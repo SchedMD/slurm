@@ -1246,7 +1246,7 @@ static void _destroy_bg_config(bg_config_t *bg_conf)
 {
 	if(bg_conf) {
 #ifdef HAVE_BGL
-		if(bg_conf->blrts_list) {
+		if (bg_conf->blrts_list) {
 			list_destroy(bg_conf->blrts_list);
 			bg_conf->blrts_list = NULL;
 		}
@@ -1256,17 +1256,17 @@ static void _destroy_bg_config(bg_config_t *bg_conf)
 		xfree(bg_conf->default_linuximage);
 		xfree(bg_conf->default_mloaderimage);
 		xfree(bg_conf->default_ramdiskimage);
-		if(bg_conf->linux_list) {
+		if (bg_conf->linux_list) {
 			list_destroy(bg_conf->linux_list);
 			bg_conf->linux_list = NULL;
 		}
 
-		if(bg_conf->mloader_list) {
+		if (bg_conf->mloader_list) {
 			list_destroy(bg_conf->mloader_list);
 			bg_conf->mloader_list = NULL;
 		}
 
-		if(bg_conf->ramdisk_list) {
+		if (bg_conf->ramdisk_list) {
 			list_destroy(bg_conf->ramdisk_list);
 			bg_conf->ramdisk_list = NULL;
 		}
@@ -1295,19 +1295,19 @@ static void _destroy_bg_lists(bg_lists_t *bg_lists)
 			bg_lists->main = NULL;
 		}
 
-		if(bg_lists->valid_small32) {
+		if (bg_lists->valid_small32) {
 			list_destroy(bg_lists->valid_small32);
 			bg_lists->valid_small32 = NULL;
 		}
-		if(bg_lists->valid_small64) {
+		if (bg_lists->valid_small64) {
 			list_destroy(bg_lists->valid_small64);
 			bg_lists->valid_small64 = NULL;
 		}
-		if(bg_lists->valid_small128) {
+		if (bg_lists->valid_small128) {
 			list_destroy(bg_lists->valid_small128);
 			bg_lists->valid_small128 = NULL;
 		}
-		if(bg_lists->valid_small256) {
+		if (bg_lists->valid_small256) {
 			list_destroy(bg_lists->valid_small256);
 			bg_lists->valid_small256 = NULL;
 		}
@@ -1318,20 +1318,20 @@ static void _destroy_bg_lists(bg_lists_t *bg_lists)
 
 static void _set_bg_lists()
 {
-	if(!bg_lists)
+	if (!bg_lists)
 		bg_lists = xmalloc(sizeof(bg_lists_t));
 
 	slurm_mutex_lock(&block_state_mutex);
 
-	if(bg_lists->booted)
+	if (bg_lists->booted)
 		list_destroy(bg_lists->booted);
 	bg_lists->booted = list_create(NULL);
 
-	if(bg_lists->job_running)
+	if (bg_lists->job_running)
 		list_destroy(bg_lists->job_running);
 	bg_lists->job_running = list_create(NULL);
 
-	if(bg_lists->main)
+	if (bg_lists->main)
 		list_destroy(bg_lists->main);
 	bg_lists->main = list_create(destroy_bg_record);
 
@@ -1384,7 +1384,7 @@ static int _validate_config_nodes(List curr_block_list,
 	   that way again ;). */
 	rc = SLURM_ERROR;
 #endif
-	if(!bg_recover)
+	if (!bg_recover)
 		return SLURM_ERROR;
 
 	itr_curr = list_iterator_create(curr_block_list);
@@ -1395,8 +1395,8 @@ static int _validate_config_nodes(List curr_block_list,
 			if (strcasecmp(bg_record->nodes,
 				       init_bg_record->nodes))
 				continue; /* wrong nodes */
-			if(!bit_equal(bg_record->ionode_bitmap,
-				      init_bg_record->ionode_bitmap))
+			if (!bit_equal(bg_record->ionode_bitmap,
+				       init_bg_record->ionode_bitmap))
 				continue;
 #ifdef HAVE_BGL
 			if (bg_record->conn_type != init_bg_record->conn_type)
@@ -1424,7 +1424,7 @@ static int _validate_config_nodes(List curr_block_list,
 			     tmp_char);
 			rc = SLURM_ERROR;
 		} else {
-			if(bg_record->full_block)
+			if (bg_record->full_block)
 				full_created = 1;
 
 			list_push(found_block_list, bg_record);
@@ -1434,20 +1434,20 @@ static int _validate_config_nodes(List curr_block_list,
 			     bg_record->bg_block_id,
 			     tmp_char,
 			     conn_type_string(bg_record->conn_type));
-			if(((bg_record->state == RM_PARTITION_READY)
-			    || (bg_record->state == RM_PARTITION_CONFIGURING))
+			if (((bg_record->state == RM_PARTITION_READY)
+			     || (bg_record->state == RM_PARTITION_CONFIGURING))
 			   && !block_ptr_exist_in_list(bg_lists->booted,
 						       bg_record))
 				list_push(bg_lists->booted, bg_record);
 		}
 	}
-	if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
+	if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		goto finished;
 
-	if(!full_created) {
+	if (!full_created) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if(init_bg_record->full_block) {
+			if (init_bg_record->full_block) {
 				list_remove(itr_curr);
 				bg_record = init_bg_record;
 				list_append(bg_lists->main, bg_record);
@@ -1458,9 +1458,9 @@ static int _validate_config_nodes(List curr_block_list,
 				     bg_record->bg_block_id,
 				     tmp_char,
 				     conn_type_string(bg_record->conn_type));
-				if(((bg_record->state == RM_PARTITION_READY)
-				    || (bg_record->state
-					== RM_PARTITION_CONFIGURING))
+				if (((bg_record->state == RM_PARTITION_READY)
+				     || (bg_record->state
+					 == RM_PARTITION_CONFIGURING))
 				   && !block_ptr_exist_in_list(
 					   bg_lists->booted, bg_record))
 					list_push(bg_lists->booted,
@@ -1473,7 +1473,7 @@ static int _validate_config_nodes(List curr_block_list,
 finished:
 	list_iterator_destroy(itr_conf);
 	list_iterator_destroy(itr_curr);
-	if(!list_count(curr_block_list))
+	if (!list_count(curr_block_list))
 		rc = SLURM_SUCCESS;
 	return rc;
 }
@@ -1488,7 +1488,7 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 	xassert(found_block_list);
 
 	info("removing unspecified blocks");
-	if(!bg_recover) {
+	if (!bg_recover) {
 		itr_curr = list_iterator_create(curr_block_list);
 		while ((init_record = list_next(itr_curr))) {
 			list_remove(itr_curr);
@@ -1538,7 +1538,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	bg_record->free_cnt--;
 
 	if (bg_record->free_cnt > 0) {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("%d other are trying to destroy this block %s",
 			     bg_record->free_cnt, bg_record->bg_block_id);
 		return SLURM_SUCCESS;
@@ -1548,7 +1548,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		/* Something isn't right, go mark this one in an error
 		   state. */
 		update_block_msg_t block_msg;
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("_post_block_free: block %s is not in state "
 			     "free (%s), putting it in error state.",
 			     bg_record->bg_block_id,
@@ -1566,22 +1566,25 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	if (restore)
 		return SLURM_SUCCESS;
 
-	if(blocks_are_created
-	   && remove_from_bg_list(bg_lists->main, bg_record) != SLURM_SUCCESS) {
-		/* This should never happen */
-		error("_post_block_free: It appears this block %s isn't "
+	if (blocks_are_created
+	    && remove_from_bg_list(bg_lists->main, bg_record)
+	    != SLURM_SUCCESS) {
+		/* This should only happen if called from
+		 * bg_job_place.c where the block was never added to
+		 * the list. */
+		debug("_post_block_free: It appears this block %s isn't "
 		      "in the main list anymore.",
 		      bg_record->bg_block_id);
 	}
 
 #ifdef HAVE_BG_FILES
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("_post_block_free: removing %s from database",
 		     bg_record->bg_block_id);
 
 	rc = bridge_remove_block(bg_record->bg_block_id);
 	if (rc != STATUS_OK) {
-		if(rc == PARTITION_NOT_FOUND) {
+		if (rc == PARTITION_NOT_FOUND) {
 			debug("_post_block_free: block %s is not found",
 			      bg_record->bg_block_id);
 		} else {
@@ -1591,12 +1594,12 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 			      bg_err_str(rc));
 		}
 	} else
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("_post_block_free: done %s",
 			     bg_record->bg_block_id);
 #endif
 	destroy_bg_record(bg_record);
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("_post_block_free: destroyed");
 
 	return SLURM_SUCCESS;
