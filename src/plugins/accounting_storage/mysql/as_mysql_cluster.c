@@ -252,13 +252,27 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
 		} else {
+			ListIterator check_itr;
+			char *tmp_name;
+
 			added++;
 			/* add it to the list and sort */
 			slurm_mutex_lock(&as_mysql_cluster_list_lock);
-			list_append(as_mysql_cluster_list,
-				    xstrdup(object->name));
-			list_sort(as_mysql_cluster_list,
-				  (ListCmpF)slurm_sort_char_list_asc);
+			check_itr = list_iterator_create(as_mysql_cluster_list);
+			while ((tmp_name = list_next(check_itr))) {
+				if (!strcmp(tmp_name, object->name))
+					break;
+			}
+			list_iterator_destroy(check_itr);
+			if (!tmp_name) {
+				list_append(as_mysql_cluster_list,
+					    xstrdup(object->name));
+				list_sort(as_mysql_cluster_list,
+					  (ListCmpF)slurm_sort_char_list_asc);
+			} else
+				error("Cluster %s(%s) appears to already be in "
+				      "our cache list, not adding.", tmp_name,
+				      object->name);
 			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		}
 		/* Add user root by default to run from the root
