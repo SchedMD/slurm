@@ -3500,7 +3500,7 @@ again:	if (gettimeofday(&tv1, NULL)) {
 		return;
 	}
 
-	cur_time = (tv1.tv_sec % 1000) + tv1.tv_usec;
+	cur_time = ((tv1.tv_sec % 1000) * 1000000) + tv1.tv_usec;
 	tot_time = host_cnt * usec_per_rpc;
 	offset_time = cur_time % tot_time;
 	target_time = host_inx * usec_per_rpc;

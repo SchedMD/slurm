@@ -83,7 +83,7 @@ again:	if (gettimeofday(&tv1, NULL)) {
 		return;
 	}
 
-	cur_time = (tv1.tv_sec % 1000) + tv1.tv_usec;
+	cur_time = ((tv1.tv_sec % 1000) * 1000000) + tv1.tv_usec;
 	tot_time = pmi_size * pmi_time;
 	offset_time = cur_time % tot_time;
 	target_time = pmi_rank * pmi_time;
