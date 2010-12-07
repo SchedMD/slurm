@@ -74,6 +74,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/basil_interface.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
@@ -758,6 +759,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
+	restore_front_end_state(recover);
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
