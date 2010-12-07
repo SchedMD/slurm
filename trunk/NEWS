@@ -4,6 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.rc4
 ============================
  -- Normalized the way pidfile are created by the slurm daemons.
+ -- Correction in logic to spread out over time highly parallel messages to
+    minimize lost messages. Effects slurmd epilog complete messages and PMI
+    key-pair transmissions. Patch from Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
