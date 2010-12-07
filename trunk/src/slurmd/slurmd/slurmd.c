@@ -167,7 +167,7 @@ static void      _wait_for_all_threads(void);
 int
 main (int argc, char *argv[])
 {
-	int i, pidfd;
+	int i;
 	int blocked_signals[] = {SIGPIPE, 0};
 	char *oom_value;
 	uint32_t slurmd_uid = 0;
@@ -299,9 +299,7 @@ main (int argc, char *argv[])
 	_create_msg_socket();
 
 	conf->pid = getpid();
-	pidfd = create_pidfile(conf->pidfile);
-	if (pidfd >= 0)
-		fd_set_close_on_exec(pidfd);
+	create_pidfile(conf->pidfile, 0);
 
 	RFC822_TIMESTAMP(time_stamp);
 	info("%s started on %s", xbasename(argv[0]), time_stamp);
@@ -313,12 +311,6 @@ main (int argc, char *argv[])
 	_spawn_registration_engine();
 	_msg_engine();
 
-	/*
-	 * Close fd here, otherwise we'll deadlock since create_pidfile()
-	 * flocks the pidfile.
-	 */
-	if (pidfd >= 0)			/* valid pidfd, non-error */
-		(void) close(pidfd);	/* Ignore errors */
 	if (unlink(conf->pidfile) < 0)
 		error("Unable to remove pidfile `%s': %m", conf->pidfile);
 

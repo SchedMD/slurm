@@ -788,20 +788,9 @@ static void *_slurmctld_signal_hand(void *no_data)
 	int i, rc;
 	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
 	sigset_t set;
-	/* Locks: Read configuration */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	lock_slurmctld(config_read_lock);
-	while ( (create_pidfile(slurmctld_conf.slurmctld_pidfile) < 0) &&
-		(errno == EAGAIN) ) {
-		verbose("Retrying create_pidfile: %m");
-		sleep(1);
-	}
-	unlock_slurmctld(config_read_lock);
 
 	/* Make sure no required signals are ignored (possibly inherited) */
 	for (i = 0; sig_array[i]; i++)
@@ -1877,8 +1866,7 @@ static void _update_nice(void)
 
 /* Kill the currently running slurmctld
  * NOTE: No need to lock the config data since we are still single-threaded */
-static void
-_kill_old_slurmctld(void)
+static void _kill_old_slurmctld(void)
 {
 	int fd;
 	pid_t oldpid = read_pidfile(slurmctld_conf.slurmctld_pidfile, &fd);
@@ -1896,26 +1884,14 @@ _kill_old_slurmctld(void)
 }
 
 /* NOTE: No need to lock the config data since we are still single-threaded */
-static void
-_init_pidfile(void)
+static void _init_pidfile(void)
 {
-	int   fd;
-	uid_t uid     = slurmctld_conf.slurm_user_id;
-
 	if (strcmp(slurmctld_conf.slurmctld_pidfile,
 		   slurmctld_conf.slurmd_pidfile) == 0)
 		error("SlurmctldPid == SlurmdPid, use different names");
 
-	if ((fd = create_pidfile(slurmctld_conf.slurmctld_pidfile)) < 0)
-		return;
-
-	if (uid && (fchown(fd, uid, -1) < 0))
-		error ("Unable to reset owner of pidfile: %m");
-	/*
-	 * Close fd here, otherwise we'll deadlock since create_pidfile()
-	 * flocks the pidfile.
-	 */
-	close(fd);
+	create_pidfile(slurmctld_conf.slurmctld_pidfile,
+		       slurmctld_conf.slurm_user_id);
 }
 
 /*

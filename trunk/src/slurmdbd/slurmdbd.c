@@ -415,15 +415,12 @@ static void _kill_old_slurmdbd(void)
 /* Create the PidFile if one is configured */
 static void _init_pidfile(void)
 {
-	int   fd;
-
 	if (slurmdbd_conf->pid_file == NULL) {
 		error("No PidFile configured");
 		return;
 	}
 
-	if ((fd = create_pidfile(slurmdbd_conf->pid_file)) < 0)
-		return;
+	create_pidfile(slurmdbd_conf->pid_file, slurmdbd_conf->slurm_user_id);
 }
 
 /* Become a daemon (child of init) and

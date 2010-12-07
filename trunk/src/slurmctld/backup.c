@@ -241,13 +241,6 @@ static void *_background_signal_hand(void *no_data)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	/* No need for slurmctld_conf lock yet */
-	while ( (create_pidfile(slurmctld_conf.slurmctld_pidfile) < 0) &&
-	        (errno == EAGAIN) ) {
-		verbose("Retrying create_pidfile: %m");
-		sleep(1);
-	}
-
 	while (slurmctld_config.shutdown_time == 0) {
 		xsignal_sigset_create(backup_sigarray, &set);
 		rc = sigwait(&set, &sig);
