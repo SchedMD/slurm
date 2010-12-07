@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
+ -- Normalized the way pidfile are created by the slurm daemons.
 
 * Changes in SLURM 2.2.0.rc3
 ============================

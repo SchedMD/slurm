@@ -166,9 +166,10 @@ read_pidfile(const char *pidfile, int *pidfd)
 
 
 int
-create_pidfile(const char *pidfile)
+create_pidfile(const char *pidfile, uid_t uid)
 {
 	FILE *fp;
+	int rc = 0;
 
 	xassert(pidfile != NULL);
 	xassert(pidfile[0] == '/');
@@ -180,24 +181,28 @@ create_pidfile(const char *pidfile)
 
 	if (fd_get_write_lock(fileno(fp)) < 0) {
 		error ("Unable to lock pidfile `%s': %m", pidfile);
-		fclose(fp);
+		rc = -1;
 		goto error;
 	}
 
 	if (fprintf(fp, "%lu\n", (unsigned long) getpid()) == EOF) {
 		error("Unable to write to pidfile `%s': %m", pidfile);
-		fclose(fp);
+		rc = -1;
 		goto error;
 	}
 
 	fflush(fp);
 
-	return (fileno(fp));
+	if (uid && (fchown(fileno(fp), uid, -1) < 0))
+		error ("Unable to reset owner of pidfile: %m");
 
-  error:
-	if (unlink(pidfile) < 0)
+error:
+	(void)fclose(fp); /* Ignore errors */
+
+	if ((rc != 0) && unlink(pidfile) < 0)
 		error("Unable to remove pidfile `%s': %m", pidfile);
-	return -1;
+
+	return rc;
 }
 
 void
