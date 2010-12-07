@@ -205,6 +205,24 @@ extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 
 /*****************************************************************************\
+ *  FRONT_END parameters and data structures
+\*****************************************************************************/
+#ifdef HAVE_FRONT_END
+typedef struct front_end_record {
+	char *comm_name;		/* communications path name to node */
+	char *name;			/* frontend node name */
+	uint16_t node_state;		/* enum node_states, ORed with
+					 * NODE_STATE_NO_RESPOND if not
+					 * responding */
+	slurm_addr_t slurm_addr;	/* network address */
+	uint16_t port;			/* frontend specific port */
+	char *reason;			/* reason for down frontend node */
+} front_end_record_t;
+
+extern front_end_record_t *front_end_nodes;
+extern uint16_t front_end_node_cnt;
+#endif
+/*****************************************************************************\
  *  PARTITION parameters and data structures
 \*****************************************************************************/
 #define PART_MAGIC 0xaefe8495

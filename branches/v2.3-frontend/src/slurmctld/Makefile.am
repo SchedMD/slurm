@@ -22,6 +22,8 @@ slurmctld_SOURCES = 	\
 	basil_interface.c \
 	basil_interface.h \
 	controller.c 	\
+	front_end.c	\
+	front_end.h	\
 	gang.c		\
 	gang.h		\
 	groups.c	\

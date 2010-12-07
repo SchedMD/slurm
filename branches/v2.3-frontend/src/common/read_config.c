@@ -465,6 +465,8 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		else {
 			n->node_state = state_str2int(node_state,
 						      (char *) value);
+			if (n->node_state == (uint16_t) NO_VAL)
+				n->node_state = NODE_STATE_UNKNOWN;
 			xfree(node_state);
 		}
 
