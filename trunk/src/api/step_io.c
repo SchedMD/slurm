@@ -1158,6 +1158,7 @@ client_io_handler_start(client_io_t *cio)
 				      &_io_thr_internal, (void *) cio))) {
 		if (++retries > MAX_RETRIES) {
 			error ("pthread_create error %m");
+			cio->ioid = 0;
 			slurm_attr_destroy(&attr);
 			return SLURM_ERROR;
 		}
