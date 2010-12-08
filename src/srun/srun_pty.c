@@ -120,8 +120,10 @@ void pty_thread_create(srun_job_t *job)
 
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if ((pthread_create(&job->pty_id, &attr, &_pty_thread, (void *) job)))
+	if ((pthread_create(&job->pty_id, &attr, &_pty_thread, (void *) job))) {
+		job->pty_id = 0;
 		error("pthread_create(pty_thread): %m");
+	}
 	slurm_attr_destroy(&attr);
 }
 

@@ -1574,6 +1574,7 @@ _start_io_timeout_thread(step_launch_state_t *sls)
 	if (pthread_create(&sls->io_timeout_thread, &attr,
 			   _check_io_timeout, (void *)sls) != 0) {
 		error("pthread_create of io timeout thread: %m");
+		sls->io_timeout_thread = 0;
 		rc = SLURM_ERROR;
 	} else {
 		sls->io_timeout_thread_created = true;
