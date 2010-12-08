@@ -1129,7 +1129,8 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 					       "cluster='%s'",
 					       wckey_table, cluster_name);
 			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
 				goto end_it;

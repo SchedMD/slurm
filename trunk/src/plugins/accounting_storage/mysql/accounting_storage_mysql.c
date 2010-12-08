@@ -679,7 +679,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 					"on duplicate key update "
 					"id=LAST_INSERT_ID(id), deleted=0;",
 					qos_table, now, now, qos);
-				qos_id = mysql_db_insert_ret_id(mysql_conn, query);
+				qos_id = mysql_db_insert_ret_id(
+					mysql_conn, query);
 				if(!qos_id)
 					fatal("problem added qos '%s", qos);
 				xstrfmtcat(default_qos_str, ",%d", qos_id);
@@ -2012,6 +2013,13 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (as_mysql_cluster_list) {
+		list_destroy(as_mysql_cluster_list);
+		as_mysql_cluster_list = NULL;
+	}
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	slurm_mutex_destroy(&as_mysql_cluster_list_lock);
 	destroy_mysql_db_info(mysql_db_info);
 	xfree(mysql_db_name);
 	xfree(default_qos_str);
