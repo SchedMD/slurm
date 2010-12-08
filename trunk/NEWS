@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Correction in logic to spread out over time highly parallel messages to
     minimize lost messages. Effects slurmd epilog complete messages and PMI
     key-pair transmissions. Patch from Gerrit Renker, CSCS.
+ -- Fixed issue where if a system has unset messages to the dbd in 2.1 and
+    upgrades to 2.2.  Messages are now processed correctly now.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
