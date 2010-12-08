@@ -194,8 +194,10 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	}
 
 	/* Create message receiving sockets and handler thread */
-	_msg_thr_create(ctx->launch_state,
-			ctx->step_resp->step_layout->node_cnt);
+	rc = _msg_thr_create(ctx->launch_state,
+			     ctx->step_resp->step_layout->node_cnt);
+	if (rc != SLURM_SUCCESS)
+		return rc;
 
 	/* Start tasks on compute nodes */
 	launch.job_id = ctx->step_req->job_id;
@@ -823,7 +825,8 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	if (pthread_create(&sls->msg_thread, &attr,
 			   _msg_thr_internal, (void *)sls) != 0) {
 		error("pthread_create of message thread: %m");
-
+		/* make sure msg_thread is 0 so we don't wait on it. */
+		sls->msg_thread = 0;
 		rc = SLURM_ERROR;
 	}
 	slurm_attr_destroy(&attr);

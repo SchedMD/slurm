@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     upgrades to 2.2.  Messages are now processed correctly now.
  -- Fixed issue where assoc_mgr cache wasn't always loaded correctly if the
     slurmdbd wasn't running when the slurmctld was started.
+ -- Make sure on a pthread create in step launch that the error code is looked
+    at.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
