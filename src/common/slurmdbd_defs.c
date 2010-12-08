@@ -2102,10 +2102,21 @@ static void _save_dbd_state(void)
 
 	dbd_fname = slurm_get_state_save_location();
 	xstrcat(dbd_fname, "/dbd.messages");
+	(void) unlink(dbd_fname);	/* clear save state */
 	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {
 		error("slurmdbd: Creating state save file %s", dbd_fname);
-	} else if (agent_list) {
+	} else if (agent_list && list_count(agent_list)) {
+		char curr_ver_str[10];
+		snprintf(curr_ver_str, sizeof(curr_ver_str),
+			 "VER%d", SLURMDBD_VERSION);
+		buffer = init_buf(strlen(curr_ver_str));
+		packstr(curr_ver_str, buffer);
+		rc = _save_dbd_rec(fd, buffer);
+		free_buf(buffer);
+		if (rc != SLURM_SUCCESS)
+			goto end_it;
+
 		while ((buffer = list_dequeue(agent_list))) {
 			/* We do not want to store registration
 			   messages.  If an admin puts in an incorrect
@@ -2132,6 +2143,8 @@ static void _save_dbd_state(void)
 			wrote++;
 		}
 	}
+
+end_it:
 	if (fd >= 0) {
 		verbose("slurmdbd: saved %d pending RPCs", wrote);
 		(void) close(fd);
@@ -2144,6 +2157,7 @@ static void _load_dbd_state(void)
 	char *dbd_fname;
 	Buf buffer;
 	int fd, recovered = 0;
+	uint16_t rpc_version = 0;
 
 	dbd_fname = slurm_get_state_save_location();
 	xstrcat(dbd_fname, "/dbd.messages");
@@ -2157,18 +2171,88 @@ static void _load_dbd_state(void)
 			error("slurmdbd: Opening state save file %s: %m",
 			      dbd_fname);
 	} else {
-		while (1) {
-			buffer = _load_dbd_rec(fd);
-			if (buffer == NULL)
-				break;
-			if (list_enqueue(agent_list, buffer) == NULL)
-				fatal("slurmdbd: list_enqueue, no memory");
-			recovered++;
+		char *ver_str = NULL;
+		uint32_t ver_str_len;
+
+		buffer = _load_dbd_rec(fd);
+		if (buffer == NULL)
+			goto end_it;
+		/* This is set to the end of the buffer for send so we
+		   need to set it back to 0 */
+		set_buf_offset(buffer, 0);
+		safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+		if (remaining_buf(buffer))
+			goto unpack_error;
+		debug3("Version string in dbd_state header is %s", ver_str);
+		free_buf(buffer);
+		buffer = NULL;
+	unpack_error:
+		if (ver_str) {
+			char curr_ver_str[10];
+			snprintf(curr_ver_str, sizeof(curr_ver_str),
+				 "VER%d", SLURMDBD_VERSION);
+			if (!strcmp(ver_str, curr_ver_str))
+				rpc_version = SLURMDBD_VERSION;
 		}
 
+		xfree(ver_str);
+		while (1) {
+			/* If the buffer was not the VER%d string it
+			   was an actual message so we don't want to
+			   skip it.
+			*/
+			if (!buffer)
+				buffer = _load_dbd_rec(fd);
+			if (buffer == NULL)
+				break;
+			if (rpc_version != SLURMDBD_VERSION) {
+				slurmdbd_msg_t msg;
+				int rc;
+				set_buf_offset(buffer, 0);
+				if (rpc_version == 0) {
+					/* This should only happen for
+					   pre 2.2.0.rc4 and 2.1
+					   machines so no real need to
+					   keep it add more to it.
+					*/
+					rc = unpack_slurmdbd_msg(
+						&msg, SLURMDBD_VERSION, buffer);
+					if ((rc == SLURM_SUCCESS)
+					    && !remaining_buf(buffer))
+						goto got_it;
+
+					/* If the current version
+					   failed lets try the last
+					   version.
+					*/
+					set_buf_offset(buffer, 0);
+					rc = unpack_slurmdbd_msg(
+						&msg, SLURMDBD_VERSION_MIN,
+						buffer);
+				} else
+					rc = unpack_slurmdbd_msg(
+						&msg, rpc_version, buffer);
+			got_it:
+				free_buf(buffer);
+				if (rc == SLURM_SUCCESS)
+					buffer = pack_slurmdbd_msg(
+						&msg, SLURMDBD_VERSION);
+				else
+					buffer = NULL;
+			}
+			if (!buffer) {
+				error("no buffer given");
+				continue;
+			}
+			if (!list_enqueue(agent_list, buffer))
+				fatal("slurmdbd: list_enqueue, no memory");
+			recovered++;
+			buffer = NULL;
+		}
+
+	end_it:
 		verbose("slurmdbd: recovered %d pending RPCs", recovered);
 		(void) close(fd);
-		(void) unlink(dbd_fname);	/* clear save state */
 	}
 	xfree(dbd_fname);
 }
