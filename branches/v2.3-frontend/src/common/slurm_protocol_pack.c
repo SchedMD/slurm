@@ -1115,7 +1115,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_FRONT_END_INFO:
-		_pack_front_end_info_msg(msg->data, buffer);
+		_pack_front_end_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);

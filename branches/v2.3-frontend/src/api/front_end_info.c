@@ -134,7 +134,7 @@ slurm_sprint_front_end_table (front_end_info_t * front_end_ptr,
 	snprintf(tmp_line, sizeof(tmp_line), "FrontendName=%s ",
 		 front_end_ptr->name);
 	xstrcat(out, tmp_line);
-	snprintf(tmp_line, sizeof(tmp_line), "State=%s%s",
+	snprintf(tmp_line, sizeof(tmp_line), "State=%s%s ",
 		 node_state_string(my_state), drain_str);
 	xstrcat(out, tmp_line);
 	if (front_end_ptr->reason_time) {
