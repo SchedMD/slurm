@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     key-pair transmissions. Patch from Gerrit Renker, CSCS.
  -- Fixed issue where if a system has unset messages to the dbd in 2.1 and
     upgrades to 2.2.  Messages are now processed correctly now.
+ -- Fixed issue where assoc_mgr cache wasn't always loaded correctly if the
+    slurmdbd wasn't running when the slurmctld was started.
 
 * Changes in SLURM 2.2.0.rc3
 ============================

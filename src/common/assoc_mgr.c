@@ -3638,14 +3638,14 @@ extern int load_assoc_mgr_state(char *state_save_location)
 		switch(type) {
 		case DBD_ADD_ASSOCS:
 			error_code = slurmdbd_unpack_list_msg(
-				&msg, SLURMDBD_VERSION, DBD_ADD_ASSOCS, buffer);
+				&msg, ver, DBD_ADD_ASSOCS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
-			else if(!msg->my_list) {
+			else if (!msg->my_list) {
 				error("No associations retrieved");
 				break;
 			}
-			if(assoc_mgr_association_list)
+			if (assoc_mgr_association_list)
 				list_destroy(assoc_mgr_association_list);
 			assoc_mgr_association_list = msg->my_list;
 			_post_association_list(assoc_mgr_association_list);
@@ -3657,14 +3657,14 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			break;
 		case DBD_ADD_USERS:
 			error_code = slurmdbd_unpack_list_msg(
-				&msg, SLURMDBD_VERSION, DBD_ADD_USERS, buffer);
+				&msg, ver, DBD_ADD_USERS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
-			else if(!msg->my_list) {
+			else if (!msg->my_list) {
 				error("No users retrieved");
 				break;
 			}
-			if(assoc_mgr_user_list)
+			if (assoc_mgr_user_list)
 				list_destroy(assoc_mgr_user_list);
 			assoc_mgr_user_list = msg->my_list;
 			_post_user_list(assoc_mgr_user_list);
@@ -3675,10 +3675,10 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			break;
 		case DBD_ADD_QOS:
 			error_code = slurmdbd_unpack_list_msg(
-				&msg, SLURMDBD_VERSION, DBD_ADD_QOS, buffer);
+				&msg, ver, DBD_ADD_QOS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
-			else if(!msg->my_list) {
+			else if (!msg->my_list) {
 				error("No qos retrieved");
 				break;
 			}
@@ -3693,14 +3693,14 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			break;
 		case DBD_ADD_WCKEYS:
 			error_code = slurmdbd_unpack_list_msg(
-				&msg, SLURMDBD_VERSION, DBD_ADD_WCKEYS, buffer);
+				&msg, ver, DBD_ADD_WCKEYS, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
-			else if(!msg->my_list) {
+			else if (!msg->my_list) {
 				error("No qos retrieved");
 				break;
 			}
-			if(assoc_mgr_wckey_list)
+			if (assoc_mgr_wckey_list)
 				list_destroy(assoc_mgr_wckey_list);
 			assoc_mgr_wckey_list = msg->my_list;
 			debug("Recovered %u wckeys",
@@ -3720,7 +3720,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	if(buffer)
+	if (buffer)
 		free_buf(buffer);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
