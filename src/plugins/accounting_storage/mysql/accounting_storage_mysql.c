@@ -1234,7 +1234,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		return SLURM_ERROR;
 
 	if (!def_exist && user_table_exists)
-		/* now set the default for each user */
+		/* now set the default for each user since the tables
+		 * exist, but the defaults don't. */
 		if (as_mysql_convert_user_defs(mysql_conn, cluster_name)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
