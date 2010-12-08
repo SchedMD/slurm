@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.17
 =========================
+ -- Correct format of --begin reported in salloc, sbatch and srun --help
+    message.
 
 * Changes in SLURM 2.1.16
 =========================

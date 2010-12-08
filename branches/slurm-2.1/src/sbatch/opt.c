@@ -2636,7 +2636,7 @@ static void _help(void)
 "\n"
 "Parallel run options:\n"
 "  -A, --account=name          charge job to specified account\n"
-"      --begin=time            defer job until HH:MM DD/MM/YY\n"
+"      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
