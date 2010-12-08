@@ -45,6 +45,13 @@
 extern void log_front_end_state(void);
 
 /*
+ * Update front end node state
+ * update_front_end_msg_ptr IN change specification
+ * RET SLURM_SUCCESS or error code
+ */
+extern int update_front_end(update_front_end_msg_t *update_front_end_msg_ptr);
+
+/*
  * pack_all_front_end - dump all front_end node information for all nodes
  *	in machine independent form (for network transmission)
  * OUT buffer_ptr - pointer to the stored data

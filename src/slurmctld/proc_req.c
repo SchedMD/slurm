@@ -147,6 +147,7 @@ inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg);
+inline static void  _slurm_rpc_update_front_end(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
@@ -281,6 +282,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_SUBMIT_BATCH_JOB:
 		_slurm_rpc_submit_batch_job(msg);
 		slurm_free_job_desc_msg(msg->data);
+		break;
+	case REQUEST_UPDATE_FRONT_END:
+		_slurm_rpc_update_front_end(msg);
+		slurm_free_update_front_end_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB:
 		_slurm_rpc_update_job(msg);
@@ -2654,8 +2659,54 @@ extern int slurm_fail_job(uint32_t job_id)
 	return error_code;
 }
 
-/* _slurm_rpc_update_node - process RPC to update the configuration of a
- *	node (e.g. UP/DOWN) */
+/*
+ * _slurm_rpc_update_front_end - process RPC to update the configuration of a
+ *	front_end node (e.g. UP/DOWN)
+ */
+static void _slurm_rpc_update_front_end(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	update_front_end_msg_t *update_front_end_msg_ptr =
+		(update_front_end_msg_t *) msg->data;
+	/* Locks: write node */
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_UPDATE_FRONT_END from uid=%d", uid);
+	if (!validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, UPDATE_FRONT_END RPC from uid=%d",
+		      uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		lock_slurmctld(node_write_lock);
+		error_code = update_front_end(update_front_end_msg_ptr);
+		unlock_slurmctld(node_write_lock);
+		END_TIMER2("_slurm_rpc_update_front_end");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_update_front_end for %s: %s",
+		     update_front_end_msg_ptr->name,
+		     slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_update_front_end complete for %s %s",
+		       update_front_end_msg_ptr->name, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+}
+
+/*
+ * _slurm_rpc_update_node - process RPC to update the configuration of a
+ *	node (e.g. UP/DOWN)
+ */
 static void _slurm_rpc_update_node(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;

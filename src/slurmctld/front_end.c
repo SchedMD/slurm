@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
+
 #include <slurm/slurm.h>
 #include <src/common/list.h>
 #include <src/common/log.h>
@@ -48,6 +50,75 @@
 front_end_record_t *front_end_nodes = NULL;
 uint16_t front_end_node_cnt = 0;
 time_t last_front_end_update = (time_t) 0;
+
+/*
+ * Update front end node state
+ * update_front_end_msg_ptr IN change specification
+ * RET SLURM_SUCCESS or error code
+ */
+extern int update_front_end(update_front_end_msg_t *msg_ptr)
+{
+#ifdef HAVE_FRONT_END
+	char  *this_node_name = NULL;
+	hostlist_t host_list;
+	front_end_record_t *front_end_ptr;
+	int i, rc = SLURM_SUCCESS;
+	uint16_t state_base;
+	time_t now = time(NULL);
+
+	if ((host_list = hostlist_create(msg_ptr->name)) == NULL) {
+		error("hostlist_create error on %s: %m", msg_ptr->name);
+		return ESLURM_INVALID_NODE_NAME;
+	}
+
+	last_front_end_update = now;
+	while ((this_node_name = hostlist_shift(host_list))) {
+		for (i = 0, front_end_ptr = front_end_nodes;
+		     i < front_end_node_cnt; i++, front_end_ptr++) {
+			if (strcmp(this_node_name, front_end_ptr->name))
+				continue;
+			if (msg_ptr->node_state == (uint16_t) NO_VAL)
+				;	/* No change in node state */
+			else if (msg_ptr->node_state == NODE_RESUME)
+				front_end_ptr->node_state = NODE_STATE_IDLE;
+			else if (msg_ptr->node_state == NODE_STATE_DRAIN)
+				front_end_ptr->node_state |= NODE_STATE_DRAIN;
+			else if (msg_ptr->node_state == NODE_STATE_DOWN) {
+				front_end_ptr->node_state &= NODE_STATE_FLAGS;
+				front_end_ptr->node_state |= NODE_STATE_DOWN;
+			}
+			state_base = front_end_ptr->node_state &
+				     NODE_STATE_BASE;
+			if ((front_end_ptr->node_state & NODE_STATE_DRAIN) ||
+			    (state_base == NODE_STATE_DOWN)) {
+				if (msg_ptr->reason) {
+					xfree(front_end_ptr->reason);
+					front_end_ptr->reason =
+						xstrdup(msg_ptr->reason);
+					front_end_ptr->reason_time = now;
+					front_end_ptr->reason_uid =
+						msg_ptr->reason_uid;
+				}
+			} else if (front_end_ptr->reason) {
+				/* Should not be any reason set */
+				xfree(front_end_ptr->reason);
+				front_end_ptr->reason_time = 0;
+				front_end_ptr->reason_uid = 0;
+			}
+			break;
+		}
+		if (i >= front_end_node_cnt) {
+			info("update_front_end: could not find front end: %s",
+			     this_node_name);
+			rc = ESLURM_INVALID_NODE_NAME;
+		}
+		free(this_node_name);
+	}
+	hostlist_destroy(host_list);
+
+	return rc;
+#endif
+}
 
 /*
  * log_front_end_state - log all front end node state

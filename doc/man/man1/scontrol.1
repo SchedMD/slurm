@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "November 2010" "scontrol 2.2" "Slurm components"
+.TH SCONTROL "1" "December 2010" "scontrol 2.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -275,9 +275,9 @@ is restarted or \fBscontrol reconfigure\fR is executed).
 .TP
 \fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
-\fIENTITY\fP may be \fIconfig\fP, \fIdaemons\fP, \fIjob\fP, \fInode\fP,
-\fIpartition\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP, \fItopology\fP,
-\fIhostlist\fP or \fIhostnames\fP
+\fIENTITY\fP may be \fIconfig\fP, \fIdaemons\fP, \fIfrontend\fP, \fIjob\fP,
+\fInode\fP, \fIpartition\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
+\fItopology\fP, \fIhostlist\fP or \fIhostnames\fP
 (also \fIblock\fP or \fIsubbp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified
 entity: the configuration parameter name, job ID, node name, partition name,
@@ -356,7 +356,8 @@ updated configuration values to the \fIupdate\fP. Note that while most
 configuration values can be changed using this command, not all can be changed
 using this mechanism. In particular, the hardware configuration of a node or
 the physical addition or removal of nodes from the cluster may only be
-accomplished through editing the Slurm configuration file and executing the \fIreconfigure\fP command (described above).
+accomplished through editing the Slurm configuration file and executing the
+\fIreconfigure\fP command (described above).
 
 .TP
 \fBverbose\fP
