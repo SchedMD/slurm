@@ -575,8 +575,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		/* write header: version and time */
+	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
 					&node_scaling);

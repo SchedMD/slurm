@@ -69,6 +69,7 @@
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_block_info_resp_msg(msg,buf)	_pack_buffer_msg(msg,buf)
+#define _pack_front_end_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_reserve_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
@@ -159,6 +160,18 @@ static int _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer,
 				 uint16_t protocol_version);
 static int _unpack_node_info_members(node_info_t * node, Buf buffer,
 				     uint16_t protocol_version);
+
+static void _pack_front_end_info_request_msg(
+				front_end_info_request_msg_t * msg,
+				Buf buffer, uint16_t protocol_version);
+static int _unpack_front_end_info_request_msg(
+				front_end_info_request_msg_t ** msg,
+				Buf buffer, uint16_t protocol_version);
+static int _unpack_front_end_info_msg(front_end_info_msg_t ** msg, Buf buffer,
+				      uint16_t protocol_version);
+static int _unpack_front_end_info_members(front_end_info_t *front_end,
+					  Buf buffer,
+					  uint16_t protocol_version);
 
 static void _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 				       uint16_t protocol_version);
@@ -585,7 +598,7 @@ pack_header(header_t * header, Buf buffer)
 		pack32((uint32_t)header->forward.timeout, buffer);
 	}
 	pack16((uint16_t)header->ret_cnt, buffer);
-	if(header->ret_cnt > 0) {
+	if (header->ret_cnt > 0) {
 		_pack_ret_list(header->ret_list,
 			       header->ret_cnt, buffer, header->version);
 	}
@@ -619,9 +632,9 @@ unpack_header(header_t * header, Buf buffer)
 	}
 
 	safe_unpack16(&header->ret_cnt, buffer);
-	if(header->ret_cnt > 0) {
-		if(_unpack_ret_list(&(header->ret_list),
-				    header->ret_cnt, buffer, header->version))
+	if (header->ret_cnt > 0) {
+		if (_unpack_ret_list(&(header->ret_list),
+				     header->ret_cnt, buffer, header->version))
 			goto unpack_error;
 	} else {
 		header->ret_list = NULL;
@@ -633,7 +646,7 @@ unpack_header(header_t * header, Buf buffer)
 unpack_error:
 	error("unpacking header");
 	destroy_forward(&header->forward);
-	if(header->ret_list)
+	if (header->ret_list)
 		list_destroy(header->ret_list);
 	return SLURM_ERROR;
 }
@@ -1095,6 +1108,14 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_sbcast_cred_msg(
 			(job_sbcast_cred_msg_t *)msg->data, buffer,
 			msg->protocol_version);
+		break;
+	case REQUEST_FRONT_END_INFO:
+		_pack_front_end_info_request_msg(
+			(front_end_info_request_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_FRONT_END_INFO:
+		_pack_front_end_info_msg(msg->data, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -1605,6 +1626,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_JOB_SBCAST_CRED:
 		rc = _unpack_job_sbcast_cred_msg(
 			(job_sbcast_cred_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_FRONT_END_INFO:
+		rc = _unpack_front_end_info_request_msg(
+			(front_end_info_request_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_FRONT_END_INFO:
+		rc = _unpack_front_end_info_msg(
+			(front_end_info_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
 	default:
@@ -2524,7 +2555,7 @@ _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer,
 	*msg = xmalloc(sizeof(node_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack32(&((*msg)->node_scaling), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
@@ -2555,7 +2586,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 	xassert(node != NULL);
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpack16(&node->node_state, buffer);
 		safe_unpack16(&node->cpus, buffer);
@@ -6797,6 +6828,88 @@ _unpack_node_info_request_msg(node_info_request_msg_t ** msg, Buf buffer,
 unpack_error:
 	slurm_free_node_info_request_msg(node_info);
 	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_front_end_info_request_msg(front_end_info_request_msg_t * msg,
+				 Buf buffer, uint16_t protocol_version)
+{
+	pack_time(msg->last_update, buffer);
+}
+
+static int
+_unpack_front_end_info_request_msg(front_end_info_request_msg_t ** msg,
+				   Buf buffer, uint16_t protocol_version)
+{
+	front_end_info_request_msg_t* front_end_info;
+
+	front_end_info = xmalloc(sizeof(front_end_info_request_msg_t));
+	*msg = front_end_info;
+
+	safe_unpack_time(&front_end_info->last_update, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_front_end_info_request_msg(front_end_info);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static int
+_unpack_front_end_info_msg(front_end_info_msg_t ** msg, Buf buffer,
+			   uint16_t protocol_version)
+{
+	int i;
+	front_end_info_t *front_end = NULL;
+
+	xassert(msg != NULL);
+	*msg = xmalloc(sizeof(front_end_info_msg_t));
+
+	/* load buffer's header (data structure version and time) */
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack32(&((*msg)->record_count), buffer);
+		safe_unpack_time(&((*msg)->last_update), buffer);
+		front_end = xmalloc(sizeof(front_end_info_t) *
+				    (*msg)->record_count);
+		(*msg)->front_end_array = front_end;
+
+		/* load individual front_end info */
+		for (i = 0; i < (*msg)->record_count; i++) {
+			if (_unpack_front_end_info_members(&front_end[i],
+							   buffer,
+							   protocol_version))
+				goto unpack_error;
+		}
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_front_end_info_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static int
+_unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
+			       uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+
+	xassert(front_end != NULL);
+
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&front_end->name, &uint32_tmp, buffer);
+		safe_unpack16(&front_end->node_state, buffer);
+
+		safe_unpackstr_xmalloc(&front_end->reason, &uint32_tmp, buffer);\
+		safe_unpack_time(&front_end->reason_time, buffer);
+		safe_unpack32(&front_end->reason_uid, buffer);
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_front_end_info_members(front_end);
 	return SLURM_ERROR;
 }
 

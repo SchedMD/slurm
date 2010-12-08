@@ -47,6 +47,7 @@
 
 front_end_record_t *front_end_nodes = NULL;
 uint16_t front_end_node_cnt = 0;
+time_t last_front_end_update = (time_t) 0;
 
 /*
  * log_front_end_state - log all front end node state
@@ -109,6 +110,7 @@ extern void restore_front_end_state(int recover)
 
 	if (recover == 2)
 		return;
+	last_front_end_update = time(NULL);
 	if (recover == 0)
 		purge_front_end_state();
 	if (front_end_list == NULL)
@@ -167,4 +169,82 @@ extern void restore_front_end_state(int recover)
 	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
 		log_front_end_state();
 #endif
+}
+
+/*
+ * _pack_front_end - dump all configuration information about a specific
+ *	front_end node in machine independent form (for network transmission)
+ * IN dump_front_end_ptr - pointer to front_end node for which information is
+ *	requested
+ * IN/OUT buffer - buffer where data is placed, pointers automatically updated
+ * IN protocol_version - slurm protocol version of client
+ * NOTE: if you make any changes here be sure to make the corresponding
+ *	changes to load_front_end_config in api/node_info.c
+ */
+static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
+			    Buf buffer, uint16_t protocol_version)
+{
+#ifdef HAVE_FRONT_END
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		packstr(dump_front_end_ptr->name, buffer);
+		pack16(dump_front_end_ptr->node_state, buffer);
+
+		packstr(dump_front_end_ptr->reason, buffer);
+		pack_time(dump_front_end_ptr->reason_time, buffer);
+		pack32(dump_front_end_ptr->reason_uid, buffer);
+	} else {
+		error("_pack_front_end: Unsupported slurm version %u",
+		      protocol_version);
+	}
+#endif
+}
+
+/*
+ * pack_all_front_end - dump all front_end node information for all nodes
+ *	in machine independent form (for network transmission)
+ * OUT buffer_ptr - pointer to the stored data
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN protocol_version - slurm protocol version of client
+ * NOTE: the caller must xfree the buffer at *buffer_ptr
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
+			       uint16_t protocol_version)
+{
+	uint32_t nodes_packed, tmp_offset;
+	front_end_record_t *front_end_ptr;
+	Buf buffer;
+	int i;
+	time_t now = time(NULL);
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	buffer = init_buf(BUF_SIZE * 2);
+	nodes_packed = 0;
+
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		/* write header: count and time */
+		pack32(nodes_packed, buffer);
+		pack_time(now, buffer);
+
+		/* write records */
+		for (i = 0, front_end_ptr = front_end_nodes;
+		     i < front_end_node_cnt; i++, front_end_ptr++) {
+			_pack_front_end(front_end_ptr, buffer,
+					protocol_version);
+			nodes_packed++;
+		}
+	} else {
+		error("pack_all_front_end: Unsupported slurm version %u",
+		      protocol_version);
+	}
+
+	tmp_offset = get_buf_offset (buffer);
+	set_buf_offset(buffer, 0);
+	pack32(nodes_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
 }
