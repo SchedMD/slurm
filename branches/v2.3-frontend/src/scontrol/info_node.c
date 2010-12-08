@@ -240,3 +240,69 @@ extern void	scontrol_print_topo (char *node_list)
 		      "node named %s", node_list);
 	}
 }
+
+/*
+ * Load current front_end table information into *node_buffer_pptr
+ */
+extern int
+scontrol_load_front_end(front_end_info_msg_t ** front_end_buffer_pptr)
+{
+	int error_code;
+	front_end_info_msg_t *front_end_info_ptr = NULL;
+
+	if (old_front_end_info_ptr) {
+		error_code = slurm_load_front_end (
+				old_front_end_info_ptr->last_update,
+				&front_end_info_ptr);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_front_end_info_msg (old_front_end_info_ptr);
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			front_end_info_ptr = old_front_end_info_ptr;
+			error_code = SLURM_SUCCESS;
+			if (quiet_flag == -1) {
+				printf("slurm_load_front_end no change in "
+				       "data\n");
+			}
+		}
+	}
+	else
+		error_code = slurm_load_front_end((time_t) NULL,
+						  &front_end_info_ptr);
+
+	if (error_code == SLURM_SUCCESS) {
+		old_front_end_info_ptr = front_end_info_ptr;
+		*front_end_buffer_pptr = front_end_info_ptr;
+	}
+
+	return error_code;
+}
+
+/*
+ * scontrol_print_front_end_list - print information about all front_end nodes
+ */
+extern void
+scontrol_print_front_end_list(void)
+{
+	front_end_info_msg_t *front_end_info_ptr = NULL;
+	int error_code;
+
+	error_code = scontrol_load_front_end(&front_end_info_ptr);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_front_end error");
+		return;
+	}
+
+	if (quiet_flag == -1) {
+		char time_str[32];
+		slurm_make_time_str((time_t *)&front_end_info_ptr->last_update,
+			            time_str, sizeof(time_str));
+		printf ("last_update_time=%s, records=%d\n",
+			time_str, front_end_info_ptr->record_count);
+	}
+
+	slurm_print_front_end_info_msg(stdout, front_end_info_ptr, one_liner);
+
+	return;
+}

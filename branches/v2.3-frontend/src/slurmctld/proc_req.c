@@ -73,6 +73,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
@@ -103,15 +104,16 @@ inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_job_allocation(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_front_end(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_job_single(slurm_msg_t * msg);
-inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
-inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg);
-inline static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
+inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
+inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg);
+inline static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg);
 inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_ready(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg);
@@ -195,6 +197,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_JOB_END_TIME:
 		_slurm_rpc_end_time(msg);
 		slurm_free_job_alloc_info_msg(msg->data);
+		break;
+	case REQUEST_FRONT_END_INFO:
+		_slurm_rpc_dump_front_end(msg);
+		slurm_free_front_end_info_request_msg(msg->data);
 		break;
 	case REQUEST_NODE_INFO:
 		_slurm_rpc_dump_nodes(msg);
@@ -1049,6 +1055,51 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 	       time_req_msg->job_id, TIME_STR);
 }
 
+/* _slurm_rpc_dump_front_end - process RPC for front_end state information */
+static void _slurm_rpc_dump_front_end(slurm_msg_t * msg)
+{
+	DEF_TIMERS;
+	char *dump;
+	int dump_size;
+	slurm_msg_t response_msg;
+	front_end_info_request_msg_t *front_end_req_msg =
+		(front_end_info_request_msg_t *) msg->data;
+	/* Locks: Read config, read node */
+	slurmctld_lock_t node_read_lock = {
+		READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_FRONT_END_INFO from uid=%d", uid);
+	lock_slurmctld(node_read_lock);
+
+	if ((front_end_req_msg->last_update - 1) >= last_front_end_update) {
+		unlock_slurmctld(node_read_lock);
+		debug2("_slurm_rpc_dump_front_end, no change");
+		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
+	} else {
+		pack_all_front_end(&dump, &dump_size, uid,
+				   msg->protocol_version);
+		unlock_slurmctld(node_read_lock);
+		END_TIMER2("_slurm_rpc_dump_front_end");
+		debug2("_slurm_rpc_dump_front_end, size=%d %s",
+		       dump_size, TIME_STR);
+
+		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
+		response_msg.address = msg->address;
+		response_msg.msg_type = RESPONSE_FRONT_END_INFO;
+		response_msg.data = dump;
+		response_msg.data_size = dump_size;
+
+		/* send message */
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		xfree(dump);
+	}
+}
+
 /* _slurm_rpc_dump_nodes - process RPC for node state information */
 static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 {
@@ -1058,18 +1109,19 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	node_info_request_msg_t *node_req_msg =
 		(node_info_request_msg_t *) msg->data;
-	/* Locks: Read config, read node, write node (for hiding) */
-	slurmctld_lock_t node_read_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+	/* Locks: Read config, write node (reset allocated CPU count in some
+	 * select plugins) */
+	slurmctld_lock_t node_write_lock = {
+		READ_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_NODE_INFO from uid=%d", uid);
-	lock_slurmctld(node_read_lock);
+	lock_slurmctld(node_write_lock);
 
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
 	    &&  (!validate_operator(uid))) {
-		unlock_slurmctld(node_read_lock);
+		unlock_slurmctld(node_write_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -1079,14 +1131,14 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	select_g_select_nodeinfo_set_all(node_req_msg->last_update - 1);
 
 	if ((node_req_msg->last_update - 1) >= last_node_update) {
-		unlock_slurmctld(node_read_lock);
+		unlock_slurmctld(node_write_lock);
 		debug2("_slurm_rpc_dump_nodes, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 
 		pack_all_node(&dump, &dump_size, node_req_msg->show_flags,
 			      uid, msg->protocol_version);
-		unlock_slurmctld(node_read_lock);
+		unlock_slurmctld(node_write_lock);
 		END_TIMER2("_slurm_rpc_dump_nodes");
 		debug2("_slurm_rpc_dump_nodes, size=%d %s",
 		       dump_size, TIME_STR);

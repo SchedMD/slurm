@@ -217,10 +217,16 @@ typedef struct front_end_record {
 	slurm_addr_t slurm_addr;	/* network address */
 	uint16_t port;			/* frontend specific port */
 	char *reason;			/* reason for down frontend node */
+	time_t reason_time;		/* Time stamp when reason was set,
+					 * ignore if no reason is set. */
+	uint32_t reason_uid;   		/* User that set the reason, ignore if
+					 * no reason is set. */
 } front_end_record_t;
 
 extern front_end_record_t *front_end_nodes;
 extern uint16_t front_end_node_cnt;
+extern time_t last_front_end_update;	/* time of last front_end update */
+
 #endif
 /*****************************************************************************\
  *  PARTITION parameters and data structures

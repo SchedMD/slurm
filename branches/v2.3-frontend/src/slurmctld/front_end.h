@@ -45,6 +45,18 @@
 extern void log_front_end_state(void);
 
 /*
+ * pack_all_front_end - dump all front_end node information for all nodes
+ *	in machine independent form (for network transmission)
+ * OUT buffer_ptr - pointer to the stored data
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN protocol_version - slurm protocol version of client
+ * NOTE: the caller must xfree the buffer at *buffer_ptr
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
+			       uint16_t protocol_version);
+
+/*
  * purge_front_end_state - purge all front end node state
  */
 extern void purge_front_end_state(void);

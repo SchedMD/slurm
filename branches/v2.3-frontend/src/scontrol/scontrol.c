@@ -55,8 +55,10 @@ int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int verbosity;		/* count of "-v" options */
-uint32_t cluster_flags; /*what type of cluster are we talking to */
+uint32_t cluster_flags; /* what type of cluster are we talking to */
+
 block_info_msg_t *old_block_info_ptr = NULL;
+front_end_info_msg_t *old_front_end_info_ptr = NULL;
 job_info_msg_t *old_job_info_ptr = NULL;
 node_info_msg_t *old_node_info_ptr = NULL;
 partition_info_msg_t *old_part_info_ptr = NULL;
@@ -559,6 +561,8 @@ _process_command (int argc, char *argv[])
 		cluster_flags = slurmdb_setup_cluster_flags();
 		slurm_free_block_info_msg(old_block_info_ptr);
 		old_block_info_ptr = NULL;
+		slurm_free_front_end_info_msg(old_front_end_info_ptr);
+		old_front_end_info_ptr = NULL;
 		slurm_free_job_info_msg(old_job_info_ptr);
 		old_job_info_ptr = NULL;
 		slurm_free_node_info_msg(old_node_info_ptr);
@@ -1192,9 +1196,9 @@ _show_it (int argc, char *argv[])
 				        argv[0]);
 		}
 		_print_daemons ();
-	} else if (strncasecmp (tag, "jobs", MAX(taglen, 1)) == 0 ||
-		   strncasecmp (tag, "jobid", MAX(taglen, 1)) == 0 ) {
-		scontrol_print_job (val);
+	} else if (strncasecmp (tag, "frontends",  MAX(taglen, 1)) == 0 ||
+		   strncasecmp (tag, "front_ends", MAX(taglen, 1)) == 0 ) {
+		scontrol_print_front_end_list();
 	} else if (strncasecmp (tag, "hostnames", MAX(taglen, 5)) == 0) {
 		if (val)
 			scontrol_print_hosts(val);
@@ -1207,6 +1211,9 @@ _show_it (int argc, char *argv[])
 			_usage();
 		} else if (scontrol_encode_hostlist(val))
 			exit_code = 1;
+	} else if (strncasecmp (tag, "jobs", MAX(taglen, 1)) == 0 ||
+		   strncasecmp (tag, "jobid", MAX(taglen, 1)) == 0 ) {
+		scontrol_print_job (val);
 	} else if (strncasecmp (tag, "nodes", MAX(taglen, 1)) == 0) {
 		scontrol_print_node_list (val);
 	} else if (strncasecmp (tag, "partitions", MAX(taglen, 1)) == 0 ||
@@ -1584,9 +1591,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               are booted and usable                        \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-       \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\",           \n\
-       \"topology\", or \"step\"                                           \n\
+  <ENTITY> may be \"config\", \"daemons\", \"frontend\", \"hostlist\",     \n\
+       \"hostnames\", \"job\", \"node\", \"partition\", \"reservation\",   \n\
+       \"slurmd\", \"step\", or \"topology\"                               \n\
        (also for BlueGene only: \"block\" or \"subbp\").                   \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
