@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Make sure on a pthread create in step launch that the error code is looked
     at.
  -- Fix setting up default acct/wckey when upgrading from 2.1 to 2.2.
+ -- Fix issue with associations attached to a specific partition with no other
+    association, and requesting a different partition.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
