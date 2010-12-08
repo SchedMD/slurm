@@ -1389,7 +1389,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 					continue;
 				} else if (strcasecmp(assoc->partition,
 						      found_assoc->partition)) {
-					debug3("not the right partition");
+					debug4("not the right partition");
 					continue;
 				}
 			}
