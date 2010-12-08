@@ -530,8 +530,12 @@ static void *_convert_cluster_tables(void *arg)
 			      "table correctly");
 			goto end_it;
 		}
-
 	}
+
+	/* now setup the defaults */
+	if (assocs || wckeys)
+		as_mysql_convert_user_defs(&mysql_conn, cluster_name);
+
 
 end_it:
 	if(rc == SLURM_SUCCESS) {
@@ -967,7 +971,8 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		   == SLURM_ERROR)
 			goto end_it;
 
-		if(mysql_db_create_table(mysql_conn, "cluster_month_usage_table",
+		if(mysql_db_create_table(mysql_conn,
+					 "cluster_month_usage_table",
 					 cluster_usage_table_fields_2_1,
 					 ", primary key (cluster(20), "
 					 "period_start))")
@@ -1064,7 +1069,8 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 					       "where cluster='%s'",
 					       assoc_table, cluster_name);
 			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
 				goto end_it;
@@ -1385,7 +1391,8 @@ end_it:
 }
 
 /* as_mysql_cluster_list_lock needs to be locked before calling this. */
-extern int as_mysql_convert_user_defs(mysql_conn_t *mysql_conn, char *cluster_name)
+extern int as_mysql_convert_user_defs(mysql_conn_t *mysql_conn,
+				      char *cluster_name)
 {
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
@@ -1405,6 +1412,29 @@ extern int as_mysql_convert_user_defs(mysql_conn_t *mysql_conn, char *cluster_na
 	};
 
 	xassert(cluster_name);
+
+	/* See if the old table exist first.  If already ran here
+	   default_acct and default_wckey won't exist.
+	*/
+	query = xstrdup_printf("show columns from %s where "
+			       "Field='default_acct';",
+			       user_table);
+
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if(!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	i = mysql_num_rows(result);
+	mysql_free_result(result);
+	result = NULL;
+
+	if (!i) {
+		error("It appears the defaults have already been set before.  "
+		      "The user_table no longer has the fields.");
+		return SLURM_SUCCESS;
+	}
 
 	info("Updating user/assoc tables for cluster %s defaults.",
 	     cluster_name);
