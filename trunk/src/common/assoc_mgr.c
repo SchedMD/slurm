@@ -1386,10 +1386,12 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 					ret_assoc = found_assoc;
 					debug3("found association "
 					       "for no partition");
+					continue;
 				} else if (strcasecmp(assoc->partition,
-						      found_assoc->partition))
+						      found_assoc->partition)) {
 					debug3("not the right partition");
-				continue;
+					continue;
+				}
 			}
 		}
 		ret_assoc = found_assoc;
