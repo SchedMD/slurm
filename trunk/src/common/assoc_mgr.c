@@ -1283,22 +1283,22 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	if (assoc_pptr)
 		*assoc_pptr = NULL;
-	if(!assoc_mgr_association_list) {
-		if(_get_assoc_mgr_association_list(db_conn, enforce)
+	if (!assoc_mgr_association_list) {
+		if (_get_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
-	if((!assoc_mgr_association_list
-	    || !list_count(assoc_mgr_association_list))
+	if ((!assoc_mgr_association_list
+	     || !list_count(assoc_mgr_association_list))
 	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
-	if(!assoc->id) {
-		if(!assoc->acct) {
+	if (!assoc->id) {
+		if (!assoc->acct) {
 			slurmdb_user_rec_t user;
 
-			if(assoc->uid == NO_VAL) {
-				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+			if (assoc->uid == NO_VAL) {
+				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 					error("get_assoc_id: "
 					      "Not enough info to "
 					      "get an association");
@@ -1309,10 +1309,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 			}
 			memset(&user, 0, sizeof(slurmdb_user_rec_t));
 			user.uid = assoc->uid;
-			if(assoc_mgr_fill_in_user(db_conn, &user,
+			if (assoc_mgr_fill_in_user(db_conn, &user,
 						  enforce, NULL)
 			   == SLURM_ERROR) {
-				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 					error("User %d not found", assoc->uid);
 					return SLURM_ERROR;
 				} else {
@@ -1324,7 +1324,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 			if(user.default_acct)
 				assoc->acct = user.default_acct;
 			else {
-				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 					error("User %s(%d) doesn't have a "
 					      "default account", assoc->user,
 					      assoc->uid);
@@ -1347,36 +1347,36 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 /* 	     assoc->cluster, assoc->partition); */
 	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
-	while((found_assoc = list_next(itr))) {
-		if(assoc->id) {
+	while ((found_assoc = list_next(itr))) {
+		if (assoc->id) {
 			if(assoc->id == found_assoc->id) {
 				ret_assoc = found_assoc;
 				break;
 			}
 			continue;
 		} else {
-			if(assoc->uid == NO_VAL
-			   && found_assoc->uid != NO_VAL) {
+			if (assoc->uid == NO_VAL
+			    && found_assoc->uid != NO_VAL) {
 				debug3("we are looking for a "
 				       "nonuser association");
 				continue;
-			} else if(assoc->uid != found_assoc->uid) {
+			} else if (assoc->uid != found_assoc->uid) {
 				debug4("not the right user %u != %u",
 				       assoc->uid, found_assoc->uid);
 				continue;
 			}
 
-			if(found_assoc->acct
-			   && strcasecmp(assoc->acct, found_assoc->acct)) {
+			if (found_assoc->acct
+			    && strcasecmp(assoc->acct, found_assoc->acct)) {
 				debug4("not the right account %s != %s",
 				       assoc->acct, found_assoc->acct);
 				continue;
 			}
 
 			/* only check for on the slurmdbd */
-			if(!assoc_mgr_cluster_name && found_assoc->cluster
-			   && strcasecmp(assoc->cluster,
-					 found_assoc->cluster)) {
+			if (!assoc_mgr_cluster_name && found_assoc->cluster
+			    && strcasecmp(assoc->cluster,
+					  found_assoc->cluster)) {
 				debug4("not the right cluster");
 				continue;
 			}
@@ -1392,6 +1392,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 					debug4("not the right partition");
 					continue;
 				}
+			} else if (found_assoc->partition) {
+				debug4("partition specific association "
+				       "looking for one without.");
+				continue;
 			}
 		}
 		ret_assoc = found_assoc;
@@ -1399,9 +1403,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	}
 	list_iterator_destroy(itr);
 
-	if(!ret_assoc) {
+	if (!ret_assoc) {
 		assoc_mgr_unlock(&locks);
-		if(enforce & ACCOUNTING_ENFORCE_ASSOCS)
+		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
@@ -1412,10 +1416,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	assoc->id              = ret_assoc->id;
 
-	if(!assoc->acct)
+	if (!assoc->acct)
 		assoc->acct    = ret_assoc->acct;
 
-	if(!assoc->cluster)
+	if (!assoc->cluster)
 		assoc->cluster = ret_assoc->cluster;
 
 	assoc->grp_cpu_mins    = ret_assoc->grp_cpu_mins;
@@ -1438,7 +1442,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
 	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
 
-	if(assoc->parent_acct) {
+	if (assoc->parent_acct) {
 		xfree(assoc->parent_acct);
 		assoc->parent_acct       = xstrdup(ret_assoc->parent_acct);
 	} else
@@ -1446,10 +1450,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	assoc->parent_id                 = ret_assoc->parent_id;
 
-	if(!assoc->partition)
+	if (!assoc->partition)
 		assoc->partition = ret_assoc->partition;
 
-	if(!assoc->qos_list)
+	if (!assoc->qos_list)
 		assoc->qos_list = ret_assoc->qos_list;
 
 	assoc->rgt              = ret_assoc->rgt;
@@ -1470,7 +1474,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	/* assoc->usage->level_shares    = ret_assoc->usage->level_shares; */
 
-/* assoc->usage->parent_assoc_ptr   = ret_assoc->usage->parent_assoc_ptr; */
+	/* assoc->usage->parent_assoc_ptr = ret_assoc->usage->parent_assoc_ptr; */
 	/* assoc->usage->shares_norm      = ret_assoc->usage->shares_norm; */
 	/* assoc->usage->usage_efctv      = ret_assoc->usage->usage_efctv; */
 	/* assoc->usage->usage_norm       = ret_assoc->usage->usage_norm; */
@@ -1484,7 +1488,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	/* } else */
 	/* 	assoc->usage->valid_qos = ret_assoc->usage->valid_qos; */
 
-	if(!assoc->user)
+	if (!assoc->user)
 		assoc->user = ret_assoc->user;
 
 	assoc_mgr_unlock(&locks);
