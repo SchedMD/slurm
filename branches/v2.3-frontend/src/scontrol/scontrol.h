@@ -149,6 +149,7 @@ extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);
 extern int	scontrol_requeue(char *job_step_id_str);
 extern int	scontrol_suspend(char *op, char *job_id_str);
+extern int	scontrol_update_front_end (int argc, char *argv[]);
 extern int	scontrol_update_job (int argc, char *argv[]);
 extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);

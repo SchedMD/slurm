@@ -172,6 +172,10 @@ static int _unpack_front_end_info_msg(front_end_info_msg_t ** msg, Buf buffer,
 static int _unpack_front_end_info_members(front_end_info_t *front_end,
 					  Buf buffer,
 					  uint16_t protocol_version);
+static void _pack_update_front_end_msg(update_front_end_msg_t * msg,
+				       Buf buffer, uint16_t protocol_version);
+static int _unpack_update_front_end_msg(update_front_end_msg_t ** msg,
+					Buf buffer, uint16_t protocol_version);
 
 static void _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 				       uint16_t protocol_version);
@@ -763,6 +767,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_UPDATE_FRONT_END:
+		_pack_update_front_end_msg((update_front_end_msg_t *) msg->data,
+					   buffer, msg->protocol_version);
+		break;
 	case REQUEST_UPDATE_NODE:
 		_pack_update_node_msg((update_node_msg_t *) msg->data,
 				      buffer,
@@ -1248,6 +1256,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(job_alloc_info_response_msg_t **)
 			& (msg->data), buffer,
 			msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_FRONT_END:
+		rc = _unpack_update_front_end_msg((update_front_end_msg_t **) &
+						  (msg->data), buffer,
+						  msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_NODE:
 		rc = _unpack_update_node_msg((update_node_msg_t **) &
@@ -2055,11 +2068,51 @@ unpack_error:
 }
 
 static void
+_pack_update_front_end_msg(update_front_end_msg_t * msg, Buf buffer,
+			   uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		packstr(msg->name, buffer);
+		pack16(msg->node_state, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->reason_uid, buffer);
+	}
+}
+
+static int
+_unpack_update_front_end_msg(update_front_end_msg_t ** msg, Buf buffer,
+			     uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	update_front_end_msg_t *tmp_ptr;
+
+	/* alloc memory for structure */
+	xassert(msg != NULL);
+	tmp_ptr = xmalloc(sizeof(update_front_end_msg_t));
+	*msg = tmp_ptr;
+
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->name,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&tmp_ptr->node_state, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_update_front_end_msg(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
 _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		packstr(msg->node_names, buffer);
 		pack16(msg->node_state, buffer);
 		packstr(msg->features, buffer);
@@ -2088,7 +2141,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->node_names,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&tmp_ptr->node_state, buffer);

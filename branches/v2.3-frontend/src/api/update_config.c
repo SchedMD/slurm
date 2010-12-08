@@ -54,6 +54,18 @@
 static int _slurm_update (void * data, slurm_msg_type_t msg_type);
 
 /*
+ * slurm_update_front_end - issue RPC to a front_end node's configuration per
+ *	request, only usable by user root
+ * IN front_end_msg - description of front_end node updates
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int
+slurm_update_front_end (update_front_end_msg_t * front_end_msg)
+{
+	return _slurm_update ((void *) front_end_msg, REQUEST_UPDATE_FRONT_END);
+}
+
+/*
  * slurm_update_job - issue RPC to a job's configuration per request,
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates

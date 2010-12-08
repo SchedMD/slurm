@@ -989,6 +989,7 @@ inline void slurm_free_job_step_id_msg(job_step_id_msg_t *msg);
 
 inline void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
+inline void slurm_free_update_front_end_msg(update_front_end_msg_t * msg);
 inline void slurm_free_update_node_msg(update_node_msg_t * msg);
 inline void slurm_free_update_part_msg(update_part_msg_t * msg);
 inline void slurm_free_delete_part_msg(delete_part_msg_t * msg);
