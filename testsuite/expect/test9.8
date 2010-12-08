@@ -62,6 +62,7 @@ if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
 #
 make_bash_script $file_in "
 $bin_sleep 5
+ulimit -u 7168
 for ((inx=0; inx < $task_cnt; inx++)) ; do
         $srun -N1 -n1 $bin_sleep $sleep_time &
 done
