@@ -189,7 +189,7 @@ static bool _job_is_completing(void)
 	if (job_list == NULL)
 		return completing;
 
-	recent = time(NULL) - MIN(complete_wait, 5);
+	recent = time(NULL) - MAX(complete_wait, 5);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_COMPLETING(job_ptr) &&
