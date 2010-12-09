@@ -465,7 +465,7 @@ extern int schedule(uint32_t job_limit)
 			last_job_update = time(NULL);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr, false);

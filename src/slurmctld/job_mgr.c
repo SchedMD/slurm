@@ -1280,7 +1280,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		info("Cancelling job %u with invalid association",
 		     job_id);
 		job_ptr->job_state = JOB_CANCELLED;
-		job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+		job_ptr->state_reason = FAIL_ACCOUNT;
 		xfree(job_ptr->state_desc);
 		if (IS_JOB_PENDING(job_ptr))
 			job_ptr->start_time = now;
@@ -8333,7 +8333,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		     job_ptr->job_id);
 		/* make sure the assoc_mgr_lock isn't locked before this. */
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
-		job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+		job_ptr->state_reason = FAIL_ACCOUNT;
 		xfree(job_ptr->state_desc);
 		cnt++;
 	}
@@ -8563,7 +8563,7 @@ extern int send_jobs_to_accounting(void)
 				     "invalid association",
 				     job_ptr->job_id);
 				job_ptr->job_state = JOB_CANCELLED;
-				job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+				job_ptr->state_reason = FAIL_ACCOUNT;
 				if (IS_JOB_PENDING(job_ptr))
 					job_ptr->start_time = now;
 				job_ptr->end_time = now;
