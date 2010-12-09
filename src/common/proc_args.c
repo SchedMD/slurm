@@ -253,51 +253,30 @@ char * base_name(char* command)
 }
 
 /*
- * str_to_bytes(): verify that arg is numeric with optional "G" or "M" at end
- * if "G" or "M" is there, multiply by proper power of 2 and return
- * number in bytes
+ * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
+ * or "T" at end and return the number in mega-bytes
  */
-long str_to_bytes(const char *arg)
+long str_to_mbytes(const char *arg)
 {
-	char *buf;
-	char *endptr;
-	int end;
-	int multiplier = 1;
 	long result;
+	char *endptr;
 
-	buf = xstrdup(arg);
-
-	end = strlen(buf) - 1;
-
-	if (isdigit(buf[end])) {
-		result = strtol(buf, &endptr, 10);
-
-		if (*endptr != '\0')
-			result = -result;
-
-	} else {
-
-		switch (toupper(buf[end])) {
-
-		case 'G':
-			multiplier = 1024;
-			break;
-
-		case 'M':
-			/* do nothing */
-			break;
-
-		default:
-			multiplier = -1;
-		}
-
-		buf[end] = '\0';
-
-		result = multiplier * strtol(buf, &endptr, 10);
-
-		if (*endptr != '\0')
-			result = -result;
-	}
+	errno = 0;
+	result = strtol(arg, &endptr, 10);
+	if ((errno != 0) && ((result == LONG_MIN) || (result == LONG_MAX)))
+		result = -1;
+	else if (endptr[0] == '\0')
+		;
+	else if ((endptr[0] == 'k') || (endptr[0] == 'k'))
+		result = (result + 1023) / 1024;	/* round up */
+	else if ((endptr[0] == 'm') || (endptr[0] == 'M'))
+		;
+	else if ((endptr[0] == 'g') || (endptr[0] == 'G'))
+		result *= 1024;
+	else if ((endptr[0] == 't') || (endptr[0] == 'T'))
+		result *= (1024 * 1024);
+	else
+		result = -1;
 
 	return result;
 }

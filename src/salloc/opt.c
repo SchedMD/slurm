@@ -889,7 +889,7 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM:
-			opt.realmem = (int) str_to_bytes(optarg);
+			opt.realmem = (int) str_to_mbytes(optarg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -897,7 +897,7 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
-			opt.mem_per_cpu = (int) str_to_bytes(optarg);
+			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -905,7 +905,7 @@ void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_TMP:
-			opt.tmpdisk = str_to_bytes(optarg);
+			opt.tmpdisk = str_to_mbytes(optarg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);

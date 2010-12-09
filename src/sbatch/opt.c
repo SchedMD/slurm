@@ -1364,7 +1364,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM:
-			opt.realmem = (int) str_to_bytes(optarg);
+			opt.realmem = (int) str_to_mbytes(optarg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1372,7 +1372,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
-			opt.mem_per_cpu = (int) str_to_bytes(optarg);
+			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1380,7 +1380,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_TMP:
-			opt.tmpdisk = str_to_bytes(optarg);
+			opt.tmpdisk = str_to_mbytes(optarg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);
@@ -1931,7 +1931,7 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			opt.tmpdisk = str_to_bytes(temp);
+			opt.tmpdisk = str_to_mbytes(temp);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", temp);
 				exit(error_exit);
@@ -1957,7 +1957,7 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			opt.realmem = (int) str_to_bytes(temp);
+			opt.realmem = (int) str_to_mbytes(temp);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s", temp);
 				exit(error_exit);
