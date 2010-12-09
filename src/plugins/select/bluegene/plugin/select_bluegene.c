@@ -1267,18 +1267,12 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		(*nodes) = tmp;
 		break;
 	case SELECT_APPLY_NODE_MIN_OFFSET:
-		/* Below commented out code no longer applies since
-		   this is only called on a partition node count, so
-		   always apply.  If this ever changes we will have to
-		   do something else.  But as of 12-9-10 this doesn't
-		   appear it is going to need to happen.
-		*/
-		/* if ((*nodes) == 1) { */
-		/* 	/\* Job will actually get more than one c-node, */
-		/* 	 * but we can't be sure exactly how much so we */
-		/* 	 * don't scale up this value. *\/ */
-		/* 	break; */
-		/* } */
+		if ((*nodes) == 1) {
+			/* Job will actually get more than one c-node,
+			 * but we can't be sure exactly how much so we
+			 * don't scale up this value. */
+			break;
+		}
 		(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MAX_OFFSET:
