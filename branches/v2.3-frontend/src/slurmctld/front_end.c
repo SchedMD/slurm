@@ -257,12 +257,15 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 {
 #ifdef HAVE_FRONT_END
 	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack_time(dump_front_end_ptr->boot_time, buffer);
 		packstr(dump_front_end_ptr->name, buffer);
 		pack16(dump_front_end_ptr->node_state, buffer);
 
 		packstr(dump_front_end_ptr->reason, buffer);
 		pack_time(dump_front_end_ptr->reason_time, buffer);
 		pack32(dump_front_end_ptr->reason_uid, buffer);
+
+		pack_time(dump_front_end_ptr->slurmd_start_time, buffer);
 	} else {
 		error("_pack_front_end: Unsupported slurm version %u",
 		      protocol_version);

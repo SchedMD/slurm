@@ -209,6 +209,8 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 \*****************************************************************************/
 #ifdef HAVE_FRONT_END
 typedef struct front_end_record {
+	time_t boot_time;		/* Time of node boot,
+					 * computed from up_time */
 	char *comm_name;		/* communications path name to node */
 	char *name;			/* frontend node name */
 	uint16_t node_state;		/* enum node_states, ORed with
@@ -221,6 +223,7 @@ typedef struct front_end_record {
 					 * ignore if no reason is set. */
 	uint32_t reason_uid;   		/* User that set the reason, ignore if
 					 * no reason is set. */
+	time_t slurmd_start_time;	/* Time of slurmd startup */
 } front_end_record_t;
 
 extern front_end_record_t *front_end_nodes;

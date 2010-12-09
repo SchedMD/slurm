@@ -1377,13 +1377,17 @@ typedef struct node_info_msg {
 } node_info_msg_t;
 
 typedef struct front_end_info {
-	char *name;		/* node name */
-	uint16_t node_state;	/* see enum node_states */
-	char *reason;		/* reason for node being DOWN or DRAINING */
-	time_t reason_time;	/* Time stamp when reason was set, ignore if
-				 * no reason is set. */
-	uint32_t reason_uid;   	/* User that set the reason, ignore if
-				 * no reason is set. */
+	time_t boot_time;		/* Time of node boot,
+					 * computed from up_time */
+	char *name;			/* node name */
+	uint16_t node_state;		/* see enum node_states */
+	char *reason;			/* reason for node being DOWN or
+					 * DRAINING */
+	time_t reason_time;		/* Time stamp when reason was set,
+					 * ignore if no reason is set. */
+	uint32_t reason_uid;   		/* User that set the reason,
+					 * ignore if no reason is set. */
+	time_t slurmd_start_time;	/* Time of slurmd startup */
 } front_end_info_t;
 
 typedef struct front_end_info_msg {

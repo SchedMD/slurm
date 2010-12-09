@@ -1196,9 +1196,8 @@ _show_it (int argc, char *argv[])
 				        argv[0]);
 		}
 		_print_daemons ();
-	} else if (strncasecmp (tag, "frontends",  MAX(tag_len, 1)) == 0 ||
-		   strncasecmp (tag, "front_ends", MAX(tag_len, 1)) == 0 ) {
-		scontrol_print_front_end_list();
+	} else if (strncasecmp (tag, "FrontendName",  MAX(tag_len, 1)) == 0) {
+		scontrol_print_front_end_list(val);
 	} else if (strncasecmp (tag, "hostnames", MAX(tag_len, 5)) == 0) {
 		if (val)
 			scontrol_print_hosts(val);
