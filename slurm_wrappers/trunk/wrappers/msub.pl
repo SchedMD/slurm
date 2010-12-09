@@ -666,6 +666,8 @@ sub process
 {
 	my (@opts) = @_;
 
+	my $savenodes;
+
 	foreach my $opt (@opts) {
 #
 #		Convert -W format to -l format.
@@ -675,6 +677,8 @@ sub process
 			$opt =~ s/x=//;
 			$opt =~ s/:/=/;
 		}
+		$savenodes = $opt if ($opt =~ /nodes/ && $opt =~ /ppn/);
+
 		my ($ot,$r) = split(/=/, $opt);
 		my $o = lc($ot);
 		$host	  = $r if ($o =~ /partition/);
@@ -704,8 +708,8 @@ sub process
 #	See if nodes is in "nn:ppn=pp" format,
 #	if so, adjust.
 #
-	if ($nodes && $nodes =~ /ppn/) {
-		my ($o,$r,$s,$t) = split(/=|:/, $nodes);
+	if ($savenodes) {
+		my ($o,$r,$s,$t) = split(/=|:/, $savenodes);
 		$nodes = $r;
 		$tpn = $t if ($t);
         }
