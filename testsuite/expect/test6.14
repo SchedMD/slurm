@@ -189,6 +189,7 @@ foreach job_id $submitted_jobs {
 
 
 if {$exit_code == 0} {
+	exec rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

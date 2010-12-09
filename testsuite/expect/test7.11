@@ -364,7 +364,7 @@ if {[file exists $orig_spank_conf]} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_out $spank_out ${file_prog}.so
+	exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

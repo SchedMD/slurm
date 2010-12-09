@@ -246,7 +246,7 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 if {$exit_code == 0} {
-	exec rm -f $file_out $file_prog
+	exec rm -f $file_in $file_out $file_prog
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

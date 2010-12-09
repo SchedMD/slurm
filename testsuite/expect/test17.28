@@ -169,6 +169,12 @@ if {$job_id == 0} {
 	set exit_code 1
 }
 
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error completing job $job_id\n"
+	cancel_job $job_id
+	set exit_code 1
+}
+
 #
 # Post-processing
 #
