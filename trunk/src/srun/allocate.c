@@ -597,6 +597,11 @@ job_desc_msg_create_from_opts (void)
 		j->name   = xstrdup(opt.job_name);
 	else
 		j->name   = xstrdup(opt.cmd_name);
+	if (opt.argc > 0) {
+		j->argc    = 1;
+		j->argv    = (char **) xmalloc(sizeof(char *) * 2);
+		j->argv[0] = xstrdup(opt.argv[0]);
+	}
 	if (opt.acctg_freq >= 0)
 		j->acctg_freq     = opt.acctg_freq;
 	j->reservation    = xstrdup(opt.reservation);
