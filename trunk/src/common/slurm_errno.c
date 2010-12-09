@@ -213,7 +213,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_TASK_MEMORY,
 	  "Memory required by task is not available"		},
 	{ ESLURM_INVALID_ACCOUNT,
-	  "Invalid account specified"				},
+	  "Invalid account or account/partition combination specified"},
 	{ ESLURM_INVALID_PARENT_ACCOUNT,
 	  "Invalid parent account specified"			},
 	{ ESLURM_SAME_PARENT_ACCOUNT,

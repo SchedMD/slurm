@@ -64,7 +64,7 @@ static void _cancel_job(struct job_record *job_ptr)
 	last_job_update = now;
 	job_ptr->job_state = JOB_FAILED;
 	job_ptr->exit_code = 1;
-	job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+	job_ptr->state_reason = FAIL_ACCOUNT;
 	xfree(job_ptr->state_desc);
 	job_ptr->start_time = job_ptr->end_time = now;
 	job_completion_logger(job_ptr, false);

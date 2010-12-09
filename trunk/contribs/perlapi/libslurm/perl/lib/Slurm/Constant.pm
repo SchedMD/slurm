@@ -541,9 +541,11 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * FAIL_INACTIVE_LIMIT          25
 
-=item * FAIL_BANK_ACCOUNT            26
+=item * FAIL_ACCOUNT                 26
 
 =item * FAIL_QOS                     27
+
+=item * WAIT_QOS_THRES               28
 
 =back
 
