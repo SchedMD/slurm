@@ -318,8 +318,18 @@ update_node_msg_t
 
 Changed the following enums
 ===========================
-NONE
+job_state_reason
+	FAIL_BANK_ACCOUNT -> FAIL_ACCOUNT
+	FAIL_QOS        	/* invalid QOS */
+	WAIT_QOS_THRES        	/* required QOS threshold has been breached */
 
+select_jobdata_type
+	SELECT_JOBDATA_PTR	/* data-> select_jobinfo_t *jobinfo */
+
+select_nodedata_type
+	SELECT_NODEDATA_PTR     /* data-> select_nodeinfo_t *nodeinfo */
+
+select_type_plugin_info is no longer and it's contents are now mostly #defines
 
 Added the following API's
 =========================
