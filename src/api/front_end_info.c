@@ -151,6 +151,20 @@ slurm_sprint_front_end_table (front_end_info_t * front_end_ptr,
 		xstrcat(out, tmp_line);
 	}
 	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 2 ******/
+	slurm_make_time_str((time_t *)&front_end_ptr->boot_time,
+			    time_str, sizeof(time_str));
+	snprintf(tmp_line, sizeof(tmp_line), "BootTime=%s ", time_str);
+	xstrcat(out, tmp_line);
+	slurm_make_time_str((time_t *)&front_end_ptr->slurmd_start_time,
+			    time_str, sizeof(time_str));
+	snprintf(tmp_line, sizeof(tmp_line), "SlurmdStartTime=%s", time_str);
+	xstrcat(out, tmp_line);
+	if (one_liner)
 		xstrcat(out, "\n");
 	else
 		xstrcat(out, "\n\n");

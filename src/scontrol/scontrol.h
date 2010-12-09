@@ -136,7 +136,10 @@ extern void	scontrol_pid_info(pid_t job_pid);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
 					      node_info_msg_t *node_info_msg);
-extern void	scontrol_print_front_end_list(void);
+extern void	scontrol_print_front_end_list(char *node_list);
+extern void	scontrol_print_front_end(char *node_name,
+					 front_end_info_msg_t  *
+					 front_end_buffer_ptr);
 extern void	scontrol_print_job (char * job_id_str);
 extern void	scontrol_print_hosts (char * node_list);
 extern void	scontrol_print_node (char *node_name,
