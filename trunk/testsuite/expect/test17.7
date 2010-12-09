@@ -39,7 +39,7 @@ set exit_code   0
 set file_err    "test$test_id.error"
 set file_in     "test$test_id.input"
 set file_out    "$cwd/test$test_id.output"
-set tmp_dir     "/tmp"
+set tmp_dir     "[exec $bin_printenv HOME]"
 
 print_header $test_id
 
@@ -47,8 +47,8 @@ print_header $test_id
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_out $file_err
-if {[file exists /tmp/$file_err]} {
+exec $bin_rm -f $file_in $file_out $tmp_dir/$file_err
+if {[file exists $tmp_dir/$file_err]} {
 	send_user "\nWARNING: can not delete /tmp/$file_err to run test\n"
 	set random 0
 	spawn $bin_date +%N
@@ -128,7 +128,7 @@ if [file exists $file_err] {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
+	exec $bin_rm -f $file_in $file_out $tmp_dir/$file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
