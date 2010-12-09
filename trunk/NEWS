@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix it so 1 midplane clusters will run small block jobs.
  -- Add Command and WorkDir to the output of "scontrol show job" for job
     allocations created using srun (not just sbatch).
+ -- Fixed sacctmgr to not add blank defaultqos' when doing a cluster dump.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
