@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with associations attached to a specific partition with no other
     association, and requesting a different partition.
  -- Added perlapi to the slurmdb to the slurm.spec.
+ -- In sched/backfill, correct handling of CompleteWait parameter to avoid
+    backfill scheduling while a job is completing. Patch from Gerrit Renker,
+    CSCS.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
