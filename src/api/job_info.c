@@ -652,29 +652,24 @@ line15:
 		  job_ptr->shared == 1 ? "1" : "OK"),
 		 job_ptr->contiguous, job_ptr->licenses, job_ptr->network);
 	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
 
-	/****** Line 18 (optional, batch only) ******/
-	if (job_ptr->batch_flag) {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line), "Command=%s",
-			 job_ptr->command);
-		xstrcat(out, tmp_line);
+	/****** Line 18 ******/
+	snprintf(tmp_line, sizeof(tmp_line), "Command=%s",
+		 job_ptr->command);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
 
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-	}
-
-	/****** Line 19 (optional, batch only) ******/
-	if (job_ptr->batch_flag) {
-		snprintf(tmp_line, sizeof(tmp_line), "WorkDir=%s",
-			 job_ptr->work_dir);
-		xstrcat(out, tmp_line);
-	}
+	/****** Line 19 ******/
+	snprintf(tmp_line, sizeof(tmp_line), "WorkDir=%s",
+		 job_ptr->work_dir);
+	xstrcat(out, tmp_line);
 
 	if(cluster_flags & CLUSTER_FLAG_BG) {
 		/****** Line 20 (optional) ******/
