@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     CSCS.
  -- Send message back to user when trying to launch job on computing lacking
     that user ID. Patch from Hongjia Cao, NUDT.
+ -- BLUEGENE - Fix it so 1 midplane clusters will run small block jobs.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
