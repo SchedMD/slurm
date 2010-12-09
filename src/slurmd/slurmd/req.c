@@ -510,7 +510,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		error("_send_slurmstepd_init getpwuid_r: %m");
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
-		return -1;
+		errno = ESLURMD_UID_NOT_FOUND;
+		return errno;
 	}
 	debug3("_send_slurmstepd_init: return from getpwuid_r");
 
@@ -530,10 +531,10 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	return 0;
 
 rwfail:
-	if(buffer)
+	if (buffer)
 		free_buf(buffer);
 	error("_send_slurmstepd_init failed");
-	return -1;
+	return errno;
 }
 
 
@@ -590,9 +591,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
 						req, cli, self,
-						step_hset)) < 0) {
+						step_hset)) != 0) {
 			error("Unable to init slurmstepd");
-			rc = SLURM_FAILURE;
 			goto done;
 		}
 		if (read(to_slurmd[0], &rc, sizeof(int)) != sizeof(int)) {

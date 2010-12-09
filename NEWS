@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
  -- In sched/backfill, correct handling of CompleteWait parameter to avoid
     backfill scheduling while a job is completing. Patch from Gerrit Renker,
     CSCS.
+ -- Send message back to user when trying to launch job on computing lacking
+    that user ID. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
@@ -735,6 +737,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.17
 =========================
+ -- Correct format of --begin reported in salloc, sbatch and srun --help
+    message.
 
 * Changes in SLURM 2.1.16
 =========================
