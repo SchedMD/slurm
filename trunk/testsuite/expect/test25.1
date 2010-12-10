@@ -59,6 +59,9 @@ make_bash_script $file_in "$bin_sleep 600"
 proc def_cpu_cnt { } {
 	global sinfo alpha_numeric_under number exit_code partition
 
+	if { [string length $partition] == 0 } {
+		set partition [default_partition]
+	}
 	set cpu_cnt 1
 	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
 	expect {
