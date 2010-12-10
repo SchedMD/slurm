@@ -691,6 +691,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	_build_all_nodeline_info();
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
+	if (!reconfig)
+		restore_front_end_state(recover);
 
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
@@ -738,9 +740,11 @@ int read_slurm_conf(int recover, bool reconfig)
 		xfree(state_save_dir);	/* No select plugin state restore */
 	} else if (recover == 1) {	/* Load job & node state files */
 		(void) load_all_node_state(true);
+		(void) load_all_front_end_state(true);
 		load_job_ret = load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
+		(void) load_all_front_end_state(false);
 		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
 	}
@@ -759,7 +763,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
-	restore_front_end_state(recover);
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);

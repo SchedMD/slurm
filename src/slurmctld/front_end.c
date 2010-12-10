@@ -432,6 +432,7 @@ extern int dump_all_front_end_state(void)
 
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
+
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
@@ -475,11 +476,11 @@ extern int dump_all_front_end_state(void)
 		(void) unlink (new_file);
 	else {	/* file shuffle */
 		(void) unlink (old_file);
-		if(link(reg_file, old_file))
+		if (link(reg_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       reg_file, old_file);
 		(void) unlink (reg_file);
-		if(link(new_file, reg_file))
+		if (link(new_file, reg_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
 		(void) unlink (new_file);
@@ -585,7 +586,6 @@ extern int load_all_front_end_state(bool state_only)
 			goto unpack_error;
 
 		/* validity test as possible */
-
 
 		/* find record and perform update */
 		front_end_ptr = find_front_end_record(node_name);

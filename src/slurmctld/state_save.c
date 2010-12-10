@@ -46,6 +46,7 @@
 #endif                          /* WITH_PTHREADS */
 
 #include "src/common/macros.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -55,7 +56,7 @@
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
 static int save_jobs = 0, save_nodes = 0, save_parts = 0;
-static int save_triggers = 0, save_resv = 0;
+static int save_front_end = 0, save_triggers = 0, save_resv = 0;
 static bool run_save_thread = true;
 
 /* fsync() and close() a file,
@@ -88,6 +89,15 @@ extern int fsync_and_close(int fd, char *file_type)
 		rc = retval;
 
 	return rc;
+}
+
+/* Queue saving of front_end state information */
+extern void schedule_front_end_save(void)
+{
+	slurm_mutex_lock(&state_save_lock);
+	save_front_end++;
+	pthread_cond_broadcast(&state_save_cond);
+	slurm_mutex_unlock(&state_save_lock);
 }
 
 /* Queue saving of job state information */
@@ -163,7 +173,8 @@ extern void *slurmctld_state_save(void *no_data)
 		slurm_mutex_lock(&state_save_lock);
 		while (1) {
 			save_count = save_jobs + save_nodes + save_parts +
-				     save_resv + save_triggers;
+				     save_front_end + save_resv +
+				     save_triggers;
 			now = time(NULL);
 			save_delay = difftime(now, last_save);
 			if (save_count &&
@@ -186,9 +197,20 @@ extern void *slurmctld_state_save(void *no_data)
 			}
 		}
 
-		/* save job info if necessary */
+		/* save front_end node info if necessary */
 		run_save = false;
 		/* slurm_mutex_lock(&state_save_lock); done above */
+		if (save_front_end) {
+			run_save = true;
+			save_front_end = 0;
+		}
+		slurm_mutex_unlock(&state_save_lock);
+		if (run_save)
+			(void)dump_all_front_end_state();
+
+		/* save job info if necessary */
+		run_save = false;
+		slurm_mutex_lock(&state_save_lock);
 		if (save_jobs) {
 			run_save = true;
 			save_jobs = 0;
