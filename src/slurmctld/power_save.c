@@ -174,6 +174,7 @@ static void _do_power_work(void)
 		    (susp_state == 0)					&&
 		    ((suspend_rate == 0) || (suspend_cnt < suspend_rate)) &&
 		    IS_NODE_IDLE(node_ptr)				&&
+		    (node_ptr->sus_job_cnt == 0)			&&
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
 		    (!IS_NODE_POWER_UP(node_ptr))			&&
 		    (node_ptr->last_idle < (now - idle_time))		&&

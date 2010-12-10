@@ -117,6 +117,7 @@ struct node_record {
 	slurm_addr_t slurm_addr;	/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
 	uint16_t run_job_cnt;		/* count of jobs running on node */
+	uint16_t sus_job_cnt;		/* count of jobs suspended on node */
 	uint16_t no_share_job_cnt;	/* count of jobs running that will
 					 * not share nodes */
 	char *reason; 			/* why a node is DOWN or DRAINING */

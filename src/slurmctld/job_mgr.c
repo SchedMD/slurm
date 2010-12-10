@@ -7901,6 +7901,7 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio)
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
+	time_t now = time(NULL);
 
 	if (clear_prio &&
 	    (rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS)
@@ -7910,14 +7911,14 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
+		node_ptr->sus_job_cnt++;
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
 		else {
 			error("Node %s run_job_cnt underflow",
 				node_ptr->name);
 		}
-		if (job_ptr->details
-		&&  (job_ptr->details->shared == 0)) {
+		if (job_ptr->details && (job_ptr->details->shared == 0)) {
 			if (node_ptr->no_share_job_cnt)
 				(node_ptr->no_share_job_cnt)--;
 			else {
@@ -7937,13 +7938,13 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio)
 				node_ptr->name);
 		} else if (node_ptr->run_job_cnt) {
 			node_ptr->node_state = NODE_STATE_ALLOCATED |
-					node_flags;
+					       node_flags;
 		} else {
-			node_ptr->node_state = NODE_STATE_IDLE |
-					node_flags;
+			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+			node_ptr->last_idle  = now;
 		}
 	}
-	last_job_update = last_node_update = time(NULL);
+	last_job_update = last_node_update = now;
 	return rc;
 }
 
@@ -7970,6 +7971,12 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool clear_prio)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
+		if (node_ptr->sus_job_cnt)
+			(node_ptr->sus_job_cnt)--;
+		else {
+			error("Node %s sus_job_cnt underflow",
+			      node_ptr->name);
+		}
 		node_ptr->run_job_cnt++;
 		if (job_ptr->details &&
 		    (job_ptr->details->shared == 0)) {

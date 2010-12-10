@@ -113,6 +113,7 @@ static int  _strcmp(const char *s1, const char *s2);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
+static void _sync_nodes_to_suspended_job(struct job_record *job_ptr);
 static void _sync_part_prio(void);
 static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
@@ -1300,6 +1301,8 @@ static int _sync_nodes_to_jobs(void)
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 			update_cnt += _sync_nodes_to_active_job(job_ptr);
+		else if (IS_JOB_SUSPENDED(job_ptr))
+			_sync_nodes_to_suspended_job(job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -1354,8 +1357,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		node_ptr->run_job_cnt++; /* NOTE:
 				* This counter moved to comp_job_cnt
 				* by _sync_nodes_to_comp_job() */
-		if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr)) &&
-		    (job_ptr->details) && (job_ptr->details->shared == 0))
+		if ((job_ptr->details) && (job_ptr->details->shared == 0))
 			node_ptr->no_share_job_cnt++;
 
 		if (IS_NODE_DOWN(node_ptr)              &&
@@ -1396,6 +1398,21 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		}
 	}
 	return cnt;
+}
+
+/* Synchronize states of nodes and suspended jobs */
+static void _sync_nodes_to_suspended_job(struct job_record *job_ptr)
+{
+	int i;
+	struct node_record *node_ptr = node_record_table_ptr;
+
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+
+		node_ptr->sus_job_cnt++;
+	}
+	return;
 }
 
 #ifdef 	HAVE_ELAN
