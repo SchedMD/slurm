@@ -1879,7 +1879,6 @@ typedef struct slurm_update_node_msg {
 	char *gres;		/* new generic resources for node */
 	char *node_names;	/* comma separated list of required nodes */
 	uint16_t node_state;	/* see enum node_states */
-	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t reason_uid;	/* user ID of sending (needed if user
 				 * root is sending message) */
