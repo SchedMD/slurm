@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
  -- Correct processing of memory and disk space specifications in the salloc,
     sbatch, and srun commands to work properly with a suffix of "MB", "GB",
     etc. and not only with a single letter (e.g. "M", "G", etc.).
+ -- Prevent nodes with suspended jobs from being powered down by SLURM.
 
 * Changes in SLURM 2.2.0.rc3
 ============================

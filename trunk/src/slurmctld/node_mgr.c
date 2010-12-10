@@ -2363,7 +2363,13 @@ extern void make_node_comp(struct node_record *node_ptr,
 
 	xassert(node_ptr);
 	last_node_update = now;
-	if (!suspended) {
+	if (suspended) {
+		if (node_ptr->sus_job_cnt)
+			(node_ptr->sus_job_cnt)--;
+		else
+			error("Node %s sus_job_cnt underflow in "
+				"make_node_comp", node_ptr->name);
+	} else {
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
 		else
@@ -2480,7 +2486,14 @@ void make_node_idle(struct node_record *node_ptr,
 			      job_ptr->job_id);
 		}
 
-		if (IS_JOB_RUNNING(job_ptr)) {
+		if (IS_JOB_SUSPENDED(job_ptr)) {
+			/* Remove node from suspended job */
+			if (node_ptr->sus_job_cnt)
+				(node_ptr->sus_job_cnt)--;
+			else
+				error("Node %s sus_job_cnt underflow in "
+					"make_node_idle", node_ptr->name);
+		} else if (IS_JOB_RUNNING(job_ptr)) {
 			/* Remove node from running job */
 			if (node_ptr->run_job_cnt)
 				(node_ptr->run_job_cnt)--;
