@@ -1545,6 +1545,7 @@ extern void save_all_state(void)
 	char *save_loc;
 
 	/* Each of these functions lock their own databases */
+	schedule_front_end_save();
 	schedule_job_save();
 	schedule_node_save();
 	schedule_part_save();
