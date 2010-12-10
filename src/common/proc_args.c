@@ -267,7 +267,7 @@ long str_to_mbytes(const char *arg)
 		result = -1;
 	else if (endptr[0] == '\0')
 		;
-	else if ((endptr[0] == 'k') || (endptr[0] == 'k'))
+	else if ((endptr[0] == 'k') || (endptr[0] == 'K'))
 		result = (result + 1023) / 1024;	/* round up */
 	else if ((endptr[0] == 'm') || (endptr[0] == 'M'))
 		;
