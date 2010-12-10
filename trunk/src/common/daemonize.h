@@ -49,9 +49,8 @@
  */
 extern int daemon(int nochdir, int noclose);
 
-/* Write pid into file pidfile.  If uid is non-zero, will set the
- * owner of that file to that uid.
- * Returns -1 on error.
+/* Write pid into file pidfile if uid is not 0 change the owner of the
+ * pidfile to that user.
  */
 extern int create_pidfile(const char *pidfilename, uid_t uid);
 

@@ -128,6 +128,14 @@ int main(int argc, char *argv[])
 	if (foreground == 0)
 		_daemonize();
 
+	/*
+	 * Need to create pidfile here in case we setuid() below
+	 * (init_pidfile() exits if it can't initialize pid file).
+	 * On Linux we also need to make this setuid job explicitly
+	 * able to write a core dump.
+	 * This also has to happen after daemon(), which closes all fd's,
+	 * so we keep the write lock of the pidfile.
+	 */
 	_init_pidfile();
 	_become_slurm_user();
 	log_config();
@@ -420,6 +428,9 @@ static void _init_pidfile(void)
 		return;
 	}
 
+	/* Don't close the fd returned here since we need to keep the
+	   fd open to maintain the write lock.
+	*/
 	create_pidfile(slurmdbd_conf->pid_file, slurmdbd_conf->slurm_user_id);
 }
 
