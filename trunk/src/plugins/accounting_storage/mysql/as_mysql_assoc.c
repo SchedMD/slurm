@@ -1372,8 +1372,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 bool is_admin, List ret_list)
 {
 	ListIterator itr = NULL;
-	MYSQL_RES *result2;
-	MYSQL_ROW row, row2;
+	MYSQL_ROW row;
 	int added = 0;
 	int rc = SLURM_SUCCESS;
 	int set_qos_vals = 0;
@@ -1508,57 +1507,66 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		else
 			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
 
-		/* If there is a variable cleared here we need to make
-		   sure we get the parent's information, if any. */
-		query = xstrdup_printf(
-			"call get_parent_limits('%s', "
-			"'%s', '%s', %u); %s",
-			assoc_table, account,
-			cluster_name, 0,
-			get_parent_limits_select);
-		debug4("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if(!(result2 = mysql_db_query_ret(
-			     mysql_conn, query, 1))) {
+		/* Only do this when not dealing with the root association. */
+		if (strcmp(account, "root") || row[MASSOC_USER][0]) {
+			MYSQL_RES *result2;
+			MYSQL_ROW row2;
+			/* If there is a variable cleared here we need to make
+			   sure we get the parent's information, if any. */
+			query = xstrdup_printf(
+				"call get_parent_limits('%s', "
+				"'%s', '%s', %u); %s",
+				assoc_table, account,
+				cluster_name, 0,
+				get_parent_limits_select);
+			debug("%d(%s:%d) query\n%s",
+			      mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if(!(result2 = mysql_db_query_ret(
+				     mysql_conn, query, 1))) {
+				xfree(query);
+				break;
+			}
 			xfree(query);
-			break;
+
+			if((row2 = mysql_fetch_row(result2))) {
+				if(!assoc->def_qos_id
+				   && row2[ASSOC2_REQ_DEF_QOS])
+					assoc->def_qos_id = slurm_atoul(
+						row2[ASSOC2_REQ_DEF_QOS]);
+
+				if((assoc->max_jobs == INFINITE)
+				   && row2[ASSOC2_REQ_MJ])
+					assoc->max_jobs = slurm_atoul(
+						row2[ASSOC2_REQ_MJ]);
+				if((assoc->max_submit_jobs == INFINITE)
+				   && row2[ASSOC2_REQ_MSJ])
+					assoc->max_submit_jobs = slurm_atoul(
+						row2[ASSOC2_REQ_MSJ]);
+				if((assoc->max_cpus_pj == INFINITE)
+				   && row2[ASSOC2_REQ_MCPJ])
+					assoc->max_cpus_pj = slurm_atoul(
+						row2[ASSOC2_REQ_MCPJ]);
+				if((assoc->max_nodes_pj == INFINITE)
+				   && row2[ASSOC2_REQ_MNPJ])
+					assoc->max_nodes_pj = slurm_atoul(
+						row2[ASSOC2_REQ_MNPJ]);
+				if((assoc->max_wall_pj == INFINITE)
+				   && row2[ASSOC2_REQ_MWPJ])
+					assoc->max_wall_pj = slurm_atoul(
+						row2[ASSOC2_REQ_MWPJ]);
+				if((assoc->max_cpu_mins_pj ==
+				    (uint64_t)INFINITE)
+				   && row2[ASSOC2_REQ_MCMPJ])
+					assoc->max_cpu_mins_pj = slurm_atoull(
+						row2[ASSOC2_REQ_MCMPJ]);
+				if((assoc->max_cpu_run_mins ==
+				    (uint64_t)INFINITE)
+				   && row2[ASSOC2_REQ_MCRM])
+					assoc->max_cpu_run_mins = slurm_atoull(
+						row2[ASSOC2_REQ_MCRM]);
+			}
+			mysql_free_result(result2);
 		}
-		xfree(query);
-
-		if((row2 = mysql_fetch_row(result2))) {
-			if(!assoc->def_qos_id && row2[ASSOC2_REQ_DEF_QOS])
-				assoc->def_qos_id =
-					slurm_atoul(row2[ASSOC2_REQ_DEF_QOS]);
-
-			if((assoc->max_jobs == INFINITE) && row2[ASSOC2_REQ_MJ])
-				assoc->max_jobs = slurm_atoul(row2[ASSOC2_REQ_MJ]);
-			if((assoc->max_submit_jobs == INFINITE)
-			   && row2[ASSOC2_REQ_MSJ])
-				assoc->max_submit_jobs =
-					slurm_atoul(row2[ASSOC2_REQ_MSJ]);
-			if((assoc->max_cpus_pj == INFINITE)
-			   && row2[ASSOC2_REQ_MCPJ])
-				assoc->max_cpus_pj =
-					slurm_atoul(row2[ASSOC2_REQ_MCPJ]);
-			if((assoc->max_nodes_pj == INFINITE)
-			   && row2[ASSOC2_REQ_MNPJ])
-				assoc->max_nodes_pj =
-					slurm_atoul(row2[ASSOC2_REQ_MNPJ]);
-			if((assoc->max_wall_pj == INFINITE)
-			   && row2[ASSOC2_REQ_MWPJ])
-				assoc->max_wall_pj =
-					slurm_atoul(row2[ASSOC2_REQ_MWPJ]);
-			if((assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
-			   && row2[ASSOC2_REQ_MCMPJ])
-				assoc->max_cpu_mins_pj =
-					slurm_atoull(row2[ASSOC2_REQ_MCMPJ]);
-			if((assoc->max_cpu_run_mins == (uint64_t)INFINITE)
-			   && row2[ASSOC2_REQ_MCRM])
-				assoc->max_cpu_run_mins =
-					slurm_atoull(row2[ASSOC2_REQ_MCRM]);
-		}
-		mysql_free_result(result2);
-
 		mod_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 		slurmdb_init_association_rec(mod_assoc, 0);
 		mod_assoc->id = slurm_atoul(row[MASSOC_ID]);

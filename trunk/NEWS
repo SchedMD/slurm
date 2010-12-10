@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     etc. and not only with a single letter (e.g. "M", "G", etc.).
  -- Prevent nodes with suspended jobs from being powered down by SLURM.
  -- Normalized the way pidfile are created by the slurm daemons.
+ -- Fixed modifying the root association to no read in it's last value
+    when clearing a limit being set.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
