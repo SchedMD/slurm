@@ -1814,11 +1814,10 @@ extern int validate_nodes_via_front_end(
 		    (job_ptr->batch_flag == 0))
 			continue;
 #ifdef HAVE_BG
-		    /* slurmd does not report job presence until after prolog
-		     * completes which waits for bgblock boot to complete.
-		     * This can take several minutes on BlueGene. */
+		/* slurmd does not report job presence until after prolog
+		 * completes which waits for bgblock boot to complete.
+		 * This can take several minutes on BlueGene. */
 		if (difftime(now, job_ptr->time_last_active) <=
-
 		    (BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
 		     BG_INCR_BLOCK_BOOT * job_ptr->node_cnt))
 			continue;
@@ -1901,8 +1900,8 @@ extern int validate_nodes_via_front_end(
 						node_flags;
 					node_ptr->last_idle = now;
 				}
-				if (!IS_NODE_DRAIN(node_ptr)
-				    && !IS_NODE_FAIL(node_ptr)) {
+				if (!IS_NODE_DRAIN(node_ptr) &&
+				    !IS_NODE_FAIL(node_ptr)) {
 					xfree(node_ptr->reason);
 					node_ptr->reason_time = 0;
 					node_ptr->reason_uid = NO_VAL;
@@ -1928,8 +1927,8 @@ extern int validate_nodes_via_front_end(
 					node_ptr->last_idle = now;
 				}
 				trigger_node_up(node_ptr);
-				if (!IS_NODE_DRAIN(node_ptr)
-				    && !IS_NODE_FAIL(node_ptr)) {
+				if (!IS_NODE_DRAIN(node_ptr) &&
+				    !IS_NODE_FAIL(node_ptr)) {
 					xfree(node_ptr->reason);
 					node_ptr->reason_time = 0;
 					node_ptr->reason_uid = NO_VAL;
