@@ -208,10 +208,14 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
  *  FRONT_END parameters and data structures
 \*****************************************************************************/
 #ifdef HAVE_FRONT_END
+#define FRONT_END_MAGIC 0xfe9b82fe
+
 typedef struct front_end_record {
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
 	char *comm_name;		/* communications path name to node */
+	time_t last_response;		/* Time of last communication */
+	uint32_t magic;			/* magic cookie to test data integrity */
 	char *name;			/* frontend node name */
 	uint16_t node_state;		/* enum node_states, ORed with
 					 * NODE_STATE_NO_RESPOND if not

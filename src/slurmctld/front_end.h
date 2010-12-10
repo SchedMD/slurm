@@ -39,17 +39,33 @@
 #ifndef __SLURM_FRONT_END_H__
 #define __SLURM_FRONT_END_H__
 
+#include "src/slurmctld/slurmctld.h"
+
+/* dump_all_front_end_state - save the state of all front_end nodes to file */
+extern int dump_all_front_end_state(void);
+
+/*
+ * find_front_end_record - find a record for front_endnode with specified name
+ * input: name - name of the desired front_end node
+ * output: return pointer to front_end node record or NULL if not found
+ */
+extern front_end_record_t *find_front_end_record(char *name);
+
+/*
+ * load_all_front_end_state - Load the front_end node state from file, recover
+ *	on slurmctld restart. Execute this after loading the configuration
+ *	file data. Data goes into common storage.
+ * IN state_only - if true, overwrite only front_end node state and reason
+ *	Use this to overwrite the "UNKNOWN state typically used in slurm.conf
+ * RET 0 or error code
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern int load_all_front_end_state(bool state_only);
+
 /*
  * log_front_end_state - log all front end node state
  */
 extern void log_front_end_state(void);
-
-/*
- * Update front end node state
- * update_front_end_msg_ptr IN change specification
- * RET SLURM_SUCCESS or error code
- */
-extern int update_front_end(update_front_end_msg_t *update_front_end_msg_ptr);
 
 /*
  * pack_all_front_end - dump all front_end node information for all nodes
@@ -79,5 +95,12 @@ extern void purge_front_end_state(void);
  *              2 = recover all saved state
  */
 extern void restore_front_end_state(int recover);
+
+/*
+ * Update front end node state
+ * update_front_end_msg_ptr IN change specification
+ * RET SLURM_SUCCESS or error code
+ */
+extern int update_front_end(update_front_end_msg_t *update_front_end_msg_ptr);
 
 #endif /*__SLURM_FRONT_END_H__*/

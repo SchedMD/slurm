@@ -36,7 +36,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <fcntl.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <slurm/slurm.h>
 #include <src/common/list.h>
@@ -45,11 +49,97 @@
 #include <src/common/read_config.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/xstring.h>
+#include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
+#include <src/slurmctld/state_save.h>
 
+/* Change FRONT_END_STATE_VERSION value when changing the state save format */
+#define FRONT_END_STATE_VERSION      "VER001"
+#define FRONT_END_2_2_STATE_VERSION  "VER001"	/* SLURM version 2.2 */
+
+#ifdef HAVE_FRONT_END
 front_end_record_t *front_end_nodes = NULL;
 uint16_t front_end_node_cnt = 0;
 time_t last_front_end_update = (time_t) 0;
+
+/*
+ * _dump_front_end_state - dump state of a specific front_end node to a buffer
+ * IN front_end_ptr - pointer to node for which information is requested
+ * IN/OUT buffer - location to store data, pointers automatically advanced
+ */
+static void _dump_front_end_state(front_end_record_t *front_end_ptr,
+				  Buf buffer)
+{
+	packstr  (front_end_ptr->name, buffer);
+	pack16   (front_end_ptr->node_state, buffer);
+	packstr  (front_end_ptr->reason, buffer);
+	pack_time(front_end_ptr->reason_time, buffer);
+	pack32   (front_end_ptr->reason_uid, buffer);
+}
+
+
+/*
+ * Open the front_end node state save file, or backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_front_end_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(*state_file, "/front_end_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open front_end state file %s: %m",
+		      *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat front_end state file %s: %m",
+		      *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 10) {
+		error("Front_end state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else 	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup front_endstate save file. Information may "
+	      "be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
+/*
+ * _pack_front_end - dump all configuration information about a specific
+ *	front_end node in machine independent form (for network transmission)
+ * IN dump_front_end_ptr - pointer to front_end node for which information is
+ *	requested
+ * IN/OUT buffer - buffer where data is placed, pointers automatically updated
+ * IN protocol_version - slurm protocol version of client
+ * NOTE: if you make any changes here be sure to make the corresponding
+ *	changes to load_front_end_config in api/node_info.c
+ */
+static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
+			    Buf buffer, uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack_time(dump_front_end_ptr->boot_time, buffer);
+		packstr(dump_front_end_ptr->name, buffer);
+		pack16(dump_front_end_ptr->node_state, buffer);
+
+		packstr(dump_front_end_ptr->reason, buffer);
+		pack_time(dump_front_end_ptr->reason_time, buffer);
+		pack32(dump_front_end_ptr->reason_uid, buffer);
+
+		pack_time(dump_front_end_ptr->slurmd_start_time, buffer);
+	} else {
+		error("_pack_front_end: Unsupported slurm version %u",
+		      protocol_version);
+	}
+}
+#endif
 
 /*
  * Update front end node state
@@ -75,6 +165,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 	while ((this_node_name = hostlist_shift(host_list))) {
 		for (i = 0, front_end_ptr = front_end_nodes;
 		     i < front_end_node_cnt; i++, front_end_ptr++) {
+			xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 			if (strcmp(this_node_name, front_end_ptr->name))
 				continue;
 			if (msg_ptr->node_state == (uint16_t) NO_VAL)
@@ -121,6 +212,27 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 }
 
 /*
+ * find_front_end_record - find a record for front_endnode with specified name
+ * input: name - name of the desired front_end node
+ * output: return pointer to front_end node record or NULL if not found
+ */
+extern front_end_record_t *find_front_end_record(char *name)
+{
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+	int i;
+
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
+		if (strcmp(front_end_ptr->name, name) == 0)
+			return front_end_ptr;
+	}
+#endif
+	return NULL;
+}
+
+/*
  * log_front_end_state - log all front end node state
  */
 extern void log_front_end_state(void)
@@ -131,6 +243,7 @@ extern void log_front_end_state(void)
 
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 		info("FrontendName=%s FrontendAddr=%s Port=%u State=%s "
 		     "Reason=%s",
 		     front_end_ptr->name, front_end_ptr->comm_name,
@@ -152,6 +265,7 @@ extern void purge_front_end_state(void)
 
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 		xfree(front_end_ptr->comm_name);
 		xfree(front_end_ptr->name);
 		xfree(front_end_ptr->reason);
@@ -206,6 +320,7 @@ extern void restore_front_end_state(int recover)
 				 front_end_node_cnt);
 			front_end_nodes[i].name =
 				xstrdup(slurm_conf_fe_ptr->frontends);
+			front_end_nodes[i].magic = FRONT_END_MAGIC;
 		}
 		xfree(front_end_nodes[i].comm_name);
 		if (slurm_conf_fe_ptr->addresses) {
@@ -243,37 +358,6 @@ extern void restore_front_end_state(int recover)
 }
 
 /*
- * _pack_front_end - dump all configuration information about a specific
- *	front_end node in machine independent form (for network transmission)
- * IN dump_front_end_ptr - pointer to front_end node for which information is
- *	requested
- * IN/OUT buffer - buffer where data is placed, pointers automatically updated
- * IN protocol_version - slurm protocol version of client
- * NOTE: if you make any changes here be sure to make the corresponding
- *	changes to load_front_end_config in api/node_info.c
- */
-static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
-			    Buf buffer, uint16_t protocol_version)
-{
-#ifdef HAVE_FRONT_END
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		pack_time(dump_front_end_ptr->boot_time, buffer);
-		packstr(dump_front_end_ptr->name, buffer);
-		pack16(dump_front_end_ptr->node_state, buffer);
-
-		packstr(dump_front_end_ptr->reason, buffer);
-		pack_time(dump_front_end_ptr->reason_time, buffer);
-		pack32(dump_front_end_ptr->reason_uid, buffer);
-
-		pack_time(dump_front_end_ptr->slurmd_start_time, buffer);
-	} else {
-		error("_pack_front_end: Unsupported slurm version %u",
-		      protocol_version);
-	}
-#endif
-}
-
-/*
  * pack_all_front_end - dump all front_end node information for all nodes
  *	in machine independent form (for network transmission)
  * OUT buffer_ptr - pointer to the stored data
@@ -285,6 +369,7 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 			       uint16_t protocol_version)
 {
+#ifdef HAVE_FRONT_END
 	uint32_t nodes_packed, tmp_offset;
 	front_end_record_t *front_end_ptr;
 	Buf buffer;
@@ -305,6 +390,7 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 		/* write records */
 		for (i = 0, front_end_ptr = front_end_nodes;
 		     i < front_end_node_cnt; i++, front_end_ptr++) {
+			xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 			_pack_front_end(front_end_ptr, buffer,
 					protocol_version);
 			nodes_packed++;
@@ -321,4 +407,244 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
+#endif
+}
+
+/* dump_all_front_end_state - save the state of all front_end nodes to file */
+extern int dump_all_front_end_state(void)
+{
+#ifdef HAVE_FRONT_END
+	/* Save high-water mark to avoid buffer growth with copies */
+	static int high_buffer_size = (1024 * 1024);
+	int error_code = 0, i, log_fd;
+	char *old_file, *new_file, *reg_file;
+	front_end_record_t *front_end_ptr;
+	/* Locks: Read config and node */
+	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
+					    NO_LOCK };
+	Buf buffer = init_buf(high_buffer_size);
+	DEF_TIMERS;
+
+	START_TIMER;
+	/* write header: version, time */
+	packstr(FRONT_END_STATE_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+
+	/* write node records to buffer */
+	lock_slurmctld (node_read_lock);
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
+		_dump_front_end_state(front_end_ptr, buffer);
+	}
+
+	old_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (old_file, "/front_end_state.old");
+	reg_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (reg_file, "/front_end_state");
+	new_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (new_file, "/front_end_state.new");
+	unlock_slurmctld (node_read_lock);
+
+	/* write the buffer to file */
+	lock_state_files();
+	log_fd = creat (new_file, 0600);
+	if (log_fd < 0) {
+		error ("Can't save state, error creating file %s %m", new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+
+		rc = fsync_and_close(log_fd, "front_end");
+		if (rc && !error_code)
+			error_code = rc;
+	}
+	if (error_code)
+		(void) unlink (new_file);
+	else {	/* file shuffle */
+		(void) unlink (old_file);
+		if(link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink (reg_file);
+		if(link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink (new_file);
+	}
+	xfree (old_file);
+	xfree (reg_file);
+	xfree (new_file);
+	unlock_state_files ();
+
+	free_buf (buffer);
+	END_TIMER2("dump_all_front_end_state");
+	return error_code;
+#endif
+}
+
+/*
+ * load_all_front_end_state - Load the front_end node state from file, recover
+ *	on slurmctld restart. Execute this after loading the configuration
+ *	file data. Data goes into common storage.
+ * IN state_only - if true, overwrite only front_end node state and reason
+ *	Use this to overwrite the "UNKNOWN state typically used in slurm.conf
+ * RET 0 or error code
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern int load_all_front_end_state(bool state_only)
+{
+#ifdef HAVE_FRONT_END
+	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
+	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
+	uint16_t node_state;
+	uint32_t data_size = 0, name_len;
+	uint32_t reason_uid = NO_VAL;
+	time_t reason_time = 0;
+	front_end_record_t *front_end_ptr;
+	int state_fd;
+	time_t time_stamp;
+	Buf buffer;
+	char *ver_str = NULL;
+	uint16_t protocol_version = (uint16_t) NO_VAL;
+
+	/* read the file */
+	lock_state_files ();
+	state_fd = _open_front_end_state_file(&state_file);
+	if (state_fd < 0) {
+		info ("No node state file (%s) to recover", state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size], BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error ("Read error on %s: %m",
+						state_file);
+					break;
+				}
+			} else if (data_read == 0)     /* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close (state_fd);
+	}
+	xfree (state_file);
+	unlock_state_files ();
+
+	buffer = create_buf (data, data_size);
+
+	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
+	debug3("Version string in front_end_state header is %s", ver_str);
+	if (ver_str) {
+		if (!strcmp(ver_str, FRONT_END_STATE_VERSION)) {
+			protocol_version = SLURM_PROTOCOL_VERSION;
+		}
+	}
+
+	if (protocol_version == (uint16_t) NO_VAL) {
+		error("*****************************************************");
+		error("Can not recover front_end state, version incompatible");
+		error("*****************************************************");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
+
+	safe_unpack_time(&time_stamp, buffer);
+
+	while (remaining_buf (buffer) > 0) {
+		uint16_t base_state;
+		if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpack16 (&node_state,  buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpack_time (&reason_time, buffer);
+			safe_unpack32 (&reason_uid,  buffer);
+			base_state = node_state & NODE_STATE_BASE;
+		} else
+			goto unpack_error;
+
+		/* validity test as possible */
+
+
+		/* find record and perform update */
+		front_end_ptr = find_front_end_record(node_name);
+		if (front_end_ptr == NULL) {
+			error("Front_end node %s has vanished from "
+			      "configuration", node_name);
+		} else if (state_only) {
+			uint16_t orig_base, orig_flags;
+			orig_base  = front_end_ptr->node_state &
+				     NODE_STATE_BASE;
+			orig_flags = front_end_ptr->node_state &
+				     NODE_STATE_FLAGS;
+			node_cnt++;
+			if (orig_base == NODE_STATE_UNKNOWN) {
+				if (base_state == NODE_STATE_DOWN) {
+					front_end_ptr->node_state =
+						NODE_STATE_DOWN | orig_flags;
+				}
+				if (node_state & NODE_STATE_DRAIN) {
+					 front_end_ptr->node_state |=
+						 NODE_STATE_DRAIN;
+				}
+				if (node_state & NODE_STATE_FAIL) {
+					front_end_ptr->node_state |=
+						NODE_STATE_FAIL;
+				}
+			}
+			if (front_end_ptr->reason == NULL) {
+				front_end_ptr->reason = reason;
+				reason = NULL;	/* Nothing to free */
+				front_end_ptr->reason_time = reason_time;
+				front_end_ptr->reason_uid = reason_uid;
+			}
+		} else {
+			node_cnt++;
+			front_end_ptr->node_state = node_state;
+			xfree(front_end_ptr->reason);
+			front_end_ptr->reason	= reason;
+			reason			= NULL;	/* Nothing to free */
+			front_end_ptr->reason_time	= reason_time;
+			front_end_ptr->reason_uid	= reason_uid;
+			front_end_ptr->last_response	= (time_t) 0;
+		}
+
+		xfree(node_name);
+		xfree(reason);
+	}
+
+fini:	info("Recovered state of %d front_end nodes", node_cnt);
+	free_buf (buffer);
+	return error_code;
+
+unpack_error:
+	error("Incomplete front_end node data checkpoint file");
+	error_code = EFAULT;
+	xfree (node_name);
+	xfree(reason);
+	goto fini;
+#else
+	return 0;
+#endif
 }
