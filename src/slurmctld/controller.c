@@ -244,11 +244,45 @@ int main(int argc, char *argv[])
 	_update_nice();
 	_kill_old_slurmctld();
 
+	if (daemonize) {
+		slurmctld_config.daemonize = 1;
+		if (daemon(1, 1))
+			error("daemon(): %m");
+		log_alter(log_opts, LOG_DAEMON,
+			  slurmctld_conf.slurmctld_logfile);
+		sched_log_alter(sched_log_opts, LOG_DAEMON,
+				slurmctld_conf.sched_logfile);
+		debug("sched: slurmctld starting");
+
+		if (slurmctld_conf.slurmctld_logfile &&
+		    (slurmctld_conf.slurmctld_logfile[0] == '/')) {
+			char *slash_ptr, *work_dir;
+			work_dir = xstrdup(slurmctld_conf.slurmctld_logfile);
+			slash_ptr = strrchr(work_dir, '/');
+			if (slash_ptr == work_dir)
+				work_dir[1] = '\0';
+			else
+				slash_ptr[0] = '\0';
+			if (chdir(work_dir) < 0)
+				fatal("chdir(%s): %m", work_dir);
+			xfree(work_dir);
+		} else {
+			if (chdir(slurmctld_conf.state_save_location) < 0) {
+				fatal("chdir(%s): %m",
+				      slurmctld_conf.state_save_location);
+			}
+		}
+	} else {
+		slurmctld_config.daemonize = 0;
+	}
+
 	/*
 	 * Need to create pidfile here in case we setuid() below
 	 * (init_pidfile() exits if it can't initialize pid file).
 	 * On Linux we also need to make this setuid job explicitly
 	 * able to write a core dump.
+	 * This also has to happen after daemon(), which closes all fd's,
+	 * so we keep the write lock of the pidfile.
 	 */
 	_init_pidfile();
 	_become_slurm_user();
@@ -282,37 +316,6 @@ int main(int argc, char *argv[])
 	 */
 	set_slurmctld_state_loc();
 
-	if (daemonize) {
-		slurmctld_config.daemonize = 1;
-		if (daemon(1, 1))
-			error("daemon(): %m");
-		log_alter(log_opts, LOG_DAEMON,
-			  slurmctld_conf.slurmctld_logfile);
-		sched_log_alter(sched_log_opts, LOG_DAEMON,
-				slurmctld_conf.sched_logfile);
-		debug("sched: slurmctld starting");
-
-		if (slurmctld_conf.slurmctld_logfile &&
-		    (slurmctld_conf.slurmctld_logfile[0] == '/')) {
-			char *slash_ptr, *work_dir;
-			work_dir = xstrdup(slurmctld_conf.slurmctld_logfile);
-			slash_ptr = strrchr(work_dir, '/');
-			if (slash_ptr == work_dir)
-				work_dir[1] = '\0';
-			else
-				slash_ptr[0] = '\0';
-			if (chdir(work_dir) < 0)
-				fatal("chdir(%s): %m", work_dir);
-			xfree(work_dir);
-		} else {
-			if (chdir(slurmctld_conf.state_save_location) < 0) {
-				fatal("chdir(%s): %m",
-				      slurmctld_conf.state_save_location);
-			}
-		}
-	} else {
-		slurmctld_config.daemonize = 0;
-	}
 	test_core_limit();
 	_test_thread_limit();
 
@@ -1890,6 +1893,9 @@ static void _init_pidfile(void)
 		   slurmctld_conf.slurmd_pidfile) == 0)
 		error("SlurmctldPid == SlurmdPid, use different names");
 
+	/* Don't close the fd returned here since we need to keep the
+	   fd open to maintain the write lock.
+	*/
 	create_pidfile(slurmctld_conf.slurmctld_pidfile,
 		       slurmctld_conf.slurm_user_id);
 }
