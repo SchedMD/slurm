@@ -103,7 +103,8 @@ Buf create_buf(char *data, int size)
 	Buf my_buf;
 
 	if (size > MAX_BUF_SIZE) {
-		error("create_buf: buffer size too large");
+		error("create_buf: buffer size too large (%d > %d)",
+		      size, MAX_BUF_SIZE);
 		return NULL;
 	}
 
