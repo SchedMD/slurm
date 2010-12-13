@@ -486,7 +486,7 @@ sub getslurmdata
 #		next if ($job->{job_id} > 1000000); # don't process interactive jobs.
 		$jdat->{jobid}       = $job->{job_id};
 		$jdat->{user}        = getpwuid($job->{user_id});
-		$jdat->{group}       = getpgrp($job->{group_id});
+		$jdat->{group}       = getgrgid($job->{group_id});
 		$jdat->{jobname}     = $job->{name} || 'N/A';
 		$jdat->{account}     = $job->{account} || 'N/A';
 
