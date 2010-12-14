@@ -36,6 +36,7 @@ documents those changes that are of interest to users and admins.
     after the job allocation will properly release the allocation and cause
     salloc to exit.
  -- BLUEGENE - Fix for recreating a block in a ready state.
+ -- Fix debug flags for incorrect logic when dealing with DEBUG_FLAG_WIKI.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
