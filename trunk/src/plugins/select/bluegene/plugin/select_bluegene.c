@@ -957,7 +957,6 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		/* This means recreate the block, remove it and then
 		   recreate it.
 		*/
-		remove_from_bg_list(bg_lists->main, bg_record);
 
 		/* make sure if we are removing a block to put it back
 		   to a normal state in accounting first */
@@ -971,6 +970,12 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_free_block(bg_record, 1, 1);
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: done");
+
+		/* Now remove it from the main list since we are
+		   looking for a state change and it won't be caught
+		   unless it is in the main list until now.
+		*/
+		remove_from_bg_list(bg_lists->main, bg_record);
 
 #ifdef HAVE_BG_FILES
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
