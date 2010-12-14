@@ -1098,12 +1098,11 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	 * we have to do is grab that and we are set. */
 	node_tab = gtk_container_get_focus_child(GTK_CONTAINER(node_tab));
 #else
+	/* See above comment.  Since gtk_container_get_focus_child
+	 * doesn't exist yet we will just traverse the childern until
+	 * we find the label widget and then break.
+	 */
 	{
-		/* See above comment.  Since
-		   gtk_container_get_focus_child doesn't exist yet we
-		   will just traverse the childern until we find the
-		   label widget and then break.
-		*/
 		int i = 0;
 		GList *childern = gtk_container_get_children(
 			GTK_CONTAINER(node_tab));
