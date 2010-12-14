@@ -1270,6 +1270,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
+			xfree(resv_desc_ptr->node_list);
+			resv_desc_ptr->node_list =
+				bitmap2node_name(node_bitmap);
 		} else if (node_name2bitmap(resv_desc_ptr->node_list,
 					    false, &node_bitmap)) {
 			rc = ESLURM_INVALID_NODE_NAME;

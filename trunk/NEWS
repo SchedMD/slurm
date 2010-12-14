@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
     salloc to exit.
  -- BLUEGENE - Fix for recreating a block in a ready state.
  -- Fix debug flags for incorrect logic when dealing with DEBUG_FLAG_WIKI.
+ -- Report reservation's Nodes as a hostlist expression of all nodes rather
+    than using "ALL".
 
 * Changes in SLURM 2.2.0.rc3
 ============================
