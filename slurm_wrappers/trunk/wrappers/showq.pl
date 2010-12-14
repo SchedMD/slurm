@@ -595,7 +595,6 @@ sub getcompletedjobs
 	foreach my $line (@out) {
 		my @job =  split (/\|/, $line);
 		$jdat->{jobid}       = $job[0];
-		next if ($jdat->{jobid} > 1000000); # don't process interactive jobs.
 		$jdat->{user}        = $job[1];
 		$jdat->{group}       = $job[2];
 		$jdat->{jobname}     = $job[3] || 'N/A';
