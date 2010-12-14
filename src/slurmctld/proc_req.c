@@ -3699,7 +3699,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	slurm_ctl_conf_t *conf;
 
 	debug2("Processing RPC: REQUEST_SET_DEBUG_LEVEL from uid=%d", uid);
-	if (!validate_slurm_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error("set debug level request from non-super user uid=%d",
 		      uid);
 		slurm_send_rc_msg(msg, EACCES);
@@ -3755,7 +3755,7 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	slurm_ctl_conf_t *conf;
 
 	debug2("Processing RPC: REQUEST_SET_SCHEDLOG_LEVEL from uid=%d", uid);
-	if (!validate_slurm_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error("set scheduler log level request from non-super user "
 		      "uid=%d", uid);
 		slurm_send_rc_msg(msg, EACCES);
