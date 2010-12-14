@@ -2,9 +2,7 @@
 #
 # Convert sethold commands into slurm commands.
 #
-# Author:Phil Eckert
-# Date: 2010-07-20
-# Last Update: 2010-07-27
+# Last Update: 2010-12-14
 #
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

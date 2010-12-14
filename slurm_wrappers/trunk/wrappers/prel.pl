@@ -1,16 +1,10 @@
 #! /usr/bin/perl -w
-
 #
 # prel - release SLURM jobs in an LCRM manner.
 #
-# Modified:	2010-07-27
+# Modified:	2010-12-14
 # By:		Phil Eckert
 #
-
-#
-# For debugging.
-#
-#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
 
 BEGIN {
     # Just dump the man page in *roff format and exit if --roff specified.
@@ -30,8 +24,6 @@ use strict;
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
-use Slurm;
-use Slurmdb;
 
 my ($cmd, $rc, $output);
 
@@ -63,26 +55,26 @@ GetOpts();
 #
 # Query the jobs.
 #
-my $tmp = Slurm->load_jobs();
-unless($tmp) {
-	my $errmsg = Slurm->strerror();
-	print "Error loading nodes: $errmsg";
-}
-
 my $worstRc = 0;
 my ($jobId, $user, $account, $state, $allocPartition, $reason);
 
-foreach my $jobs (@{$tmp->{job_array}}) {
+my @jobs = `scontrol show job --oneliner`;
+if ($?) {
+	printf("\n Error getting job information.\n\n");
+	exit($?);
+}
 
-	$jobId   = $jobs->{job_id};
-	$user    = getpwuid($jobs->{user_id});
-	$account = $jobs->{account} || "N/A";
-
-	$reason = Slurm->job_reason_string($jobs->{state_reason});
-	$state  = Slurm->job_state_string($jobs->{job_state});
-
+foreach my $job (@jobs) {
+	next if ($job =~ /No jobs in the system/);
+#               next if ($job->{job_id} > 1000000); # don't process interactive jobs.
+	($jobId)     = ($job =~ m/JobId=(\S+)/);
+	($user)      = ($job =~ m/UserId=(\S+)/);
+        $user        =~ s/\(.*\)//;
+	($account)   = ($job =~ m/Account=(\S+)/);
+	($reason)    = ($job =~ m/Reason=(\S+)/);
+	($state)     = ($job =~ m/JobState=(\S+)/);
 	next if ($state eq "CANCELLED" ||
-		 $state eq "RUNNING" ||
+	 	 $state eq "RUNNING" ||
 		 $state eq "TIMEOUT" ||
 		 $reason !~ /Held/);
 

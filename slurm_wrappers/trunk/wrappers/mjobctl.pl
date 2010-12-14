@@ -2,7 +2,7 @@
 #
 # Convert mjobctl commands into slurm commands.
 #
-# Last Update: 2010-07-27
+# Last Update: 2010-12-14
 #
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -37,7 +37,6 @@ BEGIN {
 #
 # Standard options, variables and arrays.
 #
-
 my (
 	$cancel, $help,    $hold,   $jobid,
 	$man, 	 $modify,  $unhold, $query,
@@ -101,7 +100,7 @@ sub do_modify
 #
 
 	if ($modify =~ /\-/ || $modify =~ /\+/) {
-		printf(" -- can not use += or -= in modify.\n");
+		printf(" -- Can not use += or -= in modify.\n");
 		exit(1);
 	}
 
@@ -141,8 +140,6 @@ sub GetOpts
 #
 #	Could have written my own parser, but it is easier to
 #	manipulate the arrays for what needs to be done.
-#
-
 #
 #	Remove any "types" from hold and unhold.
 #

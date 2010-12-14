@@ -1,9 +1,8 @@
 #!/usr/bin/perl -w
-
 #
 # showbf - just mjstat
 #
-# Last Update: 2010-07-27
+# Last Update: 2010-12-14
 #
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

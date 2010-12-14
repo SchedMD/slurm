@@ -3,15 +3,13 @@
 #
 # prm - cancel slurm jobs in familar lcrm format.
 #
-# Modified:	07/14/2010
+# Modified:	2010-12014
 # By:     	Phil Eckert
 #
 
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
-
 my $debug=0;
 
 BEGIN {
@@ -31,8 +29,6 @@ BEGIN {
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
-use Slurm ':all';
-use Slurmdb ':all';
 
 my ($cmd, $rc, $output);
 
@@ -44,14 +40,6 @@ my (
 
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
-
-if ($sversion < 2.2) {
-	printf("\n job remove functionality not available in this release.\n\n");
-	exit(1);
-}
-
-my $hst = `scontrol show config | grep ClusterName`;
-my ($host) = ($hst =~ m/ = (\S+)/);
 
 #
 # Get options.
@@ -66,40 +54,31 @@ $graceTime = seconds($graceTime) if ($graceTime);
 $userName = (getpwuid($<))[0] unless $bankName || $userName || $jobList;
 my $deleteCount = 0;
 my $worstRc = 0;
-my ($jobId, $user, $account, $state, $allocPartition, $start);
+my ($jobId, $user, $account, $state, $start);
 my $now = time();
 
 
 #
 # Process job argument(s).
 #
-my $tmp = Slurm->load_jobs();
-unless($tmp) {
-	my $errmsg = Slurm->strerror();
-	print "Error loading nodes: $errmsg";
+my @jobs = `scontrol show job --oneliner`;
+if ($?) {
+	printf("\n Error getting job information.\n\n");
+	exit($?);
 }
 
-foreach my $jobs (@{$tmp->{job_array}}) {
+foreach my $job (@jobs) {
+        next if ($job =~ /No jobs in the system/);
+	($jobId)     = ($job =~ m/JobId=(\S+)/);
+	($user)      = ($job =~ m/UserId=(\S+)/);
+	$user        =~ s/\(.*\)//;
 
-	$jobId   = $jobs->{job_id};
-	$user    = getpwuid($jobs->{user_id});
-	$account = $jobs->{account} || "N/A";
-
-#
-#	Have to use eval to avoid structure differences in SLURM perl api.
-#
-my $eval_state;
-if ($sversion =~ /2.2/) {
-	$eval_state  = 'Slurm->job_state_string($jobs->{job_state})';
-} else {
-	$eval_state  = 'Slurm::job_state_string($jobs->{job_state})';
-}
-	$state  = eval $eval_state || "N/A";
+	($account)   = ($job =~ m/Account=(\S+)/);
+	($state)     = ($job =~ m/JobState=(\S+)/);
+	($start)     = ($job =~ m/StartTime=(\S+)/);
+	$start       = slurm2epoch($start);
 
 	next if ($state eq "CANCELLED" || $state eq "TIMEOUT");
-
-	$start   = $jobs->{start_time};
-	$allocPartition = $host;
 
 #
 #	Filter jobs according to options and arguments
@@ -280,6 +259,24 @@ sub confirm
 	}
 
 	return;
+}
+
+
+#
+# Slurm time to epoch time.
+#
+sub slurm2epoch
+{
+	my ($slurmTime) = @_;
+
+	return ("0") if ($slurmTime =~ /Unknown/);
+
+	my $mes;
+
+	my ($yr,$mm, $dd, $hr, $mn, $sc) = split(/[-|T|:]/, $slurmTime);
+	my $epoch = timelocal($sc,$mn,$hr,$dd,$mm-1,$yr);
+
+	return($epoch);
 }
 
 

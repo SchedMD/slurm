@@ -2,7 +2,7 @@
 #
 # psub - submit slurm jobs in familar lcrm format.
 #
-# Modified:	07/14/2010
+# Modified:	2010-12-14
 # By:		Phil Eckert
 #
 

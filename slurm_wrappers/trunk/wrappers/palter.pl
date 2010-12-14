@@ -1,20 +1,17 @@
 #! /usr/bin/perl -w
-
 #
 # A utility to emulate palter.
 #
-# Modified:	2010-07-27
+# Modified:	2010-12-14
 # By:		Phil Eckert
 #
 
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_banana/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+my $pdebug = 0;
 
 use File::Basename;
-use Slurm;
-use Slurmdb;
 
 BEGIN {
     # Just dump the man page in *roff format and exit if --roff specified.
@@ -51,7 +48,7 @@ my (
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 if ($sversion < 2.2) {
-	printf("\n job alter functionality not available in this release.\n\n");
+	printf("\n Palter functionality not available in this release.\n\n");
 	exit(1);
 }
 
@@ -164,30 +161,25 @@ unsupportedOption("-p <priority>") 	if $priority;
 #
 
 #
-# Build command to get job data.
+# Get job data.
 #
-my $resp = Slurm->load_jobs(1);
-if(!$resp) {
-	die "Problem loading jobs.\n";
+my $job = `scontrol show job $jobId --oneliner`;
+if ($?) {
+        printf("\n Job $jobId not found.\n\n");
+        exit($?);
 }
 
-my $job;
-foreach my $tmp (@{$resp->{job_array}}) {
-	if ($jobId eq $tmp->{'job_id'}) {
-		$job = $tmp;
-		last;
-	}
-}
-
-die("Job $jobId not found\n") if (!$job);
+my ($user)     = ($job =~ m/UserId=(\S+)/);
+    $user      =~ s/\(.*\)//;
+my ($state)    = ($job =~ m/JobState=(\S+)/) || "N/A";
+my ($account)  = ($job =~ m/Account=(\S+)/);
+my ($qos)      = ($job =~ m/QOS=(\S+)/);
 
 #
 # Require confirmation unless force option specified
 #
-my $state = Slurm->job_state_string($job->{'job_state'}) || 'N/A';
-my $user  = getpwuid($job->{'user_id'});
 unless ($force) {
-	confirm($user, $state, $job->{'account'} || '') or exit 0;
+	confirm($user, $state, $account || '') or exit 0;
 };
 
 my $scontrol = "scontrol";
@@ -201,35 +193,35 @@ my @cmds = ();
 # Only one of expedite, noexpedite, normal, standby, or nostandby
 # may be set at a time.  This is enforced earlier in the code.
 #
-if ((defined $expedite) && ($job->{'qos'} ne "expedite")) {
+if ((defined $expedite) && ($qos ne "expedite")) {
 	push @cmds, "$scontrol update jobid=$jobId qos=expedite  2>&1";
 }
 
-if ((defined $noexpedite) && ($job->{'qos'} ne "normal")) {
+if ((defined $noexpedite) && ($qos ne "normal")) {
 	push @cmds, "$scontrol update jobid=$jobId qos=normal  2>&1";
 }
 
-if ((defined $exempt) && ($job->{'qos'} ne "exempt")) {
+if ((defined $exempt) && ($qos ne "exempt")) {
 	push @cmds, "$scontrol update jobid=$jobId qos=exempt  2>&1";
 }
 
-if ((defined $noexempt) && ($job->{'qos'} ne "normal")) {
+if ((defined $noexempt) && ($qos ne "normal")) {
 	push @cmds, "$scontrol update jobid=$jobId qos=normal  2>&1";
 }
 
-if ((defined $normal) && ($job->{'qos'} ne "normal")) {
+if ((defined $normal) && ($qos ne "normal")) {
 	push @cmds, "$scontrol update jobid=$jobId qos=normal  2>&1";
 }
 
-if ((defined $standby) && ($job->{'qos'} ne "standby")) {
+if ((defined $standby) && ($qos ne "standby")) {
 	push @cmds, "$scontrol update jobid=$jobId qos=standby 2>&1";
 }
 
-if ((defined $nostandby) && ($job->{'qos'} ne "normal")) {
+if ((defined $nostandby) && ($qos ne "normal")) {
 	push @cmds, "$scontrol update jobid=$jobId qos=normal  2>&1";
 }
 
-if ((defined $bankName) && ($job->{'account'} ne $bankName)) {
+if ((defined $bankName) && ($account ne $bankName)) {
 	push @cmds, "$scontrol update jobid=$jobId account=$bankName 2>&1";
 }
 

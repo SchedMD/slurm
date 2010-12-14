@@ -1,16 +1,15 @@
 #! /usr/bin/perl -w
-
 #
 # phold - hold SLURM jobs in an LCRM manner.
 #
-# Modified:	2010-07-27
+# Modified:	2010-12-14
 # By:		Phil Eckert
 #
 
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
+my $debug=0;
 
 BEGIN {
     # Just dump the man page in *roff format and exit if --roff specified.
@@ -30,8 +29,6 @@ use strict;
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use Time::Local;
 use autouse 'Pod::Usage' => qw(pod2usage);
-use Slurm;
-use Slurmdb;
 
 my ($cmd, $rc, $output);
 
@@ -40,15 +37,11 @@ my (
     $jobList,   $userName, $verbose
 );
 
-my $hst = `scontrol show config | grep ClusterName`;
-my ($host) = ($hst =~ m/ = (\S+)/);
-
 #
 # Slurm Version.
 #
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
-
 if ($sversion < 2.2) {
 	printf("\n Hold/Release functionality not available in this release.\n\n");
 	exit(1);
@@ -62,28 +55,30 @@ GetOpts();
 #
 # Query the jobs.
 #
-my $tmp = Slurm->load_jobs();
-unless($tmp) {
-	my $errmsg = Slurm->strerror();
-	print "Error loading nodes: $errmsg";
+my $worstRc = 0;
+my ($jobId, $user, $account, $state, $reason);
+
+my @jobs = `scontrol show job --oneliner`;
+if ($?) {
+	printf("\n Error getting job information.\n\n");
+	exit($?);
 }
 
-my $worstRc = 0;
-my ($jobId, $user, $account, $state, $allocPartition, $reason);
-
-foreach my $jobs (@{$tmp->{job_array}}) {
-
-	$jobId   = $jobs->{job_id};
-	$user    = getpwuid($jobs->{user_id});
-	$account = $jobs->{account} || "N/A";
-	$reason  = Slurm->job_reason_string($jobs->{state_reason}) || 'N/A';
-	$state   = Slurm->job_state_string($jobs->{job_state}) || 'N/A';
+#
+#       Iterate over the jobs
+#
+foreach my $job (@jobs) {
+        next if ($job =~ /No jobs in the system/);
+	($jobId)     = ($job =~ m/JobId=(\S+)/);
+	($user)      = ($job =~ m/UserId=(\S+)/);
+	$user        =~ s/\(.*\)//;
+	($account)   = ($job =~ m/Account=(\S+)/);
+	($reason)    = ($job =~ m/Reason=(\S+)/);
+	($state)     = ($job =~ m/JobState=(\S+)/);
 	next if ($state eq "CANCELLED" || 
 		 $state eq "RUNNING" || 
 		 $state eq "TIMEOUT" ||
 		 $reason =~ /Held/);
-
-	$allocPartition = $host;
 
 #
 #	Filter jobs according to options and arguments.

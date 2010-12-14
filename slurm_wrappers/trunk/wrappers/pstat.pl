@@ -1,17 +1,15 @@
 #! /usr/bin/perl -w
-
 #
 # pstat - Show SLURM jobs in LCRM format.
 #
-# Modified:	07/14/2010
+# Modified:	2010-12-14
 # By:		Phil Eckert
 #
 
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi/";
-
+my $debug = 0;
 
 BEGIN {
 #
@@ -29,13 +27,11 @@ BEGIN {
 }
 
 use Getopt::Long 2.24 qw(:config no_ignore_case);
-use lib qw(/opt/freeware/lib/site_perl/5.8.2/aix-thread-multi);
 
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Switch;
+use Time::Local;
 use strict;
-use Slurm ':all';
-use Slurmdb ':all';
 
 #
 # Each entry in this hash table must have a subhash.  The possible keys are:
@@ -100,6 +96,7 @@ my (
 );
 
 my $mask = 0x8000;
+my @all_jobs;
 
 my @States = qw /
         ELIG
@@ -118,10 +115,6 @@ my @States = qw /
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 
-if ($sversion < 2.2) {
-	printf("\n pstat functionality not available in this release.\n\n");
-	exit(1);
-}
 
 GetOptions(
 	'A'          => \$all,
@@ -145,7 +138,6 @@ GetOptions(
 	'v'          => \$verbose,
 ) or pod2usage(2);
 
-
 #
 # Display usage
 #
@@ -154,7 +146,6 @@ if ($help) {
 	print "Report problems to LC Hotline.\n";
 	exit(0);
 }
-
 
 #
 # Display man page
@@ -263,7 +254,6 @@ if (!defined $sortOrder) {
 #
 # Build command
 #
-
 my $Now = time();
 
 my ($eval_reason, $eval_state);
@@ -272,57 +262,65 @@ my $tmp = `scontrol show config | grep ClusterName`;;
 my ($host) = ($tmp =~ m/ = (\S+)/); 
 
 #
-# Use SLURM perl api to get job info.
+#	Use SLURM perl api to get job info.
 #
-my $jobs = Slurm->load_jobs();
-unless($jobs) {
-	my $errmsg = Slurm->strerror();
-	print "Error loading jobs: $errmsg";
-}
+my @jobs = `scontrol show job --oneliner`;
 
+my $now = time();
+my $jdat;
 #
-# Iterate over the jobs
+#	Iterate over the jobs
 #
-my @all_jobs;
-foreach my $job (@{$jobs->{job_array}}) {
-	my $jobId           = $job->{job_id};
-#	next if ($jobId > 1000000);
-	my $user            = getpwuid($job->{user_id});
-	my $jobName         = $job->{name} || 'N/A';
-	my $dRMJID          = $job->{job_id};
-	my $account         = $job->{account} || 'N/A';
-	my $block           = 'N/A';
-	my $reason          = Slurm->job_reason_string($job->{state_reason}) || "N/A";
-	my $state           = Slurm->job_state_string($job->{job_state}) || "N/A";
-	next if (($state eq "COMPLETED"  || 
-		  $state eq "FAILED") || 
-		  $state eq "CANCELLED" ||
-		  $state eq "TIMEOUT" && !$terminated);
-	my $hold            = 'N/A';
-	my $allocPartition  = $host;
-	my $reqPartition    = $host;
-	my $qosReq          = 'N/A';
-	my $depend          = $job->{dependency};
-	my $startPriority   = $job->{priority} || 0;
-	my $tpn             = 'N/A';
-	my $reqNodes        = $job->{num_nodes};
-	my $reqProcs        = $job->{num_cpus} || 0;
-	my $class           = $job->{partition};
-	my $variable        = 'N/A';
-	my $submissionTime  = $job->{submit_time};
-	my $systemQueueTime = $job->{submit_time} || 'N/A';
-	my $startTime       = $job->{start_time};
-	my $completionTime  = $job->{end_time};
-	my $reqSMinTime     = $job->{start_time};
-	my $reqNodeFeature  = $job->{features} || 'N/A';
-	my $EffPAL          = 'N/A';
-	my $reqNodeMem      = $job->{job_min_memory} || 'N/A';
-	my $reqNodeDisk     = $job->{job_min_tmp_disk} || 'N/A';
-	my $statPSDed       = 'N/A';
-	my $reqAWDuration   = $job->{time_limit} * 60;
-	my $aWDuration      = ($Now - $job->{start_time}) if ($state ne "PENDING");;
-	my $cpuLimit        = $job->{time_limit};
-	my $sid             = $job->{alloc_sid} || "???";
+foreach my $job (@jobs) {
+	next if ($job =~ /No jobs in the system/);
+	my ($user)		= ($job =~ m/UserId=(\S+)/);
+	$user			=~ s/\(.*\)//;
+	my ($jobName)		= ($job =~ m/Name=(\S+)/);
+	my ($jobId)		= ($job =~ m/JobId=(\S+)/);
+	my ($dRMJID)		= ($job =~ m/JobId=(\S+)/);
+	my ($account)		= ($job =~ m/Account=(\S+)/);
+	my ($block)		= "N/A";
+	my ($state)		= ($job =~ m/JobState=(\S+)/);
+	next if (($state eq "COMPLETED"  ||
+		 $state eq "FAILED") ||
+		 $state eq "CANCELLED" ||
+		 $state eq "TIMEOUT" && !$terminated);
+	my $hold		= 'N/A';
+	my $allocPartition	= $host;
+	my $reqPartition	= $host;
+	my $qosReq		= 'N/A';
+	my ($depend)		= ($job =~ m/Dependency=(\S+)/);
+	my ($startPriority)	= ($job =~ m/Priority=(\S+)/);
+	my ($reqNodes)		= ($job =~ m/NumNodes=(\S+)/);
+	$reqNodes		=~ s/-.*//;
+	my ($reqProcs)		= ($job =~ m/NumCPUs=(\S+)/);
+	my ($class)		= ($job =~ m/Partition=(\S+)/);
+	my $variable		= 'N/A';
+
+	my ($submissionTime)	= ($job =~ m/SubmitTime=(\S+)/);
+	$submissionTime		= slurm2epoch($submissionTime);
+	my $systemQueueTime	= $submissionTime;
+
+	my ($startTime)		= ($job =~ m/StartTime=(\S+)/);
+	$startTime		= slurm2epoch($startTime);
+
+	my ($completionTime)	= ($job =~ m/EndTime=(\S+)/);
+	$completionTime 	= slurm2epoch($completionTime);
+
+	my ($reqSMinTime)	= ($job =~ m/StartTime=(\S+)/);
+	$reqSMinTime		= slurm2epoch($reqSMinTime);
+
+	my ($reqNodeFeature)	= ($job =~ m/Features=(\S+)/);
+	my $EffPAL		= 'N/A';
+	my ($reqNodeMem)	= ($job =~ /MinMemoryNode =(\S+)/);
+	my ($reqNodeDisk)	= ($job =~ /MinTmpDiskNode =(\S+)/);
+	my $statPSDed		= 'N/A';
+        my ($reqAWDuration)	= ($job =~ m/TimeLimit=(\S+)/);
+        my ($aWDuration)	= ($Now - $startTime) if ($state ne "PENDING");
+	my $cpuLimit		= $reqAWDuration;
+	my ($sid)		= ($job =~ m/AllocNode:Sid=(\S+)/);
+	my ($reason)		= ($job =~ m/Reason=(\S+)/);
+
 #
 #	Prepare variables
 #
@@ -419,7 +417,7 @@ foreach my $job (@{$jobs->{job_array}}) {
 #
 #	Rewrite finalState if job is dependent on another job.
 #
-	$finalState = "*DEPEND" if ($dependency ne "none");
+	$finalState = "*DEPEND" if ($dependency ne "none" && $state ne "RUNNING");
 
 #
 #	Full output
@@ -642,6 +640,25 @@ sub hRTime
 
 	return($hRTime);
 }
+
+
+#
+# Slurm time to epoch time.
+#
+sub slurm2epoch
+{
+	my ($slurmTime) = @_;
+
+	return ("0") if ($slurmTime =~ /Unknown/);
+
+	my $mes;
+
+	my ($yr,$mm, $dd, $hr, $mn, $sc) = split(/[-|T|:]/, $slurmTime);
+	my $epoch = timelocal($sc,$mn,$hr,$dd,$mm-1,$yr);
+
+	return($epoch);
+}
+
 
 #
 # $hhmmss = hhmm($hhmmss)

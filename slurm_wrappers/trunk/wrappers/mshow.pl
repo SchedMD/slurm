@@ -2,7 +2,7 @@
 #
 # Convert mshow commands into slurm commands.
 #
-# Last Update: 2010-07-27
+# Last Update: 2010-12-14
 #
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -17,7 +17,6 @@ my $debug=0;
 
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 use strict;
-
 
 #
 # Define the options variables.

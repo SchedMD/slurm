@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#! /usr/local/bin/perl -w
 #
 # A utility to expand the showq information.
 #
@@ -11,7 +11,7 @@
 #
 # A future rewrite will undoubtably handle this differently.
 #
-# Last Update: 2010-07-27
+# Last Update: 2010-12-14
 #
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -22,9 +22,6 @@
 #
 # For debugging.
 #
-#use lib "/var/opt/slurm_dawn/lib64/perl5/site_perl/5.8.8/x86_64-linux-thread-multi";
-use Slurm ':all';
-use Slurmdb ':all'; # needed for getting the correct cluster dims
 
 #
 # For generating man pages.
@@ -131,7 +128,6 @@ if ($version_arg) {
 	system("sinfo -V");
 	exit(0);
 }
-
 #
 # Clean up output format string and check to see if the
 # environment option is setup, otherwise set the Default
@@ -177,6 +173,8 @@ foreach my $spec (split /\s*[, ]\s*/, $outputFormat) {
 # Get showq output.
 #
 
+my $Now = time();
+
 if ($completed_arg) {
 	getcompletedjobs();
 } else {
@@ -207,7 +205,7 @@ if ($completed_arg) {
 	$max = 2;
 }
 
-my $Now = time();
+
 foreach my $ct ($min .. $max) {
 	my $status    = $queue[$ct];
 	my $ar        = $Ars[$ct];
@@ -288,10 +286,10 @@ foreach my $ct ($min .. $max) {
 		my $procs       = $job->{procs};
 		my $tpn         = $job->{tpn};
 		my $class       = $job->{class};
-		my $eligtime    = $job->{etime};
-		my $subtime     = $job->{subtime};
-		my $starttime   = $job->{starttime};
-		my $comptime    = $job->{comptime};
+		my $eligtime    = $job->{etime} || $Now;
+		my $subtime     = $job->{subtime} || $Now;
+		my $starttime   = $job->{starttime} || $Now;
+		my $comptime    = $job->{comptime} || $Now;
 		my $masternode  = $job->{master} || "N/A";
 		my $duration    = $job->{duration};
 		my $remaining   = $job->{remaining};
@@ -449,10 +447,27 @@ sub getnodeinfo
 	my $average = ($Info[0] / $Info[3]) * 100.0;
 	my $procinfo = sprintf("%8s of %-s processors in use by local jobs (%2.2f%%)",
 		$Info2[4], $Info2[7], $average);
-	my $nodeinfo = sprintf("%8s of %-s nodes active (%2.2f%%)\n",
-		$Info2[0], $Info2[3], $average);
+	    my $nodeinfo = sprintf("%8s of %-s nodes active (%2.2f%%)\n",
+		    $Info2[0], $Info2[3], $average);
 
 	return ($procinfo, $nodeinfo);
+}
+
+#
+# Slurm time to epoch time.
+#
+sub slurm2epoch
+{
+	my ($slurmTime) = @_;
+
+	return ("0") if ($slurmTime =~ /Unknown/);
+
+	my $mes;
+
+	my ($yr,$mm, $dd, $hr, $mn, $sc) = split(/[-|T|:]/, $slurmTime);
+	my $epoch = timelocal($sc,$mn,$hr,$dd,$mm-1,$yr);
+
+	return($epoch);
 }
 
 #
@@ -460,57 +475,61 @@ sub getnodeinfo
 #
 sub getslurmdata
 {
-	use Slurm ':all';
-
-	my ($eval_reason, $eval_state);
 
 	my $tmp = `scontrol show config  | grep ClusterName`;;
 	my ($host) = ($tmp =~ m/ = (\S+)/);
 
-
 #
 #	Use SLURM perl api to get job info.
 #
-	my $jobs = Slurm->load_jobs();
-	unless($jobs) {
-		my $errmsg = Slurm->strerror();
-		print "Error loading jobs: $errmsg";
-	}
+	my @jobs = `scontrol show job --oneliner`;
 
 	my $now = time();
 	my $jdat;
 #
 #	Iterate over the jobs
 #
-	foreach my $job (@{$jobs->{job_array}}) {
+	foreach my $job (@jobs) {
+		next if ($job =~ /No jobs in the system/);
 #		next if ($job->{job_id} > 1000000); # don't process interactive jobs.
-		$jdat->{jobid}       = $job->{job_id};
-		$jdat->{user}        = getpwuid($job->{user_id});
-		$jdat->{group}       = getgrgid($job->{group_id});
-		$jdat->{jobname}     = $job->{name} || 'N/A';
-		$jdat->{account}     = $job->{account} || 'N/A';
+		($jdat->{jobid})       = ($job =~ m/JobId=(\S+)/);
+		($jdat->{user})        = ($job =~ m/UserId=(\S+)/);
+		($jdat->{user})        =~ s/\(.*\)//;
 
-#
-#		Have to use eval to avoid structure differences in SLURM perl api.
-#
-		$jdat->{reason}      = Slurm->job_reason_string($job->{state_reason}) || "N/A";
-		$jdat->{state}       = Slurm->job_state_string($job->{job_state}) || "N/A";
-		$jdat->{host}        = $host;
-		$jdat->{qos}         = $job->{qos} || 'N/A';
-		$jdat->{ccode}       = $job->{exit_code} >> 8;
-		$jdat->{depend}      = $job->{dependency} || 'N/A';
-		$jdat->{priority}    = $job->{priority} || 0;
-		$jdat->{master}      = $job->{nodes};
-		$jdat->{nodes}       = $job->{num_nodes};
-		$jdat->{procs}       = $job->{num_cpus};
-		$jdat->{tpn}         = $job->{ntasks_per_node} || 'N/A';
-		$jdat->{class}       = $job->{partition};
-		$jdat->{eligtime}    = $job->{eligible_time};
-		$jdat->{subtime}     = $job->{submit_time};
-		$jdat->{starttime}   = $job->{start_time};
-		$jdat->{comptime}    = $job->{end_time};
-		$jdat->{features}    = $job->{features} || 'N/A';
-		$jdat->{duration}    = $job->{time_limit} * 60;	# slurm states in minutes, Moab seconds.
+		($jdat->{group})       = ($job =~ m/GroupId=(\S+)/);
+		($jdat->{group})        =~ s/\(.*\)//;
+
+		($jdat->{jobname})     = ($job =~ m/Name=(\S+)/);
+		($jdat->{account})     = ($job =~ m/Account=(\S+)/);
+		($jdat->{reason})      = ($job =~ m/Reason=(\S+)/);
+		($jdat->{state})       = ($job =~ m/JobState=(\S+)/);
+		($jdat->{host})        = $host;
+		($jdat->{qos})         = ($job =~ m/QOS=(\S+)/);
+		($jdat->{ccode})       = ($job =~ m/ExitCode=(\S+)/);
+		($jdat->{depend})      = ($job =~ m/Dependency=(\S+)/);
+		($jdat->{priority})    = ($job =~ m/Priority=(\S+)/);
+		($jdat->{master})      = ($job =~ m/AllocNode=(\S+)/);
+		($jdat->{nodes})       = ($job =~ m/NumNodes=(\S+)/);
+		$jdat->{nodes}         =~ s/-.*//;
+
+		($jdat->{procs})       = ($job =~ m/NumCPUs=(\S+)/);
+		($jdat->{tpn})         = ($job =~ m/MinCPUsNode=(\S+)/);
+		($jdat->{class})       = ($job =~ m/Partition=(\S+)/);
+		($jdat->{eligtime})    = ($job =~ m/EligibleTime=(\S+)/);
+		($jdat->{subtime})     = ($job =~ m/SubmitTime=(\S+)/);
+		($jdat->{starttime})   = ($job =~ m/StartTime=(\S+)/);
+		($jdat->{comptime})    = ($job =~ m/EndTime=(\S+)/);
+		($jdat->{used})        = ($job =~ m/RunTime=(\S+)/);
+		($jdat->{features})    = ($job =~ m/Features=(\S+)/);
+		($jdat->{duration})    = ($job =~ m/TimeLimit=(\S+)/);
+		$jdat->{duration}      = seconds($jdat->{duration});
+#		$jdat->{duration}     /= 60 if ($jdat->{duration} !~ "UNLIMITED");
+
+		$jdat->{eligtime}  = slurm2epoch( $jdat->{eligtime});
+		$jdat->{subtime}   = slurm2epoch( $jdat->{subtime});
+		$jdat->{starttime} = slurm2epoch( $jdat->{starttime});
+		$jdat->{comptime}  = slurm2epoch( $jdat->{comptime});
+
 
 		my $jdat2 = dclone($jdat);
 
@@ -550,8 +569,6 @@ sub getslurmdata
 #
 sub getcompletedjobs
 {
-	use Slurm ':all';
-
 	my $now = time();
 	my $jdat;
 #
@@ -653,6 +670,41 @@ sub getcompletedjobs
 
 
 #
+# Converts a duration in dd-hh:mm:ss to seconds
+#
+sub seconds
+{
+	my ($duration) = @_;
+	$duration = 0 unless $duration;
+	my $seconds = 0;
+
+	return("UNLIMITED") if ($duration =~ /UNLIMITED/);
+
+	my @req = split /:|-/, $duration;
+#
+#	Convert dd:hh:mm:ss to seconds
+#
+
+	if ($duration =~ /^(\d+)$/) {
+		$seconds = $duration;
+	} else {
+		my $inc;
+		$seconds = pop(@req);
+		$seconds += (60    * $inc) if ($inc = pop(@req));
+		$seconds += (3600  * $inc) if ($inc = pop(@req));
+		$seconds += (86400 * $inc) if ($inc = pop(@req));
+	}
+
+#
+#	Time must be at least 1 minute (60 seconds)
+#
+	$seconds = 60 if $seconds < 60;
+
+	return $seconds;
+}
+
+
+#
 # Convert epochtime to readable format.
 #
 sub toTime
@@ -670,6 +722,7 @@ sub toTime
 	return $toTime;
 }
 
+
 #
 # Convert seconds to dd:hh:mm:ss format.
 #
@@ -677,12 +730,12 @@ sub hhmmss
 {
 	my ($hhmmss) = @_;
 
+	return "UNLIMITED" if ($hhmmss eq "UNLIMITED");
 #
 #	For right now, any time longer than 99 day,
 #	just indicate that.
 #
 	my $year = 300 * 24 * 3600;
-	return "UNLIMITED" if ($hhmmss >= $year);
 
 #
 #	Convert hhmmss to duration in seconds

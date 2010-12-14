@@ -3,7 +3,7 @@
 #
 # Convert msub commands in to slurm commands.
 #
-# Last Update: 2010-07-27
+# Last Update: 2010-12-14
 #
 # Copyright (C) 2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -71,7 +71,6 @@ chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 
 GetOpts(@ARGV);
-
 
 #
 # Display man page if requested.
