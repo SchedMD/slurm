@@ -576,7 +576,7 @@ static char *	_recv_msg(slurm_fd_t new_fd)
 		return NULL;
 	}
 
-	if (slurm_get_debug_flags() && DEBUG_FLAG_WIKI)
+	if (slurm_get_debug_flags() & DEBUG_FLAG_WIKI)
 		info("wiki msg recv:%s", buf);
 
 	return buf;
@@ -592,7 +592,7 @@ static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
 	char header[10];
 	size_t data_sent;
 
-	if (slurm_get_debug_flags() && DEBUG_FLAG_WIKI)
+	if (slurm_get_debug_flags() & DEBUG_FLAG_WIKI)
 		info("wiki msg send:%s", buf);
 
 	(void) sprintf(header, "%08lu\n", (unsigned long) size);
