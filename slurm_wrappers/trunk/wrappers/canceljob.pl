@@ -37,7 +37,8 @@ BEGIN {
 #
 # Define the options variables.
 #
-my ($help, @joblist, $man, $worststatus, $verbose) = ()x5;
+my ($help, @joblist, $man) = ()x3;
+my $worststatus = 0;
 
 #
 # Get input from user.
