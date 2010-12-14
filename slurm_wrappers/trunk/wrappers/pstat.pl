@@ -287,8 +287,11 @@ foreach my $job (@JOBS) {
 	my $startTime		= $job->{starttime};
 	my $completionTime	= $job->{comptime};
 	my $reqSMinTime		= $job->{reqSMinTime};
-	my $reqNodeFeature	= $job->{feature};
-	my $EffPAL		= 'N/A';
+	my $reqNodeFeature	= $job->{features};
+        undef $reqNodeFeature if ($job->{features} =~ /null/);
+
+#	my $EffPAL		= 'N/A';
+	my $EffPAL;
 	my $reqNodeMem		= $job->{reqNodeMem};
 	my $reqNodeDisk		= $job->{reqNodeDisk};
 	my $statPSDed		= 'N/A';
@@ -347,19 +350,19 @@ foreach my $job (@JOBS) {
 	if ($depend) {
 		$dependency = $1 if ($depend =~ /.*:(\w+)/);
 	}
+    
 	my @features = ();
 	if ($reqNodeFeature) {
 		@features = split(/[\[\]]+/, $reqNodeFeature);
-		shift @features;
 	}
-    
+
 #
 #	we want to see all jobs eligable for a node also
 #
 	my @eff_features = @features;    
-	if($EffPAL) {
+	if(defined $EffPAL) {
 		push(@eff_features, split(/[\[\]]+/, $EffPAL));
-		shift @eff_features;
+	#	shift @eff_features;
 	}    
 
 #
@@ -812,6 +815,7 @@ sub getslurmdata
 		($jdat->{comptime})	= ($job =~ m/EndTime=(\S+)/);
 		($jdat->{used})		= ($job =~ m/RunTime=(\S+)/);
 		($jdat->{features})	= ($job =~ m/Features=(\S+)/);
+
 		($jdat->{duration})	= ($job =~ m/TimeLimit=(\S+)/);
 		($jdat->{reqSMinTime})	= ($job =~ m/StartTime=(\S+)/);
 		$jdat->{reqSMinTime}	= slurm2epoch($jdat->{reqSMinTime});
