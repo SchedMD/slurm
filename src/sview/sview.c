@@ -1086,11 +1086,11 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		free_switch_nodes_maps(g_switch_nodes_maps);
 
 	/* change the node tab name if needed */
-#ifdef GTK2_USE_GET_FOCUS
 	node_tab = gtk_notebook_get_nth_page(
 		GTK_NOTEBOOK(main_notebook), NODE_PAGE);
 	node_tab = gtk_notebook_get_tab_label(GTK_NOTEBOOK(main_notebook),
 					      node_tab);
+#ifdef GTK2_USE_GET_FOCUS
 
 	/* ok, now we have a table which we have set up to contain an
 	 * event_box which contains the label we are interested.  We
@@ -1098,11 +1098,29 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	 * we have to do is grab that and we are set. */
 	node_tab = gtk_container_get_focus_child(GTK_CONTAINER(node_tab));
 #else
-	/* FIXME: on older systems there may be a way to do it, we
-	   just haven't figure it out yet.
-	*/
-	node_tab = NULL;
-	g_object_get(node_tab, "focus-child", &node_tab, NULL);
+	{
+		/* See above comment.  Since
+		   gtk_container_get_focus_child doesn't exist yet we
+		   will just traverse the childern until we find the
+		   label widget and then break.
+		*/
+		int i = 0;
+		GList *childern = gtk_container_get_children(
+			GTK_CONTAINER(node_tab));
+		while ((node_tab = g_list_nth_data(childern, i++))) {
+			int j = 0;
+			GList *childern2 = gtk_container_get_children(
+				GTK_CONTAINER(node_tab));
+			while ((node_tab = g_list_nth_data(childern2, j++))) {
+				if (GTK_IS_LABEL(node_tab))
+					break;
+			}
+			g_list_free(childern2);
+			if (node_tab)
+				break;
+		}
+		g_list_free(childern);
+	}
 #endif
 	if(node_tab)
 		gtk_label_set_text(GTK_LABEL(node_tab),
