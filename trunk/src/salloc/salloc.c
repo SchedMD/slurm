@@ -93,15 +93,15 @@ static bool allocation_interrupted = false;
 static uint32_t pending_job_id = 0;
 static time_t last_timeout = 0;
 
-static void _default_sigaction(int sig);
+static void _exit_on_signal(int signo);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static pid_t  _fork_command(char **command);
+static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
 static void _ring_terminal_bell(void);
-static void *_salloc_signal_mgr(void *no_data);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
 static void _set_spank_env(void);
@@ -126,6 +126,8 @@ bool salloc_shutdown = false;
 int sig_array[] = {
 	SIGHUP, SIGINT, SIGQUIT, SIGPIPE,
 	SIGTERM, SIGUSR1, SIGUSR2, 0 };
+int sig_array2[] = {
+	SIGHUP, SIGTERM, 0 };
 
 int main(int argc, char *argv[])
 {
@@ -143,8 +145,6 @@ int main(int argc, char *argv[])
 	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
-	pthread_attr_t thread_attr;
-	pthread_t signal_thread = (pthread_t) 0;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -303,15 +303,6 @@ int main(int argc, char *argv[])
 	}
 
 	after = time(NULL);
-
-	slurm_attr_init(&thread_attr);
-	while (pthread_create(&signal_thread, &thread_attr, _salloc_signal_mgr,
-			      NULL)) {
-		error("pthread_create error %m");
-		sleep(1);
-	}
-	slurm_attr_destroy(&thread_attr);
-
 	if (opt.bell == BELL_ALWAYS
 	    || (opt.bell == BELL_AFTER_DELAY
 		&& ((after - before) > DEFAULT_BELL_DELAY))) {
@@ -373,6 +364,12 @@ int main(int argc, char *argv[])
 		command_pid = pid = _fork_command(command_argv);
 	}
 
+	/* NOTE: Do not process signals in separate pthread.
+	 * The signal will cause waitpid() to exit immediately. */
+	xsignal_unblock(sig_array2);
+	xsignal(SIGHUP,  _exit_on_signal);
+	xsignal(SIGTERM, _forward_signal);
+
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
 	 * signal.  Either way, we are going to release the allocation next.
@@ -404,12 +401,6 @@ relinquish:
 			allocation_state = REVOKED;
 	}
 	pthread_mutex_unlock(&allocation_state_lock);
-
-	if (signal_thread) {
-		salloc_shutdown = true;
-		pthread_kill(signal_thread, SIGINT);
-		pthread_join(signal_thread,  NULL);
-	}
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	slurm_allocation_msg_thr_destroy(msg_thr);
@@ -669,63 +660,23 @@ static void _pending_callback(uint32_t job_id)
 	pending_job_id = job_id;
 }
 
+static void _exit_on_signal(int signo)
+{
+	exit_flag = true;
+}
+
+static void _forward_signal(int signo)
+{
+	if (command_pid > 0)
+		kill(command_pid, signo);
+}
+
 static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
 	if (pending_job_id != 0) {
 		slurm_complete_job(pending_job_id, 0);
 	}
-}
-
-static void _default_sigaction(int sig)
-{
-	struct sigaction act;
-	if (sigaction(sig, NULL, &act)) {
-		error("sigaction(%d): %m", sig);
-		return;
-	}
-	if (act.sa_handler != SIG_IGN)
-		return;
-
-	act.sa_handler = SIG_DFL;
-	if (sigaction(sig, &act, NULL))
-		error("sigaction(%d): %m", sig);
-}
-
-/* _salloc_signal_mgr - Process daemon-wide signals */
-static void *_salloc_signal_mgr(void *no_data)
-{
-	int sig;
-	int i, rc;
-	sigset_t set;
-
-	/* Make sure no required signals are ignored (possibly inherited) */
-	for (i = 0; sig_array[i]; i++)
-		_default_sigaction(sig_array[i]);
-	while (!salloc_shutdown) {
-		xsignal_sigset_create(sig_array, &set);
-		rc = sigwait(&set, &sig);
-		if (rc == EINTR)
-			continue;
-		switch (sig) {
-		case SIGHUP:
-			exit_flag = true;
-			break;
-		case SIGTERM:
-			if (command_pid > 0)
-				kill(command_pid, sig);
-			break;
-		case SIGINT:
-		case SIGQUIT:
-		case SIGPIPE:
-		case SIGUSR1:
-		case SIGUSR2:
-		default:
-			/* ignore_signal */
-			break;
-		}
-	}
-	return NULL;
 }
 
 /* This typically signifies the job was cancelled by scancel */
