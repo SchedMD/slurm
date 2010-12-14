@@ -256,7 +256,7 @@ if {$matches != 12} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.b3breakpoints
+	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints ${test_prog}.TVD.v3breakpoints~
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
