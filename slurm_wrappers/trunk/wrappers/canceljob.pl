@@ -144,7 +144,7 @@ B<canceljob> - Cancel a Moab job.
 
 =head1 SYNOPSIS
 
- canc3eljob jobid [-h] [--man]
+ canceljob jobid [-h] [--man]
 
 =head1 DESCRIPTION
 
