@@ -32,6 +32,9 @@ documents those changes that are of interest to users and admins.
  -- Normalized the way pidfile are created by the slurm daemons.
  -- Fixed modifying the root association to no read in it's last value
     when clearing a limit being set.
+ -- Revert some resent signal handling logic from salloc so that SIGHUP sent
+    after the job allocation will properly release the allocation and cause
+    salloc to exit.
 
 * Changes in SLURM 2.2.0.rc3
 ============================
