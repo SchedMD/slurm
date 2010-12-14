@@ -29,6 +29,7 @@ BEGIN {
 use Getopt::Long 2.24 qw(:config no_ignore_case);
 
 use autouse 'Pod::Usage' => qw(pod2usage);
+use Storable qw/dclone/;
 use Switch;
 use Time::Local;
 use strict;
@@ -97,17 +98,7 @@ my (
 
 my $mask = 0x8000;
 my @all_jobs;
-
-my @States = qw /
-        ELIG
-        RUN
-        SUSPENDED
-        COMPLETE
-        CANCELLED
-        FAILED
-        TIMEOUT
-        NODE_FAIL
-/;
+my @JOBS;
 
 #
 # Slurm Version.
@@ -258,68 +249,54 @@ my $Now = time();
 
 my ($eval_reason, $eval_state);
 
-my $tmp = `scontrol show config | grep ClusterName`;;
-my ($host) = ($tmp =~ m/ = (\S+)/); 
+if ($terminated) {
+        getcompletedjobs();
+} else {
+        getslurmdata();
+}
 
-#
-#	Use SLURM perl api to get job info.
-#
-my @jobs = `scontrol show job --oneliner`;
-
-my $now = time();
-my $jdat;
 #
 #	Iterate over the jobs
 #
-foreach my $job (@jobs) {
+foreach my $job (@JOBS) {
 	next if ($job =~ /No jobs in the system/);
-	my ($user)		= ($job =~ m/UserId=(\S+)/);
-	$user			=~ s/\(.*\)//;
-	my ($jobName)		= ($job =~ m/Name=(\S+)/);
-	my ($jobId)		= ($job =~ m/JobId=(\S+)/);
-	my ($dRMJID)		= ($job =~ m/JobId=(\S+)/);
-	my ($account)		= ($job =~ m/Account=(\S+)/);
-	my ($block)		= "N/A";
-	my ($state)		= ($job =~ m/JobState=(\S+)/);
+	my $user		= $job->{user};
+	my $jobName		= $job->{jobname} || "N/A";
+	my $jobId		= $job->{jobid};
+	my $dRMJID		= $job->{jobid};
+	my $account		= $job->{account};
+	my $block		= "N/A";
+	my $state		= $job->{state};
 	next if (($state eq "COMPLETED"  ||
+		 $state eq "COMPLETING" ||
 		 $state eq "FAILED") ||
 		 $state eq "CANCELLED" ||
 		 $state eq "TIMEOUT" && !$terminated);
 	my $hold		= 'N/A';
-	my $allocPartition	= $host;
-	my $reqPartition	= $host;
+	my $allocPartition	= $job->{host};
+	my $reqPartition	= $job->{host};
 	my $qosReq		= 'N/A';
-	my ($depend)		= ($job =~ m/Dependency=(\S+)/);
-	my ($startPriority)	= ($job =~ m/Priority=(\S+)/);
-	my ($reqNodes)		= ($job =~ m/NumNodes=(\S+)/);
-	$reqNodes		=~ s/-.*//;
-	my ($reqProcs)		= ($job =~ m/NumCPUs=(\S+)/);
-	my ($class)		= ($job =~ m/Partition=(\S+)/);
+	my $depend		= $job->{depend};
+	my $startPriority	= $job->{priority} || "N/A";
+	my $reqNodes		= $job->{nodes} || "N/A";
+	my $reqProcs		= $job->{procs} || "N/A";
+	my $class		= $job->{class};
 	my $variable		= 'N/A';
-
-	my ($submissionTime)	= ($job =~ m/SubmitTime=(\S+)/);
-	$submissionTime		= slurm2epoch($submissionTime);
+	my $submissionTime	= $job->{subtime};
 	my $systemQueueTime	= $submissionTime;
-
-	my ($startTime)		= ($job =~ m/StartTime=(\S+)/);
-	$startTime		= slurm2epoch($startTime);
-
-	my ($completionTime)	= ($job =~ m/EndTime=(\S+)/);
-	$completionTime 	= slurm2epoch($completionTime);
-
-	my ($reqSMinTime)	= ($job =~ m/StartTime=(\S+)/);
-	$reqSMinTime		= slurm2epoch($reqSMinTime);
-
-	my ($reqNodeFeature)	= ($job =~ m/Features=(\S+)/);
+	my $startTime		= $job->{starttime};
+	my $completionTime	= $job->{comptime};
+	my $reqSMinTime		= $job->{reqSMinTime};
+	my $reqNodeFeature	= $job->{feature};
 	my $EffPAL		= 'N/A';
-	my ($reqNodeMem)	= ($job =~ /MinMemoryNode =(\S+)/);
-	my ($reqNodeDisk)	= ($job =~ /MinTmpDiskNode =(\S+)/);
+	my $reqNodeMem		= $job->{reqNodeMem};
+	my $reqNodeDisk		= $job->{reqNodeDisk};
 	my $statPSDed		= 'N/A';
-        my ($reqAWDuration)	= ($job =~ m/TimeLimit=(\S+)/);
-        my ($aWDuration)	= ($Now - $startTime) if ($state ne "PENDING");
-	my $cpuLimit		= $reqAWDuration;
-	my ($sid)		= ($job =~ m/AllocNode:Sid=(\S+)/);
-	my ($reason)		= ($job =~ m/Reason=(\S+)/);
+        my $reqAWDuration	= $job->{duration};
+        my $aWDuration		= ($Now - $startTime) if ($state ne "PENDING");
+	my $cpuLimit		= $job->{duration};
+	my $sid			= $job->{sid};
+	my $reason		= $job->{reason};
 
 #
 #	Prepare variables
@@ -417,7 +394,10 @@ foreach my $job (@jobs) {
 #
 #	Rewrite finalState if job is dependent on another job.
 #
-	$finalState = "*DEPEND" if ($dependency ne "none" && $state ne "RUNNING");
+printf("--------------------reason is $reason\n");
+printf("final is $finalState\n");
+	$finalState = "*DEPEND" if ($dependency ne "none" && $reason eq "Dependency");
+printf("a final is $finalState\n");
 
 #
 #	Full output
@@ -499,7 +479,7 @@ foreach my $job (@jobs) {
 		printf(
 		"  time limit per cpu: %15s  time used per cpu:%22s\n",
 		$cpuLimit  ? hhmm($cpuLimit)  : "default", "N/A");
-		printf("  cpus:             %17d\n\n", $reqProcs);
+		printf("  cpus:             %17s\n\n", $reqProcs);
 		print "\n";
 	}
 #
@@ -780,6 +760,147 @@ sub job_cmp
 	}
 
 	return($rc);
+}
+
+#
+# Get the needed data from the slurm job api.
+#
+sub getslurmdata
+{
+
+	my $tmp = `scontrol show config  | grep ClusterName`;;
+	my ($host) = ($tmp =~ m/ = (\S+)/);
+
+#
+#	Use SLURM perl api to get job info.
+#
+	my @jobs = `scontrol show job --oneliner`;
+
+	my $now = time();
+	my $jdat;
+#
+#	Iterate over the jobs
+#
+	foreach my $job (@jobs) {
+		next if ($job =~ /No jobs in the system/);
+		($jdat->{jobid})       = ($job =~ m/JobId=(\S+)/);
+		($jdat->{user})        = ($job =~ m/UserId=(\S+)/);
+		$jdat->{user}        =~ s/\(.*\)//;
+
+		($jdat->{group})       = ($job =~ m/GroupId=(\S+)/);
+		$jdat->{group}        =~ s/\(.*\)//;
+
+		($jdat->{jobname})     = ($job =~ m/Name=(\S+)/);
+		($jdat->{account})     = ($job =~ m/Account=(\S+)/);
+		($jdat->{reason})      = ($job =~ m/Reason=(\S+)/);
+		($jdat->{state})       = ($job =~ m/JobState=(\S+)/);
+		($jdat->{host})        = $host;
+		($jdat->{qos})         = ($job =~ m/QOS=(\S+)/);
+		($jdat->{ccode})       = ($job =~ m/ExitCode=(\S+)/);
+		($jdat->{depend})      = ($job =~ m/Dependency=(\S+)/);
+		($jdat->{priority})    = ($job =~ m/Priority=(\S+)/);
+		($jdat->{master})      = ($job =~ m/AllocNode=(\S+)/);
+		($jdat->{nodes})       = ($job =~ m/NumNodes=(\S+)/);
+		$jdat->{nodes}         =~ s/-.*//;
+
+		($jdat->{sid})		=	($job =~ m/AllocNode:Sid=(\S+)/);
+		($jdat->{reqNodeMem})	= ($job =~ /MinMemoryNode =(\S+)/);
+		($jdat->{reqNodeDisk})	= ($job =~ /MinTmpDiskNode =(\S+)/);
+		($jdat->{procs})	= ($job =~ m/NumCPUs=(\S+)/);
+		($jdat->{tpn})		= ($job =~ m/MinCPUsNode=(\S+)/);
+		($jdat->{class})	= ($job =~ m/Partition=(\S+)/);
+		($jdat->{eligtime})	= ($job =~ m/EligibleTime=(\S+)/);
+		($jdat->{subtime})	= ($job =~ m/SubmitTime=(\S+)/);
+		($jdat->{starttime})	= ($job =~ m/StartTime=(\S+)/);
+		($jdat->{comptime})	= ($job =~ m/EndTime=(\S+)/);
+		($jdat->{used})		= ($job =~ m/RunTime=(\S+)/);
+		($jdat->{features})	= ($job =~ m/Features=(\S+)/);
+		($jdat->{duration})	= ($job =~ m/TimeLimit=(\S+)/);
+		($jdat->{reqSMinTime})	= ($job =~ m/StartTime=(\S+)/);
+		$jdat->{reqSMinTime}	= slurm2epoch($jdat->{reqSMinTime});
+
+	#	$jdat->{duration}	= seconds($jdat->{duration});
+	#	$jdat->{duration}	/= 60 if ($jdat->{duration} !~ "UNLIMITED");
+
+		$jdat->{eligtime}  = slurm2epoch( $jdat->{eligtime});
+		$jdat->{subtime}   = slurm2epoch( $jdat->{subtime});
+		$jdat->{starttime} = slurm2epoch( $jdat->{starttime});
+		$jdat->{comptime}  = slurm2epoch( $jdat->{comptime});
+
+		my $jdat2 = dclone($jdat);
+		push @JOBS, $jdat2;
+	}
+
+	return;
+}
+
+
+#
+# Get the needed data from the slurm job api.
+#
+sub getcompletedjobs
+{
+	my $now = time();
+	my $week = 3600 * 24 * 7;
+	my $jdat;
+
+
+	my $weekback = sprintf("%8.8s", hRTime($Now-$week));
+
+
+#
+#	Use SLURM perl api to get job info.
+#
+	my $cmd = "sacct -n -X -p ";
+	my $fmt = "-o 'JobID,User,Group,JobName,Account,State,Cluster,QOS,ExitCode,Priority,NodeList,NNodes,NTasks,Partition,Start,End,Elapsed,submit' ";
+	$cmd .= $fmt;
+
+	$cmd .= " -A $bank" 	if ($bank);
+	$cmd .= " -j $jobList"	if ($jobList);
+	$cmd .= " -u $userName"	if ($userName);
+	$cmd .= " -a"            if (!$userName);
+	$cmd .= " -S $weekback";
+
+	my @out = `$cmd`;
+	
+#
+#	Iterate over the jobs
+#
+	foreach my $line (@out) {
+		my @job =  split (/\|/, $line);
+		$jdat->{jobid}       = $job[0];
+		$jdat->{user}        = $job[1];
+		$jdat->{group}       = $job[2];
+		$jdat->{jobname}     = $job[3] || 'N/A';
+		$jdat->{account}     = $job[4];
+		$jdat->{state}       = $job[5];
+		$jdat->{state}       =~ s/ b.*//;
+		$jdat->{host}        = $job[6];
+		$jdat->{qos}         = $job[7] || 'N/A';
+		$jdat->{ccode}       = $job[8];
+		$jdat->{priority}    = $job[9];
+		$jdat->{master}      = $job[10];
+		$jdat->{nodes}       = $job[11];
+		$jdat->{procs}       = $job[12];
+		$jdat->{reason}      = "N/A";
+		$jdat->{class}       = $job[13];
+		$jdat->{starttime}   = slurm2epoch($job[14]);
+		$jdat->{comptime}    = slurm2epoch($job[15]);
+		$jdat->{duration}    = $job[16];	# slurm states in minutes, Moab seconds.
+		$jdat->{subtime}     = slurm2epoch($job[17]);
+		$jdat->{status}      = "completed";
+
+		my $jdat2 = dclone($jdat);
+
+#
+#		In order to avoid too many changes in how showq.pl handles the slurm data
+#		compared to moab, I am arraning the output into separate arrays similar to
+# 		showq xml data is arranges....there is a method to my madness.
+#	
+		push @JOBS, $jdat2;
+	}
+
+	return;
 }
 
 

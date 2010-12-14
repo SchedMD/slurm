@@ -44,7 +44,11 @@ my $line = "scontrol release $jobid";
 my $result = `$line 2>&1`;
 my $status = $?;
 
-printf("\n$result\n");
+if ($status == 0) {
+	printf("\nholds modified for job $jobid\n\n");
+} else {
+	printf("\n$result\n");
+}
 
 exit($status);
 
