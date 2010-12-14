@@ -97,6 +97,7 @@ install -D -m755 wrappers/checkjob.pl $RPM_BUILD_ROOT%{_bindir}/checkjob
 install -D -m755 wrappers/checknode.pl $RPM_BUILD_ROOT%{_bindir}/checknode
 install -D -m755 wrappers/mdiag.pl $RPM_BUILD_ROOT%{_bindir}/mdiag
 install -D -m755 wrappers/mjobctl.pl $RPM_BUILD_ROOT%{_bindir}/mjobctl
+install -D -m755 wrappers/moab2slurm.pl $RPM_BUILD_ROOT%{_bindir}/moab2slurm
 install -D -m755 wrappers/mshow.pl $RPM_BUILD_ROOT%{_bindir}/mshow
 install -D -m755 wrappers/msub.pl $RPM_BUILD_ROOT%{_bindir}/msub
 install -D -m755 wrappers/releasehold.pl $RPM_BUILD_ROOT%{_bindir}/releasehold
