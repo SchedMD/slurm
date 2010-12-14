@@ -416,7 +416,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		   unless the reservation completely overlaps the
 		   other reservation we have no idea how many cpus
 		   should be removed since this could be a
-		   heterogeneous system.
+		   heterogeneous system.  This same problem exists
+		   when a reservation is created with the ignore_jobs
+		   option which will allow jobs to continue to run in the
+		   reservation that aren't suppose to.
 		*/
 		while((row = mysql_fetch_row(result))) {
 			time_t row_start = slurm_atoul(row[RESV_REQ_START]);
