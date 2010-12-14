@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
  -- Fix debug flags for incorrect logic when dealing with DEBUG_FLAG_WIKI.
  -- Report reservation's Nodes as a hostlist expression of all nodes rather
     than using "ALL".
+ -- Fix reporting of nodes in BlueGene reservation (was reporting CPU count
+    rather than cnode count in scontrol output for NodeCnt field).
 
 * Changes in SLURM 2.2.0.rc3
 ============================
