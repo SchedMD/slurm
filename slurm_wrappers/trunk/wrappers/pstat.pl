@@ -394,10 +394,7 @@ foreach my $job (@JOBS) {
 #
 #	Rewrite finalState if job is dependent on another job.
 #
-printf("--------------------reason is $reason\n");
-printf("final is $finalState\n");
 	$finalState = "*DEPEND" if ($dependency ne "none" && $reason eq "Dependency");
-printf("a final is $finalState\n");
 
 #
 #	Full output
