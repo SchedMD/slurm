@@ -491,7 +491,6 @@ sub getslurmdata
 #
 	foreach my $job (@jobs) {
 		next if ($job =~ /No jobs in the system/);
-#		next if ($job->{job_id} > 1000000); # don't process interactive jobs.
 		($jdat->{jobid})       = ($job =~ m/JobId=(\S+)/);
 		($jdat->{user})        = ($job =~ m/UserId=(\S+)/);
 		($jdat->{user})        =~ s/\(.*\)//;
