@@ -2262,6 +2262,7 @@ extern int validate_job_resv(struct job_record *job_ptr)
 		xfree(job_ptr->resv_name);
 		job_ptr->resv_id    = 0;
 		job_ptr->resv_flags = 0;
+		job_ptr->resv_ptr   = NULL;
 		return SLURM_SUCCESS;
 	}
 
@@ -2280,6 +2281,7 @@ extern int validate_job_resv(struct job_record *job_ptr)
 	if (rc == SLURM_SUCCESS) {
 		job_ptr->resv_id    = resv_ptr->resv_id;
 		job_ptr->resv_flags = resv_ptr->flags;
+		job_ptr->resv_ptr   = resv_ptr;
 	}
 	return rc;
 }
