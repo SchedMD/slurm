@@ -75,6 +75,7 @@ foreach my $job (@jobs) {
 	($state)     = ($job =~ m/JobState=(\S+)/);
 	next if ($state eq "CANCELLED" ||
 	 	 $state eq "RUNNING" ||
+	 	 $state eq "COMPLETED" ||
 		 $state eq "TIMEOUT" ||
 		 $reason !~ /Held/);
 
