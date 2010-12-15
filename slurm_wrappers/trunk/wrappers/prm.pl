@@ -38,6 +38,11 @@ my (
 	$jobList,        $terminated, $userName, $verbose
 );
 
+#
+# Check SLURM status.
+#
+isslurmup();
+
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
 
@@ -335,6 +340,20 @@ sub seconds
 	return($seconds);
 }
 
+
+#
+# Determine if SLURM is available.
+#
+sub isslurmup
+{
+	my $out = `scontrol show part 2>&1`;
+	if ($?) {
+		printf("\n SLURM is not communicating.\n\n");
+		exit(1);
+	}
+
+	return;
+}
 
 ##############################################################################
 

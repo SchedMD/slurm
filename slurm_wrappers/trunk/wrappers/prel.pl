@@ -33,6 +33,11 @@ my (
     $jobList,   $userName, $verbose
 );
 
+#
+# Check SLURM status.
+#
+isslurmup();
+
 my $hst = `scontrol show config | grep ClusterName`;
 my ($host) = ($hst =~ m/ = (\S+)/);
 
@@ -41,7 +46,6 @@ my ($host) = ($hst =~ m/ = (\S+)/);
 #
 chomp(my $soutput = `sinfo --version`);
 my ($sversion) = ($soutput =~ m/slurm (\d+\.\d+)/);
-
 if ($sversion < 2.2) {
 	printf("\n Hold/Release functionality not available in this release.\n\n");
 	exit(1);
@@ -206,6 +210,20 @@ sub GetOpts
 	return;
 }
 
+
+#
+# Determine if SLURM is available.
+#
+sub isslurmup
+{
+	my $out = `scontrol show part 2>&1`;
+	if ($?) {
+		printf("\n SLURM is not communicating.\n\n");
+		exit(1);
+	}
+
+	return;
+}
 
 ##############################################################################
 

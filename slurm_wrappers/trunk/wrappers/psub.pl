@@ -65,6 +65,11 @@ my (
 );
 
 #
+# Check SLURM status.
+#
+isslurmup();
+
+#
 # Slurm Version.
 #
 chomp(my $soutput = `sinfo --version`);
@@ -793,8 +798,19 @@ sub NoOptionSupport
 }
 
 
-# Target SYNOPSIS B<psub> [B<-A> I<date_time>] [B<-b> I<bank_name>] [B<-bgl> I<attributes>] [B<-c> I<constraints>] [B<-d> I<job_id>] [B<-e> I<file_name>] [B<-eo>] [B<-exempt>] [B<-expedite>] [B<-g> [I<tasks>][I<switch>][I<@layout>]] [B<-lc> I<limit>] [B<-ld> I<limit>] [B<-lF> I<limit>] [B<-lf> I<limit>] [B<-lM> I<jsize>] [B<-ln> I<node_count_range>] [B<-lo> I<limit>] [B<-lr> I<limit>] [B<-ls> I<limit>] [B<-lt> I<limit>] [B<-mb>] [B<-me>] [B<-mn>] [B<-nettype> I<network_type>] [B<-nobulkxfer>] [B<-nokill>] [B<-np> I<cpus_per_node>] [B<-o> I<file_name>] [B<-p> I<priority>] [B<-pool> I<pool_name>] [B<-prj> I<project_name>] [B<-r> I<job_name>] [B<-s> I<shell_name>] [B<-standby>] [B<-tM> I<time>] [B<-tW> I<time>] [B<-v>] [B<-wckey> I<wckey_name>] [B<-x>] [B<-H, -?, --help>] [B<--man>] [B<-i> <command> | {F<job_command_file> [I<session_args>]}]
+#
+# Determine if SLURM is available.
+#
+sub isslurmup
+{
+	my $out = `scontrol show part 2>&1`;
+	if ($?) {
+		printf("\n SLURM is not communicating.\n\n");
+		exit(1);
+	}
 
+	return;
+}
 
 ##############################################################################
 

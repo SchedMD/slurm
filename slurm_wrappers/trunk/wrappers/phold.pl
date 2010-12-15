@@ -38,6 +38,11 @@ my (
 );
 
 #
+# Check SLURM status.
+#
+isslurmup();
+
+#
 # Slurm Version.
 #
 chomp(my $soutput = `sinfo --version`);
@@ -202,6 +207,21 @@ sub GetOpts
 		} else {
 			pod2usage(2);
 		}
+	}
+
+	return;
+}
+
+
+#
+# Determine if SLURM is available.
+#
+sub isslurmup
+{
+	my $out = `scontrol show part 2>&1`;
+	if ($?) {
+		printf("\n SLURM is not communicating.\n\n");
+		exit(1);
 	}
 
 	return;

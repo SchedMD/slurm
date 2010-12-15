@@ -40,6 +40,11 @@ BEGIN {
 my ($help, $nodeid, $man, $verbose);
 
 #
+# Check SLURM status.
+#
+isslurmup();
+
+#
 # Get input from user.
 #
 GetOpts();
@@ -99,6 +104,20 @@ sub GetOpts
 	if (!($nodeid = shift(@ARGV))) {
 		printf("\n Node Id needed.\n\n"); 
 		pod2usage(2);
+	}
+
+	return;
+}
+
+#
+# Determine if SLURM is available.
+#
+sub isslurmup
+{
+	my $out = `scontrol show part 2>&1`;
+	if ($?) {
+		printf("\n SLURM is not communicating.\n\n");
+		exit(1);
 	}
 
 	return;

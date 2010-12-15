@@ -44,7 +44,14 @@ my (
 	$host_name
 );
 
+#
+# Check SLURM status.
+#
+isslurmup();
+
 my $tmp = `scontrol show config | grep ClusterName`;
+exit(1) if ($?);
+
 my ($host) = ($tmp =~ m/ = (\S+)/);
 chomp($host = `nodeattr -v cluster`) if ($host =~ /null/);
 
@@ -278,6 +285,21 @@ sub execute
 	printf("\n$result\n");
 
 	exit($status);
+}
+
+
+#
+# Determine if SLURM is available.
+#
+sub isslurmup
+{
+	my $out = `scontrol show part 2>&1`;
+	if ($?) {
+		printf("\n SLURM is not communicating.\n\n");
+		exit(1);
+	}
+
+	return;
 }
 
 
