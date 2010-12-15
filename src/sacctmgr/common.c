@@ -659,7 +659,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 				while ((account = list_next(itr2))) {
 					rec = sacctmgr_find_association_from_list(
 						local_assoc_list,
-						user, account, cluster, NULL);
+						user, account, cluster, "*");
 					if (!rec) {
 						error("Failed to find "
 						      "cluster %s "
@@ -680,7 +680,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 			while ((account = list_next(itr2))) {
 				rec = sacctmgr_find_association_from_list(
 					local_assoc_list,
-					NULL, account, cluster, NULL);
+					NULL, account, cluster, "*");
 				if (!rec) {
 					error("Failed to find cluster %s "
 					      "account %s association in "
@@ -862,12 +862,16 @@ extern slurmdb_association_rec_t *sacctmgr_find_association_from_list(
 		    || ((!cluster && assoc->cluster)
 			|| (cluster && (!assoc->cluster
 					|| strcasecmp(cluster,
-						      assoc->cluster))))
-		    || ((!partition && assoc->partition)
-			|| (partition && (!assoc->partition
-					  || strcasecmp(partition,
-							assoc->partition)))))
+						      assoc->cluster)))))
 			continue;
+		else if (partition) {
+			if (partition[0] != '*'
+			    && (!assoc->partition
+				|| strcasecmp(partition, assoc->partition)))
+				continue;
+		} else if (assoc->partition)
+			continue;
+
 		break;
 	}
 	list_iterator_destroy(itr);

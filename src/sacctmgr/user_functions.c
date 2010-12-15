@@ -375,7 +375,7 @@ static int _check_default_associations(char *def_acct,
 		while((cluster = list_next(itr_c))) {
 			if(!sacctmgr_find_association_from_list(
 				local_assoc_list,
-				user, def_acct, cluster, NULL)) {
+				user, def_acct, cluster, "*")) {
 				regret = xmalloc(sizeof(regret_t));
 				regret->user = user;
 				regret->cluster = cluster;
@@ -1023,7 +1023,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						sacctmgr_find_association_from_list(
 						     user_rec->assoc_list,
 						     name, NULL,
-						     cluster, NULL)))
+						     cluster, "*")))
 						local_def_acct = xstrdup(
 							assoc_rec->acct);
 					else if (assoc_cond
