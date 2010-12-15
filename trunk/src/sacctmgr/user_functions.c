@@ -533,7 +533,7 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 	if(check && (!user_cond->assoc_cond->acct_list
 		     || !list_count(user_cond->assoc_cond->acct_list))) {
 		exit_code=1;
-		fprintf(stderr, " You need to specify a account list here.\n");
+		fprintf(stderr, " You need to specify an account list here.\n");
 		return SLURM_ERROR;
 	}
 
