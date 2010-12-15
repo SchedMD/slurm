@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for changing the reservation of pending or running jobs.
  -- On Cray systems only, salloc sends SIGKILL to spawned process group when
     job allocation is revoked. Patch from Gerrit Renker, CSCS.
+ -- Fix for sacctmgr to work correctly when modifying user associations where
+    all the associations contain a partition.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
