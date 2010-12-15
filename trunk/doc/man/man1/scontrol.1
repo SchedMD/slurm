@@ -921,6 +921,8 @@ Multiple license names should be comma separated (e.g.
 \fINodeCnt\fP=<num>
 Identify number of nodes to be reserved.  A new reservation must specify either
 NodeCnt or Nodes.
+On BlueGene systems, this number represents a cnode (compute node) count and
+will be rounded up as needed to represent whole nodes (midplanes).
 
 .TP
 \fINodes\fP=<name>
