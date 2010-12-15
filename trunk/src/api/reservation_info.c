@@ -103,18 +103,19 @@ void slurm_print_reservation_info ( FILE* out, reserve_info_t * resv_ptr,
 char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 				      int one_liner )
 {
-	char tmp1[32], tmp2[32], *flag_str = NULL;
+	char tmp1[32], tmp2[32], tmp3[32], *flag_str = NULL;
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
+	uint32_t duration;
 
 	/****** Line 1 ******/
 	slurm_make_time_str(&resv_ptr->start_time, tmp1, sizeof(tmp1));
 	slurm_make_time_str(&resv_ptr->end_time,   tmp2, sizeof(tmp2));
+	duration = difftime(resv_ptr->end_time, resv_ptr->start_time);
+	secs2time_str(duration, tmp3, sizeof(tmp3));
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "ReservationName=%s StartTime=%s EndTime=%s Duration=%u",
-		 resv_ptr->name, tmp1, tmp2,
-		 (uint32_t) (difftime(resv_ptr->end_time,
-				      resv_ptr->start_time) / 60));
+		 "ReservationName=%s StartTime=%s EndTime=%s Duration=%s",
+		 resv_ptr->name, tmp1, tmp2, tmp3);
 	xstrcat(out, tmp_line);
 
 	if (one_liner)

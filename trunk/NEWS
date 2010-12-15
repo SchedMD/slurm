@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.0
+========================
+ -- Change format of Duration field in "scontrol show reservation" output from
+    an integer number of minutes to "[days-]hours:minutes:seconds".
+
 * Changes in SLURM 2.2.0.rc4
 ============================
  -- Correction in logic to spread out over time highly parallel messages to
