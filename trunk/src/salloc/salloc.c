@@ -704,14 +704,33 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				     comp->job_id);
 			}
 		}
-		if (allocation_state == GRANTED
-		    && command_pid > -1
-		    && opt.kill_command_signal_set) {
-			verbose("Sending signal %d to command \"%s\", pid %d",
-				opt.kill_command_signal,
-				command_argv[0], command_pid);
-			kill(command_pid, opt.kill_command_signal);
+#ifdef HAVE_CRAY
+		if ((allocation_state == GRANTED) && (command_pid > -1)) {
+			pid_t pgid = getpgid(command_pid);
+
+			if (pgid == command_pid) {
+				/* Clean up all sub-processes */
+				 verbose("Sending signal %d to command \"%s\", "
+					 "pgid %d", SIGKILL,
+					 command_argv[0], command_pid);
+				killpg(command_pid, SIGKILL);
+			} else if (opt.kill_command_signal_set) {
+				 verbose("Sending signal %d to command \"%s\", "
+					 "pid %d", opt.kill_command_signal,
+					 command_argv[0], command_pid);
+				kill(command_pid, opt.kill_command_signal);
+			}
 		}
+#else
+		if ((allocation_state == GRANTED) && (command_pid > -1)) {
+			if (opt.kill_command_signal_set) {
+				 verbose("Sending signal %d to command \"%s\", "
+					 "pid %d", opt.kill_command_signal,
+					 command_argv[0], command_pid);
+				kill(command_pid, opt.kill_command_signal);
+			}
+		}
+#endif
 		allocation_state = REVOKED;
 		pthread_mutex_unlock(&allocation_state_lock);
 	} else {
