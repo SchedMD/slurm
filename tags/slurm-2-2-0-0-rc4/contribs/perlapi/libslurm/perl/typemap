@@ -1,0 +1,60 @@
+#####################################
+TYPEMAP
+
+uint32_t	T_U_LONG
+uint16_t	T_U_SHORT
+pid_t		T_U_LONG
+bitoff_t		T_IV
+log_facility_t		T_UV
+
+slurm_t			T_SLURM
+bitstr_t *		T_PTROBJ_SLURM
+hostlist_t		T_PTROBJ_SLURM
+slurm_step_ctx_t * 	T_PTROBJ_SLURM
+List			T_PTROBJ_SLURM
+ListIterator		T_PTROBJ_SLURM
+
+dynamic_plugin_data_t *	T_PTROBJ_SLURM
+job_resources_t * 	T_PTROBJ_SLURM
+slurm_cred_t * 		T_PTROBJ_SLURM
+switch_jobinfo_t * 	T_PTROBJ_SLURM
+select_jobinfo_t * 	T_PTROBJ_SLURM
+select_nodeinfo_t * 	T_PTROBJ_SLURM
+jobacctinfo_t * 	T_PTROBJ_SLURM
+allocation_msg_thread_t *	T_PTROBJ_SLURM
+node_info_msg_t *	T_PTROBJ_SLURM
+job_info_msg_t *	T_PTROBJ_SLURM
+
+#####################################
+OUTPUT
+
+T_SLURM
+        sv_setref_pv( $arg, \"Slurm\", (void*)$var );
+
+
+T_PTROBJ_SLURM
+	sv_setref_pv( $arg, \"${eval(`cat classmap`);\$class_map->{$ntype}}\", (void*)$var );
+
+#####################################
+INPUT
+
+T_SLURM
+        if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG) && sv_derived_from($arg, \"Slurm\") ) {
+		IV tmp = SvIV((SV*)SvRV($arg));
+		$var = INT2PTR($type,tmp);
+	} else if(SvPOK($arg) && !strcmp(\"Slurm\", SvPV_nolen($arg)))
+	        $var = &default_slurm_object;
+	else {
+	        Perl_croak(aTHX_ \"${Package}::$func_name() -- $var is not a blessed SV reference or correct package name\" );
+	}
+
+T_PTROBJ_SLURM
+	if (sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG) && sv_derived_from($arg, \"${eval(`cat classmap`);\$class_map->{$ntype}}\")) {
+		IV tmp = SvIV((SV*)SvRV($arg));
+		$var = INT2PTR($type,tmp);
+	} else {
+		Perl_croak(aTHX_ \"%s: %s is not of type %s\",
+			${$ALIAS?\q[GvNAME(CvGV(cv))]:\qq[\"$pname\"]},
+			\"$var\", \"${eval(`cat classmap`);\$class_map->{$ntype}}\");
+	}
+
