@@ -1,5 +1,5 @@
 LLNL Security Tests
-27 September 2010
+15 December 2010
 
 Starting with SLURM v2.2, users who are assigned Operator,
 Administrator or account Coordinator privileges in the SLURM db are
@@ -13,38 +13,36 @@ For computers running the slurmctld or slurmd daemon, run tests 1.x, 2.x,
 and 3.x only.
 
 NOTE: If a cluster has no pdebug partition, you will need to submit
-your test jobs to the pbatch partition.  Before the pbatch partition
-will accept jobs submitted through sbatch, you will need to modify the
-partition to accept non-root jobs and modify the job's priority to 1.
-For example (as user root):
+your test jobs to the pbatch partition.  When Moab is the scheduler,
+you will need to modify the pbatch partition to accept non-root jobs
+and modify the job's priority to 1 before it will run.  For example
+(as user root):
 
-# scontrol update PartitionName=pbatch RootOnly=NO < ENABLE JOB SUBMIT
-WITHOUT MOAB <submit test job(s) here> # scontrol update
-JobID=<slurm_job_id> Priority=1 < ENABLE JOB(s) TO RUN # scontrol
-update PartitionName=pbatch RootOnly=YES < FORCE JOB SUBMIT THROUGH
-MOAB
+# scontrol update PartitionName=pbatch RootOnly=NO  < ENABLE JOB SUBMIT WITHOUT MOAB
+<submit test job(s) here>
+# scontrol update JobID=<slurm_job_id> Priority=1   < ENABLE JOB(s) TO RUN
+# scontrol update PartitionName=pbatch RootOnly=YES < RESTORE JOB SUBMIT FROM MOAB
 
 
 Test 1.1     Verify file ownership and permissions
 ==================================================
-
 Execute "security_1_1.py" as root on every node of the cluster and
 check for errors. If the installation directory is not "/usr" and the
 configuration directory not "/etc/slurm" then specify the appropriate
 locations using the "--prefix" and "--sysconfdir" options. Its last
 line will be "SUCCESS" if there were no errors and "FAILURE"
 otherwise. Files which do not exist or their directories cannot be
-read are noted as "WARNING:". Some warnings are expected if all RPM
+read are noted as "WARNING:". Some warnings are expected if all RPMs
 are not installed.  The output near the top with a prefix of "NOTE:"
 describes these cases.
 
 Example:
 $ ./security_1_1.py --prefix=/usr --sysconfdir=/etc/slurm
 NOTE: slurm_epilog and slurm_prolog only exist on BlueGene systems
-NOTE: federation.conf only exists on AIX systems
 NOTE: sview, slurmdbd and slurmdbd.conf exists only on selected systems
 NOTE: JobCredentialPrivateKey, SlurmctldLogFile, and StateSaveLocation only on control host
 NOTE: SlurmdLogFile and SlurmdSpoolDir only exist on compute servers
+
 Ensuring the following are not world writable:
 OK: 755 /etc/slurm
 OK: 444 /etc/slurm/slurm.conf
@@ -62,11 +60,12 @@ SUCCESS
 Test 1.2     Verify that SlurmUser is unique
 ============================================
 Execute "security_1_2.bash" and check for errors. Make sure that the
-"scontrol" program is in your default search path or modify the script.
-The last line of output will be "SUCCESS" if there were no errors and
-"FAILURE" otherwise.
-NOTE: On systems without a full slurm installation (e.g. the slurmdbd server),
-use the second example below.
+"scontrol" program is in your default search path or modify the
+script.  The last line of output will be "SUCCESS" if there were no
+errors and "FAILURE" otherwise.
+
+NOTE: On systems without a full slurm installation (e.g. the slurmdbd
+server), use the second example below.
 
 Example for systems running slurmctld:
 $ ./security_1_2.bash                            < Gets UID from "scontrol show config"
@@ -83,16 +82,14 @@ slurm:x:101:101:slurm:/var/slurm:/sbin/nologin   < No other users/groups with ID
 Test 2.1     Verify that unauthenticated requests are rejected
 ==============================================================
 Execute "security_2_1.bash" and check for errors. Make sure that the
-"scontrol" and "srun" programs are in your default search path or modify
-the script. Its last line of output will be "SUCCESS" if there were no
-errors and "FAILURE" otherwise. Note that srun errors are expected due
-to authentication failure.
+"scontrol" and "srun" programs are in your default search path or
+modify the script. Its last line of output will be "SUCCESS" if there
+were no errors and "FAILURE" otherwise. Note that srun errors are
+expected due to authentication failure.
+
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 Example:
-For AIX only:
-$ export PATH=/opt/freeware/bin:/opt/freeware/sbin:$PATH
-For all systems:
 $ ./security_2_1.bash
 srun: warning: auth/dummy plugin selected
 srun: warning: auth/dummy plugin selected
@@ -106,6 +103,7 @@ SUCCESS
 Test 2.2.1   Verify that normal user can't reconfigure the system
 =================================================================
 Execute "scontrol reconfig".
+
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 Example:
@@ -115,16 +113,18 @@ slurm_reconfigure error: Invalid user id        < ERROR IS EXPECTED
 
 Test 2.2.2   Verify that jobs can't be run as another user
 ==========================================================
-First run a job as yourself and they try to do so as another user. On some
-systems the pdebug partition should be specified. On BlueGene systems a
-batch script must be submitted (use "sbatch --partition=pdebug security_2_2_2.sh").
-If there is no pdebug partition and the pbatch partition can only be used by
-user ROOT, you will need to change that before and after the test. See
-example below for BlueGene.  The script security_2_2_2.sh just invokes
+First run a job as yourself and they try to do so as another user. On
+some systems the pdebug partition should be specified. On BlueGene
+systems a batch script must be submitted (use "sbatch
+--partition=pdebug security_2_2_2.sh").  If there is no pdebug
+partition and the pbatch partition can only be used by user ROOT, you
+will need to change that before and after the test. See example below
+for BlueGene.  The script security_2_2_2.sh just invokes
 "/usr/bin/id".
+
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
-Linux/AIX example:
+Linux example:
 $ srun --partition=pdebug security_2_2_2.sh
 uid=5136(jette) gid=5136(jette) groups=902(pcs),1153(bgldev),1310(aixdev),5136(jette)
 $ srun --partition=pdebug --uid=0 security_2_2_2.sh
@@ -145,10 +145,12 @@ $ diff out.2.2.2 slurm.out.1784597                            < AFTER JOB COMPLE
 
 Test 2.2.3   Verify SLURM's wiki interface is secure
 ====================================================
-SLURM's wiki interface is used by Moab to start and modify user jobs and is
-protected by a digital signature. This test confirms that attempts to use the
-wiki interface without the proper signature will fail. First we need to build
-the test then execute it. The build lines vary by architecture.
+SLURM's wiki interface is used by Moab to start and modify user jobs
+and is protected by a digital signature. This test confirms that
+attempts to use the wiki interface without the proper signature will
+fail. First we need to build the test then execute it. The build lines
+vary by architecture.
+
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 For BlueGene:
@@ -165,18 +167,9 @@ $ ./security_2_2_4
 Bad checksum reported      < ERROR IS EXPECTED
 SUCCESS
 
-For AIX only (I am having linking problems. This work-around will work):
-$ export OBJECT_MODE=32
-$ gcc -DAIX=1 -I/opt/freeware/include -L/opt/freeware/lib -lslurm -osecurity_2_2_4 -pthread security_2_2_4.c
-$ scontrol show config | grep ControlAddr  (substitute the value in execution below)
-Then execute thus:
-$ ./security_2_2_4 <ControlAddr>
-Bad checksum reported      < ERROR IS EXPECTED
-SUCCESS
 
-
-Test 2.3     Verify that trigger program runs a the proper user
-===============================================================
+Test 2.3     Verify that trigger program runs as the proper user
+================================================================
 Since SlurmUser is not root at LLNL, this is a no-op for now. Test by
 executing "security_2_3.sh".
 
@@ -184,14 +177,19 @@ Example:
 $ ./security_2_3.sh
 Executing:
 strigger --set --idle --offset=0 --program=/g/g0/jette/slurm-1.3.way/testsuite/slurm_unit/slurmctld/security_2_3_in
-slurm_set_trigger: Operation not permitted    < ERROR IS EXPECTED
-If this failure is a security violation, that's fine
+
+Waiting for trigger event, this take 20 seconds
+Trigger ran as this user:
+uid=<uid>(<username>) gid=<gid>(<groupname>)...
+If that's not your user and group id, this is a failure
 
 
-Test 2.4   Verify that one user can't modify another user's job
+Test 2.4     Verify that one user can't modify another user's job
 =================================================================
-Submit a job as one user then try to cancel or modify it as another user.
-See note above if there is no pdebug or pbatch is root accessible only.
+Submit a job as one user then try to cancel or modify it as another
+user.  See note above if there is no pdebug or pbatch is root
+accessible only.
+
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.5 verification.
 
 Example:
@@ -202,7 +200,7 @@ sbatch: Submitted batch job 1784601
 FROM A DIFFERENT USER (NOT root, SlurmUser, an Admin, Operator, or
 account Coordinator):
 $ scancel 1784601                            < THE JOB ID FROM ABOVE
-scancel: error: Kill job error on job id 1784601: Access denied
+scancel: error: Kill job error on job id 1784601: Access/permission denied
 $ scontrol update timelimit=4 jobid=1784601  < THE JOB ID FROM ABOVE
 slurm_update error: Invalid user id
 # scontrol update PartitionName=pbatch RootOnly=YES           < AS USER ROOT
@@ -236,6 +234,7 @@ Test 3.1     Verify slurm only accepts requests with valid credential
 =====================================================================
 Submit a job with a fabricated credential (lacking a proper digital
 signature).
+
 NOTE: This test is not compatible with BlueGene systems since srun is
       not available for task launch.
 NOTE: Insure the event is logged in SlurmdLogFile for test 3.3 verification.
@@ -251,6 +250,7 @@ srun: Job Failed                      < ERROR EXPECTED HERE
 Test 3.2     Verify slurm only accepts attach requests from valid user
 ======================================================================
 Start a job as one user, then attept attaching to it from a different user.
+
 NOTE: This test is not applicable for BlueGene systems.
 NOTE: Insure the event is logged in SlurmdLogFile for test 3.3 verification.
 
@@ -278,16 +278,15 @@ From test 3.1 in SlurmdLogFile on node where job tried to run (/var/log/slurm/sl
 
 From test 3.3 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
 [Dec 01 15:15:50] error: Security violation, REQUEST_STEP_LAYOUT for JobId=97700 from uid=7558
-NOTE: The above error message was added to SLURM version 1.3.12.
-Earlier versions of SLURM will not report this message.
 
 
 Test 4.1     Verify that valid credential is required for SlurmDBD access
 =========================================================================
-The basic idea here is to try using a private munge program without the secure
-munge key (we use our own key). This validates that munge authenitication
-is being used as desired. You'll need two windows for this, both running as
-a regular user.
+The basic idea here is to try using a private munge program without
+the secure munge key (we use our own key). This validates that munge
+authenitication is being used as desired. You'll need two windows for
+this, both running as a regular user.
+
 NOTE: Insure the event is logged in SlurmdbdLogFile for test 4.3 verification.
 
 Example, window 1, start munged:
@@ -299,49 +298,57 @@ munged: Info: Found 2067 users with supplementary groups in 0.958 seconds
 
 Example, window 2, try running sacctmgr with new munged:
 ./security_4_1b.bash
-sacctmgr: error: slurmdbd: DBD_RC is 2002 from DBD_INIT(1400): Failed to unpack DBD_INIT message
-sacctmgr: error: slurmdbd: Sending DdbInit msg: Resource temporarily unavailable
+sacctmgr: error: slurmdbd: Sending DbdInit msg: Access/permission denied
+sacctmgr: error: Problem talking to the database: Access/permission denied
 
 Now kill the munged running in window 1 (just use ctrl-c)
 
 
 Test 4.2     Verify that only authorized users can access the SlurmDBD database
 ===============================================================================
-Try to add a dummy cluster name as a non-priviledged user the computers master node.
+Try to add a dummy cluster name as a non-priviledged user the
+computers master node.
+
+NOTE: Insure the event is logged in SlurmdbdLogFile for test 4.3 verification.
 
 Examples (three):
 $ sacctmgr add cluster foo_bar
  Adding Cluster(s)
   Name          = foo_bar
-sacctmgr: error: slurmdbd(2002): from 1405: Your user doesn't have privilege to preform this action
- Problem adding clusters
-sacctmgr: slurmdbd: reopening connection
+ Problem adding clusters: Access/permission denied
 
 $ sacctmgr add account foo_bar
  Adding Account(s)
   foo_bar
 ...
-sacctmgr: error: slurmdbd(2002): from 1402: Your user doesn't have privilege to preform this action
- Problem adding accounts
-sacctmgr: slurmdbd: reopening connection
+ Problem adding accounts: Access/permission denied
 
-$ sacctmgr add coordinator foo_bar
- Adding Coordinator(s)
-  foo_bar
-...
-sacctmgr: error: slurmdbd(2002): from 1402: Your user doesn't have privilege to preform this action
- Problem adding accounts
-sacctmgr: slurmdbd: reopening connection
+$ sacctmgr add coordinator name=pytest account=lc
+ Adding Coordinator User(s)
+  pytest
+ To Account(s) and all sub-accounts
+  lc
+ Problem adding coordinator: Access/permission denied
 
 
 Test 4.3     Verify SlurmDBD security violations are logged
 ===========================================================
-From test 4.1 in /usr/log/slurmdbd.log:
-[Dec 02 09:53:46] error: Munge decode failed: Invalid credential
-[Dec 02 09:53:46] error: Bad authentication: authentication credential invalid
-[Dec 02 09:53:46] error: Failed to unpack DBD_INIT message
-[Dec 02 09:53:46] error: Processing last message from connection 32(134.9.1.222)
+From test 4.1 in /var/log/slurm/slurmdbd.log:
+[2010-12-15T10:58:46] error: Munge decode failed: Invalid credential
+[2010-12-15T10:58:46] error: Bad authentication: authentication credential invalid
+[2010-12-15T10:58:46] error: Failed to unpack DBD_INIT message
+[2010-12-15T10:58:46] error: Security violation, DBD_INIT
+[2010-12-15T10:58:46] error: Processing last message from connection 36(134.9.50.37) uid(-2)
 
-From test 4.2 in /usr/log/slurmdbd.log:
-[Dec 02 09:58:02] error: Your user doesn't have privilege to preform this action
-[Dec 02 09:58:02] error: Processing last message from connection 32(134.9.1.222) uid(5136)
+From test 4.2 in /var/log/slurm/slurmdbd.log:
+[2010-12-15T11:08:42] error: Your user doesn't have privilege to preform this action
+[2010-12-15T11:08:42] error: Security violation, DBD_ADD_CLUSTERS
+[2010-12-15T11:08:42] error: Processing last message from connection 38(134.9.50.37) uid(865)
+
+[2010-12-15T11:09:56] error: Your user doesn't have privilege to preform this action
+[2010-12-15T11:09:56] error: Security violation, DBD_ADD_ACCOUNTS
+[2010-12-15T11:09:56] error: Processing last message from connection 36(134.9.50.37) uid(865)
+
+[2010-12-15T11:15:54] error: Your user doesn't have privilege to preform this action
+[2010-12-15T11:15:54] error: Security violation, DBD_ADD_ACCOUNT_COORDS
+[2010-12-15T11:15:54] error: Processing last message from connection 38(134.9.50.37) uid(865)
