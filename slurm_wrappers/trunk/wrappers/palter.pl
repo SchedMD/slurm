@@ -250,7 +250,7 @@ if (defined $earliestTime) {
 	my $epoch_time = `LCRM_date2epoch "$earliestTime"`;
 	chomp $epoch_time;
 	die("Invalid time specification ($earliestTime).\n") if ($epoch_time == 0);
-	push @cmds, "$scontrol update jobid=$jobId starttime=$epoch_time 2>&1";
+	push @cmds, "$scontrol update jobid=$jobId starttime=uts$epoch_time 2>&1";
 }
 
 if (defined $nodes) {
