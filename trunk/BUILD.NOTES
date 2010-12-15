@@ -135,6 +135,22 @@ To build and run on AIX:
    and install the other RPMs into /usr/admin/inst.images/slurm/aix5.3 on an 
    OCF AIX machine (pdev is a good choice).
 
+Debian build notes:
+Since Debian doesn't have PRMs, the rpmbuild program can not locate
+dependencies, so build without them by patching the build program:
+Index: build
+===================================================================
+--- build       (revision 173)
++++ build       (working copy)
+@@ -798,6 +798,7 @@
+     $cmd .= " --define \"_tmppath $rpmdir/TMP\"";
+     $cmd .= " --define \"_topdir $rpmdir\"";
+     $cmd .= " --define \"build_bin_rpm 1\"";
++    $cmd .= " --nodeps";
+     if (defined $conf{rpm_dist}) {
+         my $dist = length $conf{rpm_dist} ? $conf{rpm_dist} : "%{nil}";
+         $cmd .= " --define \"dist $dist\"";
+
 AIX/Federation switch window problems
 To clean switch windows:     ntblclean =w 8 -a sni0
 To get switch window status: ntblstatus
