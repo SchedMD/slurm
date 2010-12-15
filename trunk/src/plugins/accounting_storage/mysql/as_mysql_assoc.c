@@ -1519,10 +1519,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				assoc_table, account,
 				cluster_name, 0,
 				get_parent_limits_select);
-			debug("%d(%s:%d) query\n%s",
-			      mysql_conn->conn, THIS_FILE, __LINE__, query);
-			if(!(result2 = mysql_db_query_ret(
-				     mysql_conn, query, 1))) {
+			debug4("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			if (!(result2 = mysql_db_query_ret(
+				      mysql_conn, query, 1))) {
 				xfree(query);
 				break;
 			}
