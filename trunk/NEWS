@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Change format of Duration field in "scontrol show reservation" output from
     an integer number of minutes to "[days-]hours:minutes:seconds".
+ -- Add support for changing the reservation of pending or running jobs.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
