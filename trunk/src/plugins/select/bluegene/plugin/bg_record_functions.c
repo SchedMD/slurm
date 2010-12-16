@@ -407,61 +407,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 
 	xfree(sec_record->bg_block_id);
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);
-	xfree(sec_record->nodes);
-	sec_record->nodes = xstrdup(fir_record->nodes);
-	xfree(sec_record->ionodes);
-	sec_record->ionodes = xstrdup(fir_record->ionodes);
-	xfree(sec_record->user_name);
-	sec_record->user_name = xstrdup(fir_record->user_name);
-	xfree(sec_record->target_name);
-	sec_record->target_name = xstrdup(fir_record->target_name);
 
-#ifdef HAVE_BGL
-	xfree(sec_record->blrtsimage);
-	sec_record->blrtsimage = xstrdup(fir_record->blrtsimage);
-#endif
-	xfree(sec_record->linuximage);
-	sec_record->linuximage = xstrdup(fir_record->linuximage);
-	xfree(sec_record->mloaderimage);
-	sec_record->mloaderimage = xstrdup(fir_record->mloaderimage);
-	xfree(sec_record->ramdiskimage);
-	sec_record->ramdiskimage = xstrdup(fir_record->ramdiskimage);
-	xfree(sec_record->reason);
-	sec_record->reason = xstrdup(fir_record->reason);
-
-	sec_record->user_uid = fir_record->user_uid;
-	sec_record->state = fir_record->state;
-	sec_record->conn_type = fir_record->conn_type;
-#ifdef HAVE_BGL
-	sec_record->node_use = fir_record->node_use;
-#endif
-	sec_record->bp_count = fir_record->bp_count;
-	sec_record->switch_count = fir_record->switch_count;
-	sec_record->boot_state = fir_record->boot_state;
-	sec_record->boot_count = fir_record->boot_count;
-	sec_record->full_block = fir_record->full_block;
-
-	sec_record->magic = fir_record->magic;
-
-	for(i=0;i<SYSTEM_DIMENSIONS;i++) {
-		sec_record->geo[i] = fir_record->geo[i];
-		sec_record->start[i] = fir_record->start[i];
-	}
-
-	FREE_NULL_BITMAP(sec_record->bitmap);
-	if(fir_record->bitmap
-	   && (sec_record->bitmap = bit_copy(fir_record->bitmap)) == NULL) {
-		error("Unable to copy bitmap for %s", fir_record->nodes);
-		sec_record->bitmap = NULL;
-	}
-	FREE_NULL_BITMAP(sec_record->ionode_bitmap);
-	if(fir_record->ionode_bitmap
-	   && (sec_record->ionode_bitmap
-	       = bit_copy(fir_record->ionode_bitmap)) == NULL) {
-		error("Unable to copy ionode_bitmap for %s",
-		      fir_record->nodes);
-		sec_record->ionode_bitmap = NULL;
-	}
 	if(sec_record->bg_block_list)
 		list_destroy(sec_record->bg_block_list);
 	sec_record->bg_block_list = list_create(destroy_ba_node);
@@ -473,10 +419,83 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		}
 		list_iterator_destroy(itr);
 	}
-	sec_record->job_running = fir_record->job_running;
-	sec_record->job_ptr = fir_record->job_ptr;
+
+	FREE_NULL_BITMAP(sec_record->bitmap);
+	if(fir_record->bitmap
+	   && (sec_record->bitmap = bit_copy(fir_record->bitmap)) == NULL) {
+		error("Unable to copy bitmap for %s", fir_record->nodes);
+		sec_record->bitmap = NULL;
+	}
+
+#ifdef HAVE_BGL
+	xfree(sec_record->blrtsimage);
+	sec_record->blrtsimage = xstrdup(fir_record->blrtsimage);
+#endif
+
+	sec_record->boot_state = fir_record->boot_state;
+	sec_record->boot_count = fir_record->boot_count;
+	sec_record->bp_count = fir_record->bp_count;
+	sec_record->conn_type = fir_record->conn_type;
 	sec_record->cpu_cnt = fir_record->cpu_cnt;
+	sec_record->free_cnt = fir_record->free_cnt;
+	sec_record->full_block = fir_record->full_block;
+
+	for(i=0;i<HIGHEST_DIMENSIONS;i++) {
+		sec_record->geo[i] = fir_record->geo[i];
+		sec_record->start[i] = fir_record->start[i];
+	}
+
+	xfree(sec_record->ionodes);
+	sec_record->ionodes = xstrdup(fir_record->ionodes);
+
+	FREE_NULL_BITMAP(sec_record->ionode_bitmap);
+	if(fir_record->ionode_bitmap
+	   && (sec_record->ionode_bitmap
+	       = bit_copy(fir_record->ionode_bitmap)) == NULL) {
+		error("Unable to copy ionode_bitmap for %s",
+		      fir_record->nodes);
+		sec_record->ionode_bitmap = NULL;
+	}
+
+	sec_record->job_ptr = fir_record->job_ptr;
+	sec_record->job_running = fir_record->job_running;
+
+	xfree(sec_record->linuximage);
+	sec_record->linuximage = xstrdup(fir_record->linuximage);
+
+	sec_record->magic = fir_record->magic;
+
+	xfree(sec_record->mloaderimage);
+	sec_record->mloaderimage = xstrdup(fir_record->mloaderimage);
+
+	sec_record->modifying = fir_record->modifying;
+
+	xfree(sec_record->nodes);
+	sec_record->nodes = xstrdup(fir_record->nodes);
+
 	sec_record->node_cnt = fir_record->node_cnt;
+
+#ifdef HAVE_BGL
+	sec_record->node_use = fir_record->node_use;
+#endif
+	/* Don't set the original, only in bg_copy_list does it happen
+	 * for a reason. */
+	/* sec_record->original = fir_record; */
+
+	xfree(sec_record->ramdiskimage);
+	sec_record->ramdiskimage = xstrdup(fir_record->ramdiskimage);
+	xfree(sec_record->reason);
+	sec_record->reason = xstrdup(fir_record->reason);
+
+	sec_record->state = fir_record->state;
+	sec_record->switch_count = fir_record->switch_count;
+
+	xfree(sec_record->target_name);
+	sec_record->target_name = xstrdup(fir_record->target_name);
+	xfree(sec_record->user_name);
+	sec_record->user_name = xstrdup(fir_record->user_name);
+
+	sec_record->user_uid = fir_record->user_uid;
 }
 
 /*

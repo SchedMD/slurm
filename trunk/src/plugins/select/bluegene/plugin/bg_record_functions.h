@@ -85,14 +85,14 @@ typedef struct bg_record {
 	uint16_t geo[HIGHEST_DIMENSIONS];  /* geometry */
 	char *ionodes; 		        /* String of ionodes in block
 					 * NULL if not a small block*/
+	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
+					   keep track which ionodes we
+					   are on.  NULL if not a small block*/
 	struct job_record *job_ptr;	/* pointer to job running on
 					 * block or NULL if no job */
 	int job_running;                /* job id of job running of if
 					 * block is in an error state
 					 * BLOCK_ERROR_STATE */
-	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
-					   keep track which ionodes we
-					   are on.  NULL if not a small block*/
 	char *linuximage;               /* LinuxImage/CnloadImage for
 					 * this block */
 	uint16_t magic;	        	/* magic number */
