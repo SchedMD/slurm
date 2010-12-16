@@ -82,9 +82,7 @@ foreach my $job (@jobs) {
 	($state)     = ($job =~ m/JobState=(\S+)/);
 	($start)     = ($job =~ m/StartTime=(\S+)/);
 	$start       = slurm2epoch($start);
-
 	next if ($state eq "CANCELLED" ||
-		 $state eq "RUNNING" ||
 		 $state eq "COMPLETED" ||
 		 $state eq "TIMEOUT" ||
 		 $state =~ "FAIL");
@@ -93,6 +91,7 @@ foreach my $job (@jobs) {
 #
 #	Filter jobs according to options and arguments
 #
+
 	if ($bankName) { next unless $account eq $bankName; }
 	if ($userName) { next unless $user    eq $userName; }
 	if ($jobList) {
