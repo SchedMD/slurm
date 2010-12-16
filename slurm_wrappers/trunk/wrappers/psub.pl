@@ -235,7 +235,6 @@ getopt(@SAVEDARGV);
 #
 # Parse the arguments
 #
-my %environment   = ();
 my ($outputFileName, @outputFileRedirects, $errorFileName, @errorFileRedirects);
 
 #
@@ -498,19 +497,19 @@ if ($errorFileName) {
 #
 chomp(my $hostname = `hostname`);
 
-$environment{ENVIRONMENT}  = "BATCH";
-$environment{PSUB_HOME}    = $ENV{HOME} if ($ENV{HOME});
-$environment{PSUB_HOST}    = $hostname;
-$environment{PSUB_LOGNAME} = $ENV{LOGNAME} if ($ENV{LOGNAME});
-$environment{PSUB_PATH}    = $SAVEDPATH if ($SAVEDPATH);
-$environment{PSUB_REQNAME} = $assignedJobName;
-unless ($environment{PSUB_SUBDIR} = getcwd) {
+$ENV{ENVIRONMENT}  = "BATCH";
+$ENV{PSUB_HOME}    = $ENV{HOME} if ($ENV{HOME});
+$ENV{PSUB_HOST}    = $hostname;
+$ENV{PSUB_LOGNAME} = $ENV{LOGNAME} if ($ENV{LOGNAME});
+$ENV{PSUB_PATH}    = $SAVEDPATH if ($SAVEDPATH);
+$ENV{PSUB_REQNAME} = $assignedJobName;
+unless ($ENV{PSUB_SUBDIR} = getcwd) {
         die " Can't get current working directory:$!\n";
 }
-$environment{PSUB_TZ}      = $ENV{TZ} if ($ENV{TZ});
-$environment{PSUB_USER}    = $ENV{USER} if ($ENV{USER});
-$assignedShell = $ENV{SHELL} if ($ENV{SHELL} && ! $assignedShell);
-$environment{PSUB_SHELL}   = $assignedShell if ($assignedShell);
+$ENV{PSUB_TZ}      = $ENV{TZ} if ($ENV{TZ});
+$ENV{PSUB_USER}    = $ENV{USER} if ($ENV{USER});
+$ENV = $ENV{SHELL} if ($ENV{SHELL} && ! $assignedShell);
+$ENV{PSUB_SHELL}   = $assignedShell if ($assignedShell);
 
 #
 # Add command file
@@ -526,25 +525,7 @@ if ($scriptFile || $tmpScriptFile) {
 #	Add arguments
 #
 	if ($scriptArgs) {
-		$environment{SESSARGS} = "$scriptArgs";
-	}
-}
-
-#
-# Add the environment variables
-#
-if (%environment) {
-#
-#	Build the job script environment file
-#	Add it to the Environment element
-#
-	my @environmentVariables = ();
-	foreach my $variable (sort keys %environment) {
-		if (grep /;/, $environment{$variable}) {
-			push @environmentVariables, "$variable=\"$environment{$variable}\"";
-		} else {
-			push @environmentVariables, "$variable=$environment{$variable}";
-		}
+		$ENV{SESSARGS} = "$scriptArgs";
 	}
 }
 
