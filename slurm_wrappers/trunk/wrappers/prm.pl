@@ -83,7 +83,12 @@ foreach my $job (@jobs) {
 	($start)     = ($job =~ m/StartTime=(\S+)/);
 	$start       = slurm2epoch($start);
 
-	next if ($state eq "CANCELLED" || $state eq "TIMEOUT" || $state eq "COMPLETED" );
+	next if ($state eq "CANCELLED" ||
+		 $state eq "RUNNING" ||
+		 $state eq "COMPLETED" ||
+		 $state eq "TIMEOUT" ||
+		 $state =~ "FAIL");
+
 
 #
 #	Filter jobs according to options and arguments

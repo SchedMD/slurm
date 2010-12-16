@@ -83,7 +83,8 @@ foreach my $job (@jobs) {
 	next if ($state eq "CANCELLED" || 
 		 $state eq "RUNNING" || 
 		 $state eq "COMPLETED" || 
-		 $state eq "TIMEOUT" ||
+		 $state eq "TIMEOUT" || 
+		 $state =~ "FAIL" ||
 		 $reason =~ /Held/);
 
 #

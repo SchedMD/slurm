@@ -273,7 +273,7 @@ foreach my $job (@JOBS) {
 	my $state		= $job->{state};
 	next if (($state eq "COMPLETED"  ||
 		 $state eq "COMPLETING" ||
-		 $state eq "FAILED") ||
+		 $state =~ "FAIL") ||
 		 $state eq "CANCELLED" ||
 		 $state eq "TIMEOUT" && !$terminated);
 	my $hold		= 'N/A';
@@ -696,7 +696,7 @@ sub finalState
 	my ($state, $reason) = @_;
 
 	my $finalState;
-	if    ($state =~ /Cancelled|Removed|Vacated/) { $finalState = ' REMOVED'; }
+	if    ($state =~ /CANCELLED|FAIL|TIME/)       { $finalState = ' REMOVED'; }
 	elsif ($state =~ /COMPLETED/)                 { $finalState = ' COMPLETE'; }
 	elsif ($state =~ /RUNNING/)     	      { $finalState = ' RUN'; }
 	elsif ($state =~ /PENDING/)  {
@@ -888,7 +888,7 @@ sub getcompletedjobs
 		$jdat->{master}      = $job[10];
 		$jdat->{nodes}       = $job[11];
 		$jdat->{procs}       = $job[12];
-		$jdat->{reason}      = "N/A";
+		$jdat->{reason}      = "None";
 		$jdat->{class}       = $job[13];
 		$jdat->{starttime}   = slurm2epoch($job[14]);
 		$jdat->{comptime}    = slurm2epoch($job[15]);

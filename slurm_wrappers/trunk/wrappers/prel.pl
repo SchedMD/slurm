@@ -81,6 +81,7 @@ foreach my $job (@jobs) {
 	 	 $state eq "RUNNING" ||
 	 	 $state eq "COMPLETED" ||
 		 $state eq "TIMEOUT" ||
+		 $state =~ "FAIL" ||
 		 $reason !~ /Held/);
 
 	$allocPartition = $host;
