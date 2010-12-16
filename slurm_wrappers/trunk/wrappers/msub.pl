@@ -146,6 +146,12 @@ else {
 	);
 }
 
+#
+# Add arguments
+#
+if ($scriptArgs) {
+	$ENV{SESSARGS} = "$scriptArgs";
+}
 
 #
 # Parse job script
