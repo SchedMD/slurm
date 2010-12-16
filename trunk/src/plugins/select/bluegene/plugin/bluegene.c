@@ -480,13 +480,17 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 
 	while (count < MAX_FREE_RETRIES) {
 		/* block was removed */
-		if(bg_record->magic == 0) {
+		if(bg_record->magic != BLOCK_MAGIC) {
 			error("block was removed while freeing it here");
 			if(!locked)
 				slurm_mutex_unlock(&block_state_mutex);
 			return SLURM_SUCCESS;
 		}
-
+		/* Reset these here so we don't try to reboot it
+		   when the state goes to free.
+		*/
+		bg_record->boot_state = 0;
+		bg_record->boot_count = 0;
 		/* Here we don't need to check if the block is still
 		 * in exsistance since this function can't be called on
 		 * the same block twice.  It may

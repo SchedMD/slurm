@@ -645,6 +645,10 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 {
 
 	int rc;
+	if (bg_record->magic != BLOCK_MAGIC) {
+		error("requeue_and_error: magic was bad");
+		return;
+	}
 
 	if(bg_record->job_running > NO_JOB_RUNNING)
 		bg_requeue_job(bg_record->job_running, 0);

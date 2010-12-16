@@ -285,7 +285,8 @@ extern int update_block_list()
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if(!bg_record->bg_block_id)
+		if ((bg_record->magic != BLOCK_MAGIC)
+		    || !bg_record->bg_block_id)
 			continue;
 		name = bg_record->bg_block_id;
 		if ((rc = bridge_get_block_info(name, &block_ptr))
@@ -453,9 +454,11 @@ extern int update_block_list()
 					xstrdup(bg_record->user_name);
 			}
 #endif
-			else if(bg_record->state == RM_PARTITION_CONFIGURING)
+			else if(bg_record->state == RM_PARTITION_CONFIGURING) {
+				debug("Setting bootflag for %s",
+				      bg_record->bg_block_id);
 				bg_record->boot_state = 1;
-			else if(bg_record->state == RM_PARTITION_FREE) {
+			} else if(bg_record->state == RM_PARTITION_FREE) {
 				if(remove_from_bg_list(bg_lists->job_running,
 						       bg_record)
 				   == SLURM_SUCCESS)
@@ -514,17 +517,17 @@ extern int update_block_list()
 				break;
 			case RM_PARTITION_FREE:
 				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
-					slurm_mutex_unlock(&block_state_mutex);
 					if((rc = boot_block(bg_record))
-					   != SLURM_SUCCESS) {
+					   != SLURM_SUCCESS)
 						updated = -1;
+
+					if (bg_record->magic == BLOCK_MAGIC) {
+						debug("boot count for block "
+						      "%s is %d",
+						      bg_record->bg_block_id,
+						      bg_record->boot_count);
+						bg_record->boot_count++;
 					}
-					slurm_mutex_lock(&block_state_mutex);
-					debug("boot count for block "
-					      "%s is %d",
-					      bg_record->bg_block_id,
-					      bg_record->boot_count);
-					bg_record->boot_count++;
 				} else {
 					char *reason = "update_block_list: "
 						"Boot fails ";
