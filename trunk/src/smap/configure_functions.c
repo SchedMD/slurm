@@ -573,7 +573,7 @@ static int _resolve(char *com)
 #ifdef HAVE_BG_FILES
 	int len=strlen(com);
 	char *rack_mid = NULL;
-	int *coord = NULL;
+	uint16_t *coord = NULL;
 #endif
 
 	while(com[i] != '\0') {

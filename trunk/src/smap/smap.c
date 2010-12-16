@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 				       params.resolve[Z+i]);
 
 		} else {
-			int *coord = find_bp_loc(params.resolve);
+			uint16_t *coord = find_bp_loc(params.resolve);
 			if(coord)
 				printf("%s resolves to X=%d Y=%d Z=%d\n",
 				       params.resolve,
