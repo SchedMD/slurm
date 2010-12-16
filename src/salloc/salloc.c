@@ -712,7 +712,6 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 
 			if (pgid == command_pid) {
 				/* Clean up all sub-processes */
-				killpg(command_pid, SIGCONT);
 				killpg(command_pid, SIGTERM);
 				cf = slurm_conf_lock();
 				delay = MAX(cf->kill_wait, 5);
