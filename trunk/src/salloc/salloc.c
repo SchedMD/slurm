@@ -123,11 +123,18 @@ static int  _claim_reservation(resource_allocation_response_msg_t *alloc);
 #endif
 
 bool salloc_shutdown = false;
+/* Signals that are considered terminal before resource allocation. */
 int sig_array[] = {
 	SIGHUP, SIGINT, SIGQUIT, SIGPIPE,
-	SIGTERM, SIGUSR1, SIGUSR2, 0 };
-int sig_array2[] = {
-	SIGHUP, SIGTERM, 0 };
+	SIGTERM, SIGUSR1, SIGUSR2, 0
+};
+/* Signals that are considered terminal and which require cleanup. */
+static int sig_array2[] = {
+	SIGTERM, SIGILL, SIGBUS, SIGABRT,
+	SIGFPE, SIGSEGV, SIGSTKFLT, SIGXCPU,
+	SIGXFSZ, SIGVTALRM, SIGPWR,SIGHUP,
+	SIGSYS, 0
+};
 
 int main(int argc, char *argv[])
 {
@@ -148,11 +155,6 @@ int main(int argc, char *argv[])
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
-
-	/* This must happen before we spawn any threads
-	 * which are not designed to handle the signal */
-	if (xsignal_block(sig_array) < 0)
-		error("Unable to block signals");
 
 	if (spank_init_allocator() < 0) {
 		error("Failed to initialize plugin stack");
@@ -229,7 +231,6 @@ int main(int argc, char *argv[])
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
-	xsignal_unblock(sig_array);
 	for (i = 0; sig_array[i]; i++)
 		xsignal(sig_array[i], _signal_while_allocating);
 
@@ -245,7 +246,6 @@ int main(int argc, char *argv[])
 			debug("%s", msg);
 		sleep (++retries);
 	}
-	xsignal_block(sig_array);
 
 	/* become the user after the allocation has been requested. */
 	if (opt.uid != (uid_t) -1) {
@@ -366,9 +366,11 @@ int main(int argc, char *argv[])
 
 	/* NOTE: Do not process signals in separate pthread.
 	 * The signal will cause waitpid() to exit immediately. */
-	xsignal_unblock(sig_array2);
 	xsignal(SIGHUP,  _exit_on_signal);
-	xsignal(SIGTERM, _forward_signal);
+	for (i = 0; sig_array2[i]; i++)
+		xsignal(sig_array2[i], _forward_signal);
+	for (i = SIGRTMIN; i <= SIGRTMAX; i++)
+		xsignal(i, _exit_on_signal);
 
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
@@ -667,7 +669,8 @@ static void _exit_on_signal(int signo)
 
 static void _forward_signal(int signo)
 {
-	if (command_pid > 0)
+	/* Assume process group first, fall back to just PID */
+	if ((command_pid > 0) && (killpg(command_pid, signo) < 0))
 		kill(command_pid, signo);
 }
 
