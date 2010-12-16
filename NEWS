@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     job allocation is revoked. Patch from Gerrit Renker, CSCS.
  -- Fix for sacctmgr to work correctly when modifying user associations where
     all the associations contain a partition.
+ -- Minor mods to salloc signal handling logic: forwards more signals and
+    releases allocation on real-time signals. Patch from Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
