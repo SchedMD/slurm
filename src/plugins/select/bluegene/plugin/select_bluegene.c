@@ -356,6 +356,8 @@ extern int select_p_state_save(char *dir_name)
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while((bg_record = list_next(itr))) {
+		if (bg_record->magic != BLOCK_MAGIC)
+			continue;
 		/* on real bluegene systems we only want to keep track of
 		 * the blocks in an error state
 		 */
@@ -626,6 +628,8 @@ extern int select_p_pack_select_info(time_t last_query_time,
 				slurm_mutex_lock(&block_state_mutex);
 				itr = list_iterator_create(bg_lists->main);
 				while ((bg_record = list_next(itr))) {
+					if (bg_record->magic != BLOCK_MAGIC)
+						continue;
 					pack_block(bg_record, buffer,
 						   protocol_version);
 					blocks_packed++;

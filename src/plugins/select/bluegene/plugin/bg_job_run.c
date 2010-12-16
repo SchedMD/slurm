@@ -294,7 +294,8 @@ static int _make_sure_block_still_exists(bg_action_t *bg_action_ptr,
 	/* check to make sure this block still exists since
 	 * something could had happened and the block is no
 	 * longer in existance */
-	if(!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
+	if ((bg_record->magic != BLOCK_MAGIC)
+	    || !block_ptr_exist_in_list(bg_lists->main, bg_record)) {
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("The block %s disappeared while starting "
 		      "job %u requeueing if possible.",
@@ -829,9 +830,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	}
 
 	if(bg_record->state == RM_PARTITION_FREE) {
-		slurm_mutex_unlock(&block_state_mutex);
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
-			slurm_mutex_lock(&block_state_mutex);
 			if(!_make_sure_block_still_exists(bg_action_ptr,
 							  bg_record)) {
 				slurm_mutex_unlock(&block_state_mutex);
@@ -842,7 +841,6 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
 			return;
 		}
-		slurm_mutex_lock(&block_state_mutex);
 		if(!_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
 			slurm_mutex_unlock(&block_state_mutex);
 			return;
@@ -1311,11 +1309,16 @@ extern int sync_jobs(List job_list)
  * Boot a block. Block state expected to be FREE upon entry.
  * NOTE: This function does not wait for the boot to complete.
  * the slurm prolog script needs to perform the waiting.
+ * NOTE: block_state_mutex needs to be locked before entering.
  */
 extern int boot_block(bg_record_t *bg_record)
 {
 #ifdef HAVE_BG_FILES
 	int rc;
+	if (bg_record->magic != BLOCK_MAGIC) {
+		error("boot_block: magic was bad");
+		return SLURM_ERROR;
+	}
 
 	if ((rc = bridge_set_block_owner(bg_record->bg_block_id,
 					 bg_conf->slurm_user_name))
@@ -1340,44 +1343,27 @@ extern int boot_block(bg_record_t *bg_record)
 				 "This usually means hardware is allocated "
 				 "by another block (maybe outside of SLURM).",
 				 bg_record->bg_block_id);
-			requeue_and_error(bg_record, reason);
 			bg_record->boot_state = 0;
 			bg_record->boot_count = 0;
+			slurm_mutex_unlock(&block_state_mutex);
+			requeue_and_error(bg_record, reason);
+			slurm_mutex_lock(&block_state_mutex);
 		}
 		return SLURM_ERROR;
 	}
 
-	slurm_mutex_lock(&block_state_mutex);
-	if(!block_ptr_exist_in_list(bg_lists->booted, bg_record))
+	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
-	slurm_mutex_unlock(&block_state_mutex);
-
-	rc = 0;
-	while(rc < 10) {
-		if(bg_record->state == RM_PARTITION_CONFIGURING) {
-			break;
-		}
-		sleep(1);
-		rc++;
-	}
-	slurm_mutex_lock(&block_state_mutex);
-	/* reset state right now, don't wait for
-	 * update_block_list() to run or epilog could
-	 * get old/bad data. */
-	if(bg_record->state != RM_PARTITION_CONFIGURING)
-		bg_record->state = RM_PARTITION_CONFIGURING;
-	debug("Setting bootflag for %s", bg_record->bg_block_id);
+	/* Set this here just to make sure we know we are suppose to
+	   be booting.  Just incase the block goes free before we
+	   notice we are configuring.
+	*/
 	bg_record->boot_state = 1;
-
-	last_bg_update = time(NULL);
-	slurm_mutex_unlock(&block_state_mutex);
 #else
-	slurm_mutex_lock(&block_state_mutex);
 	if(!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
 	bg_record->state = RM_PARTITION_READY;
 	last_bg_update = time(NULL);
-	slurm_mutex_unlock(&block_state_mutex);
 #endif
 
 

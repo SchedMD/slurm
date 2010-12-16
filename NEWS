@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     releases allocation on real-time signals. Patch from Gerrit Renker, CSCS.
  -- Add salloc logic to preserve tty attributes after abnormal exit. Patch
     from Mark Grondona, LLNL.
+ -- BLUEGENE - Fix for issue in dynamic mode when trying to create a block
+    overlapping a block with no job running on it but in configuring state.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
