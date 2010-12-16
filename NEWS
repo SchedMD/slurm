@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     all the associations contain a partition.
  -- Minor mods to salloc signal handling logic: forwards more signals and
     releases allocation on real-time signals. Patch from Gerrit Renker, CSCS.
+ -- Add salloc logic to preserve tty attributes after abnormal exit. Patch
+    from Mark Grondona, LLNL.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
