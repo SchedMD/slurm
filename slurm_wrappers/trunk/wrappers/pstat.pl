@@ -291,8 +291,8 @@ foreach my $job (@JOBS) {
 	my $startTime		= $job->{starttime};
 	my $completionTime	= $job->{comptime};
 	my $reqSMinTime		= $job->{reqSMinTime};
-	my $reqNodeFeature	= $job->{features};
-        undef $reqNodeFeature if ($job->{features} =~ /null/);
+	my $reqNodeFeature	= $job->{features} || "null";
+        undef $reqNodeFeature if ($reqNodeFeature =~ /null/);
 
 #	my $EffPAL		= 'N/A';
 	my $EffPAL;

@@ -358,7 +358,7 @@ foreach my $ct ($min .. $max) {
 		if ($completed_arg) {
 			$value->{'starttime'} = $subtime;
 		} else {
-			$value->{'starttime'} = toTime($subtime);
+			$value->{'starttime'} = toTime($subtime,1);
 		}
 
 #
@@ -576,10 +576,14 @@ sub getcompletedjobs
 {
 	my $now = time();
 	my $jdat;
+	my $week = 7 * 24 * 3600;
+
+	my $weekback = sprintf("%8.8s", toTime($now-$week,2));
+
 #
 #	Use SLURM perl api to get job info.
 #
-	my $cmd = "sacct -X -p ";
+	my $cmd = "sacct -X -n -p ";
 	my $fmt = "-o 'JobID,User,Group,JobName,Account,State,Cluster,QOS,ExitCode,Priority,NodeList,NNodes,NTasks,Partition,Start,End,Elapsed' ";
 	$cmd .= $fmt;
 
@@ -590,7 +594,7 @@ sub getcompletedjobs
 	$cmd .= " -u $user_arg"    if ($user_arg);
 	$cmd .= " -s $status_arg"  if ($status_arg);
 	$cmd .= " -a"              if (!$user_arg);
-	$cmd .= " -S 06/21/10";
+	$cmd .= " -S $weekback";
 
 	my @out = `$cmd`;
 	
@@ -606,6 +610,13 @@ sub getcompletedjobs
 		$jdat->{account}     = $job[4];
 		$jdat->{state}       = $job[5];
 		$jdat->{state}       =~ s/ b.*//;
+#
+#		Only want completed jobs.
+#
+		next if ($jdat->{state} !~ /COMP/ &&
+			 $jdat->{state} !~ /FAIL/ &&
+			 $jdat->{state} !~ /TIMEOUT/ &&
+			 $jdat->{state} !~/CANC/);
 		$jdat->{host}        = $job[6];
 		$jdat->{qos}         = $job[7] || 'N/A';
 		$jdat->{ccode}       = $job[8];
@@ -713,17 +724,23 @@ sub seconds
 #
 sub toTime
 {
-	my ($epochTime) = @_;
+	my ($epochTime,$flag) = @_;
 
 	my @months   = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
 	my @weekdays = qw(Sun Mon Tue Wed Thu Fri Sat);
 	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
 		localtime($epochTime);
 
-	my $toTime = sprintf( "%3s %3s %2d %02d:%02d:%02d",
-        $weekdays[$wday], $months[$mon], $mday, $hour, $min, $sec);
 
-	return $toTime;
+	if ($flag == 1) {
+		my $toTime = sprintf( "%3s %3s %2d %02d:%02d:%02d",
+        	$weekdays[$wday], $months[$mon], $mday, $hour, $min, $sec);
+		return($toTime);
+	} else {
+		my $short_toTime = sprintf( "%02d/%02d/%02d",
+                $mon + 1, $mday, ($year + 1900) - 2000);
+		return($short_toTime);
+	}
 }
 
 
