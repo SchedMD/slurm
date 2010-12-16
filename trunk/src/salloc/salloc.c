@@ -706,11 +706,19 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 		}
 #ifdef HAVE_CRAY
 		if ((allocation_state == GRANTED) && (command_pid > -1)) {
+			int delay;
+			slurm_ctl_conf_t *cf;
 			pid_t pgid = getpgid(command_pid);
 
 			if (pgid == command_pid) {
 				/* Clean up all sub-processes */
-				 verbose("Sending signal %d to command \"%s\", "
+				killpg(command_pid, SIGCONT);
+				killpg(command_pid, SIGTERM);
+				cf = slurm_conf_lock();
+				delay = MAX(cf->kill_wait, 5);
+				slurm_conf_unlock();
+				sleep(delay);
+				verbose("Sending signal %d to command \"%s\", "
 					 "pgid %d", SIGKILL,
 					 command_argv[0], command_pid);
 				killpg(command_pid, SIGKILL);
