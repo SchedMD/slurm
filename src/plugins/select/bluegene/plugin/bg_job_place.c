@@ -847,7 +847,7 @@ static int _find_best_block_match(List block_list,
 
 	if(!is_test && (req_procs > avail_cpus)) {
 		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-			info("asking for %u I only got %d",
+			info("asking for %u I only have %d",
 			     req_procs, avail_cpus);
 		return SLURM_ERROR;
 	}

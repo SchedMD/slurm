@@ -602,7 +602,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(track_list);
 	while ((bg_record = list_next(itr))) {
-		if(bg_record->magic == 0) {
+		if(bg_record->magic != BLOCK_MAGIC) {
 			error("block was already destroyed");
 			free_cnt++;
 			continue;

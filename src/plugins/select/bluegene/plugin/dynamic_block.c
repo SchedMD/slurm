@@ -80,7 +80,29 @@ extern List create_dynamic_block(List block_list,
 		reset_ba_system(track_down_nodes);
 		itr = list_iterator_create(my_block_list);
 		while ((bg_record = list_next(itr))) {
-			if(!my_bitmap) {
+			if (bg_record->free_cnt) {
+				if(bg_conf->slurm_debug_flags
+				   & DEBUG_FLAG_BG_PICK) {
+					char *start_geo = give_geo(
+						bg_record->start);
+					char *geo = give_geo(bg_record->geo);
+
+					info("not adding %s(%s) %s %s %s %u "
+					     "(free_cnt)",
+					     bg_record->bg_block_id,
+					     bg_record->nodes,
+					     bg_block_state_string(
+						     bg_record->state),
+					     start_geo,
+					     geo,
+					     bg_record->node_cnt);
+					xfree(start_geo);
+					xfree(geo);
+				}
+				continue;
+			}
+
+			if (!my_bitmap) {
 				my_bitmap =
 					bit_alloc(bit_size(bg_record->bitmap));
 			}
@@ -678,6 +700,12 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	 */
 	itr = list_iterator_create(block_list);
 	while ((bg_record = list_next(itr))) {
+		if (bg_record->free_cnt) {
+			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("%s being free for other job(s), skipping",
+				     bg_record->bg_block_id);
+			continue;
+		}
 		/* never look at a block if a job is running */
 		if(bg_record->job_running != NO_JOB_RUNNING)
 			continue;

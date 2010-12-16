@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     from Mark Grondona, LLNL.
  -- BLUEGENE - Fix for issue in dynamic mode when trying to create a block
     overlapping a block with no job running on it but in configuring state.
+ -- BLUEGENE - Speedup by skipping blocks that are deallocating for other jobs
+    when starting overlapping jobs in dynamic mode.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
