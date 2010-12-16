@@ -419,6 +419,7 @@ struct job_record {
 					 * value before use */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
+	char *batch_host;		/* host executing batch script */
 	check_jobinfo_t check_job;      /* checkpoint context, opaque */
 	uint16_t ckpt_interval;	        /* checkpoint interval in minutes */
 	time_t ckpt_time;	        /* last time job was periodically

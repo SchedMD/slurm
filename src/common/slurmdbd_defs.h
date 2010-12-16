@@ -76,7 +76,7 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	8 /* already changed for 2.2 */
+#define SLURMDBD_VERSION	9 /* already changed for 2.3 */
 #define SLURMDBD_VERSION_MIN	7
 
 /* SLURM DBD message types */
