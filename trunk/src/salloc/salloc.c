@@ -49,6 +49,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -77,6 +78,11 @@
 #include "src/common/node_select.h"
 #endif
 
+#ifndef __USE_XOPEN_EXTENDED
+extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
+extern pid_t getpgid(pid_t pid);
+#endif
+
 #define MAX_RETRIES	10
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
@@ -92,6 +98,7 @@ static bool exit_flag = false;
 static bool allocation_interrupted = false;
 static uint32_t pending_job_id = 0;
 static time_t last_timeout = 0;
+static struct termios saved_tty_attributes;
 
 static void _exit_on_signal(int signo);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
@@ -132,9 +139,19 @@ int sig_array[] = {
 static int sig_array2[] = {
 	SIGTERM, SIGILL, SIGBUS, SIGABRT,
 	SIGFPE, SIGSEGV, SIGSTKFLT, SIGXCPU,
-	SIGXFSZ, SIGVTALRM, SIGPWR,SIGHUP,
+	SIGXFSZ, SIGVTALRM, SIGPWR,
 	SIGSYS, 0
 };
+
+static void _reset_input_mode (void)
+{
+	/* SIGTTOU needs to be blocked per the POSIX spec:
+	 * http://pubs.opengroup.org/onlinepubs/009695399/functions/tcsetattr.html
+	 */
+	int sig_block[] = { SIGTTOU, SIGTTIN, 0 };
+	xsignal_block (sig_block);
+	tcsetattr (STDIN_FILENO, TCSANOW, &saved_tty_attributes);
+}
 
 int main(int argc, char *argv[])
 {
@@ -152,6 +169,13 @@ int main(int argc, char *argv[])
 	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
+
+	/*
+	 * Save tty attributes and reset at exit, in case a child
+	 * process died before properly resetting terminal.
+	 */
+	tcgetattr (STDIN_FILENO, &saved_tty_attributes);
+	atexit (_reset_input_mode);
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -707,22 +731,23 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				     comp->job_id);
 			}
 		}
-#ifdef HAVE_CRAY
+
+#if 1
 		if ((allocation_state == GRANTED) && (command_pid > -1)) {
 			int delay;
 			slurm_ctl_conf_t *cf;
 			pid_t pgid = getpgid(command_pid);
 
-			if (pgid == command_pid) {
+			if ((pgid == command_pid) &&
+			    (killpg(command_pid, SIGTERM) == 0)) {
 				/* Clean up all sub-processes */
-				killpg(command_pid, SIGTERM);
+				verbose("Sending SIGTERM/SIGKILL to "
+					"command \"%s\", pgid %d",
+					command_argv[0], command_pid);
 				cf = slurm_conf_lock();
 				delay = MAX(cf->kill_wait, 5);
 				slurm_conf_unlock();
 				sleep(delay);
-				verbose("Sending signal %d to command \"%s\", "
-					 "pgid %d", SIGKILL,
-					 command_argv[0], command_pid);
 				killpg(command_pid, SIGKILL);
 			} else if (opt.kill_command_signal_set) {
 				 verbose("Sending signal %d to command \"%s\", "
