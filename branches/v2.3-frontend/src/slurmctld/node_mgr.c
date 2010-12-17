@@ -66,6 +66,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
@@ -93,6 +94,9 @@ bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
 
 static void 	_dump_node_state (struct node_record *dump_node_ptr,
 				  Buf buffer);
+static front_end_record_t * _front_end_reg(char *node_name,
+					   time_t slurmd_start_time,
+					   uint32_t up_time);
 static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static void	_node_did_resp(struct node_record *node_ptr);
@@ -1719,6 +1723,44 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	return error_code;
 }
 
+static front_end_record_t * _front_end_reg(char *node_name,
+					   time_t slurmd_start_time,
+					   uint32_t up_time)
+{
+	front_end_record_t *front_end_ptr;
+
+	info("name:%s boot_time:%u up_time:%u",
+	      node_name, (unsigned int) slurmd_start_time, up_time);
+	front_end_ptr = find_front_end_record(node_name);
+	if (front_end_ptr == NULL) {
+		error("Registration message from unknown node %s", node_name);
+	} else {
+		uint16_t state_base, state_flags;
+		time_t now = time(NULL);
+		front_end_ptr->boot_time = now - up_time;
+		front_end_ptr->last_response = now;
+		front_end_ptr->slurmd_start_time = slurmd_start_time;
+		state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
+		state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
+		if ((state_base == NODE_STATE_DOWN) &&
+		    (!strncmp(front_end_ptr->reason, "Not responding", 14))) {
+			info("FrontEnd node %s returned to service",
+			     node_name);
+			state_base = NODE_STATE_IDLE;
+			xfree(front_end_ptr->reason);
+			front_end_ptr->reason_time = (time_t) 0;
+			front_end_ptr->reason_uid = 0;
+		}
+		if (state_base == NODE_STATE_UNKNOWN)
+			state_base = NODE_STATE_IDLE;
+		if (state_flags & NODE_STATE_NO_RESPOND)
+			state_flags &= (~NODE_STATE_NO_RESPOND);
+		front_end_ptr->node_state = state_base | state_flags;
+		last_front_end_update = now;
+	}
+	return front_end_ptr;
+}
+
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
  *	a valid configuration as soon as the front-end registers. Individual
@@ -1744,12 +1786,19 @@ extern int validate_nodes_via_front_end(
 	hostlist_t prolog_hostlist = NULL;
 	char *host_str = NULL;
 	uint16_t node_flags;
+	front_end_record_t *front_end_ptr;
 
 	if (reg_msg->up_time > now) {
 		error("Node up_time is invalid: %u>%u", reg_msg->up_time,
 		      (uint32_t) now);
 		reg_msg->up_time = 0;
 	}
+
+	front_end_ptr = _front_end_reg(reg_msg->node_name,
+				       reg_msg->slurmd_start_time,
+				       reg_msg->up_time);
+	if (front_end_ptr == NULL)
+		return ESLURM_INVALID_NODE_NAME;
 
 	/* First validate the job info */
 	node_ptr = node_record_table_ptr;	/* All msg send to node zero,
