@@ -2261,7 +2261,7 @@ void set_node_down (char *name, char *reason)
 	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup(reason);
-		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_time = now;
 		node_ptr->reason_uid = slurm_get_slurm_user_id();
 	}
 	_make_node_down(node_ptr, now);
