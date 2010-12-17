@@ -691,6 +691,7 @@ static void _pending_callback(uint32_t job_id)
 
 static void _exit_on_signal(int signo)
 {
+	_forward_signal(signo);
 	exit_flag = true;
 }
 
