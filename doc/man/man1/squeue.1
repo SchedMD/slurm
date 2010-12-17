@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "September 2010" "squeue 2.2" "Slurm components"
+.TH SQUEUE "1" "December 2010" "squeue 2.3" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -118,6 +118,10 @@ This reports the value of the \fBsrun \-\-ntasks\fR option.
 \fB%b\fR
 Generic resources (gres) required by the job or step.
 (Valid for jobs and job steps)
+.TP
+\fB%B\fR
+The name of the computer executing the batch script (batch host).
+(Valid for jobs only)
 .TP
 \fB%c\fR
 Minimum number of CPUs (processors) per node requested by the job.
