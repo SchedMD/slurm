@@ -418,15 +418,18 @@ int main(int argc, char *argv[])
 relinquish:
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
+		allocation_state = REVOKED;
+		pthread_mutex_unlock(&allocation_state_lock);
+
 		info("Relinquishing job allocation %d", alloc->job_id);
-		if (slurm_complete_job(alloc->job_id, status)
-		    != 0)
+		if ((slurm_complete_job(alloc->job_id, status) != 0) &&
+		    (slurm_get_errno() != ESLURM_ALREADY_DONE)) {
 			error("Unable to clean up job allocation %d: %m",
 			      alloc->job_id);
-		else
-			allocation_state = REVOKED;
+		}
+	} else {
+		pthread_mutex_unlock(&allocation_state_lock);
 	}
-	pthread_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	slurm_allocation_msg_thr_destroy(msg_thr);
