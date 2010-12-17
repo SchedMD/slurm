@@ -353,7 +353,7 @@ scontrol_print_front_end_list(char *node_list)
 	}
 
 	if (node_list == NULL) {
-		slurm_print_front_end_info_msg(stdout, front_end_info_ptr, one_liner);
+		scontrol_print_front_end(NULL, front_end_info_ptr);
 	} else {
 		if ((host_list = hostlist_create (node_list))) {
 			while ((this_node_name = hostlist_shift (host_list))) {
