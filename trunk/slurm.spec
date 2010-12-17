@@ -433,6 +433,9 @@ rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 %endif
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
+rm -f $RPM_BUILD_ROOT/%{_perldir}/perllocal.pod
+rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/.packlist
+rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/autosplit.ix
 
 %if ! %{slurm_with blcr}
 # remove these if they exist
