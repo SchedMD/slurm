@@ -51,6 +51,7 @@
 
 static bool reverse_order;
 
+static int _sort_job_by_batch_host(void *void1, void *void2);
 static int _sort_job_by_gres(void *void1, void *void2);
 static int _sort_job_by_group_id(void *void1, void *void2);
 static int _sort_job_by_group_name(void *void1, void *void2);
@@ -107,7 +108,9 @@ void sort_job_list(List job_list)
 		if ((i > 0) && (params.sort[i-1] == '-'))
 			reverse_order = true;
 
-		if      (params.sort[i] == 'b')
+		if      (params.sort[i] == 'B')
+			list_sort(job_list, _sort_job_by_batch_host);
+		else if (params.sort[i] == 'b')
 			list_sort(job_list, _sort_job_by_gres);
 		else if (params.sort[i] == 'c')
 			;	/* sort_job_by_min_cpus_per_node */
@@ -222,6 +225,24 @@ void sort_step_list(List step_list)
 /*****************************************************************************
  * Local Job Sort Functions
  *****************************************************************************/
+static int _sort_job_by_batch_host(void *void1, void *void2)
+{
+	int diff;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
+	char *val1 = "", *val2 = "";
+
+	if (job1->batch_host)
+		val1 = job1->batch_host;
+	if (job2->batch_host)
+		val2 = job2->batch_host;
+	diff = strcmp(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
 static int _sort_job_by_gres(void *void1, void *void2)
 {
 	int diff;
