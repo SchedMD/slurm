@@ -220,6 +220,8 @@ typedef struct front_end_record {
 	uint16_t node_state;		/* enum node_states, ORed with
 					 * NODE_STATE_NO_RESPOND if not
 					 * responding */
+	bool not_responding;		/* set if fails to respond,
+					 * clear after logging this */
 	slurm_addr_t slurm_addr;	/* network address */
 	uint16_t port;			/* frontend specific port */
 	char *reason;			/* reason for down frontend node */

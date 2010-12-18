@@ -201,6 +201,8 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_PRI_DB_RES_OP;
 		ti.res_type = TRIGGER_RES_TYPE_DATABASE;
 	}
+	if (params.front_end)
+		ti.res_type = TRIGGER_RES_TYPE_FRONT_END;
 
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;
@@ -250,8 +252,10 @@ static int _get_trigger(void)
 				continue;
 		}
 		if (params.node_down) {
-			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE) ||
+			if (((trig_msg->trigger_array[i].res_type
+					!= TRIGGER_RES_TYPE_NODE) &&
+			     (trig_msg->trigger_array[i].res_type
+					!= TRIGGER_RES_TYPE_FRONT_END)) ||
 			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_DOWN))
 				continue;
@@ -283,8 +287,10 @@ static int _get_trigger(void)
 				continue;
 		}
 		if (params.node_up) {
-			if ((trig_msg->trigger_array[i].res_type
-					!= TRIGGER_RES_TYPE_NODE) ||
+			if (((trig_msg->trigger_array[i].res_type
+					!= TRIGGER_RES_TYPE_NODE) &&
+			     (trig_msg->trigger_array[i].res_type
+					!= TRIGGER_RES_TYPE_FRONT_END)) ||
 			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_UP))
 				continue;

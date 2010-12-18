@@ -1934,6 +1934,7 @@ typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
 #define TRIGGER_RES_TYPE_SLURMCTLD      0x0003
 #define TRIGGER_RES_TYPE_SLURMDBD       0x0004
 #define TRIGGER_RES_TYPE_DATABASE       0x0005
+#define TRIGGER_RES_TYPE_FRONT_END      0x0006
 #define TRIGGER_TYPE_UP                 0x00000001
 #define TRIGGER_TYPE_DOWN               0x00000002
 #define TRIGGER_TYPE_FAIL               0x00000004

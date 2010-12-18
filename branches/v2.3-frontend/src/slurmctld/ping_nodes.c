@@ -51,6 +51,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/read_config.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -130,7 +131,11 @@ void ping_nodes (void)
 	char *host_str = NULL;
 	agent_arg_t *ping_agent_args = NULL;
 	agent_arg_t *reg_agent_args = NULL;
-	struct node_record *node_ptr;
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr = NULL;
+#else
+	struct node_record *node_ptr = NULL;
+#endif
 
 	now = time (NULL);
 
@@ -153,12 +158,12 @@ void ping_nodes (void)
 	 * Because of this, we extend the SlurmdTimeout by the
 	 * time needed to complete a ping of all nodes.
 	 */
-	if ((slurmctld_conf.slurmd_timeout == 0)
-	||  (last_ping_time == (time_t) 0)) {
+	if ((slurmctld_conf.slurmd_timeout == 0) ||
+	    (last_ping_time == (time_t) 0)) {
 		node_dead_time = (time_t) 0;
 	} else {
 		node_dead_time = last_ping_time -
-				slurmctld_conf.slurmd_timeout;
+				 slurmctld_conf.slurmd_timeout;
 	}
 	still_live_time = now - (slurmctld_conf.slurmd_timeout / 3);
 	last_ping_time  = now;
@@ -171,6 +176,63 @@ void ping_nodes (void)
 	    (offset >= (max_reg_threads * MAX_REG_FREQUENCY)))
 		offset = 0;
 
+#ifdef HAVE_FRONT_END
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		if ((slurmctld_conf.slurmd_timeout == 0)	&&
+		    (!IS_NODE_UNKNOWN(front_end_ptr))	&&
+		    (!IS_NODE_NO_RESPOND(front_end_ptr)))
+			continue;
+
+		if ((front_end_ptr->last_response != (time_t) 0)     &&
+		    (front_end_ptr->last_response <= node_dead_time) &&
+		    (!IS_NODE_DOWN(front_end_ptr))) {
+			if (down_hostlist)
+				(void) hostlist_push_host(down_hostlist,
+					front_end_ptr->name);
+			else
+				down_hostlist =
+					hostlist_create(front_end_ptr->name);
+			set_front_end_down(front_end_ptr, "Not responding");
+			front_end_ptr->not_responding = false;
+			continue;
+		}
+
+		if (front_end_ptr->last_response == (time_t) 0) {
+			restart_flag = true;	/* system just restarted */
+			front_end_ptr->last_response =
+				slurmctld_conf.last_update;
+		} else
+			restart_flag = false;
+
+		/* Request a node registration if its state is UNKNOWN or
+		 * on a periodic basis (about every MAX_REG_FREQUENCY ping,
+		 * this mechanism avoids an additional (per node) timer or
+		 * counter and gets updated configuration information
+		 * once in a while). We limit these requests since they
+		 * can generate a flood of incoming RPCs. */
+		if (IS_NODE_UNKNOWN(front_end_ptr) || restart_flag ||
+		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
+			hostlist_push(reg_agent_args->hostlist,
+				      front_end_ptr->name);
+			reg_agent_args->node_count++;
+			continue;
+		}
+
+		if ((!IS_NODE_NO_RESPOND(front_end_ptr)) &&
+		    (front_end_ptr->last_response >= still_live_time))
+			continue;
+
+		/* Do not keep pinging down nodes since this can induce
+		 * huge delays in hierarchical communication fail-over */
+		if (IS_NODE_NO_RESPOND(front_end_ptr) &&
+		    IS_NODE_DOWN(front_end_ptr))
+			continue;
+
+		hostlist_push(ping_agent_args->hostlist, front_end_ptr->name);
+		ping_agent_args->node_count++;
+	}
+#else
 	for (i=0, node_ptr=node_record_table_ptr;
 	     i<node_record_count; i++, node_ptr++) {
 		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_POWER_SAVE(node_ptr))
@@ -200,11 +262,6 @@ void ping_nodes (void)
 		} else
 			restart_flag = false;
 
-#ifdef HAVE_FRONT_END		/* Operate only on front-end */
-		if (i > 0)
-			continue;
-#endif
-
 		/* Request a node registration if its state is UNKNOWN or
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping,
 		 * this mechanism avoids an additional (per node) timer or
@@ -231,6 +288,7 @@ void ping_nodes (void)
 		hostlist_push(ping_agent_args->hostlist, node_ptr->name);
 		ping_agent_args->node_count++;
 	}
+#endif
 
 	if (ping_agent_args->node_count == 0) {
 		hostlist_destroy(ping_agent_args->hostlist);

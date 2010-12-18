@@ -97,6 +97,15 @@ extern void purge_front_end_state(void);
 extern void restore_front_end_state(int recover);
 
 /*
+ * set_front_end_down - make the specified front end node's state DOWN and
+ *	kill jobs as needed
+ * IN front_end_pt - pointer to the front end node
+ * IN reason - why the node is DOWN
+ */
+extern void set_front_end_down (front_end_record_t *front_end_ptr,
+				char *reason);
+
+/*
  * Update front end node state
  * update_front_end_msg_ptr IN change specification
  * RET SLURM_SUCCESS or error code
