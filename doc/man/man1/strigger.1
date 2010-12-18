@@ -1,4 +1,4 @@
-.TH STRIGGER "1" "September 2010" "strigger 2.2" "Slurm components"
+.TH STRIGGER "1" "December 2010" "strigger 2.3" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -57,12 +57,12 @@ Trigger an event when the primary slurmctld resuming operation after failure.
 Trigger an event when primary slurmctld resumes control.
 
 .TP
-\fB\-B\fR, \fB\-\-backup_slurmctld_failure\fR
-Trigger an event when the backup slurmctld fails.
-
-.TP
 \fB\-\-block_err\fP
 Trigger an event when a BlueGene block enters an ERROR state.
+
+.TP
+\fB\-B\fR, \fB\-\-backup_slurmctld_failure\fR
+Trigger an event when the backup slurmctld fails.
 
 .TP
 \fB\-c\fR, \fB\-\-backup_slurmctld_resumed_operation\fR
@@ -83,7 +83,6 @@ be cleared.
 \fB\-d\fR, \fB\-\-down\fR
 Trigger an event if the specified node goes into a DOWN state.
 
-
 .TP
 \fB\-D\fR, \fB\-\-drained\fR
 Trigger an event if the specified node goes into a DRAINED state.
@@ -99,6 +98,13 @@ Trigger an event if the specified node goes into a FAILING state.
 .TP
 \fB\-f\fR, \fB\-\-fini\fR
 Trigger an event when the specified job completes execution.
+
+.TP
+\fB\-\-front_end\fR
+Trigger events based upon changes in state of front end nodes rather than
+compute nodes. Applies to BlueGene and Cray architectures only, where the
+slurmd daemon executes on front end nodes rather than the compute nodes.
+Use this option with either the \fB\-\-up\fR or \fB\-\-down\fR option.
 
 .TP
 \fB\-g\fR, \fB\-\-primary_slurmdbd_failure\fR

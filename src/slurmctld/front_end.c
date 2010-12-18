@@ -52,6 +52,7 @@
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 #include <src/slurmctld/state_save.h>
+#include <src/slurmctld/trigger_mgr.h>
 
 /* Change FRONT_END_STATE_VERSION value when changing the state save format */
 #define FRONT_END_STATE_VERSION      "VER001"
@@ -647,4 +648,30 @@ unpack_error:
 #else
 	return 0;
 #endif
+}
+
+/*
+ * set_front_end_down - make the specified front end node's state DOWN and
+ *	kill jobs as needed
+ * IN front_end_pt - pointer to the front end node
+ * IN reason - why the node is DOWN
+ */
+extern void set_front_end_down (front_end_record_t *front_end_ptr,
+				char *reason)
+{
+	time_t now = time(NULL);
+	uint16_t state_flags = front_end_ptr->node_state & NODE_STATE_FLAGS;
+
+	front_end_ptr->node_state = NODE_STATE_DOWN | state_flags;
+	trigger_front_end_down(front_end_ptr);
+//(void) kill_running_job_by_node_name(name);
+	if ((front_end_ptr->reason == NULL) ||
+	    (strncmp(front_end_ptr->reason, "Not responding", 14) == 0)) {
+		xfree(front_end_ptr->reason);
+		front_end_ptr->reason = xstrdup(reason);
+		front_end_ptr->reason_time = now;
+		front_end_ptr->reason_uid = slurm_get_slurm_user_id();
+	}
+
+	return;
 }

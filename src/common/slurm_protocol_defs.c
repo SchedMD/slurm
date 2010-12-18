@@ -1113,6 +1113,8 @@ char *trigger_res_type(uint16_t res_type)
 		return "slurmdbd";
 	else if (res_type == TRIGGER_RES_TYPE_DATABASE)
 		return "database";
+	else if (res_type == TRIGGER_RES_TYPE_FRONT_END)
+		return "front_end";
 	else
 		return "unknown";
 }

@@ -132,6 +132,9 @@ extern void allocate_nodes(struct job_record *job_ptr)
 
 	last_node_update = time(NULL);
 
+//FIXME: For testing purposes only, set with real node name later
+xfree(job_ptr->batch_host);
+job_ptr->batch_host = xstrdup("TESTING");
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i))
 			make_node_alloc(&node_record_table_ptr[i], job_ptr);
