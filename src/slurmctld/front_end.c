@@ -154,7 +154,6 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 	hostlist_t host_list;
 	front_end_record_t *front_end_ptr;
 	int i, rc = SLURM_SUCCESS;
-	uint16_t state_base;
 	time_t now = time(NULL);
 
 	if ((host_list = hostlist_create(msg_ptr->name)) == NULL) {
@@ -179,10 +178,8 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 				front_end_ptr->node_state &= NODE_STATE_FLAGS;
 				front_end_ptr->node_state |= NODE_STATE_DOWN;
 			}
-			state_base = front_end_ptr->node_state &
-				     NODE_STATE_BASE;
-			if ((front_end_ptr->node_state & NODE_STATE_DRAIN) ||
-			    (state_base == NODE_STATE_DOWN)) {
+			if (IS_NODE_DRAIN(front_end_ptr) ||
+			    IS_NODE_DOWN(front_end_ptr)) {
 				if (msg_ptr->reason) {
 					xfree(front_end_ptr->reason);
 					front_end_ptr->reason =
@@ -594,13 +591,11 @@ extern int load_all_front_end_state(bool state_only)
 			error("Front_end node %s has vanished from "
 			      "configuration", node_name);
 		} else if (state_only) {
-			uint16_t orig_base, orig_flags;
-			orig_base  = front_end_ptr->node_state &
-				     NODE_STATE_BASE;
+			uint16_t orig_flags;
 			orig_flags = front_end_ptr->node_state &
 				     NODE_STATE_FLAGS;
 			node_cnt++;
-			if (orig_base == NODE_STATE_UNKNOWN) {
+			if (IS_NODE_UNKNOWN(front_end_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					front_end_ptr->node_state =
 						NODE_STATE_DOWN | orig_flags;
