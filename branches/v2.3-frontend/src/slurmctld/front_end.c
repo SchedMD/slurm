@@ -664,7 +664,6 @@ extern void set_front_end_down (front_end_record_t *front_end_ptr,
 
 	front_end_ptr->node_state = NODE_STATE_DOWN | state_flags;
 	trigger_front_end_down(front_end_ptr);
-//(void) kill_running_job_by_node_name(name);
 	if ((front_end_ptr->reason == NULL) ||
 	    (strncmp(front_end_ptr->reason, "Not responding", 14) == 0)) {
 		xfree(front_end_ptr->reason);
