@@ -22,6 +22,8 @@ endif
 INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
+# This is needed if compiling on windows
+EXEEXT=
 
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
