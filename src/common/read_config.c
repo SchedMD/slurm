@@ -1229,7 +1229,6 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		hostname = hostlist_shift(hostname_list);
 		address = hostlist_shift(address_list);
 #endif
-
 		_push_to_hashtbls(alias, hostname, address, node_ptr->port,
 				  node_ptr->cpus, node_ptr->sockets,
 				  node_ptr->cores, node_ptr->threads);
@@ -1253,11 +1252,61 @@ cleanup:
 	return error_code;
 }
 
+static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
+{
+	hostlist_t hostname_list = NULL;
+	hostlist_t address_list = NULL;
+	char *hostname = NULL;
+	char *address = NULL;
+	int error_code = SLURM_SUCCESS;
+
+	if ((front_end_ptr->frontends == NULL) ||
+	    (front_end_ptr->frontends[0] == '\0'))
+		return -1;
+
+	if ((hostname_list = hostlist_create(front_end_ptr->frontends))
+	     == NULL) {
+		error("Unable to create FrontendNames list from %s",
+		      front_end_ptr->frontends);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((address_list = hostlist_create(front_end_ptr->addresses))
+	     == NULL) {
+		error("Unable to create FrontendAddr list from %s",
+		      front_end_ptr->addresses);
+		error_code = errno;
+		goto cleanup;
+	}
+	if (hostlist_count(address_list) != hostlist_count(hostname_list)) {
+		error("Node count mismatch between FrontendNames and "
+		      "FrontendAddr");
+		goto cleanup;
+	}
+
+	while ((hostname = hostlist_shift(hostname_list))) {
+		address = hostlist_shift(address_list);
+
+		_push_to_hashtbls(hostname, hostname, address,
+				  front_end_ptr->port, 0, 0, 0, 0);
+		free(hostname);
+		free(address);
+	}
+
+	/* free allocated storage */
+cleanup:
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (address_list)
+		hostlist_destroy(address_list);
+	return error_code;
+}
+
 static void _init_slurmd_nodehash(void)
 {
 	slurm_conf_node_t **ptr_array;
-	int count;
-	int i;
+	slurm_conf_frontend_t **ptr_front_end;
+	int count, i;
 
 	if (nodehash_initialized)
 		return;
@@ -1270,12 +1319,12 @@ static void _init_slurmd_nodehash(void)
 	}
 
 	count = slurm_conf_nodename_array(&ptr_array);
-	if (count == 0)
-		return;
-
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < count; i++)
 		_register_conf_node_aliases(ptr_array[i]);
-	}
+
+	count = slurm_conf_frontend_array(&ptr_front_end);
+	for (i = 0; i < count; i++)
+		_register_front_ends(ptr_front_end[i]);
 }
 
 /*
