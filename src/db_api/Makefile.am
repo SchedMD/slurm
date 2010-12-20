@@ -51,7 +51,8 @@ BUILT_SOURCES = $(VERSION_SCRIPT) libslurmdb.la
 # and libslurmdb in the same program because of extra symbols this is needed.
 # libslurmdb.o are for convenience, and it is not installed.
 noinst_PROGRAMS = libslurmdb.o
-
+# This is needed if compiling on windows
+EXEEXT=
 
 libslurmdb_la_SOURCES =	\
 	account_functions.c \
