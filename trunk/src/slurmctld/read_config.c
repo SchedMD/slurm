@@ -876,6 +876,12 @@ static int _restore_node_state(int recover,
 		power_save_mode = true;
 	slurm_conf_unlock();
 
+
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
+	     i++, node_ptr++) {
+		node_ptr->not_responding = true;
+	}
+
 	for (i=0, old_node_ptr=old_node_table_ptr; i<old_node_record_count;
 	     i++, old_node_ptr++) {
 		uint16_t drain_flag = false, down_flag = false;
@@ -883,6 +889,7 @@ static int _restore_node_state(int recover,
 		if (node_ptr == NULL)
 			continue;
 
+		node_ptr->not_responding = false;
 		if (IS_NODE_DOWN(node_ptr))
 			down_flag = true;
 		if (IS_NODE_DRAIN(node_ptr))
@@ -959,7 +966,27 @@ static int _restore_node_state(int recover,
 		hostset_ranged_string(hs, sizeof(node_names), node_names);
 		info("Cleared POWER_SAVE flag from nodes %s", node_names);
 		hostset_destroy(hs);
+		hs = NULL;
 	}
+
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
+	     i++, node_ptr++) {
+		if (!node_ptr->not_responding)
+			continue;
+		node_ptr->not_responding = false;
+		if (hs)
+			hostset_insert(hs, node_ptr->name);
+		else
+			hs = hostset_create(node_ptr->name);
+	}
+	if (hs) {
+		char node_names[128];
+		hostset_ranged_string(hs, sizeof(node_names), node_names);
+		error("Nodes added to configuration (%s)", node_names);
+		error("Reboot of all slurm daemons is recommended");
+		hostset_destroy(hs);
+	}
+
 	return rc;
 }
 
