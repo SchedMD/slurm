@@ -54,14 +54,23 @@ case "$host" in
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
 
+ac_have_windows=no
 dnl
-dnl add some flags for Solaris
+dnl add some flags for Solaris and cygwin
 dnl
 case "$host" in
+     	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined"
+		   ac_have_windows=yes
+		   AC_SUBST(HAVE_WINDOWS)
+		   ;;
 	*solaris*) CC="/usr/sfw/bin/gcc"
 		   CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
 		   LDFLAGS="$LDFLAGS -L/usr/sfw/lib"
+		   ;;
 esac
+
+AM_CONDITIONAL(HAVE_WINDOWS, test "x$ac_have_windows" = "xyes")
+AC_SUBST(HAVE_WINDOWS)
 
 dnl Checks for programs.
 dnl
