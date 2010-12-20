@@ -148,7 +148,11 @@ extern char *default_plugstack;
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"
 #endif
 #define DEFAULT_WAIT_TIME           0
-#define DEFAULT_TREE_WIDTH          50
+#ifdef HAVE_FRONT_END
+#  define DEFAULT_TREE_WIDTH        1
+#else
+#  define DEFAULT_TREE_WIDTH        50
+#endif
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
 #define DEFAULT_MAX_TASKS_PER_NODE  128
 
