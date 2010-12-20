@@ -60,6 +60,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -371,6 +372,12 @@ extern int schedule(uint32_t job_limit)
 		job_limit = def_job_limit;
 
 	lock_slurmctld(job_write_lock);
+	if (!avail_front_end()) {
+		unlock_slurmctld(job_write_lock);
+		debug("sched: schedule() returning, no front end nodes are "
+		       "available");
+		return SLURM_SUCCESS;
+	}
 	/* Avoid resource fragmentation if important */
 	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);

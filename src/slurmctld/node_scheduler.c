@@ -70,6 +70,7 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/basil_interface.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -132,6 +133,8 @@ extern void allocate_nodes(struct job_record *job_ptr)
 
 	last_node_update = time(NULL);
 
+	xfree(job_ptr->batch_host);
+	job_ptr->batch_host = xstrdup(assign_front_end());
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i))
 			make_node_alloc(&node_record_table_ptr[i], job_ptr);

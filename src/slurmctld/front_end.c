@@ -143,6 +143,52 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 #endif
 
 /*
+ * assign_front_end - assign a front end node for starting a job
+ * RET name of the front end node to use or NULL if none available
+ */
+extern char *assign_front_end(void)
+{
+#ifdef HAVE_FRONT_END
+	static int last_assigned = -1;
+	front_end_record_t *front_end_ptr;
+	int i;
+
+	for (i = 0; i < front_end_node_cnt; i++) {
+		last_assigned = (last_assigned + 1) % front_end_node_cnt;
+		front_end_ptr = front_end_nodes + last_assigned;
+		if (IS_NODE_DOWN(front_end_ptr) ||
+		    IS_NODE_NO_RESPOND(front_end_ptr))
+			continue;
+		return front_end_nodes[last_assigned].name;
+	}
+	fatal("assign_front_end: no available front end nodes found");
+#endif
+	return NULL;
+}
+
+/*
+ * avail_front_end - test if any front end nodes are available for starting job
+ */
+extern bool avail_front_end(void)
+{
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+	int i;
+
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		if (IS_NODE_DOWN(front_end_ptr) ||
+		    IS_NODE_NO_RESPOND(front_end_ptr))
+			continue;
+		return true;
+	}
+	return false;
+#else
+	return true;
+#endif
+}
+
+/*
  * Update front end node state
  * update_front_end_msg_ptr IN change specification
  * RET SLURM_SUCCESS or error code
