@@ -736,7 +736,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			}
 		}
 
-#if 1
+#ifdef HAVE_CRAY
 		if ((allocation_state == GRANTED) && (command_pid > -1)) {
 			int delay;
 			slurm_ctl_conf_t *cf;
