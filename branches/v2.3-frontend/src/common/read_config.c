@@ -1288,7 +1288,7 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 		address = hostlist_shift(address_list);
 
 		_push_to_hashtbls(hostname, hostname, address,
-				  front_end_ptr->port, 0, 0, 0, 0);
+				  front_end_ptr->port, 1, 1, 1, 1);
 		free(hostname);
 		free(address);
 	}
