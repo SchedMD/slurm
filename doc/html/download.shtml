@@ -63,6 +63,16 @@ OpenSSL may be used as an alternative to MUNGE for generation of digital signatu
 Download it from <a href="http://www.openssl.org/">http://www.openssl.org/</a>.</li>
 </ul><br>
 
+<li><b>DRMAA (Distributed Resource Management Application API)</b><br>
+<a href="http://apps.man.poznan.pl/trac/slurm-drmaa">PSNC DRMAA</a> for SLURM
+is an implementation of <a href="http://www.gridforum.org/">Open Grid Forum</a>
+<a href="http://www.drmaa.org/">DRMAA 1.0</a> (Distributed Resource Management Application API)
+<a href="http://www.ogf.org/documents/GFD.133.pdf">specification</a> for submission
+and control of jobs to <href="https://computing.llnl.gov/linux/slurm/">SLURM</a>.
+Using DRMAA, grid applications builders, portal developers and ISVs can use 
+the same high-level API to link their software with different cluster/resource
+management systems.</li><br>
+
 <li><b>Hostlist</b><br>
 A python program used for manipulation of SLURM hostlists including
 functions such as intersection and difference. Download the code from:<br>
@@ -194,6 +204,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 11 October 2010</p>
+<p style="text-align:center;">Last modified 20 December 2010</p>
 
 <!--#include virtual="footer.txt"-->
