@@ -41,6 +41,17 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+/*
+ * assign_front_end - assign a front end node for a starting job
+ * RET name of the front end node to use or NULL if none available
+ */
+extern char *assign_front_end(void);
+
+/*
+ * avail_front_end - test if any front end nodes are available for starting job
+ */
+extern bool avail_front_end(void);
+
 /* dump_all_front_end_state - save the state of all front_end nodes to file */
 extern int dump_all_front_end_state(void);
 
