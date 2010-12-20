@@ -57,6 +57,7 @@
 
 #include <stdarg.h>
 #include <ctype.h>
+#include <time.h>
 
 #include <slurm/slurm_errno.h>
 
