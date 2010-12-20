@@ -181,6 +181,11 @@ void batch_bind(batch_job_launch_msg_t *req)
 		slurm_cred_free_args(&arg);
 		return;
 	}
+	if ((sockets * cores) == 0) {
+		error("task/affinity: socket and core count both zero");
+		slurm_cred_free_args(&arg);
+		return;
+	}
 
 	num_cpus  = MIN((sockets * cores),
 			 (conf->sockets * conf->cores));
