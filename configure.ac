@@ -54,13 +54,12 @@ case "$host" in
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
 
-ac_have_windows=no
 dnl
 dnl add some flags for Solaris and cygwin
 dnl
 case "$host" in
      	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined"
-		   AC_DEFINE(HAVE_WINDOWS, 1, [Define to 1 if running on Windows system])
+		   PLUGIN_FLAGS="$PLUGIN_FLAGS $(top_builddir)/src/api/libslurmhelper.la"
 		   ;;
 	*solaris*) CC="/usr/sfw/bin/gcc"
 		   CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"

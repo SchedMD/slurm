@@ -323,9 +323,6 @@
 /* Define to 1 if you have the <values.h> header file. */
 #undef HAVE_VALUES_H
 
-/* Define to 1 if running on Windows system */
-#undef HAVE_WINDOWS
-
 /* Define to 1 if using XCPU for job launch */
 #undef HAVE_XCPU
 
