@@ -92,7 +92,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "on duplicate key update "
 			   "deleted=VALUES(deleted);",
 			   cluster_name, assoc_table,
-			   assoc_table, cluster_name);
+			   "assoc_table_old", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -156,7 +156,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, assoc_day_table,
-			   "assoc_day_usage_table",
+			   "assoc_day_usage_table_old",
 			   cluster_name, assoc_table);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" "
@@ -172,7 +172,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, assoc_hour_table,
-			   "assoc_hour_usage_table",
+			   "assoc_hour_usage_table_old",
 			   cluster_name, assoc_table);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" "
@@ -188,7 +188,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, assoc_month_table,
-			   "assoc_month_usage_table",
+			   "assoc_month_usage_table_old",
 			   cluster_name, assoc_table);
 		debug4("(%s:%d) query\n%s",
 		       THIS_FILE, __LINE__, query);
@@ -216,7 +216,7 @@ static void *_convert_cluster_tables(void *arg)
 			"time_start=VALUES(time_start), "
 			"time_end=VALUES(time_end);",
 			cluster_name, event_table,
-			"cluster_event_table", cluster_name);
+			"cluster_event_table_old", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -252,7 +252,7 @@ static void *_convert_cluster_tables(void *arg)
 			"time_start=VALUES(time_start), "
 			"time_end=VALUES(time_end);",
 			cluster_name, job_table,
-			job_table, cluster_name);
+			"job_table_old", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -275,7 +275,7 @@ static void *_convert_cluster_tables(void *arg)
 			"daily_rollup=VALUES(daily_rollup), "
 			"monthly_rollup=VALUES(monthly_rollup);",
 			cluster_name, last_ran_table,
-			last_ran_table);
+			"last_ran_table_old");
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -302,7 +302,7 @@ static void *_convert_cluster_tables(void *arg)
 			"time_start=VALUES(time_start), "
 			"time_end=VALUES(time_end);",
 			cluster_name, resv_table,
-			resv_table, cluster_name);
+			"resv_table_old", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -346,7 +346,7 @@ static void *_convert_cluster_tables(void *arg)
 			"time_start=VALUES(time_start), "
 			"time_end=VALUES(time_end);",
 			cluster_name, step_table,
-			step_table, cluster_name, job_table);
+			"step_table_old", cluster_name, job_table);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -369,7 +369,7 @@ static void *_convert_cluster_tables(void *arg)
 			"time_start=VALUES(time_start), "
 			"time_end=VALUES(time_end);",
 			cluster_name, suspend_table,
-			suspend_table, cluster_name, job_table);
+			"suspend_table_old", cluster_name, job_table);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -400,7 +400,7 @@ static void *_convert_cluster_tables(void *arg)
 			"deleted=VALUES(deleted), "
 			"time_start=VALUES(time_start);",
 			cluster_name, cluster_day_table,
-			"cluster_day_usage_table", cluster_name);
+			"cluster_day_usage_table_old", cluster_name);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, deleted, time_start, cpu_count, "
@@ -417,7 +417,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, cluster_hour_table,
-			   "cluster_hour_usage_table", cluster_name);
+			   "cluster_hour_usage_table_old", cluster_name);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, deleted, time_start, cpu_count, "
@@ -434,7 +434,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, cluster_month_table,
-			   "cluster_month_usage_table", cluster_name);
+			   "cluster_month_usage_table_old", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -459,7 +459,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "on duplicate key update "
 			   "deleted=VALUES(deleted);",
 			   cluster_name, wckey_table,
-			   wckey_table, cluster_name);
+			   "wckey_table_old", cluster_name);
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(&mysql_conn, query);
 		xfree(query);
@@ -484,7 +484,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, wckey_day_table,
-			   "wckey_day_usage_table",
+			   "wckey_day_usage_table_old",
 			   cluster_name, wckey_table);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" "
@@ -502,7 +502,8 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, wckey_hour_table,
-			   "wckey_hour_usage_table", cluster_name, wckey_table);
+			   "wckey_hour_usage_table_old",
+			   cluster_name, wckey_table);
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" "
 			   "(creation_time, "
@@ -519,7 +520,7 @@ static void *_convert_cluster_tables(void *arg)
 			   "deleted=VALUES(deleted), "
 			   "time_start=VALUES(time_start);",
 			   cluster_name, wckey_month_table,
-			   "wckey_month_usage_table",
+			   "wckey_month_usage_table_old",
 			   cluster_name, wckey_table);
 		debug4("(%s:%d) query\n%s",
 		       THIS_FILE, __LINE__, query);
@@ -1031,192 +1032,9 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	   && !steps && !suspends && !usage && !wckeys)
 		goto end_it;
 
-	slurm_mutex_init(&converted_lock);
-	pthread_cond_init(&converted_cond, NULL);
-
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
-	/* now convert to new form */
-	itr = list_iterator_create(as_mysql_cluster_list);
-	while((cluster_name = list_next(itr))) {
-		pthread_t convert_tid;
-		pthread_attr_t convert_attr;
-		slurm_attr_init(&convert_attr);
-		/* _convert_cluster_tables(cluster_name); */
-		if (pthread_create(&convert_tid, &convert_attr,
-				   _convert_cluster_tables,
-				   (void *)cluster_name))
-			fatal("pthread_create: %m");
-		slurm_attr_destroy(&convert_attr);
-	}
-	slurm_mutex_lock(&converted_lock);
-
-	/* This has to be done after the threads because of a locking
-	   issue on this table. */
-	list_iterator_reset(itr);
-	while((cluster_name = list_next(itr))) {
-		char *txn_ids = NULL;
-		if(assocs) {
-			/* Since there isn't a cluster name in the
-			   assoc usage tables we need to get all the ids from
-			   the assoc_table and query against that.  Since
-			   we can't use the new table yet just use the
-			   old one.  This is much faster than
-			   joining the 2 tables together
-			   surprisingly.  But we tested it so you
-			   wouldn't have to in the future ;).
-			*/
-			query = xstrdup_printf("select id from %s "
-					       "where cluster='%s'",
-					       assoc_table, cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(
-				     mysql_conn, query, 0))) {
-				xfree(query);
-				rc = SLURM_ERROR;
-				goto end_it;
-			}
-			xfree(query);
-
-			if(mysql_num_rows(result)) {
-				while((row = mysql_fetch_row(result))) {
-					if(txn_ids)
-						xstrcat(txn_ids, " || ");
-					else
-						xstrcat(txn_ids, "(");
-					xstrfmtcat(txn_ids,
-						   "(name like '%%id=%s %%' "
-						   "|| name like '%%id=%s)' "
-						   "|| name=%s)",
-						   row[0], row[0], row[0]);
-				}
-				xstrcat(txn_ids, ")");
-			}
-			mysql_free_result(result);
-			result = NULL;
-
-			if(txn_ids) {
-				query = xstrdup_printf(
-					"update %s set cluster='%s' where "
-					"(action= %d || action = %d "
-					"|| action = %d) && %s;",
-					txn_table, cluster_name,
-					DBD_ADD_ASSOCS, DBD_MODIFY_ASSOCS,
-					DBD_REMOVE_ASSOCS, txn_ids);
-				xfree(txn_ids);
-				debug4("(%s:%d) query\n%s",
-				     THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(mysql_conn, query);
-				xfree(query);
-				if(rc != SLURM_SUCCESS) {
-					error("Couldn't update assoc "
-					      "txn's correctly");
-					goto end_it;
-				}
-			}
-		}
-
-		if(wckeys) {
-			/* Since there isn't a cluster name in the
-			   wckey usage tables we need to get all the ids from
-			   the wckey_table query against that.  Since
-			   we can't use the new table yet just use the
-			   old one.  This is much faster than
-			   joining the 2 tables together
-			   surprisingly.  But we tested it so you
-			   wouldn't have to in the future ;).
-			*/
-			query = xstrdup_printf("select id from %s where "
-					       "cluster='%s'",
-					       wckey_table, cluster_name);
-			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-			if(!(result = mysql_db_query_ret(
-				     mysql_conn, query, 0))) {
-				xfree(query);
-				rc = SLURM_ERROR;
-				goto end_it;
-			}
-			xfree(query);
-
-			if(mysql_num_rows(result)) {
-				while((row = mysql_fetch_row(result))) {
-					if(txn_ids)
-						xstrcat(txn_ids, " || ");
-					else
-						xstrcat(txn_ids, "(");
-					xstrfmtcat(txn_ids,
-						   "(name like '%%id=%s %%' "
-						   "|| name like '%%id=%s)' "
-						   "|| name=%s)",
-						   row[0], row[0], row[0]);
-				}
-				xstrcat(txn_ids, ")");
-			}
-			mysql_free_result(result);
-			result = NULL;
-			if(txn_ids) {
-				query = xstrdup_printf(
-					"update %s set cluster='%s' where "
-					"(action= %d || action = %d "
-					"|| action = %d) && %s;",
-					txn_table, cluster_name,
-					DBD_ADD_WCKEYS, DBD_MODIFY_WCKEYS,
-					DBD_REMOVE_WCKEYS, txn_ids);
-				xfree(txn_ids);
-				debug4("(%s:%d) query\n%s",
-				     THIS_FILE, __LINE__, query);
-				rc = mysql_db_query(mysql_conn, query);
-				xfree(query);
-				if(rc != SLURM_SUCCESS) {
-					error("Couldn't update wckey "
-					      "txn's correctly");
-					goto end_it;
-				}
-			}
-		}
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-
-	/* Now make some sort of destinction as to what an id is. */
-	if(assocs) {
-		xstrfmtcat(query, "update %s set name=replace(name, 'id=', "
-			   "'id_assoc=') where (action = %d || action = %d);",
-			   txn_table, DBD_MODIFY_ASSOCS, DBD_REMOVE_ASSOCS);
-
-		xstrfmtcat(query,
-			   "update %s set name=concat('id_assoc=', name) "
-			   "where action = %d;",
-			   txn_table, DBD_ADD_ASSOCS);
-	}
-	if(wckeys) {
-		xstrfmtcat(query, "update %s set name=replace(name, 'id=', "
-			   "'id_wckey=') where (action = %d || action = %d);",
-			   txn_table, DBD_MODIFY_WCKEYS, DBD_REMOVE_WCKEYS);
-
-		xstrfmtcat(query,
-			   "update %s set name=concat('id_wckey=', name) "
-			   "where action = %d;",
-			   txn_table, DBD_ADD_WCKEYS);
-	}
-
-	if(query) {
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		if(rc != SLURM_SUCCESS) {
-			error("Couldn't replace id='s in txn table");
-			goto end_it;
-		}
-	}
-
-	while(converted < list_count(as_mysql_cluster_list)) {
-		pthread_cond_wait(&converted_cond, &converted_lock);
-		debug2("Got %d converted", converted);
-	}
-	slurm_mutex_unlock(&converted_lock);
-	debug2("Everything converted");
-	slurm_mutex_destroy(&converted_lock);
-	pthread_cond_destroy(&converted_cond);
-
+	/* Rename the old tables first so we don't have to worry about
+	   clusters actually named "cluster" or "wckey".
+	*/
 	if(assocs) {
 		if(!drop_query)
 			drop_query = xstrdup("drop table if exists ");
@@ -1383,6 +1201,192 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 			goto end_it;
 		}
 	}
+
+	slurm_mutex_init(&converted_lock);
+	pthread_cond_init(&converted_cond, NULL);
+
+	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	/* now convert to new form */
+	itr = list_iterator_create(as_mysql_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		pthread_t convert_tid;
+		pthread_attr_t convert_attr;
+		slurm_attr_init(&convert_attr);
+		/* _convert_cluster_tables(cluster_name); */
+		if (pthread_create(&convert_tid, &convert_attr,
+				   _convert_cluster_tables,
+				   (void *)cluster_name))
+			fatal("pthread_create: %m");
+		slurm_attr_destroy(&convert_attr);
+	}
+	slurm_mutex_lock(&converted_lock);
+
+	/* This has to be done after the threads because of a locking
+	   issue on this table. */
+	list_iterator_reset(itr);
+	while((cluster_name = list_next(itr))) {
+		char *txn_ids = NULL;
+		if(assocs) {
+			/* Since there isn't a cluster name in the
+			   assoc usage tables we need to get all the ids from
+			   the assoc_table and query against that.  Since
+			   we can't use the new table yet just use the
+			   old one.  This is much faster than
+			   joining the 2 tables together
+			   surprisingly.  But we tested it so you
+			   wouldn't have to in the future ;).
+			*/
+			query = xstrdup_printf("select id from %s "
+					       "where cluster='%s'",
+					       "assoc_table_old", cluster_name);
+			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn, query, 0))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			xfree(query);
+
+			if(mysql_num_rows(result)) {
+				while((row = mysql_fetch_row(result))) {
+					if(txn_ids)
+						xstrcat(txn_ids, " || ");
+					else
+						xstrcat(txn_ids, "(");
+					xstrfmtcat(txn_ids,
+						   "(name like '%%id=%s %%' "
+						   "|| name like '%%id=%s)' "
+						   "|| name=%s)",
+						   row[0], row[0], row[0]);
+				}
+				xstrcat(txn_ids, ")");
+			}
+			mysql_free_result(result);
+			result = NULL;
+
+			if(txn_ids) {
+				query = xstrdup_printf(
+					"update %s set cluster='%s' where "
+					"(action= %d || action = %d "
+					"|| action = %d) && %s;",
+					txn_table, cluster_name,
+					DBD_ADD_ASSOCS, DBD_MODIFY_ASSOCS,
+					DBD_REMOVE_ASSOCS, txn_ids);
+				xfree(txn_ids);
+				debug4("(%s:%d) query\n%s",
+				     THIS_FILE, __LINE__, query);
+				rc = mysql_db_query(mysql_conn, query);
+				xfree(query);
+				if(rc != SLURM_SUCCESS) {
+					error("Couldn't update assoc "
+					      "txn's correctly");
+					goto end_it;
+				}
+			}
+		}
+
+		if(wckeys) {
+			/* Since there isn't a cluster name in the
+			   wckey usage tables we need to get all the ids from
+			   the wckey_table query against that.  Since
+			   we can't use the new table yet just use the
+			   old one.  This is much faster than
+			   joining the 2 tables together
+			   surprisingly.  But we tested it so you
+			   wouldn't have to in the future ;).
+			*/
+			query = xstrdup_printf("select id from %s where "
+					       "cluster='%s'",
+					       "wckey_table_old", cluster_name);
+			debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn, query, 0))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			xfree(query);
+
+			if(mysql_num_rows(result)) {
+				while((row = mysql_fetch_row(result))) {
+					if(txn_ids)
+						xstrcat(txn_ids, " || ");
+					else
+						xstrcat(txn_ids, "(");
+					xstrfmtcat(txn_ids,
+						   "(name like '%%id=%s %%' "
+						   "|| name like '%%id=%s)' "
+						   "|| name=%s)",
+						   row[0], row[0], row[0]);
+				}
+				xstrcat(txn_ids, ")");
+			}
+			mysql_free_result(result);
+			result = NULL;
+			if(txn_ids) {
+				query = xstrdup_printf(
+					"update %s set cluster='%s' where "
+					"(action= %d || action = %d "
+					"|| action = %d) && %s;",
+					txn_table, cluster_name,
+					DBD_ADD_WCKEYS, DBD_MODIFY_WCKEYS,
+					DBD_REMOVE_WCKEYS, txn_ids);
+				xfree(txn_ids);
+				debug4("(%s:%d) query\n%s",
+				     THIS_FILE, __LINE__, query);
+				rc = mysql_db_query(mysql_conn, query);
+				xfree(query);
+				if(rc != SLURM_SUCCESS) {
+					error("Couldn't update wckey "
+					      "txn's correctly");
+					goto end_it;
+				}
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+
+	/* Now make some sort of destinction as to what an id is. */
+	if(assocs) {
+		xstrfmtcat(query, "update %s set name=replace(name, 'id=', "
+			   "'id_assoc=') where (action = %d || action = %d);",
+			   txn_table, DBD_MODIFY_ASSOCS, DBD_REMOVE_ASSOCS);
+
+		xstrfmtcat(query,
+			   "update %s set name=concat('id_assoc=', name) "
+			   "where action = %d;",
+			   txn_table, DBD_ADD_ASSOCS);
+	}
+	if(wckeys) {
+		xstrfmtcat(query, "update %s set name=replace(name, 'id=', "
+			   "'id_wckey=') where (action = %d || action = %d);",
+			   txn_table, DBD_MODIFY_WCKEYS, DBD_REMOVE_WCKEYS);
+
+		xstrfmtcat(query,
+			   "update %s set name=concat('id_wckey=', name) "
+			   "where action = %d;",
+			   txn_table, DBD_ADD_WCKEYS);
+	}
+
+	if(query) {
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't replace id='s in txn table");
+			goto end_it;
+		}
+	}
+
+	while(converted < list_count(as_mysql_cluster_list)) {
+		pthread_cond_wait(&converted_cond, &converted_lock);
+		debug2("Got %d converted", converted);
+	}
+	slurm_mutex_unlock(&converted_lock);
+	debug2("Everything converted");
+	slurm_mutex_destroy(&converted_lock);
+	pthread_cond_destroy(&converted_cond);
 
 end_it:
 	if(result)
