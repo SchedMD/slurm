@@ -402,8 +402,10 @@ int main(int argc, char *argv[])
 	 */
 	if (pid > 0) {
 		while ((rc_pid = waitpid(pid, &status, 0)) == -1) {
-			if (exit_flag)
-				break;
+			if (exit_flag) {
+				slurm_complete_job(alloc->job_id, status);
+				continue;
+			}
 			if (errno == EINTR)
 				continue;
 		}
