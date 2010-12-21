@@ -6,8 +6,6 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 
 if WITH_CYGWIN
-EXTRA_libslurmtot_la_SOURCES =
-else
 noinst_LTLIBRARIES = libslurmtot.la
 
 libslurmtot_la_SOURCES =
@@ -21,4 +19,6 @@ libslurmtot_la_LDFLAGS = $(LIB_LDFLAGS) $(OTHER_FLAGS)
 force:
 $(libslurmtot_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+else
+EXTRA_libslurmtot_la_SOURCES =
 endif
