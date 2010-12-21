@@ -1963,8 +1963,163 @@ extern int kill_job_by_part_name(char *part_name)
 	list_iterator_destroy(job_iterator);
 
 	if (job_count)
-		last_job_update = time(NULL);
+		last_job_update = now;
 	return job_count;
+}
+
+/*
+ * kill_job_by_front_end_name - Given a front end node name, deallocate
+ *	resource for its jobs and kill them.
+ * IN node_name - name of a front end node
+ * RET number of jobs associated with this front end node
+ */
+extern int kill_job_by_front_end_name(char *node_name)
+{
+#ifdef HAVE_FRONT_END
+	ListIterator job_iterator;
+	struct job_record  *job_ptr;
+	struct node_record *node_ptr;
+	time_t now = time(NULL);
+	int i, job_count = 0;
+
+	if (node_name == NULL)
+		fatal("kill_job_by_front_end_name: node_name is NULL");
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool suspended = false;
+
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr) &&
+		    !IS_JOB_COMPLETING(job_ptr))
+			continue;
+		if ((job_ptr->batch_host == NULL) ||
+		    strcmp(job_ptr->batch_host, node_name))
+			continue;	/* no match on node name */
+
+		if (IS_JOB_SUSPENDED(job_ptr)) {
+			enum job_states suspend_job_state = job_ptr->job_state;
+			/* we can't have it as suspended when we call the
+			 * accounting stuff.
+			 */
+			job_ptr->job_state = JOB_CANCELLED;
+			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+			job_ptr->job_state = suspend_job_state;
+			suspended = true;
+		}
+		if (IS_JOB_COMPLETING(job_ptr)) {
+			job_count++;
+			while ((i = bit_ffs(job_ptr->node_bitmap_cg)) >= 0) {
+				bit_clear(job_ptr->node_bitmap_cg, i);
+				job_update_cpu_cnt(job_ptr, i);
+				if (job_ptr->node_cnt)
+					(job_ptr->node_cnt)--;
+				else {
+					error("node_cnt underflow on JobId=%u",
+				   	      job_ptr->job_id);
+				}
+				if (job_ptr->node_cnt == 0) {
+					job_ptr->job_state &= (~JOB_COMPLETING);
+					delete_step_records(job_ptr, 0);
+					slurm_sched_schedule();
+				}
+				node_ptr = &node_record_table_ptr[i];
+				if (node_ptr->comp_job_cnt)
+					(node_ptr->comp_job_cnt)--;
+				else {
+					error("Node %s comp_job_cnt underflow, "
+					      "JobId=%u",
+					      node_ptr->name, job_ptr->job_id);
+				}
+			}
+		} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
+			job_count++;
+			if (job_ptr->batch_flag && job_ptr->details &&
+				   (job_ptr->details->requeue > 0)) {
+				char requeue_msg[128];
+
+				srun_node_fail(job_ptr->job_id, node_name);
+
+				info("requeue job %u due to failure of node %s",
+				     job_ptr->job_id, node_name);
+				_set_job_prio(job_ptr);
+				snprintf(requeue_msg, sizeof(requeue_msg),
+					 "Job requeued due to failure "
+					 "of node %s",
+					 node_name);
+				slurm_sched_requeue(job_ptr, requeue_msg);
+				job_ptr->time_last_active  = now;
+				if (suspended) {
+					job_ptr->end_time =
+						job_ptr->suspend_time;
+					job_ptr->tot_sus_time +=
+						difftime(now,
+							 job_ptr->
+							 suspend_time);
+				} else
+					job_ptr->end_time = now;
+
+				/* We want this job to look like it
+				 * was terminated in the accounting logs.
+				 * Set a new submit time so the restarted
+				 * job looks like a new job. */
+				job_ptr->job_state  = JOB_NODE_FAIL;
+				build_cg_bitmap(job_ptr);
+				deallocate_nodes(job_ptr, false, suspended);
+				job_completion_logger(job_ptr, true);
+				job_ptr->db_index = 0;
+				job_ptr->job_state = JOB_PENDING;
+				if (job_ptr->node_cnt)
+					job_ptr->job_state |= JOB_COMPLETING;
+				job_ptr->details->submit_time = now;
+
+				/* restart from periodic checkpoint */
+				if (job_ptr->ckpt_interval &&
+				    job_ptr->ckpt_time &&
+				    job_ptr->details->ckpt_dir) {
+					xfree(job_ptr->details->restart_dir);
+					job_ptr->details->restart_dir =
+						xstrdup (job_ptr->details->
+							 ckpt_dir);
+					xstrfmtcat(job_ptr->details->
+						   restart_dir,
+						   "/%u", job_ptr->job_id);
+				}
+				job_ptr->restart_cnt++;
+				/* Since the job completion logger
+				 * removes the submit we need to add it
+				 * again. */
+				acct_policy_add_job_submit(job_ptr);
+			} else {
+				info("Killing job_id %u on failed node %s",
+				     job_ptr->job_id, node_name);
+				srun_node_fail(job_ptr->job_id, node_name);
+				job_ptr->job_state = JOB_NODE_FAIL |
+						     JOB_COMPLETING;
+				build_cg_bitmap(job_ptr);
+				job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
+				job_ptr->state_reason = FAIL_DOWN_NODE;
+				xfree(job_ptr->state_desc);
+				if (suspended) {
+					job_ptr->end_time =
+						job_ptr->suspend_time;
+					job_ptr->tot_sus_time +=
+						difftime(now,
+							 job_ptr->suspend_time);
+				} else
+					job_ptr->end_time = now;
+				deallocate_nodes(job_ptr, false, suspended);
+				job_completion_logger(job_ptr, false);
+			}
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	if (job_count)
+		last_job_update = now;
+	return job_count;
+#else
+	return 0;
+#endif
 }
 
 /*
@@ -2012,9 +2167,10 @@ extern int kill_running_job_by_node_name(char *node_name)
 			job_update_cpu_cnt(job_ptr, bit_position);
 			if (job_ptr->node_cnt)
 				(job_ptr->node_cnt)--;
-			else
+			else {
 				error("node_cnt underflow on JobId=%u",
 			   	      job_ptr->job_id);
+			}
 			if (job_ptr->node_cnt == 0) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
 				delete_step_records(job_ptr, 0);
@@ -2022,10 +2178,11 @@ extern int kill_running_job_by_node_name(char *node_name)
 			}
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
-			else
+			else {
 				error("Node %s comp_job_cnt underflow, "
 				      "JobId=%u",
 				      node_ptr->name, job_ptr->job_id);
+			}
 		} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
 			job_count++;
 			if ((job_ptr->details) &&
@@ -2112,7 +2269,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 						difftime(now,
 							 job_ptr->suspend_time);
 				} else
-					job_ptr->end_time = time(NULL);
+					job_ptr->end_time = now;
 				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr, false);
 			}

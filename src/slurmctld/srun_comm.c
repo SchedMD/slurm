@@ -144,7 +144,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 {
 	struct node_record *node_ptr;
 	struct job_record *job_ptr = find_job_record (job_id);
-	int bit_position;
+	int bit_position = -1;
 	slurm_addr_t * addr;
 	srun_node_fail_msg_t *msg_arg;
 	ListIterator step_iterator;
@@ -155,13 +155,18 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 	if (!job_ptr || !IS_JOB_RUNNING(job_ptr))
 		return;
 
+#ifdef HAVE_FRONT_END
+	/* Purge all jobs steps in front end mode */
+#else
 	if (!node_name || (node_ptr = find_node_record(node_name)) == NULL)
 		return;
 	bit_position = node_ptr - node_record_table_ptr;
+#endif
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
-		if (!bit_test(step_ptr->step_node_bitmap, bit_position))
+		if ((bit_position >= 0) &&
+		    (!bit_test(step_ptr->step_node_bitmap, bit_position)))
 			continue;	/* job step not on this node */
 		if ( (step_ptr->port    == 0)    ||
 		     (step_ptr->host    == NULL) ||
