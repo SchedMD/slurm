@@ -234,7 +234,6 @@ PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -332,6 +331,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 @HAVE_FEDERATION_FALSE@federation_lib = 
 @HAVE_FEDERATION_TRUE@federation_lib = switch_federation.la
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = $(federation_lib)
 
