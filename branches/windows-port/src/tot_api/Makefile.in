@@ -83,16 +83,16 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-@WITH_CYGWIN_FALSE@libslurmtot_la_DEPENDENCIES =  \
-@WITH_CYGWIN_FALSE@	$(top_builddir)/src/common/libcommon.la \
-@WITH_CYGWIN_FALSE@	$(top_builddir)/src/slurmctld/libslurmctld.la \
-@WITH_CYGWIN_FALSE@	$(top_builddir)/src/slurmd/common/libslurmd_common.la
+@WITH_CYGWIN_TRUE@libslurmtot_la_DEPENDENCIES =  \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/common/libcommon.la \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmctld/libslurmctld.la \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmd/common/libslurmd_common.la
 am_libslurmtot_la_OBJECTS =
 libslurmtot_la_OBJECTS = $(am_libslurmtot_la_OBJECTS)
 libslurmtot_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libslurmtot_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_CYGWIN_FALSE@am_libslurmtot_la_rpath =
+@WITH_CYGWIN_TRUE@am_libslurmtot_la_rpath =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -300,14 +300,14 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-@WITH_CYGWIN_TRUE@EXTRA_libslurmtot_la_SOURCES = 
-@WITH_CYGWIN_FALSE@noinst_LTLIBRARIES = libslurmtot.la
-@WITH_CYGWIN_FALSE@libslurmtot_la_SOURCES = 
-@WITH_CYGWIN_FALSE@libslurmtot_la_LIBADD = $(top_builddir)/src/common/libcommon.la \
-@WITH_CYGWIN_FALSE@	$(top_builddir)/src/slurmctld/libslurmctld.la	\
-@WITH_CYGWIN_FALSE@	$(top_builddir)/src/slurmd/common/libslurmd_common.la
+@WITH_CYGWIN_TRUE@noinst_LTLIBRARIES = libslurmtot.la
+@WITH_CYGWIN_TRUE@libslurmtot_la_SOURCES = 
+@WITH_CYGWIN_TRUE@libslurmtot_la_LIBADD = $(top_builddir)/src/common/libcommon.la \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmctld/libslurmctld.la	\
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmd/common/libslurmd_common.la
 
-@WITH_CYGWIN_FALSE@libslurmtot_la_LDFLAGS = $(LIB_LDFLAGS) $(OTHER_FLAGS)
+@WITH_CYGWIN_TRUE@libslurmtot_la_LDFLAGS = $(LIB_LDFLAGS) $(OTHER_FLAGS)
+@WITH_CYGWIN_FALSE@EXTRA_libslurmtot_la_SOURCES = 
 all: all-am
 
 .SUFFIXES:
@@ -514,9 +514,9 @@ uninstall-am:
 	uninstall uninstall-am
 
 
-@WITH_CYGWIN_FALSE@force:
-@WITH_CYGWIN_FALSE@$(libslurmtot_la_LIBADD) : force
-@WITH_CYGWIN_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
+@WITH_CYGWIN_TRUE@force:
+@WITH_CYGWIN_TRUE@$(libslurmtot_la_LIBADD) : force
+@WITH_CYGWIN_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
