@@ -59,8 +59,8 @@ dnl add some flags for Solaris and cygwin
 dnl
 case "$host" in
      	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined"
-		   PLUGIN_FLAGS="$PLUGIN_FLAGS $(top_builddir)/src/api/libslurmhelper.la"
-		   AC_SUBST(PLUGIN_FLAGS)
+		   SO_LDFLAGS="$SO_LDFLAGS \$(top_builddir)/src/api/libslurmhelper.la"
+		   AC_SUBST(SO_LDFLAGS)
 		   ;;
 	*solaris*) CC="/usr/sfw/bin/gcc"
 		   CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
