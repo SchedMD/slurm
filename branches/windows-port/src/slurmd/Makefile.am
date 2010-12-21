@@ -1,2 +1,2 @@
 
-SUBDIRS = slurmd slurmstepd
+SUBDIRS = common slurmd slurmstepd

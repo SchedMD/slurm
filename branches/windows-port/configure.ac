@@ -375,6 +375,7 @@ AC_CONFIG_FILES([Makefile
 		 src/srun/Makefile
 		 src/srun_cr/Makefile
 		 src/slurmd/Makefile
+		 src/slurmd/common/Makefile
 		 src/slurmd/slurmd/Makefile
 		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile
