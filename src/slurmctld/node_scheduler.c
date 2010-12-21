@@ -163,6 +163,9 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
 	struct node_record *node_ptr;
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -186,6 +189,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 0;	/* re_kill_job() resends as needed */
 	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update    = time(NULL);
 	kill_job->job_id    = job_ptr->job_id;
@@ -201,9 +206,36 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
 
-	for (i=0, node_ptr=node_record_table_ptr;
+#ifdef HAVE_FRONT_END
+	if (job_ptr->batch_host &&
+	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
+		if (IS_NODE_DOWN(front_end_ptr)) {
+			/* Issue the KILL RPC, but don't verify response */
+			down_node_cnt++;
+			if (job_ptr->node_bitmap_cg == NULL) {
+				error("deallocate_nodes: node_bitmap_cg is "
+				      "not set");
+				/* Create empty node_bitmap_cg */
+				job_ptr->node_bitmap_cg =
+					bit_alloc(node_record_count);
+			}
+			job_ptr->cpu_cnt  = 0;
+			job_ptr->node_cnt = 0;
+		}
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			make_node_comp(node_ptr, job_ptr, suspended);
+		}
+
+		hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+		agent_args->node_count++;
+	}
+#else
+	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 		if (IS_NODE_DOWN(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
@@ -218,13 +250,13 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			job_ptr->node_cnt--;
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
-#ifdef HAVE_FRONT_END		/* Operate only on front-end */
+
 		if (agent_args->node_count > 0)
 			continue;
-#endif
 		hostlist_push(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
+#endif
 
 	if ((agent_args->node_count - down_node_cnt) == 0) {
 		job_ptr->job_state &= (~JOB_COMPLETING);
@@ -1948,16 +1980,26 @@ extern void re_kill_job(struct job_record *job_ptr)
 	int i;
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
-	hostlist_t kill_hostlist = hostlist_create("");
+	hostlist_t kill_hostlist;
 	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
+	struct node_record *node_ptr;
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 
+	kill_hostlist = hostlist_create("");
+	if (kill_hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
+
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_id    = job_ptr->job_id;
@@ -1972,8 +2014,37 @@ extern void re_kill_job(struct job_record *job_ptr)
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
 
+#ifdef HAVE_FRONT_END
+	if (job_ptr->batch_host &&
+	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
+		if (IS_NODE_DOWN(front_end_ptr)) {
+			for (i = 0, node_ptr = node_record_table_ptr;
+			     i < node_record_count; i++, node_ptr++) {
+				if (!bit_test(job_ptr->node_bitmap_cg, i))
+					continue;
+				bit_clear(job_ptr->node_bitmap_cg, i);
+				job_update_cpu_cnt(job_ptr, i);
+				if (node_ptr->comp_job_cnt)
+					(node_ptr->comp_job_cnt)--;
+				if ((job_ptr->node_cnt > 0) && 
+				    ((--job_ptr->node_cnt) == 0)) {
+					last_node_update = time(NULL);
+					job_ptr->job_state &= (~JOB_COMPLETING);
+					delete_step_records(job_ptr, 0);
+					slurm_sched_schedule();
+				}
+			}
+		} else if (!IS_NODE_NO_RESPOND(front_end_ptr)) {
+			(void) hostlist_push_host(kill_hostlist,
+						  job_ptr->batch_host);
+			hostlist_push(agent_args->hostlist,
+				      job_ptr->batch_host);
+			agent_args->node_count++;
+		}
+	}
+#else
 	for (i = 0; i < node_record_count; i++) {
-		struct node_record *node_ptr = &node_record_table_ptr[i];
+		node_ptr = &node_record_table_ptr[i];
 		if ((job_ptr->node_bitmap_cg == NULL) ||
 		    (bit_test(job_ptr->node_bitmap_cg, i) == 0))
 			continue;
@@ -1984,7 +2055,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 			job_update_cpu_cnt(job_ptr, i);
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
-			if ((--job_ptr->node_cnt) == 0) {
+			if ((job_ptr->node_cnt > 0) && 
+			    ((--job_ptr->node_cnt) == 0)) {
 				last_node_update = time(NULL);
 				job_ptr->job_state &= (~JOB_COMPLETING);
 				delete_step_records(job_ptr, 0);
@@ -1995,17 +2067,14 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_NO_RESPOND(node_ptr))
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
-#ifdef HAVE_FRONT_END		/* Operate only on front-end */
-		if (agent_args->node_count > 0)
-			continue;
-#endif
 		hostlist_push(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
+#endif
 
 	if (agent_args->node_count == 0) {
 		slurm_free_kill_job_msg(kill_job);
-		if(agent_args->hostlist)
+		if (agent_args->hostlist)
 			hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		hostlist_destroy(kill_hostlist);
