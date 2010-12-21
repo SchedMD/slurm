@@ -221,8 +221,8 @@ static void _state_time_string(char **extra, uint32_t state,
 			if(!end) {
 				xstrfmtcat(*extra,
 					   "(t1.time_eligible && "
-					   "(!t1.time_start || (%d between "
-					   "t1.time_eligible "
+					   "((!t1.time_start && !t1.time_end) "
+					   "|| (%d between t1.time_eligible "
 					   "and t1.time_start)))",
 					   start);
 			} else {

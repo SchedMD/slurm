@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     overlapping a block with no job running on it but in configuring state.
  -- BLUEGENE - Speedup by skipping blocks that are deallocating for other jobs
     when starting overlapping jobs in dynamic mode.
+ -- Fix for sacct --state to work correctly when not specifying a start time.
 
 * Changes in SLURM 2.2.0.rc4
 ============================
