@@ -163,9 +163,17 @@ int main(int argc, char *argv[])
 
 	is_interactive = isatty(STDIN_FILENO);
 	if (is_interactive) {
+		bool sent_msg = false;
 		/* Wait as long as we are running in the background */
-		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp()))
+		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp())) {
+			if (!sent_msg) {
+				error("Waiting for %s to be placed in the "
+				      "foreground", argv[0]);
+				sent_msg = true;
+			}
 			killpg(pid, SIGTTIN);
+		}
+
 		/*
 		 * Save tty attributes and reset at exit, in case a child
 		 * process died before properly resetting terminal.
@@ -769,14 +777,19 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 		 */
 		if ((command_pid > -1) &&
 		    (waitpid(command_pid, NULL, WNOHANG) == 0)) {
-			int signal = SIGTERM;
-#if !defined(HAVE_CRAY)
+			int signal = 0;
+#if defined(HAVE_CRAY)
+			signal = SIGTERM;
+#else
 			if (opt.kill_command_signal_set)
 				signal = opt.kill_command_signal;
 #endif
-			 verbose("Sending signal %d to command \"%s\", pid %d",
-				 signal, command_argv[0], command_pid);
-			_forward_signal(signal);
+			if (signal) {
+				 verbose("Sending signal %d to command \"%s\","
+					 " pid %d",
+					 signal, command_argv[0], command_pid);
+				_forward_signal(signal);
+			}
 		}
 	} else {
 		verbose("Job step %u.%u is finished.",
