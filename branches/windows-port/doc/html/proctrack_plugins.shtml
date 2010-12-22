@@ -70,10 +70,10 @@ Successful API calls are not required to reset errno to a known value.</p>
 <p>The following functions must appear. Functions which are not implemented should
 be stubbed.</p>
 
-<p class="commandline">int slurm_container_create (slurmd_job_t *job);</p>
+<p class="commandline">int slurm_container_plugin_create (slurmd_job_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: Create a container.
 The container should be valid
-<span class="commandline">slurm_container_destroy()</span> is called.
+<span class="commandline">slurm_container_plugin_destroy()</span> is called.
 This function must put the container ID directory in the job structure's
 variable <i>cont_id</i>.</p>
 <p style="margin-left:.2in"><b>Argument</b>:
@@ -83,7 +83,7 @@ Pointer to a slurmd job structure.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_container_add (slurmd_job_t *job, pid_t pid);</p>
+<p class="commandline">int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid);</p>
 <p style="margin-left:.2in"><b>Description</b>: Add a specific process ID
 to a given job's container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -95,7 +95,7 @@ The ID of the process to add to this job's container.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_container_signal (uint32_t id, int signal);</p>
+<p class="commandline">int slurm_container_plugin_signal (uint32_t id, int signal);</p>
 <p style="margin-left:.2in"><b>Description</b>: Signal all processes in a given
 job's container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -111,7 +111,7 @@ its errno to an appropriate value to indicate the reason for failure.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p class="commandline">int slurm_container_destroy (uint32_t id);</p>
+<p class="commandline">int slurm_container_plugin_destroy (uint32_t id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Destroy or  otherwise
 invalidate a job container.
 This does not imply the container is empty, just that it is no longer
@@ -123,7 +123,7 @@ Job container's ID.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">uint32_t slurm_container_find (pid_t pid);</p>
+<p class="commandline">uint32_t slurm_container_plugin_find (pid_t pid);</p>
 <p style="margin-left:.2in"><b>Description</b>:
 Given a process ID, return its job container ID.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -131,6 +131,19 @@ Given a process ID, return its job container ID.</p>
 A process ID.</p>
 <p style="margin-left:.2in"><b>Returns</b>: The job container ID
 with this process or zero if none is found.</p>
+
+<p class="commandline">uint32_t slurm_container_plugin_get_pids (uint32_t cont_id, pid_t **pids, int *npids);</p>
+<p style="margin-left:.2in"><b>Description</b>:
+Given a process container ID, fill in all the process IDs in the container.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> cont_id</span>&nbsp; &nbsp;&nbsp;(input)
+A container ID.</p>
+<span class="commandline"> pids</span>&nbsp; &nbsp;&nbsp;(output)
+Array of process IDs in the container.</p>
+<span class="commandline"> npids</span>&nbsp; &nbsp;&nbsp;(output)
+Count of process IDs in the container.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if
+  successful, SLURM_ERROR else.</p>
 
 <h2>Versioning</h2>
 <p> This document describes version 0 of the SLURM Process Tracking API.
@@ -140,6 +153,6 @@ mechanism outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 June 2006</p>
+<p style="text-align:center;">Last modified 22 Dec 2010</p>
 
 <!--#include virtual="footer.txt"-->

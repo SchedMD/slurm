@@ -81,14 +81,14 @@ extern int fini (void)
 
 /*
  * When proctrack/rms is used in conjunction with switch/elan,
- * slurm_container_create will not normally create the program description.
- * It just retrieves the prgid created in switch/elan.
+ * slurm_container_plugin_create will not normally create the program
+ * description.  It just retrieves the prgid created in switch/elan.
  *
  * When the program description cannot be retrieved (switch/elan is not
  * being used, the job step is a batch script, etc.) then rms_prgcreate()
  * is called here.
  */
-extern int slurm_container_create (slurmd_job_t *job)
+extern int slurm_container_plugin_create (slurmd_job_t *job)
 {
 	int prgid;
 	/*
@@ -111,17 +111,17 @@ extern int slurm_container_create (slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_add (slurmd_job_t *job, pid_t pid)
+extern int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
 {
 	return SLURM_SUCCESS;
 }
 
 /*
- * slurm_container_signal assumes that the slurmd jobstep manager
+ * slurm_container_plugin_signal assumes that the slurmd jobstep manager
  * is always the last process in the rms program description.
  * No signals are sent to the last process.
  */
-extern int slurm_container_signal  (uint32_t id, int signal)
+extern int slurm_container_plugin_signal  (uint32_t id, int signal)
 {
 	pid_t *pids;
 	int nids = 0;
@@ -165,20 +165,20 @@ extern int slurm_container_signal  (uint32_t id, int signal)
  * returns SLURM_SUCCESS when the program description contains one and
  * only one process, assumed to be the slurmd jobstep manager.
  */
-extern int slurm_container_destroy (uint32_t id)
+extern int slurm_container_plugin_destroy (uint32_t id)
 {
 	debug2("proctrack/rms: destroying container %u", id);
 	if (id == 0)
 		return SLURM_SUCCESS;
 
-	if (slurm_container_signal(id, 0) == -1)
+	if (slurm_container_plugin_signal(id, 0) == -1)
 		return SLURM_SUCCESS;
 
 	return SLURM_ERROR;
 }
 
 
-extern uint32_t slurm_container_find (pid_t pid)
+extern uint32_t slurm_container_plugin_find (pid_t pid)
 {
 	int prgid = 0;
 
@@ -187,7 +187,7 @@ extern uint32_t slurm_container_find (pid_t pid)
 	return (uint32_t) prgid;
 }
 
-extern bool slurm_container_has_pid (uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid (uint32_t cont_id, pid_t pid)
 {
 	int prgid = 0;
 
@@ -200,7 +200,7 @@ extern bool slurm_container_has_pid (uint32_t cont_id, pid_t pid)
 }
 
 extern int
-slurm_container_wait(uint32_t cont_id)
+slurm_container_plugin_wait(uint32_t cont_id)
 {
 	int delay = 1;
 
@@ -210,8 +210,8 @@ slurm_container_wait(uint32_t cont_id)
 	}
 
 	/* Spin until the container is empty */
-	while (slurm_container_signal(cont_id, 0) != -1) {
-		slurm_container_signal(cont_id, SIGKILL);
+	while (slurm_container_plugin_signal(cont_id, 0) != -1) {
+		slurm_container_plugin_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
@@ -229,7 +229,7 @@ slurm_container_wait(uint32_t cont_id)
  * the slurmstepd in the list of pids that we return.
  */
 extern int
-slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 {
 	pid_t *p;
 	int np;
