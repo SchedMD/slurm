@@ -98,8 +98,8 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	basil_resv_conf.c basil_resv_conf.h xmalloc.c xmalloc.h \
 	xassert.c xassert.h xstring.c xstring.h xsignal.c xsignal.h \
 	forward.c forward.h strlcpy.c strlcpy.h list.c list.h net.c \
-	net.h fd.c fd.h log.c log.h cbuf.c cbuf.h safeopen.c \
-	safeopen.h bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
+	net.h log.c log.h cbuf.c cbuf.h safeopen.c safeopen.h \
+	bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
 	parse_config.c parse_config.h parse_spec.c parse_spec.h \
 	plugin.c plugin.h plugrack.c plugrack.h print_fields.c \
 	print_fields.h read_config.c read_config.h node_select.c \
@@ -133,8 +133,8 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo forward.lo strlcpy.lo list.lo \
-	net.lo fd.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo \
-	pack.lo parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
+	net.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
+	parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
 	print_fields.lo read_config.lo node_select.lo env.lo \
 	slurm_cred.lo slurm_errno.lo slurm_priority.lo \
 	slurm_protocol_api.lo slurm_protocol_pack.lo \
@@ -414,7 +414,6 @@ libcommon_la_SOURCES = \
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	net.c net.h                     \
-	fd.c fd.h			\
 	log.c log.h			\
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\

@@ -84,7 +84,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 @WITH_CYGWIN_TRUE@libslurmtot_la_DEPENDENCIES =  \
-@WITH_CYGWIN_TRUE@	$(top_builddir)/src/common/libcommon.la \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/api/libslurmhelper.la \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/common/libdaemonize.la \
 @WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmctld/libslurmctld.la \
 @WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmd/common/libslurmd_common.la
 am_libslurmtot_la_OBJECTS =
@@ -302,8 +303,9 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 @WITH_CYGWIN_TRUE@noinst_LTLIBRARIES = libslurmtot.la
 @WITH_CYGWIN_TRUE@libslurmtot_la_SOURCES = 
-@WITH_CYGWIN_TRUE@libslurmtot_la_LIBADD = $(top_builddir)/src/common/libcommon.la \
-@WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmctld/libslurmctld.la	\
+@WITH_CYGWIN_TRUE@libslurmtot_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/common/libdaemonize.la \
+@WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmctld/libslurmctld.la \
 @WITH_CYGWIN_TRUE@	$(top_builddir)/src/slurmd/common/libslurmd_common.la
 
 @WITH_CYGWIN_TRUE@libslurmtot_la_LDFLAGS = $(LIB_LDFLAGS) $(OTHER_FLAGS)
