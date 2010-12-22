@@ -207,7 +207,6 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 /*****************************************************************************\
  *  FRONT_END parameters and data structures
 \*****************************************************************************/
-#ifdef HAVE_FRONT_END
 #define FRONT_END_MAGIC 0xfe9b82fe
 
 typedef struct front_end_record {
@@ -236,7 +235,6 @@ extern front_end_record_t *front_end_nodes;
 extern uint16_t front_end_node_cnt;
 extern time_t last_front_end_update;	/* time of last front_end update */
 
-#endif
 /*****************************************************************************\
  *  PARTITION parameters and data structures
 \*****************************************************************************/

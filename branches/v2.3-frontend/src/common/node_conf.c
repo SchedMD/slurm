@@ -464,6 +464,7 @@ static int _list_find_feature (void *feature_entry, void *key)
 	return 0;
 }
 
+#ifdef HAVE_FRONT_END
 /* Log the contents of a frontend record */
 static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
 {
@@ -471,6 +472,7 @@ static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
 	     fe_ptr->frontends, fe_ptr->addresses,
 	     fe_ptr->port, fe_ptr->node_state, fe_ptr->reason);
 }
+#endif
 
 /*
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
@@ -479,8 +481,8 @@ static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
  */
 extern int build_all_frontend_info (void)
 {
-#ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t **ptr_array;
+#ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t *fe_single, *fe_line;
 	int i, count, max_rc = SLURM_SUCCESS;
 	bool front_end_debug;

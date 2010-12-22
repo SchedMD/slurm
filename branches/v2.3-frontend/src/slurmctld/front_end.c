@@ -58,11 +58,11 @@
 #define FRONT_END_STATE_VERSION      "VER001"
 #define FRONT_END_2_2_STATE_VERSION  "VER001"	/* SLURM version 2.2 */
 
-#ifdef HAVE_FRONT_END
 front_end_record_t *front_end_nodes = NULL;
 uint16_t front_end_node_cnt = 0;
 time_t last_front_end_update = (time_t) 0;
 
+#ifdef HAVE_FRONT_END
 /*
  * _dump_front_end_state - dump state of a specific front_end node to a buffer
  * IN front_end_ptr - pointer to node for which information is requested
@@ -252,6 +252,8 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 	hostlist_destroy(host_list);
 
 	return rc;
+#else
+	return SLURM_SUCCESS;
 #endif
 }
 
@@ -537,6 +539,8 @@ extern int dump_all_front_end_state(void)
 	free_buf (buffer);
 	END_TIMER2("dump_all_front_end_state");
 	return error_code;
+#else
+	return SLURM_SUCCESS;
 #endif
 }
 

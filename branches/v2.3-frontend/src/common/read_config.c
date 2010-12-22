@@ -1412,13 +1412,13 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	while (p) {
 		if (strcmp(p->hostname, node_hostname) == 0) {
 			alias = xstrdup(p->alias);
-			break
+			break;
 		}
 		p = p->next_hostname;
 	}
 	slurm_conf_unlock();
 
-	return alias
+	return alias;
 #endif
 }
 
