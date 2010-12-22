@@ -21,7 +21,7 @@ endif
 
 INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES)
 
-noinst_PROGRAMS = libcommon.o libeio.o libfd.o libspank.o
+noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 # This is needed if compiling on windows
 EXEEXT=
 
@@ -29,7 +29,6 @@ noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
 	libdaemonize.la 		\
 	libeio.la  			\
-	libfd.la 			\
 	libspank.la
 
 libcommon_la_SOURCES = 			\
@@ -57,6 +56,7 @@ libcommon_la_SOURCES = 			\
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
 	env.c env.h      		\
+	fd.c fd.h       		\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
@@ -121,9 +121,6 @@ libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\
 	daemonize.h
 
-libfd_la_SOURCES =  		\
-	fd.c fd.h
-
 libeio_la_SOURCES = 	   		\
 	eio.c eio.h	   		\
 	io_hdr.c io_hdr.h
@@ -141,12 +138,6 @@ libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 libcommon_o_SOURCES =
 libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_la_OBJECTS)
-
-# This was made so we could export all symbols from libcommon
-# on multiple platforms
-libfd_o_SOURCES =
-libfd.o :  $(libfd_la_OBJECTS) $(libfd_la_DEPENDENCIES)
-	$(LINK)  $(libfd_la_OBJECTS)
 
 # This was made so we could export all symbols from libeio
 # on multiple platforms

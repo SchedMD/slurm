@@ -47,7 +47,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 noinst_PROGRAMS = libcommon.o$(EXEEXT) libeio.o$(EXEEXT) \
-	libfd.o$(EXEEXT) libspank.o$(EXEEXT)
+	libspank.o$(EXEEXT)
 subdir = src/common
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -103,7 +103,7 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	parse_config.c parse_config.h parse_spec.c parse_spec.h \
 	plugin.c plugin.h plugrack.c plugrack.h print_fields.c \
 	print_fields.h read_config.c read_config.h node_select.c \
-	node_select.h env.c env.h slurm_cred.h slurm_cred.c \
+	node_select.h env.c env.h fd.c fd.h slurm_cred.h slurm_cred.c \
 	slurm_errno.c slurm_priority.c slurm_priority.h \
 	slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
@@ -135,7 +135,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo forward.lo strlcpy.lo list.lo \
 	net.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
 	parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
-	print_fields.lo read_config.lo node_select.lo env.lo \
+	print_fields.lo read_config.lo node_select.lo env.lo fd.lo \
 	slurm_cred.lo slurm_errno.lo slurm_priority.lo \
 	slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
@@ -161,9 +161,6 @@ libdaemonize_la_OBJECTS = $(am_libdaemonize_la_OBJECTS)
 libeio_la_LIBADD =
 am_libeio_la_OBJECTS = eio.lo io_hdr.lo
 libeio_la_OBJECTS = $(am_libeio_la_OBJECTS)
-libfd_la_LIBADD =
-am_libfd_la_OBJECTS = fd.lo
-libfd_la_OBJECTS = $(am_libfd_la_OBJECTS)
 libspank_la_LIBADD =
 am_libspank_la_OBJECTS = plugstack.lo optz.lo
 libspank_la_OBJECTS = $(am_libspank_la_OBJECTS)
@@ -174,9 +171,6 @@ libcommon_o_LDADD = $(LDADD)
 am_libeio_o_OBJECTS =
 libeio_o_OBJECTS = $(am_libeio_o_OBJECTS)
 libeio_o_LDADD = $(LDADD)
-am_libfd_o_OBJECTS =
-libfd_o_OBJECTS = $(am_libfd_o_OBJECTS)
-libfd_o_LDADD = $(LDADD)
 am_libspank_o_OBJECTS =
 libspank_o_OBJECTS = $(am_libspank_o_OBJECTS)
 libspank_o_LDADD = $(LDADD)
@@ -195,15 +189,13 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libfd_la_SOURCES) $(libspank_la_SOURCES) \
-	$(libcommon_o_SOURCES) $(libeio_o_SOURCES) $(libfd_o_SOURCES) \
-	$(libspank_o_SOURCES)
+	$(libspank_la_SOURCES) $(libcommon_o_SOURCES) \
+	$(libeio_o_SOURCES) $(libspank_o_SOURCES)
 DIST_SOURCES = $(am__libcommon_la_SOURCES_DIST) \
 	$(am__EXTRA_libcommon_la_SOURCES_DIST) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libfd_la_SOURCES) $(libspank_la_SOURCES) \
-	$(libcommon_o_SOURCES) $(libeio_o_SOURCES) $(libfd_o_SOURCES) \
-	$(libspank_o_SOURCES)
+	$(libspank_la_SOURCES) $(libcommon_o_SOURCES) \
+	$(libeio_o_SOURCES) $(libspank_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -409,7 +401,6 @@ noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
 	libeio.la  			\
-	libfd.la 			\
 	libspank.la
 
 libcommon_la_SOURCES = \
@@ -437,6 +428,7 @@ libcommon_la_SOURCES = \
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
 	env.c env.h      		\
+	fd.c fd.h       		\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
@@ -501,9 +493,6 @@ libdaemonize_la_SOURCES = \
 	daemonize.c       	 	\
 	daemonize.h
 
-libfd_la_SOURCES = \
-	fd.c fd.h
-
 libeio_la_SOURCES = \
 	eio.c eio.h	   		\
 	io_hdr.c io_hdr.h
@@ -518,10 +507,6 @@ libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
 libcommon_o_SOURCES = 
-
-# This was made so we could export all symbols from libcommon
-# on multiple platforms
-libfd_o_SOURCES = 
 
 # This was made so we could export all symbols from libeio
 # on multiple platforms
@@ -579,8 +564,6 @@ libdaemonize.la: $(libdaemonize_la_OBJECTS) $(libdaemonize_la_DEPENDENCIES)
 	$(LINK)  $(libdaemonize_la_OBJECTS) $(libdaemonize_la_LIBADD) $(LIBS)
 libeio.la: $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES) 
 	$(LINK)  $(libeio_la_OBJECTS) $(libeio_la_LIBADD) $(LIBS)
-libfd.la: $(libfd_la_OBJECTS) $(libfd_la_DEPENDENCIES) 
-	$(LINK)  $(libfd_la_OBJECTS) $(libfd_la_LIBADD) $(LIBS)
 libspank.la: $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES) 
 	$(LINK)  $(libspank_la_OBJECTS) $(libspank_la_LIBADD) $(LIBS)
 
@@ -900,8 +883,6 @@ uninstall-am:
 
 libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_la_OBJECTS)
-libfd.o :  $(libfd_la_OBJECTS) $(libfd_la_DEPENDENCIES)
-	$(LINK)  $(libfd_la_OBJECTS)
 libeio.o :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)
 	$(LINK)  $(libeio_la_OBJECTS)
 libspank.o :  $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES)
