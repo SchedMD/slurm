@@ -136,8 +136,12 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	xfree(job_ptr->batch_host);
 	job_ptr->batch_host = xstrdup(assign_front_end());
 	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job_ptr->node_bitmap, i))
-			make_node_alloc(&node_record_table_ptr[i], job_ptr);
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		make_node_alloc(&node_record_table_ptr[i], job_ptr);
+		if (job_ptr->batch_host)
+			continue;
+		job_ptr->batch_host = xstrdup(node_record_table_ptr[i].name);
 	}
 
 	license_job_get(job_ptr);
