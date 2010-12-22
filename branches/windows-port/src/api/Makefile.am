@@ -112,6 +112,7 @@ slurmapi_add = 			 \
 	$(common_dir)/libcommon.la	\
 	$(common_dir)/libspank.la      	\
 	$(common_dir)/libeio.la		\
+	$(common_dir)/libfd.la		\
 	-lpthread
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
@@ -147,7 +148,8 @@ libslurm_o_SOURCES =
 
 libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libspank.o	\
-	$(top_builddir)/src/common/libcommon.o
+	$(top_builddir)/src/common/libcommon.o  \
+	$(top_builddir)/src/common/libfd.o
 
 libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)

@@ -47,7 +47,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 noinst_PROGRAMS = libcommon.o$(EXEEXT) libeio.o$(EXEEXT) \
-	libspank.o$(EXEEXT)
+	libfd.o$(EXEEXT) libspank.o$(EXEEXT)
 subdir = src/common
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -156,11 +156,14 @@ libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libcommon_la_LDFLAGS) $(LDFLAGS) -o $@
 libdaemonize_la_LIBADD =
-am_libdaemonize_la_OBJECTS = daemonize.lo fd.lo
+am_libdaemonize_la_OBJECTS = daemonize.lo
 libdaemonize_la_OBJECTS = $(am_libdaemonize_la_OBJECTS)
 libeio_la_LIBADD =
 am_libeio_la_OBJECTS = eio.lo io_hdr.lo
 libeio_la_OBJECTS = $(am_libeio_la_OBJECTS)
+libfd_la_LIBADD =
+am_libfd_la_OBJECTS = fd.lo
+libfd_la_OBJECTS = $(am_libfd_la_OBJECTS)
 libspank_la_LIBADD =
 am_libspank_la_OBJECTS = plugstack.lo optz.lo
 libspank_la_OBJECTS = $(am_libspank_la_OBJECTS)
@@ -171,6 +174,9 @@ libcommon_o_LDADD = $(LDADD)
 am_libeio_o_OBJECTS =
 libeio_o_OBJECTS = $(am_libeio_o_OBJECTS)
 libeio_o_LDADD = $(LDADD)
+am_libfd_o_OBJECTS =
+libfd_o_OBJECTS = $(am_libfd_o_OBJECTS)
+libfd_o_LDADD = $(LDADD)
 am_libspank_o_OBJECTS =
 libspank_o_OBJECTS = $(am_libspank_o_OBJECTS)
 libspank_o_LDADD = $(LDADD)
@@ -189,13 +195,15 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libspank_la_SOURCES) $(libcommon_o_SOURCES) \
-	$(libeio_o_SOURCES) $(libspank_o_SOURCES)
+	$(libfd_la_SOURCES) $(libspank_la_SOURCES) \
+	$(libcommon_o_SOURCES) $(libeio_o_SOURCES) $(libfd_o_SOURCES) \
+	$(libspank_o_SOURCES)
 DIST_SOURCES = $(am__libcommon_la_SOURCES_DIST) \
 	$(am__EXTRA_libcommon_la_SOURCES_DIST) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libspank_la_SOURCES) $(libcommon_o_SOURCES) \
-	$(libeio_o_SOURCES) $(libspank_o_SOURCES)
+	$(libfd_la_SOURCES) $(libspank_la_SOURCES) \
+	$(libcommon_o_SOURCES) $(libeio_o_SOURCES) $(libfd_o_SOURCES) \
+	$(libspank_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -401,6 +409,7 @@ noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
 	libeio.la  			\
+	libfd.la 			\
 	libspank.la
 
 libcommon_la_SOURCES = \
@@ -490,7 +499,9 @@ EXTRA_libcommon_la_SOURCES = \
 
 libdaemonize_la_SOURCES = \
 	daemonize.c       	 	\
-	daemonize.h        		\
+	daemonize.h
+
+libfd_la_SOURCES = \
 	fd.c fd.h
 
 libeio_la_SOURCES = \
@@ -507,6 +518,10 @@ libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
 libcommon_o_SOURCES = 
+
+# This was made so we could export all symbols from libcommon
+# on multiple platforms
+libfd_o_SOURCES = 
 
 # This was made so we could export all symbols from libeio
 # on multiple platforms
@@ -564,6 +579,8 @@ libdaemonize.la: $(libdaemonize_la_OBJECTS) $(libdaemonize_la_DEPENDENCIES)
 	$(LINK)  $(libdaemonize_la_OBJECTS) $(libdaemonize_la_LIBADD) $(LIBS)
 libeio.la: $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES) 
 	$(LINK)  $(libeio_la_OBJECTS) $(libeio_la_LIBADD) $(LIBS)
+libfd.la: $(libfd_la_OBJECTS) $(libfd_la_DEPENDENCIES) 
+	$(LINK)  $(libfd_la_OBJECTS) $(libfd_la_LIBADD) $(LIBS)
 libspank.la: $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES) 
 	$(LINK)  $(libspank_la_OBJECTS) $(libspank_la_LIBADD) $(LIBS)
 
@@ -883,6 +900,8 @@ uninstall-am:
 
 libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_la_OBJECTS)
+libfd.o :  $(libfd_la_OBJECTS) $(libfd_la_DEPENDENCIES)
+	$(LINK)  $(libfd_la_OBJECTS)
 libeio.o :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)
 	$(LINK)  $(libeio_la_OBJECTS)
 libspank.o :  $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES)
