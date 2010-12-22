@@ -3978,7 +3978,7 @@ init_gids_cache(int cache)
 	gids_t *gids;
 #ifdef HAVE_AIX
 	FILE *fp = NULL;
-#elif defined (__APPLE__)
+#elif defined (__APPLE__) || defined (__CYGWIN__)
 #else
 	struct passwd pw;
 	char buf[BUF_SIZE];
@@ -4008,7 +4008,7 @@ init_gids_cache(int cache)
 	setpwent();
 #if defined (__sun)
 	while ((pwd = getpwent_r(&pw, buf, BUF_SIZE)) != NULL) {
-#elif defined (__APPLE__)
+#elif defined (__APPLE__) || defined (__CYGWIN__)
 	while ((pwd = getpwent()) != NULL) {
 #else
 

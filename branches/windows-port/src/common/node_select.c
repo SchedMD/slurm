@@ -286,11 +286,21 @@ extern int slurm_select_init(bool only_default)
 			if (strncmp(e->d_name, "select_", 7))
 				continue;
 
-			len = strlen(e->d_name)-3;
+			len = strlen(e->d_name);
+#if defined(__CYGWIN__)
+			len -= 4;
+#else
+			len -= 3;
+#endif
 			/* Check only shared object files */
-			if (strcmp(e->d_name+len, ".so"))
+			if (strcmp(e->d_name+len,
+#if defined(__CYGWIN__)
+				   ".dll"
+#else
+				   ".so"
+#endif
+				    ))
 				continue;
-
 			/* add one for the / */
 			len++;
 			xassert(len<sizeof(full_name));
