@@ -99,7 +99,6 @@ static front_end_record_t * _front_end_reg(char *node_name,
 					   uint32_t up_time);
 static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
-static void	_node_did_resp(struct node_record *node_ptr);
 static bool	_node_is_hidden(struct node_record *node_ptr);
 static int	_open_node_state_file(char **state_file);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer,
@@ -111,9 +110,6 @@ static int	_update_node_features(char *node_names, char *features);
 static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint16_t old, uint16_t new);
-#ifndef HAVE_FRONT_END
-static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
-#endif
 
 
 /* dump_all_node_state - save the state of all nodes to file */
@@ -1608,14 +1604,10 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		set_node_down(reg_msg->node_name, reason_down);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
-#ifdef HAVE_BG
-			info("Prolog failure on node %s", reg_msg->node_name);
-#else
 			last_node_update = time (NULL);
 			error("Prolog failure on node %s, state to DOWN",
 				reg_msg->node_name);
 			set_node_down(reg_msg->node_name, "Prolog failed");
-#endif
 		}
 	} else {
 		if (IS_NODE_UNKNOWN(node_ptr)) {
@@ -1799,6 +1791,8 @@ extern int validate_nodes_via_front_end(
 				       reg_msg->up_time);
 	if (front_end_ptr == NULL)
 		return ESLURM_INVALID_NODE_NAME;
+	if (reg_msg->status == ESLURMD_PROLOG_FAILED)
+		set_front_end_down(front_end_ptr, "Prolog failed");
 
 	/* First validate the job info */
 	node_ptr = node_record_table_ptr;	/* All msg send to node zero,
@@ -1926,6 +1920,7 @@ extern int validate_nodes_via_front_end(
 				else
 					prolog_hostlist = hostlist_create(
 						node_ptr->name);
+				/* Front-end node set down above */
 				set_node_down(node_ptr->name, "Prolog failed");
 #endif
 			}
@@ -2064,33 +2059,42 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 		bit_set   (up_node_bitmap, node_inx);
 }
 
-/*
- * node_did_resp - record that the specified node is responding
- * IN name - name of the node
- * NOTE: READ lock_slurmctld config before entry
- */
-void node_did_resp (char *name)
+#ifdef HAVE_FRONT_END
+static void _node_did_resp(front_end_record_t *node_ptr)
 {
-	struct node_record *node_ptr;
-#ifdef HAVE_FRONT_END		/* Fake all other nodes */
-	int i;
+	uint16_t resp_state, node_flags;
+	time_t now = time(NULL);
 
-	for (i=0; i<node_record_count; i++) {
-		node_ptr = &node_record_table_ptr[i];
-		_node_did_resp(node_ptr);
+	node_ptr->last_response = now;
+	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	if (resp_state) {
+		info("Node %s now responding", node_ptr->name);
+		last_front_end_update = now;
+		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 	}
-	debug2("node_did_resp %s",name);
-#else
-	node_ptr = find_node_record (name);
-	if (node_ptr == NULL) {
-		error ("node_did_resp unable to find node %s", name);
-		return;
+	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
+	if (IS_NODE_UNKNOWN(node_ptr)) {
+		last_front_end_update = now;
+		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 	}
-	_node_did_resp(node_ptr);
-	debug2("node_did_resp %s",name);
-#endif
+	if (IS_NODE_DOWN(node_ptr) &&
+	    (slurmctld_conf.ret2service == 1) &&
+	    (node_ptr->reason != NULL) &&
+	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
+		last_front_end_update = now;
+		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+		info("node_did_resp: node %s returned to service",
+		     node_ptr->name);
+		trigger_front_end_up(node_ptr);
+		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
+			xfree(node_ptr->reason);
+			node_ptr->reason_time = 0;
+			node_ptr->reason_uid = NO_VAL;
+		}
+	}
+	return;
 }
-
+#else
 static void _node_did_resp(struct node_record *node_ptr)
 {
 	int node_inx;
@@ -2129,7 +2133,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service",
-			node_ptr->name);
+		     node_ptr->name);
 		trigger_node_up(node_ptr);
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			xfree(node_ptr->reason);
@@ -2154,6 +2158,29 @@ static void _node_did_resp(struct node_record *node_ptr)
 		bit_set   (up_node_bitmap, node_inx);
 	return;
 }
+#endif
+
+/*
+ * node_did_resp - record that the specified node is responding
+ * IN name - name of the node
+ * NOTE: READ lock_slurmctld config before entry
+ */
+void node_did_resp (char *name)
+{
+#ifdef HAVE_FRONT_END
+	front_end_record_t *node_ptr;
+	node_ptr = find_front_end_record (name);
+#else
+	struct node_record *node_ptr;
+	node_ptr = find_node_record (name);
+#endif
+	if (node_ptr == NULL) {
+		error ("node_did_resp unable to find node %s", name);
+		return;
+	}
+	_node_did_resp(node_ptr);
+	debug2("node_did_resp %s",name);
+}
 
 /*
  * node_not_resp - record that the specified node is not responding
@@ -2162,22 +2189,15 @@ static void _node_did_resp(struct node_record *node_ptr)
  */
 void node_not_resp (char *name, time_t msg_time)
 {
-	struct node_record *node_ptr;
-#ifdef HAVE_FRONT_END		/* Fake all other nodes */
-	int i;
+#ifdef HAVE_FRONT_END
+	front_end_record_t *node_ptr;
 
-	for (i=0; i<node_record_count; i++) {
-		node_ptr = node_record_table_ptr + i;
-		if (!IS_NODE_DOWN(node_ptr)) {
-			node_ptr->not_responding = true;
-			bit_clear (avail_node_bitmap, i);
-			node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-			last_node_update = time(NULL);
-		}
-	}
-
+	node_ptr = find_front_end_record (name);
 #else
+	struct node_record *node_ptr;
+
 	node_ptr = find_node_record (name);
+#endif
 	if (node_ptr == NULL) {
 		error ("node_not_resp unable to find node %s", name);
 		return;
@@ -2186,8 +2206,23 @@ void node_not_resp (char *name, time_t msg_time)
 		/* Logged by node_no_resp_msg() on periodic basis */
 		node_ptr->not_responding = true;
 	}
-	_node_not_resp(node_ptr, msg_time);
+
+	if (IS_NODE_NO_RESPOND(node_ptr))
+		return;		/* Already known to be not responding */
+
+	if (node_ptr->last_response >= msg_time) {
+		debug("node_not_resp: node %s responded since msg sent",
+		      node_ptr->name);
+		return;
+	}
+	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+#ifdef HAVE_FRONT_END
+	last_front_end_update = time(NULL);
+#else
+	last_node_update = time(NULL);
+	bit_clear (avail_node_bitmap, (node_ptr - node_record_table_ptr));
 #endif
+	return;
 }
 
 /* For every node with the "not_responding" flag set, clear the flag
@@ -2219,29 +2254,8 @@ extern void node_no_resp_msg(void)
 	}
 }
 
-#ifndef HAVE_FRONT_END
-static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)
-{
-	int i;
-
-	i = node_ptr - node_record_table_ptr;
-	if (IS_NODE_NO_RESPOND(node_ptr))
-		return;		/* Already known to be not responding */
-
-	if (node_ptr->last_response >= msg_time) {
-		debug("node_not_resp: node %s responded since msg sent",
-			node_ptr->name);
-		return;
-	}
-	last_node_update = time (NULL);
-	bit_clear (avail_node_bitmap, i);
-	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-	return;
-}
-#endif
-
 /*
- * set_node_down - make the specified node's state DOWN and
+ * set_node_down - make the specified compute node's state DOWN and
  *	kill jobs as needed
  * IN name - name of the node
  * IN reason - why the node is DOWN
@@ -2298,9 +2312,15 @@ bool is_node_down (char *name)
  */
 bool is_node_resp (char *name)
 {
+#ifdef HAVE_FRONT_END
+	front_end_record_t *node_ptr;
+
+	node_ptr = find_front_end_record (name);
+#else
 	struct node_record *node_ptr;
 
 	node_ptr = find_node_record (name);
+#endif
 	if (node_ptr == NULL) {
 		error ("is_node_resp unable to find node %s", name);
 		return false;

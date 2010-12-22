@@ -77,6 +77,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
@@ -7987,6 +7988,10 @@ _xmit_new_end_time(struct job_record *job_ptr)
 extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		uint32_t return_code)
 {
+#ifdef HAVE_FRONT_END
+	int i;
+	front_end_record_t *front_end_ptr = NULL;
+#endif
 	struct job_record  *job_ptr = find_job_record(job_id);
 	struct node_record *node_ptr;
 
@@ -8016,14 +8021,20 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		return false;
 	}
 
-#ifdef HAVE_FRONT_END		/* operate only on front-end node */
-{
-	int i;
-
-	if (return_code)
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	if (return_code) {
 		error("Epilog error on %s, setting DOWN",
-			job_ptr->nodes);
-	for (i=0; i<node_record_count; i++) {
+		      job_ptr->batch_host);
+		for (i = 0, front_end_ptr = front_end_nodes;
+		     i < front_end_node_cnt; i++, front_end_ptr++) {
+			if (strcmp(front_end_ptr->name, job_ptr->batch_host))
+				continue;
+			set_front_end_down(front_end_ptr, "Epilog error");
+			break;
+		}
+	}
+	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 		node_ptr = &node_record_table_ptr[i];
@@ -8032,7 +8043,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		else
 			make_node_idle(node_ptr, job_ptr);
 	}
-}
 #else
 	if (return_code) {
 		error("Epilog error on %s, setting DOWN", node_name);
