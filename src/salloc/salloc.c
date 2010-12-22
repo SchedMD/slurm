@@ -80,7 +80,6 @@
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
-extern pid_t getpgid(pid_t pid);
 #endif
 
 #define MAX_RETRIES	10
@@ -135,13 +134,6 @@ int sig_array[] = {
 	SIGHUP, SIGINT, SIGQUIT, SIGPIPE,
 	SIGTERM, SIGUSR1, SIGUSR2, 0
 };
-/* Signals that are considered terminal and which require cleanup. */
-static int sig_array2[] = {
-	SIGTERM, SIGILL, SIGBUS, SIGABRT,
-	SIGFPE, SIGSEGV, SIGSTKFLT, SIGXCPU,
-	SIGXFSZ, SIGVTALRM, SIGPWR,
-	SIGSYS, 0
-};
 
 static void _reset_input_mode (void)
 {
@@ -161,21 +153,26 @@ int main(int argc, char *argv[])
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr;
 	char **env = NULL;
-	int status = 0;
-	int errnum = 0;
+	int status = 0, is_interactive;
 	int retries = 0;
-	pid_t pid;
+	pid_t pid = 0;
 	pid_t rc_pid = 0;
 	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 
-	/*
-	 * Save tty attributes and reset at exit, in case a child
-	 * process died before properly resetting terminal.
-	 */
-	tcgetattr (STDIN_FILENO, &saved_tty_attributes);
-	atexit (_reset_input_mode);
+	is_interactive = isatty(STDIN_FILENO);
+	if (is_interactive) {
+		/* Wait as long as we are running in the background */
+		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp()))
+			killpg(pid, SIGTTIN);
+		/*
+		 * Save tty attributes and reset at exit, in case a child
+		 * process died before properly resetting terminal.
+		 */
+		tcgetattr (STDIN_FILENO, &saved_tty_attributes);
+		atexit (_reset_input_mode);
+	}
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -382,37 +379,51 @@ int main(int argc, char *argv[])
 			      alloc->job_id);
 		}
 		return 1;
-	} else {
-		allocation_state = GRANTED;
-		pthread_mutex_unlock(&allocation_state_lock);
-		command_pid = pid = _fork_command(command_argv);
+ 	}
+	allocation_state = GRANTED;
+	pthread_mutex_unlock(&allocation_state_lock);
+
+	/*  Ensure that salloc has initial terminal foreground control.  */
+	if (is_interactive) {
+		/*
+		 * Ignore remaining job-control signals (other than those in
+		 * sig_array, which at this state act like SIG_IGN).
+		 */
+		xsignal(SIGTSTP, SIG_IGN);
+		xsignal(SIGTTIN, SIG_IGN);
+		xsignal(SIGTTOU, SIG_IGN);
+
+		pid = getpid();
+		setpgid(pid, pid);
+
+		tcsetpgrp(STDIN_FILENO, pid);
 	}
 
-	/* NOTE: Do not process signals in separate pthread.
-	 * The signal will cause waitpid() to exit immediately. */
-	xsignal(SIGHUP,  _exit_on_signal);
-	for (i = 0; sig_array2[i]; i++)
-		xsignal(sig_array2[i], _forward_signal);
-	for (i = SIGRTMIN; i <= SIGRTMAX; i++)
-		xsignal(i, _exit_on_signal);
-
+	command_pid = _fork_command(command_argv);
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
 	 * signal.  Either way, we are going to release the allocation next.
 	 */
-	if (pid > 0) {
-		while ((rc_pid = waitpid(pid, &status, 0)) == -1) {
-			if (exit_flag) {
-				slurm_complete_job(alloc->job_id, status);
-				continue;
-			}
-			if (errno == EINTR)
-				continue;
-		}
-		errnum = errno;
-		if ((rc_pid == -1) && (errnum != EINTR))
+	if (command_pid > 0) {
+		setpgid(command_pid, command_pid);
+		if (is_interactive)
+			tcsetpgrp(STDIN_FILENO, command_pid);
+
+		/* NOTE: Do not process signals in separate pthread.
+		 * The signal will cause waitpid() to exit immediately. */
+		xsignal(SIGHUP,  _exit_on_signal);
+
+		/* Use WUNTRACED to treat stopped children like terminated ones */
+		do {
+			rc_pid = waitpid(command_pid, &status, WUNTRACED);
+		} while ((rc_pid == -1) && (!exit_flag));
+
+		if ((rc_pid == -1) && (errno != EINTR))
 			error("waitpid for %s failed: %m", command_argv[0]);
 	}
+
+	if (is_interactive)
+		tcsetpgrp(STDIN_FILENO, pid);
 
 	/*
 	 * Relinquish the job allocation (if not already revoked).
@@ -420,18 +431,17 @@ int main(int argc, char *argv[])
 relinquish:
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
-		allocation_state = REVOKED;
 		pthread_mutex_unlock(&allocation_state_lock);
 
 		info("Relinquishing job allocation %d", alloc->job_id);
 		if ((slurm_complete_job(alloc->job_id, status) != 0) &&
-		    (slurm_get_errno() != ESLURM_ALREADY_DONE)) {
+		    (slurm_get_errno() != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %d: %m",
 			      alloc->job_id);
-		}
-	} else {
-		pthread_mutex_unlock(&allocation_state_lock);
+		pthread_mutex_lock(&allocation_state_lock);
+		allocation_state = REVOKED;
 	}
+	pthread_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	slurm_allocation_msg_thr_destroy(msg_thr);
@@ -675,6 +685,21 @@ static pid_t _fork_command(char **command)
 		error("fork failed: %m");
 	} else if (pid == 0) {
 		/* child */
+		setpgid(getpid(), 0);
+
+		/*
+		 * Reset job control signals.
+		 * Suspend (TSTP) is not restored (ignored, as in the parent):
+		 * shells with job-control override this and look after their
+		 * processes.
+		 * Suspending single commands is more complex and would require
+		 * adding full shell-like job control to salloc.
+		 */
+		xsignal(SIGINT, SIG_DFL);
+		xsignal(SIGQUIT, SIG_DFL);
+		xsignal(SIGTTIN, SIG_DFL);
+		xsignal(SIGTTOU, SIG_DFL);
+
 		execvp(command[0], command);
 
 		/* should only get here if execvp failed */
@@ -699,9 +724,8 @@ static void _exit_on_signal(int signo)
 
 static void _forward_signal(int signo)
 {
-	/* Assume process group first, fall back to just PID */
-	if ((command_pid > 0) && (killpg(command_pid, signo) < 0))
-		kill(command_pid, signo);
+	if (command_pid > 0)
+		killpg(command_pid, signo);
 }
 
 static void _signal_while_allocating(int signo)
@@ -737,43 +761,23 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				     comp->job_id);
 			}
 		}
-
-#ifdef HAVE_CRAY
-		if ((allocation_state == GRANTED) && (command_pid > -1)) {
-			int delay;
-			slurm_ctl_conf_t *cf;
-			pid_t pgid = getpgid(command_pid);
-
-			if ((pgid == command_pid) &&
-			    (killpg(command_pid, SIGTERM) == 0)) {
-				/* Clean up all sub-processes */
-				verbose("Sending SIGTERM/SIGKILL to "
-					"command \"%s\", pgid %d",
-					command_argv[0], command_pid);
-				cf = slurm_conf_lock();
-				delay = MAX(cf->kill_wait, 5);
-				slurm_conf_unlock();
-				sleep(delay);
-				killpg(command_pid, SIGKILL);
-			} else if (opt.kill_command_signal_set) {
-				 verbose("Sending signal %d to command \"%s\", "
-					 "pid %d", opt.kill_command_signal,
-					 command_argv[0], command_pid);
-				kill(command_pid, opt.kill_command_signal);
-			}
-		}
-#else
-		if ((allocation_state == GRANTED) && (command_pid > -1)) {
-			if (opt.kill_command_signal_set) {
-				 verbose("Sending signal %d to command \"%s\", "
-					 "pid %d", opt.kill_command_signal,
-					 command_argv[0], command_pid);
-				kill(command_pid, opt.kill_command_signal);
-			}
-		}
-#endif
 		allocation_state = REVOKED;
 		pthread_mutex_unlock(&allocation_state_lock);
+		/*
+		 * Clean up child process: only if the forked process has not
+		 * yet changed state (waitpid returning 0).
+		 */
+		if ((command_pid > -1) &&
+		    (waitpid(command_pid, NULL, WNOHANG) == 0)) {
+			int signal = SIGTERM;
+#if !defined(HAVE_CRAY)
+			if (opt.kill_command_signal_set)
+				signal = opt.kill_command_signal;
+#endif
+			 verbose("Sending signal %d to command \"%s\", pid %d",
+				 signal, command_argv[0], command_pid);
+			_forward_signal(signal);
+		}
 	} else {
 		verbose("Job step %u.%u is finished.",
 			comp->job_id, comp->step_id);
