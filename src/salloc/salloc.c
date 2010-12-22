@@ -138,7 +138,7 @@ int sig_array[] = {
 /* Signals that are considered terminal and which require cleanup. */
 static int sig_array2[] = {
 	SIGTERM, SIGILL, SIGBUS, SIGABRT,
-	SIGFPE, SIGSEGV, SIGSTKFLT, SIGXCPU,
+	SIGFPE, SIGSEGV, SIGXCPU,
 	SIGXFSZ, SIGVTALRM, SIGPWR,
 	SIGSYS, 0
 };
