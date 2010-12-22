@@ -255,8 +255,6 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
 
-		if (agent_args->node_count > 0)
-			continue;
 		hostlist_push(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
