@@ -10,8 +10,9 @@ noinst_LTLIBRARIES = libslurmtot.la
 
 libslurmtot_la_SOURCES =
 
-libslurmtot_la_LIBADD = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/slurmctld/libslurmctld.la	\
+libslurmtot_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la \
+	$(top_builddir)/src/common/libdaemonize.la \
+	$(top_builddir)/src/slurmctld/libslurmctld.la \
 	$(top_builddir)/src/slurmd/common/libslurmd_common.la
 
 libslurmtot_la_LDFLAGS = $(LIB_LDFLAGS) $(OTHER_FLAGS)

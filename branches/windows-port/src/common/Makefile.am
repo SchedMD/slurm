@@ -42,7 +42,6 @@ libcommon_la_SOURCES = 			\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	net.c net.h                     \
-	fd.c fd.h			\
 	log.c log.h			\
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\
