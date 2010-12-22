@@ -727,7 +727,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 /*	cred_arg.step_gres_list      = NULL; */
 
 #ifdef HAVE_FRONT_END
-	cred_arg.step_hostlist       = node_record_table_ptr[0].name;
+	xassert(job_ptr->batch_host);
+	cred_arg.step_hostlist       = job_ptr->batch_host;
 #else
 	cred_arg.step_hostlist       = launch_msg_ptr->nodes;
 #endif
