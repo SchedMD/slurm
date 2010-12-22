@@ -67,8 +67,10 @@
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
  */
+#if !defined(__CYGWIN__)
 slurm_ctl_conf_t slurmctld_conf;
 List job_list = NULL;
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they

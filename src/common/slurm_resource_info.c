@@ -72,11 +72,11 @@ static void _clear_then_set(int *data, int clear_mask, int set_mask)
  * returns 1 is the argument appears to be a value, 0 otherwise
  */
 static int _isvalue(char *arg) {
-    	if (isdigit(*arg)) {	 /* decimal values and 0x... hex values */
+    	if (isdigit((int)*arg)) { /* decimal values and 0x... hex values */
 	    	return 1;
 	}
 
-	while (isxdigit(*arg)) { /* hex values not preceded by 0x */
+	while (isxdigit((int)*arg)) { /* hex values not preceded by 0x */
 		arg++;
 	}
 	if (*arg == ',' || *arg == '\0') { /* end of field or string */

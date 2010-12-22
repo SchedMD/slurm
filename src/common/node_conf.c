@@ -543,7 +543,7 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 		tmp_str = xmalloc(i);
 		/* Remove white space from feature specification */
 		for (i=0, j=0; config_ptr->feature[i]; i++) {
-			if (!isspace(config_ptr->feature[i]))
+			if (!isspace((int)config_ptr->feature[i]))
 				tmp_str[j++] = config_ptr->feature[i];
 		}
 		if (i != j)

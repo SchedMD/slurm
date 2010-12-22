@@ -731,7 +731,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		else {
 			int i;
 			for (i=0; p->nodes[i]; i++) {
-				if (isspace(p->nodes[i]))
+				if (isspace((int)p->nodes[i]))
 					p->nodes[i] = ',';
 			}
 		}
@@ -1879,7 +1879,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		int i;
 		for (i = 0; conf->cluster_name[i] != '\0'; i++)
 			conf->cluster_name[i] =
-				(char)tolower(conf->cluster_name[i]);
+				(char)tolower((int)conf->cluster_name[i]);
 	}
 
 	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))

@@ -217,8 +217,8 @@ plugin_load_and_link(const char *type_name, int n_syms,
 
 	if (!type_name)
 		return plug;
-#ifdef HAVE_WINDOWS
-	so_name = xstrdup_printf("%s.dll.a", type_name);
+#if defined(__CYGWIN__)
+	so_name = xstrdup_printf("%s.dll", type_name);
 #else
 	so_name = xstrdup_printf("%s.so", type_name);
 #endif

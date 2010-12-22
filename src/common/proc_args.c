@@ -141,7 +141,7 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 		} else if (strncasecmp(arg, "block", len) == 0) {
 			result = SLURM_DIST_BLOCK;
 		} else if ((strncasecmp(arg, "arbitrary", len) == 0) ||
-		           (strncasecmp(arg, "hostfile", len) == 0)) {
+			   (strncasecmp(arg, "hostfile", len) == 0)) {
 			result = SLURM_DIST_ARBITRARY;
 		}
 	}
@@ -378,7 +378,7 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 	   saying, lay it out this way! */
 	if(dist == SLURM_DIST_ARBITRARY)
 		nodelist = slurm_read_hostfile(*node_list_pptr, task_count);
-        else
+	else
 		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
 
 	if (!nodelist)
@@ -417,7 +417,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 	}
 
 	result = strtol(arg, &p, 10);
-        if (*p == 'k' || *p == 'K') {
+	if (*p == 'k' || *p == 'K') {
 		result *= 1024;
 		p++;
 	} else if(*p == 'm' || *p == 'M') {
@@ -445,7 +445,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 		p++;
 
 	result = strtol(p, &p, 10);
-        if ((*p == 'k') || (*p == 'K')) {
+	if ((*p == 'k') || (*p == 'K')) {
 		result *= 1024;
 		p++;
 	} else if(*p == 'm' || *p == 'M') {
@@ -514,7 +514,7 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 		} else if (j == 2) {
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		}
-        }
+	}
 	buf[j][i] = '\0';
 
 	ret_val = true;
@@ -544,7 +544,7 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
  * RET true if valid
  */
 bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
-		 int *min_threads, int *ntasks_per_core, 
+		 int *min_threads, int *ntasks_per_core,
 		 cpu_bind_type_t *cpu_bind_type)
 {
 	char *buf, *p, *tok;
@@ -557,7 +557,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 	/* change all ',' delimiters not followed by a digit to ';'  */
 	/* simplifies parsing tokens while keeping map/mask together */
 	while (p[0] != '\0') {
-		if ((p[0] == ',') && (!isdigit(p[1])))
+		if ((p[0] == ',') && (!isdigit((int)p[1])))
 			p[0] = ';';
 		p++;
 	}
@@ -574,21 +574,21 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 "        help            show this help message\n");
 			return 1;
 		} else if (strcasecmp(tok, "compute_bound") == 0) {
-		        *min_sockets = NO_VAL;
-		        *min_cores   = NO_VAL;
-		        *min_threads = 1;
+			*min_sockets = NO_VAL;
+			*min_cores   = NO_VAL;
+			*min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_CORES;
 		} else if (strcasecmp(tok, "memory_bound") == 0) {
-		        *min_cores   = 1;
-		        *min_threads = 1;
+			*min_cores   = 1;
+			*min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_CORES;
 		} else if (strcasecmp(tok, "multithread") == 0) {
-		        *min_threads = NO_VAL;
+			*min_threads = NO_VAL;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 			if (*ntasks_per_core == NO_VAL)
 				*ntasks_per_core = INFINITE;
 		} else if (strcasecmp(tok, "nomultithread") == 0) {
-		        *min_threads = 1;
+			*min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		} else {
 			error("unrecognized --hint argument \"%s\", "
@@ -615,7 +615,7 @@ uint16_t parse_mail_type(const char *arg)
 	else if (strcasecmp(arg, "REQUEUE") == 0)
 		rc = MAIL_JOB_REQUEUE;
 	else if (strcasecmp(arg, "ALL") == 0)
-		rc = MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL | 
+		rc = MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
 		     MAIL_JOB_REQUEUE;
 	else
 		rc = 0;		/* failure */
@@ -690,7 +690,7 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 	char *path, *fullpath = NULL;
 
 	if (  (cmd[0] == '.' || cmd[0] == '/')
-           && (access(cmd, access_mode) == 0 ) ) {
+	   && (access(cmd, access_mode) == 0 ) ) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", cwd);
 		xstrcat(fullpath, cmd);
@@ -813,7 +813,7 @@ int sig_name2num(char *signal_name)
 			return 0;
 	} else {
 		ptr = (char *)signal_name;
-		while (isspace(*ptr))
+		while (isspace((int)*ptr))
 			ptr++;
 		if (strncasecmp(ptr, "SIG", 3) == 0)
 			ptr += 3;
@@ -823,7 +823,7 @@ int sig_name2num(char *signal_name)
 			if (strncasecmp(ptr, sig_name[i],
 					strlen(sig_name[i])) == 0) {
 				/* found the signal name */
-				if (!xstring_is_whitespace(ptr + 
+				if (!xstring_is_whitespace(ptr +
 							   strlen(sig_name[i])))
 					return 0;
 				sig = sig_num[i];

@@ -618,7 +618,7 @@ static int host_prefix_end(const char *hostname)
 			return -1;
 		idx = len - 1;
 
-		while (idx >= 0 && isdigit((char) hostname[idx]))
+		while (idx >= 0 && isdigit((int)hostname[idx]))
 			idx--;
 	}
 
