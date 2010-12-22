@@ -120,8 +120,7 @@ libslurm_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libslurm_la_LDFLAGS) $(LDFLAGS) -o $@
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
-	$(common_dir)/libspank.la $(common_dir)/libeio.la \
-	$(common_dir)/libfd.la
+	$(common_dir)/libspank.la $(common_dir)/libeio.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = allocate.lo allocate_msg.lo cancel.lo checkpoint.lo \
 	complete.lo config_info.lo init_msg.lo job_info.lo \
@@ -137,8 +136,7 @@ am_libslurm_o_OBJECTS =
 libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
 libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libeio.o \
 	$(top_builddir)/src/common/libspank.o \
-	$(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/common/libfd.o
+	$(top_builddir)/src/common/libcommon.o
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -456,7 +454,6 @@ slurmapi_add = \
 	$(common_dir)/libcommon.la	\
 	$(common_dir)/libspank.la      	\
 	$(common_dir)/libeio.la		\
-	$(common_dir)/libfd.la		\
 	-lpthread
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
@@ -493,8 +490,7 @@ libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
 libslurm_o_SOURCES = 
 libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libspank.o	\
-	$(top_builddir)/src/common/libcommon.o  \
-	$(top_builddir)/src/common/libfd.o
+	$(top_builddir)/src/common/libcommon.o
 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
