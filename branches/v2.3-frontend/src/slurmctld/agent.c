@@ -377,7 +377,7 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 {
-	int i = 0, j=0;
+	int i = 0, j = 0;
 	agent_info_t *agent_info_ptr = NULL;
 	thd_t *thread_ptr = NULL;
 	int *span = NULL;
@@ -449,7 +449,8 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 #if 0
-		info("sending to nodes %s", thread_ptr[thr_count].nodelist);
+		info("sending msg_type %u to nodes %s",
+		     agent_arg_ptr->msg_type, thread_ptr[thr_count].nodelist);
 #endif
 		thr_count++;
 	}
@@ -676,7 +677,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #if AGENT_IS_THREAD
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
-		if(!thread_ptr[i].ret_list) {
+		if (!thread_ptr[i].ret_list) {
 			state = thread_ptr[i].state;
 			is_ret_list = 0;
 			goto switch_on_state;
@@ -684,52 +685,50 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		is_ret_list = 1;
 
 		itr = list_iterator_create(thread_ptr[i].ret_list);
-		while((ret_data_info = list_next(itr))) {
+		while ((ret_data_info = list_next(itr))) {
 			state = ret_data_info->err;
 		switch_on_state:
 			switch(state) {
 			case DSH_NO_RESP:
-				if(!is_ret_list) {
+				if (!is_ret_list) {
 					node_not_resp(thread_ptr[i].nodelist,
 						      thread_ptr[i].
 						      start_time);
-					break;
+				} else {
+					node_not_resp(ret_data_info->node_name,
+						      thread_ptr[i].start_time);
 				}
-
-				node_not_resp(ret_data_info->node_name,
-					      thread_ptr[i].start_time);
 				break;
 			case DSH_FAILED:
 #ifdef HAVE_BG
 				error("Prolog/epilog failure");
 #else
-				if(!is_ret_list) {
+				if (!is_ret_list) {
 					set_node_down(thread_ptr[i].nodelist,
 						      "Prolog/epilog failure");
-					break;
+				} else {
+					set_node_down(ret_data_info->node_name,
+						      "Prolog/epilog failure");
 				}
-				set_node_down(ret_data_info->node_name,
-					      "Prolog/epilog failure");
 #endif
 				break;
 			case DSH_DONE:
-				if(!is_ret_list) {
+				if (!is_ret_list)
 					node_did_resp(thread_ptr[i].nodelist);
-					break;
-				}
-				node_did_resp(ret_data_info->node_name);
+				else
+					node_did_resp(ret_data_info->node_name);
 				break;
 			default:
-				if(!is_ret_list) {
+				if (!is_ret_list) {
 					error("unknown state returned for %s",
 					      thread_ptr[i].nodelist);
-					break;
+				} else {
+					error("unknown state returned for %s",
+					      ret_data_info->node_name);
 				}
-				error("unknown state returned for %s",
-				      ret_data_info->node_name);
 				break;
 			}
-			if(!is_ret_list)
+			if (!is_ret_list)
 				goto finished;
 		}
 		list_iterator_destroy(itr);
@@ -1537,10 +1536,8 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
  */
 static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 {
-	char *hostname;
 	agent_arg_t *agent_arg_ptr;
 	batch_job_launch_msg_t *launch_msg_ptr;
-	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	struct job_record  *job_ptr;
 	int delay_time, nodes_ready = 0;
@@ -1567,6 +1564,12 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	if (job_ptr->wait_all_nodes) {
 		(void) job_node_ready(launch_msg_ptr->job_id, &nodes_ready);
 	} else {
+#ifdef HAVE_FRONT_END
+		nodes_ready = 1;
+#else
+		struct node_record *node_ptr;
+		char *hostname;
+
 		hostname = hostlist_deranged_string_xmalloc(
 					agent_arg_ptr->hostlist);
 		node_ptr = find_node_record(hostname);
@@ -1582,6 +1585,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		    !IS_NODE_NO_RESPOND(node_ptr)) {
 			nodes_ready = 1;
 		}
+#endif
 	}
 
 	delay_time = difftime(now, job_ptr->start_time);
