@@ -3616,7 +3616,10 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
-	agent_arg_ptr->hostlist = hostlist_create(node_ptr->name);
+	xassert(job_ptr->batch_host);
+	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+	if (agent_arg_ptr->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
