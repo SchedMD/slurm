@@ -2917,10 +2917,11 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	agent_arg_t *agent_args = NULL;
 
 	xassert(job_ptr);
+	xassert(job_ptr->batch_host);
 	i = bit_ffs(job_ptr->node_bitmap);
 	if (i < 0) {
 		error("_signal_batch_job JobId=%u lacks assigned nodes",
-		  job_ptr->job_id);
+		      job_ptr->job_id);
 		return;
 	}
 
@@ -2928,8 +2929,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	agent_args->msg_type	= REQUEST_SIGNAL_TASKS;
 	agent_args->retry	= 1;
 	agent_args->node_count  = 1;
-	agent_args->hostlist	=
-		hostlist_create(node_record_table_ptr[i].name);
+	agent_args->hostlist	= hostlist_create(job_ptr->batch_host);
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = job_ptr->job_id;
 	kill_tasks_msg->job_step_id = NO_VAL;
@@ -7708,8 +7708,6 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 
-	debug("Aborting job %u on node %s", job_id, node_ptr->name);
-
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
@@ -7729,7 +7727,14 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
 	agent_info->retry	= 0;
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
+	debug("Aborting job %u on node %s", job_id, job_ptr->batch_host);
+#else
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
+	debug("Aborting job %u on node %s", job_id, node_ptr->name);
+#endif
 	agent_info->msg_type	= REQUEST_ABORT_JOB;
 	agent_info->msg_args	= kill_req;
 
@@ -7749,8 +7754,6 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 
-	debug("Killing job %u on node %s", job_id, node_ptr->name);
-
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
@@ -7769,7 +7772,14 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
 	agent_info->retry	= 0;
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
+	debug("Killing job %u on node %s", job_id, job_ptr->batch_host);
+#else
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
+	debug("Killing job %u on node %s", job_id, node_ptr->name);
+#endif
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
 
@@ -7929,28 +7939,36 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 static void
 _xmit_new_end_time(struct job_record *job_ptr)
 {
+#ifndef HAVE_FRONT_END
+	int i;
+#endif
 	job_time_msg_t *job_time_msg_ptr;
 	agent_arg_t *agent_args;
-	int i;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	job_time_msg_ptr = xmalloc(sizeof(job_time_msg_t));
 	job_time_msg_ptr->job_id          = job_ptr->job_id;
 	job_time_msg_ptr->expiration_time = job_ptr->end_time;
 
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	agent_args->node_count  = 1;
+#else
+	agent_args->hostlist = hostlist_create("");
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		hostlist_push(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
-#ifdef HAVE_FRONT_END		/* operate only on front-end node */
-		break;
-#endif
 	}
+#endif
 
 	agent_args->msg_args = job_time_msg_ptr;
 	agent_queue_request(agent_args);
@@ -8247,28 +8265,35 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 /* Send specified signal to all steps associated with a job */
 static void _signal_job(struct job_record *job_ptr, int signal)
 {
+#ifndef HAVE_FRONT_END
+	int i;
+#endif
 	agent_arg_t *agent_args = NULL;
 	signal_job_msg_t *signal_job_msg = NULL;
-	int i;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SIGNAL_JOB;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
 	signal_job_msg->signal = signal;
 
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	agent_args->node_count = 1;
+#else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		hostlist_push(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
-#ifdef HAVE_FRONT_END	/* Operate only on front-end */
-		break;
-#endif
 	}
+#endif
 
 	if (agent_args->node_count == 0) {
 		xfree(signal_job_msg);
@@ -8284,9 +8309,11 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 /* Send suspend request to slumrd of all nodes associated with a job */
 static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 {
+#ifndef HAVE_FRONT_END
+	int i;
+#endif
 	agent_arg_t *agent_args;
 	suspend_msg_t *sus_ptr;
-	int i;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SUSPEND;
@@ -8295,20 +8322,25 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 				 * quickly induce huge backlog
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	sus_ptr = xmalloc(sizeof(suspend_msg_t));
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
 
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	agent_args->node_count = 1;
+#else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		hostlist_push(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
-#ifdef HAVE_FRONT_END	/* Operate only on front-end */
-		break;
-#endif
 	}
+#endif
 
 	if (agent_args->node_count == 0) {
 		xfree(sus_ptr);
