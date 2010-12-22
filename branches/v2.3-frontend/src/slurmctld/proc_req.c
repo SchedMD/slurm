@@ -700,7 +700,8 @@ static int _make_step_cred(struct step_record *step_ptr,
 
 	cred_arg.step_core_bitmap = step_ptr->core_bitmap_job;
 #ifdef HAVE_FRONT_END
-	cred_arg.step_hostlist   = node_record_table_ptr[0].name;
+	xassert(job_ptr->batch_host);
+	cred_arg.step_hostlist   = job_ptr->batch_host;
 #else
 	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
 #endif
