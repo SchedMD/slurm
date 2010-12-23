@@ -820,8 +820,7 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->sockets_per_node);
 }
 
-int
-slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
+int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 {
 	xassert(cred != NULL);
 	xassert(arg  != NULL);
