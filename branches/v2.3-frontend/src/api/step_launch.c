@@ -1316,6 +1316,9 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
 			 uint32_t timeout)
 {
+#ifdef HAVE_FRONT_END
+	slurm_cred_arg_t cred_args;
+#endif
 	slurm_msg_t msg;
 	List ret_list = NULL;
 	ListIterator ret_itr;
@@ -1328,7 +1331,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		char *name = NULL;
 		hostlist_t hl = hostlist_create(launch_msg->complete_nodelist);
 		int i = 0;
-		while((name = hostlist_shift(hl))) {
+		while ((name = hostlist_shift(hl))) {
 			_print_launch_msg(launch_msg, name, i++);
 			free(name);
 		}
@@ -1339,9 +1342,17 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
 
-	if(!(ret_list = slurm_send_recv_msgs(
-		     ctx->step_resp->step_layout->node_list,
-		     &msg, timeout, false))) {
+#ifdef HAVE_FRONT_END
+	slurm_cred_get_args(ctx->step_resp->cred, &cred_args);
+	info("hostlist=%s", cred_args.step_hostlist);
+	ret_list = slurm_send_recv_msgs(cred_args.step_hostlist, &msg, timeout,
+					false);
+	slurm_cred_free_args(&cred_args);
+#else
+	ret_list = slurm_send_recv_msgs(ctx->step_resp->step_layout->node_list,
+					&msg, timeout, false);
+#endif
+	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;
 	}
@@ -1376,7 +1387,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
 
-	if(tot_rc != SLURM_SUCCESS)
+	if (tot_rc != SLURM_SUCCESS)
 		return tot_rc;
 	return rc;
 }
