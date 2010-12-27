@@ -45,7 +45,9 @@
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
 ** for details.
  */
+strong_alias(jobacct_common_pack, slurm_jobacct_common_pack);
 strong_alias(jobacct_common_unpack, slurm_jobacct_common_unpack);
+strong_alias(jobacct_common_alloc_jobacct, slurm_jobacct_common_alloc_jobacct);
 strong_alias(jobacct_common_free_jobacct, slurm_jobacct_common_free_jobacct);
 
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;

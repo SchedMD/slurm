@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     when starting overlapping jobs in dynamic mode.
  -- Fix for sacct --state to work correctly when not specifying a start time.
  -- Fix upgrade process in accounting from 2.1 for clusters named "cluster".
+ -- Export more jobacct_common symbols needed for the slurm api on some systems.
 
 * Changes in SLURM 2.2.0.rc4
 ============================

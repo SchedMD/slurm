@@ -337,7 +337,9 @@
 #define plugrack_set_paranoia   slurm_plugrack_set_paranoia
 #define plugrack_use_by_type    slurm_plugrack_use_by_type
 
+#define jobacct_common_pack	slurm_jobacct_common_pack
 #define jobacct_common_unpack	slurm_jobacct_common_unpack
+#define jobacct_common_alloc_jobacct slurm_jobacct_common_alloc_jobacct
 #define jobacct_common_free_jobacct slurm_jobacct_common_free_jobacct
 
 #endif /* USE_ALIAS */
