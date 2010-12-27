@@ -5640,7 +5640,7 @@ esac
 ac_have_cygwin=no
 case "$host" in
      	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined"
-		   SO_LDFLAGS="$SO_LDFLAGS -L\$(top_builddir)/src/tot_api/.libs -lslurmtot "
+		   SO_LDFLAGS="$SO_LDFLAGS \$(top_builddir)/src/tot_api/libslurmtot.la"
 
 		   ac_have_cygwin=yes
 		   ;;
