@@ -50,9 +50,15 @@ exec $bin_cc -O -o $file_prog2 ${file_prog2}.c
 
 #
 # Submit a script that returns a successful exit code and confirm that
-# the job record's ExitCode reflects this value.  The successful and failed
-# job steps should have no influence on the job's exit value.
+# the job record's ExitCode reflects this value.  $file_prog1 returns a
+# successful error code (0) and $file_prog2 returns an unsuccessful
+# error code (123).
 #
+# The failed job step should have no influence on the job's ExitCode
+# value.  However the DerivedExitCode value should be set to the
+# highest value of all the job steps, in this case, 123.
+#
+
 make_bash_script $file_in "
   $bin_echo 'testing successful job return code'
   $srun $file_prog1
@@ -88,9 +94,13 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Confirm correct ExitCode setting in job record
 #
 set matches 0
-spawn $scontrol show job $job_id
+spawn $scontrol --detail show job $job_id
 expect {
 	-re "ExitCode=0:0" {
+		incr matches
+		exp_continue
+	}
+	-re "DerivedExitCode=123:0" {
 		incr matches
 		exp_continue
 	}
@@ -103,7 +113,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
+if {$matches != 2} {
 	send_user "\nFAILURE: Job ExitCode incorrect\n"
 	exit 1
 }
@@ -136,15 +146,20 @@ if {$fini != 1} {
 }
 
 #
-# Now submit a script that returns a non-zero exit code and confirm that
-# the job record's ExitCode reflects this value.  The successful and failed
-# job steps should have no influence on the job's exit value.
+
+# Now submit a script that returns a non-zero exit code and confirm
+# that the job record's ExitCode reflects this value.  The two
+# successful job steps ($file_prog1 from above) should have no
+# influence on the job's, unsuccessful ExitCode.
+#
+# Here, the DerivedExitCode value should be set to the highest value
+# of the two successful job steps (i.e., 0).
 #
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "
   $bin_echo 'testing unsuccessful job return code'
   $srun $file_prog1
-  $srun $file_prog2
+  $srun $file_prog1
   exit 33
 "
 
@@ -176,9 +191,13 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Confirm correct ExitCode setting in job record
 #
 set matches 0
-spawn $scontrol show job $job_id
+spawn $scontrol --detail show job $job_id
 expect {
 	-re "ExitCode=33:0" {
+		incr matches
+		exp_continue
+	}
+	-re "DerivedExitCode=0:0" {
 		incr matches
 		exp_continue
 	}
@@ -191,7 +210,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
+if {$matches != 2} {
 	send_user "\nFAILURE: Job ExitCode incorrect\n"
 	exit 1
 }
