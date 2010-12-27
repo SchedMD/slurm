@@ -67,7 +67,10 @@
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
  */
-#if !defined(__CYGWIN__)
+#if defined(__APPLE__)
+slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+List job_list __attribute__((weak_import)) = NULL;
+#else
 slurm_ctl_conf_t slurmctld_conf;
 List job_list = NULL;
 #endif

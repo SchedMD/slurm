@@ -65,7 +65,7 @@ char *alpha_num  __attribute__((weak_import)) =
 void *acct_db_conn  __attribute__((weak_import)) = NULL;
 char *slurmctld_cluster_name  __attribute__((weak_import)) = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
-#elif !defined(__CYGWIN__)
+#else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr = NULL;
 int bg_recover = NOT_FROM_CONTROLLER;

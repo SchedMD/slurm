@@ -69,7 +69,7 @@ int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
 struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
-#elif !defined(__CYGWIN__)
+#else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
 int bg_recover = NOT_FROM_CONTROLLER;

@@ -97,7 +97,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 
-static char* _uptime_path = "/proc/uptime";
 static char* _cpuinfo_path = "/proc/cpuinfo";
 
 static int _compute_block_map(uint16_t numproc,
@@ -418,6 +417,7 @@ extern int get_up_time(uint32_t *up_time)
 #elif defined(__CYGWIN__)
 	FILE *uptime_file;
 	char buffer[128];
+	char* _uptime_path = "/proc/uptime";
 
 	if (!(uptime_file = fopen(_uptime_path, "r"))) {
 		error("get_up_time: error %d opening %s", errno, _uptime_path);
