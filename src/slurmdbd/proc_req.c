@@ -2764,7 +2764,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 		fd =  slurm_open_msg_conn(&ctld_address);
 		if (fd < 0) {
 			error("CONN: can not open socket back to slurmctld",
-			      slurmdbd_conn->newsockfd,);
+			      slurmdbd_conn->newsockfd);
 		} else {
 			slurm_msg_t out_msg;
 			slurm_msg_t_init(&out_msg);
