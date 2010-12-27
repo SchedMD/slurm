@@ -35,6 +35,7 @@ source ./globals
 set test_id        "3.3"
 set authorized     1
 set exit_code      0
+set node_list      ""
 set node_name      ""
 set node_old_state ""
 set node_new_state ""
@@ -45,21 +46,43 @@ print_header $test_id
 #
 # Identify a node and its state
 #
-spawn $scontrol show node
+spawn $sinfo --noheader -o  "NodeName=%N State=%t "
 expect {
-        -re "NodeName=($alpha_numeric_under) State=IDLE " {
-                if {[string compare $node_name ""] == 0} {
-                        set node_name $expect_out(1,string)
+        -re "NodeName=($alpha_numeric_nodelist) State=idle " {
+                if {[string compare $node_list ""] == 0} {
+                        set node_list $expect_out(1,string)
                         set node_old_state "IDLE"
                 }
                 exp_continue
         }
-        -re "NodeName=($alpha_numeric_under) State=ALLOCATED " {
-                if {[string compare $node_name ""] == 0} {
-                        set node_name $expect_out(1,string)
+        -re "NodeName=($alpha_numeric_nodelist) State=allocated " {
+                if {[string compare $node_list ""] == 0} {
+                        set node_list $expect_out(1,string)
                         set node_old_state "ALLOCATED"
                 }
                 exp_continue
+        }
+	timeout {
+		send_user "\nFAILURE: sinfo not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $node_list ""] == 0} {
+	send_user "\nWARNING: no nodes in usable state for this test\n"
+	exit 0
+}
+
+#
+# Convert node list to a single node name
+#
+log_user 0
+spawn $scontrol show hostnames $node_list
+expect {
+        -re "($alpha_numeric_nodelist)" {
+		set node_name $expect_out(1,string)
         }
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -69,10 +92,7 @@ expect {
 		wait
 	}
 }
-
-#
-# Validate current node information
-#
+log_user 1
 if {[string compare $node_name ""] == 0} {
 	send_user "\nWARNING: no nodes in usable state for this test\n"
 	exit 0
