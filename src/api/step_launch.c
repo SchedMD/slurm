@@ -560,10 +560,10 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		active = 0;
 		num_tasks = sls->layout->tasks[node_id];
 		for (j = 0; j < num_tasks; j++) {
-			if(bit_test(sls->tasks_started,
-				    sls->layout->tids[node_id][j]) &&
-			   !bit_test(sls->tasks_exited,
-				     sls->layout->tids[node_id][j])) {
+			if (bit_test(sls->tasks_started,
+				     sls->layout->tids[node_id][j]) &&
+			    !bit_test(sls->tasks_exited,
+				      sls->layout->tids[node_id][j])) {
 				/* this one has active tasks */
 				active = 1;
 				break;
@@ -573,14 +573,21 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		if (!active)
 			continue;
 
-		name = nodelist_nth_host(sls->layout->node_list, node_id);
-		hostlist_push(hl, name);
-		free(name);
+		if (ctx->step_resp->step_layout->front_end) {
+			hostlist_push(hl,
+				      ctx->step_resp->step_layout->front_end);
+			break;
+		} else {
+			name = nodelist_nth_host(sls->layout->node_list,
+						 node_id);
+			hostlist_push(hl, name);
+			free(name);
+		}
 	}
 
 	pthread_mutex_unlock(&sls->lock);
 
-	if(!hostlist_count(hl)) {
+	if (!hostlist_count(hl)) {
 		hostlist_destroy(hl);
 		goto nothing_left;
 	}
