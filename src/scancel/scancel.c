@@ -437,21 +437,22 @@ _cancel_job_id (void *ci)
 		else
 			verbose("Signal %u to job %u", sig, job_id);
 
-		if ((!sig_set) || opt.ctld) {
+		if ((!sig_set) || opt.ctld || opt.clusters) {
 			error_code = slurm_kill_job (job_id, sig,
 						     (uint16_t)opt.batch);
 		} else {
-			if (opt.batch)
+			if (opt.batch) {
 				error_code = slurm_signal_job_step(
 					job_id,
 					SLURM_BATCH_SCRIPT,
 					sig);
-			else
+			} else {
 				error_code = slurm_signal_job (job_id, sig);
+			}
 		}
-		if (error_code == 0
-		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
-			&& errno != ESLURM_JOB_PENDING))
+		if ((error_code == 0) ||
+		    ((errno != ESLURM_TRANSITION_STATE_NO_UPDATE) &&
+		     (errno != ESLURM_JOB_PENDING)))
 			break;
 		verbose("Job is in transistional state, retrying");
 		sleep ( 5 + i );
