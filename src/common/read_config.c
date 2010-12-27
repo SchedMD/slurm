@@ -1379,7 +1379,7 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 
 	slurm_conf_lock();
 	if (!front_end_list) {
-		error("front_end_list is NULL");
+		debug("front_end_list is NULL");
 	} else {
 		front_end_ptr = list_find_first(front_end_list,
 						list_find_frontend,
