@@ -59,9 +59,9 @@ dnl
 dnl add some flags for Solaris and cygwin
 dnl
 case "$host" in
-     	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined"
-		   SO_LDFLAGS="$SO_LDFLAGS \$(top_builddir)/src/tot_api/libslurmtot.la"
-		   AC_SUBST(SO_LDFLAGS)
+     	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined -lslurmtot"
+dnl		   SO_LDFLAGS="$SO_LDFLAGS \$(top_builddir)/src/tot_api/libslurmtot.la"
+dnl		   AC_SUBST(SO_LDFLAGS)
 		   ac_have_cygwin=yes
 		   ;;
 	*solaris*) CC="/usr/sfw/bin/gcc"
