@@ -195,8 +195,10 @@ extern int topo_build_config(void)
  */
 extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 {
+#ifndef HAVE_FRONT_END
 	if (find_node_record(node_name) == NULL)
 		return SLURM_ERROR;
+#endif
 
 	*paddr = xstrdup(node_name);
 	*ppattern = xstrdup("node");
