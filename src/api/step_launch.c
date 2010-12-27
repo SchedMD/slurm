@@ -1347,7 +1347,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 
 #ifdef HAVE_FRONT_END
 	slurm_cred_get_args(ctx->step_resp->cred, &cred_args);
-	info("hostlist=%s", cred_args.step_hostlist);
+	//info("hostlist=%s", cred_args.step_hostlist);
 	ret_list = slurm_send_recv_msgs(cred_args.step_hostlist, &msg, timeout,
 					false);
 	slurm_cred_free_args(&cred_args);
