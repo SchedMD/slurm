@@ -1616,7 +1616,12 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		job_step_resp.job_step_id = step_rec->step_id;
 		job_step_resp.resv_ports  = xstrdup(step_rec->resv_ports);
 		job_step_resp.step_layout = slurm_step_layout_copy(layout);
-
+#ifdef HAVE_FRONT_END
+		if (step_rec->job_ptr->batch_host) {
+			job_step_resp.step_layout->front_end =
+				xstrdup(step_rec->job_ptr->batch_host);
+		}
+#endif
 		job_step_resp.cred        = slurm_cred;
 		job_step_resp.switch_job  = switch_copy_jobinfo(
 			step_rec->switch_job);
@@ -2380,7 +2385,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	}
 
 	step_ptr = find_step_record(job_ptr, req->step_id);
-	if(!step_ptr) {
+	if (!step_ptr) {
 		unlock_slurmctld(job_read_lock);
 		debug2("_slurm_rpc_step_layout: "
 		       "JobId=%u.%u Not Found",
@@ -2389,6 +2394,10 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 	step_layout = slurm_step_layout_copy(step_ptr->step_layout);
+#ifdef HAVE_FRONT_END
+	if (job_ptr->batch_host)
+		step_layout->front_end = xstrdup(job_ptr->batch_host);
+#endif
 	unlock_slurmctld(job_read_lock);
 
 	slurm_msg_t_init(&response_msg);

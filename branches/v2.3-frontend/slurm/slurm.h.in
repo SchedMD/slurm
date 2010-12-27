@@ -1102,6 +1102,9 @@ typedef struct step_update_request_msg {
 } step_update_request_msg_t;
 
 typedef struct slurm_step_layout {
+	char *front_end;	/* If a front-end architecture, the name of
+				 * of the node running all tasks,
+				 * NULL otherwise */
 	uint32_t node_cnt;	/* node count */
 	char *node_list;        /* list of nodes in step */
 	uint16_t plane_size;	/* plane size when task_dist =
