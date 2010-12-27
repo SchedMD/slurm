@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 
 if WITH_CYGWIN
-lib_LTLIBRARIES = libslurmtot.la
+noinst_LTLIBRARIES = libslurmtot.la
 
 libslurmtot_la_SOURCES =
 
