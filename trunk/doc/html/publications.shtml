@@ -92,6 +92,11 @@ Morris Jette, Lawrence Livermore National Laboratory
 <h2>Publications</h2>
 
 <ul>
+<li><a href="http://mescal.imag.fr/membres/yiannis.georgiou/publications/thesis_Georgiou-2010-UJF.pdf">
+<b>Contributions for Resource and Job Management in High Performance Computing</b></a>,
+Yiannis Georgiou, Universite Joseph Fourier
+(Thesis, December 2010)</li>
+
 <li><a href="http://www.linux-mag.com/id/7239/1/">
 <b>Caos NSA and Perceus: All-in-one Cluster Software Stack</b></a>,
 Jeffrey B. Layton,
@@ -125,6 +130,6 @@ RCE 10: SLURM (podcast)</a>:
 Brock Palen and Jeff Squyres speak with Morris Jette and
 Danny Auble of LLNL about SLURM.</p>
 
-<p style="text-align:center;">Last modified 9 November 2010</p>
+<p style="text-align:center;">Last modified 27 December 2010</p>
 
 <!--#include virtual="footer.txt"-->

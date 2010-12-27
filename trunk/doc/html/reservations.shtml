@@ -52,10 +52,18 @@ ReservationName=root_3 StartTime=2009-02-06T16:00:00
    Users=root Accounts=(null)
 </pre>
 
-<p>A variation of this would be to configure license to
-represent system resources, such as a global file system.
-One could create a reservation for all of those licenses
-in order to perform maintenance on that resource.</p>
+<p>A variation of this would be to configure license to represent system
+resources, such as a global file system.
+The system resource may not may not require an actual license for use, but
+SLURM licenses can be used to prevent jobs needed the resource from being
+started when that resource is unavailable.
+One could create a reservation for all of those licenses in order to perform
+maintenance on that resource.
+In the example below, we create a reservation for 1000 licenses with the name
+of "lustre". 
+If there are a total of 1000 lustre licenses configured in this cluster,
+this reservation will prevent any job specifying the need for needed a lustre
+license from being scheduled on this cluster during this reservation.</p>
 <pre>
 $ scontrol create reservation starttime=2009-04-06T16:00:00 \
    duration=120 user=root flags=maint,ignore_jobs \
@@ -236,7 +244,7 @@ before a reservation given fewer jobs to time-slice with.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 25 August 2009</p>
+<p style="text-align: center;">Last modified 27 December 2010</p>
 
 <!--#include virtual="footer.txt"-->
 
