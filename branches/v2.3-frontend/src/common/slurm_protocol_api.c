@@ -3367,26 +3367,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		return NULL;
 	}
 
-#ifdef HAVE_FRONT_END
-	{
-		char *name = NULL;
-		/* only send to the front end node */
-		name = nodelist_nth_host(nodelist, 0);
-		if (!name) {
-			error("slurm_send_recv_msgs: "
-			      "can't get the first name out of %s",
-			      nodelist);
-			return NULL;
-		}
-/* 	info("got %s and %s", nodelist, name); */
-		hl = hostlist_create(name);
-		free(name);
-	}
-#else
-/* 	info("total sending to %s",nodelist); */
 	hl = hostlist_create(nodelist);
-#endif
-
 	if (!hl) {
 		error("slurm_send_recv_msgs: problem creating hostlist");
 		return NULL;
