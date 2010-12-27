@@ -122,7 +122,7 @@ expect {
 #
 # Validate that step's new time limit
 #
-spawn  $scontrol show step $job_id.o
+spawn  $scontrol show step $job_id.0
 expect {
 	-re "TimeLimit=00:($number):00" {
 		set orig_time $expect_out(1,string)

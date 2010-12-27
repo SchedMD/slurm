@@ -1,0 +1,231 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Verify the correct setting of a job's ExitCode.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2010 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Don Lipari <lipari1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id          "7.13"
+set exit_code        0
+set file_in          "test$test_id.input"
+set file_out         "test$test_id.output"
+set file_prog1       "test$test_id.prog1"
+set file_prog2       "test$test_id.prog2"
+
+print_header $test_id
+
+#
+# Delete left-over programs and rebuild them.
+#
+exec $bin_rm -f $file_in $file_out
+exec $bin_rm -f $file_prog1 $file_prog2
+exec $bin_cc -O -o $file_prog1 ${file_prog1}.c
+exec $bin_cc -O -o $file_prog2 ${file_prog2}.c
+
+#
+# Submit a script that returns a successful exit code and confirm that
+# the job record's ExitCode reflects this value.  The successful and failed
+# job steps should have no influence on the job's exit value.
+#
+make_bash_script $file_in "
+  $bin_echo 'testing successful job return code'
+  $srun $file_prog1
+  $srun $file_prog2
+  exit 0
+"
+
+set job_id 0
+spawn $sbatch --output=$file_out -t1 ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	exit 1
+}
+
+#
+# Confirm correct ExitCode setting in job record
+#
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "ExitCode=0:0" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE: Job ExitCode incorrect\n"
+	exit 1
+}
+
+#
+# Inspect the job's output file
+#
+if {[wait_for_file $file_out] != 0} {
+	exit 1
+}
+
+set fini    0
+spawn $bin_cat $file_out
+expect {
+	-re "fini" {
+		set fini 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: /bin/cat not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$fini != 1} {
+	send_user "\nFAILURE: script never completed\n"
+	exit 1
+}
+
+#
+# Now submit a script that returns a non-zero exit code and confirm that
+# the job record's ExitCode reflects this value.  The successful and failed
+# job steps should have no influence on the job's exit value.
+#
+exec $bin_rm -f $file_in $file_out
+make_bash_script $file_in "
+  $bin_echo 'testing unsuccessful job return code'
+  $srun $file_prog1
+  $srun $file_prog2
+  exit 33
+"
+
+set job_id 0
+spawn $sbatch --output=$file_out -t1 ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	exit 1
+}
+
+#
+# Confirm correct ExitCode setting in job record
+#
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "ExitCode=33:0" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE: Job ExitCode incorrect\n"
+	exit 1
+}
+
+#
+# Inspect the job's output file
+#
+if {[wait_for_file $file_out] != 0} {
+	exit 1
+}
+
+set fini    0
+spawn $bin_cat $file_out
+expect {
+	-re "fini" {
+		set fini 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: /bin/cat not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$fini != 1} {
+	send_user "\nFAILURE: script never completed\n"
+	exit 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in $file_prog1 $file_prog2 $file_out
+}
+
+exit $exit_code
