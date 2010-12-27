@@ -407,11 +407,16 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != SRUN_USER_MSG)		&&
 	    (agent_arg_ptr->msg_type != SRUN_STEP_MISSING)	&&
 	    (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
+#ifdef HAVE_FRONT_END
+		span = set_span(agent_arg_ptr->node_count,
+				agent_arg_ptr->node_count);
+#else
 		/* Sending message to a possibly large number of slurmd.
 		 * Push all message forwarding to slurmd in order to
 		 * offload as much work from slurmctld as possible. */
-		agent_info_ptr->get_reply = true;
 		span = set_span(agent_arg_ptr->node_count, 1);
+#endif
+		agent_info_ptr->get_reply = true;
 	} else {
 		/* Message is going to one node (for srun) or we want
 		 * it to get processed ASAP (SHUTDOWN or RECONFIGURE).
