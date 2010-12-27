@@ -167,8 +167,8 @@ int main(int argc, char *argv[])
 		/* Wait as long as we are running in the background */
 		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp())) {
 			if (!sent_msg) {
-				error("Waiting for %s to be placed in the "
-				      "foreground", argv[0]);
+				error("Waiting for program to be placed in "
+				      "the foreground");
 				sent_msg = true;
 			}
 			killpg(pid, SIGTTIN);
