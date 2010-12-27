@@ -942,7 +942,6 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	srun_node_fail_msg_t *nf = fail_msg->data;
 	hostset_t fail_nodes, all_nodes;
 	hostlist_iterator_t fail_itr;
-	char *node;
 	int num_node_ids;
 	int *node_ids;
 	int i, j;
@@ -959,7 +958,10 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	all_nodes = hostset_create(sls->layout->node_list);
 	/* find the index number of each down node */
 	for (i = 0; i < num_node_ids; i++) {
-		node = hostlist_next(fail_itr);
+#ifdef HAVE_FRONT_END
+		node_id = 0;
+#else
+		char *node = hostlist_next(fail_itr);
 		node_id = node_ids[i] = hostset_find(all_nodes, node);
 		if (node_id < 0) {
 			error(  "Internal error: bad SRUN_NODE_FAIL message. "
@@ -968,6 +970,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 			continue;
 		}
 		free(node);
+#endif
 
 		/* find all of the tasks that should run on this node and
 		 * mark them as having started and exited.  If they haven't
