@@ -178,6 +178,8 @@ slurm_step_layout_to_hv(slurm_step_layout_t *step_layout, HV *hv)
 	AV* av, *av2;
 	int i, j;
 
+	if (step_layout->front_end)
+		STORE_FIELD(hv, step_layout, front_end, charp);
 	STORE_FIELD(hv, step_layout, node_cnt, uint16_t);
 	if (step_layout->node_list)
 		STORE_FIELD(hv, step_layout, node_list, charp);
@@ -187,15 +189,15 @@ slurm_step_layout_to_hv(slurm_step_layout_t *step_layout, HV *hv)
 	}
 	STORE_FIELD(hv, step_layout, plane_size, uint16_t);
 	av = newAV();
-	for(i = 0; i < step_layout->node_cnt; i ++)
+	for (i = 0; i < step_layout->node_cnt; i ++)
 		av_store_uint16_t(av, i, step_layout->tasks[i]);
 	hv_store_sv(hv, "tasks", newRV_noinc((SV*)av));
 	STORE_FIELD(hv, step_layout, task_cnt, uint32_t);
 	STORE_FIELD(hv, step_layout, task_dist, uint16_t);
 	av = newAV();
-	for(i = 0; i < step_layout->node_cnt; i ++) {
+	for (i = 0; i < step_layout->node_cnt; i ++) {
 		av2 = newAV();
-		for(j = 0; j < step_layout->tasks[i]; j ++)
+		for (j = 0; j < step_layout->tasks[i]; j ++)
 			av_store_uint32_t(av2, i, step_layout->tids[i][j]);
 		av_store(av, i, newRV_noinc((SV*)av2));
 	}
