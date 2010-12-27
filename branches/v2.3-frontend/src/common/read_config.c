@@ -2947,12 +2947,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			error("TreeWidth=0 is invalid");
 			conf->tree_width = DEFAULT_TREE_WIDTH;
 		}
-#ifdef HAVE_FRONT_END
-		if (conf->tree_width != 1) {
-			error("TreeWidth=1 is invalid");
-			conf->tree_width = DEFAULT_TREE_WIDTH;
-		}
-#endif
 	} else {
 		conf->tree_width = DEFAULT_TREE_WIDTH;
 	}
