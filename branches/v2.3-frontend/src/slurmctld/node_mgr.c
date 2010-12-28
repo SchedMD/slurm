@@ -1766,16 +1766,13 @@ extern int validate_nodes_via_front_end(
 {
 	int error_code = 0, i, j, jobs_on_node;
 	bool update_node_state = false;
-#ifdef HAVE_BG
 	bool failure_logged = false;
-#endif
 	struct job_record *job_ptr;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	ListIterator job_iterator;
 	hostlist_t return_hostlist = NULL, reg_hostlist = NULL;
-	hostlist_t prolog_hostlist = NULL;
 	char *host_str = NULL;
 	uint16_t node_flags;
 	front_end_record_t *front_end_ptr;
@@ -1864,10 +1861,8 @@ extern int validate_nodes_via_front_end(
 		    IS_JOB_CONFIGURING(job_ptr) ||
 		    (job_ptr->batch_flag == 0))
 			continue;
-#ifdef HAVE_FRONT_END
 		if (job_ptr->front_end_ptr != front_end_ptr)
 			continue;
-#endif
 #ifdef HAVE_BG
 		/* slurmd does not report job presence until after prolog
 		 * completes which waits for bgblock boot to complete.
@@ -1916,24 +1911,10 @@ extern int validate_nodes_via_front_end(
 
 		if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 			if (!IS_NODE_DRAIN(node_ptr) &&
-			    !IS_NODE_FAIL(node_ptr)) {
-#ifdef HAVE_BG
-				if (!failure_logged) {
-					error("Prolog failure");
-					failure_logged = true;
-				}
-#else
-				update_node_state = true;
-				if (prolog_hostlist)
-					(void) hostlist_push_host(
-						prolog_hostlist,
-						node_ptr->name);
-				else
-					prolog_hostlist = hostlist_create(
-						node_ptr->name);
-				/* Front-end node set down above */
-				set_node_down(node_ptr->name, "Prolog failed");
-#endif
+			    !IS_NODE_FAIL(node_ptr) &&
+			    !failure_logged) {
+				error("Prolog failure");
+				failure_logged = true;
 			}
 		} else {
 			if (reg_hostlist)
@@ -2021,13 +2002,6 @@ extern int validate_nodes_via_front_end(
 		}
 	}
 
-	if (prolog_hostlist) {
-		hostlist_uniq(prolog_hostlist);
-		host_str = hostlist_ranged_string_xmalloc(prolog_hostlist);
-		error("Prolog failure on nodes %s, set to DOWN", host_str);
-		xfree(host_str);
-		hostlist_destroy(prolog_hostlist);
-	}
 	if (reg_hostlist) {
 		hostlist_uniq(reg_hostlist);
 		host_str = hostlist_ranged_string_xmalloc(reg_hostlist);

@@ -1411,6 +1411,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	bool job_requeue = false;
 	bool dump_job = false, dump_node = false;
 	struct job_record *job_ptr = NULL;
+	char *msg_title = "node(s)";
 	char *nodes = comp_msg->node_name;
 #ifdef HAVE_BG
 	update_block_msg_t block_desc;
@@ -1442,7 +1443,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		batch_step.step_id = SLURM_BATCH_SCRIPT;
 		batch_step.jobacct = comp_msg->jobacct;
 		batch_step.exit_code = comp_msg->job_rc;
-#ifdef HAVE_BG
+#ifdef HAVE_FRONT_END
 		nodes = job_ptr->nodes;
 #endif
 		batch_step.gres = nodes;
@@ -1454,22 +1455,22 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		jobacct_storage_g_step_start(acct_db_conn, &batch_step);
 		jobacct_storage_g_step_complete(acct_db_conn, &batch_step);
 		FREE_NULL_BITMAP(batch_step.step_node_bitmap);
-	} else if (!association_based_accounting) {
-#ifdef HAVE_BG
-		job_ptr = find_job_record(comp_msg->job_id);
-
-		if (job_ptr)
-			nodes = job_ptr->nodes;
-#endif
 	}
+
+#ifdef HAVE_FRONT_END
+	job_ptr = find_job_record(comp_msg->job_id);
+	if (job_ptr)
+		nodes = job_ptr->front_end_ptr->name;
+	msg_title = "front_end";
+#endif
 
 	/* do RPC call */
 	/* First set node DOWN if fatal error */
 	if (comp_msg->slurm_rc == ESLURM_ALREADY_DONE) {
 		/* race condition on job termination, not a real error */
-		info("slurmd error running JobId=%u from node(s)=%s: %s",
+		info("slurmd error running JobId=%u from %s=%s: %s",
 		     comp_msg->job_id,
-		     nodes,
+		     msg_title, nodes,
 		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
 	}
@@ -1478,20 +1479,40 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	if (comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR
 	    || comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED
 	    || comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) {
-		error("slurmd error %u running JobId=%u on node(s)=%s: %s",
+		error("slurmd error %u running JobId=%u on %s=%s: %s",
 		      comp_msg->slurm_rc,
 		      comp_msg->job_id,
-		      nodes,
+		      msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 	} else if (comp_msg->slurm_rc != SLURM_SUCCESS) {
 		error("Fatal slurmd error %u running JobId=%u "
-		      "on node(s)=%s: %s",
+		      "on %s=%s: %s",
 		      comp_msg->slurm_rc,
 		      comp_msg->job_id,
-		      nodes,
+		      msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 		if (error_code == SLURM_SUCCESS) {
-#ifndef HAVE_BG
+#ifdef HAVE_BG
+			if (job_ptr) {
+				select_g_select_jobinfo_get(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_BLOCK_ID,
+					&block_desc.bg_block_id);
+			}
+#else
+#ifdef HAVE_FRONT_END
+			if (job_ptr && job_ptr->front_end_ptr) {
+				update_front_end_msg_t update_node_msg;
+				memset(&update_node_msg, 0,
+				       sizeof(update_front_end_msg_t));
+				update_node_msg.name = job_ptr->front_end_ptr->
+						       name;
+				update_node_msg.node_state = NODE_STATE_DRAIN;
+				update_node_msg.reason =
+					"batch job complete failure";
+				error_code = update_front_end(&update_node_msg);
+			}
+#else
 			update_node_msg_t update_node_msg;
 			memset(&update_node_msg, 0, sizeof(update_node_msg_t));
 			update_node_msg.node_names = comp_msg->node_name;
@@ -1499,14 +1520,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 			update_node_msg.reason = "batch job complete failure";
 			update_node_msg.weight = NO_VAL;
 			error_code = update_node(&update_node_msg);
-#else
-			if (job_ptr) {
-				select_g_select_jobinfo_get(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_BLOCK_ID,
-					&block_desc.bg_block_id);
-			}
-#endif
+#endif	/* !HAVE_FRONT_END */
+#endif	/* !HAVE_BG */
 			if (comp_msg->job_rc != SLURM_SUCCESS)
 				job_requeue = true;
 			dump_job = true;
