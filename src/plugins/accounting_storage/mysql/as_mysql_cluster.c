@@ -50,21 +50,21 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 	ListIterator itr = NULL;
 	char *object = NULL;
 
-	if(!cluster_cond)
+	if (!cluster_cond)
 		return 0;
 
-	if(cluster_cond->with_deleted)
+	if (cluster_cond->with_deleted)
 		xstrcat(*extra, " where (deleted=0 || deleted=1)");
 	else
 		xstrcat(*extra, " where deleted=0");
 
-	if(cluster_cond->cluster_list
-	   && list_count(cluster_cond->cluster_list)) {
+	if (cluster_cond->cluster_list
+	    && list_count(cluster_cond->cluster_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(cluster_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "name='%s'", object);
 			set = 1;
@@ -73,13 +73,13 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if(cluster_cond->plugin_id_select_list
-	   && list_count(cluster_cond->plugin_id_select_list)) {
+	if (cluster_cond->plugin_id_select_list
+	    && list_count(cluster_cond->plugin_id_select_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(cluster_cond->plugin_id_select_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "plugin_id_select='%s'", object);
 			set = 1;
@@ -88,13 +88,13 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if(cluster_cond->rpc_version_list
-	   && list_count(cluster_cond->rpc_version_list)) {
+	if (cluster_cond->rpc_version_list
+	    && list_count(cluster_cond->rpc_version_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(cluster_cond->rpc_version_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "rpc_version='%s'", object);
 			set = 1;
@@ -103,12 +103,12 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if(cluster_cond->classification) {
+	if (cluster_cond->classification) {
 		xstrfmtcat(*extra, " && (classification & %u)",
 			   cluster_cond->classification);
 	}
 
-	if(cluster_cond->flags != NO_VAL) {
+	if (cluster_cond->flags != NO_VAL) {
 		xstrfmtcat(*extra, " && (flags & %u)",
 			   cluster_cond->flags);
 	}
@@ -152,7 +152,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		if ((rc = create_cluster_tables(mysql_conn,
 						object->name))
-		   != SLURM_SUCCESS) {
+		    != SLURM_SUCCESS) {
 			xfree(extra);
 			xfree(cols);
 			xfree(vals);
@@ -327,12 +327,12 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	 * the controller when it loads
 	 */
 
-	if(!cluster_cond || !cluster) {
+	if (!cluster_cond || !cluster) {
 		error("we need something to change");
 		return NULL;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	/* force to only do non-deleted clusters */
@@ -340,56 +340,56 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	_setup_cluster_cond_limits(cluster_cond, &extra);
 
 	/* Needed if talking to older SLURM versions < 2.2 */
-	if(!mysql_conn->cluster_name && cluster_cond->cluster_list
-	   && list_count(cluster_cond->cluster_list))
+	if (!mysql_conn->cluster_name && cluster_cond->cluster_list
+	    && list_count(cluster_cond->cluster_list))
 		mysql_conn->cluster_name =
 			xstrdup(list_peek(cluster_cond->cluster_list));
 
 	set = 0;
-	if(cluster->control_host) {
+	if (cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
 		clust_reg = true;
 	}
 
-	if(cluster->control_port) {
+	if (cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
 		set++;
 		clust_reg = true;
 	}
 
-	if(cluster->rpc_version) {
+	if (cluster->rpc_version) {
 		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
 		clust_reg = true;
 	}
 
-	if(cluster->dimensions) {
+	if (cluster->dimensions) {
 		xstrfmtcat(vals, ", dimensions=%u", cluster->dimensions);
 		clust_reg = true;
 	}
 
-	if(cluster->plugin_id_select) {
+	if (cluster->plugin_id_select) {
 		xstrfmtcat(vals, ", plugin_id_select=%u",
 			   cluster->plugin_id_select);
 		clust_reg = true;
 	}
-	if(cluster->flags != NO_VAL) {
+	if (cluster->flags != NO_VAL) {
 		xstrfmtcat(vals, ", flags=%u", cluster->flags);
 		clust_reg = true;
 	}
 
-	if(cluster->classification) {
+	if (cluster->classification) {
 		xstrfmtcat(vals, ", classification=%u",
 			   cluster->classification);
 	}
 
-	if(!vals) {
+	if (!vals) {
 		xfree(extra);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
-	} else if(clust_reg && (set != 3)) {
+	} else if (clust_reg && (set != 3)) {
 		xfree(vals);
 		xfree(extra);
 		errno = EFAULT;
@@ -404,8 +404,8 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(vals);
 		error("no result given for %s", extra);
@@ -416,11 +416,11 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
 
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			rc = 1;
 		} else  {
@@ -429,7 +429,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(vals);
@@ -438,7 +438,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	if(vals) {
+	if (vals) {
 		send_char = xstrdup_printf("(%s)", name_char);
 		user_name = uid_to_string((uid_t) uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
@@ -478,34 +478,34 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	bool jobs_running = 0;
 
-	if(!cluster_cond) {
+	if (!cluster_cond) {
 		error("we need something to change");
 		return NULL;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	/* force to only do non-deleted clusters */
 	cluster_cond->with_deleted = 0;
 	_setup_cluster_cond_limits(cluster_cond, &extra);
 
-	if(!extra) {
+	if (!extra) {
 		error("Nothing to remove");
 		return NULL;
 	}
 
 	query = xstrdup_printf("select name from %s%s;", cluster_table, extra);
 	xfree(extra);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 
-	if(!mysql_num_rows(result)) {
+	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
@@ -517,14 +517,14 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	assoc_char = xstrdup_printf("t2.acct='root'");
 
 	user_name = uid_to_string((uid_t) uid);
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
-		if(!jobs_running)
+		if (!jobs_running)
 			list_append(ret_list, object);
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
-		if(jobs_running)
+		if (jobs_running)
 			xfree(object);
 		/* We should not need to delete any cluster usage just set it
 		 * to deleted */
@@ -537,11 +537,11 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   object, cluster_day_table, now,
 			   object, cluster_hour_table, now,
 			   object, cluster_month_table, now);
-		if((rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
-				       user_name, cluster_table,
-				       name_char, assoc_char, object,
-				       ret_list, &jobs_running))
-		   != SLURM_SUCCESS)
+		if ((rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
+					user_name, cluster_table,
+					name_char, assoc_char, object,
+					ret_list, &jobs_running))
+		    != SLURM_SUCCESS)
 			break;
 	}
 	mysql_free_result(result);
@@ -553,12 +553,12 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_destroy(ret_list);
 		return NULL;
 	}
-	if(!jobs_running) {
+	if (!jobs_running) {
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);
 			list_destroy(ret_list);
 			return NULL;
@@ -568,23 +568,23 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		wckey_cond.cluster_list = ret_list;
 		tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
-		if(tmp_list)
+		if (tmp_list)
 			list_destroy(tmp_list);
 
 		itr = list_iterator_create(ret_list);
-		while((object = list_next(itr))) {
-			if((rc = remove_cluster_tables(mysql_conn, object))
-			   != SLURM_SUCCESS)
+		while ((object = list_next(itr))) {
+			if ((rc = remove_cluster_tables(mysql_conn, object))
+			    != SLURM_SUCCESS)
 				break;
 			cluster_name = xstrdup(object);
-			if(addto_update_list(mysql_conn->update_list,
-					     SLURMDB_REMOVE_CLUSTER,
-					     cluster_name) != SLURM_SUCCESS)
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_REMOVE_CLUSTER,
+					      cluster_name) != SLURM_SUCCESS)
 				xfree(cluster_name);
 		}
 		list_iterator_destroy(itr);
 
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);
 			list_destroy(ret_list);
 			errno = rc;
@@ -637,11 +637,11 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_REQ_COUNT
 	};
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 
-	if(!cluster_cond) {
+	if (!cluster_cond) {
 		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
@@ -664,8 +664,8 @@ empty:
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -675,7 +675,7 @@ empty:
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_association_cond_t));
 
-	if(cluster_cond) {
+	if (cluster_cond) {
 		/* I don't think we want the with_usage flag here.
 		 * We do need the with_deleted though. */
 		//assoc_cond.with_usage = cluster_cond->with_usage;
@@ -683,7 +683,7 @@ empty:
 	}
 	assoc_cond.cluster_list = list_create(NULL);
 
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
 
@@ -695,7 +695,7 @@ empty:
 		list_append(assoc_cond.cluster_list, cluster->name);
 
 		/* get the usage if requested */
-		if(cluster_cond && cluster_cond->with_usage) {
+		if (cluster_cond && cluster_cond->with_usage) {
 			as_mysql_get_usage(
 				mysql_conn, uid, cluster,
 				DBD_GET_CLUSTER_USAGE,
@@ -718,22 +718,22 @@ empty:
 			cluster->name, event_table);
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if(!(result2 = mysql_db_query_ret(
-			     mysql_conn, query, 0))) {
+		if (!(result2 = mysql_db_query_ret(
+			      mysql_conn, query, 0))) {
 			xfree(query);
 			continue;
 		}
 		xfree(query);
-		if((row2 = mysql_fetch_row(result2))) {
+		if ((row2 = mysql_fetch_row(result2))) {
 			cluster->cpu_count = slurm_atoul(row2[0]);
-			if(row2[1] && row2[1][0])
+			if (row2[1] && row2[1][0])
 				cluster->nodes = xstrdup(row2[1]);
 		}
 		mysql_free_result(result2);
 	}
 	mysql_free_result(result);
 
-	if(!list_count(assoc_cond.cluster_list)) {
+	if (!list_count(assoc_cond.cluster_list)) {
 		list_destroy(assoc_cond.cluster_list);
 		return cluster_list;
 	}
@@ -749,17 +749,17 @@ empty:
 	list_destroy(assoc_cond.acct_list);
 	list_destroy(assoc_cond.user_list);
 
-	if(!assoc_list)
+	if (!assoc_list)
 		return cluster_list;
 
 	itr = list_iterator_create(cluster_list);
 	assoc_itr = list_iterator_create(assoc_list);
-	while((cluster = list_next(itr))) {
-		while((assoc = list_next(assoc_itr))) {
-			if(strcmp(assoc->cluster, cluster->name))
+	while ((cluster = list_next(itr))) {
+		while ((assoc = list_next(assoc_itr))) {
+			if (strcmp(assoc->cluster, cluster->name))
 				continue;
 
-			if(cluster->root_assoc) {
+			if (cluster->root_assoc) {
 				debug("This cluster %s already has "
 				      "an association.", cluster->name);
 				continue;
@@ -771,7 +771,7 @@ empty:
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(assoc_itr);
-	if(list_count(assoc_list))
+	if (list_count(assoc_list))
 		error("I have %d left over associations",
 		      list_count(assoc_list));
 	list_destroy(assoc_list);
@@ -819,19 +819,19 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		EVENT_REQ_COUNT
 	};
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if(!event_cond)
+	if (!event_cond)
 		goto empty;
 
-	if(event_cond->cpus_min) {
-		if(extra)
+	if (event_cond->cpus_min) {
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 
-		if(event_cond->cpus_max) {
+		if (event_cond->cpus_max) {
 			xstrfmtcat(extra, "cpu_count between %u and %u)",
 				   event_cond->cpus_min, event_cond->cpus_max);
 
@@ -846,7 +846,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	case SLURMDB_EVENT_ALL:
 		break;
 	case SLURMDB_EVENT_CLUSTER:
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
@@ -854,7 +854,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		break;
 	case SLURMDB_EVENT_NODE:
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
@@ -866,16 +866,16 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		break;
 	}
 
-	if(event_cond->node_list
-	   && list_count(event_cond->node_list)) {
+	if (event_cond->node_list
+	    && list_count(event_cond->node_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->node_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "node_name='%s'", object);
 			set = 1;
@@ -884,11 +884,11 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(event_cond->period_start) {
-		if(!event_cond->period_end)
+	if (event_cond->period_start) {
+		if (!event_cond->period_end)
 			event_cond->period_end = now;
 
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
@@ -899,16 +899,16 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 			   event_cond->period_end, event_cond->period_start);
 	}
 
-	if(event_cond->reason_list
-	   && list_count(event_cond->reason_list)) {
+	if (event_cond->reason_list
+	    && list_count(event_cond->reason_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->reason_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "reason like '%%%s%%'", object);
 			set = 1;
@@ -917,16 +917,16 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(event_cond->reason_uid_list
-	   && list_count(event_cond->reason_uid_list)) {
+	if (event_cond->reason_uid_list
+	    && list_count(event_cond->reason_uid_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->reason_uid_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "reason_uid='%s'", object);
 			set = 1;
@@ -935,16 +935,16 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(event_cond->state_list
-	   && list_count(event_cond->state_list)) {
+	if (event_cond->state_list
+	    && list_count(event_cond->state_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->state_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "state='%s'", object);
 			set = 1;
@@ -953,7 +953,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(event_cond->cluster_list && list_count(event_cond->cluster_list))
+	if (event_cond->cluster_list && list_count(event_cond->cluster_list))
 		use_cluster_list = event_cond->cluster_list;
 empty:
 	xfree(tmp);
@@ -962,25 +962,25 @@ empty:
 		xstrfmtcat(tmp, ", %s", event_req_inx[i]);
 	}
 
-	if(use_cluster_list == as_mysql_cluster_list)
+	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 
 	ret_list = list_create(slurmdb_destroy_event_rec);
 
 	itr = list_iterator_create(use_cluster_list);
-	while((object = list_next(itr))) {
+	while ((object = list_next(itr))) {
 		query = xstrdup_printf("select %s from \"%s_%s\"",
 				       tmp, object, event_table);
-		if(extra)
+		if (extra)
 			xstrfmtcat(query, " %s", extra);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn, query, 0))) {
+		if (!(result = mysql_db_query_ret(
+			      mysql_conn, query, 0))) {
 			xfree(query);
-			if(mysql_errno(mysql_conn->db_conn)
-			   != ER_NO_SUCH_TABLE) {
+			if (mysql_errno(mysql_conn->db_conn)
+			    != ER_NO_SUCH_TABLE) {
 				list_destroy(ret_list);
 				ret_list = NULL;
 			}
@@ -988,7 +988,7 @@ empty:
 		}
 		xfree(query);
 
-		while((row = mysql_fetch_row(result))) {
+		while ((row = mysql_fetch_row(result))) {
 			slurmdb_event_rec_t *event =
 				xmalloc(sizeof(slurmdb_event_rec_t));
 
@@ -996,7 +996,7 @@ empty:
 
 			event->cluster = xstrdup(object);
 
-			if(row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0]) {
+			if (row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0]) {
 				event->node_name = xstrdup(row[EVENT_REQ_NODE]);
 				event->event_type = SLURMDB_EVENT_NODE;
 			} else
@@ -1007,12 +1007,12 @@ empty:
 			event->period_start = slurm_atoul(row[EVENT_REQ_START]);
 			event->period_end = slurm_atoul(row[EVENT_REQ_END]);
 
-			if(row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
+			if (row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
 				event->reason = xstrdup(row[EVENT_REQ_REASON]);
 			event->reason_uid =
 				slurm_atoul(row[EVENT_REQ_REASON_UID]);
 
-			if(row[EVENT_REQ_CNODES] && row[EVENT_REQ_CNODES][0])
+			if (row[EVENT_REQ_CNODES] && row[EVENT_REQ_CNODES][0])
 				event->cluster_nodes =
 					xstrdup(row[EVENT_REQ_CNODES]);
 		}
@@ -1022,26 +1022,26 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if(use_cluster_list == as_mysql_cluster_list)
+	if (use_cluster_list == as_mysql_cluster_list)
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	return ret_list;
 }
 
 extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
-			   struct node_record *node_ptr,
-			   time_t event_time, char *reason,
-			   uint32_t reason_uid)
+			      struct node_record *node_ptr,
+			      time_t event_time, char *reason,
+			      uint32_t reason_uid)
 {
 	uint16_t cpus;
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
 	char *my_reason;
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if(!node_ptr) {
+	if (!node_ptr) {
 		error("No node_ptr given!");
 		return SLURM_ERROR;
 	}
@@ -1090,13 +1090,13 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
-			 struct node_record *node_ptr,
-			 time_t event_time)
+			    struct node_record *node_ptr,
+			    time_t event_time)
 {
 	char* query;
 	int rc = SLURM_SUCCESS;
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	query = xstrdup_printf(
@@ -1120,14 +1120,14 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	uint32_t flags = slurmdb_setup_cluster_flags();
 
-	if(slurmdbd_conf)
+	if (slurmdbd_conf)
 		fatal("clusteracct_storage_g_register_ctld "
 		      "should never be called from the slurmdbd.");
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if(!mysql_conn->cluster_name)
+	if (!mysql_conn->cluster_name)
 		mysql_conn->cluster_name = xstrdup(cluster);
 
 	info("Registering slurmctld for cluster %s at port %u in database.",
@@ -1135,8 +1135,8 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	gethostname(hostname, sizeof(hostname));
 
 	/* check if we are running on the backup controller */
-	if(slurmctld_conf.backup_controller
-	   && !strcmp(slurmctld_conf.backup_controller, hostname)) {
+	if (slurmctld_conf.backup_controller
+	    && !strcmp(slurmctld_conf.backup_controller, hostname)) {
 		address = slurmctld_conf.backup_addr;
 	} else
 		address = slurmctld_conf.control_addr;
@@ -1163,8 +1163,8 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
-			      char *cluster_nodes, uint32_t cpus,
-			      time_t event_time)
+				 char *cluster_nodes, uint32_t cpus,
+				 time_t event_time)
 {
 	char* query;
 	int rc = SLURM_SUCCESS;
@@ -1172,7 +1172,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
- 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+ 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	/* Record the processor count */
@@ -1180,10 +1180,10 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		"select cpu_count, cluster_nodes from \"%s_%s\" where "
 		"time_end=0 and node_name='' limit 1",
 		mysql_conn->cluster_name, event_table);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
 		xfree(query);
-		if(mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
+		if (mysql_errno(mysql_conn->db_conn) == ER_NO_SUCH_TABLE)
 			rc = ESLURM_ACCESS_DENIED;
 		else
 			rc = SLURM_ERROR;
@@ -1192,7 +1192,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	/* we only are checking the first one here */
-	if(!(row = mysql_fetch_row(result))) {
+	if (!(row = mysql_fetch_row(result))) {
 		debug("We don't have an entry for this machine %s "
 		      "most likely a first time running.",
 		      mysql_conn->cluster_name);
@@ -1209,12 +1209,12 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		goto add_it;
 	}
 
-	if(slurm_atoul(row[0]) == cpus) {
+	if (slurm_atoul(row[0]) == cpus) {
 		debug3("we have the same cpu count as before for %s, "
 		       "no need to update the database.",
 		       mysql_conn->cluster_name);
-		if(cluster_nodes) {
-			if(!row[1][0]) {
+		if (cluster_nodes) {
+			if (!row[1][0]) {
 				debug("Adding cluster nodes '%s' to "
 				      "last instance of cluster '%s'.",
 				      cluster_nodes, mysql_conn->cluster_name);
@@ -1227,7 +1227,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 				rc = mysql_db_query(mysql_conn, query);
 				xfree(query);
 				goto end_it;
-			} else if(!strcmp(cluster_nodes, row[1])) {
+			} else if (!strcmp(cluster_nodes, row[1])) {
 				debug3("we have the same nodes in the cluster "
 				       "as before no need to "
 				       "update the database.");
@@ -1248,7 +1248,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 	first = 1;
-	if(rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS)
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
@@ -1261,7 +1261,7 @@ add_it:
 	xfree(query);
 end_it:
 	mysql_free_result(result);
-	if(first && rc == SLURM_SUCCESS)
+	if (first && rc == SLURM_SUCCESS)
 		rc = ACCOUNTING_FIRST_REG;
 
 	return rc;
