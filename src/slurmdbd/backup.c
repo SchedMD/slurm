@@ -55,7 +55,7 @@ static slurm_fd_t  slurmdbd_fd         = -1;
 /* Open a connection to the Slurm DBD and set slurmdbd_fd */
 static void _open_slurmdbd_fd(slurm_addr_t dbd_addr)
 {
-	if(dbd_addr.sin_port == 0) {
+	if (dbd_addr.sin_port == 0) {
 		error("sin_port == 0 in the slurmdbd backup");
 		return;
 	}
@@ -112,14 +112,14 @@ extern void run_backup(void)
 			shutdown_threads();
 			have_control = false;
 			break;
-		} else if(!have_control && !writeable) {
+		} else if (!have_control && !writeable) {
 			have_control = true;
 			info("Taking Control");
 			break;
 		}
 
 		sleep(1);
-		if(!writeable)
+		if (!writeable)
 			_reopen_slurmdbd_fd(dbd_addr);
 	}
 
