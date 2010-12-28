@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.2
-1 December 2010
+28 December 2010
 
 
 IMPORTANT NOTE:
@@ -15,8 +15,8 @@ You can accomplish this by adding the line
 
 innodb_buffer_pool_size=64M
 
-under the [mysqld] reference and restarting the mysqld.  This is needed when
-converting large tables over to the new database schema.
+under the [mysqld] reference in the my.cnf file and restarting the mysqld.
+This is needed when converting large tables over to the new database schema.
 
 SLURM can be upgraded from version 2.1 to version 2.2 without loss of jobs or
 other state information.
