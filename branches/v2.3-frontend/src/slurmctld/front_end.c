@@ -159,6 +159,7 @@ extern front_end_record_t *assign_front_end(void)
 		last_assigned = (last_assigned + 1) % front_end_node_cnt;
 		front_end_ptr = front_end_nodes + last_assigned;
 		if (IS_NODE_DOWN(front_end_ptr) ||
+		    IS_NODE_DRAIN(front_end_ptr) ||
 		    IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
 		state_flags = front_end_nodes[last_assigned].node_state &
@@ -185,6 +186,7 @@ extern bool avail_front_end(void)
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if (IS_NODE_DOWN(front_end_ptr) ||
+		    IS_NODE_DRAIN(front_end_ptr) ||
 		    IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
 		return true;
@@ -299,11 +301,12 @@ extern void log_front_end_state(void)
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 		info("FrontendName=%s FrontendAddr=%s Port=%u State=%s "
-		     "Reason=%s",
+		     "Reason=%s JobCntRun=%u JobCntComp=%u",
 		     front_end_ptr->name, front_end_ptr->comm_name,
 		     front_end_ptr->port,
 		     node_state_string(front_end_ptr->node_state),
-		     front_end_ptr->reason);
+		     front_end_ptr->reason, front_end_ptr->job_cnt_run,
+		     front_end_ptr->job_cnt_comp);
 	}
 #endif
 }
@@ -718,6 +721,7 @@ unpack_error:
 extern void set_front_end_down (front_end_record_t *front_end_ptr,
 				char *reason)
 {
+#ifdef HAVE_FRONT_END
 	time_t now = time(NULL);
 	uint16_t state_flags = front_end_ptr->node_state & NODE_STATE_FLAGS;
 
@@ -732,6 +736,77 @@ extern void set_front_end_down (front_end_record_t *front_end_ptr,
 		front_end_ptr->reason_time = now;
 		front_end_ptr->reason_uid = slurm_get_slurm_user_id();
 	}
+#endif
+}
 
-	return;
+/*
+ * sync_front_end_state - synchronize job pointers and front-end node state
+ */
+extern void sync_front_end_state(void)
+{
+#ifdef HAVE_FRONT_END
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	front_end_record_t *front_end_ptr;
+	uint16_t state_flags;
+	int i;
+
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		front_end_ptr->job_cnt_comp = 0;
+		front_end_ptr->job_cnt_run  = 0;
+	}
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->batch_host) {
+			job_ptr->front_end_ptr =
+				find_front_end_record(job_ptr->batch_host);
+			if ((job_ptr->front_end_ptr == NULL) &&
+			    IS_JOB_RUNNING(job_ptr)) {
+				error("front end node %s has vanish, "
+				      "killing job %u",
+				      job_ptr->batch_host, job_ptr->job_id);
+				job_ptr->job_state = JOB_NODE_FAIL |
+						     JOB_COMPLETING;
+			} else if (IS_JOB_COMPLETING(job_ptr)) {
+				job_ptr->front_end_ptr->job_cnt_comp++;
+			} else if (IS_JOB_RUNNING(job_ptr)) {
+				job_ptr->front_end_ptr->job_cnt_run++;
+			}
+		} else {
+			job_ptr->front_end_ptr = NULL;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		if (IS_NODE_IDLE(front_end_ptr) &&
+		    (front_end_ptr->job_cnt_run != 0)) {
+			state_flags = front_end_ptr->node_state &
+				      NODE_STATE_FLAGS;
+			front_end_ptr->node_state = NODE_STATE_IDLE |
+						    state_flags;
+		}
+		if (IS_NODE_ALLOCATED(front_end_ptr) &&
+		    (front_end_ptr->job_cnt_run == 0)) {
+			state_flags = front_end_ptr->node_state &
+				      NODE_STATE_FLAGS;
+			front_end_ptr->node_state = NODE_STATE_ALLOCATED |
+						    state_flags;
+		}
+		if (IS_NODE_COMPLETING(front_end_ptr) &&
+		    (front_end_ptr->job_cnt_comp == 0)) {
+			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
+		}
+		if (!IS_NODE_COMPLETING(front_end_ptr) &&
+		    (front_end_ptr->job_cnt_comp != 0)) {
+			front_end_ptr->node_state |= NODE_STATE_COMPLETING;
+		}
+	}
+
+	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
+		log_front_end_state();
+#endif
 }

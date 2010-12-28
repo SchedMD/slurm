@@ -1459,7 +1459,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 
 #ifdef HAVE_FRONT_END
 	job_ptr = find_job_record(comp_msg->job_id);
-	if (job_ptr)
+	if (job_ptr && job_ptr->front_end_ptr)
 		nodes = job_ptr->front_end_ptr->name;
 	msg_title = "front_end";
 #endif

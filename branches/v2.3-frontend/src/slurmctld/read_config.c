@@ -749,6 +749,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_job_ret = load_all_job_state();
 	}
 
+	sync_front_end_state();
 	_sync_part_prio();
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
