@@ -71,13 +71,13 @@ time_t shutdown_time = 0;		/* when shutdown request arrived */
 
 /* Local variables */
 static int    dbd_sigarray[] = {	/* blocked signals for this process */
-			SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
-			SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
-			SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0 };
+	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
+	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
+	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0 };
 static int    debug_level = 0;		/* incremented for -v on command line */
 static int    foreground = 0;		/* run process as a daemon */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
-			LOG_OPTS_INITIALIZER;
+	LOG_OPTS_INITIALIZER;
 static int	 new_nice = 0;
 static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
 static pthread_t signal_handler_thread;	/* thread ID for signal hander */
@@ -118,11 +118,11 @@ int main(int argc, char *argv[])
 
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s authentication plugin",
-			slurmdbd_conf->auth_type);
+		      slurmdbd_conf->auth_type);
 	}
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
-			slurmdbd_conf->storage_type);
+		      slurmdbd_conf->storage_type);
 	}
 	_kill_old_slurmdbd();
 	if (foreground == 0)
@@ -162,10 +162,10 @@ int main(int argc, char *argv[])
 	/* If we are tacking wckey we need to cache
 	   wckeys, if we aren't only cache the users and qos */
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
-	if(slurmdbd_conf->track_wckey)
+	if (slurmdbd_conf->track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
-	if(assoc_mgr_init(db_conn, &assoc_init_arg) == SLURM_ERROR) {
+	if (assoc_mgr_init(db_conn, &assoc_init_arg) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);
 		goto end_it;
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 	if (gethostname_short(node_name, sizeof(node_name)))
 		fatal("getnodename: %m");
 
-	while(1) {
+	while (1) {
 		if (slurmdbd_conf->dbd_backup &&
 		    (!strcmp(node_name, slurmdbd_conf->dbd_backup) ||
 		     !strcmp(slurmdbd_conf->dbd_backup, "localhost"))) {
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 			have_control = false;
 			backup = true;
 			run_backup();
-			if(!shutdown_time)
+			if (!shutdown_time)
 				assoc_mgr_refresh_lists(db_conn, NULL);
 		} else if (slurmdbd_conf->dbd_host &&
 			   (!strcmp(slurmdbd_conf->dbd_host, node_name) ||
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 			      slurmdbd_conf->dbd_backup);
 		}
 
-		if(!shutdown_time) {
+		if (!shutdown_time) {
 			/* Create attached thread to process incoming RPCs */
 			slurm_attr_init(&thread_attr);
 			if (pthread_create(&rpc_handler_thread, &thread_attr,
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 			slurm_attr_destroy(&thread_attr);
 		}
 
-		if(!shutdown_time) {
+		if (!shutdown_time) {
 			/* Create attached thread to do usage rollup */
 			slurm_attr_init(&thread_attr);
 			if (pthread_create(&rollup_handler_thread,
@@ -216,31 +216,31 @@ int main(int argc, char *argv[])
 		}
 
 		/* Daemon is fully operational here */
-		if(!shutdown_time || primary_resumed) {
+		if (!shutdown_time || primary_resumed) {
 			shutdown_time = 0;
 			info("slurmdbd version %s started",
 			     SLURM_VERSION_STRING);
-			if(backup)
+			if (backup)
 				run_backup();
 		}
 
 		/* this is only ran if not backup */
-		if(rollup_handler_thread)
+		if (rollup_handler_thread)
 			pthread_join(rollup_handler_thread, NULL);
-		if(rpc_handler_thread)
+		if (rpc_handler_thread)
 			pthread_join(rpc_handler_thread, NULL);
 
-		if(backup && primary_resumed) {
+		if (backup && primary_resumed) {
 			shutdown_time = 0;
 			info("Backup has given up control");
 		}
 
-		if(shutdown_time)
+		if (shutdown_time)
 			break;
 	}
 	/* Daemon termination handled here */
 
-	if(signal_handler_thread)
+	if (signal_handler_thread)
 		pthread_join(signal_handler_thread, NULL);
 
 end_it:
@@ -342,15 +342,15 @@ static void _usage(char *prog_name)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
 	fprintf(stderr, "  -D         \t"
-			"Run daemon in foreground.\n");
+		"Run daemon in foreground.\n");
 	fprintf(stderr, "  -h         \t"
-			"Print this help message.\n");
+		"Print this help message.\n");
 	fprintf(stderr, "  -n value   \t"
-			"Run the daemon at the specified nice value.\n");
+		"Run the daemon at the specified nice value.\n");
 	fprintf(stderr, "  -v         \t"
-			"Verbose mode. Multiple -v's increase verbosity.\n");
+		"Verbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -V         \t"
-			"Print version information and exit.\n");
+		"Print version information and exit.\n");
 }
 
 /* Reset slurmctld logging based upon configuration parameters */
@@ -459,10 +459,10 @@ static void _daemonize(void)
 
 static void _rollup_handler_cancel()
 {
-	if(running_rollup)
+	if (running_rollup)
 		debug("Waiting for rollup thread to finish.");
 	slurm_mutex_lock(&rollup_lock);
-	if(rollup_handler_thread)
+	if (rollup_handler_thread)
 		pthread_cancel(rollup_handler_thread);
 	slurm_mutex_unlock(&rollup_lock);
 }
@@ -478,14 +478,14 @@ static void *_rollup_handler(void *db_conn)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	if(!localtime_r(&start_time, &tm)) {
+	if (!localtime_r(&start_time, &tm)) {
 		fatal("Couldn't get localtime for rollup handler %ld",
 		      (long)start_time);
 		return NULL;
 	}
 
 	while (1) {
-		if(!db_conn)
+		if (!db_conn)
 			break;
 		/* run the roll up */
 		slurm_mutex_lock(&rollup_lock);
@@ -508,7 +508,7 @@ static void *_rollup_handler(void *db_conn)
 		sleep((next_time-start_time));
 
 		start_time = time(NULL);
-		if(!localtime_r(&start_time, &tm)) {
+		if (!localtime_r(&start_time, &tm)) {
 			fatal("Couldn't get localtime for rollup handler %ld",
 			      (long)start_time);
 			return NULL;
