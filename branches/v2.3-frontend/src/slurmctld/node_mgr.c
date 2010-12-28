@@ -1721,7 +1721,7 @@ static front_end_record_t * _front_end_reg(char *node_name,
 {
 	front_end_record_t *front_end_ptr;
 
-	info("name:%s boot_time:%u up_time:%u",
+	debug("name:%s boot_time:%u up_time:%u",
 	      node_name, (unsigned int) slurmd_start_time, up_time);
 	front_end_ptr = find_front_end_record(node_name);
 	if (front_end_ptr == NULL) {
@@ -1764,7 +1764,7 @@ static front_end_record_t * _front_end_reg(char *node_name,
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg)
 {
-	int error_code = 0, i, jobs_on_node;
+	int error_code = 0, i, j, jobs_on_node;
 	bool update_node_state = false;
 #ifdef HAVE_BG
 	bool failure_logged = false;
@@ -1806,8 +1806,8 @@ extern int validate_nodes_via_front_end(
 		job_ptr = find_job_record(reg_msg->job_id[i]);
 		node_ptr = node_record_table_ptr;
 		if (job_ptr && job_ptr->node_bitmap &&
-		    ((i = bit_ffs(job_ptr->node_bitmap)) >= 0))
-			node_ptr += i;
+		    ((j = bit_ffs(job_ptr->node_bitmap)) >= 0))
+			node_ptr += j;
 
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported",
@@ -1833,7 +1833,6 @@ extern int validate_nodes_via_front_end(
 					 node_ptr);
 		}
 
-
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
@@ -1855,7 +1854,8 @@ extern int validate_nodes_via_front_end(
 	if (reg_msg->job_count == 0) {
 		front_end_ptr->job_cnt_comp = 0;
 		front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
-	}
+	} else if (front_end_ptr->job_cnt_comp != 0)
+		front_end_ptr->node_state |= NODE_STATE_COMPLETING;
 
 	/* purge orphan batch jobs */
 	job_iterator = list_iterator_create(job_list);
@@ -1887,11 +1887,11 @@ extern int validate_nodes_via_front_end(
 
 	(void) gres_plugin_node_config_unpack(reg_msg->gres_info,
 					      node_record_table_ptr->name);
-	for (i=0; i<node_record_count; i++) {
-		node_ptr = &node_record_table_ptr[i];
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
 		config_ptr = node_ptr->config_ptr;
 		jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
-		node_ptr->last_response = time (NULL);
+		node_ptr->last_response = now;
 
 		(void) gres_plugin_node_config_validate(node_ptr->name,
 							config_ptr->gres,

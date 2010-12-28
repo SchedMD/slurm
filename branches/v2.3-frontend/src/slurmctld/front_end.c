@@ -230,6 +230,12 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 				front_end_ptr->node_state &= NODE_STATE_FLAGS;
 				front_end_ptr->node_state |= NODE_STATE_DOWN;
 			}
+
+			if (IS_NODE_DOWN(front_end_ptr)) {
+				front_end_ptr->node_state &=
+					(~NODE_STATE_COMPLETING);
+			}
+
 			if (IS_NODE_DRAIN(front_end_ptr) ||
 			    IS_NODE_DOWN(front_end_ptr)) {
 				if (msg_ptr->reason) {
@@ -658,6 +664,7 @@ extern int load_all_front_end_state(bool state_only)
 			node_cnt++;
 			if (IS_NODE_UNKNOWN(front_end_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
+					orig_flags &= (~NODE_STATE_COMPLETING);
 					front_end_ptr->node_state =
 						NODE_STATE_DOWN | orig_flags;
 				}
@@ -718,6 +725,7 @@ extern void set_front_end_down (front_end_record_t *front_end_ptr,
 	time_t now = time(NULL);
 	uint16_t state_flags = front_end_ptr->node_state & NODE_STATE_FLAGS;
 
+	state_flags &= (~NODE_STATE_COMPLETING);
 	front_end_ptr->node_state = NODE_STATE_DOWN | state_flags;
 	trigger_front_end_down(front_end_ptr);
 	(void) kill_job_by_front_end_name(front_end_ptr->name);

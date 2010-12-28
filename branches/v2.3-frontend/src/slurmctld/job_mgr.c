@@ -2673,7 +2673,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	no_alloc = test_only || too_fragmented ||
 		(!top_prio) || (!independent);
 
-	error_code = select_nodes(job_ptr, no_alloc, NULL);
+	if (!no_alloc && !avail_front_end()) {
+		debug("sched: schedule() returning, no front end nodes are "
+		       "available");
+		error_code = ESLURM_NODES_BUSY;
+	} else
+		error_code = select_nodes(job_ptr, no_alloc, NULL);
 
 	if (!test_only) {
 		last_job_update = now;
@@ -7990,7 +7995,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 {
 #ifdef HAVE_FRONT_END
 	int i;
-	front_end_record_t *front_end_ptr = NULL;
 #endif
 	struct job_record  *job_ptr = find_job_record(job_id);
 	struct node_record *node_ptr;
@@ -8024,16 +8028,23 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
 	if (return_code) {
-		error("Epilog error on %s, setting DOWN",
-		      job_ptr->batch_host);
-		for (i = 0, front_end_ptr = front_end_nodes;
-		     i < front_end_node_cnt; i++, front_end_ptr++) {
-			if (strcmp(front_end_ptr->name, job_ptr->batch_host))
-				continue;
-			set_front_end_down(front_end_ptr, "Epilog error");
-			break;
+		error("Epilog error on %s, setting DOWN", job_ptr->batch_host);
+		if (job_ptr->front_end_ptr) {
+			set_front_end_down(job_ptr->front_end_ptr,
+					  "Epilog error");
 		}
+	} else if (job_ptr->front_end_ptr) {
+		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
+		if (front_end_ptr->job_cnt_comp)
+			front_end_ptr->job_cnt_comp--;
+		else {
+			error("job_cnt_comp underflow for front end %s",
+			      front_end_ptr->name);
+		}
+		if (front_end_ptr->job_cnt_comp == 0)
+			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
 	}
+		
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
