@@ -213,6 +213,8 @@ typedef struct front_end_record {
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
 	char *comm_name;		/* communications path name to node */
+	uint32_t job_cnt_comp;		/* count of completing jobs on node */
+	uint16_t job_cnt_run;		/* count of running jobs on node */
 	time_t last_response;		/* Time of last communication */
 	uint32_t magic;			/* magic cookie to test data integrity */
 	char *name;			/* frontend node name */
@@ -448,6 +450,8 @@ struct job_record {
 					 * actual or expected */
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
+	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
+					 * this job */
 	char *gres;			/* generic resources */
 	List gres_list;			/* generic resource allocation detail */
 	uint32_t group_id;		/* group submitted under */
