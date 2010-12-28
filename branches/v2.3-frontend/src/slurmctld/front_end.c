@@ -144,13 +144,14 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 
 /*
  * assign_front_end - assign a front end node for starting a job
- * RET name of the front end node to use or NULL if none available
+ * RET pointer to the front end node to use or NULL if none available
  */
-extern char *assign_front_end(void)
+extern front_end_record_t *assign_front_end(void)
 {
 #ifdef HAVE_FRONT_END
 	static int last_assigned = -1;
 	front_end_record_t *front_end_ptr;
+	uint16_t state_flags;
 	int i;
 
 	for (i = 0; i < front_end_node_cnt; i++) {
@@ -159,7 +160,12 @@ extern char *assign_front_end(void)
 		if (IS_NODE_DOWN(front_end_ptr) ||
 		    IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
-		return front_end_nodes[last_assigned].name;
+		state_flags = front_end_nodes[last_assigned].node_state &
+			      NODE_STATE_FLAGS;
+		front_end_nodes[last_assigned].node_state =
+				NODE_STATE_ALLOCATED | state_flags;
+		front_end_nodes[last_assigned].job_cnt_run++;
+		return front_end_ptr;
 	}
 	fatal("assign_front_end: no available front end nodes found");
 #endif

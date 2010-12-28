@@ -1795,8 +1795,6 @@ extern int validate_nodes_via_front_end(
 		set_front_end_down(front_end_ptr, "Prolog failed");
 
 	/* First validate the job info */
-	node_ptr = node_record_table_ptr;	/* All msg send to node zero,
-				 * the front-end for the whole cluster */
 	for (i = 0; i < reg_msg->job_count; i++) {
 		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
@@ -1806,6 +1804,11 @@ extern int validate_nodes_via_front_end(
 		}
 
 		job_ptr = find_job_record(reg_msg->job_id[i]);
+		node_ptr = node_record_table_ptr;
+		if (job_ptr && job_ptr->node_bitmap &&
+		    ((i = bit_ffs(job_ptr->node_bitmap)) >= 0))
+			node_ptr += i;
+
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported",
 			      reg_msg->job_id[i], reg_msg->step_id[i]);
@@ -1849,6 +1852,11 @@ extern int validate_nodes_via_front_end(
 		}
 	}
 
+	if (reg_msg->job_count == 0) {
+		front_end_ptr->job_cnt_comp = 0;
+		front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
+	}
+
 	/* purge orphan batch jobs */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -1856,6 +1864,10 @@ extern int validate_nodes_via_front_end(
 		    IS_JOB_CONFIGURING(job_ptr) ||
 		    (job_ptr->batch_flag == 0))
 			continue;
+#ifdef HAVE_FRONT_END
+		if (job_ptr->front_end_ptr != front_end_ptr)
+			continue;
+#endif
 #ifdef HAVE_BG
 		/* slurmd does not report job presence until after prolog
 		 * completes which waits for bgblock boot to complete.
@@ -1868,7 +1880,6 @@ extern int validate_nodes_via_front_end(
 		if (difftime(now, job_ptr->time_last_active) <= 5)
 			continue;
 #endif
-
 		info("Killing orphan batch job %u", job_ptr->job_id);
 		job_complete(job_ptr->job_id, 0, false, false, 0);
 	}

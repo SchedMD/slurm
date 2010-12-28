@@ -131,10 +131,13 @@ extern void allocate_nodes(struct job_record *job_ptr)
 {
 	int i;
 
-	last_node_update = time(NULL);
-
+#ifdef HAVE_FRONT_END
+	job_ptr->front_end_ptr = assign_front_end();
+	xassert(job_ptr->front_end_ptr);
 	xfree(job_ptr->batch_host);
-	job_ptr->batch_host = xstrdup(assign_front_end());
+	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
+#endif
+
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
@@ -143,6 +146,7 @@ extern void allocate_nodes(struct job_record *job_ptr)
 			continue;
 		job_ptr->batch_host = xstrdup(node_record_table_ptr[i].name);
 	}
+	last_node_update = time(NULL);
 
 	license_job_get(job_ptr);
 	return;
@@ -212,9 +216,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
-	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
+	    (front_end_ptr = job_ptr->front_end_ptr)) {
 		if (IS_NODE_DOWN(front_end_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
+			front_end_ptr->job_cnt_comp = 0;
+			front_end_ptr->job_cnt_run  = 0;
 			down_node_cnt++;
 			if (job_ptr->node_bitmap_cg == NULL) {
 				error("deallocate_nodes: node_bitmap_cg is "
@@ -225,12 +231,28 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			}
 			job_ptr->cpu_cnt  = 0;
 			job_ptr->node_cnt = 0;
-		}
-		for (i = 0, node_ptr = node_record_table_ptr;
-		     i < node_record_count; i++, node_ptr++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			make_node_comp(node_ptr, job_ptr, suspended);
+		} else {
+			front_end_ptr->job_cnt_comp++;
+			if (front_end_ptr->job_cnt_run)
+				front_end_ptr->job_cnt_run--;
+			else {
+				error("front_end %s job_cnt_run underflow",
+				      front_end_ptr->name);
+			}
+			if (front_end_ptr->job_cnt_run == 0) {
+				uint16_t state_flags;
+				state_flags = front_end_ptr->node_state &
+					      NODE_STATE_FLAGS;
+				state_flags |= NODE_STATE_COMPLETING;
+				front_end_ptr->node_state = NODE_STATE_IDLE |
+							    state_flags;
+			}
+			for (i = 0, node_ptr = node_record_table_ptr;
+			     i < node_record_count; i++, node_ptr++) {
+				if (!bit_test(job_ptr->node_bitmap, i))
+					continue;
+				make_node_comp(node_ptr, job_ptr, suspended);
+			}
 		}
 
 		hostlist_push(agent_args->hostlist, job_ptr->batch_host);
