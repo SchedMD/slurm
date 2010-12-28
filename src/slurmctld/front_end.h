@@ -117,6 +117,11 @@ extern void set_front_end_down (front_end_record_t *front_end_ptr,
 				char *reason);
 
 /*
+ * sync_front_end_state - synchronize job pointers and front-end node state
+ */
+extern void sync_front_end_state(void);
+
+/*
  * Update front end node state
  * update_front_end_msg_ptr IN change specification
  * RET SLURM_SUCCESS or error code
