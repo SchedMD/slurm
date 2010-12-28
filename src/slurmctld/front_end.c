@@ -49,6 +49,7 @@
 #include <src/common/read_config.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/xstring.h>
+#include <src/slurmctld/front_end.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 #include <src/slurmctld/state_save.h>
@@ -220,24 +221,15 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 			xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 			if (strcmp(this_node_name, front_end_ptr->name))
 				continue;
-			if (msg_ptr->node_state == (uint16_t) NO_VAL)
+			if (msg_ptr->node_state == (uint16_t) NO_VAL) {
 				;	/* No change in node state */
-			else if (msg_ptr->node_state == NODE_RESUME)
+			} else if (msg_ptr->node_state == NODE_RESUME) {
 				front_end_ptr->node_state = NODE_STATE_IDLE;
-			else if (msg_ptr->node_state == NODE_STATE_DRAIN)
+				xfree(front_end_ptr->reason);
+				front_end_ptr->reason_time = 0;
+				front_end_ptr->reason_uid = 0;
+			} else if (msg_ptr->node_state == NODE_STATE_DRAIN) {
 				front_end_ptr->node_state |= NODE_STATE_DRAIN;
-			else if (msg_ptr->node_state == NODE_STATE_DOWN) {
-				front_end_ptr->node_state &= NODE_STATE_FLAGS;
-				front_end_ptr->node_state |= NODE_STATE_DOWN;
-			}
-
-			if (IS_NODE_DOWN(front_end_ptr)) {
-				front_end_ptr->node_state &=
-					(~NODE_STATE_COMPLETING);
-			}
-
-			if (IS_NODE_DRAIN(front_end_ptr) ||
-			    IS_NODE_DOWN(front_end_ptr)) {
 				if (msg_ptr->reason) {
 					xfree(front_end_ptr->reason);
 					front_end_ptr->reason =
@@ -246,11 +238,15 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 					front_end_ptr->reason_uid =
 						msg_ptr->reason_uid;
 				}
-			} else if (front_end_ptr->reason) {
-				/* Should not be any reason set */
-				xfree(front_end_ptr->reason);
-				front_end_ptr->reason_time = 0;
-				front_end_ptr->reason_uid = 0;
+			} else if (msg_ptr->node_state == NODE_STATE_DOWN) {
+				set_front_end_down(front_end_ptr,
+						   msg_ptr->reason);
+			}
+			if (msg_ptr->node_state != (uint16_t) NO_VAL) {
+				info("update_front_end: set state of %s to %s",
+				     this_node_name,
+				     node_state_string(front_end_ptr->
+						       node_state));
 			}
 			break;
 		}
@@ -261,7 +257,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 		}
 		free(this_node_name);
 	}
-	hostlist_destroy(host_list);
+	hostlist_destroy(host_list);     
 
 	return rc;
 #else
