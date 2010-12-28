@@ -102,7 +102,7 @@ static int _wait_part_ready(uint32_t job_id)
 	int is_ready = 0, i, rc;
 
 	max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
-		   (BG_INCR_BLOCK_BOOT * _get_job_size(job_id));
+		(BG_INCR_BLOCK_BOOT * _get_job_size(job_id));
 
 #if _DEBUG
 	printf("Waiting for job %u to become ready.", job_id);
@@ -205,12 +205,12 @@ static int _partitions_dealloc()
 
 	if (error_code) {
 		fprintf(stderr, "slurm_load_partitions: %s\n",
-		       slurm_strerror(slurm_get_errno()));
+			slurm_strerror(slurm_get_errno()));
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state
-		   == RM_PARTITION_DEALLOCATING) {
+		if (new_bg_ptr->block_array[i].state
+		    == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;
 		}

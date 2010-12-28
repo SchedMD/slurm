@@ -226,13 +226,13 @@ extern int bridge_init()
 	int n_syms;
 	int rc;
 
-	if(initialized)
+	if (initialized)
 		return 1;
 
 	n_syms = sizeof( syms ) / sizeof( char * );
 
 	initialized = true;
-	if(!_get_syms(n_syms, syms, (void **) &bridge_api))
+	if (!_get_syms(n_syms, syms, (void **) &bridge_api))
 		return 0;
 #ifdef BG_SERIAL
 	debug("setting the serial to %s", BG_SERIAL);
@@ -249,7 +249,7 @@ extern int bridge_init()
 
 extern int bridge_fini()
 {
-	if(handle)
+	if (handle)
 		dlclose(handle);
 	initialized = false;
 
@@ -259,7 +259,7 @@ extern int bridge_fini()
 extern status_t bridge_get_bg(my_bluegene_t **bg)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -271,7 +271,7 @@ extern status_t bridge_get_bg(my_bluegene_t **bg)
 extern status_t bridge_add_block(rm_partition_t *partition)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -285,7 +285,7 @@ extern status_t bridge_get_block(pm_partition_id_t pid,
 				 rm_partition_t **partition)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -299,7 +299,7 @@ extern status_t bridge_get_block_info(pm_partition_id_t pid,
 				      rm_partition_t **partition)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	/* this is here to make sure we don't lock up things with
@@ -307,7 +307,7 @@ extern status_t bridge_get_block_info(pm_partition_id_t pid,
 	rc = pthread_mutex_trylock(&api_file_mutex);
 	if (rc == EBUSY)
 		return rc;
-	else if(rc) {
+	else if (rc) {
 		errno = rc;
 		error("%s:%d %s: pthread_mutex_trylock(): %m",
 		      __FILE__, __LINE__, __CURRENT_FUNC__);
@@ -324,7 +324,7 @@ extern status_t bridge_modify_block(pm_partition_id_t pid,
 				    enum rm_modify_op op, const void *data)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -337,7 +337,7 @@ extern status_t bridge_modify_block(pm_partition_id_t pid,
 extern status_t bridge_set_block_owner(pm_partition_id_t pid, const char *name)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -350,7 +350,7 @@ extern status_t bridge_set_block_owner(pm_partition_id_t pid, const char *name)
 extern status_t bridge_add_block_user(pm_partition_id_t pid, const char *name)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -364,7 +364,7 @@ extern status_t bridge_remove_block_user(pm_partition_id_t pid,
 					 const char *name)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -377,7 +377,7 @@ extern status_t bridge_remove_block_user(pm_partition_id_t pid,
 extern status_t bridge_remove_block(pm_partition_id_t pid)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -391,7 +391,7 @@ extern status_t bridge_get_blocks(rm_partition_state_flag_t flag,
 				  rm_partition_list_t **part_list)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -405,7 +405,7 @@ extern status_t bridge_get_blocks_info(rm_partition_state_flag_t flag,
 				       rm_partition_list_t **part_list)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -418,7 +418,7 @@ extern status_t bridge_get_blocks_info(rm_partition_state_flag_t flag,
 extern status_t bridge_get_job(db_job_id_t dbJobId, rm_job_t **job)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -431,7 +431,7 @@ extern status_t bridge_get_job(db_job_id_t dbJobId, rm_job_t **job)
 extern status_t bridge_get_jobs(rm_job_state_flag_t flag, rm_job_list_t **jobs)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -444,7 +444,7 @@ extern status_t bridge_get_jobs(rm_job_state_flag_t flag, rm_job_list_t **jobs)
 extern status_t bridge_remove_job(db_job_id_t jid)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -458,7 +458,7 @@ extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
 				     rm_nodecard_list_t **nc_list)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -471,7 +471,7 @@ extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
 extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -484,7 +484,7 @@ extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard)
 extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -498,7 +498,7 @@ extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
 extern status_t bridge_new_ionode(rm_ionode_t **ionode)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -511,7 +511,7 @@ extern status_t bridge_new_ionode(rm_ionode_t **ionode)
 extern status_t bridge_free_ionode(rm_ionode_t *ionode)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -525,7 +525,7 @@ extern status_t bridge_free_ionode(rm_ionode_t *ionode)
 extern status_t bridge_new_block(rm_partition_t **partition)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -538,7 +538,7 @@ extern status_t bridge_new_block(rm_partition_t **partition)
 extern status_t bridge_free_block(rm_partition_t *partition)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -551,7 +551,7 @@ extern status_t bridge_free_block(rm_partition_t *partition)
 extern status_t bridge_free_job(rm_job_t *job)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -564,7 +564,7 @@ extern status_t bridge_free_job(rm_job_t *job)
 extern status_t bridge_free_bg(my_bluegene_t *bg)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -577,7 +577,7 @@ extern status_t bridge_free_bg(my_bluegene_t *bg)
 extern status_t bridge_free_block_list(rm_partition_list_t *part_list)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -590,7 +590,7 @@ extern status_t bridge_free_block_list(rm_partition_list_t *part_list)
 extern status_t bridge_free_job_list(rm_job_list_t *job_list)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -603,7 +603,7 @@ extern status_t bridge_free_job_list(rm_job_list_t *job_list)
 extern status_t bridge_free_nodecard_list(rm_nodecard_list_t *nc_list)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -617,7 +617,7 @@ extern status_t bridge_get_data(rm_element_t* element,
 				enum rm_specification field, void *data)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -631,7 +631,7 @@ extern status_t bridge_set_data(rm_element_t* element,
 				enum rm_specification field, void *data)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -645,7 +645,7 @@ extern status_t bridge_set_data(rm_element_t* element,
 extern status_t bridge_signal_job(db_job_id_t jid, rm_signal_t sig)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -658,7 +658,7 @@ extern status_t bridge_signal_job(db_job_id_t jid, rm_signal_t sig)
 extern status_t bridge_cancel_job(db_job_id_t jid)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -672,7 +672,7 @@ extern status_t bridge_cancel_job(db_job_id_t jid)
 extern status_t bridge_create_block(pm_partition_id_t pid)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -686,7 +686,7 @@ extern status_t bridge_create_block(pm_partition_id_t pid)
 extern status_t bridge_reboot_block(pm_partition_id_t pid)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -700,7 +700,7 @@ extern status_t bridge_reboot_block(pm_partition_id_t pid)
 extern status_t bridge_destroy_block(pm_partition_id_t pid)
 {
 	int rc = CONNECTION_ERROR;
-	if(!bridge_init())
+	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
@@ -716,11 +716,11 @@ extern int bridge_set_log_params(char *api_file_name, unsigned int level)
         FILE *fp2 = NULL;
 	int rc = SLURM_SUCCESS;
 
-	if(!bridge_init())
+	if (!bridge_init())
 		return SLURM_ERROR;
 
 	slurm_mutex_lock(&api_file_mutex);
-	if(fp)
+	if (fp)
 		fp2 = fp;
 
 	fp = fopen(api_file_name, "a");
@@ -739,7 +739,7 @@ extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 	   log */
 	//(void)dup2(fileno(fp), STDERR_FILENO);
 
-	if(fp2)
+	if (fp2)
 		fclose(fp2);
 end_it:
 	slurm_mutex_unlock(&api_file_mutex);

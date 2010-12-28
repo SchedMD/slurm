@@ -78,21 +78,21 @@ void parse_command_line(int argc, char *argv[])
 		        break;
 		case (int) 'b':
 		case (int) 'p':
-			if(!block_list)
+			if (!block_list)
 				block_list = list_create(slurm_destroy_char);
-		        slurm_addto_char_list(block_list, optarg);
-			break;
+		slurm_addto_char_list(block_list, optarg);
+		break;
 		case (int) 'h':
 		case (int) OPT_LONG_HELP:
 			_help();
-			exit(0);
+		exit(0);
 		case (int) 'r':
 			remove_blocks = 1;
 			break;
 		case (int) 'u':
 		case (int) OPT_LONG_USAGE:
 			_usage();
-			exit(0);
+		exit(0);
 		case (int) 'V':
 			print_slurm_version();
 			exit(0);
