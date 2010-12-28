@@ -53,25 +53,25 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	ListIterator itr;
 
-	if(!acct) {
+	if (!acct) {
 		error("We need a account to fill in.");
 		return SLURM_ERROR;
 	}
 
-	if(!acct->coordinators)
+	if (!acct->coordinators)
 		acct->coordinators = list_create(slurmdb_destroy_coord_rec);
 
 	query = xstrdup_printf(
 		"select user from %s where acct='%s' && deleted=0",
 		acct_coord_table, acct->name);
 
-	if(!(result =
-	     mysql_db_query_ret(mysql_conn, query, 0))) {
+	if (!(result =
+	      mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(acct->coordinators, coord);
 		coord->name = xstrdup(row[0]);
@@ -81,8 +81,8 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
-	while((cluster_name = list_next(itr))) {
-		if(query)
+	while ((cluster_name = list_next(itr))) {
+		if (query)
 			xstrcat(query, " union ");
 		xstrfmtcat(query,
 			   "select distinct t0.user from %s as t0, "
@@ -98,18 +98,18 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
-	if(!query) {
+	if (!query) {
 		error("No clusters defined?  How could there be accts?");
 		return SLURM_SUCCESS;
 	}
 	xstrcat(query, ";");
 
-	if(!(result =  mysql_db_query_ret(mysql_conn, query, 0))) {
+	if (!(result =  mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(acct->coordinators, coord);
 		coord->name = xstrdup(row[0]);
@@ -132,15 +132,15 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	List assoc_list = list_create(slurmdb_destroy_association_rec);
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(acct_list);
-	while((object = list_next(itr))) {
-		if(!object->name || !object->name[0]
-		   || !object->description || !object->description[0]
-		   || !object->organization || !object->organization[0]) {
+	while ((object = list_next(itr))) {
+		if (!object->name || !object->name[0]
+		    || !object->description || !object->description[0]
+		    || !object->organization || !object->organization[0]) {
 			error("We need an account name, description, and "
 			      "organization to add. %s %s %s",
 			      object->name, object->description,
@@ -167,7 +167,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(cols);
 		xfree(vals);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add acct");
 			xfree(extra);
 			continue;
@@ -175,7 +175,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		affect_rows = last_affected_rows(mysql_conn);
 /* 		debug3("affected %d", affect_rows); */
 
-		if(!affect_rows) {
+		if (!affect_rows) {
 			debug3("nothing changed");
 			xfree(extra);
 			continue;
@@ -184,7 +184,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);
 
-		if(txn_query)
+		if (txn_query)
 			xstrfmtcat(txn_query,
 				   ", (%ld, %u, '%s', '%s', '%s')",
 				   now, DBD_ADD_ACCOUNTS, object->name,
@@ -200,7 +200,7 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(tmp_extra);
 		xfree(extra);
 
-		if(!object->assoc_list)
+		if (!object->assoc_list)
 			continue;
 
 		list_transfer(assoc_list, object->assoc_list);
@@ -208,13 +208,13 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(rc != SLURM_ERROR) {
-		if(txn_query) {
+	if (rc != SLURM_ERROR) {
+		if (txn_query) {
 			xstrcat(txn_query, ";");
 			rc = mysql_db_query(mysql_conn,
 					    txn_query);
 			xfree(txn_query);
-			if(rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add txn");
 				rc = SLURM_SUCCESS;
 			}
@@ -222,9 +222,9 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	} else
 		xfree(txn_query);
 
-	if(list_count(assoc_list)) {
-		if(as_mysql_add_assocs(mysql_conn, uid, assoc_list)
-		   == SLURM_ERROR) {
+	if (list_count(assoc_list)) {
+		if (as_mysql_add_assocs(mysql_conn, uid, assoc_list)
+		    == SLURM_ERROR) {
 			error("Problem adding user associations");
 			rc = SLURM_ERROR;
 		}
@@ -235,8 +235,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			       slurmdb_account_cond_t *acct_cond,
-			       slurmdb_account_rec_t *acct)
+				  slurmdb_account_cond_t *acct_cond,
+				  slurmdb_account_rec_t *acct)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -249,23 +249,23 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
-	if(!acct_cond || !acct) {
+	if (!acct_cond || !acct) {
 		error("we need something to change");
 		return NULL;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	xstrcat(extra, "where deleted=0");
-	if(acct_cond->assoc_cond
-	   && acct_cond->assoc_cond->acct_list
-	   && list_count(acct_cond->assoc_cond->acct_list)) {
+	if (acct_cond->assoc_cond
+	    && acct_cond->assoc_cond->acct_list
+	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -274,13 +274,13 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct_cond->description_list
-	   && list_count(acct_cond->description_list)) {
+	if (acct_cond->description_list
+	    && list_count(acct_cond->description_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->description_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
@@ -289,13 +289,13 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct_cond->organization_list
-	   && list_count(acct_cond->organization_list)) {
+	if (acct_cond->organization_list
+	    && list_count(acct_cond->organization_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->organization_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "organization='%s'", object);
 			set = 1;
@@ -304,12 +304,12 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct->description)
+	if (acct->description)
 		xstrfmtcat(vals, ", description='%s'", acct->description);
-	if(acct->organization)
+	if (acct->organization)
 		xstrfmtcat(vals, ", organization='%s'", acct->organization);
 
-	if(!extra || !vals) {
+	if (!extra || !vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
@@ -319,8 +319,8 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(vals);
 		return NULL;
@@ -328,10 +328,10 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
@@ -341,7 +341,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
@@ -369,7 +369,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
-			       slurmdb_account_cond_t *acct_cond)
+				  slurmdb_account_cond_t *acct_cond)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -385,25 +385,25 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	bool jobs_running = 0;
 
-	if(!acct_cond) {
+	if (!acct_cond) {
 		error("we need something to change");
 		return NULL;
 	}
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	xstrcat(extra, "where deleted=0");
-	if(acct_cond->assoc_cond
-	   && acct_cond->assoc_cond->acct_list
-	   && list_count(acct_cond->assoc_cond->acct_list)) {
+	if (acct_cond->assoc_cond
+	    && acct_cond->assoc_cond->acct_list
+	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(!object[0])
+		while ((object = list_next(itr))) {
+			if (!object[0])
 				continue;
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -412,13 +412,13 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct_cond->description_list
-	   && list_count(acct_cond->description_list)) {
+	if (acct_cond->description_list
+	    && list_count(acct_cond->description_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->description_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
@@ -427,13 +427,13 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct_cond->organization_list
-	   && list_count(acct_cond->organization_list)) {
+	if (acct_cond->organization_list
+	    && list_count(acct_cond->organization_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->organization_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "organization='%s'", object);
 			set = 1;
@@ -442,25 +442,25 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(!extra) {
+	if (!extra) {
 		error("Nothing to remove");
 		return NULL;
 	}
 
 	query = xstrdup_printf("select name from %s %s;", acct_table, extra);
 	xfree(extra);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
-	while((row = mysql_fetch_row(result))) {
+	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			xstrfmtcat(assoc_char, "t2.acct='%s'", object);
 			rc = 1;
@@ -471,7 +471,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
@@ -482,19 +482,19 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* We need to remove these accounts from the coord's that have it */
 	coord_list = as_mysql_remove_coord(
 		mysql_conn, uid, ret_list, NULL);
-	if(coord_list)
+	if (coord_list)
 		list_destroy(coord_list);
 
 	user_name = uid_to_string((uid_t) uid);
 
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
-	while((object = list_next(itr))) {
-		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
-				       user_name, acct_table, name_char,
-				       assoc_char, object, ret_list,
-				       &jobs_running))
-		   != SLURM_SUCCESS)
+	while ((object = list_next(itr))) {
+		if ((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
+					user_name, acct_table, name_char,
+					assoc_char, object, ret_list,
+					&jobs_running))
+		    != SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -508,7 +508,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(jobs_running)
+	if (jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else
 		errno = SLURM_SUCCESS;
@@ -516,7 +516,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
-			    slurmdb_account_cond_t *acct_cond)
+			       slurmdb_account_cond_t *acct_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
@@ -544,7 +544,7 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		SLURMDB_REQ_COUNT
 	};
 
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
@@ -553,9 +553,9 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	private_data = slurm_get_private_data();
 
 	if (private_data & PRIVATE_DATA_ACCOUNTS) {
-		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-			if(!is_user_any_coord(mysql_conn, &user)) {
+		if (!(is_admin = is_user_min_admin_level(
+			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			if (!is_user_any_coord(mysql_conn, &user)) {
 				error("Only admins/coordinators "
 				      "can look at account usage");
 				errno = ESLURM_ACCESS_DENIED;
@@ -564,24 +564,24 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
-	if(!acct_cond) {
+	if (!acct_cond) {
 		xstrcat(extra, "where deleted=0");
 		goto empty;
 	}
 
-	if(acct_cond->with_deleted)
+	if (acct_cond->with_deleted)
 		xstrcat(extra, "where (deleted=0 || deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
 
-	if(acct_cond->assoc_cond
-	   && acct_cond->assoc_cond->acct_list
-	   && list_count(acct_cond->assoc_cond->acct_list)) {
+	if (acct_cond->assoc_cond
+	    && acct_cond->assoc_cond->acct_list
+	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -590,13 +590,13 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct_cond->description_list
-	   && list_count(acct_cond->description_list)) {
+	if (acct_cond->description_list
+	    && list_count(acct_cond->description_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->description_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "description='%s'", object);
 			set = 1;
@@ -605,13 +605,13 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if(acct_cond->organization_list
-	   && list_count(acct_cond->organization_list)) {
+	if (acct_cond->organization_list
+	    && list_count(acct_cond->organization_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->organization_list);
-		while((object = list_next(itr))) {
-			if(set)
+		while ((object = list_next(itr))) {
+			if (set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "organization='%s'", object);
 			set = 1;
@@ -632,12 +632,12 @@ empty:
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if(!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
+	if (!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
 		slurmdb_coord_rec_t *coord = NULL;
 		set = 0;
 		itr = list_iterator_create(user.coord_accts);
-		while((coord = list_next(itr))) {
-			if(set) {
+		while ((coord = list_next(itr))) {
+			if (set) {
 				xstrfmtcat(extra, " || name='%s'",
 					   coord->name);
 			} else {
@@ -647,7 +647,7 @@ empty:
 			}
 		}
 		list_iterator_destroy(itr);
-		if(set)
+		if (set)
 			xstrcat(extra,")");
 	}
 
@@ -657,8 +657,8 @@ empty:
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -666,30 +666,31 @@ empty:
 
 	acct_list = list_create(slurmdb_destroy_account_rec);
 
-	if(acct_cond && acct_cond->with_assocs) {
+	if (acct_cond && acct_cond->with_assocs) {
 		/* We are going to be freeing the inners of
-			   this list in the acct->name so we don't
-			   free it here
-			*/
-		if(acct_cond->assoc_cond->acct_list)
+		   this list in the acct->name so we don't
+		   free it here
+		*/
+		if (acct_cond->assoc_cond->acct_list)
 			list_destroy(acct_cond->assoc_cond->acct_list);
 		acct_cond->assoc_cond->acct_list = list_create(NULL);
 	}
 
-	while((row = mysql_fetch_row(result))) {
-		slurmdb_account_rec_t *acct = xmalloc(sizeof(slurmdb_account_rec_t));
+	while ((row = mysql_fetch_row(result))) {
+		slurmdb_account_rec_t *acct =
+			xmalloc(sizeof(slurmdb_account_rec_t));
 		list_append(acct_list, acct);
 
 		acct->name =  xstrdup(row[SLURMDB_REQ_NAME]);
 		acct->description = xstrdup(row[SLURMDB_REQ_DESC]);
 		acct->organization = xstrdup(row[SLURMDB_REQ_ORG]);
 
-		if(acct_cond && acct_cond->with_coords) {
+		if (acct_cond && acct_cond->with_coords) {
 			_get_account_coords(mysql_conn, acct);
 		}
 
-		if(acct_cond && acct_cond->with_assocs) {
-			if(!acct_cond->assoc_cond) {
+		if (acct_cond && acct_cond->with_assocs) {
+			if (!acct_cond->assoc_cond) {
 				acct_cond->assoc_cond = xmalloc(
 					sizeof(slurmdb_association_cond_t));
 			}
@@ -700,34 +701,34 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if(acct_cond && acct_cond->with_assocs
-	   && list_count(acct_cond->assoc_cond->acct_list)) {
+	if (acct_cond && acct_cond->with_assocs
+	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;
 		slurmdb_association_rec_t *assoc = NULL;
 		List assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, acct_cond->assoc_cond);
 
-		if(!assoc_list) {
+		if (!assoc_list) {
 			error("no associations");
 			return acct_list;
 		}
 
 		itr = list_iterator_create(acct_list);
 		assoc_itr = list_iterator_create(assoc_list);
-		while((acct = list_next(itr))) {
-			while((assoc = list_next(assoc_itr))) {
-				if(strcmp(assoc->acct, acct->name))
+		while ((acct = list_next(itr))) {
+			while ((assoc = list_next(assoc_itr))) {
+				if (strcmp(assoc->acct, acct->name))
 					continue;
 
-				if(!acct->assoc_list)
+				if (!acct->assoc_list)
 					acct->assoc_list = list_create(
 						slurmdb_destroy_association_rec);
 				list_append(acct->assoc_list, assoc);
 				list_remove(assoc_itr);
 			}
 			list_iterator_reset(assoc_itr);
-			if(!acct->assoc_list)
+			if (!acct->assoc_list)
 				list_remove(itr);
 		}
 		list_iterator_destroy(itr);
