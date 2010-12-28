@@ -1764,7 +1764,7 @@ static front_end_record_t * _front_end_reg(char *node_name,
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg)
 {
-	int error_code = 0, i, j, jobs_on_node;
+	int error_code = 0, i, j;
 	bool update_node_state = false;
 	bool failure_logged = false;
 	struct job_record *job_ptr;
@@ -1885,7 +1885,6 @@ extern int validate_nodes_via_front_end(
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		config_ptr = node_ptr->config_ptr;
-		jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 		node_ptr->last_response = now;
 
 		(void) gres_plugin_node_config_validate(node_ptr->name,
@@ -1926,7 +1925,7 @@ extern int validate_nodes_via_front_end(
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (IS_NODE_UNKNOWN(node_ptr)) {
 				update_node_state = true;
-				if (jobs_on_node) {
+				if (node_ptr->run_job_cnt) {
 					node_ptr->node_state =
 						NODE_STATE_ALLOCATED |
 						node_flags;
@@ -1952,7 +1951,7 @@ extern int validate_nodes_via_front_end(
 				     (strncmp(node_ptr->reason,
 					      "Not responding", 14) == 0)))) {
 				update_node_state = true;
-				if (jobs_on_node) {
+				if (node_ptr->run_job_cnt) {
 					node_ptr->node_state =
 						NODE_STATE_ALLOCATED |
 						node_flags;
@@ -1973,21 +1972,21 @@ extern int validate_nodes_via_front_end(
 						node_ptr, now);
 				}
 			} else if (IS_NODE_ALLOCATED(node_ptr) &&
-				   (jobs_on_node == 0)) {
+				   (node_ptr->run_job_cnt == 0)) {
 				/* job vanished */
 				update_node_state = true;
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
 				node_ptr->last_idle = now;
 			} else if (IS_NODE_COMPLETING(node_ptr) &&
-				   (jobs_on_node == 0)) {
+				   (node_ptr->comp_job_cnt == 0)) {
 				/* job already done */
 				update_node_state = true;
 				node_ptr->node_state &=
 					(~NODE_STATE_COMPLETING);
 				bit_clear(cg_node_bitmap, i);
 			} else if (IS_NODE_IDLE(node_ptr) &&
-				   (jobs_on_node != 0)) {
+				   (node_ptr->run_job_cnt != 0)) {
 				update_node_state = true;
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 						       node_flags;
@@ -1998,7 +1997,7 @@ extern int validate_nodes_via_front_end(
 
 			select_g_update_node_config(i);
 			select_g_update_node_state(i, node_ptr->node_state);
-			_sync_bitmaps(node_ptr, jobs_on_node);
+			_sync_bitmaps(node_ptr, node_ptr->run_job_cnt);
 		}
 	}
 
