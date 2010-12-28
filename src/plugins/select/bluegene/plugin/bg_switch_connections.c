@@ -67,7 +67,7 @@ static int _get_bp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 	int i, rc;
 	rm_location_t loc;
 
-	if(!bp_num) {
+	if (!bp_num) {
 		if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num))
 		    != STATUS_OK) {
 			fatal("bridge_get_data: RM_BPNum: %s", bg_err_str(rc));
@@ -76,7 +76,7 @@ static int _get_bp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 	}
 
 	for (i=0; i<bp_num; i++){
-		if(i) {
+		if (i) {
 			if ((rc = bridge_get_data(my_bg, RM_NextBP, bp))
 			    != STATUS_OK) {
 				fatal("bridge_get_data: RM_NextBP: %s",
@@ -117,7 +117,7 @@ static int _get_switches_by_bpid(
 	int found_bpid = 0;
 	char *curr_bpid = NULL;
 
-	if(!switch_num) {
+	if (!switch_num) {
 		if ((rc = bridge_get_data(my_bg, RM_SwitchNum, &switch_num))
 		    != STATUS_OK) {
 			fatal("bridge_get_data: RM_SwitchNum: %s",
@@ -127,7 +127,7 @@ static int _get_switches_by_bpid(
 	}
 
 	for (i=0; i<switch_num; i++) {
-		if(i) {
+		if (i) {
 			if ((rc = bridge_get_data(my_bg, RM_NextSwitch,
 						  &curr_switch))
 			    != STATUS_OK) {
@@ -150,7 +150,7 @@ static int _get_switches_by_bpid(
 			      bg_err_str(rc));
 		}
 
-		if(!curr_bpid) {
+		if (!curr_bpid) {
 			error("No BP ID was returned from database");
 			continue;
 		}
@@ -158,7 +158,7 @@ static int _get_switches_by_bpid(
 		if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
 			coord_switch[found_bpid] = curr_switch;
 			found_bpid++;
-			if(found_bpid==SYSTEM_DIMENSIONS) {
+			if (found_bpid==SYSTEM_DIMENSIONS) {
 				free(curr_bpid);
 				return SLURM_SUCCESS;
 			}
@@ -204,7 +204,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			break;
 		}
 		ba_conn = &ba_switch->int_wire[source];
-		if(ba_conn->used && ba_conn->port_tar != source) {
+		if (ba_conn->used && ba_conn->port_tar != source) {
 			switch(ba_conn->port_tar) {
 			case 0:
 				conn[i].p2 = RM_PORT_S0;
@@ -222,7 +222,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				break;
 			}
 			conn[i].part_state = RM_PARTITION_READY;
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 				info("adding %d -> %d", source,
 				     ba_conn->port_tar);
 			list_push(conn_list, &conn[i]);
@@ -230,7 +230,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 	}
 
 	i = list_count(conn_list);
-	if(i) {
+	if (i) {
 		if ((rc = bridge_set_data(curr_switch, RM_SwitchConnNum, &i))
 		    != STATUS_OK) {
 			fatal("bridge_set_data: RM_SwitchConnNum: %s",
@@ -239,15 +239,15 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 			return SLURM_ERROR;
 		}
 	} else {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 			info("we got a switch with no connections");
 		list_destroy(conn_list);
                 return SLURM_ERROR;
 	}
 
 	/* Now we can add them to the mix */
-	while((conn_ptr = list_pop(conn_list))) {
-		if(firstconnect) {
+	while ((conn_ptr = list_pop(conn_list))) {
+		if (firstconnect) {
 			if ((rc = bridge_set_data(
 				     curr_switch,
 				     RM_SwitchFirstConnection,
@@ -291,13 +291,13 @@ static int _used_switches(ba_node_t* ba_node)
 	int i = 0, j = 0, switch_count = 0;
 	int source = 0;
 
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 		info("checking node %c%c%c",
 		     alpha_num[ba_node->coord[X]],
 		     alpha_num[ba_node->coord[Y]],
 		     alpha_num[ba_node->coord[Z]]);
 	for(i=0; i<SYSTEM_DIMENSIONS; i++) {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 			info("dim %d", i);
 		ba_switch = &ba_node->axis_switch[i];
 		for(j=0; j<num_connections; j++) {
@@ -318,10 +318,10 @@ static int _used_switches(ba_node_t* ba_node)
 				break;
 			}
 			ba_conn = &ba_switch->int_wire[source];
-			if(ba_conn->used && ba_conn->port_tar != source) {
+			if (ba_conn->used && ba_conn->port_tar != source) {
 				switch_count++;
-				if(bg_conf->slurm_debug_flags
-				   & DEBUG_FLAG_BG_WIRES)
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_WIRES)
 					info("used");
 				break;
 			}
@@ -350,7 +350,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	double nc_pos = 0;
 #endif
 	xassert(bg_record->ionode_bitmap);
-	if(bg_record->bp_count != 1) {
+	if (bg_record->bp_count != 1) {
 		error("Requesting small block with %d bps, needs to be 1.",
 		      bg_record->bp_count);
 		return SLURM_ERROR;
@@ -367,7 +367,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 
 	num_ncards = bg_record->node_cnt/bg_conf->nodecard_node_cnt;
-	if(num_ncards < 1) {
+	if (num_ncards < 1) {
 		num_ncards = 1;
 		sub_nodecard = 1;
 	}
@@ -376,14 +376,14 @@ extern int configure_small_block(bg_record_t *bg_record)
 	/* find out how many nodecards to get for each ionode */
 
 	for(i = 0; i<bg_conf->numpsets; i++) {
-		if(bit_test(bg_record->ionode_bitmap, i)) {
-			if(bg_conf->nc_ratio > 1) {
+		if (bit_test(bg_record->ionode_bitmap, i)) {
+			if (bg_conf->nc_ratio > 1) {
 				int j=0;
 				for(j=0; j<bg_conf->nc_ratio; j++)
 					use_nc[(int)nc_pos+j] = 1;
 			} else {
 				use_nc[(int)nc_pos] = 1;
-				if(i%2)
+				if (i%2)
 					ionode_card = 1;
 			}
 		}
@@ -437,7 +437,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 
 
-	if(!bp_id) {
+	if (!bp_id) {
 		error("No BP ID was returned from database");
 		return SLURM_ERROR;
 	}
@@ -452,13 +452,13 @@ extern int configure_small_block(bg_record_t *bg_record)
 	free(bp_id);
 
 
-	if((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
-	   != STATUS_OK) {
+	if ((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
+	    != STATUS_OK) {
 		error("bridge_get_data(RM_NodeCardListSize): %s",
 		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
-	if(num_ncards > num) {
+	if (num_ncards > num) {
 		error("You requested more (%d > %d) nodecards "
 		      "than are available on this block %s",
 		      num_ncards, num, bg_record->nodes);
@@ -493,7 +493,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		   the system happens, but that should be rare.
 		*/
 		nc_id = i;
-		if(!use_nc[i])
+		if (!use_nc[i])
 			continue;
 #else
 		if ((rc = bridge_get_data(ncard,
@@ -505,7 +505,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 			goto cleanup;
 		}
 
-		if(!nc_char) {
+		if (!nc_char) {
 			error("No NodeCard ID was returned from database");
 			rc = SLURM_ERROR;
 			goto cleanup;
@@ -513,16 +513,16 @@ extern int configure_small_block(bg_record_t *bg_record)
 
 		nc_id = atoi((char*)nc_char+1);
 
-		if(!use_nc[nc_id]) {
+		if (!use_nc[nc_id]) {
 			free(nc_char);
 			continue;
 		}
 
-		if(sub_nodecard) {
+		if (sub_nodecard) {
 			rm_ionode_t *ionode;
 			char *ionode_id = "J00";
 
-			if((rc = bridge_new_nodecard(&ncard)) != STATUS_OK) {
+			if ((rc = bridge_new_nodecard(&ncard)) != STATUS_OK) {
 				error("bridge_new_nodecard(): %s",
 				      bg_err_str(rc));
 				rc = SLURM_ERROR;
@@ -551,14 +551,14 @@ extern int configure_small_block(bg_record_t *bg_record)
 				goto cleanup;
 			}
 
-			if((rc = bridge_new_ionode(&ionode)) != STATUS_OK) {
+			if ((rc = bridge_new_ionode(&ionode)) != STATUS_OK) {
 				error("bridge_new_ionode(): %s",
 				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
 
-			if(ionode_card)
+			if (ionode_card)
 				ionode_id = "J01";
 
 			if ((rc = bridge_set_data(ionode,
@@ -583,7 +583,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 				goto cleanup;
 			}
 
-			if((rc = bridge_free_ionode(ionode)) != STATUS_OK) {
+			if ((rc = bridge_free_ionode(ionode)) != STATUS_OK) {
 				error("bridge_free_ionode(): %s",
 				      bg_err_str(rc));
 				rc = SLURM_ERROR;
@@ -621,8 +621,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 
 		nc_count++;
 #ifndef HAVE_BGL
-		if(sub_nodecard) {
-			if((rc = bridge_free_nodecard(ncard)) != STATUS_OK) {
+		if (sub_nodecard) {
+			if ((rc = bridge_free_nodecard(ncard)) != STATUS_OK) {
 				error("bridge_free_nodecard(): %s",
 				      bg_err_str(rc));
 				rc = SLURM_ERROR;
@@ -630,7 +630,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 			}
 		}
 #endif
-		if(nc_count == num_ncards)
+		if (nc_count == num_ncards)
 			break;
 	}
 cleanup:
@@ -639,7 +639,7 @@ cleanup:
 		return SLURM_ERROR;
 	}
 #endif
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 		info("making the small block");
 	return rc;
 }
@@ -660,7 +660,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	rm_BP_t *curr_bp = NULL;
 	rm_switch_t *coord_switch[SYSTEM_DIMENSIONS];
 #endif
-	if(!bg_record->bg_block_list) {
+	if (!bg_record->bg_block_list) {
 		error("There was no block_list given, can't create block");
 		return SLURM_ERROR;
 	}
@@ -670,7 +670,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = list_next(itr))) {
-		if(ba_node->used) {
+		if (ba_node->used) {
 			bg_record->bp_count++;
 		}
 		bg_record->switch_count += _used_switches(ba_node);
@@ -697,9 +697,9 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		goto cleanup;
 	}
 #endif
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 		info("BP count %d", bg_record->bp_count);
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 		info("switch count %d", bg_record->switch_count);
 
 	list_iterator_reset(itr);
@@ -711,15 +711,15 @@ extern int configure_block_switches(bg_record_t * bg_record)
 			goto cleanup;
 		}
 #endif
-		if(!ba_node->used) {
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+		if (!ba_node->used) {
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 				info("%c%c%c is a passthrough, "
 				     "not including in request",
 				     alpha_num[ba_node->coord[X]],
 				     alpha_num[ba_node->coord[Y]],
 				     alpha_num[ba_node->coord[Z]]);
 		} else {
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 				info("using node %c%c%c",
 				     alpha_num[ba_node->coord[X]],
 				     alpha_num[ba_node->coord[Y]],
@@ -756,23 +756,23 @@ extern int configure_block_switches(bg_record_t * bg_record)
 			fatal("bridge_get_data: RM_BPID: %s", bg_err_str(rc));
 		}
 
-		if(!bpid) {
+		if (!bpid) {
 			error("No BP ID was returned from database");
 			continue;
 		}
-		if(_get_switches_by_bpid(bg, bpid, coord_switch)
-		   != SLURM_SUCCESS) {
+		if (_get_switches_by_bpid(bg, bpid, coord_switch)
+		    != SLURM_SUCCESS) {
 			error("Didn't get all the switches for bp %s", bpid);
 			free(bpid);
 			continue;
 		}
 		free(bpid);
 		for(i=0; i<SYSTEM_DIMENSIONS; i++) {
-			if(_add_switch_conns(coord_switch[i],
-					     &ba_node->axis_switch[i])
-			   == SLURM_SUCCESS) {
-				if(bg_conf->slurm_debug_flags
-				   & DEBUG_FLAG_BG_WIRES)
+			if (_add_switch_conns(coord_switch[i],
+					      &ba_node->axis_switch[i])
+			    == SLURM_SUCCESS) {
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_WIRES)
 					info("adding switch dim %d", i);
 				if (first_switch){
 					if ((rc = bridge_set_data(

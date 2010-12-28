@@ -96,7 +96,7 @@ extern int init_bg(void)
 {
 	_set_bg_lists();
 
-	if(!bg_conf)
+	if (!bg_conf)
 		bg_conf = xmalloc(sizeof(bg_config_t));
 
 	xfree(bg_conf->slurm_user_name);
@@ -110,17 +110,17 @@ extern int init_bg(void)
 	slurm_conf_unlock();
 
 #ifdef HAVE_BGL
-	if(bg_conf->blrts_list)
+	if (bg_conf->blrts_list)
 		list_destroy(bg_conf->blrts_list);
 	bg_conf->blrts_list = list_create(destroy_image);
 #endif
-	if(bg_conf->linux_list)
+	if (bg_conf->linux_list)
 		list_destroy(bg_conf->linux_list);
 	bg_conf->linux_list = list_create(destroy_image);
-	if(bg_conf->mloader_list)
+	if (bg_conf->mloader_list)
 		list_destroy(bg_conf->mloader_list);
 	bg_conf->mloader_list = list_create(destroy_image);
-	if(bg_conf->ramdisk_list)
+	if (bg_conf->ramdisk_list)
 		list_destroy(bg_conf->ramdisk_list);
 	bg_conf->ramdisk_list = list_create(destroy_image);
 
@@ -134,7 +134,7 @@ extern int init_bg(void)
 /* Purge all plugin variables */
 extern void fini_bg(void)
 {
-	if(!agent_fini) {
+	if (!agent_fini) {
 		error("The agent hasn't been finied yet!");
 		agent_fini = true;
 	}
@@ -150,20 +150,20 @@ extern void fini_bg(void)
  */
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
-	if((rec_a->bp_count > 1) && (rec_b->bp_count > 1)) {
+	if ((rec_a->bp_count > 1) && (rec_b->bp_count > 1)) {
 		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
 		check_and_set_node_list(rec_a->bg_block_list);
-		if(check_and_set_node_list(rec_b->bg_block_list)
-		   == SLURM_ERROR)
+		if (check_and_set_node_list(rec_b->bg_block_list)
+		    == SLURM_ERROR)
 			return true;
 	}
 
 	if (!bit_overlap(rec_a->bitmap, rec_b->bitmap))
 		return false;
 
-	if((rec_a->node_cnt >= bg_conf->bp_node_cnt)
-	   || (rec_b->node_cnt >= bg_conf->bp_node_cnt))
+	if ((rec_a->node_cnt >= bg_conf->bp_node_cnt)
+	    || (rec_b->node_cnt >= bg_conf->bp_node_cnt))
 		return true;
 
 	if (!bit_overlap(rec_a->ionode_bitmap, rec_b->ionode_bitmap))
@@ -206,8 +206,8 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	   filled in there.  This function is very slow but necessary
 	   here to get the correct block count and the users. */
 	if ((rc = bridge_get_block(bg_block_id, &block_ptr)) != STATUS_OK) {
-		if(rc == INCONSISTENT_DATA
-		   && bg_conf->layout_mode == LAYOUT_DYNAMIC)
+		if (rc == INCONSISTENT_DATA
+		    && bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			return REMOVE_USER_FOUND;
 
 		error("bridge_get_block(%s): %s",
@@ -216,18 +216,18 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		return REMOVE_USER_ERR;
 	}
 
-	if((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
-				 &user_count))
-	   != STATUS_OK) {
+	if ((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
+				  &user_count))
+	    != STATUS_OK) {
 		error("bridge_get_data(RM_PartitionUsersNum): %s",
 		      bg_err_str(rc));
 		returnc = REMOVE_USER_ERR;
 		user_count = 0;
 	} else
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("got %d users for %s", user_count, bg_block_id);
 	for(i=0; i<user_count; i++) {
-		if(i) {
+		if (i) {
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionNextUser,
 						  &user))
@@ -250,17 +250,17 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 				break;
 			}
 		}
-		if(!user) {
+		if (!user) {
 			error("No user was returned from database");
 			continue;
 		}
-		if(!strcmp(user, bg_conf->slurm_user_name)) {
+		if (!strcmp(user, bg_conf->slurm_user_name)) {
 			free(user);
 			continue;
 		}
 
-		if(user_name) {
-			if(!strcmp(user, user_name)) {
+		if (user_name) {
+			if (!strcmp(user, user_name)) {
 				returnc = REMOVE_USER_FOUND;
 				free(user);
 				continue;
@@ -290,14 +290,14 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 extern int set_block_user(bg_record_t *bg_record)
 {
 	int rc = 0;
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("resetting the boot state flag and "
 		     "counter for block %s.",
 		     bg_record->bg_block_id);
 	bg_record->boot_state = 0;
 	bg_record->boot_count = 0;
 
-	if((rc = update_block_user(bg_record, 1)) == 1) {
+	if ((rc = update_block_user(bg_record, 1)) == 1) {
 		last_bg_update = time(NULL);
 		rc = SLURM_SUCCESS;
 	} else if (rc == -1) {
@@ -338,11 +338,11 @@ extern void *block_agent(void *args)
 		if (difftime(now, last_bg_test) >= BG_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				break;	/* quit now */
-			if(blocks_are_created) {
+			if (blocks_are_created) {
 				last_bg_test = now;
-				if((rc = update_block_list()) == 1)
+				if ((rc = update_block_list()) == 1)
 					last_bg_update = now;
-				else if(rc == -1)
+				else if (rc == -1)
 					error("Error with update_block_list");
 			}
 		}
@@ -368,7 +368,7 @@ extern void *state_agent(void *args)
 		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				break; 	/* quit now */
-			if(blocks_are_created) {
+			if (blocks_are_created) {
 				/* can run for a while so set the
 				 * time after the call so there is
 				 * always MMCS_POLL_TIME between
@@ -392,14 +392,14 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 	ListIterator itr;
 	int rc = SLURM_ERROR;
 
-	if(!bg_record)
+	if (!bg_record)
 		return rc;
 
 	//slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(my_bg_list);
 	while ((found_record = list_next(itr))) {
-		if(found_record)
-			if(bg_record == found_record) {
+		if (found_record)
+			if (bg_record == found_record) {
 				list_remove(itr);
 				rc = SLURM_SUCCESS;
 				break;
@@ -422,14 +422,14 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 
 	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
 		/* check for full node bitmap compare */
-		if(bit_equal(bg_record->bitmap, found_record->bitmap)
-		   && bit_equal(bg_record->ionode_bitmap,
-				found_record->ionode_bitmap)) {
-			if(!strcmp(bg_record->bg_block_id,
-				   found_record->bg_block_id)) {
+		if (bit_equal(bg_record->bitmap, found_record->bitmap)
+		    && bit_equal(bg_record->ionode_bitmap,
+				 found_record->ionode_bitmap)) {
+			if (!strcmp(bg_record->bg_block_id,
+				    found_record->bg_block_id)) {
 				list_remove(itr);
-				if(bg_conf->slurm_debug_flags
-				   & DEBUG_FLAG_SELECT_TYPE)
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_SELECT_TYPE)
 					info("got the block");
 				break;
 			}
@@ -448,14 +448,14 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 
 	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
 		/* check for full node bitmap compare */
-		if(bit_equal(bg_record->bitmap, found_record->bitmap)
-		   && bit_equal(bg_record->ionode_bitmap,
-				found_record->ionode_bitmap)) {
+		if (bit_equal(bg_record->bitmap, found_record->bitmap)
+		    && bit_equal(bg_record->ionode_bitmap,
+				 found_record->ionode_bitmap)) {
 
-			if(!strcmp(bg_record->bg_block_id,
-				   found_record->bg_block_id)) {
-				if(bg_conf->slurm_debug_flags
-				   & DEBUG_FLAG_SELECT_TYPE)
+			if (!strcmp(bg_record->bg_block_id,
+				    found_record->bg_block_id)) {
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_SELECT_TYPE)
 					info("got the block");
 				break;
 			}
@@ -470,19 +470,19 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 	int rc = SLURM_SUCCESS;
 	int count = 0;
 
-	if(!bg_record) {
+	if (!bg_record) {
 		error("bg_free_block: there was no bg_record");
 		return SLURM_ERROR;
 	}
 
-	if(!locked)
+	if (!locked)
 		slurm_mutex_lock(&block_state_mutex);
 
 	while (count < MAX_FREE_RETRIES) {
 		/* block was removed */
-		if(bg_record->magic != BLOCK_MAGIC) {
+		if (bg_record->magic != BLOCK_MAGIC) {
 			error("block was removed while freeing it here");
-			if(!locked)
+			if (!locked)
 				slurm_mutex_unlock(&block_state_mutex);
 			return SLURM_SUCCESS;
 		}
@@ -500,16 +500,16 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		    && bg_record->state != RM_PARTITION_FREE
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 #ifdef HAVE_BG_FILES
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("bridge_destroy %s",
 				     bg_record->bg_block_id);
 			rc = bridge_destroy_block(bg_record->bg_block_id);
 			if (rc != STATUS_OK) {
-				if(rc == PARTITION_NOT_FOUND) {
+				if (rc == PARTITION_NOT_FOUND) {
 					debug("block %s is not found",
 					      bg_record->bg_block_id);
 					break;
-				} else if(rc == INCOMPATIBLE_STATE) {
+				} else if (rc == INCOMPATIBLE_STATE) {
 #ifndef HAVE_BGL
 					/* If the state is error and
 					   we get an incompatible
@@ -517,12 +517,12 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					   we set it ourselves so
 					   break out.
 					*/
-					if(bg_record->state
-					   == RM_PARTITION_ERROR)
+					if (bg_record->state
+					    == RM_PARTITION_ERROR)
 						break;
 #endif
-					if(bg_conf->slurm_debug_flags
-					   & DEBUG_FLAG_SELECT_TYPE)
+					if (bg_conf->slurm_debug_flags
+					    & DEBUG_FLAG_SELECT_TYPE)
 						info("bridge_destroy_partition"
 						     "(%s): %s State = %d",
 						     bg_record->bg_block_id,
@@ -560,13 +560,13 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 	}
 
 	rc = SLURM_SUCCESS;
-	if(bg_record->state == RM_PARTITION_FREE)
+	if (bg_record->state == RM_PARTITION_FREE)
 		remove_from_bg_list(bg_lists->booted, bg_record);
 	else if (count >= MAX_FREE_RETRIES) {
 		/* Something isn't right, go mark this one in an error
 		   state. */
 		update_block_msg_t block_msg;
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("bg_free_block: block %s is not in state "
 			     "free (%s), putting it in error state.",
 			     bg_record->bg_block_id,
@@ -580,7 +580,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		slurm_mutex_lock(&block_state_mutex);
 		rc = SLURM_ERROR;
 	}
-	if(!locked)
+	if (!locked)
 		slurm_mutex_unlock(&block_state_mutex);
 
 	return rc;
@@ -596,13 +596,13 @@ extern int free_block_list(uint32_t job_id, List track_list,
 	int track_cnt = 0, free_cnt = 0, retry_cnt = 0, rc = SLURM_SUCCESS;
 	bool restore = true;
 
-	if(!track_list || !(track_cnt = list_count(track_list)))
+	if (!track_list || !(track_cnt = list_count(track_list)))
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(track_list);
 	while ((bg_record = list_next(itr))) {
-		if(bg_record->magic != BLOCK_MAGIC) {
+		if (bg_record->magic != BLOCK_MAGIC) {
 			error("block was already destroyed");
 			free_cnt++;
 			continue;
@@ -620,8 +620,8 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			bg_requeue_job(bg_record->job_ptr->job_id, 0);
 			slurm_mutex_lock(&block_state_mutex);
 		}
-		if(remove_from_bg_list(bg_lists->job_running, bg_record)
-		   == SLURM_SUCCESS)
+		if (remove_from_bg_list(bg_lists->job_running, bg_record)
+		    == SLURM_SUCCESS)
 			num_unused_cpus += bg_record->cpu_cnt;
 
 		/* we will wait below */
@@ -728,7 +728,7 @@ extern int read_bg_conf(void)
 	ListIterator itr = NULL;
 	char* bg_conf_file = NULL;
 
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("Reading the bluegene.conf file");
 
 	/* check if config file has changed */
@@ -738,8 +738,8 @@ extern int read_bg_conf(void)
 		fatal("can't stat bluegene.conf file %s: %m", bg_conf_file);
 	if (last_config_update) {
 		_reopen_bridge_log();
-		if(last_config_update == config_stat.st_mtime) {
-			if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (last_config_update == config_stat.st_mtime) {
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("%s unchanged", bg_conf_file);
 		} else {
 			info("Restart slurmctld for %s changes "
@@ -756,7 +756,7 @@ extern int read_bg_conf(void)
 	/* bg_conf defined in bg_node_alloc.h */
 	tbl = s_p_hashtbl_create(bg_conf_file_options);
 
-	if(s_p_parse_file(tbl, NULL, bg_conf_file) == SLURM_ERROR)
+	if (s_p_parse_file(tbl, NULL, bg_conf_file) == SLURM_ERROR)
 		fatal("something wrong with opening/reading bluegene "
 		      "conf file");
 	xfree(bg_conf_file);
@@ -770,7 +770,7 @@ extern int read_bg_conf(void)
 		}
 	}
 	if (!s_p_get_string(&bg_conf->default_blrtsimage, "BlrtsImage", tbl)) {
-		if(!list_count(bg_conf->blrts_list))
+		if (!list_count(bg_conf->blrts_list))
 			fatal("BlrtsImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_conf->blrts_list);
@@ -782,7 +782,7 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set BlrtsImage",
 		     bg_conf->default_blrtsimage);
 	} else {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("default BlrtsImage %s",
 			     bg_conf->default_blrtsimage);
 		image = xmalloc(sizeof(image_t));
@@ -801,7 +801,7 @@ extern int read_bg_conf(void)
 		}
 	}
 	if (!s_p_get_string(&bg_conf->default_linuximage, "LinuxImage", tbl)) {
-		if(!list_count(bg_conf->linux_list))
+		if (!list_count(bg_conf->linux_list))
 			fatal("LinuxImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_conf->linux_list);
@@ -813,7 +813,7 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set LinuxImage",
 		     bg_conf->default_linuximage);
 	} else {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("default LinuxImage %s",
 			     bg_conf->default_linuximage);
 		image = xmalloc(sizeof(image_t));
@@ -833,7 +833,7 @@ extern int read_bg_conf(void)
 	}
 	if (!s_p_get_string(&bg_conf->default_ramdiskimage,
 			    "RamDiskImage", tbl)) {
-		if(!list_count(bg_conf->ramdisk_list))
+		if (!list_count(bg_conf->ramdisk_list))
 			fatal("RamDiskImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_conf->ramdisk_list);
@@ -845,7 +845,7 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set RamDiskImage",
 		     bg_conf->default_ramdiskimage);
 	} else {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("default RamDiskImage %s",
 			     bg_conf->default_ramdiskimage);
 		image = xmalloc(sizeof(image_t));
@@ -865,7 +865,7 @@ extern int read_bg_conf(void)
 		}
 	}
 	if (!s_p_get_string(&bg_conf->default_linuximage, "CnloadImage", tbl)) {
-		if(!list_count(bg_conf->linux_list))
+		if (!list_count(bg_conf->linux_list))
 			fatal("CnloadImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_conf->linux_list);
@@ -877,7 +877,7 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set CnloadImage",
 		     bg_conf->default_linuximage);
 	} else {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("default CnloadImage %s",
 			     bg_conf->default_linuximage);
 		image = xmalloc(sizeof(image_t));
@@ -897,7 +897,7 @@ extern int read_bg_conf(void)
 	}
 	if (!s_p_get_string(&bg_conf->default_ramdiskimage,
 			    "IoloadImage", tbl)) {
-		if(!list_count(bg_conf->ramdisk_list))
+		if (!list_count(bg_conf->ramdisk_list))
 			fatal("IoloadImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_conf->ramdisk_list);
@@ -909,7 +909,7 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set IoloadImage",
 		     bg_conf->default_ramdiskimage);
 	} else {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("default IoloadImage %s",
 			     bg_conf->default_ramdiskimage);
 		image = xmalloc(sizeof(image_t));
@@ -930,7 +930,7 @@ extern int read_bg_conf(void)
 	}
 	if (!s_p_get_string(&bg_conf->default_mloaderimage,
 			    "MloaderImage", tbl)) {
-		if(!list_count(bg_conf->mloader_list))
+		if (!list_count(bg_conf->mloader_list))
 			fatal("MloaderImage not configured "
 			      "in bluegene.conf");
 		itr = list_iterator_create(bg_conf->mloader_list);
@@ -942,7 +942,7 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set MloaderImage",
 		     bg_conf->default_mloaderimage);
 	} else {
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("default MloaderImage %s",
 			     bg_conf->default_mloaderimage);
 		image = xmalloc(sizeof(image_t));
@@ -960,7 +960,7 @@ extern int read_bg_conf(void)
 		bg_conf->bp_node_cnt = 512;
 		bg_conf->quarter_node_cnt = 128;
 	} else {
-		if(bg_conf->bp_node_cnt <= 0)
+		if (bg_conf->bp_node_cnt <= 0)
 			fatal("You should have more than 0 nodes "
 			      "per base partition");
 
@@ -968,7 +968,7 @@ extern int read_bg_conf(void)
 	}
 	/* bg_conf->cpus_per_bp should had already been set from the
 	 * node_init */
-	if(bg_conf->cpus_per_bp < bg_conf->bp_node_cnt) {
+	if (bg_conf->cpus_per_bp < bg_conf->bp_node_cnt) {
 		fatal("For some reason we have only %u cpus per bp, but "
 		      "have %u cnodes per bp.  You need at least the same "
 		      "number of cpus as you have cnodes per bp.  "
@@ -978,7 +978,7 @@ extern int read_bg_conf(void)
 	}
 
 	bg_conf->cpu_ratio = bg_conf->cpus_per_bp/bg_conf->bp_node_cnt;
-	if(!bg_conf->cpu_ratio)
+	if (!bg_conf->cpu_ratio)
 		fatal("We appear to have less than 1 cpu on a cnode.  "
 		      "You specified %u for BasePartitionNodeCnt "
 		      "in the blugene.conf and %u cpus "
@@ -995,7 +995,7 @@ extern int read_bg_conf(void)
 		bg_conf->nodecard_node_cnt = 32;
 	}
 
-	if(bg_conf->nodecard_node_cnt<=0)
+	if (bg_conf->nodecard_node_cnt<=0)
 		fatal("You should have more than 0 nodes per nodecard");
 
 	bg_conf->bp_nodecard_cnt =
@@ -1004,12 +1004,12 @@ extern int read_bg_conf(void)
 	if (!s_p_get_uint16(&bg_conf->numpsets, "Numpsets", tbl))
 		fatal("Warning: Numpsets not configured in bluegene.conf");
 
-	if(bg_conf->numpsets) {
+	if (bg_conf->numpsets) {
 		bitstr_t *tmp_bitmap = NULL;
 		int small_size = 1;
 
 		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK */
-		if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt) {
+		if (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt) {
 			bg_conf->quarter_ionode_cnt = 2;
 			bg_conf->nodecard_ionode_cnt = 2;
 		} else {
@@ -1032,20 +1032,20 @@ extern int read_bg_conf(void)
 		/* figure out the smallest block we can have on the
 		   system */
 #ifdef HAVE_BGL
-		if(bg_conf->io_ratio >= 1)
+		if (bg_conf->io_ratio >= 1)
 			bg_conf->smallest_block=32;
 		else
 			bg_conf->smallest_block=128;
 #else
-		if(bg_conf->io_ratio >= 2)
+		if (bg_conf->io_ratio >= 2)
 			bg_conf->smallest_block=16;
-		else if(bg_conf->io_ratio == 1)
+		else if (bg_conf->io_ratio == 1)
 			bg_conf->smallest_block=32;
-		else if(bg_conf->io_ratio == .5)
+		else if (bg_conf->io_ratio == .5)
 			bg_conf->smallest_block=64;
-		else if(bg_conf->io_ratio == .25)
+		else if (bg_conf->io_ratio == .25)
 			bg_conf->smallest_block=128;
-		else if(bg_conf->io_ratio == .125)
+		else if (bg_conf->io_ratio == .125)
 			bg_conf->smallest_block=256;
 		else {
 			error("unknown ioratio %f.  Can't figure out "
@@ -1054,20 +1054,20 @@ extern int read_bg_conf(void)
 			bg_conf->smallest_block = 512;
 		}
 #endif
-		if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("Smallest block possible on this system is %u",
 			     bg_conf->smallest_block);
 		/* below we are creating all the possible bitmaps for
 		 * each size of small block
 		 */
-		if((int)bg_conf->nodecard_ionode_cnt < 1) {
+		if ((int)bg_conf->nodecard_ionode_cnt < 1) {
 			bg_conf->nodecard_ionode_cnt = 0;
 		} else {
 			bg_lists->valid_small32 = list_create(_destroy_bitmap);
-			if((small_size = bg_conf->nodecard_ionode_cnt))
+			if ((small_size = bg_conf->nodecard_ionode_cnt))
 				small_size--;
 			i = 0;
-			while(i<bg_conf->numpsets) {
+			while (i<bg_conf->numpsets) {
 				tmp_bitmap = bit_alloc(bg_conf->numpsets);
 				bit_nset(tmp_bitmap, i, i+small_size);
 				i += small_size+1;
@@ -1078,14 +1078,14 @@ extern int read_bg_conf(void)
 		/* If we only have 1 nodecard just jump to the end
 		   since this will never need to happen below.
 		   Pretty much a hack to avoid seg fault;). */
-		if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
+		if (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
 			goto no_calc;
 
 		bg_lists->valid_small128 = list_create(_destroy_bitmap);
-		if((small_size = bg_conf->quarter_ionode_cnt))
+		if ((small_size = bg_conf->quarter_ionode_cnt))
 			small_size--;
 		i = 0;
-		while(i<bg_conf->numpsets) {
+		while (i<bg_conf->numpsets) {
 			tmp_bitmap = bit_alloc(bg_conf->numpsets);
 			bit_nset(tmp_bitmap, i, i+small_size);
 			i += small_size+1;
@@ -1094,10 +1094,10 @@ extern int read_bg_conf(void)
 
 #ifndef HAVE_BGL
 		bg_lists->valid_small64 = list_create(_destroy_bitmap);
-		if((small_size = bg_conf->nodecard_ionode_cnt * 2))
+		if ((small_size = bg_conf->nodecard_ionode_cnt * 2))
 			small_size--;
 		i = 0;
-		while(i<bg_conf->numpsets) {
+		while (i<bg_conf->numpsets) {
 			tmp_bitmap = bit_alloc(bg_conf->numpsets);
 			bit_nset(tmp_bitmap, i, i+small_size);
 			i += small_size+1;
@@ -1105,10 +1105,10 @@ extern int read_bg_conf(void)
 		}
 
 		bg_lists->valid_small256 = list_create(_destroy_bitmap);
-		if((small_size = bg_conf->quarter_ionode_cnt * 2))
+		if ((small_size = bg_conf->quarter_ionode_cnt * 2))
 			small_size--;
 		i = 0;
-		while(i<bg_conf->numpsets) {
+		while (i<bg_conf->numpsets) {
 			tmp_bitmap = bit_alloc(bg_conf->numpsets);
 			bit_nset(tmp_bitmap, i, i+small_size);
 			i += small_size+1;
@@ -1131,13 +1131,13 @@ no_calc:
 		_reopen_bridge_log();
 
 	if (s_p_get_string(&layout, "DenyPassthrough", tbl)) {
-		if(strstr(layout, "X"))
+		if (strstr(layout, "X"))
 			ba_deny_pass |= PASS_DENY_X;
-		if(strstr(layout, "Y"))
+		if (strstr(layout, "Y"))
 			ba_deny_pass |= PASS_DENY_Y;
-		if(strstr(layout, "Z"))
+		if (strstr(layout, "Z"))
 			ba_deny_pass |= PASS_DENY_Z;
-		if(!strcasecmp(layout, "ALL"))
+		if (!strcasecmp(layout, "ALL"))
 			ba_deny_pass |= PASS_DENY_ALL;
 		bg_conf->deny_pass = ba_deny_pass;
 		xfree(layout);
@@ -1148,11 +1148,11 @@ no_calc:
 		     "defaulting to STATIC partitioning");
 		bg_conf->layout_mode = LAYOUT_STATIC;
 	} else {
-		if(!strcasecmp(layout,"STATIC"))
+		if (!strcasecmp(layout,"STATIC"))
 			bg_conf->layout_mode = LAYOUT_STATIC;
-		else if(!strcasecmp(layout,"OVERLAP"))
+		else if (!strcasecmp(layout,"OVERLAP"))
 			bg_conf->layout_mode = LAYOUT_OVERLAP;
-		else if(!strcasecmp(layout,"DYNAMIC"))
+		else if (!strcasecmp(layout,"DYNAMIC"))
 			bg_conf->layout_mode = LAYOUT_DYNAMIC;
 		else {
 			fatal("I don't understand this LayoutMode = %s",
@@ -1162,7 +1162,7 @@ no_calc:
 	}
 
 	/* add blocks defined in file */
-	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
+	if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		if (!s_p_get_array((void ***)&blockreq_array,
 				   &count, "BPs", tbl)) {
 			info("WARNING: no blocks defined in bluegene.conf, "
@@ -1190,7 +1190,7 @@ extern int validate_current_blocks(char *dir)
 	bg_record_t *bg_record = NULL;
 
 	/* only run on startup */
-	if(last_config_update)
+	if (last_config_update)
 		return SLURM_SUCCESS;
 
 	last_config_update = time(NULL);
@@ -1204,7 +1204,7 @@ extern int validate_current_blocks(char *dir)
 	}
 //#endif
 	/* looking for blocks only I created */
-	if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+	if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 		init_wires();
 		info("No blocks created until jobs are submitted");
 	} else {
@@ -1225,8 +1225,8 @@ extern int validate_current_blocks(char *dir)
 	   it doesn't matter much in the first place though since
 	   no threads are started before this function. */
 	itr = list_iterator_create(bg_lists->main);
-	while((bg_record = list_next(itr))) {
-		if(bg_record->state == RM_PARTITION_ERROR)
+	while ((bg_record = list_next(itr))) {
+		if (bg_record->state == RM_PARTITION_ERROR)
 			put_block_in_error_state(bg_record,
 						 BLOCK_ERROR_STATE, NULL);
 	}
@@ -1241,14 +1241,14 @@ extern int validate_current_blocks(char *dir)
 	last_bg_update = time(NULL);
 	sort_bg_record_inc_size(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("Blocks have finished being created.");
 	return SLURM_SUCCESS;
 }
 
 static void _destroy_bg_config(bg_config_t *bg_conf)
 {
-	if(bg_conf) {
+	if (bg_conf) {
 #ifdef HAVE_BGL
 		if (bg_conf->blrts_list) {
 			list_destroy(bg_conf->blrts_list);
@@ -1282,7 +1282,7 @@ static void _destroy_bg_config(bg_config_t *bg_conf)
 
 static void _destroy_bg_lists(bg_lists_t *bg_lists)
 {
-	if(bg_lists) {
+	if (bg_lists) {
 		if (bg_lists->booted) {
 			list_destroy(bg_lists->booted);
 			bg_lists->booted = NULL;
@@ -1440,8 +1440,8 @@ static int _validate_config_nodes(List curr_block_list,
 			     conn_type_string(bg_record->conn_type));
 			if (((bg_record->state == RM_PARTITION_READY)
 			     || (bg_record->state == RM_PARTITION_CONFIGURING))
-			   && !block_ptr_exist_in_list(bg_lists->booted,
-						       bg_record))
+			    && !block_ptr_exist_in_list(bg_lists->booted,
+							bg_record))
 				list_push(bg_lists->booted, bg_record);
 		}
 	}
@@ -1465,8 +1465,8 @@ static int _validate_config_nodes(List curr_block_list,
 				if (((bg_record->state == RM_PARTITION_READY)
 				     || (bg_record->state
 					 == RM_PARTITION_CONFIGURING))
-				   && !block_ptr_exist_in_list(
-					   bg_lists->booted, bg_record))
+				    && !block_ptr_exist_in_list(
+					    bg_lists->booted, bg_record))
 					list_push(bg_lists->booted,
 						  bg_record);
 				break;
@@ -1512,7 +1512,7 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 			}
 			list_iterator_destroy(itr_found);
 
-			if(found_record == NULL) {
+			if (found_record == NULL) {
 				list_remove(itr_curr);
 				list_push(destroy_list, init_record);
 			}
@@ -1671,7 +1671,7 @@ static int _reopen_bridge_log(void)
 	rc = bridge_set_log_params(bg_conf->bridge_api_file,
 				   bg_conf->bridge_api_verb);
 #endif
-	if(bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("Bridge api file set to %s, verbose level %d",
 		     bg_conf->bridge_api_file, bg_conf->bridge_api_verb);
 
@@ -1682,7 +1682,7 @@ static void _destroy_bitmap(void *object)
 {
 	bitstr_t *bitstr = (bitstr_t *)object;
 
-	if(bitstr) {
+	if (bitstr) {
 		FREE_NULL_BITMAP(bitstr);
 	}
 }

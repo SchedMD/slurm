@@ -132,7 +132,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		}
 
 		/* Make sure the conn type is correct with the new count */
-		if((new_size > 1) && (jobinfo->conn_type == SELECT_SMALL))
+		if ((new_size > 1) && (jobinfo->conn_type == SELECT_SMALL))
 			jobinfo->conn_type = SELECT_TORUS;
 		break;
 	case SELECT_JOBDATA_REBOOT:
@@ -161,10 +161,10 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		jobinfo->node_cnt = *uint32;
 #ifdef HAVE_BG_L_P
 		/* Make sure the conn type is correct with the new count */
-		if((bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
-		   || (jobinfo->node_cnt < bg_conf->bp_node_cnt))
+		if ((bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
+		    || (jobinfo->node_cnt < bg_conf->bp_node_cnt))
 			jobinfo->conn_type = SELECT_SMALL;
-		else if(jobinfo->conn_type == SELECT_SMALL)
+		else if (jobinfo->conn_type == SELECT_SMALL)
 			jobinfo->conn_type = SELECT_TORUS;
 #endif
 		break;
@@ -350,7 +350,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int dims = slurmdb_setup_cluster_dims();
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (jobinfo) {
 			/* NOTE: If new elements are added here, make sure to
 			 * add equivalant pack of zeros below for NULL
@@ -409,7 +409,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packstr(jobinfo->nodes, buffer);
 			packstr(jobinfo->ionodes, buffer);
 
-			if(cluster_flags & CLUSTER_FLAG_BGL)
+			if (cluster_flags & CLUSTER_FLAG_BGL)
 				packstr(jobinfo->blrtsimage, buffer);
 
 			packstr(jobinfo->linuximage, buffer);
@@ -429,7 +429,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packnull(buffer); //nodes
 			packnull(buffer); //ionodes
 
-			if(cluster_flags & CLUSTER_FLAG_BGL)
+			if (cluster_flags & CLUSTER_FLAG_BGL)
 				packnull(buffer); //blrts
 
 			packnull(buffer); //linux
@@ -458,7 +458,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		for (i=0; i<dims; i++) {
 			safe_unpack16(&(jobinfo->geometry[i]), buffer);
 		}
@@ -500,7 +500,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
 				       buffer);
 
-		if(cluster_flags & CLUSTER_FLAG_BGL)
+		if (cluster_flags & CLUSTER_FLAG_BGL)
 			safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
 					       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint32_tmp,
@@ -600,7 +600,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, "%s", jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_NODES:
-		if(jobinfo->ionodes && jobinfo->ionodes[0])
+		if (jobinfo->ionodes && jobinfo->ionodes[0])
 			snprintf(buf, size, "%s[%s]",
 				 jobinfo->nodes, jobinfo->ionodes);
 		else
@@ -622,22 +622,22 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, "%s", geo);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
-		if(jobinfo->blrtsimage)
+		if (jobinfo->blrtsimage)
 			tmp_image = jobinfo->blrtsimage;
 		snprintf(buf, size, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_LINUX_IMAGE:
-		if(jobinfo->linuximage)
+		if (jobinfo->linuximage)
 			tmp_image = jobinfo->linuximage;
 		snprintf(buf, size, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_MLOADER_IMAGE:
-		if(jobinfo->mloaderimage)
+		if (jobinfo->mloaderimage)
 			tmp_image = jobinfo->mloaderimage;
 		snprintf(buf, size, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_RAMDISK_IMAGE:
-		if(jobinfo->ramdiskimage)
+		if (jobinfo->ramdiskimage)
 			tmp_image = jobinfo->ramdiskimage;
 		snprintf(buf, size, "%s", tmp_image);
 		break;
@@ -703,21 +703,21 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		break;
 	case SELECT_PRINT_MIXED:
 		xstrfmtcat(buf,
-			 "Connection=%s Reboot=%s Rotate=%s "
-			 "Geometry=%s Block_ID=%s",
-			 conn_type_string(jobinfo->conn_type),
-			 _yes_no_string(jobinfo->reboot),
-			 _yes_no_string(jobinfo->rotate),
-			 geo,
-			 jobinfo->bg_block_id);
+			   "Connection=%s Reboot=%s Rotate=%s "
+			   "Geometry=%s Block_ID=%s",
+			   conn_type_string(jobinfo->conn_type),
+			   _yes_no_string(jobinfo->reboot),
+			   _yes_no_string(jobinfo->rotate),
+			   geo,
+			   jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:
 		xstrfmtcat(buf, "%s", jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_NODES:
-		if(jobinfo->ionodes && jobinfo->ionodes[0])
+		if (jobinfo->ionodes && jobinfo->ionodes[0])
 			xstrfmtcat(buf, "%s[%s]",
-				 jobinfo->nodes, jobinfo->ionodes);
+				   jobinfo->nodes, jobinfo->ionodes);
 		else
 			xstrfmtcat(buf, "%s", jobinfo->nodes);
 		break;
@@ -737,22 +737,22 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		xstrfmtcat(buf, "%s", geo);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
-		if(jobinfo->blrtsimage)
+		if (jobinfo->blrtsimage)
 			tmp_image = jobinfo->blrtsimage;
 		xstrfmtcat(buf, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_LINUX_IMAGE:
-		if(jobinfo->linuximage)
+		if (jobinfo->linuximage)
 			tmp_image = jobinfo->linuximage;
 		xstrfmtcat(buf, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_MLOADER_IMAGE:
-		if(jobinfo->mloaderimage)
+		if (jobinfo->mloaderimage)
 			tmp_image = jobinfo->mloaderimage;
 		xstrfmtcat(buf, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_RAMDISK_IMAGE:
-		if(jobinfo->ramdiskimage)
+		if (jobinfo->ramdiskimage)
 			tmp_image = jobinfo->ramdiskimage;
 		xstrfmtcat(buf, "%s", tmp_image);
 		break;
