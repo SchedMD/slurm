@@ -285,6 +285,7 @@ test6.13   Test routing all signals through slurmctld rather than directly
            to slurmd (undocumented --ctld option).
 test6.14   Test scancel nodelist option (--nodelist or -w)
 
+
 test7.#    Testing of other functionality.
 ==========================================
 test7.1    Test priorities slurmctld assigns to jobs. Uses srun --hold and
@@ -310,6 +311,8 @@ test7.10   Test if we can trick SLURM into using the wrong user ID
 test7.11   Test of SPANK plugin.
 test7.12   Test of slurm_job_step_stat() API call.
 test7.13   Verify the correct setting of a job's ExitCode
+test7.14   Verify the ability to modify the Derived Exit Code/String fields
+           of a job record in the database
 
 
 test8.#    Test of Blue Gene specific functionality.
