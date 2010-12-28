@@ -859,11 +859,13 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		exit (0);
 	}
 	xfree(ui_description);
-	/* GList *action_list = gtk_action_group_list_actions(menu_action_group); */
+	/* GList *action_list = */
+	/* 	gtk_action_group_list_actions(menu_action_group); */
 	/* GtkAction *action = NULL; */
 	/* int i=0; */
 	/* while ((action = g_list_nth_data(action_list, i++))) { */
-	/* 	g_print("got %s and %x\n", gtk_action_get_name(action), action); */
+	/* 	g_print("got %s and %x\n", gtk_action_get_name(action), */
+	/* 		action); */
 	/* } */
 
 	/* Get the pointers to the correct action so if we ever need
