@@ -105,13 +105,13 @@ extern void row_clicked_submit(GtkTreeView *tree_view,
 	GtkWidget *popup = NULL;
 	GtkWidget *label = NULL;
 	char *info = NULL;
-	if(line == -1) {
+	if (line == -1) {
 		g_error("problem getting line number");
 		return;
 	}
 
 /* 	part_ptr = &new_part_ptr->partition_array[line]; */
-	/* if(!(info = slurm_sprint_partition_info(part_ptr, 0))) { */
+	/* if (!(info = slurm_sprint_partition_info(part_ptr, 0))) { */
 /* 		info = xmalloc(100); */
 /* 		sprintf(info, "Problem getting partition info for %s",  */
 /* 			part_ptr->name); */
@@ -121,7 +121,7 @@ extern void row_clicked_submit(GtkTreeView *tree_view,
 
 	label = gtk_label_new(info);
 	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox),
-			   label, TRUE, TRUE, 0);
+			 label, TRUE, TRUE, 0);
 	xfree(info);
 	gtk_widget_show(label);
 

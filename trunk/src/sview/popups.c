@@ -812,7 +812,8 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 	 gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 3, 4);
 	 gtk_table_attach_defaults(GTK_TABLE(table), gtbtton, 1, 2, 3, 4);
 
-	 gtk_toggle_button_set_active (&gtbtton,working_sview_config.grid_topological);
+	 gtk_toggle_button_set_active (&gtbtton,
+                                       working_sview_config.grid_topological);
 	*/
 
 	gtk_widget_show_all(popup);
@@ -834,7 +835,8 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 			temp = g_strdup_printf("Grid: Nothing changed.");
 		} else if (working_sview_config.grid_topological) {
 			temp = g_strdup_printf("Grid: Invalid mode .."
-					       " switch to non-topology order first.");
+					       " switch to non-topology "
+					       "order first.");
 		} else {
 			bool refresh = 0;
 			temp = g_strdup_printf(

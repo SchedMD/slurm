@@ -1175,7 +1175,8 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	gtk_tree_store_set(treestore, iter, SORTID_NODE_STATE_NUM,
 			   sview_part_sub->node_state, -1);
 
-	if ((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
+	if ((sview_part_sub->node_state & NODE_STATE_BASE)
+	    == NODE_STATE_MIXED) {
 		if (sview_part_sub->cpu_alloc_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_alloc_cnt,
 					 tmp_cnt,
@@ -1403,7 +1404,8 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 		return;
 	}
 
-	if ((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
+	if ((sview_part_sub->node_state & NODE_STATE_BASE)
+	    == NODE_STATE_MIXED) {
 		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 					  SELECT_NODEDATA_SUBCNT,
 					  NODE_STATE_ALLOCATED,
