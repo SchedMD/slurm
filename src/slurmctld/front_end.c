@@ -268,7 +268,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 
 	return rc;
 #else
-	return SLURM_SUCCESS;
+	return ESLURM_INVALID_NODE_NAME;
 #endif
 }
 
@@ -436,12 +436,13 @@ extern void restore_front_end_state(int recover)
 extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 			       uint16_t protocol_version)
 {
-#ifdef HAVE_FRONT_END
-	uint32_t nodes_packed, tmp_offset;
-	front_end_record_t *front_end_ptr;
-	Buf buffer;
-	int i;
 	time_t now = time(NULL);
+	uint32_t nodes_packed = 0;
+	Buf buffer;
+#ifdef HAVE_FRONT_END
+	uint32_t tmp_offset;
+	front_end_record_t *front_end_ptr;
+	int i;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -475,8 +476,13 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
 #else
-	*buffer_size = 0;
 	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+	buffer = init_buf(64);
+	pack32(nodes_packed, buffer);
+	pack_time(now, buffer);
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
 #endif
 }
 
