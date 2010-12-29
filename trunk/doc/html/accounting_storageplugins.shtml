@@ -785,6 +785,24 @@ running on the host is grabbed from the connection.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
+int clusteracct_storage_p_fini_ctld(void *db_conn, char *ip,
+uint16_t port, char *cluster_nodes)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Used when a controller is turned off to tell the storage type the
+  slurmctld has gone away.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">db_conn</span> (input) connection to
+the storage type.<br>
+<span class="commandline">ip</span> (input) ip of connected slurmctld.<br>
+<span class="commandline">port</span> (input) port on host cluster is
+running on the host is grabbed from the connection.<br>
+<span class="commandline">cluster_nodes</span> (input) name of all
+nodes currently on the cluster.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
 int jobacct_storage_p_job_start(void *db_conn, struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Note that a job is about to begin execution or has just changed size.

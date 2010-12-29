@@ -2491,6 +2491,18 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 		mysql_conn, mysql_conn->cluster_name, port);
 }
 
+extern int clusteracct_storage_p_fini_ctld(mysql_conn_t *mysql_conn,
+					   char *ip, uint16_t port,
+					   char *cluster_nodes)
+{
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	return as_mysql_fini_ctld(mysql_conn, ip, port, cluster_nodes);
+}
+
 extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 					      char *cluster_nodes,
 					      uint32_t cpus,

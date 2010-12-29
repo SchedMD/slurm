@@ -69,6 +69,9 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 				  char *cluster, uint16_t port);
 
+extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
+			      char *ip, uint16_t port, char *cluster_nodes);
+
 extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 				 char *cluster_nodes, uint32_t cpus,
 				 time_t event_time);

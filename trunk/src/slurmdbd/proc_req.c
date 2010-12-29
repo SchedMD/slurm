@@ -1004,6 +1004,11 @@ static int _cluster_cpus(slurmdbd_conn_t *slurmdbd_conn,
 		rc = SLURM_ERROR;
 	}
 end_it:
+	if (rc == SLURM_SUCCESS) {
+		xfree(slurmdbd_conn->cluster_nodes);
+		slurmdbd_conn->cluster_nodes =
+			xstrdup(cluster_cpus_msg->cluster_nodes);
+	}
 	slurmdbd_free_cluster_cpus_msg(cluster_cpus_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 				      rc, comment, DBD_CLUSTER_CPUS);
@@ -2784,6 +2789,10 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 #endif
 
 end_it:
+
+	if (rc == SLURM_SUCCESS)
+		slurmdbd_conn->ctld_port = register_ctld_msg->port;
+
 	slurmdbd_free_register_ctld_msg(register_ctld_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 				      rc, comment, DBD_REGISTER_CTLD);

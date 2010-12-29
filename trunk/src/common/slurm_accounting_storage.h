@@ -451,36 +451,39 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 					      time_t event_time);
 
 extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port);
+extern int clusteracct_storage_g_fini_ctld(void *db_conn,
+					   char *ip, uint16_t port,
+					   char *cluster_nodes);
 
 /*
  * load into the storage the start of a job
  */
-extern int jobacct_storage_g_job_start (void *db_conn,
-					struct job_record *job_ptr);
+extern int jobacct_storage_g_job_start(void *db_conn,
+				       struct job_record *job_ptr);
 
 /*
  * load into the storage the end of a job
  */
-extern int jobacct_storage_g_job_complete (void *db_conn,
-					   struct job_record *job_ptr);
+extern int jobacct_storage_g_job_complete(void *db_conn,
+					  struct job_record *job_ptr);
 
 /*
  * load into the storage the start of a job step
  */
-extern int jobacct_storage_g_step_start (void *db_conn,
-					 struct step_record *step_ptr);
+extern int jobacct_storage_g_step_start(void *db_conn,
+					struct step_record *step_ptr);
 
 /*
  * load into the storage the end of a job step
  */
-extern int jobacct_storage_g_step_complete (void *db_conn,
-					    struct step_record *step_ptr);
+extern int jobacct_storage_g_step_complete(void *db_conn,
+					   struct step_record *step_ptr);
 
 /*
  * load into the storage a suspention of a job
  */
-extern int jobacct_storage_g_job_suspend (void *db_conn,
-					  struct job_record *job_ptr);
+extern int jobacct_storage_g_job_suspend(void *db_conn,
+					 struct job_record *job_ptr);
 
 /*
  * get info from the storage

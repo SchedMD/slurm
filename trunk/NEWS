@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre1
 =============================
+ -- Added that when a slurmctld closes the connection to the database it's
+    registered host and port are removed.
 
 * Changes in SLURM 2.2.1
 ========================

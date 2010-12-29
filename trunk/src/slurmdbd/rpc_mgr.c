@@ -248,11 +248,19 @@ static void * _service_connection(void *arg)
 		xfree(msg);
 	}
 
+	if (conn->ctld_port) {
+		debug("cluster %s has disconnected", conn->cluster_name);
+		clusteracct_storage_g_fini_ctld(
+			conn->db_conn, conn->ip,
+			conn->ctld_port, conn->cluster_nodes);
+	}
+
 	acct_storage_g_close_connection(&conn->db_conn);
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
 		error("close(%d): %m(%s)",  conn->newsockfd, conn->ip);
 	else
 		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
+	xfree(conn->cluster_nodes);
 	xfree(conn->cluster_name);
 	xfree(conn);
 	_free_server_thread(pthread_self());
