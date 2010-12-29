@@ -217,9 +217,11 @@ plugin_load_and_link(const char *type_name, int n_syms,
 
 	if (!type_name)
 		return plug;
-
+#if defined(__CYGWIN__)
+	so_name = xstrdup_printf("%s.dll", type_name);
+#else
 	so_name = xstrdup_printf("%s.so", type_name);
-
+#endif
 	while(so_name[i]) {
 		if(so_name[i] == '/')
 			so_name[i] = '_';

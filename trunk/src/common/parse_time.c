@@ -92,7 +92,7 @@ static int _get_delta(char *time_str, int *pos, long *delta)
 	for (offset = (*pos) + 1;
 	     ((time_str[offset] != '\0') && (time_str[offset] != '\n'));
 	     offset++) {
-		if (isspace(time_str[offset]))
+		if (isspace((int)time_str[offset]))
 			continue;
 		for (i=0; un[i].name; i++) {
 			if (!strncasecmp((time_str + offset),
@@ -180,7 +180,7 @@ _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 	} else
 		sec = 0;
 
-	while (isspace(time_str[offset])) {
+	while (isspace((int)time_str[offset])) {
 		offset++;
 	}
 	if (strncasecmp(time_str+offset, "pm", 2)== 0) {
@@ -357,7 +357,7 @@ extern time_t parse_time(char *time_str, int past)
 
 	for (pos=0; ((time_str[pos] != '\0') && (time_str[pos] != '\n'));
 	     pos++) {
-		if (isblank(time_str[pos]) ||
+		if (isblank((int)time_str[pos]) ||
 		    (time_str[pos] == '-') || (time_str[pos] == 'T'))
 			continue;
 		if (strncasecmp(time_str+pos, "today", 5) == 0) {
@@ -409,7 +409,7 @@ extern time_t parse_time(char *time_str, int past)
 						goto prob;
 					break;
 				}
-				if (isblank(time_str[i]))
+				if (isblank((int)time_str[i]))
 					continue;
 				if ((time_str[i] == '\0')
 				    || (time_str[i] == '\n')) {

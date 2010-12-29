@@ -3,32 +3,32 @@
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -80,7 +80,7 @@
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobcomp" for SLURM job completion logging) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
+ * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobcomp/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
@@ -159,7 +159,7 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 
 	/* build user cgroup path if no set (should not be) */
 	if ( *user_cgroup_path == '\0' ) {
-		if ( snprintf(user_cgroup_path,PATH_MAX,CGROUP_SLURMDIR 
+		if ( snprintf(user_cgroup_path,PATH_MAX,CGROUP_SLURMDIR
 			      "/uid_%u",uid) >= PATH_MAX ) {
 			error("unable to build uid %u cgroup filepath : %m",
 			      uid);
@@ -198,9 +198,9 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	if ( slurm_cgroup_conf->user_cgroup_params )
 		xcgroup_set_params(user_cgroup_path,
 				   slurm_cgroup_conf->user_cgroup_params);
-	
+
 	/*
-	 * if memory constraints have to be added to uid cgroup 
+	 * if memory constraints have to be added to uid cgroup
 	 * use_hierachy=1 must be set here, but this would result
 	 * in impossibility to configure some job memory parameters
 	 * differently, so skip this stage for now
@@ -214,8 +214,8 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	if ( xcgroup_create(job_cgroup_path,&opts)
 	     != SLURM_SUCCESS )
 		return SLURM_ERROR;
-	
-	/* job cgroup parameters must be set before any sub cgroups 
+
+	/* job cgroup parameters must be set before any sub cgroups
 	   are created */
 	xcgroup_set_mem_use_hierarchy(job_cgroup_path,1);
 	if ( slurm_cgroup_conf->job_cgroup_params )
@@ -228,15 +228,15 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	 *  more memory than permitted
 	 *
 	 *  If an env value is already set for slurmstepd
-	 *  OOM killer behavior, keep it, otherwise set the 
+	 *  OOM killer behavior, keep it, otherwise set the
 	 *  -17 value, wich means do not let OOM killer kill it
-	 *  
-	 *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-17" 
+	 *
+	 *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-17"
 	 *  in /etc/sysconfig/slurm would be the same
 	 */
 	setenv("SLURMSTEPD_OOM_ADJ","-17",0);
 
-	/* 
+	/*
 	 * FIXME!
 	 * Warning, with slurm-2.1.0 job_mem more corresponds to the
 	 * missing field jobstep_mem and thus must not be
@@ -252,8 +252,8 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	 * In the future, a jobstep_mem field should be added
 	 * to avoid this workaround and be more deterministic
 	 *
-	 * Unfortunately with this workaround comes a collateral problem ! 
-	 * As we propose to alter already fixed limits for both mem and 
+	 * Unfortunately with this workaround comes a collateral problem !
+	 * As we propose to alter already fixed limits for both mem and
 	 * mem+swap, we have to respect a certain order while doing the
 	 * modification to respect the kernel cgroup implementation
 	 * requirements : when sets, memory limit must be lower or equal
@@ -261,7 +261,7 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	 *
 	 * Notes : a limit value of -1 means that the limit was not
 	 * previously set
-	 * Notes : this whole part should be much more simpler when 
+	 * Notes : this whole part should be much more simpler when
 	 * the jobstep_mem field will be added
 	 *
 	 */
@@ -272,7 +272,7 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	xcgroup_get_memlimit(job_cgroup_path,&cur_memlimit);
 	xcgroup_get_memswlimit(job_cgroup_path,&cur_memswlimit);
 
-	/* 
+	/*
 	 * set memory constraints according to cgroup conf
 	 */
 	if ( slurm_cgroup_conf->constrain_ram_space &&
@@ -287,28 +287,28 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 		uint32_t limit,memlimit,swaplimit;
 		memlimit = (uint32_t) job->job_mem ;
 		swaplimit = memlimit ;
-		memlimit = (uint32_t) memlimit * 
+		memlimit = (uint32_t) memlimit *
 			( slurm_cgroup_conf->allowed_ram_space / 100.0 ) ;
-		swaplimit = (uint32_t) swaplimit * 
+		swaplimit = (uint32_t) swaplimit *
 			( slurm_cgroup_conf->allowed_swap_space / 100.0 ) ;
 		limit = memlimit + swaplimit ;
-		/* 
-		 * if memlimit was not set in the previous block, 
-		 * we have to set it here or it will not be possible 
+		/*
+		 * if memlimit was not set in the previous block,
+		 * we have to set it here or it will not be possible
 		 * to set mem+swap limit as the mem limit value could be
 		 * higher.
 		 * FIXME!
 		 * However, due to the restriction mentioned in the previous
 		 * block (job_mem...) if a step already set it, we will
 		 * have to skip this as if the new amount is bigger
-		 * we will not be allowed by the kernel to set it as 
-		 * the mem+swap value will certainly be lower. In such 
+		 * we will not be allowed by the kernel to set it as
+		 * the mem+swap value will certainly be lower. In such
 		 * scenario, we will have to set memlimit after mem+swap limit
 		 * to still be clean regarding to cgroup kernel implementation
 		 * ( memlimit must be lower or equal to mem+swap limit when
 		 * set ). See stage 2 below...
 		 */
-		if ( !slurm_cgroup_conf->constrain_ram_space && 
+		if ( !slurm_cgroup_conf->constrain_ram_space &&
 		     cur_memlimit == -1 )
 			xcgroup_set_memlimit(job_cgroup_path,limit);
 		/*
@@ -321,18 +321,18 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 		else
 			debug3("keeping previously set mem+swap limit of %uMB"
 			       " for '%s'",cur_memswlimit,job_cgroup_path);
-		/* 
+		/*
 		 * FIXME!
 		 * stage 2
 		 */
-		if ( !slurm_cgroup_conf->constrain_ram_space && 
+		if ( !slurm_cgroup_conf->constrain_ram_space &&
 		     cur_memlimit != -1 ) {
 			/*
 			 * FIXME!
-			 * for the reason why we do this, see the previous 
+			 * for the reason why we do this, see the previous
 			 * block
 			 */
-			if ( cur_memlimit == -1 || cur_memlimit < limit ) 
+			if ( cur_memlimit == -1 || cur_memlimit < limit )
 				xcgroup_set_memlimit(job_cgroup_path,limit);
 			else
 				debug3("keeping previously set mem limit of "
@@ -342,7 +342,7 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	}
 	/*
 	 * FIXME!
-	 * yet an other stage 2 due to jobstep_mem lack... 
+	 * yet an other stage 2 due to jobstep_mem lack...
 	 * only used when ram_space constraint is enforced
 	 */
 	if ( slurm_cgroup_conf->constrain_ram_space &&
@@ -359,7 +359,7 @@ int _slurm_cgroup_create(slurmd_job_t *job,uint32_t id,uid_t uid,gid_t gid)
 	}
 
 	/* set cores constraints if required by conf */
-	if ( slurm_cgroup_conf->constrain_cores && 
+	if ( slurm_cgroup_conf->constrain_cores &&
 	     job->job_alloc_cores ) {
 		/*
 		 * abstract mapping of cores in slurm must
@@ -409,13 +409,13 @@ int _slurm_cgroup_destroy(void)
 {
 	if ( jobstep_cgroup_path[0] != '\0' )
 		xcgroup_destroy(jobstep_cgroup_path);
-	
+
 	if ( job_cgroup_path[0] != '\0' )
 		xcgroup_destroy(job_cgroup_path);
-	
+
 	if ( user_cgroup_path[0] != '\0' )
 		xcgroup_destroy(user_cgroup_path);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -423,7 +423,7 @@ int _slurm_cgroup_add_pids(uint32_t id,pid_t* pids,int npids)
 {
 	if ( *jobstep_cgroup_path == '\0' )
 		return SLURM_ERROR;
-	
+
 	return xcgroup_add_pids(jobstep_cgroup_path,pids,npids);
 }
 
@@ -432,7 +432,7 @@ _slurm_cgroup_get_pids(uint32_t id, pid_t **pids, int *npids)
 {
 	if ( *jobstep_cgroup_path == '\0' )
 		return SLURM_ERROR;
-	
+
 	return xcgroup_get_pids(jobstep_cgroup_path,pids,npids);
 }
 
@@ -440,7 +440,7 @@ int _slurm_cgroup_set_memlimit(uint32_t id,uint32_t memlimit)
 {
 	if ( *jobstep_cgroup_path == '\0' )
 		return SLURM_ERROR;
-	
+
 	return xcgroup_set_memlimit(jobstep_cgroup_path,memlimit);
 }
 
@@ -448,7 +448,7 @@ int _slurm_cgroup_set_memswlimit(uint32_t id,uint32_t memlimit)
 {
 	if ( *jobstep_cgroup_path == '\0' )
 		return SLURM_ERROR;
-	
+
 	return xcgroup_set_memswlimit(jobstep_cgroup_path,memlimit);
 }
 
@@ -522,11 +522,11 @@ extern int fini ( void )
 /*
  * Uses slurmd job-step manager's pid as the unique container id.
  */
-extern int slurm_container_create ( slurmd_job_t *job )
+extern int slurm_container_plugin_create ( slurmd_job_t *job )
 {
 	int fstatus;
 
-	/* create a new cgroup for that container */ 
+	/* create a new cgroup for that container */
 	fstatus = _slurm_cgroup_create(job,(uint32_t)job->jmgr_pid,
 				       job->uid,job->gid);
 	if ( fstatus )
@@ -542,11 +542,11 @@ extern int slurm_container_create ( slurmd_job_t *job )
 	fstatus = _slurm_cgroup_add_pids((uint32_t)job->jmgr_pid,
 					 &(job->jmgr_pid),1);
 	if ( fstatus ) {
-		_slurm_cgroup_destroy();		
+		_slurm_cgroup_destroy();
 		return SLURM_ERROR;
 	}
 
-	/* we use slurmstepd pid as the identifier of the container 
+	/* we use slurmstepd pid as the identifier of the container
 	 * the corresponding cgroup could be found using
 	 * _slurm_cgroup_find_by_pid */
 	job->cont_id = (uint32_t)job->jmgr_pid;
@@ -554,12 +554,12 @@ extern int slurm_container_create ( slurmd_job_t *job )
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
+extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
 {
 	return _slurm_cgroup_add_pids(job->cont_id,&pid,1);
 }
 
-extern int slurm_container_signal ( uint32_t id, int signal )
+extern int slurm_container_plugin_signal ( uint32_t id, int signal )
 {
 	pid_t* pids = NULL;
 	int npids;
@@ -570,7 +570,7 @@ extern int slurm_container_signal ( uint32_t id, int signal )
 		error("unable to get pids list for cont_id=%u",id);
 		return SLURM_ERROR;
 	}
-	
+
 	for ( i = 0 ; i<npids ; i++ ) {
 		/* do not kill slurmstepd */
 		if ( pids[i] != id ) {
@@ -579,26 +579,26 @@ extern int slurm_container_signal ( uint32_t id, int signal )
 			kill(pids[i],signal);
 		}
 	}
-	
+
 	xfree(pids);
-	
+
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_destroy ( uint32_t id )
+extern int slurm_container_plugin_destroy ( uint32_t id )
 {
 	_slurm_cgroup_destroy();
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t slurm_container_find(pid_t pid)
+extern uint32_t slurm_container_plugin_find(pid_t pid)
 {
 	uint32_t cont_id=-1;
 	_slurm_cgroup_find_by_pid(&cont_id,pid);
 	return cont_id;
 }
 
-extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
 {
 	int fstatus;
 	uint32_t lid;
@@ -614,7 +614,7 @@ extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
 
 }
 
-extern int slurm_container_wait(uint32_t cont_id)
+extern int slurm_container_plugin_wait(uint32_t cont_id)
 {
 	int delay = 1;
 
@@ -624,8 +624,8 @@ extern int slurm_container_wait(uint32_t cont_id)
 	}
 
 	/* Spin until the container is successfully destroyed */
-	while (slurm_container_destroy(cont_id) != SLURM_SUCCESS) {
-		slurm_container_signal(cont_id, SIGKILL);
+	while (slurm_container_plugin_destroy(cont_id) != SLURM_SUCCESS) {
+		slurm_container_plugin_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
@@ -637,7 +637,8 @@ extern int slurm_container_wait(uint32_t cont_id)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+extern int slurm_container_plugin_get_pids(
+	uint32_t cont_id, pid_t **pids, int *npids)
 {
 	return _slurm_cgroup_get_pids(cont_id,pids,npids);
 }

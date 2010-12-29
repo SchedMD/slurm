@@ -46,6 +46,7 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/list.h"
 #include "filetxt_jobacct_process.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"

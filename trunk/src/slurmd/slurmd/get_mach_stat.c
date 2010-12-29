@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  get_mach_stat.c - Get the status of the current machine 
+ *  get_mach_stat.c - Get the status of the current machine
  *
  *  NOTE: Some of these functions are system dependent. Built on RedHat2.4
  *  NOTE: While not currently used by SLURM, this code can also get a node's
- *       OS name and CPU speed. See code ifdef'ed out via USE_OS_NAME and 
+ *       OS name and CPU speed. See code ifdef'ed out via USE_OS_NAME and
  *       USE_CPU_SPEED
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
@@ -11,32 +11,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -57,9 +57,9 @@
 #ifdef HAVE_SYS_SYSCTL_H
 # include <sys/sysctl.h>
 #endif
- 
+
 #include <errno.h>
-#include <fcntl.h> 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -119,8 +119,8 @@ static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #define xfree	free
 /* main is used here for testing purposes only:				*/
 /* % gcc -DDEBUG_MODULE get_mach_stat.c -I../../.. -g -DUSE_CPU_SPEED	*/
-int 
-main(int argc, char * argv[]) 
+int
+main(int argc, char * argv[])
 {
 	int error_code;
 	uint16_t sockets, cores, threads;
@@ -140,7 +140,7 @@ main(int argc, char * argv[])
 	debug3("%s:", _cpuinfo_path);
 
 	error_code = get_mach_name(node_name);
-	if (error_code != 0) 
+	if (error_code != 0)
 		exit(1);    /* The show is all over without a node name */
 
 	error_code += get_procs(&this_node.cpus);
@@ -171,15 +171,15 @@ main(int argc, char * argv[])
 	days  = (up_time / 86400);
 	debug3("\tUpTime=%u=%u-%2.2u:%2.2u:%2.2u",
 	       up_time, days, hours, mins, secs);
-	if (error_code != 0) 
+	if (error_code != 0)
 		debug3("get_mach_stat error_code=%d encountered", error_code);
 	exit (error_code);
 }
 
 
-/* gethostname_short - equivalent to gethostname, but return only the first 
- * component of the fully qualified name 
- * (e.g. "linux123.foo.bar" becomes "linux123") 
+/* gethostname_short - equivalent to gethostname, but return only the first
+ * component of the fully qualified name
+ * (e.g. "linux123.foo.bar" becomes "linux123")
  * OUT name
  */
 int
@@ -209,13 +209,13 @@ gethostname_short (char *name, size_t len)
 
 
 /*
- * get_procs - Return the count of procs on this system 
+ * get_procs - Return the count of procs on this system
  * Input: procs - buffer for the CPU count
  * Output: procs - filled in with CPU count, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-extern int 
-get_procs(uint16_t *procs) 
+extern int
+get_procs(uint16_t *procs)
 {
 #ifdef LPAR_INFO_FORMAT2
 	/* AIX 5.3 only */
@@ -226,7 +226,7 @@ get_procs(uint16_t *procs)
 		error("lpar_get_info() failed");
 		return EINVAL;
 	}
-	
+
 	*procs = (uint16_t) info.online_vcpus;
 #else /* !LPAR_INFO_FORMAT2 */
 
@@ -238,7 +238,7 @@ get_procs(uint16_t *procs)
 	if (my_proc_tally < 1) {
 		error ("get_procs: error running sysconf(_SC_NPROCESSORS_ONLN)");
 		return EINVAL;
-	} 
+	}
 
 	*procs = (uint16_t) my_proc_tally;
 #  else
@@ -263,13 +263,13 @@ get_procs(uint16_t *procs)
 
 #ifdef USE_OS_NAME
 /*
- * get_os_name - Return the operating system name and version 
+ * get_os_name - Return the operating system name and version
  * Input: os_name - buffer for the OS name, must be at least MAX_OS_LEN characters
  * Output: os_name - filled in with OS name, "UNKNOWN" if error
  *         return code - 0 if no error, otherwise errno
  */
-extern int 
-get_os_name(char *os_name) 
+extern int
+get_os_name(char *os_name)
 {
 	int error_code;
 	struct utsname sys_info;
@@ -279,13 +279,13 @@ get_os_name(char *os_name)
 	if (error_code != 0) {
 		error ("get_os_name: uname error %d", error_code);
 		return error_code;
-	} 
+	}
 
-	if ((strlen(sys_info.sysname) + strlen(sys_info.release) + 2) >= 
+	if ((strlen(sys_info.sysname) + strlen(sys_info.release) + 2) >=
 		MAX_OS_LEN) {
 		error ("get_os_name: OS name too long");
 		return error_code;
-	} 
+	}
 
 	strcpy(os_name, sys_info.sysname);
 	strcat(os_name, ".");
@@ -296,13 +296,13 @@ get_os_name(char *os_name)
 
 
 /*
- * get_mach_name - Return the name of this node 
+ * get_mach_name - Return the name of this node
  * Input: node_name - buffer for the node name, must be at least MAX_SLURM_NAME characters
  * Output: node_name - filled in with node name
  *         return code - 0 if no error, otherwise errno
  */
-extern int 
-get_mach_name(char *node_name) 
+extern int
+get_mach_name(char *node_name)
 {
     int error_code;
 
@@ -315,7 +315,7 @@ get_mach_name(char *node_name)
 
 
 /*
- * get_memory - Return the count of procs on this system 
+ * get_memory - Return the count of procs on this system
  * Input: real_memory - buffer for the Real Memory size
  * Output: real_memory - the Real Memory size in MB, "1" if error
  *         return code - 0 if no error, otherwise errno
@@ -334,8 +334,8 @@ get_memory(uint32_t *real_memory)
 	if (pages < 1) {
 		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)");
 		return EINVAL;
-	} 
-	*real_memory = (uint32_t)((float)pages * (sysconf(_SC_PAGE_SIZE) / 
+	}
+	*real_memory = (uint32_t)((float)pages * (sysconf(_SC_PAGE_SIZE) /
 			1048576.0)); /* Megabytes of memory */
 #  else  /* !_SC_PHYS_PAGES */
 #    if HAVE_SYSCTLBYNAME
@@ -357,16 +357,16 @@ get_memory(uint32_t *real_memory)
 
 
 /*
- * get_tmp_disk - Return the total size of temporary file system on 
- *    this system 
+ * get_tmp_disk - Return the total size of temporary file system on
+ *    this system
  * Input: tmp_disk - buffer for the disk space size
- *        tmp_fs - pathname of the temporary file system to status, 
- *	           defaults to "/tmp"
+ *        tmp_fs - pathname of the temporary file system to status,
+ *		   defaults to "/tmp"
  * Output: tmp_disk - filled in with disk space size in MB, zero if error
  *         return code - 0 if no error, otherwise errno
  */
-extern int 
-get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs) 
+extern int
+get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 {
 	int error_code = 0;
 #ifdef HAVE_SYS_VFS_H
@@ -390,7 +390,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 	}
 	else if (errno != ENOENT) {
 		error_code = errno;
-		error ("get_tmp_disk: error %d executing statfs on %s", 
+		error ("get_tmp_disk: error %d executing statfs on %s",
 			errno, tmp_fs_name);
 	}
 
@@ -403,7 +403,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 extern int get_up_time(uint32_t *up_time)
 {
-#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__)
+#if defined(HAVE_AIX) || defined(__sun)	|| defined(__APPLE__)
 	clock_t tm;
 	struct tms buf;
 
@@ -414,10 +414,24 @@ extern int get_up_time(uint32_t *up_time)
 	}
 
 	*up_time = tm / sysconf(_SC_CLK_TCK);
+#elif defined(__CYGWIN__)
+	FILE *uptime_file;
+	char buffer[128];
+	char* _uptime_path = "/proc/uptime";
+
+	if (!(uptime_file = fopen(_uptime_path, "r"))) {
+		error("get_up_time: error %d opening %s", errno, _uptime_path);
+		return errno;
+	}
+
+	if (fgets(buffer, sizeof(buffer), uptime_file))
+		*up_time = atoi(buffer);
+
+	fclose(uptime_file);
 #else
-	/* NOTE for Linux: The return value of times() may overflow the 
-	 * possible range of type clock_t. There is also an offset of 
-	 * 429 million seconds on some implementations. We just use the 
+	/* NOTE for Linux: The return value of times() may overflow the
+	 * possible range of type clock_t. There is also an offset of
+	 * 429 million seconds on some implementations. We just use the
 	 * simpler sysinfo() function instead. */
 	struct sysinfo info;
 
@@ -446,7 +460,7 @@ static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
 		return false;
 
 	ptr = strstr(buffer, ":");
-	if (ptr != NULL) 
+	if (ptr != NULL)
 		ptr++;
 	*valptr = ptr;
 	return true;
@@ -496,8 +510,8 @@ static int _chk_cpuinfo_float(char *buffer, char *keyword, float *val)
  * Output: procs - filled in with CPU speed, "1.0" if error
  *         return code - 0 if no error, otherwise errno
  */
-extern int 
-get_speed(float *speed) 
+extern int
+get_speed(float *speed)
 {
 #if defined (__sun)
 	kstat_ctl_t   *kc;
@@ -524,29 +538,29 @@ get_speed(float *speed)
 	if (cpu_info_file == NULL) {
 		error("get_speed: error %d opening %s", errno, _cpuinfo_path);
 		return errno;
-	} 
+	}
 
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 		_chk_cpuinfo_float(buffer, "cpu MHz", speed);
-	} 
+	}
 
 	fclose(cpu_info_file);
 #endif
 	return 0;
-} 
+}
 
 #endif
 
 /*
- * get_cpuinfo - Return detailed cpuinfo on this system 
+ * get_cpuinfo - Return detailed cpuinfo on this system
  * Input:  numproc - number of processors on the system
  * Output: p_sockets - number of physical processor sockets
  *         p_cores - total number of physical CPU cores
  *         p_threads - total number of hardware execution threads
- *         block_map - asbtract->physical block distribution map 
+ *         block_map - asbtract->physical block distribution map
  *         block_map_inv - physical->abstract block distribution map (inverse)
  *         return code - 0 if no error, otherwise errno
- * NOTE: User must xfree block_map and block_map_inv  
+ * NOTE: User must xfree block_map and block_map_inv
  */
 typedef struct cpuinfo {
 	uint16_t seen;
@@ -616,7 +630,7 @@ get_cpuinfo(uint16_t numproc,
 #else
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
-		error ("get_cpuinfo: error %d opening %s", 
+		error ("get_cpuinfo: error %d opening %s",
 			errno, _cpuinfo_path);
 		return errno;
 	}
@@ -699,7 +713,7 @@ get_cpuinfo(uint16_t numproc,
 			numcpu++;
 			curcpu = val;
 		    	if (val >= numproc) {	/* out of bounds, ignore */
-				debug("cpuid is %u (> %d), ignored", 
+				debug("cpuid is %u (> %d), ignored",
 					val, numproc);
 				continue;
 			}
@@ -797,10 +811,10 @@ get_cpuinfo(uint16_t numproc,
 		}
 		if (sockets == 0)
 			sockets = 1;		/* guarantee non-zero */
-	
+
 		cores = numcores / sockets;	/* unique "core id" */
 		cores = MAX(maxcores, cores);	/* maximum "cpu cores" */
-	
+
 		if (cores == 0) {
 			cores = numcpu / sockets;	/* assume multi-core */
 			if (cores > 1) {
@@ -810,7 +824,7 @@ get_cpuinfo(uint16_t numproc,
 		}
 		if (cores == 0)
 			cores = 1;	/* guarantee non-zero */
-	
+
 		threads = numcpu / (sockets * cores); /* solve for threads */
 		if (threads == 0)
 			threads = 1;	/* guarantee non-zero */
@@ -871,7 +885,7 @@ get_cpuinfo(uint16_t numproc,
  *   actual machine processor ID ordering (which can be BIOS/OS dependendent)
  * Input:  numproc - number of processors on the system
  *	   cpu - array of cpuinfo (file static for qsort/_compare_cpus)
- * Output: block_map, block_map_inv - asbtract->physical block distribution map 
+ * Output: block_map, block_map_inv - asbtract->physical block distribution map
  *         return code - 0 if no error, otherwise errno
  * NOTE: User must free block_map and block_map_inv
  *
@@ -1024,5 +1038,3 @@ static int _compute_block_map(uint16_t numproc,
 #endif
 	return 0;
 }
-
-

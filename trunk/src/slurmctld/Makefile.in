@@ -314,10 +314,10 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-slurmctld_LDADD = \
-	$(top_builddir)/src/common/libdaemonize.la  \
-	$(top_builddir)/src/api/libslurm.o -ldl
 
+# noinst_LTLIBRARIES = libslurmctld.la
+# libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+# libslurmctld_la_SOURCES =
 slurmctld_SOURCES = \
 	acct_policy.c	\
 	acct_policy.h	\
@@ -367,6 +367,10 @@ slurmctld_SOURCES = \
 	step_mgr.c	\
 	trigger_mgr.c	\
 	trigger_mgr.h
+
+slurmctld_LDADD = \
+	$(top_builddir)/src/common/libdaemonize.la  \
+	$(top_builddir)/src/api/libslurm.o -ldl
 
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am

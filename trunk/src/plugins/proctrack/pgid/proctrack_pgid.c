@@ -107,7 +107,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_create ( slurmd_job_t *job )
+extern int slurm_container_plugin_create ( slurmd_job_t *job )
 {
 	return SLURM_SUCCESS;
 }
@@ -115,13 +115,13 @@ extern int slurm_container_create ( slurmd_job_t *job )
 /*
  * Uses job step process group id.
  */
-extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
+extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
 {
 	job->cont_id = (uint32_t)job->pgid;
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_signal  ( uint32_t id, int signal )
+extern int slurm_container_plugin_signal  ( uint32_t id, int signal )
 {
 	pid_t pid = (pid_t) id;
 
@@ -136,12 +136,12 @@ extern int slurm_container_signal  ( uint32_t id, int signal )
 	return (int)killpg(pid, signal);
 }
 
-extern int slurm_container_destroy ( uint32_t id )
+extern int slurm_container_plugin_destroy ( uint32_t id )
 {
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t slurm_container_find(pid_t pid)
+extern uint32_t slurm_container_plugin_find(pid_t pid)
 {
 	pid_t rc = getpgid(pid);
 
@@ -151,7 +151,7 @@ extern uint32_t slurm_container_find(pid_t pid)
 		return (uint32_t) rc;
 }
 
-extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
 {
 	pid_t pgid = getpgid(pid);
 
@@ -162,7 +162,7 @@ extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
 }
 
 extern int
-slurm_container_wait(uint32_t cont_id)
+slurm_container_plugin_wait(uint32_t cont_id)
 {
 	pid_t pgid = (pid_t)cont_id;
 	int delay = 1;
@@ -174,7 +174,7 @@ slurm_container_wait(uint32_t cont_id)
 
 	/* Spin until the process group is gone. */
 	while (killpg(pgid, 0) == 0) {
-		slurm_container_signal(cont_id, SIGKILL);
+		slurm_container_plugin_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
@@ -187,8 +187,9 @@ slurm_container_wait(uint32_t cont_id)
 }
 
 extern int
-slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 {
-	error("proctrack/pgid does not implement slurm_container_get_pids");
+	error("proctrack/pgid does not implement "
+	      "slurm_container_plugin_get_pids");
 	return SLURM_ERROR;
 }

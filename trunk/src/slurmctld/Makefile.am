@@ -6,14 +6,10 @@ CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
-sbin_PROGRAMS = slurmctld
-
-slurmctld_LDADD = 					\
-	$(top_builddir)/src/common/libdaemonize.la  \
-	$(top_builddir)/src/api/libslurm.o -ldl
-
-
-slurmctld_SOURCES = 	\
+# noinst_LTLIBRARIES = libslurmctld.la
+# libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+# libslurmctld_la_SOURCES =
+slurmctld_SOURCES =     \
 	acct_policy.c	\
 	acct_policy.h	\
 	agent.c  	\
@@ -63,8 +59,13 @@ slurmctld_SOURCES = 	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 
-slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
+sbin_PROGRAMS = slurmctld
+
+slurmctld_LDADD = 				    \
+	$(top_builddir)/src/common/libdaemonize.la  \
+	$(top_builddir)/src/api/libslurm.o -ldl
+slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(slurmctld_LDADD) : force

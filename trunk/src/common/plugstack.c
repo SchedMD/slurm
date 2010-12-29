@@ -1036,7 +1036,7 @@ _find_word_boundary(char *str, char *from, char **next)
 	 * Back up past any non-whitespace if we are pointing in
 	 *  the middle of a word.
 	 */
-	while ((p != str) && !isspace (*p))
+	while ((p != str) && !isspace ((int)*p))
 		--p;
 
 	/*
@@ -1047,7 +1047,7 @@ _find_word_boundary(char *str, char *from, char **next)
 	/*
 	 * Now move back to the end of the previous word
 	 */
-	while ((p != str) && isspace (*p))
+	while ((p != str) && isspace ((int)*p))
 		--p;
 
 	if (p == str) {
@@ -1182,7 +1182,7 @@ int spank_print_options(FILE * fp, int left_pad, int width)
 
 static char _canonical_char (char c)
 {
-	if (!isalnum (c))
+	if (!isalnum ((int)c))
 		return '_';
 	else
 		return c;
