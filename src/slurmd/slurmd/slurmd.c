@@ -1194,7 +1194,7 @@ _slurmd_init(void)
 	 * Read global slurm config file, ovverride necessary values from
 	 * defaults and command line.
 	 */
-	_read_config();		// SETUP LOGGING EARLIER
+	_read_config();
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
 	    (gres_plugin_node_config_load(cpu_cnt) != SLURM_SUCCESS))

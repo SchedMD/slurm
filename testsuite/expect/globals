@@ -100,9 +100,6 @@ cset poe	"/usr/bin/poe"
 cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
-# Set if using "--enable_front_end" configuration option
-cset enable_front_end 0
-
 # Set if using "--enable-memory-leak-debug" configuration option
 cset enable_memory_leak_debug 0
 
@@ -1037,10 +1034,6 @@ proc get_default_acct { user } {
 
 proc test_front_end { } {
 	global enable_front_end scontrol
-
-	if {$enable_front_end != 0} {
-		return 1
-	}
 
 	log_user 0
 	set front_end 0
