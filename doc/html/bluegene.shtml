@@ -313,12 +313,8 @@ in the <i>slurm.conf</i> file.
 It is recommended that at least two front end nodes be dedicated to use by
 the slurmd daemons for fault tolerance.
 For example:
-"FrontendName=frontend00,frontend01 State=UNKNOWN"
-is used to define four front end nodes for running slurmd daemons.
-Note that since the naming of front end nodes would typically not follow that
-of the compute nodes (lacking X, Y and Z coordinates), each front end
-node name should be listed separately and without a hostlist expression
-(i.e. NOT as "frontend[00-01]").</p>
+"FrontendName=frontend[00-03] State=UNKNOWN"
+is used to define four front end nodes for running slurmd daemons.</p>
 
 <pre>
 # Portion of slurm.conf for BlueGene system
@@ -327,8 +323,8 @@ SelectType=select/bluegene
 Prolog=/usr/sbin/prolog
 Epilog=/usr/sbin/epilog
 #
-FrontendName=frontend00,frontend01 State=UNKNOWN
-NodeName=bg[000x733] Procs=1024
+FrontendName=frontend[00-01] State=UNKNOWN
+NodeName=bg[000x733] Procs=1024 State=UNKNOWN
 </pre>
 
 <p>While users are unable to initiate SLURM job steps on BlueGene systems,
@@ -674,6 +670,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 December 2010</p>
+<p style="text-align:center;">Last modified 29 December 2010</p>
 
 <!--#include virtual="footer.txt"-->
