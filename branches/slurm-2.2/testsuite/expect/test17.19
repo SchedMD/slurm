@@ -1,0 +1,216 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of job submit to multiple partitions (--partition).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "17.19"
+set exit_code   0
+set file_in     "test$test_id.input"
+
+print_header $test_id
+
+#
+# Delete left-over stdin/out/err files
+# Build stdin file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "$bin_id"
+
+#
+# Identify available partitions
+#
+set part_cnt 0
+set fd [open "|$scontrol --all --oneliner show partition"]
+while {[gets $fd line] != -1} {
+	if {[regexp {^PartitionName=(\w+).*State=UP} $line frag part($part_cnt)] == 1} {
+		incr part_cnt
+	}
+}
+catch {close $fd}
+
+if {$part_cnt == 0} {
+	send_user "FAILURE: could not identify the any usable partitions\n"
+	exit 1
+}
+
+#
+# Submit job to one partition
+#
+set job_id  0
+spawn $sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part(0) $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch failed to submit job\n"
+	exit 1
+}
+
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "Partition=$part(0)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+cancel_job $job_id
+if {$matches != 1} {
+	send_user "\nFAILURE: sbatch failed to set partition properly\n"
+	exit 1
+}
+if {$exit_code != 0} {
+	exit $exit_code
+}
+send_user "\n\nSo far, so good....\n\n\n"
+
+#
+# Submit job to two partitions, including one invalid name
+#
+set job_id  0
+set matches 0
+spawn $sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part(0),DUMMY $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Invalid partition name specified" {
+		send_user "\nNo worries, this error is expected\n"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id != 0} {
+	send_user "\nFAILURE: sbatch submitted job to invalid partition name\n"
+	cancel_job $job_id
+	set exit_code 1
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: sbatch failed to report invalid partition name\n"
+	exit 1
+}
+if {$exit_code != 0} {
+	exit $exit_code
+}
+send_user "\n\nSo far, so good....\n\n\n"
+
+#
+# Quit here if only one partition
+#
+if {$part_cnt < 2} {
+	if {$exit_code == 0} {
+		exec $bin_rm -f $file_in
+		send_user "\nSUCCESS\n"
+	}
+	exit $exit_code
+}
+
+#
+# Submit job to more than one partition, if so configured
+#
+set job_id  0
+spawn $sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part(0),$part(1) $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch failed to submit job\n"
+	exit 1
+}
+
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "Partition=$part(0),$part(1)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+cancel_job $job_id
+if {$matches != 1} {
+	send_user "\nFAILURE: sbatch failed to set partition properly\n"
+	exit 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
