@@ -644,6 +644,8 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	int rc = -1;
 	int retcode;
 	int i;
+	uint16_t port = 0;
+	char ip_buf[16];
 	static bool acct_sent = false;
 
 	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
@@ -677,9 +679,13 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 		/* this is the base of the tree, its parent is slurmctld */
 		debug3("Rank %d sending complete to slurmctld, range %d to %d",
 		       step_complete.rank, first, last);
-		if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+		if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+			slurm_get_ip_str(&step_complete.parent_addr, &port,
+					 ip_buf, sizeof(ip_buf));
 			error("Rank %d failed sending step completion message"
-			      " to slurmctld (parent)", step_complete.rank);
+			      " to slurmctld (parent, %s:%u)",
+			      step_complete.rank, ip_buf, port);
+		}
 		goto finished;
 	}
 
@@ -699,9 +705,13 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	/* on error AGAIN, send to the slurmctld instead */
 	debug3("Rank %d sending complete to slurmctld instead, range %d to %d",
 	       step_complete.rank, first, last);
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+		slurm_get_ip_str(&step_complete.parent_addr, &port,
+				 ip_buf, sizeof(ip_buf));
 		error("Rank %d failed sending step completion message"
-		      " directly to slurmctld", step_complete.rank);
+		      " directly to slurmctld (%s:%u)",
+		      step_complete.rank, ip_buf, port);
+	}
 finished:
 	jobacct_gather_g_destroy(msg.jobacct);
 }
