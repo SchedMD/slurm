@@ -169,7 +169,12 @@ extern front_end_record_t *assign_front_end(void)
 		front_end_nodes[last_assigned].job_cnt_run++;
 		return front_end_ptr;
 	}
+#if 1
+	error("assign_front_end: no available front end nodes found");
+	abort();
+#else
 	fatal("assign_front_end: no available front end nodes found");
+#endif
 #endif
 	return NULL;
 }
@@ -736,6 +741,7 @@ extern void set_front_end_down (front_end_record_t *front_end_ptr,
 		front_end_ptr->reason_time = now;
 		front_end_ptr->reason_uid = slurm_get_slurm_user_id();
 	}
+	last_front_end_update = now;
 #endif
 }
 
