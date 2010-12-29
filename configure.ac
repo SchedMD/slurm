@@ -54,14 +54,22 @@ case "$host" in
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
 
+ac_have_cygwin=no
 dnl
-dnl add some flags for Solaris
+dnl add some flags for Solaris and cygwin
 dnl
 case "$host" in
+     	*cygwin)   LDFLAGS="$LDFLAGS -no-undefined"
+		   SO_LDFLAGS="$SO_LDFLAGS \$(top_builddir)/src/api/libslurmhelper.la"
+		   AC_SUBST(SO_LDFLAGS)
+		   ac_have_cygwin=yes
+		   ;;
 	*solaris*) CC="/usr/sfw/bin/gcc"
 		   CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
 		   LDFLAGS="$LDFLAGS -L/usr/sfw/lib"
+		   ;;
 esac
+AM_CONDITIONAL(WITH_CYGWIN, test x"$ac_have_cygwin" == x"yes")
 
 dnl Checks for programs.
 dnl
@@ -370,6 +378,7 @@ AC_CONFIG_FILES([Makefile
 		 src/srun/Makefile
 		 src/srun_cr/Makefile
 		 src/slurmd/Makefile
+		 src/slurmd/common/Makefile
 		 src/slurmd/slurmd/Makefile
 		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile

@@ -57,6 +57,7 @@
 
 #include <stdarg.h>
 #include <ctype.h>
+#include <time.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -469,7 +470,7 @@ bool xstring_is_whitespace(const char *str)
 
 	len = strlen(str);
 	for (i = 0; i < len; i++) {
-		if (!isspace(str[i])) {
+		if (!isspace((int)str[i])) {
 			return false;
 		}
 	}
@@ -485,7 +486,7 @@ char *xstrtolower(char *str)
 	if(str) {
 		int j = 0;
 		while(str[j]) {
-			str[j] = tolower(str[j]);
+			str[j] = tolower((int)str[j]);
 			j++;
 		}
 	}

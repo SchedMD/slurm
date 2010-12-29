@@ -48,21 +48,21 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurmd_task_ops {
-	int	(*slurmd_batch_request)		(uint32_t job_id,
-						 batch_job_launch_msg_t *req);
-	int	(*slurmd_launch_request)	(uint32_t job_id,
-						 launch_tasks_request_msg_t *req,
-						 uint32_t node_id);
-	int	(*slurmd_reserve_resources)	(uint32_t job_id,
-						 launch_tasks_request_msg_t *req,
-						 uint32_t node_id);
-	int	(*slurmd_suspend_job)		(uint32_t job_id);
-	int	(*slurmd_resume_job)		(uint32_t job_id);
-	int	(*slurmd_release_resources)	(uint32_t job_id);
+	int	(*slurmd_batch_request)	    (uint32_t job_id,
+					     batch_job_launch_msg_t *req);
+	int	(*slurmd_launch_request)    (uint32_t job_id,
+					     launch_tasks_request_msg_t *req,
+					     uint32_t node_id);
+	int	(*slurmd_reserve_resources) (uint32_t job_id,
+					     launch_tasks_request_msg_t *req,
+					     uint32_t node_id);
+	int	(*slurmd_suspend_job)	    (uint32_t job_id);
+	int	(*slurmd_resume_job)	    (uint32_t job_id);
+	int	(*slurmd_release_resources) (uint32_t job_id);
 
-	int	(*pre_setuid)			(slurmd_job_t *job);
-	int	(*pre_launch)			(slurmd_job_t *job);
-	int	(*post_term)			(slurmd_job_t *job);
+	int	(*pre_setuid)		    (slurmd_job_t *job);
+	int	(*pre_launch)		    (slurmd_job_t *job);
+	int	(*post_term)		    (slurmd_job_t *job);
 } slurmd_task_ops_t;
 
 

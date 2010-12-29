@@ -98,12 +98,12 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	basil_resv_conf.c basil_resv_conf.h xmalloc.c xmalloc.h \
 	xassert.c xassert.h xstring.c xstring.h xsignal.c xsignal.h \
 	forward.c forward.h strlcpy.c strlcpy.h list.c list.h net.c \
-	net.h fd.c fd.h log.c log.h cbuf.c cbuf.h safeopen.c \
-	safeopen.h bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
+	net.h log.c log.h cbuf.c cbuf.h safeopen.c safeopen.h \
+	bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
 	parse_config.c parse_config.h parse_spec.c parse_spec.h \
 	plugin.c plugin.h plugrack.c plugrack.h print_fields.c \
 	print_fields.h read_config.c read_config.h node_select.c \
-	node_select.h env.c env.h slurm_cred.h slurm_cred.c \
+	node_select.h env.c env.h fd.c fd.h slurm_cred.h slurm_cred.c \
 	slurm_errno.c slurm_priority.c slurm_priority.h \
 	slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
@@ -133,9 +133,9 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo forward.lo strlcpy.lo list.lo \
-	net.lo fd.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo \
-	pack.lo parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
-	print_fields.lo read_config.lo node_select.lo env.lo \
+	net.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
+	parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
+	print_fields.lo read_config.lo node_select.lo env.lo fd.lo \
 	slurm_cred.lo slurm_errno.lo slurm_priority.lo \
 	slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
@@ -156,7 +156,7 @@ libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libcommon_la_LDFLAGS) $(LDFLAGS) -o $@
 libdaemonize_la_LIBADD =
-am_libdaemonize_la_OBJECTS = daemonize.lo fd.lo
+am_libdaemonize_la_OBJECTS = daemonize.lo
 libdaemonize_la_OBJECTS = $(am_libdaemonize_la_OBJECTS)
 libeio_la_LIBADD =
 am_libeio_la_OBJECTS = eio.lo io_hdr.lo
@@ -235,7 +235,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 ELAN_LIBS = @ELAN_LIBS@
-EXEEXT = @EXEEXT@
+# This is needed if compiling on windows
+EXEEXT = 
 FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FGREP = @FGREP@
 GREP = @GREP@
@@ -413,7 +414,6 @@ libcommon_la_SOURCES = \
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	net.c net.h                     \
-	fd.c fd.h			\
 	log.c log.h			\
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\
@@ -428,6 +428,7 @@ libcommon_la_SOURCES = \
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
 	env.c env.h      		\
+	fd.c fd.h       		\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
@@ -490,8 +491,7 @@ EXTRA_libcommon_la_SOURCES = \
 
 libdaemonize_la_SOURCES = \
 	daemonize.c       	 	\
-	daemonize.h        		\
-	fd.c fd.h
+	daemonize.h
 
 libeio_la_SOURCES = \
 	eio.c eio.h	   		\

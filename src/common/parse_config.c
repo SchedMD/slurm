@@ -99,7 +99,7 @@ static int _conf_hashtbl_index(const char *key)
 	for (i = 0; i < 10; i++) {
 		if (key[i] == '\0')
 			break;
-		idx += tolower(key[i]);
+		idx += tolower((int)key[i]);
 	}
 	return idx % CONF_HASH_LEN;
 }
@@ -266,7 +266,7 @@ static int _strip_continuation(char *buf, int len)
 	for (ptr = buf+len-1; ptr >= buf; ptr--) {
 		if (*ptr == '\\')
 			bs++;
-		else if (isspace(*ptr) && bs == 0)
+		else if (isspace((int)*ptr) && bs == 0)
 			continue;
 		else
 			break;
@@ -725,7 +725,7 @@ static int _line_is_space(const char *line)
 	}
 	len = strlen(line);
 	for (i = 0; i < len; i++) {
-		if (!isspace(line[i]))
+		if (!isspace((int)line[i]))
 			return 0;
 	}
 
@@ -812,12 +812,12 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 	*leftover = NULL;
 	if (strncasecmp("include", line, strlen("include")) == 0) {
 		ptr = (char *)line + strlen("include");
-		if (!isspace(*ptr))
+		if (!isspace((int)*ptr))
 			return 0;
-		while (isspace(*ptr))
+		while (isspace((int)*ptr))
 			ptr++;
 		fn_start = ptr;
-		while (!isspace(*ptr))
+		while (!isspace((int)*ptr))
 			ptr++;
 		fn_stop = *leftover = ptr;
 		filename = xstrndup(fn_start, fn_stop-fn_start);

@@ -22,6 +22,8 @@ endif
 INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
+# This is needed if compiling on windows
+EXEEXT=
 
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
@@ -40,7 +42,6 @@ libcommon_la_SOURCES = 			\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	net.c net.h                     \
-	fd.c fd.h			\
 	log.c log.h			\
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\
@@ -55,6 +56,7 @@ libcommon_la_SOURCES = 			\
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
 	env.c env.h      		\
+	fd.c fd.h       		\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
@@ -117,8 +119,7 @@ EXTRA_libcommon_la_SOURCES = 	\
 
 libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\
-	daemonize.h        		\
-	fd.c fd.h
+	daemonize.h
 
 libeio_la_SOURCES = 	   		\
 	eio.c eio.h	   		\

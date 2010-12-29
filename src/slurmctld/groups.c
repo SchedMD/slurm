@@ -93,7 +93,7 @@ extern uid_t *get_group_members(char *group_name)
 	int i, j, uid_cnt;
 #ifdef HAVE_AIX
 	FILE *fp = NULL;
-#elif defined (__APPLE__)
+#elif defined (__APPLE__) || defined (__CYGWIN__)
 #else
 	char pw_buffer[PW_BUF_SIZE];
 	struct passwd pw;
@@ -121,7 +121,7 @@ extern uid_t *get_group_members(char *group_name)
 	setgrent_r(&fp);
 	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
 		grp_result = &grp;
-#elif defined (__APPLE__)
+#elif defined (__APPLE__) || defined (__CYGWIN__)
 	setgrent();
 	while ((grp_result = getgrent()) != NULL) {
 #else
@@ -166,7 +166,7 @@ extern uid_t *get_group_members(char *group_name)
 	setpwent();
 #if defined (__sun)
 	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
-#elif defined (__APPLE__)
+#elif defined (__APPLE__) || defined (__CYGWIN__)
 	while ((pwd_result = getpwent()) != NULL) {
 #else
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {

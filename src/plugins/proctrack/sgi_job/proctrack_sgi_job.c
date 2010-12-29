@@ -192,7 +192,7 @@ int _job_getpidcnt (jid_t jid)
 	return ((*job_ops.getpidcnt) (jid));
 }
 
-int slurm_container_create (slurmd_job_t *job)
+int slurm_container_plugin_create (slurmd_job_t *job)
 {
 	jid_t jid;
 	job->cont_id = (uint32_t) -1;
@@ -209,7 +209,7 @@ int slurm_container_create (slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
-int slurm_container_add (slurmd_job_t *job, pid_t pid)
+int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
 {
 	if (job->cont_id == (uint32_t) -1) {
 		job->cont_id = (uint32_t) _job_getjid (getpid());
@@ -225,7 +225,7 @@ int slurm_container_add (slurmd_job_t *job, pid_t pid)
 	return SLURM_SUCCESS;
 }
 
-int slurm_container_signal (uint32_t id, int sig)
+int slurm_container_plugin_signal (uint32_t id, int sig)
 {
 	if ( (_job_killjid ((jid_t) id, sig) < 0)
 	   && (errno != ENODATA) && (errno != EBADF) )
@@ -233,7 +233,7 @@ int slurm_container_signal (uint32_t id, int sig)
 	return (SLURM_SUCCESS);
 }
 
-int slurm_container_destroy (uint32_t id)
+int slurm_container_plugin_destroy (uint32_t id)
 {
 	int status;
 	_job_waitjid ((jid_t) id, &status, 0);
@@ -243,7 +243,7 @@ int slurm_container_destroy (uint32_t id)
 	return SLURM_SUCCESS;
 }
 
-uint32_t slurm_container_find (pid_t pid)
+uint32_t slurm_container_plugin_find (pid_t pid)
 {
 	jid_t jid;
 
@@ -253,7 +253,7 @@ uint32_t slurm_container_find (pid_t pid)
 	return ((uint32_t) jid);
 }
 
-bool slurm_container_has_pid (uint32_t cont_id, pid_t pid)
+bool slurm_container_plugin_has_pid (uint32_t cont_id, pid_t pid)
 {
 	jid_t jid;
 
@@ -265,7 +265,7 @@ bool slurm_container_has_pid (uint32_t cont_id, pid_t pid)
 	return true;
 }
 
-int slurm_container_wait (uint32_t id)
+int slurm_container_plugin_wait (uint32_t id)
 {
 	int status;
 	if (_job_waitjid ((jid_t) id, &status, 0) == (jid_t)-1)
@@ -274,7 +274,7 @@ int slurm_container_wait (uint32_t id)
 	return SLURM_SUCCESS;
 }
 
-int slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+int slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 {
 	int pidcnt, bufsize;
 	pid_t *p;

@@ -85,14 +85,14 @@ _proctrack_get_ops(slurm_proctrack_context_t * c)
 	 * Must be synchronized with slurm_proctrack_ops_t above.
 	 */
 	static const char *syms[] = {
-		"slurm_container_create",
-		"slurm_container_add",
-		"slurm_container_signal",
-		"slurm_container_destroy",
-		"slurm_container_find",
-		"slurm_container_has_pid",
-		"slurm_container_wait",
-		"slurm_container_get_pids"
+		"slurm_container_plugin_create",
+		"slurm_container_plugin_add",
+		"slurm_container_plugin_signal",
+		"slurm_container_plugin_destroy",
+		"slurm_container_plugin_find",
+		"slurm_container_plugin_has_pid",
+		"slurm_container_plugin_wait",
+		"slurm_container_plugin_get_pids"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 

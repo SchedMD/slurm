@@ -105,33 +105,33 @@ extern int fini ( void )
 /*
  * Uses slurmd job-step manager's pid as the unique container id.
  */
-extern int slurm_container_create ( slurmd_job_t *job )
+extern int slurm_container_plugin_create ( slurmd_job_t *job )
 {
 	job->cont_id = (uint32_t)job->jmgr_pid;
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_add ( slurmd_job_t *job, pid_t pid )
+extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
 {
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_signal ( uint32_t id, int signal )
+extern int slurm_container_plugin_signal ( uint32_t id, int signal )
 {
 	return kill_proc_tree((pid_t)id, signal);
 }
 
-extern int slurm_container_destroy ( uint32_t id )
+extern int slurm_container_plugin_destroy ( uint32_t id )
 {
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t slurm_container_find(pid_t pid)
+extern uint32_t slurm_container_plugin_find(pid_t pid)
 {
 	return (uint32_t) find_ancestor(pid, "slurmstepd");
 }
 
-extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
 {
 	uint32_t cont;
 
@@ -143,7 +143,7 @@ extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
 }
 
 extern int
-slurm_container_wait(uint32_t cont_id)
+slurm_container_plugin_wait(uint32_t cont_id)
 {
 	int delay = 1;
 
@@ -153,8 +153,8 @@ slurm_container_wait(uint32_t cont_id)
 	}
 
 	/* Spin until the container is successfully destroyed */
-	while (slurm_container_destroy(cont_id) != SLURM_SUCCESS) {
-		slurm_container_signal(cont_id, SIGKILL);
+	while (slurm_container_plugin_destroy(cont_id) != SLURM_SUCCESS) {
+		slurm_container_plugin_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 120) {
 			delay *= 2;
@@ -167,7 +167,7 @@ slurm_container_wait(uint32_t cont_id)
 }
 
 extern int
-slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 {
 	return proctrack_linuxproc_get_pids((pid_t)cont_id, pids, npids);
 }

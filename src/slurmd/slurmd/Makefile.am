@@ -11,7 +11,8 @@ INCLUDES = -I$(top_srcdir)
 slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o -ldl	   \
-	$(PLPA_LIBS)
+	$(PLPA_LIBS) \
+	../common/libslurmd_common.la
 
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
@@ -19,20 +20,7 @@ SLURMD_SOURCES = \
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
 	reverse_tree_math.c reverse_tree_math.h \
-	xcpu.c xcpu.h			\
-	$(top_builddir)/src/slurmd/common/proctrack.c \
-	$(top_builddir)/src/slurmd/common/proctrack.h \
-	$(top_builddir)/src/slurmd/common/setproctitle.c \
-	$(top_builddir)/src/slurmd/common/setproctitle.h \
-	$(top_builddir)/src/slurmd/common/slurmstepd_init.c \
-	$(top_builddir)/src/slurmd/common/slurmstepd_init.h \
-	$(top_builddir)/src/slurmd/common/run_script.c \
-	$(top_builddir)/src/slurmd/common/run_script.h \
-	$(top_builddir)/src/slurmd/common/task_plugin.c \
-	$(top_builddir)/src/slurmd/common/task_plugin.h \
-	$(top_builddir)/src/slurmd/common/set_oomadj.c \
-	$(top_builddir)/src/slurmd/common/set_oomadj.h \
-	$(top_builddir)/src/slurmd/common/reverse_tree.h
+	xcpu.c xcpu.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 

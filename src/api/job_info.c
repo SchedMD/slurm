@@ -209,7 +209,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (job_ptr->state_desc) {
 		/* Replace white space with underscore for easier parsing */
 		for (j=0; job_ptr->state_desc[j]; j++) {
-			if (isspace(job_ptr->state_desc[j]))
+			if (isspace((int)job_ptr->state_desc[j]))
 				job_ptr->state_desc[j] = '_';
 		}
 		tmp6_ptr = job_ptr->state_desc;
