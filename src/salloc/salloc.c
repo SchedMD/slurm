@@ -257,6 +257,7 @@ int main(int argc, char *argv[])
 	if (alloc == NULL) {
 		if (allocation_interrupted) {
 			/* cancelled by signal */
+			info("Job aborted due to signal");
 		} else if (errno == EINTR) {
 			error("Interrupted by signal."
 			      "  Allocation request rescinded.");
