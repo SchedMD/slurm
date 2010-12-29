@@ -1162,6 +1162,43 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	return mysql_db_query(mysql_conn, query);
 }
 
+extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
+			      char *ip, uint16_t port, char *cluster_nodes)
+{
+	int rc = SLURM_SUCCESS;
+	time_t now = time(NULL);
+	char *query = NULL;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
+	/* Here we need to check make sure we are updating the entry
+	   correctly just incase the backup has already gained
+	   control.  If we check the ip and port it is a pretty safe
+	   bet we have the right ctld.
+	*/
+	xstrfmtcat(query,
+		   "update %s set mod_time=%ld, control_host='', "
+		   "control_port=0 where name='%s' && "
+		   "control_host='%s' && control_port=%u;",
+		   cluster_table, now, mysql_conn->cluster_name,
+		   ip, port);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+
+	if (rc != SLURM_SUCCESS) {
+		reset_mysql_conn(mysql_conn);
+		return SLURM_ERROR;
+	}
+
+	if (!last_affected_rows(mysql_conn))
+		return rc;
+
+	return rc;
+}
+
 extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 				 char *cluster_nodes, uint32_t cpus,
 				 time_t event_time)

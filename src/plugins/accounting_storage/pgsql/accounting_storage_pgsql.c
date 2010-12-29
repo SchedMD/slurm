@@ -595,6 +595,13 @@ extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
 	return cs_pg_register_ctld(pg_conn, pg_conn->cluster_name, port);
 }
 
+extern int clusteracct_storage_p_fini_ctld(void *db_conn,
+					   char *ip, uint16_t port,
+					   char *cluster_nodes)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 					      char *cluster_nodes,
 					      uint32_t cpus,

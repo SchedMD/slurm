@@ -166,6 +166,8 @@ typedef struct slurm_acct_storage_ops {
 	int  (*cluster_cpus)      (void *db_conn, char *cluster_nodes,
 				   uint32_t cpus, time_t event_time);
 	int  (*register_ctld)      (void *db_conn, uint16_t port);
+	int  (*fini_ctld)          (void *db_conn, char *ip, uint16_t port,
+				    char *cluster_nodes);
 	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
 				    struct job_record *job_ptr);
@@ -263,6 +265,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"clusteracct_storage_p_node_up",
 		"clusteracct_storage_p_cluster_cpus",
 		"clusteracct_storage_p_register_ctld",
+		"clusteracct_storage_p_fini_ctld",
 		"jobacct_storage_p_job_start",
 		"jobacct_storage_p_job_complete",
 		"jobacct_storage_p_step_start",
@@ -871,12 +874,22 @@ extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 		(db_conn, port);
 }
 
+extern int clusteracct_storage_g_fini_ctld(void *db_conn,
+					   char *ip, uint16_t port,
+					   char *cluster_nodes)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+ 	return (*(g_acct_storage_context->ops.fini_ctld))
+		(db_conn, ip, port, cluster_nodes);
+}
+
 /*
  * load into the storage information about a job,
  * typically when it begins execution, but possibly earlier
  */
-extern int jobacct_storage_g_job_start (void *db_conn,
-					struct job_record *job_ptr)
+extern int jobacct_storage_g_job_start(void *db_conn,
+				       struct job_record *job_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -901,8 +914,8 @@ extern int jobacct_storage_g_job_start (void *db_conn,
 /*
  * load into the storage the end of a job
  */
-extern int jobacct_storage_g_job_complete  (void *db_conn,
-					    struct job_record *job_ptr)
+extern int jobacct_storage_g_job_complete(void *db_conn,
+					  struct job_record *job_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -912,8 +925,8 @@ extern int jobacct_storage_g_job_complete  (void *db_conn,
 /*
  * load into the storage the start of a job step
  */
-extern int jobacct_storage_g_step_start (void *db_conn,
-					 struct step_record *step_ptr)
+extern int jobacct_storage_g_step_start(void *db_conn,
+					struct step_record *step_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -923,8 +936,8 @@ extern int jobacct_storage_g_step_start (void *db_conn,
 /*
  * load into the storage the end of a job step
  */
-extern int jobacct_storage_g_step_complete (void *db_conn,
-					    struct step_record *step_ptr)
+extern int jobacct_storage_g_step_complete(void *db_conn,
+					   struct step_record *step_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -935,8 +948,8 @@ extern int jobacct_storage_g_step_complete (void *db_conn,
 /*
  * load into the storage a suspention of a job
  */
-extern int jobacct_storage_g_job_suspend (void *db_conn,
-					  struct job_record *job_ptr)
+extern int jobacct_storage_g_job_suspend(void *db_conn,
+					 struct job_record *job_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
