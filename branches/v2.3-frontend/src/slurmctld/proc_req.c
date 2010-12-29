@@ -1065,8 +1065,8 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 static void _slurm_rpc_dump_front_end(slurm_msg_t * msg)
 {
 	DEF_TIMERS;
-	char *dump;
-	int dump_size;
+	char *dump = NULL;
+	int dump_size = 0;
 	slurm_msg_t response_msg;
 	front_end_info_request_msg_t *front_end_req_msg =
 		(front_end_info_request_msg_t *) msg->data;

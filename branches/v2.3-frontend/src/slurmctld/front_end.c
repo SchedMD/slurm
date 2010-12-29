@@ -474,6 +474,9 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
+#else
+	*buffer_size = 0;
+	buffer_ptr[0] = NULL;
 #endif
 }
 
