@@ -41,6 +41,7 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
+#include "src/common/parse_time.h"
 #include "src/common/jobacct_common.h"
 
 /* Used in job functions for getting the database index based off the
@@ -552,10 +553,8 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *vals = NULL, *extra = NULL, *query = NULL, *cond_char = NULL;
+	char *vals = NULL, *query = NULL, *cond_char = NULL;
 	time_t now = time(NULL);
-	time_t submit_time = 0;
-	time_t most_recent = 0;
 	char *user_name = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -563,19 +562,16 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!job_cond || !job) {
 		error("we need something to change");
 		return NULL;
-	}
-
-	if (check_connection(mysql_conn) != SLURM_SUCCESS)
-		return NULL;
-
-	if (job_cond->job_id == NO_VAL) {
+	} else if (job_cond->job_id == NO_VAL) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Job ID was not specified for job modification\n");
 		return NULL;
-	} else
-		xstrfmtcat(extra, " && id_job=%u", job_cond->job_id);
-
-	xstrfmtcat(extra, " && id_user=%u", uid);
+	} else if (!job_cond->cluster) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("Cluster was not specified for job modification\n");
+		return NULL;
+	} else if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
 
 	if (job->derived_ec != NO_VAL)
 		xstrfmtcat(vals, ", derived_ec=%u", job->derived_ec);
@@ -586,50 +582,42 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("No change specified for job modification");
-		xfree(extra);
 		return NULL;
 	}
 
-	if (job_cond->cluster) {
-		query = xstrdup_printf("select id_job,time_submit from "
-				       "\"%s_%s\" where deleted=0 %s;",
-				       job_cond->cluster, job_table, extra);
-	} else {
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		error("Cluster was not specified for job modification\n");
-		xfree(extra);
-		xfree(vals);
-		return NULL;
-	}
+	/* Here we want to get the last job submitted here */
+	query = xstrdup_printf("select job_db_inx, id_job, time_submit "
+			       "from \"%s_%s\" where deleted=0 "
+			       "&& id_job=%u && id_user=%u "
+			       "order by time_submit desc limit 1;",
+			       job_cond->cluster, job_table,
+			       job_cond->job_id, uid);
 
-	xfree(extra);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(vals);
 		xfree(query);
 		return NULL;
 	}
 
-	ret_list = list_create(slurm_destroy_char);
-	while ((row = mysql_fetch_row(result))) {
-		submit_time = (time_t)atol(row[1]);
-		if (submit_time > most_recent) {
-			most_recent = submit_time;
-			xfree(object);
-			object = xstrdup(row[0]);
-		}
-	}
-	mysql_free_result(result);
+	if ((row = mysql_fetch_row(result))) {
+		char tmp_char[25];
+		time_t time_submit = atol(row[2]);
+		slurm_make_time_str(&time_submit, tmp_char, sizeof(tmp_char));
 
-	if (object) {
-		xstrfmtcat(cond_char, "id_job=%s and time_submit=%ld", object,
-			   most_recent);
+		xstrfmtcat(cond_char, "job_db_inx=%s", row[0]);
+		object = xstrdup_printf("%s submitted at %s", row[1], tmp_char);
+
+		ret_list = list_create(slurm_destroy_char);
 		list_append(ret_list, object);
+		mysql_free_result(result);
 	} else {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(vals);
 		xfree(query);
-		list_destroy(ret_list);
+		mysql_free_result(result);
 		return NULL;
 	}
 	xfree(query);
