@@ -2,7 +2,7 @@
 
 <h1>SLURM User and Administrator Guide for Cray systems</h1>
 
-<b>NOTE: As of 6 December 2010, the SLURM interface to Cray systems is incomplete.</b>
+<b>NOTE: As of 20 December 2010, the SLURM interface to Cray systems is incomplete.</b>
 
 <h2>User Guide</h2>
 
@@ -69,11 +69,7 @@ It is from here that users will execute <i>aprun</i> commands to launch tasks.
 This is specified in the <i>slurm.conf</i> file by using the
 <i>NodeName</i> field to the compute nodes and using the <i>FrontendName</i>
 field to identify to identify where the <i>slurmd</i> runs
-as seen in the examples below.
-Note that since the naming of front end nodes would typically not follow that
-of the compute nodes (lacking X, Y and Z coordinates), each front end
-node name should be listed separately and without a hostlist expression
-(i.e. NOT as "frontend[00-01]").</p>
+as seen in the examples below.</p>
 
 <p>Next you need to select from two options for the resource selection
 plugin (the <i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration
@@ -112,7 +108,7 @@ Two examples of SLURM configuration files are shown below:</p>
 # slurm.conf for Cray XT system of size 4x4x4
 # Parameters removed here
 SelectType=select/linear
-FrontendName=front_end
+FrontendName=front_end[00-03] State=Unknown
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
 NodeName=tux[000x333]
 PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
@@ -122,7 +118,7 @@ PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
 # slurm.conf for Cray XT system of size 2x2x2
 # Parameters removed here
 SelectType=select/linear
-FrontendName=front_end
+FrontendName=front_end[00-03] State=Unknown
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
 NodeName=tux000
 NodeName=tux100
@@ -145,6 +141,6 @@ by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 December 2010</p></td>
+<p style="text-align:center;">Last modified 29 December 2010</p></td>
 
 <!--#include virtual="footer.txt"-->
