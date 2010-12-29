@@ -714,7 +714,7 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fIReason\fP=<reason>
-Identify the reason the node is in a "DOWN" or "DRAINED", "DRAINING",
+Identify the reason the node is in a "DOWN". "DRAINED", "DRAINING",
 "FAILING" or "FAIL" state.
 Use quotes to enclose a reason having more than one word.
 
@@ -753,6 +753,30 @@ of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP. 
 Update slurm.conf with any changes meant to be persistent across normal 
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+
+.TP
+\fBSPECIFICATIONS FOR UPDATE COMMAND, FRONTEND\fR
+
+.TP
+\fIFrontendName\fP=<name>
+Identify the front end node to be updated. This specification is required.
+
+.TP
+\fIReason\fP=<reason>
+Identify the reason the node is in a "DOWN" or "DRAIN" state.
+Use quotes to enclose a reason having more than one word.
+
+.TP
+\fIState\fP=<state>
+Identify the state to be assigned to the front end node. Possible values are
+"DOWN", "DRAIN" or "RESUME".
+If you want to remove a front end node from service, you typically want to set
+it's state to "DRAIN".
+"RESUME" is not an actual node state, but will return a "DRAINED", "DRAINING",
+or "DOWN" front end node to service, either "IDLE" or "ALLOCATED" state as
+appropriate.
+Setting a front end node "DOWN" will cause all running and suspended jobs on
+that node to be terminated.
 
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, PARTITIONS\fR
