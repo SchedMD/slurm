@@ -94,9 +94,8 @@ bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
 
 static void 	_dump_node_state (struct node_record *dump_node_ptr,
 				  Buf buffer);
-static front_end_record_t * _front_end_reg(char *node_name,
-					   time_t slurmd_start_time,
-					   uint32_t up_time);
+static front_end_record_t * _front_end_reg(
+				slurm_node_registration_status_msg_t *reg_msg);
 static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static bool	_node_is_hidden(struct node_record *node_ptr);
@@ -1662,7 +1661,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			   && (node_ptr->boot_time > node_ptr->last_response)
 			   && (slurmctld_conf.ret2service != 2)) {
 			last_node_update = now;
-			if(!node_ptr->reason) {
+			if (!node_ptr->reason) {
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid =
 					slurm_get_slurm_user_id();
@@ -1715,41 +1714,53 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	return error_code;
 }
 
-static front_end_record_t * _front_end_reg(char *node_name,
-					   time_t slurmd_start_time,
-					   uint32_t up_time)
+static front_end_record_t * _front_end_reg(
+		slurm_node_registration_status_msg_t *reg_msg)
 {
 	front_end_record_t *front_end_ptr;
+	uint16_t state_base, state_flags;
+	time_t now = time(NULL);
 
 	debug("name:%s boot_time:%u up_time:%u",
-	      node_name, (unsigned int) slurmd_start_time, up_time);
-	front_end_ptr = find_front_end_record(node_name);
+	      reg_msg->node_name, (unsigned int) reg_msg->slurmd_start_time,
+	      reg_msg->up_time);
+
+	front_end_ptr = find_front_end_record(reg_msg->node_name);
 	if (front_end_ptr == NULL) {
-		error("Registration message from unknown node %s", node_name);
-	} else {
-		uint16_t state_base, state_flags;
-		time_t now = time(NULL);
-		front_end_ptr->boot_time = now - up_time;
-		front_end_ptr->last_response = now;
-		front_end_ptr->slurmd_start_time = slurmd_start_time;
-		state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
-		state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
-		if ((state_base == NODE_STATE_DOWN) &&
-		    (!strncmp(front_end_ptr->reason, "Not responding", 14))) {
-			info("FrontEnd node %s returned to service",
-			     node_name);
-			state_base = NODE_STATE_IDLE;
-			xfree(front_end_ptr->reason);
-			front_end_ptr->reason_time = (time_t) 0;
-			front_end_ptr->reason_uid = 0;
-		}
-		if (state_base == NODE_STATE_UNKNOWN)
-			state_base = NODE_STATE_IDLE;
-		if (state_flags & NODE_STATE_NO_RESPOND)
-			state_flags &= (~NODE_STATE_NO_RESPOND);
-		front_end_ptr->node_state = state_base | state_flags;
-		last_front_end_update = now;
+		error("Registration message from unknown node %s",
+		      reg_msg->node_name);
+		return NULL;
 	}
+
+	front_end_ptr->boot_time = now - reg_msg->up_time;
+	if (front_end_ptr->last_response &&
+	    (front_end_ptr->boot_time > front_end_ptr->last_response) &&
+	    (slurmctld_conf.ret2service != 2)) {
+		set_front_end_down(front_end_ptr,
+				   "Front end silently failed and came back");
+		info("Front end %s silently failed and came back",
+		     reg_msg->node_name);
+		reg_msg->job_count = 0;
+	}
+
+	front_end_ptr->last_response = now;
+	front_end_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
+	state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
+	state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
+	if ((state_base == NODE_STATE_DOWN) &&
+	    (!strncmp(front_end_ptr->reason, "Not responding", 14))) {
+		info("FrontEnd node %s returned to service",
+		     reg_msg->node_name);
+		state_base = NODE_STATE_IDLE;
+		xfree(front_end_ptr->reason);
+		front_end_ptr->reason_time = (time_t) 0;
+		front_end_ptr->reason_uid = 0;
+	}
+	if (state_base == NODE_STATE_UNKNOWN)
+		state_base = NODE_STATE_IDLE;
+	state_flags &= (~NODE_STATE_NO_RESPOND);
+	front_end_ptr->node_state = state_base | state_flags;
+	last_front_end_update = now;
 	return front_end_ptr;
 }
 
@@ -1783,11 +1794,10 @@ extern int validate_nodes_via_front_end(
 		reg_msg->up_time = 0;
 	}
 
-	front_end_ptr = _front_end_reg(reg_msg->node_name,
-				       reg_msg->slurmd_start_time,
-				       reg_msg->up_time);
+	front_end_ptr = _front_end_reg(reg_msg);
 	if (front_end_ptr == NULL)
 		return ESLURM_INVALID_NODE_NAME;
+
 	if (reg_msg->status == ESLURMD_PROLOG_FAILED)
 		set_front_end_down(front_end_ptr, "Prolog failed");
 
