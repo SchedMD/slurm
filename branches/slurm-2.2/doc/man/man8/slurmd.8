@@ -52,6 +52,12 @@ Set the daemon's nice value to the specified value, typically a negative number.
 Also note the \fBPropagatePrioProcess\fR configuration parameter.
 
 .TP
+\fB\-N <hostname>\fR
+Run the daemon with the given hostname. Used to emulated a larger system
+with more than one slurmd daemon per node. Requires that SLURM be built using
+the \-\-enable\-multiple\-slurmd configure option.
+
+.TP
 \fB\-v\fR
 Verbose operation. Multiple \-v's increase verbosity.
 .TP
