@@ -1029,8 +1029,7 @@ proc get_default_acct { user } {
 #
 # Purpose: Determine if the execution host is one in which the
 # slurmd daemon executes on a front-end node rather than the
-# compute hosts (e.g. Blue Gene systems). This is based upon
-# the value of SelectType in the slurm.conf.
+# compute hosts (e.g. Blue Gene systems).
 #
 # Returns 1 if the system uses a front-end, 0 otherwise
 #
@@ -1045,13 +1044,9 @@ proc test_front_end { } {
 
 	log_user 0
 	set front_end 0
-	spawn $scontrol show config
+	spawn $scontrol show frontend
 	expect {
-		"HAVE_XCPU" {
-			set front_end 1
-			exp_continue
-		}
-		"select/bluegene" {
+		"FrontendName=" {
 			set front_end 1
 			exp_continue
 		}
