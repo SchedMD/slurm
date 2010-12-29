@@ -2709,7 +2709,7 @@ extern int slurm_load_node PARAMS(
 	 uint16_t show_flags));
 
 /*
- * slurm_free_node_info - free the node information response message
+ * slurm_free_node_info_msg - free the node information response message
  * IN msg - pointer to node information response message
  * NOTE: buffer is loaded by slurm_load_node.
  */
@@ -2782,7 +2782,8 @@ extern int slurm_load_front_end PARAMS(
 	(time_t update_time, front_end_info_msg_t **resp));
 
 /*
- * slurm_free_front_end_info - free the front_end information response message
+ * slurm_free_front_end_info_msg - free the front_end information response
+ *	message
  * IN msg - pointer to front_end information response message
  * NOTE: buffer is loaded by slurm_load_front_end.
  */
