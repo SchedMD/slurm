@@ -938,6 +938,8 @@ static char *hostrange_pop(hostrange_t hr)
 	if (hr->singlehost) {
 		hr->lo++;    /* effectively set count == 0 */
 		host = strdup(hr->prefix);
+		if (host == NULL)
+			out_of_memory("hostrange pop");
 	} else if (hostrange_count(hr) > 0) {
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
@@ -950,12 +952,12 @@ static char *hostrange_pop(hostrange_t hr)
 			hostlist_parse_int_to_array(hr->hi, coord, dims, 0);
 
 			len = snprintf(host, size, "%s", hr->prefix);
-			for (i2 = 0; i2 < dims; i2++) {
-				if (len <= size)
-					host[len++] = alpha_num[coord[i2]];
+			if (len >= 0 && len + dims < size) {
+				while (i2 < dims)
+					host[len++] = alpha_num[coord[i2++]];
+				host[len] = '\0';
 			}
 			hr->hi--;
-			host[len] = '\0';
 		} else {
 			snprintf(host, size, "%s%0*lu", hr->prefix,
 				 hr->width, hr->hi--);
@@ -990,12 +992,12 @@ static char *hostrange_shift(hostrange_t hr)
 			hostlist_parse_int_to_array(hr->lo, coord, dims, 0);
 
 			len = snprintf(host, size, "%s", hr->prefix);
-			for (i2 = 0; i2 < dims; i2++) {
-				if (len <= size)
-					host[len++] = alpha_num[coord[i2]];
+			if (len >= 0 && len + dims < size) {
+				while (i2 < dims)
+					host[len++] = alpha_num[coord[i2++]];
+				host[len] = '\0';
 			}
 			hr->lo++;
-			host[len] = '\0';
 		} else {
 			snprintf(host, size, "%s%0*lu", hr->prefix,
 				 hr->width, hr->lo++);
