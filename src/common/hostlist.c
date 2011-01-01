@@ -2176,8 +2176,12 @@ static char *
 _hostrange_string(hostrange_t hr, int depth)
 {
 	char buf[MAXHOSTNAMELEN + 16];
-	int  len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", hr->prefix);
+	const int size = sizeof(buf);
 	int dims = slurmdb_setup_cluster_dims();
+	int  len = snprintf(buf, size, "%s", hr->prefix);
+
+	if (len < 0 || len + dims >= size)
+		return NULL;
 
 	if (!hr->singlehost) {
 		if ((dims > 1) && (hr->width == dims)) {
@@ -2186,14 +2190,14 @@ _hostrange_string(hostrange_t hr, int depth)
 
 			hostlist_parse_int_to_array(hr->lo + depth, coord, dims, 0);
 
-			for (i2 = 0; i2 < dims; i2++) {
-				if (len <= MAXHOSTNAMELEN + 15)
-					buf[len++] = alpha_num[coord[i2]];
-			}
+			while (i2 < dims)
+				buf[len++] = alpha_num[coord[i2++]];
 			buf[len] = '\0';
 		} else {
-			snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%0*lu",
-				 hr->width, hr->lo + depth);
+			len = snprintf(buf + len, size - len, "%0*lu",
+				       hr->width, hr->lo + depth);
+			if (len < 0 || len >= size)
+				return NULL;
 		}
 	}
 	return strdup(buf);
@@ -3209,6 +3213,7 @@ static void _iterator_advance_range(hostlist_iterator_t i)
 char *hostlist_next(hostlist_iterator_t i)
 {
 	char buf[MAXHOSTNAMELEN + 16];
+	const int size = sizeof(buf);
 	int len = 0;
 	int dims = slurmdb_setup_cluster_dims();
 
@@ -3217,12 +3222,13 @@ char *hostlist_next(hostlist_iterator_t i)
 	LOCK_HOSTLIST(i->hl);
 	_iterator_advance(i);
 
-	if (i->idx > i->hl->nranges - 1) {
-		UNLOCK_HOSTLIST(i->hl);
-		return NULL;
-	}
+	if (i->idx > i->hl->nranges - 1)
+		goto no_next;
 
-	len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", i->hr->prefix);
+	len = snprintf(buf, size, "%s", i->hr->prefix);
+	if (len < 0 || len + dims >= size)
+		goto no_next;
+
 	if (!i->hr->singlehost) {
 		if ((dims > 1) && (i->hr->width == dims)) {
 			int i2 = 0;
@@ -3230,18 +3236,21 @@ char *hostlist_next(hostlist_iterator_t i)
 
 			hostlist_parse_int_to_array(i->hr->lo + i->depth,
 						    coord, dims, 0);
-			for (i2 = 0; i2 < dims; i2++) {
-				if (len <= MAXHOSTNAMELEN + 15)
-					buf[len++] = alpha_num[coord[i2]];
-			}
+			while (i2 < dims)
+				buf[len++] = alpha_num[coord[i2++]];
 			buf[len] = '\0';
 		} else {
-			snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
-				 i->hr->width, i->hr->lo + i->depth);
+			len = snprintf(buf + len, size - len, "%0*lu",
+				       i->hr->width, i->hr->lo + i->depth);
+			if (len < 0 || len >= size)
+				goto no_next;
 		}
 	}
 	UNLOCK_HOSTLIST(i->hl);
 	return strdup(buf);
+no_next:
+	UNLOCK_HOSTLIST(i->hl);
+	return NULL;
 }
 
 char *hostlist_next_range(hostlist_iterator_t i)
