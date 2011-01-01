@@ -1137,8 +1137,7 @@ static size_t
 hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 {
 	unsigned long i;
-	int truncated = 0;
-	int len = 0;
+	int ret, len = 0;
 	char sep = separator == NULL ? ',' : separator[0];
 	int dims = slurmdb_setup_cluster_dims();
 
@@ -1147,45 +1146,42 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 
 	assert(hr != NULL);
 
-	if (hr->singlehost)
-		return snprintf(buf, n, "%s", hr->prefix);
+	if (hr->singlehost) {
+		ret = snprintf(buf, n, "%s", hr->prefix);
+		if (ret < 0 || ret >= n)
+			goto truncated;
+		return ret;
+	}
 
 	for (i = hr->lo; i <= hr->hi; i++) {
-		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
-		int ret = 0;
+		if (i > hr->lo)
+			buf[len++] = sep;
+		if (len >= n)
+			goto truncated;
+
 		if ((dims > 1) && (hr->width == dims)) {
 			int i2 = 0;
 			int coord[dims];
 
 			hostlist_parse_int_to_array(i, coord, dims, 0);
-			ret = snprintf(buf + len, m, "%s", hr->prefix);
-			for (i2 = 0; i2 < dims; i2++) {
-				if (len + ret < n)
-					buf[len+ret] = alpha_num[coord[i2]];
-				ret++;
-			}
+			ret = snprintf(buf + len, n - len, "%s", hr->prefix);
+			if (ret < 0 || (len += ret) >= n || len + dims >= n)
+				goto truncated;
+			while (i2 < dims)
+				buf[len++] = alpha_num[coord[i2++]];
 		} else {
-			ret = snprintf(buf + len, m, "%s%0*lu",
+			ret = snprintf(buf + len, n - len, "%s%0*lu",
 				       hr->prefix, hr->width, i);
+			if (ret < 0 || (len += ret) >= n)
+				goto truncated;
 		}
-
-		if (ret < 0 || ret >= m) {
-			len = n;
-			truncated = 1;
-			break;
-		}
-		len+=ret;
-		buf[len++] = sep;
 	}
 
-	if (truncated) {
-		buf[n-1] = '\0';
-		return -1;
-	} else {
-		/* back up over final separator */
-		buf[--len] = '\0';
-		return len;
-	}
+	buf[len] = '\0';
+	return len;
+truncated:
+	buf[n-1] = '\0';
+	return -1;
 }
 
 /* Place the string representation of the numeric part of hostrange into buf
