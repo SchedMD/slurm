@@ -81,7 +81,7 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
-if {[test_bluegene]} {
+if {[test_bluegene] || [test_cray]} {
 	if {$exit_code == 0} {
 		send_user "\nSUCCESS\n"
 	}
