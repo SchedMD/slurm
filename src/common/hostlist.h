@@ -318,7 +318,8 @@ void hostlist_sort(hostlist_t hl);
  */
 void hostlist_uniq(hostlist_t hl);
 
-int hostlist_get_base();
+/* Return the base used for encoding numeric hostlist suffixes */
+#define hostlist_get_base(_dimensions) ((_dimensions) > 1 ? 36 : 10)
 
 /* given a int will parse it into sizes in each dimension */
 void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base);

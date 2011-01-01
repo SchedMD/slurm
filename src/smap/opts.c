@@ -170,8 +170,8 @@ extern void parse_command_line(int argc, char *argv[])
 			exit(0);
 		}
 	}
-	params.cluster_base = hostlist_get_base();
 	params.cluster_dims = slurmdb_setup_cluster_dims();
+	params.cluster_base = hostlist_get_base(params.cluster_dims);
 	params.cluster_flags = slurmdb_setup_cluster_flags();
 }
 

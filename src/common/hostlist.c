@@ -633,8 +633,8 @@ static hostname_t hostname_create(const char *hostname)
 	hostname_t hn = NULL;
 	char *p = '\0';
 	int idx = 0;
-	int hostlist_base = hostlist_get_base();
 	int dims = slurmdb_setup_cluster_dims();
+	int hostlist_base = hostlist_get_base(dims);
 	assert(hostname != NULL);
 
 	if (!(hn = (hostname_t) malloc(sizeof(*hn))))
@@ -1459,7 +1459,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	char prefix[256] = "";
 	int pos = 0;
 	int error = 0;
-	int hostlist_base = hostlist_get_base();
+	int hostlist_base;
 	char range_op = r_op[0];/* XXX support > 1 char range ops in future? */
 
 	hostlist_t new = hostlist_new();
@@ -1470,6 +1470,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	if(slurmdb_setup_cluster_dims() > 1)
 		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
 		      "work on Multidimentional systems!!!!");
+	hostlist_base = hostlist_get_base(1);
 
 	orig = str = strdup(hostlist);
 
@@ -1656,8 +1657,8 @@ static int _parse_single_range(const char *str, struct _range *range)
 {
 	char *p, *q;
 	char *orig = strdup(str);
-	int hostlist_base = hostlist_get_base();
 	int dims = slurmdb_setup_cluster_dims();
+	int hostlist_base = hostlist_get_base(dims);
 
 	if (!orig)
 		seterrno_ret(ENOMEM, 0);
@@ -2503,23 +2504,10 @@ ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 	return truncated ? -1 : len;
 }
 
-int hostlist_get_base()
-{
-	int hostlist_base;
-
-	if(slurmdb_setup_cluster_dims() > 1)
-		hostlist_base = 36;
-	else
-		hostlist_base = 10;
-
-	return hostlist_base;
-}
-
-
 /* convert 'in' polynomial of base 'base' to 'out' array of 'dim' dimensions */
 void hostlist_parse_int_to_array(int in, int *out, int dims, int base)
 {
-	int hostlist_base = base ? base : hostlist_get_base();
+	int hostlist_base = base ? base : hostlist_get_base(dims);
 
 	for ( ; --dims >= 0; in /= hostlist_base)
 		out[dims] = in % hostlist_base;
@@ -2661,8 +2649,8 @@ end_it:
 static int _get_next_box(int *start,
 			 int *end)
 {
-	int hostlist_base = hostlist_get_base();
 	int dims = slurmdb_setup_cluster_dims();
+	int hostlist_base = hostlist_get_base(dims);
 	static int orig_grid_end[HIGHEST_DIMENSIONS];
 	static int last[HIGHEST_DIMENSIONS];
 	int pos[dims];
@@ -2996,8 +2984,8 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	int len = 0;
 	int truncated = 0;
 	bool box = false;
-	int hostlist_base = hostlist_get_base();
 	int dims = slurmdb_setup_cluster_dims();
+	int hostlist_base = hostlist_get_base(dims);
 	DEF_TIMERS;
 
 	START_TIMER;
