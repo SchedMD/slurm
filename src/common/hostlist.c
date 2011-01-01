@@ -2471,28 +2471,25 @@ char *hostlist_deranged_string_xmalloc(hostlist_t hl)
 ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 {
 	int i;
-	int len = 0;
-	int truncated = 0;
+	int len = 0, ret;
 
 	LOCK_HOSTLIST(hl);
-	for (i = 0; i < hl->nranges; i++) {
-		size_t m = (n - len) <= n ? n - len : 0;
-		int ret = hostrange_to_string(hl->hr[i], m, buf + len, ",");
-		if (ret < 0 || ret > m) {
-			len = n;
-			truncated = 1;
-			break;
-		}
-		len+=ret;
-		buf[len++] = ',';
+	for (i = 0; i < hl->nranges && len < n; i++) {
+		if (i)
+			buf[len++] = ',';
+		if (len >= n)
+			goto truncated;
+		ret = hostrange_to_string(hl->hr[i], n - len, buf + len, ",");
+		if (ret < 0)
+			goto truncated;
+		len += ret;
 	}
 	UNLOCK_HOSTLIST(hl);
-
-	buf[len > 0 ? --len : 0] = '\0';
-	if (len == n)
-		truncated = 1;
-
-	return truncated ? -1 : len;
+	return len;
+truncated:
+	UNLOCK_HOSTLIST(hl);
+	buf[n-1] = '\0';
+	return -1;
 }
 
 /* convert 'in' polynomial of base 'base' to 'out' array of 'dim' dimensions */
