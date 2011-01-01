@@ -595,30 +595,19 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
  */
 static int host_prefix_end(const char *hostname)
 {
-	int idx, len;
-	int dims = slurmdb_setup_cluster_dims();
+	int idx, dims = slurmdb_setup_cluster_dims();
 
 	assert(hostname != NULL);
 
-	len = strlen(hostname);
+	idx = strlen(hostname) - 1;
 
-	if(dims > 1) {
-		idx = len - 1;
-
-		while (idx >= 0) {
-			if (((hostname[idx] >= '0')
-			     && (hostname[idx] <= '9')) ||
-			    ((hostname[idx] >= 'A') && (hostname[idx] <= 'Z')))
-				idx--;
-			else
-				break;
-		}
+	if (dims > 1) {
+		while ((idx >= 0) &&
+		       (isdigit((int)hostname[idx]) ||
+		        isupper((int)hostname[idx])))
+			idx--;
 	} else {
-		if (len < 1)
-			return -1;
-		idx = len - 1;
-
-		while (idx >= 0 && isdigit((int)hostname[idx]))
+		while ((idx >= 0) && isdigit((int)hostname[idx]))
 			idx--;
 	}
 
