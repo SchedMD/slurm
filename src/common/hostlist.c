@@ -1210,6 +1210,8 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 
 	if (hr->singlehost || n == 0)
 		return 0;
+	if (n <= dims)
+		return -1;
 
 	if ((dims > 1) && (hr->width == dims)) {
 		int i2 = 0;
@@ -1217,16 +1219,18 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 
 		hostlist_parse_int_to_array(hr->lo, coord, dims, 0);
 
-		for (i2 = 0; i2 < dims; i2++) {
-			if (len <= n)
-				buf[len++] = alpha_num[coord[i2]];
-		}
+		while (i2 < dims)
+			buf[len++] = alpha_num[coord[i2++]];
 		buf[len] = '\0';
 	} else {
 		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
+		if (len < 0 || len >= n)
+			return -1;
 	}
 
-	if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
+	if (hr->lo < hr->hi) {
+		if (n < len + dims + 2)	/* '-' plus 'dims' digits, plus '\0' */
+			return -1;
 		if ((dims > 1) && (hr->width == dims)) {
 			int i2 = 0;
 			int coord[dims];
@@ -1234,18 +1238,14 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 			hostlist_parse_int_to_array(hr->hi, coord, dims, 0);
 
 			buf[len++] = '-';
-			for (i2 = 0; i2 < dims; i2++) {
-				if (len <= n)
-					buf[len++] = alpha_num[coord[i2]];
-			}
+			while (i2 < dims)
+				buf[len++] = alpha_num[coord[i2++]];
 			buf[len] = '\0';
 		} else {
 			int len2 = snprintf(buf + len, n - len, "-%0*lu",
 					    hr->width, hr->hi);
-			if (len2 < 0)
-				len = -1;
-			else
-				len += len2;
+			if (len2 < 0 || (len += len2) >= n)
+				return -1;
 		}
 	}
 
