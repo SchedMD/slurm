@@ -2516,52 +2516,13 @@ int hostlist_get_base()
 }
 
 
-void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base)
+/* convert 'in' polynomial of base 'base' to 'out' array of 'dim' dimensions */
+void hostlist_parse_int_to_array(int in, int *out, int dims, int base)
 {
-	int a;
+	int hostlist_base = base ? base : hostlist_get_base();
 
-	static int my_start_pow_minus = 0;
-	static int my_start_pow = 0;
-	static int last_dims = 0;
-        int my_pow_minus = my_start_pow_minus;
-	int my_pow = my_start_pow;
-
-	if(!hostlist_base)
-		hostlist_base = hostlist_get_base();
-
-	if(!my_start_pow || (last_dims != dims)) {
-		/* this will never change so just calculate it once */
-		my_start_pow = 1;
-
-		/* To avoid having to use the pow function and include
-		   the math lib everywhere just do this. */
-		for(a = 0; a<dims; a++)
-			my_start_pow *= hostlist_base;
-
-		my_pow = my_start_pow;
-		my_pow_minus = my_start_pow_minus =
-			my_start_pow / hostlist_base;
-		last_dims = dims;
-	}
-
-	for(a = 0; a<dims; a++) {
-		out[a] = (int)in % my_pow;
-		/* This only needs to be done until we get a 0 here
-		   meaning we are on the last dimension. This avoids
-		   dividing by 0. */
-		if(dims - a) {
-			out[a] /= my_pow_minus;
-			/* set this up for the next dimension */
-			my_pow = my_pow_minus;
-			my_pow_minus /= hostlist_base;
-		}
-		if(out[a] < 0) {
-			error("Dim %d returned negative %d from %d %d %d",
-			      a, out[a], in, my_pow, my_pow_minus);
-			xassert(0);
-			out[a] = 0;
-		}
-	}
+	for ( ; --dims >= 0; in /= hostlist_base)
+		out[dims] = in % hostlist_base;
 }
 
 /* return true if a bracket is needed for the range at i in hostlist hl */
