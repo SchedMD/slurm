@@ -49,9 +49,13 @@ set ret_code    42
 
 print_header $test_id
 
-if {[test_bluegene] != 0} {
+if {[test_bluegene]} {
 	send_user "\nWARNING: This test is incompatible with bluegene systems\n"
 	exit 0
+}
+if {[test_cray]} {
+        send_user "\nWARNING: This test is incompatible with Cray systems\n"
+        exit $exit_code
 }
 
 proc _get_mem {prog} {

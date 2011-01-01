@@ -1055,6 +1055,10 @@ proc test_front_end { } {
 			set front_end 1
 			exp_continue
 		}
+		"select/cray" {
+			set front_end 1
+			exp_continue
+		}
 		eof {
 			wait
 		}
@@ -1155,6 +1159,35 @@ proc test_bluegene { } {
 
 ################################################################
 #
+# Proc: test_cray
+#
+# Purpose: Determine if the system is a cray system
+#
+# Returns 1 if the system is a cray, 0 otherwise
+#
+################################################################
+
+proc test_cray { } {
+	global scontrol bin_bash bin_grep
+
+	log_user 0
+	set cray 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	expect {
+		"select/cray" {
+			set cray 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $cray
+}
+################################################################
+#
 # Proc: get_cycle_count
 #
 # Purpose: For tests with iteration counts (e.g. test9.1, test9.2)
@@ -1165,7 +1198,7 @@ proc test_bluegene { } {
 ################################################################
 
 proc get_cycle_count { } {
-	global enable_memory_leak_debug test_bluegene
+	global enable_memory_leak_debug
 
 	if {$enable_memory_leak_debug != 0} {
 		return 2

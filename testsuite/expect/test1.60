@@ -48,9 +48,13 @@ set file_out_n_glob  ""
 
 print_header $test_id
 
-if {[test_bluegene] != 0} {
+if {[test_bluegene]} {
 	send_user "\nWARNING: This test is incompatible with bluegene systems\n"
-	exit 0
+        exit $exit_code
+}
+if {[test_cray]} {
+        send_user "\nWARNING: This test is incompatible with Cray systems\n"
+        exit $exit_code
 }
 
 #
@@ -83,18 +87,14 @@ if {$job_id == 0} {
 }
 
 set node_count 0
-if { [test_bluegene] } {
-	set node_count 1
-} else {
-	spawn $squeue -tall -j $job_id -o "%i %D"
-	expect {
-		-re "$job_id ($number)" {
-			set node_count $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
+spawn $squeue -tall -j $job_id -o "%i %D"
+expect {
+	-re "$job_id ($number)" {
+		set node_count $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 if {$node_count == 0} {

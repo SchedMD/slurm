@@ -41,9 +41,13 @@ set job_id      0
 
 print_header $test_id
 
-if { [test_bluegene] } {
+if {[test_bluegene]} {
 	send_user "\nWARNING: This test is not compatible with bluegene systesm\n"
 	exit 0
+}
+if {[test_cray]} {
+        send_user "\nWARNING: This test is incompatible with Cray systems\n"
+        exit $exit_code
 }
 
 make_bash_script $file_bash {

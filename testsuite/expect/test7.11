@@ -48,13 +48,17 @@ if {[test_super_user] == 0} {
 	send_user "\nWARNING: This test must be run as SlurmUser\n"
 	exit 0
 }
-if {[test_aix] == 1} {
+if {[test_aix]} {
 	send_user "WARNING: Test is incompatible with AIX\n"
 	exit 0
 }
-if {[test_bluegene] == 1} {
-	send_user "WARNING: Test is incompatible with Blue Gene\n"
-	exit 0
+if {[test_bluegene]} {
+        send_user "\nWARNING: This test is incompatible with bluegene systems\n"
+        exit $exit_code
+}
+if {[test_cray]} {
+        send_user "\nWARNING: This test is incompatible with Cray systems\n"
+        exit $exit_code
 }
 
 #
