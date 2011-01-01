@@ -2542,37 +2542,24 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	int bracket_needed = _is_bracket_needed(hl, i);
 
 	len = snprintf(buf, n, "%s", hr[i]->prefix);
+	if (len < 0 || len + 4 >= n)	/* min: '[', <digit>, ']', '\0' */
+		return n;		/* truncated, buffer filled */
 
-	if ((len < 0) || (len > n))
-		return n; /* truncated, buffer filled */
-
-	if (bracket_needed && len < n && len >= 0)
+	if (bracket_needed)
 		buf[len++] = '[';
 
 	do {
-		m = (n - len) <= n ? n - len : 0;
-		len += hostrange_numstr(hr[i], m, buf + len);
-		if (len >= n)
-			break;
-		if (bracket_needed) /* Only need commas inside brackets */
+		if (i > *start)
 			buf[len++] = ',';
+		m = hostrange_numstr(hr[i], n - len, buf + len);
+		if (m < 0 || (len += m) >= n - 1)	/* insufficient space */
+			return n;
 	} while (++i < hl->nranges && hostrange_within_range(hr[i], hr[i-1]));
-	if (bracket_needed && len < n && len > 0) {
 
-		/* Add trailing bracket (change trailing "," from above to "]" */
-		buf[len - 1] = ']';
+	if (bracket_needed)
+		buf[len++] = ']';
 
-		/* NUL terminate for safety, but do not add terminator to len */
-		buf[len]   = '\0';
-	} else if (len >= n) {
-		if (n > 0)
-			buf[n-1] = '\0';
-
-	} else {
-		/* If len is > 0, NUL terminate (but do not add to len) */
-		buf[len > 0 ? len : 0] = '\0';
-	}
-
+	buf[len] = '\0';
 	*start = i;
 	return len;
 }
