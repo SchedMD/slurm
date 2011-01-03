@@ -511,7 +511,7 @@ extern int build_all_frontend_info (void)
 						       name);
 		}
 		fe_single->port = node_record_table_ptr->port;
-		fe_single->node_state = NODE_STATE_IDLE;
+		fe_single->node_state = NODE_STATE_UNKNOWN;
 		if (front_end_debug)
 			_dump_front_end(fe_single);
 	}

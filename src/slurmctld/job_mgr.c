@@ -7522,7 +7522,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			      reg_msg->job_id[i], reg_msg->step_id[i],
 			      reg_msg->node_name);
 			abort_job_on_node(reg_msg->job_id[i],
-					  job_ptr, node_ptr);
+					  job_ptr, node_ptr->name);
 		}
 
 		else if (IS_JOB_RUNNING(job_ptr) ||
@@ -7553,7 +7553,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 				      reg_msg->step_id[i],
 				      reg_msg->node_name);
 				abort_job_on_node(reg_msg->job_id[i], job_ptr,
-						node_ptr);
+						node_ptr->name);
 			}
 		}
 
@@ -7572,7 +7572,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			      reg_msg->job_id[i], reg_msg->step_id[i],
 			      reg_msg->node_name);
 			abort_job_on_node(reg_msg->job_id[i],
-					  job_ptr, node_ptr);
+					  job_ptr, node_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -7706,11 +7706,10 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
  *	agent request per node as they register.
  * IN job_id - id of the job to be killed
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
- * IN node_ptr - pointer to the node on which the job resides
+ * IN node_name - name of the node on which the job resides
  */
 extern void
-abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
-		  struct node_record *node_ptr)
+abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
@@ -7719,7 +7718,7 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
-	kill_req->nodes		= xstrdup(node_ptr->name);
+	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->start_time = job_ptr->start_time;
 		kill_req->select_jobinfo =
@@ -7734,14 +7733,12 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
 	agent_info->retry	= 0;
+	agent_info->hostlist	= hostlist_create(node_name);
 #ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
-	debug("Aborting job %u on front end node %s", job_id,
-	      job_ptr->batch_host);
+	debug("Aborting job %u on front end node %s", job_id, node_name);
 #else
-	agent_info->hostlist	= hostlist_create(node_ptr->name);
-	debug("Aborting job %u on node %s", job_id, node_ptr->name);
+
+	debug("Aborting job %u on node %s", job_id, node_name);
 #endif
 	agent_info->msg_type	= REQUEST_ABORT_JOB;
 	agent_info->msg_args	= kill_req;

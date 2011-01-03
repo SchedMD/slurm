@@ -1721,9 +1721,9 @@ static front_end_record_t * _front_end_reg(
 	uint16_t state_base, state_flags;
 	time_t now = time(NULL);
 
-	debug("name:%s boot_time:%u up_time:%u",
-	      reg_msg->node_name, (unsigned int) reg_msg->slurmd_start_time,
-	      reg_msg->up_time);
+	debug2("name:%s boot_time:%u up_time:%u",
+	       reg_msg->node_name, (unsigned int) reg_msg->slurmd_start_time,
+	       reg_msg->up_time);
 
 	front_end_ptr = find_front_end_record(reg_msg->node_name);
 	if (front_end_ptr == NULL) {
@@ -1777,7 +1777,6 @@ extern int validate_nodes_via_front_end(
 {
 	int error_code = 0, i, j;
 	bool update_node_state = false;
-	bool failure_logged = false;
 	struct job_record *job_ptr;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
@@ -1789,8 +1788,8 @@ extern int validate_nodes_via_front_end(
 	front_end_record_t *front_end_ptr;
 
 	if (reg_msg->up_time > now) {
-		error("Node up_time is invalid: %u>%u", reg_msg->up_time,
-		      (uint32_t) now);
+		error("Node up_time on %s is invalid: %u>%u",
+		      reg_msg->node_name, reg_msg->up_time, (uint32_t) now);
 		reg_msg->up_time = 0;
 	}
 
@@ -1798,8 +1797,10 @@ extern int validate_nodes_via_front_end(
 	if (front_end_ptr == NULL)
 		return ESLURM_INVALID_NODE_NAME;
 
-	if (reg_msg->status == ESLURMD_PROLOG_FAILED)
+	if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
+		error("Prolog failed on node %s", reg_msg->node_name);
 		set_front_end_down(front_end_ptr, "Prolog failed");
+	}
 
 	/* First validate the job info */
 	for (i = 0; i < reg_msg->job_count; i++) {
@@ -1817,16 +1818,18 @@ extern int validate_nodes_via_front_end(
 			node_ptr += j;
 
 		if (job_ptr == NULL) {
-			error("Orphan job %u.%u reported",
-			      reg_msg->job_id[i], reg_msg->step_id[i]);
+			error("Orphan job %u.%u reported on %s",
+			      reg_msg->job_id[i], reg_msg->step_id[i],
+			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i],
-					  job_ptr, node_ptr);
+					  job_ptr, front_end_ptr->name);
 		}
 
 		else if (IS_JOB_RUNNING(job_ptr) ||
 			 IS_JOB_SUSPENDED(job_ptr)) {
-			debug3("Registered job %u.%u",
-			       reg_msg->job_id[i], reg_msg->step_id[i]);
+			debug3("Registered job %u.%u on %s",
+			       reg_msg->job_id[i], reg_msg->step_id[i],
+			       front_end_ptr->name);
 			if (job_ptr->batch_flag) {
 				/* NOTE: Used for purging defunct batch jobs */
 				job_ptr->time_last_active = now;
@@ -1843,16 +1846,18 @@ extern int validate_nodes_via_front_end(
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING job %u.%u",
-				reg_msg->job_id[i], reg_msg->step_id[i]);
+			error("Registered PENDING job %u.%u on %s",
+			      reg_msg->job_id[i], reg_msg->step_id[i],
+			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i], job_ptr,
-					  node_ptr);
+					  front_end_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered job %u.%u in state %s",
+			error("Registered job %u.%u in state %s on %s",
 				reg_msg->job_id[i], reg_msg->step_id[i],
-				job_state_string(job_ptr->job_state));
+				job_state_string(job_ptr->job_state),
+			        front_end_ptr->name);
 			kill_job_on_node(reg_msg->job_id[i], job_ptr,
 					 node_ptr);
 		}
@@ -1918,14 +1923,7 @@ extern int validate_nodes_via_front_end(
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		}
 
-		if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
-			if (!IS_NODE_DRAIN(node_ptr) &&
-			    !IS_NODE_FAIL(node_ptr) &&
-			    !failure_logged) {
-				error("Prolog failure");
-				failure_logged = true;
-			}
-		} else {
+		if (reg_msg->status != ESLURMD_PROLOG_FAILED) {
 			if (reg_hostlist)
 				(void) hostlist_push_host(reg_hostlist,
 							  node_ptr->name);
@@ -2007,7 +2005,9 @@ extern int validate_nodes_via_front_end(
 
 			select_g_update_node_config(i);
 			select_g_update_node_state(i, node_ptr->node_state);
-			_sync_bitmaps(node_ptr, node_ptr->run_job_cnt);
+			_sync_bitmaps(node_ptr,
+				      (node_ptr->run_job_cnt +
+				       node_ptr->comp_job_cnt));
 		}
 	}
 

@@ -1375,36 +1375,7 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	char *alias = NULL;
 	int idx;
 	names_ll_t *p;
-#ifdef HAVE_FRONT_END
-	slurm_conf_frontend_t *front_end_ptr = NULL;
 
-	slurm_conf_lock();
-	if (!front_end_list) {
-		debug("front_end_list is NULL");
-	} else {
-		front_end_ptr = list_find_first(front_end_list,
-						list_find_frontend,
-						(char *) node_hostname);
-	}
-
-	if (front_end_ptr) {
-		alias = xstrdup(front_end_ptr->frontends);
-	} else {
-		_init_slurmd_nodehash();
-		idx = _get_hash_idx(node_hostname);
-		p = host_to_node_hashtbl[idx];
-		while (p) {
-			if (strcmp(p->alias, node_hostname) == 0) {
-				alias = xstrdup(p->alias);
-				break;
-			}
-			p = p->next_hostname;
-		}
-	}
-	slurm_conf_unlock();
-
-	return alias;
-#else
 	slurm_conf_lock();
 	_init_slurmd_nodehash();
 	idx = _get_hash_idx(node_hostname);
@@ -1420,7 +1391,6 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	slurm_conf_unlock();
 
 	return alias;
-#endif
 }
 
 /*
