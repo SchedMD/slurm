@@ -136,6 +136,8 @@ static int _set_trigger(void)
 			ti.trig_type |= TRIGGER_TYPE_FINI;
 		if (params.time_limit)
 			ti.trig_type |= TRIGGER_TYPE_TIME;
+	} else if (params.front_end)
+		ti.res_type = TRIGGER_RES_TYPE_FRONT_END;
 	} else {
 		ti.res_type = TRIGGER_RES_TYPE_NODE;
 		if (params.node_id)
@@ -201,8 +203,6 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_PRI_DB_RES_OP;
 		ti.res_type = TRIGGER_RES_TYPE_DATABASE;
 	}
-	if (params.front_end)
-		ti.res_type = TRIGGER_RES_TYPE_FRONT_END;
 
 	ti.offset = params.offset + 0x8000;
 	ti.program = params.program;

@@ -106,7 +106,7 @@ static int _open_front_end_state_file(char **state_file)
 	} else 	/* Success */
 		return state_fd;
 
-	error("NOTE: Trying backup front_endstate save file. Information may "
+	error("NOTE: Trying backup front_end_state save file. Information may "
 	      "be lost!");
 	xstrcat(*state_file, ".old");
 	state_fd = open(*state_file, O_RDONLY);
@@ -190,7 +190,7 @@ extern bool avail_front_end(void)
 
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
-		if (IS_NODE_DOWN(front_end_ptr) ||
+		if (IS_NODE_DOWN(front_end_ptr)  ||
 		    IS_NODE_DRAIN(front_end_ptr) ||
 		    IS_NODE_NO_RESPOND(front_end_ptr))
 			continue;
@@ -801,14 +801,14 @@ extern void sync_front_end_state(void)
 		    (front_end_ptr->job_cnt_run != 0)) {
 			state_flags = front_end_ptr->node_state &
 				      NODE_STATE_FLAGS;
-			front_end_ptr->node_state = NODE_STATE_IDLE |
+			front_end_ptr->node_state = NODE_STATE_ALLOCATED |
 						    state_flags;
 		}
 		if (IS_NODE_ALLOCATED(front_end_ptr) &&
 		    (front_end_ptr->job_cnt_run == 0)) {
 			state_flags = front_end_ptr->node_state &
 				      NODE_STATE_FLAGS;
-			front_end_ptr->node_state = NODE_STATE_ALLOCATED |
+			front_end_ptr->node_state = NODE_STATE_IDLE |
 						    state_flags;
 		}
 		if (IS_NODE_COMPLETING(front_end_ptr) &&
