@@ -1973,6 +1973,7 @@ extern int kill_job_by_part_name(char *part_name)
  *	resource for its jobs and kill them.
  * IN node_name - name of a front end node
  * RET number of jobs associated with this front end node
+ * NOTE: Patterned after kill_running_job_by_node_name()
  */
 extern int kill_job_by_front_end_name(char *node_name)
 {
@@ -7736,7 +7737,8 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
 	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
-	debug("Aborting job %u on node %s", job_id, job_ptr->batch_host);
+	debug("Aborting job %u on front end node %s", job_id,
+	      job_ptr->batch_host);
 #else
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	debug("Aborting job %u on node %s", job_id, node_ptr->name);
@@ -7781,7 +7783,8 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
 	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
-	debug("Killing job %u on node %s", job_id, job_ptr->batch_host);
+	debug("Killing job %u on front end node %s", job_id,
+	      job_ptr->batch_host);
 #else
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	debug("Killing job %u on node %s", job_id, node_ptr->name);
@@ -7966,7 +7969,6 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count  = 1;
 #else
-	agent_args->hostlist = hostlist_create("");
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;

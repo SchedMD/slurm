@@ -1118,15 +1118,15 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	/* Locks: Read config, write node (reset allocated CPU count in some
 	 * select plugins) */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+		READ_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_NODE_INFO from uid=%d", uid);
 	lock_slurmctld(node_write_lock);
 
-	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
-	    &&  (!validate_operator(uid))) {
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES) &&
+	    (!validate_operator(uid))) {
 		unlock_slurmctld(node_write_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d",
 		      uid);
@@ -1435,8 +1435,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 
 	/* Send batch step info to accounting */
-	if (association_based_accounting
-	    && (job_ptr = find_job_record(comp_msg->job_id))) {
+	if (association_based_accounting &&
+	    (job_ptr = find_job_record(comp_msg->job_id))) {
 		struct step_record batch_step;
 		memset(&batch_step, 0, sizeof(struct step_record));
 		batch_step.job_ptr = job_ptr;

@@ -472,6 +472,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 
 		*dest = (void *)n;
 
+		s_p_hashtbl_destroy(tbl);
 		return 1;
 	}
 
