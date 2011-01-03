@@ -129,7 +129,7 @@ done
 #
 #	releasehold sethold
 #
-for cmd in canceljob checkjob checknode mdiag mjobctl mshow msub showbf showq showres showstart showstate; do
+for cmd in canceljob checkjob checknode mdiag mjobctl msub showbf showq showres showstart showstate; do
     $RPM_BUILD_ROOT%{_bindir}/${cmd} --roff > $RPM_BUILD_ROOT%{_mandir}/man1/${cmd}.1
 done
 chmod 644 $RPM_BUILD_ROOT%{_mandir}/man1/*.1
