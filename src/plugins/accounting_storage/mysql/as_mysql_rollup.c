@@ -805,15 +805,21 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				overtime = (int64_t)(c_usage->total_time -
 						     (c_usage->a_cpu
 						      + c_usage->d_cpu));
-				if (overtime < 0)
+				if (overtime < 0) {
 					c_usage->d_cpu += overtime;
+					if ((int64_t)c_usage->d_cpu < 0)
+						c_usage->d_cpu = 0;
+				}
 
 				overtime = (int64_t)(c_usage->total_time -
 						     (c_usage->a_cpu
 						      + c_usage->d_cpu
 						      + c_usage->pd_cpu));
-				if (overtime < 0)
+				if (overtime < 0) {
 					c_usage->pd_cpu += overtime;
+					if ((int64_t)c_usage->pd_cpu < 0)
+						c_usage->pd_cpu = 0;
+				}
 
 				total_used = c_usage->a_cpu +
 					c_usage->d_cpu + c_usage->pd_cpu;
