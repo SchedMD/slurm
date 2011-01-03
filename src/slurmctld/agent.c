@@ -441,9 +441,9 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		}
 		free(name);
 		i++;
-		for(j = 0; j < span[thr_count]; j++) {
+		for (j = 0; j < span[thr_count]; j++) {
 			name = hostlist_shift(agent_arg_ptr->hostlist);
-			if(!name)
+			if (!name)
 				break;
 			hostlist_push(hl, name);
 			free(name);

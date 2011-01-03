@@ -2240,6 +2240,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CHECKPOINT_TASK_COMP:
 		slurm_free_checkpoint_task_comp_msg(data);
 		break;
+	case REQUEST_FRONT_END_INFO:
+		slurm_free_front_end_info_request_msg(data);
+		break;
 	case REQUEST_SUSPEND:
 		slurm_free_suspend_msg(data);
 		break;

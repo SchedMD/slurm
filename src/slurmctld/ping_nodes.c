@@ -190,9 +190,12 @@ void ping_nodes (void)
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
 					front_end_ptr->name);
-			else
+			else {
 				down_hostlist =
 					hostlist_create(front_end_ptr->name);
+				if (down_hostlist == NULL)
+					fatal("hostlist_create: malloc error");
+			}
 			set_front_end_down(front_end_ptr, "Not responding");
 			front_end_ptr->not_responding = false;
 			continue;
@@ -248,9 +251,12 @@ void ping_nodes (void)
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
 					node_ptr->name);
-			else
+			else {
 				down_hostlist =
 					hostlist_create(node_ptr->name);
+				if (down_hostlist == NULL)
+					fatal("hostlist_create: malloc error");
+			}
 			set_node_down(node_ptr->name, "Not responding");
 			node_ptr->not_responding = false;  /* logged below */
 			continue;
