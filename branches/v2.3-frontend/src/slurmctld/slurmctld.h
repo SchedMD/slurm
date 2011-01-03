@@ -645,10 +645,10 @@ enum select_plugindata_info {
  *	agent request per node as they register.
  * IN job_id - id of the job to be killed
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
- * IN node_ptr - pointer to the node on which the job resides
+ * IN node_name - name of the node on which the job resides
  */
 extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
-			      struct node_record *node_ptr);
+			      char *node_name);
 
 /* Build a bitmap of nodes completing this job */
 extern void build_cg_bitmap(struct job_record *job_ptr);

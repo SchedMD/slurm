@@ -136,7 +136,7 @@ static int _set_trigger(void)
 			ti.trig_type |= TRIGGER_TYPE_FINI;
 		if (params.time_limit)
 			ti.trig_type |= TRIGGER_TYPE_TIME;
-	} else if (params.front_end)
+	} else if (params.front_end) {
 		ti.res_type = TRIGGER_RES_TYPE_FRONT_END;
 	} else {
 		ti.res_type = TRIGGER_RES_TYPE_NODE;
