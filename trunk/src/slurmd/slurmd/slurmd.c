@@ -1497,11 +1497,12 @@ Usage: %s [OPTIONS]\n\
    -C          Print node configuration information and exit.\n\
    -d stepd    Pathname to the slurmstepd program.\n\
    -D          Run daemon in foreground.\n\
-   -M          Use mlock() to lock slurmd pages into memory.\n\
-   -h          Print this help message.\n\
    -f config   Read configuration from the specified file.\n\
+   -h          Print this help message.\n\
    -L logfile  Log messages to the file `logfile'.\n\
+   -M          Use mlock() to lock slurmd pages into memory.\n\
    -n value    Run the daemon at the specified nice value.\n\
+   -N host     Run the daemon for specified hostname.\n\
    -v          Verbose mode. Multiple -v's increase verbosity.\n\
    -V          Print version information and exit.\n", conf->prog);
 	return;

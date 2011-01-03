@@ -861,8 +861,7 @@ a different set of nodes for the different SLURM systems.
 That will permit both systems to allocate switch windows without
 conflicts.
 
-<p><a name="multi_slurmd"><b>14. Can slurm emulate a larger
-cluster?</b></a><br>
+<p><a name="multi_slurmd"><b>14. Can slurm emulate a larger cluster?</b></a><br>
 Yes, this can be useful for testing purposes.
 It has also been used to partition "fat" nodes into multiple SLURM nodes.
 There are two ways to do this.
@@ -882,7 +881,8 @@ physical node needs to be configured to use a different port number.  You
 will also want to use the "%n" symbol in slurmd related path options in
 slurm.conf. </li>
 <li>When starting the <i>slurmd</i> daemon, include the <i>NodeName</i>
-of the node that it is supposed to serve on the execute line.</li>
+of the node that it is supposed to serve on the execute line (e.g.
+"slurmd -N hostname").</li>
 </ol>
 <p>It is strongly recommended that SLURM version 1.2 or higher be used
 for this due to its improved support for multiple slurmd daemons.
@@ -1338,6 +1338,6 @@ dset TV::parallel_configs {
 </pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 July 2010</p>
+<p style="text-align:center;">Last modified 29 December 2010</p>
 
 <!--#include virtual="footer.txt"-->
