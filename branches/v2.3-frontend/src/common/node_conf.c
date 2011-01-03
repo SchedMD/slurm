@@ -499,14 +499,12 @@ extern int build_all_frontend_info (void)
 		fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
 		if (list_append(front_end_list, fe_single) == NULL)
 			fatal("list_append: malloc failure");
+		fe_single->frontends = _find_alias_node_record(
+						node_record_table_ptr->name);
 		if (node_record_table_ptr->comm_name) {
-			fe_single->frontends = xstrdup(node_record_table_ptr->
-						       comm_name);
 			fe_single->addresses = xstrdup(node_record_table_ptr->
 						       comm_name);
 		} else {
-			fe_single->frontends = xstrdup(node_record_table_ptr->
-						       name);
 			fe_single->addresses = xstrdup(node_record_table_ptr->
 						       name);
 		}
