@@ -544,6 +544,7 @@ extern int load_defaults(void)
 		{"PageOptsNode", S_P_STRING},
 		{"PageOptsPartition", S_P_STRING},
 		{"PageOptsReservation", S_P_STRING},
+		{"PageOptsFrontend", S_P_STRING},
 		{"RefreshDelay", S_P_UINT16},
 		{"RuledTables", S_P_BOOLEAN},
 		{"SavePageSettings", S_P_BOOLEAN},

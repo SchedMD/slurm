@@ -592,9 +592,6 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	case BLOCK_PAGE:
 		each.pfunc = &popup_all_block;
 		break;
-	case FRONT_END_PAGE:
-		each.pfunc = &popup_all_front_end;
-		break;
 	case RESV_PAGE:
 		each.pfunc = &popup_all_resv;
 		break;
