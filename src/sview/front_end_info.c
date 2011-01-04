@@ -51,8 +51,6 @@ enum {
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_NAME,
-	SORTID_NODE_CNT,
-	SORTID_NODELIST,
 	SORTID_NODE_INX,
 	SORTID_UPDATED,
 	SORTID_CNT
@@ -76,18 +74,6 @@ static display_data_t display_data_resv[] = {
 	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_COLOR,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_STRING, SORTID_ACTION,     "Action", FALSE, EDIT_MODEL,
-	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node Count", FALSE, EDIT_TEXTBOX,
-	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_NODELIST,
-#ifdef HAVE_BG
-	 "BP List",
-#else
-	 "NodeList",
-#endif
-	 FALSE, EDIT_TEXTBOX,
-	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
@@ -156,7 +142,6 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 int column)
 {
 	char *type = "";
-	int temp_int = 0;
 
 	/* need to clear global_edit_error here (just in case) */
 	global_edit_error = 0;
@@ -176,18 +161,6 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		resv_msg->name = xstrdup(new_text);
 		type = "name";
 		break;
-	case SORTID_NODE_CNT:
-		temp_int = strtol(new_text, (char **)NULL, 10);
-
-		type = "Node Count";
-		if (temp_int <= 0)
-			goto return_error;
-		resv_msg->node_cnt = temp_int;
-		break;
-	case SORTID_NODELIST:
-		resv_msg->node_list = xstrdup(new_text);
-		type = "node list";
-		break;
 	default:
 		type = "unknown";
 		break;
@@ -196,10 +169,6 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	if (strcmp(type, "unknown"))
 		global_send_update_msg = 1;
 
-	return type;
-
-return_error:
-	global_edit_error = 1;
 	return type;
 }
 
@@ -315,31 +284,14 @@ static void _layout_resv_record(GtkTreeView *treeview,
 				sview_resv_info_t *sview_resv_info,
 				int update)
 {
-	GtkTreeIter iter;
-	reserve_info_t *resv_ptr = sview_resv_info->resv_ptr;
-	char tmp_char[50];
-
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
-
-	convert_num_unit((float)resv_ptr->node_cnt,
-			 tmp_char, sizeof(tmp_char), UNIT_NONE);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_resv,
-						 SORTID_NODE_CNT),
-				   tmp_char);
-
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_resv,
-						 SORTID_NODELIST),
-				   resv_ptr->node_list);
 }
 
 static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 				GtkTreeStore *treestore,
 				GtkTreeIter *iter)
 {
-	char tmp_char[50];
 	reserve_info_t *resv_ptr = sview_resv_info_ptr->resv_ptr;
 
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
@@ -349,17 +301,6 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, resv_ptr->name, -1);
-
-	convert_num_unit((float)resv_ptr->node_cnt,
-			 tmp_char, sizeof(tmp_char), UNIT_NONE);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODE_CNT, tmp_char, -1);
-
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODELIST, resv_ptr->node_list, -1);
-
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODE_INX, resv_ptr->node_inx, -1);
 
 	return;
 }
@@ -441,28 +382,6 @@ static void _update_info_resv(List info_list,
 	return;
 }
 
-static int _sview_resv_sort_aval_dec(sview_resv_info_t* rec_a,
-				     sview_resv_info_t* rec_b)
-{
-	int size_a = rec_a->resv_ptr->node_cnt;
-	int size_b = rec_b->resv_ptr->node_cnt;
-
-	if (size_a < size_b)
-		return -1;
-	else if (size_a > size_b)
-		return 1;
-
-	if (rec_a->resv_ptr->node_list && rec_b->resv_ptr->node_list) {
-		size_a = strcmp(rec_a->resv_ptr->node_list,
-				rec_b->resv_ptr->node_list);
-		if (size_a < 0)
-			return -1;
-		else if (size_a > 0)
-			return 1;
-	}
-	return 0;
-}
-
 static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 				   int changed)
 {
@@ -492,9 +411,6 @@ static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 		list_append(info_list, sview_resv_info_ptr);
 	}
 
-	list_sort(info_list,
-		  (ListCmpF)_sview_resv_sort_aval_dec);
-
 update_color:
 	return info_list;
 }
@@ -509,7 +425,6 @@ static void _display_info_front_end(List info_list, popup_info_t *popup_win)
 	ListIterator itr = NULL;
 	sview_resv_info_t *sview_resv_info = NULL;
 	int update = 0;
-	int j = 0;
 
 	if (!spec_info->search_info->gchar_data) {
 		//info = xstrdup("No pointer given!");
@@ -531,16 +446,6 @@ need_refresh:
 	while ((sview_resv_info = (sview_resv_info_t*) list_next(itr))) {
 		resv_ptr = sview_resv_info->resv_ptr;
 		if (!strcmp(resv_ptr->name, name)) {
-			j=0;
-			while (resv_ptr->node_inx[j] >= 0) {
-				change_grid_color(
-					popup_win->grid_button_list,
-					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1],
-					sview_resv_info->color_inx,
-					true, 0);
-				j += 2;
-			}
 			_layout_resv_record(treeview, sview_resv_info, update);
 			found = 1;
 			break;
@@ -743,11 +648,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	int j=0;
 	int changed = 1;
-	ListIterator itr = NULL;
-	sview_resv_info_t *sview_resv_info_ptr = NULL;
-	reserve_info_t *resv_ptr = NULL;
 	GtkTreePath *path = NULL;
 	static bool set_opts = FALSE;
 
@@ -810,26 +711,11 @@ display_it:
 					 &path, &focus_column);
 	}
 	if (!path) {
-		itr = list_iterator_create(info_list);
-		while ((sview_resv_info_ptr = list_next(itr))) {
-			resv_ptr = sview_resv_info_ptr->resv_ptr;
-			j=0;
-			while (resv_ptr->node_inx[j] >= 0) {
-				change_grid_color(grid_button_list,
-						  resv_ptr->node_inx[j],
-						  resv_ptr->node_inx[j+1],
-						  sview_resv_info_ptr->
-						  color_inx,
-						  true, 0);
-				j += 2;
-			}
-		}
-		list_iterator_destroy(itr);
 		change_grid_color(grid_button_list, -1, -1,
 				  MAKE_WHITE, true, 0);
 	} else
 		highlight_grid(GTK_TREE_VIEW(display_widget),
-			       SORTID_NODE_INX, SORTID_COLOR_INX,
+			       SORTID_NAME, SORTID_COLOR_INX,
 			       grid_button_list);
 
 	if (working_sview_config.grid_speedup) {
@@ -883,7 +769,7 @@ extern void specific_info_front_end(popup_info_t *popup_win)
 	List send_resv_list = NULL;
 	int changed = 1;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
-	int j=0, i=-1;
+	int i=-1;
 	hostset_t hostset = NULL;
 	ListIterator itr = NULL;
 
@@ -1004,16 +890,6 @@ display_it:
 			continue;
 		}
 		list_push(send_resv_list, sview_resv_info_ptr);
-		j=0;
-		while (resv_ptr->node_inx[j] >= 0) {
-			change_grid_color(
-				popup_win->grid_button_list,
-				resv_ptr->node_inx[j],
-				resv_ptr->node_inx[j+1],
-				sview_resv_info_ptr->color_inx,
-				true, 0);
-			j += 2;
-		}
 	}
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
@@ -1044,7 +920,7 @@ extern void set_menus_front_end(void *arg, void *arg2, GtkTreePath *path,
 		make_options_menu(tree_view, path, menu, options_data_resv);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, SORTID_NODE_INX,
+		highlight_grid(tree_view, SORTID_NAME,
 			       SORTID_COLOR_INX, button_list);
 		break;
 	case FULL_CLICKED:
@@ -1112,7 +988,7 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	 */
 	popup_win->model = model;
 	popup_win->iter = *iter;
-	popup_win->node_inx_id = SORTID_NODE_INX;
+	popup_win->node_inx_id = SORTID_NAME;	/* Should be NODE_INX */
 
 	switch (id) {
 	case INFO_PAGE:
@@ -1148,11 +1024,6 @@ extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
 				   GtkTreeView *treeview)
 {
 	if (treeview) {
-		if (display_data->extra & EXTRA_NODES) {
-			select_admin_nodes(model, iter, display_data,
-					   SORTID_NODELIST, treeview);
-			return;
-		}
 		global_multi_error = FALSE;
 		gtk_tree_selection_selected_foreach(
 			gtk_tree_view_get_selection(treeview),
@@ -1281,27 +1152,7 @@ end_it:
 extern void cluster_change_front_end(void)
 {
 	display_data_t *display_data = display_data_resv;
-	while (display_data++) {
-		if (display_data->id == -1)
-			break;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			switch (display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "BP List";
-				break;
-			default:
-				break;
-			}
-		} else {
-			switch (display_data->id) {
-			case SORTID_NODELIST:
-				display_data->name = "NodeList";
-				break;
-			default:
-				break;
-			}
-		}
-	}
+
 	display_data = options_data_resv;
 	while (display_data++) {
 		if (display_data->id == -1)
