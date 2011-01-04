@@ -592,6 +592,9 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	case BLOCK_PAGE:
 		each.pfunc = &popup_all_block;
 		break;
+	case FRONT_END_PAGE:
+		each.pfunc = &popup_all_front_end;
+		break;
 	case RESV_PAGE:
 		each.pfunc = &popup_all_resv;
 		break;
@@ -610,6 +613,12 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 		case BLOCK_PAGE:
 			select_admin_block(treedata->model, &treedata->iter,
 					   display_data, treedata->treeview);
+			break;
+		case FRONT_END_PAGE:
+			select_admin_front_end(treedata->model,
+					       &treedata->iter,
+					       display_data,
+					       treedata->treeview);
 			break;
 		case RESV_PAGE:
 			select_admin_resv(treedata->model, &treedata->iter,
@@ -2232,6 +2241,8 @@ extern char *page_to_str(int page)
 		return "Block";
 	case RESV_PAGE:
 		return "Reservation";
+	case FRONT_END_PAGE:
+		return "Frontend";
 	default:
 		return NULL;
 	}
