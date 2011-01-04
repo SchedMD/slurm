@@ -47,12 +47,9 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
-	SORTID_ACTION,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_NAME,
-	SORTID_NODE_INX,
-	SORTID_UPDATED,
 	SORTID_CNT
 };
 
@@ -73,11 +70,7 @@ static display_data_t display_data_resv[] = {
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_COLOR,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_ACTION,     "Action", FALSE, EDIT_MODEL,
-	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
-	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_INT,    SORTID_UPDATED,    NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
@@ -117,19 +110,6 @@ static void _set_active_combo_resv(GtkComboBox *combo,
 	gtk_tree_model_get(model, iter, type, &temp_char, -1);
 	if (!temp_char)
 		goto end_it;
-	switch (type) {
-	case SORTID_ACTION:
-		if (!strcmp(temp_char, "none"))
-			action = 0;
-		else if (!strcmp(temp_char, "remove"))
-			action = 1;
-		else
-			action = 0;
-
-		break;
-	default:
-		break;
-	}
 	g_free(temp_char);
 end_it:
 	gtk_combo_box_set_active(combo, action);
@@ -150,13 +130,6 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		return NULL;
 
 	switch (column) {
-	case SORTID_ACTION:
-		xfree(got_edit_signal);
-		if (!strcasecmp(new_text, "None"))
-			got_edit_signal = NULL;
-		else
-			got_edit_signal = xstrdup(new_text);
-		break;
 	case SORTID_NAME:
 		resv_msg->name = xstrdup(new_text);
 		type = "name";
@@ -298,7 +271,6 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 			   sview_colors[sview_resv_info_ptr->color_inx], -1);
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
 			   sview_resv_info_ptr->color_inx, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, resv_ptr->name, -1);
 
@@ -330,8 +302,6 @@ static void _update_info_resv(List info_list,
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		/* make sure all the reserves are still here */
 		while (1) {
-			gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-					   SORTID_UPDATED, 0, -1);
 			if (!gtk_tree_model_iter_next(model, &iter)) {
 				break;
 			}
@@ -377,8 +347,7 @@ static void _update_info_resv(List info_list,
 		free(host);
 
 	gtk_tree_path_free(path);
-	/* remove all old reservations */
-	remove_old(model, SORTID_UPDATED);
+
 	return;
 }
 
@@ -542,22 +511,8 @@ end_it:
 extern GtkListStore *create_model_front_end(int type)
 {
 	GtkListStore *model = NULL;
-	GtkTreeIter iter;
 
 	switch (type) {
-	case SORTID_ACTION:
-		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   1, SORTID_ACTION,
-				   0, "None",
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   1, SORTID_ACTION,
-				   0, "Remove",
-				   -1);
-		break;
 	default:
 		break;
 	}
@@ -653,7 +608,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	static bool set_opts = FALSE;
 
 	if (!set_opts)
-		set_page_opts(RESV_PAGE, display_data_resv,
+		set_page_opts(FRONT_END_PAGE, display_data_resv,
 			      SORTID_CNT, _initial_page_opts);
 	set_opts = TRUE;
 

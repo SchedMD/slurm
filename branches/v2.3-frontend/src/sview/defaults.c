@@ -847,9 +847,6 @@ extern int save_defaults(bool final_save)
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if (!final_save)
-		goto end_it;
-
 	/* save all current page options */
 	for (i=0; i<PAGE_CNT; i++) {
 		page_opts_t *page_opts =
@@ -883,11 +880,6 @@ extern int save_defaults(bool final_save)
 				xstrfmtcat(tmp_str2, "%s", col_name);
 			}
 			list_iterator_destroy(itr);
-		}
-
-		if (page_opts->col_list) {
-			list_destroy(page_opts->col_list);
-			page_opts->col_list = NULL;
 		}
 
 		if (tmp_str2) {

@@ -2266,13 +2266,15 @@ extern char *tab_pos_to_str(int pos)
 extern char *visible_to_str(sview_config_t *sview_config)
 {
 	char *ret = NULL;
-	int i = 0;
-	for(i=0; i<PAGE_CNT; i++)
-		if(sview_config->page_visible[i]) {
-			if(ret)
+	int i;
+
+	for (i = 0; i < PAGE_CNT; i++) {
+		if (sview_config->page_visible[i] && (i != TAB_PAGE)) {
+			if (ret)
 				xstrcat(ret, ",");
 			xstrcat(ret, page_to_str(i));
 		}
+	}
 
 	return ret;
 }
