@@ -201,7 +201,7 @@ test2.2    Validate scontrol help command.
 test2.3    Validate scontrol ping command.
 test2.4    Validate scontrol exit, quit, and !! commands.
 test2.5    Validate scontrol show commands for configuation, daemons,
-           nodes, and partitions.
+           nodes, frontends, and partitions.
 test2.6    Validate scontrol verbose and quite options.
 test2.7    Validate scontrol pidinfo command.
 test2.8    Validate scontrol show commands for jobs and steps.
@@ -226,6 +226,7 @@ test3.8    Test of batch job requeue.
 test3.9    Test of "scontrol show slurmd"
 test3.10   Test of "scontrol notify <jobid> <message>"
 test3.11   Validate scontrol create, delete, and update of reservations.
+test3.12   Validate scontrol update command for front end nodes.
 UNTESTED   "scontrol abort"    would stop slurm
 UNTESTED   "scontrol shutdown" would stop slurm
 
