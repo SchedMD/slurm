@@ -710,7 +710,7 @@ update_color:
 	return info_list;
 }
 
-void _display_info_resv(List info_list,	popup_info_t *popup_win)
+static void _display_info_resv(List info_list, popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
