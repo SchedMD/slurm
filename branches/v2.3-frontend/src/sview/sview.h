@@ -347,8 +347,7 @@ extern uint32_t cluster_flags;
 extern int cluster_dims;
 extern List cluster_list;
 extern block_info_msg_t *g_block_info_ptr;
-//extern front_end_info_msg_t *g_front_end_info_ptr;
-extern reserve_info_msg_t *g_front_end_info_ptr;
+extern front_end_info_msg_t *g_front_end_info_ptr;
 extern job_info_msg_t *g_job_info_ptr;
 extern node_info_msg_t *g_node_info_ptr;
 extern partition_info_msg_t *g_part_info_ptr;
@@ -467,8 +466,7 @@ extern void admin_edit_front_end(GtkCellRendererText *cell,
 extern void cluster_change_front_end(void);
 extern GtkListStore *create_model_front_end(int type);
 extern void get_info_front_end(GtkTable *table, display_data_t *display_data);
-//extern int  get_new_info_front_end(front_end_info_msg_t **info_ptr, int force);
-extern int get_new_info_front_end(reserve_info_msg_t **info_ptr, int force);
+extern int  get_new_info_front_end(front_end_info_msg_t **info_ptr, int force);
 extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void refresh_front_end(GtkAction *action, gpointer user_data);
 extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
