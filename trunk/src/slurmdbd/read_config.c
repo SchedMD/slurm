@@ -112,6 +112,7 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->storage_type);
 		xfree(slurmdbd_conf->storage_user);
 		slurmdbd_conf->track_wckey = 0;
+		slurmdbd_conf->track_ctld = 0;
 	}
 }
 
@@ -162,6 +163,7 @@ extern int read_slurmdbd_conf(void)
 		{"StorageType", S_P_STRING},
 		{"StorageUser", S_P_STRING},
 		{"TrackWCKey", S_P_BOOLEAN},
+		{"TrackSlurmctldDown", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
@@ -358,6 +360,10 @@ extern int read_slurmdbd_conf(void)
 				     "TrackWCKey", tbl))
 			slurmdbd_conf->track_wckey = false;
 
+		if (!s_p_get_boolean((bool *)&slurmdbd_conf->track_ctld,
+				     "TrackSlurmctldDown", tbl))
+			slurmdbd_conf->track_ctld = false;
+
 		if (a_events)
 			slurmdbd_conf->purge_event |= SLURMDB_PURGE_ARCHIVE;
 		if (a_jobs)
@@ -536,6 +542,7 @@ extern void log_config(void)
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
 
 	debug2("TrackWCKey        = %u", slurmdbd_conf->track_wckey);
+	debug2("TrackSlurmctldDown= %u", slurmdbd_conf->track_ctld);
 }
 
 /* Return the DbdPort value */
@@ -803,6 +810,12 @@ extern List dump_config(void)
 	key_pair->name = xstrdup("TrackWCKey");
 	key_pair->value = xmalloc(32);
 	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->track_wckey);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("TrackSlurmctldDown");
+	key_pair->value = xmalloc(32);
+	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->track_ctld);
 	list_append(my_list, key_pair);
 
 	return my_list;

@@ -312,7 +312,7 @@ typedef enum {
 
 	ACCOUNTING_UPDATE_MSG = 10001,
 	ACCOUNTING_FIRST_REG,
-
+	ACCOUNTING_REGISTER_CTLD,
 } slurm_msg_type_t;
 
 typedef enum {

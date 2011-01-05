@@ -2274,6 +2274,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 		/* No body to free */
 		break;

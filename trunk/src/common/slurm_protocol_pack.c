@@ -720,6 +720,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 		/* Message contains no body/information */
 		break;
@@ -1197,6 +1198,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 		/* Message contains no body/information */
 		break;
@@ -8159,7 +8161,7 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 			list_append(msg_ptr->update_list, rec);
 		}
 	} else {
-		/* Before 2.2 the only happened in the slurmctld, now
+		/* Before 2.2 this only happened in the slurmctld, now
 		   it can happen else where, so this should work for <
 		   2.2 and above will catch everything from now on.
 		*/

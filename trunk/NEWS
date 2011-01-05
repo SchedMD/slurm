@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Added that when a slurmctld closes the connection to the database it's
     registered host and port are removed.
+ -- Added flag to slurmdbd.conf TrackSlurmctldDown where if set will mark idle
+    resources as down on a cluster when a slurmctld disconnects or is no
+    longer reachable.
 
 * Changes in SLURM 2.2.1
 ========================
