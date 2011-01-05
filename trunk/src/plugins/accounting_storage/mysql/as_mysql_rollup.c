@@ -40,6 +40,7 @@
 
 #include "as_mysql_rollup.h"
 #include "as_mysql_archive.h"
+#include "src/common/parse_time.h"
 
 typedef struct {
 	int id;
@@ -154,6 +155,7 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
 	uint64_t total_used;
+	char start_char[20], end_char[20];
 
 	if (!c_usage)
 		return rc;
@@ -162,17 +164,16 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 	/* sanity check to make sure we don't have more
 	   allocated cpus than possible. */
 	if (c_usage->total_time < c_usage->a_cpu) {
-		char *start_char = xstrdup(ctime(&curr_start));
-		char *end_char = xstrdup(ctime(&curr_end));
-		start_char[strlen(start_char)-1] = '\0';
+		slurm_make_time_str(&curr_start, start_char,
+				    sizeof(start_char));
+		slurm_make_time_str(&curr_end, end_char,
+				    sizeof(end_char));
 		error("We have more allocated time than is "
 		      "possible (%"PRIu64" > %"PRIu64") for "
 		      "cluster %s(%d) from %s - %s",
 		      c_usage->a_cpu, c_usage->total_time,
 		      cluster_name, c_usage->cpu_count,
 		      start_char, end_char);
-		xfree(start_char);
-		xfree(end_char);
 		c_usage->a_cpu = c_usage->total_time;
 	}
 
@@ -181,11 +182,12 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 	/* Make sure the total time we care about
 	   doesn't go over the limit */
 	if (c_usage->total_time < total_used) {
-		char *start_char = xstrdup(ctime(&curr_start));
-		char *end_char = xstrdup(ctime(&curr_end));
 		int64_t overtime;
 
-		start_char[strlen(start_char)-1] = '\0';
+		slurm_make_time_str(&curr_start, start_char,
+				    sizeof(start_char));
+		slurm_make_time_str(&curr_end, end_char,
+				    sizeof(end_char));
 		error("We have more time than is "
 		      "possible (%"PRIu64"+%"PRIu64"+%"
 		      PRIu64")(%"PRIu64") > %"PRIu64" for "
@@ -195,8 +197,6 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 		      c_usage->total_time,
 		      cluster_name, c_usage->cpu_count,
 		      start_char, end_char);
-		xfree(start_char);
-		xfree(end_char);
 
 		/* First figure out how much actual down time
 		   we have and then how much
@@ -470,6 +470,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	List wckey_usage_list = list_create(_destroy_local_id_usage);
 	List resv_usage_list = list_create(_destroy_local_resv_usage);
 	uint16_t track_wckey = slurm_get_track_wckey();
+	/* char start_char[20], end_char[20]; */
 
 	char *job_req_inx[] = {
 		"job_db_inx",
@@ -659,16 +660,15 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				c_usage->pd_cpu += r_usage->total_time;
 			else
 				c_usage->a_cpu += r_usage->total_time;
-			/* char *start_char = xstrdup(ctime(&r_usage->start));*/
-			/* char *end_char = xstrdup(ctime(&r_usage->end)); */
-			/* start_char[strlen(start_char)-1] = '\0'; */
+			/* slurm_make_time_str(&r_usage->start, start_char, */
+			/* 		    sizeof(start_char)); */
+			/* slurm_make_time_str(&r_usage->end, end_char, */
+			/* 		    sizeof(end_char)); */
 			/* info("adding this much %lld to cluster %s " */
 			/*      "%d %d %s - %s", */
 			/*      r_usage->total_time, c_usage->name, */
 			/*      (row_flags & RESERVE_FLAG_MAINT),  */
 			/*      r_usage->id, start_char, end_char); */
-			/* xfree(start_char); */
-			/* xfree(end_char); */
 		}
 		mysql_free_result(result);
 
