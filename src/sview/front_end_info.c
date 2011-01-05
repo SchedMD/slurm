@@ -36,8 +36,8 @@
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
 	int color_inx;
-	reserve_info_t *resv_ptr;
-} sview_resv_info_t;
+	front_end_info_t *front_end_ptr;
+} sview_front_end_info_t;
 
 enum {
 	EDIT_REMOVE = 1,
@@ -50,6 +50,7 @@ enum {
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_NAME,
+	SORTID_STATE,
 	SORTID_CNT
 };
 
@@ -61,14 +62,16 @@ enum {
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.
  * s/b a const probably*/
-static char *_initial_page_opts = "Name";
+static char *_initial_page_opts = "Name,State";
 
 static display_data_t display_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_NAME,       "Name", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_COLOR,
+	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_COLOR,  NULL, TRUE, EDIT_COLOR,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
@@ -145,13 +148,9 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 	return type;
 }
 
-static void _resv_info_list_del(void *object)
+static void _front_end_info_list_del(void *object)
 {
-	sview_resv_info_t *sview_resv_info = (sview_resv_info_t *)object;
-
-	if (sview_resv_info) {
-		xfree(sview_resv_info);
-	}
+	xfree(object);
 }
 
 static void _admin_edit_combo_box_resv(GtkComboBox *combo,
@@ -254,36 +253,45 @@ static GtkWidget *_admin_full_edit_resv(resv_desc_msg_t *resv_msg,
 }
 
 static void _layout_resv_record(GtkTreeView *treeview,
-				sview_resv_info_t *sview_resv_info,
+				sview_front_end_info_t *sview_front_end_info,
 				int update)
 {
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 }
 
-static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
+static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr,
 				GtkTreeStore *treestore,
 				GtkTreeIter *iter)
 {
-	reserve_info_t *resv_ptr = sview_resv_info_ptr->resv_ptr;
+	front_end_info_t *front_end_ptr;
+	char *upper = NULL, *lower = NULL;
 
+	front_end_ptr = sview_front_end_info_ptr->front_end_ptr;
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
-			   sview_colors[sview_resv_info_ptr->color_inx], -1);
+			   sview_colors[sview_front_end_info_ptr->color_inx],
+			   -1);
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
-			   sview_resv_info_ptr->color_inx, -1);
+			   sview_front_end_info_ptr->color_inx, -1);
 
-	gtk_tree_store_set(treestore, iter, SORTID_NAME, resv_ptr->name, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NAME, front_end_ptr->name,
+			   -1);
+
+	upper = node_state_string(front_end_ptr->node_state);
+	lower = str_tolower(upper);
+	gtk_tree_store_set(treestore, iter, SORTID_STATE, lower, -1);
+	xfree(lower);
 
 	return;
 }
 
-static void _append_resv_record(sview_resv_info_t *sview_resv_info_ptr,
+static void _append_resv_record(sview_front_end_info_t *sview_front_end_info_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter,
 				int line)
 {
 	gtk_tree_store_append(treestore, iter, NULL);
 	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
-	_update_resv_record(sview_resv_info_ptr, treestore, iter);
+	_update_resv_record(sview_front_end_info_ptr, treestore, iter);
 }
 
 static void _update_info_resv(List info_list,
@@ -292,11 +300,11 @@ static void _update_info_resv(List info_list,
 	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkTreeIter iter;
-	reserve_info_t *resv_ptr = NULL;
+	front_end_info_t *front_end_ptr = NULL;
 	int line = 0;
-	char *host = NULL, *resv_name = NULL;
+	char *host = NULL, *front_end_name = NULL;
 	ListIterator itr = NULL;
-	sview_resv_info_t *sview_resv_info = NULL;
+	sview_front_end_info_t *sview_front_end_info = NULL;
 
 	/* get the iter, or find out the list is empty goto add */
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
@@ -309,8 +317,8 @@ static void _update_info_resv(List info_list,
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_resv_info = (sview_resv_info_t*) list_next(itr))) {
-		resv_ptr = sview_resv_info->resv_ptr;
+	while ((sview_front_end_info = (sview_front_end_info_t*) list_next(itr))) {
+		front_end_ptr = sview_front_end_info->front_end_ptr;
 		/* get the iter, or find out the list is empty goto add */
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;
@@ -320,16 +328,16 @@ static void _update_info_resv(List info_list,
 			/* search for the jobid and check to see if
 			   it is in the list */
 			gtk_tree_model_get(model, &iter, SORTID_NAME,
-					   &resv_name, -1);
-			if (!strcmp(resv_name, resv_ptr->name)) {
+					   &front_end_name, -1);
+			if (!strcmp(front_end_name, front_end_ptr->name)) {
 				/* update with new info */
-				g_free(resv_name);
-				_update_resv_record(sview_resv_info,
+				g_free(front_end_name);
+				_update_resv_record(sview_front_end_info,
 						    GTK_TREE_STORE(model),
 						    &iter);
 				goto found;
 			}
-			g_free(resv_name);
+			g_free(front_end_name);
 
 			line++;
 			if (!gtk_tree_model_iter_next(model, &iter)) {
@@ -337,7 +345,7 @@ static void _update_info_resv(List info_list,
 			}
 		}
 	adding:
-		_append_resv_record(sview_resv_info, GTK_TREE_STORE(model),
+		_append_resv_record(sview_front_end_info, GTK_TREE_STORE(model),
 				    &iter, line);
 	found:
 		;
@@ -351,13 +359,13 @@ static void _update_info_resv(List info_list,
 	return;
 }
 
-static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
-				   int changed)
+static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr,
+					int changed)
 {
 	static List info_list = NULL;
 	int i = 0;
-	sview_resv_info_t *sview_resv_info_ptr = NULL;
-	reserve_info_t *resv_ptr = NULL;
+	sview_front_end_info_t *sview_front_end_info_ptr = NULL;
+	front_end_info_t *front_end_ptr = NULL;
 
 	if (!changed && info_list)
 		goto update_color;
@@ -365,19 +373,20 @@ static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 	if (info_list)
 		list_flush(info_list);
 	else
-		info_list = list_create(_resv_info_list_del);
+		info_list = list_create(_front_end_info_list_del);
 
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;
 	}
 
-	for(i=0; i<resv_info_ptr->record_count; i++) {
-		resv_ptr = &(resv_info_ptr->reservation_array[i]);
-		sview_resv_info_ptr = xmalloc(sizeof(sview_resv_info_t));
-		sview_resv_info_ptr->resv_ptr = resv_ptr;
-		sview_resv_info_ptr->color_inx = i % sview_colors_cnt;
-		list_append(info_list, sview_resv_info_ptr);
+	for (i=0; i<front_end_info_ptr->record_count; i++) {
+		front_end_ptr = &(front_end_info_ptr->front_end_array[i]);
+		sview_front_end_info_ptr =
+			xmalloc(sizeof(sview_front_end_info_t));
+		sview_front_end_info_ptr->front_end_ptr = front_end_ptr;
+		sview_front_end_info_ptr->color_inx = i % sview_colors_cnt;
+		list_append(info_list, sview_front_end_info_ptr);
 	}
 
 update_color:
@@ -389,10 +398,10 @@ static void _display_info_front_end(List info_list, popup_info_t *popup_win)
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
 	int found = 0;
-	reserve_info_t *resv_ptr = NULL;
+	front_end_info_t *front_end_ptr = NULL;
 	GtkTreeView *treeview = NULL;
 	ListIterator itr = NULL;
-	sview_resv_info_t *sview_resv_info = NULL;
+	sview_front_end_info_t *sview_front_end_info = NULL;
 	int update = 0;
 
 	if (!spec_info->search_info->gchar_data) {
@@ -412,10 +421,12 @@ need_refresh:
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_resv_info = (sview_resv_info_t*) list_next(itr))) {
-		resv_ptr = sview_resv_info->resv_ptr;
-		if (!strcmp(resv_ptr->name, name)) {
-			_layout_resv_record(treeview, sview_resv_info, update);
+	while ((sview_front_end_info =
+	       (sview_front_end_info_t*) list_next(itr))) {
+		front_end_ptr = sview_front_end_info->front_end_ptr;
+		if (!strcmp(front_end_ptr->name, name)) {
+			_layout_resv_record(treeview, sview_front_end_info,
+					    update);
 			found = 1;
 			break;
 		}
@@ -462,16 +473,16 @@ extern void refresh_front_end(GtkAction *action, gpointer user_data)
 	specific_info_front_end(popup_win);
 }
 
-extern int get_new_info_front_end(reserve_info_msg_t **info_ptr, int force)
+extern int get_new_info_front_end(front_end_info_msg_t **info_ptr, int force)
 {
-	static reserve_info_msg_t *new_resv_ptr = NULL;
+	static front_end_info_msg_t *new_front_end_ptr = NULL;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
 
-	if (g_front_end_info_ptr && !force
-	   && ((now - last) < working_sview_config.refresh_delay)) {
+	if (g_front_end_info_ptr && !force &&
+	    ((now - last) < working_sview_config.refresh_delay)) {
 		if (*info_ptr != g_front_end_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = g_front_end_info_ptr;
@@ -481,24 +492,24 @@ extern int get_new_info_front_end(reserve_info_msg_t **info_ptr, int force)
 	}
 	last = now;
 	if (g_front_end_info_ptr) {
-		error_code = slurm_load_reservations(
-			g_front_end_info_ptr->last_update, &new_resv_ptr);
+		error_code = slurm_load_front_end(
+			g_front_end_info_ptr->last_update, &new_front_end_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_reservation_info_msg(g_front_end_info_ptr);
+			slurm_free_front_end_info_msg(g_front_end_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
-			new_resv_ptr = g_front_end_info_ptr;
+			new_front_end_ptr = g_front_end_info_ptr;
 			changed = 0;
 		}
 	} else {
-		new_resv_ptr = NULL;
-		error_code = slurm_load_reservations((time_t) NULL,
-						     &new_resv_ptr);
+		new_front_end_ptr = NULL;
+		error_code = slurm_load_front_end((time_t) NULL,
+						  &new_front_end_ptr);
 		changed = 1;
 	}
 
-	g_front_end_info_ptr = new_resv_ptr;
+	g_front_end_info_ptr = new_front_end_ptr;
 
 	if (g_front_end_info_ptr && (*info_ptr != g_front_end_info_ptr))
 		error_code = SLURM_SUCCESS;
@@ -523,10 +534,11 @@ extern void admin_edit_front_end(GtkCellRendererText *cell,
 				 const char *path_string,
 				 const char *new_text, gpointer data)
 {
+#if 0
 	GtkTreeStore *treestore = GTK_TREE_STORE(data);
 	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
 	GtkTreeIter iter;
-	resv_desc_msg_t *resv_msg = xmalloc(sizeof(resv_desc_msg_t));
+	front_end_desc_msg_t *front_end_msg = xmalloc(sizeof(front_end_desc_msg_t));
 
 	char *temp = NULL;
 	char *old_text = NULL;
@@ -586,11 +598,12 @@ extern void admin_edit_front_end(GtkCellRendererText *cell,
 	g_free(temp);
 
 no_input:
-	slurm_free_resv_desc_msg(resv_msg);
+	slurm_free_front_end_desc_msg(front_end_msg);
 
 	gtk_tree_path_free (path);
 	g_free(old_text);
 	g_static_mutex_unlock(&sview_mutex);
+#endif
 }
 
 extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
@@ -598,7 +611,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	int error_code = SLURM_SUCCESS;
 	List info_list = NULL;
 	static int view = -1;
-	static reserve_info_msg_t *resv_info_ptr = NULL;
+	static front_end_info_msg_t *front_end_info_ptr = NULL;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -617,7 +630,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 		if (display_widget)
 			gtk_widget_destroy(display_widget);
 		display_widget = NULL;
-		resv_info_ptr = NULL;
+		front_end_info_ptr = NULL;
 		goto reset_curs;
 	}
 
@@ -633,7 +646,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 		goto display_it;
 	}
 
-	error_code = get_new_info_front_end(&resv_info_ptr, force_refresh);
+	error_code = get_new_info_front_end(&front_end_info_ptr, force_refresh);
 	if (error_code == SLURM_NO_CHANGE_IN_DATA) {
 		changed = 0;
 	} else if (error_code != SLURM_SUCCESS) {
@@ -642,7 +655,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 		if (display_widget)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
-		sprintf(error_char, "slurm_load_reservations: %s",
+		sprintf(error_char, "slurm_load_front_end: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -652,12 +665,12 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	}
 
 display_it:
-	info_list = _create_resv_info_list(resv_info_ptr, changed);
+	info_list = _create_front_end_info_list(front_end_info_ptr, changed);
 	if (!info_list)
 		goto reset_curs;
 	/* set up the grid */
-	if (display_widget && GTK_IS_TREE_VIEW(display_widget)
-	   && gtk_tree_selection_count_selected_rows(
+	if (display_widget && GTK_IS_TREE_VIEW(display_widget) &&
+	    gtk_tree_selection_count_selected_rows(
 		   gtk_tree_view_get_selection(
 			   GTK_TREE_VIEW(display_widget)))) {
 		GtkTreeViewColumn *focus_column = NULL;
@@ -713,8 +726,8 @@ reset_curs:
 extern void specific_info_front_end(popup_info_t *popup_win)
 {
 	int resv_error_code = SLURM_SUCCESS;
-	static reserve_info_msg_t *resv_info_ptr = NULL;
-	static reserve_info_t *resv_ptr = NULL;
+	static front_end_info_msg_t *front_end_info_ptr = NULL;
+	static front_end_info_t *front_end_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
 	sview_search_info_t *search_info = spec_info->search_info;
 	char error_char[100];
@@ -723,9 +736,8 @@ extern void specific_info_front_end(popup_info_t *popup_win)
 	List resv_list = NULL;
 	List send_resv_list = NULL;
 	int changed = 1;
-	sview_resv_info_t *sview_resv_info_ptr = NULL;
-	int i=-1;
-	hostset_t hostset = NULL;
+	sview_front_end_info_t *sview_front_end_info_ptr = NULL;
+	int i = -1;
 	ListIterator itr = NULL;
 
 	if (!spec_info->display_widget) {
@@ -738,9 +750,9 @@ extern void specific_info_front_end(popup_info_t *popup_win)
 		goto display_it;
 	}
 
-	if ((resv_error_code =
-	    get_new_info_front_end(&resv_info_ptr, popup_win->force_refresh))
-	   == SLURM_NO_CHANGE_IN_DATA) {
+	resv_error_code = get_new_info_front_end(&front_end_info_ptr,
+						 popup_win->force_refresh);
+	if (resv_error_code == SLURM_NO_CHANGE_IN_DATA) {
 		if (!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
 		changed = 0;
@@ -763,7 +775,7 @@ extern void specific_info_front_end(popup_info_t *popup_win)
 
 display_it:
 
-	resv_list = _create_resv_info_list(resv_info_ptr, changed);
+	resv_list = _create_front_end_info_list(front_end_info_ptr, changed);
 
 	if (!resv_list)
 		return;
@@ -803,27 +815,17 @@ display_it:
 	send_resv_list = list_create(NULL);
 	itr = list_iterator_create(resv_list);
 	i = -1;
-	while ((sview_resv_info_ptr = list_next(itr))) {
+	while ((sview_front_end_info_ptr = list_next(itr))) {
 		i++;
-		resv_ptr = sview_resv_info_ptr->resv_ptr;
+		front_end_ptr = sview_front_end_info_ptr->front_end_ptr;
 		switch (spec_info->type) {
 		case PART_PAGE:
 		case BLOCK_PAGE:
 		case NODE_PAGE:
-			if (!resv_ptr->node_list)
-				continue;
-
-			if (!(hostset = hostset_create(search_info->gchar_data)))
-				continue;
-			if (!hostset_intersects(hostset, resv_ptr->node_list)) {
-				hostset_destroy(hostset);
-				continue;
-			}
-			hostset_destroy(hostset);
 			break;
 		case JOB_PAGE:
-			if (strcmp(resv_ptr->name,
-				  search_info->gchar_data))
+			if (strcmp(front_end_ptr->name,
+				   search_info->gchar_data))
 				continue;
 			break;
 		case RESV_PAGE:
@@ -832,8 +834,8 @@ display_it:
 				if (!search_info->gchar_data)
 					continue;
 
-				if (strcmp(resv_ptr->name,
-					  search_info->gchar_data))
+				if (strcmp(front_end_ptr->name,
+					   search_info->gchar_data))
 					continue;
 				break;
 			default:
@@ -844,7 +846,7 @@ display_it:
 			g_print("Unknown type %d\n", spec_info->type);
 			continue;
 		}
-		list_push(send_resv_list, sview_resv_info_ptr);
+		list_push(send_resv_list, sview_front_end_info_ptr);
 	}
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
@@ -912,10 +914,10 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	switch (id) {
 	case INFO_PAGE:
-		snprintf(title, 100, "Full info for reservation %s", name);
+		snprintf(title, 100, "Full info for front end node %s", name);
 		break;
 	default:
-		g_print("resv got %d\n", id);
+		g_print("front end got %d\n", id);
 	}
 
 	itr = list_iterator_create(popup_list);
@@ -953,8 +955,7 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("resv got unknown type %d\n", id);
 	}
-	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
-	{
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error)) {
 		g_printerr ("Failed to create resv popup thread: %s\n",
 			    error->message);
 		return;
