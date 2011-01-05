@@ -452,8 +452,7 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 
 extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port);
 extern int clusteracct_storage_g_fini_ctld(void *db_conn,
-					   char *ip, uint16_t port,
-					   char *cluster_nodes);
+					   slurmdb_cluster_rec_t *cluster_rec);
 
 /*
  * load into the storage the start of a job

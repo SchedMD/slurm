@@ -248,11 +248,15 @@ static void * _service_connection(void *arg)
 		xfree(msg);
 	}
 
-	if (conn->ctld_port) {
+	if (conn->ctld_port && !shutdown_time) {
+		slurmdb_cluster_rec_t cluster_rec;
+		memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
+		cluster_rec.name = conn->cluster_name;
+		cluster_rec.control_host = conn->ip;
+		cluster_rec.control_port = conn->ctld_port;
+		cluster_rec.cpu_count = conn->cluster_cpus;
 		debug("cluster %s has disconnected", conn->cluster_name);
-		clusteracct_storage_g_fini_ctld(
-			conn->db_conn, conn->ip,
-			conn->ctld_port, conn->cluster_nodes);
+		clusteracct_storage_g_fini_ctld(conn->db_conn, &cluster_rec);
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
@@ -260,7 +264,7 @@ static void * _service_connection(void *arg)
 		error("close(%d): %m(%s)",  conn->newsockfd, conn->ip);
 	else
 		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
-	xfree(conn->cluster_nodes);
+
 	xfree(conn->cluster_name);
 	xfree(conn);
 	_free_server_thread(pthread_self());

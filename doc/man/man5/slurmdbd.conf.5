@@ -320,6 +320,12 @@ with to store the job accounting data.
 Boolean yes or no.  Used to set display and track of the Workload
 Characterization Key. Must be set to track wckey usage.
 
+.TP
+\fBTrackSlurmctldDown\fR
+Boolean yes or no.  If set the slurmdbd will mark all idle resources on the
+cluster as down when a slurmctld disconnects or is no longer reachable.  The
+default is no.
+
 .SH "EXAMPLE"
 .LP
 #

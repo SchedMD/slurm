@@ -166,8 +166,8 @@ typedef struct slurm_acct_storage_ops {
 	int  (*cluster_cpus)      (void *db_conn, char *cluster_nodes,
 				   uint32_t cpus, time_t event_time);
 	int  (*register_ctld)      (void *db_conn, uint16_t port);
-	int  (*fini_ctld)          (void *db_conn, char *ip, uint16_t port,
-				    char *cluster_nodes);
+	int  (*fini_ctld)          (void *db_conn,
+				    slurmdb_cluster_rec_t *cluster_rec);
 	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
 				    struct job_record *job_ptr);
@@ -870,18 +870,15 @@ extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.register_ctld))
-		(db_conn, port);
+ 	return (*(g_acct_storage_context->ops.register_ctld))(db_conn, port);
 }
 
 extern int clusteracct_storage_g_fini_ctld(void *db_conn,
-					   char *ip, uint16_t port,
-					   char *cluster_nodes)
+					   slurmdb_cluster_rec_t *cluster_rec)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.fini_ctld))
-		(db_conn, ip, port, cluster_nodes);
+ 	return (*(g_acct_storage_context->ops.fini_ctld))(db_conn, cluster_rec);
 }
 
 /*

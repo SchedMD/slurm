@@ -45,7 +45,7 @@
 
 typedef struct {
 	char *cluster_name;
-	char *cluster_nodes;
+	uint32_t cluster_cpus;
 	uint16_t ctld_port; /* slurmctld_port */
 	void *db_conn; /* database connection */
 	char ip[32];

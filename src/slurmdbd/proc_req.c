@@ -1004,11 +1004,9 @@ static int _cluster_cpus(slurmdbd_conn_t *slurmdbd_conn,
 		rc = SLURM_ERROR;
 	}
 end_it:
-	if (rc == SLURM_SUCCESS) {
-		xfree(slurmdbd_conn->cluster_nodes);
-		slurmdbd_conn->cluster_nodes =
-			xstrdup(cluster_cpus_msg->cluster_nodes);
-	}
+	if (rc == SLURM_SUCCESS)
+		slurmdbd_conn->cluster_cpus = cluster_cpus_msg->cpu_count;
+
 	slurmdbd_free_cluster_cpus_msg(cluster_cpus_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 				      rc, comment, DBD_CLUSTER_CPUS);

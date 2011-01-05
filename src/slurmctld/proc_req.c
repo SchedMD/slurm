@@ -93,8 +93,9 @@ static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 static int          _make_step_cred(struct step_record *step_rec,
 				    slurm_cred_t **slurm_cred);
 
-inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
@@ -392,6 +393,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case ACCOUNTING_FIRST_REG:
 		_slurm_rpc_accounting_first_reg(msg);
+		/* No body to free */
+		break;
+	case ACCOUNTING_REGISTER_CTLD:
+		_slurm_rpc_accounting_register_ctld(msg);
 		/* No body to free */
 		break;
 	case REQUEST_TOPO_INFO:
@@ -3828,4 +3833,26 @@ inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 	send_all_to_accounting(event_time);
 
 	END_TIMER2("_slurm_rpc_accounting_first_reg");
+}
+
+inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
+{
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug("Processing RPC: ACCOUNTING_REGISTER_CTLD from uid=%d", uid);
+	if (!validate_slurm_user(uid)
+	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
+		< SLURMDB_ADMIN_SUPER_USER)) {
+		error("Registration request from non-super user uid=%d",
+		      uid);
+		return;
+	}
+
+	clusteracct_storage_g_register_ctld(acct_db_conn,
+					    slurmctld_conf.slurmctld_port);
+
+	END_TIMER2("_slurm_rpc_accounting_register_ctld");
 }
