@@ -3842,7 +3842,7 @@ inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	debug("Processing RPC: ACCOUNTING_REGISTER_CTLD from uid=%d", uid);
+	debug2("Processing RPC: ACCOUNTING_REGISTER_CTLD from uid=%d", uid);
 	if (!validate_slurm_user(uid)
 	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
 		< SLURMDB_ADMIN_SUPER_USER)) {
