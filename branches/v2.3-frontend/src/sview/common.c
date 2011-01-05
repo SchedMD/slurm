@@ -595,6 +595,9 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	case RESV_PAGE:
 		each.pfunc = &popup_all_resv;
 		break;
+	case FRONT_END_PAGE:
+		each.pfunc = &popup_all_front_end;
+		break;
 	case ADMIN_PAGE:
 		switch(display_data->id) {
 		case JOB_PAGE:
@@ -1813,6 +1816,9 @@ extern void *popup_thr(popup_info_t *popup_win)
 		break;
 	case RESV_PAGE:
 		specifc_info = specific_info_resv;
+		break;
+	case FRONT_END_PAGE:
+		specifc_info = specific_info_front_end;
 		break;
 	case SUBMIT_PAGE:
 	default:

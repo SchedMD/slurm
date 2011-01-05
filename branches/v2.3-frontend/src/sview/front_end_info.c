@@ -37,6 +37,10 @@
 typedef struct {
 	int color_inx;
 	front_end_info_t *front_end_ptr;
+	char *boot_time;
+	char *reason;
+	char *slurmd_start_time;
+	char *state;
 } sview_front_end_info_t;
 
 enum {
@@ -47,9 +51,11 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_BOOT_TIME,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_NAME,
+	SORTID_SLURMD_START_TIME,
 	SORTID_STATE,
 	SORTID_CNT
 };
@@ -64,14 +70,19 @@ enum {
  * s/b a const probably*/
 static char *_initial_page_opts = "Name,State";
 
-static display_data_t display_data_resv[] = {
+static display_data_t display_data_front_end[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_COLOR,  NULL, TRUE, EDIT_COLOR,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
-	{G_TYPE_STRING, SORTID_COLOR,  NULL, TRUE, EDIT_COLOR,
+	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime",
+	 FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
@@ -80,17 +91,7 @@ static display_data_t display_data_resv[] = {
 
 static display_data_t options_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
-	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Remove", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, RESV_PAGE},
-#ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, RESV_PAGE},
-#else
-	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, RESV_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, RESV_PAGE},
-#endif
+	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, FRONT_END_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -150,7 +151,15 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 
 static void _front_end_info_list_del(void *object)
 {
-	xfree(object);
+	sview_front_end_info_t *sview_front_end_info;
+
+	sview_front_end_info = (sview_front_end_info_t *)object;
+	if (sview_front_end_info) {
+		xfree(sview_front_end_info->boot_time);
+		xfree(sview_front_end_info->slurmd_start_time);
+		xfree(sview_front_end_info->state);
+		xfree(sview_front_end_info);
+	}
 }
 
 static void _admin_edit_combo_box_resv(GtkComboBox *combo,
@@ -216,7 +225,7 @@ static GtkWidget *_admin_full_edit_resv(resv_desc_msg_t *resv_msg,
 	GtkViewport *view = NULL;
 	GtkTable *table = NULL;
 	int i = 0, row = 0;
-	display_data_t *display_data = display_data_resv;
+	display_data_t *display_data = display_data_front_end;
 
 	gtk_scrolled_window_set_policy(window,
 				       GTK_POLICY_NEVER,
@@ -245,7 +254,7 @@ static GtkWidget *_admin_full_edit_resv(resv_desc_msg_t *resv_msg,
 				_set_active_combo_resv);
 			break;
 		}
-		display_data = display_data_resv;
+		display_data = display_data_front_end;
 	}
 	gtk_table_resize(table, row, 2);
 
@@ -256,8 +265,34 @@ static void _layout_resv_record(GtkTreeView *treeview,
 				sview_front_end_info_t *sview_front_end_info,
 				int update)
 {
+	GtkTreeIter iter;
+	front_end_info_t *front_end_ptr =
+		sview_front_end_info->front_end_ptr;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
+
+	if (!treestore)
+		return;
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_NAME),
+				   front_end_ptr->name);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_STATE),
+				   sview_front_end_info->state);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_BOOT_TIME),
+				   sview_front_end_info->boot_time);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_SLURMD_START_TIME),
+				   sview_front_end_info->slurmd_start_time);
 }
 
 static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr,
@@ -265,7 +300,6 @@ static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr
 				GtkTreeIter *iter)
 {
 	front_end_info_t *front_end_ptr;
-	char *upper = NULL, *lower = NULL;
 
 	front_end_ptr = sview_front_end_info_ptr->front_end_ptr;
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
@@ -277,10 +311,14 @@ static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, front_end_ptr->name,
 			   -1);
 
-	upper = node_state_string(front_end_ptr->node_state);
-	lower = str_tolower(upper);
-	gtk_tree_store_set(treestore, iter, SORTID_STATE, lower, -1);
-	xfree(lower);
+	gtk_tree_store_set(treestore, iter, SORTID_STATE,
+			   sview_front_end_info_ptr->state, -1);
+
+	gtk_tree_store_set(treestore, iter, SORTID_BOOT_TIME,
+			   sview_front_end_info_ptr->boot_time, -1);
+
+	gtk_tree_store_set(treestore, iter, SORTID_SLURMD_START_TIME,
+			   sview_front_end_info_ptr->slurmd_start_time, -1);
 
 	return;
 }
@@ -362,6 +400,8 @@ static void _update_info_resv(List info_list,
 static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr,
 					int changed)
 {
+	char *upper = NULL;
+	char time_str[32];
 	static List info_list = NULL;
 	int i = 0;
 	sview_front_end_info_t *sview_front_end_info_ptr = NULL;
@@ -380,12 +420,26 @@ static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr
 		return NULL;
 	}
 
-	for (i=0; i<front_end_info_ptr->record_count; i++) {
+	for (i = 0; i < front_end_info_ptr->record_count; i++) {
 		front_end_ptr = &(front_end_info_ptr->front_end_array[i]);
 		sview_front_end_info_ptr =
 			xmalloc(sizeof(sview_front_end_info_t));
 		sview_front_end_info_ptr->front_end_ptr = front_end_ptr;
 		sview_front_end_info_ptr->color_inx = i % sview_colors_cnt;
+		if (front_end_ptr->boot_time) {
+			slurm_make_time_str(&front_end_ptr->boot_time,
+					    time_str, sizeof(time_str));
+			sview_front_end_info_ptr->boot_time =
+				xstrdup(time_str);
+		}
+		if (front_end_ptr->slurmd_start_time) {
+			slurm_make_time_str(&front_end_ptr->slurmd_start_time,
+					    time_str, sizeof(time_str));
+			sview_front_end_info_ptr->slurmd_start_time =
+				xstrdup(time_str);
+		}
+		upper = node_state_string(front_end_ptr->node_state);
+		sview_front_end_info_ptr->state = str_tolower(upper);
 		list_append(info_list, sview_front_end_info_ptr);
 	}
 
@@ -436,7 +490,7 @@ need_refresh:
 
 	if (!found) {
 		if (!popup_win->not_found) {
-			char *temp = "RESERVATION DOESN'T EXSIST\n";
+			char *temp = "FRONT END DOESN'T EXSIST\n";
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 
@@ -621,7 +675,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	static bool set_opts = FALSE;
 
 	if (!set_opts)
-		set_page_opts(FRONT_END_PAGE, display_data_resv,
+		set_page_opts(FRONT_END_PAGE, display_data_front_end,
 			      SORTID_CNT, _initial_page_opts);
 	set_opts = TRUE;
 
@@ -637,7 +691,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	if (display_data)
 		local_display_data = display_data;
 	if (!table) {
-		display_data_resv->set_menu = local_display_data->set_menu;
+		display_data_front_end->set_menu = local_display_data->set_menu;
 		goto reset_curs;
 	}
 	if (display_widget && toggled) {
@@ -708,7 +762,7 @@ display_it:
 		/* since this function sets the model of the tree_view
 		   to the treestore we don't really care about
 		   the return value */
-		create_treestore(tree_view, display_data_resv,
+		create_treestore(tree_view, display_data_front_end,
 				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 
@@ -741,7 +795,7 @@ extern void specific_info_front_end(popup_info_t *popup_win)
 	ListIterator itr = NULL;
 
 	if (!spec_info->display_widget) {
-		setup_popup_info(popup_win, display_data_resv, SORTID_CNT);
+		setup_popup_info(popup_win, display_data_front_end, SORTID_CNT);
 	}
 
 	if (spec_info->display_widget && popup_win->toggled) {
@@ -871,7 +925,7 @@ extern void set_menus_front_end(void *arg, void *arg2, GtkTreePath *path,
 
 	switch (type) {
 	case TAB_CLICKED:
-		make_fields_menu(NULL, menu, display_data_resv, SORTID_CNT);
+		make_fields_menu(NULL, menu, display_data_front_end, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_resv);
@@ -931,9 +985,12 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	if (!popup_win) {
 		if (id == INFO_PAGE)
-			popup_win = create_popup_info(id, RESV_PAGE, title);
-		else
-			popup_win = create_popup_info(RESV_PAGE, id, title);
+			popup_win = create_popup_info(id, FRONT_END_PAGE,
+						      title);
+		else {
+			popup_win = create_popup_info(FRONT_END_PAGE, id,
+						      title);
+		}
 	} else {
 		g_free(name);
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
@@ -1107,7 +1164,7 @@ end_it:
 
 extern void cluster_change_front_end(void)
 {
-	display_data_t *display_data = display_data_resv;
+	display_data_t *display_data = display_data_front_end;
 
 	display_data = options_data_resv;
 	while (display_data++) {
