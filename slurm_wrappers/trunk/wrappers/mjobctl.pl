@@ -123,6 +123,7 @@ sub do_modify
 	$type =~ s/nodes/numnodes/      if ($type =~ /nodes/);
 	$type =~ s/userprio/prio/       if ($type =~ /userprio/);
 	$type =~ s/wclimit/timelimit/   if ($type =~ /wclimit/);
+	$type =~ s/gres/licenses/       if ($type =~ /gres/);
 
 #
 #	If timelimit modified, correct value.

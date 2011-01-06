@@ -55,10 +55,9 @@ my (
 my (
 	$advres, 	$dmem,		$ddisk,
 	$depend, 	$feature,	$gres,
-	$flags, 	$maxmem, 
-	$host, 		$procs,		$qos,
-	$resfail, 	$signal,	$tpn,
-	$ttc
+	$flags, 	$host,		$maxmem, 
+	$procs,		$qos,		$resfail,
+	$signal,	$tpn,		$ttc
 );
 
 my (@lreslist, @slurmArgs, @xslurmArgs, @nargv);
@@ -289,6 +288,8 @@ if ($feature) {
 #
 if ($gres) {
 	push @slurmArgs, "--licenses=$gres";
+} else {
+	get_gres();
 }
 
 if ($hold) {
@@ -558,6 +559,25 @@ sub usage
  
 	exit(0);
 }
+
+
+#
+# Set the gres if it exists, by default.
+#
+sub get_gres
+{
+	my $out = `scontrol show conf | grep Licenses`;
+	chomp $out;
+
+	my  ($gres) = ($out =~ m/= (.*)/);
+
+        $gres =~ s/\*[\d+]//g;
+
+        push @slurmArgs, "--licenses=$gres" if ($gres ne "");
+
+	return;
+}
+
 
 sub convert_moabtime
 {
@@ -875,8 +895,6 @@ B<msub> - submit batch jobs.
 	       that can be consumed.  Either resources native to the resource manager (see PBS/TORQUE resources) or
 	       scheduler resource manager extensions may be specified. See the Resource Manager Extensions heading
 	       below.
-
-	       NOTE: gres not yet supported on SLURM only systems.
 
        EXAMPLES
 	       ----------------------
