@@ -6318,7 +6318,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->nice != (uint16_t) NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr))
 			error_code = ESLURM_DISABLED;
-		else if (authorized || (job_specs->nice < NICE_OFFSET)) {
+		else if (authorized || (job_specs->nice >= NICE_OFFSET)) {
 			int64_t new_prio = job_ptr->priority;
 			new_prio += job_ptr->details->nice;
 			new_prio -= job_specs->nice;
