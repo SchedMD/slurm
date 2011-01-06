@@ -2966,31 +2966,27 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	START_TIMER;
 	LOCK_HOSTLIST(hl);
 
-	if(dims > 1) {	/* logic for block node description */
+	if (dims > 1 && hl->nranges) {	/* logic for block node description */
 		slurm_mutex_lock(&multi_dim_lock);
 
 		/* compute things that only need to be calculated once */
-		if(dim_grid_size == -1) {
-			int i;
-
+		if (dim_grid_size == -1) {
 			dim_grid_size = sizeof(int) * dims;
 
 			/* the last one is always 1 */
 			offset[dims-1] = 1;
-			for(i=(dims-2); i>=0; i--)
+			for (i=(dims-2); i>=0; i--)
 				offset[i] = offset[i+1] * hostlist_base;
 		}
-
-		if (hl->nranges < 1)
-			goto notbox;	/* no data */
 
 		memset(grid, 0, sizeof(grid));
 		memset(grid_start, hostlist_base, dim_grid_size);
 		memset(grid_end, -1, dim_grid_size);
 
-		for (i=0;i<hl->nranges;i++) {
-			/*info("got %s %d %d-%d", hl->hr[i]->prefix, hl->hr[i]->width, */
-			/*     hl->hr[i]->lo, hl->hr[i]->hi); */
+		for (i=0; i<hl->nranges; i++) {
+			/* info("got %s %d %d-%d", hl->hr[i]->prefix, */
+			/*      hl->hr[i]->width, hl->hr[i]->lo, */
+			/*      hl->hr[i]->hi); */
 			if (hl->hr[i]->width != dims) {
 				/* We use this logic to build task
 				 * list ranges, so this does not
@@ -3016,47 +3012,42 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 			_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
 		}
 		if (!memcmp(grid_start, grid_end, dim_grid_size)) {
-			len += snprintf(buf, n, "%s", hl->hr[0]->prefix);
-			for(i = 0; i<dims; i++) {
-				if(len > n)
-					goto too_long;
+			len = snprintf(buf, n, "%s", hl->hr[0]->prefix);
+			if (len < 0 || ((len + dims) >= n))
+				goto too_long;
+			for (i = 0; i < dims; i++)
 				buf[len++] = alpha_num[grid_start[i]];
-			}
 		} else if (!_test_box(grid_start, grid_end)) {
-			sprintf(buf, "%s[", hl->hr[0]->prefix);
-			len = strlen(hl->hr[0]->prefix) + 1;
+			len = snprintf(buf, n, "%s[", hl->hr[0]->prefix);
+			if (len < 0 || len >= n)
+				goto too_long;
 			len += _get_boxes(buf + len, (n-len));
 		} else {
-			len += snprintf(buf, n, "%s[", hl->hr[0]->prefix);
-			for(i = 0; i<dims; i++) {
-				if(len > n)
-					goto too_long;
-				buf[len++] = alpha_num[grid_start[i]];
-			}
-			if(len <= n)
-				buf[len++] = 'x';
+			len = snprintf(buf, n, "%s[", hl->hr[0]->prefix);
+			if (len < 0 || ((len + 2 + (dims * 2)) >= n))
+				goto too_long;
 
-			for(i = 0; i<dims; i++) {
-				if(len > n)
-					goto too_long;
+			for (i = 0; i < dims; i++)
+				buf[len++] = alpha_num[grid_start[i]];
+			buf[len++] = 'x';
+
+			for (i = 0; i < dims; i++)
 				buf[len++] = alpha_num[grid_end[i]];
-			}
-			if(len <= n)
-				buf[len++] = ']';
+			buf[len++] = ']';
 		}
 		if ((len < 0) || (len > n))
 		too_long:
 			len = n;	/* truncated */
 		box = true;
-	}
 notbox:
+		slurm_mutex_unlock(&multi_dim_lock);
+	}
 
 	if (!box) {
-		i=0;
-		while (i < hl->nranges && len < n) {
-			len += _get_bracketed_list(hl, &i, n - len, buf + len);
-			if ((len > 0) && (len < n) && (i < hl->nranges))
+		for (i = 0; i < hl->nranges && len < n;) {
+			if (i)
 				buf[len++] = ',';
+			len += _get_bracketed_list(hl, &i, n - len, buf + len);
 		}
 	}
 
@@ -3068,11 +3059,9 @@ notbox:
 		if (n > 0)
 			buf[n-1] = '\0';
 	} else
-		buf[len > 0 ? len : 0] = '\0';
+		buf[len] = '\0';
 
 	END_TIMER;
-	if(dims > 1)	/* logic for block node description */
-		slurm_mutex_unlock(&multi_dim_lock);
 
 //	info("time was %s", TIME_STR);
 	return truncated ? -1 : len;
