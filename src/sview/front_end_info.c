@@ -55,6 +55,7 @@ enum {
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_NAME,
+	SORTID_REASON,
 	SORTID_SLURMD_START_TIME,
 	SORTID_STATE,
 	SORTID_CNT
@@ -84,6 +85,8 @@ static display_data_t display_data_front_end[] = {
 	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime",
 	 FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -92,6 +95,12 @@ static display_data_t display_data_front_end[] = {
 static display_data_t options_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, FRONT_END_PAGE},
+	{G_TYPE_STRING, FRONT_END_PAGE, "Drain Front End Node", TRUE,
+	 ADMIN_PAGE},
+	{G_TYPE_STRING, FRONT_END_PAGE, "Resume Front End Node", TRUE,
+	 ADMIN_PAGE},
+	{G_TYPE_STRING, FRONT_END_PAGE, "Set Front End Node Down", TRUE,
+	 ADMIN_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -156,6 +165,7 @@ static void _front_end_info_list_del(void *object)
 	sview_front_end_info = (sview_front_end_info_t *)object;
 	if (sview_front_end_info) {
 		xfree(sview_front_end_info->boot_time);
+		xfree(sview_front_end_info->reason);
 		xfree(sview_front_end_info->slurmd_start_time);
 		xfree(sview_front_end_info->state);
 		xfree(sview_front_end_info);
@@ -293,6 +303,11 @@ static void _layout_resv_record(GtkTreeView *treeview,
 				   find_col_name(display_data_front_end,
 						 SORTID_SLURMD_START_TIME),
 				   sview_front_end_info->slurmd_start_time);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_REASON),
+				   sview_front_end_info->reason);
 }
 
 static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr,
@@ -319,6 +334,9 @@ static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr
 
 	gtk_tree_store_set(treestore, iter, SORTID_SLURMD_START_TIME,
 			   sview_front_end_info_ptr->slurmd_start_time, -1);
+
+	gtk_tree_store_set(treestore, iter, SORTID_REASON,
+			   sview_front_end_info_ptr->reason, -1);
 
 	return;
 }
@@ -401,7 +419,7 @@ static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr
 					int changed)
 {
 	char *upper = NULL;
-	char time_str[32];
+	char user[32], time_str[32];
 	static List info_list = NULL;
 	int i = 0;
 	sview_front_end_info_t *sview_front_end_info_ptr = NULL;
@@ -440,6 +458,27 @@ static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr
 		}
 		upper = node_state_string(front_end_ptr->node_state);
 		sview_front_end_info_ptr->state = str_tolower(upper);
+
+		if (front_end_ptr->reason && front_end_ptr->reason_time &&
+		    (front_end_ptr->reason_uid != NO_VAL)) {
+			struct passwd *pw = NULL;
+
+			if ((pw=getpwuid(front_end_ptr->reason_uid)))
+				snprintf(user, sizeof(user), "%s", pw->pw_name);
+			else
+				snprintf(user, sizeof(user), "Unk(%u)",
+					 front_end_ptr->reason_uid);
+			slurm_make_time_str(&front_end_ptr->reason_time,
+					    time_str, sizeof(time_str));
+			sview_front_end_info_ptr->reason =
+				xstrdup_printf("%s [%s@%s]",
+					       front_end_ptr->reason, user,
+					       time_str);
+		} else {
+			sview_front_end_info_ptr->reason =
+				xstrdup(front_end_ptr->reason);
+		}
+
 		list_append(info_list, sview_front_end_info_ptr);
 	}
 
