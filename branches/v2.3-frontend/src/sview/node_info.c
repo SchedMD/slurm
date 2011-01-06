@@ -125,14 +125,14 @@ static display_data_t options_data_node[] = {
 #ifdef HAVE_BG
 	{G_TYPE_STRING, NODE_PAGE, "Drain Base Partition", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Resume Base Partition", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Put Base Partition Down",
+	{G_TYPE_STRING, NODE_PAGE, "Set Base Partition Down",
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Base Partition Idle",
 	 TRUE, ADMIN_PAGE},
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Drain Node", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Resume Node", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Put Node(s) Down", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Set Node(s) Down", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Node(s) Idle", TRUE, ADMIN_PAGE},
 #endif
 	{G_TYPE_STRING, NODE_PAGE, "Update Features", TRUE, ADMIN_PAGE},
