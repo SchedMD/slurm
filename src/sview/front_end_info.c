@@ -99,8 +99,6 @@ static display_data_t options_data_resv[] = {
 	 ADMIN_PAGE},
 	{G_TYPE_STRING, FRONT_END_PAGE, "Resume Front End Node", TRUE,
 	 ADMIN_PAGE},
-	{G_TYPE_STRING, FRONT_END_PAGE, "Set Front End Node Down", TRUE,
-	 ADMIN_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -109,54 +107,9 @@ static display_data_t *local_display_data = NULL;
 
 static char *got_edit_signal = NULL;
 
-static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
-static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
-			       GtkTreeIter*iter, gpointer userdata);
-
-static void _set_active_combo_resv(GtkComboBox *combo,
-				   GtkTreeModel *model, GtkTreeIter *iter,
-				   int type)
-{
-	char *temp_char = NULL;
-	int action = 0;
-
-	gtk_tree_model_get(model, iter, type, &temp_char, -1);
-	if (!temp_char)
-		goto end_it;
-	g_free(temp_char);
-end_it:
-	gtk_combo_box_set_active(combo, action);
-
-}
-
-/* don't free this char */
-static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
-				 const char *new_text,
-				 int column)
-{
-	char *type = "";
-
-	/* need to clear global_edit_error here (just in case) */
-	global_edit_error = 0;
-
-	if (!resv_msg)
-		return NULL;
-
-	switch (column) {
-	case SORTID_NAME:
-		resv_msg->name = xstrdup(new_text);
-		type = "name";
-		break;
-	default:
-		type = "unknown";
-		break;
-	}
-
-	if (strcmp(type, "unknown"))
-		global_send_update_msg = 1;
-
-	return type;
-}
+static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+static void _process_each_front_end(GtkTreeModel *model, GtkTreePath *path,
+				    GtkTreeIter*iter, gpointer userdata);
 
 static void _front_end_info_list_del(void *object)
 {
@@ -170,105 +123,6 @@ static void _front_end_info_list_del(void *object)
 		xfree(sview_front_end_info->state);
 		xfree(sview_front_end_info);
 	}
-}
-
-static void _admin_edit_combo_box_resv(GtkComboBox *combo,
-				       resv_desc_msg_t *resv_msg)
-{
-	GtkTreeModel *model = NULL;
-	GtkTreeIter iter;
-	int column = 0;
-	char *name = NULL;
-
-	if (!resv_msg)
-		return;
-
-	if (!gtk_combo_box_get_active_iter(combo, &iter)) {
-		g_print("nothing selected\n");
-		return;
-	}
-	model = gtk_combo_box_get_model(combo);
-	if (!model) {
-		g_print("nothing selected\n");
-		return;
-	}
-
-	gtk_tree_model_get(model, &iter, 0, &name, -1);
-	gtk_tree_model_get(model, &iter, 1, &column, -1);
-
-	_set_resv_msg(resv_msg, name, column);
-
-	g_free(name);
-}
-
-
-
-static gboolean _admin_focus_out_resv(GtkEntry *entry,
-				      GdkEventFocus *event,
-				      resv_desc_msg_t *resv_msg)
-{
-	if (global_entry_changed) {
-		const char *col_name = NULL;
-		int type = gtk_entry_get_max_length(entry);
-		const char *name = gtk_entry_get_text(entry);
-		type -= DEFAULT_ENTRY_LENGTH;
-		col_name = _set_resv_msg(resv_msg, name, type);
-		if (global_edit_error) {
-			if (global_edit_error_msg)
-				g_free(global_edit_error_msg);
-			global_edit_error_msg = g_strdup_printf(
-				"Reservation %s %s can't be set to %s",
-				resv_msg->name,
-				col_name,
-				name);
-		}
-		global_entry_changed = 0;
-	}
-	return false;
-}
-
-static GtkWidget *_admin_full_edit_resv(resv_desc_msg_t *resv_msg,
-					GtkTreeModel *model, GtkTreeIter *iter)
-{
-	GtkScrolledWindow *window = create_scrolled_window();
-	GtkBin *bin = NULL;
-	GtkViewport *view = NULL;
-	GtkTable *table = NULL;
-	int i = 0, row = 0;
-	display_data_t *display_data = display_data_front_end;
-
-	gtk_scrolled_window_set_policy(window,
-				       GTK_POLICY_NEVER,
-				       GTK_POLICY_AUTOMATIC);
-	bin = GTK_BIN(&window->container);
-	view = GTK_VIEWPORT(bin->child);
-	bin = GTK_BIN(&view->bin);
-	table = GTK_TABLE(bin->child);
-	gtk_table_resize(table, SORTID_CNT, 2);
-
-	gtk_table_set_homogeneous(table, FALSE);
-
-	for(i = 0; i < SORTID_CNT; i++) {
-		while (display_data++) {
-			if (display_data->id == -1)
-				break;
-			if (!display_data->name)
-				continue;
-			if (display_data->id != i)
-				continue;
-			display_admin_edit(
-				table, resv_msg, &row, model, iter,
-				display_data,
-				G_CALLBACK(_admin_edit_combo_box_resv),
-				G_CALLBACK(_admin_focus_out_resv),
-				_set_active_combo_resv);
-			break;
-		}
-		display_data = display_data_front_end;
-	}
-	gtk_table_resize(table, row, 2);
-
-	return GTK_WIDGET(window);
 }
 
 static void _layout_resv_record(GtkTreeView *treeview,
@@ -660,7 +514,7 @@ extern void admin_edit_front_end(GtkCellRendererText *cell,
 	if (got_edit_signal) {
 		temp = got_edit_signal;
 		got_edit_signal = NULL;
-		_admin_resv(GTK_TREE_MODEL(treestore), &iter, temp);
+		_admin_front_end(GTK_TREE_MODEL(treestore), &iter, temp);
 		xfree(temp);
 		goto no_input;
 	}
@@ -1058,8 +912,8 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 }
 
-static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
-			       GtkTreeIter*iter, gpointer userdata)
+static void _process_each_front_end(GtkTreeModel *model, GtkTreePath *path,
+				    GtkTreeIter*iter, gpointer userdata)
 {
 	char *type = userdata;
 	if (_DEBUG)
@@ -1067,7 +921,7 @@ static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
 			global_multi_error);
 
 	if (!global_multi_error) {
-		_admin_resv(model, iter, type);
+		_admin_front_end(model, iter, type);
 	}
 }
 
@@ -1079,19 +933,18 @@ extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
 		global_multi_error = FALSE;
 		gtk_tree_selection_selected_foreach(
 			gtk_tree_view_get_selection(treeview),
-			_process_each_resv, display_data->name);
+			_process_each_front_end, display_data->name);
 	}
 }
 
-static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
+static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
-	resv_desc_msg_t *resv_msg = xmalloc(sizeof(resv_desc_msg_t));
-	reservation_name_msg_t resv_name_msg;
-	char *resvid = NULL;
+	uint16_t state = (uint16_t) NO_VAL;
+	update_front_end_msg_t front_end_update_msg;
+	char *resvid = NULL, *new_type = NULL, *reason = NULL;
 	char tmp_char[100];
-	char *temp = NULL;
-	int edit_type = 0;
-	int response = 0;
+	char *lower;
+	int rc;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
@@ -1099,45 +952,30 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		GTK_WINDOW(main_window),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
-	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
+	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 	gtk_tree_model_get(model, iter, SORTID_NAME, &resvid, -1);
 
-	slurm_init_resv_desc_msg(resv_msg);
-	memset(&resv_name_msg, 0, sizeof(reservation_name_msg_t));
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+	gtk_dialog_add_button(GTK_DIALOG(popup),
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-	resv_msg->name = xstrdup(resvid);
-
-	if (!strcasecmp("Remove", type)) {
-		resv_name_msg.name = resvid;
-
-		label = gtk_dialog_add_button(GTK_DIALOG(popup),
-					      GTK_STOCK_YES, GTK_RESPONSE_OK);
-		gtk_window_set_default(GTK_WINDOW(popup), label);
-		gtk_dialog_add_button(GTK_DIALOG(popup),
-				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-
-		snprintf(tmp_char, sizeof(tmp_char),
-			 "Are you sure you want to remove "
-			 "reservation %s?",
-			 resvid);
-		label = gtk_label_new(tmp_char);
-		edit_type = EDIT_REMOVE;
-	} else {
-		label = gtk_dialog_add_button(GTK_DIALOG(popup),
-					      GTK_STOCK_OK, GTK_RESPONSE_OK);
-		gtk_window_set_default(GTK_WINDOW(popup), label);
-		gtk_dialog_add_button(GTK_DIALOG(popup),
-				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-
-		gtk_window_set_default_size(GTK_WINDOW(popup), 200, 400);
-		snprintf(tmp_char, sizeof(tmp_char),
-			 "Editing reservation %s think before you type",
-			 resvid);
-		label = gtk_label_new(tmp_char);
-		edit_type = EDIT_EDIT;
-		entry = _admin_full_edit_resv(resv_msg, model, iter);
+	if (!strncasecmp("Drain", type, 5)) {
+		new_type = "DRAIN";
+		reason = "\n\nPlease enter reason.";
+		state = NODE_STATE_DRAIN;
+		entry = create_entry();
+	} else if (!strncasecmp("Resume", type, 6)) {
+		new_type = "RESUME";
+		reason = "";
+		state = NODE_RESUME;
 	}
+	snprintf(tmp_char, sizeof(tmp_char),
+		 "Are you sure you want to set state of front end node %s "
+		 "to %s?%s", resvid, new_type, reason);
+	label = gtk_label_new(tmp_char);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
 			   label, FALSE, FALSE, 0);
@@ -1145,57 +983,55 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
 				   entry, TRUE, TRUE, 0);
 	gtk_widget_show_all(popup);
-	response = gtk_dialog_run (GTK_DIALOG(popup));
+	rc = gtk_dialog_run (GTK_DIALOG(popup));
 
-	if (response == GTK_RESPONSE_OK) {
-		switch (edit_type) {
-		case EDIT_REMOVE:
-			if (slurm_delete_reservation(&resv_name_msg)
-			   == SLURM_SUCCESS) {
-				temp = g_strdup_printf(
-					"Reservation %s removed successfully",
-					resvid);
-			} else {
-				temp = g_strdup_printf(
-					"Problem removing reservation %s.",
-					resvid);
-			}
-			display_edit_note(temp);
-			g_free(temp);
-			break;
-		case EDIT_EDIT:
-			if (got_edit_signal)
+	slurm_init_update_front_end_msg(&front_end_update_msg);
+
+	if (rc == GTK_RESPONSE_OK) {
+		front_end_update_msg.name = resvid;
+		front_end_update_msg.node_state = state;
+		if (entry) {
+			front_end_update_msg.reason = xstrdup(
+				gtk_entry_get_text(GTK_ENTRY(entry)));
+			if (!front_end_update_msg.reason ||
+			    !strlen(front_end_update_msg.reason)) {
+				lower = g_strdup_printf(
+					"You need a reason to do that.");
+				display_edit_note(lower);
+				g_free(lower);
 				goto end_it;
-
-			if (!global_send_update_msg) {
-				temp = g_strdup_printf("No change detected.");
-			} else if (slurm_update_reservation(resv_msg)
-				  == SLURM_SUCCESS) {
-				temp = g_strdup_printf(
-					"Reservation %s updated successfully",
-					resvid);
-			} else {
-				temp = g_strdup_printf(
-					"Problem updating reservation %s.",
-					resvid);
 			}
-			display_edit_note(temp);
-			g_free(temp);
-			break;
-		default:
-			break;
+			rc = uid_from_string(getlogin(),
+					     &front_end_update_msg.reason_uid);
+			if (rc < 0)
+				front_end_update_msg.reason_uid = getuid();
+		}
+
+		rc = slurm_update_front_end(&front_end_update_msg);
+		if (rc == SLURM_SUCCESS) {
+			lower = g_strdup_printf(
+				"Nodes %s updated successfully.",
+				resvid);
+			display_edit_note(lower);
+			g_free(lower);
+		} else {
+			lower = g_strdup_printf(
+				"Problem updating nodes %s: %s",
+				resvid, slurm_strerror(rc));
+			display_edit_note(lower);
+			g_free(lower);
 		}
 	}
-end_it:
 
+end_it:
 	g_free(resvid);
 	global_entry_changed = 0;
-	slurm_free_resv_desc_msg(resv_msg);
+	xfree(front_end_update_msg.reason);
 	gtk_widget_destroy(popup);
 	if (got_edit_signal) {
 		type = got_edit_signal;
 		got_edit_signal = NULL;
-		_admin_resv(model, iter, type);
+		_admin_front_end(model, iter, type);
 		xfree(type);
 	}
 	return;
