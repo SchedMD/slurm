@@ -905,7 +905,6 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	switch (id) {
 	case INFO_PAGE:
 		popup_win->spec_info->search_info->gchar_data = name;
-		//specific_info_job(popup_win);
 		break;
 	default:
 		g_print("resv got unknown type %d\n", id);
@@ -975,7 +974,6 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 		NULL);
 
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
-	//gtk_tree_model_get(model, iter, SORTID_NAME, &resvid, -1);
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_YES, GTK_RESPONSE_OK);
@@ -1045,7 +1043,6 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 	}
 
 end_it:
-	//g_free(resvid);
 	global_entry_changed = 0;
 	xfree(front_end_update_msg.reason);
 	gtk_widget_destroy(popup);
