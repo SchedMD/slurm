@@ -149,7 +149,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 			 uint16_t *geometry, int conn_type);
 
-#ifndef HAVE_BG_FILES
+#if !defined HAVE_BG_FILES || !defined HAVE_BG_L_P
 /* */
 static int _emulate_ext_wiring(ba_node_t ***grid);
 #endif
@@ -3332,7 +3332,7 @@ static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 	return 1;
 }
 
-#ifndef HAVE_BG_FILES
+#if !defined HAVE_BG_FILES || !defined HAVE_BG_L_P
 /** */
 static int _emulate_ext_wiring(ba_node_t ***grid)
 {
