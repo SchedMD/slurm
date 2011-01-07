@@ -237,7 +237,7 @@ AC_DEFUN([X_AC_BGQ],
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
-			bg_ldflags="$bg_ldflags -L$bg_dir/lib -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
+			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/lib -L$bg_dir/lib -l$libname"
 		fi
 
       		# Search for headers in the directory
