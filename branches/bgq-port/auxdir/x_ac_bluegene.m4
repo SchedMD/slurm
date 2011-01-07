@@ -282,4 +282,5 @@ AC_DEFUN([X_AC_BGQ],
    	fi
 
    	AC_SUBST(BG_INCLUDES)
+   	AC_SUBST(BG_LDFLAGS)
 ])
