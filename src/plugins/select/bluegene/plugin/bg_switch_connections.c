@@ -41,7 +41,7 @@
 #include "bluegene.h"
 
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 static int _get_bp_by_location(my_bluegene_t* my_bg,
 			       uint16_t* curr_coord,
 			       rm_BP_t** bp);
@@ -59,7 +59,7 @@ static int _used_switches(ba_node_t *ba_node);
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
  */
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 static int _get_bp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 			       rm_BP_t** bp)
 {
@@ -333,7 +333,7 @@ static int _used_switches(ba_node_t* ba_node)
 extern int configure_small_block(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	bool small = true;
 	ba_node_t* ba_node = NULL;
 	rm_BP_t *curr_bp = NULL;
@@ -357,7 +357,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 /* 	info("configuring small block on ionodes %s out of %d ncs",  */
 /* 	     bg_record->ionodes, bg_conf->bp_nodecard_cnt); */
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	/* set that we are doing a small block */
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall,
 				  &small)) != STATUS_OK) {
@@ -652,7 +652,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	char *bpid = NULL;
 	int first_bp=1;
 	int first_switch=1;
@@ -675,7 +675,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		}
 		bg_record->switch_count += _used_switches(ba_node);
 	}
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionBPNum,
 				  &bg_record->bp_count))
@@ -704,7 +704,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 
 	list_iterator_reset(itr);
 	while ((ba_node = list_next(itr))) {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 		if (_get_bp_by_location(bg, ba_node->coord, &curr_bp)
 		    == SLURM_ERROR) {
 			rc = SLURM_ERROR;
@@ -724,7 +724,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 				     alpha_num[ba_node->coord[X]],
 				     alpha_num[ba_node->coord[Y]],
 				     alpha_num[ba_node->coord[Z]]);
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 			if (first_bp){
 				if ((rc = bridge_set_data(bg_record->bg_block,
 							  RM_PartitionFirstBP,
@@ -749,7 +749,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 			}
 #endif
 		}
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 		if ((rc = bridge_get_data(curr_bp, RM_BPID, &bpid))
 		    != STATUS_OK) {
 			list_iterator_destroy(itr);
@@ -804,7 +804,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 #endif
 	}
 	rc = SLURM_SUCCESS;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 cleanup:
 #endif
 	return rc;

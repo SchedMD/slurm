@@ -102,7 +102,7 @@ static void _print_list(List list)
  */
 static void _pre_allocate(bg_record_t *bg_record)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc;
 	int send_psets=bg_conf->numpsets;
 
@@ -180,7 +180,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 static int _post_allocate(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int i;
 	pm_partition_id_t block_id;
 	uid_t my_uid;
@@ -268,7 +268,7 @@ static int _post_allocate(bg_record_t *bg_record)
 	return rc;
 }
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 
 static int _set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 {
@@ -388,7 +388,7 @@ cleanup:
 extern int configure_block(bg_record_t *bg_record)
 {
 	/* new block to be added */
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	bridge_new_block(&bg_record->bg_block);
 #endif
 	_pre_allocate(bg_record);
@@ -402,7 +402,7 @@ extern int configure_block(bg_record_t *bg_record)
 	return 1;
 }
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 /*
  * Download from MMCS the initial BG block information
  */
@@ -1048,7 +1048,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		goto unpack_error;
 	}
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	for (i=0; i<block_ptr->record_count; i++) {
 		block_info = &(block_ptr->block_array[i]);
 

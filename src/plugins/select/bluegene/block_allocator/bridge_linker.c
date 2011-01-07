@@ -39,7 +39,7 @@
 
 #include "bridge_linker.h"
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 typedef struct {
 	/* all the rm functions */
 	status_t (*set_serial)(const rm_serial_t serial);

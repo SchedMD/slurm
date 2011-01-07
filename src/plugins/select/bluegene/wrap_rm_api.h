@@ -13,7 +13,7 @@
 #  include "config.h"
 #endif
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 
   /* MPI Debug support */
   typedef struct {
