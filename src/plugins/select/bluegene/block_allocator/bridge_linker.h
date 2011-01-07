@@ -65,7 +65,7 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 extern bool have_db2;
 extern int bridge_init();
 extern int bridge_fini();
