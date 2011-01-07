@@ -1,0 +1,1 @@
+/* Dummy header to allow use of datetoi.c without modification. */
