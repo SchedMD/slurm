@@ -1432,6 +1432,7 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	gtk_tree_model_get(model, iter, SORTID_NAME, &resvid, -1);
 
 	slurm_init_resv_desc_msg(resv_msg);
+	memset(&resv_name_msg, 0, sizeof(reservation_name_msg_t));
 
 	resv_msg->name = xstrdup(resvid);
 
