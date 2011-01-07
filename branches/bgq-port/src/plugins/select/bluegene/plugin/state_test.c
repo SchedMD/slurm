@@ -54,7 +54,7 @@
 
 #define BUFSIZE 4096
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 
 /* Find the specified BlueGene node ID and drain it from SLURM */
 static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
@@ -540,7 +540,7 @@ extern int node_already_down(char *node_name)
  */
 extern void test_mmcs_failures(void)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	my_bluegene_t *local_bg;
 	int rc;
 
@@ -567,7 +567,7 @@ extern void test_mmcs_failures(void)
 extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	rm_partition_t *block_ptr = NULL;
 	rm_BP_t *bp_ptr = NULL;
 	int cnt = 0;

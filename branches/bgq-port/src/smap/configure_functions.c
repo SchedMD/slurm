@@ -570,7 +570,7 @@ geo_error_message:
 static int _resolve(char *com)
 {
 	int i=0;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int len=strlen(com);
 	char *rack_mid = NULL;
 	uint16_t *coord = NULL;
@@ -585,7 +585,7 @@ static int _resolve(char *com)
 		com[i] = 'R';
 
 	memset(error_string,0,255);
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if (!have_db2) {
 		sprintf(error_string, "Must be on BG SN to resolve\n");
 		goto resolve_error;

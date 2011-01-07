@@ -272,7 +272,7 @@ extern int init ( void )
 		      SYSTEM_DIMENSIONS);
 #endif
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 #ifdef HAVE_BGL
 	        if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
 		    || !getenv("VWSPATH"))
@@ -361,7 +361,7 @@ extern int select_p_state_save(char *dir_name)
 		/* on real bluegene systems we only want to keep track of
 		 * the blocks in an error state
 		 */
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 		if (bg_record->state != RM_PARTITION_ERROR)
 			continue;
 #endif
@@ -984,7 +984,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		*/
 		remove_from_bg_list(bg_lists->main, bg_record);
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: "
 			     "removing %s from database",

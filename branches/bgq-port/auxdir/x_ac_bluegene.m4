@@ -212,6 +212,7 @@ AC_DEFUN([X_AC_BGQ],
    	if test "x$ac_bluegene_loaded" = "xyes" ; then
 		bg_default_dirs=""
 	elif test "x$bgq_emulation" = "xyes"; then
+      		AC_DEFINE(HAVE_4D, 1, [Define to 1 if 4-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 4, [4-dimensional schedulable architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/Q system])

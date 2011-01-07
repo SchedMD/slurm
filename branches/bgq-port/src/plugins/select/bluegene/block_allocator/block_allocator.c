@@ -121,7 +121,7 @@ typedef enum {
 } block_algo_t;
 
 /** internal helper functions */
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 /** */
 static void _bp_map_list_del(void *object);
 
@@ -876,7 +876,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	slurm_conf_node_t *node = NULL, **ptr_array;
 	int coords[HIGHEST_DIMENSIONS];
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	rm_size3D_t bp_size;
 	int rc = 0;
 #endif /* HAVE_BG_FILES */
@@ -889,7 +889,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	cluster_flags = slurmdb_setup_cluster_flags();
 	set_ba_debug_flags(slurm_get_debug_flags());
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	bridge_init();
 #endif
 
@@ -1038,7 +1038,7 @@ node_info_error:
 			REAL_DIM_SIZE[j] = DIM_SIZE[j];
 		}
 	}
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	/* sanity check.  We can only request part of the system, but
 	   we don't want to allow more than we have. */
 	if (sanity_check && have_db2) {
@@ -1144,7 +1144,7 @@ extern void init_wires()
 			}
 		}
 	}
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	_set_external_wires(0,0,NULL,NULL);
 	if (!bp_map_list) {
 		if (set_bp_map() == -1) {
@@ -1177,7 +1177,7 @@ extern void ba_fini()
 		list_destroy(best_path);
 		best_path = NULL;
 	}
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if (bg)
 		bridge_free_bg(bg);
 
@@ -1959,7 +1959,7 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
  */
 extern char *bg_err_str(status_t inx)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	switch (inx) {
 	case STATUS_OK:
 		return "Status OK";
@@ -1998,7 +1998,7 @@ extern char *bg_err_str(status_t inx)
  */
 extern int set_bp_map(void)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc;
 	rm_BP_t *my_bp = NULL;
 	ba_bp_map_t *bp_map = NULL;
@@ -2093,7 +2093,7 @@ extern int set_bp_map(void)
  */
 extern uint16_t *find_bp_loc(char* bp_id)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	ba_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	char *check = NULL;
@@ -2161,7 +2161,7 @@ cleanup:
  */
 extern char *find_bp_rack_mid(char* xyz)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	ba_bp_map_t *bp_map = NULL;
 	ListIterator itr;
 	int number;
@@ -2210,7 +2210,7 @@ extern char *find_bp_rack_mid(char* xyz)
  */
 extern int load_block_wiring(char *bg_block_id)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc, i, j;
 	rm_partition_t *block_ptr = NULL;
 	int cnt = 0;
@@ -2438,7 +2438,7 @@ extern int load_block_wiring(char *bg_block_id)
 extern List get_and_set_block_wiring(char *bg_block_id,
 				     rm_partition_t *block_ptr)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc, i, j;
 	int cnt = 0;
 	int switch_cnt = 0;
@@ -2677,7 +2677,7 @@ end_it:
 /* */
 extern int validate_coord(uint16_t *coord)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if (coord[X]>=REAL_DIM_SIZE[X]
 	    || coord[Y]>=REAL_DIM_SIZE[Y]
 	    || coord[Z]>=REAL_DIM_SIZE[Z]) {
@@ -2713,7 +2713,7 @@ extern int validate_coord(uint16_t *coord)
 
 /********************* Local Functions *********************/
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 static void _bp_map_list_del(void *object)
 {
 	ba_bp_map_t *bp_map = (ba_bp_map_t *)object;
@@ -3760,7 +3760,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			       ba_node_t* target)
 {
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 #ifdef HAVE_BGL
 
 #define UNDER_POS  7

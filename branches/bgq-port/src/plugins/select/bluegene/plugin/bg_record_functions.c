@@ -608,7 +608,7 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 		error("No user_name");
 		bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	}
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc=0;
 	if (set) {
 		if ((rc = remove_all_users(bg_record->bg_block_id,
