@@ -38,6 +38,7 @@ typedef struct {
 	int color_inx;
 	front_end_info_t *front_end_ptr;
 	char *boot_time;
+	int node_inx[3];
 	char *reason;
 	char *slurmd_start_time;
 	char *state;
@@ -59,6 +60,7 @@ enum {
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_NAME,
+	SORTID_NODE_INX,
 	SORTID_REASON,
 	SORTID_SLURMD_START_TIME,
 	SORTID_STATE,
@@ -93,10 +95,12 @@ static display_data_t display_data_front_end[] = {
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
-static display_data_t options_data_resv[] = {
+static display_data_t options_data_front_end[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, FRONT_END_PAGE},
 	{G_TYPE_STRING, FRONT_END_PAGE, "Drain Front End Node", TRUE,
@@ -130,9 +134,10 @@ static void _front_end_info_list_del(void *object)
 	}
 }
 
-static void _layout_resv_record(GtkTreeView *treeview,
-				sview_front_end_info_t *sview_front_end_info,
-				int update)
+static void _layout_front_end_record(GtkTreeView *treeview,
+				     sview_front_end_info_t *
+				     sview_front_end_info,
+				     int update)
 {
 	GtkTreeIter iter;
 	front_end_info_t *front_end_ptr =
@@ -169,9 +174,10 @@ static void _layout_resv_record(GtkTreeView *treeview,
 				   sview_front_end_info->reason);
 }
 
-static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr,
-				GtkTreeStore *treestore,
-				GtkTreeIter *iter)
+static void _update_front_end_record(
+			sview_front_end_info_t *sview_front_end_info_ptr,
+			GtkTreeStore *treestore,
+			GtkTreeIter *iter)
 {
 	front_end_info_t *front_end_ptr;
 
@@ -181,6 +187,9 @@ static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr
 			   -1);
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
 			   sview_front_end_info_ptr->color_inx, -1);
+
+	gtk_tree_store_set(treestore, iter, SORTID_NODE_INX,
+			   sview_front_end_info_ptr->node_inx, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, front_end_ptr->name,
 			   -1);
@@ -200,17 +209,17 @@ static void _update_resv_record(sview_front_end_info_t *sview_front_end_info_ptr
 	return;
 }
 
-static void _append_resv_record(sview_front_end_info_t *sview_front_end_info_ptr,
-				GtkTreeStore *treestore, GtkTreeIter *iter,
-				int line)
+static void _append_front_end_record(
+			sview_front_end_info_t *sview_front_end_info_ptr,
+			GtkTreeStore *treestore, GtkTreeIter *iter,
+			int line)
 {
 	gtk_tree_store_append(treestore, iter, NULL);
 	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
-	_update_resv_record(sview_front_end_info_ptr, treestore, iter);
+	_update_front_end_record(sview_front_end_info_ptr, treestore, iter);
 }
 
-static void _update_info_resv(List info_list,
-			      GtkTreeView *tree_view)
+static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
@@ -247,7 +256,7 @@ static void _update_info_resv(List info_list,
 			if (!strcmp(front_end_name, front_end_ptr->name)) {
 				/* update with new info */
 				g_free(front_end_name);
-				_update_resv_record(sview_front_end_info,
+				_update_front_end_record(sview_front_end_info,
 						    GTK_TREE_STORE(model),
 						    &iter);
 				goto found;
@@ -260,7 +269,7 @@ static void _update_info_resv(List info_list,
 			}
 		}
 	adding:
-		_append_resv_record(sview_front_end_info, GTK_TREE_STORE(model),
+		_append_front_end_record(sview_front_end_info, GTK_TREE_STORE(model),
 				    &iter, line);
 	found:
 		;
@@ -303,6 +312,9 @@ static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr
 			xmalloc(sizeof(sview_front_end_info_t));
 		sview_front_end_info_ptr->front_end_ptr = front_end_ptr;
 		sview_front_end_info_ptr->color_inx = i % sview_colors_cnt;
+		sview_front_end_info_ptr->node_inx[0] = 0;
+		sview_front_end_info_ptr->node_inx[1] = 8;
+		sview_front_end_info_ptr->node_inx[2] = -1;
 		if (front_end_ptr->boot_time) {
 			slurm_make_time_str(&front_end_ptr->boot_time,
 					    time_str, sizeof(time_str));
@@ -377,8 +389,9 @@ need_refresh:
 	       (sview_front_end_info_t*) list_next(itr))) {
 		front_end_ptr = sview_front_end_info->front_end_ptr;
 		if (!strcmp(front_end_ptr->name, name)) {
-			_layout_resv_record(treeview, sview_front_end_info,
-					    update);
+			_layout_front_end_record(treeview,
+						 sview_front_end_info,
+						 update);
 			found = 1;
 			break;
 		}
@@ -486,76 +499,7 @@ extern void admin_edit_front_end(GtkCellRendererText *cell,
 				 const char *path_string,
 				 const char *new_text, gpointer data)
 {
-#if 0
-	GtkTreeStore *treestore = GTK_TREE_STORE(data);
-	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
-	GtkTreeIter iter;
-	front_end_desc_msg_t *front_end_msg = xmalloc(sizeof(front_end_desc_msg_t));
-
-	char *temp = NULL;
-	char *old_text = NULL;
-	const char *type = NULL;
-
-	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
-						       "column"));
-
-	if (!new_text || !strcmp(new_text, ""))
-		goto no_input;
-
-	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
-
-	slurm_init_resv_desc_msg(resv_msg);
-	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
-			   SORTID_NAME, &temp,
-			   column, &old_text,
-			   -1);
-	resv_msg->name = xstrdup(temp);
-	g_free(temp);
-
-	type = _set_resv_msg(resv_msg, new_text, column);
-	if (global_edit_error)
-		goto print_error;
-
-	if (got_edit_signal) {
-		temp = got_edit_signal;
-		got_edit_signal = NULL;
-		_admin_front_end(GTK_TREE_MODEL(treestore), &iter, temp);
-		xfree(temp);
-		goto no_input;
-	}
-
-	if (old_text && !strcmp(old_text, new_text)) {
-		temp = g_strdup_printf("No change in value.");
-	} else if (slurm_update_reservation(resv_msg)
-		  == SLURM_SUCCESS) {
-		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
-		temp = g_strdup_printf("Reservation %s %s changed to %s",
-				       resv_msg->name,
-				       type,
-				       new_text);
-	} else if (errno == ESLURM_DISABLED) {
-		temp = g_strdup_printf(
-			"Can only edit %s on reservations not yet started.",
-			type);
-	} else {
-	print_error:
-		temp = g_strdup_printf("Reservation %s %s can't be "
-				       "set to %s",
-				       resv_msg->name,
-				       type,
-				       new_text);
-	}
-
-	display_edit_note(temp);
-	g_free(temp);
-
-no_input:
-	slurm_free_front_end_desc_msg(front_end_msg);
-
-	gtk_tree_path_free (path);
-	g_free(old_text);
-	g_static_mutex_unlock(&sview_mutex);
-#endif
+	/* No fields to edit here */
 }
 
 extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
@@ -633,10 +577,11 @@ display_it:
 	if (!path) {
 		change_grid_color(grid_button_list, -1, -1,
 				  MAKE_WHITE, true, 0);
-	} else
+	} else {
 		highlight_grid(GTK_TREE_VIEW(display_widget),
-			       SORTID_NAME, SORTID_COLOR_INX,
+			       SORTID_NODE_INX, SORTID_COLOR_INX,
 			       grid_button_list);
+	}
 
 	if (working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
@@ -665,7 +610,7 @@ display_it:
 	}
 
 	view = INFO_VIEW;
-	_update_info_resv(info_list, GTK_TREE_VIEW(display_widget));
+	_update_info_front_end(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
 	force_refresh = FALSE;
@@ -803,7 +748,7 @@ display_it:
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
 
-	_update_info_resv(send_resv_list,
+	_update_info_front_end(send_resv_list,
 			  GTK_TREE_VIEW(spec_info->display_widget));
 	list_destroy(send_resv_list);
 end_it:
@@ -826,10 +771,10 @@ extern void set_menus_front_end(void *arg, void *arg2, GtkTreePath *path,
 		make_fields_menu(NULL, menu, display_data_front_end, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
-		make_options_menu(tree_view, path, menu, options_data_resv);
+		make_options_menu(tree_view, path, menu, options_data_front_end);
 		break;
 	case ROW_LEFT_CLICKED:
-		highlight_grid(tree_view, SORTID_NAME,
+		highlight_grid(tree_view, SORTID_NODE_INX,
 			       SORTID_COLOR_INX, button_list);
 		break;
 	case FULL_CLICKED:
@@ -900,7 +845,7 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	 */
 	popup_win->model = model;
 	popup_win->iter = *iter;
-	popup_win->node_inx_id = SORTID_NAME;	/* Should be NODE_INX */
+	popup_win->node_inx_id = SORTID_NODE_INX;
 
 	switch (id) {
 	case INFO_PAGE:
@@ -1059,7 +1004,7 @@ extern void cluster_change_front_end(void)
 {
 	display_data_t *display_data = display_data_front_end;
 
-	display_data = options_data_resv;
+	display_data = options_data_front_end;
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
