@@ -98,6 +98,7 @@ install -D -m755 wrappers/checknode.pl $RPM_BUILD_ROOT%{_bindir}/checknode
 install -D -m755 wrappers/mdiag.pl $RPM_BUILD_ROOT%{_bindir}/mdiag
 install -D -m755 wrappers/mjobctl.pl $RPM_BUILD_ROOT%{_bindir}/mjobctl
 install -D -m755 wrappers/moab2slurm.pl $RPM_BUILD_ROOT%{_bindir}/moab2slurm
+install -D -m755 wrappers/mshare.pl $RPM_BUILD_ROOT%{_bindir}/mshare
 install -D -m755 wrappers/mshow.pl $RPM_BUILD_ROOT%{_bindir}/mshow
 install -D -m755 wrappers/msub.pl $RPM_BUILD_ROOT%{_bindir}/msub
 install -D -m755 wrappers/releasehold.pl $RPM_BUILD_ROOT%{_bindir}/releasehold
@@ -129,7 +130,7 @@ done
 #
 #	releasehold sethold
 #
-for cmd in canceljob checkjob checknode mdiag mjobctl msub showbf showq showres showstart showstate; do
+for cmd in canceljob checkjob checknode mdiag mjobctl mshare msub showbf showq showres showstart showstate; do
     $RPM_BUILD_ROOT%{_bindir}/${cmd} --roff > $RPM_BUILD_ROOT%{_mandir}/man1/${cmd}.1
 done
 chmod 644 $RPM_BUILD_ROOT%{_mandir}/man1/*.1
