@@ -237,7 +237,7 @@ AC_DEFUN([X_AC_BGQ],
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
-			bg_ldflags="$bg_ldflags -L$bg_dir/lib -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
+			bg_ldflags="$bg_ldflags -L$bg_dir/lib -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
 		fi
 
       		# Search for headers in the directory
@@ -259,6 +259,7 @@ AC_DEFUN([X_AC_BGQ],
    	fi
 
   	if test ! -z "$have_bgq_files" ; then
+      		BG_LDFLAGS="$bg_ldflags"
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
    		CXXFLAGS="$CXXFLAGS $CFLAGS"
@@ -268,13 +269,14 @@ AC_DEFUN([X_AC_BGQ],
       		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/Q system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
-		AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
+		#AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
 
-		AC_MSG_CHECKING(for BG serial value)
-		bg_serial="BGQ"
-    		AC_ARG_WITH(bg-serial,, [bg_serial="$withval"])
-     		AC_MSG_RESULT($bg_serial)
-     		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
+    		AC_MSG_NOTICE([Running on a legitimate BG/Q system])
+		# AC_MSG_CHECKING(for BG serial value)
+		# bg_serial="BGQ"
+    		# AC_ARG_WITH(bg-serial,, [bg_serial="$withval"])
+     		# AC_MSG_RESULT($bg_serial)
+     		# AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
    	fi

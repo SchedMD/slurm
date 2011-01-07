@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  bgq.h - hearder file for the Blue Gene/Q plugin.
+ *  bgq_enums.h - hearder file containing enums for the Blue Gene/Q plugin.
  *****************************************************************************
- *  Copyright (C) 2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -36,38 +36,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BGQ_H_
-#define _BGQ_H_
-
-#include <iostream>
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#endif
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#ifndef _BGQ_ENUMS_H_
+#define _BGQ_ENUMS_H_
 
 extern "C" {
 
-#include "src/common/slurm_xlator.h"	/* Must be first */
-#include "src/common/macros.h"
-#include "src/slurmctld/slurmctld.h"
-#include "bgq_enums.h"
-
+	typedef enum {
+		BG_BLOCK_ALLOCATED = 0,  // Block is allocated
+		BG_BLOCK_BOOTING,        // Block is booting
+		BG_BLOCK_FREE,           // Block is free
+		BG_BLOCK_INITED,         // Block is initialized
+		BG_BLOCK_TERM,           // Block is terminating
+		BG_BLOCK_ERROR,          // Block is in error
+	} bgq_block_status_t;
 }
-#endif /* _BGQ_H_ */
+#endif /* _BGQ_ENUMS_H_ */

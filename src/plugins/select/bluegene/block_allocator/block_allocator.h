@@ -494,8 +494,9 @@ extern void init_grid(node_info_msg_t *node_info_ptr);
  * IN inx - error code from any of the BG Bridge APIs
  * RET - string describing the error condition
  */
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 extern char *bg_err_str(status_t inx);
-
+#endif
 /*
  * Set up the map for resolving
  */
