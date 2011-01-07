@@ -312,9 +312,13 @@ static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr
 			xmalloc(sizeof(sview_front_end_info_t));
 		sview_front_end_info_ptr->front_end_ptr = front_end_ptr;
 		sview_front_end_info_ptr->color_inx = i % sview_colors_cnt;
-		sview_front_end_info_ptr->node_inx[0] = 0;
-		sview_front_end_info_ptr->node_inx[1] = 8;
-		sview_front_end_info_ptr->node_inx[2] = -1;
+		if (g_node_info_ptr) {
+			sview_front_end_info_ptr->node_inx[0] = 0;
+			sview_front_end_info_ptr->node_inx[1] =
+				g_node_info_ptr->record_count - 1;
+			sview_front_end_info_ptr->node_inx[2] = -1;
+		} else
+			sview_front_end_info_ptr->node_inx[0] = -1;
 		if (front_end_ptr->boot_time) {
 			slurm_make_time_str(&front_end_ptr->boot_time,
 					    time_str, sizeof(time_str));
@@ -365,7 +369,7 @@ static void _display_info_front_end(List info_list, popup_info_t *popup_win)
 	front_end_info_t *front_end_ptr = NULL;
 	GtkTreeView *treeview = NULL;
 	ListIterator itr = NULL;
-	sview_front_end_info_t *sview_front_end_info = NULL;
+	sview_front_end_info_t *sview_fe_info = NULL;
 	int update = 0;
 
 	if (!spec_info->search_info->gchar_data) {
@@ -385,12 +389,17 @@ need_refresh:
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_front_end_info =
-	       (sview_front_end_info_t*) list_next(itr))) {
-		front_end_ptr = sview_front_end_info->front_end_ptr;
-		if (!strcmp(front_end_ptr->name, name)) {
-			_layout_front_end_record(treeview,
-						 sview_front_end_info,
+	while ((sview_fe_info = (sview_front_end_info_t*) list_next(itr))) {
+		front_end_ptr = sview_fe_info->front_end_ptr;
+		if (strcmp(front_end_ptr->name, name) != 0) {
+			if (sview_fe_info->node_inx[0] >= 0) {
+				change_grid_color(popup_win->grid_button_list,
+						  sview_fe_info->node_inx[0],
+						  sview_fe_info->node_inx[1],
+						  sview_fe_info->color_inx,
+						  true, 0);
+			}
+			_layout_front_end_record(treeview, sview_fe_info,
 						 update);
 			found = 1;
 			break;
@@ -512,7 +521,8 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	int changed = 1;
+	int changed = 1, j;
+	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
 	static bool set_opts = FALSE;
 
@@ -575,6 +585,20 @@ display_it:
 					 &path, &focus_column);
 	}
 	if (!path) {
+		sview_front_end_info_t *fe_ptr;
+		itr = list_iterator_create(info_list);
+		while ((fe_ptr = list_next(itr))) {
+			j=0;
+			while (fe_ptr->node_inx[j] >= 0) {
+				change_grid_color(grid_button_list,
+						  fe_ptr->node_inx[j],
+						  fe_ptr->node_inx[j+1],
+						  fe_ptr->color_inx,
+						  true, 0);
+				j += 2;
+			}
+		}
+		list_iterator_destroy(itr);
 		change_grid_color(grid_button_list, -1, -1,
 				  MAKE_WHITE, true, 0);
 	} else {
