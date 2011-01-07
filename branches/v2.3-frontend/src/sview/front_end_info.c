@@ -496,10 +496,26 @@ end_it:
 extern GtkListStore *create_model_front_end(int type)
 {
 	GtkListStore *model = NULL;
+	GtkTreeIter iter;
+	int i = 0;
 
-	switch (type) {
-	default:
+	switch(type) {
+	case SORTID_STATE:
+		model = gtk_list_store_new(2, G_TYPE_STRING,
+					   G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "Drain",
+				   1, i,
+				   -1);
+		gtk_list_store_append(model, &iter);
+
+		gtk_list_store_set(model, &iter,
+				   0, "Resume",
+				   1, i,
+				   -1);
 		break;
+
 	}
 	return model;
 }
@@ -508,7 +524,30 @@ extern void admin_edit_front_end(GtkCellRendererText *cell,
 				 const char *path_string,
 				 const char *new_text, gpointer data)
 {
-	/* No fields to edit here */
+	GtkTreeStore *treestore = GTK_TREE_STORE(data);
+	GtkTreePath *path = gtk_tree_path_new_from_string(path_string);
+	GtkTreeIter iter;
+	char *node_list = NULL;
+	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
+						       "column"));
+	if (!new_text || !strcmp(new_text, ""))
+		goto no_input;
+
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
+	switch(column) {
+	case SORTID_STATE:
+		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
+				   SORTID_NAME,
+				   &node_list, -1);
+		_admin_front_end(GTK_TREE_MODEL(treestore), &iter,
+				 (char *)new_text, node_list);
+		g_free(node_list);
+	default:
+		break;
+	}
+no_input:
+	gtk_tree_path_free(path);
+	g_static_mutex_unlock(&sview_mutex);
 }
 
 extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
