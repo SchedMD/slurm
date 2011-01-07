@@ -141,11 +141,10 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %files 
-
+%defattr(-,root,root,0755)
 %{_bindir}/*
 %{_mandir}/man1/*
 
-%defattr(-,root,root,0755)
 
 %pre
 
