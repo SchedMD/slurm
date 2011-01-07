@@ -1952,6 +1952,7 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	}
 }
 
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 /*
  * Convert a BG API error code to a string
  * IN inx - error code from any of the BG Bridge APIs
@@ -1959,7 +1960,6 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
  */
 extern char *bg_err_str(status_t inx)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	switch (inx) {
 	case STATUS_OK:
 		return "Status OK";
@@ -1988,10 +1988,10 @@ extern char *bg_err_str(status_t inx)
 	case INCONSISTENT_DATA:
 		return "Inconsistent data";
 	}
-#endif
 
 	return "?";
 }
+#endif
 
 /*
  * Set up the map for resolving

@@ -52,22 +52,6 @@
 			   RM_PARTITION_DEALLOCATING,
 			   RM_PARTITION_ERROR,
 			   RM_PARTITION_NAV};
-  typedef enum status {STATUS_OK  = 0,
-	  	       PARTITION_NOT_FOUND = -1,
-		       JOB_NOT_FOUND = -2,
-		       BP_NOT_FOUND = -3,
-		       SWITCH_NOT_FOUND = -4,
-		       JOB_ALREADY_DEFINED=-5,
-#ifndef HAVE_BGL
-		       PARTITION_ALREADY_DEFINED=-6,
-#endif
-		       CONNECTION_ERROR=-10,
-		       INTERNAL_ERROR = -11,
-		       INVALID_INPUT=-12,
-		       INCOMPATIBLE_STATE=-13,
-		       INCONSISTENT_DATA=-14
-  }status_t;
-
 #endif
 
 /* The below #defines are needed for cross cluster dealings */
