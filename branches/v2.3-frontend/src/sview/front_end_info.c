@@ -365,7 +365,7 @@ static void _display_info_front_end(List info_list, popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
-	int found = 0;
+	int found = 0, j;
 	front_end_info_t *front_end_ptr = NULL;
 	GtkTreeView *treeview = NULL;
 	ListIterator itr = NULL;
@@ -391,13 +391,15 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_fe_info = (sview_front_end_info_t*) list_next(itr))) {
 		front_end_ptr = sview_fe_info->front_end_ptr;
-		if (strcmp(front_end_ptr->name, name) != 0) {
-			if (sview_fe_info->node_inx[0] >= 0) {
+		if (strcmp(front_end_ptr->name, name) == 0) {
+			j = 0;
+			while (sview_fe_info->node_inx[j] >= 0) {
 				change_grid_color(popup_win->grid_button_list,
-						  sview_fe_info->node_inx[0],
-						  sview_fe_info->node_inx[1],
+						  sview_fe_info->node_inx[j],
+						  sview_fe_info->node_inx[j + 1],
 						  sview_fe_info->color_inx,
 						  true, 0);
+				j += 2;
 			}
 			_layout_front_end_record(treeview, sview_fe_info,
 						 update);
@@ -627,7 +629,7 @@ display_it:
 		sview_front_end_info_t *fe_ptr;
 		itr = list_iterator_create(info_list);
 		while ((fe_ptr = list_next(itr))) {
-			j=0;
+			j = 0;
 			while (fe_ptr->node_inx[j] >= 0) {
 				change_grid_color(grid_button_list,
 						  fe_ptr->node_inx[j],
