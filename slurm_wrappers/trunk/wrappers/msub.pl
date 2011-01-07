@@ -570,8 +570,7 @@ sub get_gres
 	chomp $out;
 
 	my  ($gres) = ($out =~ m/= (.*)/);
-
-        $gres =~ s/\*[\d+]//g;
+        $gres =~ s/\*\d+//g;
 
         push @slurmArgs, "--licenses=$gres" if ($gres !~ /null/ && $gres ne "");
 
