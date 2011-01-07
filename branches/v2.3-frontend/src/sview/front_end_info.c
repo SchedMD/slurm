@@ -43,6 +43,10 @@ typedef struct {
 	char *state;
 } sview_front_end_info_t;
 
+typedef struct {
+	char *node_list;
+} front_end_user_data_t;
+
 enum {
 	EDIT_REMOVE = 1,
 	EDIT_EDIT
@@ -107,7 +111,8 @@ static display_data_t *local_display_data = NULL;
 
 static char *got_edit_signal = NULL;
 
-static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
+			     char *node_list);
 static void _process_each_front_end(GtkTreeModel *model, GtkTreePath *path,
 				    GtkTreeIter*iter, gpointer userdata);
 
@@ -913,16 +918,17 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 }
 
 static void _process_each_front_end(GtkTreeModel *model, GtkTreePath *path,
-				    GtkTreeIter*iter, gpointer userdata)
+				    GtkTreeIter*iter, gpointer user_data)
 {
-	char *type = userdata;
-	if (_DEBUG)
-		g_print("process_each_resv: global_multi_error = %d\n",
-			global_multi_error);
+	char *name = NULL;
+	front_end_user_data_t *fe_data = user_data;
 
-	if (!global_multi_error) {
-		_admin_front_end(model, iter, type);
-	}
+	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	if (fe_data->node_list)
+		xstrfmtcat(fe_data->node_list, ",%s", name);
+	else
+		fe_data->node_list = xstrdup(name);
+	g_free(name);
 }
 
 extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
@@ -930,18 +936,33 @@ extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
 				   GtkTreeView *treeview)
 {
 	if (treeview) {
-		global_multi_error = FALSE;
+		char *node_list;
+		hostlist_t hl = NULL;
+		front_end_user_data_t user_data;
+
+		memset(&user_data, 0, sizeof(front_end_user_data_t));
 		gtk_tree_selection_selected_foreach(
 			gtk_tree_view_get_selection(treeview),
-			_process_each_front_end, display_data->name);
+			_process_each_front_end, &user_data);
+
+		hl = hostlist_create(user_data.node_list);
+		hostlist_uniq(hl);
+		hostlist_sort(hl);
+		xfree(user_data.node_list);
+		node_list = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
+
+		_admin_front_end(model, iter, display_data->name, node_list);
+		xfree(node_list);
 	}
 }
 
-static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type)
+static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
+			     char *node_list)
 {
 	uint16_t state = (uint16_t) NO_VAL;
 	update_front_end_msg_t front_end_update_msg;
-	char *resvid = NULL, *new_type = NULL, *reason = NULL;
+	char *new_type = NULL, *reason = NULL;
 	char tmp_char[100];
 	char *lower;
 	int rc;
@@ -954,7 +975,7 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		NULL);
 
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
-	gtk_tree_model_get(model, iter, SORTID_NAME, &resvid, -1);
+	//gtk_tree_model_get(model, iter, SORTID_NAME, &resvid, -1);
 
 	label = gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_YES, GTK_RESPONSE_OK);
@@ -974,7 +995,7 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	}
 	snprintf(tmp_char, sizeof(tmp_char),
 		 "Are you sure you want to set state of front end node %s "
-		 "to %s?%s", resvid, new_type, reason);
+		 "to %s?%s", node_list, new_type, reason);
 	label = gtk_label_new(tmp_char);
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
@@ -988,7 +1009,7 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	slurm_init_update_front_end_msg(&front_end_update_msg);
 
 	if (rc == GTK_RESPONSE_OK) {
-		front_end_update_msg.name = resvid;
+		front_end_update_msg.name = node_list;
 		front_end_update_msg.node_state = state;
 		if (entry) {
 			front_end_update_msg.reason = xstrdup(
@@ -1011,27 +1032,27 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		if (rc == SLURM_SUCCESS) {
 			lower = g_strdup_printf(
 				"Nodes %s updated successfully.",
-				resvid);
+				node_list);
 			display_edit_note(lower);
 			g_free(lower);
 		} else {
 			lower = g_strdup_printf(
 				"Problem updating nodes %s: %s",
-				resvid, slurm_strerror(rc));
+				node_list, slurm_strerror(rc));
 			display_edit_note(lower);
 			g_free(lower);
 		}
 	}
 
 end_it:
-	g_free(resvid);
+	//g_free(resvid);
 	global_entry_changed = 0;
 	xfree(front_end_update_msg.reason);
 	gtk_widget_destroy(popup);
 	if (got_edit_signal) {
 		type = got_edit_signal;
 		got_edit_signal = NULL;
-		_admin_front_end(model, iter, type);
+		_admin_front_end(model, iter, type, node_list);
 		xfree(type);
 	}
 	return;
