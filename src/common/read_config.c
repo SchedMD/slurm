@@ -729,8 +729,36 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 		*ptr_array = ptr;
 		return count;
 	} else {
+#ifdef HAVE_FRONT_END
+		static slurm_conf_frontend_t local_front_end;
+		static slurm_conf_frontend_t *local_front_end_array[2] =
+			{NULL, NULL};
+		static char addresses[1024], hostnames[1024];
+
+		if (local_front_end_array[0] == NULL) {
+			slurm_conf_node_t **node_ptr;
+			int node_count = 0;
+			if (!s_p_get_array((void ***)&node_ptr, &node_count,
+					   "NodeName", conf_hashtbl) ||
+			    (node_count == 0))
+				fatal("No front end nodes configured");
+			strncpy(addresses, node_ptr[0]->addresses,
+				sizeof(addresses));
+			strncpy(hostnames, node_ptr[0]->hostnames,
+				sizeof(hostnames));
+			local_front_end.addresses = addresses;
+			local_front_end.frontends = hostnames;
+			local_front_end.port = node_ptr[0]->port;
+			local_front_end.reason = NULL;
+			local_front_end.node_state = NODE_STATE_UNKNOWN;
+			local_front_end_array[0] = &local_front_end;
+		}
+		*ptr_array = local_front_end_array;
+		return 1;
+#else
 		*ptr_array = NULL;
 		return 0;
+#endif
 	}
 }
 
