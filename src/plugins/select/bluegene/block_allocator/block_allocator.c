@@ -1144,7 +1144,7 @@ extern void init_wires()
 			}
 		}
 	}
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#ifdef HAVE_BG_FILES
 	_set_external_wires(0,0,NULL,NULL);
 	if (!bp_map_list) {
 		if (set_bp_map() == -1) {
