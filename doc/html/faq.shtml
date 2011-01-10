@@ -279,7 +279,13 @@ this command as user root!</b></p>
 
 <p><a name="backfill"><b>7. Why is the SLURM backfill scheduler not starting my job?
 </b></a><br>
-There are significant limitations in the current backfill scheduler plugin.
+The most common problem is failing to set job time limits. If all jobs have
+the same time limit (for example the partition's time limit), then backfill
+will not be effective. Note that partitions can have both default and maximum
+time limits, which can be helpful in configuring a system for effective
+backfill scheduling.</p>
+<p>In addition, there are significant limitations in the current backfill
+scheduler plugin.
 It was designed to perform backfill node scheduling for a homogeneous cluster.
 It does not manage scheduling on individual processors (or other consumable
 resources). It does not update the required or excluded node list of
@@ -1338,6 +1344,6 @@ dset TV::parallel_configs {
 </pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 December 2010</p>
+<p style="text-align:center;">Last modified 6 January 2011</p>
 
 <!--#include virtual="footer.txt"-->
