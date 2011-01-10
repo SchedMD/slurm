@@ -54,6 +54,7 @@ typedef struct scancel_options {
 	char *job_name;		/* --name=n, -nn		*/
 	char *partition;	/* --partition=n, -pn		*/
 	char *qos;		/* --qos=n, -qn			*/
+	char *reservation;	/* --reservation=n, -Rn		*/
 	uint16_t signal;	/* --signal=n, -sn		*/
 	uint16_t state;		/* --state=n, -tn		*/
 	uid_t user_id;		/* derived from user_name	*/

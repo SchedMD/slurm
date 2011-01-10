@@ -218,6 +218,7 @@ static void _opt_default()
 	opt.nodelist	= NULL;
 	opt.partition	= NULL;
 	opt.qos		= NULL;
+	opt.reservation	= NULL;
 	opt.signal	= (uint16_t)-1; /* no signal specified */
 	opt.state	= JOB_END;
 	opt.user_id	= 0;
@@ -329,6 +330,7 @@ static void _opt_args(int argc, char **argv)
 		{"partition",   required_argument, 0, 'p'},
 		{"qos",         required_argument, 0, 'q'},
 		{"quiet",       no_argument,       0, 'Q'},
+		{"reservation", required_argument, 0, 'R'},
 		{"signal",      required_argument, 0, 's'},
 		{"state",       required_argument, 0, 't'},
 		{"usage",       no_argument,       0, OPT_LONG_USAGE},
@@ -339,7 +341,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,          0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "A:biM:n:p:Qq:s:t:u:vVw:",
+	while((opt_char = getopt_long(argc, argv, "A:biM:n:p:Qq:R:s:t:u:vVw:",
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -383,6 +385,9 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'q':
 			opt.qos = xstrdup(optarg);
+			break;
+		case (int)'R':
+			opt.reservation = xstrdup(optarg);
 			break;
 		case (int)'s':
 			opt.signal = _xlate_signal_name(optarg);
@@ -492,6 +497,7 @@ _opt_verify(void)
 	    (opt.nodelist == NULL) &&
 	    (opt.partition == NULL) &&
 	    (opt.qos == NULL) &&
+	    (opt.reservation == NULL) &&
 	    (opt.state == JOB_END) &&
 	    (opt.user_name == NULL) &&
 	    (opt.wckey == NULL)) {
@@ -516,6 +522,7 @@ static void _opt_list(void)
 	info("nodelist       : %s", opt.nodelist);
 	info("partition      : %s", opt.partition);
 	info("qos            : %s", opt.qos);
+	info("reservation    : %s", opt.reservation);
 	info("signal         : %u", opt.signal);
 	info("state          : %s", job_state_string(opt.state));
 	info("user_id        : %u", opt.user_id);
@@ -531,7 +538,7 @@ static void _opt_list(void)
 static void _usage(void)
 {
 	printf("Usage: scancel [-A account] [--batch] [--interactive] [-n job_name]\n");
-	printf("               [-p partition] [-Q] [-q qos] [-s signal | integer]\n");
+	printf("               [-p partition] [-Q] [-q qos] [-R reservation][-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[.step_id]]\n");
 }
@@ -547,6 +554,7 @@ static void _help(void)
 	printf("  -p, --partition=partition       act only on jobs in this partition\n");
 	printf("  -Q, --quiet                     disable warnings\n");
 	printf("  -q, --qos=qos                   act only on jobs with this quality of service\n");
+	printf("  -R, --reservation=reservation   act only on jobs with this reservation\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
 	printf("  -t, --state=states              act only on jobs in this state.  Valid job\n");
 	printf("                                  states are PENDING, RUNNING and SUSPENDED\n");

@@ -545,8 +545,13 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Gres", MAX(taglen, 2)) == 0) {
-			job_msg.gres = val;
-			update_cnt++;
+			if (!strcasecmp(val, "help") ||
+			    !strcasecmp(val, "list")) {
+				print_gres_help();
+			} else {
+				job_msg.gres = val;
+				update_cnt++;
+			}
 		}
 		else if (strncasecmp(tag, "Account", MAX(taglen, 1)) == 0) {
 			job_msg.account = val;

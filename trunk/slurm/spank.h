@@ -150,10 +150,10 @@ enum spank_item {
     S_SLURM_VERSION_MICRO,   /* SLURM version micro release (char **)        */
     S_STEP_CPUS_PER_TASK,    /* CPUs allocated per task (=1 if --overcommit
                               * option is used, uint32_t *)                  */
-    S_JOB_ALLOC_CORES,       /* Job's allocated cores in list format         */
-    S_JOB_ALLOC_MEM,         /* Job's allocated memory in MB                 */
-    S_STEP_ALLOC_CORES,      /* Step's allocated cores in list format        */
-    S_STEP_ALLOC_MEM         /* Step's allocated memory in MB                */
+    S_JOB_ALLOC_CORES,       /* Job allocated cores in list format (char **) */
+    S_JOB_ALLOC_MEM,         /* Job allocated memory in MB (uint32_t *)      */
+    S_STEP_ALLOC_CORES,      /* Step alloc'd cores in list format  (char **) */
+    S_STEP_ALLOC_MEM         /* Step alloc'd memory in MB (uint32_t *)       */
 };
 
 typedef enum spank_item spank_item_t;

@@ -5,8 +5,8 @@
 <h2>Index</h2>
 <ul>
 <li><a href="#21">SLURM Version 2.1, January 2010</a></li>
-<li><a href="#22">SLURM Version 2.2, available in late 2010</a></li>
-<li><a href="#23">SLURM Version 2.3, available in 2011</a></li>
+<li><a href="#22">SLURM Version 2.2, December 2010</a></li>
+<li><a href="#23">SLURM Version 2.3, available May 2011</a></li>
 <li><a href="#24">SLURM Version 2.4 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
@@ -27,7 +27,7 @@ job time limit).</li>
 </ul>
 
 <h2><a name="22">Major Updates in SLURM Version 2.2</a></h2>
-<p>SLURM Version 2.2 release is planned late in 2010.
+<p>SLURM Version 2.2 was released in December 2010.
 Major enhancements include:
 <ul>
 <li>Permit resource allocations (jobs) to shrink in size.</li>
@@ -54,13 +54,15 @@ several times that rate.</li>
 </ul>
 
 <h2><a name="23">Major Updates in SLURM Version 2.3</a></h2>
-<p>SLURM Version 2.3 release is planned in 2011.
+<p>SLURM Version 2.3 release is planned in May 2011.
 Major enhancements currently planned include:
 <ul>
-<li>Support for Cray computers (integration with ALPS/BASIL).</li>
-<li>Support for BlueGene/Q computers.</li>
-<li>Integration with FlexLM license management.</li>
-<li>Numerous enhancements to advanced resource reservations.</li>
+<li>Support for Cray XT and XE computers (integration with ALPS/BASIL).</li>
+<li>Support for BlueGene/Q computers (partially implemented).</li>
+<li>Support for multiple front-end nodes running slurmd daemons (for Cray and
+BlueGene architectures, improves performance and fault tolerance).</li>
+<li>Support for Linux cgroup job containers including integration with
+generic resources.</li>
 </ul>
 
 <h2><a name="24">Major Updates in SLURM Version 2.4 and beyond</a></h2>
@@ -69,6 +71,8 @@ have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activities. Future development plans includes:
 <ul>
+<li>Integration with FlexLM license management.</li>
+<li>Numerous enhancements to advanced resource reservations.</li>
 <li>Add Kerberos credential support including credential forwarding
 and refresh.</li>
 <li>Provide a web-based SLURM administration tool.</li>
@@ -98,6 +102,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 20 September 2010</p>
+<p style="text-align:center;">Last modified 3 January 2011</p>
 
 <!--#include virtual="footer.txt"-->
