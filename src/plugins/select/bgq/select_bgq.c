@@ -73,13 +73,10 @@ char *slurmctld_cluster_name = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 #endif
 
-/* In C++ const objects have internal linkage by default so we have to
- * do an extra extern here to make them export correctly.
- */
-extern const char plugin_name[]       	= "BG/Q node selection plugin";
-extern const char plugin_type[]       	= "select/bgq";
-extern const uint32_t plugin_id     	= 103;
-extern const uint32_t plugin_version	= 100;
+const char plugin_name[]       	= "BG/Q node selection plugin";
+const char plugin_type[]       	= "select/bgq";
+const uint32_t plugin_id     	= 103;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

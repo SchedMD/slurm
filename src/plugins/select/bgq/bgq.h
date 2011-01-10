@@ -39,8 +39,6 @@
 #ifndef _BGQ_H_
 #define _BGQ_H_
 
-#include <iostream>
-
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #  if HAVE_STDINT_H
