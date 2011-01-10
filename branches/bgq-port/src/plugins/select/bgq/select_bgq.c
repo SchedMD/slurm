@@ -81,8 +81,6 @@ extern const char plugin_type[]       	= "select/bgq";
 extern const uint32_t plugin_id     	= 103;
 extern const uint32_t plugin_version	= 100;
 
-extern "C" {
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -422,6 +420,4 @@ extern int select_p_reconfigure(void)
 #else
 	return SLURM_ERROR;
 #endif
-}
-
 }

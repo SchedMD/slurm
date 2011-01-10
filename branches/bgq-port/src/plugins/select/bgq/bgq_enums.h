@@ -39,15 +39,13 @@
 #ifndef _BGQ_ENUMS_H_
 #define _BGQ_ENUMS_H_
 
-extern "C" {
+typedef enum {
+	BG_BLOCK_ALLOCATED = 0,  // Block is allocated
+	BG_BLOCK_BOOTING,        // Block is booting
+	BG_BLOCK_FREE,           // Block is free
+	BG_BLOCK_INITED,         // Block is initialized
+	BG_BLOCK_TERM,           // Block is terminating
+	BG_BLOCK_ERROR,          // Block is in error
+} bgq_block_status_t;
 
-	typedef enum {
-		BG_BLOCK_ALLOCATED = 0,  // Block is allocated
-		BG_BLOCK_BOOTING,        // Block is booting
-		BG_BLOCK_FREE,           // Block is free
-		BG_BLOCK_INITED,         // Block is initialized
-		BG_BLOCK_TERM,           // Block is terminating
-		BG_BLOCK_ERROR,          // Block is in error
-	} bgq_block_status_t;
-}
 #endif /* _BGQ_ENUMS_H_ */

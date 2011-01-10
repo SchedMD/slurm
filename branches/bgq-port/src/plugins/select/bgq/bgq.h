@@ -62,12 +62,9 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
-extern "C" {
-
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
 #include "bgq_enums.h"
 
-}
 #endif /* _BGQ_H_ */

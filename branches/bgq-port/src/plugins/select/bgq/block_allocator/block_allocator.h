@@ -42,6 +42,10 @@
 
 #include "bridge_linker.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // #define DEBUG_PA
 #define BIG_MAX 9999
 #define BUFSIZE 4096
@@ -51,7 +55,7 @@
 #define PASS_DENY_A 0x0001
 #define PASS_DENY_B 0x0002
 #define PASS_DENY_C 0x0004
-#define PASS_DENY_C 0x0008
+#define PASS_DENY_D 0x0008
 #define PASS_DENY_ALL 0x00ff
 
 #define PASS_FOUND_A 0x0100
@@ -65,7 +69,6 @@ extern bool _initialized;
 enum {A, B, C, D};
 
 /* */
-
 /*
  * structure that holds switch path information for finding the wiring
  * path without setting the configuration.
@@ -244,11 +247,11 @@ typedef struct {
 
 	/* made to hold info about a system, which right now is only a
 	 * grid of ba_nodes*/
-	ba_node_t ***grid;
+	ba_node_t ****grid;
 } ba_system_t;
 
 /* Used to Keep track of where the Base Blocks are at all times
-   Rack and Midplane is the bp_id and XYZ is the coords.
+   Rack and Midplane is the bp_id and ABCD is the coords.
 */
 typedef struct {
 	char *bp_id;
@@ -257,7 +260,7 @@ typedef struct {
 
 /* Global */
 extern my_bluegene_t *bg;
-extern List bp_map_list; /* list used for conversion from XYZ to Rack
+extern List bp_map_list; /* list used for conversion from ABCD to Rack
 			  * midplane */
 extern char letters[62]; /* complete list of letters used in smap */
 extern char colors[6]; /* index into colors used for smap */
@@ -267,6 +270,7 @@ extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
 extern uint16_t ba_deny_pass;
 extern ba_system_t *ba_system_ptr;
+
 
 /* must xfree return of this */
 extern char *ba_passthroughs_string(uint16_t passthrough);
@@ -511,9 +515,9 @@ extern int set_bp_map(void);
 extern uint16_t *find_bp_loc(char* bp_id);
 
 /*
- * find a rack/midplace location based on XYZ coords
+ * find a rack/midplace location based on ABCD coords
  */
-extern char *find_bp_rack_mid(char* xyz);
+extern char *find_bp_rack_mid(char* abcd);
 
 /*
  * set the used wires in the virtual system for a block from the real system
@@ -529,6 +533,8 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 
 /* make sure a node is in the system return 1 if it is 0 if not */
 extern int validate_coord(uint16_t *coord);
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _BLOCK_ALLOCATOR_H_ */
