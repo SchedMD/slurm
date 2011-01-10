@@ -139,7 +139,8 @@ COMPLETING or DOWN state.
 Delete the entry with the specified \fISPECIFICATION\fP.
 The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP and
 \fIReservation=<name>\fP.  On Dynamically laid out Bluegene systems
-\fIBlockName=<name>\fP also works.
+\fIBlockName=<name>\fP also works. Reservations and partitions should have
+no associated jobs at the time of their deletion (modify the job's first).
 
 .TP
 \fBdetails\fP
@@ -536,6 +537,10 @@ By setting a job's priority to zero it is held.
 Set the priority to a non\-zero value to permit it to run.
 Explicitly setting a job's priority clears any previously set nice value.
 .TP
+\fIQOS\fP=<name>
+Set the job's QOS (Quality Of Service) to the specified value.
+Value may be cleared with blank data value, "QOS=".
+.TP
 \fIReqCores\fP=<count>
 Set the job's count of cores per socket to the specified value.
 .TP
@@ -556,6 +561,7 @@ for no, 1 for yes.
 .TP
 \fIReservationName\fP=<name>
 Set the job's reservation to the specified value.
+Value may be cleared with blank data value, "ReservationName=".
 .TP
 \fIRotate\fP=<yes|no>
 Permit the job's geometry to be rotated.
