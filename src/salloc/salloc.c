@@ -89,6 +89,7 @@ char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
 char *work_dir = NULL;
+static int is_interactive;
 
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -153,7 +154,7 @@ int main(int argc, char *argv[])
 	time_t before, after;
 	allocation_msg_thread_t *msg_thr;
 	char **env = NULL;
-	int status = 0, is_interactive;
+	int status = 0;
 	int retries = 0;
 	pid_t pid = 0;
 	pid_t rc_pid = 0;
@@ -778,6 +779,19 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 		if ((command_pid > -1) &&
 		    (waitpid(command_pid, NULL, WNOHANG) == 0)) {
 			int signal = 0;
+
+			if (is_interactive) {
+				pid_t tpgid = tcgetpgrp(STDIN_FILENO);
+				/*
+				 * This happens if the command forks further
+				 * subprocesses, e.g. a user shell (since we
+				 * are ignoring TSTP, the process must have
+				 * originated from salloc). Notify foreground
+				 * process about pending termination.
+				 */
+				if (tpgid != command_pid && tpgid != getpgrp())
+					killpg(tpgid, SIGHUP);
+			}
 #if defined(HAVE_CRAY)
 			signal = SIGTERM;
 #else
