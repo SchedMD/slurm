@@ -2654,6 +2654,10 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 		/* reservation ended earlier */
 		return ESLURM_RESERVATION_INVALID;
 	}
+	if (resv_ptr->node_cnt == 0) {
+		/* empty reservation treated like it will start later */
+		return ESLURM_INVALID_TIME_VALUE;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2817,6 +2821,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if (*when < resv_ptr->start_time) {
 			/* reservation starts later */
 			*when = resv_ptr->start_time;
+			return ESLURM_INVALID_TIME_VALUE;
+		}
+		if (resv_ptr->node_cnt == 0) {
+			/* empty reservation treated like it will start later */
+			*when = time(NULL) + 600;
 			return ESLURM_INVALID_TIME_VALUE;
 		}
 		if (*when > resv_ptr->end_time) {

@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Better checking for time overflow when rolling up in accounting.
  -- Add scancel --reservation option to cancell all jobs associated with a
     specific reservation.
+ -- Treat reservation with no nodes like one that starts later (let jobs of any
+    size get queued).
 
 * Changes in SLURM 2.2.0
 ========================
