@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fix setting derived exit code correctly for jobs that happen to have the
     same jobid.
  -- Better checking for time overflow when rolling up in accounting.
+ -- Add scancel --reservation option to cancell all jobs associated with a
+    specific reservation.
 
 * Changes in SLURM 2.2.0
 ========================
