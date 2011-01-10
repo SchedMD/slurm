@@ -160,7 +160,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char select_buf[122];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		nodelist = "BP_List";
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
@@ -400,8 +400,19 @@ line6:
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 14 ******/
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	/****** Line 14 (optional) ******/
+	if (job_ptr->batch_host) {
+		snprintf(tmp_line, sizeof(tmp_line), "BatchHost=%s",
+			 job_ptr->batch_host);
+		xstrcat(out, tmp_line);
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+
+	/****** Line 15 ******/
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &min_nodes);

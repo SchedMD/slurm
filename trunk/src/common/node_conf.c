@@ -78,8 +78,9 @@
 #define _DEBUG 0
 
 /* Global variables */
-List config_list  = NULL;		/* list of config_record entries */
-List feature_list = NULL;		/* list of features_record entries */
+List config_list  = NULL;	/* list of config_record entries */
+List feature_list = NULL;	/* list of features_record entries */
+List front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
 struct node_record **node_hash_table = NULL;	/* node_record hash table */
@@ -98,7 +99,6 @@ static void	_list_delete_config (void *config_entry);
 static void	_list_delete_feature (void *feature_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static int	_list_find_feature (void *feature_entry, void *key);
-
 
 
 static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
@@ -152,7 +152,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 	int state_val = NODE_STATE_UNKNOWN;
 
 	if (node_ptr->state != NULL) {
-		state_val = state_str2int(node_ptr->state);
+		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
 		if (state_val == NO_VAL)
 			goto cleanup;
 	}
@@ -178,9 +178,9 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
-	if ((hostlist_count(hostname_list) != 1) ||
-	    (hostlist_count(address_list)  != 1)) {
-		error("Only one hostname and address allowed "
+	if ((hostlist_count(hostname_list) > 1) ||
+	    (hostlist_count(address_list)  > 1)) {
+		error("Only one NodeHostName and NodeAddr are allowed "
 		      "in FRONT_END mode");
 		goto cleanup;
 	}
@@ -249,8 +249,9 @@ cleanup:
 static int _delete_config_record (void)
 {
 	last_node_update = time (NULL);
-	(void) list_delete_all (config_list,  &_list_find_config,  NULL);
-	(void) list_delete_all (feature_list, &_list_find_feature, NULL);
+	(void) list_delete_all (config_list,    &_list_find_config,  NULL);
+	(void) list_delete_all (feature_list,   &_list_find_feature, NULL);
+	(void) list_delete_all (front_end_list, &list_find_frontend, NULL);
 	return SLURM_SUCCESS;
 }
 
@@ -461,6 +462,80 @@ static int _list_find_feature (void *feature_entry, void *key)
 	if (strcmp(feature_ptr->name, (char *) key) == 0)
 		return 1;
 	return 0;
+}
+
+#ifdef HAVE_FRONT_END
+/* Log the contents of a frontend record */
+static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
+{
+	info("fe name:%s addr:%s port:%u state:%u reason:%s",
+	     fe_ptr->frontends, fe_ptr->addresses,
+	     fe_ptr->port, fe_ptr->node_state, fe_ptr->reason);
+}
+#endif
+
+/*
+ * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
+ *	from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ */
+extern int build_all_frontend_info (void)
+{
+	slurm_conf_frontend_t **ptr_array;
+#ifdef HAVE_FRONT_END
+	slurm_conf_frontend_t *fe_single, *fe_line;
+	int i, count, max_rc = SLURM_SUCCESS;
+	bool front_end_debug;
+
+	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
+		front_end_debug = true;
+	else
+		front_end_debug = false;
+	count = slurm_conf_frontend_array(&ptr_array);
+	if (count == 0)
+		fatal("No FrontendName information available!");
+
+	for (i = 0; i < count; i++) {
+		hostlist_t hl_name, hl_addr;
+		char *fe_name, *fe_addr;
+
+		fe_line = ptr_array[i];
+		hl_name = hostlist_create(fe_line->frontends);
+		if (hl_name == NULL)
+			fatal("Invalid FrontendName:%s", fe_line->frontends);
+		hl_addr = hostlist_create(fe_line->addresses);
+		if (hl_addr == NULL)
+			fatal("Invalid FrontendAddr:%s", fe_line->addresses);
+		if (hostlist_count(hl_name) != hostlist_count(hl_addr)) {
+			fatal("Inconsistent node count between "
+			      "FrontendName(%s) and FrontendAddr(%s)",
+			      fe_line->frontends, fe_line->addresses);
+		}
+		while ((fe_name = hostlist_shift(hl_name))) {
+			fe_addr = hostlist_shift(hl_addr);
+			fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
+			if (list_append(front_end_list, fe_single) == NULL)
+				fatal("list_append: malloc failure");
+			fe_single->frontends = xstrdup(fe_name);
+			fe_single->addresses = xstrdup(fe_addr);
+			free(fe_name);
+			free(fe_addr);
+			fe_single->port = fe_line->port;
+			if (fe_line->reason && fe_line->reason[0])
+				fe_single->reason = xstrdup(fe_line->reason);
+			fe_single->node_state = fe_line->node_state;
+			if (front_end_debug)
+				_dump_front_end(fe_single);
+		}
+		hostlist_destroy(hl_addr);
+		hostlist_destroy(hl_name);
+	}
+	return max_rc;
+#else
+	if (slurm_conf_frontend_array(&ptr_array) != 0)
+		fatal("FrontendName information configured!");
+	return SLURM_SUCCESS;
+#endif
 }
 
 /*
@@ -704,9 +779,11 @@ extern int init_node_conf (void)
 	if (config_list)	/* delete defunct configuration entries */
 		(void) _delete_config_record ();
 	else {
-		config_list  = list_create (_list_delete_config);
-		feature_list = list_create (_list_delete_feature);
-		if ((config_list == NULL) || (feature_list == NULL))
+		config_list    = list_create (_list_delete_config);
+		feature_list   = list_create (_list_delete_feature);
+		front_end_list = list_create (destroy_frontend);
+		if ((config_list == NULL) || (feature_list == NULL) ||
+		    (front_end_list == NULL))
 			fatal("list_create malloc failure");
 	}
 
@@ -725,6 +802,8 @@ extern void node_fini2 (void)
 		config_list = NULL;
 		list_destroy(feature_list);
 		feature_list = NULL;
+		list_destroy(front_end_list);
+		front_end_list = NULL;
 	}
 
 	node_ptr = node_record_table_ptr;
@@ -838,7 +917,7 @@ extern void rehash_node (void)
 }
 
 /* Convert a node state string to it's equivalent enum value */
-extern int state_str2int(const char *state_str)
+extern int state_str2int(const char *state_str, char *node_name)
 {
 	int state_val = NO_VAL;
 	int i;
@@ -858,7 +937,7 @@ extern int state_str2int(const char *state_str)
 			state_val = NODE_STATE_IDLE | NODE_STATE_FAIL;
 	}
 	if (state_val == NO_VAL) {
-		error("invalid node state %s", state_str);
+		error("node %s has invalid state %s", node_name, state_str);
 		errno = EINVAL;
 	}
 	return state_val;

@@ -2,13 +2,14 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Validate scontrol show commands for configuation, daemons,
-#          nodes, and partitions.
+#          nodes, frontends, and partitions.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2011 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -123,6 +124,55 @@ if {$matches != 1} {
 	send_user "\nFAILURE: scontrol show partition command"
 	send_user " with name failed\n"
 	set exit_code 1
+}
+
+#
+# Report all slurm front end nodes
+#
+set matches     0
+set node_name   ""
+spawn $scontrol show frontend
+expect {
+	-re "FrontendName=($alpha_numeric_under)" {
+		set node_name $expect_out(1,string)
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches < 1} {
+	send_user "\nWARNING: no front end nodes found\n"
+} else {
+#
+#	Report one slurm front end node
+#
+	set matches     0
+	spawn $scontrol show frontend $node_name
+	expect {
+		-re "FrontendName=($alpha_numeric_under)" {
+			if {[string compare $expect_out(1,string) $node_name] == 0} {
+				incr matches
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: scontrol show frontend command with name failed\n"
+		set exit_code 1
+	}
 }
 
 #

@@ -103,9 +103,10 @@ extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
-extern uint32_t cluster_flags; /*what type of cluster are we talking to */
+extern uint32_t cluster_flags; /* what type of cluster are we talking to */
 
 extern block_info_msg_t *old_block_info_ptr;
+extern front_end_info_msg_t *old_front_end_info_ptr;
 extern job_info_msg_t *old_job_info_ptr;
 extern node_info_msg_t *old_node_info_ptr;
 extern partition_info_msg_t *old_part_info_ptr;
@@ -123,6 +124,8 @@ extern int	scontrol_job_notify(int argc, char *argv[]);
 extern int	scontrol_job_ready(char *job_id_str);
 extern void	scontrol_list_pids(const char *jobid_str,
 				   const char *node_name);
+extern int	scontrol_load_front_end(front_end_info_msg_t **
+					front_end_buffer_pptr);
 extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);
 extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr,
 				     uint16_t show_flags);
@@ -133,6 +136,10 @@ extern void	scontrol_pid_info(pid_t job_pid);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
 					      node_info_msg_t *node_info_msg);
+extern void	scontrol_print_front_end_list(char *node_list);
+extern void	scontrol_print_front_end(char *node_name,
+					 front_end_info_msg_t  *
+					 front_end_buffer_ptr);
 extern void	scontrol_print_job (char * job_id_str);
 extern void	scontrol_print_hosts (char * node_list);
 extern void	scontrol_print_node (char *node_name,
@@ -145,6 +152,7 @@ extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);
 extern int	scontrol_requeue(char *job_step_id_str);
 extern int	scontrol_suspend(char *op, char *job_id_str);
+extern int	scontrol_update_front_end (int argc, char *argv[]);
 extern int	scontrol_update_job (int argc, char *argv[]);
 extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);

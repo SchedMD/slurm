@@ -60,6 +60,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -371,6 +372,12 @@ extern int schedule(uint32_t job_limit)
 		job_limit = def_job_limit;
 
 	lock_slurmctld(job_write_lock);
+	if (!avail_front_end()) {
+		unlock_slurmctld(job_write_lock);
+		debug("sched: schedule() returning, no front end nodes are "
+		       "available");
+		return SLURM_SUCCESS;
+	}
 	/* Avoid resource fragmentation if important */
 	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
@@ -619,11 +626,6 @@ extern void launch_job(struct job_record *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
-	struct node_record *node_ptr;
-
-	node_ptr = find_first_node_record(job_ptr->node_bitmap);
-	if (node_ptr == NULL)
-		return;
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
@@ -686,7 +688,8 @@ extern void launch_job(struct job_record *job_ptr)
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
-	agent_arg_ptr->hostlist = hostlist_create(node_ptr->name);
+	xassert(job_ptr->batch_host);
+	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
@@ -724,7 +727,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 /*	cred_arg.step_gres_list      = NULL; */
 
 #ifdef HAVE_FRONT_END
-	cred_arg.step_hostlist       = node_record_table_ptr[0].name;
+	xassert(job_ptr->batch_host);
+	cred_arg.step_hostlist       = job_ptr->batch_host;
 #else
 	cred_arg.step_hostlist       = launch_msg_ptr->nodes;
 #endif

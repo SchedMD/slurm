@@ -69,6 +69,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/acct_policy.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -412,7 +413,7 @@ extern void *backfill_agent(void *args)
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
 		    _job_is_completing() || _many_pending_rpcs() ||
-		    !_more_work(last_backfill_time))
+		    !avail_front_end() || !_more_work(last_backfill_time))
 			continue;
 
 		gettimeofday(&tv1, NULL);

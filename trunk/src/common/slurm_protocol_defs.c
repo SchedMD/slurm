@@ -82,6 +82,8 @@ strong_alias(bg_block_state_string, slurm_bg_block_state_string);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 
 
+static void _free_all_front_end_info(front_end_info_msg_t *msg);
+
 static void _free_all_job_info (job_info_msg_t *msg);
 
 static void _free_all_node_info (node_info_msg_t *msg);
@@ -346,20 +348,23 @@ void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 	xfree(msg);
 }
 
-void slurm_free_job_step_info_request_msg(
-	job_step_info_request_msg_t *msg)
+void slurm_free_job_step_info_request_msg(job_step_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_node_info_request_msg(
-	node_info_request_msg_t *msg)
+inline void slurm_free_front_end_info_request_msg
+		(front_end_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_part_info_request_msg(
-	part_info_request_msg_t *msg)
+inline void slurm_free_node_info_request_msg(node_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
+inline void slurm_free_part_info_request_msg(part_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -465,6 +470,7 @@ void slurm_free_job_info_members(job_info_t * job)
 	if (job) {
 		xfree(job->account);
 		xfree(job->alloc_node);
+		xfree(job->batch_host);
 		xfree(job->command);
 		xfree(job->comment);
 		xfree(job->dependency);
@@ -508,6 +514,14 @@ void slurm_free_node_registration_status_msg(
 	}
 }
 
+void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->name);
+		xfree(msg->reason);
+		xfree(msg);
+	}
+}
 
 void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
@@ -1099,6 +1113,8 @@ char *trigger_res_type(uint16_t res_type)
 		return "slurmdbd";
 	else if (res_type == TRIGGER_RES_TYPE_DATABASE)
 		return "database";
+	else if (res_type == TRIGGER_RES_TYPE_FRONT_END)
+		return "front_end";
 	else
 		return "unknown";
 }
@@ -1779,6 +1795,40 @@ void slurm_free_job_step_info_members (job_step_info_t * msg)
 	}
 }
 
+/*
+ * slurm_free_front_end_info - free the front_end information response message
+ * IN msg - pointer to front_end information response message
+ * NOTE: buffer is loaded by slurm_load_front_end.
+ */
+void slurm_free_front_end_info_msg(front_end_info_msg_t * msg)
+{
+	if (msg) {
+		if (msg->front_end_array) {
+			_free_all_front_end_info(msg);
+			xfree(msg->front_end_array);
+		}
+		xfree(msg);
+	}
+}
+
+static void _free_all_front_end_info(front_end_info_msg_t *msg)
+{
+	int i;
+
+	if ((msg == NULL) || (msg->front_end_array == NULL))
+		return;
+
+	for (i = 0; i < msg->record_count; i++)
+		slurm_free_front_end_info_members(&msg->front_end_array[i]);
+}
+
+void slurm_free_front_end_info_members(front_end_info_t * front_end)
+{
+	if (front_end) {
+		xfree(front_end->name);
+		xfree(front_end->reason);
+	}
+}
 
 /*
  * slurm_free_node_info - free the node information response message
@@ -1800,8 +1850,7 @@ static void _free_all_node_info(node_info_msg_t *msg)
 {
 	int i;
 
-	if ((msg == NULL) ||
-	    (msg->node_array == NULL))
+	if ((msg == NULL) || (msg->node_array == NULL))
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
@@ -2155,6 +2204,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SHUTDOWN:
 		slurm_free_shutdown_msg(data);
 		break;
+	case REQUEST_UPDATE_FRONT_END:
+		slurm_free_update_front_end_msg(data);
+		break;
 	case REQUEST_UPDATE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
@@ -2187,6 +2239,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_CHECKPOINT_TASK_COMP:
 		slurm_free_checkpoint_task_comp_msg(data);
+		break;
+	case REQUEST_FRONT_END_INFO:
+		slurm_free_front_end_info_request_msg(data);
 		break;
 	case REQUEST_SUSPEND:
 		slurm_free_suspend_msg(data);

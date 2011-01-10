@@ -187,6 +187,8 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 			sview_config->default_page = BLOCK_PAGE;
 		else if (!strcasecmp(new_text, "node"))
 			sview_config->default_page = NODE_PAGE;
+		else if (!strcasecmp(new_text, "frontend"))
+			sview_config->default_page = FRONT_END_PAGE;
 		else
 			sview_config->default_page = JOB_PAGE;
 		break;
@@ -521,7 +523,7 @@ static void _init_sview_conf()
 	}
 }
 
-extern int load_defaults()
+extern int load_defaults(void)
 {
 	s_p_hashtbl_t *hashtbl = NULL;
 	s_p_options_t sview_conf_options[] = {
@@ -542,6 +544,7 @@ extern int load_defaults()
 		{"PageOptsNode", S_P_STRING},
 		{"PageOptsPartition", S_P_STRING},
 		{"PageOptsReservation", S_P_STRING},
+		{"PageOptsFrontend", S_P_STRING},
 		{"RefreshDelay", S_P_UINT16},
 		{"RuledTables", S_P_BOOLEAN},
 		{"SavePageSettings", S_P_BOOLEAN},
@@ -592,6 +595,8 @@ extern int load_defaults()
 			default_sview_config.default_page = BLOCK_PAGE;
 		else if (slurm_strcasestr(tmp_str, "node"))
 			default_sview_config.default_page = NODE_PAGE;
+		else if (slurm_strcasestr(tmp_str, "frontend"))
+			default_sview_config.default_page = FRONT_END_PAGE;
 		xfree(tmp_str);
 	}
 	s_p_get_uint32(&default_sview_config.grid_hori,
@@ -644,7 +649,7 @@ extern int load_defaults()
 	}
 	if (s_p_get_string(&tmp_str, "VisiblePages", hashtbl)) {
 		int i = 0;
-		for(i=0; i<PAGE_CNT; i++)
+		for (i=0; i<PAGE_CNT; i++)
 			default_sview_config.page_visible[i] = FALSE;
 
 		if (slurm_strcasestr(tmp_str, "job"))
@@ -657,6 +662,8 @@ extern int load_defaults()
 			default_sview_config.page_visible[BLOCK_PAGE] = 1;
 		if (slurm_strcasestr(tmp_str, "node"))
 			default_sview_config.page_visible[NODE_PAGE] = 1;
+		if (slurm_strcasestr(tmp_str, "frontend"))
+			default_sview_config.page_visible[FRONT_END_PAGE] = 1;
 		xfree(tmp_str);
 	}
 
@@ -840,9 +847,6 @@ extern int save_defaults(bool final_save)
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if (!final_save)
-		goto end_it;
-
 	/* save all current page options */
 	for (i=0; i<PAGE_CNT; i++) {
 		page_opts_t *page_opts =
@@ -876,11 +880,6 @@ extern int save_defaults(bool final_save)
 				xstrfmtcat(tmp_str2, "%s", col_name);
 			}
 			list_iterator_destroy(itr);
-		}
-
-		if (page_opts->col_list) {
-			list_destroy(page_opts->col_list);
-			page_opts->col_list = NULL;
 		}
 
 		if (tmp_str2) {
@@ -968,6 +967,11 @@ extern GtkListStore *create_model_defaults(int type)
 				   0, "node",
 				   1, type,
 				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "frontend",
+				   1, type,
+				   -1);
 		break;
 	case SORTID_TAB_POS:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -998,7 +1002,7 @@ extern GtkListStore *create_model_defaults(int type)
 	return model;
 }
 
-extern int configure_defaults()
+extern int configure_defaults(void)
 {
 	GtkScrolledWindow *window = create_scrolled_window();
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
@@ -1101,6 +1105,7 @@ extern int configure_defaults()
 				cluster_change_part();
 				cluster_change_job();
 				cluster_change_node();
+				cluster_change_front_end();
 			} else if (tmp_config.grid_topological !=
 				   working_sview_config.grid_topological) {
 				apply_hidden_change = FALSE;

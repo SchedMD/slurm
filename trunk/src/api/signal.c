@@ -56,18 +56,150 @@
 #include "src/common/slurm_protocol_api.h"
 
 static int _local_send_recv_rc_msgs(const char *nodelist,
-				    slurm_msg_type_t type,
-				    void *data);
-static int _signal_job_step(
-	const job_step_info_t *step,
-	const resource_allocation_response_msg_t *allocation,
-	uint16_t signal);
-static int _signal_batch_script_step(
-	const resource_allocation_response_msg_t *allocation, uint16_t signal);
+				    slurm_msg_type_t type, void *data)
+{
+	List ret_list = NULL;
+	int temp_rc = 0, rc = 0;
+	ret_data_info_t *ret_data_info = NULL;
+	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+
+	slurm_msg_t_init(msg);
+	msg->msg_type = type;
+	msg->data = data;
+
+	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
+		while ((ret_data_info = list_pop(ret_list))) {
+			temp_rc = slurm_get_return_code(ret_data_info->type,
+							ret_data_info->data);
+			if (temp_rc)
+				rc = temp_rc;
+		}
+	} else {
+		error("slurm_signal_job: no list was returned");
+		rc = SLURM_ERROR;
+	}
+
+	slurm_free_msg(msg);
+	return rc;
+}
+
+static int _signal_batch_script_step(const resource_allocation_response_msg_t 
+				     *allocation, uint16_t signal)
+{
+	slurm_msg_t msg;
+	kill_tasks_msg_t rpc;
+	int rc = SLURM_SUCCESS;
+	char *name = nodelist_nth_host(allocation->node_list, 0);
+	if (!name) {
+		error("_signal_batch_script_step: "
+		      "can't get the first name out of %s",
+		      allocation->node_list);
+		return -1;
+	}
+	rpc.job_id = allocation->job_id;
+	rpc.job_step_id = SLURM_BATCH_SCRIPT;
+	rpc.signal = (uint32_t)signal;
+
+	slurm_msg_t_init(&msg);
+	msg.msg_type = REQUEST_SIGNAL_TASKS;
+	msg.data = &rpc;
+	if (slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
+		error("_signal_batch_script_step: "
+		      "can't find address for host %s, check slurm.conf",
+		      name);
+		free(name);
+		return -1;
+	}
+	free(name);
+	if (slurm_send_recv_rc_msg_only_one(&msg, &rc, 0) < 0) {
+		error("_signal_batch_script_step: %m");
+		rc = -1;
+	}
+	return rc;
+}
+
+static int _signal_job_step(const job_step_info_t *step,
+			    const resource_allocation_response_msg_t *
+			    allocation, uint16_t signal)
+{
+	kill_tasks_msg_t rpc;
+	int rc = SLURM_SUCCESS;
+
+	/* same remote procedure call for each node */
+	rpc.job_id = step->job_id;
+	rpc.job_step_id = step->step_id;
+	rpc.signal = (uint32_t)signal;
+	rc = _local_send_recv_rc_msgs(allocation->node_list,
+				      REQUEST_SIGNAL_TASKS, &rpc);
+	return rc;
+}
+
+static int _terminate_batch_script_step(const resource_allocation_response_msg_t
+					* allocation)
+{
+	slurm_msg_t msg;
+	kill_tasks_msg_t rpc;
+	int rc = SLURM_SUCCESS;
+	int i;
+	char *name = nodelist_nth_host(allocation->node_list, 0);
+	if (!name) {
+		error("_signal_batch_script_step: "
+		      "can't get the first name out of %s",
+		      allocation->node_list);
+		return -1;
+	}
+
+	rpc.job_id = allocation->job_id;
+	rpc.job_step_id = SLURM_BATCH_SCRIPT;
+	rpc.signal = (uint32_t)-1; /* not used by slurmd */
+
+	slurm_msg_t_init(&msg);
+	msg.msg_type = REQUEST_TERMINATE_TASKS;
+	msg.data = &rpc;
+
+	if (slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
+		error("_signal_batch_script_step: "
+		      "can't find address for host %s, check slurm.conf",
+		      name);
+		free(name);
+		return -1;
+	}
+	free(name);
+	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 0);
+	if (i != 0)
+		rc = i;
+
+	return rc;
+}
+
+/*
+ * Send a REQUEST_TERMINATE_TASKS rpc to all nodes in a job step.
+ *
+ * RET Upon successful termination of the job step, 0 shall be returned.
+ * Otherwise, -1 shall be returned and errno set to indicate the error.
+ */
 static int _terminate_job_step(const job_step_info_t *step,
-		       const resource_allocation_response_msg_t *allocation);
-static int _terminate_batch_script_step(
-	const resource_allocation_response_msg_t *allocation);
+			       const resource_allocation_response_msg_t *
+			       allocation)
+{
+	kill_tasks_msg_t rpc;
+	int rc = SLURM_SUCCESS;
+
+	/*
+	 *  Send REQUEST_TERMINATE_TASKS to all nodes of the step
+	 */
+	rpc.job_id = step->job_id;
+	rpc.job_step_id = step->step_id;
+	rpc.signal = (uint32_t)-1; /* not used by slurmd */
+	rc = _local_send_recv_rc_msgs(allocation->node_list,
+				      REQUEST_TERMINATE_TASKS, &rpc);
+	if ((rc == -1) && (errno == ESLURM_ALREADY_DONE)) {
+		rc = 0;
+		errno = 0;
+	}
+
+	return rc;
+}
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
@@ -158,87 +290,6 @@ fail:
 	slurm_free_resource_allocation_response_msg(alloc_info);
  	errno = save_errno;
  	return rc ? -1 : 0;
-}
-
-static int
-_local_send_recv_rc_msgs(const char *nodelist, slurm_msg_type_t type,
-			 void *data)
-{
-	List ret_list = NULL;
-	int temp_rc = 0, rc = 0;
-	ret_data_info_t *ret_data_info = NULL;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-
-	slurm_msg_t_init(msg);
-	msg->msg_type = type;
-	msg->data = data;
-
-	if((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
-		while((ret_data_info = list_pop(ret_list))) {
-			temp_rc = slurm_get_return_code(ret_data_info->type,
-							ret_data_info->data);
-			if(temp_rc)
-				rc = temp_rc;
-		}
-	} else {
-		error("slurm_signal_job: no list was returned");
-		rc = SLURM_ERROR;
-	}
-
-	slurm_free_msg(msg);
-	return rc;
-}
-
-static int
-_signal_job_step(const job_step_info_t *step,
-		 const resource_allocation_response_msg_t *allocation,
-		 uint16_t signal)
-{
-	kill_tasks_msg_t rpc;
-	int rc = SLURM_SUCCESS;
-
-	/* same remote procedure call for each node */
-	rpc.job_id = step->job_id;
-	rpc.job_step_id = step->step_id;
-	rpc.signal = (uint32_t)signal;
-	rc = _local_send_recv_rc_msgs(allocation->node_list,
-				      REQUEST_SIGNAL_TASKS, &rpc);
-	return rc;
-}
-
-static int _signal_batch_script_step(
-	const resource_allocation_response_msg_t *allocation, uint16_t signal)
-{
-	slurm_msg_t msg;
-	kill_tasks_msg_t rpc;
-	int rc = SLURM_SUCCESS;
-	char *name = nodelist_nth_host(allocation->node_list, 0);
-	if(!name) {
-		error("_signal_batch_script_step: "
-		      "can't get the first name out of %s",
-		      allocation->node_list);
-		return -1;
-	}
-	rpc.job_id = allocation->job_id;
-	rpc.job_step_id = SLURM_BATCH_SCRIPT;
-	rpc.signal = (uint32_t)signal;
-
-	slurm_msg_t_init(&msg);
-	msg.msg_type = REQUEST_SIGNAL_TASKS;
-	msg.data = &rpc;
-	if(slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
-		error("_signal_batch_script_step: "
-		      "can't find address for host %s, check slurm.conf",
-		      name);
-		free(name);
-		return -1;
-	}
-	free(name);
-	if (slurm_send_recv_rc_msg_only_one(&msg, &rc, 0) < 0) {
-		error("_signal_batch_script_step: %m");
-		rc = -1;
-	}
-	return rc;
 }
 
 
@@ -335,74 +386,6 @@ fail:
 	slurm_free_resource_allocation_response_msg(alloc_info);
 	errno = save_errno;
 	return rc ? -1 : 0;
-}
-
-
-/*
- * Send a REQUEST_TERMINATE_TASKS rpc to all nodes in a job step.
- *
- * RET Upon successful termination of the job step, 0 shall be returned.
- * Otherwise, -1 shall be returned and errno set to indicate the error.
- */
-static int
-_terminate_job_step(const job_step_info_t *step,
-		    const resource_allocation_response_msg_t *allocation)
-{
-	kill_tasks_msg_t rpc;
-	int rc = SLURM_SUCCESS;
-
-	/*
-	 *  Send REQUEST_TERMINATE_TASKS to all nodes of the step
-	 */
-	rpc.job_id = step->job_id;
-	rpc.job_step_id = step->step_id;
-	rpc.signal = (uint32_t)-1; /* not used by slurmd */
-	rc = _local_send_recv_rc_msgs(allocation->node_list,
-				      REQUEST_TERMINATE_TASKS, &rpc);
-	if (rc == -1 && errno == ESLURM_ALREADY_DONE) {
-		rc = 0;
-		errno = 0;
-	}
-
-	return rc;
-}
-
-static int _terminate_batch_script_step(
-	const resource_allocation_response_msg_t *allocation)
-{
-	slurm_msg_t msg;
-	kill_tasks_msg_t rpc;
-	int rc = SLURM_SUCCESS;
-	int i;
-	char *name = nodelist_nth_host(allocation->node_list, 0);
-	if(!name) {
-		error("_signal_batch_script_step: "
-		      "can't get the first name out of %s",
-		      allocation->node_list);
-		return -1;
-	}
-
-	rpc.job_id = allocation->job_id;
-	rpc.job_step_id = SLURM_BATCH_SCRIPT;
-	rpc.signal = (uint32_t)-1; /* not used by slurmd */
-
-	slurm_msg_t_init(&msg);
-	msg.msg_type = REQUEST_TERMINATE_TASKS;
-	msg.data = &rpc;
-
-	if(slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
-		error("_signal_batch_script_step: "
-		      "can't find address for host %s, check slurm.conf",
-		      name);
-		free(name);
-		return -1;
-	}
-	free(name);
-	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 0);
-	if (i != 0)
-		rc = i;
-
-	return rc;
 }
 
 /*

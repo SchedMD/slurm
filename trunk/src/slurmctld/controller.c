@@ -87,6 +87,7 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/basil_interface.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
@@ -647,6 +648,7 @@ int main(int argc, char *argv[])
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
+	purge_front_end_state();
 	resv_fini();
 	trigger_fini();
 	dir_name = slurm_get_state_save_location();
@@ -1535,6 +1537,7 @@ extern void save_all_state(void)
 	char *save_loc;
 
 	/* Each of these functions lock their own databases */
+	schedule_front_end_save();
 	schedule_job_save();
 	schedule_node_save();
 	schedule_part_save();

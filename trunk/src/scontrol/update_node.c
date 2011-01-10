@@ -57,30 +57,30 @@ scontrol_update_node (int argc, char *argv[])
 	update_node_msg_t node_msg;
 	char *reason_str = NULL;
 	char *tag, *val;
-	int taglen, vallen;
+	int tag_len, val_len;
 
 	slurm_init_update_node_msg(&node_msg);
 	for (i=0; i<argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
-			taglen = val - argv[i];
+			tag_len = val - argv[i];
 			val++;
-			vallen = strlen(val);
+			val_len = strlen(val);
 		} else {
 			exit_code = 1;
 			error("Invalid input: %s  Request aborted", argv[i]);
 			return -1;
 		}
-		if (strncasecmp(tag, "NodeName", MAX(taglen, 1)) == 0)
+		if (strncasecmp(tag, "NodeName", MAX(tag_len, 1)) == 0)
 			node_msg.node_names = val;
-		else if (strncasecmp(tag, "Features", MAX(taglen, 1)) == 0) {
+		else if (strncasecmp(tag, "Features", MAX(tag_len, 1)) == 0) {
 			node_msg.features = val;
 			update_cnt++;
-		} else if (strncasecmp(tag, "Gres", MAX(taglen, 1)) == 0) {
+		} else if (strncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
 			node_msg.gres = val;
 			update_cnt++;
-		} else if (strncasecmp(tag, "Weight", MAX(taglen,1)) == 0) {
+		} else if (strncasecmp(tag, "Weight", MAX(tag_len,1)) == 0) {
 			/* Logic borrowed from function _handle_uint32 */
 			char *endptr;
 			unsigned long num;
@@ -115,7 +115,7 @@ scontrol_update_node (int argc, char *argv[])
 			}
 			node_msg.weight = num;
 			update_cnt++;
-		} else if (strncasecmp(tag, "Reason", MAX(taglen, 1)) == 0) {
+		} else if (strncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
 			int len = strlen(val);
 			reason_str = xmalloc(len+1);
 			if (*val == '"')
@@ -128,36 +128,36 @@ scontrol_update_node (int argc, char *argv[])
 				reason_str[len] = '\0';
 
 			node_msg.reason = reason_str;
-			if (getlogin() == NULL ||
-			    uid_from_string(getlogin(),
-					    &node_msg.reason_uid) < 0) {
+			if ((getlogin() == NULL) ||
+			    (uid_from_string(getlogin(),
+					     &node_msg.reason_uid) < 0)) {
 				node_msg.reason_uid = getuid();
 			}
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "State", MAX(taglen, 1)) == 0) {
+		else if (strncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
 			if (strncasecmp(val, "NoResp",
-				        MAX(vallen, 3)) == 0) {
+				        MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_NO_RESPOND;
 				update_cnt++;
 			} else if (strncasecmp(val, "DRAIN",
-				   MAX(vallen, 3)) == 0) {
+				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_DRAIN;
 				update_cnt++;
 			} else if (strncasecmp(val, "FAIL",
-				   MAX(vallen, 3)) == 0) {
+				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_FAIL;
 				update_cnt++;
 			} else if (strncasecmp(val, "RESUME",
-				   MAX(vallen, 3)) == 0) {
+				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_RESUME;
 				update_cnt++;
 			} else if (strncasecmp(val, "POWER_DOWN",
-				   MAX(vallen, 7)) == 0) {
+				   MAX(val_len, 7)) == 0) {
 				node_msg.node_state = NODE_STATE_POWER_SAVE;
 				update_cnt++;
 			} else if (strncasecmp(val, "POWER_UP",
-				   MAX(vallen, 7)) == 0) {
+				   MAX(val_len, 7)) == 0) {
 				node_msg.node_state = NODE_STATE_POWER_UP;
 				update_cnt++;
 			} else {
@@ -165,7 +165,7 @@ scontrol_update_node (int argc, char *argv[])
 				for (j = 0; j < NODE_STATE_END; j++) {
 					if (strncasecmp (node_state_string(j),
 							 val,
-							 MAX(vallen, 3)) == 0){
+							 MAX(val_len, 3)) == 0){
 						state_val = (uint16_t) j;
 						break;
 					}
@@ -217,6 +217,120 @@ scontrol_update_node (int argc, char *argv[])
 	}
 
 	rc = slurm_update_node(&node_msg);
+
+done:	xfree(reason_str);
+	if (rc) {
+		exit_code = 1;
+		return slurm_get_errno ();
+	} else
+		return 0;
+}
+
+/*
+ * scontrol_update_front_end - update the slurm front_end node configuration
+ *	per the supplied arguments
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *			error message and returns 0
+ */
+extern int
+scontrol_update_front_end (int argc, char *argv[])
+{
+	int i, rc = 0, update_cnt = 0;
+	update_front_end_msg_t front_end_msg;
+	char *reason_str = NULL;
+	char *tag, *val;
+	int tag_len, val_len;
+
+	slurm_init_update_front_end_msg(&front_end_msg);
+	for (i=0; i<argc; i++) {
+		tag = argv[i];
+		val = strchr(argv[i], '=');
+		if (val) {
+			tag_len = val - argv[i];
+			val++;
+			val_len = strlen(val);
+		} else {
+			exit_code = 1;
+			error("Invalid input: %s  Request aborted", argv[i]);
+			return -1;
+		}
+		if (strncasecmp(tag, "FrontendName", MAX(tag_len, 1)) == 0)
+			front_end_msg.name = val;
+		else if (strncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
+			int len = strlen(val);
+			reason_str = xmalloc(len+1);
+			if (*val == '"')
+				strcpy(reason_str, val+1);
+			else
+				strcpy(reason_str, val);
+
+			len = strlen(reason_str) - 1;
+			if ((len >= 0) && (reason_str[len] == '"'))
+				reason_str[len] = '\0';
+
+			front_end_msg.reason = reason_str;
+			if ((getlogin() == NULL) ||
+			    (uid_from_string(getlogin(),
+					     &front_end_msg.reason_uid) < 0)) {
+				front_end_msg.reason_uid = getuid();
+			}
+			update_cnt++;
+		}
+		else if (strncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
+			if (strncasecmp(val, "DRAIN",
+				   MAX(val_len, 3)) == 0) {
+				front_end_msg.node_state = NODE_STATE_DRAIN;
+				update_cnt++;
+			} else if (strncasecmp(val, "DOWN",
+				   MAX(val_len, 3)) == 0) {
+				front_end_msg.node_state = NODE_STATE_DOWN;
+				update_cnt++;
+			} else if (strncasecmp(val, "RESUME",
+				   MAX(val_len, 3)) == 0) {
+				front_end_msg.node_state = NODE_RESUME;
+				update_cnt++;
+			} else {
+				exit_code = 1;
+				fprintf(stderr,
+					 "Invalid input: %s\n"
+					 "Request aborted\n"
+					 "Valid states are: DRAIN RESUME\n",
+					 argv[i]);
+				goto done;
+			}
+		} else {
+			exit_code = 1;
+			fprintf(stderr, "Update of this parameter is not "
+				"supported: %s\n", argv[i]);
+			fprintf(stderr, "Request aborted\n");
+			goto done;
+		}
+	}
+
+	if ((front_end_msg.node_state == NODE_STATE_DOWN) &&
+	    ((front_end_msg.reason == NULL) ||
+	     (strlen(front_end_msg.reason) == 0))) {
+		fprintf (stderr, "You must specify a reason when DOWNING a "
+			"frontend node\nRequest aborted\n");
+		goto done;
+	}
+	if ((front_end_msg.node_state == NODE_STATE_DRAIN) &&
+	    ((front_end_msg.reason == NULL) ||
+	     (strlen(front_end_msg.reason) == 0))) {
+		fprintf (stderr, "You must specify a reason when DRAINING a "
+			"frontend node\nRequest aborted\n");
+		goto done;
+	}
+
+	if (update_cnt == 0) {
+		exit_code = 1;
+		fprintf(stderr, "No changes specified\n");
+		return 0;
+	}
+
+	rc = slurm_update_front_end(&front_end_msg);
 
 done:	xfree(reason_str);
 	if (rc) {
