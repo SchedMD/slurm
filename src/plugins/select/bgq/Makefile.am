@@ -14,15 +14,14 @@ pkglib_LTLIBRARIES = select_bgq.la
 if BLUEGENE_LOADED
 
 # BGQ node selection plugin.
-select_bgq_la_SOURCES = select_bgq.cc bgq.h bgq_enums.h
+select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
-select_bgq_la_LIBADD  = block_allocator/block_allocator.la
-
+select_bgq_la_LIBADD  = block_allocator/libbgq_block_allocator.la
 
 else
 # These are needed for pack/unpack of structures for cross-cluster stuff
-select_bluegene_la_SOURCES = select_bgq.cc bgq.h bgq_enums.h
-select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
+select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 
 endif

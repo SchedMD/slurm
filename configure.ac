@@ -454,10 +454,11 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
-		 src/plugins/select/bgq/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/bluegene/block_allocator/Makefile
 		 src/plugins/select/bluegene/plugin/Makefile
+		 src/plugins/select/bgq/Makefile
+		 src/plugins/select/bgq/block_allocator/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cray/Makefile
 		 src/plugins/select/linear/Makefile

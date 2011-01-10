@@ -64,9 +64,10 @@ int main(int argc, char** argv)
 
 	log_alter(log_opts, LOG_DAEMON, "/dev/null");
 
-	DIM_SIZE[X]=0;
-	DIM_SIZE[Y]=0;
-	DIM_SIZE[Z]=0;
+	DIM_SIZE[A]=0;
+	DIM_SIZE[B]=0;
+	DIM_SIZE[C]=0;
+	DIM_SIZE[D]=0;
 
 	slurm_conf_reinit(NULL);
 	ba_init(NULL, 1);
@@ -143,21 +144,26 @@ int main(int argc, char** argv)
 
 
 	int dim,j;
-	int x,y,z;
-	int startx=0;
-	int starty=0;
-	int startz=0;
-	int endx=DIM_SIZE[X];
-	int endy=1;//DIM_SIZE[Y];
-	int endz=1;//DIM_SIZE[Z];
+	int a,b,c,d;
+	int starta=0;
+	int startb=0;
+	int startc=0;
+	int startd=0;
+	int enda=DIM_SIZE[A];
+	int endb=1;//DIM_SIZE[B];
+	int endc=1;//DIM_SIZE[C];
+	int endd=1;//DIM_SIZE[D];
 
-	for(x=startx;x<endx;x++) {
-		for(y=starty;y<endy;y++) {
-			for(z=startz;z<endz;z++) {
-				ba_node_t *curr_node =
-					&(ba_system_ptr->grid[x][y][z]);
-				info("Node %c%c%c Used = %d Letter = %c",
-				     alpha_num[x],alpha_num[y],alpha_num[z],
+	for(a=starta;a<enda;a++) {
+		for(b=startb;b<endb;b++) {
+			for(c=startc;c<endc;c++) {
+				for(d=startd;d<endd;d++) {
+					ba_node_t *curr_node =
+						&(ba_system_ptr->grid
+						  [a][b][c][d]);
+				info("Node %c%c%c%c Used = %d Letter = %c",
+				     alpha_num[a],alpha_num[b],
+				     alpha_num[c],alpha_num[d],
 				     curr_node->used,
 				     curr_node->letter);
 				for(dim=0;dim<1;dim++) {
@@ -165,22 +171,27 @@ int main(int argc, char** argv)
 					ba_switch_t *wire =
 						&curr_node->axis_switch[dim];
 					for(j=0;j<NUM_PORTS_PER_NODE;j++)
-						info("\t%d -> %d -> %c%c%c %d "
+						info("\t%d -> %d -> "
+						     "%c%c%c%c %d "
 						     "Used = %d",
 						     j, wire->int_wire[j].
 						     port_tar,
 						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-							       node_tar[X]],
+								     wire->int_wire[j].
+								     port_tar].
+							       node_tar[A]],
 						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     node_tar[Y]],
+								     wire->int_wire[j].
+								     port_tar].
+							       node_tar[B]],
 						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     node_tar[Z]],
+								     wire->int_wire[j].
+								     port_tar].
+							       node_tar[C]],
+						     alpha_num[wire->ext_wire[
+								     wire->int_wire[j].
+								     port_tar].
+							       node_tar[D]],
 						     wire->ext_wire[
 							     wire->int_wire[j].
 							     port_tar].
@@ -190,6 +201,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+}
 	/* list_destroy(results); */
 
 /* 	ba_fini(); */

@@ -50,6 +50,16 @@
 #  include "config.h"
 #endif
 
+#include <dlfcn.h>
+
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif				/* WITH_PTHREADS */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
@@ -59,13 +69,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
-#include <dlfcn.h>
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BG_Q
 extern bool have_db2;
 extern int bridge_init();
 extern int bridge_fini();
@@ -126,5 +131,11 @@ extern status_t bridge_destroy_block(pm_partition_id_t pid);
 /* say message */
 
 extern int bridge_set_log_params(char *api_file_name, unsigned int level);
+
 #endif /* HAVE_BG_FILES */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _BRIDGE_LINKER_H_ */

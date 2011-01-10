@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile.am for bluegene_block_allocator
+# Makefile.am for bgq_block_allocator
 
 
 VPATH = @srcdir@
@@ -39,7 +39,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BLUEGENE_LOADED_TRUE@noinst_PROGRAMS = wire_test$(EXEEXT)
-subdir = src/plugins/select/bluegene/block_allocator
+subdir = src/plugins/select/bgq/block_allocator
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -84,20 +84,20 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-libbluegene_block_allocator_la_LIBADD =
-am_libbluegene_block_allocator_la_OBJECTS = block_allocator.lo \
+libbgq_block_allocator_la_LIBADD =
+am_libbgq_block_allocator_la_OBJECTS = block_allocator.lo \
 	bridge_linker.lo
-libbluegene_block_allocator_la_OBJECTS =  \
-	$(am_libbluegene_block_allocator_la_OBJECTS)
-libbluegene_block_allocator_la_LINK = $(LIBTOOL) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) \
-	$(libbluegene_block_allocator_la_LDFLAGS) $(LDFLAGS) -o $@
+libbgq_block_allocator_la_OBJECTS =  \
+	$(am_libbgq_block_allocator_la_OBJECTS)
+libbgq_block_allocator_la_LINK = $(LIBTOOL) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(libbgq_block_allocator_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(noinst_PROGRAMS)
 wire_test_SOURCES = wire_test.c
 wire_test_OBJECTS = wire_test.$(OBJEXT)
 @BLUEGENE_LOADED_TRUE@wire_test_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	libbluegene_block_allocator.la \
+@BLUEGENE_LOADED_TRUE@	libbgq_block_allocator.la \
 @BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
 wire_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -115,8 +115,17 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libbluegene_block_allocator_la_SOURCES) wire_test.c
-DIST_SOURCES = $(libbluegene_block_allocator_la_SOURCES) wire_test.c
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+SOURCES = $(libbgq_block_allocator_la_SOURCES) wire_test.c
+DIST_SOURCES = $(libbgq_block_allocator_la_SOURCES) wire_test.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -317,22 +326,22 @@ CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
 # making a .la
-noinst_LTLIBRARIES = libbluegene_block_allocator.la
-libbluegene_block_allocator_la_SOURCES = \
-	block_allocator.c bridge_linker.c block_allocator.h bridge_linker.h
+noinst_LTLIBRARIES = libbgq_block_allocator.la
+libbgq_block_allocator_la_SOURCES = \
+	block_allocator.cc bridge_linker.cc block_allocator.h bridge_linker.h
 
-libbluegene_block_allocator_la_LDFLAGS = \
-	$(LIB_LDFLAGS) -lm
+libbgq_block_allocator_la_LDFLAGS = \
+	$(LIB_LDFLAGS) -lm $(BG_LDFLAGS)
 
-@BLUEGENE_LOADED_TRUE@wire_testSOURCES = wire_test.c block_allocator.h
-@BLUEGENE_LOADED_TRUE@wire_test_LDADD = libbluegene_block_allocator.la \
+@BLUEGENE_LOADED_TRUE@wire_testSOURCES = wire_test.cc block_allocator.h
+@BLUEGENE_LOADED_TRUE@wire_test_LDADD = libbgq_block_allocator.la \
 @BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl
 
 @BLUEGENE_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .cc .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -342,9 +351,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/select/bluegene/block_allocator/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/select/bgq/block_allocator/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/select/bluegene/block_allocator/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/select/bgq/block_allocator/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -372,8 +381,8 @@ clean-noinstLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libbluegene_block_allocator.la: $(libbluegene_block_allocator_la_OBJECTS) $(libbluegene_block_allocator_la_DEPENDENCIES) 
-	$(libbluegene_block_allocator_la_LINK)  $(libbluegene_block_allocator_la_OBJECTS) $(libbluegene_block_allocator_la_LIBADD) $(LIBS)
+libbgq_block_allocator.la: $(libbgq_block_allocator_la_OBJECTS) $(libbgq_block_allocator_la_DEPENDENCIES) 
+	$(libbgq_block_allocator_la_LINK)  $(libbgq_block_allocator_la_OBJECTS) $(libbgq_block_allocator_la_LIBADD) $(LIBS)
 
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -417,6 +426,27 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+.cc.o:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cc.obj:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cc.lo:
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo
