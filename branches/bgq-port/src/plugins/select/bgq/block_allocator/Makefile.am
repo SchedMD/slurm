@@ -23,7 +23,7 @@ wire_test_SOURCES = wire_test.c block_allocator.h
 nodist_EXTRA_wire_test_SOURCES = dummy.cxx
 
 wire_test_LDADD = libbgq_block_allocator.la \
-	$(top_builddir)/src/api/libslurm.o -ldl
+	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
 
 wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 
