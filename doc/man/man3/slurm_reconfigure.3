@@ -35,6 +35,12 @@ int \fBslurm_delete_reservation\fR (
 .br
 );
 .LP
+void \fBslurm_init_front_end_msg\fR (
+.br
+	update_front_end_msg_t *\fIupdate_front_end_msg_ptr\fP
+.br
+);
+.LP
 void \fBslurm_init_part_desc_msg\fR (
 .br
 	update_part_msg_t *\fIupdate_part_msg_ptr\fP
@@ -44,6 +50,12 @@ void \fBslurm_init_part_desc_msg\fR (
 void \fBslurm_init_resv_desc_msg\fR (
 .br
 	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP
+.br
+);
+.LP
+void \fBslurm_init_update_node_msg\fR(
+.br
+	update_node_msg_t *\fIupdate_node_msg_ptr\fP
 .br
 );
 .LP
@@ -57,9 +69,9 @@ int \fBslurm_shutdown\fR (
 .LP
 int \fBslurm_takeover\fR ( );
 .LP
-void \fBslurm_init_update_node_msg\fR(
+int \fBslurm_update_front_end\fR (
 .br
-	update_node_msg_t *\fIupdate_node_msg_ptr\fP
+	update_front_end_msg_t *\fIupdate_front_end_msg_ptr\fP
 .br
 );
 .LP
@@ -98,6 +110,10 @@ See slurm.h for full details on the data structure's contents.
 Specifies the pointer to a reservation delete request specification.
 See slurm.h for full details on the data structure's contents.
 .TP
+\fIupdate_front_end_msg_ptr\fP
+Specifies the pointer to a front end node update request specification.
+See slurm.h for full details on the data structure's contents.
+.TP
 \fIupdate_node_msg_ptr\fP
 Specifies the pointer to a node update request specification. See slurm.h
 for full details on the data structure's contents.
@@ -109,6 +125,7 @@ See slurm.h for full details on the data structure's contents.
 \fIupdate_resv_msg_ptr\fP
 Specifies the pointer to a reservation create or update request specification.
 See slurm.h for full details on the data structure's contents.
+
 .SH "DESCRIPTION"
 .LP
 \fBslurm_create_partition\fR Request that a new partition be created.
@@ -135,6 +152,12 @@ purged.  This function may only be successfully executed by user root.
 \fBslurm_delete_reservation\fR Request that the specified reservation be
 deleted. This function may only be successfully executed by user root.
 .LP
+\fBslurm_init_update_front_end_msg\fR Initialize the contents of an update
+front end node descriptor with default values. Note:
+\fBslurm_init_update_front_end_msg\fR is not equivalent to setting the data
+structure values to zero. Execute this function before executing
+\fBslurm_update_front_end\fR.
+.LP
 \fBslurm_init_part_desc_msg\fR Initialize the contents of a partition
 descriptor with default values. Note: \fBslurm_init_part_desc_msg\fR is
 not equivalent to setting the data structure values to zero. Execute
@@ -147,6 +170,11 @@ not equivalent to setting the data structure values to zero. Execute this
 function before executing \fBslurm_create_reservation\fR or
 \fBslurm_update_reservation\fR.
 .LP
+\fBslurm_init_update_node_msg\fR Initialize the contents of an update node
+descriptor with default values. Note: \fBslurm_init_update_node_msg\fR is
+not equivalent to setting the data structure values to zero. Execute
+this function before executing \fBslurm_update_node\fR.
+.LP
 \fBslurm_reconfigure\fR Request that the Slurm controller re\-read its
 configuration file. The new configuration parameters take effect
 immediately. This function may only be successfully executed by user root.
@@ -158,10 +186,11 @@ function may only be successfully executed by user root.
 immediately and the backup controller take over.
 This function may only be successfully executed by user root.
 .LP
-\fBslurm_init_update_node_msg\fR Initialize the contents of an update mpde
-descriptor with default values. Note: \fBslurm_init_update_node_msg\fR is
-not equivalent to setting the data structure values to zero. Execute
-this function before executing \fBslurm_update_node\fR.
+\fBslurm_update_front_end\fR Request that the state of one or more front end
+nodes be updated.
+This function may only be successfully executed by user root.
+If used by some autonomous program, the state value most likely to be used is
+\fBNODE_STATE_DRAIN\fR.
 .LP
 \fBslurm_update_node\fR Request that the state of one or more nodes be updated.
 Note that the state of a node (e.g. DRAINING, IDLE, etc.) may be changed, but
@@ -194,6 +223,7 @@ reservation be updated.  Initialize the data structure using the
 the parameters to be changed. Note:  \fBslurm_init_resv_desc_msg\fR
 is not equivalent to setting the data structure values to zero. This
 function may only be successfully executed by user root.
+
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, \-1 is returned, and the Slurm error
@@ -359,6 +389,7 @@ which must be linked to your process for use
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

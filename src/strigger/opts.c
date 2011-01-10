@@ -71,6 +71,7 @@
 #define OPT_LONG_CLEAR     0x104
 #define OPT_LONG_USER      0x105
 #define OPT_LONG_BLOCK_ERR 0x106
+#define OPT_LONG_FRONT_END 0x107
 
 /* getopt_long options, integers but not characters */
 
@@ -124,6 +125,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"version",                             no_argument, 0, 'V'},
 		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
 		{"clear",     no_argument,       0, OPT_LONG_CLEAR},
+		{"front_end", no_argument,       0, OPT_LONG_FRONT_END},
 		{"get",       no_argument,       0, OPT_LONG_GET},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"set",       no_argument,       0, OPT_LONG_SET},
@@ -261,6 +263,9 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) OPT_LONG_CLEAR:
 			params.mode_clear = true;
 			break;
+		case (int) OPT_LONG_FRONT_END:
+			params.front_end = true;
+			break;
 		case (int) OPT_LONG_GET:
 			params.mode_get = true;
 			break;
@@ -303,6 +308,7 @@ static void _init_options( void )
 	params.bu_ctld_fail = false;
 	params.bu_ctld_res_op = false;
 	params.bu_ctld_as_ctrl = false;
+	params.front_end    = false;
 	params.node_down    = false;
 	params.node_drained = false;
 	params.node_fail    = false;
@@ -333,6 +339,7 @@ static void _print_options( void )
 	verbose("get          = %s", params.mode_get ? "true" : "false");
 	verbose("clear        = %s", params.mode_clear ? "true" : "false");
 	verbose("block_err    = %s", params.block_err ? "true" : "false");
+	verbose("front_end    = %s", params.front_end ? "true" : "false");
 	verbose("job_id       = %u", params.job_id);
 	verbose("job_fini     = %s", params.job_fini ? "true" : "false");
 	verbose("node_down    = %s", params.node_down ? "true" : "false");
@@ -462,6 +469,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
       --get           get trigger information\n\
       --clear         delete a trigger\n\n\
       --block_err     trigger event on BlueGene block error\n\
+      --front_end     trigger event on FrontEnd node state changes\n\
   -a, --primary_slurmctld_failure\n\
                       trigger event when primary slurmctld fails\n\
   -A, --primary_slurmctld_resumed_operation\n\

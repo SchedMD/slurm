@@ -203,7 +203,7 @@ main (int argc, char *argv[])
 	conf->argc = &argc;
 	slurmd_uid = slurm_get_slurmd_user_id();
 	curr_uid = getuid();
-	if(curr_uid != slurmd_uid) {
+	if (curr_uid != slurmd_uid) {
 		struct passwd *pw = NULL;
 		char *slurmd_user = NULL;
 		char *curr_user = NULL;
@@ -764,7 +764,6 @@ _read_config(void)
 
 	conf->block_map_size = 0;
 
-	_update_logging();
 	_update_nice();
 		
 	get_procs(&conf->actual_cpus);
@@ -788,11 +787,11 @@ _read_config(void)
 		conf->threads = conf->conf_threads;
 	}
 
-	if(cf->fast_schedule &&
-	   ((conf->cpus    != conf->actual_cpus)    ||
-	    (conf->sockets != conf->actual_sockets) ||
-	    (conf->cores   != conf->actual_cores)   ||
-	    (conf->threads != conf->actual_threads))) {
+	if (cf->fast_schedule &&
+	    ((conf->cpus    != conf->actual_cpus)    ||
+	     (conf->sockets != conf->actual_sockets) ||
+	     (conf->cores   != conf->actual_cores)   ||
+	     (conf->threads != conf->actual_threads))) {
 		info("Node configuration differs from hardware\n"
 		     "   Procs=%u:%u(hw) Sockets=%u:%u(hw)\n"
 		     "   CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
@@ -850,6 +849,7 @@ _reconfigure(void)
 	bool did_change;
 
 	_reconfig = 0;
+	_update_logging();
 	_read_config();
 
 	/*
@@ -858,7 +858,6 @@ _reconfigure(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 
-	/* _update_logging(); */
 	_print_conf();
 
 	/*
@@ -1184,11 +1183,19 @@ _slurmd_init(void)
 	 * an alternate location for the slurm config file.
 	 */
 	_process_cmdline(*conf->argc, *conf->argv);
+	_update_logging();
+
+	/*
+	 * Build nodes table like in slurmctld
+	 * This is required by the topology stack
+	 */
+	init_node_conf();
+	build_all_nodeline_info(true);
+	build_all_frontend_info();
 
 	/*
 	 * Read global slurm config file, ovverride necessary values from
 	 * defaults and command line.
-	 *
 	 */
 	_read_config();
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
@@ -1199,24 +1206,11 @@ _slurmd_init(void)
 		return SLURM_FAILURE;
 
 	/*
-	 * Build nodes table like in slurmctld
-	 * This is required by the topology stack
-	 */
-	init_node_conf();
-	build_all_nodeline_info(true);
-
-	/*
 	 * Get and set slurmd topology information
 	 */
 	slurm_topo_build_config();
 	_set_topo_info();
 
-	/*
-	 * Update location of log messages (syslog, stderr, logfile, etc.),
-	 * print current configuration (if in debug mode), and
-	 * load appropriate plugin(s).
-	 */
-	/* _update_logging(); */
 	_print_conf();
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;

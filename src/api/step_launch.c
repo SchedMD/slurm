@@ -562,10 +562,10 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		active = 0;
 		num_tasks = sls->layout->tasks[node_id];
 		for (j = 0; j < num_tasks; j++) {
-			if(bit_test(sls->tasks_started,
-				    sls->layout->tids[node_id][j]) &&
-			   !bit_test(sls->tasks_exited,
-				     sls->layout->tids[node_id][j])) {
+			if (bit_test(sls->tasks_started,
+				     sls->layout->tids[node_id][j]) &&
+			    !bit_test(sls->tasks_exited,
+				      sls->layout->tids[node_id][j])) {
 				/* this one has active tasks */
 				active = 1;
 				break;
@@ -575,14 +575,21 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		if (!active)
 			continue;
 
-		name = nodelist_nth_host(sls->layout->node_list, node_id);
-		hostlist_push(hl, name);
-		free(name);
+		if (ctx->step_resp->step_layout->front_end) {
+			hostlist_push(hl,
+				      ctx->step_resp->step_layout->front_end);
+			break;
+		} else {
+			name = nodelist_nth_host(sls->layout->node_list,
+						 node_id);
+			hostlist_push(hl, name);
+			free(name);
+		}
 	}
 
 	pthread_mutex_unlock(&sls->lock);
 
-	if(!hostlist_count(hl)) {
+	if (!hostlist_count(hl)) {
 		hostlist_destroy(hl);
 		goto nothing_left;
 	}
@@ -945,7 +952,6 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	srun_node_fail_msg_t *nf = fail_msg->data;
 	hostset_t fail_nodes, all_nodes;
 	hostlist_iterator_t fail_itr;
-	char *node;
 	int num_node_ids;
 	int *node_ids;
 	int i, j;
@@ -962,7 +968,10 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	all_nodes = hostset_create(sls->layout->node_list);
 	/* find the index number of each down node */
 	for (i = 0; i < num_node_ids; i++) {
-		node = hostlist_next(fail_itr);
+#ifdef HAVE_FRONT_END
+		node_id = 0;
+#else
+		char *node = hostlist_next(fail_itr);
 		node_id = node_ids[i] = hostset_find(all_nodes, node);
 		if (node_id < 0) {
 			error(  "Internal error: bad SRUN_NODE_FAIL message. "
@@ -971,6 +980,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 			continue;
 		}
 		free(node);
+#endif
 
 		/* find all of the tasks that should run on this node and
 		 * mark them as having started and exited.  If they haven't
@@ -1319,6 +1329,9 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
 			 uint32_t timeout)
 {
+#ifdef HAVE_FRONT_END
+	slurm_cred_arg_t cred_args;
+#endif
 	slurm_msg_t msg;
 	List ret_list = NULL;
 	ListIterator ret_itr;
@@ -1331,7 +1344,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		char *name = NULL;
 		hostlist_t hl = hostlist_create(launch_msg->complete_nodelist);
 		int i = 0;
-		while((name = hostlist_shift(hl))) {
+		while ((name = hostlist_shift(hl))) {
 			_print_launch_msg(launch_msg, name, i++);
 			free(name);
 		}
@@ -1342,9 +1355,17 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
 
-	if(!(ret_list = slurm_send_recv_msgs(
-		     ctx->step_resp->step_layout->node_list,
-		     &msg, timeout, false))) {
+#ifdef HAVE_FRONT_END
+	slurm_cred_get_args(ctx->step_resp->cred, &cred_args);
+	//info("hostlist=%s", cred_args.step_hostlist);
+	ret_list = slurm_send_recv_msgs(cred_args.step_hostlist, &msg, timeout,
+					false);
+	slurm_cred_free_args(&cred_args);
+#else
+	ret_list = slurm_send_recv_msgs(ctx->step_resp->step_layout->node_list,
+					&msg, timeout, false);
+#endif
+	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;
 	}
@@ -1379,7 +1400,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
 
-	if(tot_rc != SLURM_SUCCESS)
+	if (tot_rc != SLURM_SUCCESS)
 		return tot_rc;
 	return rc;
 }

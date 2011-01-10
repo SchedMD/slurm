@@ -35,7 +35,6 @@ source ./globals
 
 set test_id     "15.26"
 set exit_code   0
-set matches     0
 
 print_header $test_id
 
@@ -48,21 +47,27 @@ if { [test_xcpu] } {
 # Spawn initial program via srun
 # Send the signal while the srun is waiting for a resource allocation
 #
+set wait_flag  0
+set abort_flag 0
 set salloc_pid [spawn $salloc -N1 -t1 --begin=noon -v $bin_sleep 1]
 expect {
 	-re "queued and waiting for resources" {
-		incr matches
+		set wait_flag 1
 		exec $bin_kill -INT $salloc_pid
 		send_user "\nSent SIGINT\n"
 		exp_continue
 	}
 	-re "Job allocation ($number) has been revoked" {
-		incr matches
+		set abort_flag 1
 		exp_continue
+	}
+	-re "Job aborted due to signal"  {
+		set abort_flag 1
+		exp_continue;
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		set matches -999
+		set wait_flag -999
 		slow_kill $salloc_pid
 		set exit_code 1
 	}
@@ -71,7 +76,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 2} {
+if {[expr $wait_flag + $abort_flag] != 2} {
 	send_user "\nFAILURE: salloc failed to process SIGINT while waiting for allocation\n"
 	set exit_code 1
 }

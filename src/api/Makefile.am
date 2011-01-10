@@ -81,15 +81,16 @@ EXEEXT=
 slurmapi_src =           \
 	allocate.c       \
 	allocate_msg.c   \
+	block_info.c     \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
+	front_end_info.c \
 	init_msg.c       \
 	job_info.c job_info.h \
 	job_step_info.c  \
 	node_info.c      \
-	block_info.c \
 	partition_info.c \
 	reservation_info.c \
 	signal.c         \

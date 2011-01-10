@@ -343,7 +343,9 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 		       slurm_msg_type_t msg_type)
 {
+#ifndef HAVE_FRONT_END
 	int i;
+#endif
 	kill_tasks_msg_t *kill_tasks_msg;
 	agent_arg_t *agent_args = NULL;
 
@@ -359,16 +361,21 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 	kill_tasks_msg->job_step_id = step_ptr->step_id;
 	kill_tasks_msg->signal      = signal;
 
+#ifdef HAVE_FRONT_END
+	xassert(step_ptr->job_ptr->batch_host);
+	hostlist_push(agent_args->hostlist, step_ptr->job_ptr->batch_host);
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
+	agent_args->node_count = 1;
+#else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
 		hostlist_push(agent_args->hostlist,
 			      node_record_table_ptr[i].name);
 		agent_args->node_count++;
-#ifdef HAVE_FRONT_END		/* Operate only on front-end */
-		break;
-#endif
 	}
+#endif
 
 	if (agent_args->node_count == 0) {
 		xfree(kill_tasks_msg);
@@ -400,8 +407,14 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = msg_type;
 	agent_args->retry    = 1;
+#ifdef HAVE_FRONT_END
+	xassert(step_ptr->job_ptr->batch_host);
+	agent_args->node_count++;
+	agent_args->hostlist = hostlist_create(step_ptr->job_ptr->batch_host);
+#else
 	agent_args->node_count++;
 	agent_args->hostlist = hostlist_create(node_name);
+#endif
 	if (agent_args->hostlist == NULL)
 		fatal("hostlist_create: malloc failure");
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
@@ -2862,7 +2875,9 @@ extern void step_checkpoint(void)
 static void _signal_step_timelimit(struct job_record *job_ptr,
 				   struct step_record *step_ptr, time_t now)
 {
+#ifndef HAVE_FRONT_END
 	int i;
+#endif
 	kill_job_msg_t *kill_step;
 	agent_arg_t *agent_args = NULL;
 
@@ -2871,6 +2886,8 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
 	kill_step = xmalloc(sizeof(kill_job_msg_t));
 	kill_step->job_id    = job_ptr->job_id;
 	kill_step->step_id   = step_ptr->step_id;
@@ -2882,16 +2899,19 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	kill_step->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
 
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+	agent_args->node_count++;
+#else
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
 		hostlist_push(agent_args->hostlist,
 			node_record_table_ptr[i].name);
 		agent_args->node_count++;
-#ifdef HAVE_FRONT_END		/* Operate only on front-end */
-		break;
-#endif
 	}
+#endif
 
 	if (agent_args->node_count == 0) {
 		hostlist_destroy(agent_args->hostlist);

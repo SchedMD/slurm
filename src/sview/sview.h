@@ -108,6 +108,7 @@ enum { JOB_PAGE,
        RESV_PAGE,
        BLOCK_PAGE,
        NODE_PAGE,
+       FRONT_END_PAGE,
        SUBMIT_PAGE,
        ADMIN_PAGE,
        INFO_PAGE,
@@ -346,6 +347,7 @@ extern uint32_t cluster_flags;
 extern int cluster_dims;
 extern List cluster_list;
 extern block_info_msg_t *g_block_info_ptr;
+extern front_end_info_msg_t *g_front_end_info_ptr;
 extern job_info_msg_t *g_job_info_ptr;
 extern node_info_msg_t *g_node_info_ptr;
 extern partition_info_msg_t *g_part_info_ptr;
@@ -456,6 +458,23 @@ extern void select_admin_block(GtkTreeModel *model, GtkTreeIter *iter,
 			       display_data_t *display_data,
 			       GtkTreeView *treeview);
 extern void cluster_change_block();
+
+// front_end_info.c
+extern void admin_edit_front_end(GtkCellRendererText *cell,
+				 const char *path_string,
+				 const char *new_text, gpointer data);
+extern void cluster_change_front_end(void);
+extern GtkListStore *create_model_front_end(int type);
+extern void get_info_front_end(GtkTable *table, display_data_t *display_data);
+extern int  get_new_info_front_end(front_end_info_msg_t **info_ptr, int force);
+extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void refresh_front_end(GtkAction *action, gpointer user_data);
+extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
+				  display_data_t *display_data,
+				  GtkTreeView *treeview);
+extern void set_menus_front_end(void *arg, void *arg2, GtkTreePath *path,
+				int type);
+extern void specific_info_front_end(popup_info_t *popup_win);
 
 // job_info.c
 extern void refresh_job(GtkAction *action, gpointer user_data);
@@ -625,9 +644,9 @@ extern char *visible_to_str(sview_config_t *sview_config);
 extern gboolean entry_changed(GtkWidget *widget, void *msg);
 
 // defaults.c
-extern int load_defaults();
+extern int load_defaults(void);
 extern int save_defaults(bool final_save);
 extern GtkListStore *create_model_defaults(int type);
-extern int configure_defaults();
+extern int configure_defaults(void);
 
 #endif

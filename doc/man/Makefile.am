@@ -53,6 +53,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_delete_partition.3 \
 	man3/slurm_delete_reservation.3 \
 	man3/slurm_free_ctl_conf.3 \
+	man3/slurm_free_front_end_info_msg.3 \
 	man3/slurm_free_job_info_msg.3 \
 	man3/slurm_free_job_alloc_info_response_msg.3 \
 	man3/slurm_free_job_step_create_response_msg.3 \
@@ -72,6 +73,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_get_rem_time.3 \
 	man3/slurm_get_select_jobinfo.3 \
 	man3/slurm_get_triggers.3 \
+	man3/slurm_init_update_front_end_msg.3 \
 	man3/slurm_init_job_desc_msg.3 \
 	man3/slurm_init_part_desc_msg.3 \
 	man3/slurm_init_resv_desc_msg.3 \
@@ -88,6 +90,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_kill_job.3 \
 	man3/slurm_kill_job_step.3 \
 	man3/slurm_load_ctl_conf.3 \
+	man3/slurm_load_front_end.3 \
 	man3/slurm_load_job.3 \
 	man3/slurm_load_jobs.3 \
 	man3/slurm_load_node.3 \
@@ -99,6 +102,8 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_pid2jobid.3 \
 	man3/slurm_ping.3 \
 	man3/slurm_print_ctl_conf.3 \
+	man3/slurm_print_front_end_info_msg.3 \
+	man3/slurm_print_front_end_table.3 \
 	man3/slurm_print_job_info.3 \
 	man3/slurm_print_job_info_msg.3 \
 	man3/slurm_print_job_step_info.3 \
@@ -120,6 +125,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_signal_job.3 \
 	man3/slurm_signal_job_step.3 \
 	man3/slurm_slurmd_status.3 \
+	man3/slurm_sprint_front_end_table.3 \
 	man3/slurm_sprint_job_info.3 \
 	man3/slurm_sprint_job_step_info.3 \
 	man3/slurm_sprint_node_table.3 \
@@ -142,6 +148,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_takeover.3 \
 	man3/slurm_terminate_job.3 \
 	man3/slurm_terminate_job_step.3 \
+	man3/slurm_update_front_end.3 \
 	man3/slurm_update_job.3 \
 	man3/slurm_update_node.3 \
 	man3/slurm_update_partition.3 \

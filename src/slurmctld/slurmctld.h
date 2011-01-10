@@ -207,6 +207,39 @@ extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 
 /*****************************************************************************\
+ *  FRONT_END parameters and data structures
+\*****************************************************************************/
+#define FRONT_END_MAGIC 0xfe9b82fe
+
+typedef struct front_end_record {
+	time_t boot_time;		/* Time of node boot,
+					 * computed from up_time */
+	char *comm_name;		/* communications path name to node */
+	uint32_t job_cnt_comp;		/* count of completing jobs on node */
+	uint16_t job_cnt_run;		/* count of running jobs on node */
+	time_t last_response;		/* Time of last communication */
+	uint32_t magic;			/* magic cookie to test data integrity */
+	char *name;			/* frontend node name */
+	uint16_t node_state;		/* enum node_states, ORed with
+					 * NODE_STATE_NO_RESPOND if not
+					 * responding */
+	bool not_responding;		/* set if fails to respond,
+					 * clear after logging this */
+	slurm_addr_t slurm_addr;	/* network address */
+	uint16_t port;			/* frontend specific port */
+	char *reason;			/* reason for down frontend node */
+	time_t reason_time;		/* Time stamp when reason was set,
+					 * ignore if no reason is set. */
+	uint32_t reason_uid;   		/* User that set the reason, ignore if
+					 * no reason is set. */
+	time_t slurmd_start_time;	/* Time of slurmd startup */
+} front_end_record_t;
+
+extern front_end_record_t *front_end_nodes;
+extern uint16_t front_end_node_cnt;
+extern time_t last_front_end_update;	/* time of last front_end update */
+
+/*****************************************************************************\
  *  PARTITION parameters and data structures
 \*****************************************************************************/
 #define PART_MAGIC 0xaefe8495
@@ -390,6 +423,7 @@ struct job_record {
 					 * value before use */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
+	char *batch_host;		/* host executing batch script */
 	check_jobinfo_t check_job;      /* checkpoint context, opaque */
 	uint16_t ckpt_interval;	        /* checkpoint interval in minutes */
 	time_t ckpt_time;	        /* last time job was periodically
@@ -418,6 +452,8 @@ struct job_record {
 					 * actual or expected */
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
+	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
+					 * this job */
 	char *gres;			/* generic resources */
 	List gres_list;			/* generic resource allocation detail */
 	uint32_t group_id;		/* group submitted under */
@@ -611,10 +647,10 @@ enum select_plugindata_info {
  *	agent request per node as they register.
  * IN job_id - id of the job to be killed
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
- * IN node_ptr - pointer to the node on which the job resides
+ * IN node_name - name of the node on which the job resides
  */
 extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
-			      struct node_record *node_ptr);
+			      char *node_name);
 
 /* Build a bitmap of nodes completing this job */
 extern void build_cg_bitmap(struct job_record *job_ptr);
@@ -1129,6 +1165,14 @@ extern int kill_job_by_part_name(char *part_name);
  */
 extern void kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			     struct node_record *node_ptr);
+
+/*
+ * kill_job_by_front_end_name - Given a front end node name, deallocate
+ *	resource for its jobs and kill them.
+ * IN node_name - name of a front end node
+ * RET number of jobs associated with this front end node
+ */
+extern int kill_job_by_front_end_name(char *node_name);
 
 /*
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING

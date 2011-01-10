@@ -2,7 +2,7 @@
 
 <h1>SLURM User and Administrator Guide for Cray systems</h1>
 
-<b>NOTE: As of January 2009, the SLURM interface to Cray systems is incomplete.</b>
+<b>NOTE: As of 20 December 2010, the SLURM interface to Cray systems is incomplete.</b>
 
 <h2>User Guide</h2>
 
@@ -63,13 +63,12 @@ ways depending upon how SLURM is being built.
 <li>Add <i>%with_cray_xt 1</i> to your <i>~/.rpmmacros</i> file.</li>
 </ol></p>
 
-<p>One <i>slurmd</i> will be used to run all of the batch jobs on
-the system. It is from here that users will execute <i>aprun</i>
-commands to launch tasks.
+<p>The <i>slurmd</i> daemons will not execute on the compute nodes, but will
+execute on one or more front end nodes.
+It is from here that users will execute <i>aprun</i> commands to launch tasks.
 This is specified in the <i>slurm.conf</i> file by using the
-<i>NodeName</i> field to identify the compute nodes and both the
-<i>NodeAddr</i> and <i>NodeHostname</i> fields to identify the
-computer when <i>slurmd</i> runs (normally some sort of front-end node)
+<i>NodeName</i> field to the compute nodes and using the <i>FrontendName</i>
+field to identify to identify where the <i>slurmd</i> runs
 as seen in the examples below.</p>
 
 <p>Next you need to select from two options for the resource selection
@@ -109,24 +108,26 @@ Two examples of SLURM configuration files are shown below:</p>
 # slurm.conf for Cray XT system of size 4x4x4
 # Parameters removed here
 SelectType=select/linear
+FrontendName=front_end[00-03] State=Unknown
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux[000x333] NodeAddr=front_end NodeHostname=front_end
+NodeName=tux[000x333]
 PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
 </pre>
 
 <pre>
-# slurm.conf for Cray XT system of size 4x4x4
+# slurm.conf for Cray XT system of size 2x2x2
 # Parameters removed here
 SelectType=select/linear
+FrontendName=front_end[00-03] State=Unknown
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux000 NodeAddr=front_end NodeHostname=front_end
-NodeName=tux100 NodeAddr=front_end NodeHostname=front_end
-NodeName=tux110 NodeAddr=front_end NodeHostname=front_end
-NodeName=tux010 NodeAddr=front_end NodeHostname=front_end
-NodeName=tux011 NodeAddr=front_end NodeHostname=front_end
-NodeName=tux111 NodeAddr=front_end NodeHostname=front_end
-NodeName=tux101 NodeAddr=front_end NodeHostname=front_end
-NodeName=tux001 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux000
+NodeName=tux100
+NodeName=tux110
+NodeName=tux010
+NodeName=tux011
+NodeName=tux111
+NodeName=tux101
+NodeName=tux001
 PartitionName=debug Nodes=tux[000x111] Default=Yes State=UP
 </pre>
 
@@ -140,6 +141,6 @@ by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 January 2009</p></td>
+<p style="text-align:center;">Last modified 29 December 2010</p></td>
 
 <!--#include virtual="footer.txt"-->

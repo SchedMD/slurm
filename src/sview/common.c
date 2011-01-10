@@ -595,6 +595,9 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	case RESV_PAGE:
 		each.pfunc = &popup_all_resv;
 		break;
+	case FRONT_END_PAGE:
+		each.pfunc = &popup_all_front_end;
+		break;
 	case ADMIN_PAGE:
 		switch(display_data->id) {
 		case JOB_PAGE:
@@ -610,6 +613,12 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 		case BLOCK_PAGE:
 			select_admin_block(treedata->model, &treedata->iter,
 					   display_data, treedata->treeview);
+			break;
+		case FRONT_END_PAGE:
+			select_admin_front_end(treedata->model,
+					       &treedata->iter,
+					       display_data,
+					       treedata->treeview);
 			break;
 		case RESV_PAGE:
 			select_admin_resv(treedata->model, &treedata->iter,
@@ -1808,6 +1817,9 @@ extern void *popup_thr(popup_info_t *popup_win)
 	case RESV_PAGE:
 		specifc_info = specific_info_resv;
 		break;
+	case FRONT_END_PAGE:
+		specifc_info = specific_info_front_end;
+		break;
 	case SUBMIT_PAGE:
 	default:
 		g_print("thread got unknown type %d\n", popup_win->type);
@@ -2232,6 +2244,8 @@ extern char *page_to_str(int page)
 		return "Block";
 	case RESV_PAGE:
 		return "Reservation";
+	case FRONT_END_PAGE:
+		return "Frontend";
 	default:
 		return NULL;
 	}
@@ -2258,13 +2272,15 @@ extern char *tab_pos_to_str(int pos)
 extern char *visible_to_str(sview_config_t *sview_config)
 {
 	char *ret = NULL;
-	int i = 0;
-	for(i=0; i<PAGE_CNT; i++)
-		if (sview_config->page_visible[i]) {
+	int i;
+
+	for (i = 0; i < PAGE_CNT; i++) {
+		if (sview_config->page_visible[i] && (i != TAB_PAGE)) {
 			if (ret)
 				xstrcat(ret, ",");
 			xstrcat(ret, page_to_str(i));
 		}
+	}
 
 	return ret;
 }

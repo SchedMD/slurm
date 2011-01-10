@@ -97,8 +97,11 @@ if {[string compare $host_0 ""] == 0} {
 	exit 1
 }
 if {[string compare $nodelist_name ""] == 0} {
-    send_user "\nFAILURE: Did not get nodelist_name of task 0\n"
-    exit 1
+	send_user "\nFAILURE: Did not get nodelist_name of task 0\n"
+	exit 1
+}
+if {[string compare $host_0 $nodelist_name] != 0} {
+	send_user "\nWARNING: hostname inconsistency\n"
 }
 set include_node $host_0
 
@@ -164,7 +167,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	exec $bin_usleep 250000
 
 	set failures 0
-	set srun_pid [spawn $srun -N1 --nodelist=$include_node -t1 -l $bin_printenv SLURMD_NODENAME]
+	set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 -l $bin_printenv SLURMD_NODENAME]
 	set   alloc $spawn_id
 
 	set srun_pid1 [spawn $srun -N1 --nodelist=$include_node -Z $bin_usleep 500000]
@@ -223,12 +226,8 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	expect {
 		-i $alloc
 		-re "Invalid node name specified" {
-			if {$front_end == 0} {
-				send_user "\nFAILURE: some error happened\n"
-				set failures 1
-			} else {
-				send_user "\nExpected error on front-end systems\n"
-			}
+			send_user "\nFAILURE: some error happened\n"
+			set failures 1
 			exp_continue
 		}
 		-re "error:.*configuring interconnect" {

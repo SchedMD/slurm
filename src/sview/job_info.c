@@ -3,7 +3,7 @@
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -83,6 +83,7 @@ enum {
 	SORTID_ALLOC_NODE,
 	SORTID_ALPS_RESV_ID,
 	SORTID_BATCH,
+	SORTID_BATCH_HOST,
 #ifdef HAVE_BG
 	SORTID_NODELIST,
 	SORTID_NODELIST_EXC,
@@ -305,6 +306,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_EXIT_CODE, "Exit Code", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_BATCH, "Batch Flag", FALSE,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_BATCH_HOST, "Batch Host", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_MIN, "CPUs Min",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
@@ -1234,6 +1237,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_BATCH),
 				   tmp_char);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_BATCH_HOST),
+				   job_ptr->batch_host);
+
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_job,
@@ -1932,6 +1940,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		sprintf(tmp_char, "no");
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_BATCH, tmp_char, -1);
+
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_BATCH_HOST, job_ptr->batch_host, -1);
 
 	if (job_ptr->requeue)
 		sprintf(tmp_char, "yes");

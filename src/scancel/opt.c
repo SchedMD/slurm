@@ -207,7 +207,11 @@ static void _opt_default()
 	opt.account	= NULL;
 	opt.batch	= false;
 	opt.clusters    = NULL;
+#ifdef HAVE_FRONT_END
+	opt.ctld	= true;
+#else
 	opt.ctld	= false;
+#endif
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
 	opt.job_name	= NULL;

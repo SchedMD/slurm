@@ -1345,8 +1345,9 @@ static void _handle_intr(void)
 {
 	static time_t last_intr      = 0;
 	static time_t last_intr_sent = 0;
+	time_t now = time(NULL);
 
-	if (!opt.quit_on_intr && ((time(NULL) - last_intr) > 1)) {
+	if (!opt.quit_on_intr && ((now - last_intr) > 1)) {
 		if  (opt.disable_status) {
 			info("sending Ctrl-C to job %u.%u",
 			     job->jobid, job->stepid);
@@ -1363,7 +1364,7 @@ static void _handle_intr(void)
 		update_job_state(job, SRUN_JOB_CANCELLED);
 		/* terminate job */
 		if (job->state < SRUN_JOB_FORCETERM) {
-			if ((time(NULL) - last_intr_sent) < 1) {
+			if ((now - last_intr_sent) < 1) {
 				job_force_termination(job);
 				slurm_step_launch_abort(job->step_ctx);
 				return;
@@ -1371,7 +1372,7 @@ static void _handle_intr(void)
 
 			info("sending Ctrl-C to job %u.%u",
 			     job->jobid, job->stepid);
-			last_intr_sent = time(NULL);
+			last_intr_sent = now;
 			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
 			slurm_step_launch_abort(job->step_ctx);
 		} else {

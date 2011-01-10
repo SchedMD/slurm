@@ -122,13 +122,13 @@ libslurm_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
 	$(common_dir)/libspank.la $(common_dir)/libeio.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = allocate.lo allocate_msg.lo cancel.lo checkpoint.lo \
-	complete.lo config_info.lo init_msg.lo job_info.lo \
-	job_step_info.lo node_info.lo block_info.lo partition_info.lo \
-	reservation_info.lo signal.lo slurm_hostlist.lo slurm_pmi.lo \
-	step_ctx.lo step_io.lo step_launch.lo pmi_server.lo submit.lo \
-	suspend.lo topo_info.lo triggers.lo reconfigure.lo \
-	update_config.lo
+am__objects_1 = allocate.lo allocate_msg.lo block_info.lo cancel.lo \
+	checkpoint.lo complete.lo config_info.lo front_end_info.lo \
+	init_msg.lo job_info.lo job_step_info.lo node_info.lo \
+	partition_info.lo reservation_info.lo signal.lo \
+	slurm_hostlist.lo slurm_pmi.lo step_ctx.lo step_io.lo \
+	step_launch.lo pmi_server.lo submit.lo suspend.lo topo_info.lo \
+	triggers.lo reconfigure.lo update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 PROGRAMS = $(noinst_PROGRAMS)
@@ -424,15 +424,16 @@ noinst_LTLIBRARIES = libslurmhelper.la
 slurmapi_src = \
 	allocate.c       \
 	allocate_msg.c   \
+	block_info.c     \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
+	front_end_info.c \
 	init_msg.c       \
 	job_info.c job_info.h \
 	job_step_info.c  \
 	node_info.c      \
-	block_info.c \
 	partition_info.c \
 	reservation_info.c \
 	signal.c         \
@@ -602,6 +603,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init_msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_step_info.Plo@am__quote@

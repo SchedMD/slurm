@@ -75,6 +75,8 @@
 List trigger_list;
 uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
+bitstr_t *trigger_down_front_end_bitmap = NULL;
+bitstr_t *trigger_up_front_end_bitmap = NULL;
 bitstr_t *trigger_down_nodes_bitmap = NULL;
 bitstr_t *trigger_drained_nodes_bitmap = NULL;
 bitstr_t *trigger_fail_nodes_bitmap = NULL;
@@ -447,6 +449,28 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 fini:	slurm_mutex_unlock(&trigger_mutex);
 	unlock_slurmctld(job_read_lock);
 	return rc;
+}
+
+extern void trigger_front_end_down(front_end_record_t *front_end_ptr)
+{
+	int inx = front_end_ptr - front_end_nodes;
+
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_down_front_end_bitmap == NULL)
+		trigger_down_front_end_bitmap = bit_alloc(front_end_node_cnt);
+	bit_set(trigger_down_front_end_bitmap, inx);
+	slurm_mutex_unlock(&trigger_mutex);
+}
+
+extern void trigger_front_end_up(front_end_record_t *front_end_ptr)
+{
+	int inx = front_end_ptr - front_end_nodes;
+
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_up_front_end_bitmap == NULL)
+		trigger_up_front_end_bitmap = bit_alloc(front_end_node_cnt);
+	bit_set(trigger_up_front_end_bitmap, inx);
+	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_down(struct node_record *node_ptr)
@@ -899,6 +923,25 @@ fini:	verbose("State of %d triggers recovered", trigger_cnt);
 	return SLURM_FAILURE;
 }
 
+static bool _front_end_job_test(bitstr_t *front_end_bitmap,
+				struct job_record *job_ptr)
+{
+#ifdef HAVE_FRONT_END
+	int i;
+
+	if ((front_end_bitmap == NULL) || (job_ptr->batch_host == NULL))
+		return false;
+
+	for (i = 0; i < front_end_node_cnt; i++) {
+		if (bit_test(front_end_bitmap, i) &&
+		    !strcmp(front_end_nodes[i].name, job_ptr->batch_host)) {
+			return true;
+		}
+	}
+#endif
+	return false;
+}
+
 /* Test if the event has been triggered, change trigger state as needed */
 static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 {
@@ -939,6 +982,20 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 				info("trigger[%u] for job %u time",
 				     trig_in->trig_id, trig_in->job_id);
 			}
+			return;
+		}
+	}
+
+	if (trig_in->trig_type & TRIGGER_TYPE_DOWN) {
+		if (_front_end_job_test(trigger_down_front_end_bitmap,
+					trig_in->job_ptr)) {
+			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
+				info("trigger[%u] for job %u down",
+				     trig_in->trig_id, trig_in->job_id);
+			}
+			trig_in->state = 1;
+			trig_in->trig_time = now +
+					    (trig_in->trig_time - 0x8000);
 			return;
 		}
 	}
@@ -989,6 +1046,52 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 }
 
+
+static void _trigger_front_end_event(trig_mgr_info_t *trig_in, time_t now)
+{
+	int i;
+
+	if ((trig_in->trig_type & TRIGGER_TYPE_DOWN) &&
+	    (trigger_down_front_end_bitmap != NULL) &&
+	    ((i = bit_ffs(trigger_down_front_end_bitmap)) != -1)) {
+		xfree(trig_in->res_id);
+		for (i = 0; i < front_end_node_cnt; i++) {
+			if (!bit_test(trigger_down_front_end_bitmap, i))
+				continue;
+			if (trig_in->res_id != NULL)
+				xstrcat(trig_in->res_id, ",");
+			xstrcat(trig_in->res_id, front_end_nodes[i].name);
+		}
+		trig_in->state = 1;
+		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
+			info("trigger[%u] for node %s down",
+			     trig_in->trig_id, trig_in->res_id);
+		}
+		return;
+	}
+
+	if ((trig_in->trig_type & TRIGGER_TYPE_UP) &&
+	    (trigger_up_front_end_bitmap != NULL) &&
+	    ((i = bit_ffs(trigger_up_front_end_bitmap)) != -1)) {
+		xfree(trig_in->res_id);
+		for (i = 0; i < front_end_node_cnt; i++) {
+			if (!bit_test(trigger_up_front_end_bitmap, i))
+				continue;
+			if (trig_in->res_id != NULL)
+				xstrcat(trig_in->res_id, ",");
+			xstrcat(trig_in->res_id, front_end_nodes[i].name);
+		}
+		trig_in->state = 1;
+		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
+			info("trigger[%u] for node %s up",
+			     trig_in->trig_id, trig_in->res_id);
+		}
+		return;
+	}
+}
+
 static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 {
 	if ((trig_in->trig_type & TRIGGER_TYPE_BLOCK_ERR) &&
@@ -1001,7 +1104,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_DOWN) &&
-	    trigger_down_nodes_bitmap               &&
+	    trigger_down_nodes_bitmap                &&
 	    (bit_ffs(trigger_down_nodes_bitmap) != -1)) {
 		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
 			xfree(trig_in->res_id);
@@ -1029,7 +1132,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_DRAINED) &&
-	    trigger_drained_nodes_bitmap               &&
+	    trigger_drained_nodes_bitmap                &&
 	    (bit_ffs(trigger_drained_nodes_bitmap) != -1)) {
 		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
 			xfree(trig_in->res_id);
@@ -1057,7 +1160,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_FAIL) &&
-	    trigger_fail_nodes_bitmap               &&
+	    trigger_fail_nodes_bitmap                &&
 	    (bit_ffs(trigger_fail_nodes_bitmap) != -1)) {
 		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
 			xfree(trig_in->res_id);
@@ -1125,7 +1228,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_UP) &&
-	    trigger_up_nodes_bitmap               &&
+	    trigger_up_nodes_bitmap                &&
 	    (bit_ffs(trigger_up_nodes_bitmap) != -1)) {
 		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
 			xfree(trig_in->res_id);
@@ -1372,6 +1475,14 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 
 static void _clear_event_triggers(void)
 {
+	if (trigger_down_front_end_bitmap) {
+		bit_nclear(trigger_down_front_end_bitmap,
+			   0, (bit_size(trigger_down_front_end_bitmap) - 1));
+	}
+	if (trigger_up_front_end_bitmap) {
+		bit_nclear(trigger_up_front_end_bitmap,
+			   0, (bit_size(trigger_up_front_end_bitmap) - 1));
+	}
 	if (trigger_down_nodes_bitmap) {
 		bit_nclear(trigger_down_nodes_bitmap,
 			   0, (bit_size(trigger_down_nodes_bitmap) - 1));
@@ -1425,8 +1536,12 @@ extern void trigger_process(void)
 			else if (trig_in->res_type ==
 				 TRIGGER_RES_TYPE_SLURMDBD)
 				_trigger_slurmdbd_event(trig_in, now);
-			else /* TRIGGER_RES_TYPE_DATABASE */
+			else if (trig_in->res_type ==
+				 TRIGGER_RES_TYPE_DATABASE)
 			 	_trigger_database_event(trig_in, now);
+			else if (trig_in->res_type ==
+				 TRIGGER_RES_TYPE_FRONT_END)
+			 	_trigger_front_end_event(trig_in, now);
 		}
 		if ((trig_in->state == 1) &&
 		    (trig_in->trig_time <= now)) {
@@ -1502,6 +1617,8 @@ extern void trigger_fini(void)
 		list_destroy(trigger_list);
 		trigger_list = NULL;
 	}
+	FREE_NULL_BITMAP(trigger_down_front_end_bitmap);
+	FREE_NULL_BITMAP(trigger_up_front_end_bitmap);
 	FREE_NULL_BITMAP(trigger_down_nodes_bitmap);
 	FREE_NULL_BITMAP(trigger_drained_nodes_bitmap);
 	FREE_NULL_BITMAP(trigger_fail_nodes_bitmap);

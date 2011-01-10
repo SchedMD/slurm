@@ -536,6 +536,11 @@ extern int parse_format( char* format )
 				job_format_add_gres( params.format_list,
 						     field_size, right_justify,
 						     suffix );
+			else if (field[0] == 'B')
+				job_format_add_batch_host( params.format_list,
+							   field_size,
+							   right_justify,
+							   suffix );
 			else if (field[0] == 'c')
 				job_format_add_min_cpus( params.format_list,
 							 field_size,

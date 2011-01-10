@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "April 2009" "scancel 2.0" "Slurm components"
+.TH SCANCEL "1" "January 2011" "scancel 2.3" "Slurm components"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -33,6 +33,8 @@ for details.
 \fB-\-ctld\fR
 Send the job signal request to the slurmctld daemon rather than directly to the
 slurmd daemons. This increases overhead, but offers better fault tolerance.
+This is the default behavior on architectures using front end nodes (e.g.
+BlueGene and Cray computers) or when the \fB\-\-clusters\fR option is used.
 
 .TP
 \fB\-\-help\fR
@@ -215,7 +217,7 @@ scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
 
 .SH "COPYING"
 Copyright (C) 2002-2007 The Regents of the University of California.
-Copyright (C) 2008-2009 Lawrence Livermore National Security.
+Copyright (C) 2008-2011 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

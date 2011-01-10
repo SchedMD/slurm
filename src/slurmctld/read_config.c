@@ -74,6 +74,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/basil_interface.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
@@ -327,7 +328,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 	int state_val = NODE_STATE_DOWN;
 
 	if (down->state != NULL) {
-		state_val = state_str2int(down->state);
+		state_val = state_str2int(down->state, down->nodenames);
 		if (state_val == NO_VAL) {
 			error("Invalid State \"%s\"", down->state);
 			goto cleanup;
@@ -399,6 +400,7 @@ static int _build_all_nodeline_info(void)
 
 	/* Load the node table here */
 	rc = build_all_nodeline_info(false);
+	rc = MAX(build_all_frontend_info(), rc);
 
 	/* Now perform operations on the node table as needed by slurmctld */
 #ifdef HAVE_BG
@@ -690,6 +692,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	_build_all_nodeline_info();
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
+	if (!reconfig)
+		restore_front_end_state(recover);
 
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
@@ -737,13 +741,16 @@ int read_slurm_conf(int recover, bool reconfig)
 		xfree(state_save_dir);	/* No select plugin state restore */
 	} else if (recover == 1) {	/* Load job & node state files */
 		(void) load_all_node_state(true);
+		(void) load_all_front_end_state(true);
 		load_job_ret = load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
+		(void) load_all_front_end_state(false);
 		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
 	}
 
+	sync_front_end_state();
 	_sync_part_prio();
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
