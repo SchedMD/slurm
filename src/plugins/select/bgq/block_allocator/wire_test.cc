@@ -58,11 +58,11 @@ int main(int argc, char** argv)
 	List results;
 //	List results2;
 //	int i,j;
-	log_opts.stderr_level  = debug_level;
-	log_opts.logfile_level = debug_level;
-	log_opts.syslog_level  = debug_level;
+	log_opts.stderr_level  = (log_level_t)debug_level;
+	log_opts.logfile_level = (log_level_t)debug_level;
+	log_opts.syslog_level  = (log_level_t)debug_level;
 
-	log_alter(log_opts, LOG_DAEMON, "/dev/null");
+	log_alter(log_opts, (log_facility_t)LOG_DAEMON, "/dev/null");
 
 	DIM_SIZE[A]=0;
 	DIM_SIZE[B]=0;
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 
 	slurm_conf_reinit(NULL);
 	ba_init(NULL, 1);
-	init_wires(NULL);
+	init_wires();
 
 	/* [010x831] */
 /* 	results = list_create(NULL); */
