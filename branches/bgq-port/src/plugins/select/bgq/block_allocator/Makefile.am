@@ -19,7 +19,8 @@ if BLUEGENE_LOADED
 #to build the debug executable
 noinst_PROGRAMS = wire_test
 
-wire_testSOURCES = wire_test.cc block_allocator.h
+wire_test_SOURCES = wire_test.c block_allocator.h
+nodist_EXTRA_wire_test_SOURCES = dummy.cxx
 
 wire_test_LDADD = libbgq_block_allocator.la \
 	$(top_builddir)/src/api/libslurm.o -ldl
