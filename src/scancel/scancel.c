@@ -116,6 +116,7 @@ main (int argc, char *argv[])
 	    (opt.nodelist) ||
 	    (opt.partition) ||
 	    (opt.qos) ||
+	    (opt.reservation) ||
 	    (opt.state != JOB_END) ||
 	    (opt.user_name) ||
 	    (opt.wckey)) {
@@ -174,6 +175,17 @@ _verify_job_ids (void)
 	return rc;
 }
 
+/* variant of strcmp() that handles NULL input */
+static int _strcmp(char *s1, char *s2)
+{
+	if (s1 && s2)
+		return strcmp(s1, s2);
+	if (s1)
+		return 1;
+	if (s2)
+		return -1;
+	return 0;	/* both NULL */
+}
 
 /* _filter_job_records - filtering job information per user specification */
 static void
@@ -197,25 +209,31 @@ _filter_job_records (void)
 		}
 
 		if (opt.account != NULL &&
-		    (strcmp(job_ptr[i].account, opt.account) != 0)) {
+		    _strcmp(job_ptr[i].account, opt.account)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
 
 		if (opt.job_name != NULL &&
-		    (strcmp(job_ptr[i].name, opt.job_name) != 0)) {
+		    _strcmp(job_ptr[i].name, opt.job_name)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
 
 		if ((opt.partition != NULL) &&
-		    (strcmp(job_ptr[i].partition,opt.partition) != 0)) {
+		    _strcmp(job_ptr[i].partition,opt.partition)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
 
 		if ((opt.qos != NULL) &&
-		    (strcmp(job_ptr[i].qos, opt.qos) != 0)) {
+		    _strcmp(job_ptr[i].qos, opt.qos)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
+		if ((opt.reservation != NULL) &&
+		    _strcmp(job_ptr[i].resv_name, opt.reservation)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
