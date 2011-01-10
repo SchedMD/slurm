@@ -161,6 +161,7 @@ unless ($command) {
 	my $lineNumber = 0;
 	foreach my $line (<SCRIPTIN>) {
 		$lineNumber++;
+		print SCRIPTOUT "#! /bin/sh\n" if ($lineNumber == 1 && $line !~ /^#!/ && $tmpScriptFile); 
 		print SCRIPTOUT $line if $tmpScriptFile;
 		if ($lineNumber == 1 && $line =~ /^\s*#\s*!\s*(\S+)/) {
 			$assignedShell = $1;
@@ -474,19 +475,29 @@ if ($minwclim) {
 	}
 }
 
+#
+# Add command file
+#
+if ($scriptFile || $tmpScriptFile) {
+	if ($scriptFile) {
+		$command = $scriptFile;
+	} else {
+		$command = $tmpScriptFile;
+	}
+}
 
 
 #
 # Execute sbatch.
 #
 if ($debug == 1) {
-	printf("sbatch args: '@slurmArgs' '@xslurmArgs' $scriptFile\n");
+	printf("sbatch args: '@slurmArgs' '@xslurmArgs' $command\n");
 } else {
 	my $rval;
 	if ( @xslurmArgs) {
-		$rval = `sbatch @slurmArgs @xslurmArgs $scriptFile 2>&1`;
+		$rval = `sbatch @slurmArgs @xslurmArgs $command 2>&1`;
 	} else {
-		$rval = `sbatch @slurmArgs $scriptFile 2>&1`;
+		$rval = `sbatch @slurmArgs $command 2>&1`;
 	}
 
         my $rc = $?;
@@ -498,6 +509,11 @@ if ($debug == 1) {
 		printf("\n$jobid\n");
 	}
 }
+
+#
+# Remove temporary job script
+#
+unlink $tmpScriptFile if ($tmpScriptFile);
 
 exit;
 
