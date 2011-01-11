@@ -2536,12 +2536,12 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		error("_slurm_rpc_update_job JobId=%u: %s",
-		      job_desc_msg->job_id, slurm_strerror(error_code));
+		error("_slurm_rpc_update_job JobId=%u uid=%d: %s",
+		      job_desc_msg->job_id, uid, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("_slurm_rpc_update_job complete JobId=%u %s",
-		       job_desc_msg->job_id, TIME_STR);
+		info("_slurm_rpc_update_job complete JobId=%u uid=%d %s",
+		       job_desc_msg->job_id, uid, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		/* Below functions provide their own locking */
 		schedule(0);
