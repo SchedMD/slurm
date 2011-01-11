@@ -18,12 +18,18 @@ documents those changes that are of interest to users and admins.
  -- Fix setting derived exit code correctly for jobs that happen to have the
     same jobid.
  -- Better checking for time overflow when rolling up in accounting.
- -- Add scancel --reservation option to cancell all jobs associated with a
+ -- Add scancel --reservation option to cancel all jobs associated with a
     specific reservation.
  -- Treat reservation with no nodes like one that starts later (let jobs of any
-    size get queued).
+    size get queued and do not block any pending jobs).
  -- Fix bug in gang scheduling logic that would temporarily resume to many jobs
     after a job completed.
+ -- Change srun message about job step being deferred due to SlurmctldProlog
+    running to be more clear and only print when --verbose option is used.
+ -- Made it so you could remove the hold on jobs with sview by setting the
+    priority to infinite.
+ -- BLUEGENE - better checking small blocks in dynamic mode whether a full
+    midplane job could run or not.
 
 * Changes in SLURM 2.2.0
 ========================

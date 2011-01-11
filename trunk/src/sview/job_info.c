@@ -694,10 +694,13 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->time_limit = (uint32_t)temp_int;
 		break;
 	case SORTID_PRIORITY:
-		temp_int = strtol(new_text, (char **)NULL, 10);
+		if (!strcasecmp(new_text, "infinite"))
+			temp_int = INFINITE;
+		else
+			temp_int = strtol(new_text, (char **)NULL, 10);
 
 		type = "priority";
-		if (temp_int < 0)
+		if ((temp_int < 0) && (temp_int != INFINITE))
 			goto return_error;
 		job_msg->priority = (uint32_t)temp_int;
 		break;
