@@ -544,7 +544,6 @@ sub getslurmdata
 #		compared to moab, I am arraning the output into separate arrays similar to
 # 		showq xml data is arranges....there is a method to my madness.
 #	
-printf("it is $jdat->{state}\n");
 		if ($jdat->{state} =~ /COMP/ ||
 		    $jdat->{state} =~ /FAIL/ ||
 		    $jdat->{state} =~ /TIMEOUT/ ||
