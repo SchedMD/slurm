@@ -3601,7 +3601,7 @@ inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg)
 	      (unsigned int) uid);
 	if (!validate_slurm_user(uid)) {
 		rc = ESLURM_USER_ID_MISSING;
-		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%d",
+		error("Security violation, REQUEST_TRIGGER_PULL RPC from uid=%d",
 		      uid);
 	} else
 		rc = trigger_pull(trigger_ptr);
