@@ -907,8 +907,14 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		}
 
 		if (i == 0) {
-			info("Job step creation temporarily disabled, "
-			     "retrying");
+			if (rc == ESLURM_PROLOG_RUNNING) {
+				verbose("Resources allocated for job %u and "
+					"being configured, please wait",
+					job->ctx_params.job_id);
+			} else {
+				info("Job step creation temporarily disabled, "
+				     "retrying");
+			}
 			ointf  = xsignal(SIGINT,  _intr_handler);
 			otermf  = xsignal(SIGTERM, _intr_handler);
 			oquitf  = xsignal(SIGQUIT, _intr_handler);

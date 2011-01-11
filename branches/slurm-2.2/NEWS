@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     size get queued and do not block any pending jobs).
  -- Fix bug in gang scheduling logic that would temporarily resume to many jobs
     after a job completed.
+ -- Change srun message about job step being deferred due to SlurmctldProlog
+    running to be more clear and only print when --verbose option is used.
  -- Made it so you could remove the hold on jobs with sview by setting the
     priority to infinite.
 
