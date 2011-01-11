@@ -373,7 +373,7 @@ pkglib_LTLIBRARIES = select_bgq.la
 # BGQ node selection plugin.
 @BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 @BGQ_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
 @BGQ_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
 all: all-recursive
 
