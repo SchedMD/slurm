@@ -687,7 +687,7 @@ static int _sort_partitions(void *part1, void *part2)
 {
 	int prio1 = ((struct gs_part *) part1)->priority;
 	int prio2 = ((struct gs_part *) part2)->priority;
-	return prio1 - prio2;
+	return prio2 - prio1;
 }
 
 /* Scan the partition list. Add the given job as a "shadow" to every
