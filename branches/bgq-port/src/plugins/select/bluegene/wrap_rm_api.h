@@ -59,10 +59,12 @@
 typedef rm_BGL_t my_bluegene_t;
 #define PARTITION_ALREADY_DEFINED -6
 #define RM_PARTITION_REBOOTING 1000
-#else
+#elif defined HAVE_BGP
 typedef rm_BG_t my_bluegene_t;
 #define RM_PARTITION_BUSY 1000
-
+#else
+typedef void my_bluegene_t;
+#define RM_PARTITION_BUSY 1000
 #endif
 
 #endif	/* #ifndef ATTACH_BG_H */

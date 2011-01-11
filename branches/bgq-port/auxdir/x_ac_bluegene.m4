@@ -221,6 +221,7 @@ AC_DEFUN([X_AC_BGQ],
 		bg_default_dirs=""
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
+		ac_bgq_loaded=yes
 	else
 		bg_default_dirs="/bgsys/drivers/ppcfloor/hlcs"
 	fi
@@ -279,6 +280,7 @@ AC_DEFUN([X_AC_BGQ],
      		# AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
+		ac_bgq_loaded=yes
    	fi
 
    	AC_SUBST(BG_INCLUDES)

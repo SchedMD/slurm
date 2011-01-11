@@ -14,7 +14,7 @@ libbgq_block_allocator_la_SOURCES =    \
 libbgq_block_allocator_la_LDFLAGS        = \
 	$(LIB_LDFLAGS) -lm $(BG_LDFLAGS)
 
-if BLUEGENE_LOADED
+if BGQ_LOADED
 
 #to build the debug executable
 noinst_PROGRAMS = wire_test

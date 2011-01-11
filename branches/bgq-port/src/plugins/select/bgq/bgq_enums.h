@@ -39,6 +39,10 @@
 #ifndef _BGQ_ENUMS_H_
 #define _BGQ_ENUMS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
 	BG_BLOCK_ALLOCATED = 0,  // Block is allocated
 	BG_BLOCK_BOOTING,        // Block is booting
@@ -47,5 +51,13 @@ typedef enum {
 	BG_BLOCK_TERM,           // Block is terminating
 	BG_BLOCK_ERROR,          // Block is in error
 } bgq_block_status_t;
+
+#ifdef HAVE_BGQ
+typedef void my_bluegene_t;
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _BGQ_ENUMS_H_ */
