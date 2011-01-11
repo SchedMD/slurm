@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.2
-28 December 2010
+10 January 2011
 
 
 IMPORTANT NOTE:
@@ -37,7 +37,9 @@ HIGHLIGHTS
 
      OPERATION            ACTION
      slurmctld -R         Recover all job, node and partition state
-     slurmctld            Recover job state, recreate node and partition state
+     slurmctld            Recover job state plus state and reason for DOWN
+                          and DRAINED nodes only, recreate all other node state
+                          plus all partition state
      slurmctld -c         Recover no jobs, recreate node and partition state
      SIGHUP to slurmctld  Preserve all job, node and partition state
      scontrol reconfig    Preserve job state, recreate node and partition state
