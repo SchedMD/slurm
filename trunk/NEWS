@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     specific reservation.
  -- Treat reservation with no nodes like one that starts later (let jobs of any
     size get queued).
+ -- Fix bug in gang scheduling logic that would temporarily resume to many jobs
+    after a job completed.
 
 * Changes in SLURM 2.2.0
 ========================
