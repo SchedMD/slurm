@@ -16,7 +16,7 @@ if BGQ_LOADED
 # BGQ node selection plugin.
 select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-select_bgq_la_LIBADD  = block_allocator/lib_block_allocator.la
+select_bgq_la_LIBADD  = block_allocator/libblock_allocator.la
 
 force:
 $(select_bgq_la_LDADD) : force

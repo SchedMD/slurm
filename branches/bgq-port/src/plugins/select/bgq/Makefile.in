@@ -105,7 +105,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @BGQ_LOADED_TRUE@select_bgq_la_DEPENDENCIES =  \
-@BGQ_LOADED_TRUE@	block_allocator/lib_block_allocator.la
+@BGQ_LOADED_TRUE@	block_allocator/libblock_allocator.la
 am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h
 @BGQ_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
 @BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo
@@ -374,7 +374,7 @@ pkglib_LTLIBRARIES = select_bgq.la
 @BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 @BGQ_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BGQ_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/lib_block_allocator.la
+@BGQ_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
 all: all-recursive
 
 .SUFFIXES:
