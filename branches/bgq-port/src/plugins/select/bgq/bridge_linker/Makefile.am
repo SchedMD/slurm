@@ -12,4 +12,4 @@ libbridge_linker_la_SOURCES =    \
 	bridge_linker.cc bridge_linker.h
 
 libbridge_linker_la_LDFLAGS        = \
-	$(LIB_LDFLAGS) -lm $(BG_LDFLAGS)
+	$(LIB_LDFLAGS) -lm

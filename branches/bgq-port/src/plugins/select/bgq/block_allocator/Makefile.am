@@ -22,9 +22,6 @@ if BGQ_LOADED
 noinst_PROGRAMS = wire_test
 
 wire_test_SOURCES = wire_test.c block_allocator.h
-# This extra file is needed to force using g++ to link.  (Pretty slick huh)
-# g++ is needed when compiling main programs to c++ stuff.
-nodist_EXTRA_wire_test_SOURCES = dummy.cxx
 
 wire_test_LDADD = libblock_allocator.la \
 	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
