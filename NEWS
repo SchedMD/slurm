@@ -6,10 +6,10 @@ documents those changes that are of interest to users and admins.
  -- Fix setting derived exit code correctly for jobs that happen to have the
     same jobid.
  -- Better checking for time overflow when rolling up in accounting.
- -- Add scancel --reservation option to cancell all jobs associated with a
+ -- Add scancel --reservation option to cancel all jobs associated with a
     specific reservation.
  -- Treat reservation with no nodes like one that starts later (let jobs of any
-    size get queued).
+    size get queued and do not block any pending jobs).
  -- Fix bug in gang scheduling logic that would temporarily resume to many jobs
     after a job completed.
 
