@@ -104,10 +104,11 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@BLUEGENE_LOADED_TRUE@select_bgq_la_DEPENDENCIES = block_allocator/libbgq_block_allocator.la
+@BGQ_LOADED_TRUE@select_bgq_la_DEPENDENCIES =  \
+@BGQ_LOADED_TRUE@	block_allocator/libbgq_block_allocator.la
 am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h
-@BLUEGENE_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
-@BLUEGENE_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo
+@BGQ_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
+@BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo
 select_bgq_la_OBJECTS = $(am_select_bgq_la_OBJECTS)
 select_bgq_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -178,6 +179,7 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BGL_LOADED = @BGL_LOADED@
+BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
@@ -367,13 +369,13 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 pkglib_LTLIBRARIES = select_bgq.la
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
-@BLUEGENE_LOADED_FALSE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
+@BGQ_LOADED_FALSE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 
 # BGQ node selection plugin.
-@BLUEGENE_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
-@BLUEGENE_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BLUEGENE_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
-@BLUEGENE_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/libbgq_block_allocator.la
+@BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
+@BGQ_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
+@BGQ_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/libbgq_block_allocator.la
 all: all-recursive
 
 .SUFFIXES:

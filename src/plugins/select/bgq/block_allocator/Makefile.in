@@ -38,7 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BLUEGENE_LOADED_TRUE@noinst_PROGRAMS = wire_test$(EXEEXT)
+@BGQ_LOADED_TRUE@noinst_PROGRAMS = wire_test$(EXEEXT)
 subdir = src/plugins/select/bgq/block_allocator
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -95,11 +95,10 @@ libbgq_block_allocator_la_LINK = $(LIBTOOL) --tag=CXX \
 	$(libbgq_block_allocator_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(noinst_PROGRAMS)
 am__wire_test_SOURCES_DIST = wire_test.c block_allocator.h
-@BLUEGENE_LOADED_TRUE@am_wire_test_OBJECTS = wire_test.$(OBJEXT)
+@BGQ_LOADED_TRUE@am_wire_test_OBJECTS = wire_test.$(OBJEXT)
 wire_test_OBJECTS = $(am_wire_test_OBJECTS)
-@BLUEGENE_LOADED_TRUE@wire_test_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	libbgq_block_allocator.la \
-@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
+@BGQ_LOADED_TRUE@wire_test_DEPENDENCIES = libbgq_block_allocator.la \
+@BGQ_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
 wire_test_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(wire_test_LDFLAGS) $(LDFLAGS) -o $@
@@ -142,6 +141,7 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BGL_LOADED = @BGL_LOADED@
+BGQ_LOADED = @BGQ_LOADED@
 BG_INCLUDES = @BG_INCLUDES@
 BG_LDFLAGS = @BG_LDFLAGS@
 BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
@@ -336,12 +336,12 @@ libbgq_block_allocator_la_SOURCES = \
 libbgq_block_allocator_la_LDFLAGS = \
 	$(LIB_LDFLAGS) -lm $(BG_LDFLAGS)
 
-@BLUEGENE_LOADED_TRUE@wire_test_SOURCES = wire_test.c block_allocator.h
-@BLUEGENE_LOADED_TRUE@nodist_EXTRA_wire_test_SOURCES = dummy.cxx
-@BLUEGENE_LOADED_TRUE@wire_test_LDADD = libbgq_block_allocator.la \
-@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
+@BGQ_LOADED_TRUE@wire_test_SOURCES = wire_test.c block_allocator.h
+@BGQ_LOADED_TRUE@nodist_EXTRA_wire_test_SOURCES = dummy.cxx
+@BGQ_LOADED_TRUE@wire_test_LDADD = libbgq_block_allocator.la \
+@BGQ_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
 
-@BLUEGENE_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
+@BGQ_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:

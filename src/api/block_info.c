@@ -64,7 +64,6 @@
 #include "src/common/xstring.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
 
-
 /*
  * slurm_print_block_info_msg - output information about all Bluegene
  *	blocks based upon message as loaded using slurm_load_block

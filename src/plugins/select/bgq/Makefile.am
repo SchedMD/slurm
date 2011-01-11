@@ -11,7 +11,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 pkglib_LTLIBRARIES = select_bgq.la
 
-if BLUEGENE_LOADED
+if BGQ_LOADED
 
 # BGQ node selection plugin.
 select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
