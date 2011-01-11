@@ -18,6 +18,10 @@ documents those changes that are of interest to users and admins.
     priority to infinite.
  -- BLUEGENE - better checking small blocks in dynamic mode whether a full
     midplane job could run or not.
+ -- Decrease the maximum sleep time between srun job step creation retry
+    attempts from 60 seconds to 29 seconds. This should eliminate a possible
+    synchronization problem with gang scheduling that could result in job
+    step creation requests only occuring when a job is suspended. 
 
 * Changes in SLURM 2.2.0
 ========================

@@ -921,9 +921,9 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 			my_sleep = (getpid() % 1000) * 100 + 100000;
 		} else {
 			verbose("Job step creation still disabled, retrying");
-			my_sleep = MIN((my_sleep * 2), 60000000);
+			my_sleep = MIN((my_sleep * 2), 29000000);
 		}
-		/* sleep 0.1 to 60 secs with exponential back-off */
+		/* sleep 0.1 to 29 secs with exponential back-off */
 		usleep(my_sleep);
 	}
 	if (i > 0) {
