@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     running to be more clear and only print when --verbose option is used.
  -- Made it so you could remove the hold on jobs with sview by setting the
     priority to infinite.
+ -- BLUEGENE - better checking small blocks in dynamic mode whether a full
+    midplane job could run or not.
 
 * Changes in SLURM 2.2.0
 ========================
