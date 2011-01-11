@@ -57,8 +57,8 @@ extern List create_dynamic_block(List block_list,
 {
 	int rc = SLURM_SUCCESS;
 
-	ListIterator itr;
-	bg_record_t *bg_record = NULL;
+	ListIterator itr, itr2;
+	bg_record_t *bg_record = NULL, *found_record = NULL;
 	List results = NULL;
 	List new_blocks = NULL;
 	bitstr_t *my_bitmap = NULL;
@@ -305,6 +305,7 @@ extern List create_dynamic_block(List block_list,
 
 	/*Try to put block starting in the smallest of the exisiting blocks*/
 	itr = list_iterator_create(block_list);
+	itr2 = list_iterator_create(block_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		/* never check a block with a job running */
 		if (bg_record->job_running != NO_JOB_RUNNING)
@@ -316,9 +317,26 @@ extern List create_dynamic_block(List block_list,
 		   bg_conf->bp_node_cnt or the first bit is
 		   set in the ionode_bitmap.
 		*/
-		if ((bg_record->node_cnt < bg_conf->bp_node_cnt)
-		    && (bit_ffs(bg_record->ionode_bitmap) != 0))
-			continue;
+		if (bg_record->node_cnt < bg_conf->bp_node_cnt) {
+			bool found = 0;
+			if (bit_ffs(bg_record->ionode_bitmap) != 0)
+				continue;
+			/* Check to see if we have other blocks in
+			   this midplane that have jobs running.
+			*/
+			while ((found_record = list_next(itr2))) {
+				if ((found_record->job_running
+				     != NO_JOB_RUNNING)
+				    && bit_overlap(bg_record->bitmap,
+						   found_record->bitmap)) {
+					found = 1;
+					break;
+				}
+			}
+			list_iterator_reset(itr2);
+			if (found)
+				continue;
+		}
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("removing %s for request %d",
@@ -342,6 +360,7 @@ extern List create_dynamic_block(List block_list,
 		rc = SLURM_ERROR;
 	}
 	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
 
 setup_records:
 	if (rc == SLURM_SUCCESS) {
