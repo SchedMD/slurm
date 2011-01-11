@@ -287,16 +287,16 @@ set def_hostlist ""
 set part_exclusive 0
 spawn $scontrol show part $def_part
 expect {
-	-re " Shared=EXCLUSIVE" {
-		set part_exclusive 1
-		exp_continue
-	}
 	-re " Nodes=($alpha_numeric_nodelist)"  {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
 	-re " BasePartitions=($alpha_numeric_nodelist)" {
 		set def_hostlist $expect_out(1,string)
+		exp_continue
+	}
+	-re " Shared=EXCLUSIVE" {
+		set part_exclusive 1
 		exp_continue
 	}
 	timeout {
