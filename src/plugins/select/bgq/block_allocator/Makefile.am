@@ -34,7 +34,7 @@ wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BG_LDFLAGS)
 
 endif
 
-total = $(libblock_allocator_la_LDADD) $(wire_test_LDADD)
+total = $(libblock_allocator_la_LDADD) $(top_builddir)/src/api/libslurm.o
 
 force:
 $(total) : force
