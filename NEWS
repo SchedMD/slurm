@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     size get queued and do not block any pending jobs).
  -- Fix bug in gang scheduling logic that would temporarily resume to many jobs
     after a job completed.
+ -- Made it so you could remove the hold on jobs with sview by setting the
+    priority to infinite.
 
 * Changes in SLURM 2.2.0
 ========================
