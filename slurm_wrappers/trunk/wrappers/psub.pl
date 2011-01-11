@@ -48,7 +48,7 @@ my (
 	$dm,              $errorFile,        $exempt,
 	$expedite,        $featureList,      $fileSizeLimit,
 	$fileSpaceLimit,  $flushError,       $flushOutput,
-	$geometry,        $help,             $jobName,
+	$geometry,        $gres,             $jobName,
 	$keepError,       $keepOutput,       $mailJobStart,
 	$mailJobEnd,      $mailNever,        $mailUser,
 	$man,             $mergeError,       $memoryLimit,
@@ -61,7 +61,7 @@ my (
 	$stackLimit,      $standby,          $taskCpuLimit,
 	$tmpScriptFile,   $wallclockLimit,   $verbose,
 	$export,	  $adapter,          $geometry_options,
-	$wcKey
+	$wcKey, 	  $help,	
 );
 
 #
@@ -491,6 +491,15 @@ if ($errorFileName) {
 	push @slurmArgs, "--error=$errorFileName";
 }
 
+#
+# Gres will have to be driven by user demand,
+# not assigned as a matter or course.
+#
+if ($gres) {
+	push @slurmArgs, "--licenses=$gres";
+} else {
+	get_gres();
+}
 
 #
 # Set the psub environment variables
@@ -637,6 +646,7 @@ sub getopt
 		'exempt'     => \$exempt,
 		'expedite'   => \$expedite,
 		'g=s'        => \$geometry,
+		'gres=s'     => \$gres,
 		'help|?|H'   => \$help,
 		'i=s'        => \$command,
 		'ke'         => \$keepError,
@@ -678,6 +688,23 @@ sub getopt
 		'wckey=s'    => \$wcKey,
 		'x'          => \$export,
 	);
+
+	return;
+}
+
+
+#
+# Set the gres if it exists, by default.
+#
+sub get_gres
+{
+	my $out = `scontrol show conf | grep Licenses`;
+	chomp $out;
+
+	my  ($gres) = ($out =~ m/= (.*)/);
+	$gres =~ s/\*\d+//g;
+
+	push @slurmArgs, "--licenses=$gres" if ($gres !~ /null/ && $gres ne "");
 
 	return;
 }
