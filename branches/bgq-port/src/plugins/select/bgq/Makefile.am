@@ -1,6 +1,6 @@
 # Makefile for select/bgq plugin
 
-SUBDIRS = block_allocator
+SUBDIRS = bridge_linker block_allocator
 
 CPPFLAGS = -DBLUEGENE_CONFIG_FILE=\"$(sysconfdir)/bluegene.conf\"
 AUTOMAKE_OPTIONS = foreign
@@ -15,9 +15,12 @@ if BGQ_LOADED
 
 # BGQ node selection plugin.
 select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
-select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
-select_bgq_la_LIBADD  = block_allocator/libbgq_block_allocator.la
+select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_bgq_la_LIBADD  = block_allocator/lib_block_allocator.la
 
+force:
+$(select_bgq_la_LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 else
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h

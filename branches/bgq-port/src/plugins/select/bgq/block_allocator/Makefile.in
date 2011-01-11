@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile.am for bgq_block_allocator
+# Makefile.am for block_allocator
 
 
 VPATH = @srcdir@
@@ -84,20 +84,18 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-libbgq_block_allocator_la_LIBADD =
-am_libbgq_block_allocator_la_OBJECTS = block_allocator.lo \
-	bridge_linker.lo
-libbgq_block_allocator_la_OBJECTS =  \
-	$(am_libbgq_block_allocator_la_OBJECTS)
-libbgq_block_allocator_la_LINK = $(LIBTOOL) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(AM_CXXFLAGS) $(CXXFLAGS) \
-	$(libbgq_block_allocator_la_LDFLAGS) $(LDFLAGS) -o $@
+libblock_allocator_la_DEPENDENCIES =  \
+	../bridge_linker/libbridge_linker.la
+am_libblock_allocator_la_OBJECTS = block_allocator.lo
+libblock_allocator_la_OBJECTS = $(am_libblock_allocator_la_OBJECTS)
+libblock_allocator_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libblock_allocator_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(noinst_PROGRAMS)
 am__wire_test_SOURCES_DIST = wire_test.c block_allocator.h
 @BGQ_LOADED_TRUE@am_wire_test_OBJECTS = wire_test.$(OBJEXT)
 wire_test_OBJECTS = $(am_wire_test_OBJECTS)
-@BGQ_LOADED_TRUE@wire_test_DEPENDENCIES = libbgq_block_allocator.la \
+@BGQ_LOADED_TRUE@wire_test_DEPENDENCIES = libblock_allocator.la \
 @BGQ_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
 wire_test_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -124,9 +122,9 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libbgq_block_allocator_la_SOURCES) $(wire_test_SOURCES) \
+SOURCES = $(libblock_allocator_la_SOURCES) $(wire_test_SOURCES) \
 	$(nodist_EXTRA_wire_test_SOURCES)
-DIST_SOURCES = $(libbgq_block_allocator_la_SOURCES) \
+DIST_SOURCES = $(libblock_allocator_la_SOURCES) \
 	$(am__wire_test_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
@@ -329,23 +327,27 @@ CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
 # making a .la
-noinst_LTLIBRARIES = libbgq_block_allocator.la
-libbgq_block_allocator_la_SOURCES = \
-	block_allocator.cc bridge_linker.cc block_allocator.h bridge_linker.h
+noinst_LTLIBRARIES = libblock_allocator.la
+libblock_allocator_la_SOURCES = \
+	block_allocator.c block_allocator.h
 
-libbgq_block_allocator_la_LDFLAGS = \
-	$(LIB_LDFLAGS) -lm $(BG_LDFLAGS)
+libblock_allocator_la_LDFLAGS = \
+	$(LIB_LDFLAGS) -lm
 
+libblock_allocator_la_LIBADD = ../bridge_linker/libbridge_linker.la
 @BGQ_LOADED_TRUE@wire_test_SOURCES = wire_test.c block_allocator.h
+# This extra file is needed to force using g++ to link.  (Pretty slick huh)
+# g++ is needed when compiling main programs to c++ stuff.
 @BGQ_LOADED_TRUE@nodist_EXTRA_wire_test_SOURCES = dummy.cxx
-@BGQ_LOADED_TRUE@wire_test_LDADD = libbgq_block_allocator.la \
+@BGQ_LOADED_TRUE@wire_test_LDADD = libblock_allocator.la \
 @BGQ_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
 
-@BGQ_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
+@BGQ_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BG_LDFLAGS)
+total = $(libblock_allocator_la_LDADD) $(wire_test_LDADD)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .cxx .lo .o .obj
+.SUFFIXES: .c .cxx .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -385,8 +387,8 @@ clean-noinstLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libbgq_block_allocator.la: $(libbgq_block_allocator_la_OBJECTS) $(libbgq_block_allocator_la_DEPENDENCIES) 
-	$(libbgq_block_allocator_la_LINK)  $(libbgq_block_allocator_la_OBJECTS) $(libbgq_block_allocator_la_LIBADD) $(LIBS)
+libblock_allocator.la: $(libblock_allocator_la_OBJECTS) $(libblock_allocator_la_DEPENDENCIES) 
+	$(libblock_allocator_la_LINK)  $(libblock_allocator_la_OBJECTS) $(libblock_allocator_la_LIBADD) $(LIBS)
 
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -407,7 +409,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_allocator.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wire_test.Po@am__quote@
 
@@ -431,27 +432,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-.cc.o:
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
-
-.cc.obj:
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.cc.lo:
-@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
 .cxx.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -679,6 +659,10 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am
 
+
+force:
+$(total) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
