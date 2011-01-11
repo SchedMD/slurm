@@ -189,14 +189,6 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 static char *_set_internal_wires(List nodes, int size, int conn_type);
 
 /* */
-static int _find_x_path(List results, ba_node_t *ba_node, uint16_t *start,
-			int x_size, int found, int conn_type,
-			block_algo_t algo);
-
-/* */
-static int _remove_node(List results, uint16_t *node_tar);
-
-/* */
 /* static int _find_passthrough(ba_switch_t *curr_switch, int source_port,  */
 /* 			     List nodes, int dim,  */
 /* 			     int count, int highest_phys_x);  */
@@ -356,7 +348,7 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 	n->groups = list_create(destroy_image_group_list);
 	s_p_get_string(&tmp, "Groups", tbl);
 	if (tmp) {
-		for(i=0; i<strlen(tmp); i++) {
+		for(i=0; i<(int)strlen(tmp); i++) {
 			if ((tmp[i] == ':') || (tmp[i] == ',')) {
 				image_group = (image_group_t *)
 					xmalloc(sizeof(image_group_t));
@@ -941,7 +933,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 
 
 	if (node_info_ptr) {
-		for (i = 0; i < node_info_ptr->record_count; i++) {
+		for (i = 0; i < (int)node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
 			number = 0;
 
@@ -1392,7 +1384,7 @@ extern int remove_block(List nodes, int new_count, int conn_type)
 		}
 	}
 	list_iterator_destroy(itr);
-	if (new_count == NO_VAL) {
+	if (new_count == (int)NO_VAL) {
 	} else if (new_count == -1)
 		color_count--;
 	else
@@ -1832,8 +1824,8 @@ extern int reset_all_removed_bps()
 						ba_system_ptr->grid
 							[a][b][c][d].used = 0;
 		}
-		return SLURM_SUCCESS;
 	}
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1927,7 +1919,7 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 		return;
 	}
 
-	for (j = 0; j < node_info_ptr->record_count; j++) {
+	for (j = 0; j < (int)node_info_ptr->record_count; j++) {
 		node_info_t *node_ptr = &node_info_ptr->node_array[j];
 		host = node_ptr->name;
 		if (!host)
@@ -3206,7 +3198,7 @@ static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 				[node_tar[C]][node_tar[D]];
 			dim_next_switch = &next_node->axis_switch[i2];
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("%c%c%c port 5",
+				info("%c%c%c%c port 5",
 				     alpha_num[next_node->coord[A]],
 				     alpha_num[next_node->coord[B]],
 				     alpha_num[next_node->coord[C]],
@@ -3581,10 +3573,10 @@ static void _create_ba_system(void)
 	ba_system_ptr->grid = (ba_node_t****)
 		xmalloc(sizeof(ba_node_t***) * DIM_SIZE[A]);
 	for (a=0; a<DIM_SIZE[A]; a++) {
-		ba_system_ptr->grid[b] = (ba_node_t***)
+		ba_system_ptr->grid[a] = (ba_node_t***)
 			xmalloc(sizeof(ba_node_t**) * DIM_SIZE[B]);
 		for (b=0; b<DIM_SIZE[B]; b++) {
-			ba_system_ptr->grid[b][c] = (ba_node_t**)
+			ba_system_ptr->grid[a][b] = (ba_node_t**)
 				xmalloc(sizeof(ba_node_t*) * DIM_SIZE[C]);
 			for (c=0; c<DIM_SIZE[C]; c++) {
 				ba_system_ptr->grid[a][b][c] = (ba_node_t*)
@@ -3939,44 +3931,6 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 
 	return name;
 }
-
-
-static int _remove_node(List results, uint16_t *node_tar)
-{
-	ListIterator itr;
-	ba_node_t *ba_node = NULL;
-
-	itr = list_iterator_create(results);
-	while ((ba_node = (ba_node_t*) list_next(itr))) {
-
-#ifdef HAVE_BG_Q
-		if (node_tar[A] == ba_node->coord[A]
-		    && node_tar[B] == ba_node->coord[B]
-		    && node_tar[C] == ba_node->coord[C]
-		    && node_tar[D] == ba_node->coord[D]) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-				info("removing %c%c%c%c from list",
-				     alpha_num[node_tar[A]],
-				     alpha_num[node_tar[B]],
-				     alpha_num[node_tar[C]],
-				     alpha_num[node_tar[D]]);
-			list_remove (itr);
-			break;
-		}
-#else
-		if (node_tar[A] == ba_node->coord[A]) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-				info("removing %d from list",
-				     node_tar[B]);
-			list_remove (itr);
-			break;
-		}
-#endif
-	}
-	list_iterator_destroy(itr);
-	return 1;
-}
-
 
 static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord)
 {
