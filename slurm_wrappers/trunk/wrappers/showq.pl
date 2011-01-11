@@ -366,7 +366,7 @@ foreach my $ct ($min .. $max) {
 #
 		$state = "Running" if ($state =~ /RUN/);
 		if ($state eq "PENDING" && $status eq "eligible") {
-			if ($reason eq "Resource") {
+			if ($reason eq "Resources") {
 				$state = "wcpu";
 			} else {
 				$state = "Wprio";
@@ -555,7 +555,7 @@ sub getslurmdata
 			push @ACTIVE, $jdat2;
 		} elsif ($jdat->{state} eq "PENDING" &&
 				($jdat->{reason} eq "None" ||
-				 $jdat->{reason} eq "Resource" ||
+				 $jdat->{reason} eq "Resources" ||
 				 $jdat->{reason} eq "Priority")) {
 			$jdat2->{status} = "eligible";
 			push @ELIG, $jdat2;
