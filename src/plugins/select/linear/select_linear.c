@@ -2171,10 +2171,10 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
 	bitstr_t *orig_map;
-	int i, rc = SLURM_ERROR;
-	int max_run_jobs = max_share - 1;	/* exclude this job */
+	int i, max_run_jobs, rc = SLURM_ERROR;
 	time_t now = time(NULL);
 
+	max_run_jobs = MAX((max_share - 1), 1);	/* exclude this job */
 	orig_map = bit_copy(bitmap);
 	if (!orig_map)
 		fatal("bit_copy: malloc failure");
