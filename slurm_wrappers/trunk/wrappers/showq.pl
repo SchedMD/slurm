@@ -364,6 +364,7 @@ foreach my $ct ($min .. $max) {
 #
 #		Remap some of the states to be more recognizable to users.
 #
+		$state = "Configuring" if ($state =~ /CONF/);
 		$state = "Running" if ($state =~ /RUN/);
 		if ($state eq "PENDING" && $status eq "eligible") {
 			if ($reason eq "Resources") {
@@ -543,13 +544,14 @@ sub getslurmdata
 #		compared to moab, I am arraning the output into separate arrays similar to
 # 		showq xml data is arranges....there is a method to my madness.
 #	
+printf("it is $jdat->{state}\n");
 		if ($jdat->{state} =~ /COMP/ ||
 		    $jdat->{state} =~ /FAIL/ ||
 		    $jdat->{state} =~ /TIMEOUT/ ||
 		    $jdat->{state} =~/CANC/) {
 			$jdat2->{status} = "completed";
 			push @COMP, $jdat2;
-		} elsif ($jdat2->{state} eq "RUNNING") {
+		} elsif ($jdat->{state} eq "RUNNING" || $jdat->{state} eq "CONFIGURING") {
 			$jdat2->{remaining} = $jdat->{duration} - ($now - $jdat->{starttime});
 			$jdat2->{status} = "active";
 			push @ACTIVE, $jdat2;
