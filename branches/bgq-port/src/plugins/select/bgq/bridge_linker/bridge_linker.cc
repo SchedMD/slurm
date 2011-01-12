@@ -39,11 +39,12 @@
 
 #include "bridge_linker.h"
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+using namespace std;
 using namespace bgsched;
 using namespace bgsched::core;
 
@@ -53,12 +54,22 @@ bool initialized = false;
 bool have_db2 = true;
 void *handle = NULL;
 
-extern int bridge_init()
+static void _b_midplane_del(void *object)
+{
+	b_midplane_t *b_midplane = (b_midplane_t *)object;
+
+	if (b_midplane) {
+		xfree(b_midplane->bp_id);
+		xfree(b_midplane);
+	}
+}
+
+extern int bridge_init(char *properties_file)
 {
 	if (initialized)
 		return 1;
 
-	bgsched::init(properties);
+	bgsched::init(properties_file);
 
 
 	initialized = true;
@@ -74,10 +85,10 @@ extern int bridge_fini()
 	return SLURM_SUCCESS;
 }
 
-extern status_t bridge_get_bg(my_bluegene_t **bg)
+extern int bridge_get_bg(my_bluegene_t **bg)
 {
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
+	int rc = SLURM_ERROR;
+	if (!bridge_init(NULL))
 		return rc;
 	try {
 		ComputeHardware::ConstPtr bgq = getComputeHardware();
@@ -91,312 +102,163 @@ extern status_t bridge_get_bg(my_bluegene_t **bg)
 	return rc;
 }
 
-extern status_t bridge_add_block(rm_partition_t *partition)
+extern uint16_t *bridge_get_size(my_bluegene_t *bg)
 {
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
+	uint16_t size[SYSTEM_DIMENSIONS];
+	int rc = SLURM_ERROR;
+	if (!bridge_init(NULL))
+		return NULL;
+
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		size[i] = bgq->getMidplaneSize(i);
+
+	return size;
+}
+
+extern List bridge_get_map(my_bluegene_t *bg)
+{
+	int a, b, c, d;
+	List b_midplane_list = list_create(_bp_map_list_del);
+
+	for (a = 0; a < bgq->getMachineSize(Dimension::A); ++a)
+		for (b = 0; b < bgq->getMachineSize(Dimension::B); ++b)
+			for (c = 0; c < bgq->getMachineSize(Dimension::C); ++c)
+				for (d = 0; d < bgq->getMachineSize(Dimension::D); ++d) {
+					Midplane::Coordinates coords =
+						{{a, b, c, d}};
+					Midplane::ConstPtr midplane =
+						bgq->getMidplane(coords);
+					b_midplane_t *b_midplane =
+						xmalloc(sizeof(b_midplane_t));
+
+					list_append(bp_map_list, b_midplane);
+					b_midplane->midplane = midplane;
+					b_midplane->loc =
+						midplane->getLocation();
+					b_midplane->coord[A] = a;
+					b_midplane->coord[B] = b;
+					b_midplane->coord[C] = c;
+					b_midplane->coord[D] = d;
+				}
+	return b_midplane_list;
+}
+
+extern int bridge_create_block(bg_record_t *bg_record)
+{
+	Block::Ptr block_ptr;
+	Block::Midplanes midplanes;
+        Block::PassthroughMidplanes pt_midplanes;
+        Block::DimensionConnectivity conn_type;
+	ListIterator itr = NULL;
+	Midplane::ConstPtr midplane;
+	int i;
+	int rc = SLURM_SUCCESS;
+
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (bg_record->block_ptr)
+		return SLURM_ERROR;
+
+	if (bg_record->small) {
+		info("we can't make small blocks yet");
+		return SLURM_ERROR;
+	}
+
+	if (!bg_record->bg_midplanes || !list_count(bg_record->bg_midplanes)) {
+		error("There are no midplanes in this block?");
+		return SLURM_ERROR;
+	}
+
+	itr = list_iterator_create(bg_record->bg_midplanes);
+	while ((midplane == (Midplane::ConstPtr)list_next(itr))) {
+		midplanes.push_back(midplane->getLocation());
+	}
+	list_iterator_destroy(itr);
+
+	itr = list_iterator_create(bg_record->bg_pt_midplanes);
+	while ((midplane == (Midplane::ConstPtr)list_next(itr))) {
+		pt_midplanes.push_back(midplane->getLocation());
+	}
+	list_iterator_destroy(itr);
+
+        for (i=A; i<D; i++)
+		conn_type[dim] = bg_record->conn_type[i];
+
+	block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
+	block_ptr->setName(bg_record->bg_block_id);
+	block_ptr->addUser(bg_record->bg_block_id, bg_record->user_name);
+	block_ptr->add(NULL);
+
+	midplanes.clear();
+        pt_midplanes.clear();
+        conn_type.clear();
+
+	bg_record->block_ptr = block_ptr;
 
 	return rc;
 }
 
-extern status_t bridge_get_block(pm_partition_id_t pid,
-				 rm_partition_t **partition)
+extern int bridge_boot_block(char *name)
 {
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
+	int rc = SLURM_SUCCESS;
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (!name)
+		return SLURM_ERROR;
+
+        try {
+		Block::initiateBoot(name);
+	} catch(...) {
+                error("Boot block request failed ... continuing.");
+		rc = SLURM_ERROR;
+	}
 
 	return rc;
 }
 
-extern status_t bridge_get_block_info(pm_partition_id_t pid,
-				      rm_partition_t **partition)
+extern int bridge_free_block(char *name)
 {
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
+	int rc = SLURM_SUCCESS;
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (!name)
+		return SLURM_ERROR;
+
+        try {
+		Block::initiateFree(name);
+	} catch(...) {
+                error("Free block request failed ... continuing.");
+		rc = SLURM_ERROR;
+	}
 
 	return rc;
 }
 
-extern status_t bridge_modify_block(pm_partition_id_t pid,
-				    enum rm_modify_op op, const void *data)
+extern int bridge_remove_block(char *name)
 {
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
+	int rc = SLURM_SUCCESS;
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (!name)
+		return SLURM_ERROR;
+
+        try {
+		Block::remove(name);
+	} catch(...) {
+                error("Remove block request failed ... continuing.");
+		rc = SLURM_ERROR;
+	}
 
 	return rc;
 }
 
-extern status_t bridge_set_block_owner(pm_partition_id_t pid, const char *name)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
 
-	return rc;
-}
-
-extern status_t bridge_add_block_user(pm_partition_id_t pid, const char *name)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_remove_block_user(pm_partition_id_t pid,
-					 const char *name)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_remove_block(pm_partition_id_t pid)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_get_blocks(rm_partition_state_flag_t flag,
-				  rm_partition_list_t **part_list)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_get_blocks_info(rm_partition_state_flag_t flag,
-				       rm_partition_list_t **part_list)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_get_job(db_job_id_t dbJobId, rm_job_t **job)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_get_jobs(rm_job_state_flag_t flag, rm_job_list_t **jobs)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_remove_job(db_job_id_t jid)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
-				     rm_nodecard_list_t **nc_list)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-#ifndef HAVE_BGL
-extern status_t bridge_new_ionode(rm_ionode_t **ionode)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_ionode(rm_ionode_t *ionode)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-
-}
-#endif
-
-extern status_t bridge_new_block(rm_partition_t **partition)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_block(rm_partition_t *partition)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_job(rm_job_t *job)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_bg(my_bluegene_t *bg)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_block_list(rm_partition_list_t *part_list)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_job_list(rm_job_list_t *job_list)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_free_nodecard_list(rm_nodecard_list_t *nc_list)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_get_data(rm_element_t* element,
-				enum rm_specification field, void *data)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_set_data(rm_element_t* element,
-				enum rm_specification field, void *data)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-/* all the jm functions */
-extern status_t bridge_signal_job(db_job_id_t jid, rm_signal_t sig)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern status_t bridge_cancel_job(db_job_id_t jid)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-/* all the pm functions */
-extern status_t bridge_create_block(pm_partition_id_t pid)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-#ifndef HAVE_BGL
-extern status_t bridge_reboot_block(pm_partition_id_t pid)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-#endif
-
-extern status_t bridge_destroy_block(pm_partition_id_t pid)
-{
-	int rc = CONNECTION_ERROR;
-	if (!bridge_init())
-		return rc;
-
-	return rc;
-}
-
-extern int bridge_set_log_params(char *api_file_name, unsigned int level)
-{
+// extern int bridge_set_log_params(char *api_file_name, unsigned int level)
+// {
 // 	static FILE *fp = NULL;
 //         FILE *fp2 = NULL;
 // 	int rc = SLURM_SUCCESS;
@@ -428,8 +290,8 @@ extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 // 		fclose(fp2);
 // end_it:
 // 	slurm_mutex_unlock(&api_file_mutex);
- 	return rc;
-}
+//  	return rc;
+// }
 
 #ifdef __cplusplus
 }

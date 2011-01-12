@@ -1,10 +1,11 @@
 /*****************************************************************************\
- *  bridge_linker.h
- *
+ *  nodeinfo.h - definitions of functions used for the select_nodeinfo_t
+ *              structure
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov> et. al.
+ *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -36,68 +37,43 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BRIDGE_LINKER_H_
-#define _BRIDGE_LINKER_H_
+#ifndef _HAVE_SELECT_NODEINFO_H
+#define _HAVE_SELECT_NODEINFO_H
 
-/* This must be included first for AIX systems */
-#include "src/common/macros.h"
+#include "src/common/node_select.h"
+#define NODEINFO_MAGIC 0x85ac
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <dlfcn.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
-#include "src/slurmctld/proc_req.h"
-#include "src/common/list.h"
-#include "src/common/hostlist.h"
-#include "src/common/bitstring.h"
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "../bgq_enums.h"
-#include "../bgq.h"
-
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-
-/* Used to Keep track of where the Base Blocks are at all times
-   Rack and Midplane is the bp_id and ABCD is the coords.
-*/
 typedef struct {
-	void *midplane;
-	char *loc;
-	uint16_t coord[SYSTEM_DIMENSIONS];
-} b_midplane_t;
+	bitstr_t *bitmap;
+	int *inx;
+	uint16_t node_cnt;
+	enum node_states state;
+	char *str;
+} node_subgrp_t;
 
-extern int bridge_init(char *properties_file);
-extern int bridge_fini();
+struct select_nodeinfo {
+	uint16_t bitmap_size;
+	uint16_t magic;		/* magic number */
+	List subgrp_list;
+};
 
-extern int bridge_get_bg(my_bluegene_t **bg);
-extern uint16_t *bridge_get_size(my_bluegene_t *bg);
-extern List bridge_get_map(my_bluegene_t *bg);
+extern char *give_geo(uint16_t int_geo[SYSTEM_DIMENSIONS]);
 
-extern int bridge_create_block(bg_record_t *bg_record);
-extern int bridge_boot_block(char *name);
-extern int bridge_free_block(char *name);
-extern int bridge_remove_block(char *name);
+extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
+				uint16_t protocol_version);
 
-#endif /* HAVE_BGQ_FILES */
+extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
+				  uint16_t protocol_version);
 
-#ifdef __cplusplus
-}
+extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size);
+
+extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
+
+extern int select_nodeinfo_set_all(time_t last_query_time);
+
+extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
+			       enum select_nodedata_type dinfo,
+			       enum node_states state,
+			       void *data);
+
 #endif
-
-#endif /* _BRIDGE_LINKER_H_ */

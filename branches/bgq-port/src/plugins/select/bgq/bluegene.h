@@ -1,10 +1,11 @@
 /*****************************************************************************\
- *  bgq.h - hearder file for the Blue Gene/Q plugin.
+ *  bluegene.h - header for blue gene configuration processing module.
+ *
+ *  $Id$
  *****************************************************************************
- *  Copyright (C) 2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Written by Dan Phung <phung4@llnl.gov> and Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -36,39 +37,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BGQ_H_
-#define _BGQ_H_
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#endif
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#ifndef _BLUEGENE_H_
+#define _BLUEGENE_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "src/common/slurm_xlator.h"	/* Must be first */
-#include "src/common/macros.h"
-#include "src/slurmctld/slurmctld.h"
-#include "bgq_enums.h"
-#include "block_allocator/block_allocator.h"
+#include "bg_record_functions.h"
 
 typedef enum bg_layout_type {
 	LAYOUT_STATIC,  /* no overlaps, except for full system block
@@ -79,15 +55,24 @@ typedef enum bg_layout_type {
 } bg_layout_t;
 
 typedef struct {
+#ifdef HAVE_BGL
+	List blrts_list;
+#endif
 	uint16_t bp_node_cnt;
 	uint16_t bp_nodecard_cnt;
 	char *bridge_api_file;
 	uint16_t bridge_api_verb;
 	uint32_t slurm_debug_flags;
+#ifdef HAVE_BGL
+	char *default_blrtsimage;
+#endif
+	char *default_linuximage;
 	char *default_mloaderimage;
+	char *default_ramdiskimage;
 	uint16_t deny_pass;
 	double io_ratio;
 	bg_layout_t layout_mode;
+	List linux_list;
 	List mloader_list;
 	double nc_ratio;
 	uint16_t nodecard_node_cnt;
@@ -132,12 +117,18 @@ extern int num_unused_cpus;
 #define BITSIZE 128
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER001"
+#define BLOCK_STATE_VERSION      "VER004"
+#define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
 
+#include "bg_block_info.h"
 #include "bg_job_place.h"
 #include "bg_job_run.h"
+#include "state_test.h"
 #include "jobinfo.h"
 #include "nodeinfo.h"
+
+/* bluegene.c */
+/**********************************************/
 
 /* Initialize all plugin variables */
 extern int init_bg(void);
@@ -145,8 +136,67 @@ extern int init_bg(void);
 /* Purge all plugin variables */
 extern void fini_bg(void);
 
+extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
+
+extern void bg_requeue_job(uint32_t job_id, bool wait_for_start);
+
+/* remove all users from a block but what is in user_name */
+/* Note return codes */
+#define REMOVE_USER_ERR  -1
+#define REMOVE_USER_NONE  0
+#define REMOVE_USER_FOUND 2
+extern int remove_all_users(char *bg_block_id, char *user_name);
+extern int set_block_user(bg_record_t *bg_record);
+
+/* sort a list of bg_records by size (node count) */
+extern void sort_bg_record_inc_size(List records);
+
+/* block_agent - detached thread periodically tests status of bluegene
+ * blocks */
+extern void *block_agent(void *args);
+
+/* state_agent - thread periodically tests status of bluegene
+ * nodes, nodecards, and switches */
+extern void *state_agent(void *args);
+
+extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked);
+
+extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
+extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
+						     bg_record_t *bg_record);
+extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
+extern void *mult_free_block(void *args);
+extern void *mult_destroy_block(void *args);
+extern int free_block_list(uint32_t job_id, List track_list,
+			   bool destroy, bool wait);
+extern int read_bg_conf();
+extern int validate_current_blocks(char *dir);
+
+/* block_sys.c */
+/*****************************************************/
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#ifdef HAVE_BGL
+extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
+			     int *nc_id);
+#endif
+#endif
+extern int configure_block(bg_record_t * bg_conf_record);
+extern int read_bg_blocks();
+extern int load_state_file(List curr_block_list, char *dir_name);
+
+/* bg_switch_connections.c */
+/*****************************************************/
+extern int configure_small_block(bg_record_t *bg_record);
+extern int configure_block_switches(bg_record_t * bg_conf_record);
+
+
+/* select_bluegene.c */
+/*****************************************************/
+extern int select_p_update_block(update_block_msg_t *block_desc_ptr);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _BGQ_H_ */
+#endif /* _BLUEGENE_H_ */
+

@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  bridge_linker.h
- *
+ *  bg_job_run.h - header for blue gene job execution (e.g. initiation and
+ *  termination) functions.
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -36,68 +36,56 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BRIDGE_LINKER_H_
-#define _BRIDGE_LINKER_H_
+#ifndef _BG_JOB_RUN_H_
+#define _BG_JOB_RUN_H_
 
-/* This must be included first for AIX systems */
-#include "src/common/macros.h"
+#include "src/slurmctld/slurmctld.h"
+#include "bg_record_functions.h"
 
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
+/*
+ * Boot a block. Partition state expected to be FREE upon entry.
+ * NOTE: This function does not wait for the boot to complete.
+ * the slurm prolog script needs to perform the waiting.
+ */
+extern int boot_block(bg_record_t *bg_record);
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+/*
+ * Perform any setup required to initiate a job
+ * job_ptr IN - pointer to the job being initiated
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens in parallel with srun and slurmd spawning
+ * the job. A prolog script is expected to defer initiation of
+ * the job script until the BG block is available for use.
+ */
+extern int start_job(struct job_record *job_ptr);
 
-#include <dlfcn.h>
+/*
+ * Synchronize BG block state to that of currently active jobs.
+ * This can recover from slurmctld crashes when block ownership
+ * changes were queued
+ */
+extern int sync_jobs(List job_list);
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+/*
+ * Perform any work required to terminate a job
+ * job_ptr IN - pointer to the job being terminated
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens in parallel with srun and slurmd terminating
+ * the job. Insure that this function, mpirun and the epilog can
+ * all deal with termination race conditions.
+ */
+extern int term_job(struct job_record *job_ptr);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/*
+ * Perform any work required to terminate a jobs on a block
+ * bg_block_id IN - partition name
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens when new partitions are created and we
+ * need to clean up jobs on them.
+ */
+extern int term_jobs_on_block(pm_partition_id_t bg_block_id);
 
-#include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
-#include "src/slurmctld/proc_req.h"
-#include "src/common/list.h"
-#include "src/common/hostlist.h"
-#include "src/common/bitstring.h"
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "../bgq_enums.h"
-#include "../bgq.h"
-
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-
-/* Used to Keep track of where the Base Blocks are at all times
-   Rack and Midplane is the bp_id and ABCD is the coords.
-*/
-typedef struct {
-	void *midplane;
-	char *loc;
-	uint16_t coord[SYSTEM_DIMENSIONS];
-} b_midplane_t;
-
-extern int bridge_init(char *properties_file);
-extern int bridge_fini();
-
-extern int bridge_get_bg(my_bluegene_t **bg);
-extern uint16_t *bridge_get_size(my_bluegene_t *bg);
-extern List bridge_get_map(my_bluegene_t *bg);
-
-extern int bridge_create_block(bg_record_t *bg_record);
-extern int bridge_boot_block(char *name);
-extern int bridge_free_block(char *name);
-extern int bridge_remove_block(char *name);
-
-#endif /* HAVE_BGQ_FILES */
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _BRIDGE_LINKER_H_ */
+#endif /* _BG_JOB_RUN_H_ */

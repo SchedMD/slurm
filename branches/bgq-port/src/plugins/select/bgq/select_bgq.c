@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  select_bgq.cc - node selection plugin for Blue Gene/Q system.
  *****************************************************************************
- *  Copyright (C) 2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -95,6 +95,8 @@ extern int init ( void )
 		verbose("%s loading...", plugin_name);
 		/* if this is coming from something other than the controller
 		   we don't want to read the config or anything like that. */
+		if (init_bg())
+			return SLURM_ERROR;
 	}
 	verbose("%s loaded", plugin_name);
 #else
@@ -109,6 +111,9 @@ extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
 
+#ifdef HAVE_BGQ
+	fini_bg();
+#endif
 	return rc;
 }
 
@@ -121,6 +126,100 @@ extern int fini ( void )
 extern int select_p_state_save(char *dir_name)
 {
 #ifdef HAVE_BGQ
+	ListIterator itr;
+	bg_record_t *bg_record = NULL;
+	int error_code = 0, log_fd;
+	char *old_file, *new_file, *reg_file;
+	uint32_t blocks_packed = 0, tmp_offset, block_offset;
+	Buf buffer = init_buf(BUF_SIZE);
+	DEF_TIMERS;
+
+	debug("bluegene: select_p_state_save");
+	START_TIMER;
+	/* write header: time */
+	packstr(BLOCK_STATE_VERSION, buffer);
+	block_offset = get_buf_offset(buffer);
+	pack32(blocks_packed, buffer);
+	pack_time(time(NULL), buffer);
+
+	/* write block records to buffer */
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = list_next(itr))) {
+		if (bg_record->magic != BLOCK_MAGIC)
+			continue;
+		/* on real bluegene systems we only want to keep track of
+		 * the blocks in an error state
+		 */
+#ifdef HAVE_BGQ_FILES
+		if (bg_record->state != RM_PARTITION_ERROR)
+			continue;
+#endif
+		xassert(bg_record->bg_block_id != NULL);
+
+		pack_block(bg_record, buffer, SLURM_PROTOCOL_VERSION);
+		blocks_packed++;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, block_offset);
+	pack32(blocks_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+	/* Maintain config read lock until we copy state_save_location *\
+	   \* unlock_slurmctld(part_read_lock);          - see below      */
+
+	/* write the buffer to file */
+	slurm_conf_lock();
+	old_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(old_file, "/block_state.old");
+	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(reg_file, "/block_state");
+	new_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(new_file, "/block_state.new");
+	slurm_conf_unlock();
+
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+
+	free_buf(buffer);
+	END_TIMER2("select_p_state_save");
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;

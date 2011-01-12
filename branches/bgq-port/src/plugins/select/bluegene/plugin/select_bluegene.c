@@ -335,7 +335,7 @@ extern int fini ( void )
 /* We rely upon DB2 to save and restore BlueGene state */
 extern int select_p_state_save(char *dir_name)
 {
-#ifdef HAVE_BG_L_P
+#ifdef HAVE_BGQ
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 	int error_code = 0, log_fd;
@@ -361,7 +361,7 @@ extern int select_p_state_save(char *dir_name)
 		/* on real bluegene systems we only want to keep track of
 		 * the blocks in an error state
 		 */
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 		if (bg_record->state != RM_PARTITION_ERROR)
 			continue;
 #endif

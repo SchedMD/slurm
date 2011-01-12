@@ -126,8 +126,6 @@ typedef enum {
 
 /** internal helper functions */
 #if defined HAVE_BG_FILES && defined HAVE_BG_Q
-/** */
-static void _bp_map_list_del(void *object);
 
 /** */
 static int _port_enum(int port);
@@ -865,7 +863,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	int coords[HIGHEST_DIMENSIONS];
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	rm_size3D_t bp_size;
+	uint16_t *bp_size;
 	int rc = 0;
 #endif /* HAVE_BG_FILES */
 
@@ -878,7 +876,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	set_ba_debug_flags(slurm_get_debug_flags());
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	bridge_init();
+	bridge_init(NULL);
 #endif
 
 	/* make the letters array only contain letters upper and lower
@@ -915,18 +913,19 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	/* cluster_dims is already set up off of working_cluster_rec */
 	if (cluster_dims == 1) {
 		if (node_info_ptr) {
-			REAL_DIM_SIZE[B] = DIM_SIZE[B] =
+			REAL_DIM_SIZE[A] = DIM_SIZE[A] =
 				node_info_ptr->record_count;
 			ba_system_ptr->num_of_proc =
 				node_info_ptr->record_count;
+			REAL_DIM_SIZE[B] = DIM_SIZE[B] = 1;
 			REAL_DIM_SIZE[C] = DIM_SIZE[C] = 1;
 			REAL_DIM_SIZE[D] = DIM_SIZE[D] = 1;
 		}
 		goto setup_done;
 	} else if (working_cluster_rec && working_cluster_rec->dim_size) {
 		for(i=0; i<working_cluster_rec->dimensions; i++) {
-			DIM_SIZE[i] = working_cluster_rec->dim_size[i];
-			REAL_DIM_SIZE[i] = DIM_SIZE[i];
+			REAL_DIM_SIZE[i] = DIM_SIZE[i] =
+				working_cluster_rec->dim_size[i];
 		}
 		goto setup_done;
 	}
@@ -972,7 +971,8 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	}
 node_info_error:
 
-	if ((DIM_SIZE[B]==0) || (DIM_SIZE[C]==0) || (DIM_SIZE[D]==0)) {
+	if ((DIM_SIZE[A]==0) || (DIM_SIZE[B]==0)
+	    || (DIM_SIZE[C]==0) || (DIM_SIZE[D]==0)) {
 		debug("Setting dimensions from slurm.conf file");
 		count = slurm_conf_nodename_array(&ptr_array);
 		if (count == 0)
@@ -1017,7 +1017,8 @@ node_info_error:
 					break;
 			}
 		}
-		if ((DIM_SIZE[B]==0) && (DIM_SIZE[C]==0) && (DIM_SIZE[D]==0))
+		if ((DIM_SIZE[A]==0) && (DIM_SIZE[B]==0)
+		    && (DIM_SIZE[C]==0) && (DIM_SIZE[D]==0))
 			info("are you sure you only have 1 midplane? %s",
 			     node->nodenames);
 		for(j=0; j<cluster_dims; j++) {
@@ -1040,11 +1041,9 @@ node_info_error:
 			return;
 		}
 
-		if ((bg != NULL)
-		    &&  ((rc = bridge_get_data(bg, RM_Msize, &bp_size))
-			 == STATUS_OK)) {
+		if (bg && (size = bridge_get_size(bg))) {
 			verbose("BlueGene configured with "
-				"%d x %d x %d base blocks",
+				"%d x %d x %d x %d base blocks",
 				bp_size.B, bp_size.C, bp_size.D);
 			REAL_DIM_SIZE[B] = bp_size.B;
 			REAL_DIM_SIZE[C] = bp_size.C;
@@ -2014,79 +2013,14 @@ extern int set_bp_map(void)
 	if (_bp_map_initialized)
 		return 1;
 
-	bp_map_list = list_create(_bp_map_list_del);
-
-	if (!have_db2) {
-		error("Can't access DB2 library, run from service node");
-		return -1;
-	}
-
-#ifdef HAVE_BGL
-	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
-		error("Missing DB2INSTANCE or VWSPATH env var.  "
-		      "Execute 'db2profile'");
-		return -1;
-	}
-#endif
-
 	if (!bg) {
-		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+		if ((rc = bridge_get_bg(&bg)) != SLURM_SUCCESS) {
 			error("bridge_get_BG(): %d", rc);
 			return -1;
 		}
 	}
 
-	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
-		error("bridge_get_data(RM_BPNum): %d", rc);
-		bp_num = 0;
-	}
-
-	for (i=0; i<bp_num; i++) {
-
-		if (i) {
-			if ((rc = bridge_get_data(bg, RM_NextBP, &my_bp))
-			    != STATUS_OK) {
-				error("bridge_get_data(RM_NextBP): %d", rc);
-				break;
-			}
-		} else {
-			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_bp))
-			    != STATUS_OK) {
-				error("bridge_get_data(RM_FirstBP): %d", rc);
-				break;
-			}
-		}
-
-		bp_map = (ba_bp_map_t *) xmalloc(sizeof(ba_bp_map_t));
-
-		if ((rc = bridge_get_data(my_bp, RM_BPID, &bp_id))
-		    != STATUS_OK) {
-			xfree(bp_map);
-			error("bridge_get_data(RM_BPID): %d", rc);
-			continue;
-		}
-
-		if (!bp_id) {
-			error("No BP ID was returned from database");
-			continue;
-		}
-
-		if ((rc = bridge_get_data(my_bp, RM_BPLoc, &bp_loc))
-		    != STATUS_OK) {
-			xfree(bp_map);
-			error("bridge_get_data(RM_BPLoc): %d", rc);
-			continue;
-		}
-
-		bp_map->bp_id = xstrdup(bp_id);
-		bp_map->coord[B] = bp_loc.B;
-		bp_map->coord[C] = bp_loc.C;
-		bp_map->coord[D] = bp_loc.D;
-
-		list_push(bp_map_list, bp_map);
-
-		free(bp_id);
-	}
+	bp_map_list = bridge_get_map(bg);
 #endif
 	_bp_map_initialized = true;
 	return 1;
@@ -2721,15 +2655,6 @@ extern int validate_coord(uint16_t *coord)
 /********************* Local Functions *********************/
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_Q
-static void _bp_map_list_del(void *object)
-{
-	ba_bp_map_t *bp_map = (ba_bp_map_t *)object;
-
-	if (bp_map) {
-		xfree(bp_map->bp_id);
-		xfree(bp_map);
-	}
-}
 
 /* translation from the enum to the actual port number */
 static int _port_enum(int port)
