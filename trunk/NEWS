@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     architectures where the slurmd does not execute on the compute nodes
     (e.g. BlueGene). New configuration parameters FrontendNode and FrontendAddr
     added. See "man slurm.conf" for more information.
+ -- With the scontrol show job command when using the --details option, show
+    a batch job's script.
 
 * Changes in SLURM 2.2.1
 ========================

@@ -471,6 +471,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->account);
 		xfree(job->alloc_node);
 		xfree(job->batch_host);
+		xfree(job->batch_script);
 		xfree(job->command);
 		xfree(job->comment);
 		xfree(job->dependency);

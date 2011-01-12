@@ -144,8 +144,10 @@ no associated jobs at the time of their deletion (modify the job's first).
 
 .TP
 \fBdetails\fP
-Causes the \fIshow\fP command to provide additional details where available,
-namely the specific CPUs and NUMA memory allocated on each node.
+Causes the \fIshow\fP command to provide additional details where available.
+Batch job information will include the batch script for jobs the user is
+authorized to view.
+Job information will include CPUs and NUMA memory allocated on each node.
 Note that on computers with hyperthreading enabled and SLURM configured to
 allocate cores, each listed CPU represents one physical core.
 Each hyperthread on that core can be allocated a separate task, so a job's
