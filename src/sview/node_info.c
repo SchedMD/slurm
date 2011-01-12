@@ -1029,11 +1029,18 @@ extern int update_state_node(GtkDialog *dialog,
 			 nodelist);
 		label = gtk_label_new(tmp_char);
 		state = NODE_RESUME;
+	} else if (!strncasecmp("set", type, 3)) {
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to down node(s) %s?\n\n"
+			 "Please put reason.",
+			 nodelist);
+		entry = create_entry();
+		label = gtk_label_new(tmp_char);
+		state = NODE_STATE_DOWN;
 	} else {
+
 		if (!strncasecmp("make", type, 4))
 			type = "idle";
-		else if (!strncasecmp("put", type, 3))
-			type = "down";
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
 			lower = str_tolower(upper);
