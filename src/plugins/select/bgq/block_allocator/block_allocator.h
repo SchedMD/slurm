@@ -250,14 +250,6 @@ typedef struct {
 	ba_node_t ****grid;
 } ba_system_t;
 
-/* Used to Keep track of where the Base Blocks are at all times
-   Rack and Midplane is the bp_id and ABCD is the coords.
-*/
-typedef struct {
-	char *bp_id;
-	uint16_t coord[HIGHEST_DIMENSIONS];
-} ba_bp_map_t;
-
 /* Global */
 extern my_bluegene_t *bg;
 extern List bp_map_list; /* list used for conversion from ABCD to Rack

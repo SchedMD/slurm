@@ -106,9 +106,14 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @BGQ_LOADED_TRUE@select_bgq_la_DEPENDENCIES =  \
 @BGQ_LOADED_TRUE@	block_allocator/libblock_allocator.la
-am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h
+am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h \
+	bg_job_place.c bg_job_place.h bg_job_run.c bg_job_run.h \
+	bg_record_functions.c bg_record_functions.h jobinfo.c \
+	jobinfo.h nodeinfo.c nodeinfo.h
 @BGQ_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
-@BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo
+@BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo \
+@BGQ_LOADED_TRUE@	bg_job_place.lo bg_job_run.lo \
+@BGQ_LOADED_TRUE@	bg_record_functions.lo jobinfo.lo nodeinfo.lo
 select_bgq_la_OBJECTS = $(am_select_bgq_la_OBJECTS)
 select_bgq_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -371,7 +376,13 @@ pkglib_LTLIBRARIES = select_bgq.la
 @BGQ_LOADED_FALSE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 
 # BGQ node selection plugin.
-@BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
+@BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h \
+@BGQ_LOADED_TRUE@			bg_job_place.c bg_job_place.h \
+@BGQ_LOADED_TRUE@			bg_job_run.c bg_job_run.h \
+@BGQ_LOADED_TRUE@			bg_record_functions.c bg_record_functions.h \
+@BGQ_LOADED_TRUE@			jobinfo.c jobinfo.h\
+@BGQ_LOADED_TRUE@			nodeinfo.c nodeinfo.h
+
 @BGQ_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
 @BGQ_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
@@ -449,6 +460,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_job_place.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_job_run.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_record_functions.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobinfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bgq.Plo@am__quote@
 
 .c.o:
