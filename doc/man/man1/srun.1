@@ -1039,6 +1039,13 @@ Standard output from this program of the form
 for the task being spawned.
 
 .TP
+\fB\-\-test\-only\fR
+Returns an estimate of when a job would be scheduled to run given the
+current job queue and all the other \fBsrun\fR arguments specifying
+the job.  This limits \fBsrun's\fR behavior to just return
+information; no job is actually submitted.
+
+.TP
 \fB\-\-time\-min\fR=<\fItime\fR>
 Set a minimum time limit on the job allocation.
 If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
