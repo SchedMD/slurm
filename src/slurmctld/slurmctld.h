@@ -1376,11 +1376,12 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  * IN show_flags - job filtering options
  * IN/OUT buffer - buffer in which data is placed, pointers automatically
  *	updated
+ * IN uid - user requesting the data
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
 extern void pack_job (struct job_record *dump_job_ptr, uint16_t show_flags,
-		      Buf buffer, uint16_t protocol_version);
+		      Buf buffer, uint16_t protocol_version, uid_t uid);
 
 /*
  * pack_part - dump all configuration information about a specific partition

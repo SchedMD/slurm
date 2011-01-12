@@ -5096,7 +5096,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		    (! IS_JOB_COMPLETING(job_ptr)) && IS_JOB_FINISHED(job_ptr))
 			continue;	/* job ready for purging, don't dump */
 
-		pack_job(job_ptr, show_flags, buffer, protocol_version);
+		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
 		jobs_packed++;
 	}
 	part_filter_clear();
@@ -5157,7 +5157,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	buffer = init_buf(BUF_SIZE);
 	pack32(jobs_packed, buffer);
 	pack_time(time(NULL), buffer);
-	pack_job(job_ptr, show_flags, buffer, protocol_version);
+	pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
@@ -5171,11 +5171,12 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
  * IN show_flags - job filtering options
  * IN/OUT buffer - buffer in which data is placed, pointers automatically
  *	updated
+ * IN uid - user requesting the data
  * NOTE: change _unpack_job_info_members() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
 void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
-	      uint16_t protocol_version)
+	      uint16_t protocol_version, uid_t uid)
 {
 	struct job_details *detail_ptr;
 	time_t begin_time = 0;
@@ -5246,6 +5247,15 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->gres, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
+		if ((show_flags & SHOW_DETAIL) &&
+		    ((dump_job_ptr->user_id == (uint32_t) uid) ||
+		     validate_slurm_user(uid))) {
+			char *batch_script = get_job_script(dump_job_ptr);
+			packstr(batch_script, buffer);
+			xfree(batch_script);
+		} else {
+			packnull(buffer);
+		}
 
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {

@@ -785,6 +785,15 @@ line15:
 			 job_ptr->comment);
 		xstrcat(out, tmp_line);
 	}
+	/****** Line 27 (optional) ******/
+	if (job_ptr->batch_script) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		xstrcat(out, "BatchScript=\n");
+		xstrcat(out, job_ptr->batch_script);
+	}
 
 	if (one_liner)
 		xstrcat(out, "\n");

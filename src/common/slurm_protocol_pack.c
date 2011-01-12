@@ -3760,6 +3760,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
