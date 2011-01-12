@@ -383,6 +383,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkAction *action, gpointer user_data);
 extern void change_grid_popup(GtkAction *action, gpointer user_data);
 extern void about_popup(GtkAction *action, gpointer user_data);
+extern void usage_popup(GtkAction *action, gpointer user_data);
 
 //grid.c
 extern void destroy_grid_button(void *arg);
