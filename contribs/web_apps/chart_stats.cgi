@@ -146,7 +146,7 @@ sub print_form {
 	      -maxlength=>2),
     b(" Year: "),
     textfield(-name=>'year_begin',
-	      -value=>'10',
+	      -value=>'11',
 	      -size=>2,
 	      -maxlength=>2),
     br;
@@ -164,7 +164,7 @@ sub print_form {
 	      -maxlength=>2),
     b(" Year: "),
     textfield(-name=>'year_end',
-	      -value=>'10',
+	      -value=>'11',
 	      -size=>2,
 	      -maxlength=>2),
     br;
