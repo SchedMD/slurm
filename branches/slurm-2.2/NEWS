@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     attempts from 60 seconds to 29 seconds. This should eliminate a possible
     synchronization problem with gang scheduling that could result in job
     step creation requests only occuring when a job is suspended. 
+ -- Fix to prevent changing a held job's state from HELD to DEPENDENCY
+    until the job is released. Patch from Rod Schultz, Bull.
 
 * Changes in SLURM 2.2.0
 ========================
