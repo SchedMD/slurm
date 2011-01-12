@@ -95,16 +95,33 @@ int main (int argc, char *argv[])
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 
-	weight_age  = slurm_get_priority_weight_age();
-	weight_fs   = slurm_get_priority_weight_fairshare();
-	weight_js   = slurm_get_priority_weight_job_size();
-	weight_part = slurm_get_priority_weight_partition();
-	weight_qos  = slurm_get_priority_weight_qos();
-
 	parse_command_line( argc, argv );
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
+	}
+
+	if (working_cluster_rec) {
+		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr;
+
+		error_code = slurm_load_ctl_conf((time_t) NULL,
+						  &slurm_ctl_conf_ptr);
+		if (error_code) {
+			slurm_perror ("slurm_load_ctl_conf error");
+			exit(error_code);
+		}
+		weight_age  = slurm_ctl_conf_ptr->priority_weight_age;
+		weight_fs   = slurm_ctl_conf_ptr->priority_weight_fs;
+		weight_js   = slurm_ctl_conf_ptr->priority_weight_js;
+		weight_part = slurm_ctl_conf_ptr->priority_weight_part;
+		weight_qos  = slurm_ctl_conf_ptr->priority_weight_qos;
+		slurm_free_ctl_conf(slurm_ctl_conf_ptr);
+	} else {
+		weight_age  = slurm_get_priority_weight_age();
+		weight_fs   = slurm_get_priority_weight_fairshare();
+		weight_js   = slurm_get_priority_weight_job_size();
+		weight_part = slurm_get_priority_weight_partition();
+		weight_qos  = slurm_get_priority_weight_qos();
 	}
 
 	memset(&req_msg, 0, sizeof(priority_factors_request_msg_t));

@@ -24,6 +24,7 @@ documents those changes that are of interest to users and admins.
     step creation requests only occuring when a job is suspended. 
  -- Fix to prevent changing a held job's state from HELD to DEPENDENCY
     until the job is released. Patch from Rod Schultz, Bull.
+ -- Fixed sprio -M to reflect PriorityWeight values from remote cluster.
 
 * Changes in SLURM 2.2.0
 ========================
