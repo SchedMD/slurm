@@ -661,6 +661,7 @@ static char *_get_ui_description()
 		"    </menu>"
 		"    <menu action='help'>"
 		"      <menuitem action='about'/>"
+		"      <menuitem action='usage'/>"
 		/* "      <menuitem action='manual'/>" */
 		"    </menu>"
 		"  </menubar>"
@@ -715,8 +716,10 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"exit", GTK_STOCK_QUIT, "E_xit",
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
 		{"help", NULL, "_Help", "<alt>h"},
-		{"about", GTK_STOCK_ABOUT, "A_bout", "<control>b",
+		{"about", GTK_STOCK_ABOUT, "About", "",
 		 "About", G_CALLBACK(about_popup)},
+		{"usage", GTK_STOCK_HELP, "Usage", "",
+		 "Usage", G_CALLBACK(usage_popup)},
 		//{"manual", GTK_STOCK_HELP, "_Manual", "<control>m"},
 		{"grid_specs", GTK_STOCK_EDIT, "Set Grid _Properties",
 		 "<control>p", "Change Grid Properties",

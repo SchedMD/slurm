@@ -917,3 +917,54 @@ extern void about_popup(GtkAction *action, gpointer user_data)
 
 	return;
 }
+
+extern void usage_popup(GtkAction *action, gpointer user_data)
+{
+	GtkWidget *table = gtk_table_new(1, 1, FALSE);
+	GtkWidget *label = NULL;
+
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Usage",
+		GTK_WINDOW(user_data),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	int response = 0;
+	char *help_msg =
+		"sview can be used to view and modify many of SLURM's\n"
+		"records.\n\n"
+		"Tabs are used to select the data type to work with.\n"
+		"Right click on the tab to select it. Left click on\n"
+		"the tab to control the fields of the table to be\n"
+		"displayed. Those fields can then be re-ordered or used\n"
+		"for sorting the records.\n\n"
+		"Left click on a record to see the compute nodes\n"
+		"associated with it. Right click on a record to modify\n"
+		"it. The colored boxes represent compute nodes associated\n"
+		"with each job, partition, etc. and may also selected\n"
+		"with right and left buttons.\n\n"
+		"Select 'Option' then 'Admin mode' to enable editing\n"
+		"of the records.\n";
+
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+
+	gtk_window_set_default_size(GTK_WINDOW(popup), 200, 50);
+
+	label = gtk_label_new(help_msg);
+
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   table, FALSE, FALSE, 0);
+
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
+
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	gtk_widget_destroy(popup);
+
+	return;
+}
