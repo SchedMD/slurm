@@ -40,7 +40,7 @@ command.
 Define the job accounting sampling interval.
 This can be used to override the \fIJobAcctGatherFrequency\fR parameter in SLURM's
 configuration file, \fIslurm.conf\fR.
-A value of zero disables real the periodic job sampling and provides accounting
+A value of zero disables the periodic job sampling and provides accounting
 information only on job termination (reducing SLURM interference with the job).
 
 .TP
@@ -119,7 +119,7 @@ already passed for that year, in which case the next year is used.
 .TP
 \fB\-\-checkpoint\fR=<\fItime\fR>
 Specifies the interval between creating checkpoints of the job step.
-By default, the job step will no checkpoints created.
+By default, the job step will have no checkpoints created.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
 "days\-hours:minutes:seconds".
@@ -134,7 +134,8 @@ and "<job_id>.<step_id>.ckpt" for job steps.
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>
-An arbitrary comment.
+An arbitrary comment enclosed in double quotes if using spaces or some
+special characters.
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
@@ -158,7 +159,7 @@ the cluster, but any of those four racks can be used.
 A request can also specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
 For example "\fBsbatch \-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
-indicates that the job requires 16 nodes at that at least four of those
+indicates that the job requires 16 nodes and that at least four of those
 nodes must have the feature "graphics."
 Constraints with node counts may only be combined with AND operators.
 If no nodes have the requested features, then the job will be rejected
@@ -507,7 +508,7 @@ Multiple license names should be comma separated (e.g.
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 The job will be submitted to the one cluster providing the earliest expected
 job initiation time. The default value is the current cluster.  A value of
-of '\fIall\fR' will query to run on all clusters.  Note the
+'\fIall\fR' will query to run on all clusters.  Note the
 \fB\-\-export\fR option to control environment variables exported
 between clusters.
 
@@ -554,7 +555,7 @@ https://computing.llnl.gov/linux/slurm/dist_plane.html.
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order as
 listed in file designated by the environment variable SLURM_HOSTFILE.  If
-this variable is listed it will over ride any other method specified.
+this variable is listed it will override any other method specified.
 If not set the method will default to block.  Inside the hostfile must
 contain at minimum the number of hosts requested.  If requesting tasks
 (\-n) your tasks will be laid out on the nodes in the order of the file.
@@ -619,8 +620,8 @@ NOTE: To have SLURM always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
-The following informational environment variables are set when \fB\-\-mem_bind\
-is in use:
+The following informational environment variables are set when
+\fB\-\-mem_bind is in use:
 
 .nf
         SLURM_MEM_BIND_VERBOSE
@@ -699,8 +700,8 @@ and without delaying the initiation of the job.
 \fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
 sbatch does not launch tasks, it requests an allocation of resources and
 submits a batch script. This option advises the SLURM controller that job
-steps run within this allocation will launch a maximum of \fInumber\fR
-tasks and sufficient resources are allocated to accomplish this.
+steps run within the allocation will launch a maximum of \fInumber\fR
+tasks and to provide for sufficient resources.
 The default is one task per node, but note
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
@@ -772,7 +773,7 @@ This is related to \fB\-\-cpus\-per\-task\fR=\fIncpus\fR,
 but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
 request that no more than a specific number of tasks be invoked
-on each node.  Examples of this include submitting
+on each node.  Examples include submitting
 a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
 assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
@@ -881,7 +882,7 @@ Allocate resources for the job from the named reservation.
 \fB\-s\fR, \fB\-\-share\fR
 The job allocation can share nodes with other running jobs.  (The default
 shared/exclusive behaviour depends on system configuration.)
-This may result the allocation being granted sooner than if the \-\-share
+This may result in the allocation being granted sooner than if the \-\-share
 option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
@@ -1000,7 +1001,7 @@ applicable to other systems as well.
 
 .TP
 \fB\-\-blrts\-image\fR=<\fIpath\fR>
-Path to blrts image for bluegene block.  BGL only.
+Path to Blue Gene\/L Run Time Supervisor, or blrts, image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
