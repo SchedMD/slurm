@@ -468,9 +468,7 @@ static void _destroy_jobs_foreach(void *object)
 {
 	jobs_foreach_t *jobs_foreach = (jobs_foreach_t *)object;
 
-	if (jobs_foreach) {
-		xfree(jobs_foreach);
-	}
+	xfree(jobs_foreach);
 }
 
 /* translate name name to number */
@@ -3607,37 +3605,6 @@ static void process_foreach_list (jobs_foreach_common_t *jobs_foreach_common)
 				g_free(tmp_char_ptr);
 			}
 			break;
-		case EDIT_EDIT:
-			/* note: this case only applies to
-			   single jobs, but still gets
-			   processed here */
-			if (got_edit_signal)
-				goto end_it;
-
-			if (global_edit_error)
-				tmp_char_ptr = global_edit_error_msg;
-			else if (!global_send_update_msg) {
-				tmp_char_ptr = g_strdup_printf(
-					"No change detected.");
-			} else if (slurm_update_job(
-					   jobs_foreach_common->job_msg)
-				   == SLURM_SUCCESS) {
-				tmp_char_ptr = g_strdup_printf(
-					"Job %u updated successfully",
-					jobid);
-			} else if (errno == ESLURM_DISABLED) {
-				tmp_char_ptr = g_strdup_printf(
-					"Can't edit that part of "
-					"non-pending job %u.",
-					jobid);
-			} else {
-				tmp_char_ptr = g_strdup_printf(
-					"Problem updating job %u.",
-					jobid);
-			}
-			display_edit_note(tmp_char_ptr);
-			g_free(tmp_char_ptr);
-			break;
 		default:
 			break;
 
@@ -3726,7 +3693,119 @@ static void selected_foreach_build_list(GtkTreeModel  *model,
 	else
 		xstrfmtcat(stacked_job_list, "%u.%u", jobid, stepid);
 }
-/*selected_foreach_build_list ^^^*/
+
+static void _edit_each_job (GtkTreeModel *model, GtkTreeIter *iter,
+			    jobs_foreach_common_t *jobs_foreach_common)
+{
+	int response;
+	GtkWidget *popup;
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+	char tmp_char[255];
+	char *tmp_char_ptr = "";
+	jobs_foreach_t *job_foreach = NULL;
+	job_desc_msg_t *job_msg;
+	ListIterator itr = NULL;
+
+	itr = list_iterator_create(foreach_list);
+	while ((job_foreach = list_next(itr))) {
+		/*stop processing remaining jobs on any error*/
+		if (global_error_code || got_edit_signal)
+			break;
+
+		popup = gtk_dialog_new_with_buttons(
+				"Edit Job",
+				GTK_WINDOW(main_window),
+				GTK_DIALOG_MODAL |
+				GTK_DIALOG_DESTROY_WITH_PARENT,
+				NULL);
+		gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_OK, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup), GTK_STOCK_CANCEL,
+				      GTK_RESPONSE_CANCEL);
+		gtk_dialog_add_button(GTK_DIALOG(popup), "Cancel all",
+				      GTK_RESPONSE_DELETE_EVENT);
+		gtk_window_set_default_size(GTK_WINDOW(popup), 200, 400);
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Editing job %u think before you type",
+			 job_foreach->job_id);
+		label = gtk_label_new(tmp_char);
+
+		job_msg = xmalloc(sizeof(job_desc_msg_t));
+		slurm_init_job_desc_msg(job_msg);
+		job_msg->job_id = job_foreach->job_id;
+		entry = _admin_full_edit_job(job_msg, model, iter);
+		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+				   label, FALSE, FALSE, 0);
+		if (entry)
+			gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+					   entry, TRUE, TRUE, 0);
+		gtk_widget_show_all(popup);
+		response = gtk_dialog_run(GTK_DIALOG(popup));
+		gtk_widget_destroy(popup);
+
+		if (got_edit_signal ||
+		    (response == GTK_RESPONSE_DELETE_EVENT)) {
+			slurm_free_job_desc_msg(job_msg);
+			break;
+		}
+
+		if (global_edit_error) {
+			tmp_char_ptr = global_edit_error_msg;
+		} else if (!global_send_update_msg ||
+			   (response == GTK_RESPONSE_CANCEL)) {
+			tmp_char_ptr = g_strdup_printf("No change detected.");
+		} else if (slurm_update_job(job_msg)
+			   == SLURM_SUCCESS) {
+			tmp_char_ptr = g_strdup_printf(
+				"Job %u updated successfully",
+				job_foreach->job_id);
+		} else if (errno == ESLURM_DISABLED) {
+			tmp_char_ptr = g_strdup_printf(
+				"Can't edit that part of non-pending job %u.",
+				job_foreach->job_id);
+		} else {
+			tmp_char_ptr = g_strdup_printf(
+				"Problem updating job %u.",
+				job_foreach->job_id);
+		}
+		display_edit_note(tmp_char_ptr);
+		g_free(tmp_char_ptr);
+		slurm_free_job_desc_msg(job_msg);
+	} /*spin thru selected jobs*/
+
+	xfree(stacked_job_list);
+
+} /*process_foreach_list ^^^*/
+
+static void _edit_jobs(GtkTreeModel *model, GtkTreeIter *iter,
+		       char *type, GtkTreeView *treeview)
+{
+	jobs_foreach_common_t job_foreach_common;
+	global_error_code = SLURM_SUCCESS;
+	/* setup params that applies to ALL selections */
+	memset(&job_foreach_common, 0, sizeof(jobs_foreach_common_t));
+	job_foreach_common.type = type;
+	job_foreach_common.edit_type = EDIT_EDIT;
+
+	/* create a list to stack the selected jobs */
+	foreach_list = list_create(_destroy_jobs_foreach);
+	/* build array of job(s) to process */
+	if (treeview) {
+		gtk_tree_selection_selected_foreach(
+			gtk_tree_view_get_selection(treeview),
+			selected_foreach_build_list, NULL);
+	} else
+		selected_foreach_build_list(model, NULL, iter, NULL);
+	/* determine what to do with them/it */
+	_edit_each_job(model, iter, &job_foreach_common); /*go do them*/
+	list_destroy(foreach_list);
+
+	return;
+
+}
 
 extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 		      char *type, GtkTreeView *treeview)
@@ -3737,15 +3816,20 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	char tmp_char[255];
 	int edit_type = 0;
 	int row_count=0;
-	job_desc_msg_t *job_msg = xmalloc(sizeof(job_desc_msg_t));
+	job_desc_msg_t *job_msg;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
-	GtkWidget *popup = gtk_dialog_new_with_buttons(
-		type,
-		GTK_WINDOW(main_window),
-		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-		NULL);
+	GtkWidget *popup;
 
+	if (strcmp(type, "Edit Job") == 0)
+		return _edit_jobs(model, iter, type, treeview);
+
+	job_msg = xmalloc(sizeof(job_desc_msg_t));
+	popup = gtk_dialog_new_with_buttons(
+			type,
+			GTK_WINDOW(main_window),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
 	if (treeview)
@@ -3817,21 +3901,6 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 				 "suspend/resume on these jobs?");
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_SUSPEND;
-	} else {
-		label = gtk_dialog_add_button(GTK_DIALOG(popup),
-					      GTK_STOCK_OK, GTK_RESPONSE_OK);
-		gtk_window_set_default(GTK_WINDOW(popup), label);
-		gtk_dialog_add_button(GTK_DIALOG(popup),
-				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-
-		gtk_window_set_default_size(GTK_WINDOW(popup), 200, 400);
-		snprintf(tmp_char, sizeof(tmp_char),
-			 "Editing job %u think before you type",
-			 jobid);
-		label = gtk_label_new(tmp_char);
-		edit_type = EDIT_EDIT;
-		job_msg->job_id = jobid;
-		entry = _admin_full_edit_job(job_msg, model, iter);
 	}
 
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
