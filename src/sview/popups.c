@@ -498,6 +498,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	sview_search_info_t sview_search_info;
 	resv_desc_msg_t *resv_msg = NULL;
+	char *res_name, *temp;
 
 	sview_search_info.gchar_data = NULL;
 	sview_search_info.int_data = NO_VAL;
@@ -508,7 +509,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	gtk_window_set_default(GTK_WINDOW(popup), label);
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-	gtk_window_set_default_size(GTK_WINDOW(popup), 400, 400);
+	gtk_window_set_default_size(GTK_WINDOW(popup), 400, 600);
 
 	if (!strcmp(name, "batch_job")) {
 		sview_search_info.search_type = CREATE_BATCH_JOB;
@@ -520,7 +521,16 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new("Partition?");
 	} else if (!strcmp(name, "reservation")) {
 		sview_search_info.search_type = CREATE_RESERVATION;
-		label = gtk_label_new("Reservation creation specifications");
+		label = gtk_label_new(
+			"Reservation creation specifications\n\n"
+			"Specify Time_Start and either Duration or Time_End.\n"
+#ifdef HAVE_BG
+			"Specify either Node_Count or BP_List.\n"
+#else
+			"Specify either Node_Count or Node_List.\n"
+#endif
+			"Specify either Accounts or Users.\n"
+			"All other fields are optional.");
 		resv_msg = xmalloc(sizeof(resv_desc_msg_t));
 		slurm_init_resv_desc_msg(resv_msg);
 		entry = create_resv_entry(resv_msg, model, &iter);
@@ -549,7 +559,20 @@ g_print("cbj\n");
 g_print("cp\n");
 			break;
 		case CREATE_RESERVATION:
-g_print("cr\n");
+			res_name = slurm_create_reservation(resv_msg);
+			if (res_name) {
+				temp = g_strdup_printf(
+					"Reservation %s updated created",
+					res_name);
+				free(res_name);
+			} else {
+				temp = g_strdup_printf(
+					"Problem creating reservation:%s",
+					slurm_strerror(slurm_get_errno()));
+			}
+			display_edit_note(temp);
+			g_free(temp);
+
 			break;
 		default:
 			break;
