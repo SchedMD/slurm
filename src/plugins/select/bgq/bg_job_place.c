@@ -43,8 +43,8 @@
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "bluegene.h"
-#include "dynamic_block.h"
+#include "bgq.h"
+//#include "dynamic_block.h"
 
 #define _DEBUG 0
 #define MAX_GROUPS 128
@@ -64,15 +64,8 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			    gid_t *groups, int max_groups, int *ngroups);
 static int _test_image_perms(char *image_name, List image_list,
 			     struct job_record* job_ptr);
-#ifdef HAVE_BGL
-static int _check_images(struct job_record* job_ptr,
-			 char **blrtsimage, char **linuximage,
-			 char **mloaderimage, char **ramdiskimage);
-#else
-static int _check_images(struct job_record* job_ptr,
-			 char **linuximage,
-			 char **mloaderimage, char **ramdiskimage);
-#endif
+static int _check_images(struct job_record* job_ptr, char **mloaderimage);
+
 static bg_record_t *_find_matching_block(List block_list,
 					 struct job_record* job_ptr,
 					 bitstr_t* slurm_block_bitmap,
@@ -99,21 +92,29 @@ static int _find_best_block_match(List block_list, int *blocks_added,
 				  uint16_t query_mode, int avail_cpus);
 static int _sync_block_lists(List full_list, List incomp_list);
 
-/* Rotate a 3-D geometry array through its six permutations */
+/* Rotate a 4-D geometry array through its permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 {
 	uint16_t tmp;
 
 	switch (rot_cnt) {
-	case 0:		/* ABC -> ACB */
-	case 2:		/* CAB -> CBA */
-	case 4:		/* BCA -> BAC */
-		SWAP(req_geometry[Y], req_geometry[Z], tmp);
+	case 0:		/* ABCD -> ABDC */
+	case 3:		/* DABC -> DACB */
+	case 6:		/* CDAB -> CDBA */
+	case 9:		/* BCDA -> BCAD */
+		SWAP(req_geometry[C], req_geometry[D], tmp);
 		break;
-	case 1:		/* ACB -> CAB */
-	case 3:		/* CBA -> BCA */
-	case 5:		/* BAC -> ABC */
-		SWAP(req_geometry[X], req_geometry[Y], tmp);
+	case 1:		/* ABDC -> ADBC */
+	case 4:		/* DACB -> DCAB */
+	case 7:		/* CDBA -> CBDA */
+	case 10:	/* BCAD -> BACD */
+		SWAP(req_geometry[B], req_geometry[C], tmp);
+		break;
+	case 2:		/* ABDC -> DABC */
+	case 5:		/* DCAB -> CDAB */
+	case 8:		/* CBDA -> BCDA */
+	case 11:	/* BACD -> ABCD */
+		SWAP(req_geometry[A], req_geometry[B], tmp);
 		break;
 	}
 }
@@ -200,45 +201,9 @@ static int _test_image_perms(char *image_name, List image_list,
 	return allow;
 }
 
-#ifdef HAVE_BGL
-static int _check_images(struct job_record* job_ptr,
-			 char **blrtsimage, char **linuximage,
-			 char **mloaderimage, char **ramdiskimage)
-#else
-	static int _check_images(struct job_record* job_ptr,
-				 char **linuximage,
-				 char **mloaderimage, char **ramdiskimage)
-#endif
+static int _check_images(struct job_record* job_ptr, char **mloaderimage)
 {
 	int allow = 0;
-
-#ifdef HAVE_BGL
-	get_select_jobinfo(job_ptr->select_jobinfo->data,
-			   SELECT_JOBDATA_BLRTS_IMAGE, blrtsimage);
-
-	if (*blrtsimage) {
-		allow = _test_image_perms(*blrtsimage, bg_conf->blrts_list,
-					  job_ptr);
-		if (!allow) {
-			error("User %u:%u is not allowed to use BlrtsImage %s",
-			      job_ptr->user_id, job_ptr->group_id,
-			      *blrtsimage);
-			return SLURM_ERROR;
-
-		}
-	}
-#endif
-	get_select_jobinfo(job_ptr->select_jobinfo->data,
-			   SELECT_JOBDATA_LINUX_IMAGE, linuximage);
-	if (*linuximage) {
-		allow = _test_image_perms(*linuximage, bg_conf->linux_list,
-					  job_ptr);
-		if (!allow) {
-			error("User %u:%u is not allowed to use LinuxImage %s",
-			      job_ptr->user_id, job_ptr->group_id, *linuximage);
-			return SLURM_ERROR;
-		}
-	}
 
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_MLOADER_IMAGE, mloaderimage);
@@ -251,21 +216,6 @@ static int _check_images(struct job_record* job_ptr,
 			      "to use MloaderImage %s",
 			      job_ptr->user_id, job_ptr->group_id,
 			      *mloaderimage);
-			return SLURM_ERROR;
-		}
-	}
-
-	get_select_jobinfo(job_ptr->select_jobinfo->data,
-			   SELECT_JOBDATA_RAMDISK_IMAGE, ramdiskimage);
-	if (*ramdiskimage) {
-		allow = _test_image_perms(*ramdiskimage,
-					  bg_conf->ramdisk_list,
-					  job_ptr);
-		if (!allow) {
-			error("User %u:%u is not allowed "
-			      "to use RamDiskImage %s",
-			      job_ptr->user_id, job_ptr->group_id,
-			      *ramdiskimage);
 			return SLURM_ERROR;
 		}
 	}
@@ -306,9 +256,9 @@ static bg_record_t *_find_matching_block(List block_list,
 			bg_record->job_running = bg_record->job_ptr->job_id;
 
 		/*block is messed up some how (BLOCK_ERROR_STATE)
-		 * ignore it or if state == RM_PARTITION_ERROR */
+		 * ignore it or if state == BG_BLOCK_ERROR */
 		if ((bg_record->job_running == BLOCK_ERROR_STATE)
-		    || (bg_record->state == RM_PARTITION_ERROR)) {
+		    || (bg_record->state == BG_BLOCK_ERROR)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("block %s is in an error "
 				     "state (can't use)",
@@ -385,31 +335,9 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 
 		if (check_image) {
-#ifdef HAVE_BGL
-			if (request->blrtsimage &&
-			    strcasecmp(request->blrtsimage,
-				       bg_record->blrtsimage)) {
-				*allow = 1;
-				continue;
-			}
-#endif
-			if (request->linuximage &&
-			    strcasecmp(request->linuximage,
-				       bg_record->linuximage)) {
-				*allow = 1;
-				continue;
-			}
-
 			if (request->mloaderimage &&
 			    strcasecmp(request->mloaderimage,
 				       bg_record->mloaderimage)) {
-				*allow = 1;
-				continue;
-			}
-
-			if (request->ramdiskimage &&
-			    strcasecmp(request->ramdiskimage,
-				       bg_record->ramdiskimage)) {
 				*allow = 1;
 				continue;
 			}
@@ -418,22 +346,22 @@ static bg_record_t *_find_matching_block(List block_list,
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-		if ((request->conn_type != bg_record->conn_type)
-		    && (request->conn_type != SELECT_NAV)) {
+		if ((request->conn_type[A] != bg_record->conn_type[A])
+		    && (request->conn_type[A] != SELECT_NAV)) {
 #ifndef HAVE_BGL
-			if (request->conn_type >= SELECT_SMALL) {
+			if (request->conn_type[A] >= SELECT_SMALL) {
 				/* we only want to reboot blocks if
 				   they have to be so skip booted
 				   blocks if in small state
 				*/
 				if (check_image
 				    && (bg_record->state
-					== RM_PARTITION_READY)) {
+					== BG_BLOCK_INITED)) {
 					*allow = 1;
 					continue;
 				}
 				goto good_conn_type;
-			} else if (bg_record->conn_type >= SELECT_SMALL) {
+			} else if (bg_record->conn_type[A] >= SELECT_SMALL) {
 				/* since we already checked to see if
 				   the cpus were good this means we are
 				   looking for a block in a range that
@@ -447,8 +375,8 @@ static bg_record_t *_find_matching_block(List block_list,
 				info("bg block %s conn-type not usable "
 				     "asking for %s bg_record is %s",
 				     bg_record->bg_block_id,
-				     conn_type_string(request->conn_type),
-				     conn_type_string(bg_record->conn_type));
+				     conn_type_string(request->conn_type[A]),
+				     conn_type_string(bg_record->conn_type[A]));
 			continue;
 		}
 #ifndef HAVE_BGL
@@ -457,18 +385,20 @@ static bg_record_t *_find_matching_block(List block_list,
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
-		if (request->geometry[X] == (uint16_t)NO_VAL)
+		if (request->geometry[A] == (uint16_t)NO_VAL)
 			;	/* Geometry not specified */
 		else {	/* match requested geometry */
 			bool match = false;
 			int rot_cnt = 0;	/* attempt six rotations  */
 
 			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
-				if ((bg_record->geo[X] >= request->geometry[X])
-				    && (bg_record->geo[Y]
-					>= request->geometry[Y])
-				    && (bg_record->geo[Z]
-					>= request->geometry[Z])) {
+				if ((bg_record->geo[A] >= request->geometry[A])
+				    && (bg_record->geo[B]
+					>= request->geometry[B])
+				    && (bg_record->geo[C]
+					>= request->geometry[C])
+				    && (bg_record->geo[D]
+					>= request->geometry[D])) {
 					match = true;
 					break;
 				}
@@ -576,9 +506,9 @@ static int _check_for_booted_overlapping_blocks(
 			 */
 			if (bg_conf->layout_mode == LAYOUT_OVERLAP
 			    && ((overlap_check == 0 && bg_record->state
-				 != RM_PARTITION_READY)
+				 != BG_BLOCK_INITED)
 				|| (overlap_check == 1 && found_record->state
-				    != RM_PARTITION_FREE))) {
+				    != BG_BLOCK_FREE))) {
 
 				if (!is_test) {
 					rc = 1;
@@ -587,11 +517,11 @@ static int _check_for_booted_overlapping_blocks(
 			}
 
 			if ((found_record->job_running != NO_JOB_RUNNING)
-			    || (found_record->state == RM_PARTITION_ERROR)) {
+			    || (found_record->state == BG_BLOCK_ERROR)) {
 				if ((found_record->job_running
 				     == BLOCK_ERROR_STATE)
 				    || (found_record->state
-					== RM_PARTITION_ERROR))
+					== BG_BLOCK_ERROR))
 					error("can't use %s, "
 					      "overlapping block %s "
 					      "is in an error state.",
@@ -814,7 +744,7 @@ static int _find_best_block_match(List block_list,
 {
 	bg_record_t *bg_record = NULL;
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
-	uint16_t conn_type, rotate, target_size = 0;
+	uint16_t conn_type[SYSTEM_DIMENSIONS], rotate, target_size = 0;
 	uint32_t req_procs = job_ptr->details->min_cpus;
 	ba_request_t request;
 	int i;
@@ -824,19 +754,15 @@ static int _find_best_block_match(List block_list,
 	uint32_t max_cpus = job_ptr->details->max_cpus;
 	char tmp_char[256];
 	static int total_cpus = 0;
-#ifdef HAVE_BGL
-	char *blrtsimage = NULL;        /* BlrtsImage for this request */
-#endif
-	char *linuximage = NULL;        /* LinuxImage for this request */
 	char *mloaderimage = NULL;      /* mloaderImage for this request */
-	char *ramdiskimage = NULL;      /* RamDiskImage for this request */
 	int rc = SLURM_SUCCESS;
 	int create_try = 0;
 	List overlapped_list = NULL;
 	bool is_test = SELECT_IS_TEST(query_mode);
 
 	if (!total_cpus)
-		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z]
+		total_cpus = DIM_SIZE[A] * DIM_SIZE[B]
+			* DIM_SIZE[C] * DIM_SIZE[D]
 			* bg_conf->cpus_per_bp;
 
 	if (req_nodes > max_nodes) {
@@ -864,33 +790,27 @@ static int _find_best_block_match(List block_list,
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_ROTATE, &rotate);
 
-#ifdef HAVE_BGL
-	if ((rc = _check_images(job_ptr, &blrtsimage, &linuximage,
-				&mloaderimage, &ramdiskimage)) == SLURM_ERROR)
+	if ((rc = _check_images(job_ptr, &mloaderimage)) == SLURM_ERROR)
 		goto end_it;
-#else
-	if ((rc = _check_images(job_ptr, &linuximage,
-				&mloaderimage, &ramdiskimage)) == SLURM_ERROR)
-		goto end_it;
-#endif
 
-	if (req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
+	if (req_geometry[A] != 0 && req_geometry[A] != (uint16_t)NO_VAL) {
 		target_size = 1;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			target_size *= req_geometry[i];
 		if (target_size != min_nodes) {
 			debug2("min_nodes not set correctly %u "
-			       "should be %u from %u%u%u",
+			       "should be %u from %u%u%u%u",
 			       min_nodes, target_size,
-			       req_geometry[X],
-			       req_geometry[Y],
-			       req_geometry[Z]);
+			       req_geometry[A],
+			       req_geometry[B],
+			       req_geometry[C],
+			       req_geometry[D]);
 			min_nodes = target_size;
 		}
 		if (!req_nodes)
 			req_nodes = min_nodes;
 	} else {
-		req_geometry[X] = (uint16_t)NO_VAL;
+		req_geometry[A] = (uint16_t)NO_VAL;
 		target_size = min_nodes;
 	}
 
@@ -911,12 +831,7 @@ static int _find_best_block_match(List block_list,
 	request.rotate = rotate;
 	request.elongate = rotate;
 
-#ifdef HAVE_BGL
-	request.blrtsimage = blrtsimage;
-#endif
-	request.linuximage = linuximage;
 	request.mloaderimage = mloaderimage;
-	request.ramdiskimage = ramdiskimage;
 	if (job_ptr->details->req_node_bitmap)
 		request.avail_node_bitmap = job_ptr->details->req_node_bitmap;
 	else
@@ -981,7 +896,7 @@ static int _find_best_block_match(List block_list,
 					*/
 					bg_record->job_running =
 						BLOCK_ERROR_STATE;
-					bg_record->state = RM_PARTITION_ERROR;
+					bg_record->state = BG_BLOCK_ERROR;
 					error("_find_best_block_match: Picked "
 					      "block (%s) had some issues with "
 					      "hardware, trying a different "
@@ -1204,12 +1119,7 @@ no_match:
 	rc = SLURM_ERROR;
 
 end_it:
-#ifdef HAVE_BGL
-	xfree(blrtsimage);
-#endif
-	xfree(linuximage);
 	xfree(mloaderimage);
-	xfree(ramdiskimage);
 
 	return rc;
 }
@@ -1486,13 +1396,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int rc = SLURM_SUCCESS;
 	bg_record_t* bg_record = NULL;
 	char buf[256];
-	uint16_t conn_type = (uint16_t)NO_VAL;
+	uint16_t conn_type[SYSTEM_DIMENSIONS];
 	List block_list = NULL;
 	int blocks_added = 0;
 	time_t starttime = time(NULL);
 	uint16_t local_mode = mode, preempt_done=false;
 	int avail_cpus = num_unused_cpus;
 
+	conn_type[A] = (uint16_t)NO_VAL;
 	if (preemptee_candidates && preemptee_job_list
 	    && list_count(preemptee_candidates))
 		local_mode |= SELECT_MODE_PREEMPT_FLAG;
@@ -1508,13 +1419,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if (conn_type == SELECT_NAV) {
+	if (conn_type[A] == SELECT_NAV) {
 		if (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
-			conn_type = SELECT_SMALL;
+			conn_type[A] = SELECT_SMALL;
 		else if (min_nodes > 1)
-			conn_type = SELECT_TORUS;
+			conn_type[A] = SELECT_TORUS;
 		else if (job_ptr->details->min_cpus < bg_conf->cpus_per_bp)
-			conn_type = SELECT_SMALL;
+			conn_type[A] = SELECT_SMALL;
 
 		set_select_jobinfo(job_ptr->select_jobinfo->data,
 				   SELECT_JOBDATA_CONN_TYPE,
@@ -1538,31 +1449,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	      min_nodes, req_nodes, max_nodes);
 	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
 			      buf, sizeof(buf),
-			      SELECT_PRINT_BLRTS_IMAGE);
-#ifdef HAVE_BGL
-	debug3("BlrtsImage=%s", buf);
-	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
-			      buf, sizeof(buf),
-			      SELECT_PRINT_LINUX_IMAGE);
-#endif
-#ifdef HAVE_BGL
-	debug3("LinuxImage=%s", buf);
-#else
-	debug3("ComputNodeImage=%s", buf);
-#endif
-
-	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
-			      buf, sizeof(buf),
 			      SELECT_PRINT_MLOADER_IMAGE);
 	debug3("MloaderImage=%s", buf);
-	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
-			      buf, sizeof(buf),
-			      SELECT_PRINT_RAMDISK_IMAGE);
-#ifdef HAVE_BGL
-	debug3("RamDiskImage=%s", buf);
-#else
-	debug3("RamDiskIoLoadImage=%s", buf);
-#endif
 
 	/* First look at the empty space, and then remove the
 	   preemptable jobs and try again. */

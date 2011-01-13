@@ -60,7 +60,7 @@ extern "C" {
 #include "src/common/parse_time.h"
 #include "src/slurmctld/slurmctld.h"
 
-#include "../block_allocator/block_allocator.h"
+#include "block_allocator/block_allocator.h"
 
 #define BLOCK_MAGIC 0x3afd
 
@@ -108,7 +108,7 @@ typedef struct bg_record {
 	struct bg_record *original;     /* if this is a copy this is a
 					   pointer to the original */
 	char *reason;                   /* reason block is in error state */
-	rm_partition_state_t state;     /* Current state of the block */
+	uint16_t state;                 /* Current state of the block */
 	uint16_t start[HIGHEST_DIMENSIONS];  /* start node */
 	char *target_name;		/* when a block is freed this
 					   is the name of the user we

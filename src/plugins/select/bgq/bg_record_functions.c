@@ -37,7 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "bluegene.h"
+#include "bgq.h"
 #include "dynamic_block.h"
 
 #include "src/common/uid.h"

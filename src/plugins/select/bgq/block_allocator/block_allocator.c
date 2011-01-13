@@ -140,7 +140,7 @@ static int _append_geo(uint16_t *geo, List geos, int rotate);
 
 /* */
 static int _fill_in_coords(List results, List start_list,
-			   uint16_t *geometry, int conn_type);
+			   uint16_t *geometry, int *conn_type);
 
 /* */
 static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
@@ -148,8 +148,8 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			  int source, int dim);
 
 /* */
-static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
-			 uint16_t *geometry, int conn_type);
+static int _find_path(ba_node_t *ba_node, uint16_t *first,
+		      uint16_t *geometry, int *conn_type);
 
 #ifndef HAVE_BG_FILES
 /* */
@@ -829,7 +829,7 @@ extern void print_ba_request(ba_request_t* ba_request)
 		debug("%d", ba_request->geometry[i]);
 	}
 	debug("        size:\t%d", ba_request->size);
-	debug("   conn_type:\t%d", ba_request->conn_type);
+	debug("   conn_type:\t%d", ba_request->conn_type[A]);
 	debug("      rotate:\t%d", ba_request->rotate);
 	debug("    elongate:\t%d", ba_request->elongate);
 }
@@ -1437,23 +1437,23 @@ extern int alter_block(List nodes, int conn_type)
  */
 extern int redo_block(List nodes, uint16_t *geo, int conn_type, int new_count)
 {
-       	ba_node_t* ba_node;
-	char *name = NULL;
+       	/* ba_node_t* ba_node; */
+	/* char *name = NULL; */
 
-	ba_node = (ba_node_t *)list_peek(nodes);
-	if (!ba_node)
-		return SLURM_ERROR;
+	/* ba_node = (ba_node_t *)list_peek(nodes); */
+	/* if (!ba_node) */
+	/* 	return SLURM_ERROR; */
 
-	remove_block(nodes, new_count, conn_type);
-	list_delete_all(nodes, &empty_null_destroy_list, (void *)"");
+	/* remove_block(nodes, new_count, conn_type); */
+	/* list_delete_all(nodes, &empty_null_destroy_list, (void *)""); */
 
-	name = set_bg_block(nodes, ba_node->coord, geo, conn_type);
-	if (!name)
-		return SLURM_ERROR;
-	else {
-		xfree(name);
-		return SLURM_SUCCESS;
-	}
+	/* name = set_bg_block(nodes, ba_node->coord, geo, conn_type); */
+	/* if (!name) */
+	/* 	return SLURM_ERROR; */
+	/* else { */
+	/* 	xfree(name); */
+	/* 	return SLURM_SUCCESS; */
+	/* } */
 }
 
 /*
@@ -1587,7 +1587,7 @@ end_it:
  *     xfreed.  NULL on failure
  */
 extern char *set_bg_block(List results, uint16_t *start,
-			  uint16_t *geometry, int conn_type)
+			  uint16_t *geometry, int *conn_type)
 {
 	char *name = NULL;
 	ba_node_t* ba_node = NULL;
@@ -1597,12 +1597,13 @@ extern char *set_bg_block(List results, uint16_t *start,
 
 
 	if (cluster_dims == 1) {
-		if (start[B]>=DIM_SIZE[B])
+		if (start[A]>=DIM_SIZE[A])
 			return NULL;
 		size = geometry[B];
 		ba_node = &ba_system_ptr->grid[start[A]][0][0][0];
 	} else {
-		if (start[B]>=DIM_SIZE[B]
+		if (start[A]>=DIM_SIZE[A]
+		    || start[B]>=DIM_SIZE[B]
 		    || start[C]>=DIM_SIZE[C]
 		    || start[D]>=DIM_SIZE[D])
 			return NULL;
@@ -1634,10 +1635,12 @@ extern char *set_bg_block(List results, uint16_t *start,
 	/* This midplane should have already been checked if it was in
 	   use or not */
 	list_append(results, ba_node);
-	if (conn_type >= SELECT_SMALL) {
+
+	if (conn_type[A] >= SELECT_SMALL) {
 		/* adding the ba_node and ending */
 		ba_node->used = true;
-		name = xstrdup_printf("%c%c%c",
+		name = xstrdup_printf("%c%c%c%c",
+				      alpha_num[ba_node->coord[A]],
 				      alpha_num[ba_node->coord[B]],
 				      alpha_num[ba_node->coord[C]],
 				      alpha_num[ba_node->coord[D]]);
@@ -1655,12 +1658,10 @@ extern char *set_bg_block(List results, uint16_t *start,
 		goto end_it;
 	}
 
-	if (!found) {
-		debug2("trying less efficient code");
-		remove_block(results, color_count, conn_type);
-		list_delete_all(results, &empty_null_destroy_list, (void *)"");
-		list_append(results, ba_node);
-	}
+	/* FIXME: THIS NEEDS TO GO FIND THE NODES NOW */
+
+	/**********************************************/
+
 	if (found) {
 		if (cluster_flags & CLUSTER_FLAG_BG) {
 			List start_list = NULL;
@@ -1688,7 +1689,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 
 	name = _set_internal_wires(results,
 				   size,
-				   conn_type);
+				   conn_type[A]);
 end_it:
 	if (!send_results && results) {
 		list_destroy(results);
@@ -2376,257 +2377,260 @@ extern int load_block_wiring(char *bg_block_id)
  * not bridge_get_block_info, if you are looking to recover from
  * before.  If you are looking to start clean it doesn't matter.
  */
-extern List get_and_set_block_wiring(char *bg_block_id,
-				     rm_partition_t *block_ptr)
-{
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	int rc, i, j;
-	int cnt = 0;
-	int switch_cnt = 0;
-	rm_switch_t *curr_switch = NULL;
-	rm_BP_t *curr_bp = NULL;
-	char *switchid = NULL;
-	rm_connection_t curr_conn;
-	int dim;
-	ba_node_t *ba_node = NULL;
-	ba_switch_t *ba_switch = NULL;
-	uint16_t *geo = NULL;
-	List results = list_create(destroy_ba_node);
-	ListIterator itr = NULL;
+/* extern List get_and_set_block_wiring(char *bg_block_id, */
+/* 				     rm_partition_t *block_ptr) */
+/* { */
+/* #if defined HAVE_BG_FILES && defined HAVE_BG_Q */
+/* 	int rc, i, j; */
+/* 	int cnt = 0; */
+/* 	int switch_cnt = 0; */
+/* 	rm_switch_t *curr_switch = NULL; */
+/* 	rm_BP_t *curr_bp = NULL; */
+/* 	char *switchid = NULL; */
+/* 	rm_connection_t curr_conn; */
+/* 	int dim; */
+/* 	ba_node_t *ba_node = NULL; */
+/* 	ba_switch_t *ba_switch = NULL; */
+/* 	uint16_t *geo = NULL; */
+/* 	List results = list_create(destroy_ba_node); */
+/* 	ListIterator itr = NULL; */
 
-	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-		info("getting info for block %s", bg_block_id);
+/* 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO) */
+/* 		info("getting info for block %s", bg_block_id); */
 
-	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
-				  &switch_cnt)) != STATUS_OK) {
-		error("bridge_get_data(RM_PartitionSwitchNum): %s",
-		      bg_err_str(rc));
-		goto end_it;
-	}
-	if (!switch_cnt) {
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("no switch_cnt");
-		if ((rc = bridge_get_data(block_ptr,
-					  RM_PartitionFirstBP,
-					  &curr_bp))
-		    != STATUS_OK) {
-			error("bridge_get_data: "
-			      "RM_PartitionFirstBP: %s",
-			      bg_err_str(rc));
-			goto end_it;
-		}
-		if ((rc = bridge_get_data(curr_bp, RM_BPID, &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			goto end_it;
-		}
+/* 	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum, */
+/* 				  &switch_cnt)) != STATUS_OK) { */
+/* 		error("bridge_get_data(RM_PartitionSwitchNum): %s", */
+/* 		      bg_err_str(rc)); */
+/* 		goto end_it; */
+/* 	} */
+/* 	if (!switch_cnt) { */
+/* 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) */
+/* 			info("no switch_cnt"); */
+/* 		if ((rc = bridge_get_data(block_ptr, */
+/* 					  RM_PartitionFirstBP, */
+/* 					  &curr_bp)) */
+/* 		    != STATUS_OK) { */
+/* 			error("bridge_get_data: " */
+/* 			      "RM_PartitionFirstBP: %s", */
+/* 			      bg_err_str(rc)); */
+/* 			goto end_it; */
+/* 		} */
+/* 		if ((rc = bridge_get_data(curr_bp, RM_BPID, &switchid)) */
+/* 		    != STATUS_OK) { */
+/* 			error("bridge_get_data: RM_SwitchBPID: %s", */
+/* 			      bg_err_str(rc)); */
+/* 			goto end_it; */
+/* 		} */
 
-		geo = find_bp_loc(switchid);
-		if (!geo) {
-			error("find_bp_loc: bpid %s not known", switchid);
-			goto end_it;
-		}
-		ba_node = xmalloc(sizeof(ba_node_t));
-		list_push(results, ba_node);
-		ba_node->coord[B] = geo[B];
-		ba_node->coord[C] = geo[C];
-		ba_node->coord[D] = geo[D];
+/* 		geo = find_bp_loc(switchid); */
+/* 		if (!geo) { */
+/* 			error("find_bp_loc: bpid %s not known", switchid); */
+/* 			goto end_it; */
+/* 		} */
+/* 		ba_node = xmalloc(sizeof(ba_node_t)); */
+/* 		list_push(results, ba_node); */
+/* 		ba_node->coord[B] = geo[B]; */
+/* 		ba_node->coord[C] = geo[C]; */
+/* 		ba_node->coord[D] = geo[D]; */
 
-		ba_node->used = TRUE;
-		return results;
-	}
-	for (i=0; i<switch_cnt; i++) {
-		if (i) {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionNextSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionNextSwitch: %s",
-				      bg_err_str(rc));
-				goto end_it;
-			}
-		} else {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionFirstSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionFirstSwitch: %s",
-				      bg_err_str(rc));
-				goto end_it;
-			}
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchDim: %s",
-			      bg_err_str(rc));
-			goto end_it;
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
-					  &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			goto end_it;
-		}
+/* 		ba_node->used = TRUE; */
+/* 		return results; */
+/* 	} */
+/* 	for (i=0; i<switch_cnt; i++) { */
+/* 		if (i) { */
+/* 			if ((rc = bridge_get_data(block_ptr, */
+/* 						  RM_PartitionNextSwitch, */
+/* 						  &curr_switch)) */
+/* 			    != STATUS_OK) { */
+/* 				error("bridge_get_data: " */
+/* 				      "RM_PartitionNextSwitch: %s", */
+/* 				      bg_err_str(rc)); */
+/* 				goto end_it; */
+/* 			} */
+/* 		} else { */
+/* 			if ((rc = bridge_get_data(block_ptr, */
+/* 						  RM_PartitionFirstSwitch, */
+/* 						  &curr_switch)) */
+/* 			    != STATUS_OK) { */
+/* 				error("bridge_get_data: " */
+/* 				      "RM_PartitionFirstSwitch: %s", */
+/* 				      bg_err_str(rc)); */
+/* 				goto end_it; */
+/* 			} */
+/* 		} */
+/* 		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim)) */
+/* 		    != STATUS_OK) { */
+/* 			error("bridge_get_data: RM_SwitchDim: %s", */
+/* 			      bg_err_str(rc)); */
+/* 			goto end_it; */
+/* 		} */
+/* 		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID, */
+/* 					  &switchid)) */
+/* 		    != STATUS_OK) { */
+/* 			error("bridge_get_data: RM_SwitchBPID: %s", */
+/* 			      bg_err_str(rc)); */
+/* 			goto end_it; */
+/* 		} */
 
-		geo = find_bp_loc(switchid);
-		if (!geo) {
-			error("find_bp_loc: bpid %s not known", switchid);
-			goto end_it;
-		}
+/* 		geo = find_bp_loc(switchid); */
+/* 		if (!geo) { */
+/* 			error("find_bp_loc: bpid %s not known", switchid); */
+/* 			goto end_it; */
+/* 		} */
 
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			goto end_it;
-		}
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("switch id = %s dim %d conns = %d",
-			     switchid, dim, cnt);
+/* 		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt)) */
+/* 		    != STATUS_OK) { */
+/* 			error("bridge_get_data: RM_SwitchBPID: %s", */
+/* 			      bg_err_str(rc)); */
+/* 			goto end_it; */
+/* 		} */
+/* 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO) */
+/* 			info("switch id = %s dim %d conns = %d", */
+/* 			     switchid, dim, cnt); */
 
-		itr = list_iterator_create(results);
-		while ((ba_node = list_next(itr))) {
-			if (ba_node->coord[B] == geo[B] &&
-			    ba_node->coord[C] == geo[C] &&
-			    ba_node->coord[D] == geo[D])
-				break;	/* we found it */
-		}
-		list_iterator_destroy(itr);
-		if (!ba_node) {
-			ba_node = xmalloc(sizeof(ba_node_t));
+/* 		itr = list_iterator_create(results); */
+/* 		while ((ba_node = list_next(itr))) { */
+/* 			if (ba_node->coord[B] == geo[B] && */
+/* 			    ba_node->coord[C] == geo[C] && */
+/* 			    ba_node->coord[D] == geo[D]) */
+/* 				break;	/\* we found it *\/ */
+/* 		} */
+/* 		list_iterator_destroy(itr); */
+/* 		if (!ba_node) { */
+/* 			ba_node = xmalloc(sizeof(ba_node_t)); */
 
-			list_push(results, ba_node);
-			ba_node->coord[B] = geo[B];
-			ba_node->coord[C] = geo[C];
-			ba_node->coord[D] = geo[D];
-		}
-		ba_switch = &ba_node->axis_switch[dim];
-		for (j=0; j<cnt; j++) {
-			if (j) {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchNextConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchNextConnection: %s",
-					      bg_err_str(rc));
-					goto end_it;
-				}
-			} else {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchFirstConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchFirstConnection: %s",
-					      bg_err_str(rc));
-					goto end_it;
-				}
-			}
-			switch(curr_conn.p1) {
-			case RM_PORT_S1:
-				curr_conn.p1 = 1;
-				break;
-			case RM_PORT_S2:
-				curr_conn.p1 = 2;
-				break;
-			case RM_PORT_S4:
-				curr_conn.p1 = 4;
-				break;
-			default:
-				error("1 unknown port %d",
-				      _port_enum(curr_conn.p1));
-				goto end_it;
-			}
+/* 			list_push(results, ba_node); */
+/* 			ba_node->coord[B] = geo[B]; */
+/* 			ba_node->coord[C] = geo[C]; */
+/* 			ba_node->coord[D] = geo[D]; */
+/* 		} */
+/* 		ba_switch = &ba_node->axis_switch[dim]; */
+/* 		for (j=0; j<cnt; j++) { */
+/* 			if (j) { */
+/* 				if ((rc = bridge_get_data( */
+/* 					     curr_switch, */
+/* 					     RM_SwitchNextConnection, */
+/* 					     &curr_conn)) */
+/* 				    != STATUS_OK) { */
+/* 					error("bridge_get_data: " */
+/* 					      "RM_SwitchNextConnection: %s", */
+/* 					      bg_err_str(rc)); */
+/* 					goto end_it; */
+/* 				} */
+/* 			} else { */
+/* 				if ((rc = bridge_get_data( */
+/* 					     curr_switch, */
+/* 					     RM_SwitchFirstConnection, */
+/* 					     &curr_conn)) */
+/* 				    != STATUS_OK) { */
+/* 					error("bridge_get_data: " */
+/* 					      "RM_SwitchFirstConnection: %s", */
+/* 					      bg_err_str(rc)); */
+/* 					goto end_it; */
+/* 				} */
+/* 			} */
+/* 			switch(curr_conn.p1) { */
+/* 			case RM_PORT_S1: */
+/* 				curr_conn.p1 = 1; */
+/* 				break; */
+/* 			case RM_PORT_S2: */
+/* 				curr_conn.p1 = 2; */
+/* 				break; */
+/* 			case RM_PORT_S4: */
+/* 				curr_conn.p1 = 4; */
+/* 				break; */
+/* 			default: */
+/* 				error("1 unknown port %d", */
+/* 				      _port_enum(curr_conn.p1)); */
+/* 				goto end_it; */
+/* 			} */
 
-			switch(curr_conn.p2) {
-			case RM_PORT_S0:
-				curr_conn.p2 = 0;
-				break;
-			case RM_PORT_S3:
-				curr_conn.p2 = 3;
-				break;
-			case RM_PORT_S5:
-				curr_conn.p2 = 5;
-				break;
-			default:
-				error("2 unknown port %d",
-				      _port_enum(curr_conn.p2));
-				goto end_it;
-			}
+/* 			switch(curr_conn.p2) { */
+/* 			case RM_PORT_S0: */
+/* 				curr_conn.p2 = 0; */
+/* 				break; */
+/* 			case RM_PORT_S3: */
+/* 				curr_conn.p2 = 3; */
+/* 				break; */
+/* 			case RM_PORT_S5: */
+/* 				curr_conn.p2 = 5; */
+/* 				break; */
+/* 			default: */
+/* 				error("2 unknown port %d", */
+/* 				      _port_enum(curr_conn.p2)); */
+/* 				goto end_it; */
+/* 			} */
 
-			if (curr_conn.p1 == 1 && dim == B) {
-				if (ba_node->used) {
-					debug("I have already been to "
-					      "this node %c%c%c",
-					      alpha_num[geo[B]],
-					      alpha_num[geo[C]],
-					      alpha_num[geo[D]]);
-					goto end_it;
-				}
-				ba_node->used = true;
-			}
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("connection going from %d -> %d",
-				     curr_conn.p1, curr_conn.p2);
+/* 			if (curr_conn.p1 == 1 && dim == B) { */
+/* 				if (ba_node->used) { */
+/* 					debug("I have already been to " */
+/* 					      "this node %c%c%c", */
+/* 					      alpha_num[geo[B]], */
+/* 					      alpha_num[geo[C]], */
+/* 					      alpha_num[geo[D]]); */
+/* 					goto end_it; */
+/* 				} */
+/* 				ba_node->used = true; */
+/* 			} */
+/* 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) */
+/* 				info("connection going from %d -> %d", */
+/* 				     curr_conn.p1, curr_conn.p2); */
 
-			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%c%c%c dim %d port %d "
-				      "is already in use",
-				      alpha_num[geo[B]],
-				      alpha_num[geo[C]],
-				      alpha_num[geo[D]],
-				      dim,
-				      curr_conn.p1);
-				goto end_it;
-			}
-			ba_switch->int_wire[curr_conn.p1].used = 1;
-			ba_switch->int_wire[curr_conn.p1].port_tar
-				= curr_conn.p2;
+/* 			if (ba_switch->int_wire[curr_conn.p1].used) { */
+/* 				debug("%c%c%c dim %d port %d " */
+/* 				      "is already in use", */
+/* 				      alpha_num[geo[B]], */
+/* 				      alpha_num[geo[C]], */
+/* 				      alpha_num[geo[D]], */
+/* 				      dim, */
+/* 				      curr_conn.p1); */
+/* 				goto end_it; */
+/* 			} */
+/* 			ba_switch->int_wire[curr_conn.p1].used = 1; */
+/* 			ba_switch->int_wire[curr_conn.p1].port_tar */
+/* 				= curr_conn.p2; */
 
-			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%c%c%c dim %d port %d "
-				      "is already in use",
-				      alpha_num[geo[B]],
-				      alpha_num[geo[C]],
-				      alpha_num[geo[D]],
-				      dim,
-				      curr_conn.p2);
-				goto end_it;
-			}
-			ba_switch->int_wire[curr_conn.p2].used = 1;
-			ba_switch->int_wire[curr_conn.p2].port_tar
-				= curr_conn.p1;
-		}
-	}
-	return results;
-end_it:
-	list_destroy(results);
-	return NULL;
-#else
-	return NULL;
-#endif
+/* 			if (ba_switch->int_wire[curr_conn.p2].used) { */
+/* 				debug("%c%c%c dim %d port %d " */
+/* 				      "is already in use", */
+/* 				      alpha_num[geo[B]], */
+/* 				      alpha_num[geo[C]], */
+/* 				      alpha_num[geo[D]], */
+/* 				      dim, */
+/* 				      curr_conn.p2); */
+/* 				goto end_it; */
+/* 			} */
+/* 			ba_switch->int_wire[curr_conn.p2].used = 1; */
+/* 			ba_switch->int_wire[curr_conn.p2].port_tar */
+/* 				= curr_conn.p1; */
+/* 		} */
+/* 	} */
+/* 	return results; */
+/* end_it: */
+/* 	list_destroy(results); */
+/* 	return NULL; */
+/* #else */
+/* 	return NULL; */
+/* #endif */
 
-}
+/* } */
 
 /* */
 extern int validate_coord(uint16_t *coord)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	if (coord[B]>=REAL_DIM_SIZE[B]
+	if (coord[A]>=REAL_DIM_SIZE[A]
+	    || coord[B]>=REAL_DIM_SIZE[B]
 	    || coord[C]>=REAL_DIM_SIZE[C]
 	    || coord[D]>=REAL_DIM_SIZE[D]) {
-		error("got coord %c%c%c greater than system dims "
-		      "%c%c%c",
+		error("got coord %c%c%c%c greater than system dims "
+		      "%c%c%c%c",
+		      alpha_num[coord[A]],
 		      alpha_num[coord[B]],
 		      alpha_num[coord[C]],
 		      alpha_num[coord[D]],
+		      alpha_num[REAL_DIM_SIZE[A]],
 		      alpha_num[REAL_DIM_SIZE[B]],
 		      alpha_num[REAL_DIM_SIZE[C]],
 		      alpha_num[REAL_DIM_SIZE[D]]);
@@ -2637,11 +2641,13 @@ extern int validate_coord(uint16_t *coord)
 	    || coord[C]>=DIM_SIZE[C]
 	    || coord[D]>=DIM_SIZE[D]) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("got coord %c%c%c greater than what we are using "
-			     "%c%c%c",
+			info("got coord %c%c%c%c greater than what "
+			     "we are using %c%c%c%c",
+			     alpha_num[coord[A]],
 			     alpha_num[coord[B]],
 			     alpha_num[coord[C]],
 			     alpha_num[coord[D]],
+			     alpha_num[DIM_SIZE[A]],
 			     alpha_num[DIM_SIZE[B]],
 			     alpha_num[DIM_SIZE[C]],
 			     alpha_num[DIM_SIZE[D]]);
@@ -2828,7 +2834,7 @@ static int _append_geo(uint16_t *geometry, List geos, int rotate)
  * RET: 0 on failure 1 on success
  */
 static int _fill_in_coords(List results, List start_list,
-			   uint16_t *geometry, int conn_type)
+			   uint16_t *geometry, int *conn_type)
 {
 	ba_node_t *ba_node = NULL;
 	ba_node_t *check_node = NULL;
@@ -2916,10 +2922,8 @@ static int _fill_in_coords(List results, List start_list,
 
 	itr = list_iterator_create(results);
 	while ((ba_node = (ba_node_t*) list_next(itr))) {
-		if (!_find_yz_path(ba_node,
-				   check_node->coord,
-				   geometry,
-				   conn_type)){
+		if (!_find_path(ba_node, check_node->coord,
+				geometry, conn_type)) {
 			rc = 0;
 			goto failed;
 		}
@@ -3090,8 +3094,8 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			      port_tar, dim);
 }
 
-static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
-			 uint16_t *geometry, int conn_type)
+static int _find_path(ba_node_t *ba_node, uint16_t *first,
+		      uint16_t *geometry, int *conn_type)
 {
 	ba_node_t *next_node = NULL;
 	uint16_t *node_tar = NULL;
@@ -3100,7 +3104,7 @@ static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 	int i2;
 	int count = 0;
 
-	for(i2=1;i2<=2;i2++) {
+	for(i2=A;i2<=D;i2++) {
 		if (geometry[i2] > 1) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("%d node %c%c%c%c port 2 -> ",
@@ -3156,7 +3160,7 @@ static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 				       alpha_num[node_tar[B]],
 				       alpha_num[node_tar[C]],
 				       alpha_num[node_tar[D]]);
-				if (conn_type == SELECT_TORUS) {
+				if (conn_type[i2] == SELECT_TORUS) {
 					dim_curr_switch->int_wire[0].used = 1;
 					dim_curr_switch->int_wire[0].port_tar
 						= 2;
@@ -3240,8 +3244,8 @@ static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 				}
 
 			} else if (count < geometry[i2]) {
-				if (conn_type == SELECT_TORUS ||
-				    (conn_type == SELECT_MESH &&
+				if (conn_type[i2] == SELECT_TORUS ||
+				    (conn_type[i2] == SELECT_MESH &&
 				     (node_tar[i2] != first[i2]))) {
 					dim_curr_switch->
 						int_wire[0].used = 1;
@@ -3272,7 +3276,8 @@ static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 				      geometry[i2], i2, count);
 				return 0;
 			}
-		} else if ((geometry[i2] == 1) && (conn_type == SELECT_TORUS)) {
+		} else if ((geometry[i2] == 1)
+			   && (conn_type[i2] == SELECT_TORUS)) {
 			/* FIB ME: This is put here because we got
 			   into a state where the C dim was not being
 			   processed correctly.  This will set up the
@@ -3635,7 +3640,7 @@ start_again:
 				     alpha_num[ba_request->geometry[B]],
 				     alpha_num[ba_request->geometry[C]],
 				     alpha_num[ba_request->geometry[D]],
-				     ba_request->conn_type);
+				     ba_request->conn_type[A]);
 			name = set_bg_block(results,
 					    start,
 					    ba_request->geometry,
@@ -3648,7 +3653,7 @@ start_again:
 
 			if (results) {
 				remove_block(results, color_count,
-					     ba_request->conn_type);
+					     ba_request->conn_type[A]);
 				list_delete_all(results,
 						&empty_null_destroy_list,
 						(void *)"");

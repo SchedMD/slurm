@@ -69,7 +69,7 @@ extern "C" {
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "../bgq_enums.h"
-#include "../bgq.h"
+#include "../block_allocator/block_allocator.h"
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
