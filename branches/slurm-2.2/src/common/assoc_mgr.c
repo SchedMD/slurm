@@ -452,6 +452,19 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 	return SLURM_SUCCESS;
 }
 
+static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
+{
+	if (!qos || !g_qos_max_priority)
+		return;
+
+	if (!qos->usage)
+		qos->usage = create_assoc_mgr_qos_usage();
+	qos->usage->norm_priority =
+		(double)qos->priority / (double)g_qos_max_priority;
+	info("QOS %s is now %u / %u = %f", qos->name, qos->priority,
+	     g_qos_max_priority, qos->usage->norm_priority);
+}
+
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 static int _post_association_list(List assoc_list)
 {
@@ -587,10 +600,8 @@ static int _post_qos_list(List qos_list)
 	if (g_qos_max_priority) {
 		list_iterator_reset(itr);
 
-		while ((qos = list_next(itr))) {
-			qos->usage->norm_priority = (double)qos->priority
-				/ (double)g_qos_max_priority;
-		}
+		while ((qos = list_next(itr)))
+			_set_qos_norm_priority(qos);
 	}
 	list_iterator_destroy(itr);
 
@@ -2767,6 +2778,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	slurmdb_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
+	int redo_priority = 0;
 	List remove_list = NULL;
 	List update_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
@@ -2813,6 +2825,13 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				resize_qos_bitstr = 1;
 				g_qos_count = object->id+1;
 			}
+
+			if (object->priority > g_qos_max_priority) {
+				g_qos_max_priority = object->priority;
+				redo_priority = 1;
+			} else
+				_set_qos_norm_priority(object);
+
 			object = NULL;
 			break;
 		case SLURMDB_MODIFY_QOS:
@@ -2895,8 +2914,18 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			if (object->preempt_mode != (uint16_t)NO_VAL)
 				rec->preempt_mode = object->preempt_mode;
 
-			if (object->priority != NO_VAL)
+			if (object->priority != NO_VAL) {
+				if (rec->priority == g_qos_max_priority)
+					redo_priority = 2;
+
 				rec->priority = object->priority;
+
+				if (rec->priority > g_qos_max_priority) {
+					g_qos_max_priority = rec->priority;
+					redo_priority = 1;
+				} else if (redo_priority != 2)
+					_set_qos_norm_priority(rec);
+			}
 
 			if (object->usage_factor != (double)NO_VAL)
 				rec->usage_factor =
@@ -2921,6 +2950,10 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+
+			/* We need to renormalize of something else */
+			if (rec->priority == g_qos_max_priority)
+				redo_priority = 2;
 
 			if (remove_qos_notify) {
 				/* since there are some deadlock
@@ -2989,6 +3022,14 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			list_iterator_destroy(assoc_itr);
 		}
 	}
+
+	if (redo_priority == 1) {
+		list_iterator_reset(itr);
+		while ((object = list_next(itr)))
+			_set_qos_norm_priority(object);
+	} else if (redo_priority == 2)
+		_post_qos_list(assoc_mgr_qos_list);
+
 	list_iterator_destroy(itr);
 
 	assoc_mgr_unlock(&locks);
