@@ -498,6 +498,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	sview_search_info_t sview_search_info;
 	resv_desc_msg_t *resv_msg = NULL;
+	update_part_msg_t *part_msg = NULL;
 	char *res_name, *temp;
 
 	sview_search_info.gchar_data = NULL;
@@ -518,7 +519,12 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	} else if (!strcmp(name, "partition")) {
 		sview_search_info.search_type = CREATE_PARTITION;
 		entry = create_entry();
-		label = gtk_label_new("Partition?");
+		label = gtk_label_new(
+			"Partition creation specifications\n\n"
+			"Specify Name. All other fields are optional.");
+		part_msg = xmalloc(sizeof(update_part_msg_t));
+		slurm_init_part_desc_msg(part_msg);
+		entry = create_part_entry(part_msg, model, &iter);
 	} else if (!strcmp(name, "reservation")) {
 		sview_search_info.search_type = CREATE_RESERVATION;
 		label = gtk_label_new(
@@ -558,7 +564,15 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 g_print("cbj\n");
 			break;
 		case CREATE_PARTITION:
-g_print("cp\n");
+			if (slurm_create_partition(part_msg) == SLURM_SUCCESS) {
+				temp = g_strdup_printf("Partition created");
+			} else {
+				temp = g_strdup_printf(
+					"Problem creating partition: %s",
+					slurm_strerror(slurm_get_errno()));
+			}
+			display_edit_note(temp);
+			g_free(temp);
 			break;
 		case CREATE_RESERVATION:
 			res_name = slurm_create_reservation(resv_msg);
@@ -569,12 +583,11 @@ g_print("cp\n");
 				free(res_name);
 			} else {
 				temp = g_strdup_printf(
-					"Problem creating reservation:%s",
+					"Problem creating reservation: %s",
 					slurm_strerror(slurm_get_errno()));
 			}
 			display_edit_note(temp);
 			g_free(temp);
-
 			break;
 		default:
 			break;
@@ -583,6 +596,8 @@ g_print("cp\n");
 
 end_it:
 	gtk_widget_destroy(popup);
+	if (part_msg)
+		xfree(part_msg);
 	if (resv_msg)
 		slurm_free_resv_desc_msg(resv_msg);
 	return;
