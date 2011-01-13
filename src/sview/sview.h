@@ -418,6 +418,8 @@ extern void setup_popup_grid_list(popup_info_t *popup_win);
 extern void post_setup_popup_grid_list(popup_info_t *popup_win);
 
 // part_info.c
+extern GtkWidget *create_part_entry(update_part_msg_t *part_msg,
+				    GtkTreeModel *model, GtkTreeIter *iter);
 extern bool visible_part(char* part_name);
 extern bool check_part_includes_node(int node_dx);
 extern void refresh_part(GtkAction *action, gpointer user_data);
@@ -435,7 +437,7 @@ extern void select_admin_partitions(GtkTreeModel *model, GtkTreeIter *iter,
 				    display_data_t *display_data,
 				    GtkTreeView *treeview);
 extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type);
-extern void cluster_change_part();
+extern void cluster_change_part(void);
 
 // accnt_info.c
 extern void refresh_accnt(GtkAction *action, gpointer user_data);
