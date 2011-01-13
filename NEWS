@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
  -- Made it so QOS with UsageFactor set to 0 would make it so jobs running
     under that QOS wouldn't add time to fairshare or association/qos
     limits.
+ -- Fixed issue where QOS priority wasn't re-normalized until a slurmctld
+    restart when a QOS priority was changed.
 
 * Changes in SLURM 2.2.0
 ========================
