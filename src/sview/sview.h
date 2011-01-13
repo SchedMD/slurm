@@ -149,7 +149,11 @@ typedef struct specific_info specific_info_t;
 typedef struct popup_info popup_info_t;
 typedef struct popup_positioner popup_positioner_t;
 
-typedef enum { SEARCH_JOB_ID = 1,
+typedef enum {
+	       CREATE_BATCH_JOB = 1,
+	       CREATE_PARTITION,
+	       CREATE_RESERVATION,
+	       SEARCH_JOB_ID = 10,
 	       SEARCH_JOB_USER,
 	       SEARCH_JOB_STATE,
 	       SEARCH_BLOCK_NAME,
@@ -377,6 +381,7 @@ extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 
 //popups.c
 extern void create_config_popup(GtkAction *action, gpointer user_data);
+extern void create_create_popup(GtkAction *action, gpointer user_data);
 extern void create_dbconfig_popup(GtkAction *action, gpointer user_data);
 extern void create_daemon_popup(GtkAction *action, gpointer user_data);
 extern void create_search_popup(GtkAction *action, gpointer user_data);
@@ -524,6 +529,8 @@ extern void admin_node_name(char *name, char *old_value, char *type);
 extern void cluster_change_node();
 
 // resv_info.c
+extern GtkWidget *create_resv_entry(resv_desc_msg_t *resv_msg,
+				    GtkTreeModel *model, GtkTreeIter *iter);
 extern void refresh_resv(GtkAction *action, gpointer user_data);
 extern GtkListStore *create_model_resv(int type);
 extern void admin_edit_resv(GtkCellRendererText *cell,
