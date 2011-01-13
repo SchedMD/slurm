@@ -37,7 +37,7 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_xlator.h"
-#include "bluegene.h"
+#include "bgq.h"
 #include "jobinfo.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

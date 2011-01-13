@@ -39,36 +39,39 @@
 #ifndef _BGQ_H_
 #define _BGQ_H_
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#endif
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include "bg_record_functions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "src/common/slurm_xlator.h"	/* Must be first */
-#include "src/common/macros.h"
-#include "src/slurmctld/slurmctld.h"
-#include "bgq_enums.h"
-#include "block_allocator/block_allocator.h"
+/* #ifdef HAVE_CONFIG_H */
+/* #  include "config.h" */
+/* #  if HAVE_STDINT_H */
+/* #    include <stdint.h> */
+/* #  endif */
+/* #  if HAVE_INTTYPES_H */
+/* #    include <inttypes.h> */
+/* #  endif */
+/* #endif */
+
+/* #include <stdio.h> */
+/* #include <sys/types.h> */
+/* #include <sys/stat.h> */
+/* #include <unistd.h> */
+/* #include <slurm/slurm.h> */
+/* #include <slurm/slurm_errno.h> */
+
+/* #ifdef WITH_PTHREADS */
+/* #  include <pthread.h> */
+/* #endif				/\* WITH_PTHREADS *\/ */
+
+
+/* #include "src/common/slurm_xlator.h"	/\* Must be first *\/ */
+/* #include "src/common/macros.h" */
+/* #include "src/slurmctld/slurmctld.h" */
+/* #include "bgq_enums.h" */
+/* #include "block_allocator/block_allocator.h" */
 
 typedef enum bg_layout_type {
 	LAYOUT_STATIC,  /* no overlaps, except for full system block

@@ -94,7 +94,7 @@ typedef struct {
 #ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
 #endif
-	int conn_type;                 /* mesh, torus, or small */
+	int conn_type[HIGHEST_DIMENSIONS]; /* mesh, torus, or small */
 	bool elongate;                 /* whether allow elongation or not */
 	int elongate_count;            /* place in elongate_geos list
 					  we are at */
@@ -445,7 +445,7 @@ extern int check_and_set_node_list(List nodes);
  *     xfreed.  NULL on failure
  */
 extern char *set_bg_block(List results, uint16_t *start,
-			  uint16_t *geometry, int conn_type);
+			  uint16_t *geometry, int *conn_type);
 
 /*
  * Resets the virtual system to a virgin state.  If track_down_nodes is set
@@ -520,8 +520,8 @@ extern int load_block_wiring(char *bg_block_id);
  * get the used wires for a block out of the database and return the
  * node list
  */
-extern List get_and_set_block_wiring(char *bg_block_id,
-				     rm_partition_t *block_ptr);
+/* extern List get_and_set_block_wiring(char *bg_block_id, */
+/* 				     rm_partition_t *block_ptr); */
 
 /* make sure a node is in the system return 1 if it is 0 if not */
 extern int validate_coord(uint16_t *coord);

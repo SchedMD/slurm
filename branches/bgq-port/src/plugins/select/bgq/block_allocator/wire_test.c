@@ -131,7 +131,10 @@ int main(int argc, char** argv)
 //	request->size = 1;
 	request->rotate = 1;
 	request->elongate = 1;
-	request->conn_type = SELECT_TORUS;
+	request->conn_type[A] = SELECT_TORUS;
+	request->conn_type[B] = SELECT_TORUS;
+	request->conn_type[C] = SELECT_TORUS;
+	request->conn_type[D] = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
 	if (!allocate_block(request, results)) {
