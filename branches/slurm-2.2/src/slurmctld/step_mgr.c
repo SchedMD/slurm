@@ -914,7 +914,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					i : step_spec->min_nodes ;
 		if (step_spec->max_nodes &&
 		    (step_spec->max_nodes < step_spec->min_nodes)) {
-			info("Job step %u max node count incompatable with CPU "
+			info("Job step %u max node count incompatible with CPU "
 			     "count", job_ptr->job_id);
 			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 			goto cleanup;

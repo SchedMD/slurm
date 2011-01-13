@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "19" "August 2010" "slurmdbd.conf 2.2" "Slurm configuration file"
+.TH "slurmdbd.conf" "5" "August 2010" "slurmdbd.conf 2.2" "Slurm configuration file"
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 
@@ -27,7 +27,9 @@ If ArchiveScript is not set the slurmdbd will generate a file that can be
 read in anytime with sacctmgr load filename.  This directory is where the
 file will be placed archive has ran.  Default is /tmp.  The format for this
 files name is
+.na
 $ArchiveDir/$ClusterName_$ArchiveObject_archive_$BeginTimeStamp_$endTimeStamp
+.ad
 
 .TP
 \fBArchiveEvents\fR
@@ -297,7 +299,9 @@ Acceptable values at present include
 "accounting_storage/pgsql".
 The value "accounting_storage/gold" indicates that account records
 will be written to Gold
+.na
 (http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
+.ad
 which maintains its own database.
 The value "accounting_storage/mysql" indicates that accounting records
 should be written to a MySQL database specified by the
