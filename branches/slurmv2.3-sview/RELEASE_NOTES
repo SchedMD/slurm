@@ -1,0 +1,109 @@
+RELEASE NOTES FOR SLURM VERSION 2.3
+10 January 2011
+
+
+IMPORTANT NOTE:
+If using the slurmdbd (SLURM DataBase Daemon) you must update this first.
+The 2.3 slurmdbd will work with SLURM daemons of version 2.1.3 and above.
+You will not need to update all clusters at the same time, but it is very
+important to update slurmdbd first and having it running before updating
+any other clusters making use of it.  No real harm will come from updating
+your systems before the slurmdbd, but they will not talk to each other
+until you do.  Also at least the first time running the slurmdbd you need to
+make sure your my.cnf file has innodb_buffer_pool_size equal to at least 64M.
+You can accomplish this by adding the line
+
+innodb_buffer_pool_size=64M
+
+under the [mysqld] reference in the my.cnf file and restarting the mysqld.
+This is needed when converting large tables over to the new database schema.
+
+SLURM can be upgraded from version 2.2 to version 2.3 without loss of jobs or
+other state information.
+
+
+HIGHLIGHTS
+==========
+* For architectures where the slurmd daemon executes on front end nodes (Cray
+  and BlueGene systems) more than one slurmd daemon may be executed using more
+  than one front end node for improved fault-tolerance and performance
+
+
+CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
+=============================================================
+* In order to support more than one front end node, new parameters have been
+  added to support a new data structure: FrontendName, FrontendAddr, Port,
+  State and Reason.
+
+* DebugFlags of Frontend added
+
+
+COMMAND CHANGES (see man pages for details)
+===========================================
+* scontrol has the ability to get and set front end node state.
+
+
+BLUEGENE SPECIFIC CHANGES
+=========================
+
+
+OTHER CHANGES
+=============
+
+
+API CHANGES
+===========
+
+
+Changed members of the following structs
+========================================
+
+
+Added the following struct definitions
+======================================
+front_end_info_msg_t		entirely new structure
+
+front_end_info_t		entirely new structure
+
+job_info_t
+	batch_host		name of the host running the batch script
+
+slurm_step_layout
+	front_end		name of front end host running the step
+
+update_front_end_msg_t		entirely new structure
+
+
+Changed the following enums and #defines
+========================================
+job_state_reason
+	FAIL_BANK_ACCOUNT -> FAIL_ACCOUNT
+	FAIL_QOS        	/* invalid QOS */
+	WAIT_QOS_THRES        	/* required QOS threshold has been breached */
+
+select_jobdata_type
+	SELECT_JOBDATA_PTR	/* data-> select_jobinfo_t *jobinfo */
+
+select_nodedata_type
+	SELECT_NODEDATA_PTR     /* data-> select_nodeinfo_t *nodeinfo */
+
+select_type_plugin_info is no longer and it's contents are now mostly #defines
+
+DEBUG_FLAG_FRONT_END		added DebugFlags of Frontend
+
+TRIGGER_RES_TYPE_FRONT_END	added trigger for frontend state changes
+
+
+Added the following API's
+=========================
+slurm_free_front_end_info_msg	free front end state information
+slurm_init_update_front_end_msg	initialize data structure for front end update
+slurm_load_front_end()		load front end state information
+slurm_print_front_end_info_msg	print all front end state information
+slurm_print_front_end_table	print state information for one front end node
+slurm_sprint_front_end_table	output state information for one front end node
+slurm_update_front_end		update state of front end node
+
+
+Changed the following API's
+===========================

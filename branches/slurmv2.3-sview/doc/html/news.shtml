@@ -1,0 +1,107 @@
+<!--#include virtual="header.txt"-->
+
+<h1>What's New</h1>
+
+<h2>Index</h2>
+<ul>
+<li><a href="#21">SLURM Version 2.1, January 2010</a></li>
+<li><a href="#22">SLURM Version 2.2, December 2010</a></li>
+<li><a href="#23">SLURM Version 2.3, available May 2011</a></li>
+<li><a href="#24">SLURM Version 2.4 and beyond</a></li>
+<li><a href="#security">Security Patches</a></li>
+</ul>
+
+<h2><a name="21">Major Updates in SLURM Version 2.1</a></h2>
+<p>SLURM Version 2.1 was released in January 2010.
+Major enhancements include:
+<ul>
+<li>Optimized resource allocation based upon network topology (e.g.
+hierarchical switches).</li>
+<li>Support for job preemption based upon job Quality of Service (QOS) in
+addition to queue priority.</li>
+<li>Support for time limits on individual job steps (in addition to the
+job time limit).</li>
+<li>Improve fault-tolerance in recognizing compute node reboots.</li>
+<li>Add sinfo and squeue information about specific cores allocated.</li>
+<li>Support for Solaris (OpenSolaris build 119).</li>
+</ul>
+
+<h2><a name="22">Major Updates in SLURM Version 2.2</a></h2>
+<p>SLURM Version 2.2 was released in December 2010.
+Major enhancements include:
+<ul>
+<li>Permit resource allocations (jobs) to shrink in size.</li>
+<li>Add support for job time limit range. The job's time limit will get it's
+maximum time limit unless reducing it to a lower value within the range will
+permit it to start earlier via backfill scheduling.</li>
+<li>Add support for allocation of generic resources (e.g. GPUs).</li>
+<li>Add a job submission plugin that can be use to set site-specific default
+job parameters including default partition (based upon job size, etc.).</li>
+<li>Add support for TotalView partitial attach (debugger attach to selected
+tasks only).</li>
+<li>Add support for draining partitions (job queues) with alternate partition
+specification available.</li>
+<li>The MySQL database has been restructured for a 50-75% performance
+improvement.</li>
+<li>RPCs have been modified to prevent job loss on SLURM upgrades and permit
+different versions of the commands and deamons to interoperate.</li>
+<li>Major enhancements made to PostGreSQL database plugin (still beta).</li>
+<li>Permit SLURM commands to operate between clusters (e.g. status jobs on a
+different cluster or submit a job on one cluster to run on another).</li>
+<li>Major enhancements for high-throughput computing. Job throughput
+rates now exceed 120,000 jobs per hour with bursts of job submissions at
+several times that rate.</li>
+</ul>
+
+<h2><a name="23">Major Updates in SLURM Version 2.3</a></h2>
+<p>SLURM Version 2.3 release is planned in May 2011.
+Major enhancements currently planned include:
+<ul>
+<li>Support for Cray XT and XE computers (integration with ALPS/BASIL).</li>
+<li>Support for BlueGene/Q computers (partially implemented).</li>
+<li>Support for multiple front-end nodes running slurmd daemons (for Cray and
+BlueGene architectures, improves performance and fault tolerance).</li>
+<li>Support for Linux cgroup job containers including integration with
+generic resources.</li>
+</ul>
+
+<h2><a name="24">Major Updates in SLURM Version 2.4 and beyond</a></h2>
+<p> Detailed plans for release dates and contents of additional SLURM releases
+have not been finalized. Anyone desiring to perform SLURM development should
+notify <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
+to coordinate activities. Future development plans includes:
+<ul>
+<li>Integration with FlexLM license management.</li>
+<li>Numerous enhancements to advanced resource reservations.</li>
+<li>Add Kerberos credential support including credential forwarding
+and refresh.</li>
+<li>Provide a web-based SLURM administration tool.</li>
+</ul>
+
+<h2><a name="security">Security Patches</a></h2>
+<p>Common Vulnerabilities and Exposure (CVE)</a> information is available at<br>
+<a href="http://cve.mitre.org/">http://cve.mitre.org/</a>.</p>
+<ul>
+<li>CVE-2009-0128<br>
+There is a potential security vulnerability in SLURM where a user could
+build an invalid job credential in order to execute a job (under his
+correct UID and GID) on resources not allocated to that user. This
+vulnerability exists only when the crypto/openssl plugin is used and was
+fixed in SLURM version 1.3.0.</li>
+<li>CVE-2009-2084<br>
+SLURM failed to properly set supplementary groups before invoking (1) sbcast
+from the slurmd daemon or (2) strigger from the slurmctld daemon, which might
+allow local SLURM users to modify files and gain privileges. This was fixed
+in SLURM version 1.3.14.</li>
+<li>CVE-2010-3308<br>
+There is a potential security vulnerability where if the init.d scripts are
+executed by user root or SlurmUser to initiate the SLURM daemons and the
+LD_LIBRARY_PATH is not set and the operating system interprets a blank entry
+in the path as "." (current working directory) and that directory contains a
+trojan library, then that library will be used by the SLURM daemon with
+unpredictable results. This was fixed in SLURM version 2.1.14.</li>
+</ul>
+
+<p style="text-align:center;">Last modified 3 January 2011</p>
+
+<!--#include virtual="footer.txt"-->
