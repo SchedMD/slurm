@@ -778,6 +778,20 @@ static void *_decay_thread(void *no_data)
 				time_t start_period = last_ran;
 				time_t end_period = start_time;
 				double run_decay = 0;
+				assoc_mgr_lock_t qos_read_lock =
+					{ NO_LOCK, NO_LOCK,
+					  READ_LOCK, NO_LOCK, NO_LOCK };
+
+				/* If usage_factor is 0 just skip this
+				   since we don't add the usage.
+				*/
+				assoc_mgr_lock(&qos_read_lock);
+				qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+				if (qos && !qos->usage_factor) {
+					assoc_mgr_unlock(&qos_read_lock);
+					continue;
+				}
+				assoc_mgr_unlock(&qos_read_lock);
 
 				if (job_ptr->start_time > start_period)
 					start_period = job_ptr->start_time;
@@ -805,13 +819,18 @@ static void *_decay_thread(void *no_data)
 					* (double)job_ptr->total_cpus;
 
 				assoc_mgr_lock(&locks);
+				/* Just to make sure we don't make a
+				   window where the qos_ptr could of
+				   changed make sure we get it again
+				   here.
+				*/
 				qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 				assoc = (slurmdb_association_rec_t *)
 					job_ptr->assoc_ptr;
 				/* now apply the usage factor for this
 				   qos */
 				if (qos) {
-					if (qos->usage_factor > 0) {
+					if (qos->usage_factor >= 0) {
 						real_decay *= qos->usage_factor;
 						run_decay *= qos->usage_factor;
 					}

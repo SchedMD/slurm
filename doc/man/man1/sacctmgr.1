@@ -1126,8 +1126,9 @@ Usage factor when running with this QOS.  This is a float that is
 factored into the time of running jobs.  e.g. if the usagefactor of a
 QOS was 2 for every cpu second a job ran it would count for 2.  Also
 if the usagefactor was .5 every second would only could for half the time.
+Setting this value to 0 will make it so any job running will not add
+time to fairshare or association/qos limits.
 To clear a previously set value use the modify command with a new value of \-1.
-
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
 
