@@ -282,7 +282,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 const char *new_text,
 				 int column)
 {
-	char *type = "";
+	char *type = "", *temp_str;
 	int temp_int = 0;
 	uint32_t f;
 
@@ -331,7 +331,11 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "name";
 		break;
 	case SORTID_NODE_CNT:
-		temp_int = strtol(new_text, (char **)NULL, 10);
+		temp_int = strtol(new_text, &temp_str, 10);
+		if ((temp_str[0] == 'k') || (temp_str[0] == 'k'))
+			temp_int *= 1024;
+		if ((temp_str[0] == 'm') || (temp_str[0] == 'm'))
+			temp_int *= (1024 * 1024);
 
 		type = "Node Count";
 		if (temp_int <= 0)
