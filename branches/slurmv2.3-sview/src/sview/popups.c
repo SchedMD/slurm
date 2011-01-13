@@ -483,6 +483,86 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 	return;
 }
 
+extern void create_create_popup(GtkAction *action, gpointer user_data)
+{
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Create",
+		GTK_WINDOW(user_data),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	int response = 0;
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	const gchar *name = gtk_action_get_name(action);
+	sview_search_info_t sview_search_info;
+	resv_desc_msg_t *resv_msg = NULL;
+
+	sview_search_info.gchar_data = NULL;
+	sview_search_info.int_data = NO_VAL;
+	sview_search_info.int_data2 = NO_VAL;
+
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+	gtk_dialog_add_button(GTK_DIALOG(popup),
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+	gtk_window_set_default_size(GTK_WINDOW(popup), 400, 400);
+
+	if (!strcmp(name, "batch_job")) {
+		sview_search_info.search_type = CREATE_BATCH_JOB;
+		entry = create_entry();
+		label = gtk_label_new("Batch job");
+	} else if (!strcmp(name, "partition")) {
+		sview_search_info.search_type = CREATE_PARTITION;
+		entry = create_entry();
+		label = gtk_label_new("Partition?");
+	} else if (!strcmp(name, "reservation")) {
+		sview_search_info.search_type = CREATE_RESERVATION;
+		label = gtk_label_new("Reservation creation specifications");
+		resv_msg = xmalloc(sizeof(resv_desc_msg_t));
+		slurm_init_resv_desc_msg(resv_msg);
+		entry = create_resv_entry(resv_msg, model, &iter);
+	} else {
+		sview_search_info.search_type = 0;
+		goto end_it;
+	}
+
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   label, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   entry, TRUE, TRUE, 0);
+
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	if (response == GTK_RESPONSE_OK) {
+		if (!sview_search_info.search_type)
+			goto end_it;
+
+		switch(sview_search_info.search_type) {
+		case CREATE_BATCH_JOB:
+g_print("cbj\n");
+			break;
+		case CREATE_PARTITION:
+g_print("cp\n");
+			break;
+		case CREATE_RESERVATION:
+g_print("cr\n");
+			break;
+		default:
+			break;
+		}
+	}
+
+end_it:
+	gtk_widget_destroy(popup);
+	if (resv_msg)
+		slurm_free_resv_desc_msg(resv_msg);
+	return;
+}
+
 extern void create_search_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(

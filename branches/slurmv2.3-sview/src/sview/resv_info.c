@@ -2,7 +2,7 @@
  *  resv_info.c - Functions related to advanced reservation display
  *  mode of sview.
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -115,6 +115,43 @@ static display_data_t display_data_resv[] = {
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT,    SORTID_UPDATED,    NULL, FALSE, EDIT_NONE,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+};
+
+static display_data_t create_data_resv[] = {
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NAME,  "Name (optional)",
+	 FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node Count", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODELIST,
+#ifdef HAVE_BG
+	 "BP List",
+#else
+	 "NodeList",
+#endif
+	 FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_START, "Time Start (required)",
+	 FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_DURATION,   "Duration", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_USERS,      "Users", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_FEATURES,   "Features (optional)",
+	 FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_FLAGS, "Flags (optional)", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
@@ -787,6 +824,50 @@ need_refresh:
 finished:
 
 	return;
+}
+
+extern GtkWidget *create_resv_entry(resv_desc_msg_t *resv_msg,
+				    GtkTreeModel *model, GtkTreeIter *iter)
+{
+	GtkScrolledWindow *window = create_scrolled_window();
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	GtkTable *table = NULL;
+	int i = 0, row = 0;
+	display_data_t *display_data = create_data_resv;
+
+	gtk_scrolled_window_set_policy(window,
+				       GTK_POLICY_NEVER,
+				       GTK_POLICY_AUTOMATIC);
+	bin = GTK_BIN(&window->container);
+	view = GTK_VIEWPORT(bin->child);
+	bin = GTK_BIN(&view->bin);
+	table = GTK_TABLE(bin->child);
+	gtk_table_resize(table, SORTID_CNT, 2);
+
+	gtk_table_set_homogeneous(table, FALSE);
+
+	for (i = 0; i < SORTID_CNT; i++) {
+		while (display_data++) {
+			if (display_data->id == -1)
+				break;
+			if (!display_data->name)
+				continue;
+			if (display_data->id != i)
+				continue;
+			display_admin_edit(
+				table, resv_msg, &row, model, iter,
+				display_data,
+				G_CALLBACK(_admin_edit_combo_box_resv),
+				G_CALLBACK(_admin_focus_out_resv),
+				_set_active_combo_resv);
+			break;
+		}
+		display_data = create_data_resv;
+	}
+	gtk_table_resize(table, row, 2);
+
+	return GTK_WIDGET(window);
 }
 
 extern void refresh_resv(GtkAction *action, gpointer user_data)
