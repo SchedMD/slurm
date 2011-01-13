@@ -2019,9 +2019,11 @@ extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
 		char *temp_char = NULL;
 		/* other edittable items that are unknown */
 		entry = create_entry();
-		gtk_tree_model_get(model, iter,
-				   display_data->id,
-				   &temp_char, -1);
+		if (model) {
+			gtk_tree_model_get(model, iter,
+					   display_data->id,
+					   &temp_char, -1);
+		}
 		gtk_entry_set_max_length(GTK_ENTRY(entry),
 					 (DEFAULT_ENTRY_LENGTH +
 					  display_data->id));
