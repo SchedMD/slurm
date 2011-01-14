@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
     calulating it own numbers.
  -- BLUEGENE - fixed race condition with preemption where if the wind blows the
     right way the slurmctld could lock up when preempting jobs to run others.
+ -- BLUEGENE - fixed epilog to wait until MMCS job is totally complete before
+    finishing.
 
 * Changes in SLURM 2.2.0
 ========================
