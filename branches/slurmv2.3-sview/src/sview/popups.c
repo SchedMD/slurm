@@ -497,8 +497,10 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	GtkTreeIter iter;
 	const gchar *name = gtk_action_get_name(action);
 	sview_search_info_t sview_search_info;
-	resv_desc_msg_t *resv_msg = NULL;
+	job_desc_msg_t *job_msg = NULL;
+	submit_response_msg_t *slurm_alloc_msg = NULL;
 	update_part_msg_t *part_msg = NULL;
+	resv_desc_msg_t *resv_msg = NULL;
 	char *res_name, *temp;
 
 	sview_search_info.gchar_data = NULL;
@@ -515,7 +517,17 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	if (!strcmp(name, "batch_job")) {
 		sview_search_info.search_type = CREATE_BATCH_JOB;
 		entry = create_entry();
-		label = gtk_label_new("Batch job");
+		label = gtk_label_new(
+			"Batch job submission specifications\n\n"
+			"Specify size (task and/or node count) plus the\n"
+			"script. All other fields are optional.");
+		job_msg = xmalloc(sizeof(job_desc_msg_t));
+		slurm_init_job_desc_msg(job_msg);
+		job_msg->group_id = getuid();
+		job_msg->user_id  = getgid();
+		job_msg->work_dir = xmalloc(1024);
+		getcwd(job_msg->work_dir, 1024);
+		entry = create_job_entry(job_msg, model, &iter);
 	} else if (!strcmp(name, "partition")) {
 		sview_search_info.search_type = CREATE_PARTITION;
 		entry = create_entry();
@@ -561,11 +573,25 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 
 		switch(sview_search_info.search_type) {
 		case CREATE_BATCH_JOB:
-g_print("cbj\n");
+			response = slurm_submit_batch_job(job_msg,
+							  &slurm_alloc_msg);
+			if (response == SLURM_SUCCESS) {
+				temp = g_strdup_printf(
+					"Job %u submitted",
+					slurm_alloc_msg->job_id);
+			} else {
+				temp = g_strdup_printf(
+					"Problem submitting job: %s",
+					slurm_strerror(slurm_get_errno()));
+			}
+			display_edit_note(temp);
+			g_free(temp);
 			break;
 		case CREATE_PARTITION:
-			if (slurm_create_partition(part_msg) == SLURM_SUCCESS) {
-				temp = g_strdup_printf("Partition created");
+			response = slurm_create_partition(part_msg);
+			if (response == SLURM_SUCCESS) {
+				temp = g_strdup_printf("Partition %s created",
+						       part_msg->name);
 			} else {
 				temp = g_strdup_printf(
 					"Problem creating partition: %s",
@@ -596,8 +622,14 @@ g_print("cbj\n");
 
 end_it:
 	gtk_widget_destroy(popup);
-	if (part_msg)
-		xfree(part_msg);
+	if (slurm_alloc_msg)
+		slurm_free_submit_response_response_msg(slurm_alloc_msg);
+	if (job_msg) {
+		xfree(job_msg->script);
+		xfree(job_msg->work_dir);
+		xfree(job_msg);
+	}
+	xfree(part_msg);
 	if (resv_msg)
 		slurm_free_resv_desc_msg(resv_msg);
 	return;
