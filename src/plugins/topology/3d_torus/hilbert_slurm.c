@@ -61,10 +61,9 @@ static int _coord(char coord)
  * be called once, immediately after reading the slurm.conf file. */
 extern void nodes_to_hilbert_curve(void)
 {
-	int coord_inx, i, j, k, max_coord = 0, min_inx;
-	uint32_t min_val;
+	int coord_inx, i, j, k, max_coord = 0;
 	int *coords;
-	struct node_record *node_ptr, *node_ptr2;
+	struct node_record *node_ptr;
 	coord_t hilbert[3];
 	int dims = 3;
 #ifdef HAVE_SUN_CONST
@@ -127,64 +126,4 @@ extern void nodes_to_hilbert_curve(void)
 			((hilbert[1]>>0 & 1) <<  1) +
 			((hilbert[2]>>0 & 1) <<  0);
 	}
-
-	/* Now we need to sort the node records. We only need to move a few
-	 * fields since the others were all initialized to identical values.
-	 * The fields needing to be copied are those set by the function
-	 * _build_single_nodeline_info() in src/common/read_conf.c */
-	for (i=0; i<node_record_count; i++) {
-		min_val = node_record_table_ptr[i].node_rank;
-		min_inx = i;
-		for (j=(i+1); j<node_record_count; j++) {
-			if (node_record_table_ptr[j].node_rank < min_val) {
-				min_val = node_record_table_ptr[j].node_rank;
-				min_inx = j;
-			}
-		}
-		if (min_inx != i) {	/* swap records */
-			char *tmp_str;
-			uint16_t tmp_uint16;
-			uint32_t tmp_uint32;
-
-			node_ptr =  node_record_table_ptr + i;
-			node_ptr2 = node_record_table_ptr + min_inx;
-
-			tmp_str = node_ptr->name;
-			node_ptr->name  = node_ptr2->name;
-			node_ptr2->name = tmp_str;
-
-			tmp_str = node_ptr->comm_name;
-			node_ptr->comm_name  = node_ptr2->comm_name;
-			node_ptr2->comm_name = tmp_str;
-
-			tmp_uint32 = node_ptr->node_rank;
-			node_ptr->node_rank  = node_ptr2->node_rank;
-			node_ptr2->node_rank = tmp_uint32;
-
-			tmp_str = node_ptr->features;
-			node_ptr->features  = node_ptr2->features;
-			node_ptr2->features = tmp_str;
-
-			tmp_uint16 = node_ptr->port;
-			node_ptr->port  = node_ptr2->port;
-			node_ptr2->port = tmp_uint16;
-
-			tmp_str = node_ptr->reason;
-			node_ptr->reason  = node_ptr2->reason;
-			node_ptr2->reason = tmp_str;
-
-			tmp_uint32 = node_ptr->weight;
-			node_ptr->weight  = node_ptr2->weight;
-			node_ptr2->weight = tmp_uint32;
-		}
-	}
-
-#if _DEBUG
-	/* Log the results */
-	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
-	     i++, node_ptr++) {
-		info("%s: %u", node_ptr->name, node_ptr->node_rank);
-	}
-#endif
 }
-

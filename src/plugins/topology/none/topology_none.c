@@ -77,7 +77,7 @@
  */
 const char plugin_name[]        = "topology NONE plugin";
 const char plugin_type[]        = "topology/none";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 101;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -105,6 +105,14 @@ extern int fini(void)
 extern int topo_build_config(void)
 {
 	return SLURM_SUCCESS;
+}
+
+/*
+ * topo_generate_node_ranking  -  this plugin does not set any node_rank fields
+ */
+extern bool topo_generate_node_ranking(void)
+{
+	return false;
 }
 
 /*

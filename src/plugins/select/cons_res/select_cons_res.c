@@ -168,7 +168,7 @@ bitstr_t *idle_node_bitmap;
 const char plugin_name[] = "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_id      = 101;
-const uint32_t plugin_version = 91;
+const uint32_t plugin_version = 100;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
@@ -1674,6 +1674,12 @@ extern int select_p_job_init(List job_list)
 {
 	/* nothing to initialize for jobs */
 	return SLURM_SUCCESS;
+}
+
+/* This plugin does not generate a node ranking. */
+extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+{
+	return false;
 }
 
 /* This is Part 1 of a 4-part procedure which can be found in

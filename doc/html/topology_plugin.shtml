@@ -7,7 +7,7 @@
 defines them.
 It is intended as a resource to programmers wishing to write their own
 SLURM topology plugin.
-This is version 100 of the API.</p>
+This is version 101 of the API.</p>
 
 <p>SLURM topology plugins are SLURM plugins that implement
 convey system topology information so that SLURM is able to
@@ -64,6 +64,12 @@ Functions which are not implemented should be stubbed.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS or
 SLURM_ERROR on failure.</p>
 
+<p class="commandline">bool topo_generate_node_ranking(void)</p>
+<p style="margin-left:.2in"><b>Description</b>: Determine if this plugin will
+reorder the node records based upon each job's node rank field.</p>
+<p style="margin-left:.2in"><b>Returns</b>: true if node reording is supported,
+false otherwise.</p>
+
 <p class="commandline">int topo_get_node_addr(char* node_name, char** paddr, char** ppatt);</p>
 <p style="margin-left:.2in"><b>Description</b>: Get Topology address of a given node.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -80,10 +86,10 @@ in the hierarchy is separated by a period. The final element will always be
 SLURM_ERROR on failure.</p>
 
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM topology API.
+<p> This document describes version 101 of the SLURM topology API.
 Future releases of SLURM may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 August 2009</p>
+<p style="text-align:center;">Last modified 13 January 2011</p>
 
 <!--#include virtual="footer.txt"-->

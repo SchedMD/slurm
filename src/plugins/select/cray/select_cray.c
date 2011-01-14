@@ -126,7 +126,7 @@ struct select_nodeinfo {
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
 uint32_t plugin_id	        = 104;
-const uint32_t plugin_version	= 1;
+const uint32_t plugin_version	= 100;
 
 
 /*
@@ -177,6 +177,14 @@ extern int select_p_state_restore(char *dir_name)
 extern int select_p_job_init(List job_list)
 {
 	return other_job_init(job_list);
+}
+
+/*
+ * select_p_node_ranking - generate node ranking for Cray nodes
+ */
+extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+{
+	return false;		/* FIXME - to be filled in */
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)

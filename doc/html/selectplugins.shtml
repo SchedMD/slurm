@@ -185,6 +185,18 @@ but actually registered with 2GB of memory.</p>
 of the node in reference to the entire system.<br><br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
+<p class="commandline">bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)</p>
+<p style="margin-left:.2in"><b>Description</b>: This function is called by the slurmctld
+daemon at start time to set node rank information for reording the nodes to
+optimize application performance. </p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> node_ptr</span>&nbsp;&nbsp;&nbsp;(input/output) pointer
+to the node data structure. Each node's node rank field may be set.<br>
+<span class="commandline"> node_cnt</span>&nbsp;&nbsp;&nbsp;(input) number
+of nodes configured on the system.</p>
+<p style="margin-left:.2in"><b>Returns</b>: true if node rank information has
+been set.</p>
+
 <p class="commandline">int select_p_update_node_state (int index, uint16_t state);</p>
 <p style="margin-left:.2in"><b>Description</b>: push a change of state
 into the plugin the index should be the index from the slurmctld of
@@ -390,7 +402,7 @@ the plugin should return SLURM_ERROR.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 1 of the SLURM node selection API. Future
+<p> This document describes version 100 of the SLURM node selection API. Future
 releases of SLURM may revise this API. A node selection plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM plugins.
 In addition, the credential is transmitted along with the version number of the
@@ -399,6 +411,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 October 2009</p>
+<p style="text-align:center;">Last modified 13 January 2011</p>
 
 <!--#include virtual="footer.txt"-->

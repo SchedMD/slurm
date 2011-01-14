@@ -69,6 +69,8 @@ typedef struct slurm_select_ops {
 	int		(*state_save)		(char *dir_name);
 	int		(*state_restore)	(char *dir_name);
 	int		(*job_init)		(List job_list);
+	int		(*node_ranking)		(struct node_record *node_ptr,
+						 int node_cnt);
 	int		(*node_init)		(struct node_record *node_ptr,
 						 int node_cnt);
 	int		(*block_init)		(List block_list);
@@ -193,6 +195,14 @@ extern int select_g_state_restore(char *dir_name);
  * slurmctld and used to synchronize any job state.
  */
 extern int select_g_job_init(List job_list);
+
+/*
+ * Assign a 'node_rank' value to each of the node_ptr entries.
+ * IN node_ptr - current node data
+ * IN node_count - number of node entries
+ * Return true if node ranking was performed, false if not.
+ */
+extern bool select_g_node_ranking(struct node_record *node_ptr, int node_cnt);
 
 /*
  * Note re/initialization of node record data structure

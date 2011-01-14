@@ -90,6 +90,13 @@ extern int slurm_topo_fini(void);
 extern int slurm_topo_build_config( void );
 
 /*
+ * slurm_topo_generate_node_ranking  -  populate node_rank fields
+ * NOTE: This operation is only supported by those topology plugins for
+ *       which the node ordering between slurmd and slurmctld is invariant.
+ */
+extern bool slurm_topo_generate_node_ranking( void );
+
+/*
  * slurm_topo_get_node_addr - build node address and the associated pattern
  *      based on the topology information
  */

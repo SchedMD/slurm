@@ -191,7 +191,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 const char plugin_name[]       	= "Linear node selection plugin";
 const char plugin_type[]       	= "select/linear";
 const uint32_t plugin_id	= 102;
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 100;
 
 static struct node_record *select_node_ptr = NULL;
 static int select_node_cnt = 0;
@@ -2350,6 +2350,11 @@ extern int select_p_state_restore(char *dir_name)
 extern int select_p_job_init(List job_list)
 {
 	return SLURM_SUCCESS;
+}
+
+extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+{
+	return false;
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
