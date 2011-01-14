@@ -157,7 +157,7 @@ static display_data_t create_data_resv[] = {
 static display_data_t options_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Remove", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Remove Reservation", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, RESV_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, RESV_PAGE},
@@ -945,7 +945,7 @@ extern GtkListStore *create_model_resv(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
-				   0, "Remove",
+				   0, "Remove Reservation",
 				   -1);
 		break;
 	default:
@@ -1519,7 +1519,7 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	resv_msg->name = xstrdup(resvid);
 
-	if (!strcasecmp("Remove", type)) {
+	if (!strcasecmp("Remove Reservation", type)) {
 		resv_name_msg.name = resvid;
 
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
