@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
     restart when a QOS priority was changed.
  -- Fix sprio to use calculated numbers from slurmctld instead of
     calulating it own numbers.
+ -- BLUEGENE - fixed race condition with preemption where if the wind blows the
+    right way the slurmctld could lock up when preempting jobs to run others.
 
 * Changes in SLURM 2.2.0
 ========================

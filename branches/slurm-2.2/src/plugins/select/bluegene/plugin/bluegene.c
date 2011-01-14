@@ -616,6 +616,9 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			     bg_record->bg_block_id,
 			     bg_record->job_ptr->job_id,
 			     bg_record->job_running);
+			/* This is not thread safe if called from
+			   bg_job_place.c anywhere from within
+			   submit_job() */
 			slurm_mutex_unlock(&block_state_mutex);
 			bg_requeue_job(bg_record->job_ptr->job_id, 0);
 			slurm_mutex_lock(&block_state_mutex);

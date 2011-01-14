@@ -205,11 +205,12 @@ extern int block_ready(struct job_record *job_ptr)
 			rc = READY_JOB_FATAL;	/* fatal error */
 		}
 		slurm_mutex_unlock(&block_state_mutex);
-		xfree(block_id);
 	} else
 		rc = READY_JOB_ERROR;
-/* 	info("returning %d for job %u %d %d", */
-/* 	     rc, job_ptr->job_id, READY_JOB_ERROR, READY_JOB_FATAL); */
+	/* info("returning %d for job %u block %s %d %d", */
+	/*      rc, job_ptr->job_id, block_id, */
+	/*      READY_JOB_ERROR, READY_JOB_FATAL); */
+	xfree(block_id);
 	return rc;
 }
 
