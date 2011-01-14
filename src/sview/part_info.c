@@ -35,6 +35,8 @@
 
 #define _DEBUG 0
 
+static GtkListStore *_create_model_part2(int type);
+
 typedef struct {
 	uint32_t cpu_alloc_cnt;
 	uint32_t cpu_error_cnt;
@@ -125,14 +127,14 @@ static display_data_t display_data_part[] = {
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PART_STATE, "Part State", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit",
-	 FALSE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES, "Node Count",
-	 FALSE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_CPUS, "CPU Count",
-	 FALSE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODE_STATE, "Node State",
-	 FALSE, EDIT_MODEL, refresh_part,
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES, "Node Count", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODE_STATE, "Node State", FALSE,
+	 EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
@@ -183,43 +185,43 @@ static display_data_t display_data_part[] = {
 static display_data_t create_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
 	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PART_STATE, "State", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_GROUPS, "Groups Allowed", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #endif
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
@@ -268,16 +270,15 @@ static display_data_t options_data_part[] = {
 };
 
 static display_data_t *local_display_data = NULL;
-
 static char *got_edit_signal = NULL;
 static char *got_features_edit_signal = NULL;
 
-static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
-				    GtkTreeStore *treestore,
-				    GtkTreeIter *iter);
 static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore, GtkTreeIter *iter,
 				    int line);
+static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
+				    GtkTreeStore *treestore,
+				    GtkTreeIter *iter);
 
 static int _build_min_max_32_string(char *buffer, int buf_size,
 				    uint32_t min, uint32_t max, bool range)
@@ -1937,6 +1938,66 @@ end_it:
 	return error_code;
 }
 
+static GtkListStore *_create_model_part2(int type)
+{
+	GtkListStore *model = NULL;
+	GtkTreeIter iter;
+
+	switch (type) {
+	case SORTID_DEFAULT:
+	case SORTID_HIDDEN:
+		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "no (default)", 1, SORTID_DEFAULT, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "yes", 1, SORTID_DEFAULT, -1);
+		break;
+	case SORTID_ROOT:
+		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "yes (default)", 1, SORTID_DEFAULT, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "no", 1, SORTID_DEFAULT, -1);
+		break;
+	case SORTID_SHARE:
+		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "no (default)", 1, SORTID_SHARE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "yes", 1, SORTID_SHARE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "force", 1, SORTID_SHARE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "exclusive", 1, SORTID_SHARE, -1);
+		break;
+	case SORTID_PART_STATE:
+		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "up (default)", 1, SORTID_PART_STATE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "down", 1, SORTID_PART_STATE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "inactive", 1, SORTID_PART_STATE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "drain", 1, SORTID_PART_STATE, -1);
+		break;
+	}
+
+	return model;
+}
+
 extern GtkListStore *create_model_part(int type)
 {
 	GtkListStore *model = NULL;
@@ -1946,31 +2007,15 @@ extern GtkListStore *create_model_part(int type)
 
 	switch (type) {
 	case SORTID_DEFAULT:
-		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "yes",
-				   1, SORTID_DEFAULT,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "no",
-				   1, SORTID_DEFAULT,
-				   -1);
-		break;
 	case SORTID_HIDDEN:
+	case SORTID_ROOT:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "yes",
-				   1, SORTID_HIDDEN,
-				   -1);
+				   0, "yes", 1, type, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "no",
-				   1, SORTID_HIDDEN,
-				   -1);
-
+				   0, "no", 1, type, -1);
 		break;
 	case SORTID_PREEMPT_MODE:
 	case SORTID_PRIORITY:
@@ -1978,41 +2023,20 @@ extern GtkListStore *create_model_part(int type)
 	case SORTID_NODES_MIN:
 	case SORTID_NODES_MAX:
 		break;
-	case SORTID_ROOT:
-		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "yes",
-				   1, SORTID_ROOT,
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "no",
-				   1, SORTID_ROOT,
-				   -1);
-		break;
 	case SORTID_SHARE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "force",
-				   1, SORTID_SHARE,
-				   -1);
+				   0, "force", 1, SORTID_SHARE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "no",
-				   1, SORTID_SHARE,
-				   -1);
+				   0, "no", 1, SORTID_SHARE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "yes",
-				   1, SORTID_SHARE,
-				   -1);
+				   0, "yes", 1, SORTID_SHARE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "exclusive",
-				   1, SORTID_SHARE,
-				   -1);
+				   0, "exclusive", 1, SORTID_SHARE, -1);
 		break;
 	case SORTID_GROUPS:
 		break;
@@ -2022,37 +2046,26 @@ extern GtkListStore *create_model_part(int type)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "up",
-				   1, SORTID_PART_STATE,
-				   -1);
+				   0, "up", 1, SORTID_PART_STATE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "down",
-				   1, SORTID_PART_STATE,
-				   -1);
+				   0, "down", 1, SORTID_PART_STATE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "inactive",
-				   1, SORTID_PART_STATE,
-				   -1);
+				   0, "inactive", 1, SORTID_PART_STATE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "drain",
-				   1, SORTID_PART_STATE,
-				   -1);
+				   0, "drain", 1, SORTID_PART_STATE, -1);
+		break;
 		break;
 	case SORTID_NODE_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "drain",
-				   1, SORTID_NODE_STATE,
-				   -1);
+				   0, "drain", 1, SORTID_NODE_STATE, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "resume",
-				   1, SORTID_NODE_STATE,
-				   -1);
+				   0, "resume", 1, SORTID_NODE_STATE, -1);
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
 			if (!strcmp(upper, "UNKNOWN"))
@@ -2061,15 +2074,13 @@ extern GtkListStore *create_model_part(int type)
 			gtk_list_store_append(model, &iter);
 			lower = str_tolower(upper);
 			gtk_list_store_set(model, &iter,
-					   0, lower,
-					   1, SORTID_NODE_STATE,
-					   -1);
+					   0, lower, 1, SORTID_NODE_STATE, -1);
 			xfree(lower);
 		}
 
 		break;
-
 	}
+
 	return model;
 }
 
