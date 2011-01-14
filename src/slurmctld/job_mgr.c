@@ -7816,7 +7816,6 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	 * test and update block state information. */
 	rc = select_g_job_ready(job_ptr);
 
-
 	if (rc == READY_JOB_FATAL)
 		return ESLURM_INVALID_PARTITION_NAME;
 	if (rc == READY_JOB_ERROR)
