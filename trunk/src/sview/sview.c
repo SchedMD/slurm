@@ -584,6 +584,11 @@ static char *_get_ui_description()
 		"<ui>"
 		"  <menubar name='main'>"
 		"    <menu action='actions'>"
+		"      <menu action='create'>"
+		"        <menuitem action='batch_job'/>"
+		"        <menuitem action='partition'/>"
+		"        <menuitem action='reservation'/>"
+		"      </menu>"
 		"      <menu action='search'>"
 		"        <menuitem action='jobid'/>"
 		"        <menuitem action='user_jobs'/>"
@@ -680,6 +685,12 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"actions", NULL, "_Actions", "<alt>a"},
 		{"options", NULL, "_Options", "<alt>o"},
 		{"displays", NULL, "_Query", "<alt>q"},
+		{"batch_job", NULL, "Batch Job", "", "Submit batch job",
+		 G_CALLBACK(create_create_popup)},
+		{"partition", NULL, "Partition", "", "Create partition",
+		 G_CALLBACK(create_create_popup)},
+		{"reservation", NULL, "Reservation", "", "Create reservation",
+		 G_CALLBACK(create_create_popup)},
 		{"search", GTK_STOCK_FIND, "Search", ""},
 		{"jobid", NULL, "Job ID",
 		 "", "Search for jobid",
@@ -699,7 +710,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"reservation_name", NULL, "Reservation Name",
 		 "", "Search for reservation",
 		 G_CALLBACK(create_search_popup)},
-		{"tab_pos", NULL, "_Tab Pos"},
+		{"tab_pos", NULL, "_Tab Position"},
+		{"create", GTK_STOCK_ADD, "Create"},
 		{"interval", GTK_STOCK_REFRESH, "Set Refresh _Interval",
 		 "<control>i", "Change Refresh Interval",
 		 G_CALLBACK(change_refresh_popup)},

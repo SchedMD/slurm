@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     added. See "man slurm.conf" for more information.
  -- With the scontrol show job command when using the --details option, show
     a batch job's script.
+ -- Add ability to create reservations or partitions and submit batch jobs
+    using sview. Also add the ability to delete reservations and partitions.
 
 * Changes in SLURM 2.2.1
 ========================

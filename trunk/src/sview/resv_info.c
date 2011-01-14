@@ -2,7 +2,7 @@
  *  resv_info.c - Functions related to advanced reservation display
  *  mode of sview.
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -91,7 +91,7 @@ static display_data_t display_data_resv[] = {
 #ifdef HAVE_BG
 	 "BP List",
 #else
-	 "NodeList",
+	 "Node List",
 #endif
 	 FALSE, EDIT_TEXTBOX, refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", FALSE, EDIT_TEXTBOX,
@@ -119,10 +119,45 @@ static display_data_t display_data_resv[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
+static display_data_t create_data_resv[] = {
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NAME,  "Name", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node_Count", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_NODELIST,
+#ifdef HAVE_BG
+	 "BP_List",
+#else
+	 "Node_List",
+#endif
+	 FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_START, "Time_Start",
+	 FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TIME_END,   "Time_End", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_DURATION,   "Duration", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_USERS,      "Users", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_PARTITION,  "Partition", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_FEATURES,   "Features", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_FLAGS, "Flags", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+};
+
 static display_data_t options_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Remove", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Remove Reservation", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, RESV_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, RESV_PAGE},
@@ -247,7 +282,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 const char *new_text,
 				 int column)
 {
-	char *type = "";
+	char *type = "", *temp_str;
 	int temp_int = 0;
 	uint32_t f;
 
@@ -296,7 +331,11 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "name";
 		break;
 	case SORTID_NODE_CNT:
-		temp_int = strtol(new_text, (char **)NULL, 10);
+		temp_int = strtol(new_text, &temp_str, 10);
+		if ((temp_str[0] == 'k') || (temp_str[0] == 'k'))
+			temp_int *= 1024;
+		if ((temp_str[0] == 'm') || (temp_str[0] == 'm'))
+			temp_int *= (1024 * 1024);
 
 		type = "Node Count";
 		if (temp_int <= 0)
@@ -789,6 +828,50 @@ finished:
 	return;
 }
 
+extern GtkWidget *create_resv_entry(resv_desc_msg_t *resv_msg,
+				    GtkTreeModel *model, GtkTreeIter *iter)
+{
+	GtkScrolledWindow *window = create_scrolled_window();
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	GtkTable *table = NULL;
+	int i = 0, row = 0;
+	display_data_t *display_data = create_data_resv;
+
+	gtk_scrolled_window_set_policy(window,
+				       GTK_POLICY_NEVER,
+				       GTK_POLICY_AUTOMATIC);
+	bin = GTK_BIN(&window->container);
+	view = GTK_VIEWPORT(bin->child);
+	bin = GTK_BIN(&view->bin);
+	table = GTK_TABLE(bin->child);
+	gtk_table_resize(table, SORTID_CNT, 2);
+
+	gtk_table_set_homogeneous(table, FALSE);
+
+	for (i = 0; i < SORTID_CNT; i++) {
+		while (display_data++) {
+			if (display_data->id == -1)
+				break;
+			if (!display_data->name)
+				continue;
+			if (display_data->id != i)
+				continue;
+			display_admin_edit(
+				table, resv_msg, &row, model, iter,
+				display_data,
+				G_CALLBACK(_admin_edit_combo_box_resv),
+				G_CALLBACK(_admin_focus_out_resv),
+				_set_active_combo_resv);
+			break;
+		}
+		display_data = create_data_resv;
+	}
+	gtk_table_resize(table, row, 2);
+
+	return GTK_WIDGET(window);
+}
+
 extern void refresh_resv(GtkAction *action, gpointer user_data)
 {
 	popup_info_t *popup_win = (popup_info_t *)user_data;
@@ -862,7 +945,7 @@ extern GtkListStore *create_model_resv(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
-				   0, "Remove",
+				   0, "Remove Reservation",
 				   -1);
 		break;
 	default:
@@ -1436,7 +1519,7 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	resv_msg->name = xstrdup(resvid);
 
-	if (!strcasecmp("Remove", type)) {
+	if (!strcasecmp("Remove Reservation", type)) {
 		resv_name_msg.name = resvid;
 
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
