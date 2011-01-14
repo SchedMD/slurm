@@ -908,6 +908,26 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->script = _read_file(new_text);
 		if (job_msg->script == NULL)
 			goto return_error;
+		if (job_msg->argc) {
+			for (j = 0; j < job_msg->argc; j++)
+				xfree(job_msg->argv[j]);
+		}
+		xfree(job_msg->argv);
+		xfree(job_msg->name);
+		job_msg->argc = 1;
+		job_msg->argv = xmalloc(sizeof(char *) * job_msg->argc);
+		if (new_text[0] == '/') {
+			job_msg->argv[0] = xstrdup(new_text);
+			token = strrchr(new_text, (int) '/');
+			if (token)
+				job_msg->name = xstrdup(token + 1);
+		} else {
+			job_msg->argv[0] = xmalloc(1024);
+			getcwd(job_msg->argv[0], 1024);
+			xstrcat(job_msg->argv[0], "/");
+			xstrcat(job_msg->argv[0], new_text);
+			job_msg->name = xstrdup(new_text);
+		}
 		break;
 	case SORTID_DEPENDENCY:
 		job_msg->dependency = xstrdup(new_text);
