@@ -490,7 +490,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		GTK_WINDOW(user_data),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
-	int response = 0;
+	int i, response = 0;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
 	GtkTreeModel *model = NULL;
@@ -625,6 +625,10 @@ end_it:
 	if (slurm_alloc_msg)
 		slurm_free_submit_response_response_msg(slurm_alloc_msg);
 	if (job_msg) {
+		for (i = 0; i < job_msg->argc; i++)
+			xfree(job_msg->argv[i]);
+		xfree(job_msg->argv);
+		xfree(job_msg->name);
 		xfree(job_msg->script);
 		xfree(job_msg->work_dir);
 		xfree(job_msg);
