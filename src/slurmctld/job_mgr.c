@@ -7812,12 +7812,16 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
+	/* Always call select_g_job_ready() so that select/bluegene can
+	 * test and update block state information. */
+	rc = select_g_job_ready(job_ptr);
+
 	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
-		/* Gang scheduling might suspend job immediately */
+		/* Gang scheduling might suspend job immediately.
+		 * If the job is not ready to run, always return 0. */
 		return 0;
 	}
 
-	rc = select_g_job_ready(job_ptr);
 	if (rc == READY_JOB_FATAL)
 		return ESLURM_INVALID_PARTITION_NAME;
 	if (rc == READY_JOB_ERROR)
