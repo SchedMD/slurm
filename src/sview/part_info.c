@@ -61,6 +61,7 @@ typedef struct {
 
 enum {
 	EDIT_PART_STATE = 1,
+	EDIT_REMOVE_PART,
 	EDIT_EDIT
 };
 
@@ -226,6 +227,8 @@ static display_data_t create_data_part[] = {
 static display_data_t options_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, PART_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Edit Partition", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Remove Partition", TRUE, ADMIN_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, PART_PAGE, "Drain Base Partitions",
 	 TRUE, ADMIN_PAGE | EXTRA_NODES},
@@ -249,9 +252,8 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, PART_PAGE, "Update Node Features",
 	 TRUE, ADMIN_PAGE | EXTRA_NODES},
 #endif
-	{G_TYPE_STRING, PART_PAGE, "Change Part State",
+	{G_TYPE_STRING, PART_PAGE, "Change Partition State",
 	 TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Edit Part", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PART_PAGE},
@@ -2728,7 +2730,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	part_msg->name = xstrdup(partid);
 
-	if (!strcasecmp("Change Part State", type)) {
+	if (!strcasecmp("Change Partition State", type)) {
 		GtkCellRenderer *renderer = NULL;
 		GtkTreeModel *model2 = GTK_TREE_MODEL(
 			create_model_part(SORTID_PART_STATE));
@@ -2764,7 +2766,19 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			 partid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_PART_STATE;
-	} else if (!strcasecmp("Edit Part", type)) {
+	} else if (!strcasecmp("Remove Partition", type)) {
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_YES, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to remove partition %s?",
+			 partid);
+		label = gtk_label_new(tmp_char);
+		edit_type = EDIT_REMOVE_PART;
+	} else if (!strcasecmp("Edit Partition", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_OK, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -2811,7 +2825,21 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		int rc;
 		if (global_edit_error)
 			temp = global_edit_error_msg;
-		else if (!global_send_update_msg) {
+		else if (edit_type == EDIT_REMOVE_PART) {
+			delete_part_msg_t part_del_msg;
+			part_del_msg.name = partid;
+			rc = slurm_delete_partition(&part_del_msg);
+			if (rc == SLURM_SUCCESS) {
+				temp = g_strdup_printf(
+					"Partition %s removed successfully",
+					partid);
+			} else {
+				temp = g_strdup_printf(
+					"Problem removing partition %s: %s",
+					partid, slurm_strerror(rc));
+				global_multi_error = TRUE;
+			}
+		} else if (!global_send_update_msg) {
 			temp = g_strdup_printf("No change detected.");
 		} else if ((rc = slurm_update_partition(part_msg))
 			   == SLURM_SUCCESS) {
