@@ -150,8 +150,6 @@ enum {
 	SORTID_RESV_NAME,
 	SORTID_RESTARTS,
 	SORTID_ROTATE,
-	SORTID_SCRIPT,
-	SORTID_SCRIPT_FILE,
 	SORTID_SHARED,
 /* 	SORTID_SOCKETS_MAX, */
 /* 	SORTID_SOCKETS_MIN, */
@@ -379,16 +377,16 @@ static display_data_t display_data_job[] = {
 };
 
 static display_data_t create_data_job[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_job,
-	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_SCRIPT_FILE, "Script File",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TASKS, "Task Count",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
-	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_COMMAND, "Script File", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TASKS, "Task Count", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -904,7 +902,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->qos = xstrdup(new_text);
 		type = "qos";
 		break;
-	case SORTID_SCRIPT_FILE:
+	case SORTID_COMMAND:
 		type = "script_file";
 		xfree(job_msg->script);
 		job_msg->script = _read_file(new_text);
