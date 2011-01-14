@@ -1088,15 +1088,21 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	else if (qos_ptr && assoc_ptr &&
 		 (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
 		 (qos_ptr->usage_thres != (double)NO_VAL)) {
-		if (job_ptr->priority_fs == 0) {
+		if (!job_ptr->prio_factors)
+			job_ptr->prio_factors =
+				xmalloc(sizeof(priority_factors_object_t));
+
+		if (!job_ptr->prio_factors->priority_fs) {
 			if (assoc_ptr->usage->usage_efctv
 			    == (long double)NO_VAL)
 				priority_g_set_assoc_usage(assoc_ptr);
-			job_ptr->priority_fs = priority_g_calc_fs_factor(
-				assoc_ptr->usage->usage_efctv,
-				(long double)assoc_ptr->usage->shares_norm);
+			job_ptr->prio_factors->priority_fs =
+				priority_g_calc_fs_factor(
+					assoc_ptr->usage->usage_efctv,
+					(long double)assoc_ptr->usage->
+					shares_norm);
 		}
-		if (job_ptr->priority_fs < qos_ptr->usage_thres)
+		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres)
 			fail_reason = WAIT_QOS_THRES;
 	}
 

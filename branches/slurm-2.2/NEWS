@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     limits.
  -- Fixed issue where QOS priority wasn't re-normalized until a slurmctld
     restart when a QOS priority was changed.
+ -- Fix sprio to use calculated numbers from slurmctld instead of
+    calulating it own numbers.
 
 * Changes in SLURM 2.2.0
 ========================
