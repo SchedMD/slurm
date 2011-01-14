@@ -665,6 +665,42 @@ static int _check_for_booted_overlapping_blocks(
 					list_push(tmp_list, found_record);
 					slurm_mutex_unlock(&block_state_mutex);
 
+					/* We need to make sure if a
+					   job is running here to not
+					   call the regular method since
+					   we are inside the job write
+					   lock already.
+					*/
+					if (found_record->job_ptr
+					    && !IS_JOB_FINISHED(
+						    found_record->job_ptr)) {
+						info("Somehow block %s "
+						     "is being freed, but "
+						     "appears to already have "
+						     "a job %u(%u) running "
+						     "on it.",
+						     found_record->bg_block_id,
+						     found_record->
+						     job_ptr->job_id,
+						     found_record->job_running);
+						if (job_requeue(0,
+								found_record->
+								job_ptr->job_id,
+								-1,
+								(uint16_t)
+								NO_VAL)) {
+							error("Couldn't "
+							      "requeue job %u, "
+							      "failing it: %s",
+							      found_record->
+							      job_ptr->job_id,
+							      slurm_strerror(
+								      rc));
+							job_fail(found_record->
+								 job_ptr->
+								 job_id);
+						}
+					}
 					free_block_list(NO_VAL, tmp_list, 0, 0);
 					list_destroy(tmp_list);
 				}
@@ -745,10 +781,20 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			while ((bg_record = list_pop(new_blocks))) {
 				if (block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
-				else if (SELECT_IS_TEST(query_mode)) {
+				else if (SELECT_IS_TEST(query_mode)
+					 || SELECT_IS_PREEMPT_ON_FULL_TEST(
+						 query_mode)) {
 					/* Here we don't really want
 					   to create the block if we
 					   are testing.
+
+					   The second test here is to
+					   make sure If we are able to
+					   run here but we just
+					   preempted we should wait a
+					   bit to make sure the
+					   preempted blocks have time
+					   to clear out.
 					*/
 					list_append(block_list, bg_record);
 					(*blocks_added) = 1;
@@ -1241,9 +1287,9 @@ static int _sync_block_lists(List full_list, List incomp_list)
 		if (!bg_record) {
 			list_remove(itr);
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("sync: adding %s %zx",
+				info("sync: adding %s %p",
 				     new_record->bg_block_id,
-				     (size_t)new_record);
+				     new_record);
 			list_append(incomp_list, new_record);
 			last_bg_update = time(NULL);
 			count++;
@@ -1625,10 +1671,11 @@ preempt:
 					error("Small block used in "
 					      "non-shared partition");
 
-				debug("%d can start job %u at %ld on %s(%s)",
-				      local_mode, job_ptr->job_id,
+				debug("%d(%d) can start job %u "
+				      "at %ld on %s(%s) %d",
+				      local_mode, mode, job_ptr->job_id,
 				      starttime, bg_record->bg_block_id,
-				      bg_record->nodes);
+				      bg_record->nodes, SELECT_IS_MODE_RUN_NOW(local_mode));
 
 				if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
 					set_select_jobinfo(
@@ -1644,12 +1691,20 @@ preempt:
 							JOB_CONFIGURING;
 						last_bg_update = time(NULL);
 					}
-				} else
+				} else {
 					set_select_jobinfo(
 						job_ptr->select_jobinfo->data,
 						SELECT_JOBDATA_BLOCK_ID,
 						"unassigned");
-
+					/* Just to make sure we don't
+					   end up using this on
+					   another job, or we have to
+					   wait until preemption is
+					   done.
+					*/
+					bg_record->job_ptr = NULL;
+					bg_record->job_running = NO_JOB_RUNNING;
+				}
 				set_select_jobinfo(
 					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_NODE_CNT,
