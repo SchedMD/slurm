@@ -81,7 +81,7 @@
  */
 const char plugin_name[]        = "topology tree plugin";
 const char plugin_type[]        = "topology/tree";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 101;
 
 typedef struct slurm_conf_switches {
 	uint32_t link_speed;	/* link speed, arbitrary units */
@@ -139,6 +139,13 @@ extern int topo_build_config(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * topo_generate_node_ranking  -  this plugin does not set any node_rank fields
+ */
+extern bool topo_generate_node_ranking(void)
+{
+	return false;
+}
 
 /*
  * topo_get_node_addr - build node address and the associated pattern

@@ -78,6 +78,7 @@ static slurm_select_ops_t *_other_select_get_ops(slurm_select_context_t *c)
 		"select_p_state_save",
 		"select_p_state_restore",
 		"select_p_job_init",
+		"select_p_node_ranking",
 		"select_p_node_init",
 		"select_p_block_init",
 		"select_p_job_test",

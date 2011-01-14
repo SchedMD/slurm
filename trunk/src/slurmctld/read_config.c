@@ -122,6 +122,77 @@ static void _validate_node_proc_count(void);
 #endif
 
 /*
+ * _reorder_node_record_table - order node table in ascending order of node_rank
+ * This depends on the TopologyPlugin, which may generate such a ranking.
+ */
+static void _reorder_node_record_table(void)
+{
+	struct node_record *node_ptr, *node_ptr2;
+	int i, j, min_inx;
+	uint32_t min_val;
+
+	/* Now we need to sort the node records. We only need to move a few
+	 * fields since the others were all initialized to identical values.
+	 * The fields needing to be copied are those set by the function
+	 * _build_single_nodeline_info() in src/common/read_conf.c */
+	for (i = 0; i < node_record_count; i++) {
+		min_val = node_record_table_ptr[i].node_rank;
+		min_inx = i;
+		for (j = i + 1; j < node_record_count; j++) {
+			if (node_record_table_ptr[j].node_rank < min_val) {
+				min_val = node_record_table_ptr[j].node_rank;
+				min_inx = j;
+			}
+		}
+		if (min_inx != i) {	/* swap records */
+			char *tmp_str;
+			uint16_t tmp_uint16;
+			uint32_t tmp_uint32;
+
+			node_ptr =  node_record_table_ptr + i;
+			node_ptr2 = node_record_table_ptr + min_inx;
+
+			tmp_str = node_ptr->name;
+			node_ptr->name  = node_ptr2->name;
+			node_ptr2->name = tmp_str;
+
+			tmp_str = node_ptr->comm_name;
+			node_ptr->comm_name  = node_ptr2->comm_name;
+			node_ptr2->comm_name = tmp_str;
+
+			tmp_uint32 = node_ptr->node_rank;
+			node_ptr->node_rank  = node_ptr2->node_rank;
+			node_ptr2->node_rank = tmp_uint32;
+
+			tmp_str = node_ptr->features;
+			node_ptr->features  = node_ptr2->features;
+			node_ptr2->features = tmp_str;
+
+			tmp_uint16 = node_ptr->port;
+			node_ptr->port  = node_ptr2->port;
+			node_ptr2->port = tmp_uint16;
+
+			tmp_str = node_ptr->reason;
+			node_ptr->reason  = node_ptr2->reason;
+			node_ptr2->reason = tmp_str;
+
+			tmp_uint32 = node_ptr->weight;
+			node_ptr->weight  = node_ptr2->weight;
+			node_ptr2->weight = tmp_uint32;
+		}
+	}
+
+#if _DEBUG
+	/* Log the results */
+	for (i=0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		info("%s: %u", node_ptr->name, node_ptr->node_rank);
+	}
+#endif
+}
+
+
+/*
  * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to
  *	calling the select_* functions
  */
@@ -633,6 +704,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	int error_code, i, rc, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
 	struct node_record *old_node_table_ptr = NULL, *node_ptr;
+	bool do_reorder_nodes = false;
 	List old_part_list = NULL;
 	char *old_def_part_name = NULL;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
@@ -712,6 +784,17 @@ int read_slurm_conf(int recover, bool reconfig)
 		_purge_old_part_state(old_part_list, old_def_part_name);
 		return EINVAL;
 	}
+
+	/*
+	 * Node reordering needs to be done by the topology and/or select
+	 * plugin. Reordering the table must be done before hashing the
+	 * nodes, and before any position-relative bitmaps are created.
+	 */
+	do_reorder_nodes |= slurm_topo_generate_node_ranking();
+	do_reorder_nodes |= select_g_node_ranking(node_record_table_ptr,
+						  node_record_count);
+	if (do_reorder_nodes)
+		_reorder_node_record_table();
 
 	rehash_node();
 	rehash_jobs();

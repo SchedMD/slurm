@@ -55,6 +55,7 @@ int switch_record_cnt = 0;
 /* ************************************************************************ */
 typedef struct slurm_topo_ops {
 	int		(*build_config)		( void );
+	bool		(*node_ranking)		( void );
 	int		(*get_node_addr)	( char* node_name,
 						  char** addr,
 						  char** pattern );
@@ -87,6 +88,7 @@ slurm_topo_get_ops( slurm_topo_context_t *c )
 	 */
 	static const char *syms[] = {
 		"topo_build_config",
+		"topo_generate_node_ranking",
 		"topo_get_node_addr",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
@@ -268,6 +270,19 @@ slurm_topo_build_config( void )
 	return rc;
 }
 
+/* *********************************************************************** */
+/*  TAG(                      slurm_topo_generate_node_ranking          )  */
+/* NOTE: This operation is only supported by those topology plugins for    */
+/*       which the node ordering between slurmd and slurmctld is invariant */
+/* *********************************************************************** */
+extern bool
+slurm_topo_generate_node_ranking( void )
+{
+	if ( slurm_topo_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_topo_context->ops.node_ranking))();
+}
 
 /* *********************************************************************** */
 /*  TAG(                      slurm_topo_get_node_addr                  )  */

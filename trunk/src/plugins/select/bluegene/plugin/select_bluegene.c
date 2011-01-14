@@ -462,6 +462,11 @@ extern int select_p_job_init(List job_list)
 #endif
 }
 
+extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+{
+	return false;
+}
+
 /* All initialization is performed by init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {

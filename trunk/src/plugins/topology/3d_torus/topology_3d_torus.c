@@ -79,7 +79,7 @@
  */
 const char plugin_name[]        = "topology 3d_torus plugin";
 const char plugin_type[]        = "topology/3d_torus";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 101;
 
 extern void nodes_to_hilbert_curve(void);
 
@@ -107,19 +107,29 @@ extern int fini(void)
  *	after a system startup or reconfiguration.
  */
 extern int topo_build_config(void)
-{	static bool first_run = true;
+{
+	return SLURM_SUCCESS;
+}
+
+/*
+ * topo_generate_node_ranking  -  populate node_rank fields
+ */
+extern bool topo_generate_node_ranking(void)
+{
+#ifdef HAVE_BG
+	return false;
+#else
+	static bool first_run = true;
 
 	/* We can only re-order the nodes once at slurmctld startup.
 	 * After that time, many bitmaps are created based upon the
 	 * index of each node name in the array. */
 	if (!first_run)
-		return SLURM_SUCCESS;
-	first_run = false;
+		return false;
 
-#ifndef HAVE_BG
 	nodes_to_hilbert_curve();
+	return true;
 #endif
-	return SLURM_SUCCESS;
 }
 
 /*
