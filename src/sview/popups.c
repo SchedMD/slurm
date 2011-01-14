@@ -483,6 +483,163 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 	return;
 }
 
+extern void create_create_popup(GtkAction *action, gpointer user_data)
+{
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Create",
+		GTK_WINDOW(user_data),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	int i, response = 0;
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	const gchar *name = gtk_action_get_name(action);
+	sview_search_info_t sview_search_info;
+	job_desc_msg_t *job_msg = NULL;
+	submit_response_msg_t *slurm_alloc_msg = NULL;
+	update_part_msg_t *part_msg = NULL;
+	resv_desc_msg_t *resv_msg = NULL;
+	char *res_name, *temp;
+
+	sview_search_info.gchar_data = NULL;
+	sview_search_info.int_data = NO_VAL;
+	sview_search_info.int_data2 = NO_VAL;
+
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+	gtk_dialog_add_button(GTK_DIALOG(popup),
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+	gtk_window_set_default_size(GTK_WINDOW(popup), 400, 600);
+
+	if (!strcmp(name, "batch_job")) {
+		sview_search_info.search_type = CREATE_BATCH_JOB;
+		entry = create_entry();
+		label = gtk_label_new(
+			"Batch job submission specifications\n\n"
+			"Specify size (task and/or node count) plus the\n"
+			"script. All other fields are optional.\n\n"
+			"More fields will be made available later.");
+		job_msg = xmalloc(sizeof(job_desc_msg_t));
+		slurm_init_job_desc_msg(job_msg);
+		job_msg->group_id = getuid();
+		job_msg->user_id  = getgid();
+		job_msg->work_dir = xmalloc(1024);
+		getcwd(job_msg->work_dir, 1024);
+		entry = create_job_entry(job_msg, model, &iter);
+	} else if (!strcmp(name, "partition")) {
+		sview_search_info.search_type = CREATE_PARTITION;
+		entry = create_entry();
+		label = gtk_label_new(
+			"Partition creation specifications\n\n"
+			"Specify Name. All other fields are optional.");
+		part_msg = xmalloc(sizeof(update_part_msg_t));
+		slurm_init_part_desc_msg(part_msg);
+		entry = create_part_entry(part_msg, model, &iter);
+	} else if (!strcmp(name, "reservation")) {
+		sview_search_info.search_type = CREATE_RESERVATION;
+		label = gtk_label_new(
+			"Reservation creation specifications\n\n"
+			"Specify Time_Start and either Duration or Time_End.\n"
+#ifdef HAVE_BG
+			"Specify either Node_Count or BP_List.\n"
+#else
+			"Specify either Node_Count or Node_List.\n"
+#endif
+			"Specify either Accounts or Users.\n\n"
+			"Supported Flags include: Maintenance, Overlap,\n"
+			"Ignore_Jobs, Daily and Weekly.\n"
+			"All other fields are optional.");
+		resv_msg = xmalloc(sizeof(resv_desc_msg_t));
+		slurm_init_resv_desc_msg(resv_msg);
+		entry = create_resv_entry(resv_msg, model, &iter);
+	} else {
+		sview_search_info.search_type = 0;
+		goto end_it;
+	}
+
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   label, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   entry, TRUE, TRUE, 0);
+
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	if (response == GTK_RESPONSE_OK) {
+		if (!sview_search_info.search_type)
+			goto end_it;
+
+		switch(sview_search_info.search_type) {
+		case CREATE_BATCH_JOB:
+			response = slurm_submit_batch_job(job_msg,
+							  &slurm_alloc_msg);
+			if (response == SLURM_SUCCESS) {
+				temp = g_strdup_printf(
+					"Job %u submitted",
+					slurm_alloc_msg->job_id);
+			} else {
+				temp = g_strdup_printf(
+					"Problem submitting job: %s",
+					slurm_strerror(slurm_get_errno()));
+			}
+			display_edit_note(temp);
+			g_free(temp);
+			break;
+		case CREATE_PARTITION:
+			response = slurm_create_partition(part_msg);
+			if (response == SLURM_SUCCESS) {
+				temp = g_strdup_printf("Partition %s created",
+						       part_msg->name);
+			} else {
+				temp = g_strdup_printf(
+					"Problem creating partition: %s",
+					slurm_strerror(slurm_get_errno()));
+			}
+			display_edit_note(temp);
+			g_free(temp);
+			break;
+		case CREATE_RESERVATION:
+			res_name = slurm_create_reservation(resv_msg);
+			if (res_name) {
+				temp = g_strdup_printf(
+					"Reservation %s updated created",
+					res_name);
+				free(res_name);
+			} else {
+				temp = g_strdup_printf(
+					"Problem creating reservation: %s",
+					slurm_strerror(slurm_get_errno()));
+			}
+			display_edit_note(temp);
+			g_free(temp);
+			break;
+		default:
+			break;
+		}
+	}
+
+end_it:
+	gtk_widget_destroy(popup);
+	if (slurm_alloc_msg)
+		slurm_free_submit_response_response_msg(slurm_alloc_msg);
+	if (job_msg) {
+		for (i = 0; i < job_msg->argc; i++)
+			xfree(job_msg->argv[i]);
+		xfree(job_msg->argv);
+		xfree(job_msg->name);
+		xfree(job_msg->script);
+		xfree(job_msg->work_dir);
+		xfree(job_msg);
+	}
+	xfree(part_msg);
+	if (resv_msg)
+		slurm_free_resv_desc_msg(resv_msg);
+	return;
+}
+
 extern void create_search_popup(GtkAction *action, gpointer user_data)
 {
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
