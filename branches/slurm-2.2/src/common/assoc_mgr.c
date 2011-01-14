@@ -461,8 +461,6 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 		qos->usage = create_assoc_mgr_qos_usage();
 	qos->usage->norm_priority =
 		(double)qos->priority / (double)g_qos_max_priority;
-	info("QOS %s is now %u / %u = %f", qos->name, qos->priority,
-	     g_qos_max_priority, qos->usage->norm_priority);
 }
 
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
