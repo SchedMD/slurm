@@ -1177,10 +1177,14 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				else
 					part_ptr->flags &= (~PART_FLAG_ROOT_ONLY);
 			}
-			if (part_ptr->max_nodes != old_part_ptr->max_nodes) {
+			if (part_ptr->max_nodes_orig !=
+			    old_part_ptr->max_nodes_orig) {
 				error("Partition %s MaxNodes differs from "
-				      "slurm.conf", part_ptr->name);
-				part_ptr->max_nodes = old_part_ptr->max_nodes;
+				      "slurm.conf (%u != %u)", part_ptr->name,
+				       part_ptr->max_nodes_orig,
+				       old_part_ptr->max_nodes_orig);
+				part_ptr->max_nodes = old_part_ptr->
+						      max_nodes_orig;
 				part_ptr->max_nodes_orig = old_part_ptr->
 							   max_nodes_orig;
 			}
@@ -1194,10 +1198,14 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				      "slurm.conf", part_ptr->name);
 				part_ptr->max_time = old_part_ptr->max_time;
 			}
-			if (part_ptr->min_nodes != old_part_ptr->min_nodes) {
+			if (part_ptr->min_nodes_orig !=
+			    old_part_ptr->min_nodes_orig) {
 				error("Partition %s MinNodes differs from "
-				      "slurm.conf", part_ptr->name);
-				part_ptr->min_nodes = old_part_ptr->min_nodes;
+				      "slurm.conf (%u != %u)", part_ptr->name,
+				       part_ptr->min_nodes_orig,
+				       old_part_ptr->min_nodes_orig);
+				part_ptr->min_nodes = old_part_ptr->
+						      min_nodes_orig;
 				part_ptr->min_nodes_orig = old_part_ptr->
 							   min_nodes_orig;
 			}

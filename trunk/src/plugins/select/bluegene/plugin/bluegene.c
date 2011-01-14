@@ -159,14 +159,16 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 			return true;
 	}
 
-	if (!bit_overlap(rec_a->bitmap, rec_b->bitmap))
+	if (rec_a->bitmap && rec_b->bitmap
+	    && !bit_overlap(rec_a->bitmap, rec_b->bitmap))
 		return false;
 
 	if ((rec_a->node_cnt >= bg_conf->bp_node_cnt)
 	    || (rec_b->node_cnt >= bg_conf->bp_node_cnt))
 		return true;
 
-	if (!bit_overlap(rec_a->ionode_bitmap, rec_b->ionode_bitmap))
+	if (rec_a->ionode_bitmap && rec_b->ionode_bitmap
+	    && !bit_overlap(rec_a->ionode_bitmap, rec_b->ionode_bitmap))
 		return false;
 
 	return true;
@@ -616,6 +618,9 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			     bg_record->bg_block_id,
 			     bg_record->job_ptr->job_id,
 			     bg_record->job_running);
+			/* This is not thread safe if called from
+			   bg_job_place.c anywhere from within
+			   submit_job() */
 			slurm_mutex_unlock(&block_state_mutex);
 			bg_requeue_job(bg_record->job_ptr->job_id, 0);
 			slurm_mutex_lock(&block_state_mutex);

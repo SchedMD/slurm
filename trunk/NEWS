@@ -35,13 +35,24 @@ documents those changes that are of interest to users and admins.
  -- Decrease the maximum sleep time between srun job step creation retry
     attempts from 60 seconds to 29 seconds. This should eliminate a possible
     synchronization problem with gang scheduling that could result in job
-    step creation requests only occuring when a job is suspended. 
+    step creation requests only occuring when a job is suspended.
  -- Fix to prevent changing a held job's state from HELD to DEPENDENCY
     until the job is released. Patch from Rod Schultz, Bull.
  -- Fixed sprio -M to reflect PriorityWeight values from remote cluster.
  -- Fix bug in sview when trying to update arbitrary field on more than one
     job. Formerly would display information about one job, but update next
     selected job.
+ -- Made it so QOS with UsageFactor set to 0 would make it so jobs running
+    under that QOS wouldn't add time to fairshare or association/qos
+    limits.
+ -- Fixed issue where QOS priority wasn't re-normalized until a slurmctld
+    restart when a QOS priority was changed.
+ -- Fix sprio to use calculated numbers from slurmctld instead of
+    calulating it own numbers.
+ -- BLUEGENE - fixed race condition with preemption where if the wind blows the
+    right way the slurmctld could lock up when preempting jobs to run others.
+ -- BLUEGENE - fixed epilog to wait until MMCS job is totally complete before
+    finishing.
 
 * Changes in SLURM 2.2.0
 ========================
