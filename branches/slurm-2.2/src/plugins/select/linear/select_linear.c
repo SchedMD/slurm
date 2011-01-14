@@ -2507,6 +2507,11 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
 
+	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
+		/* Gang scheduling might suspend job immediately */
+		return 0;
+	}
+
 	if ((job_ptr->node_bitmap == NULL) ||
 	    ((i_first = bit_ffs(job_ptr->node_bitmap)) == -1))
 		return READY_NODE_STATE;
