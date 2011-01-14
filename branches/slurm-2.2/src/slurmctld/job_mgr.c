@@ -7816,11 +7816,6 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	 * test and update block state information. */
 	rc = select_g_job_ready(job_ptr);
 
-	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
-		/* Gang scheduling might suspend job immediately.
-		 * If the job is not ready to run, always return 0. */
-		return 0;
-	}
 
 	if (rc == READY_JOB_FATAL)
 		return ESLURM_INVALID_PARTITION_NAME;
@@ -7829,7 +7824,9 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 
 	if (rc)
 		rc = READY_NODE_STATE;
-	rc |= READY_JOB_STATE;	/* Validated running above */
+
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		rc |= READY_JOB_STATE;
 
 	*ready = rc;
 	return SLURM_SUCCESS;
