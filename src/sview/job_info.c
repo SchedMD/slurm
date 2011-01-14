@@ -1,9 +1,8 @@
 /*****************************************************************************\
- *  job_info.c - Functions related to job display
- *  mode of sview.
+ *  job_info.c - Functions related to job display mode of sview.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -28,11 +27,15 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <fcntl.h>
+#include <grp.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "src/common/uid.h"
 #include "src/common/node_select.h"
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
-#include <grp.h>
 
 #define _DEBUG 0
 #define MAX_CANCEL_RETRY 10
@@ -147,6 +150,8 @@ enum {
 	SORTID_RESV_NAME,
 	SORTID_RESTARTS,
 	SORTID_ROTATE,
+	SORTID_SCRIPT,
+	SORTID_SCRIPT_FILE,
 	SORTID_SHARED,
 /* 	SORTID_SOCKETS_MAX, */
 /* 	SORTID_SOCKETS_MIN, */
@@ -325,18 +330,6 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-/* 	{G_TYPE_STRING, SORTID_SOCKETS_MIN, "Min Sockets",  */
-/* 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job}, */
-/* 	{G_TYPE_STRING, SORTID_SOCKETS_MAX, "Max Sockets",  */
-/* 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job}, */
-/* 	{G_TYPE_STRING, SORTID_CORES_MIN, "Min Cores",  */
-/* 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job}, */
-/* 	{G_TYPE_STRING, SORTID_CORES_MAX, "Max Cores",  */
-/* 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job}, */
-/* 	{G_TYPE_STRING, SORTID_THREADS_MIN, "Min Threads",  */
-/* 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job}, */
-/* 	{G_TYPE_STRING, SORTID_THREADS_MAX, "Max Threads",  */
-/* 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job}, */
 	{G_TYPE_STRING, SORTID_CPU_REQ, "Min CPUs Per Node",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MEM_MIN, "Min Memory Per Node",
@@ -361,12 +354,6 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ALLOC_NODE, "Alloc Node : Sid",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-/* 	{G_TYPE_STRING, SORTID_NTASKS_PER_NODE, "Num tasks per Node",  */
-/* 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job}, */
-/* 	{G_TYPE_STRING, SORTID_NTASKS_PER_SOCKET, "Num tasks per Socket",  */
-/* 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job}, */
-/* 	{G_TYPE_STRING, SORTID_NTASKS_PER_CORE, "Num tasks per Core",  */
-/* 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job}, */
 #ifdef HAVE_AIX
 	{G_TYPE_STRING, SORTID_NETWORK, "Network",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
@@ -388,6 +375,20 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
+};
+
+static display_data_t create_data_job[] = {
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_SCRIPT_FILE, "Script File",
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min",
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TASKS, "Task Count",
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -454,6 +455,35 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 			      GtkTreeIter *step_iter,
 			      GtkTreeIter *iter);
 
+static char *_read_file(const char *f_name)
+{
+	int fd, f_size, offset = 0;
+	ssize_t rd_size;
+	struct stat f_stat;
+	char *buf;
+
+	fd = open(f_name, 0);
+	if (fd < 0)
+		return NULL;
+	if (fstat(fd, &f_stat)) {
+		close(fd);
+		return NULL;
+	}
+	f_size = f_stat.st_size;
+	buf = xmalloc(f_size);
+	while (offset < f_size) {
+		rd_size = read(fd, buf+offset, f_size-offset);
+		if (rd_size < 0) {
+			if ((errno == EAGAIN) || (errno == EINTR))
+				continue;
+			xfree(buf);
+			break;
+		}
+		offset += rd_size;
+	}
+	close(fd);
+	return buf;
+}
 
 static void _job_info_list_del(void *object)
 {
@@ -591,7 +621,8 @@ static void _set_active_combo_job(GtkComboBox *combo,
 	char *temp_char = NULL;
 	int action = 0;
 
-	gtk_tree_model_get(model, iter, type, &temp_char, -1);
+	if (model)
+		gtk_tree_model_get(model, iter, type, &temp_char, -1);
 	if (!temp_char)
 		goto end_it;
 	switch(type) {
@@ -872,6 +903,13 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_QOS:
 		job_msg->qos = xstrdup(new_text);
 		type = "qos";
+		break;
+	case SORTID_SCRIPT_FILE:
+		type = "script_file";
+		xfree(job_msg->script);
+		job_msg->script = _read_file(new_text);
+		if (job_msg->script == NULL)
+			goto return_error;
 		break;
 	case SORTID_DEPENDENCY:
 		job_msg->dependency = xstrdup(new_text);
@@ -2651,6 +2689,50 @@ need_refresh:
 
 finished:
 	return;
+}
+
+extern GtkWidget *create_job_entry(job_desc_msg_t *job_msg,
+				   GtkTreeModel *model, GtkTreeIter *iter)
+{
+	GtkScrolledWindow *window = create_scrolled_window();
+	GtkBin *bin = NULL;
+	GtkViewport *view = NULL;
+	GtkTable *table = NULL;
+	int i = 0, row = 0;
+	display_data_t *display_data = create_data_job;
+
+	gtk_scrolled_window_set_policy(window,
+				       GTK_POLICY_NEVER,
+				       GTK_POLICY_AUTOMATIC);
+	bin = GTK_BIN(&window->container);
+	view = GTK_VIEWPORT(bin->child);
+	bin = GTK_BIN(&view->bin);
+	table = GTK_TABLE(bin->child);
+	gtk_table_resize(table, SORTID_CNT, 2);
+
+	gtk_table_set_homogeneous(table, FALSE);
+
+	for (i = 0; i < SORTID_CNT; i++) {
+		while (display_data++) {
+			if (display_data->id == -1)
+				break;
+			if (!display_data->name)
+				continue;
+			if (display_data->id != i)
+				continue;
+			display_admin_edit(
+				table, job_msg, &row, model, iter,
+				display_data,
+				G_CALLBACK(_admin_edit_combo_box_job),
+				G_CALLBACK(_admin_focus_out_job),
+				_set_active_combo_job);
+			break;
+		}
+		display_data = create_data_job;
+	}
+	gtk_table_resize(table, row, 2);
+
+	return GTK_WIDGET(window);
 }
 
 extern void refresh_job(GtkAction *action, gpointer user_data)
