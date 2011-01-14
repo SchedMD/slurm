@@ -520,7 +520,8 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new(
 			"Batch job submission specifications\n\n"
 			"Specify size (task and/or node count) plus the\n"
-			"script. All other fields are optional.");
+			"script. All other fields are optional.\n\n"
+			"More fields will be made available later.");
 		job_msg = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(job_msg);
 		job_msg->group_id = getuid();
