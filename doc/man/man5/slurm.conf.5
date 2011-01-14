@@ -673,7 +673,7 @@ By default, any existing file is truncated.
 .TP
 \fBJobRequeue\fR
 This option controls what to do by default after a node failure.
-If \fBJobRequeue\fR is set to a value of 1, then any job running
+If \fBJobRequeue\fR is set to a value of 1, then any batch job running
 on the failed node will be requeued for execution on different nodes.
 If \fBJobRequeue\fR is set to a value of 0, then any job running
 on the failed node will be terminated.
@@ -1488,8 +1488,8 @@ thread on nodes with more than one \fBThreadsPerCore\fR configured.
 .TP
 \fBCR_CORE_DEFAULT_DIST_BLOCK\fR
 Allocate cores using block distribution by default.
-This default behavior can be overriden specifying a particular 
-"-m" parameter with srun/salloc/sbatch.
+This default behavior can be overridden specifying a particular 
+"\-m" parameter with srun/salloc/sbatch.
 Without this option, cores will be allocated cyclicly across the sockets.
 .TP
 \fBCR_Socket\fR
@@ -2479,8 +2479,9 @@ Note that partitions that a user lacks access to by virtue of the
 
 .TP
 \fBMaxNodes\fR
-Maximum count of nodes (c\-nodes for BlueGene systems) which
-may be allocated to any single job.
+Maximum count of nodes which may be allocated to any single job.
+For BlueGene systems this will be a  c\-nodes count and will be converted
+to a midplane count with a reduction in resolution.
 The default value is "UNLIMITED", which is represented internally as \-1.
 This limit does not apply to jobs executed by SlurmUser or user root.
 
@@ -2496,8 +2497,9 @@ This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
 \fBMinNodes\fR
-Minimum count of nodes (or base partitions for BlueGene systems) which
-may be allocated to any single job.
+Minimum count of nodes which may be allocated to any single job.
+For BlueGene systems this will be a  c\-nodes count and will be converted
+to a midplane count with a reduction in resolution.
 The default value is 1.
 This limit does not apply to jobs executed by SlurmUser or user root.
 

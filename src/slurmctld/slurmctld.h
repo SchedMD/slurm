@@ -499,7 +499,8 @@ struct job_record {
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
-	double priority_fs;		/* cached value used by sprio command */
+	priority_factors_object_t *prio_factors; /* cached value used
+						  * by sprio command */
 	uint32_t qos_id;		/* quality of service id */
 	void *qos_ptr;	                /* pointer to the quality of
 					 * service record used for

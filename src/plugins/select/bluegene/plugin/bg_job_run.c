@@ -403,6 +403,10 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 			break;
 		}
 	}
+#else
+	/* Simpulate better job completion since on a real system it
+	 * could take up minutes to kill a job. */
+	sleep(2);
 #endif
 	/* remove the block's users */
 	slurm_mutex_lock(&block_state_mutex);

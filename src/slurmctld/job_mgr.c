@@ -223,6 +223,7 @@ struct job_record *create_job_record(int *error_code)
 
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->details = detail_ptr;
+	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_object_t));
 	job_ptr->step_list = list_create(NULL);
 	if (job_ptr->step_list == NULL)
 		fatal("memory allocation failure");
@@ -3735,15 +3736,21 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
 		   (qos_ptr->usage_thres != (double)NO_VAL)) {
-		if (job_ptr->priority_fs == 0) {
+		if (!job_ptr->prio_factors)
+			job_ptr->prio_factors =
+				xmalloc(sizeof(priority_factors_object_t));
+
+		if (!job_ptr->prio_factors->priority_fs) {
 			if (assoc_ptr->usage->usage_efctv
 			    == (long double)NO_VAL)
 				priority_g_set_assoc_usage(assoc_ptr);
-			job_ptr->priority_fs = priority_g_calc_fs_factor(
-				assoc_ptr->usage->usage_efctv,
-				(long double)assoc_ptr->usage->shares_norm);
+			job_ptr->prio_factors->priority_fs =
+				priority_g_calc_fs_factor(
+					assoc_ptr->usage->usage_efctv,
+					(long double)assoc_ptr->usage->
+					shares_norm);
 		}
-		if (job_ptr->priority_fs < qos_ptr->usage_thres) {
+		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres) {
 			info("Job %u exceeds usage threahold", job_ptr->job_id);
 			fail_reason = WAIT_QOS_THRES;
 		}
@@ -4966,6 +4973,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
+	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
 	free_job_resources(&job_ptr->job_resrcs);
@@ -8279,12 +8287,10 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
-		/* Gang scheduling might suspend job immediately */
-		return 0;
-	}
-
+	/* Always call select_g_job_ready() so that select/bluegene can
+	 * test and update block state information. */
 	rc = select_g_job_ready(job_ptr);
+
 	if (rc == READY_JOB_FATAL)
 		return ESLURM_INVALID_PARTITION_NAME;
 	if (rc == READY_JOB_ERROR)
@@ -8292,7 +8298,9 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 
 	if (rc)
 		rc = READY_NODE_STATE;
-	rc |= READY_JOB_STATE;	/* Validated running above */
+
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		rc |= READY_JOB_STATE;
 
 	*ready = rc;
 	return SLURM_SUCCESS;

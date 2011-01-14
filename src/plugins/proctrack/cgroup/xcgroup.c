@@ -526,7 +526,7 @@ int xcgroup_set_params(char* cpath,char* parameters)
 				       p,value,cpath);
 		}
 		else
-			debug2("bad paramters format for entry '%s'",p);
+			debug2("bad parameters format for entry '%s'",p);
 	next_loop:
 		p = next;
 	}
