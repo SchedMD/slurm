@@ -2832,7 +2832,7 @@ _steps_completed_now(uint32_t jobid)
 }
 
 /*
- *  Send epilog complete message to currently active comtroller.
+ *  Send epilog complete message to currently active controller.
  *   Returns SLURM_SUCCESS if message sent successfully,
  *           SLURM_FAILURE if epilog complete message fails to be sent.
  */

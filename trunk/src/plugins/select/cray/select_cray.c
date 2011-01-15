@@ -234,7 +234,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     List preemptee_candidates,
 			     List *preemptee_job_list)
 {
-
 	return other_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 			      req_nodes, mode, preemptee_candidates,
 			      preemptee_job_list);
@@ -357,11 +356,11 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
-		error("other_get_nodeinfo: nodeinfo not set");
+		error("select/cray nodeinfo_get: nodeinfo not set");
 		return SLURM_ERROR;
 	}
 	if (nodeinfo->magic != NODEINFO_MAGIC) {
-		error("set_nodeinfo: nodeinfo magic bad");
+		error("select/cray nodeinfo_get: nodeinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -395,11 +394,11 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	uint32_t *uint32 = (uint32_t *) data;
 
 	if (jobinfo == NULL) {
-		error("set_jobinfo: jobinfo not set");
+		error("select/cray jobinfo_set: jobinfo not set");
 		return SLURM_ERROR;
 	}
 	if (jobinfo->magic != JOBINFO_MAGIC) {
-		error("set_jobinfo: jobinfo magic bad");
+		error("select/cray jobinfo_set: jobinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -424,11 +423,11 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 	select_jobinfo_t **select_jobinfo = (select_jobinfo_t **) data;
 
 	if (jobinfo == NULL) {
-		error("get_jobinfo: jobinfo not set");
+		error("select/cray jobinfo_get: jobinfo not set");
 		return SLURM_ERROR;
 	}
 	if (jobinfo->magic != JOBINFO_MAGIC) {
-		error("get_jobinfo: jobinfo magic bad");
+		error("select/cray jobinfo_get: jobinfo magic bad");
 		return SLURM_ERROR;
 	}
 
@@ -454,7 +453,7 @@ extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 	if (jobinfo == NULL)
 		;
 	else if (jobinfo->magic != JOBINFO_MAGIC)
-		error("copy_jobinfo: jobinfo magic bad");
+		error("select/cray jobinfo_copy: jobinfo magic bad");
 	else {
 		rc = xmalloc(sizeof(struct select_jobinfo));
 		rc->magic = JOBINFO_MAGIC;
@@ -469,7 +468,7 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 
 	if (jobinfo) {
 		if (jobinfo->magic != JOBINFO_MAGIC) {
-			error("free_jobinfo: jobinfo magic bad");
+			error("select/cray jobinfo_free: jobinfo magic bad");
 			return EINVAL;
 		}
 
@@ -529,19 +528,19 @@ extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 {
 
 	if (buf == NULL) {
-		error("sprint_jobinfo: buf is null");
+		error("select/cray jobinfo_sprint: buf is null");
 		return NULL;
 	}
 
 	if ((mode != SELECT_PRINT_DATA)
 	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
-		error("sprint_jobinfo: jobinfo magic bad");
+		error("select/cray jobinfo_sprint: jobinfo magic bad");
 		return NULL;
 	}
 
 	if (jobinfo == NULL) {
 		if (mode != SELECT_PRINT_HEAD) {
-			error("sprint_jobinfo: jobinfo bad");
+			error("select/cray jobinfo_sprint: jobinfo bad");
 			return NULL;
 		}
 	}
@@ -582,13 +581,13 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 
 	if ((mode != SELECT_PRINT_DATA)
 	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
-		error("xstrdup_jobinfo: jobinfo magic bad");
+		error("select/cray jobinfo_xstrdup: jobinfo magic bad");
 		return NULL;
 	}
 
 	if (jobinfo == NULL) {
 		if (mode != SELECT_PRINT_HEAD) {
-			error("xstrdup_jobinfo: jobinfo bad");
+			error("select/cray jobinfo_xstrdup: jobinfo bad");
 			return NULL;
 		}
 	}

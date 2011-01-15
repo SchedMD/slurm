@@ -1572,7 +1572,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		(void) schedule_node_save();	/* Has own locking */
 }
 
-/* _slurm_rpc_job_step_create - process RPC to creates/registers a job step
+/* _slurm_rpc_job_step_create - process RPC to create/register a job step
  *	with the step_mgr */
 static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 {
