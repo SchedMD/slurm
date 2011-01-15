@@ -2785,6 +2785,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->slurm_user_id = my_uid;
 		}
 	}
+#ifdef HAVE_NATIVE_CRAY
+	if (conf->slurm_user_id != 0)
+		fatal("Cray requires SlurmUser=root (default), but have '%s'.",
+			conf->slurm_user_name);
+#endif
 
 	if (!s_p_get_string( &conf->slurmd_user_name, "SlurmdUser", hashtbl)) {
 		conf->slurmd_user_name = xstrdup("root");
