@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
     right way the slurmctld could lock up when preempting jobs to run others.
  -- BLUEGENE - fixed epilog to wait until MMCS job is totally complete before
     finishing.
+ -- BLUEGENE - more robust checking for states when freeing blocks.
 
 * Changes in SLURM 2.2.0
 ========================
