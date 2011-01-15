@@ -923,7 +923,8 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 				job_msg->name = xstrdup(token + 1);
 		} else {
 			job_msg->argv[0] = xmalloc(1024);
-			getcwd(job_msg->argv[0], 1024);
+			if (!getcwd(job_msg->argv[0], 1024))
+				goto return_error;
 			xstrcat(job_msg->argv[0], "/");
 			xstrcat(job_msg->argv[0], new_text);
 			job_msg->name = xstrdup(new_text);
