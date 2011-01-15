@@ -286,9 +286,13 @@ extern int update_block_list()
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if ((bg_record->magic != BLOCK_MAGIC)
-		    || !bg_record->bg_block_id)
+		if (bg_record->magic != BLOCK_MAGIC) {
+			/* block is gone */
+			list_remove(itr);
 			continue;
+		} else if (!bg_record->bg_block_id)
+			continue;
+
 		name = bg_record->bg_block_id;
 		if ((rc = bridge_get_block_info(name, &block_ptr))
 		    != STATUS_OK) {
@@ -627,7 +631,11 @@ extern int update_block_list_state(List block_list)
 
 	itr = list_iterator_create(block_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if (!bg_record->bg_block_id)
+		if (bg_record->magic != BLOCK_MAGIC) {
+			/* block is gone */
+			list_remove(itr);
+			continue;
+		} else if (!bg_record->bg_block_id)
 			continue;
 
 		name = bg_record->bg_block_id;
@@ -643,8 +651,11 @@ extern int update_block_list_state(List block_list)
 				case PARTITION_NOT_FOUND:
 					debug("block %s not found, removing "
 					      "from slurm", name);
-					list_remove(itr);
-					destroy_bg_record(bg_record);
+					/* Just set to free,
+					   everything will be cleaned
+					   up outside this.
+					*/
+					bg_record->state = RM_PARTITION_FREE;
 					continue;
 					break;
 				default:
