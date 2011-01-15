@@ -6,7 +6,7 @@
 #    X_AC_CRAY
 #
 #  DESCRIPTION:
-#    Test for Cray systems including XT with 3-D interconect
+#    Test for Cray systems including XT with 3-D interconnect
 #    Also test for the apbasil client (Cray's Batch Application Scheduler 
 #    Interface Layer interface)
 ##*****************************************************************************

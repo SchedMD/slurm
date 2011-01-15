@@ -1272,7 +1272,7 @@ static hostlist_t hostlist_new(void)
 fail2:
 	free(new);
 fail1:
-	out_of_memory("hostlist_create");
+	out_of_memory("hostlist_new");
 }
 
 
@@ -1456,7 +1456,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	if(slurmdb_setup_cluster_dims() > 1)
 		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
-		      "work on Multidimentional systems!!!!");
+		      "work on multi-dimensional systems!!!!");
 	hostlist_base = hostlist_get_base(1);
 
 	orig = str = strdup(hostlist);

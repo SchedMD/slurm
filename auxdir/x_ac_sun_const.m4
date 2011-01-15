@@ -6,7 +6,7 @@
 #    X_AC_SUN_CONST
 #
 #  DESCRIPTION:
-#    Test for Sun Constellation system with 3-D interconect
+#    Test for Sun Constellation system with 3-D interconnect
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_SUN_CONST], [
