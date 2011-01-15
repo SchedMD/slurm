@@ -2056,12 +2056,11 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 #ifdef HAVE_FRONT_END
 static void _node_did_resp(front_end_record_t *node_ptr)
 {
-	uint16_t resp_state, node_flags;
+	uint16_t node_flags;
 	time_t now = time(NULL);
 
 	node_ptr->last_response = now;
-	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	if (resp_state) {
+	if (IS_NODE_NO_RESPOND(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		last_front_end_update = now;
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
@@ -2092,13 +2091,12 @@ static void _node_did_resp(front_end_record_t *node_ptr)
 static void _node_did_resp(struct node_record *node_ptr)
 {
 	int node_inx;
-	uint16_t resp_state, node_flags;
+	uint16_t node_flags;
 	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
 	node_ptr->last_response = now;
-	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	if (resp_state) {
+	if (IS_NODE_NO_RESPOND(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		last_node_update = now;
 		reset_job_priority();
