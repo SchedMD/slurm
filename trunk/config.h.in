@@ -63,9 +63,6 @@
 /* Define to 1 for basic support of Cray XT/XE systems */
 #undef HAVE_CRAY
 
-/* Define to 1 for native Cray XT/XE system */
-#undef HAVE_NATIVE_CRAY
-
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
 
@@ -160,6 +157,9 @@
 
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
+
+/* Define to 1 for native Cray XT/XE system */
+#undef HAVE_NATIVE_CRAY
 
 /* Define to 1 if you have the <ncurses.h> header file. */
 #undef HAVE_NCURSES_H
