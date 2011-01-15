@@ -2702,6 +2702,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
+#ifdef HAVE_NATIVE_CRAY
+	if (conf->ret2service > 1)
+		fatal("ReturnToService > 1 is not supported on Cray");
+#endif
 
 	s_p_get_uint16(&conf->resv_over_run, "ResvOverRun", hashtbl);
 
