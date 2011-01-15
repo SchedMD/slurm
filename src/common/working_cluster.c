@@ -94,7 +94,7 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 #ifdef MULTIPLE_SLURMD
 	cluster_flags |= CLUSTER_FLAG_MULTSD;
 #endif
-#ifdef HAVE_CRAY
+#ifdef HAVE_NATIVE_CRAY
 	cluster_flags |= CLUSTER_FLAG_CRAYXT;
 #endif
 #ifdef HAVE_FRONT_END

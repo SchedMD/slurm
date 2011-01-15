@@ -3,9 +3,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Define the apbasil command location */
-#undef APBASIL_LOC
-
 /* Define the BG_BRIDGE_SO value */
 #undef BG_BRIDGE_SO
 
@@ -63,8 +60,11 @@
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
-/* Define if Cray system */
+/* Define to 1 for basic support of Cray XT/XE systems */
 #undef HAVE_CRAY
+
+/* Define to 1 for native Cray XT/XE system */
+#undef HAVE_NATIVE_CRAY
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H

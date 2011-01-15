@@ -1268,16 +1268,15 @@ static char **_build_env(struct job_record *job_ptr)
 				(const char **) job_ptr->spank_job_env);
 	}
 
-#ifdef HAVE_CRAY
-	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						SELECT_PRINT_RESV_ID);
-	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);
-	xfree(name);
-#endif
-#ifdef HAVE_BG
+#if defined(HAVE_BG)
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID, &name);
 	setenvf(&my_env, "MPIRUN_PARTITION", "%s", name);
+	xfree(name);
+#elif defined(HAVE_NATIVE_CRAY)
+	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
+						SELECT_PRINT_RESV_ID);
+	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);
 	xfree(name);
 #endif
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
