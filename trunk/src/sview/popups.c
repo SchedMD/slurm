@@ -527,7 +527,8 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		job_msg->group_id = getuid();
 		job_msg->user_id  = getgid();
 		job_msg->work_dir = xmalloc(1024);
-		getcwd(job_msg->work_dir, 1024);
+		if (!getcwd(job_msg->work_dir, 1024))
+			goto end_it;
 		entry = create_job_entry(job_msg, model, &iter);
 	} else if (!strcmp(name, "partition")) {
 		sview_search_info.search_type = CREATE_PARTITION;
