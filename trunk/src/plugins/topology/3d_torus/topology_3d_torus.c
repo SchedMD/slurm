@@ -118,18 +118,9 @@ extern bool topo_generate_node_ranking(void)
 {
 #ifdef HAVE_BG
 	return false;
-#else
-	static bool first_run = true;
-
-	/* We can only re-order the nodes once at slurmctld startup.
-	 * After that time, many bitmaps are created based upon the
-	 * index of each node name in the array. */
-	if (!first_run)
-		return false;
-
+#endif
 	nodes_to_hilbert_curve();
 	return true;
-#endif
 }
 
 /*
