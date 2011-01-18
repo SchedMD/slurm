@@ -406,7 +406,8 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 #else
 	/* Simpulate better job completion since on a real system it
 	 * could take up minutes to kill a job. */
-	sleep(2);
+	if (jobs)
+		sleep(2);
 #endif
 	/* remove the block's users */
 	slurm_mutex_lock(&block_state_mutex);
@@ -482,6 +483,11 @@ static void _reset_block_list(List block_list)
 	while ((bg_record = list_next(itr))) {
 		info("Queue clearing of users of BG block %s",
 		     bg_record->bg_block_id);
+#ifdef HAVE_BG_FILES
+		/* simulate jobs running and need to be cleared from MMCS */
+		if (bg_record->job_ptr)
+			jobs = 1;
+#endif
 		_remove_jobs_on_block_and_reset(job_list, jobs,
 						bg_record->bg_block_id);
 	}
