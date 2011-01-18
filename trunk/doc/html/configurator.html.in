@@ -152,6 +152,7 @@ function displayfile()
    get_field("Epilog",document.config.epilog) + "<br>" +
    "#PrologSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
+   "#MaxJobId=999999 <br>" +
    "#GresTypes= <br>" +
    "#GroupUpdateForce=0 <br>" +
    "#GroupUpdateTime=600 <br>" +

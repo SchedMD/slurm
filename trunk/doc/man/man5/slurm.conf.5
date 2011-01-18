@@ -486,6 +486,7 @@ specific requested value. Job id values generated will incremented by 1
 for each subsequent job. This may be used to provide a meta\-scheduler
 with a job id space which is disjoint from the interactive jobs.
 The default value is 1.
+Also see \fBMaxJobId\fR
 
 .TP
 \fBGetEnvTimeout\fR
@@ -736,6 +737,15 @@ resources. Once this limit is reached, requests to submit additional
 jobs will fail. The default value is 10000 jobs. This value may not
 be reset via "scontrol reconfig". It only takes effect upon restart
 of the slurmctld daemon.
+
+.TP
+\fBMaxJobId\fR
+The maximum job id to be used for jobs submitted to SLURM without a
+specific requested value. Job id values generated will incremented by 1
+for each subsequent job. This may be used to provide a meta\-scheduler
+with a job id space which is disjoint from the interactive jobs.
+The default value is 4294901760 (0xffff0000).
+Also see \fBFirstJobId\fR
 
 .TP
 \fBMaxMemPerCPU\fR

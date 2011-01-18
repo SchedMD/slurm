@@ -5947,7 +5947,7 @@ extern uint32_t get_next_job_id(void)
 
 	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 	next_id = job_id_sequence + 1;
-	if (next_id >= MIN_NOALLOC_JOBID)
+	if (next_id >= slurmctld_conf.max_job_id)
 		next_id = slurmctld_conf.first_job_id;
 	return next_id;
 }
@@ -5958,6 +5958,7 @@ extern uint32_t get_next_job_id(void)
  */
 static void _set_job_id(struct job_record *job_ptr)
 {
+	int i;
 	uint32_t new_id;
 
 	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
@@ -5969,15 +5970,18 @@ static void _set_job_id(struct job_record *job_ptr)
 		fatal("_set_job_id: partition not set");
 
 	/* Insure no conflict in job id if we roll over 32 bits */
-	while (1) {
-		if (++job_id_sequence >= MIN_NOALLOC_JOBID)
+	for (i = 0; i < 1000; i++) {
+		if (++job_id_sequence >= slurmctld_conf.max_job_id)
 			job_id_sequence = slurmctld_conf.first_job_id;
 		new_id = job_id_sequence;
 		if (find_job_record(new_id) == NULL) {
 			job_ptr->job_id = new_id;
-			break;
+			return;
 		}
 	}
+	fatal("We have exhausted our supply of valid job id values."
+	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
+	      slurmctld_conf.max_job_id);
 }
 
 
