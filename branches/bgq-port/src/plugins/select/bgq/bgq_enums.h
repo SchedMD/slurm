@@ -52,9 +52,7 @@ typedef enum {
 	BG_BLOCK_ERROR,          // Block is in error
 } bgq_block_status_t;
 
-#ifdef HAVE_BGQ
 typedef void my_bluegene_t;
-#endif
 
 #ifdef __cplusplus
 }

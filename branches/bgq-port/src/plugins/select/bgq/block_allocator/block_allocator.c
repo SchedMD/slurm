@@ -1454,6 +1454,7 @@ extern int redo_block(List nodes, uint16_t *geo, int conn_type, int new_count)
 	/* 	xfree(name); */
 	/* 	return SLURM_SUCCESS; */
 	/* } */
+	return SLURM_SUCCESS;
 }
 
 /*
