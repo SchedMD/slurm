@@ -606,7 +606,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			res_name = slurm_create_reservation(resv_msg);
 			if (res_name) {
 				temp = g_strdup_printf(
-					"Reservation %s updated created",
+					"Reservation %s created",
 					res_name);
 				free(res_name);
 			} else {
