@@ -406,7 +406,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 #else
 	/* Simpulate better job completion since on a real system it
 	 * could take up minutes to kill a job. */
-	if (jobs)
+	if (job_cnt)
 		sleep(2);
 #endif
 	/* remove the block's users */
