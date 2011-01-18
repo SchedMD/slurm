@@ -38,6 +38,7 @@
 \*****************************************************************************/
 #include "sview.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
+#define NODE_WIDTH 10
 #define TOPO_DEBUG 0
 #define RESET_GRID -2
 List grid_button_list = NULL;
@@ -232,7 +233,8 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	grid_button->color = NULL;
 	grid_button->color_inx = MAKE_DOWN;
 	grid_button->button = gtk_event_box_new();
-	gtk_widget_set_size_request(grid_button->button, 10, 10);
+	gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
+				    NODE_WIDTH);
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(grid_button->button),
 				      FALSE);
 	_add_button_signals(grid_button);
@@ -272,7 +274,8 @@ void _put_button_as_up(grid_button_t *grid_button)
 	}
 	gtk_widget_destroy(grid_button->button);
 	grid_button->button = gtk_button_new();
-	gtk_widget_set_size_request(grid_button->button, 10, 10);
+	gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
+				    NODE_WIDTH);
 	_add_button_signals(grid_button);
 
 /* 	if (grid_button->frame) */
@@ -298,7 +301,8 @@ void _put_button_as_inactive(grid_button_t *grid_button)
 	}
 	gtk_widget_destroy(grid_button->button);
 	grid_button->button = gtk_button_new();
-	gtk_widget_set_size_request(grid_button->button, 10, 10);
+	gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
+				    NODE_WIDTH);
 	//gtk_widget_set_sensitive (grid_button->button, FALSE);
 
 	_add_button_signals(grid_button);
@@ -507,15 +511,13 @@ static int _block_in_node(int *bp_inx, int inx)
  * in the system (e.g. there is a gap in the 3-D torus for a service or login
  * node.
  */
-static void _build_empty_node(int x, int y, int z,
+static void _build_empty_node(int coord_x, int coord_y,
 			      button_processor_t *button_processor)
 {
 	grid_button_t *grid_button = button_processor->grid_button;
-	int y_offset;
 
-	(*button_processor->coord_x) = (x + (DIM_SIZE[Z] - 1)) - z;
-	y_offset = button_processor->default_y_offset - (DIM_SIZE[Z] * y);
-	(*button_processor->coord_y) = (y_offset - y) + z;
+	(*button_processor->coord_x) = coord_x;
+	(*button_processor->coord_y) = coord_y;
 	grid_button = xmalloc(sizeof(grid_button_t));
 	grid_button->color_inx = MAKE_BLACK;
 	grid_button->inx = (*button_processor->inx);
@@ -537,6 +539,16 @@ static void _build_empty_node(int x, int y, int z,
 			 GTK_SHRINK, GTK_SHRINK, 1, 1);
 }
 
+static void _calc_coord_3d(int x, int y, int z, int def_y_offset, 
+			   int *coord_x, int *coord_y)
+{
+	int y_offset;
+
+	*coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
+	y_offset = def_y_offset - (DIM_SIZE[Z] * y);
+	*coord_y = (y_offset - y) + z;
+}
+
 /* Add a button for a given node. If node_ptr == NULL then fill in any gaps
  * in the grid just for a clean look. Always call with node_ptr == NULL for
  * the last call in the sequence. */
@@ -546,21 +558,15 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	grid_button_t *grid_button = button_processor->grid_button;
 
 	if (cluster_dims == 4) {
-		/* FIXME: */
 		return SLURM_ERROR;
 	} else if (cluster_dims == 3) {
 		static bool *node_exists = NULL;
-		int i, x=0, y=0, z=0, y_offset=0;
-		/* On 3D system we need to translate a
-		   3D space to a 2D space and make it
-		   appear 3D.  So we get the coords of
-		   each node in xyz format and apply
-		   an x and y offset to get a coord_x
-		   and coord_y.  This is not needed
-		   for linear systems since they can
-		   be laid out in any fashion
-		*/
-
+		int i, x, y, z, coord_x, coord_y;
+		/* On 3D system we need to translate a 3D space to a 2D space
+		 * and make it appear 3D.  So we get the coords of each node
+		 * in xyz format and apply an x and y offset to get a coord_x
+		 * and coord_y.  This is not needed for linear systems since
+		 * they can be laid out in any fashion. */
 		if (node_exists == NULL) {
 			node_exists = xmalloc(sizeof(bool) * DIM_SIZE[X] *
 					      DIM_SIZE[Y] * DIM_SIZE[Z]);
@@ -577,11 +583,14 @@ static int _add_button_to_list(node_info_t *node_ptr,
 				i = (x * DIM_SIZE[Y] + y) * DIM_SIZE[Z] + z;
 				node_exists[i] = true;
 			}
-			(*button_processor->coord_x) = (x + (DIM_SIZE[Z] - 1))
-				- z;
-			y_offset = button_processor->default_y_offset
-				- (DIM_SIZE[Z] * y);
-			(*button_processor->coord_y) = (y_offset - y) + z;
+			_calc_coord_3d(x, y, z,
+				       button_processor->default_y_offset,
+				       &coord_x, &coord_y);
+			(*button_processor->coord_x) = coord_x;
+			(*button_processor->coord_y) = coord_y;
+#if 0
+			g_print("%s %d:%d\n", node_ptr->name,coord_x, coord_y);
+#endif
 		} else {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
 				for (y = 0; y < DIM_SIZE[Y]; y++) {
@@ -590,8 +599,12 @@ static int _add_button_to_list(node_info_t *node_ptr,
 							DIM_SIZE[Z] + z;
 						if (node_exists[i])
 							continue;
+						_calc_coord_3d(x, y, z,
+				      			button_processor->
+							default_y_offset,
+							&coord_x, &coord_y);
 						_build_empty_node(
-							x, y, z,
+							coord_x, coord_y,
 							button_processor);
 					}
 				}
@@ -613,7 +626,8 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		grid_button->button = gtk_button_new();
 		grid_button->node_name = xstrdup(node_ptr->name);
 
-		gtk_widget_set_size_request(grid_button->button, 10, 10);
+		gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
+					    NODE_WIDTH);
 		_add_button_signals(grid_button);
 		list_append(button_processor->button_list, grid_button);
 
@@ -641,12 +655,9 @@ static int _add_button_to_list(node_info_t *node_ptr,
 /* 		gtk_frame_set_shadow_type(GTK_FRAME(grid_button->frame), */
 /* 					  GTK_SHADOW_ETCHED_OUT); */
 	if (cluster_dims < 3) {
-		/* On linear systems we just up the
-		   x_coord until we hit the side of
-		   the table and then increment the
-		   coord_y.  We add space inbetween
-		   each 10th row.
-		*/
+		/* On linear systems we just up the x_coord until we hit the
+		 * side of the table and then increment the coord_y.  We add
+		 * space between each tenth row. */
 		(*button_processor->coord_x)++;
 		if ((*button_processor->coord_x)
 		    == working_sview_config.grid_x_width) {
@@ -932,7 +943,8 @@ extern grid_button_t *create_grid_button_from_another(
 /* 		sview_widget_modify_bg(send_grid_button->button,  */
 /* 				       GTK_STATE_ACTIVE, color); */
 	}
-	gtk_widget_set_size_request(send_grid_button->button, 10, 10);
+	gtk_widget_set_size_request(send_grid_button->button, NODE_WIDTH,
+				    NODE_WIDTH);
 
 	send_grid_button->node_name = xstrdup(name);
 
