@@ -539,15 +539,28 @@ static void _build_empty_node(int coord_x, int coord_y,
 			 GTK_SHRINK, GTK_SHRINK, 1, 1);
 }
 
-static void _calc_coord_3d(int x, int y, int z, int def_y_offset, 
+static void _calc_coord_3d(int x, int y, int z, int default_y_offset, 
 			   int *coord_x, int *coord_y)
 {
 	int y_offset;
 
 	*coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
-	y_offset = def_y_offset - (DIM_SIZE[Z] * y);
+	y_offset = default_y_offset - (DIM_SIZE[Z] * y);
 	*coord_y = (y_offset - y) + z;
 }
+
+#if 0
+static void _calc_coord_4d(int x, int y, int z, int a, int default_y_offset, 
+			   int *coord_x, int *coord_y)
+{
+	int x_offset, y_offset;
+
+	x_offset = (DIM_SIZE[X] + DIM_SIZE[Z]) * a;
+	*coord_x = x_offset + (x + (DIM_SIZE[Z] - 1)) - z;
+	y_offset = default_y_offset - (DIM_SIZE[Z] * y);
+	*coord_y = (y_offset - y) + z;
+}
+#endif
 
 /* Add a button for a given node. If node_ptr == NULL then fill in any gaps
  * in the grid just for a clean look. Always call with node_ptr == NULL for
@@ -558,15 +571,73 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	grid_button_t *grid_button = button_processor->grid_button;
 
 	if (cluster_dims == 4) {
+#if 0
+/* NOTE: THIS LOGIC IS UNTESTED, BUT IS CLOSE TO THE LOGIC NEEDED FOR 
+ * A BLUEGENE/Q SYSTEM */
+		static bool *node_exists = NULL;
+		int i, x, y, z, a, coord_x, coord_y;
+		/* Translate a 4D space into a 2D space the the extent
+		 * possible. */
+		if (node_exists == NULL) {
+			node_exists = xmalloc(sizeof(bool) * DIM_SIZE[X] *
+					      DIM_SIZE[Y] * DIM_SIZE[Z] *
+					      DIM_SIZE[A]);
+		}
+		if (node_ptr) {
+			i = strlen(node_ptr->name);
+			if (i < 5) {
+				g_error("bad node name %s\n", node_ptr->name);
+				return SLURM_ERROR;
+			}
+			x = _coord(node_ptr->name[i-4]);
+			y = _coord(node_ptr->name[i-3]);
+			z = _coord(node_ptr->name[i-2]);
+			a = _coord(node_ptr->name[i-1]);
+			/* Skip "b" for BlueGene/Q */
+			i = ((x * DIM_SIZE[Y] + y) * DIM_SIZE[Z] + z) *
+			    DIM_SIZE[A] + a;
+			node_exists[i] = true;
+			_calc_coord_4d(x, y, z, a,
+				       button_processor->default_y_offset,
+				       &coord_x, &coord_y);
+			(*button_processor->coord_x) = coord_x;
+			(*button_processor->coord_y) = coord_y;
+#if 0
+			g_print("%s %d:%d\n", node_ptr->name,coord_x, coord_y);
+#endif
+		} else {
+			for (i = -1, x = 0; x < DIM_SIZE[X]; x++) {
+				for (y = 0; y < DIM_SIZE[Y]; y++) {
+					for (z = 0; z < DIM_SIZE[Z]; z++) {
+						for (a = 0; a < DIM_SIZE[A];
+						     a++) {
+							i++;
+							if (node_exists[i])
+								continue;
+							_calc_coord_4d(x,y,z,a,
+				      				button_processor->
+								default_y_offset,
+								&coord_x,
+								&coord_y);
+							_build_empty_node(
+								coord_x,
+								coord_y,
+								button_processor);
+						}
+					}
+				}
+			}
+			xfree(node_exists);
+			return SLURM_SUCCESS;
+		}
+#else
 		return SLURM_ERROR;
+#endif
 	} else if (cluster_dims == 3) {
 		static bool *node_exists = NULL;
 		int i, x, y, z, coord_x, coord_y;
-		/* On 3D system we need to translate a 3D space to a 2D space
-		 * and make it appear 3D.  So we get the coords of each node
-		 * in xyz format and apply an x and y offset to get a coord_x
-		 * and coord_y.  This is not needed for linear systems since
-		 * they can be laid out in any fashion. */
+		/* Translate a 3D space into a 2D space the the extent
+		 * possible. */
 		if (node_exists == NULL) {
 			node_exists = xmalloc(sizeof(bool) * DIM_SIZE[X] *
 					      DIM_SIZE[Y] * DIM_SIZE[Z]);
@@ -576,13 +647,12 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			if (i < 4) {
 				g_error("bad node name %s\n", node_ptr->name);
 				return SLURM_ERROR;
-			} else {
-				x = _coord(node_ptr->name[i-3]);
-				y = _coord(node_ptr->name[i-2]);
-				z = _coord(node_ptr->name[i-1]);
-				i = (x * DIM_SIZE[Y] + y) * DIM_SIZE[Z] + z;
-				node_exists[i] = true;
 			}
+			x = _coord(node_ptr->name[i-3]);
+			y = _coord(node_ptr->name[i-2]);
+			z = _coord(node_ptr->name[i-1]);
+			i = (x * DIM_SIZE[Y] + y) * DIM_SIZE[Z] + z;
+			node_exists[i] = true;
 			_calc_coord_3d(x, y, z,
 				       button_processor->default_y_offset,
 				       &coord_x, &coord_y);
