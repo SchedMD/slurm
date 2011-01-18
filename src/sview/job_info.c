@@ -1751,7 +1751,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
 	GtkTreeIter step_iter;
-	int childern = 0;
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
@@ -2111,9 +2110,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_WORKDIR, job_ptr->work_dir, -1);
 
-
-	childern = gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
-						&step_iter, iter);
 	if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 					 &step_iter, iter))
 		_update_info_step(sview_job_info_ptr,
