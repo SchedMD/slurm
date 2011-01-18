@@ -2277,6 +2277,17 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_TIME_RUNNING, tmp_time, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_ALLOC, 0, -1);
+	if ((step_ptr->time_limit == NO_VAL) ||
+	    (step_ptr->time_limit == INFINITE)) {
+		sprintf(tmp_char, "Job Limit");
+	} else {
+		secs2time_str((step_ptr->time_limit * 60),
+			      tmp_char, sizeof(tmp_char));
+	}
+	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, tmp_char, -1);
+	slurm_make_time_str((time_t *)&step_ptr->start_time, tmp_char,
+			    sizeof(tmp_char));
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_START, tmp_char, -1);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_JOBID, step_ptr->step_id, -1);
 	gtk_tree_store_set(treestore, iter,
@@ -3522,14 +3533,14 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		if (stepid == NO_VAL)
 			snprintf(title, 100, "Partition with job %d", jobid);
 		else
-			snprintf(title, 100, "Partition with job %d.%d",
+			snprintf(title, 100, "Partition with job step %d.%d",
 				 jobid, stepid);
 		break;
 	case RESV_PAGE:
 		if (stepid == NO_VAL)
 			snprintf(title, 100, "Reservation with job %d", jobid);
 		else
-			snprintf(title, 100, "Reservation with job %d.%d",
+			snprintf(title, 100, "Reservation with job step %d.%d",
 				 jobid, stepid);
 		break;
 	case NODE_PAGE:
@@ -3537,21 +3548,21 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			snprintf(title, 100,
 				 "%s(s) running job %d", type, jobid);
 		else
-			snprintf(title, 100, "%s(s) running job %d.%d",
+			snprintf(title, 100, "%s(s) running job step %d.%d",
 				 type, jobid, stepid);
 		break;
 	case BLOCK_PAGE:
 		if (stepid == NO_VAL)
 			snprintf(title, 100, "Block with job %d", jobid);
 		else
-			snprintf(title, 100, "Block with job %d.%d",
+			snprintf(title, 100, "Block with job step %d.%d",
 				 jobid, stepid);
 		break;
 	case INFO_PAGE:
 		if (stepid == NO_VAL)
 			snprintf(title, 100, "Full info for job %d", jobid);
 		else
-			snprintf(title, 100, "Full info for job %d.%d",
+			snprintf(title, 100, "Full info for job step %d.%d",
 				 jobid, stepid);
 		break;
 	default:
