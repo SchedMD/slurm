@@ -483,7 +483,7 @@ static void _reset_block_list(List block_list)
 	while ((bg_record = list_next(itr))) {
 		info("Queue clearing of users of BG block %s",
 		     bg_record->bg_block_id);
-#ifdef HAVE_BG_FILES
+#ifndef HAVE_BG_FILES
 		/* simulate jobs running and need to be cleared from MMCS */
 		if (bg_record->job_ptr)
 			jobs = 1;
