@@ -435,7 +435,6 @@ rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/perllocal.pod
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/.packlist
-rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/autosplit.ix
 
 %if ! %{slurm_with blcr}
 # remove these if they exist
@@ -619,6 +618,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_perldir}/Slurmdb.pm
 %{_perldir}/auto/Slurmdb/Slurmdb.so
 %{_perldir}/auto/Slurmdb/Slurmdb.bs
+%{_perldir}/auto/Slurmdb/autosplit.ix
 %{_perlman3dir}/Slurm*
 
 #############################################################################
