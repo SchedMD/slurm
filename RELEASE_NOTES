@@ -37,6 +37,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
 * DebugFlags of Frontend added
 
+* Added new configuration parameter MaxJobId. Use with FirstJobId to limit
+  range of job ID values.
+
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -68,6 +71,9 @@ front_end_info_t		entirely new structure
 job_info_t
 	batch_host		name of the host running the batch script
 
+slurm_ctl_conf
+	max_job_id		maximum supported job id before starting over
+				with first_job_id
 slurm_step_layout
 	front_end		name of front end host running the step
 

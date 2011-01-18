@@ -205,6 +205,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"Licenses", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxJobCount", S_P_UINT32},
+	{"MaxJobId", S_P_UINT32},
 	{"MaxMemPerCPU", S_P_UINT32},
 	{"MaxMemPerNode", S_P_UINT32},
 	{"MaxTasksPerNode", S_P_UINT16},
@@ -1780,7 +1781,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
-	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
+	ctl_conf_ptr->first_job_id		= NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
 	xfree(ctl_conf_ptr->gres_plugins);
 	ctl_conf_ptr->group_info		= (uint16_t) NO_VAL;
@@ -1805,6 +1806,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->max_job_id		= NO_VAL;
 	ctl_conf_ptr->max_mem_per_cpu           = 0;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
@@ -2232,6 +2234,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->first_job_id, "FirstJobId", hashtbl))
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;
+	if (!s_p_get_uint32(&conf->max_job_id, "MaxJobId", hashtbl))
+		conf->max_job_id = DEFAULT_MAX_JOB_ID;
 
 	s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
 
@@ -2354,6 +2358,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
+
+	if (!s_p_get_uint32(&conf->max_job_id, "MaxJobId", hashtbl))
+		conf->max_job_id = DEFAULT_MAX_JOB_ID;
 
 	if (s_p_get_uint32(&conf->max_mem_per_cpu,
 			   "MaxMemPerCPU", hashtbl)) {
