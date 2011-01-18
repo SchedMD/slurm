@@ -950,8 +950,8 @@ static void *_thread_per_group_rpc(void *args)
 
 		switch (rc) {
 		case SLURM_SUCCESS:
-			debug("agent processed RPC to node %s",
-			  ret_data_info->node_name);
+			/* debug("agent processed RPC to node %s", */
+			/*       ret_data_info->node_name); */
 			thread_state = DSH_DONE;
 			break;
 		case SLURM_UNKNOWN_FORWARD_ADDR:
