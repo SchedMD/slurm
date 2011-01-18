@@ -389,7 +389,7 @@ void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type)
 
 void slurm_print_cpu_bind_help(void)
 {
-	if (_have_task_affinity()) {
+	if (!_have_task_affinity()) {
 		printf("CPU bind options not supported with current "
 		       "configuration\n");
 	} else {
