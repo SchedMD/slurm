@@ -1675,7 +1675,8 @@ preempt:
 				      "at %ld on %s(%s) %d",
 				      local_mode, mode, job_ptr->job_id,
 				      starttime, bg_record->bg_block_id,
-				      bg_record->nodes, SELECT_IS_MODE_RUN_NOW(local_mode));
+				      bg_record->nodes,
+				      SELECT_IS_MODE_RUN_NOW(local_mode));
 
 				if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
 					set_select_jobinfo(
