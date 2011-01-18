@@ -1059,7 +1059,6 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	uint16_t tmp_uint16 = 0;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	GtkTreeIter sub_iter;
-	int childern = 0;
 
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
 			   sview_colors[sview_part_info->color_inx], -1);
@@ -1197,8 +1196,6 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	gtk_tree_store_set(treestore, iter, SORTID_FEATURES, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_REASON, "", -1);
 
-	childern = gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
-						&sub_iter, iter);
 	if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 					 &sub_iter, iter))
 		_subdivide_part(sview_part_info,
