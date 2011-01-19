@@ -107,9 +107,12 @@ extern List create_dynamic_block(List block_list,
 					bit_alloc(bit_size(bg_record->bitmap));
 			}
 			if (!bg_record->bitmap) {
-				error("no bitmap for bg record %s %s %x",
-				      bg_record->bg_block_id, bg_record->nodes,
-				      bg_record->magic);
+				error("got %p", bg_record);
+				error("magic was %d %d", bg_record->magic,
+				      BLOCK_MAGIC);
+				error("parent %p", bg_record->original);
+				error("no bitmap for bg record %s",
+				      bg_record->nodes);
 				continue;
 			}
 			if (!bit_super_set(bg_record->bitmap, my_bitmap)) {
