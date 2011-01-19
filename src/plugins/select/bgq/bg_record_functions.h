@@ -59,63 +59,10 @@ extern "C" {
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/slurmctld/slurmctld.h"
-
 #include "block_allocator/block_allocator.h"
 
 #define BLOCK_MAGIC 0x3afd
 
-typedef struct bg_record {
-	void *block_ptr;                /* object to hold info from db2 */
-	char *bg_block_id;     	        /* ID returned from MMCS */
-	List bg_midplanes;              /* List of midplanes in block */
-	List bg_pt_midplanes;           /* List of passthrough
-					 * midplanes in block */
-	bitstr_t *bitmap;               /* bitmap to check the nodes
-					   of block */
-	int boot_count;                 /* number of attemts boot attempts */
-	int boot_state;                 /* check to see if boot failed.
-					   -1 = fail,
-					   0 = not booting,
-					   1 = booting */
-	int bp_count;                   /* size */
-	uint16_t conn_type[HIGHEST_DIMENSIONS];  /* MESH or Torus or NAV */
-	uint32_t cpu_cnt;               /* count of cpus per block */
-	int free_cnt;                   /* How many are trying
-					   to free this block at the
-					   same time */
-	bool full_block;                /* whether or not block is the full
-					   block */
-	uint16_t geo[HIGHEST_DIMENSIONS];  /* geometry */
-	char *ionodes; 		        /* String of ionodes in block
-					 * NULL if not a small block*/
-	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
-					   keep track which ionodes we
-					   are on.  NULL if not a small block*/
-	struct job_record *job_ptr;	/* pointer to job running on
-					 * block or NULL if no job */
-	int job_running;                /* job id of job running of if
-					 * block is in an error state
-					 * BLOCK_ERROR_STATE */
-	char *linuximage;               /* LinuxImage/CnloadImage for
-					 * this block */
-	uint16_t magic;	        	/* magic number */
-	char *mloaderimage;             /* mloaderImage for this block */
-	int modifying;                  /* flag to say the block is
-					   being modified or not at
-					   job launch usually */
-	char *nodes;			/* String of nodes in block */
-	uint32_t node_cnt;              /* count of cnodes per block */
-	struct bg_record *original;     /* if this is a copy this is a
-					   pointer to the original */
-	char *reason;                   /* reason block is in error state */
-	uint16_t state;                 /* Current state of the block */
-	uint16_t start[HIGHEST_DIMENSIONS];  /* start node */
-	char *target_name;		/* when a block is freed this
-					   is the name of the user we
-					   want on the block */
-	char *user_name;		/* user using the block */
-	uid_t user_uid;   		/* Owner of block uid	*/
-} bg_record_t;
 
 /* Log a bg_record's contents */
 extern void print_bg_record(bg_record_t *record);

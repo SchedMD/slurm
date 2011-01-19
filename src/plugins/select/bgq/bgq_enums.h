@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  bgq_enums.h - hearder file containing enums for the Blue Gene/Q plugin.
+ *  bg_enums.h - hearder file containing enums for the Blue Gene/Q plugin.
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,12 +36,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BGQ_ENUMS_H_
-#define _BGQ_ENUMS_H_
+#ifndef _BG_ENUMS_H_
+#define _BG_ENUMS_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef enum bg_layout_type {
+	LAYOUT_STATIC,  /* no overlaps, except for full system block
+			   blocks never change */
+	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in
+			   bluegene.conf file */
+	LAYOUT_DYNAMIC	/* slurm will make all blocks */
+} bg_layout_t;
 
 typedef enum {
 	BG_BLOCK_ALLOCATED = 0,  // Block is allocated
@@ -67,4 +75,4 @@ typedef void my_bluegene_t;
 }
 #endif
 
-#endif /* _BGQ_ENUMS_H_ */
+#endif /* _BG_ENUMS_H_ */
