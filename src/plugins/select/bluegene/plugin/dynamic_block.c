@@ -112,6 +112,8 @@ extern List create_dynamic_block(List block_list,
 				      BLOCK_MAGIC);
 				error("parent %p", bg_record->original);
 				error("no bitmap for bg record %s",
+				      bg_record->bg_block_id);
+				error("nodes %s",
 				      bg_record->nodes);
 				continue;
 			}
