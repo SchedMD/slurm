@@ -119,7 +119,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: scontrol failed to find all jobs\n"
+	send_user "\nFAILURE: scontrol found $matches of 2 jobs\n"
 	set exit_code 1
 }
 

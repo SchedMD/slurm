@@ -2642,7 +2642,35 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 	xassert(node != NULL);
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
+		safe_unpack16(&node->node_state, buffer);
+		safe_unpack16(&node->cpus, buffer);
+		safe_unpack16(&node->sockets, buffer);
+		safe_unpack16(&node->cores, buffer);
+		safe_unpack16(&node->threads, buffer);
+
+		safe_unpack32(&node->real_memory, buffer);
+		safe_unpack32(&node->tmp_disk, buffer);
+		safe_unpack32(&node->weight, buffer);
+		safe_unpack32(&node->reason_uid, buffer);
+
+		safe_unpack_time(&node->boot_time, buffer);
+		safe_unpack_time(&node->reason_time, buffer);
+		safe_unpack_time(&node->slurmd_start_time, buffer);
+
+		select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer,
+						protocol_version);
+
+		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpack16(&node->node_state, buffer);
 		safe_unpack16(&node->cpus, buffer);

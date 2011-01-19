@@ -51,6 +51,8 @@ enum {
 	SORTID_GRES,
 	SORTID_MEMORY,
 	SORTID_NAME,
+	SORTID_NODE_ADDR,
+	SORTID_NODE_HOSTNAME,
 	SORTID_REASON,
 	SORTID_SLURMD_START_TIME,
 	SORTID_SOCKETS,
@@ -80,6 +82,10 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL, refresh_node,
@@ -170,6 +176,16 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_NAME),
 				   node_ptr->name);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_NODE_ADDR),
+				   node_ptr->node_addr);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_NODE_HOSTNAME),
+				   node_ptr->node_hostname);
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
@@ -299,6 +315,10 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 					% sview_colors_cnt], -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODE_ADDR,
+			   node_ptr->node_addr, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODE_HOSTNAME,
+			   node_ptr->node_hostname, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM,
 			   node_ptr->node_state, -1);
