@@ -1248,19 +1248,29 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 
 	/* now build the individual node structures */
 	while ((alias = hostlist_shift(alias_list))) {
-		if (hostname_count)
-			hostname = hostlist_shift(hostname_list);
-		if (address_count)
+		if ((address_count > 1)  || (address == NULL))
 			address = hostlist_shift(address_list);
+		if ((hostname_count > 1) || (hostname == NULL))
+			hostname = hostlist_shift(hostname_list);
 		_push_to_hashtbls(alias, hostname, address, node_ptr->port,
 				  node_ptr->cpus, node_ptr->sockets,
 				  node_ptr->cores, node_ptr->threads);
 		free(alias);
-		if (hostname_count--)
-			free(hostname);
-		if (address_count--)
+		if (address_count > 1) {
+			address_count--;
 			free(address);
+			address = NULL;
+		}
+		if (hostname_count > 1) {
+			hostname_count--;
+			free(hostname);
+			hostname = NULL;
+		}
 	}
+	if (address)
+		free(address);
+	if (hostname)
+		free(hostname);
 
 	/* free allocated storage */
 cleanup:
