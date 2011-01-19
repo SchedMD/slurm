@@ -16,8 +16,8 @@ documents those changes that are of interest to users and admins.
     a batch job's script.
  -- Add ability to create reservations or partitions and submit batch jobs
     using sview. Also add the ability to delete reservations and partitions.
- -- Added new configuration parameter MaxJobId. Once reached, start job value
-    at FirstJobId.
+ -- Added new configuration parameter MaxJobId. Once reached, restart job ID
+    values at FirstJobId.
 
 * Changes in SLURM 2.2.1
 ========================
