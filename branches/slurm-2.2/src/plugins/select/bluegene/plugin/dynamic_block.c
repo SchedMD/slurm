@@ -75,11 +75,15 @@ extern List create_dynamic_block(List block_list,
 	}
 	memset(&blockreq, 0, sizeof(blockreq_t));
 
-	slurm_mutex_lock(&block_state_mutex);
 	if (my_block_list) {
 		reset_ba_system(track_down_nodes);
 		itr = list_iterator_create(my_block_list);
 		while ((bg_record = list_next(itr))) {
+			if (bg_record->magic != BLOCK_MAGIC) {
+				error("got a block with bad magic");
+				list_remove(itr);
+				continue;
+			}
 			if (bg_record->free_cnt) {
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK) {
@@ -402,7 +406,6 @@ finished:
 	if (results)
 		list_destroy(results);
 	errno = rc;
-	slurm_mutex_unlock(&block_state_mutex);
 
 	return new_blocks;
 }
