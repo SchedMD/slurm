@@ -835,11 +835,13 @@ int read_slurm_conf(int recover, bool reconfig)
 		(void) load_all_node_state(true);
 		(void) load_all_front_end_state(true);
 		load_job_ret = load_all_job_state();
+		sync_job_priorities();
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
 		(void) load_all_front_end_state(false);
 		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
+		sync_job_priorities();
 	}
 
 	sync_front_end_state();
