@@ -117,7 +117,7 @@ typedef struct names_ll_s {
 	struct names_ll_s *next_alias;
 	struct names_ll_s *next_hostname;
 } names_ll_t;
-bool nodehash_initialized = false;
+static bool nodehash_initialized = false;
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
 
@@ -1100,7 +1100,7 @@ static int _get_hash_idx(const char *s)
 	int hash = 0, i;
 
 	if (s) {
-		for (i = 0; i < 20; i++) {
+		for (i = 0; i < 64; i++) {
 			if (s[i])
 				hash += (int) s[i];
 			else
