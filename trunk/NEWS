@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     using sview. Also add the ability to delete reservations and partitions.
  -- Added new configuration parameter MaxJobId. Once reached, restart job ID
     values at FirstJobId.
+ -- When restarting slurmctld with priority/basic, increment all job priorities
+    so the highest job priority becomes TOP_PRIORITY.
 
 * Changes in SLURM 2.2.1
 ========================

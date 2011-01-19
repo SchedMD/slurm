@@ -114,7 +114,8 @@ List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
 /* Local variables */
-static uint32_t maximum_prio = TOP_PRIORITY;
+static uint32_t highest_prio = 0;
+static uint32_t lowest_prio  = TOP_PRIORITY;
 static int      hash_table_size = 0;
 static int      job_count = 0;		/* job's in the system */
 static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
@@ -1307,8 +1308,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		goto unpack_error;
 	}
 
-	if ((maximum_prio >= priority) && (priority > 1))
-		maximum_prio = priority;
+	if (priority > 1) {
+		highest_prio = MAX(highest_prio, priority);
+		lowest_prio  = MIN(lowest_prio,  priority);
+	}
 	if (job_id_sequence <= job_id)
 		job_id_sequence = job_id + 1;
 
@@ -5996,20 +5999,41 @@ static void _set_job_prio(struct job_record *job_ptr)
 	xassert (job_ptr->magic == JOB_MAGIC);
 	if (IS_JOB_FINISHED(job_ptr))
 		return;
-	job_ptr->priority = slurm_sched_initial_priority(maximum_prio,
+	job_ptr->priority = slurm_sched_initial_priority(lowest_prio,
 							 job_ptr);
 	if ((job_ptr->priority <= 1) ||
 	    (job_ptr->direct_set_prio) ||
 	    (job_ptr->details && (job_ptr->details->nice != NICE_OFFSET)))
 		return;
 
-	maximum_prio = MIN(job_ptr->priority, maximum_prio);
+	lowest_prio = MIN(job_ptr->priority, lowest_prio);
+}
+
+/* After recovering job state, if using priority/basic then we increment the
+ * priorities of all jobs to avoid decrementing the base down to zero */
+extern void sync_job_priorities(void)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	uint32_t prio_boost = 0;
+
+	if ((highest_prio != 0) && (highest_prio < TOP_PRIORITY))
+		prio_boost = TOP_PRIORITY - highest_prio;
+	if (strcmp(slurmctld_conf.priority_type, "priority/basic") ||
+	    (prio_boost < 1000000))
+		return;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator)))
+		job_ptr->priority += prio_boost;
+	list_iterator_destroy(job_iterator);
+	lowest_prio += prio_boost;
 }
 
 
 /* After a node is returned to service, reset the priority of jobs
  * which may have been held due to that node being unavailable */
-void reset_job_priority(void)
+extern void reset_job_priority(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
