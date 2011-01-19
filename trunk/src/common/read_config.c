@@ -1097,15 +1097,18 @@ static void _init_name_hashtbl(void)
 
 static int _get_hash_idx(const char *s)
 {
-	int i = 0;
+	int hash = 0, i;
 
 	if (s) {
-		while (*s) {
-			i += (int)*s++;
+		for (i = 0; i < 20; i++) {
+			if (s[i])
+				hash += (int) s[i];
+			else
+				break;
 		}
 	}
 
-	return i % NAME_HASH_LEN;
+	return hash % NAME_HASH_LEN;
 }
 
 static void _push_to_hashtbls(char *alias, char *hostname,
