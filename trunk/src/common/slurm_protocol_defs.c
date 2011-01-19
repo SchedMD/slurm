@@ -1861,9 +1861,11 @@ static void _free_all_node_info(node_info_msg_t *msg)
 void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
-		xfree(node->name);
 		xfree(node->arch);
 		xfree(node->features);
+		xfree(node->name);
+		xfree(node->node_hostname);
+		xfree(node->node_addr);
 		xfree(node->os);
 		xfree(node->reason);
 		select_g_select_nodeinfo_free(node->select_nodeinfo);

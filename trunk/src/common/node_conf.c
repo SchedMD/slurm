@@ -150,6 +150,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 	char *hostname = NULL;
 	char *address = NULL;
 	int state_val = NODE_STATE_UNKNOWN;
+	int address_count, alias_count, hostname_count;
 
 	if (node_ptr->state != NULL) {
 		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
@@ -177,22 +178,27 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 	}
 
 	/* some sanity checks */
+	address_count  = hostlist_count(address_list);
+	alias_count    = hostlist_count(alias_list);
+	hostname_count = hostlist_count(hostname_list);
 #ifdef HAVE_FRONT_END
-	if ((hostlist_count(hostname_list) > 1) ||
-	    (hostlist_count(address_list)  > 1)) {
-		error("Only one NodeHostName and NodeAddr are allowed "
-		      "in FRONT_END mode");
+	if ((hostname_count != alias_count) && (hostname_count != 1)) {
+		error("NodeHostname count must equal that of NodeName "
+		      "records of there must be no more than one");
 		goto cleanup;
 	}
-	hostname = node_ptr->hostnames;
-	address = node_ptr->addresses;
+	if ((address_count != alias_count) && (address_count != 1)) {
+		error("NodeAddr count must equal that of NodeName "
+		      "records of there must be no more than one");
+		goto cleanup;
+	}
 #else
-	if (hostlist_count(hostname_list) < hostlist_count(alias_list)) {
+	if (hostname_count < alias_count) {
 		error("At least as many NodeHostname are required "
 		      "as NodeName");
 		goto cleanup;
 	}
-	if (hostlist_count(address_list) < hostlist_count(alias_list)) {
+	if (address_count < alias_count) {
 		error("At least as many NodeAddr are required as NodeName");
 		goto cleanup;
 	}
@@ -200,10 +206,10 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 
 	/* now build the individual node structures */
 	while ((alias = hostlist_shift(alias_list))) {
-#ifndef HAVE_FRONT_END
-		hostname = hostlist_shift(hostname_list);
-		address = hostlist_shift(address_list);
-#endif
+		if (hostname_count)
+			hostname = hostlist_shift(hostname_list);
+		if (address_count)
+			address = hostlist_shift(address_list);
 		/* find_node_record locks this to get the
 		 * alias so we need to unlock */
 		node_rec = find_node_record(alias);
@@ -215,6 +221,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				node_rec->node_state = state_val;
 			node_rec->last_response = (time_t) 0;
 			node_rec->comm_name = xstrdup(address);
+			node_rec->node_hostname = xstrdup(hostname);
 			node_rec->port      = node_ptr->port;
 			node_rec->weight    = node_ptr->weight;
 			node_rec->features  = xstrdup(node_ptr->feature);
@@ -224,10 +231,10 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 			error("reconfiguration for node %s, ignoring!", alias);
 		}
 		free(alias);
-#ifndef HAVE_FRONT_END
-		free(hostname);
-		free(address);
-#endif
+		if (hostname_count--)
+			free(hostname);
+		if (address_count--)
+			free(address);
 	}
 
 	/* free allocated storage */
@@ -881,6 +888,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	if (node_ptr->gres_list)
 		list_destroy(node_ptr->gres_list);
 	xfree(node_ptr->name);
+	xfree(node_ptr->node_hostname);
 	xfree(node_ptr->os);
 	xfree(node_ptr->part_pptr);
 	xfree(node_ptr->reason);

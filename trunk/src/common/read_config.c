@@ -545,21 +545,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			_set_node_prefix(n->nodenames);
 #endif
 
-#ifdef HAVE_FRONT_END
-		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
-			xfree(n->hostnames);
-		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
-			xfree(n->addresses);
-		else {
-			verbose("Use FrontendNode/FrondendAddr configuration "
-				"options instead of NodeAddr");
-		}
-#else
 		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
 			n->hostnames = xstrdup(n->nodenames);
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
 			n->addresses = xstrdup(n->hostnames);
-#endif
 
 		if (!s_p_get_uint16(&n->cores, "CoresPerSocket", tbl)
 		    && !s_p_get_uint16(&n->cores, "CoresPerSocket", dflt)) {
@@ -1080,7 +1069,7 @@ extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
 	}
 }
 
-static void _free_name_hashtbl()
+static void _free_name_hashtbl(void)
 {
 	int i;
 	names_ll_t *p, *q;
@@ -1101,7 +1090,7 @@ static void _free_name_hashtbl()
 	nodehash_initialized = false;
 }
 
-static void _init_name_hashtbl()
+static void _init_name_hashtbl(void)
 {
 	return;
 }
@@ -1154,7 +1143,7 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	}
 
 	/* Create the new data structure and link it into the hash tables */
-	new = (names_ll_t *)xmalloc(sizeof(*new));
+	new = (names_ll_t *)xmalloc(sizeof(names_ll_t));
 	new->alias	= xstrdup(alias);
 	new->hostname	= xstrdup(hostname);
 	new->address	= xstrdup(address);
@@ -1201,6 +1190,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 	char *hostname = NULL;
 	char *address = NULL;
 	int error_code = SLURM_SUCCESS;
+	int address_count, alias_count, hostname_count;
 
 	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
 		return -1;
@@ -1230,24 +1220,27 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 #endif
 
 	/* some sanity checks */
+	address_count  = hostlist_count(address_list);
+	alias_count    = hostlist_count(alias_list);
+	hostname_count = hostlist_count(hostname_list);
 #ifdef HAVE_FRONT_END
-	if ((hostlist_count(hostname_list) > 1) ||
-	    (hostlist_count(address_list)  > 1)) {
-		error("Only one NodeHostName and NodeAddr allowed "
-		      "in FRONT_END mode");
-		error("Use FrontendNode/FrondendAddr configuration options");
+	if ((hostname_count != alias_count) && (hostname_count != 1)) {
+		error("NodeHostname count must equal that of NodeName "
+		      "records of there must be no more than one");
 		goto cleanup;
 	}
-
-	hostname = node_ptr->hostnames;
-	address = node_ptr->addresses;
+	if ((address_count != alias_count) && (address_count != 1)) {
+		error("NodeAddr count must equal that of NodeName "
+		      "records of there must be no more than one");
+		goto cleanup;
+	}
 #else
-	if (hostlist_count(hostname_list) < hostlist_count(alias_list)) {
+	if (hostname_count < alias_count) {
 		error("At least as many NodeHostname are required "
 		      "as NodeName");
 		goto cleanup;
 	}
-	if (hostlist_count(address_list) < hostlist_count(alias_list)) {
+	if (address_count < alias_count) {
 		error("At least as many NodeAddr are required as NodeName");
 		goto cleanup;
 	}
@@ -1255,20 +1248,18 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 
 	/* now build the individual node structures */
 	while ((alias = hostlist_shift(alias_list))) {
-#ifndef HAVE_FRONT_END
-		hostname = hostlist_shift(hostname_list);
-		address = hostlist_shift(address_list);
-#endif
+		if (hostname_count)
+			hostname = hostlist_shift(hostname_list);
+		if (address_count)
+			address = hostlist_shift(address_list);
 		_push_to_hashtbls(alias, hostname, address, node_ptr->port,
 				  node_ptr->cpus, node_ptr->sockets,
 				  node_ptr->cores, node_ptr->threads);
-
 		free(alias);
-#ifndef HAVE_FRONT_END
-		free(hostname);
-		free(address);
-#endif
-
+		if (hostname_count--)
+			free(hostname);
+		if (address_count--)
+			free(address);
 	}
 
 	/* free allocated storage */

@@ -1349,7 +1349,9 @@ typedef struct node_info {
 				 * the node */
 	char *features;		/* list of a node's features */
 	char *gres;		/* list of a node's generic resources */
-	char *name;		/* node name */
+	char *name;		/* node name to slurm */
+	char *node_addr;	/* communication name (optional) */
+	char *node_hostname;	/* node's hostname (optional) */
 	uint16_t node_state;	/* see enum node_states */
 	char *os;		/* operating system currently running */
 	uint32_t real_memory;	/* configured MB of real memory on the node */

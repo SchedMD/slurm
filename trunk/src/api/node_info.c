@@ -177,7 +177,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "NodeName=%s ", node_ptr->name);
 	xstrcat(out, tmp_line);
-	if (node_ptr->arch ) {
+	if (node_ptr->arch) {
 		snprintf(tmp_line, sizeof(tmp_line), "Arch=%s ",
 			 node_ptr->arch);
 		xstrcat(out, tmp_line);
@@ -208,7 +208,19 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 4 ******/
+	/****** Line 4 (optional) ******/
+	if (node_ptr->node_hostname || node_ptr->node_addr) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "NodeAddr=%s NodeHostName=%s",
+			 node_ptr->node_addr, node_ptr->node_hostname);
+		xstrcat(out, tmp_line);	
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+
+	/****** Line 5 ******/
 	if (node_ptr->os) {
 		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
 		xstrcat(out, tmp_line);
@@ -221,7 +233,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 5 ******/
+	/****** Line 6 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "State=%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
@@ -233,7 +245,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 6 ******/
+	/****** Line 7 ******/
 	if (node_ptr->boot_time) {
 		slurm_make_time_str ((time_t *)&node_ptr->boot_time,
 				     time_str, sizeof(time_str));
@@ -256,7 +268,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 7 ******/
+	/****** Line 8 ******/
 	if (node_ptr->reason_time) {
 		char *user_name = uid_to_string(node_ptr->reason_uid);
 		slurm_make_time_str ((time_t *)&node_ptr->reason_time,
