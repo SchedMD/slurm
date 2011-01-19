@@ -80,8 +80,13 @@ extern List create_dynamic_block(List block_list,
 		itr = list_iterator_create(my_block_list);
 		while ((bg_record = list_next(itr))) {
 			if (bg_record->magic != BLOCK_MAGIC) {
-				error("got a block with bad magic");
-				list_remove(itr);
+				/* This should never happen since we
+				   only call this on copies of blocks
+				   and we check on this during the
+				   copy.
+				*/
+				error("create_dynamic_block: "
+				      "got a block with bad magic?");
 				continue;
 			}
 			if (bg_record->free_cnt) {
@@ -110,17 +115,7 @@ extern List create_dynamic_block(List block_list,
 				my_bitmap =
 					bit_alloc(bit_size(bg_record->bitmap));
 			}
-			if (!bg_record->bitmap) {
-				error("got %p", bg_record);
-				error("magic was %d %d", bg_record->magic,
-				      BLOCK_MAGIC);
-				error("parent %p", bg_record->original);
-				error("no bitmap for bg record %s",
-				      bg_record->bg_block_id);
-				error("nodes %s",
-				      bg_record->nodes);
-				continue;
-			}
+
 			if (!bit_super_set(bg_record->bitmap, my_bitmap)) {
 				bit_or(my_bitmap, bg_record->bitmap);
 
@@ -752,12 +747,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		if (only_small && (bg_record->node_cnt > bg_conf->bp_node_cnt))
 			continue;
 
-		if (!bg_record->bitmap) {
-			error("2 no bitmap for bg record %s %s %x",
-			      bg_record->bg_block_id, bg_record->nodes,
-			      bg_record->magic);
-			continue;
-		}
 		if (request->avail_node_bitmap &&
 		    !bit_super_set(bg_record->bitmap,
 				   request->avail_node_bitmap)) {
