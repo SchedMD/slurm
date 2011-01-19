@@ -100,7 +100,7 @@ extern int bridge_get_bg(my_bluegene_t **bg)
 		return rc;
 	try {
 		ComputeHardware::ConstPtr bgq = getComputeHardware();
-		*bg = (my_bluegene_t *)bgq;
+		*bg = (my_bluegene_t *)&bgq;
 		rc = SLURM_SUCCESS;
 	} catch (...) { // Handle all exceptions
 		error(" Unexpected error calling getComputeHardware");
@@ -110,30 +110,32 @@ extern int bridge_get_bg(my_bluegene_t **bg)
 	return rc;
 }
 
-extern int bridge_get_size(my_bluegene_t *bg, uint32_t *size)
+extern int bridge_get_size(my_bluegene_t *bg, uint16_t *size)
 {
 	ComputeHardware::ConstPtr bgq;
 	int i;
 
 	if (!bridge_init(NULL) || !bg)
 		return SLURM_ERROR;
-	bgq = (ComputeHardware::ConstPtr)bg;
+	bgq = (ComputeHardware::ConstPtr &)bg;
 	memset(size, 0, sizeof(uint32_t) * SYSTEM_DIMENSIONS);
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		size[i] = bgq->getMidplaneSize((bgsched::Dimension::Value)i);
 
-	return size;
+	return SLURM_SUCCESS;
 }
 
 extern List bridge_get_map(my_bluegene_t *bg)
 {
 	ComputeHardware::ConstPtr bgq;
 	uint32_t a, b, c, d;
-	List b_midplane_list = list_create(_b_midplane_del);
+	List b_midplane_list = NULL;
 
 	if (!bridge_init(NULL) || !bg)
-		return SLURM_ERROR;
-	bgq = (ComputeHardware::ConstPtr)bg;
+		return b_midplane_list;
+
+	bgq = (ComputeHardware::ConstPtr &)bg;
+	b_midplane_list = list_create(_b_midplane_del);
 
 	for (a = 0; a < bgq->getMachineSize(Dimension::A); ++a)
 		for (b = 0; b < bgq->getMachineSize(Dimension::B); ++b)
@@ -148,10 +150,11 @@ extern List bridge_get_map(my_bluegene_t *bg)
 					b_midplane_t *b_midplane =
 						xmalloc(sizeof(b_midplane_t));
 
-					list_append(bp_map_list, b_midplane);
+					list_append(bp_midplane_list,
+						    b_midplane);
 					b_midplane->midplane = midplane;
-					b_midplane->loc =
-						midplane->getLocation();
+					b_midplane->loc = xstrdup(
+						midplane->getLocation());
 					b_midplane->coord[A] = a;
 					b_midplane->coord[X] = b;
 					b_midplane->coord[Y] = c;
@@ -188,7 +191,7 @@ extern int bridge_create_block(bg_record_t *bg_record)
 	}
 
 	itr = list_iterator_create(bg_record->bg_midplanes);
-	while ((midplane == (Midplane::ConstPtr)list_next(itr))) {
+	while ((midplane == (Midplane::ConstPtr &)list_next(itr))) {
 		midplanes.push_back(midplane->getLocation());
 	}
 	list_iterator_destroy(itr);
@@ -304,7 +307,7 @@ extern List bridge_block_get_jobs(bg_record_t *bg_record)
 
 	xassert(bg_record);
 	xassert(bg_record->block_ptr);
-	block_ptr = (Block::Ptr)bg_record->block_ptr;
+	block_ptr = (Block::Ptr &)bg_record->block_ptr;
 
 	job_vec = block_ptr->getJobIds();
 	ret_list = list_create(NULL);
@@ -325,7 +328,7 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 	bool is_history = false;
 	uint32_t job_id;
 	/* I don't think this is correct right now. */
-	Job::ConstPtr job_ptr = job;
+	Job::ConstPtr job_ptr = (bgsched::Job::ConstPtr &)job;
 
 	if (!job_ptr)
 		return SLURM_ERROR;
