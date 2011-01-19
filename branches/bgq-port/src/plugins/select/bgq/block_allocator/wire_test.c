@@ -65,9 +65,9 @@ int main(int argc, char** argv)
 	log_alter(log_opts, (log_facility_t)LOG_DAEMON, "/dev/null");
 
 	DIM_SIZE[A]=0;
-	DIM_SIZE[B]=0;
-	DIM_SIZE[C]=0;
-	DIM_SIZE[D]=0;
+	DIM_SIZE[X]=0;
+	DIM_SIZE[Y]=0;
+	DIM_SIZE[Z]=0;
 
 	slurm_conf_reinit(NULL);
 	ba_init(NULL, 1);
@@ -132,9 +132,9 @@ int main(int argc, char** argv)
 	request->rotate = 1;
 	request->elongate = 1;
 	request->conn_type[A] = SELECT_TORUS;
-	request->conn_type[B] = SELECT_TORUS;
-	request->conn_type[C] = SELECT_TORUS;
-	request->conn_type[D] = SELECT_TORUS;
+	request->conn_type[X] = SELECT_TORUS;
+	request->conn_type[Y] = SELECT_TORUS;
+	request->conn_type[Z] = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
 	if (!allocate_block(request, results)) {
@@ -153,9 +153,9 @@ int main(int argc, char** argv)
 	int startc=0;
 	int startd=0;
 	int enda=DIM_SIZE[A];
-	int endb=1;//DIM_SIZE[B];
-	int endc=1;//DIM_SIZE[C];
-	int endd=1;//DIM_SIZE[D];
+	int endb=1;//DIM_SIZE[X];
+	int endc=1;//DIM_SIZE[Y];
+	int endd=1;//DIM_SIZE[Z];
 
 	for(a=starta;a<enda;a++) {
 		for(b=startb;b<endb;b++) {
@@ -186,15 +186,15 @@ int main(int argc, char** argv)
 						     alpha_num[wire->ext_wire[
 								     wire->int_wire[j].
 								     port_tar].
-							       node_tar[B]],
+							       node_tar[X]],
 						     alpha_num[wire->ext_wire[
 								     wire->int_wire[j].
 								     port_tar].
-							       node_tar[C]],
+							       node_tar[Y]],
 						     alpha_num[wire->ext_wire[
 								     wire->int_wire[j].
 								     port_tar].
-							       node_tar[D]],
+							       node_tar[Z]],
 						     wire->ext_wire[
 							     wire->int_wire[j].
 							     port_tar].

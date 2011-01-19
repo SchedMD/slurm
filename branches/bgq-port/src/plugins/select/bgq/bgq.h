@@ -148,6 +148,8 @@ extern int init_bg(void);
 /* Purge all plugin variables */
 extern void fini_bg(void);
 
+extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
+
 #ifdef __cplusplus
 }
 #endif

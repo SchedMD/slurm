@@ -256,6 +256,145 @@ extern int bridge_remove_block(char *name)
 	return rc;
 }
 
+extern int bridge_set_block_owner(bg_record_t *bg_record)
+{
+	int rc = SLURM_SUCCESS;
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (!name)
+		return SLURM_ERROR;
+
+        try {
+		Block::setUser(name, user_name);
+	} catch(...) {
+                error("Remove block request failed ... continuing.");
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
+}
+
+extern List bridge_block_get_jobs(bg_record_t *bg_record)
+{
+	int rc = SLURM_SUCCESS;
+	List ret_list = NULL;
+	std::vector<Job::Id> job_vec;
+	Block::Ptr block_ptr;
+	vector<Job::Id>::iterator iter;
+
+	if (!bridge_init(NULL))
+		return NULL;
+
+	xassert(bg_record);
+	xassert(bg_record->bg_block);
+	block_ptr = bg_record->block_ptr;
+
+	job_vec = blockPtr->getJobIds();
+	ret_list = list_create(NULL);
+	if (jobIdVector.empty())
+		return ret_list;
+
+	for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
+		list_append(ret_list, iter);
+
+	return ret_list;
+}
+
+extern int bridge_job_remove(void *job, char *bg_block_id)
+{
+	int rc;
+	int count = 0;
+	bgq_job_status_t job_state;
+	bool is_history = false;
+
+	/* I don't think this is correct right now. */
+	Job::ConstPtr job_ptr = job;
+
+	if (!job_ptr)
+		return SLURM_ERROR;
+	debug("removing job %d from MMCS on block %s",
+	      job_ptr->getId(), block_id);
+	while (1) {
+		if (count)
+			sleep(POLL_INTERVAL);
+		count++;
+
+		job_state = job_ptr->getStatus();
+		is_history = job_ptr->isInHistory();
+
+		/* FIX ME: We need to call something here to end the
+		   job. */
+		// if ((rc = bridge_free_job(job_rec)) != STATUS_OK)
+		// 	error("bridge_free_job: %s", bg_err_str(rc));
+
+		debug2("job %d on block %s is in state %d history %d",
+		       job_id, block_id, job_state, is_history);
+
+		/* check the state and process accordingly */
+		if (is_history) {
+			debug2("Job %d on block %s isn't in the "
+			       "active job table anymore, final state was %d",
+			       job_id, block_id, job_state);
+			return SLURM_SUCCESS;
+		} else if (job_state == BG_JOB_TERMINATED)
+			return SLURM_SUCCESS;
+		else if (job_state == BG_JOB_ENDING) {
+			if (count > MAX_POLL_RETRIES)
+				error("Job %d on block %s isn't dying, "
+				      "trying for %d seconds", job_id,
+				      block_id, count*POLL_INTERVAL);
+			continue;
+		} else if (job_state == BG_JOB_ERROR) {
+			error("job %d on block %s is in a error state.",
+			      job_ptr->getId(), block_id);
+
+			//free_bg_block();
+			return SLURM_ERROR;
+		}
+
+		/* we have been told the next 2 lines do the same
+		 * thing, but I don't believe it to be true.  In most
+		 * cases when you do a signal of SIGTERM the mpirun
+		 * process gets killed with a SIGTERM.  In the case of
+		 * bridge_cancel_job it always gets killed with a
+		 * SIGKILL.  From IBM's point of view that is a bad
+		 * deally, so we are going to use signal ;).  Sending
+		 * a SIGKILL will kill the mpirun front end process,
+		 * and if you kill that jobs will never get cleaned up and
+		 * you end up with ciod unreacahble on the next job.
+		 */
+
+		/* FIXME: I don't know how to cancel jobs yet. */
+//		 rc = bridge_cancel_job(job_id);
+		// rc = bridge_signal_job(job_id, SIGTERM);
+
+		if (rc != STATUS_OK) {
+			if (rc == JOB_NOT_FOUND) {
+				debug("job %d on block %s removed from MMCS",
+				      job_ptr->getId(), block_id);
+				return STATUS_OK;
+			}
+			if (rc == INCOMPATIBLE_STATE)
+				debug("job %d on block %s is in an "
+				      "INCOMPATIBLE_STATE",
+				      job_ptr->getId(), block_id);
+			else
+				error("bridge_signal_job(%d): %s",
+				      job_ptr->getId(),
+				      bg_err_str(rc));
+		} else if (count > MAX_POLL_RETRIES)
+			error("Job %d on block %s is in state %d and "
+			      "isn't dying, and doesn't appear to be "
+			      "responding to SIGTERM, trying for %d seconds",
+			      job_ptr->getId(), block_id,
+			      job_state, count*POLL_INTERVAL);
+
+	}
+
+	error("Failed to remove job %d from MMCS", job_id);
+	return INTERNAL_ERROR;
+}
 
 // extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 // {

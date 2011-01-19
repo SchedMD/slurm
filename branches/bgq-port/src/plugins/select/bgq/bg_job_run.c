@@ -62,7 +62,7 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
-#include "bgq.h"
+#include "bluegene.h"
 
 #define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
@@ -82,7 +82,7 @@ typedef struct {
 	char *mloaderimage;     /* mloaderImage for this block */
 } bg_action_t;
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 static int	_remove_job(db_job_id_t job_id, char *block_id);
 #endif
 
@@ -98,7 +98,7 @@ static void	_sync_agent(bg_action_t *bg_action_ptr);
 static void	_term_agent(bg_action_t *bg_action_ptr);
 
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 /* Kill a job and remove its record from MMCS */
 static int _remove_job(db_job_id_t job_id, char *block_id)
 {
@@ -315,87 +315,32 @@ static void _destroy_bg_action(void *x)
 	}
 }
 
-static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
-					    int job_cnt, char *block_id)
+static void _remove_jobs_on_block_and_reset(List job_list, char *block_id)
 {
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
-
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	rm_element_t *job_elem = NULL;
-	char *job_block;
-	db_job_id_t job_id;
-	int i, rc;
-#endif
-
-	if (!job_list)
-		job_cnt = 0;
+	ListIterator itr;
+	void *job;
 
 	if (!block_id) {
 		error("_remove_jobs_on_block_and_reset: no block name given");
 		return;
 	}
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	for (i=0; i<job_cnt; i++) {
-		if (i) {
-			if ((rc = bridge_get_data(job_list, RM_JobListNextJob,
-						  &job_elem)) != STATUS_OK) {
-				error("bridge_get_data"
-				      "(RM_JobListNextJob): %s",
-				      bg_err_str(rc));
-				continue;
+	if (job_list) {
+		itr = list_iterator_create(job_list);
+		while ((job = list_next(itr))) {
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+			if ((rc = bridge_job_remove(job, block_id))
+			    != SLURM_SUCCESS) {
+				job_remove_failed = 1;
+				break;
 			}
-		} else {
-			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob,
-						  &job_elem)) != STATUS_OK) {
-				error("bridge_get_data"
-				      "(RM_JobListFirstJob): %s",
-				      bg_err_str(rc));
-				continue;
-			}
-		}
-
-		if (!job_elem) {
-			error("No Job Elem breaking out job count = %d", i);
-			break;
-		}
-		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID,
-					  &job_block))
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_JobPartitionID) %s: %s",
-			      job_block, bg_err_str(rc));
-			continue;
-		}
-
-		if (!job_block) {
-			error("No blockID returned from Database");
-			continue;
-		}
-
-		debug2("looking at block %s looking for %s",
-		       job_block, block_id);
-
-		if (strcmp(job_block, block_id)) {
-			free(job_block);
-			continue;
-		}
-
-		free(job_block);
-
-		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_JobDBJobID): %s",
-			      bg_err_str(rc));
-			continue;
-		}
-		debug2("got job_id %d",job_id);
-		if ((rc = _remove_job(job_id, block_id)) == INTERNAL_ERROR) {
-			job_remove_failed = 1;
-			break;
-		}
-	}
 #endif
+		}
+		list_iterator_destroy(itr);
+	}
+
 	/* remove the block's users */
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main, block_id);
@@ -420,14 +365,8 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		debug2("Hopefully we are destroying this block %s "
 		       "since it isn't in the bg_lists->main",
 		       block_id);
-	} else if (job_cnt) {
-		error("Could not find block %s previously assigned to job.  "
-		      "If this is happening at startup and you just changed "
-		      "your bluegene.conf this is expected.  Else you should "
-		      "probably restart your slurmctld since this shouldn't "
-		      "happen outside of that.",
-		      block_id);
 	}
+
 	slurm_mutex_unlock(&block_state_mutex);
 
 }
@@ -436,49 +375,24 @@ static void _reset_block_list(List block_list)
 {
 	ListIterator itr = NULL;
 	bg_record_t *bg_record = NULL;
-	rm_job_list_t *job_list = NULL;
-	int jobs = 0;
-
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	int live_states, rc;
-#endif
+	List job_list = NULL;
 
 	if (!block_list)
 		return;
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	debug2("getting the job info");
-	live_states = JOB_ALL_FLAG
-		& (~JOB_TERMINATED_FLAG)
-		& (~JOB_KILLED_FLAG)
-		& (~JOB_ERROR_FLAG);
-
-	if ((rc = bridge_get_jobs(live_states, &job_list)) != STATUS_OK) {
-		error("bridge_get_jobs(): %s", bg_err_str(rc));
-
-		return;
-	}
-
-	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs))
-	    != STATUS_OK) {
-		error("bridge_get_data(RM_JobListSize): %s", bg_err_str(rc));
-		jobs = 0;
-	}
-	debug2("job count %d",jobs);
-#endif
 	itr = list_iterator_create(block_list);
 	while ((bg_record = list_next(itr))) {
 		info("Queue clearing of users of BG block %s",
 		     bg_record->bg_block_id);
-		_remove_jobs_on_block_and_reset(job_list, jobs,
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+		job_list = bridge_block_get_jobs(bg_record);
+#endif
+		_remove_jobs_on_block_and_reset(job_list,
 						bg_record->bg_block_id);
+		if (job_list)
+			list_destroy(job_list);
 	}
 	list_iterator_destroy(itr);
-
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
-		error("bridge_free_job_list(): %s", bg_err_str(rc));
-#endif
 }
 
 /* Update block user and reboot as needed */
@@ -509,7 +423,7 @@ static void _sync_agent(bg_action_t *bg_action_ptr)
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
 
-	if (bg_record->state == RM_PARTITION_READY) {
+	if (bg_record->state == BG_BLOCK_INITED) {
 		if (bg_record->job_ptr) {
 			bg_record->job_ptr->job_state &= (~JOB_CONFIGURING);
 			last_job_update = time(NULL);
@@ -533,7 +447,7 @@ static void _sync_agent(bg_action_t *bg_action_ptr)
 			slurm_mutex_unlock(&block_state_mutex);
 
 	} else {
-		if (bg_record->state != RM_PARTITION_CONFIGURING) {
+		if (bg_record->state != BG_BLOCK_BOOTING) {
 			error("Block %s isn't ready and isn't "
 			      "being configured! Starting job again.",
 			      bg_action_ptr->bg_block_id);
@@ -576,7 +490,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		      bg_action_ptr->job_ptr->job_id);
 		return;
 	}
-	if (bg_record->state == RM_PARTITION_DEALLOCATING) {
+	if (bg_record->state == BG_BLOCK_TERM) {
 		debug("Block is in Deallocating state, waiting for free.");
 		bg_free_block(bg_record, 1, 1);
 		/* no reason to reboot here since we are already
@@ -674,17 +588,17 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		rc = 1;
 	}
 #else
-	if ((bg_action_ptr->conn_type >= SELECT_SMALL)
-	   && (bg_action_ptr->conn_type != bg_record->conn_type)) {
+	if ((bg_action_ptr->conn_type[A] >= SELECT_SMALL)
+	   && (bg_action_ptr->conn_type[A] != bg_record->conn_type[A])) {
 		debug3("changing small block mode from %s to %s",
-		       conn_type_string(bg_record->conn_type),
-		       conn_type_string(bg_action_ptr->conn_type));
+		       conn_type_string(bg_record->conn_type[A]),
+		       conn_type_string(bg_action_ptr->conn_type[A]));
 		rc = 1;
 #ifndef HAVE_BG_FILES
 		/* since we don't check state on an emulated system we
 		 * have to change it here
 		 */
-		bg_record->conn_type = bg_action_ptr->conn_type;
+		bg_record->conn_type[A] = bg_action_ptr->conn_type[A];
 #endif
 	}
 #endif
@@ -707,43 +621,43 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			slurm_mutex_unlock(&block_state_mutex);
 			return;
 		}
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 
-		if (bg_action_ptr->conn_type[A] > SELECT_SMALL) {
-			char *conn_type = NULL;
-			switch(bg_action_ptr->conn_type) {
-			case SELECT_HTC_S:
-				conn_type = "s";
-				break;
-			case SELECT_HTC_D:
-				conn_type = "d";
-				break;
-			case SELECT_HTC_V:
-				conn_type = "v";
-				break;
-			case SELECT_HTC_L:
-				conn_type = "l";
-				break;
-			default:
-				break;
-			}
-			/* the option has to be set before the pool can be
-			   set */
-			if ((rc = bridge_modify_block(
-				     bg_record->bg_block_id,
-				     RM_MODIFY_Options,
-				     conn_type)) != STATUS_OK)
-				error("bridge_set_data(RM_MODIFY_Options): %s",
-				      bg_err_str(rc));
-		}
+		/* if (bg_action_ptr->conn_type[A] > SELECT_SMALL) { */
+		/* 	char *conn_type = NULL; */
+		/* 	switch(bg_action_ptr->conn_type) { */
+		/* 	case SELECT_HTC_S: */
+		/* 		conn_type = "s"; */
+		/* 		break; */
+		/* 	case SELECT_HTC_D: */
+		/* 		conn_type = "d"; */
+		/* 		break; */
+		/* 	case SELECT_HTC_V: */
+		/* 		conn_type = "v"; */
+		/* 		break; */
+		/* 	case SELECT_HTC_L: */
+		/* 		conn_type = "l"; */
+		/* 		break; */
+		/* 	default: */
+		/* 		break; */
+		/* 	} */
+		/* 	/\* the option has to be set before the pool can be */
+		/* 	   set *\/ */
+		/* 	if ((rc = bridge_modify_block( */
+		/* 		     bg_record->bg_block_id, */
+		/* 		     RM_MODIFY_Options, */
+		/* 		     conn_type)) != STATUS_OK) */
+		/* 		error("bridge_set_data(RM_MODIFY_Options): %s", */
+		/* 		      bg_err_str(rc)); */
+		/* } */
+		/* if ((rc = bridge_modify_block(bg_record->bg_block_id, */
+		/* 			      RM_MODIFY_MloaderImg, */
+		/* 			      bg_record->mloaderimage)) */
+		/*     != STATUS_OK) */
+		/* 	error("bridge_modify_block(RM_MODIFY_MloaderImg): %s", */
+		/* 	      bg_err_str(rc)); */
+
 #endif
-		if ((rc = bridge_modify_block(bg_record->bg_block_id,
-					      RM_MODIFY_MloaderImg,
-					      bg_record->mloaderimage))
-		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_MloaderImg): %s",
-			      bg_err_str(rc));
-
 		bg_record->modifying = 0;
 	} else if (bg_action_ptr->reboot) {
 		bg_record->modifying = 1;
@@ -757,7 +671,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		bg_record->modifying = 0;
 	}
 
-	if (bg_record->state == RM_PARTITION_FREE) {
+	if (bg_record->state == BG_BLOCK_FREE) {
 		if ((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			if (!_make_sure_block_still_exists(bg_action_ptr,
 							  bg_record)) {
@@ -773,7 +687,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			slurm_mutex_unlock(&block_state_mutex);
 			return;
 		}
-	} else if (bg_record->state == RM_PARTITION_CONFIGURING)
+	} else if (bg_record->state == BG_BLOCK_BOOTING)
 		bg_record->boot_state = 1;
 
 
@@ -795,7 +709,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	debug("setting the target_name for Block %s to %s",
 	      bg_record->bg_block_id, bg_record->target_name);
 
-	if (bg_record->state == RM_PARTITION_READY) {
+	if (bg_record->state == BG_BLOCK_INITED) {
 		debug("block %s is ready.", bg_record->bg_block_id);
 		set_user_rc = set_block_user(bg_record);
 		if (bg_action_ptr->job_ptr) {
@@ -825,39 +739,22 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 /* Perform job termination work */
 static void _term_agent(bg_action_t *bg_action_ptr)
 {
-	int jobs = 0;
-	rm_job_list_t *job_list = NULL;
+	List job_list = NULL;
+	bg_record_t *bg_record;
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	int live_states, rc;
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record = find_bg_record_in_list(bg_lists->main,
+					   bg_action_ptr->bg_block_id);
 
-	debug2("getting the job info");
-	live_states = JOB_ALL_FLAG
-		& (~JOB_TERMINATED_FLAG)
-		& (~JOB_KILLED_FLAG)
-		& (~JOB_ERROR_FLAG);
-
-	if ((rc = bridge_get_jobs(live_states, &job_list)) != STATUS_OK) {
-		error("bridge_get_jobs(): %s", bg_err_str(rc));
-
-		return;
-	}
-
-	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs))
-	    != STATUS_OK) {
-		error("bridge_get_data(RM_JobListSize): %s", bg_err_str(rc));
-		jobs = 0;
-	}
-	debug2("job count %d",jobs);
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	if (bg_record)
+		job_list = bridge_block_get_jobs(bg_record);
 #endif
-	_remove_jobs_on_block_and_reset(job_list, jobs,
+	slurm_mutex_unlock(&block_state_mutex);
+
+	_remove_jobs_on_block_and_reset(job_list,
 					bg_action_ptr->bg_block_id);
-
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
-		error("bridge_free_job_list(): %s", bg_err_str(rc));
-#endif
-
+	list_destroy(job_list);
 }
 
 static void *_block_agent(void *args)
@@ -1196,7 +1093,7 @@ extern int sync_jobs(List job_list)
  */
 extern int boot_block(bg_record_t *bg_record)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	int rc;
 	if (bg_record->magic != BLOCK_MAGIC) {
 		error("boot_block: magic was bad");
@@ -1214,8 +1111,7 @@ extern int boot_block(bg_record_t *bg_record)
 	}
 
 	info("Booting block %s", bg_record->bg_block_id);
-	if ((rc = bridge_create_block(bg_record->bg_block_id))
-	    != STATUS_OK) {
+	if ((rc = bridge_create_block(bg_record)) != STATUS_OK) {
 		error("bridge_create_block(%s): %s",
 		      bg_record->bg_block_id, bg_err_str(rc));
 		if (rc == INCOMPATIBLE_STATE) {

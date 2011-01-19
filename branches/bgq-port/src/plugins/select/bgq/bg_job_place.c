@@ -43,7 +43,7 @@
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "bgq.h"
+#include "bluegene.h"
 //#include "dynamic_block.h"
 
 #define _DEBUG 0
@@ -102,19 +102,19 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 	case 3:		/* DABC -> DACB */
 	case 6:		/* CDAB -> CDBA */
 	case 9:		/* BCDA -> BCAD */
-		SWAP(req_geometry[C], req_geometry[D], tmp);
+		SWAP(req_geometry[Y], req_geometry[Z], tmp);
 		break;
 	case 1:		/* ABDC -> ADBC */
 	case 4:		/* DACB -> DCAB */
 	case 7:		/* CDBA -> CBDA */
 	case 10:	/* BCAD -> BACD */
-		SWAP(req_geometry[B], req_geometry[C], tmp);
+		SWAP(req_geometry[X], req_geometry[Y], tmp);
 		break;
 	case 2:		/* ABDC -> DABC */
 	case 5:		/* DCAB -> CDAB */
 	case 8:		/* CBDA -> BCDA */
 	case 11:	/* BACD -> ABCD */
-		SWAP(req_geometry[A], req_geometry[B], tmp);
+		SWAP(req_geometry[A], req_geometry[X], tmp);
 		break;
 	}
 }
@@ -393,12 +393,12 @@ static bg_record_t *_find_matching_block(List block_list,
 
 			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
 				if ((bg_record->geo[A] >= request->geometry[A])
-				    && (bg_record->geo[B]
-					>= request->geometry[B])
-				    && (bg_record->geo[C]
-					>= request->geometry[C])
-				    && (bg_record->geo[D]
-					>= request->geometry[D])) {
+				    && (bg_record->geo[X]
+					>= request->geometry[X])
+				    && (bg_record->geo[Y]
+					>= request->geometry[Y])
+				    && (bg_record->geo[Z]
+					>= request->geometry[Z])) {
 					match = true;
 					break;
 				}
@@ -622,7 +622,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 {
 	List list_of_lists = NULL;
 	List temp_list = NULL;
-	List new_blocks = NULL;
+	/* List new_blocks = NULL; */
 	ListIterator itr = NULL;
 	int rc = SLURM_ERROR;
 	int create_try = 0;
@@ -667,52 +667,52 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		*/
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("trying with %d", create_try);
-		if ((new_blocks = create_dynamic_block(block_list,
-						       request, temp_list,
-						       true))) {
-			bg_record_t *bg_record = NULL;
+		/* if ((new_blocks = create_dynamic_block(block_list, */
+		/* 				       request, temp_list, */
+		/* 				       true))) { */
+		/* 	bg_record_t *bg_record = NULL; */
 
-			while ((bg_record = list_pop(new_blocks))) {
-				if (block_exist_in_list(block_list, bg_record))
-					destroy_bg_record(bg_record);
-				else if (SELECT_IS_TEST(query_mode)) {
-					/* Here we don't really want
-					   to create the block if we
-					   are testing.
-					*/
-					list_append(block_list, bg_record);
-					(*blocks_added) = 1;
-				} else {
-					if (configure_block(bg_record)
-					    == SLURM_ERROR) {
-						destroy_bg_record(bg_record);
-						error("_dynamically_request: "
-						      "unable to configure "
-						      "block");
-						rc = SLURM_ERROR;
-						break;
-					}
-					list_append(block_list, bg_record);
-					print_bg_record(bg_record);
-					(*blocks_added) = 1;
-				}
-			}
-			list_destroy(new_blocks);
-			if (!*blocks_added) {
-				memcpy(request->geometry, start_geo,
-				       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
-				rc = SLURM_ERROR;
-				continue;
-			}
-			list_sort(block_list,
-				  (ListCmpF)bg_record_sort_aval_inc);
+		/* 	while ((bg_record = list_pop(new_blocks))) { */
+		/* 		if (block_exist_in_list(block_list, bg_record)) */
+		/* 			destroy_bg_record(bg_record); */
+		/* 		else if (SELECT_IS_TEST(query_mode)) { */
+		/* 			/\* Here we don't really want */
+		/* 			   to create the block if we */
+		/* 			   are testing. */
+		/* 			*\/ */
+		/* 			list_append(block_list, bg_record); */
+		/* 			(*blocks_added) = 1; */
+		/* 		} else { */
+		/* 			if (configure_block(bg_record) */
+		/* 			    == SLURM_ERROR) { */
+		/* 				destroy_bg_record(bg_record); */
+		/* 				error("_dynamically_request: " */
+		/* 				      "unable to configure " */
+		/* 				      "block"); */
+		/* 				rc = SLURM_ERROR; */
+		/* 				break; */
+		/* 			} */
+		/* 			list_append(block_list, bg_record); */
+		/* 			print_bg_record(bg_record); */
+		/* 			(*blocks_added) = 1; */
+		/* 		} */
+		/* 	} */
+		/* 	list_destroy(new_blocks); */
+		/* 	if (!*blocks_added) { */
+		/* 		memcpy(request->geometry, start_geo, */
+		/* 		       sizeof(uint16_t)*SYSTEM_DIMENSIONS); */
+		/* 		rc = SLURM_ERROR; */
+		/* 		continue; */
+		/* 	} */
+		/* 	list_sort(block_list, */
+		/* 		  (ListCmpF)bg_record_sort_aval_inc); */
 
-			rc = SLURM_SUCCESS;
-			break;
-		} else if (errno == ESLURM_INTERCONNECT_FAILURE) {
-			rc = SLURM_ERROR;
-			break;
-		}
+		/* 	rc = SLURM_SUCCESS; */
+		/* 	break; */
+		/* } else if (errno == ESLURM_INTERCONNECT_FAILURE) { */
+		/* 	rc = SLURM_ERROR; */
+		/* 	break; */
+		/* } */
 
 		memcpy(request->geometry, start_geo,
 		       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
@@ -761,8 +761,8 @@ static int _find_best_block_match(List block_list,
 	bool is_test = SELECT_IS_TEST(query_mode);
 
 	if (!total_cpus)
-		total_cpus = DIM_SIZE[A] * DIM_SIZE[B]
-			* DIM_SIZE[C] * DIM_SIZE[D]
+		total_cpus = DIM_SIZE[A] * DIM_SIZE[X]
+			* DIM_SIZE[Y] * DIM_SIZE[Z]
 			* bg_conf->cpus_per_bp;
 
 	if (req_nodes > max_nodes) {
@@ -802,9 +802,9 @@ static int _find_best_block_match(List block_list,
 			       "should be %u from %u%u%u%u",
 			       min_nodes, target_size,
 			       req_geometry[A],
-			       req_geometry[B],
-			       req_geometry[C],
-			       req_geometry[D]);
+			       req_geometry[X],
+			       req_geometry[Y],
+			       req_geometry[Z]);
 			min_nodes = target_size;
 		}
 		if (!req_nodes)
@@ -827,7 +827,7 @@ static int _find_best_block_match(List block_list,
 	request.elongate_geos = NULL;
 	request.size = target_size;
 	request.procs = req_procs;
-	request.conn_type = conn_type;
+	memcpy(request.conn_type, conn_type, sizeof(request.conn_type));
 	request.rotate = rotate;
 	request.elongate = rotate;
 
@@ -881,30 +881,6 @@ static int _find_best_block_match(List block_list,
 
 		/* set the bitmap and do other allocation activities */
 		if (bg_record) {
-			if (!is_test) {
-				if (check_block_bp_states(
-					    bg_record->bg_block_id, 1)
-				    != SLURM_SUCCESS) {
-					/* check_block_bp_states will
-					   set this block in the main
-					   list to an error state, but
-					   we aren't looking
-					   at the main list, so we
-					   need to set this copy of
-					   the block in an
-					   error state as well.
-					*/
-					bg_record->job_running =
-						BLOCK_ERROR_STATE;
-					bg_record->state = BG_BLOCK_ERROR;
-					error("_find_best_block_match: Picked "
-					      "block (%s) had some issues with "
-					      "hardware, trying a different "
-					      "one.",
-					      bg_record->bg_block_id);
-					continue;
-				}
-			}
 			format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 
 			debug("_find_best_block_match %s <%s>",
@@ -1044,26 +1020,26 @@ static int _find_best_block_match(List block_list,
 					   node on the system.
 					*/
 					track_down_nodes = false;
-				if (!(new_blocks = create_dynamic_block(
-					      block_list, &request, job_list,
-					      track_down_nodes))) {
-					if (errno == ESLURM_INTERCONNECT_FAILURE
-					    || !list_count(job_list)) {
-						char *nodes;
-						if (slurmctld_conf.
-						    slurmctld_debug < 5)
-							break;
-						nodes = bitmap2node_name(
-							slurm_block_bitmap);
-						debug("job %u not "
-						      "runable on %s",
-						      job_ptr->job_id,
-						      nodes);
-						xfree(nodes);
-						break;
-					}
-					continue;
-				}
+				/* if (!(new_blocks = create_dynamic_block( */
+				/* 	      block_list, &request, job_list, */
+				/* 	      track_down_nodes))) { */
+				/* 	if (errno == ESLURM_INTERCONNECT_FAILURE */
+				/* 	    || !list_count(job_list)) { */
+				/* 		char *nodes; */
+				/* 		if (slurmctld_conf. */
+				/* 		    slurmctld_debug < 5) */
+				/* 			break; */
+				/* 		nodes = bitmap2node_name( */
+				/* 			slurm_block_bitmap); */
+				/* 		debug("job %u not " */
+				/* 		      "runable on %s", */
+				/* 		      job_ptr->job_id, */
+				/* 		      nodes); */
+				/* 		xfree(nodes); */
+				/* 		break; */
+				/* 	} */
+				/* 	continue; */
+				/* } */
 				rc = SLURM_SUCCESS;
 				/* outside of the job_test_list this
 				 * gets destroyed later, so don't worry
