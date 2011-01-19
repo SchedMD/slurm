@@ -40,7 +40,7 @@
 #include "nodeinfo.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "bgq.h"
+#include "bluegene.h"
 
 static void _free_node_subgrp(void *object)
 {

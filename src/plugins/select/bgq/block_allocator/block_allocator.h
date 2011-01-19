@@ -53,20 +53,20 @@ extern "C" {
 #define NUM_PORTS_PER_NODE 6
 
 #define PASS_DENY_A 0x0001
-#define PASS_DENY_B 0x0002
-#define PASS_DENY_C 0x0004
-#define PASS_DENY_D 0x0008
+#define PASS_DENY_X 0x0002
+#define PASS_DENY_Y 0x0004
+#define PASS_DENY_Z 0x0008
 #define PASS_DENY_ALL 0x00ff
 
 #define PASS_FOUND_A 0x0100
-#define PASS_FOUND_B 0x0200
-#define PASS_FOUND_C 0x0400
-#define PASS_FOUND_D 0x0800
+#define PASS_FOUND_X 0x0200
+#define PASS_FOUND_Y 0x0400
+#define PASS_FOUND_Z 0x0800
 #define PASS_FOUND_ANY 0xff00
 
 extern bool _initialized;
 
-enum {A, B, C, D};
+enum {A, X, Y, Z};
 
 /* */
 /*
@@ -94,7 +94,7 @@ typedef struct {
 #ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
 #endif
-	int conn_type[HIGHEST_DIMENSIONS]; /* mesh, torus, or small */
+	uint16_t conn_type[HIGHEST_DIMENSIONS]; /* mesh, torus, or small */
 	bool elongate;                 /* whether allow elongation or not */
 	int elongate_count;            /* place in elongate_geos list
 					  we are at */
@@ -143,7 +143,7 @@ typedef struct {
 typedef struct {
 	char *block;                   /* Hostlist of midplanes in the
 					  block */
-	int conn_type;                 /* mesh, torus, or small */
+	uint16_t conn_type[HIGHEST_DIMENSIONS];  /* mesh, torus, or small */
 #ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
 #endif
@@ -445,7 +445,7 @@ extern int check_and_set_node_list(List nodes);
  *     xfreed.  NULL on failure
  */
 extern char *set_bg_block(List results, uint16_t *start,
-			  uint16_t *geometry, int *conn_type);
+			  uint16_t *geometry, uint16_t *conn_type);
 
 /*
  * Resets the virtual system to a virgin state.  If track_down_nodes is set

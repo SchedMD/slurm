@@ -55,24 +55,15 @@ typedef enum bg_layout_type {
 } bg_layout_t;
 
 typedef struct {
-#ifdef HAVE_BGL
-	List blrts_list;
-#endif
 	uint16_t bp_node_cnt;
 	uint16_t bp_nodecard_cnt;
 	char *bridge_api_file;
 	uint16_t bridge_api_verb;
 	uint32_t slurm_debug_flags;
-#ifdef HAVE_BGL
-	char *default_blrtsimage;
-#endif
-	char *default_linuximage;
 	char *default_mloaderimage;
-	char *default_ramdiskimage;
 	uint16_t deny_pass;
 	double io_ratio;
 	bg_layout_t layout_mode;
-	List linux_list;
 	List mloader_list;
 	double nc_ratio;
 	uint16_t nodecard_node_cnt;
@@ -117,13 +108,10 @@ extern int num_unused_cpus;
 #define BITSIZE 128
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER004"
-#define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
+#define BLOCK_STATE_VERSION      "VER001"
 
-#include "bg_block_info.h"
 #include "bg_job_place.h"
 #include "bg_job_run.h"
-#include "state_test.h"
 #include "jobinfo.h"
 #include "nodeinfo.h"
 
@@ -171,15 +159,10 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			   bool destroy, bool wait);
 extern int read_bg_conf();
 extern int validate_current_blocks(char *dir);
+extern int node_already_down(char *node_name);
 
 /* block_sys.c */
 /*****************************************************/
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-#ifdef HAVE_BGL
-extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
-			     int *nc_id);
-#endif
-#endif
 extern int configure_block(bg_record_t * bg_conf_record);
 extern int read_bg_blocks();
 extern int load_state_file(List curr_block_list, char *dir_name);

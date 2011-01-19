@@ -52,6 +52,15 @@ typedef enum {
 	BG_BLOCK_ERROR,          // Block is in error
 } bgq_block_status_t;
 
+typedef enum {
+        BG_JOB_LOADING = 0, //!< Job is loading.
+        BG_JOB_STARTING,    //!< Job is starting.
+        BG_JOB_RUNNING,     //!< Job is running.
+        BG_JOB_ENDING,      //!< Job is ending.
+        BG_JOB_TERMINATED,  //!< Job is terminated.
+        BG_JOB_ERROR        //!< Job is in error status.
+} bgq_job_status_t;
+
 typedef void my_bluegene_t;
 
 #ifdef __cplusplus
