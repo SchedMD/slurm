@@ -577,7 +577,7 @@ extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
 	/* If no bg_record->bg_block_id we don't need to check this
 	   since this block isn't really created.
 	*/
-	if (!bg_record->bg_block_id)
+	if (!bg_block_id)
 		return SLURM_SUCCESS;
 
 	if ((rc = bridge_get_block(bg_block_id, &block_ptr)) != STATUS_OK) {
