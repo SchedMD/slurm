@@ -60,6 +60,19 @@ extern uint16_t slurmdb_setup_cluster_dims(void)
 		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
 }
 
+extern uint16_t slurmdb_setup_cluster_name_dims(void)
+{
+	if (working_cluster_rec) {
+		if (working_cluster_rec->flags & CLUSTER_FLAG_CRAYXT)
+			return 1;
+		return working_cluster_rec->dimensions;
+	}
+#ifdef HAVE_NATIVE_CRAY
+	return 1;
+#endif
+	return SYSTEM_DIMENSIONS;
+}
+
 extern uint32_t slurmdb_setup_cluster_flags(void)
 {
 	static uint32_t cluster_flags = NO_VAL;

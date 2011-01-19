@@ -595,7 +595,7 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
  */
 static int host_prefix_end(const char *hostname)
 {
-	int idx, dims = slurmdb_setup_cluster_dims();
+	int idx, dims = slurmdb_setup_cluster_name_dims();
 
 	assert(hostname != NULL);
 
@@ -622,7 +622,7 @@ static hostname_t hostname_create(const char *hostname)
 	hostname_t hn = NULL;
 	char *p = '\0';
 	int idx = 0;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int hostlist_base = hostlist_get_base(dims);
 	assert(hostname != NULL);
 
@@ -931,7 +931,7 @@ static char *hostrange_pop(hostrange_t hr)
 {
 	size_t size = 0;
 	char *host = NULL;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	assert(hr != NULL);
 
@@ -972,7 +972,7 @@ static char *hostrange_shift(hostrange_t hr)
 {
 	size_t size = 0;
 	char *host = NULL;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	assert(hr != NULL);
 
@@ -1139,7 +1139,7 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 	unsigned long i;
 	int ret, len = 0;
 	char sep = separator == NULL ? ',' : separator[0];
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	if (n == 0)
 		return 0;
@@ -1190,7 +1190,7 @@ truncated:
 static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 {
 	int len = 0;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	assert(buf != NULL);
 	assert(hr != NULL);
@@ -1454,7 +1454,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	if (hostlist == NULL)
 		return new;
 
-	if(slurmdb_setup_cluster_dims() > 1)
+	if (slurmdb_setup_cluster_name_dims() > 1)
 		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
 		      "work on multi-dimensional systems!!!!");
 	hostlist_base = hostlist_get_base(1);
@@ -1593,7 +1593,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 static int _parse_box_range(char *str, struct _range *ranges,
  			    int len, int *count)
 {
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int start[dims], end[dims],
 		pos[dims];
 	char coord[dims+1];
@@ -1644,7 +1644,7 @@ static int _parse_single_range(const char *str, struct _range *range)
 {
 	char *p, *q;
 	char *orig = strdup(str);
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int hostlist_base = hostlist_get_base(dims);
 
 	if (!orig)
@@ -1709,7 +1709,7 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 {
 	char *p;
 	int count = 0;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	while (str) {
 		if (count == len) {
@@ -2164,7 +2164,7 @@ _hostrange_string(hostrange_t hr, int depth)
 {
 	char buf[MAXHOSTNAMELEN + 16];
 	const int size = sizeof(buf);
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int  len = snprintf(buf, size, "%s", hr->prefix);
 
 	if (len < 0 || len + dims >= size)
@@ -2555,7 +2555,7 @@ static int _tell_if_used(int dim, int curr,
 {
 	int rc = 1;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 /* 	int i; */
 /* 	char coord[dims+1]; */
 /* 	memset(coord, 0, sizeof(coord)); */
@@ -2624,7 +2624,7 @@ end_it:
 static int _get_next_box(int *start,
 			 int *end)
 {
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int hostlist_base = hostlist_get_base(dims);
 	static int orig_grid_end[HIGHEST_DIMENSIONS];
 	static int last[HIGHEST_DIMENSIONS];
@@ -2719,7 +2719,7 @@ static int
 _get_boxes(char *buf, int max_len)
 {
 	int len=0, i;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int curr_min[dims], curr_max[dims];
 /* 	char coord[dims+1]; */
 /* 	char coord2[dims+1]; */
@@ -2784,7 +2784,7 @@ _set_box_in_grid(int dim, int curr, int *start,
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
@@ -2805,7 +2805,7 @@ static int _add_box_ranges(int dim,  int curr,
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
 		curr = start_curr + (pos[dim] * offset[dim]);
@@ -2851,7 +2851,7 @@ static void _set_min_max_of_grid(int dim, int curr,
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
 		curr = start_curr + (pos[dim] * offset[dim]);
@@ -2871,7 +2871,7 @@ static void _set_min_max_of_grid(int dim, int curr,
 static void
 _set_grid(unsigned long start, unsigned long end)
 {
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int sent_start[dims], sent_end[dims];
 	int i;
 /* 	char coord[dims+1]; */
@@ -2899,7 +2899,7 @@ _test_box_in_grid(int dim, int curr,
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
@@ -2919,7 +2919,7 @@ static bool
 _test_box(int *start, int *end)
 {
 	int i;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	if(!memcmp(start, end, dim_grid_size)) /* single node */
 		return false;
@@ -2959,7 +2959,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	int len = 0;
 	int truncated = 0;
 	bool box = false;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 	int hostlist_base = hostlist_get_base(dims);
 	DEF_TIMERS;
 
@@ -3175,7 +3175,7 @@ char *hostlist_next(hostlist_iterator_t i)
 	char buf[MAXHOSTNAMELEN + 16];
 	const int size = sizeof(buf);
 	int len = 0;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	assert(i != NULL);
 	assert(i->magic == HOSTLIST_MAGIC);

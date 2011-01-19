@@ -41,6 +41,10 @@
 /* Return the number of dimensions in the current working cluster */
 extern uint16_t slurmdb_setup_cluster_dims(void);
 
+/* Return the number of digits required in the numeric suffix of hostnames
+ * in the current working cluster */
+extern uint16_t slurmdb_setup_cluster_name_dims(void);
+
 /* Return the architecture flags in the current working cluster */
 extern uint32_t slurmdb_setup_cluster_flags(void);
 
