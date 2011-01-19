@@ -106,7 +106,12 @@ extern List create_dynamic_block(List block_list,
 				my_bitmap =
 					bit_alloc(bit_size(bg_record->bitmap));
 			}
-
+			if (!bg_record->bitmap) {
+				error("no bitmap for bg record %s %s %x",
+				      bg_record->bg_block_id, bg_record->nodes,
+				      bg_record->magic);
+				continue;
+			}
 			if (!bit_super_set(bg_record->bitmap, my_bitmap)) {
 				bit_or(my_bitmap, bg_record->bitmap);
 
@@ -739,6 +744,12 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		if (only_small && (bg_record->node_cnt > bg_conf->bp_node_cnt))
 			continue;
 
+		if (!bg_record->bitmap) {
+			error("2 no bitmap for bg record %s %s %x",
+			      bg_record->bg_block_id, bg_record->nodes,
+			      bg_record->magic);
+			continue;
+		}
 		if (request->avail_node_bitmap &&
 		    !bit_super_set(bg_record->bitmap,
 				   request->avail_node_bitmap)) {
