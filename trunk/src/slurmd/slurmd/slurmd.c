@@ -147,7 +147,7 @@ static void      _msg_engine(void);
 static void      _print_conf(void);
 static void      _print_config(void);
 static void      _process_cmdline(int ac, char **av);
-static void      _read_config(void);
+static void      _read_config(bool reconfig);
 static void      _reconfigure(void);
 static void     *_registration_engine(void *arg);
 static int       _restore_cred_state(slurm_cred_ctx_t ctx);
@@ -700,13 +700,14 @@ _massage_pathname(char **path)
  * values into the slurmd configuration in preference of the defaults.
  */
 static void
-_read_config(void)
+_read_config(bool reconfig)
 {
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
 	bool cr_flag = false, gang_flag = false;
 
-	slurm_conf_reinit(conf->conffile);
+	if (reconfig)
+		slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -850,7 +851,7 @@ _reconfigure(void)
 
 	_reconfig = 0;
 	_update_logging();
-	_read_config();
+	_read_config(true);
 
 	/*
 	 * Rebuild topology information and refresh slurmd topo infos
@@ -1197,7 +1198,7 @@ _slurmd_init(void)
 	 * Read global slurm config file, ovverride necessary values from
 	 * defaults and command line.
 	 */
-	_read_config();
+	_read_config(false);
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
 	    (gres_plugin_node_config_load(cpu_cnt) != SLURM_SUCCESS))
