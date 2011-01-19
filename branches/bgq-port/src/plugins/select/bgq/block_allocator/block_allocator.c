@@ -1047,25 +1047,29 @@ node_info_error:
 			return;
 		}
 
-		if (bg && (size = bridge_get_size(bg))) {
+		if (bg && (bridge_get_size(bg, REAL_DIM_SIZE)
+			   == SLURM_SUCCESS)) {
 			verbose("BlueGene configured with "
 				"%d x %d x %d x %d base blocks",
-				bp_size.B, bp_size.C, bp_size.D);
-			REAL_DIM_SIZE[X] = bp_size.B;
-			REAL_DIM_SIZE[Y] = bp_size.C;
-			REAL_DIM_SIZE[Z] = bp_size.D;
-			if ((DIM_SIZE[X] > bp_size.B)
-			    || (DIM_SIZE[Y] > bp_size.C)
-			    || (DIM_SIZE[Z] > bp_size.D)) {
-				fatal("Cou requested a %c%c%c system, "
-				      "but we only have a system of %c%c%c.  "
+				REAL_DIM_SIZE[A],
+				REAL_DIM_SIZE[X],
+				REAL_DIM_SIZE[Y],
+				REAL_DIM_SIZE[Z]);
+			if ((DIM_SIZE[A] > REAL_DIM_SIZE[A])
+			    || (DIM_SIZE[X] > REAL_DIM_SIZE[X])
+			    || (DIM_SIZE[Y] > REAL_DIM_SIZE[Y])
+			    || (DIM_SIZE[Z] > REAL_DIM_SIZE[Z])) {
+				fatal("Cou requested a %c%c%c%c system, "
+				      "but we only have a system of %c%c%c%c.  "
 				      "Change your slurm.conf.",
+				      alpha_num[DIM_SIZE[A]],
 				      alpha_num[DIM_SIZE[X]],
 				      alpha_num[DIM_SIZE[Y]],
 				      alpha_num[DIM_SIZE[Z]],
-				      alpha_num[bp_size.B],
-				      alpha_num[bp_size.C],
-				      alpha_num[bp_size.D]);
+				      alpha_num[REAL_DIM_SIZE[A]],
+				      alpha_num[REAL_DIM_SIZE[X]],
+				      alpha_num[REAL_DIM_SIZE[Y]],
+				      alpha_num[REAL_DIM_SIZE[Z]]);
 			}
 		} else {
 			error("bridge_get_data(RM_Msize): %d", rc);
@@ -1077,12 +1081,14 @@ setup_done:
 	if (cluster_dims == 1) {
 		if (DIM_SIZE[X]==0) {
 			debug("Setting default system dimensions");
-			REAL_DIM_SIZE[X] = DIM_SIZE[X]=100;
-			REAL_DIM_SIZE[Y] = DIM_SIZE[Y]=1;
-			REAL_DIM_SIZE[Z] = DIM_SIZE[Z]=1;
+			REAL_DIM_SIZE[A] = DIM_SIZE[A] = 100;
+			REAL_DIM_SIZE[X] = DIM_SIZE[X] = 1;
+			REAL_DIM_SIZE[Y] = DIM_SIZE[Y] = 1;
+			REAL_DIM_SIZE[Z] = DIM_SIZE[Z] = 1;
 		}
 	} else {
-		debug("We are using %c x %c x %c of the system.",
+		debug("We are using %c x %c x %c x %c of the system.",
+		      alpha_num[DIM_SIZE[A]],
 		      alpha_num[DIM_SIZE[X]],
 		      alpha_num[DIM_SIZE[Y]],
 		      alpha_num[DIM_SIZE[Z]]);

@@ -14,7 +14,7 @@ pkglib_LTLIBRARIES = select_bgq.la
 if BGQ_LOADED
 
 # BGQ node selection plugin.
-select_bgq_la_SOURCES = select_bgq.c bgq_enums.h \
+select_bgq_la_SOURCES = select_bgq.c bg_enums.h bg_structs.h \
 			bg_job_place.c bg_job_place.h \
 			bg_job_run.c bg_job_run.h \
 			bg_record_functions.c bg_record_functions.h \

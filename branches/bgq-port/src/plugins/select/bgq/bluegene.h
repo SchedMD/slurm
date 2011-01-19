@@ -40,54 +40,12 @@
 #ifndef _BLUEGENE_H_
 #define _BLUEGENE_H_
 
+#include "bg_structs.h"
+#include "bg_record_functions.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "bg_record_functions.h"
-
-typedef enum bg_layout_type {
-	LAYOUT_STATIC,  /* no overlaps, except for full system block
-			   blocks never change */
-	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in
-			   bluegene.conf file */
-	LAYOUT_DYNAMIC	/* slurm will make all blocks */
-} bg_layout_t;
-
-typedef struct {
-	uint16_t bp_node_cnt;
-	uint16_t bp_nodecard_cnt;
-	char *bridge_api_file;
-	uint16_t bridge_api_verb;
-	uint32_t slurm_debug_flags;
-	char *default_mloaderimage;
-	uint16_t deny_pass;
-	double io_ratio;
-	bg_layout_t layout_mode;
-	List mloader_list;
-	double nc_ratio;
-	uint16_t nodecard_node_cnt;
-	uint16_t nodecard_ionode_cnt;
-	uint16_t numpsets;
-	uint16_t cpu_ratio;
-	uint32_t cpus_per_bp;
-	uint16_t quarter_node_cnt;
-	uint16_t quarter_ionode_cnt;
-	List ramdisk_list;
-	char *slurm_user_name;
-	char *slurm_node_prefix;
-	uint32_t smallest_block;
-} bg_config_t;
-
-typedef struct {
-	List booted;         /* blocks that are booted */
-	List job_running;    /* jobs running in these blocks */
-	List main;	    /* List of configured BG blocks */
-	List valid_small32;
-	List valid_small64;
-	List valid_small128;
-	List valid_small256;
-} bg_lists_t;
 
 /* Global variables */
 extern bg_config_t *bg_conf;

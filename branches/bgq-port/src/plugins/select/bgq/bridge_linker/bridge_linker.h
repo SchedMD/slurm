@@ -2,9 +2,9 @@
  *  bridge_linker.h
  *
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2011 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -68,13 +68,10 @@ extern "C" {
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "../bgq_enums.h"
-#include "../block_allocator/block_allocator.h"
-
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+#include "../bg_structs.h"
 
 /* Used to Keep track of where the Base Blocks are at all times
-   Rack and Midplane is the bp_id and ABCD is the coords.
+   Rack and Midplane is the bp_id and AXYZ is the coords.
 */
 typedef struct {
 	void *midplane;
@@ -82,11 +79,13 @@ typedef struct {
 	uint16_t coord[SYSTEM_DIMENSIONS];
 } b_midplane_t;
 
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+
 extern int bridge_init(char *properties_file);
 extern int bridge_fini();
 
 extern int bridge_get_bg(my_bluegene_t **bg);
-extern uint16_t *bridge_get_size(my_bluegene_t *bg);
+extern int bridge_get_size(my_bluegene_t *bg, uint16_t *size);
 extern List bridge_get_map(my_bluegene_t *bg);
 
 extern int bridge_block_create(bg_record_t *bg_record);

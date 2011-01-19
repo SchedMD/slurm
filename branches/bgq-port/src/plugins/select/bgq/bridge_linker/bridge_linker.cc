@@ -38,18 +38,26 @@
 
 
 #include "bridge_linker.h"
+#include "../block_allocator/block_allocator.h"
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+
+#include <bgsched/bgsched.h>
+#include <bgsched/Block.h>
+#include <bgsched/core/core.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define MAX_POLL_RETRIES    220
+#define POLL_INTERVAL        3
 
 using namespace std;
 using namespace bgsched;
 using namespace bgsched::core;
 
 pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
-bridge_api_t bridge_api;
 bool initialized = false;
 bool have_db2 = true;
 void *handle = NULL;
@@ -59,7 +67,7 @@ static void _b_midplane_del(void *object)
 	b_midplane_t *b_midplane = (b_midplane_t *)object;
 
 	if (b_midplane) {
-		xfree(b_midplane->bp_id);
+		xfree(b_midplane->loc);
 		xfree(b_midplane);
 	}
 }
@@ -92,38 +100,47 @@ extern int bridge_get_bg(my_bluegene_t **bg)
 		return rc;
 	try {
 		ComputeHardware::ConstPtr bgq = getComputeHardware();
-		&bg = (void *)bgq;
+		*bg = (my_bluegene_t *)bgq;
 		rc = SLURM_SUCCESS;
 	} catch (...) { // Handle all exceptions
 		error(" Unexpected error calling getComputeHardware");
-		&bg = NULL;
+		*bg = NULL;
 	}
 
 	return rc;
 }
 
-extern uint16_t *bridge_get_size(my_bluegene_t *bg)
+extern int bridge_get_size(my_bluegene_t *bg, uint32_t *size)
 {
-	uint16_t size[SYSTEM_DIMENSIONS];
-	int rc = SLURM_ERROR;
-	if (!bridge_init(NULL))
-		return NULL;
+	ComputeHardware::ConstPtr bgq;
+	int i;
 
+	if (!bridge_init(NULL) || !bg)
+		return SLURM_ERROR;
+	bgq = (ComputeHardware::ConstPtr)bg;
+	memset(size, 0, sizeof(uint32_t) * SYSTEM_DIMENSIONS);
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		size[i] = bgq->getMidplaneSize(i);
+		size[i] = bgq->getMidplaneSize((bgsched::Dimension::Value)i);
 
 	return size;
 }
 
 extern List bridge_get_map(my_bluegene_t *bg)
 {
-	int a, b, c, d;
-	List b_midplane_list = list_create(_bp_map_list_del);
+	ComputeHardware::ConstPtr bgq;
+	uint32_t a, b, c, d;
+	List b_midplane_list = list_create(_b_midplane_del);
+
+	if (!bridge_init(NULL) || !bg)
+		return SLURM_ERROR;
+	bgq = (ComputeHardware::ConstPtr)bg;
 
 	for (a = 0; a < bgq->getMachineSize(Dimension::A); ++a)
 		for (b = 0; b < bgq->getMachineSize(Dimension::B); ++b)
 			for (c = 0; c < bgq->getMachineSize(Dimension::C); ++c)
-				for (d = 0; d < bgq->getMachineSize(Dimension::D); ++d) {
+				for (d = 0;
+				     d < bgq->getMachineSize(Dimension::D);
+				     ++d) {
 					Midplane::Coordinates coords =
 						{{a, b, c, d}};
 					Midplane::ConstPtr midplane =
@@ -136,9 +153,9 @@ extern List bridge_get_map(my_bluegene_t *bg)
 					b_midplane->loc =
 						midplane->getLocation();
 					b_midplane->coord[A] = a;
-					b_midplane->coord[B] = b;
-					b_midplane->coord[C] = c;
-					b_midplane->coord[D] = d;
+					b_midplane->coord[X] = b;
+					b_midplane->coord[Y] = c;
+					b_midplane->coord[Z] = d;
 				}
 	return b_midplane_list;
 }
@@ -182,8 +199,8 @@ extern int bridge_create_block(bg_record_t *bg_record)
 	}
 	list_iterator_destroy(itr);
 
-        for (i=A; i<D; i++)
-		conn_type[dim] = bg_record->conn_type[i];
+        for (i=A; i<Z; i++)
+		conn_type[i] = bg_record->conn_type[i];
 
 	block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
 	block_ptr->setName(bg_record->bg_block_id);
@@ -194,7 +211,7 @@ extern int bridge_create_block(bg_record_t *bg_record)
         pt_midplanes.clear();
         conn_type.clear();
 
-	bg_record->block_ptr = block_ptr;
+	bg_record->block_ptr = (void *)block_ptr;
 
 	return rc;
 }
@@ -256,7 +273,7 @@ extern int bridge_remove_block(char *name)
 	return rc;
 }
 
-extern int bridge_set_block_owner(bg_record_t *bg_record)
+extern int bridge_set_block_owner(char *bg_block_id, char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
@@ -266,7 +283,7 @@ extern int bridge_set_block_owner(bg_record_t *bg_record)
 		return SLURM_ERROR;
 
         try {
-		Block::setUser(name, user_name);
+		Block::addUser(bg_block_id, user_name);
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -277,7 +294,6 @@ extern int bridge_set_block_owner(bg_record_t *bg_record)
 
 extern List bridge_block_get_jobs(bg_record_t *bg_record)
 {
-	int rc = SLURM_SUCCESS;
 	List ret_list = NULL;
 	std::vector<Job::Id> job_vec;
 	Block::Ptr block_ptr;
@@ -287,12 +303,12 @@ extern List bridge_block_get_jobs(bg_record_t *bg_record)
 		return NULL;
 
 	xassert(bg_record);
-	xassert(bg_record->bg_block);
-	block_ptr = bg_record->block_ptr;
+	xassert(bg_record->block_ptr);
+	block_ptr = (Block::Ptr)bg_record->block_ptr;
 
-	job_vec = blockPtr->getJobIds();
+	job_vec = block_ptr->getJobIds();
 	ret_list = list_create(NULL);
-	if (jobIdVector.empty())
+	if (job_vec.empty())
 		return ret_list;
 
 	for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
@@ -307,14 +323,15 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 	int count = 0;
 	bgq_job_status_t job_state;
 	bool is_history = false;
-
+	uint32_t job_id;
 	/* I don't think this is correct right now. */
 	Job::ConstPtr job_ptr = job;
 
 	if (!job_ptr)
 		return SLURM_ERROR;
+	job_id = job_ptr->getId();
 	debug("removing job %d from MMCS on block %s",
-	      job_ptr->getId(), block_id);
+	      job_id, block_id);
 	while (1) {
 		if (count)
 			sleep(POLL_INTERVAL);
@@ -347,7 +364,7 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 			continue;
 		} else if (job_state == BG_JOB_ERROR) {
 			error("job %d on block %s is in a error state.",
-			      job_ptr->getId(), block_id);
+			      job_id, block_id);
 
 			//free_bg_block();
 			return SLURM_ERROR;
@@ -369,31 +386,32 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 //		 rc = bridge_cancel_job(job_id);
 		// rc = bridge_signal_job(job_id, SIGTERM);
 
-		if (rc != STATUS_OK) {
-			if (rc == JOB_NOT_FOUND) {
-				debug("job %d on block %s removed from MMCS",
-				      job_ptr->getId(), block_id);
-				return STATUS_OK;
-			}
-			if (rc == INCOMPATIBLE_STATE)
-				debug("job %d on block %s is in an "
-				      "INCOMPATIBLE_STATE",
-				      job_ptr->getId(), block_id);
-			else
-				error("bridge_signal_job(%d): %s",
-				      job_ptr->getId(),
-				      bg_err_str(rc));
-		} else if (count > MAX_POLL_RETRIES)
-			error("Job %d on block %s is in state %d and "
-			      "isn't dying, and doesn't appear to be "
-			      "responding to SIGTERM, trying for %d seconds",
-			      job_ptr->getId(), block_id,
-			      job_state, count*POLL_INTERVAL);
+		return SLURM_SUCCESS;
+		// if (rc != STATUS_OK) {
+		// 	if (rc == JOB_NOT_FOUND) {
+		// 		debug("job %d on block %s removed from MMCS",
+		// 		      job_ptr->getId(), block_id);
+		// 		return STATUS_OK;
+		// 	}
+		// 	if (rc == INCOMPATIBLE_STATE)
+		// 		debug("job %d on block %s is in an "
+		// 		      "INCOMPATIBLE_STATE",
+		// 		      job_ptr->getId(), block_id);
+		// 	else
+		// 		error("bridge_signal_job(%d): %s",
+		// 		      job_ptr->getId(),
+		// 		      bg_err_str(rc));
+		// } else if (count > MAX_POLL_RETRIES)
+		// 	error("Job %d on block %s is in state %d and "
+		// 	      "isn't dying, and doesn't appear to be "
+		// 	      "responding to SIGTERM, trying for %d seconds",
+		// 	      job_ptr->getId(), block_id,
+		// 	      job_state, count*POLL_INTERVAL);
 
 	}
 
 	error("Failed to remove job %d from MMCS", job_id);
-	return INTERNAL_ERROR;
+	return SLURM_ERROR;
 }
 
 // extern int bridge_set_log_params(char *api_file_name, unsigned int level)
