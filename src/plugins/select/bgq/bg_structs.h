@@ -39,7 +39,7 @@
 #ifndef _BG_STRUCTS_H_
 #define _BG_STRUCTS_H_
 
-#include "bgq_enums.h"
+#include "bg_enums.h"
 
 #if HAVE_CONFIG_H
 #  include "config.h"
