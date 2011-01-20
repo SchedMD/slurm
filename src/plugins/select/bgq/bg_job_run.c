@@ -247,7 +247,7 @@ static void _reset_block_list(List block_list)
 		info("Queue clearing of users of BG block %s",
 		     bg_record->bg_block_id);
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-		job_list = bridge_block_get_jobs(bg_record);
+		job_list = bridge_block_get_jobs(bg_record->bg_block_id);
 #endif
 		_remove_jobs_on_block_and_reset(job_list,
 						bg_record->bg_block_id);
@@ -610,7 +610,7 @@ static void _term_agent(bg_action_t *bg_action_ptr)
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	if (bg_record)
-		job_list = bridge_block_get_jobs(bg_record);
+		job_list = bridge_block_get_jobs(bg_record->bg_block_id);
 #endif
 	slurm_mutex_unlock(&block_state_mutex);
 

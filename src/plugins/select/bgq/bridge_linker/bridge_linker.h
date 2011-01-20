@@ -89,13 +89,13 @@ extern int bridge_get_size(my_bluegene_t *bg, uint16_t *size);
 extern List bridge_get_map(my_bluegene_t *bg);
 
 extern int bridge_block_create(bg_record_t *bg_record);
-extern int bridge_block_boot(char *name);
-extern int bridge_block_free(char *name);
-extern int bridge_block_remove(char *name);
+extern int bridge_block_boot(char *bg_block_id);
+extern int bridge_block_free(char *bg_block_id);
+extern int bridge_block_remove(char *bg_block_id);
 
-extern int bridge_block_set_owner(char *name, char *user_name);
+extern int bridge_block_set_owner(char *bg_block_id, char *user_name);
 
-extern List bridge_block_get_jobs(bg_record_t *bg_record);
+extern List bridge_block_get_jobs(char *bg_block_id);
 
 extern int bridge_job_remove(void *job, char *bg_block_id);
 

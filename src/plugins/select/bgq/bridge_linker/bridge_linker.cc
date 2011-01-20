@@ -233,17 +233,17 @@ extern int bridge_create_block(bg_record_t *bg_record)
 	return rc;
 }
 
-extern int bridge_boot_block(char *name)
+extern int bridge_boot_block(char *bg_block_id)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!name)
+	if (!bg_block_id)
 		return SLURM_ERROR;
 
         try {
-		Block::initiateBoot(name);
+		Block::initiateBoot(bg_block_id);
 	} catch(...) {
                 error("Boot block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -252,17 +252,17 @@ extern int bridge_boot_block(char *name)
 	return rc;
 }
 
-extern int bridge_free_block(char *name)
+extern int bridge_free_block(char *bg_block_id)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!name)
+	if (!bg_block_id)
 		return SLURM_ERROR;
 
         try {
-		Block::initiateFree(name);
+		Block::initiateFree(bg_block_id);
 	} catch(...) {
                 error("Free block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -271,17 +271,17 @@ extern int bridge_free_block(char *name)
 	return rc;
 }
 
-extern int bridge_remove_block(char *name)
+extern int bridge_remove_block(char *bg_block_id)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!name)
+	if (!bg_block_id)
 		return SLURM_ERROR;
 
         try {
-		Block::remove(name);
+		Block::remove(bg_block_id);
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -312,8 +312,7 @@ extern int bridge_set_block_owner(char *bg_block_id, char *user_name)
 extern List bridge_block_get_jobs(char *bg_block_id)
 {
 	List ret_list = NULL;
-	Job::ConstPtrs job_vec;
-	Block::Ptr block_ptr;
+	std::vector<Job::ConstPtr> job_vec;
 	JobFilter job_filter;
 	vector<Job::ConstPtr>::iterator iter;
 
@@ -327,9 +326,7 @@ extern List bridge_block_get_jobs(char *bg_block_id)
 
 	job_filter.setComputeBlockName(bg_block_id);
 
-	block_ptr = (Block::Ptr &)bg_record->block_ptr;
-
-	job_vec = block_ptr->getJobIds();
+	job_vec = getJobs(job_filter);
 	ret_list = list_create(NULL);
 	if (job_vec.empty())
 		return ret_list;
