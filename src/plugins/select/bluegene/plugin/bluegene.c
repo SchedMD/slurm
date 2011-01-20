@@ -1570,7 +1570,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 #ifdef HAVE_BG_FILES
 	int rc = SLURM_SUCCESS;
 #endif
-	if (bg_record->magic == 0) {
+	if (bg_record->magic != BLOCK_MAGIC) {
 		error("block already destroyed");
 		return SLURM_ERROR;
 	}
@@ -1607,18 +1607,10 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	   removed out of all the lists.
 	*/
 	if (blocks_are_created) {
-		if (remove_from_bg_list(bg_lists->booted, bg_record)
-		    == SLURM_SUCCESS)
-			error("block %s is being freed but hadn't been "
-			      "removed from the booted block list yet.",
-			      bg_record->bg_block_id);
+		remove_from_bg_list(bg_lists->booted, bg_record);
 		if (remove_from_bg_list(bg_lists->job_running, bg_record)
-		    == SLURM_SUCCESS) {
+		    == SLURM_SUCCESS)
 			num_unused_cpus += bg_record->cpu_cnt;
-			error("block %s is being freed but hadn't been "
-			      "removed from the running job block list yet.",
-			      bg_record->bg_block_id);
-		}
 	}
 
 	if (restore)
