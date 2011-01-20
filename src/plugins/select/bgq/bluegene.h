@@ -42,6 +42,7 @@
 
 #include "bg_structs.h"
 #include "bg_record_functions.h"
+#include "block_allocator/block_allocator.h"
 
 #ifdef __cplusplus
 extern "C" {

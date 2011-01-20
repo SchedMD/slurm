@@ -491,37 +491,37 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 				info("bridge_destroy %s",
 				     bg_record->bg_block_id);
 			rc = bridge_block_remove(bg_record->bg_block_id);
-			if (rc != STATUS_OK) {
-				if (rc == PARTITION_NOT_FOUND) {
-					debug("block %s is not found",
-					      bg_record->bg_block_id);
-					break;
-				} else if (rc == INCOMPATIBLE_STATE) {
-#ifndef HAVE_BGL
-					/* If the state is error and
-					   we get an incompatible
-					   state back here, it means
-					   we set it ourselves so
-					   break out.
-					*/
-					if (bg_record->state
-					    == BG_BLOCK_ERROR)
-						break;
-#endif
-					if (bg_conf->slurm_debug_flags
-					    & DEBUG_FLAG_SELECT_TYPE)
-						info("bridge_block_remove"
-						     "(%s): %s State = %d",
-						     bg_record->bg_block_id,
-						     bg_err_str(rc),
-						     bg_record->state);
-				} else {
+			if (rc != SLURM_SUCCESS) {
+/* 				if (rc == PARTITION_NOT_FOUND) { */
+/* 					debug("block %s is not found", */
+/* 					      bg_record->bg_block_id); */
+/* 					break; */
+/* 				} else if (rc == INCOMPATIBLE_STATE) { */
+/* #ifndef HAVE_BGL */
+/* 					/\* If the state is error and */
+/* 					   we get an incompatible */
+/* 					   state back here, it means */
+/* 					   we set it ourselves so */
+/* 					   break out. */
+/* 					*\/ */
+/* 					if (bg_record->state */
+/* 					    == BG_BLOCK_ERROR) */
+/* 						break; */
+/* #endif */
+/* 					if (bg_conf->slurm_debug_flags */
+/* 					    & DEBUG_FLAG_SELECT_TYPE) */
+/* 						info("bridge_block_remove" */
+/* 						     "(%s): %s State = %d", */
+/* 						     bg_record->bg_block_id, */
+/* 						     bg_err_str(rc), */
+/* 						     bg_record->state); */
+/* 				} else { */
 					error("bridge_block_remove"
 					      "(%s): %s State = %d",
 					      bg_record->bg_block_id,
 					      bg_err_str(rc),
 					      bg_record->state);
-				}
+				/* } */
 			}
 #else
 			bg_record->state = BG_BLOCK_FREE;
@@ -1408,16 +1408,16 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		     bg_record->bg_block_id);
 
 	rc = bridge_block_remove(bg_record->bg_block_id);
-	if (rc != STATUS_OK) {
-		if (rc == PARTITION_NOT_FOUND) {
-			debug("_post_block_free: block %s is not found",
-			      bg_record->bg_block_id);
-		} else {
+	if (rc != SLURM_SUCCESS) {
+		/* if (rc == PARTITION_NOT_FOUND) { */
+		/* 	debug("_post_block_free: block %s is not found", */
+		/* 	      bg_record->bg_block_id); */
+		/* } else { */
 			error("_post_block_free: "
-			      "rm_remove_partition(%s): %s",
+			      "bridge_block_remove(%s): %s",
 			      bg_record->bg_block_id,
 			      bg_err_str(rc));
-		}
+		/* } */
 	} else
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("_post_block_free: done %s",
