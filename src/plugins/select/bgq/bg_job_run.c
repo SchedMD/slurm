@@ -194,8 +194,7 @@ static void _remove_jobs_on_block_and_reset(List job_list, char *block_id)
 		itr = list_iterator_create(job_list);
 		while ((job = list_next(itr))) {
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-			if (bridge_job_remove(job, block_id))
-				!= SLURM_SUCCESS) {
+			if (bridge_job_remove(job, block_id) != SLURM_SUCCESS) {
 				job_remove_failed = 1;
 				break;
 			}
@@ -965,18 +964,18 @@ extern int boot_block(bg_record_t *bg_record)
 
 	if ((rc = bridge_block_set_owner(bg_record->bg_block_id,
 					 bg_conf->slurm_user_name))
-	    != STATUS_OK) {
-		error("bridge_block_set_owner(%s,%s): %s",
-		      bg_record->bg_block_id,
-		      bg_conf->slurm_user_name,
-		      bg_err_str(rc));
+	    != SLURM_SUCCESS) {
+		/* error("bridge_block_set_owner(%s,%s): %s", */
+		/*       bg_record->bg_block_id, */
+		/*       bg_conf->slurm_user_name, */
+		/*       bg_err_str(rc)); */
 		return SLURM_ERROR;
 	}
 
 	info("Booting block %s", bg_record->bg_block_id);
 	if ((rc = bridge_block_create(bg_record)) != SLURM_SUCCESS) {
-		error("bridge_create_block(%s): %s",
-		      bg_record->bg_block_id, bg_err_str(rc));
+		/* error("bridge_create_block(%s): %s", */
+		/*       bg_record->bg_block_id, bg_err_str(rc)); */
 		/* if (rc == INCOMPATIBLE_STATE) { */
 		/* 	char reason[200]; */
 		/* 	snprintf(reason, sizeof(reason), */
