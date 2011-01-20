@@ -26,7 +26,9 @@ HIGHLIGHTS
 ==========
 * For architectures where the slurmd daemon executes on front end nodes (Cray
   and BlueGene systems) more than one slurmd daemon may be executed using more
-  than one front end node for improved fault-tolerance and performance
+  than one front end node for improved fault-tolerance and performance.
+  NOTE: The slurmctld daemon will report the lack of a front_end_state file
+  as an error when first started in this configuration.
 
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
