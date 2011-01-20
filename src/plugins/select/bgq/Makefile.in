@@ -107,9 +107,10 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @BGQ_LOADED_TRUE@select_bgq_la_DEPENDENCIES =  \
 @BGQ_LOADED_TRUE@	block_allocator/libblock_allocator.la
 am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h \
-	bg_job_place.c bg_job_place.h bg_job_run.c bg_job_run.h \
-	bg_record_functions.c bg_record_functions.h bluegene.c \
-	bluegene.h jobinfo.c jobinfo.h nodeinfo.c nodeinfo.h
+	bg_enums.h bg_structs.h bg_job_place.c bg_job_place.h \
+	bg_job_run.c bg_job_run.h bg_record_functions.c \
+	bg_record_functions.h bluegene.c bluegene.h jobinfo.c \
+	jobinfo.h nodeinfo.c nodeinfo.h
 @BGQ_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
 @BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo \
 @BGQ_LOADED_TRUE@	bg_job_place.lo bg_job_run.lo \
@@ -377,7 +378,7 @@ pkglib_LTLIBRARIES = select_bgq.la
 @BGQ_LOADED_FALSE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 
 # BGQ node selection plugin.
-@BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bgq_enums.h \
+@BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bg_enums.h bg_structs.h \
 @BGQ_LOADED_TRUE@			bg_job_place.c bg_job_place.h \
 @BGQ_LOADED_TRUE@			bg_job_run.c bg_job_run.h \
 @BGQ_LOADED_TRUE@			bg_record_functions.c bg_record_functions.h \

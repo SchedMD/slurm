@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  bgq.h - hearder file for the Blue Gene/Q plugin.
+ *  bg_structs.h
+ *
  *****************************************************************************
- *  Copyright (C) 2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2011 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -36,50 +36,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BGQ_H_
-#define _BGQ_H_
+#ifndef _BG_STRUCTS_H_
+#define _BG_STRUCTS_H_
 
-#include "bg_record_functions.h"
+#include "bgq_enums.h"
 
-#ifdef __cplusplus
-extern "C" {
+#if HAVE_CONFIG_H
+#  include "config.h"
 #endif
 
-/* #ifdef HAVE_CONFIG_H */
-/* #  include "config.h" */
-/* #  if HAVE_STDINT_H */
-/* #    include <stdint.h> */
-/* #  endif */
-/* #  if HAVE_INTTYPES_H */
-/* #    include <inttypes.h> */
-/* #  endif */
-/* #endif */
-
-/* #include <stdio.h> */
-/* #include <sys/types.h> */
-/* #include <sys/stat.h> */
-/* #include <unistd.h> */
-/* #include <slurm/slurm.h> */
-/* #include <slurm/slurm_errno.h> */
-
-/* #ifdef WITH_PTHREADS */
-/* #  include <pthread.h> */
-/* #endif				/\* WITH_PTHREADS *\/ */
-
-
-/* #include "src/common/slurm_xlator.h"	/\* Must be first *\/ */
-/* #include "src/common/macros.h" */
-/* #include "src/slurmctld/slurmctld.h" */
-/* #include "bgq_enums.h" */
-/* #include "block_allocator/block_allocator.h" */
-
-typedef enum bg_layout_type {
-	LAYOUT_STATIC,  /* no overlaps, except for full system block
-			   blocks never change */
-	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in
-			   bluegene.conf file */
-	LAYOUT_DYNAMIC	/* slurm will make all blocks */
-} bg_layout_t;
+#include "slurm.h"
+#include "src/common/list.h"
+#include "src/common/bitstring.h"
 
 typedef struct {
 	uint16_t bp_node_cnt;
@@ -116,42 +84,58 @@ typedef struct {
 	List valid_small256;
 } bg_lists_t;
 
-/* Global variables */
-extern bg_config_t *bg_conf;
-extern bg_lists_t *bg_lists;
-extern ba_system_t *ba_system_ptr;
-extern time_t last_bg_update;
-extern bool agent_fini;
-extern pthread_mutex_t block_state_mutex;
-extern pthread_mutex_t request_list_mutex;
-extern int blocks_are_created;
-extern int num_unused_cpus;
+typedef struct bg_record {
+	void *block_ptr;                /* object to hold info from db2 */
+	char *bg_block_id;     	        /* ID returned from MMCS */
+	List bg_midplanes;              /* List of midplanes in block */
+	List bg_pt_midplanes;           /* List of passthrough
+					 * midplanes in block */
+	bitstr_t *bitmap;               /* bitmap to check the nodes
+					   of block */
+	int boot_count;                 /* number of attemts boot attempts */
+	int boot_state;                 /* check to see if boot failed.
+					   -1 = fail,
+					   0 = not booting,
+					   1 = booting */
+	int bp_count;                   /* size */
+	uint16_t conn_type[HIGHEST_DIMENSIONS];  /* MESH or Torus or NAV */
+	uint32_t cpu_cnt;               /* count of cpus per block */
+	int free_cnt;                   /* How many are trying
+					   to free this block at the
+					   same time */
+	bool full_block;                /* whether or not block is the full
+					   block */
+	uint16_t geo[HIGHEST_DIMENSIONS];  /* geometry */
+	char *ionodes; 		        /* String of ionodes in block
+					 * NULL if not a small block*/
+	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
+					   keep track which ionodes we
+					   are on.  NULL if not a small block*/
+	struct job_record *job_ptr;	/* pointer to job running on
+					 * block or NULL if no job */
+	int job_running;                /* job id of job running of if
+					 * block is in an error state
+					 * BLOCK_ERROR_STATE */
+	char *linuximage;               /* LinuxImage/CnloadImage for
+					 * this block */
+	uint16_t magic;	        	/* magic number */
+	char *mloaderimage;             /* mloaderImage for this block */
+	int modifying;                  /* flag to say the block is
+					   being modified or not at
+					   job launch usually */
+	char *nodes;			/* String of nodes in block */
+	uint32_t node_cnt;              /* count of cnodes per block */
+	struct bg_record *original;     /* if this is a copy this is a
+					   pointer to the original */
+	char *reason;                   /* reason block is in error state */
+	uint16_t small;                 /* if this block is small or not. */
+	uint16_t state;                 /* Current state of the block */
+	uint16_t start[HIGHEST_DIMENSIONS];  /* start node */
+	char *target_name;		/* when a block is freed this
+					   is the name of the user we
+					   want on the block */
+	char *user_name;		/* user using the block */
+	uid_t user_uid;   		/* Owner of block uid	*/
+} bg_record_t;
 
-#define MAX_PTHREAD_RETRIES  1
-#define BLOCK_ERROR_STATE    -3
-#define ADMIN_ERROR_STATE    -4
-#define NO_JOB_RUNNING       -1
-#define BUFSIZE 4096
-#define BITSIZE 128
-/* Change BLOCK_STATE_VERSION value when changing the state save
- * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER001"
-
-#include "bg_job_place.h"
-#include "bg_job_run.h"
-#include "jobinfo.h"
-#include "nodeinfo.h"
-
-/* Initialize all plugin variables */
-extern int init_bg(void);
-
-/* Purge all plugin variables */
-extern void fini_bg(void);
-
-extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* _BGQ_H_ */

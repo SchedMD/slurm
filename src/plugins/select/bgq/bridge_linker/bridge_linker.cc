@@ -148,13 +148,15 @@ extern List bridge_get_map(my_bluegene_t *bg)
 					Midplane::ConstPtr midplane =
 						bgq->getMidplane(coords);
 					b_midplane_t *b_midplane =
-						xmalloc(sizeof(b_midplane_t));
+						(b_midplane_t *)xmalloc(
+							sizeof(b_midplane_t));
 
-					list_append(bp_midplane_list,
+					list_append(b_midplane_list,
 						    b_midplane);
-					b_midplane->midplane = midplane;
-					b_midplane->loc = xstrdup(
-						midplane->getLocation());
+					b_midplane->midplane =
+						(void *) &midplane;
+					b_midplane->loc = (char *)
+						&midplane->getLocation();
 					b_midplane->coord[A] = a;
 					b_midplane->coord[X] = b;
 					b_midplane->coord[Y] = c;
@@ -170,9 +172,11 @@ extern int bridge_create_block(bg_record_t *bg_record)
         Block::PassthroughMidplanes pt_midplanes;
         Block::DimensionConnectivity conn_type;
 	ListIterator itr = NULL;
-	Midplane::ConstPtr midplane;
+	Midplane::Ptr midplane;
 	int i;
 	int rc = SLURM_SUCCESS;
+	Dimension dim;
+	b_midplane_t *b_midplane;
 
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
@@ -191,20 +195,30 @@ extern int bridge_create_block(bg_record_t *bg_record)
 	}
 
 	itr = list_iterator_create(bg_record->bg_midplanes);
-	while ((midplane == (Midplane::ConstPtr &)list_next(itr))) {
+	while ((b_midplane = (b_midplane_t *)list_next(itr))) {
+		midplane = (Midplane::Ptr &)b_midplane->midplane;
 		midplanes.push_back(midplane->getLocation());
 	}
 	list_iterator_destroy(itr);
 
 	itr = list_iterator_create(bg_record->bg_pt_midplanes);
-	while ((midplane == (Midplane::ConstPtr)list_next(itr))) {
+	while ((b_midplane = (b_midplane_t *)list_next(itr))) {
+		midplane = (Midplane::Ptr &)b_midplane->midplane;
 		pt_midplanes.push_back(midplane->getLocation());
 	}
 	list_iterator_destroy(itr);
 
-        for (i=A; i<Z; i++)
-		conn_type[i] = bg_record->conn_type[i];
-
+        for (i=0, dim = Dimension::A; i<SYSTEM_DIMENSIONS; i++, ++dim) {
+		switch (bg_record->conn_type[i]) {
+		case Block::Connectivity::Mesh:
+			conn_type[dim] = Block::Connectivity::Mesh;
+			break;
+		case Block::Connectivity::Torus:
+		default:
+			conn_type[dim] = Block::Connectivity::Torus;
+			break;
+		}
+	}
 	block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
 	block_ptr->setName(bg_record->bg_block_id);
 	block_ptr->addUser(bg_record->bg_block_id, bg_record->user_name);
@@ -214,7 +228,7 @@ extern int bridge_create_block(bg_record_t *bg_record)
         pt_midplanes.clear();
         conn_type.clear();
 
-	bg_record->block_ptr = (void *)block_ptr;
+	bg_record->block_ptr = (void *)&block_ptr;
 
 	return rc;
 }
@@ -282,7 +296,7 @@ extern int bridge_set_block_owner(char *bg_block_id, char *user_name)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!name)
+	if (!bg_block_id || !user_name)
 		return SLURM_ERROR;
 
         try {
@@ -295,18 +309,24 @@ extern int bridge_set_block_owner(char *bg_block_id, char *user_name)
 	return rc;
 }
 
-extern List bridge_block_get_jobs(bg_record_t *bg_record)
+extern List bridge_block_get_jobs(char *bg_block_id)
 {
 	List ret_list = NULL;
-	std::vector<Job::Id> job_vec;
+	Job::ConstPtrs job_vec;
 	Block::Ptr block_ptr;
-	vector<Job::Id>::iterator iter;
+	JobFilter job_filter;
+	vector<Job::ConstPtr>::iterator iter;
 
 	if (!bridge_init(NULL))
 		return NULL;
 
-	xassert(bg_record);
-	xassert(bg_record->block_ptr);
+	if (!bg_block_id) {
+		error("no block name given");
+		return ret_list;
+	}
+
+	job_filter.setComputeBlockName(bg_block_id);
+
 	block_ptr = (Block::Ptr &)bg_record->block_ptr;
 
 	job_vec = block_ptr->getJobIds();
@@ -315,14 +335,13 @@ extern List bridge_block_get_jobs(bg_record_t *bg_record)
 		return ret_list;
 
 	for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
-		list_append(ret_list, iter);
+		list_append(ret_list, &iter);
 
 	return ret_list;
 }
 
 extern int bridge_job_remove(void *job, char *bg_block_id)
 {
-	int rc;
 	int count = 0;
 	bgq_job_status_t job_state;
 	bool is_history = false;
@@ -334,13 +353,13 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 		return SLURM_ERROR;
 	job_id = job_ptr->getId();
 	debug("removing job %d from MMCS on block %s",
-	      job_id, block_id);
+	      job_id, bg_block_id);
 	while (1) {
 		if (count)
 			sleep(POLL_INTERVAL);
 		count++;
 
-		job_state = job_ptr->getStatus();
+		job_state = (bgq_job_status_t) job_ptr->getStatus().toValue();;
 		is_history = job_ptr->isInHistory();
 
 		/* FIX ME: We need to call something here to end the
@@ -349,13 +368,13 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 		// 	error("bridge_free_job: %s", bg_err_str(rc));
 
 		debug2("job %d on block %s is in state %d history %d",
-		       job_id, block_id, job_state, is_history);
+		       job_id, bg_block_id, job_state, is_history);
 
 		/* check the state and process accordingly */
 		if (is_history) {
 			debug2("Job %d on block %s isn't in the "
 			       "active job table anymore, final state was %d",
-			       job_id, block_id, job_state);
+			       job_id, bg_block_id, job_state);
 			return SLURM_SUCCESS;
 		} else if (job_state == BG_JOB_TERMINATED)
 			return SLURM_SUCCESS;
@@ -363,11 +382,11 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 			if (count > MAX_POLL_RETRIES)
 				error("Job %d on block %s isn't dying, "
 				      "trying for %d seconds", job_id,
-				      block_id, count*POLL_INTERVAL);
+				      bg_block_id, count*POLL_INTERVAL);
 			continue;
 		} else if (job_state == BG_JOB_ERROR) {
 			error("job %d on block %s is in a error state.",
-			      job_id, block_id);
+			      job_id, bg_block_id);
 
 			//free_bg_block();
 			return SLURM_ERROR;
@@ -393,13 +412,13 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 		// if (rc != STATUS_OK) {
 		// 	if (rc == JOB_NOT_FOUND) {
 		// 		debug("job %d on block %s removed from MMCS",
-		// 		      job_ptr->getId(), block_id);
+		// 		      job_ptr->getId(), bg_block_id);
 		// 		return STATUS_OK;
 		// 	}
 		// 	if (rc == INCOMPATIBLE_STATE)
 		// 		debug("job %d on block %s is in an "
 		// 		      "INCOMPATIBLE_STATE",
-		// 		      job_ptr->getId(), block_id);
+		// 		      job_ptr->getId(), bg_block_id);
 		// 	else
 		// 		error("bridge_signal_job(%d): %s",
 		// 		      job_ptr->getId(),
@@ -408,7 +427,7 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 		// 	error("Job %d on block %s is in state %d and "
 		// 	      "isn't dying, and doesn't appear to be "
 		// 	      "responding to SIGTERM, trying for %d seconds",
-		// 	      job_ptr->getId(), block_id,
+		// 	      job_ptr->getId(), bg_block_id,
 		// 	      job_state, count*POLL_INTERVAL);
 
 	}
