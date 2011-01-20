@@ -540,8 +540,9 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 				}
 			}
 #else
-			bg_record->state = RM_PARTITION_FREE;
-//			bg_record->state = RM_PARTITION_DEALLOCATING;
+//			bg_record->state = RM_PARTITION_FREE;
+			if (bg_record->state != RM_PARTITION_FREE)
+				bg_record->state = RM_PARTITION_DEALLOCATING;
 #endif
 		}
 
@@ -691,6 +692,13 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 		/* just incase things change */
 		track_cnt = list_count(track_list);
 		while ((bg_record = list_next(itr))) {
+#ifndef HAVE_BG_FILES
+			/* Fake a free since we are n deallocating
+			   state before this.
+			*/
+			if (retry_cnt >= 2)
+				bg_record->state = RM_PARTITION_FREE;
+#endif
 			if ((bg_record->state == RM_PARTITION_FREE)
 			    || (bg_record->state == RM_PARTITION_ERROR))
 				free_cnt++;
@@ -1655,6 +1663,13 @@ static void *_track_freeing_blocks(void *args)
 		/* just incase this changes from the update function */
 		track_cnt = list_count(track_list);
 		while ((bg_record = list_next(itr))) {
+#ifndef HAVE_BG_FILES
+			/* Fake a free since we are n deallocating
+			   state before this.
+			*/
+			if (retry_cnt >= 2)
+				bg_record->state = RM_PARTITION_FREE;
+#endif
 			if ((bg_record->state == RM_PARTITION_FREE)
 			    || (bg_record->state == RM_PARTITION_ERROR))
 				free_cnt++;

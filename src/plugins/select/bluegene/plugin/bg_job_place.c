@@ -729,6 +729,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	List list_of_lists = NULL;
 	List temp_list = NULL;
 	List new_blocks = NULL;
+	List job_list = NULL, booted_list = NULL;
 	ListIterator itr = NULL;
 	int rc = SLURM_ERROR;
 	int create_try = 0;
@@ -746,20 +747,28 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	if (SELECT_IS_PREEMPT_SET(query_mode)
 	    && SELECT_IS_CHECK_FULL_SET(query_mode)) {
 		list_append(list_of_lists, block_list);
-	} else if (user_req_nodes)
-		list_append(list_of_lists, bg_lists->job_running);
-	else {
+	} else if (user_req_nodes) {
+		slurm_mutex_lock(&block_state_mutex);
+		job_list = copy_bg_list(bg_lists->job_running);
+		list_append(list_of_lists, job_list);
+		slurm_mutex_unlock(&block_state_mutex);
+	} else {
+		slurm_mutex_lock(&block_state_mutex);
 		list_append(list_of_lists, block_list);
 		if (list_count(block_list) != list_count(bg_lists->booted)) {
-			list_append(list_of_lists, bg_lists->booted);
+			booted_list = copy_bg_list(bg_lists->booted);
+			list_append(list_of_lists, booted_list);
 			if (list_count(bg_lists->booted)
-			    != list_count(bg_lists->job_running))
-				list_append(list_of_lists,
-					    bg_lists->job_running);
+			    != list_count(bg_lists->job_running)) {
+				job_list = copy_bg_list(bg_lists->job_running);
+				list_append(list_of_lists, job_list);
+			}
 		} else if (list_count(block_list)
 			   != list_count(bg_lists->job_running)) {
-			list_append(list_of_lists, bg_lists->job_running);
+			job_list = copy_bg_list(bg_lists->job_running);
+			list_append(list_of_lists, job_list);
 		}
+		slurm_mutex_unlock(&block_state_mutex);
 	}
 	itr = list_iterator_create(list_of_lists);
 	while ((temp_list = (List)list_next(itr))) {
@@ -838,6 +847,10 @@ static int _dynamically_request(List block_list, int *blocks_added,
 
 	if (list_of_lists)
 		list_destroy(list_of_lists);
+	if (job_list)
+		list_destroy(job_list);
+	if (booted_list)
+		list_destroy(booted_list);
 
 	return rc;
 }
