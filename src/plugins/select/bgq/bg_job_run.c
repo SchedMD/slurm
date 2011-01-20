@@ -194,8 +194,8 @@ static void _remove_jobs_on_block_and_reset(List job_list, char *block_id)
 		itr = list_iterator_create(job_list);
 		while ((job = list_next(itr))) {
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-			if ((rc = bridge_job_remove(job, block_id))
-			    != SLURM_SUCCESS) {
+			if (bridge_job_remove(job, block_id))
+				!= SLURM_SUCCESS) {
 				job_remove_failed = 1;
 				break;
 			}
@@ -963,10 +963,10 @@ extern int boot_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 
-	if ((rc = bridge_set_block_owner(bg_record->bg_block_id,
+	if ((rc = bridge_block_set_owner(bg_record->bg_block_id,
 					 bg_conf->slurm_user_name))
 	    != STATUS_OK) {
-		error("bridge_set_block_owner(%s,%s): %s",
+		error("bridge_block_set_owner(%s,%s): %s",
 		      bg_record->bg_block_id,
 		      bg_conf->slurm_user_name,
 		      bg_err_str(rc));
@@ -974,23 +974,23 @@ extern int boot_block(bg_record_t *bg_record)
 	}
 
 	info("Booting block %s", bg_record->bg_block_id);
-	if ((rc = bridge_create_block(bg_record)) != STATUS_OK) {
+	if ((rc = bridge_block_create(bg_record)) != SLURM_SUCCESS) {
 		error("bridge_create_block(%s): %s",
 		      bg_record->bg_block_id, bg_err_str(rc));
-		if (rc == INCOMPATIBLE_STATE) {
-			char reason[200];
-			snprintf(reason, sizeof(reason),
-				 "boot_block: "
-				 "Block %s is in an incompatible state.  "
-				 "This usually means hardware is allocated "
-				 "by another block (maybe outside of SLURM).",
-				 bg_record->bg_block_id);
-			bg_record->boot_state = 0;
-			bg_record->boot_count = 0;
-			slurm_mutex_unlock(&block_state_mutex);
-			requeue_and_error(bg_record, reason);
-			slurm_mutex_lock(&block_state_mutex);
-		}
+		/* if (rc == INCOMPATIBLE_STATE) { */
+		/* 	char reason[200]; */
+		/* 	snprintf(reason, sizeof(reason), */
+		/* 		 "boot_block: " */
+		/* 		 "Block %s is in an incompatible state.  " */
+		/* 		 "This usually means hardware is allocated " */
+		/* 		 "by another block (maybe outside of SLURM).", */
+		/* 		 bg_record->bg_block_id); */
+		/* 	bg_record->boot_state = 0; */
+		/* 	bg_record->boot_count = 0; */
+		/* 	slurm_mutex_unlock(&block_state_mutex); */
+		/* 	requeue_and_error(bg_record, reason); */
+		/* 	slurm_mutex_lock(&block_state_mutex); */
+		/* } */
 		return SLURM_ERROR;
 	}
 
