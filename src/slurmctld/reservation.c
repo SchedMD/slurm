@@ -111,14 +111,12 @@ static List _list_dup(List license_list);
 static int  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
+static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
+				  resv_desc_msg_t *resv_desc_ptr);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
-static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
-				  resv_desc_msg_t *resv_desc_ptr);
-static bitstr_t *_pick_idle_nodes2(bitstr_t *avail_nodes,
-				   resv_desc_msg_t *resv_desc_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static bool _resv_overlap(time_t start_time, time_t end_time,
 			  uint16_t flags, bitstr_t *node_bitmap,
@@ -2466,27 +2464,11 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		/* Nodes must be available */
 		bit_and(node_bitmap, avail_node_bitmap);
 	}
-	*resv_bitmap = NULL;
-	if (rc != SLURM_SUCCESS)
-		;
-	else if (bit_set_count(node_bitmap) < resv_desc_ptr->node_cnt)
-		verbose("reservation requests more nodes than are available");
-	else if ((i = bit_overlap(node_bitmap, idle_node_bitmap)) >=
-		 resv_desc_ptr->node_cnt) {	/* Reserve idle nodes */
-		bit_and(node_bitmap, idle_node_bitmap);
-		*resv_bitmap = bit_pick_cnt(node_bitmap,
-					    resv_desc_ptr->node_cnt);
-	} else if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
-		/* Reserve nodes that are idle first, then busy nodes */
-		*resv_bitmap = _pick_idle_nodes2(node_bitmap,
-						 resv_desc_ptr);
-	} else {
-		/* Reserve nodes that are or will be idle.
-		 * This algorithm is slower than above logic that just
-		 * selects from the idle nodes. */
-		*resv_bitmap = _pick_idle_nodes(node_bitmap, resv_desc_ptr);
-	}
 
+	*resv_bitmap = NULL;
+	if (rc == SLURM_SUCCESS)
+		*resv_bitmap = _pick_idle_nodes(node_bitmap,
+						resv_desc_ptr);
 	FREE_NULL_BITMAP(node_bitmap);
 	if (*resv_bitmap == NULL) {
 		if (rc == SLURM_SUCCESS)
@@ -2498,67 +2480,80 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	return SLURM_SUCCESS;
 }
 
-/*
- * Select nodes for a reservation to use
- * IN,OUT avail_nodes - nodes to choose from with proper features, partition
- *                      destructively modified by this function
- * IN resv_desc_ptr - reservation request
- * RET bitmap of selected nodes or NULL if request can not be satisfied
- */
-static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
+static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 				  resv_desc_msg_t *resv_desc_ptr)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
+	bitstr_t *save_bitmap, *ret_bitmap, *tmp_bitmap;
 
+	if (bit_set_count(avail_bitmap) < resv_desc_ptr->node_cnt) {
+		verbose("reservation requests more nodes than are available");
+		return NULL;
+	}
+
+	save_bitmap = bit_copy(avail_bitmap);
+	/* First: Try to reserve nodes that are currently IDLE */
+	if (bit_overlap(avail_bitmap, idle_node_bitmap) >=
+	    resv_desc_ptr->node_cnt) {
+		bit_and(avail_bitmap, idle_node_bitmap);
+		ret_bitmap = bit_pick_cnt(avail_bitmap,
+					  resv_desc_ptr->node_cnt);
+		if (ret_bitmap)
+			goto fini;
+	}
+
+	/* Second: Try to reserve nodes that are will be IDLE */
+	bit_or(avail_bitmap, save_bitmap);	/* restore avail_bitmap */
 	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr) ||
-		    (job_ptr->end_time < resv_desc_ptr->start_time))
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+			continue;
+		if (job_ptr->end_time < resv_desc_ptr->start_time)
 			continue;
 		bit_not(job_ptr->node_bitmap);
-		bit_and(avail_nodes, job_ptr->node_bitmap);
+		bit_and(avail_bitmap, job_ptr->node_bitmap);
 		bit_not(job_ptr->node_bitmap);
 	}
 	list_iterator_destroy(job_iterator);
+	ret_bitmap = bit_pick_cnt(avail_bitmap, resv_desc_ptr->node_cnt);
+	if (ret_bitmap)
+		goto fini;
 
-	return bit_pick_cnt(avail_nodes, resv_desc_ptr->node_cnt);
-}
-
-/*
- * Select nodes for a reservation to use
- * IN,OUT avail_nodes - nodes to choose from with proper features, partition
- *                      destructively modified by this function
- * IN resv_desc_ptr - reservation request
- * RET bitmap of selected nodes or NULL if request can not be satisfied
- */
-static bitstr_t *_pick_idle_nodes2(bitstr_t *avail_nodes,
-				   resv_desc_msg_t *resv_desc_ptr)
-{
-	ListIterator job_iterator;
-	struct job_record *job_ptr;
-	bitstr_t *tmp_bitmap;
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr) ||
-		    (job_ptr->end_time < resv_desc_ptr->start_time))
-			continue;
-		tmp_bitmap = bit_copy(avail_nodes);
-		if (tmp_bitmap == NULL)
-			fatal("malloc failure");
-		bit_not(job_ptr->node_bitmap);
-		bit_and(avail_nodes, job_ptr->node_bitmap);
-		bit_not(job_ptr->node_bitmap);
-		if (bit_set_count(avail_nodes) < resv_desc_ptr->node_cnt) {
-			/* Removed too many nodes, put them back */
-			bit_or(avail_nodes, tmp_bitmap);
+	/* Third: Try to reserve nodes that will be allocated to a limited
+	 * number of running jobs. We could sort the jobs by priority, QOS,
+	 * size or other criterion if desired. Right now we just go down
+	 * the unsorted job list. */
+	if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
+		job_iterator = list_iterator_create(job_list);
+		if (job_iterator == NULL)
+			fatal("list_iterator_create: malloc failure");
+		while ((job_ptr = (struct job_record *)
+			list_next(job_iterator))) {
+			if (!IS_JOB_RUNNING(job_ptr) &&
+			    !IS_JOB_SUSPENDED(job_ptr))
+				continue;
+			if (job_ptr->end_time < resv_desc_ptr->start_time)
+				continue;
+			tmp_bitmap = bit_copy(save_bitmap);
+			bit_and(tmp_bitmap, job_ptr->node_bitmap);
+			if (bit_set_count(tmp_bitmap) > 0) {
+				bit_or(avail_bitmap, tmp_bitmap);
+				ret_bitmap = bit_pick_cnt(avail_bitmap,
+							  resv_desc_ptr->
+							  node_cnt);
+			}
+			FREE_NULL_BITMAP(tmp_bitmap);
+			if (ret_bitmap)
+				break;
 		}
-		FREE_NULL_BITMAP(tmp_bitmap);
+		list_iterator_destroy(job_iterator);
 	}
-	list_iterator_destroy(job_iterator);
 
-	return bit_pick_cnt(avail_nodes, resv_desc_ptr->node_cnt);
+fini:	FREE_NULL_BITMAP(save_bitmap);
+	return ret_bitmap;
 }
 
 /* Determine if a job has access to a reservation
