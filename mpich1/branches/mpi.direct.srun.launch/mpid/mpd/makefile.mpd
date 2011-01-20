@@ -1,5 +1,0 @@
-# This makefile is invoked from the Makefile in p4mpd to configure mpd if it
-# needs it.  This makefile is not made by configure.
-#
-Makefile: Makefile.in
-	./configure

@@ -1,4 +1,0 @@
-/* mpich-mpid.h.in.  Generated automatically from configure.in by autoheader.  */
-
-/* Define if you have the gettimeofday function.  */
-#undef HAVE_GETTIMEOFDAY

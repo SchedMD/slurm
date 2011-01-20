@@ -1,8 +1,0 @@
-/* This is a parallel file to aclocal.m4.  It uses includes the same
-   way that aclocal.m4 does.  Unfortunately, autoheader doesn't process
-   the acconfig.h files with cpp or with m4.  Thus, we use acconfig.h.in
-   to form acconfig.h with cpp 
- */
-#include "acconfig_f77.h"
-#include "acconfig_cc.h"
-#include "acconfig_mpi.h"

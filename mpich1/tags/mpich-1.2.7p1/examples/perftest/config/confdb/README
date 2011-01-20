@@ -1,4 +1,0 @@
-This directory contains autoconf version 2 (2.13) aclocal.m4 files
-They are organized by category, so that you can include subsets in your own
-aclocal.m4 files if you prefer (the aclocal.m4 file here includes them
-all).

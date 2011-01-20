@@ -1,8 +1,0 @@
-#!/bin/sh
-# script to kill a set of programs on a set of machines (one each)
-# takes as input a file containing machine - program pairs 
-awk '{
-         printf("rsh %s /u/lusk/p4test/kj %s &\n",$1,$2)
-	 printf("echo killing %s on %s\n",$2,$1)
-     }' $1 | /bin/sh
-

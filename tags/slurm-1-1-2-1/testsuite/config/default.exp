@@ -1,3 +1,0 @@
-
-proc common_exit {} {}
-proc common_version {} {}

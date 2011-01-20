@@ -1,7 +1,0 @@
-This directory contains a list of the machines at Argonne.  You will need to 
-provide your own line.  The format is one machine per line; the file names
-are "machines.$ARCH".
-
-It is acceptable for there to be repetitions, or even for all lines to be
-the same.  It the latter case, all processes will be started on the same
-machine, but the processes will still communicate via sockets.

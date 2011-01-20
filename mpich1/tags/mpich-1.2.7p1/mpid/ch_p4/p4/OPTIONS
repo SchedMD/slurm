@@ -1,7 +1,0 @@
-/* #define ALOG_TRACE */
-/* For shared memory on SUN, HP, etc. */
-/* #define SYSV_IPC */
-/* For shared memory on SUN_SOLARIS and SGI */
-/* #define VENDOR_IPC */
-#define P4_DPRINTFL
-#define LISTENER_PATHNAME ""

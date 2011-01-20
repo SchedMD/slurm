@@ -1,6 +1,0 @@
-This directory contains the second generation ADI implementation for
-the p4 device.  This simply defines the mappings from p4 to the channel
-device, and uses LINKS to the appropriate ch2 files.
-
-The p4 -> channel mappings are drawn from the PETSc/Chameleon tools for
-mapping between different communication systems.

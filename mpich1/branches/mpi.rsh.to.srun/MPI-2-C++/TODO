@@ -1,9 +1,0 @@
-Known issues / to-do list for MPI-2 C++ bindings
-------------------------------------------------
-
-- Find error with KCC compilers
-- Verify with ecgs
-- Verify with gcc/g++ 2.8.x
-- Verify on linux (with g++, should be a gimmie)
-
-- Add example of user defined datatype

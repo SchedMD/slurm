@@ -1,3 +1,0 @@
-# $Id$
-
-SUBDIRS = slurmd slurmstepd

@@ -1,9 +1,0 @@
-#!/bin/csh
-/margit/c/users/rbutler/p4-1.4dqs/messages/systest1 \
-    -execer_id DQS \
-    -master_host dirac \
-    -my_hostname ibm11 \
-    -my_nodenum 1 \
-    -my_numprocs 1 \
-    -total_numnodes 3 \
-    -job_id  5555

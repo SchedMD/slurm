@@ -1,9 +1,0 @@
-
-Entry for older versions of Unix (e.g. Ultrix 4.x):
-
-P4_PORT_NAME	stream	tcp	nowait	SERVER_HOME/serv_p4 serv_p4
-
-Entry for newer BSD4.3 based Unices (e.g. SunOS, Sequent Dynix, IRIX, 
-Alliant Concentrix, NeXT):
-
-P4_PORT_NAME stream  tcp      nowait  root SERVER_HOME/serv_p4 serv_p4

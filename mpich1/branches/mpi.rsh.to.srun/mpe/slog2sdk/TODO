@@ -1,6 +1,0 @@
-1, investigate if base.drawable.Coord class's lineID needs to be Integer
-   instead of int.  A performance issue with lineID to rowID mapping used
-   in base.drawable.{Primitive,Shadow}'s drawState().
-
-2, separate the code that reads slog2's treenode from the main event
-   dispatching thread, i.e. increase overlap.

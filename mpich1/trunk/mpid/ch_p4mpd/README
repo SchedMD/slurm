@@ -1,8 +1,0 @@
-This directory contains the second generation ADI implementation for
-the ch_p4mpd device.  This simply defines the mappings from p4 to the channel
-device, and uses LINKS to the appropriate ch2 files.
-
-ch_p4mpd is a modification of the ch_p4 device to take advantage of the mpd
-multipurpose daemon for fast startup.  This directory contains p4mpd as 
-a copy of p4 with the necessary changes, primarily to lib/p4_bm.c.  The
-mpd itself is in mpich/mpid/mpd.

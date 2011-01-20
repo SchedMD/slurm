@@ -1,9 +1,0 @@
-#!/bin/csh
-/u5/rbutler/p4/p4-1.4dqs/messages/systest1 \
-    -execer_id DQS \
-    -master_host sinkhole \
-    -my_hostname sinkhole \
-    -my_nodenum 2 \
-    -my_numprocs 1 \
-    -total_numnodes 3 \
-    -job_id  5555

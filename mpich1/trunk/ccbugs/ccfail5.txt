@@ -1,9 +1,0 @@
-    ******************************************************************
-    * Your C compiler can not properly handle certain kinds of       *
-    * structure combinations.  See the file ccbugs/ccfail5.c for the *
-    * example                                                        *
-    *                                                                *
-    * Please file a bug report with your vendor.                     *
-    * As a work-around, consider using a lower level of optimization *
-    *                                                                *
-    ******************************************************************

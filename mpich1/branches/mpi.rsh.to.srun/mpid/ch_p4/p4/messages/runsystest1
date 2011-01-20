@@ -1,9 +1,0 @@
-#!/bin/csh
-starter -port=5555 \
-    -host=dirac \
-	-pgm=/margit/c/users/rbutler/p4-1.4a/messages/systest1 \
-	-numprocs=1  \
-	-args='-p4dbg 11 -p4rdbg 11' \
-    -host=ibm11 \
-	-pgm=/margit/c/users/rbutler/p4-1.4a/messages/systest1 \
-	-numprocs=1

@@ -1,3 +1,0 @@
-ps auwx | grep $1  | \
-grep -v grep | grep -v $$ | \
-awk '{ print "kill -9 " $2 }' | sh

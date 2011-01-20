@@ -1,6 +1,0 @@
-#!/bin/csh
-foreach fn (`ls p4*.c`)
-    echo formatting $fn
-    indent $fn temp -i4 -bl -di2 -npcs -nip -nce -npsl -nfc1 -cli0.5
-    mv temp $fn
-end

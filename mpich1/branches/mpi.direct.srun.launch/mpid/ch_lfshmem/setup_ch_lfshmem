@@ -1,5 +1,0 @@
-#! /bin/sh
-#
-# Use the ch_shmem setup script
-# EXCEPT we need to configure in ch_lfshmem
-. mpid/ch_shmem/setup_ch_shmem "$@" 

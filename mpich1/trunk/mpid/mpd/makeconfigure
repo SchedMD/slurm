@@ -1,9 +1,0 @@
-#! /bin/sh
-# runs autoheader and autoconf with local macros
-confdbdir=/homes/gropp/sowing-proj/sowing/confdb
-cat acconfigl.h $confdbdir/acconfig.h > acconfig.h
-cat $confdbdir/aclocal_*.m4 > aclocal.m4
-autoheader 
-autoconf   
-rm -f aclocal.m4 acconfig.h
-

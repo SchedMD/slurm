@@ -1,5 +1,0 @@
-#!/bin/csh
-echo building pg file
-p4bldpg $*
-echo starting processes
-starter $*

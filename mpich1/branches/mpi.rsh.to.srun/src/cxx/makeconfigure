@@ -1,4 +1,0 @@
-#! /bin/sh
-confdb=/home/gropp/sowing-proj/sowing/confdb
-autoheader --localdir=$confdb
-autoconf --localdir=$confdb
