@@ -765,6 +765,7 @@ _read_config(bool reconfig)
 
 	conf->block_map_size = 0;
 
+	_update_logging();
 	_update_nice();
 		
 	get_procs(&conf->actual_cpus);
