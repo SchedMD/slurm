@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre2
 =============================
+ -- Optimize advanced reservations resource selection for computer topology.
 
 * Changes in SLURM 2.3.0.pre1
 =============================
