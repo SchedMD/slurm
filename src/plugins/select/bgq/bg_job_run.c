@@ -178,28 +178,18 @@ static void _destroy_bg_action(void *x)
 	}
 }
 
-static void _remove_jobs_on_block_and_reset(List job_list, char *block_id)
+static void _remove_jobs_on_block_and_reset(char *block_id)
 {
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
-	ListIterator itr;
-	void *job;
 
 	if (!block_id) {
 		error("_remove_jobs_on_block_and_reset: no block name given");
 		return;
 	}
 
-	if (job_list) {
-		itr = list_iterator_create(job_list);
-		while ((job = list_next(itr))) {
-			if (bridge_job_remove(job, block_id) != SLURM_SUCCESS) {
-				job_remove_failed = 1;
-				break;
-			}
-		}
-		list_iterator_destroy(itr);
-	}
+	if (bridge_block_remove_jobs(block_id) != SLURM_SUCCESS)
+		job_remove_failed = 1;
 
 	/* remove the block's users */
 	slurm_mutex_lock(&block_state_mutex);
@@ -235,7 +225,6 @@ static void _reset_block_list(List block_list)
 {
 	ListIterator itr = NULL;
 	bg_record_t *bg_record = NULL;
-	List job_list = NULL;
 
 	if (!block_list)
 		return;
@@ -244,11 +233,7 @@ static void _reset_block_list(List block_list)
 	while ((bg_record = list_next(itr))) {
 		info("Queue clearing of users of BG block %s",
 		     bg_record->bg_block_id);
-		job_list = bridge_block_get_jobs(bg_record->bg_block_id);
-		_remove_jobs_on_block_and_reset(job_list,
-						bg_record->bg_block_id);
-		if (job_list)
-			list_destroy(job_list);
+		_remove_jobs_on_block_and_reset(bg_record->bg_block_id);
 	}
 	list_iterator_destroy(itr);
 }
@@ -595,18 +580,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 /* Perform job termination work */
 static void _term_agent(bg_action_t *bg_action_ptr)
 {
-	List job_list = NULL;
-	bg_record_t *bg_record;
-
-	slurm_mutex_lock(&block_state_mutex);
-	bg_record = find_bg_record_in_list(bg_lists->main,
-					   bg_action_ptr->bg_block_id);
-	if (bg_record)
-		job_list = bridge_block_get_jobs(bg_record->bg_block_id);
-	slurm_mutex_unlock(&block_state_mutex);
-
-	_remove_jobs_on_block_and_reset(job_list,
-					bg_action_ptr->bg_block_id);
+	_remove_jobs_on_block_and_reset(bg_action_ptr->bg_block_id);
 	list_destroy(job_list);
 }
 

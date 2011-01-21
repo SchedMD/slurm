@@ -53,7 +53,7 @@ static void _free_node_subgrp(void *object)
 	}
 }
 
-#ifdef HAVE_BG_L_P
+#ifdef HAVE_BG_Q
 static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 				   uint16_t size)
 {
@@ -211,7 +211,7 @@ extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 
-#ifdef HAVE_BG_L_P
+#ifdef HAVE_BG_Q
 	if (bg_conf && (!size || size == NO_VAL))
 		size = bg_conf->numpsets;
 #else
@@ -241,7 +241,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 
 extern int select_nodeinfo_set_all(time_t last_query_time)
 {
-#ifdef HAVE_BG_L_P
+#ifdef HAVE_BG_Q
 	ListIterator itr = NULL;
 	struct node_record *node_ptr = NULL;
 	int i=0;

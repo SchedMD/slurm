@@ -116,7 +116,7 @@ extern int bridge_block_remove_user(char *bg_block_id, char *user_name);
 extern int bridge_block_remove_all_users(char *bg_block_id, char *user_name);
 extern int bridge_block_set_owner(char *bg_block_id, char *user_name);
 
-extern List bridge_block_get_jobs(char *bg_block_id);
+extern int bridge_block_remove_jobs(char *bg_block_id);
 
 extern int bridge_job_remove(void *job, char *bg_block_id);
 

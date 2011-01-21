@@ -416,35 +416,49 @@ extern int bridge_block_set_owner(char *bg_block_id, char *user_name)
 	return rc;
 }
 
-extern List bridge_block_get_jobs(char *bg_block_id)
+extern int bridge_block_remove_jobs(char *bg_block_id)
 {
-	List ret_list = NULL;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	std::vector<Job::ConstPtr> job_vec;
 	JobFilter job_filter;
+	JobFilter::Statuses job_statuses;
 	vector<Job::ConstPtr>::iterator iter;
+	int count = 0;
 #endif
 
 	if (!bridge_init(NULL))
-		return NULL;
+		return SLURM_ERROR;
 
 	if (!bg_block_id) {
 		error("no block name given");
-		return ret_list;
+		return SLURM_ERROR;
 	}
 
-	ret_list = list_create(NULL);
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+
 	job_filter.setComputeBlockName(bg_block_id);
 
-	job_vec = getJobs(job_filter);
-	if (job_vec.empty())
-		return ret_list;
+	/* I think these are all the states we need. */
+	job_statuses.insert(Job::Loading);
+	job_statuses.insert(Job::Starting);
+	job_statuses.insert(Job::Running);
+	job_statuses.insert(Job::Ending);
+	job_filter.setStatuses(&job_statuses);
 
-	for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
-		list_append(ret_list, &iter);
+	while (1) {
+		if (count)
+			sleep(POLL_INTERVAL);
+		count++;
+		job_vec = getJobs(job_filter);
+		if (job_vec.empty())
+			return SLURM_SUCCESS;
+
+		for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
+			debug("waiting on job %u to finish on block %s",
+			      *(iter)->getId(), bg_block_id);
+	}
 #endif
-	return ret_list;
+	return SLURM_SUCCESS;
 }
 
 extern int bridge_job_remove(void *job, char *bg_block_id)
