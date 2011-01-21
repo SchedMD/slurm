@@ -8666,10 +8666,11 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
  * IN job_id - id of the job to be requeued
  * IN conn_fd - file descriptor on which to send reply
  * IN protocol_version - slurm protocol version of client
+ * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
-			uint16_t protocol_version)
+			uint16_t protocol_version, bool preempt)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr = NULL;
@@ -8749,7 +8750,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	 * job looks like a new job. */
 	job_ptr->job_state  = JOB_CANCELLED;
 	build_cg_bitmap(job_ptr);
-	deallocate_nodes(job_ptr, false, suspended, false);
+	deallocate_nodes(job_ptr, false, suspended, preempt);
 	xfree(job_ptr->details->req_node_layout);
 	job_completion_logger(job_ptr, true);
 	job_ptr->db_index = 0;

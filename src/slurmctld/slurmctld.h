@@ -1090,12 +1090,13 @@ extern int job_req_node_filter(struct job_record *job_ptr,
  * job_requeue - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN job_id - id of the job to be requeued
- * IN conn_fd - file descriptor on which to send reply, -1 if none
+ * IN conn_fd - file descriptor on which to send reply
  * IN protocol_version - slurm protocol version of client
+ * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
-			uint16_t protocol_version);
+			uint16_t protocol_version, bool preempt);
 
 /*
  * job_step_complete - note normal completion the specified job step

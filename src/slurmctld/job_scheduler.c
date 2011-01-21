@@ -1471,7 +1471,7 @@ static void *_run_prolog(void *arg)
 			     job_id);
 			kill_job = true;
 		} else if ((rc = job_requeue(0, job_id, -1,
-					     (uint16_t)NO_VAL))) {
+					     (uint16_t)NO_VAL, false))) {
 			info("unable to requeue job %u: %m", job_id);
 			kill_job = true;
 		} else

@@ -3290,7 +3290,7 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 
 	lock_slurmctld(job_write_lock);
 	error_code = job_requeue(uid, requeue_ptr->job_id,
-				 msg->conn_fd, msg->protocol_version);
+				 msg->conn_fd, msg->protocol_version, false);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_requeue");
 

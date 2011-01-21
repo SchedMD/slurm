@@ -656,7 +656,7 @@ static void _preempt_job_dequeue(void)
 			   job_ptr->batch_flag && job_ptr->details &&
 			   (job_ptr->details->requeue > 0)) {
 			rc = job_requeue(0, job_ptr->job_id, -1,
-					 (uint16_t)NO_VAL);
+					 (uint16_t)NO_VAL, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
