@@ -305,7 +305,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		if (bg_record->job_ptr)
 			bg_record->job_running = bg_record->job_ptr->job_id;
 
-		/*block is messed up some how (BLOCK_ERROR_STATE)
+		/* block is messed up some how (BLOCK_ERROR_STATE)
 		 * ignore it or if state == RM_PARTITION_ERROR */
 		if ((bg_record->job_running == BLOCK_ERROR_STATE)
 		    || (bg_record->state == RM_PARTITION_ERROR)) {
@@ -314,25 +314,39 @@ static bg_record_t *_find_matching_block(List block_list,
 				     "state (can't use)",
 				     bg_record->bg_block_id);
 			continue;
-		} else if ((bg_record->job_running != NO_JOB_RUNNING)
-			   && (bg_record->job_running != job_ptr->job_id)
-			   && ((bg_conf->layout_mode == LAYOUT_DYNAMIC)
-			       || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
-				    || SELECT_IS_MODE_RUN_NOW(query_mode))
-				   && (bg_conf->layout_mode
-				       != LAYOUT_DYNAMIC)))) {
-			/* Look here if you are trying to run now or
-			   if you aren't looking at the full set.  We
-			   don't continue on running blocks for the
-			   full set because we are seeing if the job
-			   can ever run so look here.
-			*/
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("block %s in use by %s job %d",
-				     bg_record->bg_block_id,
-				     bg_record->user_name,
-				     bg_record->job_running);
-			continue;
+		} else if ((bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			   || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
+				|| SELECT_IS_MODE_RUN_NOW(query_mode))
+			       && (bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
+			if (bg_record->free_cnt) {
+				/* No reason to look at a block that
+				   is being freed unless we are
+				   running static and looking at the
+				   full set.
+				*/
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("block %s being free for other "
+					     "job(s), skipping",
+					     bg_record->bg_block_id);
+				continue;
+			} else if ((bg_record->job_running != NO_JOB_RUNNING)
+				   && (bg_record->job_running
+				       != job_ptr->job_id)) {
+				/* Look here if you are trying to run now or
+				   if you aren't looking at the full set.  We
+				   don't continue on running blocks for the
+				   full set because we are seeing if the job
+				   can ever run so look here.
+				*/
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("block %s in use by %s job %d",
+					     bg_record->bg_block_id,
+					     bg_record->user_name,
+					     bg_record->job_running);
+				continue;
+			}
 		}
 
 		/* Check processor count */
@@ -626,16 +640,13 @@ static int _check_for_booted_overlapping_blocks(
 							     bg_block_id);
 						found_record =
 							bg_record->original;
-						remove_from_bg_list(
-							bg_lists->main,
-							found_record);
 					} else {
 						if (bg_conf->slurm_debug_flags
 						    & DEBUG_FLAG_BG_PICK)
 							info("looking for "
 							     "original");
 						found_record =
-							find_and_remove_org_from_bg_list(
+							find_org_in_bg_list(
 								bg_lists->main,
 								bg_record);
 					}

@@ -42,7 +42,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - more robust checking for states when freeing blocks.
  -- Added correct files to the slurm.spec file for correct perl api rpm
     creation.
- 
+
 * Changes in SLURM 2.2.0
 ========================
  -- Change format of Duration field in "scontrol show reservation" output from
