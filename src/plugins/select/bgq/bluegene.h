@@ -44,12 +44,6 @@
 #include "bg_record_functions.h"
 #include "block_allocator/block_allocator.h"
 
-#define MAX_PTHREAD_RETRIES  1
-#define BLOCK_ERROR_STATE    -3
-#define ADMIN_ERROR_STATE    -4
-#define NO_JOB_RUNNING       -1
-#define BUFSIZE 4096
-#define BITSIZE 128
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
 #define BLOCK_STATE_VERSION      "VER001"
@@ -74,9 +68,6 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start);
 
 /* remove all users from a block but what is in user_name */
 /* Note return codes */
-#define REMOVE_USER_ERR  -1
-#define REMOVE_USER_NONE  0
-#define REMOVE_USER_FOUND 2
 extern int remove_all_users(bg_record_t *bg_record, char *user_name);
 extern int set_block_user(bg_record_t *bg_record);
 

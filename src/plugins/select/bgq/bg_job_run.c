@@ -952,16 +952,6 @@ extern int boot_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 
-	if ((rc = bridge_block_set_owner(bg_record->bg_block_id,
-					 bg_conf->slurm_user_name))
-	    != SLURM_SUCCESS) {
-		/* error("bridge_block_set_owner(%s,%s): %s", */
-		/*       bg_record->bg_block_id, */
-		/*       bg_conf->slurm_user_name, */
-		/*       bridge_err_str(rc)); */
-		return SLURM_ERROR;
-	}
-
 	info("Booting block %s", bg_record->bg_block_id);
 	if ((rc = bridge_block_boot(bg_record)) != SLURM_SUCCESS) {
 		/* error("bridge_create_block(%s): %s", */
@@ -982,21 +972,6 @@ extern int boot_block(bg_record_t *bg_record)
 		/* } */
 		return SLURM_ERROR;
 	}
-
-	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
-		list_push(bg_lists->booted, bg_record);
-	/* Set this here just to make sure we know we are suppose to
-	   be booting.  Just incase the block goes free before we
-	   notice we are configuring.
-	*/
-	bg_record->boot_state = 1;
-/* #else */
-/* 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record)) */
-/* 		list_push(bg_lists->booted, bg_record); */
-/* 	bg_record->state = BG_BLOCK_INITED; */
-/* 	last_bg_update = time(NULL); */
-/* #endif */
-
 
 	return SLURM_SUCCESS;
 }

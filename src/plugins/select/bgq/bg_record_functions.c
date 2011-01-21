@@ -116,59 +116,6 @@ extern void destroy_bg_record(void *object)
 	}
 }
 
-/* see if a record already of like bitmaps exists in a list */
-extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
-{
-	ListIterator itr = list_iterator_create(my_list);
-	bg_record_t *found_record = NULL;
-	int rc = 0;
-
-	while ((found_record = list_next(itr))) {
-		/* check for full node bitmap compare */
-		if (bit_equal(bg_record->bitmap, found_record->bitmap)
-		    && bit_equal(bg_record->ionode_bitmap,
-				 found_record->ionode_bitmap)) {
-			if (bg_record->ionodes)
-				debug("This block %s[%s] "
-				      "is already in the list %s",
-				      bg_record->nodes,
-				      bg_record->ionodes,
-				      found_record->bg_block_id);
-			else
-				debug("This block %s "
-				      "is already in the list %s",
-				      bg_record->nodes,
-				      found_record->bg_block_id);
-
-			rc = 1;
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	return rc;
-}
-
-/* see if the exact record already exists in a list */
-extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record)
-{
-	ListIterator itr = NULL;
-	bg_record_t *found_record = NULL;
-	int rc = 0;
-
-	if (!my_list || !bg_record)
-		return rc;
-
-	itr = list_iterator_create(my_list);
-	while ((found_record = list_next(itr))) {
-		if (bg_record == found_record) {
-			rc = 1;
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	return rc;
-}
-
 extern void process_nodes(bg_record_t *bg_record, bool startup)
 {
 	int j=0, number;
@@ -566,33 +513,6 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	return bg_record_cmpf_inc(rec_a, rec_b);
 }
 
-/* if looking at the main list this should have some nice
- * block_state_mutex locks around it.
- */
-extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
-{
-	ListIterator itr;
-	bg_record_t *bg_record = NULL;
-
-	xassert(my_list);
-
-	if (!bg_block_id)
-		return NULL;
-
-	itr = list_iterator_create(my_list);
-	while ((bg_record = list_next(itr))) {
-		if (bg_record->bg_block_id)
-			if (!strcasecmp(bg_record->bg_block_id, bg_block_id))
-				break;
-	}
-	list_iterator_destroy(itr);
-
-	if (bg_record)
-		return bg_record;
-	else
-		return NULL;
-}
-
 /* All changes to the bg_list target_name must
    be done before this function is called.
    also slurm_conf_lock() must be called before calling this
@@ -613,7 +533,7 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 
 	if (set) {
 		if ((rc = bridge_block_remove_all_users(
-			     bg_record, bg_record->target_name))
+			     bg_record->bg_block_id, bg_record->target_name))
 		    == REMOVE_USER_ERR) {
 			error("1 Something happened removing "
 			      "users from block %s",
@@ -627,7 +547,8 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 				     bg_record->bg_block_id);
 
 				if ((rc = bridge_block_add_user(
-					     bg_record, bg_record->target_name))
+					     bg_record->bg_block_id,
+					     bg_record->target_name))
 				    != SLURM_SUCCESS) {
 					error("bridge_add_block_user"
 					      "(%s,%s): %s",

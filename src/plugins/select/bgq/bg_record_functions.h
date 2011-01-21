@@ -40,10 +40,6 @@
 #ifndef _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 #define _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -61,22 +57,14 @@ extern "C" {
 #include "src/slurmctld/slurmctld.h"
 #include "block_allocator/block_allocator.h"
 
-#define BLOCK_MAGIC 0x3afd
-
-
 /* Log a bg_record's contents */
 extern void print_bg_record(bg_record_t *record);
 extern void destroy_bg_record(void *object);
-extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
-extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record);
 extern void process_nodes(bg_record_t *bg_reord, bool startup);
 extern List copy_bg_list(List in_list);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 extern int bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b);
-
-/* return bg_record from a bg_list */
-extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
 
 /* change username of a block bg_record_t target_name needs to be
    updated before call of function.
@@ -96,9 +84,5 @@ extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap);
 extern int put_block_in_error_state(bg_record_t *bg_record,
 				    int state, char *reason);
 extern int resume_block(bg_record_t *bg_record);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _BLUEGENE_BG_RECORD_FUNCTIONS_H_ */

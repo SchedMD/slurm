@@ -39,7 +39,6 @@
 extern "C" {
 #include "bridge_linker.h"
 #include "../block_allocator/block_allocator.h"
-#include "../bg_record_functions.h"
 }
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
@@ -116,34 +115,13 @@ extern const char *bridge_err_str(int inx)
 	return "?";
 }
 
-extern int bridge_get_bg(my_bluegene_t **bg)
-{
-	int rc = SLURM_ERROR;
-	if (!bridge_init(NULL))
-		return rc;
-	try {
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-		ComputeHardware::ConstPtr bgq = getComputeHardware();
-		*bg = (my_bluegene_t *)&bgq;
-#else
-		*bg = (void *)1;
-#endif
-		rc = SLURM_SUCCESS;
-	} catch (...) { // Handle all exceptions
-		error(" Unexpected error calling getComputeHardware");
-		*bg = NULL;
-	}
-
-	return rc;
-}
-
 extern int bridge_get_size(uint16_t *size)
 {
 	int i;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
         Midplane::Coordinates bgq_size = core::getMachineSize();
 #endif
-	if (!bridge_init(NULL) || !bg)
+	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 	memset(size, 0, sizeof(uint16_t) * SYSTEM_DIMENSIONS);
 
@@ -159,14 +137,14 @@ extern int bridge_get_size(uint16_t *size)
 	return SLURM_SUCCESS;
 }
 
-extern List bridge_get_map()
+extern List bridge_get_midplanes()
 {
 	uint32_t a, x, y, z;
 	List b_midplane_list = NULL;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	ComputeHardware::ConstPtr bgq;
 #endif
-	if (!bridge_init(NULL) || !bg)
+	if (!bridge_init(NULL))
 		return b_midplane_list;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
@@ -262,13 +240,25 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	return rc;
 }
 
+/*
+ * Boot a block. Block state expected to be FREE upon entry.
+ * NOTE: This function does not wait for the boot to complete.
+ * the slurm prolog script needs to perform the waiting.
+ * NOTE: block_state_mutex needs to be locked before entering.
+ */
 extern int bridge_block_boot(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
-	if (!bridge_init(NULL))
+
+	if (bg_record->magic != BLOCK_MAGIC) {
+		error("boot_block: magic was bad");
 		return SLURM_ERROR;
+	}
 
 	if (!bg_record || !bg_record->bg_block_id)
+		return SLURM_ERROR;
+
+	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
@@ -282,6 +272,11 @@ extern int bridge_block_boot(bg_record_t *bg_record)
                 error("Boot block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
+	/* Set this here just to make sure we know we are suppose to
+	   be booting.  Just incase the block goes free before we
+	   notice we are configuring.
+	*/
+	bg_record->boot_state = BG_BLOCK_BOOTING;
 #else
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 	 	list_push(bg_lists->booted, bg_record);
@@ -331,7 +326,7 @@ extern int bridge_block_remove(char *bg_block_id)
 	return rc;
 }
 
-extern int bridge_block_set_owner(char *bg_block_id, char *user_name)
+extern int bridge_block_add_user(char *bg_block_id, char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
@@ -348,6 +343,76 @@ extern int bridge_block_set_owner(char *bg_block_id, char *user_name)
 		rc = SLURM_ERROR;
 	}
 #endif
+	return rc;
+}
+
+extern int bridge_block_remove_user(char *bg_block_id, char *user_name)
+{
+	int rc = SLURM_SUCCESS;
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (!bg_block_id || !user_name)
+		return SLURM_ERROR;
+
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+        try {
+		Block::removeUser(bg_block_id, user_name);
+	} catch(...) {
+                error("Remove block request failed ... continuing.");
+		rc = REMOVE_USER_ERR;
+	}
+#endif
+	return rc;
+}
+
+extern int bridge_block_remove_all_users(char *bg_block_id, char *user_name)
+{
+	int rc = SLURM_SUCCESS;
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	std::vector<std::string> vec;
+#endif
+
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (!bg_block_id)
+		return SLURM_ERROR;
+
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	vec = Block::getUsers(bg_block_id);
+	if (vec.empty())
+		return REMOVE_USER_NONE;
+	for (iter = vec.begin(); iter != vec.end(); iter++) {
+		if (user_name && !strcmp(user_name, iter))
+			continue;
+		if ((rc = bridge_block_remove_user(bg_block_id, user_name)
+		     != SLURM_SUCCESS))
+			break;
+	}
+
+#endif
+	return rc;
+}
+
+extern int bridge_block_set_owner(char *bg_block_id, char *user_name)
+{
+	int rc = SLURM_SUCCESS;
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
+	if (!bg_block_id || !user_name)
+		return SLURM_ERROR;
+
+	if ((rc = bridge_block_remove_all_users(bg_block_id, user_name))
+	    == REMOVE_USER_ERR) {
+		error("bridge_block_set_owner: Something happened removing "
+		      "users from block %s",
+		      bg_block_id);
+		return SLURM_ERROR;
+	} else if (rc == REMOVE_USER_NONE && user_name)
+		rc = bridge_block_add_user(bg_block_id, user_name);
+
 	return rc;
 }
 

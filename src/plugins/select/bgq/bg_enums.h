@@ -69,8 +69,6 @@ typedef enum {
         BG_JOB_ERROR        //!< Job is in error status.
 } bgq_job_status_t;
 
-typedef void my_bluegene_t;
-
 #ifdef __cplusplus
 }
 #endif

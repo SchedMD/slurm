@@ -247,9 +247,6 @@ typedef struct {
 } ba_system_t;
 
 /* Global */
-extern my_bluegene_t *bg;
-extern List bp_map_list; /* list used for conversion from ABCD to Rack
-			  * midplane */
 extern char letters[62]; /* complete list of letters used in smap */
 extern char colors[6]; /* index into colors used for smap */
 extern uint16_t DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in

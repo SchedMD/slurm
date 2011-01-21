@@ -82,9 +82,8 @@ char *p = '\0';
 uint32_t ba_debug_flags = 0;
 
 /* extern Global */
-my_bluegene_t *bg = NULL;
 uint16_t ba_deny_pass = 0;
-List bp_map_list = NULL;
+List ba_midplane_list = NULL;
 char letters[62];
 char colors[6];
 uint16_t DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
@@ -1025,17 +1024,7 @@ node_info_error:
 	   we don't want to allow more than we have. */
 	if (sanity_check) {
 		verbose("Attempting to contact MMCS");
-		if (bridge_get_bg(&bg) != SLURM_SUCCESS) {
-			fatal("bridge_get_BG() failed.  This usually means "
-			      "there is something wrong with the database.  "
-			      "Cou might want to run slurmctld in daemon "
-			      "mode (-D) to see what the real error from "
-			      "the api was.");
-			return;
-		}
-
-		if (bg && (bridge_get_size(bg, REAL_DIM_SIZE)
-			   == SLURM_SUCCESS)) {
+		if (bridge_get_size(REAL_DIM_SIZE) == SLURM_SUCCESS) {
 			verbose("BlueGene configured with "
 				"%d x %d x %d x %d base blocks",
 				REAL_DIM_SIZE[A],
@@ -1133,7 +1122,7 @@ extern void init_wires()
 	}
 #ifdef HAVE_BG_FILES
 	_set_external_wires(0,0,NULL,NULL);
-	if (!bp_map_list) {
+	if (!ba_midplane_list) {
 		if (set_bp_map() == -1) {
 			return;
 		}
@@ -1165,13 +1154,9 @@ extern void ba_fini()
 		best_path = NULL;
 	}
 
-	/* It doesn't appear this is needed */
-	/* if (bg) */
-	/* 	bridge_free_bg(bg); */
-
-	if (bp_map_list) {
-		list_destroy(bp_map_list);
-		bp_map_list = NULL;
+	if (ba_midplane_list) {
+		list_destroy(ba_midplane_list);
+		ba_midplane_list = NULL;
 		_bp_map_initialized = false;
 	}
 	bridge_fini();
@@ -1963,12 +1948,7 @@ extern int set_bp_map(void)
 	if (_bp_map_initialized)
 		return 1;
 
-	if (!bg) {
-		if (bridge_get_bg(&bg) != SLURM_SUCCESS)
-			return -1;
-	}
-
-	bp_map_list = bridge_get_map(bg);
+	ba_midplane_list = bridge_get_midplanes();
 
 	_bp_map_initialized = true;
 	return 1;
@@ -1984,7 +1964,7 @@ extern uint16_t *find_bp_loc(char* bp_id)
 	ListIterator itr;
 	char *check = NULL;
 
-	if (!bp_map_list) {
+	if (!ba_midplane_list) {
 		if (set_bp_map() == -1)
 			return NULL;
 	}
@@ -2023,7 +2003,7 @@ extern uint16_t *find_bp_loc(char* bp_id)
 	}
 #endif
 
-	itr = list_iterator_create(bp_map_list);
+	itr = list_iterator_create(ba_midplane_list);
 	while ((b_midplane = list_next(itr)))
 		if (!strcasecmp(b_midplane->loc, check))
 			break;	/* we found it */
@@ -2064,12 +2044,12 @@ extern char *find_bp_rack_mid(char* axyz)
 	number = xstrntol(axyz + len, &p, cluster_dims, cluster_base);
 	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
 
-	if (!bp_map_list) {
+	if (!ba_midplane_list) {
 		if (set_bp_map() == -1)
 			return NULL;
 	}
 
-	itr = list_iterator_create(bp_map_list);
+	itr = list_iterator_create(ba_midplane_list);
 	while ((b_midplane = list_next(itr)) != NULL)
 		if (b_midplane->coord[A] == coord[A] &&
 		    b_midplane->coord[X] == coord[X] &&

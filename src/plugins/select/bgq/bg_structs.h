@@ -137,4 +137,18 @@ typedef struct bg_record {
 	uid_t user_uid;   		/* Owner of block uid	*/
 } bg_record_t;
 
+#define MAX_PTHREAD_RETRIES  1
+#define BLOCK_ERROR_STATE    -3
+#define ADMIN_ERROR_STATE    -4
+#define NO_JOB_RUNNING       -1
+#define BUFSIZE 4096
+#define BITSIZE 128
+
+#define BLOCK_MAGIC 0x3afd
+
+#define REMOVE_USER_ERR  -1
+#define REMOVE_USER_NONE  0
+#define REMOVE_USER_FOUND 2
+
+
 #endif
