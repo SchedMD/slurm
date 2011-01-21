@@ -100,9 +100,9 @@ static int	_job_signal(uint32_t jobid, uint16_t sig_num)
 		return ESLURM_ALREADY_DONE;
 
 	if (job_ptr->batch_flag)
-		rc = job_signal(jobid, sig_num, 1, 0);
+		rc = job_signal(jobid, sig_num, 1, 0, false);
 	if (rc == SLURM_SUCCESS)
-		rc = job_signal(jobid, sig_num, 0, 0);
+		rc = job_signal(jobid, sig_num, 0, 0, false);
 	return rc;
 }
 

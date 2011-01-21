@@ -1293,7 +1293,8 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 		/* NOTE: SLURM_BATCH_SCRIPT == NO_VAL */
 		error_code = job_signal(job_step_kill_msg->job_id,
 					job_step_kill_msg->signal,
-					job_step_kill_msg->batch_flag, uid);
+					job_step_kill_msg->batch_flag, uid,
+					false);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_job_step_kill");
 

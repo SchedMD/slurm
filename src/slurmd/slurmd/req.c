@@ -260,6 +260,12 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_terminate_tasks(msg);
 		slurm_free_kill_tasks_msg(msg->data);
 		break;
+	case REQUEST_KILL_PREEMPTED:
+		debug2("Processing RPC: REQUEST_KILL_PREEMPTED");
+		last_slurmctld_msg = time(NULL);
+		_rpc_timelimit(msg);
+		slurm_free_timelimit_msg(msg->data);
+		break;
 	case REQUEST_KILL_TIMELIMIT:
 		debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
 		last_slurmctld_msg = time(NULL);
@@ -1834,7 +1840,8 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 #  endif
 #endif
 
-	if ((signal == SIG_TIME_LIMIT) || (signal == SIG_DEBUG_WAKE)) {
+	if ((signal == SIG_PREEMPTED) || (signal == SIG_TIME_LIMIT) ||
+	    (signal == SIG_DEBUG_WAKE)) {
 		rc = stepd_signal_container(fd, signal);
 	} else {
 		rc = stepd_signal(fd, signal);
@@ -2249,14 +2256,20 @@ _rpc_timelimit(slurm_msg_t *msg)
 		slurm_ctl_conf_t *cf;
 		int delay;
 		/* A jobstep has timed out:
-		 * - send the container a SIG_TIME_LIMIT to note the occasion
+		 * - send the container a SIG_TIME_LIMIT or SIG_PREEMPTED
+		 *   to log the event
 		 * - send a SIGCONT to resume any suspended tasks
 		 * - send a SIGTERM to begin termination
 		 * - sleep KILL_WAIT
 		 * - send a SIGKILL to clean up
 		 */
-		rc = _signal_jobstep(req->job_id, req->step_id, uid,
-				     SIG_TIME_LIMIT);
+		if (msg->msg_type == REQUEST_KILL_TIMELIMIT) {
+			rc = _signal_jobstep(req->job_id, req->step_id, uid,
+					     SIG_TIME_LIMIT);
+		} else {
+			rc = _signal_jobstep(req->job_id, req->step_id, uid,
+					     SIG_PREEMPTED);
+		}
 		if (rc != SLURM_SUCCESS)
 			return;
 		rc = _signal_jobstep(req->job_id, req->step_id, uid, SIGCONT);
@@ -2273,7 +2286,10 @@ _rpc_timelimit(slurm_msg_t *msg)
 		return;
 	}
 
-	_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, true);
+	if (msg->msg_type == REQUEST_KILL_TIMELIMIT)
+		_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, true);
+	else /* (msg->type == REQUEST_KILL_PREEMPTED) */
+		_kill_all_active_steps(req->job_id, SIG_PREEMPTED, true);
 	nsteps = xcpu_signal(SIGTERM, req->nodes) +
 		_kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps",

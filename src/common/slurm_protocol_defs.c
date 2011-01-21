@@ -2291,6 +2291,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CHECKPOINT_TASKS:
 		slurm_free_checkpoint_tasks_msg(data);
 		break;
+	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
 		slurm_free_timelimit_msg(data);
 		break;

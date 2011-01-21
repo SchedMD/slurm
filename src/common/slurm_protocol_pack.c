@@ -901,6 +901,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				     msg->protocol_version);
 		break;
 	case REQUEST_ABORT_JOB:
+	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
 		_pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer,
@@ -1404,6 +1405,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					    msg->protocol_version);
 		break;
 	case REQUEST_ABORT_JOB:
+	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
 		rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data),

@@ -1950,7 +1950,8 @@ extern int kill_job_by_part_name(char *part_name)
 			} else
 				job_ptr->end_time = now;
 			if (!pending)
-				deallocate_nodes(job_ptr, false, suspended);
+				deallocate_nodes(job_ptr, false, suspended,
+						 false);
 			job_completion_logger(job_ptr, false);
 		} else if (pending) {
 			job_count++;
@@ -2070,7 +2071,8 @@ extern int kill_job_by_front_end_name(char *node_name)
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				build_cg_bitmap(job_ptr);
-				deallocate_nodes(job_ptr, false, suspended);
+				deallocate_nodes(job_ptr, false, suspended,
+						 false);
 				job_completion_logger(job_ptr, true);
 				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
@@ -2113,7 +2115,8 @@ extern int kill_job_by_front_end_name(char *node_name)
 							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
-				deallocate_nodes(job_ptr, false, suspended);
+				deallocate_nodes(job_ptr, false, suspended,
+						 false);
 				job_completion_logger(job_ptr, false);
 			}
 		}
@@ -2233,7 +2236,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				build_cg_bitmap(job_ptr);
-				deallocate_nodes(job_ptr, false, suspended);
+				deallocate_nodes(job_ptr, false, suspended,
+						 false);
 				job_completion_logger(job_ptr, true);
 				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
@@ -2276,7 +2280,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
-				deallocate_nodes(job_ptr, false, suspended);
+				deallocate_nodes(job_ptr, false, suspended,
+						 false);
 				job_completion_logger(job_ptr, false);
 			}
 		}
@@ -2788,7 +2793,7 @@ extern int job_fail(uint32_t job_id)
 		job_ptr->exit_code = 1;
 		job_ptr->state_reason = FAIL_LAUNCH;
 		xfree(job_ptr->state_desc);
-		deallocate_nodes(job_ptr, false, suspended);
+		deallocate_nodes(job_ptr, false, suspended, false);
 		job_completion_logger(job_ptr, false);
 		return SLURM_SUCCESS;
 	}
@@ -2805,12 +2810,11 @@ extern int job_fail(uint32_t job_id)
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN batch_flag - signal batch shell only if set
  * IN uid - uid of requesting user
+ * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
  */
 extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
-		      uid_t uid)
+		      uid_t uid, bool preempt)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -2854,7 +2858,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return ESLURM_ALREADY_DONE;
 
 	/* save user ID of the one who requested the job be cancelled */
-	if(signal == SIGKILL)
+	if (signal == SIGKILL)
 		job_ptr->requid = uid;
 	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
@@ -2885,7 +2889,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-		deallocate_nodes(job_ptr, false, true);
+		deallocate_nodes(job_ptr, false, true, preempt);
 		job_completion_logger(job_ptr, false);
 		verbose("job_signal %u of suspended job %u successful",
 			signal, job_id);
@@ -2900,7 +2904,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			last_job_update			= now;
 			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 			build_cg_bitmap(job_ptr);
-			deallocate_nodes(job_ptr, false, false);
+			deallocate_nodes(job_ptr, false, false, preempt);
 			job_completion_logger(job_ptr, false);
 		} else if (batch_flag) {
 			if (job_ptr->batch_flag)
@@ -3088,7 +3092,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	last_job_update = now;
 	if (job_comp_flag) {	/* job was running */
 		build_cg_bitmap(job_ptr);
-		deallocate_nodes(job_ptr, false, suspended);
+		deallocate_nodes(job_ptr, false, suspended, false);
 	}
 	info("sched: job_complete for JobId=%u successful", job_id);
 	return SLURM_SUCCESS;
@@ -4618,7 +4622,8 @@ void job_time_limit(void)
 				debug("Warning signal %u to job %u ",
 				      job_ptr->warn_signal, job_ptr->job_id);
 				(void) job_signal(job_ptr->job_id,
-						  job_ptr->warn_signal, 0, 0);
+						  job_ptr->warn_signal, 0, 0,
+						  false);
 				job_ptr->warn_signal = 0;
 				job_ptr->warn_time = 0;
 			}
@@ -4824,10 +4829,10 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
 		job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
-		deallocate_nodes(job_ptr, true, false);
+		deallocate_nodes(job_ptr, true, false, false);
 		job_completion_logger(job_ptr, false);
 	} else
-		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
 	return;
 }
 
@@ -8744,7 +8749,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	 * job looks like a new job. */
 	job_ptr->job_state  = JOB_CANCELLED;
 	build_cg_bitmap(job_ptr);
-	deallocate_nodes(job_ptr, false, suspended);
+	deallocate_nodes(job_ptr, false, suspended, false);
 	xfree(job_ptr->details->req_node_layout);
 	job_completion_logger(job_ptr, true);
 	job_ptr->db_index = 0;
@@ -8868,7 +8873,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		info("Association deleted, cancelling job %u",
 		     job_ptr->job_id);
 		/* make sure the assoc_mgr_lock isn't locked before this. */
-		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
 		job_ptr->state_reason = FAIL_ACCOUNT;
 		xfree(job_ptr->state_desc);
 		cnt++;
@@ -8922,7 +8927,7 @@ extern int job_cancel_by_qos_id(uint32_t qos_id)
 		info("QOS deleted, cancelling job %u",
 		     job_ptr->job_id);
 		/* make sure the assoc_mgr_lock isn't locked before this. */
-		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
 		job_ptr->state_reason = FAIL_QOS;
 		xfree(job_ptr->state_desc);
 		cnt++;

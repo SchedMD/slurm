@@ -162,9 +162,10 @@ extern void allocate_nodes(struct job_record *job_ptr)
  *	RPC instead of REQUEST_TERMINATE_JOB
  * IN suspended - true if job was already suspended (node's job_run_cnt
  *	already decremented);
+ * IN preempted - true if job is being preempted
  */
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
-		bool suspended)
+		bool suspended, bool preempted)
 {
 	int i;
 	kill_job_msg_t *kill_job = NULL;
@@ -193,6 +194,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	if (timeout)
 		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
+	else if (preempted)
+		agent_args->msg_type = REQUEST_KILL_PREEMPTED;
 	else
 		agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 0;	/* re_kill_job() resends as needed */
@@ -1017,7 +1020,7 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
 		mode = slurm_job_preempt_mode(job_ptr);
 		if (mode == PREEMPT_MODE_CANCEL) {
-			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been killed",
 				     job_ptr->job_id);
@@ -1059,7 +1062,7 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS)
 				info("preempted job %u had to be killed",
 				     job_ptr->job_id);

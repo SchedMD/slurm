@@ -171,7 +171,7 @@ static int	_cancel_job(uint32_t jobid, char *comment_ptr,
 		job_ptr->comment = xstrdup(comment_ptr);
 	}
 
-	slurm_rc = job_signal(jobid, SIGKILL, 0, 0);
+	slurm_rc = job_signal(jobid, SIGKILL, 0, 0, false);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
 		*err_msg = slurm_strerror(slurm_rc);

@@ -62,9 +62,10 @@ extern void build_node_details(struct job_record *job_ptr);
  *	RPC instead of REQUEST_TERMINATE_JOB
  * IN suspended - true if job was already suspended (node's job_run_cnt
  *	already decremented);
+ * IN preempted - true if job is being preempted
  */
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
-		bool suspended);
+		bool suspended, bool preempted);
 
 /*
  * re_kill_job - for a given job, deallocate its nodes for a second time,

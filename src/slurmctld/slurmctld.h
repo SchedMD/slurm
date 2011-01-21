@@ -986,12 +986,11 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN batch_flag - signal batch shell only if set
  * IN uid - uid of requesting user
+ * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
  */
 extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
-		      uid_t uid);
+		      uid_t uid, bool preempt);
 
 /*
  * job_step_cancel - cancel the specified job step

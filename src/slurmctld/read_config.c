@@ -1463,7 +1463,7 @@ static int _sync_nodes_to_comp_job(void)
 			info("Job %u in completing state", job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)
 				build_cg_bitmap(job_ptr);
-			deallocate_nodes(job_ptr, false, false);
+			deallocate_nodes(job_ptr, false, false, false);
 			/* The job in completing state at slurmctld restart or
 			 * reconfiguration, do not log completion again.
 			 * job_completion_logger(job_ptr, false); */

@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre2
 =============================
+ -- Log a job cancellation due to preemption to that job's stderr.
 
 * Changes in SLURM 2.3.0.pre1
 =============================

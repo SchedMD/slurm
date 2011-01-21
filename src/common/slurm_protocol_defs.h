@@ -295,6 +295,7 @@ typedef enum {
 				 * job/step/task complete responses */
 	REQUEST_FILE_BCAST,
 	TASK_USER_MANAGED_IO_STREAM,
+	REQUEST_KILL_PREEMPTED,
 
 	SRUN_PING = 7001,
 	SRUN_TIMEOUT,
@@ -694,6 +695,7 @@ typedef struct return_code_msg {
  * from getting the MPIRUN_PARTITION at that time. It is needed for
  * the job epilog. */
 
+#define SIG_PREEMPTED	994	/* Dummy signal value for job preemption */
 #define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped 
 				 * for debugger */
 #define SIG_TIME_LIMIT	996	/* Dummy signal value for time limit reached */
