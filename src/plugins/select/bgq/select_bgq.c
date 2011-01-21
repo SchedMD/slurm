@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 
+#include "src/common/slurm_xlator.h"
 #include "bluegene.h"
 
 #define HUGE_BUF_SIZE (1024*16)

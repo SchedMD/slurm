@@ -44,21 +44,6 @@
 #include "bg_record_functions.h"
 #include "block_allocator/block_allocator.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Global variables */
-extern bg_config_t *bg_conf;
-extern bg_lists_t *bg_lists;
-extern ba_system_t *ba_system_ptr;
-extern time_t last_bg_update;
-extern bool agent_fini;
-extern pthread_mutex_t block_state_mutex;
-extern pthread_mutex_t request_list_mutex;
-extern int blocks_are_created;
-extern int num_unused_cpus;
-
 #define MAX_PTHREAD_RETRIES  1
 #define BLOCK_ERROR_STATE    -3
 #define ADMIN_ERROR_STATE    -4
@@ -92,7 +77,7 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start);
 #define REMOVE_USER_ERR  -1
 #define REMOVE_USER_NONE  0
 #define REMOVE_USER_FOUND 2
-extern int remove_all_users(char *bg_block_id, char *user_name);
+extern int remove_all_users(bg_record_t *bg_record, char *user_name);
 extern int set_block_user(bg_record_t *bg_record);
 
 /* sort a list of bg_records by size (node count) */
@@ -135,10 +120,6 @@ extern int configure_block_switches(bg_record_t * bg_conf_record);
 /* select_bluegene.c */
 /*****************************************************/
 extern int select_p_update_block(update_block_msg_t *block_desc_ptr);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _BLUEGENE_H_ */
 

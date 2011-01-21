@@ -193,12 +193,10 @@ static void _remove_jobs_on_block_and_reset(List job_list, char *block_id)
 	if (job_list) {
 		itr = list_iterator_create(job_list);
 		while ((job = list_next(itr))) {
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 			if (bridge_job_remove(job, block_id) != SLURM_SUCCESS) {
 				job_remove_failed = 1;
 				break;
 			}
-#endif
 		}
 		list_iterator_destroy(itr);
 	}
@@ -246,9 +244,7 @@ static void _reset_block_list(List block_list)
 	while ((bg_record = list_next(itr))) {
 		info("Queue clearing of users of BG block %s",
 		     bg_record->bg_block_id);
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 		job_list = bridge_block_get_jobs(bg_record->bg_block_id);
-#endif
 		_remove_jobs_on_block_and_reset(job_list,
 						bg_record->bg_block_id);
 		if (job_list)
@@ -483,7 +479,6 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			slurm_mutex_unlock(&block_state_mutex);
 			return;
 		}
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 
 		/* if (bg_action_ptr->conn_type[A] > SELECT_SMALL) { */
 		/* 	char *conn_type = NULL; */
@@ -510,16 +505,15 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		/* 		     RM_MODIFY_Options, */
 		/* 		     conn_type)) != STATUS_OK) */
 		/* 		error("bridge_set_data(RM_MODIFY_Options): %s", */
-		/* 		      bg_err_str(rc)); */
+		/* 		      bridge_err_str(rc)); */
 		/* } */
 		/* if ((rc = bridge_modify_block(bg_record->bg_block_id, */
 		/* 			      RM_MODIFY_MloaderImg, */
 		/* 			      bg_record->mloaderimage)) */
 		/*     != STATUS_OK) */
 		/* 	error("bridge_modify_block(RM_MODIFY_MloaderImg): %s", */
-		/* 	      bg_err_str(rc)); */
+		/* 	      bridge_err_str(rc)); */
 
-#endif
 		bg_record->modifying = 0;
 	} else if (bg_action_ptr->reboot) {
 		bg_record->modifying = 1;
@@ -607,11 +601,8 @@ static void _term_agent(bg_action_t *bg_action_ptr)
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
 					   bg_action_ptr->bg_block_id);
-
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	if (bg_record)
 		job_list = bridge_block_get_jobs(bg_record->bg_block_id);
-#endif
 	slurm_mutex_unlock(&block_state_mutex);
 
 	_remove_jobs_on_block_and_reset(job_list,
@@ -955,7 +946,6 @@ extern int sync_jobs(List job_list)
  */
 extern int boot_block(bg_record_t *bg_record)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	int rc;
 	if (bg_record->magic != BLOCK_MAGIC) {
 		error("boot_block: magic was bad");
@@ -968,14 +958,14 @@ extern int boot_block(bg_record_t *bg_record)
 		/* error("bridge_block_set_owner(%s,%s): %s", */
 		/*       bg_record->bg_block_id, */
 		/*       bg_conf->slurm_user_name, */
-		/*       bg_err_str(rc)); */
+		/*       bridge_err_str(rc)); */
 		return SLURM_ERROR;
 	}
 
 	info("Booting block %s", bg_record->bg_block_id);
-	if ((rc = bridge_block_create(bg_record)) != SLURM_SUCCESS) {
+	if ((rc = bridge_block_boot(bg_record)) != SLURM_SUCCESS) {
 		/* error("bridge_create_block(%s): %s", */
-		/*       bg_record->bg_block_id, bg_err_str(rc)); */
+		/*       bg_record->bg_block_id, bridge_err_str(rc)); */
 		/* if (rc == INCOMPATIBLE_STATE) { */
 		/* 	char reason[200]; */
 		/* 	snprintf(reason, sizeof(reason), */
@@ -1000,12 +990,12 @@ extern int boot_block(bg_record_t *bg_record)
 	   notice we are configuring.
 	*/
 	bg_record->boot_state = 1;
-#else
-	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
-		list_push(bg_lists->booted, bg_record);
-	bg_record->state = BG_BLOCK_INITED;
-	last_bg_update = time(NULL);
-#endif
+/* #else */
+/* 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record)) */
+/* 		list_push(bg_lists->booted, bg_record); */
+/* 	bg_record->state = BG_BLOCK_INITED; */
+/* 	last_bg_update = time(NULL); */
+/* #endif */
 
 
 	return SLURM_SUCCESS;

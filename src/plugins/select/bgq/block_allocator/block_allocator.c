@@ -125,12 +125,6 @@ typedef enum {
 } block_algo_t;
 
 /** internal helper functions */
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-
-/** */
-static int _port_enum(int port);
-
-#endif /* HAVE_BG_FILES */
 
 /* */
 static int _check_for_options(ba_request_t* ba_request);
@@ -743,7 +737,7 @@ extern int new_ba_request(ba_request_t* ba_request)
  * link well, so since this is only for aix and this doesn't really
  * need to be there just don't allow this extra calculation.
  */
-#ifndef HAVE_AIB
+#ifndef HAVE_AIX
 		/* see if We can find a cube or square root of the
 		   size to make an easy cube */
 		for(i=0; i<cluster_dims-1; i++) {
@@ -778,7 +772,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 				      __LINE__, geo[X], geo[Y], geo[Z],
 				      ba_request->size);
 		}
-#endif //HAVE_AIB
+#endif //HAVE_AIX
 	}
 
 endit:
@@ -868,11 +862,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	slurm_conf_node_t *node = NULL, **ptr_array;
 	int coords[HIGHEST_DIMENSIONS];
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	uint16_t *bp_size;
-	int rc = 0;
-#endif /* HAVE_BG_FILES */
-
 	/* We only need to initialize once, so return if already done so. */
 	if (_initialized)
 		return;
@@ -881,9 +870,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	cluster_flags = slurmdb_setup_cluster_flags();
 	set_ba_debug_flags(slurm_get_debug_flags());
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
 	bridge_init(NULL);
-#endif
 
 	/* make the letters array only contain letters upper and lower
 	 * (62) */
@@ -1033,17 +1020,17 @@ node_info_error:
 			REAL_DIM_SIZE[j] = DIM_SIZE[j];
 		}
 	}
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
+
 	/* sanity check.  We can only request part of the system, but
 	   we don't want to allow more than we have. */
-	if (sanity_check && have_db2) {
+	if (sanity_check) {
 		verbose("Attempting to contact MMCS");
-		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+		if (bridge_get_bg(&bg) != SLURM_SUCCESS) {
 			fatal("bridge_get_BG() failed.  This usually means "
 			      "there is something wrong with the database.  "
 			      "Cou might want to run slurmctld in daemon "
 			      "mode (-D) to see what the real error from "
-			      "the api was.  The return code was %d", rc);
+			      "the api was.");
 			return;
 		}
 
@@ -1059,7 +1046,7 @@ node_info_error:
 			    || (DIM_SIZE[X] > REAL_DIM_SIZE[X])
 			    || (DIM_SIZE[Y] > REAL_DIM_SIZE[Y])
 			    || (DIM_SIZE[Z] > REAL_DIM_SIZE[Z])) {
-				fatal("Cou requested a %c%c%c%c system, "
+				fatal("You requested a %c%c%c%c system, "
 				      "but we only have a system of %c%c%c%c.  "
 				      "Change your slurm.conf.",
 				      alpha_num[DIM_SIZE[A]],
@@ -1071,11 +1058,8 @@ node_info_error:
 				      alpha_num[REAL_DIM_SIZE[Y]],
 				      alpha_num[REAL_DIM_SIZE[Z]]);
 			}
-		} else {
-			error("bridge_get_data(RM_Msize): %d", rc);
 		}
 	}
-#endif
 
 setup_done:
 	if (cluster_dims == 1) {
@@ -1180,9 +1164,10 @@ extern void ba_fini()
 		list_destroy(best_path);
 		best_path = NULL;
 	}
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	if (bg)
-		bridge_free_bg(bg);
+
+	/* It doesn't appear this is needed */
+	/* if (bg) */
+	/* 	bridge_free_bg(bg); */
 
 	if (bp_map_list) {
 		list_destroy(bp_map_list);
@@ -1190,7 +1175,7 @@ extern void ba_fini()
 		_bp_map_initialized = false;
 	}
 	bridge_fini();
-#endif
+
 	_delete_ba_system();
 	_initialized = false;
 	_bp_map_initialized = false;
@@ -1970,72 +1955,21 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	}
 }
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern char *bg_err_str(status_t inx)
-{
-	switch (inx) {
-	case STATUS_OK:
-		return "Status OK";
-	case PARTITION_NOT_FOUND:
-		return "Partition not found";
-	case JOB_NOT_FOUND:
-		return "Job not found";
-	case BP_NOT_FOUND:
-		return "Base partition not found";
-	case SWITCH_NOT_FOUND:
-		return "Switch not found";
-#ifndef HAVE_BGL
-	case PARTITION_ALREADY_DEFINED:
-		return "Partition already defined";
-#endif
-	case JOB_ALREADY_DEFINED:
-		return "Job already defined";
-	case CONNECTION_ERROR:
-		return "Connection error";
-	case INTERNAL_ERROR:
-		return "Internal error";
-	case INVALID_INPUT:
-		return "Invalid input";
-	case INCOMPATIBLE_STATE:
-		return "Incompatible state";
-	case INCONSISTENT_DATA:
-		return "Inconsistent data";
-	}
-
-	return "?";
-}
-#endif
-
 /*
  * Set up the map for resolving
  */
 extern int set_bp_map(void)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	int rc;
-	rm_BP_t *my_bp = NULL;
-	ba_bp_map_t *bp_map = NULL;
-	int bp_num, i;
-	char *bp_id = NULL;
-	rm_location_t bp_loc;
-
 	if (_bp_map_initialized)
 		return 1;
 
 	if (!bg) {
-		if ((rc = bridge_get_bg(&bg)) != SLURM_SUCCESS) {
-			error("bridge_get_BG(): %d", rc);
+		if (bridge_get_bg(&bg) != SLURM_SUCCESS)
 			return -1;
-		}
 	}
 
 	bp_map_list = bridge_get_map(bg);
-#endif
+
 	_bp_map_initialized = true;
 	return 1;
 
@@ -2046,8 +1980,7 @@ extern int set_bp_map(void)
  */
 extern uint16_t *find_bp_loc(char* bp_id)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	ba_bp_map_t *bp_map = NULL;
+	b_midplane_t *b_midplane = NULL;
 	ListIterator itr;
 	char *check = NULL;
 
@@ -2091,49 +2024,44 @@ extern uint16_t *find_bp_loc(char* bp_id)
 #endif
 
 	itr = list_iterator_create(bp_map_list);
-	while ((bp_map = list_next(itr)))
-		if (!strcasecmp(bp_map->bp_id, check))
+	while ((b_midplane = list_next(itr)))
+		if (!strcasecmp(b_midplane->loc, check))
 			break;	/* we found it */
 	list_iterator_destroy(itr);
 
 cleanup:
 	xfree(check);
 
-	if (bp_map != NULL)
-		return bp_map->coord;
+	if (b_midplane != NULL)
+		return b_midplane->coord;
 	else
 		return NULL;
-
-#else
-	return NULL;
-#endif
 }
 
 /*
  * find a rack/midplace location
  */
-extern char *find_bp_rack_mid(char* abcd)
+extern char *find_bp_rack_mid(char* axyz)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	ba_bp_map_t *bp_map = NULL;
+	b_midplane_t *b_midplane = NULL;
 	ListIterator itr;
 	int number;
 	int coord[cluster_dims];
-	int len = strlen(abcd);
+	int len = strlen(axyz);
 
 	len -= 4;
 	if (len<0)
 		return NULL;
 
-	if ((abcd[len] < '0' || abcd[len] > '9')
-	    || (abcd[len+1] < '0' || abcd[len+1] > '9')
-	    || (abcd[len+2] < '0' || abcd[len+2] > '9')
-	    || (abcd[len+3] < '0' || abcd[len+3] > '9')) {
-		error("%s is not a valid Location (i.e. 000)", abcd);
+	if ((axyz[len] < '0' || axyz[len] > '9')
+	    || (axyz[len+1] < '0' || axyz[len+1] > '9')
+	    || (axyz[len+2] < '0' || axyz[len+2] > '9')
+	    || (axyz[len+3] < '0' || axyz[len+3] > '9')) {
+		error("%s is not a valid Location (i.e. 0000)", axyz);
 		return NULL;
 	}
 
-	number = xstrntol(abcd + len, &p, cluster_dims, cluster_base);
+	number = xstrntol(axyz + len, &p, cluster_dims, cluster_base);
 	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
 
 	if (!bp_map_list) {
@@ -2142,247 +2070,20 @@ extern char *find_bp_rack_mid(char* abcd)
 	}
 
 	itr = list_iterator_create(bp_map_list);
-	while ((bp_map = list_next(itr)) != NULL)
-		if (bp_map->coord[A] == coord[A] &&
-		    bp_map->coord[X] == coord[X] &&
-		    bp_map->coord[Y] == coord[Y] &&
-		    bp_map->coord[Z] == coord[Z])
+	while ((b_midplane = list_next(itr)) != NULL)
+		if (b_midplane->coord[A] == coord[A] &&
+		    b_midplane->coord[X] == coord[X] &&
+		    b_midplane->coord[Y] == coord[Y] &&
+		    b_midplane->coord[Z] == coord[Z])
 			break;	/* we found it */
 
 	list_iterator_destroy(itr);
-	if (bp_map != NULL)
-		return bp_map->bp_id;
+	if (b_midplane != NULL)
+		return b_midplane->loc;
 	else
 		return NULL;
-
-#else
-	return NULL;
-#endif
 }
 
-/*
- * set the used wires in the virtual system for a block from the real system
- */
-extern int load_block_wiring(char *bg_block_id)
-{
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-	int rc, i, j;
-	rm_partition_t *block_ptr = NULL;
-	int cnt = 0;
-	int switch_cnt = 0;
-	rm_switch_t *curr_switch = NULL;
-	rm_BP_t *curr_bp = NULL;
-	char *switchid = NULL;
-	rm_connection_t curr_conn;
-	int dim;
-	ba_switch_t *ba_switch = NULL;
-	uint16_t *geo = NULL;
-
-	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-		info("getting info for block %s", bg_block_id);
-
-	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
-		error("bridge_get_block(%s): %s",
-		      bg_block_id,
-		      bg_err_str(rc));
-		return SLURM_ERROR;
-	}
-
-	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
-				  &switch_cnt)) != STATUS_OK) {
-		error("bridge_get_data(RM_PartitionSwitchNum): %s",
-		      bg_err_str(rc));
-		return SLURM_ERROR;
-	}
-	if (!switch_cnt) {
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("no switch_cnt");
-		if ((rc = bridge_get_data(block_ptr,
-					  RM_PartitionFirstBP,
-					  &curr_bp))
-		    != STATUS_OK) {
-			error("bridge_get_data: "
-			      "RM_PartitionFirstBP: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-		if ((rc = bridge_get_data(curr_bp, RM_BPID, &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-
-		geo = find_bp_loc(switchid);
-		if (!geo) {
-			error("find_bp_loc: bpid %s not known", switchid);
-			return SLURM_ERROR;
-		}
-		ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].used = true;
-		return SLURM_SUCCESS;
-	}
-	for (i=0; i<switch_cnt; i++) {
-		if (i) {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionNextSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionNextSwitch: %s",
-				      bg_err_str(rc));
-				return SLURM_ERROR;
-			}
-		} else {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionFirstSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionFirstSwitch: %s",
-				      bg_err_str(rc));
-				return SLURM_ERROR;
-			}
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchDim: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
-					  &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-
-		geo = find_bp_loc(switchid);
-		if (!geo) {
-			error("find_bp_loc: bpid %s not known", switchid);
-			return SLURM_ERROR;
-		}
-
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("switch id = %s dim %d conns = %d",
-			     switchid, dim, cnt);
-		ba_switch = &ba_system_ptr->
-			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];
-		for (j=0; j<cnt; j++) {
-			if (j) {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchNextConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchNextConnection: %s",
-					      bg_err_str(rc));
-					return SLURM_ERROR;
-				}
-			} else {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchFirstConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchFirstConnection: %s",
-					      bg_err_str(rc));
-					return SLURM_ERROR;
-				}
-			}
-			switch(curr_conn.p1) {
-			case RM_PORT_S1:
-				curr_conn.p1 = 1;
-				break;
-			case RM_PORT_S2:
-				curr_conn.p1 = 2;
-				break;
-			case RM_PORT_S4:
-				curr_conn.p1 = 4;
-				break;
-			default:
-				error("1 unknown port %d",
-				      _port_enum(curr_conn.p1));
-				return SLURM_ERROR;
-			}
-
-			switch(curr_conn.p2) {
-			case RM_PORT_S0:
-				curr_conn.p2 = 0;
-				break;
-			case RM_PORT_S3:
-				curr_conn.p2 = 3;
-				break;
-			case RM_PORT_S5:
-				curr_conn.p2 = 5;
-				break;
-			default:
-				error("2 unknown port %d",
-				      _port_enum(curr_conn.p2));
-				return SLURM_ERROR;
-			}
-
-			if (curr_conn.p1 == 1 && dim == B) {
-				if (ba_system_ptr->
-				    grid[geo[X]][geo[Y]][geo[Z]].used) {
-					debug("I have already been to "
-					      "this node %c%c%c",
-					      alpha_num[geo[X]],
-					      alpha_num[geo[Y]],
-					      alpha_num[geo[Z]]);
-					return SLURM_ERROR;
-				}
-				ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].
-					used = true;
-			}
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("connection going from %d -> %d",
-				     curr_conn.p1, curr_conn.p2);
-
-			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%c%c%c dim %d port %d "
-				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
-				      dim,
-				      curr_conn.p1);
-				return SLURM_ERROR;
-			}
-			ba_switch->int_wire[curr_conn.p1].used = 1;
-			ba_switch->int_wire[curr_conn.p1].port_tar
-				= curr_conn.p2;
-
-			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%c%c%c dim %d port %d "
-				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
-				      dim,
-				      curr_conn.p2);
-				return SLURM_ERROR;
-			}
-			ba_switch->int_wire[curr_conn.p2].used = 1;
-			ba_switch->int_wire[curr_conn.p2].port_tar
-				= curr_conn.p1;
-		}
-	}
-	return SLURM_SUCCESS;
-
-#else
-	return SLURM_ERROR;
-#endif
-
-}
 
 /*
  * get the used wires for a block out of the database and return the
@@ -2414,7 +2115,7 @@ extern int load_block_wiring(char *bg_block_id)
 /* 	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum, */
 /* 				  &switch_cnt)) != STATUS_OK) { */
 /* 		error("bridge_get_data(RM_PartitionSwitchNum): %s", */
-/* 		      bg_err_str(rc)); */
+/* 		      bridge_err_str(rc)); */
 /* 		goto end_it; */
 /* 	} */
 /* 	if (!switch_cnt) { */
@@ -2426,13 +2127,13 @@ extern int load_block_wiring(char *bg_block_id)
 /* 		    != STATUS_OK) { */
 /* 			error("bridge_get_data: " */
 /* 			      "RM_PartitionFirstBP: %s", */
-/* 			      bg_err_str(rc)); */
+/* 			      bridge_err_str(rc)); */
 /* 			goto end_it; */
 /* 		} */
 /* 		if ((rc = bridge_get_data(curr_bp, RM_BPID, &switchid)) */
 /* 		    != STATUS_OK) { */
 /* 			error("bridge_get_data: RM_SwitchBPID: %s", */
-/* 			      bg_err_str(rc)); */
+/* 			      bridge_err_str(rc)); */
 /* 			goto end_it; */
 /* 		} */
 
@@ -2458,7 +2159,7 @@ extern int load_block_wiring(char *bg_block_id)
 /* 			    != STATUS_OK) { */
 /* 				error("bridge_get_data: " */
 /* 				      "RM_PartitionNextSwitch: %s", */
-/* 				      bg_err_str(rc)); */
+/* 				      bridge_err_str(rc)); */
 /* 				goto end_it; */
 /* 			} */
 /* 		} else { */
@@ -2468,21 +2169,21 @@ extern int load_block_wiring(char *bg_block_id)
 /* 			    != STATUS_OK) { */
 /* 				error("bridge_get_data: " */
 /* 				      "RM_PartitionFirstSwitch: %s", */
-/* 				      bg_err_str(rc)); */
+/* 				      bridge_err_str(rc)); */
 /* 				goto end_it; */
 /* 			} */
 /* 		} */
 /* 		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim)) */
 /* 		    != STATUS_OK) { */
 /* 			error("bridge_get_data: RM_SwitchDim: %s", */
-/* 			      bg_err_str(rc)); */
+/* 			      bridge_err_str(rc)); */
 /* 			goto end_it; */
 /* 		} */
 /* 		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID, */
 /* 					  &switchid)) */
 /* 		    != STATUS_OK) { */
 /* 			error("bridge_get_data: RM_SwitchBPID: %s", */
-/* 			      bg_err_str(rc)); */
+/* 			      bridge_err_str(rc)); */
 /* 			goto end_it; */
 /* 		} */
 
@@ -2495,7 +2196,7 @@ extern int load_block_wiring(char *bg_block_id)
 /* 		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt)) */
 /* 		    != STATUS_OK) { */
 /* 			error("bridge_get_data: RM_SwitchBPID: %s", */
-/* 			      bg_err_str(rc)); */
+/* 			      bridge_err_str(rc)); */
 /* 			goto end_it; */
 /* 		} */
 /* 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO) */
@@ -2528,7 +2229,7 @@ extern int load_block_wiring(char *bg_block_id)
 /* 				    != STATUS_OK) { */
 /* 					error("bridge_get_data: " */
 /* 					      "RM_SwitchNextConnection: %s", */
-/* 					      bg_err_str(rc)); */
+/* 					      bridge_err_str(rc)); */
 /* 					goto end_it; */
 /* 				} */
 /* 			} else { */
@@ -2539,7 +2240,7 @@ extern int load_block_wiring(char *bg_block_id)
 /* 				    != STATUS_OK) { */
 /* 					error("bridge_get_data: " */
 /* 					      "RM_SwitchFirstConnection: %s", */
-/* 					      bg_err_str(rc)); */
+/* 					      bridge_err_str(rc)); */
 /* 					goto end_it; */
 /* 				} */
 /* 			} */
@@ -2632,7 +2333,6 @@ extern int load_block_wiring(char *bg_block_id)
 /* */
 extern int validate_coord(uint16_t *coord)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
 	if (coord[A]>=REAL_DIM_SIZE[A]
 	    || coord[X]>=REAL_DIM_SIZE[X]
 	    || coord[Y]>=REAL_DIM_SIZE[Y]
@@ -2666,43 +2366,10 @@ extern int validate_coord(uint16_t *coord)
 			     alpha_num[DIM_SIZE[Z]]);
 		return 0;
 	}
-#endif
+
 	return 1;
 }
 
-
-/********************* Local Functions *********************/
-
-#if defined HAVE_BG_FILES && defined HAVE_BG_Q
-
-/* translation from the enum to the actual port number */
-static int _port_enum(int port)
-{
-	switch(port) {
-	case RM_PORT_S0:
-		return 0;
-		break;
-	case RM_PORT_S1:
-		return 1;
-		break;
-	case RM_PORT_S2:
-		return 2;
-		break;
-	case RM_PORT_S3:
-		return 3;
-		break;
-	case RM_PORT_S4:
-		return 4;
-		break;
-	case RM_PORT_S5:
-		return 5;
-		break;
-	default:
-		return -1;
-	}
-}
-
-#endif
 
 /*
  * This function is here to check options for rotating and elongating

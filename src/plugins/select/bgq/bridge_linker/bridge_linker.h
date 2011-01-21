@@ -56,10 +56,6 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
@@ -79,30 +75,37 @@ typedef struct {
 	uint16_t coord[SYSTEM_DIMENSIONS];
 } b_midplane_t;
 
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+/* Global variables */
+extern bg_config_t *bg_conf;
+extern bg_lists_t *bg_lists;
+extern time_t last_bg_update;
+extern bool agent_fini;
+extern pthread_mutex_t block_state_mutex;
+extern pthread_mutex_t request_list_mutex;
+extern int blocks_are_created;
+extern int num_unused_cpus;
 
 extern int bridge_init(char *properties_file);
 extern int bridge_fini();
+
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern const char *bridge_err_str(int inx);
 
 extern int bridge_get_bg(my_bluegene_t **bg);
 extern int bridge_get_size(my_bluegene_t *bg, uint16_t *size);
 extern List bridge_get_map(my_bluegene_t *bg);
 
 extern int bridge_block_create(bg_record_t *bg_record);
-extern int bridge_block_boot(char *bg_block_id);
+extern int bridge_block_boot(bg_record_t *bg_record);
 extern int bridge_block_free(char *bg_block_id);
 extern int bridge_block_remove(char *bg_block_id);
-
 extern int bridge_block_set_owner(char *bg_block_id, char *user_name);
-
 extern List bridge_block_get_jobs(char *bg_block_id);
 
 extern int bridge_job_remove(void *job, char *bg_block_id);
-
-#endif /* HAVE_BGQ_FILES */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _BRIDGE_LINKER_H_ */

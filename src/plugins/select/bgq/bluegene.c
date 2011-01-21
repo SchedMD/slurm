@@ -65,16 +65,6 @@ typedef struct {
 	bool wait;
 } bg_free_t;
 
-/* Global variables */
-
-bg_config_t *bg_conf = NULL;
-bg_lists_t *bg_lists = NULL;
-bool agent_fini = false;
-time_t last_bg_update;
-pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
-int blocks_are_created = 0;
-int num_unused_cpus = 0;
-
 static void _destroy_bg_config(bg_config_t *bg_conf);
 static void _destroy_bg_lists(bg_lists_t *bg_lists);
 
@@ -182,10 +172,10 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start)
 	unlock_slurmctld(job_write_lock);
 }
 
-extern int remove_all_users(char *bg_block_id, char *user_name)
+extern int remove_all_users(bg_record_t *bg_record, char *user_name)
 {
 	int returnc = REMOVE_USER_NONE;
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+
 	/* char *user; */
 	/* rm_partition_t *block_ptr = NULL; */
 	/* int rc, i, user_count; */
@@ -200,7 +190,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 
 	/* 	error("bridge_get_block(%s): %s", */
 	/* 	      bg_block_id, */
-	/* 	      bg_err_str(rc)); */
+	/* 	      bridge_err_str(rc)); */
 	/* 	return REMOVE_USER_ERR; */
 	/* } */
 
@@ -208,7 +198,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	/* 			  &user_count)) */
 	/*     != STATUS_OK) { */
 	/* 	error("bridge_get_data(RM_PartitionUsersNum): %s", */
-	/* 	      bg_err_str(rc)); */
+	/* 	      bridge_err_str(rc)); */
 	/* 	returnc = REMOVE_USER_ERR; */
 	/* 	user_count = 0; */
 	/* } else */
@@ -222,7 +212,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	/* 		    != STATUS_OK) { */
 	/* 			error("bridge_get_data" */
 	/* 			      "(RM_PartitionNextUser): %s", */
-	/* 			      bg_err_str(rc)); */
+	/* 			      bridge_err_str(rc)); */
 	/* 			returnc = REMOVE_USER_ERR; */
 	/* 			break; */
 	/* 		} */
@@ -233,7 +223,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	/* 		    != STATUS_OK) { */
 	/* 			error("bridge_get_data" */
 	/* 			      "(RM_PartitionFirstUser): %s", */
-	/* 			      bg_err_str(rc)); */
+	/* 			      bridge_err_str(rc)); */
 	/* 			returnc = REMOVE_USER_ERR; */
 	/* 			break; */
 	/* 		} */
@@ -265,9 +255,9 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	/* 	free(user); */
 	/* } */
 	/* if ((rc = bridge_free_block(block_ptr)) != STATUS_OK) { */
-	/* 	error("bridge_free_block(): %s", bg_err_str(rc)); */
+	/* 	error("bridge_free_block(): %s", bridge_err_str(rc)); */
 	/* } */
-#endif
+
 	return returnc;
 }
 
@@ -513,13 +503,13 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 /* 						info("bridge_block_remove" */
 /* 						     "(%s): %s State = %d", */
 /* 						     bg_record->bg_block_id, */
-/* 						     bg_err_str(rc), */
+/* 						     bridge_err_str(rc), */
 /* 						     bg_record->state); */
 /* 				} else { */
 					error("bridge_block_remove"
 					      "(%s): %s State = %d",
 					      bg_record->bg_block_id,
-					      bg_err_str(rc),
+					      bridge_err_str(rc),
 					      bg_record->state);
 				/* } */
 			}
@@ -1416,7 +1406,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 			error("_post_block_free: "
 			      "bridge_block_remove(%s): %s",
 			      bg_record->bg_block_id,
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 		/* } */
 	} else
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)

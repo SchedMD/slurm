@@ -42,10 +42,6 @@
 
 #include "../bridge_linker/bridge_linker.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // #define DEBUG_PA
 #define BIG_MAX 9999
 #define BUFSIZE 4096
@@ -262,7 +258,6 @@ extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
 extern uint16_t ba_deny_pass;
 extern ba_system_t *ba_system_ptr;
-
 
 /* must xfree return of this */
 extern char *ba_passthroughs_string(uint16_t passthrough);
@@ -489,14 +484,6 @@ extern int set_all_bps_except(char *bps);
 extern void init_grid(node_info_msg_t *node_info_ptr);
 
 /*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-extern char *bg_err_str(status_t inx);
-#endif
-/*
  * Set up the map for resolving
  */
 extern int set_bp_map(void);
@@ -525,8 +512,5 @@ extern int load_block_wiring(char *bg_block_id);
 
 /* make sure a node is in the system return 1 if it is 0 if not */
 extern int validate_coord(uint16_t *coord);
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _BLOCK_ALLOCATOR_H_ */

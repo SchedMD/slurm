@@ -36,9 +36,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-
+extern "C" {
 #include "bridge_linker.h"
 #include "../block_allocator/block_allocator.h"
+#include "../bg_record_functions.h"
+}
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
@@ -46,21 +48,28 @@
 #include <bgsched/Block.h>
 #include <bgsched/core/core.h>
 
-#ifdef __cplusplus
-extern "C" {
+using namespace std;
+using namespace bgsched;
+using namespace bgsched::core;
+
 #endif
 
 #define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
 
-using namespace std;
-using namespace bgsched;
-using namespace bgsched::core;
+/* Global variables */
 
-pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
-bool initialized = false;
-bool have_db2 = true;
-void *handle = NULL;
+bg_config_t *bg_conf = NULL;
+bg_lists_t *bg_lists = NULL;
+bool agent_fini = false;
+time_t last_bg_update;
+pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+int blocks_are_created = 0;
+int num_unused_cpus = 0;
+
+/* local vars */
+static pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool initialized = false;
 
 static void _b_midplane_del(void *object)
 {
@@ -77,8 +86,9 @@ extern int bridge_init(char *properties_file)
 	if (initialized)
 		return 1;
 
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgsched::init(properties_file);
-
+#endif
 
 	initialized = true;
 
@@ -93,14 +103,31 @@ extern int bridge_fini()
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern const char *bridge_err_str(int inx)
+{
+	// switch (inx) {
+	// }
+
+	return "?";
+}
+
 extern int bridge_get_bg(my_bluegene_t **bg)
 {
 	int rc = SLURM_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 	try {
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 		ComputeHardware::ConstPtr bgq = getComputeHardware();
 		*bg = (my_bluegene_t *)&bgq;
+#else
+		*bg = (void *)1;
+#endif
 		rc = SLURM_SUCCESS;
 	} catch (...) { // Handle all exceptions
 		error(" Unexpected error calling getComputeHardware");
@@ -110,78 +137,85 @@ extern int bridge_get_bg(my_bluegene_t **bg)
 	return rc;
 }
 
-extern int bridge_get_size(my_bluegene_t *bg, uint16_t *size)
+extern int bridge_get_size(uint16_t *size)
 {
-	ComputeHardware::ConstPtr bgq;
 	int i;
-
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+        Midplane::Coordinates bgq_size = core::getMachineSize();
+#endif
 	if (!bridge_init(NULL) || !bg)
 		return SLURM_ERROR;
+	memset(size, 0, sizeof(uint16_t) * SYSTEM_DIMENSIONS);
+
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgq = (ComputeHardware::ConstPtr &)bg;
-	memset(size, 0, sizeof(uint32_t) * SYSTEM_DIMENSIONS);
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		size[i] = bgq->getMidplaneSize((bgsched::Dimension::Value)i);
+		size[i] = bgq_size[(bgsched::Dimension::Value)i];
+#else
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		size[i] = DIM_SIZE[i];
+#endif
 
 	return SLURM_SUCCESS;
 }
 
-extern List bridge_get_map(my_bluegene_t *bg)
+extern List bridge_get_map()
 {
-	ComputeHardware::ConstPtr bgq;
-	uint32_t a, b, c, d;
+	uint32_t a, x, y, z;
 	List b_midplane_list = NULL;
-
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	ComputeHardware::ConstPtr bgq;
+#endif
 	if (!bridge_init(NULL) || !bg)
 		return b_midplane_list;
 
-	bgq = (ComputeHardware::ConstPtr &)bg;
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	bgq = getComputeHardware();
+#endif
 	b_midplane_list = list_create(_b_midplane_del);
 
-	for (a = 0; a < bgq->getMachineSize(Dimension::A); ++a)
-		for (b = 0; b < bgq->getMachineSize(Dimension::B); ++b)
-			for (c = 0; c < bgq->getMachineSize(Dimension::C); ++c)
-				for (d = 0;
-				     d < bgq->getMachineSize(Dimension::D);
-				     ++d) {
-					Midplane::Coordinates coords =
-						{{a, b, c, d}};
-					Midplane::ConstPtr midplane =
-						bgq->getMidplane(coords);
+	for (a = 0; a <= DIM_SIZE[A]; ++a)
+		for (x = 0; x <= DIM_SIZE[X]; ++x)
+			for (y = 0; y <= DIM_SIZE[Y]; ++y)
+				for (z = 0; z <= DIM_SIZE[Z]; ++z) {
 					b_midplane_t *b_midplane =
 						(b_midplane_t *)xmalloc(
 							sizeof(b_midplane_t));
-
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+					Midplane::Coordinates coords =
+						{{a, x, y, z}};
+					Midplane::ConstPtr midplane =
+						bgq->getMidplane(coords);
+					b_midplane->loc = static_cast<char *>(
+						midplane->getLocation());
+#endif
 					list_append(b_midplane_list,
 						    b_midplane);
-					b_midplane->midplane =
-						(void *) &midplane;
-					b_midplane->loc = (char *)
-						&midplane->getLocation();
 					b_midplane->coord[A] = a;
-					b_midplane->coord[X] = b;
-					b_midplane->coord[Y] = c;
-					b_midplane->coord[Z] = d;
+					b_midplane->coord[X] = x;
+					b_midplane->coord[Y] = y;
+					b_midplane->coord[Z] = z;
 				}
 	return b_midplane_list;
 }
 
-extern int bridge_create_block(bg_record_t *bg_record)
+extern int bridge_block_create(bg_record_t *bg_record)
 {
+	ListIterator itr = NULL;
+	int i;
+	int rc = SLURM_SUCCESS;
+	b_midplane_t *b_midplane;
+
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	Block::Ptr block_ptr;
 	Block::Midplanes midplanes;
         Block::PassthroughMidplanes pt_midplanes;
         Block::DimensionConnectivity conn_type;
-	ListIterator itr = NULL;
 	Midplane::Ptr midplane;
-	int i;
-	int rc = SLURM_SUCCESS;
 	Dimension dim;
-	b_midplane_t *b_midplane;
+#endif
 
 	if (!bridge_init(NULL))
-		return SLURM_ERROR;
-
-	if (bg_record->block_ptr)
 		return SLURM_ERROR;
 
 	if (bg_record->small) {
@@ -194,18 +228,15 @@ extern int bridge_create_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	itr = list_iterator_create(bg_record->bg_midplanes);
-	while ((b_midplane = (b_midplane_t *)list_next(itr))) {
-		midplane = (Midplane::Ptr &)b_midplane->midplane;
-		midplanes.push_back(midplane->getLocation());
-	}
+	while ((b_midplane = (b_midplane_t *)list_next(itr)))
+		midplanes.push_back(b_midplane->loc);
 	list_iterator_destroy(itr);
 
 	itr = list_iterator_create(bg_record->bg_pt_midplanes);
-	while ((b_midplane = (b_midplane_t *)list_next(itr))) {
-		midplane = (Midplane::Ptr &)b_midplane->midplane;
-		pt_midplanes.push_back(midplane->getLocation());
-	}
+	while ((b_midplane = (b_midplane_t *)list_next(itr)))
+		pt_midplanes.push_back(b_midplane->loc);
 	list_iterator_destroy(itr);
 
         for (i=0, dim = Dimension::A; i<SYSTEM_DIMENSIONS; i++, ++dim) {
@@ -224,35 +255,38 @@ extern int bridge_create_block(bg_record_t *bg_record)
 	block_ptr->addUser(bg_record->bg_block_id, bg_record->user_name);
 	block_ptr->add(NULL);
 
-	midplanes.clear();
-        pt_midplanes.clear();
-        conn_type.clear();
-
 	bg_record->block_ptr = (void *)&block_ptr;
+#endif
 
 	return rc;
 }
 
-extern int bridge_boot_block(char *bg_block_id)
+extern int bridge_block_boot(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id)
+	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
         try {
-		Block::initiateBoot(bg_block_id);
+		Block::initiateBoot(bg_record->bg_block_id);
 	} catch(...) {
                 error("Boot block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
-
+#else
+	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
+	 	list_push(bg_lists->booted, bg_record);
+	bg_record->state = BG_BLOCK_INITED;
+	last_bg_update = time(NULL);
+#endif
 	return rc;
 }
 
-extern int bridge_free_block(char *bg_block_id)
+extern int bridge_block_free(char *bg_block_id)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
@@ -261,17 +295,18 @@ extern int bridge_free_block(char *bg_block_id)
 	if (!bg_block_id)
 		return SLURM_ERROR;
 
-        try {
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+       try {
 		Block::initiateFree(bg_block_id);
 	} catch(...) {
                 error("Free block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
-
+#endif
 	return rc;
 }
 
-extern int bridge_remove_block(char *bg_block_id)
+extern int bridge_block_remove(char *bg_block_id)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
@@ -280,17 +315,18 @@ extern int bridge_remove_block(char *bg_block_id)
 	if (!bg_block_id)
 		return SLURM_ERROR;
 
-        try {
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+       try {
 		Block::remove(bg_block_id);
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
-
+#endif
 	return rc;
 }
 
-extern int bridge_set_block_owner(char *bg_block_id, char *user_name)
+extern int bridge_block_set_owner(char *bg_block_id, char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
@@ -299,22 +335,25 @@ extern int bridge_set_block_owner(char *bg_block_id, char *user_name)
 	if (!bg_block_id || !user_name)
 		return SLURM_ERROR;
 
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
         try {
 		Block::addUser(bg_block_id, user_name);
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
-
+#endif
 	return rc;
 }
 
 extern List bridge_block_get_jobs(char *bg_block_id)
 {
 	List ret_list = NULL;
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	std::vector<Job::ConstPtr> job_vec;
 	JobFilter job_filter;
 	vector<Job::ConstPtr>::iterator iter;
+#endif
 
 	if (!bridge_init(NULL))
 		return NULL;
@@ -324,16 +363,17 @@ extern List bridge_block_get_jobs(char *bg_block_id)
 		return ret_list;
 	}
 
+	ret_list = list_create(NULL);
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	job_filter.setComputeBlockName(bg_block_id);
 
 	job_vec = getJobs(job_filter);
-	ret_list = list_create(NULL);
 	if (job_vec.empty())
 		return ret_list;
 
 	for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
 		list_append(ret_list, &iter);
-
+#endif
 	return ret_list;
 }
 
@@ -343,7 +383,7 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 	bgq_job_status_t job_state;
 	bool is_history = false;
 	uint32_t job_id;
-	/* I don't think this is correct right now. */
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	Job::ConstPtr job_ptr = (bgsched::Job::ConstPtr &)job;
 
 	if (!job_ptr)
@@ -431,6 +471,9 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 
 	error("Failed to remove job %d from MMCS", job_id);
 	return SLURM_ERROR;
+#else
+	return SLURM_SUCCESS;
+#endif
 }
 
 // extern int bridge_set_log_params(char *api_file_name, unsigned int level)
@@ -468,11 +511,5 @@ extern int bridge_job_remove(void *job, char *bg_block_id)
 // 	slurm_mutex_unlock(&api_file_mutex);
 //  	return rc;
 // }
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* HAVE_BG_FILES */
 
 

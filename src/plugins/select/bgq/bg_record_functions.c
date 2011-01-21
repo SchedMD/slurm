@@ -600,6 +600,8 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 */
 extern int update_block_user(bg_record_t *bg_record, int set)
 {
+	int rc=0;
+
 	if (!bg_record->target_name) {
 		error("Must set target_name to run update_block_user.");
 		return -1;
@@ -608,11 +610,10 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 		error("No user_name");
 		bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	}
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	int rc=0;
+
 	if (set) {
-		if ((rc = remove_all_users(bg_record->bg_block_id,
-					   bg_record->target_name))
+		if ((rc = bridge_block_remove_all_users(
+			     bg_record, bg_record->target_name))
 		    == REMOVE_USER_ERR) {
 			error("1 Something happened removing "
 			      "users from block %s",
@@ -625,21 +626,19 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 				     bg_record->target_name,
 				     bg_record->bg_block_id);
 
-				if ((rc = bridge_add_block_user(
-					     bg_record->bg_block_id,
-					     bg_record->target_name))
-				    != STATUS_OK) {
+				if ((rc = bridge_block_add_user(
+					     bg_record, bg_record->target_name))
+				    != SLURM_SUCCESS) {
 					error("bridge_add_block_user"
 					      "(%s,%s): %s",
 					      bg_record->bg_block_id,
 					      bg_record->target_name,
-					      bg_err_str(rc));
+					      bridge_err_str(rc));
 					return -1;
 				}
 			}
 		}
 	}
-#endif
 
 	if (strcmp(bg_record->target_name, bg_record->user_name)) {
 		uid_t pw_uid;

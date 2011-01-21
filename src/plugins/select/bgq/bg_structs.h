@@ -85,7 +85,6 @@ typedef struct {
 } bg_lists_t;
 
 typedef struct bg_record {
-	void *block_ptr;                /* object to hold info from db2 */
 	char *bg_block_id;     	        /* ID returned from MMCS */
 	List bg_midplanes;              /* List of midplanes in block */
 	List bg_pt_midplanes;           /* List of passthrough
