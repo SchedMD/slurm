@@ -2888,6 +2888,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 	}
 	return bit_pick_cnt(avail_bitmap, node_cnt);
 }
+
 /*
  * _resv_test_topo - A topology aware node selection function
  * NOTE: The logic here is almost identical to that of _job_test_topo()

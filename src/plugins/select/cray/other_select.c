@@ -112,6 +112,7 @@ static slurm_select_ops_t *_other_select_get_ops(slurm_select_context_t *c)
 		"select_p_update_node_state",
 		"select_p_alter_node_cnt",
 		"select_p_reconfigure",
+		"select_p_resv_test",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -730,3 +731,22 @@ extern int other_reconfigure (void)
 
 	return (*(other_select_context->ops.reconfigure))();
 }
+
+/*
+ * other_resv_test - Identify the nodes which "best" satisfy a reservation
+ *	request. "best" is defined as either single set of consecutive nodes
+ *	satisfying the request and leaving the minimum number of unused nodes
+ *	OR the fewest number of consecutive node sets
+ * IN avail_bitmap - nodes available for the reservation
+ * IN node_cnt - count of required nodes
+ * RET - nodes selected for use by the reservation
+ */
+extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
+{
+	if (other_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(other_select_context->ops.select_resv_test)) (avail_bitmap,
+							        node_cnt);
+}
+
