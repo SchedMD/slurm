@@ -900,6 +900,14 @@ If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
 will be held until their Fairshare Usage goes above the Threshold.
 .TP
+\fINoReserve\fP
+If set, and using backfill, jobs using this QOS will all be considered
+at the same level within this QOS meaning if a larger, higher priority
+job is unable to run a smaller job will run if possible even if the
+larger higher priority job will be delayed starting.
+NOTE: This could cause starvation on these larger jobs, but if that is
+ok, this flag most likely will increase utilization.
+.TP
 \fIPartitionMaxNodes\fP
 If set jobs using this QOS will be able to
 override the requested partition's MaxNodes limit.

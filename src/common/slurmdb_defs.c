@@ -311,6 +311,9 @@ static uint32_t _str_2_qos_flags(char *flags)
 	if (slurm_strcasestr(flags, "PartitionTimeLimit"))
 		return QOS_FLAG_PART_TIME_LIMIT;
 
+	if (slurm_strcasestr(flags, "NoReserve"))
+		return QOS_FLAG_NO_RESERVE;
+
 	return 0;
 }
 
@@ -1188,6 +1191,8 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "Remove,");
 	if (flags & QOS_FLAG_ENFORCE_USAGE_THRES)
 		xstrcat(qos_flags, "EnforceUsageThreshold,");
+	if (flags & QOS_FLAG_NO_RESERVE)
+		xstrcat(qos_flags, "NoReserve,");
 	if (flags & QOS_FLAG_PART_MAX_NODE)
 		xstrcat(qos_flags, "PartitionMaxNodes,");
 	if (flags & QOS_FLAG_PART_MIN_NODE)

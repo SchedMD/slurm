@@ -42,6 +42,10 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - more robust checking for states when freeing blocks.
  -- Added correct files to the slurm.spec file for correct perl api rpm
     creation.
+ -- Added flag "NoReserve" to a QOS to make it so all jobs are created equal
+    within a QOS.  So if larger, higher priority jobs are unable to run they
+    don't prevent smaller jobs from running even if running the smaller
+    jobs delay the start of the larger, higher priority jobs.
 
 * Changes in SLURM 2.2.0
 ========================
