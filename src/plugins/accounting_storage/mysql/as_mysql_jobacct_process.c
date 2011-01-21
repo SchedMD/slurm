@@ -273,6 +273,7 @@ static void _state_time_string(char **extra, uint32_t state,
 	case JOB_FAILED:
 	case JOB_TIMEOUT:
 	case JOB_NODE_FAIL:
+	case JOB_PREEMPTED:
 	default:
 		xstrfmtcat(*extra, "(t1.state='%u' && (t1.time_end && ", state);
 		if (start) {

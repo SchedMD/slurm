@@ -296,7 +296,7 @@ See the \fBJOB STATE CODES\fR section below for more information.
 \fB%T\fR
 Job state, extended form:
 PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING,
-FAILED, TIMEOUT, and NODE_FAIL.
+FAILED, TIMEOUT, PREEMPTED, and NODE_FAIL.
 See the \fBJOB STATE CODES\fR section below for more information.
 (Valid for jobs only)
 .TP
@@ -373,8 +373,8 @@ reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
-FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
-supplied is case insensitve ("pd" and "PD" work the same).
+FAILED (F), TIMEOUT (TO), PREEMPTED (PR) and NODE_FAIL (NF). Note the
+\fB<state_list>\fR supplied is case insensitve ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
@@ -472,6 +472,9 @@ Job terminated due to failure of one or more allocated nodes.
 .TP
 \fBPD  PENDING\fR
 Job is awaiting resource allocation.
+.TP
+\fBPR  PREEMPTED\fR
+Job terminated due to preemption.
 .TP
 \fBR   RUNNING\fR
 Job currently has an allocation.

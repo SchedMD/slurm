@@ -645,7 +645,7 @@ static char *	_get_job_state(struct job_record *job_ptr)
 
 	if (IS_JOB_COMPLETE(job_ptr) || IS_JOB_FAILED(job_ptr))
 		state_str = "Completed";
-	else /* JOB_CANCELLED, JOB_TIMEOUT, JOB_NODE_FAIL */
+	else /* JOB_CANCELLED, JOB_TIMEOUT, JOB_NODE_FAIL, etc. */
 		state_str = "Removed";
 	snprintf(return_msg, sizeof(return_msg), "%s;EXITCODE=%u",
 		state_str, WEXITSTATUS(job_ptr->exit_code));

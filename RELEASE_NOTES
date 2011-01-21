@@ -99,6 +99,9 @@ select_type_plugin_info is no longer and it's contents are now mostly #defines
 
 DEBUG_FLAG_FRONT_END		added DebugFlags of Frontend
 
+JOB_PREEMPTED			added new job termination state to indicated
+				job termination was due to preemption
+
 TRIGGER_RES_TYPE_FRONT_END	added trigger for frontend state changes
 
 

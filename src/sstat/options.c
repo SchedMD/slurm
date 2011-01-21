@@ -273,6 +273,8 @@ int decode_state_char(char *state)
 		return JOB_TIMEOUT;
 	else if (!strcasecmp(state, "nf"))
 		return JOB_NODE_FAIL;
+	else if (!strcasecmp(state, "pr"))
+		return JOB_PREEMPTED;
 	else
 		return -1; // unknown
 }

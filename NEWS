@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Log a job's requeue or cancellation due to preemption to that job's stderr:
     "*** JOB 65547 CANCELLED AT 2011-01-21T12:59:33 DUE TO PREEMPTION ***".
+ -- Added new job termination state of JOB_PREEMPTED, "PR" or "PREEMPTED" to
+    indicate job termination was due to preemption.
 
 * Changes in SLURM 2.3.0.pre1
 =============================

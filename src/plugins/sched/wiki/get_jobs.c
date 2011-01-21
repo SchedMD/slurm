@@ -501,7 +501,7 @@ static char *	_get_job_state(struct job_record *job_ptr)
 
 	if (IS_JOB_COMPLETE(job_ptr))
 		return "Completed";
-	else /* JOB_CANCELLED, JOB_FAILED, JOB_TIMEOUT, JOB_NODE_FAIL */
+	else /* JOB_CANCELLED, JOB_FAILED, JOB_TIMEOUT, JOB_NODE_FAIL, etc. */
 		return "Removed";
 }
 

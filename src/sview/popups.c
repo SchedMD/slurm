@@ -686,6 +686,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			{G_TYPE_NONE, JOB_FAILED, "Failed", TRUE, -1},
 			{G_TYPE_NONE, JOB_TIMEOUT, "Timeout", TRUE, -1},
 			{G_TYPE_NONE, JOB_NODE_FAIL, "Node Failure", TRUE, -1},
+			{G_TYPE_NONE, JOB_PREEMPTED, "Preempted", TRUE, -1},
 			{G_TYPE_NONE, -1, NULL, FALSE, -1}
 		};
 

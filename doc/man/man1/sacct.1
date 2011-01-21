@@ -310,6 +310,9 @@ Job terminated due to failure of one or more allocated nodes.
 \f3PD  PENDING\fP
 Job is awaiting resource allocation.
 .TP
+\fBPR  PREEMPTED\fR
+Job terminated due to preemption.
+.TP
 \f3R   RUNNING\fP
 Job currently has an allocation.
 .TP
@@ -653,7 +656,7 @@ Initiation time of the job in the same format as \f3end\fP.
 Displays the job status, or state.
 
 Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
-TIMEOUT, or NODE_FAIL. If multiple job states are found for a single
+TIMEOUT, PREEMPTED or NODE_FAIL. If multiple job states are found for a single
 job (e.g. the job was requeued after a NODE_FAIL and then COMPLETED)
 then the last job state will be displayed followed by a "+".
 

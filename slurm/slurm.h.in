@@ -231,6 +231,7 @@ enum job_states {
 	JOB_FAILED,		/* completed execution unsuccessfully */
 	JOB_TIMEOUT,		/* terminated on reaching time limit */
 	JOB_NODE_FAIL,		/* terminated on node failure */
+	JOB_PREEMPTED,		/* terminated due to preemption */
 	JOB_END			/* not a real state, last entry in table */
 };
 #define	JOB_STATE_BASE	0x00ff	/* Used for job_states above */

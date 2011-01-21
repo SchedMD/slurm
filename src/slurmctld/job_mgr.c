@@ -2818,6 +2818,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	uint16_t job_term_state;
 
 	/* Jobs submitted using Moab command should be cancelled using
 	 * Moab command for accurate job records */
@@ -2882,11 +2883,15 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return SLURM_SUCCESS;
 	}
 
+	if (preempt)
+		job_term_state = JOB_PREEMPTED;
+	else
+		job_term_state = JOB_CANCELLED;
 	if (IS_JOB_SUSPENDED(job_ptr) &&  (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = job_ptr->suspend_time;
 		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
-		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		job_ptr->job_state      = job_term_state | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		deallocate_nodes(job_ptr, false, true, preempt);
@@ -2902,7 +2907,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			job_ptr->time_last_active	= now;
 			job_ptr->end_time		= now;
 			last_job_update			= now;
-			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+			job_ptr->job_state = job_term_state | JOB_COMPLETING;
 			build_cg_bitmap(job_ptr);
 			deallocate_nodes(job_ptr, false, false, preempt);
 			job_completion_logger(job_ptr, false);
@@ -8202,7 +8207,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 				mail_job_info(job_ptr, MAIL_JOB_REQUEUE);
 			if (!requeue && (job_ptr->mail_type & MAIL_JOB_END))
 				mail_job_info(job_ptr, MAIL_JOB_END);
-		} else {	/* JOB_FAILED, JOB_NODE_FAIL, or JOB_TIMEOUT */
+		} else {	/* JOB_FAILED, JOB_TIMEOUT, etc. */
 			if (job_ptr->mail_type & MAIL_JOB_FAIL)
 				mail_job_info(job_ptr, MAIL_JOB_FAIL);
 			else if (job_ptr->mail_type & MAIL_JOB_END)

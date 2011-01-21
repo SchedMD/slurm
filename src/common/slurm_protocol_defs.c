@@ -1036,6 +1036,8 @@ char *job_state_string(uint16_t inx)
 		return "TIMEOUT";
 	case JOB_NODE_FAIL:
 		return "NODE_FAIL";
+	case JOB_PREEMPTED:
+		return "PREEMPTED";
 	default:
 		return "?";
 	}
@@ -1069,6 +1071,8 @@ char *job_state_string_compact(uint16_t inx)
 		return "TO";
 	case JOB_NODE_FAIL:
 		return "NF";
+	case JOB_PREEMPTED:
+		return "PR";
 	default:
 		return "?";
 	}
