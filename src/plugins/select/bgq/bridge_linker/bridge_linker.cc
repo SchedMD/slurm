@@ -237,6 +237,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	itr = list_iterator_create(bg_record->bg_pt_midplanes);
 	while ((b_midplane = (b_midplane_t *)list_next(itr)))
 		pt_midplanes.push_back(b_midplane->loc);
+
 	list_iterator_destroy(itr);
 
         for (i=0, dim = Dimension::A; i<SYSTEM_DIMENSIONS; i++, ++dim) {
@@ -271,6 +272,10 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+	if (bridge_block_set_owner(bg_record->bg_block_id,
+				   bg_conf->slurm_user_name) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
         try {
 		Block::initiateBoot(bg_record->bg_block_id);
 	} catch(...) {
