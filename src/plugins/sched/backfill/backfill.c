@@ -458,6 +458,7 @@ static int _attempt_backfill(void)
 	bool filter_root = false;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
 	int i, j, node_space_recs;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -693,8 +694,11 @@ static int _attempt_backfill(void)
 		}
 
 		/*
-		 * Add reservation to scheduling table
+		 * Add reservation to scheduling table if appropriate
 		 */
+		qos_ptr = job_ptr->qos_ptr;
+		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+			continue;
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
