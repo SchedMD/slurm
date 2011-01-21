@@ -139,7 +139,7 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
@@ -197,7 +197,7 @@ static display_data_t create_data_part[] = {
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
-	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
@@ -370,6 +370,20 @@ static void _set_active_combo_part(GtkComboBox *combo,
 			}
 
 		break;
+	case SORTID_PREEMPT_MODE:
+		if (!strcasecmp(temp_char, "cancel"))
+			action = 0;
+		else if (!strcasecmp(temp_char, "checkpoint"))
+			action = 1;
+		else if (!strcasecmp(temp_char, "off"))
+			action = 2;
+		else if (!strcasecmp(temp_char, "requeue"))
+			action = 3;
+		else if (!strcasecmp(temp_char, "suspend"))
+			action = 4;
+		else
+			action = 2;	/* off */
+		break;
 	default:
 		break;
 	}
@@ -431,7 +445,6 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 {
 	char *type = "", *temp_char;
 	int temp_int = 0;
-	uint16_t temp_uint16 = 0;
 
 	global_edit_error = 0;
 
@@ -475,11 +488,17 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->max_time = (uint32_t)temp_int;
 		break;
 	case SORTID_PREEMPT_MODE:
-		temp_uint16 = preempt_mode_num(new_text);
+		if (!strcasecmp(new_text, "cancel"))
+			part_msg->preempt_mode = PREEMPT_MODE_CANCEL;
+		else if (!strcasecmp(new_text, "checkpoint"))
+			part_msg->preempt_mode = PREEMPT_MODE_CHECKPOINT;
+		else if (!strcasecmp(new_text, "off"))
+			part_msg->preempt_mode = PREEMPT_MODE_OFF;
+		else if (!strcasecmp(new_text, "requeue"))
+			part_msg->preempt_mode = PREEMPT_MODE_REQUEUE;
+		else if (!strcasecmp(new_text, "suspend"))
+			part_msg->preempt_mode = PREEMPT_MODE_SUSPEND;
 		type = "preempt_mode";
-		if (temp_uint16 == (uint16_t) NO_VAL)
-			goto return_error;
-		part_msg->preempt_mode = temp_uint16;
 		break;
 	case SORTID_PRIORITY:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -1103,7 +1122,6 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		secs2time_str((part_ptr->max_time * 60),
 			      time_buf, sizeof(time_buf));
 	}
-
 	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);
 
 	_build_min_max_32_string(time_buf, sizeof(time_buf),
@@ -1990,6 +2008,28 @@ static GtkListStore *_create_model_part2(int type)
 		gtk_list_store_set(model, &iter,
 				   0, "drain", 1, SORTID_PART_STATE, -1);
 		break;
+	case SORTID_PREEMPT_MODE:
+		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter, 0,
+				preempt_mode_string(slurm_get_preempt_mode()),
+				1, SORTID_PREEMPT_MODE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "cancel", 1, SORTID_PREEMPT_MODE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "checkpoint", 1, SORTID_PREEMPT_MODE,-1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "off", 1, SORTID_PREEMPT_MODE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "requeue", 1, SORTID_PREEMPT_MODE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "suspend", 1, SORTID_PREEMPT_MODE, -1);
+		break;
 	}
 
 	return model;
@@ -2015,6 +2055,23 @@ extern GtkListStore *create_model_part(int type)
 				   0, "no", 1, type, -1);
 		break;
 	case SORTID_PREEMPT_MODE:
+		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "cancel", 1, SORTID_PREEMPT_MODE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "checkpoint", 1, SORTID_PREEMPT_MODE,-1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "off", 1, SORTID_PREEMPT_MODE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "requeue", 1, SORTID_PREEMPT_MODE, -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "suspend", 1, SORTID_PREEMPT_MODE, -1);
+		break;
 	case SORTID_PRIORITY:
 	case SORTID_TIMELIMIT:
 	case SORTID_NODES_MIN:
@@ -2053,7 +2110,6 @@ extern GtkListStore *create_model_part(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "drain", 1, SORTID_PART_STATE, -1);
-		break;
 		break;
 	case SORTID_NODE_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
