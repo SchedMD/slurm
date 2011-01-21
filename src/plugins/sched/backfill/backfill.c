@@ -128,8 +128,8 @@ static int  _num_feature_count(struct job_record *job_ptr);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
-static bool _test_resv_overlap(node_space_map_t *node_space, 
-			       bitstr_t *use_bitmap, uint32_t start_time, 
+static bool _test_resv_overlap(node_space_map_t *node_space,
+			       bitstr_t *use_bitmap, uint32_t start_time,
 			       uint32_t end_reserve);
 static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
@@ -445,10 +445,10 @@ static int _yield_locks(void)
 	_my_sleep(backfill_interval);
 	lock_slurmctld(all_locks);
 
-	if ((last_job_update  == job_update)  && 
-	    (last_node_update == node_update) && 
+	if ((last_job_update  == job_update)  &&
+	    (last_node_update == node_update) &&
 	    (last_part_update == part_update) &&
-	    (! stop_backfill) && (! config_flag)) 
+	    (! stop_backfill) && (! config_flag))
 		return 0;
 	else
 		return 1;
@@ -459,6 +459,7 @@ static int _attempt_backfill(void)
 	bool filter_root = false;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
 	int i, j, node_space_recs;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -499,7 +500,7 @@ static int _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		_dump_node_space_table(node_space);
 
-	while ((job_queue_rec = (job_queue_rec_t *) 
+	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
@@ -645,7 +646,7 @@ static int _attempt_backfill(void)
 			if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
 				/* Set time limit as high as possible */
 				job_ptr->time_limit = comp_time_limit;
-				job_ptr->end_time = job_ptr->start_time + 
+				job_ptr->end_time = job_ptr->start_time +
 						    (comp_time_limit * 60);
 				_reset_job_time_limit(job_ptr, now,
 						      node_space);
@@ -684,18 +685,21 @@ static int _attempt_backfill(void)
 		}
 
 		end_reserve = job_ptr->start_time + (time_limit * 60);
-		if (_test_resv_overlap(node_space, avail_bitmap, 
+		if (_test_resv_overlap(node_space, avail_bitmap,
 				       job_ptr->start_time, end_reserve)) {
 			/* This job overlaps with an existing reservation for
-			 * job to be backfill scheduled, which the sched 
+			 * job to be backfill scheduled, which the sched
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
 			goto TRY_LATER;
 		}
 
 		/*
-		 * Add reservation to scheduling table
+		 * Add reservation to scheduling table if appropriate
 		 */
+		qos_ptr = job_ptr->qos_ptr;
+		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+			continue;
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
@@ -765,7 +769,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 	return rc;
 }
 
-/* Reset a job's time limit (and end_time) as high as possible 
+/* Reset a job's time limit (and end_time) as high as possible
  *	within the range job_ptr->time_min and job_ptr->time_limit.
  *	Avoid using resources reserved for pending jobs or in resource
  *	reservations */
@@ -881,8 +885,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
  * IN start_time - start time of job
  * IN end_reserve - end time of job
  */
-static bool _test_resv_overlap(node_space_map_t *node_space, 
-			       bitstr_t *use_bitmap, uint32_t start_time, 
+static bool _test_resv_overlap(node_space_map_t *node_space,
+			       bitstr_t *use_bitmap, uint32_t start_time,
 			       uint32_t end_reserve)
 {
 	bool overlap = false;

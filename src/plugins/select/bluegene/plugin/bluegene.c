@@ -696,7 +696,7 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 			/* Fake a free since we are n deallocating
 			   state before this.
 			*/
-			if (retry_cnt >= 2)
+			if (retry_cnt >= 3)
 				bg_record->state = RM_PARTITION_FREE;
 #endif
 			if ((bg_record->state == RM_PARTITION_FREE)
@@ -723,7 +723,7 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 	list_iterator_reset(itr);
 	while ((bg_record = list_next(itr))) {
 		/* block no longer exists */
-		if (bg_record->magic == 0)
+		if (bg_record->magic != BLOCK_MAGIC)
 			continue;
 		if (bg_record->state != RM_PARTITION_FREE) {
 			restore = true;
@@ -1570,7 +1570,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 #ifdef HAVE_BG_FILES
 	int rc = SLURM_SUCCESS;
 #endif
-	if (bg_record->magic == 0) {
+	if (bg_record->magic != BLOCK_MAGIC) {
 		error("block already destroyed");
 		return SLURM_ERROR;
 	}
@@ -1601,6 +1601,16 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		select_p_update_block(&block_msg);
 		slurm_mutex_lock(&block_state_mutex);
 		return SLURM_SUCCESS;
+	}
+
+	/* A bit of a sanity check to make sure blocks are being
+	   removed out of all the lists.
+	*/
+	if (blocks_are_created) {
+		remove_from_bg_list(bg_lists->booted, bg_record);
+		if (remove_from_bg_list(bg_lists->job_running, bg_record)
+		    == SLURM_SUCCESS)
+			num_unused_cpus += bg_record->cpu_cnt;
 	}
 
 	if (restore)
@@ -1667,7 +1677,7 @@ static void *_track_freeing_blocks(void *args)
 			/* Fake a free since we are n deallocating
 			   state before this.
 			*/
-			if (retry_cnt >= 2)
+			if (retry_cnt >= 3)
 				bg_record->state = RM_PARTITION_FREE;
 #endif
 			if ((bg_record->state == RM_PARTITION_FREE)
@@ -1677,7 +1687,7 @@ static void *_track_freeing_blocks(void *args)
 		slurm_mutex_unlock(&block_state_mutex);
 		if (free_cnt == track_cnt)
 			break;
-		debug("_track_freeing_blocks: freed %d of %d for",
+		debug("_track_freeing_blocks: freed %d of %d",
 		      free_cnt, track_cnt);
 		sleep(FREE_SLEEP_INTERVAL);
 		retry_cnt++;
