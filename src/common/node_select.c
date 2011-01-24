@@ -1093,4 +1093,27 @@ extern int select_g_reconfigure (void)
 	return (*(select_context[select_context_default].ops.reconfigure))();
 }
 
+/*
+ * select_g_resv_test - Identify the nodes which "best" satisfy a reservation
+ *	request. "best" is defined as either single set of consecutive nodes
+ *	satisfying the request and leaving the minimum number of unused nodes
+ *	OR the fewest number of consecutive node sets
+ * IN avail_bitmap - nodes available for the reservation
+ * IN node_cnt - count of required nodes
+ * RET - nodes selected for use by the reservation
+ */
+extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
+{
+#if 0
+	/* Wait for Danny to checkin select/bgq logic before using new plugin
+	 * function calls. The select_p_resv_test() function is currently only
+	 * available in select/linear and select/cons_res */
+	if (slurm_select_init(0) < 0)
+		return NULL;
 
+	return (*(select_context[select_context_default].ops.
+		select_resv_test)) (avail_bitmap, node_cnt);
+#else
+	return bit_pick_cnt(avail_bitmap, node_cnt);
+#endif
+}

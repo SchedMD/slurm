@@ -2497,8 +2497,8 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	if (bit_overlap(avail_bitmap, idle_node_bitmap) >=
 	    resv_desc_ptr->node_cnt) {
 		bit_and(avail_bitmap, idle_node_bitmap);
-		ret_bitmap = bit_pick_cnt(avail_bitmap,
-					  resv_desc_ptr->node_cnt);
+		ret_bitmap = select_g_resv_test(avail_bitmap,
+						resv_desc_ptr->node_cnt);
 		if (ret_bitmap)
 			goto fini;
 	}
@@ -2518,7 +2518,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 		bit_not(job_ptr->node_bitmap);
 	}
 	list_iterator_destroy(job_iterator);
-	ret_bitmap = bit_pick_cnt(avail_bitmap, resv_desc_ptr->node_cnt);
+	ret_bitmap = select_g_resv_test(avail_bitmap, resv_desc_ptr->node_cnt);
 	if (ret_bitmap)
 		goto fini;
 
@@ -2541,9 +2541,9 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 			bit_and(tmp_bitmap, job_ptr->node_bitmap);
 			if (bit_set_count(tmp_bitmap) > 0) {
 				bit_or(avail_bitmap, tmp_bitmap);
-				ret_bitmap = bit_pick_cnt(avail_bitmap,
-							  resv_desc_ptr->
-							  node_cnt);
+				ret_bitmap = select_g_resv_test(avail_bitmap,
+								resv_desc_ptr->
+								node_cnt);
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
 			if (ret_bitmap)

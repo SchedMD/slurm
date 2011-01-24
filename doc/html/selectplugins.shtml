@@ -360,6 +360,24 @@ failure, the plugin should return a SLURM error code.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
+<h3>Advanced Reservation Functions</h3>
+
+<p class="commandline">bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap,
+uint32_t node_cnt)</p>
+<p style="margin-left:.2in"><b>Description</b>: Identify the nodes which best
+satisfy a reservation request taking system topology into consideration if
+applicable.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> avail_bitmap</span>&nbsp; &nbsp;&nbsp;(input)
+a bitmap of the nodes which are available for use in creating the reservation.<br><br>
+span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input)
+number of nodes required to satisfy the reservation request.</p>
+<p style="margin-left:.2in"><b>Returns</b>: A bitmap of the nodes which should
+be used for the advanced reservation or NULL if the selected nodes can not
+be used for an advanced reservation.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
 <h3>Get Information Functions</h3>
 
 <p class="commandline">int select_p_get_info_from_plugin(enum select_data_info info,
@@ -411,6 +429,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 January 2011</p>
+<p style="text-align:center;">Last modified 21 January 2011</p>
 
 <!--#include virtual="footer.txt"-->

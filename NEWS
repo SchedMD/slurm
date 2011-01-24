@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
     "*** JOB 65547 CANCELLED AT 2011-01-21T12:59:33 DUE TO PREEMPTION ***".
  -- Added new job termination state of JOB_PREEMPTED, "PR" or "PREEMPTED" to
     indicate job termination was due to preemption.
+ -- Optimize advanced reservations resource selection for computer topology.
+    The logic has been added to select/linear and select/cons_res, but will
+    not be enabled until the other select plugins are modified.
 
 * Changes in SLURM 2.3.0.pre1
 =============================
