@@ -393,9 +393,10 @@ fini:
  * IN job_ptr      - pointer to job requirements
  * IN/OUT core_map - bitmap of cores available for use/selected for use
  * IN node_i       - index of node to be evaluated
+ * IN cpu_type     - if true, allocate CPUs rather than cores
  */
 uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
-			 const uint32_t node_i, int cpu_type)
+			 const uint32_t node_i, bool cpu_type)
 {
 	uint16_t cpu_count = 0, avail_cpus = 0, num_tasks = 0;
 	uint32_t core_begin    = cr_get_coremap_offset(node_i);
@@ -652,11 +653,11 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	}
 
 	if (cr_type & CR_CORE)
-		cpus = _allocate_cores(job_ptr, core_map, node_i, 0);
+		cpus = _allocate_cores(job_ptr, core_map, node_i, false);
 	else if (cr_type & CR_SOCKET)
 		cpus = _allocate_sockets(job_ptr, core_map, node_i);
 	else
-		cpus = _allocate_cores(job_ptr, core_map, node_i, 1);
+		cpus = _allocate_cores(job_ptr, core_map, node_i, true);
 
 	core_start_bit = cr_get_coremap_offset(node_i);
 	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
@@ -930,7 +931,7 @@ static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,
  *
  * IN: job_ptr     - pointer to the job requesting resources
  * IN: node_map    - bitmap of available nodes
- * IN: core_map    - bitmap of available cores
+ * IN/OUT: core_map    - bitmap of available cores
  * IN: cr_node_cnt - total number of nodes in the cluster
  * IN: cr_type     - resource type
  * OUT: cpu_cnt    - number of cpus that can be used by this job
