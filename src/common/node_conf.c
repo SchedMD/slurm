@@ -367,6 +367,8 @@ static int _hash_index (char *name)
 	for (j = 1; *name; name++, j++)
 		index += (int)*name * j;
 	index %= node_record_count;
+	if (index < 0)
+		index += node_record_count;
 
 	return index;
 }

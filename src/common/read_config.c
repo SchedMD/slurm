@@ -1095,20 +1095,25 @@ static void _init_name_hashtbl(void)
 	return;
 }
 
-static int _get_hash_idx(const char *s)
+static int _get_hash_idx(const char *name)
 {
-	int hash = 0, i;
+	int index = 0;
+	int j;
 
-	if (s) {
-		for (i = 0; i < 64; i++) {
-			if (s[i])
-				hash += (int) s[i];
-			else
-				break;
-		}
-	}
+	if (name == NULL)
+		return 0;	/* degenerate case */
 
-	return hash % NAME_HASH_LEN;
+	/* Multiply each character by its numerical position in the
+	 * name string to add a bit of entropy, because host names such
+	 * as cluster[0001-1000] can cause excessive index collisions.
+	 */
+	for (j = 1; *name; name++, j++)
+		index += (int)*name * j;
+	index %= NAME_HASH_LEN;
+	if (index < 0)
+		index += NAME_HASH_LEN;
+
+	return index;
 }
 
 static void _push_to_hashtbls(char *alias, char *hostname,
