@@ -69,7 +69,7 @@ MySQL, PGSQL, SlurmDBD (Slurm Database Daemon) or none</li>
 <a href="http://www.theether.org/authd/">authd</a>,
 <a href="http://munge.googlecode.com/">munge</a>, or none (default).</li>
 
-<li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX, OpenMPI, XLCH, or none.</li>
+<li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX, BLCR, OpenMPI, or none.</li>
 
 <li><a href="crypto_plugins.html">Cryptography (Digital Signature Generation)</a>:
 <a href="http://munge.googlecode.com/">munge</a> (default) or

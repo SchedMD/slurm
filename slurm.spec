@@ -652,7 +652,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/accounting_storage_slurmdbd.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
-%{_libdir}/slurm/checkpoint_xlch.so
 %{_libdir}/slurm/gres_gpu.so
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/jobacct_gather_aix.so

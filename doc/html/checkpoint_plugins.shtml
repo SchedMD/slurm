@@ -22,7 +22,6 @@ We recommend, for example:</p>
 Berkeley Lab Checkpoint/Restart (BLCR)</a></li>
 <li><b>none</b>&#151;No job checkpoint.</li>
 <li><b>ompi</b>&#151;OpenMPI checkpoint (requires OpenMPI version 1.3 or higher).</li>
-<li><b>xlch</b>&#151;XLCH</li>
 </ul></p>
 
 <p>The <span class="commandline">plugin_name</span> and
