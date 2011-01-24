@@ -67,7 +67,7 @@ int blocks_are_created = 0;
 int num_unused_cpus = 0;
 
 /* local vars */
-static pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+//static pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool initialized = false;
 
 static void _b_midplane_del(void *object)
@@ -119,14 +119,14 @@ extern int bridge_get_size(uint16_t *size)
 {
 	int i;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-        Midplane::Coordinates bgq_size = core::getMachineSize();
+        Midplane::Coordinates bgq_size;
 #endif
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 	memset(size, 0, sizeof(uint16_t) * SYSTEM_DIMENSIONS);
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	bgq = (ComputeHardware::ConstPtr &)bg;
+	bgq_size = core::getMachineSize();
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		size[i] = bgq_size[(bgsched::Dimension::Value)i];
 #else
@@ -234,7 +234,6 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	block_ptr->addUser(bg_record->bg_block_id, bg_record->user_name);
 	block_ptr->add(NULL);
 
-	bg_record->block_ptr = (void *)&block_ptr;
 #endif
 
 	return rc;
@@ -374,6 +373,7 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	int rc = SLURM_SUCCESS;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	std::vector<std::string> vec;
+	vector<std::string>::iterator iter;
 #endif
 
 	if (!bridge_init(NULL))
@@ -446,7 +446,7 @@ extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 	job_statuses.insert(Job::Starting);
 	job_statuses.insert(Job::Running);
 	job_statuses.insert(Job::Ending);
-	job_filter.setStatuses(&job_statuses);
+	job_filter.setStatus(&job_statuses);
 
 	while (1) {
 		if (count)
