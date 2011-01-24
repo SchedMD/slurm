@@ -407,7 +407,6 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 					c_usage = loc_c_usage;
 				loc_c_usage = NULL;
 			} else {
-				info("got here");
 				c_usage->cpu_count = row_cpu;
 				c_usage->total_time +=
 					(row_end - row_start) * row_cpu;
