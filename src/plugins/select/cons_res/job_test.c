@@ -289,6 +289,8 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	avail_cpus = 0;
 	num_tasks = 0;
 	threads_per_core = MIN(threads_per_core, max_threads); 
+	threads_per_core = MIN(threads_per_core, ntasks_per_core);
+
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
 		avail_cpus += tmp;
@@ -411,7 +413,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t max_cores = 0xffff, max_sockets = 0xffff, max_threads = 0xffff;
 	uint16_t ntasks_per_core = 0xffff;
 
-	if (!cpu_type && job_ptr->details && job_ptr->details->mc_ptr) {
+	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if (mc_ptr->cores_per_socket != (uint16_t) NO_VAL) {
 			min_cores   = mc_ptr->cores_per_socket;
@@ -538,22 +540,16 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	 * Note: cpus_per_task and ntasks_per_core need to play nice
 	 *       2 tasks_per_core vs. 2 cpus_per_task
 	 */
-	if (cpu_type)
-		max_threads = threads_per_core;
-	else
-		threads_per_core = MIN(threads_per_core, max_threads);
+	threads_per_core = MIN(threads_per_core, max_threads);
+	threads_per_core = MIN(threads_per_core, ntasks_per_core);
 	num_tasks = avail_cpus = threads_per_core;
-	i = job_ptr->details->mc_ptr->ntasks_per_core;
-	if (!cpu_type && (i > 0))
-		num_tasks = MIN(num_tasks, i);
 
 	/* convert from PER_CORE to TOTAL_FOR_NODE */
 	avail_cpus *= free_core_count;
 	num_tasks  *= free_core_count;
 
-	/* If job requested exclusive rights to the node don't do the
-	   min here since it will make it so we don't allocate the
-	   entire node */
+	/* If job requested exclusive rights to the node don't do the min here
+	 * since it will make it so we don't allocate the entire node */
 	if (job_ptr->details->ntasks_per_node && job_ptr->details->shared)
 		num_tasks = MIN(num_tasks, job_ptr->details->ntasks_per_node);
 

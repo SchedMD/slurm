@@ -48,6 +48,8 @@ documents those changes that are of interest to users and admins.
     jobs delay the start of the larger, higher priority jobs.
  -- BLUEGENE - Check preemptees one by one to preempt lower priority jobs first
     instead of first fit.
+ -- In select/cons_res, correct handling of the option
+    SelectTypeParameters=CR_ONE_TASK_PER_CORE.
 
 * Changes in SLURM 2.2.0
 ========================
