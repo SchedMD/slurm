@@ -108,16 +108,15 @@ extern int bridge_block_create(bg_record_t *bg_record);
  * NOTE: block_state_mutex needs to be locked before entering.
  */
 extern int bridge_block_boot(bg_record_t *bg_record);
-extern int bridge_block_free(char *bg_block_id);
-extern int bridge_block_remove(char *bg_block_id);
+extern int bridge_block_free(bg_record_t *bg_record);
+extern int bridge_block_remove(bg_record_t *bg_record);
 
-extern int bridge_block_add_user(char *bg_block_id, char *user_name);
-extern int bridge_block_remove_user(char *bg_block_id, char *user_name);
-extern int bridge_block_remove_all_users(char *bg_block_id, char *user_name);
-extern int bridge_block_set_owner(char *bg_block_id, char *user_name);
+extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name);
+extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name);
+extern int bridge_block_remove_all_users(bg_record_t *bg_record,
+					 char *user_name);
+extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name);
 
-extern int bridge_block_remove_jobs(char *bg_block_id);
-
-extern int bridge_job_remove(void *job, char *bg_block_id);
+extern int bridge_block_remove_jobs(bg_record_t *bg_record);
 
 #endif /* _BRIDGE_LINKER_H_ */

@@ -476,11 +476,10 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != BG_BLOCK_FREE
 		    && bg_record->state != BG_BLOCK_TERM) {
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("bridge_destroy %s",
 				     bg_record->bg_block_id);
-			rc = bridge_block_remove(bg_record->bg_block_id);
+			rc = bridge_block_free(bg_record);
 			if (rc != SLURM_SUCCESS) {
 /* 				if (rc == PARTITION_NOT_FOUND) { */
 /* 					debug("block %s is not found", */
@@ -513,10 +512,6 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					      bg_record->state);
 				/* } */
 			}
-#else
-			bg_record->state = BG_BLOCK_FREE;
-//			bg_record->state = BG_BLOCK_TERM;
-#endif
 		}
 
 		if (!wait || (bg_record->state == BG_BLOCK_FREE)
@@ -1342,9 +1337,8 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 /* block_state_mutex should be locked before calling this */
 static int _post_block_free(bg_record_t *bg_record, bool restore)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	int rc = SLURM_SUCCESS;
-#endif
+
 	if (bg_record->magic == 0) {
 		error("block already destroyed");
 		return SLURM_ERROR;
@@ -1392,12 +1386,11 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		      bg_record->bg_block_id);
 	}
 
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("_post_block_free: removing %s from database",
 		     bg_record->bg_block_id);
 
-	rc = bridge_block_remove(bg_record->bg_block_id);
+	rc = bridge_block_remove(bg_record);
 	if (rc != SLURM_SUCCESS) {
 		/* if (rc == PARTITION_NOT_FOUND) { */
 		/* 	debug("_post_block_free: block %s is not found", */
@@ -1412,7 +1405,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("_post_block_free: done %s",
 			     bg_record->bg_block_id);
-#endif
+
 	destroy_bg_record(bg_record);
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("_post_block_free: destroyed");

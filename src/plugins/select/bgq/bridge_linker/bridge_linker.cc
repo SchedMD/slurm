@@ -262,8 +262,8 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	if (bridge_block_set_owner(bg_record->bg_block_id,
-				   bg_conf->slurm_user_name) != SLURM_SUCCESS)
+	if (bridge_block_set_owner(
+		    bg_record, bg_conf->slurm_user_name) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
         try {
@@ -286,38 +286,40 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	return rc;
 }
 
-extern int bridge_block_free(char *bg_block_id)
+extern int bridge_block_free(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id)
+	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-       try {
-		Block::initiateFree(bg_block_id);
+	try {
+		Block::initiateFree(bg_record->bg_block_id);
 	} catch(...) {
                 error("Free block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
+#else
+	bg_record->state = BG_BLOCK_FREE;
 #endif
 	return rc;
 }
 
-extern int bridge_block_remove(char *bg_block_id)
+extern int bridge_block_remove(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id)
+	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-       try {
-		Block::remove(bg_block_id);
+	try {
+		Block::remove(bg_record->bg_block_id);
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -326,18 +328,18 @@ extern int bridge_block_remove(char *bg_block_id)
 	return rc;
 }
 
-extern int bridge_block_add_user(char *bg_block_id, char *user_name)
+extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id || !user_name)
+	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
         try {
-		Block::addUser(bg_block_id, user_name);
+		Block::addUser(bg_record->bg_block_id, user_name);
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -346,18 +348,18 @@ extern int bridge_block_add_user(char *bg_block_id, char *user_name)
 	return rc;
 }
 
-extern int bridge_block_remove_user(char *bg_block_id, char *user_name)
+extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id || !user_name)
+	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
         try {
-		Block::removeUser(bg_block_id, user_name);
+		Block::removeUser(bg_record->bg_block_id, user_name);
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = REMOVE_USER_ERR;
@@ -366,7 +368,8 @@ extern int bridge_block_remove_user(char *bg_block_id, char *user_name)
 	return rc;
 }
 
-extern int bridge_block_remove_all_users(char *bg_block_id, char *user_name)
+extern int bridge_block_remove_all_users(bg_record_t *bg_record,
+					 char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
@@ -376,17 +379,17 @@ extern int bridge_block_remove_all_users(char *bg_block_id, char *user_name)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id)
+	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	vec = Block::getUsers(bg_block_id);
+	vec = Block::getUsers(bg_record->bg_block_id);
 	if (vec.empty())
 		return REMOVE_USER_NONE;
 	for (iter = vec.begin(); iter != vec.end(); iter++) {
 		if (user_name && !strcmp(user_name, iter))
 			continue;
-		if ((rc = bridge_block_remove_user(bg_block_id, user_name)
+		if ((rc = bridge_block_remove_user(bg_record, user_name)
 		     != SLURM_SUCCESS))
 			break;
 	}
@@ -395,28 +398,28 @@ extern int bridge_block_remove_all_users(char *bg_block_id, char *user_name)
 	return rc;
 }
 
-extern int bridge_block_set_owner(char *bg_block_id, char *user_name)
+extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id || !user_name)
+	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
-	if ((rc = bridge_block_remove_all_users(bg_block_id, user_name))
-	    == REMOVE_USER_ERR) {
+	if ((rc = bridge_block_remove_all_users(
+		     bg_record, user_name)) == REMOVE_USER_ERR) {
 		error("bridge_block_set_owner: Something happened removing "
 		      "users from block %s",
-		      bg_block_id);
+		      bg_record->bg_block_id);
 		return SLURM_ERROR;
 	} else if (rc == REMOVE_USER_NONE && user_name)
-		rc = bridge_block_add_user(bg_block_id, user_name);
+		rc = bridge_block_add_user(bg_record, user_name);
 
 	return rc;
 }
 
-extern int bridge_block_remove_jobs(char *bg_block_id)
+extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	std::vector<Job::ConstPtr> job_vec;
@@ -429,14 +432,14 @@ extern int bridge_block_remove_jobs(char *bg_block_id)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_block_id) {
+	if (!bg_record || !bg_record->bg_block_id) {
 		error("no block name given");
 		return SLURM_ERROR;
 	}
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
-	job_filter.setComputeBlockName(bg_block_id);
+	job_filter.setComputeBlockName(bg_record->bg_block_id);
 
 	/* I think these are all the states we need. */
 	job_statuses.insert(Job::Loading);
@@ -455,109 +458,10 @@ extern int bridge_block_remove_jobs(char *bg_block_id)
 
 		for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
 			debug("waiting on job %u to finish on block %s",
-			      *(iter)->getId(), bg_block_id);
+			      *(iter)->getId(), bg_record->bg_block_id);
 	}
 #endif
 	return SLURM_SUCCESS;
-}
-
-extern int bridge_job_remove(void *job, char *bg_block_id)
-{
-	int count = 0;
-	bgq_job_status_t job_state;
-	bool is_history = false;
-	uint32_t job_id;
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-	Job::ConstPtr job_ptr = (bgsched::Job::ConstPtr &)job;
-
-	if (!job_ptr)
-		return SLURM_ERROR;
-	job_id = job_ptr->getId();
-	debug("removing job %d from MMCS on block %s",
-	      job_id, bg_block_id);
-	while (1) {
-		if (count)
-			sleep(POLL_INTERVAL);
-		count++;
-
-		job_state = (bgq_job_status_t) job_ptr->getStatus().toValue();;
-		is_history = job_ptr->isInHistory();
-
-		/* FIX ME: We need to call something here to end the
-		   job. */
-		// if ((rc = bridge_free_job(job_rec)) != STATUS_OK)
-		// 	error("bridge_free_job: %s", bg_err_str(rc));
-
-		debug2("job %d on block %s is in state %d history %d",
-		       job_id, bg_block_id, job_state, is_history);
-
-		/* check the state and process accordingly */
-		if (is_history) {
-			debug2("Job %d on block %s isn't in the "
-			       "active job table anymore, final state was %d",
-			       job_id, bg_block_id, job_state);
-			return SLURM_SUCCESS;
-		} else if (job_state == BG_JOB_TERMINATED)
-			return SLURM_SUCCESS;
-		else if (job_state == BG_JOB_ENDING) {
-			if (count > MAX_POLL_RETRIES)
-				error("Job %d on block %s isn't dying, "
-				      "trying for %d seconds", job_id,
-				      bg_block_id, count*POLL_INTERVAL);
-			continue;
-		} else if (job_state == BG_JOB_ERROR) {
-			error("job %d on block %s is in a error state.",
-			      job_id, bg_block_id);
-
-			//free_bg_block();
-			return SLURM_ERROR;
-		}
-
-		/* we have been told the next 2 lines do the same
-		 * thing, but I don't believe it to be true.  In most
-		 * cases when you do a signal of SIGTERM the mpirun
-		 * process gets killed with a SIGTERM.  In the case of
-		 * bridge_cancel_job it always gets killed with a
-		 * SIGKILL.  From IBM's point of view that is a bad
-		 * deally, so we are going to use signal ;).  Sending
-		 * a SIGKILL will kill the mpirun front end process,
-		 * and if you kill that jobs will never get cleaned up and
-		 * you end up with ciod unreacahble on the next job.
-		 */
-
-		/* FIXME: I don't know how to cancel jobs yet. */
-//		 rc = bridge_cancel_job(job_id);
-		// rc = bridge_signal_job(job_id, SIGTERM);
-
-		return SLURM_SUCCESS;
-		// if (rc != STATUS_OK) {
-		// 	if (rc == JOB_NOT_FOUND) {
-		// 		debug("job %d on block %s removed from MMCS",
-		// 		      job_ptr->getId(), bg_block_id);
-		// 		return STATUS_OK;
-		// 	}
-		// 	if (rc == INCOMPATIBLE_STATE)
-		// 		debug("job %d on block %s is in an "
-		// 		      "INCOMPATIBLE_STATE",
-		// 		      job_ptr->getId(), bg_block_id);
-		// 	else
-		// 		error("bridge_signal_job(%d): %s",
-		// 		      job_ptr->getId(),
-		// 		      bg_err_str(rc));
-		// } else if (count > MAX_POLL_RETRIES)
-		// 	error("Job %d on block %s is in state %d and "
-		// 	      "isn't dying, and doesn't appear to be "
-		// 	      "responding to SIGTERM, trying for %d seconds",
-		// 	      job_ptr->getId(), bg_block_id,
-		// 	      job_state, count*POLL_INTERVAL);
-
-	}
-
-	error("Failed to remove job %d from MMCS", job_id);
-	return SLURM_ERROR;
-#else
-	return SLURM_SUCCESS;
-#endif
 }
 
 // extern int bridge_set_log_params(char *api_file_name, unsigned int level)
