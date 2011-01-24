@@ -46,6 +46,8 @@ documents those changes that are of interest to users and admins.
     within a QOS.  So if larger, higher priority jobs are unable to run they
     don't prevent smaller jobs from running even if running the smaller
     jobs delay the start of the larger, higher priority jobs.
+ -- BLUEGENE - Check preemptees one by one to preempt lower priority jobs first
+    instead of first fit.
 
 * Changes in SLURM 2.2.0
 ========================
