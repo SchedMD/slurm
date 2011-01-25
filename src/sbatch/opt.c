@@ -2756,6 +2756,7 @@ static void _help(void)
 "  -s, --share                 share nodes with other jobs\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+"      --wrap[=command string] wrap commmand string in a sh script and submit\n"
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"
