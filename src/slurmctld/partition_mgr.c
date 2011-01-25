@@ -1465,6 +1465,9 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr)
 	if (part_ptr == NULL)	/* No such partition */
 		return ESLURM_INVALID_PARTITION_NAME;
 
+	if (partition_in_use(part_desc_ptr->name))
+		return ESLURM_PARTITION_IN_USE;
+
 	if (default_part_loc == part_ptr) {
 		error("Deleting default partition %s", part_ptr->name);
 		default_part_loc = NULL;

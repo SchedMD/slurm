@@ -1847,6 +1847,7 @@ static void _rebuild_part_name_list(struct job_record  *job_ptr)
 	xfree(job_ptr->partition);
 	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
 		job_active = true;
+		xfree(job_ptr->partition);
 		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
 	} else if (IS_JOB_PENDING(job_ptr))
 		job_pending = true;
@@ -2132,6 +2133,37 @@ extern int kill_job_by_front_end_name(char *node_name)
 }
 
 /*
+ * partition_in_use - determine whether a partition is in use by a RUNNING
+ *	PENDING or SUSPENDED job
+ * IN part_name - name of a partition
+ * RET true if the partition is in use, else false
+ */
+extern bool partition_in_use(char *part_name)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	struct part_record *part_ptr;
+
+	part_ptr = find_part_record (part_name);
+	if (part_ptr == NULL)	/* No such partition */
+		return false;
+
+	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create: malloc failure");
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->part_ptr == part_ptr) {
+			if (!IS_JOB_FINISHED(job_ptr)) {
+				list_iterator_destroy(job_iterator);
+				return true;
+			}
+		}
+	}
+	list_iterator_destroy(job_iterator);
+	return false;
+}
+
+/*
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
  * IN node_name - name of a node
@@ -2152,6 +2184,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 	bit_position = node_ptr - node_record_table_ptr;
 
 	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool suspended = false;
 		if ((job_ptr->node_bitmap == NULL) ||

@@ -274,6 +274,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job is no longer pending execution"			},
 	{ ESLURM_QOS_THRES,
 	  "Requested account has breached requested QOS usage threshold"},
+	{ ESLURM_PARTITION_IN_USE,
+	  "Partition is in use"					},
 
 	/* slurmd error codes */
 

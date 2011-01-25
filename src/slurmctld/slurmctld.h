@@ -872,6 +872,14 @@ extern bool is_node_down (char *name);
 extern bool is_node_resp (char *name);
 
 /*
+ * job_alloc_info - get details about an existing job allocation
+ * IN uid - job issuing the code
+ * IN job_id - ID of job for which info is requested
+ * OUT job_pptr - set to pointer to job record
+ */
+extern int job_alloc_info(uint32_t uid, uint32_t job_id,
+			  struct job_record **job_pptr);
+/*
  * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
  * IN job_specs - job specifications
@@ -1298,15 +1306,6 @@ extern void node_not_resp (char *name, time_t msg_time);
 extern void node_no_resp_msg(void);
 
 /*
- * job_alloc_info - get details about an existing job allocation
- * IN uid - job issuing the code
- * IN job_id - ID of job for which info is requested
- * OUT job_pptr - set to pointer to job record
- */
-extern int job_alloc_info(uint32_t uid, uint32_t job_id,
-			  struct job_record **job_pptr);
-
-/*
  * pack_all_jobs - dump all job information for all jobs in
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
@@ -1423,6 +1422,14 @@ extern void part_filter_set(uid_t uid);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
+
+/*
+ * partition_in_use - determine whether a partition is in use by a RUNNING
+ *	PENDING or SUSPENDED job
+ * IN part_name - name of a partition
+ * RET true if the partition is in use, else false
+ */
+extern bool partition_in_use(char *part_name);
 
 /*
  * purge_old_job - purge old job records.

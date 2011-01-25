@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     The logic has been added to select/linear and select/cons_res, but will
     not be enabled until the other select plugins are modified.
  -- Remove checkpoint/xlch plugin.
+ -- Disable deletion of partitions that have unfinished jobs (pending,
+    running or suspended states). Patch from Martin Perry, BULL.
 
 * Changes in SLURM 2.3.0.pre1
 =============================

@@ -141,6 +141,7 @@ The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP and
 \fIReservation=<name>\fP.  On Dynamically laid out Bluegene systems
 \fIBlockName=<name>\fP also works. Reservations and partitions should have
 no associated jobs at the time of their deletion (modify the job's first).
+If the specified partition is in use, the request is denied.
 
 .TP
 \fBdetails\fP

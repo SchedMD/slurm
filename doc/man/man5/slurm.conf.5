@@ -2417,6 +2417,9 @@ configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "PartitionName=DEFAULT".
 The "PartitionName=" specification must be placed on every line
 describing the configuration of partitions.
+If a partition that is in use is deleted from the configuration and slurm
+is restarted or reconfigured (scontrol reconfgure), jobs using the partition
+are canceled.
 \fBNOTE:\fR Put all parameters for each partition on a single line.
 Each line of partition configuration information should
 represent a different partition.
