@@ -164,8 +164,9 @@ extern List bridge_get_midplanes()
 						{{a, x, y, z}};
 					Midplane::ConstPtr midplane =
 						bgq->getMidplane(coords);
-					b_midplane->loc = static_cast<char *>(
-						midplane->getLocation());
+					b_midplane->loc =
+						xstrdup(midplane->
+							getLocation().c_str());
 #endif
 					list_append(b_midplane_list,
 						    b_midplane);
@@ -387,7 +388,7 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	if (vec.empty())
 		return REMOVE_USER_NONE;
 	for (iter = vec.begin(); iter != vec.end(); iter++) {
-		if (user_name && !strcmp(user_name, iter))
+		if (user_name && (*(iter) == user_name))
 			continue;
 		if ((rc = bridge_block_remove_user(bg_record, user_name)
 		     != SLURM_SUCCESS))
@@ -456,9 +457,10 @@ extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 		if (job_vec.empty())
 			return SLURM_SUCCESS;
 
-		for (iter = job_vec.begin(); iter != job_vec.end(); iter++)
+		for (iter = job_vec.begin(); iter != job_vec.end(); iter++) {
+			const Job::ConstPtr job_ptr = *(iter);
 			debug("waiting on job %u to finish on block %s",
-			      *(iter)->getId(), bg_record->bg_block_id);
+			      job_ptr->getId(), bg_record->bg_block_id);
 	}
 #endif
 	return SLURM_SUCCESS;
