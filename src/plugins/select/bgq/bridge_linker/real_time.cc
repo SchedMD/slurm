@@ -62,6 +62,7 @@ using namespace bgsched::core;
 static bool real_time_inited = false;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+static pthread_t real_time_thread;
 
 static int _real_time_connect(bgsched::realtime::Client c)
 {
@@ -84,23 +85,21 @@ static int _real_time_connect(bgsched::realtime::Client c)
 
 static void *_real_time(void *no_data)
 {
-	const bgsched::realtime::ClientConfiguration client_configuration;
-	FilterHolder filter_holder;
+	bgsched::realtime::Filter filter;
+	bgsched::realtime::Client c;
 
 	bool failed = false;
 
    	info("Creating real-time client...");
+	filter = bgsched::realtime::Filter::createNone();
+	filter.setBlocks(true);
+ 	filter.setBlockDeleted(true);
+	// filter.get().setMidplanes(true);
+ 	// filter.get().setNodeBoards(true);
+ 	// filter.get().setSwitches(true);
+ 	// filter.get().setCables(true);
 
-	filter_holder.get().setBlocks(true);
- 	filter_holder.get().setBlockDeleted(true);
-	// filter_holder.get().setMidplanes(true);
- 	// filter_holder.get().setNodeBoards(true);
- 	// filter_holder.get().setSwitches(true);
- 	// filter_holder.get().setCables(true);
-
- 	bgsched::realtime::Client c(client_configuration);
-
-	info("Connecting real-time client..." );
+ 	info("Connecting real-time client..." );
 
 	_real_time_connect(c);
 
@@ -122,6 +121,7 @@ static void *_real_time(void *no_data)
 	}
 
 	c.disconnect();
+	return NULL;
 }
 
 #endif
