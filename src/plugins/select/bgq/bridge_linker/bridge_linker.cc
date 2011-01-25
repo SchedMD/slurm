@@ -461,6 +461,7 @@ extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 			const Job::ConstPtr job_ptr = *(iter);
 			debug("waiting on job %u to finish on block %s",
 			      job_ptr->getId(), bg_record->bg_block_id);
+		}
 	}
 #endif
 	return SLURM_SUCCESS;
