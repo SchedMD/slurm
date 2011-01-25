@@ -71,25 +71,11 @@ int num_unused_cpus = 0;
 //static pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool initialized = false;
 
-static void _b_midplane_del(void *object)
-{
-	b_midplane_t *b_midplane = (b_midplane_t *)object;
-
-	if (b_midplane) {
-		xfree(b_midplane->loc);
-		xfree(b_midplane);
-	}
-}
-
 extern int bridge_init(char *properties_file)
 {
 	if (initialized)
 		return 1;
-	/* We don't care about keeping this around, so just set and
-	   forget since blank to IBM means "" not NULL.
-	*/
-	if (!properties_file)
-		properties_file = "";
+
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgsched::init(properties_file);
 #endif
@@ -142,45 +128,38 @@ extern int bridge_get_size(uint16_t *size)
 	return SLURM_SUCCESS;
 }
 
-extern List bridge_get_midplanes()
+extern int bridge_set_locations()
 {
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	uint32_t a, x, y, z;
-	List b_midplane_list = NULL;
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	ComputeHardware::ConstPtr bgq;
-#endif
+	static bool inited = false;
 	if (!bridge_init(NULL))
-		return b_midplane_list;
+		return SLURM_ERROR;
 
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	if (inited)
+		return SLURM_SUCCESS;
+
+	inited = true;
 	bgq = getComputeHardware();
-#endif
-	b_midplane_list = list_create(_b_midplane_del);
 
 	for (a = 0; a <= DIM_SIZE[A]; ++a)
 		for (x = 0; x <= DIM_SIZE[X]; ++x)
 			for (y = 0; y <= DIM_SIZE[Y]; ++y)
 				for (z = 0; z <= DIM_SIZE[Z]; ++z) {
-					b_midplane_t *b_midplane =
-						(b_midplane_t *)xmalloc(
-							sizeof(b_midplane_t));
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+					ba_mp_t *ba_mp = &ba_system_ptr->
+						grid[a][x][y][z];
 					Midplane::Coordinates coords =
 						{{a, x, y, z}};
 					Midplane::ConstPtr midplane =
 						bgq->getMidplane(coords);
+					xfree(b_midplane->loc);
 					b_midplane->loc =
 						xstrdup(midplane->
 							getLocation().c_str());
-#endif
-					list_append(b_midplane_list,
-						    b_midplane);
-					b_midplane->coord[A] = a;
-					b_midplane->coord[X] = x;
-					b_midplane->coord[Y] = y;
-					b_midplane->coord[Z] = z;
 				}
-	return b_midplane_list;
+#endif
+	return SLURM_SUCCESS;
 }
 
 extern int bridge_block_create(bg_record_t *bg_record)
@@ -188,7 +167,6 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	ListIterator itr = NULL;
 	int i;
 	int rc = SLURM_SUCCESS;
-	b_midplane_t *b_midplane;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	Block::Ptr block_ptr;
@@ -197,6 +175,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
         Block::DimensionConnectivity conn_type;
 	Midplane::Ptr midplane;
 	Dimension dim;
+	ba_mp_t *ba_mp = NULL;
 #endif
 
 	if (!bridge_init(NULL))
@@ -214,13 +193,13 @@ extern int bridge_block_create(bg_record_t *bg_record)
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	itr = list_iterator_create(bg_record->bg_midplanes);
-	while ((b_midplane = (b_midplane_t *)list_next(itr)))
-		midplanes.push_back(b_midplane->loc);
+	while ((ba_mp = (ba_mp_t *)list_next(itr)))
+		midplanes.push_back(ba_mp->loc);
 	list_iterator_destroy(itr);
 
 	itr = list_iterator_create(bg_record->bg_pt_midplanes);
-	while ((b_midplane = (b_midplane_t *)list_next(itr)))
-		pt_midplanes.push_back(b_midplane->loc);
+	while ((ba_mp = (ba_mp_t *)list_next(itr)))
+		pt_midplanes.push_back(ba_mp->loc);
 
 	list_iterator_destroy(itr);
 

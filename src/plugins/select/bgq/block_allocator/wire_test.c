@@ -161,18 +161,18 @@ int main(int argc, char** argv)
 		for(b=startb;b<endb;b++) {
 			for(c=startc;c<endc;c++) {
 				for(d=startd;d<endd;d++) {
-					ba_node_t *curr_node =
+					ba_mp_t *curr_mp =
 						&(ba_system_ptr->grid
 						  [a][b][c][d]);
 				info("Node %c%c%c%c Used = %d Letter = %c",
 				     alpha_num[a],alpha_num[b],
 				     alpha_num[c],alpha_num[d],
-				     curr_node->used,
-				     curr_node->letter);
+				     curr_mp->used,
+				     curr_mp->letter);
 				for(dim=0;dim<1;dim++) {
 					info("Dim %d",dim);
 					ba_switch_t *wire =
-						&curr_node->axis_switch[dim];
+						&curr_mp->axis_switch[dim];
 					for(j=0;j<NUM_PORTS_PER_NODE;j++)
 						info("\t%d -> %d -> "
 						     "%c%c%c%c %d "
@@ -182,19 +182,19 @@ int main(int argc, char** argv)
 						     alpha_num[wire->ext_wire[
 								     wire->int_wire[j].
 								     port_tar].
-							       node_tar[A]],
+							       mp_tar[A]],
 						     alpha_num[wire->ext_wire[
 								     wire->int_wire[j].
 								     port_tar].
-							       node_tar[X]],
+							       mp_tar[X]],
 						     alpha_num[wire->ext_wire[
 								     wire->int_wire[j].
 								     port_tar].
-							       node_tar[Y]],
+							       mp_tar[Y]],
 						     alpha_num[wire->ext_wire[
 								     wire->int_wire[j].
 								     port_tar].
-							       node_tar[Z]],
+							       mp_tar[Z]],
 						     wire->ext_wire[
 							     wire->int_wire[j].
 							     port_tar].

@@ -661,9 +661,9 @@ static int _dynamically_request(List block_list, int *blocks_added,
 
 		/* 1- try empty space
 		   2- we see if we can create one in the
-		   unused bps
+		   unused mps
 		   3- see if we can create one in the non
-		   job running bps
+		   job running mps
 		*/
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("trying with %d", create_try);
@@ -763,10 +763,10 @@ static int _find_best_block_match(List block_list,
 	if (!total_cpus)
 		total_cpus = DIM_SIZE[A] * DIM_SIZE[X]
 			* DIM_SIZE[Y] * DIM_SIZE[Z]
-			* bg_conf->cpus_per_bp;
+			* bg_conf->cpus_per_mp;
 
 	if (req_nodes > max_nodes) {
-		error("can't run this job max bps is %u asking for %u",
+		error("can't run this job max mps is %u asking for %u",
 		      max_nodes, req_nodes);
 		return SLURM_ERROR;
 	}
@@ -833,15 +833,15 @@ static int _find_best_block_match(List block_list,
 
 	request.mloaderimage = mloaderimage;
 	if (job_ptr->details->req_node_bitmap)
-		request.avail_node_bitmap = job_ptr->details->req_node_bitmap;
+		request.avail_mp_bitmap = job_ptr->details->req_node_bitmap;
 	else
-		request.avail_node_bitmap = slurm_block_bitmap;
+		request.avail_mp_bitmap = slurm_block_bitmap;
 
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_cpus if given
 	 */
 	if (max_cpus == (uint32_t)NO_VAL)
-		max_cpus = max_nodes * bg_conf->cpus_per_bp;
+		max_cpus = max_nodes * bg_conf->cpus_per_mp;
 
 	while (1) {
 		/* Here we are creating a list of all the blocks that
@@ -1171,10 +1171,10 @@ static int _sync_block_lists(List full_list, List incomp_list)
  * 	*)node_record_table_ptr, 1)) */
 /* 		error("select_p_job_test: build_job_resources: %m"); */
 
-/* 	if (job_ptr->num_cpus <= bg_conf->cpus_per_bp) */
+/* 	if (job_ptr->num_cpus <= bg_conf->cpus_per_mp) */
 /* 		node_cpus = job_ptr->num_cpus; */
 /* 	else */
-/* 		node_cpus = bg_conf->cpus_per_bp; */
+/* 		node_cpus = bg_conf->cpus_per_mp; */
 
 /* 	first_bit = bit_ffs(bitmap); */
 /* 	last_bit  = bit_fls(bitmap); */
@@ -1237,10 +1237,10 @@ static void _build_select_struct(struct job_record *job_ptr,
 		fatal("bit_copy malloc failure");
 
 	job_resrcs_ptr->cpu_array_cnt = 1;
-	if (job_ptr->details->min_cpus < bg_conf->cpus_per_bp)
+	if (job_ptr->details->min_cpus < bg_conf->cpus_per_mp)
 		job_resrcs_ptr->cpu_array_value[0] = job_ptr->details->min_cpus;
 	else
-		job_resrcs_ptr->cpu_array_value[0] = bg_conf->cpus_per_bp;
+		job_resrcs_ptr->cpu_array_value[0] = bg_conf->cpus_per_mp;
 	job_resrcs_ptr->cpu_array_reps[0] = node_cnt;
 	total_cpus = bg_conf->cpu_ratio * node_cnt;
 
@@ -1396,11 +1396,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if (conn_type[A] == SELECT_NAV) {
-		if (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
+		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
 			conn_type[A] = SELECT_SMALL;
 		else if (min_nodes > 1)
 			conn_type[A] = SELECT_TORUS;
-		else if (job_ptr->details->min_cpus < bg_conf->cpus_per_bp)
+		else if (job_ptr->details->min_cpus < bg_conf->cpus_per_mp)
 			conn_type[A] = SELECT_SMALL;
 
 		set_select_jobinfo(job_ptr->select_jobinfo->data,

@@ -70,7 +70,7 @@ enum {A, X, Y, Z};
  * path without setting the configuration.
  *
  * - dim      - Which Axis it is on
- * - geometry - node location
+ * - geometry - mp location
  * - in       - ingress port.
  * - out      - egress port.
  *
@@ -86,7 +86,7 @@ typedef struct {
  * structure that holds the configuration settings for each request
  */
 typedef struct {
-	bitstr_t *avail_node_bitmap;   /* pointer to available nodes */
+	bitstr_t *avail_mp_bitmap;   /* pointer to available mps */
 #ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
 #endif
@@ -184,7 +184,7 @@ typedef struct {
 /*
  * structure that holds the configuration settings for each connection
  *
- * - node_tar - coords of where the next hop is externally
+ * - mp_tar - coords of where the next hop is externally
  *              interanlly - nothing.
  *              exteranlly - location of next hop.
  * - port_tar - which port the connection is going to
@@ -196,7 +196,7 @@ typedef struct {
 typedef struct
 {
 	/* target label */
-	uint16_t node_tar[HIGHEST_DIMENSIONS];
+	uint16_t mp_tar[HIGHEST_DIMENSIONS];
 	/* target port */
 	int port_tar;
 	bool used;
@@ -218,7 +218,7 @@ typedef struct
 } ba_switch_t;
 
 /*
- * ba_node_t: node within the allocation system.
+ * ba_mp_t: mp within the allocation system.
  */
 typedef struct {
 	/* a switch for each dimensions */
@@ -229,21 +229,23 @@ typedef struct {
 	int color;
 	/* midplane index used for easy look up of the miplane */
 	int index;
+	/* rack-midplane location. */
+	char *loc;
 	/* letter used in smap */
 	char letter;
 //	int phys_x;	// no longer needed
 	int state;
 	/* set if using this midplane in a block */
 	uint16_t used;
-} ba_node_t;
+} ba_mp_t;
 
 typedef struct {
 	/* total number of procs on the system */
 	int num_of_proc;
 
 	/* made to hold info about a system, which right now is only a
-	 * grid of ba_nodes*/
-	ba_node_t ****grid;
+	 * grid of ba_mps*/
+	ba_mp_t ****grid;
 } ba_system_t;
 
 /* Global */
@@ -273,7 +275,7 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 
 extern void destroy_image_group_list(void *ptr);
 extern void destroy_image(void *ptr);
-extern void destroy_ba_node(void *ptr);
+extern void destroy_ba_mp(void *ptr);
 
 /*
  * create a block request.  Note that if the geometry is given,
@@ -286,7 +288,7 @@ extern void destroy_ba_node(void *ptr);
  * ALL below IN's need to be set within the ba_request before the call
  * if you want them to be used.
  * ALL below OUT's are set and returned within the ba_request.
- * IN - avail_node_bitmap: bitmap of usable midplanes.
+ * IN - avail_mp_bitmap: bitmap of usable midplanes.
  * IN - blrtsimage: BlrtsImage for this block if not default
  * IN - conn_type: connection type of request (TORUS or MESH or SMALL)
  * IN - elongate: if true, will try to fit different geometries of
@@ -349,31 +351,31 @@ extern void ba_fini();
 extern void set_ba_debug_flags(uint32_t debug_flags);
 
 /*
- * set the node in the internal configuration as in, or not in use,
- * along with the current state of the node.
+ * set the mp in the internal configuration as in, or not in use,
+ * along with the current state of the mp.
  *
- * IN ba_node: ba_node_t to update state
- * IN state: new state of ba_node_t
+ * IN ba_mp: ba_mp_t to update state
+ * IN state: new state of ba_mp_t
  */
-extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state);
+extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
 
 /*
- * copy info from a ba_node, a direct memcpy of the ba_node_t
+ * copy info from a ba_mp, a direct memcpy of the ba_mp_t
  *
- * IN ba_node: node to be copied
- * Returned ba_node_t *: copied info must be freed with destroy_ba_node
+ * IN ba_mp: mp to be copied
+ * Returned ba_mp_t *: copied info must be freed with destroy_ba_mp
  */
-extern ba_node_t *ba_copy_node(ba_node_t *ba_node);
+extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp);
 
 /*
- * copy the path of the nodes given
+ * copy the path of the mps given
  *
- * IN nodes List of ba_node_t *'s: nodes to be copied
- * OUT dest_nodes List of ba_node_t *'s: filled in list of nodes
+ * IN mps List of ba_mp_t *'s: mps to be copied
+ * OUT dest_mps List of ba_mp_t *'s: filled in list of mps
  * wiring.
  * Return on success SLURM_SUCCESS, on error SLURM_ERROR
  */
-extern int copy_node_path(List nodes, List *dest_nodes);
+extern int copy_mp_path(List mps, List *dest_mps);
 
 /*
  * Try to allocate a block.
@@ -391,7 +393,7 @@ extern int allocate_block(ba_request_t* ba_request, List results);
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List nodes, int new_count, int conn_type);
+extern int remove_block(List mps, int new_count, int conn_type);
 
 /*
  * Admin wants to change something about a previous allocation.
@@ -399,29 +401,29 @@ extern int remove_block(List nodes, int new_count, int conn_type);
  * letter code for the allocation and the variable to alter
  * (Not currently used in the system, update this if it is)
  */
-extern int alter_block(List nodes, int conn_type);
+extern int alter_block(List mps, int conn_type);
 
 /*
  * After a block is deleted or altered following allocations must
  * be redone to make sure correct path will be used in the real system
  * (Not currently used in the system, update this if it is)
  */
-extern int redo_block(List nodes, uint16_t *geo, int conn_type, int new_count);
+extern int redo_block(List mps, uint16_t *geo, int conn_type, int new_count);
 
 /*
  * Used to set a block into a virtual system.  The system can be
  * cleared first and this function sets all the wires and midplanes
- * used in the nodelist given.  The nodelist is a list of ba_node_t's
+ * used in the mplist given.  The mplist is a list of ba_mp_t's
  * that are already set up.  This is very handly to test if there are
  * any passthroughs used by one block when adding another block that
  * also uses those wires, and neither use any overlapping
  * midplanes. Doing a simple bitmap & will not reveal this.
  *
- * Returns SLURM_SUCCESS if nodelist fits into system without
- * conflict, and SLURM_ERROR if nodelist conflicts with something
+ * Returns SLURM_SUCCESS if mplist fits into system without
+ * conflict, and SLURM_ERROR if mplist conflicts with something
  * already in the system.
  */
-extern int check_and_set_node_list(List nodes);
+extern int check_and_set_mp_list(List mps);
 
 /*
  * Used to find, and set up midplanes and the wires in the virtual
@@ -440,10 +442,10 @@ extern char *set_bg_block(List results, uint16_t *start,
 			  uint16_t *geometry, uint16_t *conn_type);
 
 /*
- * Resets the virtual system to a virgin state.  If track_down_nodes is set
+ * Resets the virtual system to a virgin state.  If track_down_mps is set
  * then those midplanes are not set to idle, but kept in a down state.
  */
-extern int reset_ba_system(bool track_down_nodes);
+extern int reset_ba_system(bool track_down_mps);
 
 /*
  * Used to set all midplanes in a special used state except the ones
@@ -452,28 +454,28 @@ extern int reset_ba_system(bool track_down_nodes);
  * IN: hostlist of midplanes we do not want
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Note: Need to call reset_all_removed_bps before starting another
+ * Note: Need to call reset_all_removed_mps before starting another
  * allocation attempt after
  */
-extern int removable_set_bps(char *bps);
+extern int removable_set_mps(char *mps);
 
 /*
  * Resets the virtual system to the pervious state before calling
- * removable_set_bps, or set_all_bps_except.
+ * removable_set_mps, or set_all_mps_except.
  */
-extern int reset_all_removed_bps();
+extern int reset_all_removed_mps();
 
 /*
  * IN: hostlist of midplanes we do not want
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Need to call rest_all_removed_bps before starting another
- * allocation attempt.  If possible use removable_set_bps since it is
+ * Need to call rest_all_removed_mps before starting another
+ * allocation attempt.  If possible use removable_set_mps since it is
  * faster. It does basically the opposite of this function. If you
  * have to come up with this list though it is faster to use this
  * function than if you have to call bitmap2node_name since that is slow.
  */
-extern int set_all_bps_except(char *bps);
+extern int set_all_mps_except(char *mps);
 
 /*
  * set values of every grid point (used in smap)
@@ -483,29 +485,22 @@ extern void init_grid(node_info_msg_t *node_info_ptr);
 /*
  * Set up the map for resolving
  */
-extern int set_bp_map(void);
+extern int set_mp_locations(void);
 
 /*
  * find a base blocks bg location based on Rack Midplane name R000 not R00-M0
  */
-extern uint16_t *find_bp_loc(char* bp_id);
+extern uint16_t *find_mp_loc(char* mp_id);
 
 /*
  * find a rack/midplace location based on ABCD coords
  */
-extern char *find_bp_rack_mid(char* abcd);
+extern char *find_mp_rack_mid(char* abcd);
 
 /*
  * set the used wires in the virtual system for a block from the real system
  */
 extern int load_block_wiring(char *bg_block_id);
-
-/*
- * get the used wires for a block out of the database and return the
- * node list
- */
-/* extern List get_and_set_block_wiring(char *bg_block_id, */
-/* 				     rm_partition_t *block_ptr); */
 
 /* make sure a node is in the system return 1 if it is 0 if not */
 extern int validate_coord(uint16_t *coord);

@@ -67,15 +67,6 @@
 #include "../bg_structs.h"
 #include "bg_list_functions.h"
 
-/* Used to Keep track of where the Base Blocks are at all times
-   Rack and Midplane is the bp_id and AXYZ is the coords.
-*/
-typedef struct {
-	void *midplane;
-	char *loc;
-	uint16_t coord[SYSTEM_DIMENSIONS];
-} b_midplane_t;
-
 /* Global variables */
 extern bg_config_t *bg_conf;
 extern bg_lists_t *bg_lists;
@@ -97,7 +88,7 @@ extern int bridge_fini();
 extern const char *bridge_err_str(int inx);
 
 extern int bridge_get_size(uint16_t *size);
-extern List bridge_get_midplanes();
+extern int bridge_set_locations();
 
 extern int bridge_block_create(bg_record_t *bg_record);
 

@@ -128,11 +128,11 @@ extern void fini_bg(void)
  */
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
-	if ((rec_a->bp_count > 1) && (rec_b->bp_count > 1)) {
+	if ((rec_a->mp_count > 1) && (rec_b->mp_count > 1)) {
 		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
-		check_and_set_node_list(rec_a->bg_midplanes);
-		if (check_and_set_node_list(rec_b->bg_midplanes)
+		check_and_set_mp_list(rec_a->bg_midplanes);
+		if (check_and_set_mp_list(rec_b->bg_midplanes)
 		    == SLURM_ERROR)
 			return true;
 	}
@@ -140,8 +140,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	if (!bit_overlap(rec_a->bitmap, rec_b->bitmap))
 		return false;
 
-	if ((rec_a->node_cnt >= bg_conf->bp_node_cnt)
-	    || (rec_b->node_cnt >= bg_conf->bp_node_cnt))
+	if ((rec_a->node_cnt >= bg_conf->mp_node_cnt)
+	    || (rec_b->node_cnt >= bg_conf->mp_node_cnt))
 		return true;
 
 	if (!bit_overlap(rec_a->ionode_bitmap, rec_b->ionode_bitmap))
@@ -764,39 +764,39 @@ extern int read_bg_conf(void)
 	}
 
 	if (!s_p_get_uint16(
-		    &bg_conf->bp_node_cnt, "BasePartitionNodeCnt", tbl)) {
+		    &bg_conf->mp_node_cnt, "BasePartitionNodeCnt", tbl)) {
 		error("BasePartitionNodeCnt not configured in bluegene.conf "
 		      "defaulting to 512 as BasePartitionNodeCnt");
-		bg_conf->bp_node_cnt = 512;
+		bg_conf->mp_node_cnt = 512;
 		bg_conf->quarter_node_cnt = 128;
 	} else {
-		if (bg_conf->bp_node_cnt <= 0)
+		if (bg_conf->mp_node_cnt <= 0)
 			fatal("You should have more than 0 nodes "
 			      "per base partition");
 
-		bg_conf->quarter_node_cnt = bg_conf->bp_node_cnt/4;
+		bg_conf->quarter_node_cnt = bg_conf->mp_node_cnt/4;
 	}
-	/* bg_conf->cpus_per_bp should had already been set from the
+	/* bg_conf->cpus_per_mp should had already been set from the
 	 * node_init */
-	if (bg_conf->cpus_per_bp < bg_conf->bp_node_cnt) {
-		fatal("For some reason we have only %u cpus per bp, but "
-		      "have %u cnodes per bp.  You need at least the same "
-		      "number of cpus as you have cnodes per bp.  "
+	if (bg_conf->cpus_per_mp < bg_conf->mp_node_cnt) {
+		fatal("For some reason we have only %u cpus per mp, but "
+		      "have %u cnodes per mp.  You need at least the same "
+		      "number of cpus as you have cnodes per mp.  "
 		      "Check the NodeName Procs= "
 		      "definition in the slurm.conf.",
-		      bg_conf->cpus_per_bp, bg_conf->bp_node_cnt);
+		      bg_conf->cpus_per_mp, bg_conf->mp_node_cnt);
 	}
 
-	bg_conf->cpu_ratio = bg_conf->cpus_per_bp/bg_conf->bp_node_cnt;
+	bg_conf->cpu_ratio = bg_conf->cpus_per_mp/bg_conf->mp_node_cnt;
 	if (!bg_conf->cpu_ratio)
 		fatal("We appear to have less than 1 cpu on a cnode.  "
 		      "You specified %u for BasePartitionNodeCnt "
 		      "in the blugene.conf and %u cpus "
 		      "for each node in the slurm.conf",
-		      bg_conf->bp_node_cnt, bg_conf->cpus_per_bp);
+		      bg_conf->mp_node_cnt, bg_conf->cpus_per_mp);
 	num_unused_cpus =
 		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z]
-		* bg_conf->cpus_per_bp;
+		* bg_conf->cpus_per_mp;
 
 	if (!s_p_get_uint16(
 		    &bg_conf->nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
@@ -808,8 +808,8 @@ extern int read_bg_conf(void)
 	if (bg_conf->nodecard_node_cnt<=0)
 		fatal("You should have more than 0 nodes per nodecard");
 
-	bg_conf->bp_nodecard_cnt =
-		bg_conf->bp_node_cnt / bg_conf->nodecard_node_cnt;
+	bg_conf->mp_nodecard_cnt =
+		bg_conf->mp_node_cnt / bg_conf->nodecard_node_cnt;
 
 	if (!s_p_get_uint16(&bg_conf->numpsets, "Numpsets", tbl))
 		fatal("Warning: Numpsets not configured in bluegene.conf");
@@ -819,7 +819,7 @@ extern int read_bg_conf(void)
 		int small_size = 1;
 
 		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK */
-		if (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt) {
+		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt) {
 			bg_conf->quarter_ionode_cnt = 2;
 			bg_conf->nodecard_ionode_cnt = 2;
 		} else {
@@ -830,13 +830,13 @@ extern int read_bg_conf(void)
 
 		/* How many nodecards per ionode */
 		bg_conf->nc_ratio =
-			((double)bg_conf->bp_node_cnt
+			((double)bg_conf->mp_node_cnt
 			 / (double)bg_conf->nodecard_node_cnt)
 			/ (double)bg_conf->numpsets;
 		/* How many ionodes per nodecard */
 		bg_conf->io_ratio =
 			(double)bg_conf->numpsets /
-			((double)bg_conf->bp_node_cnt
+			((double)bg_conf->mp_node_cnt
 			 / (double)bg_conf->nodecard_node_cnt);
 		//info("got %f %f", bg_conf->nc_ratio, bg_conf->io_ratio);
 		/* figure out the smallest block we can have on the
@@ -888,7 +888,7 @@ extern int read_bg_conf(void)
 		/* If we only have 1 nodecard just jump to the end
 		   since this will never need to happen below.
 		   Pretty much a hack to avoid seg fault;). */
-		if (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
+		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
 			goto no_calc;
 
 		bg_lists->valid_small128 = list_create(_destroy_bitmap);
