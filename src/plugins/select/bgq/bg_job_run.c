@@ -5,8 +5,9 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>, Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.

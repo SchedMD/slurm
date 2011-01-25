@@ -19,6 +19,8 @@ select_bgq_la_SOURCES = select_bgq.c bg_enums.h bg_structs.h \
 			bg_job_run.c bg_job_run.h \
 			bg_record_functions.c bg_record_functions.h \
 			bluegene.c bluegene.h \
+			defined_block.c defined_block.h \
+			dynamic_block.c dynamic_block.h \
 			jobinfo.c jobinfo.h\
 			nodeinfo.c nodeinfo.h
 

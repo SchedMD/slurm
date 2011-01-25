@@ -109,12 +109,14 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h \
 	bg_enums.h bg_structs.h bg_job_place.c bg_job_place.h \
 	bg_job_run.c bg_job_run.h bg_record_functions.c \
-	bg_record_functions.h bluegene.c bluegene.h jobinfo.c \
+	bg_record_functions.h bluegene.c bluegene.h defined_block.c \
+	defined_block.h dynamic_block.c dynamic_block.h jobinfo.c \
 	jobinfo.h nodeinfo.c nodeinfo.h
 @BGQ_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
 @BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo \
 @BGQ_LOADED_TRUE@	bg_job_place.lo bg_job_run.lo \
-@BGQ_LOADED_TRUE@	bg_record_functions.lo bluegene.lo jobinfo.lo \
+@BGQ_LOADED_TRUE@	bg_record_functions.lo bluegene.lo \
+@BGQ_LOADED_TRUE@	defined_block.lo dynamic_block.lo jobinfo.lo \
 @BGQ_LOADED_TRUE@	nodeinfo.lo
 select_bgq_la_OBJECTS = $(am_select_bgq_la_OBJECTS)
 select_bgq_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -383,6 +385,8 @@ pkglib_LTLIBRARIES = select_bgq.la
 @BGQ_LOADED_TRUE@			bg_job_run.c bg_job_run.h \
 @BGQ_LOADED_TRUE@			bg_record_functions.c bg_record_functions.h \
 @BGQ_LOADED_TRUE@			bluegene.c bluegene.h \
+@BGQ_LOADED_TRUE@			defined_block.c defined_block.h \
+@BGQ_LOADED_TRUE@			dynamic_block.c dynamic_block.h \
 @BGQ_LOADED_TRUE@			jobinfo.c jobinfo.h\
 @BGQ_LOADED_TRUE@			nodeinfo.c nodeinfo.h
 
@@ -467,6 +471,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_job_run.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_record_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bluegene.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/defined_block.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dynamic_block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bgq.Plo@am__quote@

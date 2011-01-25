@@ -10,6 +10,7 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 noinst_LTLIBRARIES = libbridge_linker.la
 libbridge_linker_la_SOURCES =    \
 	bridge_linker.cc bridge_linker.h	\
+	real_time.cc real_time.h		\
 	bg_list_functions.c bg_list_functions.h
 
 libbridge_linker_la_LDFLAGS        = \

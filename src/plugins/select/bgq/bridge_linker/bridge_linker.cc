@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  bridge_linker.c
+ *  bridge_linker.cc
  *
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -193,12 +193,12 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	}
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	itr = list_iterator_create(bg_record->bg_mp_list);
+	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = (ba_mp_t *)list_next(itr)))
 		midplanes.push_back(ba_mp->loc);
 	list_iterator_destroy(itr);
 
-	itr = list_iterator_create(bg_record->bg_pt_mp_list);
+	itr = list_iterator_create(bg_record->ba_pt_mp_list);
 	while ((ba_mp = (ba_mp_t *)list_next(itr)))
 		pt_midplanes.push_back(ba_mp->loc);
 

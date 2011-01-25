@@ -83,7 +83,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libbridge_linker_la_LIBADD =
-am_libbridge_linker_la_OBJECTS = bridge_linker.lo bg_list_functions.lo
+am_libbridge_linker_la_OBJECTS = bridge_linker.lo real_time.lo \
+	bg_list_functions.lo
 libbridge_linker_la_OBJECTS = $(am_libbridge_linker_la_OBJECTS)
 libbridge_linker_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -316,6 +317,7 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 noinst_LTLIBRARIES = libbridge_linker.la
 libbridge_linker_la_SOURCES = \
 	bridge_linker.cc bridge_linker.h	\
+	real_time.cc real_time.h		\
 	bg_list_functions.c bg_list_functions.h
 
 libbridge_linker_la_LDFLAGS = \
@@ -375,6 +377,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_list_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/real_time.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
