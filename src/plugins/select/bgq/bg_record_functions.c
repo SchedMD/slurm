@@ -38,7 +38,7 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
-//#include "dynamic_block.h"
+#include "dynamic_block.h"
 
 #include "src/common/uid.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -832,86 +832,86 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 extern int handle_small_record_request(List records, blockreq_t *blockreq,
 				       bg_record_t *bg_record, bitoff_t start)
 {
-	/* bitstr_t *ionodes = bit_alloc(bg_conf->numpsets); */
-	/* int i=0, ionode_cnt = 0; */
-	/* bg_record_t *found_record = NULL; */
+	bitstr_t *ionodes = bit_alloc(bg_conf->numpsets);
+	int i=0, ionode_cnt = 0;
+	bg_record_t *found_record = NULL;
 
-	/* xassert(records); */
-	/* xassert(blockreq); */
-	/* xassert(bg_record); */
+	xassert(records);
+	xassert(blockreq);
+	xassert(bg_record);
 
-	/* xassert(start >= 0); */
-	/* xassert(start < bg_conf->numpsets); */
+	xassert(start >= 0);
+	xassert(start < bg_conf->numpsets);
 
-/* #ifndef HAVE_BGL */
-/* 	for(i=0; i<blockreq->small16; i++) { */
-/* 		bit_nset(ionodes, start, start); */
-/* 		found_record = create_small_record(bg_record, ionodes, 16); */
-/* 		/\* this needs to be an append so we */
-/* 		   keep things in the order we got */
-/* 		   them, they will be sorted later *\/ */
-/* 		list_append(records, found_record); */
-/* 		bit_nclear(ionodes, start, start); */
-/* 		start++; */
-/* 	} */
-/* #endif */
-/* 	if ((ionode_cnt = bg_conf->nodecard_ionode_cnt)) */
-/* 		ionode_cnt--; */
-/* 	for(i=0; i<blockreq->small32; i++) { */
-/* 		bit_nset(ionodes, start, start+ionode_cnt); */
-/* 		found_record = create_small_record(bg_record, ionodes, 32); */
-/* 		/\* this needs to be an append so we */
-/* 		   keep things in the order we got */
-/* 		   them, they will be sorted later *\/ */
-/* 		list_append(records, found_record); */
-/* 		bit_nclear(ionodes, start, start+ionode_cnt); */
-/* 		start+=ionode_cnt+1; */
-/* 	} */
+#ifndef HAVE_BGL
+	for(i=0; i<blockreq->small16; i++) {
+		bit_nset(ionodes, start, start);
+		found_record = create_small_record(bg_record, ionodes, 16);
+		/* this needs to be an append so we
+		   keep things in the order we got
+		   them, they will be sorted later */
+		list_append(records, found_record);
+		bit_nclear(ionodes, start, start);
+		start++;
+	}
+#endif
+	if ((ionode_cnt = bg_conf->nodecard_ionode_cnt))
+		ionode_cnt--;
+	for(i=0; i<blockreq->small32; i++) {
+		bit_nset(ionodes, start, start+ionode_cnt);
+		found_record = create_small_record(bg_record, ionodes, 32);
+		/* this needs to be an append so we
+		   keep things in the order we got
+		   them, they will be sorted later */
+		list_append(records, found_record);
+		bit_nclear(ionodes, start, start+ionode_cnt);
+		start+=ionode_cnt+1;
+	}
 
-/* #ifndef HAVE_BGL */
-/* 	if ((ionode_cnt = bg_conf->nodecard_ionode_cnt * 2)) */
-/* 		ionode_cnt--; */
-/* 	for(i=0; i<blockreq->small64; i++) { */
-/* 		bit_nset(ionodes, start, start+ionode_cnt); */
-/* 		found_record = create_small_record(bg_record, ionodes, 64); */
-/* 		/\* this needs to be an append so we */
-/* 		   keep things in the order we got */
-/* 		   them, they will be sorted later *\/ */
-/* 		list_append(records, found_record); */
-/* 		bit_nclear(ionodes, start, start+ionode_cnt); */
-/* 		start+=ionode_cnt+1; */
-/* 	} */
-/* #endif */
-/* 	if ((ionode_cnt = bg_conf->quarter_ionode_cnt)) */
-/* 		ionode_cnt--; */
-/* 	for(i=0; i<blockreq->small128; i++) { */
-/* 		bit_nset(ionodes, start, start+ionode_cnt); */
-/* 		found_record = create_small_record(bg_record, ionodes, 128); */
-/* 		/\* this needs to be an append so we */
-/* 		   keep things in the order we got */
-/* 		   them, they will be sorted later *\/ */
-/* 		list_append(records, found_record); */
-/* 		bit_nclear(ionodes, start, start+ionode_cnt); */
-/* 		start+=ionode_cnt+1; */
-/* 	} */
+#ifndef HAVE_BGL
+	if ((ionode_cnt = bg_conf->nodecard_ionode_cnt * 2))
+		ionode_cnt--;
+	for(i=0; i<blockreq->small64; i++) {
+		bit_nset(ionodes, start, start+ionode_cnt);
+		found_record = create_small_record(bg_record, ionodes, 64);
+		/* this needs to be an append so we
+		   keep things in the order we got
+		   them, they will be sorted later */
+		list_append(records, found_record);
+		bit_nclear(ionodes, start, start+ionode_cnt);
+		start+=ionode_cnt+1;
+	}
+#endif
+	if ((ionode_cnt = bg_conf->quarter_ionode_cnt))
+		ionode_cnt--;
+	for(i=0; i<blockreq->small128; i++) {
+		bit_nset(ionodes, start, start+ionode_cnt);
+		found_record = create_small_record(bg_record, ionodes, 128);
+		/* this needs to be an append so we
+		   keep things in the order we got
+		   them, they will be sorted later */
+		list_append(records, found_record);
+		bit_nclear(ionodes, start, start+ionode_cnt);
+		start+=ionode_cnt+1;
+	}
 
-/* #ifndef HAVE_BGL */
-/* 	if ((ionode_cnt = bg_conf->quarter_ionode_cnt * 2)) */
-/* 		ionode_cnt--; */
-/* 	for(i=0; i<blockreq->small256; i++) { */
-/* 		bit_nset(ionodes, start, start+ionode_cnt); */
-/* 		found_record = create_small_record(bg_record, ionodes, 256); */
-/* 		/\* this needs to be an append so we */
-/* 		   keep things in the order we got */
-/* 		   them, they will be sorted later *\/ */
-/* 		list_append(records, found_record); */
-/* 		bit_nclear(ionodes, start, start+ionode_cnt); */
-/* 		start+=ionode_cnt+1; */
-/* 	} */
-/* #endif */
+#ifndef HAVE_BGL
+	if ((ionode_cnt = bg_conf->quarter_ionode_cnt * 2))
+		ionode_cnt--;
+	for(i=0; i<blockreq->small256; i++) {
+		bit_nset(ionodes, start, start+ionode_cnt);
+		found_record = create_small_record(bg_record, ionodes, 256);
+		/* this needs to be an append so we
+		   keep things in the order we got
+		   them, they will be sorted later */
+		list_append(records, found_record);
+		bit_nclear(ionodes, start, start+ionode_cnt);
+		start+=ionode_cnt+1;
+	}
+#endif
 
 
-	/* FREE_NULL_BITMAP(ionodes); */
+	FREE_NULL_BITMAP(ionodes);
 
 	return SLURM_SUCCESS;
 }

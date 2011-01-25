@@ -44,7 +44,7 @@
 #include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "bluegene.h"
-//#include "dynamic_block.h"
+#include "dynamic_block.h"
 
 #define _DEBUG 0
 #define MAX_GROUPS 128
@@ -622,7 +622,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 {
 	List list_of_lists = NULL;
 	List temp_list = NULL;
-	/* List new_blocks = NULL; */
+	List new_blocks = NULL;
 	ListIterator itr = NULL;
 	int rc = SLURM_ERROR;
 	int create_try = 0;
@@ -667,52 +667,52 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		*/
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("trying with %d", create_try);
-		/* if ((new_blocks = create_dynamic_block(block_list, */
-		/* 				       request, temp_list, */
-		/* 				       true))) { */
-		/* 	bg_record_t *bg_record = NULL; */
+		if ((new_blocks = create_dynamic_block(block_list,
+						       request, temp_list,
+						       true))) {
+			bg_record_t *bg_record = NULL;
 
-		/* 	while ((bg_record = list_pop(new_blocks))) { */
-		/* 		if (block_exist_in_list(block_list, bg_record)) */
-		/* 			destroy_bg_record(bg_record); */
-		/* 		else if (SELECT_IS_TEST(query_mode)) { */
-		/* 			/\* Here we don't really want */
-		/* 			   to create the block if we */
-		/* 			   are testing. */
-		/* 			*\/ */
-		/* 			list_append(block_list, bg_record); */
-		/* 			(*blocks_added) = 1; */
-		/* 		} else { */
-		/* 			if (configure_block(bg_record) */
-		/* 			    == SLURM_ERROR) { */
-		/* 				destroy_bg_record(bg_record); */
-		/* 				error("_dynamically_request: " */
-		/* 				      "unable to configure " */
-		/* 				      "block"); */
-		/* 				rc = SLURM_ERROR; */
-		/* 				break; */
-		/* 			} */
-		/* 			list_append(block_list, bg_record); */
-		/* 			print_bg_record(bg_record); */
-		/* 			(*blocks_added) = 1; */
-		/* 		} */
-		/* 	} */
-		/* 	list_destroy(new_blocks); */
-		/* 	if (!*blocks_added) { */
-		/* 		memcpy(request->geometry, start_geo, */
-		/* 		       sizeof(uint16_t)*SYSTEM_DIMENSIONS); */
-		/* 		rc = SLURM_ERROR; */
-		/* 		continue; */
-		/* 	} */
-		/* 	list_sort(block_list, */
-		/* 		  (ListCmpF)bg_record_sort_aval_inc); */
+			while ((bg_record = list_pop(new_blocks))) {
+				if (block_exist_in_list(block_list, bg_record))
+					destroy_bg_record(bg_record);
+				else if (SELECT_IS_TEST(query_mode)) {
+					/* Here we don't really want
+					   to create the block if we
+					   are testing.
+					*/
+					list_append(block_list, bg_record);
+					(*blocks_added) = 1;
+				} else {
+					if (configure_block(bg_record)
+					    == SLURM_ERROR) {
+						destroy_bg_record(bg_record);
+						error("_dynamically_request: "
+						      "unable to configure "
+						      "block");
+						rc = SLURM_ERROR;
+						break;
+					}
+					list_append(block_list, bg_record);
+					print_bg_record(bg_record);
+					(*blocks_added) = 1;
+				}
+			}
+			list_destroy(new_blocks);
+			if (!*blocks_added) {
+				memcpy(request->geometry, start_geo,
+				       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
+				rc = SLURM_ERROR;
+				continue;
+			}
+			list_sort(block_list,
+				  (ListCmpF)bg_record_sort_aval_inc);
 
-		/* 	rc = SLURM_SUCCESS; */
-		/* 	break; */
-		/* } else if (errno == ESLURM_INTERCONNECT_FAILURE) { */
-		/* 	rc = SLURM_ERROR; */
-		/* 	break; */
-		/* } */
+			rc = SLURM_SUCCESS;
+			break;
+		} else if (errno == ESLURM_INTERCONNECT_FAILURE) {
+			rc = SLURM_ERROR;
+			break;
+		}
 
 		memcpy(request->geometry, start_geo,
 		       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
