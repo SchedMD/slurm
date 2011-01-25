@@ -1687,6 +1687,7 @@ static void _rebuild_part_name_list(struct job_record  *job_ptr)
 	xfree(job_ptr->partition);
 	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
 		job_active = true;
+		xfree(job_ptr->partition);
 		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
 	} else if (IS_JOB_PENDING(job_ptr))
 		job_pending = true;
