@@ -46,6 +46,7 @@ extern "C" {
 #include <bgsched/bgsched.h>
 #include <bgsched/Block.h>
 #include <bgsched/core/core.h>
+#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace bgsched;
@@ -84,7 +85,11 @@ extern int bridge_init(char *properties_file)
 {
 	if (initialized)
 		return 1;
-
+	/* We don't care about keeping this around, so just set and
+	   forget since blank to IBM means "" not NULL.
+	*/
+	if (!properties_file)
+		properties_file = "";
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgsched::init(properties_file);
 #endif
@@ -387,8 +392,9 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	vec = Block::getUsers(bg_record->bg_block_id);
 	if (vec.empty())
 		return REMOVE_USER_NONE;
-	for (iter = vec.begin(); iter != vec.end(); iter++) {
-		if (user_name && (*(iter) == user_name))
+
+	BOOST_FOREACH(const std::string& user, vec) {
+		if (user_name && (user == user_name))
 			continue;
 		if ((rc = bridge_block_remove_user(bg_record, user_name)
 		     != SLURM_SUCCESS))
@@ -426,7 +432,6 @@ extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 	std::vector<Job::ConstPtr> job_vec;
 	JobFilter job_filter;
 	JobFilter::Statuses job_statuses;
-	vector<Job::ConstPtr>::iterator iter;
 	int count = 0;
 #endif
 
@@ -457,9 +462,8 @@ extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 		if (job_vec.empty())
 			return SLURM_SUCCESS;
 
-		for (iter = job_vec.begin(); iter != job_vec.end(); iter++) {
-			const Job::ConstPtr job_ptr = *(iter);
-			debug("waiting on job %u to finish on block %s",
+		BOOST_FOREACH(const Job::ConstPtr& job_ptr, job_vec) {
+			debug("waiting on job %lu to finish on block %s",
 			      job_ptr->getId(), bg_record->bg_block_id);
 		}
 	}
