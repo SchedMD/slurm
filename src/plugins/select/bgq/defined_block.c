@@ -64,7 +64,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	char *non_usable_nodes = NULL;
 	bitstr_t *bitmap = bit_alloc(node_record_count);
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	init_wires();
 #endif
 	/* Locks are already in place to protect part_list here */
