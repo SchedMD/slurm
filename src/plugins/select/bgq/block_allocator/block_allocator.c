@@ -42,10 +42,6 @@
 #  include "config.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -60,7 +56,6 @@ extern "C" {
 /* Global */
 bool _initialized = false;
 bool _wires_initialized = false;
-bool mp_locations_set = false;
 
 /* _ba_system is the "current" system that the structures will work
  *  on */
@@ -150,13 +145,9 @@ static int _emulate_ext_wiring(ba_mp_t ****grid);
 #endif
 
 /** */
-static void _new_ba_mp(ba_mp_t *ba_mp, uint16_t *coord,
-			 bool track_down_mps);
-/** */
 static int _reset_the_path(ba_switch_t *curr_switch, int source,
 			   int target, int dim);
-/** */
-static void _create_ba_system(void);
+
 /* */
 static void _delete_ba_system(void);
 /* */
@@ -191,6 +182,7 @@ static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord);
 /* */
 static void _destroy_geo(void *object);
 
+/* */
 static int _coord(char coord);
 
 extern char *ba_passthroughs_string(uint16_t passthrough)
@@ -950,12 +942,12 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			hostlist_parse_int_to_array(
 				number, coords, cluster_dims, cluster_base);
 
-			for(j=0; j<cluster_dims; j++) {
+			for (j=0; j<cluster_dims; j++) {
 				if (DIM_SIZE[j] < coords[j])
 					DIM_SIZE[j] = coords[j];
 			}
 		}
-		for(j=0; j<cluster_dims; j++) {
+		for (j=0; j<cluster_dims; j++) {
 			DIM_SIZE[j]++;
 			/* this will probably be reset below */
 			REAL_DIM_SIZE[j] = DIM_SIZE[j];
@@ -977,15 +969,15 @@ node_info_error:
 			while (node->nodenames[j] != '\0') {
 				if ((node->nodenames[j] == '['
 				     || node->nodenames[j] == ',')
-				    && (node->nodenames[j+8] == ']'
-					|| node->nodenames[j+8] == ',')
-				    && (node->nodenames[j+4] == 'x'
-					|| node->nodenames[j+4] == '-')) {
-					j+=5;
+				    && (node->nodenames[j+10] == ']'
+					|| node->nodenames[j+10] == ',')
+				    && (node->nodenames[j+5] == 'x'
+					|| node->nodenames[j+5] == '-')) {
+					j+=6;
 				} else if ((node->nodenames[j] >= '0'
 					    && node->nodenames[j] <= '9')
 					   || (node->nodenames[j] >= 'A'
-					       && node->nodenames[j] <= 'D')) {
+					       && node->nodenames[j] <= 'Z')) {
 					/* suppose to be blank, just
 					   making sure this is the
 					   correct alpha num
@@ -1000,7 +992,7 @@ node_info_error:
 				hostlist_parse_int_to_array(
 					number, coords, cluster_dims,
 					cluster_base);
-				j += 3;
+				j += 4;
 
 				for(k=0; k<cluster_dims; k++)
 					DIM_SIZE[k] = MAX(DIM_SIZE[k],
@@ -1010,6 +1002,7 @@ node_info_error:
 					break;
 			}
 		}
+
 		if ((DIM_SIZE[A]==0) && (DIM_SIZE[X]==0)
 		    && (DIM_SIZE[Y]==0) && (DIM_SIZE[Z]==0))
 			info("are you sure you only have 1 midplane? %s",
@@ -1074,11 +1067,11 @@ setup_done:
 			ba_system_ptr->num_of_proc *= DIM_SIZE[i];
 	}
 
-	_create_ba_system();
+	bridge_setup_system(node_info_ptr, cluster_dims);
 
 
 #ifndef HAVE_BG_FILES
-	if ((cluster_flags & CLUSTER_FLAG_BGQ))
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		_emulate_ext_wiring(ba_system_ptr->grid);
 #endif
 
@@ -1124,8 +1117,6 @@ extern void init_wires()
 #ifdef HAVE_BG_FILES
 	_set_external_wires(0,0,NULL,NULL);
 #endif
-	set_mp_locations();
-
 	_wires_initialized = true;
 	return;
 }
@@ -1155,7 +1146,6 @@ extern void ba_fini()
 
 	_delete_ba_system();
 	_initialized = false;
-	mp_locations_set = false;
 	_wires_initialized = true;
 	for (i=0; i<HIGHEST_DIMENSIONS; i++)
 		DIM_SIZE[i] = 0;
@@ -1187,9 +1177,12 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
 	}
 
 #ifdef HAVE_BG_Q
-	debug2("ba_update_mp_state: new state of [%c%c%c] is %s",
-	       alpha_num[ba_mp->coord[X]], alpha_num[ba_mp->coord[Y]],
-	       alpha_num[ba_mp->coord[Z]], node_state_string(state));
+	debug2("ba_update_mp_state: new state of [%c%c%c%c] is %s",
+	       alpha_num[ba_mp->coord[A]],
+	       alpha_num[ba_mp->coord[X]],
+	       alpha_num[ba_mp->coord[Y]],
+	       alpha_num[ba_mp->coord[Z]],
+	       node_state_string(state));
 #else
 	debug2("ba_update_mp_state: new state of [%d] is %s",
 	       ba_mp->coord[A],
@@ -1204,6 +1197,30 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
 		ba_mp->used = false;
 
 	ba_mp->state = state;
+}
+
+extern void ba_setup_mp(ba_mp_t *ba_mp, uint16_t *coord, bool track_down_mps)
+{
+	int i,j;
+	uint16_t node_base_state = ba_mp->state & NODE_STATE_BASE;
+
+	if (((node_base_state != NODE_STATE_DOWN)
+	     && !(ba_mp->state & NODE_STATE_DRAIN)) || !track_down_mps)
+		ba_mp->used = false;
+
+	for (i=0; i<cluster_dims; i++){
+		ba_mp->coord[i] = coord[i];
+
+		for(j=0;j<NUM_PORTS_PER_NODE;j++) {
+			ba_mp->axis_switch[i].int_wire[j].used = 0;
+			if (i!=X) {
+				if (j==3 || j==4)
+					ba_mp->axis_switch[i].int_wire[j].
+						used = 1;
+			}
+			ba_mp->axis_switch[i].int_wire[j].port_tar = j;
+		}
+	}
 }
 
 /*
@@ -1264,7 +1281,7 @@ extern int copy_mp_path(List mps, List *dest_mps)
 				     alpha_num[ba_mp->coord[Y]],
 				     alpha_num[ba_mp->coord[Z]]);
 			new_ba_mp = ba_copy_mp(ba_mp);
-			_new_ba_mp(new_ba_mp, ba_mp->coord, false);
+			ba_setup_mp(new_ba_mp, ba_mp->coord, false);
 			list_push(*dest_mps, new_ba_mp);
 
 		}
@@ -1687,20 +1704,16 @@ end_it:
  */
 extern int reset_ba_system(bool track_down_mps)
 {
-	int a, b, c, d;
-	uint16_t coord[cluster_dims];
+	int a, x, y, z;
 
 	for (a = 0; a < DIM_SIZE[A]; a++)
-		for (b = 0; b < DIM_SIZE[X]; b++)
-			for (c = 0; c < DIM_SIZE[Y]; c++)
-				for (d = 0; d < DIM_SIZE[Z]; d++) {
-					coord[A] = a;
-					coord[X] = b;
-					coord[Y] = c;
-					coord[Z] = d;
-					_new_ba_mp(&ba_system_ptr->grid
-						   [a][b][c][d],
-						   coord, track_down_mps);
+		for (x = 0; x < DIM_SIZE[X]; x++)
+			for (y = 0; y < DIM_SIZE[Y]; y++)
+				for (z = 0; z < DIM_SIZE[Z]; z++) {
+					ba_mp_t *ba_mp = &ba_system_ptr->
+						grid[a][x][y][z];
+					ba_setup_mp(ba_mp, ba_mp->coord,
+						    track_down_mps);
 				}
 
 	return 1;
@@ -1873,17 +1886,16 @@ extern int set_all_mps_except(char *mps)
  */
 extern void init_grid(node_info_msg_t * node_info_ptr)
 {
-	int i = 0, j, a, b, c, d;
+	int i = 0, j, a, x, y, z;
 	ba_mp_t *ba_mp = NULL;
-	char *host;
 
 	if (!node_info_ptr) {
 		for (a = 0; a < DIM_SIZE[A]; a++) {
-			for (b = 0; b < DIM_SIZE[X]; b++) {
-				for (c = 0; c < DIM_SIZE[Y]; c++) {
-					for (d = 0; d < DIM_SIZE[Z]; d++) {
+			for (x = 0; x < DIM_SIZE[X]; x++) {
+				for (y = 0; y < DIM_SIZE[Y]; y++) {
+					for (z = 0; z < DIM_SIZE[Z]; z++) {
 						ba_mp = &ba_system_ptr->grid
-							[a][b][c][d];
+							[a][x][y][z];
 						ba_mp->color = 7;
 						ba_mp->letter = '.';
 						ba_mp->state = NODE_STATE_IDLE;
@@ -1896,56 +1908,41 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	}
 
 	for (j = 0; j < (int)node_info_ptr->record_count; j++) {
+		int coord[cluster_dims];
 		node_info_t *node_ptr = &node_info_ptr->node_array[j];
-		host = node_ptr->name;
-		if (!host)
+		if (!node_ptr->name)
 			continue;
+
+		memset(coord, 0, sizeof(coord));
 		if (cluster_dims == 1) {
-			a = j;
-			b = 0;
-			c = 0;
-			d = 0;
+			coord[0] = j;
 		} else {
-			if ((i = strlen(host)) < 4)
+			if ((i = strlen(node_ptr->name)) < 4)
 				continue;
-			a = _coord(host[i-4]);
-			b = _coord(host[i-3]);
-			c = _coord(host[i-2]);
-			d = _coord(host[i-1]);
+			for (x=0; x<cluster_dims; x++)
+				coord[x] = _coord(node_ptr->name[i-(4+x)]);
 		}
 
-		if ((a < 0) || (b < 0) || (c < 0) || (d < 0))
+		for (x=0; x<cluster_dims; x++)
+			if (coord[x] < 0)
+				break;
+		if (x < cluster_dims)
 			continue;
 
-		ba_mp = &ba_system_ptr->grid[a][b][c][d];
+		ba_mp = &ba_system_ptr->grid
+			[coord[A]][coord[X]][coord[Y]][coord[Z]];
 		ba_mp->index = j;
+		ba_mp->state = node_ptr->node_state;
+
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
 			ba_mp->color = 0;
 			ba_mp->letter = '#';
-			if (_initialized)
-				ba_update_mp_state(
-					ba_mp, node_ptr->node_state);
+			ba_update_mp_state(ba_mp, node_ptr->node_state);
 		} else {
 			ba_mp->color = 7;
 			ba_mp->letter = '.';
 		}
-		ba_mp->state = node_ptr->node_state;
 	}
-}
-
-/*
- * Set up the map for resolving
- */
-extern int set_mp_locations(void)
-{
-	if (mp_locations_set)
-		return 1;
-
-	if (bridge_set_locations() != SLURM_SUCCESS)
-		fatal("couldn't set locations");
-	mp_locations_set = true;
-	return 1;
-
 }
 
 /*
@@ -1958,7 +1955,7 @@ extern uint16_t *find_mp_loc(char* mp_id)
 	uint32_t a, x, y, z;
 	ba_mp_t *ba_mp = NULL;
 
-	set_mp_locations();
+	bridge_setup_system();
 
 	check = xstrdup(mp_id);
 	/* with BGP they changed the names of the rack midplane action from
@@ -2053,7 +2050,7 @@ extern char *find_mp_rack_mid(char* axyz)
 		return NULL;
 	}
 
-	set_mp_locations();
+	bridge_setup_system();
 
 	return ba_system_ptr->grid[coord[A]][coord[X]][coord[Y]][coord[Z]].loc;
 }
@@ -2730,7 +2727,7 @@ static int _copy_the_path(List mps, ba_switch_t *curr_switch,
 					       [mark_mp_tar[X]]
 					       [mark_mp_tar[Y]]
 					       [mark_mp_tar[Z]]);
-			_new_ba_mp(ba_mp, mark_mp_tar, false);
+			ba_setup_mp(ba_mp, mark_mp_tar, false);
 			list_push(mps, ba_mp);
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("haven't seen %c%c%c%c adding it",
@@ -3124,62 +3121,6 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 //	return 1;
 }
 
-static void _new_ba_mp(ba_mp_t *ba_mp, uint16_t *coord,
-		       bool track_down_mps)
-{
-	int i,j;
-	uint16_t node_base_state = ba_mp->state & NODE_STATE_BASE;
-
-	if (((node_base_state != NODE_STATE_DOWN)
-	     && !(ba_mp->state & NODE_STATE_DRAIN)) || !track_down_mps)
-		ba_mp->used = false;
-
-	for (i=0; i<cluster_dims; i++){
-		ba_mp->coord[i] = coord[i];
-
-		for(j=0;j<NUM_PORTS_PER_NODE;j++) {
-			ba_mp->axis_switch[i].int_wire[j].used = 0;
-			if (i!=X) {
-				if (j==3 || j==4)
-					ba_mp->axis_switch[i].int_wire[j].
-						used = 1;
-			}
-			ba_mp->axis_switch[i].int_wire[j].port_tar = j;
-		}
-	}
-}
-
-static void _create_ba_system(void)
-{
-	int a,b,c,d;
-	uint16_t coord[cluster_dims];
-
-	ba_system_ptr->grid = (ba_mp_t****)
-		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
-	for (a=0; a<DIM_SIZE[A]; a++) {
-		ba_system_ptr->grid[a] = (ba_mp_t***)
-			xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
-		for (b=0; b<DIM_SIZE[X]; b++) {
-			ba_system_ptr->grid[a][b] = (ba_mp_t**)
-				xmalloc(sizeof(ba_mp_t*) * DIM_SIZE[Y]);
-			for (c=0; c<DIM_SIZE[Y]; c++) {
-				ba_system_ptr->grid[a][b][c] = (ba_mp_t*)
-					xmalloc(sizeof(ba_mp_t)
-						* DIM_SIZE[Z]);
-				for (d=0; d<DIM_SIZE[Z]; d++) {
-					coord[A] = a;
-					coord[X] = b;
-					coord[Y] = c;
-					coord[Z] = d;
-					_new_ba_mp(&ba_system_ptr->grid
-						     [a][b][c][d],
-						     coord, true);
-				}
-			}
-		}
-	}
-}
-
 /** */
 static void _delete_ba_system(void)
 {
@@ -3553,7 +3494,3 @@ static int _coord(char coord)
 		return (coord - 'A');
 	return -1;
 }
-
-#ifdef __cplusplus
-}
-#endif

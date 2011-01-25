@@ -360,6 +360,11 @@ extern void set_ba_debug_flags(uint32_t debug_flags);
 extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
 
 /*
+ * setup the ports and what not for a midplane.
+ */
+extern void ba_setup_mp(ba_mp_t *ba_mp, uint16_t *coord, bool track_down_mps);
+
+/*
  * copy info from a ba_mp, a direct memcpy of the ba_mp_t
  *
  * IN ba_mp: mp to be copied

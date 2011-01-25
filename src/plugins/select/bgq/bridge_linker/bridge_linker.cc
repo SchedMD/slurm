@@ -131,13 +131,15 @@ extern int bridge_get_size(uint16_t *size)
 	return SLURM_SUCCESS;
 }
 
-extern int bridge_set_locations()
+extern int bridge_setup_system()
 {
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-	uint32_t a, x, y, z;
-	ComputeHardware::ConstPtr bgq;
-	static bool inited = false;
+	int a, x, y, z, i = 0;
+	ba_mp_t *ba_mp;
 
+	static bool inited = false;
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	ComputeHardware::ConstPtr bgq;
+#endif
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
@@ -145,24 +147,48 @@ extern int bridge_set_locations()
 		return SLURM_SUCCESS;
 
 	inited = true;
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgq = getComputeHardware();
-
-	for (a = 0; a <= DIM_SIZE[A]; ++a)
-		for (x = 0; x <= DIM_SIZE[X]; ++x)
-			for (y = 0; y <= DIM_SIZE[Y]; ++y)
-				for (z = 0; z <= DIM_SIZE[Z]; ++z) {
-					ba_mp_t *ba_mp = &ba_system_ptr->
+#endif
+	ba_system_ptr->grid = (ba_mp_t****)
+		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
+	for (a = 0; a < DIM_SIZE[A]; a++) {
+		ba_system_ptr->grid[a] = (ba_mp_t***)
+			xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
+		for (x = 0; x < DIM_SIZE[X]; x++) {
+			ba_system_ptr->grid[a][x] = (ba_mp_t**)
+				xmalloc(sizeof(ba_mp_t*) * DIM_SIZE[Y]);
+			for (y = 0; y < DIM_SIZE[Y]; y++) {
+				ba_system_ptr->grid[a][x][y] = (ba_mp_t*)
+					xmalloc(sizeof(ba_mp_t) * DIM_SIZE[Z]);
+				for (z = 0; z < DIM_SIZE[Z]; z++) {
+					ba_mp = &ba_system_ptr->
 						grid[a][x][y][z];
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 					Midplane::Coordinates coords =
 						{{a, x, y, z}};
 					Midplane::ConstPtr midplane =
 						bgq->getMidplane(coords);
-					xfree(ba_mp->loc);
 					ba_mp->loc =
 						xstrdup(midplane->
 							getLocation().c_str());
-				}
 #endif
+					ba_mp->coord[A] = a;
+					ba_mp->coord[X] = x;
+					ba_mp->coord[Y] = y;
+					ba_mp->coord[Z] = z;
+					ba_setup_mp(ba_mp, ba_mp->coord, true);
+					info("%s which is %c%c%c%c is setup",
+					     ba_mp->loc,
+					     alpha_num[ba_mp->coord[A]],
+					     alpha_num[ba_mp->coord[X]],
+					     alpha_num[ba_mp->coord[Y]],
+					     alpha_num[ba_mp->coord[Z]]);
+				}
+			}
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
