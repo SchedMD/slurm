@@ -1077,13 +1077,16 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		fail_reason = WAIT_HELD;
 	else if ((job_ptr->time_limit != NO_VAL) &&
 		 ((job_ptr->time_limit > part_ptr->max_time) &&
-		  (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT))))
+		  (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+					     & QOS_FLAG_PART_TIME_LIMIT)))))
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	else if (((job_ptr->details->max_nodes != 0) &&
 	          ((job_ptr->details->max_nodes < part_ptr->min_nodes) &&
-		   (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) ||
+		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+					      & QOS_FLAG_PART_MIN_NODE))))) ||
 	         ((job_ptr->details->min_nodes > part_ptr->max_nodes) &&
-		  (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))))
+		  (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+					     & QOS_FLAG_PART_MAX_NODE)))))
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	else if (qos_ptr && assoc_ptr &&
 		 (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&

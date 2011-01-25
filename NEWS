@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
     instead of first fit.
  -- In select/cons_res, correct handling of the option
     SelectTypeParameters=CR_ONE_TASK_PER_CORE.
+ -- Fix for checking QOS to override partition limits, previously if not using
+    QOS some limits would be overlooked.
 
 * Changes in SLURM 2.2.0
 ========================
