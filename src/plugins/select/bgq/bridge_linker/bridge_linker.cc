@@ -38,9 +38,10 @@
 
 extern "C" {
 #include "bridge_linker.h"
-#include "real_time.h"
 #include "../block_allocator/block_allocator.h"
 }
+
+#include "real_time.h"
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
@@ -80,7 +81,7 @@ extern int bridge_init(char *properties_file)
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgsched::init(properties_file);
 #endif
-
+	real_time_init();
 	initialized = true;
 
 	return 1;
@@ -90,6 +91,7 @@ extern int bridge_init(char *properties_file)
 extern int bridge_fini()
 {
 	initialized = false;
+	real_time_fini();
 
 	return SLURM_SUCCESS;
 }
