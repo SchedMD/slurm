@@ -1690,7 +1690,7 @@ extern int select_p_job_init(List job_list)
  */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	int i;
+	int i, tot_core;
 
 	info("cons_res: select_p_node_init");
 	if (node_ptr == NULL) {
@@ -1733,6 +1733,10 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			select_node_record[i].real_memory = node_ptr[i].
 				real_memory;
 		}
+		tot_core = select_node_record[i].sockets *
+			   select_node_record[i].cores;
+		if (tot_core >= select_node_record[i].cpus)
+			select_node_record[i].vpus = 1;
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
 		gres_plugin_node_state_dealloc_all(select_node_record[i].
 						   node_ptr->gres_list);
