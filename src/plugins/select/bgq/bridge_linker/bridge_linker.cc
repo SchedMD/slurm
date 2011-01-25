@@ -38,6 +38,7 @@
 
 extern "C" {
 #include "bridge_linker.h"
+#include "real_time.h"
 #include "../block_allocator/block_allocator.h"
 }
 
