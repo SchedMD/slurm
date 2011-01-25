@@ -86,8 +86,8 @@ typedef struct {
 
 typedef struct bg_record {
 	char *bg_block_id;     	        /* ID returned from MMCS */
-	List bg_midplanes;              /* List of midplanes in block */
-	List bg_pt_midplanes;           /* List of passthrough
+	List ba_mp_list;                /* List of midplanes in block */
+	List ba_pt_mp_list;             /* List of passthrough
 					 * midplanes in block */
 	bitstr_t *bitmap;               /* bitmap to check the nodes
 					   of block */

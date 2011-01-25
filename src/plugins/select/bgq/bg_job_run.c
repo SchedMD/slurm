@@ -188,7 +188,7 @@ static void _remove_jobs_on_block_and_reset(char *block_id)
 		return;
 	}
 
-	if (bridge_block_remove_jobs(block_id) != SLURM_SUCCESS)
+	if (bridge_block_wait_for_jobs(block_id) != SLURM_SUCCESS)
 		job_remove_failed = 1;
 
 	/* remove the block's users */

@@ -134,6 +134,7 @@ extern int bridge_set_locations()
 	uint32_t a, x, y, z;
 	ComputeHardware::ConstPtr bgq;
 	static bool inited = false;
+
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
@@ -153,8 +154,8 @@ extern int bridge_set_locations()
 						{{a, x, y, z}};
 					Midplane::ConstPtr midplane =
 						bgq->getMidplane(coords);
-					xfree(b_midplane->loc);
-					b_midplane->loc =
+					xfree(ba_mp->loc);
+					ba_mp->loc =
 						xstrdup(midplane->
 							getLocation().c_str());
 				}
@@ -186,18 +187,18 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 
-	if (!bg_record->bg_midplanes || !list_count(bg_record->bg_midplanes)) {
+	if (!bg_record->ba_mp_list || !list_count(bg_record->ba_mp_list)) {
 		error("There are no midplanes in this block?");
 		return SLURM_ERROR;
 	}
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	itr = list_iterator_create(bg_record->bg_midplanes);
+	itr = list_iterator_create(bg_record->bg_mp_list);
 	while ((ba_mp = (ba_mp_t *)list_next(itr)))
 		midplanes.push_back(ba_mp->loc);
 	list_iterator_destroy(itr);
 
-	itr = list_iterator_create(bg_record->bg_pt_midplanes);
+	itr = list_iterator_create(bg_record->bg_pt_mp_list);
 	while ((ba_mp = (ba_mp_t *)list_next(itr)))
 		pt_midplanes.push_back(ba_mp->loc);
 
@@ -405,7 +406,7 @@ extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name)
 	return rc;
 }
 
-extern int bridge_block_remove_jobs(bg_record_t *bg_record)
+extern int bridge_block_wait_for_jobs(char *bg_block_id)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	std::vector<Job::ConstPtr> job_vec;
@@ -417,14 +418,14 @@ extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (!bg_record || !bg_record->bg_block_id) {
+	if (!bg_block_id) {
 		error("no block name given");
 		return SLURM_ERROR;
 	}
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
-	job_filter.setComputeBlockName(bg_record->bg_block_id);
+	job_filter.setComputeBlockName(bg_block_id);
 
 	/* I think these are all the states we need. */
 	job_statuses.insert(Job::Loading);
@@ -443,7 +444,7 @@ extern int bridge_block_remove_jobs(bg_record_t *bg_record)
 
 		BOOST_FOREACH(const Job::ConstPtr& job_ptr, job_vec) {
 			debug("waiting on job %lu to finish on block %s",
-			      job_ptr->getId(), bg_record->bg_block_id);
+			      job_ptr->getId(), bg_block_id);
 		}
 	}
 #endif

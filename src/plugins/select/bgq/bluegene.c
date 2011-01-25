@@ -131,8 +131,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	if ((rec_a->mp_count > 1) && (rec_b->mp_count > 1)) {
 		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
-		check_and_set_mp_list(rec_a->bg_midplanes);
-		if (check_and_set_mp_list(rec_b->bg_midplanes)
+		check_and_set_mp_list(rec_a->ba_mp_list);
+		if (check_and_set_mp_list(rec_b->ba_mp_list)
 		    == SLURM_ERROR)
 			return true;
 	}

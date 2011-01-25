@@ -108,6 +108,9 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 					 char *user_name);
 extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name);
 
-extern int bridge_block_remove_jobs(bg_record_t *bg_record);
+/* don't send the bg_record since we would need to lock things up and
+ * this function could take a bit.
+ */
+extern int bridge_block_wait_for_jobs(char *bg_block_id);
 
 #endif /* _BRIDGE_LINKER_H_ */
