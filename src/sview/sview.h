@@ -308,6 +308,8 @@ typedef struct {
 	char *boot_time;
 	char *reason;
 	char *slurmd_start_time;
+	bool iter_set;
+	GtkTreeIter iter_ptr;
 } sview_node_info_t;
 
 typedef struct {
@@ -530,7 +532,7 @@ extern void popup_all_node_name(char *name, int id);
 extern void admin_menu_node_name(char *name, GdkEventButton *event);
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void admin_node_name(char *name, char *old_value, char *type);
-extern void cluster_change_node();
+extern void cluster_change_node(void);
 
 // resv_info.c
 extern GtkWidget *create_resv_entry(resv_desc_msg_t *resv_msg,

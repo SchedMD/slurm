@@ -456,38 +456,28 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 			}
 		}
 	}
+
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
 		node_ptr = sview_node_info->node_ptr;
-		/* get the iter, or find out the list is empty goto add */
-		if (!gtk_tree_model_get_iter(model, &iter, path)) {
-			goto adding;
-		}
-
-		while (1) {
-			/* search for the node name and check to see if
-			   it is in the list */
-			gtk_tree_model_get(model, &iter, SORTID_NAME,
-					   &name, -1);
-			if (!strcmp(name, node_ptr->name)) {
-				/* update with new info */
-				g_free(name);
-				_update_node_record(sview_node_info,
-						    GTK_TREE_STORE(model),
-						    &iter);
-				goto found;
-			}
-			g_free(name);
-
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
+		if (sview_node_info->iter_set) {
+			gtk_tree_model_get(model, &sview_node_info->iter_ptr,
+					   SORTID_NAME, &name, -1);
+			if (strcmp(name, node_ptr->name)) { /* Bad pointer */
+				sview_node_info->iter_set = false;
+				//g_print("bad node iter pointer\n");
 			}
 		}
-	adding:
-		_append_node_record(sview_node_info,
-				    GTK_TREE_STORE(model), &iter);
-	found:
-		;
+		if (sview_node_info->iter_set) {
+			_update_node_record(sview_node_info,
+					    GTK_TREE_STORE(model),
+					    &sview_node_info->iter_ptr);
+		} else {
+			_append_node_record(sview_node_info,
+					    GTK_TREE_STORE(model),
+					    &sview_node_info->iter_ptr);
+			sview_node_info->iter_set = true;
+		}
 	}
 	list_iterator_destroy(itr);
 
@@ -1260,14 +1250,12 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		gtk_widget_show(label);
 		goto end_it;
 	}
+
 display_it:
-
-	info_list = create_node_info_list(node_info_ptr, changed,
-					  FALSE);
-
+	info_list = create_node_info_list(node_info_ptr, changed, FALSE);
 	if (!info_list)
 		goto reset_curs;
-	i=0;
+	i = 0;
 	/* set up the grid */
 	if (display_widget && GTK_IS_TREE_VIEW(display_widget) &&
 	    gtk_tree_selection_count_selected_rows(
@@ -1744,7 +1732,7 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 	return;
 }
 
-extern void cluster_change_node()
+extern void cluster_change_node(void)
 {
 	display_data_t *display_data = options_data_node;
 	while (display_data++) {
