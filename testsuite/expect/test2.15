@@ -1,0 +1,150 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol update size of running job with some running tasks.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "2.15"
+set exit_code        0
+set file_in          "test$test_id.bash"
+set job_id           0
+
+print_header $test_id
+
+if { [test_xcpu] } {
+	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
+	exit 0
+}
+
+if { [test_bluegene] } {
+	send_user "\nWARNING: This test is incompatible with BlueGene systems\n"
+	exit 0
+}
+if { [test_cray] } {
+        send_user "\nWARNING: This test is incompatible with Cray systems\n"
+        exit $exit_code
+}
+
+set node_cnt 2
+set available [available_nodes [default_partition]]
+if {$available < $node_cnt} {
+    send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
+    exit $exit_code
+}
+
+
+make_bash_script $file_in "
+if \[ \$SLURM_PROCID = 0 \]; then
+	$bin_echo JOBID=\$SLURM_JOB_ID
+	$bin_echo \"Proc \$SLURM_PROCID on HOST=\$SLURMD_NODENAME : I await the end of the other tasks\"
+	$bin_sleep 35
+	$squeue -o \"%i %10j %2t %N\"
+	$bin_echo \"Proc \$SLURM_PROCID terminated properly\"
+else
+	$bin_sleep 5
+	$bin_echo \"Proc \$SLURM_PROCID terminated improperly, not killed\"
+	exit 0
+fi
+"
+
+#
+# Run job with one task continuing
+#
+set host ""
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N$node_cnt -t1 $file_in]
+set srun_id $spawn_id
+expect {
+	-re "JOBID=($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "HOST=($alpha_numeric_under)" {
+		set host $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	exit 1
+}
+
+spawn $scontrol update jobid=$job_id nodelist=$host
+set scontrol_id $spawn_id
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set matches 0
+set timeout 40
+set spawn_id $srun_id
+expect {
+	-re "terminated properly" {
+		incr matches
+		exp_continue
+	}
+	-re "terminated improperly" {
+		set matches -9999
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: task 0 did not run to completion after other tasks killed\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

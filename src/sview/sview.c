@@ -206,7 +206,9 @@ void *_page_thr(void *arg)
 //		g_static_mutex_unlock(&sview_mutex);
 /* 		END_TIMER; */
 /* 		g_print("got for initeration: %s\n", TIME_STR); */
+g_print("sleep start: %d\n", working_sview_config.refresh_delay);
 		sleep(working_sview_config.refresh_delay);
+g_print("sleep done\n\n");
 		g_static_mutex_lock(&sview_mutex);
 		if (thread_count > 1) {
 			g_static_mutex_unlock(&sview_mutex);
