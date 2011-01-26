@@ -52,6 +52,9 @@ documents those changes that are of interest to users and admins.
     SelectTypeParameters=CR_ONE_TASK_PER_CORE.
  -- Fix for checking QOS to override partition limits, previously if not using
     QOS some limits would be overlooked.
+ -- Fix bug which would terminate a job step if any of the nodes allocated to
+    it were removed from the job's allocation. Now only the tasks on those
+    nodes are terminated.
 
 * Changes in SLURM 2.2.0
 ========================
