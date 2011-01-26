@@ -70,7 +70,7 @@ if \[ \$SLURM_PROCID = 0 \]; then
 	$squeue -o \"%i %10j %2t %N\"
 	$bin_echo \"Proc \$SLURM_PROCID terminated properly\"
 else
-	$bin_sleep 5
+	$bin_sleep 10
 	$bin_echo \"Proc \$SLURM_PROCID terminated improperly, not killed\"
 	exit 0
 fi
