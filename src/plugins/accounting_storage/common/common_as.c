@@ -90,66 +90,6 @@ static void _dump_slurmdb_assoc_records(List assoc_list)
 }
 
 /*
- * send_accounting_update - send update to controller of cluster
- * IN update_list: updates to send
- * IN cluster: name of cluster
- * IN host: control host of cluster
- * IN port: control port of cluster
- * IN rpc_version: rpc version of cluster
- * RET:  error code
- */
-extern int send_accounting_update(List update_list, char *cluster, char *host,
-				  uint16_t port, uint16_t rpc_version)
-{
-	accounting_update_msg_t msg;
-	slurm_msg_t req;
-	slurm_msg_t resp;
-	int rc;
-
-	// Set highest version that we can use
-	if (rpc_version > SLURMDBD_VERSION) {
-		rpc_version = SLURMDBD_VERSION;
-	}
-	memset(&msg, 0, sizeof(accounting_update_msg_t));
-	msg.rpc_version = rpc_version;
-	msg.update_list = update_list;
-
-	debug("sending updates to %s at %s(%hu) ver %hu",
-	      cluster, host, port, rpc_version);
-
-	slurm_msg_t_init(&req);
-	slurm_set_addr_char(&req.address, port, host);
-	req.msg_type = ACCOUNTING_UPDATE_MSG;
-	if(slurmdbd_conf)
-		req.flags = SLURM_GLOBAL_AUTH_KEY;
-	req.data = &msg;
-	slurm_msg_t_init(&resp);
-
-	rc = slurm_send_recv_node_msg(&req, &resp, 0);
-	if ((rc != 0) || ! resp.auth_cred) {
-		error("update cluster: %m to %s at %s(%hu)",
-		      cluster, host, port);
-		rc = SLURM_ERROR;
-	}
-	if (resp.auth_cred)
-		g_slurm_auth_destroy(resp.auth_cred);
-
-	switch (resp.msg_type) {
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *)resp.data)->return_code;
-		slurm_free_return_code_msg(resp.data);
-		break;
-	default:
-		if(rc != SLURM_ERROR)
-			error("Unknown response message %u", resp.msg_type);
-		rc = SLURM_ERROR;
-		break;
-	}
-	//info("got rc of %d", rc);
-	return rc;
-}
-
-/*
  * addto_update_list - add object updated to list
  * IN/OUT update_list: list of updated objects
  * IN type: update type

@@ -40,7 +40,6 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
-#include "src/plugins/accounting_storage/common/common_as.h"
 
 #include <unistd.h>
 #include <termios.h>
@@ -647,11 +646,11 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 
 		if (list_count(update_obj->objects)) {
 			list_append(update_list, update_obj);
-			rc = send_accounting_update(update_list,
-						    cluster,
-						    cluster_rec->control_host,
-						    cluster_rec->control_port,
-						    cluster_rec->rpc_version);
+			rc = slurmdb_send_accounting_update(
+				update_list, cluster,
+				cluster_rec->control_host,
+				cluster_rec->control_port,
+				cluster_rec->rpc_version);
 		}
 		list_destroy(update_list);
 	}
