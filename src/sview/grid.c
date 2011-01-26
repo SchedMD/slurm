@@ -1517,8 +1517,7 @@ extern int get_system_stats(GtkTable *table)
 			setup_grid_table(main_grid_table, grid_button_list,
 					 node_list);
 		}
-	}
-	else {
+	} else {
 		grid_button_list = list_create(destroy_grid_button);
 		setup_grid_table(main_grid_table, grid_button_list, node_list);
 	}

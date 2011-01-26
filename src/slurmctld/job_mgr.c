@@ -2236,7 +2236,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
 				job_pre_resize_acctg(job_ptr);
-				kill_step_on_node(job_ptr, node_ptr);
+				kill_step_on_node(job_ptr, node_ptr, true);
 				excise_node_from_job(job_ptr, node_ptr);
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
@@ -7131,7 +7131,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    !bit_test(job_ptr->node_bitmap, i))
 					continue;
 				node_ptr = node_record_table_ptr + i;
-				kill_step_on_node(job_ptr, node_ptr);
+				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
 			job_post_resize_acctg(job_ptr);
@@ -7207,7 +7207,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				if (++total <= job_specs->min_nodes)
 					continue;
 				node_ptr = node_record_table_ptr + i;
-				kill_step_on_node(job_ptr, node_ptr);
+				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
 			job_post_resize_acctg(job_ptr);

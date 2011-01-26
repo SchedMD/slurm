@@ -125,6 +125,11 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 	int rc = 0;
 
 	while ((found_record = list_next(itr))) {
+		/* If there is a free_cnt that means the block is
+		   going away, so we should skip it.
+		*/
+		if (found_record->free_cnt)
+			continue;
 		/* check for full node bitmap compare */
 		if (bit_equal(bg_record->bitmap, found_record->bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
