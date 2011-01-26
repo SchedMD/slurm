@@ -1247,9 +1247,13 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 				(int)display_data[i].type);
 		}
 	}
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(treestore),
-					     sort_column,
-					     GTK_SORT_ASCENDING);
+
+	if (sort_column >= 0) {
+		gtk_tree_sortable_set_sort_column_id(
+					GTK_TREE_SORTABLE(treestore),
+					sort_column,
+					GTK_SORT_ASCENDING);
+	}
 
 	g_object_unref(treestore);
 

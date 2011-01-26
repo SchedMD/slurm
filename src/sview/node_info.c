@@ -1199,7 +1199,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
 	int changed = 1;
-	int i = 0;
+	int i = 0, sort_key;
 	int b_color_ndx;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	ListIterator itr = NULL;
@@ -1310,11 +1310,16 @@ display_it:
 		gtk_table_attach_defaults(GTK_TABLE(table),
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
-		/* since this function sets the model of the tree_view
-		   to the treestore we don't really care about
-		   the return value */
+		/* Since this function sets the model of the tree_view to the
+		 * treestore we don't really care about the return value
+		 * On large clusters, sorting on the node name slows GTK down
+		 * by a large margin. */
+		if (node_info_ptr->record_count > 1000)
+			sort_key = -1;
+		else
+			sort_key = SORTID_NAME;
 		create_treestore(tree_view, display_data_node,
-				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
+				 SORTID_CNT, sort_key, SORTID_COLOR);
 	}
 	view = INFO_VIEW;
 	_update_info_node(info_list, GTK_TREE_VIEW(display_widget));
@@ -1344,7 +1349,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 	node_info_t *node_ptr = NULL;
 	hostlist_t hostlist = NULL;
 	hostlist_iterator_t host_itr = NULL;
-	int i = -1;
+	int i = -1, sort_key;
 	sview_search_info_t *search_info = spec_info->search_info;
 
 	if (!spec_info->display_widget)
@@ -1401,11 +1406,16 @@ display_it:
 		gtk_table_attach_defaults(popup_win->table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
-		/* since this function sets the model of the tree_view
-		   to the treestore we don't really care about
-		   the return value */
+		/* Since this function sets the model of the tree_view to the
+		 * treestore we don't really care about the return value
+		 * On large clusters, sorting on the node name slows GTK down
+		 * by a large margin. */
+		if (node_info_ptr->record_count > 1000)
+			sort_key = -1;
+		else
+			sort_key = SORTID_NAME;
 		create_treestore(tree_view, popup_win->display_data,
-				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
+				 SORTID_CNT, sort_key, SORTID_COLOR);
 	}
 
 	setup_popup_grid_list(popup_win);

@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
  -- Remove checkpoint/xlch plugin.
  -- Disable deletion of partitions that have unfinished jobs (pending,
     running or suspended states). Patch from Martin Perry, BULL.
+ -- In sview, disable the sorting of node records by name at startup for
+    clusters over 1000 nodes. Users can enable this by selecting the "Name"
+    tab. This change dramatically improves scalability of sview.
 
 * Changes in SLURM 2.3.0.pre1
 =============================
