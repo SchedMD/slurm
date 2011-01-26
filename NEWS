@@ -55,6 +55,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug which would terminate a job step if any of the nodes allocated to
     it were removed from the job's allocation. Now only the tasks on those
     nodes are terminated.
+ -- Fixed bug in sacctmgr reported by Fredrik Tegenfeldt
 
 * Changes in SLURM 2.2.0
 ========================
