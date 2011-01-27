@@ -423,7 +423,7 @@ struct job_record {
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
 	struct job_record *job_next;	/* next entry with same hash index */
-	enum job_states job_state;	/* state of the job */
+	uint16_t job_state;	        /* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
 					 * node failure */
 	char *licenses;			/* licenses required by the job */

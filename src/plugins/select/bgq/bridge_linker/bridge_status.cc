@@ -39,6 +39,10 @@
 extern "C" {
 #include "bridge_linker.h"
 #include "../block_allocator/block_allocator.h"
+#include "../bluegene.h"
+#include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/locks.h"
 }
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
@@ -86,6 +90,15 @@ static List kill_job_list = NULL;
 static pthread_t real_time_thread;
 static bgsched::realtime::Client rt_client;
 
+static void _destroy_kill_struct(void *object)
+{
+	kill_job_struct_t *freeit = (kill_job_struct_t *)object;
+
+	if (freeit) {
+		xfree(freeit);
+	}
+}
+
 static int _block_is_deallocating(bg_record_t *bg_record)
 {
 	int jobid = bg_record->job_running;
@@ -105,6 +118,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			if (strcmp(bg_record->target_name, bg_record->user_name)
 			    || (jobid > NO_JOB_RUNNING)) {
 				kill_job_struct_t *freeit =
+					(kill_job_struct_t *)
 					xmalloc(sizeof(freeit));
 				freeit->jobid = jobid;
 				list_push(kill_job_list, freeit);
@@ -121,8 +135,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				      bg_record->bg_block_id);
 			}
 		} else {
-			error("State went to free on a boot "
-			      "for block %s.",
+			error("State went to free on a boot for block %s.",
 			      bg_record->bg_block_id);
 		}
 	} else if (bg_record->user_name) {
@@ -149,26 +162,29 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 }
 
 void event_handler::handleBlockStateChangedRealtimeEvent(
-        const BlockStateChangedEventInfo& eventInfo)
+        const BlockStateChangedEventInfo& event)
 {
 	bg_record_t *bg_record = NULL;
 	bgq_block_status_t state;
 	bool skipped_dealloc = false;
+	const char *bg_block_id = event.getBlockName().c_str();
+	kill_job_struct_t *freeit = NULL;
 
-	info("Received block status changed real-time event. Block=%s state=%d"
-	     eventInfo.getBlockName(), eventInfo.getStatus());
+	info("Received block status changed real-time event. Block=%s state=%d",
+	     bg_block_id, event.getStatus());
+
+	if (!bg_lists->main)
+		return;
 
 	slurm_mutex_lock(&block_state_mutex);
-	bg_record = find_bg_record_in_list(bg_lists->main,
-					   eventInfo.getBlockName().c_str());
+	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
 	if (!bg_record) {
 		slurm_mutex_unlock(&block_state_mutex);
-		info("bg_record %s isn't in the main list",
-		     eventInfo.getBlockName());
+		info("bg_record %s isn't in the main list", bg_block_id);
 		return;
 	}
 
-	switch (eventInfo.getStatus()) {
+	switch (event.getStatus()) {
 	case Block::Allocated:
 		state = BG_BLOCK_ALLOCATED;
 		break;
@@ -202,7 +218,7 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 	     && bg_record->state != BG_BLOCK_ERROR)
 	    && state == BG_BLOCK_FREE)
 		skipped_dealloc = 1;
-	else if ((bg_record->state == BG_BLOCK_INIT
+	else if ((bg_record->state == BG_BLOCK_INITED
 		  || bg_record->state == BG_BLOCK_ALLOCATED)
 		 && (state == BG_BLOCK_BOOTING)) {
 		/* This means the user did a reboot through
@@ -293,23 +309,19 @@ nochange_state:
 			break;
 		case BG_BLOCK_FREE:
 			if (bg_record->boot_count < RETRY_BOOT_COUNT) {
-				if ((rc = boot_block(bg_record))
-				    != SLURM_SUCCESS)
-					updated = -1;
+				bridge_block_boot(bg_record);
 
 				if (bg_record->magic == BLOCK_MAGIC) {
-					debug("boot count for block "
-					      "%s is %d",
+					debug("boot count for block %s is %d",
 					      bg_record->bg_block_id,
 					      bg_record->boot_count);
 					bg_record->boot_count++;
 				}
 			} else {
-				char *reason = "update_block_list: "
-					"Boot fails ";
+				char *reason = (char *)
+					"status_check: Boot fails ";
 
-				error("Couldn't boot Block %s "
-				      "for user %s",
+				error("Couldn't boot Block %s for user %s",
 				      bg_record->bg_block_id,
 				      bg_record->target_name);
 
@@ -320,11 +332,9 @@ nochange_state:
 				bg_record->boot_state = 0;
 				bg_record->boot_count = 0;
 				if (remove_from_bg_list(
-					    bg_lists->job_running,
-					    bg_record)
+					    bg_lists->job_running, bg_record)
 				    == SLURM_SUCCESS) {
-					num_unused_cpus +=
-						bg_record->cpu_cnt;
+					num_unused_cpus += bg_record->cpu_cnt;
 				}
 				remove_from_bg_list(
 					bg_lists->booted, bg_record);
@@ -341,7 +351,8 @@ nochange_state:
 			}
 			/* boot flags are reset here */
 			if (set_block_user(bg_record) == SLURM_ERROR) {
-				freeit = xmalloc(sizeof(kill_job_struct_t));
+				freeit = (kill_job_struct_t *)
+					xmalloc(sizeof(kill_job_struct_t));
 				freeit->jobid = bg_record->job_running;
 				list_push(kill_job_list, freeit);
 			}
@@ -360,20 +371,23 @@ nochange_state:
 			      bg_block_state_string(bg_record->state));
 			break;
 		}
+	}
 	slurm_mutex_unlock(&block_state_mutex);
 
 	/* kill all the jobs from unexpectedly freed blocks */
-	while ((freeit = list_pop(kill_job_list))) {
+	while ((freeit = (kill_job_struct_t *)list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %u", freeit->jobid);
 		bg_requeue_job(freeit->jobid, 0);
 		_destroy_kill_struct(freeit);
 	}
+	last_bg_update = time(NULL);
 }
 
 static int _real_time_connect(bgsched::realtime::Client c)
 {
 	int rc = SLURM_ERROR;
 	int count = 0;
+
 	while (bridge_status_inited && (rc != SLURM_SUCCESS)) {
 		try {
 			c.connect();
@@ -394,9 +408,9 @@ static void *_real_time(void *no_data)
 	event_handler_t event_handler;
 
 	bool failed = false;
-	bgsched::realtime::Filter rt_filter(Filter::createNone());
+	bgsched::realtime::Filter rt_filter(
+		bgsched::realtime::Filter::createNone());
 
-	rt_filter = bgsched::realtime::Filter::createNone();
 	rt_filter.setBlocks(true);
  	//rt_filter.setBlockDeleted(true);
 	// filter.get().setMidplanes(true);
@@ -410,7 +424,7 @@ static void *_real_time(void *no_data)
 	_real_time_connect(rt_client);
 
 	while (bridge_status_inited && !failed) {
-		Filter::Id filter_id; // Assigned filter id
+		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
 		rt_client.setFilter(rt_filter, &filter_id, NULL);
 		info("Requesting updates on the real-time client...");
 
@@ -466,7 +480,6 @@ extern int bridge_status_fini(void)
 
 	if (real_time_thread) {
 		pthread_join(real_time_thread, NULL);
-		pthread_destroy(real_time_thread);
 		real_time_thread = 0;
 	}
 	if (kill_job_list) {
