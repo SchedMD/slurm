@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  real_time.h
+ *  bridge_status.h
  *
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
@@ -36,10 +36,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _REAL_TIME_H_
-#define _REAL_TIME_H_
+#ifndef _BRIDGE_STATUS_H_
+#define _BRIDGE_STATUS_H_
 
-extern int real_time_init(void);
-extern int real_time_fini(void);
+extern int bridge_status_init(void);
+extern int bridge_status_fini(void);
 
 #endif

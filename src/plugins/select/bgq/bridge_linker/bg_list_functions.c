@@ -121,3 +121,83 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 		return NULL;
 }
 
+/* must set the protecting mutex if any before this function is called */
+
+extern int remove_from_bg_list(List my_list, bg_record_t *bg_record)
+{
+	bg_record_t *found_record = NULL;
+	ListIterator itr;
+	int rc = SLURM_ERROR;
+
+	if (!bg_record)
+		return rc;
+
+	//slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(my_list);
+	while ((found_record = list_next(itr))) {
+		if (found_record)
+			if (bg_record == found_record) {
+				list_remove(itr);
+				rc = SLURM_SUCCESS;
+				break;
+			}
+	}
+	list_iterator_destroy(itr);
+	//slurm_mutex_unlock(&block_state_mutex);
+
+	return rc;
+}
+
+/* This is here to remove from the orignal list when dealing with
+ * copies like above all locks need to be set.  This function does not
+ * free anything you must free it when you are done */
+extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
+						     bg_record_t *bg_record)
+{
+	ListIterator itr = list_iterator_create(my_list);
+	bg_record_t *found_record = NULL;
+
+	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+		/* check for full node bitmap compare */
+		if (bit_equal(bg_record->bitmap, found_record->bitmap)
+		    && bit_equal(bg_record->ionode_bitmap,
+				 found_record->ionode_bitmap)) {
+			if (!strcmp(bg_record->bg_block_id,
+				    found_record->bg_block_id)) {
+				list_remove(itr);
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_SELECT_TYPE)
+					info("got the block");
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	return found_record;
+}
+
+/* This is here to remove from the orignal list when dealing with
+ * copies like above all locks need to be set */
+extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
+{
+	ListIterator itr = list_iterator_create(my_list);
+	bg_record_t *found_record = NULL;
+
+	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+		/* check for full node bitmap compare */
+		if (bit_equal(bg_record->bitmap, found_record->bitmap)
+		    && bit_equal(bg_record->ionode_bitmap,
+				 found_record->ionode_bitmap)) {
+
+			if (!strcmp(bg_record->bg_block_id,
+				    found_record->bg_block_id)) {
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_SELECT_TYPE)
+					info("got the block");
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	return found_record;
+}

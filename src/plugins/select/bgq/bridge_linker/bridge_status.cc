@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  real_time.cc
+ *  bridge_status.cc
  *
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
@@ -60,7 +60,7 @@ using namespace bgsched::core;
 
 #endif
 
-static bool real_time_inited = false;
+static bool bridge_status_inited = false;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 /*
@@ -75,7 +75,13 @@ public:
 		const BlockStateChangedEventInfo& eventInfo);
 } event_handler_t;
 
+typedef struct {
+	int jobid;
+} kill_job_struct_t;
+
+static List kill_job_list = NULL;
 static pthread_t real_time_thread;
+static bgsched::realtime::Client rt_client;
 
 static int _block_is_deallocating(bg_record_t *bg_record)
 {
@@ -86,10 +92,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		return SLURM_SUCCESS;
 
 	user_name = xstrdup(bg_conf->slurm_user_name);
-	if (remove_all_users(bg_record->bg_block_id, NULL)
-	    == REMOVE_USER_ERR) {
-		error("Something happened removing "
-		      "users from block %s",
+	if (bridge_block_remove_all_users(bg_record, NULL) == REMOVE_USER_ERR) {
+		error("Something happened removing users from block %s",
 		      bg_record->bg_block_id);
 	}
 
@@ -355,13 +359,20 @@ nochange_state:
 			break;
 		}
 	slurm_mutex_unlock(&block_state_mutex);
+
+	/* kill all the jobs from unexpectedly freed blocks */
+	while ((freeit = list_pop(kill_job_list))) {
+		debug2("Trying to requeue job %u", freeit->jobid);
+		bg_requeue_job(freeit->jobid, 0);
+		_destroy_kill_struct(freeit);
+	}
 }
 
 static int _real_time_connect(bgsched::realtime::Client c)
 {
 	int rc = SLURM_ERROR;
 	int count = 0;
-	while (real_time_inited && (rc != SLURM_SUCCESS)) {
+	while (bridge_status_inited && (rc != SLURM_SUCCESS)) {
 		try {
 			c.connect();
 			rc = SLURM_SUCCESS;
@@ -378,13 +389,11 @@ static int _real_time_connect(bgsched::realtime::Client c)
 
 static void *_real_time(void *no_data)
 {
-	bgsched::realtime::Filter rt_filter(Filter::createNone());
-	bgsched::realtime::Client rt_client;
 	event_handler_t event_handler;
 
 	bool failed = false;
+	bgsched::realtime::Filter rt_filter(Filter::createNone());
 
-   	info("Creating real-time client...");
 	rt_filter = bgsched::realtime::Filter::createNone();
 	rt_filter.setBlocks(true);
  	//rt_filter.setBlockDeleted(true);
@@ -393,23 +402,23 @@ static void *_real_time(void *no_data)
  	// filter.get().setSwitches(true);
  	// filter.get().setCables(true);
 
- 	info("Connecting real-time client..." );
+    	info("Connecting real-time client..." );
 
 	rt_client.addListener(event_handler);
 	_real_time_connect(rt_client);
-       int pollFd = rt_client.getPollDescriptor();
 
-	while (real_time_inited && !failed) {
+	while (bridge_status_inited && !failed) {
+		Filter::Id filter_id; // Assigned filter id
+		rt_client.setFilter(rt_filter, &filter_id, NULL);
 		info("Requesting updates on the real-time client...");
 
 		rt_client.requestUpdates(NULL);
-		rt_client.setBlocking(false); // Change to non-blocking mode
 
 		info("Receiving messages on the real-time client...");
 
 		rt_client.receiveMessages(NULL, NULL, &failed);
 
-		if (real_time_inited && failed) {
+		if (bridge_status_inited && failed) {
 			info("Disconnected from real-time events. "
 			     "Will try to reconnect.");
 			_real_time_connect(rt_client);
@@ -417,18 +426,24 @@ static void *_real_time(void *no_data)
 		}
 	}
 
-	rt_client.disconnect();
 	return NULL;
 }
 
 #endif
 
-extern int real_time_init(void)
+extern int bridge_status_init(void)
 {
-	real_time_inited = true;
+	if (bridge_status_inited)
+		return SLURM_ERROR;
+
+	bridge_status_inited = true;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	pthread_attr_t thread_attr;
+
+	if (!kill_job_list)
+		kill_job_list = list_create(_destroy_kill_struct);
+
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&real_time_thread, &thread_attr,
 			   _real_time, NULL))
@@ -437,11 +452,25 @@ extern int real_time_init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int real_time_fini(void)
+extern int bridge_status_fini(void)
 {
-	real_time_inited = false;
+	if (!bridge_status_inited)
+		return SLURM_ERROR;
+
+	bridge_status_inited = false;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	pthread_join(real_time_thread, NULL);
+
+	rt_client.disconnect();
+
+	if (real_time_thread) {
+		pthread_join(real_time_thread, NULL);
+		pthread_destroy(real_time_thread);
+		real_time_thread = 0;
+	}
+	if (kill_job_list) {
+		list_destroy(kill_job_list);
+		kill_job_list = NULL;
+	}
 #endif
 
 	return SLURM_SUCCESS;
