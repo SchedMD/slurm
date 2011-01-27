@@ -703,7 +703,8 @@ static int _check_for_booted_overlapping_blocks(
 								job_ptr->job_id,
 								-1,
 								(uint16_t)
-								NO_VAL)) {
+								NO_VAL,
+								false)) {
 							error("Couldn't "
 							      "requeue job %u, "
 							      "failing it: %s",
