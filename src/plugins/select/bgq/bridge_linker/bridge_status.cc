@@ -55,6 +55,7 @@ extern "C" {
 #include <bgsched/realtime/ClientConfiguration.h>
 #include <bgsched/realtime/ClientEventListener.h>
 #include <bgsched/realtime/Filter.h>
+#include "bridge_status.h"
 
 #include <iostream>
 
@@ -88,7 +89,9 @@ typedef struct {
 
 static List kill_job_list = NULL;
 static pthread_t real_time_thread;
-static bgsched::realtime::Client rt_client;
+static pthread_t poll_thread;
+static bgsched::realtime::Client *rt_client_ptr = NULL;
+pthread_mutex_t rt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _destroy_kill_struct(void *object)
 {
@@ -161,30 +164,14 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	return SLURM_SUCCESS;
 }
 
-void event_handler::handleBlockStateChangedRealtimeEvent(
-        const BlockStateChangedEventInfo& event)
+static int _update_block_state(bg_record_t *bg_record,
+			       bgsched::Block::Status state_in)
 {
-	bg_record_t *bg_record = NULL;
 	bgq_block_status_t state;
 	bool skipped_dealloc = false;
-	const char *bg_block_id = event.getBlockName().c_str();
 	kill_job_struct_t *freeit = NULL;
 
-	info("Received block status changed real-time event. Block=%s state=%d",
-	     bg_block_id, event.getStatus());
-
-	if (!bg_lists->main)
-		return;
-
-	slurm_mutex_lock(&block_state_mutex);
-	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
-	if (!bg_record) {
-		slurm_mutex_unlock(&block_state_mutex);
-		info("bg_record %s isn't in the main list", bg_block_id);
-		return;
-	}
-
-	switch (event.getStatus()) {
+	switch (state_in) {
 	case Block::Allocated:
 		state = BG_BLOCK_ALLOCATED;
 		break;
@@ -204,6 +191,10 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 		state = BG_BLOCK_ERROR;
 		break;
 	}
+
+	if (bg_record->job_running == BLOCK_ERROR_STATE
+	    || bg_record->state == state)
+		return 0;
 
 	debug("state of Block %s was %d and now is %d",
 	      bg_record->bg_block_id,
@@ -372,6 +363,33 @@ nochange_state:
 			break;
 		}
 	}
+
+	return 1;
+}
+
+void event_handler::handleBlockStateChangedRealtimeEvent(
+        const BlockStateChangedEventInfo& event)
+{
+	bg_record_t *bg_record = NULL;
+	const char *bg_block_id = event.getBlockName().c_str();
+	kill_job_struct_t *freeit = NULL;
+
+	info("Received block status changed real-time event. Block=%s state=%d",
+	     bg_block_id, event.getStatus());
+
+	if (!bg_lists->main)
+		return;
+
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
+	if (!bg_record) {
+		slurm_mutex_unlock(&block_state_mutex);
+		info("bg_record %s isn't in the main list", bg_block_id);
+		return;
+	}
+
+	_update_block_state(bg_record, event.getStatus());
+
 	slurm_mutex_unlock(&block_state_mutex);
 
 	/* kill all the jobs from unexpectedly freed blocks */
@@ -383,14 +401,15 @@ nochange_state:
 	last_bg_update = time(NULL);
 }
 
-static int _real_time_connect(bgsched::realtime::Client c)
+static int _real_time_connect(void)
 {
 	int rc = SLURM_ERROR;
 	int count = 0;
 
 	while (bridge_status_inited && (rc != SLURM_SUCCESS)) {
 		try {
-			c.connect();
+			info("going to connect");
+			rt_client_ptr->connect();
 			rc = SLURM_SUCCESS;
 		} catch (...) {
 			rc = SLURM_ERROR;
@@ -405,7 +424,7 @@ static int _real_time_connect(bgsched::realtime::Client c)
 
 static void *_real_time(void *no_data)
 {
-	event_handler_t event_handler;
+	event_handler_t event_hand;
 
 	bool failed = false;
 	bgsched::realtime::Filter rt_filter(
@@ -418,26 +437,29 @@ static void *_real_time(void *no_data)
  	// filter.get().setSwitches(true);
  	// filter.get().setCables(true);
 
-    	info("Connecting real-time client..." );
-
-	rt_client.addListener(event_handler);
-	_real_time_connect(rt_client);
+	info("adding listener");
+	rt_client_ptr->addListener(event_hand);
+  	info("Connecting real-time client..." );
+	_real_time_connect();
 
 	while (bridge_status_inited && !failed) {
 		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
-		rt_client.setFilter(rt_filter, &filter_id, NULL);
+		info("setting the filter");
+		slurm_mutex_lock(&rt_mutex);
+		rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
 		info("Requesting updates on the real-time client...");
 
-		rt_client.requestUpdates(NULL);
+		rt_client_ptr->requestUpdates(NULL);
 
 		info("Receiving messages on the real-time client...");
 
-		rt_client.receiveMessages(NULL, NULL, &failed);
+		rt_client_ptr->receiveMessages(NULL, NULL, &failed);
+		slurm_mutex_unlock(&rt_mutex);
 
 		if (bridge_status_inited && failed) {
 			info("Disconnected from real-time events. "
 			     "Will try to reconnect.");
-			_real_time_connect(rt_client);
+			_real_time_connect();
 			failed = false;
 		}
 	}
@@ -445,6 +467,20 @@ static void *_real_time(void *no_data)
 	return NULL;
 }
 
+static void *_poll(void *no_data)
+{
+	event_handler_t event_hand;
+
+	while (bridge_status_inited) {
+		slurm_mutex_lock(&rt_mutex);
+		if (!bridge_status_inited)
+			break;
+		bridge_status_do_poll();
+		slurm_mutex_unlock(&rt_mutex);
+		sleep(1);
+	}
+	return NULL;
+}
 #endif
 
 extern int bridge_status_init(void)
@@ -460,10 +496,15 @@ extern int bridge_status_init(void)
 	if (!kill_job_list)
 		kill_job_list = list_create(_destroy_kill_struct);
 
+	rt_client_ptr = new(bgsched::realtime::Client);
+
 	slurm_attr_init(&thread_attr);
-	if (pthread_create(&real_time_thread, &thread_attr,
-			   _real_time, NULL))
+	if (pthread_create(&real_time_thread, &thread_attr, _real_time, NULL))
 		fatal("pthread_create error %m");
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&poll_thread, &thread_attr, _poll, NULL))
+		fatal("pthread_create error %m");
+	slurm_attr_destroy(&thread_attr);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -476,17 +517,77 @@ extern int bridge_status_fini(void)
 	bridge_status_inited = false;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
-	rt_client.disconnect();
+	/* make the rt connection end. */
+	rt_client_ptr->disconnect();
+
+	if (kill_job_list) {
+		list_destroy(kill_job_list);
+		kill_job_list = NULL;
+	}
 
 	if (real_time_thread) {
 		pthread_join(real_time_thread, NULL);
 		real_time_thread = 0;
 	}
-	if (kill_job_list) {
-		list_destroy(kill_job_list);
-		kill_job_list = NULL;
+
+	if (poll_thread) {
+		pthread_join(poll_thread, NULL);
+		poll_thread = 0;
 	}
+	pthread_mutex_destroy(&rt_mutex);
+	delete(rt_client_ptr);
 #endif
 
 	return SLURM_SUCCESS;
+}
+
+
+extern void bridge_status_do_poll(void)
+{
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+	bg_record_t *bg_record;
+	ListIterator itr;
+	int updated = 0;
+	kill_job_struct_t *freeit = NULL;
+
+	if (!bg_lists->main)
+		return;
+
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = (bg_record_t *) list_next(itr))) {
+		BlockFilter filter;
+		Block::Ptrs vec;
+
+		if ((bg_record->magic != BLOCK_MAGIC)
+		    || !bg_record->bg_block_id)
+			continue;
+
+		filter.setName(string(bg_record->bg_block_id));
+
+		vec = getBlocks(filter, BlockSort::AnyOrder);
+		if (vec.empty()) {
+			debug("block %s not found, removing "
+			      "from slurm", bg_record->bg_block_id);
+			list_remove(itr);
+			destroy_bg_record(bg_record);
+			continue;
+		}
+		const Block::Ptr &block_ptr = *(vec.begin());
+
+		if (_update_block_state(bg_record,
+					block_ptr->getStatus().toValue()))
+			updated = 1;
+	}
+
+	/* kill all the jobs from unexpectedly freed blocks */
+	while ((freeit = (kill_job_struct_t *)list_pop(kill_job_list))) {
+		debug2("Trying to requeue job %u", freeit->jobid);
+		bg_requeue_job(freeit->jobid, 0);
+		_destroy_kill_struct(freeit);
+	}
+	if (updated == 1)
+		last_bg_update = time(NULL);
+
+#endif
 }

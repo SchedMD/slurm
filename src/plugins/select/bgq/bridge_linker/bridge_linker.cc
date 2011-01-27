@@ -79,7 +79,9 @@ extern int bridge_init(char *properties_file)
 		return 1;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+	info("initing:");
 	bgsched::init(properties_file);
+	info("done with the init:");
 #endif
 	bridge_status_init();
 	initialized = true;
@@ -133,7 +135,7 @@ extern int bridge_get_size(uint16_t *size)
 
 extern int bridge_setup_system()
 {
-	int a, x, y, z, i = 0;
+	int a, x, y, z;
 	ba_mp_t *ba_mp;
 
 	static bool inited = false;

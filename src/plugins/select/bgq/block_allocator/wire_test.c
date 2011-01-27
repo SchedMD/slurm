@@ -48,6 +48,41 @@
 #include "src/common/uid.h"
 #include "src/common/timers.h"
 
+/* These are here to avoid linking issues with the bridge for
+ * unresolved symbols.
+ */
+time_t last_job_update;
+
+extern void bg_requeue_job(uint32_t job_id, bool wait_for_start)
+{
+	return;
+}
+
+extern int update_block_user(bg_record_t *bg_block_id, int set)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int set_block_user(bg_record_t *bg_record)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void requeue_and_error(bg_record_t *bg_record, char *reason)
+{
+	return;
+}
+
+extern void trigger_block_error(void)
+{
+
+}
+
+extern void destroy_bg_record(bg_record_t *bg_record)
+{
+
+}
+
 /** */
 int main(int argc, char** argv)
 {
