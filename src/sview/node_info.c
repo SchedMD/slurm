@@ -304,96 +304,83 @@ static void _layout_node_record(GtkTreeView *treeview,
 static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char tmp_cnt[17];
-	char *upper = NULL, *lower = NULL;
-	uint16_t err_cpus = 0, alloc_cpus = 0;
+	uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
-	int idle_cpus = node_ptr->cpus;
+	char tmp_disk[20], tmp_err_cpus[20], tmp_mem[20], tmp_used_cpus[20];
+	char *tmp_state_lower, *tmp_state_upper;
 
-	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
-			   sview_colors[sview_node_info_ptr->pos
-					% sview_colors_cnt], -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_NODE_ADDR,
-			   node_ptr->node_addr, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_NODE_HOSTNAME,
-			   node_ptr->node_hostname, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM,
-			   node_ptr->node_state, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_CPUS, node_ptr->cpus, -1);
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		if (!alloc_cpus
-		    && (IS_NODE_ALLOCATED(node_ptr)
-			|| IS_NODE_COMPLETING(node_ptr)))
+		if (!alloc_cpus &&
+		    (IS_NODE_ALLOCATED(node_ptr) ||
+		     IS_NODE_COMPLETING(node_ptr)))
 			alloc_cpus = node_ptr->cpus;
 		else
 			alloc_cpus *= cpus_per_node;
 	}
-
-	idle_cpus -= alloc_cpus;
-	convert_num_unit((float)alloc_cpus, tmp_cnt,
-			 sizeof(tmp_cnt), UNIT_NONE);
-	gtk_tree_store_set(treestore, iter, SORTID_USED_CPUS,
-			   tmp_cnt, -1);
+	idle_cpus = node_ptr->cpus - alloc_cpus;
+	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
+			 sizeof(tmp_used_cpus), UNIT_NONE);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &err_cpus);
-
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		err_cpus *= cpus_per_node;
-
 	idle_cpus -= err_cpus;
-	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
-	gtk_tree_store_set(treestore, iter, SORTID_ERR_CPUS,
-			   tmp_cnt, -1);
+	convert_num_unit((float)err_cpus, tmp_err_cpus, sizeof(tmp_err_cpus),
+			 UNIT_NONE);
 
 	if (IS_NODE_DRAIN(node_ptr)) {
 		/* don't worry about mixed since the
-		   whole node is being drained. */
-	} else if ((alloc_cpus && err_cpus)
-		   || (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
+		 * whole node is being drained. */
+	} else if ((alloc_cpus && err_cpus) ||
+		   (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		node_ptr->node_state |= NODE_STATE_MIXED;
 	}
+	tmp_state_upper = node_state_string(node_ptr->node_state);
+	tmp_state_lower = str_tolower(tmp_state_upper);
 
-	upper = node_state_string(node_ptr->node_state);
-	lower = str_tolower(upper);
-
-	gtk_tree_store_set(treestore, iter, SORTID_STATE, lower, -1);
-	xfree(lower);
-
-	gtk_tree_store_set(treestore, iter, SORTID_CORES, node_ptr->cpus, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_SOCKETS,
-			   node_ptr->sockets, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_THREADS,
-			   node_ptr->threads, -1);
-	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, sizeof(tmp_cnt),
+	convert_num_unit((float)node_ptr->real_memory, tmp_mem, sizeof(tmp_mem),
 			 UNIT_MEGA);
-	gtk_tree_store_set(treestore, iter, SORTID_MEMORY, tmp_cnt, -1);
-	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, sizeof(tmp_cnt),
+
+	convert_num_unit((float)node_ptr->tmp_disk, tmp_disk, sizeof(tmp_disk),
 			 UNIT_MEGA);
-	gtk_tree_store_set(treestore, iter, SORTID_DISK, tmp_cnt, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT,
-			   node_ptr->weight, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,
-			   node_ptr->features, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_GRES,
-			   node_ptr->gres, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_BOOT_TIME,
-			   sview_node_info_ptr->boot_time, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_SLURMD_START_TIME,
-			   sview_node_info_ptr->slurmd_start_time, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_REASON,
-			   sview_node_info_ptr->reason, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
+
+
+	/* Combining these records provides a slight performance improvement */
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
+			   SORTID_COLOR,
+			   sview_colors[sview_node_info_ptr->pos
+					% sview_colors_cnt],
+			   SORTID_CORES,     node_ptr->cpus,
+			   SORTID_CPUS,      node_ptr->cpus,
+			   SORTID_DISK,      tmp_disk,
+			   SORTID_ERR_CPUS,  tmp_err_cpus,
+			   SORTID_FEATURES,  node_ptr->features,
+			   SORTID_GRES,      node_ptr->gres,
+			   SORTID_MEMORY,    tmp_mem,
+			   SORTID_NAME,      node_ptr->name,
+			   SORTID_NODE_ADDR, node_ptr->node_addr,
+			   SORTID_NODE_HOSTNAME, node_ptr->node_hostname,
+			   SORTID_REASON,    sview_node_info_ptr->reason,
+			   SORTID_SLURMD_START_TIME,
+			   sview_node_info_ptr->slurmd_start_time,
+			   SORTID_SOCKETS,   node_ptr->sockets,
+			   SORTID_STATE,     tmp_state_lower,
+			   SORTID_STATE_NUM, node_ptr->node_state,
+			   SORTID_THREADS,   node_ptr->threads,
+			   SORTID_USED_CPUS, tmp_used_cpus,
+			   SORTID_WEIGHT,    node_ptr->weight,
+			   SORTID_UPDATED,   1, -1);
+
+	xfree(tmp_state_lower);
 
 	return;
 }
