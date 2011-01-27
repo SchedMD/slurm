@@ -53,9 +53,8 @@
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
 
-/* Global */
-bool _initialized = false;
-bool _wires_initialized = false;
+static bool _initialized = false;
+static bool _wires_initialized = false;
 
 /* _ba_system is the "current" system that the structures will work
  *  on */
@@ -1213,11 +1212,6 @@ extern void ba_setup_mp(ba_mp_t *ba_mp, uint16_t *coord, bool track_down_mps)
 
 		for(j=0;j<NUM_PORTS_PER_NODE;j++) {
 			ba_mp->axis_switch[i].int_wire[j].used = 0;
-			if (i!=X) {
-				if (j==3 || j==4)
-					ba_mp->axis_switch[i].int_wire[j].
-						used = 1;
-			}
 			ba_mp->axis_switch[i].int_wire[j].port_tar = j;
 		}
 	}

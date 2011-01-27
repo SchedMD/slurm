@@ -62,7 +62,300 @@ using namespace bgsched::core;
 static bool real_time_inited = false;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+/*!
+ *  \brief Handle compute block status changes as a result of a block allocate.
+ */
+class event_handler_t: public bgsched::realtime::ClientEventListener {
+public:
+	/*
+	 *  Handle a block state changed real-time event.
+	 */
+	void handleBlockStateChangedRealtimeEvent(
+		const BlockStateChangedEventInfo& eventInfo);
+};
+
+
 static pthread_t real_time_thread;
+
+static int _block_is_deallocating(bg_record_t *bg_record)
+{
+	int jobid = bg_record->job_running;
+	char *user_name = NULL;
+
+	if (bg_record->modifying)
+		return SLURM_SUCCESS;
+
+	user_name = xstrdup(bg_conf->slurm_user_name);
+	if (remove_all_users(bg_record->bg_block_id, NULL)
+	    == REMOVE_USER_ERR) {
+		error("Something happened removing "
+		      "users from block %s",
+		      bg_record->bg_block_id);
+	}
+
+	if (bg_record->target_name && bg_record->user_name) {
+		if (!strcmp(bg_record->target_name, user_name)) {
+			if (strcmp(bg_record->target_name, bg_record->user_name)
+			    || (jobid > NO_JOB_RUNNING)) {
+				kill_job_struct_t *freeit =
+					xmalloc(sizeof(freeit));
+				freeit->jobid = jobid;
+				list_push(kill_job_list, freeit);
+
+				error("Block %s was in a ready state "
+				      "for user %s but is being freed. "
+				      "Job %d was lost.",
+				      bg_record->bg_block_id,
+				      bg_record->user_name,
+				      jobid);
+			} else {
+				debug("Block %s was in a ready state "
+				      "but is being freed. No job running.",
+				      bg_record->bg_block_id);
+			}
+		} else {
+			error("State went to free on a boot "
+			      "for block %s.",
+			      bg_record->bg_block_id);
+		}
+	} else if (bg_record->user_name) {
+		error("Target Name was not set "
+		      "not set for block %s.",
+		      bg_record->bg_block_id);
+		bg_record->target_name = xstrdup(bg_record->user_name);
+	} else {
+		error("Target Name and User Name are "
+		      "not set for block %s.",
+		      bg_record->bg_block_id);
+		bg_record->user_name = xstrdup(user_name);
+		bg_record->target_name = xstrdup(bg_record->user_name);
+	}
+
+	if (remove_from_bg_list(bg_lists->job_running, bg_record)
+	    == SLURM_SUCCESS)
+		num_unused_cpus += bg_record->cpu_cnt;
+	remove_from_bg_list(bg_lists->booted, bg_record);
+
+	xfree(user_name);
+
+	return SLURM_SUCCESS;
+}
+
+void event_handler::handleBlockStateChangedRealtimeEvent(
+        const BlockStateChangedEventInfo& eventInfo)
+{
+	bg_record_t *bg_record = NULL;
+	bgq_block_status_t state;
+	bool skipped_dealloc = false;
+
+	info("Received block status changed real-time event. Block=%s state=%d"
+	     eventInfo.getBlockName(), eventInfo.getStatus());
+
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record = find_bg_record_in_list(bg_lists->main,
+					   eventInfo.getBlockName().c_str());
+	if (!bg_record) {
+		slurm_mutex_unlock(&block_state_mutex);
+		info("bg_record %s isn't in the main list",
+		     eventInfo.getBlockName());
+		return;
+	}
+
+	switch (eventInfo.getStatus()) {
+	case Block::Allocated:
+		state = BG_BLOCK_ALLOCATED;
+		break;
+	case Block::Booting:
+		state = BG_BLOCK_BOOTING;
+		break;
+	case Block::Free:
+		state = BG_BLOCK_FREE;
+		break;
+	case Block::Initialized:
+		state = BG_BLOCK_INITED;
+		break;
+	case Block::Terminating:
+		state = BG_BLOCK_TERM;
+		break;
+	default:
+		state = BG_BLOCK_ERROR;
+		break;
+	}
+
+	debug("state of Block %s was %d and now is %d",
+	      bg_record->bg_block_id,
+	      bg_record->state,
+	      state);
+
+	/*
+	  check to make sure block went
+	  through freeing correctly
+	*/
+	if ((bg_record->state != BG_BLOCK_TERM
+	     && bg_record->state != BG_BLOCK_ERROR)
+	    && state == BG_BLOCK_FREE)
+		skipped_dealloc = 1;
+	else if ((bg_record->state == BG_BLOCK_INIT
+		  || bg_record->state == BG_BLOCK_ALLOCATED)
+		 && (state == BG_BLOCK_BOOTING)) {
+		/* This means the user did a reboot through
+		   mpirun but we missed the state
+		   change */
+		debug("Block %s skipped rebooting, "
+		      "but it really is.  "
+		      "Setting target_name back to %s",
+		      bg_record->bg_block_id,
+		      bg_record->user_name);
+		xfree(bg_record->target_name);
+		bg_record->target_name = xstrdup(bg_record->user_name);
+	} else if ((bg_record->state == BG_BLOCK_TERM)
+		   && (state == BG_BLOCK_BOOTING))
+		/* This is a funky state IBM says
+		   isn't a bug, but all their
+		   documentation says this doesn't
+		   happen, but IBM says oh yeah, you
+		   weren't really suppose to notice
+		   that. So we will just skip this
+		   state and act like this didn't happen. */
+		goto nochange_state;
+
+	bg_record->state = state;
+
+	if (bg_record->state == BG_BLOCK_TERM || skipped_dealloc)
+		_block_is_deallocating(bg_record);
+	else if (bg_record->state == BG_BLOCK_BOOTING) {
+		debug("Setting bootflag for %s",
+		      bg_record->bg_block_id);
+		bg_record->boot_state = 1;
+	} else if (bg_record->state == BG_BLOCK_FREE) {
+		if (remove_from_bg_list(bg_lists->job_running, bg_record)
+		    == SLURM_SUCCESS)
+			num_unused_cpus += bg_record->cpu_cnt;
+		remove_from_bg_list(bg_lists->booted,
+				    bg_record);
+	} else if (bg_record->state == BG_BLOCK_ERROR) {
+		if (bg_record->boot_state == 1)
+			error("Block %s in an error state while booting.",
+			      bg_record->bg_block_id);
+		else
+			error("Block %s in an error state.",
+			      bg_record->bg_block_id);
+		remove_from_bg_list(bg_lists->booted, bg_record);
+		trigger_block_error();
+	} else if (bg_record->state == BG_BLOCK_INITED) {
+		if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
+			list_push(bg_lists->booted, bg_record);
+	} else if (bg_record->state == BG_BLOCK_ALLOCATED) {
+		if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
+			list_push(bg_lists->booted, bg_record);
+		if (remove_from_bg_list(bg_lists->job_running, bg_record)
+		    == SLURM_SUCCESS)
+			num_unused_cpus -= bg_record->cpu_cnt;
+	}
+
+nochange_state:
+
+	/* check the boot state */
+	debug3("boot state for block %s is %d",
+	       bg_record->bg_block_id,
+	       bg_record->boot_state);
+	if (bg_record->boot_state == 1) {
+		switch(bg_record->state) {
+		case BG_BLOCK_BOOTING:
+			debug3("checking to make sure user %s "
+			       "is the user.",
+			       bg_record->target_name);
+
+			if (update_block_user(bg_record, 0) == 1)
+				last_bg_update = time(NULL);
+			if (bg_record->job_ptr) {
+				bg_record->job_ptr->job_state |=
+					JOB_CONFIGURING;
+				last_job_update = time(NULL);
+			}
+			break;
+		case BG_BLOCK_ERROR:
+			/* If we get an error on boot that
+			 * means it is a transparent L3 error
+			 * and should be trying to fix
+			 * itself.  If this is the case we
+			 * just hang out waiting for the state
+			 * to go to free where we will try to
+			 * boot again below.
+			 */
+			break;
+		case BG_BLOCK_FREE:
+			if (bg_record->boot_count < RETRY_BOOT_COUNT) {
+				if ((rc = boot_block(bg_record))
+				    != SLURM_SUCCESS)
+					updated = -1;
+
+				if (bg_record->magic == BLOCK_MAGIC) {
+					debug("boot count for block "
+					      "%s is %d",
+					      bg_record->bg_block_id,
+					      bg_record->boot_count);
+					bg_record->boot_count++;
+				}
+			} else {
+				char *reason = "update_block_list: "
+					"Boot fails ";
+
+				error("Couldn't boot Block %s "
+				      "for user %s",
+				      bg_record->bg_block_id,
+				      bg_record->target_name);
+
+				slurm_mutex_unlock(&block_state_mutex);
+				requeue_and_error(bg_record, reason);
+				slurm_mutex_lock(&block_state_mutex);
+
+				bg_record->boot_state = 0;
+				bg_record->boot_count = 0;
+				if (remove_from_bg_list(
+					    bg_lists->job_running,
+					    bg_record)
+				    == SLURM_SUCCESS) {
+					num_unused_cpus +=
+						bg_record->cpu_cnt;
+				}
+				remove_from_bg_list(
+					bg_lists->booted, bg_record);
+			}
+			break;
+		case BG_BLOCK_INITED:
+		case BG_BLOCK_ALLOCATED:
+			debug("block %s is ready.",
+			      bg_record->bg_block_id);
+			if (bg_record->job_ptr) {
+				bg_record->job_ptr->job_state &=
+					(~JOB_CONFIGURING);
+				last_job_update = time(NULL);
+			}
+			/* boot flags are reset here */
+			if (set_block_user(bg_record) == SLURM_ERROR) {
+				freeit = xmalloc(
+					sizeof(kill_job_struct_t));
+				freeit->jobid = bg_record->job_running;
+				list_push(kill_job_list, freeit);
+			}
+			break;
+		case BG_BLOCK_TERM:
+			debug2("Block %s is in a deallocating state "
+			       "during a boot.  Doing nothing until "
+			       "free state.",
+			       bg_record->bg_block_id);
+			break;
+		default:
+			debug("Hey the state of block "
+			      "%s is %d(%s) doing nothing.",
+			      bg_record->bg_block_id,
+			      bg_record->state,
+			      bg_block_state_string(bg_record->state));
+			break;
+		}
+	slurm_mutex_unlock(&block_state_mutex);
+}
 
 static int _real_time_connect(bgsched::realtime::Client c)
 {
@@ -85,15 +378,16 @@ static int _real_time_connect(bgsched::realtime::Client c)
 
 static void *_real_time(void *no_data)
 {
-	bgsched::realtime::Filter filter;
-	bgsched::realtime::Client c;
+	bgsched::realtime::Filter rt_filter(Filter::createNone());
+	bgsched::realtime::Client rt_client;
+	event_handler_t event_handler;
 
 	bool failed = false;
 
    	info("Creating real-time client...");
-	filter = bgsched::realtime::Filter::createNone();
-	filter.setBlocks(true);
- 	filter.setBlockDeleted(true);
+	rt_filter = bgsched::realtime::Filter::createNone();
+	rt_filter.setBlocks(true);
+ 	//rt_filter.setBlockDeleted(true);
 	// filter.get().setMidplanes(true);
  	// filter.get().setNodeBoards(true);
  	// filter.get().setSwitches(true);
@@ -101,26 +395,29 @@ static void *_real_time(void *no_data)
 
  	info("Connecting real-time client..." );
 
-	_real_time_connect(c);
+	rt_client.addListener(event_handler);
+	_real_time_connect(rt_client);
+       int pollFd = rt_client.getPollDescriptor();
 
 	while (real_time_inited && !failed) {
 		info("Requesting updates on the real-time client...");
 
-		c.requestUpdates(NULL);
+		rt_client.requestUpdates(NULL);
+		rt_client.setBlocking(false); // Change to non-blocking mode
 
 		info("Receiving messages on the real-time client...");
 
-		c.receiveMessages(NULL, NULL, &failed);
+		rt_client.receiveMessages(NULL, NULL, &failed);
 
 		if (real_time_inited && failed) {
 			info("Disconnected from real-time events. "
 			     "Will try to reconnect.");
-			_real_time_connect(c);
+			_real_time_connect(rt_client);
 			failed = false;
 		}
 	}
 
-	c.disconnect();
+	rt_client.disconnect();
 	return NULL;
 }
 

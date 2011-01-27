@@ -46,7 +46,7 @@
 #define BIG_MAX 9999
 #define BUFSIZE 4096
 
-#define NUM_PORTS_PER_NODE 6
+#define NUM_PORTS_PER_NODE 4
 
 #define PASS_DENY_A 0x0001
 #define PASS_DENY_X 0x0002
@@ -59,8 +59,6 @@
 #define PASS_FOUND_Y 0x0400
 #define PASS_FOUND_Z 0x0800
 #define PASS_FOUND_ANY 0xff00
-
-extern bool _initialized;
 
 enum {A, X, Y, Z};
 
