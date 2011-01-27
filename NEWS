@@ -37,6 +37,9 @@ documents those changes that are of interest to users and admins.
  -- When restarting slurmctld with priority/basic, increment all job priorities
     so the highest job priority becomes TOP_PRIORITY.
 
+* Changes in SLURM 2.2.2
+========================
+
 * Changes in SLURM 2.2.1
 ========================
  -- Fix setting derived exit code correctly for jobs that happen to have the
@@ -91,6 +94,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug which would terminate a job step if any of the nodes allocated to
     it were removed from the job's allocation. Now only the tasks on those
     nodes are terminated.
+ -- Fixed issue when using a storage_accounting plugin directly without the
+    slurmDBD updates weren't always sent correctly to the slurmctld, appears to
+    OS dependent, reported by Fredrik Tegenfeldt.
 
 * Changes in SLURM 2.2.0
 ========================

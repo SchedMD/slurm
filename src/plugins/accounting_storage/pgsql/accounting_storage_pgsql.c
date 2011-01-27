@@ -298,10 +298,10 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 			goto skip;
 
 		FOR_EACH_ROW {
-			send_accounting_update(pg_conn->update_list,
-					       ROW(0), ROW(1),
-					       atoi(ROW(2)),
-					       atoi(ROW(3)));
+			slurmdb_send_accounting_update(pg_conn->update_list,
+						       ROW(0), ROW(1),
+						       atoi(ROW(2)),
+						       atoi(ROW(3)));
 		} END_EACH_ROW;
 		PQclear(result);
 	skip:

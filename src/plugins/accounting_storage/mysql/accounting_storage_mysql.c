@@ -2138,10 +2138,11 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while ((row = mysql_fetch_row(result))) {
-			rc = send_accounting_update(mysql_conn->update_list,
-						    row[2], row[0],
-						    slurm_atoul(row[1]),
-						    slurm_atoul(row[3]));
+			rc = slurmdb_send_accounting_update(
+				mysql_conn->update_list,
+				row[2], row[0],
+				slurm_atoul(row[1]),
+				slurm_atoul(row[3]));
 		}
 		mysql_free_result(result);
 	skip:
