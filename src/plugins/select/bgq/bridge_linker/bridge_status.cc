@@ -405,17 +405,17 @@ static int _real_time_connect(void)
 {
 	int rc = SLURM_ERROR;
 	int count = 0;
+	int sleep_value = 5;
 
 	while (bridge_status_inited && (rc != SLURM_SUCCESS)) {
 		try {
-			info("going to connect");
 			rt_client_ptr->connect();
 			rc = SLURM_SUCCESS;
 		} catch (...) {
 			rc = SLURM_ERROR;
 			error("couldn't connect to the real_time server, "
-			      "trying for %d seconds.", count * 5);
-			sleep(5);
+			      "trying for %d seconds.", count * sleep_value);
+			sleep(sleep_value);
 		}
 	}
 
