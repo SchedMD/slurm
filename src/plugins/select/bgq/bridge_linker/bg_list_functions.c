@@ -97,7 +97,8 @@ extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record)
 /* if looking at the main list this should have some nice
  * block_state_mutex locks around it.
  */
-extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
+extern bg_record_t *find_bg_record_in_list(List my_list,
+					   const char *bg_block_id)
 {
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;

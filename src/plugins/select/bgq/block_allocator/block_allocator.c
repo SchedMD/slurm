@@ -3327,13 +3327,12 @@ static bool _mp_used(ba_mp_t* ba_mp, int x_size)
 		/* get the switch of the B Dimension */
 		ba_switch = &ba_mp->axis_switch[X];
 
-		/* If both of these ports are used then the mp
+		/* If this port is used then the mp
 		   is in use since there are no more wires we
 		   can use since these can not connect to each
 		   other they must be connected to the other ports.
 		*/
-		if (ba_switch->int_wire[3].used
-		    && ba_switch->int_wire[5].used) {
+		if (ba_switch->int_wire[3].used) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("switch full in the B "
 				     "dim on mp %c%c%c%c!",
@@ -3400,6 +3399,7 @@ static char *_set_internal_wires(List mps, int size, int conn_type)
 	itr = list_iterator_create(mps);
 	while ((ba_mp[count] = (ba_mp_t *)list_next(itr))) {
 		snprintf(temp_name, sizeof(temp_name), "%c%c%c%c",
+
 			 alpha_num[ba_mp[count]->coord[A]],
 			 alpha_num[ba_mp[count]->coord[X]],
 			 alpha_num[ba_mp[count]->coord[Y]],

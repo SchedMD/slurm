@@ -577,6 +577,31 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 	return 0;
 }
 
+extern int set_block_user(bg_record_t *bg_record)
+{
+	int rc = 0;
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("resetting the boot state flag and "
+		     "counter for block %s.",
+		     bg_record->bg_block_id);
+	bg_record->boot_state = 0;
+	bg_record->boot_count = 0;
+
+	if ((rc = update_block_user(bg_record, 1)) == 1) {
+		last_bg_update = time(NULL);
+		rc = SLURM_SUCCESS;
+	} else if (rc == -1) {
+		error("Unable to add user name to block %s. "
+		      "Cancelling job.",
+		      bg_record->bg_block_id);
+		rc = SLURM_ERROR;
+	}
+	xfree(bg_record->target_name);
+	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
+
+	return rc;
+}
+
 /* Try to requeue job running on block and put block in an error state.
  * block_state_mutex must be unlocked before calling this.
  */

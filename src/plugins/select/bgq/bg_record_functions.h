@@ -69,6 +69,7 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b);
 /* change username of a block bg_record_t target_name needs to be
    updated before call of function.
 */
+extern int set_block_user(bg_record_t *bg_record);
 extern int update_block_user(bg_record_t *bg_block_id, int set);
 extern void requeue_and_error(bg_record_t *bg_record, char *reason);
 

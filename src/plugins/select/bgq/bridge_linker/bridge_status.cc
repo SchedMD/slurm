@@ -63,6 +63,9 @@ using namespace bgsched::core;
 static bool bridge_status_inited = false;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+
+#define RETRY_BOOT_COUNT 3
+
 /*
  * Handle compute block status changes as a result of a block allocate.
  */
@@ -338,8 +341,7 @@ nochange_state:
 			}
 			/* boot flags are reset here */
 			if (set_block_user(bg_record) == SLURM_ERROR) {
-				freeit = xmalloc(
-					sizeof(kill_job_struct_t));
+				freeit = xmalloc(sizeof(kill_job_struct_t));
 				freeit->jobid = bg_record->job_running;
 				list_push(kill_job_list, freeit);
 			}

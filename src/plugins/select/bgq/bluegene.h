@@ -66,11 +66,6 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 
 extern void bg_requeue_job(uint32_t job_id, bool wait_for_start);
 
-/* remove all users from a block but what is in user_name */
-/* Note return codes */
-extern int remove_all_users(bg_record_t *bg_record, char *user_name);
-extern int set_block_user(bg_record_t *bg_record);
-
 /* sort a list of bg_records by size (node count) */
 extern void sort_bg_record_inc_size(List records);
 
@@ -84,10 +79,6 @@ extern void *state_agent(void *args);
 
 extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked);
 
-extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
-extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
-						     bg_record_t *bg_record);
-extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
 extern int free_block_list(uint32_t job_id, List track_list,
