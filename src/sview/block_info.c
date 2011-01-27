@@ -314,58 +314,47 @@ static void _layout_block_record(GtkTreeView *treeview,
 static void _update_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char tmp_cnt[18];
+	char job_running[20], node_cnt[20];
 
-	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
-			   sview_colors[block_ptr->color_inx], -1);
-	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
-			   block_ptr->color_inx, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_BLOCK,
-			   block_ptr->bg_block_name, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_PARTITION,
-			   block_ptr->slurm_part_name, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_STATE,
-			   bg_block_state_string(block_ptr->state), -1);
-	gtk_tree_store_set(treestore, iter, SORTID_USER,
-			   block_ptr->bg_user_name, -1);
 	if (block_ptr->job_running > NO_JOB_RUNNING)
-		snprintf(tmp_cnt, sizeof(tmp_cnt),
+		snprintf(job_running, sizeof(job_running),
 			 "%d", block_ptr->job_running);
 	else
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "-");
+		snprintf(job_running, sizeof(job_running), "-");
 
-	gtk_tree_store_set(treestore, iter, SORTID_JOB, tmp_cnt, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_CONN,
-			   conn_type_string(block_ptr->bg_conn_type), -1);
-	if (cluster_flags & CLUSTER_FLAG_BGL)
-		gtk_tree_store_set(treestore, iter, SORTID_USE,
-				   node_use_string(block_ptr->bg_node_use), -1);
-
-	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
+	convert_num_unit((float)block_ptr->node_cnt, node_cnt, sizeof(node_cnt),
 			 UNIT_NONE);
-	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
-	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
-			   block_ptr->nodes, -1);
-
+	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODE_INX, block_ptr->bp_inx, -1);
+			   SORTID_BLOCK,        block_ptr->bg_block_name,
+			   SORTID_COLOR,
+				sview_colors[block_ptr->color_inx],
+			   SORTID_COLOR_INX,    block_ptr->color_inx,
+			   SORTID_CONN,
+				conn_type_string(block_ptr->bg_conn_type),
+			   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
+			   SORTID_IMAGELINUX,   block_ptr->imagelinux,
+			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
+			   SORTID_JOB,          job_running,
+			   SORTID_NODE_INX,     block_ptr->bp_inx,
+			   SORTID_NODES,        node_cnt,
+			   SORTID_NODELIST,     block_ptr->nodes,
+			   SORTID_PARTITION,    block_ptr->slurm_part_name,
+			   SORTID_SMALL_BLOCK,  block_ptr->small_block,
+			   SORTID_STATE,
+				bg_block_state_string(block_ptr->state),
+			   SORTID_USER,         block_ptr->bg_user_name,
+			   SORTID_UPDATED,      1,
+			   -1);
 
-	if (cluster_flags & CLUSTER_FLAG_BGL)
-		gtk_tree_store_set(treestore, iter, SORTID_IMAGEBLRTS,
-				   block_ptr->imageblrts, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_IMAGELINUX,
-			   block_ptr->imagelinux, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_IMAGEMLOADER,
-			   block_ptr->imagemloader, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_IMAGERAMDISK,
-			   block_ptr->imageramdisk, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_SMALL_BLOCK,
-			   block_ptr->small_block, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
+	if (cluster_flags & CLUSTER_FLAG_BGL) {
+		gtk_tree_store_set(treestore, iter,
+				   SORTID_IMAGEBLRTS,   block_ptr->imageblrts,
+				   SORTID_USE,
+					node_use_string(block_ptr->bg_node_use),
+				   -1);
+	}
 
 	return;
 }
