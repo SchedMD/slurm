@@ -446,6 +446,8 @@ static void *_real_time(void *no_data)
 		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
 		info("setting the filter");
 		slurm_mutex_lock(&rt_mutex);
+		if (!bridge_status_inited)
+			break;
 		rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
 		info("Requesting updates on the real-time client...");
 
