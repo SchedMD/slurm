@@ -49,6 +49,7 @@ extern "C" {
 #include <boost/foreach.hpp>
 #include <bgsched/realtime/Client.h>
 #include <bgsched/realtime/ClientConfiguration.h>
+#include <bgsched/realtime/ClientEventListener.h>
 #include <bgsched/realtime/Filter.h>
 
 #include <iostream>
@@ -62,18 +63,17 @@ using namespace bgsched::core;
 static bool real_time_inited = false;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-/*!
- *  \brief Handle compute block status changes as a result of a block allocate.
+/*
+ * Handle compute block status changes as a result of a block allocate.
  */
-class event_handler_t: public bgsched::realtime::ClientEventListener {
+typedef class event_handler: public bgsched::realtime::ClientEventListener {
 public:
 	/*
 	 *  Handle a block state changed real-time event.
 	 */
 	void handleBlockStateChangedRealtimeEvent(
 		const BlockStateChangedEventInfo& eventInfo);
-};
-
+} event_handler_t;
 
 static pthread_t real_time_thread;
 
