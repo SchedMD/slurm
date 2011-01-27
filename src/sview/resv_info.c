@@ -558,58 +558,46 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 				GtkTreeStore *treestore,
 				GtkTreeIter *iter)
 {
-	char *tmp_ptr = NULL;
-	char tmp_char[50];
+	char tmp_duration[40], tmp_end[40], tmp_nodes[40], tmp_start[40];
+	char *tmp_flags;
 	reserve_info_t *resv_ptr = sview_resv_info_ptr->resv_ptr;
-
-	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
-			   sview_colors[sview_resv_info_ptr->color_inx], -1);
-	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
-			   sview_resv_info_ptr->color_inx, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
-
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_ACCOUNTS, resv_ptr->accounts, -1);
 
 	secs2time_str((uint32_t)difftime(resv_ptr->end_time,
 					 resv_ptr->start_time),
-		      tmp_char, sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_DURATION, tmp_char, -1);
+		      tmp_duration, sizeof(tmp_duration));
 
-	slurm_make_time_str((time_t *)&resv_ptr->end_time, tmp_char,
-			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_TIME_END, tmp_char, -1);
+	slurm_make_time_str((time_t *)&resv_ptr->end_time, tmp_end,
+			    sizeof(tmp_end));
 
-	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,
-			   resv_ptr->features, -1);
-
-	tmp_ptr = reservation_flags_string(resv_ptr->flags);
-	gtk_tree_store_set(treestore, iter, SORTID_FLAGS,
-			   tmp_ptr, -1);
-	xfree(tmp_ptr);
-
-	gtk_tree_store_set(treestore, iter, SORTID_NAME, resv_ptr->name, -1);
+	tmp_flags = reservation_flags_string(resv_ptr->flags);
 
 	convert_num_unit((float)resv_ptr->node_cnt,
-			 tmp_char, sizeof(tmp_char), UNIT_NONE);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODE_CNT, tmp_char, -1);
+			 tmp_nodes, sizeof(tmp_nodes), UNIT_NONE);
 
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODELIST, resv_ptr->node_list, -1);
+	slurm_make_time_str((time_t *)&resv_ptr->start_time, tmp_start,
+			    sizeof(tmp_start));
 
+	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODE_INX, resv_ptr->node_inx, -1);
+			   SORTID_ACCOUNTS,   resv_ptr->accounts,
+			   SORTID_COLOR,
+				sview_colors[sview_resv_info_ptr->color_inx],
+			   SORTID_COLOR_INX,  sview_resv_info_ptr->color_inx,
+			   SORTID_DURATION,   tmp_duration,
+			   SORTID_FEATURES,   resv_ptr->features,
+			   SORTID_FLAGS,      tmp_flags,
+			   SORTID_NAME,       resv_ptr->name,
+			   SORTID_NODE_CNT,   tmp_nodes,
+			   SORTID_NODE_INX,   resv_ptr->node_inx,
+			   SORTID_NODELIST,   resv_ptr->node_list,
+			   SORTID_PARTITION,  resv_ptr->partition,
+			   SORTID_TIME_START, tmp_start,
+			   SORTID_TIME_END,   tmp_end,
+			   SORTID_UPDATED,    1,
+			   SORTID_USERS,      resv_ptr->users, 
+			   -1);
 
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_PARTITION, resv_ptr->partition, -1);
-
-	slurm_make_time_str((time_t *)&resv_ptr->start_time, tmp_char,
-			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_TIME_START, tmp_char, -1);
-
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_USERS, resv_ptr->users, -1);
+	xfree(tmp_flags);
 
 	return;
 }

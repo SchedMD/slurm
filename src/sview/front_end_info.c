@@ -182,29 +182,23 @@ static void _update_front_end_record(
 	front_end_info_t *front_end_ptr;
 
 	front_end_ptr = sview_front_end_info_ptr->front_end_ptr;
-	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
-			   sview_colors[sview_front_end_info_ptr->color_inx],
+
+	/* Combining these records provides a slight performance improvement */
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_BOOT_TIME,
+				sview_front_end_info_ptr->boot_time,
+			   SORTID_COLOR,
+				sview_colors[sview_front_end_info_ptr->color_inx],
+			   SORTID_COLOR_INX,
+				sview_front_end_info_ptr->color_inx,
+			   SORTID_NODE_INX,
+				sview_front_end_info_ptr->node_inx, 
+			   SORTID_NAME,    front_end_ptr->name,
+			   SORTID_REASON,  sview_front_end_info_ptr->reason,
+			   SORTID_SLURMD_START_TIME,
+				sview_front_end_info_ptr->slurmd_start_time,
+			   SORTID_STATE,   sview_front_end_info_ptr->state,
 			   -1);
-	gtk_tree_store_set(treestore, iter, SORTID_COLOR_INX,
-			   sview_front_end_info_ptr->color_inx, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_NODE_INX,
-			   sview_front_end_info_ptr->node_inx, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_NAME, front_end_ptr->name,
-			   -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_STATE,
-			   sview_front_end_info_ptr->state, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_BOOT_TIME,
-			   sview_front_end_info_ptr->boot_time, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_SLURMD_START_TIME,
-			   sview_front_end_info_ptr->slurmd_start_time, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_REASON,
-			   sview_front_end_info_ptr->reason, -1);
 
 	return;
 }
