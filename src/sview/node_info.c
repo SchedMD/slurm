@@ -378,7 +378,8 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_THREADS,   node_ptr->threads,
 			   SORTID_USED_CPUS, tmp_used_cpus,
 			   SORTID_WEIGHT,    node_ptr->weight,
-			   SORTID_UPDATED,   1, -1);
+			   SORTID_UPDATED,   1,
+			  -1);
 
 	xfree(tmp_state_lower);
 

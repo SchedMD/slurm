@@ -2118,7 +2118,7 @@ extern void add_display_treestore_line(int update,
 	}
 found:
 	gtk_tree_store_set(treestore, iter,
-			   DISPLAY_NAME, name,
+			   DISPLAY_NAME,  name,
 			   DISPLAY_VALUE, value,
 			   -1);
 
@@ -2166,9 +2166,9 @@ extern void add_display_treestore_line_with_font(
 	}
 found:
 	gtk_tree_store_set(treestore, iter,
-			   DISPLAY_NAME, name,
+			   DISPLAY_NAME,  name,
 			   DISPLAY_VALUE, value,
-			   DISPLAY_FONT, font,
+			   DISPLAY_FONT,  font,
 			   -1);
 
 	return;
