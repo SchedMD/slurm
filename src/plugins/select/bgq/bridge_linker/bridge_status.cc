@@ -437,31 +437,27 @@ static void *_real_time(void *no_data)
  	// filter.get().setSwitches(true);
  	// filter.get().setCables(true);
 
-	info("adding listener");
 	rt_client_ptr->addListener(event_hand);
-  	info("Connecting real-time client..." );
+
 	_real_time_connect();
 
 	while (bridge_status_inited && !failed) {
 		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
-		info("setting the filter");
+
 		slurm_mutex_lock(&rt_mutex);
 		if (!bridge_status_inited)
 			break;
 		rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
-		info("Requesting updates on the real-time client...");
 
 		rt_client_ptr->requestUpdates(NULL);
-
-		info("Receiving messages on the real-time client...");
-
 		rt_client_ptr->receiveMessages(NULL, NULL, &failed);
 		slurm_mutex_unlock(&rt_mutex);
 
 		if (bridge_status_inited && failed) {
-			info("Disconnected from real-time events. "
+			error("Disconnected from real-time events. "
 			     "Will try to reconnect.");
 			_real_time_connect();
+			info("real-time server connected again");
 			failed = false;
 		}
 	}

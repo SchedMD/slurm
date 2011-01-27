@@ -79,9 +79,7 @@ extern int bridge_init(char *properties_file)
 		return 1;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	info("initing:");
 	bgsched::init(properties_file);
-	info("done with the init:");
 #endif
 	bridge_status_init();
 	initialized = true;
@@ -180,12 +178,12 @@ extern int bridge_setup_system()
 					ba_mp->coord[Y] = y;
 					ba_mp->coord[Z] = z;
 					ba_setup_mp(ba_mp, ba_mp->coord, true);
-					info("%s which is %c%c%c%c is setup",
-					     ba_mp->loc,
-					     alpha_num[ba_mp->coord[A]],
-					     alpha_num[ba_mp->coord[X]],
-					     alpha_num[ba_mp->coord[Y]],
-					     alpha_num[ba_mp->coord[Z]]);
+					// info("%s which is %c%c%c%c is setup",
+					//      ba_mp->loc,
+					//      alpha_num[ba_mp->coord[A]],
+					//      alpha_num[ba_mp->coord[X]],
+					//      alpha_num[ba_mp->coord[Y]],
+					//      alpha_num[ba_mp->coord[Z]]);
 				}
 			}
 		}
