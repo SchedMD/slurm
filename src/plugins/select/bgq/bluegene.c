@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
+#include "defined_block.h"
 #include "src/slurmctld/locks.h"
 
 #define MMCS_POLL_TIME 30	/* seconds between poll of MMCS for
@@ -820,19 +821,18 @@ extern int validate_current_blocks(char *dir)
 //#endif
 	/* looking for blocks only I created */
 	if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
-		init_wires();
 		info("No blocks created until jobs are submitted");
 	} else {
-		/* if (create_defined_blocks(bg_conf->layout_mode, */
-		/* 			  found_block_list) */
-		/*     == SLURM_ERROR) { */
-		/* 	/\* error in creating the static blocks, so */
-		/* 	 * blocks referenced by submitted jobs won't */
-		/* 	 * correspond to actual slurm blocks. */
-		/* 	 *\/ */
-		/* 	fatal("Error, could not create the static blocks"); */
-		/* 	return SLURM_ERROR; */
-		/* } */
+		if (create_defined_blocks(bg_conf->layout_mode,
+					  found_block_list)
+		    == SLURM_ERROR) {
+			/* error in creating the static blocks, so
+			 * blocks referenced by submitted jobs won't
+			 * correspond to actual slurm blocks.
+			 */
+			fatal("Error, could not create the static blocks");
+			return SLURM_ERROR;
+		}
 	}
 
 	/* ok now since bg_lists->main has been made we now can put blocks in

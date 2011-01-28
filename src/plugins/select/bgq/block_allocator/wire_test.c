@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 	log_opts.stderr_level  = (log_level_t)debug_level;
 	log_opts.logfile_level = (log_level_t)debug_level;
 	log_opts.syslog_level  = (log_level_t)debug_level;
-
+	set_ba_debug_flags(DEBUG_FLAG_BG_ALGO);
 	log_alter(log_opts, (log_facility_t)LOG_DAEMON, "/dev/null");
 
 	DIM_SIZE[A]=0;
@@ -106,7 +106,6 @@ int main(int argc, char** argv)
 
 	slurm_conf_reinit(NULL);
 	ba_init(NULL, 1);
-	init_wires();
 
 	/* [010x831] */
 /* 	results = list_create(NULL); */
@@ -156,12 +155,14 @@ int main(int argc, char** argv)
 
 	/* [001x801] */
 	results = list_create(NULL);
-	request->geometry[0] = 7;
-	request->geometry[1] = 4;
-	request->geometry[2] = 2;
+	request->geometry[0] = 1;
+	request->geometry[1] = 3;
+	request->geometry[2] = 1;
+	request->geometry[3] = 1;
 	request->start[0] = 0;
 	request->start[1] = 0;
 	request->start[2] = 0;
+	request->start[3] = 0;
 	request->start_req = 0;
 //	request->size = 1;
 	request->rotate = 1;
@@ -173,15 +174,16 @@ int main(int argc, char** argv)
 	new_ba_request(request);
 	print_ba_request(request);
 	if (!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
+       		debug("couldn't allocate %c%c%c%c",
 		       request->geometry[0],
 		       request->geometry[1],
-		       request->geometry[2]);
+		       request->geometry[2],
+		       request->geometry[3]);
 	}
 	list_destroy(results);
 
 
-	int dim,j;
+	int dim;
 	int a,b,c,d;
 	int starta=0;
 	int startb=0;
@@ -199,47 +201,22 @@ int main(int argc, char** argv)
 					ba_mp_t *curr_mp =
 						&(ba_system_ptr->grid
 						  [a][b][c][d]);
-				info("Node %c%c%c%c Used = %d Letter = %c",
-				     alpha_num[a],alpha_num[b],
-				     alpha_num[c],alpha_num[d],
-				     curr_mp->used,
-				     curr_mp->letter);
-				for(dim=0;dim<1;dim++) {
-					info("Dim %d",dim);
-					ba_switch_t *wire =
-						&curr_mp->axis_switch[dim];
-					for(j=0;j<NUM_PORTS_PER_NODE;j++)
-						info("\t%d -> %d -> "
-						     "%c%c%c%c %d "
-						     "Used = %d",
-						     j, wire->int_wire[j].
-						     port_tar,
-						     alpha_num[wire->ext_wire[
-								     wire->int_wire[j].
-								     port_tar].
-							       mp_tar[A]],
-						     alpha_num[wire->ext_wire[
-								     wire->int_wire[j].
-								     port_tar].
-							       mp_tar[X]],
-						     alpha_num[wire->ext_wire[
-								     wire->int_wire[j].
-								     port_tar].
-							       mp_tar[Y]],
-						     alpha_num[wire->ext_wire[
-								     wire->int_wire[j].
-								     port_tar].
-							       mp_tar[Z]],
-						     wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     port_tar,
-						     wire->int_wire[j].used);
+					info("Node %c%c%c%c Used = %d "
+					     "Letter = %c",
+					     alpha_num[a],alpha_num[b],
+					     alpha_num[c],alpha_num[d],
+					     curr_mp->used,
+					     curr_mp->letter);
+					for(dim=0;dim<1;dim++) {
+						info("\tDim %d usage is %d ",
+						     dim,
+						     curr_mp->axis_switch[dim].
+						     usage);
+					}
 				}
 			}
 		}
 	}
-}
 	/* list_destroy(results); */
 
 /* 	ba_fini(); */

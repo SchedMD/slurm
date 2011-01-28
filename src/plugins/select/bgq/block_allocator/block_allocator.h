@@ -323,13 +323,6 @@ extern void print_ba_request(ba_request_t* ba_request);
  */
 extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
 
-/* If emulating a system set up a known configuration for wires in a
- * system of the size given.
- * If a real bluegene system, query the system and get all wiring
- * information of the system.
- */
-extern void init_wires();
-
 /*
  * destroy all the internal (global) data structs.
  */
