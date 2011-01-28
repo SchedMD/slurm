@@ -173,6 +173,7 @@ Can the nodes allocated to the job be shared with other jobs.
 \fB%H\fR
 Number of sockets per node requested by the job.
 This reports the value of the \fBsrun \-\-sockets\-per\-node\fR option.
+When \-\-sockets\-per\-node has not been set, "*" is displayed.
 (Valid for jobs only)
 .TP
 \fB%i\fR
@@ -182,6 +183,7 @@ Job or job step id.
 \fB%I\fR
 Number of cores per socket requested by the job.
 This reports the value of the \fBsrun \-\-cores\-per\-socket\fR option.
+When \-\-cores\-per\-socket has not been set, "*" is displayed.
 (Valid for jobs only)
 .TP
 \fB%j\fR
@@ -191,6 +193,7 @@ Job or job step name.
 \fB%J\fR
 Number of threads per core requested by the job.
 This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
+When \-\-threads\-per\-core has not been set, "*" is displayed.
 (Valid for jobs only)
 .TP
 \fB%k\fR
@@ -314,6 +317,7 @@ List of node names explicitly excluded by the job.
 .TP
 \fB%z\fR
 Number of requested sockets, cores, and threads (S:C:T) per node for the job.
+When (S:C:T) has not been set, "*" is displayed.
 (Valid for jobs only)
 .RE
 

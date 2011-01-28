@@ -732,12 +732,21 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	char threads[10];
 	char sct[(10+1)*3];
 	if (job) {
-		convert_num_unit((float)job->sockets_per_node, sockets,
-				 sizeof(sockets), UNIT_NONE);
-		convert_num_unit((float)job->cores_per_socket, cores,
-				 sizeof(cores), UNIT_NONE);
-		convert_num_unit((float)job->threads_per_core, threads,
-				 sizeof(threads), UNIT_NONE);
+		if (job->sockets_per_node == (uint16_t) NO_VAL)
+			strcpy(sockets, "*");
+		else
+			convert_num_unit((float)job->sockets_per_node, sockets,
+					sizeof(sockets), UNIT_NONE);
+		if (job->cores_per_socket == (uint16_t) NO_VAL)
+			strcpy(cores, "*");
+		else
+			convert_num_unit((float)job->cores_per_socket, cores,
+					sizeof(cores), UNIT_NONE);
+		if (job->threads_per_core == (uint16_t) NO_VAL)
+			strcpy(threads, "*");
+		else
+			convert_num_unit((float)job->threads_per_core, threads,
+					sizeof(threads), UNIT_NONE);
 		sct[0] = '\0';
 		strcat(sct, sockets);
 		strcat(sct, ":");
@@ -826,7 +835,10 @@ int _print_sockets(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("SOCKETS_PER_NODE", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->sockets_per_node, tmp_char,
+		if (job->sockets_per_node == (uint16_t) NO_VAL)
+			strcpy(tmp_char, "*");
+		else
+			convert_num_unit((float)job->sockets_per_node, tmp_char,
 				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -843,8 +855,11 @@ int _print_cores(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CORES_PER_SOCKET", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->cores_per_socket, tmp_char,
-				 sizeof(tmp_char), UNIT_NONE);
+		if (job->cores_per_socket == (uint16_t) NO_VAL)
+			strcpy(tmp_char, "*");
+		else
+			convert_num_unit((float)job->cores_per_socket, tmp_char,
+					sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -860,8 +875,11 @@ int _print_threads(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("THREADS_PER_CORE", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->threads_per_core, tmp_char,
-				 sizeof(tmp_char), UNIT_NONE);
+		if (job->threads_per_core == (uint16_t) NO_VAL)
+			strcpy(tmp_char, "*");
+		else
+			convert_num_unit((float)job->threads_per_core, tmp_char,
+					sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)

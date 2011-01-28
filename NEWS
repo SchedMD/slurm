@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Correct logic to set correct job hold state (admin or user) when setting
     the job's priority using scontrol's "update jobid=..." rather than its 
     "hold" or "holdu" commands.
+ -- Modify squeue to report unset --mincores, --minthreads or --extra-node-info
+    values as "*" rather than 65534. Patch from Rod Schulz, BULL.
 
 * Changes in SLURM 2.2.1
 ========================
