@@ -6792,7 +6792,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (job_ptr->priority == job_specs->priority) {
 			debug("update_job: setting priority to current value");
 			if ((job_ptr->priority == 0) && authorized) {
-				if (job_specs->alloc_sid & ALLOC_SID_USER_HOLD)
+				if (job_specs->alloc_sid == ALLOC_SID_USER_HOLD)
 					job_ptr->state_reason = WAIT_HELD_USER;
 				else
 					job_ptr->state_reason = WAIT_HELD;
@@ -6813,8 +6813,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
 				if (authorized &&
-				    ((job_specs->alloc_sid &
-				      ALLOC_SID_USER_HOLD) == 0)) {
+				    (job_specs->alloc_sid !=
+				     ALLOC_SID_USER_HOLD)) {
 					job_ptr->state_reason = WAIT_HELD;
 				} else
 					job_ptr->state_reason = WAIT_HELD_USER;
