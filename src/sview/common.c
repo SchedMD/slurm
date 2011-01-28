@@ -353,37 +353,53 @@ cleanup:
 	return ret;
 }
 
+/* Translate a three-digit alpha-numeric value into it's 
+ * base 36 equivalent number */
+static int _xlate_bp_coord(const char *name)
+{
+	int i, rc = 0;
+
+	for (i=0; i<3; i++) {
+		rc *= 36;
+		if ((name[i] >= '0') && (name[i] <= '9'))
+			rc += (name[i] - '0');
+		else if ((name[i] >= 'A') && (name[i] <= 'Z'))
+			rc += ((name[i] - 'A') + 10);
+	}
+	return rc;
+}
+
 /* Make a BlueGene node name into a numeric representation of
  * its location.
- * Value is low_coordinate * 1,000,000 +
- *          high_coordinate * 1,000 + I/O node (999 if none)
- * (e.g. bg123[4] -> 123,123,004, bg[234x235] -> 234,235,999)
+ * Value is low_node_coordinate * 1,000 + I/O node (999 if none)
+ * with use of base 36 for the node coordinate:
+ * (e.g. bg123[4]    ->  1,371,004
+ *       bg[234x235] ->  2,704,999
+ *       bglZZZ      -> 46,655,999
  */
 static int _bp_coordinate(const char *name)
 {
-	int i, io_val = 999, low_val = -1, high_val = -1;
+	int i, io_val = 999, low_val = -1;
 
 	for (i=0; name[i]; i++) {
 		if (name[i] == '[') {
 			i++;
-			if (low_val < 0) {
-				char *end_ptr;
-				low_val = strtol(name+i, &end_ptr, 10);
-				if ((end_ptr[0] != '\0') &&
-				    (isdigit(end_ptr[1])))
-					high_val = atoi(end_ptr + 1);
-				else
-					high_val = low_val;
-			} else
+			if (low_val < 0)
+				low_val = _xlate_bp_coord(name+i);
+			else
 				io_val = atoi(name+i);
 			break;
-		} else if ((low_val < 0) && (isdigit(name[i])))
-			low_val = high_val = atoi(name+i);
+		} else if ((low_val < 0) &&
+			   ((name[i] >= '0' && (name[i] <= '9')) ||
+			    (name[i] >= 'A' && (name[i] <= 'Z')))) {
+			low_val = _xlate_bp_coord(name+i);
+			i += 2;
+		}
 	}
 
 	if (low_val < 0)
 		return low_val;
-	return ((low_val * 1000000) + (high_val * 1000) + io_val);
+	return ((low_val * 1000) + io_val);
 }
 
 static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
