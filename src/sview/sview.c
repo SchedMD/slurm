@@ -561,6 +561,7 @@ static gboolean _delete(GtkWidget *widget,
 	gtk_main_quit();
 	ba_fini();
 
+#ifdef MEMORY_LEAK_DEBUG
 	if (popup_list)
 		list_destroy(popup_list);
 	if (grid_button_list)
@@ -572,6 +573,7 @@ static gboolean _delete(GtkWidget *widget,
 	if (cluster_list)
 		list_destroy(cluster_list);
 	xfree(orig_cluster_name);
+#endif
 	return FALSE;
 }
 
