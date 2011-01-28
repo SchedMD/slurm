@@ -1746,14 +1746,15 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			       GtkTreeStore *treestore,
 			       GtkTreeIter *iter)
 {
-	char *nodes = NULL, *reason = NULL;
 	char tmp_char[50];
 	char tmp_time_run[40],  tmp_time_resize[40], tmp_time_submit[40];
 	char tmp_time_elig[40], tmp_time_start[40],  tmp_time_end[40];
 	char tmp_time_sus[40],  tmp_time_limit[40],  tmp_alloc_node[40];
-	char tmp_exit[40],      tmp_group_id[40];
-	char tmp_cpu_cnt[40],  tmp_node_cnt[40];
-	char *tmp_batch, *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
+	char tmp_exit[40],      tmp_group_id[40],    tmp_derived_ec[40];
+	char tmp_cpu_cnt[40],   tmp_node_cnt[40],    tmp_disk[40];
+	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
+	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
+	char *tmp_reason, *tmp_nodes;
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
 	GtkTreeIter step_iter;
@@ -1783,6 +1784,26 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			 job_ptr->num_cpus);
 	}
 
+	convert_num_unit((float)job_ptr->pn_min_cpus,
+			 tmp_cpu_req, sizeof(tmp_cpu_req), UNIT_NONE);
+
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		convert_num_unit((float)job_ptr->max_cpus,
+				 tmp_cpus_max, sizeof(tmp_cpus_max),
+				 UNIT_NONE);
+	} else {
+		snprintf(tmp_cpus_max, sizeof(tmp_cpus_max), "%u",
+			 job_ptr->max_cpus);
+	}
+
+	convert_num_unit((float)job_ptr->pn_min_tmp_disk,
+			 tmp_disk, sizeof(tmp_disk), UNIT_MEGA);
+
+	if (WIFSIGNALED(job_ptr->derived_ec))
+		term_sig = WTERMSIG(job_ptr->derived_ec);
+	snprintf(tmp_derived_ec, sizeof(tmp_derived_ec), "%u:%u",
+		 WEXITSTATUS(job_ptr->derived_ec), term_sig);
+
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
 	else
@@ -1799,11 +1820,19 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			 job_ptr->group_id);
 	}
 
+	convert_num_unit((float)job_ptr->pn_min_memory,
+			 tmp_mem_min, sizeof(tmp_mem_min), UNIT_MEGA);
+
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)sview_job_info_ptr->node_cnt,
 				 tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
 	else
 		sprintf(tmp_node_cnt, "%u", sview_job_info_ptr->node_cnt);
+
+	if (job_ptr->state_desc)
+		tmp_reason = job_ptr->state_desc;
+	else
+		tmp_reason = job_reason_string(job_ptr->state_reason);
 
 	if (job_ptr->requeue)
 		tmp_requeue = "yes";
@@ -1817,7 +1846,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	if (!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run,"00:00:00");
-		nodes = "waiting...";
+		tmp_nodes = "waiting...";
 	} else {
 		if (IS_JOB_SUSPENDED(job_ptr))
 			now_time = job_ptr->pre_sus_time;
@@ -1836,7 +1865,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		}
 		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
-		nodes = sview_job_info_ptr->nodes;
+		tmp_nodes = sview_job_info_ptr->nodes;
 	}
 
 	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_time_elig,
@@ -1886,20 +1915,27 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_COMMENT,      job_ptr->comment,
 			   SORTID_CONTIGUOUS,   tmp_cont,
 			   SORTID_CPUS,         tmp_cpu_cnt,
+			   SORTID_CPU_MAX,      tmp_cpus_max,
+			   SORTID_CPU_MIN,      tmp_cpu_cnt,
+			   SORTID_CPU_REQ,      tmp_cpu_req,
 			   SORTID_DEPENDENCY,   job_ptr->dependency,
+			   SORTID_DERIVED_EC,   tmp_derived_ec,
 			   SORTID_EXIT_CODE,    tmp_exit,
 			   SORTID_FEATURES,     job_ptr->features,
 			   SORTID_GRES,         job_ptr->gres,
 			   SORTID_GROUP_ID,     tmp_group_id,
 			   SORTID_JOBID,        job_ptr->job_id,
 			   SORTID_LICENSES,     job_ptr->licenses,
+			   SORTID_MEM_MIN,      tmp_mem_min,
 			   SORTID_NAME,         job_ptr->name,
 			   SORTID_NODE_INX,     job_ptr->node_inx,
+			   SORTID_NODELIST,     tmp_nodes,
 			   SORTID_NODELIST_EXC, job_ptr->exc_nodes,
 			   SORTID_NODELIST_REQ, job_ptr->req_nodes,
 			   SORTID_NODES,        tmp_node_cnt,
 			   SORTID_PARTITION,    job_ptr->partition,
 			   SORTID_QOS,          job_ptr->qos,
+			   SORTID_REASON,       tmp_reason,
 			   SORTID_REQUEUE,      tmp_requeue,
 			   SORTID_RESTARTS,     job_ptr->restart_cnt,
 			   SORTID_RESV_NAME,    job_ptr->resv_name,
@@ -1915,6 +1951,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_TIME_SUBMIT,  tmp_time_submit,
 			   SORTID_TIME_SUSPEND, tmp_time_sus,
 			   SORTID_TIMELIMIT,    tmp_time_limit,
+			   SORTID_TMP_DISK,     tmp_disk,
 			   SORTID_UPDATED,      1,
 			   SORTID_USER_ID,      tmp_uname,
 			   SORTID_WCKEY,        job_ptr->wckey,
@@ -1996,76 +2033,26 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_ALPS_RESV_ID,  tmp_resv_id,
 				   -1);
 	}
-/********************************************************/
-
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)job_ptr->num_cpus,
-				 tmp_char, sizeof(tmp_char),
-				 UNIT_NONE);
-	else
-		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->num_cpus);
-
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_CPU_MIN, tmp_char, -1);
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)job_ptr->max_cpus,
-				 tmp_char, sizeof(tmp_char),
-				 UNIT_NONE);
-	else
-		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->max_cpus);
-
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_CPU_MAX, tmp_char, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, nodes, -1);
 
 	sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NODES_MIN, tmp_char, -1);
+
 	if (job_ptr->max_nodes > 0) {
 		sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
 		gtk_tree_store_set(treestore, iter,
 				   SORTID_NODES_MAX, tmp_char, -1);
 	}
+
 	if (job_ptr->cpus_per_task > 0) {
 		sprintf(tmp_char, "%u", job_ptr->cpus_per_task);
 		gtk_tree_store_set(treestore, iter,
 				   SORTID_CPUS_PER_TASK, tmp_char, -1);
 	}
-	convert_num_unit((float)job_ptr->pn_min_cpus,
-			 tmp_char, sizeof(tmp_char), UNIT_NONE);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_CPU_REQ, tmp_char, -1);
-
-	convert_num_unit((float)job_ptr->pn_min_memory,
-			 tmp_char, sizeof(tmp_char), UNIT_MEGA);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_MEM_MIN, tmp_char, -1);
-
-	convert_num_unit((float)job_ptr->pn_min_tmp_disk,
-			 tmp_char, sizeof(tmp_char), UNIT_MEGA);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_TMP_DISK, tmp_char, -1);
 
 	sprintf(tmp_char, "%u", job_ptr->priority);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_PRIORITY, tmp_char, -1);
-
-	if (WIFSIGNALED(job_ptr->derived_ec))
-		term_sig = WTERMSIG(job_ptr->derived_ec);
-	snprintf(tmp_char, sizeof(tmp_char), "%u:%u",
-		 WEXITSTATUS(job_ptr->derived_ec), term_sig);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_DERIVED_EC, tmp_char, -1);
-
-	if (job_ptr->state_desc)
-		reason = job_ptr->state_desc;
-	else
-		reason = job_reason_string(job_ptr->state_reason);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_REASON, reason, -1);
 
 	sprintf(tmp_char, "%u", job_ptr->nice - NICE_OFFSET);
 	gtk_tree_store_set(treestore, iter,
@@ -2197,80 +2184,72 @@ static void _update_step_record(job_step_info_t *step_ptr,
 				GtkTreeStore *treestore,
 				GtkTreeIter *iter)
 {
-	char *nodes = NULL, *uname = NULL;
-	char tmp_char[50];
-	char tmp_time[50];
+	char *tmp_nodes, *tmp_uname;
+	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
+	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
 	time_t now_time = time(NULL);
 	enum job_states state;
 
-	if (!step_ptr->nodes
-	    || !strcasecmp(step_ptr->nodes,"waiting...")) {
-		sprintf(tmp_time,"00:00:00");
-		nodes = "waiting...";
+	convert_num_unit((float)step_ptr->num_cpus, tmp_cpu_min,
+			 sizeof(tmp_cpu_min), UNIT_NONE);
+
+	if (!step_ptr->nodes ||
+	    !strcasecmp(step_ptr->nodes,"waiting...")) {
+		sprintf(tmp_time_run, "00:00:00");
+		tmp_nodes = "waiting...";
+		tmp_node_cnt[0] = '\0';
 		state = JOB_PENDING;
 	} else {
 		now_time -= step_ptr->start_time;
-		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
-		nodes = step_ptr->nodes;
-		if (cluster_flags & CLUSTER_FLAG_BG)
+		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
+		tmp_nodes = step_ptr->nodes;
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
-				tmp_char, sizeof(tmp_char), UNIT_NONE);
-		else
-			convert_num_unit((float)_nodes_in_list(nodes),
-					 tmp_char, sizeof(tmp_char), UNIT_NONE);
-
-		gtk_tree_store_set(treestore, iter,
-				   SORTID_NODES, tmp_char, -1);
+				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
+		} else {
+			convert_num_unit((float)_nodes_in_list(tmp_nodes),
+					 tmp_node_cnt, sizeof(tmp_node_cnt),
+					 UNIT_NONE);
+		}
 		state = JOB_RUNNING;
 	}
 
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_STATE,
-			   job_state_string(state), -1);
+	convert_num_unit((float)step_ptr->num_tasks, tmp_task_cnt,
+			 sizeof(tmp_task_cnt), UNIT_NONE);
 
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_GRES,         step_ptr->gres,
-			   SORTID_NAME,         step_ptr->name,
-			   SORTID_PARTITION,    step_ptr->partition,
-			   SORTID_JOBID,        step_ptr->step_id,
-			   SORTID_UPDATED,      1,
-			   -1);
-//NODE COUNT?
-//TASK COUNT?
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_TIME_RUNNING, tmp_time, -1);
-
-	gtk_tree_store_set(treestore, iter, SORTID_ALLOC, 0, -1);
 	if ((step_ptr->time_limit == NO_VAL) ||
 	    (step_ptr->time_limit == INFINITE)) {
-		sprintf(tmp_char, "Job Limit");
+		sprintf(tmp_time_limit, "Job Limit");
 	} else {
 		secs2time_str((step_ptr->time_limit * 60),
-			      tmp_char, sizeof(tmp_char));
+			      tmp_time_limit, sizeof(tmp_time_limit));
 	}
-	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, tmp_char, -1);
-	slurm_make_time_str((time_t *)&step_ptr->start_time, tmp_char,
-			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_TIME_START, tmp_char, -1);
 
-	uname = uid_to_string((uid_t)step_ptr->user_id);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_USER_ID, uname, -1);
-	xfree(uname);
+	slurm_make_time_str((time_t *)&step_ptr->start_time, tmp_time_start,
+			    sizeof(tmp_time_start));
 
-	convert_num_unit((float)step_ptr->num_tasks, tmp_char, sizeof(tmp_char),
-			 UNIT_NONE);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_TASKS, tmp_char, -1);
-
-	convert_num_unit((float)step_ptr->num_cpus, tmp_char, sizeof(tmp_char),
-			 UNIT_NONE);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_CPU_MIN, tmp_char, -1);
+	tmp_uname = uid_to_string((uid_t)step_ptr->user_id);
 
 	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODELIST, nodes, -1);
+			   SORTID_ALLOC,        0,
+			   SORTID_CPU_MIN,      tmp_cpu_min,
+			   SORTID_GRES,         step_ptr->gres,
+			   SORTID_JOBID,        step_ptr->step_id,
+			   SORTID_NAME,         step_ptr->name,
+			   SORTID_NODELIST,     tmp_nodes,
+			   SORTID_NODES,        tmp_node_cnt,
+			   SORTID_PARTITION,    step_ptr->partition,
+			   SORTID_STATE,        job_state_string(state),
+			   SORTID_TASKS,        tmp_task_cnt,
+			   SORTID_TIME_RUNNING, tmp_time_run,
+			   SORTID_TIME_START,   tmp_time_start,
+			   SORTID_TIMELIMIT,    tmp_time_limit,
+			   SORTID_UPDATED,      1,
+			   SORTID_USER_ID,      tmp_uname,
+			   -1);
+
+	xfree(tmp_uname);
 
 	return;
 }
