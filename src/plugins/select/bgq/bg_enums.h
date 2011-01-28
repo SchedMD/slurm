@@ -39,10 +39,6 @@
 #ifndef _BG_ENUMS_H_
 #define _BG_ENUMS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum bg_layout_type {
 	LAYOUT_STATIC,  /* no overlaps, except for full system block
 			   blocks never change */
@@ -69,8 +65,32 @@ typedef enum {
         BG_JOB_ERROR        //!< Job is in error status.
 } bgq_job_status_t;
 
-#ifdef __cplusplus
-}
-#endif
+
+#define BG_SWITCH_NONE         0x0000
+#define BG_SWITCH_OUT          0x0001
+#define BG_SWITCH_IN           0x0002
+#define BG_SWITCH_OUT_PASS     0x0004
+#define BG_SWITCH_IN_PASS      0x0008
+#define BG_SWITCH_WRAPPED      0x0003 /* just wrap used */
+#define BG_SWITCH_PASS_FLAG    0x0010 /* flag for marking a midplane
+				       * with a passthough used */
+#define BG_SWITCH_PASS         0x001C /* just passthough used */
+#define BG_SWITCH_WRAPPED_PASS 0x001F /* all ports are in use, but no torus */
+#define BG_SWITCH_TORUS        0x000F /* all ports are in use in a torus */
+
+#define switch_overlap(__switch_a, __switch_b) \
+	!(__switch_a & __switch_b)
+
+/* typedef enum { */
+/* 	BG_SWITCH_NONE = 0, // Switch is not in use */
+/* 	BG_SWITCH_TORUS,    // Switch is included, (Torus config) */
+/* 	BG_SWITCH_OUT,      // Switch is included, only output port used */
+/* 	BG_SWITCH_IN,       // Switch is included, only input port used */
+/* 	BG_SWITCH_WRAPPED,  // Switch is not included and ports are wrapped */
+/* 	BG_SWITCH_PASS,     // Switch is not included and ports are */
+/* 			    // used for passthrough */
+/* 	BG_SWITCH_WRAPPED_PASS // Switch is not included and ports are */
+/* 			       // wrapped and used for passthrough */
+/* } bg_switch_usage_t; */
 
 #endif /* _BG_ENUMS_H_ */

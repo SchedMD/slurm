@@ -213,14 +213,16 @@ typedef struct
 {
 	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
 	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
+	uint16_t usage;
 } ba_switch_t;
 
 /*
  * ba_mp_t: mp within the allocation system.
  */
-typedef struct {
+typedef struct block_allocator_mp {
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
+	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane */
 	uint16_t coord[HIGHEST_DIMENSIONS];
 	/* color of letter used in smap */
@@ -360,7 +362,7 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
 /*
  * setup the ports and what not for a midplane.
  */
-extern void ba_setup_mp(ba_mp_t *ba_mp, uint16_t *coord, bool track_down_mps);
+extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps);
 
 /*
  * copy info from a ba_mp, a direct memcpy of the ba_mp_t

@@ -73,6 +73,37 @@ int num_unused_cpus = 0;
 //static pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool initialized = false;
 
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
+static void _setup_ba_switch_int(ba_switch_t *ba_switch)
+{
+
+}
+
+static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
+{
+	int i;
+	Midplane::Coordinates coords = {{ba_mp->coord[A], ba_mp->coord[X],
+					 ba_mp->coord[Y], ba_mp->coord[Z]}};
+	Midplane::ConstPtr mp_ptr = bgq->getMidplane(coords);
+
+	ba_mp->loc = xstrdup(mp_ptr->getLocation().c_str());
+
+	// info("%s which is %c%c%c%c is setup",
+	//      ba_mp->loc,
+	//      alpha_num[ba_mp->coord[A]],
+	//      alpha_num[ba_mp->coord[X]],
+	//      alpha_num[ba_mp->coord[Y]],
+	//      alpha_num[ba_mp->coord[Z]]);
+	for (i=0; i < SYSTEM_DIMENSIONS; i++) {
+		Switch::ConstPtr bg_switch = mp_ptr->getSwitch(i);
+		Cable::ConstPtr bg_cable = bg_switch->getCable();
+		info("bg_cable goes to ");
+		ba_mp->axis_switch[i]->int_wire = ;
+
+	}
+}
+#endif
+
 extern int bridge_init(char *properties_file)
 {
 	if (initialized)
@@ -133,61 +164,25 @@ extern int bridge_get_size(uint16_t *size)
 
 extern int bridge_setup_system()
 {
-	int a, x, y, z;
-	ba_mp_t *ba_mp;
-
 	static bool inited = false;
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-	ComputeHardware::ConstPtr bgq;
-#endif
-	if (!bridge_init(NULL))
-		return SLURM_ERROR;
 
 	if (inited)
 		return SLURM_SUCCESS;
 
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
+
 	inited = true;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	bgq = getComputeHardware();
+	ComputeHardware::ConstPtr bgq = getComputeHardware();
+
+	for (int a = 0; a < DIM_SIZE[A]; a++)
+		for (int x = 0; x < DIM_SIZE[X]; x++)
+			for (int y = 0; y < DIM_SIZE[Y]; y++)
+				for (int z = 0; z < DIM_SIZE[Z]; z++)
+					_setup_ba_mp(&ba_system_ptr->
+						     grid[a][x][y][z], ba_mp);
 #endif
-	ba_system_ptr->grid = (ba_mp_t****)
-		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
-	for (a = 0; a < DIM_SIZE[A]; a++) {
-		ba_system_ptr->grid[a] = (ba_mp_t***)
-			xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
-		for (x = 0; x < DIM_SIZE[X]; x++) {
-			ba_system_ptr->grid[a][x] = (ba_mp_t**)
-				xmalloc(sizeof(ba_mp_t*) * DIM_SIZE[Y]);
-			for (y = 0; y < DIM_SIZE[Y]; y++) {
-				ba_system_ptr->grid[a][x][y] = (ba_mp_t*)
-					xmalloc(sizeof(ba_mp_t) * DIM_SIZE[Z]);
-				for (z = 0; z < DIM_SIZE[Z]; z++) {
-					ba_mp = &ba_system_ptr->
-						grid[a][x][y][z];
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-					Midplane::Coordinates coords =
-						{{a, x, y, z}};
-					Midplane::ConstPtr midplane =
-						bgq->getMidplane(coords);
-					ba_mp->loc =
-						xstrdup(midplane->
-							getLocation().c_str());
-#endif
-					ba_mp->coord[A] = a;
-					ba_mp->coord[X] = x;
-					ba_mp->coord[Y] = y;
-					ba_mp->coord[Z] = z;
-					ba_setup_mp(ba_mp, ba_mp->coord, true);
-					// info("%s which is %c%c%c%c is setup",
-					//      ba_mp->loc,
-					//      alpha_num[ba_mp->coord[A]],
-					//      alpha_num[ba_mp->coord[X]],
-					//      alpha_num[ba_mp->coord[Y]],
-					//      alpha_num[ba_mp->coord[Z]]);
-				}
-			}
-		}
-	}
 
 	return SLURM_SUCCESS;
 }
