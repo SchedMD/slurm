@@ -302,6 +302,7 @@ static display_data_t display_data_job[] = {
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_RESTARTS, "Restart Count", FALSE, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
+	/* Priority is a string so we can edit using a text box */
 	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_DERIVED_EC, "Derived Exit Code", FALSE,
@@ -334,10 +335,11 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TMP_DISK, "Min Tmp Disk Per Node",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NICE, "Nice",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ACCOUNT, "Account",
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	/* Nice is a string so we can edit using a text box */
+	{G_TYPE_STRING, SORTID_NICE, "Nice", FALSE,
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", FALSE,
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_QOS, "QOS", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REASON, "Reason Waiting",
@@ -1746,13 +1748,14 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			       GtkTreeStore *treestore,
 			       GtkTreeIter *iter)
 {
-	char tmp_char[50];
 	char tmp_time_run[40],  tmp_time_resize[40], tmp_time_submit[40];
 	char tmp_time_elig[40], tmp_time_start[40],  tmp_time_end[40];
 	char tmp_time_sus[40],  tmp_time_limit[40],  tmp_alloc_node[40];
 	char tmp_exit[40],      tmp_group_id[40],    tmp_derived_ec[40];
 	char tmp_cpu_cnt[40],   tmp_node_cnt[40],    tmp_disk[40];
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
+	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
+	char tmp_prio[40],      tmp_nice[40];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reason, *tmp_nodes;
 	time_t now_time = time(NULL);
@@ -1774,6 +1777,11 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		tmp_cont = "yes";
 	else
 		tmp_cont = "no";
+
+	if (job_ptr->cpus_per_task > 0)
+		sprintf(tmp_cpus_per_task, "%u", job_ptr->cpus_per_task);
+	else
+		tmp_cpus_per_task[0] = '\0';
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)job_ptr->num_cpus,
@@ -1829,6 +1837,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	else
 		sprintf(tmp_node_cnt, "%u", sview_job_info_ptr->node_cnt);
 
+	sprintf(tmp_nodes_min, "%u", sview_job_info_ptr->node_cnt);
+
 	if (job_ptr->state_desc)
 		tmp_reason = job_ptr->state_desc;
 	else
@@ -1843,6 +1853,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		tmp_shared = "yes";
 	else
 		tmp_shared = "no";
+
+	sprintf(tmp_nice, "%u", job_ptr->nice - NICE_OFFSET);
 
 	if (!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run,"00:00:00");
@@ -1867,6 +1879,13 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
 		tmp_nodes = sview_job_info_ptr->nodes;
 	}
+
+	if (job_ptr->max_nodes > 0)
+		sprintf(tmp_nodes_max, "%u", sview_job_info_ptr->node_cnt);
+	else
+		tmp_nodes_max[0] = '\0';
+
+	sprintf(tmp_prio, "%u", job_ptr->priority);
 
 	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_time_elig,
 			    sizeof(tmp_time_elig));
@@ -1917,6 +1936,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_CPUS,         tmp_cpu_cnt,
 			   SORTID_CPU_MAX,      tmp_cpus_max,
 			   SORTID_CPU_MIN,      tmp_cpu_cnt,
+			   SORTID_CPUS_PER_TASK,tmp_cpus_per_task,
 			   SORTID_CPU_REQ,      tmp_cpu_req,
 			   SORTID_DEPENDENCY,   job_ptr->dependency,
 			   SORTID_DERIVED_EC,   tmp_derived_ec,
@@ -1928,12 +1948,16 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_LICENSES,     job_ptr->licenses,
 			   SORTID_MEM_MIN,      tmp_mem_min,
 			   SORTID_NAME,         job_ptr->name,
+			   SORTID_NICE,         tmp_nice,
 			   SORTID_NODE_INX,     job_ptr->node_inx,
 			   SORTID_NODELIST,     tmp_nodes,
 			   SORTID_NODELIST_EXC, job_ptr->exc_nodes,
 			   SORTID_NODELIST_REQ, job_ptr->req_nodes,
 			   SORTID_NODES,        tmp_node_cnt,
+			   SORTID_NODES_MAX,    tmp_nodes_max,
+			   SORTID_NODES_MIN,    tmp_nodes_min,
 			   SORTID_PARTITION,    job_ptr->partition,
+			   SORTID_PRIORITY,     tmp_prio,
 			   SORTID_QOS,          job_ptr->qos,
 			   SORTID_REASON,       tmp_reason,
 			   SORTID_REQUEUE,      tmp_requeue,
@@ -2033,30 +2057,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_ALPS_RESV_ID,  tmp_resv_id,
 				   -1);
 	}
-
-	sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_NODES_MIN, tmp_char, -1);
-
-	if (job_ptr->max_nodes > 0) {
-		sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
-		gtk_tree_store_set(treestore, iter,
-				   SORTID_NODES_MAX, tmp_char, -1);
-	}
-
-	if (job_ptr->cpus_per_task > 0) {
-		sprintf(tmp_char, "%u", job_ptr->cpus_per_task);
-		gtk_tree_store_set(treestore, iter,
-				   SORTID_CPUS_PER_TASK, tmp_char, -1);
-	}
-
-	sprintf(tmp_char, "%u", job_ptr->priority);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_PRIORITY, tmp_char, -1);
-
-	sprintf(tmp_char, "%u", job_ptr->nice - NICE_OFFSET);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_NICE, tmp_char, -1);
 
 	if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
 					 &step_iter, iter))
