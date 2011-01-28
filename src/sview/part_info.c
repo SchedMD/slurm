@@ -2218,7 +2218,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
 	int changed = 1;
-	int j=0;
+	int j, k;
 	sview_part_info_t *sview_part_info = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
@@ -2310,22 +2310,30 @@ display_it:
 					 &path, &focus_column);
 	}
 	if (!path) {
+		int array_size = node_info_ptr->record_count;
+		int  *color_inx = xmalloc(sizeof(int) * array_size);
+		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(info_list);
 		while ((sview_part_info = list_next(itr))) {
 			part_ptr = sview_part_info->part_ptr;
-			j=0;
+			j = 0;
 			while (part_ptr->node_inx[j] >= 0) {
-				change_grid_color(grid_button_list,
-						  part_ptr->node_inx[j],
-						  part_ptr->node_inx[j+1],
-						  sview_part_info->color_inx,
-						  true, 0);
+				for (k = part_ptr->node_inx[j];
+				     k <= part_ptr->node_inx[j+1]; k++) {
+					color_set_flag[k] = true;
+					color_inx[k] = sview_part_info->
+						       color_inx;
+				}
 				j += 2;
 			}
 		}
 		list_iterator_destroy(itr);
+		change_grid_color_array(grid_button_list, array_size,
+					color_inx, color_set_flag, true, 0);
 		change_grid_color(grid_button_list, -1, -1,
 				  MAKE_WHITE, true, 0);
+		xfree(color_inx);
+		xfree(color_set_flag);
 	} else
 		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_NODE_INX, SORTID_COLOR_INX,
