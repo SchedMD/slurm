@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
     "hold" or "holdu" commands.
  -- Modify squeue to report unset --mincores, --minthreads or --extra-node-info
     values as "*" rather than 65534. Patch from Rod Schulz, BULL.
+ -- Report the StartTime of a job as "Unknown" rather than the year 2106 if its
+    expected start time was too far in the future for the backfill scheduler
+    to compute.
 
 * Changes in SLURM 2.2.1
 ========================
