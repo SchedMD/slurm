@@ -430,6 +430,13 @@ extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name)
 	return rc;
 }
 
+extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
+{
+
+	return SLURM_SUCCESS;
+}
+
+
 extern int bridge_block_wait_for_jobs(char *bg_block_id)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BGQ

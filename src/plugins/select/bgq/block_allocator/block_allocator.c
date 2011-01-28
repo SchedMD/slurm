@@ -2599,10 +2599,8 @@ failed:
  *
  * RET: on success 1, on error 0
  */
-static int _copy_the_path(List mps, ba_mp_t *start_mp,
-			  ba_mp_t *curr_mp,
-			  ba_mp_t *mark_mp,
-			  int dim)
+static int _copy_the_path(List mps, ba_mp_t *start_mp, ba_mp_t *curr_mp,
+			  ba_mp_t *mark_mp, int dim)
 {
 	ba_mp_t *next_mp = NULL;
 	ba_mp_t *next_mark_mp = NULL;
@@ -2899,10 +2897,7 @@ static int _find_path(ba_mp_t *ba_mp, uint16_t *first,
 				     alpha_num[ba_mp->coord[X]],
 				     alpha_num[ba_mp->coord[Y]],
 				     alpha_num[ba_mp->coord[Z]]);
-			dim_curr_switch->int_wire[0].used = 1;
-			dim_curr_switch->int_wire[0].port_tar = 1;
-			dim_curr_switch->int_wire[1].used = 1;
-			dim_curr_switch->int_wire[1].port_tar = 0;
+			dim_curr_switch->usage |= BG_SWITCH_WRAP;
 		}
 	}
 	return 1;
