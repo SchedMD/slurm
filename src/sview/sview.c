@@ -39,6 +39,7 @@
 
 #include "sview.h"
 
+#define _DEBUG 0
 #define MAX_RETRIES 3		/* g_thread_create retries */
 
 typedef struct {
@@ -172,9 +173,8 @@ void *_page_thr(void *arg)
 	display_data_t *display_data = &main_display_data[num];
 	static int thread_count = 0;
 	bool reset_highlight = true;
-	/* 	DEF_TIMERS; */
-	xfree(page);
 
+	xfree(page);
 	if (!grid_init) {
 		/* we need to signal any threads that are waiting */
 		g_mutex_lock(grid_mutex);
@@ -195,7 +195,10 @@ void *_page_thr(void *arg)
 	thread_count++;
 	g_static_mutex_unlock(&sview_mutex);
 	while (page_running == num) {
-/* 		START_TIMER; */
+#if _DEBUG
+		DEF_TIMERS;
+		START_TIMER;
+#endif
 //		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
 		sview_init_grid(reset_highlight);
@@ -204,8 +207,10 @@ void *_page_thr(void *arg)
 		//gdk_flush();
 		gdk_threads_leave();
 //		g_static_mutex_unlock(&sview_mutex);
-/* 		END_TIMER; */
-/* 		g_print("got for initeration: %s\n", TIME_STR); */
+#if _DEBUG
+		END_TIMER;
+		g_print("got for iteration: %s\n", TIME_STR);
+#endif
 		sleep(working_sview_config.refresh_delay);
 		g_static_mutex_lock(&sview_mutex);
 		if (thread_count > 1) {
