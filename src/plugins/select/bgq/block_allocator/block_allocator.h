@@ -85,9 +85,6 @@ typedef struct {
  */
 typedef struct {
 	bitstr_t *avail_mp_bitmap;   /* pointer to available mps */
-#ifdef HAVE_BGL
-	char *blrtsimage;              /* BlrtsImage for this block */
-#endif
 	uint16_t conn_type[HIGHEST_DIMENSIONS]; /* mesh, torus, or small */
 	bool elongate;                 /* whether allow elongation or not */
 	int elongate_count;            /* place in elongate_geos list
@@ -95,7 +92,6 @@ typedef struct {
 	List elongate_geos;            /* list of possible shapes of
 					  blocks. contains int* ptrs */
 	uint16_t geometry[HIGHEST_DIMENSIONS]; /* size of block in geometry */
-	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
 	uint16_t deny_pass;            /* PASSTHROUGH_FOUND is set if there are
 					  passthroughs in the block
@@ -104,28 +100,25 @@ typedef struct {
 					  appropriate bits*/
 	int procs;                     /* Number of Real processors in
 					  block */
-	char *ramdiskimage;            /* RamDiskImage for this block */
 	bool rotate;                   /* whether allow elongation or not */
 	int rotate_count;              /* number of times rotated */
 	char *save_name;               /* name of blocks in midplanes */
 	int size;                      /* count of midplanes in block */
-	int small32;                   /* number of blocks using 32 cnodes in
-					* block, only used for small
-					* block creation */
-	int small128;                  /* number of blocks using 128 cnodes in
-					* block, only used for small
-					* block creation */
-#ifndef HAVE_BGL
 	int small16;                   /* number of blocks using 16 cnodes in
+					* block, only used for small
+					* block creation */
+	int small32;                   /* number of blocks using 32 cnodes in
 					* block, only used for small
 					* block creation */
 	int small64;                   /* number of blocks using 64 cnodes in
 					* block, only used for small
 					* block creation */
+	int small128;                  /* number of blocks using 128 cnodes in
+					* block, only used for small
+					* block creation */
 	int small256;                  /* number of blocks using 256 cnodes in
 					* block, only used for small
 					* block creation */
-#endif
 	uint16_t start[HIGHEST_DIMENSIONS]; /* where to start creation of
 					    block */
 	int start_req;                 /* state there was a start
@@ -138,29 +131,22 @@ typedef struct {
 	char *block;                   /* Hostlist of midplanes in the
 					  block */
 	uint16_t conn_type[HIGHEST_DIMENSIONS];  /* mesh, torus, or small */
-#ifdef HAVE_BGL
-	char *blrtsimage;              /* BlrtsImage for this block */
-#endif
-	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
-	char *ramdiskimage;            /* RamDiskImage for this block */
-	uint16_t small32;                   /* number of blocks using 32 cnodes in
+	uint16_t small16;              /* number of blocks using 16 cnodes in
+					* block, only used for small
+					* block creation */
+	uint16_t small32;              /* number of blocks using 32 cnodes in
+					* block, only used for small
+					* block creation */
+	uint16_t small64;              /* number of blocks using 64 cnodes in
 					* block, only used for small
 					* block creation */
 	uint16_t small128;             /* number of blocks using 128 cnodes in
 					* block, only used for small
 					* block creation */
-#ifndef HAVE_BGL
-	uint16_t small16;              /* number of blocks using 16 cnodes in
-					* block, only used for small
-					* block creation */
-	uint16_t small64;                   /* number of blocks using 64 cnodes in
-					* block, only used for small
-					* block creation */
 	uint16_t small256;             /* number of blocks using 256 cnodes in
 					* block, only used for small
 					* block creation */
-#endif
 } blockreq_t;
 
 /* structure filled in from reading bluegene.conf file for specifying

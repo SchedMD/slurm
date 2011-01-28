@@ -6,7 +6,7 @@
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -84,19 +84,6 @@ uint16_t DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 uint16_t REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 s_p_options_t bg_conf_file_options[] = {
-#ifdef HAVE_BGL
-	{(char *)"BlrtsImage", S_P_STRING},
-	{(char *)"LinuxImage", S_P_STRING},
-	{(char *)"RamDiskImage", S_P_STRING},
-	{(char *)"AltBlrtsImage", S_P_ARRAY, parse_image, NULL},
-	{(char *)"AltLinuxImage", S_P_ARRAY, parse_image, NULL},
-	{(char *)"AltRamDiskImage", S_P_ARRAY, parse_image, NULL},
-#else
-	{(char *)"CnloadImage", S_P_STRING},
-	{(char *)"IoloadImage", S_P_STRING},
-	{(char *)"AltCnloadImage", S_P_ARRAY, parse_image, NULL},
-	{(char *)"AltIoloadImage", S_P_ARRAY, parse_image, NULL},
-#endif
 	{(char *)"DenyPassthrough", S_P_STRING},
 	{(char *)"LayoutMode", S_P_STRING},
 	{(char *)"MloaderImage", S_P_STRING},
@@ -214,19 +201,9 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		{(char *)"Type", S_P_STRING},
 		{(char *)"32CNBlocks", S_P_UINT16},
 		{(char *)"128CNBlocks", S_P_UINT16},
-#ifdef HAVE_BGL
-		{(char *)"Nodecards", S_P_UINT16},
-		{(char *)"Quarters", S_P_UINT16},
-		{(char *)"BlrtsImage", S_P_STRING},
-		{(char *)"LinuxImage", S_P_STRING},
-		{(char *)"RamDiskImage", S_P_STRING},
-#else
 		{(char *)"16CNBlocks", S_P_UINT16},
 		{(char *)"64CNBlocks", S_P_UINT16},
 		{(char *)"256CNBlocks", S_P_UINT16},
-		{(char *)"CnloadImage", S_P_STRING},
-		{(char *)"IoloadImage", S_P_STRING},
-#endif
 		{(char *)"MloaderImage", S_P_STRING},
 		{NULL}
 	};
@@ -244,14 +221,6 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	hl = hostlist_create(value);
 	n->block = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
-#ifdef HAVE_BGL
-	s_p_get_string(&n->blrtsimage, "BlrtsImage", tbl);
-	s_p_get_string(&n->linuximage, "LinuxImage", tbl);
-	s_p_get_string(&n->ramdiskimage, "RamDiskImage", tbl);
-#else
-	s_p_get_string(&n->linuximage, "CnloadImage", tbl);
-	s_p_get_string(&n->ramdiskimage, "IoloadImage", tbl);
-#endif
 	s_p_get_string(&n->mloaderimage, "MloaderImage", tbl);
 
 	s_p_get_string(&tmp, "Type", tbl);
@@ -263,26 +232,11 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		n->conn_type[A] = SELECT_SMALL;
 	xfree(tmp);
 
-	if (!s_p_get_uint16(&n->small32, "32CNBlocks", tbl)) {
-#ifdef HAVE_BGL
-		s_p_get_uint16(&n->small32, "Nodecards", tbl);
-#else
-		;
-#endif
-	}
-	if (!s_p_get_uint16(&n->small128, "128CNBlocks", tbl)) {
-#ifdef HAVE_BGL
-		s_p_get_uint16(&n->small128, "Quarters", tbl);
-#else
-		;
-#endif
-	}
-
-#ifndef HAVE_BGL
 	s_p_get_uint16(&n->small16, "16CNBlocks", tbl);
+	s_p_get_uint16(&n->small32, "32CNBlocks", tbl);
 	s_p_get_uint16(&n->small64, "64CNBlocks", tbl);
+	s_p_get_uint16(&n->small128, "128CNBlocks", tbl);
 	s_p_get_uint16(&n->small256, "256CNBlocks", tbl);
-#endif
 
 	s_p_hashtbl_destroy(tbl);
 
@@ -295,12 +249,7 @@ extern void destroy_blockreq(void *ptr)
 	blockreq_t *n = (blockreq_t *)ptr;
 	if (n) {
 		xfree(n->block);
-#ifdef HAVE_BGL
-		xfree(n->blrtsimage);
-#endif
-		xfree(n->linuximage);
 		xfree(n->mloaderimage);
-		xfree(n->ramdiskimage);
 		xfree(n);
 	}
 }
@@ -786,12 +735,7 @@ extern void delete_ba_request(void *arg)
 		xfree(ba_request->save_name);
 		if (ba_request->elongate_geos)
 			list_destroy(ba_request->elongate_geos);
-#ifdef HAVE_BGL
-		xfree(ba_request->blrtsimage);
-#endif
-		xfree(ba_request->linuximage);
 		xfree(ba_request->mloaderimage);
-		xfree(ba_request->ramdiskimage);
 
 		xfree(ba_request);
 	}
@@ -2897,7 +2841,7 @@ static int _find_path(ba_mp_t *ba_mp, uint16_t *first,
 				     alpha_num[ba_mp->coord[X]],
 				     alpha_num[ba_mp->coord[Y]],
 				     alpha_num[ba_mp->coord[Z]]);
-			dim_curr_switch->usage |= BG_SWITCH_WRAP;
+			dim_curr_switch->usage |= BG_SWITCH_WRAPPED;
 		}
 	}
 	return 1;
