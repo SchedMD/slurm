@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.2
 ========================
+ -- Correct logic to set correct job hold state (admin or user) when setting
+    the job's priority using scontrol's "update jobid=..." rather than its 
+    "hold" or "holdu" commands.
 
 * Changes in SLURM 2.2.1
 ========================
