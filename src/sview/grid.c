@@ -1612,8 +1612,8 @@ extern void sview_init_grid(bool reset_highlight)
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
 
-	if ((rc = get_new_info_node(&node_info_ptr, force_refresh))
-	    == SLURM_NO_CHANGE_IN_DATA) {
+	rc = get_new_info_node(&node_info_ptr, force_refresh);
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
 		/* need to clear out old data */
 		set_grid_used(grid_button_list, -1, -1, false, reset_highlight);
 		return;
@@ -1627,7 +1627,7 @@ extern void sview_init_grid(bool reset_highlight)
 	}
 
 	itr = list_iterator_create(grid_button_list);
-	for(i=0; i<node_info_ptr->record_count; i++) {
+	for (i = 0; i < node_info_ptr->record_count; i++) {
 		int tried_again = 0;
 		node_ptr = &node_info_ptr->node_array[i];
 	try_again:
@@ -1637,7 +1637,6 @@ extern void sview_init_grid(bool reset_highlight)
 			grid_button->state = node_ptr->node_state;
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
-			change_grid_color(grid_button_list, i, i, i, true, 0);
 			grid_button->used = false;
 			break;
 		}
