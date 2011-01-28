@@ -400,6 +400,10 @@ extern grid_button_t *create_grid_button_from_another(
 extern char *change_grid_color(List button_list, int start, int end,
 			       int color_inx, bool change_unused,
 			       enum node_states state_override);
+extern void change_grid_color_array(List button_list, int array_len,
+				    int *color_inx, bool *color_set_flag,
+				    bool only_change_unused,
+				    enum node_states state_override);
 extern void highlight_grid(GtkTreeView *tree_view,
 			   int node_inx_id, int color_inx_id, List button_list);
 extern void highlight_grid_range(int start, int end, List button_list);

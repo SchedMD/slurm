@@ -1255,6 +1255,9 @@ display_it:
 					 &path, &focus_column);
 	}
 	if (!path || working_sview_config.grid_topological) {
+		int array_size = node_info_ptr->record_count;
+		int  *color_inx = xmalloc(sizeof(int) * array_size);
+		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(info_list);
 		while ((sview_node_info_ptr = list_next(itr))) {
 			if (g_topo_info_msg_ptr) {
@@ -1269,11 +1272,15 @@ display_it:
 				}
 			} else
 				b_color_ndx = i;
-			change_grid_color(grid_button_list, i, i,
-					  b_color_ndx, true, 0);
+			color_set_flag[i] = true;
+			color_inx[i] = b_color_ndx;
 			i++;
 		}
 		list_iterator_destroy(itr);
+		change_grid_color_array(grid_button_list, array_size,
+					color_inx, color_set_flag, true, 0);
+		xfree(color_inx);
+		xfree(color_set_flag);
 	} else
 		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_POS, (int)NO_VAL, grid_button_list);

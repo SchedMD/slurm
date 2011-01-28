@@ -1050,16 +1050,59 @@ extern char *change_grid_color(List button_list, int start, int end,
 
 	itr = list_iterator_create(button_list);
 	while ((grid_button = list_next(itr))) {
-		if (start != -1)
-			if ((grid_button->inx < start)
-			    ||  (grid_button->inx > end))
-				continue;
+		if ((start != -1) &&
+		    ((grid_button->inx < start) || (grid_button->inx > end)))
+			continue;
 		_change_button_color(grid_button, color_inx, new_col,
 				     color, only_change_unused, state_override);
 	}
 	list_iterator_destroy(itr);
 
 	return sview_colors[color_inx];
+}
+
+/* This variation of change_grid_color() is faster when changing many 
+ * button colors at the same time since we can issue a single call to
+ * _change_button_color() and eliminate a nested loop. */
+extern void change_grid_color_array(List button_list, int array_len,
+				    int *color_inx, bool *color_set_flag,
+				    bool only_change_unused,
+				    enum node_states state_override)
+{
+	ListIterator itr = NULL;
+	grid_button_t *grid_button = NULL;
+	GdkColor color;
+	char *new_col = NULL;
+
+	if (!button_list)
+		return;
+
+	itr = list_iterator_create(button_list);
+	while ((grid_button = list_next(itr))) {
+		if ((grid_button->inx < 0) || (grid_button->inx >= array_len))
+			continue;
+		if (!color_set_flag[grid_button->inx])
+			continue;
+
+		if (color_inx[grid_button->inx] >= 0) {
+			color_inx[grid_button->inx] %= sview_colors_cnt;
+			new_col = sview_colors[color_inx[grid_button->inx]];
+		} else if (color_inx[grid_button->inx] == MAKE_BLACK) {
+			new_col = blank_color;
+		} else if (color_inx[grid_button->inx] == MAKE_TOPO_1) {
+			new_col = topo1_color;
+		} else if (color_inx[grid_button->inx] == MAKE_TOPO_2) {
+			new_col = topo2_color;
+		} else
+			new_col = white_color;
+		gdk_color_parse(new_col, &color);
+
+		_change_button_color(grid_button, color_inx[grid_button->inx],
+				     new_col, color, only_change_unused,
+				     state_override);
+	}
+	list_iterator_destroy(itr);
+	return;
 }
 
 extern void highlight_grid(GtkTreeView *tree_view,
