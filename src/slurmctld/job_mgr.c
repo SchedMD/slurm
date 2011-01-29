@@ -4040,15 +4040,19 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
  */
 char *get_job_script(struct job_record *job_ptr)
 {
-	char job_dir[30], *file_name, *script = NULL;
+	char *script = NULL;
 
-	file_name = slurm_get_state_save_location();
-	sprintf(job_dir, "/job.%d/script", job_ptr->job_id);
-	xstrcat(file_name, job_dir);
+	if (job_ptr->batch_flag) {
+		char *file_name = slurm_get_state_save_location();
+		char job_dir[30];
 
-	_read_data_from_file(file_name, &script);
+		sprintf(job_dir, "/job.%d/script", job_ptr->job_id);
+		xstrcat(file_name, job_dir);
 
-	xfree(file_name);
+		_read_data_from_file(file_name, &script);
+
+		xfree(file_name);
+	}
 	return script;
 }
 

@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- In sview, disable the sorting of node records by name at startup for
     clusters over 1000 nodes. Users can enable this by selecting the "Name"
     tab. This change dramatically improves scalability of sview.
+ -- Do not attempt to read the batch script for non-batch jobs. This patch
+    eliminates some inappropriate error messages. 01_interactive-no-script.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================
