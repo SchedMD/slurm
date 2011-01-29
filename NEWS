@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
     tab. This change dramatically improves scalability of sview.
  -- Do not attempt to read the batch script for non-batch jobs. This patch
     eliminates some inappropriate error messages. 01_interactive-no-script.diff
+ -- Cray BASIL API: basic support added to the select/cray plugin.
+    01_Cray-BASIL-basic-support.diff plus
+    01_changes-from-first-revision-of-patch-01.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================
