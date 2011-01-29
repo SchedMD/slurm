@@ -180,7 +180,6 @@ LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
-X_AC_CRAY
 X_AC_SUN_CONST
 X_AC_DIMENSIONS
 
@@ -223,6 +222,9 @@ fi
 
 
 X_AC_DATABASES
+
+dnl Cray ALPS/Basil support depends on mySQL
+X_AC_CRAY
 
 dnl checks for system services.
 dnl
