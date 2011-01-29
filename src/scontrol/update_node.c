@@ -115,7 +115,8 @@ scontrol_update_node (int argc, char *argv[])
 			}
 			node_msg.weight = num;
 			update_cnt++;
-		} else if (strncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
+		} else if (strncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0 &&
+			   !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
 			int len = strlen(val);
 			reason_str = xmalloc(len+1);
 			if (*val == '"')
@@ -134,8 +135,8 @@ scontrol_update_node (int argc, char *argv[])
 				node_msg.reason_uid = getuid();
 			}
 			update_cnt++;
-		}
-		else if (strncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
+		} else if (strncasecmp(tag, "State", MAX(tag_len, 1)) == 0 &&
+			   !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
 			if (strncasecmp(val, "NoResp",
 				        MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_NO_RESPOND;

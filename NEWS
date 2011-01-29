@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- Cray BASIL API: basic support added to the select/cray plugin.
     01_Cray-BASIL-basic-support.diff plus
     01_changes-from-first-revision-of-patch-01.diff
+ -- Prevent changing a node's Reason or State on a Cray system.
+    02_salloc-no-node-update.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================
