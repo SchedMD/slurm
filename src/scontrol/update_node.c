@@ -136,6 +136,14 @@ scontrol_update_node (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
+			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+				fprintf (stderr, "%s can not be changed through"
+					 " SLURM. Use native Cray tools such as"
+					 " xtprocadmin(8)\n", argv[i]);
+				fprintf (stderr, "Request aborted\n");
+				exit_code = 1;
+				goto done;
+			}
 			if (strncasecmp(val, "NoResp",
 				        MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_NO_RESPOND;

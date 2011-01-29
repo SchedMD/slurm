@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     tab. This change dramatically improves scalability of sview.
  -- Do not attempt to read the batch script for non-batch jobs. This patch
     eliminates some inappropriate error messages. 01_interactive-no-script.diff
+ -- Report error when trying to change a node's state from scontrol for Cray
+    systems. Based upon 01_Cray-scontrol-warning-node-update.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================
