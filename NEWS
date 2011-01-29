@@ -29,6 +29,10 @@ documents those changes that are of interest to users and admins.
     03_node-reordering-NodeHostName.diff
  -- Set Cray node order based upon ALPS_NIDORDER configuration.
     03_Cray-BASIL-node-ranking.diff
+ -- Updated configure option "--enable-cray" to support interaction with Cray
+    XT/XE systems, and build on native Cray XT/XE systems (auto-detected).
+    Building on native Cray systems requires the cray-MySQL-devel-enterprise
+    rpm and expat XML parser library/headers.
 
 * Changes in SLURM 2.3.0.pre1
 =============================
