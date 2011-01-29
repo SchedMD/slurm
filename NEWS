@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- On Cray/ALPS systems  do node inventory before scheduling jobs.
     09_Cray-INVENTORY-directly-before-schedule.diff
  -- Disable some salloc options on Cray systems. 11_salloc.diff
+ -- Disable scontrol's wait_job command on Cray systems.
+    13_scontrol-no-wait_job.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================

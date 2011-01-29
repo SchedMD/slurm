@@ -790,14 +790,16 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (tag, "wait_job", MAX(tag_len, 2)) == 0) {
-		if (argc > 2) {
+		if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+			fprintf(stderr,
+				"wait_job is handled automatically on Cray.\n");
+		} else if (argc > 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
 					"too many arguments for keyword:%s\n",
 					tag);
-		}
-		else if (argc < 2) {
+		} else if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
