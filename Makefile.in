@@ -169,6 +169,7 @@ GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
 ACLOCAL = @ACLOCAL@
+ALPS_LIBS = @ALPS_LIBS@
 AMTAR = @AMTAR@
 AR = @AR@
 AUTHD_CFLAGS = @AUTHD_CFLAGS@
