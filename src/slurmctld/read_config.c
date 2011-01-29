@@ -165,6 +165,10 @@ static void _reorder_node_record_table(void)
 			node_ptr->name  = node_ptr2->name;
 			node_ptr2->name = tmp_str;
 
+			tmp_str = node_ptr->node_hostname;
+			node_ptr->node_hostname  = node_ptr2->node_hostname;
+			node_ptr2->node_hostname = tmp_str;
+
 			tmp_str = node_ptr->comm_name;
 			node_ptr->comm_name  = node_ptr2->comm_name;
 			node_ptr2->comm_name = tmp_str;

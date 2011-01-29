@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     02_salloc-no-node-update.diff
  -- For Cray systems, resolve node attributes and coordinates from ALPS.
     02_Cray-BASIL-node-attributes-and-coordinates.diff
+ -- Preserve node's NodeHostName field when reordering for topology.
+    03_node-reordering-NodeHostName.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================
