@@ -185,7 +185,9 @@ extern int select_p_job_init(List job_list)
  */
 extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 {
-	return false;		/* FIXME - to be filled in */
+	if (basil_node_ranking(node_ptr, node_cnt) < 0)
+		fatal("can not resolve node coordinates: ALPS problem?");
+	return true;
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)

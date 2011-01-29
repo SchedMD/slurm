@@ -74,6 +74,49 @@ static struct node_record *find_node_by_basil_id(uint32_t node_id)
 	return find_node_record(nid);
 }
 
+extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
+{
+	enum basil_version version = get_basil_version();
+	struct basil_inventory *inv;
+	struct basil_node *node;
+	int rank_count = 0, i;
+
+	inv = get_full_inventory(version);
+	if (inv == NULL)
+		/* FIXME: should retry here if the condition is transient */
+		fatal("failed to get BASIL %s ranking", bv_names_long[version]);
+	else if (!inv->batch_total)
+		fatal("system has no usable batch compute nodes");
+
+	debug("BASIL %s RANKING INVENTORY: %d/%d batch nodes",
+	      bv_names_long[version], inv->batch_avail, inv->batch_total);
+
+	/*
+	 * Node ranking is based on a subset of the inventory: only nodes in
+	 * batch allocation mode which are up and not allocated. Assign a
+	 * 'NO_VAL' rank to all other nodes, which will translate as a very
+	 * high value, (unsigned)-2, to put those nodes last in the ranking.
+	 * The rest of the code must ensure that those nodes are never chosen.
+	 */
+	for (i = 0; i < node_cnt; i++)
+		node_array[i].node_rank = NO_VAL;
+
+	for (node = inv->f->node_head; node; node = node->next) {
+		struct node_record *node_ptr;
+
+		node_ptr = find_node_by_basil_id(node->node_id);
+		if (node_ptr == NULL)
+			error("nid%05u (%s node in state %s) not in slurm.conf",
+			      node->node_id, nam_noderole[node->role],
+			      nam_nodestate[node->state]);
+		 else
+			node_ptr->node_rank = inv->nodes_total - rank_count++;
+	}
+	free_inv(inv);
+
+	return SLURM_SUCCESS;
+}
+
 /**
  * basil_inventory - Periodic node-state query via ALPS XML-RPC.
  * This should be run immediately before each scheduling cycle.
