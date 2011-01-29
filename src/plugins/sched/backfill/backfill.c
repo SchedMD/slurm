@@ -480,6 +480,18 @@ static int _attempt_backfill(void)
 	}
 	this_sched_timeout = sched_timeout;
 
+#ifdef HAVE_NATIVE_CRAY
+	/*
+	 * Run a Basil Inventory immediately before setting up the schedule
+	 * plan, to avoid race conditions caused by ALPS node state change.
+	 * Needs to be done with the node-state lock taken.
+	 */
+	if (select_g_reconfigure()) {
+		debug4("backfill: not scheduling due to ALPS");
+		return SLURM_SUCCESS;
+	}
+#endif
+
 	if (slurm_get_root_filter())
 		filter_root = true;
 
