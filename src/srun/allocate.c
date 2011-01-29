@@ -68,12 +68,6 @@
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 #endif
 
-#ifdef HAVE_CRAY
-#include "src/common/node_select.h"
-#include "src/common/basil_resv_conf.h"
-#endif
-
-
 #define MAX_ALLOC_WAIT	60	/* seconds */
 #define MIN_ALLOC_WAIT	5	/* seconds */
 #define MAX_RETRIES	10
@@ -107,11 +101,6 @@ static int _blocks_dealloc(void);
 #else
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 #endif
-
-#ifdef HAVE_CRAY
-static int  _claim_reservation(resource_allocation_response_msg_t *alloc);
-#endif
-
 
 static sig_atomic_t destroy_job = 0;
 
@@ -379,25 +368,6 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 }
 #endif	/* HAVE_BG */
 
-#ifdef HAVE_CRAY
-/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
-static int _claim_reservation(resource_allocation_response_msg_t *alloc)
-{
-	int rc = 0;
-	uint32_t resv_id = 0;
-
-	select_g_select_jobinfo_get(alloc->select_jobinfo,
-				    SELECT_JOBDATA_RESV_ID, &resv_id);
-	if (!resv_id)
-		return rc;
-	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)
-		rc = 1;
-
-	return rc;
-}
-#endif
-
-
 int
 allocate_test(void)
 {
@@ -474,14 +444,6 @@ allocate_nodes(void)
 			if(!destroy_job)
 				error("Something is wrong with the "
 				      "boot of the nodes.");
-			goto relinquish;
-		}
-#endif
-#ifdef HAVE_CRAY
-		if (!_claim_reservation(resp)) {
-			if(!destroy_job)
-				error("Something is wrong with the ALPS "
-				      "resource reservation.");
 			goto relinquish;
 		}
 #endif

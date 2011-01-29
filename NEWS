@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
  -- Disable some salloc options on Cray systems. 11_salloc.diff
  -- Disable scontrol's wait_job command on Cray systems.
     13_scontrol-no-wait_job.diff
+ -- Disable srun command on native Cray/ALPS systems. 14_srun.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================
