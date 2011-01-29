@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     01_changes-from-first-revision-of-patch-01.diff
  -- Prevent changing a node's Reason or State on a Cray system.
     02_salloc-no-node-update.diff
+ -- For Cray systems, resolve node attributes and coordinates from ALPS.
+    02_Cray-BASIL-node-attributes-and-coordinates.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================

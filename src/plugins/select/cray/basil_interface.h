@@ -21,6 +21,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 extern int basil_inventory(void);
+extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt);
 extern int do_basil_reserve(struct job_record *job_ptr);
 extern int do_basil_confirm(struct job_record *job_ptr);
 extern int do_basil_release(struct job_record *job_ptr);

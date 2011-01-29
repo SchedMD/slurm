@@ -190,6 +190,10 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
+	if (basil_geometry(node_ptr, node_cnt)) {
+		error("can not get initial ALPS node state");
+		return SLURM_ERROR;
+	}
 	return other_node_init(node_ptr, node_cnt);
 }
 

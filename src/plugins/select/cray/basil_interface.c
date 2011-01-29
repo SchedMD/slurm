@@ -194,6 +194,245 @@ extern int basil_inventory(void)
 }
 
 /**
+ * basil_get_initial_state - basil_inventory() variant for initialisation
+ * The logic is identical, with the difference that this is called at the
+ * start, before any bitmaps are set, and serves to check the node state
+ * correctly: whether nodes are allocated or have been marked down.
+ * Return: SLURM_SUCCESS if ok, non-zero on error.
+ */
+static int basil_get_initial_state(void)
+{
+	enum basil_version version = get_basil_version();
+	struct basil_inventory *inv;
+	struct basil_node *node;
+	int rc = SLURM_SUCCESS;
+
+	inv = get_full_inventory(version);
+	if (inv == NULL) {
+		error("BASIL %s INVENTORY failed", bv_names_long[version]);
+		return SLURM_ERROR;
+	}
+
+	debug("BASIL %s INITIAL INVENTORY: %d/%d batch nodes available",
+	      bv_names_long[version], inv->batch_avail, inv->batch_total);
+
+	if (!inv->f->node_head || !inv->batch_avail || !inv->batch_total)
+		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+
+	for (node = inv->f->node_head; node; node = node->next) {
+		struct node_record *node_ptr;
+		char *reason = NULL;
+
+		node_ptr = find_node_by_basil_id(node->node_id);
+		if (node_ptr == NULL)
+			continue;
+
+		/* Base state entirely depends on ALPS */
+		node_ptr->node_state &= NODE_STATE_FLAGS;
+		xfree(node_ptr->reason);
+
+		if (node->state == BNS_DOWN) {
+			reason = "ALPS marked it DOWN";
+		} else if (node->state == BNS_UNAVAIL) {
+			reason = "node is UNAVAILABLE";
+		} else if (node->state == BNS_ROUTE) {
+			reason = "node does ROUTING";
+		} else if (node->state == BNS_SUSPECT) {
+			reason = "entered SUSPECT mode";
+		} else if (node->state == BNS_ADMINDOWN) {
+			reason = "node is ADMINDOWN";
+		} else if (node->state != BNS_UP) {
+			reason = "state not UP";
+		} else if (node->role != BNR_BATCH) {
+			reason = "mode not BATCH";
+		} else if (node->arch != BNA_XT) {
+			reason = "arch not XT/XE";
+		}
+
+		if (reason) {
+			debug("Initial DOWN node %s - %s", node_ptr->name, reason);
+			node_ptr->reason = xstrdup(reason);
+			node_ptr->node_state |= NODE_STATE_DOWN;
+		} else {
+			/*
+			 * Since this node is listed in the most recent ALPS
+			 * inventory, it can not possibly be allocated to a job
+			 */
+			node_ptr->node_state |= NODE_STATE_IDLE;
+		}
+	}
+	free_inv(inv);
+	return rc;
+}
+
+/**
+ * basil_geometry - Verify node attributes, resolve (X,Y,Z) coordinates.
+ */
+extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
+{
+	struct node_record *node_ptr, *end = node_ptr_array + node_cnt;
+
+	/* General */
+	MYSQL		*handle;
+	MYSQL_STMT	*stmt = NULL;
+	/* Input parameters */
+	unsigned int	node_id;
+	const char query[] =	"SELECT x_coord, y_coord, z_coord, cage, cpu, "
+				"	LOG2(coremask+1), availmem, "
+				"       processor_type  "
+				"FROM  processor, attributes "
+				"WHERE nodeid = ? "
+				"AND   processor_id = nodeid ";
+	const int	PARAM_COUNT = 1;	/* node id */
+	MYSQL_BIND	params[PARAM_COUNT];
+	/* Output parameters */
+	enum query_columns {
+			/* integer data */
+			COL_X,		/* X coordinate		*/
+			COL_Y,		/* Y coordinate		*/
+			COL_Z,		/* Z coordinate		*/
+			COL_CAGE,	/* cage number (0..2)		*/
+			COL_CPU,	/* node number (0..2)		*/
+			COL_CORES,	/* number of cores per node	*/
+			COL_MEMORY,	/* rounded-down memory in MB	*/
+			/* string data */
+			COL_TYPE,	/* {service, compute }		*/
+			COLUMN_COUNT	/* sentinel */
+	};
+	struct torus_coord tc;
+	int		cage, cpu;
+	unsigned int	node_cpus, node_mem;
+	char		proc_type[BASIL_STRING_SIZE];
+	MYSQL_BIND	bind_cols[COLUMN_COUNT];
+	my_bool		is_null[COLUMN_COUNT];
+	my_bool		is_error[COLUMN_COUNT];
+	int		is_gemini, i;
+
+	memset(params, 0, sizeof(params));
+	params[0].buffer_type = MYSQL_TYPE_LONG;
+	params[0].is_unsigned = true;
+	params[0].buffer      = (char *)&node_id;
+
+	memset(bind_cols, 0, sizeof(bind_cols));
+	for (i = 0; i < COLUMN_COUNT; i ++) {
+		bind_cols[i].is_null = &is_null[i];
+		bind_cols[i].error   = &is_error[i];
+
+		if (i == COL_TYPE) {
+			bind_cols[i].buffer_type   = MYSQL_TYPE_STRING;
+			bind_cols[i].buffer_length = sizeof(proc_type);
+			bind_cols[i].buffer	   = proc_type;
+		} else {
+			bind_cols[i].buffer_type   = MYSQL_TYPE_LONG;
+			bind_cols[i].is_unsigned   = (i >= COL_CORES);
+		}
+	}
+	bind_cols[COL_X].buffer	     = (char *)&tc.x;
+	bind_cols[COL_Y].buffer	     = (char *)&tc.y;
+	bind_cols[COL_Z].buffer	     = (char *)&tc.z;
+	bind_cols[COL_CAGE].buffer   = (char *)&cage;
+	bind_cols[COL_CPU].buffer    = (char *)&cpu;
+	bind_cols[COL_CORES].buffer  = (char *)&node_cpus;
+	bind_cols[COL_MEMORY].buffer = (char *)&node_mem;
+
+	handle = cray_connect_sdb();
+	if (handle == NULL)
+		fatal("can not connect to XTAdmin database on the SDB");
+
+	is_gemini = cray_is_gemini_system(handle);
+	if (is_gemini < 0)
+		fatal("can not determine Cray XT/XE system type");
+
+	stmt = prepare_stmt(handle, query, params, PARAM_COUNT,
+				    bind_cols, COLUMN_COUNT);
+	if (stmt == NULL)
+		fatal("can not prepare statement to resolve Cray coordinates");
+
+	for (node_ptr = node_record_table_ptr; node_ptr < end; node_ptr++) {
+
+		if (sscanf(node_ptr->name, "nid%05u", &node_id) != 1) {
+			error("can not read basil_node_id from %s", node_ptr->name);
+			continue;
+		}
+		if (exec_stmt(stmt, query, bind_cols, COLUMN_COUNT) < 0)
+			fatal("can not resolve %s coordinates", node_ptr->name);
+
+		if (mysql_stmt_fetch(stmt) == 0) {
+
+			if (strcmp(proc_type, "compute") != 0) {
+				/*
+				 * Switching a compute node to be a service node
+				 * can not happen at runtime: requires a reboot.
+				 */
+				fatal("Node '%s' is a %s node. "
+				      "Only compute nodes can appear in slurm.conf.",
+					node_ptr->name, proc_type);
+			} else if (node_cpus < node_ptr->config_ptr->cpus) {
+				/*
+				 * FIXME: Might reconsider this policy.
+				 *
+				 * FastSchedule is ignored here, it requires the
+				 * slurm.conf to be consistent with hardware.
+				 *
+				 * Assumption is that CPU/Memory do not change
+				 * at runtime (Cray has no hot-swappable parts).
+				 *
+				 * Hence checking it in basil_inventory() would
+				 * mean a lot of runtime overhead.
+				 */
+				fatal("slurm.conf: node %s has only Procs=%d",
+					node_ptr->name, node_cpus);
+			} else if (node_mem < node_ptr->config_ptr->real_memory) {
+				fatal("slurm.conf: node %s has RealMemory=%d",
+					node_ptr->name, node_mem);
+			}
+
+		} else if (is_gemini) {
+			/*
+			 * XE: node IDs are consecutive, hence not being
+			 * able to resolve the node ID is a (fatal) error.
+			 */
+			fatal("Non-existing Gemini node '%s' in slurm.conf",
+			      node_ptr->name);
+		} else {
+			/*
+			 * XT: node IDs are not consecutive. We don't want those
+			 * holes to appear in slurm.conf - configuration error.
+			 */
+			fatal("Non-existing SeaStar node '%s' in slurm.conf",
+			      node_ptr->name);
+		}
+
+		if (!is_gemini) {
+				/*
+				 * SeaStar: (X,Y,Z) resolve directly
+				 */
+				if (node_ptr->arch == NULL)
+					node_ptr->arch = xstrdup("XT");
+		} else {
+				/*
+				 * Gemini: each 2 nodes share the same network
+				 * interface (i.e,. nodes 0/1 and 2/3 each have
+				 * the same coordinates). Use cage and cpu to
+				 * create corresponding "virtual" Y coordinate.
+				 */
+				tc.y = 4 * cage + cpu;
+
+				if (node_ptr->arch == NULL)
+					node_ptr->arch = xstrdup("XE");
+		}
+
+		mysql_stmt_free_result(stmt);
+	}
+
+	if (mysql_stmt_close(stmt))
+		error("error closing statement: %s", mysql_stmt_error(stmt));
+	mysql_close(handle);
+
+	return basil_get_initial_state();
+}
+
+/**
  * do_basil_reserve - create a BASIL reservation.
  * IN job_ptr - pointer to job which has just been allocated resources
  * RET 0 or error code, job will abort or be requeued on failure
