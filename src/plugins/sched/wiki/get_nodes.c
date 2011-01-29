@@ -73,6 +73,28 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
 	int node_rec_cnt = 0, buf_size = 0;
 
+#ifdef HAVE_NATIVE_CRAY
+	/* Locks: write node */
+	slurmctld_lock_t node_read_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+
+	/*
+	 * Run a Basil Inventory immediately before scheduling, to avoid
+	 * race conditions caused by ALPS node state change (caused e.g.
+	 * by the node health checker).
+	 * This relies on the above write lock for the node state.
+	 */
+	lock_slurmctld(node_write_lock);
+	if (select_g_reconfigure()) {
+		unlock_slurmctld(node_write_lock);
+		*err_code = -720;
+		*err_msg = "Unable to run ALPS inventory";
+		error("wiki: Unable to run ALPS inventory");
+		return -1;
+	}
+	unlock_slurmctld(node_write_lock);
+#endif
+
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
 		*err_code = -300;

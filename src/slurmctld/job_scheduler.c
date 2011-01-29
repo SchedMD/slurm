@@ -386,6 +386,20 @@ extern int schedule(uint32_t job_limit)
 		return SLURM_SUCCESS;
 	}
 
+#ifdef HAVE_NATIVE_CRAY
+	/*
+	 * Run a Basil Inventory immediately before scheduling, to avoid
+	 * race conditions caused by ALPS node state change (caused e.g.
+	 * by the node health checker).
+	 * This relies on the above write lock for the node state.
+	 */
+	if (select_g_reconfigure()) {
+		unlock_slurmctld(job_write_lock);
+		debug4("sched: not scheduling due to ALPS");
+		return SLURM_SUCCESS;
+	}
+#endif
+
 	failed_parts = xmalloc(sizeof(struct part_record *) *
 			       list_count(part_list));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);

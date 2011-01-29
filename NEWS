@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     XT/XE systems, and build on native Cray XT/XE systems (auto-detected).
     Building on native Cray systems requires the cray-MySQL-devel-enterprise
     rpm and expat XML parser library/headers. 04_Cray-autoconf-rules.diff
+ -- On Cray/ALPS systems  do node inventory before scheduling jobs.
+    09_Cray-INVENTORY-directly-before-schedule.diff
 
 * Changes in SLURM 2.3.0.pre1
 =============================
