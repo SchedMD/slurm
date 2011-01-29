@@ -105,8 +105,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_cray_la_LIBADD =
-am_select_cray_la_OBJECTS = basil_interface.lo other_select.lo \
-	select_cray.lo
+am_select_cray_la_OBJECTS = select_cray.lo other_select.lo
 select_cray_la_OBJECTS = $(am_select_cray_la_OBJECTS)
 select_cray_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -326,13 +325,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
-select_cray_la_SOURCES = \
-	basil_interface.c	\
-	basil_interface.h	\
-	other_select.c		\
-	other_select.h		\
-	select_cray.c
-
+select_cray_la_SOURCES = select_cray.c other_select.c other_select.h
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
@@ -408,7 +401,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/basil_interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/other_select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray.Plo@am__quote@
 

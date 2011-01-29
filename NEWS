@@ -18,21 +18,6 @@ documents those changes that are of interest to users and admins.
     tab. This change dramatically improves scalability of sview.
  -- Do not attempt to read the batch script for non-batch jobs. This patch
     eliminates some inappropriate error messages. 01_interactive-no-script.diff
- -- Cray BASIL API: basic support added to the select/cray plugin.
-    01_Cray-BASIL-basic-support.diff plus
-    01_changes-from-first-revision-of-patch-01.diff
- -- Prevent changing a node's Reason or State on a Cray system.
-    02_salloc-no-node-update.diff
- -- For Cray systems, resolve node attributes and coordinates from ALPS.
-    02_Cray-BASIL-node-attributes-and-coordinates.diff
- -- Preserve node's NodeHostName field when reordering for topology.
-    03_node-reordering-NodeHostName.diff
- -- Set Cray node order based upon ALPS_NIDORDER configuration.
-    03_Cray-BASIL-node-ranking.diff
- -- Updated configure option "--enable-cray" to support interaction with Cray
-    XT/XE systems, and build on native Cray XT/XE systems (auto-detected).
-    Building on native Cray systems requires the cray-MySQL-devel-enterprise
-    rpm and expat XML parser library/headers.
 
 * Changes in SLURM 2.3.0.pre1
 =============================

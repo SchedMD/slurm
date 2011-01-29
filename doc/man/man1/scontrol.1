@@ -751,7 +751,6 @@ changing its underlying state.
 While all of the above states are valid, some of them are not valid new
 node states given their prior state.
 Generally only "DRAIN", "FAIL" and "RESUME" should be used.
-(This control is not supported on ALPS\-based Cray systems.)
 
 .TP
 \fIWeight\fP=<weight>
@@ -775,7 +774,7 @@ Identify the front end node to be updated. This specification is required.
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAIN" state.
 Use quotes to enclose a reason having more than one word.
-(Not supported on ALPS\-based Cray systems.)
+
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the front end node. Possible values are

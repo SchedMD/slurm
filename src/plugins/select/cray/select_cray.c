@@ -53,7 +53,6 @@
 #include <unistd.h>
 
 #include "other_select.h"
-#include "basil_interface.h"
 
 #define NOT_FROM_CONTROLLER -2
 /* These are defined here so when we link with something other than
@@ -185,17 +184,11 @@ extern int select_p_job_init(List job_list)
  */
 extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 {
-	if (basil_node_ranking(node_ptr, node_cnt) < 0)
-		fatal("can not resolve node coordinates: ALPS problem?");
-	return true;
+	return false;		/* FIXME - to be filled in */
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	if (basil_geometry(node_ptr, node_cnt)) {
-		error("can not get initial ALPS node state");
-		return SLURM_ERROR;
-	}
 	return other_node_init(node_ptr, node_cnt);
 }
 
@@ -248,11 +241,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
-	if (do_basil_reserve(job_ptr) != SLURM_SUCCESS) {
-		job_ptr->state_reason = WAIT_RESOURCES;
-		xfree(job_ptr->state_desc);
-		return SLURM_ERROR;
-	}
+
 	return other_job_begin(job_ptr);
 }
 
@@ -260,6 +249,7 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 {
 	return other_job_ready(job_ptr);
 }
+
 
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
@@ -269,9 +259,6 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
-	/* Reservations of batch jobs are released by the stepdmanager */
-	if (!job_ptr->batch_flag && do_basil_release(job_ptr) != SLURM_SUCCESS)
-		return SLURM_ERROR;
 	return other_job_fini(job_ptr);
 }
 
@@ -667,7 +654,5 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
-	if (basil_inventory())
-		return SLURM_ERROR;
 	return other_reconfigure();
 }
