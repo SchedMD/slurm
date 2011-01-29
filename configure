@@ -19279,6 +19279,9 @@ if test "x$ac_cv_header_expat_h" = x""yes; then :
 
 else
   as_fn_error $? "BASIL requires expat headers/rpm" "$LINENO" 5
+fi
+
+
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XML_ParserCreate in -lexpat" >&5
 $as_echo_n "checking for XML_ParserCreate in -lexpat... " >&6; }
 if test "${ac_cv_lib_expat_XML_ParserCreate+set}" = set; then :
@@ -19319,6 +19322,8 @@ if test "x$ac_cv_lib_expat_XML_ParserCreate" = x""yes; then :
   ALPS_LIBS="$ALPS_LIBS -lexpat"
 else
   as_fn_error $? "BASIL requires libexpat.so/rpm" "$LINENO" 5
+fi
+
 
 
 
@@ -19350,18 +19355,13 @@ fi
 
 #
 case "$host" in
-*-*-aix*
-fi
-
+*-*-aix*)
      $as_echo "#define SETPROCTITLE_STRATEGY PS_USE_CLOBBER_ARGV" >>confdefs.h
 
      $as_echo "#define SETPROCTITLE_PS_PADDING '\\0'" >>confdefs.h
 
      ;;
-*-*-hpux*
-fi
-
-
+*-*-hpux*)
      $as_echo "#define SETPROCTITLE_STRATEGY PS_USE_PSTAT" >>confdefs.h
 
      ;;

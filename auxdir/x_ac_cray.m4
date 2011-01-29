@@ -51,9 +51,9 @@ AC_DEFUN([X_AC_CRAY], [
       ALPS_LIBS="$MYSQL_LIBS"
 
       AC_CHECK_HEADER(expat.h, [],
-                    AC_MSG_ERROR([BASIL requires expat headers/rpm])
+                    AC_MSG_ERROR([BASIL requires expat headers/rpm]))
       AC_CHECK_LIB(expat, XML_ParserCreate, [ALPS_LIBS="$ALPS_LIBS -lexpat"],
-                    AC_MSG_ERROR([BASIL requires libexpat.so/rpm])
+                    AC_MSG_ERROR([BASIL requires libexpat.so/rpm]))
       AC_SUBST(ALPS_LIBS)
 
       AC_DEFINE(HAVE_NATIVE_CRAY,  1, [Define to 1 for native Cray XT/XE system])
