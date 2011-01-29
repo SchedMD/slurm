@@ -1266,7 +1266,24 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-#ifdef HAVE_BGL
+#if defined(HAVE_CRAY)
+	if (getenv("BASIL_RESERVATION_ID") != NULL) {
+		error("BASIL_RESERVATION_ID already set - running salloc "
+		      "within salloc?");
+		return false;
+	}
+	if (opt.shared && opt.shared != (uint16_t)NO_VAL) {
+		info("Node sharing is not (yet) supported on Cray.");
+		opt.shared = false;
+	}
+	if (opt.overcommit) {
+		info("Oversubscribing is not supported on Cray.");
+		opt.overcommit = false;
+	}
+	if (!opt.wait_all_nodes)
+		info("Cray needs --wait-all-nodes to wait on ALPS reservation");
+	opt.wait_all_nodes = true;
+#elif defined(HAVE_BGL)
 	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
 		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
 		verified = false;
