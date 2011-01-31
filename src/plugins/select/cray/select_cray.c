@@ -53,6 +53,7 @@
 #include <unistd.h>
 
 #include "other_select.h"
+#include "basil_interface.h"
 
 #define NOT_FROM_CONTROLLER -2
 /* These are defined here so when we link with something other than
@@ -80,20 +81,6 @@ time_t last_node_update;
 struct switch_record *switch_record_table;
 int switch_record_cnt;
 #endif
-
-#define JOBINFO_MAGIC 0x8cb3
-#define NODEINFO_MAGIC 0x82a3
-
-struct select_jobinfo {
-	uint16_t		magic;		/* magic number */
-	select_jobinfo_t	*other_jobinfo;
-	uint32_t		reservation_id;	/* BASIL reservation ID */
-};
-
-struct select_nodeinfo {
-	uint16_t magic;		/* magic number */
-	select_nodeinfo_t *other_nodeinfo;
-};
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -128,7 +115,6 @@ const char plugin_type[]	= "select/cray";
 uint32_t plugin_id	        = 104;
 const uint32_t plugin_version	= 100;
 
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -147,7 +133,7 @@ extern int init ( void )
 	 * if (slurmctld_conf.select_type_param & CR_CONS_RES)
 	 *	plugin_id = 105;
 	 */
-#ifndef HAVE_CRAY
+#ifndef HAVE_NATIVE_CRAY
 	if (bg_recover != NOT_FROM_CONTROLLER)
 		fatal("select/cray is incompatible with a non Cray system");
 #endif
@@ -184,11 +170,17 @@ extern int select_p_job_init(List job_list)
  */
 extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 {
-	return false;		/* FIXME - to be filled in */
+	if (basil_node_ranking(node_ptr, node_cnt) < 0)
+		fatal("can not resolve node coordinates: ALPS problem?");
+	return true;
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
+	if (basil_geometry(node_ptr, node_cnt)) {
+		error("can not get initial ALPS node state");
+		return SLURM_ERROR;
+	}
 	return other_node_init(node_ptr, node_cnt);
 }
 
@@ -241,15 +233,31 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
-
+	if (do_basil_reserve(job_ptr) != SLURM_SUCCESS) {
+		job_ptr->state_reason = WAIT_RESOURCES;
+		xfree(job_ptr->state_desc);
+		return SLURM_ERROR;
+	}
 	return other_job_begin(job_ptr);
 }
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
+	/*
+	 * Convention:	this function may be called also from stepdmgr, to
+	 *		confirm the ALPS reservation of a batch job. In this
+	 *		case, job_ptr only has minimal information and sets
+	 *		job_state == NO_VAL to distinguish this call from one
+	 *		done by slurmctld. It also sets batch_flag == 0, which
+	 *		means that we need to confirm only if batch_flag is 0,
+	 *		and execute the other_job_ready() only in slurmctld.
+	 */
+	if (!job_ptr->batch_flag && do_basil_confirm(job_ptr) != SLURM_SUCCESS)
+		return READY_JOB_ERROR;		/* not fatal - try again */
+	if (job_ptr->job_state == (uint16_t)NO_VAL)
+		return SLURM_SUCCESS;
 	return other_job_ready(job_ptr);
 }
-
 
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
@@ -259,6 +267,19 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
+	/*
+	 * Convention:	this function may be called also from stepdmgr, to
+	 *		release the ALPS reservation of a batch job. In this
+	 *		case, job_ptr only has minimal information and sets
+	 *		job_state == NO_VAL to distinguish this call from one
+	 *		done by slurmctld. It also sets batch_flag == 0, which
+	 *		means that we need to confirm only if batch_flag is 0,
+	 *		and execute the other_job_fini() only in slurmctld.
+	 */
+	if (!job_ptr->batch_flag && do_basil_release(job_ptr) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+	if (job_ptr->job_state == (uint16_t)NO_VAL)
+		return SLURM_SUCCESS;
 	return other_job_fini(job_ptr);
 }
 
@@ -654,5 +675,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
+	if (basil_inventory())
+		return SLURM_ERROR;
 	return other_reconfigure();
 }

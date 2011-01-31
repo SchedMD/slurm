@@ -86,16 +86,16 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
-	backup.$(OBJEXT) basil_interface.$(OBJEXT) \
-	controller.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
-	groups.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
-	job_submit.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
-	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
-	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	port_mgr.$(OBJEXT) power_save.$(OBJEXT) preempt.$(OBJEXT) \
-	proc_req.$(OBJEXT) read_config.$(OBJEXT) reservation.$(OBJEXT) \
-	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
-	state_save.$(OBJEXT) step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
+	backup.$(OBJEXT) controller.$(OBJEXT) front_end.$(OBJEXT) \
+	gang.$(OBJEXT) groups.$(OBJEXT) job_mgr.$(OBJEXT) \
+	job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
+	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
+	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
+	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
+	preempt.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
+	reservation.$(OBJEXT) sched_plugin.$(OBJEXT) \
+	srun_comm.$(OBJEXT) state_save.$(OBJEXT) step_mgr.$(OBJEXT) \
+	trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o
@@ -121,7 +121,6 @@ ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
-ALPS_LIBS = @ALPS_LIBS@
 AMTAR = @AMTAR@
 AR = @AR@
 AUTHD_CFLAGS = @AUTHD_CFLAGS@
@@ -325,8 +324,6 @@ slurmctld_SOURCES = \
 	agent.c  	\
 	agent.h		\
 	backup.c	\
-	basil_interface.c \
-	basil_interface.h \
 	controller.c 	\
 	front_end.c	\
 	front_end.h	\
@@ -466,7 +463,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_policy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/basil_interface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/controller.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@

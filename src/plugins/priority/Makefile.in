@@ -122,7 +122,6 @@ am__relativize = \
   done; \
   reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
-ALPS_LIBS = @ALPS_LIBS@
 AMTAR = @AMTAR@
 AR = @AR@
 AUTHD_CFLAGS = @AUTHD_CFLAGS@

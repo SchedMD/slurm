@@ -23,16 +23,17 @@ documents those changes that are of interest to users and admins.
     02_Bug-fix_no-script-on-interactive-job.diff
  -- Preserve NodeHostName when reordering nodes due to system topology.
     03_Bug-fix_slurmctld-swap-both-NodeAddr-and-NodeHostname-when-reordering.diff
- -- Updated configure option "--enable-cray" to support interaction with Cray
-    XT/XE systems, and build on native Cray XT/XE systems (auto-detected).
-    Building on native Cray systems requires the cray-MySQL-devel-enterprise
-    rpm and expat XML parser library/headers. 04_Cray-autoconf-rules.diff
  -- On Cray/ALPS systems  do node inventory before scheduling jobs.
     09_Cray-INVENTORY-directly-before-schedule.diff
  -- Disable some salloc options on Cray systems. 11_salloc.diff
  -- Disable scontrol's wait_job command on Cray systems.
     13_scontrol-no-wait_job.diff
  -- Disable srun command on native Cray/ALPS systems. 14_srun.diff
+ -- Updated configure option "--enable-cray-emulation" (still under
+    development) to emulate a cray XT/XE system, and auto-detect a real
+    Cray XT/XE systems (removed no longer needed --enable-cray configure
+    option).  Building on native Cray systems requires the
+    cray-MySQL-devel-enterprise rpm and expat XML parser library/headers.
 
 * Changes in SLURM 2.3.0.pre1
 =============================

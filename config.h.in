@@ -60,8 +60,8 @@
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
-/* Define to 1 for basic support of Cray XT/XE systems */
-#undef HAVE_CRAY
+/* Define to 1 for native Cray XT/XE system */
+#undef HAVE_CRAY_FILES
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
@@ -132,6 +132,9 @@
 
 /* define if you have libelanhosts. */
 #undef HAVE_LIBELANHOSTS
+
+/* Define to 1 if you have the `expat' library (-lexpat). */
+#undef HAVE_LIBEXPAT
 
 /* define if you have libntbl. */
 #undef HAVE_LIBNTBL

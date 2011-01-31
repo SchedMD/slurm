@@ -789,7 +789,6 @@ DEBUG_MODULES_FALSE
 DEBUG_MODULES_TRUE
 HAVE_NATIVE_CRAY_FALSE
 HAVE_NATIVE_CRAY_TRUE
-ALPS_LIBS
 WITH_PGSQL_FALSE
 WITH_PGSQL_TRUE
 PGSQL_CFLAGS
@@ -1013,7 +1012,7 @@ with_xcpu
 enable_gtktest
 with_mysql_config
 with_pg_config
-enable_cray
+enable_cray_emulation
 enable_debug
 enable_memory_leak_debug
 enable_front_end
@@ -1688,7 +1687,7 @@ Optional Features:
                           environment without .login
   --enable-sun-const      enable Sun Constellation system support
   --disable-gtktest       do not try to compile and run a test GTK+ program
-  --enable-cray           enable Cray XT/XE system support
+  --enable-cray-emulation Run SLURM in Cray mode on a non-cray system
   --enable-debug          enable debugging code for development
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
@@ -7220,13 +7219,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:7223: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:7222: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7226: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:7225: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7229: output\"" >&5)
+  (eval echo "\"\$as_me:7228: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8431,7 +8430,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8434 "configure"' > conftest.$ac_ext
+  echo '#line 8433 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -10220,11 +10219,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10223: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10222: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10227: \$? = $ac_status" >&5
+   echo "$as_me:10226: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10559,11 +10558,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10562: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10561: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10566: \$? = $ac_status" >&5
+   echo "$as_me:10565: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10664,11 +10663,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10667: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10666: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10671: \$? = $ac_status" >&5
+   echo "$as_me:10670: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10719,11 +10718,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10722: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10721: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10726: \$? = $ac_status" >&5
+   echo "$as_me:10725: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13103,7 +13102,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13106 "configure"
+#line 13105 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13199,7 +13198,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13202 "configure"
+#line 13201 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15155,11 +15154,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15158: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15157: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15162: \$? = $ac_status" >&5
+   echo "$as_me:15161: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15254,11 +15253,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15257: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15256: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15261: \$? = $ac_status" >&5
+   echo "$as_me:15260: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15306,11 +15305,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15309: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15308: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15313: \$? = $ac_status" >&5
+   echo "$as_me:15312: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19231,50 +19230,49 @@ fi
 
 
 
-  x_ac_cray="no"
-  ac_have_native_cray="no"
+	x_ac_cray="no"
+	ac_have_native_cray="no"
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether support for Cray XT/XE is enabled" >&5
-$as_echo_n "checking whether support for Cray XT/XE is enabled... " >&6; }
-  # Check whether --enable-cray was given.
-if test "${enable_cray+set}" = set; then :
-  enableval=$enable_cray;  case "$enableval" in
-        yes) x_ac_cray="yes" ;;
-         no) x_ac_cray="no"  ;;
-          *) as_fn_error $? "bad value \"$enableval\" for --enable-cray" "$LINENO" 5  ;;
-      esac
-
-
+   	# Check whether --enable-cray-emulation was given.
+if test "${enable_cray_emulation+set}" = set; then :
+  enableval=$enable_cray_emulation;  case "$enableval" in
+	  yes) ac_have_cray=yes ;;
+	  no)  ac_have_cray=no ;;
+	  *)   as_fn_error $? "bad value \"$enableval\" for --enable-cray-emulation" "$LINENO" 5   ;;
+    	esac
 fi
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cray" >&5
-$as_echo "$x_ac_cray" >&6; }
 
-  if test "$x_ac_cray" = "yes"; then
-
-$as_echo "#define HAVE_CRAY 1" >>confdefs.h
-
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native Cray XT or XE system" >&5
+	if test "x$ac_have_cray" = "xyes"; then
+		# FIXME: This doesn't do much just yet.
+    		{ $as_echo "$as_me:${as_lineno-$LINENO}: Running in Cray emulation mode" >&5
+$as_echo "$as_me: Running in Cray emulation mode" >&6;}
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native Cray XT or XE system" >&5
 $as_echo_n "checking whether this is a native Cray XT or XE system... " >&6; }
-    # Check for a Cray-specific file:
-    #  * older XT systems use an /etc/xtrelease file
-    #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
-    #  * both have an /etc/xthostname
-    if test -f /etc/xtrelease  || test -d /etc/opt/cray/release ; then
-      ac_have_native_cray="yes"
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_native_cray" >&5
-$as_echo "$ac_have_native_cray" >&6; }
-  fi
+                # Check for a Cray-specific file:
+                #  * older XT systems use an /etc/xtrelease file
+                #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
+                #  * both have an /etc/xthostname
+		if test -f /etc/xtrelease  || test -d /etc/opt/cray/release ; then
+			ac_have_native_cray="yes"
+			# FIXME: This should be used to distinguish we are on
+			# a real system, It appears what HAVE_NATIVE_CRAY
+			# does now should probably be renamed to HAVE_CRAY
 
-  if test "$ac_have_native_cray" = "yes"; then
-      if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
-        as_fn_error $? "BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
-      fi
-      ALPS_LIBS="$MYSQL_LIBS"
+$as_echo "#define HAVE_CRAY_FILES 1" >>confdefs.h
 
-      ac_fn_c_check_header_mongrel "$LINENO" "expat.h" "ac_cv_header_expat_h" "$ac_includes_default"
+		fi
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_cray" >&5
+$as_echo "$ac_have_cray" >&6; }
+	fi
+
+	if test "$ac_have_cray" = "yes"; then
+		if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
+			as_fn_error $? "BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
+		fi
+
+		ac_fn_c_check_header_mongrel "$LINENO" "expat.h" "ac_cv_header_expat_h" "$ac_includes_default"
 if test "x$ac_cv_header_expat_h" = x""yes; then :
 
 else
@@ -19282,7 +19280,7 @@ else
 fi
 
 
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XML_ParserCreate in -lexpat" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for XML_ParserCreate in -lexpat" >&5
 $as_echo_n "checking for XML_ParserCreate in -lexpat... " >&6; }
 if test "${ac_cv_lib_expat_XML_ParserCreate+set}" = set; then :
   $as_echo_n "(cached) " >&6
@@ -19319,15 +19317,16 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_expat_XML_ParserCreate" >&5
 $as_echo "$ac_cv_lib_expat_XML_ParserCreate" >&6; }
 if test "x$ac_cv_lib_expat_XML_ParserCreate" = x""yes; then :
-  ALPS_LIBS="$ALPS_LIBS -lexpat"
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBEXPAT 1
+_ACEOF
+
+  LIBS="-lexpat $LIBS"
+
 else
-  as_fn_error $? "BASIL requires libexpat.so/rpm" "$LINENO" 5
+  as_fn_error $? "BASIL requires libexpat.so (i.e. libexpat1-dev)" "$LINENO" 5
 fi
 
-
-
-
-$as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
 
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
@@ -19338,8 +19337,11 @@ $as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
 
 $as_echo "#define HAVE_FRONT_END 1" >>confdefs.h
 
-  fi
-   if test "$ac_have_native_cray" = "yes"; then
+
+$as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
+
+	fi
+	 if test "$ac_have_cray" = "yes"; then
   HAVE_NATIVE_CRAY_TRUE=
   HAVE_NATIVE_CRAY_FALSE='#'
 else
@@ -20668,7 +20670,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bgq/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bgq/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -21969,6 +21971,7 @@ do
     "src/plugins/select/bluegene/plugin/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/bluegene/plugin/Makefile" ;;
     "src/plugins/select/cons_res/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/cons_res/Makefile" ;;
     "src/plugins/select/cray/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/cray/Makefile" ;;
+    "src/plugins/select/cray/libalps/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/cray/libalps/Makefile" ;;
     "src/plugins/select/linear/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/linear/Makefile" ;;
     "src/plugins/switch/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/Makefile" ;;
     "src/plugins/switch/elan/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/elan/Makefile" ;;

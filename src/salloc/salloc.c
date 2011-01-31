@@ -55,7 +55,6 @@
 
 #include <slurm/slurm.h>
 
-#include "src/common/basil_resv_conf.h"
 #include "src/common/env.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -72,10 +71,6 @@
 #include "src/common/node_select.h"
 #include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
-#endif
-
-#ifdef HAVE_CRAY
-#include "src/common/node_select.h"
 #endif
 
 #ifndef __USE_XOPEN_EXTENDED
@@ -123,10 +118,6 @@ static int _wait_bluegene_block_ready(
 static int _blocks_dealloc(void);
 #else
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
-#endif
-
-#ifdef HAVE_CRAY
-static int  _claim_reservation(resource_allocation_response_msg_t *alloc);
 #endif
 
 bool salloc_shutdown = false;
@@ -322,14 +313,6 @@ int main(int argc, char *argv[])
 				      "boot of the nodes.");
 			goto relinquish;
 		}	
-#endif
-#ifdef HAVE_CRAY
-		if (!_claim_reservation(alloc)) {
-			if(!allocation_interrupted)
-				error("Something is wrong with the ALPS "
-				      "resource reservation.");
-			goto relinquish;
-		}
 #endif
 	}
 
@@ -793,7 +776,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				if (tpgid != command_pid && tpgid != getpgrp())
 					killpg(tpgid, SIGHUP);
 			}
-#if defined(HAVE_CRAY)
+#ifdef HAVE_NATIVE_CRAY
 			signal = SIGTERM;
 #else
 			if (opt.kill_command_signal_set)
@@ -1041,22 +1024,3 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	return is_ready;
 }
 #endif	/* HAVE_BG */
-
-#ifdef HAVE_CRAY
-/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
-static int _claim_reservation(resource_allocation_response_msg_t *alloc)
-{
-	int rc = 0;
-	uint32_t resv_id = 0;
-
-	select_g_select_jobinfo_get(alloc->select_jobinfo,
-				    SELECT_JOBDATA_RESV_ID,
-				    &resv_id);
-	if (!resv_id)
-		return rc;
-	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)
-		rc = 1;
-	xfree(resv_id);
-	return rc;
-}
-#endif

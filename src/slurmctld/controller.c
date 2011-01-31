@@ -86,7 +86,6 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
-#include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
@@ -1402,9 +1401,6 @@ static void *_slurmctld_background(void *no_data)
 			last_health_check_time = now;
 			lock_slurmctld(node_write_lock);
 			run_health_check();
-#ifdef HAVE_CRAY
-			basil_query();
-#endif
 			unlock_slurmctld(node_write_lock);
 		}
 		if (((difftime(now, last_ping_node_time) >= ping_interval) ||

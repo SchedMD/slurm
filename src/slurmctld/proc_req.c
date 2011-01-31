@@ -1480,10 +1480,20 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		     msg_title, nodes,
 		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
-	}
-
+#ifdef HAVE_NATIVE_CRAY
+	} else if (comp_msg->slurm_rc == ESLURM_RESERVATION_NOT_USABLE) {
+		/*
+		 * Confirmation of ALPS reservation failed.
+		 *
+		 * This is non-fatal, it may be a transient error (e.g. ALPS
+		 * temporary unavailable). Give job one more chance to run.
+		 */
+		error("ALPS reservation for JobId %u failed: %s",
+			comp_msg->job_id, slurm_strerror(comp_msg->slurm_rc));
+		dump_job = job_requeue = true;
+#endif
 	/* Handle non-fatal errors here */
-	if (comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR
+	} else if (comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR
 	    || comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED
 	    || comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) {
 		error("slurmd error %u running JobId=%u on %s=%s: %s",

@@ -146,10 +146,10 @@ struct node_record {
 					 * or other sequence number used to
 					 * order nodes by location,
 					 * no need to save/restore */
-#ifdef HAVE_CRAY
+#ifdef HAVE_NATIVE_CRAY
 	uint32_t basil_node_id;		/* Cray-XT BASIL node ID,
 					 * no need to save/restore */
-#endif	/* HAVE_CRAY */
+#endif	/* HAVE_NATIVE_CRAY */
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
 						 * to access contents */

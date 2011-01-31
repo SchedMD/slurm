@@ -2775,16 +2775,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
-#ifndef HAVE_NATIVE_CRAY
-	if (strcmp(conf->select_type, "select/cray") == 0)
-#ifdef HAVE_CRAY
-		fatal("Use of SelectType=select/cray in slurm.conf "
-		      "on a non-native Cray system.");
-#else
-		fatal("Requested SelectType=select/cray in slurm.conf, "
-		      "but slurm was built without --enable-cray.");
-#endif
-#endif
 
 	if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
@@ -2815,7 +2805,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->slurm_user_id = my_uid;
 		}
 	}
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY_FILES
 	if (conf->slurm_user_id != 0)
 		fatal("Cray requires SlurmUser=root (default), but have '%s'.",
 			conf->slurm_user_name);

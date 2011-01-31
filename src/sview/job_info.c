@@ -239,7 +239,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_IMAGE_MLOADER, NULL,
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #endif
-#ifdef HAVE_CRAY
+#ifdef HAVE_NATIVE_CRAY
 	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, "ALPS Resv ID", FALSE, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
 #else

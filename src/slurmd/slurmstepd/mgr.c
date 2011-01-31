@@ -77,7 +77,6 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/basil_resv_conf.h"
 #include "src/common/cbuf.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
@@ -258,6 +257,38 @@ static uint32_t _get_exit_code(slurmd_job_t *job)
 	return step_rc;
 }
 
+#ifdef HAVE_NATIVE_CRAY
+/*
+ * Kludge to better inter-operate with ALPS layer:
+ * - CONFIRM method requires the SID of the shell executing the job script,
+ * - RELEASE method is more robustly called from stepdmgr.
+ *
+ * To avoid calling the same select/cray plugin function also in slurmctld,
+ * we use the following convention:
+ * - only job_id, job_state, alloc_sid, and select_jobinfo set to non-NULL,
+ * - batch_flag is 0 (corresponding call in slurmctld uses batch_flag = 1),
+ * - job_state set to the unlikely value of 'NO_VAL'.
+ */
+static int _call_select_plugin_from_stepd(slurmd_job_t *job,
+					  int (*select_fn)(struct job_record *))
+{
+	struct job_record fake_job_record = {0};
+	int rc;
+
+	fake_job_record.job_id		= job->jobid;
+	fake_job_record.job_state	= (uint16_t)NO_VAL;
+	fake_job_record.alloc_sid	= getsid(0);
+	fake_job_record.select_jobinfo	= select_g_select_jobinfo_alloc();
+	select_g_select_jobinfo_set(fake_job_record.select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID, &job->resv_id);
+
+	rc = (*select_fn)(&fake_job_record);
+
+	select_g_select_jobinfo_free(fake_job_record.select_jobinfo);
+	return rc;
+}
+#endif
+
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
@@ -271,6 +302,11 @@ batch_finish(slurmd_job_t *job, int rc)
 	if (job->batchdir && (rmdir(job->batchdir) < 0))
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
+
+#ifdef HAVE_NATIVE_CRAY
+	(void)_call_select_plugin_from_stepd(job, select_g_job_fini);
+#endif
+
 	if (job->aborted) {
 		if ((job->stepid == NO_VAL) ||
 		    (job->stepid == SLURM_BATCH_SCRIPT)) {
@@ -847,6 +883,18 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 
+#ifdef HAVE_NATIVE_CRAY
+	if(_call_select_plugin_from_stepd(job, select_g_job_ready)) {
+		error("could not confirm ALPS resId %u", job->resv_id);
+		/*
+		 * slurmctld knows to interpret this condition to mean that
+		 * the ALPS (not the SLURM) reservation failed, tries again.
+		 */
+		rc = ESLURM_RESERVATION_NOT_USABLE;
+		goto fail1;
+	}
+#endif
+
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
@@ -1018,13 +1066,6 @@ _fork_all_tasks(slurmd_job_t *job)
 		error("slurm_container_create: %m");
 		return SLURM_ERROR;
 	}
-
-#ifdef HAVE_CRAY
-	if (basil_resv_conf(job->resv_id, job->jobid)) {
-		error("could not confirm reservation");
-		return SLURM_ERROR;
-	}
-#endif
 
 	debug2("Before call to spank_init()");
 	if (spank_init (job) < 0) {

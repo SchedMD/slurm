@@ -39,6 +39,7 @@
 
 #include "./msg.h"
 #include "src/common/hostlist.h"
+#include "src/common/node_select.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -87,7 +88,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 
 #ifdef HAVE_NATIVE_CRAY
 	/* Locks: write node */
-	slurmctld_lock_t node_read_lock = {
+	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	/*

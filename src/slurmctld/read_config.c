@@ -73,7 +73,6 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/acct_policy.h"
-#include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -928,10 +927,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * an extremely rare situation */
 	if (load_job_ret)
 		_acct_restore_active_jobs();
-
-#ifdef HAVE_CRAY
-	basil_query();
-#endif
 
 	/* Sync select plugin with synchronized job/node/part data */
 	select_g_reconfigure();
