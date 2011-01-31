@@ -68,48 +68,6 @@ extern long slurm_api_version (void)
 	return (long) SLURM_API_VERSION;
 }
 
-
-static char *
-_select_info(uint16_t select_type_param)
-{
-	static char select_str[64];
-
-	select_str[0] = '\0';
-	if ((select_type_param & CR_CPU) &&
-	    (select_type_param & CR_MEMORY))
-		strcat(select_str, "CR_CPU_MEMORY");
-	else if ((select_type_param & CR_CORE) &&
-		 (select_type_param & CR_MEMORY))
-		strcat(select_str, "CR_CORE_MEMORY");
-	else if ((select_type_param & CR_SOCKET) &&
-		 (select_type_param & CR_MEMORY))
-		strcat(select_str, "CR_SOCKET_MEMORY");
-	else if (select_type_param & CR_CPU)
-		strcat(select_str, "CR_CPU");
-	else if (select_type_param & CR_CORE)
-		strcat(select_str, "CR_CORE");
-	else if (select_type_param & CR_SOCKET)
-		strcat(select_str, "CR_SOCKET");
-	else if (select_type_param & CR_MEMORY)
-		strcat(select_str, "CR_MEMORY");
-
-	if (select_type_param & CR_ONE_TASK_PER_CORE) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "CR_ONE_TASK_PER_CORE");
-	}
-	if (select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "CR_CORE_DEFAULT_DIST_BLOCK");
-	}
-
-	if (select_str[0] == '\0')
-		strcat(select_str, "NONE");
-
-	return select_str;
-}
-
 static char *
 _reset_period_str(uint16_t reset_period)
 {
@@ -841,7 +799,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("SelectTypeParameters");
 		key_pair->value = xstrdup(
-			_select_info(slurm_ctl_conf_ptr->select_type_param));
+			sched_param_type_string(slurm_ctl_conf_ptr->
+						select_type_param));
 		list_append(ret_list, key_pair);
 	}
 

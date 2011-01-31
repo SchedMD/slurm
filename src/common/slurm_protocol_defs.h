@@ -1078,6 +1078,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
 
+extern char *sched_param_type_string(uint16_t select_type_param);
 extern char *job_reason_string(enum job_state_reason inx);
 extern char *job_state_string(uint16_t inx);
 extern char *job_state_string_compact(uint16_t inx);

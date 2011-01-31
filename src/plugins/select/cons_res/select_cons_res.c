@@ -1622,6 +1622,10 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 extern int init(void)
 {
 	cr_type = slurmctld_conf.select_type_param;
+	if ((cr_type & (CR_CPU | CR_SOCKET | CR_CORE)) == 0) {
+		fatal("Invalid SelectTypeParameter: %s",
+		      sched_param_type_string(cr_type));
+	}
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
 	select_debug_flags = slurm_get_debug_flags();

@@ -1008,6 +1008,48 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 	return mode_num;
 }
 
+/* Convert SelectTypeParameter to equivalent string
+ * NOTE: Not reentrant */
+extern char *sched_param_type_string(uint16_t select_type_param)
+{
+	static char select_str[64];
+
+	select_str[0] = '\0';
+	if ((select_type_param & CR_CPU) &&
+	    (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_CPU_MEMORY");
+	else if ((select_type_param & CR_CORE) &&
+		 (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_CORE_MEMORY");
+	else if ((select_type_param & CR_SOCKET) &&
+		 (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_SOCKET_MEMORY");
+	else if (select_type_param & CR_CPU)
+		strcat(select_str, "CR_CPU");
+	else if (select_type_param & CR_CORE)
+		strcat(select_str, "CR_CORE");
+	else if (select_type_param & CR_SOCKET)
+		strcat(select_str, "CR_SOCKET");
+	else if (select_type_param & CR_MEMORY)
+		strcat(select_str, "CR_MEMORY");
+
+	if (select_type_param & CR_ONE_TASK_PER_CORE) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_ONE_TASK_PER_CORE");
+	}
+	if (select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_CORE_DEFAULT_DIST_BLOCK");
+	}
+
+	if (select_str[0] == '\0')
+		strcat(select_str, "NONE");
+
+	return select_str;
+}
+
 char *job_state_string(uint16_t inx)
 {
 	/* Process JOB_STATE_FLAGS */
