@@ -2240,6 +2240,9 @@ static void _update_step_record(job_step_info_t *step_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ALLOC,        0,
+			   SORTID_COLOR,
+				sview_colors[step_ptr->step_id],
+			   SORTID_COLOR_INX,    step_ptr->step_id,
 			   SORTID_CPU_MIN,      tmp_cpu_min,
 			   SORTID_GRES,         step_ptr->gres,
 			   SORTID_JOBID,        step_ptr->step_id,
@@ -2563,7 +2566,6 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	}
 
 need_refresh:
-g_print("l2566\n");
 	if (!spec_info->display_widget) {
 		treeview = create_treeview_2cols_attach_to_table(
 			popup_win->table);
