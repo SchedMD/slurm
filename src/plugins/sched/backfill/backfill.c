@@ -567,7 +567,9 @@ static int _attempt_backfill(void)
 		}
 		comp_time_limit = time_limit;
 		orig_time_limit = job_ptr->time_limit;
-		if (job_ptr->time_min && (job_ptr->time_min < time_limit))
+		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+			time_limit = job_ptr->time_limit = 1;
+		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
 			time_limit = job_ptr->time_limit = job_ptr->time_min;
 
 		/* Determine impact of any resource reservations */
@@ -655,7 +657,9 @@ static int _attempt_backfill(void)
 		}
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
-			if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
+			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+				job_ptr->time_limit = orig_time_limit;
+			else if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
 				/* Set time limit as high as possible */
 				job_ptr->time_limit = comp_time_limit;
 				job_ptr->end_time = job_ptr->start_time +
