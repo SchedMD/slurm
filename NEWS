@@ -12,7 +12,10 @@ documents those changes that are of interest to users and admins.
     expected start time was too far in the future for the backfill scheduler
     to compute.
  -- Prevent a pending job reason field from inappropriately being set to
-    Priority.
+    "Priority".
+ -- In sched/backfill with jobs having QOS_FLAG_NO_RESERVE set, then don't
+    consider the job's time limit when attempting to backfill schedule. The job
+    will just be preempted as needed at any time.
 
 * Changes in SLURM 2.2.1
 ========================
