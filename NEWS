@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- In sched/backfill with jobs having QOS_FLAG_NO_RESERVE set, then don't
     consider the job's time limit when attempting to backfill schedule. The job
     will just be preempted as needed at any time.
+ -- Eliminated a bug in sbatch when no valid target clusters are specified.
 
 * Changes in SLURM 2.2.1
 ========================
