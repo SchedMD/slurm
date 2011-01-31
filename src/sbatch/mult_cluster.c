@@ -191,7 +191,8 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 
 	if (!list_count(ret_list)) {
 		error("Can't run on any of the clusters given");
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	/* sort the list so the first spot is on top */
@@ -202,6 +203,7 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 
 	/* set up the working cluster and be done */
 	working_cluster_rec = local_cluster->cluster_rec;
+end_it:
 	list_destroy(ret_list);
 
 	return rc;
