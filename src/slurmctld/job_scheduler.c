@@ -416,8 +416,10 @@ extern int schedule(uint32_t job_limit)
 		if ((job_ptr->resv_name == NULL) &&
 		    _failed_partition(job_ptr->part_ptr, failed_parts,
 				      failed_part_cnt)) {
-			job_ptr->state_reason = WAIT_PRIORITY;
-			xfree(job_ptr->state_desc);
+			if (job_ptr->priority != 1) {	/* not system hold */
+				job_ptr->state_reason = WAIT_PRIORITY;
+				xfree(job_ptr->state_desc);
+			}
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",
 			       job_ptr->job_id,
