@@ -1622,10 +1622,6 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 extern int init(void)
 {
 	cr_type = slurmctld_conf.select_type_param;
-	if ((cr_type & (CR_CPU | CR_SOCKET | CR_CORE)) == 0) {
-		fatal("Invalid SelectTypeParameter: %s",
-		      sched_param_type_string(cr_type));
-	}
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
 	select_debug_flags = slurm_get_debug_flags();
@@ -1703,6 +1699,10 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	int i, tot_core;
 
 	info("cons_res: select_p_node_init");
+	if ((cr_type & (CR_CPU | CR_SOCKET | CR_CORE)) == 0) {
+		fatal("Invalid SelectTypeParameter: %s",
+		      sched_param_type_string(cr_type));
+	}
 	if (node_ptr == NULL) {
 		error("select_p_node_init: node_ptr == NULL");
 		return SLURM_ERROR;
