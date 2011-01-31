@@ -41,6 +41,13 @@
 #define MAX_CANCEL_RETRY 10
 #define SIZE(a) (sizeof(a)/sizeof(a[0]))
 
+/* We do not read the node table here, but allocated space for up to
+ * MAX_NODE_SPACE nodes and generate fatal error if we go higher. Increase
+ * this value if needed */
+#ifndef SVIEW_MAX_NODE_SPACE
+#define SVIEW_MAX_NODE_SPACE (24 * 1024)
+#endif
+
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
 	int color_inx;
@@ -2548,7 +2555,7 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	int found = 0;
 	GtkTreeView *treeview = NULL;
 	int update = 0;
-	int j = 0;
+	int j, k;
 
 	if (spec_info->search_info->int_data == NO_VAL) {
 		/* 	info = xstrdup("No pointer given!"); */
@@ -2556,6 +2563,7 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	}
 
 need_refresh:
+g_print("l2566\n");
 	if (!spec_info->display_widget) {
 		treeview = create_treeview_2cols_attach_to_table(
 			popup_win->table);
@@ -2577,32 +2585,66 @@ need_refresh:
 	if (!sview_job_info) {
 		/* not found */
 	} else if (spec_info->search_info->int_data2 == NO_VAL) {
-		j=0;
+		int top_node_inx = 0;
+		int array_size = SVIEW_MAX_NODE_SPACE;
+		int  *color_inx = xmalloc(sizeof(int) * array_size);
+		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
+		j = 0;
 		while (sview_job_info->job_ptr->node_inx[j] >= 0) {
-			change_grid_color(
-				popup_win->grid_button_list,
-				sview_job_info->job_ptr->node_inx[j],
-				sview_job_info->job_ptr->node_inx[j+1],
-				sview_job_info->color_inx,
-				true, 0);
+			top_node_inx = MAX(top_node_inx,
+					   sview_job_info->job_ptr->
+					   node_inx[j+1]);
+			if (top_node_inx > SVIEW_MAX_NODE_SPACE)
+				fatal("Expand SVIEW_MAX_NODE_SPACE in sview");
+			for (k = sview_job_info->job_ptr->node_inx[j];
+			     k <= sview_job_info->job_ptr->node_inx[j+1];
+			     k++) {
+				color_set_flag[k] = true;
+				color_inx[k] = sview_job_info->
+					       color_inx;
+			}
 			j += 2;
 		}
+		change_grid_color_array(popup_win->grid_button_list,
+					top_node_inx+1, color_inx,
+					color_set_flag, true, 0);
+		xfree(color_inx);
+		xfree(color_set_flag);
 		_layout_job_record(treeview, sview_job_info, update);
 		found = 1;
 	} else {
+		int top_node_inx = 0;
+		int array_size = SVIEW_MAX_NODE_SPACE;
+		int  *color_inx = xmalloc(sizeof(int) * array_size);
+		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(sview_job_info->step_list);
 		while ((step_ptr = list_next(itr))) {
 			if (step_ptr->step_id ==
 			    spec_info->search_info->int_data2) {
-				j=0;
+				j = 0;
 				while (step_ptr->node_inx[j] >= 0) {
-					change_grid_color(
-						popup_win->grid_button_list,
-						step_ptr->node_inx[j],
-						step_ptr->node_inx[j+1],
-						step_ptr->step_id, false, 0);
+					top_node_inx = MAX(top_node_inx,
+							   step_ptr->
+							   node_inx[j+1]);
+					if (top_node_inx > SVIEW_MAX_NODE_SPACE)
+						fatal("Expand "
+						      "SVIEW_MAX_NODE_SPACE "
+						      "in sview");
+					for (k = step_ptr->node_inx[j];
+					     k <= step_ptr->node_inx[j+1];
+					     k++) {
+						color_set_flag[k] = true;
+						color_inx[k] = step_ptr->
+							       step_id;
+					}
 					j += 2;
 				}
+				change_grid_color_array(
+					popup_win->grid_button_list,
+					top_node_inx+1, color_inx,
+					color_set_flag, false, 0);
+				xfree(color_inx);
+				xfree(color_set_flag);
 				_layout_step_record(treeview,
 						    step_ptr, update);
 				found = 1;
@@ -3003,7 +3045,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
 	int changed = 1;
-	int j=0;
+	int j, k;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
@@ -3094,26 +3136,42 @@ display_it:
 					 &path, &focus_column);
 	}
 	if (!path) {
+		int top_node_inx = 0;
+		int array_size = SVIEW_MAX_NODE_SPACE;
+		int  *color_inx = xmalloc(sizeof(int) * array_size);
+		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(info_list);
 		while ((sview_job_info_ptr = list_next(itr))) {
 			job_ptr = sview_job_info_ptr->job_ptr;
-			j=0;
+			j = 0;
 			while (job_ptr->node_inx[j] >= 0) {
-				change_grid_color(grid_button_list,
-						  job_ptr->node_inx[j],
-						  job_ptr->node_inx[j+1],
-						  sview_job_info_ptr->color_inx,
-						  true, 0);
+				top_node_inx = MAX(top_node_inx,
+						   job_ptr->node_inx[j+1]);
+				if (top_node_inx > SVIEW_MAX_NODE_SPACE) {
+					fatal("Increase SVIEW_MAX_NODE_SPACE "
+					      "in sview");
+				}
+				for (k = job_ptr->node_inx[j];
+				     k <= job_ptr->node_inx[j+1]; k++) {
+					color_set_flag[k] = true;
+					color_inx[k] = sview_job_info_ptr->
+						       color_inx;
+				}
 				j += 2;
 			}
 		}
 		list_iterator_destroy(itr);
+		change_grid_color_array(grid_button_list, top_node_inx+1,
+					color_inx, color_set_flag, true, 0);
+		xfree(color_inx);
+		xfree(color_set_flag);
 		change_grid_color(grid_button_list, -1, -1,
 				  MAKE_WHITE, true, 0);
-	} else
+	} else {
 		highlight_grid(GTK_TREE_VIEW(display_widget),
 			       SORTID_NODE_INX, SORTID_COLOR_INX,
 			       grid_button_list);
+	}
 
 	if (working_sview_config.grid_speedup) {
 		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
@@ -3168,13 +3226,15 @@ extern void specific_info_job(popup_info_t *popup_win)
 	List info_list = NULL;
 	List send_info_list = NULL;
 	int changed = 1;
-	int j=0, i=-1;
+	int i=-1, j, k;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
 	char name[30], *uname = NULL;
 	hostset_t hostset = NULL;
 	int name_diff;
+	int top_node_inx, array_size, *color_inx;
+	bool *color_set_flag;
 
 	if (!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_job, SORTID_CNT);
@@ -3365,16 +3425,28 @@ display_it:
 		}
 
 		list_push(send_info_list, sview_job_info_ptr);
-		j=0;
+		top_node_inx = 0;
+		array_size = SVIEW_MAX_NODE_SPACE;
+		color_inx = xmalloc(sizeof(int) * array_size);
+		color_set_flag = xmalloc(sizeof(bool) * array_size);
+		j = 0;
 		while (job_ptr->node_inx[j] >= 0) {
-			change_grid_color(
-				popup_win->grid_button_list,
-				job_ptr->node_inx[j],
-				job_ptr->node_inx[j+1],
-				sview_job_info_ptr->color_inx,
-				true, 0);
+			top_node_inx = MAX(top_node_inx,
+					   job_ptr->node_inx[j+1]);
+			if (top_node_inx > SVIEW_MAX_NODE_SPACE)
+				fatal("Increase SVIEW_MAX_NODE_SPACE in sview");
+			for (k = job_ptr->node_inx[j];
+			     k <= job_ptr->node_inx[j+1]; k++) {
+				color_set_flag[k] = true;
+				color_inx[k] = sview_job_info_ptr->color_inx;
+			}
 			j += 2;
 		}
+		change_grid_color_array(popup_win->grid_button_list,
+					top_node_inx+1, color_inx,
+					color_set_flag, true, 0);
+		xfree(color_inx);
+		xfree(color_set_flag);
 	}
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
