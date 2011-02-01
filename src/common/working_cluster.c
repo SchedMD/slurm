@@ -42,6 +42,9 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#if defined(HAVE_BGL) || defined(HAVE_BGP)
+#include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
+#endif
 
 /*
  * This functions technically should go in the slurmdb_defs.c, but
@@ -58,6 +61,26 @@ extern uint16_t slurmdb_setup_cluster_dims(void)
 {
 	return working_cluster_rec ?
 		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
+}
+
+extern int * slurmdb_setup_cluster_dim_size(void)
+{
+	if (working_cluster_rec)
+		return working_cluster_rec->dim_size;
+
+#if defined(HAVE_BGL) || defined(HAVE_BGP)
+{
+	static int dim_size[3];
+	if (dim_size[0] == 0) {
+		dim_size[0] = DIM_SIZE[X];
+		dim_size[1] = DIM_SIZE[Y];
+		dim_size[2] = DIM_SIZE[Y];
+	}
+	return dim_size;
+}
+#endif
+
+	return NULL;
 }
 
 extern uint16_t slurmdb_setup_cluster_name_dims(void)

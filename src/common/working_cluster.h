@@ -41,6 +41,10 @@
 /* Return the number of dimensions in the current working cluster */
 extern uint16_t slurmdb_setup_cluster_dims(void);
 
+/* Return the size of each dimensions in the current working cluster.
+ * Returns NULL if information not available or not applicable. */
+extern int * slurmdb_setup_cluster_dim_size(void);
+
 /* Return the number of digits required in the numeric suffix of hostnames
  * in the current working cluster */
 extern uint16_t slurmdb_setup_cluster_name_dims(void);
