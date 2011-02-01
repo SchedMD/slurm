@@ -554,10 +554,10 @@ static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
 {
 	int x_offset, y_offset;
 
-	x_offset = (dim_size[0] + dim_size[2]) * z;
-	*coord_x = x_offset + (a + (dim_size[2] - 1)) - y;
-	y_offset = default_y_offset - (dim_size[2] * x);
-	*coord_y = (y_offset - x) + y;
+	x_offset = (dim_size[1] + dim_size[3]) * a;
+	*coord_x = x_offset + (x + (dim_size[3] - 1)) - z;
+	y_offset = default_y_offset - (dim_size[3] * y);
+	*coord_y = (y_offset - y) + z;
 }
 
 /* Add a button for a given node. If node_ptr == NULL then fill in any gaps
@@ -888,12 +888,12 @@ static int _init_button_processor(button_processor_t *button_processor,
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
 		}
-		button_processor->default_y_offset = (dim_size[2] * dim_size[1])
-			+ (dim_size[1] - dim_size[2]);
-		working_sview_config.grid_x_width = (dim_size[0] + dim_size[2])
-						    * dim_size[3];
-		button_processor->table_y = (dim_size[2] * dim_size[1])
-					    + dim_size[1];
+		button_processor->default_y_offset = (dim_size[3] * dim_size[2])
+					+ (dim_size[2] - dim_size[3]);
+		working_sview_config.grid_x_width = (dim_size[1] + dim_size[3])
+						    * dim_size[0];
+		button_processor->table_y = (dim_size[3] * dim_size[2])
+					    + dim_size[2];
 	} else if (cluster_dims == 3) {
 		int *dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
@@ -1580,6 +1580,10 @@ extern int get_system_stats(GtkTable *table)
 #if defined(HAVE_BGL) || defined(HAVE_BGP)
 	ba_init(node_info_ptr, 0);
 #endif
+#if defined(HAVE_BGL) 
+	/* Call something to set DIM_SIZE array */
+#endif
+
 	node_list = create_node_info_list(node_info_ptr,
 					  changed, FALSE);
 	if (grid_button_list) {
