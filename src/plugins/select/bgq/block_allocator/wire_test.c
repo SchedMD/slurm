@@ -218,11 +218,13 @@ int main(int argc, char** argv)
 					     alpha_num[c],alpha_num[d],
 					     curr_mp->used,
 					     curr_mp->letter);
-					for(dim=0; dim<1; dim++) {
-						info("\tDim %d usage is %d ",
+					for(dim=0; dim<4; dim++) {
+						info("\tDim %d usage is %s ",
 						     dim,
-						     curr_mp->axis_switch[dim].
-						     usage);
+						     ba_switch_usage_str(
+							     curr_mp->
+							     axis_switch[dim].
+							     usage));
 					}
 				}
 			}

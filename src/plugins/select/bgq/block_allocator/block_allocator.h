@@ -206,6 +206,8 @@ typedef struct
  * ba_mp_t: mp within the allocation system.
  */
 typedef struct block_allocator_mp {
+	/* altered wires in the switch */
+	ba_switch_t alter_switch[HIGHEST_DIMENSIONS];
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
 	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
@@ -490,5 +492,7 @@ extern int load_block_wiring(char *bg_block_id);
 
 /* make sure a node is in the system return 1 if it is 0 if not */
 extern int validate_coord(uint16_t *coord);
+
+extern char *ba_switch_usage_str(uint16_t usage);
 
 #endif /* _BLOCK_ALLOCATOR_H_ */
