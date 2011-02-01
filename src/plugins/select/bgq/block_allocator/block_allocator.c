@@ -2784,34 +2784,42 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		xassert(!(curr_switch->usage & BG_SWITCH_IN_PASS));
 		if (count == geometry) {
 			if (!_mp_out_used(curr_mp, dim)) {
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-					info("using mp %s to finish torus",
-					     curr_mp->coord_str);
 				curr_switch->usage |= BG_SWITCH_MODIFIED;
 				curr_switch->usage |= BG_SWITCH_PASS;
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("using mp %s to finish torus %u",
+					     curr_mp->coord_str,
+					     curr_switch->usage);
 			}
 		} else if (!_mp_used(curr_mp, dim)) {
 			count++;
 			curr_mp->used = 1;
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("using mp %s %d(%d)", curr_mp->coord_str,
-				     count, geometry);
 			curr_switch->usage |= BG_SWITCH_MODIFIED;
 			curr_switch->usage |= BG_SWITCH_IN_PASS;
 			curr_switch->usage |= BG_SWITCH_IN;
 			if ((count < geometry) || (conn_type == SELECT_TORUS)) {
 				curr_switch->usage |= BG_SWITCH_OUT;
 				curr_switch->usage |= BG_SWITCH_OUT_PASS;
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("using mp %s %d(%d) %u",
+					     curr_mp->coord_str,
+					     count, geometry,
+					     curr_switch->usage);
 			} else if (conn_type == SELECT_MESH) {
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("using mp %s %d(%d) %u",
+					     curr_mp->coord_str,
+					     count, geometry,
+					     curr_switch->usage);
 				list_append(mps, curr_mp);
 				return 1;
 			}
 		} else if (!_mp_out_used(curr_mp, dim)) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("using mp %s as passthrough",
-				     curr_mp->coord_str);
 			curr_switch->usage |= BG_SWITCH_MODIFIED;
 			curr_switch->usage |= BG_SWITCH_PASS;
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("using mp %s as passthrough %u",
+				     curr_mp->coord_str, curr_switch->usage);
 		} else {
 			/* we can't use this so return with a nice 0 */
 			return 0;
@@ -3213,9 +3221,6 @@ static char *_get_block_name(List mps)
 			info("mp %s is used for passthrough", ba_mp->coord_str);
 			continue;
 		}
-
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("name = %s", ba_mp->coord_str);
 
 		if (hostlist)
 			hostlist_push(hostlist, ba_mp->coord_str);
