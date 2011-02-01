@@ -74,6 +74,7 @@ typedef enum {
 #define BG_SWITCH_WRAPPED      0x0003 /* just wrap used */
 #define BG_SWITCH_PASS_FLAG    0x0010 /* flag for marking a midplane
 				       * with a passthough used */
+#define BG_SWITCH_PASS_USED    0x000C /* passthough ports used */
 #define BG_SWITCH_PASS         0x001C /* just passthough used */
 #define BG_SWITCH_WRAPPED_PASS 0x001F /* all ports are in use, but no torus */
 #define BG_SWITCH_TORUS        0x000F /* all ports are in use in a torus */

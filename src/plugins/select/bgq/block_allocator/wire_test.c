@@ -89,6 +89,7 @@ int main(int argc, char** argv)
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	int debug_level = 5;
+	uint16_t ba_debug_flags = 0;
 
 	List results;
 //	List results2;
@@ -96,7 +97,9 @@ int main(int argc, char** argv)
 	log_opts.stderr_level  = (log_level_t)debug_level;
 	log_opts.logfile_level = (log_level_t)debug_level;
 	log_opts.syslog_level  = (log_level_t)debug_level;
-	set_ba_debug_flags(DEBUG_FLAG_BG_ALGO);
+
+	ba_debug_flags |= DEBUG_FLAG_BG_ALGO;
+	ba_debug_flags |= DEBUG_FLAG_BG_ALGO_DEEP;
 	log_alter(log_opts, (log_facility_t)LOG_DAEMON, "/dev/null");
 
 	DIM_SIZE[A]=0;
@@ -106,6 +109,7 @@ int main(int argc, char** argv)
 
 	slurm_conf_reinit(NULL);
 	ba_init(NULL, 1);
+	set_ba_debug_flags(ba_debug_flags);
 
 	/* [010x831] */
 /* 	results = list_create(NULL); */

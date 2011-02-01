@@ -279,7 +279,6 @@ struct _range {
 
 /* Multi-dimension system stuff here */
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-enum {A, B, C, D};
 
 /* logic for block node description */
 
@@ -1633,7 +1632,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	}
 /* 	info("adding ranges in %sx%s", coord, coord2); */
 
-	return _add_box_ranges(A, 0, start, end, pos, ranges, len, count);
+	return _add_box_ranges(0, 0, start, end, pos, ranges, len, count);
 }
 
 /* Grab a single range from str
@@ -2641,7 +2640,7 @@ static int _get_next_box(int *start,
 /* 	memset(coord2, 0, sizeof(coord2)); */
 
 again:
-	if(start[A] == -1) {
+	if(start[0] == -1) {
 		memcpy(start, grid_start, dim_grid_size);
 		/* We need to keep track of this to make sure we get
 		   all the nodes marked since this could change based
@@ -2659,7 +2658,7 @@ again:
 /* 	}	 */
 /* 	info("beginning with %s", coord); */
 
-	_tell_if_used(A, 0, start, end, last, &found);
+	_tell_if_used(0, 0, start, end, last, &found);
 
 /* 	for(i = 0; i<dims; i++) { */
 /* 		coord[i] = alpha_num[grid_start[i]]; */
@@ -2668,17 +2667,17 @@ again:
 /* 	info("current grid is %sx%s", coord, coord2); */
 
 	/* remove what we just did */
-	_set_box_in_grid(A, 0, start, end, false);
+	_set_box_in_grid(0, 0, start, end, false);
 
 	/* set the new min max of the grid */
 	memset(new_min, hostlist_base, dim_grid_size);
 	memset(new_max, -1, dim_grid_size);
 
 	/* send the orid_grid_end so we don't miss anything that was set. */
-	_set_min_max_of_grid(A, 0, grid_start, orig_grid_end,
+	_set_min_max_of_grid(0, 0, grid_start, orig_grid_end,
 			     new_min, new_max, pos);
 
-	if(new_max[A] != -1) {
+	if(new_max[0] != -1) {
 /* 		for(i = 0; i<dims; i++) { */
 /* 			coord[i] = alpha_num[new_min[i]]; */
 /* 			coord2[i] = alpha_num[new_max[i]]; */
@@ -2727,7 +2726,7 @@ _get_boxes(char *buf, int max_len)
 /* 	memset(coord2, 0, sizeof(coord2)); */
 
 	/* this means we are at the beginning */
-	curr_min[A] = -1;
+	curr_min[0] = -1;
 
 /* 	for(i=0; i<HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE; i++) { */
 /* 		if(grid[i]) */
@@ -2890,7 +2889,7 @@ _set_grid(unsigned long start, unsigned long end)
 	}
 /* 	info("going to set %sx%s", coord, coord2); */
 
-	_set_box_in_grid(A, 0, sent_start, sent_end, true);
+	_set_box_in_grid(0, 0, sent_start, sent_end, true);
 }
 
 static bool
@@ -2921,14 +2920,14 @@ _test_box(int *start, int *end)
 	int i;
 	int dims = slurmdb_setup_cluster_dims();
 
-	if(!memcmp(start, end, dim_grid_size)) /* single node */
+	if (!memcmp(start, end, dim_grid_size)) /* single node */
 		return false;
 
-	for(i = 0; i<dims; i++)
+	for (i = 0; i<dims; i++)
 		if (start[i] > end[i])
 			return false;
 
-	return _test_box_in_grid(A, 0, start, end);
+	return _test_box_in_grid(0, 0, start, end);
 }
 
 char *hostlist_ranged_string_malloc(hostlist_t hl)

@@ -209,16 +209,18 @@ typedef struct block_allocator_mp {
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
 	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
-	/* coordinates of midplane */
-	uint16_t coord[HIGHEST_DIMENSIONS];
 	/* color of letter used in smap */
 	int color;
+	/* coordinates of midplane */
+	uint16_t coord[HIGHEST_DIMENSIONS];
+	/* coordinates of midplane in str format */
+	char coord_str[HIGHEST_DIMENSIONS+1];
 	/* midplane index used for easy look up of the miplane */
 	int index;
-	/* rack-midplane location. */
-	char *loc;
 	/* letter used in smap */
 	char letter;
+	/* rack-midplane location. */
+	char *loc;
 //	int phys_x;	// no longer needed
 	int state;
 	/* set if using this midplane in a block */
