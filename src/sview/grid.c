@@ -549,18 +549,16 @@ static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
-#if 0
-static void _calc_coord_4d(int x, int y, int z, int a, int default_y_offset, 
-			   int *coord_x, int *coord_y)
+static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset, 
+			   int *coord_x, int *coord_y, int* dim_size)
 {
 	int x_offset, y_offset;
 
-	x_offset = (DIM_SIZE[X] + DIM_SIZE[Z]) * a;
-	*coord_x = x_offset + (x + (DIM_SIZE[Z] - 1)) - z;
-	y_offset = default_y_offset - (DIM_SIZE[Z] * y);
-	*coord_y = (y_offset - y) + z;
+	x_offset = (dim_size[0] + dim_size[2]) * z;
+	*coord_x = x_offset + (a + (dim_size[2] - 1)) - y;
+	y_offset = default_y_offset - (dim_size[2] * x);
+	*coord_y = (y_offset - x) + y;
 }
-#endif
 
 /* Add a button for a given node. If node_ptr == NULL then fill in any gaps
  * in the grid just for a clean look. Always call with node_ptr == NULL for
@@ -571,17 +569,20 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	grid_button_t *grid_button = button_processor->grid_button;
 
 	if (cluster_dims == 4) {
-#if 0
-/* NOTE: THIS LOGIC IS UNTESTED, BUT IS CLOSE TO THE LOGIC NEEDED FOR 
- * A BLUEGENE/Q SYSTEM */
 		static bool *node_exists = NULL;
-		int i, x, y, z, a, coord_x, coord_y;
+		int a, x, y, z, coord_x, coord_y, i;
+		int *dim_size = slurmdb_setup_cluster_dim_size();
+		if (dim_size == NULL) {
+			g_error("could not read dim_size\n");
+			return SLURM_ERROR;
+		}
+
 		/* Translate a 4D space into a 2D space the the extent
 		 * possible. */
 		if (node_exists == NULL) {
-			node_exists = xmalloc(sizeof(bool) * DIM_SIZE[X] *
-					      DIM_SIZE[Y] * DIM_SIZE[Z] *
-					      DIM_SIZE[A]);
+			node_exists = xmalloc(sizeof(bool) * dim_size[0] *
+					      dim_size[1] * dim_size[2] *
+					      dim_size[3]);
 		}
 		if (node_ptr) {
 			i = strlen(node_ptr->name);
@@ -589,36 +590,37 @@ static int _add_button_to_list(node_info_t *node_ptr,
 				g_error("bad node name %s\n", node_ptr->name);
 				return SLURM_ERROR;
 			}
-			x = _coord(node_ptr->name[i-4]);
-			y = _coord(node_ptr->name[i-3]);
-			z = _coord(node_ptr->name[i-2]);
-			a = _coord(node_ptr->name[i-1]);
-			/* Skip "b" for BlueGene/Q */
-			i = ((x * DIM_SIZE[Y] + y) * DIM_SIZE[Z] + z) *
-			    DIM_SIZE[A] + a;
+			a = _coord(node_ptr->name[i-4]);
+			x = _coord(node_ptr->name[i-3]);
+			y = _coord(node_ptr->name[i-2]);
+			z = _coord(node_ptr->name[i-1]);
+			/* Ignore "b" for BlueGene/Q */
+			i = ((a * dim_size[1] + x) * dim_size[2] + y) *
+			    dim_size[3] + z;
 			node_exists[i] = true;
-			_calc_coord_4d(x, y, z, a,
+			_calc_coord_4d(a, x, y, z,
 				       button_processor->default_y_offset,
-				       &coord_x, &coord_y);
+				       &coord_x, &coord_y, dim_size);
 			(*button_processor->coord_x) = coord_x;
 			(*button_processor->coord_y) = coord_y;
 #if 0
 			g_print("%s %d:%d\n", node_ptr->name,coord_x, coord_y);
 #endif
 		} else {
-			for (i = -1, x = 0; x < DIM_SIZE[X]; x++) {
-				for (y = 0; y < DIM_SIZE[Y]; y++) {
-					for (z = 0; z < DIM_SIZE[Z]; z++) {
-						for (a = 0; a < DIM_SIZE[A];
-						     a++) {
+			for (i = -1, a = 0; a < dim_size[0]; a++) {
+				for (x = 0; x < dim_size[1]; x++) {
+					for (y = 0; y < dim_size[2]; y++) {
+						for (z = 0; z < dim_size[3];
+						     z++) {
 							i++;
 							if (node_exists[i])
 								continue;
-							_calc_coord_4d(x,y,z,a,
+							_calc_coord_4d(a,x,y,z,
 				      				button_processor->
 								default_y_offset,
 								&coord_x,
-								&coord_y);
+								&coord_y,
+								dim_size);
 							_build_empty_node(
 								coord_x,
 								coord_y,
@@ -630,9 +632,6 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			xfree(node_exists);
 			return SLURM_SUCCESS;
 		}
-#else
-		return SLURM_ERROR;
-#endif
 	} else if (cluster_dims == 3) {
 		static bool *node_exists = NULL;
 		int i, x, y, z, coord_x, coord_y;
@@ -884,8 +883,17 @@ static int _init_button_processor(button_processor_t *button_processor,
 	memset(button_processor, 0, sizeof(button_processor_t));
 
 	if (cluster_dims == 4) {
-		/* FIXME: */
-		return SLURM_ERROR;
+		int *dim_size = slurmdb_setup_cluster_dim_size();
+		if (dim_size == NULL) {
+			g_error("could not read dim_size\n");
+			return SLURM_ERROR;
+		}
+		button_processor->default_y_offset = (dim_size[2] * dim_size[1])
+			+ (dim_size[1] - dim_size[2]);
+		working_sview_config.grid_x_width = (dim_size[0] + dim_size[2])
+						    * dim_size[3];
+		button_processor->table_y = (dim_size[2] * dim_size[1])
+					    + dim_size[1];
 	} else if (cluster_dims == 3) {
 		int *dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
@@ -895,8 +903,8 @@ static int _init_button_processor(button_processor_t *button_processor,
 		button_processor->default_y_offset = (dim_size[2] * dim_size[1])
 			+ (dim_size[1] - dim_size[2]);
 		working_sview_config.grid_x_width = dim_size[0] + dim_size[2];
-		button_processor->table_y =
-			(dim_size[2] * dim_size[1]) + dim_size[1];
+		button_processor->table_y = (dim_size[2] * dim_size[1])
+					    + dim_size[1];
 	} else {
 		if (!working_sview_config.grid_x_width) {
 			if (node_count < 50) {
@@ -1423,8 +1431,18 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	itr = list_iterator_create(button_list);
 	while ((grid_button = list_next(itr))) {
 		if (cluster_dims == 4) {
-			/* FIXME: */
-			return;
+			grid_button->table = table;
+			gtk_table_attach(table, grid_button->button,
+					 grid_button->table_x,
+					 (grid_button->table_x+1),
+					 grid_button->table_y,
+					 (grid_button->table_y+1),
+					 GTK_SHRINK, GTK_SHRINK,
+					 1, 1);
+			if (!grid_button->table_x)
+				gtk_table_set_row_spacing(table,
+							  grid_button->table_y,
+							  5);
 		} else if (cluster_dims == 3) {
 			grid_button->table = table;
 			gtk_table_attach(table, grid_button->button,
@@ -1558,8 +1576,10 @@ extern int get_system_stats(GtkTable *table)
 		changed = 0;
 	} else if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	ba_init(node_info_ptr, 0);
 
+#if defined(HAVE_BGL) || defined(HAVE_BGP)
+	ba_init(node_info_ptr, 0);
+#endif
 	node_list = create_node_info_list(node_info_ptr,
 					  changed, FALSE);
 	if (grid_button_list) {
