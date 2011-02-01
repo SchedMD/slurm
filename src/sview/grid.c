@@ -540,12 +540,12 @@ static void _build_empty_node(int coord_x, int coord_y,
 }
 
 static void _calc_coord_3d(int x, int y, int z, int default_y_offset, 
-			   int *coord_x, int *coord_y)
+			   int *coord_x, int *coord_y, int *dim_size)
 {
 	int y_offset;
 
-	*coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
-	y_offset = default_y_offset - (DIM_SIZE[Z] * y);
+	*coord_x = (x + (dim_size[2] - 1)) - z;
+	y_offset = default_y_offset - (dim_size[2] * y);
 	*coord_y = (y_offset - y) + z;
 }
 
@@ -636,11 +636,17 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	} else if (cluster_dims == 3) {
 		static bool *node_exists = NULL;
 		int i, x, y, z, coord_x, coord_y;
+		int *dim_size = slurmdb_setup_cluster_dim_size();
+		if (dim_size == NULL) {
+			g_error("could not read dim_size\n");
+			return SLURM_ERROR;
+		}
+
 		/* Translate a 3D space into a 2D space the the extent
 		 * possible. */
 		if (node_exists == NULL) {
-			node_exists = xmalloc(sizeof(bool) * DIM_SIZE[X] *
-					      DIM_SIZE[Y] * DIM_SIZE[Z]);
+			node_exists = xmalloc(sizeof(bool) * dim_size[0] *
+					      dim_size[1] * dim_size[2]);
 		}
 		if (node_ptr) {
 			i = strlen(node_ptr->name);
@@ -651,28 +657,29 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			x = _coord(node_ptr->name[i-3]);
 			y = _coord(node_ptr->name[i-2]);
 			z = _coord(node_ptr->name[i-1]);
-			i = (x * DIM_SIZE[Y] + y) * DIM_SIZE[Z] + z;
+			i = (x * dim_size[1] + y) * dim_size[2] + z;
 			node_exists[i] = true;
 			_calc_coord_3d(x, y, z,
 				       button_processor->default_y_offset,
-				       &coord_x, &coord_y);
+				       &coord_x, &coord_y, dim_size);
 			(*button_processor->coord_x) = coord_x;
 			(*button_processor->coord_y) = coord_y;
 #if 0
 			g_print("%s %d:%d\n", node_ptr->name,coord_x, coord_y);
 #endif
 		} else {
-			for (x = 0; x < DIM_SIZE[X]; x++) {
-				for (y = 0; y < DIM_SIZE[Y]; y++) {
-					for (z = 0; z < DIM_SIZE[Z]; z++) {
-						i = (x * DIM_SIZE[Y] + y) *
-							DIM_SIZE[Z] + z;
+			for (x = 0; x < dim_size[0]; x++) {
+				for (y = 0; y < dim_size[1]; y++) {
+					for (z = 0; z < dim_size[2]; z++) {
+						i = (x * dim_size[1] + y) *
+							dim_size[2] + z;
 						if (node_exists[i])
 							continue;
 						_calc_coord_3d(x, y, z,
 				      			button_processor->
 							default_y_offset,
-							&coord_x, &coord_y);
+							&coord_x, &coord_y,
+							dim_size);
 						_build_empty_node(
 							coord_x, coord_y,
 							button_processor);
@@ -880,11 +887,16 @@ static int _init_button_processor(button_processor_t *button_processor,
 		/* FIXME: */
 		return SLURM_ERROR;
 	} else if (cluster_dims == 3) {
-		button_processor->default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y])
-			+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
-		working_sview_config.grid_x_width = DIM_SIZE[X] + DIM_SIZE[Z];
+		int *dim_size = slurmdb_setup_cluster_dim_size();
+		if (dim_size == NULL) {
+			g_error("could not read dim_size\n");
+			return SLURM_ERROR;
+		}
+		button_processor->default_y_offset = (dim_size[2] * dim_size[1])
+			+ (dim_size[1] - dim_size[2]);
+		working_sview_config.grid_x_width = dim_size[0] + dim_size[2];
 		button_processor->table_y =
-			(DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
+			(dim_size[2] * dim_size[1]) + dim_size[1];
 	} else {
 		if (!working_sview_config.grid_x_width) {
 			if (node_count < 50) {
