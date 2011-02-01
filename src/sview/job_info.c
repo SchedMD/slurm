@@ -3204,6 +3204,13 @@ display_it:
 	}
 
 	view = INFO_VIEW;
+	/* If the system has a large number of jobs then not all lines
+	 * will be displayed. You can try different values for the third
+	 * argument of gtk_widget_set_size_request() in an attempt to
+	 * maximumize the data displayed in your environment. These are my
+	 * results: Y=1000 good for 43 lines, Y=-1 good for 1151 lines,
+	 *  Y=64000 good for 2781 lines, Y=99000 good for 1453 lines */
+	/* gtk_widget_set_size_request(display_widget, -1, -1); */
 	_update_info_job(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
