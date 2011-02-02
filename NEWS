@@ -17,6 +17,10 @@ documents those changes that are of interest to users and admins.
     consider the job's time limit when attempting to backfill schedule. The job
     will just be preempted as needed at any time.
  -- Eliminated a bug in sbatch when no valid target clusters are specified.
+ -- When explicitly sending a signal to a job with the scancel command and that
+    job is in a pending state, then send the request directly to the slurmctld
+    daemon and do not attempt to send the request to slurmd daemons, which are
+    not running the job anyway.
 
 * Changes in SLURM 2.2.1
 ========================
