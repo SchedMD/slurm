@@ -76,6 +76,40 @@ typedef struct {
 
 GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
 
+static int *_get_cluster_dim_size(void)
+{
+	int *dims = slurmdb_setup_cluster_dim_size();
+
+	if (dims)
+		return dims;
+
+#if defined(HAVE_BGL) || defined(HAVE_BGP)
+{
+	static int dim_size[3];
+	if (dim_size[0] == 0) {
+		dim_size[0] = DIM_SIZE[X];
+		dim_size[1] = DIM_SIZE[Y];
+		dim_size[2] = DIM_SIZE[Y];
+	}
+	return dim_size;
+}
+#endif
+
+#if defined(HAVE_BGQ)
+/* Once the select/bgq plugin is ready, enable this */
+{
+	static int dim_size[4];
+	if (dim_size[0] == 0) {
+		dim_size[0] = 4;
+		dim_size[1] = 3;
+		dim_size[2] = 4;
+		dim_size[3] = 4;
+	}
+	return dim_size;
+}
+#endif
+}
+
 static int _coord(char coord)
 {
 	if ((coord >= '0') && (coord <= '9'))
@@ -569,7 +603,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	if (cluster_dims == 4) {
 		static bool *node_exists = NULL;
 		int a, x, y, z, coord_x, coord_y, i;
-		int *dim_size = slurmdb_setup_cluster_dim_size();
+		int *dim_size = _get_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -633,7 +667,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	} else if (cluster_dims == 3) {
 		static bool *node_exists = NULL;
 		int i, x, y, z, coord_x, coord_y;
-		int *dim_size = slurmdb_setup_cluster_dim_size();
+		int *dim_size = _get_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -882,7 +916,7 @@ static int _init_button_processor(button_processor_t *button_processor,
 	memset(button_processor, 0, sizeof(button_processor_t));
 
 	if (cluster_dims == 4) {
-		int *dim_size = slurmdb_setup_cluster_dim_size();
+		int *dim_size = _get_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -894,7 +928,7 @@ static int _init_button_processor(button_processor_t *button_processor,
 		button_processor->table_y = (dim_size[3] * dim_size[2])
 					    + dim_size[2];
 	} else if (cluster_dims == 3) {
-		int *dim_size = slurmdb_setup_cluster_dim_size();
+		int *dim_size = _get_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;

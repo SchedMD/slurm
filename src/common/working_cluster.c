@@ -42,12 +42,7 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#if defined(HAVE_BGL) || defined(HAVE_BGP)
-#  include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
-#endif
-#if defined(HAVE_BGQQ)
-#  include "src/plugins/select/bgq/block_allocator/block_allocator.h"
-#endif
+
 /*
  * This functions technically should go in the slurmdb_defs.c, but
  * because some systems don't deal well with strong_alias and
@@ -70,31 +65,6 @@ extern int * slurmdb_setup_cluster_dim_size(void)
 	if (working_cluster_rec)
 		return working_cluster_rec->dim_size;
 
-#if defined(HAVE_BGL) || defined(HAVE_BGP)
-{
-	static int dim_size[3];
-	if (dim_size[0] == 0) {
-		dim_size[0] = DIM_SIZE[X];
-		dim_size[1] = DIM_SIZE[Y];
-		dim_size[2] = DIM_SIZE[Y];
-	}
-	return dim_size;
-}
-#endif
-
-#if defined(HAVE_BGQ) && defined(DONT_USE_YET)
-/* Once the select/bgq plugin is ready, enable this */
-{
-	static int dim_size[4];
-	if (dim_size[0] == 0) {
-		dim_size[0] = DIM_SIZE[A];
-		dim_size[1] = DIM_SIZE[X];
-		dim_size[2] = DIM_SIZE[Y];
-		dim_size[3] = DIM_SIZE[Z];
-	}
-	return dim_size;
-}
-#endif
 	return NULL;
 }
 
