@@ -302,6 +302,12 @@ static int basil_get_initial_state(void)
 	return SLURM_SUCCESS;
 }
 
+/** Base-36 encoding of @coord */
+static char _enc_coord(uint8_t coord)
+{
+	return coord + (coord < 10 ? '0' : 'A' - 10);
+}
+
 /**
  * basil_geometry - Verify node attributes, resolve (X,Y,Z) coordinates.
  */
@@ -321,7 +327,8 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	 * The processor table has more authoritative information, if a nodeid
 	 * is not listed there, it does not exist.
 	 */
-	const char query[] =	"SELECT x_coord, y_coord, z_coord, cage, cpu, "
+	const char query[] =	"SELECT x_coord, y_coord, z_coord,"
+				"       cab_position, cab_row, cage, slot, cpu,"
 				"	LOG2(coremask+1), availmem, "
 				"       processor_type  "
 				"FROM  processor LEFT JOIN attributes "
@@ -335,8 +342,11 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			COL_X,		/* X coordinate		*/
 			COL_Y,		/* Y coordinate		*/
 			COL_Z,		/* Z coordinate		*/
+			COL_CAB,	/* cabinet position		*/
+			COL_ROW,	/* row position			*/
 			COL_CAGE,	/* cage number (0..2)		*/
-			COL_CPU,	/* node number (0..2)		*/
+			COL_SLOT,	/* slot number (0..7)		*/
+			COL_CPU,	/* node number (0..3)		*/
 			COL_CORES,	/* number of cores per node	*/
 			COL_MEMORY,	/* rounded-down memory in MB	*/
 			/* string data */
@@ -344,7 +354,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			COLUMN_COUNT	/* sentinel */
 	};
 	int		x_coord, y_coord, z_coord;
-	int		cage, cpu;
+	int		cab, row, cage, slot, cpu;
 	unsigned int	node_cpus, node_mem;
 	char		proc_type[BASIL_STRING_SHORT];
 	MYSQL_BIND	bind_cols[COLUMN_COUNT];
@@ -375,7 +385,10 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	bind_cols[COL_X].buffer	     = (char *)&x_coord;
 	bind_cols[COL_Y].buffer	     = (char *)&y_coord;
 	bind_cols[COL_Z].buffer	     = (char *)&z_coord;
+	bind_cols[COL_CAB].buffer    = (char *)&cab;
+	bind_cols[COL_ROW].buffer    = (char *)&row;
 	bind_cols[COL_CAGE].buffer   = (char *)&cage;
+	bind_cols[COL_SLOT].buffer   = (char *)&slot;
 	bind_cols[COL_CPU].buffer    = (char *)&cpu;
 	bind_cols[COL_CORES].buffer  = (char *)&node_cpus;
 	bind_cols[COL_MEMORY].buffer = (char *)&node_mem;
@@ -422,6 +435,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				 * be invisible to ALPS, which is why we need to
 				 * set it down here already.
 				 */
+				node_cpus = node_mem = 0;
 				node_ptr->node_state = NODE_STATE_DOWN;
 				xfree(node_ptr->reason);
 				node_ptr->reason = xstrdup("node data unknown -"
@@ -481,6 +495,40 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				if (node_ptr->arch == NULL)
 					node_ptr->arch = xstrdup("XE");
 		}
+
+		xfree(node_ptr->node_hostname);
+		xfree(node_ptr->comm_name);
+		/*
+		 * Convention: since we are using SLURM in frontend-mode,
+		 *             we use Node{Addr,HostName} as follows.
+		 *
+		 * NodeAddr:      <X><Y><Z> coordinates in base-36 encoding
+		 *
+		 * NodeHostName:  c#-#c#s#n# using the  NID convention
+		 *                <cabinet>-<row><chassis><slot><node>
+		 * - each cabinet can accommodate 3 chassis (c1..c3)
+		 * - each chassis has 8 slots               (s0..s7)
+		 * - each slot contains 2 or 4 nodes        (n0..n3)
+		 *   o either 2 service nodes (n0/n3)
+		 *   o or 4 compute nodes     (n0..n3)
+		 *   o or 2 gemini chips      (g0/g1 serving n0..n3)
+		 *
+		 * Example: c0-0c1s0n1
+		 *          - c0- = cabinet 0
+		 *          - 0   = row     0
+		 *          - c1  = chassis 1
+		 *          - s0  = slot    0
+		 *          - n1  = node    1
+		 */
+		node_ptr->node_hostname = xstrdup_printf("c%u-%uc%us%un%u", cab,
+							 row, cage, slot, cpu);
+		node_ptr->comm_name = xstrdup_printf("%c%c%c",
+						     _enc_coord(x_coord),
+						     _enc_coord(y_coord),
+						     _enc_coord(z_coord));
+		verbose("%s  %s  %s  cpus=%u, mem=%u", node_ptr->name,
+			node_ptr->node_hostname, node_ptr->comm_name,
+			node_cpus, node_mem);
 
 		mysql_stmt_free_result(stmt);
 	}
