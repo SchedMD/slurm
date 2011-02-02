@@ -212,11 +212,10 @@ extern int basil_inventory(void)
 
 		while ((job_ptr = (struct job_record *)list_next(job_iter))) {
 
-			_get_select_jobinfo((select_jobinfo_t *)
-					    job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_RESV_ID,
-					    &resv_id);
-			if (resv_id == rsvn->rsvn_id)
+			if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+						SELECT_JOBDATA_RESV_ID,
+						&resv_id) == SLURM_SUCCESS
+			    && resv_id == rsvn->rsvn_id)
 				break;
 		}
 		list_iterator_destroy(job_iter);
@@ -623,8 +622,9 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 {
 	uint32_t resv_id;
 
-	_get_select_jobinfo(job_ptr->select_jobinfo->data,
-			    SELECT_JOBDATA_RESV_ID, &resv_id);
+	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+		       SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	debug2("confirming ALPS resId %u for JobId %u with pagg %u", resv_id,
 		job_ptr->job_id, job_ptr->alloc_sid);
@@ -641,10 +641,11 @@ extern int do_basil_release(struct job_record *job_ptr)
 {
 	uint32_t resv_id;
 
-	_get_select_jobinfo(job_ptr->select_jobinfo->data,
-			    SELECT_JOBDATA_RESV_ID, &resv_id);
+	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+		       SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
-	if (resv_id && basil_release(resv_id) < 0)
+	if (basil_release(resv_id) < 0)
 		return SLURM_ERROR;
 
 	debug("released ALPS resId %u for JobId %u", resv_id, job_ptr->job_id);
