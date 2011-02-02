@@ -78,6 +78,7 @@ typedef enum {
 #define BG_SWITCH_PASS         0x001C /* just passthough used */
 #define BG_SWITCH_WRAPPED_PASS 0x001F /* all ports are in use, but no torus */
 #define BG_SWITCH_TORUS        0x000F /* all ports are in use in a torus */
+#define BG_SWITCH_START        0x0200 /* modified from the start list */
 
 #define switch_overlap(__switch_a, __switch_b) \
 	((__switch_a != BG_SWITCH_NONE) && (__switch_b != BG_SWITCH_NONE)) \

@@ -167,9 +167,9 @@ int main(int argc, char** argv)
 	/* [001x801] */
 	results = list_create(NULL);
 	request->geometry[0] = 1;
-	request->geometry[1] = 1;
+	request->geometry[1] = 2;
 	request->geometry[2] = 2;
-	request->geometry[3] = 2;
+	request->geometry[3] = 1;
 	request->start[0] = 0;
 	request->start[1] = 0;
 	request->start[2] = 0;
@@ -202,7 +202,7 @@ int main(int argc, char** argv)
 	int startd=0;
 	int enda=1;//DIM_SIZE[A];
 	int endb=DIM_SIZE[X];
-	int endc=1;//DIM_SIZE[Y];
+	int endc=DIM_SIZE[Y];
 	int endd=1;//DIM_SIZE[Z];
 
 	for(a=starta;a<enda;a++) {

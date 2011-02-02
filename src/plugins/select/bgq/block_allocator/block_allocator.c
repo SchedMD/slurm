@@ -62,7 +62,7 @@
 					 // BA_MP_USED_ALTERED and
 					 // BA_MP_USED_PASS_BIT
 
-#define mp_strip_unaltered(__mp) (__mp & (~BA_MP_USED_ALTERED_PASS))
+#define mp_strip_unaltered(__mp) (__mp & ~BA_MP_USED_ALTERED_PASS)
 
 static bool _initialized = false;
 
@@ -127,6 +127,11 @@ static int _find_first_block(List results,
 			     uint16_t *geometry, uint16_t *conn_type);
 
 /* */
+static int _fill_in_coords(List results, ba_mp_t *start_mp,
+			   uint16_t *block_start, uint16_t *block_end,
+			   uint16_t *pass_end);
+
+/* */
 static void _copy_from_main(List main_mps, List ret_list);
 
 /* */
@@ -138,7 +143,8 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim);
 
 /* */
 static int _find_path(List mps, ba_mp_t *start_mp, int dim,
-		      uint16_t geometry, uint16_t conn_type, uint16_t *longest);
+		      uint16_t geometry, uint16_t conn_type,
+		      uint16_t *block_end, uint16_t *longest);
 
 /* */
 static int _setup_next_mps(ba_mp_t ****grid);
@@ -1493,7 +1499,8 @@ extern char *set_bg_block(List results, uint16_t *start,
 	int dim, a, x, y, z;
 	List start_list = NULL;
 	ListIterator itr;
-	uint16_t end[cluster_dims];
+	uint16_t block_end[cluster_dims];
+	uint16_t pass_end[cluster_dims];
 
 	if (cluster_dims == 1) {
 		if (start[A] >= DIM_SIZE[A])
@@ -1557,75 +1564,94 @@ extern char *set_bg_block(List results, uint16_t *start,
 	list_append(main_mps, ba_mp);
 
 	/* set the end to the start and the _find_path will increase each dim.*/
-	memcpy(end, start, sizeof(end));
+	memcpy(block_end, start, sizeof(block_end));
+	memcpy(pass_end, start, sizeof(pass_end));
 	for (dim=0; dim<cluster_dims; dim++) {
 		info("starting dim %d", dim);
 		if (!_find_path(main_mps, ba_mp, dim,
-				geometry[dim], conn_type[A], &end[dim])) {
+				geometry[dim], conn_type[dim], &block_end[dim],
+				&pass_end[dim])) {
 			goto end_it;
 		}
 	}
-	info("complete box is  %c%c%c%c x %c%c%c%c",
+	info("complete box is  %c%c%c%c x %c%c%c%c pass to %c%c%c%c",
 	     alpha_num[start[A]],
 	     alpha_num[start[X]],
 	     alpha_num[start[Y]],
 	     alpha_num[start[Z]],
-	     alpha_num[end[A]],
-	     alpha_num[end[X]],
-	     alpha_num[end[Y]],
-	     alpha_num[end[Z]]);
+	     alpha_num[block_end[A]],
+	     alpha_num[block_end[X]],
+	     alpha_num[block_end[Y]],
+	     alpha_num[block_end[Z]],
+	     alpha_num[pass_end[A]],
+	     alpha_num[pass_end[X]],
+	     alpha_num[pass_end[Y]],
+	     alpha_num[pass_end[Z]]);
 
-	/* Each time you start the loop again, put the check_mp at the
-	 * start point (ba_mp) */
-	check_mp[A] = ba_mp;
-	for (a = start[A]; a <= end[A]; a++) {
-		check_mp[X] = ba_mp;
-		for (x = start[X]; x <= end[X]; x++) {
-			check_mp[Y] = ba_mp;
-			for (y = start[Y]; y <= end[Y]; y++) {
-				check_mp[Z] = ba_mp;
-				for (z = start[Z]; z <= end[Z]; z++) {
-					ba_mp_t *curr_mp = &(ba_system_ptr->grid
-							     [a][x][y][z]);
-					info("looking at %s", curr_mp->coord_str);
-					for (dim=0; dim<cluster_dims; dim++) {
-						int rc = _copy_ba_switch(
-							curr_mp,
-							check_mp[dim],
-							dim);
-						if (rc == -1)
-							goto end_it;
-						else if (rc == 1)
-							list_append(main_mps,
-								    curr_mp);
-					}
-					check_mp[Z] = check_mp[Z]->next_mp[Z];
-				}
-				check_mp[Y] = check_mp[Y]->next_mp[Y];
-			}
-			check_mp[X] = check_mp[X]->next_mp[X];
-		}
-		check_mp[A] = check_mp[A]->next_mp[A];
-	}
-	/* for (dim=0; dim<cluster_dims; dim++) { */
-	/* 	info("filling them in now dim %d", dim); */
-	/* 	if (!_find_path(main_mps, ba_mp, dim, */
-	/* 			geometry[dim], conn_type[A])) */
-	/* 		return 0; */
-	/* } */
+	if (!_fill_in_coords(main_mps, ba_mp, start, block_end, pass_end))
+		goto end_it;
 
-	/* start_list = list_create(NULL); */
-	/* if (!(itr = list_iterator_create(main_mps))) */
-	/* 	fatal("NULL itr returned"); */
-	/* while ((ba_mp = list_next(itr))) */
-	/* 	list_append(start_list, ba_mp); */
-	/* list_iterator_destroy(itr); */
-	/* if (!_fill_in_coords(main_mps, start_list, */
-	/* 		     geometry, conn_type)) { */
-	/* 	list_destroy(start_list); */
-	/* 	goto end_it; */
+	/* /\* Each time you start the loop again, put the check_mp at the */
+	/*  * start point (ba_mp) *\/ */
+	/* check_mp[A] = ba_mp; */
+	/* for (a = start[A]; a <= pass_end[A]; a++) { */
+	/* 	check_mp[X] = ba_mp; */
+	/* 	for (x = start[X]; x <= pass_end[X]; x++) { */
+	/* 		check_mp[Y] = ba_mp; */
+	/* 		for (y = start[Y]; y <= pass_end[Y]; y++) { */
+	/* 			check_mp[Z] = ba_mp; */
+	/* 			for (z = start[Z]; z <= pass_end[Z]; z++) { */
+	/* 				int count_over = 0; */
+	/* 				uint16_t used = 0; */
+	/* 				ba_mp_t *curr_mp = &(ba_system_ptr->grid */
+	/* 						     [a][x][y][z]); */
+	/* 				info("looking at %s", curr_mp->coord_str); */
+	/* 				for (dim=0; dim<cluster_dims; dim++) { */
+	/* 					/\* If we get over 2 in */
+	/* 					   any dim that we are */
+	/* 					   greater here we are */
+	/* 					   pass anything we */
+	/* 					   need to */
+	/* 					   passthrough, so break. */
+	/* 					*\/ */
+	/* 					if (check_mp[dim]->used & BA_MP_USED_PASS_BIT) { */
+	/* 						if (curr_mp->coord[dim] > block_end[dim]) { */
+	/* 							count_over++; */
+	/* 							if (count_over > 1) */
+	/* 								break; */
+	/* 						} */
+	/* 						used = check_mp[dim]->used; */
+	/* 					} */
+	/* 				} */
+	/* 				if (count_over > 1) { */
+	/* 					info("skipping non-used"); */
+	/* 					break; */
+	/* 				} */
+	/* 				for (dim=0; dim<cluster_dims; dim++) { */
+	/* 					if ((used & BA_MP_USED_PASS_BIT) */
+	/* 					    && (check_mp[dim]->used != used)) { */
+	/* 						info("skipping here %d", dim); */
+	/* 						continue; */
+	/* 					} */
+
+	/* 					int rc = _copy_ba_switch( */
+	/* 						curr_mp, */
+	/* 						check_mp[dim], */
+	/* 						dim); */
+	/* 					if (rc == -1) */
+	/* 						goto end_it; */
+	/* 					else if (rc == 1) */
+	/* 						list_append(main_mps, */
+	/* 							    curr_mp); */
+	/* 				} */
+	/* 				check_mp[Z] = check_mp[Z]->next_mp[Z]; */
+	/* 			} */
+	/* 			check_mp[Y] = check_mp[Y]->next_mp[Y]; */
+	/* 		} */
+	/* 		check_mp[X] = check_mp[X]->next_mp[X]; */
+	/* 	} */
+	/* 	check_mp[A] = check_mp[A]->next_mp[A]; */
 	/* } */
-	/* list_destroy(start_list); */
 
 	if (results)
 		_copy_from_main(main_mps, results);
@@ -2574,164 +2600,78 @@ static int _set_the_path(List results, ba_mp_t *start_mp, ba_mp_t *curr_mp,
 
 }
 
-/* static int _internal_find_first_block(List results, int dim, */
-/* 				      uint16_t *geometry, uint16_t *conn_type, */
-/* 				      int *coords, int *curr_coords) */
-/* { */
-/* 	int i; */
-/* 	ba_mp_t *start_mp; */
+static int _internal_fill_in_coords(List results, int level, ba_mp_t *start_mp,
+				    ba_mp_t **check_mp, uint16_t *block_start,
+				    uint16_t *block_end, uint16_t *pass_end,
+				    int *coords, int *level_cnt)
+{
+	int dim;
+	int count_over = 0;
+	uint16_t used = 0;
+	ba_mp_t *curr_mp;
 
-/* 	if (dim > cluster_flags) */
-/* 		return -1; */
+	if (level > cluster_dims)
+		return -1;
+	info("got here with %d", level);
+	if (level < cluster_dims) {
+		check_mp[level] = start_mp;
+		for (coords[level] = 0; coords[level] <= pass_end[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			if (_internal_fill_in_coords(
+				    results, level+1, start_mp,
+				    check_mp, block_start,
+				    block_end, pass_end, coords,
+				    level_cnt) == -1)
+				return -1;
+			check_mp[level] = check_mp[level]->next_mp[level];
+		}
+		return 1;
+	}
 
-/* 	if (dim < cluster_flags) { */
-/* 		/\* handle the outter dims here *\/ */
-/* 		while (coords[dim] < geometry[dim]) { */
-/* 			if (_internal_find_first_block(results, dim+1, */
-/* 						       geometry, conn_type, */
-/* 						       coords, curr_coords) */
-/* 			    == -1) */
-/* 				return -1; */
-/* 			coords[dim]++; */
-/* 		} */
-/* 		return 1; */
-/* 	} */
+	curr_mp = &ba_system_ptr->grid[coords[A]][coords[X]]
+		[coords[Y]][coords[Z]];
+	info("tying coord %s", curr_mp->coord_str);
+	for (dim=0; dim<cluster_dims; dim++) {
+		/* If we get over 2 in
+		   any dim that we are
+		   greater here we are
+		   pass anything we
+		   need to
+		   passthrough, so break.
+		*/
+		if (check_mp[dim]->used & BA_MP_USED_PASS_BIT) {
+			if (curr_mp->coord[dim] > block_end[dim]) {
+				count_over++;
+				if (count_over > 1)
+					break;
+			}
+			used = check_mp[dim]->used;
+		}
+	}
+	if (count_over > 1) {
+		info("skipping non-used");
+		return 1;
+	}
+	for (dim=0; dim<cluster_dims; dim++) {
+		if ((used & BA_MP_USED_PASS_BIT)
+		    && (check_mp[dim]->used != used)) {
+			info("skipping here %d", dim);
+			continue;
+		}
 
-/* 	start_mp = &ba_system_ptr->grid[curr_coords[A]][curr_coords[X]] */
-/* 		[curr_coords[Y]][curr_coords[Z]]; */
+		int rc = _copy_ba_switch(
+			curr_mp,
+			check_mp[dim],
+			dim);
+		if (rc == -1)
+			return rc;
+		else if (rc == 1)
+			list_append(results, curr_mp);
+	}
+	return 1;
+}
 
-/* 	for (i = 0; i < cluster_flags; i++) { */
-/* 		if (geometry[i] == 1) { */
-/* 			if (conn_type[i] == SELECT_MESH) */
-/* 				continue; */
-/* 			if (switch_overlap(start_mp->axis_switch[i].usage, */
-/* 					   BG_SWITCH_WRAPPED)) */
-/* 				return -1; */
-/* 			start_mp->axis_switch[i].usage |= BG_SWITCH_WRAPPED; */
-/* 		} */
-/* 		if (_set_the_path(results, start_mp, NULL, */
-/* 				  i, 1, geometry[i], conn_type[i]) != 1) */
-/* 			return -1; */
-/* 	} */
-/* 	return 1; */
-/* } */
-
-/*
- * Fill in the paths and extra midplanes we need for the block.
- * Basically copy the x path sent in with the start_list in each Y and
- * Z dimension filling in every midplane for the block and then
- * completing the Y and Z wiring, tying the whole block together.
- *
- * IN/OUT results - total list of midplanes after this function
- *        returns successfully.  Should be
- *        an exact copy of the start_list at first.
- * IN start_list - exact copy of results at first, This should only be
- *        a list of midplanes on the X dim.  We will work off this and
- *        the geometry to fill in this wiring for the X dim in all the
- *        Y and Z coords.
- * IN geometry - What the block looks like
- * IN conn_type - Mesh or Torus
- *
- * RET: 0 on failure 1 on success
- */
-/* static int _fill_in_coords(List results, List start_list, */
-/* 			   uint16_t *geometry, int conn_type) */
-/* { */
-/* 	ba_mp_t *ba_mp = NULL; */
-/* 	ba_mp_t *check_mp = NULL; */
-/* 	int rc = 1; */
-/* 	ListIterator itr = NULL; */
-/* 	int y=0, z=0; */
-/* 	ba_switch_t *curr_switch = NULL; */
-/* 	ba_switch_t *next_switch = NULL; */
-
-/* 	if (!start_list || !results) */
-/* 		return 0; */
-/* 	/\* go through the start_list and add all the midplanes *\/ */
-/* 	itr = list_iterator_create(start_list); */
-/* 	while ((check_mp = (ba_mp_t*) list_next(itr))) { */
-/* 		for (dim=0; dim<cluster_dims; dim++) { */
-			
-/* 		for(x=0; x<geometry[X]; x++) { */
-/* 			if ((check_mp->coord[X]+x) >= DIM_SIZE[X]) { */
-/* 				rc = 0; */
-/* 				goto failed; */
-/* 			} */
-/* 		for(y=0; y<geometry[Y]; y++) { */
-/* 			if ((check_mp->coord[Y]+y) >= DIM_SIZE[Y]) { */
-/* 				rc = 0; */
-/* 				goto failed; */
-/* 			} */
-/* 			for(z=0; z<geometry[Z]; z++) { */
-/* 				if ((check_mp->coord[Z]+z) >= DIM_SIZE[Z]) { */
-/* 					rc = 0; */
-/* 					goto failed; */
-/* 				} */
-/* 				ba_mp = &ba_system_ptr->grid */
-/* 					[check_mp->coord[A]] */
-/* 					[check_mp->coord[X]+x] */
-/* 					[check_mp->coord[Y]+y] */
-/* 					[check_mp->coord[Z]+z]; */
-
-/* 				if ((ba_mp->coord[X] == check_mp->coord[X]) */
-/* 				    && (ba_mp->coord[Y] == check_mp->coord[Y]) */
-/* 				    && (ba_mp->coord[Z] */
-/* 					== check_mp->coord[Z])) */
-/* 					continue; */
-/* 				for (dim=0; dim<cluster_dim, dim++) { */
-/* 				if (!_mp_used(ba_mp, geometry[dim])) { */
-/* 					if (!(curr_mp->used & BA_MP_USED_ALTERED)) { */
-/* 						if (ba_debug_flags */
-/* 						    & DEBUG_FLAG_BG_ALGO_DEEP) */
-/* 							info("here Adding %s", */
-/* 							     ba_mp->coord_str); */
-/* 						ba_mp->used |= BA_MP_USED_ALTERED; */
-/* 						list_append(results, ba_mp); */
-/* 					} */
-/* 					_copy_the_path(results, check_mp, */
-/* 						       check_mp, */
-/* 						       ba_mp, dim); */
-/* 				} else { */
-/* 					rc = 0; */
-/* 					goto failed; */
-/* 				} */
-/* 			} */
-/* 		} */
-
-/* 	} */
-/* 	list_iterator_destroy(itr); */
-/* 	itr = list_iterator_create(start_list); */
-/* 	check_mp = (ba_mp_t*) list_next(itr); */
-/* 	list_iterator_destroy(itr); */
-
-/* 	itr = list_iterator_create(results); */
-/* 	while ((ba_mp = (ba_mp_t*) list_next(itr))) { */
-/* 		if (!_find_yz_path(ba_mp, */
-/* 				   check_mp->coord, */
-/* 				   geometry, */
-/* 				   conn_type)){ */
-/* 			rc = 0; */
-/* 			goto failed; */
-/* 		} */
-/* 	} */
-
-/* 	if (deny_pass) { */
-/* 		if ((*deny_pass & PASS_DENY_Y) */
-/* 		    && (*deny_pass & PASS_FOUND_Y)) { */
-/* 			debug("We don't allow Y passthoughs"); */
-/* 			rc = 0; */
-/* 		} else if ((*deny_pass & PASS_DENY_Z) */
-/* 			   && (*deny_pass & PASS_FOUND_Z)) { */
-/* 			debug("We don't allow Z passthoughs"); */
-/* 			rc = 0; */
-/* 		} */
-/* 	} */
-
-/* failed: */
-/* 	list_iterator_destroy(itr); */
-
-/* 	return rc; */
-/* } */
 
 static int _internal_find_first_block(List results, int dim,
 				      uint16_t *geometry, uint16_t *conn_type,
@@ -2740,10 +2680,10 @@ static int _internal_find_first_block(List results, int dim,
 	int i;
 	ba_mp_t *start_mp;
 
-	if (dim > cluster_flags)
+	if (dim > cluster_dims)
 		return -1;
 
-	if (dim < cluster_flags) {
+	if (dim < cluster_dims) {
 		/* handle the outter dims here */
 		while (coords[dim] < geometry[dim]) {
 			if (_internal_find_first_block(results, dim+1,
@@ -2759,7 +2699,7 @@ static int _internal_find_first_block(List results, int dim,
 	start_mp = &ba_system_ptr->grid[curr_coords[A]][curr_coords[X]]
 		[curr_coords[Y]][curr_coords[Z]];
 
-	for (i = 0; i < cluster_flags; i++) {
+	for (i = 0; i < cluster_dims; i++) {
 		if (geometry[i] == 1) {
 			if (conn_type[i] == SELECT_MESH)
 				continue;
@@ -2793,141 +2733,17 @@ static int _internal_find_first_block(List results, int dim,
  *
  * RET: 0 on failure 1 on success
  */
-static int _find_first_block(List results,
-			     uint16_t *geometry, uint16_t *conn_type)
+static int _fill_in_coords(List results, ba_mp_t *start_mp,
+			   uint16_t *block_start, uint16_t *block_end,
+			   uint16_t *pass_end)
 {
-	ba_mp_t *first_mp;
-	int rc = 1, i;
-	ListIterator itr = NULL;
-	uint16_t coords[cluster_dims];
-	uint16_t curr_coords[cluster_dims];
-    	/* int a=0, b=0, c=0, d=0; */
-	/* int ua=0, ub=0, uc=0, ud=0; */
-	/* ba_switch_t *curr_switch = NULL; */
-	/* ba_switch_t *next_switch = NULL; */
+	ba_mp_t *check_mp[cluster_dims];
+	int coords[cluster_dims];
+	int level_cnt[cluster_dims];
 
-	if (!results || !list_count(results)) {
-		fatal("You need to put at least one "
-		      "midplane to start from here");
-		return 0;
-	}
-
-	first_mp = list_peek(results);
-
-	memset(coords, 0, sizeof(coords));
-	memcpy(curr_coords, first_mp->coord, sizeof(curr_coords));
-
-	rc = _internal_find_first_block(results, A, geometry, conn_type,
-					coords, curr_coords);
-
-	if (rc == -1)
-		goto failed;
-
-		/* curr_switch = &check_mp->axis_switch[A]; */
-
-		/* for (a=0; a<geometry[A]; a++) { */
-		/* 	ua = check_mp->coord[A]+a; */
-		/* 	if (ua >= DIM_SIZE[A]) { */
-		/* 		rc = 0; */
-		/* 		goto failed; */
-		/* 	} */
-		/* 	for (b=0; c<geometry[X]; b++) { */
-		/* 		ub = check_mp->coord[X]+b; */
-		/* 		if (ub >= DIM_SIZE[X]) { */
-		/* 			rc = 0; */
-		/* 			goto failed; */
-		/* 		} */
-		/* 		for (c=0; c<geometry[Y]; c++) { */
-		/* 			uc = check_mp->coord[Y]+c; */
-		/* 			if (uc >= DIM_SIZE[Y]) { */
-		/* 				rc = 0; */
-		/* 				goto failed; */
-		/* 			} */
-		/* 			for (d=0; d<geometry[Z]; d++) { */
-		/* 				ud = check_mp->coord[Z]+d; */
-		/* 				if (ud >= DIM_SIZE[Z]) { */
-		/* 					rc = 0; */
-		/* 					goto failed; */
-		/* 				} */
-		/* 				ba_mp = &ba_system_ptr->grid */
-		/* 					[ua][ub][uc][ud]; */
-
-		/* 				if ((ba_mp->coord[Y] == check_mp->coord[Y]) */
-		/* 				    && (ba_mp->coord[Z] */
-		/* 					== check_mp->coord[Z])) */
-		/* 					continue; */
-
-		/* 				if (!_mp_used(ba_mp, geometry)) { */
-		/* 					if (ba_debug_flags */
-		/* 					    & DEBUG_FLAG_BG_ALGO_DEEP) */
-		/* 						info("here Adding %c%c%c%c", */
-		/* 						     alpha_num[ba_mp-> */
-		/* 							       coord[A]], */
-		/* 						     alpha_num[ba_mp-> */
-		/* 							       coord[X]], */
-		/* 						     alpha_num[ba_mp-> */
-		/* 							       coord[Y]], */
-		/* 						     alpha_num[ba_mp-> */
-		/* 							       coord[Z]]); */
-		/* 					list_append(results, ba_mp); */
-		/* 					next_switch = &ba_mp->axis_switch[A]; */
-
-		/* 					/\* since we are going off the */
-		/* 					 * main system we can send NULL */
-		/* 					 * here */
-		/* 					 *\/ */
-		/* 					_copy_the_path(NULL, */
-		/* 						       ba_mp, */
-		/* 						       check_mp, */
-		/* 						       ba_mp, */
-		/* 						       A); */
-		/* 				} else { */
-		/* 					rc = 0; */
-		/* 					goto failed; */
-		/* 				} */
-			/* 		} */
-			/* 	} */
-			/* } */
-	/* } */
-	/* list_iterator_destroy(itr); */
-
-	/* if (rc == -1) */
-	/* 	return 0; */
-
-	/* itr = list_iterator_create(results); */
-	/* while ((ba_mp = (ba_mp_t*) list_next(itr))) { */
-	/* 	if (!_copy_the_path(ba_mp, check_mp->coord, */
-	/* 			geometry, conn_type)) { */
-	/* 		rc = 0; */
-	/* 		break; */
-	/* 	} */
-	/* } */
-	/* list_iterator_destroy(itr); */
-
-	if (deny_pass) {
-		if ((*deny_pass & PASS_DENY_A)
-		    && (*deny_pass & PASS_FOUND_A)) {
-			debug("We don't allow A passthoughs");
-			rc = 0;
-		} else if ((*deny_pass & PASS_DENY_X)
-		    && (*deny_pass & PASS_FOUND_X)) {
-			debug("We don't allow X passthoughs");
-			rc = 0;
-		} else if ((*deny_pass & PASS_DENY_Y)
-		    && (*deny_pass & PASS_FOUND_Y)) {
-			debug("We don't allow Y passthoughs");
-			rc = 0;
-		} else if ((*deny_pass & PASS_DENY_Z)
-			   && (*deny_pass & PASS_FOUND_Z)) {
-			debug("We don't allow Z passthoughs");
-			rc = 0;
-		}
-	}
-
-failed:
-	list_iterator_destroy(itr);
-
-	return rc;
+	return _internal_fill_in_coords(results, A, start_mp, check_mp,
+					block_start, block_end, pass_end,
+					coords, level_cnt);
 }
 
 static void _copy_from_main(List main_mps, List ret_list)
@@ -3119,12 +2935,25 @@ static int _copy_the_path(List mps, ba_mp_t *start_mp, ba_mp_t *curr_mp,
 static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 {
 	int rc = 0;
+	if (ba_mp->alter_switch[dim].usage != BG_SWITCH_NONE) {
+		info("already set %s(%d)", ba_mp->coord_str, dim);
+		return 0;
+
+	}
+	if ((orig_mp->used & BA_MP_USED_PASS_BIT)
+	    || (ba_mp->used & BA_MP_USED_PASS_BIT)) {
+		info("here %d %d", orig_mp->alter_switch[dim].usage & BG_SWITCH_PASS_FLAG, ba_mp->alter_switch[dim].usage & BG_SWITCH_PASS_FLAG);
+		if (!(orig_mp->alter_switch[dim].usage & BG_SWITCH_PASS_FLAG)) {
+			info("skipping %s(%d)", ba_mp->coord_str, dim);
+			return 0;
+		}
+	}
 
 	if (_mp_used(ba_mp, dim)) {
 		info("%s used", ba_mp->coord_str);
 		return -1;
 	}
-	info("used for %s(%d) is %d", ba_mp->coord_str, dim, ba_mp->used);
+	info("mapping dim %d of %s(%d) to %s(%d) %d", dim, orig_mp->coord_str, orig_mp->used, ba_mp->coord_str, ba_mp->used, orig_mp->used == BA_MP_USED_ALTERED_PASS);
 	if (!(ba_mp->used & BA_MP_USED_ALTERED)) {
 		if (switch_overlap(ba_mp->axis_switch[dim].usage,
 				   orig_mp->alter_switch[dim].usage)) {
@@ -3149,11 +2978,13 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 	     orig_mp->coord_str,
 	     ba_switch_usage_str(ba_mp->alter_switch[dim].usage));
 	ba_mp->alter_switch[dim].usage |= orig_mp->alter_switch[dim].usage;
+
 	return rc;
 }
 
 static int _find_path(List mps, ba_mp_t *start_mp, int dim,
-		      uint16_t geometry, uint16_t conn_type, uint16_t *longest)
+		      uint16_t geometry, uint16_t conn_type,
+		      uint16_t *block_end, uint16_t *longest)
 {
 	ba_mp_t *curr_mp = start_mp->next_mp[dim];
 	ba_switch_t *axis_switch = NULL;
@@ -3163,6 +2994,8 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 
 	if (_mp_used(start_mp, dim))
 		return 0;
+
+	//start_mp->used |= BA_MP_USED_START;
 
 	axis_switch = &start_mp->axis_switch[dim];
 	alter_switch = &start_mp->alter_switch[dim];
@@ -3188,6 +3021,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 
 	while (curr_mp != start_mp) {
 		xassert(curr_mp);
+		//curr_mp->used |= BA_MP_USED_START;
 		axis_switch = &curr_mp->axis_switch[dim];
 		alter_switch = &curr_mp->alter_switch[dim];
 		if (curr_mp->coord[dim] > *longest)
@@ -3196,6 +3030,8 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		   from an unused mp */
 		xassert(!(axis_switch->usage & BG_SWITCH_IN_PASS));
 		if ((count < geometry) && !_mp_used(curr_mp, dim)) {
+			if (curr_mp->coord[dim] > *block_end)
+				*block_end = curr_mp->coord[dim];
 			count++;
 			if (!(curr_mp->used & BA_MP_USED_ALTERED)) {
 				add = 1;
