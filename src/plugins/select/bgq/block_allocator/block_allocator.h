@@ -62,24 +62,6 @@
 
 enum {A, X, Y, Z};
 
-/* */
-/*
- * structure that holds switch path information for finding the wiring
- * path without setting the configuration.
- *
- * - dim      - Which Axis it is on
- * - geometry - mp location
- * - in       - ingress port.
- * - out      - egress port.
- *
- */
-typedef struct {
-	int dim;
-	uint16_t geometry[HIGHEST_DIMENSIONS];
-	int in;
-	int out;
-} ba_path_switch_t;
-
 /*
  * structure that holds the configuration settings for each request
  */
