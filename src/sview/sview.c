@@ -533,7 +533,7 @@ static void _tab_pos(GtkRadioAction *action,
 	gtk_notebook_set_tab_pos(notebook, working_sview_config.tab_pos);
 }
 
-static void _init_pages()
+static void _init_pages(void)
 {
 	int i;
 	for(i=0; i<PAGE_CNT; i++) {
@@ -543,7 +543,7 @@ static void _init_pages()
 	}
 }
 
-static void _persist_dynamics()
+static void _persist_dynamics(void)
 {
 
 	gint g_x;

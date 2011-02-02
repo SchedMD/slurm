@@ -510,6 +510,10 @@ static void _init_sview_conf()
 {
 	int i;
 
+	default_sview_config.main_width = 1000;
+	default_sview_config.main_height = 500;
+	default_sview_config.fi_popup_width = 800;
+	default_sview_config.fi_popup_height = 500;
 	default_sview_config.button_size = 10;
 	default_sview_config.refresh_delay = 5;
 	default_sview_config.grid_x_width = 0;
@@ -645,13 +649,6 @@ extern int load_defaults(void)
 		       "FullInfoPopupWidth", hashtbl);
 	s_p_get_uint32(&default_sview_config.fi_popup_height,
 		       "FullInfoPopupHeight", hashtbl);
-
-	if (default_sview_config.main_width == 0) {
-		default_sview_config.main_width=1000;
-		default_sview_config.main_height=450;
-		default_sview_config.fi_popup_width=600;
-		default_sview_config.fi_popup_height=400;
-	}
 	if (s_p_get_string(&tmp_str, "TabPosition", hashtbl)) {
 		if (slurm_strcasestr(tmp_str, "top"))
 			default_sview_config.tab_pos = GTK_POS_TOP;
