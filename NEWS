@@ -20,18 +20,14 @@ documents those changes that are of interest to users and admins.
     clusters over 1000 nodes. Users can enable this by selecting the "Name"
     tab. This change dramatically improves scalability of sview.
  -- Report error when trying to change a node's state from scontrol for Cray
-    systems. Based upon 01_Cray-scontrol-warning-node-update.diff
+    systems.
  -- Do not attempt to read the batch script for non-batch jobs. This patch
     eliminates some inappropriate error messages.
-    02_Bug-fix_no-script-on-interactive-job.diff
  -- Preserve NodeHostName when reordering nodes due to system topology.
-    03_Bug-fix_slurmctld-swap-both-NodeAddr-and-NodeHostname-when-reordering.diff
  -- On Cray/ALPS systems  do node inventory before scheduling jobs.
-    09_Cray-INVENTORY-directly-before-schedule.diff
- -- Disable some salloc options on Cray systems. 11_salloc.diff
+ -- Disable some salloc options on Cray systems.
  -- Disable scontrol's wait_job command on Cray systems.
-    13_scontrol-no-wait_job.diff
- -- Disable srun command on native Cray/ALPS systems. 14_srun.diff
+ -- Disable srun command on native Cray/ALPS systems.
  -- Updated configure option "--enable-cray-emulation" (still under
     development) to emulate a cray XT/XE system, and auto-detect a real
     Cray XT/XE systems (removed no longer needed --enable-cray configure
