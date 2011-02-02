@@ -80,7 +80,8 @@ typedef enum {
 #define BG_SWITCH_TORUS        0x000F /* all ports are in use in a torus */
 
 #define switch_overlap(__switch_a, __switch_b) \
-	!(__switch_a & __switch_b)
+	((__switch_a != BG_SWITCH_NONE) && (__switch_b != BG_SWITCH_NONE)) \
+	&& !(__switch_a & __switch_b)
 
 /* typedef enum { */
 /* 	BG_SWITCH_NONE = 0, // Switch is not in use */

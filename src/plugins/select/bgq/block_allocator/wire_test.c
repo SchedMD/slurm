@@ -112,34 +112,34 @@ int main(int argc, char** argv)
 	set_ba_debug_flags(ba_debug_flags);
 
 	/* [010x831] */
-	results = list_create(NULL);
-	request->geometry[0] = 1;
-	request->geometry[1] = 1;
-	request->geometry[2] = 1;
-	request->geometry[3] = 1;
-	request->start[0] = 0;
-	request->start[1] = 1;
-	request->start[2] = 0;
-	request->start[3] = 0;
-	request->start_req = 1;
-//	request->size = 16;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type[A] = SELECT_TORUS;
-	request->conn_type[X] = SELECT_TORUS;
-	request->conn_type[Y] = SELECT_TORUS;
-	request->conn_type[Z] = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if (!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       alpha_num[request->geometry[0]],
-		       alpha_num[request->geometry[1]],
-		       alpha_num[request->geometry[2]]);
-	} else
-		info("got back mps %s\n", request->save_name);
+/* 	results = list_create(NULL); */
+/* 	request->geometry[0] = 1; */
+/* 	request->geometry[1] = 1; */
+/* 	request->geometry[2] = 1; */
+/* 	request->geometry[3] = 1; */
+/* 	request->start[0] = 0; */
+/* 	request->start[1] = 1; */
+/* 	request->start[2] = 0; */
+/* 	request->start[3] = 0; */
+/* 	request->start_req = 1; */
+/* //	request->size = 16; */
+/* 	request->rotate = 0; */
+/* 	request->elongate = 0; */
+/* 	request->conn_type[A] = SELECT_TORUS; */
+/* 	request->conn_type[X] = SELECT_TORUS; */
+/* 	request->conn_type[Y] = SELECT_TORUS; */
+/* 	request->conn_type[Z] = SELECT_TORUS; */
+/* 	new_ba_request(request); */
+/* 	print_ba_request(request); */
+/* 	if (!allocate_block(request, results)) { */
+/*        		debug("couldn't allocate %c%c%c", */
+/* 		       alpha_num[request->geometry[0]], */
+/* 		       alpha_num[request->geometry[1]], */
+/* 		       alpha_num[request->geometry[2]]); */
+/* 	} else */
+/* 		info("got back mps %s\n", request->save_name); */
 
-	list_destroy(results);
+/* 	list_destroy(results); */
 
 /* 	/\* [001x801] *\/ */
 /* 	results = list_create(NULL); */
@@ -168,8 +168,8 @@ int main(int argc, char** argv)
 	results = list_create(NULL);
 	request->geometry[0] = 1;
 	request->geometry[1] = 3;
-	request->geometry[2] = 1;
-	request->geometry[3] = 1;
+	request->geometry[2] = 4;
+	request->geometry[3] = 4;
 	request->start[0] = 0;
 	request->start[1] = 0;
 	request->start[2] = 0;
