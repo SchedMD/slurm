@@ -178,12 +178,9 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 		fatal("list_create malloc failure");
 	itr = list_iterator_create(opt.clusters);
 	while ((working_cluster_rec = list_next(itr))) {
-		if ((local_cluster = _job_will_run(req))) {
-			if (!ret_list)
-				ret_list = list_create(
-					   _destroy_local_cluster_rec);
+		if ((local_cluster = _job_will_run(req)))
 			list_append(ret_list, local_cluster);
-		} else
+		else
 			error("Problem with submit to cluster %s: %m",
 			      working_cluster_rec->name);
 	}
@@ -192,9 +189,10 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 	if (host_set)
 		req->alloc_node = NULL;
 
-	if (!ret_list) {
+	if (!list_count(ret_list)) {
 		error("Can't run on any of the clusters given");
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	/* sort the list so the first spot is on top */
@@ -205,6 +203,7 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 
 	/* set up the working cluster and be done */
 	working_cluster_rec = local_cluster->cluster_rec;
+end_it:
 	list_destroy(ret_list);
 
 	return rc;

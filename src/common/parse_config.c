@@ -43,12 +43,14 @@
 #  include "config.h"
 #endif
 
-#include <string.h>
-#include <sys/types.h>
+#include <ctype.h>
 #include <regex.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <ctype.h>
+#include <unistd.h>
 
 /* #include "src/common/slurm_protocol_defs.h" */
 #include "src/common/log.h"
@@ -843,6 +845,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename)
 	int line_number;
 	int merged_lines;
 	int inc_rc;
+	struct stat stat_buf;
 
 	if (!filename) {
 		error("s_p_parse_file: No filename given.");
@@ -850,7 +853,14 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename)
 	}
 
 	_keyvalue_regex_init();
-
+	if (stat(filename, &stat_buf) < 0) {
+		info("s_p_parse_file: unable to status file \"%s\"", filename);
+		return SLURM_ERROR;
+	}
+	if (stat_buf.st_size == 0) {
+		info("s_p_parse_file: file \"%s\" is empty", filename);
+		return SLURM_SUCCESS;
+	}
 	f = fopen(filename, "r");
 	if (f == NULL) {
 		error("s_p_parse_file: unable to read \"%s\": %m",

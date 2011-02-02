@@ -439,7 +439,7 @@ _cancel_job_id (void *ci)
 {
 	int error_code = SLURM_SUCCESS, i;
 	bool sig_set = true;
-
+	bool msg_to_ctld = opt.ctld;
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
 	uint32_t job_id = cancel_info->job_id;
 	uint16_t sig    = cancel_info->sig;
@@ -455,7 +455,7 @@ _cancel_job_id (void *ci)
 		else
 			verbose("Signal %u to job %u", sig, job_id);
 
-		if ((!sig_set) || opt.ctld || opt.clusters) {
+		if ((!sig_set) || msg_to_ctld || opt.clusters) {
 			error_code = slurm_kill_job (job_id, sig,
 						     (uint16_t)opt.batch);
 		} else {
@@ -467,10 +467,14 @@ _cancel_job_id (void *ci)
 			} else {
 				error_code = slurm_signal_job (job_id, sig);
 			}
+			if (error_code && (errno == ESLURM_JOB_PENDING)) {
+				/* Send request to directly to slurmctld */
+				msg_to_ctld  = true;
+				continue;
+			}
 		}
 		if ((error_code == 0) ||
-		    ((errno != ESLURM_TRANSITION_STATE_NO_UPDATE) &&
-		     (errno != ESLURM_JOB_PENDING)))
+		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
 		verbose("Job is in transistional state, retrying");
 		sleep ( 5 + i );
