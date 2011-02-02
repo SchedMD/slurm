@@ -108,6 +108,7 @@ static int *_get_cluster_dim_size(void)
 	return dim_size;
 }
 #endif
+	return dims;
 }
 
 static int _coord(char coord)
