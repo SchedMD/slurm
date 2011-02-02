@@ -167,9 +167,9 @@ int main(int argc, char** argv)
 	/* [001x801] */
 	results = list_create(NULL);
 	request->geometry[0] = 1;
-	request->geometry[1] = 3;
-	request->geometry[2] = 4;
-	request->geometry[3] = 4;
+	request->geometry[1] = 1;
+	request->geometry[2] = 2;
+	request->geometry[3] = 2;
 	request->start[0] = 0;
 	request->start[1] = 0;
 	request->start[2] = 0;

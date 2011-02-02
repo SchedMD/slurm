@@ -1565,7 +1565,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 			goto end_it;
 		}
 	}
-	info("going from %c%c%c%c to %c%c%c%c",
+	info("complete box is  %c%c%c%c x %c%c%c%c",
 	     alpha_num[start[A]],
 	     alpha_num[start[X]],
 	     alpha_num[start[Y]],
@@ -1575,15 +1575,19 @@ extern char *set_bg_block(List results, uint16_t *start,
 	     alpha_num[end[Y]],
 	     alpha_num[end[Z]]);
 
-	/* start them all from the starting point */
-	for (dim=0; dim<cluster_dims; dim++)
-		check_mp[dim] = ba_mp;
+	/* Each time you start the loop again, put the check_mp at the
+	 * start point (ba_mp) */
+	check_mp[A] = ba_mp;
 	for (a = start[A]; a <= end[A]; a++) {
+		check_mp[X] = ba_mp;
 		for (x = start[X]; x <= end[X]; x++) {
+			check_mp[Y] = ba_mp;
 			for (y = start[Y]; y <= end[Y]; y++) {
+				check_mp[Z] = ba_mp;
 				for (z = start[Z]; z <= end[Z]; z++) {
 					ba_mp_t *curr_mp = &(ba_system_ptr->grid
 							     [a][x][y][z]);
+					info("looking at %s", curr_mp->coord_str);
 					for (dim=0; dim<cluster_dims; dim++) {
 						int rc = _copy_ba_switch(
 							curr_mp,
@@ -3132,11 +3136,17 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 				     orig_mp->alter_switch[dim].usage));
 			return -1;
 		}
-		ba_mp->used |= BA_MP_USED_ALTERED;
 		rc = 1;
 	}
-	info("adding %s to %s",
+
+	/* Just overlap them here so if they are used in a passthough
+	   we get it.
+	*/
+	ba_mp->used |= orig_mp->used;
+
+	info("adding from %s %s to %s",
 	     ba_switch_usage_str(orig_mp->alter_switch[dim].usage),
+	     orig_mp->coord_str,
 	     ba_switch_usage_str(ba_mp->alter_switch[dim].usage));
 	ba_mp->alter_switch[dim].usage |= orig_mp->alter_switch[dim].usage;
 	return rc;
