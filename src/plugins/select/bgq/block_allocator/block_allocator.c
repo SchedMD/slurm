@@ -85,11 +85,11 @@ uint32_t ba_debug_flags = 0;
 
 /* extern Global */
 uint16_t ba_deny_pass = 0;
-List ba_midplane_list = NULL;
 char letters[62];
 char colors[6];
-uint16_t DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
-uint16_t REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
+int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
+
+static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 s_p_options_t bg_conf_file_options[] = {
 	{(char *)"DenyPassthrough", S_P_STRING},
@@ -119,6 +119,10 @@ static int _check_for_options(ba_request_t* ba_request);
 
 /* */
 static int _append_geo(uint16_t *geo, List geos, int rotate);
+
+/* */
+static void _internal_removable_set_mps(int level, int *start,
+					int *end, int *coords, bool mark);
 
 /* */
 static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
@@ -1627,6 +1631,7 @@ extern int removable_set_mps(char *mps)
 	int y,z;
 	int start[cluster_dims];
         int end[cluster_dims];
+	int coords[cluster_dims];
 
 	if (!mps)
 		return SLURM_ERROR;
@@ -1647,18 +1652,8 @@ extern int removable_set_mps(char *mps)
 			hostlist_parse_int_to_array(
 				number, end, cluster_dims, cluster_base);
 			j += 3;
-			for (a = start[A]; a <= end[A]; a++)
-				for (x = start[X]; x <= end[X]; x++)
-					for (y = start[Y]; y <= end[Y]; y++)
-						for (z = start[Z];
-						     z <= end[Z]; z++) {
-							if (!ba_system_ptr->
-							    grid[a][x][y][z].
-							    used)
-								ba_system_ptr->
-									grid[a][x][y][z]
-									.used = BA_MP_USED_TEMP;
-						}
+
+			_internal_removable_set_mps(A, start, end, coords, 1);
 
 			if (mps[j] != ',')
 				break;
@@ -1674,8 +1669,10 @@ extern int removable_set_mps(char *mps)
 			y = start[Y];
 			z = start[Z];
 			j+=3;
-			if (!ba_system_ptr->grid[a][x][y][z].used)
-				ba_system_ptr->grid[a][x][y][z].used = BA_MP_USED_TEMP;
+			if (ba_system_ptr->grid[a][x][y][z].used
+			    == BA_MP_USED_FALSE)
+				ba_system_ptr->grid[a][x][y][z].used =
+					BA_MP_USED_TEMP;
 
 			if (mps[j] != ',')
 				break;
@@ -1693,17 +1690,12 @@ extern int removable_set_mps(char *mps)
  */
 extern int reset_all_removed_mps()
 {
-	int a, x, y, z;
+	int start[cluster_dims];
+  	int coords[cluster_dims];
 
-	for (a = 0; a < DIM_SIZE[A]; a++)
-		for (x = 0; x < DIM_SIZE[X]; x++)
-			for (y = 0; y < DIM_SIZE[Y]; y++)
-				for (z = 0; z <= DIM_SIZE[Z]; z++) {
-					ba_mp_t *ba_mp = &ba_system_ptr->grid
-						[a][x][y][z];
-					if (ba_mp->used == BA_MP_USED_TEMP)
-						ba_mp->used = BA_MP_USED_FALSE;
-				}
+	memset(start, 0, sizeof(start));
+	_internal_removable_set_mps(A, start, DIM_SIZE, coords, 0);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1840,7 +1832,6 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
  */
 extern uint16_t *find_mp_loc(char* mp_id)
 {
-	ListIterator itr;
 	char *check = NULL;
 	uint32_t a, x, y, z;
 	ba_mp_t *ba_mp = NULL;
@@ -1881,7 +1872,6 @@ extern uint16_t *find_mp_loc(char* mp_id)
 	}
 #endif
 
-	itr = list_iterator_create(ba_midplane_list);
 	for (a = 0; a < DIM_SIZE[A]; a++)
 		for (x = 0; x < DIM_SIZE[X]; x++)
 			for (y = 0; y < DIM_SIZE[Y]; y++)
@@ -1911,6 +1901,7 @@ extern char *find_mp_rack_mid(char* axyz)
 	int number;
 	int coord[cluster_dims];
 	int len = strlen(axyz);
+	int dim;
 
 	len -= 4;
 	if (len<0)
@@ -1927,17 +1918,17 @@ extern char *find_mp_rack_mid(char* axyz)
 	number = xstrntol(axyz + len, &p, cluster_dims, cluster_base);
 	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
 
-	if (coord[A] > DIM_SIZE[A]
-	    || coord[X] > DIM_SIZE[X]
-	    || coord[Y] > DIM_SIZE[Y]
-	    || coord[Z] > DIM_SIZE[Z]) {
-		error("This location %s is not possible in our system %c%c%c%c",
-		      axyz,
- 		      alpha_num[DIM_SIZE[A]],
-		      alpha_num[DIM_SIZE[X]],
-		      alpha_num[DIM_SIZE[Y]],
-		      alpha_num[DIM_SIZE[Z]]);
-		return NULL;
+	for (dim=0; dim<cluster_dims; dim++) {
+		if (coord[dim] > DIM_SIZE[dim]) {
+			error("This location %s is not possible "
+			      "in our system %c%c%c%c",
+			      axyz,
+			      alpha_num[DIM_SIZE[A]],
+			      alpha_num[DIM_SIZE[X]],
+			      alpha_num[DIM_SIZE[Y]],
+			      alpha_num[DIM_SIZE[Z]]);
+			return NULL;
+		}
 	}
 
 	bridge_setup_system();
@@ -2379,6 +2370,36 @@ static int _append_geo(uint16_t *geometry, List geos, int rotate)
 		list_append(geos, geo);
 	}
 	return 1;
+}
+
+static void _internal_removable_set_mps(int level, int *start,
+					int *end, int *coords, bool mark)
+{
+	ba_mp_t *curr_mp;
+
+	if (level > cluster_dims)
+		return;
+
+	if (level < cluster_dims) {
+		for (coords[level] = start[level];
+		     coords[level] <= end[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			_internal_removable_set_mps(
+				level+1, start, end, coords, mark);
+		}
+		return;
+	}
+
+	curr_mp = &ba_system_ptr->grid
+		[coords[A]][coords[X]][coords[Y]][coords[Z]];
+	if (mark) {
+		if (curr_mp->used == BA_MP_USED_FALSE)
+			curr_mp->used = BA_MP_USED_TEMP;
+	} else {
+		if (curr_mp->used == BA_MP_USED_TEMP)
+			curr_mp->used = BA_MP_USED_FALSE;
+	}
 }
 
 /*

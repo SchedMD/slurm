@@ -87,7 +87,7 @@ extern int bridge_fini();
  */
 extern const char *bridge_err_str(int inx);
 
-extern int bridge_get_size(uint16_t *size);
+extern int bridge_get_size(int *size);
 extern int bridge_setup_system();
 
 extern int bridge_block_create(bg_record_t *bg_record);

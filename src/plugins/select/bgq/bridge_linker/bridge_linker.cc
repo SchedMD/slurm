@@ -140,7 +140,7 @@ extern const char *bridge_err_str(int inx)
 	return "?";
 }
 
-extern int bridge_get_size(uint16_t *size)
+extern int bridge_get_size(int *size)
 {
 	int i;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
@@ -148,7 +148,7 @@ extern int bridge_get_size(uint16_t *size)
 #endif
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
-	memset(size, 0, sizeof(uint16_t) * SYSTEM_DIMENSIONS);
+	memset(size, 0, sizeof(int) * SYSTEM_DIMENSIONS);
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgq_size = core::getMachineSize();

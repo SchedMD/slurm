@@ -223,7 +223,7 @@ typedef struct {
 /* Global */
 extern char letters[62]; /* complete list of letters used in smap */
 extern char colors[6]; /* index into colors used for smap */
-extern uint16_t DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
+extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
 					  * each dimension */
 extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
