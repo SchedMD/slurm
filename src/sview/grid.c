@@ -443,10 +443,6 @@ static void _each_highlightd(GtkTreeModel *model,
 	}
 
 	list_iterator_destroy(itr);
-	if (changed && working_sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
-	}
 	return;
 }
 
@@ -1165,10 +1161,6 @@ extern void highlight_grid(GtkTreeView *tree_view,
 		gtk_tree_selection_selected_foreach(
 			gtk_tree_view_get_selection(tree_view),
 			_each_highlight_selected, &grid_foreach);
-	if (working_sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
-	}
 
 	return;
 }
@@ -1734,8 +1726,4 @@ extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 
 	change_grid_color(popup_win->grid_button_list, -1, -1,
 			  MAKE_BLACK, true, NODE_STATE_IDLE);
-	if (working_sview_config.grid_speedup) {
-		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 0);
-		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 1);
-	}
 }

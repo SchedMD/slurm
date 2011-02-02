@@ -1,4 +1,4 @@
-.TH "sview" "1" "SLURM 2.0" "July 2009" "SLURM Commands"
+.TH "sview" "1" "SLURM 2.3" "February 2011" "SLURM Commands"
 .SH "NAME"
 .LP
 sview \- graphical user interface to view and modify SLURM state.
@@ -38,15 +38,6 @@ unintended changes.
 The sview command can only be build if \fIgtk+\-2.0\fR is installed.
 Systems lacking these libraries will have SLURM installed without
 the sview command.
-
-On larger systems (2000+ nodes) some gtk themes can considerably slow down
-the grid display.  If you think this is happening you may
-try defining SVIEW_GRID_SPEEDUP=1 in your environment.  This will use
-a code path to try to avoid functions that typically take a
-relatively large amount of time.  THIS OPTION DOESN'T WORK FOR EVERY
-GTK THEME, but if it does work for your theme this provides an
-outrageous amount of speedup.  We have found it to work very well with
-QT based themes.
 
 At least some gtk themes are unable to display large numbers of lines (jobs,
 nodes, etc). The information is still in gtk's internal data structures, but

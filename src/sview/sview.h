@@ -201,7 +201,6 @@ typedef struct {
 	uint32_t fi_popup_width;
 	uint32_t fi_popup_height;
 	uint32_t grid_hori;
-	bool grid_speedup;
 	bool grid_topological;
 	uint32_t grid_vert;
 	uint32_t grid_x_width;

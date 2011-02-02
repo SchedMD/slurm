@@ -521,15 +521,12 @@ static void _init_sview_conf()
 	default_sview_config.grid_vert = 10;
 	default_sview_config.show_hidden = 0;
 	default_sview_config.admin_mode = FALSE;
-	default_sview_config.grid_speedup = 0;
 	default_sview_config.grid_topological = FALSE;
 	default_sview_config.ruled_treeview = FALSE;
 	default_sview_config.show_grid = TRUE;
 	default_sview_config.default_page = JOB_PAGE;
 	default_sview_config.tab_pos = GTK_POS_TOP;
 
-	if (getenv("SVIEW_GRID_SPEEDUP"))
-		default_sview_config.grid_speedup = 1;
 	for(i=0; i<PAGE_CNT; i++) {
 		memset(&default_sview_config.page_opts[i],
 		       0, sizeof(page_opts_t));
@@ -621,8 +618,6 @@ extern int load_defaults(void)
 	}
 	s_p_get_uint32(&default_sview_config.grid_hori,
 		       "GridHorizontal", hashtbl);
-	s_p_get_boolean(&default_sview_config.grid_speedup,
-			"GridSpeedup", hashtbl);
 	s_p_get_boolean(&default_sview_config.grid_topological,
 			"GridTopo", hashtbl);
 	if (default_sview_config.grid_topological == 0)
@@ -758,13 +753,6 @@ extern int save_defaults(bool final_save)
 		goto end_it;
 	tmp_str = xstrdup_printf("GridHorizontal=%u\n",
 				 default_sview_config.grid_hori);
-	rc = _write_to_file(fd, tmp_str);
-	xfree(tmp_str);
-	if (rc != SLURM_SUCCESS)
-		goto end_it;
-	tmp_str = xstrdup_printf("GridSpeedup=%s\n",
-				 default_sview_config.grid_speedup ?
-				 "YES" : "NO");
 	rc = _write_to_file(fd, tmp_str);
 	xfree(tmp_str);
 	if (rc != SLURM_SUCCESS)
