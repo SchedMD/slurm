@@ -260,12 +260,6 @@ extern int slurm_select_init(bool only_default)
 			error("%s is incompatible with Cray", select_type);
 			fatal("Use SelectType=select/cray");
 		}
-#else
-		if (!strcasecmp(select_type, "select/cray"))
-			fatal("Requested SelectType=select/cray in slurm.conf, "
-			      "but not running on a cray system.  If looking "
-			      "to emulate a Cray system use "
-			      "--enable-cray-emulation.");
 #endif
 	}
 
