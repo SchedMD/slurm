@@ -218,22 +218,20 @@ extern int bridge_block_create(bg_record_t *bg_record)
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	itr = list_iterator_create(bg_record->ba_mp_list);
-	while ((ba_mp = (ba_mp_t *)list_next(itr)))
-		midplanes.push_back(ba_mp->loc);
+	while ((ba_mp = (ba_mp_t *)list_next(itr))) {
+		if (ba_mp->used)
+			midplanes.push_back(ba_mp->loc);
+		else
+			pt_midplanes.push_back(ba_mp->loc);
+	}
 	list_iterator_destroy(itr);
 
-	itr = list_iterator_create(bg_record->ba_pt_mp_list);
-	while ((ba_mp = (ba_mp_t *)list_next(itr)))
-		pt_midplanes.push_back(ba_mp->loc);
-
-	list_iterator_destroy(itr);
-
-        for (i=0, dim = Dimension::A; i<SYSTEM_DIMENSIONS; i++, ++dim) {
-		switch (bg_record->conn_type[i]) {
-		case Block::Connectivity::Mesh:
+        for (dim=0 ; dim<SYSTEM_DIMENSIONS; dim++) {
+		switch (bg_record->conn_type[dim]) {
+		case SELECT_MESH:
 			conn_type[dim] = Block::Connectivity::Mesh;
 			break;
-		case Block::Connectivity::Torus:
+		case SELECT_TORUS:
 		default:
 			conn_type[dim] = Block::Connectivity::Torus;
 			break;
