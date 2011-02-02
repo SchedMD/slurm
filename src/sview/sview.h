@@ -195,6 +195,7 @@ typedef struct {
 	GtkToggleAction *action_gridtopo;
 	GtkToggleAction *action_ruled;
 	GtkRadioAction *action_tab;
+	uint16_t button_size;
 	bool admin_mode;
 	uint16_t default_page;
 	uint32_t fi_popup_width;

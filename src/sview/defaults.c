@@ -47,6 +47,7 @@
 enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ADMIN,
+	SORTID_BUTTON_SIZE,
 	SORTID_DEFAULT_PAGE,
 	SORTID_GRID_HORI,
 	SORTID_GRID_VERT,
@@ -71,6 +72,8 @@ static display_data_t display_data_defaults[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, NULL},
 	{G_TYPE_STRING, SORTID_ADMIN, "Start in Admin Mode",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
+	{G_TYPE_STRING, SORTID_BUTTON_SIZE, "Node Button Size in Pixels",
+	 TRUE, EDIT_TEXTBOX, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_DEFAULT_PAGE, "Default Page",
 	 TRUE, EDIT_MODEL, NULL, create_model_defaults, NULL},
 	{G_TYPE_STRING, SORTID_GRID_HORI, "Grid: Nodes before Horizontal break",
@@ -176,6 +179,13 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		else
 			sview_config->admin_mode = 0;
 		break;
+	case SORTID_BUTTON_SIZE:
+		type = "Button Size";
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		if ((temp_int <= 0) && (temp_int != INFINITE))
+			goto return_error;
+		sview_config->button_size = temp_int;
+		break;
 	case SORTID_DEFAULT_PAGE:
 		if (!strcasecmp(new_text, "job"))
 			sview_config->default_page = JOB_PAGE;
@@ -215,7 +225,6 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 	case SORTID_REFRESH_DELAY:
 		type = "Refresh Delay";
 		temp_int = strtol(new_text, (char **)NULL, 10);
-		//temp_int = time_str2secs((char *)new_text);
 		if ((temp_int <= 0) && (temp_int != INFINITE))
 			goto return_error;
 		sview_config->refresh_delay = temp_int;
@@ -393,6 +402,10 @@ static void _local_display_admin_edit(GtkTable *table,
 			temp_char = xstrdup_printf("%u",
 						   sview_config->grid_x_width);
 			break;
+		case SORTID_BUTTON_SIZE:
+			temp_char = xstrdup_printf("%u",
+						   sview_config->button_size);
+			break;
 		case SORTID_REFRESH_DELAY:
 			temp_char = xstrdup_printf("%u",
 						   sview_config->refresh_delay);
@@ -497,6 +510,7 @@ static void _init_sview_conf()
 {
 	int i;
 
+	default_sview_config.button_size = 10;
 	default_sview_config.refresh_delay = 5;
 	default_sview_config.grid_x_width = 0;
 	default_sview_config.grid_hori = 10;
@@ -528,6 +542,7 @@ extern int load_defaults(void)
 	s_p_hashtbl_t *hashtbl = NULL;
 	s_p_options_t sview_conf_options[] = {
 		{"AdminMode", S_P_BOOLEAN},
+		{"ButtonSize", S_P_UINT16},
 		{"DefaultPage", S_P_STRING},
 		{"ExcludedPartitions", S_P_STRING},	/* Vestigial */
 		{"FullInfoPopupWidth", S_P_UINT32},
@@ -584,6 +599,7 @@ extern int load_defaults(void)
 		error("something wrong with opening/reading conf file");
 
 	s_p_get_boolean(&default_sview_config.admin_mode, "AdminMode", hashtbl);
+	s_p_get_uint16(&default_sview_config.button_size,"ButtonSize", hashtbl);
 	if (s_p_get_string(&tmp_str, "DefaultPage", hashtbl)) {
 		if (slurm_strcasestr(tmp_str, "job"))
 			default_sview_config.default_page = JOB_PAGE;
@@ -771,6 +787,12 @@ extern int save_defaults(bool final_save)
 		goto end_it;
 	tmp_str = xstrdup_printf("GridXWidth=%u\n",
 				 default_sview_config.grid_x_width);
+	rc = _write_to_file(fd, tmp_str);
+	xfree(tmp_str);
+	if (rc != SLURM_SUCCESS)
+		goto end_it;
+	tmp_str = xstrdup_printf("ButtonSize=%u\n",
+				 default_sview_config.button_size);
 	rc = _write_to_file(fd, tmp_str);
 	xfree(tmp_str);
 	if (rc != SLURM_SUCCESS)

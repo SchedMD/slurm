@@ -38,7 +38,6 @@
 \*****************************************************************************/
 #include "sview.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
-#define NODE_WIDTH 10
 #define TOPO_DEBUG 0
 #define RESET_GRID -2
 List grid_button_list = NULL;
@@ -233,8 +232,9 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	grid_button->color = NULL;
 	grid_button->color_inx = MAKE_DOWN;
 	grid_button->button = gtk_event_box_new();
-	gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
-				    NODE_WIDTH);
+	gtk_widget_set_size_request(grid_button->button,
+				    working_sview_config.button_size,
+				    working_sview_config.button_size);
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(grid_button->button),
 				      FALSE);
 	_add_button_signals(grid_button);
@@ -274,8 +274,9 @@ void _put_button_as_up(grid_button_t *grid_button)
 	}
 	gtk_widget_destroy(grid_button->button);
 	grid_button->button = gtk_button_new();
-	gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
-				    NODE_WIDTH);
+	gtk_widget_set_size_request(grid_button->button,
+				    working_sview_config.button_size,
+				    working_sview_config.button_size);
 	_add_button_signals(grid_button);
 
 /* 	if (grid_button->frame) */
@@ -301,8 +302,9 @@ void _put_button_as_inactive(grid_button_t *grid_button)
 	}
 	gtk_widget_destroy(grid_button->button);
 	grid_button->button = gtk_button_new();
-	gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
-				    NODE_WIDTH);
+	gtk_widget_set_size_request(grid_button->button,
+				    working_sview_config.button_size,
+				    working_sview_config.button_size);
 	//gtk_widget_set_sensitive (grid_button->button, FALSE);
 
 	_add_button_signals(grid_button);
@@ -702,8 +704,9 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		grid_button->button = gtk_button_new();
 		grid_button->node_name = xstrdup(node_ptr->name);
 
-		gtk_widget_set_size_request(grid_button->button, NODE_WIDTH,
-					    NODE_WIDTH);
+		gtk_widget_set_size_request(grid_button->button,
+					    working_sview_config.button_size,
+					    working_sview_config.button_size);
 		_add_button_signals(grid_button);
 		list_append(button_processor->button_list, grid_button);
 
@@ -1033,8 +1036,9 @@ extern grid_button_t *create_grid_button_from_another(
 /* 		sview_widget_modify_bg(send_grid_button->button,  */
 /* 				       GTK_STATE_ACTIVE, color); */
 	}
-	gtk_widget_set_size_request(send_grid_button->button, NODE_WIDTH,
-				    NODE_WIDTH);
+	gtk_widget_set_size_request(send_grid_button->button,
+				    working_sview_config.button_size,
+				    working_sview_config.button_size);
 
 	send_grid_button->node_name = xstrdup(name);
 
