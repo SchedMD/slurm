@@ -58,6 +58,7 @@ int grid_line_cnt = 0;
 int max_display;
 int resize_screen = 0;
 
+int *dim_size = NULL;
 int main_xcord = 1;
 int main_ycord = 1;
 WINDOW *grid_win = NULL;
@@ -67,9 +68,10 @@ WINDOW *text_win = NULL;
  * Functions *
  ************/
 
-static int _get_option();
+static int *_get_cluster_dim_size(void);
+static int _get_option(void);
 static void *_resize_handler(int sig);
-static int _set_pairs();
+static int _set_pairs(void);
 
 int main(int argc, char *argv[])
 {
@@ -94,11 +96,9 @@ int main(int argc, char *argv[])
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
-	if(params.cluster_dims == 4) {
-		/* FIX ME: smap doesn't do anything correctly with
-		   more than 3 dims yet.
-		*/
-	} else if(params.cluster_dims == 3)
+	if (params.cluster_dims == 4) {
+		min_screen_width = 92;
+	} else if (params.cluster_dims == 3)
 		min_screen_width = 92;
 
 	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) {
@@ -113,9 +113,15 @@ int main(int argc, char *argv[])
 		sleep(10);	/* keep trying to reconnect */
 	}
 
+#if defined(HAVE_BGL) || defined(HAVE_BGP)
 	ba_init(new_node_ptr, 0);
+#endif
+#if defined(HAVE_BGQ) 
+	/* Call something to set DIM_SIZE array */
+#endif
+	dim_size = _get_cluster_dim_size();
 
-	if(params.resolve) {
+	if (params.resolve) {
 
 #ifdef HAVE_BG_FILES
 		if (!have_db2) {
@@ -171,13 +177,13 @@ part_fini:
 		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
 
-		if(params.cluster_dims == 4) {
-			/* FIX ME: smap doesn't do anything correctly with
-			   more than 3 dims yet.
-			*/
-		} else if(params.cluster_dims == 3) {
-			height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
-			width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+		if (params.cluster_dims == 4) {
+			height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
+			width = (dim_size[1] + dim_size[3] + 1) * dim_size[0];
+			check_width += width;
+		} else if (params.cluster_dims == 3) {
+			height = dim_size[1] * dim_size[2] + dim_size[1] + 3;
+			width = dim_size[0] + dim_size[2] + 3;
 			check_width += width;
 		} else {
 			height = 10;
@@ -356,12 +362,19 @@ part_fini:
 		getch();
 		endwin();
 	}
-	ba_fini();
 
+#ifdef MEMORY_LEAK_DEBUG
+#if defined(HAVE_BGL) || defined(HAVE_BGP)
+	ba_fini();
+#endif
+#if defined(HAVE_BGL) 
+	/* Call something to release memory */
+#endif
+#endif
 	exit(0);
 }
 
-static int _get_option()
+static int _get_option(void)
 {
 	int ch;
 
@@ -479,13 +492,13 @@ static void *_resize_handler(int sig)
 	doupdate();	/* update now to make sure we get the new size */
 	getmaxyx(stdscr,LINES,COLS);
 
-	if(params.cluster_dims == 4) {
-		/* FIX ME: smap doesn't do anything correctly with
-		   more than 3 dims yet.
-		*/
-	} else if(params.cluster_dims == 3) {
-		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
-		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+	if (params.cluster_dims == 4) {
+		height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
+		width = (dim_size[1] + dim_size[3] + 1) * dim_size[0];
+		check_width += width;
+	} else if (params.cluster_dims == 3) {
+		height = dim_size[1] * dim_size[2] + dim_size[1] + 3;
+		width = dim_size[0] + dim_size[2] + 3;
 		check_width += width;
 	} else {
 		height = 10;
@@ -552,7 +565,7 @@ static void *_resize_handler(int sig)
 	return NULL;
 }
 
-static int _set_pairs()
+static int _set_pairs(void)
 {
 	int x;
 
@@ -560,4 +573,39 @@ static int _set_pairs()
 		init_pair(colors[x], colors[x], COLOR_BLACK);
 	}
 	return 1;
+}
+
+static int *_get_cluster_dim_size(void)
+{
+	int *dims = slurmdb_setup_cluster_dim_size();
+
+	if (dims)
+		return dims;
+
+#if defined(HAVE_BGL) || defined(HAVE_BGP)
+{
+	static int dim_size[3];
+	if (dim_size[0] == 0) {
+		dim_size[0] = DIM_SIZE[X];
+		dim_size[1] = DIM_SIZE[Y];
+		dim_size[2] = DIM_SIZE[Y];
+	}
+	return dim_size;
+}
+#endif
+
+#if defined(HAVE_BGQ)
+/* Once the select/bgq plugin is ready, enable this */
+{
+	static int dim_size[4];
+	if (dim_size[0] == 0) {
+		dim_size[0] = 4;
+		dim_size[1] = 3;
+		dim_size[2] = 4;
+		dim_size[3] = 4;
+	}
+	return dim_size;
+}
+#endif
+	return dims;
 }

@@ -2,7 +2,7 @@
  *  smap.h - definitions used for smap data functions
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -131,6 +131,7 @@ typedef struct {
 extern WINDOW *grid_win;
 extern WINDOW *text_win;
 
+extern int *dim_size;
 extern int main_xcord;
 extern int main_ycord;
 
