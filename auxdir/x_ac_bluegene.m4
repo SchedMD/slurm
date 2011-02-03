@@ -212,6 +212,7 @@ AC_DEFUN([X_AC_BGQ],
    	if test "x$ac_bluegene_loaded" = "xyes" ; then
 		bg_default_dirs=""
 	elif test "x$bgq_emulation" = "xyes"; then
+      		AC_DEFINE(HAVE_4D, 1, [Define to 1 if 4-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 4, [4-dimensional schedulable architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/Q system])
@@ -220,8 +221,9 @@ AC_DEFUN([X_AC_BGQ],
 		bg_default_dirs=""
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
+		ac_bgq_loaded=yes
 	else
-		bg_default_dirs="/bgsys/drivers/ppcfloor"
+		bg_default_dirs="/bgsys/drivers/ppcfloor/hlcs"
 	fi
 
 	libname=bgsched
@@ -232,15 +234,15 @@ AC_DEFUN([X_AC_BGQ],
 			continue;
       		fi
 
-		soloc=$bg_dir/lib64/lib$libname.so
+		soloc=$bg_dir/lib/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
-			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
+			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/lib -L$bg_dir/lib -l$libname"
 		fi
 
       		# Search for headers in the directory
-      		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
+      		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/bgsched/bgsched.h" ; then
 			have_bgq_hdr=yes
 			bg_includes="-I$bg_dir/include"
       		fi
@@ -250,31 +252,37 @@ AC_DEFUN([X_AC_BGQ],
       		# ac_with_readline="no"
 		# Test to make sure the api is good
 		saved_LDFLAGS="$LDFLAGS"
-      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bgq_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/P api.)])
+      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64 $bg_includes"
+		AC_LANG_PUSH(C++)
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <bgsched/bgsched.h>]], [[ bgsched::init(""); ]])],[have_bgq_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/Q api.)])
+		AC_LANG_POP(C++)
 		LDFLAGS="$saved_LDFLAGS"
    	fi
 
   	if test ! -z "$have_bgq_files" ; then
+      		BG_LDFLAGS="$bg_ldflags"
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
    		CXXFLAGS="$CXXFLAGS $CFLAGS"
-      		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
-  		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
+      		AC_DEFINE(HAVE_4D, 1, [Define to 1 if 4-dimensional architecture])
+  		AC_DEFINE(SYSTEM_DIMENSIONS, 4, [4-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGQ, 1, [Define to 1 if emulating or running on Blue Gene/Q system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
-		AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
+		#AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
 
-		AC_MSG_CHECKING(for BG serial value)
-		bg_serial="BGQ"
-    		AC_ARG_WITH(bg-serial,, [bg_serial="$withval"])
-     		AC_MSG_RESULT($bg_serial)
-     		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
+    		AC_MSG_NOTICE([Running on a legitimate BG/Q system])
+		# AC_MSG_CHECKING(for BG serial value)
+		# bg_serial="BGQ"
+    		# AC_ARG_WITH(bg-serial,, [bg_serial="$withval"])
+     		# AC_MSG_RESULT($bg_serial)
+     		# AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
+		ac_bgq_loaded=yes
    	fi
 
    	AC_SUBST(BG_INCLUDES)
+   	AC_SUBST(BG_LDFLAGS)
 ])

@@ -13,7 +13,7 @@
 #  include "config.h"
 #endif
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 
   /* MPI Debug support */
   typedef struct {
@@ -52,22 +52,6 @@
 			   RM_PARTITION_DEALLOCATING,
 			   RM_PARTITION_ERROR,
 			   RM_PARTITION_NAV};
-  typedef enum status {STATUS_OK  = 0,
-	  	       PARTITION_NOT_FOUND = -1,
-		       JOB_NOT_FOUND = -2,
-		       BP_NOT_FOUND = -3,
-		       SWITCH_NOT_FOUND = -4,
-		       JOB_ALREADY_DEFINED=-5,
-#ifndef HAVE_BGL
-		       PARTITION_ALREADY_DEFINED=-6,
-#endif
-		       CONNECTION_ERROR=-10,
-		       INTERNAL_ERROR = -11,
-		       INVALID_INPUT=-12,
-		       INCOMPATIBLE_STATE=-13,
-		       INCONSISTENT_DATA=-14
-  }status_t;
-
 #endif
 
 /* The below #defines are needed for cross cluster dealings */
@@ -75,10 +59,12 @@
 typedef rm_BGL_t my_bluegene_t;
 #define PARTITION_ALREADY_DEFINED -6
 #define RM_PARTITION_REBOOTING 1000
-#else
+#elif defined HAVE_BGP
 typedef rm_BG_t my_bluegene_t;
 #define RM_PARTITION_BUSY 1000
-
+#else
+typedef void my_bluegene_t;
+#define RM_PARTITION_BUSY 1000
 #endif
 
 #endif	/* #ifndef ATTACH_BG_H */

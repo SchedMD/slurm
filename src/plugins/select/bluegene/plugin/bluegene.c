@@ -200,7 +200,7 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start)
 extern int remove_all_users(char *bg_block_id, char *user_name)
 {
 	int returnc = REMOVE_USER_NONE;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	char *user;
 	rm_partition_t *block_ptr = NULL;
 	int rc, i, user_count;
@@ -502,7 +502,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("bridge_destroy %s",
 				     bg_record->bg_block_id);
@@ -1407,7 +1407,7 @@ static int _validate_config_nodes(List curr_block_list,
 	xassert(curr_block_list);
 	xassert(found_block_list);
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	/* read current bg block info into curr_block_list This
 	 * happens in the state load before this in emulation mode */
 	if (read_bg_blocks(curr_block_list) == SLURM_ERROR)
@@ -1567,7 +1567,7 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 /* block_state_mutex should be locked before calling this */
 static int _post_block_free(bg_record_t *bg_record, bool restore)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc = SLURM_SUCCESS;
 #endif
 	if (bg_record->magic != BLOCK_MAGIC) {
@@ -1627,7 +1627,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		      bg_record->bg_block_id);
 	}
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("_post_block_free: removing %s from database",
 		     bg_record->bg_block_id);
@@ -1757,7 +1757,7 @@ static int _reopen_bridge_log(void)
 	if (bg_conf->bridge_api_file == NULL)
 		return rc;
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	rc = bridge_set_log_params(bg_conf->bridge_api_file,
 				   bg_conf->bridge_api_verb);
 #endif

@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
 	if (params.resolve) {
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 		if (!have_db2) {
 			printf("Required libraries can not be found "
 			       "to access the Bluegene system.\nPlease "

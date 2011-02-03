@@ -170,7 +170,7 @@ extern int validate_current_blocks(char *dir);
 
 /* block_sys.c */
 /*****************************************************/
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 #ifdef HAVE_BGL
 extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 			     int *nc_id);

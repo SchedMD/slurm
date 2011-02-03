@@ -87,7 +87,7 @@ typedef struct {
 	char *ramdiskimage;     /* RamDiskImage for this block */
 } bg_action_t;
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 static int	_remove_job(db_job_id_t job_id, char *block_id);
 #endif
 
@@ -103,7 +103,7 @@ static void	_sync_agent(bg_action_t *bg_action_ptr);
 static void	_term_agent(bg_action_t *bg_action_ptr);
 
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 /* Kill a job and remove its record from MMCS */
 static int _remove_job(db_job_id_t job_id, char *block_id)
 {
@@ -329,7 +329,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	rm_element_t *job_elem = NULL;
 	pm_partition_id_t job_block;
 	db_job_id_t job_id;
@@ -344,7 +344,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		return;
 	}
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	for (i=0; i<job_cnt; i++) {
 		if (i) {
 			if ((rc = bridge_get_data(job_list, RM_JobListNextJob,
@@ -452,14 +452,14 @@ static void _reset_block_list(List block_list)
 	rm_job_list_t *job_list = NULL;
 	int jobs = 0;
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int live_states, rc;
 #endif
 
 	if (!block_list)
 		return;
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	debug2("getting the job info");
 	live_states = JOB_ALL_FLAG
 		& (~JOB_TERMINATED_FLAG)
@@ -493,7 +493,7 @@ static void _reset_block_list(List block_list)
 	}
 	list_iterator_destroy(itr);
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
 		error("bridge_free_job_list(): %s", bg_err_str(rc));
 #endif
@@ -752,7 +752,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			slurm_mutex_unlock(&block_state_mutex);
 			return;
 		}
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 #ifdef HAVE_BGL
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_BlrtsImg,
@@ -910,7 +910,7 @@ static void _term_agent(bg_action_t *bg_action_ptr)
 	int jobs = 0;
 	rm_job_list_t *job_list = NULL;
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int live_states, rc;
 
 	debug2("getting the job info");
@@ -935,7 +935,7 @@ static void _term_agent(bg_action_t *bg_action_ptr)
 	_remove_jobs_on_block_and_reset(job_list, jobs,
 					bg_action_ptr->bg_block_id);
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
 		error("bridge_free_job_list(): %s", bg_err_str(rc));
 #endif
@@ -1323,7 +1323,7 @@ extern int sync_jobs(List job_list)
  */
 extern int boot_block(bg_record_t *bg_record)
 {
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc;
 	if (bg_record->magic != BLOCK_MAGIC) {
 		error("boot_block: magic was bad");

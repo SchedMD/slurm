@@ -71,7 +71,7 @@
 #define _DEBUG 0
 #define RETRY_BOOT_COUNT 3
 
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 
 typedef struct {
 	int jobid;
@@ -265,7 +265,7 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer,
 extern int update_block_list()
 {
 	int updated = 0;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc;
 	rm_partition_t *block_ptr = NULL;
 #ifdef HAVE_BGL
@@ -621,7 +621,7 @@ extern int update_block_list()
 extern int update_block_list_state(List block_list)
 {
 	int updated = 0;
-#ifdef HAVE_BG_FILES
+#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc;
 	rm_partition_t *block_ptr = NULL;
 	rm_partition_state_t state;

@@ -33,11 +33,17 @@ AM_CONDITIONAL(BGL_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BGL_LOADED)
 
 X_AC_BGP
-X_AC_BGQ
 
-dnl ok now check if bluegene was loaded at all
+dnl ok now check if bluegene was loaded at all Q is handled differently
+dnl so handle it later.
 AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BLUEGENE_LOADED)
+
+X_AC_BGQ
+
+dnl We need to know if this isn't a Q system
+AM_CONDITIONAL(BGQ_LOADED, test "x$ac_bgq_loaded" = "xyes")
+AC_SUBST(BGQ_LOADED)
 
 X_AC_AIX
 
@@ -455,10 +461,12 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
-		 src/plugins/select/bgq/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/bluegene/block_allocator/Makefile
 		 src/plugins/select/bluegene/plugin/Makefile
+		 src/plugins/select/bgq/Makefile
+		 src/plugins/select/bgq/block_allocator/Makefile
+		 src/plugins/select/bgq/bridge_linker/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cray/Makefile
 		 src/plugins/select/cray/libalps/Makefile

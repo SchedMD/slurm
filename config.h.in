@@ -36,6 +36,9 @@
 /* Define to 1 if 3-dimensional architecture */
 #undef HAVE_3D
 
+/* Define to 1 if 4-dimensional architecture */
+#undef HAVE_4D
+
 /* Define to 1 for AIX operating system */
 #undef HAVE_AIX
 

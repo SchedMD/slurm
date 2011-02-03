@@ -1,10 +1,11 @@
 /*****************************************************************************\
- *  bgq.h - hearder file for the Blue Gene/Q plugin.
+ *  bg_record_functions.h - header for creating blocks in a static environment.
+ *
+ *  $Id: bg_record_functions.h 12954 2008-01-04 20:37:49Z da $
  *****************************************************************************
- *  Copyright (C) 2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -36,37 +37,53 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BGQ_H_
-#define _BGQ_H_
+#ifndef _BLUEGENE_BG_RECORD_FUNCTIONS_H_
+#define _BLUEGENE_BG_RECORD_FUNCTIONS_H_
 
-#include <iostream>
-
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
 #endif
 
-#include <stdio.h>
-#include <sys/types.h>
+#include <stdlib.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include <pwd.h>
 
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
-
-extern "C" {
-
-#include "src/common/slurm_xlator.h"	/* Must be first */
+#include "src/common/bitstring.h"
+#include "src/common/hostlist.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/slurmctld/slurmctld.h"
+#include "block_allocator/block_allocator.h"
 
-}
-#endif /* _BGQ_H_ */
+/* Log a bg_record's contents */
+extern void print_bg_record(bg_record_t *record);
+extern void destroy_bg_record(void *object);
+extern void process_nodes(bg_record_t *bg_reord, bool startup);
+extern List copy_bg_list(List in_list);
+extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
+extern int bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
+extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b);
+
+/* change username of a block bg_record_t target_name needs to be
+   updated before call of function.
+*/
+extern int set_block_user(bg_record_t *bg_record);
+extern int update_block_user(bg_record_t *bg_block_id, int set);
+extern void requeue_and_error(bg_record_t *bg_record, char *reason);
+
+extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
+			 bool no_check, bitoff_t io_start);
+extern int handle_small_record_request(List records, blockreq_t *blockreq,
+				       bg_record_t *bg_record, bitoff_t start);
+
+extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size);
+extern int down_nodecard(char *bp_name, bitoff_t io_start,
+			 bool slurmctld_locked);
+extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap);
+extern int put_block_in_error_state(bg_record_t *bg_record,
+				    int state, char *reason);
+extern int resume_block(bg_record_t *bg_record);
+
+#endif /* _BLUEGENE_BG_RECORD_FUNCTIONS_H_ */
