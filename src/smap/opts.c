@@ -178,7 +178,7 @@ extern void parse_command_line(int argc, char *argv[])
 	params.cluster_flags = slurmdb_setup_cluster_flags();
 }
 
-extern void print_date()
+extern void print_date(void)
 {
 	time_t now_time = time(NULL);
 

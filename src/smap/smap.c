@@ -90,7 +90,6 @@ int main(int argc, char *argv[])
 	int i;
 	int rc;
 	int mapset = 0;
-	//char *name;
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
@@ -166,7 +165,8 @@ int main(int argc, char *argv[])
 		}
 part_fini:
 #else
-		printf("Must be physically on a BG System to resolve.\n");
+		printf("Must be physically on a BGL or BGP system for support "
+		       "of resolve option.\n");
 #endif
 		_smap_exit(0);	/* Calls exit(), no return */
 	}
@@ -361,9 +361,8 @@ part_fini:
 
 static void _init_colors(void)
 {
-	int x,y,z;
-	/* make the letters array only contain letters upper and lower
-	 * (62) */
+	int x, y, z;
+	/* make the letters array only contain letters upper and lower (62) */
 	y = 'A';
 	for (x = 0; x < 62; x++) {
 		if (y == '[')
@@ -376,7 +375,7 @@ static void _init_colors(void)
 		y++;
 	}
 
-	z=1;
+	z = 1;
 	for (x = 0; x < 6; x++) {
 		if (z == 4)
 			z++;

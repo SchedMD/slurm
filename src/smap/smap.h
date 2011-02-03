@@ -101,6 +101,7 @@
 #include "src/common/slurm_protocol_api.h"
 
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/plugins/select/bgq/bg_enums.h"
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP	0x100
@@ -108,8 +109,6 @@
 #define OPT_LONG_HIDE	0x102
 
 enum { JOBS, RESERVATIONS, SLURMPART, BGPART, COMMANDS };
-
-//typedef void (*sighandler_t) (int);
 
 /* Input parameters */
 typedef struct {
@@ -151,7 +150,7 @@ extern int set_grid_inx(int start, int end, int count);
 extern int set_grid_inx2(char *node_names, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
-bitstr_t *get_requested_node_bitmap();
+bitstr_t *get_requested_node_bitmap(void);
 
 extern void parse_command_line(int argc, char *argv[]);
 extern void print_date(void);
