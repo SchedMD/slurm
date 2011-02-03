@@ -53,9 +53,9 @@ extern int set_grid_inx(int start, int end, int count)
 {
 	int x, y, z;
 
-	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
-		for (z = 0; z < DIM_SIZE[Z]; z++) {
-			for (x = 0; x < DIM_SIZE[X]; x++) {
+	for (y = dim_size[Y] - 1; y >= 0; y--) {
+		for (z = 0; z < dim_size[Z]; z++) {
+			for (x = 0; x < dim_size[X]; x++) {
 				if ((ba_system_ptr->grid[x][y][z].index
 				     < start)
 				||  (ba_system_ptr->grid[x][y][z].index
@@ -105,14 +105,14 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 	int x=0, y=0, z=0;
 	int i = 0;
 
-	assert(end[X] < DIM_SIZE[X]);
+	assert(end[X] < dim_size[X]);
 	assert(start[X] >= 0);
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);
-	assert(end[Y] < DIM_SIZE[Y]);
+	assert(end[Y] < dim_size[Y]);
 	assert(start[Y] >= 0);
-	assert(end[Z] < DIM_SIZE[Z]);
+	assert(end[Z] < dim_size[Z]);
 	assert(start[Z] >= 0);
 
 	for (x = start[X]; x <= end[X]; x++) {
@@ -148,14 +148,14 @@ extern void print_grid(int dir)
 {
 	int x;
 	int grid_xcord, grid_ycord = 2;
-	int y, z, offset = DIM_SIZE[Z];
+	int y, z, offset = dim_size[Z];
 
-	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
-		offset = DIM_SIZE[Z] + 1;
-		for (z = 0; z < DIM_SIZE[Z]; z++) {
+	for (y = dim_size[Y] - 1; y >= 0; y--) {
+		offset = dim_size[Z] + 1;
+		for (z = 0; z < dim_size[Z]; z++) {
 			grid_xcord = offset;
 
-			for (x = 0; x < DIM_SIZE[X]; x++) {
+			for (x = 0; x < dim_size[X]; x++) {
 				if (ba_system_ptr->grid[x][y][z].color)
 					init_pair(ba_system_ptr->
 						  grid[x][y][z].color,

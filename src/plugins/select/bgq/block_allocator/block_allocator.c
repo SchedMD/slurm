@@ -115,7 +115,7 @@ typedef enum {
 /** internal helper functions */
 
 /* */
-static int _check_for_options(ba_request_t* ba_request);
+static int _check_for_options(select_ba_request_t* ba_request);
 
 /* */
 static int _append_geo(uint16_t *geo, List geos, int rotate);
@@ -163,7 +163,7 @@ static void _create_ba_system(void);
 static void _delete_ba_system(void);
 
 /* find the first block match in the system */
-static int _find_match(ba_request_t* ba_request, List results);
+static int _find_match(select_ba_request_t* ba_request, List results);
 
 /** */
 static bool _mp_used(ba_mp_t* ba_mp, int dim);
@@ -407,7 +407,7 @@ extern void destroy_ba_mp(void *ptr)
  * IN - start_req: if set use the start variable to start at
  * return success of allocation/validation of params
  */
-extern int new_ba_request(ba_request_t* ba_request)
+extern int new_ba_request(select_ba_request_t* ba_request)
 {
 	int i=0;
 	float sz=1;
@@ -772,7 +772,7 @@ endit:
  */
 extern void delete_ba_request(void *arg)
 {
-	ba_request_t *ba_request = (ba_request_t *)arg;
+	select_ba_request_t *ba_request = (select_ba_request_t *)arg;
 	if (ba_request) {
 		xfree(ba_request->save_name);
 		if (ba_request->elongate_geos)
@@ -786,7 +786,7 @@ extern void delete_ba_request(void *arg)
 /**
  * print a block request
  */
-extern void print_ba_request(ba_request_t* ba_request)
+extern void print_ba_request(select_ba_request_t* ba_request)
 {
 	int i;
 
@@ -1223,7 +1223,7 @@ extern int copy_mp_path(List mps, List *dest_mps)
  *
  * return: success or error of request
  */
-extern int allocate_block(ba_request_t* ba_request, List results)
+extern int allocate_block(select_ba_request_t* ba_request, List results)
 {
 	if (!_initialized){
 		error("Error, configuration not initialized, "
@@ -1249,7 +1249,7 @@ extern int allocate_block(ba_request_t* ba_request, List results)
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List mps, int new_count, int conn_type)
+extern int remove_block(List mps, int new_count, bool is_small)
 {
 	int dim;
 	ba_mp_t* curr_ba_mp = NULL;
@@ -1266,11 +1266,12 @@ extern int remove_block(List mps, int new_count, int conn_type)
 			[curr_ba_mp->coord[Y]]
 			[curr_ba_mp->coord[Z]];
 
+		ba_mp->used = false;
 		ba_mp->color = 7;
 		ba_mp->letter = '.';
 		/* Small blocks don't use wires, and only have 1 mp,
 		   so just break. */
-		if (conn_type == SELECT_SMALL)
+		if (is_small)
 			break;
 		for(dim=0; dim<cluster_dims; dim++) {
 			if (curr_ba_mp == ba_mp) {
@@ -1599,7 +1600,7 @@ end_it:
  * Resets the virtual system to a virgin state.  If track_down_mps is set
  * then those midplanes are not set to idle, but kept in a down state.
  */
-extern int reset_ba_system(bool track_down_mps)
+extern void reset_ba_system(bool track_down_mps)
 {
 	int a, x, y, z;
 
@@ -1611,8 +1612,6 @@ extern int reset_ba_system(bool track_down_mps)
 						grid[a][x][y][z];
 					ba_setup_mp(ba_mp, track_down_mps);
 				}
-
-	return 1;
 }
 
 /*
@@ -2256,7 +2255,7 @@ extern char *ba_switch_usage_str(uint16_t usage)
  * This function is here to check options for rotating and elongating
  * and set up the request based on the count of each option
  */
-static int _check_for_options(ba_request_t* ba_request)
+static int _check_for_options(select_ba_request_t* ba_request)
 {
 	int temp;
 	int set=0;
@@ -3096,7 +3095,7 @@ static void _delete_ba_system(void)
 /**
  * algorithm for finding match
  */
-static int _find_match(ba_request_t *ba_request, List results)
+static int _find_match(select_ba_request_t *ba_request, List results)
 {
 	int i=0;
 	uint16_t start[cluster_dims];
@@ -3167,8 +3166,10 @@ start_again:
 		}
 
 		if (results) {
-			remove_block(results, color_count,
-				     ba_request->conn_type[A]);
+			bool is_small = 0;
+			if (ba_request->conn_type[0] == SELECT_SMALL)
+				is_small = 1;
+			remove_block(results, color_count, is_small);
 			list_flush(results);
 		}
 

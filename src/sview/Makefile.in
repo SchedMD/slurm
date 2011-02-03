@@ -331,7 +331,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-@HAVE_GTK_TRUE@sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o -ldl 
+@HAVE_GTK_TRUE@sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o -ldl
 @HAVE_GTK_TRUE@noinst_HEADERS = sview.h
 @HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_TRUE@	block_info.c front_end_info.c node_info.c resv_info.c \

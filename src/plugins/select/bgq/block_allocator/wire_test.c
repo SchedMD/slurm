@@ -86,7 +86,7 @@ extern void destroy_bg_record(bg_record_t *bg_record)
 /** */
 int main(int argc, char** argv)
 {
-	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
+	select_ba_request_t *request = xmalloc(sizeof(select_ba_request_t));
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	int debug_level = 5;
 	uint16_t ba_debug_flags = 0;

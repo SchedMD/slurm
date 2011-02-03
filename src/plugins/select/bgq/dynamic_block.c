@@ -43,7 +43,7 @@ static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int cnodes);
 
 static int _breakup_blocks(List block_list, List new_blocks,
-			   ba_request_t *request, List my_block_list,
+			   select_ba_request_t *request, List my_block_list,
 			   bool only_free, bool only_small);
 
 /*
@@ -52,7 +52,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
  * RET - a list of created block(s) or NULL on failure errno is set.
  */
 extern List create_dynamic_block(List block_list,
-				 ba_request_t *request, List my_block_list,
+				 select_ba_request_t *request, List my_block_list,
 				 bool track_down_nodes)
 {
 	int rc = SLURM_SUCCESS;
@@ -324,7 +324,7 @@ extern List create_dynamic_block(List block_list,
 			info("removing %s for request %d",
 			     bg_record->nodes, request->size);
 		remove_block(bg_record->ba_mp_list, (int)NO_VAL,
-			     bg_record->conn_type[A]);
+			     bg_record->small);
 		/* need to set any unusable nodes that this last block
 		   used */
 		removable_set_mps(unusable_nodes);
@@ -648,7 +648,7 @@ finished:
 }
 
 static int _breakup_blocks(List block_list, List new_blocks,
-			   ba_request_t *request, List my_block_list,
+			   select_ba_request_t *request, List my_block_list,
 			   bool only_free, bool only_small)
 {
 	int rc = SLURM_ERROR;

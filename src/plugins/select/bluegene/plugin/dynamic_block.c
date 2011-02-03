@@ -43,7 +43,7 @@ static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int cnodes);
 
 static int _breakup_blocks(List block_list, List new_blocks,
-			   ba_request_t *request, List my_block_list,
+			   select_ba_request_t *request, List my_block_list,
 			   bool only_free, bool only_small);
 
 /*
@@ -52,7 +52,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
  * RET - a list of created block(s) or NULL on failure errno is set.
  */
 extern List create_dynamic_block(List block_list,
-				 ba_request_t *request, List my_block_list,
+				 select_ba_request_t *request, List my_block_list,
 				 bool track_down_nodes)
 {
 	int rc = SLURM_SUCCESS;
@@ -174,13 +174,13 @@ extern List create_dynamic_block(List block_list,
 			info("No list was given");
 	}
 
-	if (request->avail_node_bitmap) {
+	if (request->avail_mp_bitmap) {
 		bitstr_t *bitmap = bit_alloc(node_record_count);
 
 		/* we want the bps that aren't in this partition to
 		 * mark them as used
 		 */
-		bit_or(bitmap, request->avail_node_bitmap);
+		bit_or(bitmap, request->avail_mp_bitmap);
 		bit_not(bitmap);
 		unusable_nodes = bitmap2node_name(bitmap);
 
@@ -236,7 +236,7 @@ extern List create_dynamic_block(List block_list,
 		/* Sort the list so the small blocks are in the order
 		 * of ionodes. */
 		list_sort(block_list, (ListCmpF)bg_record_cmpf_inc);
-		request->conn_type = SELECT_SMALL;
+		request->conn_type[0] = SELECT_SMALL;
 		new_blocks = list_create(destroy_bg_record);
 		/* check only blocks that are free and small */
 		if (_breakup_blocks(block_list, new_blocks,
@@ -274,8 +274,8 @@ extern List create_dynamic_block(List block_list,
 			info("small block not able to be placed inside others");
 	}
 
-	if (request->conn_type == SELECT_NAV)
-		request->conn_type = SELECT_TORUS;
+	if (request->conn_type[0] == SELECT_NAV)
+		request->conn_type[0] = SELECT_TORUS;
 
 	//debug("going to create %d", request->size);
 	if (!new_ba_request(request)) {
@@ -316,6 +316,7 @@ extern List create_dynamic_block(List block_list,
 	itr = list_iterator_create(block_list);
 	itr2 = list_iterator_create(block_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		bool is_small = 0;
 		/* never check a block with a job running */
 		if (bg_record->job_running != NO_JOB_RUNNING)
 			continue;
@@ -350,8 +351,9 @@ extern List create_dynamic_block(List block_list,
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("removing %s for request %d",
 			     bg_record->nodes, request->size);
-		remove_block(bg_record->bg_block_list, (int)NO_VAL,
-			     (int)bg_record->conn_type);
+		if (bg_record->node_cnt < bg_conf->bp_node_cnt)
+			is_small = 1;
+		remove_block(bg_record->bg_block_list, (int)NO_VAL, is_small);
 		/* need to set any unusable nodes that this last block
 		   used */
 		removable_set_bps(unusable_nodes);
@@ -383,7 +385,7 @@ setup_records:
 		blockreq.linuximage = request->linuximage;
 		blockreq.mloaderimage = request->mloaderimage;
 		blockreq.ramdiskimage = request->ramdiskimage;
-		blockreq.conn_type = request->conn_type;
+		blockreq.conn_type = request->conn_type[0];
 
 		add_bg_record(new_blocks, results, &blockreq, 0, 0);
 	}
@@ -684,7 +686,7 @@ finished:
 }
 
 static int _breakup_blocks(List block_list, List new_blocks,
-			   ba_request_t *request, List my_block_list,
+			   select_ba_request_t *request, List my_block_list,
 			   bool only_free, bool only_small)
 {
 	int rc = SLURM_ERROR;
@@ -747,9 +749,9 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		if (only_small && (bg_record->node_cnt > bg_conf->bp_node_cnt))
 			continue;
 
-		if (request->avail_node_bitmap &&
+		if (request->avail_mp_bitmap &&
 		    !bit_super_set(bg_record->bitmap,
-				   request->avail_node_bitmap)) {
+				   request->avail_mp_bitmap)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("bg block %s has nodes not usable "
 				     "by this job",

@@ -69,7 +69,7 @@ static int _check_images(struct job_record* job_ptr, char **mloaderimage);
 static bg_record_t *_find_matching_block(List block_list,
 					 struct job_record* job_ptr,
 					 bitstr_t* slurm_block_bitmap,
-					 ba_request_t *request,
+					 select_ba_request_t *request,
 					 uint32_t max_cpus,
 					 int *allow, int check_image,
 					 int overlap_check,
@@ -80,7 +80,7 @@ static int _check_for_booted_overlapping_blocks(
 	bg_record_t *bg_record, int overlap_check, List overlapped_list,
 	uint16_t query_mode);
 static int _dynamically_request(List block_list, int *blocks_added,
-				ba_request_t *request,
+				select_ba_request_t *request,
 				char *user_req_nodes,
 				uint16_t query_mode);
 static int _find_best_block_match(List block_list, int *blocks_added,
@@ -226,7 +226,7 @@ static int _check_images(struct job_record* job_ptr, char **mloaderimage)
 static bg_record_t *_find_matching_block(List block_list,
 					 struct job_record* job_ptr,
 					 bitstr_t* slurm_block_bitmap,
-					 ba_request_t *request,
+					 select_ba_request_t *request,
 					 uint32_t max_cpus,
 					 int *allow, int check_image,
 					 int overlap_check,
@@ -616,7 +616,7 @@ static int _check_for_booted_overlapping_blocks(
  */
 
 static int _dynamically_request(List block_list, int *blocks_added,
-				ba_request_t *request,
+				select_ba_request_t *request,
 				char *user_req_nodes,
 				uint16_t query_mode)
 {
@@ -746,7 +746,7 @@ static int _find_best_block_match(List block_list,
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 	uint16_t conn_type[SYSTEM_DIMENSIONS], rotate, target_size = 0;
 	uint32_t req_procs = job_ptr->details->min_cpus;
-	ba_request_t request;
+	select_ba_request_t request;
 	int i;
 	int overlap_check = 0;
 	int allow = 0;
@@ -817,7 +817,7 @@ static int _find_best_block_match(List block_list,
 	*found_bg_record = NULL;
 	allow = 0;
 
-	memset(&request, 0, sizeof(ba_request_t));
+	memset(&request, 0, sizeof(select_ba_request_t));
 
 	for(i=0; i<SYSTEM_DIMENSIONS; i++)
 		request.geometry[i] = req_geometry[i];

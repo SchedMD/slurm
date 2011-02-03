@@ -65,6 +65,54 @@ typedef struct {
 } select_will_run_t;
 
 /*
+ * structure that holds the configuration settings for each request
+ */
+typedef struct {
+	bitstr_t *avail_mp_bitmap;   /* pointer to available mps */
+	char *blrtsimage;            /* BlrtsImage for this block */
+	uint16_t conn_type[HIGHEST_DIMENSIONS]; /* mesh, torus, or small */
+	bool elongate;                 /* whether allow elongation or not */
+	int elongate_count;            /* place in elongate_geos list
+					  we are at */
+	List elongate_geos;            /* list of possible shapes of
+					  blocks. contains int* ptrs */
+	uint16_t geometry[HIGHEST_DIMENSIONS]; /* size of block in geometry */
+	char *linuximage;              /* LinuxImage for this block */
+	char *mloaderimage;            /* mloaderImage for this block */
+	uint16_t deny_pass;            /* PASSTHROUGH_FOUND is set if there are
+					  passthroughs in the block
+					  created you can deny
+					  passthroughs by setting the
+					  appropriate bits */
+	int procs;                     /* Number of Real processors in
+					  block */
+	char *ramdiskimage;            /* RamDiskImage for this block */
+	bool rotate;                   /* whether allow elongation or not */
+	int rotate_count;              /* number of times rotated */
+	char *save_name;               /* name of blocks in midplanes */
+	int size;                      /* count of midplanes in block */
+	int small16;                   /* number of blocks using 16 cnodes in
+					* block, only used for small
+					* block creation */
+	int small32;                   /* number of blocks using 32 cnodes in
+					* block, only used for small
+					* block creation */
+	int small64;                   /* number of blocks using 64 cnodes in
+					* block, only used for small
+					* block creation */
+	int small128;                  /* number of blocks using 128 cnodes in
+					* block, only used for small
+					* block creation */
+	int small256;                  /* number of blocks using 256 cnodes in
+					* block, only used for small
+					* block creation */
+	uint16_t start[HIGHEST_DIMENSIONS]; /* where to start creation of
+					    block */
+	int start_req;                 /* state there was a start
+					  request */
+} select_ba_request_t;
+
+/*
  * Local data
  */
 typedef struct slurm_select_ops {
@@ -146,6 +194,18 @@ typedef struct slurm_select_ops {
 	int		(*alter_node_cnt)	(enum select_node_cnt type,
 						 void *data);
 	int		(*reconfigure)		(void);
+	bitstr_t *      (*resv_test)            (bitstr_t *avail_bitmap,
+						 uint32_t node_cnt);
+	void            (*ba_init)              (node_info_msg_t *node_info_ptr,
+						 bool sanity_check);
+	void            (*ba_fini)              (void);
+	int *           (*ba_get_dims)          (void);
+	void            (*ba_reset)             (bool track_down_nodes);
+	int             (*ba_request_apply)     (select_ba_request_t
+						 *ba_request);
+	int             (*ba_remove_block)      (List mps, int new_count,
+						 bool is_small);
+
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -160,12 +220,8 @@ typedef struct slurm_select_context {
  * GLOBAL SELECT STATE MANAGEMENT FUNCIONS *
 \*******************************************/
 
-extern int node_select_free_block_info(block_info_t *block_info);
-
-extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer,
-					uint16_t protocol_version);
-extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer,
-					 uint16_t protocol_version);
+extern void destroy_select_ba_request(void *arg);
+extern void print_select_ba_request(select_ba_request_t* ba_request);
 
 /*
  * Initialize context for node selection plugin
@@ -509,5 +565,13 @@ extern int select_g_pack_select_info(time_t last_query_time,
 
 /* Note reconfiguration or change in partition configuration */
 extern int select_g_reconfigure(void);
+
+extern bitstr_t *select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt);
+extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
+extern void select_g_ba_fini(void);
+extern int *select_g_ba_get_dims();
+extern void select_g_ba_reset(bool track_down_nodes);
+extern int select_g_ba_request_apply(select_ba_request_t *ba_request);
+extern int select_g_ba_remove_block(List mps, int new_count, bool is_small);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

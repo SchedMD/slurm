@@ -565,6 +565,8 @@ static gboolean _delete(GtkWidget *widget,
 	fini = 1;
 	gtk_main_quit();
 
+	select_g_ba_fini();
+
 #ifdef MEMORY_LEAK_DEBUG
 	if (popup_list)
 		list_destroy(popup_list);
@@ -1105,6 +1107,8 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		grid_button_list = NULL;
 		got_grid = 1;
 	}
+
+	select_g_ba_fini();
 
 	/* sorry popups can't survive a cluster change */
 	if (popup_list)

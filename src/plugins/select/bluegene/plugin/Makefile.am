@@ -34,9 +34,6 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la
-
-
 # MPIRUN dynamic lib.
 if BGL_LOADED
 libsched_if64_la_SOURCES = libsched_if64.c
@@ -78,5 +75,7 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 			../wrap_rm_api.h
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-
 endif
+
+select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la
+

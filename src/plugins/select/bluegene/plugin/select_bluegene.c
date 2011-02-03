@@ -1486,3 +1486,38 @@ extern int select_p_reconfigure(void)
 #endif
 }
 
+extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
+{
+	return NULL;
+}
+
+extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
+{
+	ba_init(node_info_ptr, sanity_check);
+}
+
+extern void select_p_ba_fini(void)
+{
+	ba_fini();
+}
+
+extern int *select_p_ba_get_dims(void)
+{
+	return DIM_SIZE;
+}
+
+extern void select_p_ba_reset(bool track_down_nodes)
+{
+	reset_ba_system(track_down_nodes);
+}
+
+extern int select_p_ba_request_apply(select_ba_request_t *ba_request)
+{
+	return new_ba_request(ba_request);
+}
+
+extern int select_p_ba_remove_block(List mps, int new_count, bool is_small)
+{
+	return remove_block(mps, new_count, is_small);
+}
+

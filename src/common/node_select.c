@@ -73,6 +73,8 @@ static int _select_get_ops(char *select_type,
 {
 	/*
 	 * Must be synchronized with slurm_select_ops_t in node_select.h.
+	 * Also must be synchronized with the other_plugin.[c|h] in
+	 * the select/cray plugin.
 	 */
 	static const char *syms[] = {
 		"plugin_id",
@@ -113,6 +115,13 @@ static int _select_get_ops(char *select_type,
 		"select_p_update_node_state",
 		"select_p_alter_node_cnt",
 		"select_p_reconfigure",
+		"select_p_resv_test",
+		"select_p_ba_init",
+		"select_p_ba_fini",
+		"select_p_ba_get_dims",
+		"select_p_ba_reset",
+		"select_p_ba_request_apply",
+		"select_p_ba_remove_block",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -196,6 +205,56 @@ static int _select_context_destroy( slurm_select_context_t *c )
 
 	return rc;
 }
+
+/**
+ * delete a block request
+ */
+extern void destroy_select_ba_request(void *arg)
+{
+	select_ba_request_t *ba_request = (select_ba_request_t *)arg;
+	if (ba_request) {
+		xfree(ba_request->save_name);
+		if (ba_request->elongate_geos)
+			list_destroy(ba_request->elongate_geos);
+
+		xfree(ba_request->blrtsimage);
+		xfree(ba_request->linuximage);
+		xfree(ba_request->mloaderimage);
+		xfree(ba_request->ramdiskimage);
+
+		xfree(ba_request);
+	}
+}
+
+/**
+ * print a block request
+ */
+extern void print_select_ba_request(select_ba_request_t* ba_request)
+{
+	int dim;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	uint16_t cluster_dims = slurmdb_setup_cluster_name_dims();
+
+	if (ba_request == NULL){
+		error("print_ba_request Error, request is NULL");
+		return;
+	}
+	debug("  ba_request:");
+	debug("    geometry:\t");
+	for (dim=0; dim<cluster_dims; dim++){
+		debug("%d", ba_request->geometry[dim]);
+	}
+	debug("        size:\t%d", ba_request->size);
+	if (cluster_flags & CLUSTER_FLAG_BGQ) {
+		for (dim=0; dim<cluster_dims; dim++)
+			debug("   conn_type:\t%d", ba_request->conn_type[dim]);
+	} else
+		debug("   conn_type:\t%d", ba_request->conn_type[0]);
+
+	debug("      rotate:\t%d", ba_request->rotate);
+	debug("    elongate:\t%d", ba_request->elongate);
+}
+
 
 /*
  * Initialize context for node selection plugin
@@ -948,7 +1007,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		jobinfo_ptr->plugin_id = select_context_default;
 
 	return (*(select_context[jobinfo_ptr->plugin_id].ops.jobinfo_unpack))
-		((select_jobinfo_t **)&jobinfo_ptr->data, buffer, 
+		((select_jobinfo_t **)&jobinfo_ptr->data, buffer,
 		 protocol_version);
 unpack_error:
 	select_g_select_jobinfo_free(jobinfo_ptr);
@@ -1127,9 +1186,100 @@ extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 	if (slurm_select_init(0) < 0)
 		return NULL;
 
-	return (*(select_context[select_context_default].ops.
-		select_resv_test)) (avail_bitmap, node_cnt);
+	return (*(select_context[select_context_default].ops.resv_test))
+		(avail_bitmap, node_cnt);
 #else
 	return bit_pick_cnt(avail_bitmap, node_cnt);
 #endif
+}
+
+extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
+{
+	uint32_t plugin_id;
+
+	if (slurm_select_init(0) < 0)
+		return;
+
+	if (working_cluster_rec)
+		plugin_id = working_cluster_rec->plugin_id_select;
+	else
+		plugin_id = select_context_default;
+
+	(*(select_context[plugin_id].ops.ba_init))(node_info_ptr, sanity_check);
+}
+
+extern void select_g_ba_fini()
+{
+	uint32_t plugin_id;
+
+	if (slurm_select_init(0) < 0)
+		return;
+
+	if (working_cluster_rec)
+		plugin_id = working_cluster_rec->plugin_id_select;
+	else
+		plugin_id = select_context_default;
+
+	(*(select_context[plugin_id].ops.ba_fini))();
+}
+
+extern int *select_g_ba_get_dims()
+{
+	uint32_t plugin_id;
+
+	if (slurm_select_init(0) < 0)
+		return NULL;
+
+	if (working_cluster_rec)
+		plugin_id = working_cluster_rec->plugin_id_select;
+	else
+		plugin_id = select_context_default;
+
+	return (*(select_context[plugin_id].ops.ba_get_dims))();
+}
+
+extern void select_g_ba_reset(bool track_down_nodes)
+{
+	uint32_t plugin_id;
+
+	if (slurm_select_init(0) < 0)
+		return;
+
+	if (working_cluster_rec)
+		plugin_id = working_cluster_rec->plugin_id_select;
+	else
+		plugin_id = select_context_default;
+
+	(*(select_context[plugin_id].ops.ba_reset))(track_down_nodes);
+}
+
+extern int select_g_ba_request_apply(select_ba_request_t *ba_request)
+{
+	uint32_t plugin_id;
+
+	if (slurm_select_init(0) < 0)
+		return 0;
+
+	if (working_cluster_rec)
+		plugin_id = working_cluster_rec->plugin_id_select;
+	else
+		plugin_id = select_context_default;
+
+	return (*(select_context[plugin_id].ops.ba_request_apply))(ba_request);
+}
+
+extern int select_g_ba_remove_block(List mps, int new_count, bool is_small)
+{
+	uint32_t plugin_id;
+
+	if (slurm_select_init(0) < 0)
+		return 0;
+
+	if (working_cluster_rec)
+		plugin_id = working_cluster_rec->plugin_id_select;
+	else
+		plugin_id = select_context_default;
+
+	return (*(select_context[plugin_id].ops.ba_remove_block))
+		(mps, new_count, is_small);
 }

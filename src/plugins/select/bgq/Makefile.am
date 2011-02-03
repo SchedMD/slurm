@@ -27,7 +27,6 @@ select_bgq_la_SOURCES = select_bgq.c bg_enums.h bg_structs.h \
 nodist_EXTRA_select_bgq_la_SOURCES = dummy.cxx
 
 select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
-select_bgq_la_LIBADD  = block_allocator/libblock_allocator.la
 
 force:
 $(select_bgq_la_LDADD) : force
@@ -37,5 +36,6 @@ else
 select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-
 endif
+
+select_bgq_la_LIBADD  = block_allocator/libblock_allocator.la

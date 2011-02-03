@@ -76,15 +76,13 @@ int cluster_base = 36;
 uint32_t cluster_flags = 0;
 char *p = '\0';
 uint32_t ba_debug_flags = 0;
+static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 /* extern Global */
 my_bluegene_t *bg = NULL;
 uint16_t ba_deny_pass = 0;
 List bp_map_list = NULL;
-char letters[62];
-char colors[6];
-uint16_t DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
-uint16_t REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
+int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 s_p_options_t bg_conf_file_options[] = {
 #ifdef HAVE_BGL
@@ -131,7 +129,7 @@ static int _port_enum(int port);
 #endif /* HAVE_BG_FILES */
 
 /* */
-static int _check_for_options(ba_request_t* ba_request);
+static int _check_for_options(select_ba_request_t* ba_request);
 
 /* */
 static int _append_geo(uint16_t *geo, List geos, int rotate);
@@ -168,7 +166,7 @@ static void _delete_ba_system(void);
 static void _delete_path_list(void *object);
 
 /* find the first block match in the system */
-static int _find_match(ba_request_t* ba_request, List results);
+static int _find_match(select_ba_request_t* ba_request, List results);
 
 /** */
 static bool _node_used(ba_node_t* ba_node, int x_size);
@@ -466,7 +464,7 @@ extern void destroy_ba_node(void *ptr)
  * IN - start_req: if set use the start variable to start at
  * return success of allocation/validation of params
  */
-extern int new_ba_request(ba_request_t* ba_request)
+extern int new_ba_request(select_ba_request_t* ba_request)
 {
 	int i=0;
 	float sz=1;
@@ -810,7 +808,7 @@ endit:
  */
 extern void delete_ba_request(void *arg)
 {
-	ba_request_t *ba_request = (ba_request_t *)arg;
+	select_ba_request_t *ba_request = (select_ba_request_t *)arg;
 	if (ba_request) {
 		xfree(ba_request->save_name);
 		if (ba_request->elongate_geos)
@@ -829,7 +827,7 @@ extern void delete_ba_request(void *arg)
 /**
  * print a block request
  */
-extern void print_ba_request(ba_request_t* ba_request)
+extern void print_ba_request(select_ba_request_t* ba_request)
 {
 	int i;
 
@@ -843,7 +841,7 @@ extern void print_ba_request(ba_request_t* ba_request)
 		debug("%d", ba_request->geometry[i]);
 	}
 	debug("        size:\t%d", ba_request->size);
-	debug("   conn_type:\t%d", ba_request->conn_type);
+	debug("   conn_type:\t%d", ba_request->conn_type[X]);
 	debug("      rotate:\t%d", ba_request->rotate);
 	debug("    elongate:\t%d", ba_request->elongate);
 }
@@ -868,7 +866,6 @@ extern int empty_null_destroy_list(void *arg, void *key)
  */
 extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 {
-	int x,y,z;
 	node_info_t *node_ptr = NULL;
 	int number, count;
 	char *numeric = NULL;
@@ -892,28 +889,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	bridge_init();
 #endif
-
-	/* make the letters array only contain letters upper and lower
-	 * (62) */
-	y = 'A';
-	for (x = 0; x < 62; x++) {
-		if (y == '[')
-			y = 'a';
-		else if (y == '{')
-			y = '0';
-		else if (y == ':')
-			y = 'A';
-		letters[x] = y;
-		y++;
-	}
-
-	z=1;
-	for (x = 0; x < 6; x++) {
-		if (z == 4)
-			z++;
-		colors[x] = z;
-		z++;
-	}
 
 	best_count=BEST_COUNT_INIT;
 
@@ -1332,7 +1307,7 @@ extern int copy_node_path(List nodes, List *dest_nodes)
  *
  * return: success or error of request
  */
-extern int allocate_block(ba_request_t* ba_request, List results)
+extern int allocate_block(select_ba_request_t* ba_request, List results)
 {
 	if (!_initialized){
 		error("Error, configuration not initialized, "
@@ -1358,7 +1333,7 @@ extern int allocate_block(ba_request_t* ba_request, List results)
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List nodes, int new_count, int conn_type)
+extern int remove_block(List nodes, int new_count, bool is_small)
 {
 	int dim;
 	ba_node_t* curr_ba_node = NULL;
@@ -1380,7 +1355,7 @@ extern int remove_block(List nodes, int new_count, int conn_type)
 		ba_node->letter = '.';
 		/* Small blocks don't use wires, and only have 1 node,
 		   so just break. */
-		if (conn_type == SELECT_SMALL)
+		if (is_small)
 			break;
 		for(dim=0;dim<cluster_dims;dim++) {
 			curr_switch = &ba_node->axis_switch[dim];
@@ -1446,12 +1421,14 @@ extern int redo_block(List nodes, uint16_t *geo, int conn_type, int new_count)
 {
        	ba_node_t* ba_node;
 	char *name = NULL;
+	bool is_small = 0;
 
 	ba_node = list_peek(nodes);
 	if (!ba_node)
 		return SLURM_ERROR;
-
-	remove_block(nodes, new_count, conn_type);
+	if (conn_type == SELECT_SMALL)
+		is_small = 1;
+	remove_block(nodes, new_count, is_small);
 	list_delete_all(nodes, &empty_null_destroy_list, "");
 
 	name = set_bg_block(nodes, ba_node->coord, geo, conn_type);
@@ -1644,17 +1621,17 @@ extern char *set_bg_block(List results, uint16_t *start,
 				      alpha_num[ba_node->coord[X]],
 				      alpha_num[ba_node->coord[Y]],
 				      alpha_num[ba_node->coord[Z]]);
-		if (ba_node->letter == '.') {
-			ba_node->letter = letters[color_count%62];
-			ba_node->color = colors[color_count%6];
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("count %d setting letter = %c "
-				     "color = %d",
-				     color_count,
-				     ba_node->letter,
-				     ba_node->color);
-			color_count++;
-		}
+		/* if (ba_node->letter == '.') { */
+		/* 	ba_node->letter = letters[color_count%62]; */
+		/* 	ba_node->color = colors[color_count%6]; */
+		/* 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) */
+		/* 		info("count %d setting letter = %c " */
+		/* 		     "color = %d", */
+		/* 		     color_count, */
+		/* 		     ba_node->letter, */
+		/* 		     ba_node->color); */
+		/* 	color_count++; */
+		/* } */
 		goto end_it;
 	}
 	found = _find_x_path(results, ba_node,
@@ -1664,8 +1641,11 @@ extern char *set_bg_block(List results, uint16_t *start,
 			     conn_type, BLOCK_ALGO_FIRST);
 
 	if (!found) {
+		bool is_small = 0;
+		if (conn_type == SELECT_SMALL)
+			is_small = 1;
 		debug2("trying less efficient code");
-		remove_block(results, color_count, conn_type);
+		remove_block(results, color_count, is_small);
 		list_delete_all(results, &empty_null_destroy_list, "");
 		list_append(results, ba_node);
 		found = _find_x_path(results, ba_node,
@@ -1721,7 +1701,7 @@ end_it:
  * Resets the virtual system to a virgin state.  If track_down_nodes is set
  * then those midplanes are not set to idle, but kept in a down state.
  */
-extern int reset_ba_system(bool track_down_nodes)
+extern void reset_ba_system(bool track_down_nodes)
 {
 	int x, y, z;
 	uint16_t coord[cluster_dims];
@@ -1736,8 +1716,6 @@ extern int reset_ba_system(bool track_down_nodes)
 					     coord, track_down_nodes);
 			}
 	}
-
-	return 1;
 }
 
 /*
@@ -2757,7 +2735,7 @@ static int _port_enum(int port)
  * This function is here to check options for rotating and elongating
  * and set up the request based on the count of each option
  */
-static int _check_for_options(ba_request_t* ba_request)
+static int _check_for_options(select_ba_request_t* ba_request)
 {
 	int temp;
 	int set=0;
@@ -3550,7 +3528,7 @@ static void _delete_path_list(void *object)
 /**
  * algorithm for finding match
  */
-static int _find_match(ba_request_t *ba_request, List results)
+static int _find_match(select_ba_request_t *ba_request, List results)
 {
 	int x=0;
 	uint16_t start[cluster_dims];
@@ -3621,11 +3599,11 @@ start_again:
 				     alpha_num[ba_request->geometry[X]],
 				     alpha_num[ba_request->geometry[Y]],
 				     alpha_num[ba_request->geometry[Z]],
-				     ba_request->conn_type);
+				     ba_request->conn_type[X]);
 			name = set_bg_block(results,
 					    start,
 					    ba_request->geometry,
-					    ba_request->conn_type);
+					    ba_request->conn_type[X]);
 			if (name) {
 				ba_request->save_name = xstrdup(name);
 				xfree(name);
@@ -3633,8 +3611,10 @@ start_again:
 			}
 
 			if (results) {
-				remove_block(results, color_count,
-					     ba_request->conn_type);
+				bool is_small = 0;
+				if (ba_request->conn_type[0] == SELECT_SMALL)
+					is_small = 1;
+				remove_block(results, color_count, is_small);
 				list_delete_all(results,
 						&empty_null_destroy_list, "");
 			}
@@ -4217,17 +4197,17 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	for (i=0;i<count;i++) {
 		if (!ba_node[i]->used) {
 			ba_node[i]->used=1;
-			if (ba_node[i]->letter == '.') {
-				ba_node[i]->letter = letters[color_count%62];
-				ba_node[i]->color = colors[color_count%6];
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-					info("count %d setting letter = %c "
-					     "color = %d",
-					     color_count,
-					     ba_node[i]->letter,
-					     ba_node[i]->color);
-				set=1;
-			}
+			/* if (ba_node[i]->letter == '.') { */
+			/* 	ba_node[i]->letter = letters[color_count%62]; */
+			/* 	ba_node[i]->color = colors[color_count%6]; */
+			/* 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) */
+			/* 		info("count %d setting letter = %c " */
+			/* 		     "color = %d", */
+			/* 		     color_count, */
+			/* 		     ba_node[i]->letter, */
+			/* 		     ba_node[i]->color); */
+			/* 	set=1; */
+			/* } */
 		} else {
 			debug("No network connection to create "
 			      "bgblock containing %s", name);

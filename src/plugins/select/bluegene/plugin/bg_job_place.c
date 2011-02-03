@@ -76,7 +76,7 @@ static int _check_images(struct job_record* job_ptr,
 static bg_record_t *_find_matching_block(List block_list,
 					 struct job_record* job_ptr,
 					 bitstr_t* slurm_block_bitmap,
-					 ba_request_t *request,
+					 select_ba_request_t *request,
 					 uint32_t max_cpus,
 					 int *allow, int check_image,
 					 int overlap_check,
@@ -87,7 +87,7 @@ static int _check_for_booted_overlapping_blocks(
 	bg_record_t *bg_record, int overlap_check, List overlapped_list,
 	uint16_t query_mode);
 static int _dynamically_request(List block_list, int *blocks_added,
-				ba_request_t *request,
+				select_ba_request_t *request,
 				char *user_req_nodes,
 				uint16_t query_mode);
 static int _find_best_block_match(List block_list, int *blocks_added,
@@ -280,7 +280,7 @@ static int _check_images(struct job_record* job_ptr,
 static bg_record_t *_find_matching_block(List block_list,
 					 struct job_record* job_ptr,
 					 bitstr_t* slurm_block_bitmap,
-					 ba_request_t *request,
+					 select_ba_request_t *request,
 					 uint32_t max_cpus,
 					 int *allow, int check_image,
 					 int overlap_check,
@@ -436,10 +436,10 @@ static bg_record_t *_find_matching_block(List block_list,
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-		if ((request->conn_type != bg_record->conn_type)
-		    && (request->conn_type != SELECT_NAV)) {
+		if ((request->conn_type[0] != bg_record->conn_type)
+		    && (request->conn_type[0] != SELECT_NAV)) {
 #ifndef HAVE_BGL
-			if (request->conn_type >= SELECT_SMALL) {
+			if (request->conn_type[0] >= SELECT_SMALL) {
 				/* we only want to reboot blocks if
 				   they have to be so skip booted
 				   blocks if in small state
@@ -465,7 +465,7 @@ static bg_record_t *_find_matching_block(List block_list,
 				info("bg block %s conn-type not usable "
 				     "asking for %s bg_record is %s",
 				     bg_record->bg_block_id,
-				     conn_type_string(request->conn_type),
+				     conn_type_string(request->conn_type[0]),
 				     conn_type_string(bg_record->conn_type));
 			continue;
 		}
@@ -738,7 +738,7 @@ static int _check_for_booted_overlapping_blocks(
  */
 
 static int _dynamically_request(List block_list, int *blocks_added,
-				ba_request_t *request,
+				select_ba_request_t *request,
 				char *user_req_nodes,
 				uint16_t query_mode)
 {
@@ -892,7 +892,7 @@ static int _find_best_block_match(List block_list,
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
 	uint32_t req_procs = job_ptr->details->min_cpus;
-	ba_request_t request;
+	select_ba_request_t request;
 	int i;
 	int overlap_check = 0;
 	int allow = 0;
@@ -973,7 +973,7 @@ static int _find_best_block_match(List block_list,
 	*found_bg_record = NULL;
 	allow = 0;
 
-	memset(&request, 0, sizeof(ba_request_t));
+	memset(&request, 0, sizeof(select_ba_request_t));
 
 	for(i=0; i<SYSTEM_DIMENSIONS; i++)
 		request.geometry[i] = req_geometry[i];
@@ -983,7 +983,7 @@ static int _find_best_block_match(List block_list,
 	request.elongate_geos = NULL;
 	request.size = target_size;
 	request.procs = req_procs;
-	request.conn_type = conn_type;
+	request.conn_type[0] = conn_type;
 	request.rotate = rotate;
 	request.elongate = rotate;
 
@@ -994,9 +994,9 @@ static int _find_best_block_match(List block_list,
 	request.mloaderimage = mloaderimage;
 	request.ramdiskimage = ramdiskimage;
 	if (job_ptr->details->req_node_bitmap)
-		request.avail_node_bitmap = job_ptr->details->req_node_bitmap;
+		request.avail_mp_bitmap = job_ptr->details->req_node_bitmap;
 	else
-		request.avail_node_bitmap = slurm_block_bitmap;
+		request.avail_mp_bitmap = slurm_block_bitmap;
 
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_cpus if given

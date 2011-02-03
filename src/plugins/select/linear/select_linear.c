@@ -3019,3 +3019,31 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 	return avail_nodes_bitmap;
 }
 
+extern void select_p_ba_init(void)
+{
+	return;
+}
+extern void select_p_ba_fini(void)
+{
+	return;
+}
+
+extern int *select_p_ba_get_dims(void)
+{
+	return NULL;
+}
+
+extern void select_p_ba_reset(bool track_down_nodes)
+{
+	return;
+}
+
+extern int select_p_ba_request_apply(select_ba_request_t *ba_request)
+{
+	return 1;
+}
+
+extern int select_p_ba_remove_block(List mps, int new_count, bool is_small)
+{
+	return 1;
+}

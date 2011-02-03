@@ -127,7 +127,8 @@ libsched_if64_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(libsched_if64_la_LDFLAGS) $(LDFLAGS) -o $@
 @BGL_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath =  \
 @BGL_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	-rpath $(pkglibdir)
-@BLUEGENE_LOADED_TRUE@select_bluegene_la_DEPENDENCIES = ../block_allocator/libbluegene_block_allocator.la
+select_bluegene_la_DEPENDENCIES =  \
+	../block_allocator/libbluegene_block_allocator.la
 am__select_bluegene_la_SOURCES_DIST = select_bluegene.c jobinfo.c \
 	jobinfo.h nodeinfo.c nodeinfo.h ../wrap_rm_api.h \
 	bg_boot_time.h bg_job_place.c bg_job_place.h bg_job_run.c \
@@ -437,7 +438,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 @BLUEGENE_LOADED_FALSE@select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BLUEGENE_LOADED_TRUE@select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la
 
 # MPIRUN dynamic lib.
 @BGL_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c
@@ -459,6 +459,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 @BLUEGENE_LOADED_TRUE@sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la
 all: all-am
 
 .SUFFIXES:

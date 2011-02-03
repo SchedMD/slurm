@@ -42,6 +42,7 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/node_select.h"
 
 /*
  * This functions technically should go in the slurmdb_defs.c, but
@@ -60,12 +61,12 @@ extern uint16_t slurmdb_setup_cluster_dims(void)
 		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
 }
 
-extern int * slurmdb_setup_cluster_dim_size(void)
+extern int *slurmdb_setup_cluster_dim_size(void)
 {
 	if (working_cluster_rec)
 		return working_cluster_rec->dim_size;
 
-	return NULL;
+	return select_g_ba_get_dims();
 }
 
 extern uint16_t slurmdb_setup_cluster_name_dims(void)

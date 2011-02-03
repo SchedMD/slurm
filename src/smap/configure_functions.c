@@ -46,11 +46,11 @@ typedef struct {
 	int color;
 	char letter;
 	List nodes;
-	ba_request_t *request;
+	select_ba_request_t *request;
 } allocated_block_t;
 
 static void	_delete_allocated_blocks(List allocated_blocks);
-static allocated_block_t *_make_request(ba_request_t *request);
+static allocated_block_t *_make_request(select_ba_request_t *request);
 static int      _set_layout(char *com);
 static int      _set_base_part_cnt(char *com);
 static int      _set_nodecard_cnt(char *com);
@@ -77,16 +77,18 @@ static void _delete_allocated_blocks(List allocated_blocks)
 	allocated_block_t *allocated_block = NULL;
 
 	while ((allocated_block = list_pop(allocated_blocks)) != NULL) {
-		remove_block(allocated_block->nodes, 0,
-			     allocated_block->request->conn_type);
+		bool is_small = 0;
+		if (allocated_block->request->conn_type[0] == SELECT_SMALL)
+			is_small = 1;
+		select_g_ba_remove_block(allocated_block->nodes, 0, is_small);
 		list_destroy(allocated_block->nodes);
-		delete_ba_request(allocated_block->request);
+		destroy_select_ba_request(allocated_block->request);
 		xfree(allocated_block);
 	}
 	list_destroy(allocated_blocks);
 }
 
-static allocated_block_t *_make_request(ba_request_t *request)
+static allocated_block_t *_make_request(select_ba_request_t *request)
 {
 	List results = list_create(NULL);
 	ListIterator results_i;
@@ -207,13 +209,13 @@ static int _create_allocation(char *com, List allocated_blocks)
 	int i=6, geoi=-1, starti=-1, i2=0, small32=-1, small128=-1;
 	int len = strlen(com);
 	allocated_block_t *allocated_block = NULL;
-	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
+	select_ba_request_t *request = xmalloc(sizeof(select_ba_request_t));
 	int diff=0;
 #ifndef HAVE_BGL
 	int small16=-1, small64=-1, small256=-1;
 #endif
 	request->geometry[0] = (uint16_t)NO_VAL;
-	request->conn_type=SELECT_TORUS;
+	request->conn_type[0] = SELECT_TORUS;
 	request->rotate = false;
 	request->elongate = false;
 	request->start_req=0;
@@ -221,14 +223,14 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->small32 = 0;
 	request->small128 = 0;
 	request->deny_pass = 0;
-	request->avail_node_bitmap = NULL;
+	request->avail_mp_bitmap = NULL;
 
 	while(i<len) {
 		if(!strncasecmp(com+i, "mesh", 4)) {
-			request->conn_type=SELECT_MESH;
+			request->conn_type[0] = SELECT_MESH;
 			i+=4;
 		} else if(!strncasecmp(com+i, "small", 5)) {
-			request->conn_type = SELECT_SMALL;
+			request->conn_type[0] = SELECT_SMALL;
 			i+=5;
 		} else if(!strncasecmp(com+i, "deny", 4)) {
 			i+=4;
@@ -305,7 +307,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 	}
 
-	if(request->conn_type == SELECT_SMALL) {
+	if(request->conn_type[0] == SELECT_SMALL) {
 		int total = 512;
 #ifndef HAVE_BGL
 		if(small16 > 0) {
@@ -635,11 +637,11 @@ static int _change_state_all_bps(char *com, int state)
 
 	if(params.cluster_dims == 3)
 		sprintf(allnodes, "000x%c%c%c",
-			alpha_num[DIM_SIZE[X]-1], alpha_num[DIM_SIZE[Y]-1],
-			alpha_num[DIM_SIZE[Z]-1]);
+			alpha_num[dim_size[X]-1], alpha_num[dim_size[Y]-1],
+			alpha_num[dim_size[Z]-1]);
 	else
 		sprintf(allnodes, "0-%d",
-			DIM_SIZE[X]);
+			dim_size[X]);
 
 	return _change_state_bps(allnodes, state);
 
@@ -693,7 +695,7 @@ static int _change_state_bps(char *com, int state)
 
 		if((start[X]>end[X])
 		   || (start[X]<0)
-		   || (end[X]>DIM_SIZE[X]-1))
+		   || (end[X]>dim_size[X]-1))
 			goto error_message;
 
 		for(x=start[X];x<=end[X];x++) {
@@ -753,9 +755,9 @@ static int _change_state_bps(char *com, int state)
 	   || (start[X]<0
 	       || start[Y]<0
 	       || start[Z]<0)
-	   || (end[X]>DIM_SIZE[X]-1
-	       || end[Y]>DIM_SIZE[Y]-1
-	       || end[Z]>DIM_SIZE[Z]-1))
+	   || (end[X]>dim_size[X]-1
+	       || end[Y]>dim_size[Y]-1
+	       || end[Z]>dim_size[Z]-1))
 		goto error_message;
 
 	for(x=start[X];x<=end[X];x++) {
@@ -815,30 +817,15 @@ static int _remove_allocation(char *com, List allocated_blocks)
 	} else {
 		letter = com[i];
 		results_i = list_iterator_create(allocated_blocks);
-		while((allocated_block = list_next(results_i)) != NULL) {
-			if(found) {
-				if(redo_block(allocated_block->nodes,
-					      allocated_block->
-					      request->geometry,
-					      allocated_block->
-					      request->conn_type,
-					      color_count) == SLURM_ERROR) {
-					memset(error_string,0,255);
-					sprintf(error_string,
-						"problem redoing the part.");
-					return 0;
-				}
-				allocated_block->letter =
-					letters[color_count%62];
-				allocated_block->color =
-					colors[color_count%6];
-
-			} else if(allocated_block->letter == letter) {
+		while((allocated_block = list_next(results_i))) {
+			if(allocated_block->letter == letter) {
+				bool is_small = 0;
+				if (allocated_block->request->conn_type[0]
+				    == SELECT_SMALL)
+					is_small = 1;
 				found=1;
-				remove_block(allocated_block->nodes,
-					     color_count,
-					     allocated_block->request->
-					     conn_type);
+				select_g_ba_remove_block(allocated_block->nodes,
+							 color_count, is_small);
 				list_destroy(allocated_block->nodes);
 				delete_ba_request(allocated_block->request);
 				list_remove(results_i);
@@ -891,7 +878,7 @@ static int _copy_allocation(char *com, List allocated_blocks)
 	ListIterator results_i;
 	allocated_block_t *allocated_block = NULL;
 	allocated_block_t *temp_block = NULL;
-	ba_request_t *request = NULL;
+	select_ba_request_t *request = NULL;
 
 	int i=1;
 	int len = strlen(com);
@@ -942,13 +929,12 @@ static int _copy_allocation(char *com, List allocated_blocks)
 	}
 
 	for(i=0;i<count;i++) {
-		request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
-
-		request->geometry[X] = allocated_block->request->geometry[X];
-		request->geometry[Y] = allocated_block->request->geometry[Y];
-		request->geometry[Z] = allocated_block->request->geometry[Z];
+		request = xmalloc(sizeof(select_ba_request_t));
+		memcpy(request->geometry, allocated_block->request->geometry,
+		       sizeof(request->geometry));
 		request->size = allocated_block->request->size;
-		request->conn_type=allocated_block->request->conn_type;
+		memcpy(request->conn_type, allocated_block->request->conn_type,
+		       sizeof(request->conn_type));
 		request->rotate =allocated_block->request->rotate;
 		request->elongate = allocated_block->request->elongate;
 		request->deny_pass = allocated_block->request->deny_pass;
@@ -963,7 +949,7 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		request->rotate_count= 0;
 		request->elongate_count = 0;
 	       	request->elongate_geos = list_create(NULL);
-		request->avail_node_bitmap = NULL;
+		request->avail_mp_bitmap = NULL;
 
 		results_i = list_iterator_create(request->elongate_geos);
 		while ((geo_ptr = list_next(results_i)) != NULL) {
@@ -1075,13 +1061,15 @@ static int _save_allocation(char *com, List allocated_blocks)
 		}
 		results_i = list_iterator_create(allocated_blocks);
 		while((allocated_block = list_next(results_i)) != NULL) {
-			if(allocated_block->request->conn_type == SELECT_TORUS)
+			switch (allocated_block->request->conn_type[0]) {
+			case SELECT_TORUS:
 				conn_type = "TORUS";
-			else if(allocated_block->request->conn_type
-				== SELECT_MESH)
-				conn_type = "MESH";
-			else {
-				conn_type = "SMALL";
+				break;
+			case SELECT_MESH:
+				conn_type  = "MESH";
+				break;
+			default:
+				conn_type  = "SMALL";
 #ifndef HAVE_BGL
 				xstrfmtcat(extra,
 					   " 16CNBlocks=%d 32CNBlocks=%d "
@@ -1097,8 +1085,8 @@ static int _save_allocation(char *com, List allocated_blocks)
 					   " 32CNBlocks=%d 128CNBlocks=%d",
 					   allocated_block->request->small32,
 					   allocated_block->request->small128);
-
 #endif
+				break;
 			}
 			xstrfmtcat(save_string, "BPs=%s Type=%s",
 				   allocated_block->request->save_name,
@@ -1397,10 +1385,10 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%c", allocated_block->letter);
 	main_xcord += 4;
-	if(allocated_block->request->conn_type==SELECT_TORUS)
+	if(allocated_block->request->conn_type[0] ==SELECT_TORUS)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "TORUS");
-	else if (allocated_block->request->conn_type==SELECT_MESH)
+	else if (allocated_block->request->conn_type[0] ==SELECT_MESH)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "MESH");
 	else
@@ -1428,7 +1416,7 @@ static void _print_text_command(allocated_block_t *allocated_block)
 		  main_xcord, "%d", allocated_block->request->size);
 	main_xcord += 10;
 
-	if(allocated_block->request->conn_type == SELECT_SMALL) {
+	if(allocated_block->request->conn_type[0] == SELECT_SMALL) {
 #ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
@@ -1559,7 +1547,7 @@ void get_command(void)
 		if (!strcmp(com, "exit")) {
 			endwin();
 			_delete_allocated_blocks(allocated_blocks);
-			ba_fini();
+			select_g_ba_fini();
 			exit(0);
 		}
 

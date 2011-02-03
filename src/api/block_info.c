@@ -169,7 +169,7 @@ char *slurm_sprint_block_info(
 	xstrfmtcat(out, "MloaderImage=%s%s",
 		   block_ptr->mloaderimage, line_end);
 
-	if(cluster_flags & CLUSTER_FLAG_BGL) {
+	if (cluster_flags & CLUSTER_FLAG_BGL) {
 		/****** Line 5 ******/
 		xstrfmtcat(out, "BlrtsImage=%s%s", block_ptr->blrtsimage,
 			   line_end);
@@ -178,13 +178,14 @@ char *slurm_sprint_block_info(
 			   line_end);
 		/****** Line 7 ******/
 		xstrfmtcat(out, "RamdiskImage=%s", block_ptr->ramdiskimage);
-	} else {
+	} else if (cluster_flags & CLUSTER_FLAG_BGP) {
 		/****** Line 5 ******/
 		xstrfmtcat(out, "CnloadImage=%s%s", block_ptr->linuximage,
 			   line_end);
 		/****** Line 6 ******/
 		xstrfmtcat(out, "IoloadImage=%s", block_ptr->ramdiskimage);
 	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

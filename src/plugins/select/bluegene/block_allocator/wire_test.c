@@ -51,7 +51,7 @@
 /** */
 int main(int argc, char** argv)
 {
-	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
+	select_ba_request_t *request = xmalloc(sizeof(select_ba_request_t));
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	int debug_level = 5;
 
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 //	request->size = 1;
 	request->rotate = 1;
 	request->elongate = 1;
-	request->conn_type = SELECT_TORUS;
+	request->conn_type[0] = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
 	if (!allocate_block(request, results)) {

@@ -59,6 +59,8 @@ int max_display;
 int resize_screen = 0;
 
 int *dim_size = NULL;
+char letters[62];
+char colors[6];
 int main_xcord = 1;
 int main_ycord = 1;
 WINDOW *grid_win = NULL;
@@ -68,10 +70,10 @@ WINDOW *text_win = NULL;
  * Functions *
  ************/
 
-static int *_get_cluster_dim_size(void);
 static int _get_option(void);
 static void *_resize_handler(int sig);
 static int _set_pairs(void);
+static void _init_colors(void);
 static void _smap_exit(int rc);
 
 int main(int argc, char *argv[])
@@ -114,12 +116,9 @@ int main(int argc, char *argv[])
 		sleep(10);	/* keep trying to reconnect */
 	}
 
-#if defined(HAVE_BGQ) 
-	/* Call something to set DIM_SIZE array */
-#else
-	ba_init(new_node_ptr, 0);
-#endif
-	dim_size = _get_cluster_dim_size();
+	_init_colors();
+	select_g_ba_init(new_node_ptr, 0);
+	dim_size = slurmdb_setup_cluster_dim_size();
 
 	if (params.resolve) {
 
@@ -133,7 +132,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (!mapset)
-			mapset = set_bp_map();
+			mapset = 1;
 		if (params.resolve[0] != 'R') {
 			i = strlen(params.resolve);
 			i -= 3;
@@ -261,7 +260,7 @@ part_fini:
 		case COMMANDS:
 			if (params.cluster_flags & CLUSTER_FLAG_BG) {
 				if (!mapset) {
-					mapset = set_bp_map();
+					mapset = 1;
 					wclear(text_win);
 				}
 				get_command();
@@ -360,16 +359,37 @@ part_fini:
 	exit(0);	/* Redundant, but eliminates compiler warning */
 }
 
+static void _init_colors(void)
+{
+	int x,y,z;
+	/* make the letters array only contain letters upper and lower
+	 * (62) */
+	y = 'A';
+	for (x = 0; x < 62; x++) {
+		if (y == '[')
+			y = 'a';
+		else if (y == '{')
+			y = '0';
+		else if (y == ':')
+			y = 'A';
+		letters[x] = y;
+		y++;
+	}
+
+	z=1;
+	for (x = 0; x < 6; x++) {
+		if (z == 4)
+			z++;
+		colors[x] = z;
+		z++;
+	}
+}
+
 /* Variation of exit() that releases memory as needed for memory leak test */
 static void _smap_exit(int rc)
 {
 #ifdef MEMORY_LEAK_DEBUG
-#if defined(HAVE_BGL) || defined(HAVE_BGP)
-	ba_fini();
-#endif
-#if defined(HAVE_BGL) 
-	/* Call something to release memory */
-#endif
+	select_g_ba_fini();
 #endif
 	exit(rc);
 }
@@ -507,7 +527,6 @@ static void *_resize_handler(int sig)
 		error("Screen is too small make sure "
 		      "the screen is at least %dx%d\n"
 		      "Right now it is %dx%d\n", width, height, COLS, LINES);
-		ba_fini();
 		_smap_exit(0);	/* Calls exit(), no return */
 	}
 
@@ -571,37 +590,4 @@ static int _set_pairs(void)
 		init_pair(colors[x], colors[x], COLOR_BLACK);
 	}
 	return 1;
-}
-
-static int *_get_cluster_dim_size(void)
-{
-	int *dims = slurmdb_setup_cluster_dim_size();
-
-	if (dims)
-		return dims;
-
-#if defined(HAVE_BGQ)
-/* Once the select/bgq plugin is ready, enable this */
-{
-	static int dim_size[4];
-	if (dim_size[0] == 0) {
-		dim_size[0] = 4;
-		dim_size[1] = 3;
-		dim_size[2] = 4;
-		dim_size[3] = 4;
-	}
-	return dim_size;
-}
-#else
-{
-	static int dim_size[3];
-	if (dim_size[0] == 0) {
-		dim_size[0] = DIM_SIZE[X];
-		dim_size[1] = DIM_SIZE[Y];
-		dim_size[2] = DIM_SIZE[Y];
-	}
-	return dim_size;
-}
-#endif
-
 }

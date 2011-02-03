@@ -80,58 +80,6 @@ typedef struct {
 	int out;
 } ba_path_switch_t;
 
-/*
- * structure that holds the configuration settings for each request
- */
-typedef struct {
-	bitstr_t *avail_node_bitmap;   /* pointer to available nodes */
-#ifdef HAVE_BGL
-	char *blrtsimage;              /* BlrtsImage for this block */
-#endif
-	int conn_type;                 /* mesh, torus, or small */
-	bool elongate;                 /* whether allow elongation or not */
-	int elongate_count;            /* place in elongate_geos list
-					  we are at */
-	List elongate_geos;            /* list of possible shapes of
-					  blocks. contains int* ptrs */
-	uint16_t geometry[HIGHEST_DIMENSIONS]; /* size of block in geometry */
-	char *linuximage;              /* LinuxImage for this block */
-	char *mloaderimage;            /* mloaderImage for this block */
-	uint16_t deny_pass;            /* PASSTHROUGH_FOUND is set if there are
-					  passthroughs in the block
-					  created you can deny
-					  passthroughs by setting the
-					  appropriate bits*/
-	int procs;                     /* Number of Real processors in
-					  block */
-	char *ramdiskimage;            /* RamDiskImage for this block */
-	bool rotate;                   /* whether allow elongation or not */
-	int rotate_count;              /* number of times rotated */
-	char *save_name;               /* name of blocks in midplanes */
-	int size;                      /* count of midplanes in block */
-	int small32;                   /* number of blocks using 32 cnodes in
-					* block, only used for small
-					* block creation */
-	int small128;                  /* number of blocks using 128 cnodes in
-					* block, only used for small
-					* block creation */
-#ifndef HAVE_BGL
-	int small16;                   /* number of blocks using 16 cnodes in
-					* block, only used for small
-					* block creation */
-	int small64;                   /* number of blocks using 64 cnodes in
-					* block, only used for small
-					* block creation */
-	int small256;                  /* number of blocks using 256 cnodes in
-					* block, only used for small
-					* block creation */
-#endif
-	uint16_t start[HIGHEST_DIMENSIONS]; /* where to start creation of
-					    block */
-	int start_req;                 /* state there was a start
-					  request */
-} ba_request_t;
-
 /* structure filled in from reading bluegene.conf file for block
  * creation */
 typedef struct {
@@ -256,9 +204,7 @@ typedef struct {
 extern my_bluegene_t *bg;
 extern List bp_map_list; /* list used for conversion from XYZ to Rack
 			  * midplane */
-extern char letters[62]; /* complete list of letters used in smap */
-extern char colors[6]; /* index into colors used for smap */
-extern uint16_t DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
+extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
 					  * each dimension */
 extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
@@ -314,7 +260,7 @@ extern void destroy_ba_node(void *ptr);
  * IN - start_req: if set use the start variable to start at
  * return success of allocation/validation of params
  */
-extern int new_ba_request(ba_request_t* ba_request);
+extern int new_ba_request(select_ba_request_t* ba_request);
 
 /*
  * delete a block request
@@ -330,7 +276,7 @@ extern int empty_null_destroy_list(void *arg, void *key);
 /*
  * print a block request
  */
-extern void print_ba_request(ba_request_t* ba_request);
+extern void print_ba_request(select_ba_request_t* ba_request);
 
 /*
  * Initialize internal structures by either reading previous block
@@ -394,13 +340,13 @@ extern int copy_node_path(List nodes, List *dest_nodes);
  *
  * return: success or error of request
  */
-extern int allocate_block(ba_request_t* ba_request, List results);
+extern int allocate_block(select_ba_request_t* ba_request, List results);
 
 /*
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List nodes, int new_count, int conn_type);
+extern int remove_block(List nodes, int new_count, bool is_small);
 
 /*
  * Admin wants to change something about a previous allocation.
@@ -452,7 +398,7 @@ extern char *set_bg_block(List results, uint16_t *start,
  * Resets the virtual system to a virgin state.  If track_down_nodes is set
  * then those midplanes are not set to idle, but kept in a down state.
  */
-extern int reset_ba_system(bool track_down_nodes);
+extern void reset_ba_system(bool track_down_nodes);
 
 /*
  * Used to set all midplanes in a special used state except the ones

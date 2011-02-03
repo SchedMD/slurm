@@ -132,6 +132,9 @@ extern WINDOW *grid_win;
 extern WINDOW *text_win;
 
 extern int *dim_size;
+extern char letters[62]; /* complete list of letters used in smap */
+extern char colors[6]; /* index into colors used for smap */
+
 extern int main_xcord;
 extern int main_ycord;
 

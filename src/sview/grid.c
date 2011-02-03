@@ -537,7 +537,7 @@ static void _build_empty_node(int coord_x, int coord_y,
 			 GTK_SHRINK, GTK_SHRINK, 1, 1);
 }
 
-static void _calc_coord_3d(int x, int y, int z, int default_y_offset, 
+static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 			   int *coord_x, int *coord_y, int *dim_size)
 {
 	int y_offset;
@@ -547,7 +547,7 @@ static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
-static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset, 
+static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
 			   int *coord_x, int *coord_y, int* dim_size)
 {
 	int x_offset, y_offset;
@@ -1081,7 +1081,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 	return sview_colors[color_inx];
 }
 
-/* This variation of change_grid_color() is faster when changing many 
+/* This variation of change_grid_color() is faster when changing many
  * button colors at the same time since we can issue a single call to
  * _change_button_color() and eliminate a nested loop. */
 extern void change_grid_color_array(List button_list, int array_len,
@@ -1577,6 +1577,7 @@ extern int get_system_stats(GtkTable *table)
 	} else if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
+	select_g_ba_init(node_info_ptr, 0);
 
 	node_list = create_node_info_list(node_info_ptr,
 					  changed, FALSE);
