@@ -50,11 +50,13 @@
 #  include "src/common/getopt.h"
 #endif
 
-#include <stdlib.h>
-#include <pwd.h>
 #include <ctype.h>
+#include <pwd.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <slurm/slurmdb.h>
@@ -73,16 +75,15 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
-#include "src/common/uid.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurmdb_defs.h"
-#include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
-#include "src/plugins/select/bluegene/plugin/bluegene.h"
-//#include "src/plugins/select/bluegene/wrap_rm_api.h"
-
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/uid.h"
+#include "src/common/xstring.h"
 
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/plugins/select/bgq/bg_enums.h"
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP	0x100
@@ -321,7 +322,6 @@ extern sview_config_t default_sview_config;
 extern sview_config_t working_sview_config;
 
 extern int fini;
-extern ba_system_t *ba_system_ptr;
 extern bool toggled;
 extern bool force_refresh;
 extern bool apply_hidden_change;

@@ -41,7 +41,6 @@
 #include "sview.h"
 #include "src/common/parse_config.h"
 #include "src/common/slurm_strcasestr.h"
-#include "src/common/parse_time.h"
 
 /* These need to be in alpha order (except POS and CNT) */
 enum {

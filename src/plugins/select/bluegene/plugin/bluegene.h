@@ -108,7 +108,6 @@ extern int num_unused_cpus;
 #define MAX_PTHREAD_RETRIES  1
 #define BLOCK_ERROR_STATE    -3
 #define ADMIN_ERROR_STATE    -4
-#define NO_JOB_RUNNING       -1
 #define BUFSIZE 4096
 #define BITSIZE 128
 /* Change BLOCK_STATE_VERSION value when changing the state save

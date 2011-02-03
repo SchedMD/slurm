@@ -52,6 +52,7 @@ typedef enum {
 	BG_BLOCK_BOOTING,        // Block is booting
 	BG_BLOCK_FREE,           // Block is free
 	BG_BLOCK_INITED,         // Block is initialized
+	BG_BLOCK_NAV,            // Block stateis undefined
 	BG_BLOCK_TERM,           // Block is terminating
 	BG_BLOCK_ERROR,          // Block is in error
 } bgq_block_status_t;

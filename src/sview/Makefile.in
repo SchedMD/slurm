@@ -110,7 +110,7 @@ am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c grid.c \
 	node_info.c resv_info.c submit_info.c admin_info.c common.c \
 	config_info.c defaults.c
 sview_OBJECTS = $(am_sview_OBJECTS)
-@HAVE_GTK_TRUE@sview_DEPENDENCIES = $(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
+@HAVE_GTK_TRUE@sview_DEPENDENCIES =  \
 @HAVE_GTK_TRUE@	$(top_builddir)/src/db_api/libslurmdb.o
 sview_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(sview_CFLAGS) $(CFLAGS) $(sview_LDFLAGS) \
@@ -331,10 +331,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-@HAVE_GTK_TRUE@sview_LDADD = \
-@HAVE_GTK_TRUE@	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la  \
-@HAVE_GTK_TRUE@	$(top_builddir)/src/db_api/libslurmdb.o -ldl
-
+@HAVE_GTK_TRUE@sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o -ldl 
 @HAVE_GTK_TRUE@noinst_HEADERS = sview.h
 @HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_TRUE@	block_info.c front_end_info.c node_info.c resv_info.c \

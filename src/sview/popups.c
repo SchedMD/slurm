@@ -749,8 +749,9 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		sview_search_info.search_type = SEARCH_BLOCK_SIZE;
 		entry = create_entry();
 		label = gtk_label_new("Which block size?");
-	} else if ((cluster_flags & CLUSTER_FLAG_BG)
-		   && !strcmp(name, "bg_block_state")) {
+	} else if (((cluster_flags & CLUSTER_FLAG_BGL) ||
+		    (cluster_flags & CLUSTER_FLAG_BGP)) &&
+		   !strcmp(name, "bg_block_state")) {
 		display_data_t pulldown_display_data[] = {
 			{G_TYPE_NONE, RM_PARTITION_FREE, "Free", TRUE, -1},
 			{G_TYPE_NONE, RM_PARTITION_CONFIGURING, "Configuring",
@@ -779,6 +780,29 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 					display_data->name = "Rebooting";
 					break;
 				}
+			}
+		}
+		sview_search_info.search_type = SEARCH_BLOCK_STATE;
+		entry = create_pulldown_combo(pulldown_display_data, PAGE_CNT);
+		label = gtk_label_new("Which state?");
+	} else if ((cluster_flags & CLUSTER_FLAG_BGQ) &&
+		   !strcmp(name, "bg_block_state")) {
+		display_data_t pulldown_display_data[] = {
+			{G_TYPE_NONE, BG_BLOCK_FREE, "Free", TRUE, -1},
+			{G_TYPE_NONE, BG_BLOCK_BOOTING, "Booting", TRUE, -1},
+			{G_TYPE_NONE, BG_BLOCK_INITED, "Inited", TRUE, -1},
+			{G_TYPE_NONE, BG_BLOCK_ALLOCATED, NULL, TRUE, -1},
+			{G_TYPE_NONE, BG_BLOCK_TERM, "Terminating", TRUE, -1},
+			{G_TYPE_NONE, BG_BLOCK_ERROR, "Error", TRUE, -1},
+			{G_TYPE_NONE, -1, NULL, FALSE, -1}
+		};
+		display_data_t *display_data = pulldown_display_data;
+		while (display_data++) {
+			if (display_data->id == -1)
+				break;
+			if (display_data->id == BG_BLOCK_ALLOCATED) {
+				display_data->name = "Busy";
+				break;
 			}
 		}
 		sview_search_info.search_type = SEARCH_BLOCK_STATE;

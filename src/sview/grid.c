@@ -37,7 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #include "sview.h"
-#include "src/plugins/select/bluegene/plugin/bluegene.h"
+
 #define TOPO_DEBUG 0
 #define RESET_GRID -2
 List grid_button_list = NULL;
@@ -75,38 +75,6 @@ typedef struct {
 } button_processor_t;
 
 GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
-
-static int *_get_cluster_dim_size(void)
-{
-	int *dims = slurmdb_setup_cluster_dim_size();
-
-	if (dims)
-		return dims;
-
-#if defined(HAVE_BGQ)
-/* Once the select/bgq plugin is ready, enable this */
-{
-	static int dim_size[4];
-	if (dim_size[0] == 0) {
-		dim_size[0] = 4;
-		dim_size[1] = 3;
-		dim_size[2] = 4;
-		dim_size[3] = 4;
-	}
-	return dim_size;
-}
-#else
-{
-	static int dim_size[3];
-	if (dim_size[0] == 0) {
-		dim_size[0] = DIM_SIZE[X];
-		dim_size[1] = DIM_SIZE[Y];
-		dim_size[2] = DIM_SIZE[Y];
-	}
-	return dim_size;
-}
-#endif
-}
 
 static int _coord(char coord)
 {
@@ -601,7 +569,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	if (cluster_dims == 4) {
 		static bool *node_exists = NULL;
 		int a, x, y, z, coord_x, coord_y, i;
-		int *dim_size = _get_cluster_dim_size();
+		int *dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -665,7 +633,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	} else if (cluster_dims == 3) {
 		static bool *node_exists = NULL;
 		int i, x, y, z, coord_x, coord_y;
-		int *dim_size = _get_cluster_dim_size();
+		int *dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -914,7 +882,7 @@ static int _init_button_processor(button_processor_t *button_processor,
 	memset(button_processor, 0, sizeof(button_processor_t));
 
 	if (cluster_dims == 4) {
-		int *dim_size = _get_cluster_dim_size();
+		int *dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -926,7 +894,7 @@ static int _init_button_processor(button_processor_t *button_processor,
 		button_processor->table_y = (dim_size[3] * dim_size[2])
 					    + dim_size[2];
 	} else if (cluster_dims == 3) {
-		int *dim_size = _get_cluster_dim_size();
+		int *dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
@@ -1376,7 +1344,12 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 				bg_info_ptr->ionodes);
 			nodes = tmp_nodes;
 		}
-		if (bg_info_ptr->state == RM_PARTITION_ERROR)
+		if (((cluster_flags & CLUSTER_FLAG_BGL) ||
+		     (cluster_flags & CLUSTER_FLAG_BGP)) &&
+		    (bg_info_ptr->state == RM_PARTITION_ERROR))
+			grid_button->state = NODE_STATE_ERROR;
+		else if ((cluster_flags & CLUSTER_FLAG_BGQ) &&
+		         (bg_info_ptr->state == BG_BLOCK_ERROR))
 			grid_button->state = NODE_STATE_ERROR;
 		else if (bg_info_ptr->job_running > NO_JOB_RUNNING)
 			grid_button->state = NODE_STATE_ALLOCATED;
@@ -1604,12 +1577,6 @@ extern int get_system_stats(GtkTable *table)
 	} else if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-#if defined(HAVE_BGL) || defined(HAVE_BGP)
-	ba_init(node_info_ptr, 0);
-#endif
-#if defined(HAVE_BGL) 
-	/* Call something to set DIM_SIZE array */
-#endif
 
 	node_list = create_node_info_list(node_info_ptr,
 					  changed, FALSE);

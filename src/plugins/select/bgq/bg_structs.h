@@ -140,7 +140,6 @@ typedef struct bg_record {
 #define MAX_PTHREAD_RETRIES  1
 #define BLOCK_ERROR_STATE    -3
 #define ADMIN_ERROR_STATE    -4
-#define NO_JOB_RUNNING       -1
 #define BUFSIZE 4096
 #define BITSIZE 128
 
