@@ -81,7 +81,7 @@ static void _setup_ba_switch_int(ba_switch_t *ba_switch)
 
 static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 {
-	int i;
+	// int i;
 	Midplane::Coordinates coords = {{ba_mp->coord[A], ba_mp->coord[X],
 					 ba_mp->coord[Y], ba_mp->coord[Z]}};
 	Midplane::ConstPtr mp_ptr = bgq->getMidplane(coords);
@@ -94,13 +94,41 @@ static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 	//      alpha_num[ba_mp->coord[X]],
 	//      alpha_num[ba_mp->coord[Y]],
 	//      alpha_num[ba_mp->coord[Z]]);
-	for (i=0; i < SYSTEM_DIMENSIONS; i++) {
-		Switch::ConstPtr bg_switch = mp_ptr->getSwitch(i);
-		Cable::ConstPtr bg_cable = bg_switch->getCable();
-		info("bg_cable goes to ");
-		ba_mp->axis_switch[i]->int_wire = ;
+	// for (i=0; i < SYSTEM_DIMENSIONS; i++) {
+	// 	Switch::ConstPtr bg_switch = mp_ptr->getSwitch(
+	// 		(bgsched::Dimension::Value)i);
+	// 	switch (bg_switch.getInUse().Value()) {
+	// 	case Switch::NotInUse:
+	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_NONE;
+	// 		break;
+	// 	case Switch::IncludedBothPortsInUse:
+	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_TORUS;
+	// 		break;
+	// 	case Switch::IncludedOutputPortInUse:
+	// 		ba_mp->axis_switch[i].usage =
+	// 			(BG_SWITCH_OUT | BG_SWITCH_OUT_PASS);
+	// 		break;
+	// 	case Switch::IncludedInputPortInUse:
+	// 		ba_mp->axis_switch[i].usage =
+	// 			(BG_SWITCH_IN | BG_SWITCH_IN_PASS);
+	// 		break;
+	// 	case Switch::Wrapped:
+	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_WRAPPED;
+	// 		break;
+	// 	case Switch::Passthrough:
+	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_PASS;
+	// 		break;
+	// 	case Switch::WrappedPassthrough:
+	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_WRAPPED_PASS;
+	// 		break;
+	// 	default:
+	// 		error("unknown switch conf");
+	// 		break;
+	// 	}
+	// 	info("mp %s(%d) usage is %s", ba_mp->coord_str,
+	// 	     i, ba_switch_usage_str(ba_mp->axis_switch[i].usage);
 
-	}
+	// }
 }
 #endif
 
@@ -142,9 +170,11 @@ extern const char *bridge_err_str(int inx)
 
 extern int bridge_get_size(int *size)
 {
-	int i;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
         Midplane::Coordinates bgq_size;
+	Dimension dim;
+#else
+	int dim;
 #endif
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
@@ -152,11 +182,11 @@ extern int bridge_get_size(int *size)
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgq_size = core::getMachineSize();
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		size[i] = bgq_size[(bgsched::Dimension::Value)i];
+	for (dim=Dimension::A; dim<=Dimension::D; ++dim)
+		size[dim] = bgq_size[dim];
 #else
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		size[i] = DIM_SIZE[i];
+	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+		size[dim] = DIM_SIZE[dim];
 #endif
 
 	return SLURM_SUCCESS;
@@ -180,8 +210,8 @@ extern int bridge_setup_system()
 		for (int x = 0; x < DIM_SIZE[X]; x++)
 			for (int y = 0; y < DIM_SIZE[Y]; y++)
 				for (int z = 0; z < DIM_SIZE[Z]; z++)
-					_setup_ba_mp(&ba_system_ptr->
-						     grid[a][x][y][z], ba_mp);
+					_setup_ba_mp(bgq, &ba_system_ptr->
+						     grid[a][x][y][z]);
 #endif
 
 	return SLURM_SUCCESS;
@@ -190,7 +220,6 @@ extern int bridge_setup_system()
 extern int bridge_block_create(bg_record_t *bg_record)
 {
 	ListIterator itr = NULL;
-	int i;
 	int rc = SLURM_SUCCESS;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
@@ -226,14 +255,16 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	}
 	list_iterator_destroy(itr);
 
-        for (dim=0 ; dim<SYSTEM_DIMENSIONS; dim++) {
+        for (dim=Dimension::A; dim<=Dimension::D; ++dim) {
 		switch (bg_record->conn_type[dim]) {
 		case SELECT_MESH:
-			conn_type[dim] = Block::Connectivity::Mesh;
+			conn_type[dim] =
+				Block::Connectivity::Mesh;
 			break;
 		case SELECT_TORUS:
 		default:
-			conn_type[dim] = Block::Connectivity::Torus;
+			conn_type[dim] =
+				Block::Connectivity::Torus;
 			break;
 		}
 	}
@@ -457,11 +488,12 @@ extern int bridge_block_wait_for_jobs(char *bg_block_id)
 	job_filter.setComputeBlockName(bg_block_id);
 
 	/* I think these are all the states we need. */
+	job_statuses.insert(Job::Setup);
 	job_statuses.insert(Job::Loading);
 	job_statuses.insert(Job::Starting);
 	job_statuses.insert(Job::Running);
-	job_statuses.insert(Job::Ending);
-	job_filter.setStatus(&job_statuses);
+	job_statuses.insert(Job::Cleanup);
+	job_filter.setStatuses(&job_statuses);
 
 	while (1) {
 		if (count)
