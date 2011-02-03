@@ -77,7 +77,7 @@ slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 const char plugin_name[]       	= "BG/Q node selection plugin";
 const char plugin_type[]       	= "select/bgq";
 const uint32_t plugin_id     	= 103;
-const uint32_t plugin_version	= 100;
+const uint32_t plugin_version	= 200;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -247,6 +247,11 @@ extern int select_p_job_init(List job_list)
 #else
 	return SLURM_ERROR;
 #endif
+}
+
+extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+{
+	return false;
 }
 
 /* All initialization is performed by init() */
