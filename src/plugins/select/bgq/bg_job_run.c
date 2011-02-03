@@ -582,7 +582,6 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 static void _term_agent(bg_action_t *bg_action_ptr)
 {
 	_remove_jobs_on_block_and_reset(bg_action_ptr->bg_block_id);
-	list_destroy(job_list);
 }
 
 static void *_block_agent(void *args)

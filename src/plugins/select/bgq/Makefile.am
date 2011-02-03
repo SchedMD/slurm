@@ -23,6 +23,8 @@ select_bgq_la_SOURCES = select_bgq.c bg_enums.h bg_structs.h \
 			dynamic_block.c dynamic_block.h \
 			jobinfo.c jobinfo.h\
 			nodeinfo.c nodeinfo.h
+# force link with g++
+nodist_EXTRA_select_bgq_la_SOURCES = dummy.cxx
 
 select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
 select_bgq_la_LIBADD  = block_allocator/libblock_allocator.la
