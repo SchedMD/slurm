@@ -2,7 +2,7 @@
  *  smap.c - Report overall state the system
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -452,7 +452,7 @@ static int _get_option(void)
 		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
 			grid_line_cnt++;
 			if ((((grid_line_cnt-2) * (grid_win->_maxx-1)) +
-			    max_display) > DIM_SIZE[X]) {
+			    max_display) > dim_size[0]) {
 				grid_line_cnt--;
 				return 0;
 			}
