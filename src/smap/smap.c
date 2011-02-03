@@ -114,11 +114,10 @@ int main(int argc, char *argv[])
 		sleep(10);	/* keep trying to reconnect */
 	}
 
-#if defined(HAVE_BGL) || defined(HAVE_BGP)
-	ba_init(new_node_ptr, 0);
-#endif
 #if defined(HAVE_BGQ) 
 	/* Call something to set DIM_SIZE array */
+#else
+	ba_init(new_node_ptr, 0);
 #endif
 	dim_size = _get_cluster_dim_size();
 
@@ -581,18 +580,6 @@ static int *_get_cluster_dim_size(void)
 	if (dims)
 		return dims;
 
-#if defined(HAVE_BGL) || defined(HAVE_BGP)
-{
-	static int dim_size[3];
-	if (dim_size[0] == 0) {
-		dim_size[0] = DIM_SIZE[X];
-		dim_size[1] = DIM_SIZE[Y];
-		dim_size[2] = DIM_SIZE[Y];
-	}
-	return dim_size;
-}
-#endif
-
 #if defined(HAVE_BGQ)
 /* Once the select/bgq plugin is ready, enable this */
 {
@@ -605,6 +592,16 @@ static int *_get_cluster_dim_size(void)
 	}
 	return dim_size;
 }
+#else
+{
+	static int dim_size[3];
+	if (dim_size[0] == 0) {
+		dim_size[0] = DIM_SIZE[X];
+		dim_size[1] = DIM_SIZE[Y];
+		dim_size[2] = DIM_SIZE[Y];
+	}
+	return dim_size;
+}
 #endif
-	return dims;
+
 }
