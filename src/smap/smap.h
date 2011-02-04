@@ -96,9 +96,10 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
-#include "src/common/slurmdb_defs.h"
-#include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurmdb_defs.h"
+#include "src/common/xstring.h"
 
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 #include "src/plugins/select/bgq/bg_enums.h"
@@ -126,6 +127,32 @@ typedef struct {
 	char *resolve;
 	int verbose;
 } smap_parameters_t;
+
+/*
+ * ba_node_t: node within the allocation system.
+ */
+typedef struct {
+	/* coordinates of midplane */
+	uint16_t coord[HIGHEST_DIMENSIONS];
+	/* color of letter used in smap */
+	int color;
+	/* midplane index used for easy look up of the miplane */
+	int index;
+	/* letter used in smap */
+	char letter;
+	int state;
+	/* set if using this midplane in a block */
+	uint16_t used;
+} ba_node_t;
+
+typedef struct {
+	/* total number of procs on the system */
+	int num_of_proc;
+
+	/* made to hold info about a system, which right now is only a
+	 * grid of ba_nodes*/
+	ba_node_t ***grid;
+} ba_system_t;
 
 extern WINDOW *grid_win;
 extern WINDOW *text_win;

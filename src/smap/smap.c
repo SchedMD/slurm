@@ -52,6 +52,7 @@ static int min_screen_width = 72;
 int text_line_cnt = 0;
 
 smap_parameters_t params;
+ba_system_t *ba_system_ptr;
 
 int quiet_flag = 0;
 int grid_line_cnt = 0;

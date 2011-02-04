@@ -65,14 +65,14 @@ typedef struct {
 static List block_list = NULL;
 
 static void _block_list_del(void *object);
-static int _coord(char coord);
-static int _in_slurm_partition(List slurm_nodes, List bg_nodes);
-static int _list_match_all(void *object, void *key);
-static int _make_nodelist(char *nodes, List nodelist);
-static int _marknodes(db2_block_info_t *block_ptr, int count);
+static int  _coord(char coord);
+static int  _in_slurm_partition(List slurm_nodes, List bg_nodes);
+static int  _list_match_all(void *object, void *key);
+static int  _make_nodelist(char *nodes, List nodelist);
+static void _marknodes(db2_block_info_t *block_ptr, int count);
 static void _nodelist_del(void *object);
 static void _print_header_part(void);
-static int _print_rest(db2_block_info_t *block_ptr);
+static int  _print_rest(db2_block_info_t *block_ptr);
 static int  _print_text_part(partition_info_t *part_ptr,
 			     db2_block_info_t *db2_info_ptr);
 
@@ -159,7 +159,7 @@ extern void get_slurm_part(void)
 		}
 
 		if (!params.commandline) {
-			if (i>=text_line_cnt) {
+			if (i >= text_line_cnt) {
 				part.flags = (int) letters[count%62];
 				wattron(text_win,
 					COLOR_PAIR(colors[count%6]));
@@ -400,65 +400,47 @@ extern void get_bg_part(void)
 	return;
 }
 
-static int _marknodes(db2_block_info_t *block_ptr, int count)
+static void _marknodes(db2_block_info_t *block_ptr, int count)
 {
-	int j=0;
+	int i, j = 0;
 	int start[params.cluster_dims];
 	int end[params.cluster_dims];
-	int number = 0;
-	char *p = '\0';
+	char *nodes = block_ptr->nodes;
 
 	block_ptr->letter_num = count;
-	while (block_ptr->nodes[j] != '\0') {
-		if ((block_ptr->nodes[j] == '['
-		     || block_ptr->nodes[j] == ',')
-		    && (block_ptr->nodes[j+8] == ']'
-			|| block_ptr->nodes[j+8] == ',')
-		    && (block_ptr->nodes[j+4] == 'x'
-			|| block_ptr->nodes[j+4] == '-')) {
-			j++;
-			number = strtoul(block_ptr->nodes + j, &p,
-					 params.cluster_base);
-			hostlist_parse_int_to_array(
-				number, start, params.cluster_dims,
-				params.cluster_base);
-			j += 4;
-			number = strtoul(block_ptr->nodes + j, &p,
-					 params.cluster_base);
-			hostlist_parse_int_to_array(
-				number, end, params.cluster_dims,
-				params.cluster_base);
-			j += 3;
-
-			if (block_ptr->state != RM_PARTITION_FREE)
+	while (nodes[j] != '\0') {
+		int mid = j   + params.cluster_dims + 1;
+		int fin = mid + params.cluster_dims + 1;
+		if (((nodes[j] == '[')   || (nodes[j] == ','))   &&
+		    ((nodes[mid] == 'x') || (nodes[mid] == '-')) &&
+		    ((nodes[fin] == ']') || (nodes[fin] == ','))) {
+			j++;	/* Skip leading '[' or ',' */
+			for (i = 0; i < params.cluster_dims; i++, j++)
+				start[i] = _coord(nodes[j]);
+			j++;	/* Skip middle 'x' or '-' */
+			for (i = 0; i < params.cluster_dims; i++, j++)
+				end[i] = _coord(nodes[j]);
+			if (block_ptr->state != RM_PARTITION_FREE) {
 				block_ptr->size += set_grid_bg(
 					start, end, count, 1);
-			else
+			} else {
 				block_ptr->size += set_grid_bg(
 					start, end, count, 0);
-			if (block_ptr->nodes[j] != ',')
+			}
+			if (nodes[j] != ',')
 				break;
 			j--;
-		} else if ((block_ptr->nodes[j] >= '0'
-			   && block_ptr->nodes[j] <= '9')
-			  || (block_ptr->nodes[j] >= 'A'
-			      && block_ptr->nodes[j] <= 'Z')) {
-
-			number = strtoul(block_ptr->nodes + j, &p,
-					 params.cluster_base);
-			hostlist_parse_int_to_array(
-				number, start, params.cluster_dims,
-				params.cluster_base);
-			j+=3;
-			block_ptr->size += set_grid_bg(
-				start, start, count, 0);
-			if (block_ptr->nodes[j] != ',')
+		} else if (((nodes[j] >= '0') && (nodes[j] <= '9')) ||
+			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
+			for (i = 0; i < params.cluster_dims; i++, j++)
+				start[i] = _coord(nodes[j]);
+			block_ptr->size += set_grid_bg(start, start, count, 0);
+			if (nodes[j] != ',')
 				break;
 			j--;
 		}
 		j++;
 	}
-	return SLURM_SUCCESS;
 }
 
 static void _print_header_part(void)
@@ -709,8 +691,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 			width = text_win->_maxx
 				- main_xcord;
 
-			if (!prefixlen && nodes[i] == '['
-			    && nodes[i - 1] == ',')
+			if (!prefixlen && (nodes[i] == '[') &&
+			    (nodes[i - 1] == ','))
 				prefixlen = i + 1;
 
 			if (nodes[i - 1] == ',' && (width - 12) <= 0) {
@@ -732,8 +714,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 			i++;
 		}
-		if ((params.display == BGPART) && db2_info_ptr
-		   && (db2_info_ptr->ionodes)) {
+		if ((params.display == BGPART) && db2_info_ptr &&
+		    (db2_info_ptr->ionodes)) {
 			mvwprintw(text_win,
 				  main_ycord,
 				  main_xcord, "[%s]",
@@ -844,7 +826,6 @@ static void _nodelist_del(void *object)
 
 static int _list_match_all(void *object, void *key)
 {
-
 	return 1;
 }
 
@@ -912,13 +893,40 @@ static int _print_rest(db2_block_info_t *block_ptr)
 	return SLURM_SUCCESS;
 }
 
+static int *_build_coord(int *current)
+{
+	int i;
+	int *coord = NULL;
+
+	coord = xmalloc(sizeof(int) * params.cluster_dims);
+	for (i = 0; i < params.cluster_dims; i++)
+		coord[i] = current[i];
+	return coord;
+}
+
+/* increment an array, return false if can't be incremented (reached limts) */
+static bool _incr_coord(int *start, int *end, int *current)
+{
+	int i;
+
+	for (i = 0; i < params.cluster_dims; i++) {
+		current[i]++;
+		if (current[i] <= end[i])
+			return true;
+		current[i] = start[i];
+	}
+	return false;
+}
+
 static void _addto_nodelist(List nodelist, int *start, int *end)
 {
 	int *coord = NULL;
-	int a, i, x, y, z;
+	int i;
 
+	coord = xmalloc(sizeof(int) * params.cluster_dims);
 	for (i = 0; i < params.cluster_dims; i++) {
 		xassert(start[i]);
+		coord[i] = start[i];
 		if (end[i] < dim_size[i])
 			continue;
 		fatal("It appears the slurm.conf file has changed since "
@@ -926,36 +934,11 @@ static void _addto_nodelist(List nodelist, int *start, int *end)
 		      "state, please restart the slurmctld.");
 	}
 
-	if (params.cluster_dims == 4) {
-		for (a = start[0]; a <= end[0]; a++) {
-			for (x = start[1]; x <= end[1]; x++) {
-				for (y = start[2]; y <= end[2]; y++) {
-					for (z = start[3]; z <= end[3]; z++) {
-						coord = xmalloc(sizeof(int) *
-								params.cluster_dims);
-						coord[0] = a;
-						coord[1] = x;
-						coord[2] = y;
-						coord[3] = z;
-						list_append(nodelist, coord);
-					}
-				}
-			}
-		}
-	} else {
-		for (x = start[X]; x <= end[X]; x++) {
-			for (y = start[Y]; y <= end[Y]; y++) {
-				for (z = start[Z]; z <= end[Z]; z++) {
-					coord = xmalloc(sizeof(int) *
-						        params.cluster_dims);
-					coord[0] = x;
-					coord[1] = y;
-					coord[2] = z;
-					list_append(nodelist, coord);
-				}
-			}
-		}
-	}
+	do {
+		list_append(nodelist, _build_coord(coord));
+	} while (_incr_coord(start, end, coord));
+
+	xfree(coord);
 }
 
 static int _coord(char coord)
@@ -975,6 +958,7 @@ static int _make_nodelist(char *nodes, List nodelist)
 
 	if (!nodelist)
 		nodelist = list_create(_nodelist_del);
+
 	while (nodes[j] != '\0') {
 		int mid = j   + params.cluster_dims + 1;
 		int fin = mid + params.cluster_dims + 1;
@@ -1002,5 +986,6 @@ static int _make_nodelist(char *nodes, List nodelist)
 		}
 		j++;
 	}
+
 	return 1;
 }
