@@ -150,18 +150,18 @@ char *slurm_sprint_block_info(
 
 	/****** Line 3 ******/
 	if(block_ptr->ionodes)
-		xstrfmtcat(out, "BasePartitions=%s[%s] BPIndices=",
+		xstrfmtcat(out, "MidPlanes=%s[%s] MPIndices=",
 			   block_ptr->nodes, block_ptr->ionodes);
 	else
-		xstrfmtcat(out, "BasePartitions=%s BPIndices=",
+		xstrfmtcat(out, "MidPlanes=%s MPIndices=",
 			   block_ptr->nodes);
 	for (j = 0;
-	     (block_ptr->bp_inx && (block_ptr->bp_inx[j] != -1));
+	     (block_ptr->mp_inx && (block_ptr->mp_inx[j] != -1));
 	     j+=2) {
 		if (j > 0)
 			xstrcat(out, ",");
-		xstrfmtcat(out, "%d-%d", block_ptr->bp_inx[j],
-			   block_ptr->bp_inx[j+1]);
+		xstrfmtcat(out, "%d-%d", block_ptr->mp_inx[j],
+			   block_ptr->mp_inx[j+1]);
 	}
 	xstrcat(out, line_end);
 

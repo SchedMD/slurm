@@ -54,8 +54,8 @@ typedef struct {
 #ifdef HAVE_BGL
 	List blrts_list;
 #endif
-	uint16_t bp_node_cnt;
-	uint16_t bp_nodecard_cnt;
+	uint16_t mp_node_cnt;
+	uint16_t mp_nodecard_cnt;
 	char *bridge_api_file;
 	uint16_t bridge_api_verb;
 	uint32_t slurm_debug_flags;
@@ -75,7 +75,7 @@ typedef struct {
 	uint16_t nodecard_ionode_cnt;
 	uint16_t numpsets;
 	uint16_t cpu_ratio;
-	uint32_t cpus_per_bp;
+	uint32_t cpus_per_mp;
 	uint16_t quarter_node_cnt;
 	uint16_t quarter_ionode_cnt;
 	List ramdisk_list;

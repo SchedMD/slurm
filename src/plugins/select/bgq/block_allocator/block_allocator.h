@@ -184,6 +184,8 @@ extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
 extern uint16_t ba_deny_pass;
 extern ba_system_t *ba_system_ptr;
+extern int cluster_dims;
+extern int cluster_base;
 
 /* must xfree return of this */
 extern char *ba_passthroughs_string(uint16_t passthrough);

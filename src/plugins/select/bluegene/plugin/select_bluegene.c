@@ -159,7 +159,7 @@ static List _get_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("BasePartitionNodeCnt");
-	key_pair->value = xstrdup_printf("%u", bg_conf->bp_node_cnt);
+	key_pair->value = xstrdup_printf("%u", bg_conf->mp_node_cnt);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -472,8 +472,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 #ifdef HAVE_BG_L_P
 	if (node_cnt>0 && bg_conf)
-		if (node_ptr->cpus >= bg_conf->bp_node_cnt)
-			bg_conf->cpus_per_bp = node_ptr->cpus;
+		if (node_ptr->cpus >= bg_conf->mp_node_cnt)
+			bg_conf->cpus_per_mp = node_ptr->cpus;
 
 	return SLURM_SUCCESS;
 #else
@@ -502,9 +502,9 @@ extern int select_p_block_init(List part_list)
 		while ((part_ptr = list_next(itr))) {
 			part_ptr->max_nodes = part_ptr->max_nodes_orig;
 			part_ptr->min_nodes = part_ptr->min_nodes_orig;
-			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
+			select_p_alter_node_cnt(SELECT_SET_MP_CNT,
 						&part_ptr->max_nodes);
-			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
+			select_p_alter_node_cnt(SELECT_SET_MP_CNT,
 						&part_ptr->min_nodes);
 		}
 		list_iterator_destroy(itr);
@@ -549,7 +549,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 #ifdef HAVE_BG_L_P
 	/* submit_job - is there a block where we have:
 	 * 1) geometry requested
-	 * 2) min/max nodes (BPs) requested
+	 * 2) min/max nodes (MPs) requested
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
 	 *
 	 * note: we don't have to worry about security at this level
@@ -1253,7 +1253,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	int i;
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 
-	if (!bg_conf->bp_node_cnt) {
+	if (!bg_conf->mp_node_cnt) {
 		fatal("select_p_alter_node_cnt: This can't be called "
 		      "before init");
 	}
@@ -1261,22 +1261,22 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	switch (type) {
 	case SELECT_GET_NODE_SCALING:
 		if ((*nodes) != INFINITE)
-			(*nodes) = bg_conf->bp_node_cnt;
+			(*nodes) = bg_conf->mp_node_cnt;
 		break;
 	case SELECT_GET_NODE_CPU_CNT:
 		if ((*cpus) != (uint16_t)INFINITE)
 			(*cpus) = bg_conf->cpu_ratio;
 		break;
-	case SELECT_GET_BP_CPU_CNT:
+	case SELECT_GET_MP_CPU_CNT:
 		if ((*nodes) != INFINITE)
-			(*nodes) = bg_conf->cpus_per_bp;
+			(*nodes) = bg_conf->cpus_per_mp;
 		break;
-	case SELECT_SET_BP_CNT:
+	case SELECT_SET_MP_CNT:
 		if (((*nodes) == INFINITE) || ((*nodes) == NO_VAL))
 			tmp = (*nodes);
-		else if ((*nodes) > bg_conf->bp_node_cnt) {
+		else if ((*nodes) > bg_conf->mp_node_cnt) {
 			tmp = (*nodes);
-			tmp /= bg_conf->bp_node_cnt;
+			tmp /= bg_conf->mp_node_cnt;
 			if (tmp < 1)
 				tmp = 1;
 		} else
@@ -1290,11 +1290,11 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			 * don't scale up this value. */
 			break;
 		}
-		(*nodes) *= bg_conf->bp_node_cnt;
+		(*nodes) *= bg_conf->mp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MAX_OFFSET:
 		if ((*nodes) != INFINITE)
-			(*nodes) *= bg_conf->bp_node_cnt;
+			(*nodes) *= bg_conf->mp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
 		get_select_jobinfo(job_desc->select_jobinfo->data,
@@ -1318,7 +1318,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				job_desc->min_nodes *=
 					(uint16_t)req_geometry[i];
-			job_desc->min_nodes *= bg_conf->bp_node_cnt;
+			job_desc->min_nodes *= bg_conf->mp_node_cnt;
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
 
@@ -1338,26 +1338,26 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = job_desc->min_nodes;
 
 		/* See if min_nodes is greater than one base partition */
-		if (job_desc->min_nodes > bg_conf->bp_node_cnt) {
+		if (job_desc->min_nodes > bg_conf->mp_node_cnt) {
 			/*
 			 * if it is make sure it is a factor of
-			 * bg_conf->bp_node_cnt, if it isn't make it
+			 * bg_conf->mp_node_cnt, if it isn't make it
 			 * that way
 			 */
-			tmp = job_desc->min_nodes % bg_conf->bp_node_cnt;
+			tmp = job_desc->min_nodes % bg_conf->mp_node_cnt;
 			if (tmp > 0)
 				job_desc->min_nodes +=
-					(bg_conf->bp_node_cnt-tmp);
+					(bg_conf->mp_node_cnt-tmp);
 		}
-		tmp = job_desc->min_nodes / bg_conf->bp_node_cnt;
+		tmp = job_desc->min_nodes / bg_conf->mp_node_cnt;
 
-		/* this means it is greater or equal to one bp */
+		/* this means it is greater or equal to one mp */
 		if (tmp > 0) {
 			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
-			job_desc->min_cpus = bg_conf->cpus_per_bp * tmp;
+			job_desc->min_cpus = bg_conf->cpus_per_mp * tmp;
 		} else {
 #ifdef HAVE_BGL
 			if (job_desc->min_nodes <= bg_conf->nodecard_node_cnt
@@ -1370,19 +1370,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					bg_conf->quarter_node_cnt;
 			else
 				job_desc->min_nodes =
-					bg_conf->bp_node_cnt;
+					bg_conf->mp_node_cnt;
 
 			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 
-			tmp = bg_conf->bp_node_cnt/job_desc->min_nodes;
+			tmp = bg_conf->mp_node_cnt/job_desc->min_nodes;
 
-			job_desc->min_cpus = bg_conf->cpus_per_bp/tmp;
+			job_desc->min_cpus = bg_conf->cpus_per_mp/tmp;
 			job_desc->min_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
-			while (i <= bg_conf->bp_node_cnt) {
+			while (i <= bg_conf->mp_node_cnt) {
 				if (job_desc->min_nodes <= i) {
 					job_desc->min_nodes = i;
 					break;
@@ -1400,18 +1400,18 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 #endif
 		}
 
-		if (job_desc->max_nodes > bg_conf->bp_node_cnt) {
-			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
+		if (job_desc->max_nodes > bg_conf->mp_node_cnt) {
+			tmp = job_desc->max_nodes % bg_conf->mp_node_cnt;
 			if (tmp > 0)
 				job_desc->max_nodes +=
-					(bg_conf->bp_node_cnt-tmp);
+					(bg_conf->mp_node_cnt-tmp);
 		}
-		tmp = job_desc->max_nodes / bg_conf->bp_node_cnt;
+		tmp = job_desc->max_nodes / bg_conf->mp_node_cnt;
 
 		if (tmp > 0) {
 			job_desc->max_nodes = tmp;
 			job_desc->max_cpus =
-				job_desc->max_nodes * bg_conf->cpus_per_bp;
+				job_desc->max_nodes * bg_conf->cpus_per_mp;
 			tmp = NO_VAL;
 		} else {
 #ifdef HAVE_BGL
@@ -1425,14 +1425,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					bg_conf->quarter_node_cnt;
 			else
 				job_desc->max_nodes =
-					bg_conf->bp_node_cnt;
+					bg_conf->mp_node_cnt;
 
-			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
-			job_desc->max_cpus = bg_conf->cpus_per_bp/tmp;
+			tmp = bg_conf->mp_node_cnt/job_desc->max_nodes;
+			job_desc->max_cpus = bg_conf->cpus_per_mp/tmp;
 			job_desc->max_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
-			while (i <= bg_conf->bp_node_cnt) {
+			while (i <= bg_conf->mp_node_cnt) {
 				if (job_desc->max_nodes <= i) {
 					job_desc->max_nodes = i;
 					break;

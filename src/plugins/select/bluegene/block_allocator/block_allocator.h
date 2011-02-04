@@ -193,16 +193,16 @@ typedef struct {
 } ba_system_t;
 
 /* Used to Keep track of where the Base Blocks are at all times
-   Rack and Midplane is the bp_id and XYZ is the coords.
+   Rack and Midplane is the mp_id and XYZ is the coords.
 */
 typedef struct {
-	char *bp_id;
+	char *mp_id;
 	uint16_t coord[HIGHEST_DIMENSIONS];
-} ba_bp_map_t;
+} ba_mp_map_t;
 
 /* Global */
 extern my_bluegene_t *bg;
-extern List bp_map_list; /* list used for conversion from XYZ to Rack
+extern List mp_map_list; /* list used for conversion from XYZ to Rack
 			  * midplane */
 extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
 					  * each dimension */
@@ -407,28 +407,28 @@ extern void reset_ba_system(bool track_down_nodes);
  * IN: hostlist of midplanes we do not want
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Note: Need to call reset_all_removed_bps before starting another
+ * Note: Need to call reset_all_removed_mps before starting another
  * allocation attempt after
  */
-extern int removable_set_bps(char *bps);
+extern int removable_set_mps(char *mps);
 
 /*
  * Resets the virtual system to the pervious state before calling
- * removable_set_bps, or set_all_bps_except.
+ * removable_set_mps, or set_all_mps_except.
  */
-extern int reset_all_removed_bps();
+extern int reset_all_removed_mps();
 
 /*
  * IN: hostlist of midplanes we do not want
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Need to call rest_all_removed_bps before starting another
- * allocation attempt.  If possible use removable_set_bps since it is
+ * Need to call rest_all_removed_mps before starting another
+ * allocation attempt.  If possible use removable_set_mps since it is
  * faster. It does basically the opposite of this function. If you
  * have to come up with this list though it is faster to use this
  * function than if you have to call bitmap2node_name since that is slow.
  */
-extern int set_all_bps_except(char *bps);
+extern int set_all_mps_except(char *mps);
 
 /*
  * set values of every grid point (used in smap)
@@ -446,17 +446,17 @@ extern char *bg_err_str(status_t inx);
 /*
  * Set up the map for resolving
  */
-extern int set_bp_map(void);
+extern int set_mp_map(void);
 
 /*
  * find a base blocks bg location based on Rack Midplane name R000 not R00-M0
  */
-extern uint16_t *find_bp_loc(char* bp_id);
+extern uint16_t *find_mp_loc(char* mp_id);
 
 /*
  * find a rack/midplace location based on XYZ coords
  */
-extern char *find_bp_rack_mid(char* xyz);
+extern char *find_mp_rack_mid(char* xyz);
 
 /*
  * set the used wires in the virtual system for a block from the real system

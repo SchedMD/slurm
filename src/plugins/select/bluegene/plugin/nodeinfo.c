@@ -314,16 +314,16 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 				nodeinfo->subgrp_list,
 				state, bg_conf->numpsets);
 
-			if (subgrp->node_cnt < bg_conf->bp_node_cnt) {
+			if (subgrp->node_cnt < bg_conf->mp_node_cnt) {
 				if (bg_record->node_cnt
-				    < bg_conf->bp_node_cnt) {
+				    < bg_conf->mp_node_cnt) {
 					bit_or(subgrp->bitmap,
 					       bg_record->ionode_bitmap);
 					subgrp->node_cnt += bg_record->node_cnt;
 				} else {
 					bit_nset(subgrp->bitmap,
 						 0, (bg_conf->numpsets-1));
-					subgrp->node_cnt = bg_conf->bp_node_cnt;
+					subgrp->node_cnt = bg_conf->mp_node_cnt;
 				}
 			}
 		}

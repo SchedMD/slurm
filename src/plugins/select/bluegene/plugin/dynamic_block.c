@@ -177,7 +177,7 @@ extern List create_dynamic_block(List block_list,
 	if (request->avail_mp_bitmap) {
 		bitstr_t *bitmap = bit_alloc(node_record_count);
 
-		/* we want the bps that aren't in this partition to
+		/* we want the mps that aren't in this partition to
 		 * mark them as used
 		 */
 		bit_or(bitmap, request->avail_mp_bitmap);
@@ -185,12 +185,12 @@ extern List create_dynamic_block(List block_list,
 		unusable_nodes = bitmap2node_name(bitmap);
 
 		//info("not using %s", nodes);
-		removable_set_bps(unusable_nodes);
+		removable_set_mps(unusable_nodes);
 
 		FREE_NULL_BITMAP(bitmap);
 	}
 
-	if (request->size==1 && cnodes < bg_conf->bp_node_cnt) {
+	if (request->size==1 && cnodes < bg_conf->mp_node_cnt) {
 		switch(cnodes) {
 #ifdef HAVE_BGL
 		case 32:
@@ -324,10 +324,10 @@ extern List create_dynamic_block(List block_list,
 		/* Here we are only looking for the first
 		   block on the midplane.  So either the count
 		   is greater or equal than
-		   bg_conf->bp_node_cnt or the first bit is
+		   bg_conf->mp_node_cnt or the first bit is
 		   set in the ionode_bitmap.
 		*/
-		if (bg_record->node_cnt < bg_conf->bp_node_cnt) {
+		if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
 			bool found = 0;
 			if (bit_ffs(bg_record->ionode_bitmap) != 0)
 				continue;
@@ -351,12 +351,12 @@ extern List create_dynamic_block(List block_list,
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("removing %s for request %d",
 			     bg_record->nodes, request->size);
-		if (bg_record->node_cnt < bg_conf->bp_node_cnt)
+		if (bg_record->node_cnt < bg_conf->mp_node_cnt)
 			is_small = 1;
 		remove_block(bg_record->bg_block_list, (int)NO_VAL, is_small);
 		/* need to set any unusable nodes that this last block
 		   used */
-		removable_set_bps(unusable_nodes);
+		removable_set_mps(unusable_nodes);
 		rc = SLURM_SUCCESS;
 		if (results)
 			list_flush(results);
@@ -391,7 +391,7 @@ setup_records:
 	}
 
 finished:
-	reset_all_removed_bps();
+	reset_all_removed_mps();
 
 	xfree(unusable_nodes);
 	xfree(request->save_name);
@@ -461,7 +461,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 			}
 		}
 		list_append(found_record->bg_block_list, new_ba_node);
-		found_record->bp_count = 1;
+		found_record->mp_count = 1;
 		found_record->nodes = xstrdup_printf(
 			"%s%c%c%c",
 			bg_conf->slurm_node_prefix,
@@ -499,7 +499,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int cnodes)
 {
-	bool full_bp = false;
+	bool full_mp = false;
 	bitoff_t start = 0;
 	blockreq_t blockreq;
 
@@ -538,7 +538,7 @@ static int _split_block(List block_list, List new_blocks,
 			goto finished;
 			break;
 		}
-		full_bp = true;
+		full_mp = true;
 		break;
 #else
 	case 16:
@@ -654,12 +654,12 @@ static int _split_block(List block_list, List new_blocks,
 			goto finished;
 			break;
 		}
-		full_bp = true;
+		full_mp = true;
 		break;
 #endif
 	}
 
-	if (!full_bp && bg_record->ionode_bitmap) {
+	if (!full_mp && bg_record->ionode_bitmap) {
 		if ((start = bit_ffs(bg_record->ionode_bitmap)) == -1)
 			start = 0;
 	}
@@ -696,7 +696,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	char tmp_char[256];
 	bitstr_t *ionodes = bit_alloc(bg_conf->numpsets);
 	int cnodes = request->procs / bg_conf->cpu_ratio;
-	int curr_bp_bit = -1;
+	int curr_mp_bit = -1;
 
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("cpu_count=%d cnodes=%d o_free=%d o_small=%d",
@@ -746,7 +746,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 
 		/* check small blocks first */
-		if (only_small && (bg_record->node_cnt > bg_conf->bp_node_cnt))
+		if (only_small && (bg_record->node_cnt > bg_conf->mp_node_cnt))
 			continue;
 
 		if (request->avail_mp_bitmap &&
@@ -779,15 +779,15 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			bitstr_t *bitstr = NULL;
 			int num_over = 0;
 			int num_cnodes = bg_record->node_cnt;
-			int rec_bp_bit = bit_ffs(bg_record->bitmap);
+			int rec_mp_bit = bit_ffs(bg_record->bitmap);
 
-			if (curr_bp_bit != rec_bp_bit) {
+			if (curr_mp_bit != rec_mp_bit) {
 				/* Got a different node than
 				 * previously, since the list should
 				 * be in order of nodes for small blocks
 				 * just clear here since the last node
 				 * doesn't have any more. */
-				curr_bp_bit = rec_bp_bit;
+				curr_mp_bit = rec_mp_bit;
 				bit_nclear(ionodes, 0, (bg_conf->numpsets-1));
 				total_cnode_cnt = 0;
 			}

@@ -375,12 +375,12 @@ enum select_print_mode {
 enum select_node_cnt {
 	SELECT_GET_NODE_SCALING,      /* Give scaling factor for node count */
 	SELECT_GET_NODE_CPU_CNT,      /* Give how many cpus are on a node */
-	SELECT_GET_BP_CPU_CNT,        /* Give how many cpus are on a
+	SELECT_GET_MP_CPU_CNT,        /* Give how many cpus are on a
 				       * base partition */
 	SELECT_APPLY_NODE_MIN_OFFSET, /* Apply min offset to variable */
 	SELECT_APPLY_NODE_MAX_OFFSET, /* Apply max offset to variable */
 	SELECT_SET_NODE_CNT,	      /* Set altered node cnt */
-	SELECT_SET_BP_CNT             /* Given a node cnt return the
+	SELECT_SET_MP_CNT             /* Given a node cnt return the
 				       * base partition count */
 };
 
@@ -1504,7 +1504,7 @@ typedef struct partition_info_msg {
 typedef struct {
 	char *bg_block_id;
 	char *blrtsimage;       /* BlrtsImage for this block */
-	int *bp_inx;            /* list index pairs into node_table for *nodes:
+	int *mp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t conn_type;

@@ -49,13 +49,13 @@ List bg_sys_free = NULL;
 List bg_sys_allocated = NULL;
 
 /**
- * _get_bp: get the BP at location loc
+ * _get_mp: get the MP at location loc
  *
  * IN - bg: pointer to preinitialized bg pointer
- * IN - bp: pointer to preinitailized rm_element_t that will
- *      hold the BP that we resolve to.
- * IN - loc: location of the desired BP
- * OUT - bp: will point to BP at location loc
+ * IN - mp: pointer to preinitailized rm_element_t that will
+ *      hold the MP that we resolve to.
+ * IN - loc: location of the desired MP
+ * OUT - mp: will point to MP at location loc
  * OUT - rc: error code (0 = success)
  */
 
@@ -156,7 +156,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 		error("bridge_set_data(RM_PartitionConnection): %s",
 		      bg_err_str(rc));
 
-	/* rc = bg_conf->bp_node_cnt/bg_record->node_cnt; */
+	/* rc = bg_conf->mp_node_cnt/bg_record->node_cnt; */
 /* 	if (rc > 1) */
 /* 		send_psets = bg_conf->numpsets/rc; */
 
@@ -297,7 +297,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 	int i=0;
 	int rc;
 	rm_nodecard_list_t *ncard_list = NULL;
-	rm_BP_t *curr_bp = NULL;
+	rm_BP_t *curr_mp = NULL;
 	rm_nodecard_t *ncard2;
 
 	xassert(block_ptr);
@@ -313,25 +313,25 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 
 	if ((rc = bridge_get_data(block_ptr,
 				  RM_PartitionFirstBP,
-				  &curr_bp))
+				  &curr_mp))
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_PartitionFirstBP): %s",
 		      bg_err_str(rc));
 	}
-	if ((rc = bridge_get_data(curr_bp, RM_BPID, &bp_id))
+	if ((rc = bridge_get_data(curr_mp, RM_BPID, &mp_id))
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_BPID): %d", rc);
 		return SLURM_ERROR;
 	}
 
-	if ((rc = bridge_get_nodecards(bp_id, &ncard_list))
+	if ((rc = bridge_get_nodecards(mp_id, &ncard_list))
 	    != STATUS_OK) {
 		error("bridge_get_nodecards(%s): %d",
-		      bp_id, rc);
-		free(bp_id);
+		      mp_id, rc);
+		free(mp_id);
 		return SLURM_ERROR;
 	}
-	free(bp_id);
+	free(mp_id);
 	if ((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_NodeCardListSize): %s",
@@ -393,7 +393,7 @@ extern int configure_block(bg_record_t *bg_record)
 #endif
 	_pre_allocate(bg_record);
 
-	if (bg_record->cpu_cnt < bg_conf->cpus_per_bp)
+	if (bg_record->cpu_cnt < bg_conf->cpus_per_mp)
 		configure_small_block(bg_record);
 	else
 		configure_block_switches(bg_record);
@@ -410,9 +410,9 @@ int read_bg_blocks(List curr_block_list)
 {
 	int rc = SLURM_SUCCESS;
 
-	int bp_cnt, i, nc_cnt, io_cnt;
-	rm_element_t *bp_ptr = NULL;
-	rm_bp_id_t bpid;
+	int mp_cnt, i, nc_cnt, io_cnt;
+	rm_element_t *mp_ptr = NULL;
+	rm_bp_id_t mpid;
 	rm_partition_t *block_ptr = NULL;
 	char node_name_tmp[255], *user_name = NULL;
 	bg_record_t *bg_record = NULL;
@@ -505,35 +505,35 @@ int read_bg_blocks(List curr_block_list)
 #ifndef HAVE_BGL
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionSize,
-					  &bp_cnt))
+					  &mp_cnt))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSize): %s",
 			      bg_err_str(rc));
 			continue;
 		}
 
-		if (bp_cnt==0)
+		if (mp_cnt==0)
 			continue;
 
-		bg_record->node_cnt = bp_cnt;
+		bg_record->node_cnt = mp_cnt;
 		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
 
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionBPNum,
-					  &bp_cnt))
+					  &mp_cnt))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_BPNum): %s",
 			      bg_err_str(rc));
 			continue;
 		}
 
-		if (bp_cnt==0)
+		if (mp_cnt==0)
 			continue;
-		bg_record->bp_count = bp_cnt;
+		bg_record->mp_count = mp_cnt;
 
-		debug3("has %d BPs", bg_record->bp_count);
+		debug3("has %d MPs", bg_record->mp_count);
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 					  &bg_record->switch_count))
@@ -689,10 +689,10 @@ int read_bg_blocks(List curr_block_list)
 			       bg_record->ionodes);
 		} else {
 #ifdef HAVE_BGL
-			bg_record->cpu_cnt = bg_conf->cpus_per_bp
-				* bg_record->bp_count;
-			bg_record->node_cnt =  bg_conf->bp_node_cnt
-				* bg_record->bp_count;
+			bg_record->cpu_cnt = bg_conf->cpus_per_mp
+				* bg_record->mp_count;
+			bg_record->node_cnt =  bg_conf->mp_node_cnt
+				* bg_record->mp_count;
 #endif
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionConnection,
@@ -718,11 +718,11 @@ int read_bg_blocks(List curr_block_list)
 
 		hostlist = hostlist_create(NULL);
 
-		for (i=0; i<bp_cnt; i++) {
+		for (i=0; i<mp_cnt; i++) {
 			if (i) {
 				if ((rc = bridge_get_data(block_ptr,
 							  RM_PartitionNextBP,
-							  &bp_ptr))
+							  &mp_ptr))
 				    != STATUS_OK) {
 					error("bridge_get_data(RM_NextBP): %s",
 					      bg_err_str(rc));
@@ -732,7 +732,7 @@ int read_bg_blocks(List curr_block_list)
 			} else {
 				if ((rc = bridge_get_data(block_ptr,
 							  RM_PartitionFirstBP,
-							  &bp_ptr))
+							  &mp_ptr))
 				    != STATUS_OK) {
 					error("bridge_get_data"
 					      "(RM_FirstBP): %s",
@@ -741,7 +741,7 @@ int read_bg_blocks(List curr_block_list)
 					break;
 				}
 			}
-			if ((rc = bridge_get_data(bp_ptr, RM_BPID, &bpid))
+			if ((rc = bridge_get_data(mp_ptr, RM_BPID, &mpid))
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_BPID): %s",
 				      bg_err_str(rc));
@@ -749,18 +749,18 @@ int read_bg_blocks(List curr_block_list)
 				break;
 			}
 
-			if (!bpid) {
-				error("No BP ID was returned from database");
+			if (!mpid) {
+				error("No MP ID was returned from database");
 				continue;
 			}
 
-			coord = find_bp_loc(bpid);
+			coord = find_bp_loc(mpid);
 
 			if (!coord) {
 				fatal("Could not find coordinates for "
-				      "BP ID %s", (char *) bpid);
+				      "MP ID %s", (char *) mpid);
 			}
-			free(bpid);
+			free(mpid);
 
 
 			snprintf(node_name_tmp,
@@ -811,12 +811,12 @@ int read_bg_blocks(List curr_block_list)
 		}
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
-					  &bp_cnt)) != STATUS_OK) {
+					  &mp_cnt)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionUsersNum): %s",
 			      bg_err_str(rc));
 			continue;
 		} else {
-			if (bp_cnt==0) {
+			if (mp_cnt==0) {
 
 				bg_record->user_name =
 					xstrdup(bg_conf->slurm_user_name);
@@ -1082,7 +1082,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	bitmap = bit_alloc(node_record_count);
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
-		/* we only want to use bps that are in partitions */
+		/* we only want to use mps that are in partitions */
 		if (!part_ptr->node_bitmap) {
 			debug4("Partition %s doesn't have any nodes in it.",
 			       part_ptr->name);
@@ -1111,17 +1111,17 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		bit_nclear(ionode_bitmap, 0, bit_size(ionode_bitmap) - 1);
 
 		j = 0;
-		while (block_info->bp_inx[j] >= 0) {
-			if (block_info->bp_inx[j+1]
+		while (block_info->mp_inx[j] >= 0) {
+			if (block_info->mp_inx[j+1]
 			    >= node_record_count) {
 				fatal("Job state recovered incompatible with "
-				      "bluegene.conf. bp=%u state=%d",
+				      "bluegene.conf. mp=%u state=%d",
 				      node_record_count,
-				      block_info->bp_inx[j+1]);
+				      block_info->mp_inx[j+1]);
 			}
 			bit_nset(node_bitmap,
-				 block_info->bp_inx[j],
-				 block_info->bp_inx[j+1]);
+				 block_info->mp_inx[j],
+				 block_info->mp_inx[j+1]);
 			j += 2;
 		}
 
@@ -1158,15 +1158,15 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		bg_record->state = block_info->state;
 		bg_record->job_running = NO_JOB_RUNNING;
 
-		bg_record->bp_count = bit_set_count(node_bitmap);
+		bg_record->mp_count = bit_set_count(node_bitmap);
 		bg_record->node_cnt = block_info->node_cnt;
-		if (bg_conf->bp_node_cnt > bg_record->node_cnt) {
-			ionodes = bg_conf->bp_node_cnt
+		if (bg_conf->mp_node_cnt > bg_record->node_cnt) {
+			ionodes = bg_conf->mp_node_cnt
 				/ bg_record->node_cnt;
-			bg_record->cpu_cnt = bg_conf->cpus_per_bp / ionodes;
+			bg_record->cpu_cnt = bg_conf->cpus_per_mp / ionodes;
 		} else {
-			bg_record->cpu_cnt = bg_conf->cpus_per_bp
-				* bg_record->bp_count;
+			bg_record->cpu_cnt = bg_conf->cpus_per_mp
+				* bg_record->mp_count;
 		}
 #ifdef HAVE_BGL
 		bg_record->node_use = block_info->node_use;
@@ -1204,11 +1204,11 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			reset_ba_system(false);
 		}
 
-		removable_set_bps(non_usable_nodes);
-		/* we want the bps that aren't
+		removable_set_mps(non_usable_nodes);
+		/* we want the mps that aren't
 		 * in this record to mark them as used
 		 */
-		if (set_all_bps_except(bg_record->nodes)
+		if (set_all_mps_except(bg_record->nodes)
 		    != SLURM_SUCCESS)
 			fatal("something happened in "
 			      "the load of %s.  "
@@ -1221,7 +1221,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 				    bg_record->start,
 				    geo,
 				    bg_record->conn_type);
-		reset_all_removed_bps();
+		reset_all_removed_mps();
 
 		if (!name) {
 			error("I was unable to "

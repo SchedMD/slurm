@@ -42,10 +42,10 @@
 
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-static int _get_bp_by_location(my_bluegene_t* my_bg,
+static int _get_mp_by_location(my_bluegene_t* my_bg,
 			       uint16_t* curr_coord,
-			       rm_BP_t** bp);
-static int _get_switches_by_bpid(my_bluegene_t* my_bg, const char *bpid,
+			       rm_BP_t** mp);
+static int _get_switches_by_mpid(my_bluegene_t* my_bg, const char *mpid,
 				 rm_switch_t **curr_switch);
 
 //static int _set_switch(rm_switch_t* curr_switch, ba_connection_t *int_wire);
@@ -57,41 +57,41 @@ static int _used_switches(ba_node_t *ba_node);
 
 /**
  * this is just stupid.  there are some implicit rules for where
- * "NextBP" goes to, but we don't know, so we have to do this.
+ * "NextMP" goes to, but we don't know, so we have to do this.
  */
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-static int _get_bp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
-			       rm_BP_t** bp)
+static int _get_mp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
+			       rm_BP_t** mp)
 {
-	static int bp_num = 0;
+	static int mp_num = 0;
 	int i, rc;
 	rm_location_t loc;
 
-	if (!bp_num) {
-		if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num))
+	if (!mp_num) {
+		if ((rc = bridge_get_data(my_bg, RM_BPNum, &mp_num))
 		    != STATUS_OK) {
 			fatal("bridge_get_data: RM_BPNum: %s", bg_err_str(rc));
 			return SLURM_ERROR;
 		}
 	}
 
-	for (i=0; i<bp_num; i++){
+	for (i=0; i<mp_num; i++){
 		if (i) {
-			if ((rc = bridge_get_data(my_bg, RM_NextBP, bp))
+			if ((rc = bridge_get_data(my_bg, RM_NextBP, mp))
 			    != STATUS_OK) {
 				fatal("bridge_get_data: RM_NextBP: %s",
 				      bg_err_str(rc));
 				return SLURM_ERROR;
 			}
 		} else {
-			if ((rc = bridge_get_data(my_bg, RM_FirstBP, bp))
+			if ((rc = bridge_get_data(my_bg, RM_FirstBP, mp))
 			    != STATUS_OK) {
 				fatal("bridge_get_data: RM_FirstBP: %s",
 				      bg_err_str(rc));
 				return SLURM_ERROR;
 			}
 		}
-		if ((rc = bridge_get_data(*bp, RM_BPLoc, &loc)) != STATUS_OK) {
+		if ((rc = bridge_get_data(*mp, RM_BPLoc, &loc)) != STATUS_OK) {
 			fatal("bridge_get_data: RM_BPLoc: %s", bg_err_str(rc));
 			return SLURM_ERROR;
 		}
@@ -103,19 +103,19 @@ static int _get_bp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 		}
 	}
 
-	// error("_get_bp_by_location: could not find specified bp.");
+	// error("_get_mp_by_location: could not find specified mp.");
 	return SLURM_ERROR;
 }
 
-static int _get_switches_by_bpid(
-	my_bluegene_t* my_bg, const char *bpid,
+static int _get_switches_by_mpid(
+	my_bluegene_t* my_bg, const char *mpid,
 	rm_switch_t *coord_switch[SYSTEM_DIMENSIONS])
 {
 	static int switch_num = 0;
 	rm_switch_t *curr_switch = NULL;
 	int i, rc;
-	int found_bpid = 0;
-	char *curr_bpid = NULL;
+	int found_mpid = 0;
+	char *curr_mpid = NULL;
 
 	if (!switch_num) {
 		if ((rc = bridge_get_data(my_bg, RM_SwitchNum, &switch_num))
@@ -145,25 +145,25 @@ static int _get_switches_by_bpid(
 			}
 		}
 		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
-					  &curr_bpid)) != STATUS_OK) {
+					  &curr_mpid)) != STATUS_OK) {
 			fatal("bridge_get_data: RM_SwitchBPID: %s",
 			      bg_err_str(rc));
 		}
 
-		if (!curr_bpid) {
+		if (!curr_mpid) {
 			error("No BP ID was returned from database");
 			continue;
 		}
 
-		if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
-			coord_switch[found_bpid] = curr_switch;
-			found_bpid++;
-			if (found_bpid==SYSTEM_DIMENSIONS) {
-				free(curr_bpid);
+		if (!strcasecmp((char *)mpid, (char *)curr_mpid)) {
+			coord_switch[found_mpid] = curr_switch;
+			found_mpid++;
+			if (found_mpid==SYSTEM_DIMENSIONS) {
+				free(curr_mpid);
 				return SLURM_SUCCESS;
 			}
 		}
-		free(curr_bpid);
+		free(curr_mpid);
 	}
 	return SLURM_ERROR;
 }
@@ -336,8 +336,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	bool small = true;
 	ba_node_t* ba_node = NULL;
-	rm_BP_t *curr_bp = NULL;
-	rm_bp_id_t bp_id = NULL;
+	rm_BP_t *curr_mp = NULL;
+	rm_bp_id_t mp_id = NULL;
 #ifndef HAVE_BGL
 	rm_nodecard_id_t nc_char = NULL;
 #endif
@@ -346,17 +346,17 @@ extern int configure_small_block(bg_record_t *bg_record)
 	rm_nodecard_t *ncard;
 	rm_nodecard_list_t *ncard_list = NULL;
 	int num, i;
-	int use_nc[bg_conf->bp_nodecard_cnt];
+	int use_nc[bg_conf->mp_nodecard_cnt];
 	double nc_pos = 0;
 #endif
 	xassert(bg_record->ionode_bitmap);
-	if (bg_record->bp_count != 1) {
-		error("Requesting small block with %d bps, needs to be 1.",
-		      bg_record->bp_count);
+	if (bg_record->mp_count != 1) {
+		error("Requesting small block with %d mps, needs to be 1.",
+		      bg_record->mp_count);
 		return SLURM_ERROR;
 	}
 /* 	info("configuring small block on ionodes %s out of %d ncs",  */
-/* 	     bg_record->ionodes, bg_conf->bp_nodecard_cnt); */
+/* 	     bg_record->ionodes, bg_conf->mp_nodecard_cnt); */
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	/* set that we are doing a small block */
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall,
@@ -401,16 +401,16 @@ extern int configure_small_block(bg_record_t *bg_record)
 
 	ba_node = list_peek(bg_record->bg_block_list);
 
-	if (_get_bp_by_location(bg, ba_node->coord, &curr_bp)
+	if (_get_mp_by_location(bg, ba_node->coord, &curr_mp)
 	    == SLURM_ERROR) {
-		fatal("_get_bp_by_location()");
+		fatal("_get_mp_by_location()");
 	}
 
-	/* Set the one BP */
+	/* Set the one MP */
 
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionBPNum,
-				  &bg_record->bp_count))
+				  &bg_record->mp_count))
 	    != STATUS_OK) {
 
 		fatal("bridge_set_data: RM_PartitionBPNum: %s",
@@ -419,7 +419,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionFirstBP,
-				  curr_bp))
+				  curr_mp))
 	    != STATUS_OK) {
 
 		fatal("bridge_set_data("
@@ -429,27 +429,27 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 
 
-	/* find the bp_id of the bp to get the small32 */
-	if ((rc = bridge_get_data(curr_bp, RM_BPID, &bp_id))
+	/* find the mp_id of the mp to get the small32 */
+	if ((rc = bridge_get_data(curr_mp, RM_BPID, &mp_id))
 	    != STATUS_OK) {
 		error("bridge_get_data(): %d", rc);
 		return SLURM_ERROR;
 	}
 
 
-	if (!bp_id) {
-		error("No BP ID was returned from database");
+	if (!mp_id) {
+		error("No MP ID was returned from database");
 		return SLURM_ERROR;
 	}
 
-	if ((rc = bridge_get_nodecards(bp_id, &ncard_list))
+	if ((rc = bridge_get_nodecards(mp_id, &ncard_list))
 	    != STATUS_OK) {
 		error("bridge_get_nodecards(%s): %d",
-		      bp_id, rc);
-		free(bp_id);
+		      mp_id, rc);
+		free(mp_id);
 		return SLURM_ERROR;
 	}
-	free(bp_id);
+	free(mp_id);
 
 
 	if ((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
@@ -653,11 +653,11 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	char *bpid = NULL;
-	int first_bp=1;
+	char *mpid = NULL;
+	int first_mp=1;
 	int first_switch=1;
 	int i = 0;
-	rm_BP_t *curr_bp = NULL;
+	rm_BP_t *curr_mp = NULL;
 	rm_switch_t *coord_switch[SYSTEM_DIMENSIONS];
 #endif
 	if (!bg_record->bg_block_list) {
@@ -666,19 +666,19 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	}
 
 	bg_record->switch_count = 0;
-	bg_record->bp_count = 0;
+	bg_record->mp_count = 0;
 
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = list_next(itr))) {
 		if (ba_node->used) {
-			bg_record->bp_count++;
+			bg_record->mp_count++;
 		}
 		bg_record->switch_count += _used_switches(ba_node);
 	}
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionBPNum,
-				  &bg_record->bp_count))
+				  &bg_record->mp_count))
 	    != STATUS_OK) {
 		fatal("bridge_set_data: RM_PartitionBPNum: %s",
 		      bg_err_str(rc));
@@ -698,14 +698,14 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	}
 #endif
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
-		info("BP count %d", bg_record->bp_count);
+		info("MP count %d", bg_record->mp_count);
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 		info("switch count %d", bg_record->switch_count);
 
 	list_iterator_reset(itr);
 	while ((ba_node = list_next(itr))) {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-		if (_get_bp_by_location(bg, ba_node->coord, &curr_bp)
+		if (_get_mp_by_location(bg, ba_node->coord, &curr_mp)
 		    == SLURM_ERROR) {
 			rc = SLURM_ERROR;
 			goto cleanup;
@@ -725,21 +725,21 @@ extern int configure_block_switches(bg_record_t * bg_record)
 				     alpha_num[ba_node->coord[Y]],
 				     alpha_num[ba_node->coord[Z]]);
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-			if (first_bp){
+			if (first_mp){
 				if ((rc = bridge_set_data(bg_record->bg_block,
 							  RM_PartitionFirstBP,
-							  curr_bp))
+							  curr_mp))
 				    != STATUS_OK) {
 					list_iterator_destroy(itr);
 					fatal("bridge_set_data("
 					      "RM_PartitionFirstBP): %s",
 					      bg_err_str(rc));
 				}
-				first_bp = 0;
+				first_mp = 0;
 			} else {
 				if ((rc = bridge_set_data(bg_record->bg_block,
 							  RM_PartitionNextBP,
-							  curr_bp))
+							  curr_mp))
 				    != STATUS_OK) {
 					list_iterator_destroy(itr);
 					fatal("bridge_set_data"
@@ -750,23 +750,23 @@ extern int configure_block_switches(bg_record_t * bg_record)
 #endif
 		}
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-		if ((rc = bridge_get_data(curr_bp, RM_BPID, &bpid))
+		if ((rc = bridge_get_data(curr_mp, RM_BPID, &mpid))
 		    != STATUS_OK) {
 			list_iterator_destroy(itr);
 			fatal("bridge_get_data: RM_BPID: %s", bg_err_str(rc));
 		}
 
-		if (!bpid) {
+		if (!mpid) {
 			error("No BP ID was returned from database");
 			continue;
 		}
-		if (_get_switches_by_bpid(bg, bpid, coord_switch)
+		if (_get_switches_by_mpid(bg, mpid, coord_switch)
 		    != SLURM_SUCCESS) {
-			error("Didn't get all the switches for bp %s", bpid);
-			free(bpid);
+			error("Didn't get all the switches for mp %s", mpid);
+			free(mpid);
 			continue;
 		}
-		free(bpid);
+		free(mpid);
 		for(i=0; i<SYSTEM_DIMENSIONS; i++) {
 			if (_add_switch_conns(coord_switch[i],
 					      &ba_node->axis_switch[i])

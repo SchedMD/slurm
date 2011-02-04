@@ -70,7 +70,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	/* Locks are already in place to protect part_list here */
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
-		/* we only want to use bps that are in
+		/* we only want to use mps that are in
 		 * partitions
 		 */
 		if (!part_ptr->node_bitmap) {
@@ -89,7 +89,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 		      "Please check your slurm.conf.");
 	}
 	non_usable_nodes = bitmap2node_name(bitmap);
-	removable_set_bps(non_usable_nodes);
+	removable_set_mps(non_usable_nodes);
 	FREE_NULL_BITMAP(bitmap);
 
 	slurm_mutex_lock(&block_state_mutex);
@@ -124,20 +124,20 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				error("create_defined_blocks: "
 				      "no bg_found_block_list 1");
 			}
-			if (bg_record->bp_count > 0
+			if (bg_record->mp_count > 0
 			    && !bg_record->full_block
-			    && bg_record->cpu_cnt >= bg_conf->cpus_per_bp) {
+			    && bg_record->cpu_cnt >= bg_conf->cpus_per_mp) {
 				char *name = NULL;
 
 				if (overlapped == LAYOUT_OVERLAP) {
 					reset_ba_system(false);
-					removable_set_bps(non_usable_nodes);
+					removable_set_mps(non_usable_nodes);
 				}
 
-				/* we want the bps that aren't
+				/* we want the mps that aren't
 				 * in this record to mark them as used
 				 */
-				if (set_all_bps_except(bg_record->nodes)
+				if (set_all_mps_except(bg_record->nodes)
 				    != SLURM_SUCCESS)
 					fatal("something happened in "
 					      "the load of %s.  "
@@ -168,7 +168,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						       "bluegene.conf file?",
 						       bg_record->bg_block_id);
 						list_iterator_destroy(itr);
-						reset_all_removed_bps();
+						reset_all_removed_mps();
 						slurm_mutex_unlock(
 							&block_state_mutex);
 						xfree(non_usable_nodes);
@@ -181,7 +181,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						bg_record->start,
 						geo,
 						bg_record->conn_type);
-					reset_all_removed_bps();
+					reset_all_removed_mps();
 					if (!name) {
 						error("I was unable to "
 						      "make the "
@@ -297,7 +297,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	/* Locks are already in place to protect part_list here */
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
-		/* we only want to use bps that are in
+		/* we only want to use mps that are in
 		 * partitions
 		 */
 		if (!part_ptr->node_bitmap) {

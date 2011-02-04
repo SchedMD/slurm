@@ -7175,7 +7175,7 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				      uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
-	char *bp_inx_str = NULL;
+	char *mp_inx_str = NULL;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
@@ -7184,22 +7184,22 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			safe_unpackstr_xmalloc(&block_info->blrtsimage,
 					       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
-		if (bp_inx_str == NULL) {
-			block_info->bp_inx = bitfmt2int("");
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->mp_inx = bitfmt2int("");
 		} else {
-			block_info->bp_inx = bitfmt2int(bp_inx_str);
-			xfree(bp_inx_str);
+			block_info->mp_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
 		}
 		safe_unpack16(&block_info->conn_type, buffer);
 		safe_unpackstr_xmalloc(&(block_info->ionodes),
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
-		if (bp_inx_str == NULL) {
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
 			block_info->ionode_inx = bitfmt2int("");
 		} else {
-			block_info->ionode_inx = bitfmt2int(bp_inx_str);
-			xfree(bp_inx_str);
+			block_info->ionode_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
 		}
 		safe_unpack32(&block_info->job_running, buffer);
 		safe_unpackstr_xmalloc(&block_info->linuximage,
@@ -7224,22 +7224,22 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			safe_unpackstr_xmalloc(&block_info->blrtsimage,
 					       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
-		if (bp_inx_str == NULL) {
-			block_info->bp_inx = bitfmt2int("");
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->mp_inx = bitfmt2int("");
 		} else {
-			block_info->bp_inx = bitfmt2int(bp_inx_str);
-			xfree(bp_inx_str);
+			block_info->mp_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
 		}
 		safe_unpack16(&block_info->conn_type, buffer);
 		safe_unpackstr_xmalloc(&(block_info->ionodes),
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
-		if (bp_inx_str == NULL) {
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
 			block_info->ionode_inx = bitfmt2int("");
 		} else {
-			block_info->ionode_inx = bitfmt2int(bp_inx_str);
-			xfree(bp_inx_str);
+			block_info->ionode_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
 		}
 		safe_unpack32(&block_info->job_running, buffer);
 		safe_unpackstr_xmalloc(&block_info->linuximage,
@@ -7299,8 +7299,8 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			packstr(block_info->blrtsimage, buffer);
 
-		if(block_info->bp_inx) {
-			char *bitfmt = inx2bitfmt(block_info->bp_inx);
+		if(block_info->mp_inx) {
+			char *bitfmt = inx2bitfmt(block_info->mp_inx);
 			packstr(bitfmt, buffer);
 			xfree(bitfmt);
 		} else
@@ -7359,8 +7359,8 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			packstr(block_info->blrtsimage, buffer);
 
-		if(block_info->bp_inx) {
-			char *bitfmt = inx2bitfmt(block_info->bp_inx);
+		if(block_info->mp_inx) {
+			char *bitfmt = inx2bitfmt(block_info->mp_inx);
 			packstr(bitfmt, buffer);
 			xfree(bitfmt);
 		} else

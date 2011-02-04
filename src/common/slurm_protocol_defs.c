@@ -2073,7 +2073,7 @@ extern void slurm_free_block_info_members(block_info_t *block_info)
 	if(block_info) {
 		xfree(block_info->bg_block_id);
 		xfree(block_info->blrtsimage);
-		xfree(block_info->bp_inx);
+		xfree(block_info->mp_inx);
 		xfree(block_info->ionodes);
 		xfree(block_info->ionode_inx);
 		xfree(block_info->linuximage);

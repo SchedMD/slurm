@@ -3455,10 +3455,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t reboot;
 	uint16_t rotate;
 	uint16_t conn_type;
-	static uint32_t cpus_per_bp = 0;
+	static uint32_t cpus_per_mp = 0;
 
-	if (!cpus_per_bp)
-		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
+	if (!cpus_per_mp)
+		select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT, &cpus_per_mp);
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
@@ -3646,9 +3646,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 					    SELECT_JOBDATA_CONN_TYPE,
 					    &conn_type);
 	} else if(((conn_type >= SELECT_SMALL)
-		   && (job_desc->min_cpus >= cpus_per_bp))
+		   && (job_desc->min_cpus >= cpus_per_mp))
 		  || (((conn_type == SELECT_TORUS)|| (conn_type == SELECT_MESH))
-		      && (job_desc->min_cpus < cpus_per_bp))) {
+		      && (job_desc->min_cpus < cpus_per_mp))) {
 		/* check to make sure we have a valid conn_type with
 		 * the cpu count */
 		info("Job's cpu count at %u makes our conn_type "
@@ -6233,11 +6233,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	uint16_t rotate = (uint16_t) NO_VAL;
 	uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
 	char *image = NULL;
-	static uint32_t cpus_per_bp = 0;
+	static uint32_t cpus_per_mp = 0;
 	static uint16_t cpus_per_node = 0;
 
-	if (!cpus_per_bp)
-		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
+	if (!cpus_per_mp)
+		select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT, &cpus_per_mp);
 	if (!cpus_per_node)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
@@ -7337,7 +7337,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else {
 			if((conn_type >= SELECT_SMALL)
-			   && (detail_ptr->min_cpus >= cpus_per_bp)) {
+			   && (detail_ptr->min_cpus >= cpus_per_mp)) {
 				info("update_job: could not change "
 				     "conn_type to '%s' because cpu "
 				     "count is %u for job %u making "
@@ -7348,7 +7348,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = ESLURM_INVALID_NODE_COUNT;
 			} else if(((conn_type == SELECT_TORUS)
 				   || (conn_type == SELECT_MESH))
-				  && (detail_ptr->min_cpus < cpus_per_bp)) {
+				  && (detail_ptr->min_cpus < cpus_per_mp)) {
 				info("update_job: could not change "
 				     "conn_type to '%s' because cpu "
 				     "count is %u for job %u making "
@@ -7376,9 +7376,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(detail_ptr &&
 	   (((conn_type >= SELECT_SMALL)
-	     && (detail_ptr->min_cpus >= cpus_per_bp))
+	     && (detail_ptr->min_cpus >= cpus_per_mp))
 	    || (((conn_type == SELECT_TORUS)|| (conn_type == SELECT_MESH))
-		&& (detail_ptr->min_cpus < cpus_per_bp)))) {
+		&& (detail_ptr->min_cpus < cpus_per_mp)))) {
 		info("update_job: With cpu count at %u our conn_type "
 		     "of '%s' is invalid for job %u.",
 		     detail_ptr->min_cpus,

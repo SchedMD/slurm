@@ -56,7 +56,7 @@
 /* Global */
 bool _initialized = false;
 bool _wires_initialized = false;
-bool _bp_map_initialized = false;
+bool _mp_map_initialized = false;
 
 /* _ba_system is the "current" system that the structures will work
  *  on */
@@ -81,7 +81,7 @@ static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 /* extern Global */
 my_bluegene_t *bg = NULL;
 uint16_t ba_deny_pass = 0;
-List bp_map_list = NULL;
+List mp_map_list = NULL;
 int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 s_p_options_t bg_conf_file_options[] = {
@@ -121,7 +121,7 @@ typedef enum {
 /** internal helper functions */
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 /** */
-static void _bp_map_list_del(void *object);
+static void _mp_map_list_del(void *object);
 
 /** */
 static int _port_enum(int port);
@@ -874,7 +874,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	int coords[HIGHEST_DIMENSIONS];
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	rm_size3D_t bp_size;
+	rm_size3D_t mp_size;
 	int rc = 0;
 #endif /* HAVE_BG_FILES */
 
@@ -1028,26 +1028,26 @@ node_info_error:
 		}
 
 		if ((bg != NULL)
-		    &&  ((rc = bridge_get_data(bg, RM_Msize, &bp_size))
+		    &&  ((rc = bridge_get_data(bg, RM_Msize, &mp_size))
 			 == STATUS_OK)) {
 			verbose("BlueGene configured with "
 				"%d x %d x %d base blocks",
-				bp_size.X, bp_size.Y, bp_size.Z);
-			REAL_DIM_SIZE[X] = bp_size.X;
-			REAL_DIM_SIZE[Y] = bp_size.Y;
-			REAL_DIM_SIZE[Z] = bp_size.Z;
-			if ((DIM_SIZE[X] > bp_size.X)
-			    || (DIM_SIZE[Y] > bp_size.Y)
-			    || (DIM_SIZE[Z] > bp_size.Z)) {
+				mp_size.X, mp_size.Y, mp_size.Z);
+			REAL_DIM_SIZE[X] = mp_size.X;
+			REAL_DIM_SIZE[Y] = mp_size.Y;
+			REAL_DIM_SIZE[Z] = mp_size.Z;
+			if ((DIM_SIZE[X] > mp_size.X)
+			    || (DIM_SIZE[Y] > mp_size.Y)
+			    || (DIM_SIZE[Z] > mp_size.Z)) {
 				fatal("You requested a %c%c%c system, "
 				      "but we only have a system of %c%c%c.  "
 				      "Change your slurm.conf.",
 				      alpha_num[DIM_SIZE[X]],
 				      alpha_num[DIM_SIZE[Y]],
 				      alpha_num[DIM_SIZE[Z]],
-				      alpha_num[bp_size.X],
-				      alpha_num[bp_size.Y],
-				      alpha_num[bp_size.Z]);
+				      alpha_num[mp_size.X],
+				      alpha_num[mp_size.Y],
+				      alpha_num[mp_size.Z]);
 			}
 		} else {
 			error("bridge_get_data(RM_Msize): %d", rc);
@@ -1121,8 +1121,8 @@ extern void init_wires()
 	}
 #ifdef HAVE_BG_FILES
 	_set_external_wires(0,0,NULL,NULL);
-	if (!bp_map_list) {
-		if (set_bp_map() == -1) {
+	if (!mp_map_list) {
+		if (set_mp_map() == -1) {
 			return;
 		}
 	}
@@ -1156,16 +1156,16 @@ extern void ba_fini()
 	if (bg)
 		bridge_free_bg(bg);
 
-	if (bp_map_list) {
-		list_destroy(bp_map_list);
-		bp_map_list = NULL;
-		_bp_map_initialized = false;
+	if (mp_map_list) {
+		list_destroy(mp_map_list);
+		mp_map_list = NULL;
+		_mp_map_initialized = false;
 	}
 	bridge_fini();
 #endif
 	_delete_ba_system();
 	_initialized = false;
-	_bp_map_initialized = false;
+	_mp_map_initialized = false;
 	_wires_initialized = true;
 	for (i=0; i<HIGHEST_DIMENSIONS; i++)
 		DIM_SIZE[i] = 0;
@@ -1725,10 +1725,10 @@ extern void reset_ba_system(bool track_down_nodes)
  * IN: hostlist of midplanes we do not want
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Note: Need to call reset_all_removed_bps before starting another
+ * Note: Need to call reset_all_removed_mps before starting another
  * allocation attempt after
  */
-extern int removable_set_bps(char *bps)
+extern int removable_set_mps(char *mps)
 {
 #ifdef HAVE_BG_L_P
 	int j=0, number;
@@ -1737,21 +1737,21 @@ extern int removable_set_bps(char *bps)
 	int start[cluster_dims];
         int end[cluster_dims];
 
-	if (!bps)
+	if (!mps)
 		return SLURM_ERROR;
 
-	while (bps[j] != '\0') {
-		if ((bps[j] == '[' || bps[j] == ',')
-		    && (bps[j+8] == ']' || bps[j+8] == ',')
-		    && (bps[j+4] == 'x' || bps[j+4] == '-')) {
+	while (mps[j] != '\0') {
+		if ((mps[j] == '[' || mps[j] == ',')
+		    && (mps[j+8] == ']' || mps[j+8] == ',')
+		    && (mps[j+4] == 'x' || mps[j+4] == '-')) {
 
 			j++;
-			number = xstrntol(bps + j, &p, cluster_dims,
+			number = xstrntol(mps + j, &p, cluster_dims,
 					  cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, cluster_dims, cluster_base);
 			j += 4;
-			number = xstrntol(bps + j, &p, cluster_dims,
+			number = xstrntol(mps + j, &p, cluster_dims,
 					  cluster_base);
 			hostlist_parse_int_to_array(
 				number, end, cluster_dims, cluster_base);
@@ -1768,12 +1768,12 @@ extern int removable_set_bps(char *bps)
 				}
 			}
 
-			if (bps[j] != ',')
+			if (mps[j] != ',')
 				break;
 			j--;
-		} else if ((bps[j] >= '0' && bps[j] <= '9')
-			   || (bps[j] >= 'A' && bps[j] <= 'Z')) {
-			number = xstrntol(bps + j, &p, cluster_dims,
+		} else if ((mps[j] >= '0' && mps[j] <= '9')
+			   || (mps[j] >= 'A' && mps[j] <= 'Z')) {
+			number = xstrntol(mps + j, &p, cluster_dims,
 					  cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, cluster_dims, cluster_base);
@@ -1784,7 +1784,7 @@ extern int removable_set_bps(char *bps)
 			if (!ba_system_ptr->grid[x][y][z].used)
 				ba_system_ptr->grid[x][y][z].used = 2;
 
-			if (bps[j] != ',')
+			if (mps[j] != ',')
 				break;
 			j--;
 		}
@@ -1796,9 +1796,9 @@ extern int removable_set_bps(char *bps)
 
 /*
  * Resets the virtual system to the pervious state before calling
- * removable_set_bps, or set_all_bps_except.
+ * removable_set_mps, or set_all_mps_except.
  */
-extern int reset_all_removed_bps()
+extern int reset_all_removed_mps()
 {
 	int x, y, z;
 
@@ -1816,16 +1816,16 @@ extern int reset_all_removed_bps()
  *     others as used.
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Need to call reset_all_removed_bps before starting another
- * allocation attempt if possible use removable_set_bps since it is
+ * Need to call reset_all_removed_mps before starting another
+ * allocation attempt if possible use removable_set_mps since it is
  * faster. It does basically the opposite of this function. If you
  * have to come up with this list though it is faster to use this
  * function than if you have to call bitmap2node_name since that is slow.
  */
-extern int set_all_bps_except(char *bps)
+extern int set_all_mps_except(char *mps)
 {
 	int x, y, z;
-	hostlist_t hl = hostlist_create(bps);
+	hostlist_t hl = hostlist_create(mps);
 	char *host = NULL, *numeric = NULL;
 	int number, coords[HIGHEST_DIMENSIONS];
 
@@ -1945,7 +1945,7 @@ extern char *bg_err_str(status_t inx)
 		return "Partition not found";
 	case JOB_NOT_FOUND:
 		return "Job not found";
-	case BP_NOT_FOUND:
+	case MP_NOT_FOUND:
 		return "Base partition not found";
 	case SWITCH_NOT_FOUND:
 		return "Switch not found";
@@ -1974,20 +1974,20 @@ extern char *bg_err_str(status_t inx)
 /*
  * Set up the map for resolving
  */
-extern int set_bp_map(void)
+extern int set_mp_map(void)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc;
-	rm_BP_t *my_bp = NULL;
-	ba_bp_map_t *bp_map = NULL;
-	int bp_num, i;
-	char *bp_id = NULL;
-	rm_location_t bp_loc;
+	rm_BP_t *my_mp = NULL;
+	ba_mp_map_t *mp_map = NULL;
+	int mp_num, i;
+	char *mp_id = NULL;
+	rm_location_t mp_loc;
 
-	if (_bp_map_initialized)
+	if (_mp_map_initialized)
 		return 1;
 
-	bp_map_list = list_create(_bp_map_list_del);
+	mp_map_list = list_create(_mp_map_list_del);
 
 	if (!have_db2) {
 		error("Can't access DB2 library, run from service node");
@@ -2009,59 +2009,59 @@ extern int set_bp_map(void)
 		}
 	}
 
-	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
+	if ((rc = bridge_get_data(bg, RM_BPNum, &mp_num)) != STATUS_OK) {
 		error("bridge_get_data(RM_BPNum): %d", rc);
-		bp_num = 0;
+		mp_num = 0;
 	}
 
-	for (i=0; i<bp_num; i++) {
+	for (i=0; i<mp_num; i++) {
 
 		if (i) {
-			if ((rc = bridge_get_data(bg, RM_NextBP, &my_bp))
+			if ((rc = bridge_get_data(bg, RM_NextBP, &my_mp))
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_NextBP): %d", rc);
 				break;
 			}
 		} else {
-			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_bp))
+			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_mp))
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_FirstBP): %d", rc);
 				break;
 			}
 		}
 
-		bp_map = (ba_bp_map_t *) xmalloc(sizeof(ba_bp_map_t));
+		mp_map = (ba_mp_map_t *) xmalloc(sizeof(ba_mp_map_t));
 
-		if ((rc = bridge_get_data(my_bp, RM_BPID, &bp_id))
+		if ((rc = bridge_get_data(my_mp, RM_BPID, &mp_id))
 		    != STATUS_OK) {
-			xfree(bp_map);
+			xfree(mp_map);
 			error("bridge_get_data(RM_BPID): %d", rc);
 			continue;
 		}
 
-		if (!bp_id) {
+		if (!mp_id) {
 			error("No BP ID was returned from database");
 			continue;
 		}
 
-		if ((rc = bridge_get_data(my_bp, RM_BPLoc, &bp_loc))
+		if ((rc = bridge_get_data(my_mp, RM_BPLoc, &mp_loc))
 		    != STATUS_OK) {
-			xfree(bp_map);
+			xfree(mp_map);
 			error("bridge_get_data(RM_BPLoc): %d", rc);
 			continue;
 		}
 
-		bp_map->bp_id = xstrdup(bp_id);
-		bp_map->coord[X] = bp_loc.X;
-		bp_map->coord[Y] = bp_loc.Y;
-		bp_map->coord[Z] = bp_loc.Z;
+		mp_map->mp_id = xstrdup(mp_id);
+		mp_map->coord[X] = mp_loc.X;
+		mp_map->coord[Y] = mp_loc.Y;
+		mp_map->coord[Z] = mp_loc.Z;
 
-		list_push(bp_map_list, bp_map);
+		list_push(mp_map_list, mp_map);
 
-		free(bp_id);
+		free(mp_id);
 	}
 #endif
-	_bp_map_initialized = true;
+	_mp_map_initialized = true;
 	return 1;
 
 }
@@ -2069,19 +2069,19 @@ extern int set_bp_map(void)
 /*
  * find a base blocks bg location
  */
-extern uint16_t *find_bp_loc(char* bp_id)
+extern uint16_t *find_mp_loc(char* mp_id)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	ba_bp_map_t *bp_map = NULL;
+	ba_mp_map_t *mp_map = NULL;
 	ListIterator itr;
 	char *check = NULL;
 
-	if (!bp_map_list) {
-		if (set_bp_map() == -1)
+	if (!mp_map_list) {
+		if (set_mp_map() == -1)
 			return NULL;
 	}
 
-	check = xstrdup(bp_id);
+	check = xstrdup(mp_id);
 	/* with BGP they changed the names of the rack midplane action from
 	 * R000 to R00-M0 so we now support both formats for each of the
 	 * systems */
@@ -2096,7 +2096,7 @@ extern uint16_t *find_bp_loc(char* bp_id)
 	if ((check[1] < '0' || check[1] > '9')
 	    || (check[2] < '0' || check[2] > '9')
 	    || (check[3] < '0' || check[3] > '9')) {
-		error("%s is not a valid Rack-Midplane (i.e. R000)", bp_id);
+		error("%s is not a valid Rack-Midplane (i.e. R000)", mp_id);
 		goto cleanup;
 	}
 
@@ -2104,28 +2104,28 @@ extern uint16_t *find_bp_loc(char* bp_id)
 	if (check[3] != '-') {
 		xfree(check);
 		check = xstrdup_printf("R%c%c-M%c",
-				       bp_id[1], bp_id[2], bp_id[3]);
+				       mp_id[1], mp_id[2], mp_id[3]);
 	}
 
 	if ((check[1] < '0' || check[1] > '9')
 	    || (check[2] < '0' || check[2] > '9')
 	    || (check[5] < '0' || check[5] > '9')) {
-		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", bp_id);
+		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", mp_id);
 		goto cleanup;
 	}
 #endif
 
-	itr = list_iterator_create(bp_map_list);
-	while ((bp_map = list_next(itr)))
-		if (!strcasecmp(bp_map->bp_id, check))
+	itr = list_iterator_create(mp_map_list);
+	while ((mp_map = list_next(itr)))
+		if (!strcasecmp(mp_map->mp_id, check))
 			break;	/* we found it */
 	list_iterator_destroy(itr);
 
 cleanup:
 	xfree(check);
 
-	if (bp_map != NULL)
-		return bp_map->coord;
+	if (mp_map != NULL)
+		return mp_map->coord;
 	else
 		return NULL;
 
@@ -2137,10 +2137,10 @@ cleanup:
 /*
  * find a rack/midplace location
  */
-extern char *find_bp_rack_mid(char* xyz)
+extern char *find_mp_rack_mid(char* xyz)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	ba_bp_map_t *bp_map = NULL;
+	ba_mp_map_t *mp_map = NULL;
 	ListIterator itr;
 	int number;
 	int coord[cluster_dims];
@@ -2160,21 +2160,21 @@ extern char *find_bp_rack_mid(char* xyz)
 	number = xstrntol(xyz + len, &p, cluster_dims, cluster_base);
 	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
 
-	if (!bp_map_list) {
-		if (set_bp_map() == -1)
+	if (!mp_map_list) {
+		if (set_mp_map() == -1)
 			return NULL;
 	}
 
-	itr = list_iterator_create(bp_map_list);
-	while ((bp_map = list_next(itr)) != NULL)
-		if (bp_map->coord[X] == coord[X] &&
-		    bp_map->coord[Y] == coord[Y] &&
-		    bp_map->coord[Z] == coord[Z])
+	itr = list_iterator_create(mp_map_list);
+	while ((mp_map = list_next(itr)) != NULL)
+		if (mp_map->coord[X] == coord[X] &&
+		    mp_map->coord[Y] == coord[Y] &&
+		    mp_map->coord[Z] == coord[Z])
 			break;	/* we found it */
 
 	list_iterator_destroy(itr);
-	if (bp_map != NULL)
-		return bp_map->bp_id;
+	if (mp_map != NULL)
+		return mp_map->mp_id;
 	else
 		return NULL;
 
@@ -2194,7 +2194,7 @@ extern int load_block_wiring(char *bg_block_id)
 	int cnt = 0;
 	int switch_cnt = 0;
 	rm_switch_t *curr_switch = NULL;
-	rm_BP_t *curr_bp = NULL;
+	rm_BP_t *curr_mp = NULL;
 	char *switchid = NULL;
 	rm_connection_t curr_conn;
 	int dim;
@@ -2222,23 +2222,23 @@ extern int load_block_wiring(char *bg_block_id)
 			info("no switch_cnt");
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionFirstBP,
-					  &curr_bp))
+					  &curr_mp))
 		    != STATUS_OK) {
 			error("bridge_get_data: "
 			      "RM_PartitionFirstBP: %s",
 			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
-		if ((rc = bridge_get_data(curr_bp, RM_BPID, &switchid))
+		if ((rc = bridge_get_data(curr_mp, RM_BPID, &switchid))
 		    != STATUS_OK) {
 			error("bridge_get_data: RM_SwitchBPID: %s",
 			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
 
-		geo = find_bp_loc(switchid);
+		geo = find_mp_loc(switchid);
 		if (!geo) {
-			error("find_bp_loc: bpid %s not known", switchid);
+			error("find_mp_loc: mpid %s not known", switchid);
 			return SLURM_ERROR;
 		}
 		ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].used = true;
@@ -2280,9 +2280,9 @@ extern int load_block_wiring(char *bg_block_id)
 			return SLURM_ERROR;
 		}
 
-		geo = find_bp_loc(switchid);
+		geo = find_mp_loc(switchid);
 		if (!geo) {
-			error("find_bp_loc: bpid %s not known", switchid);
+			error("find_mp_loc: mpid %s not known", switchid);
 			return SLURM_ERROR;
 		}
 
@@ -2421,7 +2421,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 	int cnt = 0;
 	int switch_cnt = 0;
 	rm_switch_t *curr_switch = NULL;
-	rm_BP_t *curr_bp = NULL;
+	rm_BP_t *curr_mp = NULL;
 	char *switchid = NULL;
 	rm_connection_t curr_conn;
 	int dim;
@@ -2445,21 +2445,21 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 			info("no switch_cnt");
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionFirstBP,
-					  &curr_bp))
+					  &curr_mp))
 		    != STATUS_OK) {
 			error("bridge_get_data: "
 			      "RM_PartitionFirstBP: %s",
 			      bg_err_str(rc));
 			goto end_it;
 		}
-		if ((rc = bridge_get_data(curr_bp, RM_BPID, &switchid))
+		if ((rc = bridge_get_data(curr_mp, RM_BPID, &switchid))
 		    != STATUS_OK) {
 			error("bridge_get_data: RM_SwitchBPID: %s",
 			      bg_err_str(rc));
 			goto end_it;
 		}
 
-		geo = find_bp_loc(switchid);
+		geo = find_mp_loc(switchid);
 		if (!geo) {
 			error("find_bp_loc: bpid %s not known", switchid);
 			goto end_it;
@@ -2509,7 +2509,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 			goto end_it;
 		}
 
-		geo = find_bp_loc(switchid);
+		geo = find_mp_loc(switchid);
 		if (!geo) {
 			error("find_bp_loc: bpid %s not known", switchid);
 			goto end_it;
@@ -2692,13 +2692,13 @@ extern int validate_coord(uint16_t *coord)
 /********************* Local Functions *********************/
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-static void _bp_map_list_del(void *object)
+static void _mp_map_list_del(void *object)
 {
-	ba_bp_map_t *bp_map = (ba_bp_map_t *)object;
+	ba_mp_map_t *mp_map = (ba_mp_map_t *)object;
 
-	if (bp_map) {
-		xfree(bp_map->bp_id);
-		xfree(bp_map);
+	if (mp_map) {
+		xfree(mp_map->mp_id);
+		xfree(mp_map);
 	}
 }
 
@@ -3284,14 +3284,14 @@ static int _find_yz_path(ba_node_t *ba_node, uint16_t *first,
 			   find out why this was happening in the
 			   first place though.  A reproducer was to
 			   have
-			   BPs=[310x323] Type=TORUS
-			   BPs=[200x233] Type=TORUS
-			   BPs=[300x303] Type=TORUS
-			   BPs=[100x133] Type=TORUS
-			   BPs=[000x033] Type=TORUS
-			   BPs=[400x433] Type=TORUS
+			   MPs=[310x323] Type=TORUS
+			   MPs=[200x233] Type=TORUS
+			   MPs=[300x303] Type=TORUS
+			   MPs=[100x133] Type=TORUS
+			   MPs=[000x033] Type=TORUS
+			   MPs=[400x433] Type=TORUS
 			   and then add
-			   BPs=[330x333] Type=TORUS
+			   MPs=[330x333] Type=TORUS
 			*/
 
 			dim_curr_switch = &ba_node->axis_switch[i2];
@@ -3788,7 +3788,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		error("bridge_get_data(RM_BPNum): %d", rc);
 		wire_num = 0;
 	}
-	/* find out system wires on each bp */
+	/* find out system wires on each mp */
 
 	for (i=0; i<wire_num; i++) {
 
@@ -3861,9 +3861,9 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			break;
 		}
 
-		coord = find_bp_loc(from_node);
+		coord = find_mp_loc(from_node);
 		if (!coord) {
-			error("1 find_bp_loc: bpid %s not known", from_node);
+			error("1 find_mp_loc: mpid %s not known", from_node);
 			continue;
 		}
 		if (!validate_coord(coord))
@@ -3871,9 +3871,9 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 
 		source = &ba_system_ptr->
 			grid[coord[X]][coord[Y]][coord[Z]];
-		coord = find_bp_loc(to_node);
+		coord = find_mp_loc(to_node);
 		if (!coord) {
-			error("2 find_bp_loc: bpid %s not known", to_node);
+			error("2 find_mp_loc: mpid %s not known", to_node);
 			continue;
 		}
 		if (!validate_coord(coord))

@@ -1066,7 +1066,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		     part_desc->max_nodes, part_desc->name);
 		part_ptr->max_nodes      = part_desc->max_nodes;
 		part_ptr->max_nodes_orig = part_desc->max_nodes;
-		select_g_alter_node_cnt(SELECT_SET_BP_CNT,
+		select_g_alter_node_cnt(SELECT_SET_MP_CNT,
 					&part_ptr->max_nodes);
 	}
 
@@ -1075,7 +1075,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		     part_desc->min_nodes, part_desc->name);
 		part_ptr->min_nodes      = part_desc->min_nodes;
 		part_ptr->min_nodes_orig = part_desc->min_nodes;
-		select_g_alter_node_cnt(SELECT_SET_BP_CNT,
+		select_g_alter_node_cnt(SELECT_SET_MP_CNT,
 					&part_ptr->min_nodes);
 	}
 

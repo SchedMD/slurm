@@ -54,6 +54,6 @@ extern void test_mmcs_failures(void);
  * Search MMCS for failed switches and nodes inside of block.
  * Failed resources are DRAINED in SLURM. This relies upon rm_get_partition(),
  */
-extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked);
+extern int check_block_mp_states(char *bg_block_id, bool slurmctld_locked);
 
 #endif /* _STATE_TEST_H_ */

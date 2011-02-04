@@ -79,6 +79,39 @@ const char plugin_type[]       	= "select/bgq";
 const uint32_t plugin_id     	= 103;
 const uint32_t plugin_version	= 200;
 
+#ifdef HAVE_BGQ
+static int _internal_update_node_state(int level, int *coords,
+				       int index, uint16_t state)
+{
+	ba_mp_t *curr_mp;
+
+	if (level > cluster_dims)
+		return SLURM_ERROR;
+
+	if (level < cluster_dims) {
+		for (coords[level] = 0;
+		     coords[level] <= DIM_SIZE[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			if (_internal_update_node_state(
+				    level+1, coords, index, state)
+			    == SLURM_SUCCESS)
+				return SLURM_SUCCESS;
+		}
+		return SLURM_ERROR;
+	}
+
+	curr_mp = &ba_system_ptr->grid
+		[coords[A]][coords[X]][coords[Y]][coords[Z]];
+
+	if (curr_mp->index == index) {
+		ba_update_mp_state(curr_mp, state);
+		return SLURM_SUCCESS;
+	}
+	return SLURM_ERROR;
+}
+#endif
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -501,7 +534,8 @@ extern int select_p_update_node_config (int index)
 extern int select_p_update_node_state (int index, uint16_t state)
 {
 #ifdef HAVE_BGQ
-	return SLURM_SUCCESS;
+	int coords[cluster_dims];
+	return _internal_update_node_state(A, coords, index, state);
 #endif
 	return SLURM_ERROR;
 }
@@ -509,6 +543,211 @@ extern int select_p_update_node_state (int index, uint16_t state)
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 #ifdef HAVE_BGQ
+	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
+	uint16_t *cpus = (uint16_t *)data;
+	uint32_t *nodes = (uint32_t *)data, tmp = 0;
+	int i;
+	uint16_t req_geometry[SYSTEM_DIMENSIONS];
+
+	if (!bg_conf->mp_node_cnt) {
+		fatal("select_p_alter_node_cnt: This can't be called "
+		      "before init");
+	}
+
+	switch (type) {
+	case SELECT_GET_NODE_SCALING:
+		if ((*nodes) != INFINITE)
+			(*nodes) = bg_conf->mp_node_cnt;
+		break;
+	case SELECT_GET_NODE_CPU_CNT:
+		if ((*cpus) != (uint16_t)INFINITE)
+			(*cpus) = bg_conf->cpu_ratio;
+		break;
+	case SELECT_GET_MP_CPU_CNT:
+		if ((*nodes) != INFINITE)
+			(*nodes) = bg_conf->cpus_per_mp;
+		break;
+	case SELECT_SET_MP_CNT:
+		if (((*nodes) == INFINITE) || ((*nodes) == NO_VAL))
+			tmp = (*nodes);
+		else if ((*nodes) > bg_conf->mp_node_cnt) {
+			tmp = (*nodes);
+			tmp /= bg_conf->mp_node_cnt;
+			if (tmp < 1)
+				tmp = 1;
+		} else
+			tmp = 1;
+		(*nodes) = tmp;
+		break;
+	case SELECT_APPLY_NODE_MIN_OFFSET:
+		if ((*nodes) == 1) {
+			/* Job will actually get more than one c-node,
+			 * but we can't be sure exactly how much so we
+			 * don't scale up this value. */
+			break;
+		}
+		(*nodes) *= bg_conf->mp_node_cnt;
+		break;
+	case SELECT_APPLY_NODE_MAX_OFFSET:
+		if ((*nodes) != INFINITE)
+			(*nodes) *= bg_conf->mp_node_cnt;
+		break;
+	case SELECT_SET_NODE_CNT:
+		get_select_jobinfo(job_desc->select_jobinfo->data,
+				   SELECT_JOBDATA_ALTERED, &tmp);
+		if (tmp == 1) {
+			return SLURM_SUCCESS;
+		}
+		tmp = 1;
+		set_select_jobinfo(job_desc->select_jobinfo->data,
+				   SELECT_JOBDATA_ALTERED, &tmp);
+
+		if (job_desc->min_nodes == (uint32_t) NO_VAL)
+			return SLURM_SUCCESS;
+
+		get_select_jobinfo(job_desc->select_jobinfo->data,
+				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
+
+		if (req_geometry[0] != 0
+		    && req_geometry[0] != (uint16_t)NO_VAL) {
+			job_desc->min_nodes = 1;
+			for (i=0; i<SYSTEM_DIMENSIONS; i++)
+				job_desc->min_nodes *=
+					(uint16_t)req_geometry[i];
+			job_desc->min_nodes *= bg_conf->mp_node_cnt;
+			job_desc->max_nodes = job_desc->min_nodes;
+		}
+
+		/* make sure if the user only specified min_cpus to
+		   set min_nodes correctly
+		*/
+		if ((job_desc->min_cpus != NO_VAL)
+		    && (job_desc->min_cpus > job_desc->min_nodes))
+			job_desc->min_nodes =
+				job_desc->min_cpus / bg_conf->cpu_ratio;
+
+		/* initialize min_cpus to the min_nodes */
+		job_desc->min_cpus = job_desc->min_nodes * bg_conf->cpu_ratio;
+
+		if ((job_desc->max_nodes == (uint32_t) NO_VAL)
+		    || (job_desc->max_nodes < job_desc->min_nodes))
+			job_desc->max_nodes = job_desc->min_nodes;
+
+		/* See if min_nodes is greater than one base partition */
+		if (job_desc->min_nodes > bg_conf->mp_node_cnt) {
+			/*
+			 * if it is make sure it is a factor of
+			 * bg_conf->mp_node_cnt, if it isn't make it
+			 * that way
+			 */
+			tmp = job_desc->min_nodes % bg_conf->mp_node_cnt;
+			if (tmp > 0)
+				job_desc->min_nodes +=
+					(bg_conf->mp_node_cnt-tmp);
+		}
+		tmp = job_desc->min_nodes / bg_conf->mp_node_cnt;
+
+		/* this means it is greater or equal to one mp */
+		if (tmp > 0) {
+			set_select_jobinfo(job_desc->select_jobinfo->data,
+					   SELECT_JOBDATA_NODE_CNT,
+					   &job_desc->min_nodes);
+			job_desc->min_nodes = tmp;
+			job_desc->min_cpus = bg_conf->cpus_per_mp * tmp;
+		} else {
+#ifdef HAVE_BGL
+			if (job_desc->min_nodes <= bg_conf->nodecard_node_cnt
+			    && bg_conf->nodecard_ionode_cnt)
+				job_desc->min_nodes =
+					bg_conf->nodecard_node_cnt;
+			else if (job_desc->min_nodes
+				 <= bg_conf->quarter_node_cnt)
+				job_desc->min_nodes =
+					bg_conf->quarter_node_cnt;
+			else
+				job_desc->min_nodes =
+					bg_conf->mp_node_cnt;
+
+			set_select_jobinfo(job_desc->select_jobinfo->data,
+					   SELECT_JOBDATA_NODE_CNT,
+					   &job_desc->min_nodes);
+
+			tmp = bg_conf->mp_node_cnt/job_desc->min_nodes;
+
+			job_desc->min_cpus = bg_conf->cpus_per_mp/tmp;
+			job_desc->min_nodes = 1;
+#else
+			i = bg_conf->smallest_block;
+			while (i <= bg_conf->mp_node_cnt) {
+				if (job_desc->min_nodes <= i) {
+					job_desc->min_nodes = i;
+					break;
+				}
+				i *= 2;
+			}
+
+			set_select_jobinfo(job_desc->select_jobinfo->data,
+					   SELECT_JOBDATA_NODE_CNT,
+					   &job_desc->min_nodes);
+
+			job_desc->min_cpus = job_desc->min_nodes
+				* bg_conf->cpu_ratio;
+			job_desc->min_nodes = 1;
+#endif
+		}
+
+		if (job_desc->max_nodes > bg_conf->mp_node_cnt) {
+			tmp = job_desc->max_nodes % bg_conf->mp_node_cnt;
+			if (tmp > 0)
+				job_desc->max_nodes +=
+					(bg_conf->mp_node_cnt-tmp);
+		}
+		tmp = job_desc->max_nodes / bg_conf->mp_node_cnt;
+
+		if (tmp > 0) {
+			job_desc->max_nodes = tmp;
+			job_desc->max_cpus =
+				job_desc->max_nodes * bg_conf->cpus_per_mp;
+			tmp = NO_VAL;
+		} else {
+#ifdef HAVE_BGL
+			if (job_desc->max_nodes <= bg_conf->nodecard_node_cnt
+			    && bg_conf->nodecard_ionode_cnt)
+				job_desc->max_nodes =
+					bg_conf->nodecard_node_cnt;
+			else if (job_desc->max_nodes
+				 <= bg_conf->quarter_node_cnt)
+				job_desc->max_nodes =
+					bg_conf->quarter_node_cnt;
+			else
+				job_desc->max_nodes =
+					bg_conf->mp_node_cnt;
+
+			tmp = bg_conf->mp_node_cnt/job_desc->max_nodes;
+			job_desc->max_cpus = bg_conf->cpus_per_mp/tmp;
+			job_desc->max_nodes = 1;
+#else
+			i = bg_conf->smallest_block;
+			while (i <= bg_conf->mp_node_cnt) {
+				if (job_desc->max_nodes <= i) {
+					job_desc->max_nodes = i;
+					break;
+				}
+				i *= 2;
+			}
+			job_desc->max_cpus =
+				job_desc->max_nodes * bg_conf->cpu_ratio;
+
+			job_desc->max_nodes = 1;
+#endif
+		}
+		tmp = NO_VAL;
+
+		break;
+	default:
+		error("unknown option %d for alter_node_cnt", type);
+	}
+
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -518,12 +757,30 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 extern int select_p_reconfigure(void)
 {
 #ifdef HAVE_BGQ
+	slurm_conf_lock();
+	if (!slurmctld_conf.slurm_user_name
+	    || strcmp(bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name))
+		error("The slurm user has changed from '%s' to '%s'.  "
+		      "If this is really what you "
+		      "want you will need to restart slurm for this "
+		      "change to be enforced in the bluegene plugin.",
+		      bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name);
+	if (!slurmctld_conf.node_prefix
+	    || strcmp(bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix))
+		error("Node Prefix has changed from '%s' to '%s'.  "
+		      "If this is really what you "
+		      "want you will need to restart slurm for this "
+		      "change to be enforced in the bluegene plugin.",
+		      bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix);
+	bg_conf->slurm_debug_flags = slurmctld_conf.debug_flags;
+	set_ba_debug_flags(bg_conf->slurm_debug_flags);
+	slurm_conf_unlock();
+
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
 #endif
 }
-
 
 extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 {

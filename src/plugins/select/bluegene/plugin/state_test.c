@@ -564,7 +564,7 @@ extern void test_mmcs_failures(void)
  * slurm_drain_node, so if slurmctld_locked is called we will call the
  * drainning function without locking the lock again.
  */
-extern int check_block_bp_states(char *bg_block_id, bool slurmctld_locked)
+extern int check_block_mp_states(char *bg_block_id, bool slurmctld_locked)
 {
 	int rc = SLURM_SUCCESS;
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
