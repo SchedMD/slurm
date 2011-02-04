@@ -71,10 +71,10 @@ WINDOW *text_win = NULL;
  * Functions *
  ************/
 
-static int _get_option(void);
-static void *_resize_handler(int sig);
-static int _set_pairs(void);
+static int  _get_option(void);
 static void _init_colors(void);
+static void *_resize_handler(int sig);
+static int  _set_pairs(void);
 static void _smap_exit(int rc);
 
 int main(int argc, char *argv[])
@@ -117,6 +117,7 @@ int main(int argc, char *argv[])
 	}
 
 	_init_colors();
+	init_grid(new_node_ptr);
 	select_g_ba_init(new_node_ptr, 0);
 	dim_size = slurmdb_setup_cluster_dim_size();
 
@@ -136,37 +137,39 @@ int main(int argc, char *argv[])
 		if (params.resolve[0] != 'R') {
 			i = strlen(params.resolve);
 			i -= 3;
-			if (i<0) {
+			if (i < 0) {
 				printf("No real block was entered\n");
 				goto part_fini;
 			}
 			char *rack_mid = find_bp_rack_mid(params.resolve+i);
 			if (rack_mid) {
 				printf("X=%c Y=%c Z=%c resolves to %s\n",
-				       params.resolve[X+i],
-				       params.resolve[Y+i],
-				       params.resolve[Z+i],
+				       params.resolve[0+i],
+				       params.resolve[1+i],
+				       params.resolve[2+i],
 				       rack_mid);
 			} else {
 				printf("X=%c Y=%c Z=%c has no resolve\n",
-				       params.resolve[X+i],
-				       params.resolve[Y+i],
-				       params.resolve[Z+i]);
+				       params.resolve[0+i],
+				       params.resolve[1+i],
+				       params.resolve[2+i]);
 			}
 		} else {
 			uint16_t *coord = find_bp_loc(params.resolve);
 			if (coord) {
 				printf("%s resolves to X=%d Y=%d Z=%d\n",
 				       params.resolve,
-				       coord[X], coord[Y], coord[Z]);
+				       coord[0], coord[1], coord[2]);
 			} else {
 				printf("%s has no resolve.\n",
 				       params.resolve);
 			}
 		}
 part_fini:
+#elseif defined(HAVE_BGQ)
+		printf("BlueGene/Q currently not supported.\n");
 #else
-		printf("Must be physically on a BGL or BGP system for support "
+		printf("Must be physically on a BlueGene system for support "
 		       "of resolve option.\n");
 #endif
 		_smap_exit(0);	/* Calls exit(), no return */
@@ -238,7 +241,7 @@ part_fini:
 
 			clear_window(text_win);
 			clear_window(grid_win);
-			move(0,0);
+			move(0, 0);
 
 			main_xcord = 1;
 			main_ycord = 1;
@@ -289,7 +292,7 @@ part_fini:
 			box(text_win, 0, 0);
 			wnoutrefresh(text_win);
 
-			print_grid(grid_line_cnt * (grid_win->_maxx-1));
+			print_grid();
 			box(grid_win, 0, 0);
 			wnoutrefresh(grid_win);
 
@@ -388,6 +391,7 @@ static void _init_colors(void)
 static void _smap_exit(int rc)
 {
 #ifdef MEMORY_LEAK_DEBUG
+	free_grid(void);
 	select_g_ba_fini();
 #endif
 	exit(rc);
@@ -571,7 +575,7 @@ static void *_resize_handler(int sig)
 		break;
 	}
 
-	print_grid(grid_line_cnt * (grid_win->_maxx-1));
+	print_grid();
 	box(text_win, 0, 0);
 	box(grid_win, 0, 0);
 	wnoutrefresh(text_win);

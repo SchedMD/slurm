@@ -45,15 +45,15 @@ extern void set_grid_inx(int start, int end, int count)
 	int i;
 
 	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
-		if ((ba_system_ptr->grid[i].index < start) ||
-		    (ba_system_ptr->grid[i].index > end))
+		if ((ba_system_ptr->grid[i]->index < start) ||
+		    (ba_system_ptr->grid[i]->index > end))
 			continue;
-		if ((ba_system_ptr->grid[i].state == NODE_STATE_DOWN) ||
-		    (ba_system_ptr->grid[i].state & NODE_STATE_DRAIN))
+		if ((ba_system_ptr->grid[i]->state == NODE_STATE_DOWN) ||
+		    (ba_system_ptr->grid[i]->state & NODE_STATE_DRAIN))
 			continue;
 
-		ba_system_ptr->grid[i].letter = letters[count%62];
-		ba_system_ptr->grid[i].color  = colors[count%6];
+		ba_system_ptr->grid[i]->letter = letters[count%62];
+		ba_system_ptr->grid[i]->color  = colors[count%6];
 	}
 }
 
@@ -64,40 +64,123 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 
 	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
 		for (j = 0; j < params.cluster_dims; j++) {
-			if ((ba_system_ptr->grid[i].coord[j] < start[i]) ||
-			    (ba_system_ptr->grid[i].coord[j] > end[i]))
+			if ((ba_system_ptr->grid[i]->coord[j] < start[i]) ||
+			    (ba_system_ptr->grid[i]->coord[j] > end[i]))
 				break;
 		}
 		if (j < params.cluster_dims)
 			break;	/* outside of boundary */
 		if (set ||
-		    ((ba_system_ptr->grid[i].letter == '.') &&
-		     (ba_system_ptr->grid[i].letter != '#'))) {
-			ba_system_ptr->grid[i].letter = letters[count%62];
-			ba_system_ptr->grid[i].color  = colors[count%6];
+		    ((ba_system_ptr->grid[i]->letter == '.') &&
+		     (ba_system_ptr->grid[i]->letter != '#'))) {
+			ba_system_ptr->grid[i]->letter = letters[count%62];
+			ba_system_ptr->grid[i]->color  = colors[count%6];
 		}
 		node_cnt++;
 	}
 	return node_cnt;
 }
 
+static int _coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return (coord - 'A') + 10;
+	return -1;
+}
+
+/* Build the ba_system_ptr structure from the node records */
+extern void init_grid(node_info_msg_t *node_info_ptr)
+{
+	int i, j, len;
+	ba_node_t *node_ptr;
+
+	ba_system_ptr = xmalloc(sizeof(ba_system_t));
+	ba_system_ptr->grid = xmalloc(sizeof(ba_node_t *) *
+				      node_info_ptr->record_count);
+	for (i = 0; i < node_info_ptr->record_count; i++) {
+		if ((node_info_ptr->node_array[i].name == NULL) ||
+		    (node_info_ptr->node_array[i].name[0] == '\0'))
+			continue;
+		node_ptr = xmalloc(sizeof(ba_node_t));
+		len = strlen(node_info_ptr->node_array[i].name);
+		if (params.cluster_dims == 1) {
+			node_ptr->coord = xmalloc(sizeof(uint16_t));
+			j = len - 1;
+			while ((node_info_ptr->node_array[i].name[j] >= '0') &&
+			       (node_info_ptr->node_array[i].name[j] <= '9')) {
+				node_ptr->coord[j] *= 10;
+				node_ptr->coord[j] +=
+					node_info_ptr->node_array[i].name[j]
+					- '0';
+				j++;
+			}
+				
+
+		} else {
+			len -= params.cluster_dims;
+			if (len < 0) {
+				printf("Invalid node name: %s.\n",
+				       node_info_ptr->node_array[i].name);
+				xfree(node_ptr);
+				continue;
+			}
+			node_ptr->coord = xmalloc(sizeof(uint16_t) *
+						  params.cluster_dims);
+			for (j = 0; j < params.cluster_dims; j++) {
+				node_ptr->coord[j] = _coord(node_info_ptr->
+							    node_array[i].
+							    name[len+j]);
+			}
+		}
+		node_ptr->index = i;
+		ba_system_ptr->grid[ba_system_ptr->node_cnt] = node_ptr;
+		ba_system_ptr->node_cnt++;
+	}
+
+	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
+		node_ptr = ba_system_ptr->grid[i];
+//FIXME
+		node_ptr->grid_xcord = i + 1;
+		node_ptr->grid_ycord = 1;
+	}
+}
+
+extern void free_grid(void)
+{
+	int i;
+
+	if (ba_system_ptr == NULL)
+		return;
+
+	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
+		ba_node_t *node_ptr = ba_system_ptr->grid[i];
+		xfree(node_ptr->coord);
+		xfree(node_ptr);
+	}
+	xfree(ba_system_ptr->grid);
+	xfree(ba_system_ptr);
+}
+
+
 /* print_grid - print values of every grid point */
-extern void print_grid(int dir)
+extern void print_grid(void)
 {
 	int i;
 
 	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
-		if (ba_system_ptr->grid[i].color)
-			init_pair(ba_system_ptr->grid[i].color,
-				  ba_system_ptr->grid[i].color, COLOR_BLACK);
+		if (ba_system_ptr->grid[i]->color)
+			init_pair(ba_system_ptr->grid[i]->color,
+				  ba_system_ptr->grid[i]->color, COLOR_BLACK);
 		else
-			init_pair(ba_system_ptr->grid[i].color,
-				  ba_system_ptr->grid[i].color, 7);
+			init_pair(ba_system_ptr->grid[i]->color,
+				  ba_system_ptr->grid[i]->color, 7);
 		mvwprintw(grid_win,
-			  ba_system_ptr->grid[i].grid_ycord, 
-			  ba_system_ptr->grid[i].grid_xcord, "%c",
-			  ba_system_ptr->grid[i].letter);
-		wattroff(grid_win, COLOR_PAIR(ba_system_ptr->grid[i].color));
+			  ba_system_ptr->grid[i]->grid_ycord, 
+			  ba_system_ptr->grid[i]->grid_xcord, "%c",
+			  ba_system_ptr->grid[i]->letter);
+		wattroff(grid_win, COLOR_PAIR(ba_system_ptr->grid[i]->color));
 	}
 	return;
 }
