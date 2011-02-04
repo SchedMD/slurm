@@ -240,7 +240,6 @@ part_fini:
 			clear_window(grid_win);
 			move(0,0);
 
-			init_grid(new_node_ptr);
 			main_xcord = 1;
 			main_ycord = 1;
 		}

@@ -48,6 +48,12 @@
 //#  include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
 #endif
 
+#if 1
+void get_command(void)
+{
+	fatal("fixme");
+}
+#else
 typedef struct {
 	int color;
 	char letter;
@@ -247,11 +253,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 			i+=5;
 		} else if (!strncasecmp(com+i, "deny", 4)) {
 			i += 4;
-#ifdef PASS_DENY_A
 			if (strstr(com+i, "A"))
 				request->deny_pass |= PASS_DENY_A;
-#endif
-#ifdef PASS_DENY_X
 			if (strstr(com+i, "X"))
 				request->deny_pass |= PASS_DENY_X;
 			if (strstr(com+i, "Y"))
@@ -260,7 +263,6 @@ static int _create_allocation(char *com, List allocated_blocks)
 				request->deny_pass |= PASS_DENY_Z;
 			if (!strcasecmp(com+i, "ALL"))
 				request->deny_pass |= PASS_DENY_ALL;
-#endif
 		} else if (!strncasecmp(com+i, "nodecard", 8)) {
 			small32 = 0;
 			i += 8;
@@ -1559,3 +1561,4 @@ void get_command(void)
 	get_job();
 	return;
 }
+#endif
