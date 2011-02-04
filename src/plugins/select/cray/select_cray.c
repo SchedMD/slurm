@@ -663,9 +663,9 @@ extern int select_p_update_node_config(int index)
 	return other_update_node_config(index);
 }
 
-extern int select_p_update_node_state(int index, uint16_t state)
+extern int select_p_update_node_state(struct node_record *node_ptr)
 {
-	return other_update_node_state(index, state);
+	return other_update_node_state(node_ptr);
 }
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)

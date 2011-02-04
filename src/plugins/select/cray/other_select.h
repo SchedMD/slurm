@@ -128,7 +128,7 @@ extern int other_update_node_config(int index);
  * IN state  - state to update to
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int other_update_node_state(int index, uint16_t state);
+extern int other_update_node_state(struct node_record *node_ptr);
 
 /*
  * Alter the node count for a job given the type of system we are on

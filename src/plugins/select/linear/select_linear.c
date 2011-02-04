@@ -2849,7 +2849,7 @@ extern int select_p_update_node_config (int index)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_node_state (int index, uint16_t state)
+extern int select_p_update_node_state (struct node_record *node_ptr)
 {
 	return SLURM_SUCCESS;
 }

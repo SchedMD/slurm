@@ -206,7 +206,7 @@ typedef struct slurm_select_ops {
 						 struct job_record *job_ptr,
 						 void *data);
 	int		(*update_node_config)	(int index);
-	int		(*update_node_state)	(int index, uint16_t state);
+	int		(*update_node_state)	(struct node_record *node_ptr);
 	int		(*alter_node_cnt)	(enum select_node_cnt type,
 						 void *data);
 	int		(*reconfigure)		(void);
@@ -327,11 +327,10 @@ extern int select_g_update_node_config (int index);
 /*
  * Updated a node state in the plugin, this should happen when a node is
  * drained or put into a down state then changed back.
- * IN index  - index into the node record list
- * IN state  - state to update to
+ * IN node_ptr
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int select_g_update_node_state (int index, uint16_t state);
+extern int select_g_update_node_state (struct node_record *node_ptr);
 
 /*
  * Alter the node count for a job given the type of system we are on

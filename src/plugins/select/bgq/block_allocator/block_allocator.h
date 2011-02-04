@@ -290,6 +290,8 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp);
  */
 extern int copy_mp_path(List mps, List *dest_mps);
 
+extern ba_mp_t *str2ba_mp(char *coords);
+
 /*
  * Try to allocate a block.
  *
@@ -408,7 +410,7 @@ extern uint16_t *find_mp_loc(char* mp_id);
 /*
  * find a rack/midplace location based on ABCD coords
  */
-extern char *find_mp_rack_mid(char* abcd);
+extern char *find_mp_rack_mid(char* coords);
 
 /*
  * set the used wires in the virtual system for a block from the real system

@@ -80,7 +80,6 @@ int cluster_dims = 3;
 int cluster_base = 36;
 #endif
 uint32_t cluster_flags = 0;
-char *p = '\0';
 uint32_t ba_debug_flags = 0;
 
 /* extern Global */
@@ -804,6 +803,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	int i, j, k;
 	slurm_conf_node_t *node = NULL, **ptr_array;
 	int coords[HIGHEST_DIMENSIONS];
+	char *p = '\0';
 
 	/* We only need to initialize once, so return if already done so. */
 	if (_initialized)
@@ -1184,6 +1184,41 @@ extern int copy_mp_path(List mps, List *dest_mps)
 #endif
 	return rc;
 }
+
+extern ba_mp_t *str2ba_mp(char *coords)
+{
+#ifdef HAVE_BGQ
+	int coord[cluster_dims];
+	int len, dim;
+	int number;
+	char *p = '\0';
+
+	if (!coords)
+		return NULL;
+	len = strlen(coords) - cluster_dims;
+	if (len < 0)
+		return NULL;
+	number = xstrntol(coords + len, &p, cluster_dims, cluster_base);
+
+	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
+
+	for (dim=0; dim<cluster_dims; dim++) {
+		if (coord[dim] > DIM_SIZE[dim]) {
+			error("This location %s is not possible "
+			      "in our system %c%c%c%c",
+			      coords,
+			      alpha_num[DIM_SIZE[A]],
+			      alpha_num[DIM_SIZE[X]],
+			      alpha_num[DIM_SIZE[Y]],
+			      alpha_num[DIM_SIZE[Z]]);
+			return NULL;
+		}
+	}
+	return &ba_system_ptr->grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
+#endif
+	return NULL;
+}
+
 
 /*
  * Try to allocate a block.
@@ -1605,6 +1640,7 @@ extern int removable_set_mps(char *mps)
 	int start[cluster_dims];
         int end[cluster_dims];
 	int coords[cluster_dims];
+	char *p = '\0';
 
 	if (!mps)
 		return SLURM_ERROR;
@@ -1689,6 +1725,7 @@ extern int set_all_mps_except(char *mps)
 	hostlist_t hl = hostlist_create(mps);
 	char *host = NULL, *numeric = NULL;
 	int number, coords[HIGHEST_DIMENSIONS];
+	char *p = '\0';
 
 	memset(coords, 0, sizeof(coords));
 
@@ -1869,44 +1906,16 @@ cleanup:
 /*
  * find a rack/midplace location
  */
-extern char *find_mp_rack_mid(char* axyz)
+extern char *find_mp_rack_mid(char* coords)
 {
-	int number;
-	int coord[cluster_dims];
-	int len = strlen(axyz);
-	int dim;
+	ba_mp_t *curr_mp;
 
-	len -= 4;
-	if (len<0)
+	if(!(curr_mp = str2ba_mp(coords)))
 		return NULL;
-
-	if ((axyz[len] < '0' || axyz[len] > '9')
-	    || (axyz[len+1] < '0' || axyz[len+1] > '9')
-	    || (axyz[len+2] < '0' || axyz[len+2] > '9')
-	    || (axyz[len+3] < '0' || axyz[len+3] > '9')) {
-		error("%s is not a valid Location (i.e. 0000)", axyz);
-		return NULL;
-	}
-
-	number = xstrntol(axyz + len, &p, cluster_dims, cluster_base);
-	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
-
-	for (dim=0; dim<cluster_dims; dim++) {
-		if (coord[dim] > DIM_SIZE[dim]) {
-			error("This location %s is not possible "
-			      "in our system %c%c%c%c",
-			      axyz,
-			      alpha_num[DIM_SIZE[A]],
-			      alpha_num[DIM_SIZE[X]],
-			      alpha_num[DIM_SIZE[Y]],
-			      alpha_num[DIM_SIZE[Z]]);
-			return NULL;
-		}
-	}
 
 	bridge_setup_system();
 
-	return ba_system_ptr->grid[coord[A]][coord[X]][coord[Y]][coord[Z]].loc;
+	return curr_mp->loc;
 }
 
 

@@ -168,6 +168,7 @@ typedef struct {
 	int index;
 	/* letter used in smap */
 	char letter;
+	char *loc;
 //	int phys_x;	// no longer needed
 	int state;
 	/* set if using this midplane in a block */
@@ -317,6 +318,8 @@ extern ba_node_t *ba_copy_node(ba_node_t *ba_node);
  * Return on success SLURM_SUCCESS, on error SLURM_ERROR
  */
 extern int copy_node_path(List nodes, List *dest_nodes);
+
+extern ba_node_t *str2ba_node(char *coords);
 
 /*
  * Try to allocate a block.

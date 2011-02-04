@@ -706,13 +706,12 @@ extern int other_update_node_config (int index)
  * IN state  - state to update to
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int other_update_node_state (int index, uint16_t state)
+extern int other_update_node_state (struct node_record *node_ptr)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(other_select_context->ops.update_node_state))
-		(index, state);
+	return (*(other_select_context->ops.update_node_state))(node_ptr);
 }
 
 /*

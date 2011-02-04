@@ -1130,13 +1130,13 @@ extern int select_g_update_node_config (int index)
  * IN state  - state to update to
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int select_g_update_node_state (int index, uint16_t state)
+extern int select_g_update_node_state (struct node_record *node_ptr)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(select_context[select_context_default].ops.update_node_state))
-		(index, state);
+		(node_ptr);
 }
 
 /*

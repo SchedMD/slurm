@@ -476,11 +476,9 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->last_idle	= now;
 		}
 
-		if (node_ptr) {
-			select_g_update_node_state(
-				(node_ptr - node_record_table_ptr),
-				node_ptr->node_state);
-		}
+		if (node_ptr)
+			select_g_update_node_state(node_ptr);
+
 		xfree(features);
 		xfree(gres);
 		if (gres_list) {
@@ -996,8 +994,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state = state_val |
 						(node_ptr->node_state &
 						 NODE_STATE_FLAGS);
-				select_g_update_node_state(node_inx,
-							   state_val);
+				select_g_update_node_state(node_ptr);
 
 				info ("update_node: node %s state set to %s",
 					this_node_name,
@@ -1430,7 +1427,7 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid )
 							reason_uid);
 		}
 
-		select_g_update_node_state(node_inx, node_ptr->node_state);
+		select_g_update_node_state(node_ptr);
 
 		free (this_node_name);
 	}
@@ -1745,7 +1742,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		}
 
 		select_g_update_node_config(node_inx);
-		select_g_update_node_state(node_inx, node_ptr->node_state);
+		select_g_update_node_state(node_ptr);
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
@@ -2044,7 +2041,7 @@ extern int validate_nodes_via_front_end(
 			}
 
 			select_g_update_node_config(i);
-			select_g_update_node_state(i, node_ptr->node_state);
+			select_g_update_node_state(node_ptr);
 			_sync_bitmaps(node_ptr,
 				      (node_ptr->run_job_cnt +
 				       node_ptr->comp_job_cnt));
@@ -2546,7 +2543,7 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 	bit_set   (idle_node_bitmap,  inx);
 	bit_set   (share_node_bitmap, inx);
 	bit_clear (up_node_bitmap,    inx);
-	select_g_update_node_state(inx, node_ptr->node_state);
+	select_g_update_node_state(node_ptr);
 	trigger_node_down(node_ptr);
 	clusteracct_storage_g_node_down(acct_db_conn,
 					node_ptr, event_time, NULL,

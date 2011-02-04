@@ -1223,23 +1223,18 @@ extern int select_p_update_node_config (int index)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_node_state (int index, uint16_t state)
+extern int select_p_update_node_state(struct node_record *node_ptr)
 {
 #ifdef HAVE_BG_L_P
-	int x, y, z;
-	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
-		for (z = 0; z < DIM_SIZE[Z]; z++) {
-			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if (ba_system_ptr->grid[x][y][z].index
-				    == index) {
-					ba_update_node_state(
-						&ba_system_ptr->grid[x][y][z],
-						state);
-					return SLURM_SUCCESS;
-				}
-			}
-		}
-	}
+	ba_node_t *curr_mp;
+
+	xassert(node_ptr);
+
+	if(!(curr_mp = str2ba_node(node_ptr->name)))
+		return SLURM_ERROR;
+
+	ba_update_node_state(curr_mp, node_ptr->node_state);
+	return SLURM_SUCCESS;
 #endif
 	return SLURM_ERROR;
 }

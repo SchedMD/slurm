@@ -406,6 +406,7 @@ extern void destroy_ba_node(void *ptr)
 {
 	ba_node_t *ba_node = (ba_node_t *)ptr;
 	if (ba_node) {
+		xfree(ba_node->loc);
 		xfree(ba_node);
 	}
 }
@@ -1277,6 +1278,39 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 	return rc;
 }
 
+extern ba_node_t *str2ba_node(char *coords)
+{
+#ifdef HAVE_BG_L_P
+	int coord[cluster_dims];
+	int len, dim;
+	int number;
+	char *p = '\0';
+
+	if (!coords)
+		return NULL;
+	len = strlen(coords) - cluster_dims;
+	if (len < 0)
+		return NULL;
+	number = xstrntol(coords + len, &p, cluster_dims, cluster_base);
+
+	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
+
+	for (dim=0; dim<cluster_dims; dim++) {
+		if (coord[dim] > DIM_SIZE[dim]) {
+			error("This location %s is not possible "
+			      "in our system %c%c%c",
+			      coords,
+			      alpha_num[DIM_SIZE[X]],
+			      alpha_num[DIM_SIZE[Y]],
+			      alpha_num[DIM_SIZE[Z]]);
+			return NULL;
+		}
+	}
+	return &ba_system_ptr->grid[coord[X]][coord[Y]][coord[Z]];
+#endif
+	return NULL;
+}
+
 /*
  * Try to allocate a block.
  *
@@ -1959,15 +1993,13 @@ extern int set_mp_map(void)
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc;
 	rm_BP_t *my_mp = NULL;
-	ba_mp_map_t *mp_map = NULL;
 	int mp_num, i;
 	char *mp_id = NULL;
 	rm_location_t mp_loc;
+	ba_node_t *curr_mp;
 
 	if (_mp_map_initialized)
 		return 1;
-
-	mp_map_list = list_create(_mp_map_list_del);
 
 	if (!have_db2) {
 		error("Can't access DB2 library, run from service node");
@@ -2010,8 +2042,6 @@ extern int set_mp_map(void)
 			}
 		}
 
-		mp_map = (ba_mp_map_t *) xmalloc(sizeof(ba_mp_map_t));
-
 		if ((rc = bridge_get_data(my_mp, RM_BPID, &mp_id))
 		    != STATUS_OK) {
 			xfree(mp_map);
@@ -2031,12 +2061,23 @@ extern int set_mp_map(void)
 			continue;
 		}
 
-		mp_map->mp_id = xstrdup(mp_id);
-		mp_map->coord[X] = mp_loc.X;
-		mp_map->coord[Y] = mp_loc.Y;
-		mp_map->coord[Z] = mp_loc.Z;
+		if (mp_loc.X > DIM_SIZE[X]
+		    || mp_loc.Y > DIM_SIZE[Y]
+		    || mp_loc.Z > DIM_SIZE[Z]) {
+			error("This location %c%c%c is not possible "
+			      "in our system %c%c%c",
+			      %x%ccoords,
+			      alpha_num[mp_loc.X],
+			      alpha_num[mp_loc.Y],
+			      alpha_num[mp_loc.Z],
+			      alpha_num[DIM_SIZE[X]],
+			      alpha_num[DIM_SIZE[Y]],
+			      alpha_num[DIM_SIZE[Z]]);
+			return NULL;
+		}
 
-		list_push(mp_map_list, mp_map);
+		curr_mp = ba_system_ptr->grid[mp_loc.X][mp_loc.Y][mp_loc.Z];
+		curr_mp->loc = xstrdup(mp_id);
 
 		free(mp_id);
 	}
@@ -2052,9 +2093,8 @@ extern int set_mp_map(void)
 extern uint16_t *find_mp_loc(char* mp_id)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	ba_mp_map_t *mp_map = NULL;
-	ListIterator itr;
 	char *check = NULL;
+	int x, y, z;
 
 	if (!mp_map_list) {
 		if (set_mp_map() == -1)
@@ -2095,17 +2135,22 @@ extern uint16_t *find_mp_loc(char* mp_id)
 	}
 #endif
 
-	itr = list_iterator_create(mp_map_list);
-	while ((mp_map = list_next(itr)))
-		if (!strcasecmp(mp_map->mp_id, check))
-			break;	/* we found it */
-	list_iterator_destroy(itr);
+	for (x = 0; x <= DIM_SIZE[X]; x++)
+		for (y = 0; y <= DIM_SIZE[Y]; y++)
+			for (z = 0; z <= DIM_SIZE[Z]; z++)
+				if (!strcasecmp(ba_system_ptr->
+						grid[x][y][z].loc,
+						check)) {
+					ba_mp = &ba_system_ptr->
+						grid[x][y][z];
+					goto cleanup; /* we found it */
+				}
 
 cleanup:
 	xfree(check);
 
-	if (mp_map != NULL)
-		return mp_map->coord;
+	if (ba_mp)
+		return ba_mp->loc;
 	else
 		return NULL;
 
@@ -2120,44 +2165,17 @@ cleanup:
 extern char *find_mp_rack_mid(char* xyz)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	ba_mp_map_t *mp_map = NULL;
-	ListIterator itr;
-	int number;
-	int coord[cluster_dims];
-	int len = strlen(xyz);
+	ba_node_t *curr_mp;
 
-	len -= 3;
-	if (len<0)
+	if(!(curr_mp = str2ba_node(coords)))
 		return NULL;
-
-	if ((xyz[len] < '0' || xyz[len] > '9')
-	    || (xyz[len+1] < '0' || xyz[len+1] > '9')
-	    || (xyz[len+2] < '0' || xyz[len+2] > '9')) {
-		error("%s is not a valid Location (i.e. 000)", xyz);
-		return NULL;
-	}
-
-	number = xstrntol(xyz + len, &p, cluster_dims, cluster_base);
-	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
 
 	if (!mp_map_list) {
 		if (set_mp_map() == -1)
 			return NULL;
 	}
 
-	itr = list_iterator_create(mp_map_list);
-	while ((mp_map = list_next(itr)) != NULL)
-		if (mp_map->coord[X] == coord[X] &&
-		    mp_map->coord[Y] == coord[Y] &&
-		    mp_map->coord[Z] == coord[Z])
-			break;	/* we found it */
-
-	list_iterator_destroy(itr);
-	if (mp_map != NULL)
-		return mp_map->mp_id;
-	else
-		return NULL;
-
+	return curr_mp->loc;
 #else
 	return NULL;
 #endif

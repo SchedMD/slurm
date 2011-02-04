@@ -83,36 +83,6 @@ const uint32_t plugin_version	= 200;
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
 
 #ifdef HAVE_BGQ
-static int _internal_update_node_state(int level, int *coords,
-				       int index, uint16_t state)
-{
-	ba_mp_t *curr_mp;
-
-	if (level > cluster_dims)
-		return SLURM_ERROR;
-
-	if (level < cluster_dims) {
-		for (coords[level] = 0;
-		     coords[level] < DIM_SIZE[level];
-		     coords[level]++) {
-			/* handle the outter dims here */
-			if (_internal_update_node_state(
-				    level+1, coords, index, state)
-			    == SLURM_SUCCESS)
-				return SLURM_SUCCESS;
-		}
-		return SLURM_ERROR;
-	}
-
-	curr_mp = &ba_system_ptr->grid
-		[coords[A]][coords[X]][coords[Y]][coords[Z]];
-
-	if (curr_mp->index == index) {
-		ba_update_mp_state(curr_mp, state);
-		return SLURM_SUCCESS;
-	}
-	return SLURM_ERROR;
-}
 
 /* Pack all relevent information about a block */
 extern void pack_block(bg_record_t *bg_record, Buf buffer,
@@ -650,11 +620,18 @@ extern int select_p_update_node_config (int index)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_node_state (int index, uint16_t state)
+extern int select_p_update_node_state(struct node_record *node_ptr)
 {
 #ifdef HAVE_BGQ
-	int coords[cluster_dims];
-	return _internal_update_node_state(A, coords, index, state);
+	ba_mp_t *curr_mp;
+
+	xassert(node_ptr);
+
+	if(!(curr_mp = str2ba_mp(node_ptr->name)))
+		return SLURM_ERROR;
+
+	ba_update_mp_state(curr_mp, node_ptr->node_state);
+	return SLURM_SUCCESS;
 #endif
 	return SLURM_ERROR;
 }
