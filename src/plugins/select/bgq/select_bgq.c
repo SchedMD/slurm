@@ -79,6 +79,8 @@ const char plugin_type[]       	= "select/bgq";
 const uint32_t plugin_id     	= 103;
 const uint32_t plugin_version	= 200;
 
+extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
+
 #ifdef HAVE_BGQ
 static int _internal_update_node_state(int level, int *coords,
 				       int index, uint16_t state)
@@ -90,7 +92,7 @@ static int _internal_update_node_state(int level, int *coords,
 
 	if (level < cluster_dims) {
 		for (coords[level] = 0;
-		     coords[level] <= DIM_SIZE[level];
+		     coords[level] < DIM_SIZE[level];
 		     coords[level]++) {
 			/* handle the outter dims here */
 			if (_internal_update_node_state(
@@ -291,6 +293,10 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 #ifdef HAVE_BGQ
+	if (node_cnt>0 && bg_conf)
+		if (node_ptr->cpus >= bg_conf->mp_node_cnt)
+			bg_conf->cpus_per_mp = node_ptr->cpus;
+
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -304,6 +310,27 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  extern int select_p_block_init(List part_list)
 {
 #ifdef HAVE_BGQ
+	/* select_p_node_init needs to be called before this to set
+	   this up correctly
+	*/
+	if (read_bg_conf() == SLURM_ERROR) {
+		fatal("Error, could not read the file");
+		return SLURM_ERROR;
+	}
+
+	if (part_list) {
+		struct part_record *part_ptr = NULL;
+		ListIterator itr = list_iterator_create(part_list);
+		while ((part_ptr = list_next(itr))) {
+			part_ptr->max_nodes = part_ptr->max_nodes_orig;
+			part_ptr->min_nodes = part_ptr->min_nodes_orig;
+			select_p_alter_node_cnt(SELECT_SET_MP_CNT,
+						&part_ptr->max_nodes);
+			select_p_alter_node_cnt(SELECT_SET_MP_CNT,
+						&part_ptr->min_nodes);
+		}
+		list_iterator_destroy(itr);
+	}
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;

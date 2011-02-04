@@ -1746,7 +1746,7 @@ extern int set_all_mps_except(char *mps)
 	for (a = 0; a < DIM_SIZE[A]; a++)
 		for (x = 0; x < DIM_SIZE[X]; x++)
 			for (y = 0; y < DIM_SIZE[Y]; y++)
-				for (z = 0; z <= DIM_SIZE[Z]; z++) {
+				for (z = 0; z < DIM_SIZE[Z]; z++) {
 					if (ba_system_ptr->grid
 					    [a][x][y][z].state
 					    & NODE_RESUME) {
@@ -1873,9 +1873,9 @@ extern uint16_t *find_mp_loc(char* mp_id)
 	}
 #endif
 
-	for (a = 0; a < DIM_SIZE[A]; a++)
-		for (x = 0; x < DIM_SIZE[X]; x++)
-			for (y = 0; y < DIM_SIZE[Y]; y++)
+	for (a = 0; a <= DIM_SIZE[A]; a++)
+		for (x = 0; x <= DIM_SIZE[X]; x++)
+			for (y = 0; y <= DIM_SIZE[Y]; y++)
 				for (z = 0; z <= DIM_SIZE[Z]; z++)
 					if (!strcasecmp(ba_system_ptr->
 							grid[a][x][y][z].loc,
