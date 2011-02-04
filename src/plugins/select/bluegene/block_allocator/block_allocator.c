@@ -46,9 +46,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include "block_allocator.h"
-#include "src/common/uid.h"
-#include "src/common/timers.h"
 #include "src/common/slurmdb_defs.h"
+#include "src/common/timers.h"
+#include "src/common/uid.h"
+
 
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
@@ -213,27 +214,6 @@ static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord);
 static void _destroy_geo(void *object);
 
 static int _coord(char coord);
-
-extern char *ba_passthroughs_string(uint16_t passthrough)
-{
-	char *pass = NULL;
-	if (passthrough & PASS_FOUND_X)
-		xstrcat(pass, "X");
-	if (passthrough & PASS_FOUND_Y) {
-		if (pass)
-			xstrcat(pass, ",Y");
-		else
-			xstrcat(pass, "Y");
-	}
-	if (passthrough & PASS_FOUND_Z) {
-		if (pass)
-			xstrcat(pass, ",Z");
-		else
-			xstrcat(pass, "Z");
-	}
-
-	return pass;
-}
 
 
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,

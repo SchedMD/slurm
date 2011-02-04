@@ -276,7 +276,7 @@ extern void get_bg_part(void)
 			int overlap = 0;
 			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
 			inx2bitstr(loc_bitmap,
-				   new_bg_ptr->block_array[i].bp_inx);
+				   new_bg_ptr->block_array[i].mp_inx);
 			overlap = bit_overlap(loc_bitmap, nodes_req);
 			FREE_NULL_BITMAP(loc_bitmap);
 			if (!overlap)
@@ -306,7 +306,8 @@ extern void get_bg_part(void)
 		block_ptr->bg_user_name
 			= xstrdup(new_bg_ptr->block_array[i].owner_name);
 		block_ptr->state = new_bg_ptr->block_array[i].state;
-		block_ptr->bg_conn_type	= new_bg_ptr->block_array[i].conn_type;
+		block_ptr->bg_conn_type	= new_bg_ptr->block_array[i].
+					  conn_type[0];
 		if (params.cluster_flags & CLUSTER_FLAG_BGL)
 			block_ptr->bg_node_use =
 				new_bg_ptr->block_array[i].node_use;

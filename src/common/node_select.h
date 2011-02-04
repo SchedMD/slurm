@@ -40,6 +40,10 @@
 #ifndef _NODE_SELECT_H
 #define _NODE_SELECT_H
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include "src/common/list.h"
@@ -48,6 +52,18 @@
 
 /* NO_JOB_RUNNING is used by select/blugene, select/bgq, smap and sview */
 #define NO_JOB_RUNNING -1
+
+#define PASS_DENY_A    0x0001
+#define PASS_DENY_X    0x0002
+#define PASS_DENY_Y    0x0004
+#define PASS_DENY_Z    0x0008
+#define PASS_DENY_ALL  0x00ff
+
+#define PASS_FOUND_A   0x0100
+#define PASS_FOUND_X   0x0200
+#define PASS_FOUND_Y   0x0400
+#define PASS_FOUND_Z   0x0800
+#define PASS_FOUND_ANY 0xff00
 
 typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
@@ -569,9 +585,13 @@ extern int select_g_reconfigure(void);
 extern bitstr_t *select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt);
 extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 extern void select_g_ba_fini(void);
-extern int *select_g_ba_get_dims();
+extern int *select_g_ba_get_dims(void);
 extern void select_g_ba_reset(bool track_down_nodes);
 extern int select_g_ba_request_apply(select_ba_request_t *ba_request);
 extern int select_g_ba_remove_block(List mps, int new_count, bool is_small);
+
+/* Convert PASS_FOUND_* into equivalent string
+ * Caller MUST xfree() the returned value */
+extern char *select_g_ba_passthroughs_string(uint16_t passthrough);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

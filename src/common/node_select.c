@@ -1208,7 +1208,7 @@ extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	(*(select_context[plugin_id].ops.ba_init))(node_info_ptr, sanity_check);
 }
 
-extern void select_g_ba_fini()
+extern void select_g_ba_fini(void)
 {
 	uint32_t plugin_id;
 
@@ -1282,4 +1282,32 @@ extern int select_g_ba_remove_block(List mps, int new_count, bool is_small)
 
 	return (*(select_context[plugin_id].ops.ba_remove_block))
 		(mps, new_count, is_small);
+}
+
+extern char *select_g_ba_passthroughs_string(uint16_t passthrough)
+{
+	char *pass = NULL;
+
+	if (passthrough & PASS_FOUND_A)
+		xstrcat(pass, "A");
+	if (passthrough & PASS_FOUND_X) {
+		if (pass)
+			xstrcat(pass, ",X");
+		else
+			xstrcat(pass, "X");
+	}
+	if (passthrough & PASS_FOUND_Y) {
+		if (pass)
+			xstrcat(pass, ",Y");
+		else
+			xstrcat(pass, "Y");
+	}
+	if (passthrough & PASS_FOUND_Z) {
+		if (pass)
+			xstrcat(pass, ",Z");
+		else
+			xstrcat(pass, "Z");
+	}
+
+	return pass;
 }

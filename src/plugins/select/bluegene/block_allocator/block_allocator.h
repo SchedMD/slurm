@@ -40,22 +40,13 @@
 #define _BLOCK_ALLOCATOR_H_
 
 #include "bridge_linker.h"
+#include "src/common/node_select.h"
 
 // #define DEBUG_PA
 #define BIG_MAX 9999
 #define BUFSIZE 4096
 
 #define NUM_PORTS_PER_NODE 6
-
-#define PASS_DENY_X 0x0001
-#define PASS_DENY_Y 0x0002
-#define PASS_DENY_Z 0x0004
-#define PASS_DENY_ALL 0x00ff
-
-#define PASS_FOUND_X 0x0100
-#define PASS_FOUND_Y 0x0200
-#define PASS_FOUND_Z 0x0400
-#define PASS_FOUND_ANY 0xff00
 
 extern bool _initialized;
 
@@ -210,9 +201,6 @@ extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 					      * bluegene.conf file. */
 extern uint16_t ba_deny_pass;
 extern ba_system_t *ba_system_ptr;
-
-/* must xfree return of this */
-extern char *ba_passthroughs_string(uint16_t passthrough);
 
 /* Parse a block request from the bluegene.conf file */
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,

@@ -100,7 +100,7 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 	allocated_block_t *allocated_block = NULL;
 	ba_node_t *current = NULL;
 
-	if (!allocate_block(request, results)){
+	if (!allocate_block(request, results)) {
 		memset(error_string,0,255);
 		if (params.cluster_dims == 3) {
 			sprintf(error_string,"allocate failure for %dx%dx%d",
@@ -113,7 +113,7 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 		}
 		return NULL;
 	} else {
-		char *pass = ba_passthroughs_string(request->deny_pass);
+		char *pass = select_g_ba_passthroughs_string(request->deny_pass);
 		if (pass) {
 			sprintf(error_string,"THERE ARE PASSTHROUGHS IN "
 				"THIS ALLOCATION DIM %s!!!!!!!", pass);

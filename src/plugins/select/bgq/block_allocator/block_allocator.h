@@ -40,6 +40,7 @@
 #ifndef _BLOCK_ALLOCATOR_H_
 #define _BLOCK_ALLOCATOR_H_
 
+#include "src/common/node_select.h"
 #include "../bridge_linker/bridge_linker.h"
 
 // #define DEBUG_PA
@@ -47,18 +48,6 @@
 #define BUFSIZE 4096
 
 #define NUM_PORTS_PER_NODE 4
-
-#define PASS_DENY_A 0x0001
-#define PASS_DENY_X 0x0002
-#define PASS_DENY_Y 0x0004
-#define PASS_DENY_Z 0x0008
-#define PASS_DENY_ALL 0x00ff
-
-#define PASS_FOUND_A 0x0100
-#define PASS_FOUND_X 0x0200
-#define PASS_FOUND_Y 0x0400
-#define PASS_FOUND_Z 0x0800
-#define PASS_FOUND_ANY 0xff00
 
 enum {A, X, Y, Z};
 
@@ -186,9 +175,6 @@ extern uint16_t ba_deny_pass;
 extern ba_system_t *ba_system_ptr;
 extern int cluster_dims;
 extern int cluster_base;
-
-/* must xfree return of this */
-extern char *ba_passthroughs_string(uint16_t passthrough);
 
 /* Parse a block request from the bluegene.conf file */
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
