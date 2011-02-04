@@ -399,7 +399,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		      bg_err_str(rc));
 	}
 
-	ba_node = list_peek(bg_record->bg_block_list);
+	ba_node = list_peek(bg_record->ba_mp_list);
 
 	if (_get_mp_by_location(bg, ba_node->coord, &curr_mp)
 	    == SLURM_ERROR) {
@@ -660,7 +660,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	rm_BP_t *curr_mp = NULL;
 	rm_switch_t *coord_switch[SYSTEM_DIMENSIONS];
 #endif
-	if (!bg_record->bg_block_list) {
+	if (!bg_record->ba_mp_list) {
 		error("There was no block_list given, can't create block");
 		return SLURM_ERROR;
 	}
@@ -668,7 +668,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	bg_record->switch_count = 0;
 	bg_record->mp_count = 0;
 
-	itr = list_iterator_create(bg_record->bg_block_list);
+	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_node = list_next(itr))) {
 		if (ba_node->used) {
 			bg_record->mp_count++;

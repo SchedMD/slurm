@@ -156,10 +156,10 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				       alpha_num[geo[X]],
 				       alpha_num[geo[Y]],
 				       alpha_num[geo[Z]]);
-				if (bg_record->bg_block_list
-				    && list_count(bg_record->bg_block_list)) {
+				if (bg_record->ba_mp_list
+				    && list_count(bg_record->ba_mp_list)) {
 					if (check_and_set_node_list(
-						    bg_record->bg_block_list)
+						    bg_record->ba_mp_list)
 					    == SLURM_ERROR) {
 						debug2("something happened in "
 						       "the load of %s"
@@ -207,14 +207,14 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						      bg_record->nodes,
 						      temp);
 					}
-					if (bg_record->bg_block_list)
+					if (bg_record->ba_mp_list)
 						list_destroy(bg_record->
-							     bg_block_list);
-					bg_record->bg_block_list =
+							     ba_mp_list);
+					bg_record->ba_mp_list =
 						list_create(destroy_ba_node);
 					copy_node_path(
 						results,
-						&bg_record->bg_block_list);
+						&bg_record->ba_mp_list);
 					list_destroy(results);
 				}
 			}
@@ -412,10 +412,10 @@ extern int create_full_system_block(List bg_found_block_list)
 		return SLURM_ERROR;
 	}
 	xfree(name);
-	if (bg_record->bg_block_list)
-		list_destroy(bg_record->bg_block_list);
-	bg_record->bg_block_list = list_create(destroy_ba_node);
-	copy_node_path(results, &bg_record->bg_block_list);
+	if (bg_record->ba_mp_list)
+		list_destroy(bg_record->ba_mp_list);
+	bg_record->ba_mp_list = list_create(destroy_ba_node);
+	copy_node_path(results, &bg_record->ba_mp_list);
 	list_destroy(results);
 
 	if ((rc = configure_block(bg_record)) == SLURM_ERROR) {

@@ -102,7 +102,7 @@ static void _print_list(List list)
  */
 static void _pre_allocate(bg_record_t *bg_record)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	int rc;
 	int send_psets=bg_conf->numpsets;
 
@@ -180,7 +180,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 static int _post_allocate(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	int i;
 	pm_partition_id_t block_id;
 	uid_t my_uid;
@@ -268,7 +268,7 @@ static int _post_allocate(bg_record_t *bg_record)
 	return rc;
 }
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 
 static int _set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 {
@@ -388,7 +388,7 @@ cleanup:
 extern int configure_block(bg_record_t *bg_record)
 {
 	/* new block to be added */
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bridge_new_block(&bg_record->bg_block);
 #endif
 	_pre_allocate(bg_record);
@@ -402,7 +402,7 @@ extern int configure_block(bg_record_t *bg_record)
 	return 1;
 }
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 /*
  * Download from MMCS the initial BG block information
  */
@@ -1028,6 +1028,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		if (!strcmp(ver_str, BLOCK_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, BLOCK_2_1_STATE_VERSION)) {
+			protocol_version = SLURM_2_2_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, BLOCK_2_1_STATE_VERSION)) {
 			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
@@ -1048,7 +1050,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		goto unpack_error;
 	}
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	for (i=0; i<block_ptr->record_count; i++) {
 		block_info = &(block_ptr->block_array[i]);
 
@@ -1171,7 +1173,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 #ifdef HAVE_BGL
 		bg_record->node_use = block_info->node_use;
 #endif
-		bg_record->conn_type = block_info->conn_type[0];
+		memcpy(bg_record->conn_type, block_info->conn_type,
+		       sizeof(bg_record->conn_type));
 
 		process_nodes(bg_record, true);
 
@@ -1245,10 +1248,10 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			      bg_record->nodes, temp);
 		}
 		if (bg_record->ba_mp_list)
-			list_destroy(bg_record->ba_mp_list);
-		bg_record->ba_mp_list =
-			list_create(destroy_ba_node);
-		copy_node_path(results, &bg_record->ba_mp_list);
+			list_flush(bg_record->ba_mp_list);
+		else
+			bg_record->ba_mp_list =	list_create(destroy_ba_mp);
+		copy_mp_path(results, &bg_record->ba_mp_list);
 		list_destroy(results);
 
 		configure_block(bg_record);

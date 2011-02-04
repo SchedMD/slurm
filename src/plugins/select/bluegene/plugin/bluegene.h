@@ -112,7 +112,8 @@ extern int num_unused_cpus;
 #define BITSIZE 128
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER004"
+#define BLOCK_STATE_VERSION      "VER005"
+#define BLOCK_2_2_STATE_VERSION  "VER004" /*Slurm 2.2's version*/
 #define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
 
 #include "bg_block_info.h"

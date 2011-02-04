@@ -235,7 +235,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	if (bg_record->small) {
+	if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
 		info("we can't make small blocks yet");
 		return SLURM_ERROR;
 	}

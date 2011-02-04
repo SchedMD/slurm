@@ -2068,6 +2068,17 @@ extern void slurm_free_job_step_pids(void *object)
 }
 
 
+extern void slurm_free_block_job_info(void *object)
+{
+	block_job_info_t *block_job_info = (block_job_info_t *)object;
+	if (block_job_info) {
+		xfree(block_job_info->cnodes);
+		xfree(block_job_info->cnode_inx);
+		xfree(block_job_info->user);
+		xfree(block_job_info);
+	}
+}
+
 extern void slurm_free_block_info_members(block_info_t *block_info)
 {
 	if(block_info) {

@@ -144,6 +144,8 @@ extern void pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer,
 				  uint16_t protocol_version);
 extern int unpack_multi_core_data (multi_core_data_t **multi_core, Buf buffer,
 				   uint16_t protocol_version);
+extern void slurm_pack_block_job_info(block_job_info_t *block_job_info,
+				      Buf buffer, uint16_t protocol_version);
 extern int slurm_unpack_block_info_msg(
 	block_info_msg_t **block_info_msg_pptr, Buf buffer,
 	uint16_t protocol_version);

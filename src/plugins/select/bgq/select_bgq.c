@@ -39,6 +39,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "bluegene.h"
+#include <fcntl.h>
 
 #define HUGE_BUF_SIZE (1024*16)
 #define NOT_FROM_CONTROLLER -2
@@ -112,6 +113,93 @@ static int _internal_update_node_state(int level, int *coords,
 	}
 	return SLURM_ERROR;
 }
+
+/* Pack all relevent information about a block */
+extern void pack_block(bg_record_t *bg_record, Buf buffer,
+		       uint16_t protocol_version)
+{
+	int dim;
+	uint32_t count = NO_VAL;
+	block_job_info_t *job;
+	ListIterator itr;
+
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		packstr(bg_record->bg_block_id, buffer);
+		packstr(bg_record->blrtsimage, buffer);
+		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack32(SYSTEM_DIMENSIONS, buffer);
+		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+			pack16(bg_record->conn_type[dim], buffer);
+		packstr(bg_record->ionodes, buffer);
+		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+
+		if (bg_record->job_list)
+			count = list_count(bg_record->job_list);
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(bg_record->job_list);
+			while ((job = list_next(itr))) {
+				slurm_pack_block_job_info(job, buffer,
+							  protocol_version);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32((uint32_t)bg_record->job_running, buffer);
+		packstr(bg_record->linuximage, buffer);
+		packstr(bg_record->mloaderimage, buffer);
+		packstr(bg_record->nodes, buffer);
+		pack32((uint32_t)bg_record->node_cnt, buffer);
+		pack16((uint16_t)bg_record->node_use, buffer);
+		packstr(bg_record->user_name, buffer);
+		packstr(bg_record->ramdiskimage, buffer);
+		packstr(bg_record->reason, buffer);
+		pack16((uint16_t)bg_record->state, buffer);
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		packstr(bg_record->bg_block_id, buffer);
+#ifdef HAVE_BGL
+		packstr(bg_record->blrtsimage, buffer);
+#endif
+		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack16((uint16_t)bg_record->conn_type[0], buffer);
+		packstr(bg_record->ionodes, buffer);
+		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+		pack32((uint32_t)bg_record->job_running, buffer);
+		packstr(bg_record->linuximage, buffer);
+		packstr(bg_record->mloaderimage, buffer);
+		packstr(bg_record->nodes, buffer);
+		pack32((uint32_t)bg_record->node_cnt, buffer);
+#ifdef HAVE_BGL
+		pack16((uint16_t)bg_record->node_use, buffer);
+#endif
+		packstr(bg_record->user_name, buffer);
+		packstr(bg_record->ramdiskimage, buffer);
+		packstr(bg_record->reason, buffer);
+		pack16((uint16_t)bg_record->state, buffer);
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		packstr(bg_record->bg_block_id, buffer);
+#ifdef HAVE_BGL
+		packstr(bg_record->blrtsimage, buffer);
+#endif
+		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack16((uint16_t)bg_record->conn_type[0], buffer);
+		packstr(bg_record->ionodes, buffer);
+		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+		pack32((uint32_t)bg_record->job_running, buffer);
+		packstr(bg_record->linuximage, buffer);
+		packstr(bg_record->mloaderimage, buffer);
+		packstr(bg_record->nodes, buffer);
+		pack32((uint32_t)bg_record->node_cnt, buffer);
+#ifdef HAVE_BGL
+		pack16((uint16_t)bg_record->node_use, buffer);
+#endif
+		packstr(bg_record->user_name, buffer);
+		packstr(bg_record->ramdiskimage, buffer);
+		pack16((uint16_t)bg_record->state, buffer);
+	}
+}
+
 #endif
 
 /*
@@ -162,100 +250,100 @@ extern int fini ( void )
 extern int select_p_state_save(char *dir_name)
 {
 #ifdef HAVE_BGQ
-/* 	ListIterator itr; */
-/* 	bg_record_t *bg_record = NULL; */
-/* 	int error_code = 0, log_fd; */
-/* 	char *old_file, *new_file, *reg_file; */
-/* 	uint32_t blocks_packed = 0, tmp_offset, block_offset; */
-/* 	Buf buffer = init_buf(BUF_SIZE); */
-/* 	DEF_TIMERS; */
+	ListIterator itr;
+	bg_record_t *bg_record = NULL;
+	int error_code = 0, log_fd;
+	char *old_file, *new_file, *reg_file;
+	uint32_t blocks_packed = 0, tmp_offset, block_offset;
+	Buf buffer = init_buf(BUF_SIZE);
+	DEF_TIMERS;
 
-/* 	debug("bluegene: select_p_state_save"); */
-/* 	START_TIMER; */
-/* 	/\* write header: time *\/ */
-/* 	packstr(BLOCK_STATE_VERSION, buffer); */
-/* 	block_offset = get_buf_offset(buffer); */
-/* 	pack32(blocks_packed, buffer); */
-/* 	pack_time(time(NULL), buffer); */
+	debug("bluegene: select_p_state_save");
+	START_TIMER;
+	/* write header: time */
+	packstr(BLOCK_STATE_VERSION, buffer);
+	block_offset = get_buf_offset(buffer);
+	pack32(blocks_packed, buffer);
+	pack_time(time(NULL), buffer);
 
-/* 	/\* write block records to buffer *\/ */
-/* 	slurm_mutex_lock(&block_state_mutex); */
-/* 	itr = list_iterator_create(bg_lists->main); */
-/* 	while ((bg_record = list_next(itr))) { */
-/* 		if (bg_record->magic != BLOCK_MAGIC) */
-/* 			continue; */
-/* 		/\* on real bluegene systems we only want to keep track of */
-/* 		 * the blocks in an error state */
-/* 		 *\/ */
-/* #ifdef HAVE_BGQ_FILES */
-/* 		if (bg_record->state != RM_PARTITION_ERROR) */
-/* 			continue; */
-/* #endif */
-/* 		xassert(bg_record->bg_block_id != NULL); */
+	/* write block records to buffer */
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = list_next(itr))) {
+		if (bg_record->magic != BLOCK_MAGIC)
+			continue;
+		/* on real bluegene systems we only want to keep track of
+		 * the blocks in an error state
+		 */
+#ifdef HAVE_BGQ_FILES
+		if (bg_record->state != RM_PARTITION_ERROR)
+			continue;
+#endif
+		xassert(bg_record->bg_block_id != NULL);
 
-/* 		pack_block(bg_record, buffer, SLURM_PROTOCOL_VERSION); */
-/* 		blocks_packed++; */
-/* 	} */
-/* 	list_iterator_destroy(itr); */
-/* 	slurm_mutex_unlock(&block_state_mutex); */
-/* 	tmp_offset = get_buf_offset(buffer); */
-/* 	set_buf_offset(buffer, block_offset); */
-/* 	pack32(blocks_packed, buffer); */
-/* 	set_buf_offset(buffer, tmp_offset); */
-/* 	/\* Maintain config read lock until we copy state_save_location *\ */
-/* 	   \* unlock_slurmctld(part_read_lock);          - see below      *\/ */
+		pack_block(bg_record, buffer, SLURM_PROTOCOL_VERSION);
+		blocks_packed++;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, block_offset);
+	pack32(blocks_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+	/* Maintain config read lock until we copy state_save_location *\
+	   \* unlock_slurmctld(part_read_lock);          - see below      */
 
-/* 	/\* write the buffer to file *\/ */
-/* 	slurm_conf_lock(); */
-/* 	old_file = xstrdup(slurmctld_conf.state_save_location); */
-/* 	xstrcat(old_file, "/block_state.old"); */
-/* 	reg_file = xstrdup(slurmctld_conf.state_save_location); */
-/* 	xstrcat(reg_file, "/block_state"); */
-/* 	new_file = xstrdup(slurmctld_conf.state_save_location); */
-/* 	xstrcat(new_file, "/block_state.new"); */
-/* 	slurm_conf_unlock(); */
+	/* write the buffer to file */
+	slurm_conf_lock();
+	old_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(old_file, "/block_state.old");
+	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(reg_file, "/block_state");
+	new_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(new_file, "/block_state.new");
+	slurm_conf_unlock();
 
-/* 	log_fd = creat(new_file, 0600); */
-/* 	if (log_fd < 0) { */
-/* 		error("Can't save state, error creating file %s, %m", */
-/* 		      new_file); */
-/* 		error_code = errno; */
-/* 	} else { */
-/* 		int pos = 0, nwrite = get_buf_offset(buffer), amount; */
-/* 		char *data = (char *)get_buf_data(buffer); */
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
 
-/* 		while (nwrite > 0) { */
-/* 			amount = write(log_fd, &data[pos], nwrite); */
-/* 			if ((amount < 0) && (errno != EINTR)) { */
-/* 				error("Error writing file %s, %m", new_file); */
-/* 				error_code = errno; */
-/* 				break; */
-/* 			} */
-/* 			nwrite -= amount; */
-/* 			pos    += amount; */
-/* 		} */
-/* 		fsync(log_fd); */
-/* 		close(log_fd); */
-/* 	} */
-/* 	if (error_code) */
-/* 		(void) unlink(new_file); */
-/* 	else {			/\* file shuffle *\/ */
-/* 		(void) unlink(old_file); */
-/* 		if (link(reg_file, old_file)) */
-/* 			debug4("unable to create link for %s -> %s: %m", */
-/* 			       reg_file, old_file); */
-/* 		(void) unlink(reg_file); */
-/* 		if (link(new_file, reg_file)) */
-/* 			debug4("unable to create link for %s -> %s: %m", */
-/* 			       new_file, reg_file); */
-/* 		(void) unlink(new_file); */
-/* 	} */
-/* 	xfree(old_file); */
-/* 	xfree(reg_file); */
-/* 	xfree(new_file); */
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
 
-/* 	free_buf(buffer); */
-/* 	END_TIMER2("select_p_state_save"); */
+	free_buf(buffer);
+	END_TIMER2("select_p_state_save");
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -267,7 +355,7 @@ extern int select_p_state_restore(char *dir_name)
 #ifdef HAVE_BGQ
 	debug("bgq: select_p_state_restore");
 
-	return SLURM_SUCCESS;
+	return validate_current_blocks(dir_name);
 #else
 	return SLURM_ERROR;
 #endif
@@ -277,7 +365,11 @@ extern int select_p_state_restore(char *dir_name)
 extern int select_p_job_init(List job_list)
 {
 #ifdef HAVE_BGQ
-	int rc = SLURM_SUCCESS;
+	int rc = sync_jobs(job_list);
+
+	/* after we have synced the blocks then we say they are
+	   created. */
+	blocks_are_created = 1;
 	return rc;
 #else
 	return SLURM_ERROR;

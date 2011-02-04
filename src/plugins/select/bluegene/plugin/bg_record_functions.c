@@ -94,20 +94,21 @@ extern void destroy_bg_record(void *object)
 	if (bg_record) {
 		bg_record->magic = 0;
 		xfree(bg_record->bg_block_id);
+		if (bg_record->ba_mp_list) {
+			list_destroy(bg_record->ba_mp_list);
+			bg_record->ba_mp_list = NULL;
+		}
+
+		FREE_NULL_BITMAP(bg_record->bitmap);
+
+		xfree(bg_record->blrtsimage);
 		xfree(bg_record->nodes);
 		xfree(bg_record->ionodes);
 		xfree(bg_record->user_name);
 		xfree(bg_record->target_name);
-		if (bg_record->bg_block_list) {
-			list_destroy(bg_record->bg_block_list);
-			bg_record->bg_block_list = NULL;
-		}
-		FREE_NULL_BITMAP(bg_record->bitmap);
+
 		FREE_NULL_BITMAP(bg_record->ionode_bitmap);
 
-#ifdef HAVE_BGL
-		xfree(bg_record->blrtsimage);
-#endif
 		xfree(bg_record->linuximage);
 		xfree(bg_record->mloaderimage);
 		xfree(bg_record->ramdiskimage);
@@ -188,10 +189,10 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	ba_node_t* ba_node = NULL;
 	char *p = '\0';
 
-	if (!bg_record->bg_block_list
-	    || !list_count(bg_record->bg_block_list)) {
-		if (!bg_record->bg_block_list) {
-			bg_record->bg_block_list =
+	if (!bg_record->ba_mp_list
+	    || !list_count(bg_record->ba_mp_list)) {
+		if (!bg_record->ba_mp_list) {
+			bg_record->ba_mp_list =
 				list_create(destroy_ba_node);
 		}
 		memset(&best_start, 0, sizeof(best_start));
@@ -302,9 +303,9 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		bg_record->start[Z] = HOSTLIST_BASE;
 	}
 
-	list_sort(bg_record->bg_block_list, (ListCmpF) _ba_node_cmpf_inc);
+	list_sort(bg_record->ba_mp_list, (ListCmpF) _ba_node_cmpf_inc);
 
-	itr = list_iterator_create(bg_record->bg_block_list);
+	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_node = list_next(itr)) != NULL) {
 		if (!ba_node->used)
 			continue;
@@ -413,14 +414,14 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	xfree(sec_record->bg_block_id);
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);
 
-	if (sec_record->bg_block_list)
-		list_destroy(sec_record->bg_block_list);
-	sec_record->bg_block_list = list_create(destroy_ba_node);
-	if (fir_record->bg_block_list) {
-		itr = list_iterator_create(fir_record->bg_block_list);
+	if (sec_record->ba_mp_list)
+		list_destroy(sec_record->ba_mp_list);
+	sec_record->ba_mp_list = list_create(destroy_ba_node);
+	if (fir_record->ba_mp_list) {
+		itr = list_iterator_create(fir_record->ba_mp_list);
 		while ((ba_node = list_next(itr))) {
 			new_ba_node = ba_copy_node(ba_node);
-			list_append(sec_record->bg_block_list, new_ba_node);
+			list_append(sec_record->ba_mp_list, new_ba_node);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -717,9 +718,9 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	else
 		bg_record->user_uid = pw_uid;
 
-	bg_record->bg_block_list = list_create(destroy_ba_node);
+	bg_record->ba_mp_list = list_create(destroy_ba_node);
 	if (used_nodes) {
-		if (copy_node_path(used_nodes, &bg_record->bg_block_list)
+		if (copy_node_path(used_nodes, &bg_record->ba_mp_list)
 		    == SLURM_ERROR)
 			error("add_bg_record: "
 			      "couldn't copy the path for the allocation");
@@ -807,11 +808,11 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			debug4("add_bg_record: "
 			       "we didn't get a request list so we are "
 			       "destroying this mp list");
-			list_destroy(bg_record->bg_block_list);
-			bg_record->bg_block_list = NULL;
+			list_destroy(bg_record->ba_mp_list);
+			bg_record->ba_mp_list = NULL;
 		}
 	} else {
-		List bg_block_list = NULL;
+		List ba_mp_list = NULL;
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("add_bg_record: adding a small block");
@@ -906,9 +907,9 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		 * Here we go through each node listed and do the same thing
 		 * for each node.
 		 */
-		bg_block_list = bg_record->bg_block_list;
-		bg_record->bg_block_list = list_create(NULL);
-		itr = list_iterator_create(bg_block_list);
+		ba_mp_list = bg_record->ba_mp_list;
+		bg_record->ba_mp_list = list_create(NULL);
+		itr = list_iterator_create(ba_mp_list);
 		while ((ba_node = list_next(itr)) != NULL) {
 			xfree(bg_record->nodes);
 			bg_record->nodes = xstrdup_printf(
@@ -917,14 +918,14 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 				alpha_num[ba_node->coord[X]],
 				alpha_num[ba_node->coord[Y]],
 				alpha_num[ba_node->coord[Z]]);
-			list_append(bg_record->bg_block_list, ba_node);
+			list_append(bg_record->ba_mp_list, ba_node);
 			handle_small_record_request(records, blockreq,
 						    bg_record, io_start);
-			list_flush(bg_record->bg_block_list);
+			list_flush(bg_record->ba_mp_list);
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
-		list_destroy(bg_block_list);
+		list_destroy(ba_mp_list);
 	}
 
 	return SLURM_SUCCESS;
@@ -1660,7 +1661,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 				ba_node = ba_copy_node(
 					&ba_system_ptr->grid[x][y][z]);
 				ba_node->used = 1;
-				list_append(bg_record->bg_block_list, ba_node);
+				list_append(bg_record->ba_mp_list, ba_node);
 				node_count++;
 			}
 		}

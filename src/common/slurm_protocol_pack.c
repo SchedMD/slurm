@@ -331,7 +331,7 @@ static int _unpack_block_info_req_msg(block_info_request_msg_t **
 				      uint16_t protocol_version);
 static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 				 uint16_t protocol_version);
-extern int _unpack_block_info(block_info_t **block_info, Buf buffer,
+static int _unpack_block_info(block_info_t **block_info, Buf buffer,
 			      uint16_t protocol_version);
 
 static void _pack_job_step_info_req_msg(job_step_info_request_msg_t * msg,
@@ -7171,17 +7171,108 @@ unpack_error:
  * plugin. The unpack functions can not be there since the plugin is
  * dependent upon libraries which do not exist on the BlueGene front-end
  * nodes. */
+static int _unpack_block_job_info(block_job_info_t **job_info, Buf buffer,
+				  uint16_t protocol_version)
+{
+	block_job_info_t *job;
+	uint32_t uint32_tmp;
+	char *cnode_inx_str = NULL;
+
+	job = xmalloc(sizeof(block_job_info_t));
+	*job_info = job;
+
+	safe_unpackstr_xmalloc(&job->cnodes, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&cnode_inx_str, &uint32_tmp, buffer);
+	if (cnode_inx_str == NULL) {
+		job->cnode_inx = bitfmt2int("");
+	} else {
+		job->cnode_inx = bitfmt2int(cnode_inx_str);
+		xfree(cnode_inx_str);
+	}
+	safe_unpack32(&job->job_id, buffer);
+	safe_unpackstr_xmalloc(&job->user, &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_block_job_info(job);
+	*job_info = NULL;
+	return SLURM_ERROR;
+}
+
+/* NOTE: The matching pack functions are directly in the select/bluegene
+ * plugin. The unpack functions can not be there since the plugin is
+ * dependent upon libraries which do not exist on the BlueGene front-end
+ * nodes. */
 static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				      uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	char *mp_inx_str = NULL;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	int i;
+	uint32_t count;
+	block_job_info_t *job = NULL;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&block_info->bg_block_id,
 				       &uint32_tmp, buffer);
-		if(cluster_flags & CLUSTER_FLAG_BGL)
+		safe_unpackstr_xmalloc(&block_info->blrtsimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->mp_inx = bitfmt2int("");
+		} else {
+			block_info->mp_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
+		}
+		safe_unpack32(&count, buffer);
+
+		xassert(count > HIGHEST_DIMENSIONS);
+
+		for (i=0; i<count; i++)
+			safe_unpack16(&block_info->conn_type[i], buffer);
+
+		safe_unpackstr_xmalloc(&(block_info->ionodes),
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->ionode_inx = bitfmt2int("");
+		} else {
+			block_info->ionode_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
+		}
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			block_info->job_list =
+				list_create(slurm_free_block_job_info);
+			for (i=0; i<count; i++) {
+				if (_unpack_block_job_info(&job, buffer,
+							   protocol_version))
+					list_append(block_info->job_list, job);
+			}
+		}
+
+		safe_unpack32(&block_info->job_running, buffer);
+		safe_unpackstr_xmalloc(&block_info->linuximage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->mloaderimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(block_info->nodes), &uint32_tmp,
+				       buffer);
+		safe_unpack32(&block_info->node_cnt, buffer);
+		safe_unpack16(&block_info->node_use, buffer);
+		safe_unpackstr_xmalloc(&block_info->owner_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->reason,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&block_info->state, buffer);
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&block_info->bg_block_id,
+				       &uint32_tmp, buffer);
+		if (cluster_flags & CLUSTER_FLAG_BGL)
 			safe_unpackstr_xmalloc(&block_info->blrtsimage,
 					       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
@@ -7191,7 +7282,7 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			block_info->mp_inx = bitfmt2int(mp_inx_str);
 			xfree(mp_inx_str);
 		}
-		safe_unpack16(&block_info->conn_type, buffer);
+		safe_unpack16(&block_info->conn_type[0], buffer);
 		safe_unpackstr_xmalloc(&(block_info->ionodes),
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
@@ -7209,7 +7300,7 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		safe_unpackstr_xmalloc(&(block_info->nodes), &uint32_tmp,
 				       buffer);
 		safe_unpack32(&block_info->node_cnt, buffer);
-		if(cluster_flags & CLUSTER_FLAG_BGL)
+		if (cluster_flags & CLUSTER_FLAG_BGL)
 			safe_unpack16(&block_info->node_use, buffer);
 		safe_unpackstr_xmalloc(&block_info->owner_name,
 				       &uint32_tmp, buffer);
@@ -7218,7 +7309,7 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		safe_unpackstr_xmalloc(&block_info->reason,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&block_info->state, buffer);
-	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&block_info->bg_block_id,
 				       &uint32_tmp, buffer);
 		if(cluster_flags & CLUSTER_FLAG_BGL)
@@ -7231,7 +7322,7 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			block_info->mp_inx = bitfmt2int(mp_inx_str);
 			xfree(mp_inx_str);
 		}
-		safe_unpack16(&block_info->conn_type, buffer);
+		safe_unpack16(&block_info->conn_type[0], buffer);
 		safe_unpackstr_xmalloc(&(block_info->ionodes),
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
@@ -7269,11 +7360,93 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 				 uint16_t protocol_version)
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	uint32_t cluster_dims = (uint32_t)slurmdb_setup_cluster_flags();
+	int dim, count = NO_VAL;
+	ListIterator itr;
+	block_job_info_t *job;
+
+	if(protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if(!block_info) {
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			pack32(1, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			return;
+		}
+
+		packstr(block_info->bg_block_id, buffer);
+		packstr(block_info->blrtsimage, buffer);
+
+		if (block_info->mp_inx) {
+			char *bitfmt = inx2bitfmt(block_info->mp_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		pack32(cluster_dims, buffer);
+		for (dim=0; dim<cluster_dims; dim++)
+			pack16(block_info->conn_type[dim], buffer);
+
+		packstr(block_info->ionodes, buffer);
+
+		if (block_info->ionode_inx) {
+			char *bitfmt =
+				inx2bitfmt(block_info->ionode_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		if (block_info->job_list)
+			count = list_count(block_info->job_list);
+
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(block_info->job_list);
+			while ((job = list_next(itr))) {
+				slurm_pack_block_job_info(job, buffer,
+							  protocol_version);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(block_info->job_running, buffer);
+
+		packstr(block_info->linuximage, buffer);
+		packstr(block_info->mloaderimage, buffer);
+		packstr(block_info->nodes, buffer);
+		pack32(block_info->node_cnt, buffer);
+		pack16(block_info->node_use, buffer);
+		packstr(block_info->owner_name, buffer);
+		packstr(block_info->ramdiskimage, buffer);
+		packstr(block_info->reason, buffer);
+		pack16(block_info->state, buffer);
+	} else if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if(!block_info) {
 			packnull(buffer);
 			if(cluster_flags & CLUSTER_FLAG_BGL)
 				packnull(buffer);
+			packnull(buffer);
 			pack16((uint16_t)NO_VAL, buffer);
 			packnull(buffer);
 
@@ -7306,7 +7479,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		} else
 			packnull(buffer);
 
-		pack16(block_info->conn_type, buffer);
+		pack16(block_info->conn_type[0], buffer);
 
 		packstr(block_info->ionodes, buffer);
 
@@ -7366,7 +7539,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		} else
 			packnull(buffer);
 
-		pack16(block_info->conn_type, buffer);
+		pack16(block_info->conn_type[0], buffer);
 
 		packstr(block_info->ionodes, buffer);
 
@@ -7390,6 +7563,28 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->ramdiskimage, buffer);
 		pack16(block_info->state, buffer);
 	}
+}
+
+extern void slurm_pack_block_job_info(block_job_info_t *block_job_info,
+				     Buf buffer, uint16_t protocol_version)
+{
+	if (!block_job_info) {
+		packnull(buffer);
+		packnull(buffer);
+		pack32(0, buffer);
+		packnull(buffer);
+		return;
+	}
+
+	packstr(block_job_info->cnodes, buffer);
+	if (block_job_info->cnode_inx) {
+		char *bitfmt = inx2bitfmt(block_job_info->cnode_inx);
+		packstr(bitfmt, buffer);
+		xfree(bitfmt);
+	} else
+		packnull(buffer);
+	pack32(block_job_info->job_id, buffer);
+	packstr(block_job_info->user, buffer);
 }
 
 extern int slurm_unpack_block_info_msg(
@@ -7421,7 +7616,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int _unpack_block_info(block_info_t **block_info, Buf buffer,
+static int _unpack_block_info(block_info_t **block_info, Buf buffer,
 			      uint16_t protocol_version)
 {
         int rc = SLURM_SUCCESS;

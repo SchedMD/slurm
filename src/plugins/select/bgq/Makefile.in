@@ -17,6 +17,7 @@
 
 # Makefile for select/bgq plugin
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -37,6 +38,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@BGQ_LOADED_TRUE@sbin_PROGRAMS = slurm_prolog$(EXEEXT) \
+@BGQ_LOADED_TRUE@	slurm_epilog$(EXEEXT)
 subdir = src/plugins/select/bgq
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -102,25 +105,43 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(pkglibdir)"
+am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(sbindir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-select_bgq_la_DEPENDENCIES = block_allocator/libblock_allocator.la
+@BGQ_LOADED_TRUE@select_bgq_la_DEPENDENCIES =  \
+@BGQ_LOADED_TRUE@	block_allocator/libblock_allocator.la
 am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h \
 	bg_enums.h bg_structs.h bg_job_place.c bg_job_place.h \
 	bg_job_run.c bg_job_run.h bg_record_functions.c \
-	bg_record_functions.h bluegene.c bluegene.h defined_block.c \
-	defined_block.h dynamic_block.c dynamic_block.h jobinfo.c \
-	jobinfo.h nodeinfo.c nodeinfo.h
+	bg_record_functions.h block_sys.c bluegene.c bluegene.h \
+	defined_block.c defined_block.h dynamic_block.c \
+	dynamic_block.h jobinfo.c jobinfo.h nodeinfo.c nodeinfo.h
 @BGQ_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
 @BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo \
 @BGQ_LOADED_TRUE@	bg_job_place.lo bg_job_run.lo \
-@BGQ_LOADED_TRUE@	bg_record_functions.lo bluegene.lo \
-@BGQ_LOADED_TRUE@	defined_block.lo dynamic_block.lo jobinfo.lo \
-@BGQ_LOADED_TRUE@	nodeinfo.lo
+@BGQ_LOADED_TRUE@	bg_record_functions.lo block_sys.lo \
+@BGQ_LOADED_TRUE@	bluegene.lo defined_block.lo dynamic_block.lo \
+@BGQ_LOADED_TRUE@	jobinfo.lo nodeinfo.lo
 select_bgq_la_OBJECTS = $(am_select_bgq_la_OBJECTS)
 select_bgq_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(select_bgq_la_LDFLAGS) $(LDFLAGS) -o $@
+PROGRAMS = $(sbin_PROGRAMS)
+am__slurm_epilog_SOURCES_DIST = slurm_epilog.c
+@BGQ_LOADED_TRUE@am_slurm_epilog_OBJECTS = slurm_epilog.$(OBJEXT)
+slurm_epilog_OBJECTS = $(am_slurm_epilog_OBJECTS)
+@BGQ_LOADED_TRUE@am__DEPENDENCIES_1 =  \
+@BGQ_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
+@BGQ_LOADED_TRUE@slurm_epilog_DEPENDENCIES = $(am__DEPENDENCIES_1)
+slurm_epilog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(slurm_epilog_LDFLAGS) $(LDFLAGS) -o $@
+am__slurm_prolog_SOURCES_DIST = slurm_prolog.c
+@BGQ_LOADED_TRUE@am_slurm_prolog_OBJECTS = slurm_prolog.$(OBJEXT)
+slurm_prolog_OBJECTS = $(am_slurm_prolog_OBJECTS)
+@BGQ_LOADED_TRUE@slurm_prolog_DEPENDENCIES = $(am__DEPENDENCIES_1)
+slurm_prolog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(slurm_prolog_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -144,8 +165,11 @@ CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(select_bgq_la_SOURCES) \
-	$(nodist_EXTRA_select_bgq_la_SOURCES)
-DIST_SOURCES = $(am__select_bgq_la_SOURCES_DIST)
+	$(nodist_EXTRA_select_bgq_la_SOURCES) $(slurm_epilog_SOURCES) \
+	$(slurm_prolog_SOURCES)
+DIST_SOURCES = $(am__select_bgq_la_SOURCES_DIST) \
+	$(am__slurm_epilog_SOURCES_DIST) \
+	$(am__slurm_prolog_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -393,6 +417,7 @@ pkglib_LTLIBRARIES = select_bgq.la
 @BGQ_LOADED_TRUE@			bg_job_place.c bg_job_place.h \
 @BGQ_LOADED_TRUE@			bg_job_run.c bg_job_run.h \
 @BGQ_LOADED_TRUE@			bg_record_functions.c bg_record_functions.h \
+@BGQ_LOADED_TRUE@			block_sys.c \
 @BGQ_LOADED_TRUE@			bluegene.c bluegene.h \
 @BGQ_LOADED_TRUE@			defined_block.c defined_block.h \
 @BGQ_LOADED_TRUE@			dynamic_block.c dynamic_block.h \
@@ -403,7 +428,14 @@ pkglib_LTLIBRARIES = select_bgq.la
 @BGQ_LOADED_TRUE@nodist_EXTRA_select_bgq_la_SOURCES = dummy.cxx
 @BGQ_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
-select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
+@BGQ_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
+@BGQ_LOADED_TRUE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+@BGQ_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
+@BGQ_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c
+@BGQ_LOADED_TRUE@slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@BGQ_LOADED_TRUE@slurm_epilog_LDADD = $(convenience_libs)
+@BGQ_LOADED_TRUE@slurm_epilog_SOURCES = slurm_epilog.c
+@BGQ_LOADED_TRUE@slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-recursive
 
 .SUFFIXES:
@@ -471,6 +503,55 @@ clean-pkglibLTLIBRARIES:
 	done
 select_bgq.la: $(select_bgq_la_OBJECTS) $(select_bgq_la_DEPENDENCIES) 
 	$(select_bgq_la_LINK) -rpath $(pkglibdir) $(select_bgq_la_OBJECTS) $(select_bgq_la_LIBADD) $(LIBS)
+install-sbinPROGRAMS: $(sbin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(sbindir)" || $(MKDIR_P) "$(DESTDIR)$(sbindir)"
+	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+	for p in $$list; do echo "$$p $$p"; done | \
+	sed 's/$(EXEEXT)$$//' | \
+	while read p p1; do if test -f $$p || test -f $$p1; \
+	  then echo "$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
+	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+	sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
+	    else { print "f", $$3 "/" $$4, $$1; } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	    test -z "$$files" || { \
+	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(sbindir)$$dir'"; \
+	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(sbindir)$$dir" || exit $$?; \
+	    } \
+	; done
+
+uninstall-sbinPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+	      -e 's/$$/$(EXEEXT)/' `; \
+	test -n "$$list" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(sbindir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(sbindir)" && rm -f $$files
+
+clean-sbinPROGRAMS:
+	@list='$(sbin_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
+slurm_epilog$(EXEEXT): $(slurm_epilog_OBJECTS) $(slurm_epilog_DEPENDENCIES) 
+	@rm -f slurm_epilog$(EXEEXT)
+	$(slurm_epilog_LINK) $(slurm_epilog_OBJECTS) $(slurm_epilog_LDADD) $(LIBS)
+slurm_prolog$(EXEEXT): $(slurm_prolog_OBJECTS) $(slurm_prolog_DEPENDENCIES) 
+	@rm -f slurm_prolog$(EXEEXT)
+	$(slurm_prolog_LINK) $(slurm_prolog_OBJECTS) $(slurm_prolog_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -481,6 +562,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_job_place.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_job_run.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_record_functions.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_sys.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bluegene.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/defined_block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Plo@am__quote@
@@ -488,6 +570,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bgq.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_epilog.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_prolog.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -732,10 +816,10 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(pkglibdir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(sbindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-recursive
@@ -766,7 +850,7 @@ maintainer-clean-generic:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
-	mostlyclean-am
+	clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR)
@@ -792,7 +876,7 @@ install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
-install-exec-am: install-pkglibLTLIBRARIES
+install-exec-am: install-pkglibLTLIBRARIES install-sbinPROGRAMS
 
 install-html: install-html-recursive
 
@@ -832,26 +916,27 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-pkglibLTLIBRARIES
+uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
 	install-am install-strip tags-recursive
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am check check-am clean clean-generic clean-libtool \
-	clean-pkglibLTLIBRARIES ctags ctags-recursive distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-pkglibLTLIBRARIES \
-	install-ps install-ps-am install-strip installcheck \
+	clean-pkglibLTLIBRARIES clean-sbinPROGRAMS ctags \
+	ctags-recursive distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglibLTLIBRARIES install-ps install-ps-am \
+	install-sbinPROGRAMS install-strip installcheck \
 	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-recursive uninstall uninstall-am \
-	uninstall-pkglibLTLIBRARIES
+	uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 
 
 @BGQ_LOADED_TRUE@force:

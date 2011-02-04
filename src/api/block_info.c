@@ -141,7 +141,7 @@ char *slurm_sprint_block_info(
 
 	xstrfmtcat(out, "User=%s ConnType=%s",
 		   block_ptr->owner_name,
-		   conn_type_string(block_ptr->conn_type));
+		   conn_type_string(block_ptr->conn_type[0]));
 	if(cluster_flags & CLUSTER_FLAG_BGL)
 		xstrfmtcat(out, " NodeUse=%s",
 			   node_use_string(block_ptr->node_use));

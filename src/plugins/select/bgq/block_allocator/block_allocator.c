@@ -1098,7 +1098,7 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
 		ba_init(NULL, 1);
 	}
 
-#ifdef HAVE_BG_Q
+#ifdef HAVE_BGQ
 	debug2("ba_update_mp_state: new state of [%s] is %s",
 	       ba_mp->coord_str, node_state_string(state));
 #else
@@ -1379,8 +1379,8 @@ extern int check_and_set_mp_list(List mps)
 {
 	int rc = SLURM_ERROR;
 
-#ifdef HAVE_BG_Q
-	int i, j;
+#ifdef HAVE_BGQ
+	int i;
 	ba_switch_t *ba_switch = NULL, *curr_ba_switch = NULL;
 	ba_mp_t *ba_mp = NULL, *curr_ba_mp = NULL;
 	ListIterator itr = NULL;

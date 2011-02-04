@@ -218,7 +218,27 @@ extern int block_ready(struct job_record *job_ptr)
 extern void pack_block(bg_record_t *bg_record, Buf buffer,
 		       uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		packstr(bg_record->bg_block_id, buffer);
+		packstr(bg_record->blrtsimage, buffer);
+		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack32(1, buffer); /* for dimensions of conn_type */
+		pack16((uint16_t)bg_record->conn_type, buffer);
+		packstr(bg_record->ionodes, buffer);
+		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+		pack32((uint32_t)NO_VAL, buffer); /* for job_list
+						   * count (used for Q) */
+		pack32((uint32_t)bg_record->job_running, buffer);
+		packstr(bg_record->linuximage, buffer);
+		packstr(bg_record->mloaderimage, buffer);
+		packstr(bg_record->nodes, buffer);
+		pack32((uint32_t)bg_record->node_cnt, buffer);
+		pack16((uint16_t)bg_record->node_use, buffer);
+		packstr(bg_record->user_name, buffer);
+		packstr(bg_record->ramdiskimage, buffer);
+		packstr(bg_record->reason, buffer);
+		pack16((uint16_t)bg_record->state, buffer);
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
 		packstr(bg_record->blrtsimage, buffer);

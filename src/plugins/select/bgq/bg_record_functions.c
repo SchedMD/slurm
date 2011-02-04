@@ -94,6 +94,8 @@ extern void destroy_bg_record(void *object)
 	if (bg_record) {
 		bg_record->magic = 0;
 		xfree(bg_record->bg_block_id);
+		FREE_NULL_BITMAP(bg_record->bitmap);
+		xfree(bg_record->blrtsimage);
 		xfree(bg_record->nodes);
 		xfree(bg_record->ionodes);
 		xfree(bg_record->user_name);
@@ -102,11 +104,11 @@ extern void destroy_bg_record(void *object)
 			list_destroy(bg_record->ba_mp_list);
 			bg_record->ba_mp_list = NULL;
 		}
-		if (bg_record->ba_pt_mp_list) {
-			list_destroy(bg_record->ba_pt_mp_list);
-			bg_record->ba_pt_mp_list = NULL;
+		if (bg_record->job_list) {
+			list_destroy(bg_record->job_list);
+			bg_record->job_list = NULL;
 		}
-		FREE_NULL_BITMAP(bg_record->bitmap);
+
 		FREE_NULL_BITMAP(bg_record->ionode_bitmap);
 
 		xfree(bg_record->mloaderimage);

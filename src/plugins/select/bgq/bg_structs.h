@@ -87,10 +87,9 @@ typedef struct {
 typedef struct bg_record {
 	char *bg_block_id;     	        /* ID returned from MMCS */
 	List ba_mp_list;                /* List of midplanes in block */
-	List ba_pt_mp_list;             /* List of passthrough
-					 * midplanes in block */
 	bitstr_t *bitmap;               /* bitmap to check the nodes
 					   of block */
+	char *blrtsimage;               /* BlrtsImage for this block */
 	int boot_count;                 /* number of attemts boot attempts */
 	int boot_state;                 /* check to see if boot failed.
 					   -1 = fail,
@@ -110,6 +109,8 @@ typedef struct bg_record {
 	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
 					   keep track which ionodes we
 					   are on.  NULL if not a small block*/
+	List job_list;                  /* List of jobs running on a
+					   small block */
 	struct job_record *job_ptr;	/* pointer to job running on
 					 * block or NULL if no job */
 	int job_running;                /* job id of job running of if
@@ -124,12 +125,16 @@ typedef struct bg_record {
 					   job launch usually */
 	char *nodes;			/* String of nodes in block */
 	uint32_t node_cnt;              /* count of cnodes per block */
+	uint16_t node_use;      	/* either COPROCESSOR or VIRTUAL */
 	struct bg_record *original;     /* if this is a copy this is a
 					   pointer to the original */
+	char *ramdiskimage;             /* RamDiskImage/IoloadImg for
+					 * this block */
 	char *reason;                   /* reason block is in error state */
-	uint16_t small;                 /* if this block is small or not. */
 	uint16_t state;                 /* Current state of the block */
 	uint16_t start[HIGHEST_DIMENSIONS];  /* start node */
+	uint32_t switch_count;          /* number of switches
+					 * used. On L/P */
 	char *target_name;		/* when a block is freed this
 					   is the name of the user we
 					   want on the block */

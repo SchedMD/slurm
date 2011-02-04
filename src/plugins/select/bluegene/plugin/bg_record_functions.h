@@ -62,20 +62,18 @@
 
 typedef struct bg_record {
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */
-	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
-	List bg_block_list;             /* node list of blocks in block */
+	char * bg_block_id;     	/* ID returned from MMCS	*/
+	List ba_mp_list;                /* list of ba_mp_t * in a block */
 	bitstr_t *bitmap;               /* bitmap to check the name
 					   of block */
-#ifdef HAVE_BGL
 	char *blrtsimage;               /* BlrtsImage for this block */
-#endif
 	int boot_count;                 /* number of attemts boot attempts */
 	int boot_state;                 /* check to see if boot failed.
 					   -1 = fail,
 					   0 = not booting,
 					   1 = booting */
 	int mp_count;                   /* size */
-	rm_connection_type_t conn_type; /* MESH or Torus or NAV */
+	uint16_t conn_type; /* MESH or Torus or NAV */
 	uint32_t cpu_cnt;               /* count of cpus per block */
 	int free_cnt;                   /* How many are trying
 					   to free this block at the
@@ -102,15 +100,13 @@ typedef struct bg_record {
 					   job launch usually */
 	char *nodes;			/* String of nodes in block */
 	uint32_t node_cnt;              /* count of cnodes per block */
-#ifdef HAVE_BGL
-	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
-#endif
+	uint16_t node_use;      	/* either COPROCESSOR or VIRTUAL */
 	struct bg_record *original;     /* if this is a copy this is a
 					   pointer to the original */
 	char *ramdiskimage;             /* RamDiskImage/IoloadImg for
 					 * this block */
 	char *reason;                   /* reason block is in error state */
-	rm_partition_state_t state;     /* Current state of the block */
+	uint16_t state;                 /* Current state of the block */
 	uint16_t start[HIGHEST_DIMENSIONS];  /* start node */
 	uint32_t switch_count;          /* number of switches used. */
 	char *target_name;		/* when a block is freed this

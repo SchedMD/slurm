@@ -306,6 +306,7 @@ extern List create_dynamic_block(List block_list,
 	/*Try to put block starting in the smallest of the exisiting blocks*/
 	itr = list_iterator_create(block_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		bool is_small = 0;
 		/* never check a block with a job running */
 		if (bg_record->job_running != NO_JOB_RUNNING)
 			continue;
@@ -323,8 +324,10 @@ extern List create_dynamic_block(List block_list,
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("removing %s for request %d",
 			     bg_record->nodes, request->size);
+		if (bg_record->node_cnt < bg_conf->mp_node_cnt)
+			is_small = 1;
 		remove_block(bg_record->ba_mp_list, (int)NO_VAL,
-			     bg_record->small);
+			     is_small);
 		/* need to set any unusable nodes that this last block
 		   used */
 		removable_set_mps(unusable_nodes);

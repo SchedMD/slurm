@@ -46,7 +46,9 @@
 
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER001"
+#define BLOCK_STATE_VERSION      "VER005"
+#define BLOCK_2_2_STATE_VERSION  "VER004" /*Slurm 2.2's version*/
+#define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
 
 #include "bg_job_place.h"
 #include "bg_job_run.h"
@@ -97,7 +99,6 @@ extern int load_state_file(List curr_block_list, char *dir_name);
 /*****************************************************/
 extern int configure_small_block(bg_record_t *bg_record);
 extern int configure_block_switches(bg_record_t * bg_conf_record);
-
 
 /* select_bluegene.c */
 /*****************************************************/

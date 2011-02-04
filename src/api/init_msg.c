@@ -176,8 +176,11 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
  */
 void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
 {
+	int i;
+
 	memset(update_block_msg, 0, sizeof(update_block_msg_t));
-	update_block_msg->conn_type = (uint16_t)NO_VAL;
+	for (i=0; i<HIGHEST_DIMENSIONS; i++)
+		update_block_msg->conn_type[i] = (uint16_t)NO_VAL;
 	update_block_msg->job_running = NO_VAL;
 	update_block_msg->node_cnt = NO_VAL;
 	update_block_msg->node_use = (uint16_t)NO_VAL;

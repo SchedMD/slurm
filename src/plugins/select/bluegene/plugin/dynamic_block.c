@@ -137,7 +137,7 @@ extern List create_dynamic_block(List block_list,
 					xfree(geo);
 				}
 				if (check_and_set_node_list(
-					    bg_record->bg_block_list)
+					    bg_record->ba_mp_list)
 				    == SLURM_ERROR) {
 					if (bg_conf->slurm_debug_flags
 					    & DEBUG_FLAG_BG_PICK)
@@ -353,7 +353,7 @@ extern List create_dynamic_block(List block_list,
 			     bg_record->nodes, request->size);
 		if (bg_record->node_cnt < bg_conf->mp_node_cnt)
 			is_small = 1;
-		remove_block(bg_record->bg_block_list, (int)NO_VAL, is_small);
+		remove_block(bg_record->ba_mp_list, (int)NO_VAL, is_small);
 		/* need to set any unusable nodes that this last block
 		   used */
 		removable_set_mps(unusable_nodes);
@@ -421,9 +421,9 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->job_running = NO_JOB_RUNNING;
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
-	found_record->bg_block_list = list_create(destroy_ba_node);
-	if (bg_record->bg_block_list)
-		ba_node = list_peek(bg_record->bg_block_list);
+	found_record->ba_mp_list = list_create(destroy_ba_node);
+	if (bg_record->ba_mp_list)
+		ba_node = list_peek(bg_record->ba_mp_list);
 	if (!ba_node) {
 		if (bg_record->nodes) {
 			hostlist_t hl = hostlist_create(bg_record->nodes);
@@ -460,7 +460,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 					port_tar = j;
 			}
 		}
-		list_append(found_record->bg_block_list, new_ba_node);
+		list_append(found_record->ba_mp_list, new_ba_node);
 		found_record->mp_count = 1;
 		found_record->nodes = xstrdup_printf(
 			"%s%c%c%c",
