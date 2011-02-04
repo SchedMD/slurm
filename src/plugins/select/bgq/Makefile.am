@@ -11,6 +11,10 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 pkglib_LTLIBRARIES = select_bgq.la
 
+
+# add this no matter what so we can get DIM_SIZE
+select_bgq_la_LIBADD  = block_allocator/libblock_allocator.la
+
 if BGQ_LOADED
 
 # BGQ node selection plugin.
@@ -28,8 +32,6 @@ select_bgq_la_SOURCES = select_bgq.c bg_enums.h bg_structs.h \
 nodist_EXTRA_select_bgq_la_SOURCES = dummy.cxx
 
 select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
-
-select_bgq_la_LIBADD  = block_allocator/libblock_allocator.la
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog
 
@@ -52,3 +54,4 @@ select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 endif
+

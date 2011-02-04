@@ -107,8 +107,7 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(sbindir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@BGQ_LOADED_TRUE@select_bgq_la_DEPENDENCIES =  \
-@BGQ_LOADED_TRUE@	block_allocator/libblock_allocator.la
+select_bgq_la_DEPENDENCIES = block_allocator/libblock_allocator.la
 am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h \
 	bg_enums.h bg_structs.h bg_job_place.c bg_job_place.h \
 	bg_job_run.c bg_job_run.h bg_record_functions.c \
@@ -409,6 +408,9 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 pkglib_LTLIBRARIES = select_bgq.la
+
+# add this no matter what so we can get DIM_SIZE
+select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
 # These are needed for pack/unpack of structures for cross-cluster stuff
 @BGQ_LOADED_FALSE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 
@@ -428,7 +430,6 @@ pkglib_LTLIBRARIES = select_bgq.la
 @BGQ_LOADED_TRUE@nodist_EXTRA_select_bgq_la_SOURCES = dummy.cxx
 @BGQ_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
-@BGQ_LOADED_TRUE@select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
 @BGQ_LOADED_TRUE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 @BGQ_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
 @BGQ_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c
