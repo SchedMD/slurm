@@ -1335,7 +1335,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 
 	for (i=0; i < block_ptr->record_count; i++) {
 		bg_info_ptr = &block_ptr->block_array[i];
-		if (!_block_in_node(bg_info_ptr->bp_inx, inx))
+		if (!_block_in_node(bg_info_ptr->mp_inx, inx))
 			continue;
 		found = 1;
 		nodes = bg_info_ptr->nodes;

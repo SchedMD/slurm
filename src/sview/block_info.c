@@ -572,7 +572,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->state
 			= block_info_ptr->block_array[i].state;
 		block_ptr->bg_conn_type
-			= block_info_ptr->block_array[i].conn_type;
+			= block_info_ptr->block_array[i].conn_type[0];
 
 		if (cluster_flags & CLUSTER_FLAG_BGL)
 			block_ptr->bg_node_use
@@ -581,7 +581,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->node_cnt
 			= block_info_ptr->block_array[i].node_cnt;
 		block_ptr->bp_inx
-			= block_info_ptr->block_array[i].bp_inx;
+			= block_info_ptr->block_array[i].mp_inx;
 		for(j = 0; j < part_info_ptr->record_count; j++) {
 			part = part_info_ptr->partition_array[j];
 			if (_in_slurm_partition(part.node_inx,
