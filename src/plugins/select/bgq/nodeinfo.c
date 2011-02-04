@@ -53,7 +53,7 @@ static void _free_node_subgrp(void *object)
 	}
 }
 
-#ifdef HAVE_BG_Q
+#ifdef HAVE_BGQ
 static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 				   uint16_t size)
 {
@@ -211,7 +211,7 @@ extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 
-#ifdef HAVE_BG_Q
+#ifdef HAVE_BGQ
 	if (bg_conf && (!size || size == NO_VAL))
 		size = bg_conf->numpsets;
 #else
@@ -241,7 +241,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 
 extern int select_nodeinfo_set_all(time_t last_query_time)
 {
-#ifdef HAVE_BG_Q
+#ifdef HAVE_BGQ
 	ListIterator itr = NULL;
 	struct node_record *node_ptr = NULL;
 	int i=0;
@@ -286,12 +286,12 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		if (bg_record->job_running == NO_JOB_RUNNING)
 			continue;
 
-		if (bg_record->state == RM_PARTITION_ERROR)
+		if (bg_record->state == BG_BLOCK_ERROR)
 			state = NODE_STATE_ERROR;
 		else if (bg_record->job_running > NO_JOB_RUNNING) {
 			/* we don't need to set the allocated here
 			 * since the whole midplane is allocated */
-			if (bg_record->conn_type < SELECT_SMALL)
+			if (bg_record->conn_type[0] < SELECT_SMALL)
 				continue;
 			state = NODE_STATE_ALLOCATED;
 		} else {

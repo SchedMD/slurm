@@ -706,7 +706,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return select_nodeinfo_get(nodeinfo, dinfo, state, data);
 }
 
-select_jobinfo_t *select_p_select_jobinfo_alloc(void)
+extern select_jobinfo_t *select_p_select_jobinfo_alloc(void)
 {
 	return alloc_select_jobinfo();
 }
@@ -989,7 +989,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		*/
 		remove_from_bg_list(bg_lists->main, bg_record);
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: "
 			     "removing %s from database",

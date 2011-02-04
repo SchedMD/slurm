@@ -45,8 +45,8 @@
 #define JOBINFO_MAGIC 0x83ac
 
 struct select_jobinfo {
-	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
-						 * dimensions, e.g. XYZ */
+	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
+						 * dimensions, e.g. AXYZ */
 	uint16_t conn_type;	/* see enum connection_type */
 	uint16_t reboot;	/* reboot block before starting job */
 	uint16_t rotate;	/* permit geometry rotation if set */

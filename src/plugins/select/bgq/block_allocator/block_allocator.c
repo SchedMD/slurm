@@ -401,7 +401,7 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 		ba_request->deny_pass = ba_deny_pass;
 
 	if (!(cluster_flags & CLUSTER_FLAG_BGQ)) {
-		if (geo[X] != (uint16_t)NO_VAL) {
+		if (geo[0] != (uint16_t)NO_VAL) {
 			for (i=0; i<cluster_dims; i++) {
 				if ((geo[i] < 1) || (geo[i] > DIM_SIZE[i])) {
 					error("new_ba_request Error, "
@@ -418,7 +418,7 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 		return 1;
 	}
 
-	if (geo[X] != (uint16_t)NO_VAL) {
+	if (geo[0] != (uint16_t)NO_VAL) {
 		for (i=0; i<cluster_dims; i++){
 			if ((geo[i] < 1) || (geo[i] > DIM_SIZE[i])) {
 				error("new_ba_request Error, "
@@ -1144,7 +1144,7 @@ extern int copy_mp_path(List mps, List *dest_mps)
 		return SLURM_ERROR;
 	if (!*dest_mps)
 		*dest_mps = list_create(destroy_ba_mp);
-
+	info("list_count is %d", list_count(*dest_mps));
 	itr = list_iterator_create(mps);
 	while ((ba_mp = (ba_mp_t *)list_next(itr))) {
 		itr2 = list_iterator_create(*dest_mps);
@@ -1180,6 +1180,7 @@ extern int copy_mp_path(List mps, List *dest_mps)
 
 	}
 	list_iterator_destroy(itr);
+	info("now list_count is %d", list_count(*dest_mps));
 	rc = SLURM_SUCCESS;
 #endif
 	return rc;
@@ -2648,7 +2649,10 @@ static int _copy_the_path(List mps, ba_mp_t *start_mp, ba_mp_t *curr_mp,
 				     ba_switch_usage_str(
 					     alter_switch->usage));
 		}
-		list_append(mps, curr_mp);
+		if (start_mp != curr_mp) {
+			info("appending here %s %s", start_mp->coord_str, curr_mp->coord_str);
+			list_append(mps, curr_mp);
+		}
 	} else {
 		info("already here for %s", curr_mp->coord_str);
 	}
@@ -2703,7 +2707,7 @@ static int _copy_the_path(List mps, ba_mp_t *start_mp, ba_mp_t *curr_mp,
 						   [next_mp->coord[Y]]
 						   [next_mp->coord[Z]]);
 				ba_setup_mp(ba_mp, false);
-				list_push(mps, ba_mp);
+				list_append(mps, ba_mp);
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("_copy_the_path: "
 					     "haven't seen %s adding it",

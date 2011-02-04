@@ -48,13 +48,13 @@ typedef enum bg_layout_type {
 } bg_layout_t;
 
 typedef enum {
-	BG_BLOCK_ALLOCATED = 0,  // Block is allocated
-	BG_BLOCK_BOOTING,        // Block is booting
-	BG_BLOCK_FREE,           // Block is free
-	BG_BLOCK_INITED,         // Block is initialized
-	BG_BLOCK_NAV,            // Block stateis undefined
-	BG_BLOCK_TERM,           // Block is terminating
-	BG_BLOCK_ERROR,          // Block is in error
+	BG_BLOCK_NAV = 0,   // Block state is undefined
+	BG_BLOCK_FREE,      // Block is free
+	BG_BLOCK_BOOTING,   // Block is booting
+	BG_BLOCK_INITED,    // Block is initialized
+	BG_BLOCK_ALLOCATED, // Block is allocated
+	BG_BLOCK_TERM,      // Block is terminating
+	BG_BLOCK_ERROR,     // Block is in error
 } bgq_block_status_t;
 
 typedef enum {
@@ -66,7 +66,6 @@ typedef enum {
         BG_JOB_TERMINATED,  //!< Job is terminated.
         BG_JOB_ERROR        //!< Job is in error status.
 } bgq_job_status_t;
-
 
 #define BG_SWITCH_NONE         0x0000
 #define BG_SWITCH_OUT          0x0001

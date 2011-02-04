@@ -159,7 +159,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_NODE_CNT:
 		jobinfo->node_cnt = *uint32;
-#ifdef HAVE_BG_Q
+#ifdef HAVE_BGQ
 		/* Make sure the conn type is correct with the new count */
 		if ((bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
 		    || (jobinfo->node_cnt < bg_conf->mp_node_cnt))
