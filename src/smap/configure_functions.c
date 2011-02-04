@@ -96,9 +96,15 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 
 	if (!allocate_block(request, results)){
 		memset(error_string,0,255);
-		sprintf(error_string,"allocate failure for %dx%dx%d",
-			  request->geometry[0], request->geometry[1],
-			  request->geometry[2]);
+		if (params.cluster_dims == 3) {
+			sprintf(error_string,"allocate failure for %dx%dx%d",
+				  request->geometry[0], request->geometry[1],
+				  request->geometry[2]);
+		} else { /* params.cluster_dims == 4 */
+			sprintf(error_string,"allocate failure for %dx%dx%dx%d",
+				  request->geometry[0], request->geometry[1],
+				  request->geometry[2], request->geometry[3]);
+		}
 		return NULL;
 	} else {
 		char *pass = ba_passthroughs_string(request->deny_pass);
@@ -158,48 +164,42 @@ static int _set_layout(char *com)
 static int _set_base_part_cnt(char *com)
 {
 	int i = 0;
-	int len = strlen(com);
 
-	while (i < len) {
-		if ((com[i] < 58) && (com[i] > 47)) {
+	while (com[i]) {
+		if ((com[i] >= '0') && (com[i] <= '9'))
 			break;
-		} else {
-			i++;
-		}
+		i++;
 	}
-	if (i>=len) {
+	if (com[i]) {
 		sprintf(error_string,
 			"I didn't notice the number you typed in\n");
 		return 0;
 	}
+
 	base_part_node_cnt = atoi(&com[i]);
 	sprintf(error_string,
 		"BasePartitionNodeCnt set to %d\n", base_part_node_cnt);
-
 	return 1;
 }
 
 static int _set_nodecard_cnt(char *com)
 {
 	int i = 0;
-	int len = strlen(com);
 
-	while (i<len) {
-		if (com[i] < 58 && com[i] > 47) {
+	while (com[i]) {
+		if ((com[i] >= '0') && (com[i] <= '9'))
 			break;
-		} else {
-			i++;
-		}
+		i++;
 	}
-	if (i>=len) {
+	if (com[i]) {
 		sprintf(error_string,
 			"I didn't notice the number you typed in\n");
 		return 0;
 	}
+
 	nodecard_node_cnt = atoi(&com[i]);
 	sprintf(error_string,
 		"NodeCardNodeCnt set to %d\n", nodecard_node_cnt);
-
 	return 1;
 }
 
@@ -224,7 +224,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->deny_pass = 0;
 	request->avail_mp_bitmap = NULL;
 
-	while(i<len) {
+	while (i<len) {
 		if (!strncasecmp(com+i, "mesh", 4)) {
 			request->conn_type[0] = SELECT_MESH;
 			i+=4;
@@ -399,7 +399,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 			if (com[i2]=='x') {
 				diff = i2-geoi;
 				/* for geometery */
-				if (diff>1) {
+				if (diff > 1) {
 					request->geometry[X] =
 						xstrntol(&com[geoi],
 							 NULL, diff,
@@ -570,14 +570,14 @@ geo_error_message:
 
 static int _resolve(char *com)
 {
-	int i=0;
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	int len=strlen(com);
+	int i = 0;
+#if defined(HAVE_BG_FILES) && defined(HAVE_BG)
+	int len = strlen(com);
 	char *rack_mid = NULL;
 	uint16_t *coord = NULL;
 #endif
 
-	while(com[i] != '\0') {
+	while (com[i] != '\0') {
 		if ((i>0) && (com[i-1] != ' '))
 			break;
 		i++;
@@ -586,7 +586,7 @@ static int _resolve(char *com)
 		com[i] = 'R';
 
 	memset(error_string,0,255);
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined(HAVE_BG_FILES) && defined(HAVE_BG)
 	if (!have_db2) {
 		sprintf(error_string, "Must be on BG SN to resolve\n");
 		goto resolve_error;
@@ -598,64 +598,95 @@ static int _resolve(char *com)
 	}
 	if (com[i] != 'R') {
 		rack_mid = find_bp_rack_mid(com+i);
-
-		if (rack_mid)
-			sprintf(error_string,
-				"X=%c Y=%c Z=%c resolves to %s\n",
-				com[X+i],com[Y+i],com[Z+i], rack_mid);
-		else
-			sprintf(error_string,
-				"X=%c Y=%c Z=%c has no resolve\n",
-				com[X+i],com[Y+i],com[Z+i]);
-
+		if (params.cluster_dims == 3) {
+			if (rack_mid) {
+				sprintf(error_string,
+					"X=%c Y=%c Z=%c resolves to %s\n",
+					com[i], com[i+1], com[i+2], rack_mid);
+			} else {
+				sprintf(error_string,
+					"X=%c Y=%c Z=%c has no resolve\n",
+					com[i], com[i+1], com[i+2]);
+			}
+		} else { /* params.cluster_dims ==4 */
+			if (rack_mid) {
+				sprintf(error_string,
+					"A=%c X=%c Y=%c Z=%c resolves to %s\n",
+					com[i], com[i+1], com[i+2], com[i+3],
+					rack_mid);
+			} else {
+				sprintf(error_string,
+					"A=%c X=%c Y=%c Z=%c has no resolve\n",
+					com[i], com[i+1], com[i+2], com[i+3]);
+			}
+		}
 	} else {
 		coord = find_bp_loc(com+i);
 
-		if (coord)
-			sprintf(error_string,
-				"%s resolves to X=%d Y=%d Z=%d\n",
-				com+i,coord[X],coord[Y],coord[Z]);
-		else
+		if (coord) {
+			if (params.cluster_dims == 3) {
+				sprintf(error_string,
+					"%s resolves to X=%d Y=%d Z=%d\n",
+					com+i, coord[0], coord[1], coord[2]);
+			} else { /* params.cluster_dims ==4 */
+				sprintf(error_string,
+					"%s resolves to A=%d X=%d Y=%d Z=%d\n",
+					com+i, coord[0], coord[1], coord[2],
+					coord[3]);
+			}
+		} else {
 			sprintf(error_string, "%s has no resolve.\n",
 				com+i);
+		}
 	}
 resolve_error:
 #else
-			sprintf(error_string,
-				"Must be on BG SN to resolve.\n");
+	sprintf(error_string, "Must be on BG SN to resolve.\n");
 #endif
 	wnoutrefresh(text_win);
 	doupdate();
 
 	return 1;
 }
+
 static int _change_state_all_bps(char *com, int state)
 {
 	char allnodes[50];
-	memset(allnodes,0,50);
+	memset(allnodes, 0, 50);
 
+	if (params.cluster_dims == 4)
+		sprintf(allnodes, "0000x%c%c%c%c",
+			alpha_num[dim_size[0]-1], alpha_num[dim_size[1]-1],
+			alpha_num[dim_size[2]-1], alpha_num[dim_size[3]-1]);
 	if (params.cluster_dims == 3)
 		sprintf(allnodes, "000x%c%c%c",
-			alpha_num[dim_size[X]-1], alpha_num[dim_size[Y]-1],
-			alpha_num[dim_size[Z]-1]);
+			alpha_num[dim_size[0]-1], alpha_num[dim_size[1]-1],
+			alpha_num[dim_size[2]-1]);
 	else
-		sprintf(allnodes, "0-%d",
-			dim_size[X]);
+		sprintf(allnodes, "0-%d", dim_size[0]);
 
 	return _change_state_bps(allnodes, state);
 
 }
+
+static int _coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return (coord - 'A') + 10;
+	return -1;
+}
+
 static int _change_state_bps(char *com, int state)
 {
-	int i=0, x;
+	int i = 0, j = 0;
 	int len = strlen(com);
 	int start[params.cluster_dims], end[params.cluster_dims];
-	int number=0, y=0, z=0, j=0;
 	char letter = '.';
 	char opposite = '#';
 	bool used = false;
 	char *c_state = "up";
-	char *p = '\0';
 
 	if (state == NODE_STATE_DOWN) {
 		letter = '#';
@@ -663,12 +694,12 @@ static int _change_state_bps(char *com, int state)
 		used = true;
 		c_state = "down";
 	}
-	while(i<len
-	      && (com[i] < '0' || com[i] > 'Z'
-		  || (com[i] > '9' && com[i] < 'A')))
+	while ((i < len) &&
+	       ((com[i] < '0') || (com[i] > '9')) &&
+	       ((com[i] < 'A') || (com[i] > 'Z')))
 		i++;
-	if (i>(len-1)) {
-		memset(error_string,0,255);
+	if (i > (len-1)) {
+		memset(error_string, 0, 255);
 		sprintf(error_string,
 			"You didn't specify any nodes to make %s. "
 			"in statement '%s'",
@@ -676,125 +707,89 @@ static int _change_state_bps(char *com, int state)
 		return 0;
 	}
 
-	if (params.cluster_dims == 1) {
-		if ((com[i+3] == 'x')
-		    || (com[i+3] == '-')) {
-			start[X] =  xstrntol(com + i, NULL,
-					     params.cluster_dims,
-					     params.cluster_base);
-			i += 4;
-			end[X] =  xstrntol(com + i, NULL,
-					   params.cluster_dims,
-					   params.cluster_base);
-		} else {
-			start[X] = end[X] =  xstrntol(com + i, NULL,
-						      params.cluster_dims,
-						      params.cluster_base);
-		}
-
-		if ((start[X]>end[X])
-		   || (start[X]<0)
-		   || (end[X]>dim_size[X]-1))
-			goto error_message;
-
-		for(x=start[X];x<=end[X];x++) {
-			ba_system_ptr->grid[x][0][0].color = 0;
-			ba_system_ptr->grid[x][0][0].letter = letter;
-			ba_system_ptr->grid[x][0][0].used = used;
-		}
-		return 1;
+	for (j = 0; j < params.cluster_dims; j++) {
+		start[j] = _coord(com[i+j]);
+		if (start[j] < 0)
+			goto error_message2;
 	}
-
-	if ((com[i+3] == 'x')
-	    || (com[i+3] == '-')) {
-		for(j=0; j<3; j++) {
-			if (((i+j) <= len) &&
-			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
-			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
-				continue;
-			goto error_message2;
-
+	if ((com[i+j] == '-') || (com[i+j] == 'x')) {
+		i += (j + 1);
+		for (j = 0; j < params.cluster_dims; j++) {
+			end[j] = _coord(com[i+j]);
+			if (end[j] < 0)
+				goto error_message2;
 		}
-		number = xstrntol(com + i, &p, params.cluster_dims,
-				  params.cluster_base);
-		hostlist_parse_int_to_array(
-			number, start, params.cluster_dims,
-			params.cluster_base);
-
-		i += 4;
-		for(j=0; j<3; j++) {
-			if (((i+j) <= len) &&
-			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
-			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
-				continue;
-			goto error_message2;
-		}
-		number = xstrntol(com + i, &p, params.cluster_dims,
-				  params.cluster_base);
-		hostlist_parse_int_to_array(
-			number, end, params.cluster_dims,
-			params.cluster_base);
 	} else {
-		for(j=0; j<3; j++) {
-			if (((i+j) <= len) &&
-			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
-			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
-				continue;
-			goto error_message2;
+		for (j = 0; j < params.cluster_dims; j++) {
+			end[j] = start[j];
 		}
-		number = xstrntol(com + i, &p, params.cluster_dims,
-				  params.cluster_base);
-		hostlist_parse_int_to_array(
-			number, start, params.cluster_dims,
-			params.cluster_base);
 	}
-	if ((start[X]>end[X]
-	    || start[Y]>end[Y]
-	    || start[Z]>end[Z])
-	   || (start[X]<0
-	       || start[Y]<0
-	       || start[Z]<0)
-	   || (end[X]>dim_size[X]-1
-	       || end[Y]>dim_size[Y]-1
-	       || end[Z]>dim_size[Z]-1))
-		goto error_message;
 
-	for(x=start[X];x<=end[X];x++) {
-		for(y=start[Y];y<=end[Y];y++) {
-			for(z=start[Z];z<=end[Z];z++) {
-				if (ba_system_ptr->grid[x][y][z].letter
-				   != opposite)
-					continue;
-				ba_system_ptr->grid[x][y][z].color = 0;
-				ba_system_ptr->grid[x][y][z].letter = letter;
-				ba_system_ptr->grid[x][y][z].used = used;
-			}
+	for (i = 0; i < params.cluster_dims; i++) {
+		if ((start[i] > end[i]) || (start[i] < 0) ||
+		    (end[i] >= dim_size[i]))
+			goto error_message;
+	}
+
+	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
+		for (j = 0; j < params.cluster_dims; j++) {
+			if ((ba_system_ptr->grid[i].coord[j] < start[j]) ||
+			    (ba_system_ptr->grid[i].coord[j] > end[j]))
+				break;
 		}
+		if (j < params.cluster_dims)
+			break;	/* coordinate out of bounds */
+		if (ba_system_ptr->grid[i].letter != opposite)
+			continue;
+		ba_system_ptr->grid[i].color = 0;
+		ba_system_ptr->grid[i].letter = letter;
+		ba_system_ptr->grid[i].used = used;
 	}
 	return 1;
+
 error_message:
-	memset(error_string,0,255);
+	memset(error_string, 0, 255);
 	if (params.cluster_dims == 1) {
 		sprintf(error_string,
-			"Problem with nodes,  specified range was %d-%d",
-			start[X],end[X]);
-	} else {
+			"Problem with nodes, specified range was %d-%d",
+			start[0], end[0]);
+	} else if (params.cluster_dims == 3) {
 		sprintf(error_string,
 			"Problem with base partitions, "
 			"specified range was %d%d%dx%d%d%d",
-			alpha_num[start[X]],alpha_num[start[Y]],
-			alpha_num[start[Z]],
-			alpha_num[end[X]],alpha_num[end[Y]],alpha_num[end[Z]]);
+			alpha_num[start[0]], alpha_num[start[1]],
+			alpha_num[start[2]],
+			alpha_num[end[1]],   alpha_num[end[1]],
+			alpha_num[end[2]]);
+	} else {	/* params.cluster_dims == 4 */
+		sprintf(error_string,
+			"Problem with base partitions, "
+			"specified range was %d%d%d%dx%d%d%d%d",
+			alpha_num[start[0]], alpha_num[start[1]],
+			alpha_num[start[2]], alpha_num[start[3]],
+			alpha_num[end[1]],   alpha_num[end[1]],
+			alpha_num[end[2]],   alpha_num[end[3]]);
 	}
 	return 0;
+
 error_message2:
-	memset(error_string,0,255);
-	sprintf(error_string,
-		"There was a problem with '%s'\nIn your request '%s'"
-		"You need to specify XYZ or XYZxXYZ",
-		com+i,com);
+	memset(error_string, 0, 255);
+	if (params.cluster_dims == 1) {
+		sprintf(error_string,
+			"There was a problem with '%s'\nIn your request '%s'"
+			"You need to specify # or #-#", com+i, com);
+	} else if (params.cluster_dims == 3) {
+		sprintf(error_string,
+			"There was a problem with '%s'\nIn your request '%s'"
+			"You need to specify XYZ or XYZxXYZ", com+i, com);
+	} else {	/* params.cluster_dims == 4 */
+		sprintf(error_string,
+			"There was a problem with '%s'\nIn your request '%s'"
+			"You need to specify AXYZ or AXYZxAXYZ", com+i, com);
+	}
 	return 0;
 }
+
 static int _remove_allocation(char *com, List allocated_blocks)
 {
 	ListIterator results_i;
@@ -845,14 +840,14 @@ static int _copy_allocation(char *com, List allocated_blocks)
 	allocated_block_t *temp_block = NULL;
 	select_ba_request_t *request = NULL;
 
-	int i=1;
+	int i=1, j;
 	int len = strlen(com);
 	char letter = '\0';
 	int count = 1;
 	int *geo = NULL, *geo_ptr = NULL;
 
 	/* look for the space after copy */
-	while(com[i-1]!=' ' && i<len)
+	while (com[i-1]!=' ' && i<len)
 		i++;
 
 	if (i<=len) {
@@ -918,11 +913,9 @@ static int _copy_allocation(char *com, List allocated_blocks)
 
 		results_i = list_iterator_create(request->elongate_geos);
 		while ((geo_ptr = list_next(results_i)) != NULL) {
-			geo = xmalloc(sizeof(int)*3);
-			geo[X] = geo_ptr[X];
-			geo[Y] = geo_ptr[Y];
-			geo[Z] = geo_ptr[Z];
-
+			geo = xmalloc(sizeof(int) * params.cluster_dims);
+			for (j = 0; j < params.cluster_dims; j++)
+				geo[j] = geo_ptr[j];
 			list_append(request->elongate_geos, geo);
 		}
 		list_iterator_destroy(results_i);
