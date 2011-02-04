@@ -42,6 +42,12 @@
 #include "src/common/uid.h"
 #include "src/smap/smap.h"
 
+#ifdef HAVE_BGQ
+//#  include "src/plugins/select/bgq/block_allocator/block_allocator.h"
+#else
+//#  include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
+#endif
+
 typedef struct {
 	int color;
 	char letter;
@@ -203,6 +209,14 @@ static int _set_nodecard_cnt(char *com)
 	return 1;
 }
 
+static int _xlate_coord(char *str, int len)
+{
+	if (len > 1)
+		return xstrntol(str, NULL, len, 10);
+	else
+		return xstrntol(str, NULL, len, params.cluster_base);
+}
+
 static int _create_allocation(char *com, List allocated_blocks)
 {
 	int i=6, geoi=-1, starti=-1, i2=0, small32=-1, small128=-1;
@@ -211,7 +225,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	select_ba_request_t *request = xmalloc(sizeof(select_ba_request_t));
 	int diff=0;
 #ifndef HAVE_BGL
-	int small16=-1, small64=-1, small256=-1;
+	int small16 = -1, small64 = -1, small256 = -1;
 #endif
 	request->geometry[0] = (uint16_t)NO_VAL;
 	request->conn_type[0] = SELECT_TORUS;
@@ -224,7 +238,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->deny_pass = 0;
 	request->avail_mp_bitmap = NULL;
 
-	while (i<len) {
+	while (i < len) {
 		if (!strncasecmp(com+i, "mesh", 4)) {
 			request->conn_type[0] = SELECT_MESH;
 			i+=4;
@@ -232,7 +246,12 @@ static int _create_allocation(char *com, List allocated_blocks)
 			request->conn_type[0] = SELECT_SMALL;
 			i+=5;
 		} else if (!strncasecmp(com+i, "deny", 4)) {
-			i+=4;
+			i += 4;
+#ifdef PASS_DENY_A
+			if (strstr(com+i, "A"))
+				request->deny_pass |= PASS_DENY_A;
+#endif
+#ifdef PASS_DENY_X
 			if (strstr(com+i, "X"))
 				request->deny_pass |= PASS_DENY_X;
 			if (strstr(com+i, "Y"))
@@ -241,64 +260,65 @@ static int _create_allocation(char *com, List allocated_blocks)
 				request->deny_pass |= PASS_DENY_Z;
 			if (!strcasecmp(com+i, "ALL"))
 				request->deny_pass |= PASS_DENY_ALL;
+#endif
 		} else if (!strncasecmp(com+i, "nodecard", 8)) {
-			small32=0;
-			i+=8;
+			small32 = 0;
+			i += 8;
 		} else if (!strncasecmp(com+i, "quarter", 7)) {
-			small128=0;
-			i+=7;
+			small128 = 0;
+			i += 7;
 		} else if (!strncasecmp(com+i, "32CN", 4)) {
-			small32=0;
-			i+=4;
+			small32 = 0;
+			i += 4;
 		} else if (!strncasecmp(com+i, "128CN", 5)) {
-			small128=0;
-			i+=5;
+			small128 = 0;
+			i += 5;
 		} else if (!strncasecmp(com+i, "rotate", 6)) {
-			request->rotate=true;
-			i+=6;
+			request->rotate = true;
+			i += 6;
 		} else if (!strncasecmp(com+i, "elongate", 8)) {
-			request->elongate=true;
-			i+=8;
+			request->elongate = true;
+			i += 8;
 		} else if (!strncasecmp(com+i, "start", 5)) {
-			request->start_req=1;
-			i+=5;
-		} else if (request->start_req
-			  && starti<0
-			  && ((com[i] >= '0' && com[i] <= '9')
-			      || (com[i] >= 'A' && com[i] <= 'Z'))) {
-			starti=i;
+			request->start_req = 1;
+			i += 5;
+		} else if (request->start_req && (starti < 0) &&
+			   ((com[i] >= '0' && com[i] <= '9') ||
+			    (com[i] >= 'A' && com[i] <= 'Z'))) {
+			starti = i;
 			i++;
 		} else if (small32 == 0 && (com[i] >= '0' && com[i] <= '9')) {
-			small32=i;
+			small32 = i;
 			i++;
 		} else if (small128 == 0 && (com[i] >= '0' && com[i] <= '9')) {
-			small128=i;
+			small128 = i;
 			i++;
 		}
 #ifndef HAVE_BGL
 		else if (!strncasecmp(com+i, "16CN", 4)) {
-			small16=0;
-			i+=4;
+			small16 = 0;
+			i += 4;
 		} else if (!strncasecmp(com+i, "64CN", 4)) {
-			small64=0;
-			i+=4;
+			small64 = 0;
+			i += 4;
 		} else if (!strncasecmp(com+i, "256CN", 5)) {
-			small256=0;
-			i+=5;
+			small256 = 0;
+			i += 5;
 		} else if (small16 == 0 && (com[i] >= '0' && com[i] <= '9')) {
-			small16=i;
+			small16 = i;
 			i++;
 		} else if (small64 == 0 && (com[i] >= '0' && com[i] <= '9')) {
-			small64=i;
+			small64 = i;
 			i++;
 		} else if (small256 == 0 && (com[i] >= '0' && com[i] <= '9')) {
-			small256=i;
+			small256 = i;
 			i++;
 		}
 #endif
-		else if (geoi<0 && ((com[i] >= '0' && com[i] <= '9')
-				     || (com[i] >= 'A' && com[i] <= 'Z'))) {
-			geoi=i;
+		else if ((geoi < 0) &&
+			 ((com[i] >= '0' && com[i] <= '9') ||
+			  (com[i] >= 'A' && com[i] <= 'Z'))) {
+			geoi = i;
 			i++;
 		} else {
 			i++;
@@ -363,7 +383,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 				break;
 		}
 #else
-		while(total > 0) {
+		while (total > 0) {
 			if (total >= 128) {
 				request->small128++;
 				total -= 128;
@@ -375,20 +395,22 @@ static int _create_allocation(char *com, List allocated_blocks)
 		}
 #endif
 		request->size = 1;
-/* 		sprintf(error_string, */
-/* 			"got %d %d %d %d %d %d", */
-/* 			total, request->small16, request->small32, */
-/* 			request->small64, request->small128, */
-/* 			request->small256); */
+#if 0
+		sprintf(error_string,
+			"got tot:%d sm16:%d sm32:%d sm64:%d sm128:%d sm256:%d",
+			total, request->small16, request->small32,
+			request->small64, request->small128,
+			request->small256);
+#endif
 	}
 
 	if ((geoi < 0) && !request->size) {
-		memset(error_string,0,255);
+		memset(error_string, 0, 255);
 		sprintf(error_string,
 			"No size or dimension specified, please re-enter");
 	} else {
-		i2=geoi;
-		while (i2<len) {
+		i2 = geoi;
+		while (i2 < len) {
 			if (request->size)
 				break;
 			if ((com[i2] == ' ') || (i2 == (len-1))) {
@@ -396,59 +418,45 @@ static int _create_allocation(char *com, List allocated_blocks)
 				request->size = atoi(&com[geoi]);
 				break;
 			}
-			if (com[i2]=='x') {
-				diff = i2-geoi;
-				/* for geometery */
-				if (diff > 1) {
-					request->geometry[X] =
-						xstrntol(&com[geoi],
-							 NULL, diff,
-							 10);
-				} else {
-					request->geometry[X] =
-						xstrntol(&com[geoi],
-							 NULL, diff,
-							 params.cluster_base);
-				}
-				geoi += diff;
-				diff = geoi;
-
-				while(com[geoi-1]!='x' && geoi<len)
-					geoi++;
-				if (geoi==len)
-					goto geo_error_message;
-				diff = geoi - diff;
-				if (diff>1) {
-					request->geometry[Y] =
-						xstrntol(&com[geoi],
-							 NULL, diff,
-							 10);
-				} else {
-					request->geometry[Y] =
-						xstrntol(&com[geoi],
-							 NULL, diff,
-							 params.cluster_base);
-				}
-				geoi += diff;
-				diff = geoi;
-				while(com[geoi-1]!='x' && geoi<len)
-					geoi++;
-				if (geoi==len)
-					goto geo_error_message;
-				diff = geoi - diff;
-
-				if (diff>1) {
-					request->geometry[Z] =
-						xstrntol(&com[geoi],
-							 NULL, diff,
-							 10);
-				} else {
-					request->geometry[Z] =
-						xstrntol(&com[geoi],
-							 NULL, diff,
-							 params.cluster_base);
-				}
+			if (com[i2] == 'x') {
 				request->size = -1;
+				/* for geometery */
+				diff = i2 - geoi;
+				request->geometry[0] = _xlate_coord(&com[geoi],
+								    diff);
+
+				geoi += diff;
+				diff = geoi;
+				while (com[geoi-1] != 'x' && com[geoi])
+					geoi++;
+				if (com[geoi] == '\0')
+					goto geo_error_message;
+				diff = geoi - diff;
+				request->geometry[1] = _xlate_coord(&com[geoi],
+								    diff);
+
+				geoi += diff;
+				diff = geoi;
+				while (com[geoi-1] != 'x' && com[geoi])
+					geoi++;
+				if (com[geoi] == '\0')
+					goto geo_error_message;
+				diff = geoi - diff;
+				request->geometry[2] = _xlate_coord(&com[geoi],
+								    diff);
+
+				if (params.cluster_dims == 3)
+					break;
+
+				geoi += diff;
+				diff = geoi;
+				while (com[geoi-1] != 'x' && com[geoi])
+					geoi++;
+				if (com[geoi] == '\0')
+					goto geo_error_message;
+				diff = geoi - diff;
+				request->geometry[3] = _xlate_coord(&com[geoi],
+								    diff);
 				break;
 			}
 			i2++;
@@ -456,62 +464,44 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 		if (request->start_req) {
 			i2 = starti;
-			while(com[i2]!='x' && i2<len)
+			while (com[i2] !='x' && com[i2])
 				i2++;
 			diff = i2-starti;
-			if (diff>1) {
-				request->start[X] = xstrntol(&com[starti],
-							     NULL, diff,
-							     10);
-			} else {
-				request->start[X] = xstrntol(&com[starti],
-							     NULL, diff,
-							     params.
-							     cluster_base);
-			}
+			request->start[0] = _xlate_coord(&com[starti], diff);
 			starti += diff;
-			if (starti==len)
+			if (starti == len)
 				goto start_request;
 
 			starti++;
 			i2 = starti;
-			while(com[i2]!='x' && i2<len)
+			while (com[i2] !='x' && com[i2])
 				i2++;
-			diff = i2-starti;
-
-			if (diff>1) {
-				request->start[Y] = xstrntol(&com[starti],
-							     NULL, diff,
-							     10);
-			} else {
-				request->start[Y] = xstrntol(&com[starti],
-							     NULL, diff,
-							     params.cluster_base);
-			}
+			diff = i2 - starti;
+			request->start[1] = _xlate_coord(&com[starti], diff);
 			starti += diff;
-			if (starti==len)
+			if (starti == len)
 				goto start_request;
 
 			starti++;
 			i2 = starti;
-			while(com[i2]!=' ' && i2<len)
+			while (com[i2] !='x' && com[i2] != ' ' && com[i2])
 				i2++;
-			diff = i2-starti;
+			diff = i2 - starti;
+			request->start[2] = _xlate_coord(&com[starti], diff);
+			starti += diff;
+			if ((starti == len) || (params.cluster_dims == 3))
+				goto start_request;
 
-			if (diff>1) {
-				request->start[Z] = xstrntol(&com[starti],
-							     NULL, diff,
-							     10);
-			} else {
-				request->start[Z] = xstrntol(&com[starti],
-							     NULL, diff,
-							     params.
-							     cluster_base);
-			}
+			starti++;
+			i2 = starti;
+			while (com[i2] != ' ' && com[i2])
+				i2++;
+			diff = i2 - starti;
+			request->start[3] = _xlate_coord(&com[starti], diff);
 		}
 	start_request:
 		if (!strcasecmp(layout_mode,"OVERLAP"))
-			reset_ba_system(true);
+			select_g_ba_reset(true);
 
 		/*
 		  Here is where we do the allocating of the partition.
@@ -519,8 +509,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 		  a list just incase we change something later.
 		*/
 		if (!new_ba_request(request)) {
-			memset(error_string,0,255);
-			if (request->size!=-1) {
+			memset(error_string, 0, 255);
+			if (request->size != -1) {
 				sprintf(error_string,
 					"Problems with request for %d\n"
 					"Either you put in something "
@@ -560,10 +550,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 	return 1;
 
 geo_error_message:
-	memset(error_string,0,255);
+	memset(error_string, 0, 255);
 	sprintf(error_string,
-		"Error in geo dimension "
-		"specified, please re-enter");
+		"Error in geo dimension specified, please re-enter");
 
 	return 0;
 }
@@ -1190,14 +1179,14 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 		}
 		j++;
 	}
-	memset(com,0,255);
-	sprintf(com,"create %dx%dx%d %s start %dx%dx%d "
+	memset(com, 0, 255);
+	sprintf(com, "create %dx%dx%d %s start %dx%dx%d "
 		"small32=%d small128=%d",
 		geo[X], geo[Y], geo[Z], conn_type,
 		start1[X], start1[Y], start1[Z],
 		blockreq->small32, blockreq->small128);
 	if (!strcasecmp(layout_mode, "OVERLAP"))
-		reset_ba_system(false);
+		select_g_ba_reset(false);
 
 	set_all_bps_except(nodes);
 	_create_allocation(com, allocated_blocks);
@@ -1435,7 +1424,7 @@ void get_command(void)
 	if (params.commandline) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
-		ba_fini();
+		select_g_ba_fini();
 		exit(0);
 	}
 	init_wires();
