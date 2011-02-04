@@ -194,7 +194,7 @@ static int _bg_report(block_info_msg_t *block_ptr)
 		       bg_block_state_string(
 			       block_ptr->block_array[i].state),
 		       conn_type_string(
-			       block_ptr->block_array[i].conn_type),
+			       block_ptr->block_array[i].conn_type[0]),
 		       node_use_string(
 			       block_ptr->block_array[i].node_use));
 	}
