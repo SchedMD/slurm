@@ -2,7 +2,7 @@
  *  job_functions.c - Functions related to job display mode of smap.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-201` Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -125,21 +125,15 @@ extern void get_job(void)
 		}
 
 		if (job_ptr->node_inx[0] != -1) {
-			if (((params.cluster_flags & CLUSTER_FLAG_BG) == 0) &&
-			    (params.cluster_dims == 3)) {
-				set_grid_inx2(job_ptr->nodes, count);
-			} else {
-				int j = 0;
-				job_ptr->num_nodes = 0;
-				while (job_ptr->node_inx[j] >= 0) {
-					job_ptr->num_nodes +=
-						(job_ptr->node_inx[j + 1] + 1) -
-						 job_ptr->node_inx[j];
-					set_grid_inx(job_ptr->node_inx[j],
-						     job_ptr->node_inx[j + 1],
-						     count);
-					j += 2;
-				}
+			int j = 0;
+			job_ptr->num_nodes = 0;
+			while (job_ptr->node_inx[j] >= 0) {
+				job_ptr->num_nodes +=
+					(job_ptr->node_inx[j + 1] + 1) -
+					 job_ptr->node_inx[j];
+				set_grid_inx(job_ptr->node_inx[j],
+					     job_ptr->node_inx[j + 1], count);
+				j += 2;
 			}
 
 			if (!params.commandline) {

@@ -78,7 +78,7 @@ static int  _print_text_part(partition_info_t *part_ptr,
 
 extern void get_slurm_part(void)
 {
-	int error_code, i, recs, count = 0;
+	int error_code, i, j, recs, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
@@ -146,16 +146,11 @@ extern void get_slurm_part(void)
 			if (!overlap)
 				continue;
 		}
-		if (((params.cluster_flags & CLUSTER_FLAG_BG) == 0) &&
-		    (params.cluster_dims == 3)) {
-			set_grid_inx2(part.nodes, count);
-		} else {
-			int j = 0;
-			while (part.node_inx[j] >= 0) {
-				set_grid_inx(part.node_inx[j],
-					     part.node_inx[j + 1], count);
-				j += 2;
-			}
+		j = 0;
+		while (part.node_inx[j] >= 0) {
+			set_grid_inx(part.node_inx[j],
+				     part.node_inx[j + 1], count);
+			j += 2;
 		}
 
 		if (!params.commandline) {
@@ -790,8 +785,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 		else
 			nodes = part_ptr->nodes;
 
-		if ((params.display == BGPART) && db2_info_ptr
-		   && (db2_info_ptr->ionodes)) {
+		if ((params.display == BGPART) && db2_info_ptr &&
+		    (db2_info_ptr->ionodes)) {
 			printf("%s[%s]\n", nodes, db2_info_ptr->ionodes);
 		} else
 			printf("%s\n",nodes);

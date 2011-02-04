@@ -91,7 +91,7 @@ extern void get_reservation(void)
 		recs = 0;
 
 	if (!params.commandline) {
-		if ((text_line_cnt+printed_resv) > count)
+		if ((text_line_cnt + printed_resv) > count)
 			text_line_cnt--;
 	}
 	printed_resv = 0;
@@ -116,21 +116,16 @@ extern void get_reservation(void)
 			active = 0;
 
 		if (active && (resv.node_inx[0] != -1)) {
-			if (((params.cluster_flags & CLUSTER_FLAG_BG) == 0) &&
-			    (params.cluster_dims == 3)) {
-				set_grid_inx2(resv.node_list, count);
-			} else {
-				int j = 0;
-				resv.node_cnt = 0;
-				while (resv.node_inx[j] >= 0) {
-					resv.node_cnt +=
-						(resv.node_inx[j + 1] + 1) -
-						 resv.node_inx[j];
-					set_grid_inx(resv.node_inx[j],
-						     resv.node_inx[j + 1],
-						     count);
-					j += 2;
-				}
+			int j = 0;
+			resv.node_cnt = 0;
+			while (resv.node_inx[j] >= 0) {
+				resv.node_cnt +=
+					(resv.node_inx[j + 1] + 1) -
+					 resv.node_inx[j];
+				set_grid_inx(resv.node_inx[j],
+					     resv.node_inx[j + 1],
+					     count);
+				j += 2;
 			}
 		}
 
@@ -153,8 +148,8 @@ extern void get_reservation(void)
 			}
 			count++;
 		}
-		if (count==128)
-			count=0;
+		if (count == 128)
+			count = 0;
 	}
 
 	if (params.commandline && params.iterate)

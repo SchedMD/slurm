@@ -134,6 +134,8 @@ typedef struct {
 typedef struct {
 	/* coordinates of midplane */
 	uint16_t coord[HIGHEST_DIMENSIONS];
+	/* coordinates on display screen */
+	int grid_xcord, grid_ycord;
 	/* color of letter used in smap */
 	int color;
 	/* midplane index used for easy look up of the miplane */
@@ -146,12 +148,8 @@ typedef struct {
 } ba_node_t;
 
 typedef struct {
-	/* total number of procs on the system */
-	int num_of_proc;
-
-	/* made to hold info about a system, which right now is only a
-	 * grid of ba_nodes*/
-	ba_node_t ***grid;
+	int node_cnt;
+	ba_node_t *grid;
 } ba_system_t;
 
 extern WINDOW *grid_win;
@@ -173,8 +171,7 @@ extern ba_system_t *ba_system_ptr;
 extern int quiet_flag;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
-extern int set_grid_inx(int start, int end, int count);
-extern int set_grid_inx2(char *node_names, int count);
+extern void set_grid_inx(int start, int end, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 bitstr_t *get_requested_node_bitmap(void);

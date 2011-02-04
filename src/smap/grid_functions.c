@@ -40,151 +40,64 @@
 
 #include "src/smap/smap.h"
 
-static int _coord(char coord)
+extern void set_grid_inx(int start, int end, int count)
 {
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A') + 10;
-	return -1;
-}
+	int i;
 
-extern int set_grid_inx(int start, int end, int count)
-{
-	int x, y, z;
+	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
+		if ((ba_system_ptr->grid[i].index < start) ||
+		    (ba_system_ptr->grid[i].index > end))
+			continue;
+		if ((ba_system_ptr->grid[i].state == NODE_STATE_DOWN) ||
+		    (ba_system_ptr->grid[i].state & NODE_STATE_DRAIN))
+			continue;
 
-	for (y = dim_size[Y] - 1; y >= 0; y--) {
-		for (z = 0; z < dim_size[Z]; z++) {
-			for (x = 0; x < dim_size[X]; x++) {
-				if ((ba_system_ptr->grid[x][y][z].index
-				     < start)
-				||  (ba_system_ptr->grid[x][y][z].index
-				     > end))
-					continue;
-				if ((ba_system_ptr->grid[x][y][z].state
-				     == NODE_STATE_DOWN)
-				    ||  (ba_system_ptr->grid[x][y][z].state
-					 & NODE_STATE_DRAIN))
-					continue;
-
-				ba_system_ptr->grid[x][y][z].letter =
-					letters[count%62];
-				ba_system_ptr->grid[x][y][z].color =
-					colors[count%6];
-			}
-		}
+		ba_system_ptr->grid[i].letter = letters[count%62];
+		ba_system_ptr->grid[i].color  = colors[count%6];
 	}
-	return 1;
-}
-
-extern int set_grid_inx2(char *node_names, int count)
-{
-	hostlist_t hl;
-	hostlist_iterator_t hl_iter;
-	char *host;
-	int i, x, y, z;
-
-	hl = hostlist_create(node_names);
-	hl_iter = hostlist_iterator_create(hl);
-	while ((host = hostlist_next(hl_iter))) {
-		i = strlen(host);
-		x = _coord(host[i-3]);
-		y = _coord(host[i-2]);
-		z = _coord(host[i-1]);
-		ba_system_ptr->grid[x][y][z].letter = letters[count%62];
-		ba_system_ptr->grid[x][y][z].color  = colors[count%6];
-		free(host);
-	}
-	hostlist_iterator_destroy(hl_iter);
-	return 1;
 }
 
 /* This function is only called when HAVE_BG is set */
 extern int set_grid_bg(int *start, int *end, int count, int set)
 {
-	int x=0, y=0, z=0;
-	int i = 0;
+	int node_cnt = 0, i, j;
 
-	assert(end[X] < dim_size[X]);
-	assert(start[X] >= 0);
-	assert(count >= 0);
-	assert(set >= 0);
-	assert(set <= 2);
-	assert(end[Y] < dim_size[Y]);
-	assert(start[Y] >= 0);
-	assert(end[Z] < dim_size[Z]);
-	assert(start[Z] >= 0);
-
-	for (x = start[X]; x <= end[X]; x++) {
-		for (y = start[Y]; y <= end[Y]; y++) {
-			for (z = start[Z]; z <= end[Z]; z++) {
-				/* set the color and letter of the
-				   block if the set flag is specified
-				   or if the letter hasn't been set yet
-				*/
-				if(set
-				   || ((ba_system_ptr->grid[x][y][z].letter
-					== '.')
-				       && (ba_system_ptr->grid[x][y][z].letter
-					   != '#'))) {
-
-						ba_system_ptr->
-							grid[x][y][z].letter =
-							letters[count%62];
-						ba_system_ptr->
-							grid[x][y][z].color =
-							colors[count%6];
-				}
-				i++;
-			}
+	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
+		for (j = 0; j < params.cluster_dims; j++) {
+			if ((ba_system_ptr->grid[i].coord[j] < start[i]) ||
+			    (ba_system_ptr->grid[i].coord[j] > end[i]))
+				break;
 		}
+		if (j < params.cluster_dims)
+			break;	/* outside of boundary */
+		if (set ||
+		    ((ba_system_ptr->grid[i].letter == '.') &&
+		     (ba_system_ptr->grid[i].letter != '#'))) {
+			ba_system_ptr->grid[i].letter = letters[count%62];
+			ba_system_ptr->grid[i].color  = colors[count%6];
+		}
+		node_cnt++;
 	}
-
-	return i;
+	return node_cnt;
 }
 
 /* print_grid - print values of every grid point */
 extern void print_grid(int dir)
 {
-	int x;
-	int grid_xcord, grid_ycord = 2;
-	int y, z, offset = dim_size[Z];
+	int i;
 
-	for (y = dim_size[Y] - 1; y >= 0; y--) {
-		offset = dim_size[Z] + 1;
-		for (z = 0; z < dim_size[Z]; z++) {
-			grid_xcord = offset;
-
-			for (x = 0; x < dim_size[X]; x++) {
-				if (ba_system_ptr->grid[x][y][z].color)
-					init_pair(ba_system_ptr->
-						  grid[x][y][z].color,
-						  ba_system_ptr->
-						  grid[x][y][z].color,
-						  COLOR_BLACK);
-				else
-					init_pair(ba_system_ptr->
-						  grid[x][y][z].color,
-						  ba_system_ptr->
-						  grid[x][y][z].color,
-                                                  7);
-
-				wattron(grid_win,
-					COLOR_PAIR(ba_system_ptr->
-						   grid[x][y][z].color));
-
-				mvwprintw(grid_win,
-					  grid_ycord, grid_xcord, "%c",
-					  ba_system_ptr->grid[x][y][z].letter);
-				wattroff(grid_win,
-					 COLOR_PAIR(ba_system_ptr->
-						    grid[x][y][z].color));
-				grid_xcord++;
-			}
-			grid_ycord++;
-			offset--;
-		}
-		grid_ycord++;
+	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
+		if (ba_system_ptr->grid[i].color)
+			init_pair(ba_system_ptr->grid[i].color,
+				  ba_system_ptr->grid[i].color, COLOR_BLACK);
+		else
+			init_pair(ba_system_ptr->grid[i].color,
+				  ba_system_ptr->grid[i].color, 7);
+		mvwprintw(grid_win,
+			  ba_system_ptr->grid[i].grid_ycord, 
+			  ba_system_ptr->grid[i].grid_xcord, "%c",
+			  ba_system_ptr->grid[i].letter);
+		wattroff(grid_win, COLOR_PAIR(ba_system_ptr->grid[i].color));
 	}
 	return;
 }
@@ -197,13 +110,12 @@ bitstr_t *get_requested_node_bitmap()
 	int i = 0;
 	node_info_t *node_ptr = NULL;
 
-	if(!params.hl)
+	if (!params.hl)
 		return NULL;
 
 	if (old_node_ptr) {
-		error_code =
-			slurm_load_node(old_node_ptr->last_update,
-					&new_node_ptr, SHOW_ALL);
+		error_code = slurm_load_node(old_node_ptr->last_update,
+					     &new_node_ptr, SHOW_ALL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA)
@@ -212,7 +124,7 @@ bitstr_t *get_requested_node_bitmap()
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 					     SHOW_ALL);
 
-	if(bitmap)
+	if (bitmap)
 		FREE_NULL_BITMAP(bitmap);
 
 	if (error_code) {
@@ -225,7 +137,7 @@ bitstr_t *get_requested_node_bitmap()
 	bitmap = bit_alloc(old_node_ptr->record_count);
 	for(i=0; i<old_node_ptr->record_count; i++) {
 		node_ptr = &(old_node_ptr->node_array[i]);
-		if(hostlist_find(params.hl, node_ptr->name) != -1)
+		if (hostlist_find(params.hl, node_ptr->name) != -1)
 			bit_set(bitmap, i);
 	}
 	return bitmap;
