@@ -53,21 +53,31 @@
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */
 #define _ADD_DELAYS 0
+#define _DEBUG 1
 
 static MYSQL *mysql_handle = NULL;
 
 extern int ns_add_node(struct nodespec **head, uint32_t node_id)
 {
+#if _DEBUG
+	info("ns_add_node: id:%u", node_id);
+#endif
 	return 0;
 }
 
 extern char *ns_to_string(const struct nodespec *head)
 {
+#if _DEBUG
+	info("ns_to_string: start:%u end:%u", head->start, head->end);
+#endif
 	return NULL;
 }
 
 extern void free_nodespec(struct nodespec *head)
 {
+#if _DEBUG
+	info("free_nodespec: start:%u end:%u", head->start, head->end);
+#endif
 }
 
 /*
@@ -76,6 +86,9 @@ extern void free_nodespec(struct nodespec *head)
 /** Connect to the XTAdmin table on the SDB */
 extern MYSQL *cray_connect_sdb(void)
 {
+#if _DEBUG
+	info("cray_connect_sdb");
+#endif
 #if _ADD_DELAYS
 	usleep(5000);
 #endif
@@ -92,6 +105,9 @@ extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
 				MYSQL_BIND bind_parm[], unsigned long nparams,
 				MYSQL_BIND bind_cols[], unsigned long ncols)
 {
+#if _DEBUG
+	info("prepare_stmt");
+#endif
 	if (handle != mysql_handle)
 		error("prepare_stmt: bad MySQL handle");
 
@@ -102,6 +118,9 @@ extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
 extern int exec_stmt(MYSQL_STMT *stmt, const char *query,
 		     MYSQL_BIND bind_col[], unsigned long ncols)
 {
+#if _DEBUG
+	info("exec_stmt");
+#endif
 #if _ADD_DELAYS
 	usleep(5000);
 #endif
@@ -112,6 +131,9 @@ extern int exec_stmt(MYSQL_STMT *stmt, const char *query,
 /** Find out interconnect chip: Gemini (XE) or SeaStar (XT) */
 extern int cray_is_gemini_system(MYSQL *handle)
 {
+#if _DEBUG
+	info("cray_is_gemini_system");
+#endif
 #if _ADD_DELAYS
 	usleep(5000);
 #endif
@@ -125,36 +147,61 @@ extern int cray_is_gemini_system(MYSQL *handle)
  */
 extern enum basil_version get_basil_version(void)
 {
+#if _DEBUG
+	info("basil_version get_basil_version");
+#endif
 	return BV_3_1;
 }
 
 extern int basil_request(struct basil_parse_data *bp)
 {
+#if _DEBUG
+	info("basil_request");
+#endif
 	return 0;
 }
 
 extern struct basil_inventory *get_full_inventory(enum basil_version version)
 {
+#if _DEBUG
+	info("get_full_inventory");
+#endif
 	return NULL;
 }
 
 extern void   free_inv(struct basil_inventory *inv)
 {
+#if _DEBUG
+	info("free_inv");
+#endif
 }
 
 extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
 			  uint32_t mem_mb, struct nodespec *ns_head)
 {
+#if _DEBUG
+	info("basil_reserve user:%s batch_id:%s width:%u depth:%u nppn:%u "
+	     "mem_mb:%u node_spec:start:%u,end:%u",
+	     user, batch_id, width, depth, nppn, mem_mb,
+	     ns_head->start, ns_head->end);
+#endif
 	return 0;
 }
 
 extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id)
 {
+#if _DEBUG
+	info("basil_confirm: rsvn_id:%u", rsvn_id);
+#endif
 	return 0;
 }
 
 extern int basil_release(uint32_t rsvn_id)
 {
+#if _DEBUG
+	info("basil_release: rsvn_id:%u", rsvn_id);
+#endif
 	return 0;
 }
+
