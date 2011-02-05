@@ -44,3 +44,117 @@
 #    include <inttypes.h>
 #  endif
 #endif
+#include <unistd.h>
+
+#include "src/common/log.h"
+#include "src/common/xmalloc.h"
+#include "../basil_alps.h"
+
+/* If _ADD_DELAYS is set, then include sleep calls to emulate delays
+ * expected for ALPS/BASIL interactions */
+#define _ADD_DELAYS 0
+
+static MYSQL *mysql_handle = NULL;
+
+extern int ns_add_node(struct nodespec **head, uint32_t node_id)
+{
+	return 0;
+}
+
+extern char *ns_to_string(const struct nodespec *head)
+{
+	return NULL;
+}
+
+extern void free_nodespec(struct nodespec *head)
+{
+}
+
+/*
+ *	Routines to interact with SDB database (uses prepared statements)
+ */
+/** Connect to the XTAdmin table on the SDB */
+extern MYSQL *cray_connect_sdb(void)
+{
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+	if (mysql_handle)
+		error("cray_connect_sdb: Duplicate MySQL connection");
+	else
+		mysql_handle = (MYSQL *) xmalloc(1);
+
+	return mysql_handle;
+}
+
+/** Initialize and prepare statement */
+extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
+				MYSQL_BIND bind_parm[], unsigned long nparams,
+				MYSQL_BIND bind_cols[], unsigned long ncols)
+{
+	if (handle != mysql_handle)
+		error("prepare_stmt: bad MySQL handle");
+
+	return NULL;
+}
+
+/** Execute and return the number of rows. */
+extern int exec_stmt(MYSQL_STMT *stmt, const char *query,
+		     MYSQL_BIND bind_col[], unsigned long ncols)
+{
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+	return 0;
+}
+
+
+/** Find out interconnect chip: Gemini (XE) or SeaStar (XT) */
+extern int cray_is_gemini_system(MYSQL *handle)
+{
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+	if (handle != mysql_handle)
+		error("cray_is_gemini_system: bad MySQL handle");
+	return 1;
+}
+
+/*
+ *	Basil XML-RPC API prototypes
+ */
+extern enum basil_version get_basil_version(void)
+{
+	return BV_3_1;
+}
+
+extern int basil_request(struct basil_parse_data *bp)
+{
+	return 0;
+}
+
+extern struct basil_inventory *get_full_inventory(enum basil_version version)
+{
+	return NULL;
+}
+
+extern void   free_inv(struct basil_inventory *inv)
+{
+}
+
+extern long basil_reserve(const char *user, const char *batch_id,
+			  uint32_t width, uint32_t depth, uint32_t nppn,
+			  uint32_t mem_mb, struct nodespec *ns_head)
+{
+	return 0;
+}
+
+extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id)
+{
+	return 0;
+}
+
+extern int basil_release(uint32_t rsvn_id)
+{
+	return 0;
+}
