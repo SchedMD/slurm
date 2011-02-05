@@ -25,7 +25,7 @@ $(select_cray_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 else
-SUBDIRS = libemuate
+SUBDIRS = libemulate
 
 select_cray_la_SOURCES += basil_interface.c
 select_cray_la_CFLAGS   = $(MYSQL_CFLAGS)
