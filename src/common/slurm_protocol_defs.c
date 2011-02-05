@@ -2074,7 +2074,7 @@ extern void slurm_free_block_job_info(void *object)
 	if (block_job_info) {
 		xfree(block_job_info->cnodes);
 		xfree(block_job_info->cnode_inx);
-		xfree(block_job_info->user);
+		xfree(block_job_info->user_name);
 		xfree(block_job_info);
 	}
 }

@@ -1509,7 +1509,9 @@ typedef struct {
 				 * start_range_2, .., -1  used for
 				 * sub-block jobs */
 	uint32_t job_id;        /* job id */
-	char *user;             /* user running the job */
+	void *job_ptr;          /* internal use only, not packed. */
+	uint32_t user_id;       /* user running the job's ID */
+	char *user_name;        /* user running the job's name */
 } block_job_info_t;
 
 typedef struct {

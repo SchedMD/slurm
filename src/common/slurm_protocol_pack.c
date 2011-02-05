@@ -7190,7 +7190,8 @@ static int _unpack_block_job_info(block_job_info_t **job_info, Buf buffer,
 		xfree(cnode_inx_str);
 	}
 	safe_unpack32(&job->job_id, buffer);
-	safe_unpackstr_xmalloc(&job->user, &uint32_tmp, buffer);
+	safe_unpack32(&job->user_id, buffer);
+	safe_unpackstr_xmalloc(&job->user_name, &uint32_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -7572,6 +7573,7 @@ extern void slurm_pack_block_job_info(block_job_info_t *block_job_info,
 		packnull(buffer);
 		packnull(buffer);
 		pack32(0, buffer);
+		pack32(0, buffer);
 		packnull(buffer);
 		return;
 	}
@@ -7584,7 +7586,8 @@ extern void slurm_pack_block_job_info(block_job_info_t *block_job_info,
 	} else
 		packnull(buffer);
 	pack32(block_job_info->job_id, buffer);
-	packstr(block_job_info->user, buffer);
+	pack32(block_job_info->user_id, buffer);
+	packstr(block_job_info->user_name, buffer);
 }
 
 extern int slurm_unpack_block_info_msg(
