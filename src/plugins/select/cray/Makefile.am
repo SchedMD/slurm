@@ -29,7 +29,7 @@ SUBDIRS = libemulate
 
 select_cray_la_SOURCES += basil_interface.c
 select_cray_la_CFLAGS   = $(MYSQL_CFLAGS)
-select_cray_la_LIBADD   = libemuate/libalps.la
+select_cray_la_LIBADD   = libemulate/libalps.la
 
 force:
 $(select_cray_la_LIBADD) : force

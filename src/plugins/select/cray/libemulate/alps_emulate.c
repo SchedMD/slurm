@@ -57,6 +57,115 @@
 
 static MYSQL *mysql_handle = NULL;
 
+/*
+ * Enum-to-string mapping tables
+ */
+
+/* Basil versions */
+const char *bv_names[BV_MAX] = {	/* Basil Protocol version */
+	[BV_1_0] = "1.0",
+	[BV_1_1] = "1.1",
+	[BV_1_2] = "1.1",
+	[BV_3_1] = "1.1"
+};
+
+const char *bv_names_long[BV_MAX] = {	/* Actual version name */
+	[BV_1_0] = "1.0",
+	[BV_1_1] = "1.1",
+	[BV_1_2] = "1.2",
+	[BV_3_1] = "3.1"
+};
+
+/* Basil methods */
+const char *bm_names[BM_MAX] = {
+	[BM_none]	= "NONE",
+	[BM_engine]	= "QUERY",
+	[BM_inventory]	= "QUERY",
+	[BM_reserve]	= "RESERVE",
+	[BM_confirm]	= "CONFIRM",
+	[BM_release]	= "RELEASE",
+};
+
+/* Error codes */
+const char *be_names[BE_MAX] = {
+	[BE_NONE]	= "",
+	[BE_INTERNAL]	= "INTERNAL",
+	[BE_SYSTEM]	= "SYSTEM",
+	[BE_PARSER]	= "PARSER",
+	[BE_SYNTAX]	= "SYNTAX",
+	[BE_BACKEND]	= "BACKEND",
+	[BE_UNKNOWN]	= "UNKNOWN"
+};
+static const char *be_names_long[BE_MAX] = {
+	[BE_NONE]	= "no ALPS error",
+	[BE_INTERNAL]	= "internal error: unexpected condition encountered",
+	[BE_SYSTEM]	= "system call failed",
+	[BE_PARSER]	= "XML parser error",
+	[BE_SYNTAX]	= "improper XML content or structure",
+	[BE_BACKEND]	= "ALPS backend error",
+	[BE_UNKNOWN]	= "UNKNOWN ALPS ERROR"
+};
+
+/*
+ * RESERVE/INVENTORY data
+ */
+const char *nam_arch[BNA_MAX] = {
+	[BNA_NONE]	= "UNDEFINED",
+	[BNA_X2]	= "X2",
+	[BNA_XT]	= "XT",
+	[BNA_UNKNOWN]	= "UNKNOWN"
+};
+
+const char *nam_memtype[BMT_MAX] = {
+	[BMT_NONE]	= "UNDEFINED",
+	[BMT_OS]	= "OS",
+	[BMT_HUGEPAGE]	= "HUGEPAGE",
+	[BMT_VIRTUAL]	= "VIRTUAL",
+	[BMT_UNKNOWN]	= "UNKNOWN"
+};
+
+const char *nam_labeltype[BLT_MAX] = {
+	[BLT_NONE]	= "UNDEFINED",
+	[BLT_HARD]	= "HARD",
+	[BLT_SOFT]	= "SOFT",
+	[BLT_UNKNOWN]	= "UNKNOWN"
+};
+
+const char *nam_ldisp[BLD_MAX] = {
+	[BLD_NONE]	= "UNDEFINED",
+	[BLD_ATTRACT]	= "ATTRACT",
+	[BLD_REPEL]	= "REPEL",
+	[BLD_UNKNOWN]	= "UNKNOWN"
+};
+
+/*
+ * INVENTORY-only data
+ */
+const char *nam_noderole[BNR_MAX] = {
+	[BNR_NONE]	= "UNDEFINED",
+	[BNR_INTER]	= "INTERACTIVE",
+	[BNR_BATCH]	= "BATCH",
+	[BNR_UNKNOWN]	= "UNKNOWN"
+};
+
+const char *nam_nodestate[BNS_MAX] = {
+	[BNS_NONE]	= "UNDEFINED",
+	[BNS_UP]	= "UP",
+	[BNS_DOWN]	= "DOWN",
+	[BNS_UNAVAIL]	= "UNAVAILABLE",
+	[BNS_ROUTE]	= "ROUTING",
+	[BNS_SUSPECT]	= "SUSPECT",
+	[BNS_ADMINDOWN]	= "ADMIN",
+	[BNS_UNKNOWN]	= "UNKNOWN"
+};
+
+const char *nam_proc[BPT_MAX] = {
+	[BPT_NONE]	= "UNDEFINED",
+	[BPT_CRAY_X2]	= "cray_x2",
+	[BPT_X86_64]	= "x86_64",
+	[BPT_UNKNOWN]	= "UNKNOWN"
+};
+
 extern int ns_add_node(struct nodespec **head, uint32_t node_id)
 {
 #if _DEBUG
@@ -106,12 +215,12 @@ extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
 				MYSQL_BIND bind_cols[], unsigned long ncols)
 {
 #if _DEBUG
-	info("prepare_stmt");
+	info("prepare_stmt: query:%s", query);
 #endif
 	if (handle != mysql_handle)
 		error("prepare_stmt: bad MySQL handle");
 
-	return NULL;
+	return (MYSQL_STMT *) query;
 }
 
 /** Execute and return the number of rows. */
@@ -166,7 +275,22 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 #if _DEBUG
 	info("get_full_inventory");
 #endif
-	return NULL;
+	struct basil_inventory *inv;
+
+	inv = xmalloc(sizeof(struct basil_inventory));
+	inv->is_gemini = true;
+	inv->batch_avail = 1;
+	inv->batch_total = 1;
+	inv->nodes_total = 1;
+	inv->f = xmalloc(sizeof(struct basil_full_inventory));
+	inv->f->node_head = xmalloc(sizeof(struct basil_node));
+//FIXME: We need to generate a series of node records here based upon the
+// node count as well as the reservation records below
+	inv->f->node_head->node_id = 0;
+	strncpy(inv->f->node_head->name, "NODE_NAME", BASIL_STRING_SHORT);
+	inv->f->node_head->next = NULL;
+	inv->f->rsvn_head = NULL;
+	return inv;
 }
 
 extern void   free_inv(struct basil_inventory *inv)
@@ -174,6 +298,13 @@ extern void   free_inv(struct basil_inventory *inv)
 #if _DEBUG
 	info("free_inv");
 #endif
+	if (inv) {
+//FIXME: Free linked list of node and reservation records
+		xfree(inv->f->node_head);
+		xfree(inv->f->rsvn_head);
+		xfree(inv->f);
+		xfree(inv);
+	}
 }
 
 extern long basil_reserve(const char *user, const char *batch_id,
