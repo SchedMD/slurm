@@ -470,6 +470,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cray/Makefile
 		 src/plugins/select/cray/libalps/Makefile
+		 src/plugins/select/cray/libemulate/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/elan/Makefile

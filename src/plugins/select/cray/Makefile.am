@@ -24,4 +24,15 @@ force:
 $(select_cray_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
+else
+SUBDIRS = libemuate
+
+select_cray_la_SOURCES += basil_interface.c
+select_cray_la_CFLAGS   = $(MYSQL_CFLAGS)
+select_cray_la_LIBADD   = libemuate/libalps.la
+
+force:
+$(select_cray_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
+
 endif
