@@ -2106,12 +2106,18 @@ static int _ping_backup_controller(void)
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
+	lock_slurmctld(config_read_lock);
+	if (!slurmctld_conf.backup_addr) {
+		debug4("No backup slurmctld to ping");
+		unlock_slurmctld(config_read_lock);
+		return SLURM_SUCCESS;
+	}
+
 	/*
 	 *  Set address of controller to ping
 	 */
-	slurm_msg_t_init(&req);
-	lock_slurmctld(config_read_lock);
 	debug3("pinging backup slurmctld at %s", slurmctld_conf.backup_addr);
+	slurm_msg_t_init(&req);
 	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.backup_addr);
 	unlock_slurmctld(config_read_lock);

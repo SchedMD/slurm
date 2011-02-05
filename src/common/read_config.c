@@ -418,7 +418,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 
 #ifndef HAVE_FRONT_END
 	fatal("Use of FrontendName in slurm.conf without SLURM being "
-	      "configured/built with the --have-front-end option");
+	      "configured/built with the --enable-front-end option");
 #endif
 
 	tbl = s_p_hashtbl_create(_frontend_options);
@@ -2811,6 +2811,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	}
 #ifdef HAVE_CRAY_FILES
+	/*
+	 * This requirement derives from Cray ALPS:
+	 * - ALPS reservations can only be created by the job owner or root
+	 *   (confirmation may be done by other non-privileged users);
+	 * - freeing a reservation always requires root privileges.
+	 */
 	if (conf->slurm_user_id != 0)
 		fatal("Cray requires SlurmUser=root (default), but have '%s'.",
 			conf->slurm_user_name);

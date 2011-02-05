@@ -889,7 +889,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 otherwise,default=0 */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	uint16_t cpu_bind_type;	/* see cpu_bind_type_t */
-	char *dependency;	/* syncrhonize job execution with other jobs */
+	char *dependency;	/* synchronize job execution with other jobs */
 	time_t end_time;	/* time by which job must complete, used for
 				 * job update only now, possible deadline
 				 * scheduling in the future */
@@ -1022,7 +1022,7 @@ typedef struct job_info {
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */
-	char *dependency;	/* syncrhonize job execution with other jobs */
+	char *dependency;	/* synchronize job execution with other jobs */
 	uint32_t derived_ec;	/* highest exit code of all job steps */
 	time_t eligible_time;	/* time job is eligible for running */
 	time_t end_time;	/* time of termination, actual or expected */

@@ -1368,7 +1368,7 @@ static void *_run_epilog(void *arg)
 		error("epilog_slurmctld job %u epilog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 	} else
-		debug2("epilog_slurmctld job %u prolog completed", job_id);
+		debug2("epilog_slurmctld job %u epilog completed", job_id);
 
  fini:	xfree(argv[0]);
 	for (i=0; my_env[i]; i++)

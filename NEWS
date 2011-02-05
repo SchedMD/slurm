@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre3
 =============================
+ -- BGQ - Initial port added, very limited functionality.
+ -- minor typos fixed
+ -- various bug fixes for Cray systems
 
 * Changes in SLURM 2.3.0.pre2
 =============================
@@ -33,7 +36,6 @@ documents those changes that are of interest to users and admins.
     Cray XT/XE systems (removed no longer needed --enable-cray configure
     option).  Building on native Cray systems requires the
     cray-MySQL-devel-enterprise rpm and expat XML parser library/headers.
- -- BGQ - Initial port added, very limited functionality.
 
 * Changes in SLURM 2.3.0.pre1
 =============================

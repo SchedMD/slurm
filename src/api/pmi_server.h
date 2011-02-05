@@ -40,7 +40,7 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr);
 
 /*
  * Set the maximum number of threads to be used by the PMI server code.
- * The PMI server code is used interally by the slurm_step_launch() function
+ * The PMI server code is used internally by the slurm_step_launch() function
  * to support MPI libraries that bootstrap themselves using PMI.
  */
 extern void pmi_server_max_threads(int max_threads);

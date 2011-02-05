@@ -191,7 +191,7 @@ static int  _run_script_as_user(const char *name, const char *path,
 				slurmd_job_t *job, int max_wait, char **env);
 
 /*
- * Batch job mangement prototypes:
+ * Batch job management prototypes:
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);

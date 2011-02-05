@@ -1742,10 +1742,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-#if defined(HAVE_NATIVE_CRAY)
-	error("No native support for srun on Cray systems - use aprun(1).");
-	return false;
-#elif defined(HAVE_BGL)
+#if defined(HAVE_BGL)
 	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
 		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
 		verified = false;

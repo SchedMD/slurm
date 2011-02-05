@@ -69,16 +69,22 @@ extern int *slurmdb_setup_cluster_dim_size(void)
 	return select_g_ba_get_dims();
 }
 
+extern bool is_cray_system(void)
+{
+	if (working_cluster_rec)
+		return working_cluster_rec->flags & CLUSTER_FLAG_CRAYXT;
+#ifdef HAVE_NATIVE_CRAY
+	return true;
+#endif
+	return false;
+}
+
 extern uint16_t slurmdb_setup_cluster_name_dims(void)
 {
-	if (working_cluster_rec) {
-		if (working_cluster_rec->flags & CLUSTER_FLAG_CRAYXT)
-			return 1;
+	if (is_cray_system())
+		return 1;	/* Cray uses 1-dimensional hostlists */
+	else if (working_cluster_rec)
 		return working_cluster_rec->dimensions;
-	}
-#ifdef HAVE_NATIVE_CRAY
-	return 1;
-#endif
 	return SYSTEM_DIMENSIONS;
 }
 

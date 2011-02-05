@@ -66,6 +66,7 @@
 
 static void  _env_merge_filter(job_desc_msg_t *desc);
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
+static int   _check_cluster_specific_settings(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
 static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
@@ -152,6 +153,9 @@ int main(int argc, char *argv[])
 	if (sbatch_set_first_avail_cluster(&desc) != SLURM_SUCCESS)
 		exit(error_exit);
 
+	if (_check_cluster_specific_settings(&desc) != SLURM_SUCCESS)
+		exit(error_exit);
+
 	while (slurm_submit_batch_job(&desc, &resp) < 0) {
 		static char *msg;
 
@@ -218,6 +222,31 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp);
+}
+
+/* Returns SLURM_ERROR if settings are invalid for chosen cluster */
+static int _check_cluster_specific_settings(job_desc_msg_t *req)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (is_cray_system()) {
+		/*
+		 * Fix options and inform user, but do not abort submission.
+		 */
+		if (req->shared && req->shared != (uint16_t)NO_VAL) {
+			info("--share is not (yet) supported on Cray.");
+			req->shared = false;
+		}
+		if (req->overcommit && req->overcommit != (uint8_t)NO_VAL) {
+			info("--overcommit is not supported on Cray.");
+			req->overcommit = false;
+		}
+		if (req->wait_all_nodes && req->wait_all_nodes != (uint16_t)NO_VAL) {
+			info("--wait-all-nodes is handled automatically on Cray.");
+			req->wait_all_nodes = false;
+		}
+	}
+	return rc;
 }
 
 /* Returns 0 on success, -1 on failure */

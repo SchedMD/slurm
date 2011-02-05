@@ -310,7 +310,7 @@ extern int slurm_select_init(bool only_default)
 			      "in slurm.conf, but not running on a BG[L|P] "
 			      "system.  If looking to emulate a BG[L|P] "
 			      "system use --enable-bgl-emulation or "
-			      "--enable-bgp-emulation repectfully.");
+			      "--enable-bgp-emulation respectively.");
 		}
 #endif
 

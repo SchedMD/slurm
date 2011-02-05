@@ -6,7 +6,7 @@
 
 <p>This document describes the unique features of SLURM on the
 <a href="http://www.research.ibm.com/bluegene/">IBM BlueGene</a> systems.
-You should be familiar with the SLURM's mode of operation on Linux clusters
+You should be familiar with SLURM's mode of operation on Linux clusters
 before studying the relatively few differences in BlueGene operation
 described in this document.</p>
 
@@ -32,7 +32,7 @@ Since the current BlueGene software can sub-allocate a <i>base partition</i>
 into blocks of 32 and/or 128 <i>c-nodes</i>, more than one user job can execute
 on each <i>base partition</i> (subject to system administrator configuration).
 To effectively utilize this environment, SLURM tools present the user with
-the view that each <i>c-nodes</i> is a separate node, so allocation requests
+the view that each <i>c-node</i> is a separate node, so allocation requests
 and status information use <i>c-node</i> counts (this is a new feature in
 SLURM version 1.1).
 Since the <i>c-node</i> count can be very large, the suffix "k" can be used

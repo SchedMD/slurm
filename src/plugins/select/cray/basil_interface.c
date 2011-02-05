@@ -652,8 +652,16 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	}
 
 	resv_id	= rc;
-	_set_select_jobinfo(job_ptr->select_jobinfo->data,
-			    SELECT_JOBDATA_RESV_ID, &resv_id);
+	if (_set_select_jobinfo(job_ptr->select_jobinfo->data,
+			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+		/*
+		 * This is a fatal error since it means we will not be able to
+		 * confirm the reservation; no step will be able to run in it.
+		 */
+		error("job %u: can not set resId %u", job_ptr->job_id, resv_id);
+		basil_release(resv_id);
+		return SLURM_ERROR;
+	}
 
 	info("ALPS RESERVATION #%u, JobId %u: BASIL -n %d -N %d -d %d -m %d",
 	     resv_id, job_ptr->job_id, mppwidth, mppnppn, mppdepth, mppmem);
@@ -665,19 +673,34 @@ extern int do_basil_reserve(struct job_record *job_ptr)
  * do_basil_confirm - confirm an existing BASIL reservation.
  * This requires the alloc_sid to equal the session ID (getsid()) of the process
  * executing the aprun/mpirun commands
+ * Returns: SLURM_SUCCESS if ok, READY_JOB_ERROR/FATAL on transient/fatal error.
  */
 extern int do_basil_confirm(struct job_record *job_ptr)
 {
 	uint32_t resv_id;
 
 	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
-		       SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+		error("can not read resId for JobId=%u", job_ptr->job_id);
+	} else if (resv_id == 0) {
+		/* On Cray XT/XE, a reservation ID of 0 is always invalid. */
+		error("JobId=%u has invalid (ZERO) resId", job_ptr->job_id);
+	} else {
+		/* basil_confirm logs the error and rc-encodes the error type */
+		int rc = basil_confirm(resv_id, job_ptr->job_id,
+						job_ptr->alloc_sid);
+		if (rc == 0) {
+			debug2("confirmed ALPS resId %u for JobId %u, pagg %u",
+				resv_id, job_ptr->job_id, job_ptr->alloc_sid);
+			return SLURM_SUCCESS;
+		}
+		error("confirming ALPS resId %u, pagg %u FAILED with %d",
+		      resv_id, job_ptr->alloc_sid, rc);
 
-	debug2("confirming ALPS resId %u for JobId %u with pagg %u", resv_id,
-		job_ptr->job_id, job_ptr->alloc_sid);
-
-	return basil_confirm(resv_id, job_ptr->job_id, job_ptr->alloc_sid);
+		if (is_transient_error(rc))
+			return READY_JOB_ERROR;
+	}
+	return READY_JOB_FATAL;
 }
 
 /**
@@ -690,13 +713,21 @@ extern int do_basil_release(struct job_record *job_ptr)
 	uint32_t resv_id;
 
 	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
-		       SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+		error("can not read resId for JobId=%u", job_ptr->job_id);
+	} else if (resv_id == 0) {
+		error("JobId=%u has invalid (ZERO) resId", job_ptr->job_id);
+	} else {
+		int rc = basil_release(resv_id);
 
-	if (basil_release(resv_id) < 0)
-		return SLURM_ERROR;
-
-	debug("released ALPS resId %u for JobId %u", resv_id, job_ptr->job_id);
-
-	return SLURM_SUCCESS;
+		if (rc == 0) {
+			debug("released ALPS resId %u for JobId %u",
+				resv_id, job_ptr->job_id);
+			return SLURM_SUCCESS;
+		}
+		error("releasing ALPS resId %u for JobId %u FAILED with %u",
+		      resv_id, job_ptr->job_id, rc);
+	}
+	slurm_seterrno(EAGAIN);
+	return SLURM_ERROR;
 }

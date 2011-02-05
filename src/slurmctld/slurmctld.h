@@ -1075,7 +1075,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code);
 
 /*
- * job_independent - determine if this job has a depenentent job pending
+ * job_independent - determine if this job has a dependent job pending
  *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
  * IN will_run - is this a test for will_run or not

@@ -243,6 +243,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
+	int rc = SLURM_SUCCESS;
 	/*
 	 * Convention:	this function may be called also from stepdmgr, to
 	 *		confirm the ALPS reservation of a batch job. In this
@@ -252,10 +253,10 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	 *		means that we need to confirm only if batch_flag is 0,
 	 *		and execute the other_job_ready() only in slurmctld.
 	 */
-	if (!job_ptr->batch_flag && do_basil_confirm(job_ptr) != SLURM_SUCCESS)
-		return READY_JOB_ERROR;		/* not fatal - try again */
-	if (job_ptr->job_state == (uint16_t)NO_VAL)
-		return SLURM_SUCCESS;
+	if (!job_ptr->batch_flag)
+		rc = do_basil_confirm(job_ptr);
+	if (rc != SLURM_SUCCESS || job_ptr->job_state == (uint16_t)NO_VAL)
+		return rc;
 	return other_job_ready(job_ptr);
 }
 
