@@ -2718,7 +2718,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 	if (conf->ret2service > 1)
 		fatal("ReturnToService > 1 is not supported on Cray");
 #endif
@@ -2775,11 +2775,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
-#ifndef HAVE_NATIVE_CRAY
-	if (strcmp(conf->select_type, "select/cray") == 0)
-		fatal("Use of SelectType=select/cray in slurm.conf "
-		      "without built-in support of Cray systems.");
-#endif
 
 	if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {

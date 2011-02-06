@@ -480,7 +480,7 @@ static int _attempt_backfill(void)
 	}
 	this_sched_timeout = sched_timeout;
 
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 	/*
 	 * Run a Basil Inventory immediately before setting up the schedule
 	 * plan, to avoid race conditions caused by ALPS node state change.

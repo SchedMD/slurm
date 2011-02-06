@@ -133,7 +133,7 @@ extern int init ( void )
 	 * if (slurmctld_conf.select_type_param & CR_CONS_RES)
 	 *	plugin_id = 105;
 	 */
-#ifndef HAVE_NATIVE_CRAY
+#ifndef HAVE_CRAY
 	if (bg_recover != NOT_FROM_CONTROLLER)
 		fatal("select/cray is incompatible with a non Cray system");
 #endif

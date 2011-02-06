@@ -257,7 +257,7 @@ static uint32_t _get_exit_code(slurmd_job_t *job)
 	return step_rc;
 }
 
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 /*
  * Kludge to better inter-operate with ALPS layer:
  * - CONFIRM method requires the SID of the shell executing the job script,
@@ -303,7 +303,7 @@ batch_finish(slurmd_job_t *job, int rc)
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
 
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 	(void)_call_select_plugin_from_stepd(job, select_g_job_fini);
 #endif
 
@@ -883,7 +883,7 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 	if(_call_select_plugin_from_stepd(job, select_g_job_ready)) {
 		error("could not confirm ALPS resId %u", job->resv_id);
 		/*

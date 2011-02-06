@@ -37,8 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_NATIVE_CRAY_TRUE@am__append_1 = basil_interface.c
-@HAVE_NATIVE_CRAY_FALSE@am__append_2 = basil_interface.c
+@HAVE_CRAY_TRUE@am__append_1 = basil_interface.c
 subdir = src/plugins/select/cray
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -106,19 +105,14 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_NATIVE_CRAY_FALSE@select_cray_la_DEPENDENCIES =  \
-@HAVE_NATIVE_CRAY_FALSE@	libemulate/libalps.la
-@HAVE_NATIVE_CRAY_TRUE@select_cray_la_DEPENDENCIES =  \
-@HAVE_NATIVE_CRAY_TRUE@	libalps/libalps.la
+@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@select_cray_la_DEPENDENCIES =  \
+@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@	libalps/libalps.la
+@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@select_cray_la_DEPENDENCIES = libemulate/libalps.la
 am__select_cray_la_SOURCES_DIST = select_cray.c basil_interface.h \
 	other_select.c other_select.h basil_interface.c
-@HAVE_NATIVE_CRAY_TRUE@am__objects_1 =  \
-@HAVE_NATIVE_CRAY_TRUE@	select_cray_la-basil_interface.lo
-@HAVE_NATIVE_CRAY_FALSE@am__objects_2 =  \
-@HAVE_NATIVE_CRAY_FALSE@	select_cray_la-basil_interface.lo
+@HAVE_CRAY_TRUE@am__objects_1 = select_cray_la-basil_interface.lo
 am_select_cray_la_OBJECTS = select_cray_la-select_cray.lo \
-	select_cray_la-other_select.lo $(am__objects_1) \
-	$(am__objects_2)
+	select_cray_la-other_select.lo $(am__objects_1)
 select_cray_la_OBJECTS = $(am_select_cray_la_OBJECTS)
 select_cray_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(select_cray_la_CFLAGS) \
@@ -152,7 +146,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = libemulate libalps
+DIST_SUBDIRS = libalps libemulate
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -379,14 +373,13 @@ pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
 select_cray_la_SOURCES = select_cray.c basil_interface.h \
-	other_select.c other_select.h $(am__append_1) $(am__append_2)
+	other_select.c other_select.h $(am__append_1)
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_NATIVE_CRAY_TRUE@SUBDIRS = libemulate
-@HAVE_NATIVE_CRAY_FALSE@SUBDIRS = libalps
-@HAVE_NATIVE_CRAY_TRUE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
-@HAVE_NATIVE_CRAY_FALSE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
-@HAVE_NATIVE_CRAY_TRUE@select_cray_la_LIBADD = libemulate/libalps.la
-@HAVE_NATIVE_CRAY_FALSE@select_cray_la_LIBADD = libalps/libalps.la
+@HAVE_CRAY_TRUE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
+@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@SUBDIRS = libalps
+@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@SUBDIRS = libemulate
+@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@select_cray_la_LIBADD = libalps/libalps.la
+@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@select_cray_la_LIBADD = libemulate/libalps.la
 all: all-recursive
 
 .SUFFIXES:
@@ -830,13 +823,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	uninstall-pkglibLTLIBRARIES
 
 
-@HAVE_NATIVE_CRAY_FALSE@force:
-@HAVE_NATIVE_CRAY_FALSE@$(select_cray_la_LIBADD) : force
-@HAVE_NATIVE_CRAY_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
-
-@HAVE_NATIVE_CRAY_TRUE@force:
-@HAVE_NATIVE_CRAY_TRUE@$(select_cray_la_LIBADD) : force
-@HAVE_NATIVE_CRAY_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+@HAVE_CRAY_TRUE@force:
+@HAVE_CRAY_TRUE@$(select_cray_la_LIBADD) : force
+@HAVE_CRAY_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

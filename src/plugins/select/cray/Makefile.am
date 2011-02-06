@@ -13,23 +13,17 @@ select_cray_la_SOURCES = select_cray.c basil_interface.h	\
 			 other_select.c other_select.h
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-if HAVE_NATIVE_CRAY
-SUBDIRS = libalps
-
+if HAVE_CRAY
 select_cray_la_SOURCES += basil_interface.c
 select_cray_la_CFLAGS   = $(MYSQL_CFLAGS)
-select_cray_la_LIBADD   = libalps/libalps.la
 
-force:
-$(select_cray_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
-
-else
+if HAVE_CRAY_EMULATION
 SUBDIRS = libemulate
-
-select_cray_la_SOURCES += basil_interface.c
-select_cray_la_CFLAGS   = $(MYSQL_CFLAGS)
 select_cray_la_LIBADD   = libemulate/libalps.la
+else
+SUBDIRS = libalps
+select_cray_la_LIBADD   = libalps/libalps.la
+endif
 
 force:
 $(select_cray_la_LIBADD) : force

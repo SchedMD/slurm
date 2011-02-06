@@ -787,8 +787,10 @@ SLURMD_PORT
 SLURMCTLD_PORT
 DEBUG_MODULES_FALSE
 DEBUG_MODULES_TRUE
-HAVE_NATIVE_CRAY_FALSE
-HAVE_NATIVE_CRAY_TRUE
+HAVE_CRAY_EMULATION_FALSE
+HAVE_CRAY_EMULATION_TRUE
+HAVE_CRAY_FALSE
+HAVE_CRAY_TRUE
 WITH_PGSQL_FALSE
 WITH_PGSQL_TRUE
 PGSQL_CFLAGS
@@ -1691,7 +1693,7 @@ Optional Features:
                           environment without .login
   --enable-sun-const      enable Sun Constellation system support
   --disable-gtktest       do not try to compile and run a test GTK+ program
-  --enable-cray-emulation Run SLURM in Cray mode on a non-cray system
+  --enable-cray-emulation Run SLURM in an emulated Cray mode
   --enable-debug          enable debugging code for development
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
@@ -7625,13 +7627,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:7628: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:7630: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7631: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:7633: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7634: output\"" >&5)
+  (eval echo "\"\$as_me:7636: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8836,7 +8838,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8839 "configure"' > conftest.$ac_ext
+  echo '#line 8841 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -10624,11 +10626,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10627: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10629: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10631: \$? = $ac_status" >&5
+   echo "$as_me:10633: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10963,11 +10965,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10966: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10968: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10970: \$? = $ac_status" >&5
+   echo "$as_me:10972: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11068,11 +11070,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11071: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11073: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11075: \$? = $ac_status" >&5
+   echo "$as_me:11077: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11123,11 +11125,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11126: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11128: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11130: \$? = $ac_status" >&5
+   echo "$as_me:11132: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13507,7 +13509,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13510 "configure"
+#line 13512 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13603,7 +13605,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13606 "configure"
+#line 13608 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15559,11 +15561,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15562: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15564: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15566: \$? = $ac_status" >&5
+   echo "$as_me:15568: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15658,11 +15660,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15661: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15663: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15665: \$? = $ac_status" >&5
+   echo "$as_me:15667: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15710,11 +15712,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15713: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15715: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15717: \$? = $ac_status" >&5
+   echo "$as_me:15719: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19635,57 +19637,52 @@ fi
 
 
 
-	x_ac_cray="no"
-	ac_have_native_cray="no"
+  ac_have_cray="no"
+  ac_have_cray_emulation="no"
 
-   	# Check whether --enable-cray-emulation was given.
+  # Check whether --enable-cray-emulation was given.
 if test "${enable_cray_emulation+set}" = set; then :
   enableval=$enable_cray_emulation;  case "$enableval" in
-	  yes) ac_have_cray=yes ;;
-	  no)  ac_have_cray=no ;;
-	  *)   as_fn_error $? "bad value \"$enableval\" for --enable-cray-emulation" "$LINENO" 5   ;;
-    	esac
+        yes) ac_have_cray_emulation="yes" ;;
+         no) ac_have_cray_emulation="no"  ;;
+          *) as_fn_error $? "bad value \"$enableval\" for --enable-cray-emulation" "$LINENO" 5   ;;
+      esac
+
 fi
 
 
-	if test "x$ac_have_cray" = "xyes"; then
-		# FIXME: This doesn't do much just yet.
-    		{ $as_echo "$as_me:${as_lineno-$LINENO}: Running in Cray emulation mode" >&5
+  if test "$ac_have_cray_emulation" = "yes"; then
+    ac_have_cray="yes"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Running in Cray emulation mode" >&5
 $as_echo "$as_me: Running in Cray emulation mode" >&6;}
-	else
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native Cray XT or XE system" >&5
+  else
+    # Check for a Cray-specific file:
+    #  * older XT systems use an /etc/xtrelease file
+    #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
+    #  * both have an /etc/xthostname
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native Cray XT or XE system" >&5
 $as_echo_n "checking whether this is a native Cray XT or XE system... " >&6; }
-                # Check for a Cray-specific file:
-                #  * older XT systems use an /etc/xtrelease file
-                #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
-                #  * both have an /etc/xthostname
-		if test -f /etc/xtrelease  || test -d /etc/opt/cray/release ; then
-			ac_have_native_cray="yes"
-			# FIXME: This should be used to distinguish we are on
-			# a real system, It appears what HAVE_NATIVE_CRAY
-			# does now should probably be renamed to HAVE_CRAY
+    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
+      ac_have_cray="yes"
 
 $as_echo "#define HAVE_CRAY_FILES 1" >>confdefs.h
 
-		fi
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_cray" >&5
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_cray" >&5
 $as_echo "$ac_have_cray" >&6; }
-	fi
+  fi
 
-	if test "$ac_have_cray" = "yes"; then
-		if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
-			as_fn_error $? "BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
-		fi
-
-		ac_fn_c_check_header_mongrel "$LINENO" "expat.h" "ac_cv_header_expat_h" "$ac_includes_default"
+  if test "$ac_have_cray" = "yes"; then
+    # libexpat is always required for the XML-RPC interface
+    ac_fn_c_check_header_mongrel "$LINENO" "expat.h" "ac_cv_header_expat_h" "$ac_includes_default"
 if test "x$ac_cv_header_expat_h" = x""yes; then :
 
 else
-  as_fn_error $? "BASIL requires expat headers/rpm" "$LINENO" 5
+  as_fn_error $? "Cray BASIL requires expat headers/rpm" "$LINENO" 5
 fi
 
 
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for XML_ParserCreate in -lexpat" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XML_ParserCreate in -lexpat" >&5
 $as_echo_n "checking for XML_ParserCreate in -lexpat... " >&6; }
 if test "${ac_cv_lib_expat_XML_ParserCreate+set}" = set; then :
   $as_echo_n "(cached) " >&6
@@ -19729,9 +19726,12 @@ _ACEOF
   LIBS="-lexpat $LIBS"
 
 else
-  as_fn_error $? "BASIL requires libexpat.so (i.e. libexpat1-dev)" "$LINENO" 5
+  as_fn_error $? "Cray BASIL requires libexpat.so (i.e. libexpat1-dev)" "$LINENO" 5
 fi
 
+    if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
+      as_fn_error $? "Cray BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
+    fi
 
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
@@ -19743,15 +19743,23 @@ $as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
 $as_echo "#define HAVE_FRONT_END 1" >>confdefs.h
 
 
-$as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
+$as_echo "#define HAVE_CRAY 1" >>confdefs.h
 
-	fi
-	 if test "$ac_have_cray" = "yes"; then
-  HAVE_NATIVE_CRAY_TRUE=
-  HAVE_NATIVE_CRAY_FALSE='#'
+  fi
+   if test "$ac_have_cray" = "yes"; then
+  HAVE_CRAY_TRUE=
+  HAVE_CRAY_FALSE='#'
 else
-  HAVE_NATIVE_CRAY_TRUE='#'
-  HAVE_NATIVE_CRAY_FALSE=
+  HAVE_CRAY_TRUE='#'
+  HAVE_CRAY_FALSE=
+fi
+
+   if test "$ac_have_cray_emulation" = "yes"; then
+  HAVE_CRAY_EMULATION_TRUE=
+  HAVE_CRAY_EMULATION_FALSE='#'
+else
+  HAVE_CRAY_EMULATION_TRUE='#'
+  HAVE_CRAY_EMULATION_FALSE=
 fi
 
 
@@ -21273,8 +21281,12 @@ if test -z "${WITH_PGSQL_TRUE}" && test -z "${WITH_PGSQL_FALSE}"; then
   as_fn_error $? "conditional \"WITH_PGSQL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${HAVE_NATIVE_CRAY_TRUE}" && test -z "${HAVE_NATIVE_CRAY_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_NATIVE_CRAY\" was never defined.
+if test -z "${HAVE_CRAY_TRUE}" && test -z "${HAVE_CRAY_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_CRAY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_CRAY_EMULATION_TRUE}" && test -z "${HAVE_CRAY_EMULATION_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_CRAY_EMULATION\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${DEBUG_MODULES_TRUE}" && test -z "${DEBUG_MODULES_FALSE}"; then

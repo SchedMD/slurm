@@ -12,7 +12,10 @@
  * Has not changed between XT3 ... XT5 ... XE
  */
 #ifdef HAVE_CRAY_FILES
-static char alps_client[] = "/usr/bin/apbasil";
+static char *alps_client = "/usr/bin/apbasil";
+#else
+static char *alps_client = NULL;
+#endif
 
 static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 {
@@ -86,7 +89,6 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 	fprintf(fp, " </ReserveParamArray>\n"
 		    "</BasilRequest>\n");
 }
-#endif
 
 /*
  * basil_request - issue BASIL request and parse response
@@ -96,12 +98,15 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
  */
 int basil_request(struct basil_parse_data *bp)
 {
-#ifdef HAVE_CRAY_FILES
 	int to_child, from_child;
 	int ec, rc = -BE_UNKNOWN;
 	FILE *apbasil;
 	pid_t pid;
 
+	if (!alps_client) {
+		error("No alps client defined");
+		return 0;
+	}
 	assert(bp->version < BV_MAX);
 	assert(bp->method > BM_none && bp->method < BM_MAX);
 
@@ -155,7 +160,4 @@ int basil_request(struct basil_parse_data *bp)
 		error("%s child process for BASIL %s method exited with %d",
 		      alps_client, bm_names[bp->method], ec);
 	return rc;
-#else
-	return 0;
-#endif
 }

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  alps_emulate.c - simple ALPS emulator used for testing purposes
  *****************************************************************************
- *  Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -49,7 +49,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
 #include "../basil_alps.h"
-#include "../parser_common.h"
+//#include "../parser_common.h"
 
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */

@@ -63,6 +63,9 @@
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
+/* Define to 1 for Cray XT/XE systems */
+#undef HAVE_CRAY
+
 /* Define to 1 for native Cray XT/XE system */
 #undef HAVE_CRAY_FILES
 
@@ -163,9 +166,6 @@
 
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
-
-/* Define to 1 for native Cray XT/XE system */
-#undef HAVE_NATIVE_CRAY
 
 /* Define to 1 if you have the <ncurses.h> header file. */
 #undef HAVE_NCURSES_H

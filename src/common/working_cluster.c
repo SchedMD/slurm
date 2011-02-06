@@ -73,7 +73,7 @@ extern bool is_cray_system(void)
 {
 	if (working_cluster_rec)
 		return working_cluster_rec->flags & CLUSTER_FLAG_CRAYXT;
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 	return true;
 #endif
 	return false;
@@ -122,7 +122,7 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 #ifdef MULTIPLE_SLURMD
 	cluster_flags |= CLUSTER_FLAG_MULTSD;
 #endif
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 	cluster_flags |= CLUSTER_FLAG_CRAYXT;
 #endif
 #ifdef HAVE_FRONT_END

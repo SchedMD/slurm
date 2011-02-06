@@ -1480,7 +1480,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		     msg_title, nodes,
 		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 	} else if (comp_msg->slurm_rc == ESLURM_RESERVATION_NOT_USABLE) {
 		/*
 		 * Confirmation of ALPS reservation failed.

@@ -120,7 +120,7 @@ extern char *default_plugstack;
 #     define DEFAULT_SELECT_TYPE       "select/bluegene"
 #  endif
 #else
-#  ifdef HAVE_NATIVE_CRAY
+#  ifdef HAVE_CRAY
 #     define DEFAULT_SELECT_TYPE       "select/cray"
 #  else
 #     define DEFAULT_SELECT_TYPE       "select/linear"

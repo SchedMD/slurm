@@ -776,7 +776,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				if (tpgid != command_pid && tpgid != getpgrp())
 					killpg(tpgid, SIGHUP);
 			}
-#ifdef HAVE_NATIVE_CRAY
+#ifdef HAVE_CRAY
 			signal = SIGTERM;
 #else
 			if (opt.kill_command_signal_set)
