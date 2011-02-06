@@ -151,9 +151,29 @@ static void _incr_hw_recs(void)
 
 extern int ns_add_node(struct nodespec **head, uint32_t node_id)
 {
+	struct nodespec *my_node_spec;
 #if _DEBUG
 	info("ns_add_node: id:%u", node_id);
 #endif
+	my_node_spec = *head;
+
+	while (my_node_spec) {
+		if (my_node_spec->start == (node_id + 1)) {
+			my_node_spec->start = node_id;
+			return 0;
+		}
+		if (my_node_spec->end == (node_id - 1)) {
+			my_node_spec->start = node_id;
+			return 0;
+		}
+		my_node_spec = my_node_spec->next;
+	}
+
+	my_node_spec = xmalloc(sizeof(struct nodespec));
+	my_node_spec->start = node_id;
+	my_node_spec->end   = node_id;
+	my_node_spec->next = *head;
+	*head = my_node_spec;
 	return 0;
 }
 
@@ -316,40 +336,58 @@ extern int basil_request(struct basil_parse_data *bp)
 	return 0;
 }
 
-extern struct basil_inventory *get_full_inventory(enum basil_version version)
+extern struct basil_inventory *get_full_inventory(enum basil_version version,
+						  void *node_rec_ptr,
+						  int node_cnt)
 {
+	int i;
+	struct basil_inventory *inv;
+	struct node_record *node_ptr;
+	struct basil_node *basil_node_ptr, **last_basil_node_ptr;
+
 #if _DEBUG
 	info("get_full_inventory");
 #endif
-	struct basil_inventory *inv;
 
+	my_node_table = (struct node_record *) node_rec_ptr;
+	my_node_count = node_cnt;
 	inv = xmalloc(sizeof(struct basil_inventory));
 	inv->is_gemini = true;
-	inv->batch_avail = 1;
-	inv->batch_total = 1;
-	inv->nodes_total = 1;
+	inv->batch_avail = my_node_count;
+	inv->batch_total = my_node_count;
+	inv->nodes_total = my_node_count;
 	inv->f = xmalloc(sizeof(struct basil_full_inventory));
-	inv->f->node_head = xmalloc(sizeof(struct basil_node));
-//FIXME: We need to generate a series of node records here based upon the
-// node count as well as the reservation records below
-	inv->f->node_head->node_id = 0;
-	strncpy(inv->f->node_head->name, "NODE_NAME", BASIL_STRING_SHORT);
-	inv->f->node_head->state = BNS_UP;
-	inv->f->node_head->role  = BNR_BATCH;
-	inv->f->node_head->arch  = BNA_XT;
-	inv->f->node_head->next  = NULL;
+	last_basil_node_ptr = &inv->f->node_head;
+	for (i = 0, node_ptr = my_node_table; i < my_node_count;
+	     i++, node_ptr++) {
+		basil_node_ptr = xmalloc(sizeof(struct basil_node));
+		*last_basil_node_ptr = basil_node_ptr;
+		basil_node_ptr->node_id = i;
+		strncpy(basil_node_ptr->name, node_ptr->name,
+			BASIL_STRING_SHORT);
+		basil_node_ptr->state = BNS_UP;
+		basil_node_ptr->role  = BNR_BATCH;
+		basil_node_ptr->arch  = BNA_XT;
+		last_basil_node_ptr = &basil_node_ptr->next;
+	}
 	inv->f->rsvn_head = NULL;
 	return inv;
 }
 
 extern void   free_inv(struct basil_inventory *inv)
 {
+	struct basil_node *basil_node_ptr, *next_basil_node_ptr;
 #if _DEBUG
 	info("free_inv");
 #endif
 	if (inv) {
 //FIXME: Free linked list of node and reservation records
-		xfree(inv->f->node_head);
+		basil_node_ptr = inv->f->node_head;
+		while (basil_node_ptr) {
+			next_basil_node_ptr = basil_node_ptr->next;
+			xfree(basil_node_ptr);
+			basil_node_ptr = next_basil_node_ptr;
+		}
 		xfree(inv->f->rsvn_head);
 		xfree(inv->f);
 		xfree(inv);
@@ -360,11 +398,18 @@ extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
 			  uint32_t mem_mb, struct nodespec *ns_head)
 {
+	struct nodespec *my_node_spec;
 #if _DEBUG
 	info("basil_reserve user:%s batch_id:%s width:%u depth:%u nppn:%u "
 	     "mem_mb:%u node_spec:start:%u,end:%u",
 	     user, batch_id, width, depth, nppn, mem_mb,
 	     ns_head->start, ns_head->end);
+	my_node_spec = ns_head;
+	while (my_node_spec) {
+		info("basil_reserve node_spec:start:%u,end:%u",
+		     my_node_spec->start, my_node_spec->end);
+		my_node_spec = my_node_spec->next;
+	}
 #endif
 	return 0;
 }
