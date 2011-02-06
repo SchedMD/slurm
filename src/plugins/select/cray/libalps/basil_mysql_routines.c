@@ -272,3 +272,26 @@ int exec_stmt(MYSQL_STMT *stmt, const char *query,
 	return store_stmt_results(stmt, query, bind_col, ncols);
 }
 
+/**
+ * fetch_stmt - return the next row in the result set.
+ * Returns 1 on error,  0 if ok.
+ */
+int fetch_stmt(MYSQL_STMT *stmt)
+{
+	return mysql_stmt_fetch(stmt);
+}
+
+my_bool free_stmt_result(MYSQL_STMT *stmt)
+{
+	return mysql_stmt_free_result(stmt);
+}
+
+my_bool stmt_close(MYSQL_STMT *stmt)
+{
+	return mysql_stmt_close(stmt);
+}
+
+my_bool cray_close_sdb(MYSQL *handle)
+{
+	return mysql_close(handle);
+}

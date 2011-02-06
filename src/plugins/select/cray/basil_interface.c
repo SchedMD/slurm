@@ -7,6 +7,8 @@
 #include "basil_interface.h"
 #include "basil_alps.h"
 
+#define _DEBUG 1
+
 /*
  * Following routines are from src/plugins/select/bluegene/plugin/jobinfo.c
  */
@@ -336,23 +338,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				"WHERE processor_id = ? ";
 	const int	PARAM_COUNT = 1;	/* node id */
 	MYSQL_BIND	params[PARAM_COUNT];
-	/* Output parameters */
-	enum query_columns {
-			/* integer data */
-			COL_X,		/* X coordinate		*/
-			COL_Y,		/* Y coordinate		*/
-			COL_Z,		/* Z coordinate		*/
-			COL_CAB,	/* cabinet position		*/
-			COL_ROW,	/* row position			*/
-			COL_CAGE,	/* cage number (0..2)		*/
-			COL_SLOT,	/* slot number (0..7)		*/
-			COL_CPU,	/* node number (0..3)		*/
-			COL_CORES,	/* number of cores per node	*/
-			COL_MEMORY,	/* rounded-down memory in MB	*/
-			/* string data */
-			COL_TYPE,	/* {service, compute }		*/
-			COLUMN_COUNT	/* sentinel */
-	};
+
 	int		x_coord, y_coord, z_coord;
 	int		cab, row, cage, slot, cpu;
 	unsigned int	node_cpus, node_mem;
@@ -407,7 +393,6 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		fatal("can not prepare statement to resolve Cray coordinates");
 
 	for (node_ptr = node_record_table_ptr; node_ptr < end; node_ptr++) {
-
 		if (sscanf(node_ptr->name, "nid%05u", &node_id) != 1) {
 			error("can not read basil_node_id from %s", node_ptr->name);
 			continue;
@@ -415,8 +400,13 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		if (exec_stmt(stmt, query, bind_cols, COLUMN_COUNT) < 0)
 			fatal("can not resolve %s coordinates", node_ptr->name);
 
-		if (mysql_stmt_fetch(stmt) == 0) {
-
+		if (fetch_stmt(stmt) == 0) {
+#if _DEBUG
+			info("proc_type:%s cpus:%u memory:%u",
+			     proc_type, node_cpus, node_mem);
+			info("row:%u cage:%u slot:%u cpu:%u xyz:%u:%u:%u",
+			     row, cage, slot, cpu, x_coord, y_coord, z_coord);
+#endif
 			if (strcmp(proc_type, "compute") != 0) {
 				/*
 				 * Switching a compute node to be a service node
@@ -512,7 +502,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		 *   o either 2 service nodes (n0/n3)
 		 *   o or 4 compute nodes     (n0..n3)
 		 *   o or 2 gemini chips      (g0/g1 serving n0..n3)
-		 *
+		 *free_stmt_result
 		 * Example: c0-0c1s0n1
 		 *          - c0- = cabinet 0
 		 *          - 0   = row     0
@@ -530,12 +520,12 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			node_ptr->node_hostname, node_ptr->comm_name,
 			node_cpus, node_mem);
 
-		mysql_stmt_free_result(stmt);
+		free_stmt_result(stmt);
 	}
 
-	if (mysql_stmt_close(stmt))
+	if (stmt_close(stmt))
 		error("error closing statement: %s", mysql_stmt_error(stmt));
-	mysql_close(handle);
+	cray_close_sdb(handle);
 
 	return basil_get_initial_state();
 }

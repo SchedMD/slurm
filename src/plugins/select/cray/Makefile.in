@@ -107,7 +107,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @HAVE_NATIVE_CRAY_FALSE@select_cray_la_DEPENDENCIES =  \
-@HAVE_NATIVE_CRAY_FALSE@	libemuate/libalps.la
+@HAVE_NATIVE_CRAY_FALSE@	libemulate/libalps.la
 @HAVE_NATIVE_CRAY_TRUE@select_cray_la_DEPENDENCIES =  \
 @HAVE_NATIVE_CRAY_TRUE@	libalps/libalps.la
 am__select_cray_la_SOURCES_DIST = select_cray.c basil_interface.h \
@@ -381,12 +381,12 @@ pkglib_LTLIBRARIES = select_cray.la
 select_cray_la_SOURCES = select_cray.c basil_interface.h \
 	other_select.c other_select.h $(am__append_1) $(am__append_2)
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_NATIVE_CRAY_FALSE@SUBDIRS = libemulate
-@HAVE_NATIVE_CRAY_TRUE@SUBDIRS = libalps
-@HAVE_NATIVE_CRAY_FALSE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
+@HAVE_NATIVE_CRAY_TRUE@SUBDIRS = libemulate
+@HAVE_NATIVE_CRAY_FALSE@SUBDIRS = libalps
 @HAVE_NATIVE_CRAY_TRUE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
-@HAVE_NATIVE_CRAY_FALSE@select_cray_la_LIBADD = libemuate/libalps.la
-@HAVE_NATIVE_CRAY_TRUE@select_cray_la_LIBADD = libalps/libalps.la
+@HAVE_NATIVE_CRAY_FALSE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
+@HAVE_NATIVE_CRAY_TRUE@select_cray_la_LIBADD = libemulate/libalps.la
+@HAVE_NATIVE_CRAY_FALSE@select_cray_la_LIBADD = libalps/libalps.la
 all: all-recursive
 
 .SUFFIXES:
@@ -830,13 +830,13 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	uninstall-pkglibLTLIBRARIES
 
 
-@HAVE_NATIVE_CRAY_TRUE@force:
-@HAVE_NATIVE_CRAY_TRUE@$(select_cray_la_LIBADD) : force
-@HAVE_NATIVE_CRAY_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
-
 @HAVE_NATIVE_CRAY_FALSE@force:
 @HAVE_NATIVE_CRAY_FALSE@$(select_cray_la_LIBADD) : force
 @HAVE_NATIVE_CRAY_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
+
+@HAVE_NATIVE_CRAY_TRUE@force:
+@HAVE_NATIVE_CRAY_TRUE@$(select_cray_la_LIBADD) : force
+@HAVE_NATIVE_CRAY_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

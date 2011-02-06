@@ -4,6 +4,9 @@
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
  * Licensed under the GPLv2.
  */
+#ifndef __PARSER_INTERNAL_H__
+#define __PARSER_INTERNAL_H__
+
 #include "../basil_alps.h"
 #include <errno.h>
 
@@ -89,3 +92,5 @@ extern void eh_segment(struct ud *ud, const XML_Char **attrs);
 extern void eh_application(struct ud *ud, const XML_Char **attrs);
 extern void eh_command(struct ud *ud, const XML_Char **attrs);
 extern void eh_resv_1_1(struct ud *ud, const XML_Char **attrs);
+
+#endif /*__PARSER_INTERNAL_H__ */

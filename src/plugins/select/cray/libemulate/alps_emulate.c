@@ -3,7 +3,6 @@
  *****************************************************************************
  *  Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
  *  Written by Morris Jette <jette@schedmd.com>
- *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -49,6 +48,7 @@
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "../basil_alps.h"
+#include "../parser_common.h"
 
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */
@@ -56,115 +56,7 @@
 #define _DEBUG 1
 
 static MYSQL *mysql_handle = NULL;
-
-/*
- * Enum-to-string mapping tables
- */
-
-/* Basil versions */
-const char *bv_names[BV_MAX] = {	/* Basil Protocol version */
-	[BV_1_0] = "1.0",
-	[BV_1_1] = "1.1",
-	[BV_1_2] = "1.1",
-	[BV_3_1] = "1.1"
-};
-
-const char *bv_names_long[BV_MAX] = {	/* Actual version name */
-	[BV_1_0] = "1.0",
-	[BV_1_1] = "1.1",
-	[BV_1_2] = "1.2",
-	[BV_3_1] = "3.1"
-};
-
-/* Basil methods */
-const char *bm_names[BM_MAX] = {
-	[BM_none]	= "NONE",
-	[BM_engine]	= "QUERY",
-	[BM_inventory]	= "QUERY",
-	[BM_reserve]	= "RESERVE",
-	[BM_confirm]	= "CONFIRM",
-	[BM_release]	= "RELEASE",
-};
-
-/* Error codes */
-const char *be_names[BE_MAX] = {
-	[BE_NONE]	= "",
-	[BE_INTERNAL]	= "INTERNAL",
-	[BE_SYSTEM]	= "SYSTEM",
-	[BE_PARSER]	= "PARSER",
-	[BE_SYNTAX]	= "SYNTAX",
-	[BE_BACKEND]	= "BACKEND",
-	[BE_UNKNOWN]	= "UNKNOWN"
-};
-static const char *be_names_long[BE_MAX] = {
-	[BE_NONE]	= "no ALPS error",
-	[BE_INTERNAL]	= "internal error: unexpected condition encountered",
-	[BE_SYSTEM]	= "system call failed",
-	[BE_PARSER]	= "XML parser error",
-	[BE_SYNTAX]	= "improper XML content or structure",
-	[BE_BACKEND]	= "ALPS backend error",
-	[BE_UNKNOWN]	= "UNKNOWN ALPS ERROR"
-};
-
-/*
- * RESERVE/INVENTORY data
- */
-const char *nam_arch[BNA_MAX] = {
-	[BNA_NONE]	= "UNDEFINED",
-	[BNA_X2]	= "X2",
-	[BNA_XT]	= "XT",
-	[BNA_UNKNOWN]	= "UNKNOWN"
-};
-
-const char *nam_memtype[BMT_MAX] = {
-	[BMT_NONE]	= "UNDEFINED",
-	[BMT_OS]	= "OS",
-	[BMT_HUGEPAGE]	= "HUGEPAGE",
-	[BMT_VIRTUAL]	= "VIRTUAL",
-	[BMT_UNKNOWN]	= "UNKNOWN"
-};
-
-const char *nam_labeltype[BLT_MAX] = {
-	[BLT_NONE]	= "UNDEFINED",
-	[BLT_HARD]	= "HARD",
-	[BLT_SOFT]	= "SOFT",
-	[BLT_UNKNOWN]	= "UNKNOWN"
-};
-
-const char *nam_ldisp[BLD_MAX] = {
-	[BLD_NONE]	= "UNDEFINED",
-	[BLD_ATTRACT]	= "ATTRACT",
-	[BLD_REPEL]	= "REPEL",
-	[BLD_UNKNOWN]	= "UNKNOWN"
-};
-
-/*
- * INVENTORY-only data
- */
-const char *nam_noderole[BNR_MAX] = {
-	[BNR_NONE]	= "UNDEFINED",
-	[BNR_INTER]	= "INTERACTIVE",
-	[BNR_BATCH]	= "BATCH",
-	[BNR_UNKNOWN]	= "UNKNOWN"
-};
-
-const char *nam_nodestate[BNS_MAX] = {
-	[BNS_NONE]	= "UNDEFINED",
-	[BNS_UP]	= "UP",
-	[BNS_DOWN]	= "DOWN",
-	[BNS_UNAVAIL]	= "UNAVAILABLE",
-	[BNS_ROUTE]	= "ROUTING",
-	[BNS_SUSPECT]	= "SUSPECT",
-	[BNS_ADMINDOWN]	= "ADMIN",
-	[BNS_UNKNOWN]	= "UNKNOWN"
-};
-
-const char *nam_proc[BPT_MAX] = {
-	[BPT_NONE]	= "UNDEFINED",
-	[BPT_CRAY_X2]	= "cray_x2",
-	[BPT_X86_64]	= "x86_64",
-	[BPT_UNKNOWN]	= "UNKNOWN"
-};
+static MYSQL_BIND *my_bind_col = NULL;
 
 extern int ns_add_node(struct nodespec **head, uint32_t node_id)
 {
@@ -225,7 +117,7 @@ extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
 
 /** Execute and return the number of rows. */
 extern int exec_stmt(MYSQL_STMT *stmt, const char *query,
-		     MYSQL_BIND bind_col[], unsigned long ncols)
+		     MYSQL_BIND *bind_col, unsigned long ncols)
 {
 #if _DEBUG
 	info("exec_stmt");
@@ -233,9 +125,59 @@ extern int exec_stmt(MYSQL_STMT *stmt, const char *query,
 #if _ADD_DELAYS
 	usleep(5000);
 #endif
+	my_bind_col = bind_col;
 	return 0;
 }
 
+extern int fetch_stmt(MYSQL_STMT *stmt)
+{
+#if _DEBUG
+	info("fetch_stmt");
+#endif
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+	strncpy(my_bind_col[COL_TYPE].buffer, "compute", BASIL_STRING_SHORT);
+	*((unsigned int *)my_bind_col[COL_CORES].buffer)  = 4;
+	*((my_bool *)my_bind_col[COL_CORES].is_null)  = (my_bool) 0;
+	*((unsigned int *)my_bind_col[COL_MEMORY].buffer) = 1024;
+	*((my_bool *)my_bind_col[COL_MEMORY].is_null)  = (my_bool) 0;
+
+	*((int *)my_bind_col[COL_CAB].buffer) = 6;
+	*((int *)my_bind_col[COL_ROW].buffer) = 1;
+	*((int *)my_bind_col[COL_CAGE].buffer) = 3;
+	*((int *)my_bind_col[COL_SLOT].buffer) = 1;
+	*((int *)my_bind_col[COL_CPU].buffer) = 1;
+
+	*((int *)my_bind_col[COL_X].buffer) = 1;
+	*((int *)my_bind_col[COL_Y].buffer) = 1;
+	*((int *)my_bind_col[COL_Z].buffer) = 1;
+	return 0;
+}
+
+my_bool free_stmt_result(MYSQL_STMT *stmt)
+{
+#if _DEBUG
+	info("free_stmt_result");
+#endif
+	return (my_bool) 0;
+}
+
+my_bool stmt_close(MYSQL_STMT *stmt)
+{
+#if _DEBUG
+	info("stmt_close");
+#endif
+	return (my_bool) 0;
+}
+
+my_bool cray_close_sdb(MYSQL *handle)
+{
+#if _DEBUG
+	info("cray_close_sdb");
+#endif
+	return (my_bool) 1;
+}
 
 /** Find out interconnect chip: Gemini (XE) or SeaStar (XT) */
 extern int cray_is_gemini_system(MYSQL *handle)
@@ -248,7 +190,7 @@ extern int cray_is_gemini_system(MYSQL *handle)
 #endif
 	if (handle != mysql_handle)
 		error("cray_is_gemini_system: bad MySQL handle");
-	return 1;
+	return 0;
 }
 
 /*
@@ -288,7 +230,10 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 // node count as well as the reservation records below
 	inv->f->node_head->node_id = 0;
 	strncpy(inv->f->node_head->name, "NODE_NAME", BASIL_STRING_SHORT);
-	inv->f->node_head->next = NULL;
+	inv->f->node_head->state = BNS_UP;
+	inv->f->node_head->role  = BNR_BATCH;
+	inv->f->node_head->arch  = BNA_XT;
+	inv->f->node_head->next  = NULL;
 	inv->f->rsvn_head = NULL;
 	return inv;
 }
