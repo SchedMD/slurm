@@ -46,6 +46,7 @@
 #include <unistd.h>
 
 #include "src/common/log.h"
+#include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
 #include "../basil_alps.h"
 #include "../parser_common.h"
@@ -57,6 +58,96 @@
 
 static MYSQL *mysql_handle = NULL;
 static MYSQL_BIND *my_bind_col = NULL;
+static struct node_record *my_node_table = NULL;
+static struct node_record *my_node_ptr = NULL;
+static int my_node_count = 0;
+static int my_node_inx = 0;
+
+static int hw_cabinet, hw_row, hw_cage, hw_slot, hw_cpu;
+static int coord[3], max_dim[3];
+
+/* Given a count of elements to distribute over a "dims" size space, 
+ * compute the minimum number of elements in each dimension to accomodate
+ * them assuming the number of elements in each dimension is similar (i.e.
+ * a cube rather than a long narrow box shape).
+ * IN spur_cnt - number of nodes at each coordinate
+ * IN/OUT coord - maximum coordinates in each dimension
+ * IN dims - -number of dimensions to use */
+static void _get_dims(int spur_cnt, int *coord, int dims)
+{
+	int count = 1, i;
+
+	for (i = 0; i < dims; i++)
+		coord[i] = 1;
+
+	while (1) {
+		for (i = 0; i < dims; i++) {
+			if (count >= spur_cnt)
+				return;
+			count /= coord[i];
+			coord[i]++;
+			count *= coord[i];
+		}
+	}
+}
+
+/* increment coordinates for a node */
+static void _incr_dims(int *coord, int *max_dim, int dims)
+{
+	int i;
+
+	for (i = 0; i < dims; i++) {
+		coord[i]++;
+		if (coord[i] < max_dim[i])
+			return;
+		coord[i] = 0;
+	}
+}
+
+/* Initialize the hardware pointer records */
+static void _init_hw_recs(void)
+{
+	int i;
+
+	hw_cabinet = 0;
+	hw_row = 0;
+	hw_cage = 0;
+	hw_slot = 0;
+	hw_cpu = 0;
+
+	for (i = 0; i < 3; i++)
+		coord[i] = 0;
+
+	my_node_ptr = my_node_table;
+	my_node_inx = 0;
+	_get_dims(my_node_count/4, max_dim, 3);
+}
+
+/* Increment the hardware pointer records */
+static void _incr_hw_recs(void)
+{
+	hw_cpu++;
+	if (hw_cpu > 3) {
+		hw_cpu = 0;
+		hw_slot++;
+		_incr_dims(coord, max_dim, 3);
+	}
+	if (hw_slot > 7) {
+		hw_slot = 0;
+		hw_cage++;
+	}
+	if (hw_cage > 2) {
+		hw_cage = 0;
+		hw_cabinet++;
+	}
+	if (hw_cabinet > 16) {
+		hw_cabinet = 0;
+		hw_row++;
+	}
+
+	my_node_ptr++;
+	my_node_inx++;
+}
 
 extern int ns_add_node(struct nodespec **head, uint32_t node_id)
 {
@@ -85,7 +176,7 @@ extern void free_nodespec(struct nodespec *head)
  *	Routines to interact with SDB database (uses prepared statements)
  */
 /** Connect to the XTAdmin table on the SDB */
-extern MYSQL *cray_connect_sdb(void)
+extern MYSQL *cray_connect_sdb(void *node_rec_ptr, int node_cnt)
 {
 #if _DEBUG
 	info("cray_connect_sdb");
@@ -97,6 +188,9 @@ extern MYSQL *cray_connect_sdb(void)
 		error("cray_connect_sdb: Duplicate MySQL connection");
 	else
 		mysql_handle = (MYSQL *) xmalloc(1);
+
+	my_node_table = (struct node_record *) node_rec_ptr;
+	my_node_count = node_cnt;
 
 	return mysql_handle;
 }
@@ -111,6 +205,7 @@ extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
 #endif
 	if (handle != mysql_handle)
 		error("prepare_stmt: bad MySQL handle");
+	_init_hw_recs();
 
 	return (MYSQL_STMT *) query;
 }
@@ -126,6 +221,7 @@ extern int exec_stmt(MYSQL_STMT *stmt, const char *query,
 	usleep(5000);
 #endif
 	my_bind_col = bind_col;
+
 	return 0;
 }
 
@@ -137,21 +233,29 @@ extern int fetch_stmt(MYSQL_STMT *stmt)
 #if _ADD_DELAYS
 	usleep(5000);
 #endif
+	if (my_node_inx >= my_node_count)
+		return 1;
+
 	strncpy(my_bind_col[COL_TYPE].buffer, "compute", BASIL_STRING_SHORT);
-	*((unsigned int *)my_bind_col[COL_CORES].buffer)  = 4;
+	*((unsigned int *)my_bind_col[COL_CORES].buffer)  =
+			my_node_ptr->config_ptr->cpus;
 	*((my_bool *)my_bind_col[COL_CORES].is_null)  = (my_bool) 0;
-	*((unsigned int *)my_bind_col[COL_MEMORY].buffer) = 1024;
+	*((unsigned int *)my_bind_col[COL_MEMORY].buffer) =
+			my_node_ptr->config_ptr->real_memory;
 	*((my_bool *)my_bind_col[COL_MEMORY].is_null)  = (my_bool) 0;
 
-	*((int *)my_bind_col[COL_CAB].buffer) = 6;
-	*((int *)my_bind_col[COL_ROW].buffer) = 1;
-	*((int *)my_bind_col[COL_CAGE].buffer) = 3;
-	*((int *)my_bind_col[COL_SLOT].buffer) = 1;
-	*((int *)my_bind_col[COL_CPU].buffer) = 1;
+	*((int *)my_bind_col[COL_CAB].buffer) = hw_cabinet;
+	*((int *)my_bind_col[COL_ROW].buffer) = hw_row;
+	*((int *)my_bind_col[COL_CAGE].buffer) = hw_cage;
+	*((int *)my_bind_col[COL_SLOT].buffer) = hw_slot;
+	*((int *)my_bind_col[COL_CPU].buffer) = hw_cpu;
 
-	*((int *)my_bind_col[COL_X].buffer) = 1;
-	*((int *)my_bind_col[COL_Y].buffer) = 1;
-	*((int *)my_bind_col[COL_Z].buffer) = 1;
+	*((int *)my_bind_col[COL_X].buffer) = coord[0];
+	*((int *)my_bind_col[COL_Y].buffer) = coord[1];
+	*((int *)my_bind_col[COL_Z].buffer) = coord[2];
+
+	_incr_hw_recs();
+
 	return 0;
 }
 
@@ -171,12 +275,12 @@ my_bool stmt_close(MYSQL_STMT *stmt)
 	return (my_bool) 0;
 }
 
-my_bool cray_close_sdb(MYSQL *handle)
+void cray_close_sdb(MYSQL *handle)
 {
 #if _DEBUG
 	info("cray_close_sdb");
 #endif
-	return (my_bool) 1;
+	return;
 }
 
 /** Find out interconnect chip: Gemini (XE) or SeaStar (XT) */

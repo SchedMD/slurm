@@ -379,7 +379,8 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	bind_cols[COL_CORES].buffer  = (char *)&node_cpus;
 	bind_cols[COL_MEMORY].buffer = (char *)&node_mem;
 
-	handle = cray_connect_sdb();
+	handle = cray_connect_sdb((void *) node_record_table_ptr,
+				  node_record_count);
 	if (handle == NULL)
 		fatal("can not connect to XTAdmin database on the SDB");
 
