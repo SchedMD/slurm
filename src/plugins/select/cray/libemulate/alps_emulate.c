@@ -370,6 +370,7 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version,
 		basil_node_ptr->arch  = BNA_XT;
 		last_basil_node_ptr = &basil_node_ptr->next;
 	}
+//FIXME: Add reservations here
 	inv->f->rsvn_head = NULL;
 	return inv;
 }
@@ -381,13 +382,13 @@ extern void   free_inv(struct basil_inventory *inv)
 	info("free_inv");
 #endif
 	if (inv) {
-//FIXME: Free linked list of node and reservation records
 		basil_node_ptr = inv->f->node_head;
 		while (basil_node_ptr) {
 			next_basil_node_ptr = basil_node_ptr->next;
 			xfree(basil_node_ptr);
 			basil_node_ptr = next_basil_node_ptr;
 		}
+//FIXME: Free reservations here
 		xfree(inv->f->rsvn_head);
 		xfree(inv->f);
 		xfree(inv);
