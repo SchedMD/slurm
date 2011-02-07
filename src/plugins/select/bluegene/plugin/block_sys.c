@@ -245,23 +245,16 @@ static int _post_allocate(bg_record_t *bg_record)
 	/* We are just looking for a real number here no need for a
 	   base conversion
 	*/
-	static int block_inx = 0;
-	int i=0, temp = 0;
-	if (bg_record->bg_block_id) {
-		while (bg_record->bg_block_id[i]
-		       && (bg_record->bg_block_id[i] > '9'
-			   || bg_record->bg_block_id[i] < '0'))
-			i++;
-		if (bg_record->bg_block_id[i]) {
-			temp = atoi(bg_record->bg_block_id+i)+1;
-			if (temp > block_inx)
-				block_inx = temp;
-			debug4("first new block inx will now be %d", block_inx);
-		}
-	} else {
-		bg_record->bg_block_id = xmalloc(8);
-		snprintf(bg_record->bg_block_id, 8,
-			 "RMP%d", block_inx++);
+	if (!bg_record->bg_block_id) {
+		struct tm my_tm;
+		struct timeval my_tv;
+		gettimeofday(&my_tv, NULL);
+		localtime_r(&my_tv.tv_sec, &my_tm);
+		bg_record->bg_block_id = xstrdup_printf(
+			"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
+			my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
+			my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec,
+			my_tv.tv_usec/1000);
 	}
 #endif
 

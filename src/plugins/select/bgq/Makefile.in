@@ -38,6 +38,17 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+
+# BGQ node selection plugin.
+@BGQ_LOADED_TRUE@am__append_1 = bg_job_place.c bg_job_place.h \
+@BGQ_LOADED_TRUE@			bg_job_run.c bg_job_run.h \
+@BGQ_LOADED_TRUE@			bg_record_functions.c bg_record_functions.h \
+@BGQ_LOADED_TRUE@			block_sys.c \
+@BGQ_LOADED_TRUE@			bluegene.c bluegene.h \
+@BGQ_LOADED_TRUE@			defined_block.c defined_block.h \
+@BGQ_LOADED_TRUE@			dynamic_block.c dynamic_block.h
+
+@BGQ_LOADED_TRUE@am__append_2 = $(BG_LDFLAGS)
 @BGQ_LOADED_TRUE@sbin_PROGRAMS = slurm_prolog$(EXEEXT) \
 @BGQ_LOADED_TRUE@	slurm_epilog$(EXEEXT)
 subdir = src/plugins/select/bgq
@@ -108,18 +119,17 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(sbindir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_bgq_la_DEPENDENCIES = block_allocator/libblock_allocator.la
-am__select_bgq_la_SOURCES_DIST = select_bgq.c bgq.h bgq_enums.h \
-	bg_enums.h bg_structs.h bg_job_place.c bg_job_place.h \
-	bg_job_run.c bg_job_run.h bg_record_functions.c \
+am__select_bgq_la_SOURCES_DIST = select_bgq.c bg_enums.h bgq_enums.h \
+	jobinfo.c jobinfo.h nodeinfo.c nodeinfo.h bg_job_place.c \
+	bg_job_place.h bg_job_run.c bg_job_run.h bg_record_functions.c \
 	bg_record_functions.h block_sys.c bluegene.c bluegene.h \
 	defined_block.c defined_block.h dynamic_block.c \
-	dynamic_block.h jobinfo.c jobinfo.h nodeinfo.c nodeinfo.h
-@BGQ_LOADED_FALSE@am_select_bgq_la_OBJECTS = select_bgq.lo
-@BGQ_LOADED_TRUE@am_select_bgq_la_OBJECTS = select_bgq.lo \
-@BGQ_LOADED_TRUE@	bg_job_place.lo bg_job_run.lo \
+	dynamic_block.h
+@BGQ_LOADED_TRUE@am__objects_1 = bg_job_place.lo bg_job_run.lo \
 @BGQ_LOADED_TRUE@	bg_record_functions.lo block_sys.lo \
-@BGQ_LOADED_TRUE@	bluegene.lo defined_block.lo dynamic_block.lo \
-@BGQ_LOADED_TRUE@	jobinfo.lo nodeinfo.lo
+@BGQ_LOADED_TRUE@	bluegene.lo defined_block.lo dynamic_block.lo
+am_select_bgq_la_OBJECTS = select_bgq.lo jobinfo.lo nodeinfo.lo \
+	$(am__objects_1)
 select_bgq_la_OBJECTS = $(am_select_bgq_la_OBJECTS)
 select_bgq_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -411,25 +421,14 @@ pkglib_LTLIBRARIES = select_bgq.la
 
 # add this no matter what so we can get DIM_SIZE
 select_bgq_la_LIBADD = block_allocator/libblock_allocator.la
-# These are needed for pack/unpack of structures for cross-cluster stuff
-@BGQ_LOADED_FALSE@select_bgq_la_SOURCES = select_bgq.c bgq.h bgq_enums.h
 
-# BGQ node selection plugin.
-@BGQ_LOADED_TRUE@select_bgq_la_SOURCES = select_bgq.c bg_enums.h bg_structs.h \
-@BGQ_LOADED_TRUE@			bg_job_place.c bg_job_place.h \
-@BGQ_LOADED_TRUE@			bg_job_run.c bg_job_run.h \
-@BGQ_LOADED_TRUE@			bg_record_functions.c bg_record_functions.h \
-@BGQ_LOADED_TRUE@			block_sys.c \
-@BGQ_LOADED_TRUE@			bluegene.c bluegene.h \
-@BGQ_LOADED_TRUE@			defined_block.c defined_block.h \
-@BGQ_LOADED_TRUE@			dynamic_block.c dynamic_block.h \
-@BGQ_LOADED_TRUE@			jobinfo.c jobinfo.h\
-@BGQ_LOADED_TRUE@			nodeinfo.c nodeinfo.h
+# These are needed for pack/unpack of structures for cross-cluster stuff
+select_bgq_la_SOURCES = select_bgq.c bg_enums.h bgq_enums.h jobinfo.c \
+	jobinfo.h nodeinfo.c nodeinfo.h $(am__append_1)
+select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(am__append_2)
 
 # force link with g++
-@BGQ_LOADED_TRUE@nodist_EXTRA_select_bgq_la_SOURCES = dummy.cxx
-@BGQ_LOADED_FALSE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BGQ_LOADED_TRUE@select_bgq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(BG_LDFLAGS)
+nodist_EXTRA_select_bgq_la_SOURCES = dummy.cxx
 @BGQ_LOADED_TRUE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 @BGQ_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
 @BGQ_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c
@@ -940,9 +939,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 	uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 
 
-@BGQ_LOADED_TRUE@force:
-@BGQ_LOADED_TRUE@$(select_bgq_la_LDADD) : force
-@BGQ_LOADED_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+force:
+$(select_bgq_la_LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

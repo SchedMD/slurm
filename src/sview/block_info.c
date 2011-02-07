@@ -527,13 +527,9 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		if (!block_ptr->bg_block_name)
 			continue;
 
-#ifdef HAVE_BG_FILES
 		block_ptr->color_inx =
 			atoi(block_ptr->bg_block_name+7);
-#else
-		block_ptr->color_inx =
-			atoi(block_ptr->bg_block_name+3);
-#endif
+
 		/* on some systems they make there own blocks named
 		   whatever they want, so doing this fixes what could
 		   be a negative number.
