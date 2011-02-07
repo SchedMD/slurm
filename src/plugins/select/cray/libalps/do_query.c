@@ -117,9 +117,7 @@ static struct basil_inventory *get_inventory(enum basil_version version,
 }
 
 /** Perform a detailed inventory */
-extern struct basil_inventory *get_full_inventory(enum basil_version version,
-						  void *node_rec_ptr,
-						  int node_cnt)
+extern struct basil_inventory *get_full_inventory(enum basil_version version)
 {
 	return get_inventory(version, true);
 }

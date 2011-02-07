@@ -36,7 +36,7 @@ static int cray_get_options_from_default_conf(MYSQL *handle)
 /**
  * cray_connect_sdb - Connect to the XTAdmin database on the SDB host
  */
-extern MYSQL *cray_connect_sdb(void *node_rec_ptr, int node_cnt)
+extern MYSQL *cray_connect_sdb(void)
 {
 	MYSQL *handle = mysql_init(NULL);
 
