@@ -135,12 +135,6 @@ static char *_copy_from_main(List main_mps, List ret_list);
 /* */
 static char *_reset_altered_mps(List main_mps);
 
-#ifdef HAVE_BGQ
-/* */
-static int _copy_the_path(List mps, ba_mp_t *start_mp, ba_mp_t *curr_mp,
-			  ba_mp_t *mark_mp, int dim);
-#endif
-
 /* */
 static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim);
 
@@ -1121,71 +1115,6 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	return new_ba_mp;
 }
 
-/*
- * copy the path of the mps given
- *
- * IN mps List of ba_mp_t *'s: mps to be copied
- * OUT dest_mps List of ba_mp_t *'s: filled in list of mps
- * wiring.
- * Return on success SLURM_SUCCESS, on error SLURM_ERROR
- */
-extern int copy_mp_path(List mps, List *dest_mps)
-{
-	int rc = SLURM_ERROR;
-
-#ifdef HAVE_BGQ
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ba_mp_t *ba_mp = NULL, *new_ba_mp = NULL;
-	int dim;
-	ba_switch_t *curr_switch = NULL, *new_switch = NULL;
-
-	if (!mps)
-		return SLURM_ERROR;
-	if (!*dest_mps)
-		*dest_mps = list_create(destroy_ba_mp);
-	info("list_count is %d", list_count(*dest_mps));
-	itr = list_iterator_create(mps);
-	while ((ba_mp = (ba_mp_t *)list_next(itr))) {
-		itr2 = list_iterator_create(*dest_mps);
-		while ((new_ba_mp = (ba_mp_t *)list_next(itr2))) {
-			if (memcmp(ba_mp->coord, new_ba_mp->coord,
-				   sizeof(ba_mp->coord)))
-				break;	/* we found it */
-		}
-		list_iterator_destroy(itr2);
-
-		if (!new_ba_mp) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-				info("adding %s as a new mp",
-				     ba_mp->coord_str);
-			new_ba_mp = ba_copy_mp(ba_mp);
-			ba_setup_mp(new_ba_mp, false);
-			list_push(*dest_mps, new_ba_mp);
-
-		}
-		new_ba_mp->used = BA_MP_USED_TRUE;
-		for(dim=0; dim<cluster_dims; dim++) {
-			curr_switch = &ba_mp->axis_switch[dim];
-			new_switch = &new_ba_mp->axis_switch[dim];
-			if (curr_switch->usage & BG_SWITCH_OUT) {
-				if (!_copy_the_path(*dest_mps, new_ba_mp,
-						    ba_mp, new_ba_mp,
-						    dim)) {
-					rc = SLURM_ERROR;
-					break;
-				}
-			}
-		}
-
-	}
-	list_iterator_destroy(itr);
-	info("now list_count is %d", list_count(*dest_mps));
-	rc = SLURM_SUCCESS;
-#endif
-	return rc;
-}
-
 extern ba_mp_t *str2ba_mp(char *coords)
 {
 #ifdef HAVE_BGQ
@@ -1453,10 +1382,11 @@ extern int check_and_set_mp_list(List mps)
 				goto end_it;
 			}
 
-			info("setting %s dim %d to from %d to %d",
+			info("setting %s dim %d to from %s to %s",
 			     ba_mp->coord_str, i,
-			     curr_ba_switch->usage,
-			     (curr_ba_switch->usage | ba_switch->usage));
+			     ba_switch_usage_str(curr_ba_switch->usage),
+			     ba_switch_usage_str(curr_ba_switch->usage
+						 | ba_switch->usage));
 			curr_ba_switch->usage |= ba_switch->usage;
 		}
 	}
@@ -2365,7 +2295,7 @@ static void _internal_removable_set_mps(int level, int *start,
 
 	if (level < cluster_dims) {
 		for (coords[level] = start[level];
-		     coords[level] <= end[level];
+		     coords[level] < end[level];
 		     coords[level]++) {
 			/* handle the outter dims here */
 			_internal_removable_set_mps(
@@ -2599,140 +2529,6 @@ static char *_reset_altered_mps(List main_mps)
 	return name;
 }
 
-#ifdef HAVE_BGQ
-/*
- * Copy a path through the wiring of a switch to another switch on a
- * starting port on a dimension.
- *
- * IN/OUT: mps - Local list of midplanes you are keeping track of.  If
- *         you visit any new midplanes a copy from ba_system_grid
- *         will be added to the list.  If NULL the path will be
- *         set in mark_switch of the main virtual system (ba_system_grid).
- * IN: curr_switch - The switch you want to copy the path of
- * IN/OUT: mark_switch - The switch you want to fill in.  On success
- *         this switch will contain a complete path from the curr_switch
- *         starting from the source port.
- * IN: dim - Dimension AXYZ
- *
- * RET: on success 1, on error 0
- */
-static int _copy_the_path(List mps, ba_mp_t *start_mp, ba_mp_t *curr_mp,
-			  ba_mp_t *mark_mp, int dim)
-{
-	ba_mp_t *next_mp = NULL;
-	ba_mp_t *next_mark_mp = NULL;
-	ba_switch_t *axis_switch = &curr_mp->axis_switch[dim];
-	ba_switch_t *alter_switch = &curr_mp->alter_switch[dim];
-	ba_switch_t *mark_alter_switch = &mark_mp->alter_switch[dim];
-
-	/* Just copy the whole thing over */
-	mark_alter_switch->usage = alter_switch->usage;
-	if (!(curr_mp->used & BA_MP_USED_ALTERED)) {
-		if (mark_alter_switch->usage & BG_SWITCH_PASS_FLAG) {
-			curr_mp->used |= BA_MP_USED_ALTERED_PASS;
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("using mp %s(%d) as passthrough "
-				     "%s added %s",
-				     curr_mp->coord_str, dim,
-				     ba_switch_usage_str(
-					     axis_switch->usage),
-				     ba_switch_usage_str(
-					     alter_switch->usage));
-		} else {
-			curr_mp->used |= BA_MP_USED_ALTERED;
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("_copy_the_path: using mp %s(%d) "
-				     "%s added %s",
-				     curr_mp->coord_str, dim,
-				     ba_switch_usage_str(
-					     axis_switch->usage),
-				     ba_switch_usage_str(
-					     alter_switch->usage));
-		}
-		if (start_mp != curr_mp) {
-			info("appending here %s %s", start_mp->coord_str, curr_mp->coord_str);
-			list_append(mps, curr_mp);
-		}
-	} else {
-		info("already here for %s", curr_mp->coord_str);
-	}
-	/* we must be in a mesh! */
-	if (!(alter_switch->usage & BG_SWITCH_OUT)) {
-		info("_copy_the_path: we are in a mesh returning now.");
-		return 1;
-	}
-
-	if (!(alter_switch->usage & BG_SWITCH_OUT_PASS)
-	    || (alter_switch->usage & BG_SWITCH_PASS_FLAG)) {
-		if (!(alter_switch->usage & BG_SWITCH_IN)) {
-			error("_copy_the_path: "
-			      "we only had an out port set and nothing else");
-			return 0;
-		}
-		/* we just had one midplane */
-		return 1;
-	}
-
-	next_mp = curr_mp->next_mp[dim];
-	if (!next_mp) {
-		error("_copy_the_path: We didn't get the next curr_mp!");
-		return 0;
-	}
-
-	/* follow the path */
-	if (!mark_mp->next_mp[dim]) {
-		if (!mps) {
-			/* If no mps then just get the next mp to fill
-			   in from the main system */
-			mark_mp->next_mp[dim] = &ba_system_ptr->
-				grid[next_mp->coord[A]]
-				[next_mp->coord[X]]
-				[next_mp->coord[Y]]
-				[next_mp->coord[Z]];
-		} else {
-			ba_mp_t *ba_mp = NULL;
-			ListIterator itr = list_iterator_create(mps);
-			/* see if we have already been to this mp */
-			while ((ba_mp = (ba_mp_t *)list_next(itr)))
-				if (memcmp(ba_mp->coord, next_mp->coord,
-					   sizeof(ba_mp->coord)))
-					break;	/* we found it */
-
-			list_iterator_destroy(itr);
-			if (!ba_mp) {
-				/* If mp grab a copy and add it to the list */
-				ba_mp = ba_copy_mp(&ba_system_ptr->
-						   grid[next_mp->coord[A]]
-						   [next_mp->coord[X]]
-						   [next_mp->coord[Y]]
-						   [next_mp->coord[Z]]);
-				ba_setup_mp(ba_mp, false);
-				list_append(mps, ba_mp);
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-					info("_copy_the_path: "
-					     "haven't seen %s adding it",
-					     ba_mp->coord_str);
-			}
-			mark_mp->next_mp[dim] = ba_mp;
-		}
-	}
-
-	next_mark_mp = mark_mp->next_mp[dim];
-	if (!next_mark_mp) {
-		error("_copy_the_path: We didn't get the next mark mp's!");
-		return 0;
-	}
-
-	if (next_mark_mp == start_mp) {
-		/* found the end of the line */
-		return 1;
-	}
-
-	/* Keep going until we reach the end of the line */
-	return _copy_the_path(mps, start_mp, next_mp, next_mark_mp, dim);
-}
-#endif
-
 static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 {
 	int rc = 0;
@@ -2854,7 +2650,8 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		}
 		return 1;
 	}
-
+	if (_mp_out_used(start_mp, dim))
+		return 0;
 	start_mp->used |= BA_MP_USED_ALTERED;
 	alter_switch->usage |= BG_SWITCH_OUT;
 	alter_switch->usage |= BG_SWITCH_OUT_PASS;

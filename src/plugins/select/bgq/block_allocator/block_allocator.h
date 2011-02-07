@@ -280,16 +280,7 @@ extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps);
  */
 extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp);
 
-/*
- * copy the path of the mps given
- *
- * IN mps List of ba_mp_t *'s: mps to be copied
- * OUT dest_mps List of ba_mp_t *'s: filled in list of mps
- * wiring.
- * Return on success SLURM_SUCCESS, on error SLURM_ERROR
- */
-extern int copy_mp_path(List mps, List *dest_mps);
-
+/* translate a string of at least AXYZ into a ba_mp_t ptr */
 extern ba_mp_t *str2ba_mp(char *coords);
 
 /*

@@ -59,7 +59,6 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	bg_record_t *found_record = NULL;
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
-	List results = NULL;
 	struct part_record *part_ptr = NULL;
 	char *non_usable_nodes = NULL;
 	bitstr_t *bitmap = bit_alloc(node_record_count);
@@ -172,9 +171,15 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						return SLURM_ERROR;
 					}
 				} else {
-					results = list_create(NULL);
+					if (bg_record->ba_mp_list)
+						list_flush(
+							bg_record->ba_mp_list);
+					else
+						bg_record->ba_mp_list =
+							list_create(
+								destroy_ba_mp);
 					name = set_bg_block(
-						results,
+						bg_record->ba_mp_list,
 						bg_record->start,
 						geo,
 						bg_record->conn_type);
@@ -183,7 +188,6 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						error("I was unable to "
 						      "make the "
 						      "requested block.");
-						list_destroy(results);
 						list_iterator_destroy(itr);
 						slurm_mutex_unlock(
 							&block_state_mutex);
@@ -204,14 +208,6 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						      bg_record->nodes,
 						      temp);
 					}
-					if (bg_record->ba_mp_list)
-						list_destroy(bg_record->
-							     ba_mp_list);
-					bg_record->ba_mp_list =
-						list_create(destroy_ba_mp);
-					copy_mp_path(results,
-						     &bg_record->ba_mp_list);
-					list_destroy(results);
 				}
 			}
 			if (found_record == NULL) {
@@ -231,7 +227,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					list_remove(itr);
 					continue;
 				}
-				if ((rc = configure_block(bg_record))
+				if ((rc = bridge_block_create(bg_record))
 				    == SLURM_ERROR) {
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(&block_state_mutex);
@@ -286,7 +282,6 @@ extern int create_full_system_block(List bg_found_block_list)
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
-	List results = NULL;
 	struct part_record *part_ptr = NULL;
 	bitstr_t *bitmap = bit_alloc(node_record_count);
 
@@ -395,26 +390,23 @@ extern int create_full_system_block(List bg_found_block_list)
 	       alpha_num[geo[X]],
 	       alpha_num[geo[Y]],
 	       alpha_num[geo[Z]]);
-	results = list_create(NULL);
-	name = set_bg_block(results,
+	if (bg_record->ba_mp_list)
+		list_flush(bg_record->ba_mp_list);
+	else
+		bg_record->ba_mp_list = list_create(destroy_ba_mp);
+	name = set_bg_block(bg_record->ba_mp_list,
 			    bg_record->start,
 			    geo,
 			    bg_record->conn_type);
 	if (!name) {
 		error("I was unable to make the full system block.");
-		list_destroy(results);
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
 	xfree(name);
-	if (bg_record->ba_mp_list)
-		list_destroy(bg_record->ba_mp_list);
-	bg_record->ba_mp_list = list_create(destroy_ba_mp);
-	copy_mp_path(results, &bg_record->ba_mp_list);
-	list_destroy(results);
 
-	if ((rc = configure_block(bg_record)) == SLURM_ERROR) {
+	if ((rc = bridge_block_create(bg_record)) == SLURM_ERROR) {
 		error("create_full_system_block: "
 		      "unable to configure block in api");
 		destroy_bg_record(bg_record);

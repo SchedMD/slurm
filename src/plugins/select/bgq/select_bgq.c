@@ -93,7 +93,7 @@ static List _get_config(void)
 		fatal("malloc failure on list_create");
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("BasePartitionNodeCnt");
+	key_pair->name = xstrdup("MidPlaneNodeCnt");
 	key_pair->value = xstrdup_printf("%u", bg_conf->mp_node_cnt);
 	list_append(my_list, key_pair);
 
@@ -143,6 +143,8 @@ static List _get_config(void)
 	if (bg_conf->deny_pass) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("DenyPassThrough");
+		if (bg_conf->deny_pass & PASS_DENY_A)
+			xstrcat(key_pair->value, "A,");
 		if (bg_conf->deny_pass & PASS_DENY_X)
 			xstrcat(key_pair->value, "X,");
 		if (bg_conf->deny_pass & PASS_DENY_Y)
@@ -1077,7 +1079,7 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 				     (char *)bg_record->bg_block_id);
 #endif
 		xfree(bg_record->bg_block_id);
-		if (configure_block(bg_record) == SLURM_ERROR) {
+		if (bridge_block_create(bg_record) == SLURM_ERROR) {
 			destroy_bg_record(bg_record);
 			error("select_p_update_block: "
 			      "unable to configure block in api");

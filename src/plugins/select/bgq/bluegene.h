@@ -91,7 +91,6 @@ extern int node_already_down(char *node_name);
 
 /* block_sys.c */
 /*****************************************************/
-extern int configure_block(bg_record_t * bg_conf_record);
 extern int read_bg_blocks();
 extern int load_state_file(List curr_block_list, char *dir_name);
 

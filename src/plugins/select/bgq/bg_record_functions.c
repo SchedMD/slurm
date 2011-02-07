@@ -632,7 +632,7 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 }
 
 /* block_state_mutex must be locked before calling this. */
-extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
+extern int add_bg_record(List records, List *used_nodes, blockreq_t *blockreq,
 			 bool no_check, bitoff_t io_start)
 {
 	bg_record_t *bg_record = NULL;
@@ -659,14 +659,13 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	else
 		bg_record->user_uid = pw_uid;
 
-	bg_record->ba_mp_list = list_create(destroy_ba_mp);
-	if (used_nodes) {
-		if (copy_mp_path(used_nodes, &bg_record->ba_mp_list)
-		    == SLURM_ERROR)
-			error("add_bg_record: "
-			      "couldn't copy the path for the allocation");
-		bg_record->mp_count = list_count(used_nodes);
-	}
+	if (used_nodes && *used_nodes) {
+		bg_record->ba_mp_list = *used_nodes;
+		*used_nodes = NULL;
+		bg_record->mp_count = list_count(bg_record->ba_mp_list);
+	} else
+		bg_record->ba_mp_list = list_create(destroy_ba_mp);
+
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
 #ifdef HAVE_BGL
@@ -1258,7 +1257,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		list_iterator_destroy(itr);
 
 		/* we need to add this record since it doesn't exist */
-		if (configure_block(bg_record) == SLURM_ERROR) {
+		if (bridge_block_create(bg_record) == SLURM_ERROR) {
 			destroy_bg_record(bg_record);
 			error("down_sub_node_blocks: "
 			      "unable to configure block in api");

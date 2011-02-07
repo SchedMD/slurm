@@ -39,6 +39,7 @@
 extern "C" {
 #include "bridge_linker.h"
 #include "../block_allocator/block_allocator.h"
+#include "src/common/parse_time.h"
 }
 
 #include "bridge_status.h"
@@ -182,7 +183,7 @@ extern int bridge_get_size(int *size)
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgq_size = core::getMachineSize();
-	for (dim=Dimension::A; dim<=Dimension::D; ++dim)
+	for (dim=Dimension::A; dim<Dimension::D; dim++)
 		size[dim] = bgq_size[dim];
 #else
 	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
@@ -221,6 +222,8 @@ extern int bridge_block_create(bg_record_t *bg_record)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
+	struct tm my_tm;
+	struct timeval my_tv;
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	Block::Ptr block_ptr;
@@ -245,6 +248,14 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 
+	/* set up a common unique name */
+	gettimeofday(&my_tv, NULL);
+	localtime_r(&my_tv.tv_sec, &my_tm);
+	bg_record->bg_block_id = xstrdup_printf(
+		"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
+		my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
+		my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, my_tv.tv_usec/1000);
+
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = (ba_mp_t *)list_next(itr))) {
@@ -255,23 +266,29 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	}
 	list_iterator_destroy(itr);
 
-        for (dim=Dimension::A; dim<=Dimension::D; ++dim) {
+        for (dim=Dimension::A; dim<Dimension::D; dim++) {
 		switch (bg_record->conn_type[dim]) {
 		case SELECT_MESH:
-			conn_type[dim] =
-				Block::Connectivity::Mesh;
+			conn_type[dim] = Block::Connectivity::Mesh;
 			break;
 		case SELECT_TORUS:
 		default:
-			conn_type[dim] =
-				Block::Connectivity::Torus;
+			conn_type[dim] = Block::Connectivity::Torus;
 			break;
 		}
 	}
-	block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
-	block_ptr->setName(bg_record->bg_block_id);
-	block_ptr->addUser(bg_record->bg_block_id, bg_record->user_name);
-	block_ptr->add(NULL);
+	try {
+		block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
+		block_ptr->setName(bg_record->bg_block_id);
+		block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
+		block_ptr->addUser(bg_record->bg_block_id,
+				   bg_record->user_name);
+		block_ptr->add("");
+	} catch (...) {
+		fatal("Couldn't create block, failing.");
+		rc = SLURM_ERROR;
+	}
+
 
 #endif
 
@@ -306,7 +323,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 
         try {
 		Block::initiateBoot(bg_record->bg_block_id);
-	} catch(...) {
+	} catch (...) {
                 error("Boot block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
@@ -316,6 +333,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	*/
 	bg_record->boot_state = BG_BLOCK_BOOTING;
 #else
+	info("block %s is ready", bg_record->bg_block_id);
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 	 	list_push(bg_lists->booted, bg_record);
 	bg_record->state = BG_BLOCK_INITED;

@@ -52,7 +52,8 @@ static int _breakup_blocks(List block_list, List new_blocks,
  * RET - a list of created block(s) or NULL on failure errno is set.
  */
 extern List create_dynamic_block(List block_list,
-				 select_ba_request_t *request, List my_block_list,
+				 select_ba_request_t *request,
+				 List my_block_list,
 				 bool track_down_nodes)
 {
 	int rc = SLURM_SUCCESS;
@@ -289,7 +290,7 @@ extern List create_dynamic_block(List block_list,
 	if (results)
 		list_flush(results);
 	else
-		results = list_create(NULL);
+		results = list_create(destroy_ba_mp);
 
 	if (allocate_block(request, results))
 		goto setup_records;
@@ -335,7 +336,7 @@ extern List create_dynamic_block(List block_list,
 		if (results)
 			list_flush(results);
 		else
-			results = list_create(NULL);
+			results = list_create(destroy_ba_mp);
 		if (allocate_block(request, results))
 			break;
 
@@ -356,7 +357,7 @@ setup_records:
 		memcpy(blockreq.conn_type, request->conn_type,
 		       sizeof(blockreq.conn_type));
 
-		add_bg_record(new_blocks, results, &blockreq, 0, 0);
+		add_bg_record(new_blocks, &results, &blockreq, 0, 0);
 	}
 
 finished:

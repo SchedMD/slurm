@@ -73,7 +73,7 @@ extern int set_block_user(bg_record_t *bg_record);
 extern int update_block_user(bg_record_t *bg_block_id, int set);
 extern void requeue_and_error(bg_record_t *bg_record, char *reason);
 
-extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
+extern int add_bg_record(List records, List *used_nodes, blockreq_t *blockreq,
 			 bool no_check, bitoff_t io_start);
 extern int handle_small_record_request(List records, blockreq_t *blockreq,
 				       bg_record_t *bg_record, bitoff_t start);

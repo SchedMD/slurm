@@ -48,19 +48,6 @@ List bg_sys_free = NULL;
 /* global system = list of allocated blocks */
 List bg_sys_allocated = NULL;
 
-/**
- * _get_mp: get the MP at location loc
- *
- * IN - bg: pointer to preinitialized bg pointer
- * IN - mp: pointer to preinitailized rm_element_t that will
- *      hold the MP that we resolve to.
- * IN - loc: location of the desired MP
- * OUT - mp: will point to MP at location loc
- * OUT - rc: error code (0 = success)
- */
-
-static void _pre_allocate(bg_record_t *bg_record);
-static int _post_allocate(bg_record_t *bg_record);
 
 #define MAX_ADD_RETRY 2
 
@@ -96,177 +83,6 @@ static void _print_list(List list)
 	list_iterator_destroy(itr);
 }
 #endif
-
-/**
- * initialize the BG block in the resource manager
- */
-static void _pre_allocate(bg_record_t *bg_record)
-{
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-	int rc;
-	int send_psets=bg_conf->numpsets;
-
-#ifdef HAVE_BGL
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,
-				  bg_record->blrtsimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionBlrtsImg): %s",
-		      bg_err_str(rc));
-
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionLinuxImg,
-				  bg_record->linuximage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionLinuxImg): %s",
-		      bg_err_str(rc));
-
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionRamdiskImg,
-				  bg_record->ramdiskimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionRamdiskImg): %s",
-		      bg_err_str(rc));
-#else
-	struct tm my_tm;
-	struct timeval my_tv;
-
-	if ((rc = bridge_set_data(bg_record->bg_block,
-				  RM_PartitionCnloadImg,
-				  bg_record->linuximage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionLinuxCnloadImg): %s",
-		      bg_err_str(rc));
-
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionIoloadImg,
-				  bg_record->ramdiskimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionIoloadImg): %s",
-		      bg_err_str(rc));
-
-	gettimeofday(&my_tv, NULL);
-	localtime_r(&my_tv.tv_sec, &my_tm);
-	bg_record->bg_block_id = xstrdup_printf(
-		"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
-		my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
-		my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, my_tv.tv_usec/1000);
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,
-				  bg_record->bg_block_id)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionID): %s", bg_err_str(rc));
-#endif
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg,
-				  bg_record->mloaderimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionMloaderImg): %s",
-		      bg_err_str(rc));
-
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionConnection,
-				  &bg_record->conn_type)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionConnection): %s",
-		      bg_err_str(rc));
-
-	/* rc = bg_conf->mp_node_cnt/bg_record->node_cnt; */
-/* 	if (rc > 1) */
-/* 		send_psets = bg_conf->numpsets/rc; */
-
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP,
-				  &send_psets)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionPsetsPerBP): %s",
-		      bg_err_str(rc));
-
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionUserName,
-				  bg_conf->slurm_user_name))
-	    != STATUS_OK)
-		error("bridge_set_data(RM_PartitionUserName): %s",
-		      bg_err_str(rc));
-
-#endif
-}
-
-/**
- * add the block record to the DB
- */
-static int _post_allocate(bg_record_t *bg_record)
-{
-	int rc = SLURM_SUCCESS;
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-	int i;
-	pm_partition_id_t block_id;
-	uid_t my_uid;
-
-	/* Add partition record to the DB */
-	debug2("adding block");
-
-	for(i=0;i<MAX_ADD_RETRY; i++) {
-		if ((rc = bridge_add_block(bg_record->bg_block))
-		    != STATUS_OK) {
-			error("bridge_add_block(): %s", bg_err_str(rc));
-			rc = SLURM_ERROR;
-		} else {
-			rc = SLURM_SUCCESS;
-			break;
-		}
-		sleep(3);
-	}
-	if (rc == SLURM_ERROR) {
-		info("going to free it");
-		if ((rc = bridge_free_block(bg_record->bg_block))
-		    != STATUS_OK)
-			error("bridge_free_block(): %s", bg_err_str(rc));
-		fatal("couldn't add last block.");
-	}
-	debug2("done adding");
-
-	/* Get back the new block id */
-	if ((rc = bridge_get_data(bg_record->bg_block, RM_PartitionID,
-				  &block_id))
-	    != STATUS_OK) {
-		error("bridge_get_data(RM_PartitionID): %s", bg_err_str(rc));
-		bg_record->bg_block_id = xstrdup("UNKNOWN");
-	} else {
-		if (!block_id) {
-			error("No Block ID was returned from database");
-			return SLURM_ERROR;
-		}
-		bg_record->bg_block_id = xstrdup(block_id);
-
-		free(block_id);
-
-		xfree(bg_record->target_name);
-
-
-		bg_record->target_name =
-			xstrdup(bg_conf->slurm_user_name);
-
-		xfree(bg_record->user_name);
-		bg_record->user_name =
-			xstrdup(bg_conf->slurm_user_name);
-
-		if (uid_from_string (bg_record->user_name, &my_uid) < 0)
-			error("uid_from_string(%s): %m", bg_record->user_name);
-		else
-			bg_record->user_uid = my_uid;
-	}
-	/* We are done with the block */
-	if ((rc = bridge_free_block(bg_record->bg_block)) != STATUS_OK)
-		error("bridge_free_block(): %s", bg_err_str(rc));
-#else
-	/* We are just looking for a real number here no need for a
-	   base conversion
-	*/
-	static int block_inx = 0;
-	int i=0, temp = 0;
-	if (bg_record->bg_block_id) {
-		while (bg_record->bg_block_id[i]
-		       && (bg_record->bg_block_id[i] > '9'
-			   || bg_record->bg_block_id[i] < '0'))
-			i++;
-		if (bg_record->bg_block_id[i]) {
-			temp = atoi(bg_record->bg_block_id+i)+1;
-			if (temp > block_inx)
-				block_inx = temp;
-			debug4("first new block inx will now be %d", block_inx);
-		}
-	} else {
-		bg_record->bg_block_id = xmalloc(8);
-		snprintf(bg_record->bg_block_id, 8,
-			 "RMP%d", block_inx++);
-	}
-#endif
-
-	return rc;
-}
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
@@ -384,23 +200,6 @@ cleanup:
 }
 #endif
 #endif
-
-extern int configure_block(bg_record_t *bg_record)
-{
-	/* new block to be added */
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-	bridge_new_block(&bg_record->bg_block);
-#endif
-	_pre_allocate(bg_record);
-
-	if (bg_record->cpu_cnt < bg_conf->cpus_per_mp)
-		configure_small_block(bg_record);
-	else
-		configure_block_switches(bg_record);
-
-	_post_allocate(bg_record);
-	return 1;
-}
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 /*
@@ -969,7 +768,6 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	bitstr_t *node_bitmap = NULL, *ionode_bitmap = NULL;
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
-	List results = NULL;
 	int data_allocated, data_read = 0;
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
@@ -1219,8 +1017,11 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			      "make the "
 			      "bluegene.conf file?",
 			      bg_record->bg_block_id);
-		results = list_create(NULL);
-		name = set_bg_block(results,
+		if (bg_record->ba_mp_list)
+			list_flush(bg_record->ba_mp_list);
+		else
+			bg_record->ba_mp_list =	list_create(destroy_ba_mp);
+		name = set_bg_block(bg_record->ba_mp_list,
 				    bg_record->start,
 				    geo,
 				    bg_record->conn_type);
@@ -1230,7 +1031,6 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			error("I was unable to "
 			      "make the "
 			      "requested block.");
-			list_destroy(results);
 			destroy_bg_record(bg_record);
 			continue;
 		}
@@ -1247,14 +1047,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			      "YOU MUST COLDSTART",
 			      bg_record->nodes, temp);
 		}
-		if (bg_record->ba_mp_list)
-			list_flush(bg_record->ba_mp_list);
-		else
-			bg_record->ba_mp_list =	list_create(destroy_ba_mp);
-		copy_mp_path(results, &bg_record->ba_mp_list);
-		list_destroy(results);
 
-		configure_block(bg_record);
+		bridge_block_create(bg_record);
 		blocks++;
 		list_push(curr_block_list, bg_record);
 		if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {

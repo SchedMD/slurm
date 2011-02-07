@@ -47,7 +47,7 @@
 struct select_jobinfo {
 	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
 						 * dimensions, e.g. AXYZ */
-	uint16_t conn_type;	/* see enum connection_type */
+	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
 	uint16_t reboot;	/* reboot block before starting job */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	char *bg_block_id;	/* Blue Gene block ID */

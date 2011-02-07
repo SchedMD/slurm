@@ -683,7 +683,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 					list_append(block_list, bg_record);
 					(*blocks_added) = 1;
 				} else {
-					if (configure_block(bg_record)
+					if (bridge_block_create(bg_record)
 					    == SLURM_ERROR) {
 						destroy_bg_record(bg_record);
 						error("_dynamically_request: "
@@ -1378,6 +1378,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	time_t starttime = time(NULL);
 	uint16_t local_mode = mode, preempt_done=false;
 	int avail_cpus = num_unused_cpus;
+	int dim = 0;
 
 	conn_type[A] = (uint16_t)NO_VAL;
 	if (preemptee_candidates && preemptee_job_list
@@ -1398,9 +1399,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if (conn_type[A] == SELECT_NAV) {
 		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
 			conn_type[A] = SELECT_SMALL;
-		else if (min_nodes > 1)
-			conn_type[A] = SELECT_TORUS;
-		else if (job_ptr->details->min_cpus < bg_conf->cpus_per_mp)
+		else if (min_nodes > 1) {
+			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+				conn_type[dim] = SELECT_TORUS;
+		} else if (job_ptr->details->min_cpus < bg_conf->cpus_per_mp)
 			conn_type[A] = SELECT_SMALL;
 
 		set_select_jobinfo(job_ptr->select_jobinfo->data,
