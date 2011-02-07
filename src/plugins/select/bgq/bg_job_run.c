@@ -512,7 +512,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		}
 		bg_record->modifying = 0;
 	}
-	info ("state is %d %d", bg_record->state, BG_BLOCK_FREE);
+
 	if (bg_record->state == BG_BLOCK_FREE) {
 		if ((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			if (!_make_sure_block_still_exists(bg_action_ptr,
