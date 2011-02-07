@@ -74,7 +74,7 @@ static int _find_node_inx (char *name)
 
 static void _display_topology(void)
 {
-	int i, match, match_cnt = 0;
+	int i, match = 0, match_cnt = 0;
 	hostset_t hs;
 	int one_liner = 1;
 
