@@ -145,7 +145,6 @@ extern int bridge_init(char *properties_file)
 	initialized = true;
 
 	return 1;
-
 }
 
 extern int bridge_fini()

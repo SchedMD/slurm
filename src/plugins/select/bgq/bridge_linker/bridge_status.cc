@@ -440,14 +440,14 @@ static void *_real_time(void *no_data)
 	rt_client_ptr->addListener(event_hand);
 
 	_real_time_connect();
-	info("connected");
+
 	while (bridge_status_inited && !failed) {
 		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
 
 		slurm_mutex_lock(&rt_mutex);
 		if (!bridge_status_inited)
 			break;
-		info("in the thread");
+
 		rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
 
 		rt_client_ptr->requestUpdates(NULL);
@@ -462,7 +462,6 @@ static void *_real_time(void *no_data)
 			failed = false;
 		}
 	}
-	info("done with thread");
 	return NULL;
 }
 
@@ -471,11 +470,11 @@ static void *_poll(void *no_data)
 	event_handler_t event_hand;
 
 	while (bridge_status_inited) {
-		debug("polling waiting until realtime dies");
+		//debug("polling waiting until realtime dies");
 		slurm_mutex_lock(&rt_mutex);
 		if (!bridge_status_inited)
 			break;
-		debug("polling taking over, realtime is dead");
+		//debug("polling taking over, realtime is dead");
 		bridge_status_do_poll();
 		slurm_mutex_unlock(&rt_mutex);
 		sleep(1);
@@ -507,7 +506,6 @@ extern int bridge_status_init(void)
 		fatal("pthread_create error %m");
 	slurm_attr_destroy(&thread_attr);
 #endif
-	info("done with the status init");
 	return SLURM_SUCCESS;
 }
 
@@ -518,7 +516,6 @@ extern int bridge_status_fini(void)
 
 	bridge_status_inited = false;
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	info("doing the disconnect");
 	/* make the rt connection end. */
 	rt_client_ptr->disconnect();
 
@@ -528,20 +525,17 @@ extern int bridge_status_fini(void)
 	}
 
 	if (real_time_thread) {
-		info("joining on the real time thread");
 		pthread_join(real_time_thread, NULL);
 		real_time_thread = 0;
 	}
 
 	if (poll_thread) {
-		info("joining on the polling thread");
 		pthread_join(poll_thread, NULL);
 		poll_thread = 0;
 	}
 	pthread_mutex_destroy(&rt_mutex);
 	delete(rt_client_ptr);
 #endif
-	info("done with status fini");
 	return SLURM_SUCCESS;
 }
 
