@@ -183,7 +183,7 @@ extern int bridge_get_size(int *size)
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	bgq_size = core::getMachineSize();
-	for (dim=Dimension::A; dim<Dimension::D; dim++)
+	for (dim=Dimension::A; dim<=Dimension::D; dim++)
 		size[dim] = bgq_size[dim];
 #else
 	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
@@ -266,7 +266,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	}
 	list_iterator_destroy(itr);
 
-        for (dim=Dimension::A; dim<Dimension::D; dim++) {
+        for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 		switch (bg_record->conn_type[dim]) {
 		case SELECT_MESH:
 			conn_type[dim] = Block::Connectivity::Mesh;

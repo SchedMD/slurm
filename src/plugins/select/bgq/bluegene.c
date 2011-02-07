@@ -986,7 +986,7 @@ static int _validate_config_nodes(List curr_block_list,
 	xassert(curr_block_list);
 	xassert(found_block_list);
 
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+#if defined HAVE_BG_FILES && defined HAVE_BG_Q
 	/* read current bg block info into curr_block_list This
 	 * happens in the state load before this in emulation mode */
 	if (read_bg_blocks(curr_block_list) == SLURM_ERROR)

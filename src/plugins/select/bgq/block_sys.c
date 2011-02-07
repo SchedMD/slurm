@@ -84,7 +84,7 @@ static void _print_list(List list)
 }
 #endif
 
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+#if defined HAVE_BG_FILES && defined HAVE_BG_Q
 
 static int _set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 {
@@ -124,7 +124,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 				  &my_card_name))
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_NodeCardID): %s",
-		      bg_err_str(rc));
+		      bridge_err_str(rc));
 	}
 
 	if ((rc = bridge_get_data(block_ptr,
@@ -132,7 +132,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 				  &curr_mp))
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_PartitionFirstBP): %s",
-		      bg_err_str(rc));
+		      bridge_err_str(rc));
 	}
 	if ((rc = bridge_get_data(curr_mp, RM_BPID, &mp_id))
 	    != STATUS_OK) {
@@ -151,7 +151,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 	if ((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_NodeCardListSize): %s",
-		      bg_err_str(rc));
+		      bridge_err_str(rc));
 		return SLURM_ERROR;
 	}
 
@@ -163,7 +163,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 					     &ncard2)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListNext): %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -173,7 +173,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 						  &ncard2)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListFirst: %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -182,7 +182,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 					  RM_NodeCardID,
 					  &card_name)) != STATUS_OK) {
 			error("bridge_get_data(RM_NodeCardID: %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}
@@ -201,7 +201,7 @@ cleanup:
 #endif
 #endif
 
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+#if defined HAVE_BG_FILES && defined HAVE_BG_Q
 /*
  * Download from MMCS the initial BG block information
  */
@@ -234,20 +234,21 @@ int read_bg_blocks(List curr_block_list)
 	if (bg_recover) {
 		if ((rc = bridge_get_blocks(state, &block_list))
 		    != STATUS_OK) {
-			error("2 rm_get_blocks(): %s", bg_err_str(rc));
+			error("2 rm_get_blocks(): %s", bridge_err_str(rc));
 			return SLURM_ERROR;
 		}
 	} else {
 		if ((rc = bridge_get_blocks_info(state, &block_list))
 		    != STATUS_OK) {
-			error("2 rm_get_blocks_info(): %s", bg_err_str(rc));
+			error("2 rm_get_blocks_info(): %s", bridge_err_str(rc));
 			return SLURM_ERROR;
 		}
 	}
 
 	if ((rc = bridge_get_data(block_list, RM_PartListSize, &block_count))
 	    != STATUS_OK) {
-		error("bridge_get_data(RM_PartListSize): %s", bg_err_str(rc));
+		error("bridge_get_data(RM_PartListSize): %s",
+		      bridge_err_str(rc));
 		block_count = 0;
 	}
 
@@ -259,7 +260,7 @@ int read_bg_blocks(List curr_block_list)
 						  &block_ptr)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_PartListNextPart): %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				break;
 			}
 		} else {
@@ -268,7 +269,7 @@ int read_bg_blocks(List curr_block_list)
 						  &block_ptr)) != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_PartListFirstPart): %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				break;
 			}
 		}
@@ -277,7 +278,7 @@ int read_bg_blocks(List curr_block_list)
 					  &tmp_char))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionID): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 
@@ -307,7 +308,7 @@ int read_bg_blocks(List curr_block_list)
 					  &mp_cnt))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSize): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 
@@ -324,7 +325,7 @@ int read_bg_blocks(List curr_block_list)
 					  &mp_cnt))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_BPNum): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 
@@ -338,7 +339,7 @@ int read_bg_blocks(List curr_block_list)
 					  &bg_record->switch_count))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSwitchNum): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 
@@ -346,7 +347,7 @@ int read_bg_blocks(List curr_block_list)
 					  &small))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSmall): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 
@@ -356,7 +357,7 @@ int read_bg_blocks(List curr_block_list)
 						  &tmp_char))
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_PartitionOptions): "
-				      "%s", bg_err_str(rc));
+				      "%s", bridge_err_str(rc));
 				continue;
 			} else if (tmp_char) {
 				switch(tmp_char[0]) {
@@ -387,7 +388,7 @@ int read_bg_blocks(List curr_block_list)
 			    != STATUS_OK) {
 				error("bridge_get_data("
 				      "RM_PartitionFirstNodeCard): %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				continue;
 			}
 
@@ -397,7 +398,7 @@ int read_bg_blocks(List curr_block_list)
 			    != STATUS_OK) {
 				error("bridge_get_data("
 				      "RM_PartitionNodeCardNum): %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				continue;
 			}
 #ifdef HAVE_BGL
@@ -462,7 +463,7 @@ int read_bg_blocks(List curr_block_list)
 				    != STATUS_OK) {
 					error("bridge_get_data("
 					      "RM_NodeCardIONodeNum): %s",
-					      bg_err_str(rc));
+					      bridge_err_str(rc));
 					rc = SLURM_ERROR;
 					continue;
 				}
@@ -499,7 +500,7 @@ int read_bg_blocks(List curr_block_list)
 			    != STATUS_OK) {
 				error("bridge_get_data"
 				      "(RM_PartitionConnection): %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				continue;
 			}
 			/* Set the bitmap blank here if it is a full
@@ -524,7 +525,7 @@ int read_bg_blocks(List curr_block_list)
 							  &mp_ptr))
 				    != STATUS_OK) {
 					error("bridge_get_data(RM_NextBP): %s",
-					      bg_err_str(rc));
+					      bridge_err_str(rc));
 					rc = SLURM_ERROR;
 					break;
 				}
@@ -535,7 +536,7 @@ int read_bg_blocks(List curr_block_list)
 				    != STATUS_OK) {
 					error("bridge_get_data"
 					      "(RM_FirstBP): %s",
-					      bg_err_str(rc));
+					      bridge_err_str(rc));
 					rc = SLURM_ERROR;
 					break;
 				}
@@ -543,7 +544,7 @@ int read_bg_blocks(List curr_block_list)
 			if ((rc = bridge_get_data(mp_ptr, RM_BPID, &mpid))
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_BPID): %s",
-				      bg_err_str(rc));
+				      bridge_err_str(rc));
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -583,13 +584,13 @@ int read_bg_blocks(List curr_block_list)
 					  &bg_record->node_use))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionMode): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 		}
 #endif
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
 					  &bg_record->state)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionState): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		} else if (bg_record->state == RM_PARTITION_CONFIGURING)
 			bg_record->boot_state = 1;
@@ -612,7 +613,7 @@ int read_bg_blocks(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
 					  &mp_cnt)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionUsersNum): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		} else {
 			if (mp_cnt==0) {
@@ -631,7 +632,7 @@ int read_bg_blocks(List curr_block_list)
 				    != STATUS_OK) {
 					error("bridge_get_data"
 					      "(RM_PartitionFirstUser): %s",
-					      bg_err_str(rc));
+					      bridge_err_str(rc));
 					continue;
 				}
 				if (!user_name) {
@@ -667,7 +668,7 @@ int read_bg_blocks(List curr_block_list)
 					  &user_name))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionBlrtsImg): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -681,7 +682,7 @@ int read_bg_blocks(List curr_block_list)
 					  &user_name))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionLinuxImg): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -695,7 +696,7 @@ int read_bg_blocks(List curr_block_list)
 					  &user_name))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionRamdiskImg): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -710,7 +711,7 @@ int read_bg_blocks(List curr_block_list)
 					  &user_name))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionCnloadImg): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -724,7 +725,7 @@ int read_bg_blocks(List curr_block_list)
 					  &user_name))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionIoloadImg): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -739,7 +740,7 @@ int read_bg_blocks(List curr_block_list)
 					  &user_name))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionMloaderImg): %s",
-			      bg_err_str(rc));
+			      bridge_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -854,7 +855,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 
 		/* we only care about the states we need here
 		 * everthing else should have been set up already */
-		if (block_info->state == RM_PARTITION_ERROR) {
+		if (block_info->state == BG_BLOCK_ERROR) {
 			slurm_mutex_lock(&block_state_mutex);
 			if ((bg_record = find_bg_record_in_list(
 				     curr_block_list,

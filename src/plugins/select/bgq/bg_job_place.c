@@ -381,7 +381,7 @@ static bg_record_t *_find_matching_block(List block_list,
 				     conn_type_string(bg_record->conn_type[A]));
 			continue;
 		}
-#ifndef HAVE_BGL
+#ifdef HAVE_BGP
 	good_conn_type:
 #endif
 		/*****************************************/
