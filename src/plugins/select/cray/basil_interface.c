@@ -81,8 +81,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	struct basil_node *node;
 	int rank_count = 0, i;
 
-	inv = get_full_inventory(version, (void *) node_record_table_ptr,
-				 node_record_count);
+	inv = get_full_inventory(version);
 	if (inv == NULL)
 		/* FIXME: should retry here if the condition is transient */
 		fatal("failed to get BASIL %s ranking", bv_names_long[version]);
@@ -134,8 +133,7 @@ extern int basil_inventory(void)
 	struct basil_rsvn *rsvn;
 	int rc = SLURM_SUCCESS;
 
-	inv = get_full_inventory(version,(void *) node_record_table_ptr,
-				 node_record_count);
+	inv = get_full_inventory(version);
 	if (inv == NULL) {
 		error("BASIL %s INVENTORY failed", bv_names_long[version]);
 		return SLURM_ERROR;
@@ -251,8 +249,7 @@ static int basil_get_initial_state(void)
 	struct basil_inventory *inv;
 	struct basil_node *node;
 
-	inv = get_full_inventory(version, (void *) node_record_table_ptr,
-				 node_record_count);
+	inv = get_full_inventory(version);
 	if (inv == NULL) {
 		error("BASIL %s INVENTORY failed", bv_names_long[version]);
 		return SLURM_ERROR;
@@ -382,8 +379,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	bind_cols[COL_CORES].buffer  = (char *)&node_cpus;
 	bind_cols[COL_MEMORY].buffer = (char *)&node_mem;
 
-	handle = cray_connect_sdb((void *) node_record_table_ptr,
-				  node_record_count);
+	handle = cray_connect_sdb();
 	if (handle == NULL)
 		fatal("can not connect to XTAdmin database on the SDB");
 

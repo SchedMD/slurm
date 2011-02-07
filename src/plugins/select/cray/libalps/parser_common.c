@@ -7,9 +7,24 @@
 #include "parser_internal.h"
 #include "../parser_common.h"
 
+const char *bv_names[BV_MAX];
+const char *bv_names_long[BV_MAX];
+const char *bm_names[BM_MAX];
+const char *be_names[BE_MAX];
+
+const char *nam_arch[BNA_MAX];
+const char *nam_memtype[BMT_MAX];
+const char *nam_labeltype[BLT_MAX];
+const char *nam_ldisp[BLD_MAX];
+
+const char *nam_noderole[BNR_MAX];
+const char *nam_nodestate[BNS_MAX];
+const char *nam_proc[BPT_MAX];
+const char *nam_rsvn_mode[BRM_MAX];
+const char *nam_gpc_mode[BGM_MAX];
+
 /* GLOBALS */
 static XML_Parser parser;
-
 
 /*
  *	General-purpose routines

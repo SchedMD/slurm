@@ -494,7 +494,7 @@ extern void free_nodespec(struct nodespec *head);
  *	Routines to interact with SDB database (uses prepared statements)
  */
 /** Connect to the XTAdmin table on the SDB */
-extern MYSQL *cray_connect_sdb(void *node_rec_ptr, int node_cnt);
+extern MYSQL *cray_connect_sdb(void);
 
 /** Initialize and prepare statement */
 extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
@@ -528,9 +528,7 @@ extern int cray_is_gemini_system(MYSQL *handle);
 extern enum basil_version get_basil_version(void);
 extern int basil_request(struct basil_parse_data *bp);
 
-extern struct basil_inventory *get_full_inventory(enum basil_version version,
-						  void *node_rec_ptr,
-						  int node_cnt);
+extern struct basil_inventory *get_full_inventory(enum basil_version version);
 extern void   free_inv(struct basil_inventory *inv);
 
 extern long basil_reserve(const char *user, const char *batch_id,

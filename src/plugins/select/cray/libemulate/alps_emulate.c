@@ -51,6 +51,23 @@
 #include "../basil_alps.h"
 //#include "../parser_common.h"
 
+/* Global variables */
+const char *bv_names[BV_MAX];
+const char *bv_names_long[BV_MAX];
+const char *bm_names[BM_MAX];
+const char *be_names[BE_MAX];
+
+const char *nam_arch[BNA_MAX];
+const char *nam_memtype[BMT_MAX];
+const char *nam_labeltype[BLT_MAX];
+const char *nam_ldisp[BLD_MAX];
+
+const char *nam_noderole[BNR_MAX];
+const char *nam_nodestate[BNS_MAX];
+const char *nam_proc[BPT_MAX];
+const char *nam_rsvn_mode[BRM_MAX];
+const char *nam_gpc_mode[BGM_MAX];
+
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */
 #define _ADD_DELAYS 0
@@ -58,9 +75,7 @@
 
 static MYSQL *mysql_handle = NULL;
 static MYSQL_BIND *my_bind_col = NULL;
-static struct node_record *my_node_table = NULL;
 static struct node_record *my_node_ptr = NULL;
-static int my_node_count = 0;
 static int my_node_inx = 0;
 
 static int hw_cabinet, hw_row, hw_cage, hw_slot, hw_cpu;
@@ -118,9 +133,9 @@ static void _init_hw_recs(void)
 	for (i = 0; i < 3; i++)
 		coord[i] = 0;
 
-	my_node_ptr = my_node_table;
+	my_node_ptr = node_record_table_ptr;
 	my_node_inx = 0;
-	_get_dims(my_node_count/4, max_dim, 3);
+	_get_dims(node_record_count/4, max_dim, 3);
 }
 
 /* Increment the hardware pointer records */
@@ -196,7 +211,7 @@ extern void free_nodespec(struct nodespec *head)
  *	Routines to interact with SDB database (uses prepared statements)
  */
 /** Connect to the XTAdmin table on the SDB */
-extern MYSQL *cray_connect_sdb(void *node_rec_ptr, int node_cnt)
+extern MYSQL *cray_connect_sdb(void)
 {
 #if _DEBUG
 	info("cray_connect_sdb");
@@ -208,9 +223,6 @@ extern MYSQL *cray_connect_sdb(void *node_rec_ptr, int node_cnt)
 		error("cray_connect_sdb: Duplicate MySQL connection");
 	else
 		mysql_handle = (MYSQL *) xmalloc(1);
-
-	my_node_table = (struct node_record *) node_rec_ptr;
-	my_node_count = node_cnt;
 
 	return mysql_handle;
 }
@@ -253,7 +265,7 @@ extern int fetch_stmt(MYSQL_STMT *stmt)
 #if _ADD_DELAYS
 	usleep(5000);
 #endif
-	if (my_node_inx >= my_node_count)
+	if (my_node_inx >=node_record_count)
 		return 1;
 
 	strncpy(my_bind_col[COL_TYPE].buffer, "compute", BASIL_STRING_SHORT);
@@ -336,9 +348,7 @@ extern int basil_request(struct basil_parse_data *bp)
 	return 0;
 }
 
-extern struct basil_inventory *get_full_inventory(enum basil_version version,
-						  void *node_rec_ptr,
-						  int node_cnt)
+extern struct basil_inventory *get_full_inventory(enum basil_version version)
 {
 	int i;
 	struct basil_inventory *inv;
@@ -349,16 +359,14 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version,
 	info("get_full_inventory");
 #endif
 
-	my_node_table = (struct node_record *) node_rec_ptr;
-	my_node_count = node_cnt;
 	inv = xmalloc(sizeof(struct basil_inventory));
 	inv->is_gemini = true;
-	inv->batch_avail = my_node_count;
-	inv->batch_total = my_node_count;
-	inv->nodes_total = my_node_count;
+	inv->batch_avail =node_record_count;
+	inv->batch_total =node_record_count;
+	inv->nodes_total =node_record_count;
 	inv->f = xmalloc(sizeof(struct basil_full_inventory));
 	last_basil_node_ptr = &inv->f->node_head;
-	for (i = 0, node_ptr = my_node_table; i < my_node_count;
+	for (i = 0, node_ptr = node_record_table_ptr; i <node_record_count;
 	     i++, node_ptr++) {
 		basil_node_ptr = xmalloc(sizeof(struct basil_node));
 		*last_basil_node_ptr = basil_node_ptr;
