@@ -90,11 +90,36 @@ static int _coord(char coord)
 	return -1;
 }
 
+static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
+			   int *coord_x, int *coord_y, int *dim_size)
+{
+	int y_offset;
+
+	*coord_x = (x + (dim_size[2] - 1)) - z + 2;
+	y_offset = default_y_offset - (dim_size[2] * y);
+	*coord_y = (y_offset - y) + z;
+}
+
+static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
+			   int *coord_x, int *coord_y, int* dim_size)
+{
+	int x_offset, y_offset;
+
+	x_offset = (dim_size[1] + dim_size[3]) * a + 2;
+	*coord_x = x_offset + (x + (dim_size[3] - 1)) - z;
+	y_offset = default_y_offset - (dim_size[3] * y);
+	*coord_y = (y_offset - y) + z;
+}
+
 /* Build the smap_system_ptr structure from the node records */
 extern void init_grid(node_info_msg_t *node_info_ptr)
 {
 	int i, j, len;
+	int default_y_offset = 0;
 	smap_node_t *node_ptr;
+
+	if (dim_size == NULL)
+		dim_size = slurmdb_setup_cluster_dim_size();
 
 	smap_system_ptr = xmalloc(sizeof(smap_system_t));
 	smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
@@ -139,11 +164,34 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 		smap_system_ptr->node_cnt++;
 	}
 
+	if (params.cluster_dims == 3) {
+		default_y_offset = (dim_size[2] * dim_size[1]) +
+				   (dim_size[1] - dim_size[2]);
+	} else if (params.cluster_dims == 4) {
+		default_y_offset = (dim_size[3] * dim_size[2]) +
+				   (dim_size[2] - dim_size[3]);
+	}
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		node_ptr = smap_system_ptr->grid[i];
-//FIXME
-		node_ptr->grid_xcord = i + 1;
-		node_ptr->grid_ycord = 1;
+		if (params.cluster_dims == 1) {
+			node_ptr->grid_xcord = i + 1;
+			node_ptr->grid_ycord = 1;
+		} else if (params.cluster_dims == 2) {
+			node_ptr->grid_xcord = node_ptr->coord[0] + 1;
+			node_ptr->grid_ycord = dim_size[1] - node_ptr->coord[1];
+		} else if (params.cluster_dims == 3) {
+			_calc_coord_3d(node_ptr->coord[0], node_ptr->coord[1],
+				       node_ptr->coord[2],
+				       default_y_offset,
+				       &node_ptr->grid_xcord,
+				       &node_ptr->grid_ycord, dim_size);
+		} else if (params.cluster_dims == 4) {
+			_calc_coord_4d(node_ptr->coord[0], node_ptr->coord[1],
+				       node_ptr->coord[2], node_ptr->coord[3],
+				       default_y_offset,
+				       &node_ptr->grid_xcord,
+				       &node_ptr->grid_ycord, dim_size);
+		}
 	}
 }
 
