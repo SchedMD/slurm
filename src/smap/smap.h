@@ -130,7 +130,7 @@ typedef struct {
 } smap_parameters_t;
 
 /*
- * ba_node_t: node within the allocation system.
+ * smap_node_t: node within the allocation system.
  */
 typedef struct {
 	/* coordinates of midplane */
@@ -146,12 +146,12 @@ typedef struct {
 	int state;
 	/* set if using this midplane in a block */
 	uint16_t used;
-} ba_node_t;
+} smap_node_t;
 
 typedef struct {
 	int node_cnt;
-	ba_node_t **grid;
-} ba_system_t;
+	smap_node_t **grid;
+} smap_system_t;
 
 extern WINDOW *grid_win;
 extern WINDOW *text_win;
@@ -168,10 +168,11 @@ extern int text_line_cnt;
 
 extern void parse_command_line(int argc, char *argv[]);
 
-extern ba_system_t *ba_system_ptr;
+extern smap_system_t *smap_system_ptr;
 extern int quiet_flag;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
+extern void clear_grid(void);
 extern void free_grid(void);
 extern void set_grid_inx(int start, int end, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);

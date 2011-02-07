@@ -44,16 +44,16 @@ extern void set_grid_inx(int start, int end, int count)
 {
 	int i;
 
-	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
-		if ((ba_system_ptr->grid[i]->index < start) ||
-		    (ba_system_ptr->grid[i]->index > end))
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		if ((smap_system_ptr->grid[i]->index < start) ||
+		    (smap_system_ptr->grid[i]->index > end))
 			continue;
-		if ((ba_system_ptr->grid[i]->state == NODE_STATE_DOWN) ||
-		    (ba_system_ptr->grid[i]->state & NODE_STATE_DRAIN))
+		if ((smap_system_ptr->grid[i]->state == NODE_STATE_DOWN) ||
+		    (smap_system_ptr->grid[i]->state & NODE_STATE_DRAIN))
 			continue;
 
-		ba_system_ptr->grid[i]->letter = letters[count%62];
-		ba_system_ptr->grid[i]->color  = colors[count%6];
+		smap_system_ptr->grid[i]->letter = letters[count%62];
+		smap_system_ptr->grid[i]->color  = colors[count%6];
 	}
 }
 
@@ -62,19 +62,19 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 {
 	int node_cnt = 0, i, j;
 
-	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		for (j = 0; j < params.cluster_dims; j++) {
-			if ((ba_system_ptr->grid[i]->coord[j] < start[i]) ||
-			    (ba_system_ptr->grid[i]->coord[j] > end[i]))
+			if ((smap_system_ptr->grid[i]->coord[j] < start[i]) ||
+			    (smap_system_ptr->grid[i]->coord[j] > end[i]))
 				break;
 		}
 		if (j < params.cluster_dims)
 			break;	/* outside of boundary */
 		if (set ||
-		    ((ba_system_ptr->grid[i]->letter == '.') &&
-		     (ba_system_ptr->grid[i]->letter != '#'))) {
-			ba_system_ptr->grid[i]->letter = letters[count%62];
-			ba_system_ptr->grid[i]->color  = colors[count%6];
+		    ((smap_system_ptr->grid[i]->letter == '.') &&
+		     (smap_system_ptr->grid[i]->letter != '#'))) {
+			smap_system_ptr->grid[i]->letter = letters[count%62];
+			smap_system_ptr->grid[i]->color  = colors[count%6];
 		}
 		node_cnt++;
 	}
@@ -90,20 +90,20 @@ static int _coord(char coord)
 	return -1;
 }
 
-/* Build the ba_system_ptr structure from the node records */
+/* Build the smap_system_ptr structure from the node records */
 extern void init_grid(node_info_msg_t *node_info_ptr)
 {
 	int i, j, len;
-	ba_node_t *node_ptr;
+	smap_node_t *node_ptr;
 
-	ba_system_ptr = xmalloc(sizeof(ba_system_t));
-	ba_system_ptr->grid = xmalloc(sizeof(ba_node_t *) *
+	smap_system_ptr = xmalloc(sizeof(smap_system_t));
+	smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
 				      node_info_ptr->record_count);
 	for (i = 0; i < node_info_ptr->record_count; i++) {
 		if ((node_info_ptr->node_array[i].name == NULL) ||
 		    (node_info_ptr->node_array[i].name[0] == '\0'))
 			continue;
-		node_ptr = xmalloc(sizeof(ba_node_t));
+		node_ptr = xmalloc(sizeof(smap_node_t));
 		len = strlen(node_info_ptr->node_array[i].name);
 		if (params.cluster_dims == 1) {
 			node_ptr->coord = xmalloc(sizeof(uint16_t));
@@ -135,15 +135,27 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 			}
 		}
 		node_ptr->index = i;
-		ba_system_ptr->grid[ba_system_ptr->node_cnt] = node_ptr;
-		ba_system_ptr->node_cnt++;
+		smap_system_ptr->grid[i] = node_ptr;
+		smap_system_ptr->node_cnt++;
 	}
 
-	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
-		node_ptr = ba_system_ptr->grid[i];
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		node_ptr = smap_system_ptr->grid[i];
 //FIXME
 		node_ptr->grid_xcord = i + 1;
 		node_ptr->grid_ycord = 1;
+	}
+}
+
+extern void clear_grid(void)
+{
+	smap_node_t *node_ptr;
+	int i;
+
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		node_ptr = smap_system_ptr->grid[i];
+		node_ptr->color = COLOR_WHITE;
+		node_ptr->letter = '.';
 	}
 }
 
@@ -151,16 +163,16 @@ extern void free_grid(void)
 {
 	int i;
 
-	if (ba_system_ptr == NULL)
+	if (smap_system_ptr == NULL)
 		return;
 
-	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
-		ba_node_t *node_ptr = ba_system_ptr->grid[i];
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		smap_node_t *node_ptr = smap_system_ptr->grid[i];
 		xfree(node_ptr->coord);
 		xfree(node_ptr);
 	}
-	xfree(ba_system_ptr->grid);
-	xfree(ba_system_ptr);
+	xfree(smap_system_ptr->grid);
+	xfree(smap_system_ptr);
 }
 
 
@@ -169,18 +181,19 @@ extern void print_grid(void)
 {
 	int i;
 
-	for (i = 0; i < ba_system_ptr->node_cnt; i++) {
-		if (ba_system_ptr->grid[i]->color)
-			init_pair(ba_system_ptr->grid[i]->color,
-				  ba_system_ptr->grid[i]->color, COLOR_BLACK);
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		if (smap_system_ptr->grid[i]->color)
+			init_pair(smap_system_ptr->grid[i]->color,
+				  smap_system_ptr->grid[i]->color, COLOR_BLACK);
 		else
-			init_pair(ba_system_ptr->grid[i]->color,
-				  ba_system_ptr->grid[i]->color, 7);
+			init_pair(smap_system_ptr->grid[i]->color,
+				  smap_system_ptr->grid[i]->color, 7);
+		wattron(grid_win, COLOR_PAIR(smap_system_ptr->grid[i]->color));
 		mvwprintw(grid_win,
-			  ba_system_ptr->grid[i]->grid_ycord, 
-			  ba_system_ptr->grid[i]->grid_xcord, "%c",
-			  ba_system_ptr->grid[i]->letter);
-		wattroff(grid_win, COLOR_PAIR(ba_system_ptr->grid[i]->color));
+			  smap_system_ptr->grid[i]->grid_ycord, 
+			  smap_system_ptr->grid[i]->grid_xcord, "%c",
+			  smap_system_ptr->grid[i]->letter);
+		wattroff(grid_win, COLOR_PAIR(smap_system_ptr->grid[i]->color));
 	}
 	return;
 }

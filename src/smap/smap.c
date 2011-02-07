@@ -52,7 +52,7 @@ static int min_screen_width = 72;
 int text_line_cnt = 0;
 
 smap_parameters_t params;
-ba_system_t *ba_system_ptr;
+smap_system_t *smap_system_ptr;
 
 int quiet_flag = 0;
 int grid_line_cnt = 0;
@@ -237,8 +237,7 @@ part_fini:
 	while (!end) {
 		if (!params.commandline) {
 			_get_option();
-		redraw:
-
+redraw:
 			clear_window(text_win);
 			clear_window(grid_win);
 			move(0, 0);
@@ -250,6 +249,7 @@ part_fini:
 		if (!params.no_header)
 			print_date();
 
+		clear_grid();
 		switch (params.display) {
 		case JOBS:
 			get_job();
@@ -336,7 +336,6 @@ part_fini:
 
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
-
 				sleep(1);
 				if (!params.commandline) {
 					if ((rc = _get_option()) == 1)
@@ -510,7 +509,7 @@ static void *_resize_handler(int sig)
 	LINES = 0;
 	initscr();
 	doupdate();	/* update now to make sure we get the new size */
-	getmaxyx(stdscr,LINES,COLS);
+	getmaxyx(stdscr, LINES, COLS);
 
 	if (params.cluster_dims == 4) {
 		height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
