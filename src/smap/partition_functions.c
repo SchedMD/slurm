@@ -288,8 +288,7 @@ extern void get_bg_part(void)
 				bit_alloc(bit_size(params.io_bit));
 			inx2bitstr(loc_bitmap,
 				   new_bg_ptr->block_array[i].ionode_inx);
-			overlap = bit_overlap(loc_bitmap,
-					      params.io_bit);
+			overlap = bit_overlap(loc_bitmap, params.io_bit);
 			FREE_NULL_BITMAP(loc_bitmap);
 			if (!overlap)
 				continue;
@@ -301,7 +300,7 @@ extern void get_bg_part(void)
 			= xstrdup(new_bg_ptr->block_array[i].bg_block_id);
 		block_ptr->nodes = xstrdup(new_bg_ptr->block_array[i].nodes);
 		block_ptr->nodelist = list_create(_nodelist_del);
-		_make_nodelist(block_ptr->nodes,block_ptr->nodelist);
+		_make_nodelist(block_ptr->nodes, block_ptr->nodelist);
 
 		block_ptr->bg_user_name
 			= xstrdup(new_bg_ptr->block_array[i].owner_name);
@@ -353,7 +352,7 @@ extern void get_bg_part(void)
 		if (!part.nodes || (part.nodes[0] == '\0'))
 			continue;	/* empty partition */
 		nodelist = list_create(_nodelist_del);
-		_make_nodelist(part.nodes,nodelist);
+		_make_nodelist(part.nodes, nodelist);
 
 		if (block_list) {
 			itr = list_iterator_create(block_list);
@@ -430,7 +429,7 @@ static void _marknodes(db2_block_info_t *block_ptr, int count)
 			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
 			for (i = 0; i < params.cluster_dims; i++, j++)
 				start[i] = _coord(nodes[j]);
-			block_ptr->size += set_grid_bg(start, start, count, 0);
+			block_ptr->size += set_grid_bg(start, start, count, 1);
 			if (nodes[j] != ',')
 				break;
 			j--;

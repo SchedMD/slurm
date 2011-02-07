@@ -64,12 +64,12 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		for (j = 0; j < params.cluster_dims; j++) {
-			if ((smap_system_ptr->grid[i]->coord[j] < start[i]) ||
-			    (smap_system_ptr->grid[i]->coord[j] > end[i]))
+			if ((smap_system_ptr->grid[i]->coord[j] < start[j]) ||
+			    (smap_system_ptr->grid[i]->coord[j] > end[j]))
 				break;
 		}
 		if (j < params.cluster_dims)
-			break;	/* outside of boundary */
+			continue;	/* outside of boundary */
 		if (set ||
 		    ((smap_system_ptr->grid[i]->letter == '.') &&
 		     (smap_system_ptr->grid[i]->letter != '#'))) {
