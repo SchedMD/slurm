@@ -7229,7 +7229,7 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		}
 		safe_unpack32(&count, buffer);
 
-		xassert(count > HIGHEST_DIMENSIONS);
+		xassert(count <= HIGHEST_DIMENSIONS);
 
 		for (i=0; i<count; i++)
 			safe_unpack16(&block_info->conn_type[i], buffer);
