@@ -47,7 +47,7 @@
 
 /* some local functions */
 static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason);
-static int _addto_node_list(bg_record_t *bg_record, int *start, int *end);
+static int _addto_mp_list(bg_record_t *bg_record, int *start, int *end);
 static int _ba_mp_cmpf_inc(ba_mp_t *node_a, ba_mp_t *node_b);
 
 extern void print_bg_record(bg_record_t* bg_record)
@@ -138,7 +138,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				list_create(destroy_ba_mp);
 		}
 		memset(&best_start, 0, sizeof(best_start));
-		bg_record->mp_count = 0;
+		//bg_record->mp_count = 0;
 		if ((bg_record->conn_type[A] >= SELECT_SMALL) && (!startup))
 			error("process_nodes: "
 			      "We shouldn't be here there could be some "
@@ -178,10 +178,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					       best_start[Z]);
 					largest_diff = diff;
 				}
-				bg_record->mp_count += _addto_node_list(
-					bg_record,
-					start,
-					end);
+				//bg_record->mp_count += _addto_mp_list(
+				_addto_mp_list(bg_record, start, end);
 				if (bg_record->nodes[j] != ',')
 					break;
 				j--;
@@ -209,10 +207,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					       best_start[Z]);
 					largest_diff = diff;
 				}
-				bg_record->mp_count += _addto_node_list(
-					bg_record,
-					start,
-					start);
+				//bg_record->mp_count += _addto_mp_list(
+				_addto_mp_list(bg_record, start, start);
 				if (bg_record->nodes[j] != ',')
 					break;
 				j--;
@@ -246,10 +242,12 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 
 	list_sort(bg_record->ba_mp_list, (ListCmpF) _ba_mp_cmpf_inc);
 
+	bg_record->mp_count = 0;
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = list_next(itr)) != NULL) {
 		if (!ba_mp->used)
 			continue;
+		bg_record->mp_count++;
 		debug4("process_nodes: "
 		       "%c%c%c%c is included in this block",
 		       alpha_num[ba_mp->coord[A]],
@@ -586,7 +584,7 @@ extern int set_block_user(bg_record_t *bg_record)
 		info("resetting the boot state flag and "
 		     "counter for block %s.",
 		     bg_record->bg_block_id);
-	bg_record->boot_state = 0;
+	bg_record->boot_state = BG_BLOCK_FREE;
 	bg_record->boot_count = 0;
 
 	if ((rc = update_block_user(bg_record, 1)) == 1) {
@@ -662,24 +660,24 @@ extern int add_bg_record(List records, List *used_nodes, blockreq_t *blockreq,
 	if (used_nodes && *used_nodes) {
 		bg_record->ba_mp_list = *used_nodes;
 		*used_nodes = NULL;
-		bg_record->mp_count = list_count(bg_record->ba_mp_list);
 	} else
 		bg_record->ba_mp_list = list_create(destroy_ba_mp);
 
 	/* bg_record->boot_state = 0; 	Implicit */
-	/* bg_record->state = 0;	Implicit */
+	bg_record->state = BG_BLOCK_FREE;
+
 #ifdef HAVE_BGL
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("add_bg_record: asking for %s %d %d %s",
 		     blockreq->block, blockreq->small32, blockreq->small128,
-		     conn_type_string(blockreq->conn_type));
+		     conn_type_string(blockreq->conn_type[0]));
 #else
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("add_bg_record: asking for %s %d %d %d %d %d %s",
 		     blockreq->block, blockreq->small256,
 		     blockreq->small128, blockreq->small64,
 		     blockreq->small32, blockreq->small16,
-		     conn_type_string(blockreq->conn_type[A]));
+		     conn_type_string(blockreq->conn_type[0]));
 #endif
 	/* Set the bitmap blank here if it is a full node we don't
 	   want anything set we also don't want the bg_record->ionodes set.
@@ -712,6 +710,7 @@ extern int add_bg_record(List records, List *used_nodes, blockreq_t *blockreq,
 #endif
 	memcpy(bg_record->conn_type, blockreq->conn_type,
 	       sizeof(bg_record->conn_type));
+
 	bg_record->cpu_cnt = bg_conf->cpus_per_mp * bg_record->mp_count;
 	bg_record->node_cnt = bg_conf->mp_node_cnt * bg_record->mp_count;
 	bg_record->job_running = NO_JOB_RUNNING;
@@ -1544,44 +1543,41 @@ static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason)
 	return rc;
 }
 
-static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
+static int _addto_mp_list(bg_record_t *bg_record, int *start, int *end)
 {
 	int node_count=0;
 	int a,x,y,z;
-	char node_name_tmp[255];
 	ba_mp_t *ba_mp = NULL;
+	char start_char[5], end_char[5], dim_char[5];
+	int dim;
 
-	if ((start[X] < 0) || (start[Y] < 0) || (start[Z] < 0)) {
-		fatal("bluegene.conf starting coordinate is invalid: %d%d%d",
-		      start[X], start[Y], start[Z]);
+	for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
+		start_char[dim] = alpha_num[start[dim]];
+		end_char[dim] = alpha_num[end[dim]];
+		dim_char[dim] = alpha_num[DIM_SIZE[dim]];
 	}
-	if ((end[X] >= DIM_SIZE[X]) || (end[Y] >= DIM_SIZE[Y])
-	    ||  (end[Z] >= DIM_SIZE[Z])) {
-		fatal("bluegene.conf matrix size exceeds space defined in "
-		      "slurm.conf %c%c%cx%d%d%d => %c%c%c",
-		      alpha_num[start[X]], alpha_num[start[Y]],
-		      alpha_num[start[Z]],
-		      end[X], end[Y], end[Z],
-		      alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]],
-		      alpha_num[DIM_SIZE[Z]]);
+	start_char[dim] = '\0';
+	end_char[dim] = '\0';
+	dim_char[dim] = '\0';
+
+	for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
+		if (start[dim] < 0)
+			fatal("bluegene.conf starting coordinate "
+			      "is invalid: %s",
+			      start_char);
+		if (end[dim] >= DIM_SIZE[dim])
+			fatal("bluegene.conf matrix size exceeds space "
+			      "defined in "
+			      "slurm.conf %sx%s => %s",
+			      start_char, end_char, dim_char);
 	}
-	debug3("adding mps: %c%c%cx%c%c%c",
-	       alpha_num[start[X]], alpha_num[start[Y]], alpha_num[start[Z]],
-	       alpha_num[end[X]], alpha_num[end[Y]], alpha_num[end[Z]]);
-	debug3("slurm.conf:    %c%c%c",
-	       alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]],
-	       alpha_num[DIM_SIZE[Z]]);
+	debug3("adding mps: %sx%s", start_char, end_char);
+	debug3("slurm.conf:    %s", dim_char);
 
 	for (a = start[A]; a <= end[A]; a++) {
 		for (x = start[X]; x <= end[X]; x++) {
 			for (y = start[Y]; y <= end[Y]; y++) {
 				for (z = start[Z]; z <= end[Z]; z++) {
-					snprintf(node_name_tmp,
-						 sizeof(node_name_tmp),
-						 "%s%c%c%c%c",
-						 bg_conf->slurm_node_prefix,
-						 alpha_num[a], alpha_num[x],
-						 alpha_num[y], alpha_num[z]);
 					ba_mp = ba_copy_mp(
 						&ba_system_ptr->grid
 						[a][x][y][z]);

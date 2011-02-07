@@ -292,12 +292,14 @@ static bg_record_t *_find_matching_block(List block_list,
 			/* We use the proccessor count per block here
 			   mostly to see if we can run on a smaller block.
 			*/
-			convert_num_unit((float)bg_record->cpu_cnt, tmp_char,
-					 sizeof(tmp_char), UNIT_NONE);
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
+				convert_num_unit((float)bg_record->cpu_cnt,
+						 tmp_char,
+						 sizeof(tmp_char), UNIT_NONE);
 				info("block %s CPU count (%s) not suitable",
 				     bg_record->bg_block_id,
 				     tmp_char);
+			}
 			continue;
 		}
 
@@ -348,7 +350,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		/***********************************************/
 		if ((request->conn_type[A] != bg_record->conn_type[A])
 		    && (request->conn_type[A] != SELECT_NAV)) {
-#ifndef HAVE_BGL
+#ifdef HAVE_BGP
 			if (request->conn_type[A] >= SELECT_SMALL) {
 				/* we only want to reboot blocks if
 				   they have to be so skip booted

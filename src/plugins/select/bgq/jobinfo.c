@@ -315,7 +315,6 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 {
 	struct select_jobinfo *rc = NULL;
-	int i;
 
 	if (jobinfo == NULL)
 		;
