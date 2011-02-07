@@ -594,7 +594,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			fatal("can not read basil_node_id from %s", node_ptr->name);
 
 		if (ns_add_node(&ns_head, basil_node_id) != 0) {
-			error("can not add node %s (nid%05u)", node_ptr->name, basil_node_id);
+			error("can not add node %s (nid%05u)", node_ptr->name,
+			      basil_node_id);
 			free_nodespec(ns_head);
 			return SLURM_ERROR;
 		}

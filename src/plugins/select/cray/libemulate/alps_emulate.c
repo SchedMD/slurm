@@ -70,8 +70,9 @@ const char *nam_gpc_mode[BGM_MAX];
 
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */
-#define _ADD_DELAYS 0
-#define _DEBUG 1
+#define _ADD_DELAYS  0
+#define _DEBUG       0
+#define MAX_RESV_CNT 500
 
 static MYSQL *mysql_handle = NULL;
 static MYSQL_BIND *my_bind_col = NULL;
@@ -80,6 +81,9 @@ static int my_node_inx = 0;
 
 static int hw_cabinet, hw_row, hw_cage, hw_slot, hw_cpu;
 static int coord[3], max_dim[3];
+
+static int last_resv_id = 0;
+static uint32_t resv_jobid[MAX_RESV_CNT];
 
 /* Given a count of elements to distribute over a "dims" size space, 
  * compute the minimum number of elements in each dimension to accomodate
@@ -354,6 +358,7 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 	struct basil_inventory *inv;
 	struct node_record *node_ptr;
 	struct basil_node *basil_node_ptr, **last_basil_node_ptr;
+	struct basil_rsvn *basil_rsvn_ptr, **last_basil_rsvn_ptr;
 
 #if _DEBUG
 	info("get_full_inventory");
@@ -378,14 +383,22 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 		basil_node_ptr->arch  = BNA_XT;
 		last_basil_node_ptr = &basil_node_ptr->next;
 	}
-//FIXME: Add reservations here
-	inv->f->rsvn_head = NULL;
+	last_basil_rsvn_ptr = &inv->f->rsvn_head;
+	for (i = 0; i < MAX_RESV_CNT; i++) {
+		if (resv_jobid[i] == 0)
+			continue;
+		basil_rsvn_ptr = xmalloc(sizeof(struct basil_rsvn));
+		*last_basil_rsvn_ptr = basil_rsvn_ptr;
+		basil_rsvn_ptr->rsvn_id = i;
+		last_basil_rsvn_ptr = &basil_rsvn_ptr->next;
+	}
 	return inv;
 }
 
 extern void   free_inv(struct basil_inventory *inv)
 {
 	struct basil_node *basil_node_ptr, *next_basil_node_ptr;
+	struct basil_rsvn *basil_rsvn_ptr, *next_basil_rsvn_ptr;
 #if _DEBUG
 	info("free_inv");
 #endif
@@ -396,8 +409,12 @@ extern void   free_inv(struct basil_inventory *inv)
 			xfree(basil_node_ptr);
 			basil_node_ptr = next_basil_node_ptr;
 		}
-//FIXME: Free reservations here
-		xfree(inv->f->rsvn_head);
+		basil_rsvn_ptr = inv->f->rsvn_head;
+		while (basil_rsvn_ptr) {
+			next_basil_rsvn_ptr = basil_rsvn_ptr->next;
+			xfree(basil_rsvn_ptr);
+			basil_rsvn_ptr = next_basil_rsvn_ptr;
+		}
 		xfree(inv->f);
 		xfree(inv);
 	}
@@ -407,12 +424,14 @@ extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
 			  uint32_t mem_mb, struct nodespec *ns_head)
 {
-	struct nodespec *my_node_spec;
+	int i;
+	uint32_t job_id;
+
 #if _DEBUG
+	struct nodespec *my_node_spec;
 	info("basil_reserve user:%s batch_id:%s width:%u depth:%u nppn:%u "
-	     "mem_mb:%u node_spec:start:%u,end:%u",
-	     user, batch_id, width, depth, nppn, mem_mb,
-	     ns_head->start, ns_head->end);
+	     "mem_mb:%u",
+	     user, batch_id, width, depth, nppn, mem_mb);
 	my_node_spec = ns_head;
 	while (my_node_spec) {
 		info("basil_reserve node_spec:start:%u,end:%u",
@@ -420,6 +439,20 @@ extern long basil_reserve(const char *user, const char *batch_id,
 		my_node_spec = my_node_spec->next;
 	}
 #endif
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+
+	job_id = atol(batch_id);
+	for (i = 0; i < MAX_RESV_CNT; i++) {
+		if (resv_jobid[last_resv_id])
+			continue;
+		resv_jobid[last_resv_id] = job_id;
+		last_resv_id++;
+		last_resv_id %= MAX_RESV_CNT;
+		return last_resv_id;
+	}
+
 	return 0;
 }
 
@@ -428,6 +461,14 @@ extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id)
 #if _DEBUG
 	info("basil_confirm: rsvn_id:%u", rsvn_id);
 #endif
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+	if ((job_id == 0) || (rsvn_id > MAX_RESV_CNT))
+		return -1;
+	if (resv_jobid[rsvn_id-1] != job_id)
+		return -1;
+
 	return 0;
 }
 
@@ -436,6 +477,11 @@ extern int basil_release(uint32_t rsvn_id)
 #if _DEBUG
 	info("basil_release: rsvn_id:%u", rsvn_id);
 #endif
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+
+	resv_jobid[rsvn_id] = 0;
+
 	return 0;
 }
-
