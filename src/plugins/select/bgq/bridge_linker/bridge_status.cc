@@ -196,10 +196,10 @@ static int _update_block_state(bg_record_t *bg_record,
 	    || bg_record->state == state)
 		return 0;
 
-	debug("state of Block %s was %d and now is %d",
+	debug("state of Block %s was %s and now is %s",
 	      bg_record->bg_block_id,
-	      bg_record->state,
-	      state);
+	      bg_block_state_string(bg_record->state),
+	      bg_block_state_string(state));
 
 	/*
 	  check to make sure block went

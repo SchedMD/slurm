@@ -46,6 +46,7 @@ extern "C" {
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 
+#include <bgsched/InputException.h>
 #include <bgsched/bgsched.h>
 #include <bgsched/Block.h>
 #include <bgsched/core/core.h>
@@ -280,13 +281,23 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	}
 	try {
 		block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
-		info("got past create");
+	} catch (bgsched::InputException err) {
+		// switch(err.getError()) {
+		// case bgsched::InputErrors::InvalidMidplanes:
+		// 	fatal("Couldn't create block, failing.");
+		// 	break;
+		// default:
+			fatal("unknown");
+		// }
+		rc = SLURM_ERROR;
+	}
+
 		block_ptr->setName(bg_record->bg_block_id);
-		info("got past set name");
 		block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
-		block_ptr->addUser(bg_record->bg_block_id,
-				   bg_record->user_name);
+	try {
 		block_ptr->add("");
+		// block_ptr->addUser(bg_record->bg_block_id,
+		// 		   bg_record->user_name);
 		info("got past add");
 	} catch (...) {
 		fatal("Couldn't create block, failing.");
@@ -319,6 +330,8 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
+
+	info("booting block %s", bg_record->bg_block_id);
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	if (bridge_block_set_owner(
@@ -355,6 +368,8 @@ extern int bridge_block_free(bg_record_t *bg_record)
 	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
+	info("freeing block %s", bg_record->bg_block_id);
+
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	try {
 		Block::initiateFree(bg_record->bg_block_id);
@@ -377,6 +392,8 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
+	info("removing block %s", bg_record->bg_block_id);
+
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
 	try {
 		Block::remove(bg_record->bg_block_id);
@@ -397,12 +414,14 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
+	info("adding user %s to block %s", user_name, bg_record->bg_block_id);
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
         try {
 		Block::addUser(bg_record->bg_block_id, user_name);
 	} catch(...) {
-                error("Remove block request failed ... continuing.");
-		rc = SLURM_ERROR;
+		// FIXME: this should do something, but for now we won't
+//                error("Remove block request failed ... continuing.");
+//		rc = SLURM_ERROR;
 	}
 #endif
 	return rc;
@@ -417,12 +436,14 @@ extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
 	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
+	info("removing user %s from block %s", user_name, bg_record->bg_block_id);
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
         try {
 		Block::removeUser(bg_record->bg_block_id, user_name);
 	} catch(...) {
-                error("Remove block request failed ... continuing.");
-		rc = REMOVE_USER_ERR;
+ 		// FIXME: this should do something, but for now we won't
+               // error("Remove block request failed ... continuing.");
+	       // 	rc = REMOVE_USER_ERR;
 	}
 #endif
 	return rc;
