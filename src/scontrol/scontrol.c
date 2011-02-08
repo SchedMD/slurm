@@ -1377,7 +1377,8 @@ _update_bluegene_block (int argc, char *argv[])
 					 argv[i]);
 				fprintf (stderr,
 					 "Acceptable State values "
-					 "are FREE, ERROR, RECREATE, REMOVE\n");
+					 "are ERROR, FREE, RECREATE, "
+					 "REMOVE, RESUME\n");
 				return 0;
 			}
 			update_cnt++;
