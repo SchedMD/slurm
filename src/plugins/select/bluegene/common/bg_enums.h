@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  bg_boot_time.h - Block boot time parameters for use by slurm_prolog
- *	and slurmctld
+ *  bg_enums.h - hearder file containing enums for the Blue Gene/Q plugin.
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
+ *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -36,8 +36,54 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BG_BOOT_TIME_H_
-#define _BG_BOOT_TIME_H_
+#ifndef _BG_ENUMS_H_
+#define _BG_ENUMS_H_
+
+typedef enum bg_layout_type {
+	LAYOUT_STATIC,  /* no overlaps, except for full system block
+			   blocks never change */
+	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in
+			   bluegene.conf file */
+	LAYOUT_DYNAMIC	/* slurm will make all blocks */
+} bg_layout_t;
+
+typedef enum {
+	BG_BLOCK_NAV = 0,   // Block state is undefined
+	BG_BLOCK_FREE,      // Block is free
+	BG_BLOCK_BOOTING,   // Block is booting
+	BG_BLOCK_INITED,    // Block is initialized
+	BG_BLOCK_ALLOCATED, // Block is allocated
+	BG_BLOCK_TERM,      // Block is terminating
+	BG_BLOCK_ERROR,     // Block is in error
+} bgq_block_status_t;
+
+typedef enum {
+        BG_JOB_SETUP = 0,   //!< Job is setting up.
+        BG_JOB_LOADING,     //!< Job is loading.
+        BG_JOB_STARTING,    //!< Job is starting.
+        BG_JOB_RUNNING,     //!< Job is running.
+        BG_JOB_CLEANUP,     //!< Job is ending.
+        BG_JOB_TERMINATED,  //!< Job is terminated.
+        BG_JOB_ERROR        //!< Job is in error status.
+} bgq_job_status_t;
+
+#define BG_SWITCH_NONE         0x0000
+#define BG_SWITCH_OUT          0x0001
+#define BG_SWITCH_IN           0x0002
+#define BG_SWITCH_OUT_PASS     0x0004
+#define BG_SWITCH_IN_PASS      0x0008
+#define BG_SWITCH_WRAPPED      0x0003 /* just wrap used */
+#define BG_SWITCH_PASS_FLAG    0x0010 /* flag for marking a midplane
+				       * with a passthough used */
+#define BG_SWITCH_PASS_USED    0x000C /* passthough ports used */
+#define BG_SWITCH_PASS         0x001C /* just passthough used */
+#define BG_SWITCH_WRAPPED_PASS 0x001F /* all ports are in use, but no torus */
+#define BG_SWITCH_TORUS        0x000F /* all ports are in use in a torus */
+#define BG_SWITCH_START        0x0200 /* modified from the start list */
+
+#define switch_overlap(__switch_a, __switch_b) \
+	((__switch_a != BG_SWITCH_NONE) && (__switch_b != BG_SWITCH_NONE)) \
+	&& !(__switch_a & __switch_b)
 
 /*
  * Total time to boot a bglblock should not exceed
@@ -52,4 +98,4 @@
 #define BG_MIN_BLOCK_BOOT  300		/* time in seconds */
 #define BG_INCR_BLOCK_BOOT 20		/* time in seconds per BP */
 
-#endif /* _BG_BOOT_TIME_H_ */
+#endif /* _BG_ENUMS_H_ */

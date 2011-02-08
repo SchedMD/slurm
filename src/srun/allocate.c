@@ -64,7 +64,7 @@
 
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
-#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
+#include "src/plugins/select/bluegene/common/bg_enums.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 #endif
 

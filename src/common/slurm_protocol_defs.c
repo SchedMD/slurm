@@ -61,7 +61,7 @@
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
-#include "src/plugins/select/bgq/bg_enums.h"
+#include "src/plugins/select/bluegene/common/bg_enums.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h

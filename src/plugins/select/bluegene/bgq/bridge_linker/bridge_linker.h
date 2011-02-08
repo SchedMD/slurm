@@ -1,8 +1,6 @@
 /*****************************************************************************\
- *  bg_list_functions.c - header for dealing with the lists that
- *                        contain bg_records.
+ *  bridge_linker.h
  *
- *  $Id: bg_list_functions.c 12954 2008-01-04 20:37:49Z da $
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -38,9 +36,27 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BRIDGE_BG_LIST_FUNCTIONS_H_
-#define _BRIDGE_BG_LIST_FUNCTIONS_H_
+#ifndef _BRIDGE_LINKER_H_
+#define _BRIDGE_LINKER_H_
 
+/* This must be included first for AIX systems */
+#include "src/common/macros.h"
+
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include <dlfcn.h>
+
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif				/* WITH_PTHREADS */
+
+#include "src/common/node_select.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"
@@ -49,16 +65,54 @@
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "../bg_structs.h"
+#include "bg_list_functions.h"
 
-/* see if the exact record already exists in a list */
-extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
-extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record);
-extern bg_record_t *find_bg_record_in_list(List my_list,
-					   const char *bg_block_id);
-extern int remove_from_bg_list(List my_list, bg_record_t *bg_record);
-extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
-						     bg_record_t *bg_record);
-extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
+/* Global variables */
+extern bg_config_t *bg_conf;
+extern bg_lists_t *bg_lists;
+extern time_t last_bg_update;
+extern bool agent_fini;
+extern pthread_mutex_t block_state_mutex;
+extern pthread_mutex_t request_list_mutex;
+extern int blocks_are_created;
+extern int num_unused_cpus;
 
-#endif
+extern int bridge_init(char *properties_file);
+extern int bridge_fini();
+
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern const char *bridge_err_str(int inx);
+
+extern int bridge_get_size(int *size);
+extern int bridge_setup_system();
+
+extern int bridge_block_create(bg_record_t *bg_record);
+
+/*
+ * Boot a block. Block state expected to be FREE upon entry.
+ * NOTE: This function does not wait for the boot to complete.
+ * the slurm prolog script needs to perform the waiting.
+ * NOTE: block_state_mutex needs to be locked before entering.
+ */
+extern int bridge_block_boot(bg_record_t *bg_record);
+extern int bridge_block_free(bg_record_t *bg_record);
+extern int bridge_block_remove(bg_record_t *bg_record);
+
+extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name);
+extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name);
+extern int bridge_block_remove_all_users(bg_record_t *bg_record,
+					 char *user_name);
+extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name);
+
+extern int bridge_block_get_and_set_mps(bg_record_t *bg_record);
+
+/* don't send the bg_record since we would need to lock things up and
+ * this function could take a bit.
+ */
+extern int bridge_block_wait_for_jobs(char *bg_block_id);
+
+#endif /* _BRIDGE_LINKER_H_ */

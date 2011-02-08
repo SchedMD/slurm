@@ -74,7 +74,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
+#include "src/plugins/select/bluegene/common/bg_enums.h"
 
 #define _DEBUG		0
 #define MAX_RETRIES	10

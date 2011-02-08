@@ -49,7 +49,6 @@
 #include "src/sinfo/print.h"
 
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
-#include "src/plugins/select/bluegene/plugin/bluegene.h"
 
 /********************
  * Global Variables *

@@ -40,7 +40,7 @@
 #ifndef _BLUEGENE_H_
 #define _BLUEGENE_H_
 
-#include "bg_structs.h"
+#include "../common/bg_structs.h"
 #include "bg_record_functions.h"
 #include "block_allocator/block_allocator.h"
 

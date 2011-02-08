@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Various bug fixes for Cray systems.
  -- Fix bug that when setting a compute node to idle state, it was failing to
     set the systems up_node_bitmap.
+ -- BLUEGENE - code reorder
 
 * Changes in SLURM 2.3.0.pre2
 =============================
