@@ -9,6 +9,8 @@ noinst_LTLIBRARIES = libalps.la
 libalps_la_SOURCES =		\
 	../basil_alps.h		\
 	alps_emulate.c		\
+	hilbert.c		\
+	hilbert.h		\
 	nodespec.c
 libalps_la_CFLAGS  = $(MYSQL_CFLAGS)
 libalps_la_LIBADD  = $(MYSQL_LIBS) -lexpat

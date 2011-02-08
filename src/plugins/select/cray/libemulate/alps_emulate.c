@@ -50,6 +50,7 @@
 #include "src/common/xmalloc.h"
 #include "../basil_alps.h"
 #include "../parser_common.h"
+#include "hilbert.h"
 
 /* Global variables */
 const char *bv_names[BV_MAX];
@@ -81,9 +82,12 @@ static int my_node_inx = 0;
 
 static int hw_cabinet, hw_row, hw_cage, hw_slot, hw_cpu;
 static int coord[3], max_dim[3];
+static int *sys_coords = NULL;
+static coord_t *sys_hilbert;
 
 static int last_resv_id = 0;
 static uint32_t resv_jobid[MAX_RESV_CNT];
+
 
 /* Given a count of elements to distribute over a "dims" size space, 
  * compute the minimum number of elements in each dimension to accomodate
@@ -94,19 +98,65 @@ static uint32_t resv_jobid[MAX_RESV_CNT];
  * IN dims - -number of dimensions to use */
 static void _get_dims(int spur_cnt, int *coord, int dims)
 {
-	int count = 1, i;
+	int count = 1, i, j;
+	coord_t hilbert[3];
 
 	for (i = 0; i < dims; i++)
 		coord[i] = 1;
 
-	while (1) {
+	do {
 		for (i = 0; i < dims; i++) {
 			if (count >= spur_cnt)
-				return;
+				break;
 			count /= coord[i];
-			coord[i]++;
+			coord[i] *= 2;
 			count *= coord[i];
 		}
+	} while (count < spur_cnt);
+
+	/* Build table of possible coordinates */
+	sys_coords  = xmalloc(sizeof(int) * spur_cnt * dims);
+	/* We leave record zero at coordinate 000 */
+	for (i = 1; i < spur_cnt; i++) {
+		for (j = 0; j < dims; j++)
+			sys_coords[i*dims + j] = sys_coords[i*dims + j - dims];
+		for (j = 0; j < dims; j++) {
+			sys_coords[i*dims+j]++;
+			if (sys_coords[i*dims+j] < coord[j])
+				break;
+			sys_coords[i*dims+j] = 0;
+		}
+	}
+
+	/* For each coordinate, generate it's Hilbert number */
+	sys_hilbert = xmalloc(sizeof(coord_t) * node_record_count);
+	for (i = 0; i < spur_cnt; i++) {
+		for (j = 0; j < dims; j++)
+			hilbert[j] = sys_coords[i*dims + j];
+		AxestoTranspose(hilbert, 5, dims);
+		/* A variation on the below calculation would be required here
+		 * for other dimension counts */
+		sys_hilbert[i] =
+			((hilbert[0]>>4 & 1) << 14) +
+			((hilbert[1]>>4 & 1) << 13) +
+			((hilbert[2]>>4 & 1) << 12) +
+			((hilbert[0]>>3 & 1) << 11) +
+			((hilbert[1]>>3 & 1) << 10) +
+			((hilbert[2]>>3 & 1) <<  9) +
+			((hilbert[0]>>2 & 1) <<  8) +
+			((hilbert[1]>>2 & 1) <<  7) +
+			((hilbert[2]>>2 & 1) <<  6) +
+			((hilbert[0]>>1 & 1) <<  5) +
+			((hilbert[1]>>1 & 1) <<  4) +
+			((hilbert[2]>>1 & 1) <<  3) +
+			((hilbert[0]>>0 & 1) <<  2) +
+			((hilbert[1]>>0 & 1) <<  1) +
+			((hilbert[2]>>0 & 1) <<  0);
+#if 0
+		info("coord:%d:%d:%d hilbert:%d", sys_coords[i*dims],
+		     sys_coords[i*dims+1], sys_coords[i*dims+2],
+		     sys_hilbert[i]);
+#endif
 	}
 }
 
@@ -139,7 +189,7 @@ static void _init_hw_recs(void)
 
 	my_node_ptr = node_record_table_ptr;
 	my_node_inx = 0;
-	_get_dims(node_record_count/4, max_dim, 3);
+	_get_dims((node_record_count+3)/4, max_dim, 3);
 }
 
 /* Increment the hardware pointer records */
@@ -334,10 +384,10 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 #endif
 
 	inv = xmalloc(sizeof(struct basil_inventory));
-	inv->is_gemini = true;
-	inv->batch_avail =node_record_count;
-	inv->batch_total =node_record_count;
-	inv->nodes_total =node_record_count;
+	inv->is_gemini   = true;
+	inv->batch_avail = node_record_count;
+	inv->batch_total = node_record_count;
+	inv->nodes_total = node_record_count;
 	inv->f = xmalloc(sizeof(struct basil_full_inventory));
 	last_basil_node_ptr = &inv->f->node_head;
 	for (i = 0, node_ptr = node_record_table_ptr; i <node_record_count;
