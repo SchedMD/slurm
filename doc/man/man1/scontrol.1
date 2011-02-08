@@ -840,6 +840,8 @@ Possible values are "YES" and "NO".
 Set the maximum number of nodes which will be allocated to any single job
 in the partition. Specify a number, "INFINITE" or "UNLIMITED".  (On a
 Bluegene type system this represents a c\-node count.)
+Changing the \fIMaxNodes\fP of a partition has no effect upon jobs that
+have already begun execution.
 
 .TP
 \fIMaxTime\fP=<time>
@@ -850,11 +852,15 @@ hours:minutes:seconds, days\-hours, days\-hours:minutes or
 days\-hours:minutes:seconds.
 Time resolution is one minute and second values are rounded up to
 the next minute.
+Changing the \fIMaxTime\fP of a partition has no effect upon jobs that
+have already begun execution.
 
 .TP
 \fIMinNodes\fP=<count>
 Set the minimum number of nodes which will be allocated to any single job
 in the partition.   (On a Bluegene type system this represents a c\-node count.)
+Changing the \fIMinNodes\fP of a partition has no effect upon jobs that
+have already begun execution.
 
 .TP
 \fINodes\fP=<name>
@@ -862,6 +868,8 @@ Identify the node(s) to be associated with this partition. Multiple node names
 may be specified using simple node range expressions (e.g. "lx[10\-20]").
 Note that jobs may only be associated with one partition at any time.
 Specify a blank data value to remove all nodes from a partition: "Nodes=".
+Changing the \fINodes\fP in a partition has no effect upon jobs that
+have already begun execution.
 
 .TP
 \fIPartitionName\fP=<name>
