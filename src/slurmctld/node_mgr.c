@@ -2650,6 +2650,7 @@ void make_node_idle(struct node_record *node_ptr,
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
 			bit_set(idle_node_bitmap, inx);
+		bit_set(up_node_bitmap, inx);
 		node_ptr->last_idle = now;
 	}
 }
