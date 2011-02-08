@@ -7227,10 +7227,10 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			block_info->mp_inx = bitfmt2int(mp_inx_str);
 			xfree(mp_inx_str);
 		}
+
 		safe_unpack32(&count, buffer);
-
-		xassert(count <= HIGHEST_DIMENSIONS);
-
+		if (count > HIGHEST_DIMENSIONS)
+			goto unpack_error;
 		for (i=0; i<count; i++)
 			safe_unpack16(&block_info->conn_type[i], buffer);
 
@@ -7361,13 +7361,13 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 				 uint16_t protocol_version)
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	uint32_t cluster_dims = (uint32_t)slurmdb_setup_cluster_flags();
+	uint32_t cluster_dims = (uint32_t)slurmdb_setup_cluster_dims();
 	int dim, count = NO_VAL;
 	ListIterator itr;
 	block_job_info_t *job;
 
-	if(protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-		if(!block_info) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (!block_info) {
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
@@ -7404,7 +7404,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			packnull(buffer);
 
 		pack32(cluster_dims, buffer);
-		for (dim=0; dim<cluster_dims; dim++)
+		for (dim = 0; dim < cluster_dims; dim++)
 			pack16(block_info->conn_type[dim], buffer);
 
 		packstr(block_info->ionodes, buffer);
@@ -7442,10 +7442,10 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
-	} else if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		if(!block_info) {
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (!block_info) {
 			packnull(buffer);
-			if(cluster_flags & CLUSTER_FLAG_BGL)
+			if (cluster_flags & CLUSTER_FLAG_BGL)
 				packnull(buffer);
 			packnull(buffer);
 			pack16((uint16_t)NO_VAL, buffer);
