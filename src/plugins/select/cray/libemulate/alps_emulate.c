@@ -168,47 +168,16 @@ static void _incr_hw_recs(void)
 	my_node_inx++;
 }
 
-extern int ns_add_node(struct nodespec **head, uint32_t node_id)
-{
-	struct nodespec *my_node_spec;
-#if _DEBUG
-	info("ns_add_node: id:%u", node_id);
-#endif
-	my_node_spec = *head;
-
-	while (my_node_spec) {
-		if (my_node_spec->start == (node_id + 1)) {
-			my_node_spec->start = node_id;
-			return 0;
-		}
-		if (my_node_spec->end == (node_id - 1)) {
-			my_node_spec->start = node_id;
-			return 0;
-		}
-		my_node_spec = my_node_spec->next;
-	}
-
-	my_node_spec = xmalloc(sizeof(struct nodespec));
-	my_node_spec->start = node_id;
-	my_node_spec->end   = node_id;
-	my_node_spec->next = *head;
-	*head = my_node_spec;
-	return 0;
-}
-
-extern char *ns_to_string(const struct nodespec *head)
-{
-#if _DEBUG
-	info("ns_to_string: start:%u end:%u", head->start, head->end);
-#endif
-	return NULL;
-}
-
 extern void free_nodespec(struct nodespec *head)
 {
 #if _DEBUG
 	info("free_nodespec: start:%u end:%u", head->start, head->end);
 #endif
+
+	if (head) {
+		free_nodespec(head->next);
+		xfree(head);
+	}
 }
 
 /*
@@ -481,7 +450,7 @@ extern int basil_release(uint32_t rsvn_id)
 	usleep(5000);
 #endif
 
-	resv_jobid[rsvn_id] = 0;
+	resv_jobid[rsvn_id - 1] = 0;
 
 	return 0;
 }
