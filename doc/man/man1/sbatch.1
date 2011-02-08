@@ -538,8 +538,10 @@ will distribute those tasks to the nodes with tasks one and four on
 the first node, task two on the second node, and task three on the
 third node. 
 Note that when SelectType is select/cons_res the same number of CPUs
-may not be allocated on each node. Distribution will be round\-robin
-among all the nodes with CPUs yet to be allocated.
+may not be allocated on each node with the \-n (\-\-ntasks) option. 
+Distribution will be round\-robin among all the nodes with CPUs yet to 
+be assigned to tasks. If you want the same number of CPUs allocated on 
+all nodes, use the \-\-ntasks\-per\-node option.
 Cyclic distribution is the default behavior if the number
 of tasks is no larger than the number of allocated nodes.
 .TP
