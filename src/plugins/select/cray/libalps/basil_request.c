@@ -11,11 +11,7 @@
  * The location of the 'apbasil' stdin/stdout interface to ALPS
  * Has not changed between XT3 ... XT5 ... XE
  */
-#ifdef HAVE_CRAY_FILES
 static char *alps_client = "/usr/bin/apbasil";
-#else
-static char *alps_client = NULL;
-#endif
 
 static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 {

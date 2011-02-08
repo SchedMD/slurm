@@ -66,8 +66,8 @@
 /* Define to 1 for Cray XT/XE systems */
 #undef HAVE_CRAY
 
-/* Define to 1 for native Cray XT/XE system */
-#undef HAVE_CRAY_FILES
+/* Define to 1 for emulating a Cray XT/XE system */
+#undef HAVE_CRAY_EMULATION
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H

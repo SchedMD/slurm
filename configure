@@ -19655,7 +19655,10 @@ fi
     ac_have_cray="yes"
     { $as_echo "$as_me:${as_lineno-$LINENO}: Running in Cray emulation mode" >&5
 $as_echo "$as_me: Running in Cray emulation mode" >&6;}
-  else
+
+$as_echo "#define HAVE_CRAY_EMULATION 1" >>confdefs.h
+
+   else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
@@ -19664,9 +19667,6 @@ $as_echo "$as_me: Running in Cray emulation mode" >&6;}
 $as_echo_n "checking whether this is a native Cray XT or XE system... " >&6; }
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
       ac_have_cray="yes"
-
-$as_echo "#define HAVE_CRAY_FILES 1" >>confdefs.h
-
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_cray" >&5
 $as_echo "$ac_have_cray" >&6; }

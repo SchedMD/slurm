@@ -2805,7 +2805,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->slurm_user_id = my_uid;
 		}
 	}
-#ifdef HAVE_CRAY_FILES
+#if defined HAVE_CRAY && !defined HAVE_CRAY_EMULATION
 	/*
 	 * This requirement derives from Cray ALPS:
 	 * - ALPS reservations can only be created by the job owner or root

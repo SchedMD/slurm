@@ -31,7 +31,8 @@ AC_DEFUN([X_AC_CRAY],
   if test "$ac_have_cray_emulation" = "yes"; then
     ac_have_cray="yes"
     AC_MSG_NOTICE([Running in Cray emulation mode])
-  else
+    AC_DEFINE(HAVE_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system])
+   else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
@@ -39,7 +40,6 @@ AC_DEFUN([X_AC_CRAY],
     AC_MSG_CHECKING([whether this is a native Cray XT or XE system])
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
       ac_have_cray="yes"
-      AC_DEFINE(HAVE_CRAY_FILES, 1, [Define to 1 for native Cray XT/XE system])
     fi
     AC_MSG_RESULT([$ac_have_cray])
   fi
