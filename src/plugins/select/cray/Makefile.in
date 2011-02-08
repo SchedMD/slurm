@@ -109,7 +109,8 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@	libalps/libalps.la
 @HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@select_cray_la_DEPENDENCIES = libemulate/libalps.la
 am__select_cray_la_SOURCES_DIST = select_cray.c basil_interface.h \
-	other_select.c other_select.h basil_interface.c
+	other_select.c other_select.h parser_common.h \
+	basil_interface.c
 @HAVE_CRAY_TRUE@am__objects_1 = select_cray_la-basil_interface.lo
 am_select_cray_la_OBJECTS = select_cray_la-select_cray.lo \
 	select_cray_la-other_select.lo $(am__objects_1)
@@ -373,7 +374,7 @@ pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
 select_cray_la_SOURCES = select_cray.c basil_interface.h \
-	other_select.c other_select.h $(am__append_1)
+	other_select.c other_select.h parser_common.h $(am__append_1)
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @HAVE_CRAY_TRUE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
 @HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@SUBDIRS = libalps
