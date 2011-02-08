@@ -49,7 +49,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
 #include "../basil_alps.h"
-//#include "../parser_common.h"
+#include "../parser_common.h"
 
 /* Global variables */
 const char *bv_names[BV_MAX];

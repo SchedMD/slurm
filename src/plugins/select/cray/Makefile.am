@@ -9,8 +9,12 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I.
 pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
-select_cray_la_SOURCES = select_cray.c basil_interface.h	\
-			 other_select.c other_select.h
+select_cray_la_SOURCES = 	\
+	select_cray.c		\
+	basil_interface.h	\
+	other_select.c 		\
+	other_select.h		\
+	parser_common.h
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_CRAY
