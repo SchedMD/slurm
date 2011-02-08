@@ -61,6 +61,7 @@
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/plugins/select/bgq/bg_enums.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -1626,7 +1627,27 @@ extern char *bg_block_state_string(uint16_t state)
 	}
 #endif
 
-	switch ((rm_partition_state_t)state) {
+#if defined HAVE_BGQ && HAVE_BG_FILES
+/* temp switch before the total switch to get things going This will
+ * not work cross-cluster */
+	switch (state) {
+	case BG_BLOCK_BOOTING:
+		return "CONFIG";
+	case BG_BLOCK_TERM:
+		return "DEALLOC";
+	case BG_BLOCK_ERROR:
+		return "ERROR";
+	case BG_BLOCK_FREE:
+		return "FREE";
+	case BG_BLOCK_NAV:
+		return "NAV";
+	case BG_BLOCK_INITED:
+		return "READY";
+	case BG_BLOCK_ALLOCATED:
+		return "ALLOCATED";
+	}
+#else
+	switch (state) {
 #ifdef HAVE_BGL
 	case RM_PARTITION_BUSY:
 		return "BUSY";
@@ -1647,7 +1668,7 @@ extern char *bg_block_state_string(uint16_t state)
 	case RM_PARTITION_READY:
 		return "READY";
 	}
-
+#endif
 	snprintf(tmp, sizeof(tmp), "%d", state);
 	return tmp;
 }
