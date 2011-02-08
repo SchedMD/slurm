@@ -1382,7 +1382,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int avail_cpus = num_unused_cpus;
 	int dim = 0;
 
-	conn_type[A] = (uint16_t)NO_VAL;
+	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+		conn_type[dim] = (uint16_t)NO_VAL;
 	if (preemptee_candidates && preemptee_job_list
 	    && list_count(preemptee_candidates))
 		local_mode |= SELECT_MODE_PREEMPT_FLAG;
@@ -1399,14 +1400,23 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if (conn_type[A] == SELECT_NAV) {
+		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+			info("type %d is %d", dim, conn_type[dim]);
 		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
 			conn_type[A] = SELECT_SMALL;
 		else if (min_nodes > 1) {
-			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++) {
 				conn_type[dim] = SELECT_TORUS;
+				info("setting dim %d to %d", dim, conn_type[dim]);
+			}
 		} else if (job_ptr->details->min_cpus < bg_conf->cpus_per_mp)
 			conn_type[A] = SELECT_SMALL;
-
+		else {
+			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++) {
+				conn_type[dim] = SELECT_NAV;
+				info("now type %d is %d", dim, conn_type[dim]);
+			}
+		}
 		set_select_jobinfo(job_ptr->select_jobinfo->data,
 				   SELECT_JOBDATA_CONN_TYPE,
 				   &conn_type);

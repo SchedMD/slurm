@@ -268,21 +268,26 @@ extern int bridge_block_create(bg_record_t *bg_record)
         for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 		switch (bg_record->conn_type[dim]) {
 		case SELECT_MESH:
+			info("dim conn type is mesh %d", bg_record->conn_type[dim]);
 			conn_type[dim] = Block::Connectivity::Mesh;
 			break;
 		case SELECT_TORUS:
 		default:
+			info("dim conn type is torus %d", bg_record->conn_type[dim]);
 			conn_type[dim] = Block::Connectivity::Torus;
 			break;
 		}
 	}
 	try {
 		block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
+		info("got past create");
 		block_ptr->setName(bg_record->bg_block_id);
+		info("got past set name");
 		block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
 		block_ptr->addUser(bg_record->bg_block_id,
 				   bg_record->user_name);
 		block_ptr->add("");
+		info("got past add");
 	} catch (...) {
 		fatal("Couldn't create block, failing.");
 		rc = SLURM_ERROR;

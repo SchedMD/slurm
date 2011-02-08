@@ -63,8 +63,8 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 		jobinfo->geometry[i] = (uint16_t) NO_VAL;
+		jobinfo->conn_type[i] = (uint16_t) NO_VAL;
 	}
-	jobinfo->conn_type[0] = (uint16_t) NO_VAL;
 	jobinfo->reboot = (uint16_t) NO_VAL;
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;
