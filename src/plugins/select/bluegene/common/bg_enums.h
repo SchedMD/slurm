@@ -55,7 +55,7 @@ typedef enum {
 	BG_BLOCK_ALLOCATED, // Block is allocated
 	BG_BLOCK_TERM,      // Block is terminating
 	BG_BLOCK_ERROR,     // Block is in error
-} bgq_block_status_t;
+} bg_block_status_t;
 
 typedef enum {
         BG_JOB_SETUP = 0,   //!< Job is setting up.
@@ -65,7 +65,7 @@ typedef enum {
         BG_JOB_CLEANUP,     //!< Job is ending.
         BG_JOB_TERMINATED,  //!< Job is terminated.
         BG_JOB_ERROR        //!< Job is in error status.
-} bgq_job_status_t;
+} bg_job_status_t;
 
 #define BG_SWITCH_NONE         0x0000
 #define BG_SWITCH_OUT          0x0001
