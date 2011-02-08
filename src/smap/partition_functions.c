@@ -419,14 +419,18 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 		    && (block_ptr->nodes[j+4] == 'x'
 			|| block_ptr->nodes[j+4] == '-')) {
 			j++;
-			number = strtoul(block_ptr->nodes + j, &p,
-					 params.cluster_base);
+
+			number = xstrntol(block_ptr->nodes + j, &p,
+					  params.cluster_dims,
+					  params.cluster_base);
+
 			hostlist_parse_int_to_array(
 				number, start, params.cluster_dims,
 				params.cluster_base);
 			j += 4;
-			number = strtoul(block_ptr->nodes + j, &p,
-					 params.cluster_base);
+			number = xstrntol(block_ptr->nodes + j, &p,
+					  params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, end, params.cluster_dims,
 				params.cluster_base);
@@ -446,8 +450,9 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			  || (block_ptr->nodes[j] >= 'A'
 			      && block_ptr->nodes[j] <= 'Z')) {
 
-			number = strtoul(block_ptr->nodes + j, &p,
-					 params.cluster_base);
+			number = xstrntol(block_ptr->nodes + j, &p,
+					  params.cluster_dims,
+					  params.cluster_base);
 			hostlist_parse_int_to_array(
 				number, start, params.cluster_dims,
 				params.cluster_base);

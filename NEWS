@@ -4,7 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.2
 ========================
  -- Correct logic to set correct job hold state (admin or user) when setting
-    the job's priority using scontrol's "update jobid=..." rather than its 
+    the job's priority using scontrol's "update jobid=..." rather than its
     "hold" or "holdu" commands.
  -- Modify squeue to report unset --mincores, --minthreads or --extra-node-info
     values as "*" rather than 65534. Patch from Rod Schulz, BULL.
@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
     not running the job anyway.
  -- In slurmctld, properly set the up_node_bitmap when setting it's state to
     IDLE (in case the previous node state was DOWN).
+ -- Fix smap to process block idplane names correctly when on a bluegene system.
 
 * Changes in SLURM 2.2.1
 ========================
