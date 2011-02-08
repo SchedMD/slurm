@@ -569,13 +569,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 		snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", part_ptr->total_nodes);
 
 	if(!params.commandline) {
-		uint16_t root_only = 0;
-		if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
-			root_only = 1;
 		mvwprintw(text_win,
 			  main_ycord,
 			  main_xcord, "%c",
-			  root_only);
+			  part_ptr->flags);
 		main_xcord += 4;
 
 		if (part_ptr->name) {

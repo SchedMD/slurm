@@ -23,7 +23,10 @@ documents those changes that are of interest to users and admins.
     not running the job anyway.
  -- In slurmctld, properly set the up_node_bitmap when setting it's state to
     IDLE (in case the previous node state was DOWN).
- -- Fix smap to process block idplane names correctly when on a bluegene system.
+ -- Fix smap to process block midplane names correctly when on a bluegene
+    system.
+ -- Fix smap to once again print out the Letter 'ID' for each line of a block/
+    partition view.
 
 * Changes in SLURM 2.2.1
 ========================
