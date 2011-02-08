@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     job is in a pending state, then send the request directly to the slurmctld
     daemon and do not attempt to send the request to slurmd daemons, which are
     not running the job anyway.
+ -- In slurmctld, properly set the up_node_bitmap when setting it's state to
+    IDLE (in case the previous node state was DOWN).
 
 * Changes in SLURM 2.2.1
 ========================
