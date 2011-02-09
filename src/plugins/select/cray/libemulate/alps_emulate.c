@@ -82,6 +82,8 @@ static int my_node_inx = 0;
 
 static int hw_cabinet, hw_row, hw_cage, hw_slot, hw_cpu;
 static int coord[3], max_dim[3];
+
+static int sys_spur_cnt = 0, last_spur_inx = 0;
 static int *sys_coords = NULL;
 static coord_t *sys_hilbert;
 
@@ -92,7 +94,7 @@ static uint32_t resv_jobid[MAX_RESV_CNT];
 /* Given a count of elements to distribute over a "dims" size space, 
  * compute the minimum number of elements in each dimension to accomodate
  * them assuming the number of elements in each dimension is similar (i.e.
- * a cube rather than a long narrow box shape).
+ * a cube rather than a long narrow box sys_spur_cntshape).
  * IN spur_cnt - number of nodes at each coordinate
  * IN/OUT coord - maximum coordinates in each dimension
  * IN dims - -number of dimensions to use */
@@ -101,6 +103,8 @@ static void _get_dims(int spur_cnt, int *coord, int dims)
 	int count = 1, i, j;
 	coord_t hilbert[3];
 
+	xfree(sys_coords);
+	xfree(sys_hilbert);
 	for (i = 0; i < dims; i++)
 		coord[i] = 1;
 
@@ -115,6 +119,7 @@ static void _get_dims(int spur_cnt, int *coord, int dims)
 	} while (count < spur_cnt);
 
 	/* Build table of possible coordinates */
+	sys_spur_cnt = spur_cnt;
 	sys_coords  = xmalloc(sizeof(int) * spur_cnt * dims);
 	/* We leave record zero at coordinate 000 */
 	for (i = 1; i < spur_cnt; i++) {
@@ -129,7 +134,7 @@ static void _get_dims(int spur_cnt, int *coord, int dims)
 	}
 
 	/* For each coordinate, generate it's Hilbert number */
-	sys_hilbert = xmalloc(sizeof(coord_t) * node_record_count);
+	sys_hilbert = xmalloc(sizeof(coord_t) * spur_cnt);
 	for (i = 0; i < spur_cnt; i++) {
 		for (j = 0; j < dims; j++)
 			hilbert[j] = sys_coords[i*dims + j];
@@ -152,31 +157,55 @@ static void _get_dims(int spur_cnt, int *coord, int dims)
 			((hilbert[0]>>0 & 1) <<  2) +
 			((hilbert[1]>>0 & 1) <<  1) +
 			((hilbert[2]>>0 & 1) <<  0);
-#if 0
+	}
+
+	/* Sort the entries by increasing hilbert number */
+	for (i = 0; i < spur_cnt; i++) {
+		int tmp_int, low_inx = i;
+		for (j = i+1; j < spur_cnt; j++) {
+			if (sys_hilbert[j] < sys_hilbert[low_inx])
+				low_inx = j;
+		}
+		if (low_inx == i)
+			continue;
+		tmp_int = sys_hilbert[i];
+		sys_hilbert[i] = sys_hilbert[low_inx];
+		sys_hilbert[low_inx] = tmp_int;
+		for (j = 0; j < dims; j++) {
+			tmp_int = sys_coords[i*dims + j];
+			sys_coords[i*dims + j] = sys_coords[low_inx*dims + j];
+			sys_coords[low_inx*dims + j] = tmp_int;
+		}
+	}
+
+#if _DEBUG
+	for (i = 0; i < spur_cnt; i++) {
 		info("coord:%d:%d:%d hilbert:%d", sys_coords[i*dims],
 		     sys_coords[i*dims+1], sys_coords[i*dims+2],
 		     sys_hilbert[i]);
-#endif
 	}
+#endif
 }
 
 /* increment coordinates for a node */
-static void _incr_dims(int *coord, int *max_dim, int dims)
+static void _incr_dims(int *coord, int dims)
 {
-	int i;
+	int j;
 
-	for (i = 0; i < dims; i++) {
-		coord[i]++;
-		if (coord[i] < max_dim[i])
-			return;
-		coord[i] = 0;
+	last_spur_inx++;
+	if (last_spur_inx >= sys_spur_cnt) {
+		error("alps_emualte: spur count exceeded");
+		last_spur_inx = 0;
 	}
+
+	for (j = 0; j < dims; j++)
+		coord[j] = sys_coords[last_spur_inx*dims + j];
 }
 
 /* Initialize the hardware pointer records */
-static void _init_hw_recs(void)
+static void _init_hw_recs(int dims)
 {
-	int i;
+	int j;
 
 	hw_cabinet = 0;
 	hw_row = 0;
@@ -184,12 +213,13 @@ static void _init_hw_recs(void)
 	hw_slot = 0;
 	hw_cpu = 0;
 
-	for (i = 0; i < 3; i++)
-		coord[i] = 0;
-
 	my_node_ptr = node_record_table_ptr;
 	my_node_inx = 0;
 	_get_dims((node_record_count+3)/4, max_dim, 3);
+
+	last_spur_inx = 0;
+	for (j = 0; j < dims; j++)
+		coord[j] = sys_coords[last_spur_inx*dims + j];
 }
 
 /* Increment the hardware pointer records */
@@ -199,7 +229,7 @@ static void _incr_hw_recs(void)
 	if (hw_cpu > 3) {
 		hw_cpu = 0;
 		hw_slot++;
-		_incr_dims(coord, max_dim, 3);
+		_incr_dims(coord, 3);
 	}
 	if (hw_slot > 7) {
 		hw_slot = 0;
@@ -260,7 +290,7 @@ extern MYSQL_STMT *prepare_stmt(MYSQL *handle, const char *query,
 #endif
 	if (handle != mysql_handle)
 		error("prepare_stmt: bad MySQL handle");
-	_init_hw_recs();
+	_init_hw_recs(3);
 
 	return (MYSQL_STMT *) query;
 }
@@ -327,6 +357,10 @@ my_bool stmt_close(MYSQL_STMT *stmt)
 #if _DEBUG
 	info("stmt_close");
 #endif
+	sys_spur_cnt = 0;
+	xfree(sys_coords);
+	xfree(sys_hilbert);
+
 	return (my_bool) 0;
 }
 
