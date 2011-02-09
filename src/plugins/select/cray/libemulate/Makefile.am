@@ -10,8 +10,7 @@ libalps_la_SOURCES =		\
 	../basil_alps.h		\
 	alps_emulate.c		\
 	hilbert.c		\
-	hilbert.h		\
-	nodespec.c
+	hilbert.h
 libalps_la_CFLAGS  = $(MYSQL_CFLAGS)
 libalps_la_LIBADD  = $(MYSQL_LIBS) -lexpat
 libalps_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic

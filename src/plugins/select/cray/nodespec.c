@@ -7,7 +7,7 @@
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
  * Licensed under the GPLv2.
  */
-#include "../basil_alps.h"
+#include "basil_alps.h"
 #define CRAY_MAX_DIGITS	5	/* nid%05d format */
 
 /* internal constructor */

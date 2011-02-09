@@ -85,7 +85,7 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libalps_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libalps_la_OBJECTS = libalps_la-alps_emulate.lo \
-	libalps_la-hilbert.lo libalps_la-nodespec.lo
+	libalps_la-hilbert.lo
 libalps_la_OBJECTS = $(am_libalps_la_OBJECTS)
 libalps_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libalps_la_CFLAGS) \
@@ -205,8 +205,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
-PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
-PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -308,8 +306,7 @@ libalps_la_SOURCES = \
 	../basil_alps.h		\
 	alps_emulate.c		\
 	hilbert.c		\
-	hilbert.h		\
-	nodespec.c
+	hilbert.h
 
 libalps_la_CFLAGS = $(MYSQL_CFLAGS)
 libalps_la_LIBADD = $(MYSQL_LIBS) -lexpat
@@ -368,7 +365,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-alps_emulate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-hilbert.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-nodespec.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -404,13 +400,6 @@ libalps_la-hilbert.lo: hilbert.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hilbert.c' object='libalps_la-hilbert.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-hilbert.lo `test -f 'hilbert.c' || echo '$(srcdir)/'`hilbert.c
-
-libalps_la-nodespec.lo: nodespec.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-nodespec.lo -MD -MP -MF $(DEPDIR)/libalps_la-nodespec.Tpo -c -o libalps_la-nodespec.lo `test -f 'nodespec.c' || echo '$(srcdir)/'`nodespec.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-nodespec.Tpo $(DEPDIR)/libalps_la-nodespec.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nodespec.c' object='libalps_la-nodespec.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-nodespec.lo `test -f 'nodespec.c' || echo '$(srcdir)/'`nodespec.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

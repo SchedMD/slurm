@@ -109,11 +109,12 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@	libalps/libalps.la
 @HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@select_cray_la_DEPENDENCIES = libemulate/libalps.la
 am__select_cray_la_SOURCES_DIST = select_cray.c basil_interface.h \
-	other_select.c other_select.h parser_common.h \
+	nodespec.c other_select.c other_select.h parser_common.h \
 	basil_interface.c
 @HAVE_CRAY_TRUE@am__objects_1 = select_cray_la-basil_interface.lo
 am_select_cray_la_OBJECTS = select_cray_la-select_cray.lo \
-	select_cray_la-other_select.lo $(am__objects_1)
+	select_cray_la-nodespec.lo select_cray_la-other_select.lo \
+	$(am__objects_1)
 select_cray_la_OBJECTS = $(am_select_cray_la_OBJECTS)
 select_cray_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(select_cray_la_CFLAGS) \
@@ -271,8 +272,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
-PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
-PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -373,7 +372,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I.
 pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
-select_cray_la_SOURCES = select_cray.c basil_interface.h \
+select_cray_la_SOURCES = select_cray.c basil_interface.h nodespec.c \
 	other_select.c other_select.h parser_common.h $(am__append_1)
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @HAVE_CRAY_TRUE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
@@ -456,6 +455,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-basil_interface.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-nodespec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-other_select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-select_cray.Plo@am__quote@
 
@@ -486,6 +486,13 @@ select_cray_la-select_cray.lo: select_cray.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='select_cray.c' object='select_cray_la-select_cray.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-select_cray.lo `test -f 'select_cray.c' || echo '$(srcdir)/'`select_cray.c
+
+select_cray_la-nodespec.lo: nodespec.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-nodespec.lo -MD -MP -MF $(DEPDIR)/select_cray_la-nodespec.Tpo -c -o select_cray_la-nodespec.lo `test -f 'nodespec.c' || echo '$(srcdir)/'`nodespec.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/select_cray_la-nodespec.Tpo $(DEPDIR)/select_cray_la-nodespec.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nodespec.c' object='select_cray_la-nodespec.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-nodespec.lo `test -f 'nodespec.c' || echo '$(srcdir)/'`nodespec.c
 
 select_cray_la-other_select.lo: other_select.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-other_select.lo -MD -MP -MF $(DEPDIR)/select_cray_la-other_select.Tpo -c -o select_cray_la-other_select.lo `test -f 'other_select.c' || echo '$(srcdir)/'`other_select.c

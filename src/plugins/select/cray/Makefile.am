@@ -12,6 +12,7 @@ pkglib_LTLIBRARIES = select_cray.la
 select_cray_la_SOURCES = 	\
 	select_cray.c		\
 	basil_interface.h	\
+	nodespec.c		\
 	other_select.c 		\
 	other_select.h		\
 	parser_common.h

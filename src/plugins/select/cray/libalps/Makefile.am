@@ -19,7 +19,6 @@ libalps_la_SOURCES =		\
 	do_reserve.c		\
 	do_release.c		\
 	do_confirm.c		\
-	nodespec.c		\
 	memory_handling.c	\
 	popen2.c		\
 	atoul.c
