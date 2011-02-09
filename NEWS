@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
  -- Fix smap to once again print out the Letter 'ID' for each line of a block/
     partition view.
  -- Corrected the NOTES section of the scancel man page
+ -- Fix for accounting_storage/mysql plugin to correctly query cluster based
+    transactions.
 
 * Changes in SLURM 2.2.1
 ========================

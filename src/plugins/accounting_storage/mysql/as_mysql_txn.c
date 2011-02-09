@@ -135,7 +135,6 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(assoc_extra, ")");
 		xstrcat(name_extra, ")");
 		use_cluster_list = txn_cond->cluster_list;
 	}
