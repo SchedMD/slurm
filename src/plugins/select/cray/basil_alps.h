@@ -29,7 +29,9 @@
 #include <assert.h>
 
 #include <expat.h>
-#include <mysql.h>
+#ifdef HAVE_CRAY
+#  include <mysql.h>
+#endif
 
 /*
  * Limits
@@ -490,6 +492,7 @@ extern int ns_add_node(struct nodespec **head, uint32_t node_id);
 extern char *ns_to_string(const struct nodespec *head);
 extern void free_nodespec(struct nodespec *head);
 
+#ifdef HAVE_CRAY
 /*
  *	Routines to interact with SDB database (uses prepared statements)
  */
@@ -521,6 +524,8 @@ void cray_close_sdb(MYSQL *handle);
 
 /** Find out interconnect chip: Gemini (XE) or SeaStar (XT) */
 extern int cray_is_gemini_system(MYSQL *handle);
+#endif  /* HAVE_CRAY */
+
 
 /*
  *	Basil XML-RPC API prototypes
