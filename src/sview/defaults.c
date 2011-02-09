@@ -184,6 +184,7 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		if ((temp_int <= 0) && (temp_int != INFINITE))
 			goto return_error;
 		sview_config->button_size = temp_int;
+		sview_config->gap_size = temp_int;
 		break;
 	case SORTID_DEFAULT_PAGE:
 		if (!strcasecmp(new_text, "job"))
@@ -514,6 +515,7 @@ static void _init_sview_conf()
 	default_sview_config.fi_popup_width = 800;
 	default_sview_config.fi_popup_height = 500;
 	default_sview_config.button_size = 10;
+	default_sview_config.gap_size = 10;
 	default_sview_config.refresh_delay = 5;
 	default_sview_config.grid_x_width = 0;
 	default_sview_config.grid_hori = 10;
@@ -599,7 +601,11 @@ extern int load_defaults(void)
 		error("something wrong with opening/reading conf file");
 
 	s_p_get_boolean(&default_sview_config.admin_mode, "AdminMode", hashtbl);
-	s_p_get_uint16(&default_sview_config.button_size,"ButtonSize", hashtbl);
+	if (s_p_get_uint16(&default_sview_config.button_size, "ButtonSize",
+			   hashtbl)) {
+		default_sview_config.gap_size =
+			default_sview_config.button_size;
+	}
 	if (s_p_get_string(&tmp_str, "DefaultPage", hashtbl)) {
 		if (slurm_strcasestr(tmp_str, "job"))
 			default_sview_config.default_page = JOB_PAGE;

@@ -723,6 +723,17 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		 * side of the table and then increment the coord_y.  We add
 		 * space between each tenth row. */
 		(*button_processor->coord_x)++;
+
+		if (button_processor->force_row_break) {
+			(*button_processor->coord_x) = 0;
+			(*button_processor->coord_y)++;
+			gtk_table_set_row_spacing(
+				button_processor->table,
+				(*button_processor->coord_y)-1,	
+				working_sview_config.gap_size);
+			return SLURM_SUCCESS;
+		}
+
 		if ((*button_processor->coord_x)
 		    == working_sview_config.grid_x_width) {
 			(*button_processor->coord_x) = 0;
@@ -731,16 +742,8 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			      % working_sview_config.grid_vert))
 				gtk_table_set_row_spacing(
 					button_processor->table,
-					(*button_processor->coord_y)-1, 5);
-		}
-
-		if (button_processor->force_row_break) {
-			(*button_processor->coord_x) = 0;
-			(*button_processor->coord_y)+= 2;
-			gtk_table_set_row_spacing(
-				button_processor->table,
-				(*button_processor->coord_y)-1,	5);
-			return SLURM_SUCCESS;
+					(*button_processor->coord_y)-1,
+					working_sview_config.gap_size);
 		}
 
 		if ((*button_processor->coord_y) == button_processor->table_y)
@@ -751,7 +754,8 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		      % working_sview_config.grid_hori))
 			gtk_table_set_col_spacing(
 				button_processor->table,
-				(*button_processor->coord_x)-1, 5);
+				(*button_processor->coord_x)-1,
+				working_sview_config.gap_size);
 	}
 	return SLURM_SUCCESS;
 }
@@ -1421,10 +1425,11 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 					 (grid_button->table_y+1),
 					 GTK_SHRINK, GTK_SHRINK,
 					 1, 1);
-			if (!grid_button->table_x)
+			if (!grid_button->table_x) {
 				gtk_table_set_row_spacing(table,
-							  grid_button->table_y,
-							  5);
+						grid_button->table_y,
+						working_sview_config.gap_size);
+			}
 		} else if (cluster_dims == 3) {
 			grid_button->table = table;
 			gtk_table_attach(table, grid_button->button,
@@ -1434,10 +1439,11 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 					 (grid_button->table_y+1),
 					 GTK_SHRINK, GTK_SHRINK,
 					 1, 1);
-			if (!grid_button->table_x)
+			if (!grid_button->table_x) {
 				gtk_table_set_row_spacing(table,
-							  grid_button->table_y,
-							  5);
+						grid_button->table_y,
+						working_sview_config.gap_size);
+			}
 		} else {
 			grid_button->table = table;
 			grid_button->table_x = coord_x;
@@ -1453,7 +1459,8 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 				coord_y++;
 				if (!(coord_y % working_sview_config.grid_vert))
 					gtk_table_set_row_spacing(
-						table, coord_y-1, 5);
+						table, coord_y-1,
+						working_sview_config.gap_size);
 			}
 
 			if (coord_y == button_processor.table_y)
