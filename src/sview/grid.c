@@ -765,14 +765,12 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 	int rc = SLURM_SUCCESS;
 	int inx = 0, ii = 0;
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
-
+#if TOPO_DEBUG
+	/* engage if want original display below switched */
+	ListIterator itr = list_iterator_create(node_list);
+	sview_node_info_t *sview_node_info_ptr = NULL;
+#endif
 	button_processor->inx = &inx;
-
-	/* engage if want original
-	   ListIterator itr = list_iterator_create(node_list);
-	   sview_node_info_t *sview_node_info_ptr = NULL;
-	   * display below switched
-	   */
 	for (ii=0; ii<g_topo_info_msg_ptr->record_count;
 	     ii++, sw_nodes_bitmaps_ptr++) {
 		int j = 0, first, last;
@@ -806,19 +804,19 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 		rc = _add_button_to_list(NULL, button_processor);
 	}
 
+#if TOPO_DEBUG
 	/* engage this if want original display below
-	 * switched grid
+	 * switched grid */
 	 button_processor->inx = &inx;
 	 while ((sview_node_info_ptr = list_next(itr))) {
-	 if ((rc = _add_button_to_list(
-	 sview_node_info_ptr->node_ptr,
-	 button_processor)) != SLURM_SUCCESS)
-	 break;
-	 inx++;
+		 if ((rc = _add_button_to_list(
+				sview_node_info_ptr->node_ptr,
+	 			button_processor)) != SLURM_SUCCESS)
+			 break;
+	 	inx++;
 	 }
 	 list_iterator_destroy(itr);
-
-	*/
+#endif
 
 	/* This is needed to get the correct width of the grid window.
 	 * If it is not given then we get a really narrow window. */
