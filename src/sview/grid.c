@@ -568,30 +568,32 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	static bool *node_exists = NULL;
 	static int node_exists_cnt = 1;
 	grid_button_t *grid_button = button_processor->grid_button;
-	int *dim_size, i, coord_x = 0, coord_y = 0, len = 0;
+	int *dim_size = NULL, i, coord_x = 0, coord_y = 0, len = 0;
 
-	dim_size = slurmdb_setup_cluster_dim_size();
-	if (dim_size == NULL) {
-		g_error("Could not read dim_size\n");
-		return SLURM_ERROR;
-	}
-	if ((dim_size[0] < 1) || (cluster_dims < 1)) {
-		g_error("Invalid dim_size or cluster_dims\n");
-		return SLURM_ERROR;
-	}
-
-	/* Translate a 3D or 4D space into a 2D space the the extent
-	 * possible. */
-	if (node_exists == NULL) {
-		for (i = 0; i < cluster_dims; i++)
-			node_exists_cnt *= dim_size[i];
-		node_exists = xmalloc(sizeof(bool) * node_exists_cnt);
-	}
-	if (node_ptr) {
-		len = strlen(node_ptr->name);
-		if (len < cluster_dims) {
-			g_error("bad node name %s\n", node_ptr->name);
+	if (cluster_dims > 1) {
+		dim_size = slurmdb_setup_cluster_dim_size();
+		if (dim_size == NULL) {
+			g_error("Could not read dim_size\n");
 			return SLURM_ERROR;
+		}
+		if ((dim_size[0] < 1) || (cluster_dims < 1)) {
+			g_error("Invalid dim_size or cluster_dims\n");
+			return SLURM_ERROR;
+		}
+
+		/* Translate a 3D or 4D space into a 2D space the the extent
+		 * possible. */
+		if (node_exists == NULL) {
+			for (i = 0; i < cluster_dims; i++)
+				node_exists_cnt *= dim_size[i];
+			node_exists = xmalloc(sizeof(bool) * node_exists_cnt);
+		}
+		if (node_ptr) {
+			len = strlen(node_ptr->name);
+			if (len < cluster_dims) {
+				g_error("bad node name %s\n", node_ptr->name);
+				return SLURM_ERROR;
+			}
 		}
 	}
 
@@ -672,11 +674,13 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	if (node_ptr == NULL)
 		return SLURM_SUCCESS;
 
-	(*button_processor->coord_x) = coord_x;
-	(*button_processor->coord_y) = coord_y;
+	if (cluster_dims > 1) {
+		(*button_processor->coord_x) = coord_x;
+		(*button_processor->coord_y) = coord_y;
 #if 0
-	g_print("%s %d:%d\n", node_ptr->name, coord_x, coord_y);
+		g_print("%s %d:%d\n", node_ptr->name, coord_x, coord_y);
 #endif
+	}
 
 	if (!grid_button) {
 		grid_button = xmalloc(sizeof(grid_button_t));
@@ -862,6 +866,8 @@ static int _grid_table_by_list(button_processor_t *button_processor,
 static int _init_button_processor(button_processor_t *button_processor,
 				  int node_count)
 {
+	int *dim_size = NULL;
+
 	if (node_count == 0) {
 		g_print("_init_button_processor: no nodes selected\n");
 		return SLURM_ERROR;
@@ -869,12 +875,14 @@ static int _init_button_processor(button_processor_t *button_processor,
 
 	memset(button_processor, 0, sizeof(button_processor_t));
 
-	if (cluster_dims == 4) {
-		int *dim_size = slurmdb_setup_cluster_dim_size();
+	if (cluster_dims > 1) {
+		dim_size = slurmdb_setup_cluster_dim_size();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
 		}
+	}
+	if (cluster_dims == 4) {
 		button_processor->default_y_offset = (dim_size[3] * dim_size[2])
 					+ (dim_size[2] - dim_size[3]);
 		working_sview_config.grid_x_width = (dim_size[1] + dim_size[3])
@@ -882,11 +890,6 @@ static int _init_button_processor(button_processor_t *button_processor,
 		button_processor->table_y = (dim_size[3] * dim_size[2])
 					    + dim_size[2];
 	} else if (cluster_dims == 3) {
-		int *dim_size = slurmdb_setup_cluster_dim_size();
-		if (dim_size == NULL) {
-			g_error("could not read dim_size\n");
-			return SLURM_ERROR;
-		}
 		button_processor->default_y_offset = (dim_size[2] * dim_size[1])
 			+ (dim_size[1] - dim_size[2]);
 		working_sview_config.grid_x_width = dim_size[0] + dim_size[2];
