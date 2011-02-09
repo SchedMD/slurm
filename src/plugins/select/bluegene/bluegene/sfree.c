@@ -102,7 +102,7 @@ static int _check_status()
 						    bg_block_id)) {
 						if (block_ptr->
 						    block_array[i].
-						    state == RM_PARTITION_FREE)
+						    state == BG_BLOCK_FREE)
 							list_delete_item(itr);
 						break;
 					}
@@ -156,9 +156,9 @@ int main(int argc, char *argv[])
 	itr = list_iterator_create(block_list);
 	while ((block_name = list_next(itr))) {
 		if (remove_blocks)
-			msg.state = RM_PARTITION_NAV;
+			msg.state = BG_BLOCK_NAV;
 		else
-			msg.state = RM_PARTITION_FREE;
+			msg.state = BG_BLOCK_FREE;
 		msg.bg_block_id = block_name;
 		rc = slurm_update_block(&msg);
 		if (rc != SLURM_SUCCESS)

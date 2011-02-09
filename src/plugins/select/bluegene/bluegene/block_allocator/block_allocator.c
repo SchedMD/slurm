@@ -121,8 +121,6 @@ typedef enum {
 
 /** internal helper functions */
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-/** */
-static void _mp_map_list_del(void *object);
 
 /** */
 static int _port_enum(int port);
@@ -1959,7 +1957,7 @@ extern char *bg_err_str(status_t inx)
 		return "Partition not found";
 	case JOB_NOT_FOUND:
 		return "Job not found";
-	case MP_NOT_FOUND:
+	case BP_NOT_FOUND:
 		return "Base partition not found";
 	case SWITCH_NOT_FOUND:
 		return "Switch not found";
@@ -2044,7 +2042,6 @@ extern int set_mp_map(void)
 
 		if ((rc = bridge_get_data(my_mp, RM_BPID, &mp_id))
 		    != STATUS_OK) {
-			xfree(mp_map);
 			error("bridge_get_data(RM_BPID): %d", rc);
 			continue;
 		}
@@ -2056,7 +2053,6 @@ extern int set_mp_map(void)
 
 		if ((rc = bridge_get_data(my_mp, RM_BPLoc, &mp_loc))
 		    != STATUS_OK) {
-			xfree(mp_map);
 			error("bridge_get_data(RM_BPLoc): %d", rc);
 			continue;
 		}
@@ -2066,17 +2062,16 @@ extern int set_mp_map(void)
 		    || mp_loc.Z > DIM_SIZE[Z]) {
 			error("This location %c%c%c is not possible "
 			      "in our system %c%c%c",
-			      %x%ccoords,
 			      alpha_num[mp_loc.X],
 			      alpha_num[mp_loc.Y],
 			      alpha_num[mp_loc.Z],
 			      alpha_num[DIM_SIZE[X]],
 			      alpha_num[DIM_SIZE[Y]],
 			      alpha_num[DIM_SIZE[Z]]);
-			return NULL;
+			return 0;
 		}
 
-		curr_mp = ba_system_ptr->grid[mp_loc.X][mp_loc.Y][mp_loc.Z];
+		curr_mp = &ba_system_ptr->grid[mp_loc.X][mp_loc.Y][mp_loc.Z];
 		curr_mp->loc = xstrdup(mp_id);
 
 		free(mp_id);
@@ -2095,6 +2090,7 @@ extern uint16_t *find_mp_loc(char* mp_id)
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	char *check = NULL;
 	int x, y, z;
+	ba_node_t *ba_mp = NULL;
 
 	if (!mp_map_list) {
 		if (set_mp_map() == -1)
@@ -2150,7 +2146,7 @@ cleanup:
 	xfree(check);
 
 	if (ba_mp)
-		return ba_mp->loc;
+		return ba_mp->coord;
 	else
 		return NULL;
 
@@ -2167,7 +2163,7 @@ extern char *find_mp_rack_mid(char* xyz)
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	ba_node_t *curr_mp;
 
-	if(!(curr_mp = str2ba_node(coords)))
+	if(!(curr_mp = str2ba_node(xyz)))
 		return NULL;
 
 	if (!mp_map_list) {
@@ -2412,7 +2408,7 @@ extern int load_block_wiring(char *bg_block_id)
  * before.  If you are looking to start clean it doesn't matter.
  */
 extern List get_and_set_block_wiring(char *bg_block_id,
-				     rm_partition_t *block_ptr)
+				     void *block_ptr)
 {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	int rc, i, j;
@@ -2690,15 +2686,6 @@ extern int validate_coord(uint16_t *coord)
 /********************* Local Functions *********************/
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-static void _mp_map_list_del(void *object)
-{
-	ba_mp_map_t *mp_map = (ba_mp_map_t *)object;
-
-	if (mp_map) {
-		xfree(mp_map->mp_id);
-		xfree(mp_map);
-	}
-}
 
 /* translation from the enum to the actual port number */
 static int _port_enum(int port)

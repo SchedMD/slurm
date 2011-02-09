@@ -60,7 +60,6 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
 #include "src/plugins/select/bluegene/common/bg_enums.h"
 
 /*
@@ -1607,68 +1606,28 @@ extern char* node_use_string(enum node_use_type node_use)
 extern char *bg_block_state_string(uint16_t state)
 {
 	static char tmp[16];
-	/* This is needs to happen cross cluster.  Since the enums
-	 * changed.  We don't handle BUSY or REBOOTING though, these
-	 * states are extremely rare so it isn't that big of a deal.
-	 */
-#ifdef HAVE_BGL
-	if(working_cluster_rec) {
-		if(!(working_cluster_rec->flags & CLUSTER_FLAG_BGL)) {
-			if(state == RM_PARTITION_BUSY)
-				state = RM_PARTITION_READY;
-		}
-	}
-#else
-	if(working_cluster_rec) {
-		if(working_cluster_rec->flags & CLUSTER_FLAG_BGL) {
-			if(state == RM_PARTITION_REBOOTING)
-				state = RM_PARTITION_READY;
-		}
-	}
-#endif
 
-#if defined HAVE_BGQ && HAVE_BG_FILES
-/* temp switch before the total switch to get things going This will
- * not work cross-cluster */
 	switch (state) {
-	case BG_BLOCK_BOOTING:
-		return "CONFIG";
-	case BG_BLOCK_TERM:
-		return "DEALLOC";
-	case BG_BLOCK_ERROR:
-		return "ERROR";
-	case BG_BLOCK_FREE:
-		return "FREE";
 	case BG_BLOCK_NAV:
 		return "NAV";
+	case BG_BLOCK_FREE:
+		return "Free";
+	case BG_BLOCK_BUSY:
+		return "Busy";
+	case BG_BLOCK_BOOTING:
+		return "Booting";
+	case BG_BLOCK_REBOOTING:
+		return "Rebooting";
 	case BG_BLOCK_INITED:
-		return "READY";
+		return "Inited";
 	case BG_BLOCK_ALLOCATED:
-		return "ALLOCATED";
+		return "Allocated";
+	case BG_BLOCK_TERM:
+		return "Terminating";
+	case BG_BLOCK_ERROR:
+		return "Error";
 	}
-#else
-	switch (state) {
-#ifdef HAVE_BGL
-	case RM_PARTITION_BUSY:
-		return "BUSY";
-#else
-	case RM_PARTITION_REBOOTING:
-		return "REBOOTING";
-#endif
-	case RM_PARTITION_CONFIGURING:
-		return "CONFIG";
-	case RM_PARTITION_DEALLOCATING:
-		return "DEALLOC";
-	case RM_PARTITION_ERROR:
-		return "ERROR";
-	case RM_PARTITION_FREE:
-		return "FREE";
-	case RM_PARTITION_NAV:
-		return "NAV";
-	case RM_PARTITION_READY:
-		return "READY";
-	}
-#endif
+
 	snprintf(tmp, sizeof(tmp), "%d", state);
 	return tmp;
 }

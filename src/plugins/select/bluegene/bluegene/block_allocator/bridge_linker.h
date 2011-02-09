@@ -59,7 +59,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/plugins/select/bluegene/common/bg_enums.h"
 #include <dlfcn.h>
 
 #ifdef WITH_PTHREADS

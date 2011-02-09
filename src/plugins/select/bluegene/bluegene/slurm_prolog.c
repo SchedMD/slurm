@@ -61,14 +61,6 @@
 int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT;
 int cur_delay = 0;
 
-enum rm_partition_state {RM_PARTITION_FREE,
-			 RM_PARTITION_CONFIGURING,
-			 RM_PARTITION_READY,
-			 RM_PARTITION_BUSY,
-			 RM_PARTITION_DEALLOCATING,
-			 RM_PARTITION_ERROR,
-			 RM_PARTITION_NAV};
-
 static int  _get_job_size(uint32_t job_id);
 static int  _wait_part_ready(uint32_t job_id);
 static int  _partitions_dealloc();
@@ -210,7 +202,7 @@ static int _partitions_dealloc()
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
 		if (new_bg_ptr->block_array[i].state
-		    == RM_PARTITION_DEALLOCATING) {
+		    == BG_BLOCK_TERM) {
 			rc = 1;
 			break;
 		}

@@ -22,8 +22,6 @@
     int    pid;                    /* The pid of the process */
   } MPIR_PROCDESC;
 
-#include "rm_api.h"
-
 #else
   typedef char *   pm_partition_id_t;
   typedef int      rm_connection_type_t;
@@ -36,22 +34,6 @@
   typedef rm_component_id_t rm_bp_id_t;
   typedef int      rm_BP_state_t;
   typedef char *   rm_job_list_t;
-
-  /* these are the typedefs that we will need to have
-   * if we want the states on the Front End Node of a BG system
-   * make certain they match the rm_api.h values on the Service Node */
-  enum rm_partition_state {RM_PARTITION_FREE,
-			   RM_PARTITION_CONFIGURING,
-#ifdef HAVE_BGL
-			   RM_PARTITION_READY,
-			   RM_PARTITION_BUSY,
-#else
-			   RM_PARTITION_REBOOTING,
-			   RM_PARTITION_READY,
-#endif
-			   RM_PARTITION_DEALLOCATING,
-			   RM_PARTITION_ERROR,
-			   RM_PARTITION_NAV};
 #endif
 
 /* The below #defines are needed for cross cluster dealings */

@@ -499,9 +499,8 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		 * the same block twice.  It may
 		 * had already been removed at this point also.
 		 */
-		if (bg_record->state != NO_VAL
-		    && bg_record->state != RM_PARTITION_FREE
-		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
+		if (bg_record->state != BG_BLOCK_FREE
+		    && bg_record->state != BG_BLOCK_TERM) {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("bridge_destroy %s",
@@ -521,7 +520,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					   break out.
 					*/
 					if (bg_record->state
-					    == RM_PARTITION_ERROR)
+					    == BG_BLOCK_ERROR)
 						break;
 #endif
 					if (bg_conf->slurm_debug_flags
@@ -540,15 +539,15 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 				}
 			}
 #else
-//			bg_record->state = RM_PARTITION_FREE;
-			if (bg_record->state != RM_PARTITION_FREE)
-				bg_record->state = RM_PARTITION_DEALLOCATING;
+//			bg_record->state = BG_BLOCK_FREE;
+			if (bg_record->state != BG_BLOCK_FREE)
+				bg_record->state = BG_BLOCK_TERM;
 #endif
 		}
 
-		if (!wait || (bg_record->state == RM_PARTITION_FREE)
+		if (!wait || (bg_record->state == BG_BLOCK_FREE)
 #ifdef HAVE_BGL
-		    ||  (bg_record->state == RM_PARTITION_ERROR)
+		    ||  (bg_record->state == BG_BLOCK_ERROR)
 #endif
 			) {
 			break;
@@ -564,7 +563,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 	}
 
 	rc = SLURM_SUCCESS;
-	if (bg_record->state == RM_PARTITION_FREE)
+	if (bg_record->state == BG_BLOCK_FREE)
 		remove_from_bg_list(bg_lists->booted, bg_record);
 	else if (count >= MAX_FREE_RETRIES) {
 		/* Something isn't right, go mark this one in an error
@@ -577,7 +576,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 			     bg_block_state_string(bg_record->state));
 		slurm_init_update_block_msg(&block_msg);
 		block_msg.bg_block_id = bg_record->bg_block_id;
-		block_msg.state = RM_PARTITION_ERROR;
+		block_msg.state = BG_BLOCK_ERROR;
 		block_msg.reason = "Block would not deallocate";
 		slurm_mutex_unlock(&block_state_mutex);
 		select_p_update_block(&block_msg);
@@ -697,12 +696,12 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 			   state before this.
 			*/
 			if (retry_cnt >= 3)
-				bg_record->state = RM_PARTITION_FREE;
+				bg_record->state = BG_BLOCK_FREE;
 #endif
-			if ((bg_record->state == RM_PARTITION_FREE)
-			    || (bg_record->state == RM_PARTITION_ERROR))
+			if ((bg_record->state == BG_BLOCK_FREE)
+			    || (bg_record->state == BG_BLOCK_ERROR))
 				free_cnt++;
-			else if (bg_record->state != RM_PARTITION_DEALLOCATING)
+			else if (bg_record->state != BG_BLOCK_TERM)
 				bg_free_block(bg_record, 0, 1);
 		}
 		slurm_mutex_unlock(&block_state_mutex);
@@ -725,7 +724,7 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 		/* block no longer exists */
 		if (bg_record->magic != BLOCK_MAGIC)
 			continue;
-		if (bg_record->state != RM_PARTITION_FREE) {
+		if (bg_record->state != BG_BLOCK_FREE) {
 			restore = true;
 			rc = SLURM_ERROR;
 			break;
@@ -1262,7 +1261,7 @@ extern int validate_current_blocks(char *dir)
 	   no threads are started before this function. */
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
-		if (bg_record->state == RM_PARTITION_ERROR)
+		if (bg_record->state == BG_BLOCK_ERROR)
 			put_block_in_error_state(bg_record,
 						 BLOCK_ERROR_STATE, NULL);
 	}
@@ -1474,8 +1473,8 @@ static int _validate_config_nodes(List curr_block_list,
 			     bg_record->bg_block_id,
 			     tmp_char,
 			     conn_type_string(bg_record->conn_type));
-			if (((bg_record->state == RM_PARTITION_READY)
-			     || (bg_record->state == RM_PARTITION_CONFIGURING))
+			if (((bg_record->state == BG_BLOCK_INITED)
+			     || (bg_record->state == BG_BLOCK_BOOTING))
 			    && !block_ptr_exist_in_list(bg_lists->booted,
 							bg_record))
 				list_push(bg_lists->booted, bg_record);
@@ -1498,9 +1497,9 @@ static int _validate_config_nodes(List curr_block_list,
 				     bg_record->bg_block_id,
 				     tmp_char,
 				     conn_type_string(bg_record->conn_type));
-				if (((bg_record->state == RM_PARTITION_READY)
+				if (((bg_record->state == BG_BLOCK_INITED)
 				     || (bg_record->state
-					 == RM_PARTITION_CONFIGURING))
+					 == BG_BLOCK_BOOTING))
 				    && !block_ptr_exist_in_list(
 					    bg_lists->booted, bg_record))
 					list_push(bg_lists->booted,
@@ -1584,7 +1583,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		return SLURM_SUCCESS;
 	}
 
-	if (bg_record->state != RM_PARTITION_FREE) {
+	if (bg_record->state != BG_BLOCK_FREE) {
 		/* Something isn't right, go mark this one in an error
 		   state. */
 		update_block_msg_t block_msg;
@@ -1595,7 +1594,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 			     bg_block_state_string(bg_record->state));
 		slurm_init_update_block_msg(&block_msg);
 		block_msg.bg_block_id = bg_record->bg_block_id;
-		block_msg.state = RM_PARTITION_ERROR;
+		block_msg.state = BG_BLOCK_ERROR;
 		block_msg.reason = "Block would not deallocate";
 		slurm_mutex_unlock(&block_state_mutex);
 		select_p_update_block(&block_msg);
@@ -1678,10 +1677,10 @@ static void *_track_freeing_blocks(void *args)
 			   state before this.
 			*/
 			if (retry_cnt >= 3)
-				bg_record->state = RM_PARTITION_FREE;
+				bg_record->state = BG_BLOCK_FREE;
 #endif
-			if ((bg_record->state == RM_PARTITION_FREE)
-			    || (bg_record->state == RM_PARTITION_ERROR))
+			if ((bg_record->state == BG_BLOCK_FREE)
+			    || (bg_record->state == BG_BLOCK_ERROR))
 				free_cnt++;
 		}
 		slurm_mutex_unlock(&block_state_mutex);
@@ -1717,7 +1716,7 @@ static void *_wait_and_destroy_block(void *args)
 		info("_wait_and_destroy_block: done %s",
 		     bg_record->bg_block_id);
 
-	if ((bg_record->state == RM_PARTITION_FREE)
+	if ((bg_record->state == BG_BLOCK_FREE)
 	    && (bg_conf->layout_mode == LAYOUT_DYNAMIC))
 		restore = false;
 

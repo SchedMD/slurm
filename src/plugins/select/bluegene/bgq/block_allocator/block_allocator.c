@@ -1857,9 +1857,9 @@ extern char *find_mp_rack_mid(char* coords)
  * before.  If you are looking to start clean it doesn't matter.
  */
 extern List get_and_set_block_wiring(char *bg_block_id,
-				     char *block_ptr)
+				     void *block_ptr)
 {
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if 0
 	int rc, i, j;
 	int cnt = 0;
 	int switch_cnt = 0;

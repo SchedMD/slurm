@@ -742,7 +742,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		 * that isn't used */
 
 		/* check for free blocks on the first and second time */
-		if (only_free && (bg_record->state != RM_PARTITION_FREE))
+		if (only_free && (bg_record->state != BG_BLOCK_FREE))
 			continue;
 
 		/* check small blocks first */

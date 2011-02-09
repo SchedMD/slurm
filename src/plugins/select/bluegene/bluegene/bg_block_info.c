@@ -183,7 +183,7 @@ extern int block_ready(struct job_record *job_ptr)
 				rc = 0;
 			} else if ((bg_record->user_uid == job_ptr->user_id)
 				   && (bg_record->state
-				       == RM_PARTITION_READY)) {
+				       == BG_BLOCK_INITED)) {
 				/* Clear the state just incase we
 				   missed it somehow.
 				*/
@@ -209,7 +209,7 @@ extern int block_ready(struct job_record *job_ptr)
 		rc = READY_JOB_ERROR;
 	/* info("returning %d for job %u block %s %d %d", */
 	/*      rc, job_ptr->job_id, block_id, */
-	/*      READY_JOB_ERROR, READY_JOB_FATAL); */
+	/*      INITED_JOB_ERROR, INITED_JOB_FATAL); */
 	xfree(block_id);
 	return rc;
 }
@@ -368,8 +368,8 @@ extern int update_block_list()
 			updated = 1;
 		}
 #else
-		if ((bg_record->node_cnt < bg_conf->bp_node_cnt)
-		    || (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)) {
+		if ((bg_record->node_cnt < bg_conf->mp_node_cnt)
+		    || (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)) {
 			char *mode = NULL;
 			uint16_t conn_type = SELECT_SMALL;
 			if ((rc = bridge_get_data(block_ptr,
@@ -432,12 +432,12 @@ extern int update_block_list()
 			  check to make sure block went
 			  through freeing correctly
 			*/
-			if ((bg_record->state != RM_PARTITION_DEALLOCATING
-			     && bg_record->state != RM_PARTITION_ERROR)
-			    && state == RM_PARTITION_FREE)
+			if ((bg_record->state != BG_BLOCK_TERM
+			     && bg_record->state != BG_BLOCK_ERROR)
+			    && state == BG_BLOCK_FREE)
 				skipped_dealloc = 1;
-			else if ((bg_record->state == RM_PARTITION_READY)
-				 && (state == RM_PARTITION_CONFIGURING)) {
+			else if ((bg_record->state == BG_BLOCK_INITED)
+				 && (state == BG_BLOCK_BOOTING)) {
 				/* This means the user did a reboot through
 				   mpirun but we missed the state
 				   change */
@@ -449,9 +449,8 @@ extern int update_block_list()
 				xfree(bg_record->target_name);
 				bg_record->target_name =
 					xstrdup(bg_record->user_name);
-			} else if ((bg_record->state
-				    == RM_PARTITION_DEALLOCATING)
-				   && (state == RM_PARTITION_CONFIGURING))
+			} else if ((bg_record->state == BG_BLOCK_TERM)
+				   && (state == BG_BLOCK_BOOTING))
 				/* This is a funky state IBM says
 				   isn't a bug, but all their
 				   documentation says this doesn't
@@ -463,11 +462,11 @@ extern int update_block_list()
 
 			bg_record->state = state;
 
-			if (bg_record->state == RM_PARTITION_DEALLOCATING
+			if (bg_record->state == BG_BLOCK_TERM
 			    || skipped_dealloc)
 				_block_is_deallocating(bg_record);
 #ifndef HAVE_BGL
-			else if (bg_record->state == RM_PARTITION_REBOOTING) {
+			else if (bg_record->state == BG_BLOCK_REBOOTING) {
 				/* This means the user did a reboot through
 				   mpirun */
 				debug("Block %s rebooting.  "
@@ -479,18 +478,18 @@ extern int update_block_list()
 					xstrdup(bg_record->user_name);
 			}
 #endif
-			else if (bg_record->state == RM_PARTITION_CONFIGURING) {
+			else if (bg_record->state == BG_BLOCK_BOOTING) {
 				debug("Setting bootflag for %s",
 				      bg_record->bg_block_id);
 				bg_record->boot_state = 1;
-			} else if (bg_record->state == RM_PARTITION_FREE) {
+			} else if (bg_record->state == BG_BLOCK_FREE) {
 				if (remove_from_bg_list(bg_lists->job_running,
 							bg_record)
 				    == SLURM_SUCCESS)
 					num_unused_cpus += bg_record->cpu_cnt;
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
-			} else if (bg_record->state == RM_PARTITION_ERROR) {
+			} else if (bg_record->state == BG_BLOCK_ERROR) {
 				if (bg_record->boot_state == 1)
 					error("Block %s in an error "
 					      "state while booting.",
@@ -501,7 +500,7 @@ extern int update_block_list()
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
 				trigger_block_error();
-			} else if (bg_record->state == RM_PARTITION_READY) {
+			} else if (bg_record->state == BG_BLOCK_INITED) {
 				if (!block_ptr_exist_in_list(bg_lists->booted,
 							     bg_record))
 					list_push(bg_lists->booted, bg_record);
@@ -517,7 +516,7 @@ extern int update_block_list()
 		       bg_record->boot_state);
 		if (bg_record->boot_state == 1) {
 			switch(bg_record->state) {
-			case RM_PARTITION_CONFIGURING:
+			case BG_BLOCK_BOOTING:
 				debug3("checking to make sure user %s "
 				       "is the user.",
 				       bg_record->target_name);
@@ -530,7 +529,7 @@ extern int update_block_list()
 					last_job_update = time(NULL);
 				}
 				break;
-			case RM_PARTITION_ERROR:
+			case BG_BLOCK_ERROR:
 				/* If we get an error on boot that
 				 * means it is a transparent L3 error
 				 * and should be trying to fix
@@ -540,7 +539,7 @@ extern int update_block_list()
 				 * boot again below.
 				 */
 				break;
-			case RM_PARTITION_FREE:
+			case BG_BLOCK_FREE:
 				if (bg_record->boot_count < RETRY_BOOT_COUNT) {
 					if ((rc = boot_block(bg_record))
 					    != SLURM_SUCCESS)
@@ -579,7 +578,7 @@ extern int update_block_list()
 						bg_lists->booted, bg_record);
 				}
 				break;
-			case RM_PARTITION_READY:
+			case BG_BLOCK_INITED:
 				debug("block %s is ready.",
 				      bg_record->bg_block_id);
 				if (bg_record->job_ptr) {
@@ -595,14 +594,14 @@ extern int update_block_list()
 					list_push(kill_job_list, freeit);
 				}
 				break;
-			case RM_PARTITION_DEALLOCATING:
+			case BG_BLOCK_TERM:
 				debug2("Block %s is in a deallocating state "
 				       "during a boot.  Doing nothing until "
 				       "free state.",
 				       bg_record->bg_block_id);
 				break;
 #ifndef HAVE_BGL
-			case RM_PARTITION_REBOOTING:
+			case BG_BLOCK_REBOOTING:
 				debug2("Block %s is rebooting.",
 				       bg_record->bg_block_id);
 				break;
@@ -675,7 +674,7 @@ extern int update_block_list_state(List block_list)
 					   everything will be cleaned
 					   up outside this.
 					*/
-					bg_record->state = RM_PARTITION_FREE;
+					bg_record->state = BG_BLOCK_FREE;
 					continue;
 					break;
 				default:

@@ -39,6 +39,47 @@
 #ifndef _BG_ENUMS_H_
 #define _BG_ENUMS_H_
 
+#ifndef ATTACH_BGL_H	/* Test for attach_bgl.h on BGL */
+#ifndef ATTACH_BG_H	/* Test for attach_bg.h on BGP */
+#define ATTACH_BGL_H	/* Replacement for attach_bgl.h on BGL */
+#define ATTACH_BG_H	/* Replacement for attach_bg.h on BGP */
+
+#if defined HAVE_BG_FILES
+
+/* MPI Debug support */
+typedef struct {
+	const char * host_name;        /* Something we can pass to inet_addr */
+	const char * executable_name;  /* The name of the image */
+	int    pid;                    /* The pid of the process */
+} MPIR_PROCDESC;
+
+#ifdef HAVE_BG_L_P
+#include "rm_api.h"
+#endif
+
+#elif defined HAVE_BG_L_P
+typedef char *   pm_partition_id_t;
+typedef int      rm_connection_type_t;
+typedef int      rm_partition_mode_t;
+typedef int      rm_partition_state_t;
+typedef uint16_t rm_partition_t;
+typedef char *   rm_BGL_t;
+typedef char *   rm_BG_t;
+typedef char *   rm_component_id_t;
+typedef rm_component_id_t rm_bp_id_t;
+typedef int      rm_BP_state_t;
+typedef char *   rm_job_list_t;
+#endif
+
+#ifdef HAVE_BGL
+typedef rm_BGL_t my_bluegene_t;
+#define PARTITION_ALREADY_DEFINED -6
+#elif defined HAVE_BGP
+typedef rm_BG_t my_bluegene_t;
+#else
+typedef void * my_bluegene_t;
+#endif
+
 typedef enum bg_layout_type {
 	LAYOUT_STATIC,  /* no overlaps, except for full system block
 			   blocks never change */
@@ -50,7 +91,9 @@ typedef enum bg_layout_type {
 typedef enum {
 	BG_BLOCK_NAV = 0,   // Block state is undefined
 	BG_BLOCK_FREE,      // Block is free
+	BG_BLOCK_BUSY,      // Block is Busy
 	BG_BLOCK_BOOTING,   // Block is booting
+	BG_BLOCK_REBOOTING, // Block is rebooting
 	BG_BLOCK_INITED,    // Block is initialized
 	BG_BLOCK_ALLOCATED, // Block is allocated
 	BG_BLOCK_TERM,      // Block is terminating
@@ -97,5 +140,8 @@ typedef enum {
 #define BG_FREE_PREVIOUS_BLOCK 300 	/* time in seconds */
 #define BG_MIN_BLOCK_BOOT  300		/* time in seconds */
 #define BG_INCR_BLOCK_BOOT 20		/* time in seconds per BP */
+
+#endif	/* #ifndef ATTACH_BG_H */
+#endif	/* #ifndef ATTACH_BGL_H */
 
 #endif /* _BG_ENUMS_H_ */

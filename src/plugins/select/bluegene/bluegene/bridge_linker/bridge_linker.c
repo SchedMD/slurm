@@ -40,6 +40,7 @@
 #include "bridge_linker.h"
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+
 typedef struct {
 	/* all the rm functions */
 	status_t (*set_serial)(const rm_serial_t serial);
@@ -617,11 +618,61 @@ extern status_t bridge_get_data(rm_element_t* element,
 				enum rm_specification field, void *data)
 {
 	int rc = CONNECTION_ERROR;
+	int *state = (int *) data;
+
 	if (!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
 	rc = (*(bridge_api.get_data))(element, field, data);
+
+	/* Since these like to change from system to system, we have a
+	   nice enum that doesn't in common/bg_enums.h, convert now. */
+	switch (field) {
+	case RM_PartitionState:
+		state = (int *) data;
+		switch (*state) {
+		case RM_PARTITION_FREE:
+			*state = BG_BLOCK_FREE;
+			break;
+		case RM_PARTITION_CONFIGURING:
+			*state = BG_BLOCK_BOOTING;
+			break;
+#ifdef HAVE_BGL
+		case RM_PARTITION_BUSY:
+			*state = BG_BLOCK_BUSY;
+			break;
+#else
+		case RM_PARTITION_REBOOTING:
+			*state = BG_BLOCK_REBOOTING;
+			break;
+#endif
+		case RM_PARTITION_READY:
+			*state = BG_BLOCK_INITED;
+			break;
+		case RM_PARTITION_DEALLOCATING:
+			*state = BG_BLOCK_TERM;
+			break;
+		case RM_PARTITION_ERROR:
+			*state = BG_BLOCK_ERROR;
+			break;
+		case RM_PARTITION_NAV:
+			*state = BG_BLOCK_NAV;
+			break;
+		default:
+			break;
+		}
+		break;
+	case RM_PartitionOptions:
+		break;
+#ifdef HAVE_BGL
+	case RM_PartitionMode:
+		break;
+#endif
+	default:
+		break;
+	}
+
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 

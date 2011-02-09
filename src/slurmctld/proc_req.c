@@ -85,7 +85,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/plugins/select/bluegene/common/bg_enums.h"
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
@@ -1555,7 +1555,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 #ifdef HAVE_BG
 	if (block_desc.bg_block_id) {
 		block_desc.reason = slurm_strerror(comp_msg->slurm_rc);
-		block_desc.state = RM_PARTITION_ERROR;
+		block_desc.state = BG_BLOCK_ERROR;
 		i = select_g_update_block(&block_desc);
 		error_code = MAX(error_code, i);
 		xfree(block_desc.bg_block_id);

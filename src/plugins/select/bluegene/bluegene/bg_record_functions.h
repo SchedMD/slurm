@@ -61,7 +61,7 @@
 #define BLOCK_MAGIC 0x3afd
 
 typedef struct bg_record {
-	rm_partition_t *bg_block;       /* structure to hold info from db2 */
+	void *bg_block;                 /* structure to hold info from db2 */
 	char * bg_block_id;     	/* ID returned from MMCS	*/
 	List ba_mp_list;                /* list of ba_mp_t * in a block */
 	bitstr_t *bitmap;               /* bitmap to check the name

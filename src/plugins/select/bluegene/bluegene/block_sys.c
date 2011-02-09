@@ -285,7 +285,7 @@ extern int find_nodecard_num(rm_partition_t *block_ptr, rm_nodecard_t *ncard,
 {
 	char *my_card_name = NULL;
 	char *card_name = NULL;
-	rm_bp_id_t bp_id = NULL;
+	rm_bp_id_t mp_id = NULL;
 	int num = 0;
 	int i=0;
 	int rc;
@@ -382,7 +382,7 @@ extern int configure_block(bg_record_t *bg_record)
 {
 	/* new block to be added */
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-	bridge_new_block(&bg_record->bg_block);
+	bridge_new_block((rm_partition_t **)&bg_record->bg_block);
 #endif
 	_pre_allocate(bg_record);
 
@@ -423,7 +423,7 @@ int read_bg_blocks(List curr_block_list)
 	bool small = false;
 	hostlist_t hostlist;		/* expanded form of hosts */
 
-	set_bp_map();
+	set_mp_map();
 
 	if (bg_recover) {
 		if ((rc = bridge_get_blocks(state, &block_list))
@@ -494,7 +494,7 @@ int read_bg_blocks(List curr_block_list)
 		bg_record->bg_block_id = xstrdup(tmp_char);
 		free(tmp_char);
 
-		bg_record->state = NO_VAL;
+		bg_record->state = BG_BLOCK_FREE;
 #ifndef HAVE_BGL
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionSize,
@@ -747,7 +747,7 @@ int read_bg_blocks(List curr_block_list)
 				continue;
 			}
 
-			coord = find_bp_loc(mpid);
+			coord = find_mp_loc(mpid);
 
 			if (!coord) {
 				fatal("Could not find coordinates for "
@@ -785,7 +785,7 @@ int read_bg_blocks(List curr_block_list)
 			error("bridge_get_data(RM_PartitionState): %s",
 			      bg_err_str(rc));
 			continue;
-		} else if (bg_record->state == RM_PARTITION_CONFIGURING)
+		} else if (bg_record->state == BG_BLOCK_BOOTING)
 			bg_record->boot_state = 1;
 
 		debug3("Block %s is in state %d",
@@ -1047,7 +1047,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 
 		/* we only care about the states we need here
 		 * everthing else should have been set up already */
-		if (block_info->state == RM_PARTITION_ERROR) {
+		if (block_info->state == BG_BLOCK_ERROR) {
 			slurm_mutex_lock(&block_state_mutex);
 			if ((bg_record = find_bg_record_in_list(
 				     curr_block_list,

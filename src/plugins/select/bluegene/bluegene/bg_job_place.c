@@ -310,9 +310,9 @@ static bg_record_t *_find_matching_block(List block_list,
 			bg_record->job_running = bg_record->job_ptr->job_id;
 
 		/* block is messed up some how (BLOCK_ERROR_STATE)
-		 * ignore it or if state == RM_PARTITION_ERROR */
+		 * ignore it or if state == BG_BLOCK_ERROR */
 		if ((bg_record->job_running == BLOCK_ERROR_STATE)
-		    || (bg_record->state == RM_PARTITION_ERROR)) {
+		    || (bg_record->state == BG_BLOCK_ERROR)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("block %s is in an error "
 				     "state (can't use)",
@@ -446,7 +446,7 @@ static bg_record_t *_find_matching_block(List block_list,
 				*/
 				if (check_image
 				    && (bg_record->state
-					== RM_PARTITION_READY)) {
+					== BG_BLOCK_INITED)) {
 					*allow = 1;
 					continue;
 				}
@@ -594,9 +594,9 @@ static int _check_for_booted_overlapping_blocks(
 			 */
 			if (bg_conf->layout_mode == LAYOUT_OVERLAP
 			    && ((overlap_check == 0 && bg_record->state
-				 != RM_PARTITION_READY)
+				 != BG_BLOCK_INITED)
 				|| (overlap_check == 1 && found_record->state
-				    != RM_PARTITION_FREE))) {
+				    != BG_BLOCK_FREE))) {
 
 				if (!is_test) {
 					rc = 1;
@@ -605,11 +605,11 @@ static int _check_for_booted_overlapping_blocks(
 			}
 
 			if ((found_record->job_running != NO_JOB_RUNNING)
-			    || (found_record->state == RM_PARTITION_ERROR)) {
+			    || (found_record->state == BG_BLOCK_ERROR)) {
 				if ((found_record->job_running
 				     == BLOCK_ERROR_STATE)
 				    || (found_record->state
-					== RM_PARTITION_ERROR))
+					== BG_BLOCK_ERROR))
 					error("can't use %s, "
 					      "overlapping block %s "
 					      "is in an error state.",
@@ -1057,7 +1057,7 @@ static int _find_best_block_match(List block_list,
 					*/
 					bg_record->job_running =
 						BLOCK_ERROR_STATE;
-					bg_record->state = RM_PARTITION_ERROR;
+					bg_record->state = BG_BLOCK_ERROR;
 					error("_find_best_block_match: Picked "
 					      "block (%s) had some issues with "
 					      "hardware, trying a different "

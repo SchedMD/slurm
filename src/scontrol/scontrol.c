@@ -40,7 +40,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/plugins/select/bluegene/common/bg_enums.h"
 #include "src/common/proc_args.h"
 
 #define OPT_LONG_HIDE   0x102
@@ -1127,7 +1127,7 @@ _delete_it (int argc, char *argv[])
 			update_block_msg_t   block_msg;
 			slurm_init_update_block_msg ( &block_msg );
 			block_msg.bg_block_id = val;
-			block_msg.state = RM_PARTITION_NAV;
+			block_msg.state = BG_BLOCK_NAV;
 			if (slurm_update_block(&block_msg)) {
 				char errmsg[64];
 				snprintf(errmsg, 64, "delete_block %s",
@@ -1376,15 +1376,15 @@ _update_bluegene_block (int argc, char *argv[])
 			block_msg.bg_block_id = val;
 		} else if (!strncasecmp(tag, "State", MAX(tag_len, 2))) {
 			if (!strncasecmp(val, "ERROR", MAX(vallen, 1)))
-				block_msg.state = RM_PARTITION_ERROR;
+				block_msg.state = BG_BLOCK_ERROR;
 			else if (!strncasecmp(val, "FREE", MAX(vallen, 1)))
-				block_msg.state = RM_PARTITION_FREE;
+				block_msg.state = BG_BLOCK_FREE;
 			else if (!strncasecmp(val, "RECREATE", MAX(vallen, 3)))
-				block_msg.state = RM_PARTITION_CONFIGURING;
+				block_msg.state = BG_BLOCK_BOOTING;
 			else if (!strncasecmp(val, "REMOVE", MAX(vallen, 3)))
-				block_msg.state = RM_PARTITION_NAV;
+				block_msg.state = BG_BLOCK_NAV;
 			else if (!strncasecmp(val, "RESUME", MAX(vallen, 3)))
-				block_msg.state = RM_PARTITION_DEALLOCATING;
+				block_msg.state = BG_BLOCK_TERM;
 			else {
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n",
@@ -1461,9 +1461,9 @@ _update_bluegene_subbp (int argc, char *argv[])
 			block_msg.nodes = val;
 		else if (!strncasecmp(tag, "State", MAX(tag_len, 2))) {
 			if (!strncasecmp(val, "ERROR", MAX(vallen, 1)))
-				block_msg.state = RM_PARTITION_ERROR;
+				block_msg.state = BG_BLOCK_ERROR;
 			else if (!strncasecmp(val, "FREE", MAX(vallen, 1)))
-				block_msg.state = RM_PARTITION_FREE;
+				block_msg.state = BG_BLOCK_FREE;
 			else {
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n",

@@ -48,8 +48,6 @@
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
-
 /********************
  * Global Variables *
  ********************/

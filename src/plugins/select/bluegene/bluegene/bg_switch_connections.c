@@ -221,7 +221,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				      source, ba_conn->port_tar);
 				break;
 			}
-			conn[i].part_state = RM_PARTITION_READY;
+			conn[i].part_state = BG_BLOCK_INITED;
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 				info("adding %d -> %d", source,
 				     ba_conn->port_tar);

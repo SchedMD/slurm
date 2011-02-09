@@ -459,7 +459,7 @@ extern int load_block_wiring(char *bg_block_id);
  * node list
  */
 extern List get_and_set_block_wiring(char *bg_block_id,
-				     rm_partition_t *block_ptr);
+				     void *block_ptr);
 
 /* make sure a node is in the system return 1 if it is 0 if not */
 extern int validate_coord(uint16_t *coord);

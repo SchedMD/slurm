@@ -527,7 +527,7 @@ static void _sync_agent(bg_action_t *bg_action_ptr)
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
 
-	if (bg_record->state == RM_PARTITION_READY) {
+	if (bg_record->state == BG_BLOCK_INITED) {
 		if (bg_record->job_ptr) {
 			bg_record->job_ptr->job_state &= (~JOB_CONFIGURING);
 			last_job_update = time(NULL);
@@ -551,7 +551,7 @@ static void _sync_agent(bg_action_t *bg_action_ptr)
 			slurm_mutex_unlock(&block_state_mutex);
 
 	} else {
-		if (bg_record->state != RM_PARTITION_CONFIGURING) {
+		if (bg_record->state != BG_BLOCK_BOOTING) {
 			error("Block %s isn't ready and isn't "
 			      "being configured! Starting job again.",
 			      bg_action_ptr->bg_block_id);
@@ -594,7 +594,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		      bg_action_ptr->job_ptr->job_id);
 		return;
 	}
-	if (bg_record->state == RM_PARTITION_DEALLOCATING) {
+	if (bg_record->state == BG_BLOCK_TERM) {
 		debug("Block is in Deallocating state, waiting for free.");
 		bg_free_block(bg_record, 1, 1);
 		/* no reason to reboot here since we are already
@@ -839,7 +839,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		bg_record->modifying = 0;
 	}
 
-	if (bg_record->state == RM_PARTITION_FREE) {
+	if (bg_record->state == BG_BLOCK_FREE) {
 		if ((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			if (!_make_sure_block_still_exists(bg_action_ptr,
 							  bg_record)) {
@@ -855,7 +855,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			slurm_mutex_unlock(&block_state_mutex);
 			return;
 		}
-	} else if (bg_record->state == RM_PARTITION_CONFIGURING)
+	} else if (bg_record->state == BG_BLOCK_BOOTING)
 		bg_record->boot_state = 1;
 
 
@@ -877,7 +877,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	debug("setting the target_name for Block %s to %s",
 	      bg_record->bg_block_id, bg_record->target_name);
 
-	if (bg_record->state == RM_PARTITION_READY) {
+	if (bg_record->state == BG_BLOCK_INITED) {
 		debug("block %s is ready.", bg_record->bg_block_id);
 		set_user_rc = set_block_user(bg_record);
 		if (bg_action_ptr->job_ptr) {
@@ -1062,7 +1062,7 @@ static int _excise_block(List block_list, pm_partition_id_t bg_block_id,
  * many seconds. Do not call from slurmctld  or any other entity that
  * can not wait.
  */
-int term_jobs_on_block(pm_partition_id_t bg_block_id)
+int term_jobs_on_block(char *bg_block_id)
 {
 	int rc = SLURM_SUCCESS;
 	bg_action_t *bg_action_ptr;
@@ -1372,7 +1372,7 @@ extern int boot_block(bg_record_t *bg_record)
 #else
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
-	bg_record->state = RM_PARTITION_READY;
+	bg_record->state = BG_BLOCK_INITED;
 	last_bg_update = time(NULL);
 #endif
 

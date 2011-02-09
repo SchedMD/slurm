@@ -1151,7 +1151,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		*/
 		if (smallest_bg_record
 		    && (smallest_bg_record->node_cnt < bg_conf->mp_node_cnt)){
-			if (smallest_bg_record->state == RM_PARTITION_ERROR) {
+			if (smallest_bg_record->state == BG_BLOCK_ERROR) {
 				rc = SLURM_NO_CHANGE_IN_DATA;
 				goto cleanup;
 			}
@@ -1220,7 +1220,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	} else if (smallest_bg_record) {
 		debug2("smallest dynamic block is %s",
 		       smallest_bg_record->bg_block_id);
-		if (smallest_bg_record->state == RM_PARTITION_ERROR) {
+		if (smallest_bg_record->state == BG_BLOCK_ERROR) {
 			rc = SLURM_NO_CHANGE_IN_DATA;
 			goto cleanup;
 		}
@@ -1474,7 +1474,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 		list_push(bg_lists->booted, bg_record);
 
 	bg_record->job_running = state;
-	bg_record->state = RM_PARTITION_ERROR;
+	bg_record->state = BG_BLOCK_ERROR;
 
 	xfree(bg_record->user_name);
 	xfree(bg_record->target_name);
@@ -1505,7 +1505,7 @@ extern int resume_block(bg_record_t *bg_record)
 	if (bg_record->job_running > NO_JOB_RUNNING)
 		return SLURM_SUCCESS;
 
-	if (bg_record->state == RM_PARTITION_ERROR)
+	if (bg_record->state == BG_BLOCK_ERROR)
 		info("Block %s put back into service after "
 		     "being in an error state.",
 		     bg_record->bg_block_id);
@@ -1513,12 +1513,12 @@ extern int resume_block(bg_record_t *bg_record)
 	if (remove_from_bg_list(bg_lists->job_running, bg_record)
 	    == SLURM_SUCCESS)
 		num_unused_cpus += bg_record->cpu_cnt;
-	if (bg_record->state != RM_PARTITION_READY)
+	if (bg_record->state != BG_BLOCK_INITED)
 		remove_from_bg_list(bg_lists->booted, bg_record);
 
 	bg_record->job_running = NO_JOB_RUNNING;
 #ifndef HAVE_BG_FILES
-	bg_record->state = RM_PARTITION_FREE;
+	bg_record->state = BG_BLOCK_FREE;
 #endif
 	xfree(bg_record->reason);
 
@@ -1559,7 +1559,7 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
 		/* only look at other nodes in error state */
-		if (bg_record->state != RM_PARTITION_ERROR)
+		if (bg_record->state != BG_BLOCK_ERROR)
 			continue;
 		if (!bit_test(bg_record->bitmap, node_inx))
 			continue;

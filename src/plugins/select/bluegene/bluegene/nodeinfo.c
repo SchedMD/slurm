@@ -286,7 +286,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		if (bg_record->job_running == NO_JOB_RUNNING)
 			continue;
 
-		if (bg_record->state == RM_PARTITION_ERROR)
+		if (bg_record->state == BG_BLOCK_ERROR)
 			state = NODE_STATE_ERROR;
 		else if (bg_record->job_running > NO_JOB_RUNNING) {
 			/* we don't need to set the allocated here

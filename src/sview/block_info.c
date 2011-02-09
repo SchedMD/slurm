@@ -38,9 +38,9 @@ typedef struct {
 	char *bg_block_name;
 	char *slurm_part_name;
 	char *nodes;
-	enum connection_type bg_conn_type;
-	enum node_use_type bg_node_use;
-	rm_partition_state_t state;
+	uint16_t bg_conn_type;
+	uint16_t bg_node_use;
+	uint16_t state;
 	int size;
 	int node_cnt;
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
@@ -461,22 +461,11 @@ static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
 		 && (rec_b->job_running == NO_JOB_RUNNING))
 		return -1;
 
-	if ((cluster_flags & CLUSTER_FLAG_BGL) ||
-	    (cluster_flags & CLUSTER_FLAG_BGP)) {
-		if ((rec_a->state == RM_PARTITION_FREE) &&
-		    (rec_b->state != RM_PARTITION_FREE))
-			return 1;
-		else if ((rec_a->state != RM_PARTITION_FREE) &&
-			 (rec_b->state == RM_PARTITION_FREE))
+	if ((rec_a->state == BG_BLOCK_FREE) && (rec_b->state != BG_BLOCK_FREE))
+		return 1;
+	else if ((rec_a->state != BG_BLOCK_FREE) &&
+		 (rec_b->state == BG_BLOCK_FREE))
 			return -1;
-	} else if (cluster_flags & CLUSTER_FLAG_BGQ) {
-		if ((rec_a->state == BG_BLOCK_FREE) &&
-		    (rec_b->state != BG_BLOCK_FREE))
-			return 1;
-		else if ((rec_a->state != BG_BLOCK_FREE) &&
-			 (rec_b->state == BG_BLOCK_FREE))
-			return -1;
-	}
 
 	if (size_a < size_b)
 		return -1;
@@ -638,12 +627,7 @@ need_refresh:
 			   state */
 			enum node_states state = NODE_STATE_UNKNOWN;
 
-			if (((cluster_flags & CLUSTER_FLAG_BGL) ||
-			     (cluster_flags & CLUSTER_FLAG_BGP)) &&
-			    (block_ptr->state == RM_PARTITION_ERROR))
-				state = NODE_STATE_ERROR;
-			else if ((cluster_flags & CLUSTER_FLAG_BGQ) &&
-			         (block_ptr->state == BG_BLOCK_ERROR))
+			if (block_ptr->state == BG_BLOCK_ERROR)
 				state = NODE_STATE_ERROR;
 			else if (block_ptr->job_running > NO_JOB_RUNNING)
 				state = NODE_STATE_ALLOCATED;
@@ -795,43 +779,28 @@ extern int update_state_block(GtkDialog *dialog,
 			 "Are you sure you want to put block %s "
 			 "in an error state?",
 			 blockid);
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
-			block_msg.state = BG_BLOCK_ERROR;
-		else
-			block_msg.state = RM_PARTITION_ERROR;
+		block_msg.state = BG_BLOCK_ERROR;
 	} else if (!strcasecmp("Recreate block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to recreate block %s?",
 			 blockid);
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
-			block_msg.state = BG_BLOCK_BOOTING;
-		else
-			block_msg.state = RM_PARTITION_CONFIGURING;
+		block_msg.state = BG_BLOCK_BOOTING;
 	} else if (!strcasecmp("Remove block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to remove block %s?",
 			 blockid);
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
-			block_msg.state = BG_BLOCK_NAV;
-		else
-			block_msg.state = RM_PARTITION_NAV;
+		block_msg.state = BG_BLOCK_NAV;
 	} else if (!strcasecmp("Resume block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to resume block %s?",
 			 blockid);
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
-			block_msg.state = BG_BLOCK_TERM;
-		else
-			block_msg.state = RM_PARTITION_DEALLOCATING;
+		block_msg.state = BG_BLOCK_TERM;
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to put block %s "
 			 "in a free state?",
 			 blockid);
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
-			block_msg.state = BG_BLOCK_FREE;
-		else
-			block_msg.state = RM_PARTITION_FREE;
+		block_msg.state = BG_BLOCK_FREE;
 	}
 
 	label = gtk_label_new(tmp_char);
@@ -1283,12 +1252,7 @@ display_it:
 		}
 		list_push(send_block_list, block_ptr);
 
-		if (((cluster_flags & CLUSTER_FLAG_BGL) ||
-		     (cluster_flags & CLUSTER_FLAG_BGP)) &&
-		    (block_ptr->state == RM_PARTITION_ERROR))
-			state = NODE_STATE_ERROR;
-		else if ((cluster_flags & CLUSTER_FLAG_BGQ) &&
-		         (block_ptr->state == BG_BLOCK_ERROR))
+		if (block_ptr->state == BG_BLOCK_ERROR)
 			state = NODE_STATE_ERROR;
 		else if (block_ptr->job_running > NO_JOB_RUNNING)
 			state = NODE_STATE_ALLOCATED;

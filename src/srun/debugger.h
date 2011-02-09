@@ -48,12 +48,12 @@
  * them, and will be confused if you change them.
  */
 
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if defined HAVE_BG_FILES
 /* On bluegene systems the below structure is defined here.  So as to
  * not confict with allocate.c including this file we will just use the
  * definition there instead of defining it here.
  */
-# include "src/plugins/select/bluegene/wrap_rm_api.h"
+# include "src/plugins/select/bluegene/common/bg_enums.h"
 #else
 typedef struct {
   char * host_name;           /* Something we can pass to inet_addr */

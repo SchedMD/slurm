@@ -389,7 +389,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 /* 			info("bringing %s back to service", */
 /* 			     bg_record->bg_block_id); */
 /* 			bg_record->job_running = NO_JOB_RUNNING; */
-/* 			bg_record->state = RM_PARTITION_FREE; */
+/* 			bg_record->state = BG_BLOCK_FREE; */
 /* 			last_bg_update = time(NULL); */
 /* 		} */
 /* 		list_iterator_destroy(itr); */

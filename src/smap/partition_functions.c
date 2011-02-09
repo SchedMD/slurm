@@ -47,8 +47,8 @@
 
 typedef struct {
 	char *bg_block_name;
-	enum connection_type bg_conn_type;
-	enum node_use_type bg_node_use;
+	uint16_t bg_conn_type;
+	uint16_t bg_node_use;
 	char *bg_user_name;
 	char *ionodes;
 	int job_running;
@@ -59,7 +59,7 @@ typedef struct {
 	bool printed;
 	int size;
 	char *slurm_part_name;
-	rm_partition_state_t state;
+	uint16_t state;
 } db2_block_info_t;
 
 static List block_list = NULL;
@@ -415,7 +415,7 @@ static void _marknodes(db2_block_info_t *block_ptr, int count)
 			j++;	/* Skip middle 'x' or '-' */
 			for (i = 0; i < params.cluster_dims; i++, j++)
 				end[i] = _coord(nodes[j]);
-			if (block_ptr->state != RM_PARTITION_FREE) {
+			if (block_ptr->state != BG_BLOCK_FREE) {
 				block_ptr->size += set_grid_bg(
 					start, end, count, 1);
 			} else {

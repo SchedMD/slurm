@@ -1332,12 +1332,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 				bg_info_ptr->ionodes);
 			nodes = tmp_nodes;
 		}
-		if (((cluster_flags & CLUSTER_FLAG_BGL) ||
-		     (cluster_flags & CLUSTER_FLAG_BGP)) &&
-		    (bg_info_ptr->state == RM_PARTITION_ERROR))
-			grid_button->state = NODE_STATE_ERROR;
-		else if ((cluster_flags & CLUSTER_FLAG_BGQ) &&
-		         (bg_info_ptr->state == BG_BLOCK_ERROR))
+		if (bg_info_ptr->state == BG_BLOCK_ERROR)
 			grid_button->state = NODE_STATE_ERROR;
 		else if (bg_info_ptr->job_running > NO_JOB_RUNNING)
 			grid_button->state = NODE_STATE_ALLOCATED;

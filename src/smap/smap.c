@@ -122,8 +122,10 @@ int main(int argc, char *argv[])
 	dim_size = slurmdb_setup_cluster_dim_size();
 
 	if (params.resolve) {
-
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
+#if 1
+		error("this doesn't work in the current 2.3 code. FIXME");
+#else
 		if (!have_db2) {
 			printf("Required libraries can not be found "
 			       "to access the Bluegene system.\nPlease "
@@ -166,8 +168,7 @@ int main(int argc, char *argv[])
 			}
 		}
 part_fini:
-#elseif defined(HAVE_BGQ)
-		printf("BlueGene/Q currently not supported.\n");
+#endif
 #else
 		printf("Must be physically on a BlueGene system for support "
 		       "of resolve option.\n");

@@ -85,6 +85,6 @@ extern int term_job(struct job_record *job_ptr);
  * NOTE: This happens when new partitions are created and we
  * need to clean up jobs on them.
  */
-extern int term_jobs_on_block(pm_partition_id_t bg_block_id);
+extern int term_jobs_on_block(char *bg_block_id);
 
 #endif /* _BG_JOB_RUN_H_ */

@@ -362,7 +362,7 @@ extern int select_p_state_save(char *dir_name)
 		 * the blocks in an error state
 		 */
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-		if (bg_record->state != RM_PARTITION_ERROR)
+		if (bg_record->state != BG_BLOCK_ERROR)
 			continue;
 #endif
 		xassert(bg_record->bg_block_id != NULL);
@@ -782,11 +782,11 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 
 	if (block_desc_ptr->reason)
 		snprintf(reason, sizeof(reason), "%s", block_desc_ptr->reason);
-	else if (block_desc_ptr->state == RM_PARTITION_CONFIGURING)
+	else if (block_desc_ptr->state == BG_BLOCK_BOOTING)
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
 			 "Admin recreated %s.", bg_record->bg_block_id);
-	else if (block_desc_ptr->state == RM_PARTITION_NAV) {
+	else if (block_desc_ptr->state == BG_BLOCK_NAV) {
 		if (bg_record->conn_type < SELECT_SMALL)
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
@@ -824,7 +824,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_record->job_ptr = NULL;
 	}
 
-	if (block_desc_ptr->state == RM_PARTITION_ERROR) {
+	if (block_desc_ptr->state == BG_BLOCK_ERROR) {
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
@@ -881,19 +881,19 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
-	} else if (block_desc_ptr->state == RM_PARTITION_FREE) {
+	} else if (block_desc_ptr->state == BG_BLOCK_FREE) {
 		bg_free_block(bg_record, 0, 1);
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
-	} else if (block_desc_ptr->state == RM_PARTITION_DEALLOCATING) {
-		/* This can't be RM_PARTITION_READY since the enum
+	} else if (block_desc_ptr->state == BG_BLOCK_TERM) {
+		/* This can't be BG_BLOCK_INITED since the enum
 		   changed from BGL to BGP and if we are running cross
 		   cluster it just doesn't work.
 		*/
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC
-		   && (block_desc_ptr->state == RM_PARTITION_NAV)) {
+		   && (block_desc_ptr->state == BG_BLOCK_NAV)) {
 		/* This means remove the block from the system.  If
 		   the block is a small block we need to remove all the
 		   blocks on that midplane.
@@ -957,7 +957,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		   to a normal state in accounting first */
 		itr = list_iterator_create(delete_list);
 		while ((found_record = list_next(itr))) {
-			if (found_record->state == RM_PARTITION_ERROR)
+			if (found_record->state == BG_BLOCK_ERROR)
 				resume_block(found_record);
 		}
 		list_iterator_destroy(itr);
@@ -965,14 +965,14 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
-	} else if (block_desc_ptr->state == RM_PARTITION_CONFIGURING) {
+	} else if (block_desc_ptr->state == BG_BLOCK_BOOTING) {
 		/* This means recreate the block, remove it and then
 		   recreate it.
 		*/
 
 		/* make sure if we are removing a block to put it back
 		   to a normal state in accounting first */
-		if (bg_record->state == RM_PARTITION_ERROR)
+		if (bg_record->state == BG_BLOCK_ERROR)
 			resume_block(bg_record);
 
 		term_jobs_on_block(bg_record->bg_block_id);
@@ -1145,7 +1145,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	}
 	node_name = xstrdup_printf("%s%s", bg_conf->slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
-	if (block_desc_ptr->state == RM_PARTITION_ERROR) {
+	if (block_desc_ptr->state == BG_BLOCK_ERROR) {
 		info("Admin setting %s[%s] in an error state",
 		     node_name, ionodes);
 		for(i = 0; i<bg_conf->numpsets; i++) {
@@ -1160,7 +1160,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 			}
 			nc_pos += bg_conf->nc_ratio;
 		}
-	} else if (block_desc_ptr->state == RM_PARTITION_FREE) {
+	} else if (block_desc_ptr->state == BG_BLOCK_FREE) {
 		info("Admin setting %s[%s] in an free state",
 		     node_name, ionodes);
 		up_nodecard(node_name, ionode_bitmap);

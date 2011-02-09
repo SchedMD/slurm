@@ -82,7 +82,6 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
 #include "src/plugins/select/bluegene/common/bg_enums.h"
 
 /* getopt_long options, integers but not characters */
