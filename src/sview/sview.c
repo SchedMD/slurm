@@ -709,7 +709,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"exit", GTK_STOCK_QUIT, "E_xit",
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
 		{"help", NULL, "_Help", "<alt>h"},
-		{"about", GTK_STOCK_ABOUT, "A_bout", "<control>b",
+		{"about", GTK_STOCK_ABOUT, "Ab_out", "<control>o",
 		 "About", G_CALLBACK(about_popup)},
 		//{"manual", GTK_STOCK_HELP, "_Manual", "<control>m"},
 		{"grid_specs", GTK_STOCK_EDIT, "Set Grid _Properties",
