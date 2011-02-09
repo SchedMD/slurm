@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
     system.
  -- Fix smap to once again print out the Letter 'ID' for each line of a block/
     partition view.
+ -- Corrected the NOTES section of the scancel man page
 
 * Changes in SLURM 2.2.1
 ========================
