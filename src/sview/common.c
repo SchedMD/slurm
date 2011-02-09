@@ -766,6 +766,7 @@ extern int get_topo_conf(void)
 	int i;
 	switch_record_bitmaps_t sw_nodes_bitmaps;
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr;
+
 	if (TOPO_DEBUG)
 		g_print("get_topo_conf\n");
 
@@ -792,28 +793,20 @@ extern int get_topo_conf(void)
 	if (TOPO_DEBUG)
 		g_print("_display_topology,  record_count = %d\n",
 			g_topo_info_msg_ptr->record_count);
-	for (i=0; i < g_topo_info_msg_ptr->record_count;
+	for (i = 0; i < g_topo_info_msg_ptr->record_count;
 	     i++, sw_nodes_bitmaps_ptr++) {
-		if (g_topo_info_msg_ptr->topo_array[i].nodes) {
-			if (TOPO_DEBUG)
-				g_print("ptr->nodes =  %s \n",
-					g_topo_info_msg_ptr->
-					topo_array[i].nodes);
-			if (build_nodes_bitmap(
-				    g_topo_info_msg_ptr->topo_array[i].nodes,
-				    &sw_nodes_bitmaps_ptr->node_bitmap)) {
-				fatal("Invalid node name (%s) in switch "
-				      "config (%s)",
-				      g_topo_info_msg_ptr->topo_array[i].nodes,
-				      g_topo_info_msg_ptr->topo_array[i].name);
-				if (TOPO_DEBUG)
-					g_print("Invalid node name (%s) "
-						"in switch  %s \n",
-						g_topo_info_msg_ptr->
-						topo_array[i].nodes,
-						g_topo_info_msg_ptr->
-						topo_array[i].name);
-			}
+		if (!g_topo_info_msg_ptr->topo_array[i].nodes)
+			continue;
+		if (TOPO_DEBUG)  {
+			g_print("ptr->nodes =  %s \n",
+				g_topo_info_msg_ptr->topo_array[i].nodes);
+		}
+		if (build_nodes_bitmap(
+			    g_topo_info_msg_ptr->topo_array[i].nodes,
+			    &sw_nodes_bitmaps_ptr->node_bitmap)) {
+			g_print("Invalid node name (%s) in switch %s\n",
+				g_topo_info_msg_ptr->topo_array[i].nodes,
+				g_topo_info_msg_ptr->topo_array[i].name);
 		}
 	}
 

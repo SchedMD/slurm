@@ -395,34 +395,6 @@ static void _append_node_record(sview_node_info_t *sview_node_info,
 	_update_node_record(sview_node_info, treestore, iter);
 }
 
-static int _get_topo_color_ndx(int node_ndx)
-{
-	int i = 0;
-	int rdx = MAKE_TOPO_2;
-	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
-
-	for (i=0; i<g_topo_info_msg_ptr->record_count;
-	     i++, sw_nodes_bitmaps_ptr++) {
-		if (g_topo_info_msg_ptr->topo_array[i].level)
-			continue;
-		if (bit_test(sw_nodes_bitmaps_ptr->node_bitmap, node_ndx)) {
-			rdx = i;
-			break;
-		}
-	}
-	if (rdx == MAKE_TOPO_2)
-		return rdx;
-//	if (rdx != _l_sw_color_ndx) {
-//		_l_sw_color_ndx = rdx;
-//		if (_l_topo_color_ndx == MAKE_TOPO_1)
-//			_l_topo_color_ndx = MAKE_TOPO_2;
-//		else
-//			_l_topo_color_ndx = MAKE_TOPO_1;
-//	}
-//	return _l_topo_color_ndx;
-	return MAKE_TOPO_1;
-}
-
 static void _update_info_node(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreePath *path = gtk_tree_path_new_first();
@@ -803,7 +775,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 
 	if (!g_topo_info_msg_ptr &&
 	    default_sview_config.grid_topological) {
-		get_topo_conf(); /*pull in topology NOW*/
+		get_topo_conf(); /* pull in topology NOW */
 	}
 end_it:
 	return error_code;
@@ -1188,7 +1160,6 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	List info_list = NULL;
 	int changed = 1;
 	int i = 0, sort_key;
-	int b_color_ndx;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
@@ -1254,26 +1225,14 @@ display_it:
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
 					 &path, &focus_column);
 	}
-	if (!path || working_sview_config.grid_topological) {
+	if (!path) {
 		int array_size = node_info_ptr->record_count;
 		int  *color_inx = xmalloc(sizeof(int) * array_size);
 		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(info_list);
 		while ((sview_node_info_ptr = list_next(itr))) {
-			if (g_topo_info_msg_ptr) {
-				//derive topo_color
-				b_color_ndx = _get_topo_color_ndx(i);
-
-				if (b_color_ndx != MAKE_TOPO_2) {
-					/* node belongs to a switch */
-					if (sview_node_info_ptr->node_ptr->
-					    node_state != NODE_STATE_IDLE )
-						b_color_ndx = i;
-				}
-			} else
-				b_color_ndx = i;
 			color_set_flag[i] = true;
-			color_inx[i] = b_color_ndx;
+			color_inx[i] = i;
 			i++;
 		}
 		list_iterator_destroy(itr);

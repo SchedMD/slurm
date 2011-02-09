@@ -447,8 +447,6 @@ static void _each_highlightd(GtkTreeModel *model,
 	return;
 }
 
-
-
 static void _each_highlight_selected(GtkTreeModel *model,
 				     GtkTreePath *path,
 				     GtkTreeIter *iter,
@@ -472,9 +470,8 @@ static void _each_highlight_selected(GtkTreeModel *model,
 		return;
 	itr = list_iterator_create(grid_foreach->button_list);
 	while ((grid_button = list_next(itr))) {
-		/*For multiple selections, need to retain all selected.
-		 *(previously this assumed only one selected).
-		 */
+		/* For multiple selections, need to retain all selected.
+		 * (previously this assumed only one selected). */
 		if (grid_button->inx != node_inx)
 			continue;
 		else if (GTK_WIDGET_STATE(grid_button->button)
