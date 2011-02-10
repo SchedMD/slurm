@@ -63,7 +63,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.2
 ========================
  -- Correct logic to set correct job hold state (admin or user) when setting
-    the job's priority using scontrol's "update jobid=..." rather than its 
+    the job's priority using scontrol's "update jobid=..." rather than its
     "hold" or "holdu" commands.
  -- Modify squeue to report unset --mincores, --minthreads or --extra-node-info
     values as "*" rather than 65534. Patch from Rod Schulz, BULL.
@@ -82,6 +82,16 @@ documents those changes that are of interest to users and admins.
     not running the job anyway.
  -- In slurmctld, properly set the up_node_bitmap when setting it's state to
     IDLE (in case the previous node state was DOWN).
+ -- Fix smap to process block midplane names correctly when on a bluegene
+    system.
+ -- Fix smap to once again print out the Letter 'ID' for each line of a block/
+    partition view.
+ -- Corrected the NOTES section of the scancel man page
+ -- Fix for accounting_storage/mysql plugin to correctly query cluster based
+    transactions.
+ -- Fix issue when updating database for clusters that were previously deleted
+    before upgrade to 2.2 database.
+ -- BLUEGENE - Handle mesh torus check better in dynamic mode.
 
 * Changes in SLURM 2.2.1
 ========================

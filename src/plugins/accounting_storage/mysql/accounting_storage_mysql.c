@@ -73,6 +73,11 @@ char *slurmctld_cluster_name = NULL;
 #endif
 
 List as_mysql_cluster_list = NULL;
+/* This total list is only used for converting things, so no
+   need to keep it upto date even though it lives until the
+   end of the life of the slurmdbd.
+*/
+List as_mysql_total_cluster_list = NULL;
 pthread_mutex_t as_mysql_cluster_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
@@ -150,7 +155,7 @@ enum {
 
 extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn);
 
-static List _get_cluster_names(mysql_conn_t *mysql_conn)
+static List _get_cluster_names(mysql_conn_t *mysql_conn, bool with_deleted)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -158,8 +163,10 @@ static List _get_cluster_names(mysql_conn_t *mysql_conn)
 	char *cluster_name = NULL;
 	bool found = 0;
 
-	char *query = xstrdup_printf("select name from %s where deleted=0",
-				     cluster_table);
+	char *query = xstrdup_printf("select name from %s", cluster_table);
+
+	if (!with_deleted)
+		xstrcat(query, " where deleted=0");
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -612,15 +619,28 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		return SLURM_ERROR;
 
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
-	if (!(as_mysql_cluster_list = _get_cluster_names(mysql_conn))) {
+	if (!(as_mysql_cluster_list = _get_cluster_names(mysql_conn, 0))) {
 		error("issue getting contents of %s", cluster_table);
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		return SLURM_ERROR;
 	}
 
+	/* This total list is only used for converting things, so no
+	   need to keep it upto date even though it lives until the
+	   end of the life of the slurmdbd.
+	*/
+	if (!(as_mysql_total_cluster_list =
+	      _get_cluster_names(mysql_conn, 1))) {
+		error("issue getting total contents of %s", cluster_table);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		return SLURM_ERROR;
+	}
+
 	/* might as well do all the cluster centric tables inside this
-	 * lock */
-	itr = list_iterator_create(as_mysql_cluster_list);
+	 * lock.  We need to do this on all the clusters deleted or
+	 * other wise just to make sure everything is kept up to
+	 * date. */
+	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		if ((rc = create_cluster_tables(mysql_conn, cluster_name))
 		    != SLURM_SUCCESS)
@@ -2017,6 +2037,10 @@ extern int fini ( void )
 	if (as_mysql_cluster_list) {
 		list_destroy(as_mysql_cluster_list);
 		as_mysql_cluster_list = NULL;
+	}
+	if (as_mysql_total_cluster_list) {
+		list_destroy(as_mysql_total_cluster_list);
+		as_mysql_total_cluster_list = NULL;
 	}
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	slurm_mutex_destroy(&as_mysql_cluster_list_lock);

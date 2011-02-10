@@ -1319,8 +1319,16 @@ static int _sync_block_lists(List full_list, List incomp_list)
 			if (bg_record->free_cnt == new_record->free_cnt
 			    && bit_equal(bg_record->bitmap, new_record->bitmap)
 			    && bit_equal(bg_record->ionode_bitmap,
-					 new_record->ionode_bitmap))
+					 new_record->ionode_bitmap)) {
+				/* now make sure the conn_type is the same for
+				   regular sized blocks */
+				if ((bg_record->node_cnt
+				     >= bg_conf->mp_node_cnt)
+				    && bg_record->conn_type
+				    != new_record->conn_type)
+					continue;
 				break;
+			}
 		}
 
 		if (!bg_record) {

@@ -180,18 +180,16 @@ The location of the SLURM configuration file.
 If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR)
 only the jobs satisfying all of the filtering options will be signaled.
 .LP
-If a signal value of "KILL" (the default value) is to be sent to an entire
-job, this will result in the job's termination and its resource allocation
-being released.
-.LP
-Specifying no \-\-signal option will send a SIGTERM and
-wait the KillWait duration as defined in the slurm.conf file before sending the
-SIGKILL giving time for the running job/step(s) to clean up.  To
-immediately kill a job, you can specify \-\-signal=KILL which will
-bypass the SIGTERM.
-.LP
-Cancelling a job step will not result in a job being terminated.
+Cancelling a job step will not result in the job being terminated.
 The job must be cancelled to release a resource allocation.
+.LP
+To cancel a job, invoke \fBscancel\fR without \-\-signal option.  This
+will send a SIGTERM to all the job steps, wait the KillWait duration
+defined in the slurm.conf file, and then send a SIGKILL.  This gives
+time for the running job/step(s) to clean up.
+.LP
+If a signal value of "KILL" is sent to an entire job, this will cancel
+the active job steps but not cancel the job itself.
 
 .SH "AUTHORIZATION"
 

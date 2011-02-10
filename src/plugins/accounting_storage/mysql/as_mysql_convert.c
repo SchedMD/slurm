@@ -1208,7 +1208,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	/* now convert to new form */
-	itr = list_iterator_create(as_mysql_cluster_list);
+	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		pthread_t convert_tid;
 		pthread_attr_t convert_attr;
@@ -1380,7 +1380,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		}
 	}
 
-	while (converted < list_count(as_mysql_cluster_list)) {
+	while (converted < list_count(as_mysql_total_cluster_list)) {
 		pthread_cond_wait(&converted_cond, &converted_lock);
 		debug2("Got %d converted", converted);
 	}

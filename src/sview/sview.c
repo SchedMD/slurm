@@ -736,7 +736,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"exit", GTK_STOCK_QUIT, "E_xit",
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
 		{"help", NULL, "_Help", "<alt>h"},
-		{"about", GTK_STOCK_ABOUT, "About", "",
+		{"about", GTK_STOCK_ABOUT, "Ab_out", "<control>o",
 		 "About", G_CALLBACK(about_popup)},
 		{"usage", GTK_STOCK_HELP, "Usage", "",
 		 "Usage", G_CALLBACK(usage_popup)},
