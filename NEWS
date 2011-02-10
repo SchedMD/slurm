@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
     transactions.
  -- Fix issue when updating database for clusters that were previously deleted
     before upgrade to 2.2 database.
+ -- BLUEGENE - Handle mesh torus check better in dynamic mode.
 
 * Changes in SLURM 2.2.1
 ========================
