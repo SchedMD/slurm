@@ -56,8 +56,8 @@ if {[test_multiple_slurmd] != 0} {
 # Various configurations allocate nodes, sockets, cores, cpus or threads;
 # not all of which are compatible with this test
 set select_type [test_select_type]
-if {[string compare $select_type "linear"]} {
-	send_user "\nWARNING: This test is compatible with select/$select_type\n"
+if {[string compare $select_type "cons_res"]} {
+	send_user "\nWARNING: This test is incompatible with select/$select_type\n"
 	exit 0
 }
 
