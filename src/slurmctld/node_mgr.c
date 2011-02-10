@@ -1641,8 +1641,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			last_node_update = time (NULL);
-			error("Prolog failure on node %s, state to DOWN",
-				reg_msg->node_name);
+			error("Prolog failure on node %s, setting state DOWN",
+			      reg_msg->node_name);
 			set_node_down(reg_msg->node_name, "Prolog failed");
 		}
 	} else {
@@ -1836,7 +1836,10 @@ extern int validate_nodes_via_front_end(
 
 	if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		error("Prolog failed on node %s", reg_msg->node_name);
-		set_front_end_down(front_end_ptr, "Prolog failed");
+		/* Do NOT set the node DOWN here. Unlike non-front-end systems,
+		 * this failure is likely due to some problem in the underlying
+		 * infrastructure (e.g. the block failed to boot). */
+		/* set_front_end_down(front_end_ptr, "Prolog failed"); */
 	}
 
 	/* First validate the job info */
