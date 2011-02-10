@@ -89,15 +89,16 @@ typedef enum bg_layout_type {
 } bg_layout_t;
 
 typedef enum {
-	BG_BLOCK_NAV = 0,   // Block state is undefined
-	BG_BLOCK_FREE,      // Block is free
+	BG_BLOCK_FREE = 0,  // Block is free
+	BG_BLOCK_ALLOCATED, // Block is allocated (reserved either
+			    // right before booting or right before free
 	BG_BLOCK_BUSY,      // Block is Busy
 	BG_BLOCK_BOOTING,   // Block is booting
-	BG_BLOCK_REBOOTING, // Block is rebooting
 	BG_BLOCK_INITED,    // Block is initialized
-	BG_BLOCK_ALLOCATED, // Block is allocated
+	BG_BLOCK_REBOOTING, // Block is rebooting
 	BG_BLOCK_TERM,      // Block is terminating
 	BG_BLOCK_ERROR,     // Block is in error
+	BG_BLOCK_NAV,       // Block state is undefined
 } bg_block_status_t;
 
 typedef enum {
