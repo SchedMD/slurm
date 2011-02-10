@@ -3080,13 +3080,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->restart_cnt++;
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
-		/* Since the job completion logger
-		   removes the submit we need to add it
-		   again.
-		*/
+		/* Since the job completion logger removes the job submit
+		 * information, we need to add it again. */
 		acct_policy_add_job_submit(job_ptr);
 
-		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
+		info("Requeue JobId=%u due to node failure", job_ptr->job_id);
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
 		   job_ptr->batch_flag) {
 		/* Possible failure mode with DOWN node and job requeue.
@@ -8756,6 +8754,8 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 		goto reply;
 	}
 	if (IS_JOB_COMPLETING(job_ptr)) {
+		if (IS_JOB_PENDING(job_ptr))
+			goto reply;	/* already requeued */
 		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
 		goto reply;
 	}

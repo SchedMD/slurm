@@ -1502,8 +1502,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		      msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 	} else if (comp_msg->slurm_rc != SLURM_SUCCESS) {
-		error("Fatal slurmd error %u running JobId=%u "
-		      "on %s=%s: %s",
+		error("slurmd error %u running JobId=%u on %s=%s: %s",
 		      comp_msg->slurm_rc,
 		      comp_msg->job_id,
 		      msg_title, nodes,

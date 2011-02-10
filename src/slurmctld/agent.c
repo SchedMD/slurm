@@ -682,6 +682,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #if AGENT_IS_THREAD
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
+		char *down_msg, *node_names;
 		if (!thread_ptr[i].ret_list) {
 			state = thread_ptr[i].state;
 			is_ret_list = 0;
@@ -705,17 +706,19 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				}
 				break;
 			case DSH_FAILED:
-#ifdef HAVE_BG
-				error("Prolog/epilog failure");
+				if (is_ret_list)
+					node_names = ret_data_info->node_name;
+				else
+					node_names = thread_ptr[i].nodelist;
+#ifdef HAVE_FRONT_END
+				down_msg = "";
 #else
-				if (!is_ret_list) {
-					set_node_down(thread_ptr[i].nodelist,
-						      "Prolog/epilog failure");
-				} else {
-					set_node_down(ret_data_info->node_name,
-						      "Prolog/epilog failure");
-				}
+				set_node_down(node_names,
+					      "Prolog/Epilog failure");
+				down_msg = ", set to state DOWN";
 #endif
+				error("Prolog/Epilog failure on nodes %s%s",
+				      node_names, down_msg);
 				break;
 			case DSH_DONE:
 				if (!is_ret_list)
@@ -969,9 +972,6 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURMD_PROLOG_FAILED:
-			error("Prolog failure on host %s, "
-			      "setting DOWN",
-			      ret_data_info->node_name);
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURM_INVALID_JOB_ID:
