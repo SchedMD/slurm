@@ -391,7 +391,7 @@ static void _init_colors(void)
 static void _smap_exit(int rc)
 {
 #ifdef MEMORY_LEAK_DEBUG
-	free_grid(void);
+	free_grid();
 	select_g_ba_fini();
 #endif
 	exit(rc);
