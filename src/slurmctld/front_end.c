@@ -779,11 +779,14 @@ extern void sync_front_end_state(void)
 				find_front_end_record(job_ptr->batch_host);
 			if ((job_ptr->front_end_ptr == NULL) &&
 			    IS_JOB_RUNNING(job_ptr)) {
-				error("front end node %s has vanish, "
+				error("front end node %s has vanished, "
 				      "killing job %u",
 				      job_ptr->batch_host, job_ptr->job_id);
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
+			} else if (job_ptr->front_end_ptr == NULL) {
+				info("front end node %s has vanished",
+				     job_ptr->batch_host);
 			} else if (IS_JOB_COMPLETING(job_ptr)) {
 				job_ptr->front_end_ptr->job_cnt_comp++;
 			} else if (IS_JOB_RUNNING(job_ptr)) {
