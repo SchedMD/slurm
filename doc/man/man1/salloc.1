@@ -21,6 +21,11 @@ section). If no command is specified, then the value of
 \fBSallocDefaultCommand\fR is not set, then \fBsalloc\fR runs the
 user's default shell.
 
+NOTE: The salloc logic includes support to save and restore the terminal line
+settings and is designed to be executed in the foreground. If you need to
+execute salloc in the background, set its standard input to some file, for
+example: "salloc \-n16 a.out </dev/null &"
+
 .SH "OPTIONS"
 .LP
 
