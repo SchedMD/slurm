@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- Corrected the NOTES section of the scancel man page
  -- Fix for accounting_storage/mysql plugin to correctly query cluster based
     transactions.
+ -- Fix issue when updating database for clusters that were previously deleted
+    before upgrade to 2.2 database.
 
 * Changes in SLURM 2.2.1
 ========================
