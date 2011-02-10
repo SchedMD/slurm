@@ -39,7 +39,7 @@
 #ifndef _BLOCK_ALLOCATOR_H_
 #define _BLOCK_ALLOCATOR_H_
 
-#include "bridge_linker.h"
+#include "../bridge_linker/bridge_linker.h"
 #include "src/common/node_select.h"
 
 // #define DEBUG_PA
