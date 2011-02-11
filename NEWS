@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- Fix issue when updating database for clusters that were previously deleted
     before upgrade to 2.2 database.
  -- BLUEGENE - Handle mesh torus check better in dynamic mode.
+ -- BLUEGENE - Fixed race condition when freeing block, most likely only would
+    happen in emulation.
 
 * Changes in SLURM 2.2.1
 ========================

@@ -59,12 +59,10 @@
 #define _DEBUG 0
 
 typedef struct {
-	bg_record_t *bg_record;
-	pthread_cond_t *free_cond;
-	int *free_cnt;
-	pthread_mutex_t *free_mutex;
-	bool wait;
-} bg_free_t;
+	List track_list;
+	uint32_t job_id;
+	bool destroy;
+} bg_free_block_list_t;
 
 /* Global variables */
 
@@ -86,7 +84,6 @@ static int _delete_old_blocks(List curr_block_list,
 			      List found_block_list);
 static int _post_block_free(bg_record_t *bg_record, bool restore);
 static void *_track_freeing_blocks(void *args);
-static void *_wait_and_destroy_block(void *args);
 static char *_get_bg_conf(void);
 static int  _reopen_bridge_log(void);
 static void _destroy_bitmap(void *object);
@@ -597,21 +594,24 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 	bg_record_t *bg_record = NULL;
 	int retries;
 	ListIterator itr = NULL;
-	int track_cnt = 0, free_cnt = 0, retry_cnt = 0, rc = SLURM_SUCCESS;
-	bool restore = true;
-	List track_list;
+	bg_free_block_list_t *bg_free_list;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
 
-	if (!track_in_list || !(track_cnt = list_count(track_in_list)))
+	if (!track_in_list || !list_count(track_in_list))
 		return SLURM_SUCCESS;
 
+	bg_free_list = xmalloc(sizeof(bg_free_block_list_t));
+	bg_free_list->track_list = list_create(NULL);
+	bg_free_list->destroy = destroy;
+	bg_free_list->job_id = job_id;
+
 	slurm_mutex_lock(&block_state_mutex);
-	track_list = list_create(NULL);
-	list_transfer(track_list, track_in_list);
-	itr = list_iterator_create(track_list);
+	list_transfer(bg_free_list->track_list, track_in_list);
+	itr = list_iterator_create(bg_free_list->track_list);
 	while ((bg_record = list_next(itr))) {
 		if (bg_record->magic != BLOCK_MAGIC) {
 			error("block was already destroyed");
-			free_cnt++;
 			continue;
 		}
 
@@ -634,118 +634,36 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 		    == SLURM_SUCCESS)
 			num_unused_cpus += bg_record->cpu_cnt;
 
-		/* we will wait below */
-		if (!wait) {
-			pthread_attr_t attr_agent;
-			pthread_t thread_agent;
-			slurm_attr_init(&attr_agent);
-			if (pthread_attr_setdetachstate(
-				    &attr_agent, PTHREAD_CREATE_DETACHED))
-				error("pthread_attr_setdetachstate error %m");
-			retries = 0;
-			while (pthread_create(&thread_agent, &attr_agent,
-					      _wait_and_destroy_block,
-					      bg_record)) {
-				error("pthread_create error %m");
-				if (++retries > MAX_PTHREAD_RETRIES)
-					fatal("Can't create "
-					      "pthread");
-				/* sleep and retry */
-				usleep(1000);
-			}
-
-			continue;
-		}
 		bg_free_block(bg_record, 0, 1);
 	}
+	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
 
-	/* _wait_and_destroy_block should handle cleanup, but we
-	 * should start a thread just to make sure we have current
-	 * states, then just return */
-	if (!wait) {
-		pthread_attr_t attr_agent;
-		pthread_t thread_agent;
-		slurm_attr_init(&attr_agent);
-		list_iterator_destroy(itr);
-		retries = 0;
-		while (pthread_create(&thread_agent, &attr_agent,
-				      _track_freeing_blocks,
-				      track_list)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_PTHREAD_RETRIES)
-				fatal("Can't create "
-				      "pthread");
-			/* sleep and retry */
-			usleep(1000);
-		}
+	if (wait) {
+		/* Track_freeing_blocks waits until the list is done
+		   and frees the memory of bg_free_list.
+		*/
+		_track_freeing_blocks(bg_free_list);
 		return SLURM_SUCCESS;
 	}
 
-	/* If no block is in error state remove and destroy them. */
-	retry_cnt = 0;
-	debug("Going to free %d for job %u", track_cnt, job_id);
-	while (retry_cnt < MAX_FREE_RETRIES) {
-		free_cnt = 0;
-		slurm_mutex_lock(&block_state_mutex);
-		/* just to make sure state is updated */
-		update_block_list_state(track_list);
-		list_iterator_reset(itr);
-		/* just incase things change */
-		track_cnt = list_count(track_list);
-		while ((bg_record = list_next(itr))) {
-#ifndef HAVE_BG_FILES
-			/* Fake a free since we are n deallocating
-			   state before this.
-			*/
-			if (retry_cnt >= 3)
-				bg_record->state = RM_PARTITION_FREE;
-#endif
-			if ((bg_record->state == RM_PARTITION_FREE)
-			    || (bg_record->state == RM_PARTITION_ERROR))
-				free_cnt++;
-			else if (bg_record->state != RM_PARTITION_DEALLOCATING)
-				bg_free_block(bg_record, 0, 1);
-		}
-		slurm_mutex_unlock(&block_state_mutex);
-		if (free_cnt == track_cnt)
-			break;
-		debug("freed %d of %d for job %u", free_cnt, track_cnt, job_id);
-		sleep(FREE_SLEEP_INTERVAL);
-		retry_cnt++;
+	/* _track_freeing_blocks handles cleanup */
+	slurm_attr_init(&attr_agent);
+	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	retries = 0;
+	while (pthread_create(&thread_agent, &attr_agent,
+			      _track_freeing_blocks,
+			      bg_free_list)) {
+		error("pthread_create error %m");
+		if (++retries > MAX_PTHREAD_RETRIES)
+			fatal("Can't create "
+			      "pthread");
+		/* sleep and retry */
+		usleep(1000);
 	}
-	debug("Freed them all for job %u", job_id);
-
-	if ((bg_conf->layout_mode == LAYOUT_DYNAMIC) || destroy)
-		restore = false;
-
-	/* If there is a block in error state we need to keep all
-	 * these blocks around. */
-	slurm_mutex_lock(&block_state_mutex);
-	list_iterator_reset(itr);
-	while ((bg_record = list_next(itr))) {
-		/* block no longer exists */
-		if (bg_record->magic != BLOCK_MAGIC)
-			continue;
-		if (bg_record->state != RM_PARTITION_FREE) {
-			restore = true;
-			rc = SLURM_ERROR;
-			break;
-		}
-	}
-	slurm_mutex_unlock(&block_state_mutex);
-
-	/* now we need to lock it up. */
-	slurm_mutex_lock(&block_state_mutex);
-	list_iterator_reset(itr);
-	while ((bg_record = list_next(itr)))
-		_post_block_free(bg_record, restore);
-	slurm_mutex_unlock(&block_state_mutex);
-	last_bg_update = time(NULL);
-	list_iterator_destroy(itr);
-	list_destroy(track_list);
-
-	return rc;
+	slurm_attr_destroy(&attr_agent);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1660,21 +1578,37 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 
 static void *_track_freeing_blocks(void *args)
 {
-	List track_list = (List)args;
+	bg_free_block_list_t *bg_free_list = (bg_free_block_list_t *)args;
+	List track_list = bg_free_list->track_list;
+	bool destroy = bg_free_list->destroy;
+	uint32_t job_id = bg_free_list->job_id;
 	int retry_cnt = 0;
 	int free_cnt = 0, track_cnt = list_count(track_list);
 	ListIterator itr = list_iterator_create(track_list);
 	bg_record_t *bg_record;
+	bool restore = true;
 
-	debug("_track_freeing_blocks: Going to free %d", track_cnt);
+	debug("_track_freeing_blocks: Going to free %d for job %u",
+	      track_cnt, job_id);
 	while (retry_cnt < MAX_FREE_RETRIES) {
 		free_cnt = 0;
 		slurm_mutex_lock(&block_state_mutex);
+		/* just to make sure state is updated */
 		update_block_list_state(track_list);
 		list_iterator_reset(itr);
 		/* just incase this changes from the update function */
 		track_cnt = list_count(track_list);
 		while ((bg_record = list_next(itr))) {
+			if (bg_record->magic != BLOCK_MAGIC) {
+				/* update_block_list_state should
+				   remove this already from the list
+				   so we shouldn't ever have this.
+				*/
+				error("_track_freeing_blocks: block was "
+				      "already destroyed");
+				free_cnt++;
+				continue;
+			}
 #ifndef HAVE_BG_FILES
 			/* Fake a free since we are n deallocating
 			   state before this.
@@ -1685,48 +1619,44 @@ static void *_track_freeing_blocks(void *args)
 			if ((bg_record->state == RM_PARTITION_FREE)
 			    || (bg_record->state == RM_PARTITION_ERROR))
 				free_cnt++;
+			else if (bg_record->state != RM_PARTITION_DEALLOCATING)
+				bg_free_block(bg_record, 0, 1);
 		}
 		slurm_mutex_unlock(&block_state_mutex);
 		if (free_cnt == track_cnt)
 			break;
-		debug("_track_freeing_blocks: freed %d of %d",
-		      free_cnt, track_cnt);
+		debug("_track_freeing_blocks: freed %d of %d for job %u",
+		      free_cnt, track_cnt, job_id);
 		sleep(FREE_SLEEP_INTERVAL);
 		retry_cnt++;
 	}
-	debug("_track_freeing_blocks: Freed them all");
+	debug("_track_freeing_blocks: Freed them all for job %u", job_id);
 
-	list_iterator_destroy(itr);
-	list_destroy(track_list);
-	return NULL;
-}
-
-/* This should only be called from a thread */
-static void *_wait_and_destroy_block(void *args)
-{
-	bg_record_t *bg_record = (bg_record_t *)args;
-	bool restore = true;
-	slurm_mutex_lock(&block_state_mutex);
-
-	if (!bg_record || (bg_record->magic != BLOCK_MAGIC))
-		goto end_it;
-
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("_wait_and_destroy_block: freeing the block %s.",
-		     bg_record->bg_block_id);
-	bg_free_block(bg_record, 1, 1);
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("_wait_and_destroy_block: done %s",
-		     bg_record->bg_block_id);
-
-	if ((bg_record->state == RM_PARTITION_FREE)
-	    && (bg_conf->layout_mode == LAYOUT_DYNAMIC))
+	if ((bg_conf->layout_mode == LAYOUT_DYNAMIC) || destroy)
 		restore = false;
 
-	_post_block_free(bg_record, restore);
-	last_bg_update = time(NULL);
-end_it:
+	/* If there is a block in error state we need to keep all
+	 * these blocks around. */
+	slurm_mutex_lock(&block_state_mutex);
+	list_iterator_reset(itr);
+	while ((bg_record = list_next(itr))) {
+		/* block no longer exists */
+		if (bg_record->magic != BLOCK_MAGIC)
+			continue;
+		if (bg_record->state != RM_PARTITION_FREE) {
+			restore = true;
+			break;
+		}
+	}
+
+	list_iterator_reset(itr);
+	while ((bg_record = list_next(itr)))
+		_post_block_free(bg_record, restore);
 	slurm_mutex_unlock(&block_state_mutex);
+	last_bg_update = time(NULL);
+	list_iterator_destroy(itr);
+	list_destroy(track_list);
+	xfree(bg_free_list);
 	return NULL;
 }
 
