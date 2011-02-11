@@ -556,6 +556,37 @@ static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
+static int *_get_cluster_dims(void)
+{
+	int *dim_size = slurmdb_setup_cluster_dim_size();
+
+	if (!dim_size && g_node_info_ptr &&
+	    (cluster_flags & CLUSTER_FLAG_CRAYXT)) {
+		static int default_dims[3] = {0, 0, 0};
+		node_info_t *node_ptr;
+		int i, j, offset;
+
+		if (default_dims[0])
+			return default_dims;
+
+		for (i = 0; i < g_node_info_ptr->record_count; i++) {
+			node_ptr = &(g_node_info_ptr->node_array[i]);
+			if (!node_ptr->node_addr ||
+			    (strlen(node_ptr->node_addr) != cluster_dims))
+				continue;
+			for (j = 0; j < cluster_dims; j++) {
+				offset = node_ptr->node_addr[j] - '0' + 1;
+				default_dims[j] = MAX(default_dims[j],
+						      offset);
+			}
+		}
+		default_dims[0] *= 4;
+		return default_dims;
+	}
+
+	return dim_size;
+}
+
 /* Add a button for a given node. If node_ptr == NULL then fill in any gaps
  * in the grid just for a clean look. Always call with node_ptr == NULL for
  * the last call in the sequence. */
@@ -565,10 +596,11 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	static bool *node_exists = NULL;
 	static int node_exists_cnt = 1;
 	grid_button_t *grid_button = button_processor->grid_button;
-	int *dim_size = NULL, i, coord_x = 0, coord_y = 0, len = 0;
+	int *dim_size = NULL, i, coord_x = 0, coord_y = 0;
+	int len = 0, len_a = 0, len_h = 0;
 
 	if (cluster_dims > 1) {
-		dim_size = slurmdb_setup_cluster_dim_size();
+		dim_size = _get_cluster_dims();
 		if (dim_size == NULL) {
 			g_error("Could not read dim_size\n");
 			return SLURM_ERROR;
@@ -590,6 +622,20 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			if (len < cluster_dims) {
 				g_error("bad node name %s\n", node_ptr->name);
 				return SLURM_ERROR;
+			}
+			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+				len_a = strlen(node_ptr->node_addr);
+				len_h = strlen(node_ptr->node_hostname);
+				if (len_a < cluster_dims) {
+					g_error("bad node addr %s\n",
+						node_ptr->node_addr);
+					return SLURM_ERROR;
+				}
+				if (len_h < 1) {
+					g_error("bad node hostname %s\n",
+						node_ptr->node_hostname);
+					return SLURM_ERROR;
+				}
 			}
 		}
 	}
@@ -637,9 +683,16 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	} else if (cluster_dims == 3) {
 		int x, y, z;
 		if (node_ptr) {
-			x = _coord(node_ptr->name[len-3]);
-			y = _coord(node_ptr->name[len-2]);
-			z = _coord(node_ptr->name[len-1]);
+			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+				x = _coord(node_ptr->node_addr[len_a-3]) * 4 +
+				    _coord(node_ptr->node_hostname[len_h-1]);
+				y = _coord(node_ptr->node_addr[len_a-2]);
+				z = _coord(node_ptr->node_addr[len_a-1]);
+			} else {
+				x = _coord(node_ptr->name[len-3]);
+				y = _coord(node_ptr->name[len-2]);
+				z = _coord(node_ptr->name[len-1]);
+			}
 			i = (x * dim_size[1] + y) * dim_size[2] + z;
 			node_exists[i] = true;
 			_calc_coord_3d(x, y, z,
@@ -875,7 +928,7 @@ static int _init_button_processor(button_processor_t *button_processor,
 	memset(button_processor, 0, sizeof(button_processor_t));
 
 	if (cluster_dims > 1) {
-		dim_size = slurmdb_setup_cluster_dim_size();
+		dim_size = _get_cluster_dims();
 		if (dim_size == NULL) {
 			g_error("could not read dim_size\n");
 			return SLURM_ERROR;
