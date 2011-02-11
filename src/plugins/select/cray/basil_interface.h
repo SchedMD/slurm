@@ -20,6 +20,8 @@
 #include "src/common/node_select.h"
 #include "src/slurmctld/slurmctld.h"
 
+extern int dim_size[3];
+
 struct select_jobinfo {
 	uint16_t		magic;		/* magic number */
 	uint32_t		reservation_id;	/* BASIL reservation ID */

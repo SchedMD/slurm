@@ -109,7 +109,11 @@ static void _get_dims(int spur_cnt, int *coord, int dims)
 		coord[i] = 1;
 
 	do {
-		for (i = 0; i < dims; i++) {
+		/* Increase size of dimensions from high to low here and do so
+		 * by doubling sizes, but fill from low to high to improve
+		 * performance of Hilbert curve fitting for better job
+		 * locality */
+		for (i = (dims - 1); i >= 0; i--) {
 			if (count >= spur_cnt)
 				break;
 			count /= coord[i];

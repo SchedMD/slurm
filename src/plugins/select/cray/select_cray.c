@@ -693,7 +693,11 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 
 extern int *select_p_ba_get_dims(void)
 {
-	return other_ba_get_dims();
+	/* Size of system in each dimension as set by basil_geometry(),
+	 * which might not be called yet */
+	if (dim_size[0])
+		return dim_size;
+	return NULL;
 }
 
 extern void select_p_ba_fini(void)
