@@ -599,11 +599,13 @@ extern int free_block_list(uint32_t job_id, List track_in_list,
 	ListIterator itr = NULL;
 	int track_cnt = 0, free_cnt = 0, retry_cnt = 0, rc = SLURM_SUCCESS;
 	bool restore = true;
-	List track_list = list_create(NULL);
+	List track_list;
+
 	if (!track_in_list || !(track_cnt = list_count(track_in_list)))
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&block_state_mutex);
+	track_list = list_create(NULL);
 	list_transfer(track_list, track_in_list);
 	itr = list_iterator_create(track_list);
 	while ((bg_record = list_next(itr))) {
