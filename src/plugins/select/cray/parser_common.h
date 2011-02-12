@@ -10,7 +10,7 @@
 #include "basil_alps.h"
 
 /*
- * Enum-to-string mapping tables
+ * Global enum-to-string mapping tables
  */
 
 /* Basil versions */
