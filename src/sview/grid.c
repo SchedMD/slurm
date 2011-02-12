@@ -560,28 +560,14 @@ static int *_get_cluster_dims(void)
 {
 	int *dim_size = slurmdb_setup_cluster_dim_size();
 
-	if (!dim_size && g_node_info_ptr &&
-	    (cluster_flags & CLUSTER_FLAG_CRAYXT)) {
-		static int default_dims[3] = {0, 0, 0};
-		node_info_t *node_ptr;
-		int i, j, offset;
-
-		if (default_dims[0])
-			return default_dims;
-
-		for (i = 0; i < g_node_info_ptr->record_count; i++) {
-			node_ptr = &(g_node_info_ptr->node_array[i]);
-			if (!node_ptr->node_addr ||
-			    (strlen(node_ptr->node_addr) != cluster_dims))
-				continue;
-			for (j = 0; j < cluster_dims; j++) {
-				offset = node_ptr->node_addr[j] - '0' + 1;
-				default_dims[j] = MAX(default_dims[j],
-						      offset);
-			}
-		}
-		default_dims[0] *= 4;
-		return default_dims;
+	if ((cluster_flags & CLUSTER_FLAG_CRAYXT) && dim_size) {
+		static int cray_dim_size[3] = {-1, -1, -1};
+		/* For now, assume four nodes per coordinate all in
+		 * the same cage. Need to refine. */
+		cray_dim_size[0] = dim_size[0] * 4;
+		cray_dim_size[1] = dim_size[1];
+		cray_dim_size[2] = dim_size[2];
+		return cray_dim_size;
 	}
 
 	return dim_size;

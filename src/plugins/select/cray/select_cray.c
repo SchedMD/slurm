@@ -82,6 +82,8 @@ struct switch_record *switch_record_table;
 int switch_record_cnt;
 #endif
 
+int select_cray_dim_size[3] = {-1, -1, -1};
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -688,6 +690,22 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 {
+	if (select_cray_dim_size[0] == -1) {
+		node_info_t *node_ptr;
+		int i, j, offset;
+
+		for (i = 0; i < node_info_ptr->record_count; i++) {
+			node_ptr = &(node_info_ptr->node_array[i]);
+			if (!node_ptr->node_addr ||
+			    (strlen(node_ptr->node_addr) != 3))
+				continue;
+			for (j = 0; j < 3; j++) {
+				offset = node_ptr->node_addr[j] - '0' + 1;
+				select_cray_dim_size[j] = MAX(offset,
+						select_cray_dim_size[j]);
+			}
+		}
+	}
 	other_ba_init(node_info_ptr, sanity_check);
 }
 
@@ -695,8 +713,8 @@ extern int *select_p_ba_get_dims(void)
 {
 	/* Size of system in each dimension as set by basil_geometry(),
 	 * which might not be called yet */
-	if (dim_size[0])
-		return dim_size;
+	if (select_cray_dim_size[0] != -1)
+		return select_cray_dim_size;
 	return NULL;
 }
 
