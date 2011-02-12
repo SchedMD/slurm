@@ -94,7 +94,7 @@ static uint32_t resv_jobid[MAX_RESV_CNT];
 /* Given a count of elements to distribute over a "dims" size space, 
  * compute the minimum number of elements in each dimension to accomodate
  * them assuming the number of elements in each dimension is similar (i.e.
- * a cube rather than a long narrow box sys_spur_cntshape).
+ * a cube rather than a long narrow box shape).
  * IN spur_cnt - number of nodes at each coordinate
  * IN/OUT coord - maximum coordinates in each dimension
  * IN dims - -number of dimensions to use */
@@ -229,6 +229,10 @@ static void _init_hw_recs(int dims)
 /* Increment the hardware pointer records */
 static void _incr_hw_recs(void)
 {
+	if (++my_node_inx >= node_record_count)
+		return;	/* end of node table */
+
+	my_node_ptr++;
 	hw_cpu++;
 	if (hw_cpu > 3) {
 		hw_cpu = 0;
@@ -247,9 +251,6 @@ static void _incr_hw_recs(void)
 		hw_cabinet = 0;
 		hw_row++;
 	}
-
-	my_node_ptr++;
-	my_node_inx++;
 }
 
 extern void free_nodespec(struct nodespec *head)
