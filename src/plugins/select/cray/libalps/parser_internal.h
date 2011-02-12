@@ -63,7 +63,7 @@ extern int atou64(const char *str, uint64_t *value);
 extern int atou32(const char *str, uint32_t *value);
 
 /* popen2.c */
-extern pid_t popen2(char *command, int *in, int *out, bool no_stderr);
+extern pid_t popen2(const char *path, int *in, int *out, bool no_stderr);
 extern unsigned char wait_for_child(pid_t pid);
 
 /*

@@ -9,12 +9,11 @@
 /**
  * _get_alps_engine  -  run QUERY of type ENGINE
  * This uses the convention of returning the Engine.version attribute via 'msg'.
- * Returns static result, NULL on error.
+ * Returns pointer to @buf, NULL on error.
  */
-static const char *_get_alps_engine(void)
+static const char *_get_alps_engine(char *buf, size_t buflen)
 {
 	struct basil_parse_data bp = {0};
-	static char alps_engine[64];
 
 	/* For this query use Basil 1.0 as lowest common denominator */
 	bp.version = BV_1_0;
@@ -22,8 +21,8 @@ static const char *_get_alps_engine(void)
 
 	if (basil_request(&bp) < 0)
 		return NULL;
-	strncpy(alps_engine, bp.msg, sizeof(alps_engine));
-	return alps_engine;
+	strncpy(buf, bp.msg, buflen);
+	return buf;
 }
 
 /**
@@ -55,9 +54,9 @@ static const char *_get_alps_engine(void)
  */
 enum basil_version get_basil_version(void)
 {
-	const char *engine_version = _get_alps_engine();
+	char engine_version[BASIL_STRING_LONG];
 
-	if (engine_version == NULL)
+	if (_get_alps_engine(engine_version, sizeof(engine_version)) == NULL)
 		error("can not determine ALPS Engine.version");
 	else if (strncmp(engine_version, "3.1.0", 5) == 0)
 		return BV_3_1;

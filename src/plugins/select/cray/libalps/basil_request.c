@@ -11,7 +11,7 @@
  * The location of the 'apbasil' stdin/stdout interface to ALPS
  * Has not changed between XT3 ... XT5 ... XE
  */
-static char *alps_client = "/usr/bin/apbasil";
+static const char *alps_client = "/usr/bin/apbasil";
 
 static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 {

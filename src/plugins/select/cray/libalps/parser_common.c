@@ -23,9 +23,6 @@ const char *nam_proc[BPT_MAX];
 const char *nam_rsvn_mode[BRM_MAX];
 const char *nam_gpc_mode[BGM_MAX];
 
-/* GLOBALS */
-static XML_Parser parser;
-
 /*
  *	General-purpose routines
  */
@@ -609,6 +606,7 @@ int parse_basil(struct basil_parse_data *bp, int fd)
 {
 	char xmlbuf[65536];
 	struct ud ud = {0};
+	XML_Parser parser;
 	int len;
 
 	/* Almost all methods require method-specific data in mdata */

@@ -53,18 +53,18 @@ static int fd_no_clobber_stdio(int *fd)
 
 /**
  * popen2  -  Open a bidirectional pipe to a process
- * @command:	command to execute as a child co-process
+ * @path:	full path of executable to run
  * @to_child:	return file descriptor for child stdin
  * @from_child:	return file descriptor for child stdout
  *
  * Return -1 on error, pid of child process on success.
  */
-pid_t popen2(char *command, int *to_child, int *from_child, bool no_stderr)
+pid_t popen2(const char *path, int *to_child, int *from_child, bool no_stderr)
 {
 	int child_in[2], child_out[2];
 	pid_t pid;
 
-	if (access(command, X_OK) < 0)
+	if (access(path, X_OK) < 0)
 		return -1;
 
 	if (pipe(child_in) < 0 || pipe(child_out) < 0)
@@ -99,7 +99,7 @@ pid_t popen2(char *command, int *to_child, int *from_child, bool no_stderr)
 		if (no_stderr && dup_devnull(STDERR_FILENO) < 0)
 			_exit(127);
 
-		if (execl(command, basename(command), NULL) < 0)
+		if (execl(path, path, NULL) < 0)
 			_exit(1);
 	}
 
