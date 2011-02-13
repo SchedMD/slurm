@@ -294,10 +294,12 @@ job_format_add_function(List list, int width, bool right, char *suffix,
 int _print_job_batch_host(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("BATCH_HOST", width, right, true);
+		_print_str("EXEC_HOST", width, right, true);
 	else {
+		char *eh = job->batch_flag ? job->batch_host : job->alloc_node;
 		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%s", job->batch_host);
+
+		snprintf(id, FORMAT_STRING_SIZE, "%s", eh ? eh : "n/a");
 		_print_str(id, width, right, true);
 	}
 	if (suffix)

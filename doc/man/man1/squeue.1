@@ -120,8 +120,13 @@ Generic resources (gres) required by the job or step.
 (Valid for jobs and job steps)
 .TP
 \fB%B\fR
-The name of the computer executing the batch script (batch host).
-(Valid for jobs only)
+Executing (batch) host. For an allocated session, this is the host on which
+the session is executing (i.e. the node from which the the \fBsrun\fR or the
+\fBsalloc\fR command was executed). For a batch job, this is the node executing
+the batch script. In the case of a typical Linux cluster, this would be the
+compute node zero of the allocation. In the case of a BlueGene or a Cray
+system, this would be the front\-end host whose slurmd daemon executes the job
+script.
 .TP
 \fB%c\fR
 Minimum number of CPUs (processors) per node requested by the job.
