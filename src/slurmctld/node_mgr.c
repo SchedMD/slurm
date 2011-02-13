@@ -1857,22 +1857,21 @@ extern int validate_nodes_via_front_end(
 		    ((j = bit_ffs(job_ptr->node_bitmap)) >= 0))
 			node_ptr += j;
 
-		if ((job_ptr != NULL) && (job_ptr->batch_host == NULL))  {
-			error("Resetting NULL batch_host of job %u to %s",
-			      reg_msg->job_id[i], front_end_ptr->name);
-			job_ptr->batch_host = xstrdup(front_end_ptr->name);
-		}
-
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on %s",
 			      reg_msg->job_id[i], reg_msg->step_id[i],
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i],
 					  job_ptr, front_end_ptr->name);
+			continue;
+		} else if (job_ptr->batch_host == NULL) {
+			error("Resetting NULL batch_host of job %u to %s",
+			      reg_msg->job_id[i], front_end_ptr->name);
+			job_ptr->batch_host = xstrdup(front_end_ptr->name);
 		}
 
-		else if (IS_JOB_RUNNING(job_ptr) ||
-			 IS_JOB_SUSPENDED(job_ptr)) {
+
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
 			debug3("Registered job %u.%u on %s",
 			       reg_msg->job_id[i], reg_msg->step_id[i],
 			       front_end_ptr->name);
