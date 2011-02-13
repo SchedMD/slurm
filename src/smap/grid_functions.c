@@ -111,6 +111,23 @@ static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
+static int *_get_cluster_dims(void)
+{
+	int *dim_size = slurmdb_setup_cluster_dim_size();
+
+	if ((params.cluster_flags & CLUSTER_FLAG_CRAYXT) && dim_size) {
+		static int cray_dim_size[3] = {-1, -1, -1};
+		/* For now, assume four nodes per coordinate all in
+		 * the same cage. Need to refine. */
+		cray_dim_size[0] = dim_size[0] * 4;
+		cray_dim_size[1] = dim_size[1];
+		cray_dim_size[2] = dim_size[2];
+		return cray_dim_size;
+	}
+
+	return dim_size;
+}
+
 /* Build the smap_system_ptr structure from the node records */
 extern void init_grid(node_info_msg_t *node_info_ptr)
 {
@@ -118,8 +135,11 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 	int default_y_offset = 0;
 	smap_node_t *node_ptr;
 
-	if (dim_size == NULL)
-		dim_size = slurmdb_setup_cluster_dim_size();
+	if (dim_size == NULL) {
+		dim_size = _get_cluster_dims();
+		if ((dim_size == NULL) || (dim_size[0] < 1))
+			fatal("Invalid system dimensions");
+	}
 
 	smap_system_ptr = xmalloc(sizeof(smap_system_t));
 	smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
@@ -140,9 +160,38 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 					node_info_ptr->node_array[i].name[j]
 					- '0';
 				j++;
+			}	
+		} else if (params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
+			int len_a, len_h;
+			len_a = strlen(node_info_ptr->node_array[i].node_addr);
+			len_h = strlen(node_info_ptr->node_array[i].
+				       node_hostname);
+			if (len_a < params.cluster_dims) {
+				printf("Invalid node addr %s\n",
+				       node_info_ptr->node_array[i].node_addr);
+				xfree(node_ptr);
+				continue;
 			}
-				
-
+			if (len_h < 1) {
+				printf("Invalid node hostname %s\n",
+				       node_info_ptr->node_array[i].
+				       node_hostname);
+				xfree(node_ptr);
+				continue;
+			}
+			node_ptr->coord = xmalloc(sizeof(uint16_t) *
+						  params.cluster_dims);
+			len_a -= params.cluster_dims;
+			for (j = 0; j < params.cluster_dims; j++) {
+				node_ptr->coord[j] = _coord(node_info_ptr->
+							    node_array[i].
+							    node_addr
+							    [len_a+j]);
+			}
+			node_ptr->coord[0] *= 4;
+			node_ptr->coord[0] += _coord(node_info_ptr->
+						     node_array[i].
+						     node_hostname[len_h-1]);
 		} else {
 			len -= params.cluster_dims;
 			if (len < 0) {

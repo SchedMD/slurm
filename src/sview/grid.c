@@ -558,19 +558,19 @@ static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
 
 static int *_get_cluster_dims(void)
 {
-	int *dim_size = slurmdb_setup_cluster_dim_size();
+	int *my_dim_size = slurmdb_setup_cluster_dim_size();
 
 	if ((cluster_flags & CLUSTER_FLAG_CRAYXT) && dim_size) {
 		static int cray_dim_size[3] = {-1, -1, -1};
 		/* For now, assume four nodes per coordinate all in
 		 * the same cage. Need to refine. */
-		cray_dim_size[0] = dim_size[0] * 4;
-		cray_dim_size[1] = dim_size[1];
-		cray_dim_size[2] = dim_size[2];
+		cray_dim_size[0] = my_dim_size[0] * 4;
+		cray_dim_size[1] = my_dim_size[1];
+		cray_dim_size[2] = my_dim_size[2];
 		return cray_dim_size;
 	}
 
-	return dim_size;
+	return my_dim_size;
 }
 
 /* Add a button for a given node. If node_ptr == NULL then fill in any gaps

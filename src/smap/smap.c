@@ -117,9 +117,8 @@ int main(int argc, char *argv[])
 	}
 
 	_init_colors();
-	init_grid(new_node_ptr);
 	select_g_ba_init(new_node_ptr, 0);
-	dim_size = slurmdb_setup_cluster_dim_size();
+	init_grid(new_node_ptr);
 
 	if (params.resolve) {
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
