@@ -1857,6 +1857,12 @@ extern int validate_nodes_via_front_end(
 		    ((j = bit_ffs(job_ptr->node_bitmap)) >= 0))
 			node_ptr += j;
 
+		if ((job_ptr != NULL) && (job_ptr->batch_host == NULL))  {
+			error("Resetting NULL batch_host of job %u to %s",
+			      reg_msg->job_id[i], front_end_ptr->name);
+			job_ptr->batch_host = xstrdup(front_end_ptr->name);
+		}
+
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on %s",
 			      reg_msg->job_id[i], reg_msg->step_id[i],
