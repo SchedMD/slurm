@@ -447,7 +447,7 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 			continue;
 		basil_rsvn_ptr = xmalloc(sizeof(struct basil_rsvn));
 		*last_basil_rsvn_ptr = basil_rsvn_ptr;
-		basil_rsvn_ptr->rsvn_id = i;
+		basil_rsvn_ptr->rsvn_id = i + 1;
 		last_basil_rsvn_ptr = &basil_rsvn_ptr->next;
 	}
 	return inv;
@@ -524,8 +524,13 @@ extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id)
 #endif
 	if ((job_id == 0) || (rsvn_id > MAX_RESV_CNT))
 		return -1;
+#if 0
+	/* This is executed from the slurmd, so we really can not confirm
+	 * here if the reseravation was made by the slurmctld. Just assume
+	 * it is valid. */
 	if (resv_jobid[rsvn_id-1] != job_id)
 		return -1;
+#endif
 
 	return 0;
 }
