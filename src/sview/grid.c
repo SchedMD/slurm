@@ -560,7 +560,7 @@ static int *_get_cluster_dims(void)
 {
 	int *my_dim_size = slurmdb_setup_cluster_dim_size();
 
-	if ((cluster_flags & CLUSTER_FLAG_CRAYXT) && dim_size) {
+	if ((cluster_flags & CLUSTER_FLAG_CRAYXT) && my_dim_size) {
 		static int cray_dim_size[3] = {-1, -1, -1};
 		/* For now, assume four nodes per coordinate all in
 		 * the same cage. Need to refine. */
