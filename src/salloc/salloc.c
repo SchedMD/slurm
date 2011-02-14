@@ -165,7 +165,11 @@ int main(int argc, char *argv[])
 	is_interactive = isatty(STDIN_FILENO);
 	if (is_interactive) {
 		bool sent_msg = false;
-		/* Wait as long as we are running in the background */
+		/*
+		 * Job control: interactive sub-processes run in the foreground
+		 * process group of the controlling terminal. In order to grant
+		 * this (tcsetpgrp), salloc needs to be in the foreground first.
+		 */
 		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp())) {
 			if (!sent_msg) {
 				error("Waiting for program to be placed in "
