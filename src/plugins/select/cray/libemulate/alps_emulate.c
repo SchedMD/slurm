@@ -374,6 +374,7 @@ void cray_close_sdb(MYSQL *handle)
 #if _DEBUG
 	info("cray_close_sdb");
 #endif
+	xfree(mysql_handle);
 	return;
 }
 

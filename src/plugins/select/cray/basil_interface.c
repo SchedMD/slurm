@@ -522,10 +522,11 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		dim_size[0] = MAX(dim_size[0], (x_coord - 1));
 		dim_size[1] = MAX(dim_size[1], (y_coord - 1));
 		dim_size[2] = MAX(dim_size[2], (z_coord - 1));
-		verbose("%s  %s  %s  cpus=%u, mem=%u", node_ptr->name,
-			node_ptr->node_hostname, node_ptr->comm_name,
-			node_cpus, node_mem);
-
+#if _DEBUG
+		info("%s  %s  %s  cpus=%u, mem=%u", node_ptr->name,
+		     node_ptr->node_hostname, node_ptr->comm_name,
+		     node_cpus, node_mem);
+#endif
 		free_stmt_result(stmt);
 	}
 
