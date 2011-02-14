@@ -214,12 +214,12 @@ int srun(int ac, char **av)
 	 * which are not designed to handle them */
 	if (xsignal_block(sig_array) < 0)
 		error("Unable to block signals");
-
+#ifndef HAVE_CRAY_EMULATION
 	if (is_cray_system() || is_cray_select_type()) {
 		error("operation not supported on Cray systems - use aprun(1)");
 		exit(error_exit);
 	}
-
+#endif
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
 	init_spank_env();

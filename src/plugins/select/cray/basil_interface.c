@@ -7,7 +7,7 @@
 #include "basil_interface.h"
 #include "basil_alps.h"
 
-#define _DEBUG 1
+#define _DEBUG 0
 
 int dim_size[3] = {0, 0, 0};
 
