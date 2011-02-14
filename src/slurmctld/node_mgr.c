@@ -1649,8 +1649,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		if (IS_NODE_UNKNOWN(node_ptr)) {
 			last_node_update = now;
 			reset_job_priority();
-			debug("validate_node_specs: node %s has registered",
-				reg_msg->node_name);
+			debug("validate_node_specs: node %s registered with "
+			      "%u jobs",
+			      reg_msg->node_name,reg_msg->job_count);
 			if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 					node_flags;
