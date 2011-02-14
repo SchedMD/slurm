@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Handle mesh torus check better in dynamic mode.
  -- BLUEGENE - Fixed race condition when freeing block, most likely only would
     happen in emulation.
+ -- Fix for calculating used QOS limits correctly on a slurmctld reconfig.
 
 * Changes in SLURM 2.2.1
 ========================
