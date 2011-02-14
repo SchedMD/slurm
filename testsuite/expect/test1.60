@@ -48,12 +48,8 @@ set file_out_n_glob  ""
 
 print_header $test_id
 
-if {[test_bluegene]} {
-	send_user "\nWARNING: This test is incompatible with bluegene systems\n"
-        exit $exit_code
-}
-if {[test_cray]} {
-        send_user "\nWARNING: This test is incompatible with Cray systems\n"
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
 
