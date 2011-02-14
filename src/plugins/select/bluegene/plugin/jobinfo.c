@@ -162,9 +162,10 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 #ifdef HAVE_BG_L_P
 		/* Make sure the conn type is correct with the new count */
 		if ((bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
-		    || (jobinfo->node_cnt < bg_conf->bp_node_cnt))
-			jobinfo->conn_type = SELECT_SMALL;
-		else if (jobinfo->conn_type == SELECT_SMALL)
+		    || (jobinfo->node_cnt < bg_conf->bp_node_cnt)) {
+			if (jobinfo->conn_type < SELECT_SMALL)
+				jobinfo->conn_type = SELECT_SMALL;
+		} else if (jobinfo->conn_type >= SELECT_SMALL)
 			jobinfo->conn_type = SELECT_TORUS;
 #endif
 		break;

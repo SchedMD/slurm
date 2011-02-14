@@ -36,6 +36,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fixed race condition when freeing block, most likely only would
     happen in emulation.
  -- Fix for calculating used QOS limits correctly on a slurmctld reconfig.
+ -- BLUEGENE - Fix for bad conn-type set when running small blocks in HTC mode.
 
 * Changes in SLURM 2.2.1
 ========================
