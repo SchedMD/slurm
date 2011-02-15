@@ -2,7 +2,7 @@
 
 <h1>Multi-Cluster Operation</h1>
 
-<p>A cluster is comprised of all the nodes managed by a single slurmctld 
+<p>A cluster is comprised of all the nodes managed by a single slurmctld
 daemon.  SLURM version 2.2 offers the ability to target commands to other
 clusters instead of, or in addition to, the local cluster on which the
 command is invoked.  When this behavior is enabled, users can submit
@@ -27,11 +27,21 @@ JOBID PARTITION   NAME   USER  ST   TIME NODES BP_LIST(REASON)
 11945    pdebug   aJob  juser   R   6:36   128 dusk000[16-31]
 </PRE>
 
-<p>Many of the SLURM client commands now offer the "-M, --clusters="
-option and the ability to specify a comma separated list of clusters.
-When <b>sbatch</b> is invoked with a cluster list, SLURM will submit
-the job to the cluster which meets the job's specifications and is expected
-to begin the job at the earliest time.</p>
+<p>The following SLURM client commands now offer the "-M, --clusters="
+option which provides the ability to communicate to and from a comma
+separated list of clusters:
+<ol><b>sacct, sbatch, scancel, scontrol, sinfo, smap, sprio, squeue,
+sshare,</b> and <b>sstrigger</b></ol>
+
+<b>salloc, srun,</b> and <b>sstat</b> are cluster specific commands
+and do not offer the "-M, --clusters=" option.</p>
+
+<p>When <b>sbatch</b> is invoked with a cluster list, SLURM will
+immediately submit the job to the cluster that offers the earliest
+start time subject its queue of pending and running jobs.  SLURM will
+make no subsequent effort to migrate the job to a different cluster
+(from the list) whose resources become available when running jobs
+finish before their scheduled end times.</p>
 
 <h2>Multi-Cluster Configuration</h2>
 <p>The multi-cluster functionality requires the use of the slurmDBD.

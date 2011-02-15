@@ -47,7 +47,8 @@ documents those changes that are of interest to users and admins.
     CONSISTENT WITH V2.1 AND EARLIER.
  -- Added the Multi-Cluster Operation web page.
  -- Removed remnant code for enforcing max sockets/cores/threads in the
-    cons_res plugin.  This was responsible for a bug reported by Rod Schultz.
+    cons_res plugin (see last item in 2.1.0-pre5).  This was responsible
+    for a bug reported by Rod Schultz.
 
 * Changes in SLURM 2.2.1
 ========================
