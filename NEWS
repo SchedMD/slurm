@@ -39,9 +39,12 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix for bad conn-type set when running small blocks in HTC mode.
  -- If salloc's --no-shell option is used, then do not attempt to preserve the
     terminal's state.
- -- Add new SLURM configure time parameter of --enable-salloc-background. If
-    set, then salloc can execute in the background. Otherwise a message will be
-    printed and the job allocation halted until brought into the foreground.
+ -- Add new SLURM configure time parameter of --disable-salloc-background. If
+    set, then salloc can only execute in the foreground. If started in the
+    background, then a message will be printed and the job allocation halted
+    until brought into the foreground.
+    NOTE: THIS IS A CHANGE IN DEFAULT SALLOC BEHAVIOR FROM V2.2.1, BUT IS
+    CONSISTENT WITH V2.1 AND EARLIER.
  -- Added the Multi-Cluster Operation web page.
  -- Removed remnant code for enforcing max sockets/cores/threads in the
     cons_res plugin.  This was responsible for a bug reported by Rod Schultz.

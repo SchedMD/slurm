@@ -224,10 +224,7 @@ int main(int argc, char *argv[])
 		 * this (tcsetpgrp), salloc needs to be in the foreground first.
 		 */
 		pid = getpgrp();
-#ifdef SALLOC_RUN_BACKGROUND
-		if (tcgetpgrp(STDIN_FILENO) == pid)
-			is_interactive = true;
-#else
+#ifdef SALLOC_RUN_FOREGROUND
 		while (tcgetpgrp(STDIN_FILENO) != pid) {
 			if (!sent_msg) {
 				error("Waiting for program to be placed in "
@@ -237,6 +234,9 @@ int main(int argc, char *argv[])
 			killpg(pid, SIGTTIN);
 		}
 		is_interactive = true;
+#else
+		if (tcgetpgrp(STDIN_FILENO) == pid)
+			is_interactive = true;
 #endif
 	}
 	/*

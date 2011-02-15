@@ -1692,8 +1692,8 @@ Optional Features:
   --enable-front-end      enable slurmd operation on a front-end
   --disable-partial-attach
                           disable debugger partial task attach support
-  --enable-salloc-background
-                          enable salloc to execute in the background
+  --disable-salloc-background
+                          disable salloc execution in the background
   --enable-multiple-slurmd
                           enable multiple-slurmd support
 
@@ -19431,8 +19431,8 @@ $as_echo "#define DEBUGGER_PARTIAL_ATTACH 1" >>confdefs.h
 $as_echo "${x_ac_partial_attach=no}" >&6; }
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to permit salloc to execute in the background" >&5
-$as_echo_n "checking whether to permit salloc to execute in the background... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to disable salloc execution in the background" >&5
+$as_echo_n "checking whether to disable salloc execution in the background... " >&6; }
   # Check whether --enable-salloc-background was given.
 if test "${enable_salloc_background+set}" = set; then :
   enableval=$enable_salloc_background;  case "$enableval" in
@@ -19440,19 +19440,23 @@ if test "${enable_salloc_background+set}" = set; then :
          no) x_ac_salloc_background=no ;;
           *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
 $as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --enable-salloc-background" "$LINENO" 5  ;;
+             as_fn_error $? "bad value \"$enableval\" for --disable-salloc-background" "$LINENO" 5  ;;
       esac
 
 
 fi
 
-  if test "$x_ac_salloc_background" = yes; then
+  if test "$x_ac_salloc_background" = no; then
 
-$as_echo "#define SALLOC_RUN_BACKGROUND 1" >>confdefs.h
+$as_echo "#define SALLOC_RUN_FOREGROUND 1" >>confdefs.h
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
   fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_salloc_background=no}" >&5
-$as_echo "${x_ac_salloc_background=no}" >&6; }
+
 
 
  if test "x$ac_debug" = "xtrue"; then
