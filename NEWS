@@ -42,6 +42,9 @@ documents those changes that are of interest to users and admins.
  -- Add new SLURM configure time parameter of --enable-salloc-background. If
     set, then salloc can execute in the background. Otherwise a message will be
     printed and the job allocation halted until brought into the foreground.
+ -- Added the Multi-Cluster Operation web page.
+ -- Removed remnant code for enforcing max sockets/cores/threads in the
+    cons_res plugin.  This was responsible for a bug reported by Rod Schultz.
 
 * Changes in SLURM 2.2.1
 ========================

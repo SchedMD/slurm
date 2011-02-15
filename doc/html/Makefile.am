@@ -34,6 +34,7 @@ generated_html = \
 	moab.html \
 	mpi_guide.html \
 	mpiplugins.html \
+	multi_cluster.html \
 	news.html \
 	overview.html \
 	platforms.html \

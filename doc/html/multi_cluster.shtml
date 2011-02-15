@@ -1,0 +1,50 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Multi-Cluster Operation</h1>
+
+<p>A cluster is comprised of all the nodes managed by a single
+slurmctld.  SLURM v2.2 offers the ability to target commands to other
+clusters instead of, or in addition to, the local cluster on which the
+command is invoked.  When this behavior is enabled, users can submit
+jobs to one or many clusters and receive status from those remote
+clusters.</p>
+
+For example,
+
+<PRE>
+juser@dawn> squeue -M dawn,dusk
+CLUSTER: dawn
+  JOBID PARTITION     NAME     USER  ST       TIME  NODES BP_LIST(REASON)
+1076897    pdebug    myJob    juser   R    5:04:10    128 dawn001[8-15]
+1076898    pdebug    myJob    juser   R    5:04:10    128 dawn001[16-23]
+1076899    pdebug    myJob    juser   R    5:04:10    128 dawn001[24-31]
+
+CLUSTER: dusk
+  JOBID PARTITION     NAME     USER  ST       TIME  NODES BP_LIST(REASON)
+1001950    pdebug     aJob    juser   R       4:20    128 dusk000[0-15]
+1001949    pdebug     aJob    juser   R       5:01    128 dusk000[48-63]
+1001946    pdebug     aJob    juser   R       6:35    128 dusk000[32-47]
+1001945    pdebug     aJob    juser   R       6:36    128 dusk000[16-31]
+</PRE>
+
+<p>Many of the slurm client commands now offer the "-M, --clusters="
+option and the ability to specify a comma separated list of clusters.
+When <b>sbatch</b> is invoked with a cluster list, SLURM will submit
+the job to the cluster which meets the job's specifications and can
+run the job at the earliest time.</p>
+
+<h2>Multi-Cluster Configuration</h2>
+<p>The multi-cluster functionality requires the use of the slurmDBD.
+The AccountingStorageType in the slurm.conf file must be set to the
+accounting_storage/slurmdbd plugin and the MUNGE or authentication
+keys must be installed to allow each cluster to communicate with the
+slurmDBD.  See <a href="accounting.html">accounting</a> for
+details.</p>
+
+<p>Once configured, slurm commands specifying the "-M, --clusters="
+option will become active for all of the clusters listed by the
+<b>"sacctmgr show clusters"</b> command.</p>
+
+<p style="text-align:center;">Last modified 14 February 2011</p>
+
+<!--#include virtual="footer.txt"-->
