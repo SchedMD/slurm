@@ -218,13 +218,17 @@ int main(int argc, char *argv[])
 	if ((!opt.no_shell) && isatty(STDIN_FILENO)) {
 		bool sent_msg = false;
 
-		is_interactive = true;
 		/*
 		 * Job control: interactive sub-processes run in the foreground
 		 * process group of the controlling terminal. In order to grant
 		 * this (tcsetpgrp), salloc needs to be in the foreground first.
 		 */
-		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp())) {
+		pid = getpgrp();
+#ifdef SALLOC_RUN_BACKGROUND
+		if (tcgetpgrp(STDIN_FILENO) == pid)
+			is_interactive = true;
+#else
+		while (tcgetpgrp(STDIN_FILENO) != pid) {
 			if (!sent_msg) {
 				error("Waiting for program to be placed in "
 				      "the foreground");
@@ -232,11 +236,14 @@ int main(int argc, char *argv[])
 			}
 			killpg(pid, SIGTTIN);
 		}
-
-		/*
-		 * Save tty attributes and reset at exit, in case a child
-		 * process died before properly resetting terminal.
-		 */
+		is_interactive = true;
+#endif
+	}
+	/*
+	 * Save tty attributes and reset at exit, in case a child
+	 * process died before properly resetting terminal.
+	 */
+	if (is_interactive) {
 		tcgetattr (STDIN_FILENO, &saved_tty_attributes);
 		atexit (_reset_input_mode);
 	}

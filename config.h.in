@@ -389,6 +389,9 @@
 /* Define the project's release. */
 #undef RELEASE
 
+/* Define to 1 to permit salloc to run in the background. */
+#undef SALLOC_RUN_BACKGROUND
+
 /* Define to 1 if sched_getaffinity takes three arguments. */
 #undef SCHED_GETAFFINITY_THREE_ARGS
 

@@ -91,5 +91,22 @@ AC_DEFUN([X_AC_DEBUG], [
   fi
   AC_MSG_RESULT([${x_ac_partial_attach=no}])
 
+
+  AC_MSG_CHECKING([whether to permit salloc to execute in the background])
+  AC_ARG_ENABLE(
+    [salloc-background],
+    AS_HELP_STRING(--enable-salloc-background,enable salloc to execute in the background),
+    [ case "$enableval" in
+        yes) x_ac_salloc_background=yes ;;
+         no) x_ac_salloc_background=no ;;
+          *) AC_MSG_RESULT([doh!])
+             AC_MSG_ERROR([bad value "$enableval" for --enable-salloc-background]) ;;
+      esac
+    ]
+  )
+  if test "$x_ac_salloc_background" = yes; then
+    AC_DEFINE(SALLOC_RUN_BACKGROUND, 1, [Define to 1 to permit salloc to run in the background.])
+  fi
+  AC_MSG_RESULT([${x_ac_salloc_background=no}])
   ]
 )
