@@ -496,10 +496,10 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		 * the same block twice.  It may
 		 * had already been removed at this point also.
 		 */
+#ifdef HAVE_BG_FILES
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
-#ifdef HAVE_BG_FILES
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("bridge_destroy %s",
 				     bg_record->bg_block_id);
@@ -536,12 +536,16 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					      bg_record->state);
 				}
 			}
-#else
-//			bg_record->state = RM_PARTITION_FREE;
-			if (bg_record->state != RM_PARTITION_FREE)
-				bg_record->state = RM_PARTITION_DEALLOCATING;
-#endif
 		}
+#else
+		/* Fake a free since we are n deallocating
+		   state before this.
+		*/
+		if (count >= 3)
+			bg_record->state = RM_PARTITION_FREE;
+		else if (bg_record->state != RM_PARTITION_FREE)
+			bg_record->state = RM_PARTITION_DEALLOCATING;
+#endif
 
 		if (!wait || (bg_record->state == RM_PARTITION_FREE)
 #ifdef HAVE_BGL
