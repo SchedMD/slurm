@@ -109,9 +109,9 @@ static int _addto_used_info(slurmdb_association_rec_t *assoc1,
 	return SLURM_SUCCESS;
 }
 
-static int _clear_used_info(slurmdb_association_rec_t *assoc)
+static int _clear_used_assoc_info(slurmdb_association_rec_t *assoc)
 {
-	if (!assoc)
+	if (!assoc || !assoc->usage)
 		return SLURM_ERROR;
 
 	assoc->usage->grp_used_cpus = 0;
@@ -119,6 +119,24 @@ static int _clear_used_info(slurmdb_association_rec_t *assoc)
 
 	assoc->usage->used_jobs  = 0;
 	assoc->usage->used_submit_jobs = 0;
+	/* do not reset usage_raw or grp_used_wall.
+	 * if you need to reset it do it
+	 * else where since sometimes we call this and do not want
+	 * shares reset */
+
+	return SLURM_SUCCESS;
+}
+
+static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
+{
+	if (!qos || !qos->usage)
+		return SLURM_ERROR;
+
+	qos->usage->grp_used_cpus = 0;
+	qos->usage->grp_used_nodes = 0;
+
+	qos->usage->grp_used_jobs  = 0;
+	qos->usage->grp_used_submit_jobs = 0;
 	/* do not reset usage_raw or grp_used_wall.
 	 * if you need to reset it do it
 	 * else where since sometimes we call this and do not want
@@ -2452,7 +2470,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			   changed we could have different usage
 			*/
 			if (!object->user) {
-				_clear_used_info(object);
+				_clear_used_assoc_info(object);
 				object->usage->usage_raw = 0;
 				object->usage->grp_used_wall = 0;
 			}
@@ -3091,18 +3109,27 @@ extern void assoc_mgr_clear_used_info(void)
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t * found_assoc = NULL;
+	slurmdb_qos_rec_t * found_qos = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
-
-	if (!assoc_mgr_association_list)
-		return;
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	assoc_mgr_lock(&locks);
-	itr = list_iterator_create(assoc_mgr_association_list);
-	while ((found_assoc = list_next(itr))) {
-		_clear_used_info(found_assoc);
+	if (assoc_mgr_association_list) {
+		itr = list_iterator_create(assoc_mgr_association_list);
+		while ((found_assoc = list_next(itr))) {
+			_clear_used_assoc_info(found_assoc);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
+
+	if (assoc_mgr_qos_list) {
+		itr = list_iterator_create(assoc_mgr_qos_list);
+		while ((found_qos = list_next(itr))) {
+			_clear_used_qos_info(found_qos);
+		}
+		list_iterator_destroy(itr);
+	}
+
 	assoc_mgr_unlock(&locks);
 }
 

@@ -395,6 +395,9 @@
 /* Define the project's release. */
 #undef RELEASE
 
+/* Define to 1 to require salloc execution in the foreground. */
+#undef SALLOC_RUN_FOREGROUND
+
 /* Define to 1 if sched_getaffinity takes three arguments. */
 #undef SCHED_GETAFFINITY_THREE_ARGS
 
