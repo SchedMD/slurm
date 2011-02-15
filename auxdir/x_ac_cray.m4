@@ -58,6 +58,7 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_FRONT_END,    1, [Define to 1 if running slurmd on front-end only])
     AC_DEFINE(HAVE_CRAY,         1, [Define to 1 for Cray XT/XE systems])
+    AC_DEFINE(SALLOC_RUN_BACKGROUND, 1, [Define to 1 to permit salloc to run in the background.])
   fi
   AM_CONDITIONAL(HAVE_CRAY, test "$ac_have_cray" = "yes")
   AM_CONDITIONAL(HAVE_CRAY_EMULATION, test "$ac_have_cray_emulation" = "yes")
