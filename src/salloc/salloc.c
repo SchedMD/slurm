@@ -162,31 +162,6 @@ int main(int argc, char *argv[])
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 
-	is_interactive = isatty(STDIN_FILENO);
-	if (is_interactive) {
-		bool sent_msg = false;
-		/*
-		 * Job control: interactive sub-processes run in the foreground
-		 * process group of the controlling terminal. In order to grant
-		 * this (tcsetpgrp), salloc needs to be in the foreground first.
-		 */
-		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp())) {
-			if (!sent_msg) {
-				error("Waiting for program to be placed in "
-				      "the foreground");
-				sent_msg = true;
-			}
-			killpg(pid, SIGTTIN);
-		}
-
-		/*
-		 * Save tty attributes and reset at exit, in case a child
-		 * process died before properly resetting terminal.
-		 */
-		tcgetattr (STDIN_FILENO, &saved_tty_attributes);
-		atexit (_reset_input_mode);
-	}
-
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 
@@ -238,6 +213,32 @@ int main(int argc, char *argv[])
 		if (env == NULL)
 			exit(error_exit);    /* error already logged */
 		_set_rlimits(env);
+	}
+
+	if ((!opt.no_shell) && isatty(STDIN_FILENO)) {
+		bool sent_msg = false;
+
+		is_interactive = true;
+		/*
+		 * Job control: interactive sub-processes run in the foreground
+		 * process group of the controlling terminal. In order to grant
+		 * this (tcsetpgrp), salloc needs to be in the foreground first.
+		 */
+		while (tcgetpgrp(STDIN_FILENO) != (pid = getpgrp())) {
+			if (!sent_msg) {
+				error("Waiting for program to be placed in "
+				      "the foreground");
+				sent_msg = true;
+			}
+			killpg(pid, SIGTTIN);
+		}
+
+		/*
+		 * Save tty attributes and reset at exit, in case a child
+		 * process died before properly resetting terminal.
+		 */
+		tcgetattr (STDIN_FILENO, &saved_tty_attributes);
+		atexit (_reset_input_mode);
 	}
 
 	/*
