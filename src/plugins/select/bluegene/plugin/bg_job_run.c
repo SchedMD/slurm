@@ -602,12 +602,11 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		bg_action_ptr->reboot = 0;
 		/* Since bg_free_block will unlock block_state_mutex
 		   we need to make sure the block we want is still
-		   around.
+		   around.  Failure will unlock this so no need to
+		   unlock before return.
 		*/
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
-			slurm_mutex_unlock(&block_state_mutex);
+		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
 			return;
-		}
 	}
 
 	delete_list = list_create(NULL);
@@ -668,10 +667,10 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	}
 
 	slurm_mutex_lock(&block_state_mutex);
-	if (!_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
-		slurm_mutex_unlock(&block_state_mutex);
+	/* Failure will unlock block_state_mutex so no need to unlock before
+	   return. */
+	if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
 		return;
-	}
 
 	if (bg_record->job_running <= NO_JOB_RUNNING) {
 		// _reset_block(bg_record); should already happened
@@ -748,10 +747,13 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 		bg_free_block(bg_record, 1, 1);
 
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
-			slurm_mutex_unlock(&block_state_mutex);
+		/* Since bg_free_block will unlock block_state_mutex
+		   we need to make sure the block we want is still
+		   around.  Failure will unlock block_state_mutex so
+		   no need to unlock before return.
+		*/
+		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
 			return;
-		}
 #ifdef HAVE_BG_FILES
 #ifdef HAVE_BGL
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
@@ -832,27 +834,31 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 		bg_free_block(bg_record, 1, 1);
 
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
-			slurm_mutex_unlock(&block_state_mutex);
+		/* Since bg_free_block will unlock block_state_mutex
+		   we need to make sure the block we want is still
+		   around.  Failure will unlock block_state_mutex so
+		   no need to unlock before return.
+		*/
+		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
 			return;
-		}
+
 		bg_record->modifying = 0;
 	}
 
 	if (bg_record->state == RM_PARTITION_FREE) {
 		if ((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
+			/* Since boot_block could unlock block_state_mutex
+			   on error we need to make sure the block we
+			   want is still around.  Failure will unlock
+			   block_state_mutex so no need to unlock
+			   before return.
+			*/
 			if (!_make_sure_block_still_exists(bg_action_ptr,
-							  bg_record)) {
-				slurm_mutex_unlock(&block_state_mutex);
+							   bg_record))
 				return;
-			}
 			_reset_block(bg_record);
 			slurm_mutex_unlock(&block_state_mutex);
 			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
-			return;
-		}
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
-			slurm_mutex_unlock(&block_state_mutex);
 			return;
 		}
 	} else if (bg_record->state == RM_PARTITION_CONFIGURING)
