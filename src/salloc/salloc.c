@@ -206,15 +206,14 @@ int main(int argc, char *argv[])
 	}
 
 	if ((!opt.no_shell) && isatty(STDIN_FILENO)) {
-		bool sent_msg = false;
-
 		/*
 		 * Job control: interactive sub-processes run in the foreground
 		 * process group of the controlling terminal. In order to grant
 		 * this (tcsetpgrp), salloc needs to be in the foreground first.
 		 */
-		pid = getpgrp();
 #ifdef SALLOC_RUN_FOREGROUND
+		bool sent_msg = false;
+		pid = getpgrp();
 		while (tcgetpgrp(STDIN_FILENO) != pid) {
 			if (!sent_msg) {
 				error("Waiting for program to be placed in "
