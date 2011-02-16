@@ -228,6 +228,8 @@ static int _num_feature_count(struct job_record *job_ptr)
 		return rc;
 
 	feat_iter = list_iterator_create(detail_ptr->feature_list);
+	if (feat_iter == NULL)
+		fatal("list_iterator_create: malloc failure");
 	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
 		if (feat_ptr->count)
 			rc++;
@@ -269,6 +271,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		list_size = list_count(detail_ptr->feature_list);
 		feat_cnt_orig = xmalloc(sizeof(uint16_t) * list_size);
 		feat_iter = list_iterator_create(detail_ptr->feature_list);
+		if (feat_iter == NULL)
+			fatal("list_iterator_create: malloc failure");
 		while ((feat_ptr =
 			(struct feature_record *) list_next(feat_iter))) {
 			high_cnt = MAX(high_cnt, feat_ptr->count);
