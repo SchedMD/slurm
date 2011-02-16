@@ -388,13 +388,13 @@ static display_data_t display_data_job[] = {
 static display_data_t create_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE, EDIT_TEXTBOX,
-	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMAND, "Script File", FALSE, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TASKS, "Task Count", FALSE, EDIT_TEXTBOX,
-	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TASKS, "Task Count", FALSE, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
@@ -2701,7 +2701,7 @@ extern GtkWidget *create_job_entry(job_desc_msg_t *job_msg,
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
 	GtkTable *table = NULL;
-	int i = 0, row = 0;
+	int row = 0;
 	display_data_t *display_data = create_data_job;
 
 	gtk_scrolled_window_set_policy(window,
@@ -2715,23 +2715,18 @@ extern GtkWidget *create_job_entry(job_desc_msg_t *job_msg,
 
 	gtk_table_set_homogeneous(table, FALSE);
 
-	for (i = 0; i < SORTID_CNT; i++) {
-		while (display_data++) {
-			if (display_data->id == -1)
-				break;
-			if (!display_data->name)
-				continue;
-			if (display_data->id != i)
-				continue;
-			display_admin_edit(
-				table, job_msg, &row, model, iter,
-				display_data,
-				G_CALLBACK(_admin_edit_combo_box_job),
-				G_CALLBACK(_admin_focus_out_job),
-				_set_active_combo_job);
+	/* NOTE: We build this in the order defined in the data structure
+	 * rather than in SORTID order for more flexibility. */
+	while (display_data++) {
+		if (display_data->id == -1)
 			break;
-		}
-		display_data = create_data_job;
+		if (!display_data->name)
+			continue;
+		display_admin_edit(table, job_msg, &row, model, iter,
+				   display_data,
+				   G_CALLBACK(_admin_edit_combo_box_job),
+				   G_CALLBACK(_admin_focus_out_job),
+				   _set_active_combo_job);
 	}
 	gtk_table_resize(table, row, 2);
 
