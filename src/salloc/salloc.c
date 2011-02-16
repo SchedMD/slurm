@@ -90,6 +90,7 @@ int command_argc;
 pid_t command_pid = -1;
 char *work_dir = NULL;
 static int is_interactive;
+static bool is_foreground;
 
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -215,7 +216,8 @@ int main(int argc, char *argv[])
 		_set_rlimits(env);
 	}
 
-	if ((!opt.no_shell) && isatty(STDIN_FILENO)) {
+	is_interactive = isatty(STDIN_FILENO);
+	if ((!opt.no_shell) && is_interactive) {
 		/*
 		 * Job control: interactive sub-processes run in the foreground
 		 * process group of the controlling terminal. In order to grant
@@ -232,17 +234,17 @@ int main(int argc, char *argv[])
 			}
 			killpg(pid, SIGTTIN);
 		}
-		is_interactive = true;
+		is_foreground = true;
 #else
 		if (tcgetpgrp(STDIN_FILENO) == pid)
-			is_interactive = true;
+			is_foreground = true;
 #endif
 	}
 	/*
 	 * Save tty attributes and reset at exit, in case a child
 	 * process died before properly resetting terminal.
 	 */
-	if (is_interactive) {
+	if (is_foreground) {
 		tcgetattr (STDIN_FILENO, &saved_tty_attributes);
 		atexit (_reset_input_mode);
 	}
