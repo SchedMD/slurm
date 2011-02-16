@@ -94,7 +94,8 @@ static int _setup_particulars(uint32_t cluster_flags,
 					    SELECT_JOBDATA_BLOCK_ID,
 					    &bg_part_id);
 		if (bg_part_id) {
-			if (cluster_flags & CLUSTER_FLAG_BGL) {
+			/* check to see if this is a HTC block or not. */
+			if (cluster_flags & CLUSTER_FLAG_BGP) {
 				uint16_t conn_type =
 					(uint16_t)NO_VAL;
 				select_g_select_jobinfo_get(
@@ -102,6 +103,8 @@ static int _setup_particulars(uint32_t cluster_flags,
 					SELECT_JOBDATA_CONN_TYPE,
 					&conn_type);
 				if (conn_type > SELECT_SMALL) {
+					/* SUBMIT_POOL over rides
+					   HTC_SUBMIT_POOL */
 					setenvf(dest, "SUBMIT_POOL", "%s",
 						bg_part_id);
 				}

@@ -3660,6 +3660,10 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 	if (resv_id) {
 #ifdef HAVE_BG
 		setenvf(&env, "MPIRUN_PARTITION", "%s", resv_id);
+# ifdef HAVE_BGP
+		/* Needed for HTC jobs */
+		setenvf(&env, "SUBMIT_POOL", "%s", resv_id);
+# endif
 #endif
 #ifdef HAVE_CRAY
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", resv_id);

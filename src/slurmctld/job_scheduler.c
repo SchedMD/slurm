@@ -1276,6 +1276,19 @@ static char **_build_env(struct job_record *job_ptr)
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID, &name);
 	setenvf(&my_env, "MPIRUN_PARTITION", "%s", name);
+# ifdef HAVE_BGP
+	{
+		uint16_t conn_type = (uint16_t)NO_VAL;
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_CONN_TYPE,
+					    &conn_type);
+		if (conn_type > SELECT_SMALL) {
+			/* SUBMIT_POOL over rides
+			   HTC_SUBMIT_POOL */
+			setenvf(&my_env, "SUBMIT_POOL", "%s", name);
+		}
+	}
+# endif
 	xfree(name);
 #endif
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
