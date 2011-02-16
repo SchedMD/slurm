@@ -370,8 +370,6 @@ extern int set_grid(int start, int end, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 
-extern void print_date();
-
 //sview.c
 extern void refresh_main(GtkAction *action, gpointer user_data);
 extern void toggle_tab_visiblity(GtkToggleButton *toggle_button,
@@ -471,7 +469,7 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void select_admin_block(GtkTreeModel *model, GtkTreeIter *iter,
 			       display_data_t *display_data,
 			       GtkTreeView *treeview);
-extern void cluster_change_block();
+extern void cluster_change_block(void);
 
 // front_end_info.c
 extern void admin_edit_front_end(GtkCellRendererText *cell,
@@ -508,7 +506,7 @@ extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type);
 extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 		      GtkTreeView *treeview);
-extern void cluster_change_job();
+extern void cluster_change_job(void);
 
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
@@ -555,7 +553,7 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void select_admin_resv(GtkTreeModel *model, GtkTreeIter *iter,
 			      display_data_t *display_data,
 			      GtkTreeView *treeview);
-extern void cluster_change_resv();
+extern void cluster_change_resv(void);
 
 
 // submit_info.c
@@ -583,8 +581,8 @@ extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
 			     display_data_t *display_data, int count);
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 			      GtkMenu *menu, display_data_t *display_data);
-extern GtkScrolledWindow *create_scrolled_window();
-extern GtkWidget *create_entry();
+extern GtkScrolledWindow *create_scrolled_window(void);
+extern GtkWidget *create_entry(void);
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
 extern GtkTreeView *create_treeview(display_data_t *local, List *button_list);
 extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table);
@@ -625,13 +623,13 @@ extern void destroy_popup_info(void *arg);
 extern void destroy_signal_params(void *arg);
 
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title);
-extern gboolean delete_popups();
+extern gboolean delete_popups(void);
 extern void *popup_thr(popup_info_t *popup_win);
 extern void remove_old(GtkTreeModel *model, int updated);
 extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 					int count);
 extern char *str_tolower(char *upper_str);
-extern char *get_reason();
+extern char *get_reason(void);
 extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
 			       GtkTreeModel *model, GtkTreeIter *iter,
 			       display_data_t *display_data,

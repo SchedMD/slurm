@@ -1476,7 +1476,7 @@ static void _admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	return;
 }
 
-extern void cluster_change_block()
+extern void cluster_change_block(void)
 {
 	display_data_t *display_data = display_data_block;
 	while (display_data++) {

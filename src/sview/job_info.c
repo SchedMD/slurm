@@ -4078,7 +4078,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	return;
 }
 
-extern void cluster_change_job()
+extern void cluster_change_job(void)
 {
 	display_data_t *display_data = display_data_job;
 	while (display_data++) {

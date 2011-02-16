@@ -1016,7 +1016,7 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 	}
 }
 
-extern GtkScrolledWindow *create_scrolled_window()
+extern GtkScrolledWindow *create_scrolled_window(void)
 {
 	GtkScrolledWindow *scrolled_window = NULL;
 	GtkWidget *table = NULL;
@@ -1037,7 +1037,7 @@ extern GtkScrolledWindow *create_scrolled_window()
 	return scrolled_window;
 }
 
-extern GtkWidget *create_entry()
+extern GtkWidget *create_entry(void)
 {
 	GtkWidget *entry = gtk_entry_new();
 
@@ -1793,7 +1793,7 @@ extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
 	return FALSE;
 }
 
-extern gboolean delete_popups()
+extern gboolean delete_popups(void)
 {
 	ListIterator itr = list_iterator_create(popup_list);
 	popup_info_t *popup_win = NULL;
@@ -1925,7 +1925,7 @@ extern char *str_tolower(char *upper_str)
 	return lower_str;
 }
 
-extern char *get_reason()
+extern char *get_reason(void)
 {
 	char *reason_str = NULL;
 	int len = 0;
@@ -2058,7 +2058,7 @@ extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
 		return;
 	label = gtk_label_new(display_data->name);
 	/* left justify */
-	gtk_misc_set_alignment(GTK_MISC(label),0.0,0.5);
+	gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
 	gtk_table_attach(table, label, 0, 1, *row, (*row)+1,
 			 GTK_FILL | GTK_EXPAND, GTK_SHRINK,
 			 0, 0);

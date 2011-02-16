@@ -1595,7 +1595,7 @@ end_it:
 	return;
 }
 
-extern void cluster_change_resv()
+extern void cluster_change_resv(void)
 {
 	display_data_t *display_data = display_data_resv;
 	while (display_data++) {
