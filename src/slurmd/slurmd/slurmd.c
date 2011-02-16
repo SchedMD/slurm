@@ -776,7 +776,8 @@ _read_config(void)
 		    &conf->block_map, &conf->block_map_inv);
 
 	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) || 
-	    (conf->actual_cpus < conf->conf_cpus)) {
+	    ((cf->fast_schedule == 1) &&
+	     (conf->actual_cpus < conf->conf_cpus))) {
 		conf->cpus    = conf->actual_cpus;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
