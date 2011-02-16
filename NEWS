@@ -51,6 +51,7 @@ documents those changes that are of interest to users and admins.
     for a bug reported by Rod Schultz.
  -- BLUEGENE - Set correct env vars for HTC mode on a P system to get correct
     block.
+ -- Correct RunTime reported by "scontrol show job" for pending jobs.
 
 * Changes in SLURM 2.2.1
 ========================
