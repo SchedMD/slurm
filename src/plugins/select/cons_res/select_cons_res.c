@@ -1567,54 +1567,6 @@ static bool _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 }
 
 
-/* Worker function for select_p_get_info_from_plugin() */
-static int _synchronize_bitmaps(struct job_record *job_ptr,
-				bitstr_t ** partially_idle_bitmap)
-{
-	int size, i;
-	struct part_res_record *p_ptr;
-	size = bit_size(avail_node_bitmap);
-	bitstr_t *bitmap = bit_alloc(size);
-
-	if (bitmap == NULL)
-		return SLURM_ERROR;
-
-	debug3("cons_res: synch_bm: avail %d of %d set, idle %d of %d set",
-	       bit_set_count(avail_node_bitmap), size,
-	       bit_set_count(idle_node_bitmap), size);
-
-	if (!job_ptr)
-		fatal("cons_res: error: don't know what job I'm sync'ing");
-
-	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->part_ptr == job_ptr->part_ptr)
-			break;
-	}
-
-	for (i = 0; i < select_node_cnt; i++) {
-		if (!bit_test(avail_node_bitmap, i))
-			continue;
-
-		if (bit_test(idle_node_bitmap, i)) {
-			bit_set(bitmap, i);
-			continue;
-		}
-
-		if (!p_ptr || _is_node_avail(p_ptr, i))
-			bit_set(bitmap, i);
-	}
-	if (p_ptr) {
-		debug3("cons_res: found %d partially idle nodes in part %s",
-		       bit_set_count(bitmap), p_ptr->part_ptr->name);
-	} else {
-		debug3("cons_res: found %d partially idle nodes",
-		       bit_set_count(bitmap));
-	}
-
-	*partially_idle_bitmap = bitmap;
-	return SLURM_SUCCESS;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -2198,17 +2150,6 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 	List *tmp_list = (List *) data;
 
 	switch (info) {
-	case SELECT_BITMAP:
-		rc = _synchronize_bitmaps(job_ptr, &tmp_bitmap);
-		if (rc != SLURM_SUCCESS) {
-			FREE_NULL_BITMAP(tmp_bitmap);
-			return rc;
-		}
-		*bitmap = tmp_bitmap;	/* Ownership transfer,
-					 * Remember to free bitmap
-					 * using FREE_NULL_BITMAP(bitmap);*/
-		tmp_bitmap = 0;
-		break;
 	case SELECT_CR_PLUGIN:
 		*tmp_32 = 1;
 		break;

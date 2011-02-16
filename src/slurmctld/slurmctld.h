@@ -624,14 +624,14 @@ extern List job_list;			/* list of job_record entries */
 */
 enum select_plugindata_info {
 	SELECT_CR_PLUGIN,    /* data-> uint32 1 if CR plugin */
-	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
+	SELECT_BITMAP,       /* Unused since version 2.0 */
 	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
 	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
 	SELECT_AVAIL_MEMORY, /* data-> uint32 avail mem  (CR support) */
-	SELECT_STATIC_PART,   /* data-> uint16, 1 if static partitioning
-			      * BlueGene support */
-	SELECT_CONFIG_INFO  /* data-> List get .conf info from select
-			     * plugin */
+	SELECT_STATIC_PART,  /* data-> uint16, 1 if static partitioning
+	                      * BlueGene support */
+	SELECT_CONFIG_INFO   /* data-> List get .conf info from select
+			      * plugin */
 } ;
 
 /*****************************************************************************\
