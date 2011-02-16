@@ -564,7 +564,7 @@ static int *_get_cluster_dims(void)
 		static int cray_dim_size[3] = {-1, -1, -1};
 		/* For now, assume four nodes per coordinate all in
 		 * the same cage. Need to refine. */
-		cray_dim_size[0] = my_dim_size[0] * 4;
+		cray_dim_size[0] = my_dim_size[0];
 		cray_dim_size[1] = my_dim_size[1];
 		cray_dim_size[2] = my_dim_size[2];
 		return cray_dim_size;
@@ -583,7 +583,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	static int node_exists_cnt = 1;
 	grid_button_t *grid_button = button_processor->grid_button;
 	int *dim_size = NULL, i, coord_x = 0, coord_y = 0;
-	int len = 0, len_a = 0, len_h = 0;
+	int len = 0, len_a = 0;
 
 	if (cluster_dims > 1) {
 		dim_size = _get_cluster_dims();
@@ -611,15 +611,9 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			}
 			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
 				len_a = strlen(node_ptr->node_addr);
-				len_h = strlen(node_ptr->node_hostname);
 				if (len_a < cluster_dims) {
 					g_error("bad node addr %s\n",
 						node_ptr->node_addr);
-					return SLURM_ERROR;
-				}
-				if (len_h < 1) {
-					g_error("bad node hostname %s\n",
-						node_ptr->node_hostname);
 					return SLURM_ERROR;
 				}
 			}
@@ -670,8 +664,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		int x, y, z;
 		if (node_ptr) {
 			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
-				x = _coord(node_ptr->node_addr[len_a-3]) * 4 +
-				    _coord(node_ptr->node_hostname[len_h-1]);
+				x = _coord(node_ptr->node_addr[len_a-3]);
 				y = _coord(node_ptr->node_addr[len_a-2]);
 				z = _coord(node_ptr->node_addr[len_a-1]);
 			} else {

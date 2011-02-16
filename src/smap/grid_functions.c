@@ -119,7 +119,7 @@ static int *_get_cluster_dims(void)
 		static int cray_dim_size[3] = {-1, -1, -1};
 		/* For now, assume four nodes per coordinate all in
 		 * the same cage. Need to refine. */
-		cray_dim_size[0] = dim_size[0] * 4;
+		cray_dim_size[0] = dim_size[0];
 		cray_dim_size[1] = dim_size[1];
 		cray_dim_size[2] = dim_size[2];
 		return cray_dim_size;
@@ -188,10 +188,6 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 							    node_addr
 							    [len_a+j]);
 			}
-			node_ptr->coord[0] *= 4;
-			node_ptr->coord[0] += _coord(node_info_ptr->
-						     node_array[i].
-						     node_hostname[len_h-1]);
 		} else {
 			len -= params.cluster_dims;
 			if (len < 0) {

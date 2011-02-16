@@ -219,7 +219,7 @@ static void _init_hw_recs(int dims)
 
 	my_node_ptr = node_record_table_ptr;
 	my_node_inx = 0;
-	_get_dims((node_record_count+3)/4, max_dim, 3);
+	_get_dims(node_record_count, max_dim, 3);
 
 	last_spur_inx = 0;
 	for (j = 0; j < dims; j++)
@@ -233,11 +233,11 @@ static void _incr_hw_recs(void)
 		return;	/* end of node table */
 
 	my_node_ptr++;
+	_incr_dims(coord, 3);
 	hw_cpu++;
 	if (hw_cpu > 3) {
 		hw_cpu = 0;
 		hw_slot++;
-		_incr_dims(coord, 3);
 	}
 	if (hw_slot > 7) {
 		hw_slot = 0;

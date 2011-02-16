@@ -688,6 +688,15 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 	return other_resv_test(avail_bitmap, node_cnt);
 }
 
+static int _coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return (coord - 'A') + 10;
+	return -1;
+}
+
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 {
 	if (select_cray_dim_size[0] == -1) {
@@ -700,8 +709,8 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			    (strlen(node_ptr->node_addr) != 3))
 				continue;
 			for (j = 0; j < 3; j++) {
-				offset = node_ptr->node_addr[j] - '0' + 1;
-				select_cray_dim_size[j] = MAX(offset,
+				offset = _coord(node_ptr->node_addr[j]);
+				select_cray_dim_size[j] = MAX((offset+1),
 						select_cray_dim_size[j]);
 			}
 		}
