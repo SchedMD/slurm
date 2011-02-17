@@ -1524,49 +1524,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return rc;
 }
 
-/* Helper function for _synchronize_bitmap().  Check
- * if the given node has at least one available CPU */
-static bool _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
-{
-	uint32_t i, r, cpu_begin, cpu_end;
-
-	cpu_begin = cr_get_coremap_offset(node_i);
-	cpu_end   = cr_get_coremap_offset(node_i+1);
-
-	if (select_node_usage[node_i].node_state >= NODE_CR_RESERVED)
-		return false;
-
-	if (select_node_usage[node_i].node_state >= NODE_CR_ONE_ROW) {
-		/* An existing job has requested that it's CPUs
-		 * NOT be shared, but any other CPUs on the same
-		 * node can be used by other jobs with the same
-		 * CPU restriction.
-		 * Check whether or not there are free CPUs on this
-		 * node in the given partition.
-		 */
-		if (!p_ptr->row || !p_ptr->row[0].row_bitmap)
-			return true;
-		for (i = cpu_begin; i < cpu_end; i++) {
-			if (!bit_test(p_ptr->row[0].row_bitmap, i))
-				return true;
-		}
-	} else {
-		/* check the core_bitmap in all rows */
-		if (!p_ptr->row)
-			return true;
-		for (r = 0; r < p_ptr->num_rows; r++) {
-			if (!p_ptr->row[r].row_bitmap)
-				return true;
-			for (i = cpu_begin; i < cpu_end; i++) {
-				if (!bit_test(p_ptr->row[r].row_bitmap, i))
-					return true;
-			}
-		}
-	}
-	return false;
-}
-
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -2144,9 +2101,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 					 void *data)
 {
 	int rc = SLURM_SUCCESS;
-	bitstr_t **bitmap = (bitstr_t **) data;
 	uint32_t *tmp_32 = (uint32_t *) data;
-	bitstr_t *tmp_bitmap = NULL;
 	List *tmp_list = (List *) data;
 
 	switch (info) {
