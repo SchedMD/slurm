@@ -572,3 +572,7 @@ test24.2   sshare h, n, p, P, v, and V options.
 test25.#   Testing of sprio command and options.
 =================================================
 test25.1   sprio all options
+
+test26.#   Test of Cray specific functionality.
+================================================
+test26.1   Validate scontrol update command for nodes is disabled.
