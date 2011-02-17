@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.3
+========================
+ -- Update srun, salloc, and sbatch man page description of --distribution
+    option. Patches from Rod Schulz, Bull.
+
 * Changes in SLURM 2.2.2
 ========================
  -- Correct logic to set correct job hold state (admin or user) when setting
