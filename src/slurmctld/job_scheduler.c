@@ -1284,12 +1284,25 @@ static char **_build_env(struct job_record *job_ptr)
 				(const char **) job_ptr->spank_job_env);
 	}
 
-#if defined(HAVE_BG)
+#ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID, &name);
 	setenvf(&my_env, "MPIRUN_PARTITION", "%s", name);
+# ifdef HAVE_BGP
+	{
+		uint16_t conn_type = (uint16_t)NO_VAL;
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_CONN_TYPE,
+					    &conn_type);
+		if (conn_type > SELECT_SMALL) {
+			/* SUBMIT_POOL over rides
+			   HTC_SUBMIT_POOL */
+			setenvf(&my_env, "SUBMIT_POOL", "%s", name);
+		}
+	}
+# endif
 	xfree(name);
-#elif defined(HAVE_CRAY)
+#elif defined HAVE_CRAY
 	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						SELECT_PRINT_RESV_ID);
 	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);

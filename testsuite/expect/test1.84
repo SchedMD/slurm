@@ -71,7 +71,7 @@ set host           ""
 set timeout        $max_job_delay
 set task_cnt       0
 
-set srun_pid [spawn $srun -N1 --cpus-per-task=1 --threads-per-core=1 --exclusive -l -t1 $file_in]
+set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 $file_in]
 expect {
 	-re "SLURM_CPUS_ON_NODE=($number) SLURMD_NODENAME=($alpha_numeric_under)" {
 		set cpu_cnt $expect_out(1,string)
@@ -107,6 +107,7 @@ if {[string compare $host ""] == 0} {
 }
 # Convert CPU count to core count if necessary
 if {$cpu_cnt != $task_cnt} {
+	set core_cnt  $cpu_cnt
 	set threads_per_core 1
 	spawn $scontrol show node $host
 	expect {
@@ -123,10 +124,10 @@ if {$cpu_cnt != $task_cnt} {
 		}
 	}
 	if {$threads_per_core != 0} {
-		set cpu_cnt [expr $cpu_cnt / $threads_per_core]
+		set cpu_cnt [expr $cpu_cnt * $threads_per_core]
 	}
 	if {$cpu_cnt == $task_cnt} {
-		send_user "NOTE: Allocated cores and $threads_per_core CPUs per core\n"
+		send_user "NOTE: Allocated $core_cnt cores and $threads_per_core CPUs per core\n"
 	}
 }
 if {$cpu_cnt != $task_cnt} {
@@ -141,10 +142,10 @@ if {$cpu_cnt < 2} {
 }
 
 #
-# Submit a 1 node job to determine the node's CPU count
+# Now verify the --cpus-per-task option
 #
 set task_cnt  0
-set srun_pid [spawn $srun -N1 -t1 --nodelist=$host --cpus-per-task=2 --threads-per-core=1 --exclusive -l $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
@@ -167,7 +168,7 @@ expect {
 }
 
 #
-# Check CPU count
+# Verify that half the number of tasks were spawned
 #
 if {$task_cnt != [expr $cpu_cnt / 2]} {
 	send_user "\nFAILURE: Improper task count for given cpus-per-task\n"

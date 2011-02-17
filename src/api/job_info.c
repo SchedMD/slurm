@@ -261,20 +261,23 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 line6:
 	snprintf(tmp_line, sizeof(tmp_line), "RunTime=");
 	xstrcat(out, tmp_line);
-
-	run_time = time(NULL);
-	if (IS_JOB_SUSPENDED(job_ptr))
+	if (IS_JOB_PENDING(job_ptr))
+		run_time = 0;
+	else if (IS_JOB_SUSPENDED(job_ptr))
 		run_time = job_ptr->pre_sus_time;
 	else {
-		if (!IS_JOB_RUNNING(job_ptr) && (job_ptr->end_time != 0))
-			run_time = job_ptr->end_time;
+		time_t end_time;
+		if (IS_JOB_RUNNING(job_ptr) || (job_ptr->end_time == 0))
+			end_time = time(NULL);
+		else
+			end_time = job_ptr->end_time;
 		if (job_ptr->suspend_time) {
 			run_time = (time_t)
-				(difftime(run_time, job_ptr->suspend_time)
+				(difftime(end_time, job_ptr->suspend_time)
 				 + job_ptr->pre_sus_time);
 		} else
 			run_time = (time_t)
-				difftime(run_time, job_ptr->start_time);
+				difftime(end_time, job_ptr->start_time);
 	}
 	secs2time_str(run_time, tmp1, sizeof(tmp1));
 	sprintf(tmp_line, "%s ", tmp1);

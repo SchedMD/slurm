@@ -60,6 +60,11 @@ documents those changes that are of interest to users and admins.
  -- When restarting slurmctld with priority/basic, increment all job priorities
     so the highest job priority becomes TOP_PRIORITY.
 
+* Changes in SLURM 2.2.3
+========================
+ -- Update srun, salloc, and sbatch man page description of --distribution
+    option. Patches from Rod Schulz, Bull.
+
 * Changes in SLURM 2.2.2
 ========================
  -- Correct logic to set correct job hold state (admin or user) when setting
@@ -108,6 +113,9 @@ documents those changes that are of interest to users and admins.
  -- Removed remnant code for enforcing max sockets/cores/threads in the
     cons_res plugin (see last item in 2.1.0-pre5).  This was responsible
     for a bug reported by Rod Schultz.
+ -- BLUEGENE - Set correct env vars for HTC mode on a P system to get correct
+    block.
+ -- Correct RunTime reported by "scontrol show job" for pending jobs.
 
 * Changes in SLURM 2.2.1
 ========================

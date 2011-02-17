@@ -842,14 +842,6 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			error("cons_res: zero processors allocated to step");
 			step_cores = 1;
 		}
-		if (tasks_to_launch > step_cores) {
-			/* This is expected with the --overcommit option
-			 * or hyperthreads */
-			debug("cons_res: More than one tasks per logical "
-			      "processor (%d > %u) on host [%u.%u %ld %s] ",
-			      tasks_to_launch, step_cores, arg.jobid,
-			      arg.stepid, (long) arg.uid, arg.step_hostlist);
-		}
 		/* NOTE: step_cores is the count of allocated resources
 		 * (typically cores). Convert to CPU count as needed */
 		if (i_last_bit <= i_first_bit)
@@ -860,6 +852,14 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 				info("scaling CPU count by factor of %d", i);
 				step_cores *= i;
 			}
+		}
+		if (tasks_to_launch > step_cores) {
+			/* This is expected with the --overcommit option
+			 * or hyperthreads */
+			debug("cons_res: More than one tasks per logical "
+			      "processor (%d > %u) on host [%u.%u %ld %s] ",
+			      tasks_to_launch, step_cores, arg.jobid,
+			      arg.stepid, (long) arg.uid, arg.step_hostlist);
 		}
 	} else {
 		step_cores = 1;
@@ -3673,6 +3673,10 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 	if (resv_id) {
 #if defined(HAVE_BG)
 		setenvf(&env, "MPIRUN_PARTITION", "%s", resv_id);
+# ifdef HAVE_BGP
+		/* Needed for HTC jobs */
+		setenvf(&env, "SUBMIT_POOL", "%s", resv_id);
+# endif
 #elif defined(HAVE_CRAY)
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", resv_id);
 #endif
