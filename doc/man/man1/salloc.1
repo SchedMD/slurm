@@ -465,8 +465,7 @@ Multiple license names should be comma separated (e.g.
 Specify alternate distribution methods for remote processes.
 In salloc, this only sets environment variables that will be used by
 subsequent srun requests.
-This option does not affect the allocation of resources to
-a job or step, but only the assignment of tasks to the nodes on which
+This option controls the assignment of tasks to the nodes on which
 resources have been allocated, and the distribution of those resources
 to tasks for binding (task affinity). The first distribution
 method (before the ":") controls the distribution of resources across
@@ -497,11 +496,9 @@ nodes each with two cpus. A four\-task cyclic distribution request
 will distribute those tasks to the nodes with tasks one and four on
 the first node, task two on the second node, and task three on the
 third node. 
-Note that when SelectType is select/cons_res the same number of CPUs
-may not be allocated on each node.
-Distribution will be round\-robin among all the nodes with CPUs yet to 
-be assigned tasks. If you want the same number of CPUs allocated on
-all nodes, use the \-\-ntasks\-per\-node option.
+Note that when SelectType is select/cons_res, the same number of CPUs
+may not be allocated on each node. Task distribution will be
+round\-robin among all the nodes with CPUs yet to be assigned to tasks.
 Cyclic distribution is the default behavior if the number
 of tasks is no larger than the number of allocated nodes.
 .TP
