@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Update srun, salloc, and sbatch man page description of --distribution
     option. Patches from Rod Schulz, Bull.
+ -- Applied patch from Martin Perry to fix "Incorrect results for task/affinity
+    block second distribution and cpus-per-task > 1" bug.
 
 * Changes in SLURM 2.2.2
 ========================
