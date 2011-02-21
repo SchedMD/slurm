@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Topology</h1>
+<h1>Topology Guide</h1>
 
 <p>SLURM version 2.0 can be configured to support topology-aware resource
 allocation to optimize job performance.
@@ -14,7 +14,7 @@ Jobs are allocated resources on a best-fit basis.
 For larger jobs, this minimizes the number of sets of consecutive nodes
 allocated to the job.</p>
 
-<h2>Three-dimension Topology</h2>
+<a name="topo_3d"><h2>Three-dimension Topology</h2>
 
 <p>Some larger computers rely upon a three-dimensional torus interconnect.
 The IBM BlueGene computers is one example of this which has highly

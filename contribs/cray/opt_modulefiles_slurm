@@ -1,0 +1,49 @@
+#%Module1.0#####################################################################
+# slurm/munge support module
+# Put into /opt/modulefiles/slurm or some other part of $MODULEPATH
+################################################################################
+
+# SUBROUTINES
+proc ModulesHelp { } {
+	puts stderr "\tThis is slurm $::version.\n"
+	puts stderr "\tPlease consult our WiKi for more information:\n"
+	puts stderr "\thttps://wiki.cscs.ch/mediawiki/index.php/nss:SlurmHowTo"
+}
+
+# CONFIGURATION
+conflict	xt-pbs pbs torque
+set slurmdir	"/opt/slurm/default"
+set mungedir	"/opt/slurm/munge"
+
+set version "UNKNOWN"
+if {![catch {exec $slurmdir/bin/sbatch --version} out]} {
+	set version [lindex  $out 1]
+}
+set helptext	"Support for the SLURM $version resource allocation system"
+
+# SCRIPT PROPER
+module-whatis	$helptext
+
+prepend-path	PATH		"$slurmdir/bin"
+prepend-path	PATH		"$mungedir/bin"
+
+prepend-path	MANPATH		"$slurmdir/share/man"
+prepend-path	MANPATH		"$mungedir/share/man"
+
+prepend-path	PERL5LIB	"$slurmdir/lib/perl5/site_perl"
+
+# other useful environment variables
+setenv	SINFO_FORMAT	{%9P %5a %8s %.10l %.6c %.6z %.7D %10T %N}
+setenv	SQUEUE_FORMAT	{%.6i %.8u %.7a %.14j %.3t %9r %19S %.10M %.10L %.5D %.4C}
+setenv	SQUEUE_ALL	{yes}	;# show hidden partitions, too
+setenv	SQUEUE_SORT	{-t,e,S}
+
+# logfile aliases
+set-alias sd_log	{tail -f "/ufs/slurm/var/log/slurmd.log"}
+set-alias sc_log	{tail -f "/ufs/slurm/var/log/slurmctld.log"}
+
+if {[exec id -u] == 0} {
+	prepend-path	PATH	"$slurmdir/sbin"
+	prepend-path	PATH	"$mungedir/sbin"
+	set-alias	sdown	{scontrol shutdown}
+}

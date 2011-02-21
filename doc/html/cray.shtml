@@ -2,145 +2,219 @@
 
 <h1>SLURM User and Administrator Guide for Cray systems</h1>
 
-<b>NOTE: As of 20 December 2010, the SLURM interface to Cray systems is incomplete.</b>
+<b>NOTE: As of 20 February 2010, the SLURM interface to Cray systems is still under development.</b>
 
 <h2>User Guide</h2>
 
 <p>This document describes the unique features of SLURM on
 Cray computers.
 You should be familiar with the SLURM's mode of operation on Linux clusters
-before studying the relatively few differences in Cray system
-operation described in this document.</p>
+before studying the differences in Cray system operation described in this
+document.</p>
 
-<p>SLURM's primary mode of operation is designed for use on clusters with
-nodes configured in a one-dimensional space.
-Minor changes were required for the <i>smap</i> and <i>sview</i> tools
-to map nodes in a three-dimensional space.
-Some changes are also desirable to optimize job placement in three-dimensional
-space.</p>
+<p>SLURM version 2.3 is designed to operate as a job scheduler over Cray's
+Application Level Placement Scheduler (ALPS).
+Use SLURM's <i>sbatch</i> or <i>salloc</i> commands to create a resource
+allocation in ALPS.
+Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
+allocation.
+The resource allocation is terminated once the the batch script or the
+<i>salloc</i> command terminate.
+Other than SLURM's <i>srun</i> command being replaced by <i>aprun</i>, all
+other SLURM commands will operate as expected.</p>
 
-<p>SLURM has added an interface to Cray's Application Level Placement Scheduler
-(ALPS). The ALPS <i>aprun</i> command must used for task launch rather than SLURM's
-<i>srun</i> command. You should create a resource reservation using SLURM's
-<i>salloc</i> or <i>sbatch</i> command and execute <i>aprun</i> from within
-that allocation. <//p>
+<p>SLURM node names will be of the form "nid#####" where "#####" is a five
+digit sequence number.
+Other information available about the node is it's XYZ coordinate in the
+node's <i>NodeAddr</i> field and it's component label in the <i>HostNodeName</i>
+field.
+The format of the component lable is "c#-#c#s#n#" where the "#" fields
+represent in order: cabinet, row, cate, blade or slot, and node.
+For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
 
 <h2>Administrator Guide</h2>
 
-<h3>Cray/ALPS configuration</h3>
+<h3>Install supporting rpms</h3>
 
-<p>Node names must have a three-digit suffix describing their
-zero-origin position in the X-, Y- and Z-dimension respectively (e.g.
-"tux000" for X=0, Y=0, Z=0; "tux123" for X=1, Y=2, Z=3).
-Rectangular prisms of nodes can be specified in SLURM commands and
-configuration files using the system name prefix with the end-points
-enclosed in square brackets and separated by an "x".
-For example "tux[620x731]" is used to represent the eight nodes in a
-block with endpoints at "tux620" and "tux731" (tux620, tux621, tux630,
-tux631, tux720, tux721, tux730, tux731).
-<b>NOTE:</b> We anticipate that Cray will provide node coordinate
-information via the ALPS interface in the future, which may result
-in a more flexible node naming convention.</p>
+<p>The build requires a few -devel RPMs listed below. You can obtain these from
+SuSe/Novel.
+<ul>
+<li>CLE 2.x uses SuSe SLES 10 packages (rpms may be on the normal isos)</li>
+<li>CLE 3.x uses Suse SLES 11 packages (rpms are on the SDK isos, there
+are two SDK iso files for SDK)</li>
+</ul></p>
 
-<p>In ALPS, configure each node to be scheduled using SLURM as type
-BATCH.</p>
+<p>You can check by
+<ul>
+<li>Going onto the bootnode</li>
+<li>xtopview</li>
+<li>rpm -qa</li>
+</ul></p>
 
-<h3>SLURM configuration</h3>
+<p>The list of packages that should be installed is:
+<ul>
+<li>expat-2.0.xxx</li>
+<li>libexpat-devel-2.0.xxx</li>
+<li>cray-MySQL-devel-enterprise-5.0.64 (this should be on the Cray iso)</li>
+</ul></p>
 
-<p>Four variables must be defined in the <i>config.h</i> file:
-<i>APBASIL_LOC</i> (location of the <i>apbasil</i> command),
-<i>HAVE_FRONT_END</i>, <i>HAVE_CRAY</i> and <i>HAVE_3D</i>.
-The <i>apbasil</i> command should automatically be found.
-If that is not the case, please notify us of its location on your system
-and we will add that to the search paths tested at configure time.
-The other variable definitions can be initiated in several different
-ways depending upon how SLURM is being built.
-<ol>
-<li>Execute the <i>configure</i> command with the option
-<i>--enable-cray-xt</i> <b>OR</b></li>
-<li>Execute the <i>rpmbuild</i> command with the option
-<i>--with cray_xt</i> <b>OR</b></li>
-<li>Add <i>%with_cray_xt 1</i> to your <i>~/.rpmmacros</i> file.</li>
+<h3>Create a build root</h3>
+
+<p>The build is done on a normal service node, where you like
+(e.g. <i>/ufs/slurm/build</i> would work).
+Most scripts check for the environment variable LIBROOT. 
+You can either edit the scripts or export this variable. Easiest way:
+<ul>
+<li>export LIBROOT=/ufs/slurm/build</li>
+<li>mkdir -vp $LIBROOT</li>
+<li>cd $LIBROOT</li>
+</ul></p>
+
+<h3>Install modulefile</h3>
+
+<p>This file is distributed as part the SLURM tar-ball in
+<i>contribs/cray/opt_modulefiles_slurm</i>. Install it as
+<i>/opt/modulefiles/slurm</i> (or anywhere else in your module path).
+It means that you can use Munge as soon as it is built.</p>
+
+<h3>Build and install Munge</h3>
+
+<p>Munge is the authentication daemon and needed by SLURM.
+<ul>
+<li>cp munge_build_script.sh $LIBROOT</li>
+<li>mkdir -vp ${LIBROOT}/munge/zip</li>
+<li>download munge-0.5.9.tar.bz2 or newer from
+<a href="http://code.google.com/p/munge/downloads/list">
+http://code.google.com/p/munge/downloads/list</a></li>
+<li>copy that into ${LIBROOT}/munge/zip</li>
+<li>run ./munge_build_script.sh</li>
+</ul></p>
+<p>This generates a tar-ball called $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz
+which has already the correct paths - in particular, the libmunge.* need to
+reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
+
+<p>Install tar-ball by
+<ul>
+<li>scp $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz boot:</li>
+<li>ssh boot</li>
+<li>tar -zxvf munge_build-*.tar.gz -C /rr/current</li>
+</ul></p>
+
+<h3>Configure Munge</h3>
+
+<p>The following steps apply to each service node where
+<ul>
+<li>the <i>slurmd</i> or <i>slurmctld</i> daemon will run and/or</li>
+<li>users will be submitting jobs</li>
+</ul></p>
+
+<p><ol>
+<li>on each login host create directory hierarchy:<br>
+    mkdir --mode=0711 -vp /var/lib/munge<br>
+    mkdir --mode=0700 -vp /var/log/munge<br>
+    mkdir --mode=0755 -vp /var/run/munge</li>
+<li>module load slurm # as root, to get the right slurm paths</li>
+<li>munged --key-file /opt/slurm/munge/etc/munge.key</li>
+<li>try a  "munge -n" to see if munged accepts input</li>
 </ol></p>
+
+<p>When done, verify network connectivity by executing<br>
+  $  munge -n |ssh other-login-host /opt/slurm/munge/bin/unmunge</p>
+
+<p>If you decide to keep the installation, you may be interested in automating
+the process using an <i>init.d</i> script distributed with the Munge as
+<i>src/etc/munge.init</i>. This is installed by</p>
+<ul>
+<li>cp munge.init /rr/current/software/munge</li>
+<li>xtopview -c login</li>
+<li>cp /software/munge /etc/init.d</li>
+<li>chkconfig munge on</li>
+</ul></p>
+
+<h3>Build libasil</h3>
+
+<p>This is the last step in the build preparations and sets up the (currently
+still external) ALPS library which does the XML-RPC calls for SLURM.
+This file is distributed as part the SLURM tar-ball in
+<i>contribs/cray/libasil.tar.gz</i>.</p>
+<ul>
+<li>cd $LIBROOT</li>
+<li>tar zxvf libasil.tar.gz</li>
+<li>make -C libasil</li>
+</ul></p>
+
+<p>This should build the required library <i>$LIBROOT/libasil/libasil.a</i>.
+There are a number of subdirectories with test programs.
+If you want, you can run various test programs via
+<ul>
+<li>make -C $LIBROOT/libasil/alps_tests all</li>
+<li>make -C $LIBROOT/libasil/sdb_tests all</li>
+</ul></p>
+
+<p>There is one program which will be used in the next part.
+It prints the correct list of compute nodes for use in SLURM's slurm.conf file.
+This is the <i>libasil/sdb_tests/tuxadmin/tuxadmin</i> program, called with the
+<i>--slurm.conf</i> argument.
+Please make sure that it is working at this stage.
+A sample execution is shown below:<br>
+gele1>libasil/sdb_tests/tuxadmin/tuxadmin --slurm.conf<br>
+slurm can use MaxNodes=16 compute nodes. These should be listed in slurm.conf as:<br>
+  NodeName=nid000[16-31]</p>
+
+<h3>Build and Configure SLURM</h3>
+
+<p>SLURM can be built and installed as on any other computer as described
+<a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
+When building SLURM's slurm.conf configuration files,  use the <i>NodeName</i>
+values reported by the <i>tuxadmin</i> command as described above.
+Note that the <i>NodeAddr</i> and <i>NodeHostName</i> fields should not be
+configured, but will be set by SLURM using data from ALPS.
+<i>NodeAddr</i> be set to the node's XYZ coordinate and be used by SLURM's
+<i>smap</i> and <i>sview</i> commands.
+<i>NodeHostName</i> will be set to the node's component label.
+The format of the component label is "c#-#c#s#n#" where the "#" fields
+represent in order: cabinet, row, cate, blade or slot, and node.
+For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
 
 <p>The <i>slurmd</i> daemons will not execute on the compute nodes, but will
 execute on one or more front end nodes.
-It is from here that users will execute <i>aprun</i> commands to launch tasks.
+It is from here that batch scripts will execute <i>aprun</i> commands to
+launch tasks.
 This is specified in the <i>slurm.conf</i> file by using the
-<i>NodeName</i> field to the compute nodes and using the <i>FrontendName</i>
-field to identify to identify where the <i>slurmd</i> runs
+<i>FrontendName</i> and optionally the <i>FrontEndAddr</i> fields
 as seen in the examples below.</p>
 
-<p>Next you need to select from two options for the resource selection
-plugin (the <i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration
-file):
-<ol>
-<li><b>select/cons_res</b> - Performs a best-fit algorithm based upon a
-one-dimensional space to allocate whole nodes, sockets, or cores to jobs
-based upon other configuration parameters.</li>
-<li><b>select/linear</b> - Performs a best-fit algorithm based upon a
-one-dimensional space to allocate whole nodes to jobs.</li>
-</ol>
+<p>You need to specify the appropriate resource selection plugin (the
+<i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration file).
+Configure <i>SelectType</i> to <i>select/cray</i> The <i>select/cray</i> 
+plugin provides an interface to ALPS plus issues calls to the
+<i>select/linear</i>, which selects resources for jobs using a best-fit
+algorithm to allocate whole nodes to jobs (rather than individual sockets,
+cores or threads).</p>
 
-<p>In order for <i>select/cons_res</i> or <i>select/linear</i> to
-allocate resources physically nearby in three-dimensional space, the
-nodes be specified in SLURM's <i>slurm.conf</i> configuration file in
-such a fashion that those nearby in <i>slurm.conf</i> (one-dimensional
-space) are also nearby in the physical three-dimensional space.
-If the definition of the nodes in SLURM's <i>slurm.conf</i> configuration
-file are listed on one line (e.g. <i>NodeName=tux[000x333]</i>),
-SLURM will automatically perform that conversion using a
-<a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>.
-Otherwise you may construct your own node name ordering and list them
-one node per line in <i>slurm.conf</i>.
-Note that each node must be listed exactly once and consecutive
-nodes should be nearby in three-dimensional space.
-Also note that each node must be defined individually rather than using
-a hostlist expression in order to preserve the ordering (there is no
-problem using a hostlist expression in the partition specification after
-the nodes have already been defined).
-The open source code used by SLURM to generate the Hilbert curve is
-included in the distribution at <i>contribs/skilling.c</i> in the event
-that you wish to experiment with it to generate your own node ordering.
-Two examples of SLURM configuration files are shown below:</p>
+<p>The last Cray-specific configuration parameter controls the system
+topology information used to optimize resource allocations and must be
+configured as <i>TopoType=topology/node_rank</i>.
+The <i>topology/node_rank</i> plugin orders the nodes such that nodes
+which are close in three dimensional space a put close in one dimensional
+space. Since SLURM uses a best-fit algorithm in one dimensional space,
+the resulting job allocations should achieve good locality in three
+dimensional space also.
+For more information about how this is achieved, see SLURM's
+<a href="topology.html#topo_3d">Topology Guide</a>.</p>
 
 <pre>
-# slurm.conf for Cray XT system of size 4x4x4
+# slurm.conf for Cray XT system of with 512 compute nodes
 # Parameters removed here
-SelectType=select/linear
-FrontendName=front_end[00-03] State=Unknown
-NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux[000x333]
-PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
+SelectType=select/cray
+TopoType=topology/node_rank
+FrontendName=front_end[00-03]
+NodeName=nid[00000-00511] Procs=8 RealMemory=2048
+PartitionName=batch Nodes=nid[00000-00511] Default=Yes State=UP
 </pre>
-
-<pre>
-# slurm.conf for Cray XT system of size 2x2x2
-# Parameters removed here
-SelectType=select/linear
-FrontendName=front_end[00-03] State=Unknown
-NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux000
-NodeName=tux100
-NodeName=tux110
-NodeName=tux010
-NodeName=tux011
-NodeName=tux111
-NodeName=tux101
-NodeName=tux001
-PartitionName=debug Nodes=tux[000x111] Default=Yes State=UP
-</pre>
-
-<p>In both of the examples above, the node names output by the
-<i>scontrol show nodes</i> will be ordered as defined (sequentially
-along the Hilbert curve or per the ordering in the <i>slurm.conf</i> file)
-rather than in numeric order (e.g. "tux001" follows "tux101" rather
-than "tux000").
-SLURM partitions should contain nodes which are defined sequentially
-by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 December 2010</p></td>
+<p style="text-align:center;">Last modified 20 February 2011</p></td>
 
 <!--#include virtual="footer.txt"-->

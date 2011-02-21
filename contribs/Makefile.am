@@ -1,4 +1,4 @@
-SUBDIRS = pam perlapi torque sjobexit slurmdb-direct
+SUBDIRS = cray pam perlapi torque sjobexit slurmdb-direct
 
 EXTRA_DIST = \
 	env_cache_builder.c	\
