@@ -107,19 +107,19 @@ typedef struct {
 	int rotate_count;              /* number of times rotated */
 	char *save_name;               /* name of blocks in midplanes */
 	int size;                      /* count of midplanes in block */
-	int small16;                   /* number of blocks using 16 cnodes in
+	uint16_t small16;              /* number of blocks using 16 cnodes in
 					* block, only used for small
 					* block creation */
-	int small32;                   /* number of blocks using 32 cnodes in
+	uint16_t small32;              /* number of blocks using 32 cnodes in
 					* block, only used for small
 					* block creation */
-	int small64;                   /* number of blocks using 64 cnodes in
+	uint16_t small64;              /* number of blocks using 64 cnodes in
 					* block, only used for small
 					* block creation */
-	int small128;                  /* number of blocks using 128 cnodes in
+	uint16_t small128;             /* number of blocks using 128 cnodes in
 					* block, only used for small
 					* block creation */
-	int small256;                  /* number of blocks using 256 cnodes in
+	uint16_t small256;             /* number of blocks using 256 cnodes in
 					* block, only used for small
 					* block creation */
 	uint16_t start[HIGHEST_DIMENSIONS]; /* where to start creation of

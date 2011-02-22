@@ -991,7 +991,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
  */
 	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
 						 * dimensions, e.g. X, Y, and Z */
-	uint16_t conn_type;	/* see enum connection_type */
+	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
 	uint16_t reboot;	/* force node reboot before startup */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	char *blrtsimage;       /* BlrtsImage for block */

@@ -96,19 +96,19 @@ static int _setup_particulars(uint32_t cluster_flags,
 		if (bg_part_id) {
 			/* check to see if this is a HTC block or not. */
 			if (cluster_flags & CLUSTER_FLAG_BGP) {
-				uint16_t conn_type =
-					(uint16_t)NO_VAL;
+				uint16_t conn_type[HIGHEST_DIMENSIONS];
 				select_g_select_jobinfo_get(
 					select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
 					&conn_type);
-				if (conn_type > SELECT_SMALL) {
+				if (conn_type[0] > SELECT_SMALL) {
 					/* SUBMIT_POOL over rides
 					   HTC_SUBMIT_POOL */
 					setenvf(dest, "SUBMIT_POOL", "%s",
 						bg_part_id);
 				}
 			}
+
 			setenvf(dest, "MPIRUN_PARTITION", "%s", bg_part_id);
 			setenvf(dest, "MPIRUN_NOFREE", "%d", 1);
 			setenvf(dest, "MPIRUN_NOALLOCATE", "%d", 1);

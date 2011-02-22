@@ -42,7 +42,7 @@
 
 #include "scontrol.h"
 #include "src/common/stepd_api.h"
-#include "src/plugins/select/bluegene/common/bg_enums.h"
+#include "src/plugins/select/bluegene/bg_enums.h"
 
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 

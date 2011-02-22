@@ -57,18 +57,14 @@
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
-	int i;
-	int dims = slurmdb_setup_cluster_dims();
-
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
 	job_desc_msg->acctg_freq	= (uint16_t) NO_VAL;
 	job_desc_msg->alloc_sid		= NO_VAL;
-	job_desc_msg->conn_type		= (uint16_t) NO_VAL;
+	job_desc_msg->conn_type[0]	= (uint16_t) NO_VAL;
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
 	job_desc_msg->cpu_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
-	for (i=0; i<dims; i++)
-		job_desc_msg->geometry[i] = (uint16_t) NO_VAL;
+	job_desc_msg->geometry[0]       = (uint16_t) NO_VAL;
 	job_desc_msg->group_id		= NO_VAL;
 	job_desc_msg->job_id		= NO_VAL;
 	job_desc_msg->pn_min_cpus	= (uint16_t) NO_VAL;
@@ -176,14 +172,10 @@ void slurm_init_update_front_end_msg (update_front_end_msg_t *
  */
 void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
 {
-	int i;
-
 	memset(update_block_msg, 0, sizeof(update_block_msg_t));
-	for (i=0; i<HIGHEST_DIMENSIONS; i++)
-		update_block_msg->conn_type[i] = (uint16_t)NO_VAL;
+	update_block_msg->conn_type[0] = (uint16_t)NO_VAL;
 	update_block_msg->job_running = NO_VAL;
 	update_block_msg->node_cnt = NO_VAL;
 	update_block_msg->node_use = (uint16_t)NO_VAL;
 	update_block_msg->state = (uint16_t)NO_VAL;
-
 }

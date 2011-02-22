@@ -3658,10 +3658,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	} else if ((conn_type[0] == SELECT_TORUS)
 		   || (conn_type[0] == SELECT_MESH)) {
 		int dim;
-		for (dim=1; dim<SYSTEM_DIMENSIONS; dim++) {
-			info("setting it to be %d", conn_type[0]);
+		for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
 			conn_type[dim] = conn_type[0];
-		}
 		select_g_select_jobinfo_set(job_desc->select_jobinfo,
 					    SELECT_JOBDATA_CONN_TYPE,
 					    &conn_type);

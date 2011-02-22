@@ -69,7 +69,7 @@
 
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
-#include "src/plugins/select/bluegene/common/bg_enums.h"
+#include "src/plugins/select/bluegene/bg_enums.h"
 #endif
 
 #ifndef __USE_XOPEN_EXTENDED
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
 				error("Something is wrong with the "
 				      "boot of the nodes.");
 			goto relinquish;
-		}	
+		}
 #endif
 	}
 
@@ -602,7 +602,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 #endif
 	if (opt.conn_type != (uint16_t)NO_VAL)
-		desc->conn_type = opt.conn_type;
+		desc->conn_type[0] = opt.conn_type;
 	if (opt.reboot)
 		desc->reboot = 1;
 	if (opt.no_rotate)

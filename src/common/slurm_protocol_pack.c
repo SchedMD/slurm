@@ -5618,7 +5618,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
-			if (job_desc_ptr->conn_type != (uint16_t) NO_VAL)
+			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
 					job_desc_ptr->select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
@@ -5757,7 +5757,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 					SELECT_JOBDATA_GEOMETRY,
 					job_desc_ptr->geometry);
 
-			if (job_desc_ptr->conn_type != (uint16_t) NO_VAL)
+			if (job_desc_ptr->conn_type[0] != (uint16_t) NO_VAL)
 				select_g_select_jobinfo_set(
 					job_desc_ptr->select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE,
@@ -5939,7 +5939,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		 * set in the select_jobinfo structure.
 		 */
 		job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->conn_type = (uint16_t)NO_VAL;
+		job_desc_ptr->conn_type[0] = (uint16_t)NO_VAL;
 		job_desc_ptr->reboot = (uint16_t)NO_VAL;
 		job_desc_ptr->rotate = (uint16_t)NO_VAL;
 		job_desc_ptr->blrtsimage = NULL;
@@ -6067,7 +6067,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		 * set in the select_jobinfo structure.
 		 */
 		job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
-		job_desc_ptr->conn_type = (uint16_t)NO_VAL;
+		job_desc_ptr->conn_type[0] = (uint16_t)NO_VAL;
 		job_desc_ptr->reboot = (uint16_t)NO_VAL;
 		job_desc_ptr->rotate = (uint16_t)NO_VAL;
 		job_desc_ptr->blrtsimage = NULL;

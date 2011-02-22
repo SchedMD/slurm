@@ -1298,7 +1298,7 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	bg_record_t *bg_record = NULL;
 	bg_record_t *new_record = NULL;
 	int count = 0;
-
+	info("in sync");
 	itr = list_iterator_create(full_list);
 	itr2 = list_iterator_create(incomp_list);
 	while ((new_record = list_next(itr))) {
@@ -1346,6 +1346,7 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 	sort_bg_record_inc_size(incomp_list);
+	info("done with sync");
 
 	return count;
 }

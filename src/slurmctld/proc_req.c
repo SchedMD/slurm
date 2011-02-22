@@ -85,7 +85,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#include "src/plugins/select/bluegene/common/bg_enums.h"
+#include "src/plugins/select/bluegene/bg_enums.h"
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);

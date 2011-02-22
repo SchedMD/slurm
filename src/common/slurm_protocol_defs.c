@@ -60,7 +60,7 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/plugins/select/bluegene/common/bg_enums.h"
+#include "src/plugins/select/bluegene/bg_enums.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h

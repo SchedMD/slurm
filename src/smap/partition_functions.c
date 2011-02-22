@@ -424,7 +424,6 @@ static void _marknodes(db2_block_info_t *block_ptr, int count)
 			}
 			if (nodes[j] != ',')
 				break;
-			j--;
 		} else if (((nodes[j] >= '0') && (nodes[j] <= '9')) ||
 			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
 			for (i = 0; i < params.cluster_dims; i++, j++)
@@ -432,9 +431,8 @@ static void _marknodes(db2_block_info_t *block_ptr, int count)
 			block_ptr->size += set_grid_bg(start, start, count, 1);
 			if (nodes[j] != ',')
 				break;
-			j--;
-		}
-		j++;
+		} else
+			j++;
 	}
 }
 

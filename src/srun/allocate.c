@@ -64,7 +64,7 @@
 
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
-#include "src/plugins/select/bluegene/common/bg_enums.h"
+#include "src/plugins/select/bluegene/bg_enums.h"
 #endif
 
 #define MAX_ALLOC_WAIT	60	/* seconds */
@@ -654,7 +654,7 @@ job_desc_msg_create_from_opts (void)
 #endif
 
 	if (opt.conn_type != (uint16_t) NO_VAL)
-		j->conn_type = opt.conn_type;
+		j->conn_type[0] = opt.conn_type;
 
 	if (opt.reboot)
 		j->reboot = 1;

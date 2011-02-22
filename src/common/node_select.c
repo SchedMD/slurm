@@ -285,30 +285,15 @@ extern int slurm_select_init(bool only_default)
 #endif
 
 #ifdef HAVE_BG
-#  ifdef HAVE_BGQ
-		if (strcasecmp(select_type, "select/bgq")) {
-			error("%s is incompatible with BlueGene/Q",
-			      select_type);
-			fatal("Use SelectType=select/bgq");
-		}
-#  else
 		if (strcasecmp(select_type, "select/bluegene")) {
 			error("%s is incompatible with BlueGene", select_type);
 			fatal("Use SelectType=select/bluegene");
 		}
-#  endif
 #else
-		if (!strcasecmp(select_type, "select/bgq")) {
-			fatal("Requested SelectType=select/bgq in slurm.conf, "
-			      "but not running on a BGQ system.  If looking "
-			      "to emulate a BGQ system use "
-			      "--enable-bgq-emulation.");
-		}
-
 		if (!strcasecmp(select_type, "select/bluegene")) {
 			fatal("Requested SelectType=select/bluegene "
-			      "in slurm.conf, but not running on a BG[L|P] "
-			      "system.  If looking to emulate a BG[L|P] "
+			      "in slurm.conf, but not running on a BG[L|P|Q] "
+			      "system.  If looking to emulate a BG[L|P|Q] "
 			      "system use --enable-bgl-emulation or "
 			      "--enable-bgp-emulation respectively.");
 		}

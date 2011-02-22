@@ -40,7 +40,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
-#include "src/plugins/select/bluegene/common/bg_enums.h"
+#include "src/plugins/select/bluegene/bg_enums.h"
 #include "src/common/proc_args.h"
 
 #define OPT_LONG_HIDE   0x102

@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that when setting a compute node to idle state, it was failing to
     set the systems up_node_bitmap.
  -- BLUEGENE - code reorder
+ -- BLUEGENE - Now only one select plugin for all Bluegene systems.
 
 * Changes in SLURM 2.3.0.pre2
 =============================

@@ -53,7 +53,7 @@
  * not confict with allocate.c including this file we will just use the
  * definition there instead of defining it here.
  */
-# include "src/plugins/select/bluegene/common/bg_enums.h"
+# include "src/plugins/select/bluegene/bg_enums.h"
 #else
 typedef struct {
   char * host_name;           /* Something we can pass to inet_addr */

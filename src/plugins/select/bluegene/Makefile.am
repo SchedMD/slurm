@@ -1,3 +1,80 @@
 # Makefile for select/bluegene plugin
 
-SUBDIRS = bluegene bgq
+AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
+
+CPPFLAGS = -DBLUEGENE_CONFIG_FILE=\"$(sysconfdir)/bluegene.conf\"
+
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
+
+INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
+
+pkglib_LTLIBRARIES = select_bluegene.la
+
+noinst_LTLIBRARIES = libba_common.la
+
+# These are needed for pack/unpack of structures for cross-cluster stuff
+select_bluegene_la_SOURCES = select_bluegene.c \
+			bg_job_info.c bg_job_info.h \
+			bg_node_info.c bg_node_info.h
+
+libba_common_la_SOURCES = ba_common.c ba_common.h
+
+
+select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+if BLUEGENE_LOADED
+
+SUBDIRS = sfree
+
+if BG_L_P_LOADED
+SUBDIRS += bl ba
+
+if BGL_LOADED
+pkglib_LTLIBRARIES += libsched_if64.la
+libsched_if64_la_SOURCES = libsched_if64.c
+libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+else
+pkglib_LTLIBRARIES += libsched_if.la
+libsched_if_la_SOURCES = libsched_if64.c
+libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+endif
+
+block_allocator_lib  = ba/libblock_allocator.la
+endif
+
+if BGQ_LOADED
+SUBDIRS += bgq_bl bgq_ba
+
+block_allocator_lib  = bgq_ba/libblock_allocator.la
+
+# force link with g++
+nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
+
+endif
+
+select_bluegene_la_SOURCES += bg_core.c bg_defined_block.c \
+			bg_dynamic_block.c bg_job_place.c \
+			bg_job_run.c bg_list_functions.c \
+			bg_read_config.c bg_record_functions.c \
+			bg_status.c
+
+select_bluegene_la_LIBADD  = $(block_allocator_lib) libba_common.la
+
+convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+
+sbin_PROGRAMS = slurm_prolog slurm_epilog
+
+slurm_prolog_LDADD = $(convenience_libs)
+slurm_prolog_SOURCES = slurm_prolog.c
+slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
+slurm_epilog_LDADD = $(convenience_libs)
+slurm_epilog_SOURCES = slurm_epilog.c
+slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
+force:
+$(block_allocator_lib) $(convenience_libs) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
+
+endif

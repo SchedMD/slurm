@@ -322,7 +322,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 
 	if (opt.conn_type != (uint16_t) NO_VAL)
-		desc->conn_type = opt.conn_type;
+		desc->conn_type[0] = opt.conn_type;
 	if (opt.reboot)
 		desc->reboot = 1;
 	if (opt.no_rotate)
