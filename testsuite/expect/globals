@@ -1773,7 +1773,7 @@ proc get_bluegene_psets { } {
 	set psets 0
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "Numpsets *= ($number)" {
+		-re "IONodesPerMP *= ($number)" {
 			set psets $expect_out(1,string)
 			exp_continue
 		}
@@ -1866,7 +1866,7 @@ proc get_bluegene_procs_per_cnode { } {
 
 ################################################################
 #
-# Proc: get_bluegene_cnodes_per_np
+# Proc: get_bluegene_cnodes_per_mp
 #
 # Purpose: Determine how many cnodes are in a midplane
 #
@@ -1881,7 +1881,7 @@ proc get_bluegene_cnodes_per_mp { } {
 	set node_cnt 1
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "BasePartitionNodeCnt *= ($number)" {
+		-re "MidPlaneNodeCnt *= ($number)" {
 			set node_cnt $expect_out(1,string)
 			exp_continue
 		}
