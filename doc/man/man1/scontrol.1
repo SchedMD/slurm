@@ -357,7 +357,8 @@ updated configuration values to the \fIupdate\fP. Note that while most
 configuration values can be changed using this command, not all can be changed
 using this mechanism. In particular, the hardware configuration of a node or
 the physical addition or removal of nodes from the cluster may only be
-accomplished through editing the Slurm configuration file and executing the \fIreconfigure\fP command (described above).
+accomplished through editing the Slurm configuration file and executing\
+the \fIreconfigure\fP command (described above).
 
 .TP
 \fBverbose\fP
@@ -367,6 +368,13 @@ This includes time\-stamps on data structures, record counts, etc.
 .TP
 \fBversion\fP
 Display the version number of scontrol being executed.
+
+.TP
+\fBwait_job\fP \fIjob_id\fP
+Wait until a job andall of its nodes are ready for use or the job has entered
+some termination state. This option is particularly useful in the SLURM Prolog
+or in the batch script itself if nodes are powered down and restarted
+automatically as needed.
 
 .TP
 \fB!!\fP
