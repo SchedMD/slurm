@@ -7787,7 +7787,8 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 	}
-	if (detail_ptr && (detail_ptr->begin_time == 0)) {
+	if ((detail_ptr && (detail_ptr->begin_time == 0) &&
+	    (job_ptr->priority != 0))) {
 		detail_ptr->begin_time = now;
 	} else if (job_ptr->state_reason == WAIT_TIME) {
 		job_ptr->state_reason = WAIT_NO_REASON;
