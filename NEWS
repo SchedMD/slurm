@@ -13,6 +13,10 @@ documents those changes that are of interest to users and admins.
  -- Make timeout for communications to the slurmctld be based upon the
     MessageTimeout configuration parameter rather than always 3 seconds.
     Patch from Matthieu Hautreux, CEA.
+ -- Add new scontrol option of "show aliases" to report every NodeName that is
+    associated with a given NodeHostName when running multiple slurmd daemons
+    per compute node (typically used for testing purposes). Patch from
+    Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.2.2
 ========================

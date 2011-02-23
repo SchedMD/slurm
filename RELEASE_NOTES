@@ -177,6 +177,10 @@ COMMAND CHANGES (see man pages for details)
   job specifies it's memory requirement, then more CPUs than requested will
   automatically be allocated to a job to honor the MaxMemPerCPU parameter.
 
+* Add new scontrol option of "show aliases" to report every NodeName that is
+  associated with a given NodeHostName when running multiple slurmd daemons
+  per compute node (typically used for testing purposes).
+
 BLUEGENE SPECIFIC CHANGES
 =========================
 
