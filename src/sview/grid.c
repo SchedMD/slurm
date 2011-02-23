@@ -599,6 +599,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		/* Translate a 3D or 4D space into a 2D space the the extent
 		 * possible. */
 		if (node_exists == NULL) {
+			node_exists_cnt = 1;
 			for (i = 0; i < cluster_dims; i++)
 				node_exists_cnt *= dim_size[i];
 			node_exists = xmalloc(sizeof(bool) * node_exists_cnt);
