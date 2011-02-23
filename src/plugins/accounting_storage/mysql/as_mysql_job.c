@@ -350,9 +350,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 no_rollup_change:
 
 	if (job_ptr->name && job_ptr->name[0])
-		jname = job_ptr->name;
+		jname = slurm_add_slash_to_quotes(job_ptr->name);
 	else {
-		jname = "allocation";
+		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
 
@@ -519,6 +519,7 @@ no_rollup_change:
 	}
 
 	xfree(block_id);
+	xfree(jname);
 	xfree(query);
 
 	/* now we will reset all the steps */
@@ -740,7 +741,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	int cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
 	int rc=SLURM_SUCCESS;
 	char node_list[BUFFER_SIZE];
-	char *node_inx = NULL;
+	char *node_inx = NULL, *step_name = NULL;
 	time_t start_time, submit_time;
 
 #ifdef HAVE_BG
@@ -846,6 +847,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		}
 	}
 
+	step_name = slurm_add_slash_to_quotes(step_ptr->name);
+
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
 	/* The stepid could be -2 so use %d not %u */
@@ -862,7 +865,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		mysql_conn->cluster_name, step_table,
 		step_ptr->job_ptr->db_index,
 		step_ptr->step_id,
-		(int)start_time, step_ptr->name,
+		(int)start_time, step_name,
 		JOB_RUNNING, cpus, nodes, tasks, node_list, node_inx, task_dist,
 		cpus, nodes, tasks, JOB_RUNNING,
 		node_list, node_inx, task_dist);
@@ -870,6 +873,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
+	xfree(step_name);
 
 	return rc;
 }
