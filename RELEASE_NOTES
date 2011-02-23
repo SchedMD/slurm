@@ -47,6 +47,9 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
 * scontrol has the ability to get and set front end node state.
 
+* Add new scontrol option of "show aliases" to report every NodeName that is
+  associated with a given NodeHostName when running multiple slurmd daemons
+  per compute node (typically used for testing purposes).
 
 BLUEGENE SPECIFIC CHANGES
 =========================

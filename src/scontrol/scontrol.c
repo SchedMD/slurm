@@ -73,6 +73,7 @@ static void     _ping_slurmctld(char *control_machine,
 				char *backup_controller);
 static void	_print_config (char *config_param);
 static void     _print_daemons (void);
+static void     _print_aliases (char* node_hostname);
 static void	_print_ping (void);
 static void	_print_slurmd(char *hostlist);
 static void     _print_version( void );
@@ -490,6 +491,41 @@ _print_daemons (void)
 	if (actld && d)
 		strcat(daemon_list, "slurmd");
 	fprintf (stdout, "%s\n", daemon_list) ;
+}
+
+/*
+ * _print_aliases - report which aliases should be running on this node
+ */
+static void
+_print_aliases (char* node_hostname)
+{
+	char me[MAX_SLURM_NAME], *n = NULL, *a = NULL;
+	char *s;
+	
+	slurm_conf_init(NULL);
+	if ( ! node_hostname ) {
+		gethostname_short(me, MAX_SLURM_NAME);
+		s = me;
+	} else
+		s = node_hostname;
+	
+	if ( ! (n = slurm_conf_get_aliases(s)) && (s == me) ) {
+		
+		if ( ! (a = slurm_conf_get_aliased_nodename()) )
+			a = slurm_conf_get_nodename("localhost");
+		
+		if ( a ) {
+			n = slurm_conf_get_aliases(a);
+			xfree(a);
+		}
+		
+	}
+
+	if ( n ) {
+		fprintf (stdout,"%s\n",n);
+		xfree(n);
+	}
+
 }
 
 /*
@@ -1185,7 +1221,12 @@ _show_it (int argc, char *argv[])
 		val = NULL;
 	}
 
-	if (strncasecmp (tag, "blocks", MAX(tag_len, 1)) == 0) {
+	if (strncasecmp (tag, "aliases", MAX(tag_len, 1)) == 0) {
+		if (val)
+			_print_aliases (val);
+		else
+			_print_aliases (NULL);
+	} else if (strncasecmp (tag, "blocks", MAX(tag_len, 1)) == 0) {
 		scontrol_print_block (val);
 	} else if (strncasecmp (tag, "config", MAX(tag_len, 1)) == 0) {
 		_print_config (val);
@@ -1599,9 +1640,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               are booted and usable                        \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"config\", \"daemons\", \"frontend\", \"hostlist\",     \n\
-       \"hostnames\", \"job\", \"node\", \"partition\", \"reservation\",   \n\
-       \"slurmd\", \"step\", or \"topology\"                               \n\
+  <ENTITY> may be \"aliases\", \"config\", \"daemons\", \"frontend\",      \n\
+       \"hostlist\", \"hostnames\", \"job\", \"node\", \"partition\",      \n\
+       \"reservation\", \"slurmd\", \"step\", or \"topology\"              \n\
        (also for BlueGene only: \"block\" or \"subbp\").                   \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
