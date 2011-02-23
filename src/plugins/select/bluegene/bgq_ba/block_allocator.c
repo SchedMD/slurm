@@ -71,6 +71,7 @@ typedef enum {
 } block_algo_t;
 
 /** internal helper functions */
+static bool _switch_overlap();
 
 /* */
 static void _rotate_geo(uint16_t *req_geo, int rot_cnt);
@@ -514,6 +515,8 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 	}
 
 endit:
+	/* reset */
+	deny_pass = NULL;
 	if (!(geo_ptr = (uint16_t *)list_peek(ba_request->elongate_geos)))
 		return 0;
 
@@ -777,15 +780,16 @@ extern int check_and_set_mp_list(List mps)
 			if (ba_switch->usage == BG_SWITCH_NONE)
 				continue;
 
-			if (switch_overlap(ba_switch->usage,
-					   curr_ba_switch->usage)) {
+			if (_switch_overlap(ba_switch, curr_ba_switch)) {
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("%s dim %d is already in "
 					     "use the way we want to use it."
-					     "%u already at %u",
+					     "%s already at %s",
 					     ba_mp->coord_str, i,
-					     ba_switch->usage,
-					     curr_ba_switch->usage);
+					     ba_switch_usage_str(
+						     ba_switch->usage),
+					     ba_switch_usage_str(
+						     curr_ba_switch->usage));
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
@@ -830,6 +834,12 @@ extern char *set_bg_block(List results, uint16_t *start,
 	uint16_t block_end[cluster_dims];
 	uint16_t pass_end[cluster_dims];
 	int coords[cluster_dims];
+
+	if (!ba_initialized){
+		error("Error, configuration not initialized, "
+		      "calling ba_init(NULL, 1)");
+		ba_init(NULL, 1);
+	}
 
 	if (cluster_dims == 1) {
 		if (start[A] >= DIM_SIZE[A])
@@ -884,25 +894,27 @@ extern char *set_bg_block(List results, uint16_t *start,
 	memcpy(block_end, start, sizeof(block_end));
 	memcpy(pass_end, start, sizeof(pass_end));
 	for (dim=0; dim<cluster_dims; dim++) {
+		info("got mp of %p", ba_mp);
 		if (!_find_path(main_mps, ba_mp, dim,
 				geometry[dim], conn_type[dim], &block_end[dim],
 				&pass_end[dim])) {
 			goto end_it;
 		}
 	}
-	info("complete box is  %c%c%c%c x %c%c%c%c pass to %c%c%c%c",
-	     alpha_num[start[A]],
-	     alpha_num[start[X]],
-	     alpha_num[start[Y]],
-	     alpha_num[start[Z]],
-	     alpha_num[block_end[A]],
-	     alpha_num[block_end[X]],
-	     alpha_num[block_end[Y]],
-	     alpha_num[block_end[Z]],
-	     alpha_num[pass_end[A]],
-	     alpha_num[pass_end[X]],
-	     alpha_num[pass_end[Y]],
-	     alpha_num[pass_end[Z]]);
+	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		info("complete box is %c%c%c%c x %c%c%c%c pass to %c%c%c%c",
+		     alpha_num[start[A]],
+		     alpha_num[start[X]],
+		     alpha_num[start[Y]],
+		     alpha_num[start[Z]],
+		     alpha_num[block_end[A]],
+		     alpha_num[block_end[X]],
+		     alpha_num[block_end[Y]],
+		     alpha_num[block_end[Z]],
+		     alpha_num[pass_end[A]],
+		     alpha_num[pass_end[X]],
+		     alpha_num[pass_end[Y]],
+		     alpha_num[pass_end[Z]]);
 
 	if (_fill_in_coords(main_mps, A, ba_mp, check_mp,
 			    start, block_end, pass_end, coords) == -1)
@@ -1082,7 +1094,8 @@ extern int set_all_mps_except(char *mps)
 				for (z = 0; z < DIM_SIZE[Z]; z++) {
 					if (ba_main_grid[a][x][y][z].state
 					    & NODE_RESUME) {
-						/* clear the bit and mark as unused */
+						/* clear the bit and
+						 * mark as unused */
 						ba_main_grid[a][x][y][z].state
 							&= ~NODE_RESUME;
 					} else if (!ba_main_grid
@@ -1565,6 +1578,20 @@ extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo)
 	return match;
 }
 
+static bool _switch_overlap(ba_switch_t *switch_a, ba_switch_t *switch_b)
+{
+	xassert(switch_a);
+	xassert(switch_b);
+
+	if ((switch_a->usage == BG_SWITCH_NONE)
+	    || (switch_b->usage != BG_SWITCH_NONE))
+		return 0;
+	else if (switch_a->usage & switch_b->usage)
+		return 1;
+
+	return 0;
+}
+
 static void _rotate_geo(uint16_t *req_geo, int rot_cnt)
 {
 	uint16_t tmp;
@@ -1866,12 +1893,14 @@ static char *_copy_from_main(List main_mps, List ret_list)
 		memset(new_mp->alter_switch, 0, sizeof(new_mp->alter_switch));
 		if (new_mp->used & BA_MP_USED_PASS_BIT) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("mp %s is used for passthrough",
+				info("_copy_from_main: "
+				     "mp %s is used for passthrough",
 				     new_mp->coord_str);
 			new_mp->used = BA_MP_USED_FALSE;
 		} else {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("mp %s is used", new_mp->coord_str);
+				info("_copy_from_main: "
+				     "mp %s is used", new_mp->coord_str);
 			new_mp->used = BA_MP_USED_TRUE;
 			/* Take this away if we decide we don't want
 			   this to setup the main list.
@@ -1923,7 +1952,7 @@ static char *_reset_altered_mps(List main_mps)
 		fatal("got NULL list iterator");
 	while ((ba_mp = list_next(itr))) {
 		if (!(ba_mp->used & BA_MP_USED_ALTERED)) {
-			error("_reset_altered_mps it appears we "
+			error("_reset_altered_mps: it appears we "
 			      "have a mp %s added that wasn't altered",
 			      ba_mp->coord_str);
 			continue;
@@ -1931,11 +1960,13 @@ static char *_reset_altered_mps(List main_mps)
 
 		if (ba_mp->used & BA_MP_USED_PASS_BIT) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("mp %s is used for passthrough",
+				info("_reset_altered_mps: "
+				     "mp %s is used for passthrough",
 				     ba_mp->coord_str);
 		} else {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("mp %s is used", ba_mp->coord_str);
+				info("_reset_altered_mps: "
+				     "mp %s is used", ba_mp->coord_str);
 			if (hostlist)
 				hostlist_push(hostlist, ba_mp->coord_str);
 			else
@@ -1959,33 +1990,52 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 {
 	int rc = 0;
 	if (ba_mp->alter_switch[dim].usage != BG_SWITCH_NONE) {
-		info("already set %s(%d)", ba_mp->coord_str, dim);
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("_copy_ba_switch: "
+			     "switch already set %s(%d)",
+			     ba_mp->coord_str, dim);
 		return 0;
 
 	}
 	if ((orig_mp->used & BA_MP_USED_PASS_BIT)
 	    || (ba_mp->used & BA_MP_USED_PASS_BIT)) {
-		info("here %d %d", orig_mp->alter_switch[dim].usage & BG_SWITCH_PASS_FLAG, ba_mp->alter_switch[dim].usage & BG_SWITCH_PASS_FLAG);
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("_copy_ba_switch: "
+			     "pass bit set %d %d",
+			     orig_mp->alter_switch[dim].usage
+			     & BG_SWITCH_PASS_FLAG,
+			     ba_mp->alter_switch[dim].usage
+			     & BG_SWITCH_PASS_FLAG);
 		if (!(orig_mp->alter_switch[dim].usage & BG_SWITCH_PASS_FLAG)) {
-			info("skipping %s(%d)", ba_mp->coord_str, dim);
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("_copy_ba_switch: "
+				     "skipping %s(%d)", ba_mp->coord_str, dim);
 			return 0;
 		}
-	}
-
-	if (_mp_used(ba_mp, dim)) {
-		info("%s used", ba_mp->coord_str);
+	} else if (_mp_used(ba_mp, dim)) {
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("_copy_ba_switch: "
+			     "%s is already used", ba_mp->coord_str);
 		return -1;
 	}
-	info("mapping dim %d of %s(%d) to %s(%d) %d", dim, orig_mp->coord_str, orig_mp->used, ba_mp->coord_str, ba_mp->used, orig_mp->used == BA_MP_USED_ALTERED_PASS);
+
+	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		info("_copy_ba_switch: "
+		     "mapping dim %d of %s(%d) to %s(%d) %d",
+		     dim, orig_mp->coord_str, orig_mp->used,
+		     ba_mp->coord_str, ba_mp->used,
+		     orig_mp->used == BA_MP_USED_ALTERED_PASS);
 	if (!(ba_mp->used & BA_MP_USED_ALTERED)) {
-		if (switch_overlap(ba_mp->axis_switch[dim].usage,
-				   orig_mp->alter_switch[dim].usage)) {
-			info("%s switches %d overlapped %s to %s",
-			     ba_mp->coord_str, dim,
-			     ba_switch_usage_str(
-				     ba_mp->alter_switch[dim].usage),
-			     ba_switch_usage_str(
-				     orig_mp->alter_switch[dim].usage));
+		if (_switch_overlap(&ba_mp->axis_switch[dim],
+				    &orig_mp->alter_switch[dim])) {
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("_copy_ba_switch: "
+				     "%s switches %d overlapped %s to %s",
+				     ba_mp->coord_str, dim,
+				     ba_switch_usage_str(
+					     ba_mp->alter_switch[dim].usage),
+				     ba_switch_usage_str(
+					     orig_mp->alter_switch[dim].usage));
 			return -1;
 		}
 		rc = 1;
@@ -1996,10 +2046,12 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 	*/
 	ba_mp->used |= orig_mp->used;
 
-	info("adding from %s %s to %s",
-	     ba_switch_usage_str(orig_mp->alter_switch[dim].usage),
-	     orig_mp->coord_str,
-	     ba_switch_usage_str(ba_mp->alter_switch[dim].usage));
+	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		info("_copy_ba_switch: "
+		     "adding from %s %s to %s",
+		     ba_switch_usage_str(orig_mp->alter_switch[dim].usage),
+		     orig_mp->coord_str,
+		     ba_switch_usage_str(ba_mp->alter_switch[dim].usage));
 	ba_mp->alter_switch[dim].usage |= orig_mp->alter_switch[dim].usage;
 
 	return rc;
@@ -2007,6 +2059,9 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 
 static int _check_deny_pass(int dim)
 {
+	if (!deny_pass || !*deny_pass)
+		return 0;
+
 	switch (dim) {
 	case A:
 		*deny_pass |= PASS_FOUND_A;
@@ -2446,8 +2501,11 @@ static bool _mp_used(ba_mp_t* ba_mp, int dim)
 	if (mp_strip_unaltered(ba_mp->used)
 	    || ba_mp->axis_switch[dim].usage & BG_SWITCH_WRAPPED) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("mp %s used in the %d dim",
-			     ba_mp->coord_str, dim);
+			info("mp %s used in the %d dim (%d, %s)",
+			     ba_mp->coord_str, dim,
+			     mp_strip_unaltered(ba_mp->used),
+			     ba_switch_usage_str(
+				     ba_mp->axis_switch[dim].usage));
 		return true;
 	}
 	return false;
@@ -2466,8 +2524,9 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim)
 	/* If the mp is already used just check the PASS_USED. */
 	if (ba_mp->axis_switch[dim].usage & BG_SWITCH_PASS_USED) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("passthroughs used in the %d dim on mp %s",
-			     dim, ba_mp->coord_str);
+			info("passthroughs used in the %d dim on mp %s (%s)",
+			     dim, ba_mp->coord_str, ba_switch_usage_str(
+				     ba_mp->axis_switch[dim].usage));
 		return true;
 	}
 

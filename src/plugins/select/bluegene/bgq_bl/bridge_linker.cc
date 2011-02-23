@@ -405,8 +405,6 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-	info("booting block %s", bg_record->bg_block_id);
-
 #if defined HAVE_BG_FILES
 	if (bridge_block_set_owner(
 		    bg_record, bg_conf->slurm_user_name) != SLURM_SUCCESS)
