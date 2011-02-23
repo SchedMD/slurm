@@ -325,12 +325,22 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	/* set up a common unique name */
 	gettimeofday(&my_tv, NULL);
 	localtime_r(&my_tv.tv_sec, &my_tm);
-	bg_record->bg_block_id = xstrdup_printf(
-		"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
-		my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
-		my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, my_tv.tv_usec/1000);
+	if (!bg_record->bg_block_id) {
+		bg_record->bg_block_id = xstrdup_printf(
+			"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
+			my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
+			my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec,
+			my_tv.tv_usec/1000);
+#ifndef HAVE_BG_FILES
+		/* Since we divide by 1000 here we need to sleep that
+		   long to get a unique id. It takes longer than this
+		   in a real system so we don't worry about it. */
+		usleep(1000);
+#endif
+	}
 
-#if defined HAVE_BG_FILES
+
+#ifdef HAVE_BG_FILES
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = (ba_mp_t *)list_next(itr))) {
 		if (ba_mp->used)
@@ -343,12 +353,10 @@ extern int bridge_block_create(bg_record_t *bg_record)
         for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 		switch (bg_record->conn_type[dim]) {
 		case SELECT_MESH:
-			info("dim conn type is mesh %d", bg_record->conn_type[dim]);
 			conn_type[dim] = Block::Connectivity::Mesh;
 			break;
 		case SELECT_TORUS:
 		default:
-			info("dim conn type is torus %d", bg_record->conn_type[dim]);
 			conn_type[dim] = Block::Connectivity::Torus;
 			break;
 		}
@@ -372,7 +380,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		block_ptr->add("");
 		// block_ptr->addUser(bg_record->bg_block_id,
 		// 		   bg_record->user_name);
-		info("got past add");
+		//info("got past add");
 	} catch (...) {
 		fatal("Couldn't create block, failing.");
 		rc = SLURM_ERROR;
