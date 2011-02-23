@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
     c) salloc has been invoked from a login shell (not a nested one),
     d) salloc has been configured at compile-time to support background
        execution and is not currently in the background process group.
+ -- Abort salloc if no controlling terminal and --no-shell option is not used
+    ("setsid salloc ..." is disabled). Patch from Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.2.2
 ========================

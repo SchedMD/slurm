@@ -248,8 +248,11 @@ int main(int argc, char *argv[])
 		 */
 		if (is_interactive)
 			atexit(_reset_input_mode);
+	} else if ((!opt.no_shell) && (getpid() == getsid(0))) {
+		error("can not run salloc in a new session without --no-shell "
+		      "since there is no controlling terminal.");
+		exit(error_exit);
 	}
-
 
 	/*
 	 * Request a job allocation
