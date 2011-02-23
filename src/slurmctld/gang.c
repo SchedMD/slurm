@@ -799,9 +799,11 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				if (p_ptr->num_shadows)
+				if (p_ptr->num_shadows &&
+				    (slurm_job_preempt_mode(j_ptr->job_ptr) !=
+				     PREEMPT_MODE_SUSPEND)) {
 					_preempt_job_queue(j_ptr->job_id);
-				else
+				} else
 					_suspend_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_SUSPEND;
 				_clear_shadow(j_ptr);
@@ -821,9 +823,11 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				if (p_ptr->num_shadows)
+				if (p_ptr->num_shadows &&
+				    (slurm_job_preempt_mode(j_ptr->job_ptr) !=
+				     PREEMPT_MODE_SUSPEND)) {
 					_preempt_job_queue(j_ptr->job_id);
-				else
+				} else
 					_suspend_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_SUSPEND;
 				_clear_shadow(j_ptr);
@@ -1011,9 +1015,11 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 			info("gang: _add_job_to_part: suspending job %u",
 			     job_ptr->job_id);
 		}
-		if (p_ptr->num_shadows)
+		if (p_ptr->num_shadows &&
+		    (slurm_job_preempt_mode(job_ptr) !=
+		     PREEMPT_MODE_SUSPEND)) {
 			_preempt_job_queue(job_ptr->job_id);
-		else
+		} else
 			_suspend_job(job_ptr->job_id);
 		j_ptr->sig_state = GS_SUSPEND;
 	}
@@ -1517,9 +1523,11 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 		    		info("gang: _cycle_job_list: suspending job %u",
 				     j_ptr->job_id);
 			}
-			if (p_ptr->num_shadows)
+			if (p_ptr->num_shadows &&
+			    (slurm_job_preempt_mode(j_ptr->job_ptr) !=
+			     PREEMPT_MODE_SUSPEND)) {
 				_preempt_job_queue(j_ptr->job_id);
-			else
+			} else
 				_suspend_job(j_ptr->job_id);
 			j_ptr->sig_state = GS_SUSPEND;
 			_clear_shadow(j_ptr);

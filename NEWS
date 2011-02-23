@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
        execution and is not currently in the background process group.
  -- Abort salloc if no controlling terminal and --no-shell option is not used
     ("setsid salloc ..." is disabled). Patch from Gerrit Renker, CSCS.
+ -- Fix to gang scheduling logic which could cause jobs to not be suspended
+    or resumed when appropriate.
 
 * Changes in SLURM 2.2.2
 ========================
