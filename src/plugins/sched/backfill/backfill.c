@@ -515,6 +515,18 @@ static int _attempt_backfill(void)
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill test for job %u", job_ptr->job_id);
 
+		if ((job_ptr->state_reason == WAIT_ASSOC_JOB_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_ASSOC_RESOURCE_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT)) {
+			debug2("backfill: job %u is not allowed to run now. "
+			       "Skipping it. State=%s. Reason=%s. Priority=%u",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority);
+			continue;
+		}
+
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL))
 		 	continue;
@@ -634,8 +646,12 @@ static int _attempt_backfill(void)
 			}
 		}
 		/* this is the time consuming operation */
+		debug2("backfill: entering _try_sched for job %u.",
+		       job_ptr->job_id);
 		j = _try_sched(job_ptr, &avail_bitmap,
 			       min_nodes, max_nodes, req_nodes);
+		debug2("backfill: finished _try_sched for job %u.",
+		       job_ptr->job_id);
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;

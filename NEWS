@@ -7,7 +7,9 @@ documents those changes that are of interest to users and admins.
     option. Patches from Rod Schulz, Bull.
  -- Applied patch from Martin Perry to fix "Incorrect results for task/affinity
     block second distribution and cpus-per-task > 1" bug.
- -- Avoid setting a job's eligible time while held (priority == 0). 
+ -- Avoid setting a job's eligible time while held (priority == 0).
+ -- Substantial performance improvement to backfill scheduling. Patch from
+    Bjorn-Helge Mevik, University of Oslo.
 
 * Changes in SLURM 2.2.2
 ========================
