@@ -1576,8 +1576,7 @@ static void _opt_args(int argc, char **argv)
 			exit(error_exit);
 		}
 		_load_multi(&opt.argc, opt.argv);
-	}
-	else if (opt.argc > 0) {
+	} else if (opt.argc > 0) {
 		char *fullpath;
 
 		if ((fullpath = search_path(opt.cwd, opt.argv[0], false, X_OK))) {

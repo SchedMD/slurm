@@ -337,6 +337,11 @@ int srun(int ac, char **av)
 			      "request");
 		}
 
+		if (!opt.job_name_set_env && opt.job_name_set_cmd)
+			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
+		else if (!opt.job_name_set_env && opt.argc)
+			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
+
 		if ( !(resp = allocate_nodes()) )
 			exit(error_exit);
 		got_alloc = 1;

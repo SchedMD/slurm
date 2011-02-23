@@ -1622,6 +1622,12 @@ Set to value of the \-\-dependency option.
 Job id of the executing job
 
 .TP
+\fBSLURM_JOB_NAME\fR
+Set to the value of the \-\-job\-name option or the command name when srun
+is used to create a new job allocation. Not set when srun is used only to
+create a job step (i.e. within an existing job allocation).
+
+.TP
 \fBSLURM_LAUNCH_NODE_IPADDR\fR
 IP address of the node from which the task launch was
 initiated (where the srun command ran from)

@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     set the systems up_node_bitmap.
  -- BLUEGENE - code reorder
  -- BLUEGENE - Now only one select plugin for all Bluegene systems.
+ -- Modify srun to set the SLURM_JOB_NAME environment variable when srun is
+    used to create a new job allocation. Not set when srun is used to create a
+    job step within an existing job allocation.
 
 * Changes in SLURM 2.3.0.pre2
 =============================
