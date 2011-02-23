@@ -372,7 +372,7 @@ extern List create_dynamic_block(List block_list,
 			info("removing %s for request %d",
 			     bg_record->nodes, request->size);
 
-		remove_block(bg_record->ba_mp_list, (int)NO_VAL, is_small);
+		remove_block(bg_record->ba_mp_list, is_small);
 		/* need to set any unusable nodes that this last block
 		   used */
 		removable_set_mps(unusable_nodes);
@@ -421,10 +421,6 @@ finished:
 	xfree(unusable_nodes);
 	xfree(request->save_name);
 
-	if (request->elongate_geos) {
-		list_destroy(request->elongate_geos);
-		request->elongate_geos = NULL;
-	}
 	if (results)
 		list_destroy(results);
 	errno = rc;

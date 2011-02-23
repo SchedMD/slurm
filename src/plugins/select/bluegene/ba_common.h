@@ -64,6 +64,21 @@
 					 // BA_MP_USED_ALTERED and
 					 // BA_MP_USED_PASS_BIT
 
+typedef struct ba_geo_table {
+	uint16_t size;			/* Total object count */
+	uint16_t *geometry;		/* Size in each dimension */
+	struct ba_geo_table *next_ptr;	/* Next geometry of this size */
+} ba_geo_table_t;
+
+typedef struct {
+	uint16_t dim_count;		/* Number of system dimensions */
+	int *dim_size;	        	/* System size in each dimension */
+	uint16_t total_size;		/* Total number of nodes in system */
+
+	ba_geo_table_t **geo_table_ptr;	/* Pointers to possible geometries.
+					 * Index is request size */
+	uint16_t geo_table_size;	/* Number of ba_geo_table_t records */
+} ba_geo_system_t;
 
 /*
  * structure that holds the configuration settings for each connection
@@ -77,8 +92,7 @@
  * - used     - weather or not the connection is used.
  *
  */
-typedef struct
-{
+typedef struct {
 	/* target label */
 	uint16_t mp_tar[HIGHEST_DIMENSIONS];
 	/* target port */
@@ -95,8 +109,7 @@ typedef struct
  *   exteranlly.
  *
  */
-typedef struct
-{
+typedef struct {
 	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
 	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
 	uint16_t usage;
@@ -190,11 +203,6 @@ extern void destroy_ba_mp(void *ptr);
 extern int new_ba_request(select_ba_request_t* ba_request);
 
 /*
- * delete a block request
- */
-extern void delete_ba_request(void *arg);
-
-/*
  * empty a list that we don't want to destroy the memory of the
  * elements always returns 1
 */
@@ -261,7 +269,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results);
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List mps, int new_count, bool is_small);
+extern int remove_block(List mps, bool is_small);
 
 /*
  * Used to set a block into a virtual system.  The system can be
@@ -361,5 +369,118 @@ extern int validate_coord(uint16_t *coord);
 extern char *ba_switch_usage_str(uint16_t usage);
 
 extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo);
+
+/*
+ * Create a geo_table of possible unique geometries
+ * IN/OUT my_geo_system - system geometry specification.
+ *		Set dim_count and dim_size. Other fields should be NULL.
+ *		This function will set total_size, geo_table_ptr, and
+ *		geo_table_size.
+ * Release memory using ba_free_geo_table().
+ */
+extern void ba_create_geo_table(ba_geo_system_t *my_geo_system);
+
+/*
+ * Free memory allocated by ba_create_geo_table().
+ * IN my_geo_system - System geometry specification.
+ */
+extern void ba_free_geo_table(ba_geo_system_t *my_geo_system);
+
+/*
+ * Print the contents of all ba_geo_table_t entries.
+ */
+extern void ba_print_geo_table(ba_geo_system_t *my_geo_system);
+
+/*
+ * Print a linked list of ba_geo_table_t entries.
+ * IN geo_ptr - first geo_table entry to print
+ * IN header - message header
+ * IN my_geo_system - system geometry specification
+ */
+extern int ba_geo_list_print(ba_geo_table_t *geo_ptr, char *header,
+			     ba_geo_system_t *my_geo_system);
+
+/*
+ * Attempt to place a new allocation into an existing node state.
+ * Do not rotate or change the requested geometry, but do attempt to place
+ * it using all possible starting locations.
+ *
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * OUT alloc_node_bitmap - bitmap representing where to place the allocation
+ *                         set only if RET == SLURM_SUCCESS
+ * IN geo_req - geometry required for the new allocation
+ * OUT attempt_cnt - number of job placements attempted
+ * IN my_geo_system - system geometry specification
+ * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
+ */
+extern int ba_geo_test_all(bitstr_t *node_bitmap,
+			   bitstr_t **alloc_node_bitmap,
+			   ba_geo_table_t *geo_req, int *attempt_cnt,
+			   ba_geo_system_t *my_geo_system);
+
+/*
+ * Print the contents of a node map created by ba_node_map_alloc() or
+ *	ba_geo_test_all(). Output may be in one-dimension or more depending
+ *	upon configuration.
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_print(bitstr_t *node_bitmap,
+			      ba_geo_system_t *my_geo_system);
+
+/*
+ * Allocate a multi-dimensional node bitmap. Use ba_node_map_free() to free
+ * IN my_geo_system - system geometry specification
+ */
+extern bitstr_t *ba_node_map_alloc(ba_geo_system_t *my_geo_system);
+
+/*
+ * Free a node map created by ba_node_map_alloc()
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_free(bitstr_t *node_bitmap,
+			     ba_geo_system_t *my_geo_system);
+
+/*
+ * Return the contents of the specified position in the bitmap
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to test
+ * IN my_geo_system - system geometry specification
+ */
+extern int ba_node_map_test(bitstr_t *node_bitmap, int *full_offset,
+			    ba_geo_system_t *my_geo_system);
+
+/*
+ * Set the contents of the specified position in the bitmap
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to test
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
+			    ba_geo_system_t *my_geo_system);
+
+/*
+ * Add a new allocation's node bitmap to that of the currently
+ *	allocated bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN alloc_bitmap - bitmap of nodes to be added fromtonode_bitmap
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_add(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
+			    ba_geo_system_t *my_geo_system);
+
+/*
+ * Remove a terminating allocation's node bitmap from that of the currently
+ *	allocated bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN alloc_bitmap - bitmap of nodes to be removed from node_bitmap
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_rm(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
+			   ba_geo_system_t *my_geo_system);
+
 
 #endif

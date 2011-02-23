@@ -81,7 +81,6 @@ bool _mp_map_initialized = false;
 List path = NULL;
 List best_path = NULL;
 int best_count;
-int color_count = 0;
 uint16_t *deny_pass = NULL;
 char *p = '\0';
 uint32_t ba_debug_flags = 0;
@@ -813,7 +812,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List nodes, int new_count, bool is_small)
+extern int remove_block(List nodes, bool is_small)
 {
 	int dim;
 	ba_mp_t* curr_ba_node = NULL;
@@ -842,13 +841,6 @@ extern int remove_block(List nodes, int new_count, bool is_small)
 		}
 	}
 	list_iterator_destroy(itr);
-	if (new_count == NO_VAL) {
-	} else if (new_count == -1)
-		color_count--;
-	else
-		color_count=new_count;
-	if (color_count < 0)
-		color_count = 0;
 	return 1;
 }
 
@@ -1043,7 +1035,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 		if (conn_type[0] == SELECT_SMALL)
 			is_small = 1;
 		debug2("trying less efficient code");
-		remove_block(results, color_count, is_small);
+		remove_block(results, is_small);
 		list_delete_all(results, &empty_null_destroy_list, "");
 		list_append(results, ba_node);
 		found = _find_x_path(results, ba_node,
@@ -2819,7 +2811,7 @@ start_again:
 				bool is_small = 0;
 				if (ba_request->conn_type[0] == SELECT_SMALL)
 					is_small = 1;
-				remove_block(results, color_count, is_small);
+				remove_block(results, is_small);
 				list_delete_all(results,
 						&empty_null_destroy_list, "");
 			}
@@ -3367,7 +3359,7 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 static char *_set_internal_wires(List nodes, int size, int conn_type)
 {
 	ba_mp_t* ba_node[size+1];
-	int count=0, i, set=0;
+	int count=0, i;
 	uint16_t *start = NULL;
 	uint16_t *end = NULL;
 	char *name = NULL;
@@ -3414,9 +3406,6 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 		for (i=0;i<count;i++) {
 			_set_one_dim(start, end, ba_node[i]->coord);
 		}
-
-	if (set)
-		color_count++;
 
 	return name;
 }

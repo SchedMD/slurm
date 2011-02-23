@@ -59,6 +59,42 @@ static int _coord(char coord)
 	return -1;
 }
 
+/*
+ * Increment a geometry index array, return false after reaching the last entry
+ */
+static bool _incr_geo(int *geo, ba_geo_system_t *my_geo_system)
+{
+	int dim, i;
+
+	for (dim = my_geo_system->dim_count - 1; dim >= 0; dim--) {
+		if (geo[dim] < my_geo_system->dim_size[dim]) {
+			geo[dim]++;
+			for (i = dim + 1; i < my_geo_system->dim_count; i++)
+				geo[i] = 1;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/* Translate a multi-dimension coordinate (3-D, 4-D, 5-D, etc.) into a 1-D
+ * offset in the cnode* bitmap */
+static void _ba_node_xlate_to_1d(int *offset_1d, int *full_offset,
+				   ba_geo_system_t *my_geo_system)
+{
+	int i, map_offset;
+
+	xassert(offset_1d);
+	xassert(full_offset);
+	map_offset = full_offset[0];
+	for (i = 1; i < my_geo_system->dim_count; i++) {
+		map_offset *= my_geo_system->dim_size[i];
+		map_offset += full_offset[i];
+	}
+	*offset_1d = map_offset;
+}
+
 /**
  * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
@@ -402,3 +438,300 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	return new_ba_mp;
 }
 
+
+extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
+{
+	ba_geo_table_t *geo_ptr;
+	int dim, inx[my_geo_system->dim_count], product;
+
+	if (my_geo_system->geo_table_ptr)
+		return;
+
+	xassert(my_geo_system->dim_count);
+	my_geo_system->total_size = 1;
+	for (dim = 0; dim < my_geo_system->dim_count; dim++) {
+		if (my_geo_system->dim_size[dim] < 1)
+			fatal("dim_size[%d]= %d", dim,
+			      my_geo_system->dim_size[dim]);
+		my_geo_system->total_size *= my_geo_system->dim_size[dim];
+		inx[dim] = 1;
+	}
+
+	my_geo_system->geo_table_ptr = xmalloc(sizeof(ba_geo_table_t *) *
+					       (my_geo_system->total_size+1));
+
+	do {
+		/* Store new value */
+		geo_ptr = xmalloc(sizeof(ba_geo_table_t));
+		geo_ptr->geometry = xmalloc(sizeof(uint16_t) *
+					    my_geo_system->dim_count);
+		product = 1;
+		for (dim = 0; dim < my_geo_system->dim_count; dim++) {
+			geo_ptr->geometry[dim] = inx[dim];
+			product *= inx[dim];
+		}
+		geo_ptr->size = product;
+		xassert(product <= my_geo_system->total_size);
+		geo_ptr->next_ptr = my_geo_system->geo_table_ptr[product];
+		my_geo_system->geo_table_ptr[product] = geo_ptr;
+		my_geo_system->geo_table_size++;
+	} while (_incr_geo(inx, my_geo_system));   /* Generate next geometry */
+}
+
+/*
+ * Free memory allocated by ba_create_geo_table().
+ * IN my_geo_system - System geometry specification.
+ */
+extern void ba_free_geo_table(ba_geo_system_t *my_geo_system)
+{
+	ba_geo_table_t *geo_ptr, *next_ptr;
+	int i;
+
+	for (i = 0; i <= my_geo_system->total_size; i++) {
+		geo_ptr = my_geo_system->geo_table_ptr[i];
+		my_geo_system->geo_table_ptr[i] = NULL;
+		while (geo_ptr) {
+			next_ptr = geo_ptr->next_ptr;
+			xfree(geo_ptr->geometry);
+			xfree(geo_ptr);
+			geo_ptr = next_ptr;
+		}
+	}
+	my_geo_system->geo_table_size = 0;
+	xfree(my_geo_system->geo_table_ptr);
+}
+
+/*
+ * Allocate a multi-dimensional node bitmap. Use ba_node_map_free() to free
+ * IN my_geo_system - system geometry specification
+ */
+extern bitstr_t *ba_node_map_alloc(ba_geo_system_t *my_geo_system)
+{
+	bitstr_t *cnode_map = bit_alloc(my_geo_system->total_size);
+	if (cnode_map == NULL)
+		fatal("bit_alloc: malloc failure");
+	return cnode_map;
+}
+
+/*
+ * Free a node map created by ba_node_map_alloc()
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_free(bitstr_t *node_bitmap,
+			     ba_geo_system_t *my_geo_system)
+{
+	xassert(bit_size(node_bitmap) == my_geo_system->total_size);
+	FREE_NULL_BITMAP(node_bitmap);
+}
+
+/*
+ * Set the contents of the specified position in the bitmap
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to test
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
+			    ba_geo_system_t *my_geo_system)
+{
+	int offset_1d;
+
+	_ba_node_xlate_to_1d(&offset_1d, full_offset, my_geo_system);
+	bit_set(node_bitmap, offset_1d);
+}
+
+/*
+ * Return the contents of the specified position in the bitmap
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to test
+ * IN my_geo_system - system geometry specification
+ */
+extern int ba_node_map_test(bitstr_t *node_bitmap, int *full_offset,
+			    ba_geo_system_t *my_geo_system)
+{
+	int offset_1d;
+
+	_ba_node_xlate_to_1d(&offset_1d, full_offset, my_geo_system);
+	return bit_test(node_bitmap, offset_1d);
+}
+
+/*
+ * Add a new allocation's node bitmap to that of the currently
+ *	allocated bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN alloc_bitmap - bitmap of nodes to be added fromtonode_bitmap
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_add(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
+			    ba_geo_system_t *my_geo_system)
+{
+	xassert(bit_size(node_bitmap) == my_geo_system->total_size);
+	xassert(bit_size(alloc_bitmap) == my_geo_system->total_size);
+	bit_or(node_bitmap, alloc_bitmap);
+}
+
+/*
+ * Remove a terminating allocation's node bitmap from that of the currently
+ *	allocated bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN alloc_bitmap - bitmap of nodes to be removed from node_bitmap
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_rm(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
+			   ba_geo_system_t *my_geo_system)
+{
+	xassert(bit_size(node_bitmap) == my_geo_system->total_size);
+	xassert(bit_size(alloc_bitmap) == my_geo_system->total_size);
+	bit_not(alloc_bitmap);
+	bit_and(node_bitmap, alloc_bitmap);
+	bit_not(alloc_bitmap);
+}
+
+/*
+ * Print the contents of a node map created by ba_node_map_alloc() or
+ *	ba_geo_test_all(). Output may be in one-dimension or more depending
+ *	upon configuration.
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_print(bitstr_t *node_bitmap,
+			      ba_geo_system_t *my_geo_system)
+{
+#if DISPLAY_1D
+{
+	char out_buf[256];
+	bit_fmt(out_buf, sizeof(out_buf), node_bitmap);
+	info("%s", out_buf);
+}
+#endif
+#if DISPLAY_FULL_DIM
+{
+	int i, j, offset[my_geo_system->dim_count];
+
+	xassert(node_bitmap);
+	xassert(bit_size(node_bitmap) == my_geo_system->total_size);
+
+	for (i = 0; i < my_geo_system->total_size; i++) {
+		if (bit_test(node_bitmap, i)) {
+			char dim_buf[16], full_buf[64];
+			full_buf[0] = '\0';
+			_ba_node_xlate_from_1d(i, offset, my_geo_system);
+			for (j = 0; j < my_geo_system->dim_count; j++) {
+				snprintf(dim_buf, sizeof(dim_buf), "%2d ",
+					 offset[j]);
+				strcat(full_buf, dim_buf);
+			}
+			info("%s", full_buf);
+		}
+	}
+}
+#endif
+}
+
+/*
+ * Attempt to place a new allocation into an existing node state.
+ * Do not rotate or change the requested geometry, but do attempt to place
+ * it using all possible starting locations.
+ *
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * OUT alloc_node_bitmap - bitmap representing where to place the allocation
+ *                         set only if RET == SLURM_SUCCESS
+ * IN geo_req - geometry required for the new allocation
+ * OUT attempt_cnt - number of job placements attempted
+ * IN my_geo_system - system geometry specification
+ * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
+ */
+extern int ba_geo_test_all(bitstr_t *node_bitmap,
+			   bitstr_t **alloc_node_bitmap,
+			   ba_geo_table_t *geo_req, int *attempt_cnt,
+			   ba_geo_system_t *my_geo_system)
+{
+	int rc = SLURM_ERROR;
+	int i, j;
+	int start_offset[my_geo_system->dim_count];
+	int next_offset[my_geo_system->dim_count];
+	int tmp_offset[my_geo_system->dim_count];
+	bitstr_t *new_bitmap;
+
+	xassert(node_bitmap);
+	xassert(alloc_node_bitmap);
+	xassert(geo_req);
+	xassert(attempt_cnt);
+
+	*attempt_cnt = 0;
+	/* Start at location 00000 and move through all starting locations */
+	memset(start_offset, 0, sizeof(start_offset));
+
+	for (i = 0; i < my_geo_system->total_size; i++) {
+		(*attempt_cnt)++;
+		memset(tmp_offset, 0, sizeof(tmp_offset));
+		while (1) {
+			/* Compute location of next entry on the grid */
+			for (j = 0; j < my_geo_system->dim_count; j++) {
+				next_offset[j] = start_offset[j] +
+						 tmp_offset[j];
+				next_offset[j] %= my_geo_system->dim_size[j];
+			}
+
+			/* Test that point on the grid */
+			if (ba_node_map_test(node_bitmap, next_offset,
+					     my_geo_system))
+				break;
+
+			/* Increment tmp_offset */
+			for (j = 0; j < my_geo_system->dim_count; j++) {
+				tmp_offset[j]++;
+				if (tmp_offset[j] < geo_req->geometry[j])
+					break;
+				tmp_offset[j] = 0;
+			}
+			if (j >= my_geo_system->dim_count) {
+				rc = SLURM_SUCCESS;
+				break;
+			}
+		}
+		if (rc == SLURM_SUCCESS)
+			break;
+
+		/* Move to next starting location */
+		for (j = 0; j < my_geo_system->dim_count; j++) {
+			if (geo_req->geometry[j] == my_geo_system->dim_size[j])
+				continue;	/* full axis used */
+			if (++start_offset[j] < my_geo_system->dim_size[j])
+				break;		/* sucess */
+			start_offset[j] = 0;	/* move to next dimension */
+		}
+		if (j >= my_geo_system->dim_count)
+			return rc;		/* end of starting locations */
+	}
+
+	new_bitmap = ba_node_map_alloc(my_geo_system);
+	memset(tmp_offset, 0, sizeof(tmp_offset));
+	while (1) {
+		/* Compute location of next entry on the grid */
+		for (j = 0; j < my_geo_system->dim_count; j++) {
+			next_offset[j] = start_offset[j] + tmp_offset[j];
+			if (next_offset[j] >= my_geo_system->dim_size[j])
+				next_offset[j] -= my_geo_system->dim_size[j];
+		}
+
+		ba_node_map_set(new_bitmap, next_offset, my_geo_system);
+
+		/* Increment tmp_offset */
+		for (j = 0; j < my_geo_system->dim_count; j++) {
+			tmp_offset[j]++;
+			if (tmp_offset[j] < geo_req->geometry[j])
+				break;
+			tmp_offset[j] = 0;
+		}
+		if (j >= my_geo_system->dim_count) {
+			rc = SLURM_SUCCESS;
+			break;
+		}
+	}
+	*alloc_node_bitmap = new_bitmap;
+
+	return rc;
+}

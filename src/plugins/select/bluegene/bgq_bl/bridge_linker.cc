@@ -296,8 +296,6 @@ extern int bridge_block_create(bg_record_t *bg_record)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	struct tm my_tm;
-	struct timeval my_tv;
 
 #if defined HAVE_BG_FILES
 	Block::Ptr block_ptr;
@@ -322,10 +320,12 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 
-	/* set up a common unique name */
-	gettimeofday(&my_tv, NULL);
-	localtime_r(&my_tv.tv_sec, &my_tm);
 	if (!bg_record->bg_block_id) {
+		struct tm my_tm;
+		struct timeval my_tv;
+		/* set up a common unique name */
+		gettimeofday(&my_tv, NULL);
+		localtime_r(&my_tv.tv_sec, &my_tm);
 		bg_record->bg_block_id = xstrdup_printf(
 			"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
 			my_tm.tm_mday, mon_abbr(my_tm.tm_mon),

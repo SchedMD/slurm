@@ -742,7 +742,7 @@ extern int select_p_ba_request_apply(select_ba_request_t *ba_request)
 	return 	other_ba_request_apply(ba_request);
 }
 
-extern int select_p_ba_remove_block(List mps, int new_count, bool is_small)
+extern int select_p_ba_remove_block(List mps, bool is_small)
 {
-	return other_ba_remove_block(mps, new_count, is_small);
+	return other_ba_remove_block(mps, is_small);
 }

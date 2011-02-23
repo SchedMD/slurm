@@ -795,11 +795,10 @@ extern int other_ba_request_apply(select_ba_request_t *ba_request)
 	return (*(other_select_context->ops.ba_request_apply))(ba_request);
 }
 
-extern int other_ba_remove_block(List mps, int new_count, bool is_small)
+extern int other_ba_remove_block(List mps, bool is_small)
 {
 	if (other_select_init() < 0)
 		return 0;
 
-	return (*(other_select_context->ops.ba_remove_block))
-		(mps, new_count, is_small);
+	return (*(other_select_context->ops.ba_remove_block))(mps, is_small);
 }

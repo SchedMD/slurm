@@ -924,7 +924,6 @@ static int _find_best_block_match(List block_list,
 
 	request.deny_pass = (uint16_t)NO_VAL;
 	request.save_name = NULL;
-	request.elongate_geos = NULL;
 	request.size = target_size;
 	request.procs = req_procs;
 	request.elongate = request.rotate;

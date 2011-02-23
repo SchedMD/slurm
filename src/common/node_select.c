@@ -212,6 +212,7 @@ static int _select_context_destroy( slurm_select_context_t *c )
 extern void destroy_select_ba_request(void *arg)
 {
 	select_ba_request_t *ba_request = (select_ba_request_t *)arg;
+
 	if (ba_request) {
 		xfree(ba_request->save_name);
 		if (ba_request->elongate_geos)
@@ -1260,7 +1261,7 @@ extern int select_g_ba_request_apply(select_ba_request_t *ba_request)
 	return (*(select_context[plugin_id].ops.ba_request_apply))(ba_request);
 }
 
-extern int select_g_ba_remove_block(List mps, int new_count, bool is_small)
+extern int select_g_ba_remove_block(List mps, bool is_small)
 {
 	uint32_t plugin_id;
 
@@ -1273,7 +1274,7 @@ extern int select_g_ba_remove_block(List mps, int new_count, bool is_small)
 		plugin_id = select_context_default;
 
 	return (*(select_context[plugin_id].ops.ba_remove_block))
-		(mps, new_count, is_small);
+		(mps, is_small);
 }
 
 extern char *select_g_ba_passthroughs_string(uint16_t passthrough)

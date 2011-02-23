@@ -333,6 +333,6 @@ extern void other_ba_fini();
 extern int *other_ba_get_dims();
 extern void other_ba_reset(bool track_down_nodes);
 extern int other_ba_request_apply(select_ba_request_t *ba_request);
-extern int other_ba_remove_block(List mps, int new_count, bool is_small);
+extern int other_ba_remove_block(List mps, bool is_small);
 
 #endif /* _CRAY_OTHER_SELECT_H */

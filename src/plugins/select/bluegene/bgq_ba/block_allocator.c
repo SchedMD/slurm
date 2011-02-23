@@ -58,17 +58,14 @@
 /* _ba_system is the "current" system that the structures will work
  *  on */
 ba_mp_t ****ba_main_grid = NULL;
-int best_count;
-int color_count = 0;
 uint16_t *deny_pass = NULL;
 uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
-static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
-typedef enum {
-	BLOCK_ALGO_FIRST,
-	BLOCK_ALGO_SECOND
-} block_algo_t;
+static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
+static ba_geo_system_t *ba_main_geo_system = NULL;
+static ba_geo_system_t *ba_mp_geo_system = NULL;
+
 
 /** internal helper functions */
 /* */
@@ -76,9 +73,6 @@ static void _rotate_geo(uint16_t *req_geo, int rot_cnt);
 
 /* */
 static int _check_for_options(select_ba_request_t* ba_request);
-
-/* */
-static int _append_geo(uint16_t *geo, List geos, int rotate);
 
 /* */
 static void _internal_removable_set_mps(int level, int *start,
@@ -129,9 +123,6 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 /* static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord); */
 
 /* */
-static void _destroy_geo(void *object);
-
-/* */
 static int _coord(char coord);
 
 /*
@@ -171,379 +162,52 @@ static int _coord(char coord);
 extern int new_ba_request(select_ba_request_t* ba_request)
 {
 	int i=0;
-	float sz=1;
-	int i2, picked, total_sz=1, size2=0;
-	uint16_t *geo_ptr;
-	int messed_with = 0;
-	int checked[DIM_SIZE[A]];
-	uint16_t geo[cluster_dims];
 
-	/*FIXME: THis needs a good looking over for effencency in 4 dims. */
-
-	memset(geo, 0, sizeof(geo));
 	ba_request->save_name= NULL;
-	ba_request->rotate_count= 0;
-	ba_request->elongate_count = 0;
-	ba_request->elongate_geos = list_create(_destroy_geo);
-	memcpy(geo, ba_request->geometry, sizeof(geo));
 
-	if (ba_request->deny_pass == (uint16_t)NO_VAL)
-		ba_request->deny_pass = ba_deny_pass;
+	if (ba_request->geometry[0] != (uint16_t)NO_VAL) {
+		for (i=0; i<cluster_dims; i++){
+			if ((ba_request->geometry[i] < 1)
+			    || (ba_request->geometry[i] > DIM_SIZE[i])) {
+				error("new_ba_request Error, "
+				      "request geometry is invalid dim %d "
+				      "can't be %c, largest is %c",
+				      i,
+				      alpha_num[ba_request->geometry[i]],
+				      alpha_num[DIM_SIZE[i]]);
+				return 0;
+			}
+		}
+		ba_request->size=1;
+		for (i=0; i<cluster_dims; i++)
+			ba_request->size *= ba_request->geometry[i];
+	}
 
 	if (!(cluster_flags & CLUSTER_FLAG_BGQ)) {
-		if (geo[0] != (uint16_t)NO_VAL) {
-			for (i=0; i<cluster_dims; i++) {
-				if ((geo[i] < 1) || (geo[i] > DIM_SIZE[i])) {
-					error("new_ba_request Error, "
-					      "request geometry is invalid %d",
-					      geo[i]);
-					return 0;
-				}
-			}
-			ba_request->size = ba_request->geometry[A];
-		} else if (ba_request->size) {
-			ba_request->geometry[A] = ba_request->size;
+		if (ba_request->size
+		    && (ba_request->geometry[0] == (uint16_t)NO_VAL)) {
+			ba_request->geometry[0] = ba_request->size;
 		} else
 			return 0;
 		return 1;
 	}
 
-	if (geo[0] != (uint16_t)NO_VAL) {
-		for (i=0; i<cluster_dims; i++){
-			if ((geo[i] < 1) || (geo[i] > DIM_SIZE[i])) {
-				error("new_ba_request Error, "
-				      "request geometry is invalid dim %d "
-				      "can't be %c, largest is %c",
-				      i,
-				      alpha_num[geo[i]],
-				      alpha_num[DIM_SIZE[i]]);
-				return 0;
-			}
+	if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
+		if (!(ba_request->geo_table =
+		      ba_main_geo_system->geo_table_ptr[ba_request->size])) {
+			error("new_ba_request: "
+			      "No geometries for %d midplanes",
+			      ba_request->size);
+			return 0;
 		}
-		_append_geo(geo, ba_request->elongate_geos, 0);
-		sz=1;
-		for (i=0; i<cluster_dims; i++)
-			sz *= ba_request->geometry[i];
-		ba_request->size = sz;
-		sz=0;
 	}
+
+	if (ba_request->deny_pass == (uint16_t)NO_VAL)
+		ba_request->deny_pass = ba_deny_pass;
 
 	deny_pass = &ba_request->deny_pass;
 
-	if (ba_request->elongate || sz) {
-		sz=1;
-		/* decompose the size into a cubic geometry */
-		ba_request->rotate= 1;
-		ba_request->elongate = 1;
-
-		for (i=0; i<cluster_dims; i++) {
-			total_sz *= DIM_SIZE[i];
-			geo[i] = 1;
-		}
-
-		if (ba_request->size == 1) {
-			_append_geo(geo,
-				    ba_request->elongate_geos,
-				    ba_request->rotate);
-			goto endit;
-		}
-
-		/* See if it can be placed in the Y dim, (Z is usually
-		   the same size so rotate will get this if needed, so
-		   only do it for 1 of the 2).
-		*/
-		if (ba_request->size <= DIM_SIZE[Y]) {
-			geo[A] = 1;
-			geo[X] = 1;
-			geo[Y] = ba_request->size;
-			geo[Z] = 1;
-			sz=ba_request->size;
-			_append_geo(geo,
-				    ba_request->elongate_geos,
-				    ba_request->rotate);
-		}
-
-		/* now see if you can set this in 1 plane. */
-		i = ba_request->size/DIM_SIZE[Y];
-		if (!(ba_request->size%2)
-		    && i <= DIM_SIZE[Y]
-		    && i <= DIM_SIZE[Z]
-		    && i*i == ba_request->size) {
-			geo[A] = 1;
-			geo[X] = 1;
-			geo[Y] = i;
-			geo[Z] = i;
-			sz=ba_request->size;
-			_append_geo(geo,
-				    ba_request->elongate_geos,
-				    ba_request->rotate);
-		}
-
-		if (ba_request->size > total_sz || ba_request->size < 1)
-			return 0;
-
-		/* now see if this is a block that is a mutiple of a
-		   plane. */
-		sz = ba_request->size % (DIM_SIZE[Y] * DIM_SIZE[Z]);
-		if (!sz) {
-			i = ba_request->size / (DIM_SIZE[Y] * DIM_SIZE[Z]);
-			if (i > DIM_SIZE[A]) {
-				geo[A] = DIM_SIZE[A];
-				geo[X] = i - DIM_SIZE[A];
-			} else {
-				geo[A] = i;
-				geo[X] = 1;
-			}
-			geo[Y] = DIM_SIZE[Y];
-			geo[Z] = DIM_SIZE[Z];
-			sz=ba_request->size;
-			if ((geo[A]*geo[X]*geo[Y]*geo[Z]) == ba_request->size)
-				_append_geo(geo,
-					    ba_request->elongate_geos,
-					    ba_request->rotate);
-			else
-				error("%d I was just trying to add a "
-				      "geo of %d%d%d%d "
-				      "while I am trying to request "
-				      "%d midplanes",
-				      __LINE__, geo[A], geo[X], geo[Y], geo[Z],
-				      ba_request->size);
-		}
-//	startagain:
-		picked=0;
-		for(i=0; i<DIM_SIZE[X]; i++)
-			checked[i]=0;
-
-		for (i=0; i<cluster_dims; i++) {
-			total_sz *= DIM_SIZE[i];
-			geo[i] = 1;
-		}
-
-		sz = 1;
-		picked=0;
-	tryagain:
-		size2 = ba_request->size;
-		//messedup:
-		for (i=picked; i<cluster_dims; i++) {
-			if (size2 <= 1)
-				break;
-
-			sz = size2 % DIM_SIZE[i];
-			if (!sz) {
-				geo[i] = DIM_SIZE[i];
-				size2 /= DIM_SIZE[i];
-			} else if (size2 > DIM_SIZE[i]) {
-				for(i2=(DIM_SIZE[i]-1); i2 > 1; i2--) {
-					/* go through each number to see if
-					   the size is divisable by a smaller
-					   number that is
-					   good in the other dims. */
-					if (!(size2%i2) && !checked[i2]) {
-						size2 /= i2;
-
-						if (i==0)
-							checked[i2]=1;
-
-						if (i2<DIM_SIZE[i]) {
-							geo[i] = i2;
-						} else {
-							goto tryagain;
-						}
-						if ((i2-1)!=1 &&
-						    i!=(cluster_dims-1))
-							break;
-					}
-				}
-				/* This size can not be made into a
-				   block return.  If you want to try
-				   until we find the next largest block
-				   uncomment the code below and the goto
-				   above. If a user specifies a max
-				   mp count the job will never
-				   run.
-				*/
-				if (i2==1) {
-					if (!list_count(
-						    ba_request->elongate_geos))
-						error("Can't make a block of "
-						      "%d into a cube.",
-						      ba_request->size);
-					goto endit;
-/* 					ba_request->size +=1; */
-/* 					goto startagain; */
-				}
-			} else {
-				geo[i] = sz;
-				break;
-			}
-		}
-
-		if ((geo[X]*geo[Y]) <= DIM_SIZE[Y]) {
-			ba_request->geometry[A] = geo[A];
-			ba_request->geometry[X] = 1;
-			ba_request->geometry[Y] = geo[X] * geo[Y];
-			ba_request->geometry[Z] = geo[Z];
-			_append_geo(ba_request->geometry,
-				    ba_request->elongate_geos,
-				    ba_request->rotate);
-
-		}
-
-		if ((geo[X]*geo[Z]) <= DIM_SIZE[Y]) {
-			ba_request->geometry[A] = geo[A];
-			ba_request->geometry[X] = 1;
-			ba_request->geometry[Y] = geo[Y];
-			ba_request->geometry[Z] = geo[X] * geo[Z];
-			_append_geo(ba_request->geometry,
-				    ba_request->elongate_geos,
-				    ba_request->rotate);
-
-		}
-
-		/* Make sure geo[A] is even and then see if we can get
-		   it into the Y or Z dim. */
-		if (!(geo[A]%2) && ((geo[A]/2) <= DIM_SIZE[Y])) {
-			ba_request->geometry[X] = geo[X];
-			if (geo[Y] == 1) {
-				ba_request->geometry[Y] = geo[A]/2;
-				messed_with = 1;
-			} else
-				ba_request->geometry[Y] = geo[Y];
-			if (!messed_with && geo[Z] == 1) {
-				messed_with = 1;
-				ba_request->geometry[Z] = geo[A]/2;
-			} else
-				ba_request->geometry[Z] = geo[Z];
-			if (messed_with) {
-				messed_with = 0;
-				ba_request->geometry[A] = 2;
-				_append_geo(ba_request->geometry,
-					    ba_request->elongate_geos,
-					    ba_request->rotate);
-			}
-		}
-		if (geo[X] == DIM_SIZE[X] && (geo[Y] < DIM_SIZE[Y]
-					      || geo[Z] < DIM_SIZE[Z])) {
-			if (DIM_SIZE[Y]<DIM_SIZE[Z]) {
-				i = DIM_SIZE[Y];
-				DIM_SIZE[Y] = DIM_SIZE[Z];
-				DIM_SIZE[Z] = i;
-			}
-			ba_request->geometry[A] = geo[A];
-			ba_request->geometry[X] = geo[X];
-			ba_request->geometry[Y] = geo[Y];
-			ba_request->geometry[Z] = geo[Z];
-			if (ba_request->geometry[Y] < DIM_SIZE[Y]) {
-				i = (DIM_SIZE[Y] - ba_request->geometry[Y]);
-				ba_request->geometry[Y] +=i;
-			}
-			if (ba_request->geometry[Z] < DIM_SIZE[Z]) {
-				i = (DIM_SIZE[Z] - ba_request->geometry[Z]);
-				ba_request->geometry[Z] +=i;
-			}
-			for(i = DIM_SIZE[X]; i>0; i--) {
-				ba_request->geometry[X]--;
-				i2 = (ba_request->geometry[X]
-				      * ba_request->geometry[Y]
-				      * ba_request->geometry[Z]);
-				if (i2 < ba_request->size) {
-					ba_request->geometry[X]++;
-					messed_with = 1;
-					break;
-				}
-			}
-			if (messed_with) {
-				messed_with = 0;
-				_append_geo(ba_request->geometry,
-					    ba_request->elongate_geos,
-					    ba_request->rotate);
-			}
-		}
-
-		if ((geo[A]*geo[X]*geo[Y]*geo[Z]) == ba_request->size)
-			_append_geo(geo,
-				    ba_request->elongate_geos,
-				    ba_request->rotate);
-		else
-			error("%d I was just trying to add a geo of %d%d%d%d "
-			      "while I am trying to request %d midplanes",
-			      __LINE__, geo[A], geo[X], geo[Y], geo[Z],
-			      ba_request->size);
-
-/* Having the functions pow and powf on an aix system doesn't seem to
- * link well, so since this is only for aix and this doesn't really
- * need to be there just don't allow this extra calculation.
- */
-#ifndef HAVE_AIX
-		/* see if We can find a cube or square root of the
-		   size to make an easy cube */
-		for(i=0; i<cluster_dims-1; i++) {
-			sz = powf((float)ba_request->size,
-				  (float)1/(cluster_dims-i));
-			if (pow(sz,(cluster_dims-i)) == ba_request->size)
-				break;
-		}
-
-		if (i < (cluster_dims-1)) {
-			/* we found something that looks like a cube! */
-			int i3 = i;
-
-			for (i=0; i<i3; i++)
-				geo[i] = 1;
-
-			for (i=i3; i<cluster_dims; i++)
-				if (sz<=DIM_SIZE[i])
-					geo[i] = sz;
-				else
-					goto endit;
-
-			if ((geo[X]*geo[Y]*geo[Z]) == ba_request->size)
-				_append_geo(geo,
-					    ba_request->elongate_geos,
-					    ba_request->rotate);
-			else
-				error("%d I was just trying to add "
-				      "a geo of %d%d%d "
-				      "while I am trying to request "
-				      "%d midplanes",
-				      __LINE__, geo[X], geo[Y], geo[Z],
-				      ba_request->size);
-		}
-#endif //HAVE_AIX
-	}
-
-endit:
-	/* reset */
-	deny_pass = NULL;
-	if (!(geo_ptr = (uint16_t *)list_peek(ba_request->elongate_geos)))
-		return 0;
-
-	ba_request->elongate_count++;
-	ba_request->geometry[X] = geo_ptr[X];
-	ba_request->geometry[Y] = geo_ptr[Y];
-	ba_request->geometry[Z] = geo_ptr[Z];
-	sz=1;
-	for (i=0; i<cluster_dims; i++)
-		sz *= ba_request->geometry[i];
-	ba_request->size = sz;
-
 	return 1;
-}
-
-/**
- * delete a block request
- */
-extern void delete_ba_request(void *arg)
-{
-	select_ba_request_t *ba_request = (select_ba_request_t *)arg;
-	if (ba_request) {
-		xfree(ba_request->save_name);
-		if (ba_request->elongate_geos)
-			list_destroy(ba_request->elongate_geos);
-		xfree(ba_request->mloaderimage);
-
-		xfree(ba_request);
-	}
 }
 
 /**
@@ -562,8 +226,11 @@ extern void print_ba_request(select_ba_request_t* ba_request)
 	for (i=0; i<cluster_dims; i++){
 		debug("%d", ba_request->geometry[i]);
 	}
+	debug("   conn_type:\t");
+	for (i=0; i<cluster_dims; i++){
+		debug("%d", ba_request->conn_type[i]);
+	}
 	debug("        size:\t%d", ba_request->size);
-	debug("   conn_type:\t%d", ba_request->conn_type[A]);
 	debug("      rotate:\t%d", ba_request->rotate);
 	debug("    elongate:\t%d", ba_request->elongate);
 }
@@ -661,7 +328,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-extern int remove_block(List mps, int new_count, bool is_small)
+extern int remove_block(List mps, bool is_small)
 {
 	int dim;
 	ba_mp_t* curr_ba_mp = NULL;
@@ -698,13 +365,7 @@ extern int remove_block(List mps, int new_count, bool is_small)
 		}
 	}
 	list_iterator_destroy(itr);
-	if (new_count == (int)NO_VAL) {
-	} else if (new_count == -1)
-		color_count--;
-	else
-		color_count=new_count;
-	if (color_count < 0)
-		color_count = 0;
+
 	return 1;
 }
 
@@ -896,7 +557,6 @@ extern char *set_bg_block(List results, uint16_t *start,
 	memcpy(block_end, start, sizeof(block_end));
 	memcpy(pass_end, start, sizeof(pass_end));
 	for (dim=0; dim<cluster_dims; dim++) {
-		info("got mp of %p", ba_mp);
 		if (!_find_path(main_mps, ba_mp, dim,
 				geometry[dim], conn_type[dim], &block_end[dim],
 				&pass_end[dim])) {
@@ -1612,120 +1272,14 @@ static void _rotate_geo(uint16_t *req_geo, int rot_cnt)
  */
 static int _check_for_options(select_ba_request_t* ba_request)
 {
-	int temp;
-	int set=0;
-	uint16_t *geo = NULL;
-	ListIterator itr;
-
-	if (ba_request->rotate) {
-	rotate_again:
-		debug2("Rotating! %d",ba_request->rotate_count);
-
-		if (ba_request->rotate_count==(cluster_dims-1)) {
-			temp=ba_request->geometry[A];
-			ba_request->geometry[A] = ba_request->geometry[Z];
-			ba_request->geometry[Z] = temp;
-			ba_request->rotate_count++;
-			set=1;
-
-		} else if (ba_request->rotate_count<(cluster_dims*2)) {
-			temp=ba_request->geometry[X];
-			ba_request->geometry[A] = ba_request->geometry[X];
-			ba_request->geometry[X] = ba_request->geometry[Y];
-			ba_request->geometry[Y] = ba_request->geometry[Z];
-			ba_request->geometry[Z] = temp;
-			ba_request->rotate_count++;
-			set=1;
-		} else
-			ba_request->rotate = false;
-		if (set) {
-			int i;
-			for (i = 0; i < cluster_dims; i++)
-				if (ba_request->geometry[i] > DIM_SIZE[A]) {
-					set = 0;
-					goto rotate_again;
-				}
-			return 1;
-		}
+	if (ba_request->geo_table) {
+		ba_geo_table_t *ba_geo_table = ba_request->geo_table;
+		ba_request->geo_table =	ba_geo_table->next_ptr;
 	}
-	if (ba_request->elongate) {
-	elongate_again:
-		debug2("Elongating! %d",ba_request->elongate_count);
-		ba_request->rotate_count=0;
-		ba_request->rotate = true;
 
-		set = 0;
-		itr = list_iterator_create(ba_request->elongate_geos);
-		for(set=0; set<=ba_request->elongate_count; set++)
-			geo = (uint16_t *)list_next(itr);
-		list_iterator_destroy(itr);
-		if (geo == NULL)
-			return 0;
-		ba_request->elongate_count++;
-		ba_request->geometry[A] = geo[A];
-		ba_request->geometry[X] = geo[X];
-		ba_request->geometry[Y] = geo[Y];
-		ba_request->geometry[Z] = geo[Z];
-		if (ba_request->geometry[A]<=DIM_SIZE[A]
-		    && ba_request->geometry[X]<=DIM_SIZE[X]
-		    && ba_request->geometry[Y]<=DIM_SIZE[Y]
-		    && ba_request->geometry[Z]<=DIM_SIZE[Z]) {
-			return 1;
-		} else
-			goto elongate_again;
-
-	}
+	if (ba_request->geo_table)
+		return 1;
 	return 0;
-}
-
-/*
- * grab all the geometries that we can get and append them to the list geos
- */
-static int _append_geo(uint16_t *geometry, List geos, int rotate)
-{
-	ListIterator itr;
-	uint16_t *geo_ptr = NULL;
-	uint16_t *geo = NULL;
-	int temp_geo;
-	int i, j;
-
-	if (rotate) {
-		for (i = (cluster_dims - 1); i >= 0; i--) {
-			for (j = 1; j <= i; j++) {
-				if ((geometry[j-1] > geometry[j])
-				    && (geometry[j] <= DIM_SIZE[j-i])
-				    && (geometry[j-1] <= DIM_SIZE[j])) {
-					temp_geo = geometry[j-1];
-					geometry[j-1] = geometry[j];
-					geometry[j] = temp_geo;
-				}
-			}
-		}
-	}
-	itr = list_iterator_create(geos);
-	while ((geo_ptr = (uint16_t *)list_next(itr)) != NULL) {
-		if (geometry[A] == geo_ptr[A]
-		    && geometry[X] == geo_ptr[X]
-		    && geometry[Y] == geo_ptr[Y]
-		    && geometry[Z] == geo_ptr[Z])
-			break;
-
-	}
-	list_iterator_destroy(itr);
-
-	if (geo_ptr == NULL) {
-		geo = (uint16_t *)xmalloc(sizeof(uint16_t)*cluster_dims);
-		geo[A] = geometry[A];
-		geo[X] = geometry[X];
-		geo[Y] = geometry[Y];
-		geo[Z] = geometry[Z];
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("adding geo %c%c%c%c",
-			     alpha_num[geo[A]], alpha_num[geo[X]],
-			     alpha_num[geo[Y]], alpha_num[geo[Z]]);
-		list_append(geos, geo);
-	}
-	return 1;
 }
 
 static void _internal_removable_set_mps(int level, int *start,
@@ -1921,7 +1475,6 @@ static char *_copy_from_main(List main_mps, List ret_list)
 	if (hostlist) {
 		name = hostlist_ranged_string_xmalloc(hostlist);
 		hostlist_destroy(hostlist);
-		color_count++;
 	}
 
 	return name;
@@ -1968,7 +1521,6 @@ static char *_reset_altered_mps(List main_mps)
 	if (hostlist) {
 		name = hostlist_ranged_string_xmalloc(hostlist);
 		hostlist_destroy(hostlist);
-		color_count++;
 	}
 
 	return name;
@@ -2322,8 +1874,28 @@ extern void ba_create_system(int num_cpus, int *real_dims, int *dims)
 		}
 	}
 
-	if (cluster_flags & CLUSTER_FLAG_BGQ)
-		_setup_next_mps(ba_main_grid);
+	/* build all the possible geos for the mid planes */
+	ba_main_geo_system =  xmalloc(sizeof(ba_geo_system_t));
+	ba_main_geo_system->dim_count = SYSTEM_DIMENSIONS;
+	ba_main_geo_system->dim_size = xmalloc(sizeof(int) *
+					  ba_main_geo_system->dim_count);
+	memcpy(ba_main_geo_system->dim_size, DIM_SIZE, sizeof(DIM_SIZE));
+	ba_create_geo_table(ba_main_geo_system);
+
+	/* build all the possible geos for a sub block inside a mid plane */
+	ba_mp_geo_system =  xmalloc(sizeof(ba_geo_system_t));
+	ba_mp_geo_system->dim_count = 5;
+	ba_mp_geo_system->dim_size = xmalloc(sizeof(int) *
+					  ba_mp_geo_system->dim_count);
+	/* These will never change. */
+	ba_mp_geo_system->dim_size[0] = 4;
+	ba_mp_geo_system->dim_size[1] = 4;
+	ba_mp_geo_system->dim_size[2] = 4;
+	ba_mp_geo_system->dim_size[3] = 4;
+	ba_mp_geo_system->dim_size[4] = 2;
+	ba_create_geo_table(ba_mp_geo_system);
+
+	_setup_next_mps(ba_main_grid);
 }
 
 /** */
@@ -2344,6 +1916,18 @@ extern void ba_destroy_system(void)
 		ba_main_grid = NULL;
 	}
 
+	if (ba_main_geo_system) {
+		ba_free_geo_table(ba_main_geo_system);
+		xfree(ba_main_geo_system->dim_size);
+		xfree(ba_main_geo_system);
+	}
+
+	if (ba_mp_geo_system) {
+		ba_free_geo_table(ba_mp_geo_system);
+		xfree(ba_mp_geo_system->dim_size);
+		xfree(ba_mp_geo_system);
+	}
+
 	memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
 }
 
@@ -2357,7 +1941,7 @@ static int _find_match(select_ba_request_t *ba_request, List results)
 	uint16_t end[cluster_dims];
 	char *name=NULL;
 	int startx;
-	uint16_t *geo_ptr;
+	ba_geo_table_t *ba_geo_table = (ba_geo_table_t *)ba_request->geo_table;
 
 	if (!(cluster_flags & CLUSTER_FLAG_BG))
 		return 0;
@@ -2375,14 +1959,14 @@ static int _find_match(select_ba_request_t *ba_request, List results)
 		}
 	}
 
-	/* set up the geo here */
-	if (!(geo_ptr = (uint16_t *)list_peek(ba_request->elongate_geos)))
+	if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
+		if (!ba_geo_table || !ba_geo_table->geometry)
+			return 0;
+		memcpy(ba_request->geometry, ba_geo_table->geometry,
+		       sizeof(ba_geo_table->geometry));
 		return 0;
-	ba_request->rotate_count=0;
-	ba_request->elongate_count=1;
-
-	for (i = 0; i < cluster_dims; i++)
-		ba_request->geometry[i] = geo_ptr[i];
+	} else
+		ba_request->geo_table = NULL;
 
 	for (i = 0; i < cluster_dims; i++) {
 		end[i] = start[i] + ba_request->geometry[i];
@@ -2397,7 +1981,7 @@ start_again:
 		i = startx-1;
 	while (i != startx) {
 		i++;
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
 			info("finding %c%c%c%c try %d",
 			     alpha_num[ba_request->geometry[A]],
 			     alpha_num[ba_request->geometry[X]],
@@ -2424,7 +2008,7 @@ start_again:
 			bool is_small = 0;
 			if (ba_request->conn_type[0] == SELECT_SMALL)
 				is_small = 1;
-			remove_block(results, color_count, is_small);
+			remove_block(results, is_small);
 			list_flush(results);
 		}
 
@@ -2519,12 +2103,6 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim)
 	}
 
 	return false;
-}
-
-static void _destroy_geo(void *object)
-{
-	uint16_t *geo_ptr = (uint16_t *)object;
-	xfree(geo_ptr);
 }
 
 static int _coord(char coord)

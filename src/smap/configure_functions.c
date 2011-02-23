@@ -92,7 +92,7 @@ static void _delete_allocated_blocks(List allocated_blocks)
 	while ((allocated_block = list_pop(allocated_blocks)) != NULL) {
 		is_small = (allocated_block->request->conn_type[0] ==
 			    SELECT_SMALL);
-		select_g_ba_remove_block(allocated_block->nodes, 0, is_small);
+		select_g_ba_remove_block(allocated_block->nodes, is_small);
 		list_destroy(allocated_block->nodes);
 /* NOTE: delete_ba_request() is not exported, but probably should be */
 		delete_ba_request(allocated_block->request);
@@ -753,7 +753,6 @@ static int _remove_allocation(char *com, List allocated_blocks)
 			} else if (allocated_block->letter == letter) {
 				found = 1;
 				select_g_ba_remove_block(allocated_block->nodes,
-						color_count,
 						allocated_block->request->
 						conn_type);
 				list_destroy(allocated_block->nodes);

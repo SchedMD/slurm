@@ -90,8 +90,10 @@ typedef struct {
 	bool elongate;                 /* whether allow elongation or not */
 	int elongate_count;            /* place in elongate_geos list
 					  we are at */
-	List elongate_geos;            /* list of possible shapes of
-					  blocks. contains int* ptrs */
+	List elongate_geos;            /* used on L and P systems for
+					  geos */
+	void *geo_table;               /* pointer to a list of
+					* pointer to different geos */
 	uint16_t geometry[HIGHEST_DIMENSIONS]; /* size of block in geometry */
 	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
@@ -219,8 +221,7 @@ typedef struct slurm_select_ops {
 	void            (*ba_reset)             (bool track_down_nodes);
 	int             (*ba_request_apply)     (select_ba_request_t
 						 *ba_request);
-	int             (*ba_remove_block)      (List mps, int new_count,
-						 bool is_small);
+	int             (*ba_remove_block)      (List mps, bool is_small);
 
 } slurm_select_ops_t;
 
@@ -587,7 +588,7 @@ extern void select_g_ba_fini(void);
 extern int *select_g_ba_get_dims(void);
 extern void select_g_ba_reset(bool track_down_nodes);
 extern int select_g_ba_request_apply(select_ba_request_t *ba_request);
-extern int select_g_ba_remove_block(List mps, int new_count, bool is_small);
+extern int select_g_ba_remove_block(List mps, bool is_small);
 
 /* Convert PASS_FOUND_* into equivalent string
  * Caller MUST xfree() the returned value */
