@@ -71,8 +71,6 @@ typedef enum {
 } block_algo_t;
 
 /** internal helper functions */
-static bool _switch_overlap();
-
 /* */
 static void _rotate_geo(uint16_t *req_geo, int rot_cnt);
 
@@ -760,7 +758,8 @@ extern int check_and_set_mp_list(List mps)
 			if (!(mp_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL))
 			    && (base_state != NODE_STATE_DOWN)) {
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-					info("I have already been to "
+					info("check_and_set_mp_list: "
+					     "I have already been to "
 					     "this mp %s %s",
 					     ba_mp->coord_str,
 					     node_state_string(
@@ -780,9 +779,11 @@ extern int check_and_set_mp_list(List mps)
 			if (ba_switch->usage == BG_SWITCH_NONE)
 				continue;
 
-			if (_switch_overlap(ba_switch, curr_ba_switch)) {
+			if (bg_switch_overlap(ba_switch->usage,
+					      curr_ba_switch->usage)) {
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-					info("%s dim %d is already in "
+					info("check_and_set_mp_list: "
+					     "%s dim %d is already in "
 					     "use the way we want to use it."
 					     "%s already at %s",
 					     ba_mp->coord_str, i,
@@ -794,11 +795,13 @@ extern int check_and_set_mp_list(List mps)
 				goto end_it;
 			}
 
-			info("setting %s dim %d to from %s to %s",
-			     ba_mp->coord_str, i,
-			     ba_switch_usage_str(curr_ba_switch->usage),
-			     ba_switch_usage_str(curr_ba_switch->usage
-						 | ba_switch->usage));
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("check_and_set_mp_list: "
+				     "setting %s dim %d to from %s to %s",
+				     ba_mp->coord_str, i,
+				     ba_switch_usage_str(curr_ba_switch->usage),
+				     ba_switch_usage_str(curr_ba_switch->usage
+							 | ba_switch->usage));
 			curr_ba_switch->usage |= ba_switch->usage;
 		}
 	}
@@ -1578,20 +1581,6 @@ extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo)
 	return match;
 }
 
-static bool _switch_overlap(ba_switch_t *switch_a, ba_switch_t *switch_b)
-{
-	xassert(switch_a);
-	xassert(switch_b);
-
-	if ((switch_a->usage == BG_SWITCH_NONE)
-	    || (switch_b->usage != BG_SWITCH_NONE))
-		return 0;
-	else if (switch_a->usage & switch_b->usage)
-		return 1;
-
-	return 0;
-}
-
 static void _rotate_geo(uint16_t *req_geo, int rot_cnt)
 {
 	uint16_t tmp;
@@ -2026,8 +2015,8 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 		     ba_mp->coord_str, ba_mp->used,
 		     orig_mp->used == BA_MP_USED_ALTERED_PASS);
 	if (!(ba_mp->used & BA_MP_USED_ALTERED)) {
-		if (_switch_overlap(&ba_mp->axis_switch[dim],
-				    &orig_mp->alter_switch[dim])) {
+		if (bg_switch_overlap(ba_mp->axis_switch[dim].usage,
+				      orig_mp->alter_switch[dim].usage)) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("_copy_ba_switch: "
 				     "%s switches %d overlapped %s to %s",
