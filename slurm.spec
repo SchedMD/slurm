@@ -686,7 +686,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_bluegene.so
 %{_libdir}/slurm/select_cray.so
-%{_libdir}/slurm/select_bgq.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so

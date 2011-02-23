@@ -82,6 +82,8 @@ documents those changes that are of interest to users and admins.
     associated with a given NodeHostName when running multiple slurmd daemons
     per compute node (typically used for testing purposes). Patch from
     Matthieu Hautreux, CEA.
+ -- Fix for handling job names with a "'" in the name within MySQL accounting.
+    Patch from Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.2.2
 ========================
