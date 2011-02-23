@@ -109,23 +109,6 @@
 
 #define NODEINFO_MAGIC 0x82aa
 
-/* The following parameters can be used to speed up the logic used to determine
- * when and where a pending job will be able to start, but it will reduce
- * the accuracy with which backfill scheduling is performed. It may improve
- * performance of sched/backfill considerably if there are many running jobs.
- * The original logic would simulate removing running jobs one at a time from
- * an emulated system and test if the pending job could start on the resources
- * then available. The new logic will remove jobs individually until
- * SCHED_SKIP_START jobs have been removed then remove SCHED_SKIP_COUNT jobs
- * at each iteration until the job can be scheduled. */
-#ifndef SCHED_SKIP_START
-#define SCHED_SKIP_START 50
-#endif
-
-#ifndef SCHED_SKIP_COUNT
-#define SCHED_SKIP_COUNT 10
-#endif
-
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -1484,27 +1467,22 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* Remove the running jobs one at a time from exp_node_cr and try
-	 * scheduling the pending job after each one. For larger job counts,
-	 * remove multiple jobs between tests to reduce overhead. */
+	 * scheduling the pending job after each one. */
 	if (rc != SLURM_SUCCESS) {
-		int jobs_rm_last_test = 0;
-		int jobs_rm_total = 0;
-		int jobs_run_total = list_count(cr_job_list);
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
 		if (job_iterator == NULL)
 			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = list_next(job_iterator))) {
+		        int ovrlap;
+			bit_or(bitmap, orig_map);
+			ovrlap = bit_overlap(bitmap, tmp_job_ptr->node_bitmap);
+			if (ovrlap == 0)	/* job has no usable nodes */
+				continue;	/* skip it */
+			debug2("cons_res: _will_run_test, job %u: overlap=%d",
+			       tmp_job_ptr->job_id, ovrlap);
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, 0);
-			jobs_rm_total++;
-			jobs_rm_last_test++;
-			if ((jobs_rm_total > SCHED_SKIP_START) &&
-			    (jobs_rm_total < jobs_run_total)   &&
-			    (jobs_rm_last_test < SCHED_SKIP_COUNT))
-				continue;
-			jobs_rm_last_test = 0;
-			bit_or(bitmap, orig_map);
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
 					 SELECT_MODE_WILL_RUN, cr_type,

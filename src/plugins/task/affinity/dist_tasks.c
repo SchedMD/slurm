@@ -961,7 +961,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	for (t=0; t<max_tasks && req->cpus_per_task>1; t++) {
 		if (!masks[t])
 			continue;
-		for (i = 0; i < size; i++) {
+		c = 0;
+		for (i = 0; i < size && c<req->cpus_per_task; i++) {
 			if (bit_test(masks[t], i) == 0)
 				continue;
 			for (j=i+1,c=1; j<size && c<req->cpus_per_task;j++) {

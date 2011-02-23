@@ -65,6 +65,11 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Update srun, salloc, and sbatch man page description of --distribution
     option. Patches from Rod Schulz, Bull.
+ -- Applied patch from Martin Perry to fix "Incorrect results for task/affinity
+    block second distribution and cpus-per-task > 1" bug.
+ -- Avoid setting a job's eligible time while held (priority == 0).
+ -- Substantial performance improvement to backfill scheduling. Patch from
+    Bjorn-Helge Mevik, University of Oslo.
 
 * Changes in SLURM 2.2.2
 ========================
@@ -729,10 +734,10 @@ documents those changes that are of interest to users and admins.
  -- Add scontrol "wait_job <job_id>" option to wait for nodes to boot as needed.
     Useful for batch jobs (in Prolog, PrologSlurmctld or the script) if powering
     down idle nodes.
- -- Added salloc and sbatch option --wait-for-nodes. If set non-zero, job 
+ -- Added salloc and sbatch option --wait-all-nodes. If set non-zero, job
     initiation will be delayed until all allocated nodes have booted. Salloc
     will log the delay with the messages "Waiting for nodes to boot" and "Nodes
-    are ready for use". 
+    are ready for job".
  -- The Priority/mulitfactor plugin now takes into consideration size of job
     in cpus as well as size in nodes when looking at the job size factor.
     Previously only nodes were considered.
