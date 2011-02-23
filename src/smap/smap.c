@@ -181,7 +181,8 @@ part_fini:
 
 		if (params.cluster_dims == 4) {
 			height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
-			width = (dim_size[1] + dim_size[3] + 1) * dim_size[0];
+			width = (dim_size[1] + dim_size[3] + 1) * dim_size[0]
+				 + 2;
 			check_width += width;
 		} else if (params.cluster_dims == 3) {
 			height = dim_size[1] * dim_size[2] + dim_size[1] + 3;
