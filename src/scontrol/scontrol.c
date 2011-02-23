@@ -497,7 +497,6 @@ _print_daemons (void)
 static void
 _print_aliases (char* node_hostname)
 {
-	slurm_ctl_conf_info_msg_t *conf;
 	char me[MAX_SLURM_NAME], *n = NULL, *a = NULL;
 	char *s;
 	
