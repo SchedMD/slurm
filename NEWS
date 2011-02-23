@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Modify srun to set the SLURM_JOB_NAME environment variable when srun is
     used to create a new job allocation. Not set when srun is used to create a
     job step within an existing job allocation.
+ -- Modify init.d/slurm script to start multiple slurmd daemons per compute
+    node if so configured. Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.3.0.pre2
 =============================

@@ -106,7 +106,15 @@ stop() {
 startall() {
     for prog in `$BINDIR/scontrol show daemons`; do
 	optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
-	start $prog ${!optvar}
+	if [[ ${MULTIPLE_SLURMD} == yes ]] && [[ ${prog} == slurmd ]]
+	then
+	    for node in $(scontrol show aliases)
+	    do
+		start $prog -N ${node} ${!optvar}
+	    done
+	else
+	    start $prog ${!optvar}
+	fi
     done
 }
 
@@ -120,6 +128,8 @@ slurmstatus() {
     local pid
     local rpid
     local pidfile
+    local pidfiles
+    local rc
 
     pidfile=`grep -i ${base}pid $CONFDIR/slurm.conf | grep -v '^ *#'`
     if [ $? = 0 ]; then
@@ -132,36 +142,64 @@ slurmstatus() {
     pid=`pidof -o $$ -o $$PPID -o %PPID -x $1 || \
 	 pidof -o $$ -o $$PPID -o %PPID -x ${base}`
 
-    if [ -f $pidfile ]; then
-	read rpid < $pidfile
-	if [ "$rpid" != "" -a "$pid" != "" ]; then
-	    for i in $pid ; do
-		if [ "$i" = "$rpid" ]; then
-		    echo $"${base} (pid $pid) is running..."
-		    return 0
-		fi
+    if [ "$base" == "slurmd" ] ; then
+	echo ${pidfile} | grep -q %n
+	if [[ $? -eq 0 ]]
+	then
+	    for n in $(scontrol show aliases)
+	    do
+		pidfiles="${pidfiles} $(echo ${pidfile} | sed "s/%n/$n/g")"
 	    done
-	elif [ "$rpid" != "" -a "$pid" = "" ]; then
+	else
+	    pidfiles=${pidfile}
+	fi
+    else
+	pidfiles=${pidfile}
+    fi
+
+    RETVAL=0
+    for pidfile in ${pidfiles}
+    do
+	rc=1
+	if [ -f $pidfile ]; then
+	    read rpid < $pidfile
+	    if [ "$rpid" != "" -a "$pid" != "" ]; then
+		for i in $pid ; do
+		    if [ "$i" = "$rpid" ]; then
+			echo $"${base} (pid $rpid) is running..."
+			rc=0
+			break
+		    fi
+		done
+	    elif [ "$rpid" != "" -a "$pid" = "" ]; then
 #           Due to change in user id, pid file may persist
 #           after slurmctld terminates
-	    if [ "$base" != "slurmctld" ] ; then
-	       echo $"${base} dead but pid file exists"
-	    else
-	       echo $"${base} is stopped"
+		if [ "$base" != "slurmctld" ] ; then
+		    echo $"${base} dead but pid file exists"
+		else
+		    echo $"${base} is stopped"
+		fi
+		RETVAL=1
 	    fi
-	    return 1
+	    
 	fi
 
-    fi
+	if [[ $rc -eq 0 ]]
+	then
+	    continue
+	fi
 
-    if [ "$base" = "slurmctld" -a "$pid" != "" ] ; then
-	echo $"${base} (pid $pid) is running..."
-	return 0
-    fi
+	if [ "$base" = "slurmctld" -a "$pid" != "" ] ; then
+	    echo $"${base} (pid $pid) is running..."
+	    continue
+	fi
+	
+	echo $"${base} is stopped"
+	RETVAL=1
 
-    echo $"${base} is stopped"
+    done
 
-    return 3
+    return $RETVAL
 }
 
 #
@@ -215,7 +253,17 @@ case "$1" in
 	if [ -f /var/lock/subsys/slurm ]; then
 	    for prog in `$BINDIR/scontrol show daemons`; do
 		 stop $prog
-		 start $prog
+		 sleep 1
+		 optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
+		 if [[ ${MULTIPLE_SLURMD} == yes ]] && [[ ${prog} == slurmd ]]
+		 then
+		     for node in $(scontrol show aliases)
+		     do
+			 start $prog -N ${node}
+		     done
+		 else
+		     start $prog ${!optvar}
+		 fi
 	    done
 	fi
 	;;
