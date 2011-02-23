@@ -779,8 +779,7 @@ extern int check_and_set_mp_list(List mps)
 			if (ba_switch->usage == BG_SWITCH_NONE)
 				continue;
 
-			if (bg_switch_overlap(ba_switch->usage,
-					      curr_ba_switch->usage)) {
+			if (ba_switch->usage & curr_ba_switch->usage) {
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("check_and_set_mp_list: "
 					     "%s dim %d is already in "
@@ -2015,8 +2014,8 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 		     ba_mp->coord_str, ba_mp->used,
 		     orig_mp->used == BA_MP_USED_ALTERED_PASS);
 	if (!(ba_mp->used & BA_MP_USED_ALTERED)) {
-		if (bg_switch_overlap(ba_mp->axis_switch[dim].usage,
-				      orig_mp->alter_switch[dim].usage)) {
+		if (ba_mp->axis_switch[dim].usage
+		    & orig_mp->alter_switch[dim].usage) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("_copy_ba_switch: "
 				     "%s switches %d overlapped %s to %s",
