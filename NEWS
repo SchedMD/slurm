@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
  -- Avoid setting a job's eligible time while held (priority == 0).
  -- Substantial performance improvement to backfill scheduling. Patch from
     Bjorn-Helge Mevik, University of Oslo.
+ -- Make timeout for communications to the slurmctld be based upon the
+    MessageTimeout configuration parameter rather than always 3 seconds.
+    Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.2.2
 ========================

@@ -1947,7 +1947,7 @@ slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
 				myproto->primary_controller.sin_port;
 	}
 
-	for (retry=0; retry<4; retry++) {
+	for (retry=0; retry<slurm_get_msg_timeout(); retry++) {
 		if (retry)
 			sleep(1);
 		if (working_cluster_rec) {
