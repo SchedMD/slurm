@@ -84,6 +84,17 @@ documents those changes that are of interest to users and admins.
     Matthieu Hautreux, CEA.
  -- Fix for handling job names with a "'" in the name within MySQL accounting.
     Patch from Gerrit Renker, CSCS.
+ -- Modify condition under which salloc execution delayed until moved to the
+    foreground. Patch from Gerrit Renker, CSCS.
+    a) salloc is not run in allocation-only (--no-shell) mode,
+    b) stdin is from a terminal (tcgetattr does not return ENOTTY),
+    c) salloc has been invoked from a login shell (not a nested one),
+    d) salloc has been configured at compile-time to support background
+       execution and is not currently in the background process group.
+ -- Abort salloc if no controlling terminal and --no-shell option is not used
+    ("setsid salloc ..." is disabled). Patch from Gerrit Renker, CSCS.
+ -- Fix to gang scheduling logic which could cause jobs to not be suspended
+    or resumed when appropriate.
 
 * Changes in SLURM 2.2.2
 ========================

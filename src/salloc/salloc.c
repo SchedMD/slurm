@@ -84,7 +84,6 @@ int command_argc;
 pid_t command_pid = -1;
 char *work_dir = NULL;
 static int is_interactive;
-static bool is_foreground;
 
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -206,37 +205,43 @@ int main(int argc, char *argv[])
 		_set_rlimits(env);
 	}
 
-	is_interactive = isatty(STDIN_FILENO);
-	if ((!opt.no_shell) && is_interactive) {
-		/*
-		 * Job control: interactive sub-processes run in the foreground
-		 * process group of the controlling terminal. In order to grant
-		 * this (tcsetpgrp), salloc needs to be in the foreground first.
-		 */
-#ifdef SALLOC_RUN_FOREGROUND
-		bool sent_msg = false;
+	/*
+	 * Job control for interactive salloc sessions.
+	 *
+	 * This uses the following heuristic:
+	 * a) salloc is not run in allocation-only (--no-shell) mode,
+	 * b) stdin is from a terminal (tcgetattr does not return ENOTTY),
+	 * c) salloc has been invoked from a login shell (not a nested one),
+	 * d) salloc has been configured at compile-time to support background
+	 *    execution and is not currently in the background process group.
+	 */
+	if ((!opt.no_shell) &&
+	    (tcgetattr(STDIN_FILENO, &saved_tty_attributes) != -1) &&
+	    (getppid() == getsid(0))) {
 		pid = getpgrp();
+#ifdef SALLOC_RUN_FOREGROUND
 		while (tcgetpgrp(STDIN_FILENO) != pid) {
-			if (!sent_msg) {
+			if (!is_interactive) {
 				error("Waiting for program to be placed in "
 				      "the foreground");
-				sent_msg = true;
+				is_interactive = true;
 			}
 			killpg(pid, SIGTTIN);
 		}
-		is_foreground = true;
 #else
 		if (tcgetpgrp(STDIN_FILENO) == pid)
-			is_foreground = true;
+			is_interactive = true;
 #endif
-	}
-	/*
-	 * Save tty attributes and reset at exit, in case a child
-	 * process died before properly resetting terminal.
-	 */
-	if (is_foreground) {
-		tcgetattr (STDIN_FILENO, &saved_tty_attributes);
-		atexit (_reset_input_mode);
+		/*
+		 * Reset saved tty attributes at exit, in case a child
+		 * process died before properly resetting terminal.
+		 */
+		if (is_interactive)
+			atexit(_reset_input_mode);
+	} else if ((!opt.no_shell) && (getpid() == getsid(0))) {
+		error("can not run salloc in a new session without --no-shell "
+		      "since there is no controlling terminal.");
+		exit(error_exit);
 	}
 
 	/*
