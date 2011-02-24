@@ -187,8 +187,11 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 		if (ba_request->size
 		    && (ba_request->geometry[0] == (uint16_t)NO_VAL)) {
 			ba_request->geometry[0] = ba_request->size;
-		} else
+		} else {
+			error("new_ba_request: "
+			      "No size or geometry given");
 			return 0;
+		}
 		return 1;
 	}
 
@@ -540,11 +543,11 @@ extern char *set_bg_block(List results, uint16_t *start,
 
 	if (conn_type[A] >= SELECT_SMALL) {
 		/* adding the ba_mp and ending */
-		if (results)
-			list_append(results, ba_mp);
-
 		ba_mp->used = BA_MP_USED_TRUE;
-		name = xstrdup(ba_mp->coord_str);
+		if (results)
+			name = _copy_from_main(main_mps, results);
+		else
+			name = xstrdup(ba_mp->coord_str);
 		goto end_it;
 	}
 
@@ -1686,7 +1689,11 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 			*longest = curr_mp->coord[dim];
 		/* This should never happen since we got here
 		   from an unused mp */
-		xassert(!(axis_switch->usage & BG_SWITCH_IN_PASS));
+		if (!(axis_switch->usage & BG_SWITCH_IN_PASS)) {
+			info("got a bad axis_switch at %s %d %s", curr_mp->coord->str, dim, ba_switch_usage_str(axis_switch->usage));
+
+			xassert(0);
+		}
 		if ((count < geometry) && !_mp_used(curr_mp, dim)) {
 			if (curr_mp->coord[dim] > *block_end)
 				*block_end = curr_mp->coord[dim];
@@ -1960,11 +1967,12 @@ static int _find_match(select_ba_request_t *ba_request, List results)
 	}
 
 	if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
-		if (!ba_geo_table || !ba_geo_table->geometry)
+		if (!ba_geo_table || !ba_geo_table->geometry) {
+			error("_find_match: no geo table");
 			return 0;
+		}
 		memcpy(ba_request->geometry, ba_geo_table->geometry,
 		       sizeof(ba_geo_table->geometry));
-		return 0;
 	} else
 		ba_request->geo_table = NULL;
 

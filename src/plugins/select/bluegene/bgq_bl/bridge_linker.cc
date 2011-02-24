@@ -310,10 +310,12 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
+#ifdef HAVE_BG_FILES
 	if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
 		info("we can't make small blocks yet");
 		return SLURM_ERROR;
 	}
+#endif
 
 	if (!bg_record->ba_mp_list || !list_count(bg_record->ba_mp_list)) {
 		error("There are no midplanes in this block?");
