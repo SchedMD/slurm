@@ -1689,11 +1689,13 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 			*longest = curr_mp->coord[dim];
 		/* This should never happen since we got here
 		   from an unused mp */
-		if (!(axis_switch->usage & BG_SWITCH_IN_PASS)) {
-			info("got a bad axis_switch at %s %d %s", curr_mp->coord_str, dim, ba_switch_usage_str(axis_switch->usage));
-
+		if (axis_switch->usage & BG_SWITCH_IN_PASS) {
+			info("got a bad axis_switch at %s %d %s",
+			     curr_mp->coord_str, dim,
+			     ba_switch_usage_str(axis_switch->usage));
 			xassert(0);
 		}
+
 		if ((count < geometry) && !_mp_used(curr_mp, dim)) {
 			if (curr_mp->coord[dim] > *block_end)
 				*block_end = curr_mp->coord[dim];
@@ -1758,6 +1760,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 			}
 		} else {
 			/* we can't use this so return with a nice 0 */
+			info("we can't use this so return");
 			return 0;
 		}
 
@@ -1774,7 +1777,13 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		alter_switch = &curr_mp->alter_switch[dim];
 		/* This should never happen since we got here
 		   from an unused mp */
-		xassert(!(axis_switch->usage & BG_SWITCH_IN_PASS));
+		if (axis_switch->usage & BG_SWITCH_IN_PASS) {
+			info("2 got a bad axis_switch at %s %d %s",
+			     curr_mp->coord_str, dim,
+			     ba_switch_usage_str(axis_switch->usage));
+			xassert(0);
+		}
+
 		alter_switch->usage |= BG_SWITCH_IN_PASS;
 		alter_switch->usage |= BG_SWITCH_IN;
 	}
