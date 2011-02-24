@@ -1690,7 +1690,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		/* This should never happen since we got here
 		   from an unused mp */
 		if (!(axis_switch->usage & BG_SWITCH_IN_PASS)) {
-			info("got a bad axis_switch at %s %d %s", curr_mp->coord->str, dim, ba_switch_usage_str(axis_switch->usage));
+			info("got a bad axis_switch at %s %d %s", curr_mp->coord_str, dim, ba_switch_usage_str(axis_switch->usage));
 
 			xassert(0);
 		}
