@@ -21,11 +21,14 @@ documents those changes that are of interest to users and admins.
     Patch from Gerrit Renker, CSCS.
  -- Modify condition under which salloc execution delayed until moved to the
     foreground. Patch from Gerrit Renker, CSCS.
-    a) salloc is not run in allocation-only (--no-shell) mode,
-    b) stdin is from a terminal (tcgetattr does not return ENOTTY),
-    c) salloc has been invoked from a login shell (not a nested one),
-    d) salloc has been configured at compile-time to support background
-       execution and is not currently in the background process group.
+	Job control for interactive salloc sessions: only if ...
+	a) input is from a terminal (stdin has valid termios attributes),
+	b) controlling terminal exists (non-negative tpgid),
+	c) salloc is not run in allocation-only (--no-shell) mode,
+	d) salloc runs in its own process group (true in interactive
+	   shells that support job control),
+	e) salloc has been configured at compile-time to support background
+	   execution and is not currently in the background process group.
  -- Abort salloc if no controlling terminal and --no-shell option is not used
     ("setsid salloc ..." is disabled). Patch from Gerrit Renker, CSCS.
  -- Fix to gang scheduling logic which could cause jobs to not be suspended

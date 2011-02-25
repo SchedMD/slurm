@@ -159,6 +159,7 @@ make_bash_script $file_in "
  echo BEGIN
  $bin_sleep 10
  $bin_sleep 10
+ $bin_sleep 10
  echo FINI
 "
 
