@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     ("setsid salloc ..." is disabled). Patch from Gerrit Renker, CSCS.
  -- Fix to gang scheduling logic which could cause jobs to not be suspended
     or resumed when appropriate.
+ -- Applied patch from Martin Perry to fix "Slurmd abort when using task
+    affinity with plane distribution" bug.
 
 * Changes in SLURM 2.2.2
 ========================
