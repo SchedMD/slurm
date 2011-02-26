@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
     or resumed when appropriate.
  -- Applied patch from Martin Perry to fix "Slurmd abort when using task
     affinity with plane distribution" bug.
+ -- Applied patch from Yiannis Georgiou to fix "Problem with cpu binding to
+    sockets option" behaviour.
 
 * Changes in SLURM 2.2.2
 ========================

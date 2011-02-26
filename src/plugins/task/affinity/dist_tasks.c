@@ -637,6 +637,32 @@ static void _blot_mask(bitstr_t *mask, uint16_t blot)
 	}
 }
 
+/* helper function for _expand_masks() 
+ * foreach task, consider which other tasks have set bits on the same socket */
+static void _blot_mask_sockets(const uint32_t maxtasks, const uint32_t task,
+			       bitstr_t **masks, uint16_t blot)
+{
+        uint16_t i, j, size=0;
+        uint32_t q;
+
+        if (!masks[task])
+                return;
+
+        size = bit_size(masks[task]);
+        for (i = 0; i < size; i++) {
+                if (bit_test(masks[task], i)) {
+			/* check if other tasks have set bits on this socket */
+                        uint16_t start = (i / blot) * blot;
+                        for (j = start; j < start+blot; j++) {
+                                for (q = 0; q < maxtasks; q++) {
+                                        if ((q != task) && bit_test(masks[q], j))
+						bit_set(masks[task], j);
+				}
+			}
+		}
+	}
+}
+
 /* foreach mask, expand the mask around the set bits to include the
  * complete resource to which the set bits are to be bound */
 static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
@@ -659,7 +685,7 @@ static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
 		if (hw_threads*hw_cores < 2)
 			return;
 		for (i = 0; i < maxtasks; i++) {
-			_blot_mask(masks[i], hw_threads*hw_cores);
+			_blot_mask_sockets(maxtasks, i, masks, hw_threads*hw_cores);
 		}
 		return;
 	}
