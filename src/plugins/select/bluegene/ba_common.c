@@ -438,11 +438,55 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	return new_ba_mp;
 }
 
+/*
+ * Print a linked list of geo_table_t entries.
+ * IN geo_ptr - first geo_table entry to print
+ * IN header - message header
+ * IN my_geo_system - system geometry specification
+ */
+extern int ba_geo_list_print(ba_geo_table_t *geo_ptr, char *header,
+			     ba_geo_system_t *my_geo_system)
+{
+	int i;
+	char dim_buf[64], full_buf[128];
+
+	full_buf[0] = '\0';
+	for (i = 0; i < my_geo_system->dim_count; i++) {
+		snprintf(dim_buf, sizeof(dim_buf), "%2u ",
+			 geo_ptr->geometry[i]);
+		strcat(full_buf, dim_buf);
+	}
+	snprintf(dim_buf, sizeof(dim_buf), ": size:%u : full_dim_cnt:%u",
+		 geo_ptr->size, geo_ptr->full_dim_cnt);
+	strcat(full_buf, dim_buf);
+	info("%s%s", header, full_buf);
+
+	return 0;
+}
+
+/*
+ * Print the contents of all geo_table_t entries.
+ */
+extern void ba_print_geo_table(ba_geo_system_t *my_geo_system)
+{
+	int i;
+	ba_geo_table_t *geo_ptr;
+
+	xassert(my_geo_system->geo_table_ptr);
+	for (i = 1; i <= my_geo_system->total_size; i++) {
+		geo_ptr = my_geo_system->geo_table_ptr[i];
+		while (geo_ptr) {
+			ba_geo_list_print(geo_ptr, "", my_geo_system);
+			geo_ptr = geo_ptr->next_ptr;
+		}
+	}
+}
 
 extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 {
 	ba_geo_table_t *geo_ptr;
 	int dim, inx[my_geo_system->dim_count], product;
+	struct ba_geo_table **last_pptr;
 
 	if (my_geo_system->geo_table_ptr)
 		return;
@@ -469,12 +513,21 @@ extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 		for (dim = 0; dim < my_geo_system->dim_count; dim++) {
 			geo_ptr->geometry[dim] = inx[dim];
 			product *= inx[dim];
+			if (inx[dim] == my_geo_system->dim_size[dim])
+				geo_ptr->full_dim_cnt++;
 		}
 		geo_ptr->size = product;
 		xassert(product <= my_geo_system->total_size);
-		geo_ptr->next_ptr = my_geo_system->geo_table_ptr[product];
-		my_geo_system->geo_table_ptr[product] = geo_ptr;
 		my_geo_system->geo_table_size++;
+		/* Insert record into linked list so that geometries
+		 * with full dimensions appear first */
+		last_pptr = &my_geo_system->geo_table_ptr[product];
+		while ((*last_pptr) &&
+		       ((*last_pptr)->full_dim_cnt > geo_ptr->full_dim_cnt)) {
+			last_pptr = &((*last_pptr)->next_ptr);
+		}
+		geo_ptr->next_ptr = *last_pptr;
+		*last_pptr = geo_ptr;
 	} while (_incr_geo(inx, my_geo_system));   /* Generate next geometry */
 }
 

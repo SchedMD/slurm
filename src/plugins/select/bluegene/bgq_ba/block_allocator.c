@@ -1897,6 +1897,7 @@ extern void ba_create_system(int num_cpus, int *real_dims, int *dims)
 					  ba_main_geo_system->dim_count);
 	memcpy(ba_main_geo_system->dim_size, DIM_SIZE, sizeof(DIM_SIZE));
 	ba_create_geo_table(ba_main_geo_system);
+	//ba_print_geo_table(ba_main_geo_system);
 
 	/* build all the possible geos for a sub block inside a mid plane */
 	ba_mp_geo_system =  xmalloc(sizeof(ba_geo_system_t));
@@ -1910,6 +1911,7 @@ extern void ba_create_system(int num_cpus, int *real_dims, int *dims)
 	ba_mp_geo_system->dim_size[3] = 4;
 	ba_mp_geo_system->dim_size[4] = 2;
 	ba_create_geo_table(ba_mp_geo_system);
+	//ba_print_geo_table(ba_mp_geo_system);
 
 	_setup_next_mps(ba_main_grid);
 }
