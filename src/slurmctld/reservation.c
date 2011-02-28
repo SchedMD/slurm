@@ -169,7 +169,7 @@ static List _list_dup(List license_list)
 	if (lic_list == NULL)
 		fatal("list_create malloc failure");
 	iter = list_iterator_create(license_list);
-	if (iter == NULL)
+	if (!iter)
 		fatal("list_interator_create malloc failure");
 	while ((license_src = (licenses_t *) list_next(iter))) {
 		license_dest = xmalloc(sizeof(licenses_t));
@@ -470,20 +470,22 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		rc = SLURM_ERROR;
 	}
 
-	if(list_count(assoc_list)) {
+	if (list_count(assoc_list)) {
 		ListIterator itr = list_iterator_create(assoc_list);
+		if (!itr)
+			fatal("malloc: list_iterator_create");
 		xfree(resv_ptr->assoc_list);	/* clear for modify */
-		while((assoc_ptr = list_next(itr))) {
-			if(resv_ptr->assoc_list)
+		while ((assoc_ptr = list_next(itr))) {
+			if (resv_ptr->assoc_list) {
 				xstrfmtcat(resv_ptr->assoc_list, "%u,",
 					   assoc_ptr->id);
-			else
+			} else {
 				xstrfmtcat(resv_ptr->assoc_list, ",%u,",
 					   assoc_ptr->id);
+			}
 		}
 		list_iterator_destroy(itr);
 	}
-	//info("list is '%s'", resv_ptr->assoc_list);
 
 end_it:
 	list_destroy(assoc_list);
@@ -1066,6 +1068,8 @@ static bool _job_overlap(time_t start_time, uint16_t flags,
 		return overlap;
 
 	job_iterator = list_iterator_create(job_list);
+	if (!job_iterator)
+		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
 		    (job_ptr->end_time > start_time)	&&
@@ -1680,6 +1684,8 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 	bool match = false;
 
 	job_iterator = list_iterator_create(job_list);
+	if (!job_iterator)
+		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((!IS_JOB_FINISHED(job_ptr)) &&
 		    (job_ptr->resv_id == resv_ptr->resv_id)) {
@@ -1699,6 +1705,8 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 	struct job_record *job_ptr;
 
 	job_iterator = list_iterator_create(job_list);
+	if (!job_iterator)
+		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->resv_ptr != resv_ptr)
 			continue;
@@ -2016,6 +2024,8 @@ static void _validate_all_reservations(void)
 
 	/* Validate all job reservation pointers */
 	iter = list_iterator_create(job_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
 		if (job_ptr->resv_name == NULL)
 			continue;
@@ -2528,7 +2538,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	 * the unsorted job list. */
 	if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
 		job_iterator = list_iterator_create(job_list);
-		if (job_iterator == NULL)
+		if (!job_iterator)
 			fatal("list_iterator_create: malloc failure");
 		while ((job_ptr = (struct job_record *)
 			list_next(job_iterator))) {
@@ -2699,7 +2709,7 @@ static int _license_cnt(List license_list, char *lic_name)
 		return lic_cnt;
 
 	iter = list_iterator_create(license_list);
-	if (iter == NULL)
+	if (!iter)
 		fatal("list_interator_create malloc failure");
 	while ((license_ptr = list_next(iter))) {
 		if (strcmp(license_ptr->name, lic_name) == 0)
@@ -3065,6 +3075,8 @@ extern int send_resvs_to_accounting(void)
 		return SLURM_SUCCESS;
 
 	itr = list_iterator_create(resv_list);
+	if (!itr)
+		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = list_next(itr))) {
 		_post_resv_create(resv_ptr);
 	}
