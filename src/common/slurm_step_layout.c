@@ -679,24 +679,26 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 /*
  * The plane distribution results in a block cyclic of block size
  * "plane_size".
- * The plane distribution does not do any workload balancing and
- * just use the user specified blocksize: "plane_size".
- * This distribution does not take the hardware (number of CPUs
- * per node) into account when computing the number of tasks per
- * hosts.
+ * To effectively deal with heterogeneous nodes, we fake a cyclic
+ * distribution to figure out how many tasks go on each node and
+ * then make the assignments of task numbers to nodes using the
+ * user-specified plane size.
  * For example:
- *	plane_size = 2
- *          node       Node0 Node1
- *                     -- -- -- --
- * task distribution:   0  1  2  3
- *                      4  5  6  7
- *                      8  9 10 11
- *                     12 13 14 15  etc.
+ *	plane_size = 2, #tasks = 6, #nodes = 3
+ *
+ * Node#:              Node0 Node1 Node2
+ *                     ----- ----- -----
+ * #of allocated CPUs:   4     1     1
+ *
+ * task distribution:   0  1   2     3
+ *                      4  5
  */
 static int _task_layout_plane(slurm_step_layout_t *step_layout,
 			      uint16_t *cpus)
 {
 	int i, j, k, taskid = 0;
+	bool over_subscribe = false;
+	uint32_t cur_task[step_layout->node_cnt];
 
 	debug3("_task_layout_plane plane_size %u node_cnt %u task_cnt %u",
 	       step_layout->plane_size,
@@ -708,22 +710,39 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	if (step_layout->tasks == NULL)
 		return SLURM_ERROR;
 
-	for (i=0; i<step_layout->node_cnt; i++) {
-		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
-					       * step_layout->task_cnt);
+	/* figure out how many tasks go to each node */
+	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */
+		bool space_remaining = false;
+		for (i=0; ((i<step_layout->node_cnt)
+			   && (taskid<step_layout->task_cnt)); i++) {
+			if ((j<cpus[i]) || over_subscribe) {
+				taskid++;
+				step_layout->tasks[i]++;
+				if ((j+1) < cpus[i])
+					space_remaining = true;
+			}
+		}
+		if (!space_remaining)
+			over_subscribe = true;
 	}
 
+	/* now distribute the tasks */
 	taskid = 0;
+	for (i=0; i < step_layout->node_cnt; i++) {
+	    step_layout->tids[i] = xmalloc(sizeof(uint32_t)
+				           * step_layout->tasks[i]);
+	    cur_task[i] = 0;
+	}
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */
 		for (i=0; ((i<step_layout->node_cnt)
 			   && (taskid<step_layout->task_cnt)); i++) {
 			/* assign a block of 'plane_size' tasks to this node */
 			for (k=0; ((k<step_layout->plane_size)
-				   && (taskid<step_layout->task_cnt)); k++) {
-				step_layout->tids[i][step_layout->tasks[i]] =
-					taskid;
+				   && (cur_task[i] < step_layout->tasks[i])
+				   && (taskid < step_layout->task_cnt)); k++) {
+				step_layout->tids[i][cur_task[i]] = taskid;
 				taskid++;
-				step_layout->tasks[i]++;
+				cur_task[i]++;
 			}
 		}
 	}

@@ -146,7 +146,8 @@ int main(int argc, char *argv[])
 	char **env = NULL;
 	int status = 0;
 	int retries = 0;
-	pid_t pid = 0;
+	pid_t pid  = getpid();
+	pid_t tpgid = 0;
 	pid_t rc_pid = 0;
 	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
@@ -206,19 +207,29 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 * Job control for interactive salloc sessions.
+	 * Job control for interactive salloc sessions: only if ...
 	 *
-	 * This uses the following heuristic:
-	 * a) salloc is not run in allocation-only (--no-shell) mode,
-	 * b) stdin is from a terminal (tcgetattr does not return ENOTTY),
-	 * c) salloc has been invoked from a login shell (not a nested one),
-	 * d) salloc has been configured at compile-time to support background
+	 * a) input is from a terminal (stdin has valid termios attributes),
+	 * b) controlling terminal exists (non-negative tpgid),
+	 * c) salloc is not run in allocation-only (--no-shell) mode,
+	 * d) salloc runs in its own process group (true in interactive
+	 *    shells that support job control),
+	 * e) salloc has been configured at compile-time to support background
 	 *    execution and is not currently in the background process group.
 	 */
-	if ((!opt.no_shell) &&
-	    (tcgetattr(STDIN_FILENO, &saved_tty_attributes) != -1) &&
-	    (getppid() == getsid(0))) {
-		pid = getpgrp();
+	if (tcgetattr(STDIN_FILENO, &saved_tty_attributes) < 0) {
+		/*
+		 * Test existence of controlling terminal (tpgid > 0)
+		 * after first making sure stdin is not redirected.
+		 */
+	} else if ((tpgid = tcgetpgrp(STDIN_FILENO)) < 0) {
+		if (!opt.no_shell) {
+			error("no controlling terminal: please set --no-shell");
+			exit(error_exit);
+		}
+	} else if ((!opt.no_shell) && (pid == getpgrp())) {
+		if (tpgid == pid)
+			is_interactive = true;
 #ifdef SALLOC_RUN_FOREGROUND
 		while (tcgetpgrp(STDIN_FILENO) != pid) {
 			if (!is_interactive) {
@@ -228,21 +239,14 @@ int main(int argc, char *argv[])
 			}
 			killpg(pid, SIGTTIN);
 		}
-#else
-		if (tcgetpgrp(STDIN_FILENO) == pid)
-			is_interactive = true;
 #endif
-		/*
-		 * Reset saved tty attributes at exit, in case a child
-		 * process died before properly resetting terminal.
-		 */
-		if (is_interactive)
-			atexit(_reset_input_mode);
-	} else if ((!opt.no_shell) && (getpid() == getsid(0))) {
-		error("can not run salloc in a new session without --no-shell "
-		      "since there is no controlling terminal.");
-		exit(error_exit);
 	}
+	/*
+	 * Reset saved tty attributes at exit, in case a child
+	 * process died before properly resetting terminal.
+	 */
+	if (is_interactive)
+		atexit (_reset_input_mode);
 
 	/*
 	 * Request a job allocation

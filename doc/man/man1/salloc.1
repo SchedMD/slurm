@@ -245,6 +245,7 @@ preceded with an optional '0x'.
 .TP
 .B sockets
 Automatically generate masks binding tasks to sockets.
+Only the CPUs on the socket which have been allocated to the job will be used.
 If the number of tasks differs from the number of allocated sockets
 this can result in sub\-optimal binding.
 .TP
