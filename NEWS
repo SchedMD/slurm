@@ -36,7 +36,9 @@ documents those changes that are of interest to users and admins.
  -- Applied patch from Martin Perry to fix "Slurmd abort when using task
     affinity with plane distribution" bug.
  -- Applied patch from Yiannis Georgiou to fix "Problem with cpu binding to
-    sockets option" behaviour.
+    sockets option" behaviour. This change causes "--cpu_bind=sockets" to bind
+    tasks only to the CPUs on each socket allocated to the job rather than all
+    CPUs on each socket.
 
 * Changes in SLURM 2.2.2
 ========================

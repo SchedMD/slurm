@@ -642,7 +642,7 @@ static void _blot_mask(bitstr_t *mask, uint16_t blot)
 static void _blot_mask_sockets(const uint32_t maxtasks, const uint32_t task,
 			       bitstr_t **masks, uint16_t blot)
 {
-        uint16_t i, j, size=0;
+        uint16_t i, j, size = 0;
         uint32_t q;
 
         if (!masks[task])
@@ -655,8 +655,10 @@ static void _blot_mask_sockets(const uint32_t maxtasks, const uint32_t task,
                         uint16_t start = (i / blot) * blot;
                         for (j = start; j < start+blot; j++) {
                                 for (q = 0; q < maxtasks; q++) {
-                                        if ((q != task) && bit_test(masks[q], j))
+                                        if ((q != task) &&
+					    bit_test(masks[q], j)) {
 						bit_set(masks[task], j);
+					}
 				}
 			}
 		}
