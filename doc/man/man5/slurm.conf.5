@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2010" "slurm.conf 2.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "March 2011" "slurm.conf 2.3" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2479,6 +2479,14 @@ on this partition.
 The default value will be the value of \fBDisableRootJobs\fR set
 outside of a partition specification (which is "NO", allowing user
 root to execute jobs).
+
+.TP
+\fIGraceTime\fP
+Specifies, in units of seconds, the maximum preemption grace time
+to be extended to a job which has been selected for preemption.
+The default value is zero, no preemption grace time is allowed on
+this partition.
+(Meaningful only for PreemptMode=CANCEL)
 
 .TP
 \fBHidden\fR
