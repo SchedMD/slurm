@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
     CPUs on each socket.
  -- Advance daily or weekly reservations immediately after termination to avoid
     having a job start that runs into the reservation when later advanced.
+ -- Fix for enabling users to change there own default account, wckey, or QOS.
 
 * Changes in SLURM 2.2.2
 ========================
