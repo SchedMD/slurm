@@ -80,6 +80,7 @@ enum {
 	SORTID_CPUS,
 	SORTID_DEFAULT,
 	SORTID_FEATURES,
+	SORTID_GRACE_TIME,
 	SORTID_GROUPS,
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
@@ -123,6 +124,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PART_STATE, "Part State", FALSE,
@@ -190,6 +193,8 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PART_STATE, "State", FALSE,
@@ -466,6 +471,13 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		}
 		type = "default";
 		break;
+	case SORTID_GRACE_TIME:
+		temp_int = time_str2mins((char *)new_text);
+		type = "grace_time";
+		if (temp_int <= 0)
+			goto return_error;
+		part_msg->grace_time = (uint32_t)temp_int;
+		break;
 	case SORTID_HIDDEN:
 		if (!strcasecmp(new_text, "yes")) {
 			part_msg->flags |= PART_FLAG_HIDDEN;
@@ -477,7 +489,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "hidden";
 		break;
 	case SORTID_TIMELIMIT:
-		if ((strcasecmp(new_text,"infinite") == 0))
+		if ((strcasecmp(new_text, "infinite") == 0))
 			temp_int = INFINITE;
 		else
 			temp_int = time_str2mins((char *)new_text);
@@ -926,6 +938,9 @@ static void _layout_part_record(GtkTreeView *treeview,
 			else
 				temp_char = "";
 			break;
+		case SORTID_GRACE_TIME:
+			limit_set = part_ptr->grace_time;
+			break;
 		case SORTID_GROUPS:
 			if (part_ptr->allow_groups)
 				temp_char = part_ptr->allow_groups;
@@ -1073,7 +1088,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				GtkTreeIter *iter)
 {
 	char tmp_prio[40], tmp_size[40], tmp_share_buf[40], tmp_time[40];
-	char tmp_max_nodes[40], tmp_min_nodes[40];
+	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40];
 	char *tmp_alt, *tmp_default, *tmp_groups, *tmp_hidden;
 	char *tmp_root, *tmp_share, *tmp_state;
@@ -1106,6 +1121,13 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		tmp_hidden = "yes";
 	else
 		tmp_hidden = "no";
+
+	if (part_ptr->grace_time == (uint32_t) NO_VAL)
+		snprintf(tmp_grace, sizeof(tmp_grace), "none");
+	else {
+		secs2time_str(part_ptr->grace_time,
+			      tmp_grace, sizeof(tmp_grace));
+	}
 
 	if (part_ptr->max_nodes == (uint32_t) INFINITE)
 		snprintf(tmp_max_nodes, sizeof(tmp_max_nodes), "infinite");
@@ -1186,6 +1208,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_CPUS,       tmp_cpu_cnt,
 			   SORTID_DEFAULT,    tmp_default,
 			   SORTID_FEATURES,   "",
+			   SORTID_GRACE_TIME, tmp_grace,
 			   SORTID_GROUPS,     tmp_groups,
 			   SORTID_HIDDEN,     tmp_hidden,
 			   SORTID_JOB_SIZE,   tmp_size,
@@ -2064,6 +2087,7 @@ extern GtkListStore *create_model_part(int type)
 		gtk_list_store_set(model, &iter,
 				   0, "suspend", 1, SORTID_PREEMPT_MODE, -1);
 		break;
+	case SORTID_GRACE_TIME:
 	case SORTID_PRIORITY:
 	case SORTID_TIMELIMIT:
 	case SORTID_NODES_MIN:

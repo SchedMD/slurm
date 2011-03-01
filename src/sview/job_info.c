@@ -150,6 +150,7 @@ enum {
 /* 	SORTID_NTASKS_PER_NODE, */
 /* 	SORTID_NTASKS_PER_SOCKET, */
 	SORTID_PARTITION,
+	SORTID_PREEMPT_TIME,
 	SORTID_PRIORITY,
 	SORTID_QOS,
 	SORTID_REASON,
@@ -265,17 +266,17 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_PREEMPT_TIME, "Preempt Time", FALSE,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_RESIZE, "Time Resize", FALSE,
-	 EDIT_NONE, refresh_job,
-	 create_model_job, admin_edit_job},
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_RUNNING, "Time Running", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_SUBMIT, "Time Submit", FALSE,
 	 EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_ELIGIBLE, "Time Eligible", FALSE,
-	 EDIT_TEXTBOX, refresh_job,
-	 create_model_job, admin_edit_job},
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_END, "Time End", FALSE,
@@ -1701,6 +1702,16 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_TIMELIMIT),
 				   tmp_char);
 
+	if (job_ptr->preempt_time) {
+		slurm_make_time_str((time_t *)&job_ptr->preempt_time, tmp_char,
+				    sizeof(tmp_char));
+	} else
+		sprintf(tmp_char, "N/A");
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_PREEMPT_TIME),
+				   tmp_char);
+
 	if (job_ptr->resize_time) {
 		slurm_make_time_str((time_t *)&job_ptr->resize_time, tmp_char,
 				    sizeof(tmp_char));
@@ -1762,7 +1773,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_cpu_cnt[40],   tmp_node_cnt[40],    tmp_disk[40];
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
-	char tmp_prio[40],      tmp_nice[40];
+	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reason, *tmp_nodes;
 	time_t now_time = time(NULL);
@@ -1912,6 +1923,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		secs2time_str((job_ptr->time_limit * 60),
 			      tmp_time_limit, sizeof(tmp_time_limit));
 
+	if (job_ptr->preempt_time) {
+		slurm_make_time_str((time_t *)&job_ptr->preempt_time,
+				    tmp_preempt_time, sizeof(tmp_time_resize));
+	} else
+		sprintf(tmp_preempt_time, "N/A");
+
 	if (job_ptr->resize_time) {
 		slurm_make_time_str((time_t *)&job_ptr->resize_time,
 				    tmp_time_resize, sizeof(tmp_time_resize));
@@ -1964,6 +1981,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_NODES_MAX,    tmp_nodes_max,
 			   SORTID_NODES_MIN,    tmp_nodes_min,
 			   SORTID_PARTITION,    job_ptr->partition,
+			   SORTID_PREEMPT_TIME, tmp_preempt_time,
 			   SORTID_PRIORITY,     tmp_prio,
 			   SORTID_QOS,          job_ptr->qos,
 			   SORTID_REASON,       tmp_reason,
