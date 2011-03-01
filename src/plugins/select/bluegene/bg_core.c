@@ -90,7 +90,8 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		return SLURM_SUCCESS;
 	}
 
-	if (bg_record->state != BG_BLOCK_FREE) {
+	if ((bg_record->state != BG_BLOCK_FREE)
+	    && (bg_record->state != BG_BLOCK_ERROR)) {
 		/* Something isn't right, go mark this one in an error
 		   state. */
 		update_block_msg_t block_msg;
@@ -200,7 +201,8 @@ static void *_track_freeing_blocks(void *args)
 			/* Fake a free since we are n deallocating
 			   state before this.
 			*/
-			if (retry_cnt >= 3)
+			if ((bg_record->state != BG_BLOCK_ERROR)
+			    && (retry_cnt >= 3))
 				bg_record->state = BG_BLOCK_FREE;
 #endif
 			if ((bg_record->state == BG_BLOCK_FREE)
@@ -388,7 +390,9 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		/* Fake a free since we are n deallocating
 		   state before this.
 		*/
-		if (count >= 3)
+		if (bg_record->state == BG_BLOCK_ERROR)
+			break;
+		else if (count >= 3)
 			bg_record->state = BG_BLOCK_FREE;
 		else if (bg_record->state != BG_BLOCK_FREE)
 			bg_record->state = BG_BLOCK_TERM;
@@ -412,7 +416,8 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 	}
 
 	rc = SLURM_SUCCESS;
-	if (bg_record->state == BG_BLOCK_FREE)
+	if ((bg_record->state == BG_BLOCK_FREE)
+	    || (bg_record->state == BG_BLOCK_ERROR))
 		remove_from_bg_list(bg_lists->booted, bg_record);
 	else if (count >= MAX_FREE_RETRIES) {
 		/* Something isn't right, go mark this one in an error

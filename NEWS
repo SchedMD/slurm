@@ -106,6 +106,10 @@ documents those changes that are of interest to users and admins.
     CPUs on each socket.
  -- Advance daily or weekly reservations immediately after termination to avoid
     having a job start that runs into the reservation when later advanced.
+ -- Fix for enabling users to change there own default account, wckey, or QOS.
+ -- BLUEGENE - If using OVERLAP mode fixed issue with multiple overlapping
+    blocks in error mode.
+ -- Fix for sacctmgr to display correctly default accounts.
 
 * Changes in SLURM 2.2.2
 ========================

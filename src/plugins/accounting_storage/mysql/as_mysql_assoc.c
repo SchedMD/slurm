@@ -1370,7 +1370,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 slurmdb_association_rec_t *assoc,
 					 slurmdb_user_rec_t *user,
 					 char *cluster_name, char *sent_vals,
-					 bool is_admin, List ret_list)
+					 bool is_admin, bool same_user,
+					 List ret_list)
 {
 	ListIterator itr = NULL;
 	MYSQL_ROW row;
@@ -1414,7 +1415,11 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		if (row[MASSOC_PACCT][0])
 			account = row[MASSOC_PACCT];
 
-		if (!is_admin) {
+		/* If this is the same user all has been done
+		   previously to make sure the user is only changing
+		   things they are allowed to change.
+		*/
+		if (!is_admin && !same_user) {
 			slurmdb_coord_rec_t *coord = NULL;
 
 			if (!user->coord_accts) { // This should never
@@ -2954,7 +2959,8 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL;
-	int set = 0, i = 0, is_admin=0;
+	int set = 0, i = 0;
+	bool is_admin=0, same_user=0;
 	MYSQL_RES *result = NULL;
 	slurmdb_user_rec_t user;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
@@ -2982,12 +2988,20 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			name = list_peek(assoc_cond->user_list);
 		        if ((uid_from_string (name, &pw_uid) >= 0)
 			    && (pw_uid == uid)) {
+				uint16_t is_def = assoc->is_def;
+				uint32_t def_qos_id = assoc->def_qos_id;
 				/* Make sure they aren't trying to
-				   change something else and then set
-				   this association as a default.
+				   change something they aren't
+				   allowed to.  Currently they are
+				   only allowed to change the default
+				   account, and default QOS.
 				*/
 				slurmdb_init_association_rec(assoc, 1);
-				assoc->is_def = 1;
+
+				assoc->is_def = is_def;
+				assoc->def_qos_id = def_qos_id;
+				same_user = 1;
+
 				goto is_same_user;
 			}
 		}
@@ -3068,7 +3082,8 @@ is_same_user:
 		xfree(query);
 		rc = _process_modify_assoc_results(mysql_conn, result, assoc,
 						   &user, cluster_name, vals,
-						   is_admin, ret_list);
+						   is_admin, same_user,
+						   ret_list);
 		mysql_free_result(result);
 
 		if ((rc == ESLURM_INVALID_PARENT_ACCOUNT)

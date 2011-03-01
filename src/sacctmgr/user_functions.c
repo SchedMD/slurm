@@ -1512,7 +1512,9 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 				if (!curr_cluster
 				    || strcmp(curr_cluster, assoc->cluster)) {
 					slurmdb_association_rec_t *assoc2;
-					/* we shouldn't have to reset this */
+					/* We shouldn't have to reset this
+					 * unless no default is on the
+					 * cluster. */
 					while ((assoc2 = list_next(itr4))) {
 						if (!assoc2->is_def ||
 						    strcmp(assoc->cluster,
@@ -1525,10 +1527,17 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						break;
 					}
 
+					/* This means there wasn't a
+					   default on the current cluster.
+					*/
+					if (!assoc2)
+						list_iterator_reset(itr4);
 					if (curr_cluster && wckey_itr) {
 						slurmdb_wckey_rec_t *wckey;
-						/* we shouldn't have
-						 * to reset this */
+						/* We shouldn't have
+						 * to reset this
+						 * unless no default
+						 * is on the cluster. */
 						while ((wckey =
 							list_next(wckey_itr))) {
 							if (!wckey->is_def ||
@@ -1544,6 +1553,14 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 									name);
 							break;
 						}
+						
+						/* This means there wasn't a
+						   default on the
+						   current cluster.
+						*/
+						if (!wckey)
+							list_iterator_reset(
+								wckey_itr);
 					}
 				}
 
