@@ -277,6 +277,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 				exit_code = 1;
 			} else
 				set = 1;
+		} else if (!strncasecmp (argv[i], "GraceTime",
+					 MAX(command_len, 3))) {
+			if (!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->grace_time,
+			             "GraceTime") == SLURM_SUCCESS) {
+				set = 1;
+			}
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
 			if(!qos)
@@ -581,6 +589,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			else
 				qos->description = xstrdup(name);
 
+			qos->grace_time = start_qos->grace_time;
 			qos->grp_cpu_mins = start_qos->grp_cpu_mins;
 			qos->grp_cpus = start_qos->grp_cpus;
 			qos->grp_jobs = start_qos->grp_jobs;
@@ -685,7 +694,8 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "Name,Prio,Preempt,PreemptM,"
+		slurm_addto_char_list(format_list,
+				      "Name,Prio,GraceT,Preempt,PreemptM,"
 				      "Flags%40,UsageThres,GrpCPUs,GrpCPUMins,"
 				      "GrpJ,GrpN,GrpS,GrpW,"
 				      "MaxCPUs,MaxCPUMins,MaxJ,MaxN,MaxS,MaxW");
@@ -736,6 +746,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			case PRINT_UT:
 				field->print_routine(
 					field, qos->usage_thres,
+					(curr_inx == field_count));
+				break;
+			case PRINT_GRACE:
+				field->print_routine(
+					field, qos->grace_time,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:

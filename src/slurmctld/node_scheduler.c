@@ -1015,6 +1015,11 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
 		mode = slurm_job_preempt_mode(job_ptr);
 		if (mode == PREEMPT_MODE_CANCEL) {
+			rc = slurm_job_check_grace(job_ptr);
+			if (rc == SLURM_SUCCESS) {
+				job_cnt++;
+				break;
+			}
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been killed",

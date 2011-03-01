@@ -264,6 +264,11 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->alternate = val;
 			(*update_cnt_ptr)++;
 		}
+		else if (strncasecmp(tag, "GraceTime", MAX(taglen, 5)) == 0) {
+			part_msg_ptr->grace_time = (uint32_t) strtol(val,
+							(char **) NULL, 10);
+			(*update_cnt_ptr)++;
+		}		
 		else {
 			exit_code = 1;
 			error("Update of this parameter is not "

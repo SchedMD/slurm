@@ -254,6 +254,7 @@ struct part_record {
 	char *alternate; 	/* name of alternate partition */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint16_t flags;		/* see PART_FLAG_* in slurm.h */
+	uint32_t grace_time;	/* default preempt grace time in seconds */
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
@@ -497,6 +498,7 @@ struct job_record {
 					 * partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
+	time_t preempt_time;		/* job preemption signal time */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
 	priority_factors_object_t *prio_factors; /* cached value used

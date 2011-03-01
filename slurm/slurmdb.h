@@ -572,6 +572,7 @@ typedef struct {
 	uint32_t id;
 	uint32_t flags; /* flags for various things to enforce or
 			   override other limits */
+	uint32_t grace_time; /* preemption grace time */
 	uint64_t grp_cpu_mins; /* max number of cpu minutes all jobs
 				* running under this qos can run for */
 	uint64_t grp_cpu_run_mins; /* max number of cpu minutes all jobs

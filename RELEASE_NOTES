@@ -75,12 +75,19 @@ front_end_info_t		entirely new structure
 
 job_info_t
 	batch_host		name of the host running the batch script
+	preempt_time		time that a job become preempted
+
+partition_info_t
+	grace_time		preempted job's grace time in seconds
 
 slurm_ctl_conf
 	max_job_id		maximum supported job id before starting over
 				with first_job_id
 slurm_step_layout
 	front_end		name of front end host running the step
+
+slurmdb_qos_rec_t
+	grace_time		preempted job's grace time in seconds
 
 update_front_end_msg_t		entirely new structure
 

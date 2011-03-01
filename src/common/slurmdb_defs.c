@@ -1058,7 +1058,7 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it)
 {
-	if(!cluster)
+	if (!cluster)
 		return;
 
 	if (free_it)
@@ -1069,7 +1069,7 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 {
-	if(!qos)
+	if (!qos)
 		return;
 
 	if (free_it)
@@ -1078,6 +1078,7 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 
 	qos->flags = QOS_FLAG_NOTSET;
 
+	qos->grace_time = NO_VAL;
 	qos->preempt_mode = (uint16_t)NO_VAL;
 	qos->priority = NO_VAL;
 
@@ -1103,7 +1104,7 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 {
-	if(!wckey)
+	if (!wckey)
 		return;
 
 	if (free_it)

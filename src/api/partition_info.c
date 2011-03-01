@@ -185,7 +185,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		sprintf(tmp_line, " DisableRootJobs=NO");
 	xstrcat(out, tmp_line);
-
+	sprintf(tmp_line, " GraceTime=%u", part_ptr->grace_time);
+	xstrcat(out, tmp_line);
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		sprintf(tmp_line, " Hidden=YES");
 	else

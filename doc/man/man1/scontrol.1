@@ -661,6 +661,10 @@ The list of nodes allocated to the job.
 The NodeIndices expose the internal indices into the node table
 associated with the node(s) allocated to the job.
 .TP
+\fIPreemptTime\fP
+Time at which job was signaled that it was selected for preemption.
+(Meaningful only for PreemptMode=CANCEL)
+.TP
 \fIPreSusTime\fP
 Time the job ran prior to last suspend.
 .TP
@@ -840,6 +844,14 @@ Format is the same as for MaxTime.
 \fIDisableRootJobs\fP=<yes|no>
 Specify if jobs can be executed as user root.
 Possible values are "YES" and "NO".
+
+.TP
+\fIGraceTime\fP=<seconds>
+Specifies, in units of seconds, the maximum preemption grace time
+to be extended to a job which has been selected for preemption.
+The default value is zero, no preemption grace time is allowed on
+this partition or qos.
+(Meaningful only for PreemptMode=CANCEL)
 
 .TP
 \fIHidden\fP=<yes|no>

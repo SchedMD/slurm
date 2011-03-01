@@ -864,13 +864,13 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\
-       add qos            - Description=, Flags=, GrpCPUMins=, GrpCPUs=,   \n\
-                            GrpJobs=, GrpNodes=, GrpSubmitJob=, GrpWall=,  \n\
-                            MaxCPUMins=, MaxCPUs=, MaxJobs=, MaxNodes=,    \n\
-                            MaxSubmitJobs=, MaxWall=, Names=, Preempt=,    \n\
-                            PreemptMode=, Priority=, UsageFactor=,         \n\
-                            and UsageThreshold=                            \n\
-       modify qos         - (set options) Description=, Flags=,            \n\
+       add qos            - Description=, Flags=, GraceTime=,GrpCPUMins=,  \n\
+                            GGrpCPUs=,rpJobs=, GrpNodes=, GrpSubmitJob=,   \n\
+                            GrpWall=,MaxCPUMins=, MaxCPUs=, MaxJobs=,      \n\
+                            MaxNodes=,MaxSubmitJobs=, MaxWall=, Names=,    \n\
+                            Preempt=,PreemptMode=, Priority=,              \n\
+                            aUsageFactor=,nd UsageThreshold=               \n\
+       modify qos         - (set options) Description=, Flags=, GraceTime=,\n\
                             GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=,           \n\
@@ -939,10 +939,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Event, EventRaw, NodeName, Reason, Start,      \n\
                             State, StateRaw, User                          \n\
                                                                            \n\
-       QOS                - Description, Flags, GrpCPUMins, GrpCPUs,       \n\
-                            GrpJobs, GrpNodes, GrpSubmitJob, GrpWall, ID,  \n\
-                            MaxCPUMins, MaxCPUs, MaxJobs, MaxNodes,        \n\
-                            MaxSubmitJobs, MaxWall, Name,                  \n\
+       QOS                - Description, Flags, GraceTime, GrpCPUMins,     \n\
+                            GrpCPUs,GrpJobs, GrpNodes, GrpSubmitJob,       \n\
+                            GrpWall, ID,MaxCPUMins, MaxCPUs, MaxJobs,      \n\
+                            MaxNodes,MaxSubmitJobs, MaxWall, Name,         \n\
                             Preempt, PreemptMode, Priority, UsageFactor,   \n\
                             UsageThreshold                                 \n\
                                                                            \n\

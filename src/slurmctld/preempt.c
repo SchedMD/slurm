@@ -189,6 +189,47 @@ static int _slurm_preempt_context_destroy(slurm_preempt_context_t *c)
 	return SLURM_SUCCESS;
 }
 
+/* *********************************************************************** */
+/*  TAG(                    _preempt_signal                             )  */
+/* *********************************************************************** */
+static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
+{
+	/* allow the job termination mechanism to signal the job */
+
+	job_ptr->preempt_time = time(NULL);
+	job_ptr->end_time = job_ptr->preempt_time + (time_t)grace_time;
+}
+/* *********************************************************************** */
+/*  TAG(                    slurm_job_check_grace                       )  */
+/* *********************************************************************** */
+extern int slurm_job_check_grace(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	char *preempt_type;
+	uint32_t grace_time = 0;
+
+	if (job_ptr->preempt_time) {
+		if (time(NULL) >= job_ptr->end_time)
+			rc = SLURM_ERROR;
+		return rc;
+	}
+
+	preempt_type = slurm_get_preempt_type();
+	if ((strcmp(preempt_type, "preempt/partition_prio") == 0))
+		grace_time = job_ptr->part_ptr->grace_time;
+	else if ((strcmp(preempt_type, "preempt/qos") == 0)) {
+		slurmdb_qos_rec_t *qos_ptr = (slurmdb_qos_rec_t *)
+					     job_ptr->qos_ptr;
+		grace_time = qos_ptr->grace_time;
+	}
+
+	if (grace_time)
+		_preempt_signal(job_ptr, grace_time);
+	else
+		rc = SLURM_ERROR;
+
+	return rc;
+}
 
 /* *********************************************************************** */
 /*  TAG(                    slurm_preempt_init                        )  */

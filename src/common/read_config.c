@@ -775,11 +775,13 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 	slurm_conf_partition_t *p;
 	char *tmp = NULL;
 	static s_p_options_t _partition_options[] = {
+		{"AllocNodes", S_P_STRING},
 		{"AllowGroups", S_P_STRING},
 		{"Alternate", S_P_STRING},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
+		{"GraceTime", S_P_UINT32},
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxTime", S_P_STRING},
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
@@ -790,7 +792,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
-		{"AllocNodes", S_P_STRING},
 		{NULL}
 	};
 
@@ -858,6 +859,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			p->max_time = max_time;
 			xfree(tmp);
 		}
+
+		if (!s_p_get_uint32(&p->grace_time, "GraceTime", tbl) &&
+		    !s_p_get_uint32(&p->grace_time, "GraceTime", dflt))
+			p->grace_time = 0;
 
 		if (!s_p_get_string(&tmp, "DefaultTime", tbl) &&
 		    !s_p_get_string(&tmp, "DefaultTime", dflt))
