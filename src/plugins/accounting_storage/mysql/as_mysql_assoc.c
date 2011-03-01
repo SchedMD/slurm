@@ -3001,7 +3001,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				assoc->is_def = is_def;
 				assoc->def_qos_id = def_qos_id;
 				same_user = 1;
-				info ("same user");
+
 				goto is_same_user;
 			}
 		}
