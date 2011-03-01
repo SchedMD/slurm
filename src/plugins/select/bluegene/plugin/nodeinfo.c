@@ -295,8 +295,9 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 				continue;
 			state = NODE_STATE_ALLOCATED;
 		} else {
-			error("not sure why we got here with block %s",
-			      bg_record->bg_block_id);
+			error("not sure why we got here with block %s %s",
+			      bg_record->bg_block_id,
+			      bg_block_state_string(bg_record->state));
 			continue;
 		}
 
