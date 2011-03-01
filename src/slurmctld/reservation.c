@@ -90,6 +90,7 @@ uint32_t  top_suffix = 0;
 uint32_t  cnodes_per_bp = 0;
 #endif
 
+static void _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
 				char ***account_list);
@@ -2373,6 +2374,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	bitstr_t *node_bitmap;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
+	time_t now = time(NULL);
 
 	if (*part_ptr == NULL) {
 		*part_ptr = default_part_loc;
@@ -2391,6 +2393,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		if (!iter)
 			fatal("malloc: list_iterator_create");
 		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if (resv_ptr->end_time <= now)
+				_advance_resv_time(resv_ptr);
 			if ((resv_ptr->node_bitmap == NULL) ||
 			    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
 			    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
@@ -2680,6 +2684,8 @@ extern void job_time_adj_resv(struct job_record *job_ptr)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (resv_ptr->end_time <= now)
+			_advance_resv_time(resv_ptr);
 		if ((job_ptr->resv_ptr == resv_ptr) ||
 		    (resv_ptr->start_time <= now))
 			continue;	/* authorized user of reservation */
@@ -2760,7 +2766,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 			     time_t when)
 {
 	slurmctld_resv_t * resv_ptr;
-	time_t job_start_time, job_end_time;
+	time_t job_start_time, job_end_time, now = time(NULL);
 	ListIterator iter;
 	int resv_cnt = 0;
 
@@ -2770,6 +2776,8 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (resv_ptr->end_time <= now)
+			_advance_resv_time(resv_ptr);
 		if ((resv_ptr->start_time >= job_end_time) ||
 		    (resv_ptr->end_time   <= job_start_time))
 			continue;	/* reservation at different time */
@@ -2807,6 +2815,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 {
 	slurmctld_resv_t * resv_ptr, *res2_ptr;
 	time_t job_start_time, job_end_time, lic_resv_time;
+	time_t now = time(NULL);
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
 
@@ -2823,6 +2832,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			return ESLURM_RESERVATION_INVALID;
 		if (_valid_job_access_resv(job_ptr, resv_ptr) != SLURM_SUCCESS)
 			return ESLURM_RESERVATION_ACCESS;
+		if (resv_ptr->end_time <= now)
+			_advance_resv_time(resv_ptr);
 		if (*when < resv_ptr->start_time) {
 			/* reservation starts later */
 			*when = resv_ptr->start_time;
@@ -2830,7 +2841,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		}
 		if (resv_ptr->node_cnt == 0) {
 			/* empty reservation treated like it will start later */
-			*when = time(NULL) + 600;
+			*when = now + 600;
 			return ESLURM_INVALID_TIME_VALUE;
 		}
 		if (*when > resv_ptr->end_time) {
@@ -2890,6 +2901,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if (!iter)
 			fatal("malloc: list_iterator_create");
 		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if (resv_ptr->end_time <= now)
+				_advance_resv_time(resv_ptr);
 			if ((resv_ptr->node_bitmap == NULL) ||
 			    (resv_ptr->start_time >= job_end_time) ||
 			    (resv_ptr->end_time   <= job_start_time))
@@ -2994,6 +3007,35 @@ extern int job_resv_check(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/* Advance a expired reservation's time stamps one day or one week 
+ * as appropriate. */
+static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
+{
+	int day_cnt = 0;
+	char *interval = "";
+
+	if (resv_ptr->flags & RESERVE_FLAG_DAILY) {
+		day_cnt = 1;
+		interval = "day";
+	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKLY) {
+		day_cnt = 7;
+		interval = "week";
+	}
+
+	if (day_cnt) {
+		verbose("Advance reservation %s one %s", resv_ptr->name,
+			interval);
+		resv_ptr->start_time = resv_ptr->start_time_first;
+		_advance_time(&resv_ptr->start_time, day_cnt);
+		resv_ptr->start_time_prev = resv_ptr->start_time;
+		resv_ptr->start_time_first = resv_ptr->start_time;
+		_advance_time(&resv_ptr->end_time, day_cnt);
+		_post_resv_create(resv_ptr);
+		last_resv_update = time(NULL);
+		schedule_resv_save();
+	}
+}
+
 /* Finish scan of all jobs for valid reservations
  *
  * Purge vestigial reservation records.
@@ -3017,35 +3059,7 @@ extern void fini_job_resv_check(void)
 			_validate_node_choice(resv_ptr);
 			continue;
 		}
-
-		if ((resv_ptr->job_run_cnt  == 0) &&
-		    (resv_ptr->flags & RESERVE_FLAG_DAILY)) {
-			verbose("Advance reservation %s one day",
-				resv_ptr->name);
-			resv_ptr->start_time = resv_ptr->start_time_first;
-			_advance_time(&resv_ptr->start_time, 1);
-			resv_ptr->start_time_prev = resv_ptr->start_time;
-			resv_ptr->start_time_first = resv_ptr->start_time;
-			_advance_time(&resv_ptr->end_time, 1);
-			_post_resv_create(resv_ptr);
-			last_resv_update = now;
-			schedule_resv_save();
-			continue;
-		}
-		if ((resv_ptr->job_run_cnt  == 0) &&
-		    (resv_ptr->flags & RESERVE_FLAG_WEEKLY)) {
-			verbose("Advance reservation %s one week",
-				resv_ptr->name);
-			resv_ptr->start_time = resv_ptr->start_time_first;
-			_advance_time(&resv_ptr->start_time, 7);
-			resv_ptr->start_time_prev = resv_ptr->start_time;
-			resv_ptr->start_time_first = resv_ptr->start_time;
-			_advance_time(&resv_ptr->end_time, 7);
-			_post_resv_create(resv_ptr);
-			last_resv_update = now;
-			schedule_resv_save();
-			continue;
-		}
+		_advance_resv_time(resv_ptr);
 		if ((resv_ptr->job_pend_cnt   == 0) &&
 		    (resv_ptr->job_run_cnt    == 0) &&
 		    (resv_ptr->maint_set_node == 0) &&

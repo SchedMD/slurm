@@ -104,6 +104,8 @@ documents those changes that are of interest to users and admins.
     sockets option" behaviour. This change causes "--cpu_bind=sockets" to bind
     tasks only to the CPUs on each socket allocated to the job rather than all
     CPUs on each socket.
+ -- Advance daily or weekly reservations immediately after termination to avoid
+    having a job start that runs into the reservation when later advanced.
 
 * Changes in SLURM 2.2.2
 ========================
