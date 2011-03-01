@@ -956,7 +956,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * or NO_VAL to use system default */
 	uint16_t warn_signal;	/* signal to send when approaching end time */
 	uint16_t warn_time;	/* time before end to send signal (seconds) */
-	time_t 	preempt_time;	/* preemption signal time */
 	char *work_dir;		/* pathname of working directory */
 
 	/* job constraints: */

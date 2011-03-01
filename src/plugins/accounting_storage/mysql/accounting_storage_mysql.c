@@ -483,7 +483,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "name", "tinytext not null" },
 		{ "description", "text" },
 		{ "flags", "int unsigned default 0" },
-		{ "grace_time", "int default 0" },
+		{ "grace_time", "int default NULL" },
 		{ "max_jobs_per_user", "int default NULL" },
 		{ "max_submit_jobs_per_user", "int default NULL" },
 		{ "max_cpus_per_job", "int default NULL" },

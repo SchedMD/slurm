@@ -865,11 +865,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\
        add qos            - Description=, Flags=, GraceTime=,GrpCPUMins=,  \n\
-                            GGrpCPUs=,rpJobs=, GrpNodes=, GrpSubmitJob=,   \n\
+                            GGrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=, \n\
                             GrpWall=,MaxCPUMins=, MaxCPUs=, MaxJobs=,      \n\
                             MaxNodes=,MaxSubmitJobs=, MaxWall=, Names=,    \n\
                             Preempt=,PreemptMode=, Priority=,              \n\
-                            aUsageFactor=,nd UsageThreshold=               \n\
+                            UsageFactor= and UsageThreshold=               \n\
        modify qos         - (set options) Description=, Flags=, GraceTime=,\n\
                             GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\

@@ -5668,7 +5668,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->reservation, buffer);
 		pack16(job_desc_ptr->warn_signal, buffer);
 		pack16(job_desc_ptr->warn_time, buffer);
-		pack_time(job_desc_ptr->preempt_time, buffer);
 		packstr(job_desc_ptr->wckey, buffer);
 
 		if (job_desc_ptr->select_jobinfo) {
@@ -6024,7 +6023,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 	job_desc_msg_t *job_desc_ptr;
 
 	/* alloc memory for structure */
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -6134,7 +6133,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->warn_signal, buffer);
 		safe_unpack16(&job_desc_ptr->warn_time, buffer);
-		safe_unpack_time(&job_desc_ptr->preempt_time, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->wckey,
 				       &uint32_tmp, buffer);
 

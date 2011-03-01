@@ -9512,7 +9512,6 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->wait_all_nodes    = job_ptr->wait_all_nodes;
 	job_desc->warn_signal       = job_ptr->warn_signal;
 	job_desc->warn_time         = job_ptr->warn_time;
-	job_desc->preempt_time 	    = job_ptr->preempt_time;
 	job_desc->wckey             = xstrdup(job_ptr->wckey);
 	job_desc->work_dir          = xstrdup(details->work_dir);
 	job_desc->pn_min_cpus       = details->pn_min_cpus;
