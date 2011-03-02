@@ -671,6 +671,8 @@ extern int removable_set_mps(char *mps)
 	if (!mps)
 		return SLURM_ERROR;
 
+	memset(coords, 0, sizeof(coords));
+
 	while (mps[j] != '\0') {
 		int mid = j   + cluster_dims + 1;
 		int fin = mid + cluster_dims + 1;
@@ -727,7 +729,7 @@ extern int reset_all_removed_mps()
 	static int start[SYSTEM_DIMENSIONS];
 	static int end[SYSTEM_DIMENSIONS];
 	static int dim = 0;
-	int coords[cluster_dims];
+	int coords[SYSTEM_DIMENSIONS];
 
 	if (!dim) {
 		memset(start, 0, sizeof(start));
@@ -735,6 +737,7 @@ extern int reset_all_removed_mps()
 			end[dim] = DIM_SIZE[dim] - 1;
 	}
 
+	memset(coords, 0, sizeof(coords));
 	_internal_removable_set_mps(A, start, end, coords, 0);
 
 	return SLURM_SUCCESS;
