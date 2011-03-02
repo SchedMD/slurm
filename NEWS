@@ -48,6 +48,9 @@ documents those changes that are of interest to users and admins.
  -- scancel -s SIGKILL will always sent the RPC to the slurmctld rather than
     the slurmd daemon(s). This insures that tasks in the process of getting
     spawned are killed.
+ -- BLUEGENE - If using OVERLAP mode fixed issue with jobs getting denied
+    at submit if the only option for their job was overlapping a block in
+    error state.
 
 * Changes in SLURM 2.2.2
 ========================
