@@ -182,7 +182,23 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 			job_desc->geometry[i] = SvUV(*svp);
 		}
 	}
-	FETCH_FIELD(hv, job_desc, conn_type, uint16_t, FALSE);
+	if((svp = hv_fetch(hv, "conn_type", 9, FALSE))) {
+		AV *av;
+		if (!SvROK(*svp) || SvTYPE(SvRV(*svp)) != SVt_PVAV) {
+			Perl_warn(aTHX_ "`conn_type' is not an array reference in job descriptor");
+			free_job_desc_msg_memory(job_desc);
+			return -1;
+		}
+		av = (AV*)SvRV(*svp);
+		for(i = 0; i < HIGHEST_DIMENSIONS; i ++) {
+			if(! (svp = av_fetch(av, i, FALSE))) {
+				Perl_warn(aTHX_ "conn_type of dimension %d missing in job descriptor", i);
+				free_job_desc_msg_memory(job_desc);
+				return -1;
+			}
+			job_desc->conn_type[i] = SvUV(*svp);
+		}
+	}
 	FETCH_FIELD(hv, job_desc, reboot, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, rotate, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, blrtsimage, charp, FALSE);

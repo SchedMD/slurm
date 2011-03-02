@@ -17,27 +17,36 @@
 int
 block_info_to_hv(block_info_t *block_info, HV *hv)
 {
+	int dim;
+	AV* av = NULL;
+
 	if(block_info->bg_block_id)
 		STORE_FIELD(hv, block_info, bg_block_id, charp);
 	if(block_info->blrtsimage)
 		STORE_FIELD(hv, block_info, blrtsimage, charp);
-	if (block_info->bp_inx) {
+	if (block_info->mp_inx) {
 		int j;
-		AV* av = newAV();
+		av = newAV();
 		for(j = 0; ; j += 2) {
-			if(block_info->bp_inx[j] == -1)
+			if(block_info->mp_inx[j] == -1)
 				break;
-			av_store(av, j, newSVuv(block_info->bp_inx[j]));
-			av_store(av, j+1, newSVuv(block_info->bp_inx[j+1]));
+			av_store(av, j, newSVuv(block_info->mp_inx[j]));
+			av_store(av, j+1, newSVuv(block_info->mp_inx[j+1]));
 		}
-		hv_store_sv(hv, "bp_inx", newRV_noinc((SV*)av));
+		hv_store_sv(hv, "mp_inx", newRV_noinc((SV*)av));
 	}
-	STORE_FIELD(hv, block_info, conn_type, uint16_t);
+
+	av = newAV();
+	for (dim=0; dim<HIGHEST_DIMENSIONS; dim++)
+		av_store(av, dim, newSVuv(block_info->conn_type[dim]));
+
+	hv_store_sv(hv, "conn_type", newRV_noinc((SV*)av));
+
 	if(block_info->ionodes)
 		STORE_FIELD(hv, block_info, ionodes, charp);
 	if (block_info->ionode_inx) {
 		int j;
-		AV* av = newAV();
+		av = newAV();
 		for(j = 0; ; j += 2) {
 			if(block_info->ionode_inx[j] == -1)
 				break;
@@ -79,20 +88,28 @@ hv_to_block_info(HV *hv, block_info_t *block_info)
 
 	FETCH_FIELD(hv, block_info, bg_block_id, charp, FALSE);
 	FETCH_FIELD(hv, block_info, blrtsimage, charp, FALSE);
-	svp = hv_fetch(hv, "bp_inx", 6, FALSE);
+	svp = hv_fetch(hv, "mp_inx", 6, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
 		av = (AV*)SvRV(*svp);
 		n = av_len(av) + 2; /* for trailing -1 */
-		block_info->bp_inx = xmalloc(n * sizeof(int));
+		block_info->mp_inx = xmalloc(n * sizeof(int));
 		for (i = 0 ; i < n-1; i += 2) {
-			block_info->bp_inx[i] = (int)SvIV(*(av_fetch(av, i, FALSE)));
-			block_info->bp_inx[i+1] = (int)SvIV(*(av_fetch(av, i+1 ,FALSE)));
+			block_info->mp_inx[i] = (int)SvIV(*(av_fetch(av, i, FALSE)));
+			block_info->mp_inx[i+1] = (int)SvIV(*(av_fetch(av, i+1 ,FALSE)));
 		}
-		block_info->bp_inx[n-1] = -1;
+		block_info->mp_inx[n-1] = -1;
 	} else {
 		/* nothing to do */
 	}
-	FETCH_FIELD(hv, block_info, conn_type, uint16_t, TRUE);
+	svp = hv_fetch(hv, "conn_type", 9, FALSE);
+	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
+		av = (AV*)SvRV(*svp);
+		n = av_len(av); /* for trailing -1 */
+		for (i = 0 ; i < HIGHEST_DIMENSIONS; i++)
+			block_info->conn_type[i] = SvUV(*(av_fetch(av, i, FALSE)));
+	} else {
+		/* nothing to do */
+	}
 	FETCH_FIELD(hv, block_info, ionodes, charp, FALSE);
 	svp = hv_fetch(hv, "ionode_inx", 10, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
@@ -200,20 +217,27 @@ hv_to_update_block_msg(HV *hv, update_block_msg_t *update_msg)
 
 	FETCH_FIELD(hv, update_msg, bg_block_id, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, blrtsimage, charp, FALSE);
-	svp = hv_fetch(hv, "bp_inx", 6, FALSE);
+	svp = hv_fetch(hv, "mp_inx", 6, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
 		av = (AV*)SvRV(*svp);
 		n = av_len(av) + 2; /* for trailing -1 */
-		update_msg->bp_inx = xmalloc(n * sizeof(int));
+		update_msg->mp_inx = xmalloc(n * sizeof(int));
 		for (i = 0 ; i < n-1; i += 2) {
-			update_msg->bp_inx[i] = (int)SvIV(*(av_fetch(av, i, FALSE)));
-			update_msg->bp_inx[i+1] = (int)SvIV(*(av_fetch(av, i+1 ,FALSE)));
+			update_msg->mp_inx[i] = (int)SvIV(*(av_fetch(av, i, FALSE)));
+			update_msg->mp_inx[i+1] = (int)SvIV(*(av_fetch(av, i+1 ,FALSE)));
 		}
-		update_msg->bp_inx[n-1] = -1;
+		update_msg->mp_inx[n-1] = -1;
 	} else {
 		/* nothing to do */
 	}
-	FETCH_FIELD(hv, update_msg, conn_type, uint16_t, FALSE);
+	svp = hv_fetch(hv, "conn_type", 9, FALSE);
+	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
+		av = (AV*)SvRV(*svp);
+		for (i = 0 ; i < HIGHEST_DIMENSIONS; i++)
+			update_msg->conn_type[i] = SvUV(*(av_fetch(av, i, FALSE)));
+	} else {
+		/* nothing to do */
+	}
 	FETCH_FIELD(hv, update_msg, ionodes, charp, FALSE);
 	svp = hv_fetch(hv, "ionode_inx", 10, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
