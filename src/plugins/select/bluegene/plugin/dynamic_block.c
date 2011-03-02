@@ -316,8 +316,9 @@ extern List create_dynamic_block(List block_list,
 	itr = list_iterator_create(block_list);
 	itr2 = list_iterator_create(block_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		/* never check a block with a job running */
-		if (bg_record->job_running != NO_JOB_RUNNING)
+		/* never check a block being deleted or with a job running */
+		if (bg_record->free_cnt
+		    || bg_record->job_running != NO_JOB_RUNNING)
 			continue;
 
 		/* Here we are only looking for the first
