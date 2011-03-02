@@ -45,6 +45,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - If using OVERLAP mode fixed issue with multiple overlapping
     blocks in error mode.
  -- Fix for sacctmgr to display correctly default accounts.
+ -- scancel -s SIGKILL will always sent the RPC to the slurmctld rather than
+    the slurmd daemon(s). This insures that tasks in the process of getting
+    spawned are killed.
 
 * Changes in SLURM 2.2.2
 ========================
