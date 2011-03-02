@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 noinst_LTLIBRARIES = libblock_allocator.la
 libblock_allocator_la_SOURCES = block_allocator.c block_allocator.h
 
-libblock_allocator_la_LIBADD  = ../bgq_bl/libbridge_linker.la
+libblock_allocator_la_LIBADD  = ../bl_bgq/libbridge_linker.la
 
 libblock_allocator_la_LDFLAGS = $(LIB_LDFLAGS) -lm
 

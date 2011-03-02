@@ -43,7 +43,7 @@
 #include "bg_defined_block.h"
 
 #ifdef HAVE_BGQ
-# include "bgq_ba/block_allocator.h"
+# include "ba_bgq/block_allocator.h"
 #else
 # include "ba/block_allocator.h"
 #endif

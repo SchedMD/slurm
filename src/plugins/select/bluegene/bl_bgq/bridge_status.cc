@@ -37,7 +37,7 @@
 \*****************************************************************************/
 
 extern "C" {
-#include "../bgq_ba/block_allocator.h"
+#include "../ba_bgq/block_allocator.h"
 #include "../bg_core.h"
 #include "../bg_status.h"
 #include "src/slurmctld/proc_req.h"

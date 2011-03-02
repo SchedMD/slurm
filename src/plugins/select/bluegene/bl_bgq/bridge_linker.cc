@@ -37,7 +37,7 @@
 \*****************************************************************************/
 
 extern "C" {
-#include "../bgq_ba/block_allocator.h"
+#include "../ba_bgq/block_allocator.h"
 #include "../bg_record_functions.h"
 #include "src/common/parse_time.h"
 }

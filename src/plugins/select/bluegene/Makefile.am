@@ -44,9 +44,9 @@ block_allocator_lib  = ba/libblock_allocator.la
 endif
 
 if BGQ_LOADED
-SUBDIRS += bgq_bl bgq_ba
+SUBDIRS += bl_bgq ba_bgq
 
-block_allocator_lib  = bgq_ba/libblock_allocator.la
+block_allocator_lib  = ba_bgq/libblock_allocator.la
 
 # force link with g++
 nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx

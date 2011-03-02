@@ -469,9 +469,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/bluegene/ba/Makefile
+		 src/plugins/select/bluegene/ba_bgq/Makefile
 		 src/plugins/select/bluegene/bl/Makefile
-		 src/plugins/select/bluegene/bgq_ba/Makefile
-		 src/plugins/select/bluegene/bgq_bl/Makefile
+		 src/plugins/select/bluegene/bl_bgq/Makefile
 		 src/plugins/select/bluegene/sfree/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cray/Makefile

@@ -41,7 +41,7 @@ target_triplet = @target@
 @BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_1 = bl ba
 @BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_2 = libsched_if64.la
 @BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_3 = libsched_if.la
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_4 = bgq_bl bgq_ba
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_4 = bl_bgq ba_bgq
 @BLUEGENE_LOADED_TRUE@am__append_5 = bg_core.c bg_defined_block.c \
 @BLUEGENE_LOADED_TRUE@			bg_dynamic_block.c bg_job_place.c \
 @BLUEGENE_LOADED_TRUE@			bg_job_run.c bg_list_functions.c \
@@ -223,7 +223,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = sfree bl ba bgq_bl bgq_ba
+DIST_SUBDIRS = sfree bl ba bl_bgq ba_bgq
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -462,7 +462,7 @@ select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_SOURCES = libsched_if64.c
 @BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = bgq_ba/libblock_allocator.la
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba_bgq/libblock_allocator.la
 @BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba/libblock_allocator.la
 
 # force link with g++
