@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     job step within an existing job allocation.
  -- Modify init.d/slurm script to start multiple slurmd daemons per compute
     node if so configured. Patch from Matthieu Hautreux, CEA.
+ -- Change license data structure counters from uint16_t to uint32_t to support
+    larger license counts.
 
 * Changes in SLURM 2.3.0.pre2
 =============================

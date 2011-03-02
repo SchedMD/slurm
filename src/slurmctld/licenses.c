@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  licenses.c - Functions for handling cluster-wide consumable resources
  *****************************************************************************
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -121,7 +121,7 @@ static List _build_license_list(char *licenses, bool *valid)
 	tmp_str = xstrdup(licenses);
 	token = strtok_r(tmp_str, ",;", &last);
 	while (token && *valid) {
-		uint16_t num = 1;
+		uint32_t num = 1;
 		for (i=0; token[i]; i++) {
 			if (isspace(token[i])) {
 				*valid = false;
@@ -129,7 +129,7 @@ static List _build_license_list(char *licenses, bool *valid)
 			}
 			if (token[i] == '*') {
 				token[i++] = '\0';
-				num = (uint16_t)strtol(&token[i], &end_num,10);
+				num = (uint32_t)strtol(&token[i], &end_num,10);
 			}
 		}
 		if (num <= 0) {
@@ -262,7 +262,7 @@ extern List license_validate(char *licenses, bool *valid)
 			break;
 		} else if (license_entry->total > match->total) {
 			debug("job wants more %s licenses than configured",
-			     match->name);
+			      match->name);
 			*valid = false;
 			break;
 		}

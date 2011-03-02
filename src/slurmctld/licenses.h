@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  licenses.h - Definitions for handling cluster-wide consumable resources
  *****************************************************************************
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -44,8 +44,8 @@
 
 typedef struct licenses {
 	char *		name;		/* name associated with a license */
-	uint16_t	total;		/* total license configued */
-	uint16_t	used;		/* used licenses */
+	uint32_t	total;		/* total license configued */
+	uint32_t	used;		/* used licenses */
 } licenses_t;
 
 extern List license_list;
