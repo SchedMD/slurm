@@ -1042,18 +1042,28 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 static void
 _prolog_error(batch_job_launch_msg_t *req, int rc)
 {
-	char *err_name_ptr, err_name[128], path_name[MAXPATHLEN];
+	char *err_name_ptr, err_name[256], path_name[MAXPATHLEN];
+	char *fmt_char;
 	int fd;
 
-	if (req->std_err)
-		err_name_ptr = req->std_err;
-	else if (req->std_out)
-		err_name_ptr = req->std_out;
-	else {
+	if (req->std_err || req->std_out) {
+		if (req->std_err)
+			strncpy(err_name, req->std_err, sizeof(err_name));
+		else
+			strncpy(err_name, req->std_out, sizeof(err_name));
+		if ((fmt_char = strchr(err_name, (int) '%')) &&
+		    (fmt_char[1] == 'j') && !strchr(fmt_char+1, (int) '%')) {
+			char tmp_name[256];
+			fmt_char[1] = 'u';
+			snprintf(tmp_name, sizeof(tmp_name), err_name,
+				 req->job_id);
+			strncpy(err_name, tmp_name, sizeof(err_name));
+		}
+	} else {
 		snprintf(err_name, sizeof(err_name), "slurm-%u.out",
 			 req->job_id);
-		err_name_ptr = err_name;
 	}
+	err_name_ptr = err_name;
 	if (err_name_ptr[0] == '/')
 		snprintf(path_name, MAXPATHLEN, "%s", err_name_ptr);
 	else if (req->work_dir)
