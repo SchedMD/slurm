@@ -6672,7 +6672,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->time_limit != NO_VAL) {
-		if (IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
 			error_code = ESLURM_DISABLED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
 			debug("sched: update_job: new time limit identical to "
