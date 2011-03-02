@@ -56,17 +56,19 @@ Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBAccountingStorageEnforce\fR
-This controls what level of enforcement you want on associations when new
-jobs are submitted.  Valid options are any combination of \fIassociations\fR, \fIlimits\fR,
-and \fIwckeys\fR, or \fIall\fR for all things.  If limits is set associations is implied.
-If wckeys is set both limits and associations are implied along with
-TrackWckey being set.  By enforcing Associations no new job is allowed to run
-unless a corresponding association exists in the system.  If limits are
-enforced users can be limited by association to how many nodes or how long
-jobs can run or other limits.  With wckeys enforced jobs will not be scheduled
-unless a valid workload characterization key is specified.  This value may not
-be reset via "scontrol reconfig". It only takes effect upon restart
-of the slurmctld daemon.
+This controls what level of association\-based enforcement to impose
+on job submissions.  Valid options are any combination of
+\fIassociations\fR, \fIlimits\fR, \fIqos\fR, and \fIwckeys\fR, or
+\fIall\fR for all things.  If limits, qos, or wckeys are set,
+associations will automatically be set.  In addition, if wckeys is
+set, TrackWCKey will automatically be set.  By enforcing Associations
+no new job is allowed to run unless a corresponding association exists
+in the system.  If limits are enforced users can be limited by
+association to whatever job size or run time limits are defined.  With
+qos and/or wckeys enforced jobs will not be scheduled unless a valid
+qos and/or workload characterization key is specified.  When
+\fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
+daemon is required (not just a "scontrol reconfig").
 
 .TP
 \fBAccountingStorageHost\fR
