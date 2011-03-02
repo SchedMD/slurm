@@ -111,8 +111,10 @@ typedef struct {
  *
  */
 typedef struct {
+#ifdef HAVE_BG_L_P
 	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
 	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
+#endif
 	uint16_t usage;
 } ba_switch_t;
 
@@ -125,16 +127,12 @@ typedef struct block_allocator_mp {
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
 	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
-	/* color of letter used in smap */
-	int color;
 	/* coordinates of midplane */
 	uint16_t coord[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane in str format */
 	char coord_str[HIGHEST_DIMENSIONS+1];
 	/* midplane index used for easy look up of the miplane */
 	int index;
-	/* letter used in smap */
-	char letter;
 	/* rack-midplane location. */
 	char *loc;
 //	int phys_x;	// no longer needed

@@ -128,11 +128,18 @@ extern List create_dynamic_block(List block_list,
 
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK) {
-					char *start_geo =
-						give_geo(bg_record->start);
-					char *geo =
-						give_geo(bg_record->geo);
-
+					int dim;
+					char start_geo[SYSTEM_DIMENSIONS+1];
+					char geo[SYSTEM_DIMENSIONS+1];
+					for (dim=0; dim<SYSTEM_DIMENSIONS;
+					     dim++) {
+						start_geo[dim] = alpha_num[
+							bg_record->start[dim]];
+						geo[dim] = alpha_num[
+							bg_record->geo[dim]];
+					}
+					start_geo[dim] = '\0';
+					geo[dim] = '\0';
 					info("adding %s(%s) %s %s %s %u",
 					     bg_record->bg_block_id,
 					     bg_record->nodes,
@@ -140,8 +147,6 @@ extern List create_dynamic_block(List block_list,
 						     bg_record->state),
 					     start_geo, geo,
 					     bg_record->node_cnt);
-					xfree(start_geo);
-					xfree(geo);
 				}
 				if (check_and_set_mp_list(
 					    bg_record->ba_mp_list)
@@ -198,7 +203,7 @@ extern List create_dynamic_block(List block_list,
 		bit_not(bitmap);
 		unusable_nodes = bitmap2node_name(bitmap);
 
-		//info("not using %s", nodes);
+		//info("not using %s", unusable_nodes);
 		removable_set_mps(unusable_nodes);
 
 		FREE_NULL_BITMAP(bitmap);
@@ -337,7 +342,8 @@ extern List create_dynamic_block(List block_list,
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		bool is_small = 0;
 		/* never check a block with a job running */
-		if (bg_record->job_running != NO_JOB_RUNNING)
+		if (bg_record->free_cnt
+		    || bg_record->job_running != NO_JOB_RUNNING)
 			continue;
 
 		/* Here we are only looking for the first
@@ -369,7 +375,8 @@ extern List create_dynamic_block(List block_list,
 		}
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-			info("removing %s for request %d",
+			info("removing %s(%s) for request %d",
+			     bg_record->bg_block_id,
 			     bg_record->nodes, request->size);
 
 		remove_block(bg_record->ba_mp_list, is_small);

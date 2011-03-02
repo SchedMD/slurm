@@ -344,10 +344,17 @@ static bg_record_t *_find_matching_block(List block_list,
 		 * SLURM block not available to this job.
 		 */
 		if (!bit_super_set(bg_record->bitmap, slurm_block_bitmap)) {
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
+				char *temp = bitmap2node_name(
+					bg_record->bitmap);
+				char *temp2 = bitmap2node_name(
+					slurm_block_bitmap);
 				info("bg block %s has nodes not "
-				     "usable by this job",
-				     bg_record->bg_block_id);
+				     "usable by this job %s %s",
+				     bg_record->bg_block_id, temp, temp2);
+				xfree(temp);
+				xfree(temp2);
+			}
 			continue;
 		}
 
@@ -554,8 +561,10 @@ static int _check_for_booted_overlapping_blocks(
 				}
 			}
 
-			if ((found_record->job_running != NO_JOB_RUNNING)
-			    || (found_record->state == BG_BLOCK_ERROR)) {
+			if (!SELECT_IS_CHECK_FULL_SET(query_mode)
+			    && ((found_record->job_running != NO_JOB_RUNNING)
+				|| (found_record->state
+				    == BG_BLOCK_ERROR))) {
 				if ((found_record->job_running
 				     == BLOCK_ERROR_STATE)
 				    || (found_record->state
@@ -565,16 +574,15 @@ static int _check_for_booted_overlapping_blocks(
 					      "is in an error state.",
 					      bg_record->bg_block_id,
 					      found_record->bg_block_id);
-				else
-					if (bg_conf->slurm_debug_flags
-					    & DEBUG_FLAG_BG_PICK)
-						info("can't use %s, there is "
-						     "a job (%d) running on "
-						     "an overlapping "
-						     "block %s",
-						     bg_record->bg_block_id,
-						     found_record->job_running,
-						     found_record->bg_block_id);
+				else if (bg_conf->slurm_debug_flags
+					 & DEBUG_FLAG_BG_PICK)
+					info("can't use %s, there is "
+					     "a job (%d) running on "
+					     "an overlapping "
+					     "block %s",
+					     bg_record->bg_block_id,
+					     found_record->job_running,
+					     found_record->bg_block_id);
 
 				if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 					List tmp_list = list_create(NULL);
@@ -1532,6 +1540,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	sprint_select_jobinfo(job_ptr->select_jobinfo->data,
 			      buf, sizeof(buf),
 			      SELECT_PRINT_MIXED);
+
 	debug("bluegene:submit_job: %u mode=%d %s nodes=%u-%u-%u",
 	      job_ptr->job_id, local_mode, buf,
 	      min_nodes, req_nodes, max_nodes);

@@ -263,12 +263,10 @@ int main(int argc, char** argv)
 				for(d=startd;d<endd;d++) {
 					ba_mp_t *curr_mp =
 						&ba_main_grid[a][b][c][d];
-					info("Node %c%c%c%c Used = %d "
-					     "Letter = %c",
+					info("Node %c%c%c%c Used = %d",
 					     alpha_num[a],alpha_num[b],
 					     alpha_num[c],alpha_num[d],
-					     curr_mp->used,
-					     curr_mp->letter);
+					     curr_mp->used);
 					for(dim=0; dim<4; dim++) {
 						info("\tDim %d usage is %s ",
 						     dim,

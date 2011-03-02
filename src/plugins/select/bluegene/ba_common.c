@@ -417,6 +417,7 @@ extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps)
 		}
 #endif
 		ba_mp->axis_switch[i].usage = BG_SWITCH_NONE;
+		ba_mp->alter_switch[i].usage = BG_SWITCH_NONE;
 	}
 }
 

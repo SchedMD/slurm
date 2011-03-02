@@ -239,10 +239,9 @@ int main(int argc, char** argv)
 		for(y=starty;y<endy;y++) {
 			for(z=startz;z<endz;z++) {
 				ba_mp_t *curr_node = &(ba_main_grid[x][y][z]);
-				info("Node %c%c%c Used = %d Letter = %c",
+				info("Node %c%c%c Used = %d",
 				     alpha_num[x],alpha_num[y],alpha_num[z],
-				     curr_node->used,
-				     curr_node->letter);
+				     curr_node->used);
 				for(dim=0;dim<1;dim++) {
 					info("Dim %d",dim);
 					ba_switch_t *wire =

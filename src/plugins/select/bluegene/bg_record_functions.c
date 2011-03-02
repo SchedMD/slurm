@@ -307,6 +307,10 @@ extern List copy_bg_list(List in_list)
 			error("trying to copy a bad record");
 			continue;
 		}
+		/* we don't care about blocks being freed */
+		/* if (bg_record->free_cnt) */
+		/* 	continue; */
+
 		new_record = xmalloc(sizeof(bg_record_t));
 		new_record->original = bg_record;
 		copy_bg_record(bg_record, new_record);

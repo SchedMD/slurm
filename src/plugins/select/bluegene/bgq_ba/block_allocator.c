@@ -270,14 +270,8 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
 		ba_init(NULL, 1);
 	}
 
-#ifdef HAVE_BGQ
 	debug2("ba_update_mp_state: new state of [%s] is %s",
 	       ba_mp->coord_str, node_state_string(state));
-#else
-	debug2("ba_update_mp_state: new state of [%d] is %s",
-	       ba_mp->coord[A],
-	       node_state_string(state));
-#endif
 
 	/* basically set the mp as used */
 	if ((mp_base_state == NODE_STATE_DOWN)
@@ -348,23 +342,48 @@ extern int remove_block(List mps, bool is_small)
 			[curr_ba_mp->coord[Y]]
 			[curr_ba_mp->coord[Z]];
 
-		ba_mp->used = false;
+		ba_mp->used &= (~BA_MP_USED_TRUE);
+		ba_mp->used &= (~BA_MP_USED_ALTERED_PASS);
+
 		/* Small blocks don't use wires, and only have 1 mp,
 		   so just break. */
+		info("remove_block: %s state now %d",
+		     ba_mp->coord_str, ba_mp->used);
+
 		if (is_small)
 			break;
-		for(dim=0; dim<cluster_dims; dim++) {
+		for (dim=0; dim<cluster_dims; dim++) {
 			if (curr_ba_mp == ba_mp) {
 				/* Remove the usage that was altered */
+				info("remove_block: %s(%d) %s removing %s",
+				     ba_mp->coord_str, dim,
+				     ba_switch_usage_str(
+					     ba_mp->axis_switch[dim].usage),
+				     ba_switch_usage_str(
+					     ba_mp->alter_switch[dim].usage));
 				ba_mp->axis_switch[dim].usage &=
 					(~ba_mp->alter_switch[dim].usage);
-				ba_mp->alter_switch[dim].usage =
-					BG_SWITCH_NONE;
+				info("remove_block: %s(%d) is now at %s",
+				     ba_mp->coord_str, dim,
+				     ba_switch_usage_str(
+					     ba_mp->axis_switch[dim].usage));
 			} else {
+				info("remove_block: 2 %s(%d) %s %s removing %s",
+				     ba_mp->coord_str, dim,
+				     curr_ba_mp->coord_str,
+				     ba_switch_usage_str(
+					     ba_mp->axis_switch[dim].usage),
+				     ba_switch_usage_str(
+					     curr_ba_mp->axis_switch[dim].usage));
 				/* Just remove the usage set here */
 				ba_mp->axis_switch[dim].usage &=
 					(~curr_ba_mp->axis_switch[dim].usage);
+				info("remove_block: 2 %s(%d) is now at %s",
+				     ba_mp->coord_str, dim,
+				     ba_switch_usage_str(
+					     ba_mp->axis_switch[dim].usage));
 			}
+			//ba_mp->alter_switch[dim].usage = BG_SWITCH_NONE;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -388,8 +407,6 @@ extern int remove_block(List mps, bool is_small)
 extern int check_and_set_mp_list(List mps)
 {
 	int rc = SLURM_ERROR;
-
-#ifdef HAVE_BGQ
 	int i;
 	ba_switch_t *ba_switch = NULL, *curr_ba_switch = NULL;
 	ba_mp_t *ba_mp = NULL, *curr_ba_mp = NULL;
@@ -424,17 +441,23 @@ extern int check_and_set_mp_list(List mps)
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("check_and_set_mp_list: "
 					     "I have already been to "
-					     "this mp %s %s",
+					     "this mp %s %s %d %d",
 					     ba_mp->coord_str,
 					     node_state_string(
-						     curr_ba_mp->state));
+						     curr_ba_mp->state),
+					     ba_mp->used, curr_ba_mp->used);
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 		}
 
 		if (ba_mp->used)
-			curr_ba_mp->used = BA_MP_USED_TRUE;
+			curr_ba_mp->used = ba_mp->used;
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("check_and_set_mp_list: "
+			     "%s is used ?= %d %d",
+			     curr_ba_mp->coord_str,
+			     curr_ba_mp->used, ba_mp->used);
 		for(i=0; i<cluster_dims; i++) {
 			ba_switch = &ba_mp->axis_switch[i];
 			curr_ba_switch = &curr_ba_mp->axis_switch[i];
@@ -446,8 +469,8 @@ extern int check_and_set_mp_list(List mps)
 			if (ba_switch->usage & curr_ba_switch->usage) {
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("check_and_set_mp_list: "
-					     "%s dim %d is already in "
-					     "use the way we want to use it."
+					     "%s(%d) is already in "
+					     "use the way we want to use it.  "
 					     "%s already at %s",
 					     ba_mp->coord_str, i,
 					     ba_switch_usage_str(
@@ -460,7 +483,7 @@ extern int check_and_set_mp_list(List mps)
 
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("check_and_set_mp_list: "
-				     "setting %s dim %d to from %s to %s",
+				     "setting %s(%d) to from %s to %s",
 				     ba_mp->coord_str, i,
 				     ba_switch_usage_str(curr_ba_switch->usage),
 				     ba_switch_usage_str(curr_ba_switch->usage
@@ -471,7 +494,7 @@ extern int check_and_set_mp_list(List mps)
 	rc = SLURM_SUCCESS;
 end_it:
 	list_iterator_destroy(itr);
-#endif
+
 	return rc;
 }
 
@@ -542,8 +565,10 @@ extern char *set_bg_block(List results, uint16_t *start,
 		     conn_type[A]);
 
 	if (conn_type[A] >= SELECT_SMALL) {
+		if (_mp_used(ba_mp, 0))
+			goto end_it;
 		/* adding the ba_mp and ending */
-		ba_mp->used = BA_MP_USED_TRUE;
+		ba_mp->used |= BA_MP_USED_TRUE;
 		if (results)
 			name = _copy_from_main(main_mps, results);
 		else
@@ -637,34 +662,38 @@ extern void reset_ba_system(bool track_down_mps)
  */
 extern int removable_set_mps(char *mps)
 {
-#ifdef HAVE_BGQ
-	int j=0, number;
-	int a,x;
-	int y,z;
+	int j=0;
+	int dim;
 	int start[cluster_dims];
         int end[cluster_dims];
 	int coords[cluster_dims];
-	char *p = '\0';
 
 	if (!mps)
 		return SLURM_ERROR;
 
 	while (mps[j] != '\0') {
-		if ((mps[j] == '[' || mps[j] == ',')
-		    && (mps[j+10] == ']' || mps[j+8] == ',')
-		    && (mps[j+5] == 'x' || mps[j+4] == '-')) {
+		int mid = j   + cluster_dims + 1;
+		int fin = mid + cluster_dims + 1;
+		if (((mps[j] == '[') || (mps[j] == ','))
+		    && ((mps[mid] == 'x') || (mps[mid] == '-'))
+		    && ((mps[fin] == ']') || (mps[fin] == ','))) {
+			static char start_char[SYSTEM_DIMENSIONS+1],
+				end_char[SYSTEM_DIMENSIONS+1];
 
-			j++;
-			number = xstrntol(mps + j, &p, cluster_dims,
-					  cluster_base);
-			hostlist_parse_int_to_array(
-				number, start, cluster_dims, cluster_base);
-			j += 4;
-			number = xstrntol(mps + j, &p, cluster_dims,
-					  cluster_base);
-			hostlist_parse_int_to_array(
-				number, end, cluster_dims, cluster_base);
-			j += 3;
+			j++;	/* Skip leading '[' or ',' */
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
+				start[dim] = _coord(mps[j]);
+			j++;	/* Skip middle 'x' or '-' */
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
+				end[dim] = _coord(mps[j]);
+			for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
+				start_char[dim] = alpha_num[start[dim]];
+				end_char[dim] = alpha_num[end[dim]];
+			}
+			start_char[dim] = '\0';
+			end_char[dim] = '\0';
+			info("_internal_removable_set_mps: setting %s x %s",
+			     start_char, end_char);
 
 			_internal_removable_set_mps(A, start, end, coords, 1);
 
@@ -673,17 +702,12 @@ extern int removable_set_mps(char *mps)
 			j--;
 		} else if ((mps[j] >= '0' && mps[j] <= '9')
 			   || (mps[j] >= 'A' && mps[j] <= 'D')) {
-			number = xstrntol(mps + j, &p, cluster_dims,
-					  cluster_base);
-			hostlist_parse_int_to_array(
-				number, start, cluster_dims, cluster_base);
-			a = start[A];
-			x = start[X];
-			y = start[Y];
-			z = start[Z];
-			j+=3;
-			if (ba_main_grid[a][x][y][z].used == BA_MP_USED_FALSE)
-				ba_main_grid[a][x][y][z].used = BA_MP_USED_TEMP;
+			ba_mp_t *curr_mp;
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
+				start[dim] = _coord(mps[j]);
+
+			curr_mp = coord2ba_mp(start);
+			curr_mp->used |= BA_MP_USED_TEMP;
 
 			if (mps[j] != ',')
 				break;
@@ -691,7 +715,6 @@ extern int removable_set_mps(char *mps)
 		}
 		j++;
 	}
-#endif
  	return SLURM_SUCCESS;
 }
 
@@ -701,11 +724,18 @@ extern int removable_set_mps(char *mps)
  */
 extern int reset_all_removed_mps()
 {
-	int start[cluster_dims];
-  	int coords[cluster_dims];
+	static int start[SYSTEM_DIMENSIONS];
+	static int end[SYSTEM_DIMENSIONS];
+	static int dim = 0;
+	int coords[cluster_dims];
 
-	memset(start, 0, sizeof(start));
-	_internal_removable_set_mps(A, start, DIM_SIZE, coords, 0);
+	if (!dim) {
+		memset(start, 0, sizeof(start));
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+			end[dim] = DIM_SIZE[dim] - 1;
+	}
+
+	_internal_removable_set_mps(A, start, end, coords, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -723,17 +753,16 @@ extern int reset_all_removed_mps()
  */
 extern int set_all_mps_except(char *mps)
 {
+	int dim;
 	int a, x, y, z;
 	hostlist_t hl = hostlist_create(mps);
 	char *host = NULL, *numeric = NULL;
-	int number, coords[HIGHEST_DIMENSIONS];
-	char *p = '\0';
+	int coords[SYSTEM_DIMENSIONS];
 
 	memset(coords, 0, sizeof(coords));
 
 	while ((host = hostlist_shift(hl))){
 		numeric = host;
-		number = 0;
 		while (numeric) {
 			if (numeric[0] < '0' || numeric[0] > 'D'
 			    || (numeric[0] > '9'
@@ -741,12 +770,10 @@ extern int set_all_mps_except(char *mps)
 				numeric++;
 				continue;
 			}
-			number = xstrntol(numeric, &p, cluster_dims,
-					  cluster_base);
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, numeric++)
+				coords[dim] = _coord(numeric[0]);
 			break;
 		}
-		hostlist_parse_int_to_array(
-			number, coords, cluster_dims, cluster_base);
 		ba_main_grid[coords[A]][coords[X]][coords[Y]][coords[Z]].state
 			|= NODE_RESUME;
 		free(host);
@@ -763,11 +790,9 @@ extern int set_all_mps_except(char *mps)
 						 * mark as unused */
 						ba_main_grid[a][x][y][z].state
 							&= ~NODE_RESUME;
-					} else if (!ba_main_grid
-						   [a][x][y][z].used) {
+					} else
 						ba_main_grid[a][x][y][z].used
-							= BA_MP_USED_TEMP;
-					}
+							|= BA_MP_USED_TEMP;
 				}
 
  	return SLURM_SUCCESS;
@@ -970,7 +995,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 		ba_mp->coord[Y] = geo[Y];
 		ba_mp->coord[Z] = geo[Z];
 
-		ba_mp->used = BA_MP_USED_TRUE;
+		ba_mp->used |= BA_MP_USED_TRUE;
 		return results;
 	}
 	for (i=0; i<switch_cnt; i++) {
@@ -1108,7 +1133,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 					      alpha_num[geo[Z]]);
 					goto end_it;
 				}
-				ba_mp->used = BA_MP_USED_TRUE;
+				ba_mp->used |= BA_MP_USED_TRUE;
 			}
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("connection going from %d -> %d",
@@ -1215,6 +1240,7 @@ extern char *ba_switch_usage_str(uint16_t usage)
 		return "In";
 	default:
 		error("unknown switch usage %u", usage);
+		xassert(0);
 		break;
 	}
 	return "unknown";
@@ -1295,7 +1321,7 @@ static void _internal_removable_set_mps(int level, int *start,
 
 	if (level < cluster_dims) {
 		for (coords[level] = start[level];
-		     coords[level] < end[level];
+		     coords[level] <= end[level];
 		     coords[level]++) {
 			/* handle the outter dims here */
 			_internal_removable_set_mps(
@@ -1303,14 +1329,12 @@ static void _internal_removable_set_mps(int level, int *start,
 		}
 		return;
 	}
-
-	curr_mp = &ba_main_grid[coords[A]][coords[X]][coords[Y]][coords[Z]];
+	curr_mp = coord2ba_mp(coords);
 	if (mark) {
-		if (curr_mp->used == BA_MP_USED_FALSE)
-			curr_mp->used = BA_MP_USED_TEMP;
+		info("can't use %s", curr_mp->coord_str);
+		curr_mp->used |= BA_MP_USED_TEMP;
 	} else {
-		if (curr_mp->used == BA_MP_USED_TEMP)
-			curr_mp->used = BA_MP_USED_FALSE;
+		curr_mp->used &= (~BA_MP_USED_TEMP);
 	}
 }
 
@@ -1591,10 +1615,10 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 
 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 		info("_copy_ba_switch: "
-		     "adding from %s %s to %s",
-		     ba_switch_usage_str(orig_mp->alter_switch[dim].usage),
-		     orig_mp->coord_str,
-		     ba_switch_usage_str(ba_mp->alter_switch[dim].usage));
+		     "mp %s(%d) %s added %s",
+		     orig_mp->coord_str, dim,
+		     ba_switch_usage_str(ba_mp->alter_switch[dim].usage),
+		     ba_switch_usage_str(orig_mp->alter_switch[dim].usage));
 	ba_mp->alter_switch[dim].usage |= orig_mp->alter_switch[dim].usage;
 
 	return rc;
@@ -1690,11 +1714,16 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		/* This should never happen since we got here
 		   from an unused mp */
 		if (axis_switch->usage & BG_SWITCH_IN_PASS) {
-			info("got a bad axis_switch at %s %d %s",
+			info("got a bad axis_switch at %s %d %s %s",
+			     curr_mp->coord_str, dim,
+			     ba_switch_usage_str(axis_switch->usage),
+			     ba_switch_usage_str(alter_switch->usage));
+			xassert(0);
+		} else
+			info("good axis_switch at %s %d %s",
 			     curr_mp->coord_str, dim,
 			     ba_switch_usage_str(axis_switch->usage));
-			xassert(0);
-		}
+
 
 		if ((count < geometry) && !_mp_used(curr_mp, dim)) {
 			if (curr_mp->coord[dim] > *block_end)
@@ -2090,13 +2119,16 @@ static bool _mp_used(ba_mp_t* ba_mp, int dim)
 
 	/* if we've used this mp in another block already */
 	if (mp_strip_unaltered(ba_mp->used)
-	    || ba_mp->axis_switch[dim].usage & BG_SWITCH_WRAPPED) {
+	    || (ba_mp->axis_switch[dim].usage & BG_SWITCH_WRAPPED)
+	    || (ba_mp->alter_switch[dim].usage & BG_SWITCH_WRAPPED)) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("mp %s used in the %d dim (%d, %s)",
+			info("mp %s(%d) used (%d, %s/%s)",
 			     ba_mp->coord_str, dim,
 			     mp_strip_unaltered(ba_mp->used),
 			     ba_switch_usage_str(
-				     ba_mp->axis_switch[dim].usage));
+				     ba_mp->axis_switch[dim].usage),
+			     ba_switch_usage_str(
+				     ba_mp->alter_switch[dim].usage));
 		return true;
 	}
 	return false;
@@ -2113,10 +2145,11 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim)
 	xassert(ba_mp);
 
 	/* If the mp is already used just check the PASS_USED. */
-	if (ba_mp->axis_switch[dim].usage & BG_SWITCH_PASS_USED) {
+	if ((ba_mp->axis_switch[dim].usage & BG_SWITCH_PASS_USED)
+	    || (ba_mp->alter_switch[dim].usage & BG_SWITCH_PASS_USED)) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("passthroughs used in the %d dim on mp %s (%s)",
-			     dim, ba_mp->coord_str, ba_switch_usage_str(
+			info("mp %s(%d) has passthroughs used (%s)",
+			     ba_mp->coord_str, dim, ba_switch_usage_str(
 				     ba_mp->axis_switch[dim].usage));
 		return true;
 	}
