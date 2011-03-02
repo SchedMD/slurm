@@ -49,6 +49,7 @@ uint32_t cluster_flags = 0;
 uint16_t ba_deny_pass = 0;
 
 bool ba_initialized = false;
+uint32_t ba_debug_flags = 0;
 
 static int _coord(char coord)
 {
@@ -93,6 +94,33 @@ static void _ba_node_xlate_to_1d(int *offset_1d, int *full_offset,
 		map_offset += full_offset[i];
 	}
 	*offset_1d = map_offset;
+}
+
+static void _internal_removable_set_mps(int level, int *start,
+					int *end, int *coords, bool mark)
+{
+	ba_mp_t *curr_mp;
+
+	if (level > cluster_dims)
+		return;
+
+	if (level < cluster_dims) {
+		for (coords[level] = start[level];
+		     coords[level] <= end[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			_internal_removable_set_mps(
+				level+1, start, end, coords, mark);
+		}
+		return;
+	}
+	curr_mp = coord2ba_mp(coords);
+	if (mark) {
+		//info("can't use %s", curr_mp->coord_str);
+		curr_mp->used |= BA_MP_USED_TEMP;
+	} else {
+		curr_mp->used &= (~BA_MP_USED_TEMP);
+	}
 }
 
 /**
@@ -789,3 +817,212 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 
 	return rc;
 }
+
+/*
+ * Used to set all midplanes in a special used state except the ones
+ * we are able to use in a new allocation.
+ *
+ * IN: hostlist of midplanes we do not want
+ * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
+ *
+ * Note: Need to call ba_reset_all_removed_mps before starting another
+ * allocation attempt after
+ */
+extern int ba_set_removable_mps(char *mps)
+{
+	int j=0;
+	int dim;
+	int start[cluster_dims];
+        int end[cluster_dims];
+	int coords[cluster_dims];
+
+	if (!mps)
+		return SLURM_ERROR;
+
+	memset(coords, 0, sizeof(coords));
+
+	while (mps[j] != '\0') {
+		int mid = j   + cluster_dims + 1;
+		int fin = mid + cluster_dims + 1;
+		if (((mps[j] == '[') || (mps[j] == ','))
+		    && ((mps[mid] == 'x') || (mps[mid] == '-'))
+		    && ((mps[fin] == ']') || (mps[fin] == ','))) {
+			/* static char start_char[SYSTEM_DIMENSIONS+1], */
+			/* 	end_char[SYSTEM_DIMENSIONS+1]; */
+
+			j++;	/* Skip leading '[' or ',' */
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
+				start[dim] = _coord(mps[j]);
+			j++;	/* Skip middle 'x' or '-' */
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
+				end[dim] = _coord(mps[j]);
+			/* for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) { */
+			/* 	start_char[dim] = alpha_num[start[dim]]; */
+			/* 	end_char[dim] = alpha_num[end[dim]]; */
+			/* } */
+			/* start_char[dim] = '\0'; */
+			/* end_char[dim] = '\0'; */
+			/* info("_internal_removable_set_mps: setting %s x %s", */
+			/*      start_char, end_char); */
+
+			_internal_removable_set_mps(0, start, end, coords, 1);
+
+			if (mps[j] != ',')
+				break;
+			j--;
+		} else if ((mps[j] >= '0' && mps[j] <= '9')
+			   || (mps[j] >= 'A' && mps[j] <= 'D')) {
+			ba_mp_t *curr_mp;
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
+				start[dim] = _coord(mps[j]);
+
+			curr_mp = coord2ba_mp(start);
+			curr_mp->used |= BA_MP_USED_TEMP;
+
+			if (mps[j] != ',')
+				break;
+			j--;
+		}
+		j++;
+	}
+ 	return SLURM_SUCCESS;
+}
+
+/*
+ * Resets the virtual system to the pervious state before calling
+ * removable_set_mps, or set_all_mps_except.
+ */
+extern int ba_reset_all_removed_mps()
+{
+	static int start[SYSTEM_DIMENSIONS];
+	static int end[SYSTEM_DIMENSIONS];
+	static int dim = 0;
+	static int *dims = NULL;
+	int coords[SYSTEM_DIMENSIONS];
+
+	if (!dim) {
+		dims = select_g_ba_get_dims();
+		xassert(dims);
+		memset(start, 0, sizeof(start));
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+			end[dim] = dims[dim] - 1;
+	}
+
+	memset(coords, 0, sizeof(coords));
+	_internal_removable_set_mps(0, start, end, coords, 0);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * set the mp in the internal configuration as in, or not in use,
+ * along with the current state of the mp.
+ *
+ * IN ba_mp: ba_mp_t to update state
+ * IN state: new state of ba_mp_t
+ */
+extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
+{
+	uint16_t mp_base_state = state & NODE_STATE_BASE;
+	uint16_t mp_flags = state & NODE_STATE_FLAGS;
+
+	if (!ba_initialized){
+		error("Error, configuration not initialized, "
+		      "calling ba_init(NULL, 1)");
+		ba_init(NULL, 1);
+	}
+
+	debug2("ba_update_mp_state: new state of [%s] is %s",
+	       ba_mp->coord_str, node_state_string(state));
+
+	/* basically set the mp as used */
+	if ((mp_base_state == NODE_STATE_DOWN)
+	    || (mp_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
+		ba_mp->used = BA_MP_USED_TRUE;
+	else
+		ba_mp->used = BA_MP_USED_FALSE;
+
+	ba_mp->state = state;
+}
+
+/*
+ * find a rack/midplace location
+ */
+extern char *find_mp_rack_mid(char* coords)
+{
+	ba_mp_t *curr_mp;
+
+	if(!(curr_mp = str2ba_mp(coords)))
+		return NULL;
+
+	bridge_setup_system();
+
+	return curr_mp->loc;
+}
+
+/* */
+extern int validate_coord(uint16_t *coord)
+{
+	int dim, i;
+	char coord_str[cluster_dims+1];
+	char dim_str[cluster_dims+1];
+	static int *dims = NULL;
+
+	if (!dims)
+		dims = select_g_ba_get_dims();
+	xassert(!dims);
+
+	for (dim=0; dim < cluster_dims; dim++) {
+		if (coord[dim] >= dims[dim]) {
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+				for (i=0; i<cluster_dims; i++) {
+					coord_str[i] = alpha_num[coord[i]];
+					dim_str[i] = alpha_num[dims[i]];
+				}
+				coord_str[i] = '\0';
+				dim_str[i] = '\0';
+
+				info("got coord %s greater than what "
+				     "we are using %s", coord_str, dim_str);
+			}
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+extern char *ba_switch_usage_str(uint16_t usage)
+{
+	switch (usage) {
+	case BG_SWITCH_NONE:
+		return "None";
+	case BG_SWITCH_WRAPPED_PASS:
+		return "WrappedPass";
+	case BG_SWITCH_TORUS:
+		return "FullTorus";
+	case BG_SWITCH_PASS:
+		return "Passthrough";
+	case BG_SWITCH_WRAPPED:
+		return "Wrapped";
+	case (BG_SWITCH_OUT | BG_SWITCH_OUT_PASS):
+		return "OutLeaving";
+	case BG_SWITCH_OUT:
+		return "Out";
+	case (BG_SWITCH_IN | BG_SWITCH_IN_PASS):
+		return "InComming";
+	case BG_SWITCH_IN:
+		return "In";
+	default:
+		error("unknown switch usage %u", usage);
+		xassert(0);
+		break;
+	}
+	return "unknown";
+}
+
+extern void set_ba_debug_flags(uint32_t debug_flags)
+{
+	ba_debug_flags = debug_flags;
+}
+

@@ -85,7 +85,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 		      "Please check your slurm.conf.");
 	}
 	non_usable_nodes = bitmap2node_name(bitmap);
-	removable_set_mps(non_usable_nodes);
+	ba_set_removable_mps(non_usable_nodes);
 	FREE_NULL_BITMAP(bitmap);
 
 	slurm_mutex_lock(&block_state_mutex);
@@ -129,7 +129,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 
 				if (overlapped == LAYOUT_OVERLAP) {
 					reset_ba_system(false);
-					removable_set_mps(non_usable_nodes);
+					ba_set_removable_mps(non_usable_nodes);
 				}
 
 				/* we want the mps that aren't
@@ -168,7 +168,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						       "bluegene.conf file?",
 						       bg_record->bg_block_id);
 						list_iterator_destroy(itr);
-						reset_all_removed_mps();
+						ba_reset_all_removed_mps();
 						slurm_mutex_unlock(
 							&block_state_mutex);
 						xfree(non_usable_nodes);
@@ -186,7 +186,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						bg_record->start,
 						geo,
 						bg_record->conn_type);
-					reset_all_removed_mps();
+					ba_reset_all_removed_mps();
 					if (!name) {
 						error("I was unable to "
 						      "make the "

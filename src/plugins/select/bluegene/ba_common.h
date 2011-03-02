@@ -146,6 +146,7 @@ extern int cluster_dims;
 extern uint32_t cluster_flags;
 extern int cluster_base;
 extern bool ba_initialized;
+extern uint32_t ba_debug_flags;
 
 /*
  * Initialize internal structures by either reading previous block
@@ -314,16 +315,16 @@ extern void reset_ba_system(bool track_down_mps);
  * IN: hostlist of midplanes we do not want
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Note: Need to call reset_all_removed_mps before starting another
+ * Note: Need to call ba_reset_all_removed_mps before starting another
  * allocation attempt after
  */
-extern int removable_set_mps(char *mps);
+extern int ba_set_removable_mps(char *mps);
 
 /*
  * Resets the virtual system to the pervious state before calling
  * removable_set_mps, or set_all_mps_except.
  */
-extern int reset_all_removed_mps();
+extern int ba_reset_all_removed_mps();
 
 /*
  * IN: hostlist of midplanes we do not want

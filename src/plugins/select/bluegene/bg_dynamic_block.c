@@ -161,28 +161,32 @@ extern List create_dynamic_block(List block_list,
 					rc = SLURM_ERROR;
 					goto finished;
 				}
-			} else if (bg_conf->slurm_debug_flags
-				   & DEBUG_FLAG_BG_PICK) {
-				int dim;
-				char start_geo[SYSTEM_DIMENSIONS+1];
-				char geo[SYSTEM_DIMENSIONS+1];
-				for (dim=0; dim<SYSTEM_DIMENSIONS;
-				     dim++) {
-					start_geo[dim] = alpha_num[
-						bg_record->start[dim]];
-					geo[dim] = alpha_num[
-						bg_record->geo[dim]];
+			} else {
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK) {
+					int dim;
+					char start_geo[SYSTEM_DIMENSIONS+1];
+					char geo[SYSTEM_DIMENSIONS+1];
+					for (dim=0; dim<SYSTEM_DIMENSIONS;
+					     dim++) {
+						start_geo[dim] = alpha_num[
+							bg_record->start[dim]];
+						geo[dim] = alpha_num[
+							bg_record->geo[dim]];
+					}
+					start_geo[dim] = '\0';
+					geo[dim] = '\0';
+					info("not adding %s(%s) %s %s %s %u ",
+					     bg_record->bg_block_id,
+					     bg_record->nodes,
+					     bg_block_state_string(
+						     bg_record->state),
+					     start_geo,
+					     geo,
+					     bg_record->node_cnt);
 				}
-				start_geo[dim] = '\0';
-				geo[dim] = '\0';
-				info("not adding %s(%s) %s %s %s %u ",
-				     bg_record->bg_block_id,
-				     bg_record->nodes,
-				     bg_block_state_string(
-					     bg_record->state),
-				     start_geo,
-				     geo,
-				     bg_record->node_cnt);
+				/* just so we don't look at it later */
+				bg_record->free_cnt = -1;
 			}
 		}
 		list_iterator_destroy(itr);
@@ -204,7 +208,7 @@ extern List create_dynamic_block(List block_list,
 		unusable_nodes = bitmap2node_name(bitmap);
 
 		//info("not using %s", unusable_nodes);
-		removable_set_mps(unusable_nodes);
+		ba_set_removable_mps(unusable_nodes);
 
 		FREE_NULL_BITMAP(bitmap);
 	}
@@ -333,12 +337,12 @@ extern List create_dynamic_block(List block_list,
 		     request->size);
 	rc = SLURM_ERROR;
 
-	if (!list_count(block_list) || !my_block_list)
+	if (!list_count(my_block_list) || !my_block_list)
 		goto finished;
 
 	/*Try to put block starting in the smallest of the exisiting blocks*/
-	itr = list_iterator_create(block_list);
-	itr2 = list_iterator_create(block_list);
+	itr = list_iterator_create(my_block_list);
+	itr2 = list_iterator_create(my_block_list);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		bool is_small = 0;
 		/* never check a block with a job running */
@@ -360,8 +364,9 @@ extern List create_dynamic_block(List block_list,
 			   this midplane that have jobs running.
 			*/
 			while ((found_record = list_next(itr2))) {
-				if ((found_record->job_running
-				     != NO_JOB_RUNNING)
+				if (!found_record->free_cnt
+				    && (found_record->job_running
+					!= NO_JOB_RUNNING)
 				    && bit_overlap(bg_record->bitmap,
 						   found_record->bitmap)) {
 					found = 1;
@@ -382,7 +387,7 @@ extern List create_dynamic_block(List block_list,
 		remove_block(bg_record->ba_mp_list, is_small);
 		/* need to set any unusable nodes that this last block
 		   used */
-		removable_set_mps(unusable_nodes);
+		ba_set_removable_mps(unusable_nodes);
 		rc = SLURM_SUCCESS;
 		if (results)
 			list_flush(results);
@@ -423,7 +428,16 @@ setup_records:
 	}
 
 finished:
-	reset_all_removed_mps();
+	ba_reset_all_removed_mps();
+
+	/* reset the ones we mucked with */
+	itr = list_iterator_create(my_block_list);
+	while ((bg_record = (bg_record_t *) list_next(itr))) {
+		if (bg_record->free_cnt == -1)
+			bg_record->free_cnt = 0;
+	}
+	list_iterator_destroy(itr);
+
 
 	xfree(unusable_nodes);
 	xfree(request->save_name);

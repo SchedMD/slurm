@@ -308,8 +308,8 @@ extern List copy_bg_list(List in_list)
 			continue;
 		}
 		/* we don't care about blocks being freed */
-		/* if (bg_record->free_cnt) */
-		/* 	continue; */
+		if (bg_record->free_cnt)
+			continue;
 
 		new_record = xmalloc(sizeof(bg_record_t));
 		new_record->original = bg_record;

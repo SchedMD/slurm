@@ -75,15 +75,20 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (bg_record->magic == 0) {
-		error("block already destroyed");
+	if (bg_record->magic != BLOCK_MAGIC) {
+		error("block already destroyed %p", bg_record);
 		xassert(0);
 		return SLURM_ERROR;
 	}
 
 	bg_record->free_cnt--;
 
-	if (bg_record->free_cnt > 0) {
+	if (bg_record->free_cnt == -1) {
+		info("we got a negative 1 here for %s",
+		     bg_record->bg_block_id);
+		xassert(0);
+		return SLURM_SUCCESS;
+	} else if (bg_record->free_cnt) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("%d other are trying to destroy this block %s",
 			     bg_record->free_cnt, bg_record->bg_block_id);
@@ -778,7 +783,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			reset_ba_system(false);
 		}
 
-		removable_set_mps(non_usable_nodes);
+		ba_set_removable_mps(non_usable_nodes);
 		/* we want the mps that aren't
 		 * in this record to mark them as used
 		 */
@@ -799,7 +804,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 				    bg_record->start,
 				    geo,
 				    bg_record->conn_type);
-		reset_all_removed_mps();
+		ba_reset_all_removed_mps();
 
 		if (!name) {
 			error("I was unable to "

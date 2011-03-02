@@ -59,7 +59,6 @@
  *  on */
 ba_mp_t ****ba_main_grid = NULL;
 uint16_t *deny_pass = NULL;
-uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
@@ -73,10 +72,6 @@ static void _rotate_geo(uint16_t *req_geo, int rot_cnt);
 
 /* */
 static int _check_for_options(select_ba_request_t* ba_request);
-
-/* */
-static void _internal_removable_set_mps(int level, int *start,
-					int *end, int *coords, bool mark);
 
 /* */
 static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
@@ -247,42 +242,6 @@ extern int empty_null_destroy_list(void *arg, void *key)
 	return 1;
 }
 
-extern void set_ba_debug_flags(uint32_t debug_flags)
-{
-	ba_debug_flags = debug_flags;
-}
-
-/*
- * set the mp in the internal configuration as in, or not in use,
- * along with the current state of the mp.
- *
- * IN ba_mp: ba_mp_t to update state
- * IN state: new state of ba_mp_t
- */
-extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
-{
-	uint16_t mp_base_state = state & NODE_STATE_BASE;
-	uint16_t mp_flags = state & NODE_STATE_FLAGS;
-
-	if (!ba_initialized){
-		error("Error, configuration not initialized, "
-		      "calling ba_init(NULL, 1)");
-		ba_init(NULL, 1);
-	}
-
-	debug2("ba_update_mp_state: new state of [%s] is %s",
-	       ba_mp->coord_str, node_state_string(state));
-
-	/* basically set the mp as used */
-	if ((mp_base_state == NODE_STATE_DOWN)
-	    || (mp_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
-		ba_mp->used = BA_MP_USED_TRUE;
-	else
-		ba_mp->used = BA_MP_USED_FALSE;
-
-	ba_mp->state = state;
-}
-
 extern ba_mp_t *coord2ba_mp(int *coord)
 {
 	return &ba_main_grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
@@ -347,41 +306,41 @@ extern int remove_block(List mps, bool is_small)
 
 		/* Small blocks don't use wires, and only have 1 mp,
 		   so just break. */
-		info("remove_block: %s state now %d",
-		     ba_mp->coord_str, ba_mp->used);
+		/* info("remove_block: %s state now %d", */
+		/*      ba_mp->coord_str, ba_mp->used); */
 
 		if (is_small)
 			break;
 		for (dim=0; dim<cluster_dims; dim++) {
 			if (curr_ba_mp == ba_mp) {
 				/* Remove the usage that was altered */
-				info("remove_block: %s(%d) %s removing %s",
-				     ba_mp->coord_str, dim,
-				     ba_switch_usage_str(
-					     ba_mp->axis_switch[dim].usage),
-				     ba_switch_usage_str(
-					     ba_mp->alter_switch[dim].usage));
+				/* info("remove_block: %s(%d) %s removing %s", */
+				/*      ba_mp->coord_str, dim, */
+				/*      ba_switch_usage_str( */
+				/* 	     ba_mp->axis_switch[dim].usage), */
+				/*      ba_switch_usage_str( */
+				/* 	     ba_mp->alter_switch[dim].usage)); */
 				ba_mp->axis_switch[dim].usage &=
 					(~ba_mp->alter_switch[dim].usage);
-				info("remove_block: %s(%d) is now at %s",
-				     ba_mp->coord_str, dim,
-				     ba_switch_usage_str(
-					     ba_mp->axis_switch[dim].usage));
+				/* info("remove_block: %s(%d) is now at %s", */
+				/*      ba_mp->coord_str, dim, */
+				/*      ba_switch_usage_str( */
+				/* 	     ba_mp->axis_switch[dim].usage)); */
 			} else {
-				info("remove_block: 2 %s(%d) %s %s removing %s",
-				     ba_mp->coord_str, dim,
-				     curr_ba_mp->coord_str,
-				     ba_switch_usage_str(
-					     ba_mp->axis_switch[dim].usage),
-				     ba_switch_usage_str(
-					     curr_ba_mp->axis_switch[dim].usage));
+				/* info("remove_block: 2 %s(%d) %s %s removing %s", */
+				/*      ba_mp->coord_str, dim, */
+				/*      curr_ba_mp->coord_str, */
+				/*      ba_switch_usage_str( */
+				/* 	     ba_mp->axis_switch[dim].usage), */
+				/*      ba_switch_usage_str( */
+				/* 	     curr_ba_mp->axis_switch[dim].usage)); */
 				/* Just remove the usage set here */
 				ba_mp->axis_switch[dim].usage &=
 					(~curr_ba_mp->axis_switch[dim].usage);
-				info("remove_block: 2 %s(%d) is now at %s",
-				     ba_mp->coord_str, dim,
-				     ba_switch_usage_str(
-					     ba_mp->axis_switch[dim].usage));
+				/* info("remove_block: 2 %s(%d) is now at %s", */
+				/*      ba_mp->coord_str, dim, */
+				/*      ba_switch_usage_str( */
+				/* 	     ba_mp->axis_switch[dim].usage)); */
 			}
 			//ba_mp->alter_switch[dim].usage = BG_SWITCH_NONE;
 		}
@@ -651,99 +610,6 @@ extern void reset_ba_system(bool track_down_mps)
 }
 
 /*
- * Used to set all midplanes in a special used state except the ones
- * we are able to use in a new allocation.
- *
- * IN: hostlist of midplanes we do not want
- * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
- *
- * Note: Need to call reset_all_removed_mps before starting another
- * allocation attempt after
- */
-extern int removable_set_mps(char *mps)
-{
-	int j=0;
-	int dim;
-	int start[cluster_dims];
-        int end[cluster_dims];
-	int coords[cluster_dims];
-
-	if (!mps)
-		return SLURM_ERROR;
-
-	memset(coords, 0, sizeof(coords));
-
-	while (mps[j] != '\0') {
-		int mid = j   + cluster_dims + 1;
-		int fin = mid + cluster_dims + 1;
-		if (((mps[j] == '[') || (mps[j] == ','))
-		    && ((mps[mid] == 'x') || (mps[mid] == '-'))
-		    && ((mps[fin] == ']') || (mps[fin] == ','))) {
-			static char start_char[SYSTEM_DIMENSIONS+1],
-				end_char[SYSTEM_DIMENSIONS+1];
-
-			j++;	/* Skip leading '[' or ',' */
-			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
-				start[dim] = _coord(mps[j]);
-			j++;	/* Skip middle 'x' or '-' */
-			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
-				end[dim] = _coord(mps[j]);
-			for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
-				start_char[dim] = alpha_num[start[dim]];
-				end_char[dim] = alpha_num[end[dim]];
-			}
-			start_char[dim] = '\0';
-			end_char[dim] = '\0';
-			info("_internal_removable_set_mps: setting %s x %s",
-			     start_char, end_char);
-
-			_internal_removable_set_mps(A, start, end, coords, 1);
-
-			if (mps[j] != ',')
-				break;
-			j--;
-		} else if ((mps[j] >= '0' && mps[j] <= '9')
-			   || (mps[j] >= 'A' && mps[j] <= 'D')) {
-			ba_mp_t *curr_mp;
-			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
-				start[dim] = _coord(mps[j]);
-
-			curr_mp = coord2ba_mp(start);
-			curr_mp->used |= BA_MP_USED_TEMP;
-
-			if (mps[j] != ',')
-				break;
-			j--;
-		}
-		j++;
-	}
- 	return SLURM_SUCCESS;
-}
-
-/*
- * Resets the virtual system to the pervious state before calling
- * removable_set_mps, or set_all_mps_except.
- */
-extern int reset_all_removed_mps()
-{
-	static int start[SYSTEM_DIMENSIONS];
-	static int end[SYSTEM_DIMENSIONS];
-	static int dim = 0;
-	int coords[SYSTEM_DIMENSIONS];
-
-	if (!dim) {
-		memset(start, 0, sizeof(start));
-		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
-			end[dim] = DIM_SIZE[dim] - 1;
-	}
-
-	memset(coords, 0, sizeof(coords));
-	_internal_removable_set_mps(A, start, end, coords, 0);
-
-	return SLURM_SUCCESS;
-}
-
-/*
  * IN: hostlist of midplanes we want to be able to use, mark all
  *     others as used.
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
@@ -918,22 +784,6 @@ cleanup:
 	else
 		return NULL;
 }
-
-/*
- * find a rack/midplace location
- */
-extern char *find_mp_rack_mid(char* coords)
-{
-	ba_mp_t *curr_mp;
-
-	if(!(curr_mp = str2ba_mp(coords)))
-		return NULL;
-
-	bridge_setup_system();
-
-	return curr_mp->loc;
-}
-
 
 /*
  * get the used wires for a block out of the database and return the
@@ -1183,72 +1033,6 @@ end_it:
 
 }
 
-/* */
-extern int validate_coord(uint16_t *coord)
-{
-	int dim;
-
-	for (dim=0; dim < cluster_dims; dim++) {
-		if (coord[dim] >= REAL_DIM_SIZE[dim]) {
-			error("got coord %c%c%c%c greater than system dims "
-			      "%c%c%c%c",
-			      alpha_num[coord[A]],
-			      alpha_num[coord[X]],
-			      alpha_num[coord[Y]],
-			      alpha_num[coord[Z]],
-			      alpha_num[REAL_DIM_SIZE[A]],
-			      alpha_num[REAL_DIM_SIZE[X]],
-			      alpha_num[REAL_DIM_SIZE[Y]],
-			      alpha_num[REAL_DIM_SIZE[Z]]);
-			return 0;
-		} else if (coord[dim] >= DIM_SIZE[dim]) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("got coord %c%c%c%c greater than what "
-				     "we are using %c%c%c%c",
-				     alpha_num[coord[A]],
-				     alpha_num[coord[X]],
-				     alpha_num[coord[Y]],
-				     alpha_num[coord[Z]],
-				     alpha_num[DIM_SIZE[A]],
-				     alpha_num[DIM_SIZE[X]],
-				     alpha_num[DIM_SIZE[Y]],
-				     alpha_num[DIM_SIZE[Z]]);
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
-extern char *ba_switch_usage_str(uint16_t usage)
-{
-	switch (usage) {
-	case BG_SWITCH_NONE:
-		return "None";
-	case BG_SWITCH_WRAPPED_PASS:
-		return "WrappedPass";
-	case BG_SWITCH_TORUS:
-		return "FullTorus";
-	case BG_SWITCH_PASS:
-		return "Passthrough";
-	case BG_SWITCH_WRAPPED:
-		return "Wrapped";
-	case (BG_SWITCH_OUT | BG_SWITCH_OUT_PASS):
-		return "OutLeaving";
-	case BG_SWITCH_OUT:
-		return "Out";
-	case (BG_SWITCH_IN | BG_SWITCH_IN_PASS):
-		return "InComming";
-	case BG_SWITCH_IN:
-		return "In";
-	default:
-		error("unknown switch usage %u", usage);
-		xassert(0);
-		break;
-	}
-	return "unknown";
-}
-
 extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo)
 {
 	bool match = false;
@@ -1312,33 +1096,6 @@ static int _check_for_options(select_ba_request_t* ba_request)
 	if (ba_request->geo_table)
 		return 1;
 	return 0;
-}
-
-static void _internal_removable_set_mps(int level, int *start,
-					int *end, int *coords, bool mark)
-{
-	ba_mp_t *curr_mp;
-
-	if (level > cluster_dims)
-		return;
-
-	if (level < cluster_dims) {
-		for (coords[level] = start[level];
-		     coords[level] <= end[level];
-		     coords[level]++) {
-			/* handle the outter dims here */
-			_internal_removable_set_mps(
-				level+1, start, end, coords, mark);
-		}
-		return;
-	}
-	curr_mp = coord2ba_mp(coords);
-	if (mark) {
-		info("can't use %s", curr_mp->coord_str);
-		curr_mp->used |= BA_MP_USED_TEMP;
-	} else {
-		curr_mp->used &= (~BA_MP_USED_TEMP);
-	}
 }
 
 /*
@@ -1722,11 +1479,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 			     ba_switch_usage_str(axis_switch->usage),
 			     ba_switch_usage_str(alter_switch->usage));
 			xassert(0);
-		} else
-			info("good axis_switch at %s %d %s",
-			     curr_mp->coord_str, dim,
-			     ba_switch_usage_str(axis_switch->usage));
-
+		}
 
 		if ((count < geometry) && !_mp_used(curr_mp, dim)) {
 			if (curr_mp->coord[dim] > *block_end)

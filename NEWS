@@ -3,7 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre3
 =============================
- -- BGQ - Initial port added, very limited functionality.
+ -- BGQ - Appears to work correctly in emulation mode, no sub blocks just yet.
  -- Minor typos fixed
  -- Various bug fixes for Cray systems.
  -- Fix bug that when setting a compute node to idle state, it was failing to

@@ -83,7 +83,6 @@ List best_path = NULL;
 int best_count;
 uint16_t *deny_pass = NULL;
 char *p = '\0';
-uint32_t ba_debug_flags = 0;
 static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 /* extern Global */
@@ -628,49 +627,6 @@ extern void init_wires()
 	return;
 }
 
-extern void set_ba_debug_flags(uint32_t debug_flags)
-{
-	ba_debug_flags = debug_flags;
-}
-
-/*
- * set the node in the internal configuration as in, or not in use,
- * along with the current state of the node.
- *
- * IN ba_node: ba_mp_t to update state
- * IN state: new state of ba_mp_t
- */
-extern void ba_update_mp_state(ba_mp_t *ba_node, uint16_t state)
-{
-	uint16_t node_base_state = state & NODE_STATE_BASE;
-	uint16_t node_flags = state & NODE_STATE_FLAGS;
-
-	if (!ba_initialized){
-		error("Error, configuration not initialized, "
-		      "calling ba_init(NULL, 1)");
-		ba_init(NULL, 1);
-	}
-
-#ifdef HAVE_BG_L_P
-	debug2("ba_update_node_state: new state of [%c%c%c] is %s",
-	       alpha_num[ba_node->coord[X]], alpha_num[ba_node->coord[Y]],
-	       alpha_num[ba_node->coord[Z]], node_state_string(state));
-#else
-	debug2("ba_update_node_state: new state of [%d] is %s",
-	       ba_node->coord[X],
-	       node_state_string(state));
-#endif
-
-	/* basically set the node as used */
-	if ((node_base_state == NODE_STATE_DOWN)
-	    || (node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
-		ba_node->used = true;
-	else
-		ba_node->used = false;
-
-	ba_node->state = state;
-}
-
 /*
  * copy the path of the nodes given
  *
@@ -1020,7 +976,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 	list_append(results, ba_node);
 	if (conn_type[0] >= SELECT_SMALL) {
 		/* adding the ba_node and ending */
-		ba_node->used = true;
+		ba_node->used |= BA_MP_USED_TRUE;
 		name = xstrdup_printf("%s", ba_node->coord_str);
 		goto end_it;
 	}
@@ -1105,97 +1061,6 @@ extern void reset_ba_system(bool track_down_nodes)
 }
 
 /*
- * Used to set all midplanes in a special used state except the ones
- * we are able to use in a new allocation.
- *
- * IN: hostlist of midplanes we do not want
- * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
- *
- * Note: Need to call reset_all_removed_mps before starting another
- * allocation attempt after
- */
-extern int removable_set_mps(char *mps)
-{
-#ifdef HAVE_BG_L_P
-	int j=0, number;
-	int x;
-	int y,z;
-	int start[cluster_dims];
-        int end[cluster_dims];
-
-	if (!mps)
-		return SLURM_ERROR;
-
-	while (mps[j] != '\0') {
-		if ((mps[j] == '[' || mps[j] == ',')
-		    && (mps[j+8] == ']' || mps[j+8] == ',')
-		    && (mps[j+4] == 'x' || mps[j+4] == '-')) {
-
-			j++;
-			number = xstrntol(mps + j, &p, cluster_dims,
-					  cluster_base);
-			hostlist_parse_int_to_array(
-				number, start, cluster_dims, cluster_base);
-			j += 4;
-			number = xstrntol(mps + j, &p, cluster_dims,
-					  cluster_base);
-			hostlist_parse_int_to_array(
-				number, end, cluster_dims, cluster_base);
-			j += 3;
-			for (x = start[X]; x <= end[X]; x++) {
-				for (y = start[Y]; y <= end[Y]; y++) {
-					for (z = start[Z]; z <= end[Z]; z++) {
-						if (!ba_main_grid[x][y][z].used)
-							ba_main_grid[x][y][z]
-								.used = 2;
-					}
-				}
-			}
-
-			if (mps[j] != ',')
-				break;
-			j--;
-		} else if ((mps[j] >= '0' && mps[j] <= '9')
-			   || (mps[j] >= 'A' && mps[j] <= 'Z')) {
-			number = xstrntol(mps + j, &p, cluster_dims,
-					  cluster_base);
-			hostlist_parse_int_to_array(
-				number, start, cluster_dims, cluster_base);
-			x = start[X];
-			y = start[Y];
-			z = start[Z];
-			j+=3;
-			if (!ba_main_grid[x][y][z].used)
-				ba_main_grid[x][y][z].used = 2;
-
-			if (mps[j] != ',')
-				break;
-			j--;
-		}
-		j++;
-	}
-#endif
- 	return SLURM_SUCCESS;
-}
-
-/*
- * Resets the virtual system to the pervious state before calling
- * removable_set_mps, or set_all_mps_except.
- */
-extern int reset_all_removed_mps()
-{
-	int x, y, z;
-
-	for (x = 0; x < DIM_SIZE[X]; x++) {
-		for (y = 0; y < DIM_SIZE[Y]; y++)
-			for (z = 0; z < DIM_SIZE[Z]; z++)
-				if (ba_main_grid[x][y][z].used == 2)
-					ba_main_grid[x][y][z].used = 0;
-	}
-	return SLURM_SUCCESS;
-}
-
-/*
  * IN: hostlist of midplanes we want to be able to use, mark all
  *     others as used.
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
@@ -1243,11 +1108,11 @@ extern int set_all_mps_except(char *mps)
 				if (ba_main_grid[x][y][z].state
 				    & NODE_RESUME) {
 					/* clear the bit and mark as unused */
-					ba_main_grid[x][y][z].state &=
-						~NODE_RESUME;
-				} else if (!ba_main_grid[x][y][z].used) {
-					ba_main_grid[x][y][z].used = 2;
-				}
+					ba_main_grid[x][y][z].state
+						&= ~NODE_RESUME;
+				} else
+					ba_main_grid[x][y][z].used
+						|= BA_MP_USED_TEMP;
 			}
 	}
 
@@ -1418,26 +1283,6 @@ cleanup:
 }
 
 /*
- * find a rack/midplace location
- */
-extern char *find_mp_rack_mid(char* xyz)
-{
-#if defined HAVE_BG_FILES
-	ba_mp_t *curr_mp;
-
-	if(!(curr_mp = str2ba_node(xyz)))
-		return NULL;
-
-	if (bridge_setup_system() == -1)
-		return NULL;
-
-	return curr_mp->loc;
-#else
-	return NULL;
-#endif
-}
-
-/*
  * set the used wires in the virtual system for a block from the real system
  */
 extern int load_block_wiring(char *bg_block_id)
@@ -1495,7 +1340,7 @@ extern int load_block_wiring(char *bg_block_id)
 			error("find_mp_loc: mpid %s not known", switchid);
 			return SLURM_ERROR;
 		}
-		ba_main_grid[geo[X]][geo[Y]][geo[Z]].used = true;
+		ba_main_grid[geo[X]][geo[Y]][geo[Z]].used |= BA_MP_USED_TRUE;
 		return SLURM_SUCCESS;
 	}
 	for (i=0; i<switch_cnt; i++) {
@@ -1586,7 +1431,7 @@ extern int load_block_wiring(char *bg_block_id)
 					return SLURM_ERROR;
 				}
 				ba_main_grid[geo[X]][geo[Y]][geo[Z]].
-					used = true;
+					used |= BA_MP_USED_TEMP;
 			}
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("connection going from %d -> %d",
@@ -1692,7 +1537,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 		ba_node->coord[Y] = geo[Y];
 		ba_node->coord[Z] = geo[Z];
 
-		ba_node->used = TRUE;
+		ba_node->used |= BA_MP_USED_TRUE;
 		return results;
 	}
 	for (i=0; i<switch_cnt; i++) {
@@ -1798,7 +1643,7 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 					      alpha_num[geo[Z]]);
 					goto end_it;
 				}
-				ba_node->used = true;
+				ba_node->used |= BA_MP_USED_TRUE;
 			}
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("connection going from %d -> %d",
@@ -1841,42 +1686,6 @@ end_it:
 	return NULL;
 #endif
 
-}
-
-/* */
-extern int validate_coord(uint16_t *coord)
-{
-#if defined HAVE_BG_FILES
-	if (coord[X]>=REAL_DIM_SIZE[X]
-	    || coord[Y]>=REAL_DIM_SIZE[Y]
-	    || coord[Z]>=REAL_DIM_SIZE[Z]) {
-		error("got coord %c%c%c greater than system dims "
-		      "%c%c%c",
-		      alpha_num[coord[X]],
-		      alpha_num[coord[Y]],
-		      alpha_num[coord[Z]],
-		      alpha_num[REAL_DIM_SIZE[X]],
-		      alpha_num[REAL_DIM_SIZE[Y]],
-		      alpha_num[REAL_DIM_SIZE[Z]]);
-		return 0;
-	}
-
-	if (coord[X]>=DIM_SIZE[X]
-	    || coord[Y]>=DIM_SIZE[Y]
-	    || coord[Z]>=DIM_SIZE[Z]) {
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("got coord %c%c%c greater than what we are using "
-			     "%c%c%c",
-			     alpha_num[coord[X]],
-			     alpha_num[coord[Y]],
-			     alpha_num[coord[Z]],
-			     alpha_num[DIM_SIZE[X]],
-			     alpha_num[DIM_SIZE[Y]],
-			     alpha_num[DIM_SIZE[Z]]);
-		return 0;
-	}
-#endif
-	return 1;
 }
 
 extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo)
@@ -2870,10 +2679,7 @@ static bool _node_used(ba_mp_t* ba_node, int x_size)
 	/* if we've used this node in another block already */
 	if (!ba_node || ba_node->used) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("node %c%c%c used",
-			     alpha_num[ba_node->coord[X]],
-			     alpha_num[ba_node->coord[Y]],
-			     alpha_num[ba_node->coord[Z]]);
+			info("node %s used", ba_node->coord_str);
 		return true;
 	}
 	/* Check If we've used this node's switches completely in another
@@ -2894,10 +2700,8 @@ static bool _node_used(ba_mp_t* ba_node, int x_size)
 		if (ba_switch->int_wire[3].used
 		    && ba_switch->int_wire[5].used) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("switch full in the X dim on node %c%c%c!",
-				     alpha_num[ba_node->coord[X]],
-				     alpha_num[ba_node->coord[Y]],
-				     alpha_num[ba_node->coord[Z]]);
+				info("switch full in the X dim on node %s!",
+				     ba_node->coord_str);
 			return true;
 		}
 	}
@@ -3391,7 +3195,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 
 	for (i=0;i<count;i++) {
 		if (!ba_node[i]->used) {
-			ba_node[i]->used=1;
+			ba_node[i]->used |= BA_MP_USED_TRUE;
 		} else {
 			debug("No network connection to create "
 			      "bgblock containing %s", name);
