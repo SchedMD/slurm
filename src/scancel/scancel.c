@@ -455,7 +455,8 @@ _cancel_job_id (void *ci)
 		else
 			verbose("Signal %u to job %u", sig, job_id);
 
-		if ((!sig_set) || msg_to_ctld || opt.clusters) {
+		if ((sig == SIGKILL) || (!sig_set) ||
+		    msg_to_ctld || opt.clusters) {
 			error_code = slurm_kill_job (job_id, sig,
 						     (uint16_t)opt.batch);
 		} else {
