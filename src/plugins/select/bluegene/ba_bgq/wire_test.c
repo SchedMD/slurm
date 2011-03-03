@@ -57,6 +57,7 @@ time_t last_bg_update;
 bg_config_t *bg_conf;
 bg_lists_t *bg_lists;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+int bg_recover = NOT_FROM_CONTROLLER;
 
 extern int bg_status_update_block_state(bg_record_t *bg_record,
 					bg_block_status_t state,

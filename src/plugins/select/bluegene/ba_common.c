@@ -153,8 +153,8 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	cluster_dims = slurmdb_setup_cluster_dims();
 	cluster_flags = slurmdb_setup_cluster_flags();
 	set_ba_debug_flags(slurm_get_debug_flags());
-
-	bridge_init("");
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		bridge_init("");
 
 	memset(coords, 0, sizeof(coords));
 	memset(dims, 0, sizeof(dims));
@@ -311,7 +311,7 @@ node_info_error:
 
 	/* sanity check.  We can only request part of the system, but
 	   we don't want to allow more than we have. */
-	if (sanity_check) {
+	if (sanity_check && (bg_recover != NOT_FROM_CONTROLLER)) {
 		verbose("Attempting to contact MMCS");
 		if (bridge_get_size(real_dims) == SLURM_SUCCESS) {
 			char real_dim_str[cluster_dims+1];
@@ -354,7 +354,8 @@ setup_done:
 
 	ba_create_system(num_cpus, real_dims, dims);
 
-	bridge_setup_system();
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		bridge_setup_system();
 
 	ba_initialized = true;
 	init_grid(node_info_ptr);
@@ -370,7 +371,8 @@ extern void ba_fini()
 		return;
 	}
 
-	bridge_fini();
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		bridge_fini();
 	ba_destroy_system();
 	ba_initialized = false;
 

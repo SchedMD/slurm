@@ -55,7 +55,6 @@
 #include "other_select.h"
 #include "basil_interface.h"
 
-#define NOT_FROM_CONTROLLER -2
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.

@@ -43,13 +43,6 @@
 #include "bg_enums.h"
 #include "bg_structs.h"
 #include "bg_record_functions.h"
-
-/* Change BLOCK_STATE_VERSION value when changing the state save
- * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER005"
-#define BLOCK_2_2_STATE_VERSION  "VER004" /*Slurm 2.2's version*/
-#define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
-
 #include "bg_job_place.h"
 #include "bg_job_run.h"
 #include "bg_job_info.h"
@@ -57,6 +50,12 @@
 #include "ba_common.h"
 #include "bridge_linker.h"
 #include "bg_status.h"
+
+/* Change BLOCK_STATE_VERSION value when changing the state save
+ * format i.e. pack_block() */
+#define BLOCK_STATE_VERSION      "VER005"
+#define BLOCK_2_2_STATE_VERSION  "VER004" /*Slurm 2.2's version*/
+#define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
 
 /* Global variables */
 /* extern bg_config_t *bg_conf; */

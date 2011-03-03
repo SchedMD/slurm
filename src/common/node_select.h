@@ -52,6 +52,7 @@
 
 /* NO_JOB_RUNNING is used by select/blugene, select/bgq, smap and sview */
 #define NO_JOB_RUNNING -1
+#define NOT_FROM_CONTROLLER -2
 
 #define PASS_DENY_A    0x0001
 #define PASS_DENY_X    0x0002

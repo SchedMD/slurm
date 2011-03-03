@@ -62,7 +62,7 @@ extern "C" {
 using namespace std;
 using namespace bgsched;
 using namespace bgsched::core;
-
+using namespace bgsched::realtime;
 #endif
 
 static bool bridge_status_inited = false;
@@ -78,7 +78,31 @@ public:
 	 *  Handle a block state changed real-time event.
 	 */
 	void handleBlockStateChangedRealtimeEvent(
-		const BlockStateChangedEventInfo& eventInfo);
+		const BlockStateChangedEventInfo& info);
+	// /*
+	//  *  Handle a midplane state changed real-time event.
+	//  */
+	// virtual void handleMidplaneStateChangedRealtimeEvent(
+	// 	const MidplaneStateChangedEventInfo& info);
+
+	// /*
+	//  * Handle a switch state changed real-time event.
+	//  */
+	// virtual void handleSwitchStateChangedRealtimeEvent(
+	// 	const SwitchStateChangedEventInfo& info);
+
+	// /*
+	//  * Handle a node board state changed real-time event.
+	//  */
+	// virtual void handleNodeBoardStateChangedRealtimeEvent(
+	// 	const NodeBoardStateChangedEventInfo& info);
+
+	// /*
+	//  * Handle a cable state changed real-time event.
+	//  */
+	// virtual void handleCableStateChangedRealtimeEvent(
+	// 	const CableStateChangedEventInfo& info);
+
 } event_handler_t;
 
 static List kill_job_list = NULL;
@@ -154,7 +178,6 @@ static int _real_time_connect(void)
 		try {
 			rt_client_ptr->connect();
 			rc = SLURM_SUCCESS;
-			count = 0;
 		} catch (...) {
 			rc = SLURM_ERROR;
 			error("couldn't connect to the real_time server, "
@@ -170,41 +193,54 @@ static int _real_time_connect(void)
 static void *_real_time(void *no_data)
 {
 	event_handler_t event_hand;
-
+	int rc = SLURM_SUCCESS;
 	bool failed = false;
-	bgsched::realtime::Filter rt_filter(
-		bgsched::realtime::Filter::createNone());
+	Filter::BlockStatuses block_statuses;
+  	Filter rt_filter(Filter::createNone());
 
 	rt_filter.setBlocks(true);
- 	//rt_filter.setBlockDeleted(true);
-	// filter.get().setMidplanes(true);
- 	// filter.get().setNodeBoards(true);
- 	// filter.get().setSwitches(true);
- 	// filter.get().setCables(true);
+        block_statuses.insert(Block::Free);
+	block_statuses.insert(Block::Booting);
+        block_statuses.insert(Block::Initialized);
+	block_statuses.insert(Block::Terminating);
+        rt_filter.setBlockStatuses(&block_statuses);
+
+ 	// rt_filter.get().setMidplanes(true);
+ 	// rt_filter.get().setNodeBoards(true);
+ 	// rt_filter.get().setSwitches(true);
+ 	// rt_filter.get().setCables(true);
 
 	rt_client_ptr->addListener(event_hand);
 
-	_real_time_connect();
+	rc = _real_time_connect();
 
-	while (bridge_status_inited && !failed) {
+	while (bridge_status_inited) {
 		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
 
 		slurm_mutex_lock(&rt_mutex);
-		if (!bridge_status_inited)
+		if (bridge_status_inited) {
+			slurm_mutex_unlock(&rt_mutex);
 			break;
+		}
 
-		rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
+		if (rc == SLURM_SUCCESS) {
+			rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
 
-		rt_client_ptr->requestUpdates(NULL);
-		rt_client_ptr->receiveMessages(NULL, NULL, &failed);
+			rt_client_ptr->requestUpdates(NULL);
+			rt_client_ptr->receiveMessages(NULL, NULL, &failed);
+		} else
+			failed = true;
+
 		slurm_mutex_unlock(&rt_mutex);
 
 		if (bridge_status_inited && failed) {
 			error("Disconnected from real-time events. "
-			     "Will try to reconnect.");
-			_real_time_connect();
-			info("real-time server connected again");
-			failed = false;
+			     "Will try tCopy of SP2o reconnect.");
+			rc = _real_time_connect();
+			if (rc == SLURM_SUCCESS) {
+				info("real-time server connected again");
+				failed = false;
+			}
 		}
 	}
 	return NULL;
@@ -217,8 +253,10 @@ static void *_poll(void *no_data)
 	while (bridge_status_inited) {
 		//debug("polling waiting until realtime dies");
 		slurm_mutex_lock(&rt_mutex);
-		if (!bridge_status_inited)
+		if (!bridge_status_inited) {
+			slurm_mutex_unlock(&rt_mutex);
 			break;
+		}
 		//debug("polling taking over, realtime is dead");
 		bridge_status_do_poll();
 		slurm_mutex_unlock(&rt_mutex);

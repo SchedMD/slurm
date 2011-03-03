@@ -52,12 +52,8 @@
 #include "src/slurmctld/trigger_mgr.h"
 #include <fcntl.h>
 
-#define MMCS_POLL_TIME 30	/* seconds between poll of MMCS for
-				 * down switches and nodes */
-#define BG_POLL_TIME 1	        /* seconds between poll of state
-				 * change in bg blocks */
 #define HUGE_BUF_SIZE (1024*16)
-#define NOT_FROM_CONTROLLER -2
+
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -606,7 +602,7 @@ static List _get_config(void)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 
 #ifdef HAVE_BG

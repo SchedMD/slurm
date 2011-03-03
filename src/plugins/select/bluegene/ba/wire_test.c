@@ -58,7 +58,7 @@ bg_config_t *bg_conf = NULL;
 bg_lists_t *bg_lists = NULL;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int blocks_are_created = 0;
-int bg_recover = -2;
+int bg_recover = NOT_FROM_CONTROLLER;
 
 extern List bg_status_create_kill_job_list(void)
 {

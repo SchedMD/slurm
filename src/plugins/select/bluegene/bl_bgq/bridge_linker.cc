@@ -46,7 +46,11 @@ extern "C" {
 
 #if defined HAVE_BG_FILES
 
+#include <bgsched/DatabaseException.h>
+#include <bgsched/InitializationException.h>
 #include <bgsched/InputException.h>
+#include <bgsched/InternalException.h>
+#include <bgsched/RuntimeException.h>
 #include <bgsched/bgsched.h>
 #include <bgsched/Block.h>
 #include <bgsched/core/core.h>
@@ -127,7 +131,6 @@ static int _block_wait_for_jobs(char *bg_block_id)
 	std::vector<Job::ConstPtr> job_vec;
 	JobFilter job_filter;
 	JobFilter::Statuses job_statuses;
-	int count = 0;
 #endif
 
 	if (!bridge_init(NULL))
@@ -151,9 +154,6 @@ static int _block_wait_for_jobs(char *bg_block_id)
 	job_filter.setStatuses(&job_statuses);
 
 	while (1) {
-		if (count)
-			sleep(POLL_INTERVAL);
-		count++;
 		job_vec = getJobs(job_filter);
 		if (job_vec.empty())
 			return SLURM_SUCCESS;
@@ -162,6 +162,7 @@ static int _block_wait_for_jobs(char *bg_block_id)
 			debug("waiting on job %lu to finish on block %s",
 			      job_ptr->getId(), bg_block_id);
 		}
+		sleep(POLL_INTERVAL);
 	}
 #endif
 	return SLURM_SUCCESS;
@@ -216,6 +217,9 @@ extern int bridge_init(char *properties_file)
 	if (initialized)
 		return 1;
 
+	if (bg_recover == NOT_FROM_CONTROLLER)
+		return 0;
+
 #if defined HAVE_BG_FILES
 	bgsched::init(properties_file);
 #endif
@@ -228,7 +232,8 @@ extern int bridge_init(char *properties_file)
 extern int bridge_fini()
 {
 	initialized = false;
-	bridge_status_fini();
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		bridge_status_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -365,29 +370,60 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	}
 	try {
 		block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
-	} catch (bgsched::InputException err) {
-		// switch(err.getError()) {
-		// case bgsched::InputErrors::InvalidMidplanes:
-		// 	fatal("Couldn't create block, failing.");
-		// 	break;
-		// default:
-			fatal("unknown");
-		// }
+	} catch (const bgsched::InputException& err) {
+		switch (err.getError().toValue()) {
+		case bgsched::InputErrors::InvalidMidplanes:
+			error("Invalid midplanes given for Block::Create()");
+			break;
+		case bgsched::InputErrors::InvalidConnectivity:
+			error("Invalid connectivity given for Block::Create()");
+			break;
+		case bgsched::InputErrors::BlockNotCreated:
+			error("Block::Create() can not create block from "
+			      "input arguments");
+			break;
+		default:
+			error("Unexpected exception value from "
+			      "Block::Create()");
+		}
 		rc = SLURM_ERROR;
 	}
 
-		block_ptr->setName(bg_record->bg_block_id);
-		block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
+	block_ptr->setName(bg_record->bg_block_id);
+	block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
+
 	try {
 		block_ptr->add("");
 		// block_ptr->addUser(bg_record->bg_block_id,
 		// 		   bg_record->user_name);
 		//info("got past add");
+	} catch (const bgsched::InputException& err) {
+		switch (err.getError().toValue()) {
+		case bgsched::InputErrors::BlockNotAdded:
+			error("For some reason the block was not added.");
+			break;
+		case  bgsched::InputErrors::InvalidMidplanes:
+			error("Invalid midplanes given for Block::Add()");
+			break;
+		default:
+			error("Unexpected exception value from "
+			      "Block::Add() %d", err.getError().toValue());
+		}
+		rc = SLURM_ERROR;
+	} catch (const bgsched::RuntimeException& err2) {
+		switch (err2.getError().toValue()) {
+		case bgsched::RuntimeErrors::BlockAddError:
+			error("Error Setting block owner Block:Add().");
+			break;
+		default:
+			error("2 Unexpected exception value from "
+			      "Block::Add() %d", err2.getError().toValue());
+		}
+		rc = SLURM_ERROR;
 	} catch (...) {
-		fatal("Couldn't create block, failing.");
+                error("Unknown error from Block::Add().");
 		rc = SLURM_ERROR;
 	}
-
 
 #endif
 
