@@ -204,8 +204,10 @@ static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
 /* *********************************************************************** */
 extern int slurm_job_check_grace(struct job_record *job_ptr)
 {
+	/* Preempt modes: -1 (unset), 0 (none), 1 (partition), 2 (QOS) */
+	static int preempt_mode = 0;
+	static time_t last_update_time = 0;
 	int rc = SLURM_SUCCESS;
-	char *preempt_type;
 	uint32_t grace_time = 0;
 
 	if (job_ptr->preempt_time) {
@@ -214,10 +216,20 @@ extern int slurm_job_check_grace(struct job_record *job_ptr)
 		return rc;
 	}
 
-	preempt_type = slurm_get_preempt_type();
-	if ((strcmp(preempt_type, "preempt/partition_prio") == 0))
+	if (last_update_time != slurmctld_conf.last_update) {
+		char *preempt_type = slurm_get_preempt_type();
+		if ((strcmp(preempt_type, "preempt/partition_prio") == 0))
+			preempt_mode = 1;
+		else if ((strcmp(preempt_type, "preempt/qos") == 0))
+			preempt_mode = 2;
+		else
+			preempt_mode = 0;
+		xfree(preempt_type);
+	}
+
+	if (preempt_mode == 1)
 		grace_time = job_ptr->part_ptr->grace_time;
-	else if ((strcmp(preempt_type, "preempt/qos") == 0)) {
+	else if (preempt_mode == 2) {
 		slurmdb_qos_rec_t *qos_ptr = (slurmdb_qos_rec_t *)
 					     job_ptr->qos_ptr;
 		grace_time = qos_ptr->grace_time;
