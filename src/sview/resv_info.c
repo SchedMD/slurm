@@ -53,6 +53,7 @@ enum {
 	SORTID_DURATION,
 	SORTID_FEATURES,
 	SORTID_FLAGS,
+	SORTID_LICENSES,
 	SORTID_NAME,
 	SORTID_NODE_CNT,
 	SORTID_NODELIST,
@@ -101,6 +102,8 @@ static display_data_t display_data_resv[] = {
 	{G_TYPE_STRING, SORTID_DURATION,   "Duration", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_LICENSES,   "Licenses", TRUE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_USERS,      "Users", FALSE, EDIT_TEXTBOX,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -326,6 +329,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			goto return_error;
 		resv_msg->flags = f;
 		break;
+	case SORTID_LICENSES:
+		resv_msg->licenses = xstrdup(new_text);
+		type = "licenses";
+		break;
 	case SORTID_NAME:
 		resv_msg->name = xstrdup(new_text);
 		type = "name";
@@ -518,6 +525,11 @@ static void _layout_resv_record(GtkTreeView *treeview,
 				   temp_char);
 	xfree(temp_char);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_resv,
+						 SORTID_LICENSES),
+				   resv_ptr->licenses);
+
 	convert_num_unit((float)resv_ptr->node_cnt,
 			 time_buf, sizeof(time_buf), UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
@@ -586,6 +598,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 			   SORTID_DURATION,   tmp_duration,
 			   SORTID_FEATURES,   resv_ptr->features,
 			   SORTID_FLAGS,      tmp_flags,
+			   SORTID_LICENSES,   resv_ptr->licenses,
 			   SORTID_NAME,       resv_ptr->name,
 			   SORTID_NODE_CNT,   tmp_nodes,
 			   SORTID_NODE_INX,   resv_ptr->node_inx,

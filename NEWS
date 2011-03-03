@@ -73,6 +73,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.4
 ========================
+ -- For batch jobs for which the Prolog fails, substitute the job ID for any
+    "%j" in the job's output or error file specification.
+ -- Add licenses field to the sview reservation information.
 
 * Changes in SLURM 2.2.3
 ========================

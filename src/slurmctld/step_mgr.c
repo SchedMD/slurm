@@ -2270,8 +2270,9 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return SLURM_SUCCESS;
 	}
 	if (req->range_last < req->range_first) {
-		error("step_partial_comp: JobID=%u range=%u-%u",
-		      req->job_id, req->range_first, req->range_last);
+		error("step_partial_comp: StepID=%u.%u range=%u-%u",
+		      req->job_id, req->job_step_id, req->range_first,
+		      req->range_last);
 		return EINVAL;
 	}
 
@@ -2281,8 +2282,10 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
 		if (req->range_last >= nodes) {	/* range is zero origin */
-			error("step_partial_comp: JobID=%u last=%u, nodes=%d",
-			      req->job_id, req->range_last, nodes);
+			error("step_partial_comp: StepID=%u.%u last=%u "
+			      "nodes=%d",
+			      req->job_id, req->job_step_id, req->range_last,
+			      nodes);
 			return EINVAL;
 		}
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
@@ -2292,8 +2295,10 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	} else {
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
 		if (req->range_last >= nodes) {	/* range is zero origin */
-			error("step_partial_comp: JobID=%u last=%u, nodes=%d",
-			      req->job_id, req->range_last, nodes);
+			error("step_partial_comp: StepID=%u.%u last=%u "
+			      "nodes=%d",
+			      req->job_id, req->job_step_id, req->range_last,
+			      nodes);
 			return EINVAL;
 		}
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);

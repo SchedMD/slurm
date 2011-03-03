@@ -1683,6 +1683,21 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute three
 tasks and the fourth node will execute one task.
+
+.TP
+\fBSLURM_TOPOLOGY_ADDR\fR
+This is set only if the system has the topology/tree plugin configured.
+The value will be set to the names network switches which may be involved in
+the job's communications from the system's top level switch down to the leaf
+switch and ending with node name. A period is used to separate each hardware
+component name.
+.TP
+\fBSLURM_TOPOLOGY_ADDR_PATTERN\fR
+This is set only if the system has the topology/tree plugin configured.
+The value will be set component types listed in \fBSLURM_TOPOLOGY_ADDR\fR.
+Each component will be identified as either "switch" or "node".
+A period is used to separate each hardware component type.
+
 .TP
 \fBMPIRUN_NOALLOCATE\fR
 Do not allocate a block on Blue Gene systems only.
