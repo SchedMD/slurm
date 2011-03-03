@@ -277,7 +277,7 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_GRACE;
 		field->name = xstrdup("GraceTime");
 		field->len = 10;
-		field->print_routine = print_fields_int;
+		field->print_routine = print_fields_time_from_secs;
 	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPCM;
 		field->name = xstrdup("GrpCPUMins");

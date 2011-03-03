@@ -729,7 +729,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->derived_ec, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
-	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
 	pack32(dump_job_ptr->next_step_id, buffer);
 	pack32(dump_job_ptr->qos_id, buffer);
@@ -890,7 +889,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&exit_code, buffer);
 		safe_unpack32(&derived_ec, buffer);
 		safe_unpack32(&db_index, buffer);
-		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
 		safe_unpack32(&qos_id, buffer);
@@ -5331,7 +5329,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
-					        dump_job_ptr->qos_id), buffer);
+						dump_job_ptr->qos_id), buffer);
 		} else
 			packnull(buffer);
 		assoc_mgr_unlock(&locks);
@@ -5441,7 +5439,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
-					        dump_job_ptr->qos_id), buffer);
+						dump_job_ptr->qos_id), buffer);
 		} else
 			packnull(buffer);
 		assoc_mgr_unlock(&locks);
@@ -8152,7 +8150,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (front_end_ptr->job_cnt_comp == 0)
 			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
 	}
-		
+
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;

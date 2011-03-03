@@ -864,7 +864,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\
-       add qos            - Description=, Flags=, GraceTime=,GrpCPUMins=,  \n\
+       add qos            - Description=, Flags=, GraceTime=, GrpCPUMins=, \n\
                             GGrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=, \n\
                             GrpWall=,MaxCPUMins=, MaxCPUs=, MaxJobs=,      \n\
                             MaxNodes=,MaxSubmitJobs=, MaxWall=, Names=,    \n\

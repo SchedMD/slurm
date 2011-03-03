@@ -1292,10 +1292,10 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		if (!object) {
 			packnull(buffer);
 			pack32(0, buffer);
-			packnull(buffer);
 
 			pack32(QOS_FLAG_NOTSET, buffer);
 
+			pack32(NO_VAL, buffer);
 			pack64(NO_VAL, buffer);
 			pack64(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -1373,7 +1373,6 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		if (!object) {
 			packnull(buffer);
 			pack32(0, buffer);
-			packnull(buffer);
 
 			pack32(QOS_FLAG_NOTSET, buffer);
 
@@ -1453,7 +1452,6 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		if (!object) {
 			packnull(buffer);
 			pack32(0, buffer);
-			packnull(buffer);
 
 			pack64(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);

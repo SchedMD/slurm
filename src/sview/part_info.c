@@ -476,7 +476,8 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "grace_time";
 		if (temp_int <= 0)
 			goto return_error;
-		part_msg->grace_time = (uint32_t)temp_int;
+		/* convert to seconds */
+		part_msg->grace_time = (uint32_t)(temp_int * 60);
 		break;
 	case SORTID_HIDDEN:
 		if (!strcasecmp(new_text, "yes")) {
