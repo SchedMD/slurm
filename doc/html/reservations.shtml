@@ -233,9 +233,6 @@ to have used half of the reserved resources).</p>
 
 <p>Several enhancements are anticipated at some point in the future.
 <ol>
-<li>The automatic selection of nodes for a reservation create request may be
-sub-optimal in terms of locality (for optimized application
-communication).</li>
 <li>Reservations made within a partition having gang scheduling assumes
 the highest level rather than the actual level of time-slicing when
 considering the initiation of jobs.
@@ -244,7 +241,7 @@ before a reservation given fewer jobs to time-slice with.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 27 December 2010</p>
+<p style="text-align: center;">Last modified 3 March 2011</p>
 
 <!--#include virtual="footer.txt"-->
 
