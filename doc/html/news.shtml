@@ -6,7 +6,7 @@
 <ul>
 <li><a href="#21">SLURM Version 2.1, January 2010</a></li>
 <li><a href="#22">SLURM Version 2.2, December 2010</a></li>
-<li><a href="#23">SLURM Version 2.3, available May 2011</a></li>
+<li><a href="#23">SLURM Version 2.3, planned for Summer 2011</a></li>
 <li><a href="#24">SLURM Version 2.4 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
@@ -54,7 +54,7 @@ several times that rate.</li>
 </ul>
 
 <h2><a name="23">Major Updates in SLURM Version 2.3</a></h2>
-<p>SLURM Version 2.3 release is planned in May 2011.
+<p>SLURM Version 2.3 release is planned for Summer 2011.
 Major enhancements currently planned include:
 <ul>
 <li>Support for Cray XT and XE computers (integration with ALPS/BASIL).</li>
@@ -63,6 +63,8 @@ Major enhancements currently planned include:
 BlueGene architectures, improves performance and fault tolerance).</li>
 <li>Support for Linux cgroup job containers including integration with
 generic resources.</li>
+<li> Resource reservations with a node count specification will select
+those nodes optimized for the system topology.</li>
 </ul>
 
 <h2><a name="24">Major Updates in SLURM Version 2.4 and beyond</a></h2>
@@ -71,10 +73,17 @@ have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activities. Future development plans includes:
 <ul>
+<li>Support for growing job allocations (shrinking jobs are supported in
+version 2.2).</li>
+<li>Faster and more powerful job step management support  (e.g. step
+dependencies).</li>
+<li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
 <li>Integration with FlexLM license management.</li>
-<li>Numerous enhancements to advanced resource reservations.</li>
+<li>Numerous enhancements to advanced resource reservations (e.g. start or
+end the reservation early depending upon the workload).</li>
 <li>Add Kerberos credential support including credential forwarding
 and refresh.</li>
+<li>Improved support for provisioning and virtualization.</li> 
 <li>Provide a web-based SLURM administration tool.</li>
 </ul>
 
