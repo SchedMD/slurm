@@ -12,7 +12,7 @@ libblock_allocator_la_SOURCES = block_allocator.c block_allocator.h
 
 libblock_allocator_la_LIBADD  = ../bl_bgq/libbridge_linker.la
 
-libblock_allocator_la_LDFLAGS = $(LIB_LDFLAGS) -lm
+libblock_allocator_la_LDFLAGS = $(LIB_LDFLAGS)
 
 total = $(libblock_allocator_la_LDADD)
 
@@ -26,7 +26,7 @@ wire_test_LDADD = $(top_builddir)/src/api/libslurm.o -ldl \
 
 total += ../libba_common.la $(top_builddir)/src/api/libslurm.o
 
-wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) $(BG_LDFLAGS)
+wire_test_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS)
 
 # force link with g++
 nodist_EXTRA_wire_test_SOURCES = dummy.cxx

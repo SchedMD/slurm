@@ -138,8 +138,10 @@ libsched_if64_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(libsched_if64_la_LDFLAGS) $(LDFLAGS) -o $@
 @BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath = -rpath \
 @BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
+am__DEPENDENCIES_1 =
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	$(block_allocator_lib) libba_common.la
+@BLUEGENE_LOADED_TRUE@	$(block_allocator_lib) libba_common.la \
+@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_1)
 am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_job_info.c \
 	bg_job_info.h bg_node_info.c bg_node_info.h bg_core.c \
 	bg_defined_block.c bg_dynamic_block.c bg_job_place.c \
@@ -161,10 +163,10 @@ am__slurm_epilog_SOURCES_DIST = slurm_epilog.c
 @BLUEGENE_LOADED_TRUE@am_slurm_epilog_OBJECTS =  \
 @BLUEGENE_LOADED_TRUE@	slurm_epilog.$(OBJEXT)
 slurm_epilog_OBJECTS = $(am_slurm_epilog_OBJECTS)
-@BLUEGENE_LOADED_TRUE@am__DEPENDENCIES_1 =  \
+@BLUEGENE_LOADED_TRUE@am__DEPENDENCIES_2 =  \
 @BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
 @BLUEGENE_LOADED_TRUE@slurm_epilog_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_1)
+@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_2)
 slurm_epilog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_epilog_LDFLAGS) $(LDFLAGS) -o $@
@@ -173,7 +175,7 @@ am__slurm_prolog_SOURCES_DIST = slurm_prolog.c
 @BLUEGENE_LOADED_TRUE@	slurm_prolog.$(OBJEXT)
 slurm_prolog_OBJECTS = $(am_slurm_prolog_OBJECTS)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_1)
+@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_2)
 slurm_prolog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_prolog_LDFLAGS) $(LDFLAGS) -o $@
@@ -467,7 +469,7 @@ select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 # force link with g++
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
-@BLUEGENE_LOADED_TRUE@select_bluegene_la_LIBADD = $(block_allocator_lib) libba_common.la
+@BLUEGENE_LOADED_TRUE@select_bluegene_la_LIBADD = $(block_allocator_lib) libba_common.la $(BG_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c

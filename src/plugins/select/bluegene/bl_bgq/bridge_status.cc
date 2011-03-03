@@ -154,11 +154,13 @@ static int _real_time_connect(void)
 		try {
 			rt_client_ptr->connect();
 			rc = SLURM_SUCCESS;
+			count = 0;
 		} catch (...) {
 			rc = SLURM_ERROR;
 			error("couldn't connect to the real_time server, "
 			      "trying for %d seconds.", count * sleep_value);
 			sleep(sleep_value);
+			count++;
 		}
 	}
 

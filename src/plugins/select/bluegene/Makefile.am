@@ -59,7 +59,8 @@ select_bluegene_la_SOURCES += bg_core.c bg_defined_block.c \
 			bg_read_config.c bg_record_functions.c \
 			bg_status.c
 
-select_bluegene_la_LIBADD  = $(block_allocator_lib) libba_common.la
+select_bluegene_la_LIBADD = $(block_allocator_lib) libba_common.la $(BG_LDFLAGS)
+
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
