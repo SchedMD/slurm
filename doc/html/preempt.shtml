@@ -76,6 +76,16 @@ at job submission time to specify their memory requirements.
 parameters are not critical.
 </LI>
 <LI>
+<B>GraceTime</B>: Specifies a time period for a job to execute after
+it is selected to be preempted. This option can be specified by partition or
+QOS using the <I>slurm.conf</I> file or database respectively. This option is
+only honored if <I>PreemptMode=CANCEL</I>. The <I>GraceTime</I> is specified in
+seconds and the default value is zero, which results in no preemption delay.
+Once a job has been selected for preemption, it's end time is set to the
+current time plus <I>GraceTime</I> and the mechanism used to terminate jobs
+upon reaching their time limit is used to cancel the job.
+</LI>
+<LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>: The "maximum data segment
 size" and "maximum virtual memory size" system limits will be configured for
 each job to ensure that the job does not exceed its requested amount of memory.
@@ -377,6 +387,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 6 December 2010</p>
+<p style="text-align:center;">Last modified 2 March 20101</p>
 
 <!--#include virtual="footer.txt"-->

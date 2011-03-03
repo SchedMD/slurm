@@ -188,7 +188,7 @@ typedef struct slurm_conf_partition {
 	uint16_t disable_root_jobs; /* if set then user root can't run
 				     * jobs if NO_VAL use global
 				     * default */
-
+	uint32_t grace_time;	/* default grace time for partition */
 	bool     hidden_flag;	/* 1 if hidden by default */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */

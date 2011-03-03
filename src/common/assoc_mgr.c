@@ -1637,6 +1637,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 
 	qos->id = found_qos->id;
 
+	qos->grace_time      = found_qos->grace_time;
 	qos->grp_cpu_mins    = found_qos->grp_cpu_mins;
 	qos->grp_cpu_run_mins= found_qos->grp_cpu_run_mins;
 	qos->grp_cpus        = found_qos->grp_cpus;
@@ -2867,6 +2868,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 					rec->flags = object->flags;
 			}
 
+			if (object->grace_time != NO_VAL)
+				rec->grace_time = object->grace_time;
 			if (object->grp_cpu_mins != (uint64_t)NO_VAL)
 				rec->grp_cpu_mins = object->grp_cpu_mins;
 			if (object->grp_cpu_run_mins != (uint64_t)NO_VAL)

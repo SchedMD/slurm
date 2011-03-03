@@ -273,6 +273,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Flags");
 		field->len = 20;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("GraceTime", object, MAX(command_len, 3))) {
+		field->type = PRINT_GRACE;
+		field->name = xstrdup("GraceTime");
+		field->len = 10;
+		field->print_routine = print_fields_time_from_secs;
 	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPCM;
 		field->name = xstrdup("GrpCPUMins");
@@ -1382,6 +1387,11 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 
 	if (qos->preempt_list && !g_qos_list)
 		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+
+	if (qos->grace_time != NO_VAL)
+		printf("  GraceTime       = %d\n", qos->grace_time);
+	else
+		printf("  GraceTime       = NONE\n");
 
 	if (qos->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins     = NONE\n");

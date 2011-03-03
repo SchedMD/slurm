@@ -729,11 +729,11 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->derived_ec, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
-	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
 	pack32(dump_job_ptr->next_step_id, buffer);
 	pack32(dump_job_ptr->qos_id, buffer);
 
+	pack_time(dump_job_ptr->preempt_time, buffer);
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
@@ -828,6 +828,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t next_step_id, total_cpus, total_nodes = 0, cpu_cnt;
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
+	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
@@ -888,11 +889,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&exit_code, buffer);
 		safe_unpack32(&derived_ec, buffer);
 		safe_unpack32(&db_index, buffer);
-		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
 		safe_unpack32(&qos_id, buffer);
 
+		safe_unpack_time(&preempt_time, buffer);
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&end_time, buffer);
 		safe_unpack_time(&suspend_time, buffer);
@@ -1406,6 +1407,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->total_nodes  = total_nodes;
 	job_ptr->cpu_cnt      = cpu_cnt;
 	job_ptr->tot_sus_time = tot_sus_time;
+	job_ptr->preempt_time = preempt_time;
 	job_ptr->user_id      = user_id;
 	job_ptr->wait_all_nodes = wait_all_nodes;
 	job_ptr->warn_signal  = warn_signal;
@@ -5291,6 +5293,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack_time(dump_job_ptr->suspend_time, buffer);
 		pack_time(dump_job_ptr->pre_sus_time, buffer);
 		pack_time(dump_job_ptr->resize_time, buffer);
+		pack_time(dump_job_ptr->preempt_time, buffer);
 		pack32(dump_job_ptr->priority, buffer);
 
 		/* Only send the allocated nodelist since we are only sending
@@ -5326,7 +5329,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
-					        dump_job_ptr->qos_id), buffer);
+						dump_job_ptr->qos_id), buffer);
 		} else
 			packnull(buffer);
 		assoc_mgr_unlock(&locks);
@@ -5436,7 +5439,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {
 			packstr(slurmdb_qos_str(assoc_mgr_qos_list,
-					        dump_job_ptr->qos_id), buffer);
+						dump_job_ptr->qos_id), buffer);
 		} else
 			packnull(buffer);
 		assoc_mgr_unlock(&locks);
@@ -6667,7 +6670,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->time_limit != NO_VAL) {
-		if (IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
 			error_code = ESLURM_DISABLED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
 			debug("sched: update_job: new time limit identical to "
@@ -8147,7 +8150,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (front_end_ptr->job_cnt_comp == 0)
 			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
 	}
-		
+
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;

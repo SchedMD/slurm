@@ -111,6 +111,17 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		}
 	}
 
+	if (qos->grace_time == INFINITE) {
+		xstrcat(*cols, ", grace_time");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grace_time=NULL");
+	} else if ((qos->grace_time != NO_VAL) &&
+		   ((int32_t)qos->grace_time >= 0)) {
+		xstrcat(*cols, ", grace_time");
+		xstrfmtcat(*vals, ", %u", qos->grace_time);
+		xstrfmtcat(*extra, ", grace_time=%u", qos->grace_time);
+	}
+
 	if (qos->grp_cpu_mins == (uint64_t)INFINITE) {
 		xstrcat(*cols, ", grp_cpu_mins");
 		xstrcat(*vals, ", NULL");
@@ -593,6 +604,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->flags = qos->flags;
 
 		qos_rec->grp_cpus = qos->grp_cpus;
+		qos_rec->grace_time = qos->grace_time;
 		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
 		qos_rec->grp_cpu_run_mins = qos->grp_cpu_run_mins;
 		qos_rec->grp_jobs = qos->grp_jobs;
@@ -874,6 +886,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"description",
 		"id",
 		"flags",
+		"grace_time",
 		"grp_cpu_mins",
 		"grp_cpu_run_mins",
 		"grp_cpus",
@@ -899,6 +912,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_DESC,
 		QOS_REQ_ID,
 		QOS_REQ_FLAGS,
+		QOS_REQ_GRACE,
 		QOS_REQ_GCM,
 		QOS_REQ_GCRM,
 		QOS_REQ_GC,
@@ -1016,6 +1030,11 @@ empty:
 
 		if (row[QOS_REQ_NAME] && row[QOS_REQ_NAME][0])
 			qos->name = xstrdup(row[QOS_REQ_NAME]);
+
+		if (row[QOS_REQ_GRACE])
+			qos->grace_time = slurm_atoul(row[QOS_REQ_GRACE]);
+		else
+			qos->grace_time = (uint32_t)NO_VAL;
 
 		if (row[QOS_REQ_GCM])
 			qos->grp_cpu_mins = slurm_atoull(row[QOS_REQ_GCM]);

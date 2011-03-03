@@ -584,6 +584,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->preempt_mode   = part->preempt_mode;
 	part_ptr->priority       = part->priority;
 	part_ptr->state_up       = part->state_up;
+	part_ptr->grace_time     = part->grace_time;
+
 	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups = xstrdup(part->allow_groups);
@@ -1208,6 +1210,11 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				      "slurm.conf", part_ptr->name);
 				part_ptr->max_time = old_part_ptr->max_time;
 			}
+			if (part_ptr->grace_time != old_part_ptr->grace_time) {
+				error("Partition %s GraceTime differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->grace_time = old_part_ptr->grace_time;
+			}
 			if (part_ptr->min_nodes_orig !=
 			    old_part_ptr->min_nodes_orig) {
 				error("Partition %s MinNodes differs from "
@@ -1258,6 +1265,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 						   max_nodes_orig;
 			part_ptr->max_share = old_part_ptr->max_share;
 			part_ptr->max_time = old_part_ptr->max_time;
+			part_ptr->grace_time = old_part_ptr->grace_time;
 			part_ptr->min_nodes = old_part_ptr->min_nodes;
 			part_ptr->min_nodes_orig = old_part_ptr->
 						   min_nodes_orig;
