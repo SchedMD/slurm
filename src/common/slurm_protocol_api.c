@@ -331,6 +331,20 @@ uint32_t slurm_get_debug_flags(void)
 	return debug_flags;
 }
 
+/* slurm_set_debug_flags
+ */
+void slurm_set_debug_flags(uint32_t debug_flags)
+{
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		conf->debug_flags = debug_flags;
+		slurm_conf_unlock();
+	}
+}
+
 /* slurm_get_max_mem_per_cpu
  * RET MaxMemPerCPU/Node value from slurm.conf
  */

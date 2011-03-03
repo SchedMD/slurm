@@ -179,6 +179,7 @@ typedef enum {
 	REQUEST_HEALTH_CHECK,
 	REQUEST_TAKEOVER,
 	REQUEST_SET_SCHEDLOG_LEVEL,
+	REQUEST_SET_DEBUG_FLAGS,
 
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
@@ -563,6 +564,11 @@ typedef struct shutdown_msg {
 typedef struct last_update_msg {
 	time_t last_update;
 } last_update_msg_t;
+
+typedef struct set_debug_flags_msg {
+	uint32_t debug_flags_minus;
+	uint32_t debug_flags_plus;
+} set_debug_flags_msg_t;
 
 typedef struct set_debug_level_msg {
 	uint32_t debug_level;
@@ -959,6 +965,7 @@ inline void slurm_free_front_end_info_request_msg(
 inline void slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 inline void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 inline void slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
+inline void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg);
 inline void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 inline void slurm_destroy_association_shares_object(void *object);
 inline void slurm_free_shares_request_msg(shares_request_msg_t *msg);

@@ -2097,6 +2097,11 @@ inline void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 	xfree(msg);
 }
 
+void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 {
 	xfree(msg);
@@ -2338,6 +2343,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SLURM_RC:
 		slurm_free_return_code_msg(data);
+		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		slurm_free_set_debug_flags_msg(data);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
 	case REQUEST_SET_SCHEDLOG_LEVEL:

@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "December 2010" "scontrol 2.3" "Slurm components"
+.TH SCONTROL "1" "March 2011" "scontrol 2.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -275,6 +275,14 @@ the name of the most detailed message type to be printed:
 This value is temporary and will be overwritten whenever the slurmctld
 daemon reads the slurm.conf configuration file (e.g. when the daemon
 is restarted or \fBscontrol reconfigure\fR is executed).
+
+.TP
+\fBsetdebugflags\fP [+|\-]\fIFLAG\fP
+Add or remove DebugFlags of the slurmctld daemon.
+See "man slurm.conf" for a list of supported DebugFlags.
+NOTE: Changing the value of some DebugFlags will have no effect without
+restarting the slurmctld daemon, which would set DebugFlags based upon the
+contents of the slurm.conf configuration file.
 
 .TP
 \fBshow\fP \fIENTITY\fP \fIID\fP

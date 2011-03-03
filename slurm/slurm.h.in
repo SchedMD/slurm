@@ -3148,6 +3148,15 @@ extern int slurm_shutdown PARAMS((uint16_t options));
 extern int slurm_takeover PARAMS((void));
 
 /*
+ * slurm_set_debugflags - issue RPC to set slurm controller debug flags
+ * IN debug_flags_plus  - debug flags to be added
+ * IN debug_flags_minus - debug flags to be removed
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_set_debugflags PARAMS((uint32_t debug_flags_plus,
+					uint32_t debug_flags_minus));
+
+/*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
  * IN debug_level - requested debug level
  * RET 0 on success, otherwise return -1 and set errno to indicate the error

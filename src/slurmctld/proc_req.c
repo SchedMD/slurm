@@ -134,6 +134,7 @@ inline static void  _slurm_rpc_resv_delete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_show(slurm_msg_t * msg);
 inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_takeover(slurm_msg_t * msg);
+inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg);
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
@@ -389,6 +390,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_JOB_NOTIFY:
 		_slurm_rpc_job_notify(msg);
 		slurm_free_job_notify_msg(msg->data);
+		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		_slurm_rpc_set_debug_flags(msg);
+		slurm_free_set_debug_flags_msg(msg->data);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
 		_slurm_rpc_set_debug_level(msg);
@@ -3833,13 +3838,42 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, error_code);
 }
 
-/* defined in controller.c */
+inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
+{
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	slurmctld_lock_t config_write_lock =
+		{ WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	set_debug_flags_msg_t *request_msg =
+		(set_debug_flags_msg_t *) msg->data;
+	uint32_t debug_flags;
+	char *flag_string;
+
+	debug2("Processing RPC: REQUEST_SET_DEBUG_FLAGS from uid=%d", uid);
+	if (!validate_super_user(uid)) {
+		error("set debug flags request from non-super user uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+
+	lock_slurmctld (config_write_lock);
+	debug_flags  = slurm_get_debug_flags();
+	debug_flags &= (~request_msg->debug_flags_minus);
+	debug_flags |= request_msg->debug_flags_plus;
+	slurm_set_debug_flags(debug_flags);
+	unlock_slurmctld (config_write_lock);
+	flag_string = debug_flags2str(debug_flags);
+	info("Set DebugFlags to %s", flag_string);
+	xfree(flag_string);
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 {
 	int debug_level, old_debug_level;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	slurmctld_lock_t config_read_lock =
-		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	slurmctld_lock_t config_write_lock =
+		{ WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	set_debug_level_msg_t *request_msg =
 		(set_debug_level_msg_t *) msg->data;
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
@@ -3858,7 +3892,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	debug_level = MIN (request_msg->debug_level, (LOG_LEVEL_END - 1));
 	debug_level = MAX (debug_level, LOG_LEVEL_QUIET);
 
-	lock_slurmctld (config_read_lock);
+	lock_slurmctld (config_write_lock);
 	if (slurmctld_config.daemonize) {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (slurmctld_conf.slurmctld_logfile) {
@@ -3877,7 +3911,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 			log_opts.logfile_level = LOG_LEVEL_QUIET;
 	}
 	log_alter(log_opts, LOG_DAEMON, slurmctld_conf.slurmctld_logfile);
-	unlock_slurmctld (config_read_lock);
+	unlock_slurmctld (config_write_lock);
 
 	conf = slurm_conf_lock();
 	old_debug_level = conf->slurmctld_debug;

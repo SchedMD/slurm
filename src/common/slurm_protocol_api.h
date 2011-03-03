@@ -128,6 +128,10 @@ uint16_t slurm_get_complete_wait(void);
  */
 uint32_t slurm_get_debug_flags(void);
 
+/* slurm_set_debug_flags
+ */
+void slurm_set_debug_flags(uint32_t debug_flags);
+
 /* slurm_get_def_mem_per_cpu
  * RET DefMemPerCPU/Node value from slurm.conf
  */

@@ -37,9 +37,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * In order to support more than one front end node, new parameters have been
   added to support a new data structure: FrontendName, FrontendAddr, Port,
   State and Reason.
-
 * DebugFlags of Frontend added
-
 * Added new configuration parameter MaxJobId. Use with FirstJobId to limit
   range of job ID values.
 
@@ -47,7 +45,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 COMMAND CHANGES (see man pages for details)
 ===========================================
 * scontrol has the ability to get and set front end node state.
-
+* scontrol has the ability to set slurmctld's DebugFlags.
 * Add new scontrol option of "show aliases" to report every NodeName that is
   associated with a given NodeHostName when running multiple slurmd daemons
   per compute node (typically used for testing purposes).

@@ -846,6 +846,64 @@ _process_command (int argc, char *argv[])
 				exit_code = 1;
 		}
 	}
+	else if (strncasecmp (tag, "setdebugflags", MAX(tag_len, 9)) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					tag);
+		} else {
+			int i, mode = 0;
+			uint32_t debug_flags_plus  = 0;
+			uint32_t debug_flags_minus = 0, flags;
+
+			for (i = 1; i < argc; i++) {
+				if (argv[i][0] == '+')
+					mode = 1;
+				else if (argv[i][0] == '-')
+					mode = -1;
+				else {
+					mode = 0;
+					break;
+				}
+				flags = debug_str2flags(&argv[i][1]);
+				if (flags == NO_VAL)
+					break;
+				if (mode == 1)
+					debug_flags_plus  |= flags;
+				else
+					debug_flags_minus |= flags;
+			}
+			if (i < argc) {
+				exit_code = 1;
+				if (quiet_flag != 1) {
+					fprintf(stderr, "invalid debug "
+						"flag: %s\n", argv[i]);
+				}
+				if ((quiet_flag != 1) &&  (mode = 0)) {
+					fprintf(stderr, "Usage: setdebugflags"
+						" [+|-]NAME\n");
+				}
+			} else {
+				error_code = slurm_set_debugflags(
+					debug_flags_plus, debug_flags_minus);
+				if (error_code) {
+					exit_code = 1;
+					if (quiet_flag != 1)
+						slurm_perror(
+							"slurm_set_debug_flags"
+							" error");
+				}
+			}
+		}
+	}
 	else if (strncasecmp (tag, "setdebug", MAX(tag_len, 2)) == 0) {
 		if (argc > 2) {
 			exit_code = 1;
@@ -1623,6 +1681,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      requeue <job_id>         re-queue a batch job                         \n\
      resume <job_id>          resume previously suspended job (see suspend)\n\
      setdebug <level>         set slurmctld debug level                    \n\
+     setdebugflags [+|-]<flag>  add or remove slurmctld DebugFlags         \n\
      schedloglevel <slevel>   set scheduler log level                      \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
 			      is all records.                              \n\

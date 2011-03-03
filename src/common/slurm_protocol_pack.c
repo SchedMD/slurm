@@ -538,6 +538,12 @@ static void _pack_job_notify(job_notify_msg_t *msg, Buf buffer,
 static int  _unpack_job_notify(job_notify_msg_t **msg_ptr, Buf buffer,
 			       uint16_t protocol_version);
 
+static void _pack_set_debug_flags_msg(set_debug_flags_msg_t * msg, Buf buffer,
+				      uint16_t protocol_version);
+static int _unpack_set_debug_flags_msg(set_debug_flags_msg_t ** msg_ptr,
+				       Buf buffer,
+				       uint16_t protocol_version);
+
 static void _pack_set_debug_level_msg(set_debug_level_msg_t * msg, Buf buffer,
 				      uint16_t protocol_version);
 static int _unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr,
@@ -1098,6 +1104,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_notify((job_notify_msg_t *) msg->data, buffer,
 				 msg->protocol_version);
 		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		_pack_set_debug_flags_msg(
+			(set_debug_flags_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
 	case REQUEST_SET_DEBUG_LEVEL:
 	case REQUEST_SET_SCHEDLOG_LEVEL:
 		_pack_set_debug_level_msg(
@@ -1623,6 +1634,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc =  _unpack_job_notify((job_notify_msg_t **)
 					 &msg->data, buffer,
 					 msg->protocol_version);
+		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		rc = _unpack_set_debug_flags_msg(
+			(set_debug_flags_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
 	case REQUEST_SET_SCHEDLOG_LEVEL:
@@ -9298,6 +9314,33 @@ static int  _unpack_job_notify(job_notify_msg_t **msg_ptr, Buf buffer,
 
 unpack_error:
 	slurm_free_job_notify_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_set_debug_flags_msg(set_debug_flags_msg_t * msg, Buf buffer,
+			  uint16_t protocol_version)
+{
+	pack32(msg->debug_flags_minus, buffer);
+	pack32(msg->debug_flags_plus,  buffer);
+}
+
+static int
+_unpack_set_debug_flags_msg(set_debug_flags_msg_t ** msg_ptr, Buf buffer,
+			    uint16_t protocol_version)
+{
+	set_debug_flags_msg_t *msg;
+
+	msg = xmalloc(sizeof(set_debug_flags_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->debug_flags_minus, buffer);
+	safe_unpack32(&msg->debug_flags_plus,  buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_set_debug_flags_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

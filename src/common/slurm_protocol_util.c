@@ -87,6 +87,7 @@ int check_header_version(header_t * header)
 		case REQUEST_PRIORITY_FACTORS:
 		case REQUEST_RECONFIGURE:
 		case REQUEST_RESERVATION_INFO:
+		case REQUEST_SET_DEBUG_FLAGS:
 		case REQUEST_SET_DEBUG_LEVEL:
 		case REQUEST_SHARE_INFO:
 		case REQUEST_SHUTDOWN:

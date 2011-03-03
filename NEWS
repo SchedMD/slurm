@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Add GraceTime to Partition and QOS data structures. Preempted jobs will be
     given this time interval before termination. Work by Bill Brophy, Bull.
+ -- Add the ability for scontrol to modify slurmctld DebugFlags values.
 
 * Changes in SLURM 2.3.0.pre3
 =============================
