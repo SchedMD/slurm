@@ -524,6 +524,24 @@ static void _set_debug(GtkRadioAction *action,
 	g_free(temp);
 }
 
+static void _set_flags(GtkToggleAction *action)
+{
+	char *temp = NULL;
+	uint32_t debug_flags_plus = 0, debug_flags_minus = 0;
+
+	if (action && gtk_toggle_action_get_active(action))
+		debug_flags_plus  |= DEBUG_FLAG_GRES;
+	else
+		debug_flags_minus |= DEBUG_FLAG_GRES;
+
+	if (!slurm_set_debugflags(debug_flags_plus, debug_flags_minus))
+		temp = g_strdup_printf("Slurmctld DebugFlags reset");
+	else
+		temp = g_strdup_printf("Problem with set DebugFlags request");
+	display_edit_note(temp);
+	g_free(temp);
+}
+
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkNotebook *notebook)
@@ -638,6 +656,10 @@ static char *_get_ui_description()
 		"        <menuitem action='debug_debug3'/>"
 		"        <menuitem action='debug_debug4'/>"
 		"        <menuitem action='debug_debug5'/>"
+		"      </menu>"
+		"      <menu action='debugflags'>"
+		"        <menuitem action='flags_gres'/>"
+		"        <menuitem action='flags_wiki'/>"
 		"      </menu>"
 		"      <separator/>"
 		"      <menuitem action='exit'/>"
@@ -786,6 +808,10 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"reconfig", GTK_STOCK_REDO, "SLUR_M Reconfigure",
 		 "<control>m", "Reconfigures System",
 		 G_CALLBACK(_reconfigure)},
+		{"debugflags", GTK_STOCK_DIALOG_WARNING,
+		 "Slurmctld DebugFlags",
+		 "", "Set slurmctld DebugFlagsl",
+		 G_CALLBACK(_get_current_debug)},
 		{"debuglevel", GTK_STOCK_DIALOG_WARNING,
 		 "Slurmctld Debug Level",
 		 "", "Set slurmctld debug level",
@@ -843,6 +869,13 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"debug_debug5", NULL, "debug5(9)", "", "Debug5 level", 9},
 	};
 
+	GtkToggleActionEntry debug_flags[] = {
+		{"flags_gres", NULL, "Gres",
+		 NULL, "Gres", G_CALLBACK(_set_flags), 1},
+		{"flags_wiki", NULL, "Wiki",
+		 NULL, "Wiki", G_CALLBACK(_set_flags), 0},
+	};
+
 	/* Make an accelerator group (shortcut keys) */
 	menu_action_group = gtk_action_group_new ("MenuActions");
 	gtk_action_group_add_actions(menu_action_group, entries,
@@ -860,6 +893,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 					   G_N_ELEMENTS(radio_entries),
 					   working_sview_config.tab_pos,
 					   G_CALLBACK(_tab_pos), notebook);
+	gtk_action_group_add_toggle_actions(menu_action_group, debug_flags,
+					    G_N_ELEMENTS(debug_flags), NULL);
 	gtk_action_group_add_radio_actions(menu_action_group, debug_entries,
 					   G_N_ELEMENTS(debug_entries),
 					   -1, G_CALLBACK(_set_debug),
