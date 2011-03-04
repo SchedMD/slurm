@@ -180,7 +180,8 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 {
 	char buf_type[100];
 
-	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
+	debug("task_slurmd_launch_request: %u.%u %u",
+	      job_id, req->job_step_id, node_id);
 
 	if (((conf->sockets >= 1)
 	     && ((conf->cores > 1) || (conf->threads > 1)))

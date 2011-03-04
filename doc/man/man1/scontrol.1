@@ -989,22 +989,25 @@ Specification of licenses (or other resources available on all
 nodes of the cluster) which are to be reserved.
 License names can be followed by an asterisk and count
 (the default count is one).
-Multiple license names should be comma separated (e.g.
-"Licenses=foo*4,bar").
+Multiple license names should be comma separated (e.g. "Licenses=foo*4,bar").
+A new reservation must specify one or more resource to be included: NodeCnt,
+Nodes and/or Licenses.
 
 .TP
 \fINodeCnt\fP=<num>
-Identify number of nodes to be reserved.  A new reservation must specify either
-NodeCnt or Nodes.
+Identify number of nodes to be reserved.
 On BlueGene systems, this number represents a cnode (compute node) count and
 will be rounded up as needed to represent whole nodes (midplanes).
+A new reservation must specify one or more resource to be included: NodeCnt,
+Nodes and/or Licenses.
 
 .TP
 \fINodes\fP=<name>
 Identify the node(s) to be reserved. Multiple node names
 may be specified using simple node range expressions (e.g. "Nodes=lx[10\-20]").
 Specify a blank data value to remove all nodes from a reservation: "Nodes=".
-A new reservation must specify either NodeCnt or Nodes.
+A new reservation must specify one or more resource to be included: NodeCnt,
+Nodes and/or Licenses.
 
 .TP
 \fIStartTime\fP=<time_spec>

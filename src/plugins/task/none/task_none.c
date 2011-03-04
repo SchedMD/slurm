@@ -116,7 +116,8 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 				       launch_tasks_request_msg_t *req,
 				       uint32_t node_id)
 {
-	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
+	debug("task_slurmd_launch_request: %u.%u %u",
+	      job_id, req->job_step_id, node_id);
 	return SLURM_SUCCESS;
 }
 
