@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- For batch jobs for which the Prolog fails, substitute the job ID for any
     "%j" in the job's output or error file specification.
  -- Add licenses field to the sview reservation information.
+ -- BLUEGENE - Fix for handling extremely overloaded system on Dynamic system
+    dealing with starting jobs on overlapping blocks.  Previous fallout
+    was job would be requeued.  (happens very rarely)
 
 * Changes in SLURM 2.2.3
 ========================

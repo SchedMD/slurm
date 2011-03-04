@@ -604,7 +604,10 @@ static int _check_for_booted_overlapping_blocks(
 				}
 			}
 
-			if (!SELECT_IS_CHECK_FULL_SET(query_mode)
+			if (((bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			     || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
+				  || SELECT_IS_MODE_RUN_NOW(query_mode))
+				 && (bg_conf->layout_mode != LAYOUT_DYNAMIC)))
 			    && ((found_record->job_running != NO_JOB_RUNNING)
 				|| (found_record->state
 				    == RM_PARTITION_ERROR))) {
