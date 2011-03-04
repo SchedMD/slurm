@@ -198,6 +198,15 @@ extern List create_dynamic_block(List block_list,
 	}
 
 	if (request->avail_mp_bitmap) {
+		DEF_TIMERS;
+		info("got %d", bit_ffc(request->avail_mp_bitmap));
+		if (bit_ffc(request->avail_mp_bitmap) != -1) {
+		START_TIMER;
+			ba_set_removable_mps2(request->avail_mp_bitmap, 1);
+
+		END_TIMER;
+		info ("took %s", TIME_STR);
+		START_TIMER;
 		bitstr_t *bitmap = bit_alloc(node_record_count);
 
 		/* we want the mps that aren't in this partition to
@@ -211,6 +220,10 @@ extern List create_dynamic_block(List block_list,
 		ba_set_removable_mps(unusable_nodes);
 
 		FREE_NULL_BITMAP(bitmap);
+		END_TIMER;
+		info ("took %s", TIME_STR);
+		exit(0);
+		}
 	}
 
 	if (request->size==1 && cnodes < bg_conf->mp_node_cnt) {

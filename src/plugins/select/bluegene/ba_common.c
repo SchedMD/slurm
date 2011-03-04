@@ -116,10 +116,44 @@ static void _internal_removable_set_mps(int level, int *start,
 	}
 	curr_mp = coord2ba_mp(coords);
 	if (mark) {
-		//info("can't use %s", curr_mp->coord_str);
+		info("can't use %s", curr_mp->coord_str);
 		curr_mp->used |= BA_MP_USED_TEMP;
 	} else {
 		curr_mp->used &= (~BA_MP_USED_TEMP);
+	}
+}
+
+static void _internal_removable_set_mps2(int level, bitstr_t *bitmap,
+					 int *coords, bool mark, bool except)
+{
+	ba_mp_t *curr_mp;
+	int is_set;
+	static int *dims = NULL;
+
+	if (level > cluster_dims)
+		return;
+	if (!dims)
+		dims = select_g_ba_get_dims();
+
+	if (level < cluster_dims) {
+		for (coords[level] = 0;
+		     coords[level] < dims[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			_internal_removable_set_mps2(
+				level+1, bitmap, coords, mark, except);
+		}
+		return;
+	}
+	curr_mp = coord2ba_mp(coords);
+	is_set = bit_test(bitmap, curr_mp->index);
+	if ((is_set && !except) || (!is_set && except)) {
+		if (mark) {
+			info("can't use %s", curr_mp->coord_str);
+			curr_mp->used |= BA_MP_USED_TEMP;
+		} else {
+			curr_mp->used &= (~BA_MP_USED_TEMP);
+		}
 	}
 }
 
@@ -888,6 +922,28 @@ extern int ba_set_removable_mps(char *mps)
 		j++;
 	}
  	return SLURM_SUCCESS;
+}
+
+/*
+ * Used to set all midplanes in a special used state except the ones
+ * we are able to use in a new allocation.
+ *
+ * IN: hostlist of midplanes we do not want
+ * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
+ *
+ * Note: Need to call ba_reset_all_removed_mps before starting another
+ * allocation attempt after
+ */
+extern int ba_set_removable_mps2(bitstr_t* bitmap, bool except)
+{
+	int coords[cluster_dims];
+
+	if (!bitmap)
+		return SLURM_ERROR;
+
+	memset(coords, 0, sizeof(coords));
+	_internal_removable_set_mps2(0, bitmap, coords, 1, except);
+	return SLURM_SUCCESS;
 }
 
 /*

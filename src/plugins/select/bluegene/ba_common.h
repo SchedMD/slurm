@@ -321,6 +321,18 @@ extern void reset_ba_system(bool track_down_mps);
 extern int ba_set_removable_mps(char *mps);
 
 /*
+ * Used to set all midplanes in a special used state except the ones
+ * we are able to use in a new allocation.
+ *
+ * IN: hostlist of midplanes we do not want
+ * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
+ *
+ * Note: Need to call ba_reset_all_removed_mps before starting another
+ * allocation attempt after
+ */
+extern int ba_set_removable_mps2(bitstr_t *mps, bool except);
+
+/*
  * Resets the virtual system to the pervious state before calling
  * removable_set_mps, or set_all_mps_except.
  */
