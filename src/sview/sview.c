@@ -526,6 +526,7 @@ static void _set_debug(GtkRadioAction *action,
 
 static void _set_flags(GtkToggleAction *action)
 {
+/* NEED TO FIND THE PARENT TO PICK THE PROPER FLAG */
 	char *temp = NULL;
 	uint32_t debug_flags_plus = 0, debug_flags_minus = 0;
 
@@ -658,7 +659,21 @@ static char *_get_ui_description()
 		"        <menuitem action='debug_debug5'/>"
 		"      </menu>"
 		"      <menu action='debugflags'>"
+		"        <menuitem action='flags_backfill'/>"
+		"        <menuitem action='flags_bg_algo'/>"
+		"        <menuitem action='flags_bg_algo_deep'/>"
+		"        <menuitem action='flags_bg_pick'/>"
+		"        <menuitem action='flags_bg_wires'/>"
+		"        <menuitem action='flags_cpu_bind'/>"
+		"        <menuitem action='flags_front_end'/>"
+		"        <menuitem action='flags_gang'/>"
 		"        <menuitem action='flags_gres'/>"
+		"        <menuitem action='flags_no_conf_hash'/>"
+		"        <menuitem action='flags_prio'/>"
+		"        <menuitem action='flags_reservation'/>"
+		"        <menuitem action='flags_select_type'/>"
+		"        <menuitem action='flags_steps'/>"
+		"        <menuitem action='flags_triggers'/>"
 		"        <menuitem action='flags_wiki'/>"
 		"      </menu>"
 		"      <separator/>"
@@ -870,8 +885,38 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	};
 
 	GtkToggleActionEntry debug_flags[] = {
+/* NOT SETTABLE WHEN ADMIN FLAG SET FROM OLD STATE */
+/* NEED TO SET INITIAL VALUE */
+		{"flags_backfill", NULL, "Backfill",
+		 NULL, "Backfill", G_CALLBACK(_set_flags), 1},
+		{"flags_bg_algo", NULL, "BgBlockAlgo",
+		 NULL, "BgBlockAlgo", G_CALLBACK(_set_flags), 1},
+		{"flags_bg_algo_deep", NULL, "BgBlockAlgoDeep",
+		 NULL, "BgBlockAlgoDeep", G_CALLBACK(_set_flags), 0},
+		{"flags_bg_pick", NULL, "BgBlockPick",
+		 NULL, "BgBlockPick", G_CALLBACK(_set_flags), 1},
+		{"flags_bg_wires", NULL, "BgBlockWires",
+		 NULL, "BgBlockWires", G_CALLBACK(_set_flags), 1},
+		{"flags_cpu_bind", NULL, "CPU Bind",
+		 NULL, "CPU_Bind", G_CALLBACK(_set_flags), 1},
+		{"flags_front_end", NULL, "FrontEnd",
+		 NULL, "FrontEnd", G_CALLBACK(_set_flags), 1},
+		{"flags_gang", NULL, "Gang",
+		 NULL, "Gang", G_CALLBACK(_set_flags), 1},
 		{"flags_gres", NULL, "Gres",
 		 NULL, "Gres", G_CALLBACK(_set_flags), 1},
+		{"flags_no_conf_hash", NULL, "NO CONF HASH",
+		 NULL, "NO_CONF_HASH", G_CALLBACK(_set_flags), 1},
+		{"flags_prio", NULL, "Priority",
+		 NULL, "Priority", G_CALLBACK(_set_flags), 0},
+		{"flags_reservation", NULL, "Reservation",
+		 NULL, "Reservation", G_CALLBACK(_set_flags), 0},
+		{"flags_select_type", NULL, "SelectType",
+		 NULL, "SelectType", G_CALLBACK(_set_flags), 1},
+		{"flags_steps", NULL, "Steps",
+		 NULL, "Steps", G_CALLBACK(_set_flags), 0},
+		{"flags_triggers", NULL, "Triggers",
+		 NULL, "Triggers", G_CALLBACK(_set_flags), 0},
 		{"flags_wiki", NULL, "Wiki",
 		 NULL, "Wiki", G_CALLBACK(_set_flags), 0},
 	};
@@ -881,10 +926,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_actions(menu_action_group, entries,
 				     G_N_ELEMENTS(entries), window);
 
-	//if (cluster_flags & CLUSTER_FLAG_BG)
 	gtk_action_group_add_actions(menu_action_group, bg_entries,
 				     G_N_ELEMENTS(bg_entries), window);
-	//else
 	gtk_action_group_add_actions(menu_action_group, nonbg_entries,
 				     G_N_ELEMENTS(nonbg_entries),
 				     window);
