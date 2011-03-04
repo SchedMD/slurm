@@ -58,6 +58,9 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 static int _test_image_perms(char *image_name, List image_list,
 			     struct job_record* job_ptr);
 
+static bool _check_rotate_geo(uint16_t *match_geo,
+			      uint16_t *req_geo, bool rotate);
+
 static int _check_images(struct job_record* job_ptr,
 			 select_ba_request_t *request);
 
@@ -167,6 +170,36 @@ static int _test_image_perms(char *image_name, List image_list,
 	list_iterator_destroy(itr);
 
 	return allow;
+}
+
+static bool _check_rotate_geo(uint16_t *match_geo,
+			      uint16_t *req_geo, bool rotate)
+{
+	bool match = false;
+	int rot_cnt = 0;	/* attempt 6 rotations  */
+	int dim = 0;
+#ifdef HAVE_BGQ
+	int max_rotate=12;
+#else
+	int max_rotate=6;
+#endif
+	for (rot_cnt=0; rot_cnt<max_rotate; rot_cnt++) {
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+			if (match_geo[dim] < req_geo[dim])
+				break;
+		}
+
+		if (dim >= SYSTEM_DIMENSIONS) {
+			match = true;
+			break;
+		}
+
+		if (!rotate)
+			break;
+		ba_rotate_geo(req_geo, rot_cnt);
+	}
+
+	return match;
 }
 
 static int _check_images(struct job_record* job_ptr,
@@ -450,10 +483,9 @@ static bg_record_t *_find_matching_block(List block_list,
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
-		if (request->geometry[0] == (uint16_t)NO_VAL)
-			;	/* Geometry not specified */
-		else if (!request->rotate
-			 || !ba_rotate_geo(bg_record->geo, request->geometry))
+		if ((request->geometry[0] != (uint16_t)NO_VAL)
+		    && (!_check_rotate_geo(bg_record->geo, request->geometry,
+					   request->rotate))
 			continue;
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)

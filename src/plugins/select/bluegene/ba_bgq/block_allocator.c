@@ -68,9 +68,6 @@ static ba_geo_system_t *ba_mp_geo_system = NULL;
 
 /** internal helper functions */
 /* */
-static void _rotate_geo(uint16_t *req_geo, int rot_cnt);
-
-/* */
 static int _check_for_options(select_ba_request_t* ba_request);
 
 /* */
@@ -1033,30 +1030,7 @@ end_it:
 
 }
 
-extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo)
-{
-	bool match = false;
-	int rot_cnt = 0;	/* attempt 12 rotations  */
-	int dim = 0;
-
-	for (rot_cnt=0; rot_cnt<12; rot_cnt++) {
-		for (dim = 0; dim < cluster_dims; dim++) {
-			if (match_geo[dim] < req_geo[dim])
-				break;
-		}
-
-		if (dim >= cluster_dims) {
-			match = true;
-			break;
-		}
-
-		_rotate_geo(req_geo, rot_cnt);
-	}
-
-	return match;
-}
-
-static void _rotate_geo(uint16_t *req_geo, int rot_cnt)
+extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
 {
 	uint16_t tmp;
 

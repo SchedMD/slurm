@@ -96,7 +96,6 @@ typedef enum {
 } block_algo_t;
 
 /** internal helper functions */
-static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 
 /* */
 static int _check_for_options(select_ba_request_t* ba_request);
@@ -1688,33 +1687,8 @@ end_it:
 
 }
 
-extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo)
-{
-	bool match = false;
-	int rot_cnt = 0;	/* attempt 6 rotations  */
-	int dim = 0;
-
-	for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
-		for (dim = 0; dim < cluster_dims; dim++) {
-			if (match_geo[dim] < req_geo[dim])
-				break;
-		}
-
-		if (dim >= cluster_dims) {
-			match = true;
-			break;
-		}
-
-		_rotate_geo(req_geo, rot_cnt);
-	}
-
-	return match;
-}
-
-/********************* Local Functions *********************/
-
 /* Rotate a 3-D geometry array through its six permutations */
-static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
+extern void ba_rotate_geo(uint16_t *req_geometry, int rot_cnt)
 {
 	uint16_t tmp;
 
@@ -1731,6 +1705,8 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 		break;
 	}
 }
+
+/********************* Local Functions *********************/
 
 /*
  * This function is here to check options for rotating and elongating

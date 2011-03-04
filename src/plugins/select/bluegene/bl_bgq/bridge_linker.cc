@@ -67,6 +67,90 @@ using namespace bgsched::core;
 static bool initialized = false;
 
 #if defined HAVE_BG_FILES
+
+static int _handle_runtime_errors(const char *function,
+				  const uint32_t err,
+				  bg_record_t *bg_record)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::RuntimeErrors::BlockAddError:
+		error("%s: Error Setting block %s owner.", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::RuntimeErrors::InvalidBlockState:
+		/* not a real error */
+		rc = SLURM_SUCCESS;
+		error("%s: Error can't perform task with block %s in state %s"
+		      "incorrect %s.", function, bg_record->bg_block_id,
+		      bg_block_state_string(bg_record->state));
+		break;
+	default:
+		error("%s: Unexpected Runtime exception value %d.",
+		      function, err);
+	}
+	return rc;
+}
+
+static int _handle_database_errors(const char *function, const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::DatabaseErrors::DatabaseError:
+		error("%s: Can't access to the database when "
+		      "doing Block::remove()!");
+		break;
+	case bgsched::DatabaseErrors::ConnectionError:
+		error("%s: Can't connect to the database!", function);
+		break;
+	default:
+		error("%s: Unexpected Database exception value %d",
+		      function, err);
+	}
+	return rc;
+}
+static int _handle_input_errors(const char *function, const uint32_t err,
+				bg_record_t *bg_record)
+{
+	int rc = SLURM_ERROR;
+
+	/* Not real errors */
+	switch (err) {
+	case bgsched::InputErrors::BlockNotAdded:
+		error("%s: For some reason the block was not added.", function);
+		break;
+	case bgsched::InputErrors::BlockNotCreated:
+		error("%s: can not create block from "
+		      "input arguments", function);
+		break;
+	case bgsched::InputErrors::BlockNotFound:
+		/* Not real error */
+		rc = SLURM_SUCCESS;
+		error("%s: Unknown block %s!",
+		      function, bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidBlockName:
+		/* Not real error */
+		rc = SLURM_SUCCESS;
+		error("%s: Bad block name %s!",
+		      function, bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidMidplanes:
+		error("%s: Invalid midplanes given.", function);
+		break;
+	case bgsched::InputErrors::InvalidConnectivity:
+		error("%s: Invalid connectivity given.", function);
+		break;
+	default:
+		error("%s: Unexpected Input exception value %d",
+		      function, err);
+		rc = SLURM_ERROR;
+	}
+	return rc;
+}
+
 static void _setup_ba_switch_int(ba_switch_t *ba_switch)
 {
 
@@ -371,23 +455,12 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	try {
 		block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
 	} catch (const bgsched::InputException& err) {
-		switch (err.getError().toValue()) {
-		case bgsched::InputErrors::InvalidMidplanes:
-			error("Invalid midplanes given for Block::Create()");
-			break;
-		case bgsched::InputErrors::InvalidConnectivity:
-			error("Invalid connectivity given for Block::Create()");
-			break;
-		case bgsched::InputErrors::BlockNotCreated:
-			error("Block::Create() can not create block from "
-			      "input arguments");
-			break;
-		default:
-			error("Unexpected exception value from "
-			      "Block::Create()");
-		}
-		rc = SLURM_ERROR;
+		rc = _handle_input_errors("Block::create",
+					  err.getError().toValue(), bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	}
+
 
 	block_ptr->setName(bg_record->bg_block_id);
 	block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
@@ -398,28 +471,16 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		// 		   bg_record->user_name);
 		//info("got past add");
 	} catch (const bgsched::InputException& err) {
-		switch (err.getError().toValue()) {
-		case bgsched::InputErrors::BlockNotAdded:
-			error("For some reason the block was not added.");
-			break;
-		case  bgsched::InputErrors::InvalidMidplanes:
-			error("Invalid midplanes given for Block::Add()");
-			break;
-		default:
-			error("Unexpected exception value from "
-			      "Block::Add() %d", err.getError().toValue());
-		}
-		rc = SLURM_ERROR;
-	} catch (const bgsched::RuntimeException& err2) {
-		switch (err2.getError().toValue()) {
-		case bgsched::RuntimeErrors::BlockAddError:
-			error("Error Setting block owner Block:Add().");
-			break;
-		default:
-			error("2 Unexpected exception value from "
-			      "Block::Add() %d", err2.getError().toValue());
-		}
-		rc = SLURM_ERROR;
+		rc = _handle_input_errors("Block::add",
+					  err.getError().toValue(), bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::RuntimeException& err) {
+		rc = _handle_runtime_errors("Block::add",
+					    err.getError().toValue(),
+					    bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	} catch (...) {
                 error("Unknown error from Block::Add().");
 		rc = SLURM_ERROR;
@@ -491,6 +552,21 @@ extern int bridge_block_free(bg_record_t *bg_record)
 #if defined HAVE_BG_FILES
 	try {
 		Block::initiateFree(bg_record->bg_block_id);
+	} catch (const bgsched::RuntimeException& err) {
+		rc = _handle_input_errors("Block::initiateFree",
+					  err.getError().toValue(), bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::DatabaseException& err) {
+		rc = _handle_database_errors("Block::initiateFree",
+					     err.getError().toValue());
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::InputException& err) {
+		rc = _handle_input_errors("Block::initiateFree",
+					  err.getError().toValue(), bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	} catch(...) {
                 error("Free block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -515,6 +591,21 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 #if defined HAVE_BG_FILES
 	try {
 		Block::remove(bg_record->bg_block_id);
+	} catch (const bgsched::RuntimeException& err) {
+		rc = _handle_input_errors("Block::remove",
+					  err.getError().toValue(), bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::DatabaseException& err) {
+		rc = _handle_database_errors("Block::remove",
+					     err.getError().toValue());
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::InputException& err) {
+		rc = _handle_input_errors("Block::remove",
+					  err.getError().toValue(), bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	} catch(...) {
                 error("Remove block request failed ... continuing.");
 		rc = SLURM_ERROR;

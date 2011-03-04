@@ -368,7 +368,7 @@ extern int validate_coord(uint16_t *coord);
 
 extern char *ba_switch_usage_str(uint16_t usage);
 
-extern bool ba_rotate_geo(uint16_t *match_geo, uint16_t *req_geo);
+extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt);
 
 /*
  * Create a geo_table of possible unique geometries
