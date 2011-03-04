@@ -28,8 +28,8 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#include <expat.h>
 #ifdef HAVE_CRAY
+#  include <expat.h>
 #  include <mysql.h>
 #endif
 
