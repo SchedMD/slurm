@@ -97,35 +97,8 @@ static void _ba_node_xlate_to_1d(int *offset_1d, int *full_offset,
 	*offset_1d = map_offset;
 }
 
-static void _internal_removable_set_mps(int level, int *start,
-					int *end, int *coords, bool mark)
-{
-	ba_mp_t *curr_mp;
-
-	if (level > cluster_dims)
-		return;
-
-	if (level < cluster_dims) {
-		for (coords[level] = start[level];
-		     coords[level] <= end[level];
-		     coords[level]++) {
-			/* handle the outer dims here */
-			_internal_removable_set_mps(
-				level+1, start, end, coords, mark);
-		}
-		return;
-	}
-	curr_mp = coord2ba_mp(coords);
-	if (mark) {
-		//info("can't use %s", curr_mp->coord_str);
-		curr_mp->used |= BA_MP_USED_TEMP;
-	} else {
-		curr_mp->used &= (~BA_MP_USED_TEMP);
-	}
-}
-
-static void _internal_removable_set_mps2(int level, bitstr_t *bitmap,
-					 int *coords, bool mark, bool except)
+static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
+					int *coords, bool mark, bool except)
 {
 	ba_mp_t *curr_mp;
 	int is_set;
@@ -142,7 +115,7 @@ static void _internal_removable_set_mps2(int level, bitstr_t *bitmap,
 		     coords[level] < dims[level];
 		     coords[level]++) {
 			/* handle the outer dims here */
-			_internal_removable_set_mps2(
+			_internal_removable_set_mps(
 				level+1, bitmap, coords, mark, except);
 		}
 		return;
@@ -827,77 +800,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
  * Note: Need to call ba_reset_all_removed_mps before starting another
  * allocation attempt after
  */
-extern int ba_set_removable_mps(char *mps)
-{
-	int j=0;
-	int dim;
-	int start[cluster_dims];
-        int end[cluster_dims];
-	int coords[cluster_dims];
-
-	if (!mps)
-		return SLURM_ERROR;
-
-	memset(coords, 0, sizeof(coords));
-
-	while (mps[j] != '\0') {
-		int mid = j   + cluster_dims + 1;
-		int fin = mid + cluster_dims + 1;
-		if (((mps[j] == '[') || (mps[j] == ','))
-		    && ((mps[mid] == 'x') || (mps[mid] == '-'))
-		    && ((mps[fin] == ']') || (mps[fin] == ','))) {
-			/* static char start_char[SYSTEM_DIMENSIONS+1], */
-			/* 	end_char[SYSTEM_DIMENSIONS+1]; */
-
-			j++;	/* Skip leading '[' or ',' */
-			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
-				start[dim] = _coord(mps[j]);
-			j++;	/* Skip middle 'x' or '-' */
-			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
-				end[dim] = _coord(mps[j]);
-			/* for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) { */
-			/* 	start_char[dim] = alpha_num[start[dim]]; */
-			/* 	end_char[dim] = alpha_num[end[dim]]; */
-			/* } */
-			/* start_char[dim] = '\0'; */
-			/* end_char[dim] = '\0'; */
-			/* info("_internal_removable_set_mps: setting %s x %s", */
-			/*      start_char, end_char); */
-
-			_internal_removable_set_mps(0, start, end, coords, 1);
-
-			if (mps[j] != ',')
-				break;
-			j--;
-		} else if ((mps[j] >= '0' && mps[j] <= '9')
-			   || (mps[j] >= 'A' && mps[j] <= 'D')) {
-			ba_mp_t *curr_mp;
-			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, j++)
-				start[dim] = _coord(mps[j]);
-
-			curr_mp = coord2ba_mp(start);
-			curr_mp->used |= BA_MP_USED_TEMP;
-
-			if (mps[j] != ',')
-				break;
-			j--;
-		}
-		j++;
-	}
- 	return SLURM_SUCCESS;
-}
-
-/*
- * Used to set all midplanes in a special used state except the ones
- * we are able to use in a new allocation.
- *
- * IN: hostlist of midplanes we do not want
- * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
- *
- * Note: Need to call ba_reset_all_removed_mps before starting another
- * allocation attempt after
- */
-extern int ba_set_removable_mps2(bitstr_t* bitmap, bool except)
+extern int ba_set_removable_mps(bitstr_t* bitmap, bool except)
 {
 	int coords[SYSTEM_DIMENSIONS];
 
@@ -911,7 +814,7 @@ extern int ba_set_removable_mps2(bitstr_t* bitmap, bool except)
 	} else if (bit_ffs(bitmap) == -1)
 		return SLURM_SUCCESS;
 
-	_internal_removable_set_mps2(0, bitmap, coords, 1, except);
+	_internal_removable_set_mps(0, bitmap, coords, 1, except);
 	return SLURM_SUCCESS;
 }
 
@@ -921,34 +824,8 @@ extern int ba_set_removable_mps2(bitstr_t* bitmap, bool except)
  */
 extern int ba_reset_all_removed_mps()
 {
-	static int start[SYSTEM_DIMENSIONS];
-	static int end[SYSTEM_DIMENSIONS];
-	static int dim = 0;
-	static int *dims = NULL;
 	int coords[SYSTEM_DIMENSIONS];
-
-	if (!dim) {
-		dims = select_g_ba_get_dims();
-		xassert(dims);
-		memset(start, 0, sizeof(start));
-		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
-			end[dim] = dims[dim] - 1;
-	}
-
-	memset(coords, 0, sizeof(coords));
-	_internal_removable_set_mps(0, start, end, coords, 0);
-
-	return SLURM_SUCCESS;
-}
-
-/*
- * Resets the virtual system to the pervious state before calling
- * removable_set_mps, or set_all_mps_except.
- */
-extern int ba_reset_all_removed_mps2()
-{
-	int coords[SYSTEM_DIMENSIONS];
-	_internal_removable_set_mps2(0, NULL, coords, 0, 0);
+	_internal_removable_set_mps(0, NULL, coords, 0, 0);
 	return SLURM_SUCCESS;
 }
 /*

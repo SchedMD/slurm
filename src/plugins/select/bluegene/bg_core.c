@@ -778,17 +778,12 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			reset_ba_system(false);
 		}
 
-		ba_set_removable_mps2(usable_mp_bitmap, 1);
+		ba_set_removable_mps(usable_mp_bitmap, 1);
 		/* we want the mps that aren't
 		 * in this record to mark them as used
 		 */
-		if (set_all_mps_except(bg_record->nodes)
-		    != SLURM_SUCCESS)
-			fatal("something happened in "
-			      "the load of %s.  "
-			      "Did you use smap to "
-			      "make the "
-			      "bluegene.conf file?",
+		if (ba_set_removable_mps(bg_record->bitmap, 1) != SLURM_SUCCESS)
+			fatal("1 It doesn't seem we have a bitmap for %s",
 			      bg_record->bg_block_id);
 #ifdef HAVE_BGQ
 		results = list_create(destroy_ba_mp);
@@ -799,7 +794,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 				    bg_record->start,
 				    geo,
 				    bg_record->conn_type);
-		ba_reset_all_removed_mps2();
+		ba_reset_all_removed_mps();
 
 		if (!name) {
 			error("I was unable to "

@@ -85,7 +85,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
-	ba_set_removable_mps2(usable_mp_bitmap, 1);
+	ba_set_removable_mps(usable_mp_bitmap, 1);
 	if (bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = list_next(itr))) {
@@ -125,20 +125,17 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 
 				if (overlapped == LAYOUT_OVERLAP) {
 					reset_ba_system(false);
-					ba_set_removable_mps2(usable_mp_bitmap,
-							      1);
+					ba_set_removable_mps(usable_mp_bitmap,
+							     1);
 				}
 
 				/* we want the mps that aren't
 				 * in this record to mark them as used
 				 */
-				if (set_all_mps_except(bg_record->nodes)
+				if (ba_set_removable_mps(bg_record->bitmap, 1)
 				    != SLURM_SUCCESS)
-					fatal("something happened in "
-					      "the load of %s.  "
-					      "Did you use smap to "
-					      "make the "
-					      "bluegene.conf file?",
+					fatal("It doesn't seem we have a "
+					      "bitmap for %s",
 					      bg_record->bg_block_id);
 
 				for(i=0; i<SYSTEM_DIMENSIONS; i++) {
@@ -178,7 +175,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						bg_record->start,
 						geo,
 						bg_record->conn_type);
-					ba_reset_all_removed_mps2();
+					ba_reset_all_removed_mps();
 					if (!name) {
 						error("I was unable to "
 						      "make the "
@@ -254,7 +251,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	sort_bg_record_inc_size(bg_lists->main);
 
 end_it:
-	ba_reset_all_removed_mps2();
+	ba_reset_all_removed_mps();
 	FREE_NULL_BITMAP(usable_mp_bitmap);
 	slurm_mutex_unlock(&block_state_mutex);
 

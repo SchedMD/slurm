@@ -197,7 +197,7 @@ extern List create_dynamic_block(List block_list,
 	}
 
 	if (request->avail_mp_bitmap)
-		ba_set_removable_mps2(request->avail_mp_bitmap, 1);
+		ba_set_removable_mps(request->avail_mp_bitmap, 1);
 
 	if (request->size==1 && cnodes < bg_conf->mp_node_cnt) {
 		switch(cnodes) {
@@ -413,7 +413,7 @@ setup_records:
 finished:
 	if (request->avail_mp_bitmap
 	    && (bit_ffc(request->avail_mp_bitmap) == -1))
-		ba_reset_all_removed_mps2();
+		ba_reset_all_removed_mps();
 
 	/* reset the ones we mucked with */
 	itr = list_iterator_create(my_block_list);

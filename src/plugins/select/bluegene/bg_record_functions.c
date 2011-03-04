@@ -281,6 +281,19 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	} else if (bg_record->node_cnt == bg_conf->mp_node_cnt)
 		bg_record->full_block = 1;
 
+	if(!bg_record->nodes) {
+		info("block %s doesn't appear to have any nodes in it",
+		     bg_record->bg_block_id);
+		itr = list_iterator_create(bg_record->ba_mp_list);
+		while ((ba_mp = list_next(itr))) {
+			if (!ba_mp->used)
+				continue;
+			info("process_nodes: %s is included in this block",
+			     ba_mp->coord_str);
+		}
+		list_iterator_destroy(itr);
+		xassert(0);
+	}
 	if (node_name2bitmap(bg_record->nodes,
 			     false,
 			     &bg_record->bitmap)) {
