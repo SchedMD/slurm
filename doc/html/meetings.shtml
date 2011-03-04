@@ -1,0 +1,20 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Meetings</h1>
+
+<p><b>SLURM User Group Meeting 2011</b><br>
+September 22-23, 2011<br>
+Phoenix, Arizona, USA</p>
+
+<p><a href="cfp.html">Call for submissions</a><br>
+Registration (not yet available)<br>
+Agenda (not yet available)<br>
+</p>
+
+<!--<p><b>SLURM User Group Meeting 2010</b><br>
+October 5, 2010<br>
+Paris, France</p>-->
+
+<p style="text-align:center;">Last modified 4 March 2011</p>
+
+<!--#include virtual="footer.txt"-->

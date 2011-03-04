@@ -8,6 +8,7 @@ generated_html = \
 	authplugins.html \
 	big_sys.html \
 	bluegene.html \
+	cfp.html \
 	checkpoint_blcr.html \
 	checkpoint_plugins.html \
 	cons_res.html \
@@ -31,6 +32,7 @@ generated_html = \
 	mail.html \
 	maui.html \
 	mc_support.html \
+	meetings.html \
 	moab.html \
 	mpi_guide.html \
 	mpiplugins.html \

@@ -38,6 +38,7 @@ structure:Laboratories and Other Field Facilities">
 <h2>About</h2>
 <ul>
 	  <li><a href="overview.shtml" class="nav">Overview</a></li>
+	  <li><a href="meetings.shtml" class="nav">Meetings</a></li>
 	  <li><a href="news.shtml" class="nav">What's New</a></li>
 	  <li><a href="publications.shtml" class="nav">Publications</a></li>
 	  <li><a href="testimonials.shtml" class="nav">Testimonials</a></li>

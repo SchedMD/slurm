@@ -1,0 +1,40 @@
+<!--#include virtual="header.txt"-->
+
+<p><b>CALL  FOR  SUBMISSIONS</b><br><br>
+SLURM User Group Meeting 2011<br>
+September 22-23, 2011<br>
+Phoenix, Arizona, USA</p>
+
+<p>You are invited to submit an abstract of a presentation or tutorial
+to be given at the SLURM User Group Meeting 2011. This event will be
+sponsored and organized by <a href="http://www.bull.com">Bull</a> and
+will be held in Phoenix, Arizona, USA on September 22 and 23, 2011.</p>
+
+<p>This international event is opened to everyone who wants to:
+<ul>
+<li>Learn more about <a href="https://computing.llnl.gov/linux/slurm">
+SLURM</a>, a highly scalable Resource Manager and Job Scheduler</li>
+<li>Share their knowledge and experience with other users and administrators</li>
+<li>Get detailed informations about the latest features and developments</li>
+<li>Share requirements and discuss future developments</li>
+</ul></p>
+
+<p>Everyone who wants to present their own usage, developments, site report,
+or tutorial about SLURM is invited to send a short abstract including
+the presentation's expected duration to
+<a href="mailto:slurm_user_group@lists.llnl.gov">slurm_user_group@lists.llnl.gov</a>.</p>
+
+<p>IMPORTANT DATES:<br>
+April 30, 2011:      Submission of abstracts<br>
+May 31, 2011:        Notification of acceptance<br>
+September 22, 2011:  SLURM User Group Meeting 2011 (tutorials)<br>
+September 23, 2011:  SLURM User Group Meeting 2011<br>
+</p>
+
+<p>Program Committee:<br>
+Danny Auble (Lawrence Livermore National Laboratory)<br>
+Matthieu Hautreux (CEA, French Atomic and Alternative Energies Commission)<br>
+Morris Jette (Lawrence Livermore National Laboratory)<br>
+Nancy Kritkausky (Bull)</p>
+
+<!--#include virtual="footer.txt"-->
