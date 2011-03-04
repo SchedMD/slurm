@@ -179,7 +179,7 @@ static bool _check_rotate_geo(uint16_t *match_geo,
 	int rot_cnt = 0;	/* attempt 6 rotations  */
 	int dim = 0;
 #ifdef HAVE_BGQ
-	int max_rotate=12;
+	int max_rotate=24;
 #else
 	int max_rotate=6;
 #endif
@@ -402,7 +402,6 @@ static bg_record_t *_find_matching_block(List block_list,
 				     bg_record->bg_block_id);
 			continue;
 		}
-
 
 		if (_check_for_booted_overlapping_blocks(
 			    block_list, itr, bg_record,

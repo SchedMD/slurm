@@ -1038,22 +1038,44 @@ extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
 	case 0:		/* ABCD -> ABDC */
 	case 3:		/* DABC -> DACB */
 	case 6:		/* CDAB -> CDBA */
-	case 9:		/* BCDA -> BCAD */
+	case 9:		/* CADB -> CABD */
+	case 14:	/* DBAC -> DBCA */
+	case 17:	/* ACBD -> ACDB */
+	case 20:	/* BDCA -> BCDA */
+	case 21:	/* BCDA -> BCAD */
 		SWAP(req_geo[Y], req_geo[Z], tmp);
 		break;
 	case 1:		/* ABDC -> ADBC */
 	case 4:		/* DACB -> DCAB */
 	case 7:		/* CDBA -> CBDA */
-	case 10:	/* BCAD -> BACD */
+	case 10:	/* CABD -> CBAD */
+	case 12:	/* BADC -> BDAC */
+	case 15:	/* DBCA -> DCBA */
+	case 18:	/* ACDB -> ADCB */
+	case 22:	/* BCAD -> BACD */
 		SWAP(req_geo[X], req_geo[Y], tmp);
 		break;
-	case 2:		/* ABDC -> DABC */
+	case 2:		/* ADBC -> DABC */
 	case 5:		/* DCAB -> CDAB */
-	case 8:		/* CBDA -> BCDA */
-	case 11:	/* BACD -> ABCD */
+	case 13:	/* BDAC -> DBAC */
+	case 23:	/* BACD -> ABCD */
 		SWAP(req_geo[A], req_geo[X], tmp);
 		break;
+	case 16:	/* DCBA -> ACBD */
+	case 19:	/* ADCB -> BDCA */
+		SWAP(req_geo[A], req_geo[Z], tmp);
+		break;
+	case 8:		/* CBDA -> CADB */
+		SWAP(req_geo[X], req_geo[Z], tmp);
+		break;
+	case 11:	/* CBAD -> BCAD -> BACD -> BADC */
+		SWAP(req_geo[A], req_geo[X], tmp);
+		SWAP(req_geo[X], req_geo[Y], tmp);
+		SWAP(req_geo[Y], req_geo[Z], tmp);
+		break;
+
 	}
+
 }
 
 /*
