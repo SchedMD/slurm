@@ -209,7 +209,7 @@ part_fini:
 		keypad(stdscr, TRUE);
 		noecho();
 		cbreak();
-		curs_set(1);
+		curs_set(0);
 		nodelay(stdscr, TRUE);
 		start_color();
 		_set_pairs();
