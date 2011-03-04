@@ -565,8 +565,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	int ionodes = 0;
 	char *name = NULL;
 	struct part_record *part_ptr = NULL;
-	char *non_usable_nodes = NULL;
-	bitstr_t *bitmap = NULL;
+	bitstr_t *usable_mp_bitmap = NULL;
 	ListIterator itr = NULL;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 
@@ -666,7 +665,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	reset_ba_system(true);
 
 	/* Locks are already in place to protect part_list here */
-	bitmap = bit_alloc(node_record_count);
+	usable_mp_bitmap = bit_alloc(node_record_count);
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
 		/* we only want to use mps that are in partitions */
@@ -675,19 +674,15 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			       part_ptr->name);
 			continue;
 		}
-		bit_or(bitmap, part_ptr->node_bitmap);
+		bit_or(usable_mp_bitmap, part_ptr->node_bitmap);
 	}
 	list_iterator_destroy(itr);
 
-	bit_not(bitmap);
-	if (bit_ffs(bitmap) != -1) {
+	if (bit_ffs(usable_mp_bitmap) == -1) {
 		fatal("We don't have any nodes in any partitions.  "
 		      "Can't create blocks.  "
 		      "Please check your slurm.conf.");
 	}
-
-	non_usable_nodes = bitmap2node_name(bitmap);
-	FREE_NULL_BITMAP(bitmap);
 
 	node_bitmap = bit_alloc(node_record_count);
 	ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
@@ -783,7 +778,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			reset_ba_system(false);
 		}
 
-		ba_set_removable_mps(non_usable_nodes);
+		ba_set_removable_mps2(usable_mp_bitmap, 1);
 		/* we want the mps that aren't
 		 * in this record to mark them as used
 		 */
@@ -804,7 +799,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 				    bg_record->start,
 				    geo,
 				    bg_record->conn_type);
-		ba_reset_all_removed_mps();
+		ba_reset_all_removed_mps2();
 
 		if (!name) {
 			error("I was unable to "
@@ -848,9 +843,9 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		}
 	}
 
-	xfree(non_usable_nodes);
 	FREE_NULL_BITMAP(ionode_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
+	FREE_NULL_BITMAP(usable_mp_bitmap);
 
 	sort_bg_record_inc_size(curr_block_list);
 	slurm_mutex_unlock(&block_state_mutex);

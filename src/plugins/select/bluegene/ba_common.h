@@ -342,6 +342,12 @@ extern int ba_set_removable_mps2(bitstr_t *mps, bool except);
 extern int ba_reset_all_removed_mps();
 
 /*
+ * Resets the virtual system to the pervious state before calling
+ * removable_set_mps, or set_all_mps_except.
+ */
+extern int ba_reset_all_removed_mps2();
+
+/*
  * IN: hostlist of midplanes we do not want
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *

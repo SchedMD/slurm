@@ -83,7 +83,7 @@ static bool _incr_geo(int *geo, ba_geo_system_t *my_geo_system)
 /* Translate a multi-dimension coordinate (3-D, 4-D, 5-D, etc.) into a 1-D
  * offset in the cnode* bitmap */
 static void _ba_node_xlate_to_1d(int *offset_1d, int *full_offset,
-				   ba_geo_system_t *my_geo_system)
+				 ba_geo_system_t *my_geo_system)
 {
 	int i, map_offset;
 
@@ -109,7 +109,7 @@ static void _internal_removable_set_mps(int level, int *start,
 		for (coords[level] = start[level];
 		     coords[level] <= end[level];
 		     coords[level]++) {
-			/* handle the outter dims here */
+			/* handle the outer dims here */
 			_internal_removable_set_mps(
 				level+1, start, end, coords, mark);
 		}
@@ -117,7 +117,7 @@ static void _internal_removable_set_mps(int level, int *start,
 	}
 	curr_mp = coord2ba_mp(coords);
 	if (mark) {
-		info("can't use %s", curr_mp->coord_str);
+		//info("can't use %s", curr_mp->coord_str);
 		curr_mp->used |= BA_MP_USED_TEMP;
 	} else {
 		curr_mp->used &= (~BA_MP_USED_TEMP);
@@ -133,6 +133,7 @@ static void _internal_removable_set_mps2(int level, bitstr_t *bitmap,
 
 	if (level > cluster_dims)
 		return;
+
 	if (!dims)
 		dims = select_g_ba_get_dims();
 
@@ -140,17 +141,18 @@ static void _internal_removable_set_mps2(int level, bitstr_t *bitmap,
 		for (coords[level] = 0;
 		     coords[level] < dims[level];
 		     coords[level]++) {
-			/* handle the outter dims here */
+			/* handle the outer dims here */
 			_internal_removable_set_mps2(
 				level+1, bitmap, coords, mark, except);
 		}
 		return;
 	}
 	curr_mp = coord2ba_mp(coords);
-	is_set = bit_test(bitmap, curr_mp->index);
-	if ((is_set && !except) || (!is_set && except)) {
+	if (bitmap)
+		is_set = bit_test(bitmap, curr_mp->index);
+	if (!bitmap || (is_set && !except) || (!is_set && except)) {
 		if (mark) {
-			info("can't use %s", curr_mp->coord_str);
+			//info("can't use %s", curr_mp->coord_str);
 			curr_mp->used |= BA_MP_USED_TEMP;
 		} else {
 			curr_mp->used &= (~BA_MP_USED_TEMP);
@@ -197,7 +199,8 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	/* cluster_dims is already set up off of working_cluster_rec */
 	if (cluster_dims == 1) {
 		if (node_info_ptr) {
-			real_dims[0] = DIM_SIZE[0] = node_info_ptr->record_count;
+			real_dims[0] = DIM_SIZE[0]
+				= node_info_ptr->record_count;
 			for (i=1; i<cluster_dims; i++)
 				real_dims[i] = DIM_SIZE[i] = 1;
 			num_cpus = node_info_ptr->record_count;
@@ -285,47 +288,10 @@ node_info_error:
 
 				for (k = 0; k < cluster_dims; k++, j++)
 					DIM_SIZE[k] = MAX(DIM_SIZE[k],
-						      _coord(nodes[j]));
+							  _coord(nodes[j]));
 				if (nodes[j] != ',')
 					break;
 			}
-
-			/* j = 0; */
-			/* while (node->nodenames[j] != '\0') { */
-			/* 	if ((node->nodenames[j] == '[' */
-			/* 	     || node->nodenames[j] == ',') */
-			/* 	    && (node->nodenames[j+10] == ']' */
-			/* 		|| node->nodenames[j+10] == ',') */
-			/* 	    && (node->nodenames[j+5] == 'x' */
-			/* 		|| node->nodenames[j+5] == '-')) { */
-			/* 		j+=6; */
-			/* 	} else if ((node->nodenames[j] >= '0' */
-			/* 		    && node->nodenames[j] <= '9') */
-			/* 		   || (node->nodenames[j] >= 'A' */
-			/* 		       && node->nodenames[j] <= 'Z')) { */
-			/* 		/\* suppose to be blank, just */
-			/* 		   making sure this is the */
-			/* 		   correct alpha num */
-			/* 		*\/ */
-			/* 	} else { */
-			/* 		j++; */
-			/* 		continue; */
-			/* 	} */
-			/* 	number = xstrntol(node->nodenames + j, */
-			/* 			  &p, cluster_dims, */
-			/* 			  cluster_base); */
-			/* 	hostlist_parse_int_to_array( */
-			/* 		number, coords, cluster_dims, */
-			/* 		cluster_base); */
-			/* 	j += 4; */
-
-			/* 	for(k=0; k<cluster_dims; k++) */
-			/* 		dims[k] = MAX(dims[k], */
-			/* 				  coords[k]); */
-
-			/* 	if (node->nodenames[j] != ',') */
-			/* 		break; */
-			/* } */
 		}
 
 		for (j=0; j<cluster_dims; j++)
@@ -718,14 +684,11 @@ extern void ba_node_map_print(bitstr_t *node_bitmap,
 			      ba_geo_system_t *my_geo_system)
 {
 #if DISPLAY_1D
-{
 	char out_buf[256];
 	bit_fmt(out_buf, sizeof(out_buf), node_bitmap);
 	info("%s", out_buf);
-}
 #endif
 #if DISPLAY_FULL_DIM
-{
 	int i, j, offset[my_geo_system->dim_count];
 
 	xassert(node_bitmap);
@@ -744,7 +707,6 @@ extern void ba_node_map_print(bitstr_t *node_bitmap,
 			info("%s", full_buf);
 		}
 	}
-}
 #endif
 }
 
@@ -790,7 +752,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			/* Compute location of next entry on the grid */
 			for (j = 0; j < my_geo_system->dim_count; j++) {
 				next_offset[j] = start_offset[j] +
-						 tmp_offset[j];
+					tmp_offset[j];
 				next_offset[j] %= my_geo_system->dim_size[j];
 			}
 
@@ -937,12 +899,18 @@ extern int ba_set_removable_mps(char *mps)
  */
 extern int ba_set_removable_mps2(bitstr_t* bitmap, bool except)
 {
-	int coords[cluster_dims];
+	int coords[SYSTEM_DIMENSIONS];
 
 	if (!bitmap)
 		return SLURM_ERROR;
 
-	memset(coords, 0, sizeof(coords));
+	/* return on empty sets */
+	if (except) {
+		if (bit_ffc(bitmap) == -1)
+			return SLURM_SUCCESS;
+	} else if (bit_ffs(bitmap) == -1)
+		return SLURM_SUCCESS;
+
 	_internal_removable_set_mps2(0, bitmap, coords, 1, except);
 	return SLURM_SUCCESS;
 }
@@ -973,6 +941,16 @@ extern int ba_reset_all_removed_mps()
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Resets the virtual system to the pervious state before calling
+ * removable_set_mps, or set_all_mps_except.
+ */
+extern int ba_reset_all_removed_mps2()
+{
+	int coords[SYSTEM_DIMENSIONS];
+	_internal_removable_set_mps2(0, NULL, coords, 0, 0);
+	return SLURM_SUCCESS;
+}
 /*
  * set the mp in the internal configuration as in, or not in use,
  * along with the current state of the mp.

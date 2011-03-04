@@ -60,8 +60,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	struct part_record *part_ptr = NULL;
-	char *non_usable_nodes = NULL;
-	bitstr_t *bitmap = bit_alloc(node_record_count);
+	bitstr_t *usable_mp_bitmap = bit_alloc(node_record_count);
 
 	/* Locks are already in place to protect part_list here */
 	itr = list_iterator_create(part_list);
@@ -74,22 +73,19 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 			       part_ptr->name);
 			continue;
 		}
-		bit_or(bitmap, part_ptr->node_bitmap);
+		bit_or(usable_mp_bitmap, part_ptr->node_bitmap);
 	}
 	list_iterator_destroy(itr);
 
-	bit_not(bitmap);
-	if (bit_ffs(bitmap) != -1) {
+	if (bit_ffs(usable_mp_bitmap) == -1) {
 		fatal("We don't have any nodes in any partitions.  "
 		      "Can't create blocks.  "
 		      "Please check your slurm.conf.");
 	}
-	non_usable_nodes = bitmap2node_name(bitmap);
-	ba_set_removable_mps(non_usable_nodes);
-	FREE_NULL_BITMAP(bitmap);
 
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
+	ba_set_removable_mps2(usable_mp_bitmap, 1);
 	if (bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = list_next(itr))) {
@@ -129,7 +125,8 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 
 				if (overlapped == LAYOUT_OVERLAP) {
 					reset_ba_system(false);
-					ba_set_removable_mps(non_usable_nodes);
+					ba_set_removable_mps2(usable_mp_bitmap,
+							      1);
 				}
 
 				/* we want the mps that aren't
@@ -158,21 +155,16 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				       start_char, geo_char);
 				if (bg_record->ba_mp_list
 				    && list_count(bg_record->ba_mp_list)) {
-					if (check_and_set_mp_list(
-						    bg_record->ba_mp_list)
-					    == SLURM_ERROR) {
+					if ((rc = check_and_set_mp_list(
+						     bg_record->ba_mp_list))
+					    != SLURM_SUCCESS) {
 						debug2("something happened in "
 						       "the load of %s"
 						       "Did you use smap to "
 						       "make the "
 						       "bluegene.conf file?",
 						       bg_record->bg_block_id);
-						list_iterator_destroy(itr);
-						ba_reset_all_removed_mps();
-						slurm_mutex_unlock(
-							&block_state_mutex);
-						xfree(non_usable_nodes);
-						return SLURM_ERROR;
+						break;
 					}
 				} else {
 #ifdef HAVE_BGQ
@@ -186,17 +178,14 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						bg_record->start,
 						geo,
 						bg_record->conn_type);
-					ba_reset_all_removed_mps();
+					ba_reset_all_removed_mps2();
 					if (!name) {
 						error("I was unable to "
 						      "make the "
 						      "requested block.");
 						list_destroy(results);
-						list_iterator_destroy(itr);
-						slurm_mutex_unlock(
-							&block_state_mutex);
-						xfree(non_usable_nodes);
-						return SLURM_ERROR;
+						rc = SLURM_ERROR;
+						break;
 					}
 
 					snprintf(temp, sizeof(temp), "%s%s",
@@ -245,29 +234,28 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					continue;
 				}
 				if ((rc = bridge_block_create(bg_record))
-				    == SLURM_ERROR) {
-					list_iterator_destroy(itr);
-					slurm_mutex_unlock(&block_state_mutex);
-					xfree(non_usable_nodes);
-					return rc;
-				}
+				    != SLURM_SUCCESS)
+					break;
 				print_bg_record(bg_record);
 			}
 		}
 		list_iterator_destroy(itr);
+		if (rc != SLURM_SUCCESS)
+			goto end_it;
 	} else {
 		error("create_defined_blocks: no bg_lists->main 2");
-		slurm_mutex_unlock(&block_state_mutex);
-		xfree(non_usable_nodes);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
-	xfree(non_usable_nodes);
-
 	slurm_mutex_unlock(&block_state_mutex);
 	create_full_system_block(bg_found_block_list);
 
 	slurm_mutex_lock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_lists->main);
+
+end_it:
+	ba_reset_all_removed_mps2();
+	FREE_NULL_BITMAP(usable_mp_bitmap);
 	slurm_mutex_unlock(&block_state_mutex);
 
 #ifdef _PRINT_BLOCKS_AND_EXIT
@@ -284,7 +272,6 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	}
  	exit(0);
 #endif	/* _PRINT_BLOCKS_AND_EXIT */
-	rc = SLURM_SUCCESS;
 	//exit(0);
 	return rc;
 }

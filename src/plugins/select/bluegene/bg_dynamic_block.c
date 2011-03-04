@@ -65,7 +65,6 @@ extern List create_dynamic_block(List block_list,
 	bitstr_t *my_bitmap = NULL;
 	select_ba_request_t blockreq;
 	int cnodes = request->procs / bg_conf->cpu_ratio;
-	char *unusable_nodes = NULL;
 
 	if (cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
@@ -197,34 +196,8 @@ extern List create_dynamic_block(List block_list,
 			info("No list was given");
 	}
 
-	if (request->avail_mp_bitmap) {
-		DEF_TIMERS;
-		info("got %d", bit_ffc(request->avail_mp_bitmap));
-		if (bit_ffc(request->avail_mp_bitmap) != -1) {
-		START_TIMER;
-			ba_set_removable_mps2(request->avail_mp_bitmap, 1);
-
-		END_TIMER;
-		info ("took %s", TIME_STR);
-		START_TIMER;
-		bitstr_t *bitmap = bit_alloc(node_record_count);
-
-		/* we want the mps that aren't in this partition to
-		 * mark them as used
-		 */
-		bit_or(bitmap, request->avail_mp_bitmap);
-		bit_not(bitmap);
-		unusable_nodes = bitmap2node_name(bitmap);
-
-		//info("not using %s", unusable_nodes);
-		ba_set_removable_mps(unusable_nodes);
-
-		FREE_NULL_BITMAP(bitmap);
-		END_TIMER;
-		info ("took %s", TIME_STR);
-		exit(0);
-		}
-	}
+	if (request->avail_mp_bitmap)
+		ba_set_removable_mps2(request->avail_mp_bitmap, 1);
 
 	if (request->size==1 && cnodes < bg_conf->mp_node_cnt) {
 		switch(cnodes) {
@@ -398,9 +371,6 @@ extern List create_dynamic_block(List block_list,
 			     bg_record->nodes, request->size);
 
 		remove_block(bg_record->ba_mp_list, is_small);
-		/* need to set any unusable nodes that this last block
-		   used */
-		ba_set_removable_mps(unusable_nodes);
 		rc = SLURM_SUCCESS;
 		if (results)
 			list_flush(results);
@@ -441,7 +411,9 @@ setup_records:
 	}
 
 finished:
-	ba_reset_all_removed_mps();
+	if (request->avail_mp_bitmap
+	    && (bit_ffc(request->avail_mp_bitmap) == -1))
+		ba_reset_all_removed_mps2();
 
 	/* reset the ones we mucked with */
 	itr = list_iterator_create(my_block_list);
@@ -452,7 +424,6 @@ finished:
 	list_iterator_destroy(itr);
 
 
-	xfree(unusable_nodes);
 	xfree(request->save_name);
 
 	if (results)
