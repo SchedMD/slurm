@@ -55,6 +55,9 @@
 /* This is only used on L and P hense the 6 count */
 #define NUM_PORTS_PER_NODE 6
 
+extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
+					  * each dimension */
+
 #define BA_MP_USED_FALSE          0x0000
 #define BA_MP_USED_TRUE           0x0001
 #define BA_MP_USED_TEMP           0x0002
@@ -165,7 +168,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
  */
 extern void ba_fini();
 
-extern void ba_create_system(int num_cpus, int *real_dims, int *dims);
+extern void ba_create_system(int num_cpus, int *real_dims);
 extern void ba_destroy_system();
 
 extern void destroy_ba_mp(void *ptr);

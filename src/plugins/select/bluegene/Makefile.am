@@ -22,6 +22,7 @@ libba_common_la_SOURCES = ba_common.c ba_common.h
 
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_bluegene_la_LIBADD = libba_common.la
 
 if BLUEGENE_LOADED
 
@@ -59,7 +60,7 @@ select_bluegene_la_SOURCES += bg_core.c bg_defined_block.c \
 			bg_read_config.c bg_record_functions.c \
 			bg_status.c
 
-select_bluegene_la_LIBADD = $(block_allocator_lib) libba_common.la $(BG_LDFLAGS)
+select_bluegene_la_LIBADD += $(block_allocator_lib) $(BG_LDFLAGS)
 
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl

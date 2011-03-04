@@ -58,13 +58,11 @@
 /* _ba_system is the "current" system that the structures will work
  *  on */
 ba_mp_t ****ba_main_grid = NULL;
-uint16_t *deny_pass = NULL;
-int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 static ba_geo_system_t *ba_main_geo_system = NULL;
 static ba_geo_system_t *ba_mp_geo_system = NULL;
-
+static uint16_t *deny_pass = NULL;
 
 /** internal helper functions */
 /* */
@@ -1630,7 +1628,7 @@ static int _setup_next_mps(ba_mp_t ****grid)
 	return 1;
 }
 
-extern void ba_create_system(int num_cpus, int *real_dims, int *dims)
+extern void ba_create_system(int num_cpus, int *real_dims)
 {
 	int a,x,y,z;
 
@@ -1638,7 +1636,6 @@ extern void ba_create_system(int num_cpus, int *real_dims, int *dims)
 		ba_destroy_system();
 
 	memcpy(REAL_DIM_SIZE, real_dims, sizeof(REAL_DIM_SIZE));
-	memcpy(DIM_SIZE, dims, sizeof(DIM_SIZE));
 
 	ba_main_grid = (ba_mp_t****)
 		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);

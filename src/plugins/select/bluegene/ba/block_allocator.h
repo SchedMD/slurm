@@ -54,8 +54,6 @@ enum {X, Y, Z};
 /* Global */
 extern my_bluegene_t *bg;
 
-extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
-					  * each dimension */
 extern ba_mp_t ***ba_main_grid;
 
 /* If emulating a system set up a known configuration for wires in a

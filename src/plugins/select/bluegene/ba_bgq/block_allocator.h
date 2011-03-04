@@ -49,8 +49,6 @@
 enum {A, X, Y, Z};
 
 /* Global */
-extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
-					  * each dimension */
 extern ba_mp_t ****ba_main_grid;
 
 #endif /* _BLOCK_ALLOCATOR_H_ */

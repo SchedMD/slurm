@@ -50,6 +50,7 @@ uint16_t ba_deny_pass = 0;
 
 bool ba_initialized = false;
 uint32_t ba_debug_flags = 0;
+int DIM_SIZE[HIGHEST_DIMENSIONS];
 
 static int _coord(char coord)
 {
@@ -177,7 +178,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	char *p = '\0';
 	int num_cpus = 0;
 	int real_dims[HIGHEST_DIMENSIONS];
-	int dims[HIGHEST_DIMENSIONS];
 	char dim_str[HIGHEST_DIMENSIONS+1];
 
 	/* We only need to initialize once, so return if already done so. */
@@ -191,21 +191,21 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 		bridge_init("");
 
 	memset(coords, 0, sizeof(coords));
-	memset(dims, 0, sizeof(dims));
+	memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
 	memset(real_dims, 0, sizeof(real_dims));
 	memset(dim_str, 0, sizeof(dim_str));
 	/* cluster_dims is already set up off of working_cluster_rec */
 	if (cluster_dims == 1) {
 		if (node_info_ptr) {
-			real_dims[0] = dims[0] = node_info_ptr->record_count;
+			real_dims[0] = DIM_SIZE[0] = node_info_ptr->record_count;
 			for (i=1; i<cluster_dims; i++)
-				real_dims[i] = dims[i] = 1;
+				real_dims[i] = DIM_SIZE[i] = 1;
 			num_cpus = node_info_ptr->record_count;
 		}
 		goto setup_done;
 	} else if (working_cluster_rec && working_cluster_rec->dim_size) {
 		for(i=0; i<cluster_dims; i++) {
-			real_dims[i] = dims[i] =
+			real_dims[i] = DIM_SIZE[i] =
 				working_cluster_rec->dim_size[i];
 		}
 		goto setup_done;
@@ -218,7 +218,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			number = 0;
 
 			if (!node_ptr->name) {
-				memset(dims, 0, sizeof(dims));
+				memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
 				goto node_info_error;
 			}
 
@@ -237,18 +237,18 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			hostlist_parse_int_to_array(
 				number, coords, cluster_dims, cluster_base);
 
-			memcpy(dims, coords, sizeof(dims));
+			memcpy(DIM_SIZE, coords, sizeof(DIM_SIZE));
 		}
 		for (j=0; j<cluster_dims; j++) {
-			dims[j]++;
+			DIM_SIZE[j]++;
 			/* this will probably be reset below */
-			real_dims[j] = dims[j];
+			real_dims[j] = DIM_SIZE[j];
 		}
 		num_cpus = node_info_ptr->record_count;
 	}
 node_info_error:
 	for (j=0; j<cluster_dims; j++)
-		if (!dims[j])
+		if (!DIM_SIZE[j])
 			break;
 
 	if (j < cluster_dims) {
@@ -284,7 +284,7 @@ node_info_error:
 				}
 
 				for (k = 0; k < cluster_dims; k++, j++)
-					dims[k] = MAX(dims[k],
+					DIM_SIZE[k] = MAX(DIM_SIZE[k],
 						      _coord(nodes[j]));
 				if (nodes[j] != ',')
 					break;
@@ -329,7 +329,7 @@ node_info_error:
 		}
 
 		for (j=0; j<cluster_dims; j++)
-			if (dims[j])
+			if (DIM_SIZE[j])
 				break;
 
 		if (j >= cluster_dims)
@@ -337,9 +337,9 @@ node_info_error:
 			     ptr_array[i]->nodenames);
 
 		for (j=0; j<cluster_dims; j++) {
-			dims[j]++;
+			DIM_SIZE[j]++;
 			/* this will probably be reset below */
-			real_dims[j] = dims[j];
+			real_dims[j] = DIM_SIZE[j];
 		}
 	}
 
@@ -351,13 +351,13 @@ node_info_error:
 			char real_dim_str[cluster_dims+1];
 			memset(real_dim_str, 0, sizeof(real_dim_str));
 			for (i=0; i<cluster_dims; i++) {
-				dim_str[i] = alpha_num[dims[i]];
+				dim_str[i] = alpha_num[DIM_SIZE[i]];
 				real_dim_str[i] = alpha_num[real_dims[i]];
 			}
 			verbose("BlueGene configured with %s midplanes",
 				real_dim_str);
 			for (i=0; i<cluster_dims; i++)
-				if (dims[i] > real_dims[i])
+				if (DIM_SIZE[i] > real_dims[i])
 					fatal("You requested a %s system, "
 					      "but we only have a "
 					      "system of %s.  "
@@ -368,31 +368,31 @@ node_info_error:
 
 setup_done:
 	if (cluster_dims == 1) {
-		if (!dims[0]) {
+		if (!DIM_SIZE[0]) {
 			debug("Setting default system dimensions");
-			real_dims[0] = dims[0] = 100;
+			real_dims[0] = DIM_SIZE[0] = 100;
 			for (i=1; i<cluster_dims; i++)
-				real_dims[i] = dims[i] = 1;
+				real_dims[i] = DIM_SIZE[i] = 1;
 		}
 	} else {
 		for (i=0; i<cluster_dims; i++)
-			dim_str[i] = alpha_num[dims[i]];
+			dim_str[i] = alpha_num[DIM_SIZE[i]];
 		debug("We are using %s of the system.", dim_str);
 	}
 
 	if (!num_cpus) {
 		num_cpus = 1;
 		for(i=0; i<cluster_dims; i++)
-			num_cpus *= dims[i];
+			num_cpus *= DIM_SIZE[i];
 	}
 
-	ba_create_system(num_cpus, real_dims, dims);
-
-	if (bg_recover != NOT_FROM_CONTROLLER)
+	if (bg_recover != NOT_FROM_CONTROLLER) {
+		ba_create_system(num_cpus, real_dims);
 		bridge_setup_system();
+		init_grid(node_info_ptr);
+	}
 
 	ba_initialized = true;
-	init_grid(node_info_ptr);
 }
 
 
@@ -405,9 +405,10 @@ extern void ba_fini()
 		return;
 	}
 
-	if (bg_recover != NOT_FROM_CONTROLLER)
+	if (bg_recover != NOT_FROM_CONTROLLER) {
 		bridge_fini();
-	ba_destroy_system();
+		ba_destroy_system();
+	}
 	ba_initialized = false;
 
 //	debug3("pa system destroyed");

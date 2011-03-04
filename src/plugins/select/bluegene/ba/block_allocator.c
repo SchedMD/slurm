@@ -87,7 +87,6 @@ static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 /* extern Global */
 my_bluegene_t *bg = NULL;
-int DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 ba_mp_t ***ba_main_grid = NULL;
 
 typedef enum {
@@ -2418,7 +2417,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 //	return 1;
 }
 
-extern void ba_create_system(int num_cpus, int *real_dims, int *dims)
+extern void ba_create_system(int num_cpus, int *real_dims)
 {
 	int x,y,z;
 
@@ -2428,7 +2427,6 @@ extern void ba_create_system(int num_cpus, int *real_dims, int *dims)
 	best_count=BEST_COUNT_INIT;
 
 	memcpy(REAL_DIM_SIZE, real_dims, sizeof(REAL_DIM_SIZE));
-	memcpy(DIM_SIZE, dims, sizeof(DIM_SIZE));
 
 	ba_main_grid = (ba_mp_t***)
 		xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
