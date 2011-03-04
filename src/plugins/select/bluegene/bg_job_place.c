@@ -485,7 +485,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		/*****************************************/
 		if ((request->geometry[0] != (uint16_t)NO_VAL)
 		    && (!_check_rotate_geo(bg_record->geo, request->geometry,
-					   request->rotate))
+					   request->rotate)))
 			continue;
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
@@ -742,8 +742,8 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	int create_try = 0;
 	uint16_t start_geo[SYSTEM_DIMENSIONS];
 
-	memcpy(start_geo, request->geometry,
-	       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
+	memcpy(start_geo, request->geometry, sizeof(start_geo));
+
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("going to create %d", request->size);
 	list_of_lists = list_create(NULL);
@@ -789,11 +789,15 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		*/
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("trying with %d", create_try);
-		if ((new_blocks = create_dynamic_block(block_list,
-						       request, temp_list,
-						       true))) {
+		new_blocks = create_dynamic_block(block_list,
+						  request, temp_list,
+						  true);
+		/* This could get changed in create_dynamic_block
+		   so reset it here.
+		*/
+		memcpy(request->geometry, start_geo, sizeof(start_geo));
+		if (new_blocks) {
 			bg_record_t *bg_record = NULL;
-
 			while ((bg_record = list_pop(new_blocks))) {
 				if (block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
@@ -831,8 +835,6 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			}
 			list_destroy(new_blocks);
 			if (!*blocks_added) {
-				memcpy(request->geometry, start_geo,
-				       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
 				rc = SLURM_ERROR;
 				continue;
 			}
@@ -845,10 +847,6 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			rc = SLURM_ERROR;
 			break;
 		}
-
-		memcpy(request->geometry, start_geo,
-		       sizeof(uint16_t)*SYSTEM_DIMENSIONS);
-
 	}
 	list_iterator_destroy(itr);
 
@@ -998,6 +996,10 @@ static int _find_best_block_match(List block_list,
 						 overlap_check,
 						 overlapped_list,
 						 query_mode);
+		/* this could get altered in _find_matching_block so we
+		   need to reset it */
+		memcpy(request.geometry, req_geometry, sizeof(req_geometry));
+
 		if (!bg_record && overlapped_list
 		    && list_count(overlapped_list)) {
 			ListIterator itr =
@@ -1051,11 +1053,6 @@ static int _find_best_block_match(List block_list,
 			rc = SLURM_SUCCESS;
 			*found_bg_record = bg_record;
 			goto end_it;
-		} else {
-			/* this gets altered in _find_matching_block so we
-			   reset it */
-			memcpy(request.geometry, req_geometry,
-			       sizeof(req_geometry));
 		}
 
 		/* see if we can just reset the image and reboot the block */
@@ -1129,10 +1126,6 @@ static int _find_best_block_match(List block_list,
 			   sort. */
 			while (1) {
 				bool track_down_nodes = true;
-				/* this gets altered in
-				 * create_dynamic_block so we reset it */
-				memcpy(request.geometry, req_geometry,
-				       sizeof(req_geometry));
 
 				if ((bg_record = list_pop(job_list))) {
 					if (bg_record->job_ptr) {
@@ -1182,9 +1175,16 @@ static int _find_best_block_match(List block_list,
 					   node on the system.
 					*/
 					track_down_nodes = false;
-				if (!(new_blocks = create_dynamic_block(
-					      block_list, &request, job_list,
-					      track_down_nodes))) {
+
+				new_blocks = create_dynamic_block(
+					block_list, &request, job_list,
+					track_down_nodes);
+				/* this gets altered in
+				 * create_dynamic_block so we reset it */
+				memcpy(request.geometry, req_geometry,
+				       sizeof(req_geometry));
+
+				if (!new_blocks) {
 					if (errno == ESLURM_INTERCONNECT_FAILURE
 					    || !list_count(job_list)) {
 						char *nodes;
