@@ -1,0 +1,60 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Registration</h1>
+
+<p>Please use with the following form to register for the
+<b>Slurm User Group Meeting 2011</b> to be held September 22-23, 2011 in
+Phoenix, Arizona, USA.
+Note that a registration fee of $75 per person will be collected at
+the meeting to defray expenses.</p>
+
+<p>Early registration is recommended as the number of attendees is limited to
+50 and speakers will receive priority.
+You will receive by email the status of your registration within a
+few days of its submission.</p>
+
+<FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:jette1@llnl.gov?subject=Registration">
+	<PRE>
+
+	  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+	    <tr>
+	      <td width="10%">First Name</td>
+	      <td width="80%"><INPUT NAME=Firstname size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Last Name</td>
+	      <td width="80%"><INPUT NAME=Lastname size=30></td>
+
+	    </tr>
+	    <tr>
+	      <td width="10%">Email</td>
+	      <td width="80%"><INPUT NAME=Email size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Country</td>
+	      <td width="80%"><INPUT NAME=Country size=30></td>
+
+	    </tr>
+	    <tr>
+	      <td width="10%">Company</td>
+	      <td width="80%"><INPUT NAME=Company size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Title</td>
+	      <td width="80%"><INPUT NAME=Title size=30></td>
+
+	    </tr>
+	    <tr>
+	      <td width="10%">Comments</td>
+	      <td width="80%"><TEXTAREA NAME=Comments rows=5 cols=50></TEXTAREA></td>
+	    </tr>
+	    <tr>
+	      <td width="30%"><INPUT TYPE=SUBMIT VALUE=Submit></td>
+	      <td width="30%"><INPUT TYPE=RESET VALUE=Clear></td>
+
+	    </tr>
+	  </table>
+	</PRE>
+</FORM>
+
+<!--#include virtual="footer.txt"-->

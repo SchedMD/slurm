@@ -52,6 +52,7 @@ generated_html = \
 	qos.html \
 	quickstart_admin.html \
 	quickstart.html \
+	registration.html \
 	reservations.html \
 	resource_limits.html \
 	schedplugins.html \
