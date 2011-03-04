@@ -544,16 +544,15 @@ static void _set_debug(GtkRadioAction *action,
 	g_free(temp);
 }
 
-static void _set_flags(GtkToggleAction *action)
+static void _set_flags(GtkToggleAction *action, uint32_t flag)
 {
-/* NEED TO FIND THE PARENT TO PICK THE PROPER FLAG */
 	char *temp = NULL;
 	uint32_t debug_flags_plus = 0, debug_flags_minus = 0;
 
 	if (action && gtk_toggle_action_get_active(action))
-		debug_flags_plus  |= DEBUG_FLAG_GRES;
+		debug_flags_plus  |= flag;
 	else
-		debug_flags_minus |= DEBUG_FLAG_GRES;
+		debug_flags_minus |= flag;
 
 	if (!slurm_set_debugflags(debug_flags_plus, debug_flags_minus))
 		temp = g_strdup_printf("Slurmctld DebugFlags reset");
@@ -561,6 +560,71 @@ static void _set_flags(GtkToggleAction *action)
 		temp = g_strdup_printf("Problem with set DebugFlags request");
 	display_edit_note(temp);
 	g_free(temp);
+}
+
+static void _set_flags_backfill(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_BACKFILL);
+}
+static void _set_flags_bg_algo(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_BG_ALGO);
+}
+static void _set_flags_bg_algo_deep(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_BG_ALGO_DEEP);
+}
+static void _set_flags_bg_pick(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_BG_PICK);
+}
+static void _set_flags_bg_wires(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_BG_WIRES);
+}
+static void _set_flags_cpu_bind(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_CPU_BIND);
+}
+static void _set_flags_front_end(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_FRONT_END);
+}
+static void _set_flags_gang(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_GANG);
+}
+static void _set_flags_gres(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_GRES);
+}
+static void _set_flags_no_conf_hash(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_NO_CONF_HASH);
+}
+static void _set_flags_prio(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_PRIO);
+}
+static void _set_flags_reservation(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_RESERVATION);
+}
+static void _set_flags_select_type(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_SELECT_TYPE);
+}
+static void _set_flags_steps(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_STEPS);
+}
+static void _set_flags_triggers(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_TRIGGERS);
+}
+static void _set_flags_wiki(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_WIKI);
 }
 
 static void _tab_pos(GtkRadioAction *action,
@@ -949,52 +1013,52 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 
 	GtkToggleActionEntry debug_flags[] = {
 		{"flags_backfill", NULL, "Backfill",
-		 NULL, "Backfill", G_CALLBACK(_set_flags),
+		 NULL, "Backfill", G_CALLBACK(_set_flags_backfill),
 		 ctld_debug_flags.flags_backfill},
 		{"flags_bg_algo", NULL, "BgBlockAlgo",
-		 NULL, "BgBlockAlgo", G_CALLBACK(_set_flags),
+		 NULL, "BgBlockAlgo", G_CALLBACK(_set_flags_bg_algo),
 		 ctld_debug_flags.flags_bg_algo},
 		{"flags_bg_algo_deep", NULL, "BgBlockAlgoDeep",
-		 NULL, "BgBlockAlgoDeep", G_CALLBACK(_set_flags),
+		 NULL, "BgBlockAlgoDeep", G_CALLBACK(_set_flags_bg_algo_deep),
 		 ctld_debug_flags.flags_bg_algo_deep},
 		{"flags_bg_pick", NULL, "BgBlockPick",
-		 NULL, "BgBlockPick", G_CALLBACK(_set_flags),
+		 NULL, "BgBlockPick", G_CALLBACK(_set_flags_bg_pick),
 		 ctld_debug_flags.flags_bg_pick},
 		{"flags_bg_wires", NULL, "BgBlockWires",
-		 NULL, "BgBlockWires", G_CALLBACK(_set_flags),
+		 NULL, "BgBlockWires", G_CALLBACK(_set_flags_bg_wires),
 		 ctld_debug_flags.flags_bg_wires},
 		{"flags_cpu_bind", NULL, "CPU Bind",
-		 NULL, "CPU_Bind", G_CALLBACK(_set_flags),
+		 NULL, "CPU_Bind", G_CALLBACK(_set_flags_cpu_bind),
 		 ctld_debug_flags.flags_cpu_bind},
 		{"flags_front_end", NULL, "FrontEnd",
-		 NULL, "FrontEnd", G_CALLBACK(_set_flags),
+		 NULL, "FrontEnd", G_CALLBACK(_set_flags_front_end),
 		 ctld_debug_flags.flags_front_end},
 		{"flags_gang", NULL, "Gang",
-		 NULL, "Gang", G_CALLBACK(_set_flags),
+		 NULL, "Gang", G_CALLBACK(_set_flags_gang),
 		 ctld_debug_flags.flags_gang},
 		{"flags_gres", NULL, "Gres",
-		 NULL, "Gres", G_CALLBACK(_set_flags),
+		 NULL, "Gres", G_CALLBACK(_set_flags_gres),
 		 ctld_debug_flags.flags_gres},
 		{"flags_no_conf_hash", NULL, "NO CONF HASH",
-		 NULL, "NO_CONF_HASH", G_CALLBACK(_set_flags),
+		 NULL, "NO_CONF_HASH", G_CALLBACK(_set_flags_no_conf_hash),
 		 ctld_debug_flags.flags_no_conf_hash},
 		{"flags_prio", NULL, "Priority",
-		 NULL, "Priority", G_CALLBACK(_set_flags),
+		 NULL, "Priority", G_CALLBACK(_set_flags_prio),
 		 ctld_debug_flags.flags_prio},
 		{"flags_reservation", NULL, "Reservation",
-		 NULL, "Reservation", G_CALLBACK(_set_flags),
+		 NULL, "Reservation", G_CALLBACK(_set_flags_reservation),
 		 ctld_debug_flags.flags_reservation},
 		{"flags_select_type", NULL, "SelectType",
-		 NULL, "SelectType", G_CALLBACK(_set_flags),
+		 NULL, "SelectType", G_CALLBACK(_set_flags_select_type),
 		 ctld_debug_flags.flags_select_type},
 		{"flags_steps", NULL, "Steps",
-		 NULL, "Steps", G_CALLBACK(_set_flags),
+		 NULL, "Steps", G_CALLBACK(_set_flags_steps),
 		 ctld_debug_flags.flags_steps},
 		{"flags_triggers", NULL, "Triggers",
-		 NULL, "Triggers", G_CALLBACK(_set_flags),
+		 NULL, "Triggers", G_CALLBACK(_set_flags_triggers),
 		 ctld_debug_flags.flags_triggers},
 		{"flags_wiki", NULL, "Wiki",
-		 NULL, "Wiki", G_CALLBACK(_set_flags),
+		 NULL, "Wiki", G_CALLBACK(_set_flags_wiki),
 		 ctld_debug_flags.flags_wiki},
 	};
 
