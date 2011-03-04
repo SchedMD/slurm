@@ -1176,7 +1176,7 @@ static int _load_configuration(char *com, List allocated_blocks)
 
 /* NOTE: bg_conf_file_options identifies options supported by bluegene.conf */
 	tbl = s_p_hashtbl_create(bg_conf_file_options);
-	if (s_p_parse_file(tbl, NULL, filename) == SLURM_ERROR) {
+	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
 		memset(error_string,0,255);
 		sprintf(error_string, "ERROR: couldn't open/read %s",
 			filename);

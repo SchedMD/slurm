@@ -519,6 +519,30 @@ static void _get_current_debug(GtkRadioAction *action)
 					     debug_level);
 }
 
+static void _get_current_debug_flags(GtkToggleAction *action)
+{
+	static uint32_t debug_flags = 0;
+	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
+
+	if (err_code != SLURM_ERROR)
+		debug_flags = slurm_ctl_conf_ptr->debug_flags;
+#if 0
+	/* Logic of this sorf should work, but I am not sure how to get each
+	 * GtkToggleButton from the GtkToggleAction argument above */
+	static GtkAction *debug_action = NULL;
+	gboolean flag_state;
+
+	debug_action = gtk_action_group_get_action(menu_action_group, "flags_backfill");
+	flag_state = debug_flags & DEBUG_FLAG_BACKFILL;
+	gtk_toggle_button_set_active(GtkToggleButton, flag_state);
+	/*
+	for (each button) {
+		gtk_toggle_button_set_active(GtkToggleButton, gboolean);
+	} */
+#endif
+}
+	
 static void _set_debug(GtkRadioAction *action,
 		       GtkRadioAction *extra,
 		       GtkNotebook *notebook)
@@ -953,7 +977,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"debugflags", GTK_STOCK_DIALOG_WARNING,
 		 "Slurmctld DebugFlags",
 		 "", "Set slurmctld DebugFlags",
-		 G_CALLBACK(_get_current_debug)},
+		 G_CALLBACK(_get_current_debug_flags)},
 		{"debuglevel", GTK_STOCK_DIALOG_WARNING,
 		 "Slurmctld Debug Level",
 		 "", "Set slurmctld debug level",

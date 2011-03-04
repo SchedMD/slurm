@@ -1956,8 +1956,8 @@ static void _init_slurm_conf(const char *file_name)
 
 	/* init hash to 0 */
 	conf_ptr->hash_val = 0;
-	if(s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name)
-	   == SLURM_ERROR)
+	if (s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name, false)
+	    == SLURM_ERROR)
 		fatal("something wrong with opening/reading conf file");
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 	_validate_and_set_defaults(conf_ptr, conf_hashtbl);

@@ -338,7 +338,7 @@ extern int read_bg_conf(void)
 	/* bg_conf defined in bg_node_alloc.h */
 	tbl = s_p_hashtbl_create(bg_conf_file_options);
 
-	if (s_p_parse_file(tbl, NULL, bg_conf_file) == SLURM_ERROR)
+	if (s_p_parse_file(tbl, NULL, bg_conf_file, false) == SLURM_ERROR)
 		fatal("something wrong with opening/reading bluegene "
 		      "conf file");
 	xfree(bg_conf_file);

@@ -456,7 +456,8 @@ extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 		topo_conf = _get_topo_conf();
 
 	conf_hashtbl = s_p_hashtbl_create(switch_options);
-	if (s_p_parse_file(conf_hashtbl, NULL, topo_conf) == SLURM_ERROR) {
+	if (s_p_parse_file(conf_hashtbl, NULL, topo_conf, false) ==
+	    SLURM_ERROR) {
 		fatal("something wrong with opening/reading %s: %m",
 		      topo_conf);
 	}

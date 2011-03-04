@@ -767,9 +767,10 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
+ * IN ingore_new - if set do not treat unrecongized input as a fatal error
  */
 static int _parse_next_key(s_p_hashtbl_t *hashtbl,
-			   const char *line, char **leftover)
+			   const char *line, char **leftover, bool ignore_new)
 {
 	char *key, *value;
 	s_p_values_t *p;
@@ -782,6 +783,9 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 			_handle_keyvalue_match(p, value,
 					       new_leftover, &new_leftover);
 			*leftover = new_leftover;
+		} else if (ignore_new) {
+			debug("Parsing error at unrecognized key: %s", key);
+			*leftover = (char *)line;
 		} else {
 			error("Parsing error at unrecognized key: %s", key);
 			xfree(key);
@@ -805,7 +809,8 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
  * no include directive is found.
  */
 static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
-				    const char *line, char **leftover)
+				    const char *line, char **leftover,
+				    bool ignore_new)
 {
 	char *ptr;
 	char *fn_start, *fn_stop;
@@ -823,7 +828,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 			ptr++;
 		fn_stop = *leftover = ptr;
 		filename = xstrndup(fn_start, fn_stop-fn_start);
-		if (s_p_parse_file(hashtbl, hash_val, filename)
+		if (s_p_parse_file(hashtbl, hash_val, filename, ignore_new)
 		    == SLURM_SUCCESS) {
 			xfree(filename);
 			return 1;
@@ -836,7 +841,8 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 	}
 }
 
-int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename)
+int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
+		   bool ignore_new)
 {
 	FILE *f;
 	char line[BUFFER_SIZE];
@@ -878,9 +884,9 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename)
 		}
 
 		inc_rc = _parse_include_directive(hashtbl, hash_val,
-						  line, &leftover);
+						  line, &leftover, ignore_new);
 		if (inc_rc == 0) {
-			_parse_next_key(hashtbl, line, &leftover);
+			_parse_next_key(hashtbl, line, &leftover, ignore_new);
 		} else if (inc_rc < 0) {
 			error("\"Include\" failed in file %s line %d",
 			      filename, line_number);
@@ -893,10 +899,15 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename)
 		if (!_line_is_space(leftover)) {
 			char *ptr = xstrdup(leftover);
 			_strip_cr_nl(ptr);
-			error("Parse error in file %s line %d: \"%s\"",
-			      filename, line_number, ptr);
+			if (ignore_new) {
+				debug("Parse error in file %s line %d: \"%s\"",
+				      filename, line_number, ptr);
+			} else {
+				error("Parse error in file %s line %d: \"%s\"",
+				      filename, line_number, ptr);
+				rc = SLURM_ERROR;
+			}
 			xfree(ptr);
-			rc = SLURM_ERROR;
 		}
 		line_number += merged_lines;
 	}

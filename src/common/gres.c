@@ -763,7 +763,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 	if (stat(gres_conf_file, &config_stat) < 0)
 		fatal("can't stat gres.conf file %s: %m", gres_conf_file);
 	tbl = s_p_hashtbl_create(_gres_options);
-	if (s_p_parse_file(tbl, NULL, gres_conf_file) == SLURM_ERROR)
+	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
 		fatal("error opening/reading %s", gres_conf_file);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 	if (gres_conf_list == NULL)

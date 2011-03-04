@@ -517,7 +517,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 		fed_conf = _get_fed_conf();
 
 	tbl = s_p_hashtbl_create(options);
-	if(s_p_parse_file(tbl, NULL, fed_conf) == SLURM_ERROR)
+	if(s_p_parse_file(tbl, NULL, fed_conf, false) == SLURM_ERROR)
 		fatal("something wrong with opening/reading federation "
 		      "conf file");
 

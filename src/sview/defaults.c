@@ -597,7 +597,7 @@ extern int load_defaults(void)
 
 	hashtbl = s_p_hashtbl_create(sview_conf_options);
 
-	if (s_p_parse_file(hashtbl, &hash_val, pathname) == SLURM_ERROR)
+	if (s_p_parse_file(hashtbl, &hash_val, pathname, true) == SLURM_ERROR)
 		error("something wrong with opening/reading conf file");
 
 	s_p_get_boolean(&default_sview_config.admin_mode, "AdminMode", hashtbl);
