@@ -477,7 +477,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	} else {
 		new_ba_mp = ba_copy_mp(ba_mp);
 		ba_setup_mp(new_ba_mp, false);
-
+		new_ba_mp->used = BA_MP_USED_TRUE;
 		list_append(found_record->ba_mp_list, new_ba_mp);
 		found_record->mp_count = 1;
 		found_record->nodes = xstrdup_printf(
@@ -750,7 +750,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	while ((bg_record = list_next(itr))) {
 		if (bg_record->free_cnt) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("%s being free for other job(s), skipping",
+				info("%s being freed by other job(s), skipping",
 				     bg_record->bg_block_id);
 			continue;
 		}

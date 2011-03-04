@@ -781,8 +781,9 @@ extern int remove_block(List nodes, bool is_small)
 		ba_node = &ba_main_grid[curr_ba_node->coord[X]]
 			[curr_ba_node->coord[Y]]
 			[curr_ba_node->coord[Z]];
+		if (curr_ba_node->used)
+			ba_node->used &= (~BA_MP_USED_TRUE);
 
-		ba_node->used = false;
 		/* Small blocks don't use wires, and only have 1 node,
 		   so just break. */
 		if (is_small)
@@ -859,7 +860,12 @@ extern int check_and_set_mp_list(List nodes)
 		}
 
 		if (ba_node->used)
-			curr_ba_node->used = true;
+			curr_ba_node->used = ba_node->used;
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("check_and_set_mp_list: "
+			     "%s is used ?= %d %d",
+			     curr_ba_node->coord_str,
+			     curr_ba_node->used, ba_node->used);
 		for(i=0; i<cluster_dims; i++) {
 			ba_switch = &ba_node->axis_switch[i];
 			curr_ba_switch = &curr_ba_node->axis_switch[i];
@@ -1056,65 +1062,6 @@ extern void reset_ba_system(bool track_down_nodes)
 				ba_setup_mp(ba_mp, track_down_nodes);
 			}
 	}
-}
-
-/*
- * IN: hostlist of midplanes we want to be able to use, mark all
- *     others as used.
- * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
- *
- * Need to call reset_all_removed_mps before starting another
- * allocation attempt if possible use removable_set_mps since it is
- * faster. It does basically the opposite of this function. If you
- * have to come up with this list though it is faster to use this
- * function than if you have to call bitmap2node_name since that is slow.
- */
-extern int set_all_mps_except(char *mps)
-{
-	int x, y, z;
-	hostlist_t hl = hostlist_create(mps);
-	char *host = NULL, *numeric = NULL;
-	int number, coords[HIGHEST_DIMENSIONS];
-
-	memset(coords, 0, sizeof(coords));
-
-	while ((host = hostlist_shift(hl))){
-		numeric = host;
-		number = 0;
-		while (numeric) {
-			if (numeric[0] < '0' || numeric[0] > 'Z'
-			    || (numeric[0] > '9'
-				&& numeric[0] < 'A')) {
-				numeric++;
-				continue;
-			}
-			number = xstrntol(numeric, &p, cluster_dims,
-					  cluster_base);
-			break;
-		}
-		hostlist_parse_int_to_array(
-			number, coords, cluster_dims, cluster_base);
-		ba_main_grid[coords[X]][coords[Y]][coords[Z]].state
-			|= NODE_RESUME;
-		free(host);
-	}
-	hostlist_destroy(hl);
-
-	for (x = 0; x < DIM_SIZE[X]; x++) {
-		for (y = 0; y < DIM_SIZE[Y]; y++)
-			for (z = 0; z < DIM_SIZE[Z]; z++) {
-				if (ba_main_grid[x][y][z].state
-				    & NODE_RESUME) {
-					/* clear the bit and mark as unused */
-					ba_main_grid[x][y][z].state
-						&= ~NODE_RESUME;
-				} else
-					ba_main_grid[x][y][z].used
-						|= BA_MP_USED_TEMP;
-			}
-	}
-
- 	return SLURM_SUCCESS;
 }
 
 /*

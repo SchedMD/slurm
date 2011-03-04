@@ -962,18 +962,22 @@ extern int bridge_setup_system()
 
 extern int bridge_block_create(bg_record_t *bg_record)
 {
+	int rc = SLURM_SUCCESS;
+
 #if defined HAVE_BG_FILES
 	_new_block((rm_partition_t **)&bg_record->bg_block);
 #endif
 	_pre_allocate(bg_record);
 
 	if (bg_record->cpu_cnt < bg_conf->cpus_per_mp)
-		configure_small_block(bg_record);
+		rc = configure_small_block(bg_record);
 	else
-		configure_block_switches(bg_record);
+		rc = configure_block_switches(bg_record);
 
-	_post_allocate(bg_record);
-	return SLURM_SUCCESS;
+	if (rc == SLURM_SUCCESS)
+		rc = _post_allocate(bg_record);
+
+	return rc;
 }
 
 extern int bridge_block_boot(bg_record_t *bg_record)

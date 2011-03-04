@@ -639,9 +639,12 @@ cleanup:
 		error("bridge_free_nodecard_list(): %s", bridge_err_str(rc));
 		return SLURM_ERROR;
 	}
+
 #endif
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 		info("making the small block");
+	if (rc != SLURM_ERROR)
+		rc = SLURM_SUCCESS;
 	return rc;
 }
 

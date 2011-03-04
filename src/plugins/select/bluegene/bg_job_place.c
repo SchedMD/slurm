@@ -592,14 +592,15 @@ static int _check_for_booted_overlapping_blocks(
 				}
 			}
 
-			if (!SELECT_IS_CHECK_FULL_SET(query_mode)
+			if (((bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			     || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
+				  || SELECT_IS_MODE_RUN_NOW(query_mode))
+				 && (bg_conf->layout_mode != LAYOUT_DYNAMIC)))
 			    && ((found_record->job_running != NO_JOB_RUNNING)
-				|| (found_record->state
-				    == BG_BLOCK_ERROR))) {
+				|| (found_record->state == BG_BLOCK_ERROR))) {
 				if ((found_record->job_running
 				     == BLOCK_ERROR_STATE)
-				    || (found_record->state
-					== BG_BLOCK_ERROR))
+				    || (found_record->state == BG_BLOCK_ERROR))
 					error("can't use %s, "
 					      "overlapping block %s "
 					      "is in an error state.",
@@ -1178,7 +1179,7 @@ static int _find_best_block_match(List block_list,
 				new_blocks = create_dynamic_block(
 					block_list, &request, job_list,
 					track_down_nodes);
-				/* this gets altered in
+				/* this could get altered in
 				 * create_dynamic_block so we reset it */
 				memcpy(request.geometry, req_geometry,
 				       sizeof(req_geometry));

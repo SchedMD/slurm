@@ -295,8 +295,8 @@ extern int remove_block(List mps, bool is_small)
 			[curr_ba_mp->coord[X]]
 			[curr_ba_mp->coord[Y]]
 			[curr_ba_mp->coord[Z]];
-
-		ba_mp->used &= (~BA_MP_USED_TRUE);
+		if (curr_ba_mp->used)
+			ba_mp->used &= (~BA_MP_USED_TRUE);
 		ba_mp->used &= (~BA_MP_USED_ALTERED_PASS);
 
 		/* Small blocks don't use wires, and only have 1 mp,
