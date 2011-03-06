@@ -120,3 +120,33 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 {
 	return get_inventory(version, true);
 }
+
+/*
+ *	Informations extracted from INVENTORY
+ */
+
+/** Return true if @seg has at least a processor or a memory allocation. */
+static bool segment_is_allocated(const struct basil_segment *seg)
+{
+	struct basil_node_processor *proc;
+	struct basil_node_memory *mem;
+
+	for (proc = seg->proc_head; proc; proc = proc->next)
+		if (proc->allocation != NULL)
+			return true;
+	for (mem = seg->mem_head; mem; mem = mem->next)
+		if (mem->a_head != NULL)
+			return true;
+	return false;
+}
+
+/** Return true if @node has at least a processor or a memory allocation. */
+bool node_is_allocated(const struct basil_node *node)
+{
+	struct basil_segment *seg;
+
+	for (seg = node->seg_head; seg; seg = seg->next)
+		if (segment_is_allocated(seg))
+			return true;
+	return false;
+}

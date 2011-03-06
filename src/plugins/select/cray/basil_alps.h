@@ -310,6 +310,7 @@ struct basil_node {
 
 	struct basil_node *next;
 };
+extern bool node_is_allocated(const struct basil_node *node);
 
 struct basil_rsvn_app_cmd {
 	uint32_t		width,

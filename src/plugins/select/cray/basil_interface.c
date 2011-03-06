@@ -134,6 +134,7 @@ extern int basil_inventory(void)
 	struct basil_inventory *inv;
 	struct basil_node *node;
 	struct basil_rsvn *rsvn;
+	int slurm_alps_mismatch = 0;
 	int rc = SLURM_SUCCESS;
 
 	inv = get_full_inventory(version);
@@ -158,6 +159,21 @@ extern int basil_inventory(void)
 			      node->node_id, nam_noderole[node->role],
 			      nam_nodestate[node->state]);
 			continue;
+		}
+
+		if (node_is_allocated(node) && !IS_NODE_ALLOCATED(node_ptr)) {
+			/*
+			 * ALPS still hangs on to the node while SLURM considers
+			 * it already unallocated. Possible causes are partition
+			 * cleanup taking too long (can be 10sec ... minutes),
+			 * and orphaned ALPS reservations (caught below).
+			 *
+			 * The converse case (SLURM hanging on to the node while
+			 * ALPS has already freed it) happens frequently during
+			 * job completion: select_g_job_fini() is called before
+			 * make_node_comp(). Rely on SLURM logic for this case.
+			 */
+			slurm_alps_mismatch++;
 		}
 
 		if (node->state == BNS_DOWN) {
@@ -186,6 +202,7 @@ extern int basil_inventory(void)
 			} else {
 				debug("MARKING %s DOWN (%s)",
 				      node_ptr->name, reason);
+				/* set_node_down also kills any running jobs */
 				set_node_down(node_ptr->name, reason);
 			}
 		} else if (IS_NODE_DOWN(node_ptr)) {
@@ -198,6 +215,9 @@ extern int basil_inventory(void)
 			make_node_idle(node_ptr, NULL);
 		}
 	}
+
+	if (slurm_alps_mismatch)
+		debug("ALPS: %d node(s) still held", slurm_alps_mismatch);
 
 	/*
 	 * Check that each ALPS reservation corresponds to a SLURM job.
@@ -229,21 +249,29 @@ extern int basil_inventory(void)
 			error("orphaned ALPS reservation %u, trying to remove",
 			      rsvn->rsvn_id);
 			basil_release(rsvn->rsvn_id);
-			/*
-			 * ALPS will take some time, do not schedule now.
-			 */
-			rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+			slurm_alps_mismatch = true;
 		}
 	}
 	free_inv(inv);
+
+	if (slurm_alps_mismatch)
+		/* ALPS will take some time, do not schedule now. */
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	return rc;
 }
 
 /**
- * basil_get_initial_state - basil_inventory() variant for initialisation
- * The logic is identical, with the difference that this is called at the
- * start, before any bitmaps are set, and serves to check the node state
- * correctly: whether nodes are allocated or have been marked down.
+ * basil_get_initial_state  -  set SLURM initial node state from ALPS.
+ *
+ * The logic is identical to basil_inventory(), with the difference that this
+ * is called before valid bitmaps exist, from select_g_node_init(). It relies
+ * on the following other parts:
+ * - it needs reset_job_bitmaps() in order to rebuild node_bitmap fields,
+ * - it relies on _sync_nodes_to_jobs() to
+ *   o kill active jobs on nodes now marked DOWN,
+ *   o reset node state to ALLOCATED if it has been marked IDLE here (which is
+ *     an error case, since there is no longer an ALPS reservation for the job,
+ *     this is caught by the subsequent basil_inventory()).
  * Return: SLURM_SUCCESS if ok, non-zero on error.
  */
 static int basil_get_initial_state(void)
@@ -295,11 +323,9 @@ static int basil_get_initial_state(void)
 			debug("Initial DOWN node %s - %s", node_ptr->name, reason);
 			node_ptr->reason = xstrdup(reason);
 			node_ptr->node_state |= NODE_STATE_DOWN;
+		} else if (node_is_allocated(node)) {
+			node_ptr->node_state |= NODE_STATE_ALLOCATED;
 		} else {
-			/*
-			 * Since this node is listed in the most recent ALPS
-			 * inventory, it can not possibly be allocated to a job
-			 */
 			node_ptr->node_state |= NODE_STATE_IDLE;
 		}
 	}
