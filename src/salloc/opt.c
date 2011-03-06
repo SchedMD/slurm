@@ -1272,6 +1272,14 @@ static bool _opt_verify(void)
 		      "within salloc?");
 		return false;
 	}
+	if (opt.no_shell) {
+		/*
+		 * As long as we are not using srun instead of aprun, this flag
+		 * makes no difference for the operational behaviour of aprun.
+		 */
+		error("--no-shell mode is not supported on Cray (due to srun)");
+		return false;
+	}
 	if (opt.shared && opt.shared != (uint16_t)NO_VAL) {
 		info("Node sharing is not (yet) supported on Cray.");
 		opt.shared = false;
