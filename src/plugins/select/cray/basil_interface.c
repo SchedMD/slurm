@@ -195,11 +195,8 @@ extern int basil_inventory(void)
 		}
 
 		if (reason) {
-			xfree(node_ptr->reason);
-
-			if (IS_NODE_DOWN(node_ptr)) {
-				node_ptr->reason = xstrdup(reason);
-			} else {
+			if (!IS_NODE_DOWN(node_ptr)) {
+				xfree(node_ptr->reason);
 				debug("MARKING %s DOWN (%s)",
 				      node_ptr->name, reason);
 				/* set_node_down also kills any running jobs */
@@ -297,10 +294,6 @@ static int basil_get_initial_state(void)
 		if (node_ptr == NULL)
 			continue;
 
-		/* Base state entirely depends on ALPS */
-		node_ptr->node_state &= NODE_STATE_FLAGS;
-		xfree(node_ptr->reason);
-
 		if (node->state == BNS_DOWN) {
 			reason = "ALPS marked it DOWN";
 		} else if (node->state == BNS_UNAVAIL) {
@@ -319,14 +312,24 @@ static int basil_get_initial_state(void)
 			reason = "arch not XT/XE";
 		}
 
+		/* Base state entirely derives from ALPS */
+		node_ptr->node_state &= NODE_STATE_FLAGS;
 		if (reason) {
-			debug("Initial DOWN node %s - %s", node_ptr->name, reason);
-			node_ptr->reason = xstrdup(reason);
+			if (node_ptr->reason) {
+				debug3("Initial DOWN node %s - %s",
+					node_ptr->name, node_ptr->reason);
+			} else {
+				debug("Initial DOWN node %s - %s",
+					node_ptr->name, reason);
+				node_ptr->reason = xstrdup(reason);
+			}
 			node_ptr->node_state |= NODE_STATE_DOWN;
-		} else if (node_is_allocated(node)) {
-			node_ptr->node_state |= NODE_STATE_ALLOCATED;
 		} else {
-			node_ptr->node_state |= NODE_STATE_IDLE;
+			if (node_is_allocated(node))
+				node_ptr->node_state |= NODE_STATE_ALLOCATED;
+			else
+				node_ptr->node_state |= NODE_STATE_IDLE;
+			xfree(node_ptr->reason);
 		}
 	}
 	free_inv(inv);
