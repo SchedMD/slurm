@@ -486,31 +486,23 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			}
 
 		} else if (is_gemini) {
-			/*
-			 * XE: node IDs are consecutive, hence not being
-			 * able to resolve the node ID is a (fatal) error.
-			 */
 			fatal("Non-existing Gemini node '%s' in slurm.conf",
 			      node_ptr->name);
 		} else {
-			/*
-			 * XT: node IDs are not consecutive. We don't want those
-			 * holes to appear in slurm.conf - configuration error.
-			 */
 			fatal("Non-existing SeaStar node '%s' in slurm.conf",
 			      node_ptr->name);
 		}
 
 		if (!is_gemini) {
 				/*
-				 * SeaStar: (X,Y,Z) resolve directly
+				 * SeaStar: each node has unique coordinates
 				 */
 				if (node_ptr->arch == NULL)
 					node_ptr->arch = xstrdup("XT");
 		} else {
 				/*
 				 * Gemini: each 2 nodes share the same network
-				 * interface (i.e,. nodes 0/1 and 2/3 each have
+				 * interface (i.e., nodes 0/1 and 2/3 each have
 				 * the same coordinates). Use cage and cpu to
 				 * create corresponding "virtual" Y coordinate.
 				 */
