@@ -1820,7 +1820,7 @@ extern int validate_nodes_via_front_end(
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	ListIterator job_iterator;
-	hostlist_t return_hostlist = NULL, reg_hostlist = NULL;
+	hostlist_t reg_hostlist = NULL;
 	char *host_str = NULL;
 	uint16_t node_flags;
 	front_end_record_t *front_end_ptr;
@@ -2063,13 +2063,6 @@ extern int validate_nodes_via_front_end(
 		debug("Nodes %s have registered", host_str);
 		xfree(host_str);
 		hostlist_destroy(reg_hostlist);
-	}
-	if (return_hostlist) {
-		hostlist_uniq(return_hostlist);
-		host_str = hostlist_ranged_string_xmalloc(return_hostlist);
-		info("Nodes %s returned to service", host_str);
-		xfree(host_str);
-		hostlist_destroy(return_hostlist);
 	}
 
 	if (update_node_state) {
