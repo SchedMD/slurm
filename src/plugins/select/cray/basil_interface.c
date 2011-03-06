@@ -396,10 +396,12 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		fatal("can not prepare statement to resolve Cray coordinates");
 
 	for (node_ptr = node_record_table_ptr; node_ptr < end; node_ptr++) {
-		if (sscanf(node_ptr->name, "nid%05u", &node_id) != 1) {
+		if ((node_ptr->name == NULL) ||
+		    (sscanf(node_ptr->name, "nid%05u", &node_id) != 1)) {
 			error("can not read basil_node_id from %s", node_ptr->name);
 			continue;
 		}
+
 		if (exec_stmt(stmt, query, bind_cols, COLUMN_COUNT) < 0)
 			fatal("can not resolve %s coordinates", node_ptr->name);
 
@@ -595,8 +597,9 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
 			continue;
 
-		if (!node_ptr->name)
-			continue;
+		if (!node_ptr->name || node_ptr->name[0] == '\0')
+			continue;	/* bad node */
+
 		if (sscanf(node_ptr->name, "nid%05u", &basil_node_id) != 1)
 			fatal("can not read basil_node_id from %s", node_ptr->name);
 
