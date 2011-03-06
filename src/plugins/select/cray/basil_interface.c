@@ -736,7 +736,7 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 /**
  * do_basil_release - release an (unconfirmed) BASIL reservation
  * IN job_ptr - pointer to job which has just been deallocated resources
- * RET 0 or error code
+ * RET see below
  */
 extern int do_basil_release(struct job_record *job_ptr)
 {
@@ -747,17 +747,15 @@ extern int do_basil_release(struct job_record *job_ptr)
 		error("can not read resId for JobId=%u", job_ptr->job_id);
 	} else if (resv_id == 0) {
 		error("JobId=%u has invalid (ZERO) resId", job_ptr->job_id);
-	} else {
-		int rc = basil_release(resv_id);
-
-		if (rc == 0) {
-			debug("released ALPS resId %u for JobId %u",
-				resv_id, job_ptr->job_id);
-			return SLURM_SUCCESS;
-		}
-		error("releasing ALPS resId %u for JobId %u FAILED with %u",
-		      resv_id, job_ptr->job_id, rc);
+	} else if (basil_release(resv_id) == 0) {
+		debug("released ALPS resId %u for JobId %u",
+		      resv_id, job_ptr->job_id);
 	}
-	slurm_seterrno(EAGAIN);
-	return SLURM_ERROR;
+	/*
+	 * Error handling: we only print out the errors (basil_release does this
+	 * internally), but do not signal error to select_g_job_fini(). Calling
+	 * contexts of this function (deallocate_nodes, batch_finish) only print
+	 * additional error text: no further action is taken at this stage.
+	 */
+	return SLURM_SUCCESS;
 }
