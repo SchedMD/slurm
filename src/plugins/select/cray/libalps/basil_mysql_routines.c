@@ -75,19 +75,24 @@ int cray_is_gemini_system(MYSQL *handle)
 {
 	/*
 	 * Rationale:
-	 * - XT SeaStar systems have one SeaStar ASIC per node
-	 *   There are 4 nodes on a blade, 4 SeaStar ASICS, giving
-	 *   4 distinct (X,Y,Z) coordinates.
-	 * - XE Gemini systems connect pairs of nodes to a Gemini chip
-	 *   There are 4 nodes on a blade and 2 Gemini chips, nodes 0/1
+	 * - XT SeaStar systems have one SeaStar ASIC per node.
+	 *   There are 4 nodes and 4 SeaStar ASICS on each blade, giving
+	 *   4 distinct (X,Y,Z) coordinates per blade, so that the total
+	 *   node count equals the total count of torus coordinates.
+	 * - XE Gemini systems connect pairs of nodes to a Gemini chip.
+	 *   There are 4 nodes on a blade and 2 Gemini chips. Nodes 0/1
 	 *   are connected to Gemini chip 0, nodes 2/3 are connected to
 	 *   Gemini chip 1. This configuration acts as if the nodes were
-	 *   already connected in Y dimension, hence there are half as
+	 *   internally joined in Y dimension; hence there are half as
 	 *   many (X,Y,Z) coordinates than there are nodes in the system.
+	 * - Coordinates may be NULL if a network chip is deactivated.
 	 */
 	const char query[] =
 		"SELECT COUNT(DISTINCT x_coord, y_coord, z_coord) < COUNT(*) "
-		"FROM processor";
+		"FROM processor "
+		"WHERE x_coord IS NOT NULL "
+		"AND   y_coord IS NOT NULL "
+		"AND   z_coord IS NOT NULL";
 	MYSQL_BIND	result[1];
 	signed char	answer;
 	my_bool		is_null;
