@@ -5,15 +5,10 @@
  * Licensed under the GPLv2.
  */
 #define _ISOC99_SOURCE		/* for LLONG_{MIN,MAX} */
-#include <stdio.h>
-#include <stddef.h>
-#include <stdarg.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <ctype.h>
+#include <limits.h>
+#include <sys/types.h>
 #include <errno.h>
 
 /**
@@ -39,6 +34,20 @@ int atou32(const char *str, uint32_t *val)
 	uint64_t tmp;
 
 	if (!atou64(str, &tmp) || tmp > 0xFFFFffffUL)
+		return -1;
+	*val = tmp;
+	return 1;
+}
+
+/*
+ * POSIX says time_t can be integer or floating type.
+ * On x86_32 it is an u32, on x86_64 it is an u64 type.
+ */
+int atotime_t(const char *str, time_t *val)
+{
+	uint64_t tmp;
+
+	if (!atou64(str, &tmp))
 		return -1;
 	*val = tmp;
 	return 1;

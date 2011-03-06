@@ -89,7 +89,7 @@ static void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs)
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 
 	strncpy(inv->mpp_host, attribs[0], sizeof(inv->mpp_host));
-	if (atou32(attribs[1], &inv->timestamp) < 0)
+	if (atotime_t(attribs[1], &inv->timestamp) < 0)
 		fatal("illegal timestamp = %s", attribs[1]);
 }
 

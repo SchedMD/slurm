@@ -17,7 +17,7 @@ void eh_resv_1_1(struct ud *ud, const XML_Char **attrs)
 	if (ud->ud_inventory) {
 		struct basil_rsvn *cur = ud->ud_inventory->rsvn_head;
 
-		if (atou32(attribs[0], &cur->timestamp) < 0)
+		if (atotime_t(attribs[0], &cur->timestamp) < 0)
 			fatal("illegal timestamp '%s'", attribs[0]);
 		strncpy(cur->batch_id, attribs[1], sizeof(cur->batch_id));
 	}

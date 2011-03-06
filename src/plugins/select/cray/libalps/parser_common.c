@@ -430,7 +430,7 @@ void eh_application(struct ud *ud, const XML_Char **attrs)
 			fatal("invalid user_id '%s'", attribs[1]);
 		else if (atou32(attribs[2], &new->group_id) < 0)
 			fatal("invalid group_id '%s'", attribs[2]);
-		else if (atou32(attribs[3], &new->timestamp) < 0)
+		else if (atotime_t(attribs[3], &new->timestamp) < 0)
 			fatal("invalid time_stamp '%s'", attribs[3]);
 
 		assert(ud->ud_inventory->rsvn_head != NULL);

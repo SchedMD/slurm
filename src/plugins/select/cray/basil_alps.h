@@ -328,7 +328,7 @@ struct basil_rsvn_app {
 	uint64_t	apid;
 	uint32_t	user_id;
 	uint32_t	group_id;
-	uint32_t	timestamp;
+	time_t		timestamp;
 
 	struct basil_rsvn_app_cmd *cmd_head;
 
@@ -337,7 +337,7 @@ struct basil_rsvn_app {
 
 struct basil_rsvn {
 	uint32_t	rsvn_id;
-	uint32_t	timestamp;			/* Basil 1.1 */
+	time_t		timestamp;			/* Basil 1.1 */
 	char		user_name[BASIL_STRING_MEDIUM];
 	char		account_name[BASIL_STRING_MEDIUM];
 	char		batch_id[BASIL_STRING_LONG];	/* Basil 1.1 */
@@ -369,7 +369,7 @@ struct basil_full_inventory {
  */
 struct basil_inventory {
 	char		mpp_host[BASIL_STRING_SHORT];
-	uint32_t	timestamp;
+	time_t		timestamp;
 	bool		is_gemini;
 	uint32_t	batch_avail,
 			batch_total,
