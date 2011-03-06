@@ -245,7 +245,7 @@ extern int basil_inventory(void)
 		if (job_ptr == NULL) {
 			error("orphaned ALPS reservation %u, trying to remove",
 			      rsvn->rsvn_id);
-			basil_release(rsvn->rsvn_id);
+			basil_safe_release(rsvn->rsvn_id, inv);
 			slurm_alps_mismatch = true;
 		}
 	}

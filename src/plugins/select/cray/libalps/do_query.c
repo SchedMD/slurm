@@ -150,3 +150,52 @@ bool node_is_allocated(const struct basil_node *node)
 			return true;
 	return false;
 }
+
+/** Search @inv for a particular reservation identified by @rsvn_id */
+const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,
+					  uint32_t rsvn_id)
+{
+	const struct basil_rsvn *rsvn;
+
+	assert(inv && inv->f);
+	for (rsvn = inv->f->rsvn_head; rsvn; rsvn = rsvn->next)
+		if (rsvn->rsvn_id == rsvn_id)
+			break;
+	return rsvn;
+}
+
+/**
+ * basil_get_rsvn_aprun_apids  -  get list of aprun APIDs for @rsvn_id
+ * Returns 0-terminated array, which caller must free.
+ * WARNING: if the aprun application uses fewer nodes than are reserved by
+ *          @rsvn_id, additional information is required to confirm whether
+ *          that particular node is indeed in use by the given apid.
+ */
+uint64_t *basil_get_rsvn_aprun_apids(const struct basil_inventory *inv,
+				     uint32_t rsvn_id)
+{
+	const struct basil_rsvn	*rsvn = basil_rsvn_by_id(inv, rsvn_id);
+	const struct basil_rsvn_app *app;
+	uint64_t *apids = NULL;
+	int n = 1;	/* 0-terminated array */
+
+	if (rsvn == NULL)
+		return NULL;
+
+	for (app = rsvn->app_head; app; app = app->next)
+		/*
+		 * There are two types of basil_rsvn_app applications:
+		 * - the first application has a 'timestamp' of 0, a 'cmd' of
+		 *   "BASIL" - this is used to store the reservation parameters;
+		 * - all other applications have a non-0 timestamp and refer to
+		 *   actual aprun job steps (whose APIDs we are interested in).
+		 */
+		if (app->timestamp) {
+			apids = realloc(apids, (n + 1) * sizeof(*apids));
+			if (apids == NULL)
+				fatal("failed to allocate Apid entry");
+			apids[n-1] = app->apid;
+			apids[n++] = 0;
+		}
+	return apids;
+}

@@ -541,6 +541,11 @@ extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
 			  uint32_t mem_mb, struct nodespec *ns_head);
 extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id);
+extern const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,
+						 uint32_t resvn_id);
+extern uint64_t *basil_get_rsvn_aprun_apids(const struct basil_inventory *inv,
+					    uint32_t rsvn_id);
 extern int basil_release(uint32_t rsvn_id);
+extern int basil_safe_release(int32_t rsvn_id, struct basil_inventory *inv);
 
 #endif /* __BASIL_ALPS_H__ */
