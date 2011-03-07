@@ -7,7 +7,7 @@
 #include "../basil_alps.h"
 
 /* Location of Cray apkill executable (supported on XT/XE CNL) */
-static const char apkill[] = "/usr/bin/apkill";
+static const char apkill[] = HAVE_ALPS_DIR "/bin/apkill";
 
 static int rsvn_release(struct basil_reservation *res)
 {
