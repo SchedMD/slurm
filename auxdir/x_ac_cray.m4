@@ -17,6 +17,12 @@ AC_DEFUN([X_AC_CRAY],
 [
   ac_have_cray="no"
   ac_have_cray_emulation="no"
+  _x_ac_alps_dirs="/usr"
+
+  AC_ARG_WITH(
+    [alps-dir],
+    AS_HELP_STRING(--with-alps-dir=PATH,Specify path to ALPS installation),
+    [_x_ac_alps_dirs="$withval $_x_ac_alps_dirs"])
 
   AC_ARG_ENABLE(
     [cray-emulation],
@@ -52,6 +58,21 @@ AC_DEFUN([X_AC_CRAY],
                  AC_MSG_ERROR([Cray BASIL requires libexpat.so (i.e. libexpat1-dev)]))
     if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
       AC_MSG_ERROR([Cray BASIL requires the cray-MySQL-devel-enterprise rpm])
+    fi
+
+    # Check that all Cray binaries called by SLURM are in their expected places.
+    # On a standard XT/XE installation, both these have always been in /usr/bin.
+    for dir in $_x_ac_alps_dirs; do
+      test -d "$dir" || continue
+      test -d "$dir/bin" || continue
+      test -f "$dir/bin/apbasil" || continue
+      test -f "$dir/bin/apkill"  || continue
+      _x_ac_alps_install_dir="$dir"
+      AC_DEFINE_UNQUOTED(HAVE_ALPS_DIR, "$dir", [Directory in which ALPS has been installed])
+      break
+    done
+    if test -z "$_x_ac_alps_install_dir"; then
+      AC_MSG_ERROR([Could not locate apbasil and apikill executables on Cray system. See --with-alps-dir option.])
     fi
 
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
