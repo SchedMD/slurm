@@ -7,6 +7,17 @@ documents those changes that are of interest to users and admins.
     given this time interval before termination. Work by Bill Brophy, Bull.
  -- Add the ability for scontrol and sview to modify slurmctld DebugFlags
     values.
+ -- Various Cray-specific patches:
+    - Fix a bug in distinguishing XT from XE.
+    - Avoids problems with empty nodenames on Cray.
+    - Check whether ALPS is hanging on to nodes, which happens if ALPS has not
+      yet cleaned up the node partition.
+    - Stops select/cray from clobbering node_ptr->reason.
+    - Perform 'safe' release of ALPS reservations using inventory and apkill.
+    - Compile-time sanity check for the apbasil and apkill files.
+    - Changes error handling in do_basil_release() (called by
+      select_g_job_fini()).
+     - Warn that salloc --no-shell option is not supported on Cray systems.
 
 * Changes in SLURM 2.3.0.pre3
 =============================
