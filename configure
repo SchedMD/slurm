@@ -1021,6 +1021,7 @@ with_xcpu
 enable_gtktest
 with_mysql_config
 with_pg_config
+with_alps_dir
 enable_cray_emulation
 enable_debug
 enable_memory_leak_debug
@@ -1729,6 +1730,7 @@ Optional Packages:
   --with-mysql_config=PATH
                           Specify path to mysql_config binary
   --with-pg_config=PATH   Specify path to pg_config binary
+  --with-alps-dir=PATH    Specify path to ALPS installation
   --with-slurmctld-port=N set slurmctld default port [6817]
   --with-slurmd-port=N    set slurmd default port [6818]
   --with-slurmdbd-port=N  set slurmdbd default port [6819]
@@ -7644,13 +7646,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:7647: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:7649: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7650: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:7652: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7653: output\"" >&5)
+  (eval echo "\"\$as_me:7655: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8855,7 +8857,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8858 "configure"' > conftest.$ac_ext
+  echo '#line 8860 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -10643,11 +10645,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10646: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10648: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10650: \$? = $ac_status" >&5
+   echo "$as_me:10652: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10982,11 +10984,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10985: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10987: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10989: \$? = $ac_status" >&5
+   echo "$as_me:10991: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11087,11 +11089,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11090: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11092: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11094: \$? = $ac_status" >&5
+   echo "$as_me:11096: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11142,11 +11144,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11145: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11147: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11149: \$? = $ac_status" >&5
+   echo "$as_me:11151: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13526,7 +13528,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13529 "configure"
+#line 13531 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13622,7 +13624,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13625 "configure"
+#line 13627 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15578,11 +15580,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15581: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15583: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15585: \$? = $ac_status" >&5
+   echo "$as_me:15587: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15677,11 +15679,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15680: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15682: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15684: \$? = $ac_status" >&5
+   echo "$as_me:15686: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15729,11 +15731,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15732: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15734: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15736: \$? = $ac_status" >&5
+   echo "$as_me:15738: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19656,6 +19658,14 @@ fi
 
   ac_have_cray="no"
   ac_have_cray_emulation="no"
+  _x_ac_alps_dirs="/usr"
+
+
+# Check whether --with-alps-dir was given.
+if test "${with_alps_dir+set}" = set; then :
+  withval=$with_alps_dir; _x_ac_alps_dirs="$withval $_x_ac_alps_dirs"
+fi
+
 
   # Check whether --enable-cray-emulation was given.
 if test "${enable_cray_emulation+set}" = set; then :
@@ -19748,6 +19758,25 @@ fi
 
     if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
       as_fn_error $? "Cray BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
+    fi
+
+    # Check that all Cray binaries called by SLURM are in their expected places.
+    # On a standard XT/XE installation, both these have always been in /usr/bin.
+    for dir in $_x_ac_alps_dirs; do
+      test -d "$dir" || continue
+      test -d "$dir/bin" || continue
+      test -f "$dir/bin/apbasil" || continue
+      test -f "$dir/bin/apkill"  || continue
+      _x_ac_alps_install_dir="$dir"
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_ALPS_DIR "$dir"
+_ACEOF
+
+      break
+    done
+    if test -z "$_x_ac_alps_install_dir"; then
+      as_fn_error $? "Could not locate apbasil and apikill executables on Cray system. See --with-alps-dir option." "$LINENO" 5
     fi
 
 
