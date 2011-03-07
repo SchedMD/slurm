@@ -5,13 +5,25 @@
 <p>Please use with the following form to register for the
 <b>Slurm User Group Meeting 2011</b> to be held September 22-23, 2011 in
 Phoenix, Arizona, USA.
-Note that a registration fee of $75 per person will be collected at
+Note that a registration fee of $100 per person will be collected at
 the meeting to defray expenses.</p>
+
+<p>Thursday September 22 will be devoted to tutorials.
+One room will be devoted to beginner level SLURM training.
+A second room will be devoted to advanced topics of SLURM administration and use.
+Please specify which tutorial track you would like to attend in the form below.</p>
+
+<p>Friday September 23 will be devoted to a variety of technical presentations.
+Please see the <a href="sug2011_agenda">agenda</a> for more details.</p>
 
 <p>Early registration is recommended as the number of attendees is limited to
 50 and speakers will receive priority.
 You will receive by email the status of your registration within a
 few days of its submission.</p>
+
+<p>The meeting will be held at LOCATION/ADDRESS in Phoenix Arizion.
+A block of rooms are available for meeting attendees wishing to stay at
+THAT HOTEL at a preferred rate of $79. HOTEL CONTACT INFO HERE.</p>
 
 <FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:jette1@llnl.gov?subject=Registration">
 	<PRE>
@@ -43,6 +55,12 @@ few days of its submission.</p>
 	      <td width="10%">Title</td>
 	      <td width="80%"><INPUT NAME=Title size=30></td>
 
+	    </tr>
+	    <tr>
+	      <td width="10%">Tutorials</td>
+	      <td width="80%"><INPUT TYPE="radio" NAME=Tutorial VALUE=Beginner>Beginner<br>
+	                      <INPUT TYPE="radio" NAME=Tutorial VALUE=Advanced>Advanced<br>
+	                      <INPUT TYPE="radio" NAME=Tutorial VALUE=None>None</td>
 	    </tr>
 	    <tr>
 	      <td width="10%">Comments</td>
