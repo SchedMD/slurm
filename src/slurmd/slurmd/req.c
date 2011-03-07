@@ -727,17 +727,18 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 
 	if ((arg.job_nhosts > 0) && (tasks_to_launch > 0)) {
 		uint32_t i, i_first_bit=0, i_last_bit=0;
+		hostset_t hset_j = NULL;
 
 		/* Determine the CPU count based upon this node's index into
 		 * the _job's_ allocation (job's hostlist and core_bitmap) */
-		hostset_destroy(hset);
-		if (!(hset = hostset_create(arg.job_hostlist))) {
+		if (!(hset_j = hostset_create(arg.job_hostlist))) {
 			error("Unable to parse credential hostlist: `%s'",
 			      arg.job_hostlist);
 			goto fail;
 		}
 
-		host_index = hostset_find(hset, conf->node_name);
+		host_index = hostset_find(hset_j, conf->node_name);
+		hostset_destroy(hset_j);
 		if ((host_index < 0) || (host_index >= arg.job_nhosts)) {
 			error("job cr credential invalid host_index %d for "
 			      "job %u", host_index, arg.jobid);
