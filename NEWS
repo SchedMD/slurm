@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix for handling extremely overloaded system on Dynamic system
     dealing with starting jobs on overlapping blocks.  Previous fallout
     was job would be requeued.  (happens very rarely)
+ -- In accounting_storage/filetxt plugin, substitute spaces within job names,
+    step names, and account names with an underscore to insure proper parsing.
 
 * Changes in SLURM 2.2.3
 ========================
