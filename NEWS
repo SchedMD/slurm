@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Correct format of --begin reported in salloc, sbatch and srun --help
     message.
  -- Correct logic for regular users to increase nice value of their own jobs.
+ -- Correct logic that tells slurmstepd how many nodes are associated with a
+    job step. The bug resulted in the job step completion message from
+    slurmstepd to slurmctld being delayed by one minute.
 
 * Changes in SLURM 2.1.16
 =========================
