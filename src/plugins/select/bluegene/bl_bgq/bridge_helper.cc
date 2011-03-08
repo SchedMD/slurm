@@ -219,8 +219,8 @@ extern int bridge_handle_runtime_errors(const char *function,
 	case bgsched::RuntimeErrors::BlockFreeError:
 		/* not a real error */
 		rc = SLURM_SUCCESS;
-		error("%s: Error freeing block %s.", function,
-		      bg_record->bg_block_id);
+		debug2("%s: Error freeing block %s.", function,
+		       bg_record->bg_block_id);
 		break;
 	case bgsched::RuntimeErrors::BlockCreateError:
 		error("%s: Error creating block %s.", function,

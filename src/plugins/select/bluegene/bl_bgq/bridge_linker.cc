@@ -546,6 +546,18 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 #ifdef HAVE_BG_FILES
         try {
 		Block::addUser(bg_record->bg_block_id, user_name);
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::addUser",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::RuntimeException& err) {
+		rc = bridge_handle_runtime_errors("Block::addUser",
+						  err.getError().toValue(),
+						  bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	} catch(...) {
 		// FIXME: this should do something, but for now we won't
 //                error("Remove block request failed ... continuing.");
