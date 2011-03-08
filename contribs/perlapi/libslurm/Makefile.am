@@ -65,11 +65,12 @@ $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi
-	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}
+	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE=
 
 #
 # Note on linking logic below
 #
+# Install at PREFIX and ignore INSTALL_BASE. Having both results in a build error.
 # AIX needs to use LD to link. It can not use gcc.
 # Suse Linux compiles with gcc, but picks some other compiler to use for linking.
 #   Since some CFLAGS may be incompatible with this other compiler, the build
@@ -80,7 +81,7 @@ all-local: $(perl_dir)/Makefile #libslurm
 if HAVE_AIX
 	@cd $(perl_dir) && \
 	if [ ! -f Makefile ]; then \
-		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}; \
+		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= ; \
 	fi && \
 	($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
 	 $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
@@ -88,7 +89,7 @@ if HAVE_AIX
 else
 	@cd $(perl_dir) && \
 	if [ ! -f Makefile ]; then \
-		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}; \
+		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= ; \
 	fi && \
 	($(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
 	 $(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
