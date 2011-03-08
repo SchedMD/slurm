@@ -1439,6 +1439,7 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid )
 static bool _valid_node_state_change(uint16_t old, uint16_t new)
 {
 	uint16_t base_state, node_flags;
+
 	if (old == new)
 		return true;
 
@@ -1452,11 +1453,8 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 		case NODE_STATE_POWER_SAVE:
 		case NODE_STATE_POWER_UP:
 			return true;
-			break;
 
 		case NODE_RESUME:
-			if (base_state == NODE_STATE_UNKNOWN)
-				return false;
 			if ((base_state == NODE_STATE_DOWN)   ||
 			    (base_state == NODE_STATE_FUTURE) ||
 			    (node_flags & NODE_STATE_DRAIN)   ||
