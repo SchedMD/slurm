@@ -19761,12 +19761,11 @@ fi
     fi
 
     # Check that all Cray binaries called by SLURM are in their expected places.
-    # On a standard XT/XE installation, both these have always been in /usr/bin.
+    # On a standard XT/XE installation, apbasil and apkill are normally in /usr/bin.
     for dir in $_x_ac_alps_dirs; do
-      test -d "$dir" || continue
       test -d "$dir/bin" || continue
-      test -f "$dir/bin/apbasil" || continue
-      test -f "$dir/bin/apkill"  || continue
+      test -x "$dir/bin/apbasil" || continue
+      test -x "$dir/bin/apkill"  || continue
       _x_ac_alps_install_dir="$dir"
 
 cat >>confdefs.h <<_ACEOF
@@ -19776,7 +19775,7 @@ _ACEOF
       break
     done
     if test -z "$_x_ac_alps_install_dir"; then
-      as_fn_error $? "Could not locate apbasil and apikill executables on Cray system. See --with-alps-dir option." "$LINENO" 5
+      as_fn_error $? "Could not locate apbasil and apkill executables on Cray system. See --with-alps-dir option." "$LINENO" 5
     fi
 
 
