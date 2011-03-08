@@ -276,64 +276,6 @@ static void *_poll(void *no_data)
 	return NULL;
 }
 
-extern bg_block_status_t bridge_translate_status(
-	bgsched::Block::Status state_in)
-{
-	switch (state_in) {
-	case Block::Allocated:
-		return BG_BLOCK_ALLOCATED;
-		break;
-	case Block::Booting:
-		return BG_BLOCK_BOOTING;
-		break;
-	case Block::Free:
-		return BG_BLOCK_FREE;
-		break;
-	case Block::Initialized:
-		return BG_BLOCK_INITED;
-		break;
-	case Block::Terminating:
-		return BG_BLOCK_TERM;
-		break;
-	default:
-		return BG_BLOCK_ERROR;
-		break;
-	}
-	error("unknown block state %d", state_in);
-	return BG_BLOCK_NAV;
-}
-
-extern uint16_t bridge_translate_switch_usage(bgsched::Switch::InUse usage_in)
-{
-	switch (usage_in) {
-	case Switch::NotInUse:
-		return BG_SWITCH_NONE;
-		break;
-	case Switch::IncludedBothPortsInUse:
-		return BG_SWITCH_TORUS;
-		break;
-	case Switch::IncludedOutputPortInUse:
-		return (BG_SWITCH_OUT | BG_SWITCH_OUT_PASS);
-		break;
-	case Switch::IncludedInputPortInUse:
-		return (BG_SWITCH_IN | BG_SWITCH_IN_PASS);
-		break;
-	case Switch::Wrapped:
-		return BG_SWITCH_WRAPPED;
-		break;
-	case Switch::Passthrough:
-		return BG_SWITCH_PASS;
-		break;
-	case Switch::WrappedPassthrough:
-		return BG_SWITCH_WRAPPED_PASS;
-		break;
-	default:
-		error("unknown switch usage %d", usage_in);
-		break;
-	}
-
-	return BG_SWITCH_NONE;
-}
 #endif
 
 extern int bridge_status_init(void)

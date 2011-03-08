@@ -41,7 +41,7 @@
 
 extern "C" {
 #include "../bg_enums.h"
-#include "../bg_structs.h"
+#include "../bg_record_functions.h"
 }
 
 #ifdef HAVE_BG_FILES
@@ -50,8 +50,16 @@ extern "C" {
 #include <bgsched/InitializationException.h>
 #include <bgsched/InputException.h>
 #include <bgsched/InternalException.h>
-#include <bgsched/Block.h>
+#include <bgsched/RuntimeException.h>
 #include <bgsched/Switch.h>
+#include <bgsched/bgsched.h>
+#include <bgsched/Block.h>
+#include <bgsched/core/core.h>
+#include <boost/foreach.hpp>
+
+using namespace std;
+using namespace bgsched;
+using namespace bgsched::core;
 
 extern int bridge_handle_runtime_errors(const char *function,
 					const uint32_t err,

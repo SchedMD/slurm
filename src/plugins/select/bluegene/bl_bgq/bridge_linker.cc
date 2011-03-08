@@ -52,15 +52,6 @@ static bool initialized = false;
 
 #ifdef HAVE_BG_FILES
 
-#include <bgsched/bgsched.h>
-#include <bgsched/Block.h>
-#include <bgsched/core/core.h>
-#include <boost/foreach.hpp>
-
-using namespace std;
-using namespace bgsched;
-using namespace bgsched::core;
-
 static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 {
 	// int i;
@@ -427,7 +418,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
         try {
 		Block::initiateBoot(bg_record->bg_block_id);
 	} catch (const bgsched::RuntimeException& err) {
-		rc = bridge_handle_input_errors("Block::initiateBoot",
+		rc = bridge_handle_runtime_errors("Block::initiateBoot",
 						err.getError().toValue(),
 						bg_record);
 		if (rc != SLURM_SUCCESS)
@@ -477,19 +468,19 @@ extern int bridge_block_free(bg_record_t *bg_record)
 	try {
 		Block::initiateFree(bg_record->bg_block_id);
 	} catch (const bgsched::RuntimeException& err) {
-		rc = bridge_handle_input_errors("Block::initiateFree",
-						err.getError().toValue(),
-						bg_record);
+		rc = bridge_handle_runtime_errors("Block::initiateFree",
+						  err.getError().toValue(),
+						  bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
-	} catch (const bgsched::DatabaseException& err) {
+	} catch (const bgsched::DatabaseException& err2) {
 		rc = bridge_handle_database_errors("Block::initiateFree",
-						   err.getError().toValue());
+						   err2.getError().toValue());
 		if (rc != SLURM_SUCCESS)
 			return rc;
-	} catch (const bgsched::InputException& err) {
+	} catch (const bgsched::InputException& err3) {
 		rc = bridge_handle_input_errors("Block::initiateFree",
-						err.getError().toValue(),
+						err3.getError().toValue(),
 						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
@@ -518,7 +509,7 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 	try {
 		Block::remove(bg_record->bg_block_id);
 	} catch (const bgsched::RuntimeException& err) {
-		rc = bridge_handle_input_errors("Block::remove",
+		rc = bridge_handle_runtime_errors("Block::remove",
 						err.getError().toValue(),
 						bg_record);
 		if (rc != SLURM_SUCCESS)
