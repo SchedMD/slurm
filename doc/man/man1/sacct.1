@@ -29,6 +29,13 @@ identifier (UID) by default.  Data for other users can be displayed
 with the \f3\-\-all\fP, \f3\-\-user\fP, or \f3\-\-uid\fP options.
 .TP "7"
 \f3Note: \fP\c
+If the AccountingStorageType is set to "accounting_storage/filetxt",
+space characters embedded within account names, job names, and step names
+will be replaced by underscores. If account names with embedded spaces are
+needed, it is recommended that a database type of accounting storage be
+configured.
+.TP
+\f3Note: \fP\c
 The content's of SLURM's database are maintained in lower case. This may
 result in some \f3sacct\fP output differing from that of other SLURM commands.
 .TP

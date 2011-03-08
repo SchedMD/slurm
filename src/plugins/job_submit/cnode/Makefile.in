@@ -14,6 +14,9 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+# Makefile for job_submit/cnode plugin
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -34,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = contribs/perlapi/libslurm
+subdir = src/plugins/job_submit/cnode
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -78,8 +81,52 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-SOURCES =
-DIST_SOURCES =
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__installdirs = "$(DESTDIR)$(pkglibdir)"
+LTLIBRARIES = $(pkglib_LTLIBRARIES)
+job_submit_cnode_la_LIBADD =
+am_job_submit_cnode_la_OBJECTS = job_submit_cnode.lo
+job_submit_cnode_la_OBJECTS = $(am_job_submit_cnode_la_OBJECTS)
+job_submit_cnode_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(job_submit_cnode_la_LDFLAGS) $(LDFLAGS) -o $@
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
+depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
+am__depfiles_maybe = depfiles
+am__mv = mv -f
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+SOURCES = $(job_submit_cnode_la_SOURCES)
+DIST_SOURCES = $(job_submit_cnode_la_SOURCES)
+ETAGS = etags
+CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -276,48 +323,17 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-# copied from pidgin
-#
-perl_dir = perl
-perlpath = /usr/bin/perl
-perl_sources = \
-	       $(perl_dir)/Makefile.PL.in \
-	       $(perl_dir)/ppport.h \
-	       $(perl_dir)/Slurm.xs \
-	       $(perl_dir)/lib/Slurm.pm \
-	       $(perl_dir)/lib/Slurm/Bitstr.pm \
-	       $(perl_dir)/lib/Slurm/Constant.pm \
-	       $(perl_dir)/lib/Slurm/Hostlist.pm \
-	       $(perl_dir)/lib/Slurm/Stepctx.pm \
-	       $(perl_dir)/typemap \
-	       $(perl_dir)/classmap \
-	       $(perl_dir)/bitstr.h \
-	       $(perl_dir)/slurm-perl.h \
-	       $(perl_dir)/alloc.c \
-	       $(perl_dir)/block.c \
-	       $(perl_dir)/conf.c \
-	       $(perl_dir)/job.c \
-	       $(perl_dir)/node.c \
-	       $(perl_dir)/partition.c \
-	       $(perl_dir)/reservation.c \
-	       $(perl_dir)/step.c \
-	       $(perl_dir)/step_ctx.c \
-	       $(perl_dir)/topo.c \
-	       $(perl_dir)/trigger.c
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+pkglib_LTLIBRARIES = job_submit_cnode.la
 
-test_sources = \
-	$(perl_dir)/t/00-use.t
-
-AM_CPPFLAGS = \
-	-DVERSION=\"$(VERSION)\" \
-	-I$(top_srcdir) \
-	-I$(top_builddir) \
-	$(DEBUG_CFLAGS) \
-	$(PERL_CFLAGS)
-
+# Job submit cnode plugin.
+job_submit_cnode_la_SOURCES = job_submit_cnode.c
+job_submit_cnode_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
+.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -327,9 +343,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign contribs/perlapi/libslurm/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/job_submit/cnode/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign contribs/perlapi/libslurm/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/job_submit/cnode/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -348,18 +364,126 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkglibdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibdir)"
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(pkglibdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(pkglibdir)"; \
+	}
+
+uninstall-pkglibLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	for p in $$list; do \
+	  $(am__strip_dir) \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(pkglibdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(pkglibdir)/$$f"; \
+	done
+
+clean-pkglibLTLIBRARIES:
+	-test -z "$(pkglib_LTLIBRARIES)" || rm -f $(pkglib_LTLIBRARIES)
+	@list='$(pkglib_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+job_submit_cnode.la: $(job_submit_cnode_la_OBJECTS) $(job_submit_cnode_la_DEPENDENCIES) 
+	$(job_submit_cnode_la_LINK) -rpath $(pkglibdir) $(job_submit_cnode_la_OBJECTS) $(job_submit_cnode_la_LIBADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT)
+
+distclean-compile:
+	-rm -f *.tab.c
+
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit_cnode.Plo@am__quote@
+
+.c.o:
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+.c.lo:
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+
+ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
+	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '{ files[$$0] = 1; nonempty = 1; } \
+	      END { if (nonempty) { for (i in files) print i; }; }'`; \
+	mkid -fID $$unique
 tags: TAGS
-TAGS:
 
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+		$(TAGS_FILES) $(LISP)
+	set x; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '{ files[$$0] = 1; nonempty = 1; } \
+	      END { if (nonempty) { for (i in files) print i; }; }'`; \
+	shift; \
+	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
+	  test -n "$$unique" || unique=$$empty_fix; \
+	  if test $$# -gt 0; then \
+	    $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
+	      "$$@" $$unique; \
+	  else \
+	    $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
+	      $$unique; \
+	  fi; \
+	fi
 ctags: CTAGS
-CTAGS:
+CTAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+		$(TAGS_FILES) $(LISP)
+	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '{ files[$$0] = 1; nonempty = 1; } \
+	      END { if (nonempty) { for (i in files) print i; }; }'`; \
+	test -z "$(CTAGS_ARGS)$$unique" \
+	  || $(CTAGS) $(CTAGSFLAGS) $(AM_CTAGSFLAGS) $(CTAGS_ARGS) \
+	     $$unique
 
+GTAGS:
+	here=`$(am__cd) $(top_builddir) && pwd` \
+	  && $(am__cd) $(top_srcdir) \
+	  && gtags -i $(GTAGS_ARGS) "$$here"
+
+distclean-tags:
+	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
 distdir: $(DISTFILES)
 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
@@ -393,8 +517,11 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile all-local
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
+	for dir in "$(DESTDIR)$(pkglibdir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -411,16 +538,25 @@ install-strip:
 	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
 mostlyclean-generic:
 
+clean-generic:
+
+distclean-generic:
+	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-tags
 
 dvi: dvi-am
 
@@ -440,7 +576,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-exec-local
+install-exec-am: install-pkglibLTLIBRARIES
 
 install-html: install-html-am
 
@@ -463,12 +599,14 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-generic mostlyclean-libtool
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -478,136 +616,24 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-local
+uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .MAKE: install-am install-strip
 
-.PHONY: all all-am all-local check check-am clean clean-generic \
-	clean-libtool distclean distclean-generic distclean-libtool \
-	distdir dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-exec-local \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
-	ps ps-am uninstall uninstall-am uninstall-local
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
+	clean-libtool clean-pkglibLTLIBRARIES ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-pkglibLTLIBRARIES \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
-	$(perl_dir)/t/01-error.t
-	$(perl_dir)/t/02-string.t
-	$(perl_dir)/t/03-block.t
-	$(perl_dir)/t/04-alloc.c
-	$(perl_dir)/t/05-signal.t
-	$(perl_dir)/t/06-complete.t
-	$(perl_dir)/t/07-spawn.t
-	$(perl_dir)/t/08-conf.t
-	$(perl_dir)/t/09-resource.t
-	$(perl_dir)/t/10-job.t
-	$(perl_dir)/t/11-step.t
-	$(perl_dir)/t/12-node.t
-	$(perl_dir)/t/13-topo.t
-	$(perl_dir)/t/14-select.t
-	$(perl_dir)/t/15-partition.t
-	$(perl_dir)/t/16-reservation.t
-	$(perl_dir)/t/17-ping.t
-	$(perl_dir)/t/18-suspend.t
-	$(perl_dir)/t/19-checkpoint.t
-	$(perl_dir)/t/20-trigger.t
-	$(perl_dir)/t/21-hostlist.t
-	$(perl_dir)/t/22-list.t
-	$(perl_dir)/t/23-bitstr.t
-
-$(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
-	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		for f in ${perl_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-		for f in ${test_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-	fi
-	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE=
-
-#
-# Note on linking logic below
-#
-# Install at PREFIX and ignore INSTALL_BASE. Having both results in a build error.
-# AIX needs to use LD to link. It can not use gcc.
-# Suse Linux compiles with gcc, but picks some other compiler to use for linking.
-#   Since some CFLAGS may be incompatible with this other compiler, the build
-#   may fail, as seen on BlueGene platforms.
-# Other Linux implementations sems to work fine with the LD specified as below
-#
-all-local: $(perl_dir)/Makefile #libslurm
-@HAVE_AIX_TRUE@	@cd $(perl_dir) && \
-@HAVE_AIX_TRUE@	if [ ! -f Makefile ]; then \
-@HAVE_AIX_TRUE@		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= ; \
-@HAVE_AIX_TRUE@	fi && \
-@HAVE_AIX_TRUE@	($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
-@HAVE_AIX_TRUE@	 $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
-@HAVE_AIX_TRUE@	cd ..;
-@HAVE_AIX_FALSE@	@cd $(perl_dir) && \
-@HAVE_AIX_FALSE@	if [ ! -f Makefile ]; then \
-@HAVE_AIX_FALSE@		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= ; \
-@HAVE_AIX_FALSE@	fi && \
-@HAVE_AIX_FALSE@	($(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
-@HAVE_AIX_FALSE@	 $(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
-@HAVE_AIX_FALSE@	cd ..;
-
-install-exec-local:
-	@cd $(perl_dir) && \
-	$(MAKE) DESTDIR=$(DESTDIR) install && \
-	cd ..;
-
-# Evil Hack (TM)
-# ... which doesn't work with DESTDIR installs. FIXME?
-uninstall-local:
-	@cd $(perl_dir) && \
-	`$(MAKE) uninstall | grep unlink | sed -e 's#/usr#${prefix}#' -e 's#unlink#rm -f#'` && \
-	cd ..;
-
-clean-generic:
-	@cd $(perl_dir); \
-	$(MAKE) clean; \
-	if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		rm -fr lib t *c *h *xs typemap classmap; \
-	fi; \
-	cd ..;
-
-	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		for f in ${perl_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-		for f in ${test_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-	fi
-
-distclean-generic:
-	@cd $(perl_dir); \
-	$(MAKE) realclean; \
-	rm -f Makefile.PL; \
-	rm -f Makefile.old; \
-	rm -f Makefile; \
-	cd ..;
-
-	@rm -f Makefile
-
-	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		for f in ${perl_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-		for f in ${test_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-	fi
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

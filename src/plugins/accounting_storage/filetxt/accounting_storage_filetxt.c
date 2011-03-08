@@ -170,6 +170,26 @@ static int _print_record(struct job_record *job_ptr,
 	return rc;
 }
 
+/* Make a copy of in_string replacing spaces with underscores.
+ * Use xfree to release returned memory */
+static char *_safe_dup(char *in_string)
+{
+	int i;
+	char *out_string;
+
+	if (in_string && in_string[0]) {
+		out_string = xstrdup(in_string);
+		for (i = 0; out_string[i]; i++) {
+			if (isspace(out_string[i]))
+				out_string[i]='_';
+		}
+	} else {
+		out_string = xstrdup("(null)");
+	}
+
+	return out_string;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -534,8 +554,7 @@ extern int clusteracct_storage_p_cluster_cpus(void *db_conn,
 extern int jobacct_storage_p_job_start(void *db_conn,
 				       struct job_record *job_ptr)
 {
-	int	i,
-		rc=SLURM_SUCCESS;
+	int	rc = SLURM_SUCCESS;
 	char	buf[BUFFER_SIZE], *account, *nodes;
 	char    *jname = NULL;
 	long	priority;
@@ -560,25 +579,19 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		   -1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
-		jname = xstrdup(job_ptr->name);
-		for (i=0; jname[i]; i++)
-			if (isspace(jname[i]))
-				jname[i]='_';
+		jname = _safe_dup(job_ptr->name);
 	} else {
 		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
 
-	if (job_ptr->account && job_ptr->account[0])
-		account = job_ptr->account;
-	else
-		account = "(null)";
+	account= _safe_dup(job_ptr->account);
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
 		nodes = "(null)";
 
-	if(job_ptr->batch_flag)
+	if (job_ptr->batch_flag)
 		track_steps = 1;
 
 	job_ptr->requid = -1; /* force to -1 for stats to know this
@@ -591,7 +604,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		 nodes, account);
 
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
-
+	xfree(account);
 	xfree(jname);
 	return rc;
 }
@@ -646,13 +659,13 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 					struct step_record *step_ptr)
 {
 	char buf[BUFFER_SIZE];
-	int cpus = 0;
+	int cpus = 0, rc;
 	char node_list[BUFFER_SIZE];
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 #endif
 	float float_tmp = 0;
-	char *account;
+	char *account, *step_name;
 
 	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
@@ -685,10 +698,8 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 			 step_ptr->step_layout->node_list);
 	}
 #endif
-	if (step_ptr->job_ptr->account && step_ptr->job_ptr->account[0])
-		account = step_ptr->job_ptr->account;
-	else
-		account = "(null)";
+	account   = _safe_dup(step_ptr->job_ptr->account);
+	step_name = _safe_dup(step_ptr->name);
 
 	step_ptr->job_ptr->requid = -1; /* force to -1 for stats to know this
 				     * hasn't been set yet  */
@@ -704,9 +715,9 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		 0,                    /* total cputime seconds */
 		 0,    		/* total cputime seconds */
 		 0,	/* user seconds */
-		 0,/* user microseconds */
+		 0,	/* user microseconds */
 		 0,	/* system seconds */
-		 0,/* system microsecs */
+		 0,	/* system microsecs */
 		 0,	/* max rss */
 		 0,	/* max ixrss */
 		 0,	/* max idrss */
@@ -733,7 +744,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		 0,	/* min cpu */
 		 0,	/* min cpu task */
 		 float_tmp,	/* ave cpu */
-		 step_ptr->name,    /* step exe name */
+		 step_name,	/* step exe name */
 		 node_list,     /* name of nodes step running on */
 		 0,	/* max vsize node */
 		 0,	/* max rss node */
@@ -742,7 +753,10 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		 account,
 		 step_ptr->job_ptr->requid); /* requester user id */
 
-	return _print_record(step_ptr->job_ptr, step_ptr->start_time, buf);
+	rc = _print_record(step_ptr->job_ptr, step_ptr->start_time, buf);
+	xfree(account);
+	xfree(step_name);
+	return rc;
 }
 
 /*
@@ -755,7 +769,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	time_t now;
 	int elapsed;
 	int comp_status;
-	int cpus = 0;
+	int cpus = 0, rc;
 	char node_list[BUFFER_SIZE];
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
@@ -765,7 +779,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0;
 	uint32_t ave_cpu2 = 0;
-	char *account;
+	char *account, *step_name;
 	uint32_t exit_code;
 
 	if(!storage_init) {
@@ -836,10 +850,8 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		ave_cpu2 = jobacct->min_cpu;
 	}
 
-	if (step_ptr->job_ptr->account && step_ptr->job_ptr->account[0])
-		account = step_ptr->job_ptr->account;
-	else
-		account = "(null)";
+	account   = _safe_dup(step_ptr->job_ptr->account);
+	step_name = _safe_dup(step_ptr->name);
 
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
@@ -885,7 +897,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		 ave_cpu2,	/* min cpu */
 		 jobacct->min_cpu_id.taskid,	/* min cpu node */
 		 ave_cpu,	/* ave cpu */
-		 step_ptr->name,      	/* step exe name */
+		 step_name,	/* step exe name */
 		 node_list, /* name of nodes step running on */
 		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
 		 jobacct->max_rss_id.nodeid,	/* max rss task */
@@ -894,7 +906,10 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		 account,
 		 step_ptr->job_ptr->requid); /* requester user id */
 
-	return _print_record(step_ptr->job_ptr, now, buf);
+	rc = _print_record(step_ptr->job_ptr, now, buf);
+	xfree(account);
+	xfree(step_name);
+	return rc;
 }
 
 /*
