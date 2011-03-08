@@ -45,13 +45,13 @@ extern "C" {
 
 #include "bridge_status.h"
 
-#if defined HAVE_BG_FILES
+/* local vars */
+//static pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool initialized = false;
 
-#include <bgsched/DatabaseException.h>
-#include <bgsched/InitializationException.h>
-#include <bgsched/InputException.h>
-#include <bgsched/InternalException.h>
-#include <bgsched/RuntimeException.h>
+
+#ifdef HAVE_BG_FILES
+
 #include <bgsched/bgsched.h>
 #include <bgsched/Block.h>
 #include <bgsched/core/core.h>
@@ -60,156 +60,6 @@ extern "C" {
 using namespace std;
 using namespace bgsched;
 using namespace bgsched::core;
-
-#endif
-
-/* local vars */
-//static pthread_mutex_t api_file_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool initialized = false;
-
-#if defined HAVE_BG_FILES
-
-static int _handle_runtime_errors(const char *function,
-				  const uint32_t err,
-				  bg_record_t *bg_record)
-{
-	int rc = SLURM_ERROR;
-
-	switch (err) {
-	case bgsched::RuntimeErrors::BlockAddError:
-		error("%s: Error Setting block %s owner.", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::RuntimeErrors::InvalidBlockState:
-		/* not a real error */
-		rc = SLURM_SUCCESS;
-		error("%s: Error can't perform task with block %s in state %s"
-		      "incorrect %s.", function, bg_record->bg_block_id,
-		      bg_block_state_string(bg_record->state));
-		break;
-	// case bgsched::RuntimeErrors::
-	// 	error("%s: .", function);
-	// 	break;
-	default:
-		error("%s: Unexpected Runtime exception value %d.",
-		      function, err);
-	}
-	return rc;
-}
-
-static int _handle_database_errors(const char *function, const uint32_t err)
-{
-	int rc = SLURM_ERROR;
-
-	switch (err) {
-	case bgsched::DatabaseErrors::DatabaseError:
-		error("%s: Can't access to the database when "
-		      "doing Block::remove()!");
-		break;
-	case bgsched::DatabaseErrors::ConnectionError:
-		error("%s: Can't connect to the database!", function);
-		break;
-	// case bgsched::DatabaseErrors::
-	// 	error("%s: .", function);
-	// 	break;
-	default:
-		error("%s: Unexpected Database exception value %d",
-		      function, err);
-	}
-	return rc;
-}
-static int _handle_input_errors(const char *function, const uint32_t err,
-				bg_record_t *bg_record)
-{
-	int rc = SLURM_ERROR;
-
-	/* Not real errors */
-	switch (err) {
-	case bgsched::InputErrors::InvalidMidplaneCoordinates:
-		error("%s: Invalid midplane coodinates given.", function);
-		break;
-	case bgsched::InputErrors::InvalidLocationString:
-		error("%s: Invalid location given.", function);
-		break;
-	case bgsched::InputErrors::InvalidBlockSize:
-		error("%s: Invalid Block Size.", function);
-		break;
-	case bgsched::InputErrors::InvalidBlockName:
-		/* Not real error */
-		rc = SLURM_SUCCESS;
-		error("%s: Bad block name %s!",
-		      function, bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::InvalidBlockDescription:
-		error("%s: Invalid Block Description (%s).", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::InvalidBlockOptions:
-		error("%s: Invalid Block Options (%s).", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::InvalidBlockBootOptions:
-		error("%s: Invalid Block boot options (%s).", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::InvalidBlockMicroLoaderImage:
-		error("%s: Invalid Block microloader image (%s).", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::InvalidBlockNodeConfiguration:
-		error("%s: Invalid Block Node Configuration (%s).", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::InvalidBlockInfo:
-		error("%s: Invalid Block Info (%s).", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::InvalidNodeBoards:
-		error("%s: Invalid Node Boards.", function);
-		break;
-	case bgsched::InputErrors::InvalidDimension:
-		error("%s: Invalid Dimensions.", function);
-		break;
-	case bgsched::InputErrors::InvalidNodeBoardCount:
-		error("%s: Invalid NodeBoard count.", function);
-		break;
-	case bgsched::InputErrors::InvalidMidplanes:
-		error("%s: Invalid midplanes given.", function);
-		break;
-	case bgsched::InputErrors::InvalidPassthroughMidplanes:
-		error("%s: Invalid passthrough midplanes given.", function);
-		break;
-	case bgsched::InputErrors::InvalidConnectivity:
-		error("%s: Invalid connectivity given.", function);
-		break;
-	case bgsched::InputErrors::BlockNotFound:
-		/* Not real error */
-		rc = SLURM_SUCCESS;
-		error("%s: Unknown block %s!",
-		      function, bg_record->bg_block_id);
-		break;
-	case bgsched::InputErrors::BlockNotAdded:
-		error("%s: For some reason the block was not added.", function);
-		break;
-	case bgsched::InputErrors::BlockNotCreated:
-		error("%s: can not create block from input arguments",
-		      function);
-		break;
-	case bgsched::InputErrors::InvalidUser:
-		error("%s: Invalid User given.", function);
-		break;
-	default:
-		error("%s: Unexpected Input exception value %d",
-		      function, err);
-		rc = SLURM_ERROR;
-	}
-	return rc;
-}
-
-static void _setup_ba_switch_int(ba_switch_t *ba_switch)
-{
-
-}
 
 static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 {
@@ -266,7 +116,7 @@ static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 
 static int _block_wait_for_jobs(char *bg_block_id)
 {
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	std::vector<Job::ConstPtr> job_vec;
 	JobFilter job_filter;
 	JobFilter::Statuses job_statuses;
@@ -280,7 +130,7 @@ static int _block_wait_for_jobs(char *bg_block_id)
 		return SLURM_ERROR;
 	}
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 
 	job_filter.setComputeBlockName(bg_block_id);
 
@@ -359,7 +209,7 @@ extern int bridge_init(char *properties_file)
 	if (bg_recover == NOT_FROM_CONTROLLER)
 		return 0;
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	bgsched::init(properties_file);
 #endif
 	bridge_status_init();
@@ -392,7 +242,7 @@ extern const char *bridge_err_str(int inx)
 
 extern int bridge_get_size(int *size)
 {
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
         Midplane::Coordinates bgq_size;
 	Dimension dim;
 #else
@@ -400,7 +250,7 @@ extern int bridge_get_size(int *size)
 #endif
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	memset(size, 0, sizeof(int) * SYSTEM_DIMENSIONS);
 
 	bgq_size = core::getMachineSize();
@@ -422,7 +272,7 @@ extern int bridge_setup_system()
 		return SLURM_ERROR;
 
 	inited = true;
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	ComputeHardware::ConstPtr bgq = getComputeHardware();
 
 	for (int a = 0; a < DIM_SIZE[A]; a++)
@@ -441,7 +291,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	Block::Ptr block_ptr;
 	Block::Midplanes midplanes;
         Block::PassthroughMidplanes pt_midplanes;
@@ -510,8 +360,9 @@ extern int bridge_block_create(bg_record_t *bg_record)
 	try {
 		block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
 	} catch (const bgsched::InputException& err) {
-		rc = _handle_input_errors("Block::create",
-					  err.getError().toValue(), bg_record);
+		rc = bridge_handle_input_errors("Block::create",
+						err.getError().toValue(),
+						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	}
@@ -526,14 +377,15 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		// 		   bg_record->user_name);
 		//info("got past add");
 	} catch (const bgsched::InputException& err) {
-		rc = _handle_input_errors("Block::add",
-					  err.getError().toValue(), bg_record);
+		rc = bridge_handle_input_errors("Block::add",
+						err.getError().toValue(),
+						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::RuntimeException& err) {
-		rc = _handle_runtime_errors("Block::add",
-					    err.getError().toValue(),
-					    bg_record);
+		rc = bridge_handle_runtime_errors("Block::add",
+						  err.getError().toValue(),
+						  bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (...) {
@@ -567,13 +419,30 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	if (bridge_block_set_owner(
 		    bg_record, bg_conf->slurm_user_name) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
         try {
 		Block::initiateBoot(bg_record->bg_block_id);
+	} catch (const bgsched::RuntimeException& err) {
+		rc = bridge_handle_input_errors("Block::initiateBoot",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::DatabaseException& err) {
+		rc = bridge_handle_database_errors("Block::initiateBoot",
+						   err.getError().toValue());
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::initiateBoot",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	} catch (...) {
                 error("Boot block request failed ... continuing.");
 		rc = SLURM_ERROR;
@@ -604,22 +473,24 @@ extern int bridge_block_free(bg_record_t *bg_record)
 
 	info("freeing block %s", bg_record->bg_block_id);
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	try {
 		Block::initiateFree(bg_record->bg_block_id);
 	} catch (const bgsched::RuntimeException& err) {
-		rc = _handle_input_errors("Block::initiateFree",
-					  err.getError().toValue(), bg_record);
+		rc = bridge_handle_input_errors("Block::initiateFree",
+						err.getError().toValue(),
+						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::DatabaseException& err) {
-		rc = _handle_database_errors("Block::initiateFree",
-					     err.getError().toValue());
+		rc = bridge_handle_database_errors("Block::initiateFree",
+						   err.getError().toValue());
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::InputException& err) {
-		rc = _handle_input_errors("Block::initiateFree",
-					  err.getError().toValue(), bg_record);
+		rc = bridge_handle_input_errors("Block::initiateFree",
+						err.getError().toValue(),
+						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch(...) {
@@ -643,22 +514,24 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 
 	info("removing block %s", bg_record->bg_block_id);
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	try {
 		Block::remove(bg_record->bg_block_id);
 	} catch (const bgsched::RuntimeException& err) {
-		rc = _handle_input_errors("Block::remove",
-					  err.getError().toValue(), bg_record);
+		rc = bridge_handle_input_errors("Block::remove",
+						err.getError().toValue(),
+						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::DatabaseException& err) {
-		rc = _handle_database_errors("Block::remove",
-					     err.getError().toValue());
+		rc = bridge_handle_database_errors("Block::remove",
+						   err.getError().toValue());
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::InputException& err) {
-		rc = _handle_input_errors("Block::remove",
-					  err.getError().toValue(), bg_record);
+		rc = bridge_handle_input_errors("Block::remove",
+						err.getError().toValue(),
+						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch(...) {
@@ -679,7 +552,7 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 		return SLURM_ERROR;
 
 	info("adding user %s to block %s", user_name, bg_record->bg_block_id);
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
         try {
 		Block::addUser(bg_record->bg_block_id, user_name);
 	} catch(...) {
@@ -701,7 +574,7 @@ extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
 		return SLURM_ERROR;
 
 	info("removing user %s from block %s", user_name, bg_record->bg_block_id);
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
         try {
 		Block::removeUser(bg_record->bg_block_id, user_name);
 	} catch(...) {
@@ -717,7 +590,7 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 					 char *user_name)
 {
 	int rc = SLURM_SUCCESS;
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	std::vector<std::string> vec;
 	vector<std::string>::iterator iter;
 #endif
@@ -728,7 +601,7 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	vec = Block::getUsers(bg_record->bg_block_id);
 	if (vec.empty())
 		return REMOVE_USER_NONE;
@@ -775,7 +648,7 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 extern int bridge_blocks_load_curr(List curr_block_list)
 {
 	int rc = SLURM_SUCCESS;
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 	Block::Ptrs vec;
 	BlockFilter filter;
 	Dimension dim;

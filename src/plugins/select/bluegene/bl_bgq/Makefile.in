@@ -83,7 +83,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libbridge_linker_la_LIBADD =
-am_libbridge_linker_la_OBJECTS = bridge_linker.lo bridge_status.lo
+am_libbridge_linker_la_OBJECTS = bridge_linker.lo bridge_helper.lo \
+	bridge_status.lo
 libbridge_linker_la_OBJECTS = $(am_libbridge_linker_la_OBJECTS)
 libbridge_linker_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -316,6 +317,7 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 # making a .la
 noinst_LTLIBRARIES = libbridge_linker.la
 libbridge_linker_la_SOURCES = bridge_linker.cc \
+				bridge_helper.cc bridge_helper.h \
 				bridge_status.cc bridge_status.h
 
 libbridge_linker_la_LDFLAGS = $(LIB_LDFLAGS)
@@ -371,6 +373,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_helper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_status.Plo@am__quote@
 
