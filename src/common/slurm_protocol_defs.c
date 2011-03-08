@@ -1597,15 +1597,15 @@ extern char *bg_block_state_string(uint16_t state)
 	case BG_BLOCK_BUSY:
 		return "Busy";
 	case BG_BLOCK_BOOTING:
-		return "Booting";
+		return "Boot";
 	case BG_BLOCK_REBOOTING:
-		return "Rebooting";
+		return "Reboot";
 	case BG_BLOCK_INITED:
-		return "Inited";
+		return "Ready";
 	case BG_BLOCK_ALLOCATED:
-		return "Allocated";
+		return "Alloc";
 	case BG_BLOCK_TERM:
-		return "Terminating";
+		return "Term";
 	case BG_BLOCK_ERROR:
 		return "Error";
 	}
