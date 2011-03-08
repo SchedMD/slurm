@@ -387,8 +387,17 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 
 	sec_record->magic = fir_record->magic;
 
+	xfree(sec_record->blrtsimage);
+	sec_record->blrtsimage = xstrdup(fir_record->blrtsimage);
+
+	xfree(sec_record->linuximage);
+	sec_record->linuximage = xstrdup(fir_record->linuximage);
+
 	xfree(sec_record->mloaderimage);
 	sec_record->mloaderimage = xstrdup(fir_record->mloaderimage);
+
+	xfree(sec_record->ramdiskimage);
+	sec_record->ramdiskimage = xstrdup(fir_record->ramdiskimage);
 
 	sec_record->modifying = fir_record->modifying;
 
