@@ -614,6 +614,9 @@ Run <i>sfree --help</i> for more information.</p>
 
 <h4>Resource Reservations</h4>
 
+<p><b>This reservation mechanism for less than an entire midplane is still
+under development.</b></p>
+
 <p>SLURM's advance reservation mechanism is designed to reserve resources
 at the level of whole nodes, which on a BlueGene systems would represent
 whole midplanes. In order to support advanced reservations with a finer

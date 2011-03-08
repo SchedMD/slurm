@@ -15,7 +15,8 @@ documents those changes that are of interest to users and admins.
     Perl can not build if both are set.
  -- Add job_submit/cnode plugin to support resource reservations of less than
     a full midplane on BlueGene computers. Treat cnodes as liceses which can
-    be reserved and are consumed by jobs.
+    be reserved and are consumed by jobs. This reservation mechanism for less
+    than an entire midplane is still under development.
 
 * Changes in SLURM 2.2.3
 ========================
