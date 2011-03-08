@@ -168,7 +168,7 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 				return 0;
 			}
 		}
-		ba_request->size=1;
+		ba_request->size = 1;
 		for (i=0; i<cluster_dims; i++)
 			ba_request->size *= ba_request->geometry[i];
 	}
@@ -1082,13 +1082,19 @@ extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
  */
 static int _check_for_options(select_ba_request_t* ba_request)
 {
+	ba_geo_table_t *ba_geo_table;
+
 	if (ba_request->geo_table) {
-		ba_geo_table_t *ba_geo_table = ba_request->geo_table;
+		ba_geo_table = ba_request->geo_table;
 		ba_request->geo_table =	ba_geo_table->next_ptr;
 	}
 
-	if (ba_request->geo_table)
+	if (ba_request->geo_table) {
+		ba_geo_table = ba_request->geo_table;
+		memcpy(ba_request->geometry, ba_geo_table->geometry,
+		       sizeof(ba_geo_table->geometry));
 		return 1;
+	}
 	return 0;
 }
 
@@ -1812,7 +1818,7 @@ start_again:
 		if (ba_request->start_req)
 			goto requested_end;
 		//exit(0);
-		debug2("trying something else");
+		debug("trying something else");
 
 		if ((DIM_SIZE[Z]-start[Z]-1) >= ba_request->geometry[Z])
 			start[Z]++;
