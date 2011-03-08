@@ -643,7 +643,6 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 	Block::Ptrs vec;
 	BlockFilter filter;
 	Dimension dim;
-	List results = NULL;
 	char temp[256];
 	uid_t my_uid;
 	bg_record_t *bg_record = NULL;
@@ -773,8 +772,6 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			      bg_record->nodes, temp);
 		}
 
-		bg_record->ba_mp_list =	results;
-		results = NULL;
 		bg_record->user_name = xstrdup(block_ptr->getUser().c_str());
 		if (!bg_record->boot_state)
 			bg_record->target_name =

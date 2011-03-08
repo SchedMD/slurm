@@ -448,7 +448,6 @@ extern int check_and_set_mp_list(List mps)
 	rc = SLURM_SUCCESS;
 end_it:
 	list_iterator_destroy(itr);
-
 	return rc;
 }
 
