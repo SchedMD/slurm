@@ -133,6 +133,39 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 	}
 }
 
+#if defined HAVE_BG_FILES
+static ba_mp_t *_internal_loc2ba_mp(int level, int *coords, char *check)
+{
+	ba_mp_t *curr_mp = NULL;
+	static int *dims = NULL;
+
+	if (!check || (level > cluster_dims))
+		return NULL;
+
+	if (!dims)
+		dims = select_g_ba_get_dims();
+
+	if (level < cluster_dims) {
+		for (coords[level] = 0;
+		     coords[level] < dims[level];
+		     coords[level]++) {
+			/* handle the outer dims here */
+			if ((curr_mp = _internal_loc2ba_mp(
+				     level+1, coords, check)))
+				break;
+		}
+		return curr_mp;
+	}
+
+	curr_mp = coord2ba_mp(coords);
+
+	if (strcasecmp(check, curr_mp->loc))
+		curr_mp = NULL;
+
+	return curr_mp;
+}
+#endif
+
 /**
  * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
@@ -366,8 +399,6 @@ extern ba_mp_t *str2ba_mp(char *coords)
 {
 	int coord[cluster_dims];
 	int len, dim;
-	int number;
-	char *p = '\0';
 	static int *dims = NULL;
 
 	if (!dims)
@@ -378,13 +409,13 @@ extern ba_mp_t *str2ba_mp(char *coords)
 	len = strlen(coords) - cluster_dims;
 	if (len < 0)
 		return NULL;
-	number = xstrntol(coords + len, &p, cluster_dims, cluster_base);
 
-	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
-
-	for (dim=0; dim<cluster_dims; dim++)
+	for (dim = 0; dim < cluster_dims; dim++, len++) {
+		coord[dim] = _coord(coords[len]);
 		if (coord[dim] > dims[dim])
 			break;
+	}
+
 	if (dim < cluster_dims) {
 		char tmp_char[cluster_dims+1];
 		memset(tmp_char, 0, sizeof(tmp_char));
@@ -396,6 +427,63 @@ extern ba_mp_t *str2ba_mp(char *coords)
 	}
 
 	return coord2ba_mp(coord);
+}
+
+/*
+ * find a base blocks bg location (rack/midplane)
+ */
+extern ba_mp_t *loc2ba_mp(char* mp_id)
+{
+#if defined HAVE_BG_FILES
+	char *check = NULL;
+	ba_mp_t *ba_mp = NULL;
+	int coords[SYSTEM_DIMENSIONS];
+
+	if (bridge_setup_system() == -1)
+		return NULL;
+
+	check = xstrdup(mp_id);
+	/* with BGP they changed the names of the rack midplane action from
+	 * R000 to R00-M0 so we now support both formats for each of the
+	 * systems */
+#ifdef HAVE_BGL
+	if (check[3] == '-') {
+		if (check[5]) {
+			check[3] = check[5];
+			check[4] = '\0';
+		}
+	}
+
+	if ((check[1] < '0' || check[1] > '9')
+	    || (check[2] < '0' || check[2] > '9')
+	    || (check[3] < '0' || check[3] > '9')) {
+		error("%s is not a valid Rack-Midplane (i.e. R000)", mp_id);
+		goto cleanup;
+	}
+
+#else
+	if (check[3] != '-') {
+		xfree(check);
+		check = xstrdup_printf("R%c%c-M%c",
+				       mp_id[1], mp_id[2], mp_id[3]);
+	}
+
+	if ((check[1] < '0' || check[1] > '9')
+	    || (check[2] < '0' || check[2] > '9')
+	    || (check[5] < '0' || check[5] > '9')) {
+		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", mp_id);
+		goto cleanup;
+	}
+#endif
+
+	ba_mp = _internal_loc2ba_mp(0, coords, check);
+cleanup:
+	xfree(check);
+
+	return ba_mp;
+#else
+	return NULL;
+#endif
 }
 
 extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps)

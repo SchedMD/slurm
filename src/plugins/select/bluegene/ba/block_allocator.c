@@ -692,39 +692,6 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 	return rc;
 }
 
-extern ba_mp_t *str2ba_node(char *coords)
-{
-#ifdef HAVE_BG_L_P
-	int coord[cluster_dims];
-	int len, dim;
-	int number;
-	char *p = '\0';
-
-	if (!coords)
-		return NULL;
-	len = strlen(coords) - cluster_dims;
-	if (len < 0)
-		return NULL;
-	number = xstrntol(coords + len, &p, cluster_dims, cluster_base);
-
-	hostlist_parse_int_to_array(number, coord, cluster_dims, cluster_base);
-
-	for (dim=0; dim<cluster_dims; dim++) {
-		if (coord[dim] > DIM_SIZE[dim]) {
-			error("This location %s is not possible "
-			      "in our system %c%c%c",
-			      coords,
-			      alpha_num[DIM_SIZE[X]],
-			      alpha_num[DIM_SIZE[Y]],
-			      alpha_num[DIM_SIZE[Z]]);
-			return NULL;
-		}
-	}
-	return &ba_main_grid[coord[X]][coord[Y]][coord[Z]];
-#endif
-	return NULL;
-}
-
 extern ba_mp_t *coord2ba_mp(int *coord)
 {
 	return &ba_main_grid[coord[X]][coord[Y]][coord[Z]];
@@ -1159,75 +1126,6 @@ extern char *bg_err_str(status_t inx)
 #endif
 
 /*
- * find a base blocks bg location
- */
-extern uint16_t *find_mp_loc(char* mp_id)
-{
-#if defined HAVE_BG_FILES
-	char *check = NULL;
-	int x, y, z;
-	ba_mp_t *ba_mp = NULL;
-
-	if (bridge_setup_system() == -1)
-		return NULL;
-
-	check = xstrdup(mp_id);
-	/* with BGP they changed the names of the rack midplane action from
-	 * R000 to R00-M0 so we now support both formats for each of the
-	 * systems */
-#ifdef HAVE_BGL
-	if (check[3] == '-') {
-		if (check[5]) {
-			check[3] = check[5];
-			check[4] = '\0';
-		}
-	}
-
-	if ((check[1] < '0' || check[1] > '9')
-	    || (check[2] < '0' || check[2] > '9')
-	    || (check[3] < '0' || check[3] > '9')) {
-		error("%s is not a valid Rack-Midplane (i.e. R000)", mp_id);
-		goto cleanup;
-	}
-
-#else
-	if (check[3] != '-') {
-		xfree(check);
-		check = xstrdup_printf("R%c%c-M%c",
-				       mp_id[1], mp_id[2], mp_id[3]);
-	}
-
-	if ((check[1] < '0' || check[1] > '9')
-	    || (check[2] < '0' || check[2] > '9')
-	    || (check[5] < '0' || check[5] > '9')) {
-		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", mp_id);
-		goto cleanup;
-	}
-#endif
-
-	for (x = 0; x <= DIM_SIZE[X]; x++)
-		for (y = 0; y <= DIM_SIZE[Y]; y++)
-			for (z = 0; z <= DIM_SIZE[Z]; z++)
-				if (!strcasecmp(ba_main_grid[x][y][z].loc,
-						check)) {
-					ba_mp = &ba_main_grid[x][y][z];
-					goto cleanup; /* we found it */
-				}
-
-cleanup:
-	xfree(check);
-
-	if (ba_mp)
-		return ba_mp->coord;
-	else
-		return NULL;
-
-#else
-	return NULL;
-#endif
-}
-
-/*
  * set the used wires in the virtual system for a block from the real system
  */
 extern int load_block_wiring(char *bg_block_id)
@@ -1243,7 +1141,7 @@ extern int load_block_wiring(char *bg_block_id)
 	rm_connection_t curr_conn;
 	int dim;
 	ba_switch_t *ba_switch = NULL;
-	uint16_t *geo = NULL;
+	ba_mp_t *ba_mp = NULL;
 
 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
 		info("getting info for block %s", bg_block_id);
@@ -1280,12 +1178,12 @@ extern int load_block_wiring(char *bg_block_id)
 			return SLURM_ERROR;
 		}
 
-		geo = find_mp_loc(switchid);
-		if (!geo) {
-			error("find_mp_loc: mpid %s not known", switchid);
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
+			error("loc2ba_mp: mpid %s not known", switchid);
 			return SLURM_ERROR;
 		}
-		ba_main_grid[geo[X]][geo[Y]][geo[Z]].used |= BA_MP_USED_TRUE;
+		ba_mp->used |= BA_MP_USED_TRUE;
 		return SLURM_SUCCESS;
 	}
 	for (i=0; i<switch_cnt; i++) {
@@ -1324,9 +1222,9 @@ extern int load_block_wiring(char *bg_block_id)
 			return SLURM_ERROR;
 		}
 
-		geo = find_mp_loc(switchid);
-		if (!geo) {
-			error("find_mp_loc: mpid %s not known", switchid);
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
+			error("loc2ba_mp: mpid %s not known", switchid);
 			return SLURM_ERROR;
 		}
 
@@ -1339,8 +1237,7 @@ extern int load_block_wiring(char *bg_block_id)
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
 			info("switch id = %s dim %d conns = %d",
 			     switchid, dim, cnt);
-		ba_switch = &ba_main_grid[geo[X]][geo[Y]][geo[Z]].
-			axis_switch[dim];
+		ba_switch = &ba_mp->axis_switch[dim];
 		for (j=0; j<cnt; j++) {
 			if (j) {
 				if ((rc = bridge_get_data(
@@ -1367,27 +1264,22 @@ extern int load_block_wiring(char *bg_block_id)
 			}
 
 			if (curr_conn.p1 == 1 && dim == X) {
-				if (ba_main_grid[geo[X]][geo[Y]][geo[Z]].used) {
+				if (ba_mp->used) {
 					debug("I have already been to "
-					      "this node %c%c%c",
-					      alpha_num[geo[X]],
-					      alpha_num[geo[Y]],
-					      alpha_num[geo[Z]]);
+					      "this node %s",
+					      ba_mp->coord_str);
 					return SLURM_ERROR;
 				}
-				ba_main_grid[geo[X]][geo[Y]][geo[Z]].
-					used |= BA_MP_USED_TEMP;
+				ba_mp->used |= BA_MP_USED_TEMP;
 			}
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("connection going from %d -> %d",
 				     curr_conn.p1, curr_conn.p2);
 
 			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%c%c%c dim %d port %d "
+				debug("%s dim %d port %d "
 				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
+				      ba_mp->coord_str,
 				      dim,
 				      curr_conn.p1);
 				return SLURM_ERROR;
@@ -1397,11 +1289,9 @@ extern int load_block_wiring(char *bg_block_id)
 				= curr_conn.p2;
 
 			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%c%c%c dim %d port %d "
+				debug("%s dim %d port %d "
 				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
+				      ba_mp->coord_str,
 				      dim,
 				      curr_conn.p2);
 				return SLURM_ERROR;
@@ -1437,9 +1327,8 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 	char *switchid = NULL;
 	rm_connection_t curr_conn;
 	int dim;
-	ba_mp_t *ba_node = NULL;
+	ba_mp_t *ba_node = NULL, *ba_mp = NULL;
 	ba_switch_t *ba_switch = NULL;
-	uint16_t *geo = NULL;
 	List results = list_create(destroy_ba_node);
 	ListIterator itr = NULL;
 
@@ -1471,16 +1360,16 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 			goto end_it;
 		}
 
-		geo = find_mp_loc(switchid);
-		if (!geo) {
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
 			error("find_bp_loc: bpid %s not known", switchid);
 			goto end_it;
 		}
 		ba_node = xmalloc(sizeof(ba_mp_t));
 		list_push(results, ba_node);
-		ba_node->coord[X] = geo[X];
-		ba_node->coord[Y] = geo[Y];
-		ba_node->coord[Z] = geo[Z];
+		ba_node->coord[X] = ba_mp->coord[X];
+		ba_node->coord[Y] = ba_mp->coord[Y];
+		ba_node->coord[Z] = ba_mp->coord[Z];
 
 		ba_node->used |= BA_MP_USED_TRUE;
 		return results;
@@ -1521,8 +1410,8 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 			goto end_it;
 		}
 
-		geo = find_mp_loc(switchid);
-		if (!geo) {
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
 			error("find_bp_loc: bpid %s not known", switchid);
 			goto end_it;
 		}
@@ -1539,9 +1428,9 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 
 		itr = list_iterator_create(results);
 		while ((ba_node = list_next(itr))) {
-			if (ba_node->coord[X] == geo[X] &&
-			    ba_node->coord[Y] == geo[Y] &&
-			    ba_node->coord[Z] == geo[Z])
+			if (ba_node->coord[X] == ba_mp->coord[X] &&
+			    ba_node->coord[Y] == ba_mp->coord[Y] &&
+			    ba_node->coord[Z] == ba_mp->coord[Z])
 				break;	/* we found it */
 		}
 		list_iterator_destroy(itr);
@@ -1549,9 +1438,9 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 			ba_node = xmalloc(sizeof(ba_mp_t));
 
 			list_push(results, ba_node);
-			ba_node->coord[X] = geo[X];
-			ba_node->coord[Y] = geo[Y];
-			ba_node->coord[Z] = geo[Z];
+			ba_node->coord[X] = ba_mp->coord[X];
+			ba_node->coord[Y] = ba_mp->coord[Y];
+			ba_node->coord[Z] = ba_mp->coord[Z];
 		}
 		ba_switch = &ba_node->axis_switch[dim];
 		for (j=0; j<cnt; j++) {
@@ -1582,10 +1471,8 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 			if (curr_conn.p1 == 1 && dim == X) {
 				if (ba_node->used) {
 					debug("I have already been to "
-					      "this node %c%c%c",
-					      alpha_num[geo[X]],
-					      alpha_num[geo[Y]],
-					      alpha_num[geo[Z]]);
+					      "this node %s",
+					      ba_mp->coord_str);
 					goto end_it;
 				}
 				ba_node->used |= BA_MP_USED_TRUE;
@@ -1595,11 +1482,9 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 				     curr_conn.p1, curr_conn.p2);
 
 			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%c%c%c dim %d port %d "
+				debug("%s dim %d port %d "
 				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
+				      ba_mp->coord_str,
 				      dim,
 				      curr_conn.p1);
 				goto end_it;
@@ -1609,11 +1494,9 @@ extern List get_and_set_block_wiring(char *bg_block_id,
 				= curr_conn.p2;
 
 			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%c%c%c dim %d port %d "
+				debug("%s dim %d port %d "
 				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
+				      ba_mp->coord_str,
 				      dim,
 				      curr_conn.p2);
 				goto end_it;
@@ -2683,7 +2566,6 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 	char *wire_id = NULL;
 	int from_port, to_port;
 	int wire_num;
-	uint16_t *coord;
 	char from_node[NODE_LEN];
 	char to_node[NODE_LEN];
 
@@ -2783,40 +2665,30 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 			break;
 		}
 
-		coord = find_mp_loc(from_node);
-		if (!coord) {
-			error("1 find_mp_loc: mpid %s not known", from_node);
+		source = loc2ba_mp(from_node);
+		if (!source) {
+			error("1 loc2ba_mp: mpid %s not known", from_node);
 			continue;
 		}
-		if (!validate_coord(coord))
+		if (!validate_coord(source->coord))
 			continue;
 
-		source = &ba_main_grid[coord[X]][coord[Y]][coord[Z]];
-		coord = find_mp_loc(to_node);
-		if (!coord) {
-			error("2 find_mp_loc: mpid %s not known", to_node);
+		target = loc2ba_mp(to_node);
+		if (!target) {
+			error("2 loc2ba_mp: mpid %s not known", to_node);
 			continue;
 		}
-		if (!validate_coord(coord))
+		if (!validate_coord(target->coord))
 			continue;
 
-		target = &ba_main_grid[coord[X]][coord[Y]][coord[Z]];
-		_switch_config(source,
-			       target,
-			       dim,
-			       from_port,
-			       to_port);
+		_switch_config(source, target, dim, from_port, to_port);
 
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("dim %d from %c%c%c %d -> %c%c%c %d",
+			info("dim %d from %s %d -> %s %d",
 			     dim,
-			     alpha_num[source->coord[X]],
-			     alpha_num[source->coord[Y]],
-			     alpha_num[source->coord[Z]],
+			     source->coord_str,
 			     from_port,
-			     alpha_num[target->coord[X]],
-			     alpha_num[target->coord[Y]],
-			     alpha_num[target->coord[Z]],
+			     target->coord_str,
 			     to_port);
 	}
 #else

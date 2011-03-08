@@ -40,6 +40,7 @@ extern "C" {
 #include "../ba_bgq/block_allocator.h"
 #include "../bg_record_functions.h"
 #include "src/common/parse_time.h"
+#include "src/common/uid.h"
 }
 
 #include "bridge_status.h"
@@ -86,6 +87,9 @@ static int _handle_runtime_errors(const char *function,
 		      "incorrect %s.", function, bg_record->bg_block_id,
 		      bg_block_state_string(bg_record->state));
 		break;
+	// case bgsched::RuntimeErrors::
+	// 	error("%s: .", function);
+	// 	break;
 	default:
 		error("%s: Unexpected Runtime exception value %d.",
 		      function, err);
@@ -105,6 +109,9 @@ static int _handle_database_errors(const char *function, const uint32_t err)
 	case bgsched::DatabaseErrors::ConnectionError:
 		error("%s: Can't connect to the database!", function);
 		break;
+	// case bgsched::DatabaseErrors::
+	// 	error("%s: .", function);
+	// 	break;
 	default:
 		error("%s: Unexpected Database exception value %d",
 		      function, err);
@@ -118,18 +125,14 @@ static int _handle_input_errors(const char *function, const uint32_t err,
 
 	/* Not real errors */
 	switch (err) {
-	case bgsched::InputErrors::BlockNotAdded:
-		error("%s: For some reason the block was not added.", function);
+	case bgsched::InputErrors::InvalidMidplaneCoordinates:
+		error("%s: Invalid midplane coodinates given.", function);
 		break;
-	case bgsched::InputErrors::BlockNotCreated:
-		error("%s: can not create block from "
-		      "input arguments", function);
+	case bgsched::InputErrors::InvalidLocationString:
+		error("%s: Invalid location given.", function);
 		break;
-	case bgsched::InputErrors::BlockNotFound:
-		/* Not real error */
-		rc = SLURM_SUCCESS;
-		error("%s: Unknown block %s!",
-		      function, bg_record->bg_block_id);
+	case bgsched::InputErrors::InvalidBlockSize:
+		error("%s: Invalid Block Size.", function);
 		break;
 	case bgsched::InputErrors::InvalidBlockName:
 		/* Not real error */
@@ -137,11 +140,63 @@ static int _handle_input_errors(const char *function, const uint32_t err,
 		error("%s: Bad block name %s!",
 		      function, bg_record->bg_block_id);
 		break;
+	case bgsched::InputErrors::InvalidBlockDescription:
+		error("%s: Invalid Block Description (%s).", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidBlockOptions:
+		error("%s: Invalid Block Options (%s).", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidBlockBootOptions:
+		error("%s: Invalid Block boot options (%s).", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidBlockMicroLoaderImage:
+		error("%s: Invalid Block microloader image (%s).", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidBlockNodeConfiguration:
+		error("%s: Invalid Block Node Configuration (%s).", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidBlockInfo:
+		error("%s: Invalid Block Info (%s).", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::InvalidNodeBoards:
+		error("%s: Invalid Node Boards.", function);
+		break;
+	case bgsched::InputErrors::InvalidDimension:
+		error("%s: Invalid Dimensions.", function);
+		break;
+	case bgsched::InputErrors::InvalidNodeBoardCount:
+		error("%s: Invalid NodeBoard count.", function);
+		break;
 	case bgsched::InputErrors::InvalidMidplanes:
 		error("%s: Invalid midplanes given.", function);
 		break;
+	case bgsched::InputErrors::InvalidPassthroughMidplanes:
+		error("%s: Invalid passthrough midplanes given.", function);
+		break;
 	case bgsched::InputErrors::InvalidConnectivity:
 		error("%s: Invalid connectivity given.", function);
+		break;
+	case bgsched::InputErrors::BlockNotFound:
+		/* Not real error */
+		rc = SLURM_SUCCESS;
+		error("%s: Unknown block %s!",
+		      function, bg_record->bg_block_id);
+		break;
+	case bgsched::InputErrors::BlockNotAdded:
+		error("%s: For some reason the block was not added.", function);
+		break;
+	case bgsched::InputErrors::BlockNotCreated:
+		error("%s: can not create block from input arguments",
+		      function);
+		break;
+	case bgsched::InputErrors::InvalidUser:
+		error("%s: Invalid User given.", function);
 		break;
 	default:
 		error("%s: Unexpected Input exception value %d",
@@ -719,7 +774,160 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 
 extern int bridge_blocks_load_curr(List curr_block_list)
 {
-	return SLURM_ERROR;
+	int rc = SLURM_SUCCESS;
+#if defined HAVE_BG_FILES
+	Block::Ptrs vec;
+	BlockFilter filter;
+	Dimension dim;
+	List results = NULL;
+	char temp[256];
+	uid_t my_uid;
+	bg_record_t *bg_record = NULL;
+
+	info("querying the system for existing blocks");
+
+	/* Get the midplane info */
+	filter.setExtendedInfo(true);
+
+	vec = getBlocks(filter, BlockSort::AnyOrder);
+	if (vec.empty()) {
+		debug("No blocks in the current system");
+		return SLURM_SUCCESS;
+	}
+
+	slurm_mutex_lock(&block_state_mutex);
+
+	BOOST_FOREACH(const Block::Ptr &block_ptr, vec) {
+		const char *bg_block_id = block_ptr->getName().c_str();
+		Block::Midplanes midplane_vec;
+		hostlist_t hostlist;
+
+		if (strncmp("RMP", bg_block_id, 3))
+			continue;
+
+		/* New BG Block record */
+
+		bg_record = (bg_record_t *)xmalloc(sizeof(bg_record_t));
+		bg_record->magic = BLOCK_MAGIC;
+
+		slurm_list_append(curr_block_list, bg_record);
+
+		bg_record->bg_block_id = xstrdup(bg_block_id);
+
+		bg_record->state = bridge_translate_status(
+			block_ptr->getStatus().toValue());
+
+		if (bg_record->state == BG_BLOCK_BOOTING)
+			bg_record->boot_state = 1;
+
+		debug3("Block %s is in state %d",
+		       bg_record->bg_block_id,
+		       bg_record->state);
+
+		bg_record->node_cnt = block_ptr->getComputeNodeCount();
+		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
+		bg_record->job_running = NO_JOB_RUNNING;
+		if (block_ptr->isSmall()) {
+			bg_record->conn_type[0] = SELECT_SMALL;
+			/* FIXME: flush out the small block logic to
+			   figure out which ionodes we are on.
+			*/
+		} else {
+			for (dim=Dimension::A; dim<=Dimension::D; dim++) {
+				bg_record->conn_type[dim] =
+					block_ptr->isTorus(dim) ?
+					SELECT_TORUS : SELECT_MESH;
+			}
+			/* Set the bitmap blank here if it is a full
+			   node we don't want anything set we also
+			   don't want the bg_record->ionodes set.
+			*/
+			bg_record->ionode_bitmap =
+				bit_alloc(bg_conf->ionodes_per_mp);
+		}
+		bg_record->mloaderimage =
+			xstrdup(block_ptr->getMicroLoaderImage().c_str());
+
+		hostlist = hostlist_create(NULL);
+		midplane_vec = block_ptr->getMidplanes();
+		BOOST_FOREACH(const std::string midplane, midplane_vec) {
+			ba_mp_t *curr_mp = loc2ba_mp((char *)midplane.c_str());
+			if (!curr_mp) {
+				error("Unknown midplane for %s",
+				      midplane.c_str());
+				continue;
+			}
+			snprintf(temp, sizeof(temp), "%s%s",
+				 bg_conf->slurm_node_prefix,
+				 curr_mp->coord_str);
+
+			hostlist_push(hostlist, temp);
+		}
+		bg_record->nodes = hostlist_ranged_string_xmalloc(hostlist);
+		hostlist_destroy(hostlist);
+		debug3("got nodes of %s", bg_record->nodes);
+
+		process_nodes(bg_record, true);
+
+		/* We can stop processing information now since we
+		   don't need to rest of the information to decide if
+		   this is the correct block. */
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+			bg_record_t *tmp_record =
+				(bg_record_t *)xmalloc(sizeof(bg_record_t));
+			copy_bg_record(bg_record, tmp_record);
+			list_push(bg_lists->main, tmp_record);
+		}
+
+		reset_ba_system(true);
+		if (ba_set_removable_mps(bg_record->bitmap, 1) != SLURM_SUCCESS)
+			fatal("It doesn't seem we have a bitmap for %s",
+			      bg_record->bg_block_id);
+
+		if (bg_record->ba_mp_list)
+			list_flush(bg_record->ba_mp_list);
+		else
+			bg_record->ba_mp_list = list_create(destroy_ba_mp);
+
+		bg_block_id = set_bg_block(bg_record->ba_mp_list,
+					   bg_record->start,
+					   bg_record->geo,
+					   bg_record->conn_type);
+		ba_reset_all_removed_mps();
+		if (!bg_block_id)
+			fatal("I was unable to make the requested block.");
+
+		snprintf(temp, sizeof(temp), "%s%s",
+			 bg_conf->slurm_node_prefix,
+			 bg_block_id);
+
+		xfree(bg_block_id);
+		if (strcmp(temp, bg_record->nodes)) {
+			fatal("bad wiring in preserved state "
+			      "(found %s, but allocated %s) "
+			      "YOU MUST COLDSTART",
+			      bg_record->nodes, temp);
+		}
+
+		bg_record->ba_mp_list =	results;
+		results = NULL;
+		bg_record->user_name = xstrdup(block_ptr->getUser().c_str());
+		if (!bg_record->boot_state)
+			bg_record->target_name =
+				xstrdup(bg_conf->slurm_user_name);
+		else
+			bg_record->target_name = xstrdup(bg_record->user_name);
+
+		if (uid_from_string(bg_record->user_name, &my_uid) < 0)
+			error("uid_from_string(%s): %m", bg_record->user_name);
+		else
+			bg_record->user_uid = my_uid;
+	}
+
+	slurm_mutex_unlock(&block_state_mutex);
+
+#endif
+	return rc;
 }
 
 extern void bridge_reset_block_list(List block_list)

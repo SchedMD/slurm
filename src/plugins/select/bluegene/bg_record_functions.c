@@ -148,10 +148,10 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 
 	if (!bg_record->ba_mp_list || !list_count(bg_record->ba_mp_list)) {
 		char *nodes = bg_record->nodes;
-		if (!bg_record->ba_mp_list) {
-			bg_record->ba_mp_list =
-				list_create(destroy_ba_mp);
-		}
+
+		if (!bg_record->ba_mp_list)
+			bg_record->ba_mp_list = list_create(destroy_ba_mp);
+
 		memset(&best_start, 0, sizeof(best_start));
 		//bg_record->mp_count = 0;
 		if ((bg_record->conn_type[0] >= SELECT_SMALL) && (!startup))

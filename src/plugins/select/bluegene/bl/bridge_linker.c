@@ -1177,7 +1177,7 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 	int dim;
 	ba_mp_t *ba_node = NULL;
 	ba_switch_t *ba_switch = NULL;
-	uint16_t *geo = NULL;
+	ba_mp_t *ba_mp = NULL;
 	ListIterator itr = NULL;
 	rm_partition_t *block_ptr = (rm_partition_t *)bg_record->bg_block_id;
 
@@ -1207,8 +1207,8 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 			goto end_it;
 		}
 
-		geo = find_mp_loc(switchid);
-		if (!geo) {
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
 			error("find_bp_loc: bpid %s not known", switchid);
 			goto end_it;
 		}
@@ -1216,9 +1216,9 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 		if (!bg_record->ba_mp_list)
 			bg_record->ba_mp_list = list_create(destroy_ba_mp);
 		list_push(bg_record->ba_mp_list, ba_node);
-		ba_node->coord[X] = geo[X];
-		ba_node->coord[Y] = geo[Y];
-		ba_node->coord[Z] = geo[Z];
+		ba_node->coord[X] = ba_mp->coord[X];
+		ba_node->coord[Y] = ba_mp->coord[Y];
+		ba_node->coord[Z] = ba_mp->coord[Z];
 
 		ba_node->used = TRUE;
 		return SLURM_SUCCESS;
@@ -1259,8 +1259,8 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 			goto end_it;
 		}
 
-		geo = find_mp_loc(switchid);
-		if (!geo) {
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
 			error("find_bp_loc: bpid %s not known", switchid);
 			goto end_it;
 		}
@@ -1277,9 +1277,9 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 		if (bg_record->ba_mp_list) {
 			itr = list_iterator_create(bg_record->ba_mp_list);
 			while ((ba_node = list_next(itr))) {
-				if (ba_node->coord[X] == geo[X] &&
-				    ba_node->coord[Y] == geo[Y] &&
-				    ba_node->coord[Z] == geo[Z])
+				if (ba_node->coord[X] == ba_mp->coord[X] &&
+				    ba_node->coord[Y] == ba_mp->coord[Y] &&
+				    ba_node->coord[Z] == ba_mp->coord[Z])
 					break;	/* we found it */
 			}
 			list_iterator_destroy(itr);
@@ -1292,9 +1292,9 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 					list_create(destroy_ba_mp);
 
 			list_push(bg_record->ba_mp_list, ba_node);
-			ba_node->coord[X] = geo[X];
-			ba_node->coord[Y] = geo[Y];
-			ba_node->coord[Z] = geo[Z];
+			ba_node->coord[X] = ba_mp->coord[X];
+			ba_node->coord[Y] = ba_mp->coord[Y];
+			ba_node->coord[Z] = ba_mp->coord[Z];
 		}
 		ba_switch = &ba_node->axis_switch[dim];
 		for (j=0; j<cnt; j++) {
@@ -1356,10 +1356,8 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 			if (curr_conn.p1 == 1 && dim == X) {
 				if (ba_node->used) {
 					debug("I have already been to "
-					      "this node %c%c%c",
-					      alpha_num[geo[X]],
-					      alpha_num[geo[Y]],
-					      alpha_num[geo[Z]]);
+					      "this node %s",
+					      ba_node->coord_str);
 					goto end_it;
 				}
 				ba_node->used = true;
@@ -1368,11 +1366,9 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 			       curr_conn.p1, curr_conn.p2);
 
 			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%c%c%c dim %d port %d "
+				debug("%s dim %d port %d "
 				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
+				      ba_node->coord_str,
 				      dim,
 				      curr_conn.p1);
 				goto end_it;
@@ -1382,11 +1378,9 @@ extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
 				= curr_conn.p2;
 
 			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%c%c%c dim %d port %d "
+				debug("%s dim %d port %d "
 				      "is already in use",
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
+				      ba_node->coord_str,
 				      dim,
 				      curr_conn.p2);
 				goto end_it;
@@ -1422,7 +1416,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 	bg_record_t *bg_record = NULL;
 	uid_t my_uid;
 
-	uint16_t *coord = NULL;
+	ba_mp_t *ba_mp = NULL;
 	int block_number, block_count;
 	char *tmp_char = NULL;
 
@@ -1762,9 +1756,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				continue;
 			}
 
-			coord = find_mp_loc(mpid);
+			ba_mp = loc2ba_mp(mpid);
 
-			if (!coord) {
+			if (!ba_mp) {
 				fatal("Could not find coordinates for "
 				      "MP ID %s", (char *) mpid);
 			}
@@ -1773,10 +1767,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 			snprintf(node_name_tmp,
 				 sizeof(node_name_tmp),
-				 "%s%c%c%c",
+				 "%s%s",
 				 bg_conf->slurm_node_prefix,
-				 alpha_num[coord[X]], alpha_num[coord[Y]],
-				 alpha_num[coord[Z]]);
+				 ba_mp->coord_str);
 
 
 			hostlist_push(hostlist, node_name_tmp);

@@ -83,6 +83,13 @@ extern void destroy_bg_record(void *object)
 {
 }
 
+extern void process_nodes(bg_record_t *bg_record, bool startup)
+{
+}
+
+extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
+{
+}
 
 /* extern void bg_requeue_job(uint32_t job_id, bool wait_for_start) */
 /* { */

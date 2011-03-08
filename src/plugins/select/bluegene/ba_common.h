@@ -254,6 +254,10 @@ extern int copy_node_path(List nodes, List *dest_nodes);
 
 /* translate a string of at least AXYZ into a ba_mp_t ptr */
 extern ba_mp_t *str2ba_mp(char *coords);
+/*
+ * find a base blocks bg location (rack/midplane)
+ */
+extern ba_mp_t *loc2ba_mp(char* mp_id);
 extern ba_mp_t *coord2ba_mp(int *coord);
 
 /*

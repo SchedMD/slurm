@@ -39,6 +39,12 @@
 #ifndef _BRIDGE_STATUS_H_
 #define _BRIDGE_STATUS_H_
 
+#if defined HAVE_BG_FILES
+#include <bgsched/Block.h>
+extern bg_block_status_t bridge_translate_status(
+	bgsched::Block::Status state_in);
+#endif
+
 extern int bridge_status_init(void);
 extern int bridge_status_fini(void);
 extern void bridge_status_do_poll(void);

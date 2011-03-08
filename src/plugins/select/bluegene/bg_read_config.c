@@ -343,6 +343,166 @@ extern int read_bg_conf(void)
 		      "conf file");
 	xfree(bg_conf_file);
 
+#ifdef HAVE_BGL
+	if (s_p_get_array((void ***)&image_array,
+			  &count, "AltBlrtsImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_conf->blrts_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&bg_conf->default_blrtsimage, "BlrtsImage", tbl)) {
+		if (!list_count(bg_conf->blrts_list))
+			fatal("BlrtsImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_conf->blrts_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		bg_conf->default_blrtsimage = xstrdup(image->name);
+		info("Warning: using %s as the default BlrtsImage.  "
+		     "If this isn't correct please set BlrtsImage",
+		     bg_conf->default_blrtsimage);
+	} else {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default BlrtsImage %s",
+			     bg_conf->default_blrtsimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(bg_conf->default_blrtsimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_conf->blrts_list, image);
+	}
+
+	if (s_p_get_array((void ***)&image_array,
+			  &count, "AltLinuxImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_conf->linux_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&bg_conf->default_linuximage, "LinuxImage", tbl)) {
+		if (!list_count(bg_conf->linux_list))
+			fatal("LinuxImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_conf->linux_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		bg_conf->default_linuximage = xstrdup(image->name);
+		info("Warning: using %s as the default LinuxImage.  "
+		     "If this isn't correct please set LinuxImage",
+		     bg_conf->default_linuximage);
+	} else {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default LinuxImage %s",
+			     bg_conf->default_linuximage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(bg_conf->default_linuximage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_conf->linux_list, image);
+	}
+
+	if (s_p_get_array((void ***)&image_array,
+			  &count, "AltRamDiskImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_conf->ramdisk_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&bg_conf->default_ramdiskimage,
+			    "RamDiskImage", tbl)) {
+		if (!list_count(bg_conf->ramdisk_list))
+			fatal("RamDiskImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_conf->ramdisk_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		bg_conf->default_ramdiskimage = xstrdup(image->name);
+		info("Warning: using %s as the default RamDiskImage.  "
+		     "If this isn't correct please set RamDiskImage",
+		     bg_conf->default_ramdiskimage);
+	} else {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default RamDiskImage %s",
+			     bg_conf->default_ramdiskimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(bg_conf->default_ramdiskimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_conf->ramdisk_list, image);
+	}
+#elif defined HAVE_BGP
+
+	if (s_p_get_array((void ***)&image_array,
+			  &count, "AltCnloadImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_conf->linux_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&bg_conf->default_linuximage, "CnloadImage", tbl)) {
+		if (!list_count(bg_conf->linux_list))
+			fatal("CnloadImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_conf->linux_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		bg_conf->default_linuximage = xstrdup(image->name);
+		info("Warning: using %s as the default CnloadImage.  "
+		     "If this isn't correct please set CnloadImage",
+		     bg_conf->default_linuximage);
+	} else {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default CnloadImage %s",
+			     bg_conf->default_linuximage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(bg_conf->default_linuximage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_conf->linux_list, image);
+	}
+
+	if (s_p_get_array((void ***)&image_array,
+			  &count, "AltIoloadImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_conf->ramdisk_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&bg_conf->default_ramdiskimage,
+			    "IoloadImage", tbl)) {
+		if (!list_count(bg_conf->ramdisk_list))
+			fatal("IoloadImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_conf->ramdisk_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		bg_conf->default_ramdiskimage = xstrdup(image->name);
+		info("Warning: using %s as the default IoloadImage.  "
+		     "If this isn't correct please set IoloadImage",
+		     bg_conf->default_ramdiskimage);
+	} else {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			info("default IoloadImage %s",
+			     bg_conf->default_ramdiskimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(bg_conf->default_ramdiskimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_conf->ramdisk_list, image);
+	}
+
+#endif
 	if (s_p_get_array((void ***)&image_array,
 			  &count, "AltMloaderImage", tbl)) {
 		for (i = 0; i < count; i++) {
