@@ -61,13 +61,17 @@ using namespace std;
 using namespace bgsched;
 using namespace bgsched::core;
 
-extern int bridge_handle_runtime_errors(const char *function,
-					const uint32_t err,
-					bg_record_t *bg_record);
 extern int bridge_handle_database_errors(
+	const char *function, const uint32_t err);
+extern int bridge_handle_init_errors(
 	const char *function, const uint32_t err);
 extern int bridge_handle_input_errors(const char *function, const uint32_t err,
 				      bg_record_t *bg_record);
+extern int bridge_handle_internal_errors(
+	const char *function, const uint32_t err);
+extern int bridge_handle_runtime_errors(const char *function,
+					const uint32_t err,
+					bg_record_t *bg_record);
 
 extern bg_block_status_t bridge_translate_status(
 	bgsched::Block::Status state_in);

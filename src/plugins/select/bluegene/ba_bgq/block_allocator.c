@@ -1817,7 +1817,7 @@ start_again:
 		if (ba_request->start_req)
 			goto requested_end;
 		//exit(0);
-		debug("trying something else");
+		debug2("trying something else");
 
 		if ((DIM_SIZE[Z]-start[Z]-1) >= ba_request->geometry[Z])
 			start[Z]++;

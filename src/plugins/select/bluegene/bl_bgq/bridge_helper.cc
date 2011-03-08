@@ -39,34 +39,6 @@
 #include "bridge_helper.h"
 
 #ifdef HAVE_BG_FILES
-extern int bridge_handle_runtime_errors(const char *function,
-					const uint32_t err,
-					bg_record_t *bg_record)
-{
-	int rc = SLURM_ERROR;
-
-	switch (err) {
-	case bgsched::RuntimeErrors::BlockAddError:
-		error("%s: Error Setting block %s owner.", function,
-		      bg_record->bg_block_id);
-		break;
-	case bgsched::RuntimeErrors::InvalidBlockState:
-		/* not a real error */
-		rc = SLURM_SUCCESS;
-		error("%s: Error can't perform task with block %s in state %s"
-		      "incorrect %s.", function, bg_record->bg_block_id,
-		      bg_block_state_string(bg_record->state));
-		break;
-	// case bgsched::RuntimeErrors::
-	// 	error("%s: .", function);
-	// 	break;
-	default:
-		error("%s: Unexpected Runtime exception value %d.",
-		      function, err);
-	}
-	return rc;
-}
-
 extern int bridge_handle_database_errors(
 	const char *function, const uint32_t err)
 {
@@ -74,17 +46,50 @@ extern int bridge_handle_database_errors(
 
 	switch (err) {
 	case bgsched::DatabaseErrors::DatabaseError:
-		error("%s: Can't access to the database when "
-		      "doing Block::remove()!");
+		error("%s: Can't access to the database!", function);
+		break;
+	case bgsched::DatabaseErrors::OperationFailed:
+		error("%s: Database option Failed!", function);
+		break;
+	case bgsched::DatabaseErrors::InvalidKey:
+		error("%s: Database Invalid Key.", function);
+		break;
+	case bgsched::DatabaseErrors::DataNotFound:
+		error("%s: Data not found error.", function);
+		break;
+	case bgsched::DatabaseErrors::DuplicateEntry:
+		error("%s: We got a duplicate entry?", function);
+		break;
+	case bgsched::DatabaseErrors::XmlError:
+		error("%s: XML Error?", function);
 		break;
 	case bgsched::DatabaseErrors::ConnectionError:
 		error("%s: Can't connect to the database!", function);
 		break;
-	// case bgsched::DatabaseErrors::
-	// 	error("%s: .", function);
-	// 	break;
 	default:
 		error("%s: Unexpected Database exception value %d",
+		      function, err);
+	}
+	return rc;
+}
+
+extern int bridge_handle_init_errors(
+	const char *function, const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::InitializationErrors::DatabaseInitializationFailed:
+		error("%s: Database Init failed.", function);
+		break;
+	case bgsched::InitializationErrors::MalformedPropertiesFile:
+		error("%s: Malformated Properties File.", function);
+		break;
+	case bgsched::InitializationErrors::PropertiesNotFound:
+		error("%s: Can't locate Properties File.", function);
+		break;
+	default:
+		error("%s: Unexpected Initialization exception value %d",
 		      function, err);
 	}
 	return rc;
@@ -174,6 +179,73 @@ extern int bridge_handle_input_errors(const char *function, const uint32_t err,
 		error("%s: Unexpected Input exception value %d",
 		      function, err);
 		rc = SLURM_ERROR;
+	}
+	return rc;
+}
+
+extern int bridge_handle_internal_errors(
+	const char *function, const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::InternalErrors::XMLParseError:
+		error("%s: XML Parse Error.", function);
+		break;
+	case bgsched::InternalErrors::InconsistentDataError:
+		error("%s: Inconsistent Data Error.", function);
+		break;
+	case bgsched::InternalErrors::UnexpectedError:
+		error("%s: Unexpected Error returned.", function);
+		break;
+	default:
+		error("%s: Unexpected Internal exception value %d",
+		      function, err);
+	}
+	return rc;
+}
+
+extern int bridge_handle_runtime_errors(const char *function,
+					const uint32_t err,
+					bg_record_t *bg_record)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::RuntimeErrors::BlockBootError:
+		error("%s: Error booting block %s.", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::RuntimeErrors::BlockFreeError:
+		/* not a real error */
+		rc = SLURM_SUCCESS;
+		error("%s: Error freeing block %s.", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::RuntimeErrors::BlockCreateError:
+		error("%s: Error creating block %s.", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::RuntimeErrors::BlockAddError:
+		error("%s: Error Setting block %s owner.", function,
+		      bg_record->bg_block_id);
+		break;
+	case bgsched::RuntimeErrors::InvalidBlockState:
+		/* not a real error */
+		rc = SLURM_SUCCESS;
+		error("%s: Error can't perform task with block %s in state %s"
+		      "incorrect %s.", function, bg_record->bg_block_id,
+		      bg_block_state_string(bg_record->state));
+		break;
+	case bgsched::RuntimeErrors::DimensionOutOfRange:
+	 	error("%s: Dimension out of Range.", function);
+	        break;
+	case bgsched::RuntimeErrors::AuthorityError:
+	 	error("%s: Authority Error.", function);
+	        break;
+	default:
+		error("%s: Unexpected Runtime exception value %d.",
+		      function, err);
 	}
 	return rc;
 }
