@@ -210,11 +210,11 @@ static void *_real_time(void *no_data)
   	Filter rt_filter(Filter::createNone());
 
 	rt_filter.setBlocks(true);
-        block_statuses.insert(Block::Free);
+	block_statuses.insert(Block::Free);
 	block_statuses.insert(Block::Booting);
-        block_statuses.insert(Block::Initialized);
+	block_statuses.insert(Block::Initialized);
 	block_statuses.insert(Block::Terminating);
-        rt_filter.setBlockStatuses(&block_statuses);
+	rt_filter.setBlockStatuses(&block_statuses);
 
  	// rt_filter.get().setMidplanes(true);
  	// rt_filter.get().setNodeBoards(true);
