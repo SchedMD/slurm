@@ -602,6 +602,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
 %{_sbindir}/sfree
+%{_libdir}/slurm/job_submit_cnode.so
 %config %{_sysconfdir}/bluegene.conf.example
 %endif
 #############################################################################

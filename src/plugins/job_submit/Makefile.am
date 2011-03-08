@@ -4,4 +4,4 @@ if HAVE_LUA
 LUA = lua
 endif
 
-SUBDIRS = defaults logging $(LUA) partition
+SUBDIRS = cnode defaults logging $(LUA) partition

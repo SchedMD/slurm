@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
     step names, and account names with an underscore to insure proper parsing.
  -- When building contribs/perlapi ignore INSTALL_BASE and use PREFIX instead.
     Perl can not build if both are set.
+ -- Add job_submit/cnode plugin to support resource reservations of less than
+    a full midplane on BlueGene computers. Treat cnodes as liceses which can
+    be reserved and are consumed by jobs.
 
 * Changes in SLURM 2.2.3
 ========================
