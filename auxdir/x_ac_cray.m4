@@ -61,18 +61,17 @@ AC_DEFUN([X_AC_CRAY],
     fi
 
     # Check that all Cray binaries called by SLURM are in their expected places.
-    # On a standard XT/XE installation, both these have always been in /usr/bin.
+    # On a standard XT/XE installation, apbasil and apkill are normally in /usr/bin.
     for dir in $_x_ac_alps_dirs; do
-      test -d "$dir" || continue
       test -d "$dir/bin" || continue
-      test -f "$dir/bin/apbasil" || continue
-      test -f "$dir/bin/apkill"  || continue
+      test -x "$dir/bin/apbasil" || continue
+      test -x "$dir/bin/apkill"  || continue
       _x_ac_alps_install_dir="$dir"
       AC_DEFINE_UNQUOTED(HAVE_ALPS_DIR, "$dir", [Directory in which ALPS has been installed])
       break
     done
     if test -z "$_x_ac_alps_install_dir"; then
-      AC_MSG_ERROR([Could not locate apbasil and apikill executables on Cray system. See --with-alps-dir option.])
+      AC_MSG_ERROR([Could not locate apbasil and apkill executables on Cray system. See --with-alps-dir option.])
     fi
 
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
