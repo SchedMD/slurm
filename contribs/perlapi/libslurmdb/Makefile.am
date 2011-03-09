@@ -17,7 +17,7 @@ $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi
-	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}
+	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=
 
 #
 # Note on linking logic below
@@ -32,7 +32,7 @@ all-local: $(perl_dir)/Makefile #libslurmdb
 if HAVE_AIX
 	@cd $(perl_dir) && \
 	if [ ! -f Makefile ]; then \
-		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}; \
+		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=; \
 	fi && \
 	($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
 	 $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
@@ -40,7 +40,7 @@ if HAVE_AIX
 else
 	@cd $(perl_dir) && \
 	if [ ! -f Makefile ]; then \
-		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}; \
+		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=; \
 	fi && \
 	($(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
 	 $(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
