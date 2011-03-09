@@ -532,8 +532,17 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->color_inx =
 			atoi(block_ptr->bg_block_name+7);
 #else
-		block_ptr->color_inx =
-			atoi(block_ptr->bg_block_name+3);
+		/* If on a non-bluegene system and looking at one
+		   check for strlen, if it is more than 7 go with
+		   that, or you could get everone being the same
+		   color.
+		*/
+		if (strlen(block_ptr->bg_block_name) >= 7)
+			block_ptr->color_inx =
+				atoi(block_ptr->bg_block_name+7);
+		else
+			block_ptr->color_inx =
+				atoi(block_ptr->bg_block_name+3);
 #endif
 		/* on some systems they make there own blocks named
 		   whatever they want, so doing this fixes what could
