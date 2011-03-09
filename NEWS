@@ -106,6 +106,7 @@ documents those changes that are of interest to users and admins.
     a full midplane on BlueGene computers. Treat cnodes as liceses which can
     be reserved and are consumed by jobs. This reservation mechanism for less
     than an entire midplane is still under development.
+ -- Clear a job's "reason" field when a hold job is released.
 
 * Changes in SLURM 2.2.3
 ========================
