@@ -711,7 +711,8 @@ static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 	}
 
 	for(i=0; i<resv_info_ptr->record_count; i++) {
-		resv_ptr = &(resv_info_ptr->reservation_array[i]);
+		if (!(resv_ptr = &(resv_info_ptr->reservation_array[i])))
+			break;
 		sview_resv_info_ptr = xmalloc(sizeof(sview_resv_info_t));
 		sview_resv_info_ptr->resv_ptr = resv_ptr;
 		sview_resv_info_ptr->color_inx = i % sview_colors_cnt;
