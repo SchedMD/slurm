@@ -6306,6 +6306,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				} else
 					job_ptr->state_reason = WAIT_HELD_USER;
 				xfree(job_ptr->state_desc);
+			} else if ((job_ptr->state_reason == WAIT_HELD) ||
+				   (job_ptr->state_reason == WAIT_HELD_USER)) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
 			}
 		} else if ((job_ptr->priority == 0) &&
 			   (job_ptr->state_reason == WAIT_HELD_USER)) {
