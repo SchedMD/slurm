@@ -49,6 +49,10 @@ COMMAND CHANGES (see man pages for details)
 * Add new scontrol option of "show aliases" to report every NodeName that is
   associated with a given NodeHostName when running multiple slurmd daemons
   per compute node (typically used for testing purposes).
+* A reservation flag of "License_Only" has been added for use by the sview and
+  scontrol commands. If set, then jobs using the reservation may use the
+  licenses associated with it plus any compute nodes. Otherwise the job is
+  limited to the compute nodes associated with the reservation.
 
 BLUEGENE SPECIFIC CHANGES
 =========================
@@ -110,6 +114,8 @@ DEBUG_FLAG_FRONT_END		added DebugFlags of Frontend
 
 JOB_PREEMPTED			added new job termination state to indicated
 				job termination was due to preemption
+
+RESERVE_FLAG_LIC_ONLY		reserve licenses only, use any nodes
 
 TRIGGER_RES_TYPE_FRONT_END	added trigger for frontend state changes
 

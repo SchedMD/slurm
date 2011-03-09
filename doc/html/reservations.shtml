@@ -11,6 +11,13 @@ Note that resource reservations are not compatible with SLURM's
 gang scheduler plugin since the termination time of running jobs
 is not possible to accurately predict.</p>
 
+<p>Note that reserved licenses are treated somewhat differently than reserved
+nodes. When nodes are reserved, then jobs using that reservation can use only
+those nodes and no other jobs can use those nodes. Reserved licenses can only
+be used by jobs associated with that reservation, but licenses not explicitly
+reserved are available to any job. This eliminates the need to explicitly
+put licenses into every advanced reservation created.</p>
+
 <p>Reservations can be created, updated, or destroyed only by user root
 or the configured <i>SlurmUser</i> using the <i>scontrol</i> command.
 The <i>scontrol</i>, <i>smap</i> and <i>sview</i> commands can be used
@@ -242,7 +249,7 @@ before a reservation given fewer jobs to time-slice with.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 3 March 2011</p>
+<p style="text-align:center;">Last modified 9 March 2011</p>
 
 <!--#include virtual="footer.txt"-->
 

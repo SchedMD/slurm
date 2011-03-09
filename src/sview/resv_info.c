@@ -236,6 +236,13 @@ static uint32_t _parse_flags(const char *flagstr)
 				outflags |= RESERVE_FLAG_NO_WEEKLY;
 			else
 				outflags |= RESERVE_FLAG_WEEKLY;
+		} else if (strncasecmp(curr, "License_Only", MAX(taglen,1))
+			    == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_LIC_ONLY;
+			else
+				outflags |= RESERVE_FLAG_LIC_ONLY;
 		} else {
 			char *temp = g_strdup_printf("Error parsing flags %s.",
 						     flagstr);

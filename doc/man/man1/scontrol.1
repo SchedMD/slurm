@@ -1054,6 +1054,13 @@ for all flags).
 Currently supported flags include:
 .RS
 .TP 12
+\fILICENSE_ONLY\fR
+This is a reservation for licenses only and not compute nodes.
+If this flag is set, a job using this reservation may use the associated
+licenses and any compute nodes.
+If this flag is not set, a job using this reservation may use only the nodes
+and licenses associated with the reservation.
+.TP
 \fIMAINT\fR
 Maintenance mode, receives special accounting treatment.
 This partition is permitted to use resources that are already in another

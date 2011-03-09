@@ -635,20 +635,25 @@ Run <i>sfree --help</i> for more information.</p>
 
 <h4>Resource Reservations</h4>
 
-<p><b>This reservation mechanism for less than an entire midplane is still
-under development.</b></p>
-
 <p>SLURM's advance reservation mechanism is designed to reserve resources
 at the level of whole nodes, which on a BlueGene systems would represent
 whole midplanes. In order to support advanced reservations with a finer
-grained resolution, you can configure one license per c-node on the system
-and reserve c-nodes instead of entire midplanes. For example, in slurm.conf
-specify something of this sort: "<i>Licenses=cnode*512</i>". Then create an
-advanced reservation with a command like this:<br>
-"<i>scontrol create reservation licenses="cnode*32" starttime=now duration=30:00 users=joe</i>".</p>
+grained resolution, you can configure one license per cnode on the system
+and reserve cnodes instead of entire midplanes. Note that reserved licenses
+are treated somewhat differently than reserved nodes. When nodes are reserved
+then jobs using that reservation can use only those nodes. Reserved licenses
+can only be used by jobs associated with that reservation, but licenses not
+explicitly reserved are available to any job.</p>
+
+<p>For example, in <i>slurm.conf</i> specify something of this sort:
+"<i>Licenses=cnode*512</i>". Then create an advanced reservation with a
+command like this:<br>
+"<i>scontrol create reservation licenses="cnode*32" starttime=now duration=30:00 users=joe</i>".<br>
+Jobs run in this reservation will then have <b>at least</b> 32 cnodes
+available for their use, but could use more given an appropriate workload.</p>
 
 <p>There is also a job_submit/cnode plugin available for use that will
-automatically set a job's license specification to match his c-node request
+automatically set a job's license specification to match its cnode request
 (i.e. a command like<br>
 "<i>sbatch -N32 my.sh</i>" would automatically be translated to<br>
 "<i>sbatch -N32 --licenses=cnode*32 my.sh</i>" by the slurmctld daemon.
@@ -692,6 +697,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 December 2010</p>
+<p style="text-align:center;">Last modified 9 March 2011</p>
 
 <!--#include virtual="footer.txt"-->

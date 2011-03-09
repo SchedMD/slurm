@@ -17,7 +17,11 @@ documents those changes that are of interest to users and admins.
     - Compile-time sanity check for the apbasil and apkill files.
     - Changes error handling in do_basil_release() (called by
       select_g_job_fini()).
-     - Warn that salloc --no-shell option is not supported on Cray systems.
+    - Warn that salloc --no-shell option is not supported on Cray systems.
+ -- Add a reservation flag of "License_Only". If set, then jobs using the
+    reservation may use the licenses associated with it plus any compute nodes.
+    Otherwise the job is limited to the compute nodes associated with the
+    reservation.
 
 * Changes in SLURM 2.3.0.pre3
 =============================

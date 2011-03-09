@@ -1216,7 +1216,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_OVERLAP  |
 					RESERVE_FLAG_IGN_JOBS |
 					RESERVE_FLAG_DAILY    |
-					RESERVE_FLAG_WEEKLY;
+					RESERVE_FLAG_WEEKLY   |
+					RESERVE_FLAG_LIC_ONLY;
 	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
@@ -1460,6 +1461,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_WEEKLY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKLY);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY)
+			resv_ptr->flags |= RESERVE_FLAG_LIC_ONLY;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_LIC_ONLY)
+			resv_ptr->flags &= (~RESERVE_FLAG_LIC_ONLY);
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
@@ -1661,9 +1666,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		val2  = resv_ptr->users;
 	} else
 		name2 = val2 = "";
-	info("sched: Updated reservation %s%s%s%s%s nodes=%s start=%s end=%s",
+	info("sched: Updated reservation %s%s%s%s%s nodes=%s licenses=%s "
+	     "start=%s end=%s",
 	     resv_ptr->name, name1, val1, name2, val2,
-	     resv_ptr->node_list, start_time, end_time);
+	     resv_ptr->node_list, resv_ptr->licenses, start_time, end_time);
 
 	_post_resv_update(resv_ptr, resv_backup);
 	_del_resv_rec(resv_backup);
@@ -2663,7 +2669,8 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 		/* reservation ended earlier */
 		return ESLURM_RESERVATION_INVALID;
 	}
-	if (resv_ptr->node_cnt == 0) {
+	if ((resv_ptr->node_cnt == 0) &&
+	    !(resv_ptr->flags & RESERVE_FLAG_LIC_ONLY)) {
 		/* empty reservation treated like it will start later */
 		return ESLURM_INVALID_TIME_VALUE;
 	}
@@ -2686,14 +2693,17 @@ extern void job_time_adj_resv(struct job_record *job_ptr)
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
-		if ((job_ptr->resv_ptr == resv_ptr) ||
-		    (resv_ptr->start_time <= now))
+		if (job_ptr->resv_ptr == resv_ptr)
 			continue;	/* authorized user of reservation */
+		if (resv_ptr->start_time <= now)
+			continue;	/* already validated */
 		if (resv_ptr->start_time >= job_ptr->end_time)
 			continue;	/* reservation starts after job ends */
-		if ((resv_ptr->node_bitmap == NULL) ||
-		    (bit_overlap(resv_ptr->node_bitmap,
-				 job_ptr->node_bitmap) == 0))
+		if (!license_list_overlap(job_ptr->license_list,
+					  resv_ptr->license_list) &&
+		    ((resv_ptr->node_bitmap == NULL) ||
+		     (bit_overlap(resv_ptr->node_bitmap,
+				  job_ptr->node_bitmap) == 0)))
 			continue;	/* disjoint resources */
 		resv_begin_time = difftime(resv_ptr->start_time, now) / 60;
 		job_ptr->time_limit = MIN(job_ptr->time_limit,resv_begin_time);
@@ -2839,7 +2849,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			*when = resv_ptr->start_time;
 			return ESLURM_INVALID_TIME_VALUE;
 		}
-		if (resv_ptr->node_cnt == 0) {
+		if ((resv_ptr->node_cnt == 0) &&
+		    (!(resv_ptr->flags & RESERVE_FLAG_LIC_ONLY))) {
 			/* empty reservation treated like it will start later */
 			*when = now + 600;
 			return ESLURM_INVALID_TIME_VALUE;
@@ -2851,11 +2862,18 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			return ESLURM_RESERVATION_INVALID;
 		}
 		if (job_ptr->details->req_node_bitmap &&
+		    (!(resv_ptr->flags & RESERVE_FLAG_LIC_ONLY)) &&
 		    !bit_super_set(job_ptr->details->req_node_bitmap,
 				   resv_ptr->node_bitmap)) {
 			return ESLURM_RESERVATION_INVALID;
 		}
-		*node_bitmap = bit_copy(resv_ptr->node_bitmap);
+		if (resv_ptr->flags & RESERVE_FLAG_LIC_ONLY) {
+			*node_bitmap = bit_alloc(node_record_count);
+			if (*node_bitmap == NULL)
+				fatal("bit_alloc: malloc failure");
+			bit_nset(*node_bitmap, 0, (node_record_count - 1));
+		} else
+			*node_bitmap = bit_copy(resv_ptr->node_bitmap);
 
 		/* if there are any overlapping reservations, we need to
 		 * prevent the job from using those nodes (e.g. MAINT nodes) */
@@ -2888,6 +2906,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 
 	job_ptr->resv_ptr = NULL;	/* should be redundant */
 	*node_bitmap = bit_alloc(node_record_count);
+	if (*node_bitmap == NULL)
+		fatal("bit_alloc: malloc failure");
 	bit_nset(*node_bitmap, 0, (node_record_count - 1));
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
@@ -2914,6 +2934,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				rc = ESLURM_NODES_BUSY;
 				break;
 			}
+			/* FIXME: This only tracks when ANY licenses required
+			 * by the job are freed by any reservation without
+			 * counting them, so the results are not accurate. */
 			if (license_list_overlap(job_ptr->license_list,
 						 resv_ptr->license_list)) {
 				if ((lic_resv_time == (time_t) 0) ||
@@ -2929,7 +2952,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if ((rc == SLURM_SUCCESS) && move_time) {
 			if (license_job_test(job_ptr, job_start_time)
 			    == EAGAIN) {
-				/* Need to postpone for licenses */
+				/* Need to postpone for licenses. Time returned
+				 * is best case; first reservation with those
+				 * licenses ends. */
 				rc = ESLURM_NODES_BUSY;
 				*when = lic_resv_time;
 			}

@@ -1240,6 +1240,16 @@ extern char *reservation_flags_string(uint16_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "SPEC_NODES");
 	}
+	if (flags & RESERVE_FLAG_LIC_ONLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "LICENSE_ONLY");
+	}
+	if (flags & RESERVE_FLAG_NO_LIC_ONLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_LICENSE_ONLY");
+	}
 	return flag_str;
 }
 
