@@ -715,6 +715,238 @@ static int _get_syms(int n_syms, const char *names[], void *ptrs[])
         return count;
 }
 
+static int _block_get_and_set_mps(bg_record_t *bg_record)
+{
+	int rc, i, j;
+	int cnt = 0;
+	int switch_cnt = 0;
+	rm_switch_t *curr_switch = NULL;
+	rm_BP_t *curr_mp = NULL;
+	char *switchid = NULL;
+	rm_connection_t curr_conn;
+	int dim;
+	ba_mp_t *ba_node = NULL;
+	ba_switch_t *ba_switch = NULL;
+	ba_mp_t *ba_mp = NULL;
+	ListIterator itr = NULL;
+	rm_partition_t *block_ptr = (rm_partition_t *)bg_record->bg_block_id;
+
+	debug2("getting info for block %s", bg_record->bg_block_id);
+
+	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
+				  &switch_cnt)) != STATUS_OK) {
+		error("bridge_get_data(RM_PartitionSwitchNum): %s",
+		      bridge_err_str(rc));
+		goto end_it;
+	}
+	if (!switch_cnt) {
+		debug3("no switch_cnt");
+		if ((rc = bridge_get_data(block_ptr,
+					  RM_PartitionFirstBP,
+					  &curr_mp))
+		    != STATUS_OK) {
+			error("bridge_get_data: "
+			      "RM_PartitionFirstBP: %s",
+			      bridge_err_str(rc));
+			goto end_it;
+		}
+		if ((rc = bridge_get_data(curr_mp, RM_BPID, &switchid))
+		    != STATUS_OK) {
+			error("bridge_get_data: RM_SwitchBPID: %s",
+			      bridge_err_str(rc));
+			goto end_it;
+		}
+
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
+			error("find_bp_loc: bpid %s not known", switchid);
+			goto end_it;
+		}
+		ba_node = xmalloc(sizeof(ba_mp_t));
+		if (!bg_record->ba_mp_list)
+			bg_record->ba_mp_list = list_create(destroy_ba_mp);
+		list_push(bg_record->ba_mp_list, ba_node);
+		ba_node->coord[X] = ba_mp->coord[X];
+		ba_node->coord[Y] = ba_mp->coord[Y];
+		ba_node->coord[Z] = ba_mp->coord[Z];
+
+		ba_node->used = TRUE;
+		return SLURM_SUCCESS;
+	}
+	for (i=0; i<switch_cnt; i++) {
+		if (i) {
+			if ((rc = bridge_get_data(block_ptr,
+						  RM_PartitionNextSwitch,
+						  &curr_switch))
+			    != STATUS_OK) {
+				error("bridge_get_data: "
+				      "RM_PartitionNextSwitch: %s",
+				      bridge_err_str(rc));
+				goto end_it;
+			}
+		} else {
+			if ((rc = bridge_get_data(block_ptr,
+						  RM_PartitionFirstSwitch,
+						  &curr_switch))
+			    != STATUS_OK) {
+				error("bridge_get_data: "
+				      "RM_PartitionFirstSwitch: %s",
+				      bridge_err_str(rc));
+				goto end_it;
+			}
+		}
+		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
+		    != STATUS_OK) {
+			error("bridge_get_data: RM_SwitchDim: %s",
+			      bridge_err_str(rc));
+			goto end_it;
+		}
+		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
+					  &switchid))
+		    != STATUS_OK) {
+			error("bridge_get_data: RM_SwitchBPID: %s",
+			      bridge_err_str(rc));
+			goto end_it;
+		}
+
+		ba_mp = loc2ba_mp(switchid);
+		if (!ba_mp) {
+			error("find_bp_loc: bpid %s not known", switchid);
+			goto end_it;
+		}
+
+		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
+		    != STATUS_OK) {
+			error("bridge_get_data: RM_SwitchBPID: %s",
+			      bridge_err_str(rc));
+			goto end_it;
+		}
+		debug2("switch id = %s dim %d conns = %d",
+		       switchid, dim, cnt);
+
+		if (bg_record->ba_mp_list) {
+			itr = list_iterator_create(bg_record->ba_mp_list);
+			while ((ba_node = list_next(itr))) {
+				if (ba_node->coord[X] == ba_mp->coord[X] &&
+				    ba_node->coord[Y] == ba_mp->coord[Y] &&
+				    ba_node->coord[Z] == ba_mp->coord[Z])
+					break;	/* we found it */
+			}
+			list_iterator_destroy(itr);
+		}
+
+		if (!ba_node) {
+			ba_node = xmalloc(sizeof(ba_mp_t));
+			if (!bg_record->ba_mp_list)
+				bg_record->ba_mp_list =
+					list_create(destroy_ba_mp);
+
+			list_push(bg_record->ba_mp_list, ba_node);
+			ba_node->coord[X] = ba_mp->coord[X];
+			ba_node->coord[Y] = ba_mp->coord[Y];
+			ba_node->coord[Z] = ba_mp->coord[Z];
+		}
+		ba_switch = &ba_node->axis_switch[dim];
+		for (j=0; j<cnt; j++) {
+			if (j) {
+				if ((rc = bridge_get_data(
+					     curr_switch,
+					     RM_SwitchNextConnection,
+					     &curr_conn))
+				    != STATUS_OK) {
+					error("bridge_get_data: "
+					      "RM_SwitchNextConnection: %s",
+					      bridge_err_str(rc));
+					goto end_it;
+				}
+			} else {
+				if ((rc = bridge_get_data(
+					     curr_switch,
+					     RM_SwitchFirstConnection,
+					     &curr_conn))
+				    != STATUS_OK) {
+					error("bridge_get_data: "
+					      "RM_SwitchFirstConnection: %s",
+					      bridge_err_str(rc));
+					goto end_it;
+				}
+			}
+			switch(curr_conn.p1) {
+			case RM_PORT_S1:
+				curr_conn.p1 = 1;
+				break;
+			case RM_PORT_S2:
+				curr_conn.p1 = 2;
+				break;
+			case RM_PORT_S4:
+				curr_conn.p1 = 4;
+				break;
+			default:
+				error("1 unknown port %d",
+				      _port_enum(curr_conn.p1));
+				goto end_it;
+			}
+
+			switch(curr_conn.p2) {
+			case RM_PORT_S0:
+				curr_conn.p2 = 0;
+				break;
+			case RM_PORT_S3:
+				curr_conn.p2 = 3;
+				break;
+			case RM_PORT_S5:
+				curr_conn.p2 = 5;
+				break;
+			default:
+				error("2 unknown port %d",
+				      _port_enum(curr_conn.p2));
+				goto end_it;
+			}
+
+			if (curr_conn.p1 == 1 && dim == X) {
+				if (ba_node->used) {
+					debug("I have already been to "
+					      "this node %s",
+					      ba_node->coord_str);
+					goto end_it;
+				}
+				ba_node->used = true;
+			}
+			debug3("connection going from %d -> %d",
+			       curr_conn.p1, curr_conn.p2);
+
+			if (ba_switch->int_wire[curr_conn.p1].used) {
+				debug("%s dim %d port %d "
+				      "is already in use",
+				      ba_node->coord_str,
+				      dim,
+				      curr_conn.p1);
+				goto end_it;
+			}
+			ba_switch->int_wire[curr_conn.p1].used = 1;
+			ba_switch->int_wire[curr_conn.p1].port_tar
+				= curr_conn.p2;
+
+			if (ba_switch->int_wire[curr_conn.p2].used) {
+				debug("%s dim %d port %d "
+				      "is already in use",
+				      ba_node->coord_str,
+				      dim,
+				      curr_conn.p2);
+				goto end_it;
+			}
+			ba_switch->int_wire[curr_conn.p2].used = 1;
+			ba_switch->int_wire[curr_conn.p2].port_tar
+				= curr_conn.p1;
+		}
+	}
+	return SLURM_SUCCESS;
+end_it:
+	if (bg_record->ba_mp_list)
+		list_destroy(bg_record->ba_mp_list);
+	return SLURM_ERROR;
+}
+
 #endif
 
 extern int bridge_init(char *properties_file)
@@ -1164,242 +1396,6 @@ extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name)
 	return SLURM_ERROR;
 }
 
-extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
-{
-#if defined HAVE_BG_FILES
-	int rc, i, j;
-	int cnt = 0;
-	int switch_cnt = 0;
-	rm_switch_t *curr_switch = NULL;
-	rm_BP_t *curr_mp = NULL;
-	char *switchid = NULL;
-	rm_connection_t curr_conn;
-	int dim;
-	ba_mp_t *ba_node = NULL;
-	ba_switch_t *ba_switch = NULL;
-	ba_mp_t *ba_mp = NULL;
-	ListIterator itr = NULL;
-	rm_partition_t *block_ptr = (rm_partition_t *)bg_record->bg_block_id;
-
-	debug2("getting info for block %s", bg_record->bg_block_id);
-
-	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
-				  &switch_cnt)) != STATUS_OK) {
-		error("bridge_get_data(RM_PartitionSwitchNum): %s",
-		      bridge_err_str(rc));
-		goto end_it;
-	}
-	if (!switch_cnt) {
-		debug3("no switch_cnt");
-		if ((rc = bridge_get_data(block_ptr,
-					  RM_PartitionFirstBP,
-					  &curr_mp))
-		    != STATUS_OK) {
-			error("bridge_get_data: "
-			      "RM_PartitionFirstBP: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-		if ((rc = bridge_get_data(curr_mp, RM_BPID, &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-
-		ba_mp = loc2ba_mp(switchid);
-		if (!ba_mp) {
-			error("find_bp_loc: bpid %s not known", switchid);
-			goto end_it;
-		}
-		ba_node = xmalloc(sizeof(ba_mp_t));
-		if (!bg_record->ba_mp_list)
-			bg_record->ba_mp_list = list_create(destroy_ba_mp);
-		list_push(bg_record->ba_mp_list, ba_node);
-		ba_node->coord[X] = ba_mp->coord[X];
-		ba_node->coord[Y] = ba_mp->coord[Y];
-		ba_node->coord[Z] = ba_mp->coord[Z];
-
-		ba_node->used = TRUE;
-		return SLURM_SUCCESS;
-	}
-	for (i=0; i<switch_cnt; i++) {
-		if (i) {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionNextSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionNextSwitch: %s",
-				      bridge_err_str(rc));
-				goto end_it;
-			}
-		} else {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionFirstSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionFirstSwitch: %s",
-				      bridge_err_str(rc));
-				goto end_it;
-			}
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchDim: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
-					  &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-
-		ba_mp = loc2ba_mp(switchid);
-		if (!ba_mp) {
-			error("find_bp_loc: bpid %s not known", switchid);
-			goto end_it;
-		}
-
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-		debug2("switch id = %s dim %d conns = %d",
-		       switchid, dim, cnt);
-
-		if (bg_record->ba_mp_list) {
-			itr = list_iterator_create(bg_record->ba_mp_list);
-			while ((ba_node = list_next(itr))) {
-				if (ba_node->coord[X] == ba_mp->coord[X] &&
-				    ba_node->coord[Y] == ba_mp->coord[Y] &&
-				    ba_node->coord[Z] == ba_mp->coord[Z])
-					break;	/* we found it */
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (!ba_node) {
-			ba_node = xmalloc(sizeof(ba_mp_t));
-			if (!bg_record->ba_mp_list)
-				bg_record->ba_mp_list =
-					list_create(destroy_ba_mp);
-
-			list_push(bg_record->ba_mp_list, ba_node);
-			ba_node->coord[X] = ba_mp->coord[X];
-			ba_node->coord[Y] = ba_mp->coord[Y];
-			ba_node->coord[Z] = ba_mp->coord[Z];
-		}
-		ba_switch = &ba_node->axis_switch[dim];
-		for (j=0; j<cnt; j++) {
-			if (j) {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchNextConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchNextConnection: %s",
-					      bridge_err_str(rc));
-					goto end_it;
-				}
-			} else {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchFirstConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchFirstConnection: %s",
-					      bridge_err_str(rc));
-					goto end_it;
-				}
-			}
-			switch(curr_conn.p1) {
-			case RM_PORT_S1:
-				curr_conn.p1 = 1;
-				break;
-			case RM_PORT_S2:
-				curr_conn.p1 = 2;
-				break;
-			case RM_PORT_S4:
-				curr_conn.p1 = 4;
-				break;
-			default:
-				error("1 unknown port %d",
-				      _port_enum(curr_conn.p1));
-				goto end_it;
-			}
-
-			switch(curr_conn.p2) {
-			case RM_PORT_S0:
-				curr_conn.p2 = 0;
-				break;
-			case RM_PORT_S3:
-				curr_conn.p2 = 3;
-				break;
-			case RM_PORT_S5:
-				curr_conn.p2 = 5;
-				break;
-			default:
-				error("2 unknown port %d",
-				      _port_enum(curr_conn.p2));
-				goto end_it;
-			}
-
-			if (curr_conn.p1 == 1 && dim == X) {
-				if (ba_node->used) {
-					debug("I have already been to "
-					      "this node %s",
-					      ba_node->coord_str);
-					goto end_it;
-				}
-				ba_node->used = true;
-			}
-			debug3("connection going from %d -> %d",
-			       curr_conn.p1, curr_conn.p2);
-
-			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%s dim %d port %d "
-				      "is already in use",
-				      ba_node->coord_str,
-				      dim,
-				      curr_conn.p1);
-				goto end_it;
-			}
-			ba_switch->int_wire[curr_conn.p1].used = 1;
-			ba_switch->int_wire[curr_conn.p1].port_tar
-				= curr_conn.p2;
-
-			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%s dim %d port %d "
-				      "is already in use",
-				      ba_node->coord_str,
-				      dim,
-				      curr_conn.p2);
-				goto end_it;
-			}
-			ba_switch->int_wire[curr_conn.p2].used = 1;
-			ba_switch->int_wire[curr_conn.p2].port_tar
-				= curr_conn.p1;
-		}
-	}
-	return SLURM_SUCCESS;
-end_it:
-	if (bg_record->ba_mp_list)
-		list_destroy(bg_record->ba_mp_list);
-	return SLURM_ERROR;
-#else
-	return SLURM_ERROR;
-#endif
-}
-
 /*
  * Download from MMCS the initial BG block information
  */
@@ -1712,7 +1708,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				bit_alloc(bg_conf->ionodes_per_mp);
 		}
 
-		bridge_block_get_and_set_mps(bg_record);
+		_block_get_and_set_mps(bg_record);
 
 		if (!bg_record->ba_mp_list)
 			fatal("couldn't get the wiring info for block %s",

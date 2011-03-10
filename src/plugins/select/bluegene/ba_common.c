@@ -125,7 +125,8 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 		is_set = bit_test(bitmap, curr_mp->index);
 	if (!bitmap || (is_set && !except) || (!is_set && except)) {
 		if (mark) {
-			//info("can't use %s", curr_mp->coord_str);
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("can't use %s", curr_mp->coord_str);
 			curr_mp->used |= BA_MP_USED_TEMP;
 		} else {
 			curr_mp->used &= (~BA_MP_USED_TEMP);

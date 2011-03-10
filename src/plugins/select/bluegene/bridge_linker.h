@@ -111,8 +111,6 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 					 char *user_name);
 extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name);
 
-extern int bridge_block_get_and_set_mps(bg_record_t *bg_record);
-
 extern int bridge_blocks_load_curr(List curr_block_list);
 
 extern void bridge_reset_block_list(List block_list);

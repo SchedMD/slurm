@@ -64,8 +64,6 @@ static pthread_t block_thread = 0;
 static pthread_t state_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int _do_block_poll(void);
-
 #if defined HAVE_BG_FILES
 
 /* Find the specified BlueGene node ID and drain it from SLURM */
@@ -535,7 +533,7 @@ static void _test_down_switches(my_bluegene_t *my_bg)
  * SLURM. This relies upon rm_get_BG(), which is slow (10+ seconds) so run
  * this test infrequently.
  */
-extern void _test_mmcs_failures(void)
+static void _test_mmcs_failures(void)
 {
 #if defined HAVE_BG_FILES
 	my_bluegene_t *local_bg;
@@ -553,68 +551,6 @@ extern void _test_mmcs_failures(void)
 	if ((rc = bridge_free_bg(local_bg)) != STATUS_OK)
 		error("bridge_free_BG(): %s", bridge_err_str(rc));
 #endif
-}
-
-/*
- * block_agent - thread periodically updates status of
- * bluegene blocks.
- *
- */
-static void *_block_state_agent(void *args)
-{
-	static time_t last_bg_test;
-	int rc;
-	time_t now = time(NULL);
-
-	last_bg_test = now - BG_POLL_TIME;
-	while (bridge_status_inited) {
-		if (difftime(now, last_bg_test) >= BG_POLL_TIME) {
-			if (!bridge_status_inited) /* don't bother */
-				break;	/* quit now */
-			if (blocks_are_created) {
-				last_bg_test = now;
-				if ((rc = _do_block_poll()) == 1)
-					last_bg_update = now;
-				else if (rc == -1)
-					error("Error with update_block_list");
-			}
-		}
-
-		sleep(1);
-		now = time(NULL);
-	}
-	return NULL;
-}
-
-/*
- * state_agent - thread periodically updates status of
- * bluegene nodes.
- *
- */
-static void *_mp_state_agent(void *args)
-{
-	static time_t last_mmcs_test;
-	time_t now = time(NULL);
-
-	last_mmcs_test = now - MMCS_POLL_TIME;
-	while (bridge_status_inited) {
-		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
-			if (!bridge_status_inited) /* don't bother */
-				break; 	/* quit now */
-			if (blocks_are_created) {
-				/* can run for a while so set the
-				 * time after the call so there is
-				 * always MMCS_POLL_TIME between
-				 * calls */
-				_test_mmcs_failures();
-				last_mmcs_test = time(NULL);
-			}
-		}
-
-		sleep(1);
-		now = time(NULL);
-	}
-	return NULL;
 }
 
 static int _do_block_poll(void)
@@ -768,6 +704,68 @@ static int _do_block_poll(void)
 
 #endif
 	return updated;
+}
+
+/*
+ * block_agent - thread periodically updates status of
+ * bluegene blocks.
+ *
+ */
+static void *_block_state_agent(void *args)
+{
+	static time_t last_bg_test;
+	int rc;
+	time_t now = time(NULL);
+
+	last_bg_test = now - BG_POLL_TIME;
+	while (bridge_status_inited) {
+		if (difftime(now, last_bg_test) >= BG_POLL_TIME) {
+			if (!bridge_status_inited) /* don't bother */
+				break;	/* quit now */
+			if (blocks_are_created) {
+				last_bg_test = now;
+				if ((rc = _do_block_poll()) == 1)
+					last_bg_update = now;
+				else if (rc == -1)
+					error("Error with update_block_list");
+			}
+		}
+
+		sleep(1);
+		now = time(NULL);
+	}
+	return NULL;
+}
+
+/*
+ * state_agent - thread periodically updates status of
+ * bluegene nodes.
+ *
+ */
+static void *_mp_state_agent(void *args)
+{
+	static time_t last_mmcs_test;
+	time_t now = time(NULL);
+
+	last_mmcs_test = now - MMCS_POLL_TIME;
+	while (bridge_status_inited) {
+		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
+			if (!bridge_status_inited) /* don't bother */
+				break; 	/* quit now */
+			if (blocks_are_created) {
+				/* can run for a while so set the
+				 * time after the call so there is
+				 * always MMCS_POLL_TIME between
+				 * calls */
+				_test_mmcs_failures();
+				last_mmcs_test = time(NULL);
+			}
+		}
+
+		sleep(1);
+		now = time(NULL);
+	}
+	return NULL;
 }
 
 extern int bridge_status_init(void)

@@ -78,7 +78,7 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 static char *_copy_from_main(List main_mps, List ret_list);
 
 /* */
-static char *_reset_altered_mps(List main_mps);
+static char *_reset_altered_mps(List main_mps, bool get_name);
 
 /* */
 static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim);
@@ -93,9 +93,6 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 
 /* */
 static int _setup_next_mps(ba_mp_t ****grid);
-
-/* find the first block match in the system */
-static int _find_match(select_ba_request_t* ba_request, List results);
 
 /** */
 static bool _mp_used(ba_mp_t* ba_mp, int dim);
@@ -153,7 +150,7 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 {
 	int i=0;
 
-	ba_request->save_name= NULL;
+	xfree(ba_request->save_name);
 
 	if (ba_request->geometry[0] != (uint16_t)NO_VAL) {
 		for (i=0; i<cluster_dims; i++){
@@ -183,16 +180,6 @@ extern int new_ba_request(select_ba_request_t* ba_request)
 			return 0;
 		}
 		return 1;
-	}
-
-	if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
-		if (!(ba_request->geo_table =
-		      ba_main_geo_system->geo_table_ptr[ba_request->size])) {
-			error("new_ba_request: "
-			      "No geometries for %d midplanes",
-			      ba_request->size);
-			return 0;
-		}
 	}
 
 	if (ba_request->deny_pass == (uint16_t)NO_VAL)
@@ -246,6 +233,13 @@ extern ba_mp_t *coord2ba_mp(const int *coord)
  */
 extern int allocate_block(select_ba_request_t* ba_request, List results)
 {
+	int i=0;
+	uint16_t start[cluster_dims];
+	uint16_t end[cluster_dims];
+	char *name=NULL;
+	int startx;
+	ba_geo_table_t *ba_geo_table;
+
 	if (!ba_initialized){
 		error("Error, configuration not initialized, "
 		      "calling ba_init(NULL, 1)");
@@ -257,12 +251,131 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 		return 0;
 	}
 
-	// _backup_ba_system();
-	if (_find_match(ba_request, results)){
-		return 1;
-	} else {
+	if (!(cluster_flags & CLUSTER_FLAG_BG))
 		return 0;
+
+	memset(start, 0, sizeof(start));
+	startx = (start[X]-1);
+
+	if (startx == -1)
+		startx = DIM_SIZE[X]-1;
+	if (ba_request->start_req) {
+		for (i = 0; i < cluster_dims; i++) {
+			if (ba_request->start[i] >= DIM_SIZE[i])
+				return 0;
+			start[i] = ba_request->start[i];
+		}
 	}
+
+	/* set up the geo_table */
+	if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
+		if (!(ba_request->geo_table =
+		      ba_main_geo_system->geo_table_ptr[ba_request->size])) {
+			error("allocate_block: "
+			      "No geometries for %d midplanes",
+			      ba_request->size);
+			return 0;
+		}
+		ba_geo_table = (ba_geo_table_t *)ba_request->geo_table;
+		if (!ba_geo_table || !ba_geo_table->geometry) {
+			error("allocate_block: no geo table");
+			return 0;
+		}
+
+		memcpy(ba_request->geometry, ba_geo_table->geometry,
+		       sizeof(ba_geo_table->geometry));
+	} else
+		ba_request->geo_table = NULL;
+
+	for (i = 0; i < cluster_dims; i++) {
+		end[i] = start[i] + ba_request->geometry[i];
+		if (end[i] > DIM_SIZE[i])
+			if (!_check_for_options(ba_request))
+				return 0;
+	}
+
+start_again:
+	i = 0;
+	if (i == startx)
+		i = startx-1;
+	while (i != startx) {
+		i++;
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("allocate_block: finding %c%c%c%c try %d",
+			     alpha_num[ba_request->geometry[A]],
+			     alpha_num[ba_request->geometry[X]],
+			     alpha_num[ba_request->geometry[Y]],
+			     alpha_num[ba_request->geometry[Z]],
+			     i);
+	new_mp:
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("allocate_block: starting at %c%c%c%c",
+			     alpha_num[start[A]],
+			     alpha_num[start[X]],
+			     alpha_num[start[Y]],
+			     alpha_num[start[Z]]);
+
+		if ((name = set_bg_block(results, start,
+					 ba_request->geometry,
+					 ba_request->conn_type))) {
+			ba_request->save_name = name;
+			name = NULL;
+			return 1;
+		}
+
+		/* If there was an error set_bg_block resets the
+		   results list */
+		/* if (results && list_count(results)) { */
+		/* 	bool is_small = 0; */
+		/* 	if (ba_request->conn_type[0] == SELECT_SMALL) */
+		/* 		is_small = 1; */
+		/* 	remove_block(results, is_small); */
+		/* 	list_flush(results); */
+		/* } */
+
+		if (ba_request->start_req)
+			goto requested_end;
+		//exit(0);
+		debug2("allocate_block: trying something else");
+
+		if ((DIM_SIZE[Z]-start[Z]-1) >= ba_request->geometry[Z])
+			start[Z]++;
+		else {
+			start[Z] = 0;
+			if ((DIM_SIZE[Y]-start[Y]-1) >= ba_request->geometry[Y])
+				start[Y]++;
+			else {
+				start[Y] = 0;
+				if ((DIM_SIZE[X]-start[X]-1)
+				    >= ba_request->geometry[X])
+					start[X]++;
+				else {
+					start[X] = 0;
+					if ((DIM_SIZE[A]-start[A]-1)
+					    >= ba_request->geometry[A])
+						start[A]++;
+					else {
+						if (ba_request->size == 1)
+							goto requested_end;
+						if (!_check_for_options(
+							    ba_request))
+							return 0;
+						else {
+							memset(start, 0,
+							       sizeof(start));
+							goto start_again;
+						}
+					}
+				}
+			}
+		}
+		goto new_mp;
+	}
+
+requested_end:
+	debug2("allocate_block: can't allocate");
+
+	return 0;
 }
 
 
@@ -508,22 +621,23 @@ extern char *set_bg_block(List results, uint16_t *start,
 		     alpha_num[geometry[Z]],
 		     conn_type[A]);
 
+	if (_mp_used(ba_mp, 0))
+		goto end_it;
+
+	main_mps = list_create(NULL);
+	/* This midplane should have already been checked if it was in
+	   use or not */
+	list_append(main_mps, ba_mp);
+
 	if (conn_type[A] >= SELECT_SMALL) {
-		if (_mp_used(ba_mp, 0))
-			goto end_it;
 		/* adding the ba_mp and ending */
-		ba_mp->used |= BA_MP_USED_TRUE;
+		ba_mp->used |= BA_MP_USED_ALTERED;
 		if (results)
 			name = _copy_from_main(main_mps, results);
 		else
 			name = xstrdup(ba_mp->coord_str);
 		goto end_it;
 	}
-
-	main_mps = list_create(NULL);
-	/* This midplane should have already been checked if it was in
-	   use or not */
-	list_append(main_mps, ba_mp);
 
 	/* set the end to the start and the _find_path will increase each dim.*/
 	memcpy(block_end, start, sizeof(block_end));
@@ -558,11 +672,14 @@ extern char *set_bg_block(List results, uint16_t *start,
 	if (results)
 		name = _copy_from_main(main_mps, results);
 	else
-		name = _reset_altered_mps(main_mps);
+		name = _reset_altered_mps(main_mps, 1);
 
 end_it:
 
 	if (main_mps) {
+		/* handle failure */
+		if (!name)
+			_reset_altered_mps(main_mps, 0);
 		list_destroy(main_mps);
 		main_mps = NULL;
 	}
@@ -770,254 +887,6 @@ cleanup:
 		return NULL;
 }
 
-/*
- * get the used wires for a block out of the database and return the
- * node list.  The block_ptr here must be gotten with bridge_get_block
- * not bridge_get_block_info, if you are looking to recover from
- * before.  If you are looking to start clean it doesn't matter.
- */
-extern List get_and_set_block_wiring(char *bg_block_id,
-				     void *block_ptr)
-{
-#if 0
-	int rc, i, j;
-	int cnt = 0;
-	int switch_cnt = 0;
-	rm_switch_t *curr_switch = NULL;
-	rm_BP_t *curr_mp = NULL;
-	char *switchid = NULL;
-	rm_connection_t curr_conn;
-	int dim;
-	ba_mp_t *ba_mp = NULL;
-	ba_switch_t *ba_switch = NULL;
-	uint16_t *geo = NULL;
-	List results = list_create(destroy_ba_mp);
-	ListIterator itr = NULL;
-
-	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-		info("getting info for block %s", bg_block_id);
-
-	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
-				  &switch_cnt)) != STATUS_OK) {
-		error("bridge_get_data(RM_PartitionSwitchNum): %s",
-		      bridge_err_str(rc));
-		goto end_it;
-	}
-	if (!switch_cnt) {
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("no switch_cnt");
-		if ((rc = bridge_get_data(block_ptr,
-					  RM_PartitionFirstBP,
-					  &curr_mp))
-		    != STATUS_OK) {
-			error("bridge_get_data: "
-			      "RM_PartitionFirstBP: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-		if ((rc = bridge_get_data(curr_mp, RM_BPID, &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-
-		geo = find_mp_loc(switchid);
-		if (!geo) {
-			error("find_mp_loc: mpid %s not known", switchid);
-			goto end_it;
-		}
-		ba_mp = xmalloc(sizeof(ba_mp_t));
-		list_push(results, ba_mp);
-		ba_mp->coord[X] = geo[X];
-		ba_mp->coord[Y] = geo[Y];
-		ba_mp->coord[Z] = geo[Z];
-
-		ba_mp->used |= BA_MP_USED_TRUE;
-		return results;
-	}
-	for (i=0; i<switch_cnt; i++) {
-		if (i) {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionNextSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionNextSwitch: %s",
-				      bridge_err_str(rc));
-				goto end_it;
-			}
-		} else {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionFirstSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionFirstSwitch: %s",
-				      bridge_err_str(rc));
-				goto end_it;
-			}
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchDim: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
-					  &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-
-		geo = find_mp_loc(switchid);
-		if (!geo) {
-			error("find_mp_loc: mpid %s not known", switchid);
-			goto end_it;
-		}
-
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
-			goto end_it;
-		}
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("switch id = %s dim %d conns = %d",
-			     switchid, dim, cnt);
-
-		itr = list_iterator_create(results);
-		while ((ba_mp = list_next(itr))) {
-			if (ba_mp->coord[X] == geo[X] &&
-			    ba_mp->coord[Y] == geo[Y] &&
-			    ba_mp->coord[Z] == geo[Z])
-				break;	/* we found it */
-		}
-		list_iterator_destroy(itr);
-		if (!ba_mp) {
-			ba_mp = xmalloc(sizeof(ba_mp_t));
-
-			list_push(results, ba_mp);
-			ba_mp->coord[X] = geo[X];
-			ba_mp->coord[Y] = geo[Y];
-			ba_mp->coord[Z] = geo[Z];
-		}
-		ba_switch = &ba_mp->axis_switch[dim];
-		for (j=0; j<cnt; j++) {
-			if (j) {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchNextConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchNextConnection: %s",
-					      bridge_err_str(rc));
-					goto end_it;
-				}
-			} else {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchFirstConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchFirstConnection: %s",
-					      bridge_err_str(rc));
-					goto end_it;
-				}
-			}
-			switch(curr_conn.p1) {
-			case RM_PORT_S1:
-				curr_conn.p1 = 1;
-				break;
-			case RM_PORT_S2:
-				curr_conn.p1 = 2;
-				break;
-			case RM_PORT_S4:
-				curr_conn.p1 = 4;
-				break;
-			default:
-				error("1 unknown port %d",
-				      _port_enum(curr_conn.p1));
-				goto end_it;
-			}
-
-			switch(curr_conn.p2) {
-			case RM_PORT_S0:
-				curr_conn.p2 = 0;
-				break;
-			case RM_PORT_S3:
-				curr_conn.p2 = 3;
-				break;
-			case RM_PORT_S5:
-				curr_conn.p2 = 5;
-				break;
-			default:
-				error("2 unknown port %d",
-				      _port_enum(curr_conn.p2));
-				goto end_it;
-			}
-
-			if (curr_conn.p1 == 1 && dim == B) {
-				if (ba_mp->used) {
-					debug("I have already been to "
-					      "this node %c%c%c%c",
-					      alpha_num[geo[A]],
-					      alpha_num[geo[X]],
-					      alpha_num[geo[Y]],
-					      alpha_num[geo[Z]]);
-					goto end_it;
-				}
-				ba_mp->used |= BA_MP_USED_TRUE;
-			}
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("connection going from %d -> %d",
-				     curr_conn.p1, curr_conn.p2);
-
-			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%c%c%c%c dim %d port %d "
-				      "is already in use",
-				      alpha_num[geo[A]],
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
-				      dim,
-				      curr_conn.p1);
-				goto end_it;
-			}
-			ba_switch->int_wire[curr_conn.p1].used = 1;
-			ba_switch->int_wire[curr_conn.p1].port_tar
-				= curr_conn.p2;
-
-			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%c%c%c%c dim %d port %d "
-				      "is already in use",
-				      alpha_num[geo[A]],
-				      alpha_num[geo[X]],
-				      alpha_num[geo[Y]],
-				      alpha_num[geo[Z]],
-				      dim,
-				      curr_conn.p2);
-				goto end_it;
-			}
-			ba_switch->int_wire[curr_conn.p2].used = 1;
-			ba_switch->int_wire[curr_conn.p2].port_tar
-				= curr_conn.p1;
-		}
-	}
-	return results;
-end_it:
-	list_destroy(results);
-	return NULL;
-#else
-	return NULL;
-#endif
-
-}
-
 extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
 {
 	uint16_t tmp;
@@ -1104,7 +973,7 @@ static int _check_for_options(select_ba_request_t* ba_request)
  * IN geometry - What the block looks like
  * IN conn_type - Mesh or Torus
  *
- * RET: 0 on failure 1 on success
+ * RET: -1 on failure 1 on success
  */
 static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 			   ba_mp_t **check_mp, uint16_t *block_start,
@@ -1257,7 +1126,7 @@ static char *_copy_from_main(List main_mps, List ret_list)
 	return name;
 }
 
-static char *_reset_altered_mps(List main_mps)
+static char *_reset_altered_mps(List main_mps, bool get_name)
 {
 	ListIterator itr = NULL;
 	ba_mp_t *ba_mp;
@@ -1284,12 +1153,18 @@ static char *_reset_altered_mps(List main_mps)
 		} else {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("_reset_altered_mps: "
-				     "mp %s is used", ba_mp->coord_str);
-			if (hostlist)
-				hostlist_push(hostlist, ba_mp->coord_str);
-			else
-				hostlist = hostlist_create(ba_mp->coord_str);
+				     "mp %s is used %d", ba_mp->coord_str,
+				     ba_mp->used);
+			if (get_name) {
+				if (hostlist)
+					hostlist_push(hostlist,
+						      ba_mp->coord_str);
+				else
+					hostlist = hostlist_create(
+						ba_mp->coord_str);
+			}
 		}
+
 		ba_mp->used &= (~BA_MP_USED_ALTERED_PASS);
 		memset(ba_mp->alter_switch, 0, sizeof(ba_mp->alter_switch));
 	}
@@ -1516,7 +1391,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 			alter_switch->usage |= BG_SWITCH_PASS;
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
 				if (count == geometry) {
-					info("using mp %s(%d) to "
+					info("using mp %s(%d)to "
 					     "finish torus %s added %s",
 					     curr_mp->coord_str, dim,
 					     ba_switch_usage_str(
@@ -1721,135 +1596,6 @@ extern void ba_destroy_system(void)
 	}
 
 	memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
-}
-
-/**
- * algorithm for finding match
- */
-static int _find_match(select_ba_request_t *ba_request, List results)
-{
-	int i=0;
-	uint16_t start[cluster_dims];
-	uint16_t end[cluster_dims];
-	char *name=NULL;
-	int startx;
-	ba_geo_table_t *ba_geo_table = (ba_geo_table_t *)ba_request->geo_table;
-
-	if (!(cluster_flags & CLUSTER_FLAG_BG))
-		return 0;
-
-	memset(start, 0, sizeof(start));
-	startx = (start[X]-1);
-
-	if (startx == -1)
-		startx = DIM_SIZE[X]-1;
-	if (ba_request->start_req) {
-		for (i = 0; i < cluster_dims; i++) {
-			if (ba_request->start[i] >= DIM_SIZE[i])
-				return 0;
-			start[i] = ba_request->start[i];
-		}
-	}
-
-	if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
-		if (!ba_geo_table || !ba_geo_table->geometry) {
-			error("_find_match: no geo table");
-			return 0;
-		}
-		memcpy(ba_request->geometry, ba_geo_table->geometry,
-		       sizeof(ba_geo_table->geometry));
-	} else
-		ba_request->geo_table = NULL;
-
-	for (i = 0; i < cluster_dims; i++) {
-		end[i] = start[i] + ba_request->geometry[i];
-		if (end[i] > DIM_SIZE[i])
-			if (!_check_for_options(ba_request))
-				return 0;
-	}
-
-start_again:
-	i = 0;
-	if (i == startx)
-		i = startx-1;
-	while (i != startx) {
-		i++;
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("finding %c%c%c%c try %d",
-			     alpha_num[ba_request->geometry[A]],
-			     alpha_num[ba_request->geometry[X]],
-			     alpha_num[ba_request->geometry[Y]],
-			     alpha_num[ba_request->geometry[Z]],
-			     i);
-	new_mp:
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("starting at %c%c%c%c",
-			     alpha_num[start[A]],
-			     alpha_num[start[X]],
-			     alpha_num[start[Y]],
-			     alpha_num[start[Z]]);
-
-		if ((name = set_bg_block(results, start,
-					 ba_request->geometry,
-					 ba_request->conn_type))) {
-			ba_request->save_name = name;
-			name = NULL;
-			return 1;
-		}
-
-		if (results) {
-			bool is_small = 0;
-			if (ba_request->conn_type[0] == SELECT_SMALL)
-				is_small = 1;
-			remove_block(results, is_small);
-			list_flush(results);
-		}
-
-		if (ba_request->start_req)
-			goto requested_end;
-		//exit(0);
-		debug2("trying something else");
-
-		if ((DIM_SIZE[Z]-start[Z]-1) >= ba_request->geometry[Z])
-			start[Z]++;
-		else {
-			start[Z] = 0;
-			if ((DIM_SIZE[Y]-start[Y]-1) >= ba_request->geometry[Y])
-				start[Y]++;
-			else {
-				start[Y] = 0;
-				if ((DIM_SIZE[X]-start[X]-1)
-				    >= ba_request->geometry[X])
-					start[X]++;
-				else {
-					start[X] = 0;
-					if ((DIM_SIZE[A]-start[A]-1)
-					    >= ba_request->geometry[A])
-						start[A]++;
-					else {
-						if (ba_request->size == 1)
-							goto requested_end;
-						if (!_check_for_options(
-							    ba_request))
-							return 0;
-						else {
-							start[A]=0;
-							start[X]=0;
-							start[Y]=0;
-							start[Z]=0;
-							goto start_again;
-						}
-					}
-				}
-			}
-		}
-		goto new_mp;
-	}
-
-requested_end:
-	debug2("1 can't allocate");
-
-	return 0;
 }
 
 /*

@@ -193,9 +193,6 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 	bg_record_t *bg_record = NULL;
 	const char *bg_block_id = event.getBlockName().c_str();
 
-	info("Received block status changed real-time event. Block=%s state=%d",
-	     bg_block_id, event.getStatus());
-
 	if (!bg_lists->main)
 		return;
 
