@@ -517,8 +517,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		return NULL;
 	}
 	for (i=0; i<block_info_ptr->record_count; i++) {
-		if (!block_info_ptr->block_array[i])
-			break;
 		block_ptr = xmalloc(sizeof(sview_block_info_t));
 
 		block_ptr->bg_block_name

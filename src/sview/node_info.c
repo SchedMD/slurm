@@ -628,8 +628,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 	}
 
 	for (i=0; i<node_info_ptr->record_count; i++) {
-		if (!(node_ptr = &(node_info_ptr->node_array[i])))
-			break;
+		node_ptr = &(node_info_ptr->node_array[i]);
 
 		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
 			continue;
