@@ -784,7 +784,15 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			      bg_record->nodes, temp);
 		}
 
-		bg_record->user_name = xstrdup(block_ptr->getUser().c_str());
+		/* If a user is on the block this will be filled in */
+		if (block_ptr->getUser() != "")
+			bg_record->user_name =
+				xstrdup(block_ptr->getUser().c_str());
+
+		if (!bg_record->user_name)
+			bg_record->user_name =
+				xstrdup(bg_conf->slurm_user_name);
+
 		if (!bg_record->boot_state)
 			bg_record->target_name =
 				xstrdup(bg_conf->slurm_user_name);

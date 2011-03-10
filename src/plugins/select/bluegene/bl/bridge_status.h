@@ -41,7 +41,7 @@
 
 extern int bridge_status_init(void);
 extern int bridge_status_fini(void);
-extern int bridge_status_do_poll(void);
+
 /* This needs to have block_state_mutex locked before hand. */
 extern int bridge_status_update_block_list_state(List block_list);
 

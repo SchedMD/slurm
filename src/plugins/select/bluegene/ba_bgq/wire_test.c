@@ -57,90 +57,26 @@ time_t last_bg_update;
 bg_config_t *bg_conf;
 bg_lists_t *bg_lists;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
-int bg_recover = NOT_FROM_CONTROLLER;
+int bg_recover = 1;
 
-extern int bg_status_update_block_state(bg_record_t *bg_record,
-					bg_block_status_t state,
-					List kill_job_list)
+extern int bridge_init(char *properties_file)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
-extern List bg_status_create_kill_job_list(void)
+extern int bridge_fini()
 {
-	return NULL;
+	return SLURM_ERROR;
 }
 
-extern void bg_status_process_kill_job_list(List kill_job_list)
+extern int bridge_get_size(int *size)
 {
+	return SLURM_ERROR;
 }
 
-extern void bridge_status_do_poll(void)
+extern int bridge_setup_system()
 {
-}
-
-extern void destroy_bg_record(void *object)
-{
-}
-
-extern void process_nodes(bg_record_t *bg_record, bool startup)
-{
-}
-
-extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
-{
-}
-
-/* extern void bg_requeue_job(uint32_t job_id, bool wait_for_start) */
-/* { */
-/* 	return; */
-/* } */
-
-/* extern int update_block_user(bg_record_t *bg_block_id, int set) */
-/* { */
-/* 	return SLURM_SUCCESS; */
-/* } */
-
-/* extern int set_block_user(bg_record_t *bg_record) */
-/* { */
-/* 	return SLURM_SUCCESS; */
-/* } */
-
-/* extern void requeue_and_error(bg_record_t *bg_record, char *reason) */
-/* { */
-/* 	return; */
-/* } */
-
-/* extern void trigger_block_error(void) */
-/* { */
-
-/* } */
-
-/* extern void destroy_bg_record(bg_record_t *bg_record) */
-/* { */
-
-/* } */
-
-extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record)
-{
-	return SLURM_SUCCESS;
-}
-
-extern bg_record_t *find_bg_record_in_list(List my_list,
-					   const char *bg_block_id)
-{
-	return NULL;
-}
-
-extern int bg_reset_block(bg_record_t *bg_record)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int slurm_drain_nodes(char *node_list, char *reason,
-			     uint32_t reason_uid)
-{
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
 /** */

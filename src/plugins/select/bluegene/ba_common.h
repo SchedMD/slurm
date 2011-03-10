@@ -206,12 +206,6 @@ extern void destroy_ba_mp(void *ptr);
 extern int new_ba_request(select_ba_request_t* ba_request);
 
 /*
- * empty a list that we don't want to destroy the memory of the
- * elements always returns 1
-*/
-extern int empty_null_destroy_list(void *arg, void *key);
-
-/*
  * print a block request
  */
 extern void print_ba_request(select_ba_request_t* ba_request);
@@ -253,12 +247,12 @@ extern int copy_node_path(List nodes, List *dest_nodes);
 #endif
 
 /* translate a string of at least AXYZ into a ba_mp_t ptr */
-extern ba_mp_t *str2ba_mp(char *coords);
+extern ba_mp_t *str2ba_mp(const char *coords);
 /*
  * find a base blocks bg location (rack/midplane)
  */
-extern ba_mp_t *loc2ba_mp(char* mp_id);
-extern ba_mp_t *coord2ba_mp(int *coord);
+extern ba_mp_t *loc2ba_mp(const char* mp_id);
+extern ba_mp_t *coord2ba_mp(const int *coord);
 
 /*
  * Try to allocate a block.

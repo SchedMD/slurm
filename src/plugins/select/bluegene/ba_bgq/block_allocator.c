@@ -228,16 +228,7 @@ extern void print_ba_request(select_ba_request_t* ba_request)
 	debug("    elongate:\t%d", ba_request->elongate);
 }
 
-/**
- * empty a list that we don't want to destroy the memory of the
- * elements always returns 1
- */
-extern int empty_null_destroy_list(void *arg, void *key)
-{
-	return 1;
-}
-
-extern ba_mp_t *coord2ba_mp(int *coord)
+extern ba_mp_t *coord2ba_mp(const int *coord)
 {
 	return &ba_main_grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
 }

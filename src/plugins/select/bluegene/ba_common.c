@@ -134,7 +134,7 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 }
 
 #if defined HAVE_BG_FILES
-static ba_mp_t *_internal_loc2ba_mp(int level, int *coords, char *check)
+static ba_mp_t *_internal_loc2ba_mp(int level, int *coords, const char *check)
 {
 	ba_mp_t *curr_mp = NULL;
 	static int *dims = NULL;
@@ -395,7 +395,7 @@ extern void destroy_ba_mp(void *ptr)
 	}
 }
 
-extern ba_mp_t *str2ba_mp(char *coords)
+extern ba_mp_t *str2ba_mp(const char *coords)
 {
 	int coord[cluster_dims];
 	int len, dim;
@@ -432,7 +432,7 @@ extern ba_mp_t *str2ba_mp(char *coords)
 /*
  * find a base blocks bg location (rack/midplane)
  */
-extern ba_mp_t *loc2ba_mp(char* mp_id)
+extern ba_mp_t *loc2ba_mp(const char* mp_id)
 {
 #if defined HAVE_BG_FILES
 	char *check = NULL;

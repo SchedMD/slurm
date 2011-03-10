@@ -579,15 +579,6 @@ extern void print_ba_request(select_ba_request_t* ba_request)
 	debug("    elongate:\t%d", ba_request->elongate);
 }
 
-/**
- * empty a list that we don't want to destroy the memory of the
- * elements always returns 1
- */
-extern int empty_null_destroy_list(void *arg, void *key)
-{
-	return 1;
-}
-
 /* If emulating a system set up a known configuration for wires in a
  * system of the size given.
  * If a real bluegene system, query the system and get all wiring
@@ -692,7 +683,7 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 	return rc;
 }
 
-extern ba_mp_t *coord2ba_mp(int *coord)
+extern ba_mp_t *coord2ba_mp(const int *coord)
 {
 	return &ba_main_grid[coord[X]][coord[Y]][coord[Z]];
 }
@@ -963,7 +954,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 			is_small = 1;
 		debug2("trying less efficient code");
 		remove_block(results, is_small);
-		list_delete_all(results, &empty_null_destroy_list, "");
+		list_flush(results);
 		list_append(results, ba_node);
 		found = _find_x_path(results, ba_node,
 				     ba_node->coord,
@@ -2425,8 +2416,7 @@ start_again:
 				if (ba_request->conn_type[0] == SELECT_SMALL)
 					is_small = 1;
 				remove_block(results, is_small);
-				list_delete_all(results,
-						&empty_null_destroy_list, "");
+				list_flush(results);
 			}
 			if (ba_request->start_req)
 				goto requested_end;

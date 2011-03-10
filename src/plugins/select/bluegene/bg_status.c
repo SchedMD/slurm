@@ -72,44 +72,40 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 		      bg_record->bg_block_id);
 	}
 
-	if (bg_record->target_name && bg_record->user_name) {
-		if (!strcmp(bg_record->target_name, user_name)) {
-			if (strcmp(bg_record->target_name, bg_record->user_name)
-			    || (jobid > NO_JOB_RUNNING)) {
-				if (kill_job_list) {
-					kill_job_struct_t *freeit =
-						(kill_job_struct_t *)
-						xmalloc(sizeof(freeit));
-					freeit->jobid = jobid;
-					list_push(kill_job_list, freeit);
-				}
-
-				error("Block %s was in a ready state "
-				      "for user %s but is being freed. "
-				      "Job %d was lost.",
-				      bg_record->bg_block_id,
-				      bg_record->user_name,
-				      jobid);
-			} else {
-				debug("Block %s was in a ready state "
-				      "but is being freed. No job running.",
-				      bg_record->bg_block_id);
-			}
-		} else {
-			error("State went to free on a boot for block %s.",
-			      bg_record->bg_block_id);
-		}
-	} else if (bg_record->user_name) {
-		error("Target Name was not set "
-		      "not set for block %s.",
+	if (!bg_record->target_name) {
+		error("Target Name was not set for block %s.",
 		      bg_record->bg_block_id);
 		bg_record->target_name = xstrdup(bg_record->user_name);
-	} else {
-		error("Target Name and User Name are "
-		      "not set for block %s.",
+	}
+
+	if (!bg_record->user_name) {
+		error("User Name was not set for block %s.",
 		      bg_record->bg_block_id);
 		bg_record->user_name = xstrdup(user_name);
-		bg_record->target_name = xstrdup(bg_record->user_name);
+	}
+
+	if (bg_record->boot_state) {
+		error("State went to free on a boot for block %s.",
+		      bg_record->bg_block_id);
+	} else if (jobid > NO_JOB_RUNNING) {
+		if (kill_job_list) {
+			kill_job_struct_t *freeit =
+				(kill_job_struct_t *)
+				xmalloc(sizeof(freeit));
+			freeit->jobid = jobid;
+			list_push(kill_job_list, freeit);
+		}
+
+		error("Block %s was in a ready state "
+		      "for user %s but is being freed. "
+		      "Job %d was lost.",
+		      bg_record->bg_block_id,
+		      bg_record->user_name,
+		      jobid);
+	} else {
+		debug("Block %s was in a ready state "
+		      "but is being freed. No job running.",
+		      bg_record->bg_block_id);
 	}
 
 	if (remove_from_bg_list(bg_lists->job_running, bg_record)
@@ -174,16 +170,8 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 
 	if (bg_record->state == BG_BLOCK_TERM || skipped_dealloc)
 		_block_is_deallocating(bg_record, kill_job_list);
-	else if (bg_record->state == BG_BLOCK_REBOOTING) {
-		/* This means the user did a reboot through mpirun */
-		debug("Block %s rebooting.  Setting target_name back to %s",
-		      bg_record->bg_block_id,
-		      bg_record->user_name);
-		xfree(bg_record->target_name);
-		bg_record->target_name = xstrdup(bg_record->user_name);
-	}else if (bg_record->state == BG_BLOCK_BOOTING) {
-		debug("Setting bootflag for %s",
-		      bg_record->bg_block_id);
+	else if (bg_record->state == BG_BLOCK_BOOTING) {
+		debug("Setting bootflag for %s", bg_record->bg_block_id);
 		bg_record->boot_state = 1;
 	} else if (bg_record->state == BG_BLOCK_FREE) {
 		if (remove_from_bg_list(bg_lists->job_running, bg_record)
@@ -192,7 +180,7 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 		remove_from_bg_list(bg_lists->booted,
 				    bg_record);
 	} else if (bg_record->state == BG_BLOCK_ERROR) {
-		if (bg_record->boot_state == 1)
+		if (bg_record->boot_state)
 			error("Block %s in an error state while booting.",
 			      bg_record->bg_block_id);
 		else
@@ -210,7 +198,7 @@ nochange_state:
 	/* check the boot state */
 	debug3("boot state for block %s is %d",
 	       bg_record->bg_block_id, bg_record->boot_state);
-	if (bg_record->boot_state == 1) {
+	if (bg_record->boot_state) {
 		switch(bg_record->state) {
 		case BG_BLOCK_BOOTING:
 			debug3("checking to make sure user %s "

@@ -43,6 +43,5 @@
 
 extern int bridge_status_init(void);
 extern int bridge_status_fini(void);
-extern void bridge_status_do_poll(void);
 
 #endif

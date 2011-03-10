@@ -58,78 +58,26 @@ bg_config_t *bg_conf = NULL;
 bg_lists_t *bg_lists = NULL;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int blocks_are_created = 0;
-int bg_recover = NOT_FROM_CONTROLLER;
+int bg_recover = 1;
 
-extern List bg_status_create_kill_job_list(void)
+extern int bridge_init(char *properties_file)
 {
-	return NULL;
+	return SLURM_ERROR;
 }
 
-extern void bg_status_process_kill_job_list(List kill_job_list)
+extern int bridge_fini()
 {
+	return SLURM_ERROR;
 }
 
-extern int configure_small_block(bg_record_t *bg_record)
+extern int bridge_get_size(int *size)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
-extern int configure_block_switches(bg_record_t * bg_record)
+extern int bridge_setup_system()
 {
-	return SLURM_SUCCESS;
-}
-
-extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record)
-{
-	return SLURM_SUCCESS;
-}
-
-extern bg_record_t *find_bg_record_in_list(List my_list,
-					   const char *bg_block_id)
-{
-	return NULL;
-}
-
-extern int bg_reset_block(bg_record_t *bg_record)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int slurm_drain_nodes(char *node_list, char *reason,
-			     uint32_t reason_uid)
-{
-	return SLURM_SUCCESS;
-}
-
-extern void process_nodes(bg_record_t * bg_record, bool startup)
-{
-	return;
-}
-
-extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
-{
-	return;
-}
-
-extern int node_already_down(char *node_name)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int down_nodecard(char *mp_name, bitoff_t io_start, bool locked)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int bg_status_update_block_state(bg_record_t *bg_record,
-					bg_block_status_t state,
-					List kill_job_list)
-{
-	return SLURM_SUCCESS;
-}
-
-extern void destroy_bg_record(void *object)
-{
+	return SLURM_ERROR;
 }
 
 /** */
