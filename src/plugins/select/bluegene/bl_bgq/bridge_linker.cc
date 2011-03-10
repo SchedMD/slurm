@@ -358,7 +358,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 			return rc;
 	}
 
-
+	info("block created correctly");
 	block_ptr->setName(bg_record->bg_block_id);
 	block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
 
@@ -703,10 +703,35 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
 		bg_record->job_running = NO_JOB_RUNNING;
 		if (block_ptr->isSmall()) {
-			bg_record->conn_type[0] = SELECT_SMALL;
-			/* FIXME: flush out the small block logic to
-			   figure out which ionodes we are on.
+			char bitstring[BITSIZE];
+			int io_cnt, io_start;
+			Block::NodeBoards nodeboards =
+				block_ptr->getNodeBoards();
+			int nb_cnt = nodeboards.size();
+			std::string nb_name = *(nodeboards.begin());
+
+			if ((io_cnt = nb_cnt * bg_conf->io_ratio))
+				io_cnt--;
+
+			/* From the first nodecard id we can figure
+			   out where to start from with the alloc of ionodes.
 			*/
+			io_start = atoi((char*)nb_name.c_str()+1)
+				* bg_conf->io_ratio;
+			info("got nb name of %s %d %d",
+			     nb_name.c_str(), io_start, nb_cnt);
+
+			bg_record->ionode_bitmap =
+				bit_alloc(bg_conf->ionodes_per_mp);
+			/* Set the correct ionodes being used in this block */
+			bit_nset(bg_record->ionode_bitmap,
+				 io_start, io_start+io_cnt);
+			bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
+			bg_record->ionodes = xstrdup(bitstring);
+			debug3("%s uses ionodes %s",
+			       bg_record->bg_block_id,
+			       bg_record->ionodes);
+			bg_record->conn_type[0] = SELECT_SMALL;
 		} else {
 			for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 				bg_record->conn_type[dim] =

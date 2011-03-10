@@ -262,7 +262,6 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 {
 	int rc = SLURM_ERROR;
 
-	std::vector<NodeBoard::ConstPtr> nb_vec;
 	const char *mp_name = event.getMidplaneId().c_str();
 	const char *nb_name = event.getNodeBoardId().c_str();
 	ba_mp_t *ba_mp = loc2ba_mp(mp_name);
@@ -324,6 +323,7 @@ static void *_real_time(void *no_data)
 	rt_filter.setNodeBoards(true);
 	rt_filter.setSwitches(true);
 	rt_filter.setBlocks(true);
+
 	block_statuses.insert(Block::Free);
 	block_statuses.insert(Block::Booting);
 	block_statuses.insert(Block::Initialized);
@@ -341,14 +341,13 @@ static void *_real_time(void *no_data)
 		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
 
 		slurm_mutex_lock(&rt_mutex);
-		if (bridge_status_inited) {
+		if (!bridge_status_inited) {
 			slurm_mutex_unlock(&rt_mutex);
 			break;
 		}
 
 		if (rc == SLURM_SUCCESS) {
 			rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
-
 			rt_client_ptr->requestUpdates(NULL);
 			rt_client_ptr->receiveMessages(NULL, NULL, &failed);
 		} else
