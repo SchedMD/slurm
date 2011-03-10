@@ -11,8 +11,9 @@ documents those changes that are of interest to users and admins.
     was job would be requeued.  (happens very rarely)
  -- In accounting_storage/filetxt plugin, substitute spaces within job names,
     step names, and account names with an underscore to insure proper parsing.
- -- When building contribs/perlapi ignore INSTALL_BASE and use PREFIX instead.
-    Perl can not build if both are set.
+ -- When building contribs/perlapi ignore both INSTALL_BASE and PERL_MM_OPT.
+    Use PREFIX instead to avoid build errors from multiple installation
+    specifications.
  -- Add job_submit/cnode plugin to support resource reservations of less than
     a full midplane on BlueGene computers. Treat cnodes as liceses which can
     be reserved and are consumed by jobs. This reservation mechanism for less
