@@ -64,6 +64,8 @@ static pthread_t block_thread = 0;
 static pthread_t state_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static int _do_block_poll(void);
+
 #if defined HAVE_BG_FILES
 
 /* Find the specified BlueGene node ID and drain it from SLURM */
