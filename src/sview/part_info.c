@@ -1662,6 +1662,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
+
 		/* don't include configured excludes */
 		if (!working_sview_config.show_hidden &&
 		    part_ptr->flags & PART_FLAG_HIDDEN)

@@ -2582,6 +2582,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (conf->preempt_mode == PREEMPT_MODE_SUSPEND)
 			fatal("PreemptMode=SUSPEND requires GANG too");
 		xfree(temp_str);
+	} else {
+		conf->preempt_mode = PREEMPT_MODE_OFF;
 	}
 	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
 		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);

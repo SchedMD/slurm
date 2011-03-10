@@ -59,10 +59,11 @@ extern int build_feature_list(struct job_record *job_ptr);
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
+ * IN clear_start - if set then clear the start_time for pending jobs
  * RET the job queue
  * NOTE: the caller must call list_destroy() on RET value to free memory
  */
-extern List build_job_queue(void);
+extern List build_job_queue(bool clear_start);
 
 /*
  * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
