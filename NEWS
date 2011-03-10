@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- Clear a job's "reason" field when a hold job is released.
  -- Fix for sview started on a non-bluegene system to pick colors correctly
     when talking to a real bluegene system.
+ -- Improve sched/backfill's expected start time calculation.
 
 * Changes in SLURM 2.2.3
 ========================

@@ -146,7 +146,7 @@ static void _compute_start_times(void)
 	alloc_bitmap = bit_alloc(node_record_count);
 	if (alloc_bitmap == NULL)
 		fatal("bit_alloc: malloc failure");
-	job_queue = build_job_queue();
+	job_queue = build_job_queue(true);
 	while ((job_queue_rec = (job_queue_rec_t *) 
 				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;

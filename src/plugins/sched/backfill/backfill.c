@@ -486,7 +486,7 @@ static int _attempt_backfill(void)
 	if (slurm_get_root_filter())
 		filter_root = true;
 
-	job_queue = build_job_queue();
+	job_queue = build_job_queue(true);
 	if (list_count(job_queue) <= 1) {
 		debug("backfill: no jobs to backfill");
 		list_destroy(job_queue);
@@ -623,8 +623,10 @@ static int _attempt_backfill(void)
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
 		    (job_req_node_filter(job_ptr, avail_bitmap))) {
-			if (later_start)
+			if (later_start) {
+				job_ptr->start_time = 0;	
 				goto TRY_LATER;
+			}
 			job_ptr->time_limit = orig_time_limit;
 			continue;
 		}
@@ -655,6 +657,7 @@ static int _attempt_backfill(void)
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;
+			job_ptr->start_time = 0;	
 			continue;	/* not runable */
 		}
 
@@ -679,10 +682,12 @@ static int _attempt_backfill(void)
 			}
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				/* Unknown future start time, just skip job */
+				job_ptr->start_time = 0;	
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
 				 * happended. */
+				job_ptr->start_time = 0;	
 				break;
 			} else {
 				/* Started this job, move to next one */
@@ -694,6 +699,7 @@ static int _attempt_backfill(void)
 		if (later_start && (job_ptr->start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */
+			job_ptr->start_time = 0;	
 			goto TRY_LATER;
 		}
 
@@ -714,6 +720,7 @@ static int _attempt_backfill(void)
 			 * job to be backfill scheduled, which the sched
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
+			job_ptr->start_time = 0;	
 			goto TRY_LATER;
 		}
 

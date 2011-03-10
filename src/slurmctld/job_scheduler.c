@@ -138,15 +138,17 @@ static void _job_queue_rec_del(void *x)
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
+ * IN clear_start - if set then clear the start_time for pending jobs
  * RET the job queue
  * NOTE: the caller must call list_destroy() on RET value to free memory
  */
-extern List build_job_queue(void)
+extern List build_job_queue(bool clear_start)
 {
 	List job_queue;
 	ListIterator job_iterator, part_iterator;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
+	bool job_is_pending;
 
 	job_queue = list_create(_job_queue_rec_del);
 	if (job_queue == NULL)
@@ -156,8 +158,11 @@ extern List build_job_queue(void)
 		fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
-		if ((!IS_JOB_PENDING(job_ptr)) || IS_JOB_COMPLETING(job_ptr))
+		job_is_pending = IS_JOB_PENDING(job_ptr);
+		if (!job_is_pending || IS_JOB_COMPLETING(job_ptr))
 			continue;
+		if (job_is_pending && clear_start)
+			job_ptr->start_time = (time_t) 0;
 		if (job_ptr->priority == 0)	{ /* held */
 			if ((job_ptr->state_reason != WAIT_HELD) &&
 			    (job_ptr->state_reason != WAIT_HELD_USER)) {
@@ -384,7 +389,7 @@ extern int schedule(uint32_t job_limit)
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
 	debug("sched: Running job scheduler");
-	job_queue = build_job_queue();
+	job_queue = build_job_queue(false);
 	while ((job_queue_rec = list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
