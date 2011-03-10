@@ -213,9 +213,9 @@ JobId=65672 UserId=phil(5136) GroupId=phil(5136)
    AllocNode:Sid=adev0:16726 TimeLimit=00:10:00 ExitCode=0:0
    StartTime=06/02-15:27:11 EndTime=06/02-15:37:11
    JobState=PENDING NodeList=(null) NodeListIndices=
-   ReqProcs=24 ReqNodes=1 ReqS:C:T=1-65535:1-65535:1-65535
+   NumCPUs=24 ReqNodes=1 ReqS:C:T=1-65535:1-65535:1-65535
    Shared=1 Contiguous=0 CPUs/task=0 Licenses=(null)
-   MinProcs=1 MinSockets=1 MinCores=1 MinThreads=1
+   MinCPUs=1 MinSockets=1 MinCores=1 MinThreads=1
    MinMemory=0 MinTmpDisk=0 Features=(null)
    Dependency=(null) Account=(null) Requeue=1
    Reason=None Network=(null)

@@ -489,6 +489,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	int computed_procs;
 	static s_p_options_t _nodename_options[] = {
 		{"CoresPerSocket", S_P_UINT16},
+		{"CPUs", S_P_UINT16},
 		{"Feature", S_P_STRING},
 		{"Gres", S_P_STRING},
 		{"NodeAddr", S_P_STRING},
@@ -570,8 +571,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->port = 0;
 		}
 
-		if (!s_p_get_uint16(&n->cpus, "Procs", tbl)
-		    && !s_p_get_uint16(&n->cpus, "Procs", dflt)) {
+		if (!s_p_get_uint16(&n->cpus, "CPUs",  tbl)  &&
+		    !s_p_get_uint16(&n->cpus, "CPUs",  dflt) &&
+		    !s_p_get_uint16(&n->cpus, "Procs", tbl)  &&
+		    !s_p_get_uint16(&n->cpus, "Procs", dflt)) {
 			n->cpus = 1;
 			no_cpus = true;
 		}
@@ -631,18 +634,18 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->sockets = 1;
 		}
 
-		if (no_cpus) {		/* infer missing Procs= */
+		if (no_cpus) {		/* infer missing CPUs= */
 			n->cpus = n->sockets * n->cores * n->threads;
 		}
 
-		/* if only Procs= and Sockets= specified check for match */
+		/* if only CPUs= and Sockets= specified check for match */
 		if (!no_cpus    &&
 		    !no_sockets &&
 		    no_cores    &&
 		    no_threads) {
 			if (n->cpus != n->sockets) {
 				n->sockets = n->cpus;
-				error("NodeNames=%s Procs doesn't match "
+				error("NodeNames=%s CPUs doesn't match "
 				      "Sockets, setting Sockets to %d",
 				      n->nodenames, n->sockets);
 			}
@@ -652,9 +655,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if ((n->cpus != n->sockets) &&
 		    (n->cpus != n->sockets * n->cores) &&
 		    (n->cpus != computed_procs)) {
-			error("NodeNames=%s Procs=%d doesn't match "
+			error("NodeNames=%s CPUs=%d doesn't match "
 			      "Sockets*CoresPerSocket*ThreadsPerCore (%d), "
-			      "resetting Procs",
+			      "resetting CPUs",
 			      n->nodenames, n->cpus, computed_procs);
 			n->cpus = computed_procs;
 		}

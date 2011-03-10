@@ -409,7 +409,7 @@ Each partition can thus be considered a separate queue.
 Partition and node specifications use node range expressions to identify
 nodes in a concise fashion. This configuration file defines a 1154-node cluster
 for SLURM, but it might be used for a much larger cluster by just changing a few
-node range expressions. Specify the minimum processor count (Procs), real memory
+node range expressions. Specify the minimum processor count (CPUs), real memory
 space (RealMemory, megabytes), and temporary disk space (TmpDisk, megabytes) that
 a node should have to be considered available for use. Any node lacking these
 minimum configuration values will be considered DOWN and not scheduled.
@@ -450,7 +450,7 @@ TreeWidth=50
 #
 # Node Configurations
 #
-NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
+NodeName=DEFAULT CPUs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
 NodeName=mcr[0-1151] NodeAddr=emcr[0-1151]
 #
 # Partition Configurations
@@ -563,8 +563,8 @@ JobId=475 UserId=bob(6885) Name=sleep JobState=COMPLETED
    AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
    StartTime=03/19-12:53:41 EndTime=03/19-12:53:59
    NodeList=adev8 NodeListIndecies=-1
-   ReqProcs=0 MinNodes=0 Shared=0 Contiguous=0
-   MinProcs=0 MinMemory=0 Features=(null) MinTmpDisk=0
+   NumCPUs=0 MinNodes=0 Shared=0 Contiguous=0
+   MinCPUs=0 MinMemory=0 Features=(null) MinTmpDisk=0
    ReqNodeList=(null) ReqNodeListIndecies=-1
 
 JobId=476 UserId=bob(6885) Name=sleep JobState=RUNNING
@@ -572,8 +572,8 @@ JobId=476 UserId=bob(6885) Name=sleep JobState=RUNNING
    AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
    StartTime=03/19-12:54:01 EndTime=NONE
    NodeList=adev8 NodeListIndecies=8,8,-1
-   ReqProcs=0 MinNodes=0 Shared=0 Contiguous=0
-   MinProcs=0 MinMemory=0 Features=(null) MinTmpDisk=0
+   NumCPUs=0 MinNodes=0 Shared=0 Contiguous=0
+   MinCPUs=0 MinMemory=0 Features=(null) MinTmpDisk=0
    ReqNodeList=(null) ReqNodeListIndecies=-1
 </pre> <p>Print the detailed state of job 477 and change its priority to
 zero. A priority of zero prevents a job from being initiated (it is held in &quot;pending&quot;

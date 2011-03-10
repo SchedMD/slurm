@@ -300,9 +300,9 @@ You can use the scontrol show command to check if these conditions apply.</p>
 <li>Job: ExcNodeList=NULL</li>
 <li>Job: Contiguous=0</li>
 <li>Job: Features=NULL</li>
-<li>Job: MinProcs, MinMemory, and MinTmpDisk satisfied by all nodes in
+<li>Job: MinCPUs, MinMemory, and MinTmpDisk satisfied by all nodes in
 the partition</li>
-<li>Job: MinProcs or MinNodes not to exceed partition's MaxNodes</li>
+<li>Job: MinCPUs or MinNodes not to exceed partition's MaxNodes</li>
 </ul>
 <p>If the partitions specifications differ from those listed above,
 no jobs in that partition will be scheduled by the backfills scheduler.
@@ -953,7 +953,7 @@ $ squeue
 resources than physically exist on the node?</b></a><br>
 Yes in SLURM version 1.2 or higher.
 In the <i>slurm.conf</i> file, set <i>FastSchedule=2</i> and specify
-any desired node resource specifications (<i>Procs</i>, <i>Sockets</i>,
+any desired node resource specifications (<i>CPUs</i>, <i>Sockets</i>,
 <i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
 SLURM will use the resource specification for each node that is
 given in <i>slurm.conf</i> and will not check these specifications

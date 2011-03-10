@@ -40,7 +40,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * DebugFlags of Frontend added
 * Added new configuration parameter MaxJobId. Use with FirstJobId to limit
   range of job ID values.
-
+* Change node configuration parameter from "Procs" to "CPUs". Both parameters
+  will be supported for now.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

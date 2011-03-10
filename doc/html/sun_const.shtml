@@ -113,7 +113,7 @@ Two examples of SLURM configuration files are shown below:</p>
 # Configuration parameters removed here
 
 # Automatic orders nodes following a Hilbert curve
-NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
+NodeName=DEFAULT CPUs=8 RealMemory=2048 State=Unknown
 NodeName=tux[0000x3337]
 PartitionName=debug Nodes=tux[0000x3337] Default=Yes State=UP
 </pre>
@@ -125,7 +125,7 @@ PartitionName=debug Nodes=tux[0000x3337] Default=Yes State=UP
 # Configuration parameters removed here
 
 # Manual ordering of nodes following a space-filling curve
-NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
+NodeName=DEFAULT CPUs=8 RealMemory=2048 State=Unknown
 NodeName=tux[0000-0007]  #  8 nodes at 0,0,0
 NodeName=tux[0010-001B]  # 12 nodes at 0,0,1
 NodeName=tux[0100-0107]  #  8 nodes at 0,1,0

@@ -2,8 +2,6 @@
 
 <h1>Support for Multi-core/Multi-thread Architectures</h1>
 
-<b>Note:</b> This document describes features added to SLURM version 1.2.
-
 <h2>Contents</h2>
 <UL>
 <LI> <a href=#defs>Definitions</a>
@@ -13,7 +11,6 @@
 <LI> <a href=#config>Configuration settings in slurm.conf</a>
 </UL>
 
-<!-------------------------------------------------------------------------->
 <a name=defs>
 <h2>Definitions</h2></a>
 
@@ -43,7 +40,6 @@ on the associated logical processor.
 allowing a process to run on more than one logical processor.
 </dl>
 
-<!-------------------------------------------------------------------------->
 <a name=flags>
 <h2>Overview of new srun flags</h2></a>
 
@@ -845,9 +841,9 @@ JobId=20 UserId=(30352) GroupId=users(1051)
    JobState=RUNNING StartTime=09/25-17:17:30 EndTime=NONE
    NodeList=hydra[12-14] NodeListIndices=0,2,-1
    <u>AllocCPUs=1,2,1</u>
-   ReqProcs=4 ReqNodes=2 <u>ReqS:C:T=2:1:*</u>
+   NumCPUs=4 ReqNodes=2 <u>ReqS:C:T=2:1:*</u>
    Shared=0 Contiguous=0 CPUs/task=0
-   MinProcs=0 MinMemory=0 MinTmpDisk=0 Features=(null)
+   MinCPUs=0 MinMemory=0 MinTmpDisk=0 Features=(null)
    Dependency=0 Account=(null) Reason=None Network=(null)
    ReqNodeList=(null) ReqNodeListIndices=-1
    ExcNodeList=(null) ExcNodeListIndices=-1
@@ -903,7 +899,7 @@ NodeName parameter can be used in combination with FastSchedule:
 
 <PRE>
 FastSchedule=1
-NodeName=dualcore[01-16] Procs=4 CoresPerSocket=2 ThreadsPerCore=1
+NodeName=dualcore[01-16] CPUs=4 CoresPerSocket=2 ThreadsPerCore=1
 </PRE>
 
 <p>Below is a more complete description of the configuration possible
@@ -941,13 +937,13 @@ using NodeName:
 #
 #     "RealMemory" : Amount of real memory (in Megabytes)
 #
-#     "Procs"      : Number of logical processors on the node.
-#                    If Procs is omitted, it will be inferred from:
+#     "CPUs"       : Number of logical processors on the node.
+#                    If CPUs is omitted, it will be inferred from:
 #                           Sockets, CoresPerSocket, and ThreadsPerCore.
 #
 #     "Sockets"    : Number of physical processor sockets/chips on the node.
 #                    If Sockets is omitted, it will be inferred from:
-#                           Procs, CoresPerSocket, and ThreadsPerCore.
+#                           CPUs, CoresPerSocket, and ThreadsPerCore.
 #
 #     "CoresPerSocket"
 #                  : Number of cores in a single physical processor socket
@@ -972,12 +968,12 @@ using NodeName:
 #
 # Example Node configuration:
 #
-# NodeName=DEFAULT Procs=2 TmpDisk=64000 State=UNKNOWN
+# NodeName=DEFAULT CPUs=2 TmpDisk=64000 State=UNKNOWN
 # NodeName=host[0-25] NodeAddr=ehost[0-25] Weight=16
 # NodeName=host26     NodeAddr=ehost26     Weight=32 Feature=graphics_card
-# NodeName=dualcore01  Procs=4 CoresPerSocket=2 ThreadsPerCore=1
-# NodeName=dualcore02  Procs=4 Sockets=2 CoresPerSocket=2 ThreadsPerCore=1
-# NodeName=multicore03 Procs=64 Sockets=8 CoresPerSocket=4 ThreadsPerCore=2
+# NodeName=dualcore01  CPUs=4 CoresPerSocket=2 ThreadsPerCore=1
+# NodeName=dualcore02  CPUs=4o Sockets=2 CoresPerSocket=2 ThreadsPerCore=1
+# NodeName=multicore03 CPUs=64 Sockets=8 CoresPerSocket=4 ThreadsPerCore=2
 </PRE>
 
 <!-------------------------------------------------------------------------->

@@ -72,7 +72,7 @@ on data transmission.</p>
 on each compute node and use it for scheduling purposes, this entails
 extra overhead.
 Optimize performance by specifying the expected configuration using
-the available parameters (<i>RealMemory</i>, <i>Procs</i>, and
+the available parameters (<i>RealMemory</i>, <i>CPUs</i>, and
 <i>TmpDisk</i>).
 If the node is found to contain less resources than configured,
 it will be marked DOWN and not used.

@@ -289,7 +289,7 @@ function displayfile()
    "# COMPUTE NODES <br>" +
    "NodeName=" + document.config.node_name.value +
    get_field2(" NodeAddr",document.config.node_addr) +
-   get_field2(" Procs",document.config.procs) +
+   get_field2(" CPUs",document.config.procs) +
    get_field2(" RealMemory",document.config.memory) +
    get_field2(" Sockets",document.config.sockets) +
    get_field2(" CoresPerSocket",document.config.cores_per_socket) +
@@ -405,19 +405,19 @@ Name of the one partition to be created
 Maximum time limit of jobs in minutes or INFINITE
 <P>
 The following parameters describe a node's configuration.
-Set a value for <B>Procs</B>.
+Set a value for <B>CPUs</B>.
 The other parameters are optional, but provide more control over scheduled resources:
 <P>
-<input type="text" name="procs" value="1"> <B>Procs</B>: Count of processors
+<input type="text" name="procs" value="1"> <B>CPUs</B>: Count of processors
 on each compute node.
-If Procs is omitted, it will be inferred from:
+If CPUs is omitted, it will be inferred from:
 Sockets, CoresPerSocket, and ThreadsPerCore.
 <P>
 <input type="text" name="sockets" value="">
 <B>Sockets</B>:
 Number of physical processor sockets/chips on the node.
 If Sockets is omitted, it will be inferred from:
-Procs, CoresPerSocket, and ThreadsPerCore.
+CPUs, CoresPerSocket, and ThreadsPerCore.
 <P>
 <input type="text" name="cores_per_socket" value="">
 <B>CoresPerSocket</B>:

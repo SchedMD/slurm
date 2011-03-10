@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     reservation may use the licenses associated with it plus any compute nodes.
     Otherwise the job is limited to the compute nodes associated with the
     reservation.
+ -- Change slurm.conf node configuration parameter from "Procs" to "CPUs".
+    Both parameters will be supported for now.
 
 * Changes in SLURM 2.3.0.pre3
 =============================

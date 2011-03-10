@@ -299,7 +299,7 @@ the scontrol reconfig command. </p>
 
 <p>SLURM node and partition descriptions should make use of the
 <a href="#naming">naming</a> conventions described above. For example,
-"NodeName=bg[000x733] Procs=1024"
+"NodeName=bg[000x733] CPUs=1024"
 is used in <i>slurm.conf</i> to define a BlueGene system with 128 midplanes
 in an 8 by 4 by 4 matrix and each midplane is configured with 1024 processors
 (cores).
@@ -324,7 +324,7 @@ Prolog=/usr/sbin/prolog
 Epilog=/usr/sbin/epilog
 #
 FrontendName=frontend[00-01] State=UNKNOWN
-NodeName=bg[000x733] Procs=1024 State=UNKNOWN
+NodeName=bg[000x733] CPUs=1024 State=UNKNOWN
 </pre>
 
 <p>While users are unable to initiate SLURM job steps on BlueGene systems,

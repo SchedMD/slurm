@@ -209,7 +209,7 @@ For more information about how this is achieved, see SLURM's
 SelectType=select/cray
 TopoType=topology/node_rank
 FrontendName=front_end[00-03]
-NodeName=nid[00000-00511] Procs=8 RealMemory=2048
+NodeName=nid[00000-00511] CPUs=8 RealMemory=2048
 PartitionName=batch Nodes=nid[00000-00511] Default=Yes State=UP
 </pre>
 

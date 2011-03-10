@@ -1465,7 +1465,7 @@ CPUs are consumable resources.
 There is no notion of sockets, cores or threads;
 do not define those values in the node specification.  If these
 are defined, unexpected results will happen when hyper\-threading
-is enabled Procs= should be used instead.
+is enabled CPUs= should be used instead.
 On a multi\-core system, each core will be considered a CPU.
 On a multi\-core and hyper\-threaded system, each thread will be
 considered a CPU.
@@ -1476,7 +1476,7 @@ CPUs and memory are consumable resources.
 There is no notion of sockets, cores or threads;
 do not define those values in the node specification.  If these
 are defined, unexpected results will happen when hyper\-threading
-is enabled Procs= should be used instead.
+is enabled CPUs= should be used instead.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
@@ -2029,7 +2029,7 @@ scheduling process by permitting it to compare job requirements
 against these (relatively few) configuration parameters and
 possibly avoid having to check job requirements
 against every individual node's configuration.
-The resources checked at node registration time are: Procs,
+The resources checked at node registration time are: CPUs,
 RealMemory and TmpDisk.
 While baseline values for each of these can be established
 in the configuration file, the actual values upon node
@@ -2178,9 +2178,9 @@ for all \fBslurmd\fR daemons on all compute nodes as defined by the
 recommended except for development or testing purposes.
 
 .TP
-\fBProcs\fR
+\fBCPUs\fR
 Number of logical processors on the node (e.g. "2").
-If \fBProcs\fR is omitted, it will set equal to the product of
+If \fBCPUs\fR is omitted, it will set equal to the product of
 \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 The default value is 1.
 
@@ -2199,7 +2199,7 @@ Use quotes to enclose a reason having more than one word.
 \fBSockets\fR
 Number of physical processor sockets/chips on the node (e.g. "2").
 If Sockets is omitted, it will be inferred from
-\fBProcs\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
+\fBCPUs\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 \fBNOTE\fR: If you have multi\-core processors, you will likely
 need to specify these parameters.
 The default value is 1.
@@ -2886,7 +2886,7 @@ JobCredentialPublicCertificate=/usr/local/slurm/public.cert
 .br
 #
 .br
-NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000
+NodeName=DEFAULT CPUs=2 RealMemory=2000 TmpDisk=64000
 .br
 NodeName=DEFAULT State=UNKNOWN
 .br
