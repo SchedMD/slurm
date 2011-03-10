@@ -2148,6 +2148,13 @@ need to specify this parameter in order to optimize scheduling.
 The default value is 1.
 
 .TP
+\fBCPUs\fR
+Number of logical processors on the node (e.g. "2").
+If \fBCPUs\fR is omitted, it will set equal to the product of
+\fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
+The default value is 1.
+
+.TP
 \fBFeature\fR
 A comma delimited list of arbitrary strings indicative of some
 characteristic associated with the node.
@@ -2178,11 +2185,8 @@ for all \fBslurmd\fR daemons on all compute nodes as defined by the
 recommended except for development or testing purposes.
 
 .TP
-\fBCPUs\fR
-Number of logical processors on the node (e.g. "2").
-If \fBCPUs\fR is omitted, it will set equal to the product of
-\fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
-The default value is 1.
+\fBProcs\fR
+See \fBCPUs\fR.
 
 .TP
 \fBRealMemory\fR
