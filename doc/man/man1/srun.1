@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.2" "November 2010" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.3" "March 2011" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -333,6 +333,9 @@ in some failed state (non-zero exit code, node failure, timed out, etc).
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
 executed (ran to completion with non-zero exit code).
+.TP
+\fBexpand:job_id\fR
+Resources allocated to this job should be used to expand the specified job.
 .TP
 \fBsingleton\fR
 This job can begin execution after any previously launched jobs

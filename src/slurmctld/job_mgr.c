@@ -5771,6 +5771,7 @@ void purge_old_job(void)
 			job_ptr->end_time	= now;
 			job_completion_logger(job_ptr, false);
 			last_job_update		= now;
+			srun_allocate_abort(job_ptr);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -7207,7 +7208,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->min_nodes, job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 			goto fini;
-		} else if (job_specs->min_nodes > job_ptr->node_cnt) {
+		} else if (job_specs->min_nodes == job_ptr->node_cnt) {
 			debug2("No change in node count update for job %u",
 			       job_specs->job_id);
 		} else {
@@ -8331,6 +8332,7 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		job_completion_logger(job_ptr, false);
+		srun_allocate_abort(job_ptr);
 		return false;
 	}
 

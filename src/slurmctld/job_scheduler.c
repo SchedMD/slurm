@@ -802,6 +802,8 @@ extern void print_job_dependency(struct job_record *job_ptr)
 			dep_str = "afternotok";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)
 			dep_str = "afterok";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
+			dep_str = "expand";
 		else
 			dep_str = "unknown";
 		info("  %s:%u", dep_str, dep_ptr->job_id);
@@ -821,7 +823,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	struct depend_spec *dep_ptr;
 	bool failure = false, depends = false;
  	List job_queue = NULL;
- 	int now;
+ 	bool run_now;
  	struct job_record *qjob_ptr;
 
 	if ((job_ptr->details == NULL) ||
@@ -837,7 +839,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
  			/* get user jobs with the same user and name */
  			job_queue = _build_user_job_list(job_ptr->user_id,
 							 job_ptr->name);
- 			now = 1;
+ 			run_now = true;
 			job_iterator = list_iterator_create(job_queue);
 			if (job_iterator == NULL)
 				fatal("list_iterator_create malloc failure");
@@ -849,14 +851,14 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				    IS_JOB_SUSPENDED(qjob_ptr) ||
 				    (IS_JOB_PENDING(qjob_ptr) &&
 				     (qjob_ptr->job_id < job_ptr->job_id))) {
-					now = 0;
+					run_now = false;
 					break;
  				}
  			}
 			list_iterator_destroy(job_iterator);
 			list_destroy(job_queue);
 			/* job can run now, delete dependency */
- 			if (now)
+ 			if (run_now)
  				list_delete_item(depend_iter);
  			else
 				depends = true;
@@ -892,6 +894,19 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				failure = true;
 				break;
 			}
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND) {
+			time_t now = time(NULL);
+			if (IS_JOB_PENDING(dep_ptr->job_ptr)) {
+				depends = true;
+			} else if (IS_JOB_FINISHED(dep_ptr->job_ptr)) {
+				failure = true;
+				break;
+			} else if ((dep_ptr->job_ptr->end_time != 0) &&
+			           (dep_ptr->job_ptr->end_time > now)) {
+				job_ptr->time_limit = dep_ptr->job_ptr->
+						      end_time - now;
+				job_ptr->time_limit /= 60;  /* sec to min */
+			}
 		} else
 			failure = true;
 	}
@@ -922,6 +937,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	struct depend_spec *dep_ptr;
 	struct job_record *dep_job_ptr;
 	char dep_buf[32];
+	bool expand_cnt = 0;
 
 	if (job_ptr->details == NULL)
 		return EINVAL;
@@ -999,7 +1015,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			depend_type = SLURM_DEPEND_AFTER_OK;
 		else if (strncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
-		else {
+		else if (strncasecmp(tok, "expand", 6) == 0) {
+#if defined(HAVE_CRAY) || defined(HAVE_BG)
+			rc = ESLURM_DEPENDENCY;
+			break;
+#else
+			depend_type = SLURM_DEPEND_EXPAND;
+#endif
+		} else {
 			rc = ESLURM_DEPENDENCY;
 			break;
 		}
@@ -1014,6 +1037,13 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				break;
 			}
 			dep_job_ptr = find_job_record(job_id);
+			if ((depend_type == SLURM_DEPEND_EXPAND) &&
+			    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
+			     (IS_JOB_FINISHED(dep_job_ptr)))) {
+				/* Expand only one active job */
+				rc = ESLURM_DEPENDENCY;
+				break;
+			}
 			if (dep_job_ptr) {	/* job still active */
 				dep_ptr = xmalloc(sizeof(struct depend_spec));
 				dep_ptr->depend_type = depend_type;
