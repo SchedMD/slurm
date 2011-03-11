@@ -98,7 +98,7 @@ typedef struct {
  */
 typedef struct {
 	/* target label */
-	uint16_t mp_tar[HIGHEST_DIMENSIONS];
+	int mp_tar[HIGHEST_DIMENSIONS];
 	/* target port */
 	int port_tar;
 	bool used;

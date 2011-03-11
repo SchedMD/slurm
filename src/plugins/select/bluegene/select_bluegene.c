@@ -676,6 +676,7 @@ extern int init(void)
 		bg_conf->slurm_node_prefix =
 			xstrdup(slurmctld_conf.node_prefix);
 		bg_conf->slurm_debug_flags = slurmctld_conf.debug_flags;
+		bg_conf->slurm_debug_level = slurmctld_conf.slurmctld_debug;
 		slurm_conf_unlock();
 
 		if (bg_conf->blrts_list)
@@ -1986,6 +1987,7 @@ extern int select_p_reconfigure(void)
 		      "change to be enforced in the bluegene plugin.",
 		      bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix);
 	bg_conf->slurm_debug_flags = slurmctld_conf.debug_flags;
+	bg_conf->slurm_debug_level = slurmctld_conf.slurmctld_debug;
 	set_ba_debug_flags(bg_conf->slurm_debug_flags);
 	slurm_conf_unlock();
 

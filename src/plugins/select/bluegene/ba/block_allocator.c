@@ -62,7 +62,7 @@
  */
 typedef struct {
 	int dim;
-	uint16_t geometry[HIGHEST_DIMENSIONS];
+	int geometry[HIGHEST_DIMENSIONS];
 	int in;
 	int out;
 } ba_path_switch_t;
@@ -165,7 +165,7 @@ static int _finish_torus(List results,
 			 ba_switch_t *curr_switch, int source_port,
 			 int dim, int count, int *start);
 /* */
-static uint16_t *_set_best_path();
+static int *_set_best_path();
 
 /* */
 static int _set_one_dim(int *start, int *end, int *coord);
@@ -1577,9 +1577,9 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			  ba_switch_t *mark_switch,
 			  int source, int dim)
 {
-	uint16_t *mp_tar;
-	uint16_t *mark_mp_tar;
-	uint16_t *node_curr;
+	int *mp_tar;
+	int *mark_mp_tar;
+	int *node_curr;
 	int port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL;
 	ba_switch_t *next_mark_switch = NULL;
@@ -1689,7 +1689,7 @@ static int _find_yz_path(ba_mp_t *ba_node, int *first,
 			 uint16_t *geometry, int conn_type)
 {
 	ba_mp_t *next_node = NULL;
-	uint16_t *mp_tar = NULL;
+	int *mp_tar = NULL;
 	ba_switch_t *dim_curr_switch = NULL;
 	ba_switch_t *dim_next_switch = NULL;
 	int i2;
@@ -1953,8 +1953,8 @@ static int _emulate_ext_wiring(ba_mp_t ***grid)
 static int _reset_the_path(ba_switch_t *curr_switch, int source,
 			   int target, int dim)
 {
-	uint16_t *mp_tar;
-	uint16_t *node_curr;
+	int *mp_tar;
+	int *node_curr;
 	int port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL;
 
@@ -2752,8 +2752,8 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	while ((ba_node[count] = list_next(itr))) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("name = %s", ba_node[count]->coord_str);
-		count++;
 		hostlist_push(hostlist, ba_node[count]->coord_str);
+		count++;
 	}
 	list_iterator_destroy(itr);
 
@@ -2812,7 +2812,7 @@ static int _find_x_path(List results, ba_mp_t *ba_node,
 	int target_port=1;
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {4, 2};
-	uint16_t *mp_tar = NULL;
+	int *mp_tar = NULL;
 	int i = 0;
 	ba_mp_t *next_node = NULL;
 	ba_mp_t *check_node = NULL;
@@ -3211,8 +3211,8 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	int port_tar;
 	int target_port = 0;
 	int port_to_try = 2;
-	uint16_t *mp_tar= curr_switch->ext_wire[0].mp_tar;
-	uint16_t *node_src = curr_switch->ext_wire[0].mp_tar;
+	int *mp_tar= curr_switch->ext_wire[0].mp_tar;
+	int *node_src = curr_switch->ext_wire[0].mp_tar;
 	int used = 0;
 	int broke = 0;
 	ba_mp_t *ba_node = NULL;
@@ -3364,8 +3364,8 @@ static int _finish_torus(List results,
 	int port_tar;
 	int target_port=0;
 	int ports_to_try[2] = {3,5};
-	uint16_t *mp_tar= curr_switch->ext_wire[0].mp_tar;
-	uint16_t *node_src = curr_switch->ext_wire[0].mp_tar;
+	int *mp_tar= curr_switch->ext_wire[0].mp_tar;
+	int *node_src = curr_switch->ext_wire[0].mp_tar;
 	int i;
 	int used=0;
 	ListIterator itr;
@@ -3540,12 +3540,12 @@ static int _finish_torus(List results,
  * into the main virtual system.  With will also set the passthrough
  * flag if there was a passthrough used.
  */
-static uint16_t *_set_best_path()
+static int *_set_best_path()
 {
 	ListIterator itr;
 	ba_path_switch_t *path_switch = NULL;
 	ba_switch_t *curr_switch = NULL;
-	uint16_t *geo = NULL;
+	int *geo = NULL;
 
 	if (!best_path)
 		return NULL;

@@ -167,64 +167,60 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				j++;	/* Skip leading '[' or ',' */
 				for (dim = 0; dim < SYSTEM_DIMENSIONS;
 				     dim++, j++)
-					start[dim] = select_char2coord(nodes[j]);
+					start[dim] = select_char2coord(
+						nodes[j]);
 				j++;	/* Skip middle 'x' or '-' */
 				for (dim = 0; dim < SYSTEM_DIMENSIONS;
 				     dim++, j++)
 					end[dim] = select_char2coord(nodes[j]);
 				diff = end[0]-start[0];
-				if (diff > largest_diff) {
-					memcpy(best_start, start,
-					       sizeof(best_start));
-					for (dim = 0; dim < SYSTEM_DIMENSIONS;
-					     dim++)
-						tmp_char[dim] = alpha_num[
-							best_start[dim]];
-
-					debug3("process_nodes: start is now %s",
-					       tmp_char);
-					largest_diff = diff;
-				}
-				//bg_record->mp_count += _addto_mp_list(
 				_addto_mp_list(bg_record, start, end);
-				if (bg_record->nodes[j] != ',')
-					break;
-				j--;
 			} else if ((nodes[j] >= '0'&& nodes[j] <= '9')
 				   || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 				for (dim = 0; dim < SYSTEM_DIMENSIONS;
 				     dim++, j++)
-					start[dim] = select_char2coord(nodes[j]);
+					start[dim] = select_char2coord(
+						nodes[j]);
 				diff = 0;
-				if (diff > largest_diff) {
-					memcpy(best_start, start,
-					       sizeof(best_start));
-					for (dim = 0; dim < SYSTEM_DIMENSIONS;
+				_addto_mp_list(bg_record, start, start);
+			} else {
+				j++;
+				continue;
+			}
+
+			if (diff > largest_diff) {
+				largest_diff = diff;
+				memcpy(best_start, start, sizeof(best_start));
+
+				if (bg_conf->slurm_debug_level
+				    >= LOG_LEVEL_DEBUG3) {
+					for (dim = 0;
+					     dim < SYSTEM_DIMENSIONS;
 					     dim++)
-						tmp_char[dim] = alpha_num[
+						tmp_char[dim] =	alpha_num[
 							best_start[dim]];
 					debug3("process_nodes: start is now %s",
 					       tmp_char);
-					largest_diff = diff;
 				}
-				//bg_record->mp_count += _addto_mp_list(
-				_addto_mp_list(bg_record, start, start);
-				if (bg_record->nodes[j] != ',')
-					break;
-				j--;
 			}
-			j++;
+			if (bg_record->nodes[j] != ',')
+				break;
+
 		}
 		if (largest_diff == -1)
 			fatal("No hostnames given here");
 
 		memcpy(bg_record->start, best_start, sizeof(bg_record->start));
 		start_set = 1;
-		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-			tmp_char[dim] = alpha_num[best_start[dim]];
-			tmp_char2[dim] = alpha_num[bg_record->start[dim]];
+		if (bg_conf->slurm_debug_level >= LOG_LEVEL_DEBUG3) {
+			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+				tmp_char[dim] = alpha_num[best_start[dim]];
+				tmp_char2[dim] =
+					alpha_num[bg_record->start[dim]];
+			}
+			debug3("process_nodes: start is %s %s",
+			       tmp_char, tmp_char2);
 		}
-		debug3("process_nodes: start is %s %s", tmp_char, tmp_char2);
 	}
 
 	memset(bg_record->geo, 0, sizeof(bg_record->geo));
@@ -246,22 +242,24 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		       ba_mp->coord_str);
 
 		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-			if ((int16_t)ba_mp->coord[dim] > (int16_t)end[dim]) {
+			if (ba_mp->coord[dim] > (int16_t)end[dim]) {
 				bg_record->geo[dim]++;
 				end[dim] = ba_mp->coord[dim];
 			}
-			if (!start_set && ((int16_t)ba_mp->coord[dim] <
+			if (!start_set && (ba_mp->coord[dim] <
 					   (int16_t)bg_record->start[dim]))
 				bg_record->start[dim] =	ba_mp->coord[dim];
 		}
 	}
 	list_iterator_destroy(itr);
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-		tmp_char[dim] = alpha_num[bg_record->geo[dim]];
-		tmp_char2[dim] = alpha_num[bg_record->start[dim]];
+	if (bg_conf->slurm_debug_level >= LOG_LEVEL_DEBUG3) {
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+			tmp_char[dim] = alpha_num[bg_record->geo[dim]];
+			tmp_char2[dim] = alpha_num[bg_record->start[dim]];
+		}
+		debug3("process_nodes: geo = %s mp count is %d start is %s",
+		       tmp_char, bg_record->mp_count, tmp_char2);
 	}
-	debug3("process_nodes: geo = %s mp count is %d start is %s",
-	       tmp_char, bg_record->mp_count, tmp_char2);
 	/* This check is for sub midplane systems to figure out what
 	   the largest block can be.
 	*/
@@ -283,8 +281,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	if (node_name2bitmap(bg_record->nodes,
 			     false,
 			     &bg_record->bitmap)) {
-		fatal("process_nodes: "
-		      "1 Unable to convert nodes %s to bitmap",
+		fatal("process_nodes: Unable to convert nodes %s to bitmap",
 		      bg_record->nodes);
 	}
 	return;
@@ -1640,44 +1637,41 @@ static void _addto_mp_list(bg_record_t *bg_record,
 		memset(start_char, 0, sizeof(start_char));
 		memset(end_char, 0, sizeof(end_char));
 		memset(dim_char, 0, sizeof(dim_char));
+		for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++)
+			dim_char[dim] = alpha_num[cluster_dims[dim]];
 	}
 
 	for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
-		start_char[dim] = alpha_num[start[dim]];
-		end_char[dim] = alpha_num[end[dim]];
-		dim_char[dim] = alpha_num[cluster_dims[dim]];
-	}
-
-	for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
-		if ((int16_t)start[dim] < 0)
+		if ((int16_t)start[dim] < 0) {
+			for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++)
+				start_char[dim] = alpha_num[start[dim]];
 			fatal("bluegene.conf starting coordinate "
 			      "is invalid: %s",
 			      start_char);
-		if (end[dim] >= cluster_dims[dim])
+		}
+
+		if (end[dim] >= cluster_dims[dim]) {
+			for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
+				start_char[dim] = alpha_num[start[dim]];
+				end_char[dim] = alpha_num[end[dim]];
+				dim_char[dim] = alpha_num[cluster_dims[dim]];
+			}
 			fatal("bluegene.conf matrix size exceeds space "
 			      "defined in "
 			      "slurm.conf %sx%s => %s",
 			      start_char, end_char, dim_char);
+		}
 	}
-	debug3("adding mps: %sx%s", start_char, end_char);
-	debug3("slurm.conf:    %s", dim_char);
+	if (bg_conf->slurm_debug_level >= LOG_LEVEL_DEBUG3) {
+		for (dim = 0; dim<SYSTEM_DIMENSIONS; dim++) {
+			start_char[dim] = alpha_num[start[dim]];
+			end_char[dim] = alpha_num[end[dim]];
+		}
+		debug3("adding mps: %sx%s", start_char, end_char);
+		debug3("slurm.conf:    %s", dim_char);
+	}
 	_append_ba_mps(bg_record->ba_mp_list, 0, start, end, coords);
-	/* for (a = start[A]; a <= end[A]; a++) { */
-	/* 	for (x = start[X]; x <= end[X]; x++) { */
-	/* 		for (y = start[Y]; y <= end[Y]; y++) { */
-	/* 			for (z = start[Z]; z <= end[Z]; z++) { */
-	/* 				ba_mp = ba_copy_mp( */
-	/* 					&ba_system_ptr->grid */
-	/* 					[a][x][y][z]); */
-	/* 				ba_mp->used = 1; */
-	/* 				list_append(bg_record->ba_mp_list, */
-	/* 					    ba_mp); */
-	/* 				node_count++; */
-	/* 			} */
-	/* 		} */
-	/* 	} */
-	/* } */
-	/* return node_count; */
+
 }
 
 static int _coord_cmpf_inc(int *coord_a, int *coord_b, int dim)
