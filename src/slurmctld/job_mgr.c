@@ -6680,7 +6680,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->min_nodes, job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 			goto fini;
-		} else if (job_specs->min_nodes > job_ptr->node_cnt) {
+		} else if (job_specs->min_nodes == job_ptr->node_cnt) {
 			debug2("No change in node count update for job %u",
 			       job_specs->job_id);
 		} else {
