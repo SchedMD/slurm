@@ -3862,6 +3862,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	debug_flags &= (~request_msg->debug_flags_minus);
 	debug_flags |= request_msg->debug_flags_plus;
 	slurm_set_debug_flags(debug_flags);
+	slurmctld_conf.last_update = time(NULL);
 	unlock_slurmctld (config_write_lock);
 	flag_string = debug_flags2str(debug_flags);
 	info("Set DebugFlags to %s", flag_string);
