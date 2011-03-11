@@ -363,6 +363,7 @@ struct job_details {
 					 * as set by Moab */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *exc_nodes;		/* excluded nodes */
+	uint32_t expanding_jobid;	/* ID of job to be expanded */
 	List feature_list;		/* required features with
 					 * node counts */
 	char *features;			/* required features */

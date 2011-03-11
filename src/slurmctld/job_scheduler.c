@@ -943,6 +943,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		return EINVAL;
 
 	/* Clear dependencies on NULL, "0", or empty dependency input */
+	job_ptr->details->expanding_jobid = 0;
 	if ((new_depend == NULL) || (new_depend[0] == '\0') ||
 	    ((new_depend[0] == '0') && (new_depend[1] == '\0'))) {
 		xfree(job_ptr->details->dependency);
@@ -1044,6 +1045,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
+			if (depend_type == SLURM_DEPEND_EXPAND)
+				job_ptr->details->expanding_jobid = job_id;
 			if (dep_job_ptr) {	/* job still active */
 				dep_ptr = xmalloc(sizeof(struct depend_spec));
 				dep_ptr->depend_type = depend_type;
