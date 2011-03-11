@@ -63,7 +63,6 @@ static void	_build_coord_string(char *buf, int buf_len, uint16_t *coord,
 				    bool x);
 static int	_change_state_all_bps(char *com, int state);
 static int	_change_state_bps(char *com, int state);
-static int	_coord(char coord);
 static int	_copy_allocation(char *com, List allocated_blocks);
 static int	_create_allocation(char *com, List allocated_blocks);
 static void	_delete_allocated_blocks(List allocated_blocks);
@@ -647,11 +646,11 @@ static int _change_state_bps(char *com, int state)
 		end[j]   = 0;
 	}
 	for (j = 0; j < params.cluster_dims; i++, j++) {
-		start[j] = _coord(com[i]);
+		start[j] = select_char2coord(com[i]);
 	}
 	if ((com[i] == 'x') || (com[i] == '-')) {
 		for (j = 0; j < params.cluster_dims; i++, j++) {
-			end[j] = _coord(com[i]);
+			end[j] = select_char2coord(com[i]);
 		}
 	} else {
 		for (j = 0; j < params.cluster_dims; j++) {
@@ -1000,15 +999,6 @@ static int _save_allocation(char *com, List allocated_blocks)
 	return 1;
 }
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A') + 10;
-	return -1;
-}
-
 /* increment an array, return false if can't be incremented (reached limts) */
 static bool _incr_coord(uint16_t *start, uint16_t *end, uint16_t *current)
 {
@@ -1076,7 +1066,7 @@ static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 			}
 			j++;	/* Skip middle 'x' or '-' */
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				end[i] = _coord(nodes[j]);
+				end[i] = select_char2coord(nodes[j]);
 			diff = end[0] - start[0];
 			if (diff > largest_diff) {
 				for (i = 0; i < params.cluster_dims; i++)
@@ -1097,7 +1087,7 @@ static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 		} else if (((nodes[j] >= '0') && (nodes[j] <= '9')) ||
 			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				start[i] = _coord(nodes[j]);
+				start[i] = select_char2coord(nodes[j]);
 			diff = 0;
 			if (diff > largest_diff) {
 				for (i = 0; i < params.cluster_dims; i++)

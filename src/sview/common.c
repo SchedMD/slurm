@@ -353,18 +353,15 @@ cleanup:
 	return ret;
 }
 
-/* Translate a three-digit alpha-numeric value into it's 
+/* Translate a three-digit alpha-numeric value into it's
  * base 36 equivalent number */
 static int _xlate_bp_coord(const char *name)
 {
 	int i, rc = 0;
 
-	for (i=0; i<3; i++) {
+	for (i=0; i<cluster_dims; i++) {
 		rc *= 36;
-		if ((name[i] >= '0') && (name[i] <= '9'))
-			rc += (name[i] - '0');
-		else if ((name[i] >= 'A') && (name[i] <= 'Z'))
-			rc += ((name[i] - 'A') + 10);
+		rc += select_char2coord(name[i]);
 	}
 	return rc;
 }

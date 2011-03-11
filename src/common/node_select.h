@@ -240,6 +240,7 @@ typedef struct slurm_select_context {
 
 extern void destroy_select_ba_request(void *arg);
 extern void print_select_ba_request(select_ba_request_t* ba_request);
+extern int select_char2coord(char coord);
 
 /*
  * Initialize context for node selection plugin

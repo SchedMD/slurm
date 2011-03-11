@@ -109,9 +109,6 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 /* */
 /* static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord); */
 
-/* */
-static int _coord(char coord);
-
 /*
  * create a block request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
@@ -742,7 +739,7 @@ extern int set_all_mps_except(char *mps)
 				continue;
 			}
 			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, numeric++)
-				coords[dim] = _coord(numeric[0]);
+				coords[dim] = select_char2coord(numeric[0]);
 			break;
 		}
 		ba_main_grid[coords[A]][coords[X]][coords[Y]][coords[Z]].state
@@ -806,7 +803,8 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 			if ((i = strlen(node_ptr->name)) < 4)
 				continue;
 			for (x=0; x<cluster_dims; x++)
-				coord[x] = _coord(node_ptr->name[i-(4+x)]);
+				coord[x] = select_char2coord(
+					node_ptr->name[i-(4+x)]);
 		}
 
 		for (x=0; x<cluster_dims; x++)
@@ -819,72 +817,6 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 		ba_mp->index = j;
 		ba_mp->state = node_ptr->node_state;
 	}
-}
-
-/*
- * find a base blocks bg location
- */
-extern uint16_t *find_mp_loc(char* mp_id)
-{
-	char *check = NULL;
-	uint32_t a, x, y, z;
-	ba_mp_t *ba_mp = NULL;
-
-	bridge_setup_system();
-
-	check = xstrdup(mp_id);
-	/* with BGP they changed the names of the rack midplane action from
-	 * R000 to R00-M0 so we now support both formats for each of the
-	 * systems */
-#ifdef HAVE_BGL
-	if (check[3] == '-') {
-		if (check[5]) {
-			check[3] = check[5];
-			check[4] = '\0';
-		}
-	}
-
-	if ((check[1] < '0' || check[1] > '9')
-	    || (check[2] < '0' || check[2] > '9')
-	    || (check[3] < '0' || check[3] > '9')) {
-		error("%s is not a valid Rack-Midplane (i.e. R000)", mp_id);
-		goto cleanup;
-	}
-
-#else
-	if (check[3] != '-') {
-		xfree(check);
-		check = xstrdup_printf("R%c%c-M%c",
-				       mp_id[1], mp_id[2], mp_id[3]);
-	}
-
-	if ((check[1] < '0' || check[1] > '9')
-	    || (check[2] < '0' || check[2] > '9')
-	    || (check[5] < '0' || check[5] > '9')) {
-		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", mp_id);
-		goto cleanup;
-	}
-#endif
-
-	for (a = 0; a <= DIM_SIZE[A]; a++)
-		for (x = 0; x <= DIM_SIZE[X]; x++)
-			for (y = 0; y <= DIM_SIZE[Y]; y++)
-				for (z = 0; z <= DIM_SIZE[Z]; z++)
-					if (!strcasecmp(ba_main_grid
-							[a][x][y][z].loc,
-							check)) {
-						ba_mp = &ba_main_grid
-							[a][x][y][z];
-						goto cleanup; /* we found it */
-					}
-
-cleanup:
-	xfree(check);
-
-	if (ba_mp != NULL)
-		return ba_mp->coord;
-	else
-		return NULL;
 }
 
 extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
@@ -1648,11 +1580,3 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim)
 	return false;
 }
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A');
-	return -1;
-}

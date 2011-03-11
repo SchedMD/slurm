@@ -65,7 +65,6 @@ typedef struct {
 static List block_list = NULL;
 
 static void _block_list_del(void *object);
-static int  _coord(char coord);
 static int  _in_slurm_partition(List slurm_nodes, List bg_nodes);
 static int  _list_match_all(void *object, void *key);
 static int  _make_nodelist(char *nodes, List nodelist);
@@ -411,10 +410,10 @@ static void _marknodes(db2_block_info_t *block_ptr, int count)
 		    ((nodes[fin] == ']') || (nodes[fin] == ','))) {
 			j++;	/* Skip leading '[' or ',' */
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				start[i] = _coord(nodes[j]);
+				start[i] = select_char2coord(nodes[j]);
 			j++;	/* Skip middle 'x' or '-' */
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				end[i] = _coord(nodes[j]);
+				end[i] = select_char2coord(nodes[j]);
 			if (block_ptr->state != BG_BLOCK_FREE) {
 				block_ptr->size += set_grid_bg(
 					start, end, count, 1);
@@ -427,7 +426,7 @@ static void _marknodes(db2_block_info_t *block_ptr, int count)
 		} else if (((nodes[j] >= '0') && (nodes[j] <= '9')) ||
 			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				start[i] = _coord(nodes[j]);
+				start[i] = select_char2coord(nodes[j]);
 			block_ptr->size += set_grid_bg(start, start, count, 1);
 			if (nodes[j] != ',')
 				break;
@@ -931,15 +930,6 @@ static void _addto_nodelist(List nodelist, int *start, int *end)
 	xfree(coord);
 }
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A') + 10;
-	return -1;
-}
-
 static int _make_nodelist(char *nodes, List nodelist)
 {
 	int i, j = 0;
@@ -957,10 +947,10 @@ static int _make_nodelist(char *nodes, List nodelist)
 		    ((nodes[fin] == ']') || (nodes[fin] == ','))) {
 			j++;	/* Skip leading '[' or ',' */
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				start[i] = _coord(nodes[j]);
+				start[i] = select_char2coord(nodes[j]);
 			j++;	/* Skip middle 'x' or '-' */
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				end[i] = _coord(nodes[j]);
+				end[i] = select_char2coord(nodes[j]);
 			_addto_nodelist(nodelist, start, end);
 			if (nodes[j] != ',')
 				break;
@@ -968,7 +958,7 @@ static int _make_nodelist(char *nodes, List nodelist)
 		} else if (((nodes[j] >= '0') && (nodes[j] <= '9')) ||
 			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
 			for (i = 0; i < params.cluster_dims; i++, j++)
-				start[i] = _coord(nodes[j]);
+				start[i] = select_char2coord(nodes[j]);
 			_addto_nodelist(nodelist, start, start);
 			if (nodes[j] != ',')
 				break;

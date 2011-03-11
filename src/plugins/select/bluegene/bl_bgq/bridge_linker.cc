@@ -58,50 +58,18 @@ static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 	Midplane::Coordinates coords = {{ba_mp->coord[A], ba_mp->coord[X],
 					 ba_mp->coord[Y], ba_mp->coord[Z]}};
 	Midplane::ConstPtr mp_ptr = bgq->getMidplane(coords);
+	int i;
+
+	ba_mp->nodecard_loc =
+		(char **)xmalloc(sizeof(char *) * bg_conf->mp_nodecard_cnt);
+	for (i=0; i<bg_conf->mp_nodecard_cnt; i++) {
+		NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
+		ba_mp->nodecard_loc[i] =
+			xstrdup(nodeboard->getLocation().c_str());
+		info("%d is %s", i, ba_mp->nodecard_loc[i]);
+	}
 
 	ba_mp->loc = xstrdup(mp_ptr->getLocation().c_str());
-
-	// info("%s which is %c%c%c%c is setup",
-	//      ba_mp->loc,
-	//      alpha_num[ba_mp->coord[A]],
-	//      alpha_num[ba_mp->coord[X]],
-	//      alpha_num[ba_mp->coord[Y]],
-	//      alpha_num[ba_mp->coord[Z]]);
-	// for (i=0; i < SYSTEM_DIMENSIONS; i++) {
-	// 	Switch::ConstPtr bg_switch = mp_ptr->getSwitch(
-	// 		(bgsched::Dimension::Value)i);
-	// 	switch (bg_switch.getInUse().Value()) {
-	// 	case Switch::NotInUse:
-	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_NONE;
-	// 		break;
-	// 	case Switch::IncludedBothPortsInUse:
-	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_TORUS;
-	// 		break;
-	// 	case Switch::IncludedOutputPortInUse:
-	// 		ba_mp->axis_switch[i].usage =
-	// 			(BG_SWITCH_OUT | BG_SWITCH_OUT_PASS);
-	// 		break;
-	// 	case Switch::IncludedInputPortInUse:
-	// 		ba_mp->axis_switch[i].usage =
-	// 			(BG_SWITCH_IN | BG_SWITCH_IN_PASS);
-	// 		break;
-	// 	case Switch::Wrapped:
-	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_WRAPPED;
-	// 		break;
-	// 	case Switch::Passthrough:
-	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_PASS;
-	// 		break;
-	// 	case Switch::WrappedPassthrough:
-	// 		ba_mp->axis_switch[i].usage = BG_SWITCH_WRAPPED_PASS;
-	// 		break;
-	// 	default:
-	// 		error("unknown switch conf");
-	// 		break;
-	// 	}
-	// 	info("mp %s(%d) usage is %s", ba_mp->coord_str,
-	// 	     i, ba_switch_usage_str(ba_mp->axis_switch[i].usage);
-
-	// }
 }
 #endif
 
@@ -285,6 +253,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 #ifdef HAVE_BG_FILES
 	Block::Ptr block_ptr;
 	Block::Midplanes midplanes;
+	Block::NodeBoards nodecards;
         Block::PassthroughMidplanes pt_midplanes;
         Block::DimensionConnectivity conn_type;
 	Midplane::Ptr midplane;
@@ -294,13 +263,6 @@ extern int bridge_block_create(bg_record_t *bg_record)
 
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
-
-#ifdef HAVE_BG_FILES
-	if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
-		info("we can't make small blocks yet");
-		return SLURM_ERROR;
-	}
-#endif
 
 	if (!bg_record->ba_mp_list || !list_count(bg_record->ba_mp_list)) {
 		error("There are no midplanes in this block?");
@@ -328,34 +290,87 @@ extern int bridge_block_create(bg_record_t *bg_record)
 
 
 #ifdef HAVE_BG_FILES
-	itr = list_iterator_create(bg_record->ba_mp_list);
-	while ((ba_mp = (ba_mp_t *)list_next(itr))) {
-		if (ba_mp->used)
-			midplanes.push_back(ba_mp->loc);
-		else
-			pt_midplanes.push_back(ba_mp->loc);
-	}
-	list_iterator_destroy(itr);
+	if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
+		bool use_nc[bg_conf->mp_nodecard_cnt];
+		int i, nc_pos = 0;
+		int ionode_card = 0, nc_count = 0;
+		static int num_ncards = 0;
 
-        for (dim=Dimension::A; dim<=Dimension::D; dim++) {
-		switch (bg_record->conn_type[dim]) {
-		case SELECT_MESH:
-			conn_type[dim] = Block::Connectivity::Mesh;
-			break;
-		case SELECT_TORUS:
-		default:
-			conn_type[dim] = Block::Connectivity::Torus;
-			break;
+		if (!num_ncards) {
+			num_ncards =
+				bg_record->node_cnt/bg_conf->nodecard_node_cnt;
+			assert(num_ncards >= 1);
 		}
-	}
-	try {
-		block_ptr = Block::create(midplanes, pt_midplanes, conn_type);
-	} catch (const bgsched::InputException& err) {
-		rc = bridge_handle_input_errors("Block::create",
-						err.getError().toValue(),
-						bg_record);
-		if (rc != SLURM_SUCCESS)
-			return rc;
+		memset(use_nc, 0, sizeof(use_nc));
+
+		/* find out how many nodecards to get for each ionode */
+		for(i = 0; i<bg_conf->ionodes_per_mp; i++) {
+			if (bit_test(bg_record->ionode_bitmap, i)) {
+				int j=0;
+				for(j=0; j<bg_conf->nc_ratio; j++)
+					use_nc[nc_pos+j] = 1;
+			}
+			nc_pos += bg_conf->nc_ratio;
+		}
+
+		ba_mp = (ba_mp_t *)list_peek(bg_record->ba_mp_list);
+		/* Since the nodeboard locations aren't set up in the
+		   copy of this pointer we need to go out a get the
+		   real one from the system and use it.
+		*/
+		ba_mp = coord2ba_mp(ba_mp->coord);
+		for (i=0; i<bg_conf->mp_nodecard_cnt; i++) {
+			if (!use_nc[i])
+				continue;
+			nodecards.push_back(ba_mp->nodecard_loc[i]);
+		}
+		try {
+			block_ptr = Block::create(nodecards);
+		} catch (const bgsched::InputException& err) {
+			rc = bridge_handle_input_errors(
+				"Block::createSmallBlock",
+				err.getError().toValue(),
+				bg_record);
+			if (rc != SLURM_SUCCESS)
+				return rc;
+		}
+	} else {
+		itr = list_iterator_create(bg_record->ba_mp_list);
+		while ((ba_mp = (ba_mp_t *)list_next(itr))) {
+			/* Since the midplane locations aren't set up in the
+			   copy of this pointer we need to go out a get the
+			   real one from the system and use it.
+			*/
+			ba_mp_t *main_mp = coord2ba_mp(ba_mp->coord);
+			if (ba_mp->used)
+				midplanes.push_back(main_mp->loc);
+			else
+				pt_midplanes.push_back(main_mp->loc);
+		}
+		list_iterator_destroy(itr);
+
+		for (dim=Dimension::A; dim<=Dimension::D; dim++) {
+			switch (bg_record->conn_type[dim]) {
+			case SELECT_MESH:
+				conn_type[dim] = Block::Connectivity::Mesh;
+				break;
+			case SELECT_TORUS:
+			default:
+				conn_type[dim] = Block::Connectivity::Torus;
+				break;
+			}
+		}
+		try {
+			block_ptr = Block::create(midplanes,
+						  pt_midplanes, conn_type);
+		} catch (const bgsched::InputException& err) {
+			rc = bridge_handle_input_errors(
+				"Block::create",
+				err.getError().toValue(),
+				bg_record);
+			if (rc != SLURM_SUCCESS)
+				return rc;
+		}
 	}
 
 	info("block created correctly");

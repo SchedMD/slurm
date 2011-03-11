@@ -52,15 +52,6 @@ bool ba_initialized = false;
 uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A') + 10;
-	return -1;
-}
-
 /*
  * Increment a geometry index array, return false after reaching the last entry
  */
@@ -295,7 +286,8 @@ node_info_error:
 
 				for (k = 0; k < cluster_dims; k++, j++)
 					DIM_SIZE[k] = MAX(DIM_SIZE[k],
-							  _coord(nodes[j]));
+							  select_char2coord(
+								  nodes[j]));
 				if (nodes[j] != ',')
 					break;
 			}
@@ -392,6 +384,12 @@ extern void destroy_ba_mp(void *ptr)
 	ba_mp_t *ba_mp = (ba_mp_t *)ptr;
 	if (ba_mp) {
 		xfree(ba_mp->loc);
+		if (ba_mp->nodecard_loc) {
+			int i;
+			for (i=0; i<bg_conf->mp_nodecard_cnt; i++)
+				xfree(ba_mp->nodecard_loc[i]);
+			xfree(ba_mp->nodecard_loc);
+		}
 		xfree(ba_mp);
 	}
 }
@@ -412,7 +410,7 @@ extern ba_mp_t *str2ba_mp(const char *coords)
 		return NULL;
 
 	for (dim = 0; dim < cluster_dims; dim++, len++) {
-		coord[dim] = _coord(coords[len]);
+		coord[dim] = select_char2coord(coords[len]);
 		if (coord[dim] > dims[dim])
 			break;
 	}
@@ -525,9 +523,11 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	ba_mp_t *new_ba_mp = (ba_mp_t *)xmalloc(sizeof(ba_mp_t));
 
 	memcpy(new_ba_mp, ba_mp, sizeof(ba_mp_t));
-	new_ba_mp->loc = xstrdup(ba_mp->loc);
 	/* we have to set this or we would be pointing to the original */
 	memset(new_ba_mp->next_mp, 0, sizeof(new_ba_mp->next_mp));
+	/* These are only used on the original as well. */
+	new_ba_mp->nodecard_loc = NULL;
+	new_ba_mp->loc = NULL;
 
 	return new_ba_mp;
 }

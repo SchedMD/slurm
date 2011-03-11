@@ -44,17 +44,9 @@
 
 #include "src/plugins/topology/3d_torus/hilbert.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/node_select.h"
 
 #define _DEBUG 0
-
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A' + 10);
-	return -1;
-}
 
 /* Using the node record table, generate a Hilbert integer for each node
  * based upon its coordinates and sort the records in that order. This must
@@ -86,7 +78,8 @@ extern void nodes_to_hilbert_curve(void)
 		}
 		j -= offset;
 		for (k=dims; k; k--) {
-			coords[coord_inx] = _coord(node_ptr->name[j-k]);
+			coords[coord_inx] = select_char2coord(
+				node_ptr->name[j-k]);
 			if (coords[coord_inx] < 0) {
 				fatal("hostname %s lacks valid numeric suffix",
 				      node_ptr->name);

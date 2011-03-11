@@ -256,6 +256,14 @@ extern void print_select_ba_request(select_ba_request_t* ba_request)
 	debug("    elongate:\t%d", ba_request->elongate);
 }
 
+extern int select_char2coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return ((coord - 'A') + 10);
+	return -1;
+}
 
 /*
  * Initialize context for node selection plugin

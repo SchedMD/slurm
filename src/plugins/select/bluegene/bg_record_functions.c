@@ -46,7 +46,6 @@
 #include "src/slurmctld/locks.h"
 
 /* some local functions */
-static int _coord(char coord);
 static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason);
 static void _addto_mp_list(bg_record_t *bg_record,
 			   uint16_t *start, uint16_t *end);
@@ -168,11 +167,11 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				j++;	/* Skip leading '[' or ',' */
 				for (dim = 0; dim < SYSTEM_DIMENSIONS;
 				     dim++, j++)
-					start[dim] = _coord(nodes[j]);
+					start[dim] = select_char2coord(nodes[j]);
 				j++;	/* Skip middle 'x' or '-' */
 				for (dim = 0; dim < SYSTEM_DIMENSIONS;
 				     dim++, j++)
-					end[dim] = _coord(nodes[j]);
+					end[dim] = select_char2coord(nodes[j]);
 				diff = end[0]-start[0];
 				if (diff > largest_diff) {
 					memcpy(best_start, start,
@@ -195,7 +194,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				   || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 				for (dim = 0; dim < SYSTEM_DIMENSIONS;
 				     dim++, j++)
-					start[dim] = _coord(nodes[j]);
+					start[dim] = select_char2coord(nodes[j]);
 				diff = 0;
 				if (diff > largest_diff) {
 					memcpy(best_start, start,
@@ -1512,15 +1511,6 @@ extern int bg_reset_block(bg_record_t *bg_record)
 
 /************************* local functions ***************************/
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A') + 10;
-	return -1;
-}
-
 /* block_state_mutex should be locked before calling */
 static int _check_all_blocks_error(int node_inx, time_t event_time,
 				   char *reason)
@@ -1690,7 +1680,7 @@ static void _addto_mp_list(bg_record_t *bg_record,
 	/* return node_count; */
 }
 
-static int _coord_cmpf_inc(uint16_t *coord_a, uint16_t *coord_b, int dim)
+static int _coord_cmpf_inc(int *coord_a, int *coord_b, int dim)
 {
 	if (dim >= SYSTEM_DIMENSIONS)
 		return 0;

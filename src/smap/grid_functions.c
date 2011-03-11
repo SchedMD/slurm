@@ -81,15 +81,6 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 	return node_cnt;
 }
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A') + 10;
-	return -1;
-}
-
 static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 			   int *coord_x, int *coord_y, int *dim_size)
 {
@@ -166,7 +157,7 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 					node_info_ptr->node_array[i].name[j]
 					- '0';
 				j++;
-			}	
+			}
 		} else if (params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
 			int len_a, len_h;
 			len_a = strlen(node_info_ptr->node_array[i].node_addr);
@@ -189,10 +180,9 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 						  params.cluster_dims);
 			len_a -= params.cluster_dims;
 			for (j = 0; j < params.cluster_dims; j++) {
-				node_ptr->coord[j] = _coord(node_info_ptr->
-							    node_array[i].
-							    node_addr
-							    [len_a+j]);
+				node_ptr->coord[j] = select_char2coord(
+					node_info_ptr->node_array[i].
+					node_addr[len_a+j]);
 			}
 		} else {
 			len -= params.cluster_dims;
@@ -205,9 +195,9 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 			node_ptr->coord = xmalloc(sizeof(uint16_t) *
 						  params.cluster_dims);
 			for (j = 0; j < params.cluster_dims; j++) {
-				node_ptr->coord[j] = _coord(node_info_ptr->
-							    node_array[i].
-							    name[len+j]);
+				node_ptr->coord[j] = select_char2coord(
+					node_info_ptr->node_array[i].
+					name[len+j]);
 			}
 		}
 		node_ptr->index = i;
@@ -289,7 +279,7 @@ extern void print_grid(void)
 				  smap_system_ptr->grid[i]->color, 7);
 		wattron(grid_win, COLOR_PAIR(smap_system_ptr->grid[i]->color));
 		mvwprintw(grid_win,
-			  smap_system_ptr->grid[i]->grid_ycord, 
+			  smap_system_ptr->grid[i]->grid_ycord,
 			  smap_system_ptr->grid[i]->grid_xcord, "%c",
 			  smap_system_ptr->grid[i]->letter);
 		wattroff(grid_win, COLOR_PAIR(smap_system_ptr->grid[i]->color));

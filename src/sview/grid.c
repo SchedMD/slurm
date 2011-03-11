@@ -77,15 +77,6 @@ typedef struct {
 
 GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
 
-static int _coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return ((coord - 'A') + 10);
-	return -1;
-}
-
 static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 				grid_button_t *grid_button)
 {
@@ -624,10 +615,10 @@ static int _add_button_to_list(node_info_t *node_ptr,
 	if (cluster_dims == 4) {
 		int a, x, y, z;
 		if (node_ptr) {
-			a = _coord(node_ptr->name[len-4]);
-			x = _coord(node_ptr->name[len-3]);
-			y = _coord(node_ptr->name[len-2]);
-			z = _coord(node_ptr->name[len-1]);
+			a = select_char2coord(node_ptr->name[len-4]);
+			x = select_char2coord(node_ptr->name[len-3]);
+			y = select_char2coord(node_ptr->name[len-2]);
+			z = select_char2coord(node_ptr->name[len-1]);
 			/* Ignore "b" dimension for BlueGene/Q */
 			i = ((a * dim_size[1] + x) * dim_size[2] + y) *
 			    dim_size[3] + z;
@@ -665,13 +656,16 @@ static int _add_button_to_list(node_info_t *node_ptr,
 		int x, y, z;
 		if (node_ptr) {
 			if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
-				x = _coord(node_ptr->node_addr[len_a-3]);
-				y = _coord(node_ptr->node_addr[len_a-2]);
-				z = _coord(node_ptr->node_addr[len_a-1]);
+				x = select_char2coord(
+					node_ptr->node_addr[len_a-3]);
+				y = select_char2coord(
+					node_ptr->node_addr[len_a-2]);
+				z = select_char2coord(
+					node_ptr->node_addr[len_a-1]);
 			} else {
-				x = _coord(node_ptr->name[len-3]);
-				y = _coord(node_ptr->name[len-2]);
-				z = _coord(node_ptr->name[len-1]);
+				x = select_char2coord(node_ptr->name[len-3]);
+				y = select_char2coord(node_ptr->name[len-2]);
+				z = select_char2coord(node_ptr->name[len-1]);
 			}
 			i = (x * dim_size[1] + y) * dim_size[2] + z;
 			node_exists[i] = true;
@@ -762,7 +756,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			(*button_processor->coord_y)++;
 			gtk_table_set_row_spacing(
 				button_processor->table,
-				(*button_processor->coord_y)-1,	
+				(*button_processor->coord_y)-1,
 				working_sview_config.gap_size);
 			return SLURM_SUCCESS;
 		}
