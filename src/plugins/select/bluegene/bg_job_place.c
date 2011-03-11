@@ -932,20 +932,20 @@ static int _find_best_block_match(List block_list,
 		goto end_it;
 
 	if (req_geometry[0] != 0 && req_geometry[0] != (uint16_t)NO_VAL) {
-		char tmp_char[SYSTEM_DIMENSIONS+1];
+		char tmp_geo[SYSTEM_DIMENSIONS+1];
 
 		target_size = 1;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			target_size *= req_geometry[i];
-			tmp_char[i] = alpha_num[req_geometry[i]];
+			tmp_geo[i] = alpha_num[req_geometry[i]];
 		}
-		tmp_char[i] = '\0';
+		tmp_geo[i] = '\0';
 
 		if (target_size != min_nodes) {
 			debug2("min_nodes not set correctly %u "
 			       "should be %u from %s",
 			       min_nodes, target_size,
-			       tmp_char);
+			       tmp_geo);
 			min_nodes = target_size;
 		}
 		if (!req_nodes)

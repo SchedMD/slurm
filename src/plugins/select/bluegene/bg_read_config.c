@@ -594,6 +594,12 @@ extern int read_bg_conf(void)
 			      "in bluegene.conf");
 	}
 
+#ifdef HAVE_BGQ
+	/* You can only have 16 ionodes per midplane */
+	if (bg_conf->ionodes_per_mp > bg_conf->mp_nodecard_cnt)
+		bg_conf->ionodes_per_mp = bg_conf->mp_nodecard_cnt;
+#endif
+
 	if (bg_conf->ionodes_per_mp) {
 		bitstr_t *tmp_bitmap = NULL;
 		int small_size = 1;
@@ -627,6 +633,7 @@ extern int read_bg_conf(void)
 		else
 			bg_conf->smallest_block=128;
 #else
+
 		if (bg_conf->io_ratio >= 2)
 			bg_conf->smallest_block=16;
 		else if (bg_conf->io_ratio == 1)

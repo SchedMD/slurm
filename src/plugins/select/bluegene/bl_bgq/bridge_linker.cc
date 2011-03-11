@@ -57,8 +57,20 @@ static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 	// int i;
 	Midplane::Coordinates coords = {{ba_mp->coord[A], ba_mp->coord[X],
 					 ba_mp->coord[Y], ba_mp->coord[Z]}};
-	Midplane::ConstPtr mp_ptr = bgq->getMidplane(coords);
+	Midplane::ConstPtr mp_ptr;
 	int i;
+
+	try {
+		mp_ptr = bgq->getMidplane(coords);
+	} catch (const bgsched::InputException& err) {
+		int rc = bridge_handle_input_errors(
+			"ComputeHardware::getMidplane",
+			err.getError().toValue(), NULL);
+		if (rc != SLURM_SUCCESS)
+			return;
+	}
+
+	ba_mp->loc = xstrdup(mp_ptr->getLocation().c_str());
 
 	ba_mp->nodecard_loc =
 		(char **)xmalloc(sizeof(char *) * bg_conf->mp_nodecard_cnt);
@@ -66,10 +78,7 @@ static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 		NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
 		ba_mp->nodecard_loc[i] =
 			xstrdup(nodeboard->getLocation().c_str());
-		info("%d is %s", i, ba_mp->nodecard_loc[i]);
 	}
-
-	ba_mp->loc = xstrdup(mp_ptr->getLocation().c_str());
 }
 #endif
 
@@ -292,27 +301,29 @@ extern int bridge_block_create(bg_record_t *bg_record)
 #ifdef HAVE_BG_FILES
 	if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
 		bool use_nc[bg_conf->mp_nodecard_cnt];
-		int i, nc_pos = 0;
-		int ionode_card = 0, nc_count = 0;
-		static int num_ncards = 0;
+		int i, nc_pos = 0, num_ncards = 0;
 
-		if (!num_ncards) {
-			num_ncards =
-				bg_record->node_cnt/bg_conf->nodecard_node_cnt;
-			assert(num_ncards >= 1);
+		num_ncards = bg_record->node_cnt/bg_conf->nodecard_node_cnt;
+		if (num_ncards < 1) {
+			error("You have to have at least 1 nodecard to make "
+			      "a small block I got %d/%d = %d",
+			      bg_record->node_cnt, bg_conf->nodecard_node_cnt,
+			      num_ncards);
+			return SLURM_ERROR;
 		}
 		memset(use_nc, 0, sizeof(use_nc));
 
 		/* find out how many nodecards to get for each ionode */
-		for(i = 0; i<bg_conf->ionodes_per_mp; i++) {
+		for (i = 0; i<bg_conf->ionodes_per_mp; i++) {
 			if (bit_test(bg_record->ionode_bitmap, i)) {
-				int j=0;
-				for(j=0; j<bg_conf->nc_ratio; j++)
+				for (int j=0; j<bg_conf->nc_ratio; j++)
 					use_nc[nc_pos+j] = 1;
 			}
 			nc_pos += bg_conf->nc_ratio;
 		}
-
+		// char tmp_char[256];
+		// format_node_name(bg_record, tmp_char, sizeof(tmp_char));
+		// info("creating %s %s", bg_record->bg_block_id, tmp_char);
 		ba_mp = (ba_mp_t *)list_peek(bg_record->ba_mp_list);
 		/* Since the nodeboard locations aren't set up in the
 		   copy of this pointer we need to go out a get the
@@ -320,10 +331,10 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		*/
 		ba_mp = coord2ba_mp(ba_mp->coord);
 		for (i=0; i<bg_conf->mp_nodecard_cnt; i++) {
-			if (!use_nc[i])
-				continue;
-			nodecards.push_back(ba_mp->nodecard_loc[i]);
+			if (use_nc[i])
+				nodecards.push_back(ba_mp->nodecard_loc[i]);
 		}
+
 		try {
 			block_ptr = Block::create(nodecards);
 		} catch (const bgsched::InputException& err) {
@@ -574,9 +585,8 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch(...) {
-		// FIXME: this should do something, but for now we won't
-//                error("Remove block request failed ... continuing.");
-//		rc = SLURM_ERROR;
+                error("Add block user request failed ... continuing.");
+		rc = SLURM_ERROR;
 	}
 #endif
 	return rc;
@@ -591,14 +601,26 @@ extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
 	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
-	info("removing user %s from block %s", user_name, bg_record->bg_block_id);
+	info("removing user %s from block %s",
+	     user_name, bg_record->bg_block_id);
 #ifdef HAVE_BG_FILES
         try {
 		Block::removeUser(bg_record->bg_block_id, user_name);
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::removeUser",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::RuntimeException& err) {
+		rc = bridge_handle_runtime_errors("Block::removeUser",
+						  err.getError().toValue(),
+						  bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 	} catch(...) {
- 		// FIXME: this should do something, but for now we won't
-               // error("Remove block request failed ... continuing.");
-	       // 	rc = REMOVE_USER_ERR;
+                error("Remove block user request failed ... continuing.");
+	        	rc = REMOVE_USER_ERR;
 	}
 #endif
 	return rc;
@@ -657,12 +679,6 @@ extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name)
 	return rc;
 }
 
-extern int bridge_block_get_and_set_mps(bg_record_t *bg_record)
-{
-
-	return SLURM_ERROR;
-}
-
 extern int bridge_blocks_load_curr(List curr_block_list)
 {
 	int rc = SLURM_SUCCESS;
@@ -719,7 +735,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		bg_record->job_running = NO_JOB_RUNNING;
 		if (block_ptr->isSmall()) {
 			char bitstring[BITSIZE];
-			int io_cnt, io_start;
+			int io_cnt, io_start, len;
 			Block::NodeBoards nodeboards =
 				block_ptr->getNodeBoards();
 			int nb_cnt = nodeboards.size();
@@ -731,10 +747,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			/* From the first nodecard id we can figure
 			   out where to start from with the alloc of ionodes.
 			*/
-			io_start = atoi((char*)nb_name.c_str()+1)
+			len = nb_name.length()-2;
+			io_start = atoi((char*)nb_name.c_str()+len)
 				* bg_conf->io_ratio;
-			info("got nb name of %s %d %d",
-			     nb_name.c_str(), io_start, nb_cnt);
 
 			bg_record->ionode_bitmap =
 				bit_alloc(bg_conf->ionodes_per_mp);
