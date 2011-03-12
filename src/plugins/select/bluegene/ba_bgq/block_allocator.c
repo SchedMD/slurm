@@ -671,7 +671,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 
 	/* Now do the same thing in reverse if needed */
 	if (need_reverse) {
-		info("down with up");
+		//info("down with up");
 		if (_fill_in_coords(main_mps, A, ba_mp, check_mp,
 				    start, block_end,
 				    pass_start, pass_end, coords, 1) == -1)
