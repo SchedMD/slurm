@@ -646,8 +646,10 @@ http://groups.google.com/group/slurm-devel</a></p>
 
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
-Beginning with Slurm version 2.2 it is possible to decrease a job's size after
-it has started, but it is not currently possible to increase a job's size.
+Beginning with SLURM version 2.2 it is possible to decrease a job's size after
+it has started as described below.
+The ability to increase the size of a running job was added in SLURM version
+2.3 and is described in the next paragraph.
 Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
 (<i>NodeList=</i>) that you want the job to retain. 
@@ -662,7 +664,7 @@ reset local environment variables
 You must retain the SLURM_JOBID environment variable in order for the
 <i>srun</i> command to gather information about the job's current state and
 specify the desired node and/or task count in subsequent <i>srun</i> invocations. 
-An example is shown below.
+An example is shown below.</p>
 <pre>
 #!/bin/bash
 srun my_big_job
@@ -670,6 +672,49 @@ scontrol update JobId=$SLURM_JOBID NumNodes=2
 . slurm_job_${SLURM_JOBID}_resize.sh
 srun -N2 my_small_job
 rm slurm_job_${SLURM_JOBID}_resize.*
+</pre>
+
+<p><b>Increasing a job's size</b><br>
+Directly increasing the size of a running job would adversely effect the
+scheduling of pending jobs.
+For the sake of fairness in job scheduling, expanding a running job requires
+the user to submit a new job, but specify the option
+<i>--dependency=expand:&lt;jobid&gt;</i>.
+This option tells SLURM that the job, when scheduled, can be used to expand
+the specified jobid.
+Other job options would be used to identify the required resources
+(e.g. task count, node count, node features, etc.).
+This job's time limit will be automatically set to reflect the end time of
+the job being expanded.
+Note that partition and Quality Of Service (QOS) limits will be applied
+independently to the new job allocation so the expanded job may exceed size
+limits configured for an individual job.</p>
+
+<p>After the new job is allocated resources, merge that job's allocation
+into that of the original job by executing:
+<i>scontrol update jobid=&lt;jobid&gt; NumNodes=0</i><br>
+The <i>jobid</i> above is that of the job to relinquish it's resources.
+These resources will automatically be transfered to the original job and the
+scontrol command will generate a script to reset variables in the original
+job's environment to reflect it's modified resource allocation. An example
+of the proceedure is shown below.
+Note that the original job may have active job steps at the time of it's
+expansion, but they will not be effected by the change.</p>
+<pre>
+#!/bin/bash
+srun my_small_job
+
+export SLURM_ORIG_JOBID=$SLURM_JOBID
+salloc -N2 --dependency=expand:$SLURM_ORIG_JOBID bash
+scontrol update JobId=$SLURM_JOBID NumNodes=0
+mv slurm_job_${SLURM_JOBID}_resize.sh \
+   slurm_job_${SLURM_ORIG_JOBID}_resize.sh
+rm slurm_job_${SLURM_JOBID}_resize.*
+exit
+
+. slurm_job_${SLURM_ORIG_JOBID}_resize.sh
+srun my_big_job
+rm slurm_job_${SLURM_ORIG_JOBID}_resize.sh
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>

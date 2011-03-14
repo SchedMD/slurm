@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     reservation.
  -- Change slurm.conf node configuration parameter from "Procs" to "CPUs".
     Both parameters will be supported for now.
+ -- Add support for jobs to expand in size. Submit additional batch job with
+    the option "--dependency=expand:<jobid>". DETAILS?
 
 * Changes in SLURM 2.3.0.pre3
 =============================

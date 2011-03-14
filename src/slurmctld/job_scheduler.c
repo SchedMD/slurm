@@ -907,6 +907,14 @@ extern int test_job_dependency(struct job_record *job_ptr)
 						      end_time - now;
 				job_ptr->time_limit /= 60;  /* sec to min */
 			}
+			if (job_ptr->details && dep_ptr->job_ptr->details) {
+				job_ptr->details->pn_min_memory =
+					dep_ptr->job_ptr->details->pn_min_memory;
+			}
+			if (job_ptr->details && dep_ptr->job_ptr->details) {
+				job_ptr->details->shared =
+					dep_ptr->job_ptr->details->shared;
+			}
 		} else
 			failure = true;
 	}

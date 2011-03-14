@@ -7202,8 +7202,52 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
 		 * for lack of other field in the job request to use */
-		if ((job_specs->min_nodes == 0) ||
-		    (job_specs->min_nodes > job_ptr->node_cnt)) {
+		if ((job_specs->min_nodes == 0) && IS_JOB_RUNNING(job_ptr) &&
+		    job_ptr->details && job_ptr->details->expanding_jobid) {
+			struct job_record *expand_job_ptr;
+
+			expand_job_ptr = find_job_record(job_ptr->details->
+							 expanding_jobid);
+			if (expand_job_ptr == NULL) {
+				info("Invalid node count (%u) for job %u "
+				     "update, job %u to expand not found",
+				     job_specs->min_nodes, job_specs->job_id,
+				     job_ptr->details->expanding_jobid);
+				error_code = ESLURM_INVALID_JOB_ID;
+				goto fini;
+			}
+			if ((job_ptr->step_list != NULL) ||
+			    (list_count(job_ptr->step_list) != 0)) {
+				info("Attempt to merge job %u with active "
+				     "steps into job %u",
+				     job_specs->job_id,
+				     job_ptr->details->expanding_jobid);
+				error_code = ESLURMD_STEP_EXISTS;
+				goto fini;
+			}
+			info("sched: cancelling job %u and moving all "
+			     "resources to job %u", job_specs->job_id,
+			     job_ptr->details->expanding_jobid);
+			job_pre_resize_acctg(expand_job_ptr);
+//REBUILD JOB_RESOURCES data struct
+//REBUILD JOB's NODE_BITMAP and NODES
+//REBUILD STEPS NODE_BITMAP
+//FIX STATE IN SELECT PLUGIN
+//ANYTHING ELSE??
+			error_code = select_g_job_expand(job_ptr,
+							 expand_job_ptr);
+			job_post_resize_acctg(expand_job_ptr);
+			/* Since job_post_resize_acctg will restart
+			 * things don't do it again. */
+			update_accounting = false;
+			if (error_code)
+				goto fini;
+			/* Kill the job giving up resources */
+//IS THIS RIGHT?
+//			job_signal(job_ptr->job_id, (uint16_t) SIGKILL,
+//				   (uint16_t) NO_VAL, (uid_t) 0, false);
+		} else if ((job_specs->min_nodes == 0) ||
+		           (job_specs->min_nodes > job_ptr->node_cnt)) {
 			info("sched: Invalid node count (%u) for job %u update",
 			     job_specs->min_nodes, job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
@@ -7234,7 +7278,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "job_id %u",
 			     job_ptr->nodes, job_specs->job_id);
 			/* Since job_post_resize_acctg will restart
-			   things don't do it again. */
+			 * things don't do it again. */
 			update_accounting = false;
 		}
 	}

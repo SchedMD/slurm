@@ -432,14 +432,20 @@ scontrol_update_job (int argc, char *argv[])
 		/* ReqNodes was replaced by NumNodes in SLURM version 2.1 */
 		else if ((strncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0) ||
 		         (strncasecmp(tag, "NumNodes", MAX(taglen, 8)) == 0)) {
-			int rc = get_resource_arg_range(
-				val,
-				"requested node count",
-				(int *)&job_msg.min_nodes,
-				(int *)&job_msg.max_nodes,
-				false);
-			if(!rc)
-				return rc;
+			int min_nodes, max_nodes, rc;
+			if (strcmp(val, "0") == 0) {
+				job_msg.min_nodes = 0;
+			} else {
+				min_nodes = (int) job_msg.min_nodes;
+				max_nodes = (int) job_msg.max_nodes;
+				rc = get_resource_arg_range(
+						val, "requested node count",
+						&min_nodes, &max_nodes, false);
+				if (!rc)
+					return rc;
+				job_msg.min_nodes = (uint32_t) min_nodes;
+				job_msg.max_nodes = (uint32_t) max_nodes;
+			}
 			update_size = true;
 			update_cnt++;
 		}
