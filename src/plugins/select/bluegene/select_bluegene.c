@@ -1091,6 +1091,12 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return ESLURM_NOT_SUPPORTED;
 }
 
+extern int select_p_job_expand(struct job_record *from_job_ptr,
+			       struct job_record *to_job_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 #ifdef HAVE_BG

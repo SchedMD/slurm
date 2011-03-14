@@ -264,7 +264,15 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
-	return other_job_resized(job_ptr, node_ptr);
+	/* return other_job_resized(job_ptr, node_ptr); */
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int select_p_job_expand(struct job_record *from_job_ptr,
+			       struct job_record *to_job_ptr)
+{
+	/* return other_job_expand(from_job_ptr, to_job_ptr); */
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int select_p_job_fini(struct job_record *job_ptr)

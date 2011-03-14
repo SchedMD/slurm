@@ -154,6 +154,8 @@ typedef struct slurm_select_ops {
 						 List *preemptee_job_list);
 	int		(*job_begin)		(struct job_record *job_ptr);
 	int		(*job_ready)		(struct job_record *job_ptr);
+	int		(*job_expand)		(struct job_record *from_job_ptr,
+						 struct job_record *to_job_ptr);
 	int		(*job_resized)		(struct job_record *job_ptr,
 						 struct node_record *node_ptr);
 	int		(*job_fini)		(struct job_record *job_ptr);
@@ -420,6 +422,15 @@ extern int select_g_job_begin(struct job_record *job_ptr);
  * RET -1 on error, 1 if ready to execute, 0 otherwise
  */
 extern int select_g_job_ready(struct job_record *job_ptr);
+
+/*
+ * Move the resource allocated to one job into that of another job.
+ *	All resources are removed from "from_job_ptr" and moved into
+ *	"to_job_ptr". Also see other_job_resized().
+ * RET: 0 or an error code
+ */
+extern int select_g_job_expand(struct job_record *from_job_ptr,
+			       struct job_record *to_job_ptr);
 
 /*
  * Modify internal data structures for a job that has changed size

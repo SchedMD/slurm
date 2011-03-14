@@ -2560,6 +2560,18 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return rc;
 }
 
+extern int select_p_job_expand(struct job_record *from_job_ptr,
+			       struct job_record *to_job_ptr)
+{
+	int rc = ESLURM_NOT_SUPPORTED;
+
+	slurm_mutex_lock(&cr_mutex);
+	if (cr_ptr == NULL)
+		_init_node_cr();
+	slurm_mutex_unlock(&cr_mutex);
+	return rc;
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;

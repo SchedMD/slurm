@@ -16,18 +16,24 @@ specifications:</p>
 The major type must be &quot;select.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
+<li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene</a>
+node selector. Note that this plugin not only selects the nodes for a job, but performs
+some initialization and termination functions for the job. Use this plugin for
+BlueGene/L, BlueGene/P and BlueGene/Q systems.</li>
+<li><b>cons_res</b>&#151;A plugin that can allocate individual processors,
+memory, etc. within nodes. This plugin is recommended for systems with
+many non-parallel programs sharing nodes. For more information see
+<a href=cons_res.html>Consumable Resources in SLURM</a>.</li>
+<li><b>cray</b>&#151;Cray XE and XT system node selector. Note that this
+plugin not only selects the nodes for a job, but performs some initialization
+and termination functions for the job. This plugin also serves as a wrapper
+for the <i>select/linear</i> plugin which enforces various limits and
+provides support for resource selection optimized for the system toplogy.</li>
 <li><b>linear</b>&#151;A plugin that selects nodes assuming a one-dimensional
 array of nodes. The nodes are selected so as to minimize the number of consecutive
 sets of nodes utilizing a best-fit algorithm. While supporting shared nodes,
 this plugin does not allocate individual processors, but can allocate memory to jobs.
 This plugin is recommended for systems without shared nodes.</li>
-<li><b>cons_res</b>&#151;A plugin that can allocate individual processors,
-memory, etc. within nodes. This plugin is recommended for systems with
-many non-parallel programs sharing nodes. For more information see
-<a href=cons_res.html>Consumable Resources in SLURM</a>.</li>
-<li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene</a>
-node selector. Note that this plugin not only selects the nodes for a job, but performs
-some initialization and termination functions for the job.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
@@ -358,6 +364,32 @@ identify the nodes which were selected for this job to use.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
 failure, the plugin should return a SLURM error code.</p>
 
+<p class="commandline">int select_p_job_expand (struct job_record *from_job_ptr,
+struct job_record *to_job_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: Transfer all resources
+currently allocated to one job to another job. One job is left with no
+allocate resources and the other job is left with the resources previously
+allocated to both jobs</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> from_job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the job being to have all of its resources removed.<br>
+<span class="commandline"> to_job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the job getting all of the resources previously either job.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
+failure, the plugin should return a SLURM error code.</p>
+
+<p class="commandline">int select_p_job_resized (struct job_record *job_ptr,
+struct node_record *node_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: Remove the specified node
+from the job's allocation.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the job being decreased in size.<br>
+<span class="commandline"> node_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
+to the node being removed from a job's allocation.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
+failure, the plugin should return a SLURM error code.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Advanced Reservation Functions</h3>
@@ -367,9 +399,9 @@ uint32_t node_cnt)</p>
 <p style="margin-left:.2in"><b>Description</b>: Identify the nodes which best
 satisfy a reservation request taking system topology into consideration if
 applicable.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> avail_bitmap</span>&nbsp; &nbsp;&nbsp;(input)
-a bitmap of the nodes which are available for use in creating the reservation.<br><br>
+a bitmap of the nodes which are available for use in creating the reservation.<br>
 span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input)
 number of nodes required to satisfy the reservation request.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A bitmap of the nodes which should
@@ -429,6 +461,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 January 2011</p>
+<p style="text-align:center;">Last modified 14 March 2011</p>
 
 <!--#include virtual="footer.txt"-->
