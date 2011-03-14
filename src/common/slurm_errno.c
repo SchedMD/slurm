@@ -330,7 +330,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURMD_TOOMANYSTEPS,
 	  "Too many job steps on node"		        	},
 	{ ESLURMD_STEP_EXISTS,
-	  "Job step already in shared memory"	        	},
+	  "Job step already exists"		        	},
 	{ ESLURMD_JOB_NOTRUNNING,
 	  "Job step not running"	        	        },
  	{ ESLURMD_STEP_SUSPENDED,
