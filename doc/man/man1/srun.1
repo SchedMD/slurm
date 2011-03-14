@@ -336,6 +336,8 @@ executed (ran to completion with non-zero exit code).
 .TP
 \fBexpand:job_id\fR
 Resources allocated to this job should be used to expand the specified job.
+The job to expand must share the same QOS (Quality of Service) and partition.
+Gang scheduling of resources in the partition is also not supported.
 .TP
 \fBsingleton\fR
 This job can begin execution after any previously launched jobs

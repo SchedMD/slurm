@@ -1040,8 +1040,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_job_ptr = find_job_record(job_id);
 			if ((depend_type == SLURM_DEPEND_EXPAND) &&
 			    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
-			     (IS_JOB_FINISHED(dep_job_ptr)))) {
-				/* Expand only one active job */
+			     (IS_JOB_FINISHED(dep_job_ptr))              ||
+			     (dep_job_ptr->qos_id != job_ptr->qos_id)    ||
+			     (dep_job_ptr->part_ptr == NULL)             ||
+			     (job_ptr->part_ptr     == NULL)             ||
+			     (job_ptr->part_ptr->max_share != 1)         ||
+			     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
+				/* Expand only one active job in the same QOS
+				 * and partition without shared resources */
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
