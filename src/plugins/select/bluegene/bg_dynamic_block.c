@@ -65,6 +65,7 @@ extern List create_dynamic_block(List block_list,
 	bitstr_t *my_bitmap = NULL;
 	select_ba_request_t blockreq;
 	int cnodes = request->procs / bg_conf->cpu_ratio;
+	uint16_t start_geo[SYSTEM_DIMENSIONS];
 
 	if (cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
@@ -74,6 +75,7 @@ extern List create_dynamic_block(List block_list,
 		goto finished;
 	}
 	memset(&blockreq, 0, sizeof(select_ba_request_t));
+	memcpy(start_geo, request->geometry, sizeof(start_geo));
 
 	if (my_block_list) {
 		reset_ba_system(track_down_nodes);
@@ -314,8 +316,14 @@ extern List create_dynamic_block(List block_list,
 #endif
 	}
 
-	if (allocate_block(request, results))
+	rc = allocate_block(request, results);
+	/* This could be changed in allocate_block so set it back up */
+	memcpy(request->geometry, start_geo, sizeof(start_geo));
+
+	if (rc) {
+		rc = SLURM_SUCCESS;
 		goto setup_records;
+	}
 
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("allocate failure for size %d base "
@@ -381,8 +389,14 @@ extern List create_dynamic_block(List block_list,
 			results = list_create(NULL);
 #endif
 		}
-		if (allocate_block(request, results))
+
+		rc = allocate_block(request, results);
+		/* This could be changed in allocate_block so set it back up */
+		memcpy(request->geometry, start_geo, sizeof(start_geo));
+		if (rc) {
+			rc = SLURM_SUCCESS;
 			break;
+		}
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("allocate failure for size %d base partitions",

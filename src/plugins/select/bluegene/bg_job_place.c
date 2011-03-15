@@ -740,9 +740,6 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	ListIterator itr = NULL;
 	int rc = SLURM_ERROR;
 	int create_try = 0;
-	uint16_t start_geo[SYSTEM_DIMENSIONS];
-
-	memcpy(start_geo, request->geometry, sizeof(start_geo));
 
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("going to create %d", request->size);
@@ -789,14 +786,8 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		*/
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("trying with %d", create_try);
-		new_blocks = create_dynamic_block(block_list,
-						  request, temp_list,
-						  true);
-		/* This could get changed in create_dynamic_block
-		   so reset it here.
-		*/
-		memcpy(request->geometry, start_geo, sizeof(start_geo));
-		if (new_blocks) {
+		if ((new_blocks = create_dynamic_block(
+			     block_list, request, temp_list, true))) {
 			bg_record_t *bg_record = NULL;
 			while ((bg_record = list_pop(new_blocks))) {
 				if (block_exist_in_list(block_list, bg_record))
@@ -1176,15 +1167,9 @@ static int _find_best_block_match(List block_list,
 					*/
 					track_down_nodes = false;
 
-				new_blocks = create_dynamic_block(
-					block_list, &request, job_list,
-					track_down_nodes);
-				/* this could get altered in
-				 * create_dynamic_block so we reset it */
-				memcpy(request.geometry, req_geometry,
-				       sizeof(req_geometry));
-
-				if (!new_blocks) {
+				if (!(new_blocks = create_dynamic_block(
+					      block_list, &request, job_list,
+					      track_down_nodes))) {
 					if (errno == ESLURM_INTERCONNECT_FAILURE
 					    || !list_count(job_list)) {
 						char *nodes;
