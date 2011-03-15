@@ -300,13 +300,17 @@ unable to execute more than a total of 4 tasks.
 This option may also be useful to spawn tasks without allocating
 resources to the job step from the job's allocation when running
 multiple job steps with the \fB\-\-exclusive\fR option.
+
 \fBWARNING\fR: There are configurations and options interpreted differently by
-job and job step requests which can result in inconsistent for this option.
+job and job step requests which can result in inconsistencies for this option.
 For example \fIsrun \-c2 \-\-threads\-per\-core=1 prog\fR may allocate two
 cores for the job, but if each of those cores contains two threads, the job
 allocation will include four CPUs. The job step allocation will then launch two
 threads per CPU for a total of two tasks.
 
+\fBWARNING\fR: When srun is executed from within salloc or sbatch,
+there are configurations and options which can result in inconsistent 
+allocations when \-c has a value greater than \-c on salloc or sbatch.
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
