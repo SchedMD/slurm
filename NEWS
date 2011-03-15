@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
  -- Fix for sview started on a non-bluegene system to pick colors correctly
     when talking to a real bluegene system.
  -- Improve sched/backfill's expected start time calculation.
+ -- Prevent abort of sacctmgr for dump command with invalid (or no) filename.
 
 * Changes in SLURM 2.2.3
 ========================

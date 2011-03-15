@@ -1083,7 +1083,13 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
-	fd = fopen(file_name, "w");
+	if ((fd = fopen(file_name,"w")) == NULL) {
+		fprintf(stderr, "Can't open file %s, %m\n", file_name);
+		list_destroy(assoc_list);
+		xfree(cluster_name);
+		return SLURM_ERROR;
+	}
+
 	/* Add header */
 	if(fprintf(fd,
 		   "# To edit this file start with a cluster line "
