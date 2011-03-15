@@ -79,7 +79,7 @@ static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
 static void  _help( void );
 static int   _max_cpus_per_node(void);
-static int   _parse_state( char* str, enum job_states* states );
+static int   _parse_state( char* str, uint16_t* states );
 static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
 static void  _print_options( void );
@@ -394,13 +394,13 @@ static int   _max_cpus_per_node(void)
  * RET 0 or error code
  */
 static int
-_parse_state( char* str, enum job_states* states )
+_parse_state( char* str, uint16_t* states )
 {
 	int i;
 	char *state_names;
 
 	if ((i = job_state_num(str)) >= 0) {
-		*states = i;
+		*states = (uint16_t) i;
 		return SLURM_SUCCESS;
 	}
 
@@ -961,7 +961,7 @@ _build_state_list( char* str )
 {
 	List my_list;
 	char *state = NULL, *tmp_char = NULL, *my_state_list = NULL;
-	enum job_states *state_id = NULL;
+	uint16_t *state_id = NULL;
 
 	if ( str == NULL)
 		return NULL;
@@ -975,9 +975,7 @@ _build_state_list( char* str )
 	{
 		state_id = xmalloc( sizeof( uint16_t ) );
 		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
-		{
 			exit( 1 );
-		}
 		list_append( my_list, state_id );
 		state = strtok_r( NULL, ",", &tmp_char );
 	}

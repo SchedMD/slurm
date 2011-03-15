@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
  -- Prevent abort of sacctmgr for dump command with invalid (or no) filename.
  -- Improve handling of job updates when using limits in accounting, and
     updating jobs as a non-admin user.
+ -- Fix for "squeue --states=all" option. Bug would show no jobs.
 
 * Changes in SLURM 2.2.3
 ========================
