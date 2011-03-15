@@ -625,6 +625,22 @@ extern char *set_bg_block(List results, uint16_t *start,
 	if (_mp_used(ba_mp, 0))
 		goto end_it;
 
+	if (conn_type[A] >= SELECT_SMALL) {
+		/* adding the ba_mp and end, we could go through the
+		 * regular logic here, but this is just faster. */
+		if (results) {
+			ba_mp = ba_copy_mp(ba_mp);
+			/* We need to have this node wrapped in Q to handle
+			   wires correctly when creating around the midplane.
+			*/
+			ba_setup_mp(ba_mp, false, true);
+			ba_mp->used = BA_MP_USED_TRUE;
+			list_append(results, ba_mp);
+		}
+		name = xstrdup(ba_mp->coord_str);
+		goto end_it;
+	}
+
 	main_mps = list_create(NULL);
 
 	ba_mp->used |= BA_MP_USED_ALTERED;
@@ -717,7 +733,8 @@ extern void reset_ba_system(bool track_down_mps)
 				for (z = 0; z < DIM_SIZE[Z]; z++) {
 					ba_mp_t *ba_mp = &ba_main_grid
 						[a][x][y][z];
-					ba_setup_mp(ba_mp, track_down_mps);
+					ba_setup_mp(ba_mp, track_down_mps,
+						    false);
 				}
 }
 
@@ -1329,6 +1346,16 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		}
 
 		if ((count < geometry) && !_mp_used(curr_mp, dim)) {
+			if (curr_mp->coord[dim] < start_mp->coord[dim]) {
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("Available mp %s(%d) is less "
+					     "than our starting point "
+					     "of %s(%d) since we already "
+					     "looked at this return.",
+					     curr_mp->coord_str, dim,
+					     start_mp->coord_str, dim);
+				return 0;
+			}
 			if (curr_mp->coord[dim] > *block_end)
 				*block_end = curr_mp->coord[dim];
 			count++;
@@ -1515,7 +1542,7 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 						 alpha_num[ba_mp->coord[X]],
 						 alpha_num[ba_mp->coord[Y]],
 						 alpha_num[ba_mp->coord[Z]]);
-					ba_setup_mp(ba_mp, true);
+					ba_setup_mp(ba_mp, true, false);
 				}
 			}
 		}

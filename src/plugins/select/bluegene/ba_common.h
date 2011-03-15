@@ -225,7 +225,7 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
 /*
  * setup the ports and what not for a midplane.
  */
-extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps);
+extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps, bool wrap_it);
 
 /*
  * copy info from a ba_mp, a direct memcpy of the ba_mp_t

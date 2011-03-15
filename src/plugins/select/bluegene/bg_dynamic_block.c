@@ -476,7 +476,11 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		}
 	} else {
 		new_ba_mp = ba_copy_mp(ba_mp);
-		//ba_setup_mp(new_ba_mp, false);
+		/* We need to have this node wrapped in Q to handle
+		   wires correctly when creating around the midplane.
+		*/
+		ba_setup_mp(new_ba_mp, false, true);
+
 		new_ba_mp->used = BA_MP_USED_TRUE;
 		list_append(found_record->ba_mp_list, new_ba_mp);
 		found_record->mp_count = 1;

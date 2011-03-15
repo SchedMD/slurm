@@ -485,7 +485,7 @@ cleanup:
 #endif
 }
 
-extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps)
+extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps, bool wrap_it)
 {
 	int i;
 	uint16_t node_base_state = ba_mp->state & NODE_STATE_BASE;
@@ -497,7 +497,7 @@ extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps)
 	for (i=0; i<cluster_dims; i++){
 #ifdef HAVE_BG_L_P
 		int j;
-		for(j=0;j<NUM_PORTS_PER_NODE;j++) {
+		for (j=0;j<NUM_PORTS_PER_NODE;j++) {
 			ba_mp->axis_switch[i].int_wire[j].used = 0;
 			if (i!=0) {
 				if (j==3 || j==4)
@@ -507,7 +507,10 @@ extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps)
 			ba_mp->axis_switch[i].int_wire[j].port_tar = j;
 		}
 #endif
-		ba_mp->axis_switch[i].usage = BG_SWITCH_NONE;
+		if (wrap_it)
+			ba_mp->axis_switch[i].usage = BG_SWITCH_WRAPPED;
+		else
+			ba_mp->axis_switch[i].usage = BG_SWITCH_NONE;
 		ba_mp->alter_switch[i].usage = BG_SWITCH_NONE;
 	}
 }

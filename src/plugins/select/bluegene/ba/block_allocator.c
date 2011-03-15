@@ -656,7 +656,7 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 				     alpha_num[ba_node->coord[Y]],
 				     alpha_num[ba_node->coord[Z]]);
 			new_ba_node = ba_copy_mp(ba_node);
-			ba_setup_mp(new_ba_node, false);
+			ba_setup_mp(new_ba_node, false, false);
 			list_push(*dest_nodes, new_ba_node);
 
 		}
@@ -1015,7 +1015,7 @@ extern void reset_ba_system(bool track_down_nodes)
 		for (y = 0; y < DIM_SIZE[Y]; y++)
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
 				ba_mp_t *ba_mp = &ba_main_grid[x][y][z];
-				ba_setup_mp(ba_mp, track_down_nodes);
+				ba_setup_mp(ba_mp, track_down_nodes, false);
 			}
 	}
 }
@@ -1668,7 +1668,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			ba_node = ba_copy_mp(&ba_main_grid[mark_mp_tar[X]]
 					     [mark_mp_tar[Y]]
 					     [mark_mp_tar[Z]]);
-			ba_setup_mp(ba_node, false);
+			ba_setup_mp(ba_node, false, false);
 			list_push(nodes, ba_node);
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("haven't seen %c%c%c adding it",
@@ -2060,7 +2060,7 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 					 alpha_num[ba_mp->coord[X]],
 					 alpha_num[ba_mp->coord[Y]],
 					 alpha_num[ba_mp->coord[Z]]);
-				ba_setup_mp(ba_mp, true);
+				ba_setup_mp(ba_mp, true, false);
 			}
 		}
 	}
