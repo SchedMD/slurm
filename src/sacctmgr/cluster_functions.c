@@ -2,8 +2,8 @@
  *  cluster_functions.c - functions dealing with clusters in the
  *                        accounting system.
  *****************************************************************************
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -927,23 +927,23 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	FILE *fd = NULL;
 	char *class_str = NULL;
 
-	for (i = 0; i < argc; i++) {
+	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
 		int option = 0;
 
-		if (!end)
-			command_len = strlen(argv[i]);
+		if(!end)
+			command_len=strlen(argv[i]);
 		else {
-			command_len = end - 1;
-			if (argv[i][end] == '=') {
+			command_len=end-1;
+			if(argv[i][end] == '=') {
 				option = (int)argv[i][end-1];
 				end++;
 			}
 		}
-		if (!end || !strncasecmp(argv[i], "Cluster",
+		if(!end || !strncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
-			if (cluster_name) {
-				exit_code = 1;
+			if(cluster_name) {
+				exit_code=1;
 				fprintf(stderr,
 					" Can only do one cluster at a time.  "
 					"Already doing %s\n", cluster_name);
@@ -951,9 +951,9 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 			}
 			cluster_name = xstrdup(argv[i]+end);
 		} else if (!strncasecmp(argv[i], "File",
-					MAX(command_len, 1))) {
-			if (file_name) {
-				exit_code = 1;
+					 MAX(command_len, 1))) {
+			if(file_name) {
+				exit_code=1;
 				fprintf(stderr,
 					" File name already set to %s\n",
 					file_name);
@@ -961,15 +961,14 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 			}
 			file_name = xstrdup(argv[i]+end);
 		} else {
-			exit_code = 1;
+			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
 		}
 	}
 
-	if (!cluster_name) {
-		exit_code = 1;
+	if(!cluster_name) {
+		exit_code=1;
 		fprintf(stderr, " We need a cluster to dump.\n");
-		xfree(file_name);
 		return SLURM_ERROR;
 	} else {
 		List temp_list = NULL;
@@ -982,32 +981,30 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
 							&cluster_cond);
-		FREE_NULL_LIST(cluster_cond.cluster_list);
-		if (!temp_list) {
-			exit_code = 1;
+		list_destroy(cluster_cond.cluster_list);
+		if(!temp_list) {
+			exit_code=1;
 			fprintf(stderr,
 				" Problem getting clusters from database.  "
 				"Contact your admin.\n");
 			xfree(cluster_name);
-			xfree(file_name);
 			return SLURM_ERROR;
 		}
 
 		cluster_rec = list_peek(temp_list);
-		if (!cluster_rec) {
-			exit_code = 1;
+		if(!cluster_rec) {
+			exit_code=1;
 			fprintf(stderr, " Cluster %s doesn't exist.\n",
 				cluster_name);
 			xfree(cluster_name);
-			xfree(file_name);
-			FREE_NULL_LIST(temp_list);
+			list_destroy(temp_list);
 			return SLURM_ERROR;
 		}
 		class_str = get_classification_str(cluster_rec->classification);
-		FREE_NULL_LIST(temp_list);
+		list_destroy(temp_list);
 	}
 
-	if (!file_name) {
+	if(!file_name) {
 		file_name = xstrdup_printf("./%s.cfg", cluster_name);
 		printf(" No filename given, using %s.\n", file_name);
 	}
@@ -1026,38 +1023,38 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	user_cond.assoc_cond = &assoc_cond;
 
 	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
-	/* If not running with the DBD assoc_cond.user_list can be set,
-	 * which will mess other things up.
-	 */
+	/* If not running with the DBD this can be set which will mess
+	   other things up.
+	*/
 	if (assoc_cond.user_list) {
-		FREE_NULL_LIST(assoc_cond.user_list);
+		list_destroy(assoc_cond.user_list);
 		assoc_cond.user_list = NULL;
 	}
 
 	/* make sure this person running is an admin */
 	user_name = uid_to_string(my_uid);
-	if (!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
-		exit_code = 1;
+	if(!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
+		exit_code=1;
 		fprintf(stderr, " Your uid (%u) is not in the "
 			"accounting system, can't dump cluster.\n", my_uid);
-		FREE_NULL_LIST(assoc_cond.cluster_list);
 		xfree(cluster_name);
-		xfree(file_name);
-		FREE_NULL_LIST(user_list);
 		xfree(user_name);
+		if(user_list)
+			list_destroy(user_list);
+		list_destroy(assoc_cond.cluster_list);
 		return SLURM_ERROR;
 
 	} else {
-		if (my_uid != slurm_get_slurm_user_id() && my_uid != 0
-		    && user->admin_level < SLURMDB_ADMIN_SUPER_USER) {
-			exit_code = 1;
+		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
+		   && user->admin_level < SLURMDB_ADMIN_SUPER_USER) {
+			exit_code=1;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to dump clusters.\n");
-			FREE_NULL_LIST(assoc_cond.cluster_list);
 			xfree(cluster_name);
-			xfree(file_name);
-			FREE_NULL_LIST(user_list);
+			if(user_list)
+				list_destroy(user_list);
 			xfree(user_name);
+			list_destroy(assoc_cond.cluster_list);
 			return SLURM_ERROR;
 		}
 	}
@@ -1066,20 +1063,18 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	/* assoc_cond is set up above */
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);
-	FREE_NULL_LIST(assoc_cond.cluster_list);
-	if (!assoc_list) {
-		exit_code = 1;
+	list_destroy(assoc_cond.cluster_list);
+	if(!assoc_list) {
+		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
 		xfree(cluster_name);
-		xfree(file_name);
 		return SLURM_ERROR;
-	} else if (!list_count(assoc_list)) {
-		exit_code = 1;
+	} else if(!list_count(assoc_list)) {
+		exit_code=1;
 		fprintf(stderr, " Cluster %s returned nothing.\n",
 			cluster_name);
-		FREE_NULL_LIST(assoc_list);
+		list_destroy(assoc_list);
 		xfree(cluster_name);
-		xfree(file_name);
 		return SLURM_ERROR;
 	}
 
@@ -1090,72 +1085,60 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	if ((fd = fopen(file_name,"w")) == NULL) {
 		fprintf(stderr, "Can't open file %s, %m\n", file_name);
-		FREE_NULL_LIST(acct_list);
-		FREE_NULL_LIST(assoc_list);
+		list_destroy(assoc_list);
 		xfree(cluster_name);
-		xfree(file_name);
-		FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
 		return SLURM_ERROR;
 	}
 
 	/* Add header */
-	if (fprintf(fd,
-		    "# To edit this file start with a cluster line "
-		    "for the new cluster\n"
-		    "# Cluster - cluster_name:MaxNodesPerJob=50\n"
-		    "# Followed by Accounts you want in this fashion "
-		    "(root is created by default)...\n"
-		    "# Parent - root\n"
-		    "# Account - cs:MaxNodesPerJob=5:MaxJobs=4:"
-		    "MaxProcSecondsPerJob=20:FairShare=399:"
-		    "MaxWallDurationPerJob=40:Description='Computer Science':"
-		    "Organization='LC'\n"
-		    "# Any of the options after a ':' can be left out and "
-		    "they can be in any order.\n"
-		    "# If you want to add any sub accounts just list the "
-		    "Parent THAT HAS ALREADY \n"
-		    "# BEEN CREATED before the account line in this fashion...\n"
-		    "# Parent - cs\n"
-		    "# Account - test:MaxNodesPerJob=1:MaxJobs=1:"
-		    "MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:"
-		    "Description='Test Account':Organization='Test'\n"
-		    "# To add users to a account add a line like this after a "
-		    "Parent - line\n"
-		    "# User - lipari:MaxNodesPerJob=2:MaxJobs=3:"
-		    "MaxProcSecondsPerJob=4:FairShare=1:"
-		    "MaxWallDurationPerJob=1\n") < 0) {
-		exit_code = 1;
+	if(fprintf(fd,
+		   "# To edit this file start with a cluster line "
+		   "for the new cluster\n"
+		   "# Cluster - cluster_name:MaxNodesPerJob=50\n"
+		   "# Followed by Accounts you want in this fashion "
+		   "(root is created by default)...\n"
+		   "# Parent - root\n"
+		   "# Account - cs:MaxNodesPerJob=5:MaxJobs=4:"
+		   "MaxProcSecondsPerJob=20:FairShare=399:"
+		   "MaxWallDurationPerJob=40:Description='Computer Science':"
+		   "Organization='LC'\n"
+		   "# Any of the options after a ':' can be left out and "
+		   "they can be in any order.\n"
+		   "# If you want to add any sub accounts just list the "
+		   "Parent THAT HAS ALREADY \n"
+		   "# BEEN CREATED before the account line in this fashion...\n"
+		   "# Parent - cs\n"
+		   "# Account - test:MaxNodesPerJob=1:MaxJobs=1:"
+		   "MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:"
+		   "Description='Test Account':Organization='Test'\n"
+		   "# To add users to a account add a line like this after a "
+		   "Parent - line\n"
+		   "# User - lipari:MaxNodesPerJob=2:MaxJobs=3:"
+		   "MaxProcSecondsPerJob=4:FairShare=1:"
+		   "MaxWallDurationPerJob=1\n") < 0) {
+		exit_code=1;
 		fprintf(stderr, "Can't write to file");
-		FREE_NULL_LIST(acct_list);
-		FREE_NULL_LIST(assoc_list);
 		xfree(cluster_name);
-		xfree(file_name);
-		FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
 		return SLURM_ERROR;
 	}
 
 	line = xstrdup_printf("Cluster - %s", cluster_name);
 
-	if (class_str)
+	if(class_str)
 		xstrfmtcat(line, ":Classification=%s", class_str);
 
 	slurmdb_hierarchical_rec = list_peek(slurmdb_hierarchical_rec_list);
 	assoc = slurmdb_hierarchical_rec->assoc;
-	if (strcmp(assoc->acct, "root")) {
+	if(strcmp(assoc->acct, "root"))
 		fprintf(stderr, "Root association not on the top it was %s\n",
 			assoc->acct);
-	} else
+	else
 		print_file_add_limits_to_line(&line, assoc);
 
-	if (fprintf(fd, "%s\n", line) < 0) {
-		exit_code = 1;
+	if(fprintf(fd, "%s\n", line) < 0) {
+		exit_code=1;
 		fprintf(stderr, " Can't write to file");
-		FREE_NULL_LIST(acct_list);
-		FREE_NULL_LIST(assoc_list);
-		xfree(cluster_name);
-		xfree(file_name);
 		xfree(line);
-		FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
 		return SLURM_ERROR;
 	}
 	info("%s", line);
@@ -1164,11 +1147,10 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	print_file_slurmdb_hierarchical_rec_list(
 		fd, slurmdb_hierarchical_rec_list, user_list, acct_list);
 
-	FREE_NULL_LIST(acct_list);
-	FREE_NULL_LIST(assoc_list);
 	xfree(cluster_name);
 	xfree(file_name);
-	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
+	list_destroy(slurmdb_hierarchical_rec_list);
+	list_destroy(assoc_list);
 	fclose(fd);
 
 	return SLURM_SUCCESS;
