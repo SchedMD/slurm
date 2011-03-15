@@ -72,7 +72,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint16_t *limit_set_max_cpus,
 				 uint16_t *limit_set_max_nodes,
-				 uint16_t *limit_set_time);
+				 uint16_t *limit_set_time, bool update_call);
 /*
  * acct_policy_job_runnable - Determine of the specified job can execute
  *	right now or not depending upon accounting policy (e.g. running

@@ -3567,7 +3567,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 				   assoc_ptr, qos_ptr,
 				   &limit_set_max_cpus,
 				   &limit_set_max_nodes,
-				   &limit_set_time))) {
+				   &limit_set_time, 0))) {
 		info("_job_create: exceeded association's node or time limit "
 		     "for user %u", job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
@@ -6445,7 +6445,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  &limit_set_max_cpus,
 					  &limit_set_max_nodes,
-					  &limit_set_time)) {
+					  &limit_set_time, 1)) {
 			info("update_job: exceeded association's cpu, node or "
 			     "time limit for user %u", job_specs->user_id);
 			error_code = ESLURM_ACCOUNTING_POLICY;
