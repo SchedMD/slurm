@@ -1074,7 +1074,7 @@ static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus &&
 	    job_ptr->job_resrcs->node_bitmap) {
-		int node_inx = 0;
+		int node_inx = -1;
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
 			if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
@@ -1088,7 +1088,7 @@ static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (usable_cpu_cnt)
 				sum += usable_cpu_cnt[i];
 			else
-				sum += job_ptr->job_resrcs->cpus[node_inx-1];
+				sum += job_ptr->job_resrcs->cpus[node_inx];
 		}
 	} else {
 		error("job %u lacks cpus array", job_ptr->job_id);
