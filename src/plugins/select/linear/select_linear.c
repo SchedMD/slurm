@@ -1493,17 +1493,13 @@ static int _job_expand(struct job_record *from_job_ptr,
 {
 	int i, node_cnt, node_inx, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr;
-	struct part_cr_record *part_cr_ptr;
 	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
 		        *new_job_resrcs_ptr;
-	uint32_t job_memory;
-	bool from_node_used, to_node_used;
+	bool exclusive, from_node_used, to_node_used;
 	int from_node_offset, to_node_offset, new_node_offset;
 	uint32_t from_job_memory_cpu  = 0, to_job_memory_cpu  = 0;
 	uint32_t from_job_memory_node = 0, to_job_memory_node = 0;
-	bool exclusive, is_job_running;
 	int first_bit, last_bit;
-	uint16_t cpu_cnt;
 	List gres_list;
 
 	if (cr_ptr == NULL) {
@@ -1597,11 +1593,14 @@ static int _job_expand(struct job_record *from_job_ptr,
 			new_job_resrcs_ptr->cpus[new_node_offset] +=
 				from_job_resrcs_ptr->cpus[from_node_offset];
 			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
-				from_job_resrcs_ptr->cpus_used[from_node_offset];
-			new_job_resrcs_ptr->memory_allocated[new_node_offset] +=
-				from_job_resrcs_ptr->memory_allocated[from_node_offset];
+				from_job_resrcs_ptr->
+				cpus_used[from_node_offset];
+			new_job_resrcs_ptr->memory_allocated[new_node_offset]+=
+				from_job_resrcs_ptr->
+				memory_allocated[from_node_offset];
 			new_job_resrcs_ptr->memory_used[new_node_offset] +=
-				from_job_resrcs_ptr->memory_used[from_node_offset];
+				from_job_resrcs_ptr->
+				memory_used[from_node_offset];
 		}
 		if (to_node_used) {
 			/* Might want to support with both flags set */
@@ -1613,7 +1612,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 			    (from_job_ptr->details->pn_min_memory &
 			     MEM_PER_CPU)) {
 				/* node allocated by one job or allocating 
-				 * memory by CPU */
+				 * memory by CPU, add mem allocations */
 				new_job_resrcs_ptr->
 				memory_allocated[new_node_offset] +=
 					to_job_resrcs_ptr->
@@ -1663,46 +1662,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 				job_ptr->job_id, node_ptr->name);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
-	part_cr_ptr = cr_ptr->nodes[node_inx].parts;
-	while (part_cr_ptr) {
-		if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
-			part_cr_ptr = part_cr_ptr->next;
-			continue;
-		}
-		if (!is_job_running)
-			/* cancelled job already suspended */;
-		else if (part_cr_ptr->run_job_cnt > 0)
-			part_cr_ptr->run_job_cnt--;
-		else {
-			error("%s: run_job_cnt underflow for node %s",
-			      pre_err, node_ptr->name);
-		}
-		if (part_cr_ptr->tot_job_cnt > 0)
-			part_cr_ptr->tot_job_cnt--;
-		else {
-			error("%s: tot_job_cnt underflow for node %s",
-			      pre_err, node_ptr->name);
-		}
-		if ((part_cr_ptr->tot_job_cnt == 0) &&
-		    (part_cr_ptr->run_job_cnt)) {
-			part_cr_ptr->run_job_cnt = 0;
-			error("%s: run_job_cnt out of sync for node %s",
-			      pre_err, node_ptr->name);
-		}
-		break;
-	}
-	if (part_cr_ptr == NULL) {
-		if (job_ptr->part_ptr) {
-			error("select/linear: Could not find partition %s "
-			      "for node %s",
-			      job_ptr->part_ptr->name, node_ptr->name);
-		} else {
-			error("select/linear: no partition ptr given for "
-			      "job %u and node %s",
-			      job_ptr->job_id, node_ptr->name);
-		}
-		rc = SLURM_ERROR;
-	}
+//NEED TO CLEAR both old job_resources structures
 #endif
 	return rc;
 }
