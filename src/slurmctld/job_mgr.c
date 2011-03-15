@@ -3469,6 +3469,16 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
+		static uint32_t node_scaling = 1;
+		static uint32_t cpus_per_mp = 1;
+#ifdef HAVE_BG
+		if (node_scaling == 1) {
+			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+						&node_scaling);
+			select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT,
+						&cpus_per_mp);
+		}
+#endif
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
 					      &req_bitmap);
 		if (error_code) {
@@ -3480,9 +3490,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 		i = bit_set_count(req_bitmap);
 		if (i > job_desc->min_nodes)
-			job_desc->min_nodes = i;
+			job_desc->min_nodes = i * node_scaling;
 		if (i > job_desc->min_cpus)
-			job_desc->min_cpus = i;
+			job_desc->min_cpus = i * cpus_per_mp;
 		if (job_desc->max_nodes &&
 		    (job_desc->min_nodes > job_desc->max_nodes))
 			job_desc->max_nodes = job_desc->min_nodes;

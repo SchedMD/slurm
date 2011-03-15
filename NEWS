@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     reservation.
  -- Change slurm.conf node configuration parameter from "Procs" to "CPUs".
     Both parameters will be supported for now.
+ -- BLUEGENE - fix for when user requests only midplane names with no count at
+    job submission time to process the node count correctly.
 
 * Changes in SLURM 2.3.0.pre3
 =============================
