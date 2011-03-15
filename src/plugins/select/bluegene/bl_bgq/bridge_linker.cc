@@ -437,6 +437,64 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		return SLURM_ERROR;
 
 #ifdef HAVE_BG_FILES
+	/* Lets see if we are connected to the IO. */
+	try {
+		uint32_t avail, unavail;
+		Block::checkIOLinksSummary(bg_record->bg_block_id,
+					   &avail, &unavail);
+	} catch (const bgsched::DatabaseException& err) {
+		rc = bridge_handle_database_errors("Block::checkIOLinksSummary",
+						   err.getError().toValue());
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::checkIOLinksSummary",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::InternalException& err) {
+		rc = bridge_handle_internal_errors("Block::checkIOLinksSummary",
+						err.getError().toValue());
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (...) {
+                error("checkIOLinksSummary request failed ... continuing.");
+		rc = SLURM_ERROR;
+	}
+
+	try {
+		std::vector<std::string> mp_vec;
+		if (!Block::isIOConnected(bg_record->bg_block_id, &mp_vec)) {
+			error("block %s is not IOConnected, "
+			      "contact your admin. Midplanes not "
+			      "connected are ...");
+			BOOST_FOREACH(const std::string& mp, mp_vec) {
+				error("%s", mp.c_str());
+			}
+			return SLURM_ERROR;
+		}
+	} catch (const bgsched::DatabaseException& err) {
+		rc = bridge_handle_database_errors("Block::isIOConnected",
+						   err.getError().toValue());
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::isIOConnected",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::InternalException& err) {
+		rc = bridge_handle_internal_errors("Block::isIOConnected",
+						err.getError().toValue());
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (...) {
+                error("isIOConnected request failed ... continuing.");
+		rc = SLURM_ERROR;
+	}
+
 	if (bridge_block_set_owner(
 		    bg_record, bg_conf->slurm_user_name) != SLURM_SUCCESS)
 		return SLURM_ERROR;
