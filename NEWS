@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
     Both parameters will be supported for now.
  -- BLUEGENE - fix for when user requests only midplane names with no count at
     job submission time to process the node count correctly.
+ -- Fix job step resource allocation problem when both node and tasks counts
+    are specified. New logic selects nodes with larger CPU counts as needed.
 
 * Changes in SLURM 2.3.0.pre3
 =============================
