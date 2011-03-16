@@ -147,6 +147,14 @@ $ sbatch --reservation=alan_6 -N4 my.script
 sbatch: Submitted batch job 65540
 </pre>
 
+<p>Note that use of a reservation does not alter a job's priority.
+Higher priority jobs in the same SLURM partition/queue could delay
+the scheduling of a job holding a reservation. However SLURM's
+sched/backfill plugin can be used to schedule the lower priority job on
+reserved resources. If SLURM's priority/multifactor plugin is used and
+Qualities of Service (QOS) are configured, then a high-priority might be
+associated with some QOS for jobs intended to use an advanced reservation.</p>
+
 <h2>Reservation Modification</h2>
 
 <p>Reservations can be modified by user root as desired.
@@ -248,8 +256,7 @@ This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</li>
 </ol>
 
-
-<p style="text-align:center;">Last modified 9 March 2011</p>
+<p style="text-align: center;">Last modified 16 March 2011</p>
 
 <!--#include virtual="footer.txt"-->
 
