@@ -1491,11 +1491,11 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 static int _job_expand(struct job_record *from_job_ptr,
 		       struct job_record *to_job_ptr)
 {
-	int i, node_cnt, node_inx, rc = SLURM_SUCCESS;
+	int i, node_cnt, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr;
 	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
 		        *new_job_resrcs_ptr;
-	bool exclusive, from_node_used, to_node_used;
+	bool from_node_used, to_node_used;
 	int from_node_offset, to_node_offset, new_node_offset;
 	uint32_t from_job_memory_cpu  = 0, to_job_memory_cpu  = 0;
 	uint32_t from_job_memory_node = 0, to_job_memory_node = 0;
@@ -1515,6 +1515,21 @@ static int _job_expand(struct job_record *from_job_ptr,
 	if (_test_tot_job(cr_ptr, to_job_ptr->job_id) == 0) {
 		info("select/linear: job %u has no resources allocated",
 		     to_job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+
+	from_job_resrcs_ptr = from_job_ptr->job_resrcs;
+	if ((from_job_resrcs_ptr == NULL) ||
+	    (from_job_resrcs_ptr->cpus == NULL)) {
+		error("job %u lacks a job_resources struct",
+		      from_job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+	to_job_resrcs_ptr = to_job_ptr->job_resrcs;
+	if ((to_job_resrcs_ptr == NULL) ||
+	    (to_job_resrcs_ptr->cpus == NULL)) {
+		error("job %u lacks a job_resources struct",
+		      to_job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -1539,21 +1554,6 @@ static int _job_expand(struct job_record *from_job_ptr,
 		}
 	}
 
-	from_job_resrcs_ptr = from_job_ptr->job_resrcs;
-	if ((from_job_resrcs_ptr == NULL) ||
-	    (from_job_resrcs_ptr->cpus == NULL)) {
-		error("job %u lacks a job_resources struct",
-		      from_job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-	to_job_resrcs_ptr = to_job_ptr->job_resrcs;
-	if ((to_job_resrcs_ptr == NULL) ||
-	    (to_job_resrcs_ptr->cpus == NULL)) {
-		error("job %u lacks a job_resources struct",
-		      to_job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-
 	node_cnt = bit_set_count(from_job_resrcs_ptr->node_bitmap) +
 		   bit_set_count(to_job_resrcs_ptr->node_bitmap);
 	new_job_resrcs_ptr = _create_job_resources(node_cnt);
@@ -1573,8 +1573,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 	last_bit  = MAX(bit_fls(from_job_resrcs_ptr->node_bitmap),
 			bit_fls(to_job_resrcs_ptr->node_bitmap));
 	from_node_offset = to_node_offset = new_node_offset = -1;
-	for (i = first_bit, node_ptr = node_record_table_ptr; 
-	     i <= node_inx; i++, node_ptr++) {
+	for (i = first_bit, node_ptr = node_record_table_ptr; i <= last_bit;
+	     i++, node_ptr++) {
 		from_node_used = to_node_used = false;
 		if (bit_test(from_job_resrcs_ptr->node_bitmap, i)) {
 			from_node_used = true;
@@ -1587,23 +1587,36 @@ static int _job_expand(struct job_record *from_job_ptr,
 		if (!from_node_used && !to_node_used)
 			continue;
 		new_node_offset++;
-		new_job_resrcs_ptr->nhosts++;
 		if (from_node_used) {
-			/* Might want to support with both flags set */
+			/* Merge alloc info from both "from" and "to" jobs,
+			 * leave "from" job with no allocated CPUs or memory */
 			new_job_resrcs_ptr->cpus[new_node_offset] +=
 				from_job_resrcs_ptr->cpus[from_node_offset];
-			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
+			from_job_resrcs_ptr->cpus[from_node_offset] = 0;
+			/* new_job_resrcs_ptr->cpus_used[new_node_offset] +=
 				from_job_resrcs_ptr->
-				cpus_used[from_node_offset];
+				cpus_used[from_node_offset]; */
 			new_job_resrcs_ptr->memory_allocated[new_node_offset]+=
 				from_job_resrcs_ptr->
 				memory_allocated[from_node_offset];
-			new_job_resrcs_ptr->memory_used[new_node_offset] +=
+			from_job_resrcs_ptr->
+				memory_allocated[from_node_offset] = 0;
+			/* new_job_resrcs_ptr->memory_used[new_node_offset] +=
 				from_job_resrcs_ptr->
-				memory_used[from_node_offset];
+				memory_used[from_node_offset]; */
+			if (to_node_used &&
+			    (to_job_ptr->details->shared == 0)) {
+				if (cr_ptr->nodes[i].exclusive_cnt)
+					cr_ptr->nodes[i].exclusive_cnt--;
+				else {
+					error("select/linear: exclusive_cnt "
+					      "underflow for node %s",
+					      node_ptr->name);
+				}
+			}
 		}
 		if (to_node_used) {
-			/* Might want to support with both flags set */
+			/* Merge alloc info from both "from" and "to" jobs */
 			new_job_resrcs_ptr->cpus[new_node_offset] +=
 				to_job_resrcs_ptr->cpus[to_node_offset];
 			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
@@ -1636,18 +1649,10 @@ static int _job_expand(struct job_record *from_job_ptr,
 			new_job_resrcs_ptr->memory_used[new_node_offset] +=
 				to_job_resrcs_ptr->memory_used[to_node_offset];
 		}
-		exclusive = (from_job_ptr->details->shared == 0);
-		if (exclusive) {
-			if (cr_ptr->nodes[i].exclusive_cnt)
-				cr_ptr->nodes[i].exclusive_cnt--;
-			else {
-				error("select/linear: exclusive_cnt underflow "
-				      "for node %s",node_ptr->name);
-			}
-		}
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
-
+info("new");
+log_job_resources(to_job_ptr->job_id, new_job_resrcs_ptr);
 #if 0
 //NEED TO SET:
 	bitstr_t *	core_bitmap;

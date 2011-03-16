@@ -7216,7 +7216,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = ESLURM_INVALID_JOB_ID;
 				goto fini;
 			}
-			if ((job_ptr->step_list != NULL) ||
+			if ((job_ptr->step_list != NULL) &&
 			    (list_count(job_ptr->step_list) != 0)) {
 				info("Attempt to merge job %u with active "
 				     "steps into job %u",
