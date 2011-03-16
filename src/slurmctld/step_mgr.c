@@ -532,7 +532,7 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 	/* Need more resources. Determine what CPU counts per node to use */
 	save_rem_nodes = rem_nodes;
 	save_rem_cpus  = rem_cpus;
-	usable_cpu_array[0] == 0;
+	usable_cpu_array[0] = 0;
 	for (i = (cpu_target - 1); i > 0; i--) {
 		if (usable_cpu_array[i] == 0)
 			continue;
