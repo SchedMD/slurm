@@ -71,8 +71,10 @@ static int _check_for_options(select_ba_request_t* ba_request);
 /* */
 static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 			   ba_mp_t **check_mp, uint16_t *block_start,
-			   int *block_end, int *pass_start,
-			   int *pass_end, int *coords, bool back);
+			   int *block_end, int *coords);
+
+static int _finish_torus(List results, int level, uint16_t *block_start,
+			 int *block_end, uint16_t *conn_type, int *coords);
 
 /* */
 static char *_copy_from_main(List main_mps, List ret_list);
@@ -88,8 +90,7 @@ static int _check_deny_pass(int dim);
 
 /* */
 static int _find_path(List mps, ba_mp_t *start_mp, int dim,
-		      uint16_t geometry, uint16_t conn_type,
-		      int *block_end, int *shortest, int *longest);
+		      uint16_t geometry, uint16_t conn_type, int *block_end);
 
 /* */
 static int _setup_next_mps(ba_mp_t ****grid);
@@ -402,11 +403,10 @@ extern int remove_block(List mps, bool is_small)
 
 		/* Small blocks don't use wires, and only have 1 mp,
 		   so just break. */
-		/* info("remove_block: %s state now %d", */
-		/*      ba_mp->coord_str, ba_mp->used); */
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+			info("remove_block: %s state now %d",
+			     ba_mp->coord_str, ba_mp->used);
 
-		if (is_small)
-			break;
 		for (dim=0; dim<cluster_dims; dim++) {
 			if (curr_ba_mp == ba_mp) {
 				/* Remove the usage that was altered */
@@ -422,21 +422,29 @@ extern int remove_block(List mps, bool is_small)
 				/*      ba_mp->coord_str, dim, */
 				/*      ba_switch_usage_str( */
 				/* 	     ba_mp->axis_switch[dim].usage)); */
-			} else {
-				/* info("remove_block: 2 %s(%d) %s %s removing %s", */
-				/*      ba_mp->coord_str, dim, */
-				/*      curr_ba_mp->coord_str, */
-				/*      ba_switch_usage_str( */
-				/* 	     ba_mp->axis_switch[dim].usage), */
-				/*      ba_switch_usage_str( */
-				/* 	     curr_ba_mp->axis_switch[dim].usage)); */
+			} else if (curr_ba_mp->axis_switch[dim].usage
+				   != BG_SWITCH_NONE) {
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("remove_block: 2 %s(%d) %s %s "
+					     "removing %s",
+					     ba_mp->coord_str, dim,
+					     curr_ba_mp->coord_str,
+					     ba_switch_usage_str(
+						     ba_mp->axis_switch
+						     [dim].usage),
+					     ba_switch_usage_str(
+						     curr_ba_mp->axis_switch
+						     [dim].usage));
 				/* Just remove the usage set here */
 				ba_mp->axis_switch[dim].usage &=
 					(~curr_ba_mp->axis_switch[dim].usage);
-				/* info("remove_block: 2 %s(%d) is now at %s", */
-				/*      ba_mp->coord_str, dim, */
-				/*      ba_switch_usage_str( */
-				/* 	     ba_mp->axis_switch[dim].usage)); */
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+					info("remove_block: 2 %s(%d) is "
+					     "now at %s",
+					     ba_mp->coord_str, dim,
+					     ba_switch_usage_str(
+						     ba_mp->axis_switch[dim].
+						     usage));
 			}
 			//ba_mp->alter_switch[dim].usage = BG_SWITCH_NONE;
 		}
@@ -575,10 +583,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 	ba_mp_t *check_mp[cluster_dims];
 	int size = 1, dim;
 	int block_end[cluster_dims];
-	int pass_start[cluster_dims];
-	int pass_end[cluster_dims];
 	int coords[cluster_dims];
-	bool need_reverse = 0;
 
 	if (!ba_initialized){
 		error("Error, configuration not initialized, "
@@ -649,19 +654,13 @@ extern char *set_bg_block(List results, uint16_t *start,
 	/* set the end to the start and the _find_path will increase each dim.*/
 	for (dim=0; dim<cluster_dims; dim++) {
 		block_end[dim] = start[dim];
-		pass_start[dim] = start[dim];
-		pass_end[dim] = start[dim];
-		if (!_find_path(main_mps, ba_mp, dim,
-				geometry[dim], conn_type[dim], &block_end[dim],
-				&pass_start[dim], &pass_end[dim])) {
+		if (!_find_path(main_mps, ba_mp, dim, geometry[dim],
+				conn_type[dim], &block_end[dim])) {
 			goto end_it;
 		}
-		if (pass_start[dim] < start[dim])
-			need_reverse = 1;
 	}
 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-		info("complete box is %c%c%c%c x %c%c%c%c "
-		     "pass %c%c%c%c x %c%c%c%c",
+		info("complete box is %c%c%c%c x %c%c%c%c",
 		     alpha_num[start[A]],
 		     alpha_num[start[X]],
 		     alpha_num[start[Y]],
@@ -669,30 +668,15 @@ extern char *set_bg_block(List results, uint16_t *start,
 		     alpha_num[block_end[A]],
 		     alpha_num[block_end[X]],
 		     alpha_num[block_end[Y]],
-		     alpha_num[block_end[Z]],
-		     alpha_num[pass_start[A]],
-		     alpha_num[pass_start[X]],
-		     alpha_num[pass_start[Y]],
-		     alpha_num[pass_start[Z]],
-		     alpha_num[pass_end[A]],
-		     alpha_num[pass_end[X]],
-		     alpha_num[pass_end[Y]],
-		     alpha_num[pass_end[Z]]);
+		     alpha_num[block_end[Z]]);
 
-	//ba_mp = coord2ba_mp(pass_start);
 	if (_fill_in_coords(main_mps, A, ba_mp, check_mp,
-			    start, block_end,
-			    pass_start, pass_end, coords, 0) == -1)
+			    start, block_end, coords) == -1)
 		goto end_it;
 
-	/* Now do the same thing in reverse if needed */
-	if (need_reverse) {
-		//info("down with up");
-		if (_fill_in_coords(main_mps, A, ba_mp, check_mp,
-				    start, block_end,
-				    pass_start, pass_end, coords, 1) == -1)
-			goto end_it;
-	}
+	if (_finish_torus(main_mps, A, start,
+			  block_end, conn_type, coords) == -1)
+		goto end_it;
 
 	/* Success */
 	if (results)
@@ -921,26 +905,27 @@ static int _check_for_options(select_ba_request_t* ba_request)
 
 /*
  * Fill in the paths and extra midplanes we need for the block.
- * Basically copy the x path sent in with the start_list in each C and
- * D dimension filling in every midplane for the block and then
- * completing the C and D wiring, tying the whole block together.
+ * Basically copy the starting coords sent in starting at block_start
+ * ending with block_end in every midplane for the block.  This
+ * function does not finish torus' (use _finish_torus for that).
  *
  * IN/OUT results - total list of midplanes after this function
- *        returns successfully.  Should be
- *        an exact copy of the start_list at first.
- * IN start_list - exact copy of results at first, This should only be
- *        a list of midplanes on the B dim.  We will work off this and
- *        the geometry to fill in this wiring for the B dim in all the
- *        C and D coords.
- * IN geometry - What the block looks like
- * IN conn_type - Mesh or Torus
+ *        returns successfully.
+ * IN level - which dimension we are on.  Since this is a recursive
+ *        function calls to this function should always be 'A' when
+ *        starting.
+ * IN start_mp - starting location of the block, should be the ba_mp
+ *        from the block_start.
+ * IN block_start - starting point of the block.
+ * IN block_end - ending point of the block.
+ * IN coords - Where we are recursively. So this should just be an
+ *        uninitialized int [SYSTEM_DIMENSIONS]
  *
  * RET: -1 on failure 1 on success
  */
 static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 			   ba_mp_t **check_mp, uint16_t *block_start,
-			   int *block_end, int *pass_start,
-			   int *pass_end, int *coords, bool back)
+			   int *block_end, int *coords)
 {
 	int dim;
 	int count_outside = 0;
@@ -952,34 +937,17 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 
 	if (level < cluster_dims) {
 		check_mp[level] = start_mp;
-		if (!back) {
-			for (coords[level] = block_start[level];
-			     coords[level] <= pass_end[level];
-			     coords[level]++) {
-				/* handle the outter dims here */
-				if (_fill_in_coords(
-					    results, level+1, start_mp,
-					    check_mp, block_start, block_end,
-					    pass_start, pass_end,
-					    coords, back) == -1)
-					return -1;
-				check_mp[level] =
-					check_mp[level]->next_mp[level];
-			}
-		} else {
-			for (coords[level] = block_end[level];
-			     coords[level] >= pass_start[level];
-			     coords[level]--) {
-				/* handle the outter dims here */
-				if (_fill_in_coords(
-					    results, level+1, start_mp,
-					    check_mp, block_start, block_end,
-					    pass_start, pass_end,
-					    coords, back) == -1)
-					return -1;
-				check_mp[level] =
-					check_mp[level]->next_mp[level];
-			}
+		for (coords[level] = block_start[level];
+		     coords[level] <= block_end[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			if (_fill_in_coords(
+				    results, level+1, start_mp,
+				    check_mp, block_start, block_end,
+				    coords) == -1)
+				return -1;
+			check_mp[level] =
+				check_mp[level]->next_mp[level];
 		}
 		return 1;
 	}
@@ -992,10 +960,11 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 		   greater here we are pass anything we need to
 		   passthrough, so break.
 		*/
-		/* info("inside at %s %d %d %d", check_mp[dim]->coord_str, */
-		/*      dim, check_mp[dim]->used, used); */
 		if (check_mp[dim]->used & BA_MP_USED_PASS_BIT)
 			used = check_mp[dim]->used;
+
+		/* info("inside at %s %d %d %d", check_mp[dim]->coord_str, */
+		/*      dim, check_mp[dim]->used, used[dim]); */
 
 		/* info("passthrough %d used %d %d %d %d", dim, used, */
 		/*      curr_mp->coord[dim], block_start[dim], */
@@ -1038,6 +1007,111 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 		else if (rc == 1)
 			list_append(results, curr_mp);
 	}
+	return 1;
+}
+
+/*
+ * Finish wiring a block together given start and end points.  All
+ * used nodes should be marked inside those points before this
+ * function is called.
+ *
+ * IN/OUT results - total list of midplanes after this function
+ *        returns successfully.
+ * IN level - which dimension we are on.  Since this is a recursive
+ *        function calls to this function should always be 'A' when
+ *        starting.
+ * IN block_start - starting point of the block.
+ * IN block_end - ending point of the block.
+ * IN conn_type - Mesh or Torus for each Dim.
+ * IN coords - Where we are recursively. So this should just be an
+ *        uninitialized int [SYSTEM_DIMENSIONS]
+ *
+ * RET: -1 on failure 1 on success
+ */
+static int _finish_torus(List results, int level, uint16_t *block_start,
+			 int *block_end, uint16_t *conn_type, int *coords)
+{
+	int dim;
+	ba_mp_t *curr_mp, *start_mp;
+
+	if (level > cluster_dims)
+		return -1;
+
+	if (level < cluster_dims) {
+		for (coords[level] = block_start[level];
+		     coords[level] <= block_end[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			if (_finish_torus(
+				    results, level+1,
+				    block_start, block_end,
+				    conn_type, coords) == -1)
+				return -1;
+		}
+		return 1;
+	}
+
+	curr_mp = &ba_main_grid[coords[A]][coords[X]][coords[Y]][coords[Z]];
+	if (!(curr_mp->used & BA_MP_USED_ALTERED)) {
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("_finish_torus: skipping non-used %s",
+			     curr_mp->coord_str);
+		return 1;
+	}
+	start_mp = curr_mp;
+
+	for (dim=0; dim<cluster_dims; dim++) {
+		if (conn_type[dim] != SELECT_TORUS)
+			continue;
+		if (!(start_mp->alter_switch[dim].usage & BG_SWITCH_OUT_PASS)) {
+			/* info("finish_torus: mp %s(%d) already terminated", */
+			/*      curr_mp->coord_str, dim); */
+			continue;
+		}
+		curr_mp = start_mp->next_mp[dim];
+		while (curr_mp != start_mp) {
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("_finish_torus: looking at %s(%d)",
+				     curr_mp->coord_str, dim);
+			if (!(curr_mp->used & BA_MP_USED_ALTERED)) {
+				ba_switch_t *axis_switch =
+					&curr_mp->axis_switch[dim];
+				ba_switch_t *alter_switch =
+					&curr_mp->alter_switch[dim];
+				if (axis_switch->usage & BG_SWITCH_PASS_USED) {
+					info("_finish_torus: got a bad "
+					     "axis_switch at "
+					     "%s(%d) %s %s",
+					     curr_mp->coord_str, dim,
+					     ba_switch_usage_str(
+						     axis_switch->usage),
+					     ba_switch_usage_str(
+						     alter_switch->usage));
+					xassert(0);
+				}
+				alter_switch->usage |= BG_SWITCH_PASS;
+				curr_mp->used |= BA_MP_USED_ALTERED_PASS;
+				list_append(results, curr_mp);
+
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("_finish_torus: using mp %s(%d) "
+					     "to finish torus %s added %s",
+					     curr_mp->coord_str, dim,
+					     ba_switch_usage_str(
+						     axis_switch->usage),
+					     ba_switch_usage_str(
+						     alter_switch->usage));
+			} else if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("_finish_torus: skipping already "
+				     "set %s(%d) %s",
+				     curr_mp->coord_str, dim,
+				     ba_switch_usage_str(
+					     curr_mp->alter_switch[dim].usage));
+			curr_mp = curr_mp->next_mp[dim];
+			continue;
+		}
+	}
+
 	return 1;
 }
 
@@ -1208,21 +1282,24 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 		     dim, orig_mp->coord_str, orig_mp->used,
 		     ba_mp->coord_str, ba_mp->used,
 		     orig_mp->used == BA_MP_USED_ALTERED_PASS);
-	if (!(ba_mp->used & BA_MP_USED_ALTERED)) {
-		if (ba_mp->axis_switch[dim].usage
-		    & orig_mp->alter_switch[dim].usage) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("_copy_ba_switch: "
-				     "%s switches %d overlapped %s to %s",
-				     ba_mp->coord_str, dim,
-				     ba_switch_usage_str(
-					     ba_mp->alter_switch[dim].usage),
-				     ba_switch_usage_str(
-					     orig_mp->alter_switch[dim].usage));
-			return -1;
-		}
-		rc = 1;
+
+	if (ba_mp->axis_switch[dim].usage & orig_mp->alter_switch[dim].usage) {
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("_copy_ba_switch: "
+			     "can't use %s(%d) switch %s "
+			     "overlapped with request %s",
+			     ba_mp->coord_str, dim,
+			     ba_switch_usage_str(
+				     ba_mp->axis_switch[dim].usage),
+			     ba_switch_usage_str(
+				     orig_mp->alter_switch[dim].usage));
+		return -1;
 	}
+
+	/* If we return 1 it means we haven't yet looked at this
+	 * midplane so add it to the list */
+	if (!(ba_mp->used & BA_MP_USED_ALTERED))
+		rc = 1;
 
 	/* Just overlap them here so if they are used in a passthough
 	   we get it.
@@ -1285,7 +1362,7 @@ static int _check_deny_pass(int dim)
 
 static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		      uint16_t geometry, uint16_t conn_type,
-		      int *block_end, int *shortest, int *longest)
+		      int *block_end)
 {
 	ba_mp_t *curr_mp = start_mp->next_mp[dim];
 	ba_switch_t *axis_switch = NULL;
@@ -1331,10 +1408,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		//curr_mp->used |= BA_MP_USED_START;
 		axis_switch = &curr_mp->axis_switch[dim];
 		alter_switch = &curr_mp->alter_switch[dim];
-		if (curr_mp->coord[dim] < *shortest)
-			*shortest = curr_mp->coord[dim];
-		if (curr_mp->coord[dim] > *longest)
-			*longest = curr_mp->coord[dim];
+
 		/* This should never happen since we got here
 		   from an unused mp */
 		if (axis_switch->usage & BG_SWITCH_IN_PASS) {
