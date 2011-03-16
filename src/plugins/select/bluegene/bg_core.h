@@ -82,6 +82,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 extern int read_bg_conf();
 extern int node_already_down(char *node_name);
 extern int load_state_file(List curr_block_list, char *dir_name);
+extern const char *bg_err_str(int inx);
 
 #endif /* _BG_CORE_H_ */
 

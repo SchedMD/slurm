@@ -396,38 +396,38 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		if ((rc = bridge_block_modify(bg_record->bg_block_id,
 					      RM_MODIFY_BlrtsImg,
 					      bg_record->blrtsimage))
-		    != STATUS_OK)
+		    != SLURM_SUCCESS)
 			error("bridge_block_modify(RM_MODIFY_BlrtsImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 
 		if ((rc = bridge_block_modify(bg_record->bg_block_id,
 					      RM_MODIFY_LinuxImg,
 					      bg_record->linuximage))
-		    != STATUS_OK)
+		    != SLURM_SUCCESS)
 			error("bridge_block_modify(RM_MODIFY_LinuxImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 
 		if ((rc = bridge_block_modify(bg_record->bg_block_id,
 					      RM_MODIFY_RamdiskImg,
 					      bg_record->ramdiskimage))
-		    != STATUS_OK)
+		    != SLURM_SUCCESS)
 			error("bridge_block_modify(RM_MODIFY_RamdiskImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 
 #elif defined HAVE_BGP
 		if ((rc = bridge_block_modify(bg_record->bg_block_id,
 					      RM_MODIFY_CnloadImg,
 					      bg_record->linuximage))
-		    != STATUS_OK)
+		    != SLURM_SUCCESS)
 			error("bridge_block_modify(RM_MODIFY_CnloadImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 
 		if ((rc = bridge_block_modify(bg_record->bg_block_id,
 					      RM_MODIFY_IoloadImg,
 					      bg_record->ramdiskimage))
-		    != STATUS_OK)
+		    != SLURM_SUCCESS)
 			error("bridge_block_modify(RM_MODIFY_IoloadImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 
 		if (bg_action_ptr->conn_type[0] > SELECT_SMALL) {
 			char *conn_type = NULL;
@@ -452,17 +452,17 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			if ((rc = bridge_block_modify(
 				     bg_record->bg_block_id,
 				     RM_MODIFY_Options,
-				     conn_type)) != STATUS_OK)
+				     conn_type)) != SLURM_SUCCESS)
 				error("bridge_set_data(RM_MODIFY_Options): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 		}
 #endif
 		if ((rc = bridge_block_modify(bg_record->bg_block_id,
 					      RM_MODIFY_MloaderImg,
 					      bg_record->mloaderimage))
-		    != STATUS_OK)
+		    != SLURM_SUCCESS)
 			error("bridge_block_modify(RM_MODIFY_MloaderImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 
 #endif
 		bg_record->modifying = 0;
@@ -952,7 +952,7 @@ extern int boot_block(bg_record_t *bg_record)
 	info("Booting block %s", bg_record->bg_block_id);
 	if ((rc = bridge_block_boot(bg_record)) != SLURM_SUCCESS) {
 		/* error("bridge_create_block(%s): %s", */
-		/*       bg_record->bg_block_id, bridge_err_str(rc)); */
+		/*       bg_record->bg_block_id, bg_err_str(rc)); */
 		/* if (rc == INCOMPATIBLE_STATE) { */
 		/* 	char reason[200]; */
 		/* 	snprintf(reason, sizeof(reason), */

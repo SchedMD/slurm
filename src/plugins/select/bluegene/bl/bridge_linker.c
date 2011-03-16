@@ -109,7 +109,7 @@ void *handle = NULL;
 
 #if defined HAVE_BG_FILES
 /* translation from the enum to the actual port number */
-extern int _port_enum(int port)
+static int _port_enum(int port)
 {
 	switch(port) {
 	case RM_PORT_S0:
@@ -135,6 +135,41 @@ extern int _port_enum(int port)
 	}
 }
 
+static int _bg_errtrans(int in)
+{
+	switch (in) {
+	case STATUS_OK:
+		return SLURM_SUCCESS;
+	case PARTITION_NOT_FOUND:
+		return BG_ERROR_BLOCK_NOT_FOUND;
+	case INCOMPATIBLE_STATE:
+		return BG_ERROR_PENDING_ACTION;
+	case CONNECTION_ERROR:
+		return BG_ERROR_CONNECTION_ERROR;
+	case JOB_NOT_FOUND:
+		return BG_ERROR_JOB_NOT_FOUND;
+	case BP_NOT_FOUND:
+		return BG_ERROR_MP_NOT_FOUND;
+	case SWITCH_NOT_FOUND:
+		return BG_ERROR_SWITCH_NOT_FOUND;
+#ifndef HAVE_BGL
+	case PARTITION_ALREADY_DEFINED:
+		return BG_ERROR_BLOCK_ALREADY_DEFINED;
+#endif
+	case JOB_ALREADY_DEFINED:
+		return BG_ERROR_JOB_ALREADY_DEFINED;
+	case INTERNAL_ERROR:
+		return BG_ERROR_INTERNAL_ERROR;
+	case INVALID_INPUT:
+		return BG_ERROR_INVALID_INPUT;
+	case INCONSISTENT_DATA:
+		return BG_ERROR_INCONSISTENT_DATA;
+	default:
+		break;
+	}
+	return SLURM_ERROR;
+}
+
 static status_t _get_job(db_job_id_t dbJobId, rm_job_t **job)
 {
 	int rc = CONNECTION_ERROR;
@@ -142,7 +177,7 @@ static status_t _get_job(db_job_id_t dbJobId, rm_job_t **job)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_job))(dbJobId, job);
+	rc = _bg_errtrans((*(bridge_api.get_job))(dbJobId, job));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -155,7 +190,7 @@ static status_t _get_jobs(rm_job_state_flag_t flag, rm_job_list_t **jobs)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_jobs))(flag, jobs);
+	rc = _bg_errtrans((*(bridge_api.get_jobs))(flag, jobs));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 }
@@ -167,7 +202,7 @@ static status_t _free_job(rm_job_t *job)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_job))(job);
+	rc = _bg_errtrans((*(bridge_api.free_job))(job));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -180,7 +215,7 @@ static status_t _free_job_list(rm_job_list_t *job_list)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_job_list))(job_list);
+	rc = _bg_errtrans((*(bridge_api.free_job_list))(job_list));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -193,7 +228,7 @@ static status_t _signal_job(db_job_id_t jid, rm_signal_t sig)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.signal_job))(jid, sig);
+	rc = _bg_errtrans((*(bridge_api.signal_job))(jid, sig));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -207,7 +242,7 @@ static status_t _remove_block_user(pm_partition_id_t pid,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.remove_part_user))(pid, name);
+	rc = _bg_errtrans((*(bridge_api.remove_part_user))(pid, name));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -220,7 +255,7 @@ static status_t _new_block(rm_partition_t **partition)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.new_partition))(partition);
+	rc = _bg_errtrans((*(bridge_api.new_partition))(partition));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 }
@@ -232,7 +267,7 @@ static status_t _add_block(rm_partition_t *partition)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.add_partition))(partition);
+	rc = _bg_errtrans((*(bridge_api.add_partition))(partition));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 }
@@ -254,28 +289,28 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 		count++;
 
 		/* Find the job */
-		if ((rc = _get_job(job_id, &job_rec)) != STATUS_OK) {
+		if ((rc = _get_job(job_id, &job_rec)) != SLURM_SUCCESS) {
 
-			if (rc == JOB_NOT_FOUND) {
+			if (rc == BG_ERROR_JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
-				return STATUS_OK;
+				return SLURM_SUCCESS;
 			}
 
 			error("bridge_get_job(%d): %s", job_id,
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 
 		if ((rc = bridge_get_data(job_rec, RM_JobState, &job_state))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			(void) _free_job(job_rec);
-			if (rc == JOB_NOT_FOUND) {
+			if (rc == BG_ERROR_JOB_NOT_FOUND) {
 				debug("job %d not found in MMCS", job_id);
-				return STATUS_OK;
+				return SLURM_SUCCESS;
 			}
 
 			error("bridge_get_data(RM_JobState) for jobid=%d "
-			      "%s", job_id, bridge_err_str(rc));
+			      "%s", job_id, bg_err_str(rc));
 			continue;
 		}
 
@@ -284,20 +319,20 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 		   incorrectly */
 		if ((rc = bridge_get_data(job_rec, RM_JobInHist,
 					  &is_history))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			(void) _free_job(job_rec);
-			if (rc == JOB_NOT_FOUND) {
+			if (rc == BG_ERROR_JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
-				return STATUS_OK;
+				return SLURM_SUCCESS;
 			}
 
 			error("bridge_get_data(RM_JobInHist) for jobid=%d "
-			      "%s", job_id, bridge_err_str(rc));
+			      "%s", job_id, bg_err_str(rc));
 			continue;
 		}
 
-		if ((rc = _free_job(job_rec)) != STATUS_OK)
-			error("bridge_free_job: %s", bridge_err_str(rc));
+		if ((rc = _free_job(job_rec)) != SLURM_SUCCESS)
+			error("bridge_free_job: %s", bg_err_str(rc));
 
 		debug2("job %d on block %s is in state %d history %d",
 		       job_id, block_id, job_state, is_history);
@@ -307,9 +342,9 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 			debug2("Job %d on block %s isn't in the "
 			       "active job table anymore, final state was %d",
 			       job_id, block_id, job_state);
-			return STATUS_OK;
+			return SLURM_SUCCESS;
 		} else if (job_state == RM_JOB_TERMINATED)
-			return STATUS_OK;
+			return SLURM_SUCCESS;
 		else if (job_state == RM_JOB_DYING) {
 			if (count > MAX_POLL_RETRIES)
 				error("Job %d on block %s isn't dying, "
@@ -321,7 +356,7 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 			      job_id, block_id);
 
 			//free_bg_block();
-			return STATUS_OK;
+			return SLURM_SUCCESS;
 		}
 
 		/* we have been told the next 2 lines do the same
@@ -339,19 +374,19 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 //		 rc = bridge_cancel_job(job_id);
 		rc = _signal_job(job_id, SIGTERM);
 
-		if (rc != STATUS_OK) {
-			if (rc == JOB_NOT_FOUND) {
+		if (rc != SLURM_SUCCESS) {
+			if (rc == BG_ERROR_JOB_NOT_FOUND) {
 				debug("job %d on block %s removed from MMCS",
 				      job_id, block_id);
-				return STATUS_OK;
+				return SLURM_SUCCESS;
 			}
-			if (rc == INCOMPATIBLE_STATE)
+			if (rc == BG_ERROR_PENDING_ACTION)
 				debug("job %d on block %s is in an "
 				      "INCOMPATIBLE_STATE",
 				      job_id, block_id);
 			else
 				error("bridge_signal_job(%d): %s", job_id,
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 		} else if (count > MAX_POLL_RETRIES)
 			error("Job %d on block %s is in state %d and "
 			      "isn't dying, and doesn't appear to be "
@@ -389,19 +424,21 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 	for (i=0; i<job_cnt; i++) {
 		if (i) {
-			if ((rc = bridge_get_data(job_list, RM_JobListNextJob,
-						  &job_elem)) != STATUS_OK) {
+			if ((rc = bridge_get_data(
+				     job_list, RM_JobListNextJob,
+				     &job_elem)) != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_JobListNextJob): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob,
-						  &job_elem)) != STATUS_OK) {
+			if ((rc = bridge_get_data(
+				     job_list, RM_JobListFirstJob,
+				     &job_elem)) != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_JobListFirstJob): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				continue;
 			}
 		}
@@ -412,9 +449,9 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		}
 		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID,
 					  &job_block))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_JobPartitionID) %s: %s",
-			      job_block, bridge_err_str(rc));
+			      job_block, bg_err_str(rc));
 			continue;
 		}
 
@@ -434,9 +471,9 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		free(job_block);
 
 		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_JobDBJobID): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 		debug2("got job_id %d",job_id);
@@ -498,33 +535,33 @@ static void _pre_allocate(bg_record_t *bg_record)
 
 #ifdef HAVE_BGL
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,
-				  bg_record->blrtsimage)) != STATUS_OK)
+				  bg_record->blrtsimage)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionBlrtsImg): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionLinuxImg,
-				  bg_record->linuximage)) != STATUS_OK)
+				  bg_record->linuximage)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionLinuxImg): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionRamdiskImg,
-				  bg_record->ramdiskimage)) != STATUS_OK)
+				  bg_record->ramdiskimage)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionRamdiskImg): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 #else
 	struct tm my_tm;
 	struct timeval my_tv;
 
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionCnloadImg,
-				  bg_record->linuximage)) != STATUS_OK)
+				  bg_record->linuximage)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionLinuxCnloadImg): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionIoloadImg,
-				  bg_record->ramdiskimage)) != STATUS_OK)
+				  bg_record->ramdiskimage)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionIoloadImg): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 	gettimeofday(&my_tv, NULL);
 	localtime_r(&my_tv.tv_sec, &my_tm);
@@ -533,34 +570,34 @@ static void _pre_allocate(bg_record_t *bg_record)
 		my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
 		my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, my_tv.tv_usec/1000);
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,
-				  bg_record->bg_block_id)) != STATUS_OK)
+				  bg_record->bg_block_id)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionID): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 #endif
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg,
-				  bg_record->mloaderimage)) != STATUS_OK)
+				  bg_record->mloaderimage)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionMloaderImg): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionConnection,
-				  &bg_record->conn_type[0])) != STATUS_OK)
+				  &bg_record->conn_type[0])) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionConnection): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 	/* rc = bg_conf->mp_node_cnt/bg_record->node_cnt; */
 /* 	if (rc > 1) */
 /* 		send_psets = bg_conf->ionodes_per_mp/rc; */
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP,
-				  &send_psets)) != STATUS_OK)
+				  &send_psets)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionPsetsPerBP): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionUserName,
 				  bg_conf->slurm_user_name))
-	    != STATUS_OK)
+	    != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionUserName): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 
 #endif
 }
@@ -581,8 +618,8 @@ static int _post_allocate(bg_record_t *bg_record)
 
 	for(i=0;i<MAX_ADD_RETRY; i++) {
 		if ((rc = _add_block(bg_record->bg_block))
-		    != STATUS_OK) {
-			error("bridge_add_block(): %s", bridge_err_str(rc));
+		    != SLURM_SUCCESS) {
+			error("bridge_add_block(): %s", bg_err_str(rc));
 			rc = SLURM_ERROR;
 		} else {
 			rc = SLURM_SUCCESS;
@@ -593,8 +630,8 @@ static int _post_allocate(bg_record_t *bg_record)
 	if (rc == SLURM_ERROR) {
 		info("going to free it");
 		if ((rc = bridge_free_block(bg_record->bg_block))
-		    != STATUS_OK)
-			error("bridge_free_block(): %s", bridge_err_str(rc));
+		    != SLURM_SUCCESS)
+			error("bridge_free_block(): %s", bg_err_str(rc));
 		fatal("couldn't add last block.");
 	}
 	debug2("done adding");
@@ -602,9 +639,9 @@ static int _post_allocate(bg_record_t *bg_record)
 	/* Get back the new block id */
 	if ((rc = bridge_get_data(bg_record->bg_block, RM_PartitionID,
 				  &block_id))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_PartitionID): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		bg_record->bg_block_id = xstrdup("UNKNOWN");
 	} else {
 		if (!block_id) {
@@ -631,8 +668,8 @@ static int _post_allocate(bg_record_t *bg_record)
 			bg_record->user_uid = my_uid;
 	}
 	/* We are done with the block */
-	if ((rc = bridge_free_block(bg_record->bg_block)) != STATUS_OK)
-		error("bridge_free_block(): %s", bridge_err_str(rc));
+	if ((rc = bridge_free_block(bg_record->bg_block)) != SLURM_SUCCESS)
+		error("bridge_free_block(): %s", bg_err_str(rc));
 #else
 	/* We are just looking for a real number here no need for a
 	   base conversion
@@ -734,9 +771,9 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 	debug2("getting info for block %s", bg_record->bg_block_id);
 
 	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
-				  &switch_cnt)) != STATUS_OK) {
+				  &switch_cnt)) != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_PartitionSwitchNum): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		goto end_it;
 	}
 	if (!switch_cnt) {
@@ -744,16 +781,16 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionFirstBP,
 					  &curr_mp))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data: "
 			      "RM_PartitionFirstBP: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			goto end_it;
 		}
 		if ((rc = bridge_get_data(curr_mp, RM_BPID, &switchid))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			goto end_it;
 		}
 
@@ -778,34 +815,34 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionNextSwitch,
 						  &curr_switch))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data: "
 				      "RM_PartitionNextSwitch: %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				goto end_it;
 			}
 		} else {
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionFirstSwitch,
 						  &curr_switch))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data: "
 				      "RM_PartitionFirstSwitch: %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				goto end_it;
 			}
 		}
 		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data: RM_SwitchDim: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			goto end_it;
 		}
 		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
 					  &switchid))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			goto end_it;
 		}
 
@@ -816,9 +853,9 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 		}
 
 		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			goto end_it;
 		}
 		debug2("switch id = %s dim %d conns = %d",
@@ -853,10 +890,10 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 					     curr_switch,
 					     RM_SwitchNextConnection,
 					     &curr_conn))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					error("bridge_get_data: "
 					      "RM_SwitchNextConnection: %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 					goto end_it;
 				}
 			} else {
@@ -864,10 +901,10 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 					     curr_switch,
 					     RM_SwitchFirstConnection,
 					     &curr_conn))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					error("bridge_get_data: "
 					      "RM_SwitchFirstConnection: %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 					goto end_it;
 				}
 			}
@@ -1005,7 +1042,7 @@ extern int bridge_init(char *properties_file)
 #ifdef BG_SERIAL
 	debug("setting the serial to %s", BG_SERIAL);
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.set_serial))(BG_SERIAL);
+	rc = _bg_errtrans((*(bridge_api.set_serial))(BG_SERIAL));
 	slurm_mutex_unlock(&api_file_mutex);
 	debug2("done %d", rc);
 #else
@@ -1028,47 +1065,6 @@ extern int bridge_fini()
 	return SLURM_SUCCESS;
 }
 
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern const char *bridge_err_str(int inx)
-{
-#ifdef HAVE_BG_FILES
-	switch (inx) {
-	case STATUS_OK:
-		return "Status OK";
-	case PARTITION_NOT_FOUND:
-		return "Partition not found";
-	case JOB_NOT_FOUND:
-		return "Job not found";
-	case BP_NOT_FOUND:
-		return "Base partition not found";
-	case SWITCH_NOT_FOUND:
-		return "Switch not found";
-#ifndef HAVE_BGL
-	case PARTITION_ALREADY_DEFINED:
-		return "Partition already defined";
-#endif
-	case JOB_ALREADY_DEFINED:
-		return "Job already defined";
-	case CONNECTION_ERROR:
-		return "Connection error";
-	case INTERNAL_ERROR:
-		return "Internal error";
-	case INVALID_INPUT:
-		return "Invalid input";
-	case INCOMPATIBLE_STATE:
-		return "Incompatible state";
-	case INCONSISTENT_DATA:
-		return "Inconsistent data";
-	}
-#endif
-
-	return "?";
-}
-
 extern int bridge_get_size(int *size)
 {
 #ifdef HAVE_BG_FILES
@@ -1078,7 +1074,7 @@ extern int bridge_get_size(int *size)
 	if (!bg)
 		return rc;
 
-	if ((rc = bridge_get_data(bg, RM_Msize, &mp_size)) != STATUS_OK) {
+	if ((rc = bridge_get_data(bg, RM_Msize, &mp_size)) != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_Msize): %d", rc);
 		return rc;
 	}
@@ -1124,13 +1120,13 @@ extern int bridge_setup_system()
 #endif
 
 	if (!bg) {
-		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+		if ((rc = bridge_get_bg(&bg)) != SLURM_SUCCESS) {
 			error("bridge_get_BG(): %d", rc);
 			return -1;
 		}
 	}
 
-	if ((rc = bridge_get_data(bg, RM_BPNum, &mp_num)) != STATUS_OK) {
+	if ((rc = bridge_get_data(bg, RM_BPNum, &mp_num)) != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_BPNum): %d", rc);
 		mp_num = 0;
 	}
@@ -1139,20 +1135,20 @@ extern int bridge_setup_system()
 
 		if (i) {
 			if ((rc = bridge_get_data(bg, RM_NextBP, &my_mp))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_NextBP): %d", rc);
 				break;
 			}
 		} else {
 			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_mp))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_FirstBP): %d", rc);
 				break;
 			}
 		}
 
 		if ((rc = bridge_get_data(my_mp, RM_BPID, &mp_id))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_BPID): %d", rc);
 			continue;
 		}
@@ -1163,7 +1159,7 @@ extern int bridge_setup_system()
 		}
 
 		if ((rc = bridge_get_data(my_mp, RM_BPLoc, &mp_loc))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_BPLoc): %d", rc);
 			continue;
 		}
@@ -1220,7 +1216,8 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.create_partition))(bg_record->bg_block_id);
+	rc = _bg_errtrans((*(bridge_api.create_partition))
+			  (bg_record->bg_block_id));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
@@ -1241,7 +1238,8 @@ extern int bridge_block_free(bg_record_t *bg_record)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.destroy_partition))(bg_record->bg_block);
+	rc = _bg_errtrans(_bg_errtrans((*(bridge_api.destroy_partition))
+				       (bg_record->bg_block)));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
@@ -1257,7 +1255,8 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.remove_partition))(bg_record->bg_block_id);
+	rc = _bg_errtrans((*(bridge_api.remove_partition))
+			  (bg_record->bg_block_id));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
@@ -1273,7 +1272,8 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.add_part_user))(bg_record->bg_block_id, user_name);
+	rc = _bg_errtrans((*(bridge_api.add_part_user))
+			  (bg_record->bg_block_id, user_name));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
@@ -1289,8 +1289,8 @@ extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.remove_part_user))(bg_record->bg_block_id,
-					      user_name);
+	rc = _bg_errtrans((*(bridge_api.remove_part_user))
+			  (bg_record->bg_block_id, user_name));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
@@ -1311,22 +1311,22 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	   filled in there.  This function is very slow but necessary
 	   here to get the correct block count and the users. */
 	if ((rc = bridge_get_block(bg_record->bg_block_id, &block_ptr))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		if (rc == INCONSISTENT_DATA
 		    && bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			return REMOVE_USER_FOUND;
 
 		error("bridge_get_block(%s): %s",
 		      bg_record->bg_block_id,
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		return REMOVE_USER_ERR;
 	}
 
 	if ((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
 				  &user_count))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_PartitionUsersNum): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		returnc = REMOVE_USER_ERR;
 		user_count = 0;
 	} else
@@ -1338,10 +1338,10 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionNextUser,
 						  &user))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_PartitionNextUser): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				returnc = REMOVE_USER_ERR;
 				break;
 			}
@@ -1349,10 +1349,10 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionFirstUser,
 						  &user))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_PartitionFirstUser): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				returnc = REMOVE_USER_ERR;
 				break;
 			}
@@ -1377,15 +1377,15 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 		info("Removing user %s from Block %s",
 		     user, bg_record->bg_block_id);
 		if ((rc = _remove_block_user(bg_record->bg_block_id, user))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			debug("user %s isn't on block %s",
 			      user,
 			      bg_record->bg_block_id);
 		}
 		free(user);
 	}
-	if ((rc = bridge_free_block(block_ptr)) != STATUS_OK) {
-		error("bridge_free_block(): %s", bridge_err_str(rc));
+	if ((rc = bridge_free_block(block_ptr)) != SLURM_SUCCESS) {
+		error("bridge_free_block(): %s", bg_err_str(rc));
 	}
 #endif
 	return returnc;
@@ -1428,22 +1428,22 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 	if (bg_recover) {
 		if ((rc = bridge_get_blocks(state, &block_list))
-		    != STATUS_OK) {
-			error("2 rm_get_blocks(): %s", bridge_err_str(rc));
+		    != SLURM_SUCCESS) {
+			error("2 rm_get_blocks(): %s", bg_err_str(rc));
 			return SLURM_ERROR;
 		}
 	} else {
 		if ((rc = bridge_get_blocks_info(state, &block_list))
-		    != STATUS_OK) {
-			error("2 rm_get_blocks_info(): %s", bridge_err_str(rc));
+		    != SLURM_SUCCESS) {
+			error("2 rm_get_blocks_info(): %s", bg_err_str(rc));
 			return SLURM_ERROR;
 		}
 	}
 
 	if ((rc = bridge_get_data(block_list, RM_PartListSize, &block_count))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_PartListSize): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		block_count = 0;
 	}
 
@@ -1452,28 +1452,30 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if (block_number) {
 			if ((rc = bridge_get_data(block_list,
 						  RM_PartListNextPart,
-						  &block_ptr)) != STATUS_OK) {
+						  &block_ptr))
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_PartListNextPart): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				break;
 			}
 		} else {
 			if ((rc = bridge_get_data(block_list,
 						  RM_PartListFirstPart,
-						  &block_ptr)) != STATUS_OK) {
+						  &block_ptr))
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_PartListFirstPart): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				break;
 			}
 		}
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionID,
 					  &tmp_char))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionID): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 
@@ -1502,9 +1504,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionSize,
 					  &mp_cnt))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionSize): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 
@@ -1519,9 +1521,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionBPNum,
 					  &mp_cnt))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_BPNum): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 
@@ -1533,17 +1535,17 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 					  &bg_record->switch_count))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionSwitchNum): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSmall,
 					  &small))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionSmall): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 
@@ -1551,9 +1553,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionOptions,
 						  &tmp_char))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_PartitionOptions): "
-				      "%s", bridge_err_str(rc));
+				      "%s", bg_err_str(rc));
 				continue;
 			} else if (tmp_char) {
 				switch(tmp_char[0]) {
@@ -1581,20 +1583,20 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionFirstNodeCard,
 						  &ncard))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data("
 				      "RM_PartitionFirstNodeCard): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				continue;
 			}
 
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionNodeCardNum,
 						  &nc_cnt))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data("
 				      "RM_PartitionNodeCardNum): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				continue;
 			}
 #ifdef HAVE_BGL
@@ -1614,7 +1616,8 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 			if ((rc = bridge_get_data(ncard,
 						  RM_NodeCardQuarter,
-						  &io_start)) != STATUS_OK) {
+						  &io_start))
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(CardQuarter): %d",rc);
 				continue;
 			}
@@ -1627,7 +1630,8 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 			if ((rc = bridge_get_data(ncard,
 						  RM_NodeCardID,
-						  &tmp_char)) != STATUS_OK) {
+						  &tmp_char))
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_NodeCardID): %d",rc);
 				continue;
 			}
@@ -1648,7 +1652,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				if ((rc = bridge_get_data(
 					     ncard,
 					     RM_NodeCardFirstIONode,
-					     &ionode)) != STATUS_OK) {
+					     &ionode)) != SLURM_SUCCESS) {
 					error("bridge_get_data("
 					      "RM_NodeCardFirstIONode): %d",
 					      rc);
@@ -1657,10 +1661,10 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				if ((rc = bridge_get_data(ionode,
 							  RM_IONodeID,
 							  &tmp_char))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					error("bridge_get_data("
 					      "RM_NodeCardIONodeNum): %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 					rc = SLURM_ERROR;
 					continue;
 				}
@@ -1694,10 +1698,10 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			if ((rc = bridge_get_data(block_ptr,
 						  RM_PartitionConnection,
 						  &bg_record->conn_type[0]))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_PartitionConnection): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				continue;
 			}
 			/* Set the bitmap blank here if it is a full
@@ -1721,9 +1725,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				if ((rc = bridge_get_data(block_ptr,
 							  RM_PartitionNextBP,
 							  &mp_ptr))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					error("bridge_get_data(RM_NextBP): %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 					rc = SLURM_ERROR;
 					break;
 				}
@@ -1731,18 +1735,18 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				if ((rc = bridge_get_data(block_ptr,
 							  RM_PartitionFirstBP,
 							  &mp_ptr))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					error("bridge_get_data"
 					      "(RM_FirstBP): %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 					rc = SLURM_ERROR;
 					break;
 				}
 			}
 			if ((rc = bridge_get_data(mp_ptr, RM_BPID, &mpid))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_BPID): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -1779,15 +1783,16 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 #ifdef HAVE_BGL
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionMode,
 					  &bg_record->node_use))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionMode): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 		}
 #endif
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
-					  &bg_record->state)) != STATUS_OK) {
+					  &bg_record->state))
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionState): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		} else if (bg_record->state == BG_BLOCK_BOOTING)
 			bg_record->boot_state = 1;
@@ -1808,9 +1813,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		}
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
-					  &mp_cnt)) != STATUS_OK) {
+					  &mp_cnt)) != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionUsersNum): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		} else {
 			if (mp_cnt==0) {
@@ -1826,10 +1831,10 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 					     block_ptr,
 					     RM_PartitionFirstUser,
 					     &user_name))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					error("bridge_get_data"
 					      "(RM_PartitionFirstUser): %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 					continue;
 				}
 				if (!user_name) {
@@ -1863,9 +1868,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionBlrtsImg,
 					  &user_name))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionBlrtsImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -1877,9 +1882,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionLinuxImg,
 					  &user_name))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionLinuxImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -1891,9 +1896,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionRamdiskImg,
 					  &user_name))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionRamdiskImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -1906,9 +1911,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionCnloadImg,
 					  &user_name))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionCnloadImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -1920,9 +1925,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionIoloadImg,
 					  &user_name))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionIoloadImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -1935,9 +1940,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionMloaderImg,
 					  &user_name))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionMloaderImg): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			continue;
 		}
 		if (!user_name) {
@@ -1975,15 +1980,15 @@ extern void bridge_reset_block_list(List block_list)
 		& (~JOB_KILLED_FLAG)
 		& (~JOB_ERROR_FLAG);
 
-	if ((rc = _get_jobs(live_states, &job_list)) != STATUS_OK) {
-		error("bridge_get_jobs(): %s", bridge_err_str(rc));
+	if ((rc = _get_jobs(live_states, &job_list)) != SLURM_SUCCESS) {
+		error("bridge_get_jobs(): %s", bg_err_str(rc));
 
 		return;
 	}
 
 	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs))
-	    != STATUS_OK) {
-		error("bridge_get_data(RM_JobListSize): %s", bridge_err_str(rc));
+	    != SLURM_SUCCESS) {
+		error("bridge_get_data(RM_JobListSize): %s", bg_err_str(rc));
 		jobs = 0;
 	}
 	debug2("job count %d",jobs);
@@ -2003,8 +2008,8 @@ extern void bridge_reset_block_list(List block_list)
 	list_iterator_destroy(itr);
 
 #if defined HAVE_BG_FILES
-	if ((rc = _free_job_list(job_list)) != STATUS_OK)
-		error("bridge_free_job_list(): %s", bridge_err_str(rc));
+	if ((rc = _free_job_list(job_list)) != SLURM_SUCCESS)
+		error("bridge_free_job_list(): %s", bg_err_str(rc));
 #endif
 }
 
@@ -2022,16 +2027,16 @@ extern void bridge_block_post_job(char *bg_block_id)
 		& (~JOB_KILLED_FLAG)
 		& (~JOB_ERROR_FLAG);
 
-	if ((rc = _get_jobs(live_states, &job_list)) != STATUS_OK) {
-		error("bridge_get_jobs(): %s", bridge_err_str(rc));
+	if ((rc = _get_jobs(live_states, &job_list)) != SLURM_SUCCESS) {
+		error("bridge_get_jobs(): %s", bg_err_str(rc));
 
 		return;
 	}
 
 	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_JobListSize): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		jobs = 0;
 	}
 	debug2("job count %d",jobs);
@@ -2039,8 +2044,8 @@ extern void bridge_block_post_job(char *bg_block_id)
 	_remove_jobs_on_block_and_reset(job_list, jobs,	bg_block_id);
 
 #if defined HAVE_BG_FILES
-	if ((rc = _free_job_list(job_list)) != STATUS_OK)
-		error("bridge_free_job_list(): %s", bridge_err_str(rc));
+	if ((rc = _free_job_list(job_list)) != SLURM_SUCCESS)
+		error("bridge_free_job_list(): %s", bg_err_str(rc));
 #endif
 }
 
@@ -2052,7 +2057,7 @@ extern status_t bridge_get_bg(my_bluegene_t **bg)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_bg))(bg);
+	rc = _bg_errtrans((*(bridge_api.get_bg))(bg));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 }
@@ -2064,7 +2069,7 @@ extern status_t bridge_free_bg(my_bluegene_t *bg)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_bg))(bg);
+	rc = _bg_errtrans((*(bridge_api.free_bg))(bg));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2117,7 +2122,7 @@ extern status_t bridge_get_data(rm_element_t* element,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_data))(element, field, data);
+	rc = _bg_errtrans((*(bridge_api.get_data))(element, field, data));
 
 	/* Since these like to change from system to system, we have a
 	   nice enum that doesn't in bg_enums.h, convert now. */
@@ -2218,7 +2223,7 @@ extern status_t bridge_set_data(rm_element_t* element,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.set_data))(element, field, data);
+	rc = _bg_errtrans((*(bridge_api.set_data))(element, field, data));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2231,7 +2236,7 @@ extern status_t bridge_free_nodecard_list(rm_nodecard_list_t *nc_list)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_nodecard_list))(nc_list);
+	rc = _bg_errtrans((*(bridge_api.free_nodecard_list))(nc_list));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2244,7 +2249,7 @@ extern status_t bridge_free_block(rm_partition_t *partition)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_partition))(partition);
+	rc = _bg_errtrans((*(bridge_api.free_partition))(partition));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2258,7 +2263,8 @@ extern status_t bridge_block_modify(char *bg_block_id,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.modify_partition))(bg_block_id, op, data);
+	rc = _bg_errtrans((*(bridge_api.modify_partition))
+			  (bg_block_id, op, data));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2272,7 +2278,8 @@ extern status_t bridge_get_block(char *bg_block_id,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_partition))(bg_block_id, partition);
+	rc = _bg_errtrans((*(bridge_api.get_partition))
+			  (bg_block_id, partition));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2297,7 +2304,8 @@ extern status_t bridge_get_block_info(char *bg_block_id,
 	}
 
 	//slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_partition_info))(bg_block_id, partition);
+	rc = _bg_errtrans((*(bridge_api.get_partition_info))
+			  (bg_block_id, partition));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2311,7 +2319,7 @@ extern status_t bridge_get_blocks(rm_partition_state_flag_t flag,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_partitions))(flag, part_list);
+	rc = _bg_errtrans((*(bridge_api.get_partitions))(flag, part_list));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2325,7 +2333,7 @@ extern status_t bridge_get_blocks_info(rm_partition_state_flag_t flag,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_partitions_info))(flag, part_list);
+	rc = _bg_errtrans((*(bridge_api.get_partitions_info))(flag, part_list));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2338,7 +2346,7 @@ extern status_t bridge_free_block_list(rm_partition_list_t *part_list)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_partition_list))(part_list);
+	rc = _bg_errtrans((*(bridge_api.free_partition_list))(part_list));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2351,7 +2359,7 @@ extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.new_nodecard))(nodecard);
+	rc = _bg_errtrans((*(bridge_api.new_nodecard))(nodecard));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2364,7 +2372,7 @@ extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_nodecard))(nodecard);
+	rc = _bg_errtrans((*(bridge_api.free_nodecard))(nodecard));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2377,7 +2385,7 @@ extern status_t bridge_set_block_owner(pm_partition_id_t pid, const char *name)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.set_part_owner))(pid, name);
+	rc = _bg_errtrans((*(bridge_api.set_part_owner))(pid, name));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2391,7 +2399,7 @@ extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_nodecards))(bpid, nc_list);
+	rc = _bg_errtrans((*(bridge_api.get_nodecards))(bpid, nc_list));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2405,7 +2413,7 @@ extern status_t bridge_new_ionode(rm_ionode_t **ionode)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.new_ionode))(ionode);
+	rc = _bg_errtrans((*(bridge_api.new_ionode))(ionode));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2418,7 +2426,7 @@ extern status_t bridge_free_ionode(rm_ionode_t *ionode)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_ionode))(ionode);
+	rc = _bg_errtrans((*(bridge_api.free_ionode))(ionode));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
@@ -2444,26 +2452,26 @@ extern int bridge_find_nodecard_num(rm_partition_t *block_ptr,
 	if ((rc = bridge_get_data(ncard,
 				  RM_NodeCardID,
 				  &my_card_name))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_NodeCardID): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 	}
 
 	if ((rc = bridge_get_data(block_ptr,
 				  RM_PartitionFirstBP,
 				  &curr_mp))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_PartitionFirstBP): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 	}
 	if ((rc = bridge_get_data(curr_mp, RM_BPID, &mp_id))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_BPID): %d", rc);
 		return SLURM_ERROR;
 	}
 
 	if ((rc = bridge_get_nodecards(mp_id, &ncard_list))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_nodecards(%s): %d",
 		      mp_id, rc);
 		free(mp_id);
@@ -2471,9 +2479,9 @@ extern int bridge_find_nodecard_num(rm_partition_t *block_ptr,
 	}
 	free(mp_id);
 	if ((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_NodeCardListSize): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 
@@ -2482,29 +2490,29 @@ extern int bridge_find_nodecard_num(rm_partition_t *block_ptr,
 			if ((rc =
 			     bridge_get_data(ncard_list,
 					     RM_NodeCardListNext,
-					     &ncard2)) != STATUS_OK) {
+					     &ncard2)) != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListNext): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
 		} else {
 			if ((rc = bridge_get_data(ncard_list,
 						  RM_NodeCardListFirst,
-						  &ncard2)) != STATUS_OK) {
+						  &ncard2)) != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListFirst: %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
 		}
 		if ((rc = bridge_get_data(ncard2,
 					  RM_NodeCardID,
-					  &card_name)) != STATUS_OK) {
+					  &card_name)) != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_NodeCardID: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}

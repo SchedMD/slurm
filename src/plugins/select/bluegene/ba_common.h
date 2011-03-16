@@ -356,7 +356,7 @@ extern char *find_mp_rack_mid(char* coords);
 extern int load_block_wiring(char *bg_block_id);
 
 /* make sure a node is in the system return 1 if it is 0 if not */
-extern int validate_coord(uint16_t *coord);
+extern int validate_coord(int *coord);
 
 extern char *ba_switch_usage_str(uint16_t usage);
 

@@ -152,7 +152,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 			error("_post_block_free: "
 			      "bridge_block_remove(%s): %s",
 			      bg_record->bg_block_id,
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 		/* } */
 	} else
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
@@ -359,36 +359,41 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 				     bg_record->bg_block_id);
 			rc = bridge_block_free(bg_record);
 			if (rc != SLURM_SUCCESS) {
-/* 				if (rc == PARTITION_NOT_FOUND) { */
-/* 					debug("block %s is not found", */
-/* 					      bg_record->bg_block_id); */
-/* 					break; */
-/* 				} else if (rc == INCOMPATIBLE_STATE) { */
-/* #ifndef HAVE_BGL */
-/* 					/\* If the state is error and */
-/* 					   we get an incompatible */
-/* 					   state back here, it means */
-/* 					   we set it ourselves so */
-/* 					   break out. */
-/* 					*\/ */
-/* 					if (bg_record->state */
-/* 					    == BG_BLOCK_ERROR) */
-/* 						break; */
-/* #endif */
-/* 					if (bg_conf->slurm_debug_flags */
-/* 					    & DEBUG_FLAG_SELECT_TYPE) */
-/* 						info("bridge_block_remove" */
-/* 						     "(%s): %s State = %d", */
-/* 						     bg_record->bg_block_id, */
-/* 						     bridge_err_str(rc), */
-/* 						     bg_record->state); */
-/* 				} else { */
+				if (rc == BG_ERROR_BLOCK_NOT_FOUND) {
+					debug("block %s is not found",
+					      bg_record->bg_block_id);
+					break;
+				} else if (rc == BG_ERROR_PENDING_ACTION) {
+#ifndef HAVE_BGL
+					/* If the state is error and
+					   we get an incompatible
+					   state back here, it means
+					   we set it ourselves so
+					   break out.
+					*/
+					if (bg_record->state == BG_BLOCK_ERROR)
+						break;
+#endif
+					if (bg_conf->slurm_debug_flags
+					    & DEBUG_FLAG_SELECT_TYPE)
+						info("bridge_block_free"
+						     "(%s): %s State = %d",
+						     bg_record->bg_block_id,
+						     bg_err_str(rc),
+						     bg_record->state);
+#ifdef HAVE_BGQ
+					if (bg_record->state != BG_BLOCK_FREE
+					    && bg_record->state
+					    != BG_BLOCK_TERM)
+					bg_record->state = BG_BLOCK_TERM;
+#endif
+				} else {
 					error("bridge_block_remove"
 					      "(%s): %s State = %d",
 					      bg_record->bg_block_id,
-					      bridge_err_str(rc),
+					      bg_err_str(rc),
 					      bg_record->state);
-				/* } */
+				}
 			}
 		}
 #else
@@ -856,3 +861,43 @@ unpack_error:
 	free_buf(buffer);
 	return SLURM_FAILURE;
 }
+
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern const char *bg_err_str(int inx)
+{
+	switch (inx) {
+	case SLURM_SUCCESS:
+		return "Status OK";
+	case BG_ERROR_PENDING_ACTION:
+		return "Action already pending";
+	case BG_ERROR_BLOCK_NOT_FOUND:
+		return "Block not found";
+	case BG_ERROR_BOOT_ERROR:
+		return "Block boot error";
+	case BG_ERROR_JOB_NOT_FOUND:
+		return "Job not found";
+	case BG_ERROR_MP_NOT_FOUND:
+		return "Midplane not found";
+	case BG_ERROR_SWITCH_NOT_FOUND:
+		return "Switch not found";
+	case BG_ERROR_BLOCK_ALREADY_DEFINED:
+		return "Block already defined";
+	case BG_ERROR_JOB_ALREADY_DEFINED:
+		return "Job already defined";
+	case BG_ERROR_CONNECTION_ERROR:
+		return "Connection error";
+	case BG_ERROR_INTERNAL_ERROR:
+		return "Internal error";
+	case BG_ERROR_INVALID_INPUT:
+		return "Invalid input";
+	case BG_ERROR_INCONSISTENT_DATA:
+		return "Inconsistent data";
+	}
+
+	return "?";
+}
+

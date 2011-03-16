@@ -467,9 +467,9 @@ extern ba_mp_t *loc2ba_mp(const char* mp_id)
 				       mp_id[1], mp_id[2], mp_id[3]);
 	}
 
-	if ((check[1] < '0' || check[1] > '9')
-	    || (check[2] < '0' || check[2] > '9')
-	    || (check[5] < '0' || check[5] > '9')) {
+	if ((select_char2coord(check[1]) == -1)
+	    || (select_char2coord(check[2]) == -1)
+	    || (select_char2coord(check[5]) == -1)) {
 		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", mp_id);
 		goto cleanup;
 	}
@@ -967,7 +967,7 @@ extern char *find_mp_rack_mid(char* coords)
 }
 
 /* */
-extern int validate_coord(uint16_t *coord)
+extern int validate_coord(int *coord)
 {
 	int dim, i;
 	char coord_str[cluster_dims+1];

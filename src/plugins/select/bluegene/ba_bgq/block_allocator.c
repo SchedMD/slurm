@@ -1064,8 +1064,10 @@ static int _finish_torus(List results, int level, uint16_t *block_start,
 		if (conn_type[dim] != SELECT_TORUS)
 			continue;
 		if (!(start_mp->alter_switch[dim].usage & BG_SWITCH_OUT_PASS)) {
-			/* info("finish_torus: mp %s(%d) already terminated", */
-			/*      curr_mp->coord_str, dim); */
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("finish_torus: mp %s(%d) already "
+				     "terminated",
+				     curr_mp->coord_str, dim);
 			continue;
 		}
 		curr_mp = start_mp->next_mp[dim];
@@ -1108,7 +1110,6 @@ static int _finish_torus(List results, int level, uint16_t *block_start,
 				     ba_switch_usage_str(
 					     curr_mp->alter_switch[dim].usage));
 			curr_mp = curr_mp->next_mp[dim];
-			continue;
 		}
 	}
 

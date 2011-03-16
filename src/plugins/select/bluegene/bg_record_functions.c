@@ -531,7 +531,7 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 					      "(%s,%s): %s",
 					      bg_record->bg_block_id,
 					      bg_record->target_name,
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 					return -1;
 				}
 			}

@@ -83,13 +83,6 @@ extern int num_unused_cpus;
 extern int bridge_init(char *properties_file);
 extern int bridge_fini();
 
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern const char *bridge_err_str(int inx);
-
 extern int bridge_get_size(int *size);
 extern int bridge_setup_system();
 

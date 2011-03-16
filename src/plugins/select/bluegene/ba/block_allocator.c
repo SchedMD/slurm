@@ -1073,231 +1073,6 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	}
 }
 
-#if defined HAVE_BG_FILES
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern char *bg_err_str(status_t inx)
-{
-	switch (inx) {
-	case STATUS_OK:
-		return "Status OK";
-	case PARTITION_NOT_FOUND:
-		return "Partition not found";
-	case JOB_NOT_FOUND:
-		return "Job not found";
-	case BP_NOT_FOUND:
-		return "Base partition not found";
-	case SWITCH_NOT_FOUND:
-		return "Switch not found";
-#ifndef HAVE_BGL
-	case PARTITION_ALREADY_DEFINED:
-		return "Partition already defined";
-#endif
-	case JOB_ALREADY_DEFINED:
-		return "Job already defined";
-	case CONNECTION_ERROR:
-		return "Connection error";
-	case INTERNAL_ERROR:
-		return "Internal error";
-	case INVALID_INPUT:
-		return "Invalid input";
-	case INCOMPATIBLE_STATE:
-		return "Incompatible state";
-	case INCONSISTENT_DATA:
-		return "Inconsistent data";
-	}
-
-	return "?";
-}
-#endif
-
-/*
- * set the used wires in the virtual system for a block from the real system
- */
-extern int load_block_wiring(char *bg_block_id)
-{
-#if defined HAVE_BG_FILES
-	int rc, i, j;
-	rm_partition_t *block_ptr = NULL;
-	int cnt = 0;
-	int switch_cnt = 0;
-	rm_switch_t *curr_switch = NULL;
-	rm_BP_t *curr_mp = NULL;
-	char *switchid = NULL;
-	rm_connection_t curr_conn;
-	int dim;
-	ba_switch_t *ba_switch = NULL;
-	ba_mp_t *ba_mp = NULL;
-
-	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-		info("getting info for block %s", bg_block_id);
-
-	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
-		error("bridge_get_block(%s): %s",
-		      bg_block_id,
-		      bg_err_str(rc));
-		return SLURM_ERROR;
-	}
-
-	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
-				  &switch_cnt)) != STATUS_OK) {
-		error("bridge_get_data(RM_PartitionSwitchNum): %s",
-		      bg_err_str(rc));
-		return SLURM_ERROR;
-	}
-	if (!switch_cnt) {
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("no switch_cnt");
-		if ((rc = bridge_get_data(block_ptr,
-					  RM_PartitionFirstBP,
-					  &curr_mp))
-		    != STATUS_OK) {
-			error("bridge_get_data: "
-			      "RM_PartitionFirstBP: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-		if ((rc = bridge_get_data(curr_mp, RM_BPID, &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-
-		ba_mp = loc2ba_mp(switchid);
-		if (!ba_mp) {
-			error("loc2ba_mp: mpid %s not known", switchid);
-			return SLURM_ERROR;
-		}
-		ba_mp->used |= BA_MP_USED_TRUE;
-		return SLURM_SUCCESS;
-	}
-	for (i=0; i<switch_cnt; i++) {
-		if (i) {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionNextSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionNextSwitch: %s",
-				      bg_err_str(rc));
-				return SLURM_ERROR;
-			}
-		} else {
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionFirstSwitch,
-						  &curr_switch))
-			    != STATUS_OK) {
-				error("bridge_get_data: "
-				      "RM_PartitionFirstSwitch: %s",
-				      bg_err_str(rc));
-				return SLURM_ERROR;
-			}
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchDim, &dim))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchDim: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
-					  &switchid))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-
-		ba_mp = loc2ba_mp(switchid);
-		if (!ba_mp) {
-			error("loc2ba_mp: mpid %s not known", switchid);
-			return SLURM_ERROR;
-		}
-
-		if ((rc = bridge_get_data(curr_switch, RM_SwitchConnNum, &cnt))
-		    != STATUS_OK) {
-			error("bridge_get_data: RM_SwitchBPID: %s",
-			      bg_err_str(rc));
-			return SLURM_ERROR;
-		}
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("switch id = %s dim %d conns = %d",
-			     switchid, dim, cnt);
-		ba_switch = &ba_mp->axis_switch[dim];
-		for (j=0; j<cnt; j++) {
-			if (j) {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchNextConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchNextConnection: %s",
-					      bg_err_str(rc));
-					return SLURM_ERROR;
-				}
-			} else {
-				if ((rc = bridge_get_data(
-					     curr_switch,
-					     RM_SwitchFirstConnection,
-					     &curr_conn))
-				    != STATUS_OK) {
-					error("bridge_get_data: "
-					      "RM_SwitchFirstConnection: %s",
-					      bg_err_str(rc));
-					return SLURM_ERROR;
-				}
-			}
-
-			if (curr_conn.p1 == 1 && dim == X) {
-				if (ba_mp->used) {
-					debug("I have already been to "
-					      "this node %s",
-					      ba_mp->coord_str);
-					return SLURM_ERROR;
-				}
-				ba_mp->used |= BA_MP_USED_TEMP;
-			}
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("connection going from %d -> %d",
-				     curr_conn.p1, curr_conn.p2);
-
-			if (ba_switch->int_wire[curr_conn.p1].used) {
-				debug("%s dim %d port %d "
-				      "is already in use",
-				      ba_mp->coord_str,
-				      dim,
-				      curr_conn.p1);
-				return SLURM_ERROR;
-			}
-			ba_switch->int_wire[curr_conn.p1].used = 1;
-			ba_switch->int_wire[curr_conn.p1].port_tar
-				= curr_conn.p2;
-
-			if (ba_switch->int_wire[curr_conn.p2].used) {
-				debug("%s dim %d port %d "
-				      "is already in use",
-				      ba_mp->coord_str,
-				      dim,
-				      curr_conn.p2);
-				return SLURM_ERROR;
-			}
-			ba_switch->int_wire[curr_conn.p2].used = 1;
-			ba_switch->int_wire[curr_conn.p2].port_tar
-				= curr_conn.p1;
-		}
-	}
-	return SLURM_SUCCESS;
-
-#else
-	return SLURM_ERROR;
-#endif
-
-}
-
 /* Rotate a 3-D geometry array through its six permutations */
 extern void ba_rotate_geo(uint16_t *req_geometry, int rot_cnt)
 {
@@ -2326,7 +2101,7 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 			       ba_mp_t* target)
 {
 
-#if defined HAVE_BG_FILES
+#ifdef HAVE_BG_FILES
 #ifdef HAVE_BGL
 
 #define UNDER_POS  7
@@ -2360,7 +2135,7 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 	}
 
 	if (!bg) {
-		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+		if ((rc = bridge_get_bg(&bg)) != SLURM_SUCCESS) {
 			error("bridge_get_BG(): %d", rc);
 			return -1;
 		}
@@ -2369,7 +2144,8 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 	if (bg == NULL)
 		return -1;
 
-	if ((rc = bridge_get_data(bg, RM_WireNum, &wire_num)) != STATUS_OK) {
+	if ((rc = bridge_get_data(bg, RM_WireNum, &wire_num))
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_BPNum): %d", rc);
 		wire_num = 0;
 	}
@@ -2379,19 +2155,19 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 
 		if (i) {
 			if ((rc = bridge_get_data(bg, RM_NextWire, &my_wire))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_NextWire): %d", rc);
 				break;
 			}
 		} else {
 			if ((rc = bridge_get_data(bg, RM_FirstWire, &my_wire))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_FirstWire): %d", rc);
 				break;
 			}
 		}
 		if ((rc = bridge_get_data(my_wire, RM_WireID, &wire_id))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_FirstWire): %d", rc);
 			break;
 		}
@@ -2426,22 +2202,22 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 		free(wire_id);
 
 		if ((rc = bridge_get_data(my_wire, RM_WireFromPort, &my_port))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_FirstWire): %d", rc);
 			break;
 		}
 		if ((rc = bridge_get_data(my_port, RM_PortID, &from_port))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PortID): %d", rc);
 			break;
 		}
 		if ((rc = bridge_get_data(my_wire, RM_WireToPort, &my_port))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_WireToPort): %d", rc);
 			break;
 		}
 		if ((rc = bridge_get_data(my_port, RM_PortID, &to_port))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PortID): %d", rc);
 			break;
 		}

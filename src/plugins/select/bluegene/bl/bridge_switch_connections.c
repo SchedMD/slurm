@@ -42,7 +42,7 @@
 
 #if defined HAVE_BG_FILES
 static int _get_mp_by_location(my_bluegene_t* my_bg,
-			       uint16_t* curr_coord,
+			       int* curr_coord,
 			       rm_BP_t** mp);
 static int _get_switches_by_mpid(my_bluegene_t* my_bg, const char *mpid,
 				 rm_switch_t **curr_switch);
@@ -59,7 +59,7 @@ static int _used_switches(ba_mp_t *ba_node);
  * "NextMP" goes to, but we don't know, so we have to do this.
  */
 #if defined HAVE_BG_FILES
-static int _get_mp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
+static int _get_mp_by_location(my_bluegene_t* my_bg, int* curr_coord,
 			       rm_BP_t** mp)
 {
 	static int mp_num = 0;
@@ -68,9 +68,9 @@ static int _get_mp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 
 	if (!mp_num) {
 		if ((rc = bridge_get_data(my_bg, RM_BPNum, &mp_num))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			fatal("bridge_get_data: RM_BPNum: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
 	}
@@ -78,22 +78,22 @@ static int _get_mp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 	for (i=0; i<mp_num; i++){
 		if (i) {
 			if ((rc = bridge_get_data(my_bg, RM_NextBP, mp))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				fatal("bridge_get_data: RM_NextBP: %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				return SLURM_ERROR;
 			}
 		} else {
 			if ((rc = bridge_get_data(my_bg, RM_FirstBP, mp))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				fatal("bridge_get_data: RM_FirstBP: %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				return SLURM_ERROR;
 			}
 		}
-		if ((rc = bridge_get_data(*mp, RM_BPLoc, &loc)) != STATUS_OK) {
+		if ((rc = bridge_get_data(*mp, RM_BPLoc, &loc)) != SLURM_SUCCESS) {
 			fatal("bridge_get_data: RM_BPLoc: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
 
@@ -120,9 +120,9 @@ static int _get_switches_by_mpid(
 
 	if (!switch_num) {
 		if ((rc = bridge_get_data(my_bg, RM_SwitchNum, &switch_num))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			fatal("bridge_get_data: RM_SwitchNum: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
 	}
@@ -131,24 +131,24 @@ static int _get_switches_by_mpid(
 		if (i) {
 			if ((rc = bridge_get_data(my_bg, RM_NextSwitch,
 						  &curr_switch))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				fatal("bridge_get_data"
 				      "(RM_NextSwitch): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 			}
 		} else {
 			if ((rc = bridge_get_data(my_bg, RM_FirstSwitch,
 						  &curr_switch))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				fatal("bridge_get_data"
 				      "(RM_FirstSwitch): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 			}
 		}
 		if ((rc = bridge_get_data(curr_switch, RM_SwitchBPID,
-					  &curr_mpid)) != STATUS_OK) {
+					  &curr_mpid)) != SLURM_SUCCESS) {
 			fatal("bridge_get_data: RM_SwitchBPID: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 		}
 
 		if (!curr_mpid) {
@@ -233,9 +233,9 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 	i = list_count(conn_list);
 	if (i) {
 		if ((rc = bridge_set_data(curr_switch, RM_SwitchConnNum, &i))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			fatal("bridge_set_data: RM_SwitchConnNum: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 
 			return SLURM_ERROR;
 		}
@@ -253,11 +253,11 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				     curr_switch,
 				     RM_SwitchFirstConnection,
 				     conn_ptr))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				fatal("bridge_set_data"
 				      "(RM_SwitchFirstConnection): "
 				      "%s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				list_destroy(conn_list);
 				return SLURM_ERROR;
 			}
@@ -267,10 +267,10 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				     curr_switch,
 				     RM_SwitchNextConnection,
 				     conn_ptr))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				fatal("bridge_set_data"
 				      "(RM_SwitchNextConnection): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				list_destroy(conn_list);
 				return SLURM_ERROR;
 			}
@@ -361,10 +361,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 #if defined HAVE_BG_FILES
 	/* set that we are doing a small block */
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall,
-				  &small)) != STATUS_OK) {
+				  &small)) != SLURM_SUCCESS) {
 
 		fatal("bridge_set_data(RM_PartitionPsetsPerBP): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 	}
 
 	num_ncards = bg_record->node_cnt/bg_conf->nodecard_node_cnt;
@@ -394,10 +394,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionNodeCardNum,
 				  &num_ncards))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 
 		fatal("bridge_set_data: RM_PartitionBPNum: %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 	}
 
 	ba_node = list_peek(bg_record->ba_mp_list);
@@ -412,27 +412,27 @@ extern int configure_small_block(bg_record_t *bg_record)
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionBPNum,
 				  &bg_record->mp_count))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 
 		fatal("bridge_set_data: RM_PartitionBPNum: %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionFirstBP,
 				  curr_mp))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 
 		fatal("bridge_set_data("
 		      "BRIDGE_PartitionFirstBP): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 
 
 	/* find the mp_id of the mp to get the small32 */
 	if ((rc = bridge_get_data(curr_mp, RM_BPID, &mp_id))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(): %d", rc);
 		return SLURM_ERROR;
 	}
@@ -444,7 +444,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 
 	if ((rc = bridge_get_nodecards(mp_id, &ncard_list))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_nodecards(%s): %d",
 		      mp_id, rc);
 		free(mp_id);
@@ -454,9 +454,9 @@ extern int configure_small_block(bg_record_t *bg_record)
 
 
 	if ((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		error("bridge_get_data(RM_NodeCardListSize): %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 	if (num_ncards > num) {
@@ -469,20 +469,20 @@ extern int configure_small_block(bg_record_t *bg_record)
 		if (i) {
 			if ((rc = bridge_get_data(ncard_list,
 						  RM_NodeCardListNext,
-						  &ncard)) != STATUS_OK) {
+						  &ncard)) != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListNext): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
 		} else {
 			if ((rc = bridge_get_data(ncard_list,
 						  RM_NodeCardListFirst,
-						  &ncard)) != STATUS_OK) {
+						  &ncard)) != SLURM_SUCCESS) {
 				error("bridge_get_data"
 				      "(RM_NodeCardListFirst): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -499,9 +499,9 @@ extern int configure_small_block(bg_record_t *bg_record)
 #else
 		if ((rc = bridge_get_data(ncard,
 					  RM_NodeCardID,
-					  &nc_char)) != STATUS_OK) {
+					  &nc_char)) != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_NodeCardID): %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}
@@ -523,9 +523,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 			rm_ionode_t *ionode;
 			char *ionode_id = "J00";
 
-			if ((rc = bridge_new_nodecard(&ncard)) != STATUS_OK) {
+			if ((rc = bridge_new_nodecard(&ncard))
+			    != SLURM_SUCCESS) {
 				error("bridge_new_nodecard(): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -533,10 +534,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 			if ((rc = bridge_set_data(ncard,
 						  RM_NodeCardID,
 						  nc_char))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_set_data("
 				      "RM_NodeCardID): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -544,17 +545,18 @@ extern int configure_small_block(bg_record_t *bg_record)
 			if ((rc = bridge_set_data(ncard,
 						  RM_NodeCardIONodeNum,
 						  &sub_nodecard))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_set_data("
 				      "RM_NodeCardIONodeNum): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
 
-			if ((rc = bridge_new_ionode(&ionode)) != STATUS_OK) {
+			if ((rc = bridge_new_ionode(&ionode))
+			    != SLURM_SUCCESS) {
 				error("bridge_new_ionode(): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -565,10 +567,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 			if ((rc = bridge_set_data(ionode,
 						  RM_IONodeID,
 						  ionode_id))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_set_data("
 				      "RM_NodeCardIONodeNum): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -576,17 +578,18 @@ extern int configure_small_block(bg_record_t *bg_record)
 			if ((rc = bridge_set_data(ncard,
 						  RM_NodeCardFirstIONode,
 						  ionode))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 				error("bridge_set_data("
 				      "RM_NodeCardFirstIONode): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
 
-			if ((rc = bridge_free_ionode(ionode)) != STATUS_OK) {
+			if ((rc = bridge_free_ionode(ionode))
+			    != SLURM_SUCCESS) {
 				error("bridge_free_ionode(): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -598,11 +601,11 @@ extern int configure_small_block(bg_record_t *bg_record)
 			if ((rc = bridge_set_data(bg_record->bg_block,
 						  RM_PartitionNextNodeCard,
 						  ncard))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 
 				error("bridge_set_data("
 				      "RM_PartitionNextNodeCard): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -610,11 +613,11 @@ extern int configure_small_block(bg_record_t *bg_record)
 			if ((rc = bridge_set_data(bg_record->bg_block,
 						  RM_PartitionFirstNodeCard,
 						  ncard))
-			    != STATUS_OK) {
+			    != SLURM_SUCCESS) {
 
 				error("bridge_set_data("
 				      "RM_PartitionFirstNodeCard): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -623,9 +626,10 @@ extern int configure_small_block(bg_record_t *bg_record)
 		nc_count++;
 #ifndef HAVE_BGL
 		if (sub_nodecard) {
-			if ((rc = bridge_free_nodecard(ncard)) != STATUS_OK) {
+			if ((rc = bridge_free_nodecard(ncard))
+			    != SLURM_SUCCESS) {
 				error("bridge_free_nodecard(): %s",
-				      bridge_err_str(rc));
+				      bg_err_str(rc));
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
@@ -635,8 +639,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 			break;
 	}
 cleanup:
-	if ((rc = bridge_free_nodecard_list(ncard_list)) != STATUS_OK) {
-		error("bridge_free_nodecard_list(): %s", bridge_err_str(rc));
+	if ((rc = bridge_free_nodecard_list(ncard_list)) != SLURM_SUCCESS) {
+		error("bridge_free_nodecard_list(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 
@@ -683,9 +687,9 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionBPNum,
 				  &bg_record->mp_count))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		fatal("bridge_set_data: RM_PartitionBPNum: %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		rc = SLURM_ERROR;
 
 		goto cleanup;
@@ -693,9 +697,9 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionSwitchNum,
 				  &bg_record->switch_count))
-	    != STATUS_OK) {
+	    != SLURM_SUCCESS) {
 		fatal("bridge_set_data: RM_PartitionSwitchNum: %s",
-		      bridge_err_str(rc));
+		      bg_err_str(rc));
 		rc = SLURM_ERROR;
 
 		goto cleanup;
@@ -733,32 +737,32 @@ extern int configure_block_switches(bg_record_t * bg_record)
 				if ((rc = bridge_set_data(bg_record->bg_block,
 							  RM_PartitionFirstBP,
 							  curr_mp))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					list_iterator_destroy(itr);
 					fatal("bridge_set_data("
 					      "RM_PartitionFirstBP): %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 				}
 				first_mp = 0;
 			} else {
 				if ((rc = bridge_set_data(bg_record->bg_block,
 							  RM_PartitionNextBP,
 							  curr_mp))
-				    != STATUS_OK) {
+				    != SLURM_SUCCESS) {
 					list_iterator_destroy(itr);
 					fatal("bridge_set_data"
 					      "(RM_PartitionNextBP): %s",
-					      bridge_err_str(rc));
+					      bg_err_str(rc));
 				}
 			}
 #endif
 		}
 #if defined HAVE_BG_FILES
 		if ((rc = bridge_get_data(curr_mp, RM_BPID, &mpid))
-		    != STATUS_OK) {
+		    != SLURM_SUCCESS) {
 			list_iterator_destroy(itr);
 			fatal("bridge_get_data: RM_BPID: %s",
-			      bridge_err_str(rc));
+			      bg_err_str(rc));
 		}
 
 		if (!mpid) {
@@ -784,11 +788,11 @@ extern int configure_block_switches(bg_record_t * bg_record)
 						     bg_record->bg_block,
 						     RM_PartitionFirstSwitch,
 						     coord_switch[i]))
-					    != STATUS_OK) {
+					    != SLURM_SUCCESS) {
 						fatal("bridge_set_data("
 						      "RM_PartitionFirst"
 						      "Switch): %s",
-						      bridge_err_str(rc));
+						      bg_err_str(rc));
 					}
 
 					first_switch = 0;
@@ -797,11 +801,11 @@ extern int configure_block_switches(bg_record_t * bg_record)
 						     bg_record->bg_block,
 						     RM_PartitionNextSwitch,
 						     coord_switch[i]))
-					    != STATUS_OK) {
+					    != SLURM_SUCCESS) {
 						fatal("bridge_set_data("
 						      "RM_PartitionNext"
 						      "Switch): %s",
-						      bridge_err_str(rc));
+						      bg_err_str(rc));
 					}
 				}
 			}

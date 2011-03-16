@@ -59,6 +59,7 @@ bg_lists_t *bg_lists = NULL;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int blocks_are_created = 0;
 int bg_recover = 1;
+bool have_db2 = false;
 
 extern int bridge_init(char *properties_file)
 {
@@ -76,6 +77,22 @@ extern int bridge_get_size(int *size)
 }
 
 extern int bridge_setup_system()
+{
+	return SLURM_ERROR;
+}
+
+extern status_t bridge_free_bg(my_bluegene_t *bg)
+{
+	return SLURM_ERROR;
+}
+
+extern status_t bridge_get_bg(my_bluegene_t **bg)
+{
+	return SLURM_ERROR;
+}
+
+extern status_t bridge_get_data(rm_element_t* element,
+				enum rm_specification field, void *data)
 {
 	return SLURM_ERROR;
 }

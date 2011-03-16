@@ -195,19 +195,6 @@ extern int bridge_fini()
 	return SLURM_SUCCESS;
 }
 
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern const char *bridge_err_str(int inx)
-{
-	// switch (inx) {
-	// }
-
-	return "?";
-}
-
 extern int bridge_get_size(int *size)
 {
 #ifdef HAVE_BG_FILES
@@ -353,6 +340,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 			   real one from the system and use it.
 			*/
 			ba_mp_t *main_mp = coord2ba_mp(ba_mp->coord);
+			//info("got %s(%s) %d", main_mp->coord_str, main_mp->loc, ba_mp->used);
 			if (ba_mp->used)
 				midplanes.push_back(main_mp->loc);
 			else

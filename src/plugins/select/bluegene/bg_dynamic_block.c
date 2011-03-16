@@ -443,7 +443,6 @@ finished:
 	if (results)
 		list_destroy(results);
 	errno = rc;
-
 	return new_blocks;
 }
 
