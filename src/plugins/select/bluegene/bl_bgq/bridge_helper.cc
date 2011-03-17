@@ -233,8 +233,8 @@ extern int bridge_handle_runtime_errors(const char *function,
 	case bgsched::RuntimeErrors::InvalidBlockState:
 		/* not a real error */
 		rc = BG_ERROR_INVALID_STATE;
-		error("%s: Error can't perform task with block %s in state %s"
-		      "incorrect %s.", function, bg_record->bg_block_id,
+		error("%s: Error can't perform task with block %s in state %s",
+		      function, bg_record->bg_block_id,
 		      bg_block_state_string(bg_record->state));
 		break;
 	case bgsched::RuntimeErrors::DimensionOutOfRange:

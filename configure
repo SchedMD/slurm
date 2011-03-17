@@ -5236,10 +5236,11 @@ $as_echo "$as_me: Running in BG/Q emulation mode" >&6;}
 		ac_bluegene_loaded=yes
 		ac_bgq_loaded=yes
 	else
-		bg_default_dirs="/bgsys/drivers/ppcfloor/hlcs"
+		bg_default_dirs="/bgsys/drivers/ppcfloor"
 	fi
 
 	libname=bgsched
+	loglibname=log4cxx
 
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
@@ -5247,18 +5248,28 @@ $as_echo "$as_me: Running in BG/Q emulation mode" >&6;}
 			continue;
       		fi
 
-		soloc=$bg_dir/lib/lib$libname.so
+		soloc=$bg_dir/hlcs/lib/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
-			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/lib -L$bg_dir/lib -l$libname"
+			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/hlcs/lib -L$bg_dir/hlcs/lib -l$libname"
+		fi
+
+  		soloc=$bg_dir/extlib/lib/lib$loglibname.so
+    		if test -z "$have_bg_ar" -a -f "$soloc" ; then
+			have_bgq_ar=yes
+			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/extlib/lib -L$bg_dir/extlib/lib -l$loglibname"
 		fi
 
       		# Search for headers in the directory
-      		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/bgsched/bgsched.h" ; then
+      		if test -z "$have_bg_hdr" -a -f "$bg_dir/hlcs/include/bgsched/bgsched.h" ; then
 			have_bgq_hdr=yes
-			bg_includes="-I$bg_dir/include"
+			bg_includes="-I$bg_dir/hlcs/include"
       		fi
+     		if test -z "$have_bg_hdr" -a -f "$bg_dir/extlib/include/log4cxx/logger.h" ; then
+			have_bgq_hdr=yes
+			bg_includes="$bg_includes -I$bg_dir/extlib/include"
+    		fi
    	done
 
    	if test ! -z "$have_bgq_ar" -a ! -z "$have_bgq_hdr" ; then
@@ -5275,10 +5286,12 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <bgsched/bgsched.h>
+#include <log4cxx/logger.h>
 int
 main ()
 {
  bgsched::init("");
+ log4cxx::LoggerPtr logger_ptr(log4cxx::Logger::getLogger( "ibm" ));
   ;
   return 0;
 }
@@ -7646,13 +7659,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:7649: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:7662: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7652: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:7665: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:7655: output\"" >&5)
+  (eval echo "\"\$as_me:7668: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8857,7 +8870,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8860 "configure"' > conftest.$ac_ext
+  echo '#line 8873 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -10645,11 +10658,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10648: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10661: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10652: \$? = $ac_status" >&5
+   echo "$as_me:10665: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10984,11 +10997,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10987: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11000: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10991: \$? = $ac_status" >&5
+   echo "$as_me:11004: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11089,11 +11102,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11092: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11105: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11096: \$? = $ac_status" >&5
+   echo "$as_me:11109: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11144,11 +11157,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11147: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11160: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11151: \$? = $ac_status" >&5
+   echo "$as_me:11164: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13528,7 +13541,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13531 "configure"
+#line 13544 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13624,7 +13637,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 13627 "configure"
+#line 13640 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15580,11 +15593,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15583: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15596: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15587: \$? = $ac_status" >&5
+   echo "$as_me:15600: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15679,11 +15692,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15682: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15695: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15686: \$? = $ac_status" >&5
+   echo "$as_me:15699: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15731,11 +15744,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15734: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15747: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15738: \$? = $ac_status" >&5
+   echo "$as_me:15751: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19891,6 +19904,7 @@ fi
 
   if test "$x_ac_debug" = yes; then
     test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -fno-strict-aliasing"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -fno-strict-aliasing"
   else
 
 $as_echo "#define NDEBUG 1" >>confdefs.h

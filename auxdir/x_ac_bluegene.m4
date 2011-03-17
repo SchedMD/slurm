@@ -223,10 +223,11 @@ AC_DEFUN([X_AC_BGQ],
 		ac_bluegene_loaded=yes
 		ac_bgq_loaded=yes
 	else
-		bg_default_dirs="/bgsys/drivers/ppcfloor/hlcs"
+		bg_default_dirs="/bgsys/drivers/ppcfloor"
 	fi
 
 	libname=bgsched
+	loglibname=log4cxx
 
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
@@ -234,18 +235,28 @@ AC_DEFUN([X_AC_BGQ],
 			continue;
       		fi
 
-		soloc=$bg_dir/lib/lib$libname.so
+		soloc=$bg_dir/hlcs/lib/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
-			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/lib -L$bg_dir/lib -l$libname"
+			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/hlcs/lib -L$bg_dir/hlcs/lib -l$libname"
+		fi
+
+  		soloc=$bg_dir/extlib/lib/lib$loglibname.so
+    		if test -z "$have_bg_ar" -a -f "$soloc" ; then
+			have_bgq_ar=yes
+			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/extlib/lib -L$bg_dir/extlib/lib -l$loglibname"
 		fi
 
       		# Search for headers in the directory
-      		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/bgsched/bgsched.h" ; then
+      		if test -z "$have_bg_hdr" -a -f "$bg_dir/hlcs/include/bgsched/bgsched.h" ; then
 			have_bgq_hdr=yes
-			bg_includes="-I$bg_dir/include"
+			bg_includes="-I$bg_dir/hlcs/include"
       		fi
+     		if test -z "$have_bg_hdr" -a -f "$bg_dir/extlib/include/log4cxx/logger.h" ; then
+			have_bgq_hdr=yes
+			bg_includes="$bg_includes -I$bg_dir/extlib/include"
+    		fi
    	done
 
    	if test ! -z "$have_bgq_ar" -a ! -z "$have_bgq_hdr" ; then
@@ -254,7 +265,13 @@ AC_DEFUN([X_AC_BGQ],
 		saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64 $bg_includes"
 		AC_LANG_PUSH(C++)
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <bgsched/bgsched.h>]], [[ bgsched::init(""); ]])],[have_bgq_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/Q api.)])
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+                                [[#include <bgsched/bgsched.h>
+#include <log4cxx/logger.h>]],
+				[[ bgsched::init("");
+ log4cxx::LoggerPtr logger_ptr(log4cxx::Logger::getLogger( "ibm" ));]])],
+			        [have_bgq_files=yes],
+				[AC_MSG_ERROR(There is a problem linking to the BG/Q api.)])
 		AC_LANG_POP(C++)
 		LDFLAGS="$saved_LDFLAGS"
    	fi

@@ -33,6 +33,7 @@ AC_DEFUN([X_AC_DEBUG], [
   )
   if test "$x_ac_debug" = yes; then
     test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -fno-strict-aliasing"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -fno-strict-aliasing"
   else
     AC_DEFINE([NDEBUG], [1],
       [Define to 1 if you are building a production release.]

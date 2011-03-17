@@ -79,7 +79,6 @@ static int _reopen_bridge_log(void)
 {
 	int rc = SLURM_SUCCESS;
 
-#if defined HAVE_BG_L_P
 	if (bg_conf->bridge_api_file == NULL)
 		return rc;
 
@@ -90,7 +89,6 @@ static int _reopen_bridge_log(void)
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("Bridge api file set to %s, verbose level %d",
 		     bg_conf->bridge_api_file, bg_conf->bridge_api_verb);
-#endif
 	return rc;
 }
 

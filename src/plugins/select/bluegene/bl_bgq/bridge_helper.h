@@ -55,6 +55,7 @@ extern "C" {
 #include <bgsched/bgsched.h>
 #include <bgsched/Block.h>
 #include <bgsched/core/core.h>
+
 #include <boost/foreach.hpp>
 
 using namespace std;

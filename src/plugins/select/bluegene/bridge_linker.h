@@ -108,13 +108,13 @@ extern int bridge_blocks_load_curr(List curr_block_list);
 
 extern void bridge_reset_block_list(List block_list);
 extern void bridge_block_post_job(char *bg_block_id);
+extern int bridge_set_log_params(char *api_file_name, unsigned int level);
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 extern bool have_db2;
 
 extern status_t bridge_get_bg(my_bluegene_t **bg);
 extern status_t bridge_free_bg(my_bluegene_t *bg);
-extern int bridge_set_log_params(char *api_file_name, unsigned int level);
 extern status_t bridge_get_data(rm_element_t* element,
 				enum rm_specification field, void *data);
 extern status_t bridge_set_data(rm_element_t* element,

@@ -1060,6 +1060,9 @@ static int _finish_torus(List results, int level, uint16_t *block_start,
 	}
 	start_mp = curr_mp;
 
+	/* info("_finish_torus: starting with %s", */
+	/*      curr_mp->coord_str); */
+
 	for (dim=0; dim<cluster_dims; dim++) {
 		if (conn_type[dim] != SELECT_TORUS)
 			continue;
@@ -1111,6 +1114,8 @@ static int _finish_torus(List results, int level, uint16_t *block_start,
 					     curr_mp->alter_switch[dim].usage));
 			curr_mp = curr_mp->next_mp[dim];
 		}
+		/* info("_finish_torus: ended with %s(%d)", */
+		/*      curr_mp->coord_str, dim); */
 	}
 
 	return 1;

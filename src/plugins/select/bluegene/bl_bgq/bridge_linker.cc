@@ -36,6 +36,23 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+/* needed to figure out if HAVE_BG_FILES is set */
+#  include "config.h"
+#endif
+
+#ifdef HAVE_BG_FILES
+/* These need to be the first declared since on line 187 of
+ * /bgsys/drivers/ppcfloor/extlib/include/log4cxx/helpers/transcoder.h
+ * there is a nice generic BUFSIZE declared and the BUFSIZE declared
+ * elsewhere in SLURM will cause errors when compiling.
+ */
+#include <log4cxx/fileappender.h>
+#include <log4cxx/logger.h>
+#include <log4cxx/patternlayout.h>
+
+#endif
+
 extern "C" {
 #include "../ba_bgq/block_allocator.h"
 #include "../bg_record_functions.h"
@@ -178,6 +195,8 @@ extern int bridge_init(char *properties_file)
 		return 0;
 
 #ifdef HAVE_BG_FILES
+	if (!properties_file)
+		properties_file = (char *)"";
 	bgsched::init(properties_file);
 #endif
 	bridge_status_init();
@@ -200,8 +219,6 @@ extern int bridge_get_size(int *size)
 #ifdef HAVE_BG_FILES
         Midplane::Coordinates bgq_size;
 	Dimension dim;
-#else
-	int dim;
 #endif
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
@@ -243,7 +260,6 @@ extern int bridge_setup_system()
 
 extern int bridge_block_create(bg_record_t *bg_record)
 {
-	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 
 #ifdef HAVE_BG_FILES
@@ -333,14 +349,14 @@ extern int bridge_block_create(bg_record_t *bg_record)
 				return rc;
 		}
 	} else {
-		itr = list_iterator_create(bg_record->ba_mp_list);
+		ListIterator itr = list_iterator_create(bg_record->ba_mp_list);
 		while ((ba_mp = (ba_mp_t *)list_next(itr))) {
 			/* Since the midplane locations aren't set up in the
 			   copy of this pointer we need to go out a get the
 			   real one from the system and use it.
 			*/
 			ba_mp_t *main_mp = coord2ba_mp(ba_mp->coord);
-			//info("got %s(%s) %d", main_mp->coord_str, main_mp->loc, ba_mp->used);
+			info("got %s(%s) %d", main_mp->coord_str, main_mp->loc, ba_mp->used);
 			if (ba_mp->used)
 				midplanes.push_back(main_mp->loc);
 			else
@@ -367,8 +383,10 @@ extern int bridge_block_create(bg_record_t *bg_record)
 				"Block::create",
 				err.getError().toValue(),
 				bg_record);
-			if (rc != SLURM_SUCCESS)
+			if (rc != SLURM_SUCCESS) {
+				assert(0);
 				return rc;
+			}
 		}
 	}
 
@@ -456,7 +474,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		if (!Block::isIOConnected(bg_record->bg_block_id, &mp_vec)) {
 			error("block %s is not IOConnected, "
 			      "contact your admin. Midplanes not "
-			      "connected are ...");
+			      "connected are ...", bg_record->bg_block_id);
 			BOOST_FOREACH(const std::string& mp, mp_vec) {
 				error("%s", mp.c_str());
 			}
@@ -769,16 +787,22 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		bg_record->state = bridge_translate_status(
 			block_ptr->getStatus().toValue());
 
-		if (bg_record->state == BG_BLOCK_BOOTING)
-			bg_record->boot_state = 1;
-
 		debug3("Block %s is in state %d",
 		       bg_record->bg_block_id,
 		       bg_record->state);
 
+		bg_record->job_running = NO_JOB_RUNNING;
+		/* we are just going to go and destroy this block so
+		   just throw get the name and continue. */
+		if (!bg_recover)
+			continue;
+
+		if (bg_record->state == BG_BLOCK_BOOTING)
+			bg_record->boot_state = 1;
+
 		bg_record->node_cnt = block_ptr->getComputeNodeCount();
 		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
-		bg_record->job_running = NO_JOB_RUNNING;
+
 		if (block_ptr->isSmall()) {
 			char bitstring[BITSIZE];
 			int io_cnt, io_start, len;
@@ -934,40 +958,100 @@ extern void bridge_block_post_job(char *bg_block_id)
 	_remove_jobs_on_block_and_reset(bg_block_id);
 }
 
-// extern int bridge_set_log_params(char *api_file_name, unsigned int level)
-// {
-// 	static FILE *fp = NULL;
-//         FILE *fp2 = NULL;
-// 	int rc = SLURM_SUCCESS;
+extern int bridge_set_log_params(char *api_file_name, unsigned int level)
+{
+	if (!bridge_init(NULL))
+		return SLURM_ERROR;
 
-// 	if (!bridge_init())
-// 		return SLURM_ERROR;
+	if (!bg_conf->bridge_api_file)
+		return SLURM_SUCCESS;
 
-// 	slurm_mutex_lock(&api_file_mutex);
-// 	if (fp)
-// 		fp2 = fp;
+#ifdef HAVE_BG_FILES
+	// Scheduler APIs use the loggers under ibm.
+	log4cxx::LoggerPtr logger_ptr(log4cxx::Logger::getLogger("ibm"));
+	// Set the pattern for output.
+	log4cxx::LayoutPtr layout_ptr(
+		new log4cxx::PatternLayout(
+			"[%d{yyyy-MM-ddTHH:mm:ss}] %p: %c: %m [%t]%n"));
+	// Set the log file
+	log4cxx::AppenderPtr appender_ptr(
+		new log4cxx::FileAppender(layout_ptr,
+					  bg_conf->bridge_api_file));
+	log4cxx::LevelPtr level_ptr;
 
-// 	fp = fopen(api_file_name, "a");
+	// Get rid of the console appender.
+	logger_ptr->removeAllAppenders();
 
-// 	if (fp == NULL) {
-// 		error("can't open file for bridgeapi.log at %s: %m",
-// 		      api_file_name);
-// 		rc = SLURM_ERROR;
-// 		goto end_it;
-// 	}
+	switch (level) {
+	case 0:
+		level_ptr = log4cxx::Level::getOff();
+		break;
+	case 1:
+		level_ptr = log4cxx::Level::getFatal();
+		break;
+	case 2:
+		level_ptr = log4cxx::Level::getError();
+		break;
+	case 3:
+		level_ptr = log4cxx::Level::getWarn();
+		break;
+	case 4:
+		level_ptr = log4cxx::Level::getInfo();
+		break;
+	case 5:
+		level_ptr = log4cxx::Level::getDebug();
+		break;
+	case 6:
+		level_ptr = log4cxx::Level::getTrace();
+		break;
+	case 7:
+		level_ptr = log4cxx::Level::getAll();
+		break;
+	default:
+		level_ptr = log4cxx::Level::getDebug();
+		break;
+	}
+	// Now set the level of debug
+	logger_ptr->setLevel(level_ptr);
+	// Add the appender to the ibm logger.
+	logger_ptr->addAppender(appender_ptr);
 
+	// for (int i=1; i<7; i++) {
+	// switch (i) {
+	// case 0:
+	// 	level_ptr = log4cxx::Level::getOff();
+	// 	break;
+	// case 1:
+	// 	level_ptr = log4cxx::Level::getFatal();
+	// 	break;
+	// case 2:
+	// 	level_ptr = log4cxx::Level::getError();
+	// 	break;
+	// case 3:
+	// 	level_ptr = log4cxx::Level::getWarn();
+	// 	break;
+	// case 4:
+	// 	level_ptr = log4cxx::Level::getInfo();
+	// 	break;
+	// case 5:
+	// 	level_ptr = log4cxx::Level::getDebug();
+	// 	break;
+	// case 6:
+	// 	level_ptr = log4cxx::Level::getTrace();
+	// 	break;
+	// case 7:
+	// 	level_ptr = log4cxx::Level::getAll();
+	// 	break;
+	// default:
+	// 	level_ptr = log4cxx::Level::getDebug();
+	// 	break;
+	// }
+	// if (logger_ptr->isEnabledFor(level_ptr))
+	// 	info("we are doing %d", i);
+	// }
 
-// 	(*(bridge_api.set_log_params))(fp, level);
-// 	/* In the libraries linked to from the bridge there are stderr
-// 	   messages send which we would miss unless we dup this to the
-// 	   log */
-// 	//(void)dup2(fileno(fp), STDERR_FILENO);
-
-// 	if (fp2)
-// 		fclose(fp2);
-// end_it:
-// 	slurm_mutex_unlock(&api_file_mutex);
-//  	return rc;
-// }
+#endif
+	return SLURM_SUCCESS;
+}
 
 
