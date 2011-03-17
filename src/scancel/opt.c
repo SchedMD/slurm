@@ -347,7 +347,7 @@ static void _opt_args(int argc, char **argv)
 			exit(1);
 			break;
 		case (int)'A':
-			opt.account = xstrdup(optarg);
+			opt.account = xstrtolower(xstrdup(optarg));
 			break;
 		case (int)'b':
 			opt.batch = true;
@@ -380,7 +380,7 @@ static void _opt_args(int argc, char **argv)
 			opt.verbose = -1;
 			break;
 		case (int)'q':
-			opt.qos = xstrdup(optarg);
+			opt.qos = xstrtolower(xstrdup(optarg));
 			break;
 		case (int)'R':
 			opt.reservation = xstrdup(optarg);
