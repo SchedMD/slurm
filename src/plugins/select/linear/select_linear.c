@@ -1574,8 +1574,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
 			    select_fast_schedule);
 	xfree(to_job_ptr->node_addr);
-	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) *
-					to_job_ptr->total_nodes);
+	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
 			bit_ffs(to_job_resrcs_ptr->node_bitmap));
 	last_bit  = MAX(bit_fls(from_job_resrcs_ptr->node_bitmap),
@@ -1674,10 +1673,25 @@ static int _job_expand(struct job_record *from_job_ptr,
 	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
 
 	to_job_ptr->total_cpus   += from_job_ptr->total_cpus;
-	from_job_ptr->total_cpus  = 0;
-	from_job_ptr->total_nodes = 0;
-	to_job_ptr->total_nodes   = new_job_resrcs_ptr->nhosts;
-	from_job_ptr->total_nodes = 0;
+	if (to_job_ptr->details) {
+		to_job_ptr->details->min_cpus = to_job_ptr->total_cpus;
+		to_job_ptr->details->max_cpus = to_job_ptr->total_cpus;
+	}
+	from_job_ptr->total_cpus   = 0;
+	from_job_resrcs_ptr->ncpus = 0;
+	if (from_job_ptr->details) {
+		from_job_ptr->details->min_cpus = 0;
+		from_job_ptr->details->max_cpus = 0;
+	}
+
+	from_job_ptr->total_nodes   = 0;
+	from_job_resrcs_ptr->nhosts = 0;
+	from_job_ptr->node_cnt      = 0;
+	if (from_job_ptr->details)
+		from_job_ptr->details->min_nodes = 0;
+	to_job_ptr->total_nodes     = new_job_resrcs_ptr->nhosts;
+	to_job_ptr->node_cnt        = new_job_resrcs_ptr->nhosts;
+
 	bit_or(to_job_ptr->node_bitmap, from_job_ptr->node_bitmap);
 	bit_nclear(from_job_ptr->node_bitmap, 0, (node_record_count - 1));
 	xfree(to_job_ptr->nodes);

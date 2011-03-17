@@ -529,14 +529,12 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
 			uint32_t empty = NO_VAL;
 			pack32(empty, buffer);
 			return;
 		}
-
-		xassert(job_resrcs_ptr->nhosts);
 
 		pack32(job_resrcs_ptr->nhosts, buffer);
 		pack32(job_resrcs_ptr->ncpus, buffer);
@@ -615,8 +613,6 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 			pack32(empty, buffer);
 			return;
 		}
-
-		xassert(job_resrcs_ptr->nhosts);
 
 		pack32(job_resrcs_ptr->nhosts, buffer);
 		pack32(job_resrcs_ptr->ncpus, buffer);
