@@ -31,6 +31,7 @@ HIGHLIGHTS
   than one front end node for improved fault-tolerance and performance.
   NOTE: The slurmctld daemon will report the lack of a front_end_state file
   as an error when first started in this configuration.
+* The ability to expand running jobs was added
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
@@ -54,6 +55,10 @@ COMMAND CHANGES (see man pages for details)
   scontrol commands. If set, then jobs using the reservation may use the
   licenses associated with it plus any compute nodes. Otherwise the job is
   limited to the compute nodes associated with the reservation.
+* The dependency option of "expand" has been added. This option identifies a
+  job whose resource allocation is intended to be used to expand the allocation
+  of another job. See https://computing.llnl.gov/linux/slurm//faq.html#job_size
+  for a description of it's use.
 
 BLUEGENE SPECIFIC CHANGES
 =========================

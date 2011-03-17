@@ -1673,6 +1673,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
 
 	to_job_ptr->total_cpus   += from_job_ptr->total_cpus;
+	to_job_ptr->cpu_cnt      += from_job_ptr->cpu_cnt;
 	if (to_job_ptr->details) {
 		to_job_ptr->details->min_cpus = to_job_ptr->total_cpus;
 		to_job_ptr->details->max_cpus = to_job_ptr->total_cpus;

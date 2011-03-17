@@ -6613,6 +6613,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	/* Reset min and max node counts as needed, insure consistency */
+	if (job_specs->min_nodes == INFINITE) {
+		/* Used by scontrol just to get current configuration info */
+		job_specs->min_nodes = NO_VAL;
+	}
 	if (job_specs->min_nodes != NO_VAL) {
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			;	/* shrink running job, handle later */
@@ -8183,7 +8187,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
 	if (return_code) {
-		error("Epilog error on %s, setting DOWN", job_ptr->batch_host);
+		error("Epilog error for job %u on %s, setting DOWN",
+		      job_ptr->job_id, job_ptr->batch_host);
 		if (job_ptr->front_end_ptr) {
 			set_front_end_down(job_ptr->front_end_ptr,
 					  "Epilog error");
@@ -8193,21 +8198,27 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (front_end_ptr->job_cnt_comp)
 			front_end_ptr->job_cnt_comp--;
 		else {
-			error("job_cnt_comp underflow for front end %s",
-			      front_end_ptr->name);
+			error("job_cnt_comp underflow for for job %u on "
+			      "front end %s",
+			      job_ptr->job_id, front_end_ptr->name);
 		}
 		if (front_end_ptr->job_cnt_comp == 0)
 			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
 	}
 
-	for (i = 0; i < node_record_count; i++) {
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
-		node_ptr = &node_record_table_ptr[i];
-		if (return_code)
-			set_node_down(node_ptr->name, "Epilog error");
-		else
-			make_node_idle(node_ptr, job_ptr);
+	if ((job_ptr->total_nodes == 0) && IS_JOB_COMPLETING(job_ptr)) {
+		/* Job resources moved into another job */
+		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+	} else {
+		for (i = 0; i < node_record_count; i++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			node_ptr = &node_record_table_ptr[i];
+			if (return_code)
+				set_node_down(node_ptr->name, "Epilog error");
+			else
+				make_node_idle(node_ptr, job_ptr);
+		}
 	}
 #else
 	if (return_code) {
@@ -8226,18 +8237,14 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	if (!IS_JOB_COMPLETING(job_ptr)) {	/* COMPLETED */
 		if (IS_JOB_PENDING(job_ptr) && (job_ptr->batch_flag)) {
 			info("requeue batch job %u", job_ptr->job_id);
-			/* Clear everything so this appears to
-			   be a new job and then restart it
-			   up in accounting.
-			*/
+			/* Clear everything so this appears to be a new job
+			 * and then restart it in accounting. */
 			job_ptr->start_time = job_ptr->end_time = 0;
 			job_ptr->total_cpus = 0;
 			/* Current code (<= 2.1) has it so we start the new
-			   job with the next step id.  This could be
-			   used when restarting to figure out which
-			   step the previous run of this job stopped
-			   on.
-			*/
+			 * job with the next step id.  This could be used
+			 * when restarting to figure out which step the
+			 * previous run of this job stopped on. */
 
 			//job_ptr->next_step_id = 0;
 			job_ptr->node_cnt = 0;

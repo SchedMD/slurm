@@ -691,30 +691,61 @@ independently to the new job allocation so the expanded job may exceed size
 limits configured for an individual job.</p>
 
 <p>After the new job is allocated resources, merge that job's allocation
-into that of the original job by executing:
+into that of the original job by executing:<br>
 <i>scontrol update jobid=&lt;jobid&gt; NumNodes=0</i><br>
 The <i>jobid</i> above is that of the job to relinquish it's resources.
 These resources will automatically be transfered to the original job and the
 scontrol command will generate a script to reset variables in the original
-job's environment to reflect it's modified resource allocation. An example
-of the proceedure is shown below.
+job's environment to reflect it's modified resource allocation. 
+One would normally exit this second job at this point, since it has no
+associated resources.
+In order to generate a script to modify the environment variables for the
+expanded job, execute:<br>
+<i>scontrol update jobid=&lt;jobid&gt; NumNodes=ALL</i><br>
+Then execute the script generated.
+Note that this command does not change the original job's size, but only
+generates the script to change its environment variables.
+An example of the proceedure is shown below.
 Note that the original job may have active job steps at the time of it's
 expansion, but they will not be effected by the change.</p>
+
 <pre>
-#!/bin/bash
-srun my_small_job
+$ salloc -N4 bash
+salloc: Granted job allocation 65542
+$ srun hostname
+icrm1
+icrm2
+icrm3
+icrm4
 
-export SLURM_ORIG_JOBID=$SLURM_JOBID
-salloc -N2 --dependency=expand:$SLURM_ORIG_JOBID bash
-scontrol update JobId=$SLURM_JOBID NumNodes=0
-mv slurm_job_${SLURM_JOBID}_resize.sh \
-   slurm_job_${SLURM_ORIG_JOBID}_resize.sh
-rm slurm_job_${SLURM_JOBID}_resize.*
+$ salloc -N4 --dependency=expand:$SLURM_JOBID bash
+salloc: Granted job allocation 65543
+$ scontrol update jobid=$SLURM_JOBID NumNodes=0
+To reset SLURM environment variables, execute
+  For bash or sh shells:  . ./slurm_job_65543_resize.sh
+  For csh shells:         source ./slurm_job_65543_resize.csh
+$ exit
 exit
+salloc: Relinquishing job allocation 65543
 
-. slurm_job_${SLURM_ORIG_JOBID}_resize.sh
-srun my_big_job
-rm slurm_job_${SLURM_ORIG_JOBID}_resize.sh
+$ scontrol update jobid=$SLURM_JOBID NumNodes=ALL
+To reset SLURM environment variables, execute
+  For bash or sh shells:  . ./slurm_job_65542_resize.sh
+  For csh shells:         source ./slurm_job_65542_resize.csh
+$ . ./slurm_job_$SLURM_JOBID_resize.sh
+
+$ srun hostname
+icrm1
+icrm2
+icrm3
+icrm4
+icrm5
+icrm6
+icrm7
+icrm8
+$ exit
+exit
+salloc: Relinquishing job allocation 65542
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -1389,6 +1420,6 @@ dset TV::parallel_configs {
 </pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 January 2011</p>
+<p style="text-align:center;">Last modified 17 March 2011</p>
 
 <!--#include virtual="footer.txt"-->

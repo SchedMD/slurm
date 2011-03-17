@@ -435,6 +435,8 @@ scontrol_update_job (int argc, char *argv[])
 			int min_nodes, max_nodes, rc;
 			if (strcmp(val, "0") == 0) {
 				job_msg.min_nodes = 0;
+			} else if (strcasecmp(val, "ALL") == 0) {
+				job_msg.min_nodes = INFINITE;
 			} else {
 				min_nodes = (int) job_msg.min_nodes;
 				max_nodes = (int) job_msg.max_nodes;
