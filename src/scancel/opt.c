@@ -233,7 +233,7 @@ static void _opt_env()
 	char *val;
 
 	if ( (val=getenv("SCANCEL_ACCOUNT")) ) {
-		opt.account = xstrdup(val);
+		opt.account = xstrtolower(xstrdup(val));
 	}
 
 	if ( (val=getenv("SCANCEL_BATCH")) ) {
@@ -276,7 +276,7 @@ static void _opt_env()
 	}
 
 	if ( (val=getenv("SCANCEL_QOS")) ) {
-		opt.qos = xstrdup(val);
+		opt.qos = xstrtolower(xstrdup(val));
 	}
 
 	if ( (val=getenv("SCANCEL_STATE")) ) {

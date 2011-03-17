@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
     updating jobs as a non-admin user.
  -- Fix for "squeue --states=all" option. Bug would show no jobs.
  -- Schedule jobs with reservations before those without reservations.
+ -- Fix squeue/scancel to query correctly against accounts of different case.
 
 * Changes in SLURM 2.2.3
 ========================
