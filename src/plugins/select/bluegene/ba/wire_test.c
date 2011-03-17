@@ -81,18 +81,18 @@ extern int bridge_setup_system()
 	return SLURM_ERROR;
 }
 
-extern status_t bridge_free_bg(my_bluegene_t *bg)
+extern int bridge_free_bg(my_bluegene_t *bg)
 {
 	return SLURM_ERROR;
 }
 
-extern status_t bridge_get_bg(my_bluegene_t **bg)
+extern int bridge_get_bg(my_bluegene_t **bg)
 {
 	return SLURM_ERROR;
 }
 
-extern status_t bridge_get_data(rm_element_t* element,
-				enum rm_specification field, void *data)
+extern int bridge_get_data(void* element,
+			   int field, void *data)
 {
 	return SLURM_ERROR;
 }
