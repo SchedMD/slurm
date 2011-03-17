@@ -237,7 +237,7 @@ static void _opt_env()
 	char *val;
 
 	if ( (val=getenv("SCANCEL_ACCOUNT")) ) {
-		opt.account = xstrdup(val);
+		opt.account = xstrtolower(xstrdup(val));
 	}
 
 	if ( (val=getenv("SCANCEL_BATCH")) ) {
@@ -280,7 +280,7 @@ static void _opt_env()
 	}
 
 	if ( (val=getenv("SCANCEL_QOS")) ) {
-		opt.qos = xstrdup(val);
+		opt.qos = xstrtolower(xstrdup(val));
 	}
 
 	if ( (val=getenv("SCANCEL_STATE")) ) {
@@ -351,7 +351,7 @@ static void _opt_args(int argc, char **argv)
 			exit(1);
 			break;
 		case (int)'A':
-			opt.account = xstrdup(optarg);
+			opt.account = xstrtolower(xstrdup(optarg));
 			break;
 		case (int)'b':
 			opt.batch = true;
@@ -384,7 +384,7 @@ static void _opt_args(int argc, char **argv)
 			opt.verbose = -1;
 			break;
 		case (int)'q':
-			opt.qos = xstrdup(optarg);
+			opt.qos = xstrtolower(xstrdup(optarg));
 			break;
 		case (int)'R':
 			opt.reservation = xstrdup(optarg);

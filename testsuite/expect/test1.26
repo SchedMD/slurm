@@ -36,7 +36,7 @@
 source ./globals
 
 set test_id     "1.26"
-set interations 100
+set iterations 100
 set exit_code   0
 
 print_header $test_id
@@ -159,7 +159,7 @@ if {[string compare $host_1 $include_node]} {
 set front_end [test_front_end]
 
 set successes 0
-for {set inx 0} {$inx < $interations} {incr inx} {
+for {set inx 0} {$inx < $iterations} {incr inx} {
 	exec $bin_usleep 250000
 
 	set failures 0
@@ -255,8 +255,8 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 		set exit_code 1
 	}
 }
-if {$successes != $interations} {
-	send_user "\nFAILURE: only $successes of $interations completed successfully\n"
+if {$successes != $iterations} {
+	send_user "\nFAILURE: only $successes of $iterations completed successfully\n"
 }
 
 if {$exit_code == 0} {

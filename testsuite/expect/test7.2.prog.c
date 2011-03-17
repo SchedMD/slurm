@@ -359,7 +359,7 @@ main (int argc, char **argv)
 	/* Replicate the very heavy load that MVAPICH2 puts on PMI
 	 * This load exceeds that of MPICH2 by a very wide margin */
 #if _DEBUG
-	printf("Starting %d interations each with %d PMI_KVS_Put and \n"
+	printf("Starting %d iterations each with %d PMI_KVS_Put and \n"
 		"  one each PMI_KVS_Commit and KVS_Barrier\n",
 		BARRIER_CNT, PUTS_PER_BARRIER);
 	fflush(stdout);
