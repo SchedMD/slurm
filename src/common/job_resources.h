@@ -206,6 +206,13 @@ extern int get_job_resources_bit(job_resources_t *job_resrcs_ptr,
 extern int set_job_resources_bit(job_resources_t *job_resrcs_ptr,
 				 uint32_t node_id, uint16_t socket_id,
 				 uint16_t core_id);
+/* For every core bitmap set in the "from" resources structure at
+ * from_node_offset, set the corresponding bit in the "new" resources structure
+ * at new_node_offset */
+extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
+				   uint16_t new_node_offset,
+				   job_resources_t *from_job_resrcs_ptr,
+				   uint16_t from_node_offset);
 
 /* Get/clear/set bit value at specified location for whole node allocations
  *	get is for any socket/core on the specified node

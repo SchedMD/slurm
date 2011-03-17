@@ -1533,6 +1533,11 @@ static int _job_expand(struct job_record *from_job_ptr,
 		return SLURM_ERROR;
 	}
 
+	if (to_job_resrcs_ptr->core_bitmap_used) {
+		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
+		bit_nclear(to_job_resrcs_ptr->core_bitmap_used, 0, i-1);
+	}
+
 	if (from_job_ptr->details &&
 	    from_job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
 		if (from_job_ptr->details->pn_min_memory & MEM_PER_CPU) {
@@ -1568,6 +1573,9 @@ static int _job_expand(struct job_record *from_job_ptr,
 						     node_bitmap);
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
 			    select_fast_schedule);
+	xfree(to_job_ptr->node_addr);
+	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) *
+					to_job_ptr->total_nodes);
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
 			bit_ffs(to_job_resrcs_ptr->node_bitmap));
 	last_bit  = MAX(bit_fls(from_job_resrcs_ptr->node_bitmap),
@@ -1587,6 +1595,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 		if (!from_node_used && !to_node_used)
 			continue;
 		new_node_offset++;
+		memcpy(&to_job_ptr->node_addr[new_node_offset],
+                       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 		if (from_node_used) {
 			/* Merge alloc info from both "from" and "to" jobs,
 			 * leave "from" job with no allocated CPUs or memory */
@@ -1614,6 +1624,10 @@ static int _job_expand(struct job_record *from_job_ptr,
 					      node_ptr->name);
 				}
 			}
+			job_resources_bits_copy(new_job_resrcs_ptr,
+						new_node_offset,
+						from_job_resrcs_ptr,
+						from_node_offset);
 		}
 		if (to_node_used) {
 			/* Merge alloc info from both "from" and "to" jobs */
@@ -1648,17 +1662,30 @@ static int _job_expand(struct job_record *from_job_ptr,
 			}
 			new_job_resrcs_ptr->memory_used[new_node_offset] +=
 				to_job_resrcs_ptr->memory_used[to_node_offset];
+			job_resources_bits_copy(new_job_resrcs_ptr,
+						new_node_offset,
+						to_job_resrcs_ptr,
+						to_node_offset);
 		}
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
-info("new");
-log_job_resources(to_job_ptr->job_id, new_job_resrcs_ptr);
+
+	free_job_resources(&to_job_ptr->job_resrcs);
+	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
+
+	to_job_ptr->total_cpus   += from_job_ptr->total_cpus;
+	from_job_ptr->total_cpus  = 0;
+	from_job_ptr->total_nodes = 0;
+	to_job_ptr->total_nodes   = new_job_resrcs_ptr->nhosts;
+	from_job_ptr->total_nodes = 0;
+	bit_or(to_job_ptr->node_bitmap, from_job_ptr->node_bitmap);
+	bit_nclear(from_job_ptr->node_bitmap, 0, (node_record_count - 1));
+	xfree(to_job_ptr->nodes);
+	to_job_ptr->nodes = xstrdup(new_job_resrcs_ptr->nodes);
+	xfree(from_job_ptr->nodes);
+	from_job_ptr->nodes = xstrdup("");
+
 #if 0
-//NEED TO SET:
-	bitstr_t *	core_bitmap;
-	bitstr_t *	core_bitmap_used;
-
-
 	if (cr_ptr->nodes[i].gres_list)
 		gres_list = cr_ptr->nodes[i].gres_list;
 	else
@@ -1667,7 +1694,6 @@ log_job_resources(to_job_ptr->job_id, new_job_resrcs_ptr);
 				job_ptr->job_id, node_ptr->name);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
-//NEED TO CLEAR both old job_resources structures
 #endif
 	return rc;
 }

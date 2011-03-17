@@ -907,6 +907,89 @@ extern int set_job_resources_bit(job_resources_t *job_resrcs_ptr,
 	return SLURM_SUCCESS;
 }
 
+/* For every core bitmap and core_bitmap_used set in the "from" resources
+ * structure at from_node_offset, set the corresponding bit in the "new"
+ * resources structure at new_node_offset */
+extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
+				   uint16_t new_node_offset,
+				   job_resources_t *from_job_resrcs_ptr,
+				   uint16_t from_node_offset)
+{
+	int i, rc = SLURM_SUCCESS;
+	int new_bit_inx  = 0, new_core_cnt  = 0;
+	int from_bit_inx = 0, from_core_cnt = 0;
+
+	xassert(new_job_resrcs_ptr);
+	xassert(from_job_resrcs_ptr);
+
+	if (new_node_offset >= new_job_resrcs_ptr->nhosts) {
+		error("job_resources_bits_move: new_node_offset invalid "
+		      "(%u is 0 or >=%u)", new_node_offset,
+		      new_job_resrcs_ptr->nhosts);
+		return SLURM_ERROR;
+	}
+	for (i = 0; i < new_job_resrcs_ptr->nhosts; i++) {
+		if (new_job_resrcs_ptr->sock_core_rep_count[i] <=
+		    new_node_offset) {
+			new_bit_inx += new_job_resrcs_ptr->sockets_per_node[i] *
+				new_job_resrcs_ptr->cores_per_socket[i] *
+				new_job_resrcs_ptr->sock_core_rep_count[i];
+			new_node_offset -= new_job_resrcs_ptr->
+					   sock_core_rep_count[i];
+		} else {
+			new_bit_inx += new_job_resrcs_ptr->sockets_per_node[i] *
+				new_job_resrcs_ptr->cores_per_socket[i] *
+				new_node_offset;
+			new_core_cnt = new_job_resrcs_ptr->sockets_per_node[i] *
+				new_job_resrcs_ptr->cores_per_socket[i];
+			break;
+		}
+	}
+
+	if (from_node_offset >= from_job_resrcs_ptr->nhosts) {
+		error("job_resources_bits_move: from_node_offset invalid "
+		      "(%u is 0 or >=%u)", from_node_offset,
+		      from_job_resrcs_ptr->nhosts);
+		return SLURM_ERROR;
+	}
+	for (i = 0; i < from_job_resrcs_ptr->nhosts; i++) {
+		if (from_job_resrcs_ptr->sock_core_rep_count[i] <=
+		    from_node_offset) {
+			from_bit_inx += from_job_resrcs_ptr->sockets_per_node[i] *
+				from_job_resrcs_ptr->cores_per_socket[i] *
+				from_job_resrcs_ptr->sock_core_rep_count[i];
+			from_node_offset -= from_job_resrcs_ptr->
+					    sock_core_rep_count[i];
+		} else {
+			from_bit_inx += from_job_resrcs_ptr->sockets_per_node[i] *
+				from_job_resrcs_ptr->cores_per_socket[i] *
+				from_node_offset;
+			from_core_cnt = from_job_resrcs_ptr->sockets_per_node[i] *
+				from_job_resrcs_ptr->cores_per_socket[i];
+			break;
+		}
+	}
+
+	if (new_core_cnt != from_core_cnt) {
+		error("job_resources_bits_move: core_cnt mis-match (%d != %d)",
+		      new_core_cnt, from_core_cnt);
+		new_core_cnt = MIN(new_core_cnt, from_core_cnt);
+		rc = SLURM_ERROR;
+	}
+
+	for (i = 0; i < new_core_cnt; i++) {
+		if (bit_test(from_job_resrcs_ptr->core_bitmap, from_bit_inx+i))
+			bit_set(new_job_resrcs_ptr->core_bitmap,new_bit_inx+i);
+		if (bit_test(from_job_resrcs_ptr->core_bitmap_used,
+			     from_bit_inx+i)) {
+			bit_set(new_job_resrcs_ptr->core_bitmap_used,
+				new_bit_inx+i);
+		}
+	}
+
+	return rc;
+}
+
 extern int get_job_resources_node(job_resources_t *job_resrcs_ptr,
 				  uint32_t node_id)
 {
