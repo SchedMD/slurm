@@ -255,7 +255,8 @@ void delete_job_details(struct job_record *job_entry)
 		return;
 
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
-	_delete_job_desc_files(job_entry->job_id);
+	if (IS_JOB_FINISHED(job_entry))
+		_delete_job_desc_files(job_entry->job_id);
 
 	for (i=0; i<job_entry->details->argc; i++)
 		xfree(job_entry->details->argv[i]);
@@ -5021,8 +5022,7 @@ static void _list_delete_job(void *job_entry)
 		fatal("job hash error");
 	*job_pptr = job_ptr->job_next;
 
-	if (IS_JOB_FINISHED(job_ptr))
-		delete_job_details(job_ptr);
+	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->batch_host);

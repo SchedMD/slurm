@@ -669,6 +669,7 @@ int main(int argc, char *argv[])
 	switch_fini();
 
 	/* purge remaining data structures */
+	license_free();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	slurm_crypto_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
