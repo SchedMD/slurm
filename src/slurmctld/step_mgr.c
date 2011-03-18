@@ -644,6 +644,23 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				gres_cnt /= cpus_per_task;
 			total_tasks = MIN(total_tasks, gres_cnt);
 
+			if (step_spec->plane_size != (uint16_t) NO_VAL) {
+				if (avail_tasks < step_spec->plane_size)
+					avail_tasks = 0;
+				else {
+					/* Round count down */
+					avail_tasks /= step_spec->plane_size;
+					avail_tasks *= step_spec->plane_size;
+				}
+				if (total_tasks < step_spec->plane_size)
+					total_tasks = 0;
+				else {
+					/* Round count down */
+					total_tasks /= step_spec->plane_size;
+					total_tasks *= step_spec->plane_size;
+				}
+			}
+
 			if (step_spec->max_nodes &&
 			    (nodes_picked_cnt >= step_spec->max_nodes))
 				bit_clear(nodes_avail, i);
@@ -1573,8 +1590,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_specs->node_list = xstrdup(step_node_list);
 	}
 	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-		verbose("got %s and %s looking for %u nodes", step_node_list,
-			step_specs->node_list, step_specs->min_nodes);
+		verbose("Picked nodes %s when accumulating from %s",
+			step_node_list, step_specs->node_list);
 	}
 	step_ptr->step_node_bitmap = nodeset;
 

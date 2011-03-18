@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- Fix squeue/scancel to query correctly against accounts of different case.
  -- Abort an srun command when it's associated job gets aborted due to a
     dependency that can not be satisfied.
+ -- When srun is used with the --exclusive and --m plane=# options, insure
+    allocate tasks in blocks of the plane size.
 
 * Changes in SLURM 2.2.3
 ========================
