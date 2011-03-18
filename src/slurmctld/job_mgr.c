@@ -252,7 +252,7 @@ void delete_job_details(struct job_record *job_entry)
 		return;
 
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
-	if (IS_JOB_FINISHED(job_ptr))
+	if (IS_JOB_FINISHED(job_entry))
 		_delete_job_desc_files(job_entry->job_id);
 
 	for (i=0; i<job_entry->details->argc; i++)
