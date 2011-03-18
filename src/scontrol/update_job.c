@@ -246,7 +246,7 @@ scontrol_hold(char *op, char *job_id_str)
 		job_msg.priority = 0;
 		job_msg.alloc_sid = 0;
 	} else
-		job_msg.priority = 1;
+		job_msg.priority = INFINITE;
 
 	if (slurm_update_job(&job_msg))
 		return slurm_get_errno();

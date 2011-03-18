@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     be reserved and are consumed by jobs. This reservation mechanism for less
     than an entire midplane is still under development.
  -- Clear a job's "reason" field when a held job is released.
+ -- When releasing a held job, calculate a new priority for it rather than
+    just setting the priority to 1.
  -- Fix for sview started on a non-bluegene system to pick colors correctly
     when talking to a real bluegene system.
  -- Improve sched/backfill's expected start time calculation.
