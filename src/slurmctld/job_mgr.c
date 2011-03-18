@@ -8340,6 +8340,7 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
+		srun_allocate_abort(job_ptr);
 		job_completion_logger(job_ptr, false);
 		return false;
 	}
