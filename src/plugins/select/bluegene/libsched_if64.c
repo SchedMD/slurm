@@ -4,7 +4,8 @@
  *
  *  $Id: bluegene.c 9169 2006-09-05 17:26:51Z jette $
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <auble1@llnl.gov> et. al.
  *

@@ -29,28 +29,32 @@ if BLUEGENE_LOADED
 SUBDIRS = sfree
 
 if BG_L_P_LOADED
-SUBDIRS += bl ba
+  SUBDIRS += bl ba
 
-if BGL_LOADED
-pkglib_LTLIBRARIES += libsched_if64.la
-libsched_if64_la_SOURCES = libsched_if64.c
-libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-else
-pkglib_LTLIBRARIES += libsched_if.la
-libsched_if_la_SOURCES = libsched_if64.c
-libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-endif
+  if BGL_LOADED
+    pkglib_LTLIBRARIES += libsched_if64.la
+    libsched_if64_la_SOURCES = libsched_if64.c
+    libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+  else
+    pkglib_LTLIBRARIES += libsched_if.la
+    libsched_if_la_SOURCES = libsched_if64.c
+    libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+  endif
 
-block_allocator_lib  = ba/libblock_allocator.la
+  block_allocator_lib  = ba/libblock_allocator.la
 endif
 
 if BGQ_LOADED
-SUBDIRS += bl_bgq ba_bgq
+  SUBDIRS += bl_bgq ba_bgq
 
-block_allocator_lib  = ba_bgq/libblock_allocator.la
+  block_allocator_lib = ba_bgq/libblock_allocator.la
 
-# force link with g++
-nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
+  # force link with g++
+  nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
+
+  pkglib_LTLIBRARIES += runjob_plugin.la
+  runjob_plugin_la_SOURCES = runjob_plugin.cc
+  runjob_plugin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 endif
 
