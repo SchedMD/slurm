@@ -1531,7 +1531,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if (step_ptr->exclusive) {
 				usable_cpus = job_resrcs_ptr->cpus[pos] -
 					      job_resrcs_ptr->cpus_used[pos];
-				if (plane_size != (uint16_t) NO_VAL) {
+				if (plane_size &&
+				   ((uint16_t)plane_size != (uint16_t)NO_VAL)){
 					/* Round count down */
 					usable_cpus /= plane_size;
 					usable_cpus *= plane_size;
