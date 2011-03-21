@@ -1527,7 +1527,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint32_t num_tasks,
 					       uint16_t cpus_per_task,
 					       uint16_t task_dist,
-					       uint32_t plane_size);
+					       uint16_t plane_size);
 
 /* start_power_mgr - Start power management thread as needed. The thread
  *	terminates automatically at slurmctld shutdown time.
