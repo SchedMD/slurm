@@ -668,6 +668,7 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 			      uint16_t *cpus)
 {
 	int i, j, k, taskid = 0;
+	bool over_subscribe = false;
 
 	debug3("_task_layout_plane plane_size %u node_cnt %u task_cnt %u",
 	       step_layout->plane_size,
@@ -685,16 +686,25 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	}
 
 	taskid = 0;
+	for (i=0; i<step_layout->node_cnt; i++)
+		taskid += cpus[i];
+	if (taskid >= step_layout->task_cnt)
+		over_subscribe = true;
+
+	taskid = 0;
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */
 		for (i=0; ((i<step_layout->node_cnt)
 			   && (taskid<step_layout->task_cnt)); i++) {
 			/* assign a block of 'plane_size' tasks to this node */
-			for (k=0; ((k<step_layout->plane_size)
-				   && (taskid<step_layout->task_cnt)); k++) {
+			for (k=0; ((k<step_layout->plane_size) &&
+				   (taskid<step_layout->task_cnt)); k++) {
 				step_layout->tids[i][step_layout->tasks[i]] =
 					taskid;
 				taskid++;
 				step_layout->tasks[i]++;
+				if (!over_subscribe &&
+				    (step_layout->tasks[i] >= cpus[i]))
+					break;
 			}
 		}
 	}
