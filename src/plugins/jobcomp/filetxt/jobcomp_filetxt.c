@@ -292,6 +292,10 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		if (job_ptr->resize_time) {
 			_make_time_str(&job_ptr->resize_time, start_str,
 				       sizeof(start_str));
+		} else if (job_ptr->start_time > job_ptr->end_time) {
+			/* Job cancelled while pending and
+			 * expected start time is in the future. */
+			snprintf(start_str, sizeof(start_str), "Unknown");
 		} else {
 			_make_time_str(&job_ptr->start_time, start_str,
 				       sizeof(start_str));
