@@ -549,3 +549,11 @@ extern int basil_release(uint32_t rsvn_id)
 
 	return 0;
 }
+
+extern bool node_is_allocated(const struct basil_node *node)
+{
+	struct node_record *node_ptr;
+
+	node_ptr = &node_record_table_ptr[node->node_id];
+	return IS_NODE_ALLOCATED(node_ptr);
+}
