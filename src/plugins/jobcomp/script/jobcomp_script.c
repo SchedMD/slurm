@@ -221,7 +221,11 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 		j->jobstate = xstrdup (job_state_string (state));
 		if (job->resize_time)
 			j->start = job->resize_time;
-		else
+		else if (job->start_time > job->end_time) {
+			/* Job cancelled while pending and
+			 * expected start time is in the future. */
+			j->start = 0;
+		} else
 			j->start = job->start_time;
 		j->end = job->end_time;
 	}

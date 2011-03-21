@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     dependency that can not be satisfied.
  -- When srun is used with the --exclusive and --m plane=# options, insure
     allocate tasks in blocks of the plane size.
+ -- In jobcomp/script plugin, report START=0 if pending job is cancelled.
+    Previously may report expected start time.
 
 * Changes in SLURM 2.2.3
 ========================
