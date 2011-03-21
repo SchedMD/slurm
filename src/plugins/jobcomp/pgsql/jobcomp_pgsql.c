@@ -352,7 +352,11 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		job_state = job_ptr->job_state & JOB_STATE_BASE;
 		if (job_ptr->resize_time)
 			start_time = job_ptr->resize_time;
-		else
+		else if (job_ptr->start_time > job_ptr->end_time) {
+			/* Job cancelled while pending and
+			 * expected start time is in the future. */
+			start_time = 0;
+		} else
 			start_time = job_ptr->start_time;
 		end_time = job_ptr->end_time;
 	}
