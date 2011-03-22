@@ -579,24 +579,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					task_cnt /= cpus_per_task;
 				total_tasks = MIN(total_tasks, task_cnt);
 			}
-
-			if (step_spec->plane_size != (uint16_t) NO_VAL) {
-				if (avail_tasks < step_spec->plane_size)
-					avail_tasks = 0;
-				else {
-					/* Round count down */
-					avail_tasks /= step_spec->plane_size;
-					avail_tasks *= step_spec->plane_size;
-				}
-				if (total_tasks < step_spec->plane_size)
-					total_tasks = 0;
-				else {
-					/* Round count down */
-					total_tasks /= step_spec->plane_size;
-					total_tasks *= step_spec->plane_size;
-				}
-			}
-
 			if ((avail_tasks <= 0) ||
 			    ((selected_nodes == NULL) &&
 			     (nodes_picked_cnt >= step_spec->node_count) &&
@@ -1531,12 +1513,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if (step_ptr->exclusive) {
 				usable_cpus = job_resrcs_ptr->cpus[pos] -
 					      job_resrcs_ptr->cpus_used[pos];
-				if (plane_size &&
-				   ((uint16_t)plane_size != (uint16_t)NO_VAL)){
-					/* Round count down */
-					usable_cpus /= plane_size;
-					usable_cpus *= plane_size;
-				}
 			} else
 				usable_cpus = job_resrcs_ptr->cpus[pos];
 			if (step_ptr->mem_per_cpu && _is_mem_resv()) {

@@ -9,7 +9,6 @@ documents those changes that are of interest to users and admins.
  -- Correct logic that tells slurmstepd how many nodes are associated with a
     job step. The bug resulted in the job step completion message from
     slurmstepd to slurmctld being delayed by one minute.
- -- Fix some anomalies with respect to task layout with plane distribution.
 
 * Changes in SLURM 2.1.16
 =========================
