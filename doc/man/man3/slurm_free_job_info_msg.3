@@ -289,6 +289,8 @@ SLURM controller.
 .LP
 #include <stdio.h>
 .br
+#include <stdlib.h>
+.br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
@@ -301,7 +303,7 @@ int main (int argc, char *argv[])
 .br
 	int i;
 .br
-	job_info_msg_t	* job_info_msg = NULL;
+	job_info_msg_t	* job_buffer_ptr = NULL;
 .br
 	job_info_t * job_ptr;
 .br
@@ -321,7 +323,7 @@ int main (int argc, char *argv[])
 .LP
 	/* The easy way to print... */
 .br
-	slurm_print_job_info_msg (stdout, job_buffer_ptr);
+	slurm_print_job_info_msg (stdout, job_buffer_ptr, 0);
 .LP
 	/* A harder way.. */
 .br
@@ -329,7 +331,7 @@ int main (int argc, char *argv[])
 .br
 		job_ptr = &job_buffer_ptr\->job_array[i];
 .br
-		slurm_print_job_info(stdout, job_ptr);
+		slurm_print_job_info(stdout, job_ptr, 1);
 .br
 	}
 .LP
@@ -353,21 +355,21 @@ int main (int argc, char *argv[])
 .LP
 	if (job_buffer_ptr\->record_count >= 1) {
 .br
-		uint16_t rotate;
+		uint16_t nodes;
 .br
 		if (slurm_get_select_jobinfo(
 .br
 			job_buffer_ptr\->job_array[0].select_jobinfo,
 .br
-			SELECT_DATA_ROTATE,
+			SELECT_JOBDATA_NODE_CNT,
 .br
-			&rotate) == SLURM_SUCCESS)
+			&nodes) == SLURM_SUCCESS)
 .br
-			printf("JobId=%u Rotate=%u\\n",
+			printf("JobId=%u Nodes=%u\\n",
 .br
 				job_buffer_ptr\->job_array[0].job_id,
 .br
-				rotate);
+				nodes);
 .br
 	}
 .LP
@@ -380,7 +382,7 @@ int main (int argc, char *argv[])
 	else
 .br
 		printf ("Slurm job id = %u\\n", job_id);
-.br
+.LP
 	exit (0);
 .br
 }
