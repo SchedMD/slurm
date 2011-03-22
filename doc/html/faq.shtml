@@ -694,9 +694,12 @@ limits configured for an individual job.</p>
 into that of the original job by executing:<br>
 <i>scontrol update jobid=&lt;jobid&gt; NumNodes=0</i><br>
 The <i>jobid</i> above is that of the job to relinquish it's resources.
-These resources will automatically be transfered to the original job and the
-scontrol command will generate a script to reset variables in the original
-job's environment to reflect it's modified resource allocation. 
+To provides more control over when the job expansion occurs, the resources are
+not merged into the original job until explicitly requested.
+These resources will be transfered to the original job and the scontrol
+command will generate a script to reset variables in the second
+job's environment to reflect it's modified resource allocation (which would
+be no resources).
 One would normally exit this second job at this point, since it has no
 associated resources.
 In order to generate a script to modify the environment variables for the
@@ -705,9 +708,18 @@ expanded job, execute:<br>
 Then execute the script generated.
 Note that this command does not change the original job's size, but only
 generates the script to change its environment variables.
-An example of the proceedure is shown below.
+Until the environment variables are modified (e.g. the job's node count,
+CPU count, hostlist, etc.), any srun command will only consider the resources
+in the original resource allocation.
 Note that the original job may have active job steps at the time of it's
-expansion, but they will not be effected by the change.</p>
+expansion, but they will not be effected by the change.
+An example of the proceedure is shown below in which the original job
+allocation waits until the second resource allocation request can be
+satisfied. The job requesting additional resources could also use the sbatch
+command and permit the original job to continue execution at its initial size.
+Note that the development of additional user tools to manage SLURM resource
+allocations is planned in the future to make this process both simpler and
+more flexible.</p
 
 <pre>
 $ salloc -N4 bash
