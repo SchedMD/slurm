@@ -1155,16 +1155,29 @@ Only print out the transactions affecting specified accounts.
 
 .TP
 \fIActor\fP=<Specific name the list will display>
+Only display transactions done by a certain person.
 
 .TP
 \fIClusters\fP=<comma separated list of cluster names>
 Only print out the transactions affecting specified clusters.
 
 .TP
-\fIEndTime\fP=<Date and time where list should end>
+\fIEnd\fP=<Date and time of last transaction to return>
+Return all transactions before this Date and time.  Default is now.
 
 .TP
-\fIStartTime\fP=<Date and time where list should begin>
+\fIStart\fP=<Date and time of first transaction to return>
+Return all transactions after this Date and time.  Default is epoch.
+
+Valid time formats for End and Start are...
+.sp
+HH:MM[:SS] [AM|PM]
+.br
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
 
 .TP
 \fIUsers\fP=<comma separated list of user names>
