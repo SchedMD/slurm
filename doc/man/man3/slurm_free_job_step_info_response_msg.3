@@ -123,6 +123,8 @@ SLURM controller.
 .LP
 #include <stdio.h>
 .br
+#include <stdlib.h>
+.br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
@@ -153,15 +155,15 @@ int main (int argc, char *argv[])
 .br
 	slurm_print_job_step_info_msg (stdout,
 .br
-	                               step_info_ptr);
+	                               step_info_ptr, 0);
 .LP
 	/* A harder way.. */
 .br
-	for (i = 0; i < step_info_ptr\->record_count; i++) {
+	for (i = 0; i < step_info_ptr\->job_step_count; i++) {
 .br
 		step_ptr = &step_info_ptr\->job_steps[i];
 .br
-		slurm_print_job_step_info(stdout, step_ptr);
+		slurm_print_job_step_info(stdout, step_ptr, 0);
 .br
 	}
 .LP
