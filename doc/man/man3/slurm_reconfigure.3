@@ -282,6 +282,8 @@ use an expired reservation.
 .LP
 #include <stdio.h>
 .br
+#include <stdlib.h>
+.br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
@@ -292,11 +294,11 @@ int main (int argc, char *argv[])
 .br
 	update_node_msg_t       update_node_msg;
 .br
-	partition_desc_msg_t    update_part_msg;
+	update_part_msg_t       update_part_msg;
 .br
 	delete_part_msg_t       delete_part_msg;
 .br
-	reserve_request_msg_t   resv_msg;
+	resv_desc_msg_t         resv_msg;
 .br
 	char                   *resv_name = NULL;
 .LP
@@ -346,7 +348,7 @@ int main (int argc, char *argv[])
 .br
 	update_node_msg.node_names = "lx[10\-12]";
 .br
-	update_node_msg.node_state = NODE_STATE_DRAINING ;
+	update_node_msg.node_state = NODE_STATE_DRAIN ;
 .br
 	if (slurm_update_node (&update_node_msg)) {
 .br
