@@ -625,6 +625,18 @@ extern int init(void)
 {
 
 #ifdef HAVE_BG
+	if (!bg_conf) {
+		/* This is needed on all systems where srun wraps the
+		   bluegene calling program (i.e. runjob).
+		*/
+		bg_conf = xmalloc(sizeof(bg_config_t));
+		/* set some defaults for most systems */
+		bg_conf->mp_node_cnt = 512;
+		bg_conf->quarter_node_cnt = 128;
+		bg_conf->nodecard_node_cnt = 32;
+		bg_conf->mp_nodecard_cnt = bg_conf->mp_node_cnt
+			/ bg_conf->nodecard_node_cnt;
+	}
 	if (bg_recover != NOT_FROM_CONTROLLER) {
 #if defined HAVE_BG_L_P && (SYSTEM_DIMENSIONS != 3)
 		fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
@@ -657,15 +669,6 @@ extern int init(void)
 		   we don't want to read the config or anything like that. */
 		_set_bg_lists();
 
-		if (!bg_conf) {
-			bg_conf = xmalloc(sizeof(bg_config_t));
-			/* set some defaults for most systems */
-			bg_conf->mp_node_cnt = 512;
-			bg_conf->quarter_node_cnt = 128;
-			bg_conf->nodecard_node_cnt = 32;
-			bg_conf->mp_nodecard_cnt = bg_conf->mp_node_cnt
-				/ bg_conf->nodecard_node_cnt;
-		}
 		xfree(bg_conf->slurm_user_name);
 		xfree(bg_conf->slurm_node_prefix);
 		slurm_conf_lock();
