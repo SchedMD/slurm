@@ -32,8 +32,6 @@ documents those changes that are of interest to users and admins.
  -- Fix squeue/scancel to query correctly against accounts of different case.
  -- Abort an srun command when it's associated job gets aborted due to a
     dependency that can not be satisfied.
- -- When srun is used with the --exclusive and --m plane=# options, always
-    allocate tasks in blocks of the plane size.
  -- In jobcomp plugins, report start time of zeroif pending job is cancelled.
     Previously may report expected start time.
 
