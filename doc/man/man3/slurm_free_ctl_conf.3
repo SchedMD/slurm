@@ -82,6 +82,8 @@ SLURM controller.
 .LP
 #include <stdio.h>
 .br
+#include <stdlib.h>
+.br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
@@ -92,7 +94,7 @@ int main (int argc, char *argv[])
 .br
 	slurm_ctl_conf_t * conf_info_msg_ptr = NULL;
 .br
-	long version = slurm_api_version;
+	long version = slurm_api_version();
 .LP
 	/* We can use the SLURM version number to determine how
 .br
@@ -128,11 +130,11 @@ int main (int argc, char *argv[])
 .br
 	printf ("control_machine = %s\\n",
 .br
-	        slurm_ctl_conf_ptr\->control_machine);
+	        conf_info_msg_ptr\->control_machine);
 .br
-	printf ("server_timeout = %u\\n",
+	printf ("first_job_id = %u\\n",
 .br
-	        slurm_ctl_conf_ptr\->server_timeout);
+	        conf_info_msg_ptr\->first_job_id);
 .LP
 	slurm_free_ctl_conf (conf_info_msg_ptr);
 .br
