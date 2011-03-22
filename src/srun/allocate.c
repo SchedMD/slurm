@@ -757,7 +757,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		       opt.min_nodes, opt.max_nodes);
 		return -1;
 	}
-#ifndef HAVE_FRONT_END
+#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
 	if (opt.min_nodes && (opt.min_nodes > job->nhosts)) {
 		error ("Minimum node count > allocated node count (%d > %d)",
 		       opt.min_nodes, job->nhosts);

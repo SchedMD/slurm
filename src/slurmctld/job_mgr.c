@@ -233,7 +233,6 @@ struct job_record *create_job_record(int *error_code)
 	detail_ptr->submit_time = time(NULL);
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
-
 	if (list_append(job_list, job_ptr) == 0)
 		fatal("list_append memory allocation failure");
 

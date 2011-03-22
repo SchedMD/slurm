@@ -290,6 +290,8 @@ int srun(int ac, char **av)
 	} else if ((resp = existing_allocation())) {
 
 		job_id = resp->job_id;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
+					&resp->node_cnt);
 		if (opt.nodes_set_env && !opt.nodes_set_opt &&
 		    (opt.min_nodes > resp->node_cnt)) {
 			/* This signifies the job used the --no-kill option
@@ -324,7 +326,7 @@ int srun(int ac, char **av)
 			exit(error_exit);
 	} else {
 		/* Combined job allocation and job step launch */
-#ifdef HAVE_FRONT_END
+#if defined HAVE_FRONT_END && (!defined HAVE_BGQ || !defined HAVE_BG_FILES)
 		uid_t my_uid = getuid();
 		if ((my_uid != 0) &&
 		    (my_uid != slurm_get_slurm_user_id())) {
@@ -441,7 +443,11 @@ int srun(int ac, char **av)
 	xfree(env);
 
  re_launch:
+#if defined HAVE_BGQ && defined HAVE_BG_FILES
+	task_state = task_state_create(1);
+#else
 	task_state = task_state_create(opt.ntasks);
+#endif
 	slurm_step_launch_params_t_init(&launch_params);
 	launch_params.gid = opt.gid;
 	launch_params.argc = opt.argc;

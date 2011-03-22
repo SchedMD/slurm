@@ -1571,6 +1571,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
 	int cpus_per_task, node_count, ret_code, i;
+	uint32_t real_node_count, max_tasks;
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
 	uint32_t orig_cpu_count;
@@ -1632,6 +1633,31 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    _test_strlen(step_specs->node_list, "node_list", 1024*64))
 		return ESLURM_PATHNAME_TOO_LONG;
 
+#if defined HAVE_BGQ && defined HAVE_BG_FILES
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_NODE_CNT,
+				    &real_node_count);
+	if (step_specs->min_nodes < real_node_count) {
+		if (step_specs->min_nodes > 512) {
+			error("step asked for more than 512 nodes but "
+			      "less than the allocation, on a "
+			      "bluegene/Q system that isn't allowed.");
+			return ESLURM_INVALID_NODE_COUNT;
+		}
+		step_specs->min_nodes = 1;
+		step_specs->max_nodes = 1;
+		step_specs->cpu_count = 0;
+	} else if (real_node_count == step_specs->min_nodes) {
+		step_specs->min_nodes = job_ptr->details->min_nodes;
+		step_specs->max_nodes = job_ptr->details->max_nodes;
+//		step_specs->num_tasks = job_ptr->details->num_tasks;
+		step_specs->cpu_count = 0;
+	} else {
+		error("bad node count %u only have %u", step_specs->min_nodes,
+		      real_node_count);
+		return ESLURM_INVALID_NODE_COUNT;
+	}
+#endif
 	/* if the overcommit flag is checked, we 0 set cpu_count=0
 	 * which makes it so we don't check to see the available cpus
 	 */
@@ -1683,18 +1709,20 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ret_code;
 	}
 	node_count = bit_set_count(nodeset);
-
+	real_node_count = node_count;
+#if defined HAVE_BGQ && defined HAVE_BG_FILES
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &real_node_count);
+#endif
 	if (step_specs->num_tasks == NO_VAL) {
 		if (step_specs->cpu_count != NO_VAL)
 			step_specs->num_tasks = step_specs->cpu_count;
 		else
-			step_specs->num_tasks = node_count;
+			step_specs->num_tasks = real_node_count;
 	}
-
-	if (step_specs->num_tasks >
-			(node_count*slurmctld_conf.max_tasks_per_node)) {
-		error("step has invalid task count: %u",
-		      step_specs->num_tasks);
+	max_tasks = (real_node_count*slurmctld_conf.max_tasks_per_node);
+	if (step_specs->num_tasks > max_tasks) {
+		error("step has invalid task count: %u max is %u",
+		      step_specs->num_tasks, max_tasks);
 		if (step_gres_list)
 			list_destroy(step_gres_list);
 		FREE_NULL_BITMAP(nodeset);
@@ -1985,7 +2013,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	char *node_list = NULL;
 	time_t begin_time, run_time;
 	bitstr_t *pack_bitstr;
-#ifdef HAVE_FRONT_END
+#if defined HAVE_FRONT_END && (!defined HAVE_BGQ || !defined HAVE_BG_FILES)
 	/* On front-end systems, the steps only execute on one node.
 	 * We need to make them appear like they are running on the job's
 	 * entire allocation (which they really are). */

@@ -191,6 +191,9 @@ int error_exit = 1;
 int immediate_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
+#if defined HAVE_BG_FILES && HAVE_BGQ
+static const char *runjob_loc = "/bgsys/drivers/ppcfloor/hlcs/bin/runjob";
+#endif
 
 typedef struct env_vars env_vars_t;
 
@@ -1579,9 +1582,23 @@ static void _opt_args(int argc, char **argv)
 	} else if (opt.argc > 0) {
 		char *fullpath;
 
-		if ((fullpath = search_path(opt.cwd, opt.argv[0], false, X_OK))) {
+		if ((fullpath = search_path(opt.cwd,
+					    opt.argv[0], false, X_OK))) {
 			xfree(opt.argv[0]);
+#if defined HAVE_BG_FILES && HAVE_BGQ
+			opt.argv[0] = xstrdup_printf("%s %s",
+						     runjob_loc, fullpath);
+			xfree(fullpath);
+#else
 			opt.argv[0] = fullpath;
+#endif
+		} else {
+#if defined HAVE_BG_FILES && HAVE_BGQ
+			fullpath = opt.argv[0];
+			opt.argv[0] = xstrdup_printf("%s %s",
+						     runjob_loc, fullpath);
+			xfree(fullpath);
+#endif
 		}
 	}
 

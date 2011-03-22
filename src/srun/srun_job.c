@@ -421,21 +421,23 @@ static int
 _compute_task_count(allocation_info_t *ainfo)
 {
 	int i, cnt = 0;
-
+#if defined HAVE_BGQ && HAVE_BG_FILES
+	/* always return the ntasks here for Q */
+	return opt.ntasks;
+#endif
 	if (opt.cpus_set) {
 		for (i = 0; i < ainfo->num_cpu_groups; i++)
 			cnt += ( ainfo->cpu_count_reps[i] *
 				 (ainfo->cpus_per_node[i]/opt.cpus_per_task));
 	}
-
 	return (cnt < ainfo->nnodes) ? ainfo->nnodes : cnt;
 }
 
 static void
-_set_ntasks(allocation_info_t *info)
+_set_ntasks(allocation_info_t *ai)
 {
 	if (!opt.ntasks_set) {
-		opt.ntasks = _compute_task_count(info);
+		opt.ntasks = _compute_task_count(ai);
 		if (opt.cpus_set)
 			opt.ntasks_set = true;	/* implicit */
 	}
@@ -460,14 +462,17 @@ _job_create_structure(allocation_info_t *ainfo)
  	job->nodelist = xstrdup(ainfo->nodelist);
 	job->stepid  = ainfo->stepid;
 
-#ifdef HAVE_FRONT_END	/* Limited job step support */
+#if defined HAVE_BGQ && defined HAVE_BG_FILES
+	job->nhosts   = ainfo->nnodes;
+	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &job->nhosts);
+#elif defined HAVE_FRONT_END	/* Limited job step support */
 	opt.overcommit = true;
 	job->nhosts = 1;
 #else
 	job->nhosts   = ainfo->nnodes;
 #endif
 
-#ifndef HAVE_FRONT_END
+#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
 	if(opt.min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt.min_nodes);

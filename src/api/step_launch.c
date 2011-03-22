@@ -181,7 +181,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		return SLURM_ERROR;
 	}
 	/* Now, hack the step_layout struct if the following it true.
-	   This looks like an ugly hack to support LAM/MPI's lamboot. */
+	   This looks like an ugly hack to support LAM/MPI's lamboot.
+	   NOTE: This also gets ran for BGQ systems. */
 	if (mpi_hook_client_single_task_per_node()) {
 		for (i = 0; i < ctx->step_resp->step_layout->node_cnt; i++)
 			ctx->step_resp->step_layout->tasks[i] = 1;
@@ -645,11 +646,15 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
+#if defined HAVE_BGQ && defined HAVE_BG_FILES
+	sls->tasks_requested = 1;
+#else
 	/* Hack for LAM-MPI's lamboot, launch one task per node */
 	if (mpi_hook_client_single_task_per_node())
 		sls->tasks_requested = layout->node_cnt;
 	else
 		sls->tasks_requested = layout->task_cnt;
+#endif
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
 	sls->node_io_error = bit_alloc(layout->node_cnt);
