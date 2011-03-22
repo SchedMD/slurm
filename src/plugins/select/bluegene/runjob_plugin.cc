@@ -49,8 +49,10 @@ extern "C" {
 #ifdef HAVE_BG_FILES
 
 #include <bgsched/runjob/Plugin.h>
+//#include "ProcessTree.h"
 
 #include <boost/thread/mutex.hpp>
+#include <boost/foreach.hpp>
 
 #include <iosfwd>
 
@@ -93,13 +95,26 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
 
-	std::cout << "starting job from pid " << verify.getPid() << std::endl;
-	std::cout << "block " << verify.getBlock() << std::endl;
-	std::cout << "corner " << verify.getCorner() << std::endl;
-	std::cout << "shape " << verify.getShape() << std::endl;
+	std::cout << "starting job from pid " << verify.pid() << std::endl;
+	std::cout << "executable: " << verify.exe() << std::endl;
+	std::cout << "args      : ";
+	std::copy(verify.args().begin(), verify.args().end(),
+		  std::ostream_iterator<std::string>(std::cout, " "));
+	std::cout << std::endl;
+	std::cout << "envs      : ";
+	std::copy(verify.envs().begin(), verify.envs().end(),
+		  std::ostream_iterator<std::string>(std::cout, " "));
+	std::cout << std::endl;
+	std::cout << "block     : " << verify.block() << std::endl;
+	if (!verify.corner().empty()) {
+		std::cout << "corner:     " << verify.corner() << std::endl;
+	}
+	if (!verify.shape().empty()) {
+		std::cout << "shape:      " << verify.shape() << std::endl;
+	}
 
-	ProcessTree tree(verify.getPid());
-	std::cout << tree << std::endl;
+	// const ProcessTree tree( verify.pid() );
+	// std::cout << tree << std::endl;
 
 	return;
 }
@@ -107,8 +122,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 void Plugin::execute(const bgsched::runjob::Started& data)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
-	std::cout << "runjob " << data.getPid()
-		  << " started with ID " << data.getJob() << std::endl;
+	std::cout << "runjob " << data.pid()
+		  << " started with ID " << data.job() << std::endl;
 }
 
 void Plugin::execute(const bgsched::runjob::Terminated& data)
