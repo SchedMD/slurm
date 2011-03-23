@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
     as UID values. Patch from Dennis Leepow.
  -- Patch to un/pack double values properly if negative value.  Patch from
     Dennis Leepow.
+ -- Do not reset a job's priority when requeued or suspended.
 
 * Changes in SLURM 2.2.3
 ========================

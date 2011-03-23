@@ -1894,7 +1894,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 
 				info("requeue job %u due to failure of node %s",
 				     job_ptr->job_id, node_name);
-				_set_job_prio(job_ptr);
 				snprintf(requeue_msg, sizeof(requeue_msg),
 					 "Job requeued due to failure "
 					 "of node %s",
@@ -8105,7 +8104,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_RUNNING;
-		_set_job_prio(job_ptr);
 		job_ptr->tot_sus_time +=
 			difftime(now, job_ptr->suspend_time);
 		if (!wiki_sched_test) {
@@ -8207,8 +8205,6 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 		goto reply;
 	}
 
-	/* reset the priority */
-	_set_job_prio(job_ptr);
 	slurm_sched_requeue(job_ptr, "Job requeued by user/admin");
 	last_job_update = now;
 
