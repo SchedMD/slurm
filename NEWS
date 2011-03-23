@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
     a constraint field with a count (e.g. "srun --constraint=gpu*2 -N4 a.out").
  -- Add support for user names that are entirely numeric and do not treat them
     as UID values. Patch from Dennis Leepow.
+ -- Patch to un/pack double values properly if negative value.  Patch from
+    Dennis Leepow.
 
 * Changes in SLURM 2.2.3
 ========================
