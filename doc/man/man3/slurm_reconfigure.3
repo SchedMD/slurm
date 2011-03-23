@@ -19,7 +19,7 @@ int \fBslurm_create_partition\fR (
 .LP
 int \fBslurm_create_reservation\fR (
 .br
-	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP
+	resv_desc_msg_t *\fIupdate_resv_msg_ptr\fP
 .br
 );
 .LP
@@ -49,7 +49,7 @@ void \fBslurm_init_part_desc_msg\fR (
 .LP
 void \fBslurm_init_resv_desc_msg\fR (
 .br
-	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP
+	resv_desc_msg_t *\fIupdate_resv_msg_ptr\fP
 .br
 );
 .LP
@@ -89,7 +89,7 @@ int \fBslurm_update_partition\fR (
 .LP
 int \fBslurm_update_reservation\fR (
 .br
-	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP
+	resv_desc_msg_t *\fIupdate_resv_msg_ptr\fP
 .br
 );
 .SH "ARGUMENTS"
