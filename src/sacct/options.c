@@ -40,6 +40,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_time.h"
+#include "src/common/uid.h"
 #include "sacct.h"
 #include <time.h>
 
@@ -75,22 +76,22 @@ void _help_fields_msg(void)
 
 static char *_convert_to_id(char *name, bool gid)
 {
-	if(gid) {
-		struct group *grp;
-		if (!(grp=getgrnam(name))) {
+	if (gid) {
+		gid_t gid;
+		if ( gid_from_string( name, &gid ) != 0 ) {
 			fprintf(stderr, "Invalid group id: %s\n", name);
 			exit(1);
 		}
 		xfree(name);
-		name = xstrdup_printf("%d", grp->gr_gid);
+		name = xstrdup_printf( "%d", (int) gid );
 	} else {
-		struct passwd *pwd;
-		if (!(pwd=getpwnam(name))) {
+		uid_t uid;
+		if ( uid_from_string( name, &uid ) != 0 ) {
 			fprintf(stderr, "Invalid user id: %s\n", name);
 			exit(1);
 		}
 		xfree(name);
-		name = xstrdup_printf("%d", pwd->pw_uid);
+		name = xstrdup_printf( "%d", (int) uid );
 	}
 	return name;
 }
@@ -129,10 +130,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
-					if (!isdigit((int) *name)) {
-						name = _convert_to_id(
-							name, gid);
-					}
+					name = _convert_to_id( name, gid );
 
 					while((tmp_char = list_next(itr))) {
 						if(!strcasecmp(tmp_char, name))
@@ -160,10 +158,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 		if((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
-
-			if (!isdigit((int) *name)) {
-				name = _convert_to_id(name, gid);
-			}
+			name = _convert_to_id(name, gid);
 
 			while((tmp_char = list_next(itr))) {
 				if(!strcasecmp(tmp_char, name))

@@ -38,6 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/uid.h"
 #include "job_reports.h"
 
 enum {
@@ -133,6 +134,19 @@ static int _sort_acct_grouping_dec(slurmdb_report_acct_grouping_t *acct_a,
 	return 0;
 }
 
+
+static char *_string_to_uid( const char *name )
+{
+	uid_t uid;
+	if ( uid_from_string( name, &uid ) != 0 ) {
+		fprintf(stderr, "Invalid user id: %s\n", name);
+		exit(1);
+	}
+	xfree(name);
+	return xstrdup_printf( "%d", (int) uid );
+}
+
+
 /* returns number of objects added to list */
 static int _addto_uid_char_list(List char_list, char *names)
 {
@@ -167,19 +181,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
-					if (!isdigit((int) *name)) {
-						struct passwd *pwd;
-						if (!(pwd=getpwnam(name))) {
-							fprintf(stderr,
-								"Invalid user "
-								"id: %s\n",
-								name);
-							exit(1);
-						}
-						xfree(name);
-						name = xstrdup_printf(
-							"%d", pwd->pw_uid);
-					}
+					name = _string_to_uid( name );
 
 					while((tmp_char = list_next(itr))) {
 						if(!strcasecmp(tmp_char, name))
@@ -207,18 +209,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 		if((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
-
-			if (!isdigit((int) *name)) {
-				struct passwd *pwd;
-				if (!(pwd=getpwnam(name))) {
-					fprintf(stderr,
-						"Invalid user id: %s\n",
-						name);
-					exit(1);
-				}
-				xfree(name);
-				name = xstrdup_printf("%d", pwd->pw_uid);
-			}
+			name = _string_to_uid( name );
 
 			while((tmp_char = list_next(itr))) {
 				if(!strcasecmp(tmp_char, name))
