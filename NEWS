@@ -131,6 +131,7 @@ documents those changes that are of interest to users and admins.
     dependency that can not be satisfied.
  -- In jobcomp plugins, report start time of zeroif pending job is cancelled.
     Previously may report expected start time.
+ -- Fixed sacctmgr man to state correct variables.
 
 * Changes in SLURM 2.2.3
 ========================
