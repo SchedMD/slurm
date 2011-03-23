@@ -2214,7 +2214,9 @@ Number of logical threads in a single physical core (e.g. "2").
 Note that the SLURM can allocate resources to jobs down to the
 resolution of a core. If your system is configured with more than
 one thread per core, execution of a different job on each thread
-is not supported.
+is not supported unless you configure \fBSelectTypeParameters=CR_CPU\fR
+plus \fBProcs\fR; do not configure \fBSockets\fR, \fBCoresPerSocket\fR or
+\fBThreadsPerCore\fR.
 A job can execute a one task per thread from within one job step or
 execute a distinct job step on each of the threads.
 Note also if you are running with more than 1 thread per core and running
