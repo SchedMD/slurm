@@ -43,7 +43,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/uid.h"
 
-static char *_string_to_uid( const char *name )
+static char *_string_to_uid( char *name )
 {
 	uid_t uid;
 	if ( uid_from_string( name, &uid ) != 0 ) {

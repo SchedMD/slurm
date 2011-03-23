@@ -61,6 +61,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 
 #include "src/strigger/strigger.h"
 

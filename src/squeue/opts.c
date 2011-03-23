@@ -1065,7 +1065,7 @@ _build_user_list( char* str )
 {
 	List my_list;
 	char *user = NULL;
-	char *tmp_char = NULL, *my_user_list = NULL, *end_ptr = NULL;
+	char *tmp_char = NULL, *my_user_list = NULL;
 
 	if ( str == NULL )
 		return NULL;

@@ -135,7 +135,7 @@ static int _sort_acct_grouping_dec(slurmdb_report_acct_grouping_t *acct_a,
 }
 
 
-static char *_string_to_uid( const char *name )
+static char *_string_to_uid( char *name )
 {
 	uid_t uid;
 	if ( uid_from_string( name, &uid ) != 0 ) {
