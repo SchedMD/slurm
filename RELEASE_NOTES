@@ -69,6 +69,12 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
+block_info_t
+	Added	    job_list
+	node_cnt -> cnode_cnt
+	ionodes  -> ionode_str
+	nodes    -> mp_str
+	bp_inx   -> mp_inx
 
 
 Added the following struct definitions

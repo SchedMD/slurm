@@ -599,26 +599,27 @@ static List _get_all_allocated_blocks(void)
 {
 	List ret_list = list_create(destroy_bg_record);
 	ListIterator itr;
-	bg_record_t *block_ptr = NULL;
-	bg_record_t *str_ptr = NULL;
+	bg_record_t *bg_record = NULL;
+	bg_record_t *rm_record = NULL;
 
 	if (!ret_list)
 		fatal("malloc error");
 
 	if (bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
-		while ((block_ptr = (bg_record_t *) list_next(itr))) {
-			if ((block_ptr->user_name == NULL)
-			    ||  (block_ptr->user_name[0] == '\0')
-			    ||  (block_ptr->bg_block_id == NULL)
-			    ||  (block_ptr->bg_block_id[0] == '0'))
+		while ((bg_record = (bg_record_t *) list_next(itr))) {
+			if ((bg_record->user_name == NULL)
+			    ||  (bg_record->user_name[0] == '\0')
+			    ||  (bg_record->bg_block_id == NULL)
+			    ||  (bg_record->bg_block_id[0] == '0'))
 				continue;
-			str_ptr = xmalloc(sizeof(bg_record_t));
-			str_ptr->magic = BLOCK_MAGIC;
-			str_ptr->bg_block_id = xstrdup(block_ptr->bg_block_id);
-			str_ptr->nodes = xstrdup(block_ptr->nodes);
+			rm_record = xmalloc(sizeof(bg_record_t));
+			rm_record->magic = BLOCK_MAGIC;
+			rm_record->bg_block_id =
+				xstrdup(bg_record->bg_block_id);
+			rm_record->mp_str = xstrdup(bg_record->mp_str);
 
-			list_append(ret_list, str_ptr);
+			list_append(ret_list, rm_record);
 		}
 		list_iterator_destroy(itr);
 	} else {
@@ -634,20 +635,20 @@ static int _excise_block(List block_list, char *bg_block_id,
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator iter;
-	bg_record_t *block = NULL;
+	bg_record_t *bg_record = NULL;
 
 	if (block_list) {
 		iter = list_iterator_create(block_list);
 		xassert(iter);
-		while ((block = list_next(iter))) {
+		while ((bg_record = list_next(iter))) {
 			rc = SLURM_ERROR;
-			if (strcmp(block->bg_block_id, bg_block_id))
+			if (strcmp(bg_record->bg_block_id, bg_block_id))
 				continue;
-			if (strcmp(block->nodes, nodes)) {
+			if (strcmp(bg_record->mp_str, nodes)) {
 				/* changed bgblock */
 				error("bg_block_id:%s old_nodes:%s "
 				      "new_nodes:%s",
-				      bg_block_id, nodes, block->nodes);
+				      bg_block_id, nodes, bg_record->mp_str);
 				break;
 			}
 

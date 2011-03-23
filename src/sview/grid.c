@@ -1313,7 +1313,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 	grid_button_t *grid_button = NULL;
 	grid_button_t *send_grid_button = NULL;
 	int i=0;
-	char *nodes = NULL;
+	char *mp_str = NULL;
 	char tmp_nodes[256];
 	int found = 0;
 	int coord_y=0;
@@ -1355,11 +1355,11 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 		if (!_block_in_node(bg_info_ptr->mp_inx, inx))
 			continue;
 		found = 1;
-		nodes = bg_info_ptr->nodes;
-		if (bg_info_ptr->ionodes) {
-			sprintf(tmp_nodes, "%s[%s]", nodes,
-				bg_info_ptr->ionodes);
-			nodes = tmp_nodes;
+		mp_str = bg_info_ptr->mp_str;
+		if (bg_info_ptr->ionode_str) {
+			sprintf(tmp_nodes, "%s[%s]", mp_str,
+				bg_info_ptr->ionode_str);
+			mp_str = tmp_nodes;
 		}
 		if (bg_info_ptr->state == BG_BLOCK_ERROR)
 			grid_button->state = NODE_STATE_ERROR;
@@ -1368,7 +1368,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 		else
 			grid_button->state = NODE_STATE_IDLE;
 		send_grid_button = create_grid_button_from_another(
-			grid_button, nodes, *color_inx);
+			grid_button, mp_str, *color_inx);
 		grid_button->state = orig_state;
 		if (send_grid_button) {
 			send_grid_button->button_list = *button_list;

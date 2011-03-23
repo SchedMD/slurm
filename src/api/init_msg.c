@@ -176,7 +176,7 @@ void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
 	memset(update_block_msg, 0, sizeof(update_block_msg_t));
 	update_block_msg->conn_type[0] = (uint16_t)NO_VAL;
 	update_block_msg->job_running = NO_VAL;
-	update_block_msg->node_cnt = NO_VAL;
+	update_block_msg->cnode_cnt = NO_VAL;
 	update_block_msg->node_use = (uint16_t)NO_VAL;
 	update_block_msg->state = (uint16_t)NO_VAL;
 }

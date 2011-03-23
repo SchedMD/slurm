@@ -462,7 +462,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	if (num_ncards > num) {
 		error("You requested more (%d > %d) nodecards "
 		      "than are available on this block %s",
-		      num_ncards, num, bg_record->nodes);
+		      num_ncards, num, bg_record->mp_str);
 	}
 
 	for(i=0; i<num; i++) {

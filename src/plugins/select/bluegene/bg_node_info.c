@@ -41,6 +41,8 @@
 #include "src/common/xstring.h"
 #include "bg_core.h"
 
+static uint32_t g_bitmap_size = 0;
+
 static void _free_node_subgrp(void *object)
 {
 	node_subgrp_t *subgrp = (node_subgrp_t *)object;
@@ -79,7 +81,7 @@ static int _pack_node_subgrp(node_subgrp_t *subgrp, Buf buffer,
 {
 	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		pack_bit_fmt(subgrp->bitmap, buffer);
-		pack16(subgrp->node_cnt, buffer);
+		pack16(subgrp->cnode_cnt, buffer);
 		pack16(subgrp->state, buffer);
 	}
 
@@ -112,7 +114,7 @@ static int _unpack_node_subgrp(node_subgrp_t **subgrp_pptr, Buf buffer,
 			j+=2;
 		}
 
-		safe_unpack16(&subgrp->node_cnt, buffer);
+		safe_unpack16(&subgrp->cnode_cnt, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
 		subgrp->state = uint16_tmp;
 	}
@@ -207,9 +209,17 @@ unpack_error:
 extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+
+	if (!g_bitmap_size) {
+		if (cluster_flags & CLUSTER_FLAG_BGQ)
+			g_bitmap_size = bg_conf->mp_cnode_cnt;
+		else
+			g_bitmap_size = bg_conf->ionodes_per_mp;
+	}
 
 	if (bg_conf && (!size || size == NO_VAL))
-		size = bg_conf->ionodes_per_mp;
+		size = g_bitmap_size;
 
 	nodeinfo->bitmap_size = size;
 	nodeinfo->magic = NODEINFO_MAGIC;
@@ -239,9 +249,17 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	int i=0;
 	bg_record_t *bg_record = NULL;
 	static time_t last_set_all = 0;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (!blocks_are_created)
 		return SLURM_NO_CHANGE_IN_DATA;
+
+	if (!g_bitmap_size) {
+		if (cluster_flags & CLUSTER_FLAG_BGQ)
+			g_bitmap_size = bg_conf->mp_cnode_cnt;
+		else
+			g_bitmap_size = bg_conf->ionodes_per_mp;
+	}
 
 	/* only set this once when the last_bg_update is newer than
 	   the last time we set things up. */
@@ -265,14 +283,15 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		xassert(nodeinfo);
 		xassert(nodeinfo->subgrp_list);
 		list_flush(nodeinfo->subgrp_list);
-		if (nodeinfo->bitmap_size != bg_conf->ionodes_per_mp)
-			nodeinfo->bitmap_size = bg_conf->ionodes_per_mp;
+		if (nodeinfo->bitmap_size != g_bitmap_size)
+			nodeinfo->bitmap_size = g_bitmap_size;
 	}
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
 		enum node_states state = NODE_STATE_UNKNOWN;
 		node_subgrp_t *subgrp = NULL;
 		select_nodeinfo_t *nodeinfo;
+		bitstr_t *bitmap;
 
 		/* Only mark unidle blocks */
 		if (bg_record->job_running == NO_JOB_RUNNING)
@@ -292,8 +311,13 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			      bg_block_state_string(bg_record->state));
 			continue;
 		}
+		if ((cluster_flags & CLUSTER_FLAG_BGQ)
+		    && (state != NODE_STATE_ERROR))
+			bitmap = bg_record->cnodes_used_bitmap;
+		else
+			bitmap = bg_record->ionode_bitmap;
 
-		for(i=0; i<node_record_count; i++) {
+		for (i=0; i<node_record_count; i++) {
 			if (!bit_test(bg_record->bitmap, i))
 				continue;
 			node_ptr = &(node_record_table_ptr[i]);
@@ -303,21 +327,25 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			xassert(nodeinfo);
 			xassert(nodeinfo->subgrp_list);
 
-			subgrp = _find_subgrp(
-				nodeinfo->subgrp_list,
-				state, bg_conf->ionodes_per_mp);
+			subgrp = _find_subgrp(nodeinfo->subgrp_list,
+					      state, g_bitmap_size);
 
-			if (subgrp->node_cnt < bg_conf->mp_node_cnt) {
-				if (bg_record->node_cnt
-				    < bg_conf->mp_node_cnt) {
-					bit_or(subgrp->bitmap,
-					       bg_record->ionode_bitmap);
-					subgrp->node_cnt += bg_record->node_cnt;
+			if (subgrp->cnode_cnt < bg_conf->mp_cnode_cnt) {
+				if (cluster_flags & CLUSTER_FLAG_BGQ) {
+					bit_or(subgrp->bitmap, bitmap);
+					subgrp->cnode_cnt +=
+						bit_set_count(bitmap);
+				} else if (bg_record->cnode_cnt
+					   < bg_conf->mp_cnode_cnt) {
+					bit_or(subgrp->bitmap, bitmap);
+					subgrp->cnode_cnt +=
+						bg_record->cnode_cnt;
 				} else {
 					bit_nset(subgrp->bitmap,
 						 0,
-						 (bg_conf->ionodes_per_mp-1));
-					subgrp->node_cnt = bg_conf->mp_node_cnt;
+						 (g_bitmap_size-1));
+					subgrp->cnode_cnt =
+						bg_conf->mp_cnode_cnt;
 				}
 			}
 		}
@@ -367,7 +395,7 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		itr = list_iterator_create(nodeinfo->subgrp_list);
 		while ((subgrp = list_next(itr))) {
 			if (subgrp->state == state) {
-				*uint16 = subgrp->node_cnt;
+				*uint16 = subgrp->cnode_cnt;
 				break;
 			}
 		}

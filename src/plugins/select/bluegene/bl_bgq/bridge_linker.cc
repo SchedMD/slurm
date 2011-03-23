@@ -164,9 +164,9 @@ static void _remove_jobs_on_block_and_reset(char *block_id)
 		      bg_record->user_name);
 
 		if (job_remove_failed) {
-			if (bg_record->nodes)
+			if (bg_record->mp_str)
 				slurm_drain_nodes(
-					bg_record->nodes,
+					bg_record->mp_str,
 					(char *)
 					"_term_agent: Couldn't remove job",
 					slurm_get_slurm_user_id());
@@ -863,9 +863,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 			hostlist_push(hostlist, temp);
 		}
-		bg_record->nodes = hostlist_ranged_string_xmalloc(hostlist);
+		bg_record->mp_str = hostlist_ranged_string_xmalloc(hostlist);
 		hostlist_destroy(hostlist);
-		debug3("got nodes of %s", bg_record->nodes);
+		debug3("got nodes of %s", bg_record->mp_str);
 
 		process_nodes(bg_record, true);
 
@@ -902,11 +902,11 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			 bg_block_id);
 
 		xfree(bg_block_id);
-		if (strcmp(temp, bg_record->nodes)) {
+		if (strcmp(temp, bg_record->mp_str)) {
 			fatal("bad wiring in preserved state "
 			      "(found %s, but allocated %s) "
 			      "YOU MUST COLDSTART",
-			      bg_record->nodes, temp);
+			      bg_record->mp_str, temp);
 		}
 
 		/* If a user is on the block this will be filled in */

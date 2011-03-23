@@ -45,23 +45,23 @@
 #define JOBINFO_MAGIC 0x83ac
 
 struct select_jobinfo {
-	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
-						 * dimensions, e.g. AXYZ */
-	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
-	uint16_t reboot;	/* reboot block before starting job */
-	uint16_t rotate;	/* permit geometry rotation if set */
-	char *bg_block_id;	/* Blue Gene block ID */
-	uint16_t magic;		/* magic number */
-	char *nodes;            /* node list given for estimated start */
-	char *ionodes;          /* for bg to tell which ionodes of a small
-				 * block the job is running */
-	uint32_t node_cnt;      /* how many cnodes in block running job */
 	uint16_t altered;       /* see if we have altered this job
 				 * or not yet */
+	char *bg_block_id;	/* Blue Gene block ID */
 	char *blrtsimage;       /* BlrtsImage for this block */
+	uint32_t cnode_cnt;     /* how many cnodes in block running job */
+	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
+	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
+						 * dimensions, e.g. AXYZ */
+	char *ionode_str;       /* for bg to tell which ionodes of a small
+				 * block the job is running */
 	char *linuximage;       /* LinuxImage for this block */
+	uint16_t magic;		/* magic number */
+	char *mp_str;           /* midplane list given for estimated start */
 	char *mloaderimage;     /* mloaderImage for this block */
 	char *ramdiskimage;     /* RamDiskImage for this block */
+	uint16_t reboot;	/* reboot block before starting job */
+	uint16_t rotate;	/* permit geometry rotation if set */
 };
 
 /* allocate storage for a select job credential

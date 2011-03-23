@@ -69,9 +69,9 @@ static bool _filter_out(node_info_t *node_ptr);
 static int  _get_info(bool clear_old);
 static void _sinfo_list_delete(void *data);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-                             node_info_t *node_ptr);
+			     node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
-                             partition_info_t* part_ptr);
+			     partition_info_t* part_ptr);
 static int  _multi_cluster(List clusters);
 static int  _query_server(partition_info_msg_t ** part_pptr,
 			  node_info_msg_t ** node_pptr,
@@ -179,14 +179,14 @@ static int _bg_report(block_info_msg_t *block_ptr)
 	}
 
 	if (!params.no_header)
-		printf("BG_BLOCK         NODES        OWNER    STATE    CONNECTION USE\n");
+		printf("BG_BLOCK         MIDPLANES    OWNER    STATE    CONNECTION USE\n");
 /*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
 /*                      RMP_22Apr1544018 bg[123x456]  name     READY    TORUS      COPROCESSOR */
 
 	for (i=0; i<block_ptr->record_count; i++) {
 		printf("%-16.16s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
 		       block_ptr->block_array[i].bg_block_id,
-		       block_ptr->block_array[i].nodes,
+		       block_ptr->block_array[i].mp_str,
 		       block_ptr->block_array[i].owner_name,
 		       bg_block_state_string(
 			       block_ptr->block_array[i].state),
@@ -204,7 +204,7 @@ static int _bg_report(block_info_msg_t *block_ptr)
  * part_pptr IN/OUT - partition information message
  * node_pptr IN/OUT - node information message
  * block_pptr IN/OUT - BlueGene block data
- * clear_old IN - If set, then always replace old data, needed when going 
+ * clear_old IN - If set, then always replace old data, needed when going
  *		  between clusters.
  * RET zero or error code
  */
@@ -559,7 +559,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 }
 
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
-                             partition_info_t* part_ptr)
+			     partition_info_t* part_ptr)
 {
 	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
 		return true;
@@ -572,7 +572,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 
 	if (params.match_flags.groups_flag &&
 	    (_strcmp(part_ptr->allow_groups,
-	             sinfo_ptr->part_info->allow_groups)))
+		     sinfo_ptr->part_info->allow_groups)))
 		return false;
 
 	if (params.match_flags.job_size_flag &&
@@ -922,4 +922,3 @@ static int _strcmp(char *data1, char *data2)
 		data2 = null_str;
 	return strcmp(data1, data2);
 }
-

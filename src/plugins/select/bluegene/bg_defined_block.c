@@ -95,10 +95,10 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				while ((found_record = (bg_record_t*)
 					list_next(itr_found)) != NULL) {
 /* 					info("%s[%s] ?= %s[%s]", */
-/* 					     bg_record->nodes, */
-/* 					     bg_record->ionodes, */
-/* 					     found_record->nodes, */
-/* 					     found_record->ionodes); */
+/* 					     bg_record->mp_str, */
+/* 					     bg_record->ionode_str, */
+/* 					     found_record->mp_str, */
+/* 					     found_record->ionode_str); */
 
 					if ((bit_equal(bg_record->bitmap,
 						       found_record->bitmap))
@@ -148,7 +148,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				geo_char[i] = '\0';
 
 				debug2("adding %s %s %s",
-				       bg_record->nodes,
+				       bg_record->mp_str,
 				       start_char, geo_char);
 				if (bg_record->ba_mp_list
 				    && list_count(bg_record->ba_mp_list)) {
@@ -190,12 +190,12 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						 name);
 
 					xfree(name);
-					if (strcmp(temp, bg_record->nodes)) {
+					if (strcmp(temp, bg_record->mp_str)) {
 						fatal("given list of %s "
 						      "but allocated %s, "
 						      "your order might be "
 						      "wrong in bluegene.conf",
-						      bg_record->nodes,
+						      bg_record->mp_str,
 						      temp);
 					}
 					if (bg_record->ba_mp_list)
@@ -348,7 +348,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	if (bg_found_block_list) {
 		itr = list_iterator_create(bg_found_block_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-			if (!strcmp(name, bg_record->nodes)) {
+			if (!strcmp(name, bg_record->mp_str)) {
 				xfree(name);
 				list_iterator_destroy(itr);
 				/* don't create total already there */
@@ -364,7 +364,7 @@ extern int create_full_system_block(List bg_found_block_list)
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = (bg_record_t *) list_next(itr))
 		       != NULL) {
-			if (!strcmp(name, bg_record->nodes)) {
+			if (!strcmp(name, bg_record->mp_str)) {
 				xfree(name);
 				list_iterator_destroy(itr);
 				/* don't create total already there */
@@ -400,7 +400,7 @@ extern int create_full_system_block(List bg_found_block_list)
 		geo_char[i] = alpha_num[bg_record->geo[i]];
 		start_char[i] = alpha_num[bg_record->start[i]];
 	}
-	debug2("adding %s %s %s",  bg_record->nodes, start_char, geo_char);
+	debug2("adding %s %s %s",  bg_record->mp_str, start_char, geo_char);
 	if (bg_record->ba_mp_list)
 		list_flush(bg_record->ba_mp_list);
 	else

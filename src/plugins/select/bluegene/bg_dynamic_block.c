@@ -109,12 +109,12 @@ extern List create_dynamic_block(List block_list,
 					info("not adding %s(%s) %s %s %s %u "
 					     "(free_cnt)",
 					     bg_record->bg_block_id,
-					     bg_record->nodes,
+					     bg_record->mp_str,
 					     bg_block_state_string(
 						     bg_record->state),
 					     start_geo,
 					     geo,
-					     bg_record->node_cnt);
+					     bg_record->cnode_cnt);
 				}
 				continue;
 			}
@@ -143,11 +143,11 @@ extern List create_dynamic_block(List block_list,
 					geo[dim] = '\0';
 					info("adding %s(%s) %s %s %s %u",
 					     bg_record->bg_block_id,
-					     bg_record->nodes,
+					     bg_record->mp_str,
 					     bg_block_state_string(
 						     bg_record->state),
 					     start_geo, geo,
-					     bg_record->node_cnt);
+					     bg_record->cnode_cnt);
 				}
 				if (check_and_set_mp_list(
 					    bg_record->ba_mp_list)
@@ -179,12 +179,12 @@ extern List create_dynamic_block(List block_list,
 					geo[dim] = '\0';
 					info("not adding %s(%s) %s %s %s %u ",
 					     bg_record->bg_block_id,
-					     bg_record->nodes,
+					     bg_record->mp_str,
 					     bg_block_state_string(
 						     bg_record->state),
 					     start_geo,
 					     geo,
-					     bg_record->node_cnt);
+					     bg_record->cnode_cnt);
 				}
 				/* just so we don't look at it later */
 				bg_record->free_cnt = -1;
@@ -201,7 +201,7 @@ extern List create_dynamic_block(List block_list,
 	if (request->avail_mp_bitmap)
 		ba_set_removable_mps(request->avail_mp_bitmap, 1);
 
-	if (request->size==1 && cnodes < bg_conf->mp_node_cnt) {
+	if (request->size==1 && cnodes < bg_conf->mp_cnode_cnt) {
 		switch(cnodes) {
 #ifdef HAVE_BGL
 		case 32:
@@ -347,10 +347,10 @@ extern List create_dynamic_block(List block_list,
 		/* Here we are only looking for the first
 		   block on the midplane.  So either the count
 		   is greater or equal than
-		   bg_conf->mp_node_cnt or the first bit is
+		   bg_conf->mp_cnode_cnt or the first bit is
 		   set in the ionode_bitmap.
 		*/
-		if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
+		if (bg_record->cnode_cnt < bg_conf->mp_cnode_cnt) {
 			bool found = 0;
 			if (bit_ffs(bg_record->ionode_bitmap) != 0)
 				continue;
@@ -376,7 +376,7 @@ extern List create_dynamic_block(List block_list,
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("removing %s(%s) for request %d",
 			     bg_record->bg_block_id,
-			     bg_record->nodes, request->size);
+			     bg_record->mp_str, request->size);
 
 		remove_block(bg_record->ba_mp_list, is_small);
 		rc = SLURM_SUCCESS;
@@ -464,14 +464,14 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	if (bg_record->ba_mp_list)
 		ba_mp = list_peek(bg_record->ba_mp_list);
 	if (!ba_mp) {
-		if (bg_record->nodes) {
-			hostlist_t hl = hostlist_create(bg_record->nodes);
+		if (bg_record->mp_str) {
+			hostlist_t hl = hostlist_create(bg_record->mp_str);
 			char *host = hostlist_shift(hl);
 			hostlist_destroy(hl);
-			found_record->nodes = xstrdup(host);
+			found_record->mp_str = xstrdup(host);
 			free(host);
 			error("you gave me a list with no ba_mps using %s",
-			      found_record->nodes);
+			      found_record->mp_str);
 		} else {
 			char tmp_char[SYSTEM_DIMENSIONS+1];
 			int dim;
@@ -479,13 +479,13 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				tmp_char[dim] =
 					alpha_num[found_record->start[dim]];
 			tmp_char[dim] = '\0';
-			found_record->nodes = xstrdup_printf(
+			found_record->mp_str = xstrdup_printf(
 				"%s%s",
 				bg_conf->slurm_node_prefix,
 				tmp_char);
 			error("you gave me a record with no ba_mps "
 			      "and no nodes either using %s",
-			      found_record->nodes);
+			      found_record->mp_str);
 		}
 	} else {
 		new_ba_mp = ba_copy_mp(ba_mp);
@@ -497,7 +497,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		new_ba_mp->used = BA_MP_USED_TRUE;
 		list_append(found_record->ba_mp_list, new_ba_mp);
 		found_record->mp_count = 1;
-		found_record->nodes = xstrdup_printf(
+		found_record->mp_str = xstrdup_printf(
 			"%s%s",
 			bg_conf->slurm_node_prefix, new_ba_mp->coord_str);
 	}
@@ -518,14 +518,14 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 
 	xassert(bg_conf->cpu_ratio);
 	found_record->cpu_cnt = bg_conf->cpu_ratio * size;
-	found_record->node_cnt = size;
+	found_record->cnode_cnt = size;
 
 	found_record->ionode_bitmap = bit_copy(ionodes);
 	bit_fmt(bitstring, BITSIZE, found_record->ionode_bitmap);
-	found_record->ionodes = xstrdup(bitstring);
+	found_record->ionode_str = xstrdup(bitstring);
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("made small block of %s[%s]",
-		     found_record->nodes, found_record->ionodes);
+		     found_record->mp_str, found_record->ionode_str);
 	return found_record;
 }
 
@@ -540,7 +540,7 @@ static int _split_block(List block_list, List new_blocks,
 
 	memset(&blockreq, 0, sizeof(select_ba_request_t));
 
-	switch(bg_record->node_cnt) {
+	switch(bg_record->cnode_cnt) {
 #ifdef HAVE_BGL
 	case 32:
 		error("We got a 32 we should never have this");
@@ -553,7 +553,7 @@ static int _split_block(List block_list, List new_blocks,
 			break;
 		default:
 			error("We don't make a %d from size %d",
-			      cnodes, bg_record->node_cnt);
+			      cnodes, bg_record->cnode_cnt);
 			goto finished;
 			break;
 		}
@@ -569,7 +569,7 @@ static int _split_block(List block_list, List new_blocks,
 			break;
 		default:
 			error("We don't make a %d from size %d",
-			      cnodes, bg_record->node_cnt);
+			      cnodes, bg_record->cnode_cnt);
 			goto finished;
 			break;
 		}
@@ -587,7 +587,7 @@ static int _split_block(List block_list, List new_blocks,
 			break;
 		default:
 			error("We don't make a %d from size %d",
-			      cnodes, bg_record->node_cnt);
+			      cnodes, bg_record->cnode_cnt);
 			goto finished;
 			break;
 		}
@@ -603,7 +603,7 @@ static int _split_block(List block_list, List new_blocks,
 			break;
 		default:
 			error("We don't make a %d from size %d",
-			      cnodes, bg_record->node_cnt);
+			      cnodes, bg_record->cnode_cnt);
 			goto finished;
 			break;
 		}
@@ -624,7 +624,7 @@ static int _split_block(List block_list, List new_blocks,
 			break;
 		default:
 			error("We don't make a %d from size %d",
-			      cnodes, bg_record->node_cnt);
+			      cnodes, bg_record->cnode_cnt);
 			goto finished;
 			break;
 		}
@@ -651,7 +651,7 @@ static int _split_block(List block_list, List new_blocks,
 			break;
 		default:
 			error("We don't make a %d from size %d",
-			      cnodes, bg_record->node_cnt);
+			      cnodes, bg_record->cnode_cnt);
 			goto finished;
 			break;
 		}
@@ -685,7 +685,7 @@ static int _split_block(List block_list, List new_blocks,
 			break;
 		default:
 			error("We don't make a %d from size %d",
-			      cnodes, bg_record->node_cnt);
+			      cnodes, bg_record->cnode_cnt);
 			goto finished;
 			break;
 		}
@@ -704,7 +704,7 @@ static int _split_block(List block_list, List new_blocks,
 		info("Asking for %u 32CNBlocks, and %u 128CNBlocks "
 		     "from a %u block, starting at ionode %d.",
 		     blockreq.small32, blockreq.small128,
-		     bg_record->node_cnt, start);
+		     bg_record->cnode_cnt, start);
 #else
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("Asking for %u 16CNBlocks, %u 32CNBlocks, "
@@ -712,7 +712,7 @@ static int _split_block(List block_list, List new_blocks,
 		     "from a %u block, starting at ionode %d.",
 		     blockreq.small16, blockreq.small32,
 		     blockreq.small64, blockreq.small128,
-		     blockreq.small256, bg_record->node_cnt, start);
+		     blockreq.small256, bg_record->cnode_cnt, start);
 #endif
 	handle_small_record_request(new_blocks, &blockreq, bg_record, start);
 
@@ -782,7 +782,8 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 
 		/* check small blocks first */
-		if (only_small && (bg_record->node_cnt > bg_conf->mp_node_cnt))
+		if (only_small
+		    && (bg_record->cnode_cnt > bg_conf->mp_cnode_cnt))
 			continue;
 
 		if (request->avail_mp_bitmap &&
@@ -795,7 +796,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 		}
 
-		if (bg_record->node_cnt == cnodes) {
+		if (bg_record->cnode_cnt == cnodes) {
 			ba_mp_t *ba_mp = NULL;
 			if (bg_record->ba_mp_list)
 				ba_mp = list_peek(bg_record->ba_mp_list);
@@ -812,11 +813,11 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			goto finished;
 		}
 		/* lets see if we can combine some small ones */
-		if (bg_record->node_cnt < cnodes) {
+		if (bg_record->cnode_cnt < cnodes) {
 			char bitstring[BITSIZE];
 			bitstr_t *bitstr = NULL;
 			int num_over = 0;
-			int num_cnodes = bg_record->node_cnt;
+			int num_cnodes = bg_record->cnode_cnt;
 			int rec_mp_bit = bit_ffs(bg_record->bitmap);
 
 			if (curr_mp_bit != rec_mp_bit) {
@@ -862,7 +863,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 					   (bg_conf->ionodes_per_mp-1));
 				bit_or(ionodes, bg_record->ionode_bitmap);
 				total_cnode_cnt = num_cnodes =
-					bg_record->node_cnt;
+					bg_record->cnode_cnt;
 			} else
 				total_cnode_cnt += num_cnodes;
 
@@ -870,9 +871,9 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("combine adding %s %s %d got %d set "
 				     "ionodes %s total is %s",
-				     bg_record->bg_block_id, bg_record->nodes,
+				     bg_record->bg_block_id, bg_record->mp_str,
 				     num_cnodes, total_cnode_cnt,
-				     bg_record->ionodes, bitstring);
+				     bg_record->ionode_str, bitstring);
 			if (total_cnode_cnt == cnodes) {
 				ba_mp_t *ba_mp = NULL;
 				if (bg_record->ba_mp_list)

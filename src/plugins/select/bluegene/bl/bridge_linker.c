@@ -497,9 +497,9 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		      bg_record->user_name);
 
 		if (job_remove_failed) {
-			if (bg_record->nodes)
+			if (bg_record->mp_str)
 				slurm_drain_nodes(
-					bg_record->nodes,
+					bg_record->mp_str,
 					"_term_agent: Couldn't remove job",
 					slurm_get_slurm_user_id());
 			else
@@ -1774,9 +1774,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 			hostlist_push(hostlist, node_name_tmp);
 		}
-		bg_record->nodes = hostlist_ranged_string_xmalloc(hostlist);
+		bg_record->mp_str = hostlist_ranged_string_xmalloc(hostlist);
 		hostlist_destroy(hostlist);
-		debug3("got nodes of %s", bg_record->nodes);
+		debug3("got nodes of %s", bg_record->mp_str);
 		// need to get the 000x000 range for nodes
 		// also need to get coords
 

@@ -67,7 +67,7 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	jobinfo->reboot = (uint16_t) NO_VAL;
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;
-	jobinfo->node_cnt = NO_VAL;
+	jobinfo->cnode_cnt = NO_VAL;
 	/* Remainder of structure is already NULL fulled */
 
 	return jobinfo;
@@ -87,8 +87,8 @@ extern int free_select_jobinfo(select_jobinfo_t *jobinfo)
 		}
 		jobinfo->magic = 0;
 		xfree(jobinfo->bg_block_id);
-		xfree(jobinfo->nodes);
-		xfree(jobinfo->ionodes);
+		xfree(jobinfo->mp_str);
+		xfree(jobinfo->ionode_str);
 		xfree(jobinfo->blrtsimage);
 		xfree(jobinfo->linuximage);
 		xfree(jobinfo->mloaderimage);
@@ -154,26 +154,26 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		jobinfo->bg_block_id = xstrdup(tmp_char);
 		break;
 	case SELECT_JOBDATA_NODES:
-		xfree(jobinfo->nodes);
-		jobinfo->nodes = xstrdup(tmp_char);
+		xfree(jobinfo->mp_str);
+		jobinfo->mp_str = xstrdup(tmp_char);
 		break;
 	case SELECT_JOBDATA_IONODES:
-		xfree(jobinfo->ionodes);
-		jobinfo->ionodes = xstrdup(tmp_char);
+		xfree(jobinfo->ionode_str);
+		jobinfo->ionode_str = xstrdup(tmp_char);
 		break;
 	case SELECT_JOBDATA_NODE_CNT:
-		jobinfo->node_cnt = *uint32;
+		jobinfo->cnode_cnt = *uint32;
 		/* Make sure the conn type is correct with the new count */
-		if ((bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
-		    || (jobinfo->node_cnt < bg_conf->mp_node_cnt)) {
+		if ((bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
+		    || (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt)) {
 			if (jobinfo->conn_type[0] < SELECT_SMALL)
 				jobinfo->conn_type[0] = SELECT_SMALL;
 		} else if (jobinfo->conn_type[0] >= SELECT_SMALL)
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				jobinfo->conn_type[i] = SELECT_TORUS;
 
-		if ((bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
-		    || (jobinfo->node_cnt < bg_conf->mp_node_cnt))
+		if ((bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
+		    || (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt))
 			jobinfo->conn_type[0] = SELECT_SMALL;
 		else if (jobinfo->conn_type[0] == SELECT_SMALL)
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
@@ -257,21 +257,21 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 			*tmp_char = xstrdup(jobinfo->bg_block_id);
 		break;
 	case SELECT_JOBDATA_NODES:
-		if ((jobinfo->nodes == NULL)
-		    ||  (jobinfo->nodes[0] == '\0'))
+		if ((jobinfo->mp_str == NULL)
+		    ||  (jobinfo->mp_str[0] == '\0'))
 			*tmp_char = NULL;
 		else
-			*tmp_char = xstrdup(jobinfo->nodes);
+			*tmp_char = xstrdup(jobinfo->mp_str);
 		break;
 	case SELECT_JOBDATA_IONODES:
-		if ((jobinfo->ionodes == NULL)
-		    ||  (jobinfo->ionodes[0] == '\0'))
+		if ((jobinfo->ionode_str == NULL)
+		    ||  (jobinfo->ionode_str[0] == '\0'))
 			*tmp_char = NULL;
 		else
-			*tmp_char = xstrdup(jobinfo->ionodes);
+			*tmp_char = xstrdup(jobinfo->ionode_str);
 		break;
 	case SELECT_JOBDATA_NODE_CNT:
-		*uint32 = jobinfo->node_cnt;
+		*uint32 = jobinfo->cnode_cnt;
 		break;
 	case SELECT_JOBDATA_ALTERED:
 		*uint16 = jobinfo->altered;
@@ -334,9 +334,9 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 		rc->rotate = jobinfo->rotate;
 		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 		rc->magic = JOBINFO_MAGIC;
-		rc->nodes = xstrdup(jobinfo->nodes);
-		rc->ionodes = xstrdup(jobinfo->ionodes);
-		rc->node_cnt = jobinfo->node_cnt;
+		rc->mp_str = xstrdup(jobinfo->mp_str);
+		rc->ionode_str = xstrdup(jobinfo->ionode_str);
+		rc->cnode_cnt = jobinfo->cnode_cnt;
 		rc->altered = jobinfo->altered;
 		rc->blrtsimage = xstrdup(jobinfo->blrtsimage);
 		rc->linuximage = xstrdup(jobinfo->linuximage);
@@ -372,11 +372,11 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			pack16(jobinfo->reboot, buffer);
 			pack16(jobinfo->rotate, buffer);
 
-			pack32(jobinfo->node_cnt, buffer);
+			pack32(jobinfo->cnode_cnt, buffer);
 
 			packstr(jobinfo->bg_block_id, buffer);
-			packstr(jobinfo->nodes, buffer);
-			packstr(jobinfo->ionodes, buffer);
+			packstr(jobinfo->mp_str, buffer);
+			packstr(jobinfo->ionode_str, buffer);
 
 			packstr(jobinfo->blrtsimage, buffer);
 			packstr(jobinfo->linuximage, buffer);
@@ -411,11 +411,11 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			pack16(jobinfo->reboot, buffer);
 			pack16(jobinfo->rotate, buffer);
 
-			pack32(jobinfo->node_cnt, buffer);
+			pack32(jobinfo->cnode_cnt, buffer);
 
 			packstr(jobinfo->bg_block_id, buffer);
-			packstr(jobinfo->nodes, buffer);
-			packstr(jobinfo->ionodes, buffer);
+			packstr(jobinfo->mp_str, buffer);
+			packstr(jobinfo->ionode_str, buffer);
 
 			packstr(jobinfo->blrtsimage, buffer);
 			packstr(jobinfo->linuximage, buffer);
@@ -451,12 +451,12 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			pack16(jobinfo->reboot, buffer);
 			pack16(jobinfo->rotate, buffer);
 
-			pack32(jobinfo->node_cnt, buffer);
+			pack32(jobinfo->cnode_cnt, buffer);
 			pack32(0, buffer);
 
 			packstr(jobinfo->bg_block_id, buffer);
-			packstr(jobinfo->nodes, buffer);
-			packstr(jobinfo->ionodes, buffer);
+			packstr(jobinfo->mp_str, buffer);
+			packstr(jobinfo->ionode_str, buffer);
 
 			if (cluster_flags & CLUSTER_FLAG_BGL)
 				packstr(jobinfo->blrtsimage, buffer);
@@ -516,12 +516,12 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpack16(&(jobinfo->reboot), buffer);
 		safe_unpack16(&(jobinfo->rotate), buffer);
 
-		safe_unpack32(&(jobinfo->node_cnt), buffer);
+		safe_unpack32(&(jobinfo->cnode_cnt), buffer);
 
 		safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->nodes), &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
+		safe_unpackstr_xmalloc(&(jobinfo->mp_str), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->ionode_str), &uint32_tmp,
 				       buffer);
 
 		safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
@@ -541,12 +541,12 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpack16(&(jobinfo->reboot), buffer);
 		safe_unpack16(&(jobinfo->rotate), buffer);
 
-		safe_unpack32(&(jobinfo->node_cnt), buffer);
+		safe_unpack32(&(jobinfo->cnode_cnt), buffer);
 
 		safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->nodes), &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
+		safe_unpackstr_xmalloc(&(jobinfo->mp_str), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->ionode_str), &uint32_tmp,
 				       buffer);
 
 		safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
@@ -565,13 +565,13 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpack16(&(jobinfo->reboot), buffer);
 		safe_unpack16(&(jobinfo->rotate), buffer);
 
-		safe_unpack32(&(jobinfo->node_cnt), buffer);
+		safe_unpack32(&(jobinfo->cnode_cnt), buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->nodes), &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
+		safe_unpackstr_xmalloc(&(jobinfo->mp_str), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->ionode_str), &uint32_tmp,
 				       buffer);
 
 		if (cluster_flags & CLUSTER_FLAG_BGL)
@@ -674,11 +674,11 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, "%s", jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_NODES:
-		if (jobinfo->ionodes && jobinfo->ionodes[0])
+		if (jobinfo->ionode_str && jobinfo->ionode_str[0])
 			snprintf(buf, size, "%s[%s]",
-				 jobinfo->nodes, jobinfo->ionodes);
+				 jobinfo->mp_str, jobinfo->ionode_str);
 		else
-			snprintf(buf, size, "%s", jobinfo->nodes);
+			snprintf(buf, size, "%s", jobinfo->mp_str);
 		break;
 	case SELECT_PRINT_CONNECTION:
 		snprintf(buf, size, "%s",
@@ -789,11 +789,11 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		xstrfmtcat(buf, "%s", jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_NODES:
-		if (jobinfo->ionodes && jobinfo->ionodes[0])
+		if (jobinfo->ionode_str && jobinfo->ionode_str[0])
 			xstrfmtcat(buf, "%s[%s]",
-				   jobinfo->nodes, jobinfo->ionodes);
+				   jobinfo->mp_str, jobinfo->ionode_str);
 		else
-			xstrfmtcat(buf, "%s", jobinfo->nodes);
+			xstrfmtcat(buf, "%s", jobinfo->mp_str);
 		break;
 	case SELECT_PRINT_CONNECTION:
 		xstrfmtcat(buf, "%s",

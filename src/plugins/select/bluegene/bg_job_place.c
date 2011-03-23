@@ -1284,8 +1284,8 @@ static int _sync_block_lists(List full_list, List incomp_list)
 					 new_record->ionode_bitmap)) {
 				/* now make sure the conn_type is the same for
 				   regular sized blocks */
-				if (bg_record->node_cnt
-				    >= bg_conf->mp_node_cnt) {
+				if (bg_record->cnode_cnt
+				    >= bg_conf->mp_cnode_cnt) {
 					int i;
 					for (i=0; i<SYSTEM_DIMENSIONS; i++)
 						if (bg_record->conn_type[i]
@@ -1529,7 +1529,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if (conn_type[0] == SELECT_NAV) {
-		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
+		if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
 			conn_type[0] = SELECT_SMALL;
 		else if (min_nodes > 1) {
 			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
@@ -1677,15 +1677,15 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
 					   SELECT_JOBDATA_NODES,
-					   bg_record->nodes);
+					   bg_record->mp_str);
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
 					   SELECT_JOBDATA_IONODES,
-					   bg_record->ionodes);
+					   bg_record->ionode_str);
 			if (!bg_record->bg_block_id) {
 				debug("%d can start unassigned job %u "
 				      "at %ld on %s",
 				      local_mode, job_ptr->job_id,
-				      starttime, bg_record->nodes);
+				      starttime, bg_record->mp_str);
 
 				set_select_jobinfo(
 					job_ptr->select_jobinfo->data,
@@ -1694,9 +1694,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				set_select_jobinfo(
 					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_NODE_CNT,
-					&bg_record->node_cnt);
+					&bg_record->cnode_cnt);
 			} else {
-				if ((bg_record->ionodes)
+				if ((bg_record->ionode_str)
 				    && (job_ptr->part_ptr->max_share <= 1))
 					error("Small block used in "
 					      "non-shared partition");
@@ -1705,7 +1705,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				      "at %ld on %s(%s) %d",
 				      local_mode, mode, job_ptr->job_id,
 				      starttime, bg_record->bg_block_id,
-				      bg_record->nodes,
+				      bg_record->mp_str,
 				      SELECT_IS_MODE_RUN_NOW(local_mode));
 
 				if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
@@ -1740,12 +1740,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				set_select_jobinfo(
 					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_NODE_CNT,
-					&bg_record->node_cnt);
+					&bg_record->cnode_cnt);
 			}
 			if (SELECT_IS_MODE_RUN_NOW(local_mode))
 				_build_select_struct(job_ptr,
 						     slurm_block_bitmap,
-						     bg_record->node_cnt);
+						     bg_record->cnode_cnt);
 			/* set up the preempted job list */
 			if (SELECT_IS_PREEMPT_SET(local_mode)) {
 				if (*preemptee_job_list)

@@ -1507,7 +1507,7 @@ _update_bluegene_block (int argc, char *argv[])
 		return 0;
 	} else if (block_msg.state == (uint16_t)NO_VAL) {
 		error("You didn't give me a state to set %s to "
-		      "(i.e. FREE, ERROR).", block_msg.nodes);
+		      "(i.e. FREE, ERROR).", block_msg.mp_str);
 		return 0;
 	}
 
@@ -1557,7 +1557,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 		}
 
 		if (!strncasecmp(tag, "SubBPName", MAX(tag_len, 2)))
-			block_msg.nodes = val;
+			block_msg.mp_str = val;
 		else if (!strncasecmp(tag, "State", MAX(tag_len, 2))) {
 			if (!strncasecmp(val, "ERROR", MAX(vallen, 1)))
 				block_msg.state = BG_BLOCK_ERROR;
@@ -1580,12 +1580,12 @@ _update_bluegene_subbp (int argc, char *argv[])
 		}
 	}
 
-	if(!block_msg.nodes) {
+	if(!block_msg.mp_str) {
 		error("You didn't supply an ionode list.");
 		return 0;
 	} else if (block_msg.state == (uint16_t)NO_VAL) {
 		error("You didn't give me a state to set %s to "
-		      "(i.e. FREE, ERROR).", block_msg.nodes);
+		      "(i.e. FREE, ERROR).", block_msg.mp_str);
 		return 0;
 	}
 

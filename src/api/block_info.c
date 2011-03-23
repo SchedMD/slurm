@@ -124,7 +124,7 @@ char *slurm_sprint_block_info(
 		line_end = " ";
 
 	/****** Line 1 ******/
-	convert_num_unit((float)block_ptr->node_cnt, tmp1, sizeof(tmp1),
+	convert_num_unit((float)block_ptr->cnode_cnt, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 
 	out = xstrdup_printf("BlockName=%s TotalNodes=%s State=%s%s",
@@ -148,12 +148,12 @@ char *slurm_sprint_block_info(
 	xstrcat(out, line_end);
 
 	/****** Line 3 ******/
-	if(block_ptr->ionodes)
+	if(block_ptr->ionode_str)
 		xstrfmtcat(out, "MidPlanes=%s[%s] MPIndices=",
-			   block_ptr->nodes, block_ptr->ionodes);
+			   block_ptr->mp_str, block_ptr->ionode_str);
 	else
 		xstrfmtcat(out, "MidPlanes=%s MPIndices=",
-			   block_ptr->nodes);
+			   block_ptr->mp_str);
 	for (j = 0;
 	     (block_ptr->mp_inx && (block_ptr->mp_inx[j] != -1));
 	     j+=2) {

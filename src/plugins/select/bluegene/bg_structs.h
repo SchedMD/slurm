@@ -65,12 +65,12 @@ typedef struct {
 	bg_layout_t layout_mode;
 	List linux_list;
 	List mloader_list;
-	uint16_t mp_node_cnt;
+	uint16_t mp_cnode_cnt;
 	uint16_t mp_nodecard_cnt;
 	double nc_ratio;
-	uint16_t nodecard_node_cnt;
+	uint16_t nodecard_cnode_cnt;
 	uint16_t nodecard_ionode_cnt;
-	uint16_t quarter_node_cnt;
+	uint16_t quarter_cnode_cnt;
 	uint16_t quarter_ionode_cnt;
 	List ramdisk_list;
 	uint32_t slurm_debug_flags;
@@ -94,7 +94,7 @@ typedef struct bg_record {
 	void *bg_block;                 /* needed for L/P systems */
 	char *bg_block_id;     	        /* ID returned from MMCS */
 	List ba_mp_list;                /* List of midplanes in block */
-	bitstr_t *bitmap;               /* bitmap to check the nodes
+	bitstr_t *bitmap;               /* bitmap to check the midplanes
 					   of block */
 	char *blrtsimage;               /* BlrtsImage for this block */
 	int boot_count;                 /* number of attemts boot attempts */
@@ -102,7 +102,8 @@ typedef struct bg_record {
 					   -1 = fail,
 					   0 = not booting,
 					   1 = booting */
-	int mp_count;                   /* size */
+	bitstr_t *cnodes_used_bitmap;   /* cnodes used in this bitmap */
+	uint32_t cnode_cnt;             /* count of cnodes per block */
 	uint16_t conn_type[SYSTEM_DIMENSIONS];  /* MESH or Torus or NAV */
 	uint32_t cpu_cnt;               /* count of cpus per block */
 	int free_cnt;                   /* How many are trying
@@ -111,11 +112,11 @@ typedef struct bg_record {
 	bool full_block;                /* whether or not block is the full
 					   block */
 	uint16_t geo[SYSTEM_DIMENSIONS];  /* geometry */
-	char *ionodes; 		        /* String of ionodes in block
-					 * NULL if not a small block*/
 	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
 					   keep track which ionodes we
 					   are on.  NULL if not a small block*/
+	char *ionode_str;               /* String of ionodes in block
+					 * NULL if not a small block*/
 	List job_list;                  /* List of jobs running on a
 					   small block */
 	struct job_record *job_ptr;	/* pointer to job running on
@@ -130,8 +131,8 @@ typedef struct bg_record {
 	int modifying;                  /* flag to say the block is
 					   being modified or not at
 					   job launch usually */
-	char *nodes;			/* String of nodes in block */
-	uint32_t node_cnt;              /* count of cnodes per block */
+	int mp_count;                   /* size */
+	char *mp_str;   		/* String of midplanes in block */
 	uint16_t node_use;      	/* either COPROCESSOR or VIRTUAL */
 	struct bg_record *original;     /* if this is a copy this is a
 					   pointer to the original */

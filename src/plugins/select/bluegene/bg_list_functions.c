@@ -54,19 +54,19 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 				 found_record->ionode_bitmap)) {
 			/* now make sure the conn_type is the same for
 			   regular sized blocks */
-			if ((bg_record->node_cnt >= bg_conf->mp_node_cnt)
+			if ((bg_record->cnode_cnt >= bg_conf->mp_cnode_cnt)
 			    && bg_record->conn_type != found_record->conn_type)
 				continue;
-			if (bg_record->ionodes)
+			if (bg_record->ionode_str)
 				debug("This block %s[%s] "
 				      "is already in the list %s",
-				      bg_record->nodes,
-				      bg_record->ionodes,
+				      bg_record->mp_str,
+				      bg_record->ionode_str,
 				      found_record->bg_block_id);
 			else
 				debug("This block %s "
 				      "is already in the list %s",
-				      bg_record->nodes,
+				      bg_record->mp_str,
 				      found_record->bg_block_id);
 
 			rc = 1;

@@ -39,18 +39,17 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_1 = bl ba
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_2 =  \
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	libsched_if64.la \
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	libsched_if.la
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_3 = bl_bgq ba_bgq
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_4 = runjob_plugin.la
-@BLUEGENE_LOADED_TRUE@am__append_5 = bg_core.c bg_defined_block.c \
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_2 = libsched_if64.la
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_3 = libsched_if.la
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_4 = bl_bgq ba_bgq
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_5 = runjob_plugin.la
+@BLUEGENE_LOADED_TRUE@am__append_6 = bg_core.c bg_defined_block.c \
 @BLUEGENE_LOADED_TRUE@			bg_dynamic_block.c bg_job_place.c \
 @BLUEGENE_LOADED_TRUE@			bg_job_run.c bg_list_functions.c \
 @BLUEGENE_LOADED_TRUE@			bg_read_config.c bg_record_functions.c \
 @BLUEGENE_LOADED_TRUE@			bg_status.c
 
-@BLUEGENE_LOADED_TRUE@am__append_6 = $(block_allocator_lib) $(BG_LDFLAGS)
+@BLUEGENE_LOADED_TRUE@am__append_7 = $(block_allocator_lib) $(BG_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@sbin_PROGRAMS = slurm_prolog$(EXEEXT) \
 @BLUEGENE_LOADED_TRUE@	slurm_epilog$(EXEEXT)
 subdir = src/plugins/select/bluegene
@@ -125,24 +124,22 @@ am_libba_common_la_OBJECTS = ba_common.lo
 libba_common_la_OBJECTS = $(am_libba_common_la_OBJECTS)
 libsched_if_la_LIBADD =
 am__libsched_if_la_SOURCES_DIST = libsched_if64.c
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_OBJECTS =  \
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	libsched_if64.lo
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_OBJECTS = libsched_if64.lo
 libsched_if_la_OBJECTS = $(am_libsched_if_la_OBJECTS)
 libsched_if_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libsched_if_la_LDFLAGS) $(LDFLAGS) -o $@
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_rpath =  \
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	-rpath $(pkglibdir)
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_rpath = -rpath \
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
 libsched_if64_la_LIBADD =
 am__libsched_if64_la_SOURCES_DIST = libsched_if64.c
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_OBJECTS =  \
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	libsched_if64.lo
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_OBJECTS = libsched_if64.lo
 libsched_if64_la_OBJECTS = $(am_libsched_if64_la_OBJECTS)
 libsched_if64_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libsched_if64_la_LDFLAGS) $(LDFLAGS) -o $@
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath =  \
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	-rpath $(pkglibdir)
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath = -rpath \
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
 runjob_plugin_la_LIBADD =
 am__runjob_plugin_la_SOURCES_DIST = runjob_plugin.cc
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_runjob_plugin_la_OBJECTS =  \
@@ -469,20 +466,20 @@ CLEANFILES = core.*
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 pkglib_LTLIBRARIES = select_bluegene.la $(am__append_2) \
-	$(am__append_4)
+	$(am__append_3) $(am__append_5)
 noinst_LTLIBRARIES = libba_common.la
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \
-	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_5)
+	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_6)
 libba_common_la_SOURCES = ba_common.c ba_common.h
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-select_bluegene_la_LIBADD = libba_common.la $(am__append_6)
-@BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1) $(am__append_3)
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_SOURCES = libsched_if64.c
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+select_bluegene_la_LIBADD = libba_common.la $(am__append_7)
+@BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1) $(am__append_4)
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_SOURCES = libsched_if64.c
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba_bgq/libblock_allocator.la
 @BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba/libblock_allocator.la
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
@@ -1041,10 +1038,6 @@ uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 	pdf pdf-am ps ps-am tags tags-recursive uninstall uninstall-am \
 	uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 
-
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@  if BGL_LOADED
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@  else
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@  endif
 
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@  # force link with g++
 

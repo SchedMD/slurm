@@ -534,36 +534,36 @@ extern int read_bg_conf(void)
 	}
 
 	if (!s_p_get_uint16(
-		    &bg_conf->mp_node_cnt, "BasePartitionNodeCnt", tbl)) {
+		    &bg_conf->mp_cnode_cnt, "BasePartitionNodeCnt", tbl)) {
 		error("BasePartitionNodeCnt not configured in bluegene.conf "
 		      "defaulting to 512 as BasePartitionNodeCnt");
-		bg_conf->mp_node_cnt = 512;
-		bg_conf->quarter_node_cnt = 128;
+		bg_conf->mp_cnode_cnt = 512;
+		bg_conf->quarter_cnode_cnt = 128;
 	} else {
-		if (bg_conf->mp_node_cnt <= 0)
+		if (bg_conf->mp_cnode_cnt <= 0)
 			fatal("You should have more than 0 nodes "
 			      "per base partition");
 
-		bg_conf->quarter_node_cnt = bg_conf->mp_node_cnt/4;
+		bg_conf->quarter_cnode_cnt = bg_conf->mp_cnode_cnt/4;
 	}
 	/* bg_conf->cpus_per_mp should had already been set from the
 	 * node_init */
-	if (bg_conf->cpus_per_mp < bg_conf->mp_node_cnt) {
+	if (bg_conf->cpus_per_mp < bg_conf->mp_cnode_cnt) {
 		fatal("For some reason we have only %u cpus per mp, but "
 		      "have %u cnodes per mp.  You need at least the same "
 		      "number of cpus as you have cnodes per mp.  "
 		      "Check the NodeName Procs= "
 		      "definition in the slurm.conf.",
-		      bg_conf->cpus_per_mp, bg_conf->mp_node_cnt);
+		      bg_conf->cpus_per_mp, bg_conf->mp_cnode_cnt);
 	}
 
-	bg_conf->cpu_ratio = bg_conf->cpus_per_mp/bg_conf->mp_node_cnt;
+	bg_conf->cpu_ratio = bg_conf->cpus_per_mp/bg_conf->mp_cnode_cnt;
 	if (!bg_conf->cpu_ratio)
 		fatal("We appear to have less than 1 cpu on a cnode.  "
 		      "You specified %u for BasePartitionNodeCnt "
 		      "in the blugene.conf and %u cpus "
 		      "for each node in the slurm.conf",
-		      bg_conf->mp_node_cnt, bg_conf->cpus_per_mp);
+		      bg_conf->mp_cnode_cnt, bg_conf->cpus_per_mp);
 
 	num_unused_cpus = 1;
 	for (i = 0; i<SYSTEM_DIMENSIONS; i++)
@@ -571,17 +571,17 @@ extern int read_bg_conf(void)
 	num_unused_cpus *= bg_conf->cpus_per_mp;
 
 	if (!s_p_get_uint16(
-		    &bg_conf->nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
+		    &bg_conf->nodecard_cnode_cnt, "NodeCardNodeCnt", tbl)) {
 		error("NodeCardNodeCnt not configured in bluegene.conf "
 		      "defaulting to 32 as NodeCardNodeCnt");
-		bg_conf->nodecard_node_cnt = 32;
+		bg_conf->nodecard_cnode_cnt = 32;
 	}
 
-	if (bg_conf->nodecard_node_cnt<=0)
+	if (bg_conf->nodecard_cnode_cnt<=0)
 		fatal("You should have more than 0 nodes per nodecard");
 
 	bg_conf->mp_nodecard_cnt =
-		bg_conf->mp_node_cnt / bg_conf->nodecard_node_cnt;
+		bg_conf->mp_cnode_cnt / bg_conf->nodecard_cnode_cnt;
 
 	if (!s_p_get_uint16(&bg_conf->ionodes_per_mp, "Numpsets", tbl))
 		fatal("Warning: Numpsets not configured in bluegene.conf");
@@ -603,7 +603,7 @@ extern int read_bg_conf(void)
 		int small_size = 1;
 
 		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK */
-		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt) {
+		if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt) {
 			bg_conf->quarter_ionode_cnt = 2;
 			bg_conf->nodecard_ionode_cnt = 2;
 		} else {
@@ -614,14 +614,14 @@ extern int read_bg_conf(void)
 
 		/* How many nodecards per ionode */
 		bg_conf->nc_ratio =
-			((double)bg_conf->mp_node_cnt
-			 / (double)bg_conf->nodecard_node_cnt)
+			((double)bg_conf->mp_cnode_cnt
+			 / (double)bg_conf->nodecard_cnode_cnt)
 			/ (double)bg_conf->ionodes_per_mp;
 		/* How many ionodes per nodecard */
 		bg_conf->io_ratio =
 			(double)bg_conf->ionodes_per_mp /
-			((double)bg_conf->mp_node_cnt
-			 / (double)bg_conf->nodecard_node_cnt);
+			((double)bg_conf->mp_cnode_cnt
+			 / (double)bg_conf->nodecard_cnode_cnt);
 		//info("got %f %f", bg_conf->nc_ratio, bg_conf->io_ratio);
 		/* figure out the smallest block we can have on the
 		   system */
@@ -673,7 +673,7 @@ extern int read_bg_conf(void)
 		/* If we only have 1 nodecard just jump to the end
 		   since this will never need to happen below.
 		   Pretty much a hack to avoid seg fault;). */
-		if (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)
+		if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
 			goto no_calc;
 
 		bg_lists->valid_small128 = list_create(_destroy_bitmap);

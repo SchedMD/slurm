@@ -37,13 +37,13 @@ typedef struct {
 	char *bg_user_name;
 	char *bg_block_name;
 	char *slurm_part_name;
-	char *nodes;
+	char *mp_str;
 	uint16_t bg_conn_type;
 	uint16_t bg_node_use;
 	uint16_t state;
 	int size;
-	int node_cnt;
-	int *bp_inx;            /* list index pairs into node_table for *nodes:
+	int cnode_cnt;
+	int *bp_inx;            /* list index pairs into node_table for *mp_str:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	int color_inx;
@@ -74,7 +74,7 @@ enum {
 	SORTID_IMAGERAMDISK,
 	SORTID_IMAGEMLOADER,
 #endif
-	SORTID_NODES,
+	SORTID_MP_STR,
 	SORTID_PARTITION,
 	SORTID_STATE,
 	SORTID_UPDATED,
@@ -104,7 +104,7 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_USER, "User", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODES, "Node Count",
+	{G_TYPE_STRING, SORTID_MP_STR, "Node Count",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type",
 	 FALSE, EDIT_NONE, refresh_block,
@@ -185,7 +185,7 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_user_name);
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
-		xfree(block_ptr->nodes);
+		xfree(block_ptr->mp_str);
 		xfree(block_ptr->imageblrts);
 		xfree(block_ptr->imagelinux);
 		xfree(block_ptr->imagemloader);
@@ -234,7 +234,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
 						 SORTID_NODELIST),
-				   block_ptr->nodes);
+				   block_ptr->mp_str);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
@@ -290,11 +290,11 @@ static void _layout_block_record(GtkTreeView *treeview,
 					   node_use_string(
 						   block_ptr->bg_node_use));
 	}
-	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
+	convert_num_unit((float)block_ptr->cnode_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
-						 SORTID_NODES),
+						 SORTID_MP_STR),
 				   tmp_cnt);
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -314,7 +314,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 static void _update_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char job_running[20], node_cnt[20];
+	char job_running[20], cnode_cnt[20];
 
 	if (block_ptr->job_running > NO_JOB_RUNNING)
 		snprintf(job_running, sizeof(job_running),
@@ -322,7 +322,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	else
 		snprintf(job_running, sizeof(job_running), "-");
 
-	convert_num_unit((float)block_ptr->node_cnt, node_cnt, sizeof(node_cnt),
+	convert_num_unit((float)block_ptr->cnode_cnt, cnode_cnt, sizeof(cnode_cnt),
 			 UNIT_NONE);
 
 	/* Combining these records provides a slight performance improvement */
@@ -338,8 +338,8 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
 			   SORTID_JOB,          job_running,
 			   SORTID_NODE_INX,     block_ptr->bp_inx,
-			   SORTID_NODES,        node_cnt,
-			   SORTID_NODELIST,     block_ptr->nodes,
+			   SORTID_MP_STR,        cnode_cnt,
+			   SORTID_NODELIST,     block_ptr->mp_str,
 			   SORTID_PARTITION,    block_ptr->slurm_part_name,
 			   SORTID_SMALL_BLOCK,  block_ptr->small_block,
 			   SORTID_STATE,
@@ -402,8 +402,8 @@ static void _update_info_block(List block_list,
 
 	itr = list_iterator_create(block_list);
 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
-		if (block_ptr->node_cnt == 0)
-			block_ptr->node_cnt = block_ptr->size;
+		if (block_ptr->cnode_cnt == 0)
+			block_ptr->cnode_cnt = block_ptr->size;
 		if (!block_ptr->slurm_part_name)
 			block_ptr->slurm_part_name = xstrdup("no part");
 
@@ -451,8 +451,8 @@ static void _update_info_block(List block_list,
 static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
 				      sview_block_info_t* rec_b)
 {
-	int size_a = rec_a->node_cnt;
-	int size_b = rec_b->node_cnt;
+	int size_a = rec_a->cnode_cnt;
+	int size_b = rec_b->cnode_cnt;
 
 	if ((rec_a->job_running == NO_JOB_RUNNING)
 	    && (rec_b->job_running != NO_JOB_RUNNING))
@@ -472,8 +472,8 @@ static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
 	else if (size_a > size_b)
 		return 1;
 
-	if (rec_a->nodes && rec_b->nodes) {
-		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+	if (rec_a->mp_str && rec_b->mp_str) {
+		size_a = strcmp(rec_a->mp_str, rec_b->mp_str);
 		if (size_a < 0)
 			return -1;
 		else if (size_a > 0)
@@ -490,7 +490,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	static List block_list = NULL;
 	partition_info_t part;
 	sview_block_info_t *block_ptr = NULL;
-	char tmp_nodes[50];
+	char tmp_mp_str[50];
 
 	if (!changed && block_list) {
 		return block_list;
@@ -528,16 +528,16 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 		block_ptr->color_inx %= sview_colors_cnt;
 
-		block_ptr->nodes
-			= xstrdup(block_info_ptr->block_array[i].nodes);
-		if (block_info_ptr->block_array[i].ionodes) {
+		block_ptr->mp_str
+			= xstrdup(block_info_ptr->block_array[i].mp_str);
+		if (block_info_ptr->block_array[i].ionode_str) {
 			block_ptr->small_block = 1;
-			snprintf(tmp_nodes, sizeof(tmp_nodes),
+			snprintf(tmp_mp_str, sizeof(tmp_mp_str),
 				 "%s[%s]",
-				 block_ptr->nodes,
-				 block_info_ptr->block_array[i].ionodes);
-			xfree(block_ptr->nodes);
-			block_ptr->nodes = xstrdup(tmp_nodes);
+				 block_ptr->mp_str,
+				 block_info_ptr->block_array[i].ionode_str);
+			xfree(block_ptr->mp_str);
+			block_ptr->mp_str = xstrdup(tmp_mp_str);
 		}
 
 		block_ptr->bg_user_name
@@ -563,8 +563,8 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			block_ptr->bg_node_use
 				= block_info_ptr->block_array[i].node_use;
 
-		block_ptr->node_cnt
-			= block_info_ptr->block_array[i].node_cnt;
+		block_ptr->cnode_cnt
+			= block_info_ptr->block_array[i].cnode_cnt;
 		block_ptr->bp_inx
 			= block_info_ptr->block_array[i].mp_inx;
 		for(j = 0; j < part_info_ptr->record_count; j++) {
@@ -622,7 +622,7 @@ need_refresh:
 	itr = list_iterator_create(block_list);
 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
 		if (!strcmp(block_ptr->bg_block_name, name)
-		    || !strcmp(block_ptr->nodes, name)) {
+		    || !strcmp(block_ptr->mp_str, name)) {
 			/* we want to over ride any subgrp in error
 			   state */
 			enum node_states state = NODE_STATE_UNKNOWN;
@@ -997,7 +997,7 @@ display_it:
 		    gtk_tree_view_get_selection(
 			    GTK_TREE_VIEW(display_widget)))) {
 		GtkTreeViewColumn *focus_column = NULL;
-		/* highlight the correct nodes from the last selection */
+		/* highlight the correct mp_str from the last selection */
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
 					 &path, &focus_column);
 	}
@@ -1188,12 +1188,12 @@ display_it:
 			break;
 		case RESV_PAGE:
 		case NODE_PAGE:
-			if (!block_ptr->nodes)
+			if (!block_ptr->mp_str)
 				continue;
 			if (!(hostset = hostset_create(
 				      search_info->gchar_data)))
 				continue;
-			name = block_ptr->nodes;
+			name = block_ptr->mp_str;
 			if (block_ptr->small_block) {
 				int j=0;
 				/* strip off the ionodes part */
@@ -1225,7 +1225,7 @@ display_it:
 			case SEARCH_BLOCK_SIZE:
 				if (search_info->int_data == NO_VAL)
 					continue;
-				if (block_ptr->node_cnt
+				if (block_ptr->cnode_cnt
 				    != search_info->int_data)
 					continue;
 				break;

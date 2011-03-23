@@ -272,8 +272,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	    && !bit_overlap(rec_a->bitmap, rec_b->bitmap))
 		return false;
 
-	if ((rec_a->node_cnt >= bg_conf->mp_node_cnt)
-	    || (rec_b->node_cnt >= bg_conf->mp_node_cnt))
+	if ((rec_a->cnode_cnt >= bg_conf->mp_cnode_cnt)
+	    || (rec_b->cnode_cnt >= bg_conf->mp_cnode_cnt))
 		return true;
 
 	if (rec_a->ionode_bitmap && rec_b->ionode_bitmap
@@ -730,8 +730,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		bg_record = xmalloc(sizeof(bg_record_t));
 		bg_record->magic = BLOCK_MAGIC;
 		bg_record->bg_block_id = xstrdup(block_info->bg_block_id);
-		bg_record->nodes = xstrdup(block_info->nodes);
-		bg_record->ionodes = xstrdup(block_info->ionodes);
+		bg_record->mp_str = xstrdup(block_info->mp_str);
+		bg_record->ionode_str = xstrdup(block_info->ionode_str);
 		bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
 		/* put_block_in_error_state should be
 		   called after the bg_lists->main has been
@@ -743,10 +743,10 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		bg_record->job_running = NO_JOB_RUNNING;
 
 		bg_record->mp_count = bit_set_count(node_bitmap);
-		bg_record->node_cnt = block_info->node_cnt;
-		if (bg_conf->mp_node_cnt > bg_record->node_cnt) {
-			ionodes = bg_conf->mp_node_cnt
-				/ bg_record->node_cnt;
+		bg_record->cnode_cnt = block_info->cnode_cnt;
+		if (bg_conf->mp_cnode_cnt > bg_record->cnode_cnt) {
+			ionodes = bg_conf->mp_cnode_cnt
+				/ bg_record->cnode_cnt;
 			bg_record->cpu_cnt = bg_conf->cpus_per_mp / ionodes;
 		} else {
 			bg_record->cpu_cnt = bg_conf->cpus_per_mp
@@ -816,11 +816,11 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			 name);
 
 		xfree(name);
-		if (strcmp(temp, bg_record->nodes)) {
+		if (strcmp(temp, bg_record->mp_str)) {
 			fatal("bad wiring in preserved state "
 			      "(found %s, but allocated %s) "
 			      "YOU MUST COLDSTART",
-			      bg_record->nodes, temp);
+			      bg_record->mp_str, temp);
 		}
 		if (bg_record->ba_mp_list)
 			list_destroy(bg_record->ba_mp_list);

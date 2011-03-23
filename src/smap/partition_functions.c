@@ -50,12 +50,12 @@ typedef struct {
 	uint16_t bg_conn_type;
 	uint16_t bg_node_use;
 	char *bg_user_name;
-	char *ionodes;
+	char *ionode_str;
 	int job_running;
 	int letter_num;
 	List nodelist;
-	char *nodes;
-	int node_cnt;
+	char *mp_str;
+	int cnode_cnt;
 	bool printed;
 	int size;
 	char *slurm_part_name;
@@ -281,7 +281,7 @@ extern void get_bg_part(void)
 			if (!overlap)
 				continue;
 		}
-		if (params.io_bit && new_bg_ptr->block_array[i].ionodes) {
+		if (params.io_bit && new_bg_ptr->block_array[i].ionode_str) {
 			int overlap = 0;
 			bitstr_t *loc_bitmap =
 				bit_alloc(bit_size(params.io_bit));
@@ -297,9 +297,9 @@ extern void get_bg_part(void)
 
 		block_ptr->bg_block_name
 			= xstrdup(new_bg_ptr->block_array[i].bg_block_id);
-		block_ptr->nodes = xstrdup(new_bg_ptr->block_array[i].nodes);
+		block_ptr->mp_str = xstrdup(new_bg_ptr->block_array[i].mp_str);
 		block_ptr->nodelist = list_create(_nodelist_del);
-		_make_nodelist(block_ptr->nodes, block_ptr->nodelist);
+		_make_nodelist(block_ptr->mp_str, block_ptr->nodelist);
 
 		block_ptr->bg_user_name
 			= xstrdup(new_bg_ptr->block_array[i].owner_name);
@@ -310,13 +310,13 @@ extern void get_bg_part(void)
 			block_ptr->bg_node_use =
 				new_bg_ptr->block_array[i].node_use;
 
-		block_ptr->ionodes
-			= xstrdup(new_bg_ptr->block_array[i].ionodes);
-		block_ptr->node_cnt = new_bg_ptr->block_array[i].node_cnt;
+		block_ptr->ionode_str
+			= xstrdup(new_bg_ptr->block_array[i].ionode_str);
+		block_ptr->cnode_cnt = new_bg_ptr->block_array[i].cnode_cnt;
 
 		itr = list_iterator_create(block_list);
 		while ((found_block = (db2_block_info_t*)list_next(itr))) {
-			if (!strcmp(block_ptr->nodes, found_block->nodes)) {
+			if (!strcmp(block_ptr->mp_str, found_block->mp_str)) {
 				block_ptr->letter_num =
 					found_block->letter_num;
 				break;
@@ -399,7 +399,7 @@ static void _marknodes(db2_block_info_t *block_ptr, int count)
 	int i, j = 0;
 	int start[params.cluster_dims];
 	int end[params.cluster_dims];
-	char *nodes = block_ptr->nodes;
+	char *nodes = block_ptr->mp_str;
 
 	block_ptr->letter_num = count;
 	while (nodes[j] != '\0') {
@@ -704,11 +704,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 			i++;
 		}
 		if ((params.display == BGPART) && db2_info_ptr &&
-		    (db2_info_ptr->ionodes)) {
+		    (db2_info_ptr->ionode_str)) {
 			mvwprintw(text_win,
 				  main_ycord,
 				  main_xcord, "[%s]",
-				  db2_info_ptr->ionodes);
+				  db2_info_ptr->ionode_str);
 		}
 
 		main_xcord = 1;
@@ -780,8 +780,8 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->nodes;
 
 		if ((params.display == BGPART) && db2_info_ptr &&
-		    (db2_info_ptr->ionodes)) {
-			printf("%s[%s]\n", nodes, db2_info_ptr->ionodes);
+		    (db2_info_ptr->ionode_str)) {
+			printf("%s[%s]\n", nodes, db2_info_ptr->ionode_str);
 		} else
 			printf("%s\n",nodes);
 	}
@@ -796,8 +796,8 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_user_name);
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
-		xfree(block_ptr->nodes);
-		xfree(block_ptr->ionodes);
+		xfree(block_ptr->mp_str);
+		xfree(block_ptr->ionode_str);
 		if (block_ptr->nodelist)
 			list_destroy(block_ptr->nodelist);
 
@@ -858,9 +858,9 @@ static int _print_rest(db2_block_info_t *block_ptr)
 {
 	partition_info_t part;
 
-	if (block_ptr->node_cnt == 0)
-		block_ptr->node_cnt = block_ptr->size;
-	part.total_nodes = block_ptr->node_cnt;
+	if (block_ptr->cnode_cnt == 0)
+		block_ptr->cnode_cnt = block_ptr->size;
+	part.total_nodes = block_ptr->cnode_cnt;
 	if (block_ptr->slurm_part_name)
 		part.name = block_ptr->slurm_part_name;
 	else
@@ -868,7 +868,7 @@ static int _print_rest(db2_block_info_t *block_ptr)
 
 	if (!block_ptr->printed)
 		return SLURM_SUCCESS;
-	part.allow_groups = block_ptr->nodes;
+	part.allow_groups = block_ptr->mp_str;
 	part.flags = (int) letters[block_ptr->letter_num%62];
 	if (!params.commandline) {
 		wattron(text_win,
