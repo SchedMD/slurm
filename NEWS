@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- In jobcomp plugins, report start time of zeroif pending job is cancelled.
     Previously may report expected start time.
  -- Fixed sacctmgr man to state correct variables.
+ -- Select nodes based upon their Weight when job allocation requests include
+    a constraint field with a count (e.g. "srun --constraint=gpu*2 -N4 a.out").
 
 * Changes in SLURM 2.2.3
 ========================

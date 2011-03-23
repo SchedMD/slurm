@@ -731,6 +731,32 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	/* Accumulate resources for this job based upon its required
 	 * features (possibly with node counts). */
 	for (j = min_feature; j <= max_feature; j++) {
+		if (job_ptr->details->req_node_bitmap) {
+			bool missing_required_nodes = false;
+			for (i = 0; i < node_set_size; i++) {
+				if (!bit_test(node_set_ptr[i].feature_bits, j))
+					continue;
+				if (avail_bitmap) {
+					bit_or(avail_bitmap,
+					       node_set_ptr[i].my_bitmap);
+				} else {
+					avail_bitmap = bit_copy(node_set_ptr[i].
+								my_bitmap);
+					if (avail_bitmap == NULL)
+						fatal("bit_copy malloc failure");
+				}
+			}
+			if (!bit_super_set(job_ptr->details->req_node_bitmap,
+					   avail_bitmap))
+				missing_required_nodes = true;
+			FREE_NULL_BITMAP(avail_bitmap);
+			if (missing_required_nodes)
+				continue;
+			avail_bitmap = bit_copy(job_ptr->details->
+						req_node_bitmap);
+			if (avail_bitmap == NULL)
+				fatal("bit_copy malloc failure");
+		}
 		for (i = 0; i < node_set_size; i++) {
 			if (!bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
@@ -776,11 +802,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 			avail_nodes = bit_set_count(avail_bitmap);
 			tried_sched = false;	/* need to test these nodes */
-
-			if (((i+1) < node_set_size)	&&
-			    (shared || preempt_flag ||
-			     (node_set_ptr[i].weight ==
-			      node_set_ptr[i+1].weight))) {
+			if ((shared || preempt_flag)	&&
+			    ((i+1) < node_set_size)	&&
+			    (node_set_ptr[i].weight ==
+			     node_set_ptr[i+1].weight)) {
 				/* Keep accumulating so we can pick the
 				 * most lightly loaded nodes */
 				continue;
@@ -791,11 +816,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			     (avail_nodes < req_nodes)	&&
 			     ((i+1) < node_set_size)))
 				continue;	/* Keep accumulating nodes */
-
-			if ((job_ptr->details->req_node_bitmap) &&
-			    (!bit_super_set(job_ptr->details->req_node_bitmap,
-					    avail_bitmap)))
-				continue;
 
 			/* NOTE: select_g_job_test() is destructive of
 			 * avail_bitmap, so save a backup copy */
