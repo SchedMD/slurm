@@ -254,7 +254,7 @@ int	unpackdouble(double *valp, Buf buffer)
 	buffer->processed += sizeof(nl);
 
 	uval.u = NTOH_uint64(nl);
-	*valp = uval.d / (double)FLOAT_MULT;
+	*valp = uval.d / FLOAT_MULT;
 	return SLURM_SUCCESS;
 }
 
