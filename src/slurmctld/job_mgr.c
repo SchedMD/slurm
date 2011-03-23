@@ -6381,7 +6381,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			goto fini;
 	}
 
-	/* Always do this last just incase the assoc_ptr changed */
+	/* Always do this last just in case the assoc_ptr changed */
 	if (job_specs->comment && wiki_sched && !validate_slurm_user(uid)) {
 		/* User must use Moab command to change job comment */
 		error("Attempt to change comment for job %u",
@@ -6416,7 +6416,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				}
 			}
 		}
-	} else if (job_specs->qos) {
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_specs->qos) {
 		slurmdb_qos_rec_t qos_rec;
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;

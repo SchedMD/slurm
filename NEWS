@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     are specified. New logic selects nodes with larger CPU counts as needed.
  -- BGQ - make it so srun wraps runjob (still under construction, but works
     for most cases)
+ -- Permit a job's QOS and Comment field to both change in a single RPC. This
+    was previously disabled since Moab stored the QOS within the Comment field.
 
 * Changes in SLURM 2.3.0.pre3
 =============================
