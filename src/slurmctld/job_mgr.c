@@ -6318,6 +6318,109 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_specs->exc_nodes) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->exc_nodes[0] == '\0') {
+			xfree(detail_ptr->exc_nodes);
+			FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+		} else {
+			if (node_name2bitmap(job_specs->exc_nodes, false,
+					     &exc_bitmap)) {
+				error("sched: Invalid node list for "
+				      "job_update: %s",job_specs->exc_nodes);
+				FREE_NULL_BITMAP(exc_bitmap);
+				error_code = ESLURM_INVALID_NODE_NAME;
+			}
+			if (exc_bitmap) {
+				xfree(detail_ptr->exc_nodes);
+				detail_ptr->exc_nodes =
+					job_specs->exc_nodes;
+				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+				detail_ptr->exc_node_bitmap = exc_bitmap;
+				info("sched: update_job: setting exc_nodes to "
+				     "%s for job_id %u", job_specs->exc_nodes,
+				     job_specs->job_id);
+				job_specs->exc_nodes = NULL;
+			}
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+#ifndef HAVE_BG
+	if (job_specs->req_nodes &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+		/* Use req_nodes to change the nodes associated with a running
+		 * for lack of other field in the job request to use */
+		if ((job_specs->req_nodes[0] == '\0') ||
+		    node_name2bitmap(job_specs->req_nodes,false, &req_bitmap) ||
+		    !bit_super_set(req_bitmap, job_ptr->node_bitmap)) {
+			info("sched: Invalid node list (%s) for job %u update",
+			     job_specs->req_nodes, job_specs->job_id);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto fini;
+		} else if (req_bitmap) {
+			int i, i_first, i_last;
+			struct node_record *node_ptr;
+			info("sched: update_job: setting nodes to %s for "
+			     "job_id %u",
+			     job_specs->req_nodes, job_specs->job_id);
+			job_pre_resize_acctg(job_ptr);
+			i_first = bit_ffs(job_ptr->node_bitmap);
+			i_last  = bit_fls(job_ptr->node_bitmap);
+			for (i=i_first; i<=i_last; i++) {
+				if (bit_test(req_bitmap, i) ||
+				    !bit_test(job_ptr->node_bitmap, i))
+					continue;
+				node_ptr = node_record_table_ptr + i;
+				kill_step_on_node(job_ptr, node_ptr, false);
+				excise_node_from_job(job_ptr, node_ptr);
+			}
+			job_post_resize_acctg(job_ptr);
+			/* Since job_post_resize_acctg will restart
+			 * things, don't do it again. */
+			update_accounting = false;
+		} else {
+			update_accounting = true;
+		}
+		FREE_NULL_BITMAP(req_bitmap);
+		xfree(job_specs->req_nodes);
+	}
+#endif
+
+	if (job_specs->req_nodes) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->req_nodes[0] == '\0') {
+			xfree(detail_ptr->req_nodes);
+			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+			xfree(detail_ptr->req_node_layout);
+		} else {
+			if (node_name2bitmap(job_specs->req_nodes, false,
+					     &req_bitmap)) {
+				info("sched: Invalid node list for "
+				     "job_update: %s", job_specs->req_nodes);
+				FREE_NULL_BITMAP(req_bitmap);
+				error_code = ESLURM_INVALID_NODE_NAME;
+			}
+			if (req_bitmap) {
+				xfree(detail_ptr->req_nodes);
+				detail_ptr->req_nodes =
+					job_specs->req_nodes;
+				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+				xfree(detail_ptr->req_node_layout);
+				detail_ptr->req_node_bitmap = req_bitmap;
+				info("sched: update_job: setting req_nodes to "
+				     "%s for job_id %u", job_specs->req_nodes,
+				     job_specs->job_id);
+				job_specs->req_nodes = NULL;
+			}
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
 
@@ -7101,109 +7204,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = rc;
 			else
 				update_accounting = true;
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-	if (job_specs->exc_nodes) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else if (job_specs->exc_nodes[0] == '\0') {
-			xfree(detail_ptr->exc_nodes);
-			FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
-		} else {
-			if (node_name2bitmap(job_specs->exc_nodes, false,
-					     &exc_bitmap)) {
-				error("sched: Invalid node list for "
-				      "job_update: %s",job_specs->exc_nodes);
-				FREE_NULL_BITMAP(exc_bitmap);
-				error_code = ESLURM_INVALID_NODE_NAME;
-			}
-			if (exc_bitmap) {
-				xfree(detail_ptr->exc_nodes);
-				detail_ptr->exc_nodes =
-					job_specs->exc_nodes;
-				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
-				detail_ptr->exc_node_bitmap = exc_bitmap;
-				info("sched: update_job: setting exc_nodes to "
-				     "%s for job_id %u", job_specs->exc_nodes,
-				     job_specs->job_id);
-				job_specs->exc_nodes = NULL;
-			}
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-#ifndef HAVE_BG
-	if (job_specs->req_nodes &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-		/* Use req_nodes to change the nodes associated with a running
-		 * for lack of other field in the job request to use */
-		if ((job_specs->req_nodes[0] == '\0') ||
-		    node_name2bitmap(job_specs->req_nodes,false, &req_bitmap) ||
-		    !bit_super_set(req_bitmap, job_ptr->node_bitmap)) {
-			info("sched: Invalid node list (%s) for job %u update",
-			     job_specs->req_nodes, job_specs->job_id);
-			error_code = ESLURM_INVALID_NODE_NAME;
-			goto fini;
-		} else if (req_bitmap) {
-			int i, i_first, i_last;
-			struct node_record *node_ptr;
-			info("sched: update_job: setting nodes to %s for "
-			     "job_id %u",
-			     job_specs->req_nodes, job_specs->job_id);
-			job_pre_resize_acctg(job_ptr);
-			i_first = bit_ffs(job_ptr->node_bitmap);
-			i_last  = bit_fls(job_ptr->node_bitmap);
-			for (i=i_first; i<=i_last; i++) {
-				if (bit_test(req_bitmap, i) ||
-				    !bit_test(job_ptr->node_bitmap, i))
-					continue;
-				node_ptr = node_record_table_ptr + i;
-				kill_step_on_node(job_ptr, node_ptr, false);
-				excise_node_from_job(job_ptr, node_ptr);
-			}
-			job_post_resize_acctg(job_ptr);
-			/* Since job_post_resize_acctg will restart
-			   things don't do it again. */
-			update_accounting = false;
-		} else {
-			update_accounting = true;
-		}
-		FREE_NULL_BITMAP(req_bitmap);
-		xfree(job_specs->req_nodes);
-	}
-#endif
-
-	if (job_specs->req_nodes) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else if (job_specs->req_nodes[0] == '\0') {
-			xfree(detail_ptr->req_nodes);
-			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-			xfree(detail_ptr->req_node_layout);
-		} else {
-			if (node_name2bitmap(job_specs->req_nodes, false,
-					     &req_bitmap)) {
-				info("sched: Invalid node list for "
-				     "job_update: %s", job_specs->req_nodes);
-				FREE_NULL_BITMAP(req_bitmap);
-				error_code = ESLURM_INVALID_NODE_NAME;
-			}
-			if (req_bitmap) {
-				xfree(detail_ptr->req_nodes);
-				detail_ptr->req_nodes =
-					job_specs->req_nodes;
-				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-				xfree(detail_ptr->req_node_layout);
-				detail_ptr->req_node_bitmap = req_bitmap;
-				info("sched: update_job: setting req_nodes to "
-				     "%s for job_id %u", job_specs->req_nodes,
-				     job_specs->job_id);
-				job_specs->req_nodes = NULL;
-			}
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
