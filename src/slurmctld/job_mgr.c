@@ -7202,7 +7202,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-#ifndef HAVE_BG
+#if defined(HAVE_BG) || defined(HAVE_CRAY)
+	if (job_specs->min_nodes != NO_VAL) {
+		info("Change of size for job %u not supported",
+		     job_specs->job_id);
+		error_code = ESLURM_INVALID_NODE_COUNT;
+		goto fini;
+	}
+#else
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
