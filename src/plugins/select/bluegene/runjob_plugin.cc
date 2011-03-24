@@ -94,6 +94,15 @@ Plugin::~Plugin()
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
+	char *bg_block_id = getenv("MPIRUN_PARTITION");
+
+	if (!bg_block_id || (strlen(bg_block_id) < 3)) {
+		printf("YOU ARE OUTSIDE OF SLURM!!!!\n");
+		verify.denyJob(DenyJob::Yes);
+		return;
+	}
+
+	verify.block(bg_block_id);
 
 	std::cout << "starting job from pid " << verify.pid() << std::endl;
 	std::cout << "executable: " << verify.exe() << std::endl;
