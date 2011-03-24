@@ -209,12 +209,12 @@ unpack_error:
 extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	//uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (!g_bitmap_size) {
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
-			g_bitmap_size = bg_conf->mp_cnode_cnt;
-		else
+		/* if (cluster_flags & CLUSTER_FLAG_BGQ) */
+		/* 	g_bitmap_size = bg_conf->mp_cnode_cnt; */
+		/* else */
 			g_bitmap_size = bg_conf->ionodes_per_mp;
 	}
 
@@ -249,15 +249,15 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	int i=0;
 	bg_record_t *bg_record = NULL;
 	static time_t last_set_all = 0;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	//uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (!blocks_are_created)
 		return SLURM_NO_CHANGE_IN_DATA;
 
 	if (!g_bitmap_size) {
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
-			g_bitmap_size = bg_conf->mp_cnode_cnt;
-		else
+		/* if (cluster_flags & CLUSTER_FLAG_BGQ) */
+		/* 	g_bitmap_size = bg_conf->mp_cnode_cnt; */
+		/* else */
 			g_bitmap_size = bg_conf->ionodes_per_mp;
 	}
 
@@ -297,7 +297,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		if (bg_record->job_running == NO_JOB_RUNNING)
 			continue;
 
-		if (bg_record->state == BG_BLOCK_ERROR)
+		if (bg_record->state & BG_BLOCK_ERROR_FLAG)
 			state = NODE_STATE_ERROR;
 		else if (bg_record->job_running > NO_JOB_RUNNING) {
 			/* we don't need to set the allocated here
@@ -311,10 +311,10 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			      bg_block_state_string(bg_record->state));
 			continue;
 		}
-		if ((cluster_flags & CLUSTER_FLAG_BGQ)
-		    && (state != NODE_STATE_ERROR))
-			bitmap = bg_record->cnodes_used_bitmap;
-		else
+		/* if ((cluster_flags & CLUSTER_FLAG_BGQ) */
+		/*     && (state != NODE_STATE_ERROR)) */
+		/* 	bitmap = bg_record->cnodes_used_bitmap; */
+		/* else */
 			bitmap = bg_record->ionode_bitmap;
 
 		for (i=0; i<node_record_count; i++) {
@@ -331,11 +331,11 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 					      state, g_bitmap_size);
 
 			if (subgrp->cnode_cnt < bg_conf->mp_cnode_cnt) {
-				if (cluster_flags & CLUSTER_FLAG_BGQ) {
-					bit_or(subgrp->bitmap, bitmap);
-					subgrp->cnode_cnt +=
-						bit_set_count(bitmap);
-				} else if (bg_record->cnode_cnt
+				/* if (cluster_flags & CLUSTER_FLAG_BGQ) { */
+				/* 	bit_or(subgrp->bitmap, bitmap); */
+				/* 	subgrp->cnode_cnt += */
+				/* 		bit_set_count(bitmap); */
+				/* } else */ if (bg_record->cnode_cnt
 					   < bg_conf->mp_cnode_cnt) {
 					bit_or(subgrp->bitmap, bitmap);
 					subgrp->cnode_cnt +=

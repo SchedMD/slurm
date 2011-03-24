@@ -1597,30 +1597,53 @@ extern char* node_use_string(enum node_use_type node_use)
 
 extern char *bg_block_state_string(uint16_t state)
 {
-	static char tmp[16];
+	static char tmp[25];
+	char *state_str = NULL;
+	char *err_str = NULL;
+	if (state & BG_BLOCK_ERROR_FLAG) {
+		err_str = "Error";
+		state &= (~BG_BLOCK_ERROR_FLAG);
+	}
 
 	switch (state) {
 	case BG_BLOCK_NAV:
-		return "NAV";
+		if (!err_str)
+			state_str = "NAV";
+		else {
+			err_str = NULL;
+			state_str = "Error";
+		}
+		break;
 	case BG_BLOCK_FREE:
-		return "Free";
+		state_str = "Free";
+		break;
 	case BG_BLOCK_BUSY:
-		return "Busy";
+		state_str = "Busy";
+		break;
 	case BG_BLOCK_BOOTING:
-		return "Boot";
+		state_str = "Boot";
+		break;
 	case BG_BLOCK_REBOOTING:
-		return "Reboot";
+		state_str = "Reboot";
+		break;
 	case BG_BLOCK_INITED:
-		return "Ready";
+		state_str = "Ready";
+		break;
 	case BG_BLOCK_ALLOCATED:
-		return "Alloc";
+		state_str = "Alloc";
+		break;
 	case BG_BLOCK_TERM:
-		return "Term";
-	case BG_BLOCK_ERROR:
-		return "Error";
+		state_str = "Term";
+		break;
+	default:
+		state_str = "Unknown";
+		break;
 	}
 
-	snprintf(tmp, sizeof(tmp), "%d", state);
+	if (err_str)
+		snprintf(tmp, sizeof(tmp), "%s(%s)", err_str, state_str);
+	else
+		return state_str;
 	return tmp;
 }
 

@@ -755,7 +755,7 @@ extern int select_p_state_save(char *dir_name)
 		 * the blocks in an error state
 		 */
 #if defined HAVE_BG_FILES
-		if (bg_record->state != BG_BLOCK_ERROR)
+		if (!(bg_record->state & BG_BLOCK_ERROR_FLAG))
 			continue;
 #endif
 		xassert(bg_record->bg_block_id != NULL);
@@ -877,7 +877,7 @@ extern int select_p_state_restore(char *dir_name)
 	   no threads are started before this function. */
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
-		if (bg_record->state == BG_BLOCK_ERROR)
+		if (bg_record->state & BG_BLOCK_ERROR_FLAG)
 			put_block_in_error_state(bg_record,
 						 BLOCK_ERROR_STATE, NULL);
 	}
@@ -1337,7 +1337,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		bg_record->job_ptr = NULL;
 	}
 
-	if (block_desc_ptr->state == BG_BLOCK_ERROR) {
+	if (block_desc_ptr->state == BG_BLOCK_ERROR_FLAG) {
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
@@ -1470,7 +1470,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		   to a normal state in accounting first */
 		itr = list_iterator_create(delete_list);
 		while ((found_record = list_next(itr))) {
-			if (found_record->state == BG_BLOCK_ERROR)
+			if (found_record->state & BG_BLOCK_ERROR_FLAG)
 				resume_block(found_record);
 		}
 		list_iterator_destroy(itr);
@@ -1485,7 +1485,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 
 		/* make sure if we are removing a block to put it back
 		   to a normal state in accounting first */
-		if (bg_record->state == BG_BLOCK_ERROR)
+		if (bg_record->state & BG_BLOCK_ERROR_FLAG)
 			resume_block(bg_record);
 
 		term_jobs_on_block(bg_record->bg_block_id);
@@ -1658,7 +1658,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	}
 	node_name = xstrdup_printf("%s%s", bg_conf->slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
-	if (block_desc_ptr->state == BG_BLOCK_ERROR) {
+	if (block_desc_ptr->state == BG_BLOCK_ERROR_FLAG) {
 		info("Admin setting %s[%s] in an error state",
 		     node_name, ionodes);
 		for(i = 0; i<bg_conf->ionodes_per_mp; i++) {

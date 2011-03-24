@@ -1088,7 +1088,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		*/
 		if (smallest_bg_record
 		    && (smallest_bg_record->cnode_cnt < bg_conf->mp_cnode_cnt)){
-			if (smallest_bg_record->state == BG_BLOCK_ERROR) {
+			if (smallest_bg_record->state & BG_BLOCK_ERROR_FLAG) {
 				rc = SLURM_NO_CHANGE_IN_DATA;
 				goto cleanup;
 			}
@@ -1157,7 +1157,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	} else if (smallest_bg_record) {
 		debug2("smallest dynamic block is %s",
 		       smallest_bg_record->bg_block_id);
-		if (smallest_bg_record->state == BG_BLOCK_ERROR) {
+		if (smallest_bg_record->state & BG_BLOCK_ERROR_FLAG) {
 			rc = SLURM_NO_CHANGE_IN_DATA;
 			goto cleanup;
 		}
@@ -1167,7 +1167,8 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 
 		if (smallest_bg_record->cnode_cnt == create_size) {
 			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE, reason);
+				smallest_bg_record, BLOCK_ERROR_STATE,
+				reason);
 			goto cleanup;
 		}
 
@@ -1411,7 +1412,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 		list_push(bg_lists->booted, bg_record);
 
 	bg_record->job_running = state;
-	bg_record->state = BG_BLOCK_ERROR;
+	bg_record->state |= BG_BLOCK_ERROR_FLAG;
 
 	xfree(bg_record->user_name);
 	xfree(bg_record->target_name);
@@ -1442,21 +1443,23 @@ extern int resume_block(bg_record_t *bg_record)
 	if (bg_record->job_running > NO_JOB_RUNNING)
 		return SLURM_SUCCESS;
 
-	if (bg_record->state == BG_BLOCK_ERROR)
+	if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
+		bg_record->state &= (~BG_BLOCK_ERROR_FLAG);
 		info("Block %s put back into service after "
 		     "being in an error state.",
 		     bg_record->bg_block_id);
+	}
 
 	if (remove_from_bg_list(bg_lists->job_running, bg_record)
 	    == SLURM_SUCCESS)
 		num_unused_cpus += bg_record->cpu_cnt;
+
 	if (bg_record->state != BG_BLOCK_INITED)
 		remove_from_bg_list(bg_lists->booted, bg_record);
+	else if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
+		list_push(bg_lists->booted, bg_record);
 
 	bg_record->job_running = NO_JOB_RUNNING;
-#ifndef HAVE_BG_FILES
-	bg_record->state = BG_BLOCK_FREE;
-#endif
 	xfree(bg_record->reason);
 
 	last_bg_update = time(NULL);
@@ -1548,7 +1551,7 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
 		/* only look at other nodes in error state */
-		if (bg_record->state != BG_BLOCK_ERROR)
+		if (!(bg_record->state & BG_BLOCK_ERROR_FLAG))
 			continue;
 		if (!bit_test(bg_record->bitmap, node_inx))
 			continue;

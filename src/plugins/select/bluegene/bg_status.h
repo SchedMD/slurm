@@ -41,7 +41,7 @@
 #include "bg_core.h"
 
 extern int bg_status_update_block_state(bg_record_t *bg_record,
-					bg_block_status_t state,
+					uint16_t state,
 					List kill_job_list);
 extern List bg_status_create_kill_job_list(void);
 extern void bg_status_process_kill_job_list(List kill_job_list);

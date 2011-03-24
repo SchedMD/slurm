@@ -98,7 +98,6 @@ typedef enum {
 	BG_BLOCK_INITED,    // Block is initialized
 	BG_BLOCK_REBOOTING, // Block is rebooting
 	BG_BLOCK_TERM,      // Block is terminating
-	BG_BLOCK_ERROR,     // Block is in error
 	BG_BLOCK_NAV,       // Block state is undefined
 } bg_block_status_t;
 
@@ -111,6 +110,9 @@ typedef enum {
         BG_JOB_TERMINATED,  //!< Job is terminated.
         BG_JOB_ERROR        //!< Job is in error status.
 } bg_job_status_t;
+
+#define BG_BLOCK_ERROR_FLAG    0x1000  // Block is in error
+
 
 #define BG_SWITCH_NONE         0x0000
 #define BG_SWITCH_OUT          0x0001

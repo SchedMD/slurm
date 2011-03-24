@@ -119,15 +119,15 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 }
 
 extern int bg_status_update_block_state(bg_record_t *bg_record,
-					bg_block_status_t state,
+					uint16_t state,
 					List kill_job_list)
 {
 	bool skipped_dealloc = false;
 	kill_job_struct_t *freeit = NULL;
 	int updated = 0;
+	uint16_t real_state = bg_record->state & (~BG_BLOCK_ERROR_FLAG);
 
-	if (bg_record->job_running == BLOCK_ERROR_STATE
-	    || bg_record->state == state)
+	if (real_state == state)
 		return 0;
 
 	debug("state of Block %s was %s and now is %s",
@@ -139,8 +139,8 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 	  check to make sure block went
 	  through freeing correctly
 	*/
-	if ((bg_record->state != BG_BLOCK_TERM
-	     && bg_record->state != BG_BLOCK_ERROR)
+	if ((real_state != BG_BLOCK_TERM
+	     && !(bg_record->state & BG_BLOCK_ERROR_FLAG))
 	    && state == BG_BLOCK_FREE)
 		skipped_dealloc = 1;
 	else if ((bg_record->state == BG_BLOCK_INITED)
@@ -166,7 +166,12 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 		   state and act like this didn't happen. */
 		goto nochange_state;
 
-	bg_record->state = state;
+	if (bg_record->state & BG_BLOCK_ERROR_FLAG)
+		state |= BG_BLOCK_ERROR_FLAG;
+	else if (state & BG_BLOCK_ERROR_FLAG)
+		bg_record->state |= state;
+	else
+		bg_record->state = state;
 
 	if (bg_record->state == BG_BLOCK_TERM || skipped_dealloc)
 		_block_is_deallocating(bg_record, kill_job_list);
@@ -179,7 +184,7 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 			num_unused_cpus += bg_record->cpu_cnt;
 		remove_from_bg_list(bg_lists->booted,
 				    bg_record);
-	} else if (bg_record->state == BG_BLOCK_ERROR) {
+	} else if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
 		if (bg_record->boot_state)
 			error("Block %s in an error state while booting.",
 			      bg_record->bg_block_id);
@@ -199,7 +204,19 @@ nochange_state:
 	debug3("boot state for block %s is %d",
 	       bg_record->bg_block_id, bg_record->boot_state);
 	if (bg_record->boot_state) {
-		switch(bg_record->state) {
+		if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
+			/* If we get an error on boot that
+			 * means it is a transparent L3 error
+			 * and should be trying to fix
+			 * itself.  If this is the case we
+			 * just hang out waiting for the state
+			 * to go to free where we will try to
+			 * boot again below.
+			 */
+			return updated;
+		}
+
+		switch (bg_record->state) {
 		case BG_BLOCK_BOOTING:
 			debug3("checking to make sure user %s "
 			       "is the user.",
@@ -212,16 +229,6 @@ nochange_state:
 					JOB_CONFIGURING;
 				last_job_update = time(NULL);
 			}
-			break;
-		case BG_BLOCK_ERROR:
-			/* If we get an error on boot that
-			 * means it is a transparent L3 error
-			 * and should be trying to fix
-			 * itself.  If this is the case we
-			 * just hang out waiting for the state
-			 * to go to free where we will try to
-			 * boot again below.
-			 */
 			break;
 		case BG_BLOCK_FREE:
 			if (bg_record->boot_count < RETRY_BOOT_COUNT) {

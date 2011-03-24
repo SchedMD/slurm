@@ -2152,7 +2152,7 @@ extern status_t bridge_get_data(rm_element_t* element,
 			*state = BG_BLOCK_TERM;
 			break;
 		case RM_PARTITION_ERROR:
-			*state = BG_BLOCK_ERROR;
+			*state |= BG_BLOCK_ERROR_FLAG;
 			break;
 		case RM_PARTITION_NAV:
 			*state = BG_BLOCK_NAV;

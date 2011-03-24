@@ -1560,7 +1560,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 #ifdef HAVE_BG
 	if (block_desc.bg_block_id) {
 		block_desc.reason = slurm_strerror(comp_msg->slurm_rc);
-		block_desc.state = BG_BLOCK_ERROR;
+		block_desc.state = BG_BLOCK_ERROR_FLAG;
 		i = select_g_update_block(&block_desc);
 		error_code = MAX(error_code, i);
 		xfree(block_desc.bg_block_id);

@@ -307,10 +307,10 @@ static bg_record_t *_find_matching_block(List block_list,
 		if (bg_record->job_ptr)
 			bg_record->job_running = bg_record->job_ptr->job_id;
 
-		/*block is messed up some how (BLOCK_ERROR_STATE)
+		/*block is messed up some how (BLOCK_ERROR_STATE_FLAG)
 		 * ignore it or if state == BG_BLOCK_ERROR */
 		if ((bg_record->job_running == BLOCK_ERROR_STATE)
-		    || (bg_record->state == BG_BLOCK_ERROR)) {
+		    || (bg_record->state & BG_BLOCK_ERROR_FLAG)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("block %s is in an error "
 				     "state (can't use)",
@@ -597,10 +597,12 @@ static int _check_for_booted_overlapping_blocks(
 				  || SELECT_IS_MODE_RUN_NOW(query_mode))
 				 && (bg_conf->layout_mode != LAYOUT_DYNAMIC)))
 			    && ((found_record->job_running != NO_JOB_RUNNING)
-				|| (found_record->state == BG_BLOCK_ERROR))) {
+				|| (found_record->state
+				    & BG_BLOCK_ERROR_FLAG))) {
 				if ((found_record->job_running
 				     == BLOCK_ERROR_STATE)
-				    || (found_record->state == BG_BLOCK_ERROR))
+				    || (found_record->state
+					& BG_BLOCK_ERROR_FLAG))
 					error("can't use %s, "
 					      "overlapping block %s "
 					      "is in an error state.",
@@ -1026,7 +1028,7 @@ static int _find_best_block_match(List block_list,
 					*/
 					bg_record->job_running =
 						BLOCK_ERROR_STATE;
-					bg_record->state = BG_BLOCK_ERROR;
+					bg_record->state |= BG_BLOCK_ERROR_FLAG;
 					error("_find_best_block_match: Picked "
 					      "block (%s) had some issues with "
 					      "hardware, trying a different "

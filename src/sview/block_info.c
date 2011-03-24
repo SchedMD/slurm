@@ -627,7 +627,7 @@ need_refresh:
 			   state */
 			enum node_states state = NODE_STATE_UNKNOWN;
 
-			if (block_ptr->state == BG_BLOCK_ERROR)
+			if (block_ptr->state & BG_BLOCK_ERROR_FLAG)
 				state = NODE_STATE_ERROR;
 			else if (block_ptr->job_running > NO_JOB_RUNNING)
 				state = NODE_STATE_ALLOCATED;
@@ -779,7 +779,7 @@ extern int update_state_block(GtkDialog *dialog,
 			 "Are you sure you want to put block %s "
 			 "in an error state?",
 			 blockid);
-		block_msg.state = BG_BLOCK_ERROR;
+		block_msg.state = BG_BLOCK_ERROR_FLAG;
 	} else if (!strcasecmp("Recreate block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to recreate block %s?",
@@ -1252,7 +1252,7 @@ display_it:
 		}
 		list_push(send_block_list, block_ptr);
 
-		if (block_ptr->state == BG_BLOCK_ERROR)
+		if (block_ptr->state & BG_BLOCK_ERROR_FLAG)
 			state = NODE_STATE_ERROR;
 		else if (block_ptr->job_running > NO_JOB_RUNNING)
 			state = NODE_STATE_ALLOCATED;

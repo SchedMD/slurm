@@ -1474,7 +1474,7 @@ _update_bluegene_block (int argc, char *argv[])
 			block_msg.bg_block_id = val;
 		} else if (!strncasecmp(tag, "State", MAX(tag_len, 2))) {
 			if (!strncasecmp(val, "ERROR", MAX(vallen, 1)))
-				block_msg.state = BG_BLOCK_ERROR;
+				block_msg.state = BG_BLOCK_ERROR_FLAG;
 			else if (!strncasecmp(val, "FREE", MAX(vallen, 1)))
 				block_msg.state = BG_BLOCK_FREE;
 			else if (!strncasecmp(val, "RECREATE", MAX(vallen, 3)))
@@ -1560,7 +1560,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 			block_msg.mp_str = val;
 		else if (!strncasecmp(tag, "State", MAX(tag_len, 2))) {
 			if (!strncasecmp(val, "ERROR", MAX(vallen, 1)))
-				block_msg.state = BG_BLOCK_ERROR;
+				block_msg.state = BG_BLOCK_ERROR_FLAG;
 			else if (!strncasecmp(val, "FREE", MAX(vallen, 1)))
 				block_msg.state = BG_BLOCK_FREE;
 			else {

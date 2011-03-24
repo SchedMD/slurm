@@ -759,7 +759,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			{G_TYPE_NONE, BG_BLOCK_INITED, "Inited", TRUE, -1},
 			{G_TYPE_NONE, BG_BLOCK_ALLOCATED, NULL, TRUE, -1},
 			{G_TYPE_NONE, BG_BLOCK_TERM, "Terminating", TRUE, -1},
-			{G_TYPE_NONE, BG_BLOCK_ERROR, "Error", TRUE, -1},
+			{G_TYPE_NONE, BG_BLOCK_ERROR_FLAG, "Error", TRUE, -1},
 			{G_TYPE_NONE, -1, NULL, FALSE, -1}
 		};
 		display_data_t *display_data = pulldown_display_data;

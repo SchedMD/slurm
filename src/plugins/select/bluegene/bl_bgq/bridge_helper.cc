@@ -250,8 +250,7 @@ extern int bridge_handle_runtime_errors(const char *function,
 	return rc;
 }
 
-extern bg_block_status_t bridge_translate_status(
-	bgsched::Block::Status state_in)
+extern uint16_t bridge_translate_status(bgsched::Block::Status state_in)
 {
 	switch (state_in) {
 	case Block::Allocated:
@@ -270,7 +269,7 @@ extern bg_block_status_t bridge_translate_status(
 		return BG_BLOCK_TERM;
 		break;
 	default:
-		return BG_BLOCK_ERROR;
+		return BG_BLOCK_ERROR_FLAG;
 		break;
 	}
 	error("unknown block state %d", state_in);

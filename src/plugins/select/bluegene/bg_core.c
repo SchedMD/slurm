@@ -95,8 +95,8 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		return SLURM_SUCCESS;
 	}
 
-	if ((bg_record->state != BG_BLOCK_FREE)
-	    && (bg_record->state != BG_BLOCK_ERROR)) {
+	if (!(bg_record->state & BG_BLOCK_ERROR_FLAG)
+	    && (bg_record->state != BG_BLOCK_FREE)) {
 		/* Something isn't right, go mark this one in an error
 		   state. */
 		update_block_msg_t block_msg;
@@ -107,7 +107,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 			     bg_block_state_string(bg_record->state));
 		slurm_init_update_block_msg(&block_msg);
 		block_msg.bg_block_id = bg_record->bg_block_id;
-		block_msg.state = BG_BLOCK_ERROR;
+		block_msg.state |= BG_BLOCK_ERROR_FLAG;
 		block_msg.reason = "Block would not deallocate";
 		slurm_mutex_unlock(&block_state_mutex);
 		select_g_update_block(&block_msg);
@@ -206,12 +206,12 @@ static void *_track_freeing_blocks(void *args)
 			/* Fake a free since we are n deallocating
 			   state before this.
 			*/
-			if ((bg_record->state != BG_BLOCK_ERROR)
+			if (!(bg_record->state & BG_BLOCK_ERROR_FLAG)
 			    && (retry_cnt >= 3))
 				bg_record->state = BG_BLOCK_FREE;
 #endif
 			if ((bg_record->state == BG_BLOCK_FREE)
-			    || (bg_record->state == BG_BLOCK_ERROR))
+			    || (bg_record->state & BG_BLOCK_ERROR_FLAG))
 				free_cnt++;
 			else if (bg_record->state != BG_BLOCK_TERM)
 				bg_free_block(bg_record, 0, 1);
@@ -371,7 +371,8 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					   we set it ourselves so
 					   break out.
 					*/
-					if (bg_record->state == BG_BLOCK_ERROR)
+					if (bg_record->state
+					    & BG_BLOCK_ERROR_FLAG)
 						break;
 #endif
 					if (bg_conf->slurm_debug_flags
@@ -400,7 +401,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 		/* Fake a free since we are n deallocating
 		   state before this.
 		*/
-		if (bg_record->state == BG_BLOCK_ERROR)
+		if (bg_record->state & BG_BLOCK_ERROR_FLAG)
 			break;
 		else if (count >= 3)
 			bg_record->state = BG_BLOCK_FREE;
@@ -410,7 +411,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 
 		if (!wait || (bg_record->state == BG_BLOCK_FREE)
 #ifdef HAVE_BGL
-		    ||  (bg_record->state == BG_BLOCK_ERROR)
+		    ||  (bg_record->state & BG_BLOCK_ERROR_FLAG)
 #endif
 			) {
 			break;
@@ -427,7 +428,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 
 	rc = SLURM_SUCCESS;
 	if ((bg_record->state == BG_BLOCK_FREE)
-	    || (bg_record->state == BG_BLOCK_ERROR))
+	    || (bg_record->state & BG_BLOCK_ERROR_FLAG))
 		remove_from_bg_list(bg_lists->booted, bg_record);
 	else if (count >= MAX_FREE_RETRIES) {
 		/* Something isn't right, go mark this one in an error
@@ -440,7 +441,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 			     bg_block_state_string(bg_record->state));
 		slurm_init_update_block_msg(&block_msg);
 		block_msg.bg_block_id = bg_record->bg_block_id;
-		block_msg.state = BG_BLOCK_ERROR;
+		block_msg.state |= BG_BLOCK_ERROR_FLAG;
 		block_msg.reason = "Block would not deallocate";
 		slurm_mutex_unlock(&block_state_mutex);
 		select_g_update_block(&block_msg);
@@ -645,7 +646,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 
 		/* we only care about the states we need here
 		 * everthing else should have been set up already */
-		if (block_info->state == BG_BLOCK_ERROR) {
+		if (block_info->state & BG_BLOCK_ERROR_FLAG) {
 			slurm_mutex_lock(&block_state_mutex);
 			if ((bg_record = find_bg_record_in_list(
 				     curr_block_list,
