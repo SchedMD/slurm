@@ -528,6 +528,8 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	memcpy(new_ba_mp, ba_mp, sizeof(ba_mp_t));
 	/* we have to set this or we would be pointing to the original */
 	memset(new_ba_mp->next_mp, 0, sizeof(new_ba_mp->next_mp));
+	/* we have to set this or we would be pointing to the original */
+	memset(new_ba_mp->prev_mp, 0, sizeof(new_ba_mp->prev_mp));
 	/* These are only used on the original as well. */
 	new_ba_mp->nodecard_loc = NULL;
 	new_ba_mp->loc = NULL;

@@ -700,8 +700,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 
 		j = 0;
 		while (block_info->mp_inx[j] >= 0) {
-			if (block_info->mp_inx[j+1]
-			    >= node_record_count) {
+			if (block_info->mp_inx[j+1] >= node_record_count) {
 				fatal("Job state recovered incompatible with "
 				      "bluegene.conf. mp=%u state=%d",
 				      node_record_count,
@@ -796,6 +795,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 #else
 		results = list_create(NULL);
 #endif
+		/* info("adding back %s %s", bg_record->bg_block_id, */
+		/*      bg_record->mp_str); */
 		name = set_bg_block(results,
 				    bg_record->start,
 				    geo,

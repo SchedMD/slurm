@@ -129,7 +129,6 @@ typedef struct block_allocator_mp {
 	ba_switch_t alter_switch[HIGHEST_DIMENSIONS];
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
-	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane */
 	int coord[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane in str format */
@@ -138,7 +137,9 @@ typedef struct block_allocator_mp {
 	int index;
 	/* rack-midplane location. */
 	char *loc;
+	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
 	char **nodecard_loc;
+	struct block_allocator_mp *prev_mp[HIGHEST_DIMENSIONS];
 //	int phys_x;	// no longer needed
 	int state;
 	/* set if using this midplane in a block */
