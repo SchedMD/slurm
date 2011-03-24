@@ -7292,12 +7292,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->begin_time) {
 		if (IS_JOB_PENDING(job_ptr) && detail_ptr) {
-			/* Make sure this time is current, it does no
-			   good for accounting to say this job could had
-			   started in the past since the job isn't
-			   going to start until now as the earliest.
-			*/
-			if(job_specs->begin_time < now)
+			char time_str[32];
+			/* Make sure this time is current, it does no good for
+			 * accounting to say this job could have started before
+			 * now */
+			if (job_specs->begin_time < now)
 				job_specs->begin_time = now;
 
 			detail_ptr->begin_time = job_specs->begin_time;
@@ -7305,6 +7304,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if ((job_ptr->priority == 1) &&
 			    (detail_ptr->begin_time <= now))
 				_set_job_prio(job_ptr);
+			slurm_make_time_str(&detail_ptr->begin_time, time_str,
+					    sizeof(time_str));
+			info("sched: update_job: setting begin to %s for "
+			     "job_id %u",
+			     time_str, job_ptr->job_id);
 		} else {
 			error_code = ESLURM_DISABLED;
 			goto fini;
