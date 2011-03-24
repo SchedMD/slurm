@@ -177,6 +177,7 @@ static void _remove_defunct_batch_dirs(List batch_dirs);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static int  _resume_job_nodes(struct job_record *job_ptr, bool clear_prio);
+static void _send_job_kill(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
@@ -7207,6 +7208,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		/* Use req_nodes to change the nodes associated with a running
 		 * for lack of other field in the job request to use */
 		if ((job_specs->min_nodes == 0) && IS_JOB_RUNNING(job_ptr) &&
+		    (job_ptr->node_cnt > 0) &&
 		    job_ptr->details && job_ptr->details->expanding_jobid) {
 			struct job_record *expand_job_ptr;
 
@@ -7232,7 +7234,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: cancelling job %u and moving all "
 			     "resources to job %u", job_specs->job_id,
 			     job_ptr->details->expanding_jobid);
+			job_pre_resize_acctg(job_ptr);
 			job_pre_resize_acctg(expand_job_ptr);
+			_send_job_kill(job_ptr);
 //REBUILD JOB_RESOURCES data struct
 //REBUILD JOB's NODE_BITMAP and NODES
 //REBUILD STEPS NODE_BITMAP
@@ -7240,16 +7244,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 //ANYTHING ELSE??
 			error_code = select_g_job_expand(job_ptr,
 							 expand_job_ptr);
+			job_post_resize_acctg(job_ptr);
 			job_post_resize_acctg(expand_job_ptr);
 			/* Since job_post_resize_acctg will restart
 			 * things don't do it again. */
 			update_accounting = false;
 			if (error_code)
 				goto fini;
-			/* Kill the job giving up resources */
-//IS THIS RIGHT?
-//			job_signal(job_ptr->job_id, (uint16_t) SIGKILL,
-//				   (uint16_t) NO_VAL, (uid_t) 0, false);
 		} else if ((job_specs->min_nodes == 0) ||
 		           (job_specs->min_nodes > job_ptr->node_cnt)) {
 			info("sched: Invalid node count (%u) for job %u update",
@@ -7587,6 +7588,71 @@ fini:
 		}
 	}
 	return error_code;
+}
+
+static void _send_job_kill(struct job_record *job_ptr)
+{
+	kill_job_msg_t *kill_job = NULL;
+	agent_arg_t *agent_args = NULL;
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+#else
+	int i;
+	struct node_record *node_ptr;
+#endif
+
+	xassert(job_ptr);
+	xassert(job_ptr->details);
+
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type = REQUEST_TERMINATE_JOB;
+	agent_args->retry = 0;	/* re_kill_job() resends as needed */
+	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
+	kill_job = xmalloc(sizeof(kill_job_msg_t));
+	last_node_update    = time(NULL);
+	kill_job->job_id    = job_ptr->job_id;
+	kill_job->step_id   = NO_VAL;
+	kill_job->job_state = job_ptr->job_state;
+	kill_job->job_uid   = job_ptr->user_id;
+	kill_job->nodes     = xstrdup(job_ptr->nodes);
+	kill_job->time      = time(NULL);
+	kill_job->start_time = job_ptr->start_time;
+	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
+			job_ptr->select_jobinfo);
+	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+					    job_ptr->spank_job_env);
+	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
+
+#ifdef HAVE_FRONT_END
+	if (job_ptr->batch_host &&
+	    (front_end_ptr = job_ptr->front_end_ptr)) {
+		hostlist_push(agent_args->hostlist, job_ptr->batch_host);
+		agent_args->node_count++;
+	}
+#else
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		hostlist_push(agent_args->hostlist, node_ptr->name);
+		agent_args->node_count++;
+	}
+#endif
+	if (agent_args->node_count == 0) {
+		error("Job %u allocated no nodes to be killed on",
+		      job_ptr->job_id);
+		xfree(kill_job->nodes);
+		xfree(kill_job);
+		hostlist_destroy(agent_args->hostlist);
+		xfree(agent_args);
+		return;
+	}
+
+	agent_args->msg_args = kill_job;
+	agent_queue_request(agent_args);
+	return;
 }
 
 /* Record accounting information for a job immediately before changing size */
