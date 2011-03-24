@@ -1502,11 +1502,18 @@ static int _job_expand(struct job_record *from_job_ptr,
 	int first_bit, last_bit;
 	List gres_list;
 
+	xassert(from_job_ptr);
+	xassert(to_job_ptr);
 	if (cr_ptr == NULL) {
 		error("select/linear: cr_ptr not initialized");
 		return SLURM_ERROR;
 	}
 
+	if (from_job_ptr->job_id == to_job_ptr->job_id) {
+		error("select/linear: attempt to merge job %u with self",
+		     from_job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 	if (_test_tot_job(cr_ptr, from_job_ptr->job_id) == 0) {
 		info("select/linear: job %u has no resources allocated",
 		     from_job_ptr->job_id);
@@ -1520,15 +1527,17 @@ static int _job_expand(struct job_record *from_job_ptr,
 
 	from_job_resrcs_ptr = from_job_ptr->job_resrcs;
 	if ((from_job_resrcs_ptr == NULL) ||
-	    (from_job_resrcs_ptr->cpus == NULL)) {
-		error("job %u lacks a job_resources struct",
+	    (from_job_resrcs_ptr->cpus == NULL) ||
+	    (from_job_resrcs_ptr->node_bitmap == NULL)) {
+		error("select/linear: job %u lacks a job_resources struct",
 		      from_job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 	to_job_resrcs_ptr = to_job_ptr->job_resrcs;
 	if ((to_job_resrcs_ptr == NULL) ||
-	    (to_job_resrcs_ptr->cpus == NULL)) {
-		error("job %u lacks a job_resources struct",
+	    (to_job_resrcs_ptr->cpus == NULL) ||
+	    (to_job_resrcs_ptr->node_bitmap == NULL)) {
+		error("select/linear: job %u lacks a job_resources struct",
 		      to_job_ptr->job_id);
 		return SLURM_ERROR;
 	}
@@ -1580,8 +1589,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	last_bit  = MAX(bit_fls(from_job_resrcs_ptr->node_bitmap),
 			bit_fls(to_job_resrcs_ptr->node_bitmap));
 	from_node_offset = to_node_offset = new_node_offset = -1;
-	for (i = first_bit, node_ptr = node_record_table_ptr; i <= last_bit;
-	     i++, node_ptr++) {
+	for (i = first_bit; i <= last_bit; i++) {
 		from_node_used = to_node_used = false;
 		if (bit_test(from_job_resrcs_ptr->node_bitmap, i)) {
 			from_node_used = true;
@@ -1594,6 +1602,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 		if (!from_node_used && !to_node_used)
 			continue;
 		new_node_offset++;
+		node_ptr = node_record_table_ptr + i;
 		memcpy(&to_job_ptr->node_addr[new_node_offset],
                        &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 		if (from_node_used) {
@@ -1669,6 +1678,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
 
+	/* Now swap data: "new" -> "to" and clear "from" */
 	free_job_resources(&to_job_ptr->job_resrcs);
 	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
 
