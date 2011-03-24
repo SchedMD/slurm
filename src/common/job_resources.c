@@ -236,7 +236,10 @@ extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id)
 		error("Invalid nodes (%s) for job_id %u",
 		      job_resrcs_ptr->nodes, job_id);
 		return SLURM_ERROR;
+	} else if (job_resrcs_ptr->nodes == NULL) {
+		job_resrcs_ptr->node_bitmap = bit_alloc(node_record_count);
 	}
+
 	i = bit_set_count(job_resrcs_ptr->node_bitmap);
 	if (job_resrcs_ptr->nhosts != i) {
 		error("Invalid change in resource allocation node count for "

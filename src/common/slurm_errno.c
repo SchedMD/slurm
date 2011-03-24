@@ -276,6 +276,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested account has breached requested QOS usage threshold"},
 	{ ESLURM_PARTITION_IN_USE,
 	  "Partition is in use"					},
+	{ ESLURM_EXPAND_GRES,
+	  "Job expansion with generic resource (gres) not supported"	},
 
 	/* slurmd error codes */
 

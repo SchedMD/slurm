@@ -1500,7 +1500,6 @@ static int _job_expand(struct job_record *from_job_ptr,
 	uint32_t from_job_memory_cpu  = 0, to_job_memory_cpu  = 0;
 	uint32_t from_job_memory_node = 0, to_job_memory_node = 0;
 	int first_bit, last_bit;
-	List gres_list;
 
 	xassert(from_job_ptr);
 	xassert(to_job_ptr);
@@ -1511,7 +1510,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 
 	if (from_job_ptr->job_id == to_job_ptr->job_id) {
 		error("select/linear: attempt to merge job %u with self",
-		     from_job_ptr->job_id);
+		      from_job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 	if (_test_tot_job(cr_ptr, from_job_ptr->job_id) == 0) {
@@ -1523,6 +1522,13 @@ static int _job_expand(struct job_record *from_job_ptr,
 		info("select/linear: job %u has no resources allocated",
 		     to_job_ptr->job_id);
 		return SLURM_ERROR;
+	}
+
+	if (from_job_ptr->gres_list || to_job_ptr->gres_list) {
+		/* This is possible to add, but very complex and fragile */
+		info("select/linear: attempt to merge job %u with GRES",
+		     from_job_ptr->job_id);
+		return ESLURM_EXPAND_GRES;
 	}
 
 	from_job_resrcs_ptr = from_job_ptr->job_resrcs;
@@ -1705,21 +1711,16 @@ static int _job_expand(struct job_record *from_job_ptr,
 
 	bit_or(to_job_ptr->node_bitmap, from_job_ptr->node_bitmap);
 	bit_nclear(from_job_ptr->node_bitmap, 0, (node_record_count - 1));
+	bit_nclear(from_job_resrcs_ptr->node_bitmap, 0,
+		  (node_record_count - 1));
+
 	xfree(to_job_ptr->nodes);
 	to_job_ptr->nodes = xstrdup(new_job_resrcs_ptr->nodes);
 	xfree(from_job_ptr->nodes);
 	from_job_ptr->nodes = xstrdup("");
+	xfree(from_job_resrcs_ptr->nodes);
+	from_job_resrcs_ptr->nodes = xstrdup("");
 
-#if 0
-	if (cr_ptr->nodes[i].gres_list)
-		gres_list = cr_ptr->nodes[i].gres_list;
-	else
-		gres_list = node_ptr->gres_list;
-	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
-				job_ptr->job_id, node_ptr->name);
-	gres_plugin_node_state_log(gres_list, node_ptr->name);
-
-#endif
 	return rc;
 }
 

@@ -8208,7 +8208,9 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 
 	if ((job_ptr->total_nodes == 0) && IS_JOB_COMPLETING(job_ptr)) {
 		/* Job resources moved into another job */
-		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
+		if (front_end_ptr)
+			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
 	} else {
 		for (i = 0; i < node_record_count; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
@@ -9829,9 +9831,12 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	if (job_ptr->node_bitmap) {
 		job_ptr->node_bitmap_cg = bit_copy(job_ptr->node_bitmap);
+		if (bit_set_count(job_ptr->node_bitmap_cg) == 0)
+			job_ptr->job_state &= (~JOB_COMPLETING);
 	} else {
 		error("build_cg_bitmap: node_bitmap is NULL");
 		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
+		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
 	if (job_ptr->node_bitmap_cg == NULL)
 		fatal("bit_copy: memory allocation failure");
