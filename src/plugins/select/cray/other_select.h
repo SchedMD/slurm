@@ -176,8 +176,22 @@ extern int other_job_begin(struct job_record *job_ptr);
 extern int other_job_ready(struct job_record *job_ptr);
 
 /*
- * Modify internal data structures for a job that has changed size
- *	Only support jobs shrinking now.
+ * Test if expanding a job is permitted
+ */
+extern bool other_job_expand_allow(void);
+
+/*
+ * Move the resource allocated to one job into that of another job.
+ *	All resources are removed from "from_job_ptr" and moved into
+ *	"to_job_ptr". Also see other_job_resized().
+ * RET: 0 or an error code
+ */
+extern int other_job_expand(struct job_record *from_job_ptr,
+			    struct job_record *to_job_ptr);
+
+/*
+ * Modify internal data structures for a job that has decreased job size.
+ *	Only support jobs shrinking. Also see other_job_expand();
  * RET: 0 or an error code
  */
 extern int other_job_resized(struct job_record *job_ptr,

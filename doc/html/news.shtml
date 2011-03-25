@@ -65,6 +65,8 @@ BlueGene architectures, improves performance and fault tolerance).</li>
 generic resources.</li>
 <li> Resource reservations with a node count specification will select
 those nodes optimized for the system topology.</li>
+<li>Support for growing job allocations (support for shrinking jobs was added
+in version 2.2).</li>
 </ul>
 
 <h2><a name="24">Major Updates in SLURM Version 2.4 and beyond</a></h2>
@@ -73,8 +75,6 @@ have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Support for growing job allocations (shrinking jobs are supported in
-version 2.2).</li>
 <li>Faster and more powerful job step management support  (e.g. step
 dependencies).</li>
 <li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
@@ -111,6 +111,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 3 January 2011</p>
+<p style="text-align:center;">Last modified 17 March 2011</p>
 
 <!--#include virtual="footer.txt"-->

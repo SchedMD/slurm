@@ -87,6 +87,8 @@ static int _select_get_ops(char *select_type,
 		"select_p_job_test",
 		"select_p_job_begin",
 		"select_p_job_ready",
+		"select_p_job_expand_allow",
+		"select_p_job_expand",
 		"select_p_job_resized",
 		"select_p_job_fini",
 		"select_p_job_suspend",
@@ -639,6 +641,34 @@ extern int select_g_job_ready(struct job_record *job_ptr)
 
 	return (*(select_context[select_context_default].ops.job_ready))
 		(job_ptr);
+}
+
+/*
+ * Test if job expansion is supported
+ */
+extern bool select_g_job_expand_allow(void)
+{
+	if (slurm_select_init(0) < 0)
+		return false;
+
+	return (*(select_context[select_context_default].ops.job_expand_allow))
+		();
+}
+
+/*
+ * Move the resource allocated to one job into that of another job.
+ *	All resources are removed from "from_job_ptr" and moved into
+ *	"to_job_ptr". Also see other_job_resized().
+ * RET: 0 or an error code
+ */
+extern int select_g_job_expand(struct job_record *from_job_ptr,
+			       struct job_record *to_job_ptr)
+{
+	if (slurm_select_init(0) < 0)
+		return -1;
+
+	return (*(select_context[select_context_default].ops.job_expand))
+		(from_job_ptr, to_job_ptr);
 }
 
 /*

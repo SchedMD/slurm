@@ -2640,8 +2640,8 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		error("_slurm_rpc_update_job JobId=%u uid=%d: %s",
-		      job_desc_msg->job_id, uid, slurm_strerror(error_code));
+		info("_slurm_rpc_update_job JobId=%u uid=%d: %s",
+		     job_desc_msg->job_id, uid, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("_slurm_rpc_update_job complete JobId=%u uid=%d %s",

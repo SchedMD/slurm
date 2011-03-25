@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.2" "October 2010" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.3" "March 2011" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -308,6 +308,11 @@ in some failed state (non-zero exit code, node failure, timed out, etc).
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
 executed (ran to completion with non-zero exit code).
+.TP
+\fBexpand:job_id\fR
+Resources allocated to this job should be used to expand the specified job.
+The job to expand must share the same QOS (Quality of Service) and partition.
+Gang scheduling of resources in the partition is also not supported.
 .TP
 \fBsingleton\fR
 This job can begin execution after any previously launched jobs

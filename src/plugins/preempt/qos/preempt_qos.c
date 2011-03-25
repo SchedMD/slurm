@@ -112,11 +112,14 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 			continue;
 		if (!_qos_preemptable(job_p, job_ptr))
 			continue;
-
 		if ((job_p->node_bitmap == NULL) ||
 		    (bit_overlap(job_p->node_bitmap,
 				 job_ptr->part_ptr->node_bitmap) == 0))
 			continue;
+		if (job_ptr->details &&
+		    (job_ptr->details->expanding_jobid == job_p->job_id))
+			continue;
+
 		/* This job is a preemption candidate */
 		if (preemptee_job_list == NULL) {
 			preemptee_job_list = list_create(NULL);

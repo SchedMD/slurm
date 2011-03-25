@@ -32,6 +32,9 @@ documents those changes that are of interest to users and admins.
     for most cases)
  -- Permit a job's QOS and Comment field to both change in a single RPC. This
     was previously disabled since Moab stored the QOS within the Comment field.
+ -- Add support for jobs to expand in size. Submit additional batch job with
+    the option "--dependency=expand:<jobid>". See web page "faq.html#job_size"
+    for details. Restrictions to be removed in the future.
 
 * Changes in SLURM 2.3.0.pre3
 =============================

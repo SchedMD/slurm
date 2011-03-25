@@ -646,8 +646,13 @@ http://groups.google.com/group/slurm-devel</a></p>
 
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
-Beginning with Slurm version 2.2 it is possible to decrease a job's size after
-it has started, but it is not currently possible to increase a job's size.
+Beginning with SLURM version 2.2 it is possible to decrease a job's size after
+it has started as described below in some configurations.
+Support is not available on BlueGene or Cray system.
+Support is also not currently available on systems configured with generic
+resource allocations, but this may change in the future.
+The ability to increase the size of a running job was added in SLURM version
+2.3 and is described in the next paragraph.
 Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
 (<i>NodeList=</i>) that you want the job to retain. 
@@ -662,7 +667,7 @@ reset local environment variables
 You must retain the SLURM_JOBID environment variable in order for the
 <i>srun</i> command to gather information about the job's current state and
 specify the desired node and/or task count in subsequent <i>srun</i> invocations. 
-An example is shown below.
+An example is shown below.</p>
 <pre>
 #!/bin/bash
 srun my_big_job
@@ -670,6 +675,92 @@ scontrol update JobId=$SLURM_JOBID NumNodes=2
 . slurm_job_${SLURM_JOBID}_resize.sh
 srun -N2 my_small_job
 rm slurm_job_${SLURM_JOBID}_resize.*
+</pre>
+
+<p><b>Increasing a job's size</b><br>
+Directly increasing the size of a running job would adversely effect the
+scheduling of pending jobs.
+For the sake of fairness in job scheduling, expanding a running job requires
+the user to submit a new job, but specify the option
+<i>--dependency=expand:&lt;jobid&gt;</i>.
+This option tells SLURM that the job, when scheduled, can be used to expand
+the specified jobid.
+Other job options would be used to identify the required resources
+(e.g. task count, node count, node features, etc.).
+This job's time limit will be automatically set to reflect the end time of
+the job being expanded.
+Note that partition and Quality Of Service (QOS) limits will be applied
+independently to the new job allocation so the expanded job may exceed size
+limits configured for an individual job.</p>
+
+<p>After the new job is allocated resources, merge that job's allocation
+into that of the original job by executing:<br>
+<i>scontrol update jobid=&lt;jobid&gt; NumNodes=0</i><br>
+The <i>jobid</i> above is that of the job to relinquish it's resources.
+To provides more control over when the job expansion occurs, the resources are
+not merged into the original job until explicitly requested.
+These resources will be transfered to the original job and the scontrol
+command will generate a script to reset variables in the second
+job's environment to reflect it's modified resource allocation (which would
+be no resources).
+One would normally exit this second job at this point, since it has no
+associated resources.
+In order to generate a script to modify the environment variables for the
+expanded job, execute:<br>
+<i>scontrol update jobid=&lt;jobid&gt; NumNodes=ALL</i><br>
+Then execute the script generated.
+Note that this command does not change the original job's size, but only
+generates the script to change its environment variables.
+Until the environment variables are modified (e.g. the job's node count,
+CPU count, hostlist, etc.), any srun command will only consider the resources
+in the original resource allocation.
+Note that the original job may have active job steps at the time of it's
+expansion, but they will not be effected by the change.
+An example of the proceedure is shown below in which the original job
+allocation waits until the second resource allocation request can be
+satisfied. The job requesting additional resources could also use the sbatch
+command and permit the original job to continue execution at its initial size.
+Note that the development of additional user tools to manage SLURM resource
+allocations is planned in the future to make this process both simpler and
+more flexible.</p
+
+<pre>
+$ salloc -N4 bash
+salloc: Granted job allocation 65542
+$ srun hostname
+icrm1
+icrm2
+icrm3
+icrm4
+
+$ salloc -N4 --dependency=expand:$SLURM_JOBID bash
+salloc: Granted job allocation 65543
+$ scontrol update jobid=$SLURM_JOBID NumNodes=0
+To reset SLURM environment variables, execute
+  For bash or sh shells:  . ./slurm_job_65543_resize.sh
+  For csh shells:         source ./slurm_job_65543_resize.csh
+$ exit
+exit
+salloc: Relinquishing job allocation 65543
+
+$ scontrol update jobid=$SLURM_JOBID NumNodes=ALL
+To reset SLURM environment variables, execute
+  For bash or sh shells:  . ./slurm_job_65542_resize.sh
+  For csh shells:         source ./slurm_job_65542_resize.csh
+$ . ./slurm_job_$SLURM_JOBID_resize.sh
+
+$ srun hostname
+icrm1
+icrm2
+icrm3
+icrm4
+icrm5
+icrm6
+icrm7
+icrm8
+$ exit
+exit
+salloc: Relinquishing job allocation 65542
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -1344,6 +1435,6 @@ dset TV::parallel_configs {
 </pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 January 2011</p>
+<p style="text-align:center;">Last modified 17 March 2011</p>
 
 <!--#include virtual="footer.txt"-->

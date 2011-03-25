@@ -276,6 +276,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested account has breached requested QOS usage threshold"},
 	{ ESLURM_PARTITION_IN_USE,
 	  "Partition is in use"					},
+	{ ESLURM_EXPAND_GRES,
+	  "Job expansion with generic resource (gres) not supported"	},
 
 	/* slurmd error codes */
 
@@ -330,7 +332,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURMD_TOOMANYSTEPS,
 	  "Too many job steps on node"		        	},
 	{ ESLURMD_STEP_EXISTS,
-	  "Job step already in shared memory"	        	},
+	  "Job step already exists"		        	},
 	{ ESLURMD_JOB_NOTRUNNING,
 	  "Job step not running"	        	        },
  	{ ESLURMD_STEP_SUSPENDED,
