@@ -302,15 +302,15 @@ extern int bridge_block_create(bg_record_t *bg_record)
 
 
 #ifdef HAVE_BG_FILES
-	if (bg_record->node_cnt < bg_conf->mp_node_cnt) {
+	if (bg_record->cnode_cnt < bg_conf->mp_cnode_cnt) {
 		bool use_nc[bg_conf->mp_nodecard_cnt];
 		int i, nc_pos = 0, num_ncards = 0;
 
-		num_ncards = bg_record->node_cnt/bg_conf->nodecard_node_cnt;
+		num_ncards = bg_record->cnode_cnt/bg_conf->nodecard_cnode_cnt;
 		if (num_ncards < 1) {
 			error("You have to have at least 1 nodecard to make "
 			      "a small block I got %d/%d = %d",
-			      bg_record->node_cnt, bg_conf->nodecard_node_cnt,
+			      bg_record->cnode_cnt, bg_conf->nodecard_cnode_cnt,
 			      num_ncards);
 			return SLURM_ERROR;
 		}
@@ -356,7 +356,8 @@ extern int bridge_block_create(bg_record_t *bg_record)
 			   real one from the system and use it.
 			*/
 			ba_mp_t *main_mp = coord2ba_mp(ba_mp->coord);
-			info("got %s(%s) %d", main_mp->coord_str, main_mp->loc, ba_mp->used);
+			info("got %s(%s) %d", main_mp->coord_str,
+			     main_mp->loc, ba_mp->used);
 			if (ba_mp->used)
 				midplanes.push_back(main_mp->loc);
 			else
@@ -800,8 +801,8 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if (bg_record->state == BG_BLOCK_BOOTING)
 			bg_record->boot_state = 1;
 
-		bg_record->node_cnt = block_ptr->getComputeNodeCount();
-		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
+		bg_record->cnode_cnt = block_ptr->getComputeNodeCount();
+		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->cnode_cnt;
 
 		if (block_ptr->isSmall()) {
 			char bitstring[BITSIZE];
@@ -827,10 +828,10 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			bit_nset(bg_record->ionode_bitmap,
 				 io_start, io_start+io_cnt);
 			bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
-			bg_record->ionodes = xstrdup(bitstring);
+			bg_record->ionode_str = xstrdup(bitstring);
 			debug3("%s uses ionodes %s",
 			       bg_record->bg_block_id,
-			       bg_record->ionodes);
+			       bg_record->ionode_str);
 			bg_record->conn_type[0] = SELECT_SMALL;
 		} else {
 			for (dim=Dimension::A; dim<=Dimension::D; dim++) {
@@ -840,7 +841,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			}
 			/* Set the bitmap blank here if it is a full
 			   node we don't want anything set we also
-			   don't want the bg_record->ionodes set.
+			   don't want the bg_record->ionode_str set.
 			*/
 			bg_record->ionode_bitmap =
 				bit_alloc(bg_conf->ionodes_per_mp);

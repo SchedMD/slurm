@@ -74,8 +74,7 @@ extern int bridge_handle_runtime_errors(const char *function,
 					const uint32_t err,
 					bg_record_t *bg_record);
 
-extern bg_block_status_t bridge_translate_status(
-	bgsched::Block::Status state_in);
+extern uint16_t bridge_translate_status(bgsched::Block::Status state_in);
 extern uint16_t bridge_translate_switch_usage(bgsched::Switch::InUse usage_in);
 
 #endif

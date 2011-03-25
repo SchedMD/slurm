@@ -97,8 +97,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	char *bg_block_id = getenv("MPIRUN_PARTITION");
 
 	if (!bg_block_id || (strlen(bg_block_id) < 3)) {
-		printf("YOU ARE OUTSIDE OF SLURM!!!!\n");
-		verify.denyJob(DenyJob::Yes);
+		std::cerr << "YOU ARE OUTSIDE OF SLURM!!!!" << std::endl;
+		verify.denyJob(bgsched::runjob::Verify::DenyJob::Yes);
 		return;
 	}
 
