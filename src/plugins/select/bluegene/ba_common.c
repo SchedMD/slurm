@@ -946,9 +946,9 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
 	/* basically set the mp as used */
 	if ((mp_base_state == NODE_STATE_DOWN)
 	    || (mp_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
-		ba_mp->used = BA_MP_USED_TRUE;
+		ba_mp->used |= BA_MP_USED_TRUE;
 	else
-		ba_mp->used = BA_MP_USED_FALSE;
+		ba_mp->used &= (~BA_MP_USED_TRUE);
 
 	ba_mp->state = state;
 }

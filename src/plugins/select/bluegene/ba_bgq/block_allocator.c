@@ -717,64 +717,6 @@ extern void reset_ba_system(bool track_down_mps)
 }
 
 /*
- * IN: hostlist of midplanes we want to be able to use, mark all
- *     others as used.
- * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
- *
- * Need to call reset_all_removed_mps before starting another
- * allocation attempt if possible use removable_set_mps since it is
- * faster. It does basically the opposite of this function. If you
- * have to come up with this list though it is faster to use this
- * function than if you have to call bitmap2node_name since that is slow.
- */
-extern int set_all_mps_except(char *mps)
-{
-	int dim;
-	int a, x, y, z;
-	hostlist_t hl = hostlist_create(mps);
-	char *host = NULL, *numeric = NULL;
-	int coords[SYSTEM_DIMENSIONS];
-
-	memset(coords, 0, sizeof(coords));
-
-	while ((host = hostlist_shift(hl))){
-		numeric = host;
-		while (numeric) {
-			if (numeric[0] < '0' || numeric[0] > 'D'
-			    || (numeric[0] > '9'
-				&& numeric[0] < 'A')) {
-				numeric++;
-				continue;
-			}
-			for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++, numeric++)
-				coords[dim] = select_char2coord(numeric[0]);
-			break;
-		}
-		ba_main_grid[coords[A]][coords[X]][coords[Y]][coords[Z]].state
-			|= NODE_RESUME;
-		free(host);
-	}
-	hostlist_destroy(hl);
-
-	for (a = 0; a < DIM_SIZE[A]; a++)
-		for (x = 0; x < DIM_SIZE[X]; x++)
-			for (y = 0; y < DIM_SIZE[Y]; y++)
-				for (z = 0; z < DIM_SIZE[Z]; z++) {
-					if (ba_main_grid[a][x][y][z].state
-					    & NODE_RESUME) {
-						/* clear the bit and
-						 * mark as unused */
-						ba_main_grid[a][x][y][z].state
-							&= ~NODE_RESUME;
-					} else
-						ba_main_grid[a][x][y][z].used
-							|= BA_MP_USED_TEMP;
-				}
-
- 	return SLURM_SUCCESS;
-}
-
-/*
  * set values of every grid point (used in smap)
  */
 extern void init_grid(node_info_msg_t * node_info_ptr)
@@ -808,11 +750,11 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 		if (cluster_dims == 1) {
 			coord[0] = j;
 		} else {
-			if ((i = strlen(node_ptr->name)) < 4)
+			if ((i = strlen(node_ptr->name)) < cluster_dims)
 				continue;
 			for (x=0; x<cluster_dims; x++)
 				coord[x] = select_char2coord(
-					node_ptr->name[i-(4+x)]);
+					node_ptr->name[i-(cluster_dims+x)]);
 		}
 
 		for (x=0; x<cluster_dims; x++)
@@ -823,6 +765,11 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 
 		ba_mp = &ba_main_grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
 		ba_mp->index = j;
+		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
+			if (ba_initialized)
+				ba_update_mp_state(
+					ba_mp, node_ptr->node_state);
+		}
 		ba_mp->state = node_ptr->node_state;
 	}
 }
@@ -1180,10 +1127,6 @@ static char *_copy_from_main(List main_mps, List ret_list)
 				info("_copy_from_main: "
 				     "mp %s is used", new_mp->coord_str);
 			new_mp->used = BA_MP_USED_TRUE;
-			/* Take this away if we decide we don't want
-			   this to setup the main list.
-			*/
-			ba_mp->used = new_mp->used;
 			if (hostlist)
 				hostlist_push(hostlist, new_mp->coord_str);
 			else
@@ -1239,8 +1182,8 @@ static char *_reset_altered_mps(List main_mps, bool get_name)
 		if (ba_mp->used & BA_MP_USED_PASS_BIT) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("_reset_altered_mps: "
-				     "mp %s is used for passthrough",
-				     ba_mp->coord_str);
+				     "mp %s is used for passthrough %d",
+				     ba_mp->coord_str, ba_mp->used);
 		} else {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("_reset_altered_mps: "
@@ -1336,18 +1279,20 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 	if (!(ba_mp->used & BA_MP_USED_ALTERED))
 		rc = 1;
 
-	/* Just overlap them here so if they are used in a passthough
-	   we get it.
-	*/
-	ba_mp->used |= orig_mp->used;
+	/* set up the usage of the midplane */
+	if (orig_mp->used & BA_MP_USED_PASS_BIT)
+		ba_mp->used |= BA_MP_USED_ALTERED_PASS;
+	else
+		ba_mp->used |= BA_MP_USED_ALTERED;
 
 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 		info("_copy_ba_switch: "
-		     "mp %s(%d) %s added %s to mp %s(%d)",
+		     "mp %s(%d) adds %s to mp %s(%d) %s %d",
 		     orig_mp->coord_str, dim,
-		     ba_switch_usage_str(ba_mp->alter_switch[dim].usage),
 		     ba_switch_usage_str(orig_mp->alter_switch[dim].usage),
-		     ba_mp->coord_str, dim);
+		     ba_mp->coord_str, dim,
+		     ba_switch_usage_str(ba_mp->alter_switch[dim].usage),
+		     ba_mp->used);
 	ba_mp->alter_switch[dim].usage |= orig_mp->alter_switch[dim].usage;
 
 	return rc;
@@ -1414,8 +1359,6 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 	if (_mp_used(start_mp, dim))
 		return 0;
 
-	//start_mp->used |= BA_MP_USED_START;
-
 	axis_switch = &start_mp->axis_switch[dim];
 	alter_switch = &start_mp->alter_switch[dim];
 	if (geometry == 1) {
@@ -1440,7 +1383,6 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 
 	while (curr_mp != start_mp) {
 		xassert(curr_mp);
-		//curr_mp->used |= BA_MP_USED_START;
 		axis_switch = &curr_mp->axis_switch[dim];
 		alter_switch = &curr_mp->alter_switch[dim];
 
