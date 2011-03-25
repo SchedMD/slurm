@@ -296,7 +296,7 @@ make_bash_script $file_in "$bin_sleep $sleep_time"
 set timeout [expr $max_job_delay + $sleep_time]
 
 
-if {![string compare $type "P"]} {
+if {![string compare $type "P"] || ![string compare $type "Q"]} {
 	set started [run_bgp_test]
 } elseif {![string compare $type "L"]} {
 	set started [run_bgl_test]
