@@ -200,7 +200,8 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
 	if (!bg_record) {
 		slurm_mutex_unlock(&block_state_mutex);
-		info("bg_record %s isn't in the main list", bg_block_id);
+		info("bridge_status: bg_record %s isn't in the main list",
+		     bg_block_id);
 		return;
 	}
 

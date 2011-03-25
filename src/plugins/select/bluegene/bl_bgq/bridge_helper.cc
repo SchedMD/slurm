@@ -180,6 +180,13 @@ extern int bridge_handle_input_errors(const char *function, const uint32_t err,
 		      function, err);
 		rc = SLURM_ERROR;
 	}
+	if (bg_record && (rc == SLURM_SUCCESS)) {
+		/* Make sure we set this to free since if it isn't in
+		   the system and we are waiting for it to be free, we
+		   will be waiting around for a long time ;).
+		*/
+		bg_record->state = BG_BLOCK_FREE;
+	}
 	return rc;
 }
 
