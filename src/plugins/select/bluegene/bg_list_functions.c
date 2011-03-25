@@ -48,6 +48,8 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 	int rc = 0;
 
 	while ((found_record = list_next(itr))) {
+		if (found_record->magic != BLOCK_MAGIC)
+			continue;
 		/* check for full node bitmap compare */
 		if (bit_equal(bg_record->bitmap, found_record->bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
@@ -114,7 +116,7 @@ extern bg_record_t *find_bg_record_in_list(List my_list,
 
 	itr = list_iterator_create(my_list);
 	while ((bg_record = list_next(itr))) {
-		if (bg_record->bg_block_id)
+		if (bg_record->bg_block_id && (bg_record->magic == BLOCK_MAGIC))
 			if (!strcasecmp(bg_record->bg_block_id, bg_block_id))
 				break;
 	}
@@ -140,7 +142,7 @@ extern int remove_from_bg_list(List my_list, bg_record_t *bg_record)
 	//slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(my_list);
 	while ((found_record = list_next(itr))) {
-		if (found_record)
+		if (found_record->magic == BLOCK_MAGIC)
 			if (bg_record == found_record) {
 				list_remove(itr);
 				rc = SLURM_SUCCESS;
@@ -162,7 +164,10 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 	ListIterator itr = list_iterator_create(my_list);
 	bg_record_t *found_record = NULL;
 
-	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+	while ((found_record = list_next(itr))) {
+		if (found_record->magic != BLOCK_MAGIC)
+			continue;
+
 		/* check for full node bitmap compare */
 		if (bit_equal(bg_record->bitmap, found_record->bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
@@ -188,7 +193,9 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 	ListIterator itr = list_iterator_create(my_list);
 	bg_record_t *found_record = NULL;
 
-	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+	while ((found_record = list_next(itr))) {
+		if (found_record->magic != BLOCK_MAGIC)
+			continue;
 		/* check for full node bitmap compare */
 		if (bit_equal(bg_record->bitmap, found_record->bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
