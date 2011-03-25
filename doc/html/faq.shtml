@@ -647,7 +647,10 @@ http://groups.google.com/group/slurm-devel</a></p>
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
 Beginning with SLURM version 2.2 it is possible to decrease a job's size after
-it has started as described below.
+it has started as described below in some configurations.
+Support is not available on BlueGene or Cray system.
+Support is also not currently available on systems configured with generic
+resource allocations, but this may change in the future.
 The ability to increase the size of a running job was added in SLURM version
 2.3 and is described in the next paragraph.
 Use the <i>scontrol</i> command to change a job's size either by specifying

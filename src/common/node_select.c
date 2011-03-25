@@ -87,6 +87,7 @@ static int _select_get_ops(char *select_type,
 		"select_p_job_test",
 		"select_p_job_begin",
 		"select_p_job_ready",
+		"select_p_job_expand_allow",
 		"select_p_job_expand",
 		"select_p_job_resized",
 		"select_p_job_fini",
@@ -632,6 +633,18 @@ extern int select_g_job_ready(struct job_record *job_ptr)
 
 	return (*(select_context[select_context_default].ops.job_ready))
 		(job_ptr);
+}
+
+/*
+ * Test if job expansion is supported
+ */
+extern bool select_g_job_expand_allow(void)
+{
+	if (slurm_select_init(0) < 0)
+		return false;
+
+	return (*(select_context[select_context_default].ops.job_expand_allow))
+		();
 }
 
 /*

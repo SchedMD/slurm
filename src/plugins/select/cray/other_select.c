@@ -387,6 +387,17 @@ extern int other_job_ready(struct job_record *job_ptr)
 }
 
 /*
+ * Test if expanding a job is permitted
+ */
+extern bool other_job_expand_allow(void)
+{
+	if (other_select_init() < 0)
+		return false;
+
+	return (*(other_select_context->ops.job_expand_allow))();
+}
+
+/*
  * Move the resource allocated to one job into that of another job.
  *	All resources are removed from "from_job_ptr" and moved into
  *	"to_job_ptr". Also see other_job_resized().

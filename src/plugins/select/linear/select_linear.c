@@ -2781,6 +2781,12 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return READY_NODE_STATE;
 }
 
+
+extern bool select_p_job_expand_allow(void)
+{
+	return true;
+}
+
 extern int select_p_job_expand(struct job_record *from_job_ptr,
 			       struct job_record *to_job_ptr)
 {

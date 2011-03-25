@@ -7229,8 +7229,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = ESLURM_INVALID_JOB_ID;
 				goto fini;
 			}
-			if ((job_ptr->step_list != NULL) &&
-			    (list_count(job_ptr->step_list) != 0)) {
+			if ((expand_job_ptr->step_list != NULL) &&
+			    (list_count(expand_job_ptr->step_list) != 0)) {
 				info("Attempt to merge job %u with active "
 				     "steps into job %u",
 				     job_specs->job_id,
@@ -7238,9 +7238,27 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = ESLURMD_STEP_EXISTS;
 				goto fini;
 			}
+			if ((job_ptr->step_list != NULL) &&
+			    (list_count(job_ptr->step_list) != 0)) {
+//FIXME: Remove this restriction
+				info("Attempt to merge job %u into job %u "
+				     "with active steps",
+				     job_specs->job_id,
+				     job_ptr->details->expanding_jobid);
+				error_code = ESLURMD_STEP_EXISTS;
+				goto fini;
+			}
+			if (!select_g_job_expand_allow()) {
+				info("Select plugin does not support merging "
+				     "of job %u into job %u",
+				     job_specs->job_id,
+				     job_ptr->details->expanding_jobid);
+				error_code = ESLURM_NOT_SUPPORTED;
+				goto fini;
+			}
 			info("sched: cancelling job %u and moving all "
 			     "resources to job %u", job_specs->job_id,
-			     job_ptr->details->expanding_jobid);
+			     expand_job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			job_pre_resize_acctg(expand_job_ptr);
 			_send_job_kill(job_ptr);
@@ -7248,7 +7266,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 //REBUILD JOB's NODE_BITMAP and NODES
 //REBUILD STEPS NODE_BITMAP
 //FIX STATE IN SELECT PLUGIN
-//ANYTHING ELSE??
 			error_code = select_g_job_expand(job_ptr,
 							 expand_job_ptr);
 			job_post_resize_acctg(job_ptr);
