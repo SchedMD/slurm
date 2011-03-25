@@ -707,7 +707,20 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 		return SLURM_ERROR;
 
 #ifdef HAVE_BG_FILES
-	vec = Block::getUsers(bg_record->bg_block_id);
+	try {
+		vec = Block::getUsers(bg_record->bg_block_id);
+	} catch (const bgsched::InputException& err) {
+		bridge_handle_input_errors(
+			"Block::getUsers",
+			err.getError().toValue(), bg_record);
+		return REMOVE_USER_NONE;
+	} catch (const bgsched::RuntimeException& err) {
+		bridge_handle_runtime_errors(
+			"Block::getUsers",
+			err.getError().toValue(), bg_record);
+		return REMOVE_USER_NONE;
+	}
+
 	if (vec.empty())
 		return REMOVE_USER_NONE;
 
