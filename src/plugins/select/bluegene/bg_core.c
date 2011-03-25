@@ -118,19 +118,15 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	/* A bit of a sanity check to make sure blocks are being
 	   removed out of all the lists.
 	*/
-	if (blocks_are_created) {
-		remove_from_bg_list(bg_lists->booted, bg_record);
-		if (remove_from_bg_list(bg_lists->job_running, bg_record)
-		    == SLURM_SUCCESS)
-			num_unused_cpus += bg_record->cpu_cnt;
-	}
+	remove_from_bg_list(bg_lists->booted, bg_record);
+	if (remove_from_bg_list(bg_lists->job_running, bg_record)
+	    == SLURM_SUCCESS)
+		num_unused_cpus += bg_record->cpu_cnt;
 
 	if (restore)
 		return SLURM_SUCCESS;
 
-	if (blocks_are_created
-	    && remove_from_bg_list(bg_lists->main, bg_record)
-	    != SLURM_SUCCESS) {
+	if (remove_from_bg_list(bg_lists->main, bg_record) != SLURM_SUCCESS) {
 		/* This should only happen if called from
 		 * bg_job_place.c where the block was never added to
 		 * the list. */

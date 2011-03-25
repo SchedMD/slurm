@@ -232,7 +232,6 @@ extern ba_mp_t *coord2ba_mp(const int *coord)
 extern int allocate_block(select_ba_request_t* ba_request, List results)
 {
 	uint16_t start[cluster_dims];
-	uint16_t end[cluster_dims];
 	char *name=NULL;
 	int i, dim, startx;
 	ba_geo_table_t *ba_geo_table;
@@ -284,13 +283,6 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 		       sizeof(ba_geo_table->geometry));
 	} else
 		ba_request->geo_table = NULL;
-
-	for (dim = 0; dim < cluster_dims; dim++) {
-		end[dim] = start[dim] + ba_request->geometry[dim];
-		if (end[dim] > DIM_SIZE[dim])
-			if (!_check_for_options(ba_request))
-				return 0;
-	}
 
 start_again:
 	i = 0;
@@ -963,7 +955,7 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 					     check_mp[level]->coord_str, level);
 				return 0;
 			}
-			if (coords[level] < (block_end[level]))
+			if (coords[level] < (DIM_SIZE[level]-1))
 				coords[level]++;
 			else
 				coords[level] = 0;
@@ -1320,10 +1312,11 @@ static int _copy_ba_switch(ba_mp_t *ba_mp, ba_mp_t *orig_mp, int dim)
 
 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 		info("_copy_ba_switch: "
-		     "mapping dim %d of %s(%d) to %s(%d) %d",
-		     dim, orig_mp->coord_str, orig_mp->used,
-		     ba_mp->coord_str, ba_mp->used,
-		     orig_mp->used == BA_MP_USED_ALTERED_PASS);
+		     "mapping %s(%d) %s to %s(%d) %s",
+		     orig_mp->coord_str, dim,
+		     ba_switch_usage_str(orig_mp->alter_switch[dim].usage),
+		     ba_mp->coord_str, dim,
+		     ba_switch_usage_str(ba_mp->alter_switch[dim].usage));
 
 	if (ba_mp->axis_switch[dim].usage & orig_mp->alter_switch[dim].usage) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
