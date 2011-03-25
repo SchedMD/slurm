@@ -1033,12 +1033,11 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		else if (strncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
 		else if (strncasecmp(tok, "expand", 6) == 0) {
-#if defined(HAVE_CRAY) || defined(HAVE_BG)
-			rc = ESLURM_DEPENDENCY;
-			break;
-#else
+			if (!select_g_job_expand_allow()) {
+				rc = ESLURM_DEPENDENCY;
+				break;
+			}
 			depend_type = SLURM_DEPEND_EXPAND;
-#endif
 		} else {
 			rc = ESLURM_DEPENDENCY;
 			break;

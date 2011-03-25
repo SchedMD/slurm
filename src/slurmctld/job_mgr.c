@@ -7215,14 +7215,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-#if defined(HAVE_BG) || defined(HAVE_CRAY)
-	if (job_specs->min_nodes != NO_VAL) {
+	if ((job_specs->min_nodes != NO_VAL) && !select_g_job_expand_allow()) {
 		info("Change of size for job %u not supported",
 		     job_specs->job_id);
-		error_code = ESLURM_INVALID_NODE_COUNT;
+		error_code = ESLURM_NOT_SUPPORTED;
 		goto fini;
 	}
-#else
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
@@ -7259,14 +7257,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				     job_specs->job_id,
 				     job_ptr->details->expanding_jobid);
 				error_code = ESLURMD_STEP_EXISTS;
-				goto fini;
-			}
-			if (!select_g_job_expand_allow()) {
-				info("Select plugin does not support merging "
-				     "of job %u into job %u",
-				     job_specs->job_id,
-				     job_ptr->details->expanding_jobid);
-				error_code = ESLURM_NOT_SUPPORTED;
 				goto fini;
 			}
 			info("sched: cancelling job %u and moving all "
@@ -7324,7 +7314,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			update_accounting = false;
 		}
 	}
-#endif
 
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
@@ -8314,7 +8303,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	}
 
 	if ((job_ptr->total_nodes == 0) && IS_JOB_COMPLETING(job_ptr)) {
-		/* Job resources moved into another job */
+		/* Job resources moved into another job and
+		 *  tasks already killed */
 		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
 		if (front_end_ptr)
 			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
