@@ -2827,6 +2827,11 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return rc;
 }
 
+extern int select_p_job_signal(struct job_record *job_ptr, int signal)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;

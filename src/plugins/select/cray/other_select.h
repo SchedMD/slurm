@@ -198,6 +198,13 @@ extern int other_job_resized(struct job_record *job_ptr,
 			     struct node_record *node_ptr);
 
 /*
+ * Pass job-step signal to other plugin.
+ * IN job_ptr - job to be signalled
+ * IN signal  - signal(7) number
+ */
+extern int other_job_signal(struct job_record *job_ptr, int signal);
+
+/*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */

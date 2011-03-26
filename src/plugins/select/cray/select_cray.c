@@ -279,6 +279,11 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	return ESLURM_NOT_SUPPORTED;
 }
 
+extern int select_p_job_signal(struct job_record *job_ptr, int signal)
+{
+	return other_job_signal(job_ptr, signal);
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	/*

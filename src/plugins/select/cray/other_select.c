@@ -85,6 +85,7 @@ static slurm_select_ops_t *_other_select_get_ops(slurm_select_context_t *c)
 		"select_p_job_begin",
 		"select_p_job_ready",
 		"select_p_job_resized",
+		"select_p_job_signal",
 		"select_p_job_fini",
 		"select_p_job_suspend",
 		"select_p_job_resume",
@@ -426,6 +427,20 @@ extern int other_job_resized(struct job_record *job_ptr,
 
 	return (*(other_select_context->ops.job_resized))
 		(job_ptr, node_ptr);
+}
+
+/*
+ * Pass job-step signal to other plugin.
+ * IN job_ptr - job to be signalled
+ * IN signal  - signal(7) number
+ */
+extern int other_job_signal(struct job_record *job_ptr, int signal)
+{
+	if (other_select_init() < 0)
+		return -1;
+
+	return (*(other_select_context->ops.job_signal))
+		(job_ptr, signal);
 }
 
 /*

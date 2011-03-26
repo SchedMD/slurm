@@ -1826,6 +1826,14 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	return ESLURM_NOT_SUPPORTED;
 }
 
+extern int select_p_job_signal(struct job_record *job_ptr, int signal)
+{
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	xassert(job_ptr);

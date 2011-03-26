@@ -159,6 +159,8 @@ typedef struct slurm_select_ops {
 						 struct job_record *to_job_ptr);
 	int		(*job_resized)		(struct job_record *job_ptr,
 						 struct node_record *node_ptr);
+	int		(*job_signal)		(struct job_record *job_ptr,
+						 int signal);
 	int		(*job_fini)		(struct job_record *job_ptr);
 	int		(*job_suspend)		(struct job_record *job_ptr);
 	int		(*job_resume)		(struct job_record *job_ptr);
@@ -446,6 +448,14 @@ extern int select_g_job_expand(struct job_record *from_job_ptr,
  */
 extern int select_g_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr);
+
+/*
+ * Pass job-step signal to plugin before signalling any job steps, so that
+ * any signal-dependent actions can be taken.
+ * IN job_ptr - job to be signalled
+ * IN signal  - signal(7) number
+ */
+extern int select_g_job_signal(struct job_record *job_ptr, int signal);
 
 /*
  * Note termination of job is starting. Executed from slurmctld.
