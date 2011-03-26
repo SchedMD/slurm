@@ -726,6 +726,29 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 }
 
 /**
+ * do_basil_signal  -  pass job signal on to any APIDs
+ * IN job_ptr - job to be signalled
+ * IN signal  - signal(7) number
+ * Only signal job if an ALPS reservation exists (non-0 reservation ID).
+ */
+extern int do_basil_signal(struct job_record *job_ptr, int signal)
+{
+	uint32_t resv_id;
+
+	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+		error("can not read resId for JobId=%u", job_ptr->job_id);
+	} else if (resv_id != 0) {
+		int rc = basil_signal_apids(resv_id, signal, NULL);
+
+		if (rc)
+			error("could not signal APIDS of resId %u: %s", resv_id,
+				basil_strerror(rc));
+	}
+	return SLURM_SUCCESS;
+}
+
+/**
  * do_basil_release - release an (unconfirmed) BASIL reservation
  * IN job_ptr - pointer to job which has just been deallocated resources
  * RET see below

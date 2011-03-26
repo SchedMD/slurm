@@ -41,6 +41,7 @@ extern int basil_inventory(void);
 extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt);
 extern int do_basil_reserve(struct job_record *job_ptr);
 extern int do_basil_confirm(struct job_record *job_ptr);
+extern int do_basil_signal(struct job_record *job_ptr, int signal);
 extern int do_basil_release(struct job_record *job_ptr);
 #else	/* !HAVE_CRAY */
 static inline int basil_node_ranking(struct node_record *ig, int nore)
@@ -63,6 +64,11 @@ static inline int do_basil_reserve(struct job_record *job_ptr)
 }
 
 static inline int do_basil_confirm(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+static inline int do_basil_signal(struct job_record *job_ptr, int signal)
 {
 	return SLURM_SUCCESS;
 }

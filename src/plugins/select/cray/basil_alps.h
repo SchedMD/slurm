@@ -546,6 +546,8 @@ extern const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *i
 extern uint64_t *basil_get_rsvn_aprun_apids(const struct basil_inventory *inv,
 					    uint32_t rsvn_id);
 extern int basil_release(uint32_t rsvn_id);
+extern int basil_signal_apids(int32_t rsvn_id, int signal,
+			      struct basil_inventory *inv);
 extern int basil_safe_release(int32_t rsvn_id, struct basil_inventory *inv);
 
 #endif /* __BASIL_ALPS_H__ */

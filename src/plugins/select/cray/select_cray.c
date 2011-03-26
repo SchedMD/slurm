@@ -281,6 +281,8 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 
 extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 {
+	if (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS)
+		return SLURM_ERROR;
 	return other_job_signal(job_ptr, signal);
 }
 
