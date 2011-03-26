@@ -2895,6 +2895,9 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	/* let node select plugin do any state-dependent signalling actions */
+	select_g_job_signal(job_ptr, signal);
+
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL)
 		job_ptr->requid = uid;
