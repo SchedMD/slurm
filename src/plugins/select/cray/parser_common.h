@@ -121,4 +121,22 @@ const char *nam_proc[BPT_MAX] = {
 	[BPT_UNKNOWN]	= "UNKNOWN"
 };
 
+/*
+ * Enum-to-string mapping tables specific to Basil 3.1
+ */
+const char *nam_rsvn_mode[BRM_MAX] = {
+	[BRM_NONE]      = "UNDEFINED",
+	[BRM_EXCLUSIVE] = "EXCLUSIVE",
+	[BRM_SHARE]     = "SHARED",
+	[BRM_UNKNOWN]   = "UNKNOWN"
+};
+
+const char *nam_gpc_mode[BGM_MAX] = {
+	[BGM_NONE]      = "NONE",
+	[BRM_PROCESSOR] = "PROCESSOR",
+	[BRM_LOCAL]     = "LOCAL",
+	[BRM_GLOBAL]    = "GLOBAL",
+	[BGM_UNKNOWN]   = "UNKNOWN"
+};
+
 #endif /* __PARSER_COMMON_H__ */

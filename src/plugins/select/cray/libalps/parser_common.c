@@ -24,6 +24,9 @@ const char *nam_proc[BPT_MAX];
 const char *nam_rsvn_mode[BRM_MAX];
 const char *nam_gpc_mode[BGM_MAX];
 
+const char *nam_gpc_mode[BGM_MAX];
+const char *nam_rsvn_mode[BRM_MAX];
+
 /*
  *	General-purpose routines
  */
@@ -494,7 +497,7 @@ static const struct element_handler *basil_tables[BV_MAX] = {
 	[BV_1_1] = basil_1_1_elements,
 	[BV_1_2] = basil_1_1_elements,		/* Basil 1.2 behaves like 1.1 */
 	[BV_3_1] = basil_3_1_elements,
-	[BV_4_0] = basil_3_1_elements
+	[BV_4_0] = basil_4_0_elements
 };
 
 /**
@@ -559,7 +562,7 @@ static void start_handler(void *user_data,
 	ud->counter[tag]++;
 
 	if (table[tag].hnd == NULL && *attrs != NULL)
-		error("Unexpected attribute '%s' in %s", *attrs, el);
+		fatal("Unexpected attribute '%s' in %s", *attrs, el);
 	else if (table[tag].hnd != NULL && *attrs == NULL)
 		fatal("Tag %s without expected attributes", el);
 	else if (table[tag].hnd != NULL)

@@ -1,12 +1,12 @@
 /*
- * XML tag handlers specific to Basil 3.1 (Basil 1.1 variant on XE/Gemini).
+ * XML tag handlers specific to Basil 4.0 (development release)
  *
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
  * Licensed under the GPLv2.
  */
 #include "parser_internal.h"
 
-/** Basil 3.1 'ReservedNode' element */
+/** Basil 3.1/4.0 'ReservedNode' element */
 static void eh_resvd_node(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "node_id" };
@@ -20,7 +20,7 @@ static void eh_resvd_node(struct ud *ud, const XML_Char **attrs)
 		fatal("could not add node %u", node_id);
 }
 
-/** Basil 3.1 'Confirmed' element */
+/** Basil 3.1/4.0 'Confirmed' element */
 static void eh_confirmed(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "reservation_id", "pagg_id" };
@@ -39,22 +39,29 @@ static void eh_confirmed(struct ud *ud, const XML_Char **attrs)
 		fatal("pagg_id mismatch '%s'", attribs[1]);
 }
 
-/** Basil 3.1 'Released' element */
-static void eh_released_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 4.0 'Released' element */
+static void eh_released_4_0(struct ud *ud, const XML_Char **attrs)
 {
-	char *attribs[] = { "reservation_id" };
+	char *attribs[] = { "reservation_id", "claims" };
 	uint32_t rsvn_id;
-
+	/*
+	 * The 'claims' attribute is new in Basil 4.0 and indicates the
+	 * number of claims still outstanding against the reservation.
+	 * If the 'claims' value is 0, the reservation is assured to have
+	 * been removed.
+	 */
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 
 	if (atou32(attribs[0], &rsvn_id) < 0)
 		fatal("illegal rsvn_id = %s", attribs[0]);
 	if (rsvn_id != ud->bp->mdata.res->rsvn_id)
 		fatal("rsvn_id mismatch '%s'", attribs[0]);
+	if (atou32(attribs[1], &ud->bp->mdata.res->claims) < 0)
+		fatal("illegal claims = %s", attribs[1]);
 }
 
-/** Basil 3.1 'Engine' element */
-static void eh_engine_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 4.0 'Engine' element */
+static void eh_engine_4_0(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "basil_support" };
 
@@ -62,8 +69,8 @@ static void eh_engine_3_1(struct ud *ud, const XML_Char **attrs)
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 }
 
-/** Basil 3.1 'Inventory' element */
-static void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 4.0 'Inventory' element */
+static void eh_inventory_4_0(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "mpp_host", "timestamp" };
 	struct basil_inventory *inv = ud->bp->mdata.inv;
@@ -75,8 +82,42 @@ static void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal timestamp = %s", attribs[1]);
 }
 
-/** Basil 3.1 'Node' element */
-static void eh_node_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 4.0 'NodeArray' element */
+static void eh_node_array_4_0(struct ud *ud, const XML_Char **attrs)
+{
+	char *attribs[] = { "changecount" };
+	/*
+	 * The 'changecount' attribute is new in Basil 4.0. Quoting Basil 1.2
+	 * documentation:
+	 * "A new attribute to the NodeArray element in both QUERY(INVENTORY)
+	 *  method requests and responses, changecount, is used to associate a
+	 *  single value (the number of changes to the set of data since
+	 *  initialization) with all values found in node data (exempting
+	 *  resource allocation data). In a QUERY(INVENTORY) method response
+	 *  that includes node data, the value of the changecount attribute of
+	 *  the NodeArray element is monotonically increasing, starting at '1'.
+	 *
+	 *  Each time any data contained within the NodeArray element changes
+	 *  (again, exempting resource allocation data like memory allocations,
+	 *  processor allocations, or accelerator allocations), the value of the
+	 *  changecount attribute is incremented. If a node's state transitions
+	 *  from up to down, the value will be incremented. If that same node's
+	 *  state again transitions, this time from down to up, the value will
+	 *  again be incremented, and thus be different from the original value,
+	 *  even though the starting and final data is identical.
+	 *
+	 *  In other words, it is possible for the node data sections of two
+	 *  QUERY(INVENTORY) method responses to be identical except for the
+	 *  value of the changecount attribute in each of the NodeArray elements.
+	 */
+	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
+
+	if (atou64(attribs[0], &ud->bp->mdata.inv->change_count) < 0)
+		fatal("illegal change_count = %s", attribs[0]);
+}
+
+/** Basil 4.0 'Node' element */
+static void eh_node_4_0(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "router_id" };
 	/*
@@ -97,8 +138,8 @@ static void eh_node_3_1(struct ud *ud, const XML_Char **attrs)
 	}
 }
 
-/** Basil 3.1 'Reservation' element */
-static void eh_resv_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 4.0 'Reservation' element */
+static void eh_resv_4_0(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "reservation_mode", "gpc_mode" };
 
@@ -119,7 +160,7 @@ static void eh_resv_3_1(struct ud *ud, const XML_Char **attrs)
 	}
 }
 
-const struct element_handler basil_3_1_elements[] = {
+const struct element_handler basil_4_0_elements[] = {
 	[BT_MESSAGE]	= {
 			.tag	= "Message",
 			.depth	= 0xff,	/* unused, can appear at any depth */
@@ -166,31 +207,31 @@ const struct element_handler basil_3_1_elements[] = {
 			.tag	= "Released",
 			.depth	= 2,
 			.uniq	= true,
-			.hnd	= eh_released_3_1
+			.hnd	= eh_released_4_0
 	},
 	[BT_ENGINE]	= {
 			.tag	= "Engine",
 			.depth	= 2,
 			.uniq	= true,
-			.hnd	= eh_engine_3_1
+			.hnd	= eh_engine_4_0
 	},
 	[BT_INVENTORY]	= {
 			.tag	= "Inventory",
 			.depth	= 2,
 			.uniq	= true,
-			.hnd	= eh_inventory_3_1
+			.hnd	= eh_inventory_4_0
 	},
 	[BT_NODEARRAY]	= {
 			.tag	= "NodeArray",
 			.depth	= 3,
 			.uniq	= true,
-			.hnd	= NULL
+			.hnd	= eh_node_array_4_0
 	},
 	[BT_NODE]	= {
 			.tag	= "Node",
 			.depth	= 4,
 			.uniq	= false,
-			.hnd	= eh_node_3_1
+			.hnd	= eh_node_4_0
 	},
 	[BT_SEGMARRAY]	= {
 			.tag	= "SegmentArray",
@@ -262,7 +303,7 @@ const struct element_handler basil_3_1_elements[] = {
 			.tag	= "Reservation",
 			.depth	= 4,
 			.uniq	= false,
-			.hnd	= eh_resv_3_1
+			.hnd	= eh_resv_4_0
 	},
 	[BT_APPARRAY]	= {
 			.tag	= "ApplicationArray",
@@ -288,7 +329,7 @@ const struct element_handler basil_3_1_elements[] = {
 			.uniq	= false,
 			.hnd	= eh_command
 	},
-	[BT_3_1_MAX]	= {
+	[BT_4_0_MAX]	= {
 			NULL, 0, 0, NULL
 	}
 };

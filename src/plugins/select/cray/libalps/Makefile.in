@@ -87,10 +87,11 @@ libalps_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libalps_la_OBJECTS = libalps_la-basil_mysql_routines.lo \
 	libalps_la-parser_common.lo libalps_la-parser_basil_1.0.lo \
 	libalps_la-parser_basil_1.1.lo libalps_la-parser_basil_3.1.lo \
-	libalps_la-basil_request.lo libalps_la-do_query.lo \
-	libalps_la-do_reserve.lo libalps_la-do_release.lo \
-	libalps_la-do_confirm.lo libalps_la-memory_handling.lo \
-	libalps_la-popen2.lo libalps_la-atoul.lo
+	libalps_la-parser_basil_4.0.lo libalps_la-basil_request.lo \
+	libalps_la-do_query.lo libalps_la-do_reserve.lo \
+	libalps_la-do_release.lo libalps_la-do_confirm.lo \
+	libalps_la-memory_handling.lo libalps_la-popen2.lo \
+	libalps_la-atoul.lo
 libalps_la_OBJECTS = $(am_libalps_la_OBJECTS)
 libalps_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libalps_la_CFLAGS) \
@@ -318,6 +319,7 @@ libalps_la_SOURCES = \
 	parser_basil_1.0.c	\
 	parser_basil_1.1.c	\
 	parser_basil_3.1.c	\
+	parser_basil_4.0.c	\
 	basil_request.c		\
 	do_query.c		\
 	do_reserve.c		\
@@ -393,6 +395,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_1.0.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_1.1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_3.1.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_4.0.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-popen2.Plo@am__quote@
 
@@ -451,6 +454,13 @@ libalps_la-parser_basil_3.1.lo: parser_basil_3.1.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_basil_3.1.c' object='libalps_la-parser_basil_3.1.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_3.1.lo `test -f 'parser_basil_3.1.c' || echo '$(srcdir)/'`parser_basil_3.1.c
+
+libalps_la-parser_basil_4.0.lo: parser_basil_4.0.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_basil_4.0.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_basil_4.0.Tpo -c -o libalps_la-parser_basil_4.0.lo `test -f 'parser_basil_4.0.c' || echo '$(srcdir)/'`parser_basil_4.0.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-parser_basil_4.0.Tpo $(DEPDIR)/libalps_la-parser_basil_4.0.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_basil_4.0.c' object='libalps_la-parser_basil_4.0.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_4.0.lo `test -f 'parser_basil_4.0.c' || echo '$(srcdir)/'`parser_basil_4.0.c
 
 libalps_la-basil_request.lo: basil_request.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-basil_request.lo -MD -MP -MF $(DEPDIR)/libalps_la-basil_request.Tpo -c -o libalps_la-basil_request.lo `test -f 'basil_request.c' || echo '$(srcdir)/'`basil_request.c
