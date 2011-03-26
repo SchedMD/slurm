@@ -35,53 +35,65 @@ int basil_release(uint32_t rsvn_id)
 }
 
 /**
- * basil_safe_release  -  release a reservation after performing sanity checks
- * @rsvn_id:	reservation ID of reservation to release
+ * basil_signal_apids  -  send a signal to all APIDs of a given ALPS reservation
+ * @rsvn_id:	reservation ID to target
+ * @signal:	signal number
+ * @inv:	recent Basil Inventory, or NULL to generate internally
+ * Returns 0 if ok, a negative %basil_error otherwise.
+ */
+int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
+{
+	struct basil_inventory *new_inv = inv;
+	uint64_t *apid, *apids;
+	char cmd[512];
+
+	if (access(apkill, X_OK) < 0) {
+		error("FATAL: can not execute the apkill command '%s'", apkill);
+		return -BE_SYSTEM;
+	}
+
+	if (inv == NULL)
+		new_inv = get_full_inventory(get_basil_version());
+	if (new_inv == NULL) {
+		error("can not obtain a BASIL inventory to get APID list");
+		return -(BE_INTERNAL | BE_TRANSIENT);
+	}
+
+	apids = basil_get_rsvn_aprun_apids(new_inv, rsvn_id);
+	if (apids) {
+		for (apid = apids; *apid; apid++) {
+			debug2("ALPS resId %u, running apkill -%d %llu",
+				rsvn_id, signal, (unsigned long long)*apid);
+			snprintf(cmd, sizeof(cmd), "%s -%d %llu",
+				 apkill, signal, (unsigned long long)*apid);
+			if (system(cmd) < 0)
+				error("system(%s) failed", cmd);
+		}
+		free(apids);
+	}
+	if (inv == NULL)
+		free_inv(new_inv);
+	return BE_NONE;
+}
+
+/**
+ * basil_safe_release  -  release reservation after signalling job steps
+ * @rsvn_id:	reservation to release
  * @inv:	recent Basil Inventory, or NULL to generate internally
  * Returns 0 if ok, a negative %basil_error otherwise.
  */
 int basil_safe_release(int32_t rsvn_id, struct basil_inventory *inv)
 {
-	struct basil_inventory *new_inv = inv;
-	int i, rc = BE_NONE;
-
-	if (inv == NULL)
-		new_inv = get_full_inventory(get_basil_version());
-
-	if (new_inv == NULL) {
-		error("can not obtain a BASIL inventory to check APIDs");
-		rc = BE_INTERNAL | BE_TRANSIENT;
-	} else if (access(apkill, X_OK) < 0) {
-		error("FATAL: can not execute the apkill command '%s'", apkill);
-		rc = BE_SYSTEM;
-	} else {
-		/*
-		 * Before issuing the Basil RELEASE command, check if there are
-		 * still any live application IDs (APIDs) associated with the
-		 * reservation. If yes, trying to release the reservation will
-		 * not succeed, ALPS will hold on to it until all applications
-		 * have terminated, i.e. the RELEASE will be without effect. To
-		 * avoid such failure, try to force-terminate the APIDs using
-		 * the Cray apkill(1) binary. This should normally only occur if
-		 * job steps have not terminated cleanly, e.g. a crashed salloc
-		 * session.
-		 */
-		uint64_t *apids = basil_get_rsvn_aprun_apids(new_inv, rsvn_id);
-		char cmd[512];
-
-		if (apids)
-			for (i = 0; apids[i]; i++) {
-				error("apkill live apid %llu of ALPS resId %u",
-					 (unsigned long long)apids[i], rsvn_id);
-				snprintf(cmd, sizeof(cmd), "%s %llu", apkill,
-					 (unsigned long long)apids[i]);
-				if (system(cmd) < 0)
-					error("system(%s) failed", cmd);
-			}
-		free(apids);
-		rc = basil_release(rsvn_id);
-	}
-	if (inv == NULL)
-		free_inv(new_inv);
-	return rc ? -rc : 0;
+	/*
+	 * If there are still any live application IDs (APIDs) associated with
+	 * @rsvn_id, the RELEASE command will be without effect, since ALPS
+	 * holds on to a reservation until all of its application IDs have
+	 * disappeared.
+	 * On normal termination, ALPS should clean up the APIDs by itself. In
+	 * order to clean up orphaned reservations, try to terminate the APIDs
+	 * manually using apkill(1). If this step fails, fall back to releasing
+	 * the reservation normally and hope that ALPS resolves the situation.
+	 */
+	basil_signal_apids(rsvn_id, SIGKILL, inv);
+	return basil_release(rsvn_id);
 }
