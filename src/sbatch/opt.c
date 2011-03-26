@@ -1756,6 +1756,15 @@ static void _set_pbs_options(int argc, char **argv)
 				      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
 				exit(error_exit);
 			}
+			if (opt.nice < 0) {
+				uid_t my_uid = getuid();
+				if ((my_uid != 0) &&
+				    (my_uid != slurm_get_slurm_user_id())) {
+					error("Nice value must be "
+					      "non-negative, value ignored");
+					opt.nice = 0;
+				}
+			}
 			break;
 		case 'q':
 			xfree(opt.partition);
@@ -1975,6 +1984,15 @@ static void _parse_pbs_resource_list(char *rl)
 				error("Invalid nice value, must be between "
 				      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
 				exit(error_exit);
+			}
+			if (opt.nice < 0) {
+				uid_t my_uid = getuid();
+				if ((my_uid != 0) &&
+				    (my_uid != slurm_get_slurm_user_id())) {
+					error("Nice value must be "
+					      "non-negative, value ignored");
+					opt.nice = 0;
+				}
 			}
 			xfree(temp);
 		} else if(!strncmp(rl+i, "nodes=", 6)) {
