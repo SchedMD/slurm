@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for jobs to expand in size. Submit additional batch job with
     the option "--dependency=expand:<jobid>". See web page "faq.html#job_size"
     for details. Restrictions to be removed in the future.
+ -- Added --with-alps-emulation to configure, and also an optional cray.conf
+    to setup alps location and database information.
 
 * Changes in SLURM 2.3.0.pre3
 =============================

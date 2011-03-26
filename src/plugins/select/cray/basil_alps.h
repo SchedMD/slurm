@@ -13,6 +13,7 @@
 
 #include "src/common/log.h"
 #include "src/common/fd.h"
+#include "cray_config.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -69,6 +70,7 @@ enum basil_version {
 	BV_1_1,		/* Basil 1.1 CLE variant (XT/SeaStar)       */
 	BV_1_2,		/* Basil 1.1 CLE 2.x variant (XT/SeaStar)   */
 	BV_3_1,		/* Basil 1.1 CLE 3.x (XE/Gemini support)    */
+	BV_4_0,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
 	BV_MAX
 };
 

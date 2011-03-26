@@ -6,12 +6,6 @@
  */
 #include "../basil_alps.h"
 
-/** Connection parameters for the SDB database lookup */
-#define CRAY_SDB_HOSTNAME	"sdb"		/* DNS name of SDB host  */
-#define CRAY_SDB_USER		NULL		/* use value from my.cnf */
-#define CRAY_SDB_PASS		NULL		/* use value from my.cnf */
-#define CRAY_SDB_DB		"XTAdmin"	/* database name to use  */
-
 /** Read options from the appropriate my.cnf configuration file. */
 static int cray_get_options_from_default_conf(MYSQL *handle)
 {
@@ -22,6 +16,7 @@ static int cray_get_options_from_default_conf(MYSQL *handle)
 	const char *default_conf_paths[] = {
 		"/etc/my.cnf",
 		"/etc/opt/cray/MySQL/my.cnf",
+		"/etc/mysql/my.cnf",
 		NULL
 	};
 
@@ -49,10 +44,12 @@ extern MYSQL *cray_connect_sdb(void)
 		goto connect_failed;
 	}
 
-	if (mysql_real_connect(handle, CRAY_SDB_HOSTNAME, CRAY_SDB_USER,
-			       CRAY_SDB_PASS,CRAY_SDB_DB, 0, NULL, 0) == NULL) {
-		error("can not connect to %s.%s (%u) - %s", CRAY_SDB_HOSTNAME,
-		      CRAY_SDB_DB, mysql_errno(handle), mysql_error(handle));
+	if (mysql_real_connect(handle, cray_conf->sdb_host, cray_conf->sdb_user,
+			       cray_conf->sdb_pass, cray_conf->sdb_db,
+			       cray_conf->sdb_port, NULL, 0) == NULL) {
+		error("can not connect to %s.%s (%u) - %s", cray_conf->sdb_host,
+		      cray_conf->sdb_db, mysql_errno(handle),
+		      mysql_error(handle));
 		goto connect_failed;
 	}
 
@@ -133,7 +130,8 @@ static bool validate_stmt_column_count(MYSQL_STMT *stmt, const char *query,
 
 	/* Fetch result-set meta information */
 	if (!result_metadata) {
-		error("can not obtain statement meta information for \"%s\": %s",
+		error("can not obtain statement meta "
+		      "information for \"%s\": %s",
 		      query, mysql_stmt_error(stmt));
 		return false;
 	}

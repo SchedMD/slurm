@@ -162,7 +162,6 @@ long basil_reserve(const char *user, const char *batch_id,
 	rc = basil_request(&bp);
 	if (rc >= 0)
 		rc = rsvn->rsvn_id;
-
 	free_rsvn(rsvn);
 	return rc;
 }

@@ -83,6 +83,8 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	struct basil_inventory *inv;
 	struct basil_node *node;
 	int rank_count = 0, i;
+	hostlist_t hl = hostlist_create(NULL);
+	bool bad_node = 0;
 
 	inv = get_full_inventory(version);
 	if (inv == NULL)
@@ -106,16 +108,28 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 
 	for (node = inv->f->node_head; node; node = node->next) {
 		struct node_record *node_ptr;
+		char tmp[50];
 
 		node_ptr = _find_node_by_basil_id(node->node_id);
-		if (node_ptr == NULL)
+		if (node_ptr == NULL) {
 			error("nid%05u (%s node in state %s) not in slurm.conf",
 			      node->node_id, nam_noderole[node->role],
 			      nam_nodestate[node->state]);
-		 else
+			bad_node = 1;
+		} else
 			node_ptr->node_rank = inv->nodes_total - rank_count++;
+		sprintf(tmp, "nid%05u", node->node_id);
+		hostlist_push(hl, tmp);
 	}
 	free_inv(inv);
+	if (bad_node) {
+		hostlist_sort(hl);
+		char *name = hostlist_ranged_string_xmalloc(hl);
+		info("It appears your slurm.conf nodelist doesn't "
+		     "match the alps system.  Here are the nodes alps knows "
+		     "about\n%s", name);
+	}
+	hostlist_destroy(hl);
 
 	return SLURM_SUCCESS;
 }

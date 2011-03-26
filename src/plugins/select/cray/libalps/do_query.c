@@ -58,6 +58,8 @@ enum basil_version get_basil_version(void)
 
 	if (_get_alps_engine(engine_version, sizeof(engine_version)) == NULL)
 		error("can not determine ALPS Engine.version");
+	else if (strncmp(engine_version, "4.0.0", 5) == 0)
+		return BV_4_0;
 	else if (strncmp(engine_version, "3.1.0", 5) == 0)
 		return BV_3_1;
 	else if (strncmp(engine_version, "1.3.0", 5) == 0)
@@ -73,7 +75,7 @@ enum basil_version get_basil_version(void)
 	else if (strncmp(engine_version, "1.1", 3) == 0)
 		return BV_1_1;
 	else
-		error("falling back to BASIL 1.0");
+		error("got %s falling back to BASIL 1.0", engine_version);
 	return BV_1_0;
 }
 

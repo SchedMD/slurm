@@ -18,14 +18,16 @@ const char *bv_names[BV_MAX] = {	/* Basil Protocol version */
 	[BV_1_0] = "1.0",
 	[BV_1_1] = "1.1",
 	[BV_1_2] = "1.1",
-	[BV_3_1] = "1.1"
+	[BV_3_1] = "1.1",
+	[BV_4_0] = "1.2"
 };
 
 const char *bv_names_long[BV_MAX] = {	/* Actual version name */
 	[BV_1_0] = "1.0",
 	[BV_1_1] = "1.1",
 	[BV_1_2] = "1.2",
-	[BV_3_1] = "3.1"
+	[BV_3_1] = "3.1",
+	[BV_4_0] = "4.0"
 };
 
 /* Basil methods */

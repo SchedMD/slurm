@@ -54,6 +54,7 @@
 
 #include "other_select.h"
 #include "basil_interface.h"
+#include "cray_config.h"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -134,7 +135,13 @@ extern int init ( void )
 	 * if (slurmctld_conf.select_type_param & CR_CONS_RES)
 	 *	plugin_id = 105;
 	 */
-#ifndef HAVE_CRAY
+#ifdef HAVE_CRAY
+	if (bg_recover != NOT_FROM_CONTROLLER) {
+		verbose("%s loading...", plugin_name);
+		create_config();
+		verbose("Cray plugin loaded successfully");
+	}
+#else
 	if (bg_recover != NOT_FROM_CONTROLLER)
 		fatal("select/cray is incompatible with a non Cray system");
 #endif
@@ -143,6 +150,7 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	destroy_config();
 	return SLURM_SUCCESS;
 }
 

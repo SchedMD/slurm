@@ -6,12 +6,6 @@
  */
 #include "parser_internal.h"
 
-/* GLOBALS */
-/*
- * The location of the 'apbasil' stdin/stdout interface to ALPS
- * Has not changed between XT3 ... XT5 ... XE
- */
-static const char *alps_client = HAVE_ALPS_DIR "/bin/apbasil";
 
 static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 {
@@ -99,16 +93,16 @@ int basil_request(struct basil_parse_data *bp)
 	FILE *apbasil;
 	pid_t pid;
 
-	if (!alps_client) {
+	if (!cray_conf->apbasil) {
 		error("No alps client defined");
 		return 0;
 	}
 	assert(bp->version < BV_MAX);
 	assert(bp->method > BM_none && bp->method < BM_MAX);
 
-	pid = popen2(alps_client, &to_child, &from_child, true);
+	pid = popen2(cray_conf->apbasil, &to_child, &from_child, true);
 	if (pid < 0)
-		fatal("popen2(\"%s\", ...)", alps_client);
+		fatal("popen2(\"%s\", ...)", cray_conf->apbasil);
 
 	/* write out request */
 	apbasil = fdopen(to_child, "w");
@@ -137,7 +131,7 @@ int basil_request(struct basil_parse_data *bp)
 				bp->mdata.res->batch_id);
 		fprintf(apbasil, "reservation_id=\"%u\" %s=\"%llu\"/>\n",
 			bp->mdata.res->rsvn_id,
-			bp->version == BV_3_1 ? "pagg_id" : "admin_cookie",
+			bp->version >= BV_3_1 ? "pagg_id" : "admin_cookie",
 			(unsigned long long)bp->mdata.res->pagg_id);
 		break;
 	case BM_release:
@@ -154,6 +148,6 @@ int basil_request(struct basil_parse_data *bp)
 	ec = wait_for_child(pid);
 	if (ec)
 		error("%s child process for BASIL %s method exited with %d",
-		      alps_client, bm_names[bp->method], ec);
+		      cray_conf->apbasil, bm_names[bp->method], ec);
 	return rc;
 }

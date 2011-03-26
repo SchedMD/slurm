@@ -16,15 +16,14 @@
 AC_DEFUN([X_AC_CRAY],
 [
   ac_have_cray="no"
+  ac_have_alps_emulation="no"
   ac_have_cray_emulation="no"
-  _x_ac_alps_dirs_orig="/usr"
-  _x_ac_alps_dirs="$_x_ac_alps_dirs_orig"
- 
 
   AC_ARG_WITH(
-    [alps-dir],
-    AS_HELP_STRING(--with-alps-dir=PATH,Specify path to ALPS installation),
-    [_x_ac_alps_dirs="$withval $_x_ac_alps_dirs"])
+    [alps-emulation],
+    AS_HELP_STRING(--with-alps-emulation,Run SLURM against an emulated Alps system - requires option cray.conf @<:@default=no@:>@),
+    [test "$withval" = no || ac_have_alps_emulation=yes],
+    [ac_have_alps_emulation=no])
 
   AC_ARG_ENABLE(
     [cray-emulation],
@@ -36,22 +35,22 @@ AC_DEFUN([X_AC_CRAY],
       esac ]
   )
 
-  if test "$ac_have_cray_emulation" = "yes"; then
+  if test "$ac_have_alps_emulation" = "yes"; then
+    ac_have_cray="yes"
+    AC_MSG_NOTICE([Running A Cray system against an Alps emulation])
+    AC_DEFINE(HAVE_ALPS_EMULATION, 1, [Define to 1 if running against an Alps emulation])
+  elif test "$ac_have_cray_emulation" = "yes"; then
     ac_have_cray="yes"
     AC_MSG_NOTICE([Running in Cray emulation mode])
     AC_DEFINE(HAVE_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system])
-   else
+  else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    # If ALPS location is explicitly set, assume this system is Cray or has ALPS simulator
     AC_MSG_CHECKING([whether this is a native Cray XT or XE system or have ALPS simulator])
 
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
-      ac_have_cray="yes"
-    fi
-    if test "$_x_ac_alps_dirs" != "$_x_ac_alps_dirs_orig"; then
       ac_have_cray="yes"
     fi
     AC_MSG_RESULT([$ac_have_cray])
@@ -67,27 +66,13 @@ AC_DEFUN([X_AC_CRAY],
       AC_MSG_ERROR([Cray BASIL requires the cray-MySQL-devel-enterprise rpm])
     fi
 
-    # Check that all Cray binaries called by SLURM are in their expected places.
-    # On a standard XT/XE installation, apbasil and apkill are normally in /usr/bin.
-    # NOTE: apkill is not included in the ALPS simulator, so we do not test for it now.
-    for dir in $_x_ac_alps_dirs; do
-      test -d "$dir/bin" || continue
-      test -x "$dir/bin/apbasil" || continue
-#      test -x "$dir/bin/apkill"  || continue
-      _x_ac_alps_install_dir="$dir"
-      AC_DEFINE_UNQUOTED(HAVE_ALPS_DIR, "$dir", [Directory in which ALPS has been installed])
-      break
-    done
-    if test -z "$_x_ac_alps_install_dir"; then
-      AC_MSG_ERROR([Could not locate apbasil and apkill executables on Cray system. See --with-alps-dir option.])
-    fi
-
-    AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
+     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_FRONT_END,    1, [Define to 1 if running slurmd on front-end only])
     AC_DEFINE(HAVE_CRAY,         1, [Define to 1 for Cray XT/XE systems])
     AC_DEFINE(SALLOC_RUN_FOREGROUND, 1, [Define to 1 to require salloc execution in the foreground.])
   fi
   AM_CONDITIONAL(HAVE_CRAY, test "$ac_have_cray" = "yes")
+  AM_CONDITIONAL(HAVE_ALPS_EMULATION, test "$ac_have_alps_emulation" = "yes")
   AM_CONDITIONAL(HAVE_CRAY_EMULATION, test "$ac_have_cray_emulation" = "yes")
 ])

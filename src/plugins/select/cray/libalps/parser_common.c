@@ -6,6 +6,7 @@
  */
 #include "parser_internal.h"
 #include "../parser_common.h"
+#include "src/common/xassert.h"
 
 const char *bv_names[BV_MAX];
 const char *bv_names_long[BV_MAX];
@@ -54,7 +55,8 @@ void extract_attributes(const XML_Char **attr_list, char **reqv, int reqc)
 		for (attr = attr_list, val = NULL; *attr; attr += 2)
 			if (strcmp(reqv[reqc], *attr) == 0) {
 				if (val != NULL)
-					fatal("multiple '%s' occurrences", *attr);
+					fatal("multiple '%s' occurrences",
+					      *attr);
 				val = attr[1];
 			}
 		if (val == NULL)
@@ -163,7 +165,8 @@ void eh_engine(struct ud *ud, const XML_Char **attrs)
 void eh_node(struct ud *ud, const XML_Char **attrs)
 {
 	struct basil_node node = {0};
-	char *attribs[] = { "node_id", "name", "architecture", "role", "state" };
+	char *attribs[] = { "node_id", "name", "architecture",
+			    "role", "state" };
 	/*
 	 * Basil 3.1 in addition has a 'router_id' attribute.
 	 */
@@ -223,7 +226,7 @@ void eh_segment(struct ud *ud, const XML_Char **attrs)
 		struct basil_segment *new = parse_zalloc(sizeof(*new));
 
 		new->ordinal = ordinal;
-		assert(ud->ud_inventory->node_head != NULL);
+		xassert(ud->ud_inventory->node_head);
 
 		if (ud->ud_inventory->node_head->seg_head)
 			new->next = ud->ud_inventory->node_head->seg_head;
@@ -257,11 +260,12 @@ void eh_proc(struct ud *ud, const XML_Char **attrs)
 		struct basil_node_processor *new = parse_zalloc(sizeof(*new));
 
 		*new = proc;
-		assert(ud->ud_inventory->node_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head != NULL);
+		xassert(ud->ud_inventory->node_head);
+		xassert(ud->ud_inventory->node_head->seg_head);
 
 		if (ud->ud_inventory->node_head->seg_head->proc_head)
-			new->next = ud->ud_inventory->node_head->seg_head->proc_head;
+			new->next = ud->ud_inventory->node_head->
+				seg_head->proc_head;
 		ud->ud_inventory->node_head->seg_head->proc_head = new;
 	}
 }
@@ -284,12 +288,14 @@ void eh_proc_alloc(struct ud *ud, const XML_Char **attrs)
 		struct basil_proc_alloc *new = parse_zalloc(sizeof(*new));
 
 		new->rsvn_id = rsvn_id;
-		assert(ud->ud_inventory->node_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head->proc_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head->proc_head->allocation == NULL);
+		xassert(ud->ud_inventory->node_head);
+		xassert(ud->ud_inventory->node_head->seg_head);
+		xassert(ud->ud_inventory->node_head->seg_head->proc_head);
+		xassert(!ud->ud_inventory->node_head->seg_head->
+			proc_head->allocation);
 
-		ud->ud_inventory->node_head->seg_head->proc_head->allocation = new;
+		ud->ud_inventory->node_head->seg_head->proc_head->allocation =
+			new;
 	}
 }
 
@@ -317,11 +323,12 @@ void eh_mem(struct ud *ud, const XML_Char **attrs)
 		struct basil_node_memory *new = parse_zalloc(sizeof(*new));
 
 		*new = memory;
-		assert(ud->ud_inventory->node_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head != NULL);
+		xassert(ud->ud_inventory->node_head);
+		xassert(ud->ud_inventory->node_head->seg_head);
 
 		if (ud->ud_inventory->node_head->seg_head->mem_head)
-			new->next = ud->ud_inventory->node_head->seg_head->mem_head;
+			new->next = ud->ud_inventory->node_head->
+				seg_head->mem_head;
 		ud->ud_inventory->node_head->seg_head->mem_head = new;
 	}
 }
@@ -346,12 +353,13 @@ void eh_mem_alloc(struct ud *ud, const XML_Char **attrs)
 		struct basil_mem_alloc *new = parse_zalloc(sizeof(*new));
 
 		*new = memalloc;
-		assert(ud->ud_inventory->node_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head->mem_head != NULL);
+		xassert(ud->ud_inventory->node_head);
+		xassert(ud->ud_inventory->node_head->seg_head);
+		xassert(ud->ud_inventory->node_head->seg_head->mem_head);
 
 		if (ud->ud_inventory->node_head->seg_head->mem_head->a_head)
-			new->next = ud->ud_inventory->node_head->seg_head->mem_head->a_head;
+			new->next = ud->ud_inventory->node_head->
+				seg_head->mem_head->a_head;
 		ud->ud_inventory->node_head->seg_head->mem_head->a_head = new;
 	}
 }
@@ -378,11 +386,12 @@ void eh_label(struct ud *ud, const XML_Char **attrs)
 		struct basil_label *new = parse_zalloc(sizeof(*new));
 
 		*new = label;
-		assert(ud->ud_inventory->node_head != NULL);
-		assert(ud->ud_inventory->node_head->seg_head != NULL);
+		xassert(ud->ud_inventory->node_head);
+		xassert(ud->ud_inventory->node_head->seg_head);
 
 		if (ud->ud_inventory->node_head->seg_head->lbl_head)
-			new->next = ud->ud_inventory->node_head->seg_head->lbl_head;
+			new->next = ud->ud_inventory->node_head->
+				seg_head->lbl_head;
 		ud->ud_inventory->node_head->seg_head->lbl_head = new;
 	}
 }
@@ -403,7 +412,8 @@ void eh_resv(struct ud *ud, const XML_Char **attrs)
 
 		new->rsvn_id = rsvn_id;
 		strncpy(new->user_name, attribs[1], sizeof(new->user_name));
-		strncpy(new->account_name, attribs[2], sizeof(new->account_name));
+		strncpy(new->account_name, attribs[2],
+			sizeof(new->account_name));
 
 		if (ud->ud_inventory->rsvn_head)
 			new->next = ud->ud_inventory->rsvn_head;
@@ -433,7 +443,7 @@ void eh_application(struct ud *ud, const XML_Char **attrs)
 		else if (atotime_t(attribs[3], &new->timestamp) < 0)
 			fatal("invalid time_stamp '%s'", attribs[3]);
 
-		assert(ud->ud_inventory->rsvn_head != NULL);
+		xassert(ud->ud_inventory->rsvn_head);
 		if (ud->ud_inventory->rsvn_head->app_head)
 			new->next = ud->ud_inventory->rsvn_head->app_head;
 		ud->ud_inventory->rsvn_head->app_head = new;
@@ -453,8 +463,8 @@ void eh_command(struct ud *ud, const XML_Char **attrs)
 	if (ud->ud_inventory) {
 		struct basil_rsvn_app_cmd *new = parse_zalloc(sizeof(*new));
 
-		assert(ud->ud_inventory->rsvn_head != NULL);
-		assert(ud->ud_inventory->rsvn_head->app_head != NULL);
+		xassert(ud->ud_inventory->rsvn_head);
+		xassert(ud->ud_inventory->rsvn_head->app_head);
 
 		if (atou32(attribs[0], &new->width) < 0)
 			fatal("invalid width '%s'", attribs[0]);
@@ -470,7 +480,8 @@ void eh_command(struct ud *ud, const XML_Char **attrs)
 		strncpy(new->cmd, attribs[5], sizeof(new->cmd));
 
 		if (ud->ud_inventory->rsvn_head->app_head->cmd_head)
-			new->next = ud->ud_inventory->rsvn_head->app_head->cmd_head;
+			new->next = ud->ud_inventory->rsvn_head->
+				app_head->cmd_head;
 		ud->ud_inventory->rsvn_head->app_head->cmd_head = new;
 	}
 }
@@ -482,7 +493,8 @@ static const struct element_handler *basil_tables[BV_MAX] = {
 	[BV_1_0] = basil_1_0_elements,
 	[BV_1_1] = basil_1_1_elements,
 	[BV_1_2] = basil_1_1_elements,		/* Basil 1.2 behaves like 1.1 */
-	[BV_3_1] = basil_3_1_elements
+	[BV_3_1] = basil_3_1_elements,
+	[BV_4_0] = basil_3_1_elements
 };
 
 /**
@@ -529,8 +541,9 @@ static void start_handler(void *user_data,
 	if (method == BM_UNKNOWN)
 		fatal("Unsupported XML start tag '%s'", el);
 	if (method != BM_none && method != ud->bp->method)
-		fatal("Unexpected '%s' start tag within %u response, expected %u",
-				el, method, ud->bp->method);
+		fatal("Unexpected '%s' start tag within %u response, "
+		      "expected %u",
+		      el, method, ud->bp->method);
 
 	if (tag != BT_MESSAGE) {
 		if (ud->depth != table[tag].depth)
@@ -546,7 +559,7 @@ static void start_handler(void *user_data,
 	ud->counter[tag]++;
 
 	if (table[tag].hnd == NULL && *attrs != NULL)
-		fatal("Unexpected attribute '%s' in %s", *attrs, el);
+		error("Unexpected attribute '%s' in %s", *attrs, el);
 	else if (table[tag].hnd != NULL && *attrs == NULL)
 		fatal("Tag %s without expected attributes", el);
 	else if (table[tag].hnd != NULL)
@@ -610,7 +623,7 @@ int parse_basil(struct basil_parse_data *bp, int fd)
 	int len;
 
 	/* Almost all methods require method-specific data in mdata */
-	assert(bp->method == BM_engine || bp->mdata.raw != NULL);
+	xassert(bp->method == BM_engine || bp->mdata.raw != NULL);
 	ud.bp = bp;
 
 	parser = XML_ParserCreate("US-ASCII");
@@ -620,7 +633,6 @@ int parse_basil(struct basil_parse_data *bp, int fd)
 	XML_SetUserData(parser, &ud);
 	XML_SetElementHandler(parser, start_handler, end_handler);
 	XML_SetCharacterDataHandler(parser, cdata_handler);
-
 	do {
 		len = read(fd, xmlbuf, sizeof(xmlbuf));
 		if (len == -1)
@@ -630,7 +642,8 @@ int parse_basil(struct basil_parse_data *bp, int fd)
 			xmlbuf[len] = '\0';
 			snprintf(ud.bp->msg, sizeof(ud.bp->msg),
 				 "Basil %s %s response parse error: %s "
-				 "at line %lu: '%s'", bv_names_long[bp->version],
+				 "at line %lu: '%s'",
+				 bv_names_long[bp->version],
 				 bm_names[bp->method],
 				 XML_ErrorString(XML_GetErrorCode(parser)),
 				 XML_GetCurrentLineNumber(parser), xmlbuf);

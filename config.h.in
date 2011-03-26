@@ -42,8 +42,8 @@
 /* Define to 1 for AIX operating system */
 #undef HAVE_AIX
 
-/* Directory in which ALPS has been installed */
-#undef HAVE_ALPS_DIR
+/* Define to 1 if running against an Alps emulation */
+#undef HAVE_ALPS_EMULATION
 
 /* Define to 1 if emulating or running on Blue Gene system */
 #undef HAVE_BG

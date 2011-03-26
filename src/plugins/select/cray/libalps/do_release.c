@@ -6,9 +6,6 @@
  */
 #include "../basil_alps.h"
 
-/* Location of Cray apkill executable (supported on XT/XE CNL) */
-static const char apkill[] = HAVE_ALPS_DIR "/bin/apkill";
-
 static int rsvn_release(struct basil_reservation *res)
 {
 	struct basil_parse_data bp = {0};
@@ -47,8 +44,9 @@ int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
 	uint64_t *apid, *apids;
 	char cmd[512];
 
-	if (access(apkill, X_OK) < 0) {
-		error("FATAL: can not execute the apkill command '%s'", apkill);
+	if (access(cray_conf->apkill, X_OK) < 0) {
+		error("FATAL: can not execute the apkill command '%s'",
+		      cray_conf->apkill);
 		return -BE_SYSTEM;
 	}
 
@@ -65,7 +63,8 @@ int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
 			debug2("ALPS resId %u, running apkill -%d %llu",
 				rsvn_id, signal, (unsigned long long)*apid);
 			snprintf(cmd, sizeof(cmd), "%s -%d %llu",
-				 apkill, signal, (unsigned long long)*apid);
+				 cray_conf->apkill, signal,
+				 (unsigned long long)*apid);
 			if (system(cmd) < 0)
 				error("system(%s) failed", cmd);
 		}

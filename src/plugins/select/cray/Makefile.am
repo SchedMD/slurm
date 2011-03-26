@@ -2,6 +2,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+CPPFLAGS = -DCRAY_CONFIG_FILE=\"$(sysconfdir)/cray.conf\"
+
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I.
@@ -15,7 +17,8 @@ select_cray_la_SOURCES = 	\
 	nodespec.c		\
 	other_select.c 		\
 	other_select.h		\
-	parser_common.h
+	parser_common.h		\
+	cray_config.c
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_CRAY

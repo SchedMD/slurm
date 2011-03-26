@@ -84,6 +84,8 @@ static slurm_select_ops_t *_other_select_get_ops(slurm_select_context_t *c)
 		"select_p_job_test",
 		"select_p_job_begin",
 		"select_p_job_ready",
+		"select_p_job_expand_allow",
+		"select_p_job_expand",
 		"select_p_job_resized",
 		"select_p_job_signal",
 		"select_p_job_fini",

@@ -110,11 +110,11 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@select_cray_la_DEPENDENCIES = libemulate/libalps.la
 am__select_cray_la_SOURCES_DIST = select_cray.c basil_interface.h \
 	nodespec.c other_select.c other_select.h parser_common.h \
-	basil_interface.c
+	cray_config.c basil_interface.c
 @HAVE_CRAY_TRUE@am__objects_1 = select_cray_la-basil_interface.lo
 am_select_cray_la_OBJECTS = select_cray_la-select_cray.lo \
 	select_cray_la-nodespec.lo select_cray_la-other_select.lo \
-	$(am__objects_1)
+	select_cray_la-cray_config.lo $(am__objects_1)
 select_cray_la_OBJECTS = $(am_select_cray_la_OBJECTS)
 select_cray_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(select_cray_la_CFLAGS) \
@@ -199,7 +199,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = @CPPFLAGS@
+CPPFLAGS = -DCRAY_CONFIG_FILE=\"$(sysconfdir)/cray.conf\"
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -376,7 +376,8 @@ pkglib_LTLIBRARIES = select_cray.la
 
 # Cray node selection plugin.
 select_cray_la_SOURCES = select_cray.c basil_interface.h nodespec.c \
-	other_select.c other_select.h parser_common.h $(am__append_1)
+	other_select.c other_select.h parser_common.h cray_config.c \
+	$(am__append_1)
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @HAVE_CRAY_TRUE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
 @HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@SUBDIRS = libalps
@@ -458,6 +459,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-basil_interface.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-cray_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-nodespec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-other_select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cray_la-select_cray.Plo@am__quote@
@@ -503,6 +505,13 @@ select_cray_la-other_select.lo: other_select.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='other_select.c' object='select_cray_la-other_select.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-other_select.lo `test -f 'other_select.c' || echo '$(srcdir)/'`other_select.c
+
+select_cray_la-cray_config.lo: cray_config.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-cray_config.lo -MD -MP -MF $(DEPDIR)/select_cray_la-cray_config.Tpo -c -o select_cray_la-cray_config.lo `test -f 'cray_config.c' || echo '$(srcdir)/'`cray_config.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/select_cray_la-cray_config.Tpo $(DEPDIR)/select_cray_la-cray_config.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cray_config.c' object='select_cray_la-cray_config.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-cray_config.lo `test -f 'cray_config.c' || echo '$(srcdir)/'`cray_config.c
 
 select_cray_la-basil_interface.lo: basil_interface.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-basil_interface.lo -MD -MP -MF $(DEPDIR)/select_cray_la-basil_interface.Tpo -c -o select_cray_la-basil_interface.lo `test -f 'basil_interface.c' || echo '$(srcdir)/'`basil_interface.c
