@@ -17,7 +17,9 @@ AC_DEFUN([X_AC_CRAY],
 [
   ac_have_cray="no"
   ac_have_cray_emulation="no"
-  _x_ac_alps_dirs="/usr"
+  _x_ac_alps_dirs_orig="/usr"
+  _x_ac_alps_dirs="$_x_ac_alps_dirs_orig"
+ 
 
   AC_ARG_WITH(
     [alps-dir],
@@ -43,8 +45,13 @@ AC_DEFUN([X_AC_CRAY],
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    AC_MSG_CHECKING([whether this is a native Cray XT or XE system])
+    # If ALPS location is explicitly set, assume this system is Cray or has ALPS simulator
+    AC_MSG_CHECKING([whether this is a native Cray XT or XE system or have ALPS simulator])
+
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
+      ac_have_cray="yes"
+    fi
+    if test "$_x_ac_alps_dirs" != "$_x_ac_alps_dirs_orig"; then
       ac_have_cray="yes"
     fi
     AC_MSG_RESULT([$ac_have_cray])
@@ -62,10 +69,11 @@ AC_DEFUN([X_AC_CRAY],
 
     # Check that all Cray binaries called by SLURM are in their expected places.
     # On a standard XT/XE installation, apbasil and apkill are normally in /usr/bin.
+    # NOTE: apkill is not included in the ALPS simulator, so we do not test for it now.
     for dir in $_x_ac_alps_dirs; do
       test -d "$dir/bin" || continue
       test -x "$dir/bin/apbasil" || continue
-      test -x "$dir/bin/apkill"  || continue
+#      test -x "$dir/bin/apkill"  || continue
       _x_ac_alps_install_dir="$dir"
       AC_DEFINE_UNQUOTED(HAVE_ALPS_DIR, "$dir", [Directory in which ALPS has been installed])
       break
