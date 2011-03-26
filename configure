@@ -19671,7 +19671,9 @@ fi
 
   ac_have_cray="no"
   ac_have_cray_emulation="no"
-  _x_ac_alps_dirs="/usr"
+  _x_ac_alps_dirs_orig="/usr"
+  _x_ac_alps_dirs="$_x_ac_alps_dirs_orig"
+
 
 
 # Check whether --with-alps-dir was given.
@@ -19703,9 +19705,14 @@ $as_echo "#define HAVE_CRAY_EMULATION 1" >>confdefs.h
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native Cray XT or XE system" >&5
-$as_echo_n "checking whether this is a native Cray XT or XE system... " >&6; }
+    # If ALPS location is explicitly set, assume this system is Cray or has ALPS simulator
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native Cray XT or XE system or have ALPS simulator" >&5
+$as_echo_n "checking whether this is a native Cray XT or XE system or have ALPS simulator... " >&6; }
+
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
+      ac_have_cray="yes"
+    fi
+    if test "$_x_ac_alps_dirs" != "$_x_ac_alps_dirs_orig"; then
       ac_have_cray="yes"
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_cray" >&5
@@ -19775,10 +19782,11 @@ fi
 
     # Check that all Cray binaries called by SLURM are in their expected places.
     # On a standard XT/XE installation, apbasil and apkill are normally in /usr/bin.
+    # NOTE: apkill is not included in the ALPS simulator, so we do not test for it now.
     for dir in $_x_ac_alps_dirs; do
       test -d "$dir/bin" || continue
       test -x "$dir/bin/apbasil" || continue
-      test -x "$dir/bin/apkill"  || continue
+#      test -x "$dir/bin/apkill"  || continue
       _x_ac_alps_install_dir="$dir"
 
 cat >>confdefs.h <<_ACEOF
