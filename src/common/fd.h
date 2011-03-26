@@ -49,6 +49,15 @@
 
 #include "src/common/macros.h"
 
+/* close all FDs >= a specified value */
+static inline void closeall(int fd)
+{
+	int fdlimit = sysconf(_SC_OPEN_MAX);
+
+	while (fd < fdlimit)
+		close(fd++);
+}
+
 void fd_set_close_on_exec(int fd);
 /*
  *  Sets the file descriptor (fd) to be closed on exec().

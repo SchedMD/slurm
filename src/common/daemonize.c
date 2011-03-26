@@ -51,16 +51,6 @@
 #include "src/common/macros.h"
 #include "src/common/xassert.h"
 
-/* closeall FDs >= a specified value */
-static void
-closeall(int fd)
-{
-	int fdlimit = sysconf(_SC_OPEN_MAX);
-
-	while (fd < fdlimit)
-		close(fd++);
-}
-
 /* detach and go into background.
  * caller is responsible for umasks
  *

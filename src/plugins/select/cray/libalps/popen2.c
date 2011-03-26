@@ -21,13 +21,7 @@
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
  * Licensed under the GPLv2.
  */
-#include <unistd.h>
-#include <stdbool.h>
-#include <libgen.h>
-#include <fcntl.h>
-#include <sys/wait.h>
-#include <errno.h>
-#include <err.h>
+#include "../basil_alps.h"
 
 static int dup_devnull(int stream_fd)
 {
@@ -98,6 +92,8 @@ pid_t popen2(const char *path, int *to_child, int *from_child, bool no_stderr)
 
 		if (no_stderr && dup_devnull(STDERR_FILENO) < 0)
 			_exit(127);
+
+		closeall(STDERR_FILENO + 1);
 
 		if (execl(path, path, NULL) < 0)
 			_exit(1);

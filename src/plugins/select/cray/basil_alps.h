@@ -12,6 +12,7 @@
 #endif
 
 #include "src/common/log.h"
+#include "src/common/fd.h"
 
 #include <stdio.h>
 #include <unistd.h>
