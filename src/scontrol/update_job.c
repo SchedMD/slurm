@@ -337,6 +337,9 @@ scontrol_update_job (int argc, char *argv[])
 
 	slurm_init_job_desc_msg (&job_msg);
 
+	/* set current user, needed e.g., for AllowGroups checks */
+	job_msg.user_id = getuid();
+
 	for (i=0; i<argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
