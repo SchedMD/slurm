@@ -769,6 +769,18 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%d",
 		      uid);
 	}
+#if HAVE_CRAY
+	/*
+	 * We are using the alloc_sid as unique identifier to confirm the ALPS
+	 * reservation. ALPS will refuse any attempt to create a second session
+	 * with the same identifier, hence sessions may not be nested.
+	 */
+	if (allocated_session_in_use(job_desc_msg)) {
+		error_code = ESLURM_RESERVATION_BUSY;
+		error("attempt to nest ALPS allocation on %s:%d by uid=%d",
+			job_desc_msg->alloc_node, job_desc_msg->alloc_sid, uid);
+	}
+#endif
 	slurm_get_peer_addr(msg->conn_fd, &resp_addr);
 	job_desc_msg->resp_host = xmalloc(16);
 	slurm_get_ip_str(&resp_addr, &port, job_desc_msg->resp_host, 16);

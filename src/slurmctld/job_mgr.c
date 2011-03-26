@@ -2167,6 +2167,42 @@ extern bool partition_in_use(char *part_name)
 }
 
 /*
+ * allocated_session_in_use - check if an interactive session is already running
+ * IN new_alloc - allocation (alloc_node:alloc_sid) to test for
+ * Returns true if an interactive session of the same node:sid already is in use
+ * by a RUNNING, PENDING, or SUSPENDED job. Provides its own locking.
+ */
+extern bool allocated_session_in_use(job_desc_msg_t *new_alloc)
+{
+	ListIterator job_iter;
+	struct job_record *job_ptr;
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
+	if ((new_alloc->script != NULL) || (new_alloc->alloc_node == NULL))
+		return false;
+
+	lock_slurmctld(job_read_lock);
+	job_iter = list_iterator_create(job_list);
+	if (job_iter == NULL)
+		fatal("list_iterator_create: malloc failure");
+
+	while ((job_ptr = (struct job_record *)list_next(job_iter))) {
+		if (job_ptr->batch_flag || IS_JOB_FINISHED(job_ptr))
+			continue;
+		if (job_ptr->alloc_node &&
+		    (strcmp(job_ptr->alloc_node, new_alloc->alloc_node) == 0) &&
+		    (job_ptr->alloc_sid == new_alloc->alloc_sid))
+			break;
+	}
+	list_iterator_destroy(job_iter);
+	unlock_slurmctld(job_read_lock);
+
+	return job_ptr != NULL;
+}
+
+/*
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
  * IN node_name - name of a node

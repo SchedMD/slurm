@@ -876,6 +876,13 @@ extern bool is_node_down (char *name);
 extern bool is_node_resp (char *name);
 
 /*
+ * allocated_session_in_use - check if an interactive session is already running
+ * IN new_alloc - allocation (alloc_node:alloc_sid) to test for
+ * Returns true if an interactive session of the same node:sid already exists.
+ */
+extern bool allocated_session_in_use(job_desc_msg_t *new_alloc);
+
+/*
  * job_alloc_info - get details about an existing job allocation
  * IN uid - job issuing the code
  * IN job_id - ID of job for which info is requested
