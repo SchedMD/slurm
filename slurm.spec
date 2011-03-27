@@ -539,6 +539,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/cgroup.*
+%{_mandir}/man5/cray.*
 %{_mandir}/man5/gres.*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/topology.*
