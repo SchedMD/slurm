@@ -277,7 +277,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = \
 	etc_init_d_munge	\
-	libasil.tar.gz		\
 	opt_modulefiles_slurm
 
 all: all-am
