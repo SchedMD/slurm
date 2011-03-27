@@ -1,0 +1,100 @@
+.TH "cray.conf" "5" "March 2011" "cray.conf 2.3" "Slurm configuration file"
+
+.SH "NAME"
+cray.conf \- Slurm configuration file for the Cray\-specific information
+
+.SH "DESCRIPTION"
+\fB/etc/cray.conf\fP is an ASCII file which defines parameters used by 
+Slurm's select/cray plugin in support of Cray systems. The file will always
+be located in the same directory as the \fBslurm.conf\fP file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+.LP
+The configuration parameters available include:
+
+.TP
+\fBAlpsDir\fR=<pathname>
+Fully qualified pathname of the directory in which ALPS is installed.
+The default value is \fI/usr\fR.
+
+.TP
+\fBapbasil\fR=<pathname>
+Fully qualified pathname to the apbasil command.
+The default value is \fI/usr/bin/apbasil\fR.
+
+.TP
+\fBapkill\fR=<pathname>
+Fully qualified pathname to the apkill command.
+The default value is \fI/usr/bin/apbasil\fR.
+
+.TP
+\fBSDBdb\fR=<dbname>
+Name of the ALPS database.
+The default value is \fIXTAdmin\fR.
+
+.TP
+\fBSDBhost\fR=<dbname>
+Hostname of the database server.
+The default value is \fIsdb\fR.
+
+.TP
+\fBSDBpass\fR=<password>
+Password used to access the ALPS database.
+The default value is NULL.
+
+.TP
+\fBSDBport\fR=<port_number>
+Port used to access the ALPS database.
+The default value is 0.
+
+.TP
+\fBSDBuser\fR=<user_name>
+Name of user used to access the ALPS database.
+The default value is NULL.
+
+.SH "EXAMPLE"
+.LP
+.br
+###
+.br
+# Slurm Cray support configuration file
+.br
+###
+.br
+apbasil=/opt/alps_simulator_40_r6768/apbasil.sh
+.br
+SDBhost=localhost
+.br
+SDBuser=alps_user
+.br
+SDBdb=XT5istanbul
+.br
+ConstrainCores=yes
+
+.SH "COPYING"
+Copyright (C) 2011 SchedMD LLC.
+Produced at SchedMD LLC (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

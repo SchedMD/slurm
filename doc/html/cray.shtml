@@ -2,8 +2,6 @@
 
 <h1>SLURM User and Administrator Guide for Cray systems</h1>
 
-<b>NOTE: As of 20 February 2010, the SLURM interface to Cray systems is still under development.</b>
-
 <h2>User Guide</h2>
 
 <p>This document describes the unique features of SLURM on
@@ -83,13 +81,13 @@ It means that you can use Munge as soon as it is built.</p>
 <ul>
 <li>cp munge_build_script.sh $LIBROOT</li>
 <li>mkdir -vp ${LIBROOT}/munge/zip</li>
-<li>download munge-0.5.9.tar.bz2 or newer from
+<li>Download munge-0.5.9.tar.bz2 or newer from
 <a href="http://code.google.com/p/munge/downloads/list">
 http://code.google.com/p/munge/downloads/list</a></li>
-<li>copy that into ${LIBROOT}/munge/zip</li>
-<li>run ./munge_build_script.sh</li>
+<li>Copy that into  <i>${LIBROOT}/munge/zip</i></li>
+<li>Execute <i>./munge_build_script.sh</i></li>
 </ul></p>
-<p>This generates a tar-ball called $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz
+<p>This generates a tar-ball called <i>$LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz</i>
 which has already the correct paths - in particular, the libmunge.* need to
 reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
 
@@ -104,22 +102,22 @@ reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
 
 <p>The following steps apply to each service node where
 <ul>
-<li>the <i>slurmd</i> or <i>slurmctld</i> daemon will run and/or</li>
-<li>users will be submitting jobs</li>
+<li>The <i>slurmd</i> or <i>slurmctld</i> daemon will run and/or</li>
+<li>Users will be submitting jobs</li>
 </ul></p>
 
 <p><ol>
-<li>on each login host create directory hierarchy:<br>
-    mkdir --mode=0711 -vp /var/lib/munge<br>
-    mkdir --mode=0700 -vp /var/log/munge<br>
-    mkdir --mode=0755 -vp /var/run/munge</li>
-<li>module load slurm # as root, to get the right slurm paths</li>
-<li>munged --key-file /opt/slurm/munge/etc/munge.key</li>
-<li>try a  "munge -n" to see if munged accepts input</li>
+<li>On each login host create directory hierarchy:<br>
+    <i>mkdir --mode=0711 -vp /var/lib/munge</i><br>
+    <i>mkdir --mode=0700 -vp /var/log/munge</i><br>
+    <i>mkdir --mode=0755 -vp /var/run/munge</i></li>
+<li><i>module load slurm</i> as root, to get the right slurm paths</li>
+<li><i>munged --key-file /opt/slurm/munge/etc/munge.key</i></li>
+<li>Try a "<i>munge -n</i>" to see if munged accepts input</li>
 </ol></p>
 
 <p>When done, verify network connectivity by executing<br>
-  $  munge -n |ssh other-login-host /opt/slurm/munge/bin/unmunge</p>
+  $  <i>munge -n |ssh other-login-host /opt/slurm/munge/bin/unmunge</i></p>
 
 <p>If you decide to keep the installation, you may be interested in automating
 the process using an <i>init.d</i> script distributed with the Munge as
@@ -131,42 +129,12 @@ the process using an <i>init.d</i> script distributed with the Munge as
 <li>chkconfig munge on</li>
 </ul></p>
 
-<h3>Build libasil</h3>
-
-<p>This is the last step in the build preparations and sets up the (currently
-still external) ALPS library which does the XML-RPC calls for SLURM.
-This file is distributed as part the SLURM tar-ball in
-<i>contribs/cray/libasil.tar.gz</i>.</p>
-<ul>
-<li>cd $LIBROOT</li>
-<li>tar zxvf libasil.tar.gz</li>
-<li>make -C libasil</li>
-</ul></p>
-
-<p>This should build the required library <i>$LIBROOT/libasil/libasil.a</i>.
-There are a number of subdirectories with test programs.
-If you want, you can run various test programs via
-<ul>
-<li>make -C $LIBROOT/libasil/alps_tests all</li>
-<li>make -C $LIBROOT/libasil/sdb_tests all</li>
-</ul></p>
-
-<p>There is one program which will be used in the next part.
-It prints the correct list of compute nodes for use in SLURM's slurm.conf file.
-This is the <i>libasil/sdb_tests/tuxadmin/tuxadmin</i> program, called with the
-<i>--slurm.conf</i> argument.
-Please make sure that it is working at this stage.
-A sample execution is shown below:<br>
-gele1>libasil/sdb_tests/tuxadmin/tuxadmin --slurm.conf<br>
-slurm can use MaxNodes=16 compute nodes. These should be listed in slurm.conf as:<br>
-  NodeName=nid000[16-31]</p>
-
 <h3>Build and Configure SLURM</h3>
 
 <p>SLURM can be built and installed as on any other computer as described
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
-When building SLURM's slurm.conf configuration files,  use the <i>NodeName</i>
-values reported by the <i>tuxadmin</i> command as described above.
+When building SLURM's slurm.conf configuration files, use the <i>NodeName</i>
+parameter to specify all batch nodes to be scheduled.
 Note that the <i>NodeAddr</i> and <i>NodeHostName</i> fields should not be
 configured, but will be set by SLURM using data from ALPS.
 <i>NodeAddr</i> be set to the node's XYZ coordinate and be used by SLURM's
@@ -204,13 +172,53 @@ For more information about how this is achieved, see SLURM's
 <a href="topology.html#topo_3d">Topology Guide</a>.</p>
 
 <pre>
-# slurm.conf for Cray XT system of with 512 compute nodes
+# slurm.conf for Cray XT system of with 512 nodes with the first 80 nodes
+# reserved for login, service, interactive, etc. use
 # Parameters removed here
 SelectType=select/cray
 TopoType=topology/node_rank
 FrontendName=front_end[00-03]
-NodeName=nid[00000-00511] CPUs=8 RealMemory=2048
-PartitionName=batch Nodes=nid[00000-00511] Default=Yes State=UP
+NodeName=nid[00080-00511] CPUs=8 RealMemory=2048
+PartitionName=batch Nodes=nid[00080-00511] Default=Yes State=UP
+</pre>
+
+<p>SLURM supports an optional <i>cray.conf</i> file containing Cray-specific
+configuration parameters. This file must be located in the same directory
+as the <i>slurm.conf</i> file.</p>
+
+<dl>
+<dt><b>AlpsDir</b>
+<dd>Fully qualified pathname of the directory in which ALPS is installed.
+The default value is <i>/usr</i>.
+<dt><b>apbasil</b>
+<dd>Fully qualified pathname to the apbasil command.
+The default value is <i>/usr/bin/apbasil</i>.
+<dt><b>apkill</b>
+<dd>Fully qualified pathname to the apkill command.
+The default value is <i>/usr/bin/apkill</i>.
+<dt><b>SDBdb</b>
+<dd>Name of the ALPS database.
+The default value is <i>XTAdmin</i>.
+<dt><b>SDBhost</b>
+<dd>Hostname of the database server.
+The default value is <i>sdb</i>.
+<dt><b>SDBpass</b>
+<dd>Password used to access the ALPS database.
+The default value is NULL.
+<dt><b>SDBport</b>
+<dd>Port used to access the ALPS database.
+The default value is 0.
+<dt><b>SDBuser</b>
+<dd>Name of user used to access the ALPS database.
+The default value is NULL.
+</dl></p>
+
+<pre>
+# Example cray.conf file
+apbasil=/opt/alps_simulator_40_r6768/apbasil.sh
+SDBhost=localhost
+SDBuser=alps_user
+SDBdb=XT5istanbul
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
