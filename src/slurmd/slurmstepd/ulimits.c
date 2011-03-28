@@ -89,6 +89,13 @@ int set_user_limits(slurmd_job_t *job)
 	struct rlimit r;
 	rlim_t task_mem_bytes;
 
+	if (getrlimit(RLIMIT_CPU, &r) == 0) {
+		if (r.rlim_max != RLIM_INFINITY) {
+			error("SLURM process CPU time limit is %d seconds",
+			      (int) r.rlim_max);
+		}
+	}
+
 	for (rli = get_slurm_rlimits_info(); rli->name; rli++)
 		_set_limit( job->env, rli );
 

@@ -1222,11 +1222,19 @@ _slurmd_init(void)
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
-	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
+	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
-		setrlimit(RLIMIT_NOFILE,&rlim);
+		setrlimit(RLIMIT_CPU, &rlim);
+		if (rlim.rlim_max != RLIM_INFINITY) {
+			error("Slurmd process CPU time limit is %d seconds",
+			      (int) rlim.rlim_max);
+		}
 	}
 
+	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		setrlimit(RLIMIT_NOFILE, &rlim);
+	}
 #ifndef NDEBUG
 	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
