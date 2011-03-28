@@ -71,6 +71,7 @@ typedef struct ba_geo_table {
 	uint16_t size;			/* Total object count */
 	uint16_t *geometry;		/* Size in each dimension */
 	uint16_t full_dim_cnt;		/* Fully occupied dimension count */
+	uint16_t passthru_cnt;		/* Count of nodes lost for passthru */
 	struct ba_geo_table *next_ptr;	/* Next geometry of this size */
 } ba_geo_table_t;
 

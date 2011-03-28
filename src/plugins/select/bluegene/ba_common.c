@@ -555,8 +555,9 @@ extern int ba_geo_list_print(ba_geo_table_t *geo_ptr, char *header,
 			 geo_ptr->geometry[i]);
 		strcat(full_buf, dim_buf);
 	}
-	snprintf(dim_buf, sizeof(dim_buf), ": size:%u : full_dim_cnt:%u",
-		 geo_ptr->size, geo_ptr->full_dim_cnt);
+	snprintf(dim_buf, sizeof(dim_buf),
+		 ": size:%u : full_dim_cnt:%u passthru_cnt:%u",
+		 geo_ptr->size, geo_ptr->full_dim_cnt, geo_ptr->passthru_cnt);
 	strcat(full_buf, dim_buf);
 	info("%s%s", header, full_buf);
 
@@ -584,7 +585,7 @@ extern void ba_print_geo_table(ba_geo_system_t *my_geo_system)
 extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 {
 	ba_geo_table_t *geo_ptr;
-	int dim, inx[my_geo_system->dim_count], product;
+	int dim, inx[my_geo_system->dim_count], passthru, product;
 	struct ba_geo_table **last_pptr;
 
 	if (my_geo_system->geo_table_ptr)
@@ -612,8 +613,11 @@ extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 		for (dim = 0; dim < my_geo_system->dim_count; dim++) {
 			geo_ptr->geometry[dim] = inx[dim];
 			product *= inx[dim];
-			if (inx[dim] == my_geo_system->dim_size[dim])
+			passthru = inx[dim] - my_geo_system->dim_size[dim];
+			if (passthru == 0)
 				geo_ptr->full_dim_cnt++;
+			else if (passthru > 1)
+				geo_ptr->passthru_cnt += passthru;
 		}
 		geo_ptr->size = product;
 		xassert(product <= my_geo_system->total_size);
@@ -621,8 +625,14 @@ extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 		/* Insert record into linked list so that geometries
 		 * with full dimensions appear first */
 		last_pptr = &my_geo_system->geo_table_ptr[product];
-		while ((*last_pptr) &&
-		       ((*last_pptr)->full_dim_cnt > geo_ptr->full_dim_cnt)) {
+		while (*last_pptr) {
+			if (geo_ptr->full_dim_cnt > (*last_pptr)->full_dim_cnt)
+				break;
+			if ((geo_ptr->full_dim_cnt ==
+			     (*last_pptr)->full_dim_cnt) &&
+			    (geo_ptr->passthru_cnt <
+			     (*last_pptr)->passthru_cnt))
+				break;
 			last_pptr = &((*last_pptr)->next_ptr);
 		}
 		geo_ptr->next_ptr = *last_pptr;
