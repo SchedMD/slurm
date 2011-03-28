@@ -107,7 +107,7 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 			     bg_block_state_string(bg_record->state));
 		slurm_init_update_block_msg(&block_msg);
 		block_msg.bg_block_id = bg_record->bg_block_id;
-		block_msg.state |= BG_BLOCK_ERROR_FLAG;
+		block_msg.state = (bg_record->state | BG_BLOCK_ERROR_FLAG);
 		block_msg.reason = "Block would not deallocate";
 		slurm_mutex_unlock(&block_state_mutex);
 		select_g_update_block(&block_msg);
@@ -443,7 +443,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 			     bg_block_state_string(bg_record->state));
 		slurm_init_update_block_msg(&block_msg);
 		block_msg.bg_block_id = bg_record->bg_block_id;
-		block_msg.state |= BG_BLOCK_ERROR_FLAG;
+		block_msg.state = (bg_record->state | BG_BLOCK_ERROR_FLAG);
 		block_msg.reason = "Block would not deallocate";
 		slurm_mutex_unlock(&block_state_mutex);
 		select_g_update_block(&block_msg);
