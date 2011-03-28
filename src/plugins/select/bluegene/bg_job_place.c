@@ -958,6 +958,11 @@ static int _find_best_block_match(List block_list,
 	request.size = target_size;
 	request.procs = req_procs;
 	request.elongate = request.rotate;
+	/* request.start[0] = 1; */
+	/* request.start[1] = 2; */
+	/* request.start[2] = 0; */
+	/* request.start[3] = 2; */
+	/* request.start_req = 1; */
 
 	if (job_ptr->details->req_node_bitmap)
 		request.avail_mp_bitmap = job_ptr->details->req_node_bitmap;

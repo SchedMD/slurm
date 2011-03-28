@@ -73,7 +73,7 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 			   ba_mp_t **check_mp, int *block_start,
 			   int *block_end, int *coords);
 
-static int _finish_torus(List results, int level, uint16_t *block_start,
+static int _finish_torus(List results, int level, int *block_start,
 			 int *block_end, uint16_t *conn_type, int *coords);
 
 /* */
@@ -649,8 +649,6 @@ extern char *set_bg_block(List results, uint16_t *start,
 		}
 	}
 
-	//ba_mp = coord2ba_mp(block_start);
-
 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
 		info("complete box is %c%c%c%c x %c%c%c%c",
 		     alpha_num[block_start[A]],
@@ -666,7 +664,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 			    block_start, block_end, coords) == -1)
 		goto end_it;
 
-	if (_finish_torus(main_mps, A, start,
+	if (_finish_torus(main_mps, A, block_start,
 			  block_end, conn_type, coords) == -1)
 		goto end_it;
 
@@ -914,15 +912,21 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 
 	/* info("looking at %s", curr_mp->coord_str); */
 	for (dim=0; dim<cluster_dims; dim++) {
+		/* If this is only used for passthrough, skip since
+		   the _finish_torus code will catch things there.
+		*/
+		if (check_mp[dim]->used & BA_MP_USED_PASS_BIT) {
+			used = check_mp[dim]->used;
+			break;
+		}
+
+		/* info("inside at %s %d %d %d", check_mp[dim]->coord_str, */
+		/*      dim, check_mp[dim]->used, used); */
+
 		/* If we get over 2 in any dim that we are
 		   greater here we are pass anything we need to
 		   passthrough, so break.
 		*/
-		if (check_mp[dim]->used & BA_MP_USED_PASS_BIT)
-			used = check_mp[dim]->used;
-
-		/* info("inside at %s %d %d %d", check_mp[dim]->coord_str, */
-		/*      dim, check_mp[dim]->used, used); */
 
 		/* info("passthrough %d used %d %d %d %d", dim, used, */
 		/*      curr_mp->coord[dim], block_start[dim], */
@@ -936,10 +940,13 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
 		}
 	}
 
-	/* info("got used of %d", used); */
-	if (count_outside > 1) {
+	/* info("got used of %d %d", used, count_outside); */
+	if (dim < cluster_dims) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-			info("skipping non-used %s", curr_mp->coord_str);
+			info("skipping non-used %s if needed for "
+			     "passthrough it should be handled in "
+			     "_finish_torus",
+			     curr_mp->coord_str);
 		return 1;
 	}
 
@@ -995,7 +1002,7 @@ static int _fill_in_coords(List results, int level, ba_mp_t *start_mp,
  *
  * RET: -1 on failure 1 on success
  */
-static int _finish_torus(List results, int level, uint16_t *block_start,
+static int _finish_torus(List results, int level, int *block_start,
 			 int *block_end, uint16_t *conn_type, int *coords)
 {
 	int dim;
