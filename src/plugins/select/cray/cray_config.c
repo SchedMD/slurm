@@ -83,7 +83,7 @@ static char *_get_cray_conf(void)
 	return rc;
 }
 
-extern int create_config()
+extern int create_config(void)
 {
 	int rc = SLURM_SUCCESS;
 	char* cray_conf_file = NULL;
@@ -139,11 +139,9 @@ extern int create_config()
 	if (!s_p_get_string(&cray_conf->apbasil, "apbasil", tbl))
 		cray_conf->apbasil = xstrdup_printf("%s/bin/apbasil",
 						    cray_conf->alps_dir);
-#ifndef HAVE_ALPS_EMULATION 
 	if (!s_p_get_string(&cray_conf->apkill, "apkill", tbl))
 		cray_conf->apkill = xstrdup_printf("%s/bin/apkill",
 						   cray_conf->alps_dir);
-#endif
 	if (!s_p_get_string(&cray_conf->sdb_db, "SDBdb", tbl))
 		cray_conf->sdb_db = xstrdup(DEFAULT_CRAY_SDB_DB);
 	if (!s_p_get_string(&cray_conf->sdb_host, "SDBhost", tbl))
@@ -172,7 +170,7 @@ end_it:
 	return rc;
 }
 
-extern int destroy_config()
+extern int destroy_config(void)
 {
 	int rc = SLURM_SUCCESS;
 

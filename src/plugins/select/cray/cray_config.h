@@ -76,7 +76,7 @@ typedef struct {
 
 extern cray_config_t *cray_conf;
 
-extern int create_config();
-extern int destroy_config();
+extern int create_config(void);
+extern int destroy_config(void);
 
 #endif
