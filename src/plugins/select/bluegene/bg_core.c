@@ -255,15 +255,22 @@ static void *_track_freeing_blocks(void *args)
  */
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
+	/* deal with large blocks here */
 	if ((rec_a->mp_count > 1) && (rec_b->mp_count > 1)) {
+		/* check for overlap. */
+		if (rec_a->bitmap && rec_b->bitmap
+		    && bit_overlap(rec_a->bitmap, rec_b->bitmap))
+			return true;
 		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
 		check_and_set_mp_list(rec_a->ba_mp_list);
 		if (check_and_set_mp_list(rec_b->ba_mp_list)
 		    == SLURM_ERROR)
 			return true;
+		return false;
 	}
 
+	/* now deal with at least one of these being a small block */
 	if (rec_a->bitmap && rec_b->bitmap
 	    && !bit_overlap(rec_a->bitmap, rec_b->bitmap))
 		return false;
