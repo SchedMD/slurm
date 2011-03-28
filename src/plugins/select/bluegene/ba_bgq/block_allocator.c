@@ -1151,10 +1151,13 @@ static char *_copy_from_main(List main_mps, List ret_list)
 		for (dim=0; dim<cluster_dims; dim++) {
 			ba_mp->axis_switch[dim].usage |=
 				new_mp->axis_switch[dim].usage;
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("_copy_from_main: dim %d is %s", dim,
-				     ba_switch_usage_str(
-					     ba_mp->axis_switch[dim].usage));
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				debug("_copy_from_main: dim %d is %s added %s",
+				      dim,
+				      ba_switch_usage_str(
+					      ba_mp->axis_switch[dim].usage),
+				      ba_switch_usage_str(
+					      new_mp->axis_switch[dim].usage));
 		}
 	}
 	list_iterator_destroy(itr);
@@ -1389,6 +1392,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 	alter_switch->usage |= BG_SWITCH_OUT_PASS;
 
 	while (curr_mp != start_mp) {
+		add = 0;
 		xassert(curr_mp);
 		axis_switch = &curr_mp->axis_switch[dim];
 		alter_switch = &curr_mp->alter_switch[dim];
