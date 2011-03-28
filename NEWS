@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
     for details. Restrictions to be removed in the future.
  -- Added --with-alps-emulation to configure, and also an optional cray.conf
     to setup alps location and database information.
+ -- Modify PMI data types to support MPICH2 jobs with more than 65536 tasks.
+    Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.3.0.pre3
 =============================

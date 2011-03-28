@@ -8999,7 +8999,7 @@ unpack_error:
 static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer,
 			       uint16_t protocol_version)
 {
-	pack16(msg_ptr->task_id, buffer);
+	pack32(msg_ptr->task_id, buffer);
 	pack16(msg_ptr->port, buffer);
 	packstr(msg_ptr->hostname, buffer);
 }
@@ -9009,7 +9009,7 @@ static int _unpack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer,
 {
 	uint32_t uint32_tmp;
 
-	safe_unpack16(&msg_ptr->task_id, buffer);
+	safe_unpack32(&msg_ptr->task_id, buffer);
 	safe_unpack16(&msg_ptr->port, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->hostname, &uint32_tmp, buffer);
 	return SLURM_SUCCESS;
@@ -9146,8 +9146,8 @@ unpack_error:
 static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, Buf buffer,
 			  uint16_t protocol_version)
 {
-	pack16((uint16_t)msg_ptr->task_id, buffer);
-	pack16((uint16_t)msg_ptr->size, buffer);
+	pack32((uint32_t)msg_ptr->task_id, buffer);
+	pack32((uint32_t)msg_ptr->size, buffer);
 	pack16((uint16_t)msg_ptr->port, buffer);
 	packstr(msg_ptr->hostname, buffer);
 }
@@ -9160,8 +9160,8 @@ static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer,
 
 	msg = xmalloc(sizeof(struct kvs_get_msg));
 	*msg_ptr = msg;
-	safe_unpack16(&msg->task_id, buffer);
-	safe_unpack16(&msg->size, buffer);
+	safe_unpack32(&msg->task_id, buffer);
+	safe_unpack32(&msg->size, buffer);
 	safe_unpack16(&msg->port, buffer);
 	safe_unpackstr_xmalloc(&msg->hostname, &uint32_tmp, buffer);
 	return SLURM_SUCCESS;

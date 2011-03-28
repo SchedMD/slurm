@@ -64,8 +64,8 @@ struct barrier_resp {
 	char *hostname;
 };				/* details for barrier task communcations */
 struct barrier_resp *barrier_ptr = NULL;
-uint16_t barrier_resp_cnt = 0;	/* tasks having reached barrier */
-uint16_t barrier_cnt = 0;	/* tasks needing to reach barrier */
+uint32_t barrier_resp_cnt = 0;	/* tasks having reached barrier */
+uint32_t barrier_cnt = 0;	/* tasks needing to reach barrier */
 
 pthread_mutex_t agent_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  agent_cond  = PTHREAD_COND_INITIALIZER;

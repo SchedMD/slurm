@@ -842,8 +842,8 @@ typedef struct suspend_msg {
 } suspend_msg_t;
 
 typedef struct kvs_get_msg {
-	uint16_t task_id;	/* job step's task id */
-	uint16_t size;		/* count of tasks in job */
+	uint32_t task_id;	/* job step's task id */
+	uint32_t size;		/* count of tasks in job */
 	uint16_t port;		/* port to be sent the kvs data */
 	char * hostname;	/* hostname to be sent the kvs data */
 } kvs_get_msg_t;

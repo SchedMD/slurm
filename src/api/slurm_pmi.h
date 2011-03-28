@@ -60,7 +60,7 @@
 #define PMI_MAX_VAL_LEN     256	/* Maximum size of a PMI value */
 
 struct kvs_hosts {
-	uint16_t	task_id;	/* job step's task id */
+	uint32_t	task_id;	/* job step's task id */
 	uint16_t	port;		/* communication port */
 	char *		hostname;	/* communication host */
 };
