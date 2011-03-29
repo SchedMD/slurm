@@ -1234,6 +1234,12 @@ extern List priority_p_get_priority_factors_list(
 			if (job_ptr->priority <= 1)
 				continue;
 
+			/*
+			 * Priority has been set elsewhere (e.g. by SlurmUser)
+			 */
+			if (job_ptr->direct_set_prio)
+				continue;
+
 			if (_filter_job(job_ptr, req_job_list, req_user_list))
 				continue;
 
