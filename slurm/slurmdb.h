@@ -732,7 +732,7 @@ typedef struct {
 	slurmdb_association_cond_t *assoc_cond; /* use user_list here for
 						   names and acct_list for
 						   default accounts */
-	List def_acct_list; /* list of char * (We can't readly use
+	List def_acct_list; /* list of char * (We can't really use
 			     * the assoc_cond->acct_list for this
 			     * because then it is impossible for us
 			     * to tell which accounts are defaults

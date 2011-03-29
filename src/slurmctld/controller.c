@@ -585,7 +585,7 @@ int main(int argc, char *argv[])
 
 		if (running_cache) {
 			/* break out and end the association cache
-			 * thread since we are shuting down, no reason
+			 * thread since we are shutting down, no reason
 			 * to wait for current info from the database */
 			slurm_mutex_lock(&assoc_cache_mutex);
 			running_cache = (uint16_t)NO_VAL;

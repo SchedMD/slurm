@@ -4367,8 +4367,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 						    &wckey_ptr)) {
 				if (accounting_enforce &
 				    ACCOUNTING_ENFORCE_WCKEYS) {
-					error("_job_create: invalid wckey '%s' "
-					      "for user %u.",
+					error("_copy_job_desc_to_job_record: "
+					      "invalid wckey '%s' for user %u.",
 					      wckey_rec.name,
 					      job_desc->user_id);
 					return ESLURM_INVALID_WCKEY;
@@ -4376,8 +4376,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			}
 		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			/* This should never happen */
-			info("_job_create: no wckey was given for "
-			     "job submit.");
+			info("_copy_job_desc_to_job_record: no wckey was given "
+			     "for job submit.");
 			return ESLURM_INVALID_WCKEY;
 		}
 	}

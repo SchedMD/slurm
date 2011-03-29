@@ -235,8 +235,6 @@ extern int basil_inventory(void)
 	 * Purge orphaned reservations, which may result from stale or
 	 * messed up system state, or are indicative of ALPS problems
 	 * (stuck in pending cancel calls).
-	 * Don't return an error code here, to encourage scheduling
-	 * even while some of the resources have not yet been freed.
 	 */
 	for (rsvn = inv->f->rsvn_head; rsvn; rsvn = rsvn->next) {
 		ListIterator job_iter = list_iterator_create(job_list);

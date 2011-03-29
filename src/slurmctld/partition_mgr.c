@@ -1242,9 +1242,9 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->priority = part_desc->priority;
 
 		/* If the max_priority changes we need to change all
-		   the normalized priorities of all the other
-		   partitions.  If not then just set this partitions.
-		*/
+		 * the normalized priorities of all the other
+		 * partitions. If not then just set this partition.
+		 */
 		if(part_ptr->priority > part_max_priority) {
 			ListIterator itr = list_iterator_create(part_list);
 			struct part_record *part2 = NULL;

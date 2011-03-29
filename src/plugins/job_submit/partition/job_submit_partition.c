@@ -131,7 +131,7 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 	return false;		/* User not in AllowGroups */
 }
 
-/* This exampe code will set a job's default partition to the highest
+/* This example code will set a job's default partition to the highest
  * priority partition that is available to this user. This is only an
  * example and tremendous flexibility is available. */
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)

@@ -245,7 +245,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_RESERVATION_OVERLAP,
 	  "Requested reservation overlaps with another reservation"	},
 	{ ESLURM_PORTS_BUSY,
-	  "Requires ports are in use"				},
+	  "Required ports are in use"				},
 	{ ESLURM_PORTS_INVALID,
 	  "Requires more ports than can be reserved"		},
 	{ ESLURM_PROLOG_RUNNING,

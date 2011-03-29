@@ -89,7 +89,7 @@ pam_setup (char *user, char *host)
 	 * administrator. PAM's session management library is responsible for
 	 * handling resource limits. When a PAM session is opened on behalf of
 	 * a user, the limits imposed by the sys admin are picked up. Opening
-	 * a PAM session requires a PAM handle, which is obatined when the PAM
+	 * a PAM session requires a PAM handle, which is obtained when the PAM
 	 * interface is intialized. (PAM handles are required with essentially
 	 * all PAM calls.) It's also necessary to have the users PAM credentials
 	 * to open a user session.

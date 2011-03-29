@@ -2758,7 +2758,7 @@ static void _help(void)
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"
 "  -n, --ntasks=ntasks         number of tasks to run\n"
-"      --nice[=value]          decrease secheduling priority by value\n"
+"      --nice[=value]          decrease scheduling priority by value\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
