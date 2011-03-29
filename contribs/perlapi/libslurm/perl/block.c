@@ -42,8 +42,8 @@ block_info_to_hv(block_info_t *block_info, HV *hv)
 
 	hv_store_sv(hv, "conn_type", newRV_noinc((SV*)av));
 
-	if(block_info->ionodes)
-		STORE_FIELD(hv, block_info, ionodes, charp);
+	if(block_info->ionode_str)
+		STORE_FIELD(hv, block_info, ionode_str, charp);
 	if (block_info->ionode_inx) {
 		int j;
 		av = newAV();
@@ -60,9 +60,9 @@ block_info_to_hv(block_info_t *block_info, HV *hv)
 		STORE_FIELD(hv, block_info, linuximage, charp);
 	if(block_info->mloaderimage)
 		STORE_FIELD(hv, block_info, mloaderimage, charp);
-	if(block_info->nodes)
-		STORE_FIELD(hv, block_info, nodes, charp);
-	STORE_FIELD(hv, block_info, node_cnt, uint32_t);
+	if(block_info->mp_str)
+		STORE_FIELD(hv, block_info, mp_str, charp);
+	STORE_FIELD(hv, block_info, cnode_cnt, uint32_t);
 	STORE_FIELD(hv, block_info, node_use, uint16_t);
 	if (block_info->owner_name)
 		STORE_FIELD(hv, block_info, owner_name, charp);
@@ -110,7 +110,7 @@ hv_to_block_info(HV *hv, block_info_t *block_info)
 	} else {
 		/* nothing to do */
 	}
-	FETCH_FIELD(hv, block_info, ionodes, charp, FALSE);
+	FETCH_FIELD(hv, block_info, ionode_str, charp, FALSE);
 	svp = hv_fetch(hv, "ionode_inx", 10, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
 		av = (AV*)SvRV(*svp);
@@ -127,8 +127,8 @@ hv_to_block_info(HV *hv, block_info_t *block_info)
 	FETCH_FIELD(hv, block_info, job_running, uint32_t, TRUE);
 	FETCH_FIELD(hv, block_info, linuximage, charp, FALSE);
 	FETCH_FIELD(hv, block_info, mloaderimage, charp, FALSE);
-	FETCH_FIELD(hv, block_info, nodes, charp, FALSE);
-	FETCH_FIELD(hv, block_info, node_cnt, uint32_t, TRUE);
+	FETCH_FIELD(hv, block_info, mp_str, charp, FALSE);
+	FETCH_FIELD(hv, block_info, cnode_cnt, uint32_t, TRUE);
 	FETCH_FIELD(hv, block_info, node_use, uint16_t, TRUE);
 	FETCH_FIELD(hv, block_info, owner_name, charp, FALSE);
 	FETCH_FIELD(hv, block_info, ramdiskimage, charp, FALSE);
@@ -238,7 +238,7 @@ hv_to_update_block_msg(HV *hv, update_block_msg_t *update_msg)
 	} else {
 		/* nothing to do */
 	}
-	FETCH_FIELD(hv, update_msg, ionodes, charp, FALSE);
+	FETCH_FIELD(hv, update_msg, ionode_str, charp, FALSE);
 	svp = hv_fetch(hv, "ionode_inx", 10, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
 		av = (AV*)SvRV(*svp);
@@ -255,8 +255,8 @@ hv_to_update_block_msg(HV *hv, update_block_msg_t *update_msg)
 	FETCH_FIELD(hv, update_msg, job_running, uint32_t, FALSE);
 	FETCH_FIELD(hv, update_msg, linuximage, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, mloaderimage, charp, FALSE);
-	FETCH_FIELD(hv, update_msg, nodes, charp, FALSE);
-	FETCH_FIELD(hv, update_msg, node_cnt, uint32_t, FALSE);
+	FETCH_FIELD(hv, update_msg, mp_str, charp, FALSE);
+	FETCH_FIELD(hv, update_msg, cnode_cnt, uint32_t, FALSE);
 	FETCH_FIELD(hv, update_msg, node_use, uint16_t, FALSE);
 	FETCH_FIELD(hv, update_msg, owner_name, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, ramdiskimage, charp, FALSE);
