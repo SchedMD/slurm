@@ -612,6 +612,32 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	core_start_bit = cr_get_coremap_offset(node_i);
 	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
 	node_ptr = select_node_record[node_i].node_ptr;
+
+	if (cr_type & CR_MEMORY) {
+		/* Memory Check: check pn_min_memory to see if:
+		 *          - this node has enough memory (MEM_PER_CPU == 0)
+		 *          - there are enough free_cores (MEM_PER_CPU = 1)
+		 */
+		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
+		avail_mem = select_node_record[node_i].real_memory;
+		if (!test_only)
+			avail_mem -= node_usage[node_i].alloc_memory;
+		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+			/* memory is per-cpu */
+			while ((cpus > 0) && ((req_mem * cpus) > avail_mem))
+				cpus--;
+			if ((cpus < job_ptr->details->ntasks_per_node) ||
+			    ((job_ptr->details->cpus_per_task > 1) &&
+			     (cpus < job_ptr->details->cpus_per_task)))
+				cpus = 0;
+			/* FIXME: Need to recheck min_cores, etc. here */
+		} else {
+			/* memory is per node */
+			if (req_mem > avail_mem)
+				cpus = 0;
+		}
+	}
+
 	if (node_usage[node_i].gres_list)
 		gres_list = node_usage[node_i].gres_list;
 	else
@@ -624,31 +650,6 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	if (gres_cpus < cpus)
 		cpus = gres_cpus;
 
-	if (!(cr_type & CR_MEMORY))
-		return cpus;
-
-	/* Memory Check: check pn_min_memory to see if:
-	 *          - this node has enough memory (MEM_PER_CPU == 0)
-	 *          - there are enough free_cores (MEM_PER_CPU = 1)
-	 */
-	req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
-	avail_mem = select_node_record[node_i].real_memory;
-	if (!test_only)
-		avail_mem -= node_usage[node_i].alloc_memory;
-	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-		/* memory is per-cpu */
-		while ((cpus > 0) && ((req_mem * cpus) > avail_mem))
-			cpus--;
-		if ((cpus < job_ptr->details->ntasks_per_node) ||
-		    ((job_ptr->details->cpus_per_task > 1) &&
-		     (cpus < job_ptr->details->cpus_per_task)))
-			cpus = 0;
-		/* FIXME: We need to recheck min_cores, gres, etc. here */
-	} else {
-		/* memory is per node */
-		if (req_mem > avail_mem)
-			cpus = 0;
-	}
 	if (cpus == 0)
 		bit_nclear(core_map, core_start_bit, core_end_bit);
 
