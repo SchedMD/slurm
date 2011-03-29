@@ -47,7 +47,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/slurm_protocol_api.h"
 

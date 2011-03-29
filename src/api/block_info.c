@@ -55,7 +55,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"

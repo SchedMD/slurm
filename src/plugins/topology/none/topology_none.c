@@ -43,7 +43,7 @@
 #include <signal.h>
 #include <sys/types.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
 #include "src/common/xstring.h"

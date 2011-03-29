@@ -48,13 +48,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <slurm/slurm_errno.h>
-#include <slurm/slurm.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
+#include "slurm/slurm_errno.h"
+#include "slurm/slurm.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

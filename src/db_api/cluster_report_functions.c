@@ -41,8 +41,8 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurmdb_defs.h"
 #include "src/common/slurm_accounting_storage.h"

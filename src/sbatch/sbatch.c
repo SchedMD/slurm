@@ -50,7 +50,7 @@
 #include <sys/param.h>               /* MAXPATHLEN */
 #include <fcntl.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/env.h"
 #include "src/common/plugstack.h"

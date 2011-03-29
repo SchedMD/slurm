@@ -40,8 +40,8 @@
 #ifndef __SLURM_CONTROLLER_PREEMPT_H__
 #define __SLURM_CONTROLLER_PREEMPT_H__
 
-#include <slurm/slurm.h>
-#include <src/slurmctld/slurmctld.h>
+#include "slurm/slurm.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
 
 /*

@@ -44,7 +44,7 @@
 #endif
 
 #include <stdbool.h>
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 typedef struct slurm_mpi_context *slurm_mpi_context_t;
 typedef void mpi_plugin_client_state_t;

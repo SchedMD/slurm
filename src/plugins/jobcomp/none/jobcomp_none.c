@@ -48,7 +48,8 @@
 #endif
 
 #include <stdio.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_jobcomp.h"
 #include "src/slurmctld/slurmctld.h"

@@ -40,7 +40,7 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/slurm_accounting_storage.h"

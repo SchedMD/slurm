@@ -44,7 +44,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/api/step_io.h"
 

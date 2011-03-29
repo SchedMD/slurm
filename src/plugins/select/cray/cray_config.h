@@ -43,7 +43,7 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 typedef struct {
 	char *alps_dir;

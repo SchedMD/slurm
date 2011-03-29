@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/api/step_launch.h"
 

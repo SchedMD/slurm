@@ -41,7 +41,8 @@
 
 #include <time.h>
 #include <unistd.h>
-#include <slurm/slurm.h>
+
+#include "slurm/slurm.h"
 #include "src/common/bitstring.h"
 #include "src/slurmctld/slurmctld.h"
 

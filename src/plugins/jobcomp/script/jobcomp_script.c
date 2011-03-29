@@ -85,8 +85,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"

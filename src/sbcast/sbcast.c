@@ -47,10 +47,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <slurm/slurm_errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "slurm/slurm_errno.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"

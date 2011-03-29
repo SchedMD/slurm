@@ -75,7 +75,7 @@
 #  include <stdlib.h>
 #endif
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

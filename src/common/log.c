@@ -70,7 +70,6 @@
 #  include <stdlib.h>	/* for abort() */
 #endif
 
-#include <slurm/slurm_errno.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -78,6 +77,7 @@
 #include <sys/types.h>
 #include <sys/unistd.h>
 
+#include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/common/fd.h"
 #include "src/common/macros.h"

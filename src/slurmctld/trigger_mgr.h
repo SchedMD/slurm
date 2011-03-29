@@ -42,8 +42,8 @@
 
 #include <unistd.h>
 #include <sys/types.h>
-#include <src/common/slurm_protocol_defs.h>
-#include <src/slurmctld/slurmctld.h>
+#include "src/common/slurm_protocol_defs.h"
+#include "src/slurmctld/slurmctld.h"
 
 
 /* User RPC processing to set, get, clear, and pull triggers */

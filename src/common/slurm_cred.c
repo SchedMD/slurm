@@ -41,8 +41,6 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm_errno.h>
-
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -52,6 +50,7 @@
 #  include <pthread.h>
 #endif /* WITH_PTHREADS */
 
+#include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
 #include "src/common/gres.h"
 #include "src/common/io_hdr.h"

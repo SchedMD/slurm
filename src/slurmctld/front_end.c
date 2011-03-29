@@ -42,18 +42,18 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
-#include <src/common/list.h>
-#include <src/common/log.h>
-#include <src/common/node_conf.h>
-#include <src/common/read_config.h>
-#include <src/common/slurm_protocol_defs.h>
-#include <src/common/xstring.h>
-#include <src/slurmctld/front_end.h>
-#include <src/slurmctld/locks.h>
-#include <src/slurmctld/slurmctld.h>
-#include <src/slurmctld/state_save.h>
-#include <src/slurmctld/trigger_mgr.h>
+#include "slurm/slurm.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/node_conf.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xstring.h"
+#include "src/slurmctld/front_end.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 /* Change FRONT_END_STATE_VERSION value when changing the state save format */
 #define FRONT_END_STATE_VERSION      "VER001"

@@ -47,7 +47,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 /* for sendto and recvfrom commands */
 #define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0
@@ -81,9 +81,9 @@
 #define SLURM_GLOBAL_AUTH_KEY   0x0001
 
 #if MONGO_IMPLEMENTATION
-#  include <src/common/slurm_protocol_mongo_common.h>
+#  include "src/common/slurm_protocol_mongo_common.h"
 #else
-#  include <src/common/slurm_protocol_socket_common.h>
+#  include "src/common/slurm_protocol_socket_common.h"
 #endif
 
 #endif

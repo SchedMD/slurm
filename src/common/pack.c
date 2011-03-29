@@ -49,7 +49,8 @@
 #include <string.h>
 #include <time.h>
 #include <inttypes.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/pack.h"
 #include "src/common/macros.h"

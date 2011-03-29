@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/plugins/mpi/mpichgm/mpichgm.h"
 

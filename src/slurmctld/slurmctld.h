@@ -64,7 +64,7 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/checkpoint.h"

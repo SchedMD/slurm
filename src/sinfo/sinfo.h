@@ -62,7 +62,7 @@
 #  endif
 #endif  /* HAVE_INTTYPES_H */
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/hostlist.h"
 #include "src/common/list.h"

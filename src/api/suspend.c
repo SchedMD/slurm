@@ -41,7 +41,7 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 #include "src/common/slurm_protocol_api.h"
 
 static int _suspend_op (uint16_t op, uint32_t job_id);

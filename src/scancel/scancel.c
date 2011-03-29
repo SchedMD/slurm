@@ -57,7 +57,7 @@
 #  endif
 #endif  /* HAVE_INTTYPES_H */
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/log.h"
 #include "src/common/xstring.h"

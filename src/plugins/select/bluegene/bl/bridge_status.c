@@ -43,8 +43,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <slurm/slurm.h>
 
+#include "slurm/slurm.h"
 #include "../ba/block_allocator.h"
 #include "bridge_status.h"
 #include "../bg_status.h"

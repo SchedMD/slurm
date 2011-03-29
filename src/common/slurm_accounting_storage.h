@@ -45,8 +45,8 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/common/slurmdb_pack.h"
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include <sys/types.h>
 #include <pwd.h>
 

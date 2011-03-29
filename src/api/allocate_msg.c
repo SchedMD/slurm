@@ -50,7 +50,7 @@
 #include <signal.h>
 #include <pthread.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"

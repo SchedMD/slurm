@@ -53,8 +53,8 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

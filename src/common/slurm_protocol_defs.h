@@ -54,10 +54,10 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
-#include <slurm/slurm.h>
-#include <slurm/slurmdb.h>
 #include <sys/wait.h>
 
+#include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
 #include "src/common/job_options.h"
 #include "src/common/list.h"

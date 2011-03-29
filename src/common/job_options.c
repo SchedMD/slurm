@@ -41,13 +41,12 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm.h>
-#include <src/common/xassert.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xstring.h>
-#include <src/common/list.h>
-#include <src/common/pack.h>
-
+#include "slurm/slurm.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/list.h"
+#include "src/common/pack.h"
 #include "src/common/job_options.h"
 
 #define JOB_OPTIONS_PACK_TAG "job_options"

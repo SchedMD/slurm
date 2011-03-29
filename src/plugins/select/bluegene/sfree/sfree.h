@@ -53,7 +53,7 @@
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 #include "../bg_enums.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/log.h"

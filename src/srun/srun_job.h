@@ -45,7 +45,7 @@
 
 #include <netinet/in.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/eio.h"
 #include "src/common/cbuf.h"

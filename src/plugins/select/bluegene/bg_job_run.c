@@ -55,7 +55,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/list.h"
 #include "src/common/macros.h"

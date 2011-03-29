@@ -60,10 +60,10 @@
 #  include <stdint.h>
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
-
 #include <stdio.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/macros.h"
 #include "src/common/plugin.h"

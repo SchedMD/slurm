@@ -53,8 +53,9 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <slurm/slurm_errno.h>
+
 #include <math.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_priority.h"
 #include "src/common/xstring.h"

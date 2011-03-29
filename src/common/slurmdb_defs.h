@@ -38,7 +38,7 @@
 #ifndef _SLURMDB_DEFS_H
 #define _SLURMDB_DEFS_H
 
-#include <slurm/slurmdb.h>
+#include "slurm/slurmdb.h"
 
 /* Defined purge macros */
 #define SLURMDB_PURGE_GET_UNITS(_X) \

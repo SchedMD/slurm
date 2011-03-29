@@ -44,8 +44,8 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/list.h"
 #include "src/common/plugrack.h"
 #include "src/slurmctld/slurmctld.h"

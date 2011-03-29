@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/eio.h"
 #include "src/common/list.h"

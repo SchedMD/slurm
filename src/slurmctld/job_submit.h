@@ -39,7 +39,7 @@
 #ifndef _JOB_SUBMIT_H
 #define _JOB_SUBMIT_H
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 /*
  * Initialize the job submit plugin.

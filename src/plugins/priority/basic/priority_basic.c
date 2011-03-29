@@ -48,8 +48,9 @@
 #endif
 
 #include <stdio.h>
-#include <slurm/slurm_errno.h>
 #include <math.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_priority.h"
 

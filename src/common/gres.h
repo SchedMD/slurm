@@ -39,7 +39,7 @@
 #ifndef _GRES_H
 #define _GRES_H
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 #include "src/common/bitstring.h"
 #include "src/common/pack.h"
 

@@ -61,7 +61,7 @@
 /* #include "src/common/slurm_rlimits_info.h" */
 #include "src/common/parse_config.h"
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #define BUFFER_SIZE 4096
 

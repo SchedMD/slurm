@@ -58,7 +58,8 @@
 #define GPL_LICENSED 1
 #include <munge.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
+
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"

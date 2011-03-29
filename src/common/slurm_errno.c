@@ -53,7 +53,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"

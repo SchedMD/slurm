@@ -52,7 +52,7 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/pack.h"
 #include "src/common/list.h"

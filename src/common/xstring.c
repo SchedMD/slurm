@@ -59,7 +59,7 @@
 #include <ctype.h>
 #include <time.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/macros.h"
 #include "src/common/strlcpy.h"

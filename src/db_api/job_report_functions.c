@@ -42,10 +42,9 @@
 
 #include <stdlib.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#include <slurm/slurmdb.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"

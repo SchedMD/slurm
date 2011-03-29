@@ -51,7 +51,8 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/types.h>
-#include <slurm/slurm.h>
+
+#include "slurm/slurm.h"
 
 #include "src/common/hostlist.h"
 

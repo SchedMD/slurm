@@ -55,7 +55,8 @@
 
 #include <dirent.h>
 #include <sys/stat.h>
-#include <slurm/slurmdb.h>
+
+#include "slurm/slurmdb.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"

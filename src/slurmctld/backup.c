@@ -53,7 +53,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/daemonize.h"
 #include "src/common/log.h"

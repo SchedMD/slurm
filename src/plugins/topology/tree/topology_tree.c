@@ -45,7 +45,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/slurm_topology.h"

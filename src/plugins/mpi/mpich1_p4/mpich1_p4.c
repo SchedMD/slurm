@@ -47,7 +47,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"

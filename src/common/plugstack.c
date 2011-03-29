@@ -62,7 +62,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 /*#include "src/srun/srun_job.h"*/
 
-#include <slurm/spank.h>
+#include "slurm/spank.h"
 
 #define REQUIRED "required"
 #define OPTIONAL "optional"

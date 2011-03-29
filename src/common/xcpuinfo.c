@@ -53,8 +53,8 @@
 #include <string.h>
 #include <strings.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

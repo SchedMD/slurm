@@ -55,7 +55,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/hostlist.h"

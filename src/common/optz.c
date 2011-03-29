@@ -40,7 +40,8 @@
 #endif
 
 #include <string.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/optz.h"
 #include "src/common/xmalloc.h"

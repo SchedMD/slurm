@@ -58,7 +58,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/checkpoint.h"

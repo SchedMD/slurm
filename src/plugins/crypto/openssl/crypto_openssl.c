@@ -59,7 +59,8 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
+
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 

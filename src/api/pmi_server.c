@@ -32,7 +32,8 @@
 
 #include <pthread.h>
 #include <stdlib.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"

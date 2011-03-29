@@ -46,8 +46,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/hostlist.h"

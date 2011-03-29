@@ -39,8 +39,8 @@
 #ifndef __SLURM_CONTROLLER_TOPO_PLUGIN_API_H__
 #define __SLURM_CONTROLLER_TOPO_PLUGIN_API_H__
 
-#include <slurm/slurm.h>
-#include <src/slurmctld/slurmctld.h>
+#include "slurm/slurm.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*****************************************************************************\
  *  SWITCH topology data structures

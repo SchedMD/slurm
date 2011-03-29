@@ -49,8 +49,9 @@
 #endif
 
 #include <stdio.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/pack.h"
 #include "src/common/xassert.h"

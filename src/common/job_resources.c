@@ -38,7 +38,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/hostlist.h"
 #include "src/common/job_resources.h"

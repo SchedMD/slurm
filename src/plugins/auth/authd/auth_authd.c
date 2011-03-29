@@ -61,7 +61,7 @@
 #define UNIX_PATH_MAX 108  /* Cribbed from linux/un.h */
 #endif
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
 /*

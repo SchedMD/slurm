@@ -52,8 +52,9 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/slurmd/common/proctrack.h"
 

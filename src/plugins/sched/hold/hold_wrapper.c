@@ -42,7 +42,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/plugin.h"
 #include "src/common/log.h"

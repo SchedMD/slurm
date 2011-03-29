@@ -69,8 +69,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurmdb.h>
+#include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"

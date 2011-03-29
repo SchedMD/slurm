@@ -54,12 +54,12 @@
 #include <dlfcn.h>
 #include <pthread.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
 #include "src/common/macros.h"

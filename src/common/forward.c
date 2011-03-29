@@ -47,7 +47,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/forward.h"
 #include "src/common/xmalloc.h"

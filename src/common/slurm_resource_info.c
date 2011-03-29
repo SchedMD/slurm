@@ -45,7 +45,8 @@
 
 #include <ctype.h>
 #include <sys/types.h>
-#include <slurm/slurm.h>
+
+#include "slurm/slurm.h"
 
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"

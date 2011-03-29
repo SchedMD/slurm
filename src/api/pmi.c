@@ -90,9 +90,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <slurm/pmi.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/pmi.h"
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"

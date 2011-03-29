@@ -61,7 +61,7 @@
 #include <sys/un.h>
 #include <netdb.h> /* for gethostbyname */
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"

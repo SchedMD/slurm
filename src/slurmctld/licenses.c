@@ -39,9 +39,10 @@
 #include <ctype.h>
 #include <errno.h>
 #include <pthread.h>
-#include <slurm/slurm_errno.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/list.h"
 #include "src/common/log.h"

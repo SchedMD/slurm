@@ -52,8 +52,8 @@
 #include <sys/wait.h>
 #include <time.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/forward.h"
 #include "src/common/node_select.h"

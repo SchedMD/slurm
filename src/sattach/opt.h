@@ -38,7 +38,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"

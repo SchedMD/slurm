@@ -40,10 +40,10 @@
 
 #define _GNU_SOURCE
 #include <sched.h>
-
 #include <sys/types.h>
-#include <slurm/slurm_errno.h>
-#include <slurm/slurm.h>
+
+#include "slurm/slurm_errno.h"
+#include "slurm/slurm.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 

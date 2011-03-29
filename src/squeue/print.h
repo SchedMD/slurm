@@ -40,7 +40,7 @@
 #ifndef _SQUEUE_PRINT_H_
 #define _SQUEUE_PRINT_H_
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/list.h"
 

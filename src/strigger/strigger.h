@@ -44,9 +44,9 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm.h>
-#include <src/common/macros.h>
-#include <src/common/slurm_protocol_defs.h>
+#include "slurm/slurm.h"
+#include "src/common/macros.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdb_defs.h"
 
 struct strigger_parameters {

@@ -49,10 +49,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"

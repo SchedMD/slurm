@@ -69,8 +69,8 @@
 
 #include <munge.h>
 
+#include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
-#include <slurm/slurm_errno.h>
 
 #define MUNGE_ERRNO_OFFSET	1000
 

@@ -67,10 +67,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
 #include <sys/stat.h>
 
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"

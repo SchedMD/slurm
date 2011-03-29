@@ -47,8 +47,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <slurm/slurm_errno.h>
 
+#include "slurm/slurm_errno.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"

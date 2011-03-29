@@ -52,7 +52,7 @@
 #include "src/common/plugin.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #  if HAVE_UNISTD_H
 #    include <unistd.h>

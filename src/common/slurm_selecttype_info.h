@@ -42,7 +42,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 int parse_select_type_param(char *select_type_parameters, uint16_t *param);
 

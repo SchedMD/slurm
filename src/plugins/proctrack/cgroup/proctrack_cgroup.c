@@ -45,8 +45,8 @@
 #include <inttypes.h>
 #endif
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/slurmd/slurmd/slurmd.h"
 

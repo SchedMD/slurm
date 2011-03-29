@@ -38,7 +38,7 @@
 #ifndef _SLURMDB_PACK_H
 #define _SLURMDB_PACK_H
 
-#include <slurm/slurmdb.h>
+#include "slurm/slurmdb.h"
 #include "slurmdb_defs.h"
 #include "pack.h"
 #include "xmalloc.h"

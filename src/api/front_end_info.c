@@ -54,7 +54,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"

@@ -76,9 +76,8 @@
 #  endif
 #endif  /* HAVE_INTTYPES_H */
 
-#include <slurm/slurm.h>
-
-#include <slurm/slurmdb.h>
+#include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/jobacct_common.h"
 #include "src/common/parse_time.h"

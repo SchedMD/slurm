@@ -41,7 +41,7 @@
 #ifndef _SINFO_PRINT_H_
 #define _SINFO_PRINT_H_
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/list.h"
 #include "src/sinfo/sinfo.h"

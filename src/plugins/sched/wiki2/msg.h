@@ -68,7 +68,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"

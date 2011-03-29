@@ -75,7 +75,7 @@
 
 #include <sys/resource.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/checkpoint.h"
 #include "src/common/env.h"

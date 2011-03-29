@@ -29,9 +29,9 @@
 
 #include <sys/types.h>
 #include <unistd.h>
-#include <slurm/slurm.h>
 #include <sys/utsname.h>
 
+#include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 

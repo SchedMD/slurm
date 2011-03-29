@@ -59,8 +59,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <slurm/slurmdb.h>
-
 #if defined(HAVE_AIX)
 /* AIX defines a func_data macro which conflicts with func_data
  * variable names in the gtk.h headers */
@@ -69,6 +67,8 @@
 #else
 #  include <gtk/gtk.h>
 #endif
+
+#include "slurm/slurmdb.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"

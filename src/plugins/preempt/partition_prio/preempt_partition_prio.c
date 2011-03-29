@@ -39,7 +39,8 @@
 \*****************************************************************************/
 
 #include <stdio.h>
-#include <slurm/slurm_errno.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/list.h"

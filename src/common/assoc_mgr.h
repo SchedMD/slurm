@@ -49,8 +49,8 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #define ASSOC_MGR_CACHE_ASSOC 0x0001
 #define ASSOC_MGR_CACHE_QOS 0x0002

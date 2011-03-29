@@ -57,7 +57,7 @@
 #include <sys/types.h>
 #include <stdarg.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"

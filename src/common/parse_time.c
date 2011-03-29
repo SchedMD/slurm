@@ -52,7 +52,7 @@
 #endif
 #include <ctype.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 #include "src/common/macros.h"
 
 #define _RUN_STAND_ALONE 0

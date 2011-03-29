@@ -62,7 +62,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

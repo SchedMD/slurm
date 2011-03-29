@@ -76,7 +76,7 @@
 #  endif
 #endif  /* HAVE_INTTYPES_H */
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"

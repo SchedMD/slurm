@@ -38,7 +38,7 @@
 
 #include <stdio.h>
 #include <sys/time.h>
-#include <src/common/log.h>
+#include "src/common/log.h"
 
 /*
  * diff_tv_str - build a string showing the time difference between two times

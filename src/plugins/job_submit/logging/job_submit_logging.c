@@ -63,8 +63,9 @@
 
 #include <stdio.h>
 
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/slurm_xlator.h"
 #include "src/slurmctld/slurmctld.h"
 

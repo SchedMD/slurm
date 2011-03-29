@@ -39,7 +39,7 @@
 #ifndef _SPRIO_PRINT_H_
 #define _SPRIO_PRINT_H_
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/list.h"
 

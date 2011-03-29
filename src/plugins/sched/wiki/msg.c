@@ -38,10 +38,10 @@
 \*****************************************************************************/
 
 #include "slurm/slurm.h"
-#include <src/common/uid.h>
-#include <src/slurmctld/locks.h>
-#include <src/plugins/sched/wiki/crypto.h>
-#include <src/plugins/sched/wiki/msg.h>
+#include "src/common/uid.h"
+#include "src/slurmctld/locks.h"
+#include "src/plugins/sched/wiki/crypto.h"
+#include "src/plugins/sched/wiki/msg.h"
 
 #define _DEBUG 0
 

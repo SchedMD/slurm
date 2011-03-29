@@ -44,7 +44,7 @@
 #  include "config.h"
 #endif
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #if HAVE_SYS_TYPES_H
 #  include <sys/types.h>

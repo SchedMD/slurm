@@ -39,12 +39,10 @@
 #  include <string.h>
 #endif                /* HAVE_CONFIG_H */
 
-
-#include <slurm/slurm.h>
-
 #include <stdlib.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_step_layout.h"
 #include "src/common/log.h"

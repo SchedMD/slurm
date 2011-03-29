@@ -54,9 +54,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
-
 #include <libcr.h>
-#include <slurm/slurm.h>
+
+#include "slurm/slurm.h"
 
 #include "src/common/fd.h"
 #include "src/common/log.h"

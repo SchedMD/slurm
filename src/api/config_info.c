@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <slurm/slurm.h>
+#include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"

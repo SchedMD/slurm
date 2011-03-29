@@ -51,7 +51,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-#include <slurm/slurm_errno.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/jobacct_common.h"

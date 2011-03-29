@@ -39,9 +39,10 @@
 #ifndef __PROC_TRACK_H__
 #define __PROC_TRACK_H__
 
-#include <slurm/slurm.h>
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include <stdbool.h>
+
+#include "slurm/slurm.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
  * Initialize the process tracking plugin.

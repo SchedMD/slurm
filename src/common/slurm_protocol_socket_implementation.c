@@ -58,7 +58,6 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/param.h>
-#include <slurm/slurm_errno.h>
 #include <stdlib.h>
 
 #if HAVE_SYS_SOCKET_H
@@ -69,6 +68,7 @@
 #  endif
 #endif
 
+#include "slurm/slurm_errno.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_defs.h"
