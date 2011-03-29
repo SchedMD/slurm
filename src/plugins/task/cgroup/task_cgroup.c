@@ -1,12 +1,9 @@
 /*****************************************************************************\
- *  task_none.c - Library for task pre-launch and post_termination functions
- *	with no actions
+ *  task_cgroup.c - Library for task pre-launch and post_termination functions
+ *	            for containment using linux cgroup subsystems
  *****************************************************************************
- *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2009 CEA/DAM/DIF
+ *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -49,6 +46,13 @@
 #include "src/common/slurm_xlator.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#include "src/common/xcgroup_read_config.h"
+#include "src/common/xcgroup.h"
+
+#include "task_cgroup_cpuset.h"
+#include "task_cgroup_memory.h"
+//#include "task_cgroup_devices.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -74,11 +78,17 @@
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum version for their plugins as this API matures.
+ * minimum versions for their plugins as this API matures.
  */
-const char plugin_name[]        = "task NONE plugin";
-const char plugin_type[]        = "task/none";
+const char plugin_name[]        = "Tasks containment using linux cgroup";
+const char plugin_type[]        = "task/cgroup";
 const uint32_t plugin_version   = 100;
+
+static bool use_cpuset  = false;
+static bool use_memory  = false;
+static bool use_devices = false;
+
+static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -86,7 +96,35 @@ const uint32_t plugin_version   = 100;
  */
 extern int init (void)
 {
-	verbose("%s loaded", plugin_name);
+
+	/* read cgroup configuration */
+	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
+		return SLURM_ERROR;
+
+	/* enable subsystems based on conf */
+	if (slurm_cgroup_conf.constrain_cores) {
+		use_cpuset = true;
+		task_cgroup_cpuset_init(&slurm_cgroup_conf);
+		debug("%s: now constraining jobs allocated cores",
+		      plugin_type);
+	}
+
+	if (slurm_cgroup_conf.constrain_ram_space ||
+	     slurm_cgroup_conf.constrain_swap_space) {
+		use_memory = true;
+		task_cgroup_memory_init(&slurm_cgroup_conf);
+		debug("%s: now constraining jobs allocated memory",
+		      plugin_type);
+	}
+
+	if (slurm_cgroup_conf.constrain_devices) {
+		use_devices = true;
+		/* here we should initialize the devices subsystem */
+		debug("%s: now constraining jobs allocated devices",
+		      plugin_type);
+	}
+
+	verbose("%s: loaded", plugin_type);
 	return SLURM_SUCCESS;
 }
 
@@ -96,6 +134,20 @@ extern int init (void)
  */
 extern int fini (void)
 {
+
+	if (use_cpuset) {
+		task_cgroup_cpuset_fini(&slurm_cgroup_conf);
+	}
+	if (use_memory) {
+		task_cgroup_memory_fini(&slurm_cgroup_conf);
+	}
+	if (use_devices) {
+		;
+	}
+
+	/* unload configuration */
+	free_slurm_cgroup_conf(&slurm_cgroup_conf);
+
 	return SLURM_SUCCESS;
 }
 
@@ -105,7 +157,6 @@ extern int fini (void)
 extern int task_slurmd_batch_request (uint32_t job_id,
 				      batch_job_launch_msg_t *req)
 {
-	debug("task_slurmd_batch_request: %u", job_id);
 	return SLURM_SUCCESS;
 }
 
@@ -116,8 +167,6 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 				       launch_tasks_request_msg_t *req,
 				       uint32_t node_id)
 {
-	debug("task_slurmd_launch_request: %u.%u %u",
-	      job_id, req->job_step_id, node_id);
 	return SLURM_SUCCESS;
 }
 
@@ -128,7 +177,6 @@ extern int task_slurmd_reserve_resources (uint32_t job_id,
 					  launch_tasks_request_msg_t *req,
 					  uint32_t node_id)
 {
-	debug("task_slurmd_reserve_resources: %u %u", job_id, node_id);
 	return SLURM_SUCCESS;
 }
 
@@ -137,7 +185,6 @@ extern int task_slurmd_reserve_resources (uint32_t job_id,
  */
 extern int task_slurmd_suspend_job (uint32_t job_id)
 {
-	debug("task_slurmd_suspend_job: %u", job_id);
 	return SLURM_SUCCESS;
 }
 
@@ -146,7 +193,6 @@ extern int task_slurmd_suspend_job (uint32_t job_id)
  */
 extern int task_slurmd_resume_job (uint32_t job_id)
 {
-	debug("task_slurmd_resume_job: %u", job_id);
 	return SLURM_SUCCESS;
 }
 
@@ -155,7 +201,6 @@ extern int task_slurmd_resume_job (uint32_t job_id)
  */
 extern int task_slurmd_release_resources (uint32_t job_id)
 {
-	debug("task_slurmd_release_resources: %u", job_id);
 	return SLURM_SUCCESS;
 }
 
@@ -166,6 +211,21 @@ extern int task_slurmd_release_resources (uint32_t job_id)
  */
 extern int task_pre_setuid (slurmd_job_t *job)
 {
+
+	if (use_cpuset) {
+		/* we create the cpuset container as we are still root */
+		task_cgroup_cpuset_create(job);
+	}
+
+	if (use_memory) {
+		/* we create the memory container as we are still root */
+		task_cgroup_memory_create(job);
+	}
+
+	if (use_devices) {
+		/* here we should create the devices container as we are root */
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -176,8 +236,25 @@ extern int task_pre_setuid (slurmd_job_t *job)
  */
 extern int task_pre_launch (slurmd_job_t *job)
 {
-	debug("task_pre_launch: %u.%u, task %d",
-		job->jobid, job->stepid, job->envtp->procid);
+
+	if (use_cpuset) {
+		/* attach the task ? not necessary but in case of future mods */
+		task_cgroup_cpuset_attach_task(job);
+
+		/* set affinity if requested */
+		if (slurm_cgroup_conf.task_affinity)
+			task_cgroup_cpuset_set_task_affinity(job);
+	}
+
+	if (use_memory) {
+		/* attach the task ? not necessary but in case of future mods */
+		task_cgroup_memory_attach_task(job);
+	}
+
+	if (use_devices) {
+		;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -188,8 +265,6 @@ extern int task_pre_launch (slurmd_job_t *job)
  */
 extern int task_post_term (slurmd_job_t *job)
 {
-	debug("task_post_term: %u.%u, task %d",
-		job->jobid, job->stepid, job->envtp->procid);
 	return SLURM_SUCCESS;
 }
 
@@ -199,5 +274,6 @@ extern int task_post_term (slurmd_job_t *job)
  */
 extern int task_post_step (slurmd_job_t *job)
 {
+	fini();
 	return SLURM_SUCCESS;
 }

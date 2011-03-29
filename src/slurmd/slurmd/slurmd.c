@@ -85,6 +85,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
 #include "src/slurmd/common/task_plugin.h"
+#include "src/common/xcpuinfo.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
@@ -767,7 +768,7 @@ _read_config(bool reconfig)
 
 	_update_logging();
 	_update_nice();
-		
+
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
 		    &conf->actual_sockets,
@@ -776,7 +777,7 @@ _read_config(bool reconfig)
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
 
-	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) || 
+	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) ||
 	    ((cf->fast_schedule == 1) &&
 	     (conf->actual_cpus < conf->conf_cpus))) {
 		conf->cpus    = conf->actual_cpus;

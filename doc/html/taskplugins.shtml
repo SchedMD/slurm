@@ -175,8 +175,21 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
+<p class="commandline">int task_post_step (slurmd_job_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_post_step() is called
+after termination of all the tasks of the job step.
+Executed by the <b>slurmstepd</b> program as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)
+pointer to the job which has terminated.
+See <b>src/slurmd/slurmstepd/slurmstepd_job.h</b> for the
+data structure definition.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
 <h2>Versioning</h2>
-<p> This document describes version 1 of the SLURM Task Plugin API.
+<p> This document describes version 2 of the SLURM Task Plugin API.
 Future releases of SLURM may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 

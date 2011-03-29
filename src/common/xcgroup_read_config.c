@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_config.c - functions for reading cgroup.conf
+ *  xcgroup_read_config.c - functions for reading cgroup.conf
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
@@ -52,58 +52,54 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "read_config.h"
+#include "xcgroup_read_config.h"
 
 slurm_cgroup_conf_t *slurm_cgroup_conf = NULL;
 
 /* Local functions */
-static void _clear_slurm_cgroup_conf(void);
+static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
 static char * _get_conf_path(void);
 
 /*
  * free_slurm_cgroup_conf - free storage associated with the global variable
  *	slurm_cgroup_conf
  */
-extern void free_slurm_cgroup_conf(void)
+extern void free_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
-	_clear_slurm_cgroup_conf();
-	xfree(slurm_cgroup_conf);
+	_clear_slurm_cgroup_conf(slurm_cgroup_conf);
 }
 
-static void _clear_slurm_cgroup_conf(void)
+static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	if (slurm_cgroup_conf) {
 		slurm_cgroup_conf->cgroup_automount = false ;
-		xfree(slurm_cgroup_conf->cgroup_mount_opts);
+		xfree(slurm_cgroup_conf->cgroup_subsystems);
 		xfree(slurm_cgroup_conf->cgroup_release_agent);
-		xfree(slurm_cgroup_conf->user_cgroup_params);
-		xfree(slurm_cgroup_conf->job_cgroup_params);
-		xfree(slurm_cgroup_conf->jobstep_cgroup_params);
+		slurm_cgroup_conf->constrain_cores = false ;
+		slurm_cgroup_conf->task_affinity = false ;
 		slurm_cgroup_conf->constrain_ram_space = false ;
 		slurm_cgroup_conf->allowed_ram_space = 100 ;
 		slurm_cgroup_conf->constrain_swap_space = false ;
 		slurm_cgroup_conf->allowed_swap_space = 0 ;
-		slurm_cgroup_conf->constrain_cores = false ;
 		slurm_cgroup_conf->memlimit_enforcement = 0 ;
 		slurm_cgroup_conf->memlimit_threshold = 100 ;
+		slurm_cgroup_conf->constrain_devices = false ;
 	}
 }
 
 /*
  * read_slurm_cgroup_conf - load the Slurm cgroup configuration from the
- *	cgroup.conf file. Store result into global variable slurm_cgroup_conf.
- *	This function can be called more than once.
+ *	cgroup.conf file.
  * RET SLURM_SUCCESS if no error, otherwise an error code
  */
-extern int read_slurm_cgroup_conf(void)
+extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN},
-		{"CgroupMountOptions", S_P_STRING},
-		{"CgroupReleaseAgent", S_P_STRING},
-		{"UserCgroupParams", S_P_STRING},
-		{"JobCgroupParams", S_P_STRING},
-		{"JobStepCgroupParams", S_P_STRING},
+		{"CgroupSubsystems", S_P_STRING},
+		{"CgroupReleaseAgentDir", S_P_STRING},
+		{"ConstrainCores", S_P_BOOLEAN},
+		{"TaskAffinity", S_P_BOOLEAN},
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_UINT32},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
@@ -111,6 +107,7 @@ extern int read_slurm_cgroup_conf(void)
 		{"ConstrainCores", S_P_BOOLEAN},
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
 		{"MemoryLimitThreshold", S_P_UINT32},
+		{"ConstrainDevices", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
@@ -118,11 +115,11 @@ extern int read_slurm_cgroup_conf(void)
 
 	/* Set initial values */
 	if (slurm_cgroup_conf == NULL) {
-		slurm_cgroup_conf = xmalloc(sizeof(slurm_cgroup_conf_t));
+		return SLURM_ERROR;
 	}
-	_clear_slurm_cgroup_conf();
+	_clear_slurm_cgroup_conf(slurm_cgroup_conf);
 
-	/* Get the slurmdbd.conf path and validate the file */
+	/* Get the cgroup.conf path and validate the file */
 	conf_path = _get_conf_path();
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		info("No cgroup.conf file (%s)", conf_path);
@@ -138,23 +135,23 @@ extern int read_slurm_cgroup_conf(void)
 
 		/* cgroup initialisation parameters */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->cgroup_automount,
-				     "CgroupAutomount", tbl))
+				   "CgroupAutomount", tbl))
 			slurm_cgroup_conf->cgroup_automount = false;
-		s_p_get_string(&slurm_cgroup_conf->cgroup_mount_opts,
-			       "CgroupMountOptions", tbl);
+		s_p_get_string(&slurm_cgroup_conf->cgroup_subsystems,
+			       "CgroupSubsystems", tbl);
 		s_p_get_string(&slurm_cgroup_conf->cgroup_release_agent,
-			       "CgroupReleaseAgent", tbl);
-		if ( ! slurm_cgroup_conf->cgroup_release_agent )
+			       "CgroupReleaseAgentDir", tbl);
+		if (! slurm_cgroup_conf->cgroup_release_agent)
 			slurm_cgroup_conf->cgroup_release_agent =
-				xstrdup("memory,cpuset");
+				xstrdup("/etc/slurm/cgroup");
 
-		/* job and jobsteps cgroup parameters */
-		s_p_get_string(&slurm_cgroup_conf->user_cgroup_params,
-			       "UserCgroupParams", tbl);
-		s_p_get_string(&slurm_cgroup_conf->job_cgroup_params,
-			       "JobCgroupParams", tbl);
-		s_p_get_string(&slurm_cgroup_conf->jobstep_cgroup_params,
-			       "JobStepCgroupParams", tbl);
+		/* Cores constraints related conf items */
+		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_cores,
+				     "ConstrainCores", tbl))
+			slurm_cgroup_conf->constrain_cores = false;
+		if (!s_p_get_boolean(&slurm_cgroup_conf->task_affinity,
+				     "TaskAffinity", tbl))
+			slurm_cgroup_conf->task_affinity = false;
 
 		/* RAM and Swap constraints related conf items */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_ram_space,
@@ -170,11 +167,6 @@ extern int read_slurm_cgroup_conf(void)
 				    "AllowedSwapSpace", tbl))
 			slurm_cgroup_conf->allowed_swap_space = 0;
 
-		/* Cores constraints */
-		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_cores,
-				     "ConstrainCores", tbl))
-			slurm_cgroup_conf->constrain_cores = false;
-
 		/* Memory limits */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->memlimit_enforcement,
 				     "MemoryLimitEnforcement", tbl))
@@ -182,6 +174,11 @@ extern int read_slurm_cgroup_conf(void)
 		if (!s_p_get_uint32(&slurm_cgroup_conf->memlimit_threshold,
 				    "MemoryLimitThreshold", tbl))
 			slurm_cgroup_conf->memlimit_threshold = 0;
+
+		/* Devices constraint related conf items */
+		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_devices,
+				     "ConstrainDevices", tbl))
+			slurm_cgroup_conf->constrain_devices = false;
 
 		s_p_hashtbl_destroy(tbl);
 	}

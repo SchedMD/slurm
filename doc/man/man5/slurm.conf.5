@@ -1080,7 +1080,7 @@ Acceptable values at present include:
 which uses an AIX kernel extension and is the default for AIX systems
 .TP
 \fBproctrack/cgroup\fR
-which uses linux cgroups to constrain and track processes. 
+which uses linux cgroups to constrain and track processes.
 NOTE: see "man cgroup.conf" for configuration details
 .TP
 \fBproctrack/linuxproc\fR
@@ -1785,12 +1785,23 @@ See \fBTaskProlog\fR for execution order details.
 Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific
 processors).
-Acceptable values include
-"task/none" for systems requiring no special handling and
+Acceptable values include :
+.RS
+.TP 20
+\fBtask/none\fR
+for systems requiring no special handling
+.TP
+\fBtask/cgroup\fR
+to enable resource containment using linux control cgroups.
+NOTE: see "man cgroup.conf" for configuration details
+.TP
+\fBtask/affinity\fR
 "task/affinity" to enable the \-\-cpu_bind and/or \-\-mem_bind
 srun options.
+
+.RE
 The default value is "task/none".
-If you "task/affinity" and encounter problems, it may be due to
+If you use "task/affinity" and encounter problems, it may be due to
 the variety of system calls used to implement task affinity on
 different operating systems.
 If that is the case, you may want to use Portable Linux

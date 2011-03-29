@@ -1,3 +1,3 @@
 # Makefile for task plugins
 
-SUBDIRS = affinity none
+SUBDIRS = affinity none cgroup

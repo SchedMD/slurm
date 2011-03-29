@@ -434,3 +434,11 @@ extern int task_post_term (slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * task_post_step() is called after termination of the step
+ * (all the task)
+ */
+extern int task_post_step (slurmd_job_t *job)
+{
+	return SLURM_SUCCESS;
+}

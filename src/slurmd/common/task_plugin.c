@@ -63,6 +63,7 @@ typedef struct slurmd_task_ops {
 	int	(*pre_setuid)		    (slurmd_job_t *job);
 	int	(*pre_launch)		    (slurmd_job_t *job);
 	int	(*post_term)		    (slurmd_job_t *job);
+	int	(*post_step)		    (slurmd_job_t *job);
 } slurmd_task_ops_t;
 
 
@@ -93,6 +94,7 @@ _slurmd_task_get_ops(slurmd_task_context_t *c)
 		"task_pre_setuid",
 		"task_pre_launch",
 		"task_post_term",
+		"task_post_step",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -362,4 +364,17 @@ extern int post_term(slurmd_job_t *job)
 		return SLURM_ERROR;
 
 	return (*(g_task_context->ops.post_term))(job);
+}
+
+/*
+ * Note that a step has terminated.
+ *
+ * RET - slurm error code
+ */
+extern int post_step(slurmd_job_t *job)
+{
+	if (slurmd_task_init())
+		return SLURM_ERROR;
+
+	return (*(g_task_context->ops.post_step))(job);
 }

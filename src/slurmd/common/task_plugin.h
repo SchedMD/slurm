@@ -130,4 +130,11 @@ extern int pre_launch(slurmd_job_t *job);
  */
 extern int post_term(slurmd_job_t *job);
 
+/*
+ * Note that a step has terminated.
+ *
+ * RET - slurm error code
+ */
+extern int post_step(slurmd_job_t *job);
+
 #endif /* _SLURMD_TASK_PLUGIN_H_ */

@@ -406,9 +406,12 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
       install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
    fi
 %endif
-install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
-install -D -m755 etc/cgroup.release_agent ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_agent
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
+install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
+install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_common.example
+install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_freezer
+install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_cpuset
+install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_memory
 install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurmdbd.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
 install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
@@ -499,6 +502,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
+   echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
 
 LIST=./pam.files
 touch $LIST
@@ -550,9 +555,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
-%config %{_sysconfdir}/cgroup.conf.example
-%config %{_sysconfdir}/cgroup.release_agent
 %config %{_sysconfdir}/slurm.conf.example
+%config %{_sysconfdir}/cgroup.conf.example
+%config %{_sysconfdir}/cgroup.release_common.example
+%config (noreplace) %{_sysconfdir}/cgroup/release_freezer
+%config (noreplace) %{_sysconfdir}/cgroup/release_cpuset
+%config (noreplace) %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
 %if %{slurm_with blcr}

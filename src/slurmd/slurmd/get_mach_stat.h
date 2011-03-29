@@ -51,11 +51,6 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
-extern int get_procs(uint16_t *procs);
-extern int get_cpuinfo(uint16_t numproc,
-		       uint16_t *sockets, uint16_t *cores, uint16_t *threads,
-		       uint16_t *block_map_size,
-		       uint16_t **block_map, uint16_t **block_map_inv);
 extern int get_mach_name(char *node_name);
 extern int get_memory(uint32_t *real_memory);
 extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);

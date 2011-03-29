@@ -455,11 +455,11 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/multifactor/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
+		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/rms/Makefile
 		 src/plugins/proctrack/sgi_job/Makefile
-		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/lua/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
@@ -494,6 +494,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/openmpi/Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
+		 src/plugins/task/cgroup/Makefile
 		 src/plugins/task/none/Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/3d_torus/Makefile

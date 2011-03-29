@@ -1,13 +1,14 @@
-.TH "cgroup.conf" "5" "February 2010" "cgroup.conf 2.2" "Slurm configuration file"
+.TH "cgroup.conf" "5" "December 2010" "cgroup.conf 2.2" \
+"Slurm cgroup configuration file"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
 
 .SH "DESCRIPTION"
-\fB/etc/cgroup.conf\fP is an ASCII file which defines parameters used by 
-Slurm's proctrack/cgroup plugin in support of Linux cgroups being used as a
-job container. The file will always be located in the same directory as the 
-\fBslurm.conf\fP file.
+
+\fB/etc/slurm/cgroup.conf\fP is an ASCII file which defines parameters used by 
+Slurm's Linux cgroup related plugins. The file will always be located in 
+the same directory as the \fBslurm.conf\fP file.
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
@@ -17,17 +18,89 @@ Changes to the configuration file take effect upon restart of
 SLURM daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
-Slurm cgroup proctrack plugin creates a hierarchical set of
+Two cgroup plugins are currently available in SLURM. The first
+one is a proctrack plugin, the second one a task plugin.
+
+.LP
+The following cgroup.conf parameters are defined to control the general behavior
+of Slurm cgroup plugins.
+
+.TP
+\fBCgroupAutomount\fR=<yes|no>
+Slurm cgroup plugins require valid and functional cgroup subsystem to be mounted
+under /cgroup/<subsystem_name>.
+When launched, plugins check their subsystem availability. If not available, 
+the plugin launch fails unless CgroupAutomount is set to yes. In that case, the 
+plugin will first try to mount the required subsystems.
+
+.TP
+\fBCgroupReleaseAgentDir\fR=<path_to_release_agent_directory>
+Used to tune the cgroup system behavior. This parameter identifies the location 
+of the directory containing Slurm cgroup release_agent files. A release_agent file
+is required for each mounted subsystem. The release_agent file name must have the
+following format: release_<subsystem_name>.  For instance, the release_agent file
+for the cpuset subsystem must be named release_cpuset.  See also CLEANUP OF
+CGROUPS below.
+
+.SH "PROCTRACK/CGROUP PLUGIN"
+
+Slurm \fBproctrack/cgroup\fP plugin is used to track processes using the
+freezer control group subsystem. It creates a hierarchical set of
 directories for each step, putting the step tasks into the leaf.
+.LP
 This directory structure is like the following:
 .br 
-/dev/cgroup/slurm/uid_%uid/job_%jobid/step_%stepid
+/cgroup/freezer/uid_%uid/job_%jobid/step_%stepid
 .LP
-Slurm cgroup proctrack plugin can constrain cores, RAM and swap space for 
-jobs and set a variety of default job and job step parameters for cgroups.
-.LP
-The configuration parameters available include:
+Slurm cgroup proctrack plugin is enabled with the following parameter
+in slurm.conf:
+.br 
+ProctrackType=proctrack/cgroup
 
+.LP
+No particular cgroup.conf parameter is defined to control the behavior
+of this particular plugin.
+
+
+.SH "TASK/CGROUP PLUGIN"
+
+.LP
+Slurm \fBtask/cgroup\fP plugin is used to enforce allocated resources 
+constraints, thus avoiding tasks to use unallocated ressources. It currently
+only uses cpuset subsystem but could use memory and devices subsystems in a 
+near future too.
+
+.LP
+It creates a hierarchical set of directories for each task and subsystem.
+The directory structure is like the following:
+.br 
+/cgroup/%subsys/uid_%uid/job_%jobid/step_%stepid/task_%taskid
+
+.LP
+Slurm cgroup task plugin is enabled with the following parameter
+in slurm.conf:
+.br
+TaskPlugin=task/cgroup
+
+.LP
+The following cgroup.conf parameters are defined to control the behavior
+of this particular plugin:
+
+.TP
+\fBConstrainCores\fR=<yes|no>
+If configured to "yes" then constrain allowed cores to the subset of 
+allocated resources. It uses the cpuset subsystem.
+The default value is "no".
+.TP
+\fBTaskAffinity\fR=<yes|no>
+If configured to "yes" then set a default task affinity to bind each step 
+task to a subset of the allocated cores using \fBsched_setaffinity\fP.
+The default value is "no".
+
+.LP
+The following cgroup.conf parameters could be defined to control the behavior
+of this particular plugin in a next version where memory and devices support
+would be added :
 
 .TP
 \fBAllowedRAMSpace\fR=<number>
@@ -46,50 +119,22 @@ will be written to standard error.
 Also see \fBConstrainSwapSpace\fR.
 
 .TP
-\fBCgroupAutomount\fR=<yes|no>
-Slurm cgroup plugins require a valid and functional cgroup system mounted on 
-/dev/cgroup. When launched, plugins check cgroup availability. If cgroup is 
-not available, the plugin launch fails unless CgroupAutomount is set to yes. 
-In that case, the plugin will first try to mount the cgroup system.
-
-.TP
-\fBCgroupMountOptions\fR=<options>
-Used to tune the cgroup system behavior.
-
-.TP
-\fBCgroupReleaseAgent\fR=<path_to_program>
-Used to tune the cgroup system behavior.
-
-.TP
-\fBConstrainCores\fR=<yes|no>
-If configured to "yes" then constrain allowed cores to the subset of 
-allocated resources.
-The default value is "no".
-
-.TP
 \fBConstrainRAMSpace\fR=<yes|no>
-If configured to "yes" then constraing the job's RAM usage.
+If configured to "yes" then constrain the job's RAM usage.
 The default value is "no".
 Also see \fBAllowedRAMSpace\fR.
 
 .TP
 \fBConstrainSwapSpace\fR=<yes|no>
-If configured to "yes" then constraing the job's swap space usage.
+If configured to "yes" then constrain the job's swap space usage.
 The default value is "no".
 Also see \fBAllowedSwapSpace\fR.
 
 .TP
-\fBJobCgroupParams\fR=<options>
-Used to tune job cgroup. The format of the parameter is the following:
-"a=b c=d e=f" where a,c,d corresponds to files under the cgroup 
-directory and b,d,f the values to write in these files.
-
-.TP
-\fBJobStepCgroupParams\fR=<options>
-Used to tune job step cgroup. The format of the parameter is the following:
-"a=b c=d e=f" where a,c,d corresponds to files under the cgroup 
-directory and b,d,f the values to write in these files.
-
+\fBConstrainDevices\fR=<yes|no>
+If configured to "yes" then constrain the job's allowed devices based on GRES
+allocated resources. It uses the devices subsystem for that.
+The default value is "no".
 
 .SH "EXAMPLE"
 .LP
@@ -102,41 +147,75 @@ directory and b,d,f the values to write in these files.
 .br
 CgroupAutomount=yes
 .br
-CgroupMountOptions="memory,cpuset"
-.br
-CgroupReleaseAgent="/etc/slurm/cgroup.release_agent"
-.br
-JobCgroupParams="memory.swappiness=30"
-.br
-JobStepCgroupParams=""
-.br
-#
-.br
-# Constrain RAM at 100% of allocation and 
-.br
-# Total space (RAM + swap) at 110% of allocation
-.br
-#
-.br
-ConstrainRAMSpace=yes
-.br
-AllowedRAMSpace=100
-.br
-ConstrainSwapSpace=yes
-.br
-AllowedSwapSpace=10
+CgroupReleaseAgentDir="/etc/slurm/cgroup"
 .br
 ConstrainCores=yes
+.br
+#
 
 .SH "NOTES"
-Proctrack/cgroup is not compatible with the task/affinity plugin configured
-to use cpusets, although this may be addressed in the future.
 .LP
 Only one instance of a cgroup subsystem is valid at a time in the kernel.
 If you try to mount another cgroup hierarchy that uses the same cpuset 
 subsystem it will fail.
 However you can mount another cgroup hierarchy for a different cpuset 
 subsystem.
+
+.SH CLEANUP OF CGROUPS
+.LP
+To allow cgroups to be removed automatically when they are no longer in use
+the notify_on_release flag is set in each cgroup when the cgroup is
+instantiated. The release_agent file for each subsystem is set up when the
+subsystem is mounted.  The name of each release_agent file is 
+release_<subsystem name>. The directory is specified via the 
+CgroupReleaseAgentDir parameter in cgroup.conf. A simple release agent 
+mechanism to remove slurm cgroups when they become empty may be set up by 
+creating the release agent files for each required subsystem as symbolic 
+links to a common release agent script, as shown in the example below:
+
+[sulu] (slurm) etc> cat cgroup.conf | grep CgroupReleaseAgentDir
+.br
+CgroupReleaseAgentDir="/etc/slurm/cgroup"
+.br
+
+[sulu] (slurm) etc> ls -al /etc/slurm/cgroup
+.br
+total 12
+.br
+drwxr-xr-x 2 root root 4096 2010-04-23 14:55 .
+.br
+drwxr-xr-x 4 root root 4096 2010-07-22 14:48 ..
+.br
+-rwxrwxrwx 1 root root  234 2010-04-23 14:52 release_common
+.br
+lrwxrwxrwx 1 root root   32 2010-04-23 11:04 release_cpuset -> /etc/slurm/cgroup/release_common
+.br
+lrwxrwxrwx 1 root root   32 2010-04-23 11:03 release_freezer -> /etc/slurm/cgroup/release_common
+
+[sulu] (slurm) etc> cat /etc/slurm/cgroup/release_common
+.br
+#!/bin/bash
+.br
+base_path=/cgroup
+.br
+progname=$(basename $0)
+.br
+subsystem=${progname##*_}
+.br
+.br
+rmcg=${base_path}/${subsystem}$@
+.br
+uidcg=${rmcg%/job*}
+.br
+if [[ -d ${base_path}/${subsystem} ]]
+.br
+then
+.br
+     flock -x ${uidcg} -c "rmdir ${rmcg}"
+.br
+fi
+.br
+[sulu] (slurm) etc>
 
 .SH "COPYING"
 Copyright (C) 2010 Lawrence Livermore National Security.

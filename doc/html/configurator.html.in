@@ -585,7 +585,7 @@ with a job step.<BR>
 Select one value for <B>ProctrackType</B>:<BR>
 <input type="radio" name="proctrack_type" value="aix"> <B>AIX</B>: Use AIX kernel
 extension, recommended for AIX systems<BR>
-<input type="radio" name="proctrack_type" value="cgroup"> <B>Cgroup</B>: Use
+<input type="radio" name="proctrack_type" value="cgroup"> <B>Cgroup</B>:  Use
 Linux <i>cgroups</i> to create a job container and track processes.
 Build a <i>cgroup.conf</i> file as well<BR>
 <input type="radio" name="proctrack_type" value="pgid" checked> <B>Pgid</B>: Use Unix
@@ -662,7 +662,10 @@ Select one value for <B>TaskPlugin</B>:<BR>
 <input type="radio" name="task_plugin" value="none" checked> <B>None</B>: No task launch actions<BR>
 <input type="radio" name="task_plugin" value="affinity"> <B>Affinity</B>:
 CPU affinity support
-(see srun man pages for the --cpu_bind, --mem_bind, and -E options)
+(see srun man pages for the --cpu_bind, --mem_bind, and -E options)<BR>
+<input type="radio" name="task_plugin" value="cgroup"> <B>Cgroup</B>:
+Allocated resources constraints enforcement using Linux Control Groups
+(see cgroup.conf man page)
 <DL><DL>
 <DT><B>TaskPluginParam</B> (As used by <I>TaskPlugin=Affinity</I> only):
 <DT><input type="radio" name="task_plugin_param" value="Cpusets">

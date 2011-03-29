@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
     jobs with more than 65,536 tasks. Patch from Hongjia Cao, NUDT.
  -- Set slurmd's soft process CPU limit equal to it's hard limit and notify the
     user if the limit is not infinite.
+ -- Added proctrack/cgroup and task/cgroup plugins written by Matthieu
+    Hautreux, CEA.
 
 * Changes in SLURM 2.3.0.pre3
 =============================

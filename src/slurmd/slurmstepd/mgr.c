@@ -1006,6 +1006,11 @@ job_manager(slurmd_job_t *job)
 	if (!job->batch && !job->user_managed_io && io_initialized)
 		_wait_for_io(job);
 
+	/*
+	 * Warn task plugin that the user's step have terminated
+	 */
+	post_step(job);
+
 	debug2("Before call to spank_fini()");
 	if (spank_fini (job)  < 0) {
 		error ("spank_fini failed");
