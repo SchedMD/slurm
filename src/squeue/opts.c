@@ -60,6 +60,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 
 #include "src/squeue/squeue.h"
 
@@ -1069,29 +1070,22 @@ _build_user_list( char* str )
 {
 	List my_list;
 	char *user = NULL;
-	char *tmp_char = NULL, *my_user_list = NULL, *end_ptr = NULL;
-	uint32_t *uid = NULL;
-	struct passwd *passwd_ptr = NULL;
+	char *tmp_char = NULL, *my_user_list = NULL;
 
-	if ( str == NULL)
+	if ( str == NULL )
 		return NULL;
 	my_list = list_create( NULL );
 	my_user_list = xstrdup( str );
 	user = strtok_r( my_user_list, ",", &tmp_char );
 	while (user) {
-		uid = xmalloc( sizeof( uint32_t ));
-		*uid = (uint32_t) strtol(user, &end_ptr, 10);
-		if (end_ptr[0] == '\0')
-			list_append( my_list, uid );
-		else {
-			passwd_ptr = getpwnam( user );
-			if (passwd_ptr == NULL) {
-				error( "Invalid user: %s\n", user);
-				xfree(uid);
-			} else {
-				*uid = passwd_ptr->pw_uid;
-				list_append( my_list, uid );
-			}
+		uid_t some_uid;
+		if ( uid_from_string( user, &some_uid ) == 0 ) {
+			uint32_t *user_id = NULL;
+			user_id = xmalloc( sizeof( uint32_t ));
+			*user_id = (uint32_t) some_uid;
+			list_append( my_list, user_id );
+		} else {
+			error( "Invalid user: %s\n", user);
 		}
 		user = strtok_r (NULL, ",", &tmp_char);
 	}

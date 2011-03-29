@@ -2645,7 +2645,7 @@ void make_node_idle(struct node_record *node_ptr,
 		bit_clear(avail_node_bitmap, inx);
 	else
 		bit_set(avail_node_bitmap, inx);
-	
+
 	if ((IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
 	    (node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
@@ -2659,8 +2659,14 @@ void make_node_idle(struct node_record *node_ptr,
 						slurm_get_slurm_user_id());
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
+		if (!IS_NODE_NO_RESPOND(node_ptr) &&
+		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr))
+			bit_set(avail_node_bitmap, inx);
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+		if (!IS_NODE_NO_RESPOND(node_ptr) &&
+		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr))
+			bit_set(avail_node_bitmap, inx);
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
 			bit_set(idle_node_bitmap, inx);

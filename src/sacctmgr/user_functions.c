@@ -940,7 +940,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						"doesn't exist.\n"
 						"        Contact your admin "
 						"to add this account.\n",
-						default_acct);
+						local_def_acct);
 					xfree(local_def_acct);
 					xfree(local_def_wckey);
 					continue;

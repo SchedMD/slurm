@@ -143,6 +143,18 @@ documents those changes that are of interest to users and admins.
  -- In jobcomp plugins, report start time of zeroif pending job is cancelled.
     Previously may report expected start time.
  -- Fixed sacctmgr man to state correct variables.
+ -- Select nodes based upon their Weight when job allocation requests include
+    a constraint field with a count (e.g. "srun --constraint=gpu*2 -N4 a.out").
+ -- Add support for user names that are entirely numeric and do not treat them
+    as UID values. Patch from Dennis Leepow.
+ -- Patch to un/pack double values properly if negative value.  Patch from
+    Dennis Leepow
+ -- Do not reset a job's priority when requeued or suspended.
+ -- Fix problemm that could let new jobs start on a node in DRAINED state.
+ -- Fix cosmetic sacctmgr issue where if the user you are trying to add
+    doesn't exist in the /etc/passwd file and the account you are trying
+    to add them to doesn't exist it would print (null) instead of the bad
+    account name.
 
 * Changes in SLURM 2.2.3
 ========================

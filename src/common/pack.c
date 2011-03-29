@@ -210,15 +210,16 @@ int unpack_time(time_t * valp, Buf buffer)
  */
 void 	packdouble(double val, Buf buffer)
 {
-	double nl1 =  (val * FLOAT_MULT) + .5; /* the .5 is here to
-						  round off.  We have
-						  found on systems
-						  going out more than
-						  15 decimals will
-						  mess things up so
-						  this is here to
-						  correct it. */
-	uint64_t nl =  HTON_uint64(nl1);
+	uint64_t nl;
+	union {
+		double d;
+		uint64_t u;
+	} uval;
+
+	 /* The 0.5 is here to round off.  We have found on systems going out
+	  * more than 15 decimals will mess things up, but this corrects it. */
+	uval.d =  (val * FLOAT_MULT) + 0.5;
+	nl =  HTON_uint64(uval.u);
 
 	if (remaining_buf(buffer) < sizeof(nl)) {
 		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
@@ -231,7 +232,6 @@ void 	packdouble(double val, Buf buffer)
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
 	buffer->processed += sizeof(nl);
-
 }
 
 /*
@@ -242,13 +242,19 @@ void 	packdouble(double val, Buf buffer)
 int	unpackdouble(double *valp, Buf buffer)
 {
 	uint64_t nl;
+	union {
+		double d;
+		uint64_t u;
+	} uval;
+
 	if (remaining_buf(buffer) < sizeof(nl))
 		return SLURM_ERROR;
 
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
-
-	*valp = (double)NTOH_uint64(nl) / (double)FLOAT_MULT;
 	buffer->processed += sizeof(nl);
+
+	uval.u = NTOH_uint64(nl);
+	*valp = uval.d / FLOAT_MULT;
 	return SLURM_SUCCESS;
 }
 

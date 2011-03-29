@@ -68,6 +68,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 
 #include "src/scancel/scancel.h"
 
@@ -479,15 +480,11 @@ static bool
 _opt_verify(void)
 {
 	bool verified = true;
-	struct passwd *passwd_ptr;
 
 	if (opt.user_name) {	/* translate to user_id */
-		passwd_ptr = getpwnam (opt.user_name);
-		if (passwd_ptr == NULL) {
+		if ( uid_from_string( opt.user_name, &opt.user_id ) != 0 ) {
 			error("Invalid user name: %s", opt.user_name);
 			return false;
-		} else {
-			opt.user_id = passwd_ptr->pw_uid;
 		}
 	}
 

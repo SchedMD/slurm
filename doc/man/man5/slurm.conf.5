@@ -1508,7 +1508,7 @@ Sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-Note that jobs requesting one CPU will only be given access to
+Note that jobs requesting one CPU will only be allocated
 that one CPU, but no other job will share the socket.
 .TP
 \fBCR_Socket_Memory\fR
@@ -1516,7 +1516,7 @@ Memory and sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-Note that jobs requesting one CPU will only be given access to
+Note that jobs requesting one CPU will only be allocated
 that one CPU, but no other job will share the socket.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP

@@ -61,6 +61,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 
 #include "src/strigger/strigger.h"
 
@@ -92,6 +93,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int first = 1;
 	int opt_char;
 	int option_index;
+	uid_t some_uid;
 	long tmp_l;
 	static struct option long_options[] = {
 		{"primary_slurmctld_failure",           no_argument, 0, 'a'},
@@ -273,17 +275,11 @@ extern void parse_command_line(int argc, char *argv[])
 			params.mode_set = true;
 			break;
 		case (int) OPT_LONG_USER:
-			if ((optarg[0] >= '0') && (optarg[0] <= '9'))
-				params.user_id = (uint32_t) atol(optarg);
-			else {
-				struct passwd *pw;
-				pw = getpwnam(optarg);
-				if (pw == NULL) {
-					error("Invalid user %s", optarg);
-					exit(1);
-				}
-				params.user_id = pw->pw_uid;
+			if ( uid_from_string( optarg, &some_uid ) != 0 ) {
+				error("Invalid user %s", optarg);
+				exit(1);
 			}
+			params.user_id = (uint32_t) some_uid;
 			break;
 		}
 	}
