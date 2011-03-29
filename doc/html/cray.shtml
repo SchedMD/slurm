@@ -91,7 +91,7 @@ http://code.google.com/p/munge/downloads/list</a></li>
 which has already the correct paths - in particular, the libmunge.* need to
 reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
 
-<p>Install tar-ball by
+<p>Install the tar-ball by executing:
 <ul>
 <li>scp $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz boot:</li>
 <li>ssh boot</li>
@@ -111,13 +111,16 @@ reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
     <i>mkdir --mode=0711 -vp /var/lib/munge</i><br>
     <i>mkdir --mode=0700 -vp /var/log/munge</i><br>
     <i>mkdir --mode=0755 -vp /var/run/munge</i></li>
-<li><i>module load slurm</i> as root, to get the right slurm paths</li>
+<li><i>module load slurm</i> as root, to get the correct SLURM paths</li>
 <li><i>munged --key-file /opt/slurm/munge/etc/munge.key</i></li>
 <li>Try a "<i>munge -n</i>" to see if munged accepts input</li>
 </ol></p>
 
-<p>When done, verify network connectivity by executing<br>
-  $  <i>munge -n |ssh other-login-host /opt/slurm/munge/bin/unmunge</i></p>
+<p>When done, verify network connectivity by executing:
+<ul>
+<li>munge -n |ssh other-login-host /opt/slurm/munge/bin/unmunge</li>
+</ul>
+
 
 <p>If you decide to keep the installation, you may be interested in automating
 the process using an <i>init.d</i> script distributed with the Munge as
@@ -221,8 +224,35 @@ SDBuser=alps_user
 SDBdb=XT5istanbul
 </pre>
 
+<p>One additional configuration script can be used to insure that the slurmd
+daemons execute with the highest resource limits possible, overriding default
+limits on Suse systems. Depending upon what resource limits are propagated
+from the user's environment, lower limits may apply to user jobs, but this
+script will insure that higher limits are possible. Copy the file
+<i>contribs/cray/etc_sysconfig_slurm</i> into <i>/etc/sysconfig/slurm</i>
+for these limits to take effect. This script is executed from
+<i>/etc/init.d/slurm</i>, which is typically executed to start the SLURM
+daemons. An excerpt of <i>contribs/cray/etc_sysconfig_slurm</i>is shown
+below.</p>
+
+<pre>
+#
+# /etc/sysconfig/slurm for Cray XT/XE systems
+#
+# Cray is SuSe-based, which means that ulimits from
+# /etc/security/limits.conf will get picked up any time SLURM is
+# restarted e.g. via pdsh/ssh. Since SLURM respects configured limits,
+# this can mean that for instance batch jobs get killed as a result
+# of configuring CPU time limits. Set sane start limits here.
+#
+# Values were taken from pam-1.1.2 Debian package
+ulimit -t unlimited	# max amount of CPU time in seconds
+ulimit -d unlimited	# max size of a process's data segment in KB
+</pre>
+
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 February 2011</p></td>
+<p style="text-align:center;">Last modified 28 March 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
