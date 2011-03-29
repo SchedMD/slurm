@@ -67,6 +67,10 @@ if [ -d /bgl/BlueLight/ppcfloor ]; then
 fi
 
 # Source slurm specific configuration
+# This can be used to alter limits for users jobs or set daemon options.
+# For example, the limits for user jobs could be higher or lower than the
+# default limits for user root (e.g. "ulimit -t unlimited" sets an unlimited
+# CPU time limit for spawned user jobs).
 # SLURMCTLD_OPTIONS defines slurmctld command line options. See "man slurmctld"
 # SLURMD_OPTIONS defines slurmd command line options. See "man slurmd"
 if [ -f /etc/sysconfig/slurm ] ; then
