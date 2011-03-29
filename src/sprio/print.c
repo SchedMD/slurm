@@ -313,7 +313,7 @@ int _print_job_priority_weighted(priority_factors_object_t * job, int width,
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
 	else {
-		sprintf(temp, "%u", (uint32_t)_get_priority(job));
+		sprintf(temp, "%.0f", _get_priority(job));
 		_print_str(temp, width, right, true);
 	}
 	if (suffix)
