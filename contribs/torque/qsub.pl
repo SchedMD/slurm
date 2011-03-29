@@ -186,7 +186,11 @@ if($res_opts{walltime}) {
 $command .= " --tmp=$res_opts{file}" if $res_opts{file};
 $command .= " --mem=$res_opts{mem}" if $res_opts{mem};
 $command .= " --nice=$res_opts{nice}" if $res_opts{nice};
-
+# Cray-specific options
+$command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
+$command .= " -w$res_opts{mppnodes}"		    if $res_opts{mppnodes};
+$command .= " --cpus-per-task=$res_opts{mppdepth}"  if $res_opts{mppdepth};
+$command .= " --ntasks-per-node=$res_opts{mppnppn}" if $res_opts{mppnppn};
 
 $command .= " --begin=$start_time" if $start_time;
 $command .= " --account=$account" if $account;
@@ -225,6 +229,12 @@ sub parse_resource_list {
 		   'pvmem' => "",
 		   'software' => "",
 		   'vmem' => "",
+		   # Cray-specific resources
+		   'mppwidth' => "",
+		   'mppdepth' => "",
+		   'mppnppn' => "",
+		   'mppmem' => "",
+		   'mppnodes' => "",
 		   'walltime' => ""
 		   );
 	my @keys = keys(%opt);
@@ -238,7 +248,9 @@ sub parse_resource_list {
 		$opt{cput} = get_minutes($opt{cput});
 	}
 
-	if($opt{mem}) {
+	if($opt{mppmem}) {
+		$opt{mem} = convert_mb_format($opt{mppmem});
+	} elsif($opt{mem}) {
 		$opt{mem} = convert_mb_format($opt{mem});
 	}
 

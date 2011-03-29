@@ -1973,6 +1973,56 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 
 			xfree(temp);
+#ifdef HAVE_CRAY
+		} else if (!strncmp(rl + i, "mppdepth=", 9)) {
+			/* Cray: number of CPUs (threads) per processing element */
+			i += 9;
+			temp = _get_pbs_option_value(rl, &i);
+			if (temp) {
+				opt.cpus_per_task = _get_int(temp, "mppdepth");
+				opt.cpus_set	  = true;
+			}
+			xfree(temp);
+		} else if (!strncmp(rl + i, "mppmem=", 7)) {
+			i += 7;
+			temp = _get_pbs_option_value(rl, &i);
+			if (!temp) {
+				error("No value given for mppmem");
+				exit(error_exit);
+			}
+			opt.realmem = (int)str_to_mbytes(temp);
+			if (opt.realmem < 0) {
+				error("invalid mppmem constraint %s", temp);
+				exit(error_exit);
+			}
+			xfree(temp);
+		} else if (!strncmp(rl + i, "mppnodes=", 9)) {
+			/* Cray `nodes' variant: hostlist without prefix */
+			i += 9;
+			temp = _get_pbs_option_value(rl, &i);
+			if (!temp) {
+				error("No value given for mppnodes");
+				exit(error_exit);
+			}
+			xfree(opt.nodelist);
+			opt.nodelist = temp;
+		} else if (!strncmp(rl + i, "mppnppn=", 8)) {
+			/* Cray: number of processing elements per node */
+			i += 8;
+			temp = _get_pbs_option_value(rl, &i);
+			if (temp)
+				opt.ntasks_per_node = _get_int(temp, "mppnppn");
+			xfree(temp);
+		} else if (!strncmp(rl + i, "mppwidth=", 9)) {
+			/* Cray: task width (number of processing elements) */
+			i += 9;
+			temp = _get_pbs_option_value(rl, &i);
+			if (temp) {
+				opt.ntasks     = _get_int(temp, "mppwidth");
+				opt.ntasks_set = true;
+			}
+			xfree(temp);
+#endif	/* HAVE_CRAY */
 		} else if(!strncmp(rl+i, "nice=", 5)) {
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i);
