@@ -132,15 +132,15 @@ static int _print_str(char *str, int width, bool right, bool cut_output)
 	return printed;
 }
 
-int _print_int(int number, int width, bool right, bool cut_output)
+static int _print_int(double number, int width, bool right, bool cut_output)
 {
 	char buf[32];
 
-	snprintf(buf, 32, "%d", number);
+	snprintf(buf, 32, "%.0f", number);
 	return _print_str(buf, width, right, cut_output);
 }
 
-int _print_norm(double number, int width, bool right, bool cut_output)
+static int _print_norm(double number, int width, bool right, bool cut_output)
 {
 	char buf[32];
 
@@ -313,7 +313,7 @@ int _print_job_priority_weighted(priority_factors_object_t * job, int width,
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
 	else {
-		sprintf(temp, "%.0f", _get_priority(job));
+		sprintf(temp, "%lld", (long long)_get_priority(job));
 		_print_str(temp, width, right, true);
 	}
 	if (suffix)
