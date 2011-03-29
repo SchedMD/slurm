@@ -1,0 +1,24 @@
+#
+# /etc/sysconfig/slurm for Cray XT/XE systems
+#
+# Cray is SuSe-based, which means that ulimits from /etc/security/limits.conf
+# will get picked up any time slurm is restarted e.g. via pdsh/ssh. Since slurm
+# respects configured limits, this can mean that for instance batch jobs get
+# killed as a result of configuring CPU time limits. Set sane start limits here.
+#
+# Values were taken from pam-1.1.2 Debian package
+ulimit -t unlimited	# max amount of CPU time in seconds
+ulimit -d unlimited	# max size of a process's data segment in KB
+ulimit -l 64		# max memory size (KB) that may be locked into memory
+ulimit -m unlimited	# max RSS size in KB
+ulimit -u unlimited	# max number of processes
+ulimit -f unlimited	# max size of files written by process and children
+ulimit -x unlimited	# max number of file locks
+ulimit -i 16382		# max number of pending signals
+ulimit -q 819200	# max number of bytes in POSIX message queues
+ulimit -Sc 0		# max size of core files (soft limit)
+ulimit -Hc unlimited	# max size of core files (hard limit)
+ulimit -Ss 8192		# max stack size (soft limit)
+ulimit -Hs unlimited	# max stack size (hard limit)
+ulimit -n 1024		# max number of open file descriptors
+ulimit -v unlimited	# max size of virtual memory (address space) in KB

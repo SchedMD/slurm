@@ -8,8 +8,8 @@ SLURM as their documentation. A quick description of the subdirectories
 of the SLURM contribs distribution follows:
 
   cray                [Tools for use on Cray systems]
-     etc_init_d_munge      - init.d script for use with Munge
-     libasil.tar.gz        - library for SLURM to interface to ALPS/BASIL
+     etc_init_d_munge      - /etc/init.d/munge script for use with Munge
+     etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
      opt_modulefiles_slurm - enables use of Munge as soon as built
 
   env_cache_builder.c [C program]
