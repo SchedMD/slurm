@@ -265,4 +265,10 @@ typedef enum {false, true} bool;
 #  define strndup(src,size) strdup(src)
 #endif
 
+/* There are places where we put NO_VAL or INFINITE into a float or double
+ * Use fuzzy_equal below to test for those values rather than an comparision
+ * which could fail due to rounding errors. */
+#define FUZZY_EPSILON 0.00001
+#define fuzzy_equal(v1, v2) ((((v1)-(v2)) > -FUZZY_EPSILON) && (((v1)-(v2)) < FUZZY_EPSILON))
+
 #endif /* !_MACROS_H */

@@ -2950,7 +2950,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				rec->usage_factor =
 					object->usage_factor;
 
-			if (object->usage_thres != (double)NO_VAL)
+			if (!fuzzy_equal(object->usage_thres, NO_VAL))
 				rec->usage_thres = object->usage_thres;
 
 			if (update_jobs && update_qos_notify) {

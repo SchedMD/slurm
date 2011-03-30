@@ -3839,7 +3839,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
-		   (qos_ptr->usage_thres != (double)NO_VAL)) {
+		   (!fuzzy_equal(qos_ptr->usage_thres, NO_VAL))) {
 		if (!job_ptr->prio_factors)
 			job_ptr->prio_factors =
 				xmalloc(sizeof(priority_factors_object_t));

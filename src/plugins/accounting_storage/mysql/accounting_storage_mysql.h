@@ -60,6 +60,7 @@
 #define	debug5			slurm_debug5
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/macros.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/uid.h"
