@@ -420,7 +420,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 		fs_assoc = fs_assoc->usage->parent_assoc_ptr;
 	}
 
-	if (fs_assoc->usage->usage_efctv == (long double) NO_VAL)
+	if (fuzzy_equal(fs_assoc->usage->usage_efctv, NO_VAL))
 		priority_p_set_assoc_usage(fs_assoc);
 
 	/* Priority is 0 -> 1 */
@@ -1181,7 +1181,7 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 {
 	double priority_fs;
 
-	xassert(usage_efctv != (long double)NO_VAL);
+	xassert(!fuzzy_equal(usage_efctv, NO_VAL));
 
 	if (shares_norm > 0.0)
 		priority_fs = pow(2.0, -(usage_efctv / shares_norm));

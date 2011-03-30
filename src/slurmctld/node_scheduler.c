@@ -1181,8 +1181,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				xmalloc(sizeof(priority_factors_object_t));
 
 		if (!job_ptr->prio_factors->priority_fs) {
-			if (assoc_ptr->usage->usage_efctv
-			    == (long double)NO_VAL)
+			if (fuzzy_equal(assoc_ptr->usage->usage_efctv, NO_VAL))
 				priority_g_set_assoc_usage(assoc_ptr);
 			job_ptr->prio_factors->priority_fs =
 				priority_g_calc_fs_factor(

@@ -208,7 +208,7 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if(tmp_dub != (double)NO_VAL)
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
 				tmp_char = _elapsed_time((long)tmp_dub, 0);
 
 			field->print_routine(field,
@@ -229,7 +229,7 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if(tmp_dub != (double)NO_VAL)
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
 				convert_num_unit((float)tmp_dub,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
@@ -251,7 +251,7 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if(tmp_dub != (double)NO_VAL)
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
 				convert_num_unit((float)tmp_dub,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
@@ -273,7 +273,7 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if(tmp_dub != (double)NO_VAL)
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
 				convert_num_unit((float)tmp_dub,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
@@ -786,7 +786,7 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if(tmp_dub != (double)NO_VAL)
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
 				tmp_char = _elapsed_time((long)tmp_dub, 0);
 			field->print_routine(field,
 					     tmp_char,

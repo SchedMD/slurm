@@ -2064,7 +2064,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 			/* We only calculate user effective usage when
 			 * we need it
 			 */
-			if (assoc->usage->usage_efctv == (long double)NO_VAL)
+			if (fuzzy_equal(assoc->usage->usage_efctv, NO_VAL))
 				priority_g_set_assoc_usage(assoc);
 
 			share->name = xstrdup(assoc->user);
@@ -2946,9 +2946,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 					_set_qos_norm_priority(rec);
 			}
 
-			if (object->usage_factor != (double)NO_VAL)
-				rec->usage_factor =
-					object->usage_factor;
+			if (!fuzzy_equal(object->usage_factor, NO_VAL))
+				rec->usage_factor = object->usage_factor;
 
 			if (!fuzzy_equal(object->usage_thres, NO_VAL))
 				rec->usage_thres = object->usage_thres;

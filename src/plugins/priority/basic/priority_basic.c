@@ -144,9 +144,9 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 	 * return 0 since shares_norm will always be NO_VAL. */
 	double priority_fs;
 
-	xassert(usage_efctv != (long double)NO_VAL);
+	xassert(!fuzzy_equal(usage_efctv, NO_VAL));
 
-	if ((shares_norm <= 0.0) || (shares_norm == (long double)NO_VAL))
+	if ((shares_norm <= 0.0) || fuzzy_equal(shares_norm, NO_VAL))
 		priority_fs = 0.0;
 	else
 		priority_fs = pow(2.0, -(usage_efctv / shares_norm));

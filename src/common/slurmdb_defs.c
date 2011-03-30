@@ -1793,20 +1793,20 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 		debug2("  Qos              : %s", "Normal");
 	}
 
-	if(assoc_ptr->parent_acct)
+	if (assoc_ptr->parent_acct)
 		debug2("  ParentAccount    : %s", assoc_ptr->parent_acct);
-	if(assoc_ptr->partition)
+	if (assoc_ptr->partition)
 		debug2("  Partition        : %s", assoc_ptr->partition);
-	if(assoc_ptr->user)
+	if (assoc_ptr->user)
 		debug2("  User             : %s(%u)",
 		       assoc_ptr->user, assoc_ptr->uid);
 
-	if(assoc_ptr->usage) {
-		if(assoc_ptr->usage->shares_norm != (double)NO_VAL)
+	if (assoc_ptr->usage) {
+		if (!fuzzy_equal(assoc_ptr->usage->shares_norm, NO_VAL))
 			debug2("  NormalizedShares : %f",
 			       assoc_ptr->usage->shares_norm);
 
-		if(assoc_ptr->usage->level_shares != NO_VAL)
+		if (assoc_ptr->usage->level_shares != NO_VAL)
 			debug2("  LevelShares      : %u",
 			       assoc_ptr->usage->level_shares);
 

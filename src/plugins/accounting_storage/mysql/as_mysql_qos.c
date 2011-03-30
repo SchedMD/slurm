@@ -351,11 +351,11 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", priority=%u", qos->priority);
 	}
 
-	if (qos->usage_factor == (double)INFINITE) {
+	if (fuzzy_equal(qos->usage_factor, INFINITE)) {
 		xstrcat(*cols, ", usage_factor");
 		xstrcat(*vals, ", 1");
 		xstrcat(*extra, ", usage_factor=1");
-	} else if ((qos->usage_factor != (double)NO_VAL)
+	} else if (!fuzzy_equal(qos->usage_factor, NO_VAL)
 		   && (qos->usage_factor >= 0)) {
 		xstrcat(*cols, ", usage_factor");
 		xstrfmtcat(*vals, ", %f", qos->usage_factor);
