@@ -122,9 +122,9 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->max_wall_pj = INFINITE;
 		if (qos->preempt_mode == (uint16_t)NO_VAL)
 			qos->preempt_mode = (uint16_t)INFINITE;
-		if (qos->usage_factor == (double)NO_VAL)
+		if (fuzzy_equal(qos->usage_factor, NO_VAL))
 			qos->usage_factor = (double)INFINITE;
-		if (qos->usage_thres == (double)NO_VAL)
+		if (fuzzy_equal(qos->usage_thres, NO_VAL))
 			qos->usage_thres = (double)INFINITE;
 	}
 
