@@ -47,6 +47,8 @@ documents those changes that are of interest to users and admins.
     doesn't exist in the /etc/passwd file and the account you are trying
     to add them to doesn't exist it would print (null) instead of the bad
     account name.
+ -- Fix associations/qos for when adding back a previously deleted object
+    the object will be cleared of all old limits.
 
 * Changes in SLURM 2.2.3
 ========================
