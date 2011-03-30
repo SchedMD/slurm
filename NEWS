@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.3.0.pre5
+=============================
+
 * Changes in SLURM 2.3.0.pre4
 =============================
  -- Add GraceTime to Partition and QOS data structures. Preempted jobs will be

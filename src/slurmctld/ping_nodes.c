@@ -262,7 +262,7 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (restart_flag) {
+		if (restart_flag)
 			node_ptr->last_response = slurmctld_conf.last_update;
 
 		/* Request a node registration if its state is UNKNOWN or
