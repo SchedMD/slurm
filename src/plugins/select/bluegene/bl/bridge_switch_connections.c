@@ -367,7 +367,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		      bg_err_str(rc));
 	}
 
-	num_ncards = bg_record->node_cnt/bg_conf->nodecard_node_cnt;
+	num_ncards = bg_record->cnode_cnt/bg_conf->nodecard_cnode_cnt;
 	if (num_ncards < 1) {
 		num_ncards = 1;
 		sub_nodecard = 1;

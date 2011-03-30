@@ -113,7 +113,7 @@ extern int bridge_handle_input_errors(const char *function, const uint32_t err,
 		break;
 	case bgsched::InputErrors::InvalidBlockName:
 		/* Not real error */
-		rc = SLURM_SUCCESS;
+		rc = BG_BLOCK_NOT_FOUND;
 		error("%s: Bad block name %s!",
 		      function, bg_record->bg_block_id);
 		break;
@@ -161,7 +161,7 @@ extern int bridge_handle_input_errors(const char *function, const uint32_t err,
 		break;
 	case bgsched::InputErrors::BlockNotFound:
 		/* Not real error */
-		rc = SLURM_SUCCESS;
+		rc = BG_ERROR_BLOCK_NOT_FOUND;
 		debug2("%s: Unknown block %s!",
 		       function, bg_record->bg_block_id);
 		break;
@@ -222,10 +222,11 @@ extern int bridge_handle_runtime_errors(const char *function,
 	case bgsched::RuntimeErrors::BlockBootError:
 		error("%s: Error booting block %s.", function,
 		      bg_record->bg_block_id);
+		rc = BG_ERROR_BOOT_ERROR;
 		break;
 	case bgsched::RuntimeErrors::BlockFreeError:
 		/* not a real error */
-		rc = BG_ERROR_PENDING_ACTION;
+		rc = BG_ERROR_INVALID_STATE;
 		debug2("%s: Error freeing block %s.", function,
 		       bg_record->bg_block_id);
 		break;

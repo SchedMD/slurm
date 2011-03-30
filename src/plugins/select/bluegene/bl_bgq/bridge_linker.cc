@@ -601,8 +601,8 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 		Block::remove(bg_record->bg_block_id);
 	} catch (const bgsched::RuntimeException& err) {
 		rc = bridge_handle_runtime_errors("Block::remove",
-						err.getError().toValue(),
-						bg_record);
+						  err.getError().toValue(),
+						  bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::DatabaseException& err) {

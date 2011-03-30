@@ -143,7 +143,7 @@ static int _bg_errtrans(int in)
 	case PARTITION_NOT_FOUND:
 		return BG_ERROR_BLOCK_NOT_FOUND;
 	case INCOMPATIBLE_STATE:
-		return BG_ERROR_PENDING_ACTION;
+		return BG_ERROR_INVALID_STATE;
 	case CONNECTION_ERROR:
 		return BG_ERROR_CONNECTION_ERROR;
 	case JOB_NOT_FOUND:
@@ -172,7 +172,7 @@ static int _bg_errtrans(int in)
 
 static status_t _get_job(db_job_id_t dbJobId, rm_job_t **job)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -185,7 +185,7 @@ static status_t _get_job(db_job_id_t dbJobId, rm_job_t **job)
 
 static status_t _get_jobs(rm_job_state_flag_t flag, rm_job_list_t **jobs)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -197,7 +197,7 @@ static status_t _get_jobs(rm_job_state_flag_t flag, rm_job_list_t **jobs)
 
 static status_t _free_job(rm_job_t *job)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -210,7 +210,7 @@ static status_t _free_job(rm_job_t *job)
 
 static status_t _free_job_list(rm_job_list_t *job_list)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -223,7 +223,7 @@ static status_t _free_job_list(rm_job_list_t *job_list)
 
 static status_t _signal_job(db_job_id_t jid, rm_signal_t sig)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -237,7 +237,7 @@ static status_t _signal_job(db_job_id_t jid, rm_signal_t sig)
 static status_t _remove_block_user(pm_partition_id_t pid,
 				   const char *name)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -250,7 +250,7 @@ static status_t _remove_block_user(pm_partition_id_t pid,
 
 static status_t _new_block(rm_partition_t **partition)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -262,7 +262,7 @@ static status_t _new_block(rm_partition_t **partition)
 
 static status_t _add_block(rm_partition_t *partition)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -380,7 +380,7 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 				      job_id, block_id);
 				return SLURM_SUCCESS;
 			}
-			if (rc == BG_ERROR_PENDING_ACTION)
+			if (rc == BG_ERROR_INVALID_STATE)
 				debug("job %d on block %s is in an "
 				      "INCOMPATIBLE_STATE",
 				      job_id, block_id);
@@ -396,7 +396,7 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 	}
 
 	error("Failed to remove job %d from MMCS", job_id);
-	return INTERNAL_ERROR;
+	return BG_ERROR_INTERNAL_ERROR;
 }
 #endif
 
@@ -477,7 +477,8 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 			continue;
 		}
 		debug2("got job_id %d",job_id);
-		if ((rc = _remove_job(job_id, block_id)) == INTERNAL_ERROR) {
+		if ((rc = _remove_job(job_id, block_id))
+		    == BG_ERROR_INTERNAL_ERROR) {
 			job_remove_failed = 1;
 			break;
 		}
@@ -584,7 +585,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 		error("bridge_set_data(RM_PartitionConnection): %s",
 		      bg_err_str(rc));
 
-	/* rc = bg_conf->mp_node_cnt/bg_record->node_cnt; */
+	/* rc = bg_conf->mp_cnode_cnt/bg_record->cnode_cnt; */
 /* 	if (rc > 1) */
 /* 		send_psets = bg_conf->ionodes_per_mp/rc; */
 
@@ -707,7 +708,7 @@ static int _set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 	/* Set the correct ionodes being used in this block */
 	bit_nset(bg_record->ionode_bitmap, io_start, io_start+io_nodes);
 	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
-	bg_record->ionodes = xstrdup(bitstring);
+	bg_record->ionode_str = xstrdup(bitstring);
 	return SLURM_SUCCESS;
 }
 
@@ -1211,13 +1212,16 @@ extern int bridge_block_create(bg_record_t *bg_record)
 extern int bridge_block_boot(bg_record_t *bg_record)
 {
 #if defined HAVE_BG_FILES
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
 	rc = _bg_errtrans((*(bridge_api.create_partition))
 			  (bg_record->bg_block_id));
+	if (rc == BG_ERROR_INVALID_STATE)
+		rc = BG_ERROR_BOOT_ERROR;
+
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
@@ -1233,7 +1237,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 extern int bridge_block_free(bg_record_t *bg_record)
 {
 #if defined HAVE_BG_FILES
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -1250,7 +1254,7 @@ extern int bridge_block_free(bg_record_t *bg_record)
 extern int bridge_block_remove(bg_record_t *bg_record)
 {
 #if defined HAVE_BG_FILES
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -1267,7 +1271,7 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 {
 #if defined HAVE_BG_FILES
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -1284,7 +1288,7 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
 {
 #if defined HAVE_BG_FILES
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -1312,7 +1316,7 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	   here to get the correct block count and the users. */
 	if ((rc = bridge_get_block(bg_record->bg_block_id, &block_ptr))
 	    != SLURM_SUCCESS) {
-		if (rc == INCONSISTENT_DATA
+		if (rc == BG_ERROR_INCONSISTENT_DATA
 		    && bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			return REMOVE_USER_FOUND;
 
@@ -1513,8 +1517,8 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if (mp_cnt==0)
 			continue;
 
-		bg_record->node_cnt = mp_cnt;
-		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
+		bg_record->cnode_cnt = mp_cnt;
+		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->cnode_cnt;
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
 
@@ -1609,10 +1613,10 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				bridge_find_nodecard_num(
 					block_ptr, ncard, &nc_id);
 
-			bg_record->node_cnt =
-				nc_cnt * bg_conf->nodecard_node_cnt;
+			bg_record->cnode_cnt =
+				nc_cnt * bg_conf->nodecard_cnode_cnt;
 			bg_record->cpu_cnt =
-				bg_conf->cpu_ratio * bg_record->node_cnt;
+				bg_conf->cpu_ratio * bg_record->cnode_cnt;
 
 			if ((rc = bridge_get_data(ncard,
 						  RM_NodeCardQuarter,
@@ -1621,8 +1625,8 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				error("bridge_get_data(CardQuarter): %d",rc);
 				continue;
 			}
-			io_start *= bg_conf->quarter_ionode_cnt;
-			io_start += bg_conf->nodecard_ionode_cnt * (nc_id%4);
+			io_start *= bg_conf->quarter_iocnode_cnt;
+			io_start += bg_conf->nodecard_iocnode_cnt * (nc_id%4);
 #else
 			/* Translate nodecard count to ionode count */
 			if ((io_cnt = nc_cnt * bg_conf->io_ratio))
@@ -1645,7 +1649,8 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			nc_id = atoi((char*)tmp_char+1);
 			free(tmp_char);
 			io_start = nc_id * bg_conf->io_ratio;
-			if (bg_record->node_cnt < bg_conf->nodecard_node_cnt) {
+			if (bg_record->cnode_cnt <
+			    bg_conf->nodecard_cnode_cnt) {
 				rm_ionode_t *ionode;
 
 				/* figure out the ionode we are using */
@@ -1687,12 +1692,12 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 				      io_start, io_start+io_cnt);
 			debug3("%s uses ionodes %s",
 			       bg_record->bg_block_id,
-			       bg_record->ionodes);
+			       bg_record->ionode_str);
 		} else {
 #ifdef HAVE_BGL
 			bg_record->cpu_cnt = bg_conf->cpus_per_mp
 				* bg_record->mp_count;
-			bg_record->node_cnt =  bg_conf->mp_node_cnt
+			bg_record->cnode_cnt =  bg_conf->mp_cnode_cnt
 				* bg_record->mp_count;
 #endif
 			if ((rc = bridge_get_data(block_ptr,
@@ -2052,7 +2057,7 @@ extern void bridge_block_post_job(char *bg_block_id)
 #if defined HAVE_BG_FILES
 extern status_t bridge_get_bg(my_bluegene_t **bg)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2064,7 +2069,7 @@ extern status_t bridge_get_bg(my_bluegene_t **bg)
 
 extern status_t bridge_free_bg(my_bluegene_t *bg)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2114,7 +2119,7 @@ end_it:
 extern status_t bridge_get_data(rm_element_t* element,
 				enum rm_specification field, void *data)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	int *state = (int *) data;
 	rm_connection_t *curr_conn = (rm_connection_t *)data;
 
@@ -2218,7 +2223,7 @@ extern status_t bridge_get_data(rm_element_t* element,
 extern status_t bridge_set_data(rm_element_t* element,
 				enum rm_specification field, void *data)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2231,7 +2236,7 @@ extern status_t bridge_set_data(rm_element_t* element,
 
 extern status_t bridge_free_nodecard_list(rm_nodecard_list_t *nc_list)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2244,7 +2249,7 @@ extern status_t bridge_free_nodecard_list(rm_nodecard_list_t *nc_list)
 
 extern status_t bridge_free_block(rm_partition_t *partition)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2258,7 +2263,7 @@ extern status_t bridge_free_block(rm_partition_t *partition)
 extern status_t bridge_block_modify(char *bg_block_id,
 				    int op, const void *data)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2273,7 +2278,7 @@ extern status_t bridge_block_modify(char *bg_block_id,
 extern status_t bridge_get_block(char *bg_block_id,
 				 rm_partition_t **partition)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2288,7 +2293,7 @@ extern status_t bridge_get_block(char *bg_block_id,
 extern status_t bridge_get_block_info(char *bg_block_id,
 				      rm_partition_t **partition)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2314,7 +2319,7 @@ extern status_t bridge_get_block_info(char *bg_block_id,
 extern status_t bridge_get_blocks(rm_partition_state_flag_t flag,
 				  rm_partition_list_t **part_list)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2328,7 +2333,7 @@ extern status_t bridge_get_blocks(rm_partition_state_flag_t flag,
 extern status_t bridge_get_blocks_info(rm_partition_state_flag_t flag,
 				       rm_partition_list_t **part_list)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2341,7 +2346,7 @@ extern status_t bridge_get_blocks_info(rm_partition_state_flag_t flag,
 
 extern status_t bridge_free_block_list(rm_partition_list_t *part_list)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2354,7 +2359,7 @@ extern status_t bridge_free_block_list(rm_partition_list_t *part_list)
 
 extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2367,7 +2372,7 @@ extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard)
 
 extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2380,7 +2385,7 @@ extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
 
 extern status_t bridge_set_block_owner(pm_partition_id_t pid, const char *name)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2394,7 +2399,7 @@ extern status_t bridge_set_block_owner(pm_partition_id_t pid, const char *name)
 extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
 				     rm_nodecard_list_t **nc_list)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2408,7 +2413,7 @@ extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
 #ifdef HAVE_BGP
 extern status_t bridge_new_ionode(rm_ionode_t **ionode)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 
@@ -2421,7 +2426,7 @@ extern status_t bridge_new_ionode(rm_ionode_t **ionode)
 
 extern status_t bridge_free_ionode(rm_ionode_t *ionode)
 {
-	int rc = CONNECTION_ERROR;
+	int rc = BG_ERROR_CONNECTION_ERROR;
 	if (!bridge_init(NULL))
 		return rc;
 

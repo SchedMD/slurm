@@ -1415,7 +1415,12 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		list_destroy(delete_list);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	} else if (block_desc_ptr->state == BG_BLOCK_FREE) {
+		/* Increment free_cnt to make sure we don't loose this
+		 * block since bg_free_block will unlock block_state_mutex.
+		 */
+		bg_record->free_cnt++;
 		bg_free_block(bg_record, 0, 1);
+		bg_record->free_cnt--;
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else if (block_desc_ptr->state == BG_BLOCK_TERM) {
@@ -1512,7 +1517,12 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: "
 			     "freeing the block %s.", bg_record->bg_block_id);
+		/* Increment free_cnt to make sure we don't loose this
+		 * block since bg_free_block will unlock block_state_mutex.
+		 */
+		bg_record->free_cnt++;
 		bg_free_block(bg_record, 1, 1);
+		bg_record->free_cnt--;
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("select_p_update_block: done");
 
@@ -1530,16 +1540,16 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 
 		rc = bridge_block_remove(bg_record);
 		if (rc != SLURM_SUCCESS) {
-			/* if (rc == PARTITION_NOT_FOUND) { */
-			/* 	debug("select_p_update_block: " */
-			/* 	      "block %s is not found", */
-			/* 	      bg_record->bg_block_id); */
-			/* } else { */
+			if (rc == BG_ERROR_BLOCK_NOT_FOUND) {
+				debug("select_p_update_block: "
+				      "block %s is not found",
+				      bg_record->bg_block_id);
+			} else {
 				error("select_p_update_block: "
 				      "rm_remove_partition(%s): %s",
 				      bg_record->bg_block_id,
 				      bg_err_str(rc));
-			/* } */
+			}
 		} else
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 				info("select_p_update_block: done %s",

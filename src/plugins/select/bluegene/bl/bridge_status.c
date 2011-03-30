@@ -585,12 +585,12 @@ static int _do_block_poll(void)
 		    != SLURM_SUCCESS) {
 			if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 				switch(rc) {
-				case INCONSISTENT_DATA:
+				case BG_ERROR_INCONSISTENT_DATA:
 					debug2("got inconsistent data when "
 					       "querying block %s", name);
 					continue;
 					break;
-				case PARTITION_NOT_FOUND:
+				case BG_ERROR_BLOCK_NOT_FOUND:
 					debug("block %s not found, removing "
 					      "from slurm", name);
 					list_remove(itr);
@@ -635,8 +635,8 @@ static int _do_block_poll(void)
 			updated = 1;
 		}
 #else
-		if ((bg_record->node_cnt < bg_conf->mp_node_cnt)
-		    || (bg_conf->mp_node_cnt == bg_conf->nodecard_node_cnt)) {
+		if ((bg_record->cnode_cnt < bg_conf->mp_cnode_cnt)
+		    || (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)) {
 			char *mode = NULL;
 			uint16_t conn_type = SELECT_SMALL;
 			if ((rc = bridge_get_data(block_ptr,
@@ -845,12 +845,12 @@ extern int bridge_status_update_block_list_state(List block_list)
 		    != SLURM_SUCCESS) {
 			if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 				switch(rc) {
-				case INCONSISTENT_DATA:
+				case BG_ERROR_INCONSISTENT_DATA:
 					debug2("got inconsistent data when "
 					       "querying block %s", name);
 					continue;
 					break;
-				case PARTITION_NOT_FOUND:
+				case BG_ERROR_BLOCK_NOT_FOUND:
 					debug("block %s not found, removing "
 					      "from slurm", name);
 					/* Just set to free,
