@@ -77,6 +77,10 @@ extern List create_dynamic_block(List block_list,
 	memset(&blockreq, 0, sizeof(select_ba_request_t));
 	memcpy(start_geo, request->geometry, sizeof(start_geo));
 
+	/* We need to lock this just incase a blocks_overlap is called
+	   which will in turn reset and set the system as it sees fit.
+	*/
+	slurm_mutex_lock(&block_state_mutex);
 	if (my_block_list) {
 		reset_ba_system(track_down_nodes);
 		itr = list_iterator_create(my_block_list);
@@ -428,6 +432,7 @@ finished:
 	if (request->avail_mp_bitmap
 	    && (bit_ffc(request->avail_mp_bitmap) == -1))
 		ba_reset_all_removed_mps();
+	slurm_mutex_unlock(&block_state_mutex);
 
 	/* reset the ones we mucked with */
 	itr = list_iterator_create(my_block_list);
