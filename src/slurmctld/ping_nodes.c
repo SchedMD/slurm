@@ -180,6 +180,7 @@ void ping_nodes (void)
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if ((slurmctld_conf.slurmd_timeout == 0)	&&
+		    (!restart_flag)				&&
 		    (!IS_NODE_UNKNOWN(front_end_ptr))		&&
 		    (!IS_NODE_NO_RESPOND(front_end_ptr)))
 			continue;
@@ -239,6 +240,7 @@ void ping_nodes (void)
 		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_POWER_SAVE(node_ptr))
 			continue;
 		if ((slurmctld_conf.slurmd_timeout == 0) &&
+		    (!restart_flag)			 &&
 		    (!IS_NODE_UNKNOWN(node_ptr))         &&
 		    (!IS_NODE_NO_RESPOND(node_ptr)))
 			continue;
