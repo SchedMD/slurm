@@ -1277,19 +1277,17 @@ static int _sync_block_lists(List full_list, List incomp_list)
 		if (!new_record->bg_block_id)
 			continue;
 		while ((bg_record = list_next(itr2))) {
-			/* There is a possiblity the job here is
-			   preempting jobs that are configuring that
-			   just started on a block overlapping the
-			   block we want to use, so we needed to
-			   recreate the deallocating block.  Checking
-			   the free_cnt will make sure we add the
-			   correct block to the mix.
+			/* If we are looking at the original, we
+			   obviously don't need to add it.
 			*/
-			if (bg_record->free_cnt == new_record->free_cnt
-			    && bit_equal(bg_record->bitmap, new_record->bitmap)
+			if (new_record->original == bg_record)
+				break;
+			if (bit_equal(bg_record->bitmap, new_record->bitmap)
 			    && bit_equal(bg_record->ionode_bitmap,
 					 new_record->ionode_bitmap)) {
-				/* now make sure the conn_type is the same for
+
+				/* now make sure the conn_type
+				   is the same for
 				   regular sized blocks */
 				if (bg_record->cnode_cnt
 				    >= bg_conf->mp_cnode_cnt) {
@@ -1301,6 +1299,18 @@ static int _sync_block_lists(List full_list, List incomp_list)
 					if (i < SYSTEM_DIMENSIONS)
 						continue;
 				}
+
+				/* Check to see if this has the same
+				   block id since we don't want to add
+				   it again. (This really only happens
+				   if the new_record->original isn't set).
+				*/
+				if (!new_record->original
+				    && strcmp(bg_record->bg_block_id,
+					      new_record->bg_block_id))
+					continue;
+
+				/* This must be the same block. */
 				break;
 			}
 		}
