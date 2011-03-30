@@ -2,7 +2,7 @@
  *  ping_nodes.c - ping the slurmd daemons to test if they respond
  *****************************************************************************
  *  Copyright (C) 2003-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -118,6 +118,7 @@ void ping_end (void)
  */
 void ping_nodes (void)
 {
+	static bool restart_flag = true;	/* system just restarted */
 	static int offset = 0;	/* mutex via node table write lock on entry */
 	static int max_reg_threads = 0;	/* max node registration threads
 					 * this can include DOWN nodes, so
@@ -126,7 +127,6 @@ void ping_nodes (void)
 	int i;
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
-	bool restart_flag;
 	hostlist_t down_hostlist = NULL;
 	char *host_str = NULL;
 	agent_arg_t *ping_agent_args = NULL;
@@ -180,7 +180,7 @@ void ping_nodes (void)
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		if ((slurmctld_conf.slurmd_timeout == 0)	&&
-		    (!IS_NODE_UNKNOWN(front_end_ptr))	&&
+		    (!IS_NODE_UNKNOWN(front_end_ptr))		&&
 		    (!IS_NODE_NO_RESPOND(front_end_ptr)))
 			continue;
 
@@ -201,12 +201,10 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (front_end_ptr->last_response == (time_t) 0) {
-			restart_flag = true;	/* system just restarted */
+		if (restart_flag) {
 			front_end_ptr->last_response =
 				slurmctld_conf.last_update;
-		} else
-			restart_flag = false;
+		}
 
 		/* Request a node registration if its state is UNKNOWN or
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping,
@@ -262,11 +260,8 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (node_ptr->last_response == (time_t) 0) {
-			restart_flag = true;	/* system just restarted */
+		if (restart_flag) {
 			node_ptr->last_response = slurmctld_conf.last_update;
-		} else
-			restart_flag = false;
 
 		/* Request a node registration if its state is UNKNOWN or
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping,
@@ -296,6 +291,7 @@ void ping_nodes (void)
 	}
 #endif
 
+	restart_flag = false;
 	if (ping_agent_args->node_count == 0) {
 		hostlist_destroy(ping_agent_args->hostlist);
 		xfree (ping_agent_args);
