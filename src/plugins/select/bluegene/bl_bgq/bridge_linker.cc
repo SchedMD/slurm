@@ -594,7 +594,7 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
-	info("removing block %s", bg_record->bg_block_id);
+	info("removing block %s %p", bg_record->bg_block_id, bg_record);
 
 #ifdef HAVE_BG_FILES
 	try {
