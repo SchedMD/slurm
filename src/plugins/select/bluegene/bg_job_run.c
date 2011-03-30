@@ -229,17 +229,15 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	}
 	if (bg_record->state == BG_BLOCK_TERM) {
 		debug("Block is in Deallocating state, waiting for free.");
+		/* Increment free_cnt to make sure we don't loose this
+		 * block since bg_free_block will unlock block_state_mutex.
+		 */
+		bg_record->free_cnt++;
 		bg_free_block(bg_record, 1, 1);
+		bg_record->free_cnt--;
 		/* no reason to reboot here since we are already
 		   deallocating */
 		bg_action_ptr->reboot = 0;
-		/* Since bg_free_block will unlock block_state_mutex
-		   we need to make sure the block we want is still
-		   around.  Failure will unlock this so no need to
-		   unlock before return.
-		*/
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
-			return;
 	}
 
 	delete_list = list_create(NULL);
@@ -301,7 +299,9 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 	slurm_mutex_lock(&block_state_mutex);
 	/* Failure will unlock block_state_mutex so no need to unlock before
-	   return. */
+	   return. Failure will unlock block_state_mutex so no need to unlock
+	   before return.
+	*/
 	if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
 		return;
 
@@ -381,15 +381,12 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	if (rc) {
 		bg_record->modifying = 1;
 
+		/* Increment free_cnt to make sure we don't loose this
+		 * block since bg_free_block will unlock block_state_mutex.
+		 */
+		bg_record->free_cnt++;
 		bg_free_block(bg_record, 1, 1);
-
-		/* Since bg_free_block will unlock block_state_mutex
-		   we need to make sure the block we want is still
-		   around.  Failure will unlock block_state_mutex so
-		   no need to unlock before return.
-		*/
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
-			return;
+		bg_record->free_cnt--;
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P
 #ifdef HAVE_BGL
@@ -469,15 +466,12 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	} else if (bg_action_ptr->reboot) {
 		bg_record->modifying = 1;
 
+		/* Increment free_cnt to make sure we don't loose this
+		 * block since bg_free_block will unlock block_state_mutex.
+		 */
+		bg_record->free_cnt++;
 		bg_free_block(bg_record, 1, 1);
-
-		/* Since bg_free_block will unlock block_state_mutex
-		   we need to make sure the block we want is still
-		   around.  Failure will unlock block_state_mutex so
-		   no need to unlock before return.
-		*/
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
-			return;
+		bg_record->free_cnt--;
 
 		bg_record->modifying = 0;
 	}
@@ -952,22 +946,22 @@ extern int boot_block(bg_record_t *bg_record)
 
 	info("Booting block %s", bg_record->bg_block_id);
 	if ((rc = bridge_block_boot(bg_record)) != SLURM_SUCCESS) {
-		/* error("bridge_create_block(%s): %s", */
-		/*       bg_record->bg_block_id, bg_err_str(rc)); */
-		/* if (rc == INCOMPATIBLE_STATE) { */
-		/* 	char reason[200]; */
-		/* 	snprintf(reason, sizeof(reason), */
-		/* 		 "boot_block: " */
-		/* 		 "Block %s is in an incompatible state.  " */
-		/* 		 "This usually means hardware is allocated " */
-		/* 		 "by another block (maybe outside of SLURM).", */
-		/* 		 bg_record->bg_block_id); */
-		/* 	bg_record->boot_state = 0; */
-		/* 	bg_record->boot_count = 0; */
-		/* 	slurm_mutex_unlock(&block_state_mutex); */
-		/* 	requeue_and_error(bg_record, reason); */
-		/* 	slurm_mutex_lock(&block_state_mutex); */
-		/* } */
+		error("bridge_create_block(%s): %s",
+		      bg_record->bg_block_id, bg_err_str(rc));
+		if (rc == BG_ERROR_BOOT_ERROR) {
+			char reason[200];
+			snprintf(reason, sizeof(reason),
+				 "boot_block: "
+				 "Block %s is in an incompatible state.  "
+				 "This usually means hardware is allocated "
+				 "by another block (maybe outside of SLURM).",
+				 bg_record->bg_block_id);
+			bg_record->boot_state = 0;
+			bg_record->boot_count = 0;
+			slurm_mutex_unlock(&block_state_mutex);
+			requeue_and_error(bg_record, reason);
+			slurm_mutex_lock(&block_state_mutex);
+		}
 		return SLURM_ERROR;
 	}
 

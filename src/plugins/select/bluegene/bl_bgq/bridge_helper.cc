@@ -222,10 +222,11 @@ extern int bridge_handle_runtime_errors(const char *function,
 	case bgsched::RuntimeErrors::BlockBootError:
 		error("%s: Error booting block %s.", function,
 		      bg_record->bg_block_id);
+		rc = BG_ERROR_BOOT_ERROR;
 		break;
 	case bgsched::RuntimeErrors::BlockFreeError:
 		/* not a real error */
-		rc = BG_ERROR_PENDING_ACTION;
+		rc = BG_ERROR_INVALID_STATE;
 		debug2("%s: Error freeing block %s.", function,
 		       bg_record->bg_block_id);
 		break;

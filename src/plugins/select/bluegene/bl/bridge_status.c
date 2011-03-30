@@ -845,12 +845,12 @@ extern int bridge_status_update_block_list_state(List block_list)
 		    != SLURM_SUCCESS) {
 			if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 				switch(rc) {
-				case INCONSISTENT_DATA:
+				case BG_ERROR_INVALID_STATE:
 					debug2("got inconsistent data when "
 					       "querying block %s", name);
 					continue;
 					break;
-				case PARTITION_NOT_FOUND:
+				case BG_ERROR_BLOCK_NOT_FOUND:
 					debug("block %s not found, removing "
 					      "from slurm", name);
 					/* Just set to free,

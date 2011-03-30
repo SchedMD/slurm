@@ -88,6 +88,10 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		     bg_record->bg_block_id);
 		xassert(0);
 		return SLURM_SUCCESS;
+	} else if (bg_record->modifying) {
+		info("%d other are modifing this block %s",
+		     bg_record->free_cnt, bg_record->bg_block_id);
+		return SLURM_SUCCESS;
 	} else if (bg_record->free_cnt) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 			info("%d other are trying to destroy this block %s",
@@ -141,19 +145,18 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 
 	rc = bridge_block_remove(bg_record);
 	if (rc != SLURM_SUCCESS) {
-		/* if (rc == PARTITION_NOT_FOUND) { */
-		/* 	debug("_post_block_free: block %s is not found", */
-		/* 	      bg_record->bg_block_id); */
-		/* } else { */
+		if (rc == BG_ERROR_BLOCK_NOT_FOUND) {
+			debug("_post_block_free: block %s is not found",
+			      bg_record->bg_block_id);
+		} else {
 			error("_post_block_free: "
 			      "bridge_block_remove(%s): %s",
 			      bg_record->bg_block_id,
 			      bg_err_str(rc));
-		/* } */
-	} else
-		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-			info("_post_block_free: done %s(%p)",
-			     bg_record->bg_block_id, bg_record);
+		}
+	} else if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("_post_block_free: done %s(%p)",
+		     bg_record->bg_block_id, bg_record);
 
 	destroy_bg_record(bg_record);
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
@@ -365,7 +368,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					debug("block %s is not found",
 					      bg_record->bg_block_id);
 					break;
-				} else if (rc == BG_ERROR_PENDING_ACTION) {
+				} else if (rc == BG_ERROR_INVALID_STATE) {
 #ifndef HAVE_BGL
 					/* If the state is error and
 					   we get an incompatible
@@ -501,8 +504,6 @@ extern int free_block_list(uint32_t job_id, List track_list,
 		if (remove_from_bg_list(bg_lists->job_running, bg_record)
 		    == SLURM_SUCCESS)
 			num_unused_cpus += bg_record->cpu_cnt;
-
-		bg_free_block(bg_record, 0, 1);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
@@ -876,8 +877,6 @@ extern const char *bg_err_str(int inx)
 	switch (inx) {
 	case SLURM_SUCCESS:
 		return "Status OK";
-	case BG_ERROR_PENDING_ACTION:
-		return "Action already pending";
 	case BG_ERROR_BLOCK_NOT_FOUND:
 		return "Block not found";
 	case BG_ERROR_BOOT_ERROR:

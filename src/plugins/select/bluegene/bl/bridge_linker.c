@@ -143,7 +143,7 @@ static int _bg_errtrans(int in)
 	case PARTITION_NOT_FOUND:
 		return BG_ERROR_BLOCK_NOT_FOUND;
 	case INCOMPATIBLE_STATE:
-		return BG_ERROR_PENDING_ACTION;
+		return BG_ERROR_INVALID_STATE;
 	case CONNECTION_ERROR:
 		return BG_ERROR_CONNECTION_ERROR;
 	case JOB_NOT_FOUND:
@@ -380,7 +380,7 @@ static int _remove_job(db_job_id_t job_id, char *block_id)
 				      job_id, block_id);
 				return SLURM_SUCCESS;
 			}
-			if (rc == BG_ERROR_PENDING_ACTION)
+			if (rc == BG_ERROR_INVALID_STATE)
 				debug("job %d on block %s is in an "
 				      "INCOMPATIBLE_STATE",
 				      job_id, block_id);
@@ -1218,6 +1218,9 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	slurm_mutex_lock(&api_file_mutex);
 	rc = _bg_errtrans((*(bridge_api.create_partition))
 			  (bg_record->bg_block_id));
+	if (rc == BG_ERROR_INVALID_STATE)
+		rc = BG_ERROR_BOOT_ERROR;
+
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
