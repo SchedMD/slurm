@@ -75,6 +75,10 @@ extern List create_dynamic_block(List block_list,
 	}
 	memset(&blockreq, 0, sizeof(blockreq_t));
 
+	/* We need to lock this just incase a blocks_overlap is called
+	   which will in turn reset and set the system as it sees fit.
+	*/
+	slurm_mutex_lock(&block_state_mutex);
 	if (my_block_list) {
 		reset_ba_system(track_down_nodes);
 		itr = list_iterator_create(my_block_list);
@@ -391,6 +395,7 @@ setup_records:
 
 finished:
 	reset_all_removed_bps();
+	slurm_mutex_unlock(&block_state_mutex);
 
 	xfree(unusable_nodes);
 	xfree(request->save_name);

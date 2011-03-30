@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
     account name.
  -- Fix associations/qos for when adding back a previously deleted object
     the object will be cleared of all old limits.
+ -- BLUEGENE - Added back a lock when creating dynamic blocks to be more thread
+    safe on larger systems with heavy load.
 
 * Changes in SLURM 2.2.3
 ========================
