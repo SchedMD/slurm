@@ -118,7 +118,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name);
 extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
-				    bool get_fs);
+				    bool for_add);
 extern int modify_common(mysql_conn_t *mysql_conn,
 			 uint16_t type,
 			 time_t now,

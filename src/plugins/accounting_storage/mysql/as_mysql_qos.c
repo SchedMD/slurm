@@ -78,10 +78,55 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 
 static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			     char **cols, char **vals,
-			     char **extra, char **added_preempt)
+			     char **extra, char **added_preempt,
+			     bool for_add)
 {
 	if (!qos)
 		return SLURM_ERROR;
+
+	if (for_add) {
+		/* If we are adding we should make sure we don't get
+		   old reside sitting around from a former life.
+		*/
+		if (!qos->description)
+			qos->description = xstrdup("");
+		if (qos->flags & QOS_FLAG_NOTSET)
+			qos->flags = 0;
+		if (qos->grp_cpu_mins == (uint64_t)NO_VAL)
+			qos->grp_cpu_mins = (uint64_t)INFINITE;
+		if (qos->grp_cpu_run_mins == (uint64_t)NO_VAL)
+			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
+		if (qos->grp_cpus == NO_VAL)
+			qos->grp_cpus = INFINITE;
+		if (qos->grp_jobs == NO_VAL)
+			qos->grp_jobs = INFINITE;
+		if (qos->grp_nodes == NO_VAL)
+			qos->grp_nodes = INFINITE;
+		if (qos->grp_submit_jobs == NO_VAL)
+			qos->grp_submit_jobs = INFINITE;
+		if (qos->grp_wall == NO_VAL)
+			qos->grp_wall = INFINITE;
+		if (qos->max_cpu_mins_pj == (uint64_t)NO_VAL)
+			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
+		if (qos->grp_cpu_run_mins == (uint64_t)NO_VAL)
+			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
+		if (qos->max_cpus_pj == NO_VAL)
+			qos->max_cpus_pj = INFINITE;
+		if (qos->max_jobs_pu == NO_VAL)
+			qos->max_jobs_pu = INFINITE;
+		if (qos->max_nodes_pj == NO_VAL)
+			qos->max_nodes_pj = INFINITE;
+		if (qos->max_submit_jobs_pu == NO_VAL)
+			qos->max_submit_jobs_pu = INFINITE;
+		if (qos->max_wall_pj == NO_VAL)
+			qos->max_wall_pj = INFINITE;
+		if (qos->preempt_mode == (uint16_t)NO_VAL)
+			qos->preempt_mode = (uint16_t)INFINITE;
+		if (qos->usage_factor == (double)NO_VAL)
+			qos->usage_factor = (double)INFINITE;
+		if (qos->usage_thres == (double)NO_VAL)
+			qos->usage_thres = (double)INFINITE;
+	}
 
 	if (qos->description) {
 		xstrcat(*cols, ", description");
@@ -321,7 +366,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xfree(preempt_val);
 	}
 
-	if ((qos->usage_factor != (int16_t)NO_VAL)
+	if ((qos->preempt_mode != (uint16_t)NO_VAL)
 	    && ((int16_t)qos->preempt_mode >= 0)) {
 		qos->preempt_mode &= (~PREEMPT_MODE_GANG);
 		xstrcat(*cols, ", preempt_mode");
@@ -396,7 +441,8 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
 
-		_setup_qos_limits(object, &cols, &vals, &extra, &added_preempt);
+		_setup_qos_limits(object, &cols, &vals,
+				  &extra, &added_preempt, 1);
 		if (added_preempt) {
 			object->preempt_bitstr = bit_alloc(g_qos_count);
 			bit_unfmt(object->preempt_bitstr, added_preempt+1);
@@ -545,7 +591,8 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	_setup_qos_limits(qos, &tmp_char1, &tmp_char2, &vals, &added_preempt);
+	_setup_qos_limits(qos, &tmp_char1, &tmp_char2,
+			  &vals, &added_preempt, 0);
 	if (added_preempt) {
 		preempt_bitstr = bit_alloc(g_qos_count);
 		bit_unfmt(preempt_bitstr, added_preempt+1);
