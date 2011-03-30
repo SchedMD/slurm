@@ -574,6 +574,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		qos = NULL;
 		if(!sacctmgr_find_qos_from_list(g_qos_list, name)) {
 			qos = xmalloc(sizeof(slurmdb_qos_rec_t));
+			slurmdb_init_qos_rec(qos, 0);
 			qos->name = xstrdup(name);
 			if(start_qos->description)
 				qos->description =
@@ -601,6 +602,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			qos->priority = start_qos->priority;
 
 			qos->usage_factor = start_qos->usage_factor;
+			qos->usage_thres = start_qos->usage_thres;
 
 			xstrfmtcat(qos_str, "  %s\n", name);
 			list_append(qos_list, qos);

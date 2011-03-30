@@ -217,10 +217,14 @@ static void _destroy_sacctmgr_file_opts(void *object)
 		xfree(file_opts->name);
 		xfree(file_opts->org);
 		xfree(file_opts->part);
-		if (file_opts->qos_list)
+		if (file_opts->qos_list) {
 			list_destroy(file_opts->qos_list);
-		if (file_opts->wckey_list)
+			file_opts->qos_list = NULL;
+		}
+		if (file_opts->wckey_list) {
 			list_destroy(file_opts->wckey_list);
+			file_opts->wckey_list = NULL;
+		}
 		xfree(file_opts);
 	}
 }
