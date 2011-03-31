@@ -830,12 +830,10 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_last_job_id();
 		reset_first_job_id();
 		(void) slurm_sched_reconfig();
-		xfree(state_save_dir);	/* No select plugin state restore */
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
 		load_last_job_id();
 		reset_first_job_id();
 		(void) slurm_sched_reconfig();
-		xfree(state_save_dir);	/* No select plugin state restore */
 	} else if (recover == 1) {	/* Load job & node state files */
 		(void) load_all_node_state(true);
 		(void) load_all_front_end_state(true);

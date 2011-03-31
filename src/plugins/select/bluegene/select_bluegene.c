@@ -214,17 +214,32 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 	xassert(curr_block_list);
 	xassert(found_block_list);
 
-	info("removing unspecified blocks");
+	slurm_mutex_lock(&block_state_mutex);
 	if (!bg_recover) {
+		info("removing all current blocks (clean start)");
 		itr_curr = list_iterator_create(curr_block_list);
 		while ((init_record = list_next(itr_curr))) {
 			list_remove(itr_curr);
-			/* make sure we query the state here. */
-			list_push(bg_lists->main, init_record);
+			/* The block needs to exist in the main list
+			 * just to make sure we query the state. */
+			if (!(found_record = find_bg_record_in_list(
+				      bg_lists->main,
+				      init_record->bg_block_id)))
+				list_push(bg_lists->main, init_record);
+			else {
+				destroy_bg_record(init_record);
+				init_record = found_record;
+			}
+			/* Make sure this block isn't in an
+			   error state since if it is it won't
+			   disappear. */
+			if (init_record->state & BG_BLOCK_ERROR_FLAG)
+				resume_block(init_record);
 			list_push(destroy_list, init_record);
 		}
 		list_iterator_destroy(itr_curr);
 	} else {
+		info("removing unspecified blocks");
 		itr_curr = list_iterator_create(curr_block_list);
 		while ((init_record = list_next(itr_curr))) {
 			itr_found = list_iterator_create(found_block_list);
@@ -239,18 +254,30 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 
 			if (found_record == NULL) {
 				list_remove(itr_curr);
-				/* make sure we query the state here. */
-				list_push(bg_lists->main, init_record);
+				/* The block needs to exist in the main list
+				 * just to make sure we query the state. */
+				if (!(found_record = find_bg_record_in_list(
+					      bg_lists->main,
+					      init_record->bg_block_id)))
+					list_push(bg_lists->main, init_record);
+				else {
+					destroy_bg_record(init_record);
+					init_record = found_record;
+				}
+				/* Make sure this block isn't in an
+				   error state since if it is it won't
+				   disappear. */
+				if (init_record->state & BG_BLOCK_ERROR_FLAG)
+					resume_block(init_record);
 				list_push(destroy_list, init_record);
 			}
 		}
 		list_iterator_destroy(itr_curr);
 	}
+	slurm_mutex_unlock(&block_state_mutex);
 
-	free_block_list(NO_VAL, destroy_list, 1, 1);
+	free_block_list(NO_VAL, destroy_list, 1, 0);
 	list_destroy(destroy_list);
-
-	info("I am done deleting");
 
 	return SLURM_SUCCESS;
 }
@@ -279,8 +306,8 @@ static void _set_bg_lists()
 }
 
 /*
- * _validate_config_nodes - Match slurm configuration information with
- *                          current BG block configuration.
+ * _validate_config_blocks - Match slurm configuration information with
+ *                           current BG block configuration.
  * IN/OUT curr_block_list -  List of blocks already existing on the system.
  * IN/OUT found_block_list - List of blocks found on the system
  *                              that are listed in the bluegene.conf.
@@ -292,8 +319,8 @@ static void _set_bg_lists()
  * code. Writes bg_block_id into bg_lists->main records.
  */
 
-static int _validate_config_nodes(List curr_block_list,
-				  List found_block_list, char *dir)
+static int _validate_config_blocks(List curr_block_list,
+				   List found_block_list, char *dir)
 {
 	int rc = SLURM_ERROR;
 	bg_record_t* bg_record = NULL;
@@ -332,8 +359,8 @@ static int _validate_config_nodes(List curr_block_list,
 	while ((bg_record = list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if (strcasecmp(bg_record->mp_str,
-				       init_bg_record->mp_str))
+			if (!bit_equal(bg_record->bitmap,
+				       init_bg_record->bitmap))
 				continue; /* wrong nodes */
 			if (!bit_equal(bg_record->ionode_bitmap,
 				       init_bg_record->ionode_bitmap))
@@ -374,10 +401,12 @@ static int _validate_config_nodes(List curr_block_list,
 			     bg_record->bg_block_id,
 			     tmp_char,
 			     conn_type_string(bg_record->conn_type[0]));
-			if (((bg_record->state == BG_BLOCK_INITED)
-			     || (bg_record->state == BG_BLOCK_BOOTING))
-			    && !block_ptr_exist_in_list(bg_lists->booted,
-							bg_record))
+			if (bg_record->state & BG_BLOCK_ERROR_FLAG)
+				put_block_in_error_state(bg_record, NULL);
+			else if (((bg_record->state == BG_BLOCK_INITED)
+				  || (bg_record->state == BG_BLOCK_BOOTING))
+				 && !block_ptr_exist_in_list(bg_lists->booted,
+							     bg_record))
 				list_push(bg_lists->booted, bg_record);
 		}
 	}
@@ -398,12 +427,16 @@ static int _validate_config_nodes(List curr_block_list,
 				     bg_record->bg_block_id,
 				     tmp_char,
 				     conn_type_string(bg_record->conn_type[0]));
-				if (((bg_record->state == BG_BLOCK_INITED)
-				     || (bg_record->state == BG_BLOCK_BOOTING))
+				if (bg_record->state & BG_BLOCK_ERROR_FLAG)
+					put_block_in_error_state(
+						bg_record, NULL);
+				else if (((bg_record->state
+					     == BG_BLOCK_INITED)
+					    || (bg_record->state
+						== BG_BLOCK_BOOTING))
 				    && !block_ptr_exist_in_list(
 					    bg_lists->booted, bg_record))
-					list_push(bg_lists->booted,
-						  bg_record);
+					list_push(bg_lists->booted, bg_record);
 				break;
 			}
 		}
@@ -842,8 +875,6 @@ extern int select_p_state_restore(char *dir_name)
 	List curr_block_list = NULL;
 	List found_block_list = NULL;
 	static time_t last_config_update = (time_t) 0;
-	ListIterator itr = NULL;
-	bg_record_t *bg_record = NULL;
 
 	/* only run on startup */
 	if (last_config_update)
@@ -854,7 +885,7 @@ extern int select_p_state_restore(char *dir_name)
 	found_block_list = list_create(NULL);
 //#if 0
 	/* Check to see if the configs we have are correct */
-	if (_validate_config_nodes(curr_block_list, found_block_list, dir_name)
+	if (_validate_config_blocks(curr_block_list, found_block_list, dir_name)
 	    == SLURM_ERROR) {
 		_delete_old_blocks(curr_block_list, found_block_list);
 	}
@@ -874,18 +905,6 @@ extern int select_p_state_restore(char *dir_name)
 			return SLURM_ERROR;
 		}
 	}
-
-	/* ok now since bg_lists->main has been made we now can put blocks in
-	   an error state this needs to be done outside of a lock
-	   it doesn't matter much in the first place though since
-	   no threads are started before this function. */
-	itr = list_iterator_create(bg_lists->main);
-	while ((bg_record = list_next(itr))) {
-		if (bg_record->state & BG_BLOCK_ERROR_FLAG)
-			put_block_in_error_state(bg_record,
-						 BLOCK_ERROR_STATE, NULL);
-	}
-	list_iterator_destroy(itr);
 
 	list_destroy(curr_block_list);
 	curr_block_list = NULL;
@@ -1413,7 +1432,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
-		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
+		put_block_in_error_state(bg_record, reason);
 	} else if (block_desc_ptr->state == BG_BLOCK_FREE) {
 		/* Increment free_cnt to make sure we don't loose this
 		 * block since bg_free_block will unlock block_state_mutex.

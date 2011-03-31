@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
+ -- BLUEGENE - Improve speed of start up when removing blocks at the beginning.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

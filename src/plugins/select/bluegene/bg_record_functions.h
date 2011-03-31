@@ -83,8 +83,7 @@ extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size);
 extern int down_nodecard(char *bp_name, bitoff_t io_start,
 			 bool slurmctld_locked);
 extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap);
-extern int put_block_in_error_state(bg_record_t *bg_record,
-				    int state, char *reason);
+extern int put_block_in_error_state(bg_record_t *bg_record, char *reason);
 extern int resume_block(bg_record_t *bg_record);
 extern int bg_reset_block(bg_record_t *bg_record);
 

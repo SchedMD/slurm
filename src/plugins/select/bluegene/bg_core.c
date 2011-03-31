@@ -579,12 +579,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	ListIterator itr = NULL;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 
-	if (!dir_name) {
-		debug2("Starting bluegene with clean slate");
-		return SLURM_SUCCESS;
-	}
-
 	xassert(curr_block_list);
+	xassert(dir_name);
 
 	state_file = xstrdup(dir_name);
 	xstrcat(state_file, "/block_state");
@@ -744,8 +740,10 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		   around in bg_lists->main.
 		*/
 		bg_record->state = block_info->state;
-		bg_record->job_running = NO_JOB_RUNNING;
-
+		bg_record->job_running = block_info->job_running;
+		if (bg_record->job_running > NO_JOB_RUNNING)
+			bg_record->job_ptr =
+				find_job_record(bg_record->job_running);
 		bg_record->mp_count = bit_set_count(node_bitmap);
 		bg_record->cnode_cnt = block_info->cnode_cnt;
 		if (bg_conf->mp_cnode_cnt > bg_record->cnode_cnt) {

@@ -588,7 +588,8 @@ static void _block_op(bg_action_t *bg_action_ptr)
 }
 
 
-/* get a list of all BG blocks with users */
+/* get a list of all BG blocks with users block_state_mutex must be
+ * unlocked before entering here. */
 static List _get_all_allocated_blocks(void)
 {
 	List ret_list = list_create(destroy_bg_record);
@@ -599,26 +600,23 @@ static List _get_all_allocated_blocks(void)
 	if (!ret_list)
 		fatal("malloc error");
 
-	if (bg_lists->main) {
-		itr = list_iterator_create(bg_lists->main);
-		while ((bg_record = (bg_record_t *) list_next(itr))) {
-			if ((bg_record->user_name == NULL)
-			    ||  (bg_record->user_name[0] == '\0')
-			    ||  (bg_record->bg_block_id == NULL)
-			    ||  (bg_record->bg_block_id[0] == '0'))
-				continue;
-			rm_record = xmalloc(sizeof(bg_record_t));
-			rm_record->magic = BLOCK_MAGIC;
-			rm_record->bg_block_id =
-				xstrdup(bg_record->bg_block_id);
-			rm_record->mp_str = xstrdup(bg_record->mp_str);
-
-			list_append(ret_list, rm_record);
-		}
-		list_iterator_destroy(itr);
-	} else {
-		error("_get_all_allocated_blocks: no bg_lists->main");
+	xassert(bg_lists->main);
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = list_next(itr))) {
+		if ((bg_record->magic != BLOCK_MAGIC)
+		    || !bg_record->user_name || !bg_record->bg_block_id)
+			continue;
+		rm_record = xmalloc(sizeof(bg_record_t));
+		rm_record->magic = BLOCK_MAGIC;
+		rm_record->bg_block_id =
+			xstrdup(bg_record->bg_block_id);
+		rm_record->mp_str = xstrdup(bg_record->mp_str);
+		list_append(ret_list, rm_record);
 	}
+	list_iterator_destroy(itr);
+
+	slurm_mutex_unlock(&block_state_mutex);
 
 	return ret_list;
 }

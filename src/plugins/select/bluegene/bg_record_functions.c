@@ -609,7 +609,7 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if (rc)
-		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
+		put_block_in_error_state(bg_record, reason);
 	else
 		error("requeue_and_error: block disappeared");
 
@@ -1094,7 +1094,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			}
 
 			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE, reason);
+				smallest_bg_record, reason);
 			goto cleanup;
 		}
 
@@ -1167,8 +1167,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 
 		if (smallest_bg_record->cnode_cnt == create_size) {
 			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE,
-				reason);
+				smallest_bg_record, reason);
 			goto cleanup;
 		}
 
@@ -1178,7 +1177,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			 * block that is already made.
 			 */
 			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE, reason);
+				smallest_bg_record, reason);
 			goto cleanup;
 		}
 		debug3("node count is %d", smallest_bg_record->cnode_cnt);
@@ -1288,8 +1287,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			/* here we know the error block doesn't exist
 			   so just set the state here */
 			slurm_mutex_unlock(&block_state_mutex);
-			rc = put_block_in_error_state(
-				bg_record, BLOCK_ERROR_STATE, reason);
+			rc = put_block_in_error_state(bg_record, reason);
 			slurm_mutex_lock(&block_state_mutex);
 		}
 	}
@@ -1364,8 +1362,7 @@ extern int up_nodecard(char *mp_name, bitstr_t *ionode_bitmap)
 }
 
 /* block_state_mutex must be unlocked before calling this. */
-extern int put_block_in_error_state(bg_record_t *bg_record,
-				    int state, char *reason)
+extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 {
 	uid_t pw_uid;
 
@@ -1411,7 +1408,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
 
-	bg_record->job_running = state;
+	bg_record->job_running = BLOCK_ERROR_STATE;
 	bg_record->state |= BG_BLOCK_ERROR_FLAG;
 
 	xfree(bg_record->user_name);
