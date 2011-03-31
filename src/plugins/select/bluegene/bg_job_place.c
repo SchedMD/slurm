@@ -1263,73 +1263,29 @@ end_it:
 static int _sync_block_lists(List full_list, List incomp_list)
 {
 	ListIterator itr;
-	ListIterator itr2;
-	bg_record_t *bg_record = NULL;
 	bg_record_t *new_record = NULL;
 	int count = 0;
 
 	itr = list_iterator_create(full_list);
-	itr2 = list_iterator_create(incomp_list);
 	while ((new_record = list_next(itr))) {
 		/* Make sure we aren't adding any block that doesn't
-		   have a block_id.
+		   have a block_id.  If the record has an original
+		   then we don't need to add either, (since it is
+		   already in the list).
 		*/
-		if (!new_record->bg_block_id)
+		if (!new_record->bg_block_id || new_record->original)
 			continue;
-		while ((bg_record = list_next(itr2))) {
-			/* If we are looking at the original, we
-			   obviously don't need to add it.
-			*/
-			if (new_record->original == bg_record)
-				break;
-			if (bit_equal(bg_record->bitmap, new_record->bitmap)
-			    && bit_equal(bg_record->ionode_bitmap,
-					 new_record->ionode_bitmap)) {
-
-				/* now make sure the conn_type
-				   is the same for
-				   regular sized blocks */
-				if (bg_record->cnode_cnt
-				    >= bg_conf->mp_cnode_cnt) {
-					int i;
-					for (i=0; i<SYSTEM_DIMENSIONS; i++)
-						if (bg_record->conn_type[i]
-						    != new_record->conn_type[i])
-							break;
-					if (i < SYSTEM_DIMENSIONS)
-						continue;
-				}
-
-				/* Check to see if this has the same
-				   block id since we don't want to add
-				   it again. (This really only happens
-				   if the new_record->original isn't set).
-				*/
-				if (!new_record->original
-				    && strcmp(bg_record->bg_block_id,
-					      new_record->bg_block_id))
-					continue;
-
-				/* This must be the same block. */
-				break;
-			}
-		}
-
-		if (!bg_record) {
-			list_remove(itr);
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("sync: adding %s %zx",
-				     new_record->bg_block_id,
-				     (size_t)new_record);
-			list_append(incomp_list, new_record);
-			last_bg_update = time(NULL);
-			count++;
-		}
-		list_iterator_reset(itr2);
+		list_remove(itr);
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("sync: adding %s %p",
+			     new_record->bg_block_id, new_record);
+		list_append(incomp_list, new_record);
+		last_bg_update = time(NULL);
+		count++;
 	}
 	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
-	sort_bg_record_inc_size(incomp_list);
+	if (count)
+		sort_bg_record_inc_size(incomp_list);
 
 	return count;
 }
