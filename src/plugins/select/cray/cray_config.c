@@ -100,9 +100,9 @@ extern int create_config(void)
 
 	if (stat(cray_conf_file, &config_stat) < 0) {
 		cray_conf->alps_dir = xstrdup(DEFAULT_ALPS_DIR);
-		cray_conf->apbasil = xstrdup(DEFAULT_APBASIL);
-		cray_conf->apkill = xstrdup(DEFAULT_APKILL);
-		cray_conf->sdb_db = xstrdup(DEFAULT_CRAY_SDB_DB);
+		cray_conf->apbasil  = xstrdup(DEFAULT_APBASIL);
+		cray_conf->apkill   = xstrdup(DEFAULT_APKILL);
+		cray_conf->sdb_db   = xstrdup(DEFAULT_CRAY_SDB_DB);
 		cray_conf->sdb_host = xstrdup(DEFAULT_CRAY_SDB_HOST);
 		cray_conf->sdb_pass = xstrdup(DEFAULT_CRAY_SDB_PASS);
 		cray_conf->sdb_port = DEFAULT_CRAY_SDB_PORT;
