@@ -174,6 +174,10 @@ main (int argc, char *argv[])
 	uint32_t slurmd_uid = 0;
 	uint32_t curr_uid = 0;
 	char time_stamp[256];
+	log_options_t lopts = LOG_OPTS_INITIALIZER;
+
+	/* NOTE: logfile is NULL at this point */
+	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
 	/*
 	 * Make sure we have no extra open files which
@@ -230,9 +234,6 @@ main (int argc, char *argv[])
 
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
-
-	/* NOTE: conf->logfile always NULL at this point */
-	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
 	xsignal(SIGTERM, &_term_handler);
 	xsignal(SIGINT,  &_term_handler);

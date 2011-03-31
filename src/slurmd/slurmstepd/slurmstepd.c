@@ -220,6 +220,9 @@ _init_from_slurmd(int sock, char **argv,
 	gid_t *gids = NULL;
 	uint16_t port;
 	char buf[16];
+	log_options_t lopts = LOG_OPTS_INITIALIZER;
+
+	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
@@ -251,7 +254,7 @@ _init_from_slurmd(int sock, char **argv,
 	conf->log_opts.stderr_level = conf->debug_level;
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level = conf->debug_level;
-	//log_alter(conf->log_opts, 0, NULL);
+
 	/*
 	 * If daemonizing, turn off stderr logging -- also, if
 	 * logging to a file, turn off syslog.
@@ -265,8 +268,8 @@ _init_from_slurmd(int sock, char **argv,
 			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
 	} else
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+	log_alter(conf->log_opts, 0, conf->logfile);
 
-	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	/* acct info */
 	jobacct_gather_g_startpoll(conf->job_acct_gather_freq);
 
