@@ -232,7 +232,7 @@ nochange_state:
 			break;
 		case BG_BLOCK_FREE:
 			if (bg_record->boot_count < RETRY_BOOT_COUNT) {
-				boot_block(bg_record);
+				bridge_block_boot(bg_record);
 
 				if (bg_record->magic == BLOCK_MAGIC) {
 					debug("boot count for block %s is %d",

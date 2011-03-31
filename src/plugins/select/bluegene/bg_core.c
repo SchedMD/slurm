@@ -873,9 +873,13 @@ unpack_error:
  */
 extern const char *bg_err_str(int inx)
 {
+	static char tmp_char[10];
+
 	switch (inx) {
 	case SLURM_SUCCESS:
-		return "Status OK";
+		return "Slurm Success";
+	case SLURM_ERROR:
+		return "Slurm Error";
 	case BG_ERROR_BLOCK_NOT_FOUND:
 		return "Block not found";
 	case BG_ERROR_BOOT_ERROR:
@@ -898,8 +902,14 @@ extern const char *bg_err_str(int inx)
 		return "Invalid input";
 	case BG_ERROR_INCONSISTENT_DATA:
 		return "Inconsistent data";
+	case BG_ERROR_NO_IOBLOCK_CONNECTED:
+		return "No IO Block Connected";
 	}
-
-	return "?";
+	/* I know this isn't the best way to handle this, but it only
+	   happens very rarely and usually in debugging, so it
+	   hopefully isn't really all that bad.
+	*/
+	snprintf(tmp_char, sizeof(tmp_char), "%u ?", inx);
+	return tmp_char;
 }
 

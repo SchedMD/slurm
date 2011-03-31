@@ -477,19 +477,27 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	}
 
 	if (bg_record->state == BG_BLOCK_FREE) {
-		if ((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
-			/* Since boot_block could unlock block_state_mutex
-			   on error we need to make sure the block we
-			   want is still around.  Failure will unlock
-			   block_state_mutex so no need to unlock
-			   before return.
-			*/
-			if (!_make_sure_block_still_exists(bg_action_ptr,
-							   bg_record))
-				return;
-			bg_reset_block(bg_record);
+		if ((rc = bridge_block_boot(bg_record)) != SLURM_SUCCESS) {
+			char reason[200];
+
+			bg_record->boot_state = 0;
+			bg_record->boot_count = 0;
+
+			if (rc == BG_ERROR_INVALID_STATE)
+				snprintf(reason, sizeof(reason),
+					 "Block %s is in an incompatible "
+					 "state.  This usually means "
+					 "hardware is allocated "
+					 "by another block (maybe outside "
+					 "of SLURM).",
+					 bg_record->bg_block_id);
+			else
+				snprintf(reason, sizeof(reason),
+					 "Couldn't boot block %s: %s",
+					 bg_record->bg_block_id,
+					 bg_err_str(rc));
 			slurm_mutex_unlock(&block_state_mutex);
-			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+			requeue_and_error(bg_record, reason);
 			return;
 		}
 	} else if (bg_record->state == BG_BLOCK_BOOTING) {
@@ -925,43 +933,5 @@ extern int sync_jobs(List job_list)
 		error("sync_jobs: no block_list");
 		return SLURM_ERROR;
 	}
-	return SLURM_SUCCESS;
-}
-
-/*
- * Boot a block. Block state expected to be FREE upon entry.
- * NOTE: This function does not wait for the boot to complete.
- * the slurm prolog script needs to perform the waiting.
- * NOTE: block_state_mutex needs to be locked before entering.
- */
-extern int boot_block(bg_record_t *bg_record)
-{
-	int rc;
-	if (bg_record->magic != BLOCK_MAGIC) {
-		error("boot_block: magic was bad");
-		return SLURM_ERROR;
-	}
-
-	info("Booting block %s", bg_record->bg_block_id);
-	if ((rc = bridge_block_boot(bg_record)) != SLURM_SUCCESS) {
-		error("bridge_create_block(%s): %s",
-		      bg_record->bg_block_id, bg_err_str(rc));
-		if (rc == BG_ERROR_BOOT_ERROR) {
-			char reason[200];
-			snprintf(reason, sizeof(reason),
-				 "boot_block: "
-				 "Block %s is in an incompatible state.  "
-				 "This usually means hardware is allocated "
-				 "by another block (maybe outside of SLURM).",
-				 bg_record->bg_block_id);
-			bg_record->boot_state = 0;
-			bg_record->boot_count = 0;
-			slurm_mutex_unlock(&block_state_mutex);
-			requeue_and_error(bg_record, reason);
-			slurm_mutex_lock(&block_state_mutex);
-		}
-		return SLURM_ERROR;
-	}
-
 	return SLURM_SUCCESS;
 }

@@ -479,7 +479,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 			BOOST_FOREACH(const std::string& mp, mp_vec) {
 				error("%s", mp.c_str());
 			}
-			return SLURM_ERROR;
+			return BG_ERROR_NO_IOBLOCK_CONNECTED;
 		}
 	} catch (const bgsched::DatabaseException& err) {
 		rc = bridge_handle_database_errors("Block::isIOConnected",

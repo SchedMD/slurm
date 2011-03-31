@@ -43,13 +43,6 @@
 #include "bg_record_functions.h"
 
 /*
- * Boot a block. Partition state expected to be FREE upon entry.
- * NOTE: This function does not wait for the boot to complete.
- * the slurm prolog script needs to perform the waiting.
- */
-extern int boot_block(bg_record_t *bg_record);
-
-/*
  * Perform any setup required to initiate a job
  * job_ptr IN - pointer to the job being initiated
  * RET - SLURM_SUCCESS or an error code
