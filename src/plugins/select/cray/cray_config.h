@@ -68,11 +68,11 @@ typedef struct {
 /* DNS name of SDB host */
 #define DEFAULT_CRAY_SDB_HOST     "sdb"
 /* If NULL, use value from my.cnf */
-#define DEFAULT_CRAY_SDB_PASS     "basic"
+#define DEFAULT_CRAY_SDB_PASS     NULL
 /* If NULL, use value from my.cnf */
 #define DEFAULT_CRAY_SDB_PORT     0
 /* If NULL, use value from my.cnf */
-#define DEFAULT_CRAY_SDB_USER     "basic"
+#define DEFAULT_CRAY_SDB_USER     NULL
 
 extern cray_config_t *cray_conf;
 
