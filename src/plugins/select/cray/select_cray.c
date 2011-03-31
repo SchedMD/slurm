@@ -135,16 +135,11 @@ extern int init ( void )
 	 * if (slurmctld_conf.select_type_param & CR_CONS_RES)
 	 *	plugin_id = 105;
 	 */
-#ifdef HAVE_CRAY
-	if (bg_recover != NOT_FROM_CONTROLLER) {
-		verbose("%s loading...", plugin_name);
-		create_config();
-		verbose("Cray plugin loaded successfully");
-	}
-#else
+#ifndef HAVE_CRAY
 	if (bg_recover != NOT_FROM_CONTROLLER)
 		fatal("select/cray is incompatible with a non Cray system");
 #endif
+	create_config();
 	return SLURM_SUCCESS;
 }
 
