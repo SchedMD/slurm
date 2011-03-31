@@ -66,13 +66,13 @@ typedef struct {
 /* database name to use  */
 #define DEFAULT_CRAY_SDB_DB       "XTAdmin"
 /* DNS name of SDB host */
-#define DEFAULT_CRAY_SDB_HOST "sdb"
+#define DEFAULT_CRAY_SDB_HOST     "sdb"
 /* If NULL, use value from my.cnf */
-#define DEFAULT_CRAY_SDB_PASS     NULL
+#define DEFAULT_CRAY_SDB_PASS     "basic"
 /* If NULL, use value from my.cnf */
 #define DEFAULT_CRAY_SDB_PORT     0
 /* If NULL, use value from my.cnf */
-#define DEFAULT_CRAY_SDB_USER     NULL
+#define DEFAULT_CRAY_SDB_USER     "basic"
 
 extern cray_config_t *cray_conf;
 

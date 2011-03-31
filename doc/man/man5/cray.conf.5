@@ -6,7 +6,9 @@ cray.conf \- Slurm configuration file for the Cray\-specific information
 .SH "DESCRIPTION"
 \fB/etc/cray.conf\fP is an ASCII file which defines parameters used by 
 Slurm's select/cray plugin in support of Cray systems. The file will always
-be located in the same directory as the \fBslurm.conf\fP file.
+be located in the same directory as the \fBslurm.conf\fP file. The default
+configuration parameters will work properly in a typical installation and
+this file will not be required.
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
@@ -46,7 +48,7 @@ The default value is \fIsdb\fR.
 .TP
 \fBSDBpass\fR=<password>
 Password used to access the ALPS database.
-The default value is NULL.
+The default value is \fIbasic\fR.
 
 .TP
 \fBSDBport\fR=<port_number>
@@ -56,7 +58,7 @@ The default value is 0.
 .TP
 \fBSDBuser\fR=<user_name>
 Name of user used to access the ALPS database.
-The default value is NULL.
+The default value is \fIbasic\fR.
 
 .SH "EXAMPLE"
 .LP
