@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.5
 ========================
+ -- Correct init.d/slurm status to have non-zero exit code if ANY Slurm
+    damon that should be running on the node is not running. Patch from Rod
+    Schulz, Bull.
 
 * Changes in SLURM 2.2.4
 ========================
