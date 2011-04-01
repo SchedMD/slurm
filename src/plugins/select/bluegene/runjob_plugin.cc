@@ -94,15 +94,22 @@ Plugin::~Plugin()
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
-	char *bg_block_id = getenv("MPIRUN_PARTITION");
 
-	if (!bg_block_id || (strlen(bg_block_id) < 3)) {
+	BOOST_FOREACH(const bgsched::runjob::Environment& env_var,
+		      verify.envs()) {
+		if (env_var.getKey() == "MPIRUN_PARTITION") {
+			verify.block(env_var.getValue());
+			break;
+		}
+	}
+
+
+	std::cout << "got bg id of " << verify.block() << std::endl;
+	if (verify.block().empty() || (verify.block().length() < 3)) {
 		std::cerr << "YOU ARE OUTSIDE OF SLURM!!!!" << std::endl;
 		verify.denyJob(bgsched::runjob::Verify::DenyJob::Yes);
 		return;
 	}
-
-	verify.block(bg_block_id);
 
 	std::cout << "starting job from pid " << verify.pid() << std::endl;
 	std::cout << "executable: " << verify.exe() << std::endl;
