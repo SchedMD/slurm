@@ -1504,7 +1504,7 @@ static void _load_multi(int *argc, char **argv)
  */
 static void _opt_args(int argc, char **argv)
 {
-	int i;
+	int i, command_pos = 0;
 	char **rest = NULL;
 
 	set_options(argc, argv);
@@ -1568,8 +1568,20 @@ static void _opt_args(int argc, char **argv)
 		while (rest[opt.argc] != NULL)
 			opt.argc++;
 	}
+#if defined HAVE_BG_FILES && HAVE_BGQ
+	command_pos = 3;
+	opt.argc += command_pos;
+#endif
+
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
-	for (i = 0; i < opt.argc; i++)
+
+#if defined HAVE_BG_FILES && HAVE_BGQ
+	opt.argv[0] = xstrdup(runjob_loc);
+	opt.argv[1] = xstrdup("--env_all");
+	opt.argv[2] = xstrdup("--exe");
+#endif
+
+	for (i = command_pos; i < opt.argc; i++)
 		opt.argv[i] = xstrdup(rest[i]);
 	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
@@ -1579,26 +1591,14 @@ static void _opt_args(int argc, char **argv)
 			exit(error_exit);
 		}
 		_load_multi(&opt.argc, opt.argv);
-	} else if (opt.argc > 0) {
+	} else if (opt.argc > command_pos) {
 		char *fullpath;
 
 		if ((fullpath = search_path(opt.cwd,
-					    opt.argv[0], false, X_OK))) {
-			xfree(opt.argv[0]);
-#if defined HAVE_BG_FILES && HAVE_BGQ
-			opt.argv[0] = xstrdup_printf("%s %s",
-						     runjob_loc, fullpath);
-			xfree(fullpath);
-#else
-			opt.argv[0] = fullpath;
-#endif
-		} else {
-#if defined HAVE_BG_FILES && HAVE_BGQ
-			fullpath = opt.argv[0];
-			opt.argv[0] = xstrdup_printf("%s %s",
-						     runjob_loc, fullpath);
-			xfree(fullpath);
-#endif
+					    opt.argv[command_pos],
+					    false, X_OK))) {
+			xfree(opt.argv[command_pos]);
+			opt.argv[command_pos] = fullpath;
 		}
 	}
 
