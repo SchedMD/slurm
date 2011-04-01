@@ -3606,7 +3606,12 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 			xcpu_signal(SIGKILL, nodes);
 			_terminate_all_steps(job_id, true);
 		}
-		sleep (1);
+		if (sec < 10)
+			sleep(1);
+		else {
+			/* Reduce logging about unkillable tasks */
+			sleep(60);
+		}
 	}
 
 	/*
