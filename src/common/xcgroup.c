@@ -307,7 +307,7 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 			*e='\0';
 			/* get subsystems entry */
 			subsys = index(p, ':');
-			p=e;
+			p = e + 1;
 			if (subsys == NULL)
 				continue;
 			subsys++;
