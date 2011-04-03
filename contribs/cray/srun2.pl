@@ -50,6 +50,17 @@ use Slurm ':all';
 use Switch;
 
 my (	$account,
+	$acctg_freq,
+	$begin_time,
+	$check_time,
+	$check_dir,
+	$comment,
+	$constraint,
+	$contiguous,
+	$cores_per_socket,
+	$cpu_bind,
+	$cpus_per_task,
+	$extra_node_info,
 	$help,
 	$man,
 	$num_tasks,
@@ -69,6 +80,11 @@ foreach (keys %ENV) {
 #	print "$_=$ENV{$_}\n";
 	$have_job = 1			if $_ eq "SLURM_JOBID";
 	$account = $ENV{$_}		if $_ eq "SLURM_ACCOUNT";
+	$acctg_freq = $ENV{$_}		if $_ eq "SLURM_ACCTG_FREQ";
+	$check_time = $ENV{$_}		if $_ eq "SLURM_CHECKPOINT";
+	$check_dir = $ENV{$_}		if $_ eq "SLURM_CHECKPOINT_DIR";
+	$cpu_bind = $ENV{$_}		if $_ eq "SLURM_CPU_BIND";
+	$cpus_per_task = $ENV{$_}	if $_ eq "SLURM_CPUS_PER_TASK";
 	$num_tasks = $ENV{$_}		if $_ eq "SLURM_NTASKS";
 	$num_nodes = $ENV{$_}		if $_ eq "SLURM_NNODES";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
@@ -76,6 +92,17 @@ foreach (keys %ENV) {
 
 GetOptions(
 	'A|account=s'			=> \$account,
+	'acctg-freq=i'			=> \$acctg_freq,
+	'B|extra-node-info=s'		=> \$extra_node_info,
+	'begin=s'			=> \$begin_time,
+	'checkpoint=s'			=> \$check_time,
+	'checkpoint-dir=s'		=> \$check_dir,
+	'comment=s'			=> \$comment,
+	'C|constraint=s'		=> \$constraint,
+	'contiguous'			=> \$contiguous,
+	'cores-per-socket=i'		=> \$cores_per_socket,
+	'cpu_bind=s'			=> \$cpu_bind,
+	'c|cpus-per-task=i'		=> \$cpus_per_task,
 	'help|?'			=> \$help,
 	'man'				=> \$man,
 	'n|ntasks=s'			=> \$num_tasks,
@@ -84,8 +111,8 @@ GetOptions(
 ) or pod2usage(2);
 
 # Display usage if necessary
-pod2usage(0) if $help;
-if ($man) {
+pod2usage(0) if $man;
+if ($help) {
 	if ($< == 0) {   # Cannot invoke perldoc as root
 		my $id = eval { getpwnam("nobody") };
 		$id = eval { getpwnam("nouser") } unless defined $id;
@@ -97,7 +124,6 @@ if ($man) {
 	delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
 	if ($0 =~ /^([-\/\w\.]+)$/) { $0 = $1; }    # Untaint $0
 	else { die "Illegal characters were found in \$0 ($0)\n"; }
-	#pod2usage(-exitstatus => 0, -verbose => 2);
 }
 
 my $script;
@@ -113,12 +139,21 @@ my %node_opts;
 
 my $command;
 
-if ($have_job) {
+if ($have_job == 0) {
 	$command = "$salloc";
-	$command .= " --account=$account" if $account;
-	$command .= " --ntasks=$num_tasks" if $num_tasks;
-	$command .= " --nodes=$num_nodes" if $num_nodes;
-	$command .= " --time=$time_limit" if $time_limit;
+	$command .= " --account=$account"		if $account;
+	$command .= " --acctg-freq=$acctg_freq"		if $acctg_freq;
+	$command .= " --begin=$begin_time"		if $begin_time;
+	$command .= " --comment=\"$comment\""		if $comment;
+	$command .= " --constraint=\"$constraint\""	if $constraint;
+	$command .= " --contiguous"			if $contiguous;
+	$command .= " --cores-per-socket=$cores_per_socket" if $cores_per_socket;
+	$command .= " --cpu_bind=$cpu_bind"		if $cpu_bind;
+	$command .= " --cpus-per-task=$cpus_per_task"	if $cpus_per_task;
+	$command .= " --extra-node-info=$extra_node_info" if $extra_node_info;
+	$command .= " --ntasks=$num_tasks"		if $num_tasks;
+	$command .= " --nodes=$num_nodes"		if $num_nodes;
+	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " $aprun";
 } else {
 	$command = "$aprun";
@@ -167,7 +202,7 @@ srun  [OPTIONS...] executable [arguments...]
 =head1 DESCRIPTION
 
 Run a parallel job on cluster managed by SLURM.  If necessary, srun will
-first create a resource allocation in whit|timech to run the parallel job.
+first create a resource allocation in whit|timech to run the parallel j	$command .= " --cpus-per-task=$cpus_per_task"	if $cpus_per_task;ob.
 
 =head1 OPTIONS
 
@@ -181,17 +216,73 @@ Charge resources used by this job to specified account.
 
 Number of tasks to launch.
 
+=item B<--acctg-freq=seconds>
+
+Specify the accounting sampling interval.
+
+=item B<-B> | B<--extra-node-info=sockets[:cores[:threads]]>
+
+Request a specific allocation of resources with details as to the
+number and type of computational resources within a cluster:
+number of sockets (or physical processors) per node,
+cores per socket, and threads per core.
+The individual levels can also be specified in separate options if desired:
+B<--sockets-per-node=sockets>, B<--cores-per-socket=cores>, and
+B<--threads-per-core=threads>.
+
+=item B<--begin=time>
+
+Defer job initiation until the specified time.cores_per_socket
+
+=item B<--checkpoint=interval>
+
+Specify the time interval between checkpoint creations.
+
+=item B<--checkpoint-dir=directory>
+
+Directory where the checkpoint image should be written.
+
+=item B<--comment=string>
+
+An arbitrary comment.
+
+=item B<-C> | B<--constraint=string>
+
+Constrain job allocation to nodes with the specified features.
+
+=item B<--contiguous>
+
+Constrain job allocation to contiguous nodes.
+
+=item B<--cores-per-socket=number>
+
+Count of cores to be allocated per per socket.
+
+=item B<--cpu_bind=options>
+
+Strategy to be used for binding tasks to the CPUs.
+Options include: quiet, verbose, none, rank, map_cpu, mask_cpu, rank_ldom,
+map_ldom, mask_ldom, sockets, cores, threads, ldoms and help.
+
+=item B<-c> | B<--cpus-per-task=number>
+
+Count of CPUs required per task.
+
+=item B<-n> | B<--ntasks=num_tasks>
+
+Number of tasks to launch.
+
 =item B<-N> | B<--nodes=num_nodes>
 
 Number of nodes to use.
 
 =item B<-?> | B<--help>
 
-Brief help message
+Print brief help message
 
 =item B<--man>
 
-Full documentation
+Print full documentation.
 
 =item B<-t> | B<--time>
 
@@ -200,4 +291,3 @@ Time limit.
 =back
 
 =cut
-
