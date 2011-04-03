@@ -139,10 +139,7 @@ extern uid_t *get_group_members(char *group_name)
 		        for (i=0; grp_result->gr_mem[i]; i++) {
 				if (uid_from_string(grp_result->gr_mem[i],
 						    &my_uid) < 0) {
-				        error("Could not find user %s in "
-					      "configured group %s",
-					      grp_result->gr_mem[i],
-					      group_name);
+					/* Group member without valid login */
 					continue;
 				}
 				if (my_uid == 0)
