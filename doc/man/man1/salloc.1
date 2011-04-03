@@ -385,7 +385,7 @@ Examples of use include "\-\-gres=gpus:2*cpu,disk=40G" and "\-\-gres=help".
 \fB\-H, \-\-hold\fR
 Specify the job is to be submitted in a held state (priority of zero).
 A held job can now be released using scontrol to reset its priority
-(e.g. "\fIscontrol update jobid=<id> priority=1\fR".
+(e.g. "\fIscontrol release <job_id>\fR").
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
