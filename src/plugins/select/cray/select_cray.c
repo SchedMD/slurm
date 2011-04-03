@@ -231,6 +231,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
+	xassert(job_ptr);
+
 	if (do_basil_reserve(job_ptr) != SLURM_SUCCESS) {
 		job_ptr->state_reason = WAIT_RESOURCES;
 		xfree(job_ptr->state_desc);
@@ -242,6 +244,8 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
+
+	xassert(job_ptr);
 	/*
 	 * Convention:	this function may be called also from stepdmgr, to
 	 *		confirm the ALPS reservation of a batch job. In this
@@ -278,6 +282,8 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 
 extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 {
+	xassert(job_ptr);
+
 	if (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	return other_job_signal(job_ptr, signal);
@@ -294,6 +300,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	 *		means that we need to confirm only if batch_flag is 0,
 	 *		and execute the other_job_fini() only in slurmctld.
 	 */
+	if (job_ptr == NULL)
+		return SLURM_SUCCESS;
 	if (!job_ptr->batch_flag && do_basil_release(job_ptr) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (job_ptr->job_state == (uint16_t)NO_VAL)

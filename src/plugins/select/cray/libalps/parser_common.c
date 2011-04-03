@@ -6,7 +6,6 @@
  */
 #include "parser_internal.h"
 #include "../parser_common.h"
-#include "src/common/xassert.h"
 
 const char *bv_names[BV_MAX];
 const char *bv_names_long[BV_MAX];

@@ -13,6 +13,7 @@
 
 #include "src/common/log.h"
 #include "src/common/fd.h"
+#include "src/common/xassert.h"
 #include "cray_config.h"
 
 #include <stdio.h>
