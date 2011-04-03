@@ -52,6 +52,7 @@ use Switch;
 my (	$account,
 	$acctg_freq,
 	$begin_time,
+	$chdir,
 	$check_time,
 	$check_dir,
 	$comment,
@@ -60,9 +61,18 @@ my (	$account,
 	$cores_per_socket,
 	$cpu_bind,
 	$cpus_per_task,
+	$dependency,
+	$error_file,
+	$epilog,
+	$exclusive,
 	$extra_node_info,
+	$group,
+	$gres,
 	$help,
+	$hint,
+	$hold,
 	$man,
+	$preserve_env,
 	$num_tasks,
 	$num_nodes,
 	$time_limit,
@@ -81,10 +91,14 @@ foreach (keys %ENV) {
 	$have_job = 1			if $_ eq "SLURM_JOBID";
 	$account = $ENV{$_}		if $_ eq "SLURM_ACCOUNT";
 	$acctg_freq = $ENV{$_}		if $_ eq "SLURM_ACCTG_FREQ";
+	$chdir = $ENV{$_}		if $_ eq "SLURM_WORKING_DIR";
 	$check_time = $ENV{$_}		if $_ eq "SLURM_CHECKPOINT";
 	$check_dir = $ENV{$_}		if $_ eq "SLURM_CHECKPOINT_DIR";
 	$cpu_bind = $ENV{$_}		if $_ eq "SLURM_CPU_BIND";
 	$cpus_per_task = $ENV{$_}	if $_ eq "SLURM_CPUS_PER_TASK";
+	$dependency = $ENV{$_}		if $_ eq "SLURM_DEPENDENCY";
+	$epilog = $ENV{$_}		if $_ eq "SLURM_EPILOG";
+	$exclusive  = 1			if $_ eq "SLURM_EXCLUSIVE";
 	$num_tasks = $ENV{$_}		if $_ eq "SLURM_NTASKS";
 	$num_nodes = $ENV{$_}		if $_ eq "SLURM_NNODES";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
@@ -103,7 +117,17 @@ GetOptions(
 	'cores-per-socket=i'		=> \$cores_per_socket,
 	'cpu_bind=s'			=> \$cpu_bind,
 	'c|cpus-per-task=i'		=> \$cpus_per_task,
+	'd|dependency=s'		=> \$dependency,
+	'D|chdir=s'			=> \$chdir,
+	'e|error=s'			=> \$error_file,
+	'epilog=s'			=> \$epilog,
+	'exclusive'			=> \$exclusive,
+	'E|preserve-env'		=> \$preserve_env,
+	'gid=s'				=> \$group,
+	'gres=s'			=> \$gres,
 	'help|?'			=> \$help,
+	'hint=s',			=> \$hint,
+	'H|hold',			=> \$hold,
 	'man'				=> \$man,
 	'n|ntasks=s'			=> \$num_tasks,
 	'N|nodes=s'			=> \$num_nodes,
@@ -144,15 +168,25 @@ if ($have_job == 0) {
 	$command .= " --account=$account"		if $account;
 	$command .= " --acctg-freq=$acctg_freq"		if $acctg_freq;
 	$command .= " --begin=$begin_time"		if $begin_time;
+	$command .= " --chdir=$chdir"			if $chdir;
 	$command .= " --comment=\"$comment\""		if $comment;
 	$command .= " --constraint=\"$constraint\""	if $constraint;
 	$command .= " --contiguous"			if $contiguous;
 	$command .= " --cores-per-socket=$cores_per_socket" if $cores_per_socket;
 	$command .= " --cpu_bind=$cpu_bind"		if $cpu_bind;
 	$command .= " --cpus-per-task=$cpus_per_task"	if $cpus_per_task;
+	$command .= " --dependency=$dependency"		if $dependency;
+	$command .= " --epilog=$epilog"			if $epilog;
+	$command .= " --error=$error_file"		if $error_file;
+	$command .= " --exclusive"			if $exclusive;
 	$command .= " --extra-node-info=$extra_node_info" if $extra_node_info;
+	$command .= " --gid=$group"			if $group;
+	$command .= " --gres=$gres"			if $gres;
+	$command .= " --hint=$hint"			if $hint;
+	$command .= " --hold"				if $hold;
 	$command .= " --ntasks=$num_tasks"		if $num_tasks;
 	$command .= " --nodes=$num_nodes"		if $num_nodes;
+	$command .= " --preserve_env"			if $preserve_env;
 	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " $aprun";
 } else {
@@ -268,6 +302,59 @@ map_ldom, mask_ldom, sockets, cores, threads, ldoms and help.
 
 Count of CPUs required per task.
 
+=item B<-d> | B<--dependency=[condition:]jobid>
+
+Wait for job(s) to enter specified condition before starting the job.
+Valid conditions include after, afterany, afternotok, and singleton.
+
+=item B<-D> | B<--chdir=directory>
+
+Execute the program from the specified directory.
+
+=item B<-e> | B<--error=filename>
+
+Write stderr to the specified file.
+
+=item B<--epilog=filename>
+
+Execute the specified program after the job step completes.
+
+=item B<--exclusive>
+
+The job or job step will not share resources with other jobs or job steps.
+
+=item B<-E> | B<--preserve-env>
+
+Pass the current values of environment variables SLURM_NNODES and
+SLURM_NTASKS through to the executable, rather than computing them
+from command line parameters.
+
+=item B<--gid=group>
+
+If user root, then execute the job using the specified group access permissions.
+Specify either a group name or ID.
+
+=item B<--gres=gres_name[*count]>
+
+Allocate the specified generic resources on each allocated node.
+
+=item B<-?> | B<--help>
+
+Print brief help message.
+
+=item B<--hint=type>
+
+Bind tasks according to application hints: compute_bound, memory_bound,
+multithread, nomultithread, or help.
+
+=item B<-H> | B<--hold>
+
+Submit the job in a held state.
+
+=item B<--man>
+
+Print full documentation.
+
 =item B<-n> | B<--ntasks=num_tasks>
 
 Number of tasks to launch.
@@ -275,14 +362,6 @@ Number of tasks to launch.
 =item B<-N> | B<--nodes=num_nodes>
 
 Number of nodes to use.
-
-=item B<-?> | B<--help>
-
-Print brief help message
-
-=item B<--man>
-
-Print full documentation.
 
 =item B<-t> | B<--time>
 
