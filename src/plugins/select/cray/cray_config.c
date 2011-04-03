@@ -182,7 +182,6 @@ extern int destroy_config(void)
 		xfree(cray_conf->sdb_host);
 		xfree(cray_conf->sdb_pass);
 		xfree(cray_conf->sdb_user);
-		xfree(cray_conf->slurm_debug_flags);
 		xfree(cray_conf);
 	}
 
