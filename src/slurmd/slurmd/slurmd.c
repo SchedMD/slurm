@@ -777,7 +777,18 @@ _read_config(bool reconfig)
 		    &conf->actual_threads,
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
-
+#ifdef HAVE_FRONT_END
+	/*
+	 * When running with multiple frontends, the slurmd S:C:T values are not
+	 * relevant, hence ignored by both _register_front_ends (sets all to 1)
+	 * and validate_nodes_via_front_end (uses slurm.conf values).
+	 * Report actual hardware configuration, irrespective of FastSchedule.
+	 */
+	conf->cpus    = conf->actual_cpus;
+	conf->sockets = conf->actual_sockets;
+	conf->cores   = conf->actual_cores;
+	conf->threads = conf->actual_threads;
+#else
 	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) ||
 	    ((cf->fast_schedule == 1) &&
 	     (conf->actual_cpus < conf->conf_cpus))) {
@@ -791,6 +802,7 @@ _read_config(bool reconfig)
 		conf->cores   = conf->conf_cores;
 		conf->threads = conf->conf_threads;
 	}
+#endif
 
 	if (cf->fast_schedule &&
 	    ((conf->cpus    != conf->actual_cpus)    ||
