@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Correct init.d/slurm status to have non-zero exit code if ANY Slurm
     damon that should be running on the node is not running. Patch from Rod
     Schulz, Bull.
+ -- Improve accuracy of response to "srun --test-only jobid=#".
 
 * Changes in SLURM 2.2.4
 ========================
