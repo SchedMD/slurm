@@ -75,8 +75,14 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	maxtasks = job_res->ncpus;
+
+	if (job_ptr->details->ntasks_per_node == 0)
+		maxtasks = job_res->ncpus;
+	else
+		maxtasks = job_res->ncpus * job_ptr->details->ntasks_per_node;
+
 	avail_cpus = job_res->cpus;
+
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 
 	/* ncpus is already set the number of tasks if overcommit is used */
