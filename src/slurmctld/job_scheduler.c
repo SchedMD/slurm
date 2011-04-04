@@ -1159,7 +1159,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
-	time_t now = time(NULL), start_res;
+	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
 	List preemptee_candidates = NULL, preemptee_job_list = NULL;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
@@ -1235,6 +1235,13 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		else
 			req_nodes = min_nodes;
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
+
+		/* The orig_start is based upon the backfill scheduler data
+		 * and considers all higher priority jobs. The logic below
+		 * only considers currently running jobs, so the expected
+		 * start time will almost certainly be earlier and not as
+		 * accurate, but this algorithm is much faster. */
+		orig_start_time = job_ptr->start_time;
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
@@ -1254,7 +1261,9 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 #else
 		resp_data->proc_cnt = job_ptr->total_cpus;
 #endif
-		resp_data->start_time = MAX(job_ptr->start_time, start_res);
+		resp_data->start_time = MAX(job_ptr->start_time,
+					    orig_start_time);
+		resp_data->start_time = MAX(resp_data->start_time, start_res);
 		job_ptr->start_time   = 0;  /* restore pending job start time */
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 

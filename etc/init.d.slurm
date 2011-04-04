@@ -245,9 +245,15 @@ case "$1" in
 	slurmstop
 	;;
     status)
+	anystop=0
 	for prog in `$BINDIR/scontrol show daemons`; do
 	   slurmstatus $prog
+	   rc=$?
+	   if [ $rc != 0 ] ; then
+	       anystop=$rc
+	   fi
 	done
+	RETVAL=$anystop          
 	;;
     restart)
 	$0 stop

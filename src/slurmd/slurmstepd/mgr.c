@@ -913,6 +913,8 @@ job_manager(slurmd_job_t *job)
 
 	if (rc) {
 		error("IO setup failed: %m");
+		job->task[0]->estatus = 0x0100;
+		step_complete.step_rc = 0x0100;
 		rc = SLURM_SUCCESS;	/* drains node otherwise */
 		goto fail2;
 	} else {

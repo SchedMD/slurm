@@ -4,6 +4,12 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.3.0.pre5
 =============================
  -- BLUEGENE - Improve speed of start up when removing blocks at the beginning.
+ -- Correct init.d/slurm status to have non-zero exit code if ANY Slurm
+    damon that should be running on the node is not running. Patch from Rod
+    Schulz, Bull.
+ -- Improve accuracy of response to "srun --test-only jobid=#".
+ -- Correct logic to perperly support --ntasks-per-node option in the
+    select/cons_res plugin. Patch from Rod Schulz, Bull.
 
 * Changes in SLURM 2.3.0.pre4
 =============================
