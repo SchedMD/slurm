@@ -1569,20 +1569,114 @@ static void _opt_args(int argc, char **argv)
 			opt.argc++;
 	}
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
+	/* A bit of setup for IBM's runjob.  runjob only has so many
+	   options, so it isn't that bad.
+	*/
+	int32_t node_cnt;
+	if (opt.max_nodes)
+		node_cnt = opt.max_nodes;
+	else
+		node_cnt = opt.min_nodes;
+
+	if (!opt.ntasks_set) {
+		if (opt.ntasks_per_node != NO_VAL)
+			opt.ntasks = node_cnt * opt.ntasks_per_node;
+		else
+			opt.ntasks = node_cnt;
+		opt.ntasks_set = true;
+	} else {
+		if (opt.nodes_set) {
+			if (node_cnt > opt.ntasks) {
+				error("You asked for %d nodes, but only "
+				      "%d tasks, resetting.",
+				      node_cnt, opt.ntasks);
+				opt.max_nodes = opt.min_nodes = node_cnt
+					= opt.ntasks;
+			}
+		} else if (node_cnt > opt.ntasks)
+			opt.max_nodes = opt.min_nodes = node_cnt = opt.ntasks;
+
+		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL))
+			opt.ntasks_per_node = opt.ntasks / node_cnt;
+		else if ((opt.ntasks / opt.ntasks_per_node) != node_cnt)
+			fatal("You are requesting for %d tasks, but are "
+			      "also asking for %d tasks per node and %d nodes.",
+			      opt.ntasks, opt.ntasks_per_node, node_cnt);
+	}
+
+	/* Since we need the opt.argc to allocate the opt.argv array
+	 * we need to do this before actually messing with
+	 * things. All the extra options added to argv will be
+	 * handled after the allocation. */
+
+	/* Default location of the actual command to be ran. We always have
+	 * to add 3 options no matter what. */
 	command_pos = 3;
+
+	if (opt.ntasks_per_node != NO_VAL)
+		command_pos += 2;
+	if (opt.ntasks_set)
+		command_pos += 2;
+	if (opt.cwd_set)
+		command_pos += 2;
+	if (opt.labelio)
+		command_pos += 1;
 	opt.argc += command_pos;
 #endif
 
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
 
 #if defined HAVE_BG_FILES && defined HAVE_BGQ
-	opt.argv[0] = xstrdup(runjob_loc);
-	opt.argv[1] = xstrdup("--env_all");
-	opt.argv[2] = xstrdup("--exe");
+	i = 0;
+	/* Instead of running the actual job, the slurmstepd will be
+	   running runjob to run the job.  srun is just wrapping it
+	   making things all kosher.
+	*/
+	opt.argv[i++] = xstrdup(runjob_loc);
+	if (opt.ntasks_per_node != NO_VAL) {
+		opt.argv[i++]  = xstrdup("-p");
+		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks_per_node);
+	}
+
+	if (opt.ntasks_set) {
+		opt.argv[i++]  = xstrdup("--np");
+		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
+	}
+
+	if (opt.cwd_set) {
+		opt.argv[i++]  = xstrdup("--cwd");
+		opt.argv[i++]  = xstrdup(opt.cwd);
+	}
+
+	if (opt.labelio) {
+		opt.argv[i++]  = xstrdup("--label");
+		/* Since we are getting labels from runjob. and we don't
+		   want 2 sets (slurm's will always be 000) remove it
+		   case.
+		*/
+		opt.labelio = 0;
+	}
+
+	/* Export all the environment so the runjob_mux will get the
+	   correct info about the job, namely the block.
+	*/
+	opt.argv[i++] = xstrdup("--env_all");
+
+	/* With runjob anything after a ':' is treated as the actual
+	   job, which in this case is exactly what it is.  So, very
+	   sweet.
+	*/
+	opt.argv[i++] = xstrdup(":");
+
+	/* Sanity check to make sure we set it up correctly. */
+	if (i != command_pos)
+		fatal ("command_pos is set to %d but we are going to put "
+		       "it at %d, please update src/srun/opt.c",
+		       command_pos, i);
 #endif
 	for (i = command_pos; i < opt.argc; i++)
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
-	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
+	opt.argv[opt.argc] = NULL;	/* End of argv's (for possible execv) */
 
 	if (opt.multi_prog) {
 		if (opt.argc < 1) {
@@ -1600,6 +1694,8 @@ static void _opt_args(int argc, char **argv)
 			opt.argv[command_pos] = fullpath;
 		}
 	}
+	/* for (i=0; i<opt.argc; i++) */
+	/* 	info("%d is '%s'", i, opt.argv[i]); */
 
 	if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
 						opt.ntasks))
