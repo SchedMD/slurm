@@ -1568,21 +1568,20 @@ static void _opt_args(int argc, char **argv)
 		while (rest[opt.argc] != NULL)
 			opt.argc++;
 	}
-#if defined HAVE_BG_FILES && HAVE_BGQ
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	command_pos = 3;
 	opt.argc += command_pos;
 #endif
 
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
 
-#if defined HAVE_BG_FILES && HAVE_BGQ
+#if defined HAVE_BG_FILES && defined HAVE_BGQ
 	opt.argv[0] = xstrdup(runjob_loc);
 	opt.argv[1] = xstrdup("--env_all");
 	opt.argv[2] = xstrdup("--exe");
 #endif
-
 	for (i = command_pos; i < opt.argc; i++)
-		opt.argv[i] = xstrdup(rest[i]);
+		opt.argv[i] = xstrdup(rest[i-command_pos]);
 	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (opt.multi_prog) {
@@ -1602,7 +1601,8 @@ static void _opt_args(int argc, char **argv)
 		}
 	}
 
-	if (opt.multi_prog && verify_multi_name(opt.argv[0], opt.ntasks))
+	if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
+						opt.ntasks))
 		exit(error_exit);
 }
 
