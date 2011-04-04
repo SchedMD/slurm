@@ -62,6 +62,7 @@ my (	$account,
 	$cpu_bind,
 	$cpus_per_task,
 	$dependency,
+	$distribution,
 	$error_file,
 	$epilog,
 	$exclusive,
@@ -71,7 +72,17 @@ my (	$account,
 	$help,
 	$hint,
 	$hold,
+	$immediate,
+	$input_file,
+	$job_id,
+	$job_name,
+	$kill_on_bad_exit,
+	$label,
+	$licenses,
+	$mail_type,
+	$mail_user,
 	$man,
+#RESUME AT --mem in srun man page
 	$preserve_env,
 	$num_tasks,
 	$num_nodes,
@@ -97,8 +108,13 @@ foreach (keys %ENV) {
 	$cpu_bind = $ENV{$_}		if $_ eq "SLURM_CPU_BIND";
 	$cpus_per_task = $ENV{$_}	if $_ eq "SLURM_CPUS_PER_TASK";
 	$dependency = $ENV{$_}		if $_ eq "SLURM_DEPENDENCY";
+	$distribution = $ENV{$_}	if $_ eq "SLURM_DISTRIBUTION";
 	$epilog = $ENV{$_}		if $_ eq "SLURM_EPILOG";
+	$error_file = $ENV{$_}		if $_ eq "SLURM_STDERRMODE";
 	$exclusive  = 1			if $_ eq "SLURM_EXCLUSIVE";
+	$input_file = $ENV{$_}		if $_ eq "SLURM_STDINMODE";
+	$job_name = $ENV{$_}		if $_ eq "SLURM_JOB_NAME";
+	$label = 1			if $_ eq "SLURM_LABELIO";
 	$num_tasks = $ENV{$_}		if $_ eq "SLURM_NTASKS";
 	$num_nodes = $ENV{$_}		if $_ eq "SLURM_NNODES";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
@@ -126,8 +142,18 @@ GetOptions(
 	'gid=s'				=> \$group,
 	'gres=s'			=> \$gres,
 	'help|?'			=> \$help,
-	'hint=s',			=> \$hint,
-	'H|hold',			=> \$hold,
+	'hint=s'			=> \$hint,
+	'H|hold'			=> \$hold,
+	'I|immediate'			=> \$immediate,
+	'i|input=s'			=> \$input_file,
+	'jobid=i'			=> \$job_id,
+	'J|job-name=s'			=> \$job_name,
+	'K|kill-on-bad-exit'		=> \$kill_on_bad_exit,
+	'l|label'			=> \$label,
+	'L|licenses=s'			=> \$licenses,
+	'm|distribution=s'		=> \$distribution,
+	'mail-type=s'			=> \$mail_type,
+	'mail-user=s'			=> \$mail_user,
 	'man'				=> \$man,
 	'n|ntasks=s'			=> \$num_tasks,
 	'N|nodes=s'			=> \$num_nodes,
@@ -176,6 +202,7 @@ if ($have_job == 0) {
 	$command .= " --cpu_bind=$cpu_bind"		if $cpu_bind;
 	$command .= " --cpus-per-task=$cpus_per_task"	if $cpus_per_task;
 	$command .= " --dependency=$dependency"		if $dependency;
+	$command .= " --distribution=$distribution"	if $distribution;
 	$command .= " --epilog=$epilog"			if $epilog;
 	$command .= " --error=$error_file"		if $error_file;
 	$command .= " --exclusive"			if $exclusive;
@@ -184,6 +211,15 @@ if ($have_job == 0) {
 	$command .= " --gres=$gres"			if $gres;
 	$command .= " --hint=$hint"			if $hint;
 	$command .= " --hold"				if $hold;
+	$command .= " --immediate"			if $immediate;
+	$command .= " --input=$input_file"		if $input_file;
+	$command .= " --jobid=$job_id"			if $job_id;
+	$command .= " --job-name=$job_name"		if $job_name;
+	$command .= " --kill-on-bad-exit"		if $kill_on_bad_exit;
+	$command .= " --label"				if $label;
+	$command .= " --licenses=$licenses"		if $licenses;
+	$command .= " --mail-type=$mail_type"		if $mail_type;
+	$command .= " --mail-user=$mail_user"		if $mail_user;
 	$command .= " --ntasks=$num_tasks"		if $num_tasks;
 	$command .= " --nodes=$num_nodes"		if $num_nodes;
 	$command .= " --preserve_env"			if $preserve_env;
@@ -351,9 +387,58 @@ multithread, nomultithread, or help.
 
 Submit the job in a held state.
 
+=item B<-I> | B<--immediate>
+
+Exit if resources are not available immediately.
+
+=item B<-i> | B<--input=filename>
+
+Read stdin from the specified file.
+
+=item B<--jobid=number>
+
+Specify the job ID number. Usable only by SlurmUser or user root.
+
+=item B<-J> | B<--job-name=name>
+
+Specify a name for the job.
+
+=item B<-K> | B<--kill-on-bad-exit>
+
+Immediately terminate a job if any task exits with a non-zero exit code.
+
+=item B<-l> | B<--label>
+
+Prepend task number to lines of stdout/err.
+
+=item B<-l> | B<--licenses=names>
+
+Specification of licenses (or other resources available on all
+nodes of the cluster) which must be allocated to this job.
+
+=item B<-m> | B<--distribution=layout>
+
+Specification of distribution of tasks across nodes.
+Supported layouts include: block, cyclic, arbitrary, plane=size.
+The options block and cyclic may be followed by :block or :cyclic
+to control the distribution of tasks across sockets on the node.
+
 =item B<--man>
 
 Print full documentation.
+
+=item B<--mail-type=event>
+
+Send email when certain event types occur.
+Valid events values are BEGIN, END, FAIL, REQUEUE, and ALL (any state change).
+
+=item B<--mail-user=user>
+
+Send email to the specified user(s). The default is the submitting user.
+
+=item B<-t> | B<--time>
+
+Time limit.
 
 =item B<-n> | B<--ntasks=num_tasks>
 
@@ -365,7 +450,7 @@ Number of nodes to use.
 
 =item B<-t> | B<--time>
 
-Time limit.
+Time limit in minutes or hours:minutes:seconds.
 
 =back
 
