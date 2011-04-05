@@ -89,10 +89,22 @@ my (	$account,
 	$msg_timeout,
 	$mpi_type,
 	$multi_prog,
+	$network,
+	$nice,
+	$ntasks_per_core,
+	$ntasks_per_node,
+	$ntasks_per_socket,
 	$num_nodes,
 	$num_tasks,
-#RESUME AT --network in srun man page
+	$overcommit,
+	$output_file,
+	$open_mode,
+	$partition,
 	$preserve_env,
+	$prolog,
+	$propagate,
+	$pty,
+#RESUME AT --network in srun man page
 	$time_limit,
 	$time_secs
 );
@@ -124,8 +136,16 @@ foreach (keys %ENV) {
 	$label = 1			if $_ eq "SLURM_LABELIO";
 	$memory_bind = $ENV{$_}		if $_ eq "SLURM_MEM_BIND";
 	$mpi_type = $ENV{$_}		if $_ eq "SLURM_MPI_TYPE";
+	$network = $ENV{$_}		if $_ eq "SLURM_NETWORK";
+	$ntasks_per_core = $ENV{$_}	if $_ eq "SLURM_NTASKS_PER_CORE";
+	$ntasks_per_node = $ENV{$_}	if $_ eq "SLURM_NTASKS_PER_NODE";
+	$ntasks_per_socket = $ENV{$_}	if $_ eq "SLURM_NTASKS_PER_SOCKET";
 	$num_tasks = $ENV{$_}		if $_ eq "SLURM_NTASKS";
 	$num_nodes = $ENV{$_}		if $_ eq "SLURM_NNODES";
+	$overcommit = $ENV{$_}		if $_ eq "SLURM_OVERCOMMIT";
+	$open_mode = $ENV{$_}		if $_ eq "SLURM_OPEN_MODE";
+	$partition = $ENV{$_}		if $_ eq "SLURM_PARTITION";
+	$prolog = $ENV{$_}		if $_ eq "SLURM_PROLOG";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
 }
 
@@ -147,7 +167,6 @@ GetOptions(
 	'e|error=s'			=> \$error_file,
 	'epilog=s'			=> \$epilog,
 	'exclusive'			=> \$exclusive,
-	'E|preserve-env'		=> \$preserve_env,
 	'gid=s'				=> \$group,
 	'gres=s'			=> \$gres,
 	'help|?'			=> \$help,
@@ -171,8 +190,21 @@ GetOptions(
 	'msg-timeout=i'			=> \$msg_timeout,
 	'mpi=s'				=> \$mpi_type,
 	'multi-prog'			=> \$multi_prog,
+	'network=s'			=> \$network,
+	'nice=i'			=> \$nice,
+	'ntasks-per-core=i'		=> \$ntasks_per_core,
+	'ntasks-per-node=i'		=> \$ntasks_per_node,
+	'ntasks-per-socket=i'		=> \$ntasks_per_socket,
 	'n|ntasks=s'			=> \$num_tasks,
 	'N|nodes=s'			=> \$num_nodes,
+	'O|overcommit'			=> \$overcommit,
+	'o|output=s'			=> \$output_file,
+	'open-mode=s'			=> \$open_mode,
+	'p|partition=s'			=> \$partition,
+	'E|preserve-env'		=> \$preserve_env,
+	'prolog=s'			=> \$prolog,
+	'propagate=s'			=> \$propagate,
+	'pty'				=> \$pty,
 	't|time=s'			=> \$time_limit,
 ) or pod2usage(2);
 
@@ -190,6 +222,7 @@ if ($help) {
 	delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
 	if ($0 =~ /^([-\/\w\.]+)$/) { $0 = $1; }    # Untaint $0
 	else { die "Illegal characters were found in \$0 ($0)\n"; }
+
 }
 
 my $script;
@@ -243,9 +276,21 @@ if ($have_job == 0) {
 	$command .= " --msg-timeout=$msg_timeout"	if $msg_timeout;
 	$command .= " --mpi=$mpi_type"			if $mpi_type;
 	$command .= " --multi-prog"			if $multi_prog;
+	$command .= " --network=$network"		if $network;
+	$command .= " --nice=$nice"			if $nice;
+	$command .= " --ntasks-per-core=$ntasks_per_core"     if $ntasks_per_core;
+	$command .= " --ntasks-per-node=$ntasks_per_node"     if $ntasks_per_node;
+	$command .= " --ntasks-per-socket=$ntasks_per_socket" if $ntasks_per_socket;
 	$command .= " --ntasks=$num_tasks"		if $num_tasks;
 	$command .= " --nodes=$num_nodes"		if $num_nodes;
+	$command .= " --overcommit"			if $overcommit;
+	$command .= " --output=$output_file"		if $output_file;
+	$command .= " --open-mode=$open_mode"		if $open_mode;
+	$command .= " --partition=$partition"		if $partition;
 	$command .= " --preserve_env"			if $preserve_env;
+	$command .= " --prolog=$prolog"			if $prolog;
+	$command .= " --propagate=$propagate"		if $propagate;
+	$command .= " --pty"				if $pty;
 	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " $aprun";
 } else {
@@ -482,7 +527,7 @@ Modify the job launch message timeout.
 
 =item B<--mpi=implementation>
 
-Identify the type of MPI to be used. May result in unique initiation
+Identify the type of MPI toSpecify the mode for stdout redirection. be used. May result in unique initiation
 procedures. Options include: list, lam, mpich1_shmem, mpichgm, mvapich,
 openmpi, and none.
 
@@ -493,6 +538,26 @@ each task. In this case, the executable program specified is
 actually a configuration file specifying the executable and
 arguments for each task.
 
+=item B<--network=type>
+
+Specify the communication protocol to be used.
+
+=item B<--nice=adjustment>
+
+Run the job with an adjusted scheduling priority within SLURM.
+
+=item B<--ntasks-per-core=ntasks>
+
+Request the maximum ntasks be invoked on each core.
+
+=item B<--ntasks-per-node=ntasks>
+
+Request the maximum ntasks be invoked on each node.
+
+=item B<--ntasks-per-socket=ntasks>
+
+Request the maximum ntasks be invoked on each socket.
+
 =item B<-N> | B<--nodes=num_nodes>
 
 Number of nodes to use.
@@ -501,9 +566,36 @@ Number of nodes to use.
 
 Number of tasks to launch.
 
-=item B<-t> | B<--time>
+=item B<--overcommit>
 
-Time limit.
+Overcommit resources. Launch more than one task per CPU.
+
+=item B<-o> | B<--output=filename>
+
+Specify the mode for stdout redirection.
+
+=item B<--open-mode=append|truncate>
+
+Open the output and error files using append or truncate mode as specified.
+
+=item B<--partition=name>
+
+Request a specific partition for the resource allocation.
+
+=item B<--prolog=filename>
+
+Execute the specified file before launching the job step.
+
+=item B<--propagate=rlimits>
+
+Allows users to specify which of the modifiable (soft) resource limits
+to propagate to the compute nodes and apply to their jobs. Supported options
+include: AS, CORE, CPU, DATA, FSIZE, MEMLOCK, NOFILE, NPROC, RSS, STACK and
+ALL.
+
+=item B<--pty>
+
+Execute task zero in pseudo terminal mode.
 
 =item B<-t> | B<--time>
 
