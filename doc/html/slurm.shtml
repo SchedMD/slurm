@@ -51,37 +51,53 @@ for the motivated end user to understand the source and add functionality.</li>
 the world including:
 <ul>
 <li><a href="http://www.nytimes.com/2010/10/28/technology/28compute.html?_r=1&partner=rss&emc=rss">
-Tianhe-1A</a> designed by The National University of Defence Technology (NUDT)
+Tianhe-1A</a> designed by 
+<a href="http://english.nudt.edu.cn">The National University of Defence Technology (NUDT)</a>
 in China with 14,336 Intel CPUs and 7,168 NVDIA Tesla M2050 GPUs.
 The world's fastest super computer with a peak performance of 2.507 Petaflops.</li>
+
 <li><a href="http://www.wcm.bull.com/internet/pr/rend.jsp?DocId=567851&lang=en">
-Tera 100</a> at CEA with 140,000 Intel Xeon 7500 processing cores, 300TB of 
+Tera 100</a> at <a href="www.cea.fr">CEA</a>
+with 140,000 Intel Xeon 7500 processing cores, 300TB of 
 central memory and a theoretical computing power of 1.25 Petaflops. Europe's
 most powerful supercomputer.</li>
+
 <li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Dawn</a>,
-a BlueGene/P system at LLNL with 147,456 PowerPC 450 cores with a peak
+a BlueGene/P system at <a href=https://www.llnl.gov">LLNL</a>
+with 147,456 PowerPC 450 cores with a peak
 performance of 0.5 Petaflops.</li>
+
+<li><a href="http://www.cscs.ch/350.0.html?&L=4">Rosa</a>,
+a CRAY XT5 at the <a href="http://www.cscs.ch">Swiss National Supercomputer Centre</a>
+named after Monte Rosa in the Swiss-Italian Alps, elevation 4,634m.
+3,688 AMD hexa-core Opteron @ 2.4 GHz, 28.8 TB DDR2 RAM, 290 TB Disk,
+9.6 GB/s interconnect bandwidth (Seastar).</li>
+
 <li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories,
 India with 14,240 Xeon processors and Infiniband interconnect</li>
+
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
-a Linux cluster at Barcelona Supercomputer Center
+a Linux cluster at the <a href="http://www.bsc.es">Barcelona Supercomputer Center</a>
 with 10,240 PowerPC processors and a Myrinet switch</li>
+
 <li><a href="http://en.wikipedia.org/wiki/Anton_(computer)">Anton</a>
 a massively parallel supercomputer designed and built by
 <a href="http://www.deshawresearch.com/">D. E. Shaw Research</a>
 for molecular dynamics simulation using 512 custom-designed ASICs
 and a three-dimensional torus interconnect.</li>
 </ul>
+
 <p>SLURM is actively being developed, distributed and supported by
 <a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>,
-<a href="http://www.hp.com">Hewlett-Packard</a>,
 <a href="http://www.schedmd.com">SchedMD</a>.
-<a href="http://www.bull.com">Bull</a>.
+<a href="http://www.bull.com">Bull</a>,
+and a variety of customer sites.
 It is also distributed and supported by
 <a href="http://www.adaptivecomputing.com">Adaptive Computing</a>,
+<a href="http://www.hp.com">Hewlett-Packard</a>,
 <a href="http://www.infiscale.com">Infiscale</a> and
 <a href="http://www.ibm.com">IBM</a>.</p>
 
-<p style="text-align:center;">Last modified 1 December 2010</p>
+<p style="text-align:center;">Last modified 5 April 20101</p>
 
 <!--#include virtual="footer.txt"-->
