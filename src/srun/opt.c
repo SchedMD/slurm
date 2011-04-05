@@ -1620,7 +1620,7 @@ static void _opt_args(int argc, char **argv)
 	if (opt.cwd_set)
 		command_pos += 2;
 	if (opt.labelio)
-		command_pos += 1;
+		command_pos += 2;
 	opt.argc += command_pos;
 #endif
 
@@ -1650,6 +1650,7 @@ static void _opt_args(int argc, char **argv)
 
 	if (opt.labelio) {
 		opt.argv[i++]  = xstrdup("--label");
+		opt.argv[i++]  = xstrdup("short");
 		/* Since we are getting labels from runjob. and we don't
 		   want 2 sets (slurm's will always be 000) remove it
 		   case.
