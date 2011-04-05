@@ -49,12 +49,15 @@ extern "C" {
 #ifdef HAVE_BG_FILES
 
 #include <bgsched/runjob/Plugin.h>
+#include <bgsched/Dimension.h>
 //#include "ProcessTree.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/foreach.hpp>
 
 #include <iosfwd>
+
+using namespace bgsched;
 
 class Plugin : public bgsched::runjob::Plugin
 {
@@ -79,48 +82,100 @@ private:
 	boost::mutex _mutex;
 };
 
+static int _char2coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return ((coord - 'A') + 10);
+	return -1;
+}
+
+static bool _set_coords(const std::string& var, int *coords)
+{
+	if (var.length() != Dimension::NodeDims) {
+		std::cerr << "Coord variable '"<< var << "' has "
+			  << var.length()
+			  << " characters in it, but it needs to be "
+			  << Dimension::NodeDims << std::endl;
+		return 0;
+	}
+	for (uint32_t dim = 0; dim<Dimension::NodeDims; dim++) {
+		if ((coords[dim] = _char2coord(var[dim]) == -1)) {
+			std::cerr << "Coord in the " << dim <<
+				" dimension is out of bounds with a value of "
+				  << var[dim] << std::endl;
+			return 0;
+		}
+		// std::cout << "Got " << dim << " = "
+		// 	  << coords[dim] << std::endl;
+	}
+	return 1;
+}
+
+
 Plugin::Plugin() :
 	bgsched::runjob::Plugin(),
 	_mutex()
 {
-	std::cout << "Hello from sample runjob plugin ctor" << std::endl;
+	std::cout << "Slurm runjob plugin loaded" << std::endl;
 }
 
 Plugin::~Plugin()
 {
-	std::cout << "Goodbye from sample runjob plugin dtor" << std::endl;
+	std::cout << "Slurm runjob plugin finished" << std::endl;
 }
 
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
+	int coords[Dimension::NodeDims];
+	int found = 0;
+	int looking_for = 3;
 
 	BOOST_FOREACH(const bgsched::runjob::Environment& env_var,
 		      verify.envs()) {
 		if (env_var.getKey() == "MPIRUN_PARTITION") {
 			verify.block(env_var.getValue());
-			break;
+			found++;
+		} else if (env_var.getKey() == "SLURM_STEP_RUNJOB_CORNER") {
+			if (!_set_coords(env_var.getValue(), coords))
+				goto deny_job;
+			// verify.corner(Corner().coordinates(Coordinates().
+			// 				   a(coords[0]).
+			// 				   b(coords[1]).
+			// 				   c(coords[2]).
+			// 				   d(coords[3]).
+			// 				   e(coords[4])));
+			found++;
+		} else if (env_var.getKey() == "SLURM_STEP_RUNJOB_SHAPE") {
+			if (!_set_coords(env_var.getValue(), coords))
+				goto deny_job;
+			// verify.shape(Shape().a(coords[0]).b(coords[1]).
+			// 	      c(coords[2]).d(coords[3]).
+			// 	      e(coords[4]));
+			found++;
 		}
+
+		if (found == looking_for)
+			break;
 	}
 
 
-	std::cout << "got bg id of " << verify.block() << std::endl;
 	if (verify.block().empty() || (verify.block().length() < 3)) {
 		std::cerr << "YOU ARE OUTSIDE OF SLURM!!!!" << std::endl;
-		verify.denyJob(bgsched::runjob::Verify::DenyJob::Yes);
-		return;
+		goto deny_job;
 	}
 
-	std::cout << "starting job from pid " << verify.pid() << std::endl;
 	std::cout << "executable: " << verify.exe() << std::endl;
 	std::cout << "args      : ";
 	std::copy(verify.args().begin(), verify.args().end(),
 		  std::ostream_iterator<std::string>(std::cout, " "));
 	std::cout << std::endl;
-	std::cout << "envs      : ";
-	std::copy(verify.envs().begin(), verify.envs().end(),
-		  std::ostream_iterator<std::string>(std::cout, " "));
-	std::cout << std::endl;
+	// std::cout << "envs      : ";
+	// std::copy(verify.envs().begin(), verify.envs().end(),
+	// 	  std::ostream_iterator<std::string>(std::cout, " "));
+	// std::cout << std::endl;
 	std::cout << "block     : " << verify.block() << std::endl;
 	if (!verify.corner().empty()) {
 		std::cout << "corner:     " << verify.corner() << std::endl;
@@ -132,6 +187,10 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	// const ProcessTree tree( verify.pid() );
 	// std::cout << tree << std::endl;
 
+	return;
+
+deny_job:
+	verify.denyJob(bgsched::runjob::Verify::DenyJob::Yes);
 	return;
 }
 
