@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Improve accuracy of response to "srun --test-only jobid=#".
  -- Correct logic to perperly support --ntasks-per-node option in the
     select/cons_res plugin. Patch from Rod Schulz, Bull.
+ -- Fix bug in select/cons_res with respect to generic resource (gres)
+    scheduling which prevented some jobs from starting as soon as possible.
 
 * Changes in SLURM 2.2.4
 ========================
