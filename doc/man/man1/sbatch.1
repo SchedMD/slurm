@@ -85,7 +85,7 @@ You may also specify \fImidnight\fR, \fInoon\fR, or
 with \fIAM\fR or \fIPM\fR for running in the morning or the evening.
 You can also say what day the job will be run, by specifying
 a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR
-\fIYYYY\-MM-DD\fR. Combine date and time using the following
+\fIYYYY\-MM\-DD\fR. Combine date and time using the following
 format \fIYYYY\-MM\-DD[THH:MM[:SS]]\fR. You can also
 give times like \fInow + count time\-units\fR, where the time\-units
 can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR,
@@ -101,6 +101,7 @@ For example:
    \-\-begin=now+60           (seconds by default)
    \-\-begin=2010\-01\-20T12:34:00
 .fi
+
 .RS
 .PP
 Notes on date/time specifications:
@@ -170,6 +171,12 @@ by the slurm job manager.
 If set, then the allocated nodes must form a contiguous set.
 Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
 plugins, both of which can modify the node ordering.
+
+.TP
+\fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
+Restrict node selection to nodes with at least the specified number of
+cores per socket.  See additional information under \fB\-B\fR option
+above when task/affinity plugin is enabled.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -550,7 +557,7 @@ round\-robin fashion). For example, consider an allocation of three
 nodes each with two cpus. A four\-task cyclic distribution request
 will distribute those tasks to the nodes with tasks one and four on
 the first node, task two on the second node, and task three on the
-third node. 
+third node.
 Note that when SelectType is select/cons_res, the same number of CPUs
 may not be allocated on each node. Task distribution will be
 round\-robin among all the nodes with CPUs yet to be assigned to tasks.
@@ -653,7 +660,7 @@ all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
 The following informational environment variables are set when
-\fB\-\-mem_bind is in use:
+\fB\-\-mem_bind\fR is in use:
 
 .nf
         SLURM_MEM_BIND_VERBOSE
@@ -805,7 +812,7 @@ This is related to \fB\-\-cpus\-per\-task\fR=\fIncpus\fR,
 but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
 request that no more than a specific number of tasks be invoked
-on each node.  Examples include submitting
+on each node.  Examples of this include submitting
 a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
 assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
@@ -931,6 +938,12 @@ If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.
 
 .TP
+\fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
+Restrict node selection to nodes with at least the specified number of
+sockets.  See additional information under \fB\-B\fR option above when
+task/affinity plugin is enabled.
+
+.TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
 Set a limit on the total run time of the job allocation.  If the
 requested time limit exceeds the partition's time limit, the job will
@@ -947,6 +960,12 @@ limit be imposed.  Acceptable time formats include "minutes",
 \fB\-\-tasks\-per\-node\fR=<\fIn\fR>
 Specify the number of tasks to be launched per node.
 Equivalent to \fB\-\-ntasks\-per\-node\fR.
+
+.TP
+\fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
+Restrict node selection to nodes with at least the specified number of
+threads per core.  See additional information under \fB\-B\fR option
+above when task/affinity plugin is enabled.
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>

@@ -164,6 +164,12 @@ Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
 plugins, both of which can modify the node ordering.
 
 .TP
+\fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
+Restrict node selection to nodes with at least the specified number of
+cores per socket.  See additional information under \fB\-B\fR option
+above when task/affinity plugin is enabled.
+
+.TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs. Used only when the task/affinity plugin is enabled.
 The configuration parameter \fBTaskPluginParam\fR may override these options.
@@ -496,7 +502,7 @@ round\-robin fashion). For example, consider an allocation of three
 nodes each with two cpus. A four\-task cyclic distribution request
 will distribute those tasks to the nodes with tasks one and four on
 the first node, task two on the second node, and task three on the
-third node. 
+third node.
 Note that when SelectType is select/cons_res, the same number of CPUs
 may not be allocated on each node. Task distribution will be
 round\-robin among all the nodes with CPUs yet to be assigned to tasks.
@@ -598,8 +604,8 @@ NOTE: To have SLURM always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
-The following informational environment variables are set when \fB\-\-mem_bind\
-is in use:
+The following informational environment variables are set when
+\fB\-\-mem_bind\fR is in use:
 
 .nf
         SLURM_MEM_BIND_VERBOSE
@@ -819,6 +825,12 @@ If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.
 
 .TP
+\fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
+Restrict node selection to nodes with at least the specified number of
+sockets.  See additional information under \fB\-B\fR option above when
+task/affinity plugin is enabled.
+
+.TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
 Set a limit on the total run time of the job allocation.  If the
 requested time limit exceeds the partition's time limit, the job will
@@ -830,6 +842,12 @@ parameter \fBKillWait\fR.  A time limit of zero requests that no time
 limit be imposed.  Acceptable time formats include "minutes",
 "minutes:seconds", "hours:minutes:seconds", "days\-hours",
 "days\-hours:minutes" and "days\-hours:minutes:seconds".
+
+.TP
+\fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
+Restrict node selection to nodes with at least the specified number of
+threads per core.  See additional information under \fB\-B\fR option
+above when task/affinity plugin is enabled.
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>

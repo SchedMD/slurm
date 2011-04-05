@@ -159,7 +159,8 @@ Not honored for a job step's allocation.
 .TP
 \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
 Restrict node selection to nodes with at least the specified number of
-cores per socket.
+cores per socket.  See additional information under \fB\-B\fR option
+above when task/affinity plugin is enabled.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -577,7 +578,7 @@ SLURM_HOSTFILE.  If this variable is listed it will over ride any
 other method specified.  If not set the method will default to block.
 Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated.  If specifying a
-task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks 
+task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
 .TP
 
@@ -652,8 +653,8 @@ NOTE: To have SLURM always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
-The following informational environment variables are set when \fB\-\-mem_bind\
-is in use:
+The following informational environment variables are set when
+\fB\-\-mem_bind\fR is in use:
 
 .nf
         SLURM_MEM_BIND_VERBOSE
@@ -1020,7 +1021,8 @@ the job. By default only errors are displayed.
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
 Restrict node selection to nodes with at least the specified number of
-sockets.
+sockets.  See additional information under \fB\-B\fR option above when
+task/affinity plugin is enabled.
 
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>
@@ -1078,6 +1080,12 @@ the job.  This limits \fBsrun's\fR behavior to just return
 information; no job is actually submitted.
 
 .TP
+\fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
+Restrict node selection to nodes with at least the specified number of
+threads per core.  See additional information under \fB\-B\fR option
+above when task/affinity plugin is enabled.
+
+.TP
 \fB\-\-time\-min\fR=<\fItime\fR>
 Set a minimum time limit on the job allocation.
 If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
@@ -1089,11 +1097,6 @@ otherwise reserved for higher priority jobs.
 Acceptable time formats include "minutes", "minutes:seconds", 
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
 "days\-hours:minutes:seconds".
-
-.TP
-\fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
-Restrict node selection to nodes with at least the specified number of
-threads per core.
 
 .TP
 \fB\-\-tmp\fR=<\fIMB\fR>
