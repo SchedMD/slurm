@@ -82,10 +82,17 @@ my (	$account,
 	$mail_type,
 	$mail_user,
 	$man,
-#RESUME AT --mem in srun man page
-	$preserve_env,
-	$num_tasks,
+	$memory,
+	$memory_per_cpu,
+	$memory_bind,
+	$min_cpus,
+	$msg_timeout,
+	$mpi_type,
+	$multi_prog,
 	$num_nodes,
+	$num_tasks,
+#RESUME AT --network in srun man page
+	$preserve_env,
 	$time_limit,
 	$time_secs
 );
@@ -115,6 +122,8 @@ foreach (keys %ENV) {
 	$input_file = $ENV{$_}		if $_ eq "SLURM_STDINMODE";
 	$job_name = $ENV{$_}		if $_ eq "SLURM_JOB_NAME";
 	$label = 1			if $_ eq "SLURM_LABELIO";
+	$memory_bind = $ENV{$_}		if $_ eq "SLURM_MEM_BIND";
+	$mpi_type = $ENV{$_}		if $_ eq "SLURM_MPI_TYPE";
 	$num_tasks = $ENV{$_}		if $_ eq "SLURM_NTASKS";
 	$num_nodes = $ENV{$_}		if $_ eq "SLURM_NNODES";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
@@ -155,6 +164,13 @@ GetOptions(
 	'mail-type=s'			=> \$mail_type,
 	'mail-user=s'			=> \$mail_user,
 	'man'				=> \$man,
+	'mem=s'				=> \$memory,
+	'mem-per-cpu=s'			=> \$memory_per_cpu,
+	'mem_bind=s'			=> \$memory_bind,
+	'mincpus=i'			=> \$min_cpus,
+	'msg-timeout=i'			=> \$msg_timeout,
+	'mpi=s'				=> \$mpi_type,
+	'multi-prog'			=> \$multi_prog,
 	'n|ntasks=s'			=> \$num_tasks,
 	'N|nodes=s'			=> \$num_nodes,
 	't|time=s'			=> \$time_limit,
@@ -220,6 +236,13 @@ if ($have_job == 0) {
 	$command .= " --licenses=$licenses"		if $licenses;
 	$command .= " --mail-type=$mail_type"		if $mail_type;
 	$command .= " --mail-user=$mail_user"		if $mail_user;
+	$command .= " --mem=$memory"			if $memory;
+	$command .= " --mem-per-cpu=$memory_per_cpu"	if $memory_per_cpu;
+	$command .= " --mem_bind=$memory_bind"		if $memory_bind;
+	$command .= " --mincpus=$min_cpus"		if $min_cpus;
+	$command .= " --msg-timeout=$msg_timeout"	if $msg_timeout;
+	$command .= " --mpi=$mpi_type"			if $mpi_type;
+	$command .= " --multi-prog"			if $multi_prog;
 	$command .= " --ntasks=$num_tasks"		if $num_tasks;
 	$command .= " --nodes=$num_nodes"		if $num_nodes;
 	$command .= " --preserve_env"			if $preserve_env;
@@ -436,17 +459,51 @@ Valid events values are BEGIN, END, FAIL, REQUEUE, and ALL (any state change).
 
 Send email to the specified user(s). The default is the submitting user.
 
-=item B<-t> | B<--time>
+=item B<--mem=MG>
 
-Time limit.
+Specify the real memory required per node in MegaBytes.
+
+=item B<--mem-per-cpu=MG>
+
+Specify the real memory required per CPU in MegaBytes.
+
+=item B<--mem_bind=type>
+
+Bind tasks to memory. Options include: quite, verbose, none, rank, local,
+map_mem, mask_mem, and help.
+
+=item B<--mincpus>
+
+Specify a minimum number of logical CPUs per node.
+
+=item B<--msg-timeout=second>
+
+Modify the job launch message timeout.
+
+=item B<--mpi=implementation>
+
+Identify the type of MPI to be used. May result in unique initiation
+procedures. Options include: list, lam, mpich1_shmem, mpichgm, mvapich,
+openmpi, and none.
+
+=item B<--multi-prog>
+
+Run a job with different programs and different arguments for
+each task. In this case, the executable program specified is
+actually a configuration file specifying the executable and
+arguments for each task.
+
+=item B<-N> | B<--nodes=num_nodes>
+
+Number of nodes to use.
 
 =item B<-n> | B<--ntasks=num_tasks>
 
 Number of tasks to launch.
 
-=item B<-N> | B<--nodes=num_nodes>
+=item B<-t> | B<--time>
 
-Number of nodes to use.
+Time limit.
 
 =item B<-t> | B<--time>
 
