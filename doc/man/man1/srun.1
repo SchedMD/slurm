@@ -158,9 +158,8 @@ Not honored for a job step's allocation.
 
 .TP
 \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
-Allocate the specified number of cores per socket. This may be used to avoid
-allocating more than one core per socket on multi\-core sockets. This option
-is used for job allocations, but ignored for job step allocations.
+Restrict node selection to nodes with at least the specified number of
+cores per socket.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -1020,9 +1019,8 @@ the job. By default only errors are displayed.
 
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
-Allocate the specified number of sockets per node. This may be used to avoid
-allocating more than one task per node on multi\-socket nodes. This option
-is used for job allocations, but ignored for job step allocations.
+Restrict node selection to nodes with at least the specified number of
+sockets.
 
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>
@@ -1094,9 +1092,8 @@ Acceptable time formats include "minutes", "minutes:seconds",
 
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
-Allocate the specified number of threads per core. This may be used to avoid
-allocating more than one task per core on hyper\-threaded nodes. This option
-is used for job allocations, but ignored for job step allocations.
+Restrict node selection to nodes with at least the specified number of
+threads per core.
 
 .TP
 \fB\-\-tmp\fR=<\fIMB\fR>
