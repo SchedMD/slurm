@@ -826,18 +826,6 @@ NOTE: This option is not supported unless
 \fISelectTypeParameters=CR_Core_Memory\fR is configured.
 
 .TP
-\fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
-Request the maximum \fIntasks\fR be invoked on each socket.
-Meant to be used with the \fB\-\-ntasks\fR option.
-Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
-instead of the node level.  Masks will automatically be generated
-to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
-is specified.
-NOTE: This option is not supported unless
-\fISelectTypeParameters=CR_Socket\fR or
-\fISelectTypeParameters=CR_Socket_Memory\fR is configured.
-
-.TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
 Request the maximum \fIntasks\fR be invoked on each node.
 Meant to be used with the \fB\-\-nodes\fR option.
@@ -851,6 +839,18 @@ assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
 setup/cleanup/monitoring job to each node of a pre\-existing
 allocation as one step in a larger job script.
+
+.TP
+\fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
+Request the maximum \fIntasks\fR be invoked on each socket.
+Meant to be used with the \fB\-\-ntasks\fR option.
+Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
+instead of the node level.  Masks will automatically be generated
+to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
+is specified.
+NOTE: This option is not supported unless
+\fISelectTypeParameters=CR_Socket\fR or
+\fISelectTypeParameters=CR_Socket_Memory\fR is configured.
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
@@ -944,7 +944,7 @@ The maximum stack size
 
 .TP
 \fB\-\-pty\fR
-Execute task zero in pseudo terminal.
+Execute task zero in pseudo terminal mode.
 Implicitly sets \fB\-\-unbuffered\fR.
 Implicitly sets \fB\-\-error\fR and \fB\-\-output\fR to /dev/null
 for all tasks except task zero, which may cause those tasks to 
