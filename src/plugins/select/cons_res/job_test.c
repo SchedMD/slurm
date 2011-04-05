@@ -643,7 +643,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	else
 		gres_list = node_ptr->gres_list;
 	gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
-					 node_ptr->gres_list, test_only,
+					 gres_list, test_only,
 					 core_map, core_start_bit,
 					 core_end_bit, job_ptr->job_id,
 					 node_ptr->name);
@@ -761,7 +761,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		else
 			gres_list = node_ptr->gres_list;
 		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
-						 node_ptr->gres_list, true,
+						 gres_list, true,
 						 NULL, 0, 0, job_ptr->job_id,
 						 node_ptr->name);
 		if (gres_cpus == 0) {

@@ -493,10 +493,15 @@ static int _cr_job_list_sort(void *x, void *y)
 static void _destroy_node_data(struct node_use_record *node_usage,
 			       struct node_res_record *node_data)
 {
+	int i;
+
 	xfree(node_data);
 	if (node_usage) {
-		if (node_usage->gres_list)
-			list_destroy(node_usage->gres_list);
+		for (i = 0; i < select_node_cnt; i++) {
+			if (node_usage[i].gres_list) {
+				list_destroy(node_usage[i].gres_list);
+			}
+		}
 		xfree(node_usage);
 	}
 }
