@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     select/cons_res plugin. Patch from Rod Schulz, Bull.
  -- Fix bug in select/cons_res with respect to generic resource (gres)
     scheduling which prevented some jobs from starting as soon as possible.
+ -- Fix memory leak in select/cons_res when backfill scheduling generic
+    resources (gres).
 
 * Changes in SLURM 2.2.4
 ========================
