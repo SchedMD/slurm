@@ -80,7 +80,8 @@ static struct step_record * _create_step_record (struct job_record *job_ptr);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
 static bool _is_mem_resv(void);
-static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
+static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer,
+				     uint16_t protocol_version);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr,
 				    job_step_create_request_msg_t *step_spec,
 				    List step_gres_list, int cpus_per_task,
@@ -1846,8 +1847,10 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 /* Pack the data for a specific job step record
  * IN step - pointer to a job step record
  * IN/OUT buffer - location to store data, pointers automatically advanced
+ * IN protocol_version - slurm protocol version of client
  */
-static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
+static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
+				     uint16_t protocol_version)
 {
 	int task_cnt;
 	char *node_list = NULL;
@@ -1873,42 +1876,81 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		node_list = step_ptr->job_ptr->nodes;
 	}
 #endif
-	pack32(step_ptr->job_ptr->job_id, buffer);
-	pack32(step_ptr->step_id, buffer);
-	pack16(step_ptr->ckpt_interval, buffer);
-	pack32(step_ptr->job_ptr->user_id, buffer);
+
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->job_id, buffer);
+		pack32(step_ptr->step_id, buffer);
+		pack16(step_ptr->ckpt_interval, buffer);
+		pack32(step_ptr->job_ptr->user_id, buffer);
 #ifdef HAVE_BG
-	if (step_ptr->job_ptr->total_cpus)
-		pack32(step_ptr->job_ptr->total_cpus, buffer);
-	else if(step_ptr->job_ptr->details)
-		pack32(step_ptr->job_ptr->details->min_cpus, buffer);
-	else
-		pack32(step_ptr->job_ptr->cpu_cnt, buffer);
+		if (step_ptr->job_ptr->total_cpus)
+			pack32(step_ptr->job_ptr->total_cpus, buffer);
+		else if(step_ptr->job_ptr->details)
+			pack32(step_ptr->job_ptr->details->min_cpus, buffer);
+		else
+			pack32(step_ptr->job_ptr->cpu_cnt, buffer);
 #else
-	pack32(step_ptr->cpu_count, buffer);
+		pack32(step_ptr->cpu_count, buffer);
 #endif
-	pack32(task_cnt, buffer);
-	pack32(step_ptr->time_limit, buffer);
+		pack32(task_cnt, buffer);
+		pack32(step_ptr->time_limit, buffer);
 
-	pack_time(step_ptr->start_time, buffer);
-	if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
-		run_time = step_ptr->pre_sus_time;
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_fmt(pack_bitstr, buffer);
+		packstr(step_ptr->ckpt_dir, buffer);
+		packstr(step_ptr->gres, buffer);
 	} else {
-		begin_time = MAX(step_ptr->start_time,
-				 step_ptr->job_ptr->suspend_time);
-		run_time = step_ptr->pre_sus_time +
-			difftime(time(NULL), begin_time);
-	}
-	pack_time(run_time, buffer);
+		pack32(step_ptr->job_ptr->job_id, buffer);
+		pack32(step_ptr->step_id, buffer);
+		pack16(step_ptr->ckpt_interval, buffer);
+		pack32(step_ptr->job_ptr->user_id, buffer);
+#ifdef HAVE_BG
+		if (step_ptr->job_ptr->total_cpus)
+			pack32(step_ptr->job_ptr->total_cpus, buffer);
+		else if(step_ptr->job_ptr->details)
+			pack32(step_ptr->job_ptr->details->min_cpus, buffer);
+		else
+			pack32(step_ptr->job_ptr->cpu_cnt, buffer);
+#else
+		pack32(step_ptr->cpu_count, buffer);
+#endif
+		pack32(task_cnt, buffer);
+		pack32(step_ptr->time_limit, buffer);
 
-	packstr(step_ptr->job_ptr->partition, buffer);
-	packstr(step_ptr->resv_ports, buffer);
-	packstr(node_list, buffer);
-	packstr(step_ptr->name, buffer);
-	packstr(step_ptr->network, buffer);
-	pack_bit_fmt(pack_bitstr, buffer);
-	packstr(step_ptr->ckpt_dir, buffer);
-	packstr(step_ptr->gres, buffer);
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_fmt(pack_bitstr, buffer);
+		packstr(step_ptr->ckpt_dir, buffer);
+	}
 }
 
 /*
@@ -1923,7 +1965,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
  */
 extern int pack_ctld_job_step_info_response_msg(
 	uint32_t job_id, uint32_t step_id, uid_t uid,
-	uint16_t show_flags, Buf buffer)
+	uint16_t show_flags, Buf buffer, uint16_t protocol_version)
 {
 	ListIterator job_iterator;
 	ListIterator step_iterator;
@@ -1962,7 +2004,8 @@ extern int pack_ctld_job_step_info_response_msg(
 			if ((step_id != NO_VAL)
 			    && (step_ptr->step_id != step_id))
 				continue;
-			_pack_ctld_job_step_info(step_ptr, buffer);
+			_pack_ctld_job_step_info(step_ptr, buffer,
+						 protocol_version);
 			steps_packed++;
 		}
 		list_iterator_destroy(step_iterator);
