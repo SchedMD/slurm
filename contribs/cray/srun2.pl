@@ -116,8 +116,15 @@ my (	$account,
 	$signal,
 	$slurmd_debug,
 	$sockets_per_node,
+	$task_epilog,
+	$task_prolog,
+	$test_only,
+	$threads_per_core,
+	$threads,
+	$time_limit, $time_secs,
+	$time_min,
+	$tmp_disk
 #RESUME AT --share in srun man page
-	$time_limit, $time_secs
 );
 
 my $aprun  = "${FindBin::Bin}/apbin";
@@ -162,6 +169,9 @@ foreach (keys %ENV) {
 	$restart_dir = $ENV{$_}		if $_ eq "SLURM_RESTART_DIR";
 	$resv_ports = 1			if $_ eq "SLURM_RESV_PORTS";
 	$signal = $ENV{$_}		if $_ eq "SLURM_SIGNAL";
+	$task_epilog = $ENV{$_}		if $_ eq "SLURM_TASK_EPILOG";
+	$task_prolog = $ENV{$_}		if $_ eq "SLURM_TASK_PROLOG";
+	$threads = $ENV{$_}		if $_ eq "SLURM_THREADS";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
 }
 
@@ -232,7 +242,14 @@ GetOptions(
 	'signal=s'			=> \$signal,
 	'slurmd-debug=i'		=> \$slurmd_debug,
 	'sockets-per-node=i'		=> \$sockets_per_node,
+	'task-epilog=s'			=> \$task_epilog,
+	'task-prolog=s'			=> \$task_prolog,
+	'test-only'			=> \$test_only,
+	'threads-per-core=i'		=> \$threads_per_core,
+	'T|threads=i'			=> \$threads,
 	't|time=s'			=> \$time_limit,
+	'time-min=s'			=> \$time_min,
+	'tmp=s'				=> \$tmp_disk
 ) or pod2usage(2);
 
 # Display usage if necessary
@@ -329,7 +346,14 @@ if ($have_job == 0) {
 	$command .= " --signal=$signal"			if $signal;
 	$command .= " --slurmd-debug=$slurmd_debug"	if $slurmd_debug;
 	$command .= " --sockets-per-node=$sockets_per_node" if $sockets_per_node;
+	$command .= " --task-epilog=$task_epilog"	if $task_epilog;
+	$command .= " --task-prolog=$task_prolog"	if $task_prolog;
+	$command .= " --test-only"			if $test_only;
+	$command .= " --threads-per-core=$threads_per_core"  if $threads_per_core;
+	$command .= " --threads=$threads"		if $threads;
 	$command .= " --time=$time_limit"		if $time_limit;
+	$command .= " --time-min=$time_min"		if $time_min;
+	$command .= " --tmp=$tmp_disk"			if $tmp_disk;
 	$command .= " $aprun";
 } else {
 	$command = "$aprun";
@@ -378,7 +402,7 @@ srun  [OPTIONS...] executable [arguments...]
 =head1 DESCRIPTION
 
 Run a parallel job on cluster managed by SLURM.  If necessary, srun will
-first create a resource allocation in whit|timech to run the parallel j	$command .= " --cpus-per-task=$cpus_per_task"	if $cpus_per_task;ob.
+first create a resource allocation in which to run the parallel job.
 
 =head1 OPTIONS
 
@@ -680,9 +704,32 @@ Specify a debug level for slurmd daemon.
 
 Allocate the specified number of sockets per node.
 
-=item B<-t> | B<--time>
+=item B<--task-epilog=filename>
+
+Execute the specified program after each task terminates.
+
+=item B<--task-prolog=filename>
+
+Execute the specified program before launching each task.
+
+=item B<--test-only>
+
+Returns an estimate of when a job would be scheduled to run given the
+current job queue and all the other B<srun> arguments specifying
+the job. No job is actually submitted.
+
+=item B<-t> | B<--time=limit>
 
 Time limit in minutes or hours:minutes:seconds.
+
+=item B<--time-min=limit>
+
+The minimum acceptable time limit in minutes or hours:minutes:seconds.
+The default value is the same as the maximum time limit.
+
+=item B<--tmp=mb>
+
+Specify a minimum amount of temporary disk space.
 
 =back
 
