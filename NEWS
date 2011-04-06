@@ -14,6 +14,10 @@ documents those changes that are of interest to users and admins.
     scheduling which prevented some jobs from starting as soon as possible.
  -- Fix memory leak in select/cons_res when backfill scheduling generic
     resources (gres).
+ -- Fix for when configuring a node with more resources than in real life
+    and using task/affinity.
+ -- Fix so slurmctld will pack correctly 2.1 step information. (Only needed if
+    a 2.1 client is talking to a 2.2 slurmctld.)
 
 * Changes in SLURM 2.3.0.pre4
 =============================

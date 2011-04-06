@@ -489,6 +489,13 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	for (s=0, s_miss=false; s<sockets; s++) {
 		for (c=0, c_hit=c_miss=false; c<cores; c++) {
 			for (t=0, t_hit=t_miss=false; t<threads; t++) {
+				/* If we are pretending we have a
+				   larger system than we really have
+				   this is needed to make sure we
+				   don't bust the bank.
+				*/
+				if (i >= bit_size(alloc_bitmap))
+					i = 0;
 				if (bit_test(alloc_bitmap, i)) {
 					bit_set(alloc_mask, i);
 					(*whole_thread_cnt)++;
@@ -547,7 +554,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 {
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
-	uint16_t p, t, num_cpus, sockets, cores;
+	uint16_t p, t, new_p, num_cpus, sockets, cores;
 	int job_node_id;
 	int start;
 	char *str;
@@ -572,12 +579,12 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		return NULL;
 	}
 	debug3("task/affinity: slurmctld s %u c %u; hw s %u c %u t %u",
-		sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
+	       sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
 
-	num_cpus   = MIN((sockets * cores),
-			  ((*hw_sockets)*(*hw_cores)));
+	num_cpus = MIN((sockets * cores), ((*hw_sockets)*(*hw_cores)));
 	req_map = (bitstr_t *) bit_alloc(num_cpus);
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
+
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
 		FREE_NULL_BITMAP(req_map);
@@ -602,11 +609,16 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	for (p = 0; p < num_cpus; p++) {
 		if (bit_test(req_map, p) == 0)
 			continue;
+		/* If we are pretending we have a larger system than
+		   we really have this is needed to make sure we
+		   don't bust the bank.
+		*/
+		new_p = p % conf->block_map_size;
 		/* core_bitmap does not include threads, so we
 		 * add them here but limit them to what the job
 		 * requested */
 		for (t = 0; t < (*hw_threads); t++) {
-			uint16_t bit = p * (*hw_threads) + t;
+			uint16_t bit = new_p * (*hw_threads) + t;
 			bit_set(hw_map, bit);
 		}
 	}
