@@ -63,12 +63,14 @@ my (	$account,
 	$cpu_bind,
 	$cpus_per_task,
 	$dependency,
+	$disable_status,
 	$distribution,
 	$error_file,
 	$epilog,
+	$exclude_nodes,
 	$exclusive,
 	$extra_node_info,
-	$group,
+	$group_id,
 	$gres,
 	$help,
 	$hint,
@@ -92,6 +94,8 @@ my (	$account,
 	$multi_prog,
 	$network,
 	$nice,
+	$no_allocate,
+	$nodelist,
 	$ntasks_per_core,
 	$ntasks_per_node,
 	$ntasks_per_socket,
@@ -123,8 +127,13 @@ my (	$account,
 	$threads,
 	$time_limit, $time_secs,
 	$time_min,
-	$tmp_disk
-#RESUME AT --share in srun man page
+	$tmp_disk,
+	$unbuffered,
+	$user_id,
+	$version,
+	$verbose,
+	$wait,
+	$wc_key
 );
 
 my $aprun  = "${FindBin::Bin}/apbin";
@@ -173,6 +182,9 @@ foreach (keys %ENV) {
 	$task_prolog = $ENV{$_}		if $_ eq "SLURM_TASK_PROLOG";
 	$threads = $ENV{$_}		if $_ eq "SLURM_THREADS";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
+	$unbuffered = 1			if $_ eq "SLURM_UNBUFFEREDIO";
+	$wait = $ENV{$_}		if $_ eq "SLURM_WAIT";
+	$wc_key = $ENV{$_}		if $_ eq "SLURM_WCKEY";
 }
 
 GetOptions(
@@ -180,6 +192,7 @@ GetOptions(
 	'acctg-freq=i'			=> \$acctg_freq,
 	'B|extra-node-info=s'		=> \$extra_node_info,
 	'begin=s'			=> \$begin_time,
+	'D|chdir=s'			=> \$chdir,
 	'checkpoint=s'			=> \$check_time,
 	'checkpoint-dir=s'		=> \$check_dir,
 	'comment=s'			=> \$comment,
@@ -189,13 +202,14 @@ GetOptions(
 	'cpu_bind=s'			=> \$cpu_bind,
 	'c|cpus-per-task=i'		=> \$cpus_per_task,
 	'd|dependency=s'		=> \$dependency,
-	'D|chdir=s'			=> \$chdir,
+	'X|disable-status'		=> \$disable_status,
 	'e|error=s'			=> \$error_file,
 	'epilog=s'			=> \$epilog,
+	'x|exclude=s'			=> \$exclude_nodes,
 	'exclusive'			=> \$exclusive,
-	'gid=s'				=> \$group,
+	'gid=s'				=> \$group_id,
 	'gres=s'			=> \$gres,
-	'help|?'			=> \$help,
+	'help|usage|?'			=> \$help,
 	'hint=s'			=> \$hint,
 	'H|hold'			=> \$hold,
 	'I|immediate'			=> \$immediate,
@@ -218,6 +232,8 @@ GetOptions(
 	'multi-prog'			=> \$multi_prog,
 	'network=s'			=> \$network,
 	'nice=i'			=> \$nice,
+	'Z|no-allocate'			=> \$no_allocate,
+	'w|nodelist=s'			=> \$nodelist,
 	'ntasks-per-core=i'		=> \$ntasks_per_core,
 	'ntasks-per-node=i'		=> \$ntasks_per_node,
 	'ntasks-per-socket=i'		=> \$ntasks_per_socket,
@@ -249,8 +265,19 @@ GetOptions(
 	'T|threads=i'			=> \$threads,
 	't|time=s'			=> \$time_limit,
 	'time-min=s'			=> \$time_min,
-	'tmp=s'				=> \$tmp_disk
+	'tmp=s'				=> \$tmp_disk,
+	'unbuffered'			=> \$unbuffered,
+	'uid=s'				=> \$user_id,
+	'V|version'			=> \$version,
+	'v|verbose'			=> \$verbose,
+	'W|wait=i'			=> \$wait,
+	'wckey=s'			=> \$wc_key
 ) or pod2usage(2);
+
+if ($version) {
+	system("$salloc --version");
+	exit(0);
+}
 
 # Display usage if necessary
 pod2usage(0) if $man;
@@ -295,12 +322,14 @@ if ($have_job == 0) {
 	$command .= " --cpu_bind=$cpu_bind"		if $cpu_bind;
 	$command .= " --cpus-per-task=$cpus_per_task"	if $cpus_per_task;
 	$command .= " --dependency=$dependency"		if $dependency;
+	$command .= " --disable-status"			if $disable_status;
 	$command .= " --distribution=$distribution"	if $distribution;
 	$command .= " --epilog=$epilog"			if $epilog;
 	$command .= " --error=$error_file"		if $error_file;
+	$command .= " --exclude=$exclude_nodes"		if $exclude_nodes;
 	$command .= " --exclusive"			if $exclusive;
 	$command .= " --extra-node-info=$extra_node_info" if $extra_node_info;
-	$command .= " --gid=$group"			if $group;
+	$command .= " --gid=$group_id"			if $group_id;
 	$command .= " --gres=$gres"			if $gres;
 	$command .= " --hint=$hint"			if $hint;
 	$command .= " --hold"				if $hold;
@@ -322,6 +351,8 @@ if ($have_job == 0) {
 	$command .= " --multi-prog"			if $multi_prog;
 	$command .= " --network=$network"		if $network;
 	$command .= " --nice=$nice"			if $nice;
+	$command .= " --no-allocate"			if $no_allocate;
+	$command .= " --nodelist=$nodelist"		if $nodelist;
 	$command .= " --ntasks-per-core=$ntasks_per_core"     if $ntasks_per_core;
 	$command .= " --ntasks-per-node=$ntasks_per_node"     if $ntasks_per_node;
 	$command .= " --ntasks-per-socket=$ntasks_per_socket" if $ntasks_per_socket;
@@ -354,6 +385,11 @@ if ($have_job == 0) {
 	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " --time-min=$time_min"		if $time_min;
 	$command .= " --tmp=$tmp_disk"			if $tmp_disk;
+	$command .= " --unbuffered"			if $unbuffered;
+	$command .= " --uid=$user_id"			if $user_id;
+	$command .= " --verbose"			if $verbose;
+	$command .= " --wait=$wait"			if $wait;
+	$command .= " --wckey=$wc_key"			if $wc_key;
 	$command .= " $aprun";
 } else {
 	$command = "$aprun";
@@ -689,6 +725,7 @@ Specifies the directory from which the job or job step's checkpoint should
 be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 
 =item B<-s> | B<--share>
+
 The job can share nodes with other running jobs.
 
 =item B<--signal=signal_number[@seconds]>
@@ -730,6 +767,55 @@ The default value is the same as the maximum time limit.
 =item B<--tmp=mb>
 
 Specify a minimum amount of temporary disk space.
+
+=item B<-u> | B<--unbuffered>
+
+Do not line buffer stdout from remote tasks.
+
+=item B<--uid=user>
+
+If user root, then execute the job as the specified user.
+Specify either a user name or ID.
+
+=item B<--usage>
+
+Print brief help message.
+
+=item B<-V> | B<--version>
+
+Display version information and exit.
+
+=item B<-v> | B<--verbose>
+
+Increase the verbosity of srun's informational messages.
+
+=item B<-W> | B<--wait=seconds>
+
+Specify how long to wait after the first task terminates before terminating
+all remaining tasks.
+
+=item B<-w> | B<--nodelist=hostlist|filename>
+
+Request a specific list of hosts to use.
+
+=item B<--wckey=key>
+
+Specify wckey to be used with job.
+
+=item B<-X> | B<--disable-status>
+
+Disable the display of task status when srun receives a single SIGINT
+(Ctrl-C).
+
+=item B<-x> | B<--exclude=hostlist>
+
+Request a specific list of hosts to not use
+
+=item B<-Z> | B<--no-allocate>
+
+Run the specified tasks on a set of nodes without creating a SLURM
+"job" in the SLURM queue structure, bypassing the normal resource
+allocation step.
 
 =back
 
