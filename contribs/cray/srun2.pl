@@ -6,6 +6,7 @@
 #	 executing "aprun".
 #
 ###############################################################################
+#
 #  Copyright (C) 2011 SchedMD LLC
 #  Written by Morris Jette <jette1@schedmd.gov>.
 #  CODE-OCEC-09-009. All rights reserved.
@@ -104,9 +105,19 @@ my (	$account,
 	$prolog,
 	$propagate,
 	$pty,
-#RESUME AT --network in srun man page
-	$time_limit,
-	$time_secs
+	$quiet,
+	$quit_on_interrupt,
+	$qos,
+	$relative,
+	$resv_ports,
+	$reservation,
+	$restart_dir,
+	$share,
+	$signal,
+	$slurmd_debug,
+	$sockets_per_node,
+#RESUME AT --share in srun man page
+	$time_limit, $time_secs
 );
 
 my $aprun  = "${FindBin::Bin}/apbin";
@@ -144,8 +155,13 @@ foreach (keys %ENV) {
 	$num_nodes = $ENV{$_}		if $_ eq "SLURM_NNODES";
 	$overcommit = $ENV{$_}		if $_ eq "SLURM_OVERCOMMIT";
 	$open_mode = $ENV{$_}		if $_ eq "SLURM_OPEN_MODE";
+	$output_file = $ENV{$_}		if $_ eq "SLURM_STDOUTMODE";
 	$partition = $ENV{$_}		if $_ eq "SLURM_PARTITION";
 	$prolog = $ENV{$_}		if $_ eq "SLURM_PROLOG";
+	$qos = $ENV{$_}			if $_ eq "SLURM_QOS";
+	$restart_dir = $ENV{$_}		if $_ eq "SLURM_RESTART_DIR";
+	$resv_ports = 1			if $_ eq "SLURM_RESV_PORTS";
+	$signal = $ENV{$_}		if $_ eq "SLURM_SIGNAL";
 	$time_limit = $ENV{$_}		if $_ eq "SLURM_TIMELIMIT";
 }
 
@@ -205,6 +221,17 @@ GetOptions(
 	'prolog=s'			=> \$prolog,
 	'propagate=s'			=> \$propagate,
 	'pty'				=> \$pty,
+	'Q|quiet'			=> \$quiet,
+	'q|quit-on-interrupt'		=> \$quit_on_interrupt,
+	'qos=s'				=> \$qos,
+	'r|relative=i'			=> \$relative,
+	'resv-ports'			=> \$resv_ports,
+	'reservation=s'			=> \$reservation,
+	'restart-dir=s'			=> \$restart_dir,
+	's|share'			=> \$share,
+	'signal=s'			=> \$signal,
+	'slurmd-debug=i'		=> \$slurmd_debug,
+	'sockets-per-node=i'		=> \$sockets_per_node,
 	't|time=s'			=> \$time_limit,
 ) or pod2usage(2);
 
@@ -291,6 +318,17 @@ if ($have_job == 0) {
 	$command .= " --prolog=$prolog"			if $prolog;
 	$command .= " --propagate=$propagate"		if $propagate;
 	$command .= " --pty"				if $pty;
+	$command .= " --quiet"				if $quiet;
+	$command .= " --quit-on-interrupt"		if $quit_on_interrupt;
+	$command .= " --qos=$qos"			if $qos;
+	$command .= " --relative=$relative"		if $relative;
+	$command .= " --resv-ports"			if $resv_ports;
+	$command .= " --reservation=$reservation"	if $reservation;
+	$command .= " --restart-dir=$restart_dir"	if $restart_dir;
+	$command .= " --share"				if $share;
+	$command .= " --signal=$signal"			if $signal;
+	$command .= " --slurmd-debug=$slurmd_debug"	if $slurmd_debug;
+	$command .= " --sockets-per-node=$sockets_per_node" if $sockets_per_node;
 	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " $aprun";
 } else {
@@ -596,6 +634,51 @@ ALL.
 =item B<--pty>
 
 Execute task zero in pseudo terminal mode.
+
+=item B<--quiet>
+
+Suppress informational messages. Errors will still be displayed.
+
+=item B<-q> | B<--quit-on-interrupt>
+
+Quit immediately on single SIGINT (Ctrl-C).
+
+=item B<--qos=quality_of_service>
+
+Request a quality of service for the job.
+
+=item B<-r> | B<--relative=offset>
+
+Run a job step at the specified node offset in the current allocation.
+
+=item B<--resv-ports=filename>
+
+Reserve communication ports for this job. Used for OpenMPI.
+
+=item B<--reservation=name>
+
+Allocate resources for the job from the named reservation.
+
+=item B<--restart-dir=directory>
+
+Specifies the directory from which the job or job step's checkpoint should
+be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
+
+=item B<-s> | B<--share>
+The job can share nodes with other running jobs.
+
+=item B<--signal=signal_number[@seconds]>
+
+When a job is within the specified number seconds of its end time,
+send it the specified signal number.
+
+=item B<--slurmd-debug=level>
+
+Specify a debug level for slurmd daemon.
+
+=item B<--sockets-per-node=number>
+
+Allocate the specified number of sockets per node.
 
 =item B<-t> | B<--time>
 
