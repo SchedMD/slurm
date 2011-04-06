@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     scheduling which prevented some jobs from starting as soon as possible.
  -- Fix memory leak in select/cons_res when backfill scheduling generic
     resources (gres).
+ -- Fix for when configuring a node with more resources than in real life
+    and using task/affinity.
 
 * Changes in SLURM 2.2.4
 ========================
