@@ -19,6 +19,9 @@ documents those changes that are of interest to users and admins.
     a 2.1 client is talking to a 2.2 slurmctld.)
  -- Set powered down node's state to IDLE+POWER after slurmctld restart instead
     of leaving in UNKNOWN+POWER. Patch from Andrej Gritsenko.
+ -- Fix bug where is srun's executable is not on it's current search path, but
+    can be found in the user's default search path. Modify slurmstepd to find
+    the executable. Patch from Andrej Gritsenko.
 
 * Changes in SLURM 2.2.4
 ========================
