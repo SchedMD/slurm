@@ -2,6 +2,38 @@
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
 generated_html = \
+	../man/man1/sacct.html \
+	../man/man1/sacctmgr.html \
+	../man/man1/salloc.html \
+	../man/man1/sattach.html \
+	../man/man1/sbatch.html \
+	../man/man1/sbcast.html \
+	../man/man1/scancel.html \
+	../man/man1/scontrol.html \
+	../man/man1/sinfo.html \
+	../man/man1/slurm.html \
+	../man/man1/smap.html \
+	../man/man1/sprio.html \
+	../man/man1/squeue.html \
+	../man/man1/sreport.html \
+	../man/man1/srun.html \
+	../man/man1/srun_cr.html \
+	../man/man1/sshare.html \
+	../man/man1/sstat.html \
+	../man/man1/strigger.html \
+	../man/man1/sview.html \
+	../man/man5/bluegene.conf.html \
+	../man/man5/cgroup.conf.html \
+	../man/man5/gres.conf.html \
+	../man/man5/slurm.conf.html \
+	../man/man5/slurmdbd.conf.html \
+	../man/man5/topology.conf.html \
+	../man/man5/wiki.conf.html \
+	../man/man8/slurmctld.html \
+	../man/man8/slurmd.html \
+	../man/man8/slurmdbd.html \
+	../man/man8/slurmstepd.html \
+	../man/man8/spank.html \
 	accounting.html \
 	accounting_storageplugins.html \
 	api.html \
@@ -13,6 +45,7 @@ generated_html = \
 	checkpoint_plugins.html \
 	cons_res.html \
 	cons_res_share.html \
+	cpu_management.html \
 	cray.html \
 	crypto_plugins.html \
 	dist_plane.html \
@@ -30,6 +63,7 @@ generated_html = \
 	job_submit_plugins.html \
 	jobcompplugins.html \
 	mail.html \
+	man_index.html \
 	maui.html \
 	mc_support.html \
 	meetings.html \
@@ -101,3 +135,10 @@ SUFFIXES = .html
 
 .shtml.html:
 	`dirname $<`/shtml2html.py $<
+
+.1.html:
+	$(top_srcdir)/doc/html/man2html.py $<
+.5.html:
+	$(top_srcdir)/doc/html/man2html.py $<
+.8.html:
+	$(top_srcdir)/doc/html/man2html.py $<

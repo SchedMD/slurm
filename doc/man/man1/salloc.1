@@ -21,6 +21,11 @@ section). If no command is specified, then the value of
 \fBSallocDefaultCommand\fR is not set, then \fBsalloc\fR runs the
 user's default shell.
 
+The following document describes the the influence of various options on the 
+allocation of cpus to jobs and tasks. 
+.br
+https://computing.llnl.gov/linux/slurm/cpu_management.html
+
 NOTE: The salloc logic includes support to save and restore the terminal line
 settings and is designed to be executed in the foreground. If you need to
 execute salloc in the background, set its standard input to some file, for
