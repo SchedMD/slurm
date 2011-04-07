@@ -195,7 +195,7 @@ static bool _validate_trigger(trig_mgr_info_t *trig_in)
 
 extern int trigger_pull(trigger_info_msg_t *msg)
 {
-	int rc = ESRCH;
+	int rc = SLURM_SUCCESS;
 	ListIterator trig_iter;
 	trigger_info_t *trig_in;
 	trig_mgr_info_t *trig_test;
@@ -255,7 +255,6 @@ extern int trigger_pull(trigger_info_msg_t *msg)
 				break;
 			}
 		}
-		rc = SLURM_SUCCESS;
 	}
 	list_iterator_destroy(trig_iter);
 
