@@ -8326,7 +8326,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			set_front_end_down(job_ptr->front_end_ptr,
 					  "Epilog error");
 		}
-	} else if (job_ptr->front_end_ptr) {
+	} else if (job_ptr->front_end_ptr && IS_JOB_COMPLETING(job_ptr)) {
 		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
 		if (front_end_ptr->job_cnt_comp)
 			front_end_ptr->job_cnt_comp--;

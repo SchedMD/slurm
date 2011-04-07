@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     and using task/affinity.
  -- Fix so slurmctld will pack correctly 2.1 step information. (Only needed if
     a 2.1 client is talking to a 2.2 slurmctld.)
+ -- Fix bug in front-end configurations which reports job_cnt_comp underflow
+    errors after slurmctld restarts.
 
 * Changes in SLURM 2.3.0.pre4
 =============================
