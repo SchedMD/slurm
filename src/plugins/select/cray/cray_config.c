@@ -2,8 +2,8 @@
  *  cray_config.c
  *
  *****************************************************************************
- *  Copyright (C) 2011 SchedMD LLC.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Copyright (C) 2011 SchedMD LLC <http://www.schedmd.com>.
+ *  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.

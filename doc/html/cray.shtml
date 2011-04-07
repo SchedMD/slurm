@@ -4,8 +4,7 @@
 
 <h2>User Guide</h2>
 
-<p>This document describes the unique features of SLURM on
-Cray computers.
+<p>This document describes the unique features of SLURM on Cray computers.
 You should be familiar with the SLURM's mode of operation on Linux clusters
 before studying the differences in Cray system operation described in this
 document.</p>
@@ -18,8 +17,20 @@ Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
 allocation.
 The resource allocation is terminated once the the batch script or the
 <i>salloc</i> command terminate.
-Other than SLURM's <i>srun</i> command being replaced by <i>aprun</i>, all
-other SLURM commands will operate as expected.</p>
+Alternately there is an <i>aprun</i> wrapper distributed with SLURM in
+<i>contribs/cray/srun2aprun</i> which will translate <i>srun</i> options
+into the equivalent <i>aprun</i> options. This wrapper will also execute
+<i>salloc</i> as needed to create a job allocation in which to run the
+<i>aprun</i> command. The <i>srun2aprun</i> script contains two new options:
+<i>--man</i> will print a summary of the options including notes about which
+<i>srun</i> options are not supported and <i>--alps="</i> which can be used
+to specify <i>aprun</i> options which lack an equivalent within <i>srun</i>.
+For example, <i>srun2aprun --alps="-a xt" -n 4 a.out</i>.
+Since <i>aprun</i> is used to launch tasks (the equivalent of a SLURM
+job step), the job steps will not be visible using SLURM commands.
+Other than SLURM's <i>srun</i> command being replaced by <i>aprun</i>
+and the job steps not being visible, all other SLURM commands will operate
+as expected.</p>
 
 <p>SLURM node names will be of the form "nid#####" where "#####" is a five
 digit sequence number.
@@ -250,9 +261,13 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
+<p>Copyright (C) 2011 <a href="http://www.schedmd.com">SchedMD LLC</a>.<br>
+Supported by the
+<a href="http://www.ornl.gov/ornlhome/high_performance_computing.shtml">
+Oak Ridge National Laboratory Extreme Scale Systems Center</a></p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 March 2011</p></td>
+<p style="text-align:center;">Last modified 6 April 2011</p></td>
 
 <!--#include virtual="footer.txt"-->

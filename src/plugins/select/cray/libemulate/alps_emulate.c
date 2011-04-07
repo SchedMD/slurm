@@ -2,6 +2,7 @@
  *  alps_emulate.c - simple ALPS emulator used for testing purposes
  *****************************************************************************
  *  Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
+ *  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.

@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.

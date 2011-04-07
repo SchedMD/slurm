@@ -7,7 +7,8 @@
 #
 ###############################################################################
 #
-#  Copyright (C) 2011 SchedMD LLC
+#  Copyright (C) 2011 SchedMD LLC <http://www.schedmd.com>.
+#  Supported by the Oak Ridge National Laboratory Extreme Scale Systems Center
 #  Written by Morris Jette <jette1@schedmd.gov>.
 #  CODE-OCEC-09-009. All rights reserved.
 #
