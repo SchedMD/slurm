@@ -533,9 +533,10 @@ static void _trigger_slurmctld_event(uint32_t trig_type)
 	ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
 	ti.trig_type = trig_type;
 	if (slurm_pull_trigger(&ti)) {
-		error("error from _trigger_slurmctld_event in backup.c");
+		error("error from _trigger_slurmctld_event %u in backup.c: %m",
+		      trig_type);
 		return;
 	}
-	verbose("trigger pulled for SLURMCTLD event successful");
+	verbose("trigger pulled for SLURMCTLD event %u successful", trig_type);
 	return;
 }
