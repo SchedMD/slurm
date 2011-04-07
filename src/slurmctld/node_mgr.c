@@ -399,10 +399,11 @@ extern int load_all_node_state ( bool state_only )
 			       node_name);
 		} else if (state_only) {
 			uint16_t orig_flags;
-			orig_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			node_cnt++;
 			if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
+					orig_flags = node_ptr->node_state &
+						     NODE_STATE_FLAGS;
 					node_ptr->node_state = NODE_STATE_DOWN
 						| orig_flags;
 				}
@@ -413,7 +414,16 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
 				if (node_state & NODE_STATE_POWER_SAVE) {
-					if (power_save_mode) {
+					if (power_save_mode &&
+					    IS_NODE_UNKNOWN(node_ptr)) {
+						orig_flags = node_ptr->
+							     node_state &
+							     NODE_STATE_FLAGS;
+						node_ptr->node_state =
+							NODE_STATE_IDLE |
+							orig_flags |
+							NODE_STATE_POWER_SAVE;
+					} else if (power_save_mode) {
 						node_ptr->node_state |=
 							NODE_STATE_POWER_SAVE;
 					} else if (hs)

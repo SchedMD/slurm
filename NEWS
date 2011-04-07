@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     and using task/affinity.
  -- Fix so slurmctld will pack correctly 2.1 step information. (Only needed if
     a 2.1 client is talking to a 2.2 slurmctld.)
+ -- Set powered down node's state to IDLE+POWER after slurmctld restart instead
+    of leaving in UNKNOWN+POWER. Patch from Andrej Gritsenko.
 
 * Changes in SLURM 2.2.4
 ========================
