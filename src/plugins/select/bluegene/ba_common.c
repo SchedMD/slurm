@@ -88,6 +88,23 @@ static void _ba_node_xlate_to_1d(int *offset_1d, int *full_offset,
 	*offset_1d = map_offset;
 }
 
+#if DISPLAY_FULL_DIM
+/* Translate a 1-D offset in the cnode bitmap to a multi-dimension
+ * coordinate (3-D, 4-D, 5-D, etc.) */
+static void _ba_node_xlate_from_1d(int offset_1d, int *full_offset,
+				   ba_geo_system_t *my_system_geo)
+{
+	int i, map_offset;
+
+	xassert(full_offset);
+	map_offset = offset_1d;
+	for (i = my_system_geo->dim_count - 1; i >= 0; i--) {
+		full_offset[i] = map_offset % my_system_geo->dim_size[i];
+		map_offset /= my_system_geo->dim_size[i];
+	}
+}
+#endif
+
 static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 					int *coords, bool mark, bool except)
 {
@@ -781,7 +798,7 @@ extern void ba_node_map_print(bitstr_t *node_bitmap,
 					 offset[j]);
 				strcat(full_buf, dim_buf);
 			}
-			info("%s", full_buf);
+			info("%s   inx:%d", full_buf, i);
 		}
 	}
 #endif
@@ -926,7 +943,7 @@ extern int ba_set_removable_mps(bitstr_t* bitmap, bool except)
  * Resets the virtual system to the pervious state before calling
  * removable_set_mps, or set_all_mps_except.
  */
-extern int ba_reset_all_removed_mps()
+extern int ba_reset_all_removed_mps(void)
 {
 	int coords[SYSTEM_DIMENSIONS];
 	_internal_removable_set_mps(0, NULL, coords, 0, 0);

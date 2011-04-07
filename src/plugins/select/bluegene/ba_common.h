@@ -330,7 +330,7 @@ extern int ba_set_removable_mps(bitstr_t *bitmap, bool except);
  * Resets the virtual system to the pervious state before calling
  * ba_set_removable_mps.
  */
-extern int ba_reset_all_removed_mps();
+extern int ba_reset_all_removed_mps(void);
 
 /*
  * set values of every grid point (used in smap)
