@@ -52,6 +52,7 @@ use Switch;
 
 my (	$account,
 	$acctg_freq,
+	$alps,
 	$begin_time,
 	$chdir,
 	$check_time,
@@ -190,6 +191,7 @@ foreach (keys %ENV) {
 GetOptions(
 	'A|account=s'			=> \$account,
 	'acctg-freq=i'			=> \$acctg_freq,
+	'alps=s'			=> \$alps,
 	'B|extra-node-info=s'		=> \$extra_node_info,
 	'begin=s'			=> \$begin_time,
 	'D|chdir=s'			=> \$chdir,
@@ -322,10 +324,7 @@ if ($have_job == 0) {
 	$command .= " --cpu_bind=$cpu_bind"		if $cpu_bind;
 	$command .= " --cpus-per-task=$cpus_per_task"	if $cpus_per_task;
 	$command .= " --dependency=$dependency"		if $dependency;
-	$command .= " --disable-status"			if $disable_status;
 	$command .= " --distribution=$distribution"	if $distribution;
-	$command .= " --epilog=$epilog"			if $epilog;
-	$command .= " --error=$error_file"		if $error_file;
 	$command .= " --exclude=$exclude_nodes"		if $exclude_nodes;
 	$command .= " --exclusive"			if $exclusive;
 	$command .= " --extra-node-info=$extra_node_info" if $extra_node_info;
@@ -334,11 +333,8 @@ if ($have_job == 0) {
 	$command .= " --hint=$hint"			if $hint;
 	$command .= " --hold"				if $hold;
 	$command .= " --immediate"			if $immediate;
-	$command .= " --input=$input_file"		if $input_file;
 	$command .= " --jobid=$job_id"			if $job_id;
 	$command .= " --job-name=$job_name"		if $job_name;
-	$command .= " --kill-on-bad-exit"		if $kill_on_bad_exit;
-	$command .= " --label"				if $label;
 	$command .= " --licenses=$licenses"		if $licenses;
 	$command .= " --mail-type=$mail_type"		if $mail_type;
 	$command .= " --mail-user=$mail_user"		if $mail_user;
@@ -346,12 +342,8 @@ if ($have_job == 0) {
 	$command .= " --mem-per-cpu=$memory_per_cpu"	if $memory_per_cpu;
 	$command .= " --mem_bind=$memory_bind"		if $memory_bind;
 	$command .= " --mincpus=$min_cpus"		if $min_cpus;
-	$command .= " --msg-timeout=$msg_timeout"	if $msg_timeout;
-	$command .= " --mpi=$mpi_type"			if $mpi_type;
-	$command .= " --multi-prog"			if $multi_prog;
 	$command .= " --network=$network"		if $network;
 	$command .= " --nice=$nice"			if $nice;
-	$command .= " --no-allocate"			if $no_allocate;
 	$command .= " --nodelist=$nodelist"		if $nodelist;
 	$command .= " --ntasks-per-core=$ntasks_per_core"     if $ntasks_per_core;
 	$command .= " --ntasks-per-node=$ntasks_per_node"     if $ntasks_per_node;
@@ -359,33 +351,17 @@ if ($have_job == 0) {
 	$command .= " --ntasks=$num_tasks"		if $num_tasks;
 	$command .= " --nodes=$num_nodes"		if $num_nodes;
 	$command .= " --overcommit"			if $overcommit;
-	$command .= " --output=$output_file"		if $output_file;
-	$command .= " --open-mode=$open_mode"		if $open_mode;
 	$command .= " --partition=$partition"		if $partition;
-	$command .= " --preserve_env"			if $preserve_env;
-	$command .= " --prolog=$prolog"			if $prolog;
-	$command .= " --propagate=$propagate"		if $propagate;
-	$command .= " --pty"				if $pty;
-	$command .= " --quiet"				if $quiet;
-	$command .= " --quit-on-interrupt"		if $quit_on_interrupt;
 	$command .= " --qos=$qos"			if $qos;
-	$command .= " --relative=$relative"		if $relative;
-	$command .= " --resv-ports"			if $resv_ports;
 	$command .= " --reservation=$reservation"	if $reservation;
-	$command .= " --restart-dir=$restart_dir"	if $restart_dir;
 	$command .= " --share"				if $share;
 	$command .= " --signal=$signal"			if $signal;
-	$command .= " --slurmd-debug=$slurmd_debug"	if $slurmd_debug;
 	$command .= " --sockets-per-node=$sockets_per_node" if $sockets_per_node;
-	$command .= " --task-epilog=$task_epilog"	if $task_epilog;
-	$command .= " --task-prolog=$task_prolog"	if $task_prolog;
-	$command .= " --test-only"			if $test_only;
 	$command .= " --threads-per-core=$threads_per_core"  if $threads_per_core;
-	$command .= " --threads=$threads"		if $threads;
+	$command .= " --minthreads=$threads"		if $threads;
 	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " --time-min=$time_min"		if $time_min;
 	$command .= " --tmp=$tmp_disk"			if $tmp_disk;
-	$command .= " --unbuffered"			if $unbuffered;
 	$command .= " --uid=$user_id"			if $user_id;
 	$command .= " --verbose"			if $verbose;
 	$command .= " --wait=$wait"			if $wait;
@@ -393,10 +369,56 @@ if ($have_job == 0) {
 	$command .= " $aprun";
 } else {
 	$command = "$aprun";
-	$command .= " -n $num_tasks" if $num_tasks;
-	$time_secs = get_seconds($time_limit);
-	$command .= " -t $time_secs" if $time_limit;
 }
+# Options that get set if aprun is launch either under salloc or directly
+$command .= " $alps"					if $alps;
+# $command .= " -a"		no srun equivalent
+# $command .= " -b"		no srun equivalent
+# $command .= " -B"		no srun equivalent
+# $command .= " -cc"		NEEDS WORK, cpu binding
+$command .= " -d $cpus_per_task"			if $cpus_per_task;
+$command .= " -D 1"					if $verbose;
+# $command .= " -F"		NEEDS WORK, cpu/memory binding
+# $command .= " -L"		NEEDS WORK, nodelist
+# $command .= " -m[h|hs]"	NEEDS WORK, mem per task
+$command .= " -n $num_tasks"				if $num_tasks;
+$command .= " -N $ntasks_per_node"    			if $ntasks_per_node;
+$command .= " -q"					if $quiet;
+# $command .= " -r"		no srun equivalent
+$command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
+# $command .= " -sl"		no srun equivalent
+$command .= " -sn $sockets_per_node" 			if $sockets_per_node;
+# $command .= " -ss"		NEEDS WORK, mem_bind
+$command .= " -T";		# Line buffered is srun default
+$time_secs = get_seconds($time_limit)			if $time_limit;
+$command .= " -t $time_secs"				if $time_secs;
+#$command .= " --multi-prog"	NEEDS WORK
+
+# Srun option which are not supported by aprun
+#	$command .= " --disable-status"			if $disable_status;
+#	$command .= " --epilog=$epilog"			if $epilog;
+#	$command .= " --error=$error_file"		if $error_file;
+#	$command .= " --input=$input_file"		if $input_file;
+#	$command .= " --kill-on-bad-exit"		if $kill_on_bad_exit;
+#	$command .= " --label"				if $label;
+#	$command .= " --mpi=$mpi_type"			if $mpi_type;
+#	$command .= " --msg-timeout=$msg_timeout"	if $msg_timeout;
+#	$command .= " --no-allocate"			if $no_allocate;
+#	$command .= " --output=$output_file"		if $output_file;
+#	$command .= " --open-mode=$open_mode"		if $open_mode;
+#	$command .= " --preserve_env"			if $preserve_env;
+#	$command .= " --prolog=$prolog"			if $prolog;
+#	$command .= " --propagate=$propagate"		if $propagate;
+#	$command .= " --pty"				if $pty;
+#	$command .= " --quit-on-interrupt"		if $quit_on_interrupt;
+#	$command .= " --relative=$relative"		if $relative;
+#	$command .= " --restart-dir=$restart_dir"	if $restart_dir;
+#	$command .= " --resv-ports"			if $resv_ports;
+#	$command .= " --slurmd-debug=$slurmd_debug"	if $slurmd_debug;
+#	$command .= " --task-epilog=$task_epilog"	if $task_epilog;
+#	$command .= " --task-prolog=$task_prolog"	if $task_prolog;
+#	$command .= " --test-only"			if $test_only;
+#	$command .= " --unbuffered"			if $unbuffered;
 
 $command .= " $script";
 
@@ -448,13 +470,13 @@ first create a resource allocation in which to run the parallel job.
 
 Charge resources used by this job to specified account.
 
-=item B<-n> | B<--ntasks=num_tasks>
-
-Number of tasks to launch.
-
 =item B<--acctg-freq=seconds>
 
 Specify the accounting sampling interval.
+
+=item B<--alps=options>
+
+Specify the options to be passed to the aprun command.
 
 =item B<-B> | B<--extra-node-info=sockets[:cores[:threads]]>
 
@@ -513,13 +535,15 @@ Valid conditions include after, afterany, afternotok, and singleton.
 
 Execute the program from the specified directory.
 
-=item B<-e> | B<--error=filename>
-
-Write stderr to the specified file.
-
 =item B<--epilog=filename>
 
 Execute the specified program after the job step completes.
+Not supported by aprun on Cray computers.
+
+=item B<-e> | B<--error=filename>
+
+Write stderr to the specified file.
+Not supported by aprun on Cray computers.
 
 =item B<--exclusive>
 
@@ -529,7 +553,7 @@ The job or job step will not share resources with other jobs or job steps.
 
 Pass the current values of environment variables SLURM_NNODES and
 SLURM_NTASKS through to the executable, rather than computing them
-from command line parameters.
+from command line parameters. Not supported by aprun on Cray computers.
 
 =item B<--gid=group>
 
@@ -560,6 +584,7 @@ Exit if resources are not available immediately.
 =item B<-i> | B<--input=filename>
 
 Read stdin from the specified file.
+Not supported by aprun on Cray computers.
 
 =item B<--jobid=number>
 
@@ -572,10 +597,12 @@ Specify a name for the job.
 =item B<-K> | B<--kill-on-bad-exit>
 
 Immediately terminate a job if any task exits with a non-zero exit code.
+Not supported by aprun on Cray computers.
 
 =item B<-l> | B<--label>
 
 Prepend task number to lines of stdout/err.
+Not supported by aprun on Cray computers.
 
 =item B<-l> | B<--licenses=names>
 
@@ -622,12 +649,13 @@ Specify a minimum number of logical CPUs per node.
 =item B<--msg-timeout=second>
 
 Modify the job launch message timeout.
+Not supported by aprun on Cray computers.
 
 =item B<--mpi=implementation>
 
-Identify the type of MPI toSpecify the mode for stdout redirection. be used. May result in unique initiation
+Identify the type of MPI to be used. May result in unique initiation
 procedures. Options include: list, lam, mpich1_shmem, mpichgm, mvapich,
-openmpi, and none.
+openmpi, and none. Not supported by aprun on Cray computers.
 
 =item B<--multi-prog>
 
@@ -671,10 +699,12 @@ Overcommit resources. Launch more than one task per CPU.
 =item B<-o> | B<--output=filename>
 
 Specify the mode for stdout redirection.
+Not supported by aprun on Cray computers.
 
 =item B<--open-mode=append|truncate>
 
 Open the output and error files using append or truncate mode as specified.
+Not supported by aprun on Cray computers.
 
 =item B<--partition=name>
 
@@ -683,17 +713,19 @@ Request a specific partition for the resource allocation.
 =item B<--prolog=filename>
 
 Execute the specified file before launching the job step.
+Not supported by aprun on Cray computers.
 
 =item B<--propagate=rlimits>
 
 Allows users to specify which of the modifiable (soft) resource limits
 to propagate to the compute nodes and apply to their jobs. Supported options
 include: AS, CORE, CPU, DATA, FSIZE, MEMLOCK, NOFILE, NPROC, RSS, STACK and
-ALL.
+ALL. Not supported by aprun on Cray computers.
 
 =item B<--pty>
 
 Execute task zero in pseudo terminal mode.
+Not supported by aprun on Cray computers.
 
 =item B<--quiet>
 
@@ -702,6 +734,7 @@ Suppress informational messages. Errors will still be displayed.
 =item B<-q> | B<--quit-on-interrupt>
 
 Quit immediately on single SIGINT (Ctrl-C).
+Not supported by aprun on Cray computers.
 
 =item B<--qos=quality_of_service>
 
@@ -710,10 +743,12 @@ Request a quality of service for the job.
 =item B<-r> | B<--relative=offset>
 
 Run a job step at the specified node offset in the current allocation.
+Not supported by aprun on Cray computers.
 
 =item B<--resv-ports=filename>
 
 Reserve communication ports for this job. Used for OpenMPI.
+Not supported by aprun on Cray computers.
 
 =item B<--reservation=name>
 
@@ -723,6 +758,7 @@ Allocate resources for the job from the named reservation.
 
 Specifies the directory from which the job or job step's checkpoint should
 be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
+Not supported by aprun on Cray computers.
 
 =item B<-s> | B<--share>
 
@@ -736,6 +772,7 @@ send it the specified signal number.
 =item B<--slurmd-debug=level>
 
 Specify a debug level for slurmd daemon.
+Not supported by aprun on Cray computers.
 
 =item B<--sockets-per-node=number>
 
@@ -744,16 +781,19 @@ Allocate the specified number of sockets per node.
 =item B<--task-epilog=filename>
 
 Execute the specified program after each task terminates.
+Not supported by aprun on Cray computers.
 
 =item B<--task-prolog=filename>
 
 Execute the specified program before launching each task.
+Not supported by aprun on Cray computers.
 
 =item B<--test-only>
 
 Returns an estimate of when a job would be scheduled to run given the
 current job queue and all the other B<srun> arguments specifying
 the job. No job is actually submitted.
+Not supported by aprun on Cray computers.
 
 =item B<-t> | B<--time=limit>
 
@@ -771,6 +811,7 @@ Specify a minimum amount of temporary disk space.
 =item B<-u> | B<--unbuffered>
 
 Do not line buffer stdout from remote tasks.
+Not supported by aprun on Cray computers.
 
 =item B<--uid=user>
 
@@ -805,7 +846,7 @@ Specify wckey to be used with job.
 =item B<-X> | B<--disable-status>
 
 Disable the display of task status when srun receives a single SIGINT
-(Ctrl-C).
+(Ctrl-C). Not supported by aprun on Cray computers.
 
 =item B<-x> | B<--exclude=hostlist>
 
@@ -815,7 +856,7 @@ Request a specific list of hosts to not use
 
 Run the specified tasks on a set of nodes without creating a SLURM
 "job" in the SLURM queue structure, bypassing the normal resource
-allocation step.
+allocation step. Not supported by aprun on Cray computers.
 
 =back
 
