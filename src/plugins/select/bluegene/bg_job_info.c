@@ -386,7 +386,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			/* pack space for 3 positions for geo
 			 * then 1 for conn_type, reboot, and rotate
 			 */
-			for (i=0; i<(dims+2); i++) {
+			for (i=0; i<((dims*2)+2); i++) {
 				pack16((uint16_t) 0, buffer);
 			}
 			pack32((uint32_t) 0, buffer); //node_cnt
