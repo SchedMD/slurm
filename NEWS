@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     errors after slurmctld restarts.
  -- Eliminate "error from _trigger_slurmctld_event in backup.c" due to lack of
     event triggers.
+ -- Fix logic in BackupController to properly recover front-end node state and
+    avoid purging active jobs.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

@@ -350,8 +350,6 @@ extern void restore_front_end_state(int recover)
 	uint16_t state_base, state_flags, tree_width;
 	int i;
 
-	if (recover == 2)
-		return;
 	last_front_end_update = time(NULL);
 	if (recover == 0)
 		purge_front_end_state();
