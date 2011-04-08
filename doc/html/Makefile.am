@@ -105,10 +105,13 @@ html_DATA = \
 	${generated_html} \
 	allocation_pies.gif \
 	arch.gif \
-	configurator.html \
 	coding_style.pdf \
+	configurator.html \
 	entities.gif \
 	example_usage.gif \
+	footer.txt \
+	header.txt \
+	linuxstyles.css \
 	lll.gif \
 	mc_support.gif \
 	plane_ex1.gif \
@@ -124,7 +127,6 @@ html_DATA = \
 	sponsors.gif \
 	topo_ex1.gif \
 	topo_ex2.gif \
-	linuxstyles.css \
 	usage_pies.gif
 
 MOSTLYCLEANFILES = ${generated_html}
@@ -137,8 +139,8 @@ SUFFIXES = .html
 	`dirname $<`/shtml2html.py $<
 
 .1.html:
-	$(top_srcdir)/doc/html/man2html.py $<
+	`dirname $<`/../man2html.py $<
 .5.html:
-	$(top_srcdir)/doc/html/man2html.py $<
+	`dirname $<`/../man2html.py $<
 .8.html:
-	$(top_srcdir)/doc/html/man2html.py $<
+	`dirname $<`/../man2html.py $<

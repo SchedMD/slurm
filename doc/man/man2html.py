@@ -185,3 +185,4 @@ for filename in files:
 #    html.write(<!--#include virtual="footer.txt"-->)
     html.close()
     shtml.close()
+    os.remove(filename)
