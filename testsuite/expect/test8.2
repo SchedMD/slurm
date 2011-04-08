@@ -45,13 +45,23 @@ if {[test_bluegene] == 0} {
 	 exit $exit_code
 }
 
+set type [get_bluegene_type]
+if {$type == 0} {
+	send_user "\nFAILURE: No bluegene type found \n"
+	exit 1
+}
+
 #
 # Set target environment variables
 #
 global env
 set env(SBATCH_CONN_TYPE)    torus
-set env(SBATCH_GEOMETRY)     1x1x1
 set env(SBATCH_NO_ROTATE)    1
+if {![string compare $type "Q"]} {
+	set env(SBATCH_GEOMETRY)     1x1x1x1
+} else {
+	set env(SBATCH_GEOMETRY)     1x1x1
+}
 
 #
 # Delete left-over input script files

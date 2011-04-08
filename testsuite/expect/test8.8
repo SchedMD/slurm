@@ -333,7 +333,7 @@ proc check_node { node error_cnt alloc_cnt } {
 }
 
 # set a block in a error state
-proc change_block_state { block state} {
+proc change_block_state { block state } {
 	global scontrol
 
 	set exit_code 0
@@ -473,9 +473,17 @@ if {$type == 0} {
 	exit 1
 }
 
-
-
-if {![string compare $type "P"]} {
+if {![string compare $type "Q"]} {
+	if {$psets >= 32} {
+		set smallest 16
+	} elseif {$psets >= 16} {
+		set smallest 32
+	} elseif {$psets >= 8} {
+		set smallest 64
+	} else {
+		set smallest 128
+	}
+} elseif {![string compare $type "P"]} {
 	if {$psets >= 32} {
 		set smallest 16
 	} elseif {$psets >= 16} {

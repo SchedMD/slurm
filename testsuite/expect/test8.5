@@ -215,7 +215,9 @@ exec $bin_chmod 700 $file_in
 #
 set timeout [expr $max_job_delay + $sleep_time]
 
-if {![string compare $type "P"]} {
+if {![string compare $type "Q"]} {
+	set exit_code [run_bgp_test]
+} elseif {![string compare $type "P"]} {
 	set exit_code [run_bgp_test]
 } elseif {![string compare $type "L"]} {
 	set exit_code [run_bgl_test]

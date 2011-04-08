@@ -223,7 +223,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 	set timeout 60
 	set idle_cpus [expr $total_procs - $proc_cnt]
 
-	set mypid [spawn $salloc -w $node -N1 -n $proc_cnt bash]
+	set mypid [spawn $salloc -w $node -N 1 -t 5 -n $proc_cnt bash]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -382,7 +382,17 @@ if {![string compare $select_type "bluegene"]} {
 		exit 1
 	}
 
-	if {![string compare $type "P"]} {
+	if {![string compare $type "Q"]} {
+		if {$psets >= 32} {
+			set smallest 16
+		} elseif {$psets >= 16} {
+			set smallest 32
+		} elseif {$psets >= 8} {
+			set smallest 64
+		} else {
+			set smallest 128
+		}
+	} elseif {![string compare $type "P"]} {
 		if {$psets >= 32} {
 			set smallest 16
 		} elseif {$psets >= 16} {
