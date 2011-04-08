@@ -150,6 +150,7 @@ extern List build_job_queue(bool clear_start)
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	bool job_is_pending;
+	bool job_indepen = false;
 
 	job_queue = list_create(_job_queue_rec_del);
 	if (job_queue == NULL)
@@ -162,6 +163,8 @@ extern List build_job_queue(bool clear_start)
 		job_is_pending = IS_JOB_PENDING(job_ptr);
 		if (!job_is_pending || IS_JOB_COMPLETING(job_ptr))
 			continue;
+		/* ensure dependency shows current values behind a hold */
+		job_indepen = job_independent(job_ptr, 0);
 		if (job_is_pending && clear_start)
 			job_ptr->start_time = (time_t) 0;
 		if (job_ptr->priority == 0)	{ /* held */
@@ -177,8 +180,15 @@ extern List build_job_queue(bool clear_start)
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority);
 			continue;
-		}
-		if (!job_independent(job_ptr, 0))	/* can not run now */
+		} else if ((job_ptr->priority == 1) && !job_indepen &&
+			   ((job_ptr->state_reason == WAIT_HELD) ||
+			    (job_ptr->state_reason == WAIT_HELD_USER))) {
+			/* released behind active dependency? */
+			job_ptr->state_reason = WAIT_DEPENDENCY;
+			xfree(job_ptr->state_desc);
+		}	
+
+		if (!job_indepen)	/* can not run now */
 			continue;
 		if (job_ptr->part_ptr_list) {
 			part_iterator = list_iterator_create(job_ptr->
@@ -832,16 +842,20 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	bool failure = false, depends = false;
  	List job_queue = NULL;
  	bool run_now;
+	int count = 0;
  	struct job_record *qjob_ptr;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL))
 		return 0;
 
+	count = list_count(job_ptr->details->depend_list);
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	if (!depend_iter)
 		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
+		bool clear_dep = false;
+		count--;
  		if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
  		    job_ptr->name) {
  			/* get user jobs with the same user and name */
@@ -874,31 +888,36 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			   (dep_ptr->job_ptr->job_id != dep_ptr->job_id)) {
 			/* job is gone, dependency lifted */
 			list_delete_item(depend_iter);
+			clear_dep = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
-			if (!IS_JOB_PENDING(dep_ptr->job_ptr))
+			if (!IS_JOB_PENDING(dep_ptr->job_ptr)) {
 				list_delete_item(depend_iter);
-			else
+				clear_dep = true;
+			} else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
-			if (IS_JOB_FINISHED(dep_ptr->job_ptr))
+			if (IS_JOB_FINISHED(dep_ptr->job_ptr)) {
 				list_delete_item(depend_iter);
-			else
+				clear_dep = true;
+			} else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
 				depends = true;
-			else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr))
+			else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
 				list_delete_item(depend_iter);
-			else {
+				clear_dep = true;
+			} else {
 				failure = true;
 				break;
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
 				depends = true;
-			else if (IS_JOB_COMPLETE(dep_ptr->job_ptr))
+			else if (IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
 				list_delete_item(depend_iter);
-			else {
+				clear_dep = true;
+			} else {
 				failure = true;
 				break;
 			}
@@ -925,8 +944,18 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			}
 		} else
 			failure = true;
+		if (clear_dep) {
+ 			char *rmv_dep;
+ 			rmv_dep = xstrdup_printf(":%u",
+						 dep_ptr->job_ptr->job_id);
+			xstrsubstitute(job_ptr->details->dependency, 
+				       rmv_dep, "");
+			xfree(rmv_dep);
+		}
 	}
 	list_iterator_destroy(depend_iter);
+	if (!depends && (count == 0))
+		xfree(job_ptr->details->dependency);
 
 	if (failure)
 		return 2;

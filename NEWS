@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
     avoid purging active jobs.
  -- Added man pages to html pages and the new cpu_management.html page.
     Submitted by Martin Perry / Rod Schultz, Bull.
+ -- Job dependency information will only show the currently active dependencies
+    rather than the original dependencies. From Dan Rusak, Bull.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

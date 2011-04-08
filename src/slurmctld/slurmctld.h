@@ -358,6 +358,7 @@ struct job_details {
 					 * each task */
 	List depend_list;		/* list of job_ptr:state pairs */
 	char *dependency;		/* wait for other jobs */
+	char *orig_dependency;		/* original value (for archiving) */
 	uint16_t env_cnt;		/* size of env_sup (see below) */
 	char **env_sup;			/* supplemental environment variables
 					 * as set by Moab */

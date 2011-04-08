@@ -266,6 +266,7 @@ void delete_job_details(struct job_record *job_entry)
 	if (job_entry->details->depend_list)
 		list_destroy(job_entry->details->depend_list);
 	xfree(job_entry->details->dependency);
+	xfree(job_entry->details->orig_dependency);
 	for (i=0; i<job_entry->details->env_cnt; i++)
 		xfree(job_entry->details->env_sup[i]);
 	xfree(job_entry->details->env_sup);
@@ -1567,6 +1568,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->exc_nodes,  buffer);
 	packstr(detail_ptr->features,   buffer);
 	packstr(detail_ptr->dependency, buffer);
+	packstr(detail_ptr->orig_dependency, buffer);
 
 	packstr(detail_ptr->std_err,       buffer);
 	packstr(detail_ptr->std_in,        buffer);
@@ -1586,7 +1588,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 			     uint16_t protocol_version)
 {
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
-	char *cpu_bind, *dependency = NULL, *mem_bind;
+	char *cpu_bind, *dependency = NULL, *orig_dependency = NULL, *mem_bind;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char *ckpt_dir = NULL, *restart_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
@@ -1603,7 +1605,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -1639,6 +1641,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
 		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
 
 		safe_unpackstr_xmalloc(&err, &name_len, buffer);
 		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
@@ -1651,7 +1654,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 			goto unpack_error;
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
-	} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
@@ -1685,6 +1690,54 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
 		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		orig_dependency = xstrdup(dependency);
+
+		safe_unpackstr_xmalloc(&err, &name_len, buffer);
+		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpack16(&acctg_freq, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack16(&shared, buffer);
+		safe_unpack16(&task_dist, buffer);
+
+		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+		safe_unpack16(&plane_size, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpack_time(&submit_time, buffer);
+
+		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		orig_dependency = xstrdup(dependency);
 
 		safe_unpackstr_xmalloc(&err, &name_len, buffer);
 		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
@@ -1722,6 +1775,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	xfree(job_ptr->details->argv);
 	xfree(job_ptr->details->cpu_bind);
 	xfree(job_ptr->details->dependency);
+	xfree(job_ptr->details->orig_dependency);
 	xfree(job_ptr->details->std_err);
 	for (i=0; i<job_ptr->details->env_cnt; i++)
 		xfree(job_ptr->details->env_sup[i]);
@@ -1746,6 +1800,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->cpu_bind_type = cpu_bind_type;
 	job_ptr->details->cpus_per_task = cpus_per_task;
 	job_ptr->details->dependency = dependency;
+	job_ptr->details->orig_dependency = orig_dependency;
 	job_ptr->details->env_cnt = env_cnt;
 	job_ptr->details->env_sup = env_sup;
 	job_ptr->details->std_err = err;
@@ -1788,6 +1843,7 @@ unpack_error:
 	xfree(argv);
 	xfree(cpu_bind);
 	xfree(dependency);
+	xfree(orig_dependency);
 /*	for (i=0; i<env_cnt; i++)
 	xfree(env_sup[i]);  Don't trust this on unpack error */
 	xfree(env_sup);
@@ -3776,6 +3832,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	error_code = update_job_dependency(job_ptr, job_desc->dependency);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
+	job_ptr->details->orig_dependency = xstrdup(job_ptr->details->
+						    dependency);
 
 	if (build_feature_list(job_ptr)) {
 		error_code = ESLURM_INVALID_FEATURE;
@@ -7380,6 +7438,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
 			else {
+				job_ptr->details->orig_dependency =
+					xstrdup(job_ptr->details->dependency);
 				info("sched: update_job: setting dependency to "
 				     "%s for job_id %u",
 				     job_ptr->details->dependency,
