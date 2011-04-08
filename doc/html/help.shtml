@@ -19,10 +19,10 @@ their support staff.</li>
 <h1>Commercial Support</h1>
 <p>The following companies are known to provide commercial support for SLURM:</p>
 <ul>
-<li><a href="http://www.sched-md.com">SchedMD</a></li>
+<li><a href="http://www.schedmd.com">SchedMD</a></li>
 <li><a href="http://www.hp.com">HP</a></li>
 <li><a href="http://www.bull.com">Bull</a></li>
 </ul>
-<p style="text-align:center;">Last modified 10 May 2010</p>
+<p style="text-align:center;">Last modified 8 April 2011</p>
 
 <!--#include virtual="footer.txt"-->
