@@ -34,8 +34,6 @@ source ./globals
 
 set test_id     "1.42"
 set file_in1    "test$test_id.input1"
-set file_in2    "test$test_id.input2"
-set file_out2   "test$test_id.output2"
 set exit_code   0
 set job_id1     0
 set job_id2     0
@@ -45,11 +43,11 @@ print_header $test_id
 #
 # Build input script files
 #
-exec $bin_rm -f $file_in1 $file_in2 $file_out2
-make_bash_script $file_in1 "$bin_sleep 30"
+exec $bin_rm -f $file_in1
+make_bash_script $file_in1 "$bin_sleep 10"
 
 #
-# Spawn an sbatch job that just sleeps for a while
+# Spawn a batch job that just sleeps for a while
 #
 set timeout $max_job_delay
 set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t1 $file_in1]
@@ -75,77 +73,29 @@ if {$job_id1 == 0} {
 #
 # Submit a dependent job
 #
-make_bash_script $file_in2 "$scontrol show job $job_id1"
-set match_state 0
-set sbatch_pid [spawn $sbatch -v --output=$file_out2 --dependency=afterany:$job_id1 $file_in2]
+set match_job_state 0
+set srun_pid [spawn $srun --dependency=afterany:$job_id1 $scontrol show job $job_id1]
 expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
+	-re "JobState=COMPLETED|COMPLETING" {
+		set match_job_state 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		slow_kill $sbatch_pid
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-if {$job_id2 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
-}
-
-#
-# Confirm dependency info within second job
-#
-set match_jobid 0
-spawn $scontrol show job $job_id2
-expect {
-	-re "Dependency=afterany:($number)" {
-		set match_jobid $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$match_jobid != $job_id1} {
-	send_user "\nFAILURE: Dependency information not processed\n"
+if {$match_job_state == 0} {
+	send_user "\nFAILURE: Dependent job not completed\n"
 	set exit_code 1
 }
 
-#
-# Confirm that first job is complete before second job starts
-#
-if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: file $file_out2 is missing\n"
-        set exit_code 1
-} else {
-	set match_job_state 0
-	spawn $bin_cat $file_out2
-	expect {
-		-re "JobState=COMPLETED|COMPLETING" {
-			set match_job_state 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$match_job_state == 0} {
-		send_user "\nFAILURE: Dependent job not completed\n"
-		set exit_code 1
-	}
-}
-
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2 $file_out2
+	exec $bin_rm -f $file_in1
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
