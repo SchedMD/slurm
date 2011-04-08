@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
     Submitted by Martin Perry / Rod Schultz, Bull.
  -- Job dependency information will only show the currently active dependencies
     rather than the original dependencies. From Dan Rusak, Bull.
+ -- Add RPCs to get the SPANK environment variables from the slurmctld daemon.
+    Patch from Andrej N. Gritsenko.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

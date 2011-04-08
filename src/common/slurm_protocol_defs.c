@@ -831,6 +831,21 @@ inline void slurm_free_suspend_msg(suspend_msg_t *msg)
 	xfree(msg);
 }
 
+void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
+void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg)
+{
+	uint32_t i;
+
+	for (i = 0; i < msg->spank_job_env_size; i++)
+		xfree(msg->spank_job_env[i]);
+	xfree(msg->spank_job_env);
+	xfree(msg);
+}
+
 /* Given a job's reason for waiting, return a descriptive string */
 extern char *job_reason_string(enum job_state_reason inx)
 {
@@ -2405,6 +2420,13 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		slurm_free_update_step_msg(data);
+		break;
+	case REQUEST_SPANK_ENVIRONMENT:
+		slurm_free_spank_env_request_msg(data);
+		break;
+	case RESPONCE_SPANK_ENVIRONMENT:
+		slurm_free_spank_env_responce_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;

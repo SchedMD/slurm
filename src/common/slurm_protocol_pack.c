@@ -589,6 +589,16 @@ static void _pack_update_job_step_msg(step_update_request_msg_t * msg,
 static int _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr,
 				       Buf buffer, uint16_t protocol_version);
 
+static void _pack_spank_env_request_msg(spank_env_request_msg_t * msg,
+					Buf buffer, uint16_t protocol_version);
+static int _unpack_spank_env_request_msg(spank_env_request_msg_t ** msg_ptr,
+					 Buf buffer, uint16_t protocol_version);
+
+static void _pack_spank_env_responce_msg(spank_env_responce_msg_t * msg,
+					 Buf buffer, uint16_t protocol_version);
+static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
+					  Buf buffer, uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -1139,6 +1149,16 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_FRONT_END_INFO:
 		_pack_front_end_info_msg((slurm_msg_t *) msg, buffer);
 		break;
+	case REQUEST_SPANK_ENVIRONMENT:
+		_pack_spank_env_request_msg(
+			(spank_env_request_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONCE_SPANK_ENVIRONMENT:
+		_pack_spank_env_responce_msg(
+			(spank_env_responce_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1670,6 +1690,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_FRONT_END_INFO:
 		rc = _unpack_front_end_info_msg(
 			(front_end_info_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_SPANK_ENVIRONMENT:
+		rc = _unpack_spank_env_request_msg(
+			(spank_env_request_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONCE_SPANK_ENVIRONMENT:
+		rc = _unpack_spank_env_responce_msg(
+			(spank_env_responce_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
 	default:
@@ -9584,6 +9614,60 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
+
+static void _pack_spank_env_request_msg(spank_env_request_msg_t * msg,
+					Buf buffer, uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+
+	pack32(msg->job_id, buffer);
+}
+
+static int _unpack_spank_env_request_msg(spank_env_request_msg_t ** msg_ptr,
+					 Buf buffer, uint16_t protocol_version)
+{
+	spank_env_request_msg_t *msg;
+
+	xassert(msg_ptr != NULL);
+	msg = xmalloc(sizeof(spank_env_request_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_spank_env_request_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_spank_env_responce_msg(spank_env_responce_msg_t * msg,
+					 Buf buffer, uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+
+	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
+}
+
+static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
+					  Buf buffer, uint16_t protocol_version)
+{
+	spank_env_responce_msg_t *msg;
+
+	xassert(msg_ptr != NULL);
+	msg = xmalloc(sizeof(spank_env_responce_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpackstr_array(&msg->spank_job_env, &msg->spank_job_env_size,
+			     buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_spank_env_responce_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
 
 /* template
    void pack_ ( * msg , Buf buffer )
