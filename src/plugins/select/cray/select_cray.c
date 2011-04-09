@@ -284,6 +284,30 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 {
 	xassert(job_ptr);
+	/*
+	 * Release the ALPS reservation already here for those signals that are
+	 * likely to terminate the job. Otherwise there is a race condition if a
+	 * script has more than one aprun line: while the apkill of the current
+	 * aprun line is underway, the job script proceeds to run and executes
+	 * the next following aprun line, until reaching the end of the script.
+	 * This not only creates large delays, it can also mess up cleaning up
+	 * after the job. Releasing the reservation will stop any new aprun
+	 * lines from being executed.
+	 */
+	switch (signal) {
+		case SIGCONT:
+		case SIGSTOP:
+		case SIGTSTP:
+		case SIGTTIN:
+		case SIGTTOU:
+		case SIGURG:
+		case SIGCHLD:
+		case SIGWINCH:
+			break;
+		default:
+			if (signal < SIGRTMIN)
+				do_basil_release(job_ptr);
+	}
 
 	if (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS)
 		return SLURM_ERROR;
