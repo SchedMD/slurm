@@ -7045,7 +7045,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			xfree(job_ptr->state_desc);
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
-			job_ptr->details->nice = NICE_OFFSET;
+			if (job_specs->priority != 0)
+				job_ptr->details->nice = NICE_OFFSET;
 			if (job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
 				_set_job_prio(job_ptr);
