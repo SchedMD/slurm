@@ -6518,6 +6518,17 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_specs->min_nodes == INFINITE) {
+		/* Used by scontrol just to get current configuration info */
+		job_specs->min_nodes = NO_VAL;
+	}
+	if ((job_specs->min_nodes != NO_VAL) && !select_g_job_expand_allow()) {
+		info("Change of size for job %u not supported",
+		     job_specs->job_id);
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
+
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
 
@@ -6825,10 +6836,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	/* Reset min and max node counts as needed, insure consistency */
-	if (job_specs->min_nodes == INFINITE) {
-		/* Used by scontrol just to get current configuration info */
-		job_specs->min_nodes = NO_VAL;
-	}
 	if (job_specs->min_nodes != NO_VAL) {
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			;	/* shrink running job, handle later */
@@ -7310,12 +7317,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if ((job_specs->min_nodes != NO_VAL) && !select_g_job_expand_allow()) {
-		info("Change of size for job %u not supported",
-		     job_specs->job_id);
-		error_code = ESLURM_NOT_SUPPORTED;
-		goto fini;
-	}
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
