@@ -772,9 +772,8 @@ extern int do_basil_release(struct job_record *job_ptr)
 	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
 			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
 		error("can not read resId for JobId=%u", job_ptr->job_id);
-	} else if (resv_id == 0) {
-		error("JobId=%u has invalid (ZERO) resId", job_ptr->job_id);
-	} else if (basil_release(resv_id) == 0) {
+	} else if (resv_id && basil_release(resv_id) == 0) {
+		/* The resv_id is non-zero only if the job is or was running. */
 		debug("released ALPS resId %u for JobId %u",
 		      resv_id, job_ptr->job_id);
 	}
