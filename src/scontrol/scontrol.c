@@ -88,7 +88,7 @@ int
 main (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
-	char **input_fields;
+	char **input_fields, *env_val;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
 	int option_index;
@@ -119,6 +119,13 @@ main (int argc, char *argv[])
 
 	if (getenv ("SCONTROL_ALL"))
 		all_flag= 1;
+	if ((env_val = getenv("SLURM_CLUSTERS"))) {
+		if (!(clusters = slurmdb_get_info_cluster(env_val))) {
+			error("'%s' invalid entry for SLURM_CLUSTERS", env_val);
+			exit(1);
+		}
+		working_cluster_rec = list_peek(clusters);
+	}
 
 	while((opt_char = getopt_long(argc, argv, "adhM:oQvV",
 			long_options, &option_index)) != -1) {
