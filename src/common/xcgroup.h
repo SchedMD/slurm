@@ -118,7 +118,7 @@ int xcgroup_ns_umount(xcgroup_ns_t* cgns);
  *  - 0 if not available
  *  - 1 if available
  */
-int xcgroup_ns_is_available();
+int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
 
 /*
  * load a cgroup from a cgroup namespace given a pid
