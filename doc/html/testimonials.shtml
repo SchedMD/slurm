@@ -3,20 +3,10 @@
 <h1>Customer Testimonials</h1>
 
 <i>
-"Today our largest IBM computers, BlueGene/L and Purple, ranked #1 and #3
-respectively on the November 2005 Top500 list, use SLURM.
-This decision reduces large job launch times from tens of minutes to seconds.
-This effectively provides
-us with millions of dollars with of additional compute resources without
-additional cost.  It also allows our computational scientists to use their
-time more effectively.  SLURM is scalable to very large numbers of processors,
-another essential ingredient for use at LLNL. This means larger computer
-systems can be used than otherwise possible with a commensurate increase in
-the scale of problems that can be solved. SLURM's scalability has eliminated
-resource management from being a concern for computers of any foreseeable
-size. It is one of the best things to happen to massively parallel computing."
-<br><br>
-Dona Crawford, Associate Directory Lawrence Livermore National Laboratory
+"Really, I am in awe of this software: I shut down a full 1841 node system,
+unpacked the tarball, and it came up without any hitch. You guys have done an
+awesome job..."<br><br>
+Gerrit Renker, Swiss National Supercomputer Centre
 </i>
 <HR SIZE=4>
 
@@ -37,6 +27,24 @@ Rensselaer Polytechnic Institute
 I tell you, I've used Sun Grid Engine, Torque, PBS Pro and there's
 nothing like SLURM."<br><br>
 Aaron Knister, Environmental Protection Agency
+</i>
+<HR SIZE=4>
+
+<i>
+"Today our largest IBM computers, BlueGene/L and Purple, ranked #1 and #3
+respectively on the November 2005 Top500 list, use SLURM.
+This decision reduces large job launch times from tens of minutes to seconds.
+This effectively provides
+us with millions of dollars with of additional compute resources without
+additional cost.  It also allows our computational scientists to use their
+time more effectively.  SLURM is scalable to very large numbers of processors,
+another essential ingredient for use at LLNL. This means larger computer
+systems can be used than otherwise possible with a commensurate increase in
+the scale of problems that can be solved. SLURM's scalability has eliminated
+resource management from being a concern for computers of any foreseeable
+size. It is one of the best things to happen to massively parallel computing."
+<br><br>
+Dona Crawford, Associate Directory Lawrence Livermore National Laboratory
 </i>
 <HR SIZE=4>
 
@@ -133,6 +141,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 8 September 2009</p>
+<p style="text-align:center;">Last modified 8 April 2011</p>
 
 <!--#include virtual="footer.txt"-->
