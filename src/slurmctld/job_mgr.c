@@ -7028,6 +7028,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				else
 					job_ptr->state_reason = WAIT_HELD;
 			}
+		} else if ((job_ptr->priority == 0) &&
+			   (job_ptr->state_reason == WAIT_HELD_USER)) {
+			job_ptr->direct_set_prio = 0;
+			_set_job_prio(job_ptr);
+			info("sched: update_job: releasing user hold "
+			     "for job_id %u", job_specs->job_id);
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
 			job_ptr->details->nice = NICE_OFFSET;
@@ -7055,14 +7063,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_ptr->state_reason = WAIT_NO_REASON;
 				xfree(job_ptr->state_desc);
 			}
-		} else if ((job_ptr->priority == 0) &&
-			   (job_ptr->state_reason == WAIT_HELD_USER)) {
-			job_ptr->direct_set_prio = 0;
-			_set_job_prio(job_ptr);
-			info("sched: update_job: releasing user hold "
-			     "for job_id %u", job_specs->job_id);
-			job_ptr->state_reason = WAIT_NO_REASON;
-			xfree(job_ptr->state_desc);
 		} else {
 			error("sched: Attempt to increase priority for job %u",
 			      job_specs->job_id);
