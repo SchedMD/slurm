@@ -217,6 +217,9 @@ scontrol_hold(char *op, char *job_id_str)
 
 	slurm_init_job_desc_msg (&job_msg);
 
+	/* set current user, needed e.g., for AllowGroups checks */
+	job_msg.user_id = getuid();
+
 	if (job_id_str) {
 		job_msg.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
 		if ((job_msg.job_id == 0) || (next_str[0] != '\0')) {
