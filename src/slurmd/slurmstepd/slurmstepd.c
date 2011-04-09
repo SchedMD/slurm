@@ -410,9 +410,11 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 static void
 _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
-	jobacct_gather_g_destroy(job->jobacct);
-	if (!job->batch)
-		job_destroy(job);
+	if (job) {
+		jobacct_gather_g_destroy(job->jobacct);
+		if (!job->batch)
+			job_destroy(job);
+	}
 	/*
 	 * The message cannot be freed until the jobstep is complete
 	 * because the job struct has pointers into the msg, such
