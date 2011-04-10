@@ -1137,8 +1137,6 @@ int job_state_num(const char *state_name)
 
 	if (_job_name_test(JOB_COMPLETING, state_name))
 		return JOB_COMPLETING;
-	if (_job_name_test(JOB_COMPLETING, state_name))
-		return JOB_COMPLETING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
 
