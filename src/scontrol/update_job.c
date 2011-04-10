@@ -666,11 +666,11 @@ scontrol_update_job (int argc, char *argv[])
 
 	if (slurm_update_job(&job_msg))
 		return slurm_get_errno ();
-	else {
-		if (update_size)
-			_update_job_size(job_msg.job_id);
-		return 0;
-	}
+
+	if (update_size)
+		_update_job_size(job_msg.job_id);
+
+	return SLURM_SUCCESS;
 }
 
 /*
