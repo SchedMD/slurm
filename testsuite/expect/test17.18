@@ -94,39 +94,6 @@ if {$job_id2 == 0} {
 	exit 1
 }
 
-# Wait for job to complete
-#
-if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	cancel_job $job_id2
-	cancel_job $job_id1
-	exit 1
-}
-cancel_job $job_id1
-
-#
-# Inspect the job's output file
-#
-if {[wait_for_file $file_out] != 0} {
-	exit 1
-}
-
-spawn $bin_cat $file_out
-expect {
-#	Could be COMPLETED or COMPLETING
-	-re "JobState=COMPLET" {
-		set match_state 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$match_state == 0} {
-	send_user "\nFAILURE: Dependent job not completed\n"
-	set exit_code 1
-}
-
 #
 # Confirm dependency info within second job
 #
@@ -161,6 +128,40 @@ if {$match_jobid == 0} {
 	}
 } elseif {$match_jobid != $job_id1} {
 	send_user "\nFAILURE: Dependency information not processed\n"
+	set exit_code 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id2 "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id2
+	cancel_job $job_id1
+	exit 1
+}
+cancel_job $job_id1
+
+#
+# Inspect the job's output file
+#
+if {[wait_for_file $file_out] != 0} {
+	exit 1
+}
+
+spawn $bin_cat $file_out
+expect {
+#	Could be COMPLETED or COMPLETING
+	-re "JobState=COMPLET" {
+		set match_state 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$match_state == 0} {
+	send_user "\nFAILURE: Dependent job not completed\n"
 	set exit_code 1
 }
 

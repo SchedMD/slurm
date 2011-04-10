@@ -39,7 +39,7 @@ set exit_code     0
 set file_in       "test$test_id.input"
 set job_id        0
 set new_prio      1
-set read_priority 0
+set read_priority -1
 
 print_header $test_id
 
@@ -77,7 +77,10 @@ if {$job_id == 0} {
 #
 spawn  $scontrol show job $job_id
 expect {
-
+	-re "Priority=($number)" {
+		set read_priority $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -85,6 +88,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$read_priority != 0} {
+	send_user "\nFAILURE: hold priority error\n"
+	set exit_code 1
 }
 
 #
@@ -124,7 +131,7 @@ expect {
 		wait
 	}
 }
-if {$new_prio != $read_priority} {
+if {$read_priority == 0} {
 	send_user "\nFAILURE: scontrol priority change error\n"
 	set exit_code 1
 }
