@@ -76,6 +76,18 @@ static void  _parse_token( char *token, char *field, int *field_size,
 static void  _print_options( void );
 static void  _usage( void );
 
+static void _opt_env(void)
+{
+	char *env_val;
+
+	if ((env_val = getenv("SLURM_CLUSTERS"))) {
+		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
+			error("'%s' invalid entry for SLURM_CLUSTERS", env_val);
+			exit(1);
+		}
+	}
+}
+
 /*
  * parse_command_line
  */
@@ -101,6 +113,9 @@ parse_command_line( int argc, char* argv[] )
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
 		{NULL,         0,                 0, 0}
 	};
+
+	/* get defaults from environment */
+	_opt_env();
 
 	while((opt_char = getopt_long(argc, argv, "hj::lM:no:u:vVw",
 				      long_options, &option_index)) != -1) {
@@ -131,7 +146,6 @@ parse_command_line( int argc, char* argv[] )
 				      optarg);
 				exit(1);
 			}
-			working_cluster_rec = list_peek(params.clusters);
 			break;
 		case (int) 'n':
 			params.normalized = true;
@@ -175,8 +189,10 @@ parse_command_line( int argc, char* argv[] )
 		}
 	}
 
-	if ( params.verbose )
+	if (params.verbose)
 		_print_options();
+	if (params.clusters)
+		working_cluster_rec = list_peek(params.clusters);
 }
 
 /*

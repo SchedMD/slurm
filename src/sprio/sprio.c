@@ -75,23 +75,11 @@ static int _get_info(priority_factors_request_msg_t *factors_req,
 
 int main (int argc, char *argv[])
 {
-	char *temp = NULL;
+	char *prio_type = NULL;
 	int error_code = SLURM_SUCCESS;
 	priority_factors_request_msg_t req_msg;
 	priority_factors_response_msg_t *resp_msg = NULL;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
-
-	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_priority_type();
-	if(strcasecmp(temp, "priority/multifactor")) {
-		fprintf (stderr, "You are not running a supported "
-			 "priority plugin\n(%s).\n"
-			 "Only 'priority/multifactor' is supported.\n",
-			temp);
-		xfree(temp);
-		exit(1);
-	}
-	xfree(temp);
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 
@@ -115,6 +103,7 @@ int main (int argc, char *argv[])
 		weight_js   = slurm_ctl_conf_ptr->priority_weight_js;
 		weight_part = slurm_ctl_conf_ptr->priority_weight_part;
 		weight_qos  = slurm_ctl_conf_ptr->priority_weight_qos;
+		prio_type   = xstrdup(slurm_ctl_conf_ptr->priority_type);
 		slurm_free_ctl_conf(slurm_ctl_conf_ptr);
 	} else {
 		weight_age  = slurm_get_priority_weight_age();
@@ -122,7 +111,19 @@ int main (int argc, char *argv[])
 		weight_js   = slurm_get_priority_weight_job_size();
 		weight_part = slurm_get_priority_weight_partition();
 		weight_qos  = slurm_get_priority_weight_qos();
+		prio_type   = slurm_get_priority_type();
 	}
+
+	/* Check to see if we are running a supported accounting plugin */
+	if (strcasecmp(prio_type, "priority/multifactor")) {
+		fprintf (stderr, "You are not running a supported "
+			 "priority plugin\n(%s).\n"
+			 "Only 'priority/multifactor' is supported.\n",
+			 prio_type);
+		exit(1);
+	}
+	xfree(prio_type);
+
 
 	memset(&req_msg, 0, sizeof(priority_factors_request_msg_t));
 

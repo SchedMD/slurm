@@ -141,6 +141,14 @@ Print version information and exit.
 factor.  This is for information purposes only.  Actual job data is
 suppressed.
 
+.SH "ENVIRONMENT VARIABLES"
+.PP
+If no corresponding commandline option is specified, \fBsprio\fR will use the value of
+the following environment variables.
+.TP 20
+\fBSLURM_CLUSTERS\fR
+Same as \fB\-\-clusters\fR
+
 .SH "EXAMPLES"
 .eo
 Print the list of all pending jobs with their weighted priorities
