@@ -2958,23 +2958,6 @@ void slurm_print_slurm_addr(slurm_addr_t * address, char *buf, size_t n)
  * slurm_addr_t pack routines
 \**********************************************************************/
 
-/*
- *  Pack just the message with no header and send back the buffer.
- */
-Buf slurm_pack_msg_no_header(slurm_msg_t * msg)
-{
-	Buf      buffer = NULL;
-
-	buffer = init_buf(0);
-
-	/*
-	 * Pack message into buffer
-	 */
-	pack_msg(msg, buffer);
-
-	return buffer;
-}
-
 /* slurm_pack_slurm_addr
  * packs a slurm_addr_t into a buffer to serialization transport
  * IN slurm_address	- slurm_addr_t to pack

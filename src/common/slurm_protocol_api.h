@@ -920,8 +920,6 @@ inline void slurm_print_slurm_addr(slurm_addr_t * address,
  * slurm_addr_t pack routines
 \**********************************************************************/
 
-Buf slurm_pack_msg_no_header(slurm_msg_t * msg);
-
 /* slurm_pack_slurm_addr
  * packs a slurm_addr_t into a buffer to serialization transport
  * IN slurm_address	- slurm_addr_t to pack
