@@ -11,6 +11,7 @@
 # include "config.h"
 #endif
 
+#include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/log.h"
 #include "src/common/fd.h"
 #include "src/common/xassert.h"
