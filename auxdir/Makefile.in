@@ -61,6 +61,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
+	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
@@ -153,6 +154,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MAN2HTML = @MAN2HTML@
 MKDIR_P = @MKDIR_P@
 MUNGE_CPPFLAGS = @MUNGE_CPPFLAGS@
 MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
@@ -294,7 +296,7 @@ EXTRA_DIST = \
     x_ac_gpl_licensed.m4 \
     x_ac_hwloc.m4 \
     x_ac_iso.m4 \
-    x_ac_pam.m4 \
+    x_ac_man2html.m4 \
     x_ac_munge.m4 \
     x_ac_ncurses.m4 \
     x_ac_pam.m4 \

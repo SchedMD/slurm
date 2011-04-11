@@ -1,7 +1,8 @@
 
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
-generated_html = \
+if HAVE_MAN2HTML
+	man_html = \
 	../man/man1/sacct.html \
 	../man/man1/sacctmgr.html \
 	../man/man1/salloc.html \
@@ -33,7 +34,12 @@ generated_html = \
 	../man/man8/slurmd.html \
 	../man/man8/slurmdbd.html \
 	../man/man8/slurmstepd.html \
-	../man/man8/spank.html \
+	../man/man8/spank.html
+else
+	man_html =
+endif
+
+generated_html = \
 	accounting.html \
 	accounting_storageplugins.html \
 	api.html \
@@ -103,6 +109,7 @@ generated_html = \
 
 html_DATA = \
 	${generated_html} \
+	${man_html} \
 	allocation_pies.gif \
 	arch.gif \
 	coding_style.pdf \
@@ -129,7 +136,7 @@ html_DATA = \
 	topo_ex2.gif \
 	usage_pies.gif
 
-MOSTLYCLEANFILES = ${generated_html}
+MOSTLYCLEANFILES = ${generated_html} ${man_html}
 
 EXTRA_DIST = $(html_DATA)
 
@@ -138,9 +145,11 @@ SUFFIXES = .html
 .shtml.html:
 	`dirname $<`/shtml2html.py $<
 
+if HAVE_MAN2HTML
 .1.html:
 	`dirname $<`/../man2html.py $<
 .5.html:
 	`dirname $<`/../man2html.py $<
 .8.html:
 	`dirname $<`/../man2html.py $<
+endif

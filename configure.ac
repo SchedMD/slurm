@@ -289,6 +289,10 @@ dnl check for lua library
 dnl
 X_AC_LUA
 
+dnl check for presence of the man2html command
+dnl
+X_AC_MAN2HTML
+
 dnl check if we can use standard printf functions
 dnl
 X_AC_PRINTF_NULL

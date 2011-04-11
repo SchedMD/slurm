@@ -62,6 +62,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
+	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
@@ -177,6 +178,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MAN2HTML = @MAN2HTML@
 MKDIR_P = @MKDIR_P@
 MUNGE_CPPFLAGS = @MUNGE_CPPFLAGS@
 MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
@@ -301,38 +303,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 generated_html = \
-	../man/man1/sacct.html \
-	../man/man1/sacctmgr.html \
-	../man/man1/salloc.html \
-	../man/man1/sattach.html \
-	../man/man1/sbatch.html \
-	../man/man1/sbcast.html \
-	../man/man1/scancel.html \
-	../man/man1/scontrol.html \
-	../man/man1/sinfo.html \
-	../man/man1/slurm.html \
-	../man/man1/smap.html \
-	../man/man1/sprio.html \
-	../man/man1/squeue.html \
-	../man/man1/sreport.html \
-	../man/man1/srun.html \
-	../man/man1/srun_cr.html \
-	../man/man1/sshare.html \
-	../man/man1/sstat.html \
-	../man/man1/strigger.html \
-	../man/man1/sview.html \
-	../man/man5/bluegene.conf.html \
-	../man/man5/cgroup.conf.html \
-	../man/man5/gres.conf.html \
-	../man/man5/slurm.conf.html \
-	../man/man5/slurmdbd.conf.html \
-	../man/man5/topology.conf.html \
-	../man/man5/wiki.conf.html \
-	../man/man8/slurmctld.html \
-	../man/man8/slurmd.html \
-	../man/man8/slurmdbd.html \
-	../man/man8/slurmstepd.html \
-	../man/man8/spank.html \
 	accounting.html \
 	accounting_storageplugins.html \
 	api.html \
@@ -402,6 +372,7 @@ generated_html = \
 
 html_DATA = \
 	${generated_html} \
+	${man_html} \
 	allocation_pies.gif \
 	arch.gif \
 	coding_style.pdf \
@@ -428,7 +399,7 @@ html_DATA = \
 	topo_ex2.gif \
 	usage_pies.gif
 
-MOSTLYCLEANFILES = ${generated_html}
+MOSTLYCLEANFILES = ${generated_html} ${man_html}
 EXTRA_DIST = $(html_DATA)
 SUFFIXES = .html
 all: all-am
@@ -644,15 +615,50 @@ uninstall-am: uninstall-htmlDATA
 	uninstall uninstall-am uninstall-htmlDATA
 
 
+@HAVE_MAN2HTML_TRUE@	man_html = \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sacct.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sacctmgr.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/salloc.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sattach.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sbatch.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sbcast.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/scancel.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/scontrol.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sinfo.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/slurm.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/smap.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sprio.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/squeue.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sreport.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/srun.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/srun_cr.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sshare.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sstat.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/strigger.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sview.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/bluegene.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/cgroup.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/gres.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/slurm.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/slurmdbd.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/topology.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/wiki.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmctld.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmd.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmdbd.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmstepd.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/spank.html
+@HAVE_MAN2HTML_FALSE@	man_html =
+
 .shtml.html:
 	`dirname $<`/shtml2html.py $<
 
-.1.html:
-	`dirname $<`/../man2html.py $<
-.5.html:
-	`dirname $<`/../man2html.py $<
-.8.html:
-	`dirname $<`/../man2html.py $<
+@HAVE_MAN2HTML_TRUE@.1.html:
+@HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py $<
+@HAVE_MAN2HTML_TRUE@.5.html:
+@HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py $<
+@HAVE_MAN2HTML_TRUE@.8.html:
+@HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py $<
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
