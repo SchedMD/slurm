@@ -292,6 +292,8 @@ X_AC_LUA
 dnl check for presence of the man2html command
 dnl
 X_AC_MAN2HTML
+AM_CONDITIONAL(HAVE_MAN2HTML, test "x$ac_have_man2html" = "xyes")
+AC_SUBST(HAVE_MAN2HTML)
 
 dnl check if we can use standard printf functions
 dnl
