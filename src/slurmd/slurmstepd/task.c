@@ -396,7 +396,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->env = NULL;
 	xfree(job->envtp->task_count);
 
-	if (job->multi_prog && task->argv[0]) {
+	if (task->argv[0] && *task->argv[0] != '/') {
 		/*
 		 * Normally the client (srun) expands the command name
 		 * to a fully qualified path, but in --multi-prog mode it

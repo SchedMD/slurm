@@ -8,16 +8,6 @@ documents those changes that are of interest to users and admins.
     damon that should be running on the node is not running. Patch from Rod
     Schulz, Bull.
  -- Improve accuracy of response to "srun --test-only jobid=#".
- -- Correct logic to properly support --ntasks-per-node option in the
-    select/cons_res plugin. Patch from Rod Schulz, Bull.
- -- Fix bug in select/cons_res with respect to generic resource (gres)
-    scheduling which prevented some jobs from starting as soon as possible.
- -- Fix memory leak in select/cons_res when backfill scheduling generic
-    resources (gres).
- -- Fix for when configuring a node with more resources than in real life
-    and using task/affinity.
- -- Fix so slurmctld will pack correctly 2.1 step information. (Only needed if
-    a 2.1 client is talking to a 2.2 slurmctld.)
  -- Fix bug in front-end configurations which reports job_cnt_comp underflow
     errors after slurmctld restarts.
  -- Eliminate "error from _trigger_slurmctld_event in backup.c" due to lack of
@@ -141,6 +131,29 @@ documents those changes that are of interest to users and admins.
     values at FirstJobId.
  -- When restarting slurmctld with priority/basic, increment all job priorities
     so the highest job priority becomes TOP_PRIORITY.
+
+* Changes in SLURM 2.2.5
+========================
+ -- Correct init.d/slurm status to have non-zero exit code if ANY Slurm
+    damon that should be running on the node is not running. Patch from Rod
+    Schulz, Bull.
+ -- Improve accuracy of response to "srun --test-only jobid=#".
+ -- Correct logic to properly support --ntasks-per-node option in the
+    select/cons_res plugin. Patch from Rod Schulz, Bull.
+ -- Fix bug in select/cons_res with respect to generic resource (gres)
+    scheduling which prevented some jobs from starting as soon as possible.
+ -- Fix memory leak in select/cons_res when backfill scheduling generic
+    resources (gres).
+ -- Fix for when configuring a node with more resources than in real life
+    and using task/affinity.
+ -- Fix so slurmctld will pack correctly 2.1 step information. (Only needed if
+    a 2.1 client is talking to a 2.2 slurmctld.)
+ -- Set powered down node's state to IDLE+POWER after slurmctld restart instead
+    of leaving in UNKNOWN+POWER. Patch from Andrej Gritsenko.
+ -- Fix bug where is srun's executable is not on it's current search path, but
+    can be found in the user's default search path. Modify slurmstepd to find
+    the executable. Patch from Andrej Gritsenko.
+ -- Make sview display correct cpu count for steps.
 
 * Changes in SLURM 2.2.4
 ========================

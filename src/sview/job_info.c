@@ -2114,7 +2114,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
-						 SORTID_CPU_MIN),
+						 SORTID_CPUS),
 				   tmp_char);
 
 	uname = uid_to_string((uid_t)step_ptr->user_id);
@@ -2258,10 +2258,9 @@ static void _update_step_record(job_step_info_t *step_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ALLOC,        0,
-			   SORTID_COLOR,
-				sview_colors[step_ptr->step_id],
+			   SORTID_COLOR,	sview_colors[step_ptr->step_id],
 			   SORTID_COLOR_INX,    step_ptr->step_id,
-			   SORTID_CPU_MIN,      tmp_cpu_min,
+			   SORTID_CPUS,         tmp_cpu_min,
 			   SORTID_GRES,         step_ptr->gres,
 			   SORTID_JOBID,        step_ptr->step_id,
 			   SORTID_NAME,         step_ptr->name,
