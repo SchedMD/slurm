@@ -162,6 +162,7 @@ $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   islurm_*;"; \
 	 echo "   slurm_*;"; \
+	 echo "   slurmdb_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 

@@ -58,6 +58,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/node_select.h"
 
+strong_alias(destroy_select_ba_request,	slurm_destroy_select_ba_request);
+
 static int select_context_cnt = -1;
 static int select_context_default = -1;
 /* If there is a new select plugin, list it here */

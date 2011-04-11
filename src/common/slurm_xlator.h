@@ -342,6 +342,9 @@
 #define jobacct_common_alloc_jobacct slurm_jobacct_common_alloc_jobacct
 #define jobacct_common_free_jobacct slurm_jobacct_common_free_jobacct
 
+/* node_select.[ch] functions */
+#define destroy_select_ba_request	slurm_destroy_select_ba_request
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
@@ -352,11 +355,13 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/env.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"
+#include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
