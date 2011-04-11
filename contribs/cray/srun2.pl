@@ -89,15 +89,15 @@ my (	$account,
 	$man,
 	$memory,
 	$memory_per_cpu,
-	$memory_bind,
+	$memory_bind, $mem_local,
 	$min_cpus,
 	$msg_timeout,
 	$mpi_type,
-	$multi_prog,
+	$multi_prog, $multi_executables,
 	$network,
 	$nice,
 	$no_allocate,
-	$nodelist,
+	$nodelist, $nid_list,
 	$ntasks_per_core,
 	$ntasks_per_node,
 	$ntasks_per_socket,
@@ -376,12 +376,13 @@ $command .= " $alps"					if $alps;
 # $command .= " -a"		no srun equivalent
 # $command .= " -b"		no srun equivalent
 # $command .= " -B"		no srun equivalent
-# $command .= " -cc"		NEEDS WORK, cpu binding
+# $command .= " -cc"		NO GOOD MAPPING, cpu binding
 $command .= " -d $cpus_per_task"			if $cpus_per_task;
 $command .= " -D 1"					if $verbose;
-# $command .= " -F"		NEEDS WORK, cpu/memory binding
-# $command .= " -L"		NEEDS WORK, nodelist
-# $command .= " -m[h|hs]"	NEEDS WORK, mem per task
+# $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
+$nid_list = get_nids($nodelist)				if $nodelist;
+$command .= " -L $nid_list"				if $nodelist;
+$command .= " -m $memory_per_cpu"			if $memory_per_cpu;
 $command .= " -n $num_tasks"				if $num_tasks;
 $command .= " -N $ntasks_per_node"    			if $ntasks_per_node;
 $command .= " -q"					if $quiet;
@@ -389,11 +390,13 @@ $command .= " -q"					if $quiet;
 $command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
 # $command .= " -sl"		no srun equivalent
 $command .= " -sn $sockets_per_node" 			if $sockets_per_node;
-# $command .= " -ss"		NEEDS WORK, mem_bind
+if ($memory_bind && ($memory_bind =~ /local/i)) {
+	$command .= " -ss"
+}
 $command .= " -T";		# Line buffered is srun default
 $time_secs = get_seconds($time_limit)			if $time_limit;
 $command .= " -t $time_secs"				if $time_secs;
-#$command .= " --multi-prog"	NEEDS WORK
+$script = get_multi_prog($script)			if $multi_prog;
 
 # Srun option which are not supported by aprun
 #	$command .= " --disable-status"			if $disable_status;
@@ -426,6 +429,7 @@ $command .= " $script";
 print "command=$command\n";
 #system($command);
 
+# Convert a SLURM time format to a number of seconds
 sub get_seconds {
 	my ($duration) = @_;
 	$duration = 0 unless $duration;
@@ -442,10 +446,103 @@ sub get_seconds {
 	} else { # Unsupported format
 		die("Invalid time limit specified ($duration)\n");
 	}
-
 	return $seconds;
 }
 
+# Convert a SLURM hostlist expression into the equivalent node index value
+# expression
+sub get_nids {
+	my ($host_list) = @_;
+	my ($nid_list) = $host_list;
+
+	$nid_list =~ s/nid//g;
+	$nid_list =~ s/\[//g;
+	$nid_list =~ s/\]//g;
+	$nid_list =~ s/\d+/sprintf("%d", $&)/ge;
+
+	return $nid_list;
+}
+
+# Convert SLURM multi_prog file into a aprun options
+# srun file format is "task_IDs command args..."
+sub get_multi_prog {
+	my ($fname) = @_;
+	my ($out_line);
+	my ($line_num) = 0;
+	my (@words, $word, $word_num, $num_pes);
+
+	open(MP, $fname) || die("Can not read $fname");
+	while (<MP>) {
+		chop;
+		if ($line_num != 0) {
+			$out_line .= " : ";
+		}
+		$line_num++;
+		@words = split(' ', $_);
+		$word_num = 0;
+		foreach $word (@words) {
+			if ($word_num == 0) {
+				$num_pes = get_num_pes($word);
+				$out_line .= " -n $num_pes";
+			} else {
+				$out_line .= " $word";
+			}
+			$word_num++;
+		}
+	}
+	return $out_line;
+}
+
+# Convert number ranges and sets into a total count
+sub get_num_pes {
+	my ($pes_range) = @_;
+	my (@ranges, $range);
+	my (@pairs, $value);
+	my ($min_value, $max_value);
+	my ($value_num);
+	my ($num_pes) = 0;
+
+	@ranges = split(',', $pes_range);
+	foreach $range (@ranges) {
+		@pairs = split('-', $range);
+		$value_num = 0;
+		foreach $value (@pairs) {
+			if ($value_num == 0) {
+				$min_value = $value;
+			}
+			$max_value = $value;
+			$value_num++;
+		}
+		$num_pes += ($max_value - $min_value + 1);
+	}
+	return $num_pes;
+}
+
+# Convert a size format containing optional K, M, G or T suffix to the
+# equvalent number of megabytes
+sub convert_mb_format {
+	my ($value) = @_;
+	my ($amount, $suffix) = $value =~ /(\d+)($|[KMGT])/i;
+	return if !$amount;
+	$suffix = lc($suffix);
+
+	if (!$suffix) {
+		$amount /= 1048576;
+	} elsif ($suffix eq "k") {
+		$amount /= 1024;
+	} elsif ($suffix eq "m") {
+		#do nothing this is what we want.
+	} elsif ($suffix eq "g") {
+		$amount *= 1024;
+	} elsif ($suffix eq "t") {
+		$amount *= 1048576;
+	} else {
+		print "don't know what to do with suffix $suffix\n";
+		return;
+	}
+
+	return $amount;
+}
 ##############################################################################
 
 __END__
@@ -464,6 +561,11 @@ Run a parallel job on cluster managed by SLURM.  If necessary, srun will
 first create a resource allocation in which to run the parallel job.
 
 =head1 OPTIONS
+
+The following aprun options have no equivalent in srun and must be specified
+by using the B<--alps> option: B<-a>, B<-b>, B<-B>, B<-cc>, B<-f>, B<-r>, and
+B<-sl>.  Many other options do not exact functionality matches, but duplication
+srun behavior to the extent possible.
 
 =over 4
 
