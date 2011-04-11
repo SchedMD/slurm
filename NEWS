@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug where is srun's executable is not on it's current search path, but
     can be found in the user's default search path. Modify slurmstepd to find
     the executable. Patch from Andrej Gritsenko.
+ -- Make sview display correct cpu count for steps.
 
 * Changes in SLURM 2.2.4
 ========================

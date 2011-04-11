@@ -2077,6 +2077,10 @@ static void _layout_step_record(GtkTreeView *treeview,
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
+						 SORTID_CPUS),
+				   tmp_char);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
 						 SORTID_CPU_MIN),
 				   tmp_char);
 
@@ -2239,7 +2243,11 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	convert_num_unit((float)step_ptr->num_cpus, tmp_char, sizeof(tmp_char),
 			 UNIT_NONE);
 	gtk_tree_store_set(treestore, iter,
+			   SORTID_CPUS, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter,
 			   SORTID_CPU_MIN, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_CPU_MAX, tmp_char, -1);
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NODELIST, nodes, -1);
