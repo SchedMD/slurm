@@ -397,7 +397,11 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	int verbose;
 
 	hwloc_topology_t topology;
+#if HWLOC_API_VERSION <= 0x00010000
 	hwloc_cpuset_t cpuset,ct;
+#else
+	hwloc_bitmap_t cpuset,ct;
+#endif
 	hwloc_obj_t obj;
 	struct hwloc_obj *pobj;
 	hwloc_obj_type_t hwtype;
@@ -446,7 +450,11 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 
 	/* Allocate and initialize hwloc objects */
 	hwloc_topology_init(&topology);
+#if HWLOC_API_VERSION <= 0x00010000
 	cpuset = hwloc_cpuset_alloc() ;
+#else
+	cpuset = hwloc_bitmap_alloc() ;
+#endif
 
 	/*
 	 * Perform the topology detection. It will only get allowed PUs.
@@ -558,31 +566,55 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 						     taskid,
 						     hwloc_obj_type_string(
 							     pobj->type));
+#if HWLOC_API_VERSION <= 0x00010000
 					ct = hwloc_cpuset_dup(pobj->
 							      allowed_cpuset);
 					hwloc_cpuset_or(cpuset,cpuset,ct);
 					hwloc_cpuset_free(ct);
+#else
+					ct = hwloc_bitmap_dup(pobj->
+							      allowed_cpuset);
+					hwloc_bitmap_or(cpuset,cpuset,ct);
+					hwloc_bitmap_free(ct);
+#endif
 				} else {
 					/* should not be executed */
 					if (verbose)
 						info("task/cgroup: task[%u] "
 						     "no higher level found",
 						     taskid);
+#if HWLOC_API_VERSION <= 0x00010000
 					ct = hwloc_cpuset_dup(obj->
 							      allowed_cpuset);
 					hwloc_cpuset_or(cpuset,cpuset,ct);
 					hwloc_cpuset_free(ct);
+#else
+					ct = hwloc_bitmap_dup(obj->
+							      allowed_cpuset);
+					hwloc_bitmap_or(cpuset,cpuset,ct);
+					hwloc_bitmap_free(ct);
+#endif
 				}
 
 			} else {
+#if HWLOC_API_VERSION <= 0x00010000
 				ct = hwloc_cpuset_dup(obj->allowed_cpuset);
 				hwloc_cpuset_or(cpuset,cpuset,ct);
 				hwloc_cpuset_free(ct);
+#else
+				ct = hwloc_bitmap_dup(obj->allowed_cpuset);
+				hwloc_bitmap_or(cpuset,cpuset,ct);
+				hwloc_bitmap_free(ct);
+#endif
 			}
 		}
 
 		char *str;
+#if HWLOC_API_VERSION <= 0x00010000
 		hwloc_cpuset_asprintf(&str,cpuset);
+#else
+		hwloc_bitmap_asprintf(&str,cpuset);
+#endif
 		tssize = sizeof(cpu_set_t);
 		if (hwloc_cpuset_to_glibc_sched_affinity(topology,cpuset,
 							  &ts,tssize) == 0) {
@@ -605,7 +637,11 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	}
 
 	/* Destroy hwloc objects */
+#if HWLOC_API_VERSION <= 0x00010000
 	hwloc_cpuset_free(cpuset);
+#else
+	hwloc_bitmap_free(cpuset);
+#endif
 	hwloc_topology_destroy(topology);
 
 	return fstatus;

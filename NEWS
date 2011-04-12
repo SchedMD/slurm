@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     rather than the original dependencies. From Dan Rusak, Bull.
  -- Add RPCs to get the SPANK environment variables from the slurmctld daemon.
     Patch from Andrej N. Gritsenko.
+ -- Updated plugins/task/cgroup/task_cgroup_cpuset.c to support newer
+    HWLOC_API_VERSION
 
 * Changes in SLURM 2.3.0.pre4
 =============================
