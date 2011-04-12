@@ -1568,7 +1568,7 @@ static void _opt_args(int argc, char **argv)
 		while (rest[opt.argc] != NULL)
 			opt.argc++;
 	}
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
+#if defined HAVE_BGQ
 	/* A bit of setup for IBM's runjob.  runjob only has so many
 	   options, so it isn't that bad.
 	*/
@@ -1604,7 +1604,8 @@ static void _opt_args(int argc, char **argv)
 			      opt.ntasks, opt.ntasks_per_node, node_cnt);
 	}
 
-	/* Since we need the opt.argc to allocate the opt.argv array
+#if defined HAVE_BG_FILES
+ 	/* Since we need the opt.argc to allocate the opt.argv array
 	 * we need to do this before actually messing with
 	 * things. All the extra options added to argv will be
 	 * handled after the allocation. */
@@ -1622,6 +1623,8 @@ static void _opt_args(int argc, char **argv)
 	if (opt.labelio)
 		command_pos += 2;
 	opt.argc += command_pos;
+#endif
+
 #endif
 
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
@@ -1722,7 +1725,8 @@ static bool _opt_verify(void)
 	 */
 	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2) {
 		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
-		info("Using srun's max debug increment of %d", opt.slurmd_debug);
+		info("Using srun's max debug increment of %d",
+		     opt.slurmd_debug);
 	}
 
 	if (opt.quiet && _verbose) {

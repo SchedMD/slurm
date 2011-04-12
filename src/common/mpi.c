@@ -296,7 +296,8 @@ bool mpi_hook_client_single_task_per_node (void)
 {
 	if (_mpi_init(NULL) < 0)
 		return SLURM_ERROR;
-#if defined HAVE_BGQ && defined HAVE_BG_FILES
+#if defined HAVE_BGQ
+//#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	/* On BGQ systems we only want 1 task to be spawned since srun
 	   is wrapping runjob.
 	*/

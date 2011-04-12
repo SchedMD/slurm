@@ -2085,7 +2085,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	dbd_step_start_msg_t req;
 	char temp_bit[BUF_SIZE];
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	char *ionodes = NULL;
 
 	if (step_ptr->job_ptr->details)
@@ -2115,7 +2115,11 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	} else {
 		cpus = step_ptr->cpu_count;
 		tasks = step_ptr->step_layout->task_cnt;
+#ifdef HAVE_BGQ
+		nodes = step_ptr->step_layout->task_cnt;
+#else
 		nodes = step_ptr->step_layout->node_cnt;
+#endif
 		task_dist = step_ptr->step_layout->task_dist;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->step_layout->node_list);
@@ -2184,7 +2188,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	slurmdbd_msg_t msg;
 	dbd_step_comp_msg_t req;
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	if (step_ptr->job_ptr->details)
 		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 	else

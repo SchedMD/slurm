@@ -646,7 +646,8 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
-#if defined HAVE_BGQ && defined HAVE_BG_FILES
+#if defined HAVE_BGQ
+//#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	sls->tasks_requested = 1;
 #else
 	/* Hack for LAM-MPI's lamboot, launch one task per node */

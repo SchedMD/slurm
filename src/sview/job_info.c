@@ -2150,7 +2150,11 @@ static void _layout_step_record(GtkTreeView *treeview,
 		now_time -= step_ptr->start_time;
 		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
 		nodes = step_ptr->nodes;
-		if (cluster_flags & CLUSTER_FLAG_BG)
+		if (cluster_flags & CLUSTER_FLAG_BGQ)
+			convert_num_unit(
+				(float)step_ptr->num_tasks,
+				tmp_char, sizeof(tmp_char), UNIT_NONE);
+		else if (cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
 				tmp_char, sizeof(tmp_char), UNIT_NONE);
@@ -2228,7 +2232,11 @@ static void _update_step_record(job_step_info_t *step_ptr,
 		now_time -= step_ptr->start_time;
 		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
 		tmp_nodes = step_ptr->nodes;
-		if (cluster_flags & CLUSTER_FLAG_BG) {
+		if (cluster_flags & CLUSTER_FLAG_BGQ)
+			convert_num_unit(
+				(float)step_ptr->num_tasks,
+				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
+		else if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
 				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);

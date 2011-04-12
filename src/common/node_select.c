@@ -807,11 +807,16 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 		}
 	} else
 		nodeinfo_ptr->plugin_id = select_context_default;
+	if ((*(select_context[nodeinfo_ptr->plugin_id].ops.nodeinfo_unpack))
+	   ((select_nodeinfo_t **)&nodeinfo_ptr->data, buffer,
+	    protocol_version) != SLURM_SUCCESS)
+		goto unpack_error;
 
-	return (*(select_context[nodeinfo_ptr->plugin_id].ops.nodeinfo_unpack))
-		((select_nodeinfo_t **)&nodeinfo_ptr->data, buffer,
-		 protocol_version);
+	return SLURM_SUCCESS;
+
 unpack_error:
+	select_g_select_nodeinfo_free(nodeinfo_ptr);
+	*nodeinfo = NULL;
 	error("select_g_select_nodeinfo_unpack: unpack error");
 	return SLURM_ERROR;
 }
@@ -916,10 +921,11 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
 
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
-	if(jobinfo) {
-		if(jobinfo->data)
+	if (jobinfo) {
+		if (jobinfo->data) {
 			rc = (*(select_context[jobinfo->plugin_id].ops.
 				jobinfo_free))(jobinfo->data);
+		}
 		xfree(jobinfo);
 	}
 	return rc;
@@ -1055,9 +1061,13 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 	} else
 		jobinfo_ptr->plugin_id = select_context_default;
 
-	return (*(select_context[jobinfo_ptr->plugin_id].ops.jobinfo_unpack))
+	if ((*(select_context[jobinfo_ptr->plugin_id].ops.jobinfo_unpack))
 		((select_jobinfo_t **)&jobinfo_ptr->data, buffer,
-		 protocol_version);
+		 protocol_version) != SLURM_SUCCESS)
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
 unpack_error:
 	select_g_select_jobinfo_free(jobinfo_ptr);
 	*jobinfo = NULL;

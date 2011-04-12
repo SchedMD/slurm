@@ -3725,7 +3725,36 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	char *node_inx_str;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		safe_unpack32(&step->job_id, buffer);
+		safe_unpack32(&step->step_id, buffer);
+		safe_unpack16(&step->ckpt_interval, buffer);
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->gres, &uint32_tmp, buffer);
+		if (node_inx_str == NULL)
+			step->node_inx = bitfmt2int("");
+		else {
+			step->node_inx = bitfmt2int(node_inx_str);
+			xfree(node_inx_str);
+		}
+		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&step->job_id, buffer);
 		safe_unpack32(&step->step_id, buffer);
 		safe_unpack16(&step->ckpt_interval, buffer);
@@ -3777,10 +3806,14 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 			xfree(node_inx_str);
 		}
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_info_members(step);
+	/* no need to free here.  (we will just be freeing it 2 times
+	   since this is freed in _unpack_job_step_info_response_msg
+	*/
+	//slurm_free_job_step_info_members(step);
 	return SLURM_ERROR;
 }
 
@@ -3926,10 +3959,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		}
 
 		if (select_g_select_jobinfo_unpack(&job->select_jobinfo,
-						   buffer, protocol_version)) {
-			info("here");
+						   buffer, protocol_version))
 			goto unpack_error;
-		}
+
 		/*** unpack default job details ***/
 		safe_unpackstr_xmalloc(&job->features,   &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->work_dir,   &uint32_tmp, buffer);

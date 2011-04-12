@@ -443,7 +443,8 @@ int srun(int ac, char **av)
 	xfree(env);
 
  re_launch:
-#if defined HAVE_BGQ && defined HAVE_BG_FILES
+#if defined HAVE_BGQ
+//#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	task_state = task_state_create(1);
 #else
 	task_state = task_state_create(opt.ntasks);

@@ -421,8 +421,10 @@ static int
 _compute_task_count(allocation_info_t *ainfo)
 {
 	int i, cnt = 0;
-#if defined HAVE_BGQ && HAVE_BG_FILES
+#if defined HAVE_BGQ
+//#if defined HAVE_BGQ && HAVE_BG_FILES
 	/* always return the ntasks here for Q */
+	info("returning %d", opt.ntasks);
 	return opt.ntasks;
 #endif
 	if (opt.cpus_set) {
@@ -462,7 +464,8 @@ _job_create_structure(allocation_info_t *ainfo)
  	job->nodelist = xstrdup(ainfo->nodelist);
 	job->stepid  = ainfo->stepid;
 
-#if defined HAVE_BGQ && defined HAVE_BG_FILES
+#if defined HAVE_BGQ
+//#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	job->nhosts   = ainfo->nnodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &job->nhosts);
 #elif defined HAVE_FRONT_END	/* Limited job step support */
@@ -472,7 +475,8 @@ _job_create_structure(allocation_info_t *ainfo)
 	job->nhosts   = ainfo->nnodes;
 #endif
 
-#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
+#if !defined HAVE_FRONT_END || (defined HAVE_BGQ)
+//#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
 	if(opt.min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt.min_nodes);

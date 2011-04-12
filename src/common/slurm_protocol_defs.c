@@ -1840,13 +1840,15 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg)
 void slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
-		xfree(msg->partition);
-		xfree(msg->resv_ports);
-		xfree(msg->nodes);
+		xfree(msg->ckpt_dir);
 		xfree(msg->name);
 		xfree(msg->network);
+		xfree(msg->nodes);
 		xfree(msg->node_inx);
-		xfree(msg->ckpt_dir);
+		xfree(msg->partition);
+		xfree(msg->resv_ports);
+		select_g_select_jobinfo_free(msg->select_jobinfo);
+		msg->select_jobinfo = NULL;
 	}
 }
 

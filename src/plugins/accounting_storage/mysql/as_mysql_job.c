@@ -744,7 +744,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	char *node_inx = NULL, *step_name = NULL;
 	time_t start_time, submit_time;
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 	char *ionodes = NULL;
 #endif
 	char *query = NULL;
@@ -796,7 +796,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   step_ptr->step_node_bitmap);
 		}
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
+		/* Only L and P use this code */
 		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
@@ -821,7 +822,11 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		} else {
 			cpus = step_ptr->cpu_count;
 			tasks = step_ptr->step_layout->task_cnt;
+#ifdef HAVE_BGQ
+			nodes = step_ptr->step_layout->task_cnt;
+#else
 			nodes = step_ptr->step_layout->node_cnt;
+#endif
 			task_dist = step_ptr->step_layout->task_dist;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->step_layout->node_list);
@@ -930,9 +935,9 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		cpus = tasks = 1;
 	} else {
 		now = time(NULL);
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
+		/* Only L and P use this code */
 		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
-
 #else
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			tasks = cpus = step_ptr->job_ptr->total_cpus;

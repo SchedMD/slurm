@@ -81,6 +81,8 @@ block_info_t
 	nodes    -> mp_str
 	bp_inx   -> mp_inx
 
+job_step_info_t
+	Added	    select_jobinfo
 
 Added the following struct definitions
 ======================================
