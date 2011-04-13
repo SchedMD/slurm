@@ -52,7 +52,7 @@
 #include "bg_structs.h"
 
 /* see if the exact record already exists in a list */
-extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
+extern bg_record_t *block_exist_in_list(List my_list, bg_record_t *bg_record);
 extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record);
 extern bg_record_t *find_bg_record_in_list(List my_list,
 					   const char *bg_block_id);

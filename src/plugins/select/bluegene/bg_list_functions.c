@@ -41,12 +41,15 @@
 #include "bg_core.h"
 
 /* see if a record already of like bitmaps exists in a list */
-extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
+extern bg_record_t *block_exist_in_list(List my_list, bg_record_t *bg_record)
 {
-	ListIterator itr = list_iterator_create(my_list);
+	ListIterator itr;
 	bg_record_t *found_record = NULL;
-	int rc = 0;
 
+	if (!my_list || !bg_record)
+		return NULL;
+
+	itr = list_iterator_create(my_list);
 	while ((found_record = list_next(itr))) {
 		if (found_record->magic != BLOCK_MAGIC)
 			continue;
@@ -56,9 +59,17 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 				 found_record->ionode_bitmap)) {
 			/* now make sure the conn_type is the same for
 			   regular sized blocks */
-			if ((bg_record->cnode_cnt >= bg_conf->mp_cnode_cnt)
-			    && bg_record->conn_type != found_record->conn_type)
-				continue;
+			if (bg_record->cnode_cnt >= bg_conf->mp_cnode_cnt) {
+				int dim;
+				for (dim=0; dim<SYSTEM_DIMENSIONS; dim++) {
+					if (bg_record->conn_type[dim]
+					    != found_record->conn_type[dim])
+						break;
+				}
+				if (dim != SYSTEM_DIMENSIONS)
+					continue;
+			}
+
 			if (bg_record->ionode_str)
 				debug("This block %s[%s] "
 				      "is already in the list %s",
@@ -70,13 +81,11 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 				      "is already in the list %s",
 				      bg_record->mp_str,
 				      found_record->bg_block_id);
-
-			rc = 1;
 			break;
 		}
 	}
 	list_iterator_destroy(itr);
-	return rc;
+	return found_record;
 }
 
 /* see if the exact record already exists in a list */

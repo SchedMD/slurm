@@ -54,9 +54,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
-	ListIterator itr_found;
 	int i;
-	bg_record_t *found_record = NULL;
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	struct part_record *part_ptr = NULL;
@@ -89,33 +87,6 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	if (bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = list_next(itr))) {
-			if (bg_found_block_list) {
-				itr_found = list_iterator_create(
-					bg_found_block_list);
-				while ((found_record = (bg_record_t*)
-					list_next(itr_found)) != NULL) {
-/* 					info("%s[%s] ?= %s[%s]", */
-/* 					     bg_record->mp_str, */
-/* 					     bg_record->ionode_str, */
-/* 					     found_record->mp_str, */
-/* 					     found_record->ionode_str); */
-
-					if ((bit_equal(bg_record->bitmap,
-						       found_record->bitmap))
-					    && (bit_equal(bg_record->
-							  ionode_bitmap,
-							  found_record->
-							  ionode_bitmap))
-						) {
-						/* don't remake this one */
-						break;
-					}
-				}
-				list_iterator_destroy(itr_found);
-			} else {
-				error("create_defined_blocks: "
-				      "no bg_found_block_list 1");
-			}
 			if (bg_record->mp_count > 0
 			    && !bg_record->full_block
 			    && bg_record->cpu_cnt >= bg_conf->cpus_per_mp) {
@@ -138,7 +109,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					      "bitmap for %s",
 					      bg_record->bg_block_id);
 
-				for(i=0; i<SYSTEM_DIMENSIONS; i++) {
+				for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 					geo[i] = bg_record->geo[i];
 					start_char[i] = alpha_num[
 						bg_record->start[i]];
@@ -213,7 +184,8 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 #endif
 				}
 			}
-			if (found_record == NULL) {
+			if (!block_exist_in_list(
+				    bg_found_block_list, bg_record)) {
 				if (bg_record->full_block) {
 					/* if this is defined we need
 					   to remove it since we are
