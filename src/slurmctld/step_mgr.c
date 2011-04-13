@@ -115,7 +115,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 		return NULL;
 	}
 
-	step_ptr = (struct step_record *) xmalloc(sizeof (struct step_record));
+	step_ptr = (struct step_record *) xmalloc(sizeof(struct step_record));
 
 	last_job_update = time(NULL);
 	step_ptr->job_ptr = job_ptr;
@@ -123,6 +123,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr->time_limit = INFINITE ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	step_ptr->requid = -1;
+	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("_create_step_record: unable to allocate memory");
