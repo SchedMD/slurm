@@ -119,8 +119,8 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 
 	last_job_update = time(NULL);
 	step_ptr->job_ptr = job_ptr;
-	step_ptr->start_time = time(NULL) ;
-	step_ptr->time_limit = INFINITE ;
+	step_ptr->start_time = time(NULL);
+	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	step_ptr->requid = -1;
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
