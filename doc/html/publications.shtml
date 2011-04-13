@@ -7,6 +7,10 @@
 <h2>Presentations</h2>
 <ul>
 
+<li><a href="http://mescal.imag.fr/membres/yiannis.georgiou/publications/thesis_Georgiou-2010-UJF.pdf">
+Contributions For Resource and Job Management in High Performance Computing</a>,
+Yiannis Georgiou, Universite de Grenoble, France (Thesis, November 2010)</li>
+
 <!-- Use LLNL-PRES-461787 -->
 <li><a href="slurm_sc10_bof.pdf">SLURM Version 2.2: Features and Release Plans</a>,
 Morris Jette, Danny Auble and Donald Lipari, Lawrence Livermore National Laboratory
@@ -130,6 +134,6 @@ RCE 10: SLURM (podcast)</a>:
 Brock Palen and Jeff Squyres speak with Morris Jette and
 Danny Auble of LLNL about SLURM.</p>
 
-<p style="text-align:center;">Last modified 27 December 2010</p>
+<p style="text-align:center;">Last modified 12 April 2011</p>
 
 <!--#include virtual="footer.txt"-->
