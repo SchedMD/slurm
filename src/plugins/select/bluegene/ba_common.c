@@ -400,6 +400,7 @@ extern void destroy_ba_mp(void *ptr)
 {
 	ba_mp_t *ba_mp = (ba_mp_t *)ptr;
 	if (ba_mp) {
+		FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
 		xfree(ba_mp->loc);
 		if (ba_mp->nodecard_loc) {
 			int i;

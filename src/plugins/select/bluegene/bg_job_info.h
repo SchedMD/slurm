@@ -47,6 +47,7 @@
 struct select_jobinfo {
 	uint16_t altered;       /* see if we have altered this job
 				 * or not yet */
+	bg_record_t *bg_record; /* For internal use only DO NOT PACK */
 	char *bg_block_id;	/* Blue Gene block ID */
 	char *blrtsimage;       /* BlrtsImage for this block */
 	uint32_t cnode_cnt;     /* how many cnodes in block running job */

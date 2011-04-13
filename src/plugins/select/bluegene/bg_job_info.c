@@ -110,6 +110,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
 	char *tmp_char = (char *) data;
+	bg_record_t *bg_record = (bg_record_t *) data;
 	uint32_t new_size;
 
 	if (jobinfo == NULL) {
@@ -147,6 +148,9 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			jobinfo->conn_type[i] = uint16[i];
 		}
+		break;
+	case SELECT_JOBDATA_BLOCK_PTR:
+		jobinfo->bg_record = bg_record;
 		break;
 	case SELECT_JOBDATA_BLOCK_ID:
 		/* we xfree() any preset value to avoid a memory leak */
@@ -222,6 +226,7 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
+	bg_record_t **bg_record = (bg_record_t **) data;
 	char **tmp_char = (char **) data;
 
 	if (jobinfo == NULL) {
@@ -255,6 +260,9 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 			*tmp_char = NULL;
 		else
 			*tmp_char = xstrdup(jobinfo->bg_block_id);
+		break;
+	case SELECT_JOBDATA_BLOCK_PTR:
+		*bg_record = jobinfo->bg_record;
 		break;
 	case SELECT_JOBDATA_NODES:
 		if ((jobinfo->mp_str == NULL)

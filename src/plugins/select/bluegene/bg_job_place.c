@@ -1620,6 +1620,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						job_ptr->select_jobinfo->data,
 						SELECT_JOBDATA_BLOCK_ID,
 						bg_record->bg_block_id);
+					set_select_jobinfo(
+						job_ptr->select_jobinfo->data,
+						SELECT_JOBDATA_BLOCK_PTR,
+						bg_record);
 					if (job_ptr) {
 						bg_record->job_running =
 							job_ptr->job_id;
@@ -1634,6 +1638,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						job_ptr->select_jobinfo->data,
 						SELECT_JOBDATA_BLOCK_ID,
 						"unassigned");
+					set_select_jobinfo(
+						job_ptr->select_jobinfo->data,
+						SELECT_JOBDATA_BLOCK_PTR,
+						NULL);
 					/* Just to make sure we don't
 					   end up using this on
 					   another job, or we have to

@@ -130,6 +130,8 @@ typedef struct block_allocator_mp {
 	ba_switch_t alter_switch[HIGHEST_DIMENSIONS];
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
+	/* Bitmap of available cnodes */
+	bitstr_t *cnode_bitmap;
 	/* coordinates of midplane */
 	int coord[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane in str format */
@@ -141,7 +143,6 @@ typedef struct block_allocator_mp {
 	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
 	char **nodecard_loc;
 	struct block_allocator_mp *prev_mp[HIGHEST_DIMENSIONS];
-//	int phys_x;	// no longer needed
 	int state;
 	/* set if using this midplane in a block */
 	uint16_t used;

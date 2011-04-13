@@ -340,6 +340,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_REBOOT,	/* data-> uint16_t reboot */
 	SELECT_JOBDATA_RESV_ID,	/* data-> uint32_t reservation_id */
 	SELECT_JOBDATA_PTR,	/* data-> select_jobinfo_t *jobinfo */
+	SELECT_JOBDATA_BLOCK_PTR, /* data-> bg_record_t *bg_record */
 };
 
 enum select_nodedata_type {
