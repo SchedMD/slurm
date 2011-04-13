@@ -147,8 +147,13 @@ the process using an <i>init.d</i> script distributed with the Munge as
 
 <p>SLURM can be built and installed as on any other computer as described
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
-When building SLURM's slurm.conf configuration files, use the <i>NodeName</i>
+When building SLURM's slurm.conf configuration file, use the <i>NodeName</i>
 parameter to specify all batch nodes to be scheduled.
+If nodes are defined in ALPS, but not defined in the slurm.conf file, a
+complete list of all batch nodes configured in ALPS will be logged by
+the slurmctld daemon when it starts.
+One would typically use this information to modify the slurm.conf file and
+restart the surmctld daemon.
 Note that the <i>NodeAddr</i> and <i>NodeHostName</i> fields should not be
 configured, but will be set by SLURM using data from ALPS.
 <i>NodeAddr</i> be set to the node's XYZ coordinate and be used by SLURM's
@@ -268,6 +273,6 @@ Oak Ridge National Laboratory Extreme Scale Systems Center</a></p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 April 2011</p></td>
+<p style="text-align:center;">Last modified 12 April 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
