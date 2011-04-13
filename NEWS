@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
     can be found in the user's default search path. Modify slurmstepd to find
     the executable. Patch from Andrej Gritsenko.
  -- Make sview display correct cpu count for steps.
+ -- BLUEGENE - when running in overlap mode make sure to check the connection
+    type so you can create overlapping blocks on the exact same nodes with
+    different connection types (i.e. one torus, one mesh).
 
 * Changes in SLURM 2.2.4
 ========================

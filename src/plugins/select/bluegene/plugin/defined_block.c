@@ -115,6 +115,14 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 							  found_record->
 							  ionode_bitmap))
 						) {
+						/* now make sure the
+						   conn_type is the same for
+						   regular sized blocks */
+						if ((bg_record->node_cnt
+						     >= bg_conf->bp_node_cnt)
+						    && bg_record->conn_type
+						    != found_record->conn_type)
+							continue;
 						/* don't remake this one */
 						break;
 					}
