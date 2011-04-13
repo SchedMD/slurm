@@ -1,6 +1,10 @@
 # Makefile for node selection plugins
 
-SUBDIRS = bluegene cons_res cray linear
+if WITH_CXX
+BLUEGENE = bluegene
+endif
+
+SUBDIRS = $(BLUEGENE) cons_res cray linear
 
 # Each plugin here needs a plugin_id, here are the currect plug_ids
 # for each plugin.
@@ -10,4 +14,4 @@ SUBDIRS = bluegene cons_res cray linear
 # linear	  = 102
 # bgq		  = 103
 # cray + linear   = 104
-# cray + cons_res = 105 ==> To be done, currently not possible on Cray.
+# cray + cons_res = 105 ==> Not current possible on Cray with ALPS/BASIL.
