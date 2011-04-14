@@ -2603,7 +2603,7 @@ void make_node_idle(struct node_record *node_ptr,
 						"%ld seconds", job_ptr->job_id,
 						(long) delay);
 				job_ptr->job_state &= (~JOB_COMPLETING);
-				delete_step_records(job_ptr, 0);
+				delete_step_records(job_ptr);
 				slurm_sched_schedule();
 			}
 		} else {

@@ -135,12 +135,8 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 /*
  * delete_step_records - delete step record for specified job_ptr
  * IN job_ptr - pointer to job table entry to have step records removed
- * IN filter  - determine which job steps to delete
- *              0: delete all job steps
- *              1: delete only job steps without a switch allocation
  */
-extern void
-delete_step_records (struct job_record *job_ptr, int filter)
+extern void delete_step_records (struct job_record *job_ptr)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -150,9 +146,6 @@ delete_step_records (struct job_record *job_ptr, int filter)
 
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if ((filter == 1) && (step_ptr->switch_job))
-			continue;
-
 		list_remove (step_iterator);
 		_free_step_rec(step_ptr);
 	}
