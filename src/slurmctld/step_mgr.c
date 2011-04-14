@@ -150,13 +150,6 @@ delete_step_records (struct job_record *job_ptr, int filter)
 			continue;
 
 		list_remove (step_iterator);
-		if (step_ptr->switch_job) {
-			switch_g_job_step_complete(
-				step_ptr->switch_job,
-				step_ptr->step_layout->node_list);
-			switch_free_jobinfo(step_ptr->switch_job);
-		}
-		checkpoint_free_jobinfo(step_ptr->check_job);
 		_free_step_rec(step_ptr);
 	}
 
@@ -166,6 +159,18 @@ delete_step_records (struct job_record *job_ptr, int filter)
 /* _free_step_rec - delete a step record's data structures */
 static void _free_step_rec(struct step_record *step_ptr)
 {
+/* FIXME: If job step record is preserved after completion,
+ * the switch_g_job_step_complete() must be called upon completion
+ * and not upon record purging. Presently both events occur
+ * simultaneously. */
+	if (step_ptr->switch_job) {
+		switch_g_job_step_complete(step_ptr->switch_job,
+					   step_ptr->step_layout->node_list);
+		switch_free_jobinfo (step_ptr->switch_job);
+	}
+	resv_port_free(step_ptr);
+	checkpoint_free_jobinfo (step_ptr->check_job);
+
 	xfree(step_ptr->host);
 	xfree(step_ptr->name);
 	slurm_step_layout_destroy(step_ptr->step_layout);
@@ -204,18 +209,6 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->step_id == step_id) {
 			list_remove (step_iterator);
-/* FIXME: If job step record is preserved after completion,
- * the switch_g_job_step_complete() must be called upon completion
- * and not upon record purging. Presently both events occur
- * simultaneously. */
-			if (step_ptr->switch_job) {
-				switch_g_job_step_complete(
-					step_ptr->switch_job,
-					step_ptr->step_layout->node_list);
-				switch_free_jobinfo (step_ptr->switch_job);
-			}
-			resv_port_free(step_ptr);
-			checkpoint_free_jobinfo (step_ptr->check_job);
 			_free_step_rec(step_ptr);
 			error_code = 0;
 			break;
