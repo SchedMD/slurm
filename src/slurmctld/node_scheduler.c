@@ -2069,7 +2069,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if (IS_NODE_DOWN(front_end_ptr)) {
 			for (i = 0, node_ptr = node_record_table_ptr;
 			     i < node_record_count; i++, node_ptr++) {
-				if (!bit_test(job_ptr->node_bitmap_cg, i))
+				if ((job_ptr->node_bitmap_cg == NULL) ||
+				    (!bit_test(job_ptr->node_bitmap_cg, i)))
 					continue;
 				bit_clear(job_ptr->node_bitmap_cg, i);
 				job_update_cpu_cnt(job_ptr, i);
@@ -2095,10 +2096,9 @@ extern void re_kill_job(struct job_record *job_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
 		if ((job_ptr->node_bitmap_cg == NULL) ||
-		    (bit_test(job_ptr->node_bitmap_cg, i) == 0))
+		    (bit_test(job_ptr->node_bitmap_cg, i) == 0)) {
 			continue;
-		if (IS_NODE_DOWN(node_ptr) &&
-		    bit_test(job_ptr->node_bitmap_cg, i)) {
+		} else if (IS_NODE_DOWN(node_ptr)) {
 			/* Consider job already completed */
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_cpu_cnt(job_ptr, i);
@@ -2111,13 +2111,11 @@ extern void re_kill_job(struct job_record *job_ptr)
 				delete_step_records(job_ptr, 0);
 				slurm_sched_schedule();
 			}
-			continue;
+		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
+			(void)hostlist_push_host(kill_hostlist, node_ptr->name);
+			hostlist_push(agent_args->hostlist, node_ptr->name);
+			agent_args->node_count++;
 		}
-		if (IS_NODE_DOWN(node_ptr) || IS_NODE_NO_RESPOND(node_ptr))
-			continue;
-		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
-		hostlist_push(agent_args->hostlist, node_ptr->name);
-		agent_args->node_count++;
 	}
 #endif
 
