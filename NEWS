@@ -160,6 +160,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - when running in overlap mode make sure to check the connection
     type so you can create overlapping blocks on the exact same nodes with
     different connection types (i.e. one torus, one mesh).
+ -- Fix memory leak if MPI ports are reserved (for OpenMPI) and srun's
+    --resv-ports option is used.
 
 * Changes in SLURM 2.2.4
 ========================
