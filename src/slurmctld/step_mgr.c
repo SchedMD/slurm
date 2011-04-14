@@ -85,7 +85,7 @@ static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer,
 static bitstr_t * _pick_step_nodes(struct job_record *job_ptr,
 				   job_step_create_request_msg_t *step_spec,
 				   List step_gres_list, int cpus_per_task,
-				   bool batch_step, int *return_code);
+				   int *return_code);
 static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
@@ -586,7 +586,6 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
  * IN step_spec - job step specification
  * IN step_gres_list - job step's gres requirement details
  * IN cpus_per_task - NOTE could be zero
- * IN batch_step - if set then step is a batch script
  * OUT return_code - exit code or SLURM_SUCCESS
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: returns all of a job's nodes if step_spec->node_count == INFINITE
@@ -595,8 +594,7 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 static bitstr_t *
 _pick_step_nodes (struct job_record  *job_ptr,
 		  job_step_create_request_msg_t *step_spec,
-		  List step_gres_list, int cpus_per_task,
-		  bool batch_step, int *return_code)
+		  List step_gres_list, int cpus_per_task, int *return_code)
 {
 	int node_inx, first_bit, last_bit;
 	struct node_record *node_ptr;
@@ -1724,7 +1722,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	job_ptr->time_last_active = now;
 	nodeset = _pick_step_nodes(job_ptr, step_specs, step_gres_list,
-				   cpus_per_task, batch_step, &ret_code);
+				   cpus_per_task, &ret_code);
 	if (nodeset == NULL) {
 		if (step_gres_list)
 			list_destroy(step_gres_list);
