@@ -184,6 +184,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->gres);
 	if (step_ptr->gres_list)
 		list_destroy(step_ptr->gres_list);
+	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr);
 }
 
