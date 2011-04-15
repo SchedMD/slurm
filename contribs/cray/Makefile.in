@@ -17,6 +17,7 @@
 
 #
 # Makefile for cray scripts
+#
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -75,6 +76,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
+	$(top_srcdir)/auxdir/x_ac_srun.m4 \
 	$(top_srcdir)/auxdir/x_ac_sun_const.m4 \
 	$(top_srcdir)/auxdir/x_ac_xcpu.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -208,8 +210,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
-PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
-PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -311,7 +311,7 @@ EXTRA_DIST = \
 	etc_sysconfig_slurm	\
 	opt_modulefiles_slurm
 
-bin_SCRIPTS = srun2
+@BUILD_SRUN2APRUN_TRUE@bin_SCRIPTS = srun
 _perldir = $(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 all: all-am
 
@@ -500,7 +500,7 @@ uninstall-am: uninstall-binSCRIPTS
 	uninstall uninstall-am uninstall-binSCRIPTS
 
 
-srun2:
+srun:
 
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)

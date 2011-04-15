@@ -363,6 +363,10 @@ dnl Check for compilation of SLURM with BLCR support:
 dnl
 X_AC_BLCR
 
+dnl
+dnl Check to build native SLURM srun command or an aprun (Cray ALPS) wrapper.
+dnl
+X_AC_SRUN2APRUN
 
 dnl All slurm Makefiles:
 

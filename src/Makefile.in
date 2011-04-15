@@ -71,6 +71,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
 	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
+	$(top_srcdir)/auxdir/x_ac_srun.m4 \
 	$(top_srcdir)/auxdir/x_ac_sun_const.m4 \
 	$(top_srcdir)/auxdir/x_ac_xcpu.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -96,9 +97,9 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = common api db_api database slurmctld slurmd slurmdbd \
-	plugins srun sbcast scontrol scancel squeue sinfo smap sview \
-	salloc sbatch sattach strigger sacct sacctmgr sreport sstat \
-	sshare sprio srun_cr
+	plugins sbcast scontrol scancel squeue sinfo smap sview salloc \
+	sbatch sattach strigger sacct sacctmgr sreport sstat sshare \
+	sprio srun srun_cr
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -224,8 +225,6 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PGSQL_CFLAGS = @PGSQL_CFLAGS@
 PGSQL_LIBS = @PGSQL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
-PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
-PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
 PTHREAD_CC = @PTHREAD_CC@
@@ -323,11 +322,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @WITH_BLCR_FALSE@SRUN_CR = 
 @WITH_BLCR_TRUE@SRUN_CR = srun_cr
+@BUILD_SRUN2APRUN_FALSE@SRUN = srun
+@BUILD_SRUN2APRUN_TRUE@SRUN = 
 SUBDIRS = common api db_api database \
-	slurmctld slurmd slurmdbd plugins srun sbcast \
+	slurmctld slurmd slurmdbd plugins sbcast \
 	scontrol scancel squeue sinfo smap sview salloc \
 	sbatch sattach strigger sacct sacctmgr sreport sstat \
-	sshare sprio $(SRUN_CR)
+	sshare sprio $(SRUN) $(SRUN_CR)
 
 all: all-recursive
 

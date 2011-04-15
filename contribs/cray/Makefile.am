@@ -1,5 +1,6 @@
 #
 # Makefile for cray scripts
+#
 
 AUTOMAKE_OPTIONS = foreign
 
@@ -8,9 +9,11 @@ EXTRA_DIST = \
 	etc_sysconfig_slurm	\
 	opt_modulefiles_slurm
 
-bin_SCRIPTS = srun2
+if BUILD_SRUN2APRUN
+  bin_SCRIPTS = srun
+endif
 
-srun2:
+srun:
 _perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 
 install-binSCRIPTS: $(bin_SCRIPTS)
