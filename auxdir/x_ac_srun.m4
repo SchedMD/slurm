@@ -27,6 +27,6 @@ AC_DEFUN([X_AC_SRUN2APRUN],
       esac
     ]
   )
-
+  AC_MSG_RESULT($ac_with_srun2aprun)
   AM_CONDITIONAL(BUILD_SRUN2APRUN, test "x$ac_with_srun2aprun" = "xyes")
 ])
