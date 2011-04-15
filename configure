@@ -21269,7 +21269,8 @@ $as_echo "doh!" >&6; }
 
 fi
 
-
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_with_srun2aprun" >&5
+$as_echo "$ac_with_srun2aprun" >&6; }
    if test "x$ac_with_srun2aprun" = "xyes"; then
   BUILD_SRUN2APRUN_TRUE=
   BUILD_SRUN2APRUN_FALSE='#'
