@@ -63,6 +63,11 @@
 
 #include "slurm/slurm.h"
 
+strong_alias(s_p_get_string,		slurm_s_p_get_string);
+strong_alias(s_p_get_uint32,		slurm_s_p_get_uint32);
+strong_alias(s_p_hashtbl_create,	slurm_s_p_hashtbl_create);
+strong_alias(s_p_parse_file,		slurm_s_p_parse_file);
+
 #define BUFFER_SIZE 4096
 
 #define CONF_HASH_LEN 26

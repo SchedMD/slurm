@@ -345,6 +345,12 @@
 /* node_select.[ch] functions */
 #define destroy_select_ba_request	slurm_destroy_select_ba_request
 
+/* parse_config.[ch] functions */
+#define s_p_get_string			slurm_s_p_get_string
+#define s_p_get_uint32			slurm_s_p_get_uint32
+#define s_p_hashtbl_create		slurm_s_p_hashtbl_create
+#define s_p_parse_file			slurm_s_p_parse_file
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
@@ -357,6 +363,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/parse_config.h"
 #include "src/common/env.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/strlcpy.h"
