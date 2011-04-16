@@ -45,7 +45,7 @@
 
 use strict;
 use FindBin;
-use Getopt::Long 2.24 qw(:config no_ignore_case require_order);
+use Getopt::Long 2.24 qw(:config no_ignore_case require_order autoabbrev);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
@@ -138,9 +138,8 @@ my (	$account,
 	$wc_key
 );
 
-my $aprun  = "${FindBin::Bin}/apbin";
+my $aprun  = "${FindBin::Bin}/aprun";
 my $salloc = "${FindBin::Bin}/salloc";
-my $echo   = "${FindBin::Bin}/echo";
 
 my $have_job;
 $have_job = 0;
@@ -426,8 +425,9 @@ $script = get_multi_prog($script)			if $multi_prog;
 
 $command .= " $script";
 
-print "command=$command\n";
-#system($command);
+# Print here for debugging
+#print "command=$command\n";
+system($command);
 
 # Convert a SLURM time format to a number of seconds
 sub get_seconds {
@@ -567,6 +567,12 @@ by using the B<--alps> option: B<-a>, B<-b>, B<-B>, B<-cc>, B<-f>, B<-r>, and
 B<-sl>.  Many other options do not exact functionality matches, but duplication
 srun behavior to the extent possible.
 
+This srun implementation requires a space or equal sign between single
+letter options and their arguments. For example "-N 2" and "-N=2" both work,
+but "-N2" does not work. This is due to limitations in Perl's Getopt::Long
+function used for parsing, although some versions of Perl may not have
+this restriction.
+q
 =over 4
 
 =item B<-A> | B<--account=account>
