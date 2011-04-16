@@ -101,7 +101,7 @@ extern int  jobacct_gather_g_endpoll();
 extern void jobacct_gather_g_suspend_poll();
 extern void jobacct_gather_g_resume_poll();
 
-extern int jobacct_gather_g_set_proctrack_container_id(uint32_t id);
+extern int jobacct_gather_g_set_proctrack_container_id(uint64_t id);
 extern int jobacct_gather_g_add_task(pid_t pid, jobacct_id_t *jobacct_id);
 /* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_gather_g_stat_task(pid_t pid);

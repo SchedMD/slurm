@@ -112,7 +112,7 @@ static xcgroup_t user_freezer_cg;
 static xcgroup_t job_freezer_cg;
 static xcgroup_t step_freezer_cg;
 
-int _slurm_cgroup_init()
+int _slurm_cgroup_init(void)
 {
 	/* initialize user/job/jobstep cgroup relative paths
 	 * and release agent path */
@@ -156,7 +156,7 @@ int _slurm_cgroup_init()
 	return SLURM_SUCCESS;
 }
 
-int _slurm_cgroup_create(slurmd_job_t *job, uint32_t id, uid_t uid, gid_t gid)
+int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 {
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
@@ -263,7 +263,7 @@ int _slurm_cgroup_destroy(void)
 	return SLURM_SUCCESS;
 }
 
-int _slurm_cgroup_add_pids(uint32_t id, pid_t* pids, int npids)
+int _slurm_cgroup_add_pids(uint64_t id, pid_t* pids, int npids)
 {
 	if (*jobstep_cgroup_path == '\0')
 		return SLURM_ERROR;
@@ -271,7 +271,7 @@ int _slurm_cgroup_add_pids(uint32_t id, pid_t* pids, int npids)
 	return xcgroup_add_pids(&step_freezer_cg, pids, npids);
 }
 
-int _slurm_cgroup_stick_stepd(uint32_t id, pid_t pid)
+int _slurm_cgroup_stick_stepd(uint64_t id, pid_t pid)
 {
 	if (*job_cgroup_path == '\0')
 		return SLURM_ERROR;
@@ -280,7 +280,7 @@ int _slurm_cgroup_stick_stepd(uint32_t id, pid_t pid)
 }
 
 int
-_slurm_cgroup_get_pids(uint32_t id, pid_t **pids, int *npids)
+_slurm_cgroup_get_pids(uint64_t id, pid_t **pids, int *npids)
 {
 	if (*jobstep_cgroup_path == '\0')
 		return SLURM_ERROR;
@@ -288,7 +288,7 @@ _slurm_cgroup_get_pids(uint32_t id, pid_t **pids, int *npids)
 	return xcgroup_get_pids(&step_freezer_cg, pids, npids);
 }
 
-int _slurm_cgroup_suspend(uint32_t id)
+int _slurm_cgroup_suspend(uint64_t id)
 {
 	if (*jobstep_cgroup_path == '\0')
 		return SLURM_ERROR;
@@ -297,7 +297,7 @@ int _slurm_cgroup_suspend(uint32_t id)
 				 "freezer.state", "FROZEN");
 }
 
-int _slurm_cgroup_resume(uint32_t id)
+int _slurm_cgroup_resume(uint64_t id)
 {
 	if (*jobstep_cgroup_path == '\0')
 		return SLURM_ERROR;
@@ -328,7 +328,7 @@ _slurm_cgroup_has_pid(pid_t pid)
 }
 
 int
-_slurm_cgroup_is_pid_a_slurm_task(uint32_t id, pid_t pid)
+_slurm_cgroup_is_pid_a_slurm_task(uint64_t id, pid_t pid)
 {
 	int fstatus = -1;
 	int fd;
@@ -362,7 +362,7 @@ _slurm_cgroup_is_pid_a_slurm_task(uint32_t id, pid_t pid)
 	 * they will get all signals, inherited processes will
 	 * only get SIGKILL
 	 */
-	if (ppid == (long) id)
+	if (ppid == (pid_t) id)
 		fstatus = 1;
 	else
 		fstatus = 0;
@@ -412,7 +412,7 @@ extern int slurm_container_plugin_create (slurmd_job_t *job)
 	int fstatus;
 
 	/* create a new cgroup for that container */
-	fstatus = _slurm_cgroup_create(job, (uint32_t)job->jmgr_pid,
+	fstatus = _slurm_cgroup_create(job, (uint64_t)job->jmgr_pid,
 				       job->uid, job->gid);
 	if (fstatus)
 		return SLURM_ERROR;
@@ -423,7 +423,7 @@ extern int slurm_container_plugin_create (slurmd_job_t *job)
 	 * properties so we need to let the slurmstepd outside of
 	 * this one)
 	 */
-	fstatus = _slurm_cgroup_stick_stepd((uint32_t)job->jmgr_pid,
+	fstatus = _slurm_cgroup_stick_stepd((uint64_t)job->jmgr_pid,
 					    job->jmgr_pid);
 	if (fstatus) {
 		_slurm_cgroup_destroy();
@@ -433,7 +433,7 @@ extern int slurm_container_plugin_create (slurmd_job_t *job)
 	/* we use slurmstepd pid as the identifier of the container
 	 * the corresponding cgroup could be found using
 	 * _slurm_cgroup_find_by_pid */
-	job->cont_id = (uint32_t)job->jmgr_pid;
+	job->cont_id = (uint64_t)job->jmgr_pid;
 
 	return SLURM_SUCCESS;
 }
@@ -443,7 +443,7 @@ extern int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
 	return _slurm_cgroup_add_pids(job->cont_id, &pid, 1);
 }
 
-extern int slurm_container_plugin_signal (uint32_t id, int signal)
+extern int slurm_container_plugin_signal (uint64_t id, int signal)
 {
 	pid_t* pids = NULL;
 	int npids;
@@ -453,7 +453,7 @@ extern int slurm_container_plugin_signal (uint32_t id, int signal)
 	/* get all the pids associated with the step */
 	if (_slurm_cgroup_get_pids(id, &pids, &npids) !=
 	     SLURM_SUCCESS) {
-		debug3("unable to get pids list for cont_id=%u", id);
+		debug3("unable to get pids list for cont_id=%lu", id);
 		/* that could mean that all the processes already exit */
 		/* the container so return success */
 		return SLURM_SUCCESS;
@@ -498,25 +498,25 @@ extern int slurm_container_plugin_signal (uint32_t id, int signal)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_destroy (uint32_t id)
+extern int slurm_container_plugin_destroy (uint64_t id)
 {
 	_slurm_cgroup_destroy();
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t slurm_container_plugin_find(pid_t pid)
+extern uint64_t slurm_container_plugin_find(pid_t pid)
 {
-	uint32_t cont_id=-1;
+	uint64_t cont_id = -1;
 	/* not provided for now */
 	return cont_id;
 }
 
-extern bool slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid(uint64_t cont_id, pid_t pid)
 {
 	return _slurm_cgroup_has_pid(pid);
 }
 
-extern int slurm_container_plugin_wait(uint32_t cont_id)
+extern int slurm_container_plugin_wait(uint64_t cont_id)
 {
 	int delay = 1;
 
@@ -532,14 +532,14 @@ extern int slurm_container_plugin_wait(uint32_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %u", cont_id);
+			error("Unable to destroy container %lu", cont_id);
 		}
 	}
 
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_get_pids(uint32_t cont_id,
+extern int slurm_container_plugin_get_pids(uint64_t cont_id,
 					   pid_t **pids, int *npids)
 {
 	return _slurm_cgroup_get_pids(cont_id, pids, npids);

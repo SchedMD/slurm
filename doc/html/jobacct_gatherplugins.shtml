@@ -163,7 +163,7 @@ polling thread.
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="commandline">void jobacct_gather_p_suspend_poll()
+<p class="commandline">void jobacct_gather_p_suspend_poll(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_gather_p_suspend_poll() is called when the process is suspended.
 This causes the polling thread to halt until the process is resumed.
@@ -172,7 +172,7 @@ This causes the polling thread to halt until the process is resumed.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">none</span>
 
-<p class="commandline">void jobacct_gather_p_resume_poll()
+<p class="commandline">void jobacct_gather_p_resume_poll(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_gather_p_resume_poll() is called when the process is resumed.
 This causes the polling thread to resume operation.
@@ -181,14 +181,14 @@ This causes the polling thread to resume operation.
 <p style="margin-left:.2in"><b>Returns</b>:<br>
 <span class="commandline">none</span>
 
-<p class="commandline">int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
+<p class="commandline">int jobacct_gather_p_set_proctrack_container_id(uint64_t cont_id)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_gather_p_set_proctrack_container_id() is called after the
 proctrack container id is known at the start of the slurmstepd,
 if using a proctrack plugin to track processes this will set the head
 of the process tree in the plugin.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
-<span class="commandline">id</span> (input) procktrack container id.
+<span class="commandline">cont_id</span> (input) procktrack container id.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -257,6 +257,6 @@ ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 11 September 2007</p>
+<p style="text-align:center;">Last modified 15 April 2011</p>
 
 <!--#include virtual="footer.txt"-->

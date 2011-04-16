@@ -108,7 +108,7 @@ extern int slurm_container_plugin_create (slurmd_job_t *job)
 	}
         debug3("proctrack/rms: prgid = %d", prgid);
 
-	job->cont_id = (uint32_t)prgid;
+	job->cont_id = (uint64_t)prgid;
 	return SLURM_SUCCESS;
 }
 
@@ -122,7 +122,7 @@ extern int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
  * is always the last process in the rms program description.
  * No signals are sent to the last process.
  */
-extern int slurm_container_plugin_signal  (uint32_t id, int signal)
+extern int slurm_container_plugin_signal  (uint64_t id, int signal)
 {
 	pid_t *pids;
 	int nids = 0;
@@ -166,7 +166,7 @@ extern int slurm_container_plugin_signal  (uint32_t id, int signal)
  * returns SLURM_SUCCESS when the program description contains one and
  * only one process, assumed to be the slurmd jobstep manager.
  */
-extern int slurm_container_plugin_destroy (uint32_t id)
+extern int slurm_container_plugin_destroy (uint64_t id)
 {
 	debug2("proctrack/rms: destroying container %u", id);
 	if (id == 0)
@@ -179,29 +179,29 @@ extern int slurm_container_plugin_destroy (uint32_t id)
 }
 
 
-extern uint32_t slurm_container_plugin_find (pid_t pid)
+extern uint64_t slurm_container_plugin_find (pid_t pid)
 {
 	int prgid = 0;
 
 	if (rms_getprgid ((int) pid, &prgid) < 0)
-		return (uint32_t) 0;
-	return (uint32_t) prgid;
+		return (uint64_t) 0;
+	return (uint64_t) prgid;
 }
 
-extern bool slurm_container_plugin_has_pid (uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid (uint64_t cont_id, pid_t pid)
 {
 	int prgid = 0;
 
 	if (rms_getprgid ((int) pid, &prgid) < 0)
 		return false;
-	if ((uint32_t)prgid != cont_id)
+	if ((uint64_t)prgid != cont_id)
 		return false;
 
 	return true;
 }
 
 extern int
-slurm_container_plugin_wait(uint32_t cont_id)
+slurm_container_plugin_wait(uint64_t cont_id)
 {
 	int delay = 1;
 
@@ -230,7 +230,7 @@ slurm_container_plugin_wait(uint32_t cont_id)
  * the slurmstepd in the list of pids that we return.
  */
 extern int
-slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	pid_t *p;
 	int np;
@@ -281,7 +281,7 @@ _close_all_fd_except(int fd)
  * parent process has exited.  Then call rms_prgdestroy.
  */
 static int
-_prg_destructor_fork()
+_prg_destructor_fork(void)
 {
 	pid_t pid;
 	int fdpair[2];

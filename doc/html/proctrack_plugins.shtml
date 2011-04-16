@@ -132,7 +132,7 @@ A process ID.</p>
 <p style="margin-left:.2in"><b>Returns</b>: The job container ID
 with this process or zero if none is found.</p>
 
-<p class="commandline">uint32_t slurm_container_plugin_get_pids (uint32_t cont_id, pid_t **pids, int *npids);</p>
+<p class="commandline">uint32_t slurm_container_plugin_get_pids (uint64_t cont_id, pid_t **pids, int *npids);</p>
 <p style="margin-left:.2in"><b>Description</b>:
 Given a process container ID, fill in all the process IDs in the container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -153,6 +153,6 @@ mechanism outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 Dec 2010</p>
+<p style="text-align:center;">Last modified 14 April 2011</p>
 
 <!--#include virtual="footer.txt"-->

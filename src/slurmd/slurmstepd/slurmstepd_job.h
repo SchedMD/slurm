@@ -190,7 +190,7 @@ typedef struct slurmd_job {
 	uint16_t       multi_prog;
 	uint16_t       overcommit;
 	env_t          *envtp;
-	uint32_t       cont_id;
+	uint64_t       cont_id;
 
 	char          *batchdir;
 	jobacctinfo_t *jobacct;

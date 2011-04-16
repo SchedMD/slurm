@@ -118,11 +118,11 @@ extern int slurm_container_plugin_create ( slurmd_job_t *job )
  */
 extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
 {
-	job->cont_id = (uint32_t)job->pgid;
+	job->cont_id = (uint64_t)job->pgid;
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_signal  ( uint32_t id, int signal )
+extern int slurm_container_plugin_signal  ( uint64_t id, int signal )
 {
 	pid_t pid = (pid_t) id;
 
@@ -137,33 +137,33 @@ extern int slurm_container_plugin_signal  ( uint32_t id, int signal )
 	return (int)killpg(pid, signal);
 }
 
-extern int slurm_container_plugin_destroy ( uint32_t id )
+extern int slurm_container_plugin_destroy ( uint64_t id )
 {
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t slurm_container_plugin_find(pid_t pid)
+extern uint64_t slurm_container_plugin_find(pid_t pid)
 {
 	pid_t rc = getpgid(pid);
 
 	if (rc == -1)
-		return (uint32_t) 0;
+		return (uint64_t) 0;
 	else
-		return (uint32_t) rc;
+		return (uint64_t) rc;
 }
 
-extern bool slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid(uint64_t cont_id, pid_t pid)
 {
 	pid_t pgid = getpgid(pid);
 
-	if (pgid == -1 || (uint32_t)pgid != cont_id)
+	if ((pgid == -1) || ((uint64_t)pgid != cont_id))
 		return false;
 
 	return true;
 }
 
 extern int
-slurm_container_plugin_wait(uint32_t cont_id)
+slurm_container_plugin_wait(uint64_t cont_id)
 {
 	pid_t pgid = (pid_t)cont_id;
 	int delay = 1;
@@ -180,7 +180,7 @@ slurm_container_plugin_wait(uint32_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %u", cont_id);
+			error("Unable to destroy container %lu", cont_id);
 		}
 	}
 
@@ -188,7 +188,7 @@ slurm_container_plugin_wait(uint32_t cont_id)
 }
 
 extern int
-slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	error("proctrack/pgid does not implement "
 	      "slurm_container_plugin_get_pids");

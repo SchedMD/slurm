@@ -290,7 +290,7 @@ extern int slurm_container_add(slurmd_job_t * job, pid_t pid)
  *
  * Returns a SLURM errno.
  */
-extern int slurm_container_signal(uint32_t cont_id, int signal)
+extern int slurm_container_signal(uint64_t cont_id, int signal)
 {
 	if (slurm_proctrack_init() < 0) {
 		return SLURM_ERROR;
@@ -304,7 +304,7 @@ extern int slurm_container_signal(uint32_t cont_id, int signal)
  *
  * Returns a SLURM errno.
 */
-extern int slurm_container_destroy(uint32_t cont_id)
+extern int slurm_container_destroy(uint64_t cont_id)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
@@ -329,7 +329,7 @@ extern uint32_t slurm_container_find(pid_t pid)
  * Return "true" if the container "cont_id" contains the process with
  * ID "pid".
  */
-extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
+extern bool slurm_container_has_pid(uint64_t cont_id, pid_t pid)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
@@ -347,7 +347,7 @@ extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid)
  *
  * Return SLURM_SUCCESS or SLURM_ERROR.
  */
-extern int slurm_container_wait(uint32_t cont_id)
+extern int slurm_container_wait(uint64_t cont_id)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
@@ -368,7 +368,7 @@ extern int slurm_container_wait(uint32_t cont_id)
  *   plugin does not implement the call.
  */
 extern int
-slurm_container_get_pids(uint32_t cont_id, pid_t ** pids, int *npids)
+slurm_container_get_pids(uint64_t cont_id, pid_t ** pids, int *npids)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;

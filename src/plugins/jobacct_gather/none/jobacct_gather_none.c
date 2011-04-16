@@ -155,7 +155,7 @@ extern void jobacct_gather_p_resume_poll()
 	return;
 }
 
-extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
+extern int jobacct_gather_p_set_proctrack_container_id(uint64_t id)
 {
 	return SLURM_SUCCESS;
 }

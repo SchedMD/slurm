@@ -108,7 +108,7 @@ extern int fini ( void )
  */
 extern int slurm_container_plugin_create ( slurmd_job_t *job )
 {
-	job->cont_id = (uint32_t)job->jmgr_pid;
+	job->cont_id = (uint64_t)job->jmgr_pid;
 	return SLURM_SUCCESS;
 }
 
@@ -117,26 +117,26 @@ extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_signal ( uint32_t id, int signal )
+extern int slurm_container_plugin_signal ( uint64_t id, int signal )
 {
 	return kill_proc_tree((pid_t)id, signal);
 }
 
-extern int slurm_container_plugin_destroy ( uint32_t id )
+extern int slurm_container_plugin_destroy ( uint64_t id )
 {
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t slurm_container_plugin_find(pid_t pid)
+extern uint64_t slurm_container_plugin_find(pid_t pid)
 {
-	return (uint32_t) find_ancestor(pid, "slurmstepd");
+	return (uint64_t) find_ancestor(pid, "slurmstepd");
 }
 
-extern bool slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
+extern bool slurm_container_plugin_has_pid(uint64_t cont_id, pid_t pid)
 {
-	uint32_t cont;
+	uint64_t cont;
 
-	cont = (uint32_t) find_ancestor(pid, "slurmstepd");
+	cont = (uint64_t) find_ancestor(pid, "slurmstepd");
 	if (cont == cont_id)
 		return true;
 
@@ -144,7 +144,7 @@ extern bool slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
 }
 
 extern int
-slurm_container_plugin_wait(uint32_t cont_id)
+slurm_container_plugin_wait(uint64_t cont_id)
 {
 	int delay = 1;
 
@@ -160,7 +160,7 @@ slurm_container_plugin_wait(uint32_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %u", cont_id);
+			error("Unable to destroy container %lu", cont_id);
 		}
 	}
 
@@ -168,7 +168,7 @@ slurm_container_plugin_wait(uint32_t cont_id)
 }
 
 extern int
-slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	return proctrack_linuxproc_get_pids((pid_t)cont_id, pids, npids);
 }

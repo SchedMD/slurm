@@ -140,11 +140,11 @@ extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
 		return SLURM_ERROR;
 	}
 
-	job->cont_id = (uint32_t)pgid;
+	job->cont_id = (uint64_t)pgid;
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_signal  ( uint32_t id, int signal )
+extern int slurm_container_plugin_signal  ( uint64_t id, int signal )
 {
 	int jobid = (int) id;
 	if (!id)	/* no container ID */
@@ -153,7 +153,7 @@ extern int slurm_container_plugin_signal  ( uint32_t id, int signal )
 	return proctrack_job_kill(&jobid, &signal);
 }
 
-extern int slurm_container_plugin_destroy ( uint32_t id )
+extern int slurm_container_plugin_destroy ( uint64_t id )
 {
 	int jobid = (int) id;
 
@@ -166,37 +166,37 @@ extern int slurm_container_plugin_destroy ( uint32_t id )
 	return SLURM_ERROR;
 }
 
-extern uint32_t
+extern uint64_t
 slurm_container_plugin_find(pid_t pid)
 {
 	int local_pid = (int) pid;
 	int cont_id = proctrack_get_job_id(&local_pid);
 	if (cont_id == -1)
-		return (uint32_t) 0;
-	return (uint32_t) cont_id;
+		return (uint64_t) 0;
+	return (uint64_t) cont_id;
 }
 
 extern bool
-slurm_container_plugin_has_pid(uint32_t cont_id, pid_t pid)
+slurm_container_plugin_has_pid(uint64_t cont_id, pid_t pid)
 {
 	int local_pid = (int) pid;
 	int found_cont_id = proctrack_get_job_id(&local_pid);
 
-	if (found_cont_id == -1 || (uint32_t)found_cont_id != cont_id)
+	if ((found_cont_id == -1) || ((uint64_t)found_cont_id != cont_id))
 		return false;
 
 	return true;
 }
 
 extern int
-slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
+slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	int32_t *p;
 	int np;
 	int len = 64;
 
 	p = (int32_t *)xmalloc(len * sizeof(int32_t));
-	while((np = proctrack_get_pids(cont_id, len, p)) > len) {
+	while ((np = proctrack_get_pids(cont_id, len, p)) > len) {
 		/* array is too short, double its length */
 		len *= 2;
 		xrealloc(p, len);
@@ -211,7 +211,7 @@ slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 		return SLURM_ERROR;
 	}
 
-	if (sizeof(uint32_t) == sizeof(pid_t)) {
+	if (sizeof(int32_t) == sizeof(pid_t)) {
 		debug3("slurm_container_plugin_get_pids: No need to copy "
 		       "pids array");
 		*npids = np;
@@ -235,7 +235,7 @@ slurm_container_plugin_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 }
 
 extern int
-slurm_container_plugin_wait(uint32_t cont_id)
+slurm_container_plugin_wait(uint64_t cont_id)
 {
 	int jobid = (int) cont_id;
 	int delay = 1;

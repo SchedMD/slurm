@@ -84,7 +84,7 @@ typedef struct slurm_jobacct_gather_ops {
 	void (*jobacct_gather_change_poll)   (uint16_t frequency);
 	void (*jobacct_gather_suspend_poll)  ();
 	void (*jobacct_gather_resume_poll)   ();
-	int (*jobacct_gather_set_proctrack_container_id)(uint32_t id);
+	int (*jobacct_gather_set_proctrack_container_id)(uint64_t id);
 	int (*jobacct_gather_add_task) (pid_t pid, jobacct_id_t *jobacct_id);
 	jobacctinfo_t *(*jobacct_gather_stat_task)(pid_t pid);
 	jobacctinfo_t *(*jobacct_gather_remove_task)(pid_t pid);
@@ -478,7 +478,7 @@ extern void jobacct_gather_g_resume_poll()
 	return;
 }
 
-extern int jobacct_gather_g_set_proctrack_container_id(uint32_t id)
+extern int jobacct_gather_g_set_proctrack_container_id(uint64_t id)
 {
 	int retval = SLURM_SUCCESS;
 	if (_slurm_jobacct_gather_init() < 0)

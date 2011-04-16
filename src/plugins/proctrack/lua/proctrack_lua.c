@@ -136,7 +136,7 @@ static const struct luaL_Reg slurm_functions [] = {
 	{ NULL,    NULL        }
 };
 
-static int lua_register_slurm_output_functions ()
+static int lua_register_slurm_output_functions (void)
 {
 	/*
 	 *  Register slurm output functions in a global "slurm" table
@@ -188,7 +188,7 @@ static int check_lua_script_function (const char *name)
 /*
  *   Verify all required fuctions are defined in the proctrack/lua script
  */
-static int check_lua_script_functions ()
+static int check_lua_script_functions (void)
 {
 	int rc = 0;
 	int i;
@@ -354,7 +354,7 @@ int slurm_container_plugin_create (slurmd_job_t *job)
 
 	id = lua_tonumber (L, -1);
 	job->cont_id = id;
-	info ("job->cont_id = %u (%.0f)", job->cont_id, id);
+	info ("job->cont_id = %lu (%.0f)", job->cont_id, id);
 	lua_pop (L, -1);
 
 	rc = SLURM_SUCCESS;
@@ -391,7 +391,7 @@ out:
 	return (rc);
 }
 
-int slurm_container_plugin_signal (uint32_t id, int sig)
+int slurm_container_plugin_signal (uint64_t id, int sig)
 {
 	int rc = SLURM_ERROR;
 
@@ -418,7 +418,7 @@ out:
 	return (rc);
 }
 
-int slurm_container_plugin_destroy (uint32_t id)
+int slurm_container_plugin_destroy (uint64_t id)
 {
 	int rc = SLURM_ERROR;
 
@@ -445,9 +445,9 @@ out:
 	return (rc);
 }
 
-uint32_t slurm_container_plugin_find (pid_t pid)
+uint64_t slurm_container_plugin_find (pid_t pid)
 {
-	uint32_t id = (uint32_t) SLURM_ERROR;
+	uint64_t id = (uint64_t) SLURM_ERROR;
 
 	slurm_mutex_lock (&lua_lock);
 
@@ -463,7 +463,7 @@ uint32_t slurm_container_plugin_find (pid_t pid)
 		goto out;
 	}
 
-	id = (uint32_t) lua_tonumber (L, -1);
+	id = (uint64_t) lua_tonumber (L, -1);
 	lua_pop (L, -1);
 
 out:
@@ -471,7 +471,7 @@ out:
 	return (id);
 }
 
-bool slurm_container_plugin_has_pid (uint32_t id, pid_t pid)
+bool slurm_container_plugin_has_pid (uint64_t id, pid_t pid)
 {
 	int rc = 0;
 
@@ -499,7 +499,7 @@ out:
 	return (rc == 1);
 }
 
-int slurm_container_plugin_wait (uint32_t id)
+int slurm_container_plugin_wait (uint64_t id)
 {
 	int rc = SLURM_ERROR;
 
@@ -524,7 +524,7 @@ out:
 	return (rc);
 }
 
-int slurm_container_plugin_get_pids (uint32_t cont_id, pid_t **pids, int *npids)
+int slurm_container_plugin_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
 {
 	int rc = SLURM_ERROR;
 	int i = 0;
