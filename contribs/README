@@ -11,7 +11,16 @@ of the SLURM contribs distribution follows:
      etc_init_d_munge      - /etc/init.d/munge script for use with Munge
      etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
      libalps_test_programs.tar.gz - set of tools to verify ALPS/BASIL support
-                             logic. To use, extract the files then:
+                             logic. Note that this currently requires:
+                             * hardcoding in libsdb/basil_mysql_routines.c:
+                               mysql_real_connect(handle, "localhost", NULL, NULL, "XT5istanbul"
+                             * suitable /etc/my.cnf, containing at least the lines
+                               [client]
+                               user=basic
+                               password=basic
+                             * setting the APBASIL in the libalps/Makefile, e.g.
+                               APBASIL := slurm/alps_simulator/apbasil.sh
+                             To use, extract the files then:
                              cd libasil/
                              make -C alps_tests all   # runs basil parser tests
                              make -C sdb_tests  all   # checks if database routines work
