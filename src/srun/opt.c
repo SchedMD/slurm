@@ -2070,7 +2070,7 @@ static bool _opt_verify(void)
 	return verified;
 }
 
-/* Initialize the the spank_job_env based upon environment variables set
+/* Initialize the spank_job_env based upon environment variables set
  *	via salloc or sbatch commands */
 extern void init_spank_env(void)
 {

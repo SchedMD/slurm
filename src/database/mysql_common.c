@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_common.c - common functions for the the mysql storage plugin.
+ *  mysql_common.c - common functions for the mysql storage plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

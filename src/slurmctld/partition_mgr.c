@@ -1441,7 +1441,7 @@ void load_part_uid_allow_list(int force)
 
 
 /*
- * _get_groups_members - indentify the users in a list of group names
+ * _get_groups_members - identify the users in a list of group names
  * IN group_names - a comma delimited list of group names
  * RET a zero terminated list of its UIDs or NULL on error
  * NOTE: User root has implicitly access to every group

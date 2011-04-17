@@ -1056,7 +1056,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 				slurm_fail_job(bg_record->job_running);
 
 		}
-		/* If Running Dynamic mode and the the block is
+		/* If Running Dynamic mode and the block is
 		   smaller than the create size just continue on.
 		*/
 		if ((bg_conf->layout_mode == LAYOUT_DYNAMIC)

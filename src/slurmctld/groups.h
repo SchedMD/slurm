@@ -47,7 +47,7 @@
 extern void clear_group_cache(void);
 
 /*
- * get_group_members - indentify the users in a given group name
+ * get_group_members - identify the users in a given group name
  * IN group_name - a single group name
  * RET a zero terminated list of its UIDs or NULL on error
  * NOTE: User root has implicitly access to every group

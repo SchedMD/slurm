@@ -142,7 +142,7 @@ int init (void)
 	if (!job_ops.getpidcnt)
 		error ("Unable to resolve job_getpidcnt in libjob.so");
 
-	info ("successfully loaded libjob.so");
+	debug ("successfully loaded libjob.so");
 	return SLURM_SUCCESS;
 }
 

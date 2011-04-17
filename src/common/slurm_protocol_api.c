@@ -2713,10 +2713,15 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 				get_buf_offset(buffer),
 				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS );
 
-	if (rc < 0) {
+	if ((rc < 0) && (errno == ENOTCONN)) {
+		debug3("slurm_msg_sendto: peer has disappeared for msg_type=%u",
+		       msg->msg_type);
+	} else if (rc < 0) {
+		slurm_addr_t peer_addr;
 		char addr_str[32];
-		slurm_print_slurm_addr(&msg->address, addr_str,
-				       sizeof(addr_str));
+
+		slurm_get_peer_addr(fd, &peer_addr);
+		slurm_print_slurm_addr(&peer_addr, addr_str, sizeof(addr_str));
 		error("slurm_msg_sendto: address:port=%s msg_type=%u: %m",
 		      addr_str, msg->msg_type);
 	}
@@ -3419,7 +3424,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 
 
 /*
- *  Open a connection to the "address" specified in the the slurm msg "req"
+ *  Open a connection to the "address" specified in the slurm msg "req".
  *    Then read back an "rc" message returning the "return_code" specified
  *    in the response in the "rc" parameter.
  * IN req	- a slurm_msg struct to be sent by the function

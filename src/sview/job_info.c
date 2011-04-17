@@ -4122,7 +4122,7 @@ extern void cluster_change_job(void)
 		if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
 			switch(display_data->id) {
 			case SORTID_ALPS_RESV_ID:
-				display_data->name = "ALPS Resv ID";
+				display_data->name = "ALPS";
 				break;
 			}
 		} else {

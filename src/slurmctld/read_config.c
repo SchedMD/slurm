@@ -1558,7 +1558,7 @@ static void _sync_nodes_to_suspended_job(struct job_record *job_ptr)
 
 #ifdef 	HAVE_ELAN
 /* Every node in a given partition must have the same processor count
- * at present, this function insure it */
+ * at present, ensured by this function. */
 static void _validate_node_proc_count(void)
 {
 	ListIterator part_iterator;

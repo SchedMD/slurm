@@ -663,9 +663,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		if (*info_ptr != g_node_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = g_node_info_ptr;
-		if (changed)
-			error_code = SLURM_SUCCESS;
-		goto end_it;
+		return error_code;
 	}
 	last = now;
 
@@ -778,7 +776,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	    default_sview_config.grid_topological) {
 		get_topo_conf(); /* pull in topology NOW */
 	}
-end_it:
+
 	return error_code;
 }
 

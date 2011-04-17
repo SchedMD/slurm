@@ -52,7 +52,7 @@
  * looking for code specific to slurm.conf, look in
  * src/common/slurm_conf.[hc].
  *
- * In the parsed file, any amount of white-space is allowed between the the
+ * In the parsed file, any amount of white-space is allowed between the
  * key, equal-sign, and value.  The parser handles comments, line
  * continuations, and escaped characters automatically.  Double-quotes can
  * be used to surround an entire value if white-space is needed within
@@ -132,7 +132,7 @@
  * a "handler" function and a "destroy" function.  The prototypes for each
  * are available below in the typedef of s_p_options_t.
  *
- * The "handler" function is given the the "key" string, "value" string, and a
+ * The "handler" function is given the "key" string, "value" string, and a
  * pointer to the remainder of the "line" on which the key-value pair was found
  * (this is the line after the parser has removed comments and concatenated
  * continued lines).  The handler can transform the value any way it desires,

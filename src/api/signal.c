@@ -143,7 +143,7 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	int i;
 	char *name = nodelist_nth_host(allocation->node_list, 0);
 	if (!name) {
-		error("_signal_batch_script_step: "
+		error("_terminate_batch_script_step: "
 		      "can't get the first name out of %s",
 		      allocation->node_list);
 		return -1;
@@ -158,7 +158,7 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	msg.data = &rpc;
 
 	if (slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
-		error("_signal_batch_script_step: "
+		error("_terminate_batch_script_step: "
 		      "can't find address for host %s, check slurm.conf",
 		      name);
 		free(name);
@@ -295,7 +295,7 @@ fail:
 
 /*
  * slurm_terminate_job - terminates all steps of an existing job by sending
- * 	a REQUEST_TERMINATE_JOB rpc to all slurmd in the the job allocation,
+ *	a REQUEST_TERMINATE_JOB rpc to all slurmd in the job allocation,
  *      and then calls slurm_complete_job().
  * IN job_id     - the job's id
  * RET 0 on success, otherwise return -1 and set errno to indicate the error

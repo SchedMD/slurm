@@ -614,21 +614,26 @@ extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 	}
 
 	switch (mode) {
+	/*
+	 * SLURM only knows the ALPS reservation ID. The application IDs (APIDs)
+	 * of the reservation need to be queried from the Inventory response.
+	 * The maximum known reservation ID is 4096, it wraps around after that.
+	 */
 	case SELECT_PRINT_HEAD:
-		snprintf(buf, size, "RESV_ID");
+		snprintf(buf, size, "ALPS");
 		break;
 	case SELECT_PRINT_DATA:
 		if (jobinfo->reservation_id)
-			snprintf(buf, size, "%7u", jobinfo->reservation_id);
+			snprintf(buf, size, "%4u", jobinfo->reservation_id);
 		else
-			snprintf(buf, size, "%7s", "none");
+			snprintf(buf, size, "%4s", "none");
 		break;
 	case SELECT_PRINT_MIXED:
 		if (jobinfo->reservation_id)
-			snprintf(buf, size, "Resv_ID=%u",
+			snprintf(buf, size, "resId=%u",
 				 jobinfo->reservation_id);
 		else
-			snprintf(buf, size, "Resv_ID=none");
+			snprintf(buf, size, "resId=none");
 		break;
 	case SELECT_PRINT_RESV_ID:
 		snprintf(buf, size, "%u", jobinfo->reservation_id);
@@ -661,20 +666,21 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	}
 
 	switch (mode) {
+	/* See comment in select_p_select_jobinfo_sprint() regarding format. */
 	case SELECT_PRINT_HEAD:
-		xstrcat(buf, "RESV_ID");
+		xstrcat(buf, "ALPS");
 		break;
 	case SELECT_PRINT_DATA:
 		if (jobinfo->reservation_id)
-			xstrfmtcat(buf, "%7u", jobinfo->reservation_id);
+			xstrfmtcat(buf, "%4u", jobinfo->reservation_id);
 		else
-			xstrfmtcat(buf, "%7s", "none");
+			xstrfmtcat(buf, "%4s", "none");
 		break;
 	case SELECT_PRINT_MIXED:
 		if (jobinfo->reservation_id)
-			xstrfmtcat(buf, "Resv_ID=%u", jobinfo->reservation_id);
+			xstrfmtcat(buf, "resId=%u", jobinfo->reservation_id);
 		else
-			xstrcat(buf, "Resv_ID=none");
+			xstrcat(buf, "resId=none");
 		break;
 	case SELECT_PRINT_RESV_ID:
 		xstrfmtcat(buf, "%u", jobinfo->reservation_id);

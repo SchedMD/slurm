@@ -799,7 +799,7 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
  * task_layout_lllp_cyclic creates a cyclic distribution at the
  * lowest level of logical processor which is either socket, core or
  * thread depending on the system architecture. The Cyclic algorithm
- * is the same as the the Cyclic distribution performed in srun.
+ * is the same as the Cyclic distribution performed in srun.
  *
  *  Distribution at the lllp:
  *  -m hostfile|plane|block|cyclic:block|cyclic
@@ -898,7 +898,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
  * task_layout_lllp_block will create a block distribution at the
  * lowest level of logical processor which is either socket, core or
  * thread depending on the system architecture. The Block algorithm
- * is the same as the the Block distribution performed in srun.
+ * is the same as the Block distribution performed in srun.
  *
  *  Distribution at the lllp:
  *  -m hostfile|plane|block|cyclic:block|cyclic

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  pgsql_common.c - common functions for the the pgsql storage plugin.
+ *  pgsql_common.c - common functions for the pgsql storage plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

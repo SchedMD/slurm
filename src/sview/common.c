@@ -57,7 +57,7 @@ static int _find_node_inx (char *name)
 	int i;
 
 	if ((name == NULL) || (name[0] == '\0')) {
-		info("find_node_record passed NULL name");
+		info("_find_node_inx passed NULL name");
 		return -1;
 	}
 

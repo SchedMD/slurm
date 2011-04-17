@@ -1211,7 +1211,7 @@ _slurmd_init(void)
 	build_all_frontend_info();
 
 	/*
-	 * Read global slurm config file, ovverride necessary values from
+	 * Read global slurm config file, override necessary values from
 	 * defaults and command line.
 	 */
 	_read_config(false);

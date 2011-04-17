@@ -587,7 +587,7 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			return SLURM_ERROR;
 		}
 
-		/* Translate a 3D or 4D space into a 2D space the the extent
+		/* Translate a 3D or 4D space into a 2D space to the extent
 		 * possible. */
 		if (node_exists == NULL) {
 			node_exists_cnt = 1;

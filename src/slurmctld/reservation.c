@@ -2057,7 +2057,7 @@ static void _validate_all_reservations(void)
 }
 
 /*
- * Validate the the reserved nodes are not DOWN or DRAINED and
+ * Validate that the reserved nodes are not DOWN or DRAINED and
  *	select different nodes as needed.
  */
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr)

@@ -170,7 +170,7 @@ _domain_socket_create(const char *dir, const char *nodename,
 	}
 
 	/*
-	 * Now build the the name of socket, and create the socket.
+	 * Now build the name of socket, and create the socket.
 	 */
 	xstrfmtcat(name, "%s/%s_%u.%u", dir, nodename, jobid, stepid);
 

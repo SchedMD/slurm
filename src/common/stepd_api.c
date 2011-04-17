@@ -752,7 +752,7 @@ rwfail:
 /*
  * Suspend execution of the job step.  Only root or SlurmUser is
  * authorized to use this call. Since this activity includes a 'sleep 1'
- * in the slurmstepd, initiate the the "suspend" in parallel
+ * in the slurmstepd, initiate the "suspend" in parallel.
  *
  * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
  * and sets errno.

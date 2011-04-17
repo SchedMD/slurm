@@ -600,7 +600,7 @@ static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
 					  Buf buffer, uint16_t protocol_version);
 
 /* pack_header
- * packs a slurm protocol header that proceeds every slurm message
+ * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
  * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
@@ -627,7 +627,7 @@ pack_header(header_t * header, Buf buffer)
 }
 
 /* unpack_header
- * unpacks a slurm protocol header that proceeds every slurm message
+ * unpacks a slurm protocol header that precedes every slurm message
  * OUT header - the header structure to unpack
  * IN/OUT buffer - source of the unpack data, contains pointers that are
  *			automatically updated

@@ -996,7 +996,10 @@ static void *_service_connection(void *arg)
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
 	slurm_msg_t_init(msg);
-
+	/*
+	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
+	 * possibility for slurmctld_req() to close accepted connection.
+	 */
 	if(slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
 		error("slurm_receive_msg: %m");
 		/* close should only be called when the socket implementation
@@ -1007,9 +1010,6 @@ static void *_service_connection(void *arg)
 		goto cleanup;
 	}
 
-	/* set msg connection fd to accepted fd. This allows
-	 *  possibility for slurmd_req () to close accepted connection
-	 */
 	if(errno != SLURM_SUCCESS) {
 		if (errno == SLURM_PROTOCOL_VERSION_ERROR) {
 			slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
