@@ -6,8 +6,8 @@
  */
 #include "parser_internal.h"
 
-/** Basil 3.1 'ReservedNode' element */
-static void eh_resvd_node(struct ud *ud, const XML_Char **attrs)
+/** Basil 3.1 and above 'ReservedNode' element */
+void eh_resvd_node(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "node_id" };
 	uint32_t node_id;
@@ -20,8 +20,8 @@ static void eh_resvd_node(struct ud *ud, const XML_Char **attrs)
 		fatal("could not add node %u", node_id);
 }
 
-/** Basil 3.1 'Confirmed' element */
-static void eh_confirmed(struct ud *ud, const XML_Char **attrs)
+/** Basil 3.1 and above 'Confirmed' element */
+void eh_confirmed(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "reservation_id", "pagg_id" };
 	uint32_t rsvn_id;
@@ -40,7 +40,7 @@ static void eh_confirmed(struct ud *ud, const XML_Char **attrs)
 }
 
 /** Basil 3.1 'Released' element */
-static void eh_released_3_1(struct ud *ud, const XML_Char **attrs)
+void eh_released_3_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "reservation_id" };
 	uint32_t rsvn_id;
@@ -53,8 +53,8 @@ static void eh_released_3_1(struct ud *ud, const XML_Char **attrs)
 		fatal("rsvn_id mismatch '%s'", attribs[0]);
 }
 
-/** Basil 3.1 'Engine' element */
-static void eh_engine_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 3.1 and above 'Engine' element */
+void eh_engine_3_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "basil_support" };
 
@@ -62,8 +62,8 @@ static void eh_engine_3_1(struct ud *ud, const XML_Char **attrs)
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 }
 
-/** Basil 3.1 'Inventory' element */
-static void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 3.1 and above 'Inventory' element */
+void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "mpp_host", "timestamp" };
 	struct basil_inventory *inv = ud->bp->mdata.inv;
@@ -75,8 +75,8 @@ static void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal timestamp = %s", attribs[1]);
 }
 
-/** Basil 3.1 'Node' element */
-static void eh_node_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 3.1 and above 'Node' element */
+void eh_node_3_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "router_id" };
 	/*
@@ -97,8 +97,8 @@ static void eh_node_3_1(struct ud *ud, const XML_Char **attrs)
 	}
 }
 
-/** Basil 3.1 'Reservation' element */
-static void eh_resv_3_1(struct ud *ud, const XML_Char **attrs)
+/** Basil 3.1 and above 'Reservation' element */
+void eh_resv_3_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "reservation_mode", "gpc_mode" };
 

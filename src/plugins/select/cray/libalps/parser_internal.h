@@ -94,4 +94,13 @@ extern void eh_application(struct ud *ud, const XML_Char **attrs);
 extern void eh_command(struct ud *ud, const XML_Char **attrs);
 extern void eh_resv_1_1(struct ud *ud, const XML_Char **attrs);
 
+/* Basil 3.1 and above common handlers */
+extern void eh_resvd_node(struct ud *ud, const XML_Char **attrs);
+extern void eh_confirmed(struct ud *ud, const XML_Char **attrs);
+extern void eh_released_3_1(struct ud *ud, const XML_Char **attrs);
+extern void eh_engine_3_1(struct ud *ud, const XML_Char **attrs);
+extern void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs);
+extern void eh_node_3_1(struct ud *ud, const XML_Char **attrs);
+extern void eh_resv_3_1(struct ud *ud, const XML_Char **attrs);
+
 #endif /*__PARSER_INTERNAL_H__ */
