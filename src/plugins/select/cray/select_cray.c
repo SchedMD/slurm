@@ -316,19 +316,15 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
-	/*
-	 * Convention:	this function may be called also from stepdmgr, to
-	 *		release the ALPS reservation of a batch job. In this
-	 *		case, job_ptr only has minimal information and sets
-	 *		job_state == NO_VAL to distinguish this call from one
-	 *		done by slurmctld. It also sets batch_flag == 0, which
-	 *		means that we need to confirm only if batch_flag is 0,
-	 *		and execute the other_job_fini() only in slurmctld.
-	 */
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
-	if (!job_ptr->batch_flag && do_basil_release(job_ptr) != SLURM_SUCCESS)
+	if (do_basil_release(job_ptr) != SLURM_SUCCESS)
 		return SLURM_ERROR;
+	/*
+	 * Convention: like select_p_job_ready, may be called also from
+	 *             stepdmgr, where job_state == NO_VAL is used to
+	 *             distinguish the context from that of slurmctld.
+	 */
 	if (job_ptr->job_state == (uint16_t)NO_VAL)
 		return SLURM_SUCCESS;
 	return other_job_fini(job_ptr);
