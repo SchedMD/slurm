@@ -8,7 +8,9 @@ EXTRA_DIST = \
 	etc_init_d_munge		\
 	etc_sysconfig_slurm		\
 	libalps_test_programs.tar.gz	\
-	opt_modulefiles_slurm
+	munge_build_script.sh		\
+	opt_modulefiles_slurm		\
+	slurm-build-script.sh
 
 if BUILD_SRUN2APRUN
   bin_SCRIPTS = srun

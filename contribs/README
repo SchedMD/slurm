@@ -21,10 +21,21 @@ of the SLURM contribs distribution follows:
                              * setting the APBASIL in the libalps/Makefile, e.g.
                                APBASIL := slurm/alps_simulator/apbasil.sh
                              To use, extract the files then:
-                             cd libasil/
-                             make -C alps_tests all   # runs basil parser tests
-                             make -C sdb_tests  all   # checks if database routines work
+                             > cd libasil/
+                             > make -C alps_tests all   # runs basil parser tests
+                             > make -C sdb_tests  all   # checks if database routines work
+                             A tool named tuxadmin is also also included. When
+                             executed with the -s or --slurm.conf option, this
+                             contact the SDB to generate system-specific information
+                             needed in slurm.conf (e.g. "NodeName=nid..." and
+                             "PartitionName= Nodes=nid... MaxNodes=...".
+     munge_build_script.sh - script to build Munge from sources for Cray system
      opt_modulefiles_slurm - enables use of Munge as soon as built
+     slurm-build-script.sh - script to build SLURM from sources for Cray system.
+                             set LIBROOT and SLURM_SRC environment variables
+                             before use, for example:
+                             LIBROOT=/ufs/slurm/build
+                             SLURM_SRC=${SLURM_SRC:-${LIBROOT}/slurm-2.3.0-0.pre4}
      srun.pl               - A perl wrapper for the aprun command. Use of this
                              wrapper requires that SLURM's perlapi be installed.
                              Execute configure with the --with-srun2aprun option

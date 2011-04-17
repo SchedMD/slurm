@@ -312,7 +312,9 @@ EXTRA_DIST = \
 	etc_init_d_munge		\
 	etc_sysconfig_slurm		\
 	libalps_test_programs.tar.gz	\
-	opt_modulefiles_slurm
+	munge_build_script.sh		\
+	opt_modulefiles_slurm		\
+	slurm-build-script.sh
 
 @BUILD_SRUN2APRUN_TRUE@bin_SCRIPTS = srun
 _perldir = $(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
