@@ -146,6 +146,8 @@ enum basil_error {
 	BE_SYNTAX,
 	BE_BACKEND,
 	BE_UNKNOWN,
+	/* custom errors start here */
+	BE_NO_RESID,
 	BE_MAX,
 	/* (b) bit masks for additional information */
 	BE_ERROR_TYPE_MASK = 0x00FF,

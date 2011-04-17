@@ -591,6 +591,14 @@ static void end_handler(void *user_data, const XML_Char *el)
 			ud->bp->mdata.inv->batch_total++;
 		}
 		ud->bp->mdata.inv->nodes_total++;
+	} else if (end_tag == BT_RESPDATA && ud->error) {
+		/*
+		 * Re-classify errors. The error message has been added by the
+		 * cdata handler nested inside the ResponseData tags.
+		 * Match substrings that are common to all Basil versions.
+		 */
+		if (strstr(ud->bp->msg, " No entry for resId "))
+			ud->error = BE_NO_RESID;
 	}
 }
 
@@ -661,8 +669,12 @@ int parse_basil(struct basil_parse_data *bp, int fd)
 	close(fd);
 	XML_ParserFree(parser);
 
-	if (ud.error != BE_NONE)
+	switch (ud.error) {
+	case BE_NO_RESID:	/* resId no longer exists */
+	case BE_NONE:		/* no error: bp->msg is empty */
+		break;
+	default:
 		error("%s", bp->msg);
-
+	}
 	return -ud.error;
 }

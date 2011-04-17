@@ -48,6 +48,7 @@ const char *be_names[BE_MAX] = {
 	[BE_PARSER]	= "PARSER",
 	[BE_SYNTAX]	= "SYNTAX",
 	[BE_BACKEND]	= "BACKEND",
+	[BE_NO_RESID]	= "BACKEND",	/* backend can not locate resId */
 	[BE_UNKNOWN]	= "UNKNOWN"
 };
 
@@ -58,6 +59,7 @@ const char *be_names_long[BE_MAX] = {
 	[BE_PARSER]	= "XML parser error",
 	[BE_SYNTAX]	= "improper XML content or structure",
 	[BE_BACKEND]	= "ALPS backend error",
+	[BE_NO_RESID]	= "ALPS resId entry does not (or no longer) exist",
 	[BE_UNKNOWN]	= "UNKNOWN ALPS ERROR"
 };
 
