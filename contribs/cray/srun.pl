@@ -188,6 +188,21 @@ foreach (keys %ENV) {
 	$wc_key = $ENV{$_}		if $_ eq "SLURM_WCKEY";
 }
 
+# The perl GetOptions function does not support a single letter option
+# followed by an argument without a space. This logic adds a space. For
+# example, "-N2" is changed into "-N 2".
+my ($i, $len);
+for ($i = 0; $i < $#ARGV; $i++) {
+	$len = length($ARGV[$i]);
+	if (($len > 2) &&
+	    (substr($ARGV[$i], 0, 1) eq "-" && substr($ARGV[$i], 2, 1) ne " ") &&
+	    ((substr($ARGV[$i], 1, 1) ge "a" && substr($ARGV[$i], 1, 1) le "z") ||
+	     (substr($ARGV[$i], 1, 1) ge "A" && substr($ARGV[$i], 1, 1) le "Z"))) {
+		splice(@ARGV, $i, 1, substr($ARGV[$i], 0, 2), substr($ARGV[$i], 2));
+	}
+
+}
+
 GetOptions(
 	'A|account=s'			=> \$account,
 	'acctg-freq=i'			=> \$acctg_freq,
@@ -539,6 +554,7 @@ sub convert_mb_format {
 	} else {
 		print "don't know what to do with suffix $suffix\n";
 		return;
+
 	}
 
 	return $amount;
@@ -567,12 +583,6 @@ by using the B<--alps> option: B<-a>, B<-b>, B<-B>, B<-cc>, B<-f>, B<-r>, and
 B<-sl>.  Many other options do not exact functionality matches, but duplication
 srun behavior to the extent possible.
 
-This srun implementation requires a space or equal sign between single
-letter options and their arguments. For example "-N 2" and "-N=2" both work,
-but "-N2" does not work. This is due to limitations in Perl's Getopt::Long
-function used for parsing, although some versions of Perl may not have
-this restriction.
-q
 =over 4
 
 =item B<-A> | B<--account=account>
