@@ -2743,8 +2743,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 */
 	if (job_ptr->priority == NO_VAL)
 		_set_job_prio(job_ptr);
-	else if (job_ptr->priority == 0)
-		job_ptr->state_reason = WAIT_HELD_USER;
 
 	if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS)
 		independent = false;
@@ -3539,6 +3537,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	List license_list = NULL;
 	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
+	uint32_t user_submit_priority;
 	uint16_t limit_set_max_cpus = 0;
 	uint16_t limit_set_max_nodes = 0;
 	uint16_t limit_set_min_cpus = 0;
@@ -3557,6 +3556,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
+	user_submit_priority = job_desc->priority;
 
 	error_code = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid);
 	if (error_code != SLURM_SUCCESS)
@@ -3828,6 +3828,12 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	 * after we see if the job is eligible or not. So we want
 	 * NO_VAL if not set. */
 	job_ptr->priority = job_desc->priority;
+	if (job_ptr->priority == 0) {
+		if (user_submit_priority == 0)
+			job_ptr->state_reason = WAIT_HELD_USER;
+		else
+			job_ptr->state_reason = WAIT_HELD;
+	}
 
 	error_code = update_job_dependency(job_ptr, job_desc->dependency);
 	if (error_code != SLURM_SUCCESS)
