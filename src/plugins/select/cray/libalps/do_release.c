@@ -83,6 +83,7 @@ int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
  */
 int basil_safe_release(int32_t rsvn_id, struct basil_inventory *inv)
 {
+	int rc = basil_release(rsvn_id);
 	/*
 	 * If there are still any live application IDs (APIDs) associated with
 	 * @rsvn_id, the RELEASE command will be without effect, since ALPS
@@ -92,7 +93,9 @@ int basil_safe_release(int32_t rsvn_id, struct basil_inventory *inv)
 	 * order to clean up orphaned reservations, try to terminate the APIDs
 	 * manually using apkill(1). If this step fails, fall back to releasing
 	 * the reservation normally and hope that ALPS resolves the situation.
+	 * To prevent that any subsequent aprun lines get started while the
+	 * apkill of the current one is still in progress, do the RELEASE first.
 	 */
 	basil_signal_apids(rsvn_id, SIGKILL, inv);
-	return basil_release(rsvn_id);
+	return rc;
 }
