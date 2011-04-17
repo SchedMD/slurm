@@ -5,8 +5,9 @@
 AUTOMAKE_OPTIONS = foreign
 
 EXTRA_DIST = \
-	etc_init_d_munge	\
-	etc_sysconfig_slurm	\
+	etc_init_d_munge		\
+	etc_sysconfig_slurm		\
+	libalps_test_programs.tar.gz	\
 	opt_modulefiles_slurm
 
 if BUILD_SRUN2APRUN

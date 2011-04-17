@@ -10,7 +10,17 @@ of the SLURM contribs distribution follows:
   cray                [Tools for use on Cray systems]
      etc_init_d_munge      - /etc/init.d/munge script for use with Munge
      etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
+     libalps_test_programs.tar.gz - set of tools to verify ALPS/BASIL support
+                             logic. To use, extract the files then:
+                             cd libasil/
+                             make -C alps_tests all   # runs basil parser tests
+                             make -C sdb_tests  all   # checks if database routines work
      opt_modulefiles_slurm - enables use of Munge as soon as built
+     srun.pl               - A perl wrapper for the aprun command. Use of this
+                             wrapper requires that SLURM's perlapi be installed.
+                             Execute configure with the --with-srun2aprun option
+                             to build and install this instead of SLURM's normal
+                             srun command.
 
   env_cache_builder.c [C program]
      This program will build an environment variable cache file for specific 
