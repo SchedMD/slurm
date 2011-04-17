@@ -3556,6 +3556,16 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
+	/*
+	 * Check user permission for negative 'nice' and non-0 priority values
+	 * (both restricted to SlurmUser) before running the job_submit plugin.
+	 */
+	if ((submit_uid != 0) && (submit_uid != slurmctld_conf.slurm_user_id)) {
+		if (job_desc->priority != 0)
+			job_desc->priority = NO_VAL;
+		if (job_desc->nice < NICE_OFFSET)
+			job_desc->nice = NICE_OFFSET;
+	}
 	user_submit_priority = job_desc->priority;
 
 	error_code = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid);
@@ -3823,16 +3833,20 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->qos_ptr = (void *) qos_ptr;
 	job_ptr->qos_id = qos_rec.id;
 
-	/* already confirmed submit_uid==0 */
-	/* If the priority isn't given we will figure it out later
-	 * after we see if the job is eligible or not. So we want
-	 * NO_VAL if not set. */
+	/*
+	 * Permission for altering priority was confirmed above. The job_submit
+	 * plugin may have set the priority directly or put the job on hold. If
+	 * the priority is not given, we will figure it out later after we see
+	 * if the job is eligible or not. So we want NO_VAL if not set.
+	 */
 	job_ptr->priority = job_desc->priority;
 	if (job_ptr->priority == 0) {
 		if (user_submit_priority == 0)
 			job_ptr->state_reason = WAIT_HELD_USER;
 		else
 			job_ptr->state_reason = WAIT_HELD;
+	} else if (job_ptr->priority != NO_VAL) {
+		job_ptr->direct_set_prio = true;
 	}
 
 	error_code = update_job_dependency(job_ptr, job_desc->dependency);
@@ -5067,13 +5081,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->nice == (uint16_t) NO_VAL)
 		job_desc_msg->nice = NICE_OFFSET;
-	if ((submit_uid != 0) &&  /* only root or SlurmUser can set job prio */
-	    (submit_uid != slurmctld_conf.slurm_user_id)) {
-		if (job_desc_msg->priority != 0)
-			job_desc_msg->priority = NO_VAL;
-		if (job_desc_msg->nice < NICE_OFFSET)
-			job_desc_msg->nice = NICE_OFFSET;
-	}
 
 	if (job_desc_msg->pn_min_memory == NO_VAL) {
 		/* Default memory limit is DefMemPerCPU (if set) or no limit */
