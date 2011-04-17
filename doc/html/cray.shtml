@@ -16,7 +16,7 @@ allocation in ALPS.
 Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
 allocation.
 The resource allocation is terminated once the the batch script or the
-<i>salloc</i> command terminate.
+<i>salloc</i> command terminates.
 Alternately there is an <i>aprun</i> wrapper distributed with SLURM in
 <i>contribs/cray/srun</i> which will translate <i>srun</i> options
 into the equivalent <i>aprun</i> options. This wrapper will also execute
@@ -68,6 +68,9 @@ are two SDK iso files for SDK)</li>
 <li>libexpat-devel-2.0.xxx</li>
 <li>cray-MySQL-devel-enterprise-5.0.64 (this should be on the Cray iso)</li>
 </ul></p>
+
+<p>ALl Cray-specific PrgEnv and compiler modules should be removed and root
+privileges will be required to install these files.</p>
 
 <h3>Create a build root</h3>
 
@@ -139,7 +142,7 @@ reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
 the process using an <i>init.d</i> script distributed with the Munge as
 <i>src/etc/munge.init</i>. This is installed by</p>
 <ul>
-<li>cp munge.init /rr/current/software/munge</li>
+<li>scp contribs/cray/etc_init_d_munge boot:/rr/current/software/munge</li>
 <li>xtopview -c login</li>
 <li>cp /software/munge /etc/init.d</li>
 <li>chkconfig munge on</li>
@@ -181,31 +184,126 @@ plugin provides an interface to ALPS plus issues calls to the
 algorithm to allocate whole nodes to jobs (rather than individual sockets,
 cores or threads).</p>
 
-<p>The last Cray-specific configuration parameter controls the system
-topology information used to optimize resource allocations and must be
-configured as <i>TopoType=topology/node_rank</i>.
-The <i>topology/node_rank</i> plugin orders the nodes such that nodes
-which are close in three dimensional space a put close in one dimensional
-space. Since SLURM uses a best-fit algorithm in one dimensional space,
-the resulting job allocations should achieve good locality in three
-dimensional space also.
-For more information about how this is achieved, see SLURM's
-<a href="topology.html#topo_3d">Topology Guide</a>.</p>
+<p>Note that the system topology is based upon information gathered from
+the ALPS database and is based upon the ALPS_NIDORDER configuration in
+<i>/etc/sysconfig/alps</i>. Excerpts of a <i>slurm.conf</i> file for
+use on a Cray systems follows:</p>
 
 <pre>
-# slurm.conf for Cray XT system of with 512 nodes with the first 80 nodes
-# reserved for login, service, interactive, etc. use
-# Parameters removed here
+#---------------------------------------------------------------------
+# PLUGINS
+#---------------------------------------------------------------------
+# Network topology (handled internally by ALPS)
+TopologyPlugin=topology/none
+
+# Scheduling
+SchedulerType=sched/backfill
+
+# Node selection: use the special-purpose "select/cray" plugin.
+# Internally this uses select/linar, i.e. nodes are always allocated
+# in units of nodes (other allocation is currently not possible, since
+# ALPS does not yet allow to run more than 1 executable on the same
+# node, see aprun(1), section LIMITATIONS).
+#
+# Add CR_memory as parameter to support --mem/--mem-per-cpu.
 SelectType=select/cray
-TopoType=topology/node_rank
-FrontendName=front_end[00-03]
-NodeName=nid[00080-00511] CPUs=8 RealMemory=2048
-PartitionName=batch Nodes=nid[00080-00511] Default=Yes State=UP
+SelectTypeParameters=CR_Memory
+
+# How process IDs (parent/child) are tracked:
+# proctrack/sgi_job is possible on Cray XT/XE since Cray provides
+# libjob.so as part of its job/CSA package. However, the first job
+# running on a host will always produce a 0 container ID, due to the
+# way 64 bit job IDs are configured on Cray (the upper 32 bits are a
+# host Id, which get truncated by slurm). The Linux fallback /proc
+# can be used by enabling 'proctrac/linuxproc'.
+ProctrackType=proctrack/sgi_job
+
+#---------------------------------------------------------------------
+# PATHS
+#---------------------------------------------------------------------
+SlurmdSpoolDir=/ufs/slurm/spool
+StateSaveLocation=/ufs/slurm/spool/state
+
+# main logfile
+SlurmctldLogFile=/ufs/slurm/log/slurmctld.log
+# slurmd logfiles (using %h for hostname)
+SlurmdLogFile=/ufs/slurm/log/%h.log
+
+# PIDs
+SlurmctldPidFile=/var/run/slurmctld.pid
+SlurmdPidFile=/var/run/slurmd.pid
+
+#---------------------------------------------------------------------
+# COMPUTE NODES
+#---------------------------------------------------------------------
+# Return DOWN nodes to service when e.g. slurmd has been unresponsive
+ReturnToService=1
+
+# Controls how a node's configuration specifications in slurm.conf are
+# used.
+# 0 - use hardware configuration (must agree with slurm.conf)
+# 1 - use slurm.conf, nodes with fewer resources are marked DOWN
+# 2 - use slurm.conf, but do not mark nodes down as in (1)
+FastSchedule=2
+
+# Per-node configuration for PALU AMD G34 dual-socket "Magny Cours"
+# Compute Nodes. We deviate from slurm's idea of a physical socket
+# here, since the Magny Cours hosts two NUMA nodes each, which is
+# also visible in the ALPS inventory (4 Segments per node, each
+# containing 6 'Processors'/Cores).
+NodeName=DEFAULT Sockets=4 CoresPerSocket=6 ThreadsPerCore=1
+NodeName=DEFAULT RealMemory=32000 State=UNKNOWN
+
+# List the nodes of the compute partition below (service nodes are not
+# allowed to appear)
+NodeName=nid00[002-013,018-159,162-173,178-189]
+
+# Frontend nodes: these should not be available to user logins, but
+#                 have all filesystems mounted that are also 
+#                 available on a login node (/scratch, /home, ...).
+FrontendName=palu[7-9]
+
+#---------------------------------------------------------------------
+# ENFORCING LIMITS
+#---------------------------------------------------------------------
+# Enforce the use of associations: {associations, limits, wckeys}
+AccountingStorageEnforce=limits
+
+# Do not propagate any resource limits from the user's environment to
+# the slurmd
+PropagateResourceLimits=NONE
+
+#---------------------------------------------------------------------
+# Resource limits for memory allocation:
+# * the Def/Max 'PerCPU' and 'PerNode' variants are mutually exclusive;
+# * use the 'PerNode' variant for both default and maximum value, since
+#   - slurm will automatically adjust this value depending on
+#     --ntasks-per-node
+#   - if using a higher per-cpu value than possible, salloc will just
+#     block.
+#--------------------------------------------------------------------
+DefMemPerNode=32000
+MaxMemPerNode=32000
+
+#---------------------------------------------------------------------
+# PARTITIONS
+#---------------------------------------------------------------------
+# defaults common to all partitions
+PartitionName=DEFAULT Nodes=nid00[002-013,018-159,162-173,178-189]
+PartitionName=DEFAULT MaxNodes=178
+PartitionName=DEFAULT Shared=EXCLUSIVE State=UP DefaultTime=60
+
+# "User Support" partition with a higher priority
+PartitionName=usup Hidden=YES Priority=10 MaxTime=720 AllowGroups=staff
+
+# normal partition available to all users
+PartitionName=day Default=YES Priority=1 MaxTime=01:00:00
 </pre>
 
 <p>SLURM supports an optional <i>cray.conf</i> file containing Cray-specific
-configuration parameters. This file must be located in the same directory
-as the <i>slurm.conf</i> file.</p>
+configuration parameters. <b>This file is NOT needed for production systems</b>,
+but is provided for advanced configurations. If used, <i>cray.conf</i> must be
+located in the same directory as the <i>slurm.conf</i> file.</p>
 
 <dl>
 <dt><b>AlpsDir</b>
@@ -222,16 +320,19 @@ The default value is <i>/usr/bin/apkill</i>.
 The default value is <i>XTAdmin</i>.
 <dt><b>SDBhost</b>
 <dd>Hostname of the database server.
-The default value is <i>sdb</i>.
+The default value is based upon the contents of the 'my.cnf' file used to
+store default database access information and that defaults to user 'sdb'.
 <dt><b>SDBpass</b>
 <dd>Password used to access the ALPS database.
-The default value is NULL.
+The default value is based upon the contents of the 'my.cnf' file used to
+store default database access information and that defaults to user 'basic'.
 <dt><b>SDBport</b>
 <dd>Port used to access the ALPS database.
 The default value is 0.
 <dt><b>SDBuser</b>
 <dd>Name of user used to access the ALPS database.
-The default value is NULL.
+The default value is based upon the contents of the 'my.cnf' file used to
+store default database access information and that defaults to user 'basic'.
 </dl></p>
 
 <pre>
@@ -268,12 +369,8 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
-<p>Supported by the
-<a href="http://www.ornl.gov/ornlhome/high_performance_computing.shtml">
-Oak Ridge National Laboratory Extreme Scale Systems Center</a></p>
-
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2011</p></td>
+<p style="text-align:center;">Last modified 16 April 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
