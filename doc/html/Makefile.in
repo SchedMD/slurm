@@ -304,7 +304,42 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+@HAVE_MAN2HTML_TRUE@man_html = \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sacct.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sacctmgr.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/salloc.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sattach.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sbatch.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sbcast.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/scancel.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/scontrol.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sinfo.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/slurm.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/smap.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sprio.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/squeue.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sreport.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/srun.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/srun_cr.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sshare.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sstat.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/strigger.html \
+@HAVE_MAN2HTML_TRUE@	../man/man1/sview.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/bluegene.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/cgroup.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/gres.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/slurm.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/slurmdbd.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/topology.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man5/wiki.conf.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmctld.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmd.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmdbd.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/slurmstepd.html \
+@HAVE_MAN2HTML_TRUE@	../man/man8/spank.html
+
 generated_html = \
+	${man_html} \
 	accounting.html \
 	accounting_storageplugins.html \
 	api.html \
@@ -374,7 +409,6 @@ generated_html = \
 
 html_DATA = \
 	${generated_html} \
-	${man_html} \
 	allocation_pies.gif \
 	arch.gif \
 	coding_style.pdf \
@@ -401,7 +435,7 @@ html_DATA = \
 	topo_ex2.gif \
 	usage_pies.gif
 
-MOSTLYCLEANFILES = ${generated_html} ${man_html}
+MOSTLYCLEANFILES = ${generated_html}
 EXTRA_DIST = $(html_DATA)
 SUFFIXES = .html
 all: all-am
@@ -616,40 +650,6 @@ uninstall-am: uninstall-htmlDATA
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	uninstall uninstall-am uninstall-htmlDATA
 
-
-@HAVE_MAN2HTML_TRUE@	man_html = \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sacct.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sacctmgr.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/salloc.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sattach.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sbatch.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sbcast.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/scancel.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/scontrol.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sinfo.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/slurm.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/smap.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sprio.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/squeue.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sreport.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/srun.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/srun_cr.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sshare.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sstat.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/strigger.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/sview.html \
-@HAVE_MAN2HTML_TRUE@	../man/man5/bluegene.conf.html \
-@HAVE_MAN2HTML_TRUE@	../man/man5/cgroup.conf.html \
-@HAVE_MAN2HTML_TRUE@	../man/man5/gres.conf.html \
-@HAVE_MAN2HTML_TRUE@	../man/man5/slurm.conf.html \
-@HAVE_MAN2HTML_TRUE@	../man/man5/slurmdbd.conf.html \
-@HAVE_MAN2HTML_TRUE@	../man/man5/topology.conf.html \
-@HAVE_MAN2HTML_TRUE@	../man/man5/wiki.conf.html \
-@HAVE_MAN2HTML_TRUE@	../man/man8/slurmctld.html \
-@HAVE_MAN2HTML_TRUE@	../man/man8/slurmd.html \
-@HAVE_MAN2HTML_TRUE@	../man/man8/slurmdbd.html \
-@HAVE_MAN2HTML_TRUE@	../man/man8/slurmstepd.html \
-@HAVE_MAN2HTML_TRUE@	../man/man8/spank.html
 @HAVE_MAN2HTML_FALSE@	man_html =
 
 .shtml.html:

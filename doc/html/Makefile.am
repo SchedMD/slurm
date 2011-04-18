@@ -2,7 +2,7 @@
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
 if HAVE_MAN2HTML
-	man_html = \
+man_html = \
 	../man/man1/sacct.html \
 	../man/man1/sacctmgr.html \
 	../man/man1/salloc.html \
@@ -40,6 +40,7 @@ else
 endif
 
 generated_html = \
+	${man_html} \
 	accounting.html \
 	accounting_storageplugins.html \
 	api.html \
@@ -109,7 +110,6 @@ generated_html = \
 
 html_DATA = \
 	${generated_html} \
-	${man_html} \
 	allocation_pies.gif \
 	arch.gif \
 	coding_style.pdf \
@@ -136,7 +136,7 @@ html_DATA = \
 	topo_ex2.gif \
 	usage_pies.gif
 
-MOSTLYCLEANFILES = ${generated_html} ${man_html}
+MOSTLYCLEANFILES = ${generated_html}
 
 EXTRA_DIST = $(html_DATA)
 
