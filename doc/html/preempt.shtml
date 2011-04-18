@@ -136,7 +136,7 @@ can preempt jobs from lower priority partitions.</LI>
 <LI><I>preempt/qos</I> indicates that jobs from one Quality Of Service (QOS)
 can preempt jobs from a lower QOS. These jobs can be in the same partition
 or different partitions. PreemptMode must be set to CANCEL, CHECKPOINT,
-SUSPEND or REQUEUE. This option requires the use of a database identifying
+or REQUEUE. This option requires the use of a database identifying
 available QOS and their preemption rules. </LI>
 </UL>
 </LI>
