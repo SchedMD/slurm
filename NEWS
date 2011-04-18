@@ -172,6 +172,8 @@ documents those changes that are of interest to users and admins.
     different connection types (i.e. one torus, one mesh).
  -- Fix memory leak if MPI ports are reserved (for OpenMPI) and srun's
     --resv-ports option is used.
+ -- Fix some anomalies in select/cons_res task layout when using the 
+    --cpus-per-task option. Patch from Martin Perry, Bull.
 
 * Changes in SLURM 2.2.4
 ========================
