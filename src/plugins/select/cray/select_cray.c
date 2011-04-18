@@ -53,6 +53,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "src/common/slurm_xlator.h"	/* Must be first */
 #include "other_select.h"
 #include "basil_interface.h"
 #include "cray_config.h"

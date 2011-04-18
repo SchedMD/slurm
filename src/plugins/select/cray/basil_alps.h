@@ -11,12 +11,6 @@
 # include "config.h"
 #endif
 
-#include "src/common/slurm_xlator.h"	/* Must be first */
-#include "src/common/log.h"
-#include "src/common/fd.h"
-#include "src/common/xassert.h"
-#include "cray_config.h"
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -36,6 +30,11 @@
 #  include <expat.h>
 #  include <mysql.h>
 #endif
+
+#include "src/common/log.h"
+#include "src/common/fd.h"
+#include "src/common/xassert.h"
+#include "cray_config.h"
 
 /*
  * Limits
@@ -73,6 +72,7 @@ enum basil_version {
 	BV_1_2,		/* Basil 1.1 CLE 2.x variant (XT/SeaStar)   */
 	BV_3_1,		/* Basil 1.1 CLE 3.x (XE/Gemini support)    */
 	BV_4_0,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
+	BV_4_1,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
 	BV_MAX
 };
 
@@ -133,6 +133,8 @@ enum basil_element {
 #define BT_3_1_MAX		(BT_RESVDNODE + 1)	/* End of Basil 3.1 */
 	/* FIXME: the Basil 4.0 interface is not yet fully released */
 #define BT_4_0_MAX              BT_3_1_MAX              /* End of Basil 4.0 */
+	/* FIXME: the Basil 4.1 interface is not yet fully released */
+#define BT_4_1_MAX              BT_3_1_MAX              /* End of Basil 4.1 */
 	BT_MAX			/* End of Basil tags */
 };
 

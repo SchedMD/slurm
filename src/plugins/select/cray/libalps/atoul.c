@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <ctype.h>
 
 /**
  * atou64 - Convert string into u64
@@ -51,4 +52,31 @@ int atotime_t(const char *str, time_t *val)
 		return -1;
 	*val = tmp;
 	return 1;
+}
+
+/**
+ * parse_version_string  -  extract release numbers from version string
+ * @vs:    version string satisfying ^D*\d+.(\d*|\d+.\d*)
+ * @major: major number to extract
+ * @minor: minor number to extract (defaults to 0 if not given)
+ * @micro: micro number to extract (defaults to 0 if not given)
+ * Returns 0 if ok (@vs satisfies above regexp), else -1 to indicate error.
+ */
+int parse_version_string(const char *vs, unsigned *major,
+			 unsigned *minor, unsigned *micro)
+{
+	if (vs == NULL)
+		return -1;
+	while (*vs && !isdigit(*vs))
+		vs++;
+	for (*major = 0; isdigit(*vs); vs++)
+		*major = *major * 10 + *vs - '0';
+	if (*vs == '\0' || *vs != '.' || (*++vs && !isdigit(*vs)))
+		return -1;
+	for (*minor = *micro = 0; isdigit(*vs); vs++)
+		*minor = *minor * 10 + *vs - '0';
+	if (*vs == '.')
+		while (isdigit(*++vs))
+			*micro = *micro * 10 + *vs - '0';
+	return 0;
 }

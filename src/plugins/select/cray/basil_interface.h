@@ -14,7 +14,6 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
-#include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/log.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
