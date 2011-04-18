@@ -82,7 +82,11 @@ struct switch_record *switch_record_table;
 int switch_record_cnt;
 #endif
 
-int select_cray_dim_size[3] = {-1, -1, -1};
+/* All current (2011) XT/XE installations have a maximum dimension of 3,
+ * smaller systems deploy a 2D Torus which has no connectivity in
+ * X-dimension.  Just incase SYSTEM_DIMENSIONS is ever set to 2
+ * instead of 3 we will initialize them later in the ba_init function. */
+static int select_cray_dim_size[SYSTEM_DIMENSIONS] = {-1};
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -741,23 +745,49 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 {
+	int i, j, offset;
+
 	if (select_cray_dim_size[0] == -1) {
 		node_info_t *node_ptr;
-		int i, j, offset;
+
+		/* init the rest of the dim sizes. All current (2011)
+		 * XT/XE installations have a maximum dimension of 3,
+		 * smaller systems deploy a 2D Torus which has no
+		 * connectivity in X-dimension.  Just incase they
+		 * decide to change it where we only get 2 instead of
+		 * 3 we will initialize it later. */
+		for (i = 1; i < SYSTEM_DIMENSIONS; i++)
+			select_cray_dim_size[i] = -1;
 
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &(node_info_ptr->node_array[i]);
 			if (!node_ptr->node_addr ||
-			    (strlen(node_ptr->node_addr) != 3))
+			    (strlen(node_ptr->node_addr) != SYSTEM_DIMENSIONS))
 				continue;
-			for (j = 0; j < 3; j++) {
+			for (j = 0; j < SYSTEM_DIMENSIONS; j++) {
 				offset = select_char2coord(
 					node_ptr->node_addr[j]);
-				select_cray_dim_size[j] = MAX((offset+1),
-						select_cray_dim_size[j]);
+				select_cray_dim_size[j] =
+					MAX((offset+1),
+					    select_cray_dim_size[j]);
 			}
 		}
 	}
+
+	/*
+	 * Override the generic setup of dim_size made in _setup_cluster_rec()
+	 * FIXME: use a better way, e.g. encoding the 3-dim triplet as a
+	 *        string which gets stored in a database (event_table?) entry.
+	 */
+	if (working_cluster_rec) {
+		xfree(working_cluster_rec->dim_size);
+		working_cluster_rec->dim_size = xmalloc(sizeof(int) *
+							SYSTEM_DIMENSIONS);
+		for (j = 0; j < SYSTEM_DIMENSIONS; j++)
+			working_cluster_rec->dim_size[j] =
+				select_cray_dim_size[j];
+	}
+       
 	other_ba_init(node_info_ptr, sanity_check);
 }
 
