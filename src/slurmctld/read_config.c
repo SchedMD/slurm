@@ -1520,7 +1520,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			excise_node_from_job(job_ptr, node_ptr);
 			job_post_resize_acctg(job_ptr);
 			accounting_enforce = save_accounting_enforce;
-		} else if (IS_NODE_DOWN(node_ptr)) {
+		} else if (IS_NODE_DOWN(node_ptr) && IS_JOB_RUNNING(job_ptr)) {
 			time_t now = time(NULL);
 			info("Killing job %u on DOWN node %s",
 			     job_ptr->job_id, node_ptr->name);
