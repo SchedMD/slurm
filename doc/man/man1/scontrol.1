@@ -671,7 +671,8 @@ associated with the node(s) allocated to the job.
 .TP
 \fIPreemptTime\fP
 Time at which job was signaled that it was selected for preemption.
-(Meaningful only for PreemptMode=CANCEL)
+(Meaningful only for PreemptMode=CANCEL and the partition or QOS
+with which the job is associated has a GraceTime value designated.)
 .TP
 \fIPreSusTime\fP
 Time the job ran prior to last suspend.
