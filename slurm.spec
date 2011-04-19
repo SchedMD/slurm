@@ -22,6 +22,7 @@
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
+# --with-srun2aprun  %_with_srun2aprun  1    build srun as aprun wrapper
 
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacors
@@ -43,6 +44,7 @@
 %slurm_without_opt debug
 %slurm_without_opt elan
 %slurm_without_opt sun_const
+%slurm_without_opt srun2aprun
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
@@ -287,6 +289,15 @@ Group: Development/System
 Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
+
+%if %{slurm_with srun2aprun}
+%package srun2aprun
+Summary: SLURM srun command is a wrapper for Cray/ALPS aprun command.
+Group: Development/System
+Requires: slurm-perlapi
+%description srun2aprun
+SLURM srun command is a wrapper for Cray/ALPS aprun command.
+%endif
 
 %package sjobexit
 Summary: SLURM job exit code management tools.
@@ -535,7 +546,26 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc doc/html
-%{_bindir}/s*
+%{_bindir}/sacct
+%{_bindir}/sacctmgr
+%{_bindir}/salloc
+%{_bindir}/sattach
+%{_bindir}/sbatch
+%{_bindir}/sbcast
+%{_bindir}/scancel
+%{_bindir}/scontrol
+%{_bindir}/sinfo
+%{_bindir}/smap*
+%{_bindir}/sprio
+%{_bindir}/squeue
+%{_bindir}/sreport
+%if ! %{slurm_with srun2aprun}
+%{_bindir}/srun
+%endif
+%{_bindir}/sshare
+%{_bindir}/sstat
+%{_bindir}/strigger
+%{_bindir}/sview*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
@@ -716,6 +746,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/qstat
 %{_bindir}/qsub
 %{_bindir}/mpiexec
+#############################################################################
+
+%if %{slurm_with srun2aprun}
+%files srun2aprun
+
+%defattr(-,root,root)
+%{_bindir}/srun
+%endif
 #############################################################################
 
 %files sjobexit
