@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
  -- NOTE: THERE HAS BEEN A NEW FIELD ADDED TO THE JOB STATE FILE. UPGRADES FROM
     VERSION 2.3.0-PRE4 WILL RESULT IN LOST JOBS UNLESS THE "orig_dependency"
     FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC.
+ -- Moving to github
 
 * Changes in SLURM 2.3.0.pre4
 =============================
