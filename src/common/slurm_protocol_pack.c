@@ -4312,6 +4312,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->max_job_cnt, buffer);
 		pack32(build_ptr->max_job_id, buffer);
 		pack32(build_ptr->max_mem_per_cpu, buffer);
+		pack32(build_ptr->max_step_cnt, buffer);
 		pack16(build_ptr->max_tasks_per_node, buffer);
 		pack16(build_ptr->min_job_age, buffer);
 		packstr(build_ptr->mpi_default, buffer);
@@ -4945,6 +4946,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->max_job_cnt, buffer);
 		safe_unpack32(&build_ptr->max_job_id, buffer);
 		safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
+		safe_unpack32(&build_ptr->max_step_cnt, buffer);
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpack16(&build_ptr->min_job_age, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
@@ -5213,6 +5215,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->max_job_cnt, buffer);
 		build_ptr->max_job_id = DEFAULT_MAX_JOB_ID;
 		safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
+		build_ptr->max_step_cnt = DEFAULT_MAX_STEP_COUNT;
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpack16(&build_ptr->min_job_age, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
@@ -5485,6 +5488,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		build_ptr->max_job_id = DEFAULT_MAX_JOB_ID;
 		safe_unpack16(&max_job_cnt, buffer);
 		safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
+		build_ptr->max_step_cnt = DEFAULT_MAX_STEP_COUNT;
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpack16(&build_ptr->min_job_age, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,

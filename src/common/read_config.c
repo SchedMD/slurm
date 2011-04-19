@@ -208,6 +208,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxJobId", S_P_UINT32},
 	{"MaxMemPerCPU", S_P_UINT32},
 	{"MaxMemPerNode", S_P_UINT32},
+	{"MaxStepCount", S_P_UINT32},
 	{"MaxTasksPerNode", S_P_UINT16},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
@@ -1859,9 +1860,10 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
-	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->max_job_cnt		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->max_job_id		= NO_VAL;
 	ctl_conf_ptr->max_mem_per_cpu           = 0;
+	ctl_conf_ptr->max_step_cnt		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
@@ -2223,6 +2225,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl) &&
 	    (conf->max_job_cnt < 1))
 		fatal("MaxJobCount=%u, No jobs permitted", conf->max_job_cnt);
+	if (s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl) &&
+	    (conf->max_step_cnt < 1)) {
+		fatal("MaxStepCount=%u, No steps permitted",
+		      conf->max_step_cnt);
+	}
 
 	if (!s_p_get_string(&conf->authtype, "AuthType", hashtbl))
 		conf->authtype = xstrdup(DEFAULT_AUTH_TYPE);
@@ -2423,6 +2430,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				 "MaxMemPerNode", hashtbl)) {
 		conf->max_mem_per_cpu = DEFAULT_MAX_MEM_PER_CPU;
 	}
+
+	if (!s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl))
+		conf->max_step_cnt = DEFAULT_MAX_STEP_COUNT;
 
 	if (!s_p_get_uint16(&conf->max_tasks_per_node, "MaxTasksPerNode",
 			    hashtbl)) {

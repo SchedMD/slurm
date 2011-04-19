@@ -31,7 +31,9 @@ documents those changes that are of interest to users and admins.
  -- Added contribs/cray/libalps_test_programs.tar.gz with tools to validate
     SLURM's logic used to support Cray systems.
  -- Create RPM for srun command that is a wrapper for the Cray/ALPS aprun
-    command. Dependent upon .rpmmacros parameter of "%_with_srun2aprun"
+    command. Dependent upon .rpmmacros parameter of "%_with_srun2aprun".
+ -- Add configuration parameter MaxStepCount to limit effect of bad batch
+    scripts.
  -- NOTE: THERE HAS BEEN A NEW FIELD ADDED TO THE JOB STATE FILE. UPGRADES FROM
     VERSION 2.3.0-PRE4 WILL RESULT IN LOST JOBS UNLESS THE "orig_dependency"
     FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC.

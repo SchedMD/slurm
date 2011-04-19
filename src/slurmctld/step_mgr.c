@@ -1625,6 +1625,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    _test_strlen(step_specs->node_list, "node_list", 1024*64))
 		return ESLURM_PATHNAME_TOO_LONG;
 
+	if (job_ptr->next_step_id >= slurmctld_conf.max_step_cnt)
+		return ESLURM_STEP_LIMIT;
+
 #if defined HAVE_BGQ
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,

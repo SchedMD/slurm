@@ -278,6 +278,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Partition is in use"					},
 	{ ESLURM_EXPAND_GRES,
 	  "Job expansion with generic resource (gres) not supported"	},
+	{ ESLURM_STEP_LIMIT,
+	  "Step limit reached for this job"			},
 
 	/* slurmd error codes */
 

@@ -774,6 +774,12 @@ accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
 
 .TP
+\fBMaxStepCount\fR
+The maximum number of steps that any job can initiate. This parameter
+is intended to limit the effect of bad batch scripts.
+The default value is 40000 steps.
+
+.TP
 \fBMaxTasksPerNode\fR
 Maximum number of tasks SLURM will allow a job step to spawn
 on a single node. The default \fBMaxTasksPerNode\fR is 128.
