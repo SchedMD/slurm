@@ -168,7 +168,7 @@ extern int slurm_container_plugin_signal  (uint64_t id, int signal)
  */
 extern int slurm_container_plugin_destroy (uint64_t id)
 {
-	debug2("proctrack/rms: destroying container %u", id);
+	debug2("proctrack/rms: destroying container %"PRIu64"", id);
 	if (id == 0)
 		return SLURM_SUCCESS;
 
@@ -217,7 +217,7 @@ slurm_container_plugin_wait(uint64_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %u", cont_id);
+			error("Unable to destroy container %"PRIu64"", cont_id);
 		}
 	}
 

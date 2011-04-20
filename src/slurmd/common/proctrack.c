@@ -51,12 +51,12 @@
 typedef struct slurm_proctrack_ops {
 	int              (*create)    (slurmd_job_t * job);
 	int              (*add)       (slurmd_job_t * job, pid_t pid);
-	int              (*signal)    (uint32_t id, int signal);
-	int              (*destroy)   (uint32_t id);
-	 uint32_t        (*find_cont) (pid_t pid);
-	 bool            (*has_pid)   (uint32_t id, pid_t pid);
-	int              (*wait)      (uint32_t id);
-	int              (*get_pids)  (uint32_t id, pid_t ** pids, int *npids);
+	int              (*signal)    (uint64_t id, int signal);
+	int              (*destroy)   (uint64_t id);
+	uint64_t         (*find_cont) (pid_t pid);
+	bool             (*has_pid)   (uint64_t id, pid_t pid);
+	int              (*wait)      (uint64_t id);
+	int              (*get_pids)  (uint64_t id, pid_t ** pids, int *npids);
 } slurm_proctrack_ops_t;
 
 
@@ -317,7 +317,7 @@ extern int slurm_container_destroy(uint64_t cont_id)
  *
  * Returns zero if no container found for the given pid.
  */
-extern uint32_t slurm_container_find(pid_t pid)
+extern uint64_t slurm_container_find(pid_t pid)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;

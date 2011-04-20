@@ -474,7 +474,7 @@ extern int slurm_container_plugin_signal (uint64_t id, int signal)
 		/* do not kill slurmstepd (it should not be part
 		 * of the list, but just to not forget about that ;))
 		 */
-		if (pids[i] == id)
+		if (pids[i] == (pid_t)id)
 			continue;
 
 		/* only signal slurm tasks unless signal is SIGKILL */

@@ -129,7 +129,7 @@ extern int slurm_container_plugin_signal  ( uint64_t id, int signal )
 	if (!id)	/* no container ID */
 		return ESRCH;
 
-	if (id == getpid() || id == getpgid(0)) {
+	if (pid == getpid() || pid == getpgid(0)) {
 		error("slurm_signal_container would kill caller!");
 		return ESRCH;
 	}
