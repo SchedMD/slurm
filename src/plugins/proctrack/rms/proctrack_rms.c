@@ -60,7 +60,7 @@
 
 const char plugin_name[] = "Process tracking for QsNet via the rms module";
 const char plugin_type[]      = "proctrack/rms";
-const uint32_t plugin_version = 1;
+const uint32_t plugin_version = 91;
 
 static int _prg_destructor_fork(void);
 static void _prg_destructor_send(int fd, int prgid);

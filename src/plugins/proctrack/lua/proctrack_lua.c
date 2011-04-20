@@ -68,7 +68,7 @@
 
 const char plugin_name[]            = "LUA proctrack module";
 const char plugin_type[]            = "proctrack/lua";
-const uint32_t plugin_version       = 90;
+const uint32_t plugin_version       = 91;
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/proctrack.lua";
 static lua_State *L = NULL;

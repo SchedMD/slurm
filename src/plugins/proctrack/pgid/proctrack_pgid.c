@@ -92,7 +92,7 @@
  */
 const char plugin_name[]      = "Process tracking via process group ID plugin";
 const char plugin_type[]      = "proctrack/pgid";
-const uint32_t plugin_version = 90;
+const uint32_t plugin_version = 91;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

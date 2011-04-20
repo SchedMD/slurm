@@ -91,9 +91,9 @@
  * matures.
  */
 const char plugin_name[]      = "Process tracking via linux "
-	"cgroup freezer subsystem";
+				"cgroup freezer subsystem";
 const char plugin_type[]      = "proctrack/cgroup";
-const uint32_t plugin_version = 10;
+const uint32_t plugin_version = 91;
 
 #ifndef PATH_MAX
 #define PATH_MAX 256
