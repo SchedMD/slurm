@@ -43,6 +43,11 @@ set steps_started        30
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 #
 # Delete left-over input script plus stdout/err files
 # Build input script file

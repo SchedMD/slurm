@@ -94,8 +94,13 @@ foreach {slurm_var check_flag} [array get good_vars] {
 	    incr good
 	}
     } else {
-	send_user "FAILURE: Variable $slurm_var not found\n"
+	send_user "\nFAILURE: Variable $slurm_var not found\n"
     }
+}
+
+if {[test_cray]} {
+	send_user "\nWARNING: For Cray system, reducing environment variables to verify from $total to \n"
+	set total 5
 }
 
 if {$good < $total} {

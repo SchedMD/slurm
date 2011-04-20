@@ -43,7 +43,7 @@ print_header $test_id
 #
 set srun_pid [spawn $srun --usage]
 expect {
-	-re "Usage: .* executable .*" {
+	-re "srun .* executable .*" {
 		incr matches
 		exp_continue
 	}

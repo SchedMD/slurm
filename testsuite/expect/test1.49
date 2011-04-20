@@ -44,6 +44,11 @@ set file_out_post        "$cwd/test$test_id.output_post"
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 #
 # Delete left-over scripts and rebuild,
 # The sleep command just forces slurmd to kill the user's (long running) epilog

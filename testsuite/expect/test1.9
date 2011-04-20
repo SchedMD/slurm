@@ -40,6 +40,11 @@ set verbosity   0
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
