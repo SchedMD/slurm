@@ -58,66 +58,37 @@ static const char *_get_alps_engine(char *buf, size_t buflen)
 enum basil_version get_basil_version(void)
 {
 	char engine_version[BASIL_STRING_LONG];
-	unsigned major, minor, micro;
+	static enum basil_version bv = BV_MAX;
 
-	if (!_get_alps_engine(engine_version, sizeof(engine_version))) {
-		error("can not determine ALPS Engine version using 1.0");
-		return BV_1_0;
-	}
+	if (bv != BV_MAX)
+		return bv;
 
-	if (parse_version_string(engine_version, &major, &minor, &micro) < 0) {
-		error("bad ALPS Engine version '%s', using BASIL 1.0",
+	if (_get_alps_engine(engine_version, sizeof(engine_version)) == NULL)
+		fatal("can not determine ALPS Engine version");
+	else if (strncmp(engine_version, "4.1.0", 5) == 0)
+		bv = BV_4_1;
+	else if (strncmp(engine_version, "4.0.0", 5) == 0)
+		bv = BV_4_0;
+	else if (strncmp(engine_version, "3.1.0", 5) == 0)
+		bv = BV_3_1;
+	else if (strncmp(engine_version, "1.3.0", 5) == 0)
+		/*
+		 * Cray Bug#762417 - strictly speaking, we should be
+		 * returning BV_3_0 here. Alps Engine Version 1.3.0
+		 * is reserved for the Cozla release (CLE 3.0), which
+		 * however was only a short time on the market.
+		 */
+		bv = BV_3_1;
+	else if (strncmp(engine_version, "1.2.0", 5) == 0)
+		bv = BV_1_2;
+	else if (strncmp(engine_version, "1.1", 3) == 0)
+		bv = BV_1_1;
+	else
+		fatal("unsupported ALPS Engine version '%s', please edit "
+		      "src/plugins/select/cray/libalps/go_query.c "
+		      "for this version",
 		      engine_version);
-		return BV_1_0;
-	}
-
-	switch (major) {
-	default:
-		if (major > 4) {
-			error("got new ALPS Engine version %s, using BASIL 4.1",
-			      engine_version);
-			return BV_4_1;
-		}
-		break;
-	case 4:
-		switch (minor) {
-		default:
-			error("unknown BASIL version 4.%u, using 4.1", minor);
-			/* fall through */
-		case 1:
-			return BV_4_1;
-		case 0:
-			return BV_4_0;
-		}
-		break;
-	case 3:
-		if (minor != 1)
-			error("unknown BASIL version 3.%u, using 3.1", minor);
-		return BV_3_1;
-	case 1:
-		switch (minor) {
-		case 3:
-			/*
-			 * Cray Bug#762417 - strictly speaking, we should be
-			 * returning BV_3_0 here. Alps Engine Version 1.3.0
-			 * is reserved for the Cozla release (CLE 3.0), which
-			 * however was only a short time on the market.
-			 */
-			return BV_3_1;
-		default:
-			error("unknown BASIL version 1.%u, using 1.2", minor);
-			/* fall through */
-		case 2:
-			return BV_1_2;
-		case 1:
-			return BV_1_1;
-		case 0:
-			return BV_1_0;
-		}
-	}
-	error("unsupported ALPS Engine version '%s', falling back to BASIL 1.0",
-	      engine_version);
-	return BV_1_0;
+	return bv;
 }
 
 static struct basil_inventory *alloc_inv(bool do_full_inventory)
