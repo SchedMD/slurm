@@ -12,7 +12,6 @@ man_html = \
 	../man/man1/scancel.html \
 	../man/man1/scontrol.html \
 	../man/man1/sinfo.html \
-	../man/man1/slurm.html \
 	../man/man1/smap.html \
 	../man/man1/sprio.html \
 	../man/man1/squeue.html \
@@ -116,8 +115,6 @@ html_DATA = \
 	configurator.html \
 	entities.gif \
 	example_usage.gif \
-	footer.txt \
-	header.txt \
 	linuxstyles.css \
 	lll.gif \
 	mc_support.gif \
@@ -147,6 +144,8 @@ SUFFIXES = .html
 
 if HAVE_MAN2HTML
 .1.html:
+	cp $(srcdir)/header.txt .
+	cp $(srcdir)/footer.txt .
 	`dirname $<`/../man2html.py $<
 .5.html:
 	`dirname $<`/../man2html.py $<
