@@ -354,7 +354,7 @@ int slurm_container_plugin_create (slurmd_job_t *job)
 
 	id = lua_tonumber (L, -1);
 	job->cont_id = id;
-	info ("job->cont_id = %lu (%.0f)", job->cont_id, id);
+	info ("job->cont_id = %"PRIu64" (%.0f)", job->cont_id, id);
 	lua_pop (L, -1);
 
 	rc = SLURM_SUCCESS;

@@ -180,7 +180,7 @@ slurm_container_plugin_wait(uint64_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %lu", cont_id);
+			error("Unable to destroy container %"PRIu64"", cont_id);
 		}
 	}
 

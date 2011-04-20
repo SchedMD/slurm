@@ -762,7 +762,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	 * Sanity checks
 	 */
 	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%lu]",
+		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;
@@ -995,7 +995,7 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 	 * Sanity checks
 	 */
 	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%lu]",
+		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;
@@ -1163,7 +1163,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 	}
 
 	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%lu]",
+		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;
@@ -1228,7 +1228,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 	}
 
 	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%lu]",
+		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;

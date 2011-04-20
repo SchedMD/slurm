@@ -224,7 +224,7 @@ static void _get_process_data(void)
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
-			debug4("no pids in this container %lu", cont_id);
+			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;
 		}
 		for (i = 0; i < npids; i++) {
@@ -576,12 +576,12 @@ extern int jobacct_gather_p_set_proctrack_container_id(uint64_t id)
 		return SLURM_SUCCESS;
 
 	if (cont_id != (uint64_t)NO_VAL)
-		info("Warning: jobacct: set_proctrack_container_id: "
-		     "cont_id is already set to %lu you are setting it to %lu",
-		     cont_id, id);
+		info("Warning: jobacct: set_proctrack_container_id: cont_id "
+		     "is already set to %"PRIu64" you are setting it to "
+		     "%"PRIu64"", cont_id, id);
 	if (id <= 0) {
 		error("jobacct: set_proctrack_container_id: "
-		      "I was given most likely an unset cont_id %lu",
+		      "I was given most likely an unset cont_id %"PRIu64"",
 		      id);
 		return SLURM_ERROR;
 	}
