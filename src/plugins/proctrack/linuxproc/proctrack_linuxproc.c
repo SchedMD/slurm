@@ -86,7 +86,7 @@
  */
 const char plugin_name[]      = "Process tracking via linux /proc";
 const char plugin_type[]      = "proctrack/linuxproc";
-const uint32_t plugin_version = 90;
+const uint32_t plugin_version = 91;
 
 
 /*
@@ -160,7 +160,7 @@ slurm_container_plugin_wait(uint64_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %lu", cont_id);
+			error("Unable to destroy container %"PRIu64"", cont_id);
 		}
 	}
 

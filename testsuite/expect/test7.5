@@ -49,7 +49,10 @@ if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit $exit_code
 }
-
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
 
 #
 # Delete left-over program and rebuild it

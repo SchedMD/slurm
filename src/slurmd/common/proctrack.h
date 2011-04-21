@@ -110,7 +110,7 @@ extern int slurm_container_destroy(uint64_t cont_id);
  *
  * Returns zero if no container found for the given pid.
  */
-extern uint32_t slurm_container_find(pid_t pid);
+extern uint64_t slurm_container_find(pid_t pid);
 
 /*
  * Return "true" if the container "cont_id" contains the process with

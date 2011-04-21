@@ -62,7 +62,7 @@
 
 const char plugin_name[]      = "Process tracking via SGI job module";
 const char plugin_type[]      = "proctrack/sgi_job";
-const uint32_t plugin_version = 90;
+const uint32_t plugin_version = 91;
 
 /*
  * We can't include <job.h> since its prototypes conflict with some

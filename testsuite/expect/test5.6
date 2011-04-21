@@ -336,7 +336,7 @@ expect {
 		wait
 	}
 }
-if {$job_found == 0} {
+if {[test_cray] == 0 && $job_found == 0} {
 	send_user "\nFAILURE: squeue failed to locate desired job step\n"
 	set exit_code 1
 }

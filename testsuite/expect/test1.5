@@ -43,7 +43,7 @@ print_header $test_id
 #
 set srun_pid [spawn $srun --help]
 expect {
-	-re "Usage:" {
+	-re "srun .* executable" {
 		incr matches
 		exp_continue
 	}
@@ -65,8 +65,13 @@ expect {
 	}
 }
 
-if {$matches != 3} {
-	send_user "\nFAILURE: srun failed to report help message\n"
+if {[test_cray]} {
+	set target_matches 1
+} else {
+	set target_matches 3
+}
+if {$matches != $target_matches} {
+	send_user "\nFAILURE: srun failed to report help message ($matches of $target_matches)\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {

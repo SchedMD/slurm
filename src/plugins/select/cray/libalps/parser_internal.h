@@ -62,8 +62,6 @@ extern const struct element_handler basil_4_0_elements[];
 extern int atou64(const char *str, uint64_t *value);
 extern int atou32(const char *str, uint32_t *value);
 extern int atotime_t(const char *str, time_t *value);
-extern int parse_version_string(const char *vs, unsigned *major,
-				unsigned *minor, unsigned *micro);
 
 /* popen2.c */
 extern pid_t popen2(const char *path, int *in, int *out, bool no_stderr);

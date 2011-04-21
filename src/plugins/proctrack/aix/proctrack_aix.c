@@ -90,7 +90,7 @@
  */
 const char plugin_name[]      = "Process tracking via AIX kernel extension plugin";
 const char plugin_type[]      = "proctrack/aix";
-const uint32_t plugin_version = 90;
+const uint32_t plugin_version = 91;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -203,8 +203,8 @@ slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 	}
 
 	if (np == -1) {
-		error("proctrack_get_pids(AIX) for container %u failed: %m",
-		      cont_id);
+		error("proctrack_get_pids(AIX) for container %"PRIu64" "
+		      "failed: %m", cont_id);
 		xfree(p);
 		*pids = NULL;
 		*npids = 0;
@@ -254,12 +254,12 @@ slurm_container_plugin_wait(uint64_t cont_id)
 			int i;
 			pid_t *pids = NULL;
 			int npids = 0;
-			error("Container %u is still not empty", cont_id);
+			error("Container %"PRIu64" is still not empty", cont_id);
 
 			slurm_container_plugin_get_pids(cont_id, &pids, &npids);
 			if (npids > 0) {
 				for (i = 0; i < npids; i++) {
-					verbose("  Container %u has pid %d",
+					verbose("Container %"PRIu64" has pid %d",
 						cont_id, pids[i]);
 				}
 				xfree(pids);

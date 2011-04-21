@@ -314,7 +314,6 @@ top_srcdir = @top_srcdir@
 @HAVE_MAN2HTML_TRUE@	../man/man1/scancel.html \
 @HAVE_MAN2HTML_TRUE@	../man/man1/scontrol.html \
 @HAVE_MAN2HTML_TRUE@	../man/man1/sinfo.html \
-@HAVE_MAN2HTML_TRUE@	../man/man1/slurm.html \
 @HAVE_MAN2HTML_TRUE@	../man/man1/smap.html \
 @HAVE_MAN2HTML_TRUE@	../man/man1/sprio.html \
 @HAVE_MAN2HTML_TRUE@	../man/man1/squeue.html \
@@ -415,8 +414,6 @@ html_DATA = \
 	configurator.html \
 	entities.gif \
 	example_usage.gif \
-	footer.txt \
-	header.txt \
 	linuxstyles.css \
 	lll.gif \
 	mc_support.gif \
@@ -656,6 +653,8 @@ uninstall-am: uninstall-htmlDATA
 	`dirname $<`/shtml2html.py $<
 
 @HAVE_MAN2HTML_TRUE@.1.html:
+@HAVE_MAN2HTML_TRUE@	cp $(srcdir)/header.txt .
+@HAVE_MAN2HTML_TRUE@	cp $(srcdir)/footer.txt .
 @HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py $<
 @HAVE_MAN2HTML_TRUE@.5.html:
 @HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py $<

@@ -91,9 +91,9 @@
  * matures.
  */
 const char plugin_name[]      = "Process tracking via linux "
-	"cgroup freezer subsystem";
+				"cgroup freezer subsystem";
 const char plugin_type[]      = "proctrack/cgroup";
-const uint32_t plugin_version = 10;
+const uint32_t plugin_version = 91;
 
 #ifndef PATH_MAX
 #define PATH_MAX 256
@@ -453,7 +453,7 @@ extern int slurm_container_plugin_signal (uint64_t id, int signal)
 	/* get all the pids associated with the step */
 	if (_slurm_cgroup_get_pids(id, &pids, &npids) !=
 	     SLURM_SUCCESS) {
-		debug3("unable to get pids list for cont_id=%lu", id);
+		debug3("unable to get pids list for cont_id=%"PRIu64"", id);
 		/* that could mean that all the processes already exit */
 		/* the container so return success */
 		return SLURM_SUCCESS;
@@ -474,7 +474,7 @@ extern int slurm_container_plugin_signal (uint64_t id, int signal)
 		/* do not kill slurmstepd (it should not be part
 		 * of the list, but just to not forget about that ;))
 		 */
-		if (pids[i] == id)
+		if (pids[i] == (pid_t)id)
 			continue;
 
 		/* only signal slurm tasks unless signal is SIGKILL */
@@ -532,7 +532,8 @@ extern int slurm_container_plugin_wait(uint64_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %lu", cont_id);
+			error("Unable to destroy container %"PRIu64"",
+			      cont_id);
 		}
 	}
 

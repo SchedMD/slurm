@@ -92,7 +92,7 @@
  */
 const char plugin_name[]      = "Process tracking via process group ID plugin";
 const char plugin_type[]      = "proctrack/pgid";
-const uint32_t plugin_version = 90;
+const uint32_t plugin_version = 91;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -129,7 +129,7 @@ extern int slurm_container_plugin_signal  ( uint64_t id, int signal )
 	if (!id)	/* no container ID */
 		return ESRCH;
 
-	if (id == getpid() || id == getpgid(0)) {
+	if (pid == getpid() || pid == getpgid(0)) {
 		error("slurm_signal_container would kill caller!");
 		return ESRCH;
 	}
@@ -180,7 +180,7 @@ slurm_container_plugin_wait(uint64_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("Unable to destroy container %lu", cont_id);
+			error("Unable to destroy container %"PRIu64"", cont_id);
 		}
 	}
 

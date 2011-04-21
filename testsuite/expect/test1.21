@@ -41,6 +41,11 @@ set task_id          3
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 #
 # Spawn a shell via srun with stdout forwarding disabled
 #
