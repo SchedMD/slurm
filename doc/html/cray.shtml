@@ -32,7 +32,7 @@ Other than SLURM's <i>srun</i> command being replaced by <i>aprun</i>
 and the job steps not being visible, all other SLURM commands will operate
 as expected. Note that in order to build and install the aprun wrapper
 described above, execute "configure" with the <i>--with-srun2aprun</i>
-option.</p>
+option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
 
 <p>SLURM node names will be of the form "nid#####" where "#####" is a five
 digit sequence number.
@@ -57,9 +57,9 @@ are two SDK iso files for SDK)</li>
 
 <p>You can check by
 <ul>
-<li>Going onto the bootnode</li>
-<li>xtopview</li>
-<li>rpm -qa</li>
+<li>Login to the bootnode:</li>
+<li><i>xtopview</i></li>
+<li><i>rpm -qa</i></li>
 </ul></p>
 
 <p>The list of packages that should be installed is:
@@ -79,9 +79,9 @@ privileges will be required to install these files.</p>
 Most scripts check for the environment variable LIBROOT. 
 You can either edit the scripts or export this variable. Easiest way:
 <ul>
-<li>export LIBROOT=/ufs/slurm/build</li>
-<li>mkdir -vp $LIBROOT</li>
-<li>cd $LIBROOT</li>
+<li><i>export LIBROOT=/ufs/slurm/build</i></li>
+<li><i>mkdir -vp $LIBROOT</i></li>
+<li><i>cd $LIBROOT</i></li>
 </ul></p>
 
 <h3>Install modulefile</h3>
@@ -95,13 +95,13 @@ It means that you can use Munge as soon as it is built.</p>
 
 <p>Munge is the authentication daemon and needed by SLURM.
 <ul>
-<li>cp munge_build_script.sh $LIBROOT</li>
-<li>mkdir -vp ${LIBROOT}/munge/zip</li>
+<li><i>cp munge_build_script.sh $LIBROOT</i></li>
+<li><i>mkdir -vp ${LIBROOT}/munge/zip</i></li>
 <li>Download munge-0.5.9.tar.bz2 or newer from
 <a href="http://code.google.com/p/munge/downloads/list">
 http://code.google.com/p/munge/downloads/list</a></li>
 <li>Copy that into  <i>${LIBROOT}/munge/zip</i></li>
-<li>Execute <i>./munge_build_script.sh</i></li>
+<li>Execute: <i>./munge_build_script.sh</i></li>
 </ul></p>
 <p>This generates a tar-ball called <i>$LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz</i>
 which has already the correct paths - in particular, the libmunge.* need to
@@ -109,9 +109,9 @@ reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
 
 <p>Install the tar-ball by executing:
 <ul>
-<li>scp $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz boot:</li>
-<li>ssh boot</li>
-<li>tar -zxvf munge_build-*.tar.gz -C /rr/current</li>
+<li><i>scp $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz boot:</i></li>
+<li><i>ssh boot</i></li>
+<li><i>tar -zxvf munge_build-*.tar.gz -C /rr/current</i></li>
 </ul></p>
 
 <h3>Configure Munge</h3>
@@ -134,7 +134,7 @@ reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
 
 <p>When done, verify network connectivity by executing:
 <ul>
-<li>munge -n |ssh other-login-host /opt/slurm/munge/bin/unmunge</li>
+<li><i>munge -n | ssh other-login-host /opt/slurm/munge/bin/unmunge</i></li>
 </ul>
 
 
@@ -142,23 +142,23 @@ reside in <i>/usr/lib64</i> since SLURM plugins call them.</p>
 the process using an <i>init.d</i> script distributed with the Munge as
 <i>src/etc/munge.init</i>. This is installed by</p>
 <ul>
-<li>scp contribs/cray/etc_init_d_munge boot:/rr/current/software/munge</li>
-<li>xtopview -c login</li>
-<li>cp /software/munge /etc/init.d</li>
-<li>chkconfig munge on</li>
+<li><i>scp contribs/cray/etc_init_d_munge boot:/rr/current/software/munge</i></li>
+<li><i>xtopview -c login</i></li>
+<li><i>cp /software/munge /etc/init.d</i></li>
+<li><i>chkconfig munge on</i></li>
 </ul></p>
 
 <h3>Build and Configure SLURM</h3>
 
 <p>SLURM can be built and installed as on any other computer as described
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
-When building SLURM's slurm.conf configuration file, use the <i>NodeName</i>
-parameter to specify all batch nodes to be scheduled.
-If nodes are defined in ALPS, but not defined in the slurm.conf file, a
+When building SLURM's <i>slurm.conf</i> configuration file, use the
+<i>NodeName</i> parameter to specify all batch nodes to be scheduled.
+If nodes are defined in ALPS, but not defined in the <i>slurm.conf</i> file, a
 complete list of all batch nodes configured in ALPS will be logged by
-the slurmctld daemon when it starts.
-One would typically use this information to modify the slurm.conf file and
-restart the surmctld daemon.
+the <i>slurmctld</i> daemon when it starts.
+One would typically use this information to modify the <i>slurm.conf</i> file
+and restart the <i>slurmctld</i> daemon.
 Note that the <i>NodeAddr</i> and <i>NodeHostName</i> fields should not be
 configured, but will be set by SLURM using data from ALPS.
 <i>NodeAddr</i> be set to the node's XYZ coordinate and be used by SLURM's
@@ -371,6 +371,6 @@ ulimit -d unlimited	# max size of a process's data segment in KB
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 April 2011</p></td>
+<p style="text-align:center;">Last modified 20 April 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
