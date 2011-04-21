@@ -229,7 +229,7 @@ expect {
 	}
 }
 
-if {$step_found == 0} {
+if {[test_cray] == 0 && $step_found == 0} {
 	send_user "\nFAILURE: squeue step format error\n"
 	set exit_code 1
 }

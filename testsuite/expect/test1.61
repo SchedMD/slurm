@@ -40,8 +40,12 @@ set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set timeout 60
 
-
 print_header $test_id
+
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
 
 exec $bin_rm -f $file_in file_out file_err
 make_bash_script $file_in "

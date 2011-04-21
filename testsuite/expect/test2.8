@@ -178,7 +178,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
+if {[test_cray] == 0 && $matches != 1} {
 	send_user "\nFAILURE: scontrol failed to find all job steps\n"
 	set exit_code 1
 }
@@ -206,7 +206,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
+if {[test_cray] == 0 && $matches != 1} {
 	send_user "\nFAILURE: scontrol failed to specific job step\n"
 	set exit_code 1
 }
@@ -242,7 +242,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
+if {[test_cray] == 0 && $matches != 1} {
 	send_user "\nFAILURE: scontrol found unexpected job step\n"
 	set exit_code 1
 }

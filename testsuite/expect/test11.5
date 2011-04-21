@@ -39,6 +39,11 @@ set job_id      0
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 #
 # Delete left-over input script
 # Build input script file
@@ -85,7 +90,7 @@ if {[wait_for_step $job_id.0] != 0} {
 }
 
 #
-# Enable/disable/test ability to heckpoint
+# Enable/disable/test abFAILility to heckpoint
 #
 spawn $scontrol check disable $job_id.0
 expect {
