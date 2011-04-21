@@ -4,9 +4,7 @@
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
  * Licensed under the GPLv2.
  */
-#include "src/common/node_select.h"
 #include "../basil_alps.h"
-#include "parser_internal.h"
 
 /**
  * _get_alps_engine  -  run QUERY of type ENGINE
@@ -31,7 +29,7 @@ static const char *_get_alps_engine(char *buf, size_t buflen)
  * get_basil_version  -  Detect highest BASIL version supported by ALPS.
  *
  * This uses the following correspondence table to find the highest supported
- * ALPS version. Failing that, it falls back to Basil 1.0 as last resort.
+ * BASIL version. Failing that, it falls back to Basil 1.0 as last resort.
  *
  * +------------+---------------+------+----------------+----------------------+
  * | CLE release| Engine.version| ALPS | Basil Protocol |       Remarks        |
@@ -51,9 +49,6 @@ static const char *_get_alps_engine(char *buf, size_t buflen)
  *
  * Starting from Basil 3.1, there is also a 'basil_support' attribute to query
  * the supported 'Basil Protocol' list.
- *
- * However, we can not presuppose this version and thus use Basil 1.0 as lowest
- * common denominator to obtain the name of the ALPS engine.
  */
 enum basil_version get_basil_version(void)
 {
@@ -85,7 +80,7 @@ enum basil_version get_basil_version(void)
 		bv = BV_1_1;
 	else
 		fatal("unsupported ALPS Engine version '%s', please edit "
-		      "src/plugins/select/cray/libalps/go_query.c "
+		      "src/plugins/select/cray/libalps/do_query.c "
 		      "for this version",
 		      engine_version);
 	return bv;
