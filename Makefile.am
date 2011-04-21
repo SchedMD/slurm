@@ -14,7 +14,7 @@ EXTRA_DIST =			\
 	etc/cgroup.release_common.example \
 	autogen.sh		\
 	slurm.spec		\
-	README			\
+	README.rst		\
 	RELEASE_NOTES		\
 	DISCLAIMER		\
 	COPYING			\

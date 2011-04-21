@@ -541,7 +541,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,0755)
 %doc AUTHORS
 %doc NEWS
-%doc README
+%doc README.rst
 %doc RELEASE_NOTES
 %doc DISCLAIMER
 %doc COPYING
