@@ -729,6 +729,20 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			j += 2;
 		}
 
+		j = 0;
+		while (block_info->mp_used_inx[j] >= 0) {
+			if (block_info->mp_used_inx[j+1] >= node_record_count) {
+				fatal("Job state recovered incompatible with "
+				      "bluegene.conf. mp=%u state=%d",
+				      node_record_count,
+				      block_info->mp_used_inx[j+1]);
+			}
+			bit_nset(used_bitmap,
+				 block_info->mp_used_inx[j],
+				 block_info->mp_used_inx[j+1]);
+			j += 2;
+		}
+
 		bg_record = xmalloc(sizeof(bg_record_t));
 		bg_record->magic = BLOCK_MAGIC;
 		bg_record->bg_block_id = xstrdup(block_info->bg_block_id);
@@ -854,6 +868,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 
 	FREE_NULL_BITMAP(ionode_bitmap);
 	FREE_NULL_BITMAP(mp_bitmap);
+	FREE_NULL_BITMAP(used_bitmap);
 	FREE_NULL_BITMAP(usable_mp_bitmap);
 
 	sort_bg_record_inc_size(curr_block_list);
