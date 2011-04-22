@@ -41,6 +41,7 @@
 #define _HAVE_SELECT_NODEINFO_H
 
 #include "src/common/node_select.h"
+#include "ba_common.h"
 #define NODEINFO_MAGIC 0x85ac
 
 typedef struct {
@@ -52,6 +53,7 @@ typedef struct {
 } node_subgrp_t;
 
 struct select_nodeinfo {
+	ba_mp_t *ba_mp;
 	uint16_t bitmap_size;
 	uint16_t magic;		/* magic number */
 	List subgrp_list;

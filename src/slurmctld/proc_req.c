@@ -2352,6 +2352,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 	if (rc || rem) {	/* some error or not totally done */
 		/* Note: Error printed within step_partial_comp */
+		info("partial logged %d, %d", rc, rem);
 		unlock_slurmctld(job_write_lock);
 		slurm_send_rc_msg(msg, rc);
 		if (!rc)	/* partition completion */

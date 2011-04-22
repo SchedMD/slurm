@@ -61,6 +61,7 @@ typedef struct {
 	char *default_ramdiskimage;
 	uint16_t deny_pass;
 	double io_ratio;
+	uint16_t ionode_cnode_cnt;
 	uint16_t ionodes_per_mp;
 	bg_layout_t layout_mode;
 	List linux_list;

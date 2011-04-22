@@ -68,6 +68,7 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;
 	jobinfo->cnode_cnt = NO_VAL;
+	jobinfo->units_used = bit_alloc(bg_conf->mp_cnode_cnt);
 	/* Remainder of structure is already NULL fulled */
 
 	return jobinfo;
@@ -93,6 +94,7 @@ extern int free_select_jobinfo(select_jobinfo_t *jobinfo)
 		xfree(jobinfo->linuximage);
 		xfree(jobinfo->mloaderimage);
 		xfree(jobinfo->ramdiskimage);
+		FREE_NULL_BITMAP(jobinfo->units_used);
 		xfree(jobinfo);
 	}
 	return rc;

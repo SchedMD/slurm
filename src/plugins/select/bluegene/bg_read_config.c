@@ -623,6 +623,11 @@ extern int read_bg_conf(void)
 			(double)bg_conf->ionodes_per_mp /
 			((double)bg_conf->mp_cnode_cnt
 			 / (double)bg_conf->nodecard_cnode_cnt);
+
+		/* How many cnodes per ionode */
+		bg_conf->ionode_cnode_cnt =
+			bg_conf->nodecard_cnode_cnt * bg_conf->nc_ratio;
+
 		//info("got %f %f", bg_conf->nc_ratio, bg_conf->io_ratio);
 		/* figure out the smallest block we can have on the
 		   system */

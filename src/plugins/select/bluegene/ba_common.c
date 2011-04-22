@@ -628,6 +628,7 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	/* These are only used on the original as well. */
 	new_ba_mp->nodecard_loc = NULL;
 	new_ba_mp->loc = NULL;
+	new_ba_mp->cnode_bitmap = NULL;
 
 	return new_ba_mp;
 }
