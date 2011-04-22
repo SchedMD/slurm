@@ -75,5 +75,3 @@ PROBLEMS
 
 If you experience problems compiling, installing, or running SLURM
 please send e-mail to either slurm-dev@lists.llnl.gov.
-
-$Id$
