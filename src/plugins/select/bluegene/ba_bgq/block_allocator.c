@@ -844,7 +844,7 @@ extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
 }
 
 extern ba_mp_t *ba_pick_sub_block_cnodes(
-	bg_record_t *bg_record, uint32_t node_count, bitstr_t *picked_cnodes)
+	bg_record_t *bg_record, uint32_t node_count, bitstr_t **picked_cnodes)
 {
 	ListIterator itr = NULL;
 	ba_mp_t *ba_mp = NULL;
@@ -853,6 +853,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	xassert(ba_mp_geo_system);
 	xassert(bg_record->ba_mp_list);
 	xassert(picked_cnodes);
+	xassert(!*picked_cnodes);
 
 	if (!(geo_table = ba_mp_geo_system->geo_table_ptr[node_count])) {
 		error("ba_pick_sub_block_cnodes: No geometries of size %u ",
@@ -886,7 +887,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 			}
 		}
 		if (bit_clear_count(ba_mp->cnode_bitmap) < node_count) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("only have %d avail in %s need %d",
 				     bit_clear_count(ba_mp->cnode_bitmap),
 				     ba_mp->coord_str, node_count);
@@ -895,21 +896,21 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 
 		while (geo_table) {
 			if (ba_geo_test_all(ba_mp->cnode_bitmap,
-					    &picked_cnodes, geo_table, &cnt,
+					    picked_cnodes, geo_table, &cnt,
 					    ba_mp_geo_system, 0)
 			    == SLURM_SUCCESS) {
-				bit_and(ba_mp->cnode_bitmap, picked_cnodes);
-				if (ba_debug_flags & DEBUG_FLAG_BG_PICK) {
+				bit_or(ba_mp->cnode_bitmap, *picked_cnodes);
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
 					char tmp_char2[BUF_SIZE];
 					char tmp_char[BUF_SIZE];
 					bit_fmt(tmp_char, sizeof(tmp_char),
-						picked_cnodes);
+						*picked_cnodes);
 					bit_fmt(tmp_char2, sizeof(tmp_char2),
 						ba_mp->cnode_bitmap);
 					info("found it on %s set %s bits "
-					     "total set is now %s",
-					     ba_mp->coord_str,
-					     tmp_char, tmp_char2);
+					       "total set is now %s",
+					       ba_mp->coord_str,
+					       tmp_char, tmp_char2);
 				}
 				break;
 			}
@@ -919,7 +920,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		if (geo_table)
 			break;
 
-		if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("couldn't place it on %s", ba_mp->coord_str);
 		geo_table = ba_mp_geo_system->geo_table_ptr[node_count];
 	}
