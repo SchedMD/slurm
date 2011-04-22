@@ -211,15 +211,6 @@ extern void ba_destroy_system(void)
 	memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
 }
 
-/* */
-/* static int _find_passthrough(ba_switch_t *curr_switch, int source_port,  */
-/* 			     List mps, int dim,  */
-/* 			     int count, int highest_phys_x);  */
-/* */
-
-/* */
-/* static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord); */
-
 /*
  * create a block request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
