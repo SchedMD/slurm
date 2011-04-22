@@ -2881,6 +2881,18 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
+					  select_jobinfo_t *jobinfo,
+					  uint32_t node_count)
+{
+	return NULL;
+}
+
+extern int select_p_step_finish(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_pack_select_info(time_t last_query_time,
 				     uint16_t show_flags, Buf *buffer_ptr,
 				     uint16_t protocol_version)

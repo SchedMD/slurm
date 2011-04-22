@@ -91,6 +91,8 @@ static slurm_select_ops_t *_other_select_get_ops(slurm_select_context_t *c)
 		"select_p_job_fini",
 		"select_p_job_suspend",
 		"select_p_job_resume",
+		"select_p_step_pick_nodes",
+		"select_p_step_finish",
 		"select_p_pack_select_info",
                 "select_p_select_nodeinfo_pack",
                 "select_p_select_nodeinfo_unpack",
@@ -486,6 +488,42 @@ extern int other_job_resume(struct job_record *job_ptr)
 		(job_ptr);
 }
 
+/*
+ * Select the "best" nodes for given job step from those available in
+ * a job allocation.
+ *
+ * IN/OUT job_ptr - pointer to job already allocated and running in a
+ *                  block where the step is to run.
+ *                  set's start_time when job expected to start
+ * OUT step_jobinfo - Fill in the resources to be used if not
+ *                    full size of job.
+ * IN node_count  - How many nodes we are looking for.
+ * RET map of slurm nodes to be used for step, NULL on failure
+ */
+extern bitstr_t *other_step_pick_nodes(struct job_record *job_ptr,
+				       select_jobinfo_t *jobinfo,
+				       uint32_t node_count)
+{
+	if (other_select_init() < 0)
+		return NULL;
+
+	return (*(other_select_context->ops.step_pick_nodes))
+		(job_ptr, jobinfo, node_count);
+}
+
+/*
+ * clear what happened in select_g_step_pick_nodes
+ * IN/OUT step_ptr - Flush the resources from the job and step.
+ */
+extern int other_step_finish(struct step_record *step_ptr)
+{
+	if (other_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(other_select_context->ops.step_finish))
+		(step_ptr);
+}
+
 extern int other_pack_select_info(time_t last_query_time, uint16_t show_flags,
 				  Buf *buffer, uint16_t protocol_version)
 {
@@ -497,8 +535,8 @@ extern int other_pack_select_info(time_t last_query_time, uint16_t show_flags,
 }
 
 extern int other_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer,
-					 uint16_t protocol_version)
+				      Buf buffer,
+				      uint16_t protocol_version)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;

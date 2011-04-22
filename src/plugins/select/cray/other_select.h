@@ -224,6 +224,26 @@ extern int other_job_suspend(struct job_record *job_ptr);
  */
 extern int other_job_resume(struct job_record *job_ptr);
 
+/*
+ * Select the "best" nodes for given job from those available
+ * IN/OUT job_ptr - pointer to job already allocated and running in a
+ *                  block where the step is to run.
+ *                  set's start_time when job expected to start
+ * OUT step_jobinfo - Fill in the resources to be used if not
+ *                    full size of job.
+ * IN node_count  - How many nodes we are looking for.
+ * RET map of slurm nodes to be used for step, NULL on failure
+ */
+extern bitstr_t * other_step_pick_nodes(struct job_record *job_ptr,
+					select_jobinfo_t *jobinfo,
+					uint32_t node_count);
+
+/*
+ * clear what happened in select_g_step_pick_nodes
+ * IN/OUT step_ptr - Flush the resources from the job and step.
+ */
+extern int other_step_finish(struct step_record *step_ptr);
+
 /* allocate storage for a select job credential
  * RET jobinfo - storage for a select job credential
  * NOTE: storage must be freed using other_free_jobinfo

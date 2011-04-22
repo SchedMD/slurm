@@ -96,6 +96,8 @@ static int _select_get_ops(char *select_type,
 		"select_p_job_fini",
 		"select_p_job_suspend",
 		"select_p_job_resume",
+		"select_p_step_pick_nodes",
+		"select_p_step_finish",
 		"select_p_pack_select_info",
                 "select_p_select_nodeinfo_pack",
                 "select_p_select_nodeinfo_unpack",
@@ -743,6 +745,44 @@ extern int select_g_job_resume(struct job_record *job_ptr)
 
 	return (*(select_context[select_context_default].ops.job_resume))
 		(job_ptr);
+}
+
+/*
+ * Select the "best" nodes for given job step from those available in
+ * a job allocation.
+ *
+ * IN/OUT job_ptr - pointer to job already allocated and running in a
+ *                  block where the step is to run.
+ *                  set's start_time when job expected to start
+ * OUT step_jobinfo - Fill in the resources to be used if not
+ *                    full size of job.
+ * IN node_count  - How many nodes we are looking for.
+ * RET map of slurm nodes to be used for step, NULL on failure
+ */
+extern bitstr_t *select_g_step_pick_nodes(struct job_record *job_ptr,
+					  dynamic_plugin_data_t *step_jobinfo,
+					  uint32_t node_count)
+{
+	if (slurm_select_init(0) < 0)
+		return NULL;
+
+	xassert(step_jobinfo);
+
+	return (*(select_context[select_context_default].ops.step_pick_nodes))
+		(job_ptr, step_jobinfo->data, node_count);
+}
+
+/*
+ * clear what happened in select_g_step_pick_nodes
+ * IN/OUT step_ptr - Flush the resources from the job and step.
+ */
+extern int select_g_step_finish(struct step_record *step_ptr)
+{
+	if (slurm_select_init(0) < 0)
+		return SLURM_ERROR;
+
+	return (*(select_context[select_context_default].ops.step_finish))
+		(step_ptr);
 }
 
 extern int select_g_pack_select_info(time_t last_query_time,

@@ -852,6 +852,80 @@ extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
 
 }
 
+extern ba_mp_t *ba_pick_sub_block_cnodes(
+	bg_record_t *bg_record, uint32_t node_count, bitstr_t *picked_cnodes)
+{
+	ListIterator itr = NULL;
+	ba_mp_t *ba_mp = NULL;
+	ba_geo_table_t *geo_table = NULL;
+
+	xassert(ba_mp_geo_system);
+	xassert(bg_record->ba_mp_list);
+	xassert(picked_cnodes);
+
+	if (!(geo_table = ba_mp_geo_system->geo_table_ptr[node_count])) {
+		error("ba_pick_sub_block_cnodes: No geometries of size %u ",
+		      node_count);
+		return NULL;
+	}
+
+	itr = list_iterator_create(bg_record->ba_mp_list);
+	while ((ba_mp = list_next(itr))) {
+		int cnt = 0;
+
+		if (!ba_mp->used)
+			continue;
+
+		/* Create the bitmap if it doesn't exist.  Since this
+		 * is a copy of the original and the cnode_bitmap is
+		 * only used for sub-block jobs we only create it
+		 * when needed. */
+		if (!ba_mp->cnode_bitmap) {
+			int start, end;
+			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+			if (bg_record->ionode_bitmap
+			    && ((start = bit_ffs(bg_record->ionode_bitmap))
+				!= -1)) {
+				start *= bg_conf->ionode_cnode_cnt;
+				end = (bit_fls(bg_record->ionode_bitmap)
+				       * bg_conf->ionode_cnode_cnt)
+					+ (bg_conf->ionode_cnode_cnt - 1);
+				bit_nset(ba_mp->cnode_bitmap, start, end);
+				bit_not(ba_mp->cnode_bitmap);
+			}
+		}
+		if (bit_clear_count(ba_mp->cnode_bitmap) < node_count) {
+			info("only have %d avail in %s need %d",
+			     bit_clear_count(ba_mp->cnode_bitmap),
+			     ba_mp->coord_str, node_count);
+			continue;
+		}
+
+		while (geo_table) {
+			if (ba_geo_test_all(ba_mp->cnode_bitmap,
+					    &picked_cnodes, geo_table, &cnt,
+					    ba_mp_geo_system)
+			    == SLURM_SUCCESS) {
+				char tmp_char2[BUF_SIZE];
+				char tmp_char[BUF_SIZE];
+				bit_fmt(tmp_char, sizeof(tmp_char), picked_cnodes);
+				bit_fmt(tmp_char2, sizeof(tmp_char2), ba_mp->cnode_bitmap);
+				bit_and(ba_mp->cnode_bitmap, picked_cnodes);
+				info("found it on %s set %s bits total set is now %s", ba_mp->coord_str, tmp_char, tmp_char2);
+				break;
+			}
+			geo_table = geo_table->next_ptr;
+		}
+
+		if (geo_table)
+			break;
+		info("couldn't place it on %s", ba_mp->coord_str);
+		geo_table = ba_mp_geo_system->geo_table_ptr[node_count];
+	}
+	list_iterator_destroy(itr);
+	return ba_mp;
+}
+
 /*
  * This function is here to check options for rotating and elongating
  * and set up the request based on the count of each option
