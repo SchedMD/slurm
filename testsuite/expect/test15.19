@@ -87,6 +87,7 @@ expect {
 if {[string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
 	set exit_code   1
+	exit $exit_code
 }
 
 set alloc_fail 0
