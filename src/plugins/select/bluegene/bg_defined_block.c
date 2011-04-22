@@ -103,7 +103,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				/* we want the mps that aren't
 				 * in this record to mark them as used
 				 */
-				if (ba_set_removable_mps(bg_record->bitmap, 1)
+				if (ba_set_removable_mps(bg_record->mp_bitmap, 1)
 				    != SLURM_SUCCESS)
 					fatal("It doesn't seem we have a "
 					      "bitmap for %s",

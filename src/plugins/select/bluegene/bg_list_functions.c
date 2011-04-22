@@ -54,7 +54,7 @@ extern bg_record_t *block_exist_in_list(List my_list, bg_record_t *bg_record)
 		if (found_record->magic != BLOCK_MAGIC)
 			continue;
 		/* check for full node bitmap compare */
-		if (bit_equal(bg_record->bitmap, found_record->bitmap)
+		if (bit_equal(bg_record->mp_bitmap, found_record->mp_bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
 				 found_record->ionode_bitmap)) {
 			/* now make sure the conn_type is the same for
@@ -178,7 +178,7 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 			continue;
 
 		/* check for full node bitmap compare */
-		if (bit_equal(bg_record->bitmap, found_record->bitmap)
+		if (bit_equal(bg_record->mp_bitmap, found_record->mp_bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
 				 found_record->ionode_bitmap)) {
 			if (!strcmp(bg_record->bg_block_id,
@@ -206,7 +206,7 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 		if (found_record->magic != BLOCK_MAGIC)
 			continue;
 		/* check for full node bitmap compare */
-		if (bit_equal(bg_record->bitmap, found_record->bitmap)
+		if (bit_equal(bg_record->mp_bitmap, found_record->mp_bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
 				 found_record->ionode_bitmap)) {
 

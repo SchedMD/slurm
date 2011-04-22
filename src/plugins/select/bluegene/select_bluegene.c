@@ -359,8 +359,8 @@ static int _validate_config_blocks(List curr_block_list,
 	while ((bg_record = list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if (!bit_equal(bg_record->bitmap,
-				       init_bg_record->bitmap))
+			if (!bit_equal(bg_record->mp_bitmap,
+				       init_bg_record->mp_bitmap))
 				continue; /* wrong nodes */
 			if (!bit_equal(bg_record->ionode_bitmap,
 				       init_bg_record->ionode_bitmap))
@@ -464,7 +464,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 		packstr(bg_record->blrtsimage, buffer);
-		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack_bit_fmt(bg_record->mp_bitmap, buffer);
 #ifdef HAVE_BGQ
 		pack32(SYSTEM_DIMENSIONS, buffer);
 		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
@@ -493,18 +493,20 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
+		packstr(bg_record->mp_used_str, buffer);
 		pack32((uint32_t)bg_record->cnode_cnt, buffer);
 		pack16((uint16_t)bg_record->node_use, buffer);
 		packstr(bg_record->user_name, buffer);
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
+		pack_bit_fmt(bg_record->mp_used_bitmap, buffer);
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
 		packstr(bg_record->blrtsimage, buffer);
 #endif
-		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack_bit_fmt(bg_record->mp_bitmap, buffer);
 		pack16((uint16_t)bg_record->conn_type[0], buffer);
 		packstr(bg_record->ionode_str, buffer);
 		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
@@ -525,7 +527,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 #ifdef HAVE_BGL
 		packstr(bg_record->blrtsimage, buffer);
 #endif
-		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack_bit_fmt(bg_record->mp_bitmap, buffer);
 		pack16((uint16_t)bg_record->conn_type[0], buffer);
 		packstr(bg_record->ionode_str, buffer);
 		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
@@ -1470,8 +1472,8 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			if (bg_record == found_record)
 				continue;
 
-			if (!bit_equal(bg_record->bitmap,
-				       found_record->bitmap)) {
+			if (!bit_equal(bg_record->mp_bitmap,
+				       found_record->mp_bitmap)) {
 				debug2("block %s isn't part of to be freed %s",
 				       found_record->bg_block_id,
 				       bg_record->bg_block_id);

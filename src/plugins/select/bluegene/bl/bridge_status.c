@@ -396,7 +396,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr, bool slurmctld_locked)
 /* 			if (bg_record->job_running != BLOCK_ERROR_STATE) */
 /* 				continue; */
 
-/* 			if (!bit_test(bg_record->bitmap, bp_bit)) */
+/* 			if (!bit_test(bg_record->mp_bitmap, bp_bit)) */
 /* 				continue; */
 /* 			info("bringing %s back to service", */
 /* 			     bg_record->bg_block_id); */

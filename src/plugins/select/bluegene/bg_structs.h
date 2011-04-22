@@ -94,15 +94,12 @@ typedef struct bg_record {
 	void *bg_block;                 /* needed for L/P systems */
 	char *bg_block_id;     	        /* ID returned from MMCS */
 	List ba_mp_list;                /* List of midplanes in block */
-	bitstr_t *bitmap;               /* bitmap to check the midplanes
-					   of block */
 	char *blrtsimage;               /* BlrtsImage for this block */
 	int boot_count;                 /* number of attemts boot attempts */
 	int boot_state;                 /* check to see if boot failed.
 					   -1 = fail,
 					   0 = not booting,
 					   1 = booting */
-	bitstr_t *cnodes_used_bitmap;   /* cnodes used in this bitmap */
 	uint32_t cnode_cnt;             /* count of cnodes per block */
 	uint16_t conn_type[SYSTEM_DIMENSIONS];  /* MESH or Torus or NAV */
 	uint32_t cpu_cnt;               /* count of cpus per block */
@@ -131,8 +128,12 @@ typedef struct bg_record {
 	int modifying;                  /* flag to say the block is
 					   being modified or not at
 					   job launch usually */
+	bitstr_t *mp_bitmap;            /* bitmap to check the midplanes
+					   of block */
 	int mp_count;                   /* size */
 	char *mp_str;   		/* String of midplanes in block */
+	bitstr_t *mp_used_bitmap;       /* cnodes used in this bitmap */
+	char *mp_used_str;   		/* String of midplanes used in block */
 	uint16_t node_use;      	/* either COPROCESSOR or VIRTUAL */
 	struct bg_record *original;     /* if this is a copy this is a
 					   pointer to the original */

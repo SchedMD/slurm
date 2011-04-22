@@ -72,9 +72,9 @@ extern void print_bg_record(bg_record_t* bg_record)
 #ifdef HAVE_BGL
 	info("\tnode_use: %s", node_use_string(bg_record->node_use));
 #endif
-	if (bg_record->bitmap) {
+	if (bg_record->mp_bitmap) {
 		char bitstring[BITSIZE];
-		bit_fmt(bitstring, BITSIZE, bg_record->bitmap);
+		bit_fmt(bitstring, BITSIZE, bg_record->mp_bitmap);
 		info("\tbitmap: %s", bitstring);
 	}
 #else
@@ -99,9 +99,7 @@ extern void destroy_bg_record(void *object)
 			bg_record->ba_mp_list = NULL;
 		}
 		xfree(bg_record->bg_block_id);
-		FREE_NULL_BITMAP(bg_record->bitmap);
 		xfree(bg_record->blrtsimage);
-		FREE_NULL_BITMAP(bg_record->cnodes_used_bitmap);
 		xfree(bg_record->ionode_str);
 		FREE_NULL_BITMAP(bg_record->ionode_bitmap);
 
@@ -112,7 +110,9 @@ extern void destroy_bg_record(void *object)
 
 		xfree(bg_record->linuximage);
 		xfree(bg_record->mloaderimage);
+		FREE_NULL_BITMAP(bg_record->mp_bitmap);
 		xfree(bg_record->mp_str);
+		FREE_NULL_BITMAP(bg_record->mp_used_bitmap);
 		xfree(bg_record->ramdiskimage);
 		xfree(bg_record->reason);
 		xfree(bg_record->target_name);
@@ -280,7 +280,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 
 	if (node_name2bitmap(bg_record->mp_str,
 			     false,
-			     &bg_record->bitmap)) {
+			     &bg_record->mp_bitmap)) {
 		fatal("process_nodes: Unable to convert nodes %s to bitmap",
 		      bg_record->mp_str);
 	}
@@ -345,23 +345,23 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		list_iterator_destroy(itr);
 	}
 
-	FREE_NULL_BITMAP(sec_record->bitmap);
-	if (fir_record->bitmap
-	    && (sec_record->bitmap = bit_copy(fir_record->bitmap)) == NULL) {
+	FREE_NULL_BITMAP(sec_record->mp_bitmap);
+	if (fir_record->mp_bitmap
+	    && (sec_record->mp_bitmap = bit_copy(fir_record->mp_bitmap)) == NULL) {
 		error("Unable to copy bitmap for %s", fir_record->mp_str);
-		sec_record->bitmap = NULL;
+		sec_record->mp_bitmap = NULL;
 	}
 
 	sec_record->boot_state = fir_record->boot_state;
 	sec_record->boot_count = fir_record->boot_count;
 
-	FREE_NULL_BITMAP(sec_record->cnodes_used_bitmap);
-	if (fir_record->cnodes_used_bitmap
-	    && (sec_record->cnodes_used_bitmap
-		= bit_copy(fir_record->cnodes_used_bitmap)) == NULL) {
-		error("Unable to copy cnodes_used_bitmap for %s",
+	FREE_NULL_BITMAP(sec_record->mp_used_bitmap);
+	if (fir_record->mp_used_bitmap
+	    && (sec_record->mp_used_bitmap
+		= bit_copy(fir_record->mp_used_bitmap)) == NULL) {
+		error("Unable to copy mp_used_bitmap for %s",
 		      fir_record->mp_str);
-		sec_record->cnodes_used_bitmap = NULL;
+		sec_record->mp_used_bitmap = NULL;
 	}
 	sec_record->cnode_cnt = fir_record->cnode_cnt;
 
@@ -679,7 +679,7 @@ extern int add_bg_record(List records, List *used_nodes,
 	   want anything set we also don't want the bg_record->ionode_str set.
 	*/
 	bg_record->ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
-	bg_record->cnodes_used_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+	bg_record->mp_used_bitmap = bit_alloc(node_record_count);
 
 	len = strlen(blockreq->save_name);
 	i=0;
@@ -1034,8 +1034,8 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	memset(&tmp_record, 0, sizeof(bg_record_t));
 	tmp_record.mp_count = 1;
 	tmp_record.cnode_cnt = bg_conf->nodecard_cnode_cnt;
-	tmp_record.bitmap = bit_alloc(node_record_count);
-	bit_set(tmp_record.bitmap, mp_bit);
+	tmp_record.mp_bitmap = bit_alloc(node_record_count);
+	bit_set(tmp_record.mp_bitmap, mp_bit);
 
 	tmp_record.ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
 	bit_nset(tmp_record.ionode_bitmap, io_start, io_start+io_cnt);
@@ -1043,7 +1043,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
-		if (!bit_test(bg_record->bitmap, mp_bit))
+		if (!bit_test(bg_record->mp_bitmap, mp_bit))
 			continue;
 
 		if (!blocks_overlap(bg_record, &tmp_record))
@@ -1304,7 +1304,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	last_bg_update = time(NULL);
 
 cleanup:
-	FREE_NULL_BITMAP(tmp_record.bitmap);
+	FREE_NULL_BITMAP(tmp_record.mp_bitmap);
 	FREE_NULL_BITMAP(tmp_record.ionode_bitmap);
 
 	return rc;
@@ -1335,7 +1335,7 @@ extern int up_nodecard(char *mp_name, bitstr_t *ionode_bitmap)
 	while ((bg_record = list_next(itr))) {
 		if (bg_record->job_running != BLOCK_ERROR_STATE)
 			continue;
-		if (!bit_test(bg_record->bitmap, mp_bit))
+		if (!bit_test(bg_record->mp_bitmap, mp_bit))
 			continue;
 
 		if (!bit_overlap(bg_record->ionode_bitmap, ionode_bitmap)) {
@@ -1550,7 +1550,7 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 		/* only look at other nodes in error state */
 		if (!(bg_record->state & BG_BLOCK_ERROR_FLAG))
 			continue;
-		if (!bit_test(bg_record->bitmap, node_inx))
+		if (!bit_test(bg_record->mp_bitmap, node_inx))
 			continue;
 		if (bg_record->cpu_cnt >= bg_conf->cpus_per_mp) {
 			total_cpus = bg_conf->cpus_per_mp;
@@ -1601,7 +1601,7 @@ static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason)
 	int i = 0;
 
 	for(i = 0; i < node_record_count; i++) {
-		if (!bit_test(bg_record->bitmap, i))
+		if (!bit_test(bg_record->mp_bitmap, i))
 			continue;
 		rc = _check_all_blocks_error(i, now, reason);
 	}

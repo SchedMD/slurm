@@ -894,7 +894,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		}
 
 		reset_ba_system(true);
-		if (ba_set_removable_mps(bg_record->bitmap, 1) != SLURM_SUCCESS)
+		if (ba_set_removable_mps(bg_record->mp_bitmap, 1) != SLURM_SUCCESS)
 			fatal("It doesn't seem we have a bitmap for %s",
 			      bg_record->bg_block_id);
 

@@ -376,10 +376,10 @@ static bg_record_t *_find_matching_block(List block_list,
 		 * drained, allocated to some other job, or in some
 		 * SLURM block not available to this job.
 		 */
-		if (!bit_super_set(bg_record->bitmap, slurm_block_bitmap)) {
+		if (!bit_super_set(bg_record->mp_bitmap, slurm_block_bitmap)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
 				char *temp = bitmap2node_name(
-					bg_record->bitmap);
+					bg_record->mp_bitmap);
 				char *temp2 = bitmap2node_name(
 					slurm_block_bitmap);
 				info("bg block %s has nodes not "
@@ -396,7 +396,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		 */
 		if (job_ptr->details->req_node_bitmap
 		    && (!bit_super_set(job_ptr->details->req_node_bitmap,
-				       bg_record->bitmap))) {
+				       bg_record->mp_bitmap))) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("bg block %s lacks required nodes",
 				     bg_record->bg_block_id);
@@ -1047,7 +1047,7 @@ static int _find_best_block_match(List block_list,
 
 			debug("_find_best_block_match %s <%s>",
 			      bg_record->bg_block_id, tmp_char);
-			bit_and(slurm_block_bitmap, bg_record->bitmap);
+			bit_and(slurm_block_bitmap, bg_record->mp_bitmap);
 			rc = SLURM_SUCCESS;
 			*found_bg_record = bg_record;
 			goto end_it;
@@ -1220,12 +1220,12 @@ static int _find_best_block_match(List block_list,
 					   the block we just popped off.
 					*/
 					bit_and(slurm_block_bitmap,
-						bg_record->bitmap);
+						bg_record->mp_bitmap);
 					*found_bg_record = bg_record;
 					break;
 				}
 				bit_and(slurm_block_bitmap,
-					(*found_bg_record)->bitmap);
+					(*found_bg_record)->mp_bitmap);
 
 				if (bg_record) {
 					(*found_bg_record)->job_running =

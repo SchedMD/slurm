@@ -125,11 +125,11 @@ extern List create_dynamic_block(List block_list,
 
 			if (!my_bitmap) {
 				my_bitmap =
-					bit_alloc(bit_size(bg_record->bitmap));
+					bit_alloc(bit_size(bg_record->mp_bitmap));
 			}
 
-			if (!bit_super_set(bg_record->bitmap, my_bitmap)) {
-				bit_or(my_bitmap, bg_record->bitmap);
+			if (!bit_super_set(bg_record->mp_bitmap, my_bitmap)) {
+				bit_or(my_bitmap, bg_record->mp_bitmap);
 
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK) {
@@ -365,8 +365,8 @@ extern List create_dynamic_block(List block_list,
 				if (!found_record->free_cnt
 				    && (found_record->job_running
 					!= NO_JOB_RUNNING)
-				    && bit_overlap(bg_record->bitmap,
-						   found_record->bitmap)) {
+				    && bit_overlap(bg_record->mp_bitmap,
+						   found_record->mp_bitmap)) {
 					found = 1;
 					break;
 				}
@@ -792,7 +792,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 
 		if (request->avail_mp_bitmap &&
-		    !bit_super_set(bg_record->bitmap,
+		    !bit_super_set(bg_record->mp_bitmap,
 				   request->avail_mp_bitmap)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("bg block %s has nodes not usable "
@@ -823,7 +823,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			bitstr_t *bitstr = NULL;
 			int num_over = 0;
 			int num_cnodes = bg_record->cnode_cnt;
-			int rec_mp_bit = bit_ffs(bg_record->bitmap);
+			int rec_mp_bit = bit_ffs(bg_record->mp_bitmap);
 
 			if (curr_mp_bit != rec_mp_bit) {
 				/* Got a different node than
