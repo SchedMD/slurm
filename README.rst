@@ -1,3 +1,6 @@
+SLURM:  the Simple Linux Utility for Resource Management
+--------------------------------------------------------
+
 This is SLURM, the Simple Linux Utility for Resource Management. SLURM
 is an open-source cluster resource management and job scheduling system
 that strives to be simple, scalable, portable, fault-tolerant, and
@@ -72,5 +75,3 @@ PROBLEMS
 
 If you experience problems compiling, installing, or running SLURM
 please send e-mail to either slurm-dev@lists.llnl.gov.
-
-$Id$
