@@ -172,10 +172,190 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
  */
 extern void ba_fini();
 
+extern void destroy_ba_mp(void *ptr);
+
+/* translate a string of at least AXYZ into a ba_mp_t ptr */
+extern ba_mp_t *str2ba_mp(const char *coords);
+/*
+ * find a base blocks bg location (rack/midplane)
+ */
+extern ba_mp_t *loc2ba_mp(const char* mp_id);
+extern ba_mp_t *coord2ba_mp(const int *coord);
+
+/*
+ * setup the ports and what not for a midplane.
+ */
+extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps, bool wrap_it);
+
+/*
+ * copy info from a ba_mp, a direct memcpy of the ba_mp_t
+ *
+ * IN ba_mp: mp to be copied
+ * Returned ba_mp_t *: copied info must be freed with destroy_ba_mp
+ */
+extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp);
+
+/*
+ * Print a linked list of ba_geo_table_t entries.
+ * IN geo_ptr - first geo_table entry to print
+ * IN header - message header
+ * IN my_geo_system - system geometry specification
+ */
+extern int ba_geo_list_print(ba_geo_table_t *geo_ptr, char *header,
+			     ba_geo_system_t *my_geo_system);
+
+/*
+ * Print the contents of all ba_geo_table_t entries.
+ */
+extern void ba_print_geo_table(ba_geo_system_t *my_geo_system);
+
+/*
+ * Create a geo_table of possible unique geometries
+ * IN/OUT my_geo_system - system geometry specification.
+ *		Set dim_count and dim_size. Other fields should be NULL.
+ *		This function will set total_size, geo_table_ptr, and
+ *		geo_table_size.
+ * Release memory using ba_free_geo_table().
+ */
+extern void ba_create_geo_table(ba_geo_system_t *my_geo_system);
+
+/*
+ * Free memory allocated by ba_create_geo_table().
+ * IN my_geo_system - System geometry specification.
+ */
+extern void ba_free_geo_table(ba_geo_system_t *my_geo_system);
+
+/*
+ * Allocate a multi-dimensional node bitmap. Use ba_node_map_free() to free
+ * IN my_geo_system - system geometry specification
+ */
+extern bitstr_t *ba_node_map_alloc(ba_geo_system_t *my_geo_system);
+
+/*
+ * Free a node map created by ba_node_map_alloc()
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_free(bitstr_t *node_bitmap,
+			     ba_geo_system_t *my_geo_system);
+
+/*
+ * Set the contents of the specified position in the bitmap
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to test
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
+			    ba_geo_system_t *my_geo_system);
+
+/*
+ * Return the contents of the specified position in the bitmap
+ * IN node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to test
+ * IN my_geo_system - system geometry specification
+ */
+extern int ba_node_map_test(bitstr_t *node_bitmap, int *full_offset,
+			    ba_geo_system_t *my_geo_system);
+
+/*
+ * Add a new allocation's node bitmap to that of the currently
+ *	allocated bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN alloc_bitmap - bitmap of nodes to be added fromtonode_bitmap
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_add(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
+			    ba_geo_system_t *my_geo_system);
+
+/*
+ * Remove a terminating allocation's node bitmap from that of the currently
+ *	allocated bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN alloc_bitmap - bitmap of nodes to be removed from node_bitmap
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_rm(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
+			   ba_geo_system_t *my_geo_system);
+
+/*
+ * Print the contents of a node map created by ba_node_map_alloc() or
+ *	ba_geo_test_all(). Output may be in one-dimension or more depending
+ *	upon configuration.
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_print(bitstr_t *node_bitmap,
+			      ba_geo_system_t *my_geo_system);
+
+/*
+ * Attempt to place a new allocation into an existing node state.
+ * Do not rotate or change the requested geometry, but do attempt to place
+ * it using all possible starting locations.
+ *
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * OUT alloc_node_bitmap - bitmap representing where to place the allocation
+ *                         set only if RET == SLURM_SUCCESS
+ * IN geo_req - geometry required for the new allocation
+ * OUT attempt_cnt - number of job placements attempted
+ * IN my_geo_system - system geometry specification
+ * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
+ */
+extern int ba_geo_test_all(bitstr_t *node_bitmap,
+			   bitstr_t **alloc_node_bitmap,
+			   ba_geo_table_t *geo_req, int *attempt_cnt,
+			   ba_geo_system_t *my_geo_system);
+
+/*
+ * Used to set all midplanes in a special used state except the ones
+ * we are able to use in a new allocation.
+ *
+ * IN: bitmap of midplanes we do or do not want
+ * IN: except - If true set all midplanes not set in the bitmap else
+ *              set all midplanes that are set in the bitmap.
+ * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
+ *
+ * Note: Need to call ba_reset_all_removed_mps before starting another
+ * allocation attempt after
+ */
+extern int ba_set_removable_mps(bitstr_t *bitmap, bool except);
+
+/*
+ * Resets the virtual system to the pervious state before calling
+ * ba_set_removable_mps.
+ */
+extern int ba_reset_all_removed_mps(void);
+
+/*
+ * set the mp in the internal configuration as in, or not in use,
+ * along with the current state of the mp.
+ *
+ * IN ba_mp: ba_mp_t to update state
+ * IN state: new state of ba_mp_t
+ */
+extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
+
+/*
+ * find a rack/midplace location based on ABCD coords
+ */
+extern char *find_mp_rack_mid(char* coords);
+
+/* make sure a node is in the system return 1 if it is 0 if not */
+extern int validate_coord(int *coord);
+
+extern char *ba_switch_usage_str(uint16_t usage);
+
+extern void set_ba_debug_flags(uint32_t debug_flags);
+/*
+ * Resets the virtual system to a virgin state.  If track_down_mps is set
+ * then those midplanes are not set to idle, but kept in a down state.
+ */
+extern void reset_ba_system(bool track_down_mps);
+
+/* in the respective block_allocator.c */
 extern void ba_create_system(int num_cpus, int *real_dims);
 extern void ba_destroy_system();
-
-extern void destroy_ba_mp(void *ptr);
 
 /*
  * create a block request.  Note that if the geometry is given,
@@ -214,30 +394,6 @@ extern int new_ba_request(select_ba_request_t* ba_request);
  */
 extern void print_ba_request(select_ba_request_t* ba_request);
 
-extern void set_ba_debug_flags(uint32_t debug_flags);
-
-/*
- * set the mp in the internal configuration as in, or not in use,
- * along with the current state of the mp.
- *
- * IN ba_mp: ba_mp_t to update state
- * IN state: new state of ba_mp_t
- */
-extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
-
-/*
- * setup the ports and what not for a midplane.
- */
-extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps, bool wrap_it);
-
-/*
- * copy info from a ba_mp, a direct memcpy of the ba_mp_t
- *
- * IN ba_mp: mp to be copied
- * Returned ba_mp_t *: copied info must be freed with destroy_ba_mp
- */
-extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp);
-
 #ifdef HAVE_BG_L_P
 /*
  * copy the path of the nodes given
@@ -249,14 +405,6 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp);
  */
 extern int copy_node_path(List nodes, List *dest_nodes);
 #endif
-
-/* translate a string of at least AXYZ into a ba_mp_t ptr */
-extern ba_mp_t *str2ba_mp(const char *coords);
-/*
- * find a base blocks bg location (rack/midplane)
- */
-extern ba_mp_t *loc2ba_mp(const char* mp_id);
-extern ba_mp_t *coord2ba_mp(const int *coord);
 
 /*
  * Try to allocate a block.
@@ -308,174 +456,20 @@ extern char *set_bg_block(List results, uint16_t *start,
 			  uint16_t *geometry, uint16_t *conn_type);
 
 /*
- * Resets the virtual system to a virgin state.  If track_down_mps is set
- * then those midplanes are not set to idle, but kept in a down state.
- */
-extern void reset_ba_system(bool track_down_mps);
-
-/*
- * Used to set all midplanes in a special used state except the ones
- * we are able to use in a new allocation.
- *
- * IN: bitmap of midplanes we do or do not want
- * IN: except - If true set all midplanes not set in the bitmap else
- *              set all midplanes that are set in the bitmap.
- * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
- *
- * Note: Need to call ba_reset_all_removed_mps before starting another
- * allocation attempt after
- */
-extern int ba_set_removable_mps(bitstr_t *bitmap, bool except);
-
-/*
- * Resets the virtual system to the pervious state before calling
- * ba_set_removable_mps.
- */
-extern int ba_reset_all_removed_mps(void);
-
-/*
- * set values of every grid point (used in smap)
- */
-extern void init_grid(node_info_msg_t *node_info_ptr);
-
-/*
  * Set up the map for resolving
  */
 extern int set_mp_locations(void);
-
-/*
- * find a base blocks bg location based on Rack Midplane name R000 not R00-M0
- */
-extern uint16_t *find_mp_loc(char* mp_id);
-
-/*
- * find a rack/midplace location based on ABCD coords
- */
-extern char *find_mp_rack_mid(char* coords);
 
 /*
  * set the used wires in the virtual system for a block from the real system
  */
 extern int load_block_wiring(char *bg_block_id);
 
-/* make sure a node is in the system return 1 if it is 0 if not */
-extern int validate_coord(int *coord);
-
-extern char *ba_switch_usage_str(uint16_t usage);
-
 extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt);
 
-/*
- * Create a geo_table of possible unique geometries
- * IN/OUT my_geo_system - system geometry specification.
- *		Set dim_count and dim_size. Other fields should be NULL.
- *		This function will set total_size, geo_table_ptr, and
- *		geo_table_size.
- * Release memory using ba_free_geo_table().
- */
-extern void ba_create_geo_table(ba_geo_system_t *my_geo_system);
-
-/*
- * Free memory allocated by ba_create_geo_table().
- * IN my_geo_system - System geometry specification.
- */
-extern void ba_free_geo_table(ba_geo_system_t *my_geo_system);
-
-/*
- * Print the contents of all ba_geo_table_t entries.
- */
-extern void ba_print_geo_table(ba_geo_system_t *my_geo_system);
-
-/*
- * Print a linked list of ba_geo_table_t entries.
- * IN geo_ptr - first geo_table entry to print
- * IN header - message header
- * IN my_geo_system - system geometry specification
- */
-extern int ba_geo_list_print(ba_geo_table_t *geo_ptr, char *header,
-			     ba_geo_system_t *my_geo_system);
-
-/*
- * Attempt to place a new allocation into an existing node state.
- * Do not rotate or change the requested geometry, but do attempt to place
- * it using all possible starting locations.
- *
- * IN node_bitmap - bitmap representing current system state, bits are set
- *                  for currently allocated nodes
- * OUT alloc_node_bitmap - bitmap representing where to place the allocation
- *                         set only if RET == SLURM_SUCCESS
- * IN geo_req - geometry required for the new allocation
- * OUT attempt_cnt - number of job placements attempted
- * IN my_geo_system - system geometry specification
- * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
- */
-extern int ba_geo_test_all(bitstr_t *node_bitmap,
-			   bitstr_t **alloc_node_bitmap,
-			   ba_geo_table_t *geo_req, int *attempt_cnt,
-			   ba_geo_system_t *my_geo_system);
-
-/*
- * Print the contents of a node map created by ba_node_map_alloc() or
- *	ba_geo_test_all(). Output may be in one-dimension or more depending
- *	upon configuration.
- * IN node_bitmap - bitmap representing current system state, bits are set
- *                  for currently allocated nodes
- * IN my_geo_system - system geometry specification
- */
-extern void ba_node_map_print(bitstr_t *node_bitmap,
-			      ba_geo_system_t *my_geo_system);
-
-/*
- * Allocate a multi-dimensional node bitmap. Use ba_node_map_free() to free
- * IN my_geo_system - system geometry specification
- */
-extern bitstr_t *ba_node_map_alloc(ba_geo_system_t *my_geo_system);
-
-/*
- * Free a node map created by ba_node_map_alloc()
- * IN node_bitmap - bitmap of currently allocated nodes
- * IN my_geo_system - system geometry specification
- */
-extern void ba_node_map_free(bitstr_t *node_bitmap,
-			     ba_geo_system_t *my_geo_system);
-
-/*
- * Return the contents of the specified position in the bitmap
- * IN node_bitmap - bitmap of currently allocated nodes
- * IN full_offset - N-dimension zero-origin offset to test
- * IN my_geo_system - system geometry specification
- */
-extern int ba_node_map_test(bitstr_t *node_bitmap, int *full_offset,
-			    ba_geo_system_t *my_geo_system);
-
-/*
- * Set the contents of the specified position in the bitmap
- * IN node_bitmap - bitmap of currently allocated nodes
- * IN full_offset - N-dimension zero-origin offset to test
- * IN my_geo_system - system geometry specification
- */
-extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
-			    ba_geo_system_t *my_geo_system);
-
-/*
- * Add a new allocation's node bitmap to that of the currently
- *	allocated bitmap
- * IN/OUT node_bitmap - bitmap of currently allocated nodes
- * IN alloc_bitmap - bitmap of nodes to be added fromtonode_bitmap
- * IN my_geo_system - system geometry specification
- */
-extern void ba_node_map_add(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
-			    ba_geo_system_t *my_geo_system);
-
-/*
- * Remove a terminating allocation's node bitmap from that of the currently
- *	allocated bitmap
- * IN/OUT node_bitmap - bitmap of currently allocated nodes
- * IN alloc_bitmap - bitmap of nodes to be removed from node_bitmap
- * IN my_geo_system - system geometry specification
- */
-extern void ba_node_map_rm(bitstr_t *node_bitmap, bitstr_t *alloc_bitmap,
-			   ba_geo_system_t *my_geo_system);
-
+#ifndef HAVE_BG_L_P
+extern ba_mp_t *ba_pick_sub_block_cnodes(
+	bg_record_t *bg_record, uint32_t node_count, bitstr_t *picked_cnodes);
+#endif
 
 #endif

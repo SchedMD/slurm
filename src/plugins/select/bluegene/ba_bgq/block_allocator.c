@@ -102,6 +102,115 @@ static bool _mp_used(ba_mp_t* ba_mp, int dim);
 /** */
 static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 
+extern void ba_create_system(int num_cpus, int *real_dims)
+{
+	int a,x,y,z, i = 0;
+	int coords[SYSTEM_DIMENSIONS];
+
+	if (ba_main_grid)
+		ba_destroy_system();
+
+	memcpy(REAL_DIM_SIZE, real_dims, sizeof(REAL_DIM_SIZE));
+
+	ba_main_grid = (ba_mp_t****)
+		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
+	for (a = 0; a < DIM_SIZE[A]; a++) {
+		ba_main_grid[a] = (ba_mp_t***)
+			xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
+		for (x = 0; x < DIM_SIZE[X]; x++) {
+			ba_main_grid[a][x] = (ba_mp_t**)
+				xmalloc(sizeof(ba_mp_t*) * DIM_SIZE[Y]);
+			for (y = 0; y < DIM_SIZE[Y]; y++) {
+				ba_main_grid[a][x][y] = (ba_mp_t*)
+					xmalloc(sizeof(ba_mp_t) * DIM_SIZE[Z]);
+				for (z = 0; z < DIM_SIZE[Z]; z++) {
+					ba_mp_t *ba_mp = &ba_main_grid
+						[a][x][y][z];
+					ba_mp->coord[A] = a;
+					ba_mp->coord[X] = x;
+					ba_mp->coord[Y] = y;
+					ba_mp->coord[Z] = z;
+					ba_mp->cnode_bitmap = bit_alloc(
+						bg_conf->mp_cnode_cnt);
+
+					snprintf(ba_mp->coord_str,
+						 sizeof(ba_mp->coord_str),
+						 "%c%c%c%c",
+						 alpha_num[ba_mp->coord[A]],
+						 alpha_num[ba_mp->coord[X]],
+						 alpha_num[ba_mp->coord[Y]],
+						 alpha_num[ba_mp->coord[Z]]);
+					ba_setup_mp(ba_mp, true, false);
+					ba_mp->state = NODE_STATE_IDLE;
+					/* This might get changed
+					   later, but just incase set
+					   it up here.
+					*/
+					ba_mp->index = i++;
+				}
+			}
+		}
+	}
+
+	/* build all the possible geos for the mid planes */
+	ba_main_geo_system =  xmalloc(sizeof(ba_geo_system_t));
+	ba_main_geo_system->dim_count = SYSTEM_DIMENSIONS;
+	ba_main_geo_system->dim_size = xmalloc(sizeof(int) *
+					  ba_main_geo_system->dim_count);
+	memcpy(ba_main_geo_system->dim_size, DIM_SIZE, sizeof(DIM_SIZE));
+	ba_create_geo_table(ba_main_geo_system);
+	//ba_print_geo_table(ba_main_geo_system);
+
+	/* build all the possible geos for a sub block inside a mid plane */
+	ba_mp_geo_system =  xmalloc(sizeof(ba_geo_system_t));
+	ba_mp_geo_system->dim_count = 5;
+	ba_mp_geo_system->dim_size = xmalloc(sizeof(int) *
+					  ba_mp_geo_system->dim_count);
+	/* These will never change. */
+	ba_mp_geo_system->dim_size[0] = 4;
+	ba_mp_geo_system->dim_size[1] = 4;
+	ba_mp_geo_system->dim_size[2] = 4;
+	ba_mp_geo_system->dim_size[3] = 4;
+	ba_mp_geo_system->dim_size[4] = 2;
+	ba_create_geo_table(ba_mp_geo_system);
+	//ba_print_geo_table(ba_mp_geo_system);
+
+	_setup_next_mps(A, coords);
+}
+
+/** */
+extern void ba_destroy_system(void)
+{
+	int a, x, y;
+
+	if (ba_main_grid) {
+		for (a=0; a<DIM_SIZE[A]; a++) {
+			for (x = 0; x < DIM_SIZE[X]; x++) {
+				for (y = 0; y < DIM_SIZE[Y]; y++)
+					xfree(ba_main_grid[a][x][y]);
+				xfree(ba_main_grid[a][x]);
+			}
+			xfree(ba_main_grid[a]);
+		}
+		xfree(ba_main_grid);
+		ba_main_grid = NULL;
+	}
+
+	if (ba_main_geo_system) {
+		ba_free_geo_table(ba_main_geo_system);
+		xfree(ba_main_geo_system->dim_size);
+		xfree(ba_main_geo_system);
+	}
+
+	if (ba_mp_geo_system) {
+		ba_free_geo_table(ba_mp_geo_system);
+		xfree(ba_mp_geo_system->dim_size);
+		xfree(ba_mp_geo_system);
+	}
+
+	memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
+}
+
 /* */
 /* static int _find_passthrough(ba_switch_t *curr_switch, int source_port,  */
 /* 			     List mps, int dim,  */
@@ -693,83 +802,6 @@ end_it:
 		deny_pass = NULL;
 
 	return name;
-}
-
-/*
- * Resets the virtual system to a virgin state.  If track_down_mps is set
- * then those midplanes are not set to idle, but kept in a down state.
- */
-extern void reset_ba_system(bool track_down_mps)
-{
-	int a, x, y, z;
-
-	for (a = 0; a < DIM_SIZE[A]; a++)
-		for (x = 0; x < DIM_SIZE[X]; x++)
-			for (y = 0; y < DIM_SIZE[Y]; y++)
-				for (z = 0; z < DIM_SIZE[Z]; z++) {
-					ba_mp_t *ba_mp = &ba_main_grid
-						[a][x][y][z];
-					ba_setup_mp(ba_mp, track_down_mps,
-						    false);
-				}
-}
-
-/*
- * set values of every grid point (used in smap)
- */
-extern void init_grid(node_info_msg_t * node_info_ptr)
-{
-	int i = 0, j, a, x, y, z;
-	ba_mp_t *ba_mp = NULL;
-
-	if (!node_info_ptr) {
-		for (a = 0; a < DIM_SIZE[A]; a++) {
-			for (x = 0; x < DIM_SIZE[X]; x++) {
-				for (y = 0; y < DIM_SIZE[Y]; y++) {
-					for (z = 0; z < DIM_SIZE[Z]; z++) {
-						ba_mp = &ba_main_grid
-							[a][x][y][z];
-						ba_mp->state = NODE_STATE_IDLE;
-						ba_mp->index = i++;
-					}
-				}
-			}
-		}
-		return;
-	}
-
-	for (j = 0; j < (int)node_info_ptr->record_count; j++) {
-		int coord[cluster_dims];
-		node_info_t *node_ptr = &node_info_ptr->node_array[j];
-		if (!node_ptr->name)
-			continue;
-
-		memset(coord, 0, sizeof(coord));
-		if (cluster_dims == 1) {
-			coord[0] = j;
-		} else {
-			if ((i = strlen(node_ptr->name)) < cluster_dims)
-				continue;
-			for (x=0; x<cluster_dims; x++)
-				coord[x] = select_char2coord(
-					node_ptr->name[i-(cluster_dims+x)]);
-		}
-
-		for (x=0; x<cluster_dims; x++)
-			if (coord[x] < 0)
-				break;
-		if (x < cluster_dims)
-			continue;
-
-		ba_mp = &ba_main_grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
-		ba_mp->index = j;
-		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
-			if (ba_initialized)
-				ba_update_mp_state(
-					ba_mp, node_ptr->node_state);
-		}
-		ba_mp->state = node_ptr->node_state;
-	}
 }
 
 extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
@@ -1550,106 +1582,6 @@ static void _setup_next_mps(int level, int *coords)
 		curr_mp->next_mp[dim] = coord2ba_mp(next_coords);
 		curr_mp->prev_mp[dim] = coord2ba_mp(prev_coords);
 	}
-}
-
-extern void ba_create_system(int num_cpus, int *real_dims)
-{
-	int a,x,y,z;
-	int coords[SYSTEM_DIMENSIONS];
-
-	if (ba_main_grid)
-		ba_destroy_system();
-
-	memcpy(REAL_DIM_SIZE, real_dims, sizeof(REAL_DIM_SIZE));
-
-	ba_main_grid = (ba_mp_t****)
-		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
-	for (a = 0; a < DIM_SIZE[A]; a++) {
-		ba_main_grid[a] = (ba_mp_t***)
-			xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
-		for (x = 0; x < DIM_SIZE[X]; x++) {
-			ba_main_grid[a][x] = (ba_mp_t**)
-				xmalloc(sizeof(ba_mp_t*) * DIM_SIZE[Y]);
-			for (y = 0; y < DIM_SIZE[Y]; y++) {
-				ba_main_grid[a][x][y] = (ba_mp_t*)
-					xmalloc(sizeof(ba_mp_t) * DIM_SIZE[Z]);
-				for (z = 0; z < DIM_SIZE[Z]; z++) {
-					ba_mp_t *ba_mp = &ba_main_grid
-						[a][x][y][z];
-					ba_mp->coord[A] = a;
-					ba_mp->coord[X] = x;
-					ba_mp->coord[Y] = y;
-					ba_mp->coord[Z] = z;
-					snprintf(ba_mp->coord_str,
-						 sizeof(ba_mp->coord_str),
-						 "%c%c%c%c",
-						 alpha_num[ba_mp->coord[A]],
-						 alpha_num[ba_mp->coord[X]],
-						 alpha_num[ba_mp->coord[Y]],
-						 alpha_num[ba_mp->coord[Z]]);
-					ba_setup_mp(ba_mp, true, false);
-				}
-			}
-		}
-	}
-
-	/* build all the possible geos for the mid planes */
-	ba_main_geo_system =  xmalloc(sizeof(ba_geo_system_t));
-	ba_main_geo_system->dim_count = SYSTEM_DIMENSIONS;
-	ba_main_geo_system->dim_size = xmalloc(sizeof(int) *
-					  ba_main_geo_system->dim_count);
-	memcpy(ba_main_geo_system->dim_size, DIM_SIZE, sizeof(DIM_SIZE));
-	ba_create_geo_table(ba_main_geo_system);
-	//ba_print_geo_table(ba_main_geo_system);
-
-	/* build all the possible geos for a sub block inside a mid plane */
-	ba_mp_geo_system =  xmalloc(sizeof(ba_geo_system_t));
-	ba_mp_geo_system->dim_count = 5;
-	ba_mp_geo_system->dim_size = xmalloc(sizeof(int) *
-					  ba_mp_geo_system->dim_count);
-	/* These will never change. */
-	ba_mp_geo_system->dim_size[0] = 4;
-	ba_mp_geo_system->dim_size[1] = 4;
-	ba_mp_geo_system->dim_size[2] = 4;
-	ba_mp_geo_system->dim_size[3] = 4;
-	ba_mp_geo_system->dim_size[4] = 2;
-	ba_create_geo_table(ba_mp_geo_system);
-	//ba_print_geo_table(ba_mp_geo_system);
-
-	_setup_next_mps(A, coords);
-}
-
-/** */
-extern void ba_destroy_system(void)
-{
-	int a, x, y;
-
-	if (ba_main_grid) {
-		for (a=0; a<DIM_SIZE[A]; a++) {
-			for (x = 0; x < DIM_SIZE[X]; x++) {
-				for (y = 0; y < DIM_SIZE[Y]; y++)
-					xfree(ba_main_grid[a][x][y]);
-				xfree(ba_main_grid[a][x]);
-			}
-			xfree(ba_main_grid[a]);
-		}
-		xfree(ba_main_grid);
-		ba_main_grid = NULL;
-	}
-
-	if (ba_main_geo_system) {
-		ba_free_geo_table(ba_main_geo_system);
-		xfree(ba_main_geo_system->dim_size);
-		xfree(ba_main_geo_system);
-	}
-
-	if (ba_mp_geo_system) {
-		ba_free_geo_table(ba_mp_geo_system);
-		xfree(ba_mp_geo_system->dim_size);
-		xfree(ba_mp_geo_system);
-	}
-
-	memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
 }
 
 /*

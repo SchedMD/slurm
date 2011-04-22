@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "ba_common.h"
+#include "bg_node_info.h"
 
 #if (SYSTEM_DIMENSIONS == 1)
 int cluster_dims = 1;
@@ -142,6 +143,32 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 	}
 }
 
+static void _internal_reset_ba_system(int level, int *coords,
+				      bool track_down_mps)
+{
+	ba_mp_t *curr_mp;
+	static int *dims = NULL;
+
+	if (level > cluster_dims)
+		return;
+
+	if (!dims)
+		dims = select_g_ba_get_dims();
+
+	if (level < cluster_dims) {
+		for (coords[level] = 0;
+		     coords[level] < dims[level];
+		     coords[level]++) {
+			/* handle the outer dims here */
+			_internal_reset_ba_system(
+				level+1, coords, track_down_mps);
+		}
+		return;
+	}
+	curr_mp = coord2ba_mp(coords);
+	ba_setup_mp(curr_mp, track_down_mps, false);
+}
+
 #if defined HAVE_BG_FILES
 static ba_mp_t *_internal_loc2ba_mp(int level, int *coords, const char *check)
 {
@@ -174,6 +201,56 @@ static ba_mp_t *_internal_loc2ba_mp(int level, int *coords, const char *check)
 	return curr_mp;
 }
 #endif
+
+/*
+ * set values of every grid point (used in smap)
+ */
+static void _init_grid(node_info_msg_t * node_info_ptr)
+{
+	int i = 0, j, x;
+
+	if (!node_info_ptr)
+		return;
+
+	for (j = 0; j < (int)node_info_ptr->record_count; j++) {
+		int coord[cluster_dims];
+		node_info_t *node_ptr = &node_info_ptr->node_array[j];
+		select_nodeinfo_t *nodeinfo = NULL;
+
+		if (!node_ptr->name)
+			continue;
+
+		memset(coord, 0, sizeof(coord));
+		if (cluster_dims == 1) {
+			coord[0] = j;
+		} else {
+			if ((i = strlen(node_ptr->name)) < cluster_dims)
+				continue;
+			for (x=0; x<cluster_dims; x++)
+				coord[x] = select_char2coord(
+					node_ptr->name[i-(cluster_dims+x)]);
+		}
+
+		for (x=0; x<cluster_dims; x++)
+			if (coord[x] < 0)
+				break;
+		if (x < cluster_dims)
+			continue;
+
+		xassert(node_ptr->select_nodeinfo);
+		nodeinfo = node_ptr->select_nodeinfo->data;
+		xassert(nodeinfo);
+		nodeinfo->ba_mp = coord2ba_mp(coord);
+		nodeinfo->ba_mp->index = j;
+		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
+			ba_update_mp_state(
+				nodeinfo->ba_mp, node_ptr->node_state);
+		}
+		nodeinfo->ba_mp->state = node_ptr->node_state;
+
+		//nodeinfo->ba_mp = ba_mp;
+	}
+}
 
 /**
  * Initialize internal structures by either reading previous block
@@ -371,7 +448,7 @@ setup_done:
 	if (bg_recover != NOT_FROM_CONTROLLER) {
 		ba_create_system(num_cpus, real_dims);
 		bridge_setup_system();
-		init_grid(node_info_ptr);
+		_init_grid(node_info_ptr);
 	}
 
 	ba_initialized = true;
@@ -1060,5 +1137,16 @@ extern char *ba_switch_usage_str(uint16_t usage)
 extern void set_ba_debug_flags(uint32_t debug_flags)
 {
 	ba_debug_flags = debug_flags;
+}
+
+/*
+ * Resets the virtual system to a virgin state.  If track_down_mps is set
+ * then those midplanes are not set to idle, but kept in a down state.
+ */
+extern void reset_ba_system(bool track_down_mps)
+{
+	int coords[SYSTEM_DIMENSIONS];
+
+	_internal_reset_ba_system(0, coords, track_down_mps);
 }
 
