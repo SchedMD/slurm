@@ -904,7 +904,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		while (geo_table) {
 			if (ba_geo_test_all(ba_mp->cnode_bitmap,
 					    &picked_cnodes, geo_table, &cnt,
-					    ba_mp_geo_system)
+					    ba_mp_geo_system, 0)
 			    == SLURM_SUCCESS) {
 				char tmp_char2[BUF_SIZE];
 				char tmp_char[BUF_SIZE];
