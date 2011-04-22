@@ -886,9 +886,10 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 			}
 		}
 		if (bit_clear_count(ba_mp->cnode_bitmap) < node_count) {
-			info("only have %d avail in %s need %d",
-			     bit_clear_count(ba_mp->cnode_bitmap),
-			     ba_mp->coord_str, node_count);
+			if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("only have %d avail in %s need %d",
+				     bit_clear_count(ba_mp->cnode_bitmap),
+				     ba_mp->coord_str, node_count);
 			continue;
 		}
 
@@ -897,12 +898,19 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 					    &picked_cnodes, geo_table, &cnt,
 					    ba_mp_geo_system, 0)
 			    == SLURM_SUCCESS) {
-				char tmp_char2[BUF_SIZE];
-				char tmp_char[BUF_SIZE];
-				bit_fmt(tmp_char, sizeof(tmp_char), picked_cnodes);
-				bit_fmt(tmp_char2, sizeof(tmp_char2), ba_mp->cnode_bitmap);
 				bit_and(ba_mp->cnode_bitmap, picked_cnodes);
-				info("found it on %s set %s bits total set is now %s", ba_mp->coord_str, tmp_char, tmp_char2);
+				if (ba_debug_flags & DEBUG_FLAG_BG_PICK) {
+					char tmp_char2[BUF_SIZE];
+					char tmp_char[BUF_SIZE];
+					bit_fmt(tmp_char, sizeof(tmp_char),
+						picked_cnodes);
+					bit_fmt(tmp_char2, sizeof(tmp_char2),
+						ba_mp->cnode_bitmap);
+					info("found it on %s set %s bits "
+					     "total set is now %s",
+					     ba_mp->coord_str,
+					     tmp_char, tmp_char2);
+				}
 				break;
 			}
 			geo_table = geo_table->next_ptr;
@@ -910,7 +918,9 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 
 		if (geo_table)
 			break;
-		info("couldn't place it on %s", ba_mp->coord_str);
+
+		if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
+			info("couldn't place it on %s", ba_mp->coord_str);
 		geo_table = ba_mp_geo_system->geo_table_ptr[node_count];
 	}
 	list_iterator_destroy(itr);
