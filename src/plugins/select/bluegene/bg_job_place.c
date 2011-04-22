@@ -1558,137 +1558,137 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	}
 
 	if (rc == SLURM_SUCCESS) {
-		if (bg_record) {
-			/* Here we see if there is a job running since
-			 * some jobs take awhile to finish we need to
-			 * make sure the time of the end is in the
-			 * future.  If it isn't (meaning it is in the
-			 * past or current time) we add 5 seconds to
-			 * it so we don't use the block immediately.
-			 */
-			if (bg_record->job_ptr
-			    && bg_record->job_ptr->end_time) {
-				if (bg_record->job_ptr->end_time <= starttime)
-					starttime += 5;
-				else
-					starttime =
-						bg_record->job_ptr->end_time;
-			} else if (bg_record->job_running == BLOCK_ERROR_STATE)
-				starttime = INFINITE;
+		if (!bg_record)
+			fatal("we got a success, but no block back");
+		/* Here we see if there is a job running since
+		 * some jobs take awhile to finish we need to
+		 * make sure the time of the end is in the
+		 * future.  If it isn't (meaning it is in the
+		 * past or current time) we add 5 seconds to
+		 * it so we don't use the block immediately.
+		 */
+		if (bg_record->job_ptr
+		    && bg_record->job_ptr->end_time) {
+			if (bg_record->job_ptr->end_time <= starttime)
+				starttime += 5;
+			else
+				starttime = bg_record->job_ptr->end_time;
+		} else if (bg_record->job_running == BLOCK_ERROR_STATE)
+			starttime = INFINITE;
 
-			/* make sure the job is eligible to run */
-			if (job_ptr->details->begin_time > starttime)
-				starttime = job_ptr->details->begin_time;
+		/* make sure the job is eligible to run */
+		if (job_ptr->details->begin_time > starttime)
+			starttime = job_ptr->details->begin_time;
 
-			job_ptr->start_time = starttime;
+		job_ptr->start_time = starttime;
+
+		set_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_NODES,
+				   bg_record->mp_str);
+		set_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_IONODES,
+				   bg_record->ionode_str);
+		if (!bg_record->bg_block_id) {
+			debug("%d can start unassigned job %u "
+			      "at %ld on %s",
+			      local_mode, job_ptr->job_id,
+			      starttime, bg_record->mp_str);
 
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_NODES,
-					   bg_record->mp_str);
+					   SELECT_JOBDATA_BLOCK_ID,
+					   "unassigned");
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_IONODES,
-					   bg_record->ionode_str);
-			if (!bg_record->bg_block_id) {
-				debug("%d can start unassigned job %u "
-				      "at %ld on %s",
-				      local_mode, job_ptr->job_id,
-				      starttime, bg_record->mp_str);
+					   SELECT_JOBDATA_NODE_CNT,
+					   &bg_record->cnode_cnt);
+		} else {
+			if ((bg_record->ionode_str)
+			    && (job_ptr->part_ptr->max_share <= 1))
+				error("Small block used in "
+				      "non-shared partition");
 
+			debug("%d(%d) can start job %u "
+			      "at %ld on %s(%s) %d",
+			      local_mode, mode, job_ptr->job_id,
+			      starttime, bg_record->bg_block_id,
+			      bg_record->mp_str,
+			      SELECT_IS_MODE_RUN_NOW(local_mode));
+
+			if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
+				set_select_jobinfo(
+					job_ptr->select_jobinfo->data,
+					SELECT_JOBDATA_BLOCK_ID,
+					bg_record->bg_block_id);
+				/* Set this up to be the
+				   correct pointer since we
+				   probably are working off a
+				   copy.
+				*/
+				if (bg_record->original)
+					bg_record = bg_record->original;
+				set_select_jobinfo(
+					job_ptr->select_jobinfo->data,
+					SELECT_JOBDATA_BLOCK_PTR,
+					bg_record);
+				if (job_ptr) {
+					bg_record->job_running =
+						job_ptr->job_id;
+					bg_record->job_ptr = job_ptr;
+
+					job_ptr->job_state |= JOB_CONFIGURING;
+					last_bg_update = time(NULL);
+				}
+			} else {
 				set_select_jobinfo(
 					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_BLOCK_ID,
 					"unassigned");
 				set_select_jobinfo(
 					job_ptr->select_jobinfo->data,
-					SELECT_JOBDATA_NODE_CNT,
-					&bg_record->cnode_cnt);
-			} else {
-				if ((bg_record->ionode_str)
-				    && (job_ptr->part_ptr->max_share <= 1))
-					error("Small block used in "
-					      "non-shared partition");
-
-				debug("%d(%d) can start job %u "
-				      "at %ld on %s(%s) %d",
-				      local_mode, mode, job_ptr->job_id,
-				      starttime, bg_record->bg_block_id,
-				      bg_record->mp_str,
-				      SELECT_IS_MODE_RUN_NOW(local_mode));
-
-				if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
-					set_select_jobinfo(
-						job_ptr->select_jobinfo->data,
-						SELECT_JOBDATA_BLOCK_ID,
-						bg_record->bg_block_id);
-					set_select_jobinfo(
-						job_ptr->select_jobinfo->data,
-						SELECT_JOBDATA_BLOCK_PTR,
-						bg_record);
-					if (job_ptr) {
-						bg_record->job_running =
-							job_ptr->job_id;
-						bg_record->job_ptr = job_ptr;
-
-						job_ptr->job_state |=
-							JOB_CONFIGURING;
-						last_bg_update = time(NULL);
-					}
-				} else {
-					set_select_jobinfo(
-						job_ptr->select_jobinfo->data,
-						SELECT_JOBDATA_BLOCK_ID,
-						"unassigned");
-					set_select_jobinfo(
-						job_ptr->select_jobinfo->data,
-						SELECT_JOBDATA_BLOCK_PTR,
-						NULL);
-					/* Just to make sure we don't
-					   end up using this on
-					   another job, or we have to
-					   wait until preemption is
-					   done.
-					*/
-					bg_record->job_ptr = NULL;
-					bg_record->job_running = NO_JOB_RUNNING;
-				}
-
-				set_select_jobinfo(
-					job_ptr->select_jobinfo->data,
-					SELECT_JOBDATA_NODE_CNT,
-					&bg_record->cnode_cnt);
+					SELECT_JOBDATA_BLOCK_PTR,
+					NULL);
+				/* Just to make sure we don't
+				   end up using this on
+				   another job, or we have to
+				   wait until preemption is
+				   done.
+				*/
+				bg_record->job_ptr = NULL;
+				bg_record->job_running = NO_JOB_RUNNING;
 			}
-			if (SELECT_IS_MODE_RUN_NOW(local_mode))
-				_build_select_struct(job_ptr,
-						     slurm_block_bitmap,
-						     bg_record->cnode_cnt);
-			/* set up the preempted job list */
-			if (SELECT_IS_PREEMPT_SET(local_mode)) {
-				if (*preemptee_job_list)
-					list_destroy(*preemptee_job_list);
-				*preemptee_job_list = _get_preemptables(
-					local_mode, bg_record,
-					preemptee_candidates);
-			}
-			if (!bg_record->bg_block_id) {
-				/* This is a fake record so we need to
-				 * destroy it after we get the info from
-				 * it.  If it was just testing then
-				 * we added this record to the
-				 * block_list.  If this is the case
-				 * it will be handled if se sync the
-				 * lists.  But we don't want to do
-				 * that so we will set blocks_added to
-				 * 0 so it doesn't happen. */
-				if (!blocks_added) {
-					destroy_bg_record(bg_record);
-					bg_record = NULL;
-				}
-				blocks_added = 0;
-			}
-			last_job_update = time(NULL);
-		} else {
-			error("we got a success, but no block back");
+
+			set_select_jobinfo(job_ptr->select_jobinfo->data,
+					   SELECT_JOBDATA_NODE_CNT,
+					   &bg_record->cnode_cnt);
 		}
+		if (SELECT_IS_MODE_RUN_NOW(local_mode))
+			_build_select_struct(job_ptr,
+					     slurm_block_bitmap,
+					     bg_record->cnode_cnt);
+		/* set up the preempted job list */
+		if (SELECT_IS_PREEMPT_SET(local_mode)) {
+			if (*preemptee_job_list)
+				list_destroy(*preemptee_job_list);
+			*preemptee_job_list = _get_preemptables(
+				local_mode, bg_record,
+				preemptee_candidates);
+		}
+		if (!bg_record->bg_block_id) {
+			/* This is a fake record so we need to
+			 * destroy it after we get the info from
+			 * it.  If it was just testing then
+			 * we added this record to the
+			 * block_list.  If this is the case
+			 * it will be handled if se sync the
+			 * lists.  But we don't want to do
+			 * that so we will set blocks_added to
+			 * 0 so it doesn't happen. */
+			if (!blocks_added) {
+				destroy_bg_record(bg_record);
+				bg_record = NULL;
+			}
+			blocks_added = 0;
+		}
+		last_job_update = time(NULL);
 	}
 
 	if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
