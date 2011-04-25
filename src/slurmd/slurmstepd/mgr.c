@@ -884,7 +884,7 @@ job_manager(slurmd_job_t *job)
 	}
 
 #ifdef HAVE_CRAY
-	if(_call_select_plugin_from_stepd(job, select_g_job_ready)) {
+	if (_call_select_plugin_from_stepd(job, select_g_job_ready)) {
 		error("could not confirm ALPS resId %u", job->resv_id);
 		/*
 		 * slurmctld knows to interpret this condition to mean that
