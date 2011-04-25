@@ -12,7 +12,7 @@ EXTRA_DIST = \
 	globals				\
 	globals_accounting		\
 	pkill				\
-	README				\
+	README.rst			\
 	regression			\
 	test1.1				\
 	test1.2				\
