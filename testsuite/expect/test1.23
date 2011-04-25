@@ -49,9 +49,9 @@ if {[test_wiki_sched] == 1} {
 # Submit a job with invalid mincpus requirement
 #
 set err_msg     0
-set host_0      ""
+set work_dir    ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mincpus=999999 -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 -l --mincpus=999999 -t1 $bin_pwd]
 expect {
 	-re "configuration is not available" {
 		send_user "This error is expected, no worries\n"
@@ -59,7 +59,7 @@ expect {
 		exp_continue
 	}
 	-re "0: ($alpha_numeric_under)" {
-		set host_0 $expect_out(1,string)
+		set work_dir $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -72,7 +72,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] != 0} {
+if {[string compare $work_dir ""] != 0} {
 	send_user "\nFAILURE: job ran with invalid mincpus option\n"
 	set exit_code   1
 }
@@ -84,12 +84,12 @@ if {$err_msg != 1} {
 #
 # Submit a job with valid mincpus requirement
 #
-set host_0      ""
+set work_dir    ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mincpus=1 -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 -l --mincpus=1 -t1 $bin_pwd]
 expect {
 	-re "0: ($alpha_numeric_under)" {
-		set host_0 $expect_out(1,string)
+		set work_dir $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -102,7 +102,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] == 0} {
+if {[string compare $work_dir ""] == 0} {
 	send_user "\nFAILURE: job failed with valid mincpus option\n"
 	set exit_code   1
 }
@@ -111,9 +111,9 @@ if {[string compare $host_0 ""] == 0} {
 # Submit a job with invalid mem requirement
 #
 set err_msg     0
-set host_0      ""
+set work_dir    ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mem=999999 -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 -l --mem=999999 -t1 $bin_pwd]
 expect {
 	-re "not available" {
 		send_user "This error is expected, no worries\n"
@@ -121,7 +121,7 @@ expect {
 		exp_continue
 	}
 	-re "0: ($alpha_numeric_under)" {
-		set host_0 $expect_out(1,string)
+		set work_dir $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -134,7 +134,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] != 0} {
+if {[string compare $work_dir ""] != 0} {
 	send_user "\nFAILURE: job ran with invalid mem option\n"
 	set exit_code   1
 }
@@ -151,9 +151,9 @@ if {$err_msg != 1} {
 # is properly configured.
 #
 set err_msg     0
-set host_0      ""
+set work_dir    ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_pwd]
 expect {
 	-re "not available" {
 		send_user "This error is not unexpected, no worries\n"
@@ -161,7 +161,7 @@ expect {
 		exp_continue
 	}
 	-re "0: ($alpha_numeric_under)" {
-		set host_0 $expect_out(1,string)
+		set work_dir $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -174,7 +174,7 @@ expect {
 	}
 }
 
-if {$err_msg == 0 && [string compare $host_0 ""] == 0} {
+if {$err_msg == 0 && [string compare $work_dir ""] == 0} {
 	send_user "\nFAILURE: job failed with valid mem option\n"
 	set exit_code   1
 }
@@ -183,9 +183,9 @@ if {$err_msg == 0 && [string compare $host_0 ""] == 0} {
 # Submit a job with invalid tmp requirement
 #
 set err_msg     0
-set host_0      ""
+set work_dir    ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --tmp=999999999 -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 -l --tmp=999999999 -t1 $bin_pwd]
 expect {
 	-re "configuration is not available" {
 		send_user "This error is expected, no worries\n"
@@ -193,7 +193,7 @@ expect {
 		exp_continue
 	}
 	-re "0: ($alpha_numeric_under)" {
-		set host_0 $expect_out(1,string)
+		set work_dir $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -206,7 +206,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] != 0} {
+if {[string compare $work_dir ""] != 0} {
 	send_user "\nFAILURE: job ran with invalid tmp option\n"
 	set exit_code   1
 }
@@ -218,12 +218,12 @@ if {$err_msg != 1} {
 #
 # Submit a job with valid tmp requirement
 #
-set host_0      ""
-set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_printenv SLURMD_NODENAME]
+set work_dir    ""
+set timeout     $max_job_delay
+set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_pwd]
 expect {
 	-re "0: ($alpha_numeric_under)" {
-		set host_0 $expect_out(1,string)
+		set work_dir $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -236,7 +236,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] == 0} {
+if {[string compare $work_dir ""] == 0} {
 	send_user "\nFAILURE: job failed with valid tmp option\n"
 	set exit_code   1
 }
