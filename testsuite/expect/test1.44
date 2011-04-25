@@ -85,7 +85,11 @@ exec $bin_rm -f $file_out
 
 set stdin_lines [get_line_cnt $file_in]
 set stdout_target [expr $stdin_lines * $task_cnt]
-
+if {[test_cray]} {
+	# The cray system is going to always throw an extra
+	# line on no matter what.
+	set stdout_target [expr $stdout_target + 1]
+}
 #
 # Run cycle_count jobs to copy job input to job output and compare sizes
 #
