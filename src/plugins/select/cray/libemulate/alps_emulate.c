@@ -559,6 +559,18 @@ extern int basil_release(uint32_t rsvn_id)
 	return 0;
 }
 
+int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
+{
+#if _DEBUG
+	info("basil_signal_apids: rsvn_id:%u signal:%d", rsvn_id, signal);
+#endif
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+
+	return ;
+}
+
 extern bool node_is_allocated(const struct basil_node *node)
 {
 	char nid[9];	/* nid%05d\0 */
