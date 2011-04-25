@@ -175,13 +175,14 @@ cset sleep_error_message "(invalid time interval)|(bad character in argument)"
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
+set alpha_numeric_comma  "\[a-zA-Z0-9_,\-\]+"
 set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
 set alpha_under          "\[A-Z_\]+"
 set end_of_line          "\[\r\n\]"
 set number               "\[0-9\]+"
 set float                "\[0-9\]+\\.?\[0-9\]+"
 set whitespace		 "\[ \t\n\r\f\v\]+"
-set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_under\]?\\\]?"
+set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_comma\]?\\\]?"
 #
 # Cache SlurmUser to check for SuperUser requests
 #

@@ -40,6 +40,10 @@ set exit_code   0
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
 if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit 0
@@ -67,11 +71,7 @@ if {$available < $node_cnt} {
     exit $exit_code
 }
 
-if {[test_cray]} {
-	set salloc_pid [spawn $salloc -N$node_cnt -t1 $srun -l $bin_hostname]
-} else {
-	set salloc_pid [spawn $salloc -N$node_cnt -t1 $srun -l $bin_printenv SLURMD_NODENAME]
-}
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $srun -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -165,11 +165,7 @@ set host_1      ""
 set host_2      ""
 set job_id      0
 set timeout $max_job_delay
-if {[test_cray]} {
-	set salloc_pid [spawn $salloc -N2 -t1 --exclude=$exclude_node $srun -l $bin_hostname]
-} else {
-	set salloc_pid [spawn $salloc -N2 -t1 --exclude=$exclude_node $srun -l $bin_printenv SLURMD_NODENAME]
-}
+set salloc_pid [spawn $salloc -N2 -t1 --exclude=$exclude_node $srun -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

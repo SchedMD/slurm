@@ -42,6 +42,10 @@ set job_id           0
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
 if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit 0
@@ -70,11 +74,7 @@ if {$available < $node_cnt} {
 #
 # Build input script file
 #
-if { [test_cray] } {
-	make_bash_script $file_in "$srun -l $bin_hostname"
-} else {
-	make_bash_script $file_in "$srun -l $bin_printenv SLURMD_NODENAME"
-}
+make_bash_script $file_in "$srun -l $bin_printenv SLURMD_NODENAME"
 
 #
 # Run job to determine what nodes are available
