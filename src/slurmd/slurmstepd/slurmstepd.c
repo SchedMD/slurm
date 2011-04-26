@@ -250,7 +250,6 @@ _init_from_slurmd(int sock, char **argv,
 	}
 	free_buf(buffer);
 
-	debug2("debug level is %d.", conf->debug_level);
 	conf->log_opts.stderr_level = conf->debug_level;
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level = conf->debug_level;
@@ -270,6 +269,7 @@ _init_from_slurmd(int sock, char **argv,
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 	log_alter(conf->log_opts, 0, conf->logfile);
 
+	debug2("debug level is %d.", conf->debug_level);
 	/* acct info */
 	jobacct_gather_g_startpoll(conf->job_acct_gather_freq);
 

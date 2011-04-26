@@ -152,6 +152,9 @@ static void _sync_agent(bg_action_t *bg_action_ptr)
 		bg_action_ptr->job_ptr->details->min_cpus = bg_record->cpu_cnt;
 	bg_record->job_running = bg_action_ptr->job_ptr->job_id;
 	bg_record->job_ptr = bg_action_ptr->job_ptr;
+	set_select_jobinfo(bg_record->job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_BLOCK_PTR,
+			   bg_record);
 
 	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
 		list_push(bg_lists->job_running, bg_record);
@@ -845,84 +848,82 @@ extern int sync_jobs(List job_list)
 		return SLURM_SUCCESS;
 	run_already = true;
 
-	/* Insure that all running jobs own the specified block */
-	block_list = _get_all_allocated_blocks();
-	if (job_list) {
-		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = (struct job_record *)
-			list_next(job_iterator))) {
-			bool good_block = true;
-			if (!IS_JOB_RUNNING(job_ptr))
-				continue;
-
-			bg_action_ptr = xmalloc(sizeof(bg_action_t));
-			bg_action_ptr->op = SYNC_OP;
-			bg_action_ptr->job_ptr = job_ptr;
-
-			get_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_BLOCK_ID,
-					   &(bg_action_ptr->bg_block_id));
-#ifdef HAVE_BG_L_P
-# ifdef HAVE_BGL
-			get_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_BLRTS_IMAGE,
-					   &(bg_action_ptr->blrtsimage));
-# else
-			get_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_CONN_TYPE,
-					   &(bg_action_ptr->conn_type));
-# endif
-			get_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_LINUX_IMAGE,
-					   &(bg_action_ptr->linuximage));
-			get_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_RAMDISK_IMAGE,
-					   &(bg_action_ptr->ramdiskimage));
-#endif
-			get_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_MLOADER_IMAGE,
-					   &(bg_action_ptr->mloaderimage));
-
-			if (bg_action_ptr->bg_block_id == NULL) {
-				error("Running job %u has bgblock==NULL",
-				      job_ptr->job_id);
-				good_block = false;
-			} else if (job_ptr->nodes == NULL) {
-				error("Running job %u has nodes==NULL",
-				      job_ptr->job_id);
-				good_block = false;
-			} else if (_excise_block(block_list,
-						 bg_action_ptr->bg_block_id,
-						 job_ptr->nodes)
-				   != SLURM_SUCCESS) {
-				error("Kill job %u belongs to defunct "
-				      "bgblock %s",
-				      job_ptr->job_id,
-				      bg_action_ptr->bg_block_id);
-				good_block = false;
-			}
-			if (!good_block) {
-				job_ptr->job_state = JOB_FAILED
-					| JOB_COMPLETING;
-				job_ptr->end_time = time(NULL);
-				last_job_update = time(NULL);
-				_destroy_bg_action(bg_action_ptr);
-				continue;
-			}
-
-			debug3("Queue sync of job %u in BG block %s "
-			       "ending at %ld",
-			       job_ptr->job_id,
-			       bg_action_ptr->bg_block_id,
-			       job_ptr->end_time);
-			_block_op(bg_action_ptr);
-		}
-		list_iterator_destroy(job_iterator);
-	} else {
+	if (!job_list) {
 		error("sync_jobs: no job_list");
-		list_destroy(block_list);
 		return SLURM_ERROR;
 	}
+	/* Insure that all running jobs own the specified block */
+	block_list = _get_all_allocated_blocks();
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		bool good_block = true;
+		if (!IS_JOB_RUNNING(job_ptr))
+			continue;
+
+		bg_action_ptr = xmalloc(sizeof(bg_action_t));
+		bg_action_ptr->op = SYNC_OP;
+		bg_action_ptr->job_ptr = job_ptr;
+
+		get_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_BLOCK_ID,
+				   &(bg_action_ptr->bg_block_id));
+#ifdef HAVE_BG_L_P
+# ifdef HAVE_BGL
+		get_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_BLRTS_IMAGE,
+				   &(bg_action_ptr->blrtsimage));
+# else
+		get_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_CONN_TYPE,
+				   &(bg_action_ptr->conn_type));
+# endif
+		get_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_LINUX_IMAGE,
+				   &(bg_action_ptr->linuximage));
+		get_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_RAMDISK_IMAGE,
+				   &(bg_action_ptr->ramdiskimage));
+#endif
+		get_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_MLOADER_IMAGE,
+				   &(bg_action_ptr->mloaderimage));
+
+		if (bg_action_ptr->bg_block_id == NULL) {
+			error("Running job %u has bgblock==NULL",
+			      job_ptr->job_id);
+			good_block = false;
+		} else if (job_ptr->nodes == NULL) {
+			error("Running job %u has nodes==NULL",
+			      job_ptr->job_id);
+			good_block = false;
+		} else if (_excise_block(block_list,
+					 bg_action_ptr->bg_block_id,
+					 job_ptr->nodes)
+			   != SLURM_SUCCESS) {
+			error("Kill job %u belongs to defunct "
+			      "bgblock %s",
+			      job_ptr->job_id,
+			      bg_action_ptr->bg_block_id);
+			good_block = false;
+		}
+		if (!good_block) {
+			job_ptr->job_state = JOB_FAILED
+				| JOB_COMPLETING;
+			job_ptr->end_time = time(NULL);
+			last_job_update = time(NULL);
+			_destroy_bg_action(bg_action_ptr);
+			continue;
+		}
+
+		debug3("Queue sync of job %u in BG block %s "
+		       "ending at %ld",
+		       job_ptr->job_id,
+		       bg_action_ptr->bg_block_id,
+		       job_ptr->end_time);
+		_block_op(bg_action_ptr);
+	}
+	list_iterator_destroy(job_iterator);
+
 	/* Insure that all other blocks are free of users */
 	if (block_list) {
 		bridge_reset_block_list(block_list);

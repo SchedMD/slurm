@@ -359,8 +359,8 @@ static int _validate_config_blocks(List curr_block_list,
 	while ((bg_record = list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if (!bit_equal(bg_record->bitmap,
-				       init_bg_record->bitmap))
+			if (!bit_equal(bg_record->mp_bitmap,
+				       init_bg_record->mp_bitmap))
 				continue; /* wrong nodes */
 			if (!bit_equal(bg_record->ionode_bitmap,
 				       init_bg_record->ionode_bitmap))
@@ -464,7 +464,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 		packstr(bg_record->blrtsimage, buffer);
-		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack_bit_fmt(bg_record->mp_bitmap, buffer);
 #ifdef HAVE_BGQ
 		pack32(SYSTEM_DIMENSIONS, buffer);
 		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
@@ -493,18 +493,20 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
+		packstr(bg_record->mp_used_str, buffer);
 		pack32((uint32_t)bg_record->cnode_cnt, buffer);
 		pack16((uint16_t)bg_record->node_use, buffer);
 		packstr(bg_record->user_name, buffer);
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
+		pack_bit_fmt(bg_record->mp_used_bitmap, buffer);
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
 		packstr(bg_record->blrtsimage, buffer);
 #endif
-		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack_bit_fmt(bg_record->mp_bitmap, buffer);
 		pack16((uint16_t)bg_record->conn_type[0], buffer);
 		packstr(bg_record->ionode_str, buffer);
 		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
@@ -525,7 +527,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 #ifdef HAVE_BGL
 		packstr(bg_record->blrtsimage, buffer);
 #endif
-		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack_bit_fmt(bg_record->mp_bitmap, buffer);
 		pack16((uint16_t)bg_record->conn_type[0], buffer);
 		packstr(bg_record->ionode_str, buffer);
 		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
@@ -1159,6 +1161,173 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return ESLURM_NOT_SUPPORTED;
 }
 
+extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
+					  select_jobinfo_t *jobinfo,
+					  uint32_t node_count)
+{
+	bitstr_t *picked_mps = NULL;
+	bitstr_t *avail_mps = NULL;
+	bg_record_t *bg_record = NULL;
+	char *tmp_char = NULL, *tmp_char2 = NULL;
+	ba_mp_t *ba_mp = NULL;
+	xassert(job_ptr);
+
+	slurm_mutex_lock(&block_state_mutex);
+
+	get_select_jobinfo(job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_BLOCK_PTR,
+			   &bg_record);
+
+	if (!bg_record)
+		fatal("This job %u does not have a bg block "
+		      "assigned to it, but for some reason we are "
+		      "trying to start a step on it?",
+		      job_ptr->job_id);
+
+	xassert(bg_record->mp_used_bitmap);
+
+	if (!(avail_mps = bit_copy(bg_record->mp_used_bitmap)))
+		fatal("bit_copy malloc failure");
+
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		tmp_char = bitmap2node_name(avail_mps);
+		info("select_p_step_pick_nodes: looking to run a new "
+		     "step for job %u requesting %u nodes on block %s with "
+		     "used midplanes %s", job_ptr->job_id, node_count,
+		     bg_record->bg_block_id, tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (!(cluster_flags & CLUSTER_FLAG_BGQ)
+	    || (node_count == bg_record->cnode_cnt)) {
+		/* If we are using the whole block we need to verify
+		   if anything else is used.  If anything else is used
+		   return NULL, else return that we can use the entire
+		   thing.
+		   On BGL/P This is always the default, no matter how
+		   big the step is since you can only run 1 step per block.
+		*/
+		if (bit_ffs(avail_mps) != -1) {
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("select_p_step_pick_nodes: Looking "
+				     "for the entire block %s for job %u, "
+				     "but some of it is used.",
+				     bg_record->bg_block_id, job_ptr->job_id);
+			goto end_it;
+		}
+		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
+			fatal("bit_copy malloc failure");
+		bit_or(bg_record->mp_used_bitmap, picked_mps);
+		goto found_it;
+	} else if ((ba_mp = ba_pick_sub_block_cnodes(
+			    bg_record, node_count,
+			    jobinfo->units_used))) {
+		if (!(picked_mps = bit_alloc(bit_size(job_ptr->node_bitmap))))
+			fatal("bit_copy malloc failure");
+		bit_set(bg_record->mp_used_bitmap, ba_mp->index);
+		bit_set(picked_mps, ba_mp->index);
+	}
+
+found_it:
+	if (picked_mps) {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			tmp_char = bitmap2node_name(picked_mps);
+			tmp_char2 = bitmap2node_name(bg_record->mp_used_bitmap);
+			info("select_p_step_pick_nodes: picked %s mps on "
+			     "block %s used is now %s",
+			     tmp_char, bg_record->bg_block_id,
+			     tmp_char2);
+			xfree(tmp_char);
+			xfree(tmp_char2);
+		}
+		jobinfo->cnode_cnt = node_count;
+	}
+end_it:
+
+	FREE_NULL_BITMAP(avail_mps);
+
+	slurm_mutex_unlock(&block_state_mutex);
+
+	return picked_mps;
+}
+
+extern int select_p_step_finish(struct step_record *step_ptr)
+{
+	bg_record_t *bg_record = NULL;
+	select_jobinfo_t *jobinfo = NULL;
+	int rc = SLURM_SUCCESS;
+	char *tmp_char = NULL, *tmp_char2 = NULL;
+
+	xassert(step_ptr);
+
+	slurm_mutex_lock(&block_state_mutex);
+
+	get_select_jobinfo(step_ptr->job_ptr->select_jobinfo->data,
+			   SELECT_JOBDATA_BLOCK_PTR,
+			   &bg_record);
+	if (!bg_record)
+		fatal("This step %u.%u does not have a bg block "
+		      "assigned to it, but for some reason we are "
+		      "trying to end the step?",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+	bit_not(step_ptr->step_node_bitmap);
+	bit_and(bg_record->mp_used_bitmap, step_ptr->step_node_bitmap);
+	bit_not(step_ptr->step_node_bitmap);
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		tmp_char = bitmap2node_name(bg_record->mp_used_bitmap);
+		tmp_char2 = bitmap2node_name(step_ptr->step_node_bitmap);
+		info("select_p_step_finish: cleared %s nodes "
+		     "from job %u, now %s used",
+		     tmp_char2, step_ptr->job_ptr->job_id, tmp_char);
+		xfree(tmp_char);
+		xfree(tmp_char2);
+	}
+
+	jobinfo = step_ptr->select_jobinfo->data;
+#ifndef HAVE_BG_L_P
+	if (jobinfo->cnode_cnt != bg_record->cnode_cnt) {
+		/* This means we only used one midplane. */
+		bitoff_t bit = bit_ffs(step_ptr->step_node_bitmap);
+		ListIterator itr = NULL;
+		ba_mp_t *ba_mp = NULL;
+
+		if (bit == -1) {
+			error("we couldn't find any bits set in "
+			      "this step %u.%u",
+			      step_ptr->job_ptr->job_id, step_ptr->step_id);
+			rc = SLURM_ERROR;
+		}
+
+		itr = list_iterator_create(bg_record->ba_mp_list);
+		while ((ba_mp = list_next(itr))) {
+			if (ba_mp->index != bit)
+				continue;
+
+			bit_not(jobinfo->units_used);
+			bit_and(ba_mp->cnode_bitmap, jobinfo->units_used);
+			if (bg_conf->slurm_debug_flags
+			    & DEBUG_FLAG_SELECT_TYPE) {
+				bit_not(jobinfo->units_used);
+				tmp_char = bitmap2node_name(
+					ba_mp->cnode_bitmap);
+				tmp_char2 = bitmap2node_name(
+					jobinfo->units_used);
+				info("select_p_step_finish: cleared %s bits "
+				     "from %s, now %s used",
+				     tmp_char2, ba_mp->coord_str, tmp_char);
+				xfree(tmp_char);
+				xfree(tmp_char2);
+			}
+		}
+		list_iterator_destroy(itr);
+
+	}
+#endif
+	slurm_mutex_unlock(&block_state_mutex);
+
+	return rc;
+}
+
 extern int select_p_pack_select_info(time_t last_query_time,
 				     uint16_t show_flags, Buf *buffer_ptr,
 				     uint16_t protocol_version)
@@ -1470,8 +1639,8 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			if (bg_record == found_record)
 				continue;
 
-			if (!bit_equal(bg_record->bitmap,
-				       found_record->bitmap)) {
+			if (!bit_equal(bg_record->mp_bitmap,
+				       found_record->mp_bitmap)) {
 				debug2("block %s isn't part of to be freed %s",
 				       found_record->bg_block_id,
 				       bg_record->bg_block_id);

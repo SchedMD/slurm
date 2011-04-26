@@ -261,8 +261,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	/* deal with large blocks here */
 	if ((rec_a->mp_count > 1) && (rec_b->mp_count > 1)) {
 		/* check for overlap. */
-		if (rec_a->bitmap && rec_b->bitmap
-		    && bit_overlap(rec_a->bitmap, rec_b->bitmap))
+		if (rec_a->mp_bitmap && rec_b->mp_bitmap
+		    && bit_overlap(rec_a->mp_bitmap, rec_b->mp_bitmap))
 			return true;
 		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
@@ -273,8 +273,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	}
 
 	/* now deal with at least one of these being a small block */
-	if (rec_a->bitmap && rec_b->bitmap
-	    && !bit_overlap(rec_a->bitmap, rec_b->bitmap))
+	if (rec_a->mp_bitmap && rec_b->mp_bitmap
+	    && !bit_overlap(rec_a->mp_bitmap, rec_b->mp_bitmap))
 		return false;
 
 	if ((rec_a->cnode_cnt >= bg_conf->mp_cnode_cnt)
@@ -563,7 +563,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	block_info_msg_t *block_ptr = NULL;
 	bg_record_t *bg_record = NULL;
 	block_info_t *block_info = NULL;
-	bitstr_t *node_bitmap = NULL, *ionode_bitmap = NULL;
+	bitstr_t *mp_bitmap = NULL, *ionode_bitmap = NULL, *used_bitmap = NULL;
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	List results = NULL;
@@ -690,13 +690,15 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		      "Please check your slurm.conf.");
 	}
 
-	node_bitmap = bit_alloc(node_record_count);
+	mp_bitmap = bit_alloc(node_record_count);
+	used_bitmap = bit_alloc(node_record_count);
 	ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
 	for (i=0; i<block_ptr->record_count; i++) {
 		block_info = &(block_ptr->block_array[i]);
 
-		bit_nclear(node_bitmap, 0, bit_size(node_bitmap) - 1);
+		bit_nclear(mp_bitmap, 0, bit_size(mp_bitmap) - 1);
 		bit_nclear(ionode_bitmap, 0, bit_size(ionode_bitmap) - 1);
+		bit_nclear(used_bitmap, 0, bit_size(used_bitmap) - 1);
 
 		j = 0;
 		while (block_info->mp_inx[j] >= 0) {
@@ -706,7 +708,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 				      node_record_count,
 				      block_info->mp_inx[j+1]);
 			}
-			bit_nset(node_bitmap,
+			bit_nset(mp_bitmap,
 				 block_info->mp_inx[j],
 				 block_info->mp_inx[j+1]);
 			j += 2;
@@ -727,12 +729,28 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 			j += 2;
 		}
 
+		j = 0;
+		while (block_info->mp_used_inx[j] >= 0) {
+			if (block_info->mp_used_inx[j+1] >= node_record_count) {
+				fatal("Job state recovered incompatible with "
+				      "bluegene.conf. mp=%u state=%d",
+				      node_record_count,
+				      block_info->mp_used_inx[j+1]);
+			}
+			bit_nset(used_bitmap,
+				 block_info->mp_used_inx[j],
+				 block_info->mp_used_inx[j+1]);
+			j += 2;
+		}
+
 		bg_record = xmalloc(sizeof(bg_record_t));
 		bg_record->magic = BLOCK_MAGIC;
 		bg_record->bg_block_id = xstrdup(block_info->bg_block_id);
 		bg_record->mp_str = xstrdup(block_info->mp_str);
 		bg_record->ionode_str = xstrdup(block_info->ionode_str);
 		bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
+		bg_record->mp_used_bitmap = bit_copy(used_bitmap);
+		info("here for %s %p", bg_record->bg_block_id, bg_record->mp_used_bitmap);
 		/* put_block_in_error_state should be
 		   called after the bg_lists->main has been
 		   made.  We can't call it here since
@@ -744,7 +762,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		if (bg_record->job_running > NO_JOB_RUNNING)
 			bg_record->job_ptr =
 				find_job_record(bg_record->job_running);
-		bg_record->mp_count = bit_set_count(node_bitmap);
+		bg_record->mp_count = bit_set_count(mp_bitmap);
 		bg_record->cnode_cnt = block_info->cnode_cnt;
 		if (bg_conf->mp_cnode_cnt > bg_record->cnode_cnt) {
 			ionodes = bg_conf->mp_cnode_cnt
@@ -789,7 +807,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		/* we want the mps that aren't
 		 * in this record to mark them as used
 		 */
-		if (ba_set_removable_mps(bg_record->bitmap, 1) != SLURM_SUCCESS)
+		if (ba_set_removable_mps(bg_record->mp_bitmap, 1)
+		    != SLURM_SUCCESS)
 			fatal("1 It doesn't seem we have a bitmap for %s",
 			      bg_record->bg_block_id);
 #ifdef HAVE_BGQ
@@ -848,7 +867,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	}
 
 	FREE_NULL_BITMAP(ionode_bitmap);
-	FREE_NULL_BITMAP(node_bitmap);
+	FREE_NULL_BITMAP(mp_bitmap);
+	FREE_NULL_BITMAP(used_bitmap);
 	FREE_NULL_BITMAP(usable_mp_bitmap);
 
 	sort_bg_record_inc_size(curr_block_list);

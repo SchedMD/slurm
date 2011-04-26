@@ -1003,76 +1003,6 @@ end_it:
 	return name;
 }
 
-/*
- * Resets the virtual system to a virgin state.  If track_down_nodes is set
- * then those midplanes are not set to idle, but kept in a down state.
- */
-extern void reset_ba_system(bool track_down_nodes)
-{
-	int x, y, z;
-
-	for (x = 0; x < DIM_SIZE[X]; x++) {
-		for (y = 0; y < DIM_SIZE[Y]; y++)
-			for (z = 0; z < DIM_SIZE[Z]; z++) {
-				ba_mp_t *ba_mp = &ba_main_grid[x][y][z];
-				ba_setup_mp(ba_mp, track_down_nodes, false);
-			}
-	}
-}
-
-/*
- * set values of every grid point (used in smap)
- */
-extern void init_grid(node_info_msg_t * node_info_ptr)
-{
-	int i = 0, j, x, y, z;
-	ba_mp_t *ba_node = NULL;
-	char *host;
-
-	if (!node_info_ptr) {
-		for (x = 0; x < DIM_SIZE[X]; x++) {
-			for (y = 0; y < DIM_SIZE[Y]; y++) {
-				for (z = 0; z < DIM_SIZE[Z]; z++) {
-					ba_node = &ba_main_grid[x][y][z];
-					ba_node->state = NODE_STATE_IDLE;
-					ba_node->index = i++;
-				}
-			}
-		}
-		return;
-	}
-
-	for (j = 0; j < node_info_ptr->record_count; j++) {
-		node_info_t *node_ptr = &node_info_ptr->node_array[j];
-		host = node_ptr->name;
-		if (!host)
-			continue;
-		if (cluster_dims == 1) {
-			x = j;
-			y = 0;
-			z = 0;
-		} else {
-			if ((i = strlen(host)) < 3)
-				continue;
-			x = select_char2coord(host[i-3]);
-			y = select_char2coord(host[i-2]);
-			z = select_char2coord(host[i-1]);
-		}
-
-		if ((x < 0) || (y < 0) || (z < 0))
-			continue;
-
-		ba_node = &ba_main_grid[x][y][z];
-		ba_node->index = j;
-		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
-			if (ba_initialized)
-				ba_update_mp_state(
-					ba_node, node_ptr->node_state);
-		}
-		ba_node->state = node_ptr->node_state;
-	}
-}
-
 /* Rotate a 3-D geometry array through its six permutations */
 extern void ba_rotate_geo(uint16_t *req_geometry, int rot_cnt)
 {
@@ -1806,7 +1736,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 
 extern void ba_create_system(int num_cpus, int *real_dims)
 {
-	int x,y,z;
+	int x,y,z, i = 0;
 
 	if (ba_main_grid)
 		ba_destroy_system();
@@ -1836,6 +1766,12 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 					 alpha_num[ba_mp->coord[Y]],
 					 alpha_num[ba_mp->coord[Z]]);
 				ba_setup_mp(ba_mp, true, false);
+				ba_node->state = NODE_STATE_IDLE;
+				/* This might get changed
+				   later, but just incase set
+				   it up here.
+				*/
+				ba_node->index = i++;
 			}
 		}
 	}

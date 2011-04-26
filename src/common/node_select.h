@@ -164,6 +164,10 @@ typedef struct slurm_select_ops {
 	int		(*job_fini)		(struct job_record *job_ptr);
 	int		(*job_suspend)		(struct job_record *job_ptr);
 	int		(*job_resume)		(struct job_record *job_ptr);
+	bitstr_t *      (*step_pick_nodes)      (struct job_record *job_ptr,
+						 select_jobinfo_t *step_jobinfo,
+						 uint32_t node_count);
+	int             (*step_finish)          (struct step_record *step_ptr);
 	int		(*pack_select_info)	(time_t last_query_time,
 						 uint16_t show_flags,
 						 Buf *buffer_ptr,
@@ -476,6 +480,26 @@ extern int select_g_job_suspend(struct job_record *job_ptr);
  * RET SLURM_SUCCESS or error code
  */
 extern int select_g_job_resume(struct job_record *job_ptr);
+
+/*
+ * Select the "best" nodes for given job from those available
+ * IN/OUT job_ptr - pointer to job already allocated and running in a
+ *                  block where the step is to run.
+ *                  set's start_time when job expected to start
+ * OUT step_jobinfo - Fill in the resources to be used if not
+ *                    full size of job.
+ * IN node_count  - How many nodes we are looking for.
+ * RET map of slurm nodes to be used for step, NULL on failure
+ */
+extern bitstr_t * select_g_step_pick_nodes(struct job_record *job_ptr,
+					   dynamic_plugin_data_t *step_jobinfo,
+					   uint32_t node_count);
+
+/*
+ * clear what happened in select_g_step_pick_nodes
+ * IN/OUT step_ptr - Flush the resources from the job and step.
+ */
+extern int select_g_step_finish(struct step_record *step_ptr);
 
 /* allocate storage for a select job credential
  * RET jobinfo - storage for a select job credential

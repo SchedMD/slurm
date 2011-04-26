@@ -78,6 +78,8 @@ Changed members of the following structs
 ========================================
 block_info_t
 	Added	    job_list
+	Added       used_mp_inx
+	Added       used_mp_str
 	node_cnt -> cnode_cnt
 	ionodes  -> ionode_str
 	nodes    -> mp_str

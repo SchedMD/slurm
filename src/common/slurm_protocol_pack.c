@@ -7678,6 +7678,8 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(block_info->mp_str), &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&(block_info->mp_used_str), &uint32_tmp,
+				       buffer);
 		safe_unpack32(&block_info->cnode_cnt, buffer);
 		safe_unpack16(&block_info->node_use, buffer);
 		safe_unpackstr_xmalloc(&block_info->owner_name,
@@ -7687,6 +7689,13 @@ static int _unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		safe_unpackstr_xmalloc(&block_info->reason,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&block_info->state, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->mp_used_inx = bitfmt2int("");
+		} else {
+			block_info->mp_used_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
+		}
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&block_info->bg_block_id,
 				       &uint32_tmp, buffer);

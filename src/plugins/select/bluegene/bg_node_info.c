@@ -318,7 +318,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			bitmap = bg_record->ionode_bitmap;
 
 		for (i=0; i<node_record_count; i++) {
-			if (!bit_test(bg_record->bitmap, i))
+			if (!bit_test(bg_record->mp_bitmap, i))
 				continue;
 			node_ptr = &(node_record_table_ptr[i]);
 
