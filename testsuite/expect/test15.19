@@ -40,6 +40,11 @@ set exit_code   0
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 #
 # Submit a 1 node job and validate that we don't get more than one
 #
@@ -66,7 +71,7 @@ expect {
 	}
 	-re "($number): ($alpha_numeric_under)" {
 		if {$task_cnt == 0} {
-			set host_0 $expect_out(1,string)
+			set host_0 $expect_out(2,string)
 		}
 		incr task_cnt
 		exp_continue
@@ -87,6 +92,7 @@ expect {
 if {[string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: Did not get SLURMD_NODENAME of task 0\n"
 	set exit_code   1
+	exit $exit_code
 }
 
 set alloc_fail 0
@@ -126,7 +132,6 @@ if { $task_cnt2 != 0 } {
 	send_user "\nFAILURE: allocated more tasks than processors\n"
 	set exit_code   1
 }
-
 
 #
 # Submit a 1 node job
