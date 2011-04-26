@@ -608,7 +608,6 @@ static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
 void
 pack_header(header_t * header, Buf buffer)
 {
-
 	pack16((uint16_t)header->version, buffer);
 	pack16((uint16_t)header->flags, buffer);
 	pack16((uint16_t)header->msg_type, buffer);
