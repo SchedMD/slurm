@@ -30,6 +30,9 @@ documents those changes that are of interest to users and admins.
     --resv-ports option is used.
  -- Fix some anomalies in select/cons_res task layout when using the 
     --cpus-per-task option. Patch from Martin Perry, Bull.
+ -- Improve backfill scheduling logic when job specifies --ntasks-per-node and
+    --mem-per-cpu options on a heterogeneous cluster. Patch from Bjorn-Helge
+    Mevik, University of Oslo.
 
 * Changes in SLURM 2.2.4
 ========================
@@ -84,7 +87,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.3
 ========================
- -- Update srun, salloc, and sbatch man page description of --distribution
+ -- Update srun, salloc, and sbatch man page descript((detail_ptr->pn_min_memory & (MEM_PER_CPU)) &ion of --distribution
     option. Patches from Rod Schulz, Bull.
  -- Applied patch from Martin Perry to fix "Incorrect results for task/affinity
     block second distribution and cpus-per-task > 1" bug.
