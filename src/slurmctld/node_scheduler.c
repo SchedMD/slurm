@@ -1543,6 +1543,10 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			if ((detail_ptr->pn_min_cpus  > config_ptr->cpus)   ||
 			    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
 			      config_ptr->real_memory) 			     ||
+			    ((detail_ptr->pn_min_memory & (MEM_PER_CPU)) &&
+			     ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) *
+			      detail_ptr->pn_min_cpus) >
+			     config_ptr->real_memory) 			     ||
 			    (detail_ptr->pn_min_tmp_disk >
 			     config_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
@@ -1562,6 +1566,10 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			if ((detail_ptr->pn_min_cpus > node_ptr->cpus)     ||
 			    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
 			      node_ptr->real_memory)                        ||
+			    ((detail_ptr->pn_min_memory & (MEM_PER_CPU)) &&
+			     ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) *
+			      detail_ptr->pn_min_cpus) >
+			     node_ptr->real_memory) 			   ||
 			    (detail_ptr->pn_min_tmp_disk >
 			     node_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);

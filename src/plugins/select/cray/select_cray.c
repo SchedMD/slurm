@@ -71,6 +71,7 @@ int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
 struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
+slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
@@ -80,6 +81,7 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table;
 int switch_record_cnt;
+slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 #endif
 
 /* All current (2011) XT/XE installations have a maximum dimension of 3,

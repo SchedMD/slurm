@@ -299,6 +299,7 @@
 #define	_xstrfmtcat		slurm_xstrfmtcat
 #define	_xmemcat		slurm_xmemcat
 #define	xstrdup			slurm_xstrdup
+#define	xstrdup_printf		slurm_xstrdup_printf
 #define	xbasename		slurm_xbasename
 
 /* slurm_protocol_defs.[ch] functions */

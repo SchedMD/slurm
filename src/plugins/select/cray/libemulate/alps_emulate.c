@@ -44,6 +44,7 @@
 #    include <inttypes.h>
 #  endif
 #endif
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "src/common/log.h"
@@ -415,6 +416,7 @@ extern int basil_request(struct basil_parse_data *bp)
 extern struct basil_inventory *get_full_inventory(enum basil_version version)
 {
 	int i;
+	char *end_ptr;
 	struct basil_inventory *inv;
 	struct node_record *node_ptr;
 	struct basil_node *basil_node_ptr, **last_basil_node_ptr;
@@ -435,7 +437,12 @@ extern struct basil_inventory *get_full_inventory(enum basil_version version)
 	     i++, node_ptr++) {
 		basil_node_ptr = xmalloc(sizeof(struct basil_node));
 		*last_basil_node_ptr = basil_node_ptr;
-		basil_node_ptr->node_id = i;
+		basil_node_ptr->node_id = strtol(node_ptr->name+3, &end_ptr,
+						 10);
+		if (end_ptr[0] != '\0') {
+			error("Invalid node name: %s", basil_node_ptr->name);
+			basil_node_ptr->node_id = i;
+		}
 		strncpy(basil_node_ptr->name, node_ptr->name,
 			BASIL_STRING_SHORT);
 		basil_node_ptr->state = BNS_UP;
@@ -505,12 +512,13 @@ extern long basil_reserve(const char *user, const char *batch_id,
 
 	job_id = atol(batch_id);
 	for (i = 0; i < MAX_RESV_CNT; i++) {
+		int my_resv_id;
 		if (resv_jobid[last_resv_id])
 			continue;
 		resv_jobid[last_resv_id] = job_id;
-		last_resv_id++;
+		my_resv_id = ++last_resv_id;	/* one origin */
 		last_resv_id %= MAX_RESV_CNT;
-		return last_resv_id;
+		return my_resv_id;
 	}
 
 	return 0;
@@ -551,10 +559,27 @@ extern int basil_release(uint32_t rsvn_id)
 	return 0;
 }
 
+int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
+{
+#if _DEBUG
+	info("basil_signal_apids: rsvn_id:%u signal:%d", rsvn_id, signal);
+#endif
+#if _ADD_DELAYS
+	usleep(5000);
+#endif
+
+	return ;
+}
+
 extern bool node_is_allocated(const struct basil_node *node)
 {
+	char nid[9];	/* nid%05d\0 */
 	struct node_record *node_ptr;
 
-	node_ptr = &node_record_table_ptr[node->node_id];
+	snprintf(nid, sizeof(nid), "nid%05u", node->node_id);
+	node_ptr = find_node_record(nid);
+	if (node_ptr == NULL)
+		return false;
+
 	return IS_NODE_ALLOCATED(node_ptr);
 }

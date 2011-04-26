@@ -46,7 +46,7 @@ print_header $test_id
 # of the ulimit program is inconsistent across systems.
 #
 exec rm -f $file_prog $file_in $file_out
-exec cc -o $file_prog $file_prog.c
+exec $bin_cc -o $file_prog $file_prog.c
 make_bash_script $file_in "
  $srun ./$file_prog
 "

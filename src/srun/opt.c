@@ -181,6 +181,7 @@
 #define LONG_OPT_DEBUG_SLURMD    0x14f
 #define LONG_OPT_TIME_MIN        0x150
 #define LONG_OPT_GRES            0x151
+#define LONG_OPT_ALPS            0x152
 
 extern char **environ;
 
@@ -712,7 +713,7 @@ _get_int(const char *arg, const char *what, bool positive)
 
 static void set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0, max_val = 0, tmp_int;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        no_argument,       0, 'a'},
@@ -758,6 +759,7 @@ static void set_options(const int argc, char **argv)
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
+		{"alps",             required_argument, 0, LONG_OPT_ALPS},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -878,9 +880,14 @@ static void set_options(const int argc, char **argv)
 			}
 			break;
 		case (int)'c':
+			tmp_int = _get_int(optarg, "cpus-per-task", false);
+			if (opt.cpus_set && (tmp_int > opt.cpus_per_task)) {
+				info("Job step's --cpus-per-task value exceeds"
+				     " that of job (%d > %d). Job step may "
+				     "never run.", tmp_int, opt.cpus_per_task);
+			}
 			opt.cpus_set = true;
-			opt.cpus_per_task =
-				_get_int(optarg, "cpus-per-task", false);
+			opt.cpus_per_task = tmp_int;
 			break;
 		case (int)'C':
 			xfree(opt.constraints);
@@ -1447,6 +1454,9 @@ static void set_options(const int argc, char **argv)
 			}
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
+			break;
+		case LONG_OPT_ALPS:
+			verbose("Not running ALPS. --alps option ignored.");
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {

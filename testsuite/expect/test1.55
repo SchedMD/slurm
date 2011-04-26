@@ -38,6 +38,11 @@ set test_script          "test$test_id.sh"
 
 print_header $test_id
 
+# limited step knowledge on cray systems.
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit 0
+}
 #
 # Create a test script to be launch by srun
 #
@@ -58,7 +63,7 @@ make_bash_script $test_script {
 set timeout $max_job_delay
 set jobid  0
 set stepid 0
-set srun_pid [spawn $srun -u -v -n1 -t1 $test_script]
+set srun_pid [spawn $srun --unbuffered -v -n1 -t1 $test_script]
 expect {
 	-re "launching (($number)\.0)" {
 		set stepid $expect_out(1,string)
