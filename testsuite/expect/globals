@@ -125,7 +125,11 @@ cset bin_env	"env"
 cset bin_file	"file"
 cset bin_id	"id"
 cset bin_grep    "grep"
-#cset bin_hostname "hostname" #Don't user $bin_hostname use $bin_printenv SLURMD_NODENAME
+
+# Don't user $bin_hostname unless on a front-end system that
+# doesn't fully use the slurmd, use $bin_printenv SLURMD_NODENAME
+cset bin_hostname "hostname"
+
 cset bin_kill	"kill"
 cset bin_make	"make"
 cset bin_od     "od"
