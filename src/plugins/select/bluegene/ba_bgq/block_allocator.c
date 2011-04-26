@@ -94,7 +94,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		      int *block_start, int *block_end);
 
 /* */
-static void _setup_next_mps(int level, int *coords);
+static void _setup_next_mps(int level, uint16_t *coords);
 
 /** */
 static bool _mp_used(ba_mp_t* ba_mp, int dim);
@@ -105,7 +105,7 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 extern void ba_create_system(int num_cpus, int *real_dims)
 {
 	int a,x,y,z, i = 0;
-	int coords[SYSTEM_DIMENSIONS];
+	uint16_t coords[SYSTEM_DIMENSIONS];
 
 	if (ba_main_grid)
 		ba_destroy_system();
@@ -313,7 +313,7 @@ extern void print_ba_request(select_ba_request_t* ba_request)
 	debug("    elongate:\t%d", ba_request->elongate);
 }
 
-extern ba_mp_t *coord2ba_mp(const int *coord)
+extern ba_mp_t *coord2ba_mp(const uint16_t *coord)
 {
 	return &ba_main_grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
 }
@@ -1623,11 +1623,11 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 	return 1;
 }
 
-static void _setup_next_mps(int level, int *coords)
+static void _setup_next_mps(int level, uint16_t *coords)
 {
 	ba_mp_t *curr_mp;
-	int next_coords[SYSTEM_DIMENSIONS];
-	int prev_coords[SYSTEM_DIMENSIONS];
+	uint16_t next_coords[SYSTEM_DIMENSIONS];
+	uint16_t prev_coords[SYSTEM_DIMENSIONS];
 	int dim;
 
 	if (level > cluster_dims)
