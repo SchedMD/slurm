@@ -107,10 +107,10 @@ typedef struct {
  */
 typedef struct {
 	/* target label */
-	int mp_tar[HIGHEST_DIMENSIONS];
+	uint16_t mp_tar[HIGHEST_DIMENSIONS];
 	/* target port */
-	int port_tar;
-	bool used;
+	uint16_t port_tar;
+	uint16_t used;
 } ba_connection_t;
 
 /*
@@ -123,10 +123,8 @@ typedef struct {
  *
  */
 typedef struct {
-#ifdef HAVE_BG_L_P
 	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
 	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
-#endif
 	uint16_t usage;
 } ba_switch_t;
 

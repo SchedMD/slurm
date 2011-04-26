@@ -54,12 +54,44 @@ uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
 
+static void _pack_ba_connection(ba_connection_t *ba_connection,
+				Buf buffer, uint16_t protocol_version)
+{
+	int dim;
+	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+		pack16(ba_connection->mp_tar[dim], buffer);
+	pack16(ba_connection->port_tar, buffer);
+	pack16(ba_connection->used, buffer);
+}
+
+static int _unpack_ba_connection(ba_connection_t *ba_connection,
+				 Buf buffer, uint16_t protocol_version)
+{
+	int dim;
+
+	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+		safe_unpack16(&ba_connection->mp_tar[dim], buffer);
+	safe_unpack16(&ba_connection->port_tar, buffer);
+	safe_unpack16(&ba_connection->used, buffer);
+
+	return SLURM_SUCCESS;
+unpack_error:
+	return SLURM_ERROR;
+}
 
 static void _pack_ba_switch(ba_switch_t *ba_switch,
 			    Buf buffer, uint16_t protocol_version)
 {
+	int i;
+
 	if ((cluster_flags & CLUSTER_FLAG_BGL)
 	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
+		for (i=0; i< NUM_PORTS_PER_NODE; i++) {
+			_pack_ba_connection(&ba_switch->int_wire[i],
+					    buffer, protocol_version);
+			_pack_ba_connection(&ba_switch->ext_wire[i],
+					    buffer, protocol_version);
+		}
 	}
 	pack16(ba_switch->usage, buffer);
 }
@@ -67,8 +99,20 @@ static void _pack_ba_switch(ba_switch_t *ba_switch,
 static int _unpack_ba_switch(ba_switch_t *ba_switch,
 			     Buf buffer, uint16_t protocol_version)
 {
+	int i;
+
 	if ((cluster_flags & CLUSTER_FLAG_BGL)
 	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
+		for (i=0; i< NUM_PORTS_PER_NODE; i++) {
+			if(_unpack_ba_connection(&ba_switch->int_wire[i],
+						 buffer, protocol_version)
+			   != SLURM_SUCCESS)
+				goto unpack_error;
+			if(_unpack_ba_connection(&ba_switch->ext_wire[i],
+						 buffer, protocol_version)
+			   != SLURM_SUCCESS)
+				goto unpack_error;
+		}
 	}
 	safe_unpack16(&ba_switch->usage, buffer);
 	return SLURM_SUCCESS;
