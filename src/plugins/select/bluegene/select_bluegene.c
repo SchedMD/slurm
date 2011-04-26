@@ -1198,7 +1198,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		xfree(tmp_char);
 	}
 
-	if (!(cluster_flags & CLUSTER_FLAG_BGQ)
+	if (((cluster_flags & CLUSTER_FLAG_BGL)
+	     || (cluster_flags & CLUSTER_FLAG_BGP))
 	    || (node_count == bg_record->cnode_cnt)) {
 		/* If we are using the whole block we need to verify
 		   if anything else is used.  If anything else is used

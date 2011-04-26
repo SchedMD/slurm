@@ -489,9 +489,7 @@ extern int load_block_wiring(char *bg_block_id);
 
 extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt);
 
-#ifndef HAVE_BG_L_P
 extern ba_mp_t *ba_pick_sub_block_cnodes(
 	bg_record_t *bg_record, uint32_t node_count, bitstr_t **picked_cnodes);
-#endif
 
 #endif
