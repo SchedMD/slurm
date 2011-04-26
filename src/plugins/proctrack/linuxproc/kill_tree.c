@@ -151,6 +151,7 @@ static xppid_t **_build_hashtbl(void)
 	struct dirent *de;
 	char path[PATH_MAX], *endptr, *num, rbuf[1024];
 	char myname[1024], cmd[1024];
+	char state;
 	int fd;
 	long pid, ppid, ret_l;
 	xppid_t **hashtbl;
@@ -185,11 +186,17 @@ static xppid_t **_build_hashtbl(void)
 			close(fd);
 			continue;
 		}
-		if (sscanf(rbuf, "%ld %s %*s %ld", &pid, cmd, &ppid) != 3) {
+		if (sscanf(rbuf, "%ld %s %c %ld", &pid, cmd, &state, &ppid)
+		    != 4) {
 			close(fd);
 			continue;
 		}
 		close(fd);
+		if (state == 'Z') {
+			debug3("Defunct process skipped: command=%s state=%c "
+			       "pid=%ld ppid=%ld", cmd, state, pid, ppid);
+			continue;	/* Defunct, don't try to kill */
+		}
 
 		/* Record cmd for debugging purpose */
 		_push_to_hashtbl((pid_t)ppid, (pid_t)pid,
