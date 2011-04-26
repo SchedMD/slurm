@@ -51,6 +51,7 @@ uint16_t ba_deny_pass = 0;
 bool ba_initialized = false;
 uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
+ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
 
 /*
  * Increment a geometry index array, return false after reaching the last entry
@@ -80,8 +81,9 @@ static void _ba_node_xlate_to_1d(int *offset_1d, int *full_offset,
 
 	xassert(offset_1d);
 	xassert(full_offset);
-	map_offset = full_offset[0];
-	for (i = 1; i < my_geo_system->dim_count; i++) {
+	i = my_geo_system->dim_count - 1;
+	map_offset = full_offset[i];
+	for (i-- ; i >= 0; i--) {
 		map_offset *= my_geo_system->dim_size[i];
 		map_offset += full_offset[i];
 	}
@@ -98,7 +100,7 @@ static void _ba_node_xlate_from_1d(int offset_1d, int *full_offset,
 
 	xassert(full_offset);
 	map_offset = offset_1d;
-	for (i = my_system_geo->dim_count - 1; i >= 0; i--) {
+	for (i = 0; i < my_system_geo->dim_count; i++) {
 		full_offset[i] = map_offset % my_system_geo->dim_size[i];
 		map_offset /= my_system_geo->dim_size[i];
 	}
@@ -174,6 +176,58 @@ static ba_mp_t *_internal_loc2ba_mp(int level, int *coords, const char *check)
 	return curr_mp;
 }
 #endif
+
+static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
+{
+	int i, j;
+	ba_geo_combos_t *combos;
+
+	xassert(size > 0);
+	combos = &geo_combos[size-1];
+	combos->elem_count = (1 << size) - 1;
+	combos->set_count_array = xmalloc(sizeof(int) * combos->elem_count);
+	combos->set_bits_array  = xmalloc(sizeof(bitstr_t *) *
+					  combos->elem_count);
+	for (i = 1; i <= combos->elem_count; i++) {
+		combos->set_bits_array[i-1] = bit_alloc(size);
+		if (combos->set_bits_array[i-1] == NULL)
+			fatal("bit_alloc: malloc failure");
+		for (j = 0; j < size; j++) {
+			if (((i >> j) & 0x1) == 0)
+				continue;
+			bit_set(combos->set_bits_array[i-1], j);
+			combos->set_count_array[i-1]++;
+		}
+	}
+
+#if 0
+	info("size=%d", size);
+	for (i = 0; i < combos->elem_count; i++) {
+		char buf[64];
+		bit_fmt(buf, sizeof(buf), combos->set_bits_array[i]);
+		info("cnt:%d bits:%s", combos->set_count_array[i], buf);
+	}
+	info("\n\n");
+#endif
+
+	return combos;
+}
+
+static void _free_geo_bitmap_arrays(void)
+{
+	int i, j;
+	ba_geo_combos_t *combos;
+
+	for (i = 1; i <= LONGEST_BGQ_DIM_LEN; i++) {
+		combos = &geo_combos[i-1];
+		for (j = 0; j < combos->elem_count; j++) {
+			if (combos->set_bits_array[j])
+				bit_free(combos->set_bits_array[j]);
+		}
+		xfree(combos->set_count_array);
+		xfree(combos->set_bits_array);
+	}
+}
 
 /**
  * Initialize internal structures by either reading previous block
@@ -372,6 +426,9 @@ setup_done:
 		ba_create_system(num_cpus, real_dims);
 		bridge_setup_system();
 		init_grid(node_info_ptr);
+
+		for (i = 1; i <= LONGEST_BGQ_DIM_LEN; i++)
+			_build_geo_bitmap_arrays(i);
 	}
 
 	ba_initialized = true;
@@ -381,7 +438,7 @@ setup_done:
 /**
  * destroy all the internal (global) data structs.
  */
-extern void ba_fini()
+extern void ba_fini(void)
 {
 	if (!ba_initialized){
 		return;
@@ -390,6 +447,7 @@ extern void ba_fini()
 	if (bg_recover != NOT_FROM_CONTROLLER) {
 		bridge_fini();
 		ba_destroy_system();
+		_free_geo_bitmap_arrays();
 	}
 	ba_initialized = false;
 
@@ -779,11 +837,14 @@ extern void ba_node_map_print(bitstr_t *node_bitmap,
 			      ba_geo_system_t *my_geo_system)
 {
 #if DISPLAY_1D
+{
 	char out_buf[256];
 	bit_fmt(out_buf, sizeof(out_buf), node_bitmap);
 	info("%s", out_buf);
+}
 #endif
 #if DISPLAY_FULL_DIM
+{
 	int i, j, offset[my_geo_system->dim_count];
 
 	xassert(node_bitmap);
@@ -802,24 +863,123 @@ extern void ba_node_map_print(bitstr_t *node_bitmap,
 			info("%s   inx:%d", full_buf, i);
 		}
 	}
+}
 #endif
 }
 
-/*
- * Attempt to place a new allocation into an existing node state.
- * Do not rotate or change the requested geometry, but do attempt to place
- * it using all possible starting locations.
- *
- * IN node_bitmap - bitmap representing current system state, bits are set
- *                  for currently allocated nodes
- * OUT alloc_node_bitmap - bitmap representing where to place the allocation
- *                         set only if RET == SLURM_SUCCESS
- * IN geo_req - geometry required for the new allocation
- * OUT attempt_cnt - number of job placements attempted
- * IN my_geo_system - system geometry specification
- * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
- */
-extern int ba_geo_test_all(bitstr_t *node_bitmap,
+/* Find the next element in the geo_combinations array in a given dimension 
+ * that contains req_bit_cnt elements to use. Return -1 if none found. */
+static int _find_next_geo_inx(ba_geo_combos_t *geo_combo_ptr,
+			      int last_inx, uint16_t req_bit_cnt)
+{
+	while (++last_inx < geo_combo_ptr->elem_count) {
+		if (req_bit_cnt == geo_combo_ptr->set_count_array[last_inx])
+			return last_inx;
+	}
+	return -1;
+}
+
+/* Determine if a specific set of elements in each dimension is available.
+ * Return a bitmap of that set of elements if free, NULL otherwise. */
+static bitstr_t * _test_geo(bitstr_t *node_bitmap,
+			    ba_geo_system_t *my_geo_system,
+			    ba_geo_combos_t **geo_array, int *geo_array_inx)
+{
+	int i;
+	bitstr_t *alloc_node_bitmap;
+	int offset[my_geo_system->dim_count];
+
+	alloc_node_bitmap = bit_alloc(my_geo_system->total_size);
+	memset(offset, 0, sizeof(offset));
+	while (1) {
+		/* Test if this coordinate is required in every dimension */
+		for (i = 0; i < my_geo_system->dim_count; i++) {
+			if (!bit_test(geo_array[i]->
+				      set_bits_array[geo_array_inx[i]],
+				      offset[i]))
+				break;	/* not needed */
+		}
+		/* Test if this coordinate is available for use */
+		if (i >= my_geo_system->dim_count) {
+			if (ba_node_map_test(node_bitmap,offset,my_geo_system))
+				break;	/* not available */
+			/* Set it in our bitmap for this job */
+			ba_node_map_set(alloc_node_bitmap, offset,
+					my_geo_system);
+		}
+		/* Go to next coordinate */
+		for (i = 0; i < my_geo_system->dim_count; i++) {
+			if (++offset[i] < my_geo_system->dim_size[i])
+				break;
+			offset[i] = 0;
+		}
+		if (i >= my_geo_system->dim_count) {
+			/* All bits in every dimension tested */
+			return alloc_node_bitmap;
+		}
+	}
+	bit_free(alloc_node_bitmap);
+	return NULL;
+}
+
+/* Attempt to place an allocation of a specific required geomemtry (reo_req)
+ * into a bitmap of available resources (node_bitmap). The resource allocation
+ * may contain gaps in multiple dimensions. */
+static int _geo_test_maps(bitstr_t *node_bitmap,
+			  bitstr_t **alloc_node_bitmap,
+			  ba_geo_table_t *geo_req, int *attempt_cnt,
+			  ba_geo_system_t *my_geo_system)
+{
+	int i;
+	ba_geo_combos_t *geo_array[my_geo_system->dim_count];
+	int geo_array_inx[my_geo_system->dim_count];
+
+	for (i = 0; i < my_geo_system->dim_count; i++) {
+		if (my_geo_system->dim_size[i] > LONGEST_BGQ_DIM_LEN) {
+			error("System geometry specification larger than "
+			      "configured LONGEST_BGQ_DIM_LEN. Increase "
+			      "LONGEST_BGQ_DIM_LEN (%d)", LONGEST_BGQ_DIM_LEN);
+			return SLURM_ERROR;
+		}
+		geo_array[i] = &geo_combos[my_geo_system->dim_size[i] - 1];
+		geo_array_inx[i] = _find_next_geo_inx(geo_array[i], -1,
+						      geo_req->geometry[i]);
+		if (geo_array_inx[i] == -1) {
+			error("Request to allocate %u nodes in dimension %d, "
+			      "which only has %d elements",
+			      geo_req->geometry[i], i,
+			      my_geo_system->dim_size[i]);
+			return SLURM_ERROR;
+		}
+	}
+
+	*alloc_node_bitmap = (bitstr_t *) NULL;
+	while (1) {
+		(*attempt_cnt)++;
+		*alloc_node_bitmap = _test_geo(node_bitmap, my_geo_system,
+					       geo_array, geo_array_inx);
+		if (*alloc_node_bitmap)
+			return SLURM_SUCCESS;
+
+		/* Increment offsets */
+		for (i = 0; i < my_geo_system->dim_count; i++) {
+			geo_array_inx[i] = _find_next_geo_inx(geo_array[i],
+							geo_array_inx[i],
+						     	geo_req->geometry[i]);
+			if (geo_array_inx[i] != -1)
+				break;
+			geo_array_inx[i] = _find_next_geo_inx(geo_array[i], -1,
+							geo_req->geometry[i]);
+		}
+		if (i >= my_geo_system->dim_count)
+			return SLURM_ERROR;
+	}
+}
+
+/* Attempt to place an allocation of a specific required geomemtry (reo_req)
+ * into a bitmap of available resources (node_bitmap). The resource allocation
+ * may contain NO gaps in any dimension. */
+static int _geo_test_all(bitstr_t *node_bitmap,
 			   bitstr_t **alloc_node_bitmap,
 			   ba_geo_table_t *geo_req, int *attempt_cnt,
 			   ba_geo_system_t *my_geo_system)
@@ -830,13 +990,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 	int next_offset[my_geo_system->dim_count];
 	int tmp_offset[my_geo_system->dim_count];
 	bitstr_t *new_bitmap;
-
-	xassert(node_bitmap);
-	xassert(alloc_node_bitmap);
-	xassert(geo_req);
-	xassert(attempt_cnt);
-
-	*attempt_cnt = 0;
+ 
 	/* Start at location 00000 and move through all starting locations */
 	memset(start_offset, 0, sizeof(start_offset));
 
@@ -908,6 +1062,46 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 		}
 	}
 	*alloc_node_bitmap = new_bitmap;
+
+	return rc;
+}
+
+/*
+ * Attempt to place a new allocation into an existing node state.
+ * Do not rotate or change the requested geometry, but do attempt to place
+ * it using all possible starting locations.
+ *
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * OUT alloc_node_bitmap - bitmap representing where to place the allocation
+ *                         set only if RET == SLURM_SUCCESS
+ * IN geo_req - geometry required for the new allocation
+ * OUT attempt_cnt - number of job placements attempted
+ * IN my_geo_system - system geometry specification
+ * IN gaps_ok - if set, then allow gaps in any dimension, any gap applies to
+ *		all elements at that position in that dimension
+ * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
+ */
+extern int ba_geo_test_all(bitstr_t *node_bitmap,
+			   bitstr_t **alloc_node_bitmap,
+			   ba_geo_table_t *geo_req, int *attempt_cnt,
+			   ba_geo_system_t *my_geo_system, bool gaps_ok)
+{
+	int rc;
+
+	xassert(node_bitmap);
+	xassert(alloc_node_bitmap);
+	xassert(geo_req);
+	xassert(attempt_cnt);
+
+	*attempt_cnt = 0;
+	if (gaps_ok) {
+		rc = _geo_test_maps(node_bitmap, alloc_node_bitmap,
+				    geo_req, attempt_cnt, my_geo_system);
+	} else {
+		rc = _geo_test_all(node_bitmap, alloc_node_bitmap,
+				   geo_req, attempt_cnt, my_geo_system);
+	}
 
 	return rc;
 }

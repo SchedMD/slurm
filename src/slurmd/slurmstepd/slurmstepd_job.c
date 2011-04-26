@@ -298,6 +298,15 @@ job_create(launch_tasks_request_msg_t *msg)
 					     job->job_mem);
 	}
 
+#ifdef HAVE_CRAY
+	/* This is only used for Cray emulation mode where slurmd is used to
+	 * launch job steps. On a real Cray system, ALPS is used to launch
+	 * the tasks instead of SLURM. SLURM's task launch RPC does NOT
+	 * contain the reservation ID, so just use some non-zero value here
+	 * for testing purposes. */
+	job->resv_id = 1;
+#endif
+
 	get_cred_gres(msg->cred, conf->node_name,
 		      &job->job_gres_list, &job->step_gres_list);
 

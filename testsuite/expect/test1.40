@@ -82,16 +82,44 @@ if {$job_id1 == 0} {
 }
 
 #
+# Confirm account info within first job based SLURM_ACCOUNT
+#
+set match_acct 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "Account=my_acct" {
+		set match_acct 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match_acct == 0} {
+	send_user "\nFAILURE: Account information not processed\n"
+	set exit_code 1
+}
+#
 # Spawn an srun job that should get account from SLURM_ACCOUNT env var
 #
+make_bash_script $file_in "$bin_env | $bin_grep SLURM_ACCOUNT"
 set match_acct  0
-set srun_pid [spawn $srun -v $scontrol show job $job_id1]
+set srun_pid [spawn $srun -v $file_in]
 expect {
+	# needed for cray systems
+	-re "Granted job allocation ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
 	-re "launching ($number).0" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "Account=my_acct" {
+	-re "SLURM_ACCOUNT=QA_ACCT" {
 		set match_acct 1
 		exp_continue
 	}

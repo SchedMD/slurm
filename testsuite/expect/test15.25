@@ -42,6 +42,10 @@ set job_acct_lc "test_acct"
 
 print_header $test_id
 
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
 if {[test_assoc_enforced]} {
 	send_user "\nWARNING: This test will not work when associations are enforced.\n"
 	exit $exit_code

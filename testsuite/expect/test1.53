@@ -42,8 +42,8 @@ print_header $test_id
 #
 # Delete left-over programs and rebuild them.
 #
-exec rm -f $file_prog
-exec cc -o $file_prog $file_prog.c
+exec $bin_rm -f $file_prog
+exec $bin_cc -o $file_prog $file_prog.c
 
 #
 # submit job to run 4 mins, but get signaled 2 mins before time limit

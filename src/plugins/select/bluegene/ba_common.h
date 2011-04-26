@@ -148,6 +148,21 @@ typedef struct block_allocator_mp {
 	uint16_t used;
 } ba_mp_t;
 
+/* This data structure records all possible combinations of bits which can be
+ * set in a bitmap of a specified size. Each bit is equivalent to another and
+ * there is no consideration of wiring. Increase LONGEST_BGQ_DIM_LEN as needed
+ * to support larger systems. */
+#ifndef LONGEST_BGQ_DIM_LEN
+#define LONGEST_BGQ_DIM_LEN 8
+#endif
+typedef struct {
+	int elem_count;			/* length of arrays set_count_array
+					 * and set_bits_array */
+	int *set_count_array;		/* number of set bits in this array */
+	bitstr_t **set_bits_array;	/* bitmap rows to use */
+} ba_geo_combos_t;
+extern ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
+
 extern uint16_t ba_deny_pass;
 extern int cluster_dims;
 extern uint32_t cluster_flags;
@@ -170,10 +185,10 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
 /*
  * destroy all the internal (global) data structs.
  */
-extern void ba_fini();
+extern void ba_fini(void);
 
 extern void ba_create_system(int num_cpus, int *real_dims);
-extern void ba_destroy_system();
+extern void ba_destroy_system(void);
 
 extern void destroy_ba_mp(void *ptr);
 
@@ -407,12 +422,14 @@ extern int ba_geo_list_print(ba_geo_table_t *geo_ptr, char *header,
  * IN geo_req - geometry required for the new allocation
  * OUT attempt_cnt - number of job placements attempted
  * IN my_geo_system - system geometry specification
+ * IN gaps_ok - if set, then allow gaps in any dimension, any gap applies to
+ *		all elements at that position in that dimension
  * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
  */
 extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			   bitstr_t **alloc_node_bitmap,
 			   ba_geo_table_t *geo_req, int *attempt_cnt,
-			   ba_geo_system_t *my_geo_system);
+			   ba_geo_system_t *my_geo_system, bool gaps_ok);
 
 /*
  * Print the contents of a node map created by ba_node_map_alloc() or
