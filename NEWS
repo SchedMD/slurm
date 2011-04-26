@@ -181,6 +181,8 @@ documents those changes that are of interest to users and admins.
  -- Improve backfill scheduling logic when job specifies --ntasks-per-node and
     --mem-per-cpu options on a heterogeneous cluster. Patch from Bjorn-Helge
     Mevik, University of Oslo.
+ -- Print warning message if srun specifies --cpus-per-task larger than used
+    to create job allocation.
 
 * Changes in SLURM 2.2.4
 ========================

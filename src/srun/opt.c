@@ -712,7 +712,7 @@ _get_int(const char *arg, const char *what, bool positive)
 
 static void set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0, max_val = 0, tmp_int;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        no_argument,       0, 'a'},
@@ -878,9 +878,14 @@ static void set_options(const int argc, char **argv)
 			}
 			break;
 		case (int)'c':
+			tmp_int = _get_int(optarg, "cpus-per-task", false);
+			if (opt.cpus_set && (tmp_int > opt.cpus_per_task)) {
+				info("Job step's --cpus-per-task value exceeds"
+				     " that of job (%d > %d). Job step may "
+				     "never run.", tmp_int, opt.cpus_per_task);
+			}
 			opt.cpus_set = true;
-			opt.cpus_per_task =
-				_get_int(optarg, "cpus-per-task", false);
+			opt.cpus_per_task = tmp_int;
 			break;
 		case (int)'C':
 			xfree(opt.constraints);
