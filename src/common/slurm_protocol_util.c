@@ -48,6 +48,24 @@
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
 
+uint16_t _get_slurm_version(uint32_t rpc_version)
+{
+	uint16_t version;
+
+	if (rpc_version >= 9)
+		version = SLURM_PROTOCOL_VERSION;
+	else if (rpc_version >= 8)
+		version = SLURM_2_2_PROTOCOL_VERSION;
+	else if (rpc_version >= 6)
+		version = SLURM_2_1_PROTOCOL_VERSION;
+	else if (rpc_version >= 5)
+		version = SLURM_2_0_PROTOCOL_VERSION;
+	else
+		version = SLURM_1_3_PROTOCOL_VERSION;
+
+	return version;
+}
+
 /*
  * check_header_version checks to see that the specified header was sent
  * from a node running the same version of the protocol as the current node
@@ -56,12 +74,18 @@
  */
 int check_header_version(header_t * header)
 {
+	uint16_t check_version = SLURM_PROTOCOL_VERSION;
+
+	if (working_cluster_rec)
+		check_version = _get_slurm_version(
+			working_cluster_rec->rpc_version);
+
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 		    (header->version != SLURM_2_2_PROTOCOL_VERSION) &&
 		    (header->version != SLURM_2_1_PROTOCOL_VERSION))
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-	} else if (header->version != SLURM_PROTOCOL_VERSION) {
+	} else if (header->version != check_version) {
 		/* Starting with 2.2 we will handle previous versions
 		 * of SLURM for some calls */
 		switch(header->msg_type) {
@@ -126,20 +150,14 @@ void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 	   protocol version changes. */
 	if (msg->protocol_version != (uint16_t)NO_VAL)
 		header->version = msg->protocol_version;
+	else if (working_cluster_rec)
+		header->version = _get_slurm_version(
+			working_cluster_rec->rpc_version);
 	else if ((msg->msg_type == ACCOUNTING_UPDATE_MSG) ||
 	         (msg->msg_type == ACCOUNTING_FIRST_REG)) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
-		if (rpc_version >= 9)
-			header->version = SLURM_PROTOCOL_VERSION;
-		else if (rpc_version >= 8)
-			header->version = SLURM_2_2_PROTOCOL_VERSION;
-		else if (rpc_version >= 6)
-			header->version = SLURM_2_1_PROTOCOL_VERSION;
-		else if (rpc_version >= 5)
-			header->version = SLURM_2_0_PROTOCOL_VERSION;
-		else
-			header->version = SLURM_1_3_PROTOCOL_VERSION;
+		header->version = _get_slurm_version(rpc_version);
 	} else
 		header->version = SLURM_PROTOCOL_VERSION;
 

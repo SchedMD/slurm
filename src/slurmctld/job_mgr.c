@@ -6535,7 +6535,15 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		/* Used by scontrol just to get current configuration info */
 		job_specs->min_nodes = NO_VAL;
 	}
-	if ((job_specs->min_nodes != NO_VAL) && !select_g_job_expand_allow()) {
+#ifdef HAVE_BG
+	if ((job_specs->min_nodes != NO_VAL) &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+#else
+	if ((job_specs->min_nodes != NO_VAL) &&
+	    (job_specs->min_nodes > job_ptr->node_cnt) &&
+	    !select_g_job_expand_allow() &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+#endif
 		info("Change of size for job %u not supported",
 		     job_specs->job_id);
 		error_code = ESLURM_NOT_SUPPORTED;
