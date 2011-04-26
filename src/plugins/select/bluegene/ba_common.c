@@ -54,6 +54,30 @@ uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
 
+
+static void _pack_ba_switch(ba_switch_t *ba_switch,
+			    Buf buffer, uint16_t protocol_version)
+{
+	if ((cluster_flags & CLUSTER_FLAG_BGL)
+	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
+	}
+	pack16(ba_switch->usage, buffer);
+}
+
+static int _unpack_ba_switch(ba_switch_t *ba_switch,
+			     Buf buffer, uint16_t protocol_version)
+{
+	if ((cluster_flags & CLUSTER_FLAG_BGL)
+	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
+	}
+	safe_unpack16(&ba_switch->usage, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+
 /*
  * Increment a geometry index array, return false after reaching the last entry
  */
