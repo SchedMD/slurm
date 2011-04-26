@@ -70,6 +70,12 @@ expect {
 		wait
 	}
 }
+
+if {[test_cray]} {
+	send_user "\nWARNING: Additional portions of this test are incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 if { $exit_code == 0 } {
 	send_user "\n\nSo far, so good\nNow run PMI test under srun\n"
 } else {
