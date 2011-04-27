@@ -145,6 +145,9 @@
 /* Define to 1 if you have the `expat' library (-lexpat). */
 #undef HAVE_LIBEXPAT
 
+/* Define to 1 if you have the `job' library (-ljob). */
+#undef HAVE_LIBJOB
+
 /* define if you have libntbl. */
 #undef HAVE_LIBNTBL
 

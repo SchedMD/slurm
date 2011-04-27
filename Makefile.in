@@ -36,7 +36,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 subdir = .
-DIST_COMMON = README.rst $(am__configure_deps) $(pkginclude_HEADERS) \
+DIST_COMMON = $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(srcdir)/config.xml.in \
 	$(top_srcdir)/configure \
@@ -380,7 +380,7 @@ EXTRA_DIST = \
 	etc/cgroup.release_common.example \
 	autogen.sh		\
 	slurm.spec		\
-	README			\
+	README.rst		\
 	RELEASE_NOTES		\
 	DISCLAIMER		\
 	COPYING			\

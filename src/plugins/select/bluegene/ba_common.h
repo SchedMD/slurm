@@ -107,10 +107,10 @@ typedef struct {
  */
 typedef struct {
 	/* target label */
-	int mp_tar[HIGHEST_DIMENSIONS];
+	uint16_t mp_tar[HIGHEST_DIMENSIONS];
 	/* target port */
-	int port_tar;
-	bool used;
+	uint16_t port_tar;
+	uint16_t used;
 } ba_connection_t;
 
 /*
@@ -123,10 +123,8 @@ typedef struct {
  *
  */
 typedef struct {
-#ifdef HAVE_BG_L_P
 	ba_connection_t int_wire[NUM_PORTS_PER_NODE];
 	ba_connection_t ext_wire[NUM_PORTS_PER_NODE];
-#endif
 	uint16_t usage;
 } ba_switch_t;
 
@@ -141,11 +139,11 @@ typedef struct block_allocator_mp {
 	/* Bitmap of available cnodes */
 	bitstr_t *cnode_bitmap;
 	/* coordinates of midplane */
-	int coord[HIGHEST_DIMENSIONS];
+	uint16_t coord[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane in str format */
 	char coord_str[HIGHEST_DIMENSIONS+1];
 	/* midplane index used for easy look up of the miplane */
-	int index;
+	uint32_t index;
 	/* rack-midplane location. */
 	char *loc;
 	struct block_allocator_mp *next_mp[HIGHEST_DIMENSIONS];
@@ -190,6 +188,9 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
 extern void ba_fini(void);
 
 extern void destroy_ba_mp(void *ptr);
+extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version);
+extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr, Buf buffer,
+			uint16_t protocol_version);
 
 /* translate a string of at least AXYZ into a ba_mp_t ptr */
 extern ba_mp_t *str2ba_mp(const char *coords);
@@ -197,7 +198,7 @@ extern ba_mp_t *str2ba_mp(const char *coords);
  * find a base blocks bg location (rack/midplane)
  */
 extern ba_mp_t *loc2ba_mp(const char* mp_id);
-extern ba_mp_t *coord2ba_mp(const int *coord);
+extern ba_mp_t *coord2ba_mp(const uint16_t *coord);
 
 /*
  * setup the ports and what not for a midplane.
@@ -486,9 +487,7 @@ extern int load_block_wiring(char *bg_block_id);
 
 extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt);
 
-#ifndef HAVE_BG_L_P
 extern ba_mp_t *ba_pick_sub_block_cnodes(
-	bg_record_t *bg_record, uint32_t node_count, bitstr_t *picked_cnodes);
-#endif
+	bg_record_t *bg_record, uint32_t node_count, bitstr_t **picked_cnodes);
 
 #endif

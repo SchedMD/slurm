@@ -62,6 +62,8 @@ AC_DEFUN([X_AC_CRAY],
                     AC_MSG_ERROR([Cray BASIL requires expat headers/rpm]))
     AC_CHECK_LIB(expat, XML_ParserCreate, [],
                  AC_MSG_ERROR([Cray BASIL requires libexpat.so (i.e. libexpat1-dev)]))
+    AC_CHECK_LIB([job], [job_getjid], [],
+                 AC_MSG_ERROR([Need cray-job (usually in /opt/cray/job/default)]))
     if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
       AC_MSG_ERROR([Cray BASIL requires the cray-MySQL-devel-enterprise rpm])
     fi

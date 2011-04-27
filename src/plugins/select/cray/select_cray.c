@@ -71,6 +71,7 @@ int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
 struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
+slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
@@ -80,6 +81,7 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table;
 int switch_record_cnt;
+slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 #endif
 
 /* All current (2011) XT/XE installations have a maximum dimension of 3,
@@ -477,6 +479,7 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t *uint32 = (uint32_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
 
 	if (jobinfo == NULL) {
 		error("select/cray jobinfo_set: jobinfo not set");
@@ -490,6 +493,9 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	switch (data_type) {
 	case SELECT_JOBDATA_RESV_ID:
 		jobinfo->reservation_id = *uint32;
+		break;
+	case SELECT_JOBDATA_PAGG_ID:
+		jobinfo->confirm_cookie = *uint64;
 		break;
 	default:
 		rc = other_select_jobinfo_set(jobinfo, data_type, data);
@@ -505,6 +511,7 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t *uint32 = (uint32_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
 	select_jobinfo_t **select_jobinfo = (select_jobinfo_t **) data;
 
 	if (jobinfo == NULL) {
@@ -522,6 +529,9 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_RESV_ID:
 		*uint32 = jobinfo->reservation_id;
+		break;
+	case SELECT_JOBDATA_PAGG_ID:
+		*uint64 = jobinfo->confirm_cookie;
 		break;
 	default:
 		rc = other_select_jobinfo_get(jobinfo, data_type, data);
@@ -543,6 +553,7 @@ extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 		rc = xmalloc(sizeof(struct select_jobinfo));
 		rc->magic = JOBINFO_MAGIC;
 		rc->reservation_id = jobinfo->reservation_id;
+		rc->confirm_cookie = jobinfo->confirm_cookie;
 	}
 	return rc;
 }
@@ -575,6 +586,7 @@ extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 			return SLURM_SUCCESS;
 		}
 		pack32(jobinfo->reservation_id, buffer);
+		pack64(jobinfo->confirm_cookie, buffer);
 		rc = other_select_jobinfo_pack(jobinfo->other_jobinfo, buffer,
 					       protocol_version);
 	}
@@ -592,6 +604,7 @@ extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 	jobinfo->magic = JOBINFO_MAGIC;
 	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&jobinfo->reservation_id, buffer);
+		safe_unpack64(&jobinfo->confirm_cookie, buffer);
 		rc = other_select_jobinfo_unpack(&jobinfo->other_jobinfo,
 						 buffer, protocol_version);
 	}

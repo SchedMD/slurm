@@ -36,8 +36,11 @@ documents those changes that are of interest to users and admins.
     scripts.
  -- NOTE: THERE HAS BEEN A NEW FIELD ADDED TO THE JOB STATE FILE. UPGRADES FROM
     VERSION 2.3.0-PRE4 WILL RESULT IN LOST JOBS UNLESS THE "orig_dependency"
-    FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC.
+    FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC. ON CRAY SYSTEMS A NEW
+    "confirm_cookie" FIELD WAS ADDED AND HAS THE SAME EFFECT OF DISABLING JOB
+    STATE RESTORE.
  -- Moving to github
+ -- Fix for handling a 2.3 system talking to a 2.2 slurmctld.
 
 * Changes in SLURM 2.3.0.pre4
 =============================
@@ -182,6 +185,8 @@ documents those changes that are of interest to users and admins.
  -- Improve backfill scheduling logic when job specifies --ntasks-per-node and
     --mem-per-cpu options on a heterogeneous cluster. Patch from Bjorn-Helge
     Mevik, University of Oslo.
+ -- Print warning message if srun specifies --cpus-per-task larger than used
+    to create job allocation.
  -- Fix issue when changing a users name in accounting, if using wckeys would
     execute correctly, but bad memcopy would core the DBD.  No information
     would be lost or corrupted, but you would need to restart the DBD.

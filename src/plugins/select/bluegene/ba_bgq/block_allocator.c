@@ -94,7 +94,7 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		      int *block_start, int *block_end);
 
 /* */
-static void _setup_next_mps(int level, int *coords);
+static void _setup_next_mps(int level, uint16_t *coords);
 
 /** */
 static bool _mp_used(ba_mp_t* ba_mp, int dim);
@@ -105,7 +105,7 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 extern void ba_create_system(int num_cpus, int *real_dims)
 {
 	int a,x,y,z, i = 0;
-	int coords[SYSTEM_DIMENSIONS];
+	uint16_t coords[SYSTEM_DIMENSIONS];
 
 	if (ba_main_grid)
 		ba_destroy_system();
@@ -313,7 +313,7 @@ extern void print_ba_request(select_ba_request_t* ba_request)
 	debug("    elongate:\t%d", ba_request->elongate);
 }
 
-extern ba_mp_t *coord2ba_mp(const int *coord)
+extern ba_mp_t *coord2ba_mp(const uint16_t *coord)
 {
 	return &ba_main_grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
 }
@@ -844,7 +844,7 @@ extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
 }
 
 extern ba_mp_t *ba_pick_sub_block_cnodes(
-	bg_record_t *bg_record, uint32_t node_count, bitstr_t *picked_cnodes)
+	bg_record_t *bg_record, uint32_t node_count, bitstr_t **picked_cnodes)
 {
 	ListIterator itr = NULL;
 	ba_mp_t *ba_mp = NULL;
@@ -853,6 +853,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	xassert(ba_mp_geo_system);
 	xassert(bg_record->ba_mp_list);
 	xassert(picked_cnodes);
+	xassert(!*picked_cnodes);
 
 	if (!(geo_table = ba_mp_geo_system->geo_table_ptr[node_count])) {
 		error("ba_pick_sub_block_cnodes: No geometries of size %u ",
@@ -886,7 +887,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 			}
 		}
 		if (bit_clear_count(ba_mp->cnode_bitmap) < node_count) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("only have %d avail in %s need %d",
 				     bit_clear_count(ba_mp->cnode_bitmap),
 				     ba_mp->coord_str, node_count);
@@ -895,21 +896,21 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 
 		while (geo_table) {
 			if (ba_geo_test_all(ba_mp->cnode_bitmap,
-					    &picked_cnodes, geo_table, &cnt,
+					    picked_cnodes, geo_table, &cnt,
 					    ba_mp_geo_system, 0)
 			    == SLURM_SUCCESS) {
-				bit_and(ba_mp->cnode_bitmap, picked_cnodes);
-				if (ba_debug_flags & DEBUG_FLAG_BG_PICK) {
+				bit_or(ba_mp->cnode_bitmap, *picked_cnodes);
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
 					char tmp_char2[BUF_SIZE];
 					char tmp_char[BUF_SIZE];
 					bit_fmt(tmp_char, sizeof(tmp_char),
-						picked_cnodes);
+						*picked_cnodes);
 					bit_fmt(tmp_char2, sizeof(tmp_char2),
 						ba_mp->cnode_bitmap);
 					info("found it on %s set %s bits "
-					     "total set is now %s",
-					     ba_mp->coord_str,
-					     tmp_char, tmp_char2);
+					       "total set is now %s",
+					       ba_mp->coord_str,
+					       tmp_char, tmp_char2);
 				}
 				break;
 			}
@@ -919,7 +920,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		if (geo_table)
 			break;
 
-		if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("couldn't place it on %s", ba_mp->coord_str);
 		geo_table = ba_mp_geo_system->geo_table_ptr[node_count];
 	}
@@ -1622,11 +1623,11 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 	return 1;
 }
 
-static void _setup_next_mps(int level, int *coords)
+static void _setup_next_mps(int level, uint16_t *coords)
 {
 	ba_mp_t *curr_mp;
-	int next_coords[SYSTEM_DIMENSIONS];
-	int prev_coords[SYSTEM_DIMENSIONS];
+	uint16_t next_coords[SYSTEM_DIMENSIONS];
+	uint16_t prev_coords[SYSTEM_DIMENSIONS];
 	int dim;
 
 	if (level > cluster_dims)

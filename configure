@@ -19801,6 +19801,53 @@ else
   as_fn_error $? "Cray BASIL requires libexpat.so (i.e. libexpat1-dev)" "$LINENO" 5
 fi
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for job_getjid in -ljob" >&5
+$as_echo_n "checking for job_getjid in -ljob... " >&6; }
+if test "${ac_cv_lib_job_job_getjid+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljob  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char job_getjid ();
+int
+main ()
+{
+return job_getjid ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_job_job_getjid=yes
+else
+  ac_cv_lib_job_job_getjid=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_job_job_getjid" >&5
+$as_echo "$ac_cv_lib_job_job_getjid" >&6; }
+if test "x$ac_cv_lib_job_job_getjid" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBJOB 1
+_ACEOF
+
+  LIBS="-ljob $LIBS"
+
+else
+  as_fn_error $? "Need cray-job (usually in /opt/cray/job/default)" "$LINENO" 5
+fi
+
     if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
       as_fn_error $? "Cray BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
     fi

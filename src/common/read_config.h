@@ -99,7 +99,11 @@ extern char *default_plugstack;
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
 #else
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
-#  define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
+#  if defined HAVE_CRAY	/* ALPS requires cluster-unique job container IDs */
+#    define DEFAULT_PROCTRACK_TYPE    "proctrack/sgi_job"
+#  else
+#    define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
+#  endif
 #endif
 #define DEFAULT_PREEMPT_TYPE        "preempt/none"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
@@ -138,7 +142,7 @@ extern char *default_plugstack;
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
-#ifdef HAVE_3D
+#if defined HAVE_3D && !defined HAVE_CRAY
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3d_torus"
 #else
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"

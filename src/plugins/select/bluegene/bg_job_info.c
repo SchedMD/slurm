@@ -68,7 +68,10 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;
 	jobinfo->cnode_cnt = NO_VAL;
-	jobinfo->units_used = bit_alloc(bg_conf->mp_cnode_cnt);
+
+	/* This bitstr is created when used. */
+	//jobinfo->units_used = bit_alloc(bg_conf->mp_cnode_cnt);
+
 	/* Remainder of structure is already NULL fulled */
 
 	return jobinfo;
@@ -87,6 +90,7 @@ extern int free_select_jobinfo(select_jobinfo_t *jobinfo)
 			return EINVAL;
 		}
 		jobinfo->magic = 0;
+		jobinfo->bg_record = NULL;
 		xfree(jobinfo->bg_block_id);
 		xfree(jobinfo->mp_str);
 		xfree(jobinfo->ionode_str);

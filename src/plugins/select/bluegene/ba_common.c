@@ -54,6 +54,74 @@ uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
 
+static void _pack_ba_connection(ba_connection_t *ba_connection,
+				Buf buffer, uint16_t protocol_version)
+{
+	int dim;
+	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+		pack16(ba_connection->mp_tar[dim], buffer);
+	pack16(ba_connection->port_tar, buffer);
+	pack16(ba_connection->used, buffer);
+}
+
+static int _unpack_ba_connection(ba_connection_t *ba_connection,
+				 Buf buffer, uint16_t protocol_version)
+{
+	int dim;
+
+	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+		safe_unpack16(&ba_connection->mp_tar[dim], buffer);
+	safe_unpack16(&ba_connection->port_tar, buffer);
+	safe_unpack16(&ba_connection->used, buffer);
+
+	return SLURM_SUCCESS;
+unpack_error:
+	return SLURM_ERROR;
+}
+
+static void _pack_ba_switch(ba_switch_t *ba_switch,
+			    Buf buffer, uint16_t protocol_version)
+{
+	int i;
+
+	if ((cluster_flags & CLUSTER_FLAG_BGL)
+	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
+		for (i=0; i< NUM_PORTS_PER_NODE; i++) {
+			_pack_ba_connection(&ba_switch->int_wire[i],
+					    buffer, protocol_version);
+			_pack_ba_connection(&ba_switch->ext_wire[i],
+					    buffer, protocol_version);
+		}
+	}
+	pack16(ba_switch->usage, buffer);
+}
+
+static int _unpack_ba_switch(ba_switch_t *ba_switch,
+			     Buf buffer, uint16_t protocol_version)
+{
+	int i;
+
+	if ((cluster_flags & CLUSTER_FLAG_BGL)
+	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
+		for (i=0; i< NUM_PORTS_PER_NODE; i++) {
+			if(_unpack_ba_connection(&ba_switch->int_wire[i],
+						 buffer, protocol_version)
+			   != SLURM_SUCCESS)
+				goto unpack_error;
+			if(_unpack_ba_connection(&ba_switch->ext_wire[i],
+						 buffer, protocol_version)
+			   != SLURM_SUCCESS)
+				goto unpack_error;
+		}
+	}
+	safe_unpack16(&ba_switch->usage, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+
 /*
  * Increment a geometry index array, return false after reaching the last entry
  */
@@ -360,7 +428,8 @@ static int _geo_test_all(bitstr_t *node_bitmap,
 }
 
 static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
-					int *coords, bool mark, bool except)
+					uint16_t *coords, bool mark,
+					bool except)
 {
 	ba_mp_t *curr_mp;
 	int is_set;
@@ -396,7 +465,7 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 	}
 }
 
-static void _internal_reset_ba_system(int level, int *coords,
+static void _internal_reset_ba_system(int level, uint16_t *coords,
 				      bool track_down_mps)
 {
 	ba_mp_t *curr_mp;
@@ -423,7 +492,8 @@ static void _internal_reset_ba_system(int level, int *coords,
 }
 
 #if defined HAVE_BG_FILES
-static ba_mp_t *_internal_loc2ba_mp(int level, int *coords, const char *check)
+static ba_mp_t *_internal_loc2ba_mp(int level, uint16_t *coords,
+				    const char *check)
 {
 	ba_mp_t *curr_mp = NULL;
 	static int *dims = NULL;
@@ -466,7 +536,7 @@ static void _init_grid(node_info_msg_t * node_info_ptr)
 		return;
 
 	for (j = 0; j < (int)node_info_ptr->record_count; j++) {
-		int coord[cluster_dims];
+		uint16_t coord[cluster_dims];
 		node_info_t *node_ptr = &node_info_ptr->node_array[j];
 		select_nodeinfo_t *nodeinfo = NULL;
 
@@ -747,9 +817,75 @@ extern void destroy_ba_mp(void *ptr)
 	}
 }
 
+extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version)
+{
+	int dim;
+
+	xassert(ba_mp);
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+		_pack_ba_switch(&ba_mp->axis_switch[dim], buffer,
+				protocol_version);
+		pack16(ba_mp->coord[dim], buffer);
+		/* No need to pack the coord_str, we can figure that
+		   out from the coords packed.
+		*/
+	}
+	pack_bit_fmt(ba_mp->cnode_bitmap, buffer);
+	pack16(ba_mp->used, buffer);
+	/* These are only used on the original, not in the block ba_mp's.
+	   ba_mp->alter_switch, ba_mp->index, ba_mp->loc, ba_mp->next_mp,
+	   ba_mp->nodecard_loc, ba_mp->prev_mp, ba_mp->state
+	*/
+}
+
+extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
+			Buf buffer, uint16_t protocol_version)
+{
+	int dim;
+	ba_mp_t *orig_mp = NULL;
+	ba_mp_t *ba_mp = xmalloc(sizeof(ba_mp_t));
+	char *bit_char;
+	uint32_t uint32_tmp;
+
+	*ba_mp_pptr = ba_mp;
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+		if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
+				      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack16(&ba_mp->coord[dim], buffer);
+		ba_mp->coord_str[dim] = alpha_num[ba_mp->coord[dim]];
+	}
+	ba_mp->coord_str[dim] = '\0';
+
+	safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
+	if (bit_char) {
+		ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+		bit_unfmt_binmask(ba_mp->cnode_bitmap, bit_char);
+		xfree(bit_char);
+	}
+	safe_unpack16(&ba_mp->used, buffer);
+
+	/* Since index could of changed here we will go figure it out again. */
+	orig_mp = coord2ba_mp(ba_mp->coord);
+	if (!orig_mp)
+		goto unpack_error;
+	ba_mp->index = orig_mp->index;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_ba_mp(ba_mp);
+	*ba_mp_pptr = NULL;
+	return SLURM_ERROR;
+}
+
+
 extern ba_mp_t *str2ba_mp(const char *coords)
 {
-	int coord[cluster_dims];
+	uint16_t coord[cluster_dims];
 	int len, dim;
 	static int *dims = NULL;
 
@@ -1197,7 +1333,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
  */
 extern int ba_set_removable_mps(bitstr_t* bitmap, bool except)
 {
-	int coords[SYSTEM_DIMENSIONS];
+	uint16_t coords[SYSTEM_DIMENSIONS];
 
 	if (!bitmap)
 		return SLURM_ERROR;
@@ -1219,7 +1355,7 @@ extern int ba_set_removable_mps(bitstr_t* bitmap, bool except)
  */
 extern int ba_reset_all_removed_mps(void)
 {
-	int coords[SYSTEM_DIMENSIONS];
+	uint16_t coords[SYSTEM_DIMENSIONS];
 	_internal_removable_set_mps(0, NULL, coords, 0, 0);
 	return SLURM_SUCCESS;
 }
@@ -1341,7 +1477,7 @@ extern void set_ba_debug_flags(uint32_t debug_flags)
  */
 extern void reset_ba_system(bool track_down_mps)
 {
-	int coords[SYSTEM_DIMENSIONS];
+	uint16_t coords[SYSTEM_DIMENSIONS];
 
 	_internal_reset_ba_system(0, coords, track_down_mps);
 }

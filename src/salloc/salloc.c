@@ -70,10 +70,14 @@
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
-#endif
-
-#ifndef __USE_XOPEN_EXTENDED
-extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
+#elif defined(HAVE_CRAY)
+#include "src/common/node_select.h"
+/*
+ * On Cray installations, the libjob headers are not automatically installed
+ * by default, while libjob.so always is, and kernels are > 2.6. Hence it is
+ * simpler to just duplicate the single declaration here.
+ */
+extern uint64_t job_getjid(pid_t pid);
 #endif
 
 #define MAX_RETRIES	10
@@ -543,6 +547,25 @@ static void _set_submit_dir_env(void)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
+#ifdef HAVE_CRAY
+	uint64_t pagg_id = job_getjid(getpid());
+	/*
+	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session
+	 * since creating sgi_job containers requires root permissions. This is
+	 * the only exception where we allow the fallback of using the SID to
+	 * confirm the reservation (caught later, in do_basil_confirm).
+	 */
+	if (pagg_id == (uint64_t)-1) {
+		error("No SGI job container ID detected - please enable the "
+		      "Cray job service via /etc/init.d/job");
+	} else {
+		if (!desc->select_jobinfo)
+			desc->select_jobinfo = select_g_select_jobinfo_alloc();
+
+		select_g_select_jobinfo_set(desc->select_jobinfo,
+					    SELECT_JOBDATA_PAGG_ID, &pagg_id);
+	}
+#endif
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
 	desc->gres = opt.gres;

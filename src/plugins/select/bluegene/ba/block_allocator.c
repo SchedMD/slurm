@@ -62,7 +62,7 @@
  */
 typedef struct {
 	int dim;
-	int geometry[HIGHEST_DIMENSIONS];
+	uint16_t geometry[HIGHEST_DIMENSIONS];
 	int in;
 	int out;
 } ba_path_switch_t;
@@ -112,7 +112,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			  int source, int dim);
 
 /* */
-static int _find_yz_path(ba_mp_t *ba_node, int *first,
+static int _find_yz_path(ba_mp_t *ba_node, uint16_t *first,
 			 uint16_t *geometry, int conn_type);
 
 #ifndef HAVE_BG_FILES
@@ -144,12 +144,12 @@ static int _set_external_wires(int dim, int count, ba_mp_t* source,
 static char *_set_internal_wires(List nodes, int size, int conn_type);
 
 /* */
-static int _find_x_path(List results, ba_mp_t *ba_node, int *start,
+static int _find_x_path(List results, ba_mp_t *ba_node, uint16_t *start,
 			int x_size, int found, int conn_type,
 			block_algo_t algo);
 
 /* */
-static int _remove_node(List results, int *mp_tar);
+static int _remove_node(List results, uint16_t *mp_tar);
 
 /* */
 static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
@@ -163,12 +163,12 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 /* */
 static int _finish_torus(List results,
 			 ba_switch_t *curr_switch, int source_port,
-			 int dim, int count, int *start);
+			 int dim, int count, uint16_t *start);
 /* */
-static int *_set_best_path();
+static uint16_t *_set_best_path();
 
 /* */
-static int _set_one_dim(int *start, int *end, int *coord);
+static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord);
 
 /* */
 static void _destroy_geo(void *object);
@@ -681,7 +681,7 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 	return rc;
 }
 
-extern ba_mp_t *coord2ba_mp(const int *coord)
+extern ba_mp_t *coord2ba_mp(const uint16_t *coord)
 {
 	return &ba_main_grid[coord[X]][coord[Y]][coord[Z]];
 }
@@ -1282,10 +1282,10 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			  ba_switch_t *mark_switch,
 			  int source, int dim)
 {
-	int *mp_tar;
-	int *mark_mp_tar;
-	int *node_curr;
-	int port_tar, port_tar1;
+	uint16_t *mp_tar;
+	uint16_t *mark_mp_tar;
+	uint16_t *node_curr;
+	uint16_t port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL;
 	ba_switch_t *next_mark_switch = NULL;
 
@@ -1390,11 +1390,11 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			      port_tar, dim);
 }
 
-static int _find_yz_path(ba_mp_t *ba_node, int *first,
+static int _find_yz_path(ba_mp_t *ba_node, uint16_t *first,
 			 uint16_t *geometry, int conn_type)
 {
 	ba_mp_t *next_node = NULL;
-	int *mp_tar = NULL;
+	uint16_t *mp_tar = NULL;
 	ba_switch_t *dim_curr_switch = NULL;
 	ba_switch_t *dim_next_switch = NULL;
 	int i2;
@@ -1658,16 +1658,16 @@ static int _emulate_ext_wiring(ba_mp_t ***grid)
 static int _reset_the_path(ba_switch_t *curr_switch, int source,
 			   int target, int dim)
 {
-	int *mp_tar;
-	int *node_curr;
+	uint16_t *mp_tar;
+	uint16_t *node_curr;
 	int port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL;
 
-	if (source < 0 || source > NUM_PORTS_PER_NODE) {
+	if (source < 0 || source >= NUM_PORTS_PER_NODE) {
 		fatal("source port was %d can only be 0->%d",
 		      source, NUM_PORTS_PER_NODE);
 	}
-	if (target < 0 || target > NUM_PORTS_PER_NODE) {
+	if (target < 0 || target >= NUM_PORTS_PER_NODE) {
 		fatal("target port was %d can only be 0->%d",
 		      target, NUM_PORTS_PER_NODE);
 	}
@@ -1682,16 +1682,17 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	}
 	curr_switch->int_wire[source].used = 0;
 	port_tar = curr_switch->int_wire[source].port_tar;
-	if (port_tar < 0 || port_tar > NUM_PORTS_PER_NODE) {
+	if (port_tar < 0 || port_tar >= NUM_PORTS_PER_NODE) {
 		fatal("port_tar port was %d can only be 0->%d",
 		      source, NUM_PORTS_PER_NODE);
+		return 1;
 	}
 
 	port_tar1 = port_tar;
 	curr_switch->int_wire[source].port_tar = source;
 	curr_switch->int_wire[port_tar].used = 0;
 	curr_switch->int_wire[port_tar].port_tar = port_tar;
-	if (port_tar==target) {
+	if (port_tar == target) {
 		return 1;
 	}
 	/* follow the path */
@@ -1766,12 +1767,12 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 					 alpha_num[ba_mp->coord[Y]],
 					 alpha_num[ba_mp->coord[Z]]);
 				ba_setup_mp(ba_mp, true, false);
-				ba_node->state = NODE_STATE_IDLE;
+				ba_mp->state = NODE_STATE_IDLE;
 				/* This might get changed
 				   later, but just incase set
 				   it up here.
 				*/
-				ba_node->index = i++;
+				ba_mp->index = i++;
 			}
 		}
 	}
@@ -1816,6 +1817,14 @@ extern void ba_destroy_system(void)
 		xfree(ba_main_grid);
 		ba_main_grid = NULL;
 	}
+}
+
+extern ba_mp_t *ba_pick_sub_block_cnodes(
+	bg_record_t *bg_record, uint32_t node_count, bitstr_t **picked_cnodes)
+{
+	/* This shouldn't be called. */
+	xassert(0);
+	return NULL;
 }
 
 static void _delete_path_list(void *object)
@@ -2450,8 +2459,8 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 {
 	ba_mp_t* ba_node[size+1];
 	int count=0, i;
-	int *start = NULL;
-	int *end = NULL;
+	uint16_t *start = NULL;
+	uint16_t *end = NULL;
 	char *name = NULL;
 	ListIterator itr;
 	hostlist_t hostlist;
@@ -2513,7 +2522,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
  * RET: 0 on failure, 1 on success
  */
 static int _find_x_path(List results, ba_mp_t *ba_node,
-			int *start, int x_size,
+			uint16_t *start, int x_size,
 			int found, int conn_type, block_algo_t algo)
 {
 	ba_switch_t *curr_switch = NULL;
@@ -2524,7 +2533,7 @@ static int _find_x_path(List results, ba_mp_t *ba_node,
 	int target_port=1;
 	int broke = 0, not_first = 0;
 	int ports_to_try[2] = {4, 2};
-	int *mp_tar = NULL;
+	uint16_t *mp_tar = NULL;
 	int i = 0;
 	ba_mp_t *next_node = NULL;
 	ba_mp_t *check_node = NULL;
@@ -2875,7 +2884,7 @@ static int _find_x_path(List results, ba_mp_t *ba_node,
 	return 0;
 }
 
-static int _remove_node(List results, int *mp_tar)
+static int _remove_node(List results, uint16_t *mp_tar)
 {
 	ListIterator itr;
 	ba_mp_t *ba_node = NULL;
@@ -2920,11 +2929,11 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 		(ba_path_switch_t *) xmalloc(sizeof(ba_path_switch_t));
 	ba_path_switch_t *path_switch = NULL;
 	ba_path_switch_t *temp_switch = NULL;
-	int port_tar;
+	uint16_t port_tar;
 	int target_port = 0;
 	int port_to_try = 2;
-	int *mp_tar= curr_switch->ext_wire[0].mp_tar;
-	int *node_src = curr_switch->ext_wire[0].mp_tar;
+	uint16_t *mp_tar= curr_switch->ext_wire[0].mp_tar;
+	uint16_t *node_src = curr_switch->ext_wire[0].mp_tar;
 	int used = 0;
 	int broke = 0;
 	ba_mp_t *ba_node = NULL;
@@ -3067,17 +3076,17 @@ return_0:
 
 static int _finish_torus(List results,
 			 ba_switch_t *curr_switch, int source_port,
-			 int dim, int count, int *start)
+			 int dim, int count, uint16_t *start)
 {
 	ba_switch_t *next_switch = NULL;
 	ba_path_switch_t *path_add = xmalloc(sizeof(ba_path_switch_t));
 	ba_path_switch_t *path_switch = NULL;
 	ba_path_switch_t *temp_switch = NULL;
-	int port_tar;
+	uint16_t port_tar;
 	int target_port=0;
 	int ports_to_try[2] = {3,5};
-	int *mp_tar= curr_switch->ext_wire[0].mp_tar;
-	int *node_src = curr_switch->ext_wire[0].mp_tar;
+	uint16_t *mp_tar= curr_switch->ext_wire[0].mp_tar;
+	uint16_t *node_src = curr_switch->ext_wire[0].mp_tar;
 	int i;
 	int used=0;
 	ListIterator itr;
@@ -3252,12 +3261,12 @@ static int _finish_torus(List results,
  * into the main virtual system.  With will also set the passthrough
  * flag if there was a passthrough used.
  */
-static int *_set_best_path()
+static uint16_t *_set_best_path()
 {
 	ListIterator itr;
 	ba_path_switch_t *path_switch = NULL;
 	ba_switch_t *curr_switch = NULL;
-	int *geo = NULL;
+	uint16_t *geo = NULL;
 
 	if (!best_path)
 		return NULL;
@@ -3295,7 +3304,7 @@ static int *_set_best_path()
 	return geo;
 }
 
-static int _set_one_dim(int *start, int *end, int *coord)
+static int _set_one_dim(uint16_t *start, uint16_t *end, uint16_t *coord)
 {
 	int dim;
 	ba_switch_t *curr_switch = NULL;

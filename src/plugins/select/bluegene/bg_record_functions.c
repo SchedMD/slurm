@@ -1610,7 +1610,7 @@ static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason)
 }
 
 static void _append_ba_mps(List my_list, int dim,
-			   uint16_t *start, uint16_t *end, int *coords)
+			   uint16_t *start, uint16_t *end, uint16_t *coords)
 {
 	ba_mp_t *curr_mp;
 
@@ -1635,7 +1635,7 @@ static void _append_ba_mps(List my_list, int dim,
 static void _addto_mp_list(bg_record_t *bg_record,
 			   uint16_t *start, uint16_t *end)
 {
-	int coords[SYSTEM_DIMENSIONS];
+	uint16_t coords[SYSTEM_DIMENSIONS];
 	int dim;
 	static int *cluster_dims = NULL;
 	static char start_char[SYSTEM_DIMENSIONS+1],
@@ -1685,7 +1685,7 @@ static void _addto_mp_list(bg_record_t *bg_record,
 
 }
 
-static int _coord_cmpf_inc(int *coord_a, int *coord_b, int dim)
+static int _coord_cmpf_inc(uint16_t *coord_a, uint16_t *coord_b, int dim)
 {
 	if (dim >= SYSTEM_DIMENSIONS)
 		return 0;

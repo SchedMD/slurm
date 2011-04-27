@@ -777,9 +777,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 #if HAVE_CRAY
 	/*
-	 * We are using the alloc_sid as unique identifier to confirm the ALPS
-	 * reservation. ALPS will refuse any attempt to create a second session
-	 * with the same identifier, hence sessions may not be nested.
+	 * Catch attempts to nest salloc sessions. It is not possible to use an
+	 * ALPS session which has the same alloc_sid, it fails even if PAGG
+	 * container IDs are used.
 	 */
 	if (allocated_session_in_use(job_desc_msg)) {
 		error_code = ESLURM_RESERVATION_BUSY;

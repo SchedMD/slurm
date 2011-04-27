@@ -125,7 +125,11 @@ cset bin_env	"env"
 cset bin_file	"file"
 cset bin_id	"id"
 cset bin_grep    "grep"
-#cset bin_hostname "hostname" #Don't user $bin_hostname use $bin_printenv SLURMD_NODENAME
+
+# Don't user $bin_hostname unless on a front-end system that
+# doesn't fully use the slurmd, use $bin_printenv SLURMD_NODENAME
+cset bin_hostname "hostname"
+
 cset bin_kill	"kill"
 cset bin_make	"make"
 cset bin_od     "od"
@@ -133,6 +137,7 @@ cset bin_pkill	"pkill"
 cset bin_ps	"ps"
 cset bin_pwd	"pwd"
 cset bin_rm	"rm"
+cset bin_sed	"sed"
 cset bin_sleep  "sleep"
 cset bin_sort   "sort"
 cset bin_touch  "touch"
@@ -174,13 +179,14 @@ cset sleep_error_message "(invalid time interval)|(bad character in argument)"
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
+set alpha_numeric_comma  "\[a-zA-Z0-9_,\-\]+"
 set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
 set alpha_under          "\[A-Z_\]+"
 set end_of_line          "\[\r\n\]"
 set number               "\[0-9\]+"
 set float                "\[0-9\]+\\.?\[0-9\]+"
 set whitespace		 "\[ \t\n\r\f\v\]+"
-set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_under\]?\\\]?"
+set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_comma\]?\\\]?"
 #
 # Cache SlurmUser to check for SuperUser requests
 #
