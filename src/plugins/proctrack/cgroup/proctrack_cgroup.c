@@ -507,6 +507,9 @@ extern int slurm_container_plugin_destroy (uint64_t id)
 extern uint64_t slurm_container_plugin_find(pid_t pid)
 {
 	uint64_t cont_id = -1;
+
+	if (cont_id == (uint64_t) -1)
+		return 0;
 	/* not provided for now */
 	return cont_id;
 }
