@@ -87,22 +87,22 @@ bitstring_test_SOURCES = bitstring-test.c
 bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
 bitstring_test_LDADD = $(LDADD)
 @HAVE_ELAN_TRUE@am__DEPENDENCIES_1 = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
-bitstring_test_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
+bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
-log_test_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
+log_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
 pack_test_SOURCES = pack-test.c
 pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
-pack_test_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
+pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
 runqsw_SOURCES = runqsw.c
 runqsw_OBJECTS = runqsw.$(OBJEXT)
 runqsw_LDADD = $(LDADD)
-runqsw_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
+runqsw_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -321,7 +321,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_ELAN_FALSE@elan_lib = 
 @HAVE_ELAN_TRUE@elan_lib = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
 INCLUDES = -I$(top_srcdir)
-LDADD = $(top_builddir)/src/common/libcommon.la \
+LDADD = $(top_builddir)/src/api/libslurm.o -ldl\
 		$(elan_lib)
 
 all: all-am
