@@ -716,6 +716,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 extern int do_basil_confirm(struct job_record *job_ptr)
 {
 	uint32_t resv_id;
+	uint64_t pagg_id;
 
 	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
 			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
@@ -723,20 +724,32 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 	} else if (resv_id == 0) {
 		/* On Cray XT/XE, a reservation ID of 0 is always invalid. */
 		error("JobId=%u has invalid (ZERO) resId", job_ptr->job_id);
+	} else if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+			SELECT_JOBDATA_PAGG_ID, &pagg_id) != SLURM_SUCCESS) {
+		error("can not read pagg ID for JobId=%u", job_ptr->job_id);
 	} else {
-		/* basil_confirm logs the error and rc-encodes the error type */
-		int rc = basil_confirm(resv_id, job_ptr->job_id,
-						job_ptr->alloc_sid);
-		if (rc == 0) {
-			debug2("confirmed ALPS resId %u for JobId %u, pagg %u",
-				resv_id, job_ptr->job_id, job_ptr->alloc_sid);
-			return SLURM_SUCCESS;
-		}
-		error("confirming ALPS resId %u, pagg %u FAILED with %d",
-		      resv_id, job_ptr->alloc_sid, rc);
+		int rc;
 
-		if (is_transient_error(rc))
-			return READY_JOB_ERROR;
+		if (pagg_id == 0) {
+			/* This fallback case is for interactive jobs only */
+			error("JobId %u has no pagg ID, falling back to SID",
+				job_ptr->job_id);
+			pagg_id = job_ptr->alloc_sid;
+		}
+
+		rc = basil_confirm(resv_id, job_ptr->job_id, pagg_id);
+		if (rc == 0) {
+			debug2("confirmed ALPS resId %u for JobId %u, "
+				"pagg %"PRIu64"",
+				resv_id, job_ptr->job_id, pagg_id);
+			return SLURM_SUCCESS;
+		} else {
+			error("confirming ALPS resId %u of JobId %u FAILED: %s",
+				resv_id, job_ptr->job_id, basil_strerror(rc));
+
+			if (is_transient_error(rc))
+				return READY_JOB_ERROR;
+		}
 	}
 	return READY_JOB_FATAL;
 }
