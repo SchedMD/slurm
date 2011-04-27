@@ -72,12 +72,10 @@ set timeout $max_job_delay
 
 if { [test_bluegene] } {
 	set node_cnt 32-2048
+} elseif { [test_xcpu] } {
+	set node_cnt 1-1
 } else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-4
-	}
+	set node_cnt 1-4
 }
 
 set srun_pid [spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 $file_in]
