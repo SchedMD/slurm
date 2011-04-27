@@ -36,7 +36,9 @@ documents those changes that are of interest to users and admins.
     scripts.
  -- NOTE: THERE HAS BEEN A NEW FIELD ADDED TO THE JOB STATE FILE. UPGRADES FROM
     VERSION 2.3.0-PRE4 WILL RESULT IN LOST JOBS UNLESS THE "orig_dependency"
-    FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC.
+    FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC. ON CRAY SYSTEMS A NEW
+    "confirm_cookie" FIELD WAS ADDED AND HAS THE SAME EFFECT OF DISABLING JOB
+    STATE RESTORE.
  -- Moving to github
  -- Fix for handling a 2.3 system talking to a 2.2 slurmctld.
 

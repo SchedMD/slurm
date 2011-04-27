@@ -25,6 +25,7 @@ extern int dim_size[3];
 struct select_jobinfo {
 	uint16_t		magic;		/* magic number */
 	uint32_t		reservation_id;	/* BASIL reservation ID */
+	uint64_t		confirm_cookie;
 	select_jobinfo_t	*other_jobinfo;
 };
 #define JOBINFO_MAGIC		0x8cb3

@@ -44,6 +44,7 @@ static int _set_select_jobinfo(select_jobinfo_t *jobinfo,
 static int _get_select_jobinfo(select_jobinfo_t *jobinfo,
 			       enum select_jobdata_type data_type, void *data)
 {
+	uint64_t *uint64 = (uint64_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
 
 	if (jobinfo == NULL) {
@@ -58,6 +59,9 @@ static int _get_select_jobinfo(select_jobinfo_t *jobinfo,
 	switch (data_type) {
 	case SELECT_JOBDATA_RESV_ID:
 		*uint32 = jobinfo->reservation_id;
+		break;
+	case SELECT_JOBDATA_PAGG_ID:
+		*uint64 = jobinfo->confirm_cookie;
 		break;
 	default:
 		error("cray/get_select_jobinfo: data_type %d invalid",
