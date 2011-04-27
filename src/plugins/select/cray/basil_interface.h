@@ -22,16 +22,31 @@
 
 extern int dim_size[3];
 
+/**
+ * struct select_jobinfo - data specific to Cray node selection plugin
+ * @magic:		magic number, must equal %JOBINFO_MAGIC
+ * @reservation_id:	ALPS reservation ID, assigned upon creation
+ * @confirm_cookie:	cluster-wide unique container identifier to
+ *			confirm the ALPS reservation. Should best use
+ *			SGI process aggregate IDs since session IDs
+ *			are not unique across multiple nodes.
+ * @other_jobinfo:	hook into attached, "other" node selection plugin.
+ */
 struct select_jobinfo {
-	uint16_t		magic;		/* magic number */
-	uint32_t		reservation_id;	/* BASIL reservation ID */
+	uint16_t		magic;
+	uint32_t		reservation_id;
 	uint64_t		confirm_cookie;
 	select_jobinfo_t	*other_jobinfo;
 };
 #define JOBINFO_MAGIC		0x8cb3
 
+/**
+ * struct select_nodeinfo - data used for node information
+ * @magic:		magic number, must equal %NODEINFO_MAGIC
+ * @other_nodeinfo:	hook into attached, "other" node selection plugin.
+ */
 struct select_nodeinfo {
-	uint16_t		magic;		/* magic number */
+	uint16_t		magic;
 	select_nodeinfo_t	*other_nodeinfo;
 };
 #define NODEINFO_MAGIC		0x82a3
@@ -49,6 +64,7 @@ static inline int basil_node_ranking(struct node_record *ig, int nore)
 {
 	return SLURM_SUCCESS;
 }
+
 static inline int basil_inventory(void)
 {
 	return SLURM_SUCCESS;

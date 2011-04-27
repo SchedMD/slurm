@@ -758,7 +758,7 @@ extern int do_basil_signal(struct job_record *job_ptr, int signal)
 		int rc = basil_signal_apids(resv_id, signal, NULL);
 
 		if (rc)
-			error("could not signal APIDS of resId %u: %s", resv_id,
+			error("could not signal APIDs of resId %u: %s", resv_id,
 				basil_strerror(rc));
 	}
 	return SLURM_SUCCESS;
