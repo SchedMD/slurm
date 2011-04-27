@@ -33,6 +33,9 @@ documents those changes that are of interest to users and admins.
  -- Improve backfill scheduling logic when job specifies --ntasks-per-node and
     --mem-per-cpu options on a heterogeneous cluster. Patch from Bjorn-Helge
     Mevik, University of Oslo.
+ -- Fix issue when changing a users name in accounting, if using wckeys would
+    execute correctly, but bad memcopy would core the DBD.  No information
+    would be lost or corrupted, but you would need to restart the DBD.
 
 * Changes in SLURM 2.2.4
 ========================
