@@ -269,7 +269,7 @@ static uint32_t _get_exit_code(slurmd_job_t *job)
  * - batch_flag is 0 (corresponding call in slurmctld uses batch_flag = 1),
  * - job_state set to the unlikely value of 'NO_VAL'.
  */
-static int _call_select_plugin_from_stepd(slurmd_job_t *job,
+static int _call_select_plugin_from_stepd(slurmd_job_t *job, uint64_t pagg_id,
 					  int (*select_fn)(struct job_record *))
 {
 	struct job_record fake_job_record = {0};
@@ -281,11 +281,29 @@ static int _call_select_plugin_from_stepd(slurmd_job_t *job,
 	fake_job_record.select_jobinfo	= select_g_select_jobinfo_alloc();
 	select_g_select_jobinfo_set(fake_job_record.select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &job->resv_id);
-
+	if (pagg_id)
+		select_g_select_jobinfo_set(fake_job_record.select_jobinfo,
+				    SELECT_JOBDATA_PAGG_ID, &pagg_id);
 	rc = (*select_fn)(&fake_job_record);
-
 	select_g_select_jobinfo_free(fake_job_record.select_jobinfo);
 	return rc;
+}
+
+static int _select_cray_plugin_job_ready(slurmd_job_t *job)
+{
+	uint64_t pagg_id = slurm_container_find(job->jmgr_pid);
+
+	if (pagg_id == 0) {
+		error("no PAGG ID: job service disabled on this host?");
+		/*
+		 * If this process is not attached to a container, there is no
+		 * sense in trying to use the SID as fallback, since the call to
+		 * slurm_container_add() in _fork_all_tasks() will fail later.
+		 * Hence drain the node until sgi_job returns proper PAGG IDs.
+		 */
+		return READY_JOB_FATAL;
+	}
+	return _call_select_plugin_from_stepd(job, pagg_id, select_g_job_ready);
 }
 #endif
 
@@ -304,7 +322,7 @@ batch_finish(slurmd_job_t *job, int rc)
 	xfree(job->batchdir);
 
 #ifdef HAVE_CRAY
-	(void)_call_select_plugin_from_stepd(job, select_g_job_fini);
+	_call_select_plugin_from_stepd(job, 0, select_g_job_fini);
 #endif
 
 	if (job->aborted) {
@@ -884,13 +902,32 @@ job_manager(slurmd_job_t *job)
 	}
 
 #ifdef HAVE_CRAY
-	if (_call_select_plugin_from_stepd(job, select_g_job_ready)) {
-		error("could not confirm ALPS resId %u", job->resv_id);
+	/*
+	 * We need to call the proctrack/sgi_job container-create function here
+	 * already since the select/cray plugin needs the job container ID in
+	 * order to CONFIRM the ALPS reservation.
+	 * It is not a good idea to perform this setup in _fork_all_tasks(),
+	 * since any transient failure of ALPS (which can happen in practice)
+	 * will then set the frontend node to DRAIN.
+	 */
+	if ((job->cont_id == 0) &&
+	    (slurm_container_create(job) != SLURM_SUCCESS)) {
+		error("failed to create proctrack/sgi_job container: %m");
+		rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
+		goto fail1;
+	}
+
+	rc = _select_cray_plugin_job_ready(job);
+	if (rc != SLURM_SUCCESS) {
 		/*
-		 * slurmctld knows to interpret this condition to mean that
-		 * the ALPS (not the SLURM) reservation failed, tries again.
+		 * Transient error: slurmctld knows this condition to mean that
+		 * the ALPS (not the SLURM) reservation failed and tries again.
 		 */
-		rc = ESLURM_RESERVATION_NOT_USABLE;
+		if (rc == READY_JOB_ERROR)
+			rc = ESLURM_RESERVATION_NOT_USABLE;
+		else
+			rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
+		error("could not confirm ALPS reservation #%u", job->resv_id);
 		goto fail1;
 	}
 #endif

@@ -69,7 +69,7 @@ are two SDK iso files for SDK)</li>
 <li>cray-MySQL-devel-enterprise-5.0.64 (this should be on the Cray iso)</li>
 </ul></p>
 
-<p>ALl Cray-specific PrgEnv and compiler modules should be removed and root
+<p>All Cray-specific PrgEnv and compiler modules should be removed and root
 privileges will be required to install these files.</p>
 
 <h3>Create a build root</h3>
@@ -190,6 +190,16 @@ the ALPS database and is based upon the ALPS_NIDORDER configuration in
 use on a Cray systems follows:</p>
 
 <pre>
+#---------------------------------------------------------------------
+# SLURM USER
+#---------------------------------------------------------------------
+# SLURM user on cray systems must be root
+# This requirement derives from Cray ALPS:
+# - ALPS reservations can only be created by the job owner or root
+#   (confirmation may be done by other non-privileged users)
+# - Freeing a reservation always requires root privileges
+SlurmUser=root
+
 #---------------------------------------------------------------------
 # PLUGINS
 #---------------------------------------------------------------------

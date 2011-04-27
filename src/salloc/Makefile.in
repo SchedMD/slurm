@@ -38,6 +38,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = salloc$(EXEEXT)
+@HAVE_CRAY_TRUE@am__append_1 = -ljob
 subdir = src/salloc
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -89,7 +90,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_salloc_OBJECTS = salloc.$(OBJEXT) opt.$(OBJEXT)
 salloc_OBJECTS = $(am_salloc_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
-salloc_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 =
+salloc_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 salloc_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(salloc_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -312,9 +314,7 @@ CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 salloc_SOURCES = salloc.c salloc.h opt.c opt.h
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
-salloc_LDADD = \
-	$(convenience_libs)
-
+salloc_LDADD = $(convenience_libs) $(am__append_1)
 salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 

@@ -2722,6 +2722,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->proctrack_type =
 				xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
+#if defined HAVE_CRAY && !defined HAVE_CRAY_EMULATION
+	if (strcmp(conf->proctrack_type, "proctrack/sgi_job"))
+		fatal("On Cray ProctrackType=proctrack/sgi_job is required to "
+		      "ensure collision-free tracking of ALPS reservations");
+#endif
 	if ((!strcmp(conf->switch_type, "switch/elan"))
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))
 		fatal("proctrack/linuxproc is incompatible with switch/elan");

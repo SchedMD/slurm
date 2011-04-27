@@ -126,15 +126,15 @@ extern int slurm_container_plugin_signal  ( uint64_t id, int signal )
 {
 	pid_t pid = (pid_t) id;
 
-	if (!id)	/* no container ID */
-		return ESRCH;
-
-	if (pid == getpid() || pid == getpgid(0)) {
+	if (!id) {
+		/* no container ID */
+	} else if (pid == getpid() || pid == getpgid(0)) {
 		error("slurm_signal_container would kill caller!");
-		return ESRCH;
+	} else {
+		return killpg(pid, signal);
 	}
-
-	return (int)killpg(pid, signal);
+	slurm_seterrno(ESRCH);
+	return SLURM_ERROR;
 }
 
 extern int slurm_container_plugin_destroy ( uint64_t id )
@@ -169,7 +169,7 @@ slurm_container_plugin_wait(uint64_t cont_id)
 	int delay = 1;
 
 	if (cont_id == 0 || cont_id == 1) {
-		errno = EINVAL;
+		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
 
