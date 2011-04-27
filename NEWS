@@ -3,6 +3,11 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
+ -- NOTE: THERE HAS BEEN A NEW FIELD ADDED TO THE JOB STATE FILE. UPGRADES FROM
+    VERSION 2.3.0-PRE4 WILL RESULT IN LOST JOBS UNLESS THE "orig_dependency"
+    FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC. ON CRAY SYSTEMS A NEW
+    "confirm_cookie" FIELD WAS ADDED AND HAS THE SAME EFFECT OF DISABLING JOB
+    STATE RESTORE.
  -- BLUEGENE - Improve speed of start up when removing blocks at the beginning.
  -- Correct init.d/slurm status to have non-zero exit code if ANY Slurm
     damon that should be running on the node is not running. Patch from Rod
@@ -34,13 +39,10 @@ documents those changes that are of interest to users and admins.
     command. Dependent upon .rpmmacros parameter of "%_with_srun2aprun".
  -- Add configuration parameter MaxStepCount to limit effect of bad batch
     scripts.
- -- NOTE: THERE HAS BEEN A NEW FIELD ADDED TO THE JOB STATE FILE. UPGRADES FROM
-    VERSION 2.3.0-PRE4 WILL RESULT IN LOST JOBS UNLESS THE "orig_dependency"
-    FIELD IS REMOVED FROM JOB STATE SAVE/RESTORE LOGIC. ON CRAY SYSTEMS A NEW
-    "confirm_cookie" FIELD WAS ADDED AND HAS THE SAME EFFECT OF DISABLING JOB
-    STATE RESTORE.
  -- Moving to github
  -- Fix for handling a 2.3 system talking to a 2.2 slurmctld.
+ -- Add contribs/lua/job_submit.license.lua script. Update job_submit and Lua
+    related documentation.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

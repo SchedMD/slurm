@@ -2,9 +2,13 @@
 
  Example lua script demonstrating the SLURM job_submit/lua interface.
  This is only an example, not meant for use in its current form.
+
  Leave the function names, arguments, local varialbes and setmetatable
  set up logic in each function unchanged. Change only the logic after
  the line containing "*** YOUR LOGIC GOES BELOW ***".
+
+ For use, this script should be copied into a file name job_"submit.lua"
+ in the same directory as the SLURM configuration file, slurm.conf.
 
 --]]
 

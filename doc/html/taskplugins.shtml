@@ -21,6 +21,7 @@ The actual mechanism used to task binding is dependent upon the available
 infrastructure as determined by the "configure" program when SLURM is built
 and the value of the <b>TaskPluginParam</b> as defined in the <b>slurm.conf</b>
 (SLURM configuration file).</li>
+<li><b>cgroup</b>&#151;Use Linux cgroups for binding tasks to resources.</li>
 <li><b>none</b>&#151;A plugin that implements the API without providing any
 services. This is the default behavior and provides no task binding.</li>
 </ul>
@@ -193,6 +194,6 @@ appropriate value to indicate the reason for failure.</p>
 Future releases of SLURM may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 February 2009</p>
+<p style="text-align:center;">Last modified 29 April 2011</p>
 
 <!--#include virtual="footer.txt"-->

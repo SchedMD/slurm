@@ -22,10 +22,16 @@ of proctrack. We recommend, for example:</p>
 <li><b>aix</b>&#151;Perform process tracking on an AIX platform.
 NOTE: This requires a kernel extension that records
 ever process creation and termination.</li>
+<li><b>cgroup</b>&#151;Use Linux cgroups for process tracking.</li>
 <li><b>linuxproc</b>&#151;Perform process tracking based upon a scan
 of the Linux process table and use the parent process ID to determine
 what processes are members of a SLURM job. NOTE: This mechanism is
 not entirely reliable for process tracking.</li>
+<li><b>lua</b>&#151;Use site-defined <a href="http://www.lua.org">Lua</a>
+script for process tracking. Sample Lua scripts can be found with the
+SLURM distribution in the directory <i>contribs/lua</i>. The default
+installation location of the Lua scripts is the same location as the SLURM
+configuration file, <i>slurm.conf</i>.</li>
 <li><b>pgid</b>&#151;Use process group ID to determine
 what processes are members of a SLURM job. NOTE: This mechanism is
 not entirely reliable for process tracking.</li>
@@ -153,6 +159,6 @@ mechanism outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 April 2011</p>
+<p style="text-align:center;">Last modified 29 April 2011</p>
 
 <!--#include virtual="footer.txt"-->
