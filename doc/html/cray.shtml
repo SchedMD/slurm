@@ -149,6 +149,7 @@ the process using an <i>init.d</i> script distributed with the Munge as
 </ul></p>
 
 <h3>Enable the Cray job service</h3>
+
 <p>This is a common dependency on Cray systems. ALPS relies on the Cray job service to
    generate cluster-unique job container IDs (PAGG IDs). These identifiers are used by
    ALPS to track running (aprun) job steps. The default (session IDs) is not unique
