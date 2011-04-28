@@ -443,7 +443,17 @@ rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.{a,la}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
 %if ! %{slurm_with bluegene}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_cnode.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
+rm -f $RPM_BUILD_ROOT/%{_sbindir}/sfree
+rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_epilog
+rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_prolog
+%endif
+%if ! %{slurm_with munge}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_munge.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_munge.so
 %endif
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
@@ -452,7 +462,9 @@ rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/.packlist
 
 %if ! %{slurm_with blcr}
 # remove these if they exist
-rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr* ${RPM_BUILD_ROOT}%{_bindir}/srun_cr ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr*
+rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun_cr
+rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 %endif
 
 # Build man pages that are generated directly by the tools
@@ -462,8 +474,10 @@ ${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
-test -f $RPM_BUILD_ROOT/etc/init.d/slurm                       &&
-  echo /etc/init.d/slurm                               >> $LIST
+test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
+  echo /etc/init.d/slurm				>> $LIST
+test -f $RPM_BUILD_ROOT/%{_bindir}/sview			&&
+  echo %{_bindir}/sview					>> $LIST
 
 %if %{slurm_with aix}
 install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/federation.conf.example
@@ -565,7 +579,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/sshare
 %{_bindir}/sstat
 %{_bindir}/strigger
-%{_bindir}/sview*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd

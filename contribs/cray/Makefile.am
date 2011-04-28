@@ -10,6 +10,7 @@ EXTRA_DIST = \
 	libalps_test_programs.tar.gz	\
 	munge_build_script.sh		\
 	opt_modulefiles_slurm		\
+	pam_job.c			\
 	slurm-build-script.sh
 
 if BUILD_SRUN2APRUN
