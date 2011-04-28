@@ -148,6 +148,21 @@ the process using an <i>init.d</i> script distributed with the Munge as
 <li><i>chkconfig munge on</i></li>
 </ul></p>
 
+<h3>Enable the Cray job service</h3>
+<p>This is a common dependency on Cray systems. ALPS relies on the Cray job service to
+   generate cluster-unique job container IDs (PAGG IDs). These identifiers are used by
+   ALPS to track running (aprun) job steps. The default (session IDs) is not unique
+   across multiple login nodes. This standard procedure is described in chapter 9 of
+   <a href="http://docs.cray.com/books/S-2393-30/">S-2393</a> and takes only two
+   steps, both to be done on all 'login' class nodes (xtopview -c login):
+   <ul>
+	   <li>make sure that the /etc/init.d/job service is enabled (chkconfig) and started</li>
+	   <li>enable the pam_job.so module from /opt/cray/job/default in /etc/pam.d/common-session<br/>
+	   (NB: the default pam_job.so is very verbose, a simpler and quieter variant is provided
+		in contribs/cray.)</li>
+   </ul>
+   The latter step is required only if you would like to run interactive salloc sessions.</p>
+
 <h3>Build and Configure SLURM</h3>
 
 <p>SLURM can be built and installed as on any other computer as described
@@ -219,14 +234,11 @@ SchedulerType=sched/backfill
 SelectType=select/cray
 SelectTypeParameters=CR_Memory
 
-# How process IDs (parent/child) are tracked:
-# proctrack/sgi_job is possible on Cray XT/XE since Cray provides
-# libjob.so as part of its job/CSA package. However, the first job
-# running on a host will always produce a 0 container ID, due to the
-# way 64 bit job IDs are configured on Cray (the upper 32 bits are a
-# host Id, which get truncated by slurm). The Linux fallback /proc
-# can be used by enabling 'proctrac/linuxproc'.
-ProctrackType=proctrack/sgi_job
+# Proctrack plugin: only/default option is proctrack/sgi_job
+# ALPS requires cluster-unique job container IDs and thus the /etc/init.d/job
+# service needs to be started on all slurmd and login nodes, as described in
+# S-2393, chapter 9. Due to this requirement, ProctrackType=proctrack/sgi_job
+# is the default on Cray and need not be specified explicitly.
 
 #---------------------------------------------------------------------
 # PATHS
@@ -292,6 +304,7 @@ PropagateResourceLimits=NONE
 #   - if using a higher per-cpu value than possible, salloc will just
 #     block.
 #--------------------------------------------------------------------
+# XXX replace both values below with your values from 'xtprocadmin -A'
 DefMemPerNode=32000
 MaxMemPerNode=32000
 
