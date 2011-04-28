@@ -157,7 +157,9 @@ the process using an <i>init.d</i> script distributed with the Munge as
    steps, both to be done on all 'login' class nodes (xtopview -c login):
    <ul>
 	   <li>make sure that the /etc/init.d/job service is enabled (chkconfig) and started</li>
-	   <li>enable the pam_job.so module from /opt/cray/job/default in /etc/pam.d/common-session</li>
+	   <li>enable the pam_job.so module from /opt/cray/job/default in /etc/pam.d/common-session<br/>
+	   (NB: the default pam_job.so is very verbose, a simpler and quieter variant is provided
+		in contribs/cray.)</li>
    </ul>
    The latter step is required only if you would like to run interactive salloc sessions.</p>
 
