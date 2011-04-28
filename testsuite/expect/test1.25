@@ -47,12 +47,10 @@ set host_0      ""
 set timeout [expr $max_job_delay + $sleep_time]
 if { [test_bluegene] } {
 	set node_cnt 32-32k
+} elseif { [test_xcpu] } {
+	set node_cnt 1-1
 } else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-64
-	}
+	set node_cnt 1-64
 }
 
 set srun_pid [spawn $srun -N$node_cnt --no-kill -t1 $bin_sleep $sleep_time]

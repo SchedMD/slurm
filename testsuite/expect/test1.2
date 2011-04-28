@@ -67,7 +67,7 @@ expect {
 
 if {$task_cnt != $tasks} {
 	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "$task_cnt, $tasks\n"
+	send_user "$task_cnt != $tasks\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {

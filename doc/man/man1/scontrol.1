@@ -304,6 +304,9 @@ named nodes will be shown.
 \fINodeHostname\fP (useful to get the list of virtual nodes associated with a
 real node in a configuration where multiple slurmd daemons execute on a single
 compute node).
+\fIconfig\fP displays parameter names from the configuration files in mixed
+case (e.g. SlurmdPort=7003) while derived parameters names are in upper case
+only (e.g. SLURM_VERSION).
 \fIhostnames\fP takes an optional hostlist expression as input and
 writes a list of individual host names to standard output (one per
 line). If no hostlist expression is supplied, the contents of the

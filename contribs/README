@@ -53,6 +53,8 @@ of the SLURM contribs distribution follows:
      Example LUA scripts that can serve as SLURM plugins.
      job_submit.lua - job_submit plugin that can set a job's default partition
                       using a very simple algorithm
+     job_submit_license.lua - job_submit plugin that can set a job's use of
+                      system licenses
      proctrack.lua  - proctrack (process tracking) plugin that implements a
                       very simple job step container using CPUSETs
 

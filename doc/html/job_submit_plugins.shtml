@@ -23,12 +23,17 @@ The minor type can be any suitable name
 for the type of accounting package.
 We include samples in the SLURM distribution for
 <ul>
-<li><b>defaults</b>&#151;Set default values for job submission or modify requests.
-<li><b>logging</b>&#151;Log select job submission and modification parameters.
+<li><b>defaults</b>&#151;Set default values for job submission or modify
+requests.</li>
+<li><b>logging</b>&#151;Log select job submission and modification
+parameters.</li>
 <li><b>lua</b>&#151;Interface to <a href="http://www.lua.org">Lua</a> scripts
-implementing these functions (actually a slight variation of them).
+implementing these functions (actually a slight variation of them). Sample Lua
+scripts can be found with the SLURM distribution in the directory
+<i>contribs/lua</i>. The default installation location of the Lua scripts is
+the same location as the SLURM configuration file, <i>slurm.conf</i>.</li>
 <li><b>partition</b>&#151;Sets a job's default partition based upon job
-submission parameters and available partitions.
+submission parameters and available partitions.</li>
 </ul>
 <p>SLURM can be configured to use multiple job_submit plugins if desired.
 
@@ -79,7 +84,9 @@ be modified.<br>
 <h2>Lua Functions</h2>
 <p>The Lua functions differ slightly from those implemented in C for
 better ease of use. Sample Lua scripts can be found with the SLURM distribution
-in the directory <i>contribs/lua</i>.</p>
+in the directory <i>contribs/lua</i>. The default installation location of
+the Lua scripts is the same location as the SLURM configuration file,
+<i>slurm.conf</i>.</p>
 
 <p class="commandline">
 int job_submit(struct job_descriptor *job_desc, List part_list)
@@ -128,6 +135,6 @@ appropriate error message printed for that errno.
 releases of SLURM may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 3 December 2010</p>
+<p style="text-align:center;">Last modified 29 April 2011</p>
 
 <!--#include virtual="footer.txt"-->

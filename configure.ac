@@ -375,6 +375,7 @@ AC_CONFIG_FILES([Makefile
 		 auxdir/Makefile
 		 contribs/Makefile
 		 contribs/cray/Makefile
+		 contribs/lua/Makefile
 		 contribs/pam/Makefile
 		 contribs/perlapi/Makefile
 		 contribs/perlapi/libslurm/Makefile
