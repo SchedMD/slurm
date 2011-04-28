@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.2.6
+========================
+
 * Changes in SLURM 2.2.5
 ========================
  -- Correct init.d/slurm status to have non-zero exit code if ANY Slurm
