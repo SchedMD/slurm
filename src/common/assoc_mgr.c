@@ -3174,7 +3174,7 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc)
 	info("Resetting usage for %s %s", child, child_str);
 
 	old_usage_raw = assoc->usage->usage_raw;
-	old_grp_used_wall = assoc->usage->usage_raw;
+	old_grp_used_wall = assoc->usage->grp_used_wall;
 /*
  *	Reset this association's raw and group usages and subtract its
  *	current usages from all parental units
