@@ -211,7 +211,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 				xstrfmtcat(query,
 					   "select distinct t1.acct from "
 					   "\"%s_%s\" as t1, \"%s_%s\" "
-					   "as t2 where t1.deleted=0 && ",
+					   "as t2 where t1.deleted=0 && (",
 					   cluster_name, assoc_table,
 					   cluster_name, assoc_table);
 			/* Make sure we don't get the same
@@ -226,6 +226,9 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 			set = 1;
 		}
 		list_iterator_reset(itr);
+		if (set)
+			xstrcat(query, ")");
+
 	}
 	list_iterator_destroy(itr2);
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
