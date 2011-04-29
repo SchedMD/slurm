@@ -315,6 +315,21 @@ void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_COMMENT:
+			switch(type) {
+			case JOB:
+				tmp_char = job->derived_es;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_CPU_TIME:
 			switch(type) {
 			case JOB:
@@ -372,21 +387,6 @@ void print_fields(type_t type, void *object)
 
 			field->print_routine(field,
 					     outbuf,
-					     (curr_inx == field_count));
-			break;
-		case PRINT_DERIVED_ES:
-			switch(type) {
-			case JOB:
-				tmp_char = job->derived_es;
-				break;
-			case JOBSTEP:
-			case JOBCOMP:
-			default:
-				tmp_char = NULL;
-				break;
-			}
-			field->print_routine(field,
-					     tmp_char,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_ELAPSED:

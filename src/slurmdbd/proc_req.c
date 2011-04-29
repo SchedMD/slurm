@@ -1851,6 +1851,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.assoc_id = job_comp_msg->assoc_id;
+	job.comment = job_comp_msg->comment;
 	job.db_index = job_comp_msg->db_index;
 	job.derived_ec = job_comp_msg->derived_ec;
 	job.end_time = job_comp_msg->end_time;

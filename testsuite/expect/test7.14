@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
-# Purpose: Verify the ability to modify the Derived Exit Code/String fields
-#          of a job record in the database.
+# Purpose: Verify the ability to modify the Derived Exit Code and Comment
+#          fields of a job record in the database.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -127,7 +127,7 @@ if {$matches != 2} {
 # Modify the DerivedExitCode and String of the job
 #
 set matches 0
-spawn $sacctmgr -i modify job job=$job_id set DerivedExitCode=22 DerivedExitString=hello
+spawn $sacctmgr -i modify job job=$job_id set DerivedExitCode=22 Comment=hello
 expect {
 	-re "$job_id" {
 		incr matches
@@ -143,7 +143,7 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE: sacctmgr failed to change DerivedExitCode/String\n"
+	send_user "\nFAILURE: sacctmgr failed to change DerivedExitCode/Comment\n"
 	exit 1
 }
 
@@ -152,7 +152,7 @@ if {$matches != 1} {
 # matches the above modification and that ExitCode did not change.
 #
 set matches 0
-spawn $sacct -n -P -X -j $job_id -o ExitCode,DerivedExitCode,DerivedExitStr
+spawn $sacct -n -P -X -j $job_id -o ExitCode,DerivedExitCode,Comment
 expect {
 	-re "0:0\\|0:22\\|hello" {	# Job record
 		incr matches

@@ -859,7 +859,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Format=, MaxCpus=, MinCpus=, Nodes=, Reason=,  \n\
                             Start=, States=, and User=                     \n\
                                                                            \n\
-       modify job         - (set options) DerivedExitCode=, DerivedExitString=\n\
+       modify job         - (set options) DerivedExitCode=, Comment=       \n\
                             (where options) JobID=, Cluster=               \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\

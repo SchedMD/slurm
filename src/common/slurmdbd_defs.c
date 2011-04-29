@@ -2510,6 +2510,7 @@ inline void slurmdbd_free_fini_msg(dbd_fini_msg_t *msg)
 inline void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->comment);
 		xfree(msg->nodes);
 		xfree(msg);
 	}
@@ -3150,6 +3151,9 @@ slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 {
 	if (rpc_version >= 8) {
 		pack32(msg->assoc_id, buffer);
+		if (rpc_version >= 9) {
+			packstr(msg->comment, buffer);
+		}
 		pack32(msg->db_index, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack_time(msg->end_time, buffer);
@@ -3184,6 +3188,10 @@ slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 
 	if (rpc_version >= 8) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		if (rpc_version >= 9) {
+			safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp,
+					       buffer);
+		}
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack32(&msg_ptr->derived_ec, buffer);
 		safe_unpack_time(&msg_ptr->end_time, buffer);

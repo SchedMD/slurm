@@ -126,21 +126,21 @@ Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .ft 3
 Fields available:
 
-AllocCPUS      Account       AssocID       AveCPU
-AvePages       AveRSS        AveVMSize     BlockID
-Cluster        CPUTime       CPUTimeRAW    DerivedExitCode
-DerivedExitStr Elapsed       Eligible      End
-ExitCode       GID           Group         JobID
-JobName        Layout        MaxPages      MaxPagesNode
-MaxPagesTask   MaxRSS        MaxRSSNode    MaxRSSTask
-MaxVMSize      MaxVMSizeNode MaxVMSizeTask MinCPU
-MinCPUNode     MinCPUTask    NCPUS         NNodes
-NodeList       NTasks        Priority      Partition
-QOS            QOSRAW        ReqCPUS       Reserved
-ResvCPU        ResvCPURAW    Start         State
-Submit         Suspended     SystemCPU     Timelimit
-TotalCPU       UID           User          UserCPU
-WCKey          WCKeyID
+AllocCPUS       Account       AssocID       AveCPU
+AvePages        AveRSS        AveVMSize     BlockID
+Cluster         Comment       CPUTime       CPUTimeRAW
+DerivedExitCode Elapsed       Eligible      End
+ExitCode        GID           Group         JobID
+JobName         Layout        MaxPages      MaxPagesNode
+MaxPagesTask    MaxRSS        MaxRSSNode    MaxRSSTask
+MaxVMSize       MaxVMSizeNode MaxVMSizeTask MinCPU
+MinCPUNode      MinCPUTask    NCPUS         NNodes
+NodeList        NTasks        Priority      Partition
+QOS             QOSRAW        ReqCPUS       Reserved
+ResvCPU         ResvCPURAW    Start         State
+Submit          Suspended     SystemCPU     Timelimit
+TotalCPU        UID           User          UserCPU
+WCKey           WCKeyID
 
 .ft 1
 .fi
@@ -438,6 +438,13 @@ Block ID, applicable to BlueGene computers only.
 Cluster name.
 
 .TP
+\f3Comment\fP
+The job's comment string when the AccountingStoreJobComment parameter
+in the slurm.conf file is set (or defaults) to YES.  The Comment
+string can be modified by invoking \f3sacctmgr modify job\fP or the
+specialized \f3sjobexitmod\fP command.
+
+.TP
 \f3cputime\fP
 Formatted number of cpu seconds a process was allocated.
 
@@ -452,12 +459,6 @@ The highest exit code returned by the job's job steps (srun
 invocations).  Following the colon is the signal that caused the
 process to terminate if it was terminated by a signal.  The
 DerivedExitCode can be modified by invoking \f3sacctmgr modify job\fP
-or the specialized \f3sjobexitmod\fP command.
-
-.TP
-\f3DerivedExitStr\fP
-The reason the job failed.  This string starts off as null.  The
-DerivedExitStr can be modified by invoking \f3sacctmgr modify job\fP
 or the specialized \f3sjobexitmod\fP command.
 
 .TP
