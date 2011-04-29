@@ -155,6 +155,12 @@ documents those changes that are of interest to users and admins.
  -- When restarting slurmctld with priority/basic, increment all job priorities
     so the highest job priority becomes TOP_PRIORITY.
 
+* Changes in SLURM 2.2.6
+========================
+ -- Fix displaying of account coordinators with sacctmgr.  Possiblity to show
+    deleted accounts.  Only a cosmetic issue, since the accounts are already
+    deleted, and have no associations.
+
 * Changes in SLURM 2.2.5
 ========================
  -- Correct init.d/slurm status to have non-zero exit code if ANY Slurm
