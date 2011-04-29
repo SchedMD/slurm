@@ -7895,8 +7895,10 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				list_create(slurm_free_block_job_info);
 			for (i=0; i<count; i++) {
 				if (_unpack_block_job_info(&job, buffer,
-							   protocol_version))
-					list_append(block_info->job_list, job);
+							   protocol_version)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(block_info->job_list, job);
 			}
 		}
 
