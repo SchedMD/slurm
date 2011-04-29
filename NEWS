@@ -157,6 +157,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.6
 ========================
+ -- Fix displaying of account coordinators with sacctmgr.  Possiblity to show
+    deleted accounts.  Only a cosmetic issue, since the accounts are already
+    deleted, and have no associations.
 
 * Changes in SLURM 2.2.5
 ========================
