@@ -43,6 +43,7 @@ documents those changes that are of interest to users and admins.
  -- Fix for handling a 2.3 system talking to a 2.2 slurmctld.
  -- Add contribs/lua/job_submit.license.lua script. Update job_submit and Lua
     related documentation.
+ -- Test if _make_batch_script() is called with a NULL script.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

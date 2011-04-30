@@ -1637,6 +1637,11 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	FILE *fp = NULL;
 	char  script[MAXPATHLEN];
 
+	if (msg->script == NULL) {
+		error("_make_batch_script: called with NULL script");
+		return NULL;
+	}
+
 	snprintf(script, 1024, "%s/%s", path, "slurm_script");
 
   again:
