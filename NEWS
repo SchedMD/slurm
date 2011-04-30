@@ -52,6 +52,7 @@ documents those changes that are of interest to users and admins.
     Storage db (to the formerly named, "DerivedExitString" job field).  This
     behavior is enabled by a new slurm.conf parameter:
     AccountingStoreJobComment.
+ -- Test if _make_batch_script() is called with a NULL script.
 
 * Changes in SLURM 2.3.0.pre4
 =============================
