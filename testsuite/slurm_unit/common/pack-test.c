@@ -39,10 +39,13 @@ int main (int argc, char *argv[])
 	char *nullstr = NULL;
 	char *data;
 	int data_size;
+	long double test_double = 1340664754944.2132312, test_double2;
+	uint64_t test64;
 
 	buffer = init_buf (0);
         pack16(test16, buffer);
         pack32(test32, buffer);
+	pack64((uint64_t)test_double, buffer);
 
         packstr(testbytes, buffer);
         packstr(teststring, buffer);
@@ -50,6 +53,7 @@ int main (int argc, char *argv[])
 
 	packstr("literal", buffer);
 	packstr("", buffer);
+
         data_size = get_buf_offset(buffer);
         printf("wrote %d bytes\n", data_size);
 
@@ -63,7 +67,14 @@ int main (int argc, char *argv[])
         unpack32(&out32, buffer);
 	TEST(out32 != test32, "un/pack32");
 
-        unpackstr_ptr(&outbytes, &byte_cnt, buffer);
+  	unpack64(&test64, buffer);
+	test_double2 = (long double)test64;
+	TEST(test64 != (uint64_t)test_double, "un/pack double as a uint64");
+	/* info("Original\t %Lf", test_double); */
+	/* info("uint64\t %ld", test64); */
+	/* info("converted LD\t %Lf", test_double2); */
+
+	unpackstr_ptr(&outbytes, &byte_cnt, buffer);
 	TEST( ( strcmp(testbytes, outbytes) != 0 ) , "un/packstr_ptr");
 
 	unpackstr_xmalloc(&outstring, &byte_cnt, buffer);
@@ -80,6 +91,7 @@ int main (int argc, char *argv[])
 
 	unpackstr_xmalloc(&outstring, &byte_cnt, buffer);
 	TEST(strcmp("", outstring) != 0, "un/packstr of string \"\" ");
+
 	xfree(outstring);
 
 	free_buf(buffer);
