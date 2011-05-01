@@ -139,7 +139,7 @@ my (	$account,
 	$wc_key
 );
 
-my $aprun  = "${FindBin::Bin}/aprun";
+my $aprun  = "aprun";
 my $salloc = "${FindBin::Bin}/salloc";
 
 my $have_job;
