@@ -1737,6 +1737,7 @@ typedef struct slurm_ctl_conf {
 	uint32_t accounting_storage_port;/* node accountinging storage port */
 	char *accounting_storage_type; /* accounting storage type */
 	char *accounting_storage_user; /* accounting storage user */
+	uint16_t acctng_store_job_comment; /* send job comment to accounting */
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */

@@ -529,7 +529,7 @@ typedef struct {
 	char	*blockid;
 	char    *cluster;
 	uint32_t derived_ec;
-	char	*derived_es;
+	char	*derived_es; /* aka "comment" */
 	uint32_t elapsed;
 	time_t eligible;
 	time_t end;

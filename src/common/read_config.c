@@ -152,6 +152,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStoragePort", S_P_UINT32},
 	{"AccountingStorageType", S_P_STRING},
 	{"AccountingStorageUser", S_P_STRING},
+	{"AccountingStoreJobComment", S_P_BOOLEAN},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
@@ -2549,6 +2550,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_pass =
 				xstrdup(default_storage_pass);
 	}
+	if (s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl) && !truth)
+		conf->acctng_store_job_comment = 0;
+	else
+		conf->acctng_store_job_comment = 1;
+
 	if (!s_p_get_uint32(&conf->accounting_storage_port,
 			    "AccountingStoragePort", hashtbl)) {
 		if(default_storage_port)

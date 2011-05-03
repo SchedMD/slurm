@@ -203,7 +203,7 @@ Events like downed or draining nodes on clusters.
 .TP
 \fIjob\fR
 Job - but only two specific fields of the job: Derived Exit Code and
-Derived Exit String
+the Comment String
 
 .TP
 \fIqos\fR
@@ -875,11 +875,15 @@ the user's judgement of whether the job succeeded or failed.  The user
 can only modify the derived exit code of their own job.
 
 .TP
-\fIDerivedExitString\fP
-Initially NULL, the derived exit string can be populated after a job
-completes with a textual description of why the job succeeded or
-failed.  The user can only modify the derived exit string of their own
-job.
+\f3Comment\fP
+The job's comment string when the AccountingStoreJobComment parameter
+in the slurm.conf file is set (or defaults) to YES.  The user can only
+modify the comment string of their own job.
+
+.TP
+The \fIDerivedExitCode\fP and \f3Comment\fP fields are the only fields
+of a job record in the database that can be modified after job
+completion.
 
 .SH "LIST/SHOW JOB FORMAT OPTIONS"
 
