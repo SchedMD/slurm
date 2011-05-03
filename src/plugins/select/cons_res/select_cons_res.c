@@ -196,8 +196,12 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Procedure Declarations */
+static int _add_job_to_res(struct job_record *job_ptr, int action);
 static int _rm_job_from_one_node(struct job_record *job_ptr,
 				 struct node_record *node_ptr);
+static int _rm_job_from_res(struct part_res_record *part_record_ptr,
+			    struct node_use_record *node_usage,
+			    struct job_record *job_ptr, int action);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
@@ -960,7 +964,10 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		_dump_job_res(job);
 
 	first_bit = bit_ffs(job->node_bitmap);
-	last_bit =  bit_fls(job->node_bitmap);
+	if (first_bit == -1)
+		last_bit = -2;
+	else
+		last_bit =  bit_fls(job->node_bitmap);
 	for (i = first_bit, n = -1; i <= last_bit; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
@@ -984,7 +991,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
 				error("cons_res: node %s memory is "
-				      "underallocated (%u-%u) for job %u",
+				      "under-allocated (%u-%u) for job %u",
 				      node_ptr->name,
 				      node_usage[i].alloc_memory,
 				      job->memory_allocated[n],
@@ -1089,7 +1096,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	List gres_list;
 
 	if (!job || !job->core_bitmap) {
-		error("job %u has no select data", job_ptr->job_id);
+		error("select/cons_res: job %u has no select data",
+		      job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
