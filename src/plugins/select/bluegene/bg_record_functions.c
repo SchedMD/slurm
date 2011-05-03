@@ -278,6 +278,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	} else if (bg_record->cnode_cnt == bg_conf->mp_cnode_cnt)
 		bg_record->full_block = 1;
 
+	FREE_NULL_BITMAP(bg_record->mp_bitmap);
 	if (node_name2bitmap(bg_record->mp_str,
 			     false,
 			     &bg_record->mp_bitmap)) {
