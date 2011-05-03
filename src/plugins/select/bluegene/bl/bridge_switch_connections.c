@@ -42,7 +42,7 @@
 
 #if defined HAVE_BG_FILES
 static int _get_mp_by_location(my_bluegene_t* my_bg,
-			       int* curr_coord,
+			       uint16_t* curr_coord,
 			       rm_BP_t** mp);
 static int _get_switches_by_mpid(my_bluegene_t* my_bg, const char *mpid,
 				 rm_switch_t **curr_switch);
@@ -59,7 +59,7 @@ static int _used_switches(ba_mp_t *ba_node);
  * "NextMP" goes to, but we don't know, so we have to do this.
  */
 #if defined HAVE_BG_FILES
-static int _get_mp_by_location(my_bluegene_t* my_bg, int* curr_coord,
+static int _get_mp_by_location(my_bluegene_t* my_bg, uint16_t* curr_coord,
 			       rm_BP_t** mp)
 {
 	static int mp_num = 0;
@@ -75,7 +75,7 @@ static int _get_mp_by_location(my_bluegene_t* my_bg, int* curr_coord,
 		}
 	}
 
-	for (i=0; i<mp_num; i++){
+	for (i=0; i<mp_num; i++) {
 		if (i) {
 			if ((rc = bridge_get_data(my_bg, RM_NextBP, mp))
 			    != SLURM_SUCCESS) {
@@ -91,7 +91,8 @@ static int _get_mp_by_location(my_bluegene_t* my_bg, int* curr_coord,
 				return SLURM_ERROR;
 			}
 		}
-		if ((rc = bridge_get_data(*mp, RM_BPLoc, &loc)) != SLURM_SUCCESS) {
+		if ((rc = bridge_get_data(*mp, RM_BPLoc, &loc))
+		    != SLURM_SUCCESS) {
 			fatal("bridge_get_data: RM_BPLoc: %s",
 			      bg_err_str(rc));
 			return SLURM_ERROR;
