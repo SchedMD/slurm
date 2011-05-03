@@ -880,7 +880,7 @@ static int _validate_config_blocks(List curr_block_list,
 		}
 		error("Found state for block %s, but that "
 		      "block isn't in the system anymore, removing",
-		      bg_block->bg_block_id);
+		      bg_record->bg_block_id);
 		list_delete_item(itr_curr);
 	}
 	list_iterator_destroy(itr_curr);

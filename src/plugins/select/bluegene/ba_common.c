@@ -925,7 +925,7 @@ extern ba_mp_t *loc2ba_mp(const char* mp_id)
 #if defined HAVE_BG_FILES
 	char *check = NULL;
 	ba_mp_t *ba_mp = NULL;
-	int coords[SYSTEM_DIMENSIONS];
+	uint16_t coords[SYSTEM_DIMENSIONS];
 
 	if (bridge_setup_system() == -1)
 		return NULL;
@@ -1406,7 +1406,7 @@ extern char *find_mp_rack_mid(char* coords)
 }
 
 /* */
-extern int validate_coord(int *coord)
+extern int validate_coord(uint16_t *coord)
 {
 	int dim, i;
 	char coord_str[cluster_dims+1];

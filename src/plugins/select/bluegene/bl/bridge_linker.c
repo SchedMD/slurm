@@ -1122,8 +1122,8 @@ static bg_record_t *_translate_object_to_block(rm_partition_t *block_ptr,
 			error("bridge_get_data(CardQuarter): %d",rc);
 			goto end_it;
 		}
-		io_start *= bg_conf->quarter_iocnode_cnt;
-		io_start += bg_conf->nodecard_iocnode_cnt * (nc_id%4);
+		io_start *= bg_conf->quarter_ionode_cnt;
+		io_start += bg_conf->nodecard_ionode_cnt * (nc_id%4);
 #else
 		/* Translate nodecard count to ionode count */
 		if ((io_cnt = nc_cnt * bg_conf->io_ratio))

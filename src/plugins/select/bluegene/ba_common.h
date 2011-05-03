@@ -362,7 +362,7 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
 extern char *find_mp_rack_mid(char* coords);
 
 /* make sure a node is in the system return 1 if it is 0 if not */
-extern int validate_coord(int *coord);
+extern int validate_coord(uint16_t *coord);
 
 extern char *ba_switch_usage_str(uint16_t usage);
 
