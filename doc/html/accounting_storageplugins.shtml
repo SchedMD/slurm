@@ -303,7 +303,7 @@ modified on success, or<br>
 List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 acct_job_modify_cond_t *job_cond, acct_job_rec_t *job)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Used to modify two fields (the derived exit code and derived exit string) of an
+Used to modify two fields (the derived exit code and the comment string) of an
 existing job in the storage type.  Can only modify one job at a time.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to

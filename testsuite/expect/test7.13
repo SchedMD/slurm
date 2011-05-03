@@ -122,7 +122,7 @@ if {$matches != 2} {
 #
 if { [test_account_storage] == 1 } {
 	set matches 0
-	spawn $sacct -n -P -j $job_id -o ExitCode,DerivedExitCode,DerivedExitStr
+	spawn $sacct -n -P -j $job_id -o ExitCode,DerivedExitCode,Comment
 	expect {
 		-re "0:0\\|123:0\\|" {	# Job record
 			incr matches
@@ -228,7 +228,7 @@ if {$matches != 2} {
 #
 if { [test_account_storage] == 1 } {
 	set matches 0
-	spawn $sacct -n -P -j $job_id -o ExitCode,DerivedExitCode,DerivedExitStr
+	spawn $sacct -n -P -j $job_id -o ExitCode,DerivedExitCode,Comment
 	expect {
 		-re "33:0\\|0:0\\|" {	# Job record
 			incr matches

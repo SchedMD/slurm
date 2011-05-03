@@ -36,7 +36,7 @@ my (
 #
 # Format for listing job.
 #
-my $list_format = "JobID,Account,NNodes,NodeList,State,ExitCode,DerivedExitCode,DerivedExitStr";
+my $list_format = "JobID,Account,NNodes,NodeList,State,ExitCode,DerivedExitCode,Comment";
 
 
 #
@@ -128,7 +128,7 @@ sub getoptions
 #
 	$execute_line = "sacctmgr -i modify job jobid=$jobid set";
 
-	$execute_line .= " DerivedExitStr=\"$reason\"" if ($reason);
+	$execute_line .= " Comment=\"$reason\""        if ($reason);
 	$execute_line .= " DerivedExitCode=$code"      if ($code);
 	$execute_line .= " Cluster=$cluster"           if ($cluster);
 
@@ -163,7 +163,7 @@ sub usage
         $base [-man]
 
 	-e <exit code>		Modify the derived exit code to new value.
-	-r <reason string>	Modify the derived exit string to new value.
+	-r <reason string>	Modify the job's comment field to new value.
 	-c <cluster>		Name of cluster (optional).
 	-l 			List information for a completed job.
 	-h 			Show usage.
@@ -215,11 +215,11 @@ B<sjobexitmod> - Modifies a completed job in the slurmdbd
  sjobexitmod is a wrapper which effectively does the same operation as using the
  sacct utility to modify certain aspects of a completed job.
 
-	sacctmgr -i modify job jobid=1286 set DerivedExitCode=1 DerivedExitStr="code error"
+	sacctmgr -i modify job jobid=1286 set DerivedExitCode=1 Comment="code error"
 
  or to list certain aspects of a completed job.
 
-	sacct -o jobid,derivedexitcode,derivedexitstr,cluster
+	sacct -o jobid,derivedexitcode,comment,cluster
 
 =head1 OPTIONS
 
@@ -247,7 +247,7 @@ List selected attributes of a completed job.
 
 =item B<-r> I<reason_string>
 
-The reason (DerivedEixtStr) for job termination.
+The reason (Comment) for job termination.
 
 =item B<JobId>
 

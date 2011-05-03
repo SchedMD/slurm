@@ -2041,6 +2041,10 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	memset(&req, 0, sizeof(dbd_job_comp_msg_t));
 
 	req.assoc_id    = job_ptr->assoc_id;
+	if (slurmctld_conf.acctng_store_job_comment)
+		req.comment     = job_ptr->comment;
+	else
+		req.comment     = NULL;
 	req.db_index    = job_ptr->db_index;
 	req.derived_ec  = job_ptr->derived_ec;
 	req.exit_code   = job_ptr->exit_code;

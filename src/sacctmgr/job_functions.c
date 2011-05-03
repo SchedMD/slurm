@@ -142,7 +142,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     "DerivedExitCode") == SLURM_SUCCESS) {
 				set = 1;
 			}
-		} else if ((!strncasecmp(argv[i], "DerivedExitString",
+		} else if ((!strncasecmp(argv[i], "Comment",
+					 MAX(command_len, 7))) ||
+			   (!strncasecmp(argv[i], "DerivedExitString",
 					 MAX(command_len, 12))) ||
 			   (!strncasecmp(argv[i], "DerivedES",
 					 MAX(command_len, 9)))) {
