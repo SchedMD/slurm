@@ -462,6 +462,7 @@ struct job_record {
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
 	struct job_record *job_next;	/* next entry with same hash index */
+	job_resources_t *job_resrcs;	/* details of allocated cores */
 	uint16_t job_state;	        /* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
 					 * node failure */
@@ -521,7 +522,6 @@ struct job_record {
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
-	job_resources_t *job_resrcs;	/* details of allocated cores */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK
 					 * plugins */
@@ -1457,6 +1457,14 @@ void purge_old_job(void);
  * NOTE: run lock_slurmctld before entry: Read config, write job
  */
 extern void rehash_jobs(void);
+
+/*
+ * Rebuild a job step's core_bitmap_job after a job has just changed size
+ * job_ptr IN - job that was just re-sized
+ * orig_job_node_bitmap IN - The job's original node bitmap
+ */
+extern void rebuild_step_bitmaps(struct job_record *job_ptr,
+				 bitstr_t *orig_job_node_bitmap);
 
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);

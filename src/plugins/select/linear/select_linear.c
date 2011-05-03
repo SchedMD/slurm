@@ -1498,8 +1498,6 @@ static int _job_expand(struct job_record *from_job_ptr,
 		        *new_job_resrcs_ptr;
 	bool from_node_used, to_node_used;
 	int from_node_offset, to_node_offset, new_node_offset;
-	uint32_t from_job_memory_cpu  = 0, to_job_memory_cpu  = 0;
-	uint32_t from_job_memory_node = 0, to_job_memory_node = 0;
 	int first_bit, last_bit;
 
 	xassert(from_job_ptr);
@@ -1554,27 +1552,6 @@ static int _job_expand(struct job_record *from_job_ptr,
 		bit_nclear(to_job_resrcs_ptr->core_bitmap_used, 0, i-1);
 	}
 
-	if (from_job_ptr->details &&
-	    from_job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
-		if (from_job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			from_job_memory_cpu = from_job_ptr->details->
-					      pn_min_memory & (~MEM_PER_CPU);
-		} else {
-			from_job_memory_node = from_job_ptr->details->
-					       pn_min_memory;
-		}
-	}
-	if (to_job_ptr->details &&
-	    to_job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
-		if (to_job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			to_job_memory_cpu = to_job_ptr->details->
-					    pn_min_memory & (~MEM_PER_CPU);
-		} else {
-			to_job_memory_node = to_job_ptr->details->
-					     pn_min_memory;
-		}
-	}
-
 	node_cnt = bit_set_count(from_job_resrcs_ptr->node_bitmap) +
 		   bit_set_count(to_job_resrcs_ptr->node_bitmap);
 	new_job_resrcs_ptr = _create_job_resources(node_cnt);
@@ -1591,6 +1568,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 			    select_fast_schedule);
 	xfree(to_job_ptr->node_addr);
 	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
 			bit_ffs(to_job_resrcs_ptr->node_bitmap));
 	last_bit  = MAX(bit_fls(from_job_resrcs_ptr->node_bitmap),
@@ -1620,7 +1598,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 			from_job_resrcs_ptr->cpus[from_node_offset] = 0;
 			/* new_job_resrcs_ptr->cpus_used[new_node_offset] +=
 				from_job_resrcs_ptr->
-				cpus_used[from_node_offset]; */
+				cpus_used[from_node_offset]; Should be 0 */
 			new_job_resrcs_ptr->memory_allocated[new_node_offset]+=
 				from_job_resrcs_ptr->
 				memory_allocated[from_node_offset];
@@ -1628,7 +1606,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 				memory_allocated[from_node_offset] = 0;
 			/* new_job_resrcs_ptr->memory_used[new_node_offset] +=
 				from_job_resrcs_ptr->
-				memory_used[from_node_offset]; */
+				memory_used[from_node_offset]; Should be 0 */
 			if (to_node_used &&
 			    (to_job_ptr->details->shared == 0)) {
 				if (cr_ptr->nodes[i].exclusive_cnt)

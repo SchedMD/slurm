@@ -6535,7 +6535,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		/* Used by scontrol just to get current configuration info */
 		job_specs->min_nodes = NO_VAL;
 	}
-#ifdef HAVE_BG
+#if defined(HAVE_BG) || defined(HAVE_CRAY)
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 #else
@@ -6867,6 +6867,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->job_id);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 		} else {
+			/* Resize of pending job */
 			save_min_nodes = detail_ptr->min_nodes;
 			detail_ptr->min_nodes = job_specs->min_nodes;
 		}
@@ -7347,6 +7348,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		    (job_ptr->node_cnt > 0) &&
 		    job_ptr->details && job_ptr->details->expanding_jobid) {
 			struct job_record *expand_job_ptr;
+			bitstr_t *orig_job_node_bitmap;
 
 			expand_job_ptr = find_job_record(job_ptr->details->
 							 expanding_jobid);
@@ -7358,20 +7360,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = ESLURM_INVALID_JOB_ID;
 				goto fini;
 			}
-			if ((expand_job_ptr->step_list != NULL) &&
-			    (list_count(expand_job_ptr->step_list) != 0)) {
-				info("Attempt to merge job %u with active "
-				     "steps into job %u",
-				     job_specs->job_id,
-				     job_ptr->details->expanding_jobid);
-				error_code = ESLURMD_STEP_EXISTS;
-				goto fini;
-			}
 			if ((job_ptr->step_list != NULL) &&
 			    (list_count(job_ptr->step_list) != 0)) {
-//FIXME: Remove this restriction
-				info("Attempt to merge job %u into job %u "
-				     "with active steps",
+				info("Attempt to merge job %u with active "
+				     "steps into job %u",
 				     job_specs->job_id,
 				     job_ptr->details->expanding_jobid);
 				error_code = ESLURMD_STEP_EXISTS;
@@ -7383,16 +7375,23 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_pre_resize_acctg(job_ptr);
 			job_pre_resize_acctg(expand_job_ptr);
 			_send_job_kill(job_ptr);
-//REBUILD JOB_RESOURCES data struct
-//REBUILD JOB's NODE_BITMAP and NODES
-//REBUILD STEPS NODE_BITMAP
-//FIX STATE IN SELECT PLUGIN
+
+			xassert(job_ptr->job_resrcs);
+			xassert(job_ptr->job_resrcs->node_bitmap);
+			orig_job_node_bitmap = bit_copy(expand_job_ptr->
+							job_resrcs->
+							node_bitmap);
 			error_code = select_g_job_expand(job_ptr,
 							 expand_job_ptr);
+			if (error_code == SLURM_SUCCESS) {
+				rebuild_step_bitmaps(expand_job_ptr,
+						     orig_job_node_bitmap);
+			}
+			bit_free(orig_job_node_bitmap);
 			job_post_resize_acctg(job_ptr);
 			job_post_resize_acctg(expand_job_ptr);
-			/* Since job_post_resize_acctg will restart
-			 * things don't do it again. */
+			/* Since job_post_resize_acctg will restart things,
+			 * don't do it again. */
 			update_accounting = false;
 			if (error_code)
 				goto fini;
@@ -7791,8 +7790,10 @@ static void _send_job_kill(struct job_record *job_ptr)
 	}
 #endif
 	if (agent_args->node_count == 0) {
-		error("Job %u allocated no nodes to be killed on",
-		      job_ptr->job_id);
+		if (job_ptr->details->expanding_jobid == 0) {
+			error("Job %u allocated no nodes to be killed on",
+			      job_ptr->job_id);
+		}
 		xfree(kill_job->nodes);
 		xfree(kill_job);
 		hostlist_destroy(agent_args->hostlist);

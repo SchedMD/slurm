@@ -1430,7 +1430,8 @@ static void _dump_step_layout(struct step_record *step_ptr)
 	int i, bit_inx, core_inx, node_inx, rep, sock_inx;
 
 	if ((step_ptr->core_bitmap_job == NULL) ||
-	    (job_resrcs_ptr == NULL) || (job_resrcs_ptr->cores_per_socket == NULL))
+	    (job_resrcs_ptr == NULL) ||
+	    (job_resrcs_ptr->cores_per_socket == NULL))
 		return;
 
 	info("====================");
@@ -3383,7 +3384,9 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	/* No need to limit step time limit as job time limit will kill
 	 * any steps with any time limit */
 	if (req->step_id == NO_VAL) {
-		step_iterator = list_iterator_create (job_ptr->step_list);
+		step_iterator = list_iterator_create(job_ptr->step_list);
+		if (step_iterator == NULL)
+			fatal("list_iterator_create: malloc failure");
 		while ((step_ptr = (struct step_record *)
 				   list_next (step_iterator))) {
 			step_ptr->time_limit = req->time_limit;
@@ -3406,4 +3409,84 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;
+}
+
+/* Return the total core count on a given node index */
+static int _get_node_cores(int node_inx)
+{
+	struct node_record *node_ptr;
+	int socks, cores;
+
+	node_ptr = node_record_table_ptr + node_inx;
+	if (slurmctld_conf.fast_schedule) {
+		socks = node_ptr->config_ptr->sockets;
+		cores = node_ptr->config_ptr->cores;
+	} else {
+		socks = node_ptr->sockets;
+		cores = node_ptr->cores;
+	}
+	return socks * cores;
+}
+
+/*
+ * Rebuild a job step's core_bitmap_job after a job has just changed size
+ * job_ptr IN - job that was just re-sized
+ * orig_job_node_bitmap IN - The job's original node bitmap
+ */
+extern void rebuild_step_bitmaps(struct job_record *job_ptr,
+				 bitstr_t *orig_job_node_bitmap)
+{
+	struct step_record *step_ptr;
+	ListIterator step_iterator;
+	bitstr_t *orig_step_core_bitmap;
+	int i, j, i_first, i_last, i_size;
+	int old_core_offset, new_core_offset, node_core_count;
+	bool old_node_set, new_node_set;
+
+	if (job_ptr->step_list == NULL)
+		return;
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	if (step_iterator == NULL)
+		fatal("list_iterator_create: malloc failure");
+	while ((step_ptr = (struct step_record *)
+			   list_next (step_iterator))) {
+		if (step_ptr->core_bitmap_job == NULL)
+			continue;
+		orig_step_core_bitmap = step_ptr->core_bitmap_job;
+		i_size = bit_size(job_ptr->job_resrcs->core_bitmap);
+		step_ptr->core_bitmap_job = bit_alloc(i_size);
+		old_core_offset = 0;
+		new_core_offset = 0;
+		i_first = MIN(bit_ffs(orig_job_node_bitmap),
+			      bit_ffs(job_ptr->job_resrcs->node_bitmap));
+		i_last  = MAX(bit_fls(orig_job_node_bitmap),
+			      bit_fls(job_ptr->job_resrcs->node_bitmap));
+		for (i = i_first; i <= i_last; i++) {
+			old_node_set = bit_test(orig_job_node_bitmap, i);
+			new_node_set = bit_test(job_ptr->job_resrcs->
+						node_bitmap, i);
+			if (!old_node_set && !new_node_set)
+				continue;
+			node_core_count = _get_node_cores(i);
+			if (old_node_set && new_node_set) {
+				for (j = 0; j < node_core_count; j++) {
+					if (!bit_test(orig_step_core_bitmap,
+						      old_core_offset + j))
+						continue;
+					bit_set(step_ptr->core_bitmap_job,
+						new_node_set + j);
+					bit_set(job_ptr->job_resrcs->
+						core_bitmap_used,
+						new_node_set + j);
+				}
+			}
+			if (old_node_set)
+				old_core_offset += node_core_count;
+			if (new_node_set)
+				new_core_offset += node_core_count;
+		}
+		bit_free(orig_step_core_bitmap);
+	}
+	list_iterator_destroy (step_iterator);
 }
