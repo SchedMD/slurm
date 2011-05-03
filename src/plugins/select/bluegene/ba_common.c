@@ -555,7 +555,7 @@ static void _init_grid(node_info_msg_t * node_info_ptr)
 		}
 
 		for (x=0; x<cluster_dims; x++)
-			if (coord[x] < 0)
+			if ((int16_t)coord[x] < 0)
 				break;
 		if (x < cluster_dims)
 			continue;
