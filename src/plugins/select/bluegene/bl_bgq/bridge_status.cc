@@ -350,7 +350,7 @@ static void *_real_time(void *no_data)
 
 		if (bridge_status_inited && failed) {
 			error("Disconnected from real-time events. "
-			     "Will try tCopy of SP2o reconnect.");
+			      "Will try to reconnect.");
 			rc = _real_time_connect();
 			if (rc == SLURM_SUCCESS) {
 				info("real-time server connected again");
