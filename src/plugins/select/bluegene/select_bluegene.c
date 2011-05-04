@@ -1257,13 +1257,7 @@ extern int select_p_state_save(char *dir_name)
 	while ((bg_record = list_next(itr))) {
 		if (bg_record->magic != BLOCK_MAGIC)
 			continue;
-		/* on real bluegene systems we only want to keep track of
-		 * the blocks in an error state
-		 */
-#if defined HAVE_BG_FILES
-		if (!(bg_record->state & BG_BLOCK_ERROR_FLAG))
-			continue;
-#endif
+
 		xassert(bg_record->bg_block_id != NULL);
 
 		_pack_block(bg_record, buffer, SLURM_PROTOCOL_VERSION);
