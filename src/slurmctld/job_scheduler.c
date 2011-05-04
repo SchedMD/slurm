@@ -935,10 +935,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				job_ptr->time_limit /= 60;  /* sec to min */
 			}
 			if (job_ptr->details && dep_ptr->job_ptr->details) {
-				job_ptr->details->pn_min_memory =
-					dep_ptr->job_ptr->details->pn_min_memory;
-			}
-			if (job_ptr->details && dep_ptr->job_ptr->details) {
 				job_ptr->details->shared =
 					dep_ptr->job_ptr->details->shared;
 			}
@@ -1088,10 +1084,9 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			     (dep_job_ptr->qos_id != job_ptr->qos_id)    ||
 			     (dep_job_ptr->part_ptr == NULL)             ||
 			     (job_ptr->part_ptr     == NULL)             ||
-			     (job_ptr->part_ptr->max_share != 1)         ||
 			     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
-				/* Expand only one active job in the same QOS
-				 * and partition without shared resources */
+				/* Expand only jobs in the same QOS and
+				 * and partition */
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}

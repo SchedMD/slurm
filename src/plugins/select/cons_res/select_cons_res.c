@@ -1000,7 +1000,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	}
 
 	node_cnt = bit_set_count(from_job_resrcs_ptr->node_bitmap) +
-		   bit_set_count(to_job_resrcs_ptr->node_bitmap) -
+		   bit_set_count(to_job_resrcs_ptr->node_bitmap)   -
 		   bit_overlap(from_job_resrcs_ptr->node_bitmap,
 			       to_job_resrcs_ptr->node_bitmap);
 	new_job_resrcs_ptr = _create_job_resources(node_cnt);
@@ -1042,18 +1042,16 @@ static int _job_expand(struct job_record *from_job_ptr,
 		if (from_node_used) {
 			/* Merge alloc info from both "from" and "to" jobs,
 			 * leave "from" job with no allocated CPUs or memory */
-			new_job_resrcs_ptr->cpus[new_node_offset] +=
+			new_job_resrcs_ptr->cpus[new_node_offset] =
 				from_job_resrcs_ptr->cpus[from_node_offset];
 			from_job_resrcs_ptr->cpus[from_node_offset] = 0;
-			/* new_job_resrcs_ptr->cpus_used[new_node_offset] +=
+			/* new_job_resrcs_ptr->cpus_used[new_node_offset] =
 				from_job_resrcs_ptr->
 				cpus_used[from_node_offset]; Should be 0 */
-			new_job_resrcs_ptr->memory_allocated[new_node_offset]+=
+			new_job_resrcs_ptr->memory_allocated[new_node_offset] =
 				from_job_resrcs_ptr->
 				memory_allocated[from_node_offset];
-			from_job_resrcs_ptr->
-				memory_allocated[from_node_offset] = 0;
-			/* new_job_resrcs_ptr->memory_used[new_node_offset] +=
+			/* new_job_resrcs_ptr->memory_used[new_node_offset] =
 				from_job_resrcs_ptr->
 				memory_used[from_node_offset]; Should be 0 */
 			job_resources_bits_copy(new_job_resrcs_ptr,
@@ -1062,41 +1060,14 @@ static int _job_expand(struct job_record *from_job_ptr,
 						from_node_offset);
 		}
 		if (to_node_used) {
-			/* Merge alloc info from both "from" and "to" jobs */
+			/* Merge alloc info from both "from" and "to" jobs. */
 			new_job_resrcs_ptr->cpus[new_node_offset] +=
 				to_job_resrcs_ptr->cpus[to_node_offset];
 			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
 				to_job_resrcs_ptr->cpus_used[to_node_offset];
-			if (!from_node_used ||
-			    (from_job_ptr->details->pn_min_memory &
-			     MEM_PER_CPU)) {
-				/* node allocated by one job or allocating 
-				 * memory by CPU, add mem allocations */
-				new_job_resrcs_ptr->
-				memory_allocated[new_node_offset] +=
-					to_job_resrcs_ptr->
-					memory_allocated[to_node_offset];
-			} else if (from_node_used) {
-				/* mem allocated by node and both jobs have
-				 * allocations on the same node */
-				if (select_node_usage[i].alloc_memory <
-				    to_job_resrcs_ptr->
-				    memory_allocated[to_node_offset]) {
-					error("cons_res: node %s memory is "
-					      "under-allocated (%u-%u) for "
-					      "job %u",
-					      node_ptr->name,
-					      select_node_usage[i].alloc_memory,
-					      to_job_resrcs_ptr->
-					      memory_allocated[to_node_offset],
-					      to_job_ptr->job_id);
-					select_node_usage[i].alloc_memory = 0;
-				} else {
-					select_node_usage[i].alloc_memory -=
-						to_job_resrcs_ptr->
-						memory_allocated[to_node_offset];
-				}
-			}
+			new_job_resrcs_ptr->memory_allocated[new_node_offset]+=
+				to_job_resrcs_ptr->
+				memory_allocated[to_node_offset];
 			new_job_resrcs_ptr->memory_used[new_node_offset] +=
 				to_job_resrcs_ptr->memory_used[to_node_offset];
 			job_resources_bits_copy(new_job_resrcs_ptr,
