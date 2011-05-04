@@ -177,11 +177,13 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	// 	  std::ostream_iterator<std::string>(std::cout, " "));
 	// std::cout << std::endl;
 	std::cout << "block     : " << verify.block() << std::endl;
-	if (!verify.corner().empty()) {
-		std::cout << "corner:     " << verify.corner() << std::endl;
+	if (!verify.corner().location().empty()) {
+		std::cout << "corner:     " <<
+			verify.corner().location() << std::endl;
 	}
-	if (!verify.shape().empty()) {
-		std::cout << "shape:      " << verify.shape() << std::endl;
+	if (!verify.shape().value().empty()) {
+		std::cout << "shape:      " << verify.shape().value()
+			  << std::endl;
 	}
 
 	// const ProcessTree tree( verify.pid() );

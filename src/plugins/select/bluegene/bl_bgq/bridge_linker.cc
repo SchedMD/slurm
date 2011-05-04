@@ -103,9 +103,11 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 	bg_record_t *bg_record = (bg_record_t *)xmalloc(sizeof(bg_record_t));
 	Block::Midplanes midplane_vec;
 	hostlist_t hostlist;
+	char *node_char = NULL;
+	char mp_str[256];
 
 	bg_record->magic = BLOCK_MAGIC;
-	bg_record->bg_block_id = xstrdup(bg_block_id);
+	bg_record->bg_block_id = xstrdup(block_ptr->getName().c_str());
 	bg_record->cnode_cnt = block_ptr->getComputeNodeCount();
 	bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->cnode_cnt;
 
@@ -124,11 +126,9 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 		   out where to start from with the alloc of ionodes.
 		*/
 		len = nb_name.length()-2;
-		io_start = atoi((char*)nb_name.c_str()+len)
-			* bg_conf->io_ratio;
+		io_start = atoi((char*)nb_name.c_str()+len) * bg_conf->io_ratio;
 
-		bg_record->ionode_bitmap =
-			bit_alloc(bg_conf->ionodes_per_mp);
+		bg_record->ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
 		/* Set the correct ionodes being used in this block */
 		bit_nset(bg_record->ionode_bitmap,
 			 io_start, io_start+io_cnt);
@@ -184,24 +184,25 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 	else
 		bg_record->ba_mp_list = list_create(destroy_ba_mp);
 
-	bg_block_id = set_bg_block(bg_record->ba_mp_list,
-				   bg_record->start,
-				   bg_record->geo,
-				   bg_record->conn_type);
+	node_char = set_bg_block(bg_record->ba_mp_list,
+				 bg_record->start,
+				 bg_record->geo,
+				 bg_record->conn_type);
 	ba_reset_all_removed_mps();
-	if (!bg_block_id)
+	if (!node_char)
 		fatal("I was unable to make the requested block.");
 
-	snprintf(temp, sizeof(temp), "%s%s",
+	snprintf(mp_str, sizeof(mp_str), "%s%s",
 		 bg_conf->slurm_node_prefix,
-		 bg_block_id);
+		 node_char);
 
-	xfree(bg_block_id);
-	if (strcmp(temp, bg_record->mp_str)) {
-		fatal("bad wiring in preserved state "
-		      "(found %s, but allocated %s) "
+	xfree(node_char);
+	if (strcmp(mp_str, bg_record->mp_str)) {
+		fatal("Couldn't make unknown block %s in our wiring.  "
+		      "Something is wrong with our algo.  Remove this block "
+		      "to continue (found %s, but allocated %s) "
 		      "YOU MUST COLDSTART",
-		      bg_record->mp_str, temp);
+		      bg_record->bg_block_id, mp_str, bg_record->mp_str);
 	}
 
 	return bg_record;
