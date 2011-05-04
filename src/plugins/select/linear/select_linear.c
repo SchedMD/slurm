@@ -1616,10 +1616,10 @@ static int _job_expand(struct job_record *from_job_ptr,
 						from_node_offset);
 		}
 		if (to_node_used) {
-			/* Merge alloc info from both "from" and "to" jobs. */
+			/* Merge alloc info from both "from" and "to" jobs */
 
-			/* DO NOT double count the allocated CPUs for the
-			 * select/linear plugin. */
+			/* DO NOT double count the allocated CPUs in partition
+			 * with Shared nodes */
 			new_job_resrcs_ptr->cpus[new_node_offset] =
 				to_job_resrcs_ptr->cpus[to_node_offset];
 			new_job_resrcs_ptr->cpus_used[new_node_offset] +=

@@ -1061,7 +1061,10 @@ static int _job_expand(struct job_record *from_job_ptr,
 						from_node_offset);
 		}
 		if (to_node_used) {
-			/* Merge alloc info from both "from" and "to" jobs. */
+			/* Merge alloc info from both "from" and "to" jobs */
+
+			/* DO NOT double count the allocated CPUs in partition
+			 * with Shared nodes */
 			new_job_resrcs_ptr->cpus[new_node_offset] +=
 				to_job_resrcs_ptr->cpus[to_node_offset];
 			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
@@ -1075,6 +1078,28 @@ static int _job_expand(struct job_record *from_job_ptr,
 						new_node_offset,
 						to_job_resrcs_ptr,
 						to_node_offset);
+			if (from_node_used) {
+				/* Adust cpu count for shared CPUs */
+				int from_core_cnt, to_core_cnt, new_core_cnt;
+				from_core_cnt = count_job_resources_node(
+							from_job_resrcs_ptr,
+							from_node_offset);
+				to_core_cnt = count_job_resources_node(
+							to_job_resrcs_ptr,
+							to_node_offset);
+				new_core_cnt = count_job_resources_node(
+							new_job_resrcs_ptr,
+							new_node_offset);
+				if ((from_core_cnt + to_core_cnt) !=
+				    new_core_cnt) {
+					new_job_resrcs_ptr->
+						cpus[new_node_offset] *=
+						new_core_cnt;
+					new_job_resrcs_ptr->
+						cpus[new_node_offset] /=
+						(from_core_cnt + to_core_cnt);
+				}
+			}
 		}
 
 		to_job_ptr->total_cpus += new_job_resrcs_ptr->
@@ -1109,7 +1134,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	bit_or(to_job_ptr->node_bitmap, from_job_ptr->node_bitmap);
 	bit_nclear(from_job_ptr->node_bitmap, 0, (node_record_count - 1));
 	bit_nclear(from_job_resrcs_ptr->node_bitmap, 0,
-		  (node_record_count - 1));
+		   (node_record_count - 1));
 
 	xfree(to_job_ptr->nodes);
 	to_job_ptr->nodes = xstrdup(new_job_resrcs_ptr->nodes);
