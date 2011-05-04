@@ -1017,6 +1017,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 			    select_fast_schedule);
 	xfree(to_job_ptr->node_addr);
 	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+	to_job_ptr->total_cpus = 0;
 
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
 			bit_ffs(to_job_resrcs_ptr->node_bitmap));
@@ -1075,6 +1076,9 @@ static int _job_expand(struct job_record *from_job_ptr,
 						to_job_resrcs_ptr,
 						to_node_offset);
 		}
+
+		to_job_ptr->total_cpus += new_job_resrcs_ptr->
+					  cpus[new_node_offset];
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
 
@@ -1082,8 +1086,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	free_job_resources(&to_job_ptr->job_resrcs);
 	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
 
-	to_job_ptr->total_cpus   += from_job_ptr->total_cpus;
-	to_job_ptr->cpu_cnt      += from_job_ptr->cpu_cnt;
+	to_job_ptr->cpu_cnt = to_job_ptr->total_cpus;
 	if (to_job_ptr->details) {
 		to_job_ptr->details->min_cpus = to_job_ptr->total_cpus;
 		to_job_ptr->details->max_cpus = to_job_ptr->total_cpus;
