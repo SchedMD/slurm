@@ -53,6 +53,12 @@
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
 
+/* in Q there are always 5 dimensions in a nodecard/board */
+typedef struct {
+	int start[5];
+	int end[5];
+} ba_nc_coords_t;
+
 #define mp_strip_unaltered(__mp) (__mp & ~BA_MP_USED_ALTERED_PASS)
 
 /* _ba_system is the "current" system that the structures will work
@@ -63,6 +69,11 @@ static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 static ba_geo_system_t *ba_main_geo_system = NULL;
 static ba_geo_system_t *ba_mp_geo_system = NULL;
 static uint16_t *deny_pass = NULL;
+static ba_nc_coords_t g_nc_coords[16];
+
+/* increment Y -> Z -> A -> X -> E
+ * used for doing nodecard coords */
+static int ba_nc_dim_order[5] = {Y, Z, A, X, E};
 
 /** internal helper functions */
 /* */
@@ -96,6 +107,9 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 /* */
 static void _setup_next_mps(int level, uint16_t *coords);
 
+/* */
+static void _increment_nc_coords(int dim, int *mp_coords, int *dim_size);
+
 /** */
 static bool _mp_used(ba_mp_t* ba_mp, int dim);
 
@@ -104,8 +118,9 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 
 extern void ba_create_system(int num_cpus, int *real_dims)
 {
-	int a,x,y,z, i = 0;
+	int a,x,y,z, i = 0, dim;
 	uint16_t coords[SYSTEM_DIMENSIONS];
+	int mp_coords[5];
 
 	if (ba_main_grid)
 		ba_destroy_system();
@@ -176,6 +191,61 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 	//ba_print_geo_table(ba_mp_geo_system);
 
 	_setup_next_mps(A, coords);
+
+	/* Now set it up to mark the corners of each nodecard.  This
+	   is used if running a sub-block job on a small block later.
+	*/
+	/* This is the basic idea for each small block size origin 00000
+	   32  = 2x2x2x2x2
+	   64  = 2x2x4x2x2
+	   128 = 2x2x4x4x2
+	   256 = 4x2x4x4x2
+	   512 = 4x4x4x4x2
+	*/
+
+	/* 32node boundaries (this is what the following code generates)
+	   N00 - 32  = 00000x11111
+	   N01 - 64  = 00200x11311
+	   N02 - 96  = 00020x11131
+	   N03 - 128 = 00220x11331
+	   N04 - 160 = 20000x31111
+	   N05 - 192 = 20200x31311
+	   N06 - 224 = 20020x31131
+	   N07 - 256 = 20220x31331
+	   N08 - 288 = 02000x13111
+	   N09 - 320 = 02200x13311
+	   N10 - 352 = 02020x13131
+	   N11 - 384 = 02220x13331
+	   N12 - 416 = 22000x33111
+	   N13 - 448 = 22200x33311
+	   N14 - 480 = 22020x33131
+	   N15 - 512 = 22220x33331
+	*/
+	memset(&mp_coords, 0, sizeof(mp_coords));
+	for (i=0; i<16; i++) {
+		/*
+		 * increment Y -> Z -> A -> X
+		 * E always goes from 0->1
+		 */
+		for (dim = 0; dim < 5; dim++) {
+			g_nc_coords[i].start[dim] =
+				g_nc_coords[i].end[dim] = mp_coords[dim];
+			g_nc_coords[i].end[dim]++;
+		}
+		/* info("%d\tgot %c%c%c%c%cx%c%c%c%c%c", */
+		/*      i, */
+		/*      alpha_num[g_nc_coords[i].start[A]], */
+		/*      alpha_num[g_nc_coords[i].start[X]], */
+		/*      alpha_num[g_nc_coords[i].start[Y]], */
+		/*      alpha_num[g_nc_coords[i].start[Z]], */
+		/*      alpha_num[g_nc_coords[i].start[E]], */
+		/*      alpha_num[g_nc_coords[i].end[A]], */
+		/*      alpha_num[g_nc_coords[i].end[X]], */
+		/*      alpha_num[g_nc_coords[i].end[Y]], */
+		/*      alpha_num[g_nc_coords[i].end[Z]], */
+		/*      alpha_num[g_nc_coords[i].end[E]]); */
+		_increment_nc_coords(0, mp_coords, ba_mp_geo_system->dim_size);
+	}
 }
 
 /** */
@@ -873,31 +943,6 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		 * only used for sub-block jobs we only create it
 		 * when needed. */
 		if (!ba_mp->cnode_bitmap) {
-			/* 32  = 2x2x2x2x2
-			   64  = 2x2x4x2x2
-			   128 = 2x2x4x4x2
-			   256 = 4x2x4x4x2
-			   512 = 4x4x4x4x2
-			*/
-
-			/* 32node boundaries
-			   N00 - 32  = 00000x11111
-			   N01 - 64  = 00200x11311
-			   N02 - 96  = 00020x11131
-			   N03 - 128 = 00220x11331
-			   N04 - 160 = 20000x31111
-			   N05 - 192 = 20200x31301
-			   N06 - 224 = 20020x31131
-			   N07 - 256 = 20220x31331
-			   N08 - 288 = 02000x13111
-			   N09 - 320 = 02200x13311
-			   N10 - 352 = 02020x13131
-			   N11 - 384 = 02220x13331
-			   N12 - 416 = 22000x33111
-			   N13 - 448 = 22200x33311
-			   N14 - 480 = 22020x33131
-			   N15 - 512 = 22220x33331
-			*/
 			int start, end;
 			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
 			if (bg_record->ionode_bitmap
@@ -1682,6 +1727,22 @@ static void _setup_next_mps(int level, uint16_t *coords)
 			prev_coords[dim] = DIM_SIZE[dim]-1;
 		curr_mp->next_mp[dim] = coord2ba_mp(next_coords);
 		curr_mp->prev_mp[dim] = coord2ba_mp(prev_coords);
+	}
+}
+
+/* Used to set up the next nodecard we are going to look at.  Setting
+ * mp_coords to 00000 each time this is called will increment
+ * mp_coords to the next starting point of the next nodecard.
+ */
+static void _increment_nc_coords(int dim, int *mp_coords, int *dim_size)
+{
+	if (dim >= 5)
+		return;
+
+	mp_coords[ba_nc_dim_order[dim]]+=2;
+	if (mp_coords[ba_nc_dim_order[dim]] >= dim_size[ba_nc_dim_order[dim]]) {
+		mp_coords[ba_nc_dim_order[dim]] = 0;
+		_increment_nc_coords(dim+1, mp_coords, dim_size);
 	}
 }
 

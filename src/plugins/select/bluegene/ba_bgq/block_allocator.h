@@ -46,7 +46,7 @@
 
 // #define DEBUG_PA
 
-enum {A, X, Y, Z};
+enum {A, X, Y, Z, E};
 
 /* Global */
 extern ba_mp_t ****ba_main_grid;
