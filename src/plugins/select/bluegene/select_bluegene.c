@@ -221,6 +221,9 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 		itr_curr = list_iterator_create(curr_block_list);
 		while ((init_record = list_next(itr_curr))) {
 			list_remove(itr_curr);
+
+			init_record->modifying = 0;
+
 			/* The block needs to exist in the main list
 			 * just to make sure we query the state. */
 			if (!(found_record = find_bg_record_in_list(
@@ -255,6 +258,9 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 
 			if (found_record == NULL) {
 				list_remove(itr_curr);
+
+				init_record->modifying = 0;
+
 				/* The block needs to exist in the main list
 				 * just to make sure we query the state. */
 				if (!(found_record = find_bg_record_in_list(

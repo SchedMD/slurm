@@ -88,12 +88,12 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		xassert(0);
 		return SLURM_SUCCESS;
 	} else if (bg_record->modifying) {
-		info("%d other are modifing this block %s",
+		info("%d others are modifing this block %s",
 		     bg_record->free_cnt, bg_record->bg_block_id);
 		return SLURM_SUCCESS;
 	} else if (bg_record->free_cnt) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-			info("%d other are trying to destroy this block %s",
+			info("%d others are trying to destroy this block %s",
 			     bg_record->free_cnt, bg_record->bg_block_id);
 		return SLURM_SUCCESS;
 	}
