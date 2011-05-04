@@ -49,7 +49,7 @@ ExitCode field whose format mirrors the output of <b>scontrol</b> and
 <b>sview</b> described above.</p>
 
 
-<h1>Derived Exit Code and String</h1>
+<h1>Derived Exit Code and Comment String</h1>
 
 <p>After reading the above description of a job's exit code, one can
 imagine a scenario where a central task of a batch job fails but the
@@ -65,14 +65,16 @@ and sent to the database when the accounting_storage plugin is
 enabled.</p>
 
 <p>In addition to the derived exit code, the job record in the SLURM
-db contains an additional field known as the "derived exit string".
-This is initialized to NULL and can only be changed by the user.  A
-new option has been added to the <b>sacctmgr</b> command to provide
-the user the means to modify these two new fields of the job record.
-No other modification to the job record is allowed.  For those who
-prefer a simpler command specifically designed to view and modify the
-derived exit code/string, the <b>sjobexitmod</b> wrapper has been
-created (see below).</p>
+database contains a comment string.  This is initialized to the job's
+comment string (when AccountingStoreJobComment parameter in the
+slurm.conf is set) and can only be changed by the user.</p>
+
+<p>A new option has been added to the <b>sacctmgr</b> command to
+provide the user the means to modify these two fields of the job
+record.  No other modification to the job record is allowed.  For
+those who prefer a simpler command specifically designed to view and
+modify the derived exit code and comment string, the
+<b>sjobexitmod</b> wrapper has been created (see below).</p>
 
 <p>The user now has the means to annotate a job's exit code after it
 completes and provide a description of what failed.  This includes the
@@ -88,7 +90,7 @@ two new derived exit fields of the SLURM db's job record.
 
 <PRE>
 > sjobexitmod -l 123
-       JobID    Account   NNodes        NodeList      State ExitCode DerivedExitCode DerivedExitStr
+       JobID    Account   NNodes        NodeList      State ExitCode DerivedExitCode        Comment
 ------------ ---------- -------- --------------- ---------- -------- --------------- --------------
 123                  lc        1            tux0  COMPLETED      0:0             0:0
 </PRE>
@@ -101,7 +103,7 @@ If a change is desired, <b>sjobexitmod</b> can modify the derived fields:
  Modification of job 123 was successful.
 
 > sjobexitmod -l 123
-       JobID    Account   NNodes        NodeList      State ExitCode DerivedExitCode DerivedExitStr
+       JobID    Account   NNodes        NodeList      State ExitCode DerivedExitCode        Comment
 ------------ ---------- -------- --------------- ---------- -------- --------------- --------------
 123                  lc        1            tux0  COMPLETED      0:0            49:0  out of memory
 </PRE>
@@ -110,8 +112,8 @@ If a change is desired, <b>sjobexitmod</b> can modify the derived fields:
 exit fields:</p>
 
 <PRE>
-> sacct -X -j 123 -o JobID,NNodes,State,ExitCode,DerivedExitcode,DerivedExitStr
-       JobID   NNodes      State ExitCode DerivedExitCode DerivedExitStr
+> sacct -X -j 123 -o JobID,NNodes,State,ExitCode,DerivedExitcode,Comment
+       JobID   NNodes      State ExitCode DerivedExitCode        Comment
 ------------ -------- ---------- -------- --------------- --------------
 123                 1  COMPLETED      0:0            49:0  out of memory
 </PRE>
