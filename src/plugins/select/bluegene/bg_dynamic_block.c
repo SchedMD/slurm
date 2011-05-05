@@ -123,10 +123,9 @@ extern List create_dynamic_block(List block_list,
 				continue;
 			}
 
-			if (!my_bitmap) {
-				my_bitmap =
-					bit_alloc(bit_size(bg_record->mp_bitmap));
-			}
+			if (!my_bitmap)
+				my_bitmap = bit_alloc(
+					bit_size(bg_record->mp_bitmap));
 
 			if (!bit_super_set(bg_record->mp_bitmap, my_bitmap)) {
 				bit_or(my_bitmap, bg_record->mp_bitmap);
