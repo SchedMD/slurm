@@ -644,6 +644,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	ListIterator itr = NULL;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 	uint32_t record_count;
+
 	xassert(curr_block_list);
 	xassert(dir_name);
 
@@ -723,8 +724,10 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 		      "Can't create blocks.  "
 		      "Please check your slurm.conf.");
 	}
+
 	for (i=0; i<record_count; i++) {
 		block_info_t block_info;
+
 		if (slurm_unpack_block_info_members(
 			    &block_info, buffer, protocol_version))
 				goto unpack_error;
@@ -742,12 +745,15 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 			reset_ba_system(false);
 
 		if (bg_record->ba_mp_list) {
-			if (check_and_set_mp_list(bg_record->ba_mp_list)
-			    == SLURM_ERROR)
-				error("something happened in the "
-				      "load of %s, keeping it "
-				      "around though",
-				      bg_record->bg_block_id);
+			/* only do this for blocks bigger than 1
+			   midplane */
+			if (bg_record->cpu_cnt >= bg_conf->cpus_per_mp)
+				if (check_and_set_mp_list(bg_record->ba_mp_list)
+				    == SLURM_ERROR)
+					error("something happened in the "
+					      "load of %s, keeping it "
+					      "around though",
+					      bg_record->bg_block_id);
 		} else {
 			ba_set_removable_mps(usable_mp_bitmap, 1);
 			/* we want the mps that aren't
