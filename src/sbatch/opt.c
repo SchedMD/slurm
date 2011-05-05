@@ -1974,6 +1974,10 @@ static void _parse_pbs_resource_list(char *rl)
 
 			xfree(temp);
 #ifdef HAVE_CRAY
+		/*
+		 * NB: no "mppmem" here since it specifies per-PE memory units,
+		 *     whereas SLURM uses per-node and per-CPU memory units.
+		 */
 		} else if (!strncmp(rl + i, "mppdepth=", 9)) {
 			/* Cray: number of CPUs (threads) per processing element */
 			i += 9;
@@ -1981,19 +1985,6 @@ static void _parse_pbs_resource_list(char *rl)
 			if (temp) {
 				opt.cpus_per_task = _get_int(temp, "mppdepth");
 				opt.cpus_set	  = true;
-			}
-			xfree(temp);
-		} else if (!strncmp(rl + i, "mppmem=", 7)) {
-			i += 7;
-			temp = _get_pbs_option_value(rl, &i);
-			if (!temp) {
-				error("No value given for mppmem");
-				exit(error_exit);
-			}
-			opt.realmem = (int)str_to_mbytes(temp);
-			if (opt.realmem < 0) {
-				error("invalid mppmem constraint %s", temp);
-				exit(error_exit);
 			}
 			xfree(temp);
 		} else if (!strncmp(rl + i, "mppnodes=", 9)) {
