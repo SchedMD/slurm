@@ -6859,7 +6859,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	/* Reset min and max node counts as needed, insure consistency */
 	if (job_specs->min_nodes != NO_VAL) {
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-			;	/* shrink running job, handle later */
+			;	/* shrink running job, processed later */
 		else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (job_specs->min_nodes < 1) {
@@ -7344,8 +7344,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/* Use req_nodes to change the nodes associated with a running
 		 * for lack of other field in the job request to use */
-		if ((job_specs->min_nodes == 0) && IS_JOB_RUNNING(job_ptr) &&
-		    (job_ptr->node_cnt > 0) &&
+		if ((job_specs->min_nodes == 0) && (job_ptr->node_cnt > 0) &&
 		    job_ptr->details && job_ptr->details->expanding_jobid) {
 			struct job_record *expand_job_ptr;
 			bitstr_t *orig_job_node_bitmap;
@@ -7358,6 +7357,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				     job_specs->min_nodes, job_specs->job_id,
 				     job_ptr->details->expanding_jobid);
 				error_code = ESLURM_INVALID_JOB_ID;
+				goto fini;
+			}
+			if (IS_JOB_SUSPENDED(job_ptr) ||
+			    IS_JOB_SUSPENDED(expand_job_ptr)) {
+				info("Can not expand job %u from job %u, "
+				     "job is suspended",
+				     expand_job_ptr->job_id, job_ptr->job_id);
+				error_code = ESLURM_JOB_SUSPENDED;
 				goto fini;
 			}
 			if ((job_ptr->step_list != NULL) &&
