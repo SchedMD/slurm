@@ -356,6 +356,8 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 		rc->linuximage = xstrdup(jobinfo->linuximage);
 		rc->mloaderimage = xstrdup(jobinfo->mloaderimage);
 		rc->ramdiskimage = xstrdup(jobinfo->ramdiskimage);
+		if (jobinfo->units_used)
+			rc->units_used = bit_copy(jobinfo->units_used);
 	}
 
 	return rc;
@@ -396,6 +398,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packstr(jobinfo->linuximage, buffer);
 			packstr(jobinfo->mloaderimage, buffer);
 			packstr(jobinfo->ramdiskimage, buffer);
+			pack_bit_fmt(jobinfo->units_used, buffer);
 		} else {
 			/* pack space for 3 positions for geo
 			 * then 1 for conn_type, reboot, and rotate
@@ -412,6 +415,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packnull(buffer); //linux
 			packnull(buffer); //mloader
 			packnull(buffer); //ramdisk
+			packnull(buffer); //units_used
 		}
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (jobinfo) {
@@ -518,6 +522,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int dims = slurmdb_setup_cluster_dims();
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
+	char *bit_char = NULL;
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
@@ -546,6 +551,13 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
+		if (bit_char) {
+			jobinfo->units_used = bit_alloc(bg_conf->mp_cnode_cnt);
+			bit_unfmt(jobinfo->units_used, bit_char);
+			xfree(bit_char);
+		}
+
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		for (i=0; i<dims; i++) {
 			safe_unpack16(&(jobinfo->geometry[i]), buffer);
