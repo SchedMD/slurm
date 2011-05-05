@@ -2266,7 +2266,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ALLOC,        0,
-			   SORTID_COLOR,	sview_colors[step_ptr->step_id],
+			   SORTID_COLOR,	sview_colors[
+				   (step_ptr->step_id % sview_colors_cnt)],
 			   SORTID_COLOR_INX,    step_ptr->step_id,
 			   SORTID_CPUS,         tmp_cpu_min,
 			   SORTID_GRES,         step_ptr->gres,
