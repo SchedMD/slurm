@@ -839,7 +839,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 {
 	ListIterator depend_iter, job_iterator;
 	struct depend_spec *dep_ptr;
-	bool failure = false, depends = false;
+	bool failure = false, depends = false, expands = false;
  	List job_queue = NULL;
  	bool run_now;
 	int count = 0;
@@ -923,6 +923,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND) {
 			time_t now = time(NULL);
+			expands = true;
 			if (IS_JOB_PENDING(dep_ptr->job_ptr)) {
 				depends = true;
 			} else if (IS_JOB_FINISHED(dep_ptr->job_ptr)) {
@@ -950,7 +951,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(depend_iter);
-	if (!depends && (count == 0))
+	if (!depends && !expands && (count == 0))
 		xfree(job_ptr->details->dependency);
 
 	if (failure)
