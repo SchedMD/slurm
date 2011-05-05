@@ -226,6 +226,10 @@ extern int clear_job_resources_node(job_resources_t *job_resrcs_ptr,
 extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
 				  uint32_t node_id);
 
+/* Return the count of core bitmaps set for the specific node */
+extern int count_job_resources_node(job_resources_t *job_resrcs_ptr,
+				    uint32_t node_id);
+
 /* Get socket and core count for a specific node_id (zero origin) */
 extern int get_job_resources_cnt(job_resources_t *job_resrcs_ptr,
 				 uint32_t node_id, uint16_t *socket_cnt,

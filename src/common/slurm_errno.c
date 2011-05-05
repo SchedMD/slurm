@@ -280,6 +280,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job expansion with generic resource (gres) not supported"	},
 	{ ESLURM_STEP_LIMIT,
 	  "Step limit reached for this job"			},
+	{ ESLURM_JOB_SUSPENDED,
+	  "Job is current suspended, requested operation disabled"	},
 
 	/* slurmd error codes */
 

@@ -34,14 +34,57 @@ as expected. Note that in order to build and install the aprun wrapper
 described above, execute "configure" with the <i>--with-srun2aprun</i>
 option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
 
+<h3>Node naming</h3>
 <p>SLURM node names will be of the form "nid#####" where "#####" is a five
 digit sequence number.
-Other information available about the node is it's XYZ coordinate in the
+Other information available about the node are it's XYZ coordinate in the
 node's <i>NodeAddr</i> field and it's component label in the <i>HostNodeName</i>
 field.
-The format of the component lable is "c#-#c#s#n#" where the "#" fields
-represent in order: cabinet, row, cate, blade or slot, and node.
+The format of the component label is "c#-#c#s#n#" where the "#" fields
+represent in order: cabinet, row, cage, blade or slot, and node.
 For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
+
+<h3>Requesting memory</h3>
+<p>Please be aware of the following conceptual difference. The "aprun -m" and PBS "mppmem" parameters both
+   describe memory in "per-processing element" <i>virtual units</i>. SLURM, in contrast, specifies memory in
+   <i>physical units</i>, either per node (<i>--mem</i> option to sbatch/salloc), or per CPU (<i>--mem-per-cpu</i>
+   option). These modes are mutually exclusive and depend on whether more than the per-CPU share is required.</p>
+
+<p>The <i>per-CPU share</i> is assumed as default by both ALPS/aprun and SLURM, since it works well with most applications.
+   It is simply the ratio <i>node_memory / number_of_cores</i>. For instance, on a XT5 system with 16000MB of node memory
+   and 12-core nodes, the per-CPU share is 1333MB.</p>
+
+<p>You can request up to the per-CPU share for your application using the <i>--mem-per-cpu</i> option to sbatch/salloc.
+   Requesting more than the per-CPU share per CPU in this mode will lead to an error message.
+   To request more than the per-CPU share of memory, use the <i>--mem</i> option in conjunction with the
+   <i>--ntasks-per-node</i> parameter. The <i>--ntasks-per-node</i> parameter specifies how many tasks are to be run
+   per node and is SLURM's way of expressing the ALPS "per-processing element" concept (on systems that support the
+   <i>-B</i> option to aprun, it also supplies the <i>-N</i> setting).
+
+<p>The <i>--ntasks-per-node</i> value can be set between 1 and the number_of_cores, and this influences the amount of
+   memory that can be requested via the <i>--mem</i> option.
+   When --ntasks-per-node=1, the entire node memory is available to the application; if it is set to
+   number_of_cores, only the default per-CPU share (node_memory / number_of_cores) can be requested.
+   For all other cases, set
+<pre>
+   --ntasks-per-node=floor(node_memory / requested_memory)
+</pre>
+   whenever <i>--mem=requested_memory</i> is larger than the per-CPU share.
+
+<p><b>Example:</b> An application with 64 tasks needs 7500MB per task on a cluster with 32000MB and 24 cores
+   per node (as seen in '<i>xtprocadmin -A</i>').  Hence  ntasks_per_node = floor(32000/7500) = 4.
+<pre>
+    #SBATCH --comment="example for node_memory=32000MB on a 24-core host"
+    #SBATCH --ntasks=64
+    #SBATCH --mem=7500
+    #SBATCH --ntasks-per-node=4
+</pre>
+<p>If you need to fine-tune the memory limit of your application, you can use the same parameters in a salloc session
+   and then see directly, using
+<pre>
+    apstat -rvv -R $BASIL_RESERVATION_ID
+</pre>how much memory has been requested for that job.</p>
+
 
 <h2>Administrator Guide</h2>
 
@@ -149,6 +192,7 @@ the process using an <i>init.d</i> script distributed with the Munge as
 </ul></p>
 
 <h3>Enable the Cray job service</h3>
+
 <p>This is a common dependency on Cray systems. ALPS relies on the Cray job service to
    generate cluster-unique job container IDs (PAGG IDs). These identifiers are used by
    ALPS to track running (aprun) job steps. The default (session IDs) is not unique

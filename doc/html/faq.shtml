@@ -646,14 +646,24 @@ http://groups.google.com/group/slurm-devel</a></p>
 
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
-Beginning with SLURM version 2.2 it is possible to decrease a job's size after
-it has started as described below in some configurations.
-Support is not available on BlueGene or Cray system.
-Support is also not currently available on systems configured with generic
-resource allocations, but this may change in the future.
-The ability to increase the size of a running job was added in SLURM version
-2.3 and is described in the next paragraph.
-Use the <i>scontrol</i> command to change a job's size either by specifying
+Support to decrease the size of a running job was added to SLURM version 2.2.
+The ability to increase the size of a running job was added to SLURM version 2.3.
+While the size of a pending job may be changed with few restrictions, several
+significant restrictions apply to changing the size of a running job as noted
+below:
+<ol>
+<li>Support is not available on BlueGene or Cray system due to limitations
+in the software underlying SLURM.</li>
+<li>Support is not currently available on systems configured to allocate
+generic resources. We do plan to support generic resources in the future.</li>
+<li>Job(s) changing size must not be in a suspended state, including jobs
+suspended for gang scheduling. The jobs must be in a state of pending or
+running. We plan to modify the gang scheduling logic in the future to
+concurrently schedule a job to be used for expanding another job and the
+job to be expanded.</li>
+</ol></p>
+
+<p>Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
 (<i>NodeList=</i>) that you want the job to retain. 
 Any job steps running on the nodes which are reliquished by the job will be
@@ -663,10 +673,12 @@ containing information about the job's environment will no longer be valid and
 should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
 SLURM_NPROCS).
 The <i>scontrol</i> command will generate a script that can be executed to
-reset local environment variables
+reset local environment variables.
 You must retain the SLURM_JOBID environment variable in order for the
 <i>srun</i> command to gather information about the job's current state and
-specify the desired node and/or task count in subsequent <i>srun</i> invocations. 
+specify the desired node and/or task count in subsequent <i>srun</i> invocations.
+A new accounting record is generated when a job is resized showing the to have
+been resubmitted and restarted at the new size.
 An example is shown below.</p>
 <pre>
 #!/bin/bash
@@ -1435,6 +1447,6 @@ dset TV::parallel_configs {
 </pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 March 2011</p>
+<p style="text-align:center;">Last modified 4 May 2011</p>
 
 <!--#include virtual="footer.txt"-->

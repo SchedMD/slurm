@@ -117,6 +117,8 @@ static void _add_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap);
 static int  _cr_job_list_sort(void *x, void *y);
 static job_resources_t *_create_job_resources(int node_cnt);
+static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
+			      char *pre_err);
 static void _dump_node_cr(struct cr_record *cr_ptr);
 static struct cr_record *_dup_cr(struct cr_record *cr_ptr);
 static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -1570,6 +1572,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 			    select_fast_schedule);
 	xfree(to_job_ptr->node_addr);
 	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+	to_job_ptr->total_cpus = 0;
 
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
 			bit_ffs(to_job_resrcs_ptr->node_bitmap));
@@ -1613,10 +1616,10 @@ static int _job_expand(struct job_record *from_job_ptr,
 						from_node_offset);
 		}
 		if (to_node_used) {
-			/* Merge alloc info from both "from" and "to" jobs. */
+			/* Merge alloc info from both "from" and "to" jobs */
 
-			/* DO NOT double count the allocated CPUs for the
-			 * select/linear plugin. */
+			/* DO NOT double count the allocated CPUs in partition
+			 * with Shared nodes */
 			new_job_resrcs_ptr->cpus[new_node_offset] =
 				to_job_resrcs_ptr->cpus[to_node_offset];
 			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
@@ -1631,6 +1634,11 @@ static int _job_expand(struct job_record *from_job_ptr,
 						to_job_resrcs_ptr,
 						to_node_offset);
 		}
+		if (from_node_used && to_node_used)
+			_decr_node_job_cnt(i, from_job_ptr, "job_expand");
+
+		to_job_ptr->total_cpus += new_job_resrcs_ptr->
+					  cpus[new_node_offset];
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
 
@@ -1638,8 +1646,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	free_job_resources(&to_job_ptr->job_resrcs);
 	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
 
-	to_job_ptr->total_cpus   += from_job_ptr->total_cpus;
-	to_job_ptr->cpu_cnt      += from_job_ptr->cpu_cnt;
+	to_job_ptr->cpu_cnt = to_job_ptr->total_cpus;
 	if (to_job_ptr->details) {
 		to_job_ptr->details->min_cpus = to_job_ptr->total_cpus;
 		to_job_ptr->details->max_cpus = to_job_ptr->total_cpus;
@@ -1674,17 +1681,74 @@ static int _job_expand(struct job_record *from_job_ptr,
 	return rc;
 }
 
+/* Decrement a partitions running and total job counts as needed to enforce the
+ * limit of jobs per node per partition (the partition's Shared=# parameter) */
+static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
+			      char *pre_err)
+{
+	struct node_record *node_ptr = node_record_table_ptr + node_inx;
+	struct part_cr_record *part_cr_ptr;
+	bool exclusive, is_job_running;
+
+	exclusive = (job_ptr->details->shared == 0);
+	if (exclusive) {
+		if (cr_ptr->nodes[node_inx].exclusive_cnt)
+			cr_ptr->nodes[node_inx].exclusive_cnt--;
+		else {
+			error("%s: exclusive_cnt underflow for node %s",
+			      pre_err, node_ptr->name);
+		}
+	}
+
+	is_job_running = _test_run_job(cr_ptr, job_ptr->job_id);
+	part_cr_ptr = cr_ptr->nodes[node_inx].parts;
+	while (part_cr_ptr) {
+		if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
+			part_cr_ptr = part_cr_ptr->next;
+			continue;
+		}
+		if (!is_job_running)
+			/* cancelled job already suspended */;
+		else if (part_cr_ptr->run_job_cnt > 0)
+			part_cr_ptr->run_job_cnt--;
+		else {
+			error("%s: run_job_cnt underflow for node %s",
+			      pre_err, node_ptr->name);
+		}
+		if (part_cr_ptr->tot_job_cnt > 0)
+			part_cr_ptr->tot_job_cnt--;
+		else {
+			error("%s: tot_job_cnt underflow for node %s",
+			      pre_err, node_ptr->name);
+		}
+		if ((part_cr_ptr->tot_job_cnt == 0) &&
+		    (part_cr_ptr->run_job_cnt)) {
+			part_cr_ptr->run_job_cnt = 0;
+			error("%s: run_job_cnt out of sync for node %s",
+			      pre_err, node_ptr->name);
+		}
+		return SLURM_SUCCESS;
+	}
+
+	if (job_ptr->part_ptr) {
+		error("%s: Could not find partition %s for node %s",
+		      pre_err, job_ptr->part_ptr->name, node_ptr->name);
+	} else {
+		error("%s: no partition ptr given for job %u and node %s",
+		      pre_err, job_ptr->job_id, node_ptr->name);
+	}
+	return SLURM_ERROR;
+}
+
 /*
  * deallocate resources that were assigned to this job on one node
  */
 static int _rm_job_from_one_node(struct job_record *job_ptr,
 				 struct node_record *node_ptr, char *pre_err)
 {
-	int i, node_inx, node_offset, rc = SLURM_SUCCESS;
-	struct part_cr_record *part_cr_ptr;
+	int i, node_inx, node_offset;
 	job_resources_t *job_resrcs_ptr;
 	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
-	bool exclusive, is_job_running;
 	int first_bit, last_bit;
 	uint16_t cpu_cnt;
 	List gres_list;
@@ -1737,7 +1801,6 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	job_resrcs_ptr->cpus[node_offset] = 0;
 	build_job_resources_cpu_array(job_resrcs_ptr);
 
-	is_job_running = _test_run_job(cr_ptr, job_ptr->job_id);
 	if (select_fast_schedule)
 		cpu_cnt = node_ptr->config_ptr->cpus;
 	else
@@ -1762,55 +1825,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 				job_ptr->job_id, node_ptr->name);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
-	exclusive = (job_ptr->details->shared == 0);
-	if (exclusive) {
-		if (cr_ptr->nodes[node_inx].exclusive_cnt)
-			cr_ptr->nodes[node_inx].exclusive_cnt--;
-		else {
-			error("%s: exclusive_cnt underflow for node %s",
-			      pre_err, node_ptr->name);
-		}
-	}
-	part_cr_ptr = cr_ptr->nodes[node_inx].parts;
-	while (part_cr_ptr) {
-		if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
-			part_cr_ptr = part_cr_ptr->next;
-			continue;
-		}
-		if (!is_job_running)
-			/* cancelled job already suspended */;
-		else if (part_cr_ptr->run_job_cnt > 0)
-			part_cr_ptr->run_job_cnt--;
-		else {
-			error("%s: run_job_cnt underflow for node %s",
-			      pre_err, node_ptr->name);
-		}
-		if (part_cr_ptr->tot_job_cnt > 0)
-			part_cr_ptr->tot_job_cnt--;
-		else {
-			error("%s: tot_job_cnt underflow for node %s",
-			      pre_err, node_ptr->name);
-		}
-		if ((part_cr_ptr->tot_job_cnt == 0) &&
-		    (part_cr_ptr->run_job_cnt)) {
-			part_cr_ptr->run_job_cnt = 0;
-			error("%s: run_job_cnt out of sync for node %s",
-			      pre_err, node_ptr->name);
-		}
-		break;
-	}
-	if (part_cr_ptr == NULL) {
-		if (job_ptr->part_ptr) {
-			error("%s: Could not find partition %s for node %s",
-			      pre_err, job_ptr->part_ptr->name, node_ptr->name);
-		} else {
-			error("%s: no partition ptr given for job %u and node %s",
-			      pre_err, job_ptr->job_id, node_ptr->name);
-		}
-		rc = SLURM_ERROR;
-	}
-
-	return rc;
+	return _decr_node_job_cnt(node_inx, job_ptr, pre_err);
 }
 
 /*

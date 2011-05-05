@@ -43,6 +43,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for handling a 2.3 system talking to a 2.2 slurmctld.
  -- Add contribs/lua/job_submit.license.lua script. Update job_submit and Lua
     related documentation.
+ -- Test if _make_batch_script() is called with a NULL script.
+ -- Increase hostlist support from 24k to 64k nodes.
  -- Renamed the Accounting Storage database's "DerivedExitString" job field to
     "Comment".  Provided backward compatible support for "DerivedExitString" in
     the sacctmgr tool.
@@ -50,6 +52,8 @@ documents those changes that are of interest to users and admins.
     Storage db (to the formerly named, "DerivedExitString" job field).  This
     behavior is enabled by a new slurm.conf parameter:
     AccountingStoreJobComment.
+ -- Test if _make_batch_script() is called with a NULL script.
+ -- Increase hostlist support from 24k to 64k nodes.
  -- Fix srun to handle signals correctly when waiting for a step creation.
 
 * Changes in SLURM 2.3.0.pre4
