@@ -901,7 +901,7 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 	safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
 	if (bit_char) {
 		ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
-		bit_unfmt_binmask(ba_mp->cnode_bitmap, bit_char);
+		bit_unfmt(ba_mp->cnode_bitmap, bit_char);
 		xfree(bit_char);
 	}
 	safe_unpack16(&ba_mp->used, buffer);
