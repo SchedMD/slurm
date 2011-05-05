@@ -174,10 +174,10 @@ extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #define HOSTLIST_CHUNK    16
 
 /* max host range: anything larger will be assumed to be an error */
-#define MAX_RANGE    24576    /* 24K Hosts */
+#define MAX_RANGE    (64*1024)    /* 64K Hosts */
 
 /* max number of ranges that will be processed between brackets */
-#define MAX_RANGES    12288    /* 12K Ranges */
+#define MAX_RANGES   (12*1024)    /* 12K Ranges */
 
 /* size of internal hostname buffer (+ some slop), hostnames will probably
  * be truncated if longer than MAXHOSTNAMELEN */

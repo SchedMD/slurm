@@ -1602,9 +1602,10 @@ _make_batch_dir(slurmd_job_t *job)
 	char path[MAXPATHLEN];
 
 	if (job->stepid == NO_VAL)
-		snprintf(path, 1024, "%s/job%05u", conf->spooldir, job->jobid);
+		snprintf(path, sizeof(path), "%s/job%05u",
+			 conf->spooldir, job->jobid);
 	else {
-		snprintf(path, 1024, "%s/job%05u.%05u",
+		snprintf(path, sizeof(path), "%s/job%05u.%05u",
 			 conf->spooldir, job->jobid, job->stepid);
 	}
 
@@ -1637,7 +1638,12 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	FILE *fp = NULL;
 	char  script[MAXPATHLEN];
 
-	snprintf(script, 1024, "%s/%s", path, "slurm_script");
+	if (msg->script == NULL) {
+		error("_make_batch_script: called with NULL script");
+		return NULL;
+	}
+
+	snprintf(script, sizeof(script), "%s/%s", path, "slurm_script");
 
   again:
 	if ((fp = safeopen(script, "w", SAFEOPEN_CREATE_ONLY)) == NULL) {

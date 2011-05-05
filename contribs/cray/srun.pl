@@ -139,7 +139,7 @@ my (	$account,
 	$wc_key
 );
 
-my $aprun  = "${FindBin::Bin}/aprun";
+my $aprun  = "aprun";
 my $salloc = "${FindBin::Bin}/salloc";
 
 my $have_job;
@@ -414,17 +414,23 @@ $time_secs = get_seconds($time_limit)			if $time_limit;
 $command .= " -t $time_secs"				if $time_secs;
 $script = get_multi_prog($script)			if $multi_prog;
 
+# Input and output file options are not supported by aprun, but can be handled by perl
+$command .= " <$input_file"				if $input_file;
+$command .= " >$output_file"				if $output_file;
+if ($error_file) {
+	$command .= " 2>$error_file";
+} elsif ($output_file) {
+	$command .= " 2>&1";
+}
+
 # Srun option which are not supported by aprun
 #	$command .= " --disable-status"			if $disable_status;
 #	$command .= " --epilog=$epilog"			if $epilog;
-#	$command .= " --error=$error_file"		if $error_file;
-#	$command .= " --input=$input_file"		if $input_file;
 #	$command .= " --kill-on-bad-exit"		if $kill_on_bad_exit;
 #	$command .= " --label"				if $label;
 #	$command .= " --mpi=$mpi_type"			if $mpi_type;
 #	$command .= " --msg-timeout=$msg_timeout"	if $msg_timeout;
 #	$command .= " --no-allocate"			if $no_allocate;
-#	$command .= " --output=$output_file"		if $output_file;
 #	$command .= " --open-mode=$open_mode"		if $open_mode;
 #	$command .= " --preserve_env"			if $preserve_env;
 #	$command .= " --prolog=$prolog"			if $prolog;

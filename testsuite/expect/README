@@ -576,3 +576,4 @@ test25.1   sprio all options
 test26.#   Test of Cray specific functionality.
 ================================================
 test26.1   Validate scontrol update command for nodes is disabled.
+test26.2   Test of srun/aprun wrapper use of --alps= option
