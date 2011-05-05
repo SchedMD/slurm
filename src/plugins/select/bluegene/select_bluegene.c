@@ -1779,7 +1779,12 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 
 			if (ba_mp->index != bit)
 				continue;
-			xassert(jobinfo->units_used);
+			if (!jobinfo->units_used) {
+				/* from older version of slurm */
+				error("didn't have the units_used bitmap "
+				      "for some reason?");
+				continue;
+			}
 
 			bit_not(jobinfo->units_used);
 			bit_and(ba_mp->cnode_bitmap, jobinfo->units_used);

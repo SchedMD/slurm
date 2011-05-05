@@ -39,6 +39,8 @@
 #include "ba_common.h"
 #include "bg_node_info.h"
 
+#define DISPLAY_FULL_DIM 1
+
 #if (SYSTEM_DIMENSIONS == 1)
 int cluster_dims = 1;
 int cluster_base = 10;
@@ -201,13 +203,6 @@ static int _ba_node_map_set_range_internal(int level, int *coords,
 		}
 		return 1;
 	}
-
-	info("setting %c%c%c%c%c",
-	     alpha_num[coords[0]],
-	     alpha_num[coords[1]],
-	     alpha_num[coords[2]],
-	     alpha_num[coords[3]],
-	     alpha_num[coords[4]]);
 
 	_ba_node_xlate_to_1d(&offset_1d, coords, my_geo_system);
 	bit_set(node_bitmap, offset_1d);
