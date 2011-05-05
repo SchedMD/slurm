@@ -84,6 +84,13 @@ int switch_record_cnt;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 #endif
 
+/*
+ * SIGRTMIN isn't defined on osx, so lets keep it above the signals in use.
+ */
+#if !defined (SIGRTMIN) && defined (__APPLE__)
+#  define SIGRTMIN SIGUSR2+1
+#endif
+
 /* All current (2011) XT/XE installations have a maximum dimension of 3,
  * smaller systems deploy a 2D Torus which has no connectivity in
  * X-dimension.  Just incase SYSTEM_DIMENSIONS is ever set to 2
