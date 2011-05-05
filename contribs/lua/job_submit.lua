@@ -14,11 +14,9 @@
 
 function _build_part_table ( part_list )
 	local part_rec = {}
-	local i = 1
-	while part_list[i] do
+	for i in ipairs(part_list) do
 		part_rec[i] = { part_rec_ptr=part_list[i] }
 		setmetatable (part_rec[i], part_rec_meta)
-		i = i + 1
 	end
 	return part_rec
 end
@@ -46,8 +44,7 @@ function slurm_job_submit ( job_desc, part_list )
 		local new_partition = nil
 		local top_priority  = -1
 		local last_priority = -1
-		local i = 1
-		while part_rec[i] do
+		for i in ipairs(part_rec) do
 --			log_info("part name[%d]:%s", i, part_rec[i].name)
 			if part_rec[i].flag_default ~= 0 then
 				top_priority = -1
@@ -58,7 +55,6 @@ function slurm_job_submit ( job_desc, part_list )
 				top_priority = last_priority
 				new_partition = part_rec[i].name
 			end
-			i = i + 1
 		end
 		if top_priority >= 0 then
 			log_info("slurm_job_submit: job from uid %d, setting default partition value: %s",
@@ -110,7 +106,7 @@ job_req_meta = {
 		return _get_job_req_field(table.job_desc_ptr, key)
 	end,
 	__newindex = function (table, key, value)
-		return _set_job_req_field(table.job_desc_ptr, key, value)
+		return _set_job_req_field(table.job_desc_ptr, key, value or "")
 	end
 }
 part_rec_meta = {
