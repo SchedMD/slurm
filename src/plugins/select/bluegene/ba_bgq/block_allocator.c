@@ -873,6 +873,31 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		 * only used for sub-block jobs we only create it
 		 * when needed. */
 		if (!ba_mp->cnode_bitmap) {
+			/* 32  = 2x2x2x2x2
+			   64  = 2x2x4x2x2
+			   128 = 2x2x4x4x2
+			   256 = 4x2x4x4x2
+			   512 = 4x4x4x4x2
+			*/
+
+			/* 32node boundaries
+			   N00 - 32  = 00000x11111
+			   N01 - 64  = 00200x11311
+			   N02 - 96  = 00020x11131
+			   N03 - 128 = 00220x11331
+			   N04 - 160 = 20000x31111
+			   N05 - 192 = 20200x31301
+			   N06 - 224 = 20020x31131
+			   N07 - 256 = 20220x31331
+			   N08 - 288 = 02000x13111
+			   N09 - 320 = 02200x13311
+			   N10 - 352 = 02020x13131
+			   N11 - 384 = 02220x13331
+			   N12 - 416 = 22000x33111
+			   N13 - 448 = 22200x33311
+			   N14 - 480 = 22020x33131
+			   N15 - 512 = 22220x33331
+			*/
 			int start, end;
 			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
 			if (bg_record->ionode_bitmap

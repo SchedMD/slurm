@@ -723,7 +723,7 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 	int node_inx = -1;
 
 	if (TOPO_DEBUG)
-		g_print("..............._node_names2bitmap............%s\n",
+		g_print("...............build_nodes_bitmap............%s\n",
 			node_names);
 	my_bitmap = (bitstr_t *) bit_alloc(g_node_info_ptr->record_count);
 	if (!my_bitmap) {
@@ -732,12 +732,12 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 	*bitmap = my_bitmap;
 
 	if (!node_names) {
-		error("_node_name2bitmap: node_names is NULL");
+		error("build_nodes_bitmap: node_names is NULL");
 		return EINVAL;
 	}
 
 	if (!(host_list = hostlist_create(node_names))) {
-		error("_node_name2bitmap: hostlist_create(%s) error",
+		error("build_nodes_bitmap: hostlist_create(%s) error",
 		      node_names);
 		return EINVAL;
 	}

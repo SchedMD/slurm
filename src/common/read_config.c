@@ -2550,7 +2550,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_pass =
 				xstrdup(default_storage_pass);
 	}
-	if (s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl) && !truth)
+	if (s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl)
+	    && !truth)
 		conf->acctng_store_job_comment = 0;
 	else
 		conf->acctng_store_job_comment = 1;

@@ -97,6 +97,116 @@ static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 			xstrdup(nodeboard->getLocation().c_str());
 	}
 }
+
+static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
+{
+	bg_record_t *bg_record = (bg_record_t *)xmalloc(sizeof(bg_record_t));
+	Block::Midplanes midplane_vec;
+	hostlist_t hostlist;
+	char *node_char = NULL;
+	char mp_str[256];
+
+	bg_record->magic = BLOCK_MAGIC;
+	bg_record->bg_block_id = xstrdup(block_ptr->getName().c_str());
+	bg_record->cnode_cnt = block_ptr->getComputeNodeCount();
+	bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->cnode_cnt;
+
+	if (block_ptr->isSmall()) {
+		char bitstring[BITSIZE];
+		int io_cnt, io_start, len;
+		Block::NodeBoards nodeboards =
+			block_ptr->getNodeBoards();
+		int nb_cnt = nodeboards.size();
+		std::string nb_name = *(nodeboards.begin());
+
+		if ((io_cnt = nb_cnt * bg_conf->io_ratio))
+			io_cnt--;
+
+		/* From the first nodecard id we can figure
+		   out where to start from with the alloc of ionodes.
+		*/
+		len = nb_name.length()-2;
+		io_start = atoi((char*)nb_name.c_str()+len) * bg_conf->io_ratio;
+
+		bg_record->ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
+		/* Set the correct ionodes being used in this block */
+		bit_nset(bg_record->ionode_bitmap,
+			 io_start, io_start+io_cnt);
+		bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
+		bg_record->ionode_str = xstrdup(bitstring);
+		debug3("%s uses ionodes %s",
+		       bg_record->bg_block_id,
+		       bg_record->ionode_str);
+		bg_record->conn_type[0] = SELECT_SMALL;
+	} else {
+		for (Dimension dim=Dimension::A; dim<=Dimension::D; dim++) {
+			bg_record->conn_type[dim] =
+				block_ptr->isTorus(dim) ?
+				SELECT_TORUS : SELECT_MESH;
+		}
+		/* Set the bitmap blank here if it is a full
+		   node we don't want anything set we also
+		   don't want the bg_record->ionode_str set.
+		*/
+		bg_record->ionode_bitmap =
+			bit_alloc(bg_conf->ionodes_per_mp);
+	}
+
+	hostlist = hostlist_create(NULL);
+	midplane_vec = block_ptr->getMidplanes();
+	BOOST_FOREACH(const std::string midplane, midplane_vec) {
+		char temp[256];
+		ba_mp_t *curr_mp = loc2ba_mp((char *)midplane.c_str());
+		if (!curr_mp) {
+			error("Unknown midplane for %s",
+			      midplane.c_str());
+			continue;
+		}
+		snprintf(temp, sizeof(temp), "%s%s",
+			 bg_conf->slurm_node_prefix,
+			 curr_mp->coord_str);
+
+		hostlist_push(hostlist, temp);
+	}
+	bg_record->mp_str = hostlist_ranged_string_xmalloc(hostlist);
+	hostlist_destroy(hostlist);
+	debug3("got nodes of %s", bg_record->mp_str);
+
+	process_nodes(bg_record, true);
+
+	reset_ba_system(true);
+	if (ba_set_removable_mps(bg_record->mp_bitmap, 1) != SLURM_SUCCESS)
+		fatal("It doesn't seem we have a bitmap for %s",
+		      bg_record->bg_block_id);
+
+	if (bg_record->ba_mp_list)
+		list_flush(bg_record->ba_mp_list);
+	else
+		bg_record->ba_mp_list = list_create(destroy_ba_mp);
+
+	node_char = set_bg_block(bg_record->ba_mp_list,
+				 bg_record->start,
+				 bg_record->geo,
+				 bg_record->conn_type);
+	ba_reset_all_removed_mps();
+	if (!node_char)
+		fatal("I was unable to make the requested block.");
+
+	snprintf(mp_str, sizeof(mp_str), "%s%s",
+		 bg_conf->slurm_node_prefix,
+		 node_char);
+
+	xfree(node_char);
+	if (strcmp(mp_str, bg_record->mp_str)) {
+		fatal("Couldn't make unknown block %s in our wiring.  "
+		      "Something is wrong with our algo.  Remove this block "
+		      "to continue (found %s, but allocated %s) "
+		      "YOU MUST COLDSTART",
+		      bg_record->bg_block_id, mp_str, bg_record->mp_str);
+	}
+
+	return bg_record;
+}
 #endif
 
 static int _block_wait_for_jobs(char *bg_block_id)
@@ -763,8 +873,6 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 #ifdef HAVE_BG_FILES
 	Block::Ptrs vec;
 	BlockFilter filter;
-	Dimension dim;
-	char temp[256];
 	uid_t my_uid;
 	bg_record_t *bg_record = NULL;
 
@@ -783,147 +891,50 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 	BOOST_FOREACH(const Block::Ptr &block_ptr, vec) {
 		const char *bg_block_id = block_ptr->getName().c_str();
-		Block::Midplanes midplane_vec;
-		hostlist_t hostlist;
+		uint16_t state;
 
 		if (strncmp("RMP", bg_block_id, 3))
 			continue;
 
-		/* New BG Block record */
-
-		bg_record = (bg_record_t *)xmalloc(sizeof(bg_record_t));
-		bg_record->magic = BLOCK_MAGIC;
-
-		slurm_list_append(curr_block_list, bg_record);
-
-		bg_record->bg_block_id = xstrdup(bg_block_id);
-
-		bg_record->state = bridge_translate_status(
+		/* find BG Block record */
+		if (!(bg_record = find_bg_record_in_list(
+			      curr_block_list, bg_block_id))) {
+			info("%s not found in the state file, adding",
+			     bg_block_id);
+			bg_record = _translate_object_to_block(block_ptr);
+			slurm_list_append(curr_block_list, bg_record);
+		}
+		bg_record->modifying = 1;
+		/* If we are in error we really just want to get the
+		   new state.
+		*/
+		state = bridge_translate_status(
 			block_ptr->getStatus().toValue());
+		if (state == BG_BLOCK_BOOTING)
+			bg_record->boot_state = 1;
 
-		debug3("Block %s is in state %d",
+		if (bg_record->state & BG_BLOCK_ERROR_FLAG)
+			state |= BG_BLOCK_ERROR_FLAG;
+		bg_record->state = state;
+
+		debug3("Block %s is in state %s",
 		       bg_record->bg_block_id,
-		       bg_record->state);
+		       bg_block_state_string(bg_record->state));
 
 		bg_record->job_running = NO_JOB_RUNNING;
+
 		/* we are just going to go and destroy this block so
 		   just throw get the name and continue. */
 		if (!bg_recover)
 			continue;
 
-		if (bg_record->state == BG_BLOCK_BOOTING)
-			bg_record->boot_state = 1;
-
-		bg_record->cnode_cnt = block_ptr->getComputeNodeCount();
-		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->cnode_cnt;
-
-		if (block_ptr->isSmall()) {
-			char bitstring[BITSIZE];
-			int io_cnt, io_start, len;
-			Block::NodeBoards nodeboards =
-				block_ptr->getNodeBoards();
-			int nb_cnt = nodeboards.size();
-			std::string nb_name = *(nodeboards.begin());
-
-			if ((io_cnt = nb_cnt * bg_conf->io_ratio))
-				io_cnt--;
-
-			/* From the first nodecard id we can figure
-			   out where to start from with the alloc of ionodes.
-			*/
-			len = nb_name.length()-2;
-			io_start = atoi((char*)nb_name.c_str()+len)
-				* bg_conf->io_ratio;
-
-			bg_record->ionode_bitmap =
-				bit_alloc(bg_conf->ionodes_per_mp);
-			/* Set the correct ionodes being used in this block */
-			bit_nset(bg_record->ionode_bitmap,
-				 io_start, io_start+io_cnt);
-			bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
-			bg_record->ionode_str = xstrdup(bitstring);
-			debug3("%s uses ionodes %s",
-			       bg_record->bg_block_id,
-			       bg_record->ionode_str);
-			bg_record->conn_type[0] = SELECT_SMALL;
-		} else {
-			for (dim=Dimension::A; dim<=Dimension::D; dim++) {
-				bg_record->conn_type[dim] =
-					block_ptr->isTorus(dim) ?
-					SELECT_TORUS : SELECT_MESH;
-			}
-			/* Set the bitmap blank here if it is a full
-			   node we don't want anything set we also
-			   don't want the bg_record->ionode_str set.
-			*/
-			bg_record->ionode_bitmap =
-				bit_alloc(bg_conf->ionodes_per_mp);
-		}
 		bg_record->mloaderimage =
 			xstrdup(block_ptr->getMicroLoaderImage().c_str());
 
-		hostlist = hostlist_create(NULL);
-		midplane_vec = block_ptr->getMidplanes();
-		BOOST_FOREACH(const std::string midplane, midplane_vec) {
-			ba_mp_t *curr_mp = loc2ba_mp((char *)midplane.c_str());
-			if (!curr_mp) {
-				error("Unknown midplane for %s",
-				      midplane.c_str());
-				continue;
-			}
-			snprintf(temp, sizeof(temp), "%s%s",
-				 bg_conf->slurm_node_prefix,
-				 curr_mp->coord_str);
-
-			hostlist_push(hostlist, temp);
-		}
-		bg_record->mp_str = hostlist_ranged_string_xmalloc(hostlist);
-		hostlist_destroy(hostlist);
-		debug3("got nodes of %s", bg_record->mp_str);
-
-		process_nodes(bg_record, true);
-
-		/* We can stop processing information now since we
-		   don't need to rest of the information to decide if
-		   this is the correct block. */
-		if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
-			bg_record_t *tmp_record =
-				(bg_record_t *)xmalloc(sizeof(bg_record_t));
-			copy_bg_record(bg_record, tmp_record);
-			list_push(bg_lists->main, tmp_record);
-		}
-
-		reset_ba_system(true);
-		if (ba_set_removable_mps(bg_record->mp_bitmap, 1) != SLURM_SUCCESS)
-			fatal("It doesn't seem we have a bitmap for %s",
-			      bg_record->bg_block_id);
-
-		if (bg_record->ba_mp_list)
-			list_flush(bg_record->ba_mp_list);
-		else
-			bg_record->ba_mp_list = list_create(destroy_ba_mp);
-
-		bg_block_id = set_bg_block(bg_record->ba_mp_list,
-					   bg_record->start,
-					   bg_record->geo,
-					   bg_record->conn_type);
-		ba_reset_all_removed_mps();
-		if (!bg_block_id)
-			fatal("I was unable to make the requested block.");
-
-		snprintf(temp, sizeof(temp), "%s%s",
-			 bg_conf->slurm_node_prefix,
-			 bg_block_id);
-
-		xfree(bg_block_id);
-		if (strcmp(temp, bg_record->mp_str)) {
-			fatal("bad wiring in preserved state "
-			      "(found %s, but allocated %s) "
-			      "YOU MUST COLDSTART",
-			      bg_record->mp_str, temp);
-		}
 
 		/* If a user is on the block this will be filled in */
+		xfree(bg_record->user_name);
+		xfree(bg_record->target_name);
 		if (block_ptr->getUser() != "")
 			bg_record->user_name =
 				xstrdup(block_ptr->getUser().c_str());

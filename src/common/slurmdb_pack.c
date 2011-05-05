@@ -743,9 +743,10 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 			object_ptr->accounting_list = list_create(
 				slurmdb_destroy_cluster_accounting_rec);
 			for(i=0; i<count; i++) {
-				slurmdb_unpack_cluster_accounting_rec(
-					(void *)&slurmdb_info,
-					rpc_version, buffer);
+				if (slurmdb_unpack_cluster_accounting_rec(
+					    (void *)&slurmdb_info,
+					    rpc_version, buffer) == SLURM_ERROR)
+					goto unpack_error;
 				list_append(object_ptr->accounting_list,
 					    slurmdb_info);
 			}
@@ -777,9 +778,10 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 			object_ptr->accounting_list = list_create(
 				slurmdb_destroy_cluster_accounting_rec);
 			for(i=0; i<count; i++) {
-				slurmdb_unpack_cluster_accounting_rec(
-					(void *)&slurmdb_info,
-					rpc_version, buffer);
+				if (slurmdb_unpack_cluster_accounting_rec(
+					    (void *)&slurmdb_info,
+					    rpc_version, buffer) == SLURM_ERROR)
+					goto unpack_error;
 				list_append(object_ptr->accounting_list,
 					    slurmdb_info);
 			}
@@ -4451,8 +4453,10 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 			object_ptr->step_list =
 				list_create(slurmdb_destroy_selected_step);
 			for(i=0; i<count; i++) {
-				slurmdb_unpack_selected_step(
-					&job, rpc_version, buffer);
+				if (slurmdb_unpack_selected_step(
+					    &job, rpc_version, buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
 				list_append(object_ptr->step_list, job);
 			}
 		}
@@ -4716,13 +4720,14 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&count, buffer);
 		job_ptr->steps = list_create(slurmdb_destroy_step_rec);
 		for(i=0; i<count; i++) {
-			slurmdb_unpack_step_rec(&step, rpc_version, buffer);
-			if(step) {
-				step->job_ptr = job_ptr;
-				if(!job_ptr->first_step_ptr)
-					job_ptr->first_step_ptr = step;
-				list_append(job_ptr->steps, step);
-			}
+			if (slurmdb_unpack_step_rec(&step, rpc_version, buffer)
+			    == SLURM_ERROR)
+				goto unpack_error;
+
+			step->job_ptr = job_ptr;
+			if(!job_ptr->first_step_ptr)
+				job_ptr->first_step_ptr = step;
+			list_append(job_ptr->steps, step);
 		}
 
 		safe_unpack_time(&job_ptr->submit, buffer);
@@ -4774,13 +4779,14 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 
 		job_ptr->steps = list_create(slurmdb_destroy_step_rec);
 		for(i=0; i<count; i++) {
-			slurmdb_unpack_step_rec(&step, rpc_version, buffer);
-			if(step) {
-				step->job_ptr = job_ptr;
-				if(!job_ptr->first_step_ptr)
-					job_ptr->first_step_ptr = step;
-				list_append(job_ptr->steps, step);
-			}
+			if (slurmdb_unpack_step_rec(&step, rpc_version, buffer)
+			    == SLURM_ERROR)
+				goto unpack_error;
+
+			step->job_ptr = job_ptr;
+			if(!job_ptr->first_step_ptr)
+				job_ptr->first_step_ptr = step;
+			list_append(job_ptr->steps, step);
 		}
 
 		safe_unpack_time(&job_ptr->submit, buffer);
