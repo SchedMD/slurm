@@ -145,8 +145,6 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 					ba_mp->coord[X] = x;
 					ba_mp->coord[Y] = y;
 					ba_mp->coord[Z] = z;
-					ba_mp->cnode_bitmap = bit_alloc(
-						bg_conf->mp_cnode_cnt);
 
 					snprintf(ba_mp->coord_str,
 						 sizeof(ba_mp->coord_str),
