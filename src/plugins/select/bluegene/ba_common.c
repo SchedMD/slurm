@@ -176,6 +176,44 @@ static void _ba_node_xlate_from_1d(int offset_1d, int *full_offset,
 }
 #endif
 
+static int _ba_node_map_set_range_internal(int level, int *coords,
+					   int *start_offset, int *end_offset,
+					   bitstr_t *node_bitmap,
+					   ba_geo_system_t *my_geo_system)
+{
+	int offset_1d;
+
+	xassert(my_geo_system);
+
+	if (level > my_geo_system->dim_count)
+		return -1;
+
+	if (level < my_geo_system->dim_count) {
+		for (coords[level] = start_offset[level];
+		     coords[level] <= end_offset[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			if (_ba_node_map_set_range_internal(
+				    level+1, coords,
+				    start_offset, end_offset,
+				    node_bitmap, my_geo_system) == -1)
+				return -1;
+		}
+		return 1;
+	}
+
+	info("setting %c%c%c%c%c",
+	     alpha_num[coords[0]],
+	     alpha_num[coords[1]],
+	     alpha_num[coords[2]],
+	     alpha_num[coords[3]],
+	     alpha_num[coords[4]]);
+
+	_ba_node_xlate_to_1d(&offset_1d, coords, my_geo_system);
+	bit_set(node_bitmap, offset_1d);
+	return 1;
+}
+
 static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 {
 	int i, j;
@@ -1179,8 +1217,8 @@ extern void ba_node_map_free(bitstr_t *node_bitmap,
 
 /*
  * Set the contents of the specified position in the bitmap
- * IN node_bitmap - bitmap of currently allocated nodes
- * IN full_offset - N-dimension zero-origin offset to test
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to set
  * IN my_geo_system - system geometry specification
  */
 extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
@@ -1190,6 +1228,23 @@ extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
 
 	_ba_node_xlate_to_1d(&offset_1d, full_offset, my_geo_system);
 	bit_set(node_bitmap, offset_1d);
+}
+
+/*
+ * Set the contents of the specified position in the bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN start_offset - N-dimension zero-origin offset to start setting at
+ * IN end_offset - N-dimension zero-origin offset to start setting at
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_set_range(bitstr_t *node_bitmap,
+				  int *start_offset, int *end_offset,
+				  ba_geo_system_t *my_geo_system)
+{
+	int coords[5];
+
+	_ba_node_map_set_range_internal(0, coords, start_offset, end_offset,
+					node_bitmap, my_geo_system);
 }
 
 /*

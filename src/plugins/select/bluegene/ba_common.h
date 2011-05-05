@@ -259,12 +259,23 @@ extern void ba_node_map_free(bitstr_t *node_bitmap,
 
 /*
  * Set the contents of the specified position in the bitmap
- * IN node_bitmap - bitmap of currently allocated nodes
- * IN full_offset - N-dimension zero-origin offset to test
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN full_offset - N-dimension zero-origin offset to set
  * IN my_geo_system - system geometry specification
  */
 extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
 			    ba_geo_system_t *my_geo_system);
+
+/*
+ * Set the contents of the specified position in the bitmap
+ * IN/OUT node_bitmap - bitmap of currently allocated nodes
+ * IN start_offset - N-dimension zero-origin offset to start setting at
+ * IN end_offset - N-dimension zero-origin offset to start setting at
+ * IN my_geo_system - system geometry specification
+ */
+extern void ba_node_map_set_range(bitstr_t *node_bitmap,
+				  int *start_offset, int *end_offset,
+				  ba_geo_system_t *my_geo_system);
 
 /*
  * Return the contents of the specified position in the bitmap
