@@ -932,6 +932,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = list_next(itr))) {
 		int cnt = 0;
+		int start;
 
 		if (!ba_mp->used)
 			continue;
@@ -941,16 +942,21 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		 * only used for sub-block jobs we only create it
 		 * when needed. */
 		if (!ba_mp->cnode_bitmap) {
-			int start, end;
 			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
 			if (bg_record->ionode_bitmap
 			    && ((start = bit_ffs(bg_record->ionode_bitmap))
 				!= -1)) {
-				start *= bg_conf->ionode_cnode_cnt;
-				end = (bit_fls(bg_record->ionode_bitmap)
-				       * bg_conf->ionode_cnode_cnt)
-					+ (bg_conf->ionode_cnode_cnt - 1);
-				bit_nset(ba_mp->cnode_bitmap, start, end);
+				int ionode_num = start;
+				int end = bit_fls(bg_record->ionode_bitmap);
+
+				for (ionode_num = start;
+				     ionode_num <= end;
+				     ionode_num++)
+					ba_node_map_set_range(
+						ba_mp->cnode_bitmap,
+						g_nc_coords[ionode_num].start,
+						g_nc_coords[ionode_num].end,
+						ba_mp_geo_system);
 				bit_not(ba_mp->cnode_bitmap);
 			}
 		}
