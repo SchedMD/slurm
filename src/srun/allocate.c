@@ -89,7 +89,6 @@ static int sig_array[] = {
 /*
  * Static Prototypes
  */
-static void  _intr_handler(int signo);
 static void _set_pending_job_id(uint32_t job_id);
 static void _signal_while_allocating(int signo);
 
@@ -206,15 +205,6 @@ static bool _retry(void)
 	}
 
 	return true;
-}
-
-/*
- * SIGINT handler while waiting for resources to become available.
- */
-static void
-_intr_handler(int signo)
-{
-	destroy_job = 1;
 }
 
 #ifdef HAVE_BG
@@ -738,7 +728,6 @@ extern int
 create_job_step(srun_job_t *job, bool use_all_cpus)
 {
 	int i, rc;
-	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
 	unsigned long my_sleep = 0;
 	time_t begin_time;
 
@@ -876,9 +865,10 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 				info("Job step creation temporarily disabled, "
 				     "retrying");
 			}
-			ointf  = xsignal(SIGINT,  _intr_handler);
-			otermf  = xsignal(SIGTERM, _intr_handler);
-			oquitf  = xsignal(SIGQUIT, _intr_handler);
+			xsignal_unblock(sig_array);
+			for (i = 0; sig_array[i]; i++)
+				xsignal(sig_array[i], _signal_while_allocating);
+
 			my_sleep = (getpid() % 1000) * 100 + 100000;
 		} else {
 			verbose("Job step creation still disabled, retrying");
@@ -886,11 +876,13 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		}
 		/* sleep 0.1 to 29 secs with exponential back-off */
 		usleep(my_sleep);
+		if (destroy_job) {
+			/* cancelled by signal */
+			break;
+		}
 	}
 	if (i > 0) {
-		xsignal(SIGINT,  ointf);
-		xsignal(SIGQUIT, oquitf);
-		xsignal(SIGTERM, otermf);
+		xsignal_block(sig_array);
 		if (destroy_job) {
 			info("Cancelled pending job step");
 			return -1;

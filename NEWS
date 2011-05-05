@@ -50,6 +50,7 @@ documents those changes that are of interest to users and admins.
     Storage db (to the formerly named, "DerivedExitString" job field).  This
     behavior is enabled by a new slurm.conf parameter:
     AccountingStoreJobComment.
+ -- Fix srun to handle signals correctly when waiting for a step creation.
 
 * Changes in SLURM 2.3.0.pre4
 =============================
