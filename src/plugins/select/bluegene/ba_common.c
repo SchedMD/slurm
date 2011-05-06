@@ -374,9 +374,9 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
  * into a bitmap of available resources (node_bitmap). The resource allocation
  * may contain NO gaps in any dimension. */
 static int _geo_test_all(bitstr_t *node_bitmap,
-			   bitstr_t **alloc_node_bitmap,
-			   ba_geo_table_t *geo_req, int *attempt_cnt,
-			   ba_geo_system_t *my_geo_system)
+			 bitstr_t **alloc_node_bitmap,
+			 ba_geo_table_t *geo_req, int *attempt_cnt,
+			 ba_geo_system_t *my_geo_system)
 {
 	int rc = SLURM_ERROR;
 	int i, j;
@@ -1327,6 +1327,65 @@ extern void ba_node_map_print(bitstr_t *node_bitmap,
 			info("%s   inx:%d", full_buf, i);
 		}
 	}
+}
+#endif
+}
+
+/*
+ * give a hostlist version of the contents of a node map created by
+ *	ba_node_map_alloc() or
+ *	ba_geo_test_all(). Output may be in one-dimension or more depending
+ *	upon configuration.
+ * IN node_bitmap - bitmap representing current system state, bits are set
+ *                  for currently allocated nodes
+ * IN my_geo_system - system geometry specification
+ * OUT char * - needs to be xfreed from caller.
+ */
+extern char *ba_node_map_ranged_hostlist(bitstr_t *node_bitmap,
+					 ba_geo_system_t *my_geo_system)
+{
+#if DISPLAY_1D
+{
+	char out_buf[256];
+	bit_fmt(out_buf, sizeof(out_buf), node_bitmap);
+	return xstrdup(out_buf);
+}
+#endif
+#if DISPLAY_FULL_DIM
+{
+	int i, j, offset[my_geo_system->dim_count];
+	hostlist_t hl = NULL;
+	char *ret_str = NULL;
+
+	xassert(node_bitmap);
+	xassert(bit_size(node_bitmap) == my_geo_system->total_size);
+
+	for (i = 0; i < my_geo_system->total_size; i++) {
+		if (bit_test(node_bitmap, i)) {
+			char dim_buf[my_geo_system->dim_count+1];
+
+			_ba_node_xlate_from_1d(i, offset, my_geo_system);
+			for (j = 0; j < my_geo_system->dim_count; j++) {
+				dim_buf[j] = alpha_num[offset[j]];
+			}
+			dim_buf[j] = '\0';
+			/* info("pushing %s", dim_buf); */
+			if (hl)
+				hostlist_push_host_dims(
+					hl, dim_buf, my_geo_system->dim_count);
+			else
+				hl = hostlist_create_dims(
+					dim_buf, my_geo_system->dim_count);
+		}
+	}
+	if (hl) {
+		ret_str = hostlist_ranged_string_xmalloc_dims(
+			hl, my_geo_system->dim_count, 0);
+		/* info("ret is %s", ret_str); */
+		hostlist_destroy(hl);
+		hl = NULL;
+	}
+	return ret_str;
 }
 #endif
 }
