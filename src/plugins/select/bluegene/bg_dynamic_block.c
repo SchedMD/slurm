@@ -456,7 +456,6 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	bg_record_t *found_record = NULL;
 	ba_mp_t *new_ba_mp = NULL;
 	ba_mp_t *ba_mp = NULL;
-	char bitstring[BITSIZE];
 
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 	found_record->magic = BLOCK_MAGIC;
@@ -525,8 +524,8 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->cnode_cnt = size;
 
 	found_record->ionode_bitmap = bit_copy(ionodes);
-	bit_fmt(bitstring, BITSIZE, found_record->ionode_bitmap);
-	found_record->ionode_str = xstrdup(bitstring);
+	found_record->ionode_str =
+		ba_set_ionode_str(found_record->ionode_bitmap);
 	found_record->mp_used_bitmap = bit_alloc(node_record_count);
 
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
