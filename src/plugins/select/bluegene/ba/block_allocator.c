@@ -1827,6 +1827,16 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	return NULL;
 }
 
+extern char *ba_set_ionode_str(bitstr_t *bitmap)
+{
+	char bitstring[BITSIZE];
+        if (bitmap) {
+		bit_fmt(bitstring, BITSIZE, bitmap);
+		return xstrdup(bitstring);
+	}
+	return NULL;
+}
+
 static void _delete_path_list(void *object)
 {
 	ba_path_switch_t *path_switch = (ba_path_switch_t *)object;

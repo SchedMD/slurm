@@ -1002,6 +1002,79 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	return ba_mp;
 }
 
+static int _ba_set_ionode_str_internal(int level, int *coords,
+				       int *start_offset, int *end_offset,
+				       hostlist_t hl)
+{
+	char tmp_char[6];
+
+	xassert(hl);
+
+	if (level > 5)
+		return -1;
+
+	if (level < 5) {
+		for (coords[level] = start_offset[level];
+		     coords[level] <= end_offset[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			if (_ba_set_ionode_str_internal(
+				    level+1, coords,
+				    start_offset, end_offset,
+				    hl) == -1)
+				return -1;
+		}
+		return 1;
+	}
+	snprintf(tmp_char, sizeof(tmp_char), "%c%c%c%c%c",
+		 alpha_num[coords[0]],
+		 alpha_num[coords[1]],
+		 alpha_num[coords[2]],
+		 alpha_num[coords[3]],
+		 alpha_num[coords[4]]);
+	hostlist_push_host_dims(hl, tmp_char, 5);
+	return 1;
+}
+
+extern char *ba_set_ionode_str(bitstr_t *ionode_bitmap)
+{
+	char *ionode_str = NULL;
+
+	if (ionode_bitmap) {
+		/* bit_fmt(bitstring, BITSIZE, ionode_bitmap); */
+		/* return xstrdup(bitstring); */
+		int ionode_num;
+		hostlist_t hl = hostlist_create_dims("", 5);
+		int coords[5];
+
+		for (ionode_num = bit_ffs(ionode_bitmap);
+		     ionode_num <= bit_fls(ionode_bitmap);
+		     ionode_num++) {
+			if (!bit_test(ionode_bitmap, ionode_num))
+				continue;
+			if (_ba_set_ionode_str_internal(
+				0, coords,
+				g_nc_coords[ionode_num].start,
+				g_nc_coords[ionode_num].end,
+				hl)
+			    == -1) {
+				hostlist_destroy(hl);
+				hl = NULL;
+				break;
+			}
+		}
+		if (hl) {
+			ionode_str = hostlist_ranged_string_xmalloc_dims(
+				hl, 5, 0);
+			info("iostring is %s", ionode_str);
+			hostlist_destroy(hl);
+			hl = NULL;
+		}
+	}
+	return ionode_str;
+}
+
+
 /*
  * This function is here to check options for rotating and elongating
  * and set up the request based on the count of each option
