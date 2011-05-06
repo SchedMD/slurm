@@ -1301,12 +1301,11 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	if (private_data & PRIVATE_DATA_JOBS) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-			if (!is_user_any_coord(mysql_conn, &user)) {
-				error("Only admins/coordinators can "
-				      "access job data");
-				errno = ESLURM_ACCESS_DENIED;
-				return NULL;
-			}
+			/* Only fill in the coordinator accounts here
+			   we will check them later when we actually
+			   try to get the jobs.
+			*/
+			is_user_any_coord(mysql_conn, &user);
 		}
 	}
 

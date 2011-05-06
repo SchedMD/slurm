@@ -175,6 +175,9 @@ documents those changes that are of interest to users and admins.
     deleted accounts.  Only a cosmetic issue, since the accounts are already
     deleted, and have no associations.
  -- Prevent opaque ncurses WINDOW struct on OS X 10.6.
+ -- Fix issue with accounting when using PrivateData=jobs... users would not be
+    able to view there own jobs unless they were admin or coordinators which is
+    obviously wrong.
 
 * Changes in SLURM 2.2.5
 ========================
