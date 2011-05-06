@@ -62,6 +62,15 @@
 #  include "src/common/getopt.h"
 #endif
 
+/*
+ * The following define is necessary for OS X 10.6. The apple supplied
+ * ncurses.h sets NCURSES_OPAQUE to 1 and then we can't get to the WINDOW
+ * flags.
+ */
+#if defined(__APPLE__)
+#  define NCURSES_OPAQUE 0
+#endif
+
 #if HAVE_CURSES_H
 #  include <curses.h>
 #endif
