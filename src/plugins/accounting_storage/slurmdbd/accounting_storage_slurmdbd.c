@@ -2088,47 +2088,47 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	slurmdbd_msg_t msg;
 	dbd_step_start_msg_t req;
 	char temp_bit[BUF_SIZE];
-
-#ifdef HAVE_BG_L_P
+	char *temp_nodes = NULL;
 	char *ionodes = NULL;
 
+#ifdef HAVE_BG_L_P
+
 	if (step_ptr->job_ptr->details)
-		cpus = step_ptr->job_ptr->details->min_cpus;
+		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 	else
-		cpus = step_ptr->job_ptr->cpu_cnt;
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_IONODES,
-				    &ionodes);
-	if (ionodes) {
-		snprintf(node_list, BUFFER_SIZE,
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else {
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
-	}
+		tasks = cpus = step_ptr->job_ptr->cpu_cnt;
 	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NODE_CNT,
 				    &nodes);
+	temp_nodes = step_ptr->job_ptr->nodes;
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = tasks = step_ptr->job_ptr->total_cpus;
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
 		nodes = step_ptr->job_ptr->total_nodes;
+		temp_nodes = step_ptr->job_ptr->nodes;
 	} else {
 		cpus = step_ptr->cpu_count;
 		tasks = step_ptr->step_layout->task_cnt;
 #ifdef HAVE_BGQ
-		nodes = step_ptr->step_layout->task_cnt;
+		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &nodes);
 #else
 		nodes = step_ptr->step_layout->node_cnt;
 #endif
 		task_dist = step_ptr->step_layout->task_dist;
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->step_layout->node_list);
+		temp_nodes = step_ptr->step_layout->node_list;
 	}
 #endif
+	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+				    SELECT_JOBDATA_IONODES,
+				    &ionodes);
+	if (ionodes) {
+		snprintf(node_list, BUFFER_SIZE, "%s[%s]", temp_nodes, ionodes);
+		xfree(ionodes);
+	} else
+		snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
+
 	if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
 		/* We overload gres with the node name of where the
 		   script was running.
