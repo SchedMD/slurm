@@ -912,20 +912,38 @@ extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt)
 }
 
 extern ba_mp_t *ba_pick_sub_block_cnodes(
-	bg_record_t *bg_record, uint32_t node_count, bitstr_t **picked_cnodes)
+	bg_record_t *bg_record, uint32_t *node_count, select_jobinfo_t *jobinfo)
 {
 	ListIterator itr = NULL;
 	ba_mp_t *ba_mp = NULL;
 	ba_geo_table_t *geo_table = NULL;
+	char *tmp_char = NULL, *tmp_char2 = NULL;
+	uint32_t orig_node_count = *node_count;
 
 	xassert(ba_mp_geo_system);
 	xassert(bg_record->ba_mp_list);
-	xassert(picked_cnodes);
-	xassert(!*picked_cnodes);
+	xassert(jobinfo);
+	xassert(!jobinfo->units_used);
 
-	if (!(geo_table = ba_mp_geo_system->geo_table_ptr[node_count])) {
-		error("ba_pick_sub_block_cnodes: No geometries of size %u ",
-		      node_count);
+	while (!(geo_table = ba_mp_geo_system->geo_table_ptr[*node_count])) {
+		debug2("ba_pick_sub_block_cnodes: No geometries of size %u ",
+		       *node_count);
+		(*node_count)++;
+		if (*node_count > bg_record->cnode_cnt)
+			break;
+	}
+
+	if (orig_node_count != *node_count)
+		debug("ba_pick_sub_block_cnodes: user requested %u nodes, "
+		      "but that can't make a block, giving them %d",
+		      orig_node_count, *node_count);
+
+	if (!geo_table) {
+		/* This should never happen */
+		error("ba_pick_sub_block_cnodes: "
+		      "Couldn't place this job size %u tried up to "
+		      "the full size of the block (%u)",
+		      orig_node_count, bg_record->cnode_cnt);
 		return NULL;
 	}
 
@@ -946,49 +964,62 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 			if (bg_record->ionode_bitmap
 			    && ((start = bit_ffs(bg_record->ionode_bitmap))
 				!= -1)) {
-				int ionode_num = start;
+				int ionode_num;
 				int end = bit_fls(bg_record->ionode_bitmap);
 
 				for (ionode_num = start;
 				     ionode_num <= end;
-				     ionode_num++)
+				     ionode_num++) {
+					if (!bit_test(bg_record->ionode_bitmap,
+						      ionode_num))
+						continue;
 					ba_node_map_set_range(
 						ba_mp->cnode_bitmap,
 						g_nc_coords[ionode_num].start,
 						g_nc_coords[ionode_num].end,
 						ba_mp_geo_system);
+				}
 				bit_not(ba_mp->cnode_bitmap);
 			}
 		}
-		if (bit_clear_count(ba_mp->cnode_bitmap) < node_count) {
+		if (bit_clear_count(ba_mp->cnode_bitmap) < *node_count) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("only have %d avail in %s need %d",
+				info("ba_pick_sub_block_cnodes: "
+				     "only have %d avail in %s need %d",
 				     bit_clear_count(ba_mp->cnode_bitmap),
-				     ba_mp->coord_str, node_count);
+				     ba_mp->coord_str, *node_count);
 			continue;
 		}
 
 		while (geo_table) {
 			if (ba_geo_test_all(ba_mp->cnode_bitmap,
-					    picked_cnodes, geo_table, &cnt,
+					    &jobinfo->units_used,
+					    geo_table, &cnt,
 					    ba_mp_geo_system, 0)
-			    == SLURM_SUCCESS) {
-				bit_or(ba_mp->cnode_bitmap, *picked_cnodes);
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
-					char tmp_char2[BUF_SIZE];
-					char tmp_char[BUF_SIZE];
-					bit_fmt(tmp_char, sizeof(tmp_char),
-						*picked_cnodes);
-					bit_fmt(tmp_char2, sizeof(tmp_char2),
-						ba_mp->cnode_bitmap);
-					info("found it on %s set %s bits "
-					       "total set is now %s",
-					       ba_mp->coord_str,
-					       tmp_char, tmp_char2);
-				}
-				break;
+			    != SLURM_SUCCESS) {
+				geo_table = geo_table->next_ptr;
+				continue;
 			}
-			geo_table = geo_table->next_ptr;
+
+			bit_or(ba_mp->cnode_bitmap, jobinfo->units_used);
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+				tmp_char = ba_node_map_ranged_hostlist(
+					jobinfo->units_used, ba_mp_geo_system);
+				bit_not(ba_mp->cnode_bitmap);
+				tmp_char2 = ba_node_map_ranged_hostlist(
+					ba_mp->cnode_bitmap, ba_mp_geo_system);
+				bit_not(ba_mp->cnode_bitmap);
+				info("ba_pick_sub_block_cnodes: "
+				     "using %s cnodes on mp %s "
+				     "leaving '%s' usable in this block (%s)",
+				     tmp_char, ba_mp->coord_str, tmp_char2,
+				     bg_record->bg_block_id);
+				xfree(tmp_char);
+				xfree(tmp_char2);
+			}
+			jobinfo->ionode_str = ba_node_map_ranged_hostlist(
+				jobinfo->units_used, ba_mp_geo_system);
+			break;
 		}
 
 		if (geo_table)
@@ -996,10 +1027,72 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("couldn't place it on %s", ba_mp->coord_str);
-		geo_table = ba_mp_geo_system->geo_table_ptr[node_count];
+		geo_table = ba_mp_geo_system->geo_table_ptr[*node_count];
 	}
 	list_iterator_destroy(itr);
 	return ba_mp;
+}
+
+extern int ba_clear_sub_block_cnodes(
+	bg_record_t *bg_record, struct step_record *step_ptr)
+{
+	bitoff_t bit;
+	ListIterator itr = NULL;
+	ba_mp_t *ba_mp = NULL;
+	select_jobinfo_t *jobinfo = NULL;
+	char *tmp_char = NULL, *tmp_char2 = NULL;
+
+	xassert(bg_record);
+	xassert(step_ptr);
+
+	jobinfo = step_ptr->select_jobinfo->data;
+	xassert(jobinfo);
+
+	/* If we are using the entire block we don't need to do
+	   anything. */
+	if (jobinfo->cnode_cnt == bg_record->cnode_cnt)
+		return SLURM_SUCCESS;
+
+	if ((bit = bit_ffs(step_ptr->step_node_bitmap)) == -1) {
+		error("ba_clear_sub_block_cnodes: "
+		      "we couldn't find any bits set");
+		return SLURM_ERROR;
+	}
+
+	itr = list_iterator_create(bg_record->ba_mp_list);
+	while ((ba_mp = list_next(itr))) {
+		if (ba_mp->index != bit)
+			continue;
+		if (!jobinfo->units_used) {
+			/* from older version of slurm */
+			error("ba_clear_sub_block_cnodes: "
+			      "didn't have the units_used bitmap "
+			      "for some reason?");
+			continue;
+		}
+
+		bit_not(jobinfo->units_used);
+		bit_and(ba_mp->cnode_bitmap, jobinfo->units_used);
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+			bit_not(jobinfo->units_used);
+			tmp_char = ba_node_map_ranged_hostlist(
+				jobinfo->units_used, ba_mp_geo_system);
+			bit_not(ba_mp->cnode_bitmap);
+			tmp_char2 = ba_node_map_ranged_hostlist(
+				ba_mp->cnode_bitmap, ba_mp_geo_system);
+			bit_not(ba_mp->cnode_bitmap);
+			info("ba_clear_sub_block_cnodes: "
+			     "cleared %s cnodes on mp %s, making '%s' usable "
+			     "in this block (%s)",
+			     tmp_char, ba_mp->coord_str, tmp_char2,
+			     bg_record->bg_block_id);
+			xfree(tmp_char);
+			xfree(tmp_char2);
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return SLURM_SUCCESS;
 }
 
 static int _ba_set_ionode_str_internal(int level, int *coords,

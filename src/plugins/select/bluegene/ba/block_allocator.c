@@ -1820,11 +1820,18 @@ extern void ba_destroy_system(void)
 }
 
 extern ba_mp_t *ba_pick_sub_block_cnodes(
-	bg_record_t *bg_record, uint32_t node_count, bitstr_t **picked_cnodes)
+	bg_record_t *bg_record, uint32_t *node_count, select_jobinfo_t *jobinfo)
 {
 	/* This shouldn't be called. */
 	xassert(0);
 	return NULL;
+}
+
+extern int ba_clear_sub_block_cnodes(
+	bg_record_t *bg_record, struct step_record *step_ptr)
+{
+	/* this doesn't do anything since above doesn't. */
+	return SLURM_SUCCESS;
 }
 
 extern char *ba_set_ionode_str(bitstr_t *bitmap)

@@ -1689,8 +1689,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		bit_or(bg_record->mp_used_bitmap, picked_mps);
 		goto found_it;
 	} else if ((ba_mp = ba_pick_sub_block_cnodes(
-			    bg_record, node_count,
-			    &step_jobinfo->units_used))) {
+			    bg_record, &node_count,
+			    step_jobinfo))) {
 		if (!(picked_mps = bit_alloc(bit_size(job_ptr->node_bitmap))))
 			fatal("bit_copy malloc failure");
 		bit_set(bg_record->mp_used_bitmap, ba_mp->index);
@@ -1756,55 +1756,8 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 		xfree(tmp_char);
 		xfree(tmp_char2);
 	}
+	rc = ba_clear_sub_block_cnodes(bg_record, step_ptr);
 
-	jobinfo = step_ptr->select_jobinfo->data;
-#ifndef HAVE_BG_L_P
-	if (jobinfo->cnode_cnt != bg_record->cnode_cnt) {
-		/* This means we only used one midplane. */
-		bitoff_t bit = bit_ffs(step_ptr->step_node_bitmap);
-		ListIterator itr = NULL;
-		ba_mp_t *ba_mp = NULL;
-
-		if (bit == -1) {
-			error("we couldn't find any bits set in "
-			      "this step %u.%u",
-			      step_ptr->job_ptr->job_id, step_ptr->step_id);
-			rc = SLURM_ERROR;
-		}
-
-		itr = list_iterator_create(bg_record->ba_mp_list);
-		while ((ba_mp = list_next(itr))) {
-			char tmp_char3[BUF_SIZE];
-			char tmp_char4[BUF_SIZE];
-
-			if (ba_mp->index != bit)
-				continue;
-			if (!jobinfo->units_used) {
-				/* from older version of slurm */
-				error("didn't have the units_used bitmap "
-				      "for some reason?");
-				continue;
-			}
-
-			bit_not(jobinfo->units_used);
-			bit_and(ba_mp->cnode_bitmap, jobinfo->units_used);
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
-				bit_not(jobinfo->units_used);
-				bit_fmt(tmp_char3, sizeof(tmp_char3),
-					jobinfo->units_used);
-				bit_fmt(tmp_char4, sizeof(tmp_char4),
-					ba_mp->cnode_bitmap);
-				info("select_p_step_finish: cleared %s bits "
-				     "from %s, now %s used",
-				     tmp_char3, ba_mp->coord_str, tmp_char4);
-				xfree(tmp_char);
-				xfree(tmp_char2);
-			}
-		}
-		list_iterator_destroy(itr);
-
-	}
-#endif
 	slurm_mutex_unlock(&block_state_mutex);
 
 	return rc;

@@ -43,6 +43,7 @@
 #include "src/common/node_select.h"
 #include "../bridge_linker.h"
 #include "../ba_common.h"
+#include "../bg_job_info.h"
 
 // #define DEBUG_PA
 
