@@ -1727,25 +1727,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 	job_ptr->time_last_active = now;
-/* #if defined HAVE_BGQ */
-/* //#if defined HAVE_BGQ && defined HAVE_BG_FILES */
-/* 	/\* Set up the cnode count.  If these 2 aren't equal then we */
-/* 	   are using less than a midplane. */
-/* 	*\/ */
-/* 	if (!sub_block) { */
-/* 		nodeset = bit_copy(job_ptr->node_bitmap); */
-/* 		/\* node_count = bit_set_count(nodeset); *\/ */
-/* 		/\* select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, *\/ */
-/* 		/\* 			&node_count); *\/ */
-/* 	} else { */
-/* 		nodeset = select_g_step_pick_nodes(job_ptr, node_count); */
-/* 	} */
-/* 	if (nodeset == NULL) { */
-/* 		if (step_gres_list) */
-/* 			list_destroy(step_gres_list); */
-/* 		return ESLURM_NODES_BUSY; */
-/* 	} */
-/* #else */
 
 	/* make sure this exists since we need it so we don't core on
 	 * a xassert */
@@ -1760,7 +1741,16 @@ step_create(job_step_create_request_msg_t *step_specs,
 		select_g_select_jobinfo_free(select_jobinfo);
 		return ret_code;
 	}
-#if !defined HAVE_BGQ
+#ifdef HAVE_BGQ
+	/* Things might of changed here since sometimes users ask for
+	   the wrong size in cnodes to make a block.
+	*/
+	select_g_select_jobinfo_get(select_jobinfo,
+				    SELECT_JOBDATA_NODE_CNT,
+				    &node_count);
+	step_specs->cpu_count = node_count * cpus_per_mp;
+	orig_cpu_count =  step_specs->cpu_count;
+#else
 	node_count = bit_set_count(nodeset);
 #endif
 	if (step_specs->num_tasks == NO_VAL) {
