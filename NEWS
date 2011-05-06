@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
  -- Test if _make_batch_script() is called with a NULL script.
  -- Increase hostlist support from 24k to 64k nodes.
  -- Fix srun to handle signals correctly when waiting for a step creation.
+ -- Made the hostlist functions be able to arbitrarily handle any size
+    dimension no matter what the size of the cluster is in dimensions.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

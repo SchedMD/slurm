@@ -77,7 +77,7 @@
 
 /* Number of dimensions the system has */
 #define SYSTEM_DIMENSIONS 1
-#define HIGHEST_DIMENSIONS 4
+#define HIGHEST_DIMENSIONS 5
 
 /* Define to 1 if you have the `elan3' library (-lelan3). */
 #undef HAVE_ELAN

@@ -80,15 +80,20 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
  */
+strong_alias(hostlist_create_dims,	slurm_hostlist_create_dims);
 strong_alias(hostlist_create,		slurm_hostlist_create);
 strong_alias(hostlist_copy,		slurm_hostlist_copy);
 strong_alias(hostlist_count,		slurm_hostlist_count);
 strong_alias(hostlist_delete,		slurm_hostlist_delete);
 strong_alias(hostlist_delete_host,	slurm_hostlist_delete_host);
 strong_alias(hostlist_delete_nth,	slurm_hostlist_delete_nth);
+strong_alias(hostlist_deranged_string_dims,
+	                                slurm_hostlist_deranged_string_dims);
 strong_alias(hostlist_deranged_string,	slurm_hostlist_deranged_string);
 strong_alias(hostlist_deranged_string_malloc,
 					slurm_hostlist_deranged_string_malloc);
+strong_alias(hostlist_deranged_string_xmalloc_dims,
+	     slurm_hostlist_deranged_string_xmalloc_dims);
 strong_alias(hostlist_deranged_string_xmalloc,
 					slurm_hostlist_deranged_string_xmalloc);
 strong_alias(hostlist_destroy,		slurm_hostlist_destroy);
@@ -102,11 +107,16 @@ strong_alias(hostlist_nth,		slurm_hostlist_nth);
 strong_alias(hostlist_pop,		slurm_hostlist_pop);
 strong_alias(hostlist_pop_range,	slurm_hostlist_pop_range);
 strong_alias(hostlist_push,		slurm_hostlist_push);
+strong_alias(hostlist_push_host_dims,	slurm_hostlist_push_host_dims);
 strong_alias(hostlist_push_host,	slurm_hostlist_push_host);
 strong_alias(hostlist_push_list,	slurm_hostlist_push_list);
+strong_alias(hostlist_ranged_string_dims,
+	                                slurm_hostlist_ranged_string_dims);
 strong_alias(hostlist_ranged_string,	slurm_hostlist_ranged_string);
 strong_alias(hostlist_ranged_string_malloc,
 					slurm_hostlist_ranged_string_malloc);
+strong_alias(hostlist_ranged_string_xmalloc_dims,
+	     slurm_hostlist_ranged_string_xmalloc_dims);
 strong_alias(hostlist_ranged_string_xmalloc,
 					slurm_hostlist_ranged_string_xmalloc);
 strong_alias(hostlist_remove,		slurm_hostlist_remove);
@@ -287,7 +297,7 @@ char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  * the maximum sized array for each dimension.  This way we can be
  * prepared for any size coming in.
  */
-static bool grid[HIGHEST_BASE*HIGHEST_BASE*HIGHEST_BASE*HIGHEST_BASE];
+static bool grid[HIGHEST_BASE*HIGHEST_BASE*HIGHEST_BASE*HIGHEST_BASE*HIGHEST_BASE];
 
 static int grid_start[HIGHEST_DIMENSIONS];
 static int grid_end[HIGHEST_DIMENSIONS];
@@ -301,31 +311,30 @@ static int _tell_if_used(int dim, int curr,
 			 int *start,
 			 int *end,
 			 int *last,
-			 int *found);
-static int _get_next_box(int *start,
-			 int *end);
-static int _get_boxes(char *buf, int max_len);
+			 int *found, int dims);
+static int _get_next_box(int *start, int *end, int dims);
+static int _get_boxes(char *buf, int max_len, int dims, int brackets);
 static void _set_box_in_grid(int dim, int curr,
 			     int *start,
 			     int *end,
-			     bool value);
+			     bool value, int dims);
 static int _add_box_ranges(int dim,  int curr,
 			   int *start,
 			   int *end,
 			   int *pos,
 			   struct _range *ranges,
-			   int len, int *count);
+			   int len, int *count, int dims);
 static void _set_min_max_of_grid(int dim, int curr,
 				 int *start,
 				 int *end,
 				 int *min,
 				 int *max,
-				 int *pos);
-static void _set_grid(unsigned long start, unsigned long end);
+				 int *pos, int dims);
+static void _set_grid(unsigned long start, unsigned long end, int dims);
 static bool _test_box_in_grid(int dim, int curr,
 			      int *start,
-			      int *end);
-static bool _test_box(int *start, int *end);
+			      int *end, int dims);
+static bool _test_box(int *start, int *end, int dims);
 
 /* ------[ static function prototypes ]------ */
 
@@ -335,7 +344,7 @@ static char * _next_tok(char *, char **);
 static int    _zero_padded(unsigned long, int);
 static int    _width_equiv(unsigned long, int *, unsigned long, int *);
 
-static int           host_prefix_end(const char *);
+static int           host_prefix_end(const char *, int dims);
 static hostname_t    hostname_create(const char *);
 static void          hostname_destroy(hostname_t);
 static int           hostname_suffix_is_valid(hostname_t);
@@ -360,11 +369,12 @@ static int           hostrange_join(hostrange_t, hostrange_t);
 static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
 static int           hostrange_hn_within(hostrange_t, hostname_t);
 static size_t        hostrange_to_string(hostrange_t hr, size_t, char *,
-					 char *);
+					 char *, int);
 static size_t        hostrange_numstr(hostrange_t, size_t, char *);
 
 static hostlist_t  hostlist_new(void);
-static hostlist_t _hostlist_create_bracketed(const char *, char *, char *);
+static hostlist_t _hostlist_create_bracketed(const char *, char *,
+					     char *, int);
 static int         hostlist_resize(hostlist_t, size_t);
 static int         hostlist_expand(hostlist_t);
 static int         hostlist_push_range(hostlist_t, hostrange_t);
@@ -374,7 +384,7 @@ static int         hostlist_insert_range(hostlist_t, hostrange_t, int);
 static void        hostlist_delete_range(hostlist_t, int n);
 static void        hostlist_coalesce(hostlist_t hl);
 static void        hostlist_collapse(hostlist_t hl);
-static hostlist_t _hostlist_create(const char *, char *, char *);
+static hostlist_t _hostlist_create(const char *, char *, char *, int);
 static void        hostlist_shift_iterators(hostlist_t, int, int, int);
 static int        _attempt_range_join(hostlist_t, int);
 static int        _is_bracket_needed(hostlist_t, int);
@@ -592,11 +602,14 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
 /*
  * return the location of the last char in the hostname prefix
  */
-static int host_prefix_end(const char *hostname)
+static int host_prefix_end(const char *hostname, int dims)
 {
-	int idx, dims = slurmdb_setup_cluster_name_dims();
+	int idx;
 
 	assert(hostname != NULL);
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
 
 	idx = strlen(hostname) - 1;
 
@@ -613,22 +626,23 @@ static int host_prefix_end(const char *hostname)
 	return idx;
 }
 
-/*
- * create a hostname_t object from a string hostname
- */
-static hostname_t hostname_create(const char *hostname)
+static hostname_t hostname_create_dims(const char *hostname, int dims)
 {
 	hostname_t hn = NULL;
 	char *p = '\0';
 	int idx = 0;
-	int dims = slurmdb_setup_cluster_name_dims();
-	int hostlist_base = hostlist_get_base(dims);
+	int hostlist_base;
+
 	assert(hostname != NULL);
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
+	hostlist_base = hostlist_get_base(dims);
 
 	if (!(hn = (hostname_t) malloc(sizeof(*hn))))
   		out_of_memory("hostname create");
 
-	idx = host_prefix_end(hostname);
+	idx = host_prefix_end(hostname, dims);
 
 	if (!(hn->hostname = strdup(hostname))) {
 		free(hn);
@@ -669,6 +683,15 @@ static hostname_t hostname_create(const char *hostname)
 	}
 
 	return hn;
+}
+/*
+ * create a hostname_t object from a string hostname
+ */
+static hostname_t hostname_create(const char *hostname)
+{
+	int dims = slurmdb_setup_cluster_name_dims();
+
+	return hostname_create_dims(hostname, dims);
 }
 
 /* free a hostname object
@@ -1133,12 +1156,15 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
  * writing at most n chars including NUL termination
  */
 static size_t
-hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
+hostrange_to_string(hostrange_t hr, size_t n, char *buf,
+		    char *separator, int dims)
 {
 	unsigned long i;
 	int ret, len = 0;
 	char sep = separator == NULL ? ',' : separator[0];
-	int dims = slurmdb_setup_cluster_name_dims();
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
 
 	if (n == 0)
 		return 0;
@@ -1437,7 +1463,8 @@ static void hostlist_delete_range(hostlist_t hl, int n)
  * See comment in hostlist.h:hostlist_create() for more info on
  * the different choices for hostlist notation.
  */
-hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
+hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op,
+			    int dims)
 {
 	char *str, *orig;
 	char *tok, *cur;
@@ -1453,7 +1480,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	if (hostlist == NULL)
 		return new;
 
-	if (slurmdb_setup_cluster_name_dims() > 1)
+	if (dims > 1)
 		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
 		      "work on multi-dimensional systems!!!!");
 	hostlist_base = hostlist_get_base(1);
@@ -1466,7 +1493,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	/* Use hostlist_create_bracketed if we see "[" */
 	if (strchr(str, '[') != NULL)
-		return _hostlist_create_bracketed(hostlist, sep, r_op);
+		return _hostlist_create_bracketed(hostlist, sep, r_op, dims);
 
 	while ((tok = _next_tok(sep, &str)) != NULL) {
 
@@ -1561,7 +1588,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 			error = 1;
 
 		if (error) {    /* assume this is not a range on any error */
-			hostlist_push_host(new, cur);
+			hostlist_push_host_dims(new, cur, dims);
 		} else {
 			if (high < low)
 				high = low;
@@ -1580,9 +1607,10 @@ done:
 
 #else                /* !WANT_RECKLESS_HOSTRANGE_EXPANSION */
 
-hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
+hostlist_t _hostlist_create(const char *hostlist, char *sep,
+			    char *r_op, int dims)
 {
-	return _hostlist_create_bracketed(hostlist, sep, r_op);
+	return _hostlist_create_bracketed(hostlist, sep, r_op, dims);
 }
 
 #endif                /* WANT_RECKLESS_HOSTRANGE_EXPANSION */
@@ -1590,9 +1618,8 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 
 static int _parse_box_range(char *str, struct _range *ranges,
- 			    int len, int *count)
+ 			    int len, int *count, int dims)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
 	int start[dims], end[dims],
 		pos[dims];
 	char coord[dims+1];
@@ -1632,18 +1659,17 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	}
 /* 	info("adding ranges in %sx%s", coord, coord2); */
 
-	return _add_box_ranges(0, 0, start, end, pos, ranges, len, count);
+	return _add_box_ranges(0, 0, start, end, pos, ranges, len, count, dims);
 }
 
 /* Grab a single range from str
  * returns 1 if str contained a valid number or range,
  *         0 if conversion of str to a range failed.
  */
-static int _parse_single_range(const char *str, struct _range *range)
+static int _parse_single_range(const char *str, struct _range *range, int dims)
 {
 	char *p, *q;
 	char *orig = strdup(str);
-	int dims = slurmdb_setup_cluster_name_dims();
 	int hostlist_base = hostlist_get_base(dims);
 
 	if (!orig)
@@ -1704,11 +1730,11 @@ error:
  *
  * Return number of ranges created, or -1 on error.
  */
-static int _parse_range_list(char *str, struct _range *ranges, int len)
+static int _parse_range_list(char *str, struct _range *ranges,
+			     int len, int dims)
 {
 	char *p;
 	int count = 0;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	while (str) {
 		if (count == len) {
@@ -1724,10 +1750,10 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 		if ((dims > 1) &&
 		    (str[dims] == 'x') &&
 		    (strlen(str) == (dims * 2 + 1))) {
-			if (!_parse_box_range(str, ranges, len, &count))
+			if (!_parse_box_range(str, ranges, len, &count, dims))
 				return -1;
 		} else {
-			if (!_parse_single_range(str, &ranges[count++]))
+			if (!_parse_single_range(str, &ranges[count++], dims))
 				return -1;
 		}
 		str = p;
@@ -1740,7 +1766,7 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
  * RET 0 on success, -1 on failure (invalid prefix) */
 static int
 _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
-		 int n)
+		 int n, int dims)
 {
 	int i, k, nr;
 	char *p, *q;
@@ -1756,7 +1782,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 		*q++ = '\0';
 		if (strrchr(tmp_prefix, '[') != NULL)
 			return -1;	/* third range is illegal */
-		nr = _parse_range_list(p, prefix_range, MAX_RANGES);
+		nr = _parse_range_list(p, prefix_range, MAX_RANGES, dims);
 		if (nr < 0)
 			return -1;	/* bad numeric expression */
 		for (i = 0; i < nr; i++) {
@@ -1796,7 +1822,8 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
  * detection of ranges and compressed lists
  */
 static hostlist_t
-_hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
+_hostlist_create_bracketed(const char *hostlist, char *sep,
+			   char *r_op, int dims)
 {
 	hostlist_t new = hostlist_new();
 	struct _range ranges[MAX_RANGES];
@@ -1822,10 +1849,12 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 				if ((q[1] != ',') && (q[1] != '\0'))
 					goto error;
 				*q = '\0';
-				nr = _parse_range_list(p, ranges, MAX_RANGES);
+				nr = _parse_range_list(p, ranges,
+						       MAX_RANGES, dims);
 				if (nr < 0)
 					goto error;
-				if (_push_range_list(new, prefix, ranges, nr))
+				if (_push_range_list(
+					    new, prefix, ranges, nr, dims))
 					goto error;
 			} else {
 				/* The hostname itself contains a '['
@@ -1835,14 +1864,15 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 				 * the end. */
 				strcat(cur_tok, "]");
 				if(prefix && prefix[0])
-					hostlist_push_host(new, cur_tok);
+					hostlist_push_host_dims(
+						new, cur_tok, dims);
 				else
-					hostlist_push_host(new, p);
+					hostlist_push_host_dims(new, p, dims);
 
 			}
 
 		} else
-			hostlist_push_host(new, cur_tok);
+			hostlist_push_host_dims(new, cur_tok, dims);
 	}
 
 	free(orig);
@@ -1857,9 +1887,17 @@ error:
 
 
 
+hostlist_t hostlist_create_dims(const char *str, int dims)
+{
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
+	return _hostlist_create(str, "\t, ", "-", dims);
+}
+
 hostlist_t hostlist_create(const char *str)
 {
-	return _hostlist_create(str, "\t, ", "-");
+	int dims = slurmdb_setup_cluster_name_dims();
+	return hostlist_create_dims(str, dims);
 }
 
 
@@ -1927,7 +1965,7 @@ int hostlist_push(hostlist_t hl, const char *hosts)
 	return retval;
 }
 
-int hostlist_push_host(hostlist_t hl, const char *str)
+int hostlist_push_host_dims(hostlist_t hl, const char *str, int dims)
 {
 	hostrange_t hr;
 	hostname_t hn;
@@ -1935,7 +1973,10 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 	if (!str || !hl)
 		return 0;
 
-	hn = hostname_create(str);
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
+
+	hn = hostname_create_dims(str, dims);
 
 	if (hostname_suffix_is_valid(hn))
 		hr = hostrange_create(hn->prefix, hn->num, hn->num,
@@ -1949,6 +1990,12 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 	hostname_destroy(hn);
 
 	return 1;
+}
+
+int hostlist_push_host(hostlist_t hl, const char *str)
+{
+	int dims = slurmdb_setup_cluster_name_dims();
+	return hostlist_push_host_dims(hl, str, dims);
 }
 
 int hostlist_push_list(hostlist_t h1, hostlist_t h2)
@@ -2163,8 +2210,8 @@ _hostrange_string(hostrange_t hr, int depth)
 {
 	char buf[MAXHOSTNAMELEN + 16];
 	const int size = sizeof(buf);
-	int dims = slurmdb_setup_cluster_name_dims();
 	int  len = snprintf(buf, size, "%s", hr->prefix);
+	int dims = slurmdb_setup_cluster_name_dims();
 
 	if (len < 0 || len + dims >= size)
 		return NULL;
@@ -2174,7 +2221,8 @@ _hostrange_string(hostrange_t hr, int depth)
 			int i2 = 0;
 			int coord[dims];
 
-			hostlist_parse_int_to_array(hr->lo + depth, coord, dims, 0);
+			hostlist_parse_int_to_array(
+				hr->lo + depth, coord, dims, 0);
 
 			while (i2 < dims)
 				buf[len++] = alpha_num[coord[i2++]];
@@ -2456,18 +2504,29 @@ char *hostlist_deranged_string_malloc(hostlist_t hl)
 	return buf;
 }
 
-char *hostlist_deranged_string_xmalloc(hostlist_t hl)
+char *hostlist_deranged_string_xmalloc_dims(hostlist_t hl, int dims)
 {
 	int buf_size = 8192;
 	char *buf = xmalloc(buf_size);
-	while (hostlist_deranged_string(hl, buf_size, buf) < 0) {
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
+
+	while (hostlist_deranged_string_dims(hl, buf_size, buf, dims) < 0) {
 		buf_size *= 2;
 		xrealloc(buf, buf_size);
 	}
 	return buf;
 }
 
-ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
+char *hostlist_deranged_string_xmalloc(hostlist_t hl)
+{
+	int dims = slurmdb_setup_cluster_name_dims();
+	return hostlist_deranged_string_xmalloc_dims(hl, dims);
+}
+
+ssize_t hostlist_deranged_string_dims(
+	hostlist_t hl, size_t n, char *buf, int dims)
 {
 	int i;
 	int len = 0, ret;
@@ -2478,7 +2537,7 @@ ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 			buf[len++] = ',';
 		if (len >= n)
 			goto truncated;
-		ret = hostrange_to_string(hl->hr[i], n - len, buf + len, ",");
+		ret = hostrange_to_string(hl->hr[i], n - len, buf + len, ",", dims);
 		if (ret < 0)
 			goto truncated;
 		len += ret;
@@ -2489,6 +2548,12 @@ truncated:
 	UNLOCK_HOSTLIST(hl);
 	buf[n-1] = '\0';
 	return -1;
+}
+
+ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
+{
+	int dims = slurmdb_setup_cluster_name_dims();
+	return hostlist_deranged_string_dims(hl, n, buf, dims);
 }
 
 /* convert 'in' polynomial of base 'base' to 'out' array of 'dim' dimensions */
@@ -2550,11 +2615,11 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 static int _tell_if_used(int dim, int curr,
 			 int *start,
 			 int *end,
-			 int *last, int *found)
+			 int *last, int *found, int dims)
 {
 	int rc = 1;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_name_dims();
+
 /* 	int i; */
 /* 	char coord[dims+1]; */
 /* 	memset(coord, 0, sizeof(coord)); */
@@ -2600,7 +2665,7 @@ static int _tell_if_used(int dim, int curr,
 		} else {
 			if((rc = _tell_if_used(dim+1, curr,
 					       start, end,
-					       last, found)) != 1) {
+					       last, found, dims)) != 1) {
 				return rc;
 			}
 			if((*found) >= dim) {
@@ -2620,24 +2685,22 @@ end_it:
 	return rc;
 }
 
-static int _get_next_box(int *start,
-			 int *end)
+static int _get_next_box(int *start, int *end, int dims)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
 	int hostlist_base = hostlist_get_base(dims);
 	static int orig_grid_end[HIGHEST_DIMENSIONS];
 	static int last[HIGHEST_DIMENSIONS];
 	int pos[dims];
-/* 	int i; */
-/* 	char coord[dims+1]; */
-/* 	char coord2[dims+1]; */
+	/* int i; */
+	/* char coord[dims+1]; */
+	/* char coord2[dims+1]; */
 	int found = -1;
 	int rc = 0;
 	int new_min[dims];
 	int new_max[dims];
 
-/* 	memset(coord, 0, sizeof(coord)); */
-/* 	memset(coord2, 0, sizeof(coord2)); */
+	/* memset(coord, 0, sizeof(coord)); */
+	/* memset(coord2, 0, sizeof(coord2)); */
 
 again:
 	if(start[0] == -1) {
@@ -2653,21 +2716,21 @@ again:
 	memcpy(end, start, dim_grid_size);
 
 
-/* 	for(i = 0; i<dims; i++) { */
-/* 		coord[i] = alpha_num[start[i]]; */
-/* 	}	 */
-/* 	info("beginning with %s", coord); */
+	/* for(i = 0; i<dims; i++) { */
+	/* 	coord[i] = alpha_num[start[i]]; */
+	/* } */
+	/* info("beginning with %s dims %d", coord, dims); */
 
-	_tell_if_used(0, 0, start, end, last, &found);
+	_tell_if_used(0, 0, start, end, last, &found, dims);
 
-/* 	for(i = 0; i<dims; i++) { */
-/* 		coord[i] = alpha_num[grid_start[i]]; */
-/* 		coord2[i] = alpha_num[grid_end[i]]; */
-/* 	}	 */
-/* 	info("current grid is %sx%s", coord, coord2); */
+	/* for(i = 0; i<dims; i++) { */
+	/* 	coord[i] = alpha_num[grid_start[i]]; */
+	/* 	coord2[i] = alpha_num[grid_end[i]]; */
+	/* } */
+	/* info("current grid is %sx%s", coord, coord2); */
 
 	/* remove what we just did */
-	_set_box_in_grid(0, 0, start, end, false);
+	_set_box_in_grid(0, 0, start, end, false, dims);
 
 	/* set the new min max of the grid */
 	memset(new_min, hostlist_base, dim_grid_size);
@@ -2675,21 +2738,21 @@ again:
 
 	/* send the orid_grid_end so we don't miss anything that was set. */
 	_set_min_max_of_grid(0, 0, grid_start, orig_grid_end,
-			     new_min, new_max, pos);
+			     new_min, new_max, pos, dims);
 
 	if(new_max[0] != -1) {
-/* 		for(i = 0; i<dims; i++) { */
-/* 			coord[i] = alpha_num[new_min[i]]; */
-/* 			coord2[i] = alpha_num[new_max[i]]; */
-/* 		}	 */
-/* 		info("here with %sx%s", coord, coord2); */
+		/* for(i = 0; i<dims; i++) { */
+		/* 	coord[i] = alpha_num[new_min[i]]; */
+		/* 	coord2[i] = alpha_num[new_max[i]]; */
+		/* } */
+		/* info("here with %sx%s", coord, coord2); */
 		memcpy(grid_start, new_min, dim_grid_size);
 		memcpy(grid_end, new_max, dim_grid_size);
 		memcpy(last, grid_start, dim_grid_size);
 
-/* 		for(i = 0; i<dims; i++)  */
-/* 			coord[i] = alpha_num[last[i]]; */
-/* 		info("next start %s", coord); */
+		/* for(i = 0; i<dims; i++) */
+		/* 	coord[i] = alpha_num[last[i]]; */
+		/* info("next start %s", coord); */
 		if(found == -1) {
 			/* There are still nodes set in the grid, so we need
 			   to go through them again to make sure we got all
@@ -2715,10 +2778,9 @@ again:
  * Assumes hostlist is locked.
  */
 static int
-_get_boxes(char *buf, int max_len)
+_get_boxes(char *buf, int max_len, int dims, int brackets)
 {
 	int len=0, i;
-	int dims = slurmdb_setup_cluster_name_dims();
 	int curr_min[dims], curr_max[dims];
 /* 	char coord[dims+1]; */
 /* 	char coord2[dims+1]; */
@@ -2733,7 +2795,7 @@ _get_boxes(char *buf, int max_len)
 /* 			info("got one at %d", i); */
 /* 	} */
 
-	while(_get_next_box(curr_min, curr_max)) {
+	while(_get_next_box(curr_min, curr_max, dims)) {
 /* 		for(i = 0; i<dims; i++) { */
 /* 			coord[i] = alpha_num[curr_min[i]]; */
 /* 			coord2[i] = alpha_num[curr_max[i]]; */
@@ -2768,8 +2830,10 @@ _get_boxes(char *buf, int max_len)
 		}
 	}
 
-	buf[len - 1] = ']';
-
+	if (brackets)
+		buf[len - 1] = ']';
+	else
+		buf[len - 1] = '\0';
 end_it:
 	/* NUL terminate for safety, but do not add terminator to len */
 	buf[len]   = '\0';
@@ -2779,18 +2843,17 @@ end_it:
 
 static void
 _set_box_in_grid(int dim, int curr, int *start,
-		 int *end, bool value)
+		 int *end, bool value, int dims)
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
 		if(dim == (dims-1))
 			grid[curr] = value;
 		else
-			_set_box_in_grid(dim+1, curr, start, end, value);
+			_set_box_in_grid(dim+1, curr, start, end, value, dims);
 
 	}
 }
@@ -2800,11 +2863,10 @@ static int _add_box_ranges(int dim,  int curr,
 			   int *end,
 			   int *pos,
 			   struct _range *ranges,
-			   int len, int *count)
+			   int len, int *count, int dims)
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
 		curr = start_curr + (pos[dim] * offset[dim]);
@@ -2829,13 +2891,13 @@ static int _add_box_ranges(int dim,  int curr,
 			new_str[dims+i+1] = alpha_num[end[i]];
 
 /* 			info("got %s", new_str); */
-			if (!_parse_single_range(new_str,
-						 &ranges[*count]))
+			if (!_parse_single_range(
+				    new_str, &ranges[*count], dims))
 				return 0;
 			(*count)++;
 		} else
 			if(!_add_box_ranges(dim+1, curr, start, end, pos,
-					    ranges, len, count))
+					    ranges, len, count, dims))
 				return 0;
 	}
 	return 1;
@@ -2846,11 +2908,11 @@ static void _set_min_max_of_grid(int dim, int curr,
 				 int *end,
 				 int *min,
 				 int *max,
-				 int *pos)
+				 int *pos,
+				 int dims)
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
 		curr = start_curr + (pos[dim] * offset[dim]);
@@ -2863,14 +2925,13 @@ static void _set_min_max_of_grid(int dim, int curr,
 			}
 		} else
 			_set_min_max_of_grid(dim+1, curr, start, end,
-					     min, max, pos);
+					     min, max, pos, dims);
 	}
 }
 
 static void
-_set_grid(unsigned long start, unsigned long end)
+_set_grid(unsigned long start, unsigned long end, int dims)
 {
-	int dims = slurmdb_setup_cluster_name_dims();
 	int sent_start[dims], sent_end[dims];
 	int i;
 /* 	char coord[dims+1]; */
@@ -2889,16 +2950,15 @@ _set_grid(unsigned long start, unsigned long end)
 	}
 /* 	info("going to set %sx%s", coord, coord2); */
 
-	_set_box_in_grid(0, 0, sent_start, sent_end, true);
+	_set_box_in_grid(0, 0, sent_start, sent_end, true, dims);
 }
 
 static bool
 _test_box_in_grid(int dim, int curr,
-		  int *start, int *end)
+		  int *start, int *end, int dims)
 {
 	int i;
 	int start_curr = curr;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
@@ -2906,7 +2966,7 @@ _test_box_in_grid(int dim, int curr,
 			if(!grid[curr])
 				return false;
 		} else {
-			if(!_test_box_in_grid(dim+1, curr, start, end))
+			if(!_test_box_in_grid(dim+1, curr, start, end, dims))
 				return false;
 		}
 	}
@@ -2915,10 +2975,9 @@ _test_box_in_grid(int dim, int curr,
 }
 
 static bool
-_test_box(int *start, int *end)
+_test_box(int *start, int *end, int dims)
 {
 	int i;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	if (!memcmp(start, end, dim_grid_size)) /* single node */
 		return false;
@@ -2927,7 +2986,7 @@ _test_box(int *start, int *end)
 		if (start[i] > end[i])
 			return false;
 
-	return _test_box_in_grid(0, 0, start, end);
+	return _test_box_in_grid(0, 0, start, end, dims);
 }
 
 char *hostlist_ranged_string_malloc(hostlist_t hl)
@@ -2941,26 +3000,40 @@ char *hostlist_ranged_string_malloc(hostlist_t hl)
 	return buf;
 }
 
-char *hostlist_ranged_string_xmalloc(hostlist_t hl)
+char *hostlist_ranged_string_xmalloc_dims(
+	hostlist_t hl, int dims, int brackets)
 {
 	int buf_size = 8192;
 	char *buf = xmalloc(buf_size);
-	while (hostlist_ranged_string(hl, buf_size, buf) < 0) {
+	while (hostlist_ranged_string_dims(
+		       hl, buf_size, buf, dims, brackets) < 0) {
 		buf_size *= 2;
 		xrealloc(buf, buf_size);
 	}
 	return buf;
 }
 
-ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
+char *hostlist_ranged_string_xmalloc(hostlist_t hl)
+{
+	int dims = slurmdb_setup_cluster_name_dims();
+	return hostlist_ranged_string_xmalloc_dims(hl, dims, 1);
+}
+
+ssize_t hostlist_ranged_string_dims(hostlist_t hl, size_t n,
+				    char *buf, int dims, int brackets)
 {
 	int i = 0;
 	int len = 0;
 	int truncated = 0;
 	bool box = false;
-	int dims = slurmdb_setup_cluster_name_dims();
-	int hostlist_base = hostlist_get_base(dims);
+	int hostlist_base;
+	static int last_dims = -1;
+
 	DEF_TIMERS;
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
+	hostlist_base = hostlist_get_base(dims);
 
 	START_TIMER;
 	LOCK_HOSTLIST(hl);
@@ -2968,8 +3041,12 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	if (dims > 1 && hl->nranges) {	/* logic for block node description */
 		slurm_mutex_lock(&multi_dim_lock);
 
-		/* compute things that only need to be calculated once */
-		if (dim_grid_size == -1) {
+		/* compute things that only need to be calculated once
+		 * (unless you change the dimensions of the
+		 * hostlist.  This can happen on a BGQ system.
+		 */
+		if ((last_dims != dims) || (dim_grid_size == -1)) {
+			last_dims = dims;
 			dim_grid_size = sizeof(int) * dims;
 
 			/* the last one is always 1 */
@@ -3008,7 +3085,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 				}
 				goto notbox;
 			}
-			_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
+			_set_grid(hl->hr[i]->lo, hl->hr[i]->hi, dims);
 		}
 		if (!memcmp(grid_start, grid_end, dim_grid_size)) {
 			len = snprintf(buf, n, "%s", hl->hr[0]->prefix);
@@ -3016,15 +3093,19 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 				goto too_long;
 			for (i = 0; i < dims; i++)
 				buf[len++] = alpha_num[grid_start[i]];
-		} else if (!_test_box(grid_start, grid_end)) {
-			len = snprintf(buf, n, "%s[", hl->hr[0]->prefix);
-			if (len < 0 || len >= n)
+		} else if (!_test_box(grid_start, grid_end, dims)) {
+			len = snprintf(buf, n, "%s", hl->hr[0]->prefix);
+			if (len < 0 || (len+1) >= n)
 				goto too_long;
-			len += _get_boxes(buf + len, (n-len));
+			if (brackets)
+				buf[len++] = '[';
+			len += _get_boxes(buf + len, (n-len), dims, brackets);
 		} else {
-			len = snprintf(buf, n, "%s[", hl->hr[0]->prefix);
-			if (len < 0 || ((len + 2 + (dims * 2)) >= n))
+			len = snprintf(buf, n, "%s", hl->hr[0]->prefix);
+			if (len < 0 || ((len + 3 + (dims * 2)) >= n))
 				goto too_long;
+			if (brackets)
+				buf[len++] = '[';
 
 			for (i = 0; i < dims; i++)
 				buf[len++] = alpha_num[grid_start[i]];
@@ -3032,7 +3113,8 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 
 			for (i = 0; i < dims; i++)
 				buf[len++] = alpha_num[grid_end[i]];
-			buf[len++] = ']';
+			if (brackets)
+				buf[len++] = ']';
 		}
 		if ((len < 0) || (len > n))
 		too_long:
@@ -3064,6 +3146,13 @@ notbox:
 
 //	info("time was %s", TIME_STR);
 	return truncated ? -1 : len;
+}
+
+ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
+{
+	int dims = slurmdb_setup_cluster_name_dims();
+
+	return hostlist_ranged_string_dims(hl, n, buf, dims, 1);
 }
 
 /* ----[ hostlist iterator functions ]---- */
@@ -3169,17 +3258,19 @@ static void _iterator_advance_range(hostlist_iterator_t i)
 	}
 }
 
-char *hostlist_next(hostlist_iterator_t i)
+char *hostlist_next_dims(hostlist_iterator_t i, int dims)
 {
 	char buf[MAXHOSTNAMELEN + 16];
 	const int size = sizeof(buf);
 	int len = 0;
-	int dims = slurmdb_setup_cluster_name_dims();
 
 	assert(i != NULL);
 	assert(i->magic == HOSTLIST_MAGIC);
 	LOCK_HOSTLIST(i->hl);
 	_iterator_advance(i);
+
+	if (!dims)
+		dims = slurmdb_setup_cluster_name_dims();
 
 	if (i->idx > i->hl->nranges - 1)
 		goto no_next;
@@ -3210,6 +3301,13 @@ char *hostlist_next(hostlist_iterator_t i)
 no_next:
 	UNLOCK_HOSTLIST(i->hl);
 	return NULL;
+}
+
+char *hostlist_next(hostlist_iterator_t i)
+{
+	int dims = slurmdb_setup_cluster_name_dims();
+
+	return hostlist_next_dims(i, dims);
 }
 
 char *hostlist_next_range(hostlist_iterator_t i)
