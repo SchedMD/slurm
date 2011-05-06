@@ -168,17 +168,18 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 	/* build all the possible geos for the mid planes */
 	ba_main_geo_system =  xmalloc(sizeof(ba_geo_system_t));
 	ba_main_geo_system->dim_count = SYSTEM_DIMENSIONS;
-	ba_main_geo_system->dim_size = xmalloc(sizeof(int) *
-					  ba_main_geo_system->dim_count);
-	memcpy(ba_main_geo_system->dim_size, DIM_SIZE, sizeof(DIM_SIZE));
+	ba_main_geo_system->dim_size =
+		xmalloc(sizeof(int) * ba_main_geo_system->dim_count);
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		ba_main_geo_system->dim_size[dim] = DIM_SIZE[dim];
 	ba_create_geo_table(ba_main_geo_system);
 	//ba_print_geo_table(ba_main_geo_system);
 
 	/* build all the possible geos for a sub block inside a mid plane */
 	ba_mp_geo_system =  xmalloc(sizeof(ba_geo_system_t));
 	ba_mp_geo_system->dim_count = 5;
-	ba_mp_geo_system->dim_size = xmalloc(sizeof(int) *
-					  ba_mp_geo_system->dim_count);
+	ba_mp_geo_system->dim_size =
+		xmalloc(sizeof(int) * ba_mp_geo_system->dim_count);
 	/* These will never change. */
 	ba_mp_geo_system->dim_size[0] = 4;
 	ba_mp_geo_system->dim_size[1] = 4;
