@@ -53,6 +53,8 @@ if test "$PHP_SLURM" != "no"; then
 	
 	PHP_SUBST(SLURM_PHP_SHARED_LIBADD)
 	
+	AC_CHECK_HEADERS(stdbool.h)
+
 	AC_DEFINE(HAVE_SLURM_PHP, 1, [Whether you have SLURM])
 	#PHP_EXTENSION(slurm_php, $ext_shared)
 	PHP_NEW_EXTENSION(slurm_php, @top_srcdir@/contribs/phpext/slurm_php/slurm_php.c, $ext_shared)
