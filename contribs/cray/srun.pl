@@ -139,7 +139,8 @@ my (	$account,
 	$wc_key
 );
 
-my $aprun  = "aprun";
+# run aprun with the -q option to quite out the output.
+my $aprun  = "aprun -q";
 my $salloc = "${FindBin::Bin}/salloc";
 
 my $have_job;
@@ -370,7 +371,7 @@ if ($have_job == 0) {
 	$command .= " --overcommit"			if $overcommit;
 	$command .= " --partition=$partition"		if $partition;
 	$command .= " --qos=$qos"			if $qos;
-	$command .= " --quiet"
+	$command .= " --quiet";
 	$command .= " --reservation=$reservation"	if $reservation;
 	$command .= " --share"				if $share;
 	$command .= " --signal=$signal"			if $signal;
@@ -400,7 +401,12 @@ $command .= " -D 1"					if $verbose;
 $nid_list = get_nids($nodelist)				if $nodelist;
 $command .= " -L $nid_list"				if $nodelist;
 $command .= " -m $memory_per_cpu"			if $memory_per_cpu;
-$command .= " -n $num_tasks"				if $num_tasks;
+if ($num_tasks) {
+	$command .= " -n $num_tasks";
+} elsif ($num_nodes) {
+	$command .= " -n $num_nodes";
+}
+#$command .= " -n $num_tasks"				if $num_tasks;
 $command .= " -N $ntasks_per_node"    			if $ntasks_per_node;
 $command .= " -q"					if $quiet;
 # $command .= " -r"		no srun equivalent
