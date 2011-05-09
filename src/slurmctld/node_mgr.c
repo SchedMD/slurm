@@ -2066,7 +2066,8 @@ static void _node_did_resp(struct node_record *node_ptr)
 
 	node_inx = node_ptr - node_record_table_ptr;
 	node_ptr->last_response = now;
-	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	resp_state = node_ptr->node_state & (NODE_STATE_NO_RESPOND |
+					     NODE_STATE_POWER_UP);
 	if (resp_state) {
 		info("Node %s now responding", node_ptr->name);
 		last_node_update = now;
