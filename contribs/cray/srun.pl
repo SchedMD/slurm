@@ -370,11 +370,12 @@ if ($have_job == 0) {
 	$command .= " --overcommit"			if $overcommit;
 	$command .= " --partition=$partition"		if $partition;
 	$command .= " --qos=$qos"			if $qos;
+	$command .= " --quiet"
 	$command .= " --reservation=$reservation"	if $reservation;
 	$command .= " --share"				if $share;
 	$command .= " --signal=$signal"			if $signal;
 	$command .= " --sockets-per-node=$sockets_per_node" if $sockets_per_node;
-	$command .= " --threads-per-core=$threads_per_core"  if $threads_per_core;
+	$command .= " --threads-per-core=$threads_per_core" if $threads_per_core;
 	$command .= " --minthreads=$threads"		if $threads;
 	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " --time-min=$time_min"		if $time_min;
@@ -416,11 +417,26 @@ $script = get_multi_prog($script)			if $multi_prog;
 
 # Input and output file options are not supported by aprun, but can be handled by perl
 $command .= " <$input_file"				if $input_file;
-$command .= " >$output_file"				if $output_file;
-if ($error_file) {
-	$command .= " 2>$error_file";
-} elsif ($output_file) {
-	$command .= " 2>&1";
+if ($error_file && ($error_file eq "none")) {
+	$error_file = "/dev/null"
+}
+if ($output_file && ($output_file eq "none")) {
+	$output_file = "/dev/null"
+}
+if ($open_mode && ($open_mode eq "a")) {
+	$command .= " >>$output_file"			if $output_file;
+	if ($error_file) {
+		$command .= " 2>>$error_file";
+	} elsif ($output_file) {
+		$command .= " 2>&1";
+	}
+} else {
+	$command .= " >$output_file"			if $output_file;
+	if ($error_file) {
+		$command .= " 2>$error_file";
+	} elsif ($output_file) {
+		$command .= " 2>&1";
+	}
 }
 
 # Srun option which are not supported by aprun
