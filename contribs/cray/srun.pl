@@ -139,8 +139,7 @@ my (	$account,
 	$wc_key
 );
 
-# run aprun with the -q option to quite out the output.
-my $aprun  = "aprun -q";
+my $aprun  = "aprun";
 my $salloc = "${FindBin::Bin}/salloc";
 
 my $have_job;
@@ -371,7 +370,7 @@ if ($have_job == 0) {
 	$command .= " --overcommit"			if $overcommit;
 	$command .= " --partition=$partition"		if $partition;
 	$command .= " --qos=$qos"			if $qos;
-	$command .= " --quiet";
+	$command .= " --quiet"				if !$verbose;
 	$command .= " --reservation=$reservation"	if $reservation;
 	$command .= " --share"				if $share;
 	$command .= " --signal=$signal"			if $signal;
@@ -396,7 +395,15 @@ $command .= " $alps"					if $alps;
 # $command .= " -B"		no srun equivalent
 # $command .= " -cc"		NO GOOD MAPPING, cpu binding
 $command .= " -d $cpus_per_task"			if $cpus_per_task;
-$command .= " -D 1"					if $verbose;
+
+# Run aprun with the -q option to quite out the output.  The debug flag
+# probably should be removed here since it isn't going to be what the
+# user expects.
+# if ($verbose) {
+# 	$command .= " -D 1";
+# } else {
+	$command .= " -q";
+# }
 # $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
 $nid_list = get_nids($nodelist)				if $nodelist;
 $command .= " -L $nid_list"				if $nodelist;
