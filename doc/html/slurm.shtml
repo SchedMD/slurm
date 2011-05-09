@@ -87,17 +87,6 @@ for molecular dynamics simulation using 512 custom-designed ASICs
 and a three-dimensional torus interconnect.</li>
 </ul>
 
-<p>SLURM is actively being developed, distributed and supported by
-<a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>,
-<a href="http://www.schedmd.com">SchedMD</a>.
-<a href="http://www.bull.com">Bull</a>,
-and a variety of customer sites.
-It is also distributed and supported by
-<a href="http://www.adaptivecomputing.com">Adaptive Computing</a>,
-<a href="http://www.hp.com">Hewlett-Packard</a>,
-<a href="http://www.infiscale.com">Infiscale</a> and
-<a href="http://www.ibm.com">IBM</a>.</p>
-
-<p style="text-align:center;">Last modified 5 April 20101</p>
+<p style="text-align:center;">Last modified 5 May 20101</p>
 
 <!--#include virtual="footer.txt"-->

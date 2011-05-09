@@ -22,13 +22,6 @@ parallel jobs), backfill scheduling,
 and sophisticated <a href="priority_multifactor.html"> multifactor job
 prioritization</a> algorithms.
 
-<p>SLURM has been developed through the collaborative efforts of
-<a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
-<a href="http://www.hp.com/">Hewlett-Packard</a>,
-<a href="http://www.schedmd.com/">SchedMD</a>,
-<a href="http://www.bull.com/">Bull</a>,
-Linux NetworX and many other contributors.</p>
-
 <h2>Architecture</h2>
 <p>SLURM has a centralized manager, <b>slurmctld</b>, to monitor resources and
 work. There may also be a backup manager to assume those responsibilities in the
@@ -209,6 +202,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 31 March 2009</p>
+<p style="text-align:center;">Last modified 5 May 2011</p>
 
 <!--#include virtual="footer.txt"-->
