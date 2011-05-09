@@ -434,7 +434,7 @@ task_start_cb(launch_tasks_response_msg_t *resp_msg)
 
 	hv = newHV();
 	if (launch_tasks_response_msg_to_hv(resp_msg, hv) < 0) {
-		Perl_warn( aTHX_ "failed to prepare paramter for task_start callback");
+		Perl_warn( aTHX_ "failed to prepare parameter for task_start callback");
 		SvREFCNT_dec(hv);
 		return;
 	}
@@ -468,7 +468,7 @@ task_finish_cb(task_exit_msg_t *exit_msg)
 
 	hv = newHV();
 	if (task_exit_msg_to_hv(exit_msg, hv) < 0) {
-		Perl_warn( aTHX_ "failed to prepare paramter for task_exit callback");
+		Perl_warn( aTHX_ "failed to prepare parameter for task_exit callback");
 		SvREFCNT_dec(hv);
 		return;
 	}

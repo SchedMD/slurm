@@ -422,7 +422,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		if (access(arch_cond->archive_dir, W_OK) < 0) {
 			errno = EACCES;
 			fprintf(stderr, " dump: "
-				"archive dir %s is not writeable\n",
+				"archive dir %s is not writable\n",
 				arch_cond->archive_dir);
 			return SLURM_ERROR;
 		}

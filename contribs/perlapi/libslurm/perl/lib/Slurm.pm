@@ -108,7 +108,7 @@ Then call the desired functions:
 
     $resp = $slurm->load_jobs();
 
-In the following L</"METHODS"> section, if a paramter may be omitted, it will be listed as "param=val" , where "val" is the default value of the paramter if it is not given.
+In the following L</"METHODS"> section, if a parameter is omitted, it will be listed as "param=val" , where "val" is the default value of the parameter.
     
 =head2 DATA STRUCTURES
     
@@ -181,7 +181,7 @@ Get the string describing the specified error number.
 
 =over 2
 
-=item * IN $errno: error number. If ommitted or 0, the error number returned by C<$slurm->get_errno()> will be used.
+=item * IN $errno: error number. If omitted or 0, the error number returned by C<$slurm->get_errno()> will be used.
     
 =item * RET: error string.
 
