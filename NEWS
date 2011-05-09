@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
  -- Test if _make_batch_script() is called with a NULL script.
  -- Increase hostlist support from 24k to 64k nodes.
  -- Fix srun to handle signals correctly when waiting for a step creation.
+ -- Preserve the last job ID across slurmctld daemon restarts even if the job
+    state file can not be fully recovered.
 
 * Changes in SLURM 2.3.0.pre4
 =============================

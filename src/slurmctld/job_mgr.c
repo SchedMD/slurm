@@ -578,8 +578,8 @@ extern int load_all_job_state(void)
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if(ver_str) {
-		if(!strcmp(ver_str, JOB_STATE_VERSION)) {
+	if (ver_str) {
+		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, JOB_2_2_STATE_VERSION)) {
 			protocol_version = SLURM_2_2_PROTOCOL_VERSION;
@@ -600,6 +600,7 @@ extern int load_all_job_state(void)
 
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32( &saved_job_id, buffer);
+	job_id_sequence = MAX(saved_job_id, job_id_sequence);
 	debug3("Job id in job_state header is %u", saved_job_id);
 
 	while (remaining_buf(buffer) > 0) {
@@ -608,8 +609,6 @@ extern int load_all_job_state(void)
 			goto unpack_error;
 		job_cnt++;
 	}
-
-	job_id_sequence = MAX(saved_job_id, job_id_sequence);
 	debug3("Set job_id_sequence to %u", job_id_sequence);
 
 	free_buf(buffer);
