@@ -2213,7 +2213,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 				GtkTreeStore *treestore,
 				GtkTreeIter *iter)
 {
-	char *tmp_nodes, *tmp_uname;
+	char *tmp_uname;
+	char tmp_nodes[50];
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
 	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
 	time_t now_time = time(NULL);
@@ -2225,18 +2226,37 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	if (!step_ptr->nodes ||
 	    !strcasecmp(step_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run, "00:00:00");
-		tmp_nodes = "waiting...";
+		snprintf(tmp_nodes, sizeof(tmp_nodes), "waiting...");
 		tmp_node_cnt[0] = '\0';
 		state = JOB_PENDING;
 	} else {
 		now_time -= step_ptr->start_time;
 		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
-		tmp_nodes = step_ptr->nodes;
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
+		if (cluster_flags & CLUSTER_FLAG_BG) {
+			char *ionodes = NULL;
+			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+						    SELECT_JOBDATA_IONODES,
+						    &ionodes);
+			if (step_ptr->nodes && ionodes) {
+				snprintf(tmp_nodes, sizeof(tmp_nodes), "%s[%s]",
+					 step_ptr->nodes, ionodes);
+			} else
+				snprintf(tmp_nodes, sizeof(tmp_nodes), "%s",
+					 step_ptr->nodes);
+			xfree(ionodes);
+		} else
+			snprintf(tmp_nodes, sizeof(tmp_nodes), "%s",
+				 step_ptr->nodes);
+
+		if (cluster_flags & CLUSTER_FLAG_BGQ) {
+			uint32_t nodes = 0;
+			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+						    SELECT_JOBDATA_NODE_CNT,
+						    &nodes);
 			convert_num_unit(
-				(float)step_ptr->num_tasks,
+				(float)nodes,
 				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
-		else if (cluster_flags & CLUSTER_FLAG_BG) {
+		} else if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
 				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
@@ -2531,7 +2551,6 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 				sview_job_info_ptr->small_block = 1;
 				snprintf(tmp_char, sizeof(tmp_char), "%s[%s]",
 					 job_ptr->nodes, ionodes);
-				xfree(ionodes);
 				/* keep a different string here so we don't
 				   just keep tacking on ionodes to a
 				   node list */
@@ -2539,6 +2558,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			} else
 				sview_job_info_ptr->nodes =
 					xstrdup(job_ptr->nodes);
+			xfree(ionodes);
 		} else
 			sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
 

@@ -604,8 +604,21 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 		if(params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "BP_LIST";
 		_print_str(title, width, right, false);
-	} else
-		_print_nodes(job->nodes, width, right, false);
+	} else {
+		char *nodes = xstrdup(job->nodes);
+		char *ionodes = NULL;
+
+		select_g_select_jobinfo_get(job->select_jobinfo,
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
+		if(ionodes) {
+			xstrfmtcat(nodes, "[%s]", ionodes);
+			xfree(ionodes);
+			_print_str(nodes, width, right, false);
+		} else
+			_print_nodes(nodes, width, right, false);
+		xfree(nodes);
+	}
 
 	if (suffix)
 		printf("%s", suffix);
@@ -635,10 +648,9 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		char *nodes = xstrdup(job->nodes);
 		char *ionodes = NULL;
 
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
-			select_g_select_jobinfo_get(job->select_jobinfo,
-						    SELECT_JOBDATA_IONODES,
-						    &ionodes);
+		select_g_select_jobinfo_get(job->select_jobinfo,
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
 		if(ionodes) {
 			xstrfmtcat(nodes, "[%s]", ionodes);
 			xfree(ionodes);
@@ -1286,8 +1298,22 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 			title = "BP_LIST";
 
 		_print_str(title, width, right, false);
-	} else
-		_print_nodes(step->nodes, width, right, false);
+	} else {
+		char *nodes = xstrdup(step->nodes);
+		char *ionodes = NULL;
+
+		select_g_select_jobinfo_get(step->select_jobinfo,
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
+		if(ionodes) {
+			xstrfmtcat(nodes, "[%s]", ionodes);
+			xfree(ionodes);
+			_print_str(nodes, width, right, false);
+		} else
+			_print_nodes(nodes, width, right, false);
+		xfree(nodes);
+	}
+
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
