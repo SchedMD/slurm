@@ -370,7 +370,7 @@ if ($have_job == 0) {
 	$command .= " --overcommit"			if $overcommit;
 	$command .= " --partition=$partition"		if $partition;
 	$command .= " --qos=$qos"			if $qos;
-	$command .= " --quiet"
+	$command .= " --quiet"				if !$verbose;
 	$command .= " --reservation=$reservation"	if $reservation;
 	$command .= " --share"				if $share;
 	$command .= " --signal=$signal"			if $signal;
@@ -395,12 +395,25 @@ $command .= " $alps"					if $alps;
 # $command .= " -B"		no srun equivalent
 # $command .= " -cc"		NO GOOD MAPPING, cpu binding
 $command .= " -d $cpus_per_task"			if $cpus_per_task;
-$command .= " -D 1"					if $verbose;
+
+# Run aprun with the -q option to quite out the output.  The debug flag
+# probably should be removed here since it isn't going to be what the
+# user expects.
+# if ($verbose) {
+# 	$command .= " -D 1";
+# } else {
+	$command .= " -q";
+# }
 # $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
 $nid_list = get_nids($nodelist)				if $nodelist;
 $command .= " -L $nid_list"				if $nodelist;
 $command .= " -m $memory_per_cpu"			if $memory_per_cpu;
-$command .= " -n $num_tasks"				if $num_tasks;
+if ($num_tasks) {
+	$command .= " -n $num_tasks";
+} elsif ($num_nodes) {
+	$command .= " -n $num_nodes";
+}
+#$command .= " -n $num_tasks"				if $num_tasks;
 $command .= " -N $ntasks_per_node"    			if $ntasks_per_node;
 $command .= " -q"					if $quiet;
 # $command .= " -r"		no srun equivalent
@@ -466,7 +479,11 @@ $command .= " $script";
 
 # Print here for debugging
 #print "command=$command\n";
-system($command);
+my $return_code = system($command);
+# Make this look like it is coming from srun
+if ($return_code != 0) {
+	die "exit code $return_code\n";
+}
 
 # Convert a SLURM time format to a number of seconds
 sub get_seconds {

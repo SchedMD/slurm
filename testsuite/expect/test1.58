@@ -37,12 +37,17 @@ set exit_code            0
 set jobid                0
 
 print_header $test_id
-set timeout $max_job_delay
+
+if { [test_cray] } {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
 
 #
 # Run an srun to grab a single node allocation, but not start any
 # job steps.
 #
+set timeout $max_job_delay
 set srun_alloc_pid [spawn $salloc -v -N1 -n1 $bin_sleep 600]
 set srun_alloc_sid $spawn_id
 expect {

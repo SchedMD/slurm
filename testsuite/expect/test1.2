@@ -40,15 +40,19 @@ set tasks       0
 
 print_header $test_id
 
+# if the srun --overcommit option worked this test would work.
+if {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
+
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
 set timeout $max_job_delay
-	set srun_pid [spawn $srun -N1 -n$task_cnt -t1 $bin_id]
-if {[test_cray]} {
-} else {
-	set srun_pid [spawn $srun -N1 -n$task_cnt --overcommit -l -t1 $bin_id]
-}
+set srun_pid [spawn $srun -N1 -n$task_cnt -t1 $bin_id]
+set srun_pid [spawn $srun -N1 -n$task_cnt --overcommit -l -t1 $bin_id]
+
 expect {
 	-re "uid=" {
 		incr tasks
