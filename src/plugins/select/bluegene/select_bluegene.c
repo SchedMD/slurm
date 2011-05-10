@@ -1687,6 +1687,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
 			fatal("bit_copy malloc failure");
 		bit_or(bg_record->mp_used_bitmap, picked_mps);
+		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
 		goto found_it;
 	} else if ((ba_mp = ba_pick_sub_block_cnodes(
 			    bg_record, &node_count,
