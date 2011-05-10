@@ -92,6 +92,11 @@ expect {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
+	#needed for cray systems that don't have a prefix
+	-re "($alpha_numeric_under)" {
+		set this_date $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
@@ -223,6 +228,11 @@ set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_date]
 expect {
 	-re "0: ($alpha_numeric_under)" {
+		set this_date $expect_out(1,string)
+		exp_continue
+	}
+	#needed for cray systems that don't have a prefix
+	-re "($alpha_numeric_under)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
