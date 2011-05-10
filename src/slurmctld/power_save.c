@@ -442,7 +442,7 @@ static void _clear_power_config(void)
 	FREE_NULL_BITMAP(exc_node_bitmap);
 }
 
-/* Initialize power_save module paramters.
+/* Initialize power_save module parameters.
  * Return 0 on valid configuration to run power saving,
  * otherwise log the problem and return -1 */
 static int _init_power_config(void)

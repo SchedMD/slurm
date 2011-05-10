@@ -370,11 +370,12 @@ if ($have_job == 0) {
 	$command .= " --overcommit"			if $overcommit;
 	$command .= " --partition=$partition"		if $partition;
 	$command .= " --qos=$qos"			if $qos;
+	$command .= " --quiet"				if !$verbose;
 	$command .= " --reservation=$reservation"	if $reservation;
 	$command .= " --share"				if $share;
 	$command .= " --signal=$signal"			if $signal;
 	$command .= " --sockets-per-node=$sockets_per_node" if $sockets_per_node;
-	$command .= " --threads-per-core=$threads_per_core"  if $threads_per_core;
+	$command .= " --threads-per-core=$threads_per_core" if $threads_per_core;
 	$command .= " --minthreads=$threads"		if $threads;
 	$command .= " --time=$time_limit"		if $time_limit;
 	$command .= " --time-min=$time_min"		if $time_min;
@@ -394,12 +395,25 @@ $command .= " $alps"					if $alps;
 # $command .= " -B"		no srun equivalent
 # $command .= " -cc"		NO GOOD MAPPING, cpu binding
 $command .= " -d $cpus_per_task"			if $cpus_per_task;
-$command .= " -D 1"					if $verbose;
+
+# Run aprun with the -q option to quite out the output.  The debug flag
+# probably should be removed here since it isn't going to be what the
+# user expects.
+# if ($verbose) {
+# 	$command .= " -D 1";
+# } else {
+	$command .= " -q";
+# }
 # $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
 $nid_list = get_nids($nodelist)				if $nodelist;
 $command .= " -L $nid_list"				if $nodelist;
 $command .= " -m $memory_per_cpu"			if $memory_per_cpu;
-$command .= " -n $num_tasks"				if $num_tasks;
+if ($num_tasks) {
+	$command .= " -n $num_tasks";
+} elsif ($num_nodes) {
+	$command .= " -n $num_nodes";
+}
+#$command .= " -n $num_tasks"				if $num_tasks;
 $command .= " -N $ntasks_per_node"    			if $ntasks_per_node;
 $command .= " -q"					if $quiet;
 # $command .= " -r"		no srun equivalent
@@ -416,11 +430,26 @@ $script = get_multi_prog($script)			if $multi_prog;
 
 # Input and output file options are not supported by aprun, but can be handled by perl
 $command .= " <$input_file"				if $input_file;
-$command .= " >$output_file"				if $output_file;
-if ($error_file) {
-	$command .= " 2>$error_file";
-} elsif ($output_file) {
-	$command .= " 2>&1";
+if ($error_file && ($error_file eq "none")) {
+	$error_file = "/dev/null"
+}
+if ($output_file && ($output_file eq "none")) {
+	$output_file = "/dev/null"
+}
+if ($open_mode && ($open_mode eq "a")) {
+	$command .= " >>$output_file"			if $output_file;
+	if ($error_file) {
+		$command .= " 2>>$error_file";
+	} elsif ($output_file) {
+		$command .= " 2>&1";
+	}
+} else {
+	$command .= " >$output_file"			if $output_file;
+	if ($error_file) {
+		$command .= " 2>$error_file";
+	} elsif ($output_file) {
+		$command .= " 2>&1";
+	}
 }
 
 # Srun option which are not supported by aprun
@@ -450,7 +479,11 @@ $command .= " $script";
 
 # Print here for debugging
 #print "command=$command\n";
-system($command);
+my $return_code = system($command);
+# Make this look like it is coming from srun
+if ($return_code != 0) {
+	die "exit code $return_code\n";
+}
 
 # Convert a SLURM time format to a number of seconds
 sub get_seconds {

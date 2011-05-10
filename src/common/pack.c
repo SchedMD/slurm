@@ -74,6 +74,8 @@ strong_alias(init_buf,		slurm_init_buf);
 strong_alias(xfer_buf_data,	slurm_xfer_buf_data);
 strong_alias(pack_time,		slurm_pack_time);
 strong_alias(unpack_time,	slurm_unpack_time);
+strong_alias(packdouble,	slurm_packdouble);
+strong_alias(unpackdouble,	slurm_unpackdouble);
 strong_alias(pack64,		slurm_pack64);
 strong_alias(unpack64,		slurm_unpack64);
 strong_alias(pack32,		slurm_pack32);

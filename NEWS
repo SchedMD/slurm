@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
  -- Test if _make_batch_script() is called with a NULL script.
  -- Increase hostlist support from 24k to 64k nodes.
  -- Fix srun to handle signals correctly when waiting for a step creation.
+ -- Preserve the last job ID across slurmctld daemon restarts even if the job
+    state file can not be fully recovered.
  -- Made the hostlist functions be able to arbitrarily handle any size
     dimension no matter what the size of the cluster is in dimensions.
 
@@ -178,6 +180,9 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with accounting when using PrivateData=jobs... users would not be
     able to view there own jobs unless they were admin or coordinators which is
     obviously wrong.
+ -- Fix bug in node stat if slurmctld is restarted while nodes are in the
+    process of being powered up. Patch from Andriy Grytsenko.
+ -- Change maximum batch script size from 128k to 4M.
 
 * Changes in SLURM 2.2.5
 ========================
@@ -3140,7 +3145,7 @@ documents those changes that are of interest to users and admins.
     than one partition uses a node or there is more than one socket per node.
  -- In output for "scontrol show job" change "StartTime" header to "EligibleTime"
     for pending jobs to accurately describe what is reported.
- -- Add more slurmdbd.conf paramters: ArchiveScript, ArchiveAge, JobPurge, and
+ -- Add more slurmdbd.conf parameters: ArchiveScript, ArchiveAge, JobPurge, and
     StepPurge (not fully implemented yet).
  -- Add slurm.conf parameter EnforcePartLimits to reject jobs which exceed a
     partition's size and/or time limits rather than leaving them queued for a
@@ -3443,7 +3448,7 @@ documents those changes that are of interest to users and admins.
     removed!  That functionality is now available in the separate commands
     salloc, sbatch, and sattach, respectively.
  -- Add new node state FAILING plus trigger for when node enters that state.
- -- Add new configuration paramter "PrivateData". This can be used to 
+ -- Add new configuration parameter "PrivateData". This can be used to 
     prevent a user from seeing jobs or job steps belonging to other users.
  -- Added configuration parameters for node power save mode: ResumeProgram
     ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and 
@@ -4356,7 +4361,7 @@ documents those changes that are of interest to users and admins.
  - BLUEGENE - check to make sure set_block_user works when the block
    is in a ready state.
  - Fix to slurmstepd to not use local variables in a pthread create.
- - In sched/wiki2 - add wiki.conf paramter HostFormat specifying 
+ - In sched/wiki2 - add wiki.conf parameter HostFormat specifying 
    format of hostlists exchanged between Slurm and Moab (experimental).
  - mpi/mvapich: Support Adam Moody's fast MPI initialization protocol 
    (MVAPICH protocol version 8).

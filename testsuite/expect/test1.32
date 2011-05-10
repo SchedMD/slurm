@@ -45,6 +45,10 @@ set usr2cnt     0
 
 print_header $test_id
 
+if { [test_cray] } {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+}
 if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit $exit_code
@@ -80,11 +84,7 @@ expect {
 #	Expect have difficulties handling unbuffered srun output
 #
 set timeout $max_job_delay
-if { [test_cray] } {
-	set srun_pid [spawn $srun -N1 -t1 --unbuffered --alps=-X $file_prog]
-} else {
-	set srun_pid [spawn $srun -N1 -t1 --unbuffered $file_prog]
-}
+set srun_pid [spawn $srun -N1 -t1 --unbuffered $file_prog]
 expect {
 	-re "WAITING" {
 		incr matches

@@ -2149,7 +2149,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 
 	node_inx = node_ptr - node_record_table_ptr;
 	node_ptr->last_response = now;
-	if (IS_NODE_NO_RESPOND(node_ptr)) {
+	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		last_node_update = now;
 		reset_job_priority();

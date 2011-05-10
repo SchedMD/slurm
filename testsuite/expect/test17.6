@@ -107,6 +107,15 @@ if {$exit_code != 0} {
 	exit $exit_code
 }
 
+# Since we can't over commit the test ends here.
+if {[test_cray]} {
+	if {$exit_code == 0} {
+		file delete $file_in $file_out
+		send_user "\nSUCCESS\n"
+	}
+	exit $exit_code
+}
+
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #

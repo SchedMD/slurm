@@ -234,6 +234,10 @@
 #define	xfer_buf_data		slurm_xfer_buf_data
 #define	pack_time		slurm_pack_time
 #define	unpack_time		slurm_unpack_time
+#define	packdouble		slurm_packdouble
+#define	unpackdouble		slurm_unpackdouble
+#define	pack64			slurm_pack64
+#define	unpack64		slurm_unpack64
 #define	pack32			slurm_pack32
 #define	unpack32		slurm_unpack32
 #define	pack16			slurm_pack16
