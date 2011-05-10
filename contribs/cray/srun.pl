@@ -479,7 +479,11 @@ $command .= " $script";
 
 # Print here for debugging
 #print "command=$command\n";
-system($command);
+my $return_code = system($command);
+# Make this look like it is coming from srun
+if ($return_code != 0) {
+	die "exit code $return_code\n";
+}
 
 # Convert a SLURM time format to a number of seconds
 sub get_seconds {
