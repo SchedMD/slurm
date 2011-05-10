@@ -113,6 +113,14 @@ static int _setup_particulars(uint32_t cluster_flags,
 			setenvf(dest, "MPIRUN_NOFREE", "%d", 1);
 			setenvf(dest, "MPIRUN_NOALLOCATE", "%d", 1);
 			xfree(bg_part_id);
+			select_g_select_jobinfo_get(select_jobinfo,
+						    SELECT_JOBDATA_IONODES,
+						    &bg_part_id);
+			if (bg_part_id) {
+				setenvf(dest, "SLURM_JOB_SUB_MP", "%s",
+					bg_part_id);
+				xfree(bg_part_id);
+			}
 		} else
 			rc = SLURM_FAILURE;
 
@@ -1128,6 +1136,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  *	SLURM_STEP_LAUNCHER_PORT
  *	SLURM_STEP_LAUNCHER_IPADDR
  *	SLURM_STEP_RESV_PORTS
+ *      SLURM_STEP_SUB_MP
  *
  * Sets OBSOLETE variables:
  *	SLURM_STEPID
@@ -1162,6 +1171,13 @@ env_array_for_step(char ***dest,
 	if (step->resv_ports) {
 		env_array_overwrite_fmt(dest, "SLURM_STEP_RESV_PORTS",
 					"%s", step->resv_ports);
+	}
+	select_g_select_jobinfo_get(step->select_jobinfo,
+				    SELECT_JOBDATA_IONODES,
+				    &tmp);
+	if (tmp) {
+		setenvf(dest, "SLURM_STEP_SUB_MP", "%s", tmp);
+		xfree(tmp);
 	}
 
 	/* OBSOLETE, but needed by MPI, do not remove */

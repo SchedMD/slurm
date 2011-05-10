@@ -64,7 +64,7 @@ COMMAND CHANGES (see man pages for details)
 
 BLUEGENE SPECIFIC CHANGES
 =========================
-
+BGQ support added.
 
 OTHER CHANGES
 =============
@@ -97,6 +97,9 @@ front_end_info_t		entirely new structure
 job_info_t
 	batch_host		name of the host running the batch script
 	preempt_time		time that a job become preempted
+
+job_step_create_response_msg_t
+	select_jobinfo		data needed from the select plugin for a step
 
 partition_info_t
 	grace_time		preempted job's grace time in seconds

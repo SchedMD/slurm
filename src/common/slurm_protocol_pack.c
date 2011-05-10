@@ -3441,12 +3441,23 @@ _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 {
 	xassert(msg != NULL);
 
-	packstr(msg->resv_ports, buffer);
-	pack32(msg->job_step_id, buffer);
-	pack_slurm_step_layout(msg->step_layout, buffer, protocol_version);
-	slurm_cred_pack(msg->cred, buffer);
-	switch_pack_jobinfo(msg->switch_job, buffer);
-
+	if(protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		packstr(msg->resv_ports, buffer);
+		pack32(msg->job_step_id, buffer);
+		pack_slurm_step_layout(
+			msg->step_layout, buffer, protocol_version);
+		slurm_cred_pack(msg->cred, buffer);
+		select_g_select_jobinfo_pack(
+			msg->select_jobinfo, buffer, protocol_version);
+		switch_pack_jobinfo(msg->switch_job, buffer);
+	} else {
+		packstr(msg->resv_ports, buffer);
+		pack32(msg->job_step_id, buffer);
+		pack_slurm_step_layout(
+			msg->step_layout, buffer, protocol_version);
+		slurm_cred_pack(msg->cred, buffer);
+		switch_pack_jobinfo(msg->switch_job, buffer);
+	}
 }
 
 static int
@@ -3462,20 +3473,45 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
 	*msg = tmp_ptr;
 
-	safe_unpackstr_xmalloc(&tmp_ptr->resv_ports, &uint32_tmp, buffer);
-	safe_unpack32(&tmp_ptr->job_step_id, buffer);
-	if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
-				     protocol_version))
-		goto unpack_error;
+	if(protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(
+			&tmp_ptr->resv_ports, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->job_step_id, buffer);
+		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
+					     protocol_version))
+			goto unpack_error;
 
-	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer, protocol_version)))
-		goto unpack_error;
+		if (!(tmp_ptr->cred = slurm_cred_unpack(
+			      buffer, protocol_version)))
+			goto unpack_error;
 
-	switch_alloc_jobinfo(&tmp_ptr->switch_job);
-	if (switch_unpack_jobinfo(tmp_ptr->switch_job, buffer)) {
-		error("switch_unpack_jobinfo: %m");
-		switch_free_jobinfo(tmp_ptr->switch_job);
-		goto unpack_error;
+		if (select_g_select_jobinfo_unpack(
+			    &tmp_ptr->select_jobinfo, buffer, protocol_version))
+			goto unpack_error;
+		switch_alloc_jobinfo(&tmp_ptr->switch_job);
+		if (switch_unpack_jobinfo(tmp_ptr->switch_job, buffer)) {
+			error("switch_unpack_jobinfo: %m");
+			switch_free_jobinfo(tmp_ptr->switch_job);
+			goto unpack_error;
+		}
+	} else {
+		safe_unpackstr_xmalloc(
+			&tmp_ptr->resv_ports, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->job_step_id, buffer);
+		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
+					     protocol_version))
+			goto unpack_error;
+
+		if (!(tmp_ptr->cred = slurm_cred_unpack(
+			      buffer, protocol_version)))
+			goto unpack_error;
+
+		switch_alloc_jobinfo(&tmp_ptr->switch_job);
+		if (switch_unpack_jobinfo(tmp_ptr->switch_job, buffer)) {
+			error("switch_unpack_jobinfo: %m");
+			switch_free_jobinfo(tmp_ptr->switch_job);
+			goto unpack_error;
+		}
 	}
 	return SLURM_SUCCESS;
 

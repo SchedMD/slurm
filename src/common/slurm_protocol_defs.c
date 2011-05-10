@@ -1728,6 +1728,7 @@ void slurm_free_job_step_create_response_msg(
 		xfree(msg->resv_ports);
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
+		select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->switch_job)
 			switch_free_jobinfo(msg->switch_job);
 
