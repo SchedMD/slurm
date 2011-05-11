@@ -114,7 +114,7 @@ static pthread_t poll_thread;
 static bgsched::realtime::Client *rt_client_ptr = NULL;
 pthread_mutex_t rt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void _handle_bad_switch(const char *switch_name, const char *mp_coords,
+static void _handle_bad_switch(int dim, const char *mp_coords,
 			       EnumWrapper<Hardware::State> state)
 {
 	char bg_down_node[128];
@@ -125,9 +125,9 @@ static void _handle_bad_switch(const char *switch_name, const char *mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (!node_already_down(bg_down_node)) {
-		error("Switch '%s' on Midplane %s, state went to %d, "
+		error("Switch at dim '%d' on Midplane %s, state went to %d, "
 		      "marking midplane down.",
-		      switch_name, bg_down_node, state.toValue());
+		      dim, bg_down_node, state.toValue());
 		slurm_drain_nodes(bg_down_node,
 				  (char *)"select_bluegene: MMCS switch not UP",
 				  slurm_get_slurm_user_id());
@@ -226,13 +226,14 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 void event_handler::handleSwitchStateChangedRealtimeEvent(
 	const SwitchStateChangedEventInfo& event)
 {
-	const char *midplane = event.getMidplaneId().c_str();
-	ba_mp_t *ba_mp = loc2ba_mp(midplane);
+	const char *mp_name = event.getMidplaneLocation().c_str();
+	int dim = event.getDimension();
+	ba_mp_t *ba_mp = loc2ba_mp(mp_name);
 
 	if (!ba_mp) {
-		error("Switch '%s' on Midplane %s, state went from %d to %d,"
-		      "but is not in our system",
-		      event.getSwitchId().c_str(), midplane,
+		error("Switch in dim '%d' on Midplane %s, state "
+		      "went from %d to %d, but is not in our system",
+		      dim, mp_name,
 		      event.getPreviousState(),
 		      event.getState());
 	}
@@ -241,14 +242,14 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 		/* Don't do anything, wait for admin to fix things,
 		 * just note things are better. */
 
-		info("Switch '%s' on Midplane %s, has returned to service",
-		     event.getSwitchId().c_str(), midplane);
+		info("Switch in dim '%u' on Midplane %s, "
+		     "has returned to service",
+		     dim, mp_name);
 		return;
 	}
 
 	/* Else mark the midplane down */
-	_handle_bad_switch(event.getSwitchId().c_str(), ba_mp->coord_str,
-			   event.getState());
+	_handle_bad_switch(dim, ba_mp->coord_str, event.getState());
 
 	return;
 }
@@ -256,8 +257,8 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	const NodeBoardStateChangedEventInfo& event)
 {
-	const char *mp_name = event.getMidplaneId().c_str();
-	const char *nb_name = event.getNodeBoardId().c_str();
+	const char *mp_name = event.getLocation().substr(0,6).c_str();
+	const char *nb_name = event.getLocation().substr(7,3).c_str();
 	ba_mp_t *ba_mp = loc2ba_mp(mp_name);
 
 	if (!ba_mp) {
@@ -422,14 +423,14 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
 		if (nodeboard->getState() != Hardware::Available)
 			_handle_bad_nodeboard(
-				nodeboard->getLocation().c_str(),
+				nodeboard->getLocation().substr(7,3).c_str(),
 				ba_mp->coord_str, nodeboard->getState());
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 		Switch::ConstPtr my_switch = mp_ptr->getSwitch(dim);
 		if (my_switch->getState() != Hardware::Available)
-			_handle_bad_switch(my_switch->getLocation().c_str(),
+			_handle_bad_switch(dim,
 					   ba_mp->coord_str,
 					   my_switch->getState());
 	}
