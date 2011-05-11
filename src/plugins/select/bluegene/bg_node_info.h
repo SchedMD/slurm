@@ -59,7 +59,7 @@ struct select_nodeinfo {
 	List subgrp_list;
 };
 
-extern char *give_geo(uint16_t int_geo[SYSTEM_DIMENSIONS]);
+extern char *give_geo(uint16_t *int_geo, int dims, bool with_sep);
 
 extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 				uint16_t protocol_version);

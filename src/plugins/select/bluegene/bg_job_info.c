@@ -60,7 +60,8 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 {
 	int i;
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+	jobinfo->dim_cnt = 0; /* This will be setup later */
+	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
 		jobinfo->geometry[i] = (uint16_t) NO_VAL;
 		jobinfo->conn_type[i] = (uint16_t) NO_VAL;
 	}
@@ -129,10 +130,16 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		return SLURM_ERROR;
 	}
 
+	if (!jobinfo->dim_cnt)
+		jobinfo->dim_cnt = SYSTEM_DIMENSIONS;
+
 	switch (data_type) {
+	case SELECT_JOBDATA_DIM_CNT:
+		jobinfo->dim_cnt = *uint16;
+		break;
 	case SELECT_JOBDATA_GEOMETRY:
 		new_size = 1;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		for (i=0; i<jobinfo->dim_cnt; i++) {
 			jobinfo->geometry[i] = uint16[i];
 			new_size *= uint16[i];
 
@@ -151,7 +158,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		jobinfo->rotate = *uint16;
 		break;
 	case SELECT_JOBDATA_CONN_TYPE:
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		for (i=0; i<jobinfo->dim_cnt; i++) {
 			jobinfo->conn_type[i] = uint16[i];
 		}
 		break;
@@ -169,6 +176,15 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_IONODES:
 		xfree(jobinfo->ionode_str);
+		if (tmp_char) {
+#ifdef HAVE_BGQ
+			jobinfo->dim_cnt = 5;
+#else
+			jobinfo->dim_cnt = SYSTEM_DIMENSIONS;
+#endif
+		} else
+			jobinfo->dim_cnt = SYSTEM_DIMENSIONS;
+
 		jobinfo->ionode_str = xstrdup(tmp_char);
 		break;
 	case SELECT_JOBDATA_NODE_CNT:
@@ -186,7 +202,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		    || (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt))
 			jobinfo->conn_type[0] = SELECT_SMALL;
 		else if (jobinfo->conn_type[0] == SELECT_SMALL)
-			for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			for (i=0; i<jobinfo->dim_cnt; i++)
 				jobinfo->conn_type[i] = SELECT_TORUS;
 		break;
 	case SELECT_JOBDATA_ALTERED:
@@ -244,9 +260,15 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 		return SLURM_ERROR;
 	}
 
+	if (!jobinfo->dim_cnt)
+		jobinfo->dim_cnt = SYSTEM_DIMENSIONS;
+
 	switch (data_type) {
+	case SELECT_JOBDATA_DIM_CNT:
+		*uint16 = jobinfo->dim_cnt;
+		break;
 	case SELECT_JOBDATA_GEOMETRY:
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		for (i=0; i<jobinfo->dim_cnt; i++) {
 			uint16[i] = jobinfo->geometry[i];
 		}
 		break;
@@ -257,7 +279,7 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 		*uint16 = jobinfo->rotate;
 		break;
 	case SELECT_JOBDATA_CONN_TYPE:
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		for (i=0; i<jobinfo->dim_cnt; i++)
 			uint16[i] = jobinfo->conn_type[i];
 		break;
 	case SELECT_JOBDATA_BLOCK_ID:
@@ -341,6 +363,7 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 		error("copy_jobinfo: jobinfo magic bad");
 	else {
 		rc = xmalloc(sizeof(struct select_jobinfo));
+		rc->dim_cnt = jobinfo->dim_cnt;
 		memcpy(rc->geometry, jobinfo->geometry, sizeof(rc->geometry));
 		memcpy(rc->conn_type, jobinfo->conn_type,
 		       sizeof(rc->conn_type));
@@ -378,6 +401,12 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		if (jobinfo) {
+			if (jobinfo->dim_cnt)
+				dims = jobinfo->dim_cnt;
+			else if (bg_recover != NOT_FROM_CONTROLLER)
+				xassert(0);
+
+			pack16(dims, buffer);
 			/* NOTE: If new elements are added here, make sure to
 			 * add equivalant pack of zeros below for NULL
 			 * pointer */
@@ -400,6 +429,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packstr(jobinfo->ramdiskimage, buffer);
 			pack_bit_fmt(jobinfo->units_used, buffer);
 		} else {
+			pack16(dims, buffer);
 			/* pack space for 3 positions for geo
 			 * then 1 for conn_type, reboot, and rotate
 			 */
@@ -526,7 +556,13 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
+
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		safe_unpack16(&jobinfo->dim_cnt, buffer);
+
+		xassert(jobinfo->dim_cnt);
+		dims = jobinfo->dim_cnt;
+
 		for (i=0; i<dims; i++) {
 			safe_unpack16(&(jobinfo->geometry[i]), buffer);
 			safe_unpack16(&(jobinfo->conn_type[i]), buffer);
@@ -557,8 +593,8 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 			bit_unfmt(jobinfo->units_used, bit_char);
 			xfree(bit_char);
 		}
-
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		jobinfo->dim_cnt = dims;
 		for (i=0; i<dims; i++) {
 			safe_unpack16(&(jobinfo->geometry[i]), buffer);
 		}
@@ -584,6 +620,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp,
 				       buffer);
 	} else {
+		jobinfo->dim_cnt = dims;
 		for (i=0; i<dims; i++) {
 			safe_unpack16(&(jobinfo->geometry[i]), buffer);
 		}
@@ -655,14 +692,14 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 	}
 
 	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		for (i=0; i<jobinfo->dim_cnt; i++) {
 			if (geo)
 				xstrcat(geo, "x0");
 			else
 				xstrcat(geo, "0");
 		}
 	} else
-		geo = give_geo(jobinfo->geometry);
+		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, 0);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
@@ -786,7 +823,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 				xstrcat(geo, "0");
 		}
 	} else
-		geo = give_geo(jobinfo->geometry);
+		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, 1);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:

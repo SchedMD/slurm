@@ -920,11 +920,14 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	ba_geo_table_t *geo_table = NULL;
 	char *tmp_char = NULL, *tmp_char2 = NULL;
 	uint32_t orig_node_count = *node_count;
+	int dim;
 
 	xassert(ba_mp_geo_system);
 	xassert(bg_record->ba_mp_list);
 	xassert(jobinfo);
 	xassert(!jobinfo->units_used);
+
+	jobinfo->dim_cnt = ba_mp_geo_system->dim_count;
 
 	while (!(geo_table = ba_mp_geo_system->geo_table_ptr[*node_count])) {
 		debug2("ba_pick_sub_block_cnodes: No geometries of size %u ",
@@ -1020,6 +1023,9 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 			}
 			jobinfo->ionode_str = ba_node_map_ranged_hostlist(
 				jobinfo->units_used, ba_mp_geo_system);
+			for (dim = 0; dim < jobinfo->dim_cnt; dim++)
+				jobinfo->geometry[dim] =
+					geo_table->geometry[dim];
 			break;
 		}
 

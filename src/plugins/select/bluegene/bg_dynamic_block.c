@@ -294,7 +294,8 @@ extern List create_dynamic_block(List block_list,
 	//debug("going to create %d", request->size);
 	if (!new_ba_request(request)) {
 		if (request->geometry[0] != (uint16_t)NO_VAL) {
-			char *geo = give_geo(request->geometry);
+			char *geo = give_geo(request->geometry,
+					     SYSTEM_DIMENSIONS, 1);
 			error("Problems with request for size %d geo %s",
 			      request->size, geo);
 			xfree(geo);

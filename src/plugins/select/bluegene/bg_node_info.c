@@ -131,13 +131,13 @@ unpack_error:
  * compiled for non-bluegene machines, and it didn't make since to
  * compile the whole file just for this one function.
  */
-extern char *give_geo(uint16_t int_geo[SYSTEM_DIMENSIONS])
+extern char *give_geo(uint16_t *int_geo, int dims, bool with_sep)
 {
 	char *geo = NULL;
 	int i;
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-		if (geo)
+	for (i=0; i<dims; i++) {
+		if (geo && with_sep)
 			xstrcat(geo, "x");
 		xstrfmtcat(geo, "%c", alpha_num[int_geo[i]]);
 	}

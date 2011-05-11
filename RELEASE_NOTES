@@ -126,7 +126,9 @@ job_state_reason
 	WAIT_QOS_THRES        	/* required QOS threshold has been breached */
 
 select_jobdata_type
-	SELECT_JOBDATA_PTR	/* data-> select_jobinfo_t *jobinfo */
+	SELECT_JOBDATA_PTR	 /* data-> select_jobinfo_t *jobinfo */
+	SELECT_JOBDATA_BLOCK_PTR /* data-> bg_record_t *bg_record */
+	SELECT_JOBDATA_DIM_CNT   /* data-> uint16_t dim_cnt */
 
 select_nodedata_type
 	SELECT_NODEDATA_PTR     /* data-> select_nodeinfo_t *nodeinfo */

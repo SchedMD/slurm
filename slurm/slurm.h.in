@@ -342,6 +342,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_PAGG_ID,	/* data-> uint64_t job container ID */
 	SELECT_JOBDATA_PTR,	/* data-> select_jobinfo_t *jobinfo */
 	SELECT_JOBDATA_BLOCK_PTR, /* data-> bg_record_t *bg_record */
+	SELECT_JOBDATA_DIM_CNT, /* data-> uint16_t dim_cnt */
 };
 
 enum select_nodedata_type {

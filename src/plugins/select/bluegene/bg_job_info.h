@@ -52,6 +52,14 @@ struct select_jobinfo {
 	char *blrtsimage;       /* BlrtsImage for this block */
 	uint32_t cnode_cnt;     /* how many cnodes in block running job */
 	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
+	uint16_t dim_cnt;       /* how many dimensions this
+				 * represents in most cases this will
+				 * be SYSTEM_DIMENSIONS, but in the
+				 * case of a sub-block allocation
+				 * this will be the number of
+				 * dimensions a cnode represent.  In
+				 * Q that is 5 while a midplane is
+				 * only representing 4. */
 	uint16_t geometry[HIGHEST_DIMENSIONS];	/* node count in various
 						 * dimensions, e.g. AXYZ */
 	char *ionode_str;       /* for bg to tell which ionodes of a small
