@@ -1155,14 +1155,31 @@ env_array_for_step(char ***dest,
 		   bool preserve_env)
 {
 	char *tmp;
+	uint32_t node_cnt = step->step_layout->node_cnt;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	tmp = _uint16_array_to_str(step->step_layout->node_cnt,
 				   step->step_layout->tasks);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST",
 				"%s", step->step_layout->node_list);
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		char geo_char[HIGHEST_DIMENSIONS+1];
+
+		select_g_select_jobinfo_get(step->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &node_cnt);
+		if (!node_cnt)
+			node_cnt = step->step_layout->node_cnt;
+
+		select_g_select_jobinfo_sprint(step->select_jobinfo,
+					       geo_char, sizeof(geo_char),
+					       SELECT_PRINT_GEOMETRY);
+		env_array_overwrite_fmt(dest, "SLURM_STEP_GEO", "%s", geo_char);
+	}
+
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES",
-				"%hu", step->step_layout->node_cnt);
+				"%hu", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS",
 				"%u", step->step_layout->task_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
@@ -1184,7 +1201,7 @@ env_array_for_step(char ***dest,
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
 	if (!preserve_env) {
 		env_array_overwrite_fmt(dest, "SLURM_NNODES",
-					"%hu", step->step_layout->node_cnt);
+					"%hu", node_cnt);
 		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
 					step->step_layout->task_cnt);
 		/* keep around for old scripts */
