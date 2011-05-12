@@ -637,6 +637,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
 				 "%s/sbin/slurmstepd", SLURM_PREFIX);
 		}
+		/* inform slurmstepd about our config */
+		setenv("SLURM_CONF", conf->conffile, 1);
 
 		/*
 		 * Child forks and exits

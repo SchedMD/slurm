@@ -148,7 +148,7 @@ static void      _msg_engine(void);
 static void      _print_conf(void);
 static void      _print_config(void);
 static void      _process_cmdline(int ac, char **av);
-static void      _read_config(bool reconfig);
+static void      _read_config(void);
 static void      _reconfigure(void);
 static void     *_registration_engine(void *arg);
 static int       _restore_cred_state(slurm_cred_ctx_t ctx);
@@ -206,6 +206,13 @@ main (int argc, char *argv[])
 	_init_conf();
 	conf->argv = &argv;
 	conf->argc = &argc;
+
+	if (_slurmd_init() < 0) {
+		error( "slurmd initialization failed" );
+		fflush( NULL );
+		exit(1);
+	}
+
 	slurmd_uid = slurm_get_slurmd_user_id();
 	curr_uid = getuid();
 	if (curr_uid != slurmd_uid) {
@@ -239,16 +246,6 @@ main (int argc, char *argv[])
 	xsignal(SIGINT,  &_term_handler);
 	xsignal(SIGHUP,  &_hup_handler );
 	xsignal_block(blocked_signals);
-
-	/*
-	 * Run slurmd_init() here in order to report early errors
-	 * (with public keyfile)
-	 */
-	if (_slurmd_init() < 0) {
-		error( "slurmd initialization failed" );
-		fflush( NULL );
-		exit(1);
-	}
 
 	debug3("slurmd initialization successful");
 
@@ -702,14 +699,13 @@ _massage_pathname(char **path)
  * values into the slurmd configuration in preference of the defaults.
  */
 static void
-_read_config(bool reconfig)
+_read_config(void)
 {
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
 	bool cr_flag = false, gang_flag = false;
 
-	if (reconfig)
-		slurm_conf_reinit(conf->conffile);
+	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -867,7 +863,7 @@ _reconfigure(void)
 
 	_reconfig = 0;
 	_update_logging();
-	_read_config(true);
+	_read_config();
 
 	/*
 	 * Rebuild topology information and refresh slurmd topo infos
@@ -1200,6 +1196,12 @@ _slurmd_init(void)
 	 * an alternate location for the slurm config file.
 	 */
 	_process_cmdline(*conf->argc, *conf->argv);
+
+	/*
+	 * Read global slurm config file, override necessary values from
+	 * defaults and command line.
+	 */
+	_read_config();
 	_update_logging();
 
 	/*
@@ -1210,11 +1212,6 @@ _slurmd_init(void)
 	build_all_nodeline_info(true);
 	build_all_frontend_info();
 
-	/*
-	 * Read global slurm config file, override necessary values from
-	 * defaults and command line.
-	 */
-	_read_config(false);
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
 	    (gres_plugin_node_config_load(cpu_cnt) != SLURM_SUCCESS))
@@ -1508,7 +1505,7 @@ _hup_handler(int signum)
 
 
 static void
-_usage()
+_usage(void)
 {
 	fprintf(stderr, "\
 Usage: %s [OPTIONS]\n\
