@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
     process of being powered up. Patch from Andriy Grytsenko.
  -- Change maximum batch script size from 128k to 4M.
  -- Get slurmd -f option working. Patch from Andriy Grytsenko.
+ -- Fix for linking problem on OSX. Patch from Jon Bringhurst, LANL.
 
 * Changes in SLURM 2.2.5
 ========================

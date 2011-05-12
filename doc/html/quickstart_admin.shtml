@@ -634,6 +634,10 @@ Slurmctld(primary/backup) at adevi/adevj are UP/UP
 adev0: scontrol shutdown
 </pre> <p class="footer"><a href="#top">top</a></p>
 
+<h2>OS X, Darwin</h2>
+<p>Build using the following execute line:<br>
+sh configure && MACOSX_DEPLOYMENT_TARGET=10.5 make all</p>
+
 <h2>Testing</h2>
 <p>An extensive test suite is available within the SLURM distribution
 in <i>testsuite/expect</i>.

@@ -2046,7 +2046,7 @@ inline void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 	}
 }
 
-inline void slurm_destroy_priority_factors_object(void *object)
+void slurm_destroy_priority_factors_object(void *object)
 {
 	priority_factors_object_t *obj_ptr =
 		(priority_factors_object_t *)object;
