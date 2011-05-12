@@ -4070,7 +4070,8 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	debug("Processing RPC: REQUEST_SPANK_ENVIRONMENT from uid=%d", uid);
+	debug("Processing RPC: REQUEST_SPANK_ENVIRONMENT from uid=%d JobId=%u",
+	      uid, spank_req_msg->job_id);
 	if (!validate_slurm_user(uid)) {
 		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_SPANK_ENVIRONMENT RPC "
