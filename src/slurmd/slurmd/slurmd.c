@@ -201,6 +201,20 @@ main (int argc, char *argv[])
 	_init_conf();
 	conf->argv = &argv;
 	conf->argc = &argc;
+
+	/*
+	 * Process commandline arguments first, since one option may be
+	 * an alternate location for the slurm config file.
+	 */
+	_process_cmdline(*conf->argc, *conf->argv);
+
+	/*
+	 * Read global slurm config file, ovverride necessary values from
+	 * defaults and command line.
+	 */
+	_read_config();
+	/* we should load config file _before_ analyzing SlurmUser below */
+
 	slurmd_uid = slurm_get_slurmd_user_id();
 	curr_uid = getuid();
 	if(curr_uid != slurmd_uid) {
@@ -230,7 +244,6 @@ main (int argc, char *argv[])
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 
-	/* NOTE: conf->logfile always NULL at this point */
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
 	xsignal(SIGTERM, &_term_handler);
@@ -1180,18 +1193,6 @@ _slurmd_init(void)
 	char slurm_stepd_path[MAXPATHLEN];
 	uint32_t cpu_cnt;
 
-	/*
-	 * Process commandline arguments first, since one option may be
-	 * an alternate location for the slurm config file.
-	 */
-	_process_cmdline(*conf->argc, *conf->argv);
-
-	/*
-	 * Read global slurm config file, ovverride necessary values from
-	 * defaults and command line.
-	 *
-	 */
-	_read_config();
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
 	    (gres_plugin_node_config_load(cpu_cnt) != SLURM_SUCCESS))
@@ -1490,7 +1491,7 @@ _hup_handler(int signum)
 
 
 static void
-_usage()
+_usage(void)
 {
 	fprintf(stderr, "\
 Usage: %s [OPTIONS]\n\
