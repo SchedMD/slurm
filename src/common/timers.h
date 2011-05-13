@@ -44,16 +44,17 @@
 #define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20]
 #define START_TIMER	gettimeofday(&tv1, NULL)
 #define END_TIMER	gettimeofday(&tv2, NULL); \
-                	diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0)
+                	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0)
 #define END_TIMER2(from) gettimeofday(&tv2, NULL); \
-	                 diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0)
+	                 slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0)
 #define END_TIMER3(from, limit) gettimeofday(&tv2, NULL); \
-	                        diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit)
-#define DELTA_TIMER	diff_tv(&tv1, &tv2)
+	                        slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit)
+#define DELTA_TIMER	slurm_diff_tv(&tv1, &tv2)
 #define TIME_STR 	tv_str
 
 /*
- * diff_tv_str - build a string showing the time difference between two times
+ * slurm_diff_tv_str - build a string showing the time difference between two
+ *		       times
  * IN tv1 - start of event
  * IN tv2 - end of event
  * OUT tv_str - place to put delta time in format "usec=%ld"
@@ -61,16 +62,16 @@
  * IN from - Name to be printed on long diffs
  * IN limit - limit to wait
  */
-extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-			       char *tv_str, int len_tv_str, char *from,
-			       long limit);
+extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
+			      char *tv_str, int len_tv_str, char *from,
+			      long limit);
 
 /*
- * diff_tv - return the difference between two times
+ * slurm_diff_tv - return the difference between two times
  * IN tv1 - start of event
  * IN tv2 - end of event
  * RET time in micro-seconds
  */
-extern inline long diff_tv(struct timeval *tv1, struct timeval *tv2);
+extern long slurm_diff_tv(struct timeval *tv1, struct timeval *tv2);
 
 #endif
