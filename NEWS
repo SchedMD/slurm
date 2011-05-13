@@ -188,6 +188,9 @@ documents those changes that are of interest to users and admins.
     Tyler Strickland.
  -- Reset a job's priority to zero (suspended) when Moab requeues the job.
     Patch from Par Andersson, NSC.
+ -- When enforcing accounting, fix polling for unknown uids for users after
+    the slurmctld started.  Previously one would have to issue a reconfigure
+    to the slurmctld to have it look for new uids.
 
 * Changes in SLURM 2.2.5
 ========================
