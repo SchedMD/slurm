@@ -48,9 +48,9 @@
  * IN len_tv_str - size of tv_str in bytes
  * IN from - where the function was called form
  */
-inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-			char *tv_str, int len_tv_str, char *from,
-			long limit)
+extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
+			       char *tv_str, int len_tv_str, char *from,
+			       long limit)
 {
 	long delta_t;
 
@@ -74,7 +74,7 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  * IN tv2 - end of event
  * RET time in micro-seconds
  */
-inline long diff_tv(struct timeval *tv1, struct timeval *tv2)
+extern inline long diff_tv(struct timeval *tv1, struct timeval *tv2)
 {
 	long delta_t;
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;

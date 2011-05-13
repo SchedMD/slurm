@@ -382,7 +382,7 @@ uint32_t slurm_get_epilog_msg_time(void)
 /* slurm_get_env_timeout
  * return default timeout for srun/sbatch --get-user-env option
  */
-inline int slurm_get_env_timeout(void)
+extern int slurm_get_env_timeout(void)
 {
 	int timeout = 0;
 	slurm_ctl_conf_t *conf;

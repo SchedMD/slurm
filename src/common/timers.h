@@ -71,6 +71,6 @@ extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  * IN tv2 - end of event
  * RET time in micro-seconds
  */
-inline long diff_tv(struct timeval *tv1, struct timeval *tv2);
+extern inline long diff_tv(struct timeval *tv1, struct timeval *tv2);
 
 #endif
