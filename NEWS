@@ -186,6 +186,8 @@ documents those changes that are of interest to users and admins.
  -- Get slurmd -f option working. Patch from Andriy Grytsenko.
  -- Fix for linking problem on OSX. Patches from Jon Bringhurst (LANL) and
     Tyler Strickland.
+ -- Reset a job's priority to zero (suspended) when Moab requeues the job.
+    Patch from Par Andersson, NSC.
 
 * Changes in SLURM 2.2.5
 ========================

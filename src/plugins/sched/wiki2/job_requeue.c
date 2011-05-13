@@ -85,6 +85,7 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		xfree(job_ptr->details->req_nodes);
 		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	}
+	job_ptr->priority = 0;
 	info("wiki: requeued job %u", jobid);
 	unlock_slurmctld(job_write_lock);
 	snprintf(reply_msg, sizeof(reply_msg),
