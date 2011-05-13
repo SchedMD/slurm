@@ -1082,6 +1082,7 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg);
 extern void slurm_free_job_step_stat(void *object);
 extern void slurm_free_job_step_pids(void *object);
+extern void slurm_free_block_job_info(void *object);
 extern void slurm_free_block_info_members(block_info_t *block_info);
 extern void slurm_free_block_info(block_info_t *block_info);
 void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
