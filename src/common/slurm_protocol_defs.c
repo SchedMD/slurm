@@ -2013,7 +2013,7 @@ void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 	xfree(msg);
 }
 
-inline void slurm_destroy_association_shares_object(void *object)
+extern void slurm_destroy_association_shares_object(void *object)
 {
 	association_shares_object_t *obj_ptr =
 		(association_shares_object_t *)object;
@@ -2046,7 +2046,7 @@ inline void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 	}
 }
 
-void slurm_destroy_priority_factors_object(void *object)
+extern void slurm_destroy_priority_factors_object(void *object)
 {
 	priority_factors_object_t *obj_ptr =
 		(priority_factors_object_t *)object;

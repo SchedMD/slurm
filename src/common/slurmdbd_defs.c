@@ -2530,7 +2530,7 @@ inline void slurmdbd_free_job_start_msg(void *in)
 	}
 }
 
-inline void slurmdbd_free_id_rc_msg(void *in)
+extern void slurmdbd_free_id_rc_msg(void *in)
 {
 	dbd_id_rc_msg_t *msg = (dbd_id_rc_msg_t *)in;
 	xfree(msg);
