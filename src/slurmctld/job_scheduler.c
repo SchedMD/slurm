@@ -54,6 +54,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"

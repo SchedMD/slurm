@@ -72,6 +72,7 @@
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
+#include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
