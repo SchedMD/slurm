@@ -445,7 +445,7 @@ inline void slurmdbd_free_init_msg(dbd_init_msg_t *msg);
 inline void slurmdbd_free_fini_msg(dbd_fini_msg_t *msg);
 inline void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 inline void slurmdbd_free_job_start_msg(void *in);
-inline void slurmdbd_free_id_rc_msg(void *in);
+extern void slurmdbd_free_id_rc_msg(void *in);
 inline void slurmdbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
 inline void slurmdbd_free_list_msg(dbd_list_msg_t *msg);
 inline void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,

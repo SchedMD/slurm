@@ -979,10 +979,10 @@ inline void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 inline void slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
 inline void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg);
 inline void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
-inline void slurm_destroy_association_shares_object(void *object);
+extern void slurm_destroy_association_shares_object(void *object);
 inline void slurm_free_shares_request_msg(shares_request_msg_t *msg);
 inline void slurm_free_shares_response_msg(shares_response_msg_t *msg);
-extern inline void slurm_destroy_priority_factors_object(void *object);
+extern void slurm_destroy_priority_factors_object(void *object);
 inline void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg);
 inline void slurm_free_priority_factors_response_msg(
@@ -1077,14 +1077,13 @@ void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
 void slurm_free_reserve_info_members(reserve_info_t * resv);
-void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
-inline void slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
-inline void slurm_free_step_complete_msg(step_complete_msg_t *msg);
-inline void slurm_free_job_step_stat(void *object);
-inline void slurm_free_job_step_pids(void *object);
-void slurm_free_block_job_info(void *object);
-void slurm_free_block_info_members(block_info_t *block_info);
-void slurm_free_block_info(block_info_t *block_info);
+extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
+extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
+extern void slurm_free_step_complete_msg(step_complete_msg_t *msg);
+extern void slurm_free_job_step_stat(void *object);
+extern void slurm_free_job_step_pids(void *object);
+extern void slurm_free_block_info_members(block_info_t *block_info);
+extern void slurm_free_block_info(block_info_t *block_info);
 void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
 inline void slurm_free_block_info_request_msg(
 		block_info_request_msg_t *msg);
