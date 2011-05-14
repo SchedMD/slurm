@@ -136,6 +136,11 @@ It means that you can use Munge as soon as it is built.</p>
 
 <h3>Build and install Munge</h3>
 
+<p>Note the Munge installation process on Cray systems differs
+somewhat from that described in the 
+<a href="http://code.google.com/p/munge/wiki/InstallationGuide">
+MUNGE Installation Guide</a>.</p>
+
 <p>Munge is the authentication daemon and needed by SLURM.
 <ul>
 <li><i>cp munge_build_script.sh $LIBROOT</i></li>
@@ -438,6 +443,6 @@ ulimit -d unlimited	# max size of a process's data segment in KB
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 April 2011</p></td>
+<p style="text-align:center;">Last modified 14 May 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
