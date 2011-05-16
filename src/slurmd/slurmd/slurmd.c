@@ -705,7 +705,6 @@ _read_config(void)
 	slurm_ctl_conf_t *cf = NULL;
 	bool cr_flag = false, gang_flag = false;
 
-	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -862,7 +861,7 @@ _reconfigure(void)
 	bool did_change;
 
 	_reconfig = 0;
-	_update_logging();
+	slurm_conf_reinit(conf->conffile);
 	_read_config();
 
 	/*
@@ -1198,19 +1197,21 @@ _slurmd_init(void)
 	_process_cmdline(*conf->argc, *conf->argv);
 
 	/*
+	 * Build nodes table like in slurmctld
+	 * This is required by the topology stack
+	 * Node tables setup must preceed _read_config() so that the 
+	 * proper hostname is set.
+	 */
+	slurm_conf_init(conf->conffile);
+	init_node_conf();
+	build_all_nodeline_info(true);
+	build_all_frontend_info();
+
+	/*
 	 * Read global slurm config file, override necessary values from
 	 * defaults and command line.
 	 */
 	_read_config();
-	_update_logging();
-
-	/*
-	 * Build nodes table like in slurmctld
-	 * This is required by the topology stack
-	 */
-	init_node_conf();
-	build_all_nodeline_info(true);
-	build_all_frontend_info();
 
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
