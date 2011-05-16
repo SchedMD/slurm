@@ -1279,6 +1279,7 @@ extern char *node_state_string(uint16_t inx)
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
@@ -1377,6 +1378,8 @@ extern char *node_state_string(uint16_t inx)
 			return "FUTURE*";
 		return "FUTURE";
 	}
+	if (resume_flag)
+		return "RESUME";
 	if (base == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNKNOWN*";
@@ -1391,6 +1394,7 @@ extern char *node_state_string_compact(uint16_t inx)
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
@@ -1491,6 +1495,8 @@ extern char *node_state_string_compact(uint16_t inx)
 			return "FUTR*";
 		return "FUTR";
 	}
+	if (resume_flag)
+		return "RESM";
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNK*";
