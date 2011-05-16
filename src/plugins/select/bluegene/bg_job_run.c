@@ -72,8 +72,9 @@ enum update_op {START_OP, TERM_OP, SYNC_OP};
 typedef struct {
 	char *bg_block_id;
 	char *blrtsimage;       /* BlrtsImage for this block */
-	uint16_t conn_type[SYSTEM_DIMENSIONS]; /* needed to boot small
-				   blocks into HTC mode or not */
+	uint16_t conn_type[HIGHEST_DIMENSIONS]; /* needed to boot small
+						   blocks into HTC
+						   mode or not */
 	struct job_record *job_ptr;	/* pointer to job running on
 					 * block or NULL if no job */
 	char *linuximage;       /* LinuxImage for this block */

@@ -50,7 +50,10 @@ struct select_jobinfo {
 	bg_record_t *bg_record; /* For internal use only DO NOT PACK */
 	char *bg_block_id;	/* Blue Gene block ID */
 	char *blrtsimage;       /* BlrtsImage for this block */
-	uint32_t cnode_cnt;     /* how many cnodes in block running job */
+	uint32_t block_cnode_cnt; /* how many cnodes in the block
+				   * This is used to say we are
+				   * running a sub-block job. */
+	uint32_t cnode_cnt;     /* how many cnodes in job running on block */
 	uint16_t conn_type[HIGHEST_DIMENSIONS];	/* see enum connection_type */
 	uint16_t dim_cnt;       /* how many dimensions this
 				 * represents in most cases this will

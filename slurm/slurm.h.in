@@ -331,7 +331,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_BLOCK_ID,	/* data-> char *bg_block_id */
 	SELECT_JOBDATA_NODES,	/* data-> char *nodes */
 	SELECT_JOBDATA_IONODES,	/* data-> char *ionodes */
-	SELECT_JOBDATA_NODE_CNT,	/* data-> uint32_t node_cnt */
+	SELECT_JOBDATA_NODE_CNT,	/* data-> uint32_t cnode_cnt */
 	SELECT_JOBDATA_ALTERED,    /* data-> uint16_t altered */
 	SELECT_JOBDATA_BLRTS_IMAGE,/* data-> char *blrtsimage */
 	SELECT_JOBDATA_LINUX_IMAGE,/* data-> char *linuximage */
@@ -343,6 +343,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_PTR,	/* data-> select_jobinfo_t *jobinfo */
 	SELECT_JOBDATA_BLOCK_PTR, /* data-> bg_record_t *bg_record */
 	SELECT_JOBDATA_DIM_CNT, /* data-> uint16_t dim_cnt */
+	SELECT_JOBDATA_BLOCK_NODE_CNT,	/* data-> uint32_t block_cnode_cnt */
 };
 
 enum select_nodedata_type {

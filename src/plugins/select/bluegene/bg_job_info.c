@@ -68,6 +68,7 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	jobinfo->reboot = (uint16_t) NO_VAL;
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;
+	jobinfo->block_cnode_cnt = NO_VAL;
 	jobinfo->cnode_cnt = NO_VAL;
 
 	/* This bitstr is created when used. */
@@ -158,17 +159,27 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		jobinfo->rotate = *uint16;
 		break;
 	case SELECT_JOBDATA_CONN_TYPE:
-		for (i=0; i<jobinfo->dim_cnt; i++) {
+		for (i=0; i<jobinfo->dim_cnt; i++)
 			jobinfo->conn_type[i] = uint16[i];
-		}
-		break;
-	case SELECT_JOBDATA_BLOCK_PTR:
-		jobinfo->bg_record = bg_record;
 		break;
 	case SELECT_JOBDATA_BLOCK_ID:
 		/* we xfree() any preset value to avoid a memory leak */
 		xfree(jobinfo->bg_block_id);
 		jobinfo->bg_block_id = xstrdup(tmp_char);
+		break;
+	case SELECT_JOBDATA_BLOCK_NODE_CNT:
+		jobinfo->block_cnode_cnt = *uint32;
+		break;
+	case SELECT_JOBDATA_BLOCK_PTR:
+		jobinfo->bg_record = bg_record;
+		xfree(jobinfo->bg_block_id);
+		if (bg_record) {
+			jobinfo->bg_block_id = xstrdup(bg_record->bg_block_id);
+			jobinfo->block_cnode_cnt = bg_record->cnode_cnt;
+		} else {
+			jobinfo->bg_block_id = xstrdup("unassigned");
+			jobinfo->block_cnode_cnt = 0;
+		}
 		break;
 	case SELECT_JOBDATA_NODES:
 		xfree(jobinfo->mp_str);
@@ -289,6 +300,9 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 		else
 			*tmp_char = xstrdup(jobinfo->bg_block_id);
 		break;
+	case SELECT_JOBDATA_BLOCK_NODE_CNT:
+		*uint32 = jobinfo->block_cnode_cnt;
+		break;
 	case SELECT_JOBDATA_BLOCK_PTR:
 		*bg_record = jobinfo->bg_record;
 		break;
@@ -369,10 +383,12 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 		       sizeof(rc->conn_type));
 		rc->reboot = jobinfo->reboot;
 		rc->rotate = jobinfo->rotate;
+		rc->bg_record = jobinfo->bg_record;
 		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 		rc->magic = JOBINFO_MAGIC;
 		rc->mp_str = xstrdup(jobinfo->mp_str);
 		rc->ionode_str = xstrdup(jobinfo->ionode_str);
+		rc->block_cnode_cnt = jobinfo->block_cnode_cnt;
 		rc->cnode_cnt = jobinfo->cnode_cnt;
 		rc->altered = jobinfo->altered;
 		rc->blrtsimage = xstrdup(jobinfo->blrtsimage);
@@ -417,6 +433,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			pack16(jobinfo->reboot, buffer);
 			pack16(jobinfo->rotate, buffer);
 
+			pack32(jobinfo->block_cnode_cnt, buffer);
 			pack32(jobinfo->cnode_cnt, buffer);
 
 			packstr(jobinfo->bg_block_id, buffer);
@@ -436,7 +453,8 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			for (i=0; i<((dims*2)+2); i++) {
 				pack16((uint16_t) 0, buffer);
 			}
-			pack32((uint32_t) 0, buffer); //node_cnt
+			pack32((uint32_t) 0, buffer); //block_cnode_cnt
+			pack32((uint32_t) 0, buffer); //cnode_cnt
 			packnull(buffer); //bg_block_id
 			packnull(buffer); //nodes
 			packnull(buffer); //ionodes
@@ -571,6 +589,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		safe_unpack16(&(jobinfo->reboot), buffer);
 		safe_unpack16(&(jobinfo->rotate), buffer);
 
+		safe_unpack32(&(jobinfo->block_cnode_cnt), buffer);
 		safe_unpack32(&(jobinfo->cnode_cnt), buffer);
 
 		safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint32_tmp,
