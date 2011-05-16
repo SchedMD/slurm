@@ -1510,10 +1510,22 @@ extern int resume_block(bg_record_t *bg_record)
 	if (bg_record->job_running > NO_JOB_RUNNING)
 		return SLURM_SUCCESS;
 
-	if (bg_record->state == RM_PARTITION_ERROR)
+	if (bg_record->state == RM_PARTITION_ERROR) {
+		/* Since we are resuming we don't want to set it to
+		   something that could get us in trouble later, so
+		   just set it to NAV and the poller will update it
+		   next time around.
+		*/
+		bg_record->state = RM_PARTITION_NAV;
 		info("Block %s put back into service after "
 		     "being in an error state.",
 		     bg_record->bg_block_id);
+	}
+
+#ifndef HAVE_BG_FILES
+	/* On a simulated system the block is always returned free. */
+	bg_record->state = RM_PARTITION_FREE;
+#endif
 
 	if (remove_from_bg_list(bg_lists->job_running, bg_record)
 	    == SLURM_SUCCESS)
@@ -1522,9 +1534,6 @@ extern int resume_block(bg_record_t *bg_record)
 		remove_from_bg_list(bg_lists->booted, bg_record);
 
 	bg_record->job_running = NO_JOB_RUNNING;
-#ifndef HAVE_BG_FILES
-	bg_record->state = RM_PARTITION_FREE;
-#endif
 	xfree(bg_record->reason);
 
 	last_bg_update = time(NULL);

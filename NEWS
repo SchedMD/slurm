@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- When enforcing accounting, fix polling for unknown uids for users after
     the slurmctld started.  Previously one would have to issue a reconfigure
     to the slurmctld to have it look for new uids.
+ -- BLUEGENE - if a block goes into an error state.  Fix issue where accounting
+    wasn't updated correctly when the block was resumed.
 
 * Changes in SLURM 2.2.5
 ========================
