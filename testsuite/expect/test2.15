@@ -50,13 +50,19 @@ if {[test_front_end] != 0} {
 }
 
 set node_cnt 2
-set available [available_nodes [default_partition]]
+set def_part [default_partition]
+if {[string compare $def_part ""] == 0} {
+	send_user "\nWARNING: No default partition\n"
+	exit $exit_code
+}
+set available [available_nodes $def_part]
 if {$available < $node_cnt} {
-    send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
-    exit $exit_code
+	send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
+	exit $exit_code
 }
 
-
+# NOTE: The second sleep command in task 1 is to deal with a possible race condition in which
+# the first sleep command is killed and the shell starts the second command before it is killed
 make_bash_script $file_in "
 if \[ \$SLURM_PROCID = 0 \]; then
 	$bin_echo JOBID=\$SLURM_JOB_ID
@@ -66,6 +72,7 @@ if \[ \$SLURM_PROCID = 0 \]; then
 	$bin_echo \"Proc \$SLURM_PROCID terminated properly\"
 else
 	$bin_sleep 10
+	$bin_sleep 1
 	$bin_echo \"Proc \$SLURM_PROCID terminated improperly, not killed\"
 	exit 0
 fi
