@@ -44,8 +44,6 @@
 
 #include "src/slurmctld/slurmctld.h"
 
-#define AGENT_IS_THREAD  	 1	/* set if agent itself a thread of
-					 * slurmctld, 0 for function call */
 #define AGENT_THREAD_COUNT	10	/* maximum active threads per agent */
 #define COMMAND_TIMEOUT 	30	/* command requeue or error, seconds */
 #define MAX_AGENT_CNT		(MAX_SERVER_THREADS / (AGENT_THREAD_COUNT + 2))
