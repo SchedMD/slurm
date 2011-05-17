@@ -90,12 +90,19 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	hostlist_t hl = hostlist_create(NULL);
 	bool bad_node = 0;
 
+	/*
+	 * When obtaining the initial configuration, we can not allow ALPS to
+	 * fail. If there is a problem at this stage it is better to restart
+	 * SLURM completely, after investigating (and/or fixing) the cause.
+	 */
 	inv = get_full_inventory(version);
 	if (inv == NULL)
-		/* FIXME: should retry here if the condition is transient */
 		fatal("failed to get BASIL %s ranking", bv_names_long[version]);
 	else if (!inv->batch_total)
 		fatal("system has no usable batch compute nodes");
+	else if (inv->batch_total < node_cnt)
+		error("ALPS sees only %d/%d slurm.conf nodes", inv->batch_total,
+			node_cnt);
 
 	debug("BASIL %s RANKING INVENTORY: %d/%d batch nodes",
 	      bv_names_long[version], inv->batch_avail, inv->batch_total);
@@ -335,7 +342,7 @@ static int basil_get_initial_state(void)
 				debug3("Initial DOWN node %s - %s",
 					node_ptr->name, node_ptr->reason);
 			} else {
-				debug("Initial DOWN node %s - %s",
+				info("Initial DOWN node %s - %s",
 					node_ptr->name, reason);
 				node_ptr->reason = xstrdup(reason);
 			}
@@ -480,6 +487,19 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				xfree(node_ptr->reason);
 				node_ptr->reason = xstrdup("node data unknown -"
 							   " disabled on SMW?");
+				error("%s: %s", node_ptr->name, node_ptr->reason);
+			} else if (is_null[COL_X] || is_null[COL_Y]
+						  || is_null[COL_Z]) {
+				/*
+				 * Similar case to the one above, observed when
+				 * a blade has been removed. Node will not
+				 * likely show up in ALPS.
+				 */
+				x_coord = y_coord = z_coord = 0;
+				node_ptr->node_state = NODE_STATE_DOWN;
+				xfree(node_ptr->reason);
+				node_ptr->reason = xstrdup("unknown coordinates -"
+							   " hardware failure?");
 				error("%s: %s", node_ptr->name, node_ptr->reason);
 			} else if (node_cpus < node_ptr->config_ptr->cpus) {
 				/*
