@@ -1092,8 +1092,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-			verbose("step got %u of %d nodes",
-				step_spec->min_nodes, nodes_picked_cnt);
+			verbose("step picked %d of %u nodes",
+				nodes_picked_cnt, step_spec->min_nodes);
 		}
 		if (nodes_idle)
 			node_avail_cnt = bit_set_count(nodes_idle);
@@ -1121,7 +1121,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_needed = 0;
 			}
 		}
-		if (nodes_idle)
+		if (nodes_avail)
 			node_avail_cnt = bit_set_count(nodes_avail);
 		else
 			node_avail_cnt = 0;
