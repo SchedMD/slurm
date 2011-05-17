@@ -90,12 +90,19 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	hostlist_t hl = hostlist_create(NULL);
 	bool bad_node = 0;
 
+	/*
+	 * When obtaining the initial configuration, we can not allow ALPS to
+	 * fail. If there is a problem at this stage it is better to restart
+	 * SLURM completely, after investigating (and/or fixing) the cause.
+	 */
 	inv = get_full_inventory(version);
 	if (inv == NULL)
-		/* FIXME: should retry here if the condition is transient */
 		fatal("failed to get BASIL %s ranking", bv_names_long[version]);
 	else if (!inv->batch_total)
 		fatal("system has no usable batch compute nodes");
+	else if (inv->batch_total < node_cnt)
+		error("ALPS sees only %d/%d slurm.conf nodes", inv->batch_total,
+			node_cnt);
 
 	debug("BASIL %s RANKING INVENTORY: %d/%d batch nodes",
 	      bv_names_long[version], inv->batch_avail, inv->batch_total);
@@ -335,7 +342,7 @@ static int basil_get_initial_state(void)
 				debug3("Initial DOWN node %s - %s",
 					node_ptr->name, node_ptr->reason);
 			} else {
-				debug("Initial DOWN node %s - %s",
+				info("Initial DOWN node %s - %s",
 					node_ptr->name, reason);
 				node_ptr->reason = xstrdup(reason);
 			}
@@ -386,7 +393,23 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				"WHERE processor_id = ? ";
 	const int	PARAM_COUNT = 1;	/* node id */
 	MYSQL_BIND	params[PARAM_COUNT];
-
+	/* Output parameters */
+	enum query_columns {
+		/* integer data */
+		COL_X,		/* X coordinate		*/
+		COL_Y,		/* Y coordinate		*/
+		COL_Z,		/* Z coordinate		*/
+		COL_CAB,	/* cabinet position		*/
+		COL_ROW,	/* row position			*/
+		COL_CAGE,	/* cage number (0..2)		*/
+		COL_SLOT,	/* slot number (0..7)		*/
+		COL_CPU,	/* node number (0..3)		*/
+		COL_CORES,	/* number of cores per node	*/
+		COL_MEMORY,	/* rounded-down memory in MB	*/
+		/* string data */
+		COL_TYPE,	/* {service, compute}		*/
+		COLUMN_COUNT	/* sentinel */
+	};
 	int		x_coord, y_coord, z_coord;
 	int		cab, row, cage, slot, cpu;
 	unsigned int	node_cpus, node_mem;
@@ -480,6 +503,19 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				xfree(node_ptr->reason);
 				node_ptr->reason = xstrdup("node data unknown -"
 							   " disabled on SMW?");
+				error("%s: %s", node_ptr->name, node_ptr->reason);
+			} else if (is_null[COL_X] || is_null[COL_Y]
+						  || is_null[COL_Z]) {
+				/*
+				 * Similar case to the one above, observed when
+				 * a blade has been removed. Node will not
+				 * likely show up in ALPS.
+				 */
+				x_coord = y_coord = z_coord = 0;
+				node_ptr->node_state = NODE_STATE_DOWN;
+				xfree(node_ptr->reason);
+				node_ptr->reason = xstrdup("unknown coordinates -"
+							   " hardware failure?");
 				error("%s: %s", node_ptr->name, node_ptr->reason);
 			} else if (node_cpus < node_ptr->config_ptr->cpus) {
 				/*

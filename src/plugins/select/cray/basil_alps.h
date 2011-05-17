@@ -45,24 +45,6 @@
 #define BASIL_STRING_LONG	64
 #define BASIL_ERROR_BUFFER_SIZE	256
 
-/* Output parameters */
-enum query_columns {
-	/* integer data */
-	COL_X,		/* X coordinate		*/
-	COL_Y,		/* Y coordinate		*/
-	COL_Z,		/* Z coordinate		*/
-	COL_CAB,	/* cabinet position		*/
-	COL_ROW,	/* row position			*/
-	COL_CAGE,	/* cage number (0..2)		*/
-	COL_SLOT,	/* slot number (0..7)		*/
-	COL_CPU,	/* node number (0..3)		*/
-	COL_CORES,	/* number of cores per node	*/
-	COL_MEMORY,	/* rounded-down memory in MB	*/
-	/* string data */
-	COL_TYPE,	/* {service, compute }		*/
-	COLUMN_COUNT	/* sentinel */
-};
-
 /*
  * Basil XML tags
  */
