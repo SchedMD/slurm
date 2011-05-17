@@ -73,6 +73,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+#include "src/common/timers.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 

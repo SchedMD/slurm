@@ -275,83 +275,83 @@ extern int slurm_sort_char_list_desc(char *name_a, char *name_b)
 	return 0;
 }
 
-void slurm_free_last_update_msg(last_update_msg_t * msg)
+extern void slurm_free_last_update_msg(last_update_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_shutdown_msg(shutdown_msg_t * msg)
+extern void slurm_free_shutdown_msg(shutdown_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg)
+extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_return_code_msg(return_code_msg_t * msg)
+extern void slurm_free_return_code_msg(return_code_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_id_msg(job_id_msg_t * msg)
+extern void slurm_free_job_id_msg(job_id_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
+extern void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_id_request_msg(job_id_request_msg_t * msg)
+extern void slurm_free_job_id_request_msg(job_id_request_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_update_step_msg(step_update_request_msg_t * msg)
+extern void slurm_free_update_step_msg(step_update_request_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
+extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
+extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
+extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_step_info_request_msg(job_step_info_request_msg_t *msg)
+extern void slurm_free_job_step_info_request_msg(job_step_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_front_end_info_request_msg
+extern void slurm_free_front_end_info_request_msg
 		(front_end_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_node_info_request_msg(node_info_request_msg_t *msg)
+extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_part_info_request_msg(part_info_request_msg_t *msg)
+extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_desc_msg(job_desc_msg_t * msg)
+extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 {
 	int i;
 
@@ -400,7 +400,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	}
 }
 
-void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
+extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 {
 	int i;
 
@@ -439,7 +439,7 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 	}
 }
 
-void slurm_free_job_info(job_info_t * job)
+extern void slurm_free_job_info(job_info_t * job)
 {
 	if (job) {
 		slurm_free_job_info_members(job);
@@ -447,7 +447,7 @@ void slurm_free_job_info(job_info_t * job)
 	}
 }
 
-void slurm_free_job_info_members(job_info_t * job)
+extern void slurm_free_job_info_members(job_info_t * job)
 {
 	if (job) {
 		xfree(job->account);
@@ -480,7 +480,7 @@ void slurm_free_job_info_members(job_info_t * job)
 	}
 }
 
-void slurm_free_node_registration_status_msg(
+extern void slurm_free_node_registration_status_msg(
 	slurm_node_registration_status_msg_t * msg)
 {
 	if (msg) {
@@ -497,7 +497,7 @@ void slurm_free_node_registration_status_msg(
 	}
 }
 
-void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
+extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->name);
@@ -506,7 +506,7 @@ void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
 	}
 }
 
-void slurm_free_update_node_msg(update_node_msg_t * msg)
+extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->features);
@@ -517,7 +517,7 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 	}
 }
 
-void slurm_free_update_part_msg(update_part_msg_t * msg)
+extern void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
 		slurm_free_partition_info_members((partition_info_t *)msg);
@@ -525,7 +525,7 @@ void slurm_free_update_part_msg(update_part_msg_t * msg)
 	}
 }
 
-void slurm_free_delete_part_msg(delete_part_msg_t * msg)
+extern void slurm_free_delete_part_msg(delete_part_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->name);
@@ -533,7 +533,7 @@ void slurm_free_delete_part_msg(delete_part_msg_t * msg)
 	}
 }
 
-void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
+extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->accounts);
@@ -547,7 +547,7 @@ void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 	}
 }
 
-void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
+extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->name);
@@ -555,13 +555,13 @@ void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
 	}
 }
 
-void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg)
+extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
-					    msg)
+extern void slurm_free_job_step_create_request_msg(
+		job_step_create_request_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->features);
@@ -575,13 +575,14 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 	}
 }
 
-void slurm_free_complete_job_allocation_msg(
+extern void slurm_free_complete_job_allocation_msg(
 	complete_job_allocation_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_complete_batch_script_msg(complete_batch_script_msg_t * msg)
+extern void slurm_free_complete_batch_script_msg(
+		complete_batch_script_msg_t * msg)
 {
 	if (msg) {
 		jobacct_gather_g_destroy(msg->jobacct);
@@ -591,7 +592,8 @@ void slurm_free_complete_batch_script_msg(complete_batch_script_msg_t * msg)
 }
 
 
-void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *msg)
+extern void slurm_free_launch_tasks_response_msg(
+		launch_tasks_response_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
@@ -601,7 +603,7 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *msg)
 	}
 }
 
-void slurm_free_kill_job_msg(kill_job_msg_t * msg)
+extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
 	if (msg) {
 		int i;
@@ -616,17 +618,17 @@ void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 	}
 }
 
-void slurm_free_signal_job_msg(signal_job_msg_t * msg)
+extern void slurm_free_signal_job_msg(signal_job_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_update_job_time_msg(job_time_msg_t * msg)
+extern void slurm_free_update_job_time_msg(job_time_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_task_exit_msg(task_exit_msg_t * msg)
+extern void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->task_id_list);
@@ -634,7 +636,7 @@ void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 	}
 }
 
-void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
+extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 {
 	int i;
 
@@ -691,12 +693,14 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg);
 }
 
-void slurm_free_task_user_managed_io_stream_msg(task_user_managed_io_msg_t *msg)
+extern void slurm_free_task_user_managed_io_stream_msg(
+		task_user_managed_io_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
+extern void slurm_free_reattach_tasks_request_msg(
+		reattach_tasks_request_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->resp_port);
@@ -706,7 +710,8 @@ void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 	}
 }
 
-void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
+extern void slurm_free_reattach_tasks_response_msg(
+		reattach_tasks_response_msg_t *msg)
 {
 	int i;
 
@@ -722,12 +727,12 @@ void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
 	}
 }
 
-void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg)
+extern void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg)
+extern void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->image_dir);
@@ -735,7 +740,7 @@ void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg)
 	}
 }
 
-void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
+extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
@@ -744,12 +749,13 @@ void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 	}
 }
 
-inline void slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg)
+extern void slurm_free_srun_job_complete_msg(
+		srun_job_complete_msg_t * msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
+extern void slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
 {
 	int i;
 
@@ -761,12 +767,12 @@ inline void slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
 	}
 }
 
-inline void slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
+extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
+extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->nodelist);
@@ -774,7 +780,7 @@ inline void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
 	}
 }
 
-inline void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
+extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->nodelist);
@@ -782,12 +788,12 @@ inline void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
 	}
 }
 
-inline void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
+extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
+extern void slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 {
 	if (user_msg) {
 		xfree(user_msg->msg);
@@ -795,7 +801,7 @@ inline void slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 	}
 }
 
-inline void slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
+extern void slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->image_dir);
@@ -803,7 +809,7 @@ inline void slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 	}
 }
 
-inline void slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
+extern void slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->error_msg);
@@ -811,7 +817,7 @@ inline void slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
 	}
 }
 
-inline void slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
+extern void slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->error_msg);
@@ -819,24 +825,24 @@ inline void slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
 	}
 }
 
-inline void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
+extern void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->error_msg);
 		xfree(msg);
 	}
 }
-inline void slurm_free_suspend_msg(suspend_msg_t *msg)
+extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg)
+extern void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg)
+extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg)
 {
 	uint32_t i;
 
@@ -911,7 +917,7 @@ extern char *job_reason_string(enum job_state_reason inx)
 	}
 }
 
-inline void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
+extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostname);
@@ -919,7 +925,7 @@ inline void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 	}
 }
 
-inline void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
+extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 {
         if (msg) {
                 xfree(msg->node_list);
@@ -1047,7 +1053,7 @@ extern char *sched_param_type_string(uint16_t select_type_param)
 	return select_str;
 }
 
-char *job_state_string(uint16_t inx)
+extern char *job_state_string(uint16_t inx)
 {
 	/* Process JOB_STATE_FLAGS */
 	if (inx & JOB_COMPLETING)
@@ -1082,7 +1088,7 @@ char *job_state_string(uint16_t inx)
 	}
 }
 
-char *job_state_string_compact(uint16_t inx)
+extern char *job_state_string_compact(uint16_t inx)
 {
 	/* Process JOB_STATE_FLAGS */
 	if (inx & JOB_COMPLETING)
@@ -1117,7 +1123,7 @@ char *job_state_string_compact(uint16_t inx)
 	}
 }
 
-inline static bool _job_name_test(int state_num, const char *state_name)
+static bool _job_name_test(int state_num, const char *state_name)
 {
 	if (!strcasecmp(state_name, job_state_string(state_num)) ||
 	    !strcasecmp(state_name, job_state_string_compact(state_num))) {
@@ -1126,7 +1132,7 @@ inline static bool _job_name_test(int state_num, const char *state_name)
 	return false;
 }
 
-int job_state_num(const char *state_name)
+extern int job_state_num(const char *state_name)
 {
 	int i;
 
@@ -1143,7 +1149,7 @@ int job_state_num(const char *state_name)
 	return -1;
 }
 
-char *trigger_res_type(uint16_t res_type)
+extern char *trigger_res_type(uint16_t res_type)
 {
 	if      (res_type == TRIGGER_RES_TYPE_JOB)
 		return "job";
@@ -1161,7 +1167,7 @@ char *trigger_res_type(uint16_t res_type)
 		return "unknown";
 }
 
-char *trigger_type(uint32_t trig_type)
+extern char *trigger_type(uint32_t trig_type)
 {
 	if      (trig_type == TRIGGER_TYPE_UP)
 		return "up";
@@ -1266,13 +1272,14 @@ extern char *reservation_flags_string(uint16_t flags)
 	return flag_str;
 }
 
-char *node_state_string(uint16_t inx)
+extern char *node_state_string(uint16_t inx)
 {
 	int  base            = (inx & NODE_STATE_BASE);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
@@ -1371,6 +1378,8 @@ char *node_state_string(uint16_t inx)
 			return "FUTURE*";
 		return "FUTURE";
 	}
+	if (resume_flag)
+		return "RESUME";
 	if (base == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNKNOWN*";
@@ -1379,12 +1388,13 @@ char *node_state_string(uint16_t inx)
 	return "?";
 }
 
-char *node_state_string_compact(uint16_t inx)
+extern char *node_state_string_compact(uint16_t inx)
 {
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
@@ -1485,6 +1495,8 @@ char *node_state_string_compact(uint16_t inx)
 			return "FUTR*";
 		return "FUTR";
 	}
+	if (resume_flag)
+		return "RESM";
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNK*";
@@ -1494,8 +1506,7 @@ char *node_state_string_compact(uint16_t inx)
 }
 
 
-extern void
-private_data_string(uint16_t private_data, char *str, int str_len)
+extern void private_data_string(uint16_t private_data, char *str, int str_len)
 {
 	if (str_len > 0)
 		str[0] = '\0';
@@ -1537,8 +1548,7 @@ private_data_string(uint16_t private_data, char *str, int str_len)
 		strcat(str, "none");
 }
 
-extern void
-accounting_enforce_string(uint16_t enforce, char *str, int str_len)
+extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 {
 	if (str_len > 0)
 		str[0] = '\0';
@@ -1666,7 +1676,7 @@ extern char *bg_block_state_string(uint16_t state)
  * IN msg - pointer to allocation response message
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
-void slurm_free_resource_allocation_response_msg (
+extern void slurm_free_resource_allocation_response_msg (
 	resource_allocation_response_msg_t * msg)
 {
 	if (msg) {
@@ -1685,7 +1695,7 @@ void slurm_free_resource_allocation_response_msg (
  * IN msg - pointer to response message from slurm_sbcast_lookup()
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
-void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
+extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_addr);
@@ -1701,7 +1711,8 @@ void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
  * IN msg - pointer to job allocation info response message
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
-void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
+extern void slurm_free_job_alloc_info_response_msg(
+		job_alloc_info_response_msg_t *msg)
 {
 	if (msg) {
 		select_g_select_jobinfo_free(msg->select_jobinfo);
@@ -1721,7 +1732,7 @@ void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
  * IN msg - pointer to job step create response message
  * NOTE: buffer is loaded by slurm_job_step_create
  */
-void slurm_free_job_step_create_response_msg(
+extern void slurm_free_job_step_create_response_msg(
 	job_step_create_response_msg_t * msg)
 {
 	if (msg) {
@@ -1744,7 +1755,7 @@ void slurm_free_job_step_create_response_msg(
  * IN msg - pointer to job submit response message
  * NOTE: buffer is loaded by slurm_submit_batch_job
  */
-void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
+extern void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
 {
 	if (msg)
 		xfree(msg);
@@ -1756,7 +1767,7 @@ void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
  * IN msg - pointer to slurm control information response message
  * NOTE: buffer is loaded by slurm_load_jobs
  */
-void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
+extern void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 {
 	if (config_ptr) {
 		free_slurm_conf(config_ptr, 0);
@@ -1785,7 +1796,7 @@ extern void slurm_free_slurmd_status(slurmd_status_t* slurmd_status_ptr)
  * IN msg - pointer to job information response message
  * NOTE: buffer is loaded by slurm_load_job.
  */
-void slurm_free_job_info_msg(job_info_msg_t * job_buffer_ptr)
+extern void slurm_free_job_info_msg(job_info_msg_t * job_buffer_ptr)
 {
 	if (job_buffer_ptr) {
 		if (job_buffer_ptr->job_array) {
@@ -1814,7 +1825,7 @@ static void _free_all_job_info(job_info_msg_t *msg)
  * IN msg - pointer to job step information response message
  * NOTE: buffer is loaded by slurm_get_job_steps.
  */
-void slurm_free_job_step_info_response_msg(job_step_info_response_msg_t *
+extern void slurm_free_job_step_info_response_msg(job_step_info_response_msg_t *
 					   msg)
 {
 	if (msg != NULL) {
@@ -1838,7 +1849,7 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg)
 		slurm_free_job_step_info_members (&msg->job_steps[i]);
 }
 
-void slurm_free_job_step_info_members (job_step_info_t * msg)
+extern void slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
 		xfree(msg->ckpt_dir);
@@ -1858,7 +1869,7 @@ void slurm_free_job_step_info_members (job_step_info_t * msg)
  * IN msg - pointer to front_end information response message
  * NOTE: buffer is loaded by slurm_load_front_end.
  */
-void slurm_free_front_end_info_msg(front_end_info_msg_t * msg)
+extern void slurm_free_front_end_info_msg(front_end_info_msg_t * msg)
 {
 	if (msg) {
 		if (msg->front_end_array) {
@@ -1880,7 +1891,7 @@ static void _free_all_front_end_info(front_end_info_msg_t *msg)
 		slurm_free_front_end_info_members(&msg->front_end_array[i]);
 }
 
-void slurm_free_front_end_info_members(front_end_info_t * front_end)
+extern void slurm_free_front_end_info_members(front_end_info_t * front_end)
 {
 	if (front_end) {
 		xfree(front_end->name);
@@ -1893,7 +1904,7 @@ void slurm_free_front_end_info_members(front_end_info_t * front_end)
  * IN msg - pointer to node information response message
  * NOTE: buffer is loaded by slurm_load_node.
  */
-void slurm_free_node_info_msg(node_info_msg_t * msg)
+extern void slurm_free_node_info_msg(node_info_msg_t * msg)
 {
 	if (msg) {
 		if (msg->node_array) {
@@ -1915,7 +1926,7 @@ static void _free_all_node_info(node_info_msg_t *msg)
 		slurm_free_node_info_members(&msg->node_array[i]);
 }
 
-void slurm_free_node_info_members(node_info_t * node)
+extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->arch);
@@ -1937,7 +1948,7 @@ void slurm_free_node_info_members(node_info_t * node)
  * IN msg - pointer to partition information response message
  * NOTE: buffer is loaded by slurm_load_partitions
  */
-void slurm_free_partition_info_msg(partition_info_msg_t * msg)
+extern void slurm_free_partition_info_msg(partition_info_msg_t * msg)
 {
 	if (msg) {
 		if (msg->partition_array) {
@@ -1962,7 +1973,7 @@ static void  _free_all_partitions(partition_info_msg_t *msg)
 
 }
 
-void slurm_free_partition_info_members(partition_info_t * part)
+extern void slurm_free_partition_info_members(partition_info_t * part)
 {
 	if (part) {
 		xfree(part->allow_alloc_nodes);
@@ -1980,7 +1991,7 @@ void slurm_free_partition_info_members(partition_info_t * part)
  * IN msg - pointer to reservation information response message
  * NOTE: buffer is loaded by slurm_load_reservation
  */
-void slurm_free_reservation_info_msg(reserve_info_msg_t * msg)
+extern void slurm_free_reservation_info_msg(reserve_info_msg_t * msg)
 {
 	if (msg) {
 		if (msg->reservation_array) {
@@ -2005,7 +2016,7 @@ static void  _free_all_reservations(reserve_info_msg_t *msg)
 
 }
 
-void slurm_free_reserve_info_members(reserve_info_t * resv)
+extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 {
 	if (resv) {
 		xfree(resv->accounts);
@@ -2129,12 +2140,12 @@ extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg)
 	}
 }
 
-inline void slurm_free_block_info_request_msg(
+extern void slurm_free_block_info_request_msg(
 	block_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
-inline void slurm_free_trigger_msg(trigger_info_msg_t *msg)
+extern void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 {
 	int i;
 
@@ -2146,17 +2157,17 @@ inline void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 	xfree(msg);
 }
 
-void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg)
+extern void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
+extern void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 {
 	xfree(msg);
 }
 
-inline void slurm_destroy_association_shares_object(void *object)
+extern void slurm_destroy_association_shares_object(void *object)
 {
 	association_shares_object_t *obj_ptr =
 		(association_shares_object_t *)object;
@@ -2169,7 +2180,7 @@ inline void slurm_destroy_association_shares_object(void *object)
 	}
 }
 
-inline void slurm_free_shares_request_msg(shares_request_msg_t *msg)
+extern void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 {
 	if(msg) {
 		if(msg->acct_list)
@@ -2180,7 +2191,7 @@ inline void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 	}
 }
 
-inline void slurm_free_shares_response_msg(shares_response_msg_t *msg)
+extern void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 {
 	if(msg) {
 		if(msg->assoc_shares_list)
@@ -2189,14 +2200,14 @@ inline void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 	}
 }
 
-void slurm_destroy_priority_factors_object(void *object)
+extern void slurm_destroy_priority_factors_object(void *object)
 {
 	priority_factors_object_t *obj_ptr =
 		(priority_factors_object_t *)object;
 	xfree(obj_ptr);
 }
 
-inline void slurm_free_priority_factors_request_msg(
+extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {
 	if(msg) {
@@ -2208,7 +2219,7 @@ inline void slurm_free_priority_factors_request_msg(
 	}
 }
 
-inline void slurm_free_priority_factors_response_msg(
+extern void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg)
 {
 	if(msg) {
@@ -2219,7 +2230,7 @@ inline void slurm_free_priority_factors_response_msg(
 }
 
 
-inline void slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
+extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 {
 	if(msg) {
 		if(msg->update_list)
@@ -2468,7 +2479,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 	return rc;
 }
 
-inline void slurm_free_job_notify_msg(job_notify_msg_t * msg)
+extern void slurm_free_job_notify_msg(job_notify_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->message);

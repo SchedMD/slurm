@@ -894,7 +894,10 @@ preempts jobs by suspending them.
 A suspended job will resume execution once the high priority job
 preempting it completes.
 The \fBSUSPEND\fR may only be used with the \fBGANG\fR option
-(the gang scheduler module performs the job resume operation).
+(the gang scheduler module performs the job resume operation)
+and with \fBPreemptType=preempt/partition_prio\fR (the logic to 
+suspend and resume jobs current only has the data structures to 
+support partitions).
 .RE
 
 .TP

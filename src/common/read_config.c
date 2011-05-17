@@ -725,6 +725,11 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 		return count;
 	} else {
 #ifdef HAVE_FRONT_END
+		/* No FrontendName in slurm.conf. Take the NodeAddr and
+		 * NodeHostName from the first node's record and use that to
+		 * build an equivalent structure to that constructed when
+		 * FrontendName is configured. This is intended for backward
+		 * compatability with SLURM version 2.2. */
 		static slurm_conf_frontend_t local_front_end;
 		static slurm_conf_frontend_t *local_front_end_array[2] =
 			{NULL, NULL};

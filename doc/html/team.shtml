@@ -77,6 +77,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Eygene Ryabinkin (Kurchatov Institute, Russia)</li>
 <li>Federico Sacerdoti (D.E. Shaw)</li>
 <li>Rod Schultz (Bull)</li>
+<li>Tyler Strickland (University of Florida)</li>
 <li>Jeff Squyres (LAM MPI)</li>
 <li>Prashanth Tamraparni (HP, India)</li>
 <li>Jimmy Tang (Trinity College, Ireland)</li>
@@ -88,6 +89,6 @@ organizations. The current SLURM development staff includes: </p>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 May 2011</p>
+<p style="text-align:center;">Last modified 13 May 2011</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1595,8 +1595,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			      starttime, bg_record->mp_str);
 
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_BLOCK_ID,
-					   "unassigned");
+					   SELECT_JOBDATA_BLOCK_PTR,
+					   NULL);
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &bg_record->cnode_cnt);
@@ -1614,10 +1614,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			      SELECT_IS_MODE_RUN_NOW(local_mode));
 
 			if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
-				set_select_jobinfo(
-					job_ptr->select_jobinfo->data,
-					SELECT_JOBDATA_BLOCK_ID,
-					bg_record->bg_block_id);
 				/* Set this up to be the
 				   correct pointer since we
 				   probably are working off a
@@ -1638,10 +1634,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					last_bg_update = time(NULL);
 				}
 			} else {
-				set_select_jobinfo(
-					job_ptr->select_jobinfo->data,
-					SELECT_JOBDATA_BLOCK_ID,
-					"unassigned");
 				set_select_jobinfo(
 					job_ptr->select_jobinfo->data,
 					SELECT_JOBDATA_BLOCK_PTR,

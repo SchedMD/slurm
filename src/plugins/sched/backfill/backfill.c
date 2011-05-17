@@ -117,8 +117,6 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
 static int  _attempt_backfill(void);
-static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-		char *tv_str, int len_tv_str);
 static bool _job_is_completing(void);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
@@ -155,22 +153,6 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 			break;
 	}
 	info("=========================================");
-}
-
-/*
- * _diff_tv_str - build a string showing the time difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
- */
-static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-		char *tv_str, int len_tv_str)
-{
-	long delta_t;
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
 }
 
 /*
@@ -394,8 +376,7 @@ extern void backfill_reconfig(void)
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
 {
-	struct timeval tv1, tv2;
-	char tv_str[20];
+	DEF_TIMERS;
 	time_t now;
 	double wait_time;
 	static time_t last_backfill_time = 0;
@@ -420,15 +401,14 @@ extern void *backfill_agent(void *args)
 		    !avail_front_end() || !_more_work(last_backfill_time))
 			continue;
 
-		gettimeofday(&tv1, NULL);
+		START_TIMER;
 		lock_slurmctld(all_locks);
 		while (_attempt_backfill()) ;
 		last_backfill_time = time(NULL);
 		unlock_slurmctld(all_locks);
-		gettimeofday(&tv2, NULL);
-		_diff_tv_str(&tv1, &tv2, tv_str, 20);
+		END_TIMER;
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
-			info("backfill: completed, %s", tv_str);
+			info("backfill: completed, %s", TIME_STR);
 	}
 	return NULL;
 }

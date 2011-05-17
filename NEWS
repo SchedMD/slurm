@@ -184,7 +184,15 @@ documents those changes that are of interest to users and admins.
     process of being powered up. Patch from Andriy Grytsenko.
  -- Change maximum batch script size from 128k to 4M.
  -- Get slurmd -f option working. Patch from Andriy Grytsenko.
- -- Fix for linking problem on OSX. Patch from Jon Bringhurst, LANL.
+ -- Fix for linking problem on OSX. Patches from Jon Bringhurst (LANL) and
+    Tyler Strickland.
+ -- Reset a job's priority to zero (suspended) when Moab requeues the job.
+    Patch from Par Andersson, NSC.
+ -- When enforcing accounting, fix polling for unknown uids for users after
+    the slurmctld started.  Previously one would have to issue a reconfigure
+    to the slurmctld to have it look for new uids.
+ -- BLUEGENE - if a block goes into an error state.  Fix issue where accounting
+    wasn't updated correctly when the block was resumed.
 
 * Changes in SLURM 2.2.5
 ========================

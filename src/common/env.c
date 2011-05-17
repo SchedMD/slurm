@@ -90,6 +90,7 @@ static int _setup_particulars(uint32_t cluster_flags,
 	int rc = SLURM_SUCCESS;
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		char *bg_part_id = NULL;
+		uint32_t node_cnt = 0;
 		select_g_select_jobinfo_get(select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID,
 					    &bg_part_id);
@@ -108,6 +109,13 @@ static int _setup_particulars(uint32_t cluster_flags,
 						bg_part_id);
 				}
 			}
+			select_g_select_jobinfo_get(
+				select_jobinfo,
+				SELECT_JOBDATA_BLOCK_NODE_CNT,
+				&node_cnt);
+			if (node_cnt)
+				setenvf(dest, "SLURM_BLOCK_NUM_NODES",
+					"%u", node_cnt);
 
 			setenvf(dest, "MPIRUN_PARTITION", "%s", bg_part_id);
 			setenvf(dest, "MPIRUN_NOFREE", "%d", 1);
