@@ -121,10 +121,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	bg_record_t *bg_record = (bg_record_t *) data;
 	uint32_t new_size;
 
-	if (jobinfo == NULL) {
-		error("set_select_jobinfo: jobinfo not set");
-		return SLURM_ERROR;
-	}
+	xassert(jobinfo);
 
 	if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("set_select_jobinfo: jobinfo magic bad");
@@ -262,10 +259,8 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 	bg_record_t **bg_record = (bg_record_t **) data;
 	char **tmp_char = (char **) data;
 
-	if (jobinfo == NULL) {
-		error("get_jobinfo: jobinfo not set");
-		return SLURM_ERROR;
-	}
+	xassert(jobinfo);
+
 	if (jobinfo->magic != JOBINFO_MAGIC) {
 		error("get_jobinfo: jobinfo magic bad");
 		return SLURM_ERROR;
