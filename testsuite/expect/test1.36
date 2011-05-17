@@ -45,6 +45,10 @@ if {[test_aix]} {
 
 print_header $test_id
 
+if {[test_bluegene]} {
+	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
+	exit $exit_code
+}
 if {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
@@ -55,14 +59,10 @@ if {[test_cray]} {
 #
 set timeout $max_job_delay
 
-if { [test_bluegene] } {
-	set node_cnt 1-2048
+if { [test_xcpu] } {
+	set node_cnt 1-1
 } else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-4
-	}
+	set node_cnt 1-4
 }
 
 set srun_pid [spawn $srun -N$node_cnt -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id]
