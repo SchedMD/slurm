@@ -44,46 +44,73 @@ The format of the component label is "c#-#c#s#n#" where the "#" fields
 represent in order: cabinet, row, cage, blade or slot, and node.
 For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
 
-<h3>Requesting memory</h3>
-<p>Please be aware of the following conceptual difference. The "aprun -m" and PBS "mppmem" parameters both
-   describe memory in "per-processing element" <i>virtual units</i>. SLURM, in contrast, specifies memory in
-   <i>physical units</i>, either per node (<i>--mem</i> option to sbatch/salloc), or per CPU (<i>--mem-per-cpu</i>
-   option). These modes are mutually exclusive and depend on whether more than the per-CPU share is required.</p>
-
-<p>The <i>per-CPU share</i> is assumed as default by both ALPS/aprun and SLURM, since it works well with most applications.
-   It is simply the ratio <i>node_memory / number_of_cores</i>. For instance, on a XT5 system with 16000MB of node memory
-   and 12-core nodes, the per-CPU share is 1333MB.</p>
-
-<p>You can request up to the per-CPU share for your application using the <i>--mem-per-cpu</i> option to sbatch/salloc.
-   Requesting more than the per-CPU share per CPU in this mode will lead to an error message.
-   To request more than the per-CPU share of memory, use the <i>--mem</i> option in conjunction with the
-   <i>--ntasks-per-node</i> parameter. The <i>--ntasks-per-node</i> parameter specifies how many tasks are to be run
-   per node and is SLURM's way of expressing the ALPS "per-processing element" concept (on systems that support the
-   <i>-B</i> option to aprun, it also supplies the <i>-N</i> setting).
-
-<p>The <i>--ntasks-per-node</i> value can be set between 1 and the number_of_cores, and this influences the amount of
-   memory that can be requested via the <i>--mem</i> option.
-   When --ntasks-per-node=1, the entire node memory is available to the application; if it is set to
-   number_of_cores, only the default per-CPU share (node_memory / number_of_cores) can be requested.
-   For all other cases, set
+<h3>Specifying thread depth</h3>
+<p>For threaded applications, use the <i>--cpus-per-task</i>/<i>-c</i> parameter of sbatch/salloc to set
+   the thread depth per node. This corresponds to mppdepth in PBS and to the aprun -d parameter. Please
+   note that SLURM does not set the OMP_NUM_THREADS environment variable. Hence, if an application spawns
+   4 threads, an example script would look like</p>
 <pre>
-   --ntasks-per-node=floor(node_memory / requested_memory)
+ #SBATCH --comment="illustrate the use of thread depth and OMP_NUM_THREADS"
+ #SBATCH --ntasks=3
+ #SBATCH -c 4
+ export OMP_NUM_THREADS=4
+ aprun -n 3 -d $OMP_NUM_THREADS ./my_exe
 </pre>
-   whenever <i>--mem=requested_memory</i> is larger than the per-CPU share.
+
+<h3>Specifying number of tasks per node</h3>
+<p>SLURM uses the same default as ALPS, assigning each task to a single core/CPU. In order to
+   make more resources available per task, you can reduce the number of processing elements
+   per node (aprun -N parameter, mppnppn in PBS) with the <i>--ntasks-per-node</i> option of
+   sbatch/salloc.
+   This is in particular necessary when tasks require more memory than the per-CPU default.</p>
+
+<h3>Specifying per-task memory</h3>
+<p>In Cray terminology, a task is also called a "processing element" (PE), hence below we
+   refer to the per-task memory and "per-PE" memory interchangeably. The per-PE memory
+   requested through the batch system corresponds to the <i>aprun -m</i> parameter.</p>
+
+<p>Due to the implicit default assumption that 1 task runs per core/CPU, the default memory
+   available per task is the <i>per-CPU share</i> of node_memory / number_of_cores. For
+   example, on a XT5 system with 16000MB per 12-core node, the per-CPU share is 1333MB.</p>
+
+<p>If nothing else is specified, the <i>--mem</i> option to sbatch/salloc can only be used to
+   <i>reduce</i> the per-PE memory below the per-CPU share. This is also the only way that
+   the <i>--mem-per-cpu</i> option can be applied (besides, the <i>--mem-per-cpu</i> option
+   is ignored if the user forgets to set --ntasks/-n).
+   Thus, the preferred way of specifying  memory is the more general <i>--mem</i> option.</p>
+
+<p>To <i>increase</i> the per-PE memory settable via the <i>--mem</i> option requires making
+   more per-task resources available using the <i>--ntasks-per-node</i> option to sbatch/salloc.
+   This allows <i>--mem</i> to request up to node_memory / ntasks_per_node MegaBytes.</p>
+
+<p>When <i>--ntasks-per-node</i> is 1, the entire node memory may be requested by the application.
+   Setting <i>--ntasks-per-node</i> to the number of cores per node yields the default per-CPU share
+   minimum value.</p>
+
+<p>For all cases in between these extremes, set --mem=per_task_memory and
+<pre>
+   --ntasks-per-node=floor(node_memory / per_task_memory)
+</pre>
+  whenever per_task_memory needs to be larger than the per-CPU share.</p>
 
 <p><b>Example:</b> An application with 64 tasks needs 7500MB per task on a cluster with 32000MB and 24 cores
-   per node (as seen in '<i>xtprocadmin -A</i>').  Hence  ntasks_per_node = floor(32000/7500) = 4.
+   per node.  Hence  ntasks_per_node = floor(32000/7500) = 4.
 <pre>
-    #SBATCH --comment="example for node_memory=32000MB on a 24-core host"
+    #SBATCH --comment="requesting 7500MB per task on 32000MB/24-core nodes"
     #SBATCH --ntasks=64
-    #SBATCH --mem=7500
     #SBATCH --ntasks-per-node=4
+    #SBATCH --mem=7500
 </pre>
-<p>If you need to fine-tune the memory limit of your application, you can use the same parameters in a salloc session
-   and then see directly, using
+<p>If you would like to fine-tune the memory limit of your application, you can set the same parameters in
+   a salloc session and then check directly, using
 <pre>
     apstat -rvv -R $BASIL_RESERVATION_ID
-</pre>how much memory has been requested for that job.</p>
+</pre>to see how much memory has been requested.</p>
+
+<h3>Using aprun -B</h3>
+<p>CLE 3.x allows a nice aprun shortcut via the <i>-B</i> option, which reuses all the batch system parameters
+   (--ntasks, --ntasks-per-node, --cpus-per-task, --mem) at application launch, as if the corresponding
+   (-n, -N, -d, -m) parameters had been set; see the aprun(1) manpage on CLE 3.x systems for details.</p>
 
 
 <h2>Administrator Guide</h2>
@@ -91,7 +118,7 @@ For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
 <h3>Install supporting rpms</h3>
 
 <p>The build requires a few -devel RPMs listed below. You can obtain these from
-SuSe/Novel.
+SuSe/Novell.
 <ul>
 <li>CLE 2.x uses SuSe SLES 10 packages (rpms may be on the normal isos)</li>
 <li>CLE 3.x uses Suse SLES 11 packages (rpms are on the SDK isos, there
@@ -145,7 +172,7 @@ MUNGE Installation Guide</a>.</p>
 <ul>
 <li><i>cp munge_build_script.sh $LIBROOT</i></li>
 <li><i>mkdir -vp ${LIBROOT}/munge/zip</i></li>
-<li>Download munge-0.5.9.tar.bz2 or newer from
+<li>Download munge-0.5.10.tar.bz2 or newer from
 <a href="http://code.google.com/p/munge/downloads/list">
 http://code.google.com/p/munge/downloads/list</a></li>
 <li>Copy that into  <i>${LIBROOT}/munge/zip</i></li>
@@ -251,7 +278,7 @@ cores or threads).</p>
 <p>Note that the system topology is based upon information gathered from
 the ALPS database and is based upon the ALPS_NIDORDER configuration in
 <i>/etc/sysconfig/alps</i>. Excerpts of a <i>slurm.conf</i> file for
-use on a Cray systems follows:</p>
+use on a Cray systems follow:</p>
 
 <pre>
 #---------------------------------------------------------------------
