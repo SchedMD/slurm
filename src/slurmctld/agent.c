@@ -207,7 +207,7 @@ static bool wiki2_sched_test = false;
  *	across a set of nodes. Use agent_queue_request() if immediate
  *	execution is not essential.
  * IN pointer to agent_arg_t, which is xfree'd (including hostlist,
- *	and msg_args) upon completion if AGENT_IS_THREAD is set
+ *	and msg_args) upon completion
  * RET always NULL (function format just for use as pthread)
  */
 void *agent(void *args)
@@ -330,9 +330,7 @@ void *agent(void *args)
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
       cleanup:
-#if AGENT_IS_THREAD
 	_purge_agent_args(agent_arg_ptr);
-#endif
 
 	if (agent_info_ptr) {
 		xfree(agent_info_ptr->thread_struct);
@@ -599,7 +597,6 @@ static void *_wdog(void *args)
 
 static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 {
-#if AGENT_IS_THREAD
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock =
 	    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -637,9 +634,6 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	}
 
 	unlock_slurmctld(job_write_lock);
-#else
-	fatal("Code development needed here if agent is not thread");
-#endif
 }
 
 static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
@@ -649,18 +643,14 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	ret_data_info_t *ret_data_info = NULL;
 	state_t state;
 	int is_ret_list = 1;
-
-#if AGENT_IS_THREAD
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t node_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-#endif
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	int i;
 
 	/* Notify slurmctld of non-responding nodes */
 	if (no_resp_cnt) {
-#if AGENT_IS_THREAD
 		/* Update node table data for non-responding nodes */
 		lock_slurmctld(node_write_lock);
 		if (agent_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
@@ -671,15 +661,11 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			job_complete(job_id, 0, true, false, 0);
 		}
 		unlock_slurmctld(node_write_lock);
-#else
-		fatal("Code development needed here if agent is not thread");
-#endif
 	}
 	if (retry_cnt && agent_ptr->retry)
 		_queue_agent_retry(agent_ptr, retry_cnt);
 
 	/* Update last_response on responding nodes */
-#if AGENT_IS_THREAD
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		char *down_msg, *node_names;
@@ -755,9 +741,6 @@ finished:	;
 	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
 	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
 		ping_end();
-#else
-	fatal("Code development needed here if agent is not thread");
-#endif
 }
 
 /* Report a communications error for specified node
@@ -765,9 +748,8 @@ finished:	;
 static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type)
 {
 	int rc = 1;
-#if AGENT_IS_THREAD
+
 	if ((rc = is_node_resp (node_name)))
-#endif
 		verbose("agent/is_node_resp: node:%s rpc:%d : %m",
 			node_name, msg_type);
 	return rc;
@@ -821,12 +803,10 @@ static void *_thread_per_group_rpc(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 	int found = 0;
 	int sig_array[2] = {SIGUSR1, 0};
-
-#if AGENT_IS_THREAD
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-#endif
+
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sig_array);
@@ -907,7 +887,6 @@ static void *_thread_per_group_rpc(void *args)
 	while ((ret_data_info = list_next(itr)) != NULL) {
 		rc = slurm_get_return_code(ret_data_info->type,
 					   ret_data_info->data);
-#if AGENT_IS_THREAD
 		/* SPECIAL CASE: Mark node as IDLE if job already
 		   complete */
 		if (is_kill_msg &&
@@ -941,8 +920,6 @@ static void *_thread_per_group_rpc(void *args)
 			unlock_slurmctld(job_write_lock);
 			continue;
 		}
-#endif
-
 
 		if (((msg_type == REQUEST_SIGNAL_TASKS) ||
 		     (msg_type == REQUEST_TERMINATE_TASKS)) &&
