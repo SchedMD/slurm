@@ -393,7 +393,23 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				"WHERE processor_id = ? ";
 	const int	PARAM_COUNT = 1;	/* node id */
 	MYSQL_BIND	params[PARAM_COUNT];
-
+	/* Output parameters */
+	enum query_columns {
+		/* integer data */
+		COL_X,		/* X coordinate		*/
+		COL_Y,		/* Y coordinate		*/
+		COL_Z,		/* Z coordinate		*/
+		COL_CAB,	/* cabinet position		*/
+		COL_ROW,	/* row position			*/
+		COL_CAGE,	/* cage number (0..2)		*/
+		COL_SLOT,	/* slot number (0..7)		*/
+		COL_CPU,	/* node number (0..3)		*/
+		COL_CORES,	/* number of cores per node	*/
+		COL_MEMORY,	/* rounded-down memory in MB	*/
+		/* string data */
+		COL_TYPE,	/* {service, compute}		*/
+		COLUMN_COUNT	/* sentinel */
+	};
 	int		x_coord, y_coord, z_coord;
 	int		cab, row, cage, slot, cpu;
 	unsigned int	node_cpus, node_mem;
