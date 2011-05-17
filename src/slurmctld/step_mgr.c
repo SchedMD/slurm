@@ -80,6 +80,8 @@ static struct step_record * _create_step_record(struct job_record *job_ptr);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
 static bool _is_mem_resv(void);
+static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
+			  int nodes_avail, int nodes_picked_cnt);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer,
 				     uint16_t protocol_version);
 static bitstr_t * _pick_step_nodes(struct job_record *job_ptr,
@@ -97,6 +99,26 @@ static int _step_hostname_to_inx(struct step_record *step_ptr,
 				char *node_name);
 static void _step_dealloc_lps(struct step_record *step_ptr);
 
+/* Select the optimal node count for a job step based upon it's min and 
+ * max target, available resources, and nodes already picked */
+static int _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
+			 int nodes_avail, int nodes_picked_cnt)
+{
+	int target_node_cnt;
+
+	if ((step_max_nodes > step_min_nodes) && (step_max_nodes != NO_VAL))
+		target_node_cnt = step_max_nodes;
+	else
+		target_node_cnt = step_min_nodes;
+	if (target_node_cnt > nodes_picked_cnt)
+		target_node_cnt -= nodes_picked_cnt;
+	else
+		target_node_cnt = 0;
+	if (nodes_avail < target_node_cnt)
+		target_node_cnt = nodes_avail;
+
+	return target_node_cnt;
+}
 
 /*
  * _create_step_record - create an empty step_record for the specified job.
@@ -1052,7 +1074,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (step_spec->min_nodes) {
-		int nodes_needed;
+		int node_avail_cnt, nodes_needed;
 
 		if (usable_cpu_cnt == NULL) {
 			usable_cpu_cnt = xmalloc(sizeof(uint32_t) *
@@ -1073,9 +1095,17 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			verbose("step got %u of %d nodes",
 				step_spec->min_nodes, nodes_picked_cnt);
 		}
+		if (nodes_idle)
+			node_avail_cnt = bit_set_count(nodes_idle);
+		else
+			node_avail_cnt = 0;
 		nodes_needed = step_spec->min_nodes - nodes_picked_cnt;
-		if ((nodes_needed > 0) && nodes_idle &&
-		    (bit_set_count(nodes_idle) >= nodes_needed)) {
+		if ((nodes_needed > 0) &&
+		    (node_avail_cnt >= nodes_needed)) {
+			nodes_needed = _opt_node_cnt(step_spec->min_nodes,
+						     step_spec->max_nodes,
+						     node_avail_cnt,
+						     nodes_picked_cnt);
 			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_idle,
 							 nodes_needed,
 							 step_spec->cpu_count,
@@ -1091,8 +1121,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_needed = 0;
 			}
 		}
-		if ((nodes_needed > 0) && nodes_avail &&
-		    (bit_set_count(nodes_avail) >= nodes_needed)) {
+		if (nodes_idle)
+			node_avail_cnt = bit_set_count(nodes_avail);
+		else
+			node_avail_cnt = 0;
+		if ((nodes_needed > 0) &&
+		    (node_avail_cnt >= nodes_needed)) {
+			nodes_needed = _opt_node_cnt(step_spec->min_nodes,
+						     step_spec->max_nodes,
+						     node_avail_cnt,
+						     nodes_picked_cnt);
 			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_avail,
 							 nodes_needed,
 							 step_spec->cpu_count,
@@ -1867,8 +1905,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (!batch_step) {
 		step_ptr->step_layout =
 			step_layout_create(step_ptr,
-					   step_node_list,
-					   step_specs->min_nodes,
+					   step_node_list, node_count,
 					   step_specs->num_tasks,
 					   (uint16_t)cpus_per_task,
 					   step_specs->task_dist,
