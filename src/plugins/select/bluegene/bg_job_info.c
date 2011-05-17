@@ -683,6 +683,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 	int i;
 	char *tmp_image = "default";
 	char *header = "CONNECT REBOOT ROTATE GEOMETRY BLOCK_ID";
+	bool print_x = 1;
 
 	if (buf == NULL) {
 		error("sprint_jobinfo: buf is null");
@@ -705,15 +706,18 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		return buf;
 	}
 
+	if (mode == SELECT_PRINT_GEOMETRY)
+		print_x = 0;
+
 	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
 		for (i=0; i<jobinfo->dim_cnt; i++) {
-			if (geo)
+			if (geo && print_x)
 				xstrcat(geo, "x0");
 			else
 				xstrcat(geo, "0");
 		}
 	} else
-		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, 0);
+		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, print_x);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
@@ -813,6 +817,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 	char *tmp_image = "default";
 	char *buf = NULL;
 	char *header = "CONNECT REBOOT ROTATE GEOMETRY BLOCK_ID";
+	bool print_x = 1;
 
 	if ((mode != SELECT_PRINT_DATA)
 	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
@@ -829,15 +834,18 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		return buf;
 	}
 
+	if (mode == SELECT_PRINT_GEOMETRY)
+		print_x = 0;
+
 	if (jobinfo->geometry[0] == (uint16_t) NO_VAL) {
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			if (geo)
+			if (geo && print_x)
 				xstrcat(geo, "x0");
 			else
 				xstrcat(geo, "0");
 		}
 	} else
-		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, 1);
+		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, print_x);
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
