@@ -45,12 +45,17 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
 	%_with_debug            1
 	%_with_sgijob		1
 	%_with_elan		1   (ONLY ON SYSTEMS WITH ELAN SWITCH)
+   NOTE: build will make a tar-ball based upon ALL of the files in your current
+   local directory. If that includes scratch files, everyone will get those
+   files in the tar-ball. For that reason, it is a good idea to clone a clean
+   copy of the repository and build from that
+   > git clone https://<user_name>@github.com/chaos/slurm.git <local_dir>
    Build using the following syntax:
    > build  --snapshot   -s <local_dir>  OR
    > build  --nosnapshot -s <local_dir>
    --nosnapshot will name the tar-ball and RPMs based upon the META file
-   --snapshot  will name the tar-ball and RPMs based upon the META file plus a
-   timestamp
+   --snapshot will name the tar-ball and RPMs based upon the META file plus a
+   timestamp. Do this to make a tar-ball for a non-tagged release.
 4. Remove the RPMs that we don't want:
    > rm -f slurm-perlapi*rpm slurm-torque*rpm
 5. Move the RPMs to
@@ -123,9 +128,21 @@ To build and run on AIX:
 	%with_munge             "--with-munge=/opt/freeware"
 	%with_proctrack         "--with-proctrack=/opt/freeware"
    Log in to the machine "uP".  uP is currently the lowest-common-denominator
-     AIX machine.
-   > CC=/usr/bin/gcc build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
-4. > export MP_RMLIB=./slurm_ll_api.so
+   AIX machine.
+   NOTE: build will make a tar-ball based upon ALL of the files in your current
+   local directory. If that includes scratch files, everyone will get those
+   files in the tar-ball. For that reason, it is a good idea to clone a clean
+   copy of the repository and build from that
+   > git clone https://<user_name>@github.com/chaos/slurm.git <local_dir>
+   Build using the following syntax:
+   > export CC=/usr/bin/gcc
+   > build  --snapshot   -s <local_dir>  OR
+   > build  --nosnapshot -s <local_dir>
+   --nosnapshot will name the tar-ball and RPMs based upon the META file
+   --snapshot will name the tar-ball and RPMs based upon the META file plus a
+   timestamp. Do this to make a tar-ball for a non-tagged release.
+4. Test POE after telling POE where to find SLURM's LoadLeveler wrapper.
+   > export MP_RMLIB=./slurm_ll_api.so
    > export CHECKPOINT=yes
 5. > poe hostname -rmpool debug
 6. To debug, set SLURM_LL_API_DEBUG=3 before running poe - will create a file
