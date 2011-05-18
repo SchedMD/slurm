@@ -80,6 +80,8 @@ static struct step_record * _create_step_record(struct job_record *job_ptr);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
 static bool _is_mem_resv(void);
+static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
+			  int nodes_avail, int nodes_picked_cnt);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer,
 				     uint16_t protocol_version);
 static bitstr_t * _pick_step_nodes(struct job_record *job_ptr,
@@ -97,6 +99,26 @@ static int _step_hostname_to_inx(struct step_record *step_ptr,
 				char *node_name);
 static void _step_dealloc_lps(struct step_record *step_ptr);
 
+/* Select the optimal node count for a job step based upon it's min and 
+ * max target, available resources, and nodes already picked */
+static int _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
+			 int nodes_avail, int nodes_picked_cnt)
+{
+	int target_node_cnt;
+
+	if ((step_max_nodes > step_min_nodes) && (step_max_nodes != NO_VAL))
+		target_node_cnt = step_max_nodes;
+	else
+		target_node_cnt = step_min_nodes;
+	if (target_node_cnt > nodes_picked_cnt)
+		target_node_cnt -= nodes_picked_cnt;
+	else
+		target_node_cnt = 0;
+	if (nodes_avail < target_node_cnt)
+		target_node_cnt = nodes_avail;
+
+	return target_node_cnt;
+}
 
 /*
  * _create_step_record - create an empty step_record for the specified job.
@@ -620,7 +642,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if ((nodes_picked = select_g_step_pick_nodes(
 		     job_ptr, select_jobinfo, node_count)))
 		return nodes_picked;
-#ifdef HAVE_BGQ
+#ifdef HAVE_BG
 	*return_code = ESLURM_NODES_BUSY;
 	return NULL;
 #endif
@@ -1052,7 +1074,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (step_spec->min_nodes) {
-		int nodes_needed;
+		int node_avail_cnt, nodes_needed;
 
 		if (usable_cpu_cnt == NULL) {
 			usable_cpu_cnt = xmalloc(sizeof(uint32_t) *
@@ -1070,12 +1092,20 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-			verbose("step got %u of %d nodes",
-				step_spec->min_nodes, nodes_picked_cnt);
+			verbose("step picked %d of %u nodes",
+				nodes_picked_cnt, step_spec->min_nodes);
 		}
+		if (nodes_idle)
+			node_avail_cnt = bit_set_count(nodes_idle);
+		else
+			node_avail_cnt = 0;
 		nodes_needed = step_spec->min_nodes - nodes_picked_cnt;
-		if ((nodes_needed > 0) && nodes_idle &&
-		    (bit_set_count(nodes_idle) >= nodes_needed)) {
+		if ((nodes_needed > 0) &&
+		    (node_avail_cnt >= nodes_needed)) {
+			nodes_needed = _opt_node_cnt(step_spec->min_nodes,
+						     step_spec->max_nodes,
+						     node_avail_cnt,
+						     nodes_picked_cnt);
 			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_idle,
 							 nodes_needed,
 							 step_spec->cpu_count,
@@ -1091,8 +1121,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_needed = 0;
 			}
 		}
-		if ((nodes_needed > 0) && nodes_avail &&
-		    (bit_set_count(nodes_avail) >= nodes_needed)) {
+		if (nodes_avail)
+			node_avail_cnt = bit_set_count(nodes_avail);
+		else
+			node_avail_cnt = 0;
+		if ((nodes_needed > 0) &&
+		    (node_avail_cnt >= nodes_needed)) {
+			nodes_needed = _opt_node_cnt(step_spec->min_nodes,
+						     step_spec->max_nodes,
+						     node_avail_cnt,
+						     nodes_picked_cnt);
 			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_avail,
 							 nodes_needed,
 							 step_spec->cpu_count,
@@ -1580,9 +1618,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t orig_cpu_count;
 	List step_gres_list = (List) NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
-#if defined HAVE_BGQ
-//#if defined HAVE_BGQ && defined HAVE_BG_FILES
-	bool sub_block = false;
+#if defined HAVE_BG
 	static uint16_t cpus_per_mp = (uint16_t)NO_VAL;
 #endif
 	*new_step_record = NULL;
@@ -1644,12 +1680,12 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr->next_step_id >= slurmctld_conf.max_step_cnt)
 		return ESLURM_STEP_LIMIT;
 
-#if defined HAVE_BGQ
-//#if defined HAVE_BGQ && defined HAVE_BG_FILES
+#if defined HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NODE_CNT,
 				    &node_count);
 
+#if defined HAVE_BGQ
 	if (step_specs->min_nodes < node_count) {
 		if (step_specs->min_nodes > 512) {
 			error("step asked for more than 512 nodes but "
@@ -1662,7 +1698,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 		step_specs->min_nodes = 1;
 		step_specs->max_nodes = 1;
-		sub_block = true;
 	} else if (node_count == step_specs->min_nodes) {
 		step_specs->min_nodes = job_ptr->details->min_nodes;
 		step_specs->max_nodes = job_ptr->details->max_nodes;
@@ -1671,6 +1706,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 		      node_count);
 		return ESLURM_INVALID_NODE_COUNT;
 	}
+#else
+	/* No sub-block steps in BGL/P, always give them the full allocation */
+	step_specs->min_nodes = job_ptr->details->min_nodes;
+	step_specs->max_nodes = job_ptr->details->max_nodes;
+#endif
 
 	if (cpus_per_mp == (uint16_t)NO_VAL)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
@@ -1682,7 +1722,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_specs->cpu_count = node_count * cpus_per_mp;
 	step_specs->overcommit = 1;
 	step_specs->exclusive = 0;
-
 #endif
 	/* if the overcommit flag is checked, we 0 set cpu_count=0
 	 * which makes it so we don't check to see the available cpus
@@ -1866,8 +1905,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (!batch_step) {
 		step_ptr->step_layout =
 			step_layout_create(step_ptr,
-					   step_node_list,
-					   step_specs->min_nodes,
+					   step_node_list, node_count,
 					   step_specs->num_tasks,
 					   (uint16_t)cpus_per_task,
 					   step_specs->task_dist,

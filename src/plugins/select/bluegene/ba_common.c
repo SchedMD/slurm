@@ -749,7 +749,7 @@ node_info_error:
 
 		if (j >= cluster_dims)
 			info("are you sure you only have 1 midplane? %s",
-			     ptr_array[i]->nodenames);
+			     ptr_array[0]->nodenames);
 
 		for (j=0; j<cluster_dims; j++) {
 			DIM_SIZE[j]++;

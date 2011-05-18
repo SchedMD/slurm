@@ -152,8 +152,8 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 			j = len - 1;
 			while ((node_info_ptr->node_array[i].name[j] >= '0') &&
 			       (node_info_ptr->node_array[i].name[j] <= '9')) {
-				node_ptr->coord[j] *= 10;
-				node_ptr->coord[j] +=
+				node_ptr->coord[0] *= 10;
+				node_ptr->coord[0] +=
 					node_info_ptr->node_array[i].name[j]
 					- '0';
 				j++;

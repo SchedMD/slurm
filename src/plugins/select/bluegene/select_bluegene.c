@@ -1676,6 +1676,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		   On BGL/P This is always the default, no matter how
 		   big the step is since you can only run 1 step per block.
 		*/
+		step_jobinfo->dim_cnt = jobinfo->dim_cnt;
 		if (bit_ffs(avail_mps) != -1) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("select_p_step_pick_nodes: Looking "
@@ -1688,7 +1689,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			fatal("bit_copy malloc failure");
 		bit_or(bg_record->mp_used_bitmap, picked_mps);
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
-		step_jobinfo->dim_cnt = jobinfo->dim_cnt;
 		goto found_it;
 	} else if ((ba_mp = ba_pick_sub_block_cnodes(
 			    bg_record, &node_count,

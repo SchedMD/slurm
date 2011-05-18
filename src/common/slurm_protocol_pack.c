@@ -7679,12 +7679,14 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
+			packnull(buffer);
 			pack32(NO_VAL, buffer);
 			pack16((uint16_t)NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
 			pack16((uint16_t)NO_VAL, buffer);
+			packnull(buffer);
 			return;
 		}
 
@@ -7731,12 +7733,19 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
 		packstr(block_info->mp_str, buffer);
+		packstr(block_info->mp_used_str, buffer);
 		pack32(block_info->cnode_cnt, buffer);
 		pack16(block_info->node_use, buffer);
 		packstr(block_info->owner_name, buffer);
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
+		if (block_info->mp_used_inx) {
+			char *bitfmt = inx2bitfmt(block_info->mp_used_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (!block_info) {
 			packnull(buffer);
@@ -7911,11 +7920,14 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		}
 
 		safe_unpack32(&count, buffer);
-		if (count > HIGHEST_DIMENSIONS)
+		if (count > HIGHEST_DIMENSIONS) {
+			error("slurm_unpack_block_info_members: count of "
+			      "system is %d but we can only handle %d",
+			      count, HIGHEST_DIMENSIONS);
 			goto unpack_error;
+		}
 		for (i=0; i<count; i++)
 			safe_unpack16(&block_info->conn_type[i], buffer);
-
 		safe_unpackstr_xmalloc(&(block_info->ionode_str),
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
@@ -8045,7 +8057,7 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	error("_unpack_node_info: error unpacking here");
+	error("slurm_unpack_block_info_members: error unpacking here");
 	slurm_free_block_info_members(block_info);
 	return SLURM_ERROR;
 }

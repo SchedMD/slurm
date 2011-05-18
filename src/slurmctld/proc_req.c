@@ -1482,6 +1482,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		batch_step.requid = -1;
 		batch_step.start_time = job_ptr->start_time;
 		batch_step.name = "batch";
+		batch_step.select_jobinfo = job_ptr->select_jobinfo;
+
 		jobacct_storage_g_step_start(acct_db_conn, &batch_step);
 		jobacct_storage_g_step_complete(acct_db_conn, &batch_step);
 		FREE_NULL_BITMAP(batch_step.step_node_bitmap);
