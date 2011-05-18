@@ -2635,8 +2635,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if ((object->user == NULL) ||
-			    (uid_from_string (object->user, &pw_uid) < 0)) {
+			if (uid_from_string (object->user, &pw_uid) < 0) {
 				debug("wckey add couldn't get a uid "
 				      "for user %s",
 				      object->user);
@@ -2739,8 +2738,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if ((object->name == NULL) ||
-			    (uid_from_string (object->name, &pw_uid) < 0)) {
+			if (uid_from_string (object->name, &pw_uid) < 0) {
 				debug("user add couldn't get a uid for user %s",
 				      object->name);
 				object->uid = NO_VAL;
