@@ -837,6 +837,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		int fail_mode = ESLURM_INVALID_TASK_MEMORY;
 		uint32_t tmp_mem, tmp_cpus, avail_cpus, total_cpus;
 		uint32_t avail_tasks, total_tasks;
+
 		usable_cpu_cnt = xmalloc(sizeof(uint32_t) * node_record_count);
 		first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
 		last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
@@ -1155,6 +1156,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			FREE_NULL_BITMAP (node_tmp);
 			node_tmp = NULL;
 			nodes_picked_cnt = step_spec->min_nodes;
+			nodes_needed = 0;
+		} else if (nodes_needed > 0) {
+			if (step_spec->min_nodes <=
+			    (nodes_picked_cnt + mem_blocked_nodes)) {
+				*return_code = ESLURM_NODES_BUSY;
+			} else if (!bit_super_set(job_ptr->node_bitmap,
+						  up_node_bitmap)) {
+				*return_code = ESLURM_NODE_NOT_AVAIL;
+			}
+			goto cleanup;
 		}
 	} else if (step_spec->cpu_count) {
 		/* make sure the selected nodes have enough cpus */
@@ -1799,7 +1810,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->num_tasks = node_count;
 	}
 
-	max_tasks = (node_count*slurmctld_conf.max_tasks_per_node);
+	max_tasks = node_count * slurmctld_conf.max_tasks_per_node;
 	if (step_specs->num_tasks > max_tasks) {
 		error("step has invalid task count: %u max is %u",
 		      step_specs->num_tasks, max_tasks);
@@ -3479,6 +3490,9 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *)
 			   list_next (step_iterator))) {
+		gres_plugin_step_state_rebase(step_ptr->gres_list,
+					orig_job_node_bitmap,
+					job_ptr->job_resrcs->node_bitmap);
 		if (step_ptr->core_bitmap_job == NULL)
 			continue;
 		orig_step_core_bitmap = step_ptr->core_bitmap_job;
@@ -3503,10 +3517,10 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 						      old_core_offset + j))
 						continue;
 					bit_set(step_ptr->core_bitmap_job,
-						new_node_set + j);
+						new_core_offset + j);
 					bit_set(job_ptr->job_resrcs->
 						core_bitmap_used,
-						new_node_set + j);
+						new_core_offset + j);
 				}
 			}
 			if (old_node_set)

@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre6
 =============================
+ -- Modify job expansion logic to support licenses, generic resources, and
+    currently running job steps.
 
 * Changes in SLURM 2.3.0.pre5
 =============================

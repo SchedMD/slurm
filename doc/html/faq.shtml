@@ -654,8 +654,6 @@ below:
 <ol>
 <li>Support is not available on BlueGene or Cray system due to limitations
 in the software underlying SLURM.</li>
-<li>Support is not currently available on systems configured to allocate
-generic resources. We do plan to support generic resources in the future.</li>
 <li>Job(s) changing size must not be in a suspended state, including jobs
 suspended for gang scheduling. The jobs must be in a state of pending or
 running. We plan to modify the gang scheduling logic in the future to
@@ -699,8 +697,20 @@ This option tells SLURM that the job, when scheduled, can be used to expand
 the specified jobid.
 Other job options would be used to identify the required resources
 (e.g. task count, node count, node features, etc.).
-This job's time limit will be automatically set to reflect the end time of
+This new job's time limit will be automatically set to reflect the end time of
 the job being expanded.
+This new job's generic resources specification will be automatically set
+equal to that of the job being merged to. This is due to the current SLURM
+restriction of all nodes associated with a job needing to have the same
+generic resource specification (i.e. a job can not have one GPU on one
+node and two GPUs on another node), although this restriction may be removed
+in the future. This restriction can pose some problems when both jobs can be
+allocated resources on the same node, in which case the generic resources
+allocated to the new job will be released. If the jobs are allocated resources
+on different nodes, the generic resources associated with the resulting job
+allocation after the merge will be consistent as expected.
+Any licenses associated with the new job will be added to those available in
+the job being merged to.
 Note that partition and Quality Of Service (QOS) limits will be applied
 independently to the new job allocation so the expanded job may exceed size
 limits configured for an individual job.</p>

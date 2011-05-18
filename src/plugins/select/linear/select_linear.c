@@ -1525,13 +1525,6 @@ static int _job_expand(struct job_record *from_job_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (from_job_ptr->gres_list || to_job_ptr->gres_list) {
-		/* This is possible to add, but very complex and fragile */
-		info("select/linear: attempt to merge job %u with GRES",
-		     from_job_ptr->job_id);
-		return ESLURM_EXPAND_GRES;
-	}
-
 	from_job_resrcs_ptr = from_job_ptr->job_resrcs;
 	if ((from_job_resrcs_ptr == NULL) ||
 	    (from_job_resrcs_ptr->cpus == NULL) ||
@@ -1548,6 +1541,11 @@ static int _job_expand(struct job_record *from_job_ptr,
 		      to_job_ptr->job_id);
 		return SLURM_ERROR;
 	}
+
+	(void) _rm_job_from_nodes(cr_ptr, from_job_ptr, "select_p_job_expand",
+				  true);
+	(void) _rm_job_from_nodes(cr_ptr, to_job_ptr,   "select_p_job_expand",
+				  true);
 
 	if (to_job_resrcs_ptr->core_bitmap_used) {
 		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
@@ -1634,13 +1632,15 @@ static int _job_expand(struct job_record *from_job_ptr,
 						to_job_resrcs_ptr,
 						to_node_offset);
 		}
-		if (from_node_used && to_node_used)
-			_decr_node_job_cnt(i, from_job_ptr, "job_expand");
 
 		to_job_ptr->total_cpus += new_job_resrcs_ptr->
 					  cpus[new_node_offset];
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
+	gres_plugin_job_merge(from_job_ptr->gres_list,
+			      from_job_resrcs_ptr->node_bitmap,
+			      to_job_ptr->gres_list,
+			      to_job_resrcs_ptr->node_bitmap);
 
 	/* Now swap data: "new" -> "to" and clear "from" */
 	free_job_resources(&to_job_ptr->job_resrcs);
@@ -1677,6 +1677,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 	from_job_ptr->nodes = xstrdup("");
 	xfree(from_job_resrcs_ptr->nodes);
 	from_job_resrcs_ptr->nodes = xstrdup("");
+
+	_add_job_to_nodes(cr_ptr, to_job_ptr, "select_p_job_expand", 1);
 
 	return rc;
 }

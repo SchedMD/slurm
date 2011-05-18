@@ -3859,7 +3859,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_FEATURE;
 		goto cleanup_fail;
 	}
-	if (gres_plugin_job_state_validate(job_ptr->gres, &job_ptr->gres_list)){
+	/* NOTE: If this job is being used to expand another job, this job's
+	 * gres_list has already been filled in with a copy of gres_list job
+	 * to be expanded by update_job_dependency() */
+	if ((job_ptr->details->expanding_jobid == 0) &&
+	    gres_plugin_job_state_validate(job_ptr->gres, &job_ptr->gres_list)){
 		error_code = ESLURM_INVALID_GRES;
 		goto cleanup_fail;
 	}
@@ -6328,6 +6332,33 @@ static bool _top_priority(struct job_record *job_ptr)
 	return top;
 }
 
+static void _merge_job_licenses(struct job_record *shrink_job_ptr,
+				struct job_record *expand_job_ptr)
+{
+	xassert(shrink_job_ptr);
+	xassert(expand_job_ptr);
+
+	if (!shrink_job_ptr->licenses)		/* No licenses to add */
+		return;
+
+	if (!expand_job_ptr->licenses) {	/* Just transfer licenses */
+		expand_job_ptr->licenses = shrink_job_ptr->licenses;
+		shrink_job_ptr->licenses = NULL;
+		FREE_NULL_LIST(expand_job_ptr->license_list);
+		expand_job_ptr->license_list = shrink_job_ptr->license_list;
+		shrink_job_ptr->license_list = NULL;
+		return;
+	}
+
+	/* Merge the license information into expanding job */
+	xstrcat(expand_job_ptr->licenses, ",");
+	xstrcat(expand_job_ptr->licenses, shrink_job_ptr->licenses);
+	xfree(shrink_job_ptr->licenses);
+	FREE_NULL_LIST(expand_job_ptr->license_list);
+	FREE_NULL_LIST(shrink_job_ptr->license_list);
+	license_job_merge(expand_job_ptr);
+	return;
+}
 
 /*
  * update_job - update a job's parameters per the supplied specifications
@@ -7283,7 +7314,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->gres) {
 		List tmp_gres_list = NULL;
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
+		    (detail_ptr->expanding_jobid != 0)) {
 			error_code = ESLURM_DISABLED;
 		} else if (job_specs->gres[0] == '\0') {
 			info("sched: update_job: cleared gres for job %u",
@@ -7376,8 +7408,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = ESLURMD_STEP_EXISTS;
 				goto fini;
 			}
-			info("sched: cancelling job %u and moving all "
-			     "resources to job %u", job_specs->job_id,
+			info("sched: killing job %u and moving all resources "
+			     "to job %u", job_specs->job_id,
 			     expand_job_ptr->job_id);
 			job_pre_resize_acctg(job_ptr);
 			job_pre_resize_acctg(expand_job_ptr);
@@ -7391,6 +7423,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = select_g_job_expand(job_ptr,
 							 expand_job_ptr);
 			if (error_code == SLURM_SUCCESS) {
+				_merge_job_licenses(job_ptr, expand_job_ptr);
 				rebuild_step_bitmaps(expand_job_ptr,
 						     orig_job_node_bitmap);
 			}
