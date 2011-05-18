@@ -101,8 +101,8 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	else if (!inv->batch_total)
 		fatal("system has no usable batch compute nodes");
 	else if (inv->batch_total < node_cnt)
-		error("ALPS sees only %d/%d slurm.conf nodes", inv->batch_total,
-			node_cnt);
+		info("Warning: ALPS sees only %d/%d slurm.conf nodes, "
+		     "check DownNodes", inv->batch_total, node_cnt);
 
 	debug("BASIL %s RANKING INVENTORY: %d/%d batch nodes",
 	      bv_names_long[version], inv->batch_avail, inv->batch_total);
@@ -280,85 +280,6 @@ extern int basil_inventory(void)
 	return rc;
 }
 
-/**
- * basil_get_initial_state  -  set SLURM initial node state from ALPS.
- *
- * The logic is identical to basil_inventory(), with the difference that this
- * is called before valid bitmaps exist, from select_g_node_init(). It relies
- * on the following other parts:
- * - it needs reset_job_bitmaps() in order to rebuild node_bitmap fields,
- * - it relies on _sync_nodes_to_jobs() to
- *   o kill active jobs on nodes now marked DOWN,
- *   o reset node state to ALLOCATED if it has been marked IDLE here (which is
- *     an error case, since there is no longer an ALPS reservation for the job,
- *     this is caught by the subsequent basil_inventory()).
- * Return: SLURM_SUCCESS if ok, non-zero on error.
- */
-static int basil_get_initial_state(void)
-{
-	enum basil_version version = get_basil_version();
-	struct basil_inventory *inv;
-	struct basil_node *node;
-
-	inv = get_full_inventory(version);
-	if (inv == NULL) {
-		error("BASIL %s INVENTORY failed", bv_names_long[version]);
-		return SLURM_ERROR;
-	}
-
-	debug("BASIL %s INITIAL INVENTORY: %d/%d batch nodes available",
-	      bv_names_long[version], inv->batch_avail, inv->batch_total);
-
-	for (node = inv->f->node_head; node; node = node->next) {
-		struct node_record *node_ptr;
-		char *reason = NULL;
-
-		node_ptr = _find_node_by_basil_id(node->node_id);
-		if (node_ptr == NULL)
-			continue;
-
-		if (node->state == BNS_DOWN) {
-			reason = "ALPS marked it DOWN";
-		} else if (node->state == BNS_UNAVAIL) {
-			reason = "node is UNAVAILABLE";
-		} else if (node->state == BNS_ROUTE) {
-			reason = "node does ROUTING";
-		} else if (node->state == BNS_SUSPECT) {
-			reason = "entered SUSPECT mode";
-		} else if (node->state == BNS_ADMINDOWN) {
-			reason = "node is ADMINDOWN";
-		} else if (node->state != BNS_UP) {
-			reason = "state not UP";
-		} else if (node->role != BNR_BATCH) {
-			reason = "mode not BATCH";
-		} else if (node->arch != BNA_XT) {
-			reason = "arch not XT/XE";
-		}
-
-		/* Base state entirely derives from ALPS */
-		node_ptr->node_state &= NODE_STATE_FLAGS;
-		if (reason) {
-			if (node_ptr->reason) {
-				debug3("Initial DOWN node %s - %s",
-					node_ptr->name, node_ptr->reason);
-			} else {
-				info("Initial DOWN node %s - %s",
-					node_ptr->name, reason);
-				node_ptr->reason = xstrdup(reason);
-			}
-			node_ptr->node_state |= NODE_STATE_DOWN;
-		} else {
-			if (node_is_allocated(node))
-				node_ptr->node_state |= NODE_STATE_ALLOCATED;
-			else
-				node_ptr->node_state |= NODE_STATE_IDLE;
-			xfree(node_ptr->reason);
-		}
-	}
-	free_inv(inv);
-	return SLURM_SUCCESS;
-}
-
 /** Base-36 encoding of @coord */
 static char _enc_coord(uint8_t coord)
 {
@@ -366,13 +287,26 @@ static char _enc_coord(uint8_t coord)
 }
 
 /**
- * basil_geometry - Verify node attributes, resolve (X,Y,Z) coordinates.
+ * basil_geometry - Check node attributes, resolve (X,Y,Z) coordinates.
+ *
+ * Checks both SDB database and ALPS inventory for consistency. The inventory
+ * part is identical to basil_inventory(), with the difference of being called
+ * before valid bitmaps exist, from select_g_node_init().
+ * Its dependencies are:
+ * - it needs reset_job_bitmaps() in order to rebuild node_bitmap fields,
+ * - it relies on _sync_nodes_to_jobs() to
+ *   o kill active jobs on nodes now marked DOWN,
+ *   o reset node state to ALLOCATED if it has been marked IDLE here (which is
+ *     an error case, since there is no longer an ALPS reservation for the job,
+ *     this is caught by the subsequent basil_inventory()).
  */
 extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 {
 	struct node_record *node_ptr, *end = node_ptr_array + node_cnt;
+	enum basil_version version = get_basil_version();
+	struct basil_inventory *inv;
 
-	/* General */
+	/* General mySQL */
 	MYSQL		*handle;
 	MYSQL_STMT	*stmt = NULL;
 	/* Input parameters */
@@ -450,6 +384,13 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	bind_cols[COL_CORES].buffer  = (char *)&node_cpus;
 	bind_cols[COL_MEMORY].buffer = (char *)&node_mem;
 
+	inv = get_full_inventory(version);
+	if (inv == NULL)
+		fatal("failed to get initial BASIL inventory");
+
+	info("BASIL %s initial INVENTORY: %d/%d batch nodes available",
+	      bv_names_long[version], inv->batch_avail, inv->batch_total);
+
 	handle = cray_connect_sdb();
 	if (handle == NULL)
 		fatal("can not connect to XTAdmin database on the SDB");
@@ -464,9 +405,13 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		fatal("can not prepare statement to resolve Cray coordinates");
 
 	for (node_ptr = node_record_table_ptr; node_ptr < end; node_ptr++) {
+		struct basil_node *node;
+		char *reason = NULL;
+
 		if ((node_ptr->name == NULL) ||
 		    (sscanf(node_ptr->name, "nid%05u", &node_id) != 1)) {
-			error("can not read basil_node_id from %s", node_ptr->name);
+			error("can not read basil_node_id from %s",
+				node_ptr->name);
 			continue;
 		}
 
@@ -499,11 +444,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				 * set it down here already.
 				 */
 				node_cpus = node_mem = 0;
-				node_ptr->node_state = NODE_STATE_DOWN;
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup("node data unknown -"
-							   " disabled on SMW?");
-				error("%s: %s", node_ptr->name, node_ptr->reason);
+				reason = "node data unknown - disabled on SMW?";
 			} else if (is_null[COL_X] || is_null[COL_Y]
 						  || is_null[COL_Z]) {
 				/*
@@ -512,11 +453,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				 * likely show up in ALPS.
 				 */
 				x_coord = y_coord = z_coord = 0;
-				node_ptr->node_state = NODE_STATE_DOWN;
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup("unknown coordinates -"
-							   " hardware failure?");
-				error("%s: %s", node_ptr->name, node_ptr->reason);
+				reason = "unknown coordinates - hardware failure?";
 			} else if (node_cpus < node_ptr->config_ptr->cpus) {
 				/*
 				 * FIXME: Might reconsider this policy.
@@ -599,14 +536,64 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		     node_ptr->node_hostname, node_ptr->comm_name,
 		     node_cpus, node_mem);
 #endif
+		/*
+		 * Check the current state reported by ALPS inventory, unless it
+		 * is already evident that the node has some other problem.
+		 */
+		if (reason == NULL) {
+			for (node = inv->f->node_head; node; node = node->next)
+				if (node->node_id == node_id)
+					break;
+			if (node == NULL) {
+				reason = "not visible to ALPS - check hardware";
+			} else if (node->state == BNS_DOWN) {
+				reason = "ALPS marked it DOWN";
+			} else if (node->state == BNS_UNAVAIL) {
+				reason = "node is UNAVAILABLE";
+			} else if (node->state == BNS_ROUTE) {
+				reason = "node does ROUTING";
+			} else if (node->state == BNS_SUSPECT) {
+				reason = "entered SUSPECT mode";
+			} else if (node->state == BNS_ADMINDOWN) {
+				reason = "node is ADMINDOWN";
+			} else if (node->state != BNS_UP) {
+				reason = "state not UP";
+			} else if (node->role != BNR_BATCH) {
+				reason = "mode not BATCH";
+			} else if (node->arch != BNA_XT) {
+				reason = "arch not XT/XE";
+			}
+		}
+
+		/* Base state entirely derives from ALPS */
+		node_ptr->node_state &= NODE_STATE_FLAGS;
+		if (reason) {
+			if (node_ptr->reason) {
+				debug("Initial DOWN node %s - %s",
+					node_ptr->name, node_ptr->reason);
+			} else {
+				info("Initial DOWN node %s - %s",
+					node_ptr->name, reason);
+				node_ptr->reason = xstrdup(reason);
+			}
+			node_ptr->node_state |= NODE_STATE_DOWN;
+		} else {
+			if (node_is_allocated(node))
+				node_ptr->node_state |= NODE_STATE_ALLOCATED;
+			else
+				node_ptr->node_state |= NODE_STATE_IDLE;
+			xfree(node_ptr->reason);
+		}
+
 		free_stmt_result(stmt);
 	}
 
 	if (stmt_close(stmt))
 		error("error closing statement: %s", mysql_stmt_error(stmt));
 	cray_close_sdb(handle);
+	free_inv(inv);
 
-	return basil_get_initial_state();
+	return SLURM_SUCCESS;
 }
 
 /**
