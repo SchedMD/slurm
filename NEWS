@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     wasn't updated correctly when the block was resumed.
  -- Synchronize power-save module better with scheduler. Patch from
     Andriy Grytsenko (Massive Solutions Limited).
+ -- Avoid SEGV in association logic with user=NULL. Patch from
+    Andriy Grytsenko (Massive Solutions Limited).
 
 * Changes in SLURM 2.2.5
 ========================
