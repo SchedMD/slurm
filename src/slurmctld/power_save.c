@@ -95,7 +95,7 @@ int   suspend_cnt,   resume_cnt;
 float suspend_cnt_f, resume_cnt_f;
 
 static void  _clear_power_config(void);
-static void  _do_power_work(void);
+static void  _do_power_work(time_t now);
 static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
@@ -108,11 +108,11 @@ static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
 /* Perform any power change work to nodes */
-static void _do_power_work(void)
+static void _do_power_work(time_t now)
 {
 	static time_t last_log = 0, last_work_scan = 0;
 	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
-	time_t now = time(NULL), delta_t;
+	time_t delta_t;
 	uint16_t susp_state;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
@@ -212,7 +212,8 @@ static void _do_power_work(void)
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
 		FREE_NULL_BITMAP(sleep_node_bitmap);
-		last_node_update = now;
+		/* last_node_update could be changed already by another thread!
+		last_node_update = now; */
 	}
 
 	if (wake_node_bitmap) {
@@ -224,7 +225,8 @@ static void _do_power_work(void)
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
 		FREE_NULL_BITMAP(wake_node_bitmap);
-		last_node_update = now;
+		/* last_node_update could be changed already by another thread!
+		last_node_update = now; */
 	}
 }
 
@@ -362,7 +364,8 @@ static int  _reap_procs(void)
 			if (rc != 0) {
 				error("power_save: program exit status of %d",
 				      rc);
-			}
+			} else
+				ping_nodes_now = true;
 		} else if (WIFSIGNALED(status)) {
 			error("power_save: program signalled: %s",
 			      strsignal(WTERMSIG(status)));
@@ -640,7 +643,7 @@ static void *_init_power_save(void *arg)
 		if ((last_node_update >= last_power_scan) ||
 		    (now >= (last_power_scan + 60))) {
 			lock_slurmctld(node_write_lock);
-			_do_power_work();
+			_do_power_work(now);
 			unlock_slurmctld(node_write_lock);
 			last_power_scan = now;
 		}

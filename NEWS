@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     to the slurmctld to have it look for new uids.
  -- BLUEGENE - if a block goes into an error state.  Fix issue where accounting
     wasn't updated correctly when the block was resumed.
+ -- Synchronize power-save module better with scheduler. Patch from
+    Andriy Grytsenko (Massive Solutions Limited).
 
 * Changes in SLURM 2.2.5
 ========================

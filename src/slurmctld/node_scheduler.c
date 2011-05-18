@@ -130,12 +130,12 @@ extern void allocate_nodes(struct job_record *job_ptr)
 {
 	int i;
 
-	last_node_update = time(NULL);
-
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i))
 			make_node_alloc(&node_record_table_ptr[i], job_ptr);
 	}
+
+	last_node_update = time(NULL);
 
 	license_job_get(job_ptr);
 	return;
@@ -2019,10 +2019,10 @@ extern void re_kill_job(struct job_record *job_ptr)
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			if ((--job_ptr->node_cnt) == 0) {
-				last_node_update = time(NULL);
 				job_ptr->job_state &= (~JOB_COMPLETING);
 				delete_step_records(job_ptr, 0);
 				slurm_sched_schedule();
+				last_node_update = time(NULL);
 			}
 			continue;
 		}
