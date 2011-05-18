@@ -12,7 +12,7 @@ to provide details about SLURM's implementation of GRES support including the
 relevant data structures. For an overview of GRES configuration and use, see
 <a href="gres.html">Generic Resource (GRES) Scheduling</a>. For details about
 the APIs provided by GRES plugins, see <a href="gres_plugins.html">
-SLURM Generic Resource (GRES) Plugin API</a>.
+SLURM Generic Resource (GRES) Plugin API</a>.</p>
 
 <h2>Data Structures</h2>
 
@@ -106,6 +106,10 @@ program directing it to GRES which have been allocated for its use (the CUDA
 libraries base their GPU selection upon environment variables, so this logic
 should work for CUDA today if users do not attempt to manipulate the
 environment variables intended for CUDA use).</p>
+
+<p>If you want to see how GRES logic is allocating resouces, configure
+<b>DebugFlags=GRES</b> to log GRES state changes. Note the resulting output can
+be quite verbose, especially for larger clusters.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 

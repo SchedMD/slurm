@@ -366,6 +366,7 @@ generated_html = \
 	ibm.html \
 	jobacct_gatherplugins.html \
 	job_exit_code.html \
+	job_launch.html \
 	job_submit_plugins.html \
 	jobcompplugins.html \
 	mail.html \
