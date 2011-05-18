@@ -357,7 +357,7 @@ line6:
 
 	/****** Line 10 ******/
 	if (job_ptr->preempt_time == 0)
-		sprintf(tmp_line, "PreemptTime=NO_VAL ");
+		sprintf(tmp_line, "PreemptTime=None ");
 	else {
 		slurm_make_time_str((time_t *)&job_ptr->preempt_time,
 				    time_str, sizeof(time_str));
