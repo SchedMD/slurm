@@ -60,6 +60,7 @@ generated_html = \
 	faq.html \
 	gang_scheduling.html \
 	gres.html \
+	gres_design.html \
 	gres_plugins.html \
 	help.html \
 	high_throughput.html \

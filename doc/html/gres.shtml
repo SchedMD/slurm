@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Generic Resource (Gres) Scheduling</h1>
+<h1>Generic Resource (GRES) Scheduling</h1>
 
 <P>Beginning in SLURM version 2.2 generic resource (Gres) scheduling is
 supported through a flexible plugin mechanism. Support is initially provided
