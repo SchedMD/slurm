@@ -51,11 +51,12 @@ int cluster_base = 36;
 uint32_t cluster_flags = 0;
 uint16_t ba_deny_pass = 0;
 
+ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
+
 bool ba_initialized = false;
 uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 bitstr_t *ba_main_mp_bitmap = NULL;
-ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
 
 static void _pack_ba_connection(ba_connection_t *ba_connection,
 				Buf buffer, uint16_t protocol_version)
@@ -810,7 +811,7 @@ setup_done:
 
 		ba_main_mp_bitmap = bit_alloc(num_mps);
 
-		ba_create_system(num_cpus, real_dims);
+		ba_create_system();
 		bridge_setup_system();
 
 		_init_grid(node_info_ptr);

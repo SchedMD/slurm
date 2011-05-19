@@ -399,7 +399,7 @@ extern void set_ba_debug_flags(uint32_t debug_flags);
 extern void reset_ba_system(bool track_down_mps);
 
 /* in the respective block_allocator.c */
-extern void ba_create_system(int num_cpus, int *real_dims);
+extern void ba_create_system(void);
 extern void ba_destroy_system(void);
 
 /*
