@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Modify job expansion logic to support licenses, generic resources, and
     currently running job steps.
+ -- Added an rpath if using the --with-munge option of configure.
  -- Add support for multiple sets of DEFAULT node, partition, and frontend
     specifications in slurm.conf.
 

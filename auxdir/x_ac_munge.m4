@@ -36,7 +36,7 @@ AC_DEFUN([X_AC_MUNGE], [
         test -f "$d/include/munge.h" || continue
 	for bit in $_x_ac_munge_libs; do
           test -d "$d/$bit" || continue
-        
+
  	  _x_ac_munge_libs_save="$LIBS"
           LIBS="-L$d/$bit -lmunge $LIBS"
           AC_LINK_IFELSE(
@@ -54,7 +54,7 @@ AC_DEFUN([X_AC_MUNGE], [
   else
     MUNGE_LIBS="-lmunge"
     MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
-    MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit -Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit"
+    MUNGE_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit -L$x_ac_cv_munge_dir/$bit"
   fi
 
   AC_SUBST(MUNGE_LIBS)
