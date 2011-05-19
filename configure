@@ -21072,7 +21072,7 @@ $as_echo "$as_me: WARNING: unable to locate munge installation" >&2;}
   else
     MUNGE_LIBS="-lmunge"
     MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
-    MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit"
+    MUNGE_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit -L$x_ac_cv_munge_dir/$bit"
   fi
 
 
