@@ -159,7 +159,7 @@ static void _reorder_node_record_table(void)
 
 			memcpy(&node_record_tmp, node_ptr, j);
 			memcpy(node_ptr, node_ptr2, j);
-			memcpy(node_pt2, &node_record_tmp, j);
+			memcpy(node_ptr2, &node_record_tmp, j);
 		}
 	}
 
