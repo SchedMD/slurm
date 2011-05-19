@@ -751,9 +751,11 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 		int rc;
 
 		if (pagg_id == 0) {
+#ifdef HAVE_REAL_CRAY
 			/* This fallback case is for interactive jobs only */
 			error("JobId %u has no pagg ID, falling back to SID",
 				job_ptr->job_id);
+#endif
 			pagg_id = job_ptr->alloc_sid;
 		}
 

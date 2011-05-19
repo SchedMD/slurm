@@ -72,12 +72,15 @@
 #include "src/plugins/select/bluegene/bg_enums.h"
 #elif defined(HAVE_CRAY)
 #include "src/common/node_select.h"
+
+#ifdef HAVE_REAL_CRAY
 /*
  * On Cray installations, the libjob headers are not automatically installed
  * by default, while libjob.so always is, and kernels are > 2.6. Hence it is
  * simpler to just duplicate the single declaration here.
  */
 extern uint64_t job_getjid(pid_t pid);
+#endif
 #endif
 
 #define MAX_RETRIES	10
@@ -547,7 +550,7 @@ static void _set_submit_dir_env(void)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-#ifdef HAVE_CRAY
+#ifdef HAVE_REAL_CRAY
 	uint64_t pagg_id = job_getjid(getpid());
 	/*
 	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session

@@ -16,6 +16,7 @@
 AC_DEFUN([X_AC_CRAY],
 [
   ac_have_cray="no"
+  ac_have_real_cray="no"
   ac_have_alps_emulation="no"
   ac_have_cray_emulation="no"
 
@@ -52,6 +53,8 @@ AC_DEFUN([X_AC_CRAY],
 
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
       ac_have_cray="yes"
+      ac_have_real_cray="yes"
+      AC_DEFINE(HAVE_REAL_CRAY, 1, [Define to 1 for running on a real Cray XT/XE system])
     fi
     AC_MSG_RESULT([$ac_have_cray])
   fi
@@ -62,8 +65,12 @@ AC_DEFUN([X_AC_CRAY],
                     AC_MSG_ERROR([Cray BASIL requires expat headers/rpm]))
     AC_CHECK_LIB(expat, XML_ParserCreate, [],
                  AC_MSG_ERROR([Cray BASIL requires libexpat.so (i.e. libexpat1-dev)]))
-    AC_CHECK_LIB([job], [job_getjid], [],
-                 AC_MSG_ERROR([Need cray-job (usually in /opt/cray/job/default)]))
+
+    if test "$ac_have_real_cray" = "yes"; then
+      AC_CHECK_LIB([job], [job_getjid], [],
+              AC_MSG_ERROR([Need cray-job (usually in /opt/cray/job/default)]))
+    fi
+
     if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
       AC_MSG_ERROR([Cray BASIL requires the cray-MySQL-devel-enterprise rpm])
     fi
@@ -75,6 +82,7 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(SALLOC_RUN_FOREGROUND, 1, [Define to 1 to require salloc execution in the foreground.])
   fi
   AM_CONDITIONAL(HAVE_CRAY, test "$ac_have_cray" = "yes")
+  AM_CONDITIONAL(HAVE_REAL_CRAY, test "$ac_have_real_cray" = "yes")
   AM_CONDITIONAL(HAVE_ALPS_EMULATION, test "$ac_have_alps_emulation" = "yes")
   AM_CONDITIONAL(HAVE_CRAY_EMULATION, test "$ac_have_cray_emulation" = "yes")
 ])
