@@ -490,11 +490,15 @@ Using this option will cause \fBsrun\fR to behave exactly as if the
 SLURM_JOB_ID environment variable was set.
 
 .TP
-\fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR
-Immediately terminate a job if any task exits with a non\-zero exit code.
-Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
-over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task
-exits with a non\-zero exit code.
+\fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR[=0|1]
+Controls whether or not to terminate a job if any task exits with a non\-zero
+exit code. If this option is not specified, the default action will be based
+upon the SLURM configuration parameter of \fBKillOnBadExit\fR. If this option
+is specified, it will take precedence over \fBKillOnBadExit\fR. An option
+argument of zero will not terminate the job. A non\-zero argument or no
+argument will terminate the job.
+Note: This option takes precedence over the \fB\-W\fR, \fB\-\-wait\fR option
+to terminate the job immediately if a task exits with a non\-zero exit code.
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR

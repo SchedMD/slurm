@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     specifications in slurm.conf.
  -- BLUEGENE - Improved logic to place small blocks in free space before freeing
     larger blocks.
+ -- Add optional argument to srun's --kill-on-bad-exit so that user can set
+    its value to zero and override a SLURM configuration parameter of
+    KillOnBadExit.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
