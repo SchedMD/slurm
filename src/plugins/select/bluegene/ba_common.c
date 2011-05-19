@@ -215,6 +215,8 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 {
 	int i, j;
 	ba_geo_combos_t *combos;
+	int gap_start, max_gap_start;
+	int gap_len, max_gap_len;
 
 	xassert(size > 0);
 	combos = &geo_combos[size-1];
@@ -222,24 +224,61 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 	combos->set_count_array = xmalloc(sizeof(int) * combos->elem_count);
 	combos->set_bits_array  = xmalloc(sizeof(bitstr_t *) *
 					  combos->elem_count);
+	combos->start_coord = xmalloc(sizeof(uint16_t *) * combos->elem_count);
+	combos->block_size  = xmalloc(sizeof(uint16_t *) * combos->elem_count);
+
 	for (i = 1; i <= combos->elem_count; i++) {
 		combos->set_bits_array[i-1] = bit_alloc(size);
 		if (combos->set_bits_array[i-1] == NULL)
 			fatal("bit_alloc: malloc failure");
+
+		gap_start = -1;
+		max_gap_start = -1;
+		gap_len = 0;
+		max_gap_len = 0;
 		for (j = 0; j < size; j++) {
-			if (((i >> j) & 0x1) == 0)
+			if (((i >> j) & 0x1) == 0) {
+				if (gap_len++ == 0)
+					gap_start = j;
 				continue;
+			}
+			if (gap_len > max_gap_len) {
+				max_gap_len = gap_len;
+				max_gap_start = gap_start;
+			}
+			gap_len = 0;
 			bit_set(combos->set_bits_array[i-1], j);
 			combos->set_count_array[i-1]++;
 		}
+		if (gap_len) {	/* test for wrap in gap */
+			for (j = 0; j < size; j++) {
+				if (bit_test(combos->set_bits_array[i-1], j))
+					break;
+				gap_len++;
+			}
+			if (gap_len >= max_gap_len) {
+				max_gap_len = gap_len;
+				max_gap_start = gap_start;
+			}
+		}
+
+		if (max_gap_len == 0) {
+			combos->start_coord[i-1] = 0;
+		} else {
+			combos->start_coord[i-1] = (max_gap_start +
+						    max_gap_len) % size;
+		}
+		combos->block_size[i-1] = size - max_gap_len;
 	}
 
 #if 0
-	info("size=%d", size);
+	info("geometry size=%d", size);
 	for (i = 0; i < combos->elem_count; i++) {
 		char buf[64];
 		bit_fmt(buf, sizeof(buf), combos->set_bits_array[i]);
-		info("cnt:%d bits:%s", combos->set_count_array[i], buf);
+		info("cnt:%d bits:%s start_coord:%u block_size:%u",
+		     combos->set_count_array[i], buf,
+		     combos->start_coord[i], combos->block_size[i]);
 	}
 	info("\n\n");
 #endif
@@ -260,6 +299,8 @@ static void _free_geo_bitmap_arrays(void)
 		}
 		xfree(combos->set_count_array);
 		xfree(combos->set_bits_array);
+		xfree(combos->start_coord);
+		xfree(combos->block_size);
 	}
 }
 

@@ -159,6 +159,8 @@ typedef struct {
 					 * and set_bits_array */
 	int *set_count_array;		/* number of set bits in this array */
 	bitstr_t **set_bits_array;	/* bitmap rows to use */
+	uint16_t *start_coord;		/* array of lowest coord in block */
+	uint16_t *block_size;		/* dimension size in block */
 } ba_geo_combos_t;
 
 extern ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
