@@ -243,6 +243,15 @@ parent association is used for fairshare. To clear a previously set
 value use the modify command with a new value of \-1.
 
 .TP
+\fIGraceTime\fP=<preemption grace time in seconds>
+Specifies, in units of seconds, the preemption grace time
+to be extended to a job which has been selected for preemption.
+The default value is zero, no preemption grace time is allowed on
+this QOS.
+.P			  
+NOTE: This value is only meaningful for QOS PreemptMode=CANCEL)
+	   
+.TP
 \fIGrpCPUMins\fP=<max cpu minutes>
 Maximum number of CPU minutes running jobs are able to be allocated in
 aggregate for this association and all associations which are children
@@ -926,6 +935,11 @@ override the requested partition's TimeLimit.
 .RE
 
 .TP
+\fIGraceTime\fP
+Preemption grace time to be extended to a job which has been 
+selected for preemption.
+
+.TP
 \fIGrpCPUMins\fP
 Maximum number of CPU minutes running jobs are able to be allocated in
 aggregate for this QOS.
@@ -1025,6 +1039,13 @@ Display information with previously deleted data.
 \fIDescription\fP
 An arbitrary string describing a QOS.
 
+.TP
+\fIGraceTime\fP
+Preemption grace time to be extended to a job which has been
+selected for preemption in the format of hh:mm:ss.  The default
+value is zero, no preemption grace time is allowed on this partition.
+NOTE: This value is only meaningful for QOS PreemptMode=CANCEL.
+			  
 .TP
 \fIGrpCPUMins\fP
 Maximum number of CPU minutes running jobs are able to be allocated in

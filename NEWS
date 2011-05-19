@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre6
 =============================
+ -- Modify job expansion logic to support licenses, generic resources, and
+    currently running job steps.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
@@ -196,6 +198,10 @@ documents those changes that are of interest to users and admins.
     to the slurmctld to have it look for new uids.
  -- BLUEGENE - if a block goes into an error state.  Fix issue where accounting
     wasn't updated correctly when the block was resumed.
+ -- Synchronize power-save module better with scheduler. Patch from
+    Andriy Grytsenko (Massive Solutions Limited).
+ -- Avoid SEGV in association logic with user=NULL. Patch from
+    Andriy Grytsenko (Massive Solutions Limited).
 
 * Changes in SLURM 2.2.5
 ========================

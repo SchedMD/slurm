@@ -86,6 +86,9 @@ uid_from_string (char *name, uid_t *uidp)
 	char buffer[PW_BUF_SIZE], *p = NULL;
 	long l;
 
+	if (!name)
+		return -1;
+
 	/*
 	 *  Check to see if name is a valid username first.
 	 */
@@ -189,6 +192,9 @@ gid_from_string (char *name, gid_t *gidp)
 	struct group grp, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
 	long l;
+
+	if (!name)
+		return -1;
 
 	/*
 	 *  Check for valid group name first.

@@ -72,6 +72,14 @@ extern void license_free_rec(void *x);
 extern int license_job_get(struct job_record *job_ptr);
 
 /*
+ * license_job_merge - The licenses from one job have just been merged into
+ *	another job by appending one job's licenses to another, possibly
+ *	including duplicate names. Reconstruct this job's licenses and
+ *	license_list fields to eliminate duplicates.
+ */
+extern void license_job_merge(struct job_record *job_ptr);
+
+/*
  * license_job_return - Return the licenses allocated to a job
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code

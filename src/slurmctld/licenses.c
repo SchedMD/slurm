@@ -123,7 +123,7 @@ static List _build_license_list(char *licenses, bool *valid)
 	token = strtok_r(tmp_str, ",;", &last);
 	while (token && *valid) {
 		uint32_t num = 1;
-		for (i=0; token[i]; i++) {
+		for (i = 0; token[i]; i++) {
 			if (isspace(token[i])) {
 				*valid = false;
 				break;
@@ -137,10 +137,17 @@ static List _build_license_list(char *licenses, bool *valid)
 			*valid = false;
 			break;
 		}
-		license_entry = xmalloc(sizeof(licenses_t));
-		license_entry->name = xstrdup(token);
-		license_entry->total = num;
-		list_push(lic_list, license_entry);
+
+		license_entry = list_find_first(lic_list, _license_find_rec,
+						token);
+		if (license_entry) {
+			license_entry->total += num;
+		} else {
+			license_entry = xmalloc(sizeof(licenses_t));
+			license_entry->name = xstrdup(token);
+			license_entry->total = num;
+			list_push(lic_list, license_entry);
+		}
 		token = strtok_r(NULL, ",;", &last);
 	}
 	xfree(tmp_str);
@@ -150,6 +157,36 @@ static List _build_license_list(char *licenses, bool *valid)
 		lic_list = NULL;
 	}
 	return lic_list;
+}
+
+/* Given a list of license_t records, return a license string.
+ * This can be combined with _build_license_list() to eliminate duplicates
+ * (e.g. "tux*2,tux*3" gets changed to "tux*5"). */
+static char * _build_license_string(List license_list)
+{
+	char buf[128], *sep;
+	char *licenses = NULL;
+	ListIterator iter;
+	licenses_t *license_entry;
+
+	if (!license_list)
+		return licenses;
+
+	iter = list_iterator_create(license_list);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		if (licenses)
+			sep = ",";
+		else
+			sep = "";
+		snprintf(buf, sizeof(buf), "%s%s*%u", sep, license_entry->name,
+			 license_entry->total);
+		xstrcat(licenses, buf);
+	}
+	list_iterator_destroy(iter);
+
+	return licenses;
 }
 
 /* Initialize licenses on this system based upon slurm.conf */
@@ -276,6 +313,22 @@ extern List license_validate(char *licenses, bool *valid)
 		job_license_list = NULL;
 	}
 	return job_license_list;
+}
+
+/*
+ * license_job_merge - The licenses from one job have just been merged into
+ *	another job by appending one job's licenses to another, possibly
+ *	including duplicate names. Reconstruct this job's licenses and
+ *	license_list fields to eliminate duplicates.
+ */
+extern void license_job_merge(struct job_record *job_ptr)
+{
+	bool valid;
+
+	FREE_NULL_LIST(job_ptr->license_list);
+	job_ptr->license_list = _build_license_list(job_ptr->licenses, &valid);
+	xfree(job_ptr->licenses);
+	job_ptr->licenses = _build_license_string(job_ptr->license_list);
 }
 
 /*

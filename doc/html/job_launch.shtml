@@ -1,0 +1,140 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Job Launch Design Guide</a></h1>
+
+<h2>Overview</h2>
+
+<p>This guide describes at a high level the processes which occur in order
+to initiate a job including the daemons and plugins involved in the process.
+It describes the process of job allocation, step allocation, task launch and
+job termination. The functionality of tens of thousands of lines of code
+has been distilled here to a couple of pages of text, so much detail is
+missing.</p>
+
+<h2>Job Allocation</h2>
+
+<p>The first step of the process is to create a job allocation, which is
+a claim on compute resources. A job allocation can be created using the
+<b>salloc</b>, <b>sbatch</b> or <b>srun</b> command. The <b>salloc</b> and
+<b>sbatch</b> commands create resource allocations while the <b>srun</b>
+command will create a resource allocation (if not already running within one)
+plus launch tasks. Each of these commands will fill in a data structure
+identifying the specifications of the job allocation requirement (e.g. node
+count, task count, etc.) based upon command line options and environment
+variables and send the RPC to the <b>slurmctld</b> daemon. If the new job
+request is the highest priority, the <b>slurmctld</b> daemon will attempt
+to select resources for it immediately, otherwise it will validate that the job
+request can be satisfied at some time and queue the request. In either case
+the request will receive a response almost immediately containing one of the
+following:</p>
+<ul>
+<li>A job ID and the resource allocation specification (nodes, cpus, etc.)</li>
+<li>A job ID and notification of the job being in a queued state OR</li>
+<li>An error code</li>
+</ul> 
+
+<p>The process of selecting resources for a job request involves multiple steps,
+some of which involve plugins. The process is as follows:</p>
+<ol>
+<li>Call <b>job_submit</b> plugins to modify the request as appropriate</li>
+<li>Validate the the options are valid for this user (e.g. valid partition
+name, valid limits, etc.)</li>
+<li>Determine if this job is the highest priority runnable job, if so then
+really try to allocate resources for it now, otherwise only validate that it
+could run if no other jobs existed</li>
+<li>Determine which nodes could be used for the job. This if the feature
+specification uses an exclusive OR option, then multiple iterations of the
+selection process below will be required with disjoint sets of nodes</li>
+<li>Call the <b>select</b> plugin to select the best resources for the request</li>
+<li>The <b>select</b> plugin will consider network topology and the topology within
+a node (e.g. sockets, cores, and threads) to select the best resources for the
+job</li>
+<li>If the job can not be initiated using available resources and preemption
+support is configured, the <b>select</b> plugin will also determine if the job
+can be initiated after preempting lower priority jobs. If so then initiate
+preemption as needed to start the job</li>
+</ol>
+
+<h2>Step Allocation</h2>
+
+<p>The <b>srun</b> command is always used for job step creation. It fills in
+a job step request RPC using information from the command line and environment
+variables then sends that request to the <b>slurmctld</b> daemon. It is
+important to note that many of the <b>srun</b> options are intended for job
+allocation and are not supported by the job step request RPC (for example the
+socket, core and thread information is not supported). If a job step uses
+all of the resources allocated to the job then the lack of support for some
+options is not important. If one wants to execute multiple job steps using
+various subsets of resources allocated to the job, this shortcoming could
+prove problematic. It is also worth noting that the logic used to select
+resources for a job step is relatively simple and entirely contained within
+the <b>slurmctld</b> daemon code (the <b>select</b> plugin is not used for job
+steps). If the request can not be immediately satisfied due to a request for
+exclusive access to resources, the appropriate error message will be sent and
+the <b>srun</b> command will retry the request on a periodic basis.
+(NOTE: It would be desirable to queue the job step requests to support job step 
+dependencies and better performance in the initiation of job steps, but that 
+is not currently supported.)
+If the request can be satisfied, the response contains a digitally signed
+credential (by the <b>crypto</b> plugin) identifying the resources to be used.</p>
+
+<h2>Task Launch</h2>
+
+<p>The <b>srun</b> command builds a task launch request data structure
+including the credential, executable name, file names, etc. and sends it to
+the <b>slurmd</b> daemon on node zero of the job step allocation. The
+<b>slurmd</b> daemon validates the signature and forwards the request to the
+<b>slurmd</b> daemons on other nodes to launch tasks for that job step. The
+degree of fanout in this message forwarding is configurable using the
+<b>TreeWidth</b> parameter. Each <b>slurmd</b> daemon tests that the job has
+not been cancelled since the credential was issued (due to a possible race 
+condition) and spawns a <b>slurmstepd</b> program to manage the job step.
+Note that the <b>slurmctld</b> daemon is not directly involved in task
+launch in order to minimize the overhead on this critical resource.</p>
+
+<p>Each <b>slurmstepd</b> program executes a single job step.
+Besides the functions listed below, the <b>slurmstepd</b> program also
+executes several SPANK plugin functions at various times.</p>
+<ol>
+<li>Performs MPI setup (using the appropriate plugin)</li>
+<li>Calls the <b>switch</b> plugin to perform any needed network configuration</li>
+<li>Creates a container for the job step using a <b>proctrack</b> plugin</li>
+<li>Change user ID to that of the user</li>
+<li>Configures I/O for the tasks (either using files or a socket connection back
+to the <b>srun</b> command</li>
+<li>Sets up environment variables for the tasks including many task-specific
+environment variables</li>
+<li>Fork/exec the tasks</li>
+</ol>
+
+<h2>Job Step Termination</h2>
+
+<p>There are several ways in which a job step or job can terminate, each with
+slight variation in the logic executed. The simplest case is if the tasks run
+to completion. The <b>srun</b> will note the termination of output from the
+tasks and notify the <b>slurmctld</b> daemon that the job step has completed.
+<b>slurmctld</b> will simply log the job step termination. The job step can
+also be explicitly cancelled by a user, reach the end of its time limit, etc.
+and those follow a sequence of steps very similar to that for job termination,
+which is described below.</p>
+
+<h2>Job Termination</h2>
+
+<p>Job termination can either be user initiated (e.g. <b>scancel</b> command) or system
+initiated (e.g. time limit reached). The termination ultimately requires
+the <b>slurmctld</b> daemon to notify the <b>slurmd</b> daemons on allocated
+nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
+<ol>
+<li>Send a SIGCONT and SIGTERM signal to any user tasks</li> 
+<li>Wait <b>KilLWait</b> seconds if there are any user tasks</li>
+<li>Send a SIGKILL signal to any user tasks</li>
+<li>Wait for all tasks to complete</li>
+<li>Execute any <b>Epilog</b> program</li>
+<li>Send an epilog_complete RPC to the <b>slurmctld</b> daemon</li>
+</ol>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 18 May 2011</p>
+
+<!--#include virtual="footer.txt"-->

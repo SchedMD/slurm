@@ -133,6 +133,7 @@ static uint32_t	_get_gres_cnt(char *orig_config, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len);
 static char *	_get_gres_conf(void);
 static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
+static int	_gres_find_id(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
 extern int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_offset, uint32_t cpu_cnt,
@@ -205,6 +206,15 @@ static uint32_t	_build_id(char *gres_name)
 	}
 
 	return id;
+}
+
+static int _gres_find_id(void *x, void *key)
+{
+	uint32_t *plugin_id = (uint32_t *)key;
+	gres_state_t *state_ptr = (gres_state_t *) x;
+	if (state_ptr->plugin_id == *plugin_id)
+		return 1;
+	return 0;
 }
 
 /* Variant of strcmp that will accept NULL string pointers */
@@ -2875,6 +2885,188 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 }
 
 /*
+ * Merge one job's gres allocation into another job's gres allocation.
+ * IN from_job_gres_list - List of gres records for the job being merged
+ *			into another job
+ * IN from_job_node_bitmap - bitmap of nodes for the job being merged into
+ *			another job
+ * IN/OUT to_job_gres_list - List of gres records for the job being merged
+ *			into job
+ * IN to_job_node_bitmap - bitmap of nodes for the job being merged into
+ */
+extern void gres_plugin_job_merge(List from_job_gres_list,
+				  bitstr_t *from_job_node_bitmap,
+				  List to_job_gres_list,
+				  bitstr_t *to_job_node_bitmap)
+{
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr, *gres_ptr2;
+	gres_job_state_t *gres_job_ptr, *gres_job_ptr2;
+	int new_node_cnt;
+	int i_first, i_last, i;
+	int from_inx, to_inx, new_inx;
+	bitstr_t **new_gres_bit_alloc, **new_gres_bit_step_alloc;
+	uint32_t *new_gres_cnt_step_alloc;
+
+	(void) gres_plugin_init();
+	new_node_cnt = bit_set_count(from_job_node_bitmap) +
+		       bit_set_count(to_job_node_bitmap) -
+		       bit_overlap(from_job_node_bitmap, to_job_node_bitmap);
+	i_first = MIN(bit_ffs(from_job_node_bitmap),
+		      bit_ffs(to_job_node_bitmap));
+	i_first = MAX(i_first, 0);
+	i_last  = MAX(bit_fls(from_job_node_bitmap),
+		      bit_fls(to_job_node_bitmap));
+	if (i_last == -1) {
+		error("gres_plugin_job_merge: node_bitmaps are empty");
+		return;
+	}
+
+	slurm_mutex_lock(&gres_context_lock);
+
+	/* Step one - Expand the gres data structures in "to" job */
+	if (!to_job_gres_list)
+		goto step2;
+	gres_iter = list_iterator_create(to_job_gres_list);
+	if (!gres_iter)
+		fatal("list_iterator_create: malloc failure");
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
+		new_gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
+					     new_node_cnt);
+		new_gres_bit_step_alloc = xmalloc(sizeof(bitstr_t *) *
+						  new_node_cnt);
+		new_gres_cnt_step_alloc = xmalloc(sizeof(uint32_t) *
+						  new_node_cnt);
+		if (!new_gres_bit_alloc || !new_gres_bit_step_alloc ||
+		    !new_gres_cnt_step_alloc)
+			fatal("malloc failure");
+
+		from_inx = to_inx = new_inx = -1;
+		for (i = i_first; i <= i_last; i++) {
+			bool from_match = false, to_match = false;
+			if (bit_test(to_job_node_bitmap, i)) {
+				to_match = true;
+				to_inx++;
+			}
+			if (bit_test(from_job_node_bitmap, i)) {
+				from_match = true;
+				from_inx++;
+			}
+			if (from_match || to_match)
+				new_inx++;
+			if (to_match) {
+				if (gres_job_ptr->gres_bit_alloc) {
+					new_gres_bit_alloc[new_inx] =
+						gres_job_ptr->
+						gres_bit_alloc[to_inx];
+				}
+				if (gres_job_ptr->gres_bit_step_alloc) {
+					new_gres_bit_step_alloc[new_inx] =
+						gres_job_ptr->
+						gres_bit_step_alloc[to_inx];
+				}
+				if (gres_job_ptr->gres_cnt_step_alloc) {
+					new_gres_cnt_step_alloc[new_inx] =
+						gres_job_ptr->
+						gres_cnt_step_alloc[to_inx];
+				}
+			}
+		}
+		gres_job_ptr->node_cnt = new_node_cnt;
+		xfree(gres_job_ptr->gres_bit_alloc);
+		gres_job_ptr->gres_bit_alloc = new_gres_bit_alloc;
+		xfree(gres_job_ptr->gres_bit_step_alloc);
+		gres_job_ptr->gres_bit_step_alloc = new_gres_bit_step_alloc;
+		xfree(gres_job_ptr->gres_cnt_step_alloc);
+		gres_job_ptr->gres_cnt_step_alloc = new_gres_cnt_step_alloc;
+	}
+	list_iterator_destroy(gres_iter);
+
+	/* Step two - Merge the gres information from the "from" job into the
+	 * existing gres information for the "to" job */
+step2:	if (!from_job_gres_list)
+		goto step3;
+	if (!to_job_gres_list) {
+		to_job_gres_list = list_create(_gres_job_list_delete);
+		if (!to_job_gres_list)
+			fatal("list_create: malloc failure");
+	}
+	gres_iter = list_iterator_create(from_job_gres_list);
+	if (!gres_iter)
+		fatal("list_iterator_create: malloc failure");
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
+		gres_ptr2 = list_find_first(to_job_gres_list, _gres_find_id,
+					    &gres_ptr->plugin_id);
+		if (gres_ptr2) {
+			gres_job_ptr2 = gres_ptr2->gres_data;
+		} else {
+			gres_ptr2 = xmalloc(sizeof(gres_state_t));
+			gres_job_ptr2 = xmalloc(sizeof(gres_job_state_t));
+			gres_ptr2->plugin_id = gres_ptr->plugin_id;
+			gres_ptr2->gres_data = gres_job_ptr2;
+			gres_job_ptr2->gres_cnt_alloc = gres_job_ptr->
+							gres_cnt_alloc;
+			gres_job_ptr2->node_cnt = new_node_cnt;
+			gres_job_ptr2->gres_bit_alloc = 
+				xmalloc(sizeof(bitstr_t *) * new_node_cnt);
+			gres_job_ptr2->gres_bit_step_alloc = 
+				xmalloc(sizeof(bitstr_t *) * new_node_cnt);
+			gres_job_ptr2->gres_cnt_step_alloc = 
+				xmalloc(sizeof(uint32_t) * new_node_cnt);
+			list_append(to_job_gres_list, gres_ptr2);
+		}
+		from_inx = to_inx = new_inx = -1;
+		for (i = i_first; i <= i_last; i++) {
+			bool from_match = false, to_match = false;
+			if (bit_test(to_job_node_bitmap, i)) {
+				to_match = true;
+				to_inx++;
+			}
+			if (bit_test(from_job_node_bitmap, i)) {
+				from_match = true;
+				from_inx++;
+			}
+			if (from_match || to_match)
+				new_inx++;
+			if (from_match) {
+				if (!gres_job_ptr->gres_bit_alloc) {
+					;
+				} else if (gres_job_ptr2->
+					   gres_bit_alloc[new_inx]) {
+					/* Do not merge GRES allocations on
+					 * a node, just keep original job's */
+#if 0
+					bit_or(gres_job_ptr2->
+					       gres_bit_alloc[new_inx],
+					       gres_job_ptr->
+					       gres_bit_alloc[from_inx]);
+#endif
+				} else {
+					gres_job_ptr2->gres_bit_alloc[new_inx] =
+						gres_job_ptr->
+						gres_bit_alloc[from_inx];
+					gres_job_ptr->
+						gres_bit_alloc
+						[from_inx] = NULL;
+				}
+				if (gres_job_ptr->gres_cnt_step_alloc &&
+				    gres_job_ptr->
+				    gres_cnt_step_alloc[from_inx]) {
+					error("Attempt to merge gres, from "
+					      "job has active steps");
+				}
+			}
+		}
+	}
+	list_iterator_destroy(gres_iter);
+
+step3:	slurm_mutex_unlock(&gres_context_lock);
+	return;
+}
+
+/*
  * Set environment variables as required for a batch job
  * IN/OUT job_env_ptr - environment variable array
  * IN gres_list - generated by gres_plugin_job_alloc()
@@ -3280,6 +3472,8 @@ List gres_plugin_step_state_extract(List gres_list, int node_index)
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
+	if (!gres_iter)
+		fatal("list_iterator_create: malloc failure");
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		if (node_index == -1)
 			new_gres_data = _step_state_dup(gres_ptr->gres_data);
@@ -3301,6 +3495,105 @@ List gres_plugin_step_state_extract(List gres_list, int node_index)
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return new_gres_list;
+}
+
+/*
+ * A job allocation size has changed. Update the job step gres information
+ * bitmaps and other data structures.
+ * IN gres_list - List of Gres records for this step to track usage
+ * IN orig_job_node_bitmap - bitmap of nodes in the original job allocation
+ * IN new_job_node_bitmap  - bitmap of nodes in the new job allocation
+ */
+void gres_plugin_step_state_rebase(List gres_list,
+				   bitstr_t *orig_job_node_bitmap,
+				   bitstr_t *new_job_node_bitmap)
+{
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr;
+	gres_step_state_t *gres_step_ptr;
+	int old_node_cnt, new_node_cnt;
+	int i_first, i_last, i;
+	int old_inx, new_inx;
+	bitstr_t *new_node_in_use;
+	bitstr_t **new_gres_bit_alloc = NULL;
+
+	if (gres_list == NULL)
+		return;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	gres_iter = list_iterator_create(gres_list);
+	if (!gres_iter)
+		fatal("list_iterator_create: malloc failure");
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
+		if (!gres_step_ptr)
+			continue;
+		if (!gres_step_ptr->node_in_use) {
+			error("gres_plugin_step_state_rebase: node_in_use is "
+			      "NULL");
+			continue;
+		}
+		old_node_cnt = bit_set_count(orig_job_node_bitmap);
+		new_node_cnt = bit_set_count(new_job_node_bitmap);
+		i_first = MIN(bit_ffs(orig_job_node_bitmap),
+			      bit_ffs(new_job_node_bitmap));
+		i_first = MAX(i_first, 0);
+		i_last  = MAX(bit_fls(orig_job_node_bitmap),
+			      bit_fls(new_job_node_bitmap));
+		if (i_last == -1) {
+			error("gres_plugin_step_state_rebase: node_bitmaps "
+			      "are empty");
+			continue;
+		}
+		new_node_in_use = bit_alloc(new_node_cnt);
+		if (!new_node_in_use)
+			fatal("bit_alloc: malloc failure");
+
+		old_inx = new_inx = -1;
+		for (i = i_first; i <= i_last; i++) {
+			bool old_match = false, new_match = false;
+			if (bit_test(orig_job_node_bitmap, i)) {
+				old_match = true;
+				old_inx++;
+			}
+			if (bit_test(new_job_node_bitmap, i)) {
+				new_match = true;
+				new_inx++;
+			}
+			if (old_match && new_match) {
+				bit_set(new_node_in_use, new_inx);
+				if (gres_step_ptr->gres_bit_alloc) {
+					if (!new_gres_bit_alloc) {
+						new_gres_bit_alloc =
+							xmalloc(
+							sizeof(bitstr_t *) *
+							new_node_cnt);
+					}
+					new_gres_bit_alloc[new_inx] =
+						gres_step_ptr->gres_bit_alloc[old_inx];
+				}
+			} else if (old_match &&
+				   gres_step_ptr->gres_bit_alloc &&
+				   gres_step_ptr->gres_bit_alloc[old_inx]) {
+				/* Node removed from job allocation,
+				 * release step's resources */
+				bit_free(gres_step_ptr->
+					 gres_bit_alloc[old_inx]);
+			}
+		}
+
+		gres_step_ptr->node_cnt = new_node_cnt;
+		bit_free(gres_step_ptr->node_in_use);
+		gres_step_ptr->node_in_use = new_node_in_use;
+		xfree(gres_step_ptr->gres_bit_alloc);
+		gres_step_ptr->gres_bit_alloc = new_gres_bit_alloc;
+	}
+	list_iterator_destroy(gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return;
 }
 
 /*

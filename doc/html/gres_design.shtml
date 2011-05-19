@@ -1,0 +1,126 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Generic Resource (GRES) Guide</a></h1>
+
+<h2>Overview</h2>
+
+<p>Generic Resources (GRES) are resources associated with a specific node
+that can be allocated to jobs and steps. The most obvious example of
+GRES use would be GPUs. GRES are identified by a specific name and use an
+optional plugin to provide device-specific support. This document is meant
+to provide details about SLURM's implementation of GRES support including the
+relevant data structures. For an overview of GRES configuration and use, see
+<a href="gres.html">Generic Resource (GRES) Scheduling</a>. For details about
+the APIs provided by GRES plugins, see <a href="gres_plugins.html">
+SLURM Generic Resource (GRES) Plugin API</a>.</p>
+
+<h2>Data Structures</h2>
+
+<p>GRES are associated with SLURM nodes, jobs and job steps. You will find
+a string variable named <b>gres</b> in those data structures which
+is used to store the GRES configured on a node or required by a job or step
+(e.g. "gpu:2,nic:1"). This string is also visible to various SLURM commands
+viewing information about those data structures (e.g. "scontrol show job").
+There is a second variable associated with each of those data structures on
+the <b>slurmctld</b> daemon
+named <b>gres_list</b> that is intended for program use only. Each element
+in the list <b>gres_list</b> provides information about a specific GRES type
+(e.g. one data structure for "gpu" and a second structure with information
+about "nic"). The structures on <b>gres_list</b> contain an ID number
+(which is faster to compare than a string) plus a pointer to another structure.
+This second structure differs somewhat for nodes, jobs, and steps (see
+<b>gres_node_state_t</b>, <b>gres_job_state_t</b>, and <b>gres_step_state_t</b> in
+<b>src/common/gres.h</b> for details), but contains various counters and bitmaps.
+Since these data structures differ for various entity types, the functions
+used to work with them are also different. If no GRES are associated with a
+node, job or step, then both <b>gres</b> and <b>gres_list</b> will be NULL.</p>
+
+<pre>
+------------------------
+|   Job Information    |
+|----------------------|
+| gres = "gpu:2,nic:1" |
+|      gres_list       |
+-----------+------------
+           |
+           +---------------------------------
+           |                                |
+   --------+---------               --------+---------
+   | List Struct    |               | List Struct    |
+   |----------------|               |----------------|
+   | id = 123 (gpu) |               | id = 124 (nic) |
+   |   gres_data    |               |   gres_data    |
+   --------+---------               --------+---------
+           |                                |
+           |                              ....
+           |
+           |
+-----------+------------------------------------
+| gres_job_state_t                             |
+|----------------------------------------------|
+| gres_count = 2                               |
+| node_count = 3                               |
+| gres_bitmap(by node) = 0,1;                  |
+|                        2,3;                  |
+|                        0,2                   |
+| gres_count_allocated_to_steps(by node) = 1;  |
+|                                          1;  |
+|                                          1   |
+| gres_bitmap_allocated_to_steps(by node) = 0; |
+|                                           2; |
+|                                           0  |
+------------------------------------------------
+</pre>
+
+<h2>Mode of Operation</h2>
+
+<p>After the slurmd daemon reads the configuration files, it calls the function
+<b>node_config_load()</b> for each configured plugin. This can be used to
+validate the configuration, for example validate that the appropriate devices
+actually exist. If no GRES plugin exists for that resource type, the information
+in the configuration file is assumed correct. Each node's GRES information is
+reported by slurmd to the slurmctld daemon at node registration time.</p>
+
+<p>The slurmctld daemon maintains GRES information in the data structures
+described above for each node, including the number of configured and allocated
+resources. If those resources are identified with a specific device file
+rather than just a count, bitmaps are used record which specific resources have
+been allocated to jobs.</p>
+
+<p>The slurmctld daemon's GRES information about jobs includes several arrays
+equal in length to the number of allocated nodes. The index into each of the
+arrays is the sequence number of the node in that's job's allocation (e.g.
+the first element is node zero of the <b>job</b> allocation). The job step's
+GRES information is similar to that of a job including the design where the
+index into arrays is based upon the job's allocation. This means when a job
+step is allocated or terminates, the required bitmap operations are very
+easy to perform without computing different index values for job and step
+data structures.</p>
+
+<p>The most complex operation on the GRES data structures happens when a job
+changes size (has nodes added or removed). In that case, the array indexed by
+node index must be rebuilt, with records shifting as appropriate. Note that
+the current software is not compatible with having different GRES counts by
+node (a job can not have 2 GPUs on one node and 1 GPU on a second node),
+although that might be addressed at a later time.</p>
+
+<p>When a job or step is initiated, it's credential includes allocated GRES information.
+This can be used by the slurmd daemon to associate those resources with that
+job. Our plan is to use the Linux cgroups logic to bind a job and/or its
+tasks with specific GRES devices, however that logic does not currently exist.
+What does exist today is a pair of plugin APIs, <b>job_set_env()</b> and
+<b>step_set_env()</b> which can be used to set environment variables for the
+program directing it to GRES which have been allocated for its use (the CUDA
+libraries base their GPU selection upon environment variables, so this logic
+should work for CUDA today if users do not attempt to manipulate the
+environment variables reserved for CUDA use).</p>
+
+<p>If you want to see how GRES logic is allocating resources, configure
+<b>DebugFlags=GRES</b> to log GRES state changes. Note the resulting output can
+be quite verbose, especially for larger clusters.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 18 May 2011</p>
+
+<!--#include virtual="footer.txt"-->

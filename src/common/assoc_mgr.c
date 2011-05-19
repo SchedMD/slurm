@@ -2639,7 +2639,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 			if (uid_from_string (object->user, &pw_uid) < 0) {
 				debug("wckey add couldn't get a uid "
 				      "for user %s",
-				      object->name);
+				      object->user);
 				object->uid = NO_VAL;
 			} else
 				object->uid = pw_uid;

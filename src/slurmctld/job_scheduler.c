@@ -50,6 +50,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/env.h"
+#include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -1082,7 +1083,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_job_ptr = find_job_record(job_id);
 			if ((depend_type == SLURM_DEPEND_EXPAND) &&
 			    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
-			     (IS_JOB_FINISHED(dep_job_ptr))              ||
+			     (!IS_JOB_RUNNING(dep_job_ptr))              ||
 			     (dep_job_ptr->qos_id != job_ptr->qos_id)    ||
 			     (dep_job_ptr->part_ptr == NULL)             ||
 			     (job_ptr->part_ptr     == NULL)             ||
@@ -1092,8 +1093,17 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
-			if (depend_type == SLURM_DEPEND_EXPAND)
+			if (depend_type == SLURM_DEPEND_EXPAND) {
 				job_ptr->details->expanding_jobid = job_id;
+				/* GRES configuration of this job must match
+				 * the job being expanded */
+				xfree(job_ptr->gres);
+				job_ptr->gres = xstrdup(dep_job_ptr->gres);
+				if (job_ptr->gres_list)
+					list_destroy(job_ptr->gres_list);
+				gres_plugin_job_state_validate(job_ptr->gres,
+						&job_ptr->gres_list);
+			}
 			if (dep_job_ptr) {	/* job still active */
 				dep_ptr = xmalloc(sizeof(struct depend_spec));
 				dep_ptr->depend_type = depend_type;
