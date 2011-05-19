@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Added an rpath if using the --with-munge option of configure.
  -- Add support for multiple sets of DEFAULT node, partition, and frontend
     specifications in slurm.conf.
+ -- BLUEGENE - Improved logic to place small blocks in free space before freeing
+    larger blocks.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
