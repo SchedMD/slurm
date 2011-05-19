@@ -1166,7 +1166,7 @@ extern char *ba_set_ionode_str(bitstr_t *ionode_bitmap)
 		if (hl) {
 			ionode_str = hostlist_ranged_string_xmalloc_dims(
 				hl, 5, 0);
-			info("iostring is %s", ionode_str);
+			//info("iostring is %s", ionode_str);
 			hostlist_destroy(hl);
 			hl = NULL;
 		}
