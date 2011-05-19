@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
  -- Add optional argument to srun's --kill-on-bad-exit so that user can set
     its value to zero and override a SLURM configuration parameter of
     KillOnBadExit.
+ -- Fix bug in GraceTime support for preempted jobs that prevented proper
+    operation when more than one job was being preempted. Based on patch from
+    Bill Brophy, Bull.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
