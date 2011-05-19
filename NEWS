@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Modify job expansion logic to support licenses, generic resources, and
     currently running job steps.
+ -- Add support for multiple sets of DEFAULT node, partition, and frontend
+    specifications in slurm.conf.
 
 * Changes in SLURM 2.3.0.pre5
 =============================

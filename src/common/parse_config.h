@@ -194,6 +194,19 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover);
 
 /*
+ * s_p_hashtbl_merge
+ * 
+ * Merge the contents of two s_p_hashtbl_t data structures. Anything in
+ * from_hashtbl that does not also appear in to_hashtbl is transfered to it.
+ * This is intended primary to support multiple lines of DEFAULT configuration
+ * information and preserve the old default values while adding new defaults.
+ *
+ * IN from_hashtbl - Source of old data
+ * IN to_hashtbl - Destination for old data (if new value not already set)
+ */
+void s_p_hashtbl_merge(s_p_hashtbl_t *to_hashtbl, s_p_hashtbl_t *from_hashtbl);
+
+/*
  * s_p_get_string
  *
  * Search for a key in a s_p_hashtbl_t with value of type

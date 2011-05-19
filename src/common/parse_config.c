@@ -168,6 +168,25 @@ s_p_hashtbl_t *s_p_hashtbl_create(s_p_options_t options[])
 	return hashtbl;
 }
 
+/* Swap the data in two data structures without changing the linked list
+ * pointers */
+static void _conf_hashtbl_swap_data(s_p_values_t *data_1,
+				    s_p_values_t *data_2)
+{
+	s_p_values_t *next_1, *next_2;
+	s_p_values_t tmp_values;
+
+	next_1 = data_1->next;
+	next_2 = data_2->next;
+
+	memcpy(&tmp_values, data_1, sizeof(s_p_values_t));
+	memcpy(data_1, data_2, sizeof(s_p_values_t));
+	memcpy(data_2, &tmp_values, sizeof(s_p_values_t));
+
+	data_1->next = next_1;
+	data_2->next = next_2;
+}
+
 static void _conf_file_values_free(s_p_values_t *p)
 {
 	int i;
@@ -919,6 +938,55 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 
 	fclose(f);
 	return rc;
+}
+
+/*
+ * s_p_hashtbl_merge
+ * 
+ * Merge the contents of two s_p_hashtbl_t data structures. Anything in
+ * from_hashtbl that does not also appear in to_hashtbl is transfered to it.
+ * This is intended primary to support multiple lines of DEFAULT configuration
+ * information and preserve the default values while adding new defaults.
+ *
+ * IN from_hashtbl - Source of old data
+ * IN to_hashtbl - Destination for old data
+ */
+void s_p_hashtbl_merge(s_p_hashtbl_t *to_hashtbl, s_p_hashtbl_t *from_hashtbl)
+{
+	int i;
+	s_p_values_t **val_pptr, *val_ptr, *match_ptr;
+
+	if (!to_hashtbl || !from_hashtbl)
+		return;
+
+	for (i = 0; i < CONF_HASH_LEN; i++) {
+		val_pptr = &from_hashtbl[i];
+		val_ptr = from_hashtbl[i];
+		while (val_ptr) {
+			if (val_ptr->data_count == 0) {
+				/* No data in from_hashtbl record to move.
+				 * Skip record */
+				val_pptr = &val_ptr->next;
+				val_ptr = val_ptr->next;
+				continue;
+			}
+			match_ptr = _conf_hashtbl_lookup(to_hashtbl,
+							 val_ptr->key);
+			if (match_ptr) {	/* Found matching key */
+				if (match_ptr->data_count == 0) {
+					_conf_hashtbl_swap_data(val_ptr,
+								match_ptr);
+				}
+				val_pptr = &val_ptr->next;
+				val_ptr = val_ptr->next;
+			} else {	/* No match, move record */
+				*val_pptr = val_ptr->next;
+				val_ptr->next = NULL;
+				_conf_hashtbl_insert(to_hashtbl, val_ptr);
+				val_ptr = *val_pptr;
+			}
+		}
+	}
 }
 
 /*
