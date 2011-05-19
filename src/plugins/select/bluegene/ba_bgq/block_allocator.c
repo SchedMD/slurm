@@ -548,8 +548,11 @@ extern int remove_block(List mps, bool is_small)
 			[curr_ba_mp->coord[X]]
 			[curr_ba_mp->coord[Y]]
 			[curr_ba_mp->coord[Z]];
-		if (curr_ba_mp->used)
+		if (curr_ba_mp->used) {
 			ba_mp->used &= (~BA_MP_USED_TRUE);
+			if (ba_mp->used == BA_MP_USED_FALSE)
+				bit_clear(ba_main_mp_bitmap, ba_mp->index);
+		}
 		ba_mp->used &= (~BA_MP_USED_ALTERED_PASS);
 
 		/* Small blocks don't use wires, and only have 1 mp,
@@ -665,8 +668,12 @@ extern int check_and_set_mp_list(List mps)
 			}
 		}
 
-		if (ba_mp->used)
+		if (ba_mp->used) {
 			curr_ba_mp->used = ba_mp->used;
+			xassert(!bit_test(ba_main_mp_bitmap, ba_mp->index));
+			bit_set(ba_main_mp_bitmap, ba_mp->index);
+		}
+
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("check_and_set_mp_list: "
 			     "%s is used ?= %d %d",

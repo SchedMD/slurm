@@ -169,6 +169,7 @@ extern uint32_t cluster_flags;
 extern int cluster_base;
 extern bool ba_initialized;
 extern uint32_t ba_debug_flags;
+extern bitstr_t *ba_main_mp_bitmap;
 
 /*
  * Initialize internal structures by either reading previous block
