@@ -395,15 +395,6 @@ $command .= " $alps"					if $alps;
 # $command .= " -B"		no srun equivalent
 # $command .= " -cc"		NO GOOD MAPPING, cpu binding
 $command .= " -d $cpus_per_task"			if $cpus_per_task;
-
-# Run aprun with the -q option to quite out the output.  The debug flag
-# probably should be removed here since it isn't going to be what the
-# user expects.
-# if ($verbose) {
-# 	$command .= " -D 1";
-# } else {
-	$command .= " -q";
-# }
 # $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
 $nid_list = get_nids($nodelist)				if $nodelist;
 $command .= " -L $nid_list"				if $nodelist;
@@ -413,9 +404,13 @@ if ($num_tasks) {
 } elsif ($num_nodes) {
 	$command .= " -n $num_nodes";
 }
-#$command .= " -n $num_tasks"				if $num_tasks;
-$command .= " -N $ntasks_per_node"    			if $ntasks_per_node;
-$command .= " -q"					if $quiet;
+if ($ntasks_per_node) {
+	$command .= " -N $ntasks_per_node";
+} elsif ($num_nodes && $num_tasks) {
+	$ntasks_per_node = int (($num_tasks + $num_nodes - 1) / $num_nodes);
+	$command .= " -N $ntasks_per_node";
+}
+$command .= " -q";
 # $command .= " -r"		no srun equivalent
 $command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
 # $command .= " -sl"		no srun equivalent
