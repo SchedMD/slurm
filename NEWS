@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in GraceTime support for preempted jobs that prevented proper
     operation when more than one job was being preempted. Based on patch from
     Bill Brophy, Bull.
+ -- Fix for running sview from a non-bluegene cluster to a bluegene cluster.
+    Regression from pre5.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
