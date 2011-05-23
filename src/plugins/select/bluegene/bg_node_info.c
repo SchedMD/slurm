@@ -211,15 +211,17 @@ extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size)
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 	//uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (bg_conf && !g_bitmap_size) {
+	if (bg_conf) {
+		if (!g_bitmap_size) {
 		/* if (cluster_flags & CLUSTER_FLAG_BGQ) */
 		/* 	g_bitmap_size = bg_conf->mp_cnode_cnt; */
 		/* else */
 			g_bitmap_size = bg_conf->ionodes_per_mp;
-	}
+		}
 
-	if (bg_conf && (!size || size == NO_VAL))
-		size = g_bitmap_size;
+		if (!size || size == NO_VAL)
+			size = g_bitmap_size;
+	}
 
 	nodeinfo->bitmap_size = size;
 	nodeinfo->magic = NODEINFO_MAGIC;
