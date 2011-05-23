@@ -99,7 +99,7 @@ extern char *default_plugstack;
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
 #else
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
-#  if defined HAVE_CRAY	/* ALPS requires cluster-unique job container IDs */
+#  if defined HAVE_REAL_CRAY/* ALPS requires cluster-unique job container IDs */
 #    define DEFAULT_PROCTRACK_TYPE    "proctrack/sgi_job"
 #  else
 #    define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
