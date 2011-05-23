@@ -83,7 +83,6 @@ List best_path = NULL;
 int best_count;
 uint16_t *deny_pass = NULL;
 char *p = '\0';
-static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 
 /* extern Global */
 my_bluegene_t *bg = NULL;
@@ -1735,7 +1734,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 //	return 1;
 }
 
-extern void ba_create_system(int num_cpus, int *real_dims)
+extern void ba_create_system()
 {
 	int x,y,z, i = 0;
 
@@ -1743,8 +1742,6 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 		ba_destroy_system();
 
 	best_count=BEST_COUNT_INIT;
-
-	memcpy(REAL_DIM_SIZE, real_dims, sizeof(REAL_DIM_SIZE));
 
 	ba_main_grid = (ba_mp_t***)
 		xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);

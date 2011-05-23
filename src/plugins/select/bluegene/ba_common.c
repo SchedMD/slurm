@@ -51,10 +51,12 @@ int cluster_base = 36;
 uint32_t cluster_flags = 0;
 uint16_t ba_deny_pass = 0;
 
+ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
+
 bool ba_initialized = false;
 uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
-ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
+bitstr_t *ba_main_mp_bitmap = NULL;
 
 static void _pack_ba_connection(ba_connection_t *ba_connection,
 				Buf buffer, uint16_t protocol_version)
@@ -213,6 +215,8 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 {
 	int i, j;
 	ba_geo_combos_t *combos;
+	int gap_start, max_gap_start;
+	int gap_len, max_gap_len;
 
 	xassert(size > 0);
 	combos = &geo_combos[size-1];
@@ -220,24 +224,61 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 	combos->set_count_array = xmalloc(sizeof(int) * combos->elem_count);
 	combos->set_bits_array  = xmalloc(sizeof(bitstr_t *) *
 					  combos->elem_count);
+	combos->start_coord = xmalloc(sizeof(uint16_t *) * combos->elem_count);
+	combos->block_size  = xmalloc(sizeof(uint16_t *) * combos->elem_count);
+
 	for (i = 1; i <= combos->elem_count; i++) {
 		combos->set_bits_array[i-1] = bit_alloc(size);
 		if (combos->set_bits_array[i-1] == NULL)
 			fatal("bit_alloc: malloc failure");
+
+		gap_start = -1;
+		max_gap_start = -1;
+		gap_len = 0;
+		max_gap_len = 0;
 		for (j = 0; j < size; j++) {
-			if (((i >> j) & 0x1) == 0)
+			if (((i >> j) & 0x1) == 0) {
+				if (gap_len++ == 0)
+					gap_start = j;
 				continue;
+			}
+			if (gap_len > max_gap_len) {
+				max_gap_len = gap_len;
+				max_gap_start = gap_start;
+			}
+			gap_len = 0;
 			bit_set(combos->set_bits_array[i-1], j);
 			combos->set_count_array[i-1]++;
 		}
+		if (gap_len) {	/* test for wrap in gap */
+			for (j = 0; j < size; j++) {
+				if (bit_test(combos->set_bits_array[i-1], j))
+					break;
+				gap_len++;
+			}
+			if (gap_len >= max_gap_len) {
+				max_gap_len = gap_len;
+				max_gap_start = gap_start;
+			}
+		}
+
+		if (max_gap_len == 0) {
+			combos->start_coord[i-1] = 0;
+		} else {
+			combos->start_coord[i-1] = (max_gap_start +
+						    max_gap_len) % size;
+		}
+		combos->block_size[i-1] = size - max_gap_len;
 	}
 
 #if 0
-	info("size=%d", size);
+	info("geometry size=%d", size);
 	for (i = 0; i < combos->elem_count; i++) {
 		char buf[64];
 		bit_fmt(buf, sizeof(buf), combos->set_bits_array[i]);
-		info("cnt:%d bits:%s", combos->set_count_array[i], buf);
+		info("cnt:%d bits:%s start_coord:%u block_size:%u",
+		     combos->set_count_array[i], buf,
+		     combos->start_coord[i], combos->block_size[i]);
 	}
 	info("\n\n");
 #endif
@@ -258,6 +299,8 @@ static void _free_geo_bitmap_arrays(void)
 		}
 		xfree(combos->set_count_array);
 		xfree(combos->set_bits_array);
+		xfree(combos->start_coord);
+		xfree(combos->block_size);
 	}
 }
 
@@ -492,8 +535,11 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("can't use %s", curr_mp->coord_str);
 			curr_mp->used |= BA_MP_USED_TEMP;
+			bit_set(ba_main_mp_bitmap, curr_mp->index);
 		} else {
 			curr_mp->used &= (~BA_MP_USED_TEMP);
+			if (curr_mp->used == BA_MP_USED_FALSE)
+				bit_clear(ba_main_mp_bitmap, curr_mp->index);
 		}
 	}
 }
@@ -522,6 +568,7 @@ static void _internal_reset_ba_system(int level, uint16_t *coords,
 	}
 	curr_mp = coord2ba_mp(coords);
 	ba_setup_mp(curr_mp, track_down_mps, false);
+	bit_clear(ba_main_mp_bitmap, curr_mp->index);
 }
 
 #if defined HAVE_BG_FILES
@@ -626,7 +673,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	slurm_conf_node_t **ptr_array;
 	int coords[HIGHEST_DIMENSIONS];
 	char *p = '\0';
-	int num_cpus = 0;
+	int num_mps = 0;
 	int real_dims[HIGHEST_DIMENSIONS];
 	char dim_str[HIGHEST_DIMENSIONS+1];
 
@@ -651,7 +698,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 				= node_info_ptr->record_count;
 			for (i=1; i<cluster_dims; i++)
 				real_dims[i] = DIM_SIZE[i] = 1;
-			num_cpus = node_info_ptr->record_count;
 		}
 		goto setup_done;
 	} else if (working_cluster_rec && working_cluster_rec->dim_size) {
@@ -695,7 +741,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			/* this will probably be reset below */
 			real_dims[j] = DIM_SIZE[j];
 		}
-		num_cpus = node_info_ptr->record_count;
+		num_mps = node_info_ptr->record_count;
 	}
 node_info_error:
 	for (j=0; j<cluster_dims; j++)
@@ -751,10 +797,12 @@ node_info_error:
 			info("are you sure you only have 1 midplane? %s",
 			     ptr_array[0]->nodenames);
 
+		num_mps = 1;
 		for (j=0; j<cluster_dims; j++) {
 			DIM_SIZE[j]++;
 			/* this will probably be reset below */
 			real_dims[j] = DIM_SIZE[j];
+			num_mps *= DIM_SIZE[j];
 		}
 	}
 
@@ -795,14 +843,16 @@ setup_done:
 		debug("We are using %s of the system.", dim_str);
 	}
 
-	if (!num_cpus) {
-		num_cpus = 1;
-		for(i=0; i<cluster_dims; i++)
-			num_cpus *= DIM_SIZE[i];
-	}
-
 	if (bg_recover != NOT_FROM_CONTROLLER) {
-		ba_create_system(num_cpus, real_dims);
+		if (!num_mps) {
+			num_mps = 1;
+			for (i=0; i<cluster_dims; i++)
+				num_mps *= DIM_SIZE[i];
+		}
+
+		ba_main_mp_bitmap = bit_alloc(num_mps);
+
+		ba_create_system();
 		bridge_setup_system();
 
 		_init_grid(node_info_ptr);
@@ -820,15 +870,18 @@ setup_done:
  */
 extern void ba_fini(void)
 {
-	if (!ba_initialized){
+	if (!ba_initialized)
 		return;
-	}
 
 	if (bg_recover != NOT_FROM_CONTROLLER) {
 		bridge_fini();
 		ba_destroy_system();
 		_free_geo_bitmap_arrays();
 	}
+
+	if (ba_main_mp_bitmap)
+		FREE_NULL_BITMAP(ba_main_mp_bitmap);
+
 	ba_initialized = false;
 
 //	debug3("pa system destroyed");

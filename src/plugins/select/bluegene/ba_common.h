@@ -159,6 +159,8 @@ typedef struct {
 					 * and set_bits_array */
 	int *set_count_array;		/* number of set bits in this array */
 	bitstr_t **set_bits_array;	/* bitmap rows to use */
+	uint16_t *start_coord;		/* array of lowest coord in block */
+	uint16_t *block_size;		/* dimension size in block */
 } ba_geo_combos_t;
 
 extern ba_geo_combos_t geo_combos[LONGEST_BGQ_DIM_LEN];
@@ -169,6 +171,7 @@ extern uint32_t cluster_flags;
 extern int cluster_base;
 extern bool ba_initialized;
 extern uint32_t ba_debug_flags;
+extern bitstr_t *ba_main_mp_bitmap;
 
 /*
  * Initialize internal structures by either reading previous block
@@ -398,7 +401,7 @@ extern void set_ba_debug_flags(uint32_t debug_flags);
 extern void reset_ba_system(bool track_down_mps);
 
 /* in the respective block_allocator.c */
-extern void ba_create_system(int num_cpus, int *real_dims);
+extern void ba_create_system(void);
 extern void ba_destroy_system(void);
 
 /*

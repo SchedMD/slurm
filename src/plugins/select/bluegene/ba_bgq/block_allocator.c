@@ -65,7 +65,6 @@ typedef struct {
  *  on */
 ba_mp_t ****ba_main_grid = NULL;
 
-static int REAL_DIM_SIZE[HIGHEST_DIMENSIONS] = {0,0,0,0};
 static ba_geo_system_t *ba_main_geo_system = NULL;
 static ba_geo_system_t *ba_mp_geo_system = NULL;
 static uint16_t *deny_pass = NULL;
@@ -116,7 +115,7 @@ static bool _mp_used(ba_mp_t* ba_mp, int dim);
 /** */
 static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 
-extern void ba_create_system(int num_cpus, int *real_dims)
+extern void ba_create_system()
 {
 	int a,x,y,z, i = 0, dim;
 	uint16_t coords[SYSTEM_DIMENSIONS];
@@ -124,8 +123,6 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 
 	if (ba_main_grid)
 		ba_destroy_system();
-
-	memcpy(REAL_DIM_SIZE, real_dims, sizeof(REAL_DIM_SIZE));
 
 	ba_main_grid = (ba_mp_t****)
 		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
@@ -170,8 +167,10 @@ extern void ba_create_system(int num_cpus, int *real_dims)
 	ba_main_geo_system->dim_count = SYSTEM_DIMENSIONS;
 	ba_main_geo_system->dim_size =
 		xmalloc(sizeof(int) * ba_main_geo_system->dim_count);
+
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		ba_main_geo_system->dim_size[dim] = DIM_SIZE[dim];
+
 	ba_create_geo_table(ba_main_geo_system);
 	//ba_print_geo_table(ba_main_geo_system);
 
@@ -548,8 +547,11 @@ extern int remove_block(List mps, bool is_small)
 			[curr_ba_mp->coord[X]]
 			[curr_ba_mp->coord[Y]]
 			[curr_ba_mp->coord[Z]];
-		if (curr_ba_mp->used)
+		if (curr_ba_mp->used) {
 			ba_mp->used &= (~BA_MP_USED_TRUE);
+			if (ba_mp->used == BA_MP_USED_FALSE)
+				bit_clear(ba_main_mp_bitmap, ba_mp->index);
+		}
 		ba_mp->used &= (~BA_MP_USED_ALTERED_PASS);
 
 		/* Small blocks don't use wires, and only have 1 mp,
@@ -665,8 +667,12 @@ extern int check_and_set_mp_list(List mps)
 			}
 		}
 
-		if (ba_mp->used)
+		if (ba_mp->used) {
 			curr_ba_mp->used = ba_mp->used;
+			xassert(!bit_test(ba_main_mp_bitmap, ba_mp->index));
+			bit_set(ba_main_mp_bitmap, ba_mp->index);
+		}
+
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("check_and_set_mp_list: "
 			     "%s is used ?= %d %d",
@@ -1166,7 +1172,7 @@ extern char *ba_set_ionode_str(bitstr_t *ionode_bitmap)
 		if (hl) {
 			ionode_str = hostlist_ranged_string_xmalloc_dims(
 				hl, 5, 0);
-			info("iostring is %s", ionode_str);
+			//info("iostring is %s", ionode_str);
 			hostlist_destroy(hl);
 			hl = NULL;
 		}

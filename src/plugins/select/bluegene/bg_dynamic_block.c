@@ -274,11 +274,16 @@ extern List create_dynamic_block(List block_list,
 			goto finished;
 
 		/* check all usable blocks */
-		if (_breakup_blocks(block_list, new_blocks,
-				    request, my_block_list,
-				    false, false)
-		    == SLURM_SUCCESS)
-			goto finished;
+		/* This check will result in unused, booted blocks to
+		   be freed before looking at free space, so we will
+		   just skip it.  If you want this kind of behavior
+		   enable it.
+		*/
+		/* if (_breakup_blocks(block_list, new_blocks, */
+		/* 		    request, my_block_list, */
+		/* 		    false, false) */
+		/*     == SLURM_SUCCESS) */
+		/* 	goto finished; */
 
 		/* Re-sort the list back to the original order. */
 		list_sort(block_list, (ListCmpF)bg_record_sort_aval_inc);
@@ -771,7 +776,12 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	 */
 	itr = list_iterator_create(block_list);
 	while ((bg_record = list_next(itr))) {
-		if (bg_record->free_cnt) {
+		/* If the free_cnt is -1 that just means we just
+		   didn't add it to the system, in this case it is
+		   probably a small block that we really should be
+		   looking at.
+		*/
+		if (bg_record->free_cnt > 0) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("%s being freed by other job(s), skipping",
 				     bg_record->bg_block_id);
@@ -789,7 +799,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 
 		/* check small blocks first */
 		if (only_small
-		    && (bg_record->cnode_cnt > bg_conf->mp_cnode_cnt))
+		    && (bg_record->cnode_cnt >= bg_conf->mp_cnode_cnt))
 			continue;
 
 		if (request->avail_mp_bitmap &&

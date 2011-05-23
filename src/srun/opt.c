@@ -381,7 +381,7 @@ static void _opt_default()
 	opt.shared = (uint16_t)NO_VAL;
 	opt.exclusive = false;
 	opt.no_kill = false;
-	opt.kill_bad_exit = false;
+	opt.kill_bad_exit = NO_VAL;
 
 	opt.immediate	= 0;
 
@@ -734,7 +734,7 @@ static void set_options(const int argc, char **argv)
 		{"join",          no_argument,       0, 'j'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
-		{"kill-on-bad-exit", no_argument,    0, 'K'},
+		{"kill-on-bad-exit", optional_argument, 0, 'K'},
 		{"label",         no_argument,       0, 'l'},
 		{"licenses",      required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
@@ -826,7 +826,7 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:hHi:IjJ:kKlL:m:n:N:"
+	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
 #ifdef HAVE_PTY_H
 	char *tmp_str;
@@ -838,7 +838,7 @@ static void set_options(const int argc, char **argv)
 		exit(error_exit);
 	}
 
-	if(opt.progname == NULL)
+	if (opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
 	else
 		error("opt.progname is already set.");
@@ -954,7 +954,10 @@ static void set_options(const int argc, char **argv)
 			opt.no_kill = true;
 			break;
 		case (int)'K':
-			opt.kill_bad_exit = true;
+			if (optarg)
+				opt.kill_bad_exit = strtol(optarg, NULL, 10);
+			else
+				opt.kill_bad_exit = 1;
 			break;
 		case (int)'l':
 			opt.labelio = true;

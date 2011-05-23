@@ -1237,7 +1237,9 @@ _update_task_exit_state(uint32_t ntasks, uint32_t taskids[], int abnormal)
 
 static int _kill_on_bad_exit(void)
 {
-	return (opt.kill_bad_exit || slurm_get_kill_on_bad_exit());
+	if (opt.kill_bad_exit == NO_VAL)
+		return slurm_get_kill_on_bad_exit();
+	return opt.kill_bad_exit;
 }
 
 static void _setup_max_wait_timer(void)

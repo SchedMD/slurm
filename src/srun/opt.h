@@ -162,7 +162,7 @@ typedef struct srun_options {
 	bool noshell;		/* --no-shell                   */
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool no_kill;		/* --no-kill, -k		*/
-	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
+	int32_t kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
 	uint16_t shared;	/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */

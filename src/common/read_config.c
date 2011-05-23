@@ -437,8 +437,10 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			return -1;
 		}
 
-		if (default_frontend_tbl != NULL)
+		if (default_frontend_tbl != NULL) {
+			s_p_hashtbl_merge(tbl, default_frontend_tbl);
 			s_p_hashtbl_destroy(default_frontend_tbl);
+		}
 		default_frontend_tbl = tbl;
 
 		return 0;
@@ -528,8 +530,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			return -1;
 		}
 
-		if (default_nodename_tbl != NULL)
+		if (default_nodename_tbl != NULL) {
+			s_p_hashtbl_merge(tbl, default_frontend_tbl);
 			s_p_hashtbl_destroy(default_nodename_tbl);
+		}
 		default_nodename_tbl = tbl;
 
 		return 0;
@@ -811,8 +815,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 	/* s_p_dump_values(tbl, _partition_options); */
 
 	if (strcasecmp(value, "DEFAULT") == 0) {
-		if (default_partition_tbl != NULL)
+		if (default_partition_tbl != NULL) {
+			s_p_hashtbl_merge(tbl, default_partition_tbl);
 			s_p_hashtbl_destroy(default_partition_tbl);
+		}
 		default_partition_tbl = tbl;
 
 		return 0;

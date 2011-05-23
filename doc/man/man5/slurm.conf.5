@@ -702,9 +702,10 @@ No job submission plugins are used by default.
 .TP
 \fBKillOnBadExit\fR
 If set to 1, the job will be terminated immediately when one of the
-processes is crashed or aborted. With default value of 0, if one of
+processes is crashed or aborted. With the default value of 0, if one of
 the processes is crashed or aborted the other processes will continue
-to run.
+to run. The user can override this configuration parameter by using srun's
+\fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR.
 
 .TP
 \fBKillWait\fR
