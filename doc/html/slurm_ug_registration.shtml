@@ -21,7 +21,7 @@
 	including meals and refreshments.
       </p>
 
-      <FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:jette@llnl.gov?subject=SLURM User Group Registration">
+      <FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:slurm_user_group@lists.llnl.gov?subject=SLURM User Group Registration">
 	<PRE>
 	  <table width="100%" border=0 cellspacing=0 cellpadding=0>
 	    <tr>
