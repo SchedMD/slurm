@@ -839,7 +839,7 @@ rm -rf $RPM_BUILD_ROOT
 #fi
 
 %post
-if [ -x /sbin/ldconfig ]; thensrun
+if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}
     if [ $1 = 1 ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
