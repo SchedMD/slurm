@@ -1,0 +1,74 @@
+<!--#include virtual="header.txt"-->
+
+<html>
+
+<head>
+  <title>SLURM User Group 2011</title>
+</head>
+
+<body>
+
+    <h1>Slurm User Group 2011</h1>
+
+      <h1>Registration</h1>
+      <p>
+	Please proceed with the following form to register to <b>Slurm User Group 2011</b>
+	to be held in Phoenix, Arizona on September 22 and 23.
+	<br>
+	You should receive a confirmation of this initial stage within in a few days.
+	<br>
+	A registration fee is $150 is payable by cash or check at the meeting to defray expenses
+	including meals and refreshments.
+      </p>
+
+      <FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:jette@llnl.gov?subject=SLURM User Group Registration">
+	<PRE>
+	  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+	    <tr>
+	      <td width="10%">Firstname</td>
+	      <td width="80%"><INPUT NAME=Firstname size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Lastname</td>
+	      <td width="80%"><INPUT NAME=Lastname size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Email</td>
+	      <td width="80%"><INPUT NAME=Email size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Country</td>
+	      <td width="80%"><INPUT NAME=Country size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Company/Organization</td>
+	      <td width="80%"><INPUT NAME=Company size=30></td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Tutorial Attendance</td>
+	      <td width="10%"><INPUT TYPE="radio" NAME="Tutorial" VALUE="Administrator">Administrator</td>
+	    </tr>
+	    <tr>
+	      <td width="10%"> </td>
+	      <td width="10%"><INPUT TYPE="radio" NAME="Tutorial" VALUE="User">User</td>
+	    </tr>
+	    <tr>
+	      <td width="10%"> </td>
+	      <td width="10%"><INPUT TYPE="radio" NAME="Tutorial" VALUE="None">None</td>
+	    </tr>
+	    <tr>
+	      <td width="10%">Comments</td>
+	      <td width="80%"><TEXTAREA NAME=Comments rows=5 cols=40></TEXTAREA></td>
+	    </tr>
+	    <tr>
+	      <td width="30%"><INPUT TYPE=SUBMIT VALUE=Submit></td>
+	      <td width="30%"><INPUT TYPE=RESET VALUE=Clear></td>
+	    </tr>
+	  </table>
+	</PRE>
+      </FORM>
+
+    </div>
+</body>
+
+<!--#include virtual="footer.txt"-->

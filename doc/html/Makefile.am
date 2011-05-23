@@ -46,7 +46,6 @@ generated_html = \
 	authplugins.html \
 	big_sys.html \
 	bluegene.html \
-	cfp.html \
 	checkpoint_blcr.html \
 	checkpoint_plugins.html \
 	cons_res.html \
@@ -94,12 +93,14 @@ generated_html = \
 	qos.html \
 	quickstart_admin.html \
 	quickstart.html \
-	registration.html \
 	reservations.html \
 	resource_limits.html \
 	schedplugins.html \
 	selectplugins.html \
 	slurm.html \
+	slurm_ug_agenda.html \
+	slurm_ug_cfp.html \
+	slurm_ug_registration.html \
 	sun_const.html \
 	switchplugins.html \
 	taskplugins.html \
