@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  nodeinfo.c - functions used for the select_nodeinfo_t structure
+ *  bg_node_info.c - functions used for the select_nodeinfo_t structure
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.

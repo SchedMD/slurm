@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  jobinfo.h - definitions of functions used for the select_jobinfo_t
+ *  bg_job_info.h - definitions of functions used for the select_jobinfo_t
  *              structure
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
