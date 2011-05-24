@@ -1005,7 +1005,6 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 			int scan_offset = 0;
 			uint16_t dont_pass[ba_mp_geo_system->dim_count];
 			uint16_t start_pos[ba_mp_geo_system->dim_count];
-			uint16_t block_len[ba_mp_geo_system->dim_count];
 #if 1
 			/* if deny_pass argument is NULL, default is to 
 			 * deny passthroughs in all dimensions */
@@ -1016,7 +1015,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 					    &jobinfo->units_used,
 					    geo_table, &cnt,
 					    ba_mp_geo_system, dont_pass,
-					    start_pos, block_len, &scan_offset)
+					    start_pos, &scan_offset)
 			    != SLURM_SUCCESS) {
 				geo_table = geo_table->next_ptr;
 				continue;
@@ -1024,8 +1023,9 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 #if 0
 			info("scan_offset=%d", scan_offset);
 			for (dim=0; dim < ba_mp_geo_system->dim_count; dim++) {
-				info("start_pos[%d]=%u block_len[%d}=%u",
-				     dim, start_pos[dim], dim, block_len[dim]);
+				info("start_pos[%d]=%u geometry[%d}=%u",
+				     dim, start_pos[dim], dim,
+				     geo_table->geometry[dim]);
 			}
 #endif
 			bit_or(ba_mp->cnode_bitmap, jobinfo->units_used);

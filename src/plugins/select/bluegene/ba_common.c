@@ -378,8 +378,7 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
 			  bitstr_t **alloc_node_bitmap,
 			  ba_geo_table_t *geo_req, int *attempt_cnt,
 			  ba_geo_system_t *my_geo_system, uint16_t *deny_pass,
-			  uint16_t *start_pos, uint16_t *block_len,
-			  int *scan_offset)
+			  uint16_t *start_pos, int *scan_offset)
 {
 	int i, current_offset = -1;
 	ba_geo_combos_t *geo_array[my_geo_system->dim_count];
@@ -443,10 +442,8 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
 			return SLURM_ERROR;
 	}
 
-	for (i = 0; i < my_geo_system->dim_count; i++) {
-		if (block_len)
-			block_len[i] = geo_req->geometry[i];
-		if (start_pos) {
+	if (start_pos) {
+		for (i = 0; i < my_geo_system->dim_count; i++) {
 			start_pos[i] = geo_array[i]->
 				       start_coord[geo_array_inx[i]];
 		}
@@ -1415,9 +1412,6 @@ extern char *ba_node_map_ranged_hostlist(bitstr_t *node_bitmap,
  * IN/OUT start_pos - input is pointer to array having same size as
  *		dimension count or NULL. Set to starting coordinates of
  *		the allocation in each dimension.
- * IN/OUT block_len - input is pointer to array having same size as
- *		dimension count or NULL. Set to size of the allocation in
- *		each dimension.
  * IN/OUT scan_offset - Location in search table from which to continue
  *		searching for resources. Initial value should be zero. If the
  *		allocation selected by the algorithm is not acceptable, call
@@ -1429,8 +1423,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			   bitstr_t **alloc_node_bitmap,
 			   ba_geo_table_t *geo_req, int *attempt_cnt,
 			   ba_geo_system_t *my_geo_system, uint16_t *deny_pass,
-			   uint16_t *start_pos, uint16_t *block_len,
-			   int *scan_offset)
+			   uint16_t *start_pos, int *scan_offset)
 {
 	int rc;
 
@@ -1442,7 +1435,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 	*attempt_cnt = 0;
 	rc = _geo_test_maps(node_bitmap, alloc_node_bitmap, geo_req,
 			    attempt_cnt, my_geo_system, deny_pass,
-			    start_pos, block_len, scan_offset);
+			    start_pos, scan_offset);
 
 	return rc;
 }

@@ -353,9 +353,6 @@ extern char *ba_node_map_ranged_hostlist(bitstr_t *node_bitmap,
  * IN/OUT start_pos - input is pointer to array having same size as
  *		dimension count or NULL. Set to starting coordinates of
  *		the allocation in each dimension.
- * IN/OUT block_len - input is pointer to array having same size as
- *		dimension count or NULL. Set to size of the allocation in
- *		each dimension.
  * IN/OUT scan_offset - Location in search table from which to continue
  *		searching for resources. Initial value should be zero. If the
  *		allocation selected by the algorithm is not acceptable, call
@@ -367,8 +364,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			   bitstr_t **alloc_node_bitmap,
 			   ba_geo_table_t *geo_req, int *attempt_cnt,
 			   ba_geo_system_t *my_geo_system, uint16_t *deny_pass,
-			   uint16_t *start_pos, uint16_t *block_len,
-			   int *scan_offset);
+			   uint16_t *start_pos, int *scan_offset);
 
 /*
  * Used to set all midplanes in a special used state except the ones
