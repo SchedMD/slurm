@@ -136,8 +136,8 @@ static bool _local_file_writable(eio_obj_t *);
 static int  _local_file_write(eio_obj_t *, List);
 
 struct io_operations local_file_ops = {
-	writable:	&_local_file_writable,
-	handle_write:	&_local_file_write,
+	.writable = &_local_file_writable,
+	.handle_write = &_local_file_write,
 };
 
 
@@ -149,9 +149,9 @@ static int  _task_write(eio_obj_t *, List);
 static int _task_write_error(eio_obj_t *obj, List objs);
 
 struct io_operations task_write_ops = {
-	writable:	&_task_writable,
-	handle_write:	&_task_write,
-	handle_error:   &_task_write_error,
+	.writable = &_task_writable,
+	.handle_write = &_task_write,
+	.handle_error = &_task_write_error,
 };
 
 struct task_write_info {
@@ -173,8 +173,8 @@ static bool _task_readable(eio_obj_t *);
 static int  _task_read(eio_obj_t *, List);
 
 struct io_operations task_read_ops = {
-	readable:	&_task_readable,
-	handle_read:	&_task_read,
+	.readable = &_task_readable,
+	.handle_read = &_task_read,
 };
 
 struct task_read_info {
