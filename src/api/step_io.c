@@ -92,8 +92,8 @@ static bool _listening_socket_readable(eio_obj_t *obj);
 static int _listening_socket_read(eio_obj_t *obj, List objs);
 
 struct io_operations listening_socket_ops = {
-	readable:	&_listening_socket_readable,
-	handle_read:	&_listening_socket_read
+	.readable = &_listening_socket_readable,
+	.handle_read = &_listening_socket_read
 };
 
 /**********************************************************************
@@ -105,10 +105,10 @@ static bool _server_writable(eio_obj_t *obj);
 static int _server_write(eio_obj_t *obj, List objs);
 
 struct io_operations server_ops = {
-        readable:	&_server_readable,
-	handle_read:	&_server_read,
-	writable:       &_server_writable,
-	handle_write:   &_server_write
+	.readable = &_server_readable,
+	.handle_read = &_server_read,
+	.writable = &_server_writable,
+	.handle_write = &_server_write
 };
 
 struct server_io_info {
@@ -138,8 +138,8 @@ static bool _file_writable(eio_obj_t *obj);
 static int _file_write(eio_obj_t *obj, List objs);
 
 struct io_operations file_write_ops = {
-	writable:	&_file_writable,
-	handle_write:	&_file_write,
+	.writable = &_file_writable,
+	.handle_write = &_file_write,
 };
 
 struct file_write_info {
@@ -163,8 +163,8 @@ static bool _file_readable(eio_obj_t *obj);
 static int _file_read(eio_obj_t *obj, List objs);
 
 struct io_operations file_read_ops = {
-	readable:	&_file_readable,
-	handle_read:	&_file_read,
+	.readable = &_file_readable,
+	.handle_read = &_file_read,
 };
 
 struct file_read_info {
