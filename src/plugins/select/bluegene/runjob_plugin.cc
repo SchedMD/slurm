@@ -102,14 +102,20 @@ static bool _set_coords(const std::string& var, int *coords)
 	}
 
 	for (uint32_t dim = 0; dim<Dimension::NodeDims; dim++) {
-		if ((coords[dim] = _char2coord(var[dim]) == -1)) {
+		int tmp_int = _char2coord((char)var[dim]);
+		if (tmp_int == -1) {
 			std::cerr << "Coord in the " << dim <<
 				" dimension is out of bounds with a value of "
 				  << var[dim] << std::endl;
 			return 0;
 		}
-		// std::cout << "Got " << dim << " = "
-		// 	  << coords[dim] << std::endl;
+		/* for some reason calling _char2coord directly
+		   doesn't seem to work here.  Thus the tmp variable
+		   that seems to make everything fine.
+		*/
+		coords[dim] = tmp_int;
+		// std::cout << "Dim " << dim << " From " << var[dim] << " Got "
+		// 	  << coords[dim] << " which should be " << tmp_int << std::endl;
 	}
 
 	return 1;
@@ -131,13 +137,16 @@ Plugin::~Plugin()
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
-	int geo[Dimension::NodeDims] = { -1 };
-	int start_coords[Dimension::NodeDims] = { -1 };
+	int geo[Dimension::NodeDims];
+	int start_coords[Dimension::NodeDims];
 	int found = 0;
 	int looking_for = 3;
 	int block_cnode_cnt = 0;
 	int step_cnode_cnt = 0;
 	bool sub_block_job = 0;
+
+	geo[0] = -1;
+	start_coords[0] = -1;
 
 	/* This should probably be changed to read this from the
 	   slurmctld for security reasons.  But for now this is what
@@ -154,29 +163,41 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		} else if (env_var.getKey() == "SLURM_STEP_NUM_NODES") {
 			step_cnode_cnt = atoi(env_var.getValue().c_str());
 			found++;
-		} else if (env_var.getKey() == "SLURM_STEP_START_LOC") {
-			if (!_set_coords(env_var.getValue(), start_coords))
-				goto deny_job;
-			found++;
-		} else if (env_var.getKey() == "SLURM_STEP_GEO") {
-			if (!_set_coords(env_var.getValue(), geo))
-				goto deny_job;
-			found++;
 		}
 
 		if (!step_cnode_cnt || !block_cnode_cnt)
 			continue;
 
-		if (step_cnode_cnt < block_cnode_cnt) {
-			looking_for += 2;
+		if (step_cnode_cnt < block_cnode_cnt)
 			sub_block_job = 1;
-		}
 
 		if (found == looking_for)
 			break;
 	}
+	if (found != looking_for)
+		goto deny_job;
 
-	if (start_coords[0] != -1)
+	if (sub_block_job) {
+		looking_for += 2;
+		BOOST_FOREACH(const bgsched::runjob::Environment& env_var,
+			      verify.envs()) {
+			if (env_var.getKey() == "SLURM_STEP_START_LOC") {
+				if (!_set_coords(env_var.getValue(),
+						 start_coords))
+					goto deny_job;
+				found++;
+			} else if (env_var.getKey() == "SLURM_STEP_GEO") {
+				if (!_set_coords(env_var.getValue(), geo))
+					goto deny_job;
+				found++;
+			}
+
+			if (found == looking_for)
+				break;
+		}
+	}
+
+	if (sub_block_job && start_coords[0] != -1)
 		verify.corner(bgsched::runjob::Corner(
 				      (unsigned *)start_coords));
 	else if (sub_block_job) {
@@ -184,7 +205,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	}
 
-	if (geo[0] != -1)
+	if (sub_block_job && geo[0] != -1)
 		verify.shape(bgsched::runjob::Shape((unsigned *)geo));
 	else if (sub_block_job) {
 		std::cerr << "No shape given for sub-block job!" << std::endl;

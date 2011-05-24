@@ -1183,7 +1183,9 @@ env_array_for_step(char ***dest,
 		select_g_select_jobinfo_sprint(step->select_jobinfo,
 					       geo_char, sizeof(geo_char),
 					       SELECT_PRINT_GEOMETRY);
-		env_array_overwrite_fmt(dest, "SLURM_STEP_GEO", "%s", geo_char);
+		if (geo_char[0] != '0')
+			env_array_overwrite_fmt(dest, "SLURM_STEP_GEO",
+						"%s", geo_char);
 		select_g_select_jobinfo_sprint(step->select_jobinfo,
 					       geo_char, sizeof(geo_char),
 					       SELECT_PRINT_START_LOC);
