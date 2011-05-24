@@ -92,8 +92,8 @@ static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
 struct io_operations msg_socket_ops = {
-	readable:	&_msg_socket_readable,
-	handle_read:	&_msg_socket_accept
+	.readable = &_msg_socket_readable,
+	.handle_read = &_msg_socket_accept
 };
 
 static char *socket_name;

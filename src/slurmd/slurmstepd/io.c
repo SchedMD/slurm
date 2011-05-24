@@ -96,10 +96,10 @@ static int  _client_read(eio_obj_t *, List);
 static int  _client_write(eio_obj_t *, List);
 
 struct io_operations client_ops = {
-	readable:	&_client_readable,
-	writable:	&_client_writable,
-	handle_read:	&_client_read,
-	handle_write:	&_client_write,
+	.readable = &_client_readable,
+	.writable = &_client_writable,
+	.handle_read = &_client_read,
+	.handle_write = &_client_write,
 };
 
 struct client_io_info {
