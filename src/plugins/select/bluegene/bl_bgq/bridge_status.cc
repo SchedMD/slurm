@@ -413,8 +413,8 @@ static void _do_block_poll(void)
 static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 				    ba_mp_t *ba_mp)
 {
-	Midplane::Coordinates coords = {{ba_mp->coord[A], ba_mp->coord[X],
-					 ba_mp->coord[Y], ba_mp->coord[Z]}};
+	Coordinates::Coordinates coords(ba_mp->coord[A], ba_mp->coord[X],
+					ba_mp->coord[Y], ba_mp->coord[Z]);
 	Midplane::ConstPtr mp_ptr = bgq->getMidplane(coords);
 	int i;
 	Dimension dim;

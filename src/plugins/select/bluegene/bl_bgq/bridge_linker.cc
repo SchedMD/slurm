@@ -72,8 +72,8 @@ static bool initialized = false;
 static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
 {
 	// int i;
-	Midplane::Coordinates coords = {{ba_mp->coord[A], ba_mp->coord[X],
-					 ba_mp->coord[Y], ba_mp->coord[Z]}};
+	Coordinates::Coordinates coords(ba_mp->coord[A], ba_mp->coord[X],
+					ba_mp->coord[Y], ba_mp->coord[Z]);
 	Midplane::ConstPtr mp_ptr;
 	int i;
 
@@ -326,17 +326,13 @@ extern int bridge_fini()
 
 extern int bridge_get_size(int *size)
 {
-#ifdef HAVE_BG_FILES
-        Midplane::Coordinates bgq_size;
-	Dimension dim;
-#endif
 	if (!bridge_init(NULL))
 		return SLURM_ERROR;
 #ifdef HAVE_BG_FILES
 	memset(size, 0, sizeof(int) * SYSTEM_DIMENSIONS);
 
-	bgq_size = core::getMachineSize();
-	for (dim=Dimension::A; dim<=Dimension::D; dim++)
+	Coordinates bgq_size = core::getMachineSize();
+	for (int dim=0; dim< SYSTEM_DIMENSIONS; dim++)
 		size[dim] = bgq_size[dim];
 #endif
 
