@@ -709,9 +709,9 @@ int xcgroup_set_uint64_param(xcgroup_t* cg, char* param, uint64_t value)
 	fstatus = _file_write_uint64s(file_path, &value, 1);
 	if (fstatus != XCGROUP_SUCCESS)
 		debug2("unable to set parameter '%s' to "
-		       "'%lu' for '%s'", param, value, cpath);
+		       "'%llu' for '%s'", param, value, cpath);
 	else
-		debug3("parameter '%s' set to '%lu' for '%s'",
+		debug3("parameter '%s' set to '%llu' for '%s'",
 		       param, value, cpath);
 
 	return fstatus;
@@ -812,7 +812,7 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 		rc = snprintf(tstr, sizeof(tstr), "%llu",
 			      (long long unsigned int)value);
 		if (rc < 0) {
-			debug2("unable to build %lu string value, skipping",
+			debug2("unable to build %llu string value, skipping",
 			       value);
 			fstatus = XCGROUP_ERROR;
 			continue;

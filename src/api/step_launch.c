@@ -110,9 +110,9 @@ static int  _start_io_timeout_thread(step_launch_state_t *sls);
 static void *_check_io_timeout(void *_sls);
 
 static struct io_operations message_socket_ops = {
-	readable:	&eio_message_socket_readable,
-	handle_read:	&eio_message_socket_accept,
-	handle_msg:     &_handle_msg
+	.readable = &eio_message_socket_readable,
+	.handle_read = &eio_message_socket_accept,
+	.handle_msg = &_handle_msg
 };
 
 

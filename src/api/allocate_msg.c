@@ -74,9 +74,9 @@ static void _handle_msg(void *arg, slurm_msg_t *msg);
 static pthread_mutex_t msg_thr_start_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t msg_thr_start_cond = PTHREAD_COND_INITIALIZER;
 static struct io_operations message_socket_ops = {
-	readable:	&eio_message_socket_readable,
-	handle_read:	&eio_message_socket_accept,
-	handle_msg:     &_handle_msg
+	.readable = &eio_message_socket_readable,
+	.handle_read = &eio_message_socket_accept,
+	.handle_msg = &_handle_msg
 };
 
 static void *_msg_thr_internal(void *arg)
