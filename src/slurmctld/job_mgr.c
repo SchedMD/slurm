@@ -9586,7 +9586,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 			} else {
 				image_dir = xstrdup(step_ptr->ckpt_dir);
 			}
-			xstrfmtcat(image_dir, "/%u.%hu", job_ptr->job_id,
+			xstrfmtcat(image_dir, "/%u.%u", job_ptr->job_id,
 				   step_ptr->step_id);
 			update_rc = checkpoint_op(ckpt_ptr->job_id,
 						  step_ptr->step_id,
