@@ -2094,13 +2094,33 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	return;
 }
 
+static void _get_step_nodelist(job_step_info_t *step_ptr, char *buf, 
+			       int buf_size)
+{
+	char *ionodes = NULL;
+
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+					    SELECT_JOBDATA_IONODES,
+					    &ionodes);
+		if (step_ptr->nodes && ionodes) {
+			snprintf(buf, buf_size, "%s[%s]", step_ptr->nodes,
+				 ionodes);
+		} else {
+			snprintf(buf, buf_size, "%s", step_ptr->nodes);
+		}
+		xfree(ionodes);
+	} else {
+		snprintf(buf, buf_size, "%s", step_ptr->nodes);
+	}
+}
+
 static void _layout_step_record(GtkTreeView *treeview,
 				job_step_info_t *step_ptr,
 				int update)
 {
-	char *nodes = NULL, *uname;
-	char tmp_char[50];
-	char tmp_time[50];
+	char *uname;
+	char tmp_char[50], tmp_nodes[50], tmp_time[50];
 	time_t now_time = time(NULL);
 	GtkTreeIter iter;
 	enum job_states state;
@@ -2142,14 +2162,14 @@ static void _layout_step_record(GtkTreeView *treeview,
 				   step_ptr->name);
 
 	if (!step_ptr->nodes
-	    || !strcasecmp(step_ptr->nodes,"waiting...")) {
+	    || !strcasecmp(step_ptr->nodes, "waiting...")) {
 		sprintf(tmp_time,"00:00:00");
-		nodes = "waiting...";
+		snprintf(tmp_nodes, sizeof(tmp_nodes), "waiting...");
 		state = JOB_PENDING;
 	} else {
 		now_time -= step_ptr->start_time;
 		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
-		nodes = step_ptr->nodes;
+		_get_step_nodelist(step_ptr, tmp_nodes, sizeof(tmp_nodes));
 		if (cluster_flags & CLUSTER_FLAG_BGQ)
 			convert_num_unit(
 				(float)step_ptr->num_tasks,
@@ -2158,10 +2178,10 @@ static void _layout_step_record(GtkTreeView *treeview,
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
 				tmp_char, sizeof(tmp_char), UNIT_NONE);
-		else
-			convert_num_unit((float)_nodes_in_list(nodes),
+		else {
+			convert_num_unit((float)_nodes_in_list(tmp_nodes),
 					 tmp_char, sizeof(tmp_char), UNIT_NONE);
-
+		}
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_job,
 							 SORTID_NODES),
@@ -2172,7 +2192,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_NODELIST),
-				   nodes);
+				   tmp_nodes);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2232,30 +2252,14 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	} else {
 		now_time -= step_ptr->start_time;
 		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
-		if (cluster_flags & CLUSTER_FLAG_BG) {
-			char *ionodes = NULL;
-			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-						    SELECT_JOBDATA_IONODES,
-						    &ionodes);
-			if (step_ptr->nodes && ionodes) {
-				snprintf(tmp_nodes, sizeof(tmp_nodes), "%s[%s]",
-					 step_ptr->nodes, ionodes);
-			} else
-				snprintf(tmp_nodes, sizeof(tmp_nodes), "%s",
-					 step_ptr->nodes);
-			xfree(ionodes);
-		} else
-			snprintf(tmp_nodes, sizeof(tmp_nodes), "%s",
-				 step_ptr->nodes);
-
+		_get_step_nodelist(step_ptr, tmp_nodes, sizeof(tmp_nodes));
 		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			uint32_t nodes = 0;
 			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &nodes);
-			convert_num_unit(
-				(float)nodes,
-				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
+			convert_num_unit((float)nodes, tmp_node_cnt,
+					 sizeof(tmp_node_cnt), UNIT_NONE);
 		} else if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
