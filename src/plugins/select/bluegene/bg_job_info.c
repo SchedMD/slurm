@@ -236,6 +236,10 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		xfree(jobinfo->ramdiskimage);
 		jobinfo->ramdiskimage = xstrdup(tmp_char);
 		break;
+	case SELECT_JOBDATA_START_LOC:
+		for (i=0; i<jobinfo->dim_cnt; i++)
+			jobinfo->start_loc[i] = uint16[i];
+		break;
 	default:
 		debug("set_select_jobinfo: data_type %d invalid",
 		      data_type);
@@ -349,6 +353,11 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 		else
 			*tmp_char = xstrdup(jobinfo->ramdiskimage);
 		break;
+	case SELECT_JOBDATA_START_LOC:
+		for (i=0; i<jobinfo->dim_cnt; i++) {
+			uint16[i] = jobinfo->start_loc[i];
+		}
+		break;
 	default:
 		debug2("get_jobinfo data_type %d invalid",
 		       data_type);
@@ -376,6 +385,8 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 		memcpy(rc->geometry, jobinfo->geometry, sizeof(rc->geometry));
 		memcpy(rc->conn_type, jobinfo->conn_type,
 		       sizeof(rc->conn_type));
+		memcpy(rc->start_loc, jobinfo->start_loc,
+		       sizeof(rc->start_loc));
 		rc->reboot = jobinfo->reboot;
 		rc->rotate = jobinfo->rotate;
 		rc->bg_record = jobinfo->bg_record;
@@ -424,6 +435,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			for (i=0; i<dims; i++) {
 				pack16(jobinfo->geometry[i], buffer);
 				pack16(jobinfo->conn_type[i], buffer);
+				pack16(jobinfo->start_loc[i], buffer);
 			}
 			pack16(jobinfo->reboot, buffer);
 			pack16(jobinfo->rotate, buffer);
@@ -443,9 +455,9 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 		} else {
 			pack16(dims, buffer);
 			/* pack space for 3 positions for geo
-			 * then 1 for conn_type, reboot, and rotate
+			 * conn_type and start_loc and then, reboot, and rotate
 			 */
-			for (i=0; i<((dims*2)+2); i++) {
+			for (i=0; i<((dims*3)+2); i++) {
 				pack16((uint16_t) 0, buffer);
 			}
 			pack32((uint32_t) 0, buffer); //block_cnode_cnt
@@ -579,6 +591,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 		for (i=0; i<dims; i++) {
 			safe_unpack16(&(jobinfo->geometry[i]), buffer);
 			safe_unpack16(&(jobinfo->conn_type[i]), buffer);
+			safe_unpack16(&(jobinfo->start_loc[i]), buffer);
 		}
 
 		safe_unpack16(&(jobinfo->reboot), buffer);
@@ -716,7 +729,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			else
 				xstrcat(geo, "0");
 		}
-	} else
+	} else if (mode != SELECT_PRINT_START_LOC)
 		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, print_x);
 
 	switch (mode) {
@@ -796,6 +809,11 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			tmp_image = jobinfo->ramdiskimage;
 		snprintf(buf, size, "%s", tmp_image);
 		break;
+	case SELECT_PRINT_START_LOC:
+		xfree(geo);
+		geo = give_geo(jobinfo->start_loc, jobinfo->dim_cnt, 0);
+		snprintf(buf, size, "%s", geo);
+		break;
 	default:
 		error("sprint_jobinfo: bad mode %d", mode);
 		if (size > 0)
@@ -844,7 +862,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 			else
 				xstrcat(geo, "0");
 		}
-	} else
+	} else if (mode != SELECT_PRINT_START_LOC)
 		geo = give_geo(jobinfo->geometry, jobinfo->dim_cnt, print_x);
 
 	switch (mode) {
@@ -914,6 +932,11 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		if (jobinfo->ramdiskimage)
 			tmp_image = jobinfo->ramdiskimage;
 		xstrfmtcat(buf, "%s", tmp_image);
+		break;
+	case SELECT_PRINT_START_LOC:
+		xfree(geo);
+		geo = give_geo(jobinfo->start_loc, jobinfo->dim_cnt, 0);
+		xstrfmtcat(buf, "%s", geo);
 		break;
 	default:
 		error("xstrdup_jobinfo: bad mode %d", mode);

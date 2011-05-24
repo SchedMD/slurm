@@ -154,7 +154,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		} else if (env_var.getKey() == "SLURM_STEP_NUM_NODES") {
 			step_cnode_cnt = atoi(env_var.getValue().c_str());
 			found++;
-		} else if (env_var.getKey() == "SLURM_STEP_SUB_MP") {
+		} else if (env_var.getKey() == "SLURM_STEP_START_LOC") {
 			if (!_set_coords(env_var.getValue(), start_coords))
 				goto deny_job;
 			found++;

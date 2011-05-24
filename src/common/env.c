@@ -1184,6 +1184,11 @@ env_array_for_step(char ***dest,
 					       geo_char, sizeof(geo_char),
 					       SELECT_PRINT_GEOMETRY);
 		env_array_overwrite_fmt(dest, "SLURM_STEP_GEO", "%s", geo_char);
+		select_g_select_jobinfo_sprint(step->select_jobinfo,
+					       geo_char, sizeof(geo_char),
+					       SELECT_PRINT_START_LOC);
+		env_array_overwrite_fmt(dest, "SLURM_STEP_START_LOC",
+					"%s", geo_char);
 	}
 
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES",

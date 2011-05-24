@@ -74,6 +74,8 @@ struct select_jobinfo {
 	char *ramdiskimage;     /* RamDiskImage for this block */
 	uint16_t reboot;	/* reboot block before starting job */
 	uint16_t rotate;	/* permit geometry rotation if set */
+	uint16_t start_loc[HIGHEST_DIMENSIONS];	/* where in block we
+						 * are starting from */
 	bitstr_t *units_used;   /* Used for a step the cnodes used.
 				 */
 };
