@@ -107,9 +107,9 @@ static void _msg_thr_destroy(message_thread_state_t *mts);
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 
 static struct io_operations message_socket_ops = {
-	readable:	&eio_message_socket_readable,
-	handle_read:	&eio_message_socket_accept,
-	handle_msg:     &_handle_msg
+	.readable = &eio_message_socket_readable,
+	.handle_read = &eio_message_socket_accept,
+	.handle_msg = &_handle_msg
 };
 
 static struct termios termdefaults;
