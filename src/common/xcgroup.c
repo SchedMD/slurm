@@ -709,9 +709,9 @@ int xcgroup_set_uint64_param(xcgroup_t* cg, char* param, uint64_t value)
 	fstatus = _file_write_uint64s(file_path, &value, 1);
 	if (fstatus != XCGROUP_SUCCESS)
 		debug2("unable to set parameter '%s' to "
-		       "'%llu' for '%s'", param, value, cpath);
+		       "'%"PRIu64"' for '%s'", param, value, cpath);
 	else
-		debug3("parameter '%s' set to '%llu' for '%s'",
+		debug3("parameter '%s' set to '%"PRIu64"' for '%s'",
 		       param, value, cpath);
 
 	return fstatus;
@@ -809,11 +809,10 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 
 		value = values[i];
 
-		rc = snprintf(tstr, sizeof(tstr), "%llu",
-			      (long long unsigned int)value);
+		rc = snprintf(tstr, sizeof(tstr), "%"PRIu64"", value);
 		if (rc < 0) {
-			debug2("unable to build %llu string value, skipping",
-			       value);
+			debug2("unable to build %"PRIu64" string value, "
+			       "skipping", value);
 			fstatus = XCGROUP_ERROR;
 			continue;
 		}
@@ -885,7 +884,7 @@ int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb)
 		}
 	}
 
-	/* build uint32_t list */
+	/* build uint64_t list */
 	if (i > 0) {
 		pa = (uint64_t*) xmalloc(sizeof(uint64_t) * i);
 		p = buf;
