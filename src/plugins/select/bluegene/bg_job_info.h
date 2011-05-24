@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  jobinfo.h - definitions of functions used for the select_jobinfo_t
+ *  bg_job_info.h - definitions of functions used for the select_jobinfo_t
  *              structure
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -74,6 +74,8 @@ struct select_jobinfo {
 	char *ramdiskimage;     /* RamDiskImage for this block */
 	uint16_t reboot;	/* reboot block before starting job */
 	uint16_t rotate;	/* permit geometry rotation if set */
+	uint16_t start_loc[HIGHEST_DIMENSIONS];	/* where in block we
+						 * are starting from */
 	bitstr_t *units_used;   /* Used for a step the cnodes used.
 				 */
 };

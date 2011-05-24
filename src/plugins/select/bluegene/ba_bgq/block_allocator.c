@@ -989,7 +989,24 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 						g_nc_coords[ionode_num].end,
 						ba_mp_geo_system);
 				}
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					tmp_char = ba_node_map_ranged_hostlist(
+						ba_mp->cnode_bitmap,
+						ba_mp_geo_system);
+
 				bit_not(ba_mp->cnode_bitmap);
+
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+					tmp_char2 = ba_node_map_ranged_hostlist(
+						ba_mp->cnode_bitmap,
+						ba_mp_geo_system);
+					info("ba_pick_sub_block_cnodes: "
+					     "can only use %s cnodes of "
+					     "this midplane leaving %s "
+					     "unusable", tmp_char, tmp_char2);
+					xfree(tmp_char);
+					xfree(tmp_char2);
+				}
 			}
 		}
 		if (bit_clear_count(ba_mp->cnode_bitmap) < *node_count) {
@@ -1003,31 +1020,29 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 
 		while (geo_table) {
 			int scan_offset = 0;
-			uint16_t dont_pass[ba_mp_geo_system->dim_count];
-			uint16_t start_pos[ba_mp_geo_system->dim_count];
-#if 1
-			/* if deny_pass argument is NULL, default is to 
-			 * deny passthroughs in all dimensions */
-			for (dim = 0; dim < ba_mp_geo_system->dim_count; dim++)
-				dont_pass[dim] = true;
-#endif
+			uint16_t start_loc[ba_mp_geo_system->dim_count];
+
 			if (ba_geo_test_all(ba_mp->cnode_bitmap,
 					    &jobinfo->units_used,
 					    geo_table, &cnt,
-					    ba_mp_geo_system, dont_pass,
-					    start_pos, &scan_offset)
+					    ba_mp_geo_system, NULL,
+					    start_loc, &scan_offset)
 			    != SLURM_SUCCESS) {
 				geo_table = geo_table->next_ptr;
 				continue;
 			}
-#if 0
-			info("scan_offset=%d", scan_offset);
-			for (dim=0; dim < ba_mp_geo_system->dim_count; dim++) {
-				info("start_pos[%d]=%u geometry[%d}=%u",
-				     dim, start_pos[dim], dim,
-				     geo_table->geometry[dim]);
+
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+				info("scan_offset=%d", scan_offset);
+				for (dim = 0;
+				     dim < ba_mp_geo_system->dim_count;
+				     dim++) {
+					info("start_loc[%d]=%u geometry[%d]=%u",
+					     dim, start_loc[dim], dim,
+					     geo_table->geometry[dim]);
+				}
 			}
-#endif
+
 			bit_or(ba_mp->cnode_bitmap, jobinfo->units_used);
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
 				tmp_char = ba_node_map_ranged_hostlist(
@@ -1046,9 +1061,11 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 			}
 			jobinfo->ionode_str = ba_node_map_ranged_hostlist(
 				jobinfo->units_used, ba_mp_geo_system);
-			for (dim = 0; dim < jobinfo->dim_cnt; dim++)
+			for (dim = 0; dim < jobinfo->dim_cnt; dim++) {
 				jobinfo->geometry[dim] =
 					geo_table->geometry[dim];
+				jobinfo->start_loc[dim] = start_loc[dim];
+			}
 			break;
 		}
 
