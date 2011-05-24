@@ -285,7 +285,7 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 				 "memory.limit_in_bytes",mlb);
 	xcgroup_set_uint64_param(&job_memory_cg,
 				 "memory.memsw.limit_in_bytes",mls);
-	debug("task/cgroup: job mem.limit=%luMB memsw.limit=%luMB",
+	debug("task/cgroup: job mem.limit=%lluMB memsw.limit=%lluMB",
 	      mlb/(1024*1024),mls/(1024*1024));
 
 	/*
@@ -315,7 +315,7 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 				 "memory.limit_in_bytes",mlb);
 	xcgroup_set_uint64_param(&step_memory_cg,
 				 "memory.memsw.limit_in_bytes",mls);
-	debug("task/cgroup: step mem.limit=%luMB memsw.limit=%luMB",
+	debug("task/cgroup: step mem.limit=%lluMB memsw.limit=%lluMB",
 	      mlb/(1024*1024),mls/(1024*1024));
 
 	/*
