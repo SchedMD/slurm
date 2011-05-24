@@ -1,14 +1,18 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Download</h1>
-<p>
-SLURM source can be downloaded from
+<p>SLURM source can be downloaded from
 <a href="http://sourceforge.net/projects/slurm/">
 http://sourceforge.net/projects/slurm/</a><br>
 SLURM has also been packaged for
 <a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and
 <a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
 (both named <i>slurm-llnl</i>).</p>
+
+<p>A <a href="http://www.bsc.es/plantillaA.php?cat_id=705">SLURM simulator</a>
+is available to assess various scheduling policies.
+Under simulation jobs are not actually executed. Instead a job execution trace
+from a real system or a synthetic trace are used.</p>
 
 <p>Related software available from various sources include:
 <ul>
@@ -204,6 +208,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 20 December 2010</p>
+<p style="text-align:center;">Last modified 24 May 2011</p>
 
 <!--#include virtual="footer.txt"-->

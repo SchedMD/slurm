@@ -62,6 +62,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and
     Networking, Italy)</li>
+<li>Alejandro Lucero Palau (Barcelona Supercomputer Center, Spain)</li>
 <li>Daniel Palermo (HP)</li>
 <li>Dan Phung (LLNL/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
@@ -90,6 +91,6 @@ organizations. The current SLURM development staff includes: </p>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 May 2011</p>
+<p style="text-align:center;">Last modified 24 May 2011</p>
 
 <!--#include virtual="footer.txt"-->
