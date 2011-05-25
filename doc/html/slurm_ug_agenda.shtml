@@ -1,15 +1,10 @@
 <!--#include virtual="header.txt"-->
 
-<html>
+      <a href="http:///www.bull.com" target="_blank"><img src="bull.jpg" style="float: right;" border="0"></a></p>
 
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-  <title>SLURM User Group 2011</title>
-  <link href="data.css" rel="stylesheet" type="text/css">
-</head>
-
-<body>
       <h1>Slurm User Group 2011</h1>
+
+      <p>Hosted by  <a href="http:///www.bull.com">Bull</a>
 
       <h1>Agenda</h1>
 
@@ -22,6 +17,33 @@
 	The <a href="#schedule">Schedule</a>  amd <a href="#abstracts">Abstracts</a>
 	are shown below.
       </p>
+
+      <h2>Hotel Information</h2>
+	<p>The meeting will be held at
+	<a href="http://embassysuites1.hilton.com/en_US/es/hotel/PHXNOES-Embassy-Suites-Phoenix-North-Arizona/index.do">Embassy Suites Phoenix - North</a>
+	2577 West Greenway Road, Phoenix, Arizona, USA (Phone: 1-602-375-1777 Fax: 1-602-375-4012).
+	You may book your reservations on line at
+	<a href="http://embassysuites1.hilton.com/en_US/es/hotel/PHXNOES-Embassy-Suites-Phoenix-North-Arizona/index.do">Embassy Suites Phoenix - North</a><p></p>
+
+	<p>Please reference Bull when making your reservations to recieve a $79/room rate.</p>
+
+      <h2>Directions and Transportation</h2>
+	<p>From Phoenix Sky Harbor Airport, take I-10 west to I-17 North.
+	Follow I-17 to the Greenway Road, exit 211 approximately 15 miles.
+	Exit and turn right, 1/8th of a mile on the right is the hotel entrance.</p>
+        <p><a href="http://embassysuites1.hilton.com/en_US/es/hotel/PHXNOES-Embassy-Suites-Phoenix-North-Arizona/directions.do;jsessionid=DDD31DD6EFFAF2D32299955C321976F3.etc83">
+	View all directions, map, and airport information</a></p>
+
+      <h2>Contact</h2>
+	<p>If you need further informations about the event, or the
+	registration protocols, contact the
+        <a href="mailto:Nancy.Kritkausky@bull.com?subject=Informations">
+	<b>Slurm User Group 2011</b></a> organizers.<br>
+
+
+      <h2>Registration</h2>
+	<p>Please <a href="slurm_ug_registration.html">register</a> online no later
+	than August 22.</p>
 
       <a name="schedule"><h1>Schedule</h1></a>
 
@@ -317,7 +339,7 @@
 	<li>Task Placement with Cgroups</li>
 	</ul>
 
-	<h2> Keynote</h2>
+	<h2> Keynote Speaker</h2>
 	William Kramer (NCSA)
 
 	<h2>Session #1</h2>
@@ -408,7 +430,5 @@
 	SLURM's design and development work.
 	We also invite proposals for hosting the SLURM User Group Meeting in 2012.
 
-    </div>
-</body>
 <!--#include virtual="footer.txt"-->
 
