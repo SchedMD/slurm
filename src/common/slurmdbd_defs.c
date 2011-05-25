@@ -539,11 +539,6 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 			(dbd_usage_msg_t *)req->data, rpc_version,
 			req->msg_type, buffer);
 		break;
-	case DBD_GET_JOBS:
-		slurmdbd_pack_get_jobs_msg((dbd_get_jobs_msg_t *)req->data,
-					   rpc_version,
-					   buffer);
-		break;
 	case DBD_INIT:
 		slurmdbd_pack_init_msg((dbd_init_msg_t *)req->data, rpc_version,
 				       buffer, slurmdbd_auth_info);
@@ -617,6 +612,8 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_GET_CONFIG:
 		/* No message to pack */
 		break;
+	case DBD_GET_JOBS:
+		/* Defunct RPC */
 	default:
 		error("slurmdbd: Invalid message type pack %u(%s:%u)",
 		      req->msg_type,
@@ -711,11 +708,6 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 			(dbd_usage_msg_t **)&resp->data, rpc_version,
 			resp->msg_type, buffer);
 		break;
-	case DBD_GET_JOBS:
-		rc = slurmdbd_unpack_get_jobs_msg(
-			(dbd_get_jobs_msg_t **)&resp->data,
-			rpc_version, buffer);
-		break;
 	case DBD_INIT:
 		rc = slurmdbd_unpack_init_msg((dbd_init_msg_t **)&resp->data,
 					      buffer,
@@ -796,6 +788,8 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	case DBD_GET_CONFIG:
 		/* No message to unpack */
 		break;
+	case DBD_GET_JOBS:
+		/* Defunct RPC */
 	default:
 		error("slurmdbd: Invalid message type unpack %u(%s)",
 		      resp->msg_type,
@@ -2481,19 +2475,6 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 	}
 }
 
-extern void slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->cluster_name);
-		if(msg->selected_steps)
-			list_destroy(msg->selected_steps);
-		if(msg->selected_parts)
-			list_destroy(msg->selected_parts);
-		xfree(msg->user);
-		xfree(msg);
-	}
-}
-
 extern void slurmdbd_free_init_msg(dbd_init_msg_t *msg)
 {
 	if(msg) {
@@ -2946,98 +2927,6 @@ extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 
 unpack_error:
 	slurmdbd_free_cond_msg(msg_ptr, type);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-extern void slurmdbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,
-				       uint16_t rpc_version, Buf buffer)
-{
-	uint32_t i = 0;
-	ListIterator itr = NULL;
-	slurmdb_selected_step_t *job = NULL;
-	char *part = NULL;
-
-	packstr(msg->cluster_name, buffer);
-
-	pack16(msg->completion, buffer);
-
-	pack32(msg->gid, buffer);
-
-	pack_time(msg->last_update, buffer);
-
-	if(msg->selected_steps)
-		i = list_count(msg->selected_steps);
-
-	pack32(i, buffer);
-	if(i) {
-		itr = list_iterator_create(msg->selected_steps);
-		while((job = list_next(itr))) {
-			slurmdb_pack_selected_step(job, rpc_version, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-
-	i = 0;
-	if(msg->selected_parts)
-		i = list_count(msg->selected_parts);
-
-	pack32(i, buffer);
-	if(i) {
-		itr = list_iterator_create(msg->selected_parts);
-		while((part = list_next(itr))) {
-			packstr(part, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-	packstr(msg->user, buffer);
-}
-
-extern int slurmdbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,
-					uint16_t rpc_version, Buf buffer)
-{
-	int i;
-	uint32_t count = 0;
-	uint32_t uint32_tmp;
-	dbd_get_jobs_msg_t *msg_ptr;
-	slurmdb_selected_step_t *job = NULL;
-	char *part = NULL;
-
-	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
-	*msg = msg_ptr;
-
-	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
-
-	safe_unpack16(&msg_ptr->completion, buffer);
-
-	safe_unpack32(&msg_ptr->gid, buffer);
-
-	safe_unpack_time(&msg_ptr->last_update, buffer);
-
-	safe_unpack32(&count, buffer);
-	if(count) {
-		msg_ptr->selected_steps =
-			list_create(slurmdb_destroy_selected_step);
-		for(i=0; i<count; i++) {
-			slurmdb_unpack_selected_step(&job, rpc_version, buffer);
-			list_append(msg_ptr->selected_steps, job);
-		}
-	}
-	safe_unpack32(&count, buffer);
-	if(count) {
-		msg_ptr->selected_parts = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
-			list_append(msg_ptr->selected_parts, part);
-		}
-	}
-
-	safe_unpackstr_xmalloc(&msg_ptr->user, &uint32_tmp, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurmdbd_free_get_jobs_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

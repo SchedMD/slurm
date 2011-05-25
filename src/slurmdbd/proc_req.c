@@ -82,8 +82,6 @@ static int   _get_config(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_events(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
-		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_probs(slurmdbd_conn_t *slurmdbd_conn,
@@ -267,10 +265,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _get_events(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
 			break;
-		case DBD_GET_JOBS:
-			rc = _get_jobs(slurmdbd_conn,
-				       in_buffer, out_buffer, uid);
-			break;
 		case DBD_GET_JOBS_COND:
 			rc = _get_jobs_cond(slurmdbd_conn,
 					    in_buffer, out_buffer, uid);
@@ -424,6 +418,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _step_start(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
 			break;
+		case DBD_GET_JOBS:
+			/* Defunct RPC */
 		default:
 			comment = "Invalid RPC";
 			error("CONN:%u %s msg_type=%d",
@@ -1206,85 +1202,6 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_EVENTS);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
-
-	return rc;
-}
-
-static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
-		     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
-{
-	dbd_get_jobs_msg_t *get_jobs_msg = NULL;
-	dbd_list_msg_t list_msg;
-	char *comment = NULL;
-	slurmdb_job_cond_t job_cond;
-	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_JOBS: called");
-	if (slurmdbd_unpack_get_jobs_msg(
-		    &get_jobs_msg, slurmdbd_conn->rpc_version, in_buffer)
-	    != SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_GET_JOBS message";
-		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      SLURM_ERROR, comment,
-					      DBD_GET_JOBS);
-		return SLURM_ERROR;
-	}
-
-	memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
-
-	job_cond.acct_list = get_jobs_msg->selected_steps;
-	job_cond.step_list = get_jobs_msg->selected_steps;
-	job_cond.partition_list = get_jobs_msg->selected_parts;
-
-	if (get_jobs_msg->user) {
-		uid_t pw_uid;
-		if (uid_from_string (get_jobs_msg->user, &pw_uid) >= 0) {
-			char *temp = xstrdup_printf("%u", pw_uid);
-			job_cond.userid_list = list_create(slurm_destroy_char);
-			list_append(job_cond.userid_list, temp);
-		}
-	}
-
-	if (get_jobs_msg->gid >=0) {
-		char *temp = xstrdup_printf("%u", get_jobs_msg->gid);
-		job_cond.groupid_list = list_create(slurm_destroy_char);
-		list_append(job_cond.groupid_list, temp);
-	}
-
-	if (get_jobs_msg->cluster_name) {
-		job_cond.cluster_list = list_create(NULL);
-		list_append(job_cond.cluster_list, get_jobs_msg->cluster_name);
-	}
-
-	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
-		slurmdbd_conn->db_conn, *uid, &job_cond);
-
-	if (!errno) {
-		if (!list_msg.my_list)
-			list_msg.my_list = list_create(NULL);
-		*out_buffer = init_buf(1024);
-		pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
-				       DBD_GOT_JOBS, *out_buffer);
-	} else {
-		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-					      errno, slurm_strerror(errno),
-					      DBD_GET_JOBS);
-		rc = SLURM_ERROR;
-	}
-
-	if (job_cond.cluster_list)
-		list_destroy(job_cond.cluster_list);
-	if (job_cond.userid_list)
-		list_destroy(job_cond.userid_list);
-	if (job_cond.groupid_list)
-		list_destroy(job_cond.groupid_list);
-
-	slurmdbd_free_get_jobs_msg(get_jobs_msg);
 
 	if (list_msg.my_list)
 		list_destroy(list_msg.my_list);

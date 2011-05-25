@@ -97,7 +97,7 @@ typedef enum {
 	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information  	*/
 	DBD_GET_CLUSTERS,	/* Get account information		*/
 	DBD_GET_CLUSTER_USAGE, 	/* Get cluster usage information	*/
-	DBD_GET_JOBS,		/* Get job information			*/
+	DBD_GET_JOBS,		/* VESTIGIAL / DEFUNCT RPC		*/
 	DBD_GET_USERS,  	/* Get account information		*/
 	DBD_GOT_ACCOUNTS,	/* Response to DBD_GET_ACCOUNTS		*/
 	DBD_GOT_ASSOCS, 	/* Response to DBD_GET_ASSOCS   	*/
@@ -440,7 +440,6 @@ extern void slurmdbd_free_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);
-extern void slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 extern void slurmdbd_free_init_msg(dbd_init_msg_t *msg);
 extern void slurmdbd_free_fini_msg(dbd_fini_msg_t *msg);
 extern void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
@@ -474,8 +473,6 @@ extern void slurmdbd_pack_rec_msg(dbd_rec_msg_t *msg,
 extern void slurmdbd_pack_cond_msg(dbd_cond_msg_t *msg,
 				   uint16_t rpc_version,
 				   slurmdbd_msg_type_t type, Buf buffer);
-extern void slurmdbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,
-				       uint16_t rpc_version, Buf buffer);
 extern void slurmdbd_pack_init_msg(dbd_init_msg_t *msg, uint16_t rpc_version,
 				   Buf buffer, char *auth_info);
 extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg,
@@ -540,8 +537,6 @@ extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type, Buf buffer);
-extern int slurmdbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,
-					uint16_t rpc_version, Buf buffer);
 extern int slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
 				    char *auth_info);
 extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg,

@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     Regression from pre5.
  -- If job's TMPDIR environment is not set or is not usable, reset to "/tmp".
     Patch from Andriy Grytsenko (Massive Solutions Limited).
+ -- Remove logic for defunct RPC: DBD_GET_JOBS.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
