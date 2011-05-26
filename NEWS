@@ -27,6 +27,10 @@ documents those changes that are of interest to users and admins.
     Andriy Grytsenko (Massive Solutions Limited).
  -- Avoid SEGV in association logic with user=NULL. Patch from
     Andriy Grytsenko (Massive Solutions Limited).
+ -- Fixed issue in accounting where it was possible for a new
+    association/wckey to be set incorrectly as a default the new object
+    was added after an original default object already existed.  Before
+    the slurmctld would need to be restarted to fix the issue.
 
 * Changes in SLURM 2.2.5
 ========================
