@@ -72,7 +72,7 @@ Job_priority =
 <P> All of the factors in this formula are floating point numbers that
   range from 0.0 to 1.0.  The weights are unsigned, 32 bit integers.
   The job's priority is an integer that ranges between 0 and
-  4294967295.  The higher the number,  the higher the job will be
+  4294967295.  The larger the number, the higher the job will be
   positioned in the queue, and the sooner the job will be scheduled.
   A job's priority, and hence its order in the queue, can vary over
   time.  For example, the longer a job sits in the queue, the higher
@@ -106,7 +106,7 @@ Job_priority =
 <h2>Partition Factor</h2></a>
 
 <P> Each node partition can be assigned an integer priority.  The
-higher the number, the greater the job priority will be for jobs that
+larger the number, the greater the job priority will be for jobs that
 request to run in this partition.  This priority value is then
 normalized to the highest priority of all the partitions to become the
 partition factor.</P>
@@ -115,7 +115,7 @@ partition factor.</P>
 <a name=qos>
 <h2>Quality of Service (QOS) Factor</h2></a>
 
-<P> Each QOS can be assigned an integer priority.  The higher the
+<P> Each QOS can be assigned an integer priority.  The larger the
 number, the greater the job priority will be for jobs that request
 this QOS.  This priority value is then normalized to the highest
 priority of all the QOS's to become the QOS factor.</P>
@@ -177,10 +177,10 @@ Where:
 
 <h3> Normalized Usage</h3>
 
-<P> The total number of processor*seconds that a machine is able to deliver over a fixed time period (for example, a day) is a fixed quantity.  The processor*seconds allocated to every job are tracked and saved to the SLURM database in real-time.  If one only considered usage over a fixed time period, then calculating a user's normalized usage would be a simple quotient:</P>
+<P> The processor*seconds allocated to every job are tracked in real-time.  If one only considered usage over a fixed time period, then calculating a user's normalized usage would be a simple quotient:</P>
 
 <PRE>
-	U<sub>N</sub> = U<sub>user</sub> / R<sub>available</sub>
+	U<sub>N</sub> = U<sub>user</sub> / U<sub>total</sub>
 </PRE>
 
 Where:
@@ -190,8 +190,8 @@ Where:
 <DD> is normalized usage, between zero and one
 <DT> U<sub>user</sub>
 <DD> is the processor*seconds consumed by all of a user's jobs in a given account for over a fixed time period
-<DT> R<sub>available</sub>
-<DD> is the total number of processor*seconds a machine can deliver during that same time period
+<DT> U<sub>total</sub>
+<DD> is the total number of processor*seconds utilized across the cluster during that same time period
 </DL>
 
 <P> However, significant real-world usage quantities span multiple time periods.  Rather than treating usage over a number of weeks or months with equal importance, SLURM's fair-share priority calculation places more importance on the most recent resource usage and less importance on usage from the distant past.</P>
@@ -229,28 +229,26 @@ default.  The decay factor, D, is assigned the value that will achieve
 the half-life decay rate specified by the <i>PriorityDecayHalfLife</i>
 parameter.</P>
 
-<P> The historical resources a machine has available could be similarly aggregated with the same decay factor:</P>
+<P> The total number of processor*seconds utilized can be similarly aggregated with the same decay factor:</P>
 
 <PRE>
 	R<sub>H</sub> = R<sub>current_period</sub> +
 	    ( D * R<sub>last_period</sub>) + (D * D * R<sub>period-2</sub>) + ...
 </PRE>
 
-<P> However, A simpler formula is:</P>
-
-<PRE>
-	R<sub>H</sub> = num_procs * half_life * 2
-</PRE>
-
 Where:
 
 <DL>
 <DT> R<sub>H</sub>
-<DD> is the historical resources available subject to the same half-life decay as the usage formula.
-<DT> num_procs</sub>
-<DD> is the total number of processors in the cluster
-<DT> half_life</sub>
-<DD> is the configured half-life(<i>PriorityDecayHalfLife</i>)
+<DD> is the total historical usage subject to the same half-life decay as the usage formula.
+<DT> R<sub>current_period</sub>
+<DD> is the total usage charged over the current measurement period
+<DT> R<sub>last_period</sub>
+<DD> is the total usage charged over the last measurement period
+<DT> R<sub>period-2</sub>
+<DD> is the total usage charged over the second last measurement period
+<DT> D
+<DD> is the decay factor between zero and one
 </DL>
 
 <P> A user's normalized usage that spans multiple time periods then becomes:</P>
@@ -449,7 +447,7 @@ factor as it is currently configured.</P>
 <DD> Set this value to "priority/multifactor" to enable the Multi-factor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
 <DT> PriorityDecayHalfLife
 <DD> This determines the contribution of historical usage on the
-  composite usage value.  The higher the number, the longer past usage
+  composite usage value.  The larger the number, the longer past usage
   affects fair-share.  If set to 0 no decay will be applied.  This is helpful if
   you want to enforce hard time limits per association.  If set to 0
   PriorityUsageResetPeriod must be set to some interval.
