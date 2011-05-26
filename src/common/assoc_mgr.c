@@ -293,7 +293,7 @@ static void _set_user_default_acct(slurmdb_association_rec_t *assoc)
 	xassert(assoc_mgr_user_list);
 
 	/* set up the default if this is it */
-	if (assoc->is_def && (assoc->uid != NO_VAL)) {
+	if ((assoc->is_def == 1) && (assoc->uid != NO_VAL)) {
 		slurmdb_user_rec_t *user = NULL;
 		ListIterator user_itr =
 			list_iterator_create(assoc_mgr_user_list);
@@ -321,7 +321,7 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 	xassert(assoc_mgr_user_list);
 
 	/* set up the default if this is it */
-	if (wckey->is_def && (wckey->uid != NO_VAL)) {
+	if ((wckey->is_def == 1) && (wckey->uid != NO_VAL)) {
 		slurmdb_user_rec_t *user = NULL;
 		ListIterator user_itr =
 			list_iterator_create(assoc_mgr_user_list);
@@ -2399,6 +2399,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			if (!object->usage)
 				object->usage =
 					create_assoc_mgr_association_usage();
+			/* If is_def is uninitialized the value will
+			   be NO_VAL, so if it isn't 1 make it 0.
+			*/
+			if (object->is_def != 1)
+				object->is_def = 0;
 			list_append(assoc_mgr_association_list, object);
 			object = NULL;
 			parents_changed = 1; /* set since we need to
@@ -2644,8 +2649,13 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 			} else
 				object->uid = pw_uid;
 
-			if (object->is_def)
+			/* If is_def is uninitialized the value will
+			   be NO_VAL, so if it isn't 1 make it 0.
+			*/
+			if (object->is_def == 1)
 				_set_user_default_wckey(object);
+			else
+				object->is_def = 0;
 			list_append(assoc_mgr_wckey_list, object);
 			object = NULL;
 			break;
