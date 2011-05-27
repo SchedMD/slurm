@@ -478,7 +478,8 @@ extern int gres_plugin_reconfig(bool *did_change)
 	char *plugin_names = slurm_get_gres_plugins();
 	bool plugin_change;
 
-	*did_change = false;
+	if (did_change)
+		*did_change = false;
 	slurm_mutex_lock(&gres_context_lock);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
 		gres_debug = true;
@@ -495,7 +496,8 @@ extern int gres_plugin_reconfig(bool *did_change)
 		error("GresPlugins changed from %s to %s ignored",
 		     gres_plugin_list, plugin_names);
 		error("Restart the slurmctld daemon to change GresPlugins");
-		*did_change = true;
+		if (did_change)
+			*did_change = true;
 #if 0
 		/* This logic would load new plugins, but we need the old
 		 * plugins to persist in order to process old state

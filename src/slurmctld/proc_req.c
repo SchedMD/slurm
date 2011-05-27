@@ -1860,9 +1860,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	}
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		if(!(slurm_get_debug_flags() & DEBUG_FLAG_NO_CONF_HASH)
-		   && (node_reg_stat_msg->hash_val != NO_VAL)
-		   && (node_reg_stat_msg->hash_val != slurm_get_hash_val())) {
+		if (!(slurm_get_debug_flags() & DEBUG_FLAG_NO_CONF_HASH) &&
+		    (node_reg_stat_msg->hash_val != NO_VAL) &&
+		    (node_reg_stat_msg->hash_val != slurm_get_hash_val())) {
 			error("Node %s appears to have a different slurm.conf "
 			      "than the slurmctld.  This could cause issues "
 			      "with communication and functionality.  "
@@ -3886,6 +3886,14 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	debug_flags |= request_msg->debug_flags_plus;
 	slurm_set_debug_flags(debug_flags);
 	slurmctld_conf.last_update = time(NULL);
+
+	/* Reset cached debug_flags values */
+	gs_reconfig();
+	gres_plugin_reconfig(NULL);
+	priority_g_reconfig();
+	select_g_reconfigure();
+	(void) slurm_sched_reconfig();
+
 	unlock_slurmctld (config_write_lock);
 	flag_string = debug_flags2str(debug_flags);
 	info("Set DebugFlags to %s", flag_string);

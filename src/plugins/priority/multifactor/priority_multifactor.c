@@ -973,11 +973,9 @@ static void *_cleanup_thread(void *no_data)
 	return NULL;
 }
 
-static void _internal_setup()
+static void _internal_setup(void)
 {
-	uint32_t debug_flags = slurm_get_debug_flags();
-
-	if (debug_flags & DEBUG_FLAG_PRIO)
+	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO)
 		priority_debug = 1;
 	else
 		priority_debug = 0;
