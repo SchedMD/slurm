@@ -7,7 +7,8 @@ documents those changes that are of interest to users and admins.
     currently running job steps.
  -- Added an rpath if using the --with-munge option of configure.
  -- Add support for multiple sets of DEFAULT node, partition, and frontend
-    specifications in slurm.conf.
+    specifications in slurm.conf so that default values can be changed mulitple
+    times as the configuration file is read.
  -- BLUEGENE - Improved logic to place small blocks in free space before freeing
     larger blocks.
  -- Add optional argument to srun's --kill-on-bad-exit so that user can set
