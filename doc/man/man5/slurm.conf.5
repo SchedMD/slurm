@@ -204,7 +204,10 @@ Supported values presently include:
 for AIX systems only
 .TP
 \fBcheckpoint/blcr\fR
-Berkeley Lab Checkpoint Restart (BLCR)
+Berkeley Lab Checkpoint Restart (BLCR).
+NOTE: If a file is found at sbin/scch (relative to the SLURM installation
+location), it will be executed upon completion of the checkpoint. This can
+be a script used for managing the checkpoint files.
 .TP
 \fBcheckpoint/none\fR
 no checkpoint support (default)
