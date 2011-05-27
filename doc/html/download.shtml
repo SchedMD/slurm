@@ -14,6 +14,15 @@ is available to assess various scheduling policies.
 Under simulation jobs are not actually executed. Instead a job execution trace
 from a real system or a synthetic trace are used.</p>
 
+<!--
+SLURM interface to PHP
+https://github.com/jcftang/slurm/commits/php-slurm
+http://thammuz.tchpc.tcd.ie/mirrors/php-slurm/1.0/
+Development by Peter Vermeulen with help from staff of
+Trinity Centre for High Performance Computing,
+Trinity College Dublin, Ireland.
+-->
+
 <p>Related software available from various sources include:
 <ul>
 
