@@ -753,8 +753,9 @@ The maximum job id to be used for jobs submitted to SLURM without a
 specific requested value. Job id values generated will incremented by 1
 for each subsequent job. This may be used to provide a meta\-scheduler
 with a job id space which is disjoint from the interactive jobs.
+Once \fBMaxJobId\fR is reached, the next job will be assigned \fBFirstJobId\fR.
 The default value is 4294901760 (0xffff0000).
-Also see \fBFirstJobId\fR
+Also see \fBFirstJobId\fR.
 
 .TP
 \fBMaxMemPerCPU\fR
