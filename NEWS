@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     Patch from Andriy Grytsenko (Massive Solutions Limited).
  -- Remove logic for defunct RPC: DBD_GET_JOBS.
  -- Propagate DebugFlag changes by scontrol to the plugins.
+ -- Improve accuracy of REQUEST_JOB_WILL_RUN start time with respect to higher
+    priority pending jobs.
 
 * Changes in SLURM 2.3.0.pre5
 =============================

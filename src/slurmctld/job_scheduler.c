@@ -1183,6 +1183,59 @@ static void _pre_list_del(void *x)
 	xfree(x);
 }
 
+/* If there are higher priority queued jobs in this job's partition, then
+ * delay the job's expected initiation time as needed to run those jobs.
+ * NOTE: This is only a rough estimate of the job's start time as it ignores
+ * job dependencies, feature requirements, specific node requirements, etc. */
+static void _delayed_job_start_time(struct job_record *job_ptr)
+{
+	uint32_t part_node_cnt, part_cpu_cnt, part_cpus_per_node;
+	uint32_t job_size_cpus, job_size_nodes, job_time;
+	uint64_t cume_space_time = 0;
+	struct job_record *job_q_ptr;
+	ListIterator job_iterator;
+
+	if (job_ptr->part_ptr == NULL)
+		return;
+	part_node_cnt = job_ptr->part_ptr->total_nodes;
+	part_cpu_cnt  = job_ptr->part_ptr->total_cpus;
+	if (part_node_cnt > part_cpu_cnt)
+		part_cpus_per_node = part_node_cnt / part_cpu_cnt;
+	else
+		part_cpus_per_node = 1;
+
+	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create memory allocation failure");
+	while ((job_q_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
+		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
+		    (job_q_ptr->priority < job_ptr->priority))
+			continue;
+		if (job_q_ptr->details->min_nodes == NO_VAL)
+			job_size_nodes = 1;
+		else
+			job_size_nodes = job_q_ptr->details->min_nodes;
+		if (job_q_ptr->details->min_cpus == NO_VAL)
+			job_size_cpus = 1;
+		else
+			job_size_cpus = job_q_ptr->details->min_nodes;
+		job_size_cpus = MAX(job_size_cpus,
+				    (job_size_nodes * part_cpus_per_node));
+		if (job_ptr->time_limit == NO_VAL)
+			job_time = job_q_ptr->part_ptr->max_time;
+		else
+			job_time = job_q_ptr->time_limit;
+		cume_space_time += job_size_cpus * job_time;
+	}
+	list_iterator_destroy(job_iterator);
+	cume_space_time /= part_cpu_cnt;/* Factor out size */
+	cume_space_time *= 60;		/* Minutes to seconds */
+	debug2("Increasing estimated start of job %u by %"PRIu64" secs",
+	       job_ptr->job_id, cume_space_time);
+	job_ptr->start_time += cume_space_time;
+}
+
 /* Determine if a pending job will run using only the specified nodes
  * (in job_desc_msg->req_nodes), build response message and return
  * SLURM_SUCCESS on success. Otherwise return an error code. Caller
@@ -1297,6 +1350,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 #else
 		resp_data->proc_cnt = job_ptr->total_cpus;
 #endif
+		_delayed_job_start_time(job_ptr);
 		resp_data->start_time = MAX(job_ptr->start_time,
 					    orig_start_time);
 		resp_data->start_time = MAX(resp_data->start_time, start_res);
