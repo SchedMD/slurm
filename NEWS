@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
     was added after an original default object already existed.  Before
     the slurmctld would need to be restarted to fix the issue.
  -- Updated the Normalized Usage section in priority_multifactor.shtml.
+ -- Disable use of SQUEUE_FORMAT env var if squeue -l, -o, or -s option is
+    used. Patch from Aaron Knister (UMBC).
 
 * Changes in SLURM 2.2.5
 ========================
