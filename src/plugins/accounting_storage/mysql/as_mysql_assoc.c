@@ -2417,6 +2417,13 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
+		/* When adding if this isn't a default might as well
+		   force it to be 0 to avoid confusion since
+		   uninitialized it is NO_VAL.
+		*/
+		if (object->is_def != 1)
+			object->is_def = 0;
+
 		list_append(local_cluster_list, object->cluster);
 
 		if (object->parent_acct) {
