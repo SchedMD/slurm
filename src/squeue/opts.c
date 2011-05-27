@@ -93,6 +93,7 @@ extern void
 parse_command_line( int argc, char* argv[] )
 {
 	char *env_val = NULL;
+	bool override_format_env = false;
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
@@ -125,8 +126,6 @@ parse_command_line( int argc, char* argv[] )
 
 	if (getenv("SQUEUE_ALL"))
 		params.all_flag = true;
-	if ( ( env_val = getenv("SQUEUE_FORMAT") ) )
-		params.format = xstrdup(env_val);
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
 	if ( ( env_val = getenv("SLURM_CLUSTERS") ) ) {
@@ -176,6 +175,7 @@ parse_command_line( int argc, char* argv[] )
 			break;
 		case (int) 'l':
 			params.long_list = true;
+			override_format_env = true;
 			break;
 		case (int) 'M':
 			if (params.clusters)
@@ -202,6 +202,8 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'o':
 			xfree(params.format);
 			params.format = xstrdup(optarg);
+			override_format_env = true;
+
 			break;
 		case (int) 'p':
 			xfree(params.partitions);
@@ -223,6 +225,7 @@ parse_command_line( int argc, char* argv[] )
 					_build_step_list(params.steps);
 			}
 			params.step_flag = true;
+			override_format_env = true;
 			break;
 		case (int) 'S':
 			xfree(params.sort);
@@ -259,6 +262,11 @@ parse_command_line( int argc, char* argv[] )
 			_usage();
 			exit(0);
 		}
+	}
+
+	if ( override_format_env == false ) {
+		if ( ( env_val = getenv("SQUEUE_FORMAT") ) )
+			params.format = xstrdup(env_val);
 	}
 
 	params.cluster_flags = slurmdb_setup_cluster_flags();

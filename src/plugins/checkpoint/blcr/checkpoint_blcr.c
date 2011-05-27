@@ -699,7 +699,10 @@ static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
 	pid_t cpid;
 
 	if (access(scch_path, R_OK | X_OK) < 0) {
-		info("Access denied for %s: %m", scch_path);
+		if (errno == ENOENT)
+			debug("checkpoint/blcr: file %s not found", scch_path);
+		else
+			info("Access denied for %s: %m", scch_path);
 		return SLURM_ERROR;
 	}
 

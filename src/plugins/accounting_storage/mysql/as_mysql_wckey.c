@@ -509,6 +509,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
+
 		if (!added_user_list)
 			added_user_list = list_create(NULL);
 		list_append(added_user_list, object->user);
@@ -524,11 +525,16 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(extra, ", wckey_name='%s'", object->name);
 		}
 
+		/* When adding, if this isn't a default might as well
+		   force it to be 0 to avoid confusion since
+		   uninitialized it is NO_VAL.
+		*/
 		if (object->is_def == 1) {
 			xstrcat(cols, ", is_def");
 			xstrcat(vals, ", 1");
 			xstrcat(extra, ", is_def=1");
 		} else {
+			object->is_def = 0;
 			xstrcat(cols, ", is_def");
 			xstrcat(vals, ", 0");
 			xstrcat(extra, ", is_def=0");
