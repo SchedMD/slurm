@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+
+* Changes in SLURM 2.2.7
+========================
+
 * Changes in SLURM 2.2.6
 ========================
  -- Fix displaying of account coordinators with sacctmgr.  Possiblity to show
