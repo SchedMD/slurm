@@ -15,7 +15,7 @@ added in version 2.1.</li>
 <ul>
 <li><b>BlueGene</b>&#151;SLURM support for IBM's BlueGene/L, BlueGene/P and
 BlueGene/Q systems has been thoroughly tested.</li>
-<li><b>Cray XT an XE</b>&#151;Operates as a scheduler on top of Cray's
+<li><b>Cray XT and XE</b>&#151;Operates as a scheduler on top of Cray's
 ALPS/BASIL software. Supported added in SLURM version 2.3.</li>
 <li><b>Ethernet</b>&#151;Ethernet requires no special support from SLURM and has
 been thoroughly tested.</li>

@@ -34,15 +34,27 @@ as expected. Note that in order to build and install the aprun wrapper
 described above, execute "configure" with the <i>--with-srun2aprun</i>
 option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
 
-<h3>Node naming</h3>
-<p>SLURM node names will be of the form "nid#####" where "#####" is a five
-digit sequence number.
-Other information available about the node are it's XYZ coordinate in the
-node's <i>NodeAddr</i> field and it's component label in the <i>HostNodeName</i>
-field.
-The format of the component label is "c#-#c#s#n#" where the "#" fields
-represent in order: cabinet, row, cage, blade or slot, and node.
-For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
+<h3>Node naming and node geometry on Cray XT/XE systems</h3>
+<p>SLURM node names will be of the form "nid#####" where "#####" is a five-digit sequence number.
+   Other information available about the node are it's XYZ coordinate in the node's <i>NodeAddr</i>
+   field and it's component label in the <i>HostNodeName</i> field.
+   The format of the component label is "c#-#c#s#n#" where the "#" fields represent in order:
+   cabinet, row, cage, blade or slot, and node.
+   For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
+
+<p>Cray XT/XE systems come with a 3D torus by default. On smaller systems the cabling in X dimension is
+   left out, resulting in a two-dimensional torus (1 x Y x Z). On Gemini/XE systems, pairs of adjacent nodes
+   (nodes 0/1 and 2/3 on each blade) share one network interface each. This causes the same Y coordinate to
+   be  assigned to those nodes, so that the number of distinct torus coordinates is half the number of total
+   nodes.</p>
+<p>The SLURM <i>smap</i> and <i>sview</i> tools can visualize node torus positions. Clicking on a particular
+   node shows its <i>NodeAddr</i> field, which is its (X,Y,Z) torus coordinate base-36 encoded as a 3-character
+   string. For example, a NodeAddr of '07A' corresponds to the coordinates X = 0, Y = 7, Z = 10.
+   The <i>NodeAddr</i> of a node can also be shown using 'scontrol show node nid#####'.</p>
+
+<p>Please note that the sbatch/salloc options "<i>--geometry</i>" and "<i>--no-rotate</i>" are BlueGene-specific
+   and have no impact on Cray systems. Topological node placement depends on what Cray makes available via the
+   ALPS_NIDORDER configuration option (see below).</p>
 
 <h3>Specifying thread depth</h3>
 <p>For threaded applications, use the <i>--cpus-per-task</i>/<i>-c</i> parameter of sbatch/salloc to set
@@ -112,6 +124,20 @@ For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
    (--ntasks, --ntasks-per-node, --cpus-per-task, --mem) at application launch, as if the corresponding
    (-n, -N, -d, -m) parameters had been set; see the aprun(1) manpage on CLE 3.x systems for details.</p>
 
+<h3>Node ordering options</h3>
+<p>SLURM honours the node ordering policy set for Cray's Application Level Placement Scheduler (ALPS). Node 
+   ordering is a configurable system option (ALPS_NIDORDER in /etc/sysconfig/alps). The current
+   setting is reported by '<i>apstat -svv</i>'  (look for the line starting with "nid ordering option") and
+   can not be changed at  runtime. The resulting, effective node ordering is revealed by '<i>apstat -no</i>'
+   (if no special node ordering has been configured, 'apstat -no' shows the same order as 'apstat -n').</p>
+
+<p>SLURM uses exactly the same order as 'apstat -no' when selecting nodes for a job. With the <i>--contiguous</i>
+   option to sbatch/salloc you can request a contiguous (relative to the current ALPS nid ordering) set of nodes.
+   Note that on a busy system there is typically more fragmentation, hence it may take longer (or even prove
+   impossible) to allocate contiguous sets of a larger size.</p>
+
+<p>Cray/ALPS node ordering is a topic of ongoing work, some information can be found in the CUG-2010 paper
+   "<i>ALPS, Topology, and Performance</i>" by Carl Albing and Mark Baker.</p>
 
 <h2>Administrator Guide</h2>
 
