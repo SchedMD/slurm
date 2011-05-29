@@ -99,7 +99,7 @@ static uint32_t resv_jobid[MAX_RESV_CNT];
  * a cube rather than a long narrow box shape).
  * IN spur_cnt - number of nodes at each coordinate
  * IN/OUT coord - maximum coordinates in each dimension
- * IN dims - -number of dimensions to use */
+ * IN dims - number of dimensions to use */
 static void _get_dims(int spur_cnt, int *coord, int dims)
 {
 	int count = 1, i, j;
@@ -331,10 +331,8 @@ extern int fetch_stmt(MYSQL_STMT *stmt)
 	strncpy(my_bind_col[COL_TYPE].buffer, "compute", BASIL_STRING_SHORT);
 	*((unsigned int *)my_bind_col[COL_CORES].buffer)  =
 			my_node_ptr->config_ptr->cpus;
-	*((my_bool *)my_bind_col[COL_CORES].is_null)  = (my_bool) 0;
 	*((unsigned int *)my_bind_col[COL_MEMORY].buffer) =
 			my_node_ptr->config_ptr->real_memory;
-	*((my_bool *)my_bind_col[COL_MEMORY].is_null)  = (my_bool) 0;
 
 	*((int *)my_bind_col[COL_CAB].buffer) = hw_cabinet;
 	*((int *)my_bind_col[COL_ROW].buffer) = hw_row;
@@ -345,6 +343,19 @@ extern int fetch_stmt(MYSQL_STMT *stmt)
 	*((int *)my_bind_col[COL_X].buffer) = coord[0];
 	*((int *)my_bind_col[COL_Y].buffer) = coord[1];
 	*((int *)my_bind_col[COL_Z].buffer) = coord[2];
+
+	*((my_bool *)my_bind_col[COL_MEMORY].is_null)  = (my_bool) 0;
+	*((my_bool *)my_bind_col[COL_CORES].is_null)  = (my_bool) 0;
+
+	*((my_bool *)my_bind_col[COL_CAB].is_null)  = (my_bool) 0;
+	*((my_bool *)my_bind_col[COL_ROW].is_null)  = (my_bool) 0;
+	*((my_bool *)my_bind_col[COL_CAGE].is_null)  = (my_bool) 0;
+	*((my_bool *)my_bind_col[COL_SLOT].is_null)  = (my_bool) 0;
+	*((my_bool *)my_bind_col[COL_CPU].is_null)  = (my_bool) 0;
+
+	*((my_bool *)my_bind_col[COL_X].is_null)  = (my_bool) 0;
+	*((my_bool *)my_bind_col[COL_Y].is_null)  = (my_bool) 0;
+	*((my_bool *)my_bind_col[COL_Z].is_null)  = (my_bool) 0;
 
 	_incr_hw_recs();
 
@@ -568,7 +579,7 @@ int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
 	usleep(5000);
 #endif
 
-	return ;
+	return 0;
 }
 
 extern bool node_is_allocated(const struct basil_node *node)

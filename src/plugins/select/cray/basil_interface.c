@@ -498,7 +498,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		 *   o either 2 service nodes (n0/n3)
 		 *   o or 4 compute nodes     (n0..n3)
 		 *   o or 2 gemini chips      (g0/g1 serving n0..n3)
-		 *free_stmt_result
+		 *
 		 * Example: c0-0c1s0n1
 		 *          - c0- = cabinet 0
 		 *          - 0   = row     0
