@@ -745,9 +745,8 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 
 		rc = basil_confirm(resv_id, job_ptr->job_id, pagg_id);
 		if (rc == 0) {
-			debug2("confirmed ALPS resId %u for JobId %u, "
-				"pagg %"PRIu64"",
-				resv_id, job_ptr->job_id, pagg_id);
+			debug2("confirmed ALPS resId %u for JobId %u, pagg "
+			       "%"PRIu64"", resv_id, job_ptr->job_id, pagg_id);
 			return SLURM_SUCCESS;
 		} else if (rc == -BE_NO_RESID) {
 			/*

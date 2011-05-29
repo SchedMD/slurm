@@ -139,7 +139,7 @@ extern int init ( void )
 	/*
 	 * FIXME: At the moment the smallest Cray allocation unit are still
 	 * full nodes. Node sharing (even across NUMA sockets of the same
-	 * node) is, as of CLE 3.1 (summer 2010) still not supported, i.e.
+	 * node) is, as of CLE 3.x (Summer 2011) still not supported, i.e.
 	 * as per the LIMITATIONS section of the aprun(1) manpage of the
 	 * 3.1.27A release).
 	 * Hence for the moment we can only use select/linear.  If some

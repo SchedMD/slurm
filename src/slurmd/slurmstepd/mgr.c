@@ -277,7 +277,6 @@ static int _call_select_plugin_from_stepd(slurmd_job_t *job, uint64_t pagg_id,
 
 	fake_job_record.job_id		= job->jobid;
 	fake_job_record.job_state	= (uint16_t)NO_VAL;
-	fake_job_record.alloc_sid	= getsid(0);
 	fake_job_record.select_jobinfo	= select_g_select_jobinfo_alloc();
 	select_g_select_jobinfo_set(fake_job_record.select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &job->resv_id);
