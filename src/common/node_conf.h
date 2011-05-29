@@ -171,8 +171,6 @@ extern time_t last_node_update;		/* time of last node record update */
  */
 char * bitmap2node_name (bitstr_t *bitmap);
 
-extern int build_all_frontend_info (void);
-
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
@@ -180,6 +178,14 @@ extern int build_all_frontend_info (void);
  * RET 0 if no error, error code otherwise
  */
 extern int build_all_nodeline_info (bool set_bitmap);
+
+/*
+ * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
+ *	from the slurm.conf reader, build table, and set values
+ * is_slurmd_context: set to true if run from slurmd
+ * RET 0 if no error, error code otherwise
+ */
+extern int build_all_frontend_info (bool is_slurmd_context);
 
 /* Given a config_record with it's bitmap already set, update feature_list */
 extern void  build_config_feature_list (struct config_record *config_ptr);

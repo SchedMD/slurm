@@ -1205,7 +1205,7 @@ _slurmd_init(void)
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
 	build_all_nodeline_info(true);
-	build_all_frontend_info();
+	build_all_frontend_info(true);
 
 	/*
 	 * Read global slurm config file, override necessary values from

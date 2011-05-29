@@ -486,9 +486,10 @@ static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
 /*
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
  *	from the slurm.conf reader, build table, and set values
+ * is_slurmd_context: set to true if run from slurmd
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_frontend_info (void)
+extern int build_all_frontend_info (bool is_slurmd_context)
 {
 	slurm_conf_frontend_t **ptr_array;
 #ifdef HAVE_FRONT_END
@@ -533,7 +534,7 @@ extern int build_all_frontend_info (void)
 			if (fe_line->reason && fe_line->reason[0])
 				fe_single->reason = xstrdup(fe_line->reason);
 			fe_single->node_state = fe_line->node_state;
-			if (front_end_debug)
+			if (front_end_debug && !is_slurmd_context)
 				_dump_front_end(fe_single);
 		}
 		hostlist_destroy(hl_addr);
