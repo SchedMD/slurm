@@ -596,9 +596,15 @@ static void end_handler(void *user_data, const XML_Char *el)
 		/*
 		 * Re-classify errors. The error message has been added by the
 		 * cdata handler nested inside the ResponseData tags.
-		 * Match substrings that are common to all Basil versions.
+		 *
+		 * Match substrings that are common to all Basil versions:
+		 * - the ' No entry for resId ' string is returned when calling
+		 *   the RELEASE method multiple times;
+		 * - the ' cannot find resId ' string is returned when trying to
+		 *   confirm a reservation which does not or no longer exist.
 		 */
-		if (strstr(ud->bp->msg, " No entry for resId "))
+		if (strstr(ud->bp->msg, " No entry for resId ") ||
+		    strstr(ud->bp->msg, " cannot find resId "))
 			ud->error = BE_NO_RESID;
 	}
 }

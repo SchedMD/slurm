@@ -533,7 +533,7 @@ extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id)
 	usleep(5000);
 #endif
 	if ((job_id == 0) || (rsvn_id > MAX_RESV_CNT))
-		return -1;
+		return -BE_NO_RESID;
 #if 0
 	/* This is executed from the slurmd, so we really can not confirm
 	 * here if the reseravation was made by the slurmctld. Just assume

@@ -749,6 +749,18 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 				"pagg %"PRIu64"",
 				resv_id, job_ptr->job_id, pagg_id);
 			return SLURM_SUCCESS;
+		} else if (rc == -BE_NO_RESID) {
+			/*
+			 * If ALPS can not find the reservation ID we are trying
+			 * to confirm, it may be that the job has already been
+			 * canceled, or that the reservation has timed out after
+			 * waiting for the confirmation.
+			 * It is more likely that this error occurs on a per-job
+			 * basis, hence in this case do not drain frontend node.
+			 */
+			error("JobId %u has invalid ALPS resId %u - job "
+			      "already canceled?", job_ptr->job_id, resv_id);
+			return SLURM_SUCCESS;
 		} else {
 			error("confirming ALPS resId %u of JobId %u FAILED: %s",
 				resv_id, job_ptr->job_id, basil_strerror(rc));
