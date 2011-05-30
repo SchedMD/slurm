@@ -982,8 +982,19 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	}
 
 display_it:
-
-	if (!part_info_ptr || !block_ptr)
+	if (!block_ptr) {
+		view = ERROR_VIEW;
+		if (display_widget)
+			gtk_widget_destroy(display_widget);
+		label = gtk_label_new("No blocks on non-Bluegene systems");
+		gtk_table_attach_defaults(GTK_TABLE(table),
+					  label,
+					  0, 1, 0, 1);
+		gtk_widget_show(label);
+		display_widget = gtk_widget_ref(label);
+		goto end_it;
+	}
+	if (!part_info_ptr)
 		goto reset_curs;
 
 	block_list = _create_block_list(part_info_ptr, block_ptr,
