@@ -191,8 +191,13 @@ parse_command_line( int argc, char* argv[] )
 
 	if (params.verbose)
 		_print_options();
-	if (params.clusters)
+	if (params.clusters) {
+		if (list_count(params.clusters) > 1) {
+			fatal("Only one cluster can be used at a time with "
+			      "sprio");
+		}
 		working_cluster_rec = list_peek(params.clusters);
+	}
 }
 
 /*
