@@ -1,0 +1,48 @@
+Slurm PHP extension
+===================
+
+Requirements (tested with)
+
+* SLURM 2.2.0
+* PHP 5.1.6
+* APACHE (optional, but recommended)
+
+This was made primarily for SLURMWEB to connect to slurm. Any extra
+interactions are welcome.
+
+to compile...
+
+phpize
+./configure
+make
+
+this should make modules/slurm_php.so
+
+make install as root
+should install this where your extensions are in your php install
+
+in your php.ini file add the line
+
+extension=slurm_php.so
+
+and you should be able to use the functions here.
+
+
+TEST CASES
+==========
+
+It is assumed that the user has both slurmctld and slurmd is
+configured up with at least 1 partition and 1 node for these tests to
+pass.
+
+Developer Notes
+===============
+
+To clean up the directory to a clean state do the following
+
+~~~~
+phpize --clean
+~~~~
+
+The coding style that should be adopted is
+http://www.kernel.org/doc/Documentation/CodingStyle

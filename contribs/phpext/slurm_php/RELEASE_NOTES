@@ -1,0 +1,38 @@
+NOTES FOR PHP-SLURM VERSION 1.0
+===============================
+
+This is PHP extensions goal is to provide just enough functionality to
+a web developer read data from the slurm controller daemon to create a
+*status* or *monitoring* application which can be viewed by the end
+user. All the code has been written by 'Vermeulen Peter' with
+contributions from TCHPC staff.
+
+
+Installation Requirements
+=========================
+
+* SLURM 2.2.0 or newer
+* PHP 5.1.6 or newer
+* APACHE (optional, but recommended)
+
+
+Added the following API's
+=========================
+
+slurm_hostlist_to_array()
+slurm_array_to_hostlist()
+slurm_ping()
+slurm_slurmd_status()
+slurm_version()
+slurm_print_partition_names()
+slurm_get_specific_partition_info()
+slurm_get_partition_node_names()
+slurm_get_node_names()
+slurm_get_node_elements()
+slurm_get_node_element_by_name()
+slurm_get_node_state_by_name()
+slurm_get_node_states()
+slurm_get_control_configuration_keys()
+slurm_get_control_configuration_values()
+slurm_load_partition_jobs()
+slurm_load_job_information()
