@@ -9,31 +9,31 @@
  *  Copyright (C) 2011 - Trinity Centre for High Performance Computing
  *  Copyright (C) 2011 - Trinity College Dublin
  *  Written By : Vermeulen Peter <HoWest><Belgium>
- *  
+ *
  *  This file is part of php-slurm, a resource management program.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  php-slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  php-slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with php-slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -45,11 +45,11 @@
 #define SLURM_PHP_VERSION "1.0"
 #define SLURM_PHP_EXTNAME "slurm"
 /*
- *	Adjust this value to change the format of the returned string
- *	values. 
- *	
- *	For more information on formatting options : 
- *		http://www.java2s.com/Tutorial/C/0460__time.h/strftime.htm
+ * Adjust this value to change the format of the returned string
+ * values.
+ *
+ * For more information on formatting options :
+ * http://www.java2s.com/Tutorial/C/0460__time.h/strftime.htm
  */
 #define TIME_FORMAT_STRING "%c"
 
@@ -70,12 +70,13 @@ typedef struct key_value {
 	char *value;		/* value */
 } key_pair;
 
+
 /*****************************************************************************\
  *	HELPER FUNCTION PROTOTYPES
 \*****************************************************************************/
 
 /*
- * now - Get the current time 
+ * now - Get the current time
  * RET time_t * : Pointer to the memory holding the current time
  */
 time_t now();
@@ -124,7 +125,7 @@ void parse_node_pointer(zval * sub_arr, node_info_t * node_arr);
  * parse_assoc_array - Parse a character array where the elements are
  *	key-value pairs separated by delimiters into an associative
  *	array
- * 
+ *
  * IN char_arr - character array that needs parsing
  * IN delims - character array that contains the delimeters used in parsing
  * IN result_arr - associative array used to store the key_value pairs in
@@ -134,7 +135,7 @@ void parse_assoc_array(char * char_arr, char * delims, zval * result_arr);
 /*
  * parse_array - Parse a character array where the elements are values
  *	 separated by delimiters into a numerically indexed array
- * 
+ *
  * IN char_arr - character array that needs parsing
  * IN delims - character array that contains the delimeters used in parsing
  * IN result_arr - numerically indexed array used to store the values in
@@ -144,20 +145,22 @@ void parse_array(char * char_arr, char * delims, zval * rslt_arr);
 /*
  * get_partition_from_name - Load the information about a specific partition
  *	 by passing on a character array containing the partition name
- * 
+ *
  * IN name - character array containing the partition name
  * IN prt_data - pointer to store the partition information in (if a
  *	partition is found with that specific name)
- * IN prt_ptr - pointer containing all the partition information of all the arrays
+ * IN prt_ptr - pointer containing all the partition information of all the
+ *	 arrays
  * RET partition_info_t pointer that contains the partition data, or
  *      null if the partition wasn't found
  */
-partition_info_t * get_partition_from_name(char * name, partition_info_t * prt_data, partition_info_msg_t * prt_ptr);
+partition_info_t * get_partition_from_name(char * name,
+		partition_info_t * prt_data, partition_info_msg_t * prt_ptr);
 
 /*
- * zend_add_valid_assoc_string - checks a character array to see if it's NULL or
- *	not, if so an associative null is added, if not an associative string is
- *	added.
+ * zend_add_valid_assoc_string - checks a character array to see if
+ *	it's NULL or not, if so an associative null is added, if not
+ *	an associative string is added.
  *
  * IN rstl_arr - array to store the associative key_value pairs in
  * IN key - character array used as the associative key
@@ -166,24 +169,26 @@ partition_info_t * get_partition_from_name(char * name, partition_info_t * prt_d
 void zend_add_valid_assoc_string(zval * rstl_arr, char *key, char *val);
 
 /*
- * zend_add_valid_assoc_time_string - checks a unix timestamp to see if it's 0 or
- *	not, if so an associative null is added, if not a formatted string
+ * zend_add_valid_assoc_time_string - checks a unix timestamp to see if it's
+ * 	0 or not, if so an associative null is added, if not a formatted string
  *	is added.
  *
  * IN rstl_arr - array to store the associative key_value pairs in
  * IN key - character array used as the associative key
  * IN val - time_t unix timestamp to be validated and added if valid
- * NOTE : If you'd like to change the format in which the valid strings are returned
- *	, you can change the TIME_FORMAT_STRING macro to the needed format
+ * NOTE : If you'd like to change the format in which the valid strings are
+ * returned, you can change the TIME_FORMAT_STRING macro to the needed format
  */
-void zend_add_valid_assoc_time_string(zval * rstl_arr, char *key, time_t * val);
+void zend_add_valid_assoc_time_string(zval * rstl_arr, char *key,
+				time_t * val);
+
 
 /*****************************************************************************\
  *	SLURM PHP HOSTLIST FUNCTIONS
 \*****************************************************************************/
 
 /*
- * slurm_hostlist_to_array - converts a hostlist string to 
+ * slurm_hostlist_to_array - converts a hostlist string to
  * a numerically indexed array.
  *
  * IN host_list - string value containing the hostlist
@@ -192,91 +197,104 @@ void zend_add_valid_assoc_time_string(zval * rstl_arr, char *key, time_t * val);
 PHP_FUNCTION(slurm_hostlist_to_array);
 
 /*
- * slurm_array_to_hostlist - convert an array of nodenames into a hostlist string
+ * slurm_array_to_hostlist - convert an array of nodenames into a hostlist
+ * 	string
  *
  * IN node_arr - Numerically indexed array containing a nodename on each index
  * RET String variable containing the hostlist string
  */
 PHP_FUNCTION(slurm_array_to_hostlist);
 
+
 /*****************************************************************************\
  *	SLURM STATUS FUNCTIONS
 \*****************************************************************************/
 
 /*
- * slurm_ping - Issues the slurm interface to return the status of the slurm 
+ * slurm_ping - Issues the slurm interface to return the status of the slurm
  *	primary and secondary controller
  *
- * RET associative array containing the status ( status = 0 if online, = -1 if 
+ * RET associative array containing the status ( status = 0 if online, = -1 if
  *	offline ) of both controllers
- * NOTE : the error codes and their meaning are described in the section labelled
- *	EXTRA
+ * NOTE : the error codes and their meaning are described in the section
+ * 	labelled EXTRA
  */
 PHP_FUNCTION(slurm_ping);
 
 /*
- * slurm_slurmd_status - Issues the slurm interface to return the 
+ * slurm_slurmd_status - Issues the slurm interface to return the
  *	status of the slave daemon ( running on this machine )
  *
  * RET associative array containing the status or a negative long variable
  *	containing an error code
- * NOTE : the error codes and their meaning are described in the section labelled
- *	EXTRA
+ * NOTE : the error codes and their meaning are described in the section
+ * 	labelled EXTRA
  */
 PHP_FUNCTION(slurm_slurmd_status);
 
 /*
  * slurm_version - Returns the slurm version number in the requested format
  *
- * IN option - long/integer value linking to the formatting of the version number
+ * IN option - long/integer value linking to the formatting of the version
+ *	number
  * RET long value containing the specific formatted version number a numeric
- *	array containing the version number or a negative long variable containing
- *	an error code.
- * NOTE : the possible cases and their meaning are described in the section labelled
- *	EXTRA
+ *	array containing the version number or a negative long variable
+ *	containing an error code.
+ * NOTE : the possible cases and their meaning are described in the section
+ * 	labelled EXTRA
  */
 PHP_FUNCTION(slurm_version);
+
 
 /*****************************************************************************\
  *	SLURM PARTITION READ FUNCTIONS
 \*****************************************************************************/
 
 /*
- * slurm_print_partition_names - Creates and returns a numerically indexed array
- *	containing the names of the partitions
+ * slurm_print_partition_names - Creates and returns a numerically
+ *	indexed array containing the names of the partitions
  *
- * RET numerically indexed array containing the partitionnames or a negative long
- *	variable containing an error code
- * NOTE : the error codes and their meaning are described in the section labelled
- *	EXTRA
+ * RET numerically indexed array containing the partitionnames or a
+ *	negative long variable containing an error code NOTE : the
+ *	error codes and their meaning are described in the section
+ *	labelled EXTRA
  */
 PHP_FUNCTION(slurm_print_partition_names);
 /*
- * slurm_get_specific_partition_info - Searches for the requested partition and 
- *	if found it returns an associative array containing the information about 
- *	this specific partition
+ * slurm_get_specific_partition_info - Searches for the requested
+ *	partition and if found it returns an associative array
+ *	containing the information about this specific partition
  *
  * IN name - a string variable containing the partitionname
- * OPTIONAL IN lngth - a long variable containing the length of the partitionname
- * RET an associative array containing the information about a specific partition,
- *	or a negative long value containing an error code
- * NOTE : the error codes and their meaning are described in the section labelled
- *	EXTRA
+ * OPTIONAL IN lngth - a long variable containing the length of the
+ *      partitionname
+ * RET an associative array containing the information about a
+ *	specific partition, or a negative long value containing an
+ *	error code
+ * NOTE : the error codes and their meaning are described in the
+ *	section labelled EXTRA
  */
 PHP_FUNCTION(slurm_get_specific_partition_info);
+
 /*
- * slurm_get_partition_node_names - Searches for the requested partition and 
+ * slurm_get_partition_node_names - Searches for the requested partition and
  *	if found it parses the nodes into a numerically indexed array, which is
  *	then returned to the calling function.
  *
  * IN name - a string variable containing the partitionname
- * OPTIONAL IN lngth - a long variable containing the length of the partitionname
- * RET a numerically indexed array containing the names of all the nodes connected
- *	to this partition, or a negative long value containing an error code
- * NOTE : the error codes and their meaning are described in the section labelled
- *	EXTRA
+ *
+ * OPTIONAL IN lngth - a long variable containing the length of the
+ * partitionname
+ *
+ * RET a numerically indexed array containing the names of all the
+ *	nodes connected to this partition, or a negative long value
+ *	containing an error code
+ *
+ * NOTE : the error codes and their meaning are described in the
+ *	section labelled EXTRA
  */
 PHP_FUNCTION(slurm_get_partition_node_names);
+
 
 /*****************************************************************************\
  *	SLURM NODE CONFIGURATION READ FUNCTIONS
@@ -292,6 +310,7 @@ PHP_FUNCTION(slurm_get_partition_node_names);
  *	section labelled EXTRA
  */
 PHP_FUNCTION(slurm_get_node_names);
+
 /*
  * slurm_get_node_elements - Creates and returns an associative array
  *	containing all the nodes indexed by nodename and as value an
@@ -332,15 +351,16 @@ PHP_FUNCTION(slurm_get_node_element_by_name);
 PHP_FUNCTION(slurm_get_node_state_by_name);
 
 /*
- * slurm_get_node_states - Creates a numerically indexed array containing the 
- *	state of each node ( only the state ! ) as a long value. This function
- *	could be used to create a summary of the node states without having to 
- *	do a lot of processing ( or having to deal with overlapping nodes between
- *	partitions ).
+ * slurm_get_node_states - Creates a numerically indexed array
+ *	containing the state of each node ( only the state ! ) as a
+ *	long value. This function could be used to create a summary of
+ *	the node states without having to do a lot of processing ( or
+ *	having to deal with overlapping nodes between partitions ).
  *
  * RET a numerically indexed array containing node states
  */
 PHP_FUNCTION(slurm_get_node_states);
+
 
 /*****************************************************************************\
  *	SLURM CONFIGURATION READ FUNCTIONS
@@ -352,16 +372,21 @@ PHP_FUNCTION(slurm_get_node_states);
  */
 
 /*
- * slurm_get_control_configuration_keys - Retreives the configuration from the slurm
- *	daemon and parses it into a numerically indexed array containg the keys that
- *	link to the values ( the values are retreived by the 
- *	slurm_get_control_configuration_values function )
- * RET a numerically indexed array containing keys that describe the values of the 
- *	configuration of the slurm daemon, or a long value containing an error code
- * NOTE : the error codes and their meaning are described in the section labelled
- *	EXTRA
+ * slurm_get_control_configuration_keys - Retreives the configuration
+ *	from the slurm daemon and parses it into a numerically indexed
+ *	array containg the keys that link to the values ( the values
+ *	are retreived by the slurm_get_control_configuration_values
+ *	function )
+ *
+ * RET a numerically indexed array containing keys that describe the
+ *	values of the configuration of the slurm daemon, or a long
+ *	value containing an error code
+ *
+ *  NOTE : the error codes and their meaning are described in the
+ *	section labelled EXTRA
  */
 PHP_FUNCTION(slurm_get_control_configuration_keys);
+
 /*
  * slurm_get_control_configuration_values - Retreives the
  *	configuration from the slurm daemon and parses it into a
@@ -376,6 +401,7 @@ PHP_FUNCTION(slurm_get_control_configuration_keys);
  *	section labelled EXTRA
  */
 PHP_FUNCTION(slurm_get_control_configuration_values);
+
 
 /*****************************************************************************\
  *	SLURM JOB READ FUNCTIONS
@@ -410,6 +436,7 @@ PHP_FUNCTION(slurm_load_partition_jobs);
  */
 PHP_FUNCTION(slurm_load_job_information);
 
+
 /*****************************************************************************\
  *	EXTRA
  *****************************************************************************
@@ -427,13 +454,13 @@ PHP_FUNCTION(slurm_load_job_information);
  *		1	:	minor of the version number
  *		2	:	micro of the version number
  *		default	:	full version number
- *		
+ *
  *		[EXPLANATION]
  *
  *			Consider the version number 2.2.3,
- *			if we were to split this into an array 
+ *			if we were to split this into an array
  *			where the "." sign is the delimiter
- *			we would receive the following 
+ *			we would receive the following
  *
  *				[2]	=>	MAJOR
  *				[2]	=>	MINOR
@@ -442,7 +469,7 @@ PHP_FUNCTION(slurm_load_job_information);
  *			When requesting the major you would
  *			only receive the major, when requesting
  *			the full version you would receive the array
- *			as depicted above. 
+ *			as depicted above.
  *
 \*****************************************************************************/
 
