@@ -112,6 +112,7 @@ parse_command_line( int argc, char* argv[] )
 		{"noheader",   no_argument,       0, 'h'},
 		{"partitions", required_argument, 0, 'p'},
 		{"qos",        required_argument, 0, 'q'},
+		{"reservation",required_argument, 0, 'R'},
 		{"sort",       required_argument, 0, 'S'},
 		{"start",      no_argument,       0, OPT_LONG_START},
 		{"steps",      optional_argument, 0, 's'},
@@ -138,7 +139,7 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::ln:M:o:p:q:s::S:t:u:U:vV",
+				       "A:ahi:j::ln:M:o:p:q:R:s::S:t:u:U:vV",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -217,6 +218,10 @@ parse_command_line( int argc, char* argv[] )
 			params.qoss = xstrdup(optarg);
 			params.qos_list =
 				_build_str_list( params.qoss );
+			break;
+		case (int) 'R':
+			xfree(params.reservation);
+			params.reservation = xstrdup(optarg);
 			break;
 		case (int) 's':
 			if (optarg) {
@@ -824,7 +829,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 
 /* print the parameters specified */
 static void
-_print_options()
+_print_options(void)
 {
 	ListIterator iterator;
 	int i;
@@ -842,21 +847,22 @@ _print_options()
 		hostlist[0] = '\0';
 
 	printf( "-----------------------------\n" );
-	printf( "all        = %s\n", params.all_flag ? "true" : "false");
-	printf( "format     = %s\n", params.format );
-	printf( "iterate    = %d\n", params.iterate );
-	printf( "job_flag   = %d\n", params.job_flag );
-	printf( "jobs       = %s\n", params.jobs );
-	printf( "max_cpus   = %d\n", params.max_cpus ) ;
-	printf( "nodes      = %s\n", hostlist ) ;
-	printf( "partitions = %s\n", params.partitions ) ;
-	printf( "sort       = %s\n", params.sort ) ;
-	printf( "start_flag = %d\n", params.start_flag );
-	printf( "states     = %s\n", params.states ) ;
-	printf( "step_flag  = %d\n", params.step_flag );
-	printf( "steps      = %s\n", params.steps );
-	printf( "users      = %s\n", params.users );
-	printf( "verbose    = %d\n", params.verbose );
+	printf( "all         = %s\n", params.all_flag ? "true" : "false");
+	printf( "format      = %s\n", params.format );
+	printf( "iterate     = %d\n", params.iterate );
+	printf( "job_flag    = %d\n", params.job_flag );
+	printf( "jobs        = %s\n", params.jobs );
+	printf( "max_cpus    = %d\n", params.max_cpus ) ;
+	printf( "nodes       = %s\n", hostlist ) ;
+	printf( "partitions  = %s\n", params.partitions ) ;
+	printf( "reservation = %s\n", params.reservation ) ;
+	printf( "sort        = %s\n", params.sort ) ;
+	printf( "start_flag  = %d\n", params.start_flag );
+	printf( "states      = %s\n", params.states ) ;
+	printf( "step_flag   = %d\n", params.step_flag );
+	printf( "steps       = %s\n", params.steps );
+	printf( "users       = %s\n", params.users );
+	printf( "verbose     = %d\n", params.verbose );
 
 	if ((params.verbose > 1) && params.job_list) {
 		i = 0;
@@ -1105,7 +1111,7 @@ static void _usage(void)
 	printf("\
 Usage: squeue [-i seconds] [-S fields] [--start] [-t states]\n\
 	      [-p partitions] [-n node] [-o format] [-u user_name]\n\
-	      [--usage] [-ahjlsv]\n");
+	      [-R reservation] [--usage] [-ahjlsv]\n");
 }
 
 static void _help(void)
@@ -1131,6 +1137,7 @@ Usage: squeue [OPTIONS]\n\
 				  to view, default is all partitions\n\
   -q, --qos=qos(s)                comma separated list of qos's\n\
 				  to view, default is all qos's\n\
+  -R, --reservation=name          reservation to view, default is all\n\
   -s, --step=step(s)              comma separated list of job steps\n\
 				  to view, default is all\n\
   -S, --sort=fields               comma separated list of fields to sort on\n\

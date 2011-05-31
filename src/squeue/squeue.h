@@ -95,6 +95,7 @@ struct squeue_parameters {
 	hostset_t nodes;
 	char* partitions;
 	char* qoss;
+	char* reservation;
 	char* sort;
 	char* states;
 	char* steps;
