@@ -365,10 +365,10 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'M':
 			opt.ctld = true;
-			if(opt.clusters)
+			if (opt.clusters)
 				list_destroy(opt.clusters);
-			if(!(opt.clusters =
-			     slurmdb_get_info_cluster(optarg))) {
+			opt.clusters = slurmdb_get_info_cluster(optarg);
+			if (!opt.clusters) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);

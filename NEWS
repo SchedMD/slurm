@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- Improve accuracy of REQUEST_JOB_WILL_RUN start time with respect to higher
     priority pending jobs.
  -- Add -R/--reservation option to squeue command as a job filter.
+ -- Add scancel support for --clusters option.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
