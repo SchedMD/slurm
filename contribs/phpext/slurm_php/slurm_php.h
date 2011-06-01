@@ -419,7 +419,7 @@ PHP_FUNCTION(slurm_get_control_configuration_values);
  * NOTE : the error codes and their meaning are described in the
  *	section labelled EXTRA
  */
-PHP_FUNCTION(slurm_load_partition_jobs);
+PHP_FUNCTION(slurm_load_job_information);
 
 /*
  * slurm_load_partition_jobs - Retreive the information of all the
@@ -434,7 +434,7 @@ PHP_FUNCTION(slurm_load_partition_jobs);
  * NOTE : the error codes and their meaning are described in the
  *	section labelled EXTRA
  */
-PHP_FUNCTION(slurm_load_job_information);
+PHP_FUNCTION(slurm_load_partition_jobs);
 
 
 /*****************************************************************************\
