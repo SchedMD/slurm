@@ -112,6 +112,7 @@
 #define OPT_IMMEDIATE   0x12
 #define OPT_WCKEY       0x14
 #define OPT_SIGNAL      0x15
+#define OPT_KILL_CMD    0x16
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_CPU_BIND    0x101
@@ -386,6 +387,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL          },
+  {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
   {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
@@ -539,6 +541,16 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid signal specification: %s", val);
 			exit(error_exit);
 		}
+		break;
+	case OPT_KILL_CMD:
+		if (val) {
+			opt.kill_command_signal = sig_name2num(val);
+			if (opt.kill_command_signal == 0) {
+				error("Invalid signal name %s", val);
+				exit(error_exit);
+			}
+		}
+		opt.kill_command_signal_set = true;
 		break;
 	default:
 		/* do nothing */
