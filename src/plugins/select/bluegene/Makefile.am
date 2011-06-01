@@ -13,6 +13,8 @@ pkglib_LTLIBRARIES = select_bluegene.la
 
 noinst_LTLIBRARIES = libba_common.la
 
+convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bluegene_la_SOURCES = select_bluegene.c \
 			bg_job_info.c bg_job_info.h \
@@ -54,7 +56,8 @@ if BGQ_LOADED
 
   pkglib_LTLIBRARIES += runjob_plugin.la
   runjob_plugin_la_SOURCES = runjob_plugin.cc
-  runjob_plugin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+  runjob_plugin_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+	$(convenience_libs) -lpthread
 
 endif
 
@@ -66,8 +69,6 @@ select_bluegene_la_SOURCES += bg_core.c bg_defined_block.c \
 
 select_bluegene_la_LIBADD += $(block_allocator_lib) $(BG_LDFLAGS)
 
-
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
 sbin_PROGRAMS = slurm_prolog slurm_epilog
 

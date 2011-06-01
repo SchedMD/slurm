@@ -44,6 +44,9 @@ extern "C" {
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#include "src/common/xmalloc.h"
+#include <slurm/slurm.h>
+
 }
 
 #ifdef HAVE_BG_FILES
@@ -82,50 +85,12 @@ private:
 	boost::mutex _mutex;
 };
 
-static int _char2coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return ((coord - 'A') + 10);
-	return -1;
-}
-
-static bool _set_coords(const std::string& var, int *coords)
-{
-	if (var.length() < Dimension::NodeDims) {
-		std::cerr << "Coord variable '"<< var << "' has "
-			  << var.length()
-			  << " characters in it, but it needs to be at least "
-			  << Dimension::NodeDims << std::endl;
-		return 0;
-	}
-
-	for (uint32_t dim = 0; dim<Dimension::NodeDims; dim++) {
-		int tmp_int = _char2coord((char)var[dim]);
-		if (tmp_int == -1) {
-			std::cerr << "Coord in the " << dim <<
-				" dimension is out of bounds with a value of "
-				  << var[dim] << std::endl;
-			return 0;
-		}
-		/* for some reason calling _char2coord directly
-		   doesn't seem to work here.  Thus the tmp variable
-		   that seems to make everything fine.
-		*/
-		coords[dim] = tmp_int;
-		// std::cout << "Dim " << dim << " From " << var[dim] << " Got "
-		// 	  << coords[dim] << " which should be " << tmp_int << std::endl;
-	}
-
-	return 1;
-}
-
-
 Plugin::Plugin() :
 	bgsched::runjob::Plugin(),
 	_mutex()
 {
+	assert(HIGHEST_DIMENSIONS >= Dimension::NodeDims);
+
 	std::cout << "Slurm runjob plugin loaded" << std::endl;
 }
 
@@ -137,76 +102,134 @@ Plugin::~Plugin()
 void Plugin::execute(bgsched::runjob::Verify& verify)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
-	int geo[Dimension::NodeDims];
-	int start_coords[Dimension::NodeDims];
+	unsigned geo[Dimension::NodeDims];
+	unsigned start_coords[Dimension::NodeDims];
 	int found = 0;
-	int looking_for = 3;
+	int looking_for = 2;
 	int block_cnode_cnt = 0;
 	int step_cnode_cnt = 0;
 	bool sub_block_job = 0;
+	job_step_info_response_msg_t * step_resp = NULL;
+	job_step_info_t *step_ptr = NULL;
+	uint32_t job_id = NO_VAL, step_id = NO_VAL;
+	char *bg_block_id = NULL;
 
-	geo[0] = -1;
-	start_coords[0] = -1;
+	geo[0] = NO_VAL;
+	start_coords[0] = NO_VAL;
 
-	/* This should probably be changed to read this from the
-	   slurmctld for security reasons.  But for now this is what
-	   we have to work with.
-	*/
+	/* Get the job/step id's from the environment and then go
+	 * verify with the slurmctld where this step should be running.
+	 */
 	BOOST_FOREACH(const bgsched::runjob::Environment& env_var,
 		      verify.envs()) {
-		if (env_var.getKey() == "MPIRUN_PARTITION") {
-			verify.block(env_var.getValue());
+		if (env_var.getKey() == "SLURM_JOB_ID") {
+			job_id = atoi(env_var.getValue().c_str());
 			found++;
-		} else if (env_var.getKey() == "SLURM_BLOCK_NUM_NODES") {
-			block_cnode_cnt = atoi(env_var.getValue().c_str());
-			found++;
-		} else if (env_var.getKey() == "SLURM_STEP_NUM_NODES") {
-			step_cnode_cnt = atoi(env_var.getValue().c_str());
+		} else if (env_var.getKey() == "SLURM_STEP_ID") {
+			step_id = atoi(env_var.getValue().c_str());
 			found++;
 		}
-
-		if (!step_cnode_cnt || !block_cnode_cnt)
-			continue;
-
-		if (step_cnode_cnt < block_cnode_cnt)
-			sub_block_job = 1;
 
 		if (found == looking_for)
 			break;
 	}
+
 	if (found != looking_for)
 		goto deny_job;
 
-	if (sub_block_job) {
-		looking_for += 2;
-		BOOST_FOREACH(const bgsched::runjob::Environment& env_var,
-			      verify.envs()) {
-			if (env_var.getKey() == "SLURM_STEP_START_LOC") {
-				if (!_set_coords(env_var.getValue(),
-						 start_coords))
-					goto deny_job;
-				found++;
-			} else if (env_var.getKey() == "SLURM_STEP_GEO") {
-				if (!_set_coords(env_var.getValue(), geo))
-					goto deny_job;
-				found++;
-			}
-
-			if (found == looking_for)
-				break;
-		}
+	if (slurm_get_job_steps((time_t) 0, job_id, step_id,
+				&step_resp, SHOW_ALL)) {
+		slurm_perror((char *)"slurm_get_job_steps error");
+		goto deny_job;
 	}
 
-	if (sub_block_job && start_coords[0] != -1)
-		verify.corner(bgsched::runjob::Corner(
-				      (unsigned *)start_coords));
+	if (!step_resp->job_step_count) {
+		std::cerr << "No steps match this id "
+			  << job_id << "." << step_id << std::endl;
+		goto deny_job;
+	}
+
+	step_ptr = &step_resp->job_steps[0];
+
+	/* A bit of verification to make sure this is the correct user
+	   supposed to be running.
+	*/
+	if (verify.user().uid() != step_ptr->user_id) {
+		std::cerr << "Jobstep " << job_id << "." << step_id
+			  << " should be ran by uid " << step_ptr->user_id
+			  << " but it is trying to be ran by "
+			  << verify.user().uid() << std::endl;
+		goto deny_job;
+	}
+
+	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
+				     SELECT_JOBDATA_BLOCK_ID,
+				     &bg_block_id)) {
+		std::cerr << "Can't get the block id!" << std::endl;
+		goto deny_job;
+	}
+	verify.block(bg_block_id);
+	xfree(bg_block_id);
+
+	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
+				     SELECT_JOBDATA_BLOCK_NODE_CNT,
+				     &block_cnode_cnt)) {
+		std::cerr << "Can't get the block node count!" << std::endl;
+		goto deny_job;
+	}
+
+	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
+				     SELECT_JOBDATA_NODE_CNT,
+				     &step_cnode_cnt)) {
+		std::cerr << "Can't get the step node count!" << std::endl;
+		goto deny_job;
+	}
+
+	if (!step_cnode_cnt || !block_cnode_cnt) {
+		std::cerr << "We didn't get both the step cnode "
+			  << "count and the block cnode cnt! step="
+			  << step_cnode_cnt << " block="
+			  << block_cnode_cnt << std::endl;
+		goto deny_job;
+	} else if (step_cnode_cnt < block_cnode_cnt) {
+		uint16_t dim;
+		uint16_t tmp_uint16[HIGHEST_DIMENSIONS];
+
+		sub_block_job = 1;
+		if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
+					     SELECT_JOBDATA_GEOMETRY,
+					     &tmp_uint16)) {
+			std::cerr << "Can't figure out the geo "
+				  << "given for sub-block job!" << std::endl;
+			goto deny_job;
+		}
+		/* since geo is an unsigned (who really knows what
+		   that is depending on the arch) we need to convert
+		   our uint16_t to the unsigned array
+		*/
+		for (dim=0; dim<Dimension::NodeDims; dim++)
+			geo[dim] = tmp_uint16[dim];
+
+		if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
+					     SELECT_JOBDATA_START_LOC,
+					     &tmp_uint16)) {
+			std::cerr << "Can't figure out the start loc "
+				  << "for sub-block job!" << std::endl;
+			goto deny_job;
+		}
+		for (dim=0; dim<Dimension::NodeDims; dim++)
+			start_coords[dim] = tmp_uint16[dim];
+	}
+
+	if (sub_block_job && start_coords[0] != NO_VAL)
+		verify.corner(bgsched::runjob::Corner(start_coords));
 	else if (sub_block_job) {
 		std::cerr << "No corner given for sub-block job!" << std::endl;
 		goto deny_job;
 	}
 
-	if (sub_block_job && geo[0] != -1)
-		verify.shape(bgsched::runjob::Shape((unsigned *)geo));
+	if (sub_block_job && geo[0] != NO_VAL)
+		verify.shape(bgsched::runjob::Shape(geo));
 	else if (sub_block_job) {
 		std::cerr << "No shape given for sub-block job!" << std::endl;
 		goto deny_job;
@@ -242,7 +265,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	return;
 
 deny_job:
-	verify.denyJob(bgsched::runjob::Verify::DenyJob::Yes);
+	slurm_free_job_step_info_response_msg(step_resp);
+	verify.deny_job(bgsched::runjob::Verify::DenyJob::Yes);
 	return;
 }
 
@@ -261,11 +285,16 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 		  << data.status() << std::endl;
 
 	// output failed nodes
-	const bgsched::runjob::Terminated::Nodes& nodes = data.failed_nodes();
+	const bgsched::runjob::Terminated::Nodes& nodes =
+		data.software_error_nodes();
 	if (!nodes.empty()) {
+		/* FIXME: We sould tell the slurmctld about this
+		   instead of just printing it out.
+		*/
 		std::cout << nodes.size() << " failed nodes" << std::endl;
-		BOOST_FOREACH(const std::string& i, data.failed_nodes()) {
-			std::cout << i << std::endl;
+		BOOST_FOREACH(const bgsched::runjob::Node& i, nodes) {
+			std::cout << i.location() << ": "
+				  << i.coordinates() << std::endl;
 		}
 	}
 }
