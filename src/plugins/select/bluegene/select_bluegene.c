@@ -1666,6 +1666,10 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		xfree(tmp_char);
 	}
 
+	xfree(step_jobinfo->bg_block_id);
+	step_jobinfo->bg_block_id = xstrdup(bg_record->bg_block_id);
+	step_jobinfo->block_cnode_cnt = bg_record->cnode_cnt;
+
 	if (((cluster_flags & CLUSTER_FLAG_BGL)
 	     || (cluster_flags & CLUSTER_FLAG_BGP))
 	    || (node_count == bg_record->cnode_cnt)) {
