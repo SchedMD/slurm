@@ -150,12 +150,12 @@ main (int argc, char *argv[])
 			detail_flag = 0;
 			break;
 		case (int)'M':
-			if(clusters) {
+			if (clusters) {
 				list_destroy(clusters);
 				clusters = NULL;
 				working_cluster_rec = NULL;
 			}
-			if(!(clusters = slurmdb_get_info_cluster(optarg))) {
+			if (!(clusters = slurmdb_get_info_cluster(optarg))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
@@ -184,6 +184,8 @@ main (int argc, char *argv[])
 		}
 	}
 
+	if (clusters && (list_count(clusters) > 1))
+		fatal("Only one cluster can be used at a time with scontrol");
 	cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (verbosity) {
@@ -214,7 +216,7 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
-	if(clusters)
+	if (clusters)
 		list_destroy(clusters);
 	exit(exit_code);
 }
@@ -587,18 +589,22 @@ _process_command (int argc, char *argv[])
 		scontrol_print_completing();
 	}
 	else if (strncasecmp (tag, "cluster", MAX(tag_len, 2)) == 0) {
-		if(clusters) {
+		if (clusters) {
 			list_destroy(clusters);
 			clusters = NULL;
 			working_cluster_rec = NULL;
 		}
 		if (argc >= 2) {
-			if(!(clusters = slurmdb_get_info_cluster(argv[1]))) {
+			if (!(clusters = slurmdb_get_info_cluster(argv[1]))) {
 				error("'%s' invalid entry for --cluster",
 				      optarg);
 				exit(1);
 			}
 			working_cluster_rec = list_peek(clusters);
+			if (list_count(clusters) > 1) {
+				fatal("Only one cluster can be used at a time "
+				      "with scontrol");
+			}
 		}
 		cluster_flags = slurmdb_setup_cluster_flags();
 		slurm_free_block_info_msg(old_block_info_ptr);

@@ -1464,6 +1464,13 @@ static int _filter_job(job_info_t * job)
 			return 6;
 	}
 
+	if (params.reservation) {
+		if ((job->resv_name == NULL) ||
+		    (strcmp(job->resv_name, params.reservation))) {
+			return 7;
+		}
+	}
+
 	return 0;
 }
 

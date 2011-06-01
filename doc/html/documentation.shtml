@@ -66,8 +66,9 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="api.html">Application Programmer Interface (API) Guide</a></li>
 <li>Design Information</li>
 <ul>
-<li><a href="job_launch.html">Job Launch Design Guide</a></li>
 <li><a href="gres_design.html">Generic Resource (GRES) Design Guide</a></li>
+<li><a href="job_launch.html">Job Launch Design Guide</a></li>
+<li><a href="select_design.html">Select Plugin Design Guide</a></li>
 </ul>
 <li><a href="plugins.html">Plugin Programmer Guide</a></li>
 <li>Plugin Interface Details</li>
@@ -92,6 +93,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 May 2011</p>
+<p style="text-align:center;">Last modified 31 May 2011</p>
 
 <!--#include virtual="footer.txt"-->

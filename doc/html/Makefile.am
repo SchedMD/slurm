@@ -96,6 +96,7 @@ generated_html = \
 	reservations.html \
 	resource_limits.html \
 	schedplugins.html \
+	select_design.html \
 	selectplugins.html \
 	slurm.html \
 	slurm_ug_agenda.html \

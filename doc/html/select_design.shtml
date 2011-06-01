@@ -1,0 +1,104 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Select Plugin Design Guide</a></h1>
+
+<h2>Overview</h2>
+
+<p>The select plugin is responsible for selecting compute resources to be
+allocated to a job, plus allocating and deallocating those resources.
+The select plugin is aware of the systems topology, based upon data structures
+established by the topology plugn. It can also over-subscribe resources to
+support gang scheduling (time slicing of parallel jobs), if so configured.
+The select plugin is also capable of communicating with an external entity
+to perform these actions (the select/bluegene plugin used on an IBM BlueGene
+and the select/cray plugin used with Cray ALPS/BASIL software are two 
+examples). Other architectures would rely upon either the select/linear or
+select/cons_res plugin. The select/linear plugin allocates whole nodes to jobs
+and is the simplest implementation. The select/cons_res plugin (<i>cons_res</i>
+is an abbreviation for <i>consumable resources</i>) can allocate individual
+sockets, cores, threads, or CPUs within a node. The select/cons_res plugin
+is slightly slower than select/linear, but contains far more complex logic.</p>
+
+<h2>Mode of Operation</h2>
+
+<p>The select/linear and select/cons_res plugins have similar modes of
+operation. The obvious difference is that data structures in select/linear
+are node-centric, while those in select/cons_res contain information at a
+finer resolution (sockets, cores, threads, or CPUs depending upon the
+SelectTypeParameters configuration parameter). The description below is
+generic and applies to both plugin implementations. Note that both plugins
+are able to manage memory allocations. Both plugins are also able to manage
+generic resource (GRES) allocations, making use of the GRES plugins.</p>
+
+<p>Per node data structures include memory (configured and allocated),
+GRES (configured and allocated, in a List data structure), plus a flag
+indicating if the node has been allocated using an exclusive option (preventing
+other jobs from being allocated resources on that same node). The other key
+data structure is used to enforce the per-partition <i>Shared</i> configuration
+parameter and tracks how many jobs have been allocated each resource in each
+partition. This data structure is different between the plugins based upon
+the resolution of the resource allocation (e.g. nodes or CPUs).</p>
+
+<p>Most of the logic in the select plugin is dedicated to identifying resources
+to be allocated to a new job. Input to that function includes: a pointer to the
+new job, a bitmap identifying nodes which could be used, node counts (minimum,
+maximum, and desired), a count of how many jobs of that partition the job can
+share resources with, and a list of jobs which can be preempted to initiate the
+new job. The first phase is to determine of all usable nodes, which nodes
+would best satisfy the resource requirement. This consistes of a best-fit
+algorithm that groups nodes based upon network topology (if the topology/tree
+plugin is configured) or based upon consecutive nodes (by default). Once the
+best nodes are identified, resources are accumulated for the new job until its
+resource requirements are satisfied.</p>
+
+<p>If the job can not be started with currently available resources, the plugin
+will attempt to identify jobs which can be preempted in order to initiate the
+new job. A copy of the current system state will be created including details
+about all resources and active jobs. Preemptable jobs will then be removed
+from this simulated system state until the new job can be initiated. When
+sufficient resources are available for the new job, the jobs actually needing
+to be preempted for its initiation will be preempted (this may be a subset of
+the jobs whose preemption is simulated).</p>
+
+<p>Other functions exist to support suspending jobs, resuming jobs, terminating
+jobs, expanding/shrinking job allocations, un/packing job state information,
+un/packing node state information, etc. The operation of those functions is
+relatively straightforward and not detailed here.</p>
+
+<h2>Operation on IBM BlueGene Systems</h2>
+
+<p>On IBM BlueGene systems, SLURM's <i>slurmd</i> daemon executes on the
+front-end nodes rather than the compute nodes and IBM provides a Bridge API 
+to manage compute nodes and jobs. The IBM BlueGene systems also have very 
+specific topology rules for what resources can be allocated to a job. SLURM's
+interface to IBM's Bridge API and the topology rules are found within the
+select/bluegene plugin and very little BlueGene-specific logic in SLURM is
+found outside of that plugin. Note that the select/bluegene plugin is used for
+BlueGene/L, BlueGene/P and BlueGene/Q systems with select portions of the
+code conditionally compiled depending upon the system type.</p>
+
+<h2>Operation on Cray Systems</h2>
+
+<p>The operation of the select/cray plugin is unique in that it does not
+directly select resources for a job, but uses the select/linear plugin for
+that purpose. It also interfaces with Cray's ALPS software using the BASIL
+interface or directly using the database. On Cray systems, SLURM's <i>slurmd</i>
+daemon executes on the front-end nodes rather than the compute nodes and
+ALPS is the mechanism available for SLURM to manage compute nodes and their
+jobs.</p>
+
+<pre>
+           -------------------
+           |   select/cray   |
+           -------------------
+              |           |
+-----------------   --------------
+| select/linear |   | BASIL/ALPS |
+-----------------   --------------
+</pre>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 31 May 2011</p>
+
+<!--#include virtual="footer.txt"-->
