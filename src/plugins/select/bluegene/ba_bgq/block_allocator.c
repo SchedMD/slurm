@@ -1077,6 +1077,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		geo_table = ba_mp_geo_system->geo_table_ptr[*node_count];
 	}
 	list_iterator_destroy(itr);
+
 	return ba_mp;
 }
 
@@ -1190,17 +1191,24 @@ extern char *ba_set_ionode_str(bitstr_t *ionode_bitmap)
 		for (ionode_num = bit_ffs(ionode_bitmap);
 		     ionode_num <= bit_fls(ionode_bitmap);
 		     ionode_num++) {
+			int nc_num, nc_start, nc_end;
 			if (!bit_test(ionode_bitmap, ionode_num))
 				continue;
-			if (_ba_set_ionode_str_internal(
-				0, coords,
-				g_nc_coords[ionode_num].start,
-				g_nc_coords[ionode_num].end,
-				hl)
-			    == -1) {
-				hostlist_destroy(hl);
-				hl = NULL;
-				break;
+
+			nc_start = ionode_num * (int)bg_conf->nc_ratio;
+			nc_end = nc_start + (int)bg_conf->nc_ratio;
+
+			for (nc_num = nc_start; nc_num < nc_end; nc_num++) {
+				if (_ba_set_ionode_str_internal(
+					    0, coords,
+					    g_nc_coords[nc_num].start,
+					    g_nc_coords[nc_num].end,
+					    hl)
+				    == -1) {
+					hostlist_destroy(hl);
+					hl = NULL;
+					break;
+				}
 			}
 		}
 		if (hl) {
