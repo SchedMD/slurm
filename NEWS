@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.7
 ========================
+ -- Eliminate zombie process created if salloc exits with stopped child
+    process. Patch from Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.2.6
 ========================
