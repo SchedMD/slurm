@@ -476,6 +476,9 @@ relinquish:
 
 		if (WIFEXITED(status)) {
 			rc = WEXITSTATUS(status);
+		} else if (WIFSTOPPED(status)) {
+			/* Terminate stopped child process */
+			_forward_signal(SIGKILL);
 		} else if (WIFSIGNALED(status)) {
 			verbose("Command \"%s\" was terminated by signal %d",
 				command_argv[0], WTERMSIG(status));
