@@ -544,7 +544,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_KILL_CMD:
 		if (val) {
-			opt.kill_command_signal = sig_name2num(val);
+			opt.kill_command_signal = sig_name2num((char *) val);
 			if (opt.kill_command_signal == 0) {
 				error("Invalid signal name %s", val);
 				exit(error_exit);
