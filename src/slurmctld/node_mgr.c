@@ -1718,9 +1718,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 				node_ptr->reason_uid =
 					slurm_get_slurm_user_id();
 				node_ptr->reason = xstrdup(
-					"Node silently failed and came back");
+					"Node unexpectedly rebooted");
 			}
-			info("Node %s silently failed and came back",
+			info("Node %s unexpectedly rebooted",
 			     reg_msg->node_name);
 			_make_node_down(node_ptr, now);
 			kill_running_job_by_node_name(reg_msg->node_name);
@@ -1790,8 +1790,8 @@ static front_end_record_t * _front_end_reg(
 	    (front_end_ptr->boot_time > front_end_ptr->last_response) &&
 	    (slurmctld_conf.ret2service != 2)) {
 		set_front_end_down(front_end_ptr,
-				   "Front end silently failed and came back");
-		info("Front end %s silently failed and came back",
+				   "Front end unexpectedly rebooted");
+		info("Front end %s unexpectedly rebooted",
 		     reg_msg->node_name);
 		reg_msg->job_count = 0;
 	}
