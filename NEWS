@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Eliminate zombie process created if salloc exits with stopped child
     process. Patch from Gerrit Renker, CSCS.
+ -- With default configuration on non-Cray systems, enable salloc to be
+    spawned as a background process. Based upon work by Don Albert (Bull) and
+    Gerrit Renker (CSCS).
 
 * Changes in SLURM 2.2.6
 ========================
