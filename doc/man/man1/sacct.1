@@ -1138,7 +1138,7 @@ This example shows the same job accounting information with the
 .nf
 .ft 3
 # sacct \-\-brief
-Jobid      Status     ExitCode
+     Jobid     State  ExitCode
 \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
 2          RUNNING           0
 3          RUNNING           0
@@ -1175,8 +1175,8 @@ on the command line.
 .PP
 .nf
 .ft 3
-# sacct \-\-format=jobid,ncpus,ntasks,nsignals,status
-Jobid     Elapsed    Ncpus     Ntasks   Status
+# sacct \-\-format=jobid,elapsed,ncpus,ntasks,state
+     Jobid    Elapsed      Ncpus   Ntasks     State
 \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 3            00:01:30          2        1 COMPLETED
 3.0          00:01:30          2        1 COMPLETED
