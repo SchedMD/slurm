@@ -980,14 +980,25 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 				for (ionode_num = start;
 				     ionode_num <= end;
 				     ionode_num++) {
+					int nc_num, nc_start, nc_end;
 					if (!bit_test(bg_record->ionode_bitmap,
 						      ionode_num))
 						continue;
-					ba_node_map_set_range(
-						ba_mp->cnode_bitmap,
-						g_nc_coords[ionode_num].start,
-						g_nc_coords[ionode_num].end,
-						ba_mp_geo_system);
+
+					nc_start = ionode_num
+						* (int)bg_conf->nc_ratio;
+					nc_end = nc_start
+						+ (int)bg_conf->nc_ratio;
+					for (nc_num = nc_start;
+					     nc_num < nc_end;
+					     nc_num++)
+						ba_node_map_set_range(
+							ba_mp->cnode_bitmap,
+							g_nc_coords[nc_num].
+							start,
+							g_nc_coords[nc_num].
+							end,
+							ba_mp_geo_system);
 				}
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					tmp_char = ba_node_map_ranged_hostlist(
