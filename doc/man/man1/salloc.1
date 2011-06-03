@@ -452,7 +452,9 @@ your command any time that the SLURM controller tells salloc that its job
 allocation has been revoked. The job allocation can be revoked for a
 couple of reasons: someone used \fBscancel\fR to revoke the allocation,
 or the allocation reached its time limit.  If you do not specify a signal
-name or number, the default signal is SIGTERM.
+name or number and SLURM is configured to signal a the spawned command at job
+termination, the default signal is SIGHUP for interactive and SIGTERM for 
+non\-interactive sessions.
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
