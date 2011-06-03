@@ -814,6 +814,8 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 		list_push(curr_block_list, bg_record);
 	}
 
+	FREE_NULL_BITMAP(usable_mp_bitmap);
+
 	sort_bg_record_inc_size(curr_block_list);
 	slurm_mutex_unlock(&block_state_mutex);
 
@@ -824,6 +826,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	FREE_NULL_BITMAP(usable_mp_bitmap);
 	slurm_mutex_unlock(&block_state_mutex);
 	error("Incomplete block data checkpoint file");
 	free_buf(buffer);
@@ -1719,7 +1722,6 @@ found_it:
 	}
 
 end_it:
-
 	FREE_NULL_BITMAP(avail_mps);
 
 	slurm_mutex_unlock(&block_state_mutex);
