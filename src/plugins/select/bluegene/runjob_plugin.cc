@@ -240,28 +240,29 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		goto deny_job;
 	}
 
-	std::cout << "executable: " << verify.exe() << std::endl;
-	std::cout << "args      : ";
-	std::copy(verify.args().begin(), verify.args().end(),
-		  std::ostream_iterator<std::string>(std::cout, " "));
-	std::cout << std::endl;
+	// std::cout << "executable: " << verify.exe() << std::endl;
+	// std::cout << "args      : ";
+	// std::copy(verify.args().begin(), verify.args().end(),
+	// 	  std::ostream_iterator<std::string>(std::cout, " "));
+	// std::cout << std::endl;
 	// std::cout << "envs      : ";
 	// std::copy(verify.envs().begin(), verify.envs().end(),
 	// 	  std::ostream_iterator<std::string>(std::cout, " "));
 	// std::cout << std::endl;
-	std::cout << "block     : " << verify.block() << std::endl;
-	if (!verify.corner().location().empty()) {
-		std::cout << "corner:     " <<
-			verify.corner().location() << std::endl;
-	}
-	if (!verify.shape().value().empty()) {
-		std::cout << "shape:      " << verify.shape().value()
-			  << std::endl;
-	}
+	// std::cout << "block     : " << verify.block() << std::endl;
+	// if (!verify.corner().location().empty()) {
+	// 	std::cout << "corner:     " <<
+	// 		verify.corner().location() << std::endl;
+	// }
+	// if (!verify.shape().value().empty()) {
+	// 	std::cout << "shape:      " << verify.shape().value()
+	// 		  << std::endl;
+	// }
 
 	// const ProcessTree tree( verify.pid() );
 	// std::cout << tree << std::endl;
 
+	slurm_free_job_step_info_response_msg(step_resp);
 	return;
 
 deny_job:
@@ -273,16 +274,16 @@ deny_job:
 void Plugin::execute(const bgsched::runjob::Started& data)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
-	std::cout << "runjob " << data.pid()
-		  << " started with ID " << data.job() << std::endl;
+	// std::cout << "runjob " << data.pid()
+	// 	  << " started with ID " << data.job() << std::endl;
 }
 
 void Plugin::execute(const bgsched::runjob::Terminated& data)
 {
 	boost::lock_guard<boost::mutex> lock( _mutex );
-	std::cout << "runjob " << data.pid() << " shadowing job "
-		  << data.job() << " finished with status "
-		  << data.status() << std::endl;
+	// std::cout << "runjob " << data.pid() << " shadowing job "
+	// 	  << data.job() << " finished with status "
+	// 	  << data.status() << std::endl;
 
 	// output failed nodes
 	const bgsched::runjob::Terminated::Nodes& nodes =
