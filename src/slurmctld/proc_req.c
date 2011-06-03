@@ -1673,19 +1673,17 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		     req_step_msg->node_list, TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
-		job_step_resp.resv_ports  = xstrdup(step_rec->resv_ports);
-		job_step_resp.step_layout = slurm_step_layout_copy(layout);
+		job_step_resp.resv_ports  = step_rec->resv_ports;
+		job_step_resp.step_layout = layout;
 #ifdef HAVE_FRONT_END
 		if (step_rec->job_ptr->batch_host) {
 			job_step_resp.step_layout->front_end =
-				xstrdup(step_rec->job_ptr->batch_host);
+				step_rec->job_ptr->batch_host;
 		}
 #endif
 		job_step_resp.cred        = slurm_cred;
-		job_step_resp.select_jobinfo = select_g_select_jobinfo_copy(
-			step_rec->select_jobinfo);
-		job_step_resp.switch_job  = switch_copy_jobinfo(
-			step_rec->switch_job);
+		job_step_resp.select_jobinfo = step_rec->select_jobinfo;
+		job_step_resp.switch_job  = step_rec->switch_job;
 
 		unlock_slurmctld(job_write_lock);
 		slurm_msg_t_init(&resp);
@@ -1696,10 +1694,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		resp.data = &job_step_resp;
 
 		slurm_send_node_msg(msg->conn_fd, &resp);
-		xfree(job_step_resp.resv_ports);
-		slurm_step_layout_destroy(job_step_resp.step_layout);
 		slurm_cred_destroy(slurm_cred);
-		switch_free_jobinfo(job_step_resp.switch_job);
 		schedule_job_save();	/* Sets own locks */
 	}
 }
