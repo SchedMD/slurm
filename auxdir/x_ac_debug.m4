@@ -92,6 +92,24 @@ AC_DEFUN([X_AC_DEBUG], [
   fi
   AC_MSG_RESULT([${x_ac_partial_attach=no}])
 
+  AC_MSG_CHECKING([whether salloc should kill child processes at job termination])
+  AC_ARG_ENABLE(
+    [salloc-kill-cmd],
+    AS_HELP_STRING(--enable-salloc-kill-cmd,salloc should kill child processes at job termination),
+    [ case "$enableval" in
+        yes) x_ac_salloc_kill_cmd=yes ;;
+         no) x_ac_salloc_kill_cmd=no ;;
+          *) AC_MSG_RESULT([doh!])
+             AC_MSG_ERROR([bad value "$enableval" for --enable-salloc-kill-cmd]) ;;
+      esac
+    ]
+  )
+  if test "$x_ac_salloc_kill_cmd" = yes; then
+    AC_DEFINE(SALLOC_KILL_CMD, 1, [Define to 1 for salloc to kill child processes at job termination])
+    AC_MSG_RESULT([yes])
+  else
+    AC_MSG_RESULT([no])
+  fi
 
   AC_MSG_CHECKING([whether to disable salloc execution in the background])
   AC_ARG_ENABLE(

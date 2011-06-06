@@ -79,6 +79,7 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_FRONT_END,    1, [Define to 1 if running slurmd on front-end only])
     AC_DEFINE(HAVE_CRAY,         1, [Define to 1 for Cray XT/XE systems])
+    AC_DEFINE(SALLOC_KILL_CMD,   1, [Define to 1 for salloc to kill child processes at job termination])
     AC_DEFINE(SALLOC_RUN_FOREGROUND, 1, [Define to 1 to require salloc execution in the foreground.])
   fi
   AM_CONDITIONAL(HAVE_CRAY, test "$ac_have_cray" = "yes")

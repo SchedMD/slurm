@@ -404,6 +404,9 @@
 /* Define the project's release. */
 #undef RELEASE
 
+/* Define to 1 for salloc to kill child processes at job termination */
+#undef SALLOC_KILL_CMD
+
 /* Define to 1 to require salloc execution in the foreground. */
 #undef SALLOC_RUN_FOREGROUND
 
