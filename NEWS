@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- With default configuration on non-Cray systems, enable salloc to be
     spawned as a background process. Based upon work by Don Albert (Bull) and
     Gerrit Renker (CSCS).
+ -- Fixed Regression from 2.2.4 in accounting where an inherited limit
+    would not be set correctly in the added child association.
 
 * Changes in SLURM 2.2.6
 ========================

@@ -643,24 +643,26 @@ static int _set_assoc_limits_for_add(
 	if (!(row = mysql_fetch_row(result)))
 		goto end_it;
 
-	if (row[ASSOC2_REQ_DEF_QOS] && assoc->def_qos_id == NO_VAL)
+	if (row[ASSOC2_REQ_DEF_QOS] && assoc->def_qos_id == INFINITE)
 		assoc->def_qos_id = slurm_atoul(row[ASSOC2_REQ_DEF_QOS]);
-	else if (assoc->def_qos_id == NO_VAL)
+	else if (assoc->def_qos_id == INFINITE)
 		assoc->def_qos_id = 0;
 
-	if (row[ASSOC2_REQ_MCMPJ] && assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
+	if (row[ASSOC2_REQ_MCMPJ]
+	    && assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
 		assoc->max_cpu_mins_pj = slurm_atoull(row[ASSOC2_REQ_MCMPJ]);
-	if (row[ASSOC2_REQ_MCRM] && assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
+	if (row[ASSOC2_REQ_MCRM]
+	    && assoc->max_cpu_run_mins == (uint64_t)INFINITE)
 		assoc->max_cpu_run_mins = slurm_atoull(row[ASSOC2_REQ_MCRM]);
-	if (row[ASSOC2_REQ_MCPJ] && assoc->max_cpus_pj == NO_VAL)
+	if (row[ASSOC2_REQ_MCPJ] && assoc->max_cpus_pj == INFINITE)
 		assoc->max_cpus_pj = slurm_atoul(row[ASSOC2_REQ_MCPJ]);
-	if (row[ASSOC2_REQ_MJ] && assoc->max_jobs == NO_VAL)
+	if (row[ASSOC2_REQ_MJ] && assoc->max_jobs == INFINITE)
 		assoc->max_jobs = slurm_atoul(row[ASSOC2_REQ_MJ]);
-	if (row[ASSOC2_REQ_MNPJ] && assoc->max_nodes_pj == NO_VAL)
+	if (row[ASSOC2_REQ_MNPJ] && assoc->max_nodes_pj == INFINITE)
 		assoc->max_nodes_pj = slurm_atoul(row[ASSOC2_REQ_MNPJ]);
-	if (row[ASSOC2_REQ_MSJ] && assoc->max_submit_jobs == NO_VAL)
+	if (row[ASSOC2_REQ_MSJ] && assoc->max_submit_jobs == INFINITE)
 		assoc->max_submit_jobs = slurm_atoul(row[ASSOC2_REQ_MSJ]);
-	if (row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == NO_VAL)
+	if (row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == INFINITE)
 		assoc->max_wall_pj = slurm_atoul(row[ASSOC2_REQ_MWPJ]);
 
 	if (assoc->qos_list) {
