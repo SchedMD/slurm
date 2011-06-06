@@ -148,11 +148,9 @@ SUFFIXES = .html
 
 if HAVE_MAN2HTML
 .1.html:
-	cp $(srcdir)/header.txt .
-	cp $(srcdir)/footer.txt .
-	`dirname $<`/../man2html.py $<
+	`dirname $<`/../man2html.py $(srcdir)/header.txt $(srcdir)/footer.txt $<
 .5.html:
-	`dirname $<`/../man2html.py $<
+	`dirname $<`/../man2html.py $(srcdir)/header.txt $(srcdir)/footer.txt $<
 .8.html:
-	`dirname $<`/../man2html.py $<
+	`dirname $<`/../man2html.py $(srcdir)/header.txt $(srcdir)/footer.txt $<
 endif

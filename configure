@@ -20735,6 +20735,15 @@ fi
 
 
 
+    if test "x$ac_have_man2html" == "xyes"; then
+  HAVE_MAN2HTML_TRUE=
+  HAVE_MAN2HTML_FALSE='#'
+else
+  HAVE_MAN2HTML_TRUE='#'
+  HAVE_MAN2HTML_FALSE=
+fi
+
+
    if test "x$ac_have_man2html" != "xyes" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: Unable to build man page html files without man2html" >&5
 $as_echo "$as_me: Unable to build man page html files without man2html" >&6;}
@@ -21620,6 +21629,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_LUA_TRUE}" && test -z "${HAVE_LUA_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_LUA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_MAN2HTML_TRUE}" && test -z "${HAVE_MAN2HTML_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_MAN2HTML\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_MAN2HTML_TRUE}" && test -z "${HAVE_MAN2HTML_FALSE}"; then

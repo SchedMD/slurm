@@ -138,7 +138,7 @@ def url_rewrite(matchobj):
         return matchobj.group(0)
   
 files = []
-for f in sys.argv[1:]:
+for f in sys.argv[3:]:
     posLastDot = f.rfind(".")
     mhtmlname = f[:posLastDot] + ".mhtml"
     cmd = "man2html " + f + "> " + mhtmlname
@@ -154,7 +154,7 @@ for filename in files:
     shtml = file(filename, 'r')
     html = file(newfilename, 'w')
 
-    lines = file("header.txt", 'r').read()
+    lines = file(sys.argv[1], 'r').read()
     lines = lines.replace(".shtml",".html")
     html.write(lines)
 #    html.write(<!--#include virtual="header.txt"-->)
@@ -180,7 +180,7 @@ for filename in files:
 
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
-    lines = file("footer.txt", 'r').read()
+    lines = file(sys.argv[2], 'r').read()
     html.write(lines)
 #    html.write(<!--#include virtual="footer.txt"-->)
     html.close()
