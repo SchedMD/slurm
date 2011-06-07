@@ -200,6 +200,31 @@ _parse_restart_args(int argc, char **argv, uint16_t *stick, char **image_dir)
 	return 0;
 }
 
+/* Return the current time limit of the specified job_id or NO_VAL if the
+ * information is not available */
+static uint32_t _get_job_time(uint32_t job_id)
+{
+	uint32_t time_limit = NO_VAL;
+	int i, rc;
+	job_info_msg_t *resp;
+
+	rc = slurm_load_job(&resp, job_id, SHOW_ALL);
+	if (rc == SLURM_SUCCESS) {
+		for (i = 0; i < resp->record_count; i++) {
+			if (resp->job_array[i].job_id != job_id)
+				continue;	/* should not happen */
+			time_limit = resp->job_array[i].time_limit;
+			break;
+		}
+		slurm_free_job_info_msg(resp);
+	} else {
+		error("Could not load state information for job %u: %m",
+		      job_id);
+	}
+
+	return time_limit;
+}
+
 /*
  * scontrol_hold - perform some job hold/release operation
  * IN op - suspend/resume operation
@@ -372,11 +397,38 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 5)) == 0) {
-			int time_limit = time_str2mins(val);
+			bool incr, decr;
+			uint32_t job_current_time, time_limit;
+
+			incr = (val[0] == '+');
+			decr = (val[0] == '-');
+			if (incr || decr)
+				val++;
+			time_limit = time_str2mins(val);
 			if ((time_limit < 0) && (time_limit != INFINITE)) {
 				error("Invalid TimeLimit value");
 				exit_code = 1;
 				return 0;
+			}
+			if (incr || decr) {
+				job_current_time = _get_job_time(job_msg.
+								 job_id);
+				if (job_current_time == NO_VAL) {
+					exit_code = 1;
+					return 0;
+				}
+				if (incr) {
+					time_limit += job_current_time;
+				} else if (time_limit > job_current_time) {
+					error("TimeLimit decrement larger than"
+					      " current time limit (%u > %u)",
+					      time_limit, job_current_time);
+					exit_code = 1;
+					return 0;
+				} else {
+					time_limit = job_current_time -
+						     time_limit;
+				}
 			}
 			job_msg.time_limit = time_limit;
 			update_cnt++;

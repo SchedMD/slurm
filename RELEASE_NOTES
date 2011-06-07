@@ -54,6 +54,7 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
 * Added scontrol ability to get and set front end node state.
 * Added scontrol ability to set slurmctld's DebugFlags.
+* Added scontrol ability to increment or decrement a job or step time limit.
 * Added new scontrol option of "show aliases" to report every NodeName that is
   associated with a given NodeHostName when running multiple slurmd daemons
   per compute node (typically used for testing purposes).

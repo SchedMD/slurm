@@ -2687,6 +2687,7 @@ extern void slurm_print_job_step_info PARAMS(
  */
 extern slurm_step_layout_t *slurm_job_step_layout_get PARAMS(
 	(uint32_t job_id, uint32_t step_id));
+
 /*
  * slurm_sprint_job_step_info - output information about a specific Slurm
  *	job step based upon message as loaded using slurm_get_job_steps
