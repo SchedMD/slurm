@@ -236,6 +236,7 @@ function displayfile()
    get_field("AccountingStoragePort",document.config.accounting_storage_port) + "<br>" +
    "AccountingStorageType=accounting_storage/" + get_radio_value(document.config.accounting_storage_type) + "<br>" +
    get_field("AccountingStorageUser",document.config.accounting_storage_user) + "<br>" +
+   get_field("AccountingStoreJobComment",document.config.acctng_store_job_comment) + "<br>" +
    get_field("ClusterName",document.config.cluster_name) + "<br>" +
    "#DebugFlags= <br>" +
    get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
@@ -782,6 +783,8 @@ Password we are to use to talk to the database for Job Accounting.
 In the case of SlurmDBD, this will be an alternate socket name for use with a Munge
 daemon providing enterprise-wide authentication (while the default Munge socket
 would provide cluster-wide authentication only).<br>
+<input type="text" name="acctng_store_job_comment" value="YES"> <B>AccountingStoreJobComment</B>:
+Set to NO to prevent the job comment field from being saved to the database<br>
 <input type="text" name="cluster_name" value="cluster"> <B>ClusterName</B>:
 Name to be recorded in database for jobs from this cluster.
 This is important if a single database is used to record information

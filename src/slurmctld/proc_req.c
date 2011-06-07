@@ -457,6 +457,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->accounting_storage_user =
 		xstrdup(conf->accounting_storage_user);
 	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
+	conf_ptr->acctng_store_job_comment = conf->acctng_store_job_comment;
 	conf_ptr->authtype            = xstrdup(conf->authtype);
 
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
