@@ -831,6 +831,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	hostlist_t temp_hl = NULL;
 	hostlist_iterator_t h_itr = NULL;
 	char *query = NULL;
+	int dims = 0;
 
 	if (!job_cond || !job_cond->used_nodes)
 		return NULL;
@@ -843,7 +844,28 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	temp_hl = hostlist_create(job_cond->used_nodes);
+	/* get the dimensions of this cluster so we know how to deal
+	   with the hostlists */
+	query = xstrdup_printf("select dimensions from %s where name='%s'",
+			       cluster_table,
+			       (char *)list_peek(job_cond->cluster_list));
+
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+
+	if (!(row = mysql_fetch_row(result))) {
+		error("Couldn't get the dimensions of cluster '%s'.",
+		      (char *)list_peek(job_cond->cluster_list));
+		return NULL;
+	}
+	dims = atoi(row[0]);
+
+	temp_hl = hostlist_create_dims(job_cond->used_nodes, dims);
 	if (hostlist_count(temp_hl) <= 0) {
 		error("we didn't get any real hosts to look for.");
 		goto no_hosts;
@@ -880,12 +902,12 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		int loc = 0;
 		local_cluster_t *local_cluster =
 			xmalloc(sizeof(local_cluster_t));
-		local_cluster->hl = hostlist_create(row[0]);
+		local_cluster->hl = hostlist_create_dims(row[0], dims);
 		local_cluster->start = slurm_atoul(row[1]);
 		local_cluster->end   = slurm_atoul(row[2]);
 		local_cluster->asked_bitmap =
 			bit_alloc(hostlist_count(local_cluster->hl));
-		while ((host = hostlist_next(h_itr))) {
+		while ((host = hostlist_next_dims(h_itr, dims))) {
 			if ((loc = hostlist_find(
 				     local_cluster->hl, host)) != -1)
 				bit_set(local_cluster->asked_bitmap, loc);

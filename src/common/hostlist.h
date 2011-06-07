@@ -436,6 +436,7 @@ void hostlist_iterator_reset(hostlist_iterator_t i);
  *
  * The caller is responsible for freeing the returned memory.
  */
+char * hostlist_next_dims(hostlist_iterator_t i, int dims);
 char * hostlist_next(hostlist_iterator_t i);
 
 
