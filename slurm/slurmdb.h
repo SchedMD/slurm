@@ -1103,7 +1103,7 @@ extern List slurmdb_coord_remove(void *db_conn, List acct_list,
 
 /*
  * get info from the storage
- * RET: List of config_key_pairs_t *
+ * RET: List of config_key_pair_t *
  * note List needs to be freed with slurm_list_destroy() when called
  */
 extern List slurmdb_config_get(void *db_conn);
