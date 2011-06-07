@@ -1,4 +1,4 @@
-SUBDIRS = cray lua pam perlapi torque sjobexit slurmdb-direct phpext
+SUBDIRS = cray lua pam perlapi torque sjobexit slurmdb-direct
 
 EXTRA_DIST = \
 	env_cache_builder.c	\

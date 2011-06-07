@@ -1,7 +1,3 @@
-/* *mode: c; c-basic-offset: 8; indent-tabs-mode: nil;*
-* vim:expandtab:shiftwidth=8:tabstop=8:
-*/
-
 /*****************************************************************************\
  *  slurm_php.h - php interface to slurm.
  *
@@ -53,8 +49,9 @@
  */
 #define TIME_FORMAT_STRING "%c"
 
-#include "php.h"
-#include "slurm/slurm.h"
+#include <php.h>
+#include <slurm/slurm.h>
+#include <slurm/slurmdb.h>
 
 #include <time.h>
 #include <stdlib.h>
@@ -68,7 +65,7 @@ extern zend_module_entry slurm_php_module_entry;
 typedef struct key_value {
 	char *name;		/* key */
 	char *value;		/* value */
-} key_pair;
+} key_pair_t;
 
 
 /*****************************************************************************\
@@ -89,7 +86,7 @@ time_t now();
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */
-int ld_partition_info(partition_info_msg_t ** part_pptr, uint16_t show_flags);
+int ld_partition_info(partition_info_msg_t **part_pptr, uint16_t show_flags);
 
 /*
  * ld_node_info - Issue slurm to load the node info into node_pptr
@@ -99,7 +96,7 @@ int ld_partition_info(partition_info_msg_t ** part_pptr, uint16_t show_flags);
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
-int ld_node_info(node_info_msg_t ** node_pptr, uint16_t show_flags);
+int ld_node_info(node_info_msg_t **node_pptr, uint16_t show_flags);
 
 /*
  * ld_job_info - Issue slurm to load the job info into job_pptr
@@ -109,7 +106,7 @@ int ld_node_info(node_info_msg_t ** node_pptr, uint16_t show_flags);
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_job_info_msg
  */
-int ld_job_info(job_info_msg_t ** job_pptr, uint16_t show_flags);
+int ld_job_info(job_info_msg_t **job_pptr, uint16_t show_flags);
 
 /*
  * parse_node_pointer - Parse a node pointer's contents into an
@@ -119,7 +116,7 @@ int ld_job_info(job_info_msg_t ** job_pptr, uint16_t show_flags);
  * IN sub_arr - array to store the contents of the node pointer
  * IN node_arr - node pointer that needs parsing
  */
-void parse_node_pointer(zval * sub_arr, node_info_t * node_arr);
+void parse_node_pointer(zval *sub_arr, node_info_t *node_arr);
 
 /*
  * parse_assoc_array - Parse a character array where the elements are
@@ -130,7 +127,7 @@ void parse_node_pointer(zval * sub_arr, node_info_t * node_arr);
  * IN delims - character array that contains the delimeters used in parsing
  * IN result_arr - associative array used to store the key_value pairs in
  */
-void parse_assoc_array(char * char_arr, char * delims, zval * result_arr);
+void parse_assoc_array(char *char_arr, char *delims, zval *result_arr);
 
 /*
  * parse_array - Parse a character array where the elements are values
@@ -140,7 +137,7 @@ void parse_assoc_array(char * char_arr, char * delims, zval * result_arr);
  * IN delims - character array that contains the delimeters used in parsing
  * IN result_arr - numerically indexed array used to store the values in
  */
-void parse_array(char * char_arr, char * delims, zval * rslt_arr);
+void parse_array(char *char_arr, char *delims, zval *rslt_arr);
 
 /*
  * get_partition_from_name - Load the information about a specific partition
@@ -154,8 +151,8 @@ void parse_array(char * char_arr, char * delims, zval * rslt_arr);
  * RET partition_info_t pointer that contains the partition data, or
  *      null if the partition wasn't found
  */
-partition_info_t * get_partition_from_name(char * name,
-		partition_info_t * prt_data, partition_info_msg_t * prt_ptr);
+partition_info_t *get_partition_from_name(
+	char *name, partition_info_t *prt_data, partition_info_msg_t *prt_ptr);
 
 /*
  * zend_add_valid_assoc_string - checks a character array to see if
@@ -166,7 +163,7 @@ partition_info_t * get_partition_from_name(char * name,
  * IN key - character array used as the associative key
  * IN val - character array to be validated and added as value if valid
  */
-void zend_add_valid_assoc_string(zval * rstl_arr, char *key, char *val);
+void zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val);
 
 /*
  * zend_add_valid_assoc_time_string - checks a unix timestamp to see if it's
@@ -179,8 +176,7 @@ void zend_add_valid_assoc_string(zval * rstl_arr, char *key, char *val);
  * NOTE : If you'd like to change the format in which the valid strings are
  * returned, you can change the TIME_FORMAT_STRING macro to the needed format
  */
-void zend_add_valid_assoc_time_string(zval * rstl_arr, char *key,
-				time_t * val);
+void zend_add_valid_assoc_time_string(zval *rstl_arr, char *key, time_t *val);
 
 
 /*****************************************************************************\
