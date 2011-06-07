@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.3
-10 January 2011
+7 June 2011
 
 
 IMPORTANT NOTE:
@@ -24,8 +24,8 @@ other state information.
 
 HIGHLIGHTS
 ==========
-* Support is provided for Cray XT and XE computers
-* Support is provided for BlueGene/Q computers.
+* Support has been added for Cray XT and XE computers
+* Support has been added for BlueGene/Q computers.
 * For architectures where the slurmd daemon executes on front end nodes (Cray
   and BlueGene systems) more than one slurmd daemon may be executed using more
   than one front end node for improved fault-tolerance and performance.
@@ -38,21 +38,26 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * In order to support more than one front end node, new parameters have been
   added to support a new data structure: FrontendName, FrontendAddr, Port,
   State and Reason.
-* DebugFlags of Frontend added
+* Added DebugFlags option of Frontend
 * Added new configuration parameter MaxJobId. Use with FirstJobId to limit
   range of job ID values.
 * Added new configuration parameter MaxStepCount to limit the effect of
   bad batch scripts. The default value is 40,000 steps per job.
-* Change node configuration parameter from "Procs" to "CPUs". Both parameters
+* Changed node configuration parameter from "Procs" to "CPUs". Both parameters
   will be supported for now.
+* Added GraceTime to Partition and QOS data structures. Preempted jobs will be
+  given this time interval before termination.
+* Added AccountingStoreJobComment to control storing job's comment field in
+  the accounting database.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-* scontrol has the ability to get and set front end node state.
-* scontrol has the ability to set slurmctld's DebugFlags.
-* Add new scontrol option of "show aliases" to report every NodeName that is
+* Added scontrol ability to get and set front end node state.
+* Added scontrol ability to set slurmctld's DebugFlags.
+* Added new scontrol option of "show aliases" to report every NodeName that is
   associated with a given NodeHostName when running multiple slurmd daemons
   per compute node (typically used for testing purposes).
+* Added new squeue optioni of -R/--reservation option as a job filter.
 * A reservation flag of "License_Only" has been added for use by the sview and
   scontrol commands. If set, then jobs using the reservation may use the
   licenses associated with it plus any compute nodes. Otherwise the job is
@@ -64,47 +69,70 @@ COMMAND CHANGES (see man pages for details)
 
 BLUEGENE SPECIFIC CHANGES
 =========================
-BGQ support added.
+* Bluegene/Q support added.
+* The select/bluegene plugin has been substantially re-written.
 
 OTHER CHANGES
 =============
-
+* Improved accuracy of estimated job start time for pending jobs. This should
+  substantially improve scheduling of jobs elibable to execute on more than one
+  cluster.
+* Job dependency information will only show the currently active dependencies
+  rather than the original dependencies.
+* Added a reservation flag of "License_Only". If set, then jobs using the
+  reservation may use the licenses associated with it plus any compute nodes.
+* Added proctrack/cgroup and task/cgroup plugins to support Linux cgroups.
 
 API CHANGES
 ===========
 
-
 Changed members of the following structs
 ========================================
 block_info_t
-	Added	    job_list
-	Added       used_mp_inx
-	Added       used_mp_str
-	node_cnt -> cnode_cnt
-	ionodes  -> ionode_str
-	nodes    -> mp_str
-	bp_inx   -> mp_inx
+	Added	     job_list
+	Added        used_mp_inx
+	Added        used_mp_str
+	bp_inx    -> mp_inx
+	conn_type -> conn_type(DIMENSIONS]
+	ionodes   -> ionode_str
+	nodes     -> mp_str
+	node_cnt  -> cnode_cnt
+
+job_desc_msg_t
+	conn_type -> conn_type(DIMENSIONS]
 
 job_step_info_t
 	Added	    select_jobinfo
 
 Added the following struct definitions
 ======================================
+block_job_info_t		entirely new structure
+
 front_end_info_msg_t		entirely new structure
 
 front_end_info_t		entirely new structure
-
+	
 job_info_t
 	batch_host		name of the host running the batch script
+	batch_script		contents of batch script
 	preempt_time		time that a job become preempted
 
 job_step_create_response_msg_t
 	select_jobinfo		data needed from the select plugin for a step
 
+job_step_info_t
+	select_jobinfo		data needed from the select plugin for a step
+
+node_info_t
+	node_addr		communication name (optional)
+	node_hostname		node's hostname (optional)
+
 partition_info_t
 	grace_time		preempted job's grace time in seconds
 
 slurm_ctl_conf
+	acctng_store_job_comment  if set, store job's comment field in
+				accounting database
 	max_job_id		maximum supported job id before starting over
 				with first_job_id
 	max_step_count		maximum number of job steps permitted per job
@@ -125,13 +153,20 @@ job_state_reason
 	FAIL_QOS        	/* invalid QOS */
 	WAIT_QOS_THRES        	/* required QOS threshold has been breached */
 
-select_jobdata_type
-	SELECT_JOBDATA_PTR	 /* data-> select_jobinfo_t *jobinfo */
+select_jobdata_type (Size of many data structures increased)
+	SELECT_JOBDATA_BLOCK_NODE_CNT /* data-> uint32_t block_cnode_cnt */
 	SELECT_JOBDATA_BLOCK_PTR /* data-> bg_record_t *bg_record */
 	SELECT_JOBDATA_DIM_CNT   /* data-> uint16_t dim_cnt */
-	SELECT_JOBDATA_BLOCK_NODE_CNT /* data-> uint32_t block_cnode_cnt */
+	SELECT_JOBDATA_NODE_CNT  /* data-> uint32_t cnode_cnt */
+	SELECT_JOBDATA_PAGG_ID   /* data-> uint64_t job container ID */
+	SELECT_JOBDATA_PTR	 /* data-> select_jobinfo_t *jobinfo */
 	SELECT_JOBDATA_START_LOC /* data-> uint16_t
 				  * start_loc[SYSTEM_DIMENSIONS] */
+select_jobdata_type (Added)
+	SELECT_PRINT_START_LOC   /* Print just the start location */
+select_jobdata_type (Names changed)
+	SELECT_GET_BP_CPU_CNT --> SELECT_GET_MP_CPU_CNT
+	SELECT_SET_BP_CNT ------>SELECT_SET_MP_CNT
 
 select_nodedata_type
 	SELECT_NODEDATA_PTR     /* data-> select_nodeinfo_t *nodeinfo */
@@ -139,7 +174,7 @@ select_nodedata_type
 select_print_mode
 	SELECT_PRINT_START_LOC	/* Print just the start location */
 
-select_type_plugin_info is no longer and it's contents are now mostly #defines
+select_type_plugin_info no longer exists. It's contents are now mostly #defines
 
 DEBUG_FLAG_FRONT_END		added DebugFlags of Frontend
 
@@ -155,9 +190,10 @@ Added the following API's
 =========================
 slurm_free_front_end_info_msg	free front end state information
 slurm_init_update_front_end_msg	initialize data structure for front end update
-slurm_load_front_end()		load front end state information
+slurm_load_front_end		load front end state information
 slurm_print_front_end_info_msg	print all front end state information
 slurm_print_front_end_table	print state information for one front end node
+slurm_set_debugflags		set new DebugFlags in slurmctld daemon
 slurm_sprint_front_end_table	output state information for one front end node
 slurm_update_front_end		update state of front end node
 
