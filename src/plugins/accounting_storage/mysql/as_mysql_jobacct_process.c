@@ -844,7 +844,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	}
 
 	temp_hl = hostlist_create(job_cond->used_nodes);
-	if (!hostlist_count(temp_hl)) {
+	if (hostlist_count(temp_hl) <= 0) {
 		error("we didn't get any real hosts to look for.");
 		goto no_hosts;
 	}
@@ -870,8 +870,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
-		hostlist_destroy(temp_hl);
-		return NULL;
+		goto no_hosts;
 	}
 	xfree(query);
 
@@ -903,14 +902,16 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			_destroy_local_cluster(local_cluster);
 	}
 	mysql_free_result(result);
-	hostlist_iterator_destroy(h_itr);
+
 	if (!list_count(local_cluster_list)) {
-		hostlist_destroy(temp_hl);
 		list_destroy(local_cluster_list);
-		return NULL;
+		local_cluster_list = NULL;
+		goto no_hosts;
 	}
+
 no_hosts:
 
+	hostlist_iterator_destroy(h_itr);
 	hostlist_destroy(temp_hl);
 
 	return local_cluster_list;
