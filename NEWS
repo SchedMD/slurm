@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- Add scancel support for --clusters option.
  -- Note that scontrol and sprio can only support a single cluster at one time.
  -- Add support to salloc for a new environment variable SALLOC_KILL_CMD.
+ -- Add support for SLURM_TIME_FORMAT environment variable to control time
+    stamp output format. Work by Gerrit Renker, CSCS.
 
 * Changes in SLURM 2.3.0.pre5
 =============================

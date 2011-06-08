@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "December 2010" "squeue 2.3" "Slurm components"
+.TH SQUEUE "1" "June 2011" "squeue 2.3" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -510,6 +510,18 @@ Same as \fB\-\-clusters\fR
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
 .TP
+\fBSLURM_TIME_FORMAT\fR
+Specify the format used to report time stamps. A value of \fIstandard\fR, the
+default value, generates output in the form "year-month-dateThour:minute:second".
+A value of \fIrelative\fR returns only "hour:minute:second" if the current day.
+For other dates in the current year it prints the "hour:minute" preceeded by
+"Tomorr" (tomorrow), "Ystday" (yesterday), the name of the day for the coming
+week (e.g. "Mon", "Tue", etc.), otherwise the date (e.g. "25 Apr").
+For other years it returns a date month and year without a time (e.g.
+"6 Jun 2012").
+Another suggested value is "%a %T" for a day of week and time stamp (e.g.
+"Mon 12:34:56"). All of the time stamps use a 24 hour format.
+.TP
 \fBSQUEUE_ACCOUNT\fR
 \fB\-A <account_list>, \-\-account=<account_list>\fR
 .TP
@@ -534,7 +546,18 @@ The location of the SLURM configuration file.
 \fBSQUEUE_USERS\fR
 \fB\-u <user_list>, \-\-users=<user_list>\fR
 
-.SH "EXAMPLES"
+.SH "EXAMPLES".TP
+\fBSLURM_TIME_FORMAT\fR
+Specify the format used to report time stamps. A value of \fIstandard\fR, the
+default value, generates output in the form "year-month-dateThour:minute:second".
+A value of \fIrelative\fR returns only "hour:minute:second" if the current day.
+For other dates in the current year it prints the "hour:minute" preceeded by
+"Tomorr" (tomorrow), "Ystday" (yesterday), the name of the day for the coming
+week (e.g. "Mon", "Tue", etc.), otherwise the date (e.g. "25 Apr").
+For other years it returns a date month and year without a time (e.g.
+"6 Jun 2012").
+Another suggested value is "%a %T" for a day of week and time stamp (e.g.
+"Mon 12:34:56"). All of the time stamps use a 24 hour format.
 .eo
 Print the jobs scheduled in the debug partition and in the
 COMPLETED state in the format with six right justified digits for
