@@ -394,7 +394,7 @@ usage there is a line that starts with '->'. This a continuation
 prompt since the previous mysql statement did not end with a ';'. It
 assumes that you wish to input more info.)</p>
 
-live example:
+<p>live example:</p>
 
 <pre>
 mysql@snowflake:~$ mysql
@@ -406,24 +406,40 @@ Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 
 mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost';
 Query OK, 0 rows affected (0.00 sec)
+</pre>
 
-or with a password...
-
+<p>You may also need to do the same with the system name in order
+for mysql to work correctly:</p>
+<pre>
+mysql> grant all on slurm_acct_db.* TO 'slurm'@'system0';
+Query OK, 0 rows affected (0.00 sec)
+where 'system0' is the localhost or database storage host.
+</pre>
+<p>or with a password...</p>
+<pre>
 mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost'
     -> identified by 'some_pass' with grant option;
 Query OK, 0 rows affected (0.00 sec)
 </pre>
 
-<p>This will grant user 'slurm' access to do what it needs to do on
-the local host. This should be done before the SlurmDBD will work
-properly. After you grant permission to the Slurm user in mysql then
-you can start SlurmDBD and Slurm. You start SlurmDBD by typing
-'slurmdbd'. You can verify that SlurmDBD is running by typing 'ps aux
-| grep slurmdbd'. After SlurmDBD and the slurmctld start you can
-verify that the database was created by using the mysql command 'show
-databases;'. You can display the tables that slurm created in the
-database by using the mysql command 'use slurm_acct_db;' and then 'show
-tables;'.</p>
+<p>The same is true in the case, you made to do the same with the 
+system name:</p>
+<pre>
+mysql> grant all on slurm_acct_db.* TO 'slurm'@'system0'
+    -> identified by 'some_pass' with grant option;
+where 'system0' is the localhost or database storage host.
+</pre>
+
+<p>This will grant user 'slurm' access to do what it needs to do on the local
+host or the storage host system.  This must be done before the SlurmDBD will
+work properly. After you grant permission to the user 'slurm' in mysql then
+you can start SlurmDBD and the other SLURM daemons. You start SlurmDBD by
+typing its pathname '/usr/sbin/slurmdbd' or '/etc/init.d/slurmdbd start'. You
+can verify that SlurmDBD is running by typing 'ps aux | grep slurmdbd'. After 
+the SlurmDBD and slurmctld daemons start, you can verify that the database
+was created by using the mysql command 'show databases;'. You can display the
+tables that slurm created in the database by using the mysql command
+'use slurm_acct_db;' and then 'show tables;'.</p>
 
 <p>Use the mysql 'show databases;' command</p>
 

@@ -211,6 +211,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed Regression from 2.2.4 in accounting where an inherited limit
     would not be set correctly in the added child association.
  -- Fixed issue with accounting when asking for jobs with a hostlist.
+ -- Avoid clearing a node's Arch, OS, BootTime and SlurmdStartTime when
+    "scontrol reconfig" is run. Patch from Martin Perry, Bull.
 
 * Changes in SLURM 2.2.6
 ========================
