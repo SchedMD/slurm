@@ -534,8 +534,50 @@ int main(int argc, char *argv[])
 #endif
 
 /*
- * slurm_make_time_str - convert time_t to string with a format of
- *	"month/date hour:min:sec" for use in user command output
+ * Smart date for @epoch, relative to current date.
+ * Maximum output length: 12 characters + '\0'
+ *      19 Jan 2003	(distant past or future)
+ *     Ystday 20:13
+ *         12:26:38	(today)
+ *     Tomorr 03:22
+ *        Sat 02:17	(next Saturday)
+ *     18 Jun 13:14	(non-close past or future)
+ *     012345678901
+ * Uses base-10 YYYYddd numbers to compute date distances.
+ */
+static char *_relative_date_fmt(const struct tm *when)
+{
+	static int todays_date;
+	int distance = 1000 * (when->tm_year + 1900) + when->tm_yday;
+
+	if (!todays_date) {
+		time_t now = time(NULL);
+		struct tm tm;
+
+		localtime_r(&now, &tm);
+		todays_date = 1000 * (tm.tm_year + 1900) + tm.tm_yday;
+	}
+
+	distance -= todays_date;
+	if (distance == -1)			/* yesterday */
+		return "Ystday %H:%M";
+	if (distance == 0)			/* same day */
+		return "%H:%M:%S";
+	if (distance == 1)			/* tomorrow */
+		return "Tomorr %H:%M";
+	if (distance < -365 || distance > 365)	/* far distance */
+		return "%-d %b %Y";
+	if (distance < -1 || distance > 6)	/* medium distance */
+		return "%-d %b %H:%M";
+	return "%a %H:%M";			/* near distance */
+}
+
+/*
+ * slurm_make_time_str - convert time_t to formatted string for user output
+ *
+ * The format depends on the environment variable SLURM_TIME_FORMAT, which may
+ * be set to 'standard' (fallback, same as if not set), 'relative' (format is
+ * relative to today's date and optimized for space), or a strftime(3) string.
  *
  * IN time - a time stamp
  * OUT string - pointer user defined buffer
@@ -551,23 +593,38 @@ slurm_make_time_str (time_t *time, char *string, int size)
 	if ((*time == (time_t) 0) || (*time == (time_t) INFINITE)) {
 		snprintf(string, size, "Unknown");
 	} else {
-#ifdef USE_ISO_8601
-		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
-		 * NOTE: This is expected to break Maui, Moab and LSF
-		 * schedulers management of SLURM. */
-		snprintf(string, size,
-			"%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
-			(time_tm.tm_year + 1900), (time_tm.tm_mon+1),
-			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
-			time_tm.tm_sec);
-#else
-		/* Format MM/DD-HH:MM:SS */
-		snprintf(string, size,
-			"%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
-			(time_tm.tm_mon+1), time_tm.tm_mday,
-			time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+		static char fmt_buf[32];
+		static const char *display_fmt;
+		static bool use_relative_format;
 
+		if (!display_fmt) {
+			char *fmt = getenv("SLURM_TIME_FORMAT");
+
+			if ((!fmt) || (!*fmt) || (!strcmp(fmt, "standard"))) {
+#if defined USE_ISO_8601	/*
+				 * ISO-8601 Standard Format YYYY-MM-DDTHH:MM:SS
+				 * NOTE: This is expected to break Maui, Moab
+				 *       and LSF schedulers management of SLURM.
+				 */
+				display_fmt = "%FT%T";
+#else
+				/* Format MM/DD-HH:MM:SS */
+				display_fmt = "%m/%d-%T";
 #endif
+			} else if (strcmp(fmt, "relative") == 0) {
+				use_relative_format = true;
+			} else if ((strchr(fmt, '%')  == NULL) ||
+				   (strlen(fmt) >= sizeof(fmt_buf))) {
+				error("invalid SLURM_TIME_FORMAT = '%s'", fmt);
+			} else {
+				strncpy(fmt_buf, fmt, sizeof(fmt_buf));
+				display_fmt = fmt_buf;
+			}
+		}
+		if (use_relative_format)
+			display_fmt = _relative_date_fmt(&time_tm);
+
+		strftime(string, size, display_fmt, &time_tm);
 	}
 }
 
