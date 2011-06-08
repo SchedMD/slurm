@@ -600,17 +600,18 @@ slurm_make_time_str (time_t *time, char *string, int size)
 		if (!display_fmt) {
 			char *fmt = getenv("SLURM_TIME_FORMAT");
 
-			if ((!fmt) || (!*fmt) || (!strcmp(fmt, "standard"))) {
-#if defined USE_ISO_8601	/*
-				 * ISO-8601 Standard Format YYYY-MM-DDTHH:MM:SS
-				 * NOTE: This is expected to break Maui, Moab
-				 *       and LSF schedulers management of SLURM.
-				 */
-				display_fmt = "%FT%T";
+#if defined USE_ISO_8601/*
+			 * ISO-8601 Standard Format YYYY-MM-DDTHH:MM:SS
+			 * NOTE: This is expected to break Maui, Moab
+			 *       and LSF schedulers management of SLURM.
+			 */
+			display_fmt = "%FT%T";
 #else
-				/* Format MM/DD-HH:MM:SS */
-				display_fmt = "%m/%d-%T";
+			/* Format MM/DD-HH:MM:SS */
+			display_fmt = "%m/%d-%T";
 #endif
+			if ((!fmt) || (!*fmt) || (!strcmp(fmt, "standard"))) {
+				;
 			} else if (strcmp(fmt, "relative") == 0) {
 				use_relative_format = true;
 			} else if ((strchr(fmt, '%')  == NULL) ||
