@@ -30,7 +30,7 @@ to mulitply the number by 1024, 1048576 or 1073741824 respectively.
 .TP
 \fBCPUs\fR
 Specify the CPU index numbers for the specific CPUs which can
-use this resources. For example, it may be strongly preferable
+use this resource. For example, it may be strongly preferable
 to use specific CPUs with specific devices (e.g. on a NUMA
 architecture). Multiple CPUs may be specified using a comma
 delimited list or a range may be specified using a "\-" separator
@@ -42,7 +42,7 @@ If any CPU can be used with the resources, then do not specify the
 .TP
 \fBFile\fR
 Fully qualified pathname of the device files associated with a resource. 
-The name can include a numberic range suffix to be interpretted by SLURM
+The name can include a numberic range suffix to be interpreted by SLURM
 (e.g. \fIFile=/dev/nvidia[0\-3]\fR).
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making

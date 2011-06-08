@@ -4675,7 +4675,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)
 		return false;
 	}
 
-	/* Our size is per CPU and limit per node or vise-versa.
+	/* Our size is per CPU and limit per node or vice-versa.
 	 * CPU count my vary by node, but we don't have a good
 	 * way to identify specific nodes for the job at this
 	 * point, so just pick the first node as a basis for enforcing

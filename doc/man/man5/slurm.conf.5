@@ -2207,9 +2207,9 @@ Also see \fBGres\fR.
 A comma delimited list of generic resources specifications for a node.
 Each resource specification consists of a name followed by an optional
 colon with a numeric value (default value is one)
-(e.g. "Gres=bandwidth:10000,gpus:2").
+(e.g. "Gres=bandwidth:10000,gpu:2").
 A suffix of "K", "M" or "G" may be used to mulitply the number by 1024,
-1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpus:4")..
+1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpu:4")..
 By default a node has no generic resources.
 Also see \fBFeature\fR.
 
@@ -2463,7 +2463,7 @@ in the configuration file with multiple entries where "PartitionName=DEFAULT".
 The "PartitionName=" specification must be placed on every line
 describing the configuration of partitions.
 If a partition that is in use is deleted from the configuration and slurm
-is restarted or reconfigured (scontrol reconfgure), jobs using the partition
+is restarted or reconfigured (scontrol reconfigure), jobs using the partition
 are canceled.
 \fBNOTE:\fR Put all parameters for each partition on a single line.
 Each line of partition configuration information should
@@ -2740,7 +2740,7 @@ to all of the programs.
 .TP
 \fBBASIL_RESERVATION_ID\fR
 Basil reservation ID.
-Available on Cray XT systems only.
+Available on Cray XT/XE systems only.
 .TP
 \fBMPIRUN_PARTITION\fR
 BlueGene partition name.
@@ -2811,7 +2811,7 @@ The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
 The only values presently supported are
 "topology/3d_torus" (default for IBM BlueGene, Sun Constellation and
-Cray XT systems, performs best\-fit logic over three\-dimensional topology),
+Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
 "topology/none" (default for other systems,
 best\-fit logic over one\-dimensional topology),
 "topology/tree" (determine the network topology based

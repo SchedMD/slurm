@@ -4,7 +4,7 @@
 
 <p>MPI use depends upon the type of MPI being used.
 There are three fundamentally different modes of operation used
-by these various MPI implementation.
+by these various MPI implementations.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization
 of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,

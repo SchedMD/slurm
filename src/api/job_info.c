@@ -477,7 +477,7 @@ line6:
 					if (i < job_resrcs->cpu_array_cnt - 1) {
 						continue;
 					}
-					/* add elipsis before last entry */
+					/* add ellipsis before last entry */
 					xstrcat(out, "...,");
 					length += 4;
 				}
