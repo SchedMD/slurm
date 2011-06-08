@@ -429,33 +429,30 @@ but is provided for advanced configurations. If used, <i>cray.conf</i> must be
 located in the same directory as the <i>slurm.conf</i> file.</p>
 
 <dl>
-<dt><b>AlpsDir</b>
-<dd>Fully qualified pathname of the directory in which ALPS is installed.
-The default value is <i>/usr</i>.
-<dt><b>apbasil</b>
+<dt><b>apbasil</b></dt>
 <dd>Fully qualified pathname to the apbasil command.
-The default value is <i>/usr/bin/apbasil</i>.
-<dt><b>apkill</b>
+The default value is <i>/usr/bin/apbasil</i>.</dd>
+<dt><b>apkill</b></dt>
 <dd>Fully qualified pathname to the apkill command.
-The default value is <i>/usr/bin/apkill</i>.
-<dt><b>SDBdb</b>
+The default value is <i>/usr/bin/apkill</i>.</dd>
+<dt><b>SDBdb</b></dt>
 <dd>Name of the ALPS database.
-The default value is <i>XTAdmin</i>.
-<dt><b>SDBhost</b>
+The default value is <i>XTAdmin</i>.</dd>
+<dt><b>SDBhost</b></dt>
 <dd>Hostname of the database server.
 The default value is based upon the contents of the 'my.cnf' file used to
-store default database access information and that defaults to user 'sdb'.
-<dt><b>SDBpass</b>
+store default database access information and that defaults to user 'sdb'.</dd>
+<dt><b>SDBpass</b></dt>
 <dd>Password used to access the ALPS database.
 The default value is based upon the contents of the 'my.cnf' file used to
-store default database access information and that defaults to user 'basic'.
-<dt><b>SDBport</b>
+store default database access information and that defaults to user 'basic'.</dd>
+<dt><b>SDBport</b></dt>
 <dd>Port used to access the ALPS database.
-The default value is 0.
-<dt><b>SDBuser</b>
+The default value is 0.</dd>
+<dt><b>SDBuser</b></dt>
 <dd>Name of user used to access the ALPS database.
 The default value is based upon the contents of the 'my.cnf' file used to
-store default database access information and that defaults to user 'basic'.
+store default database access information and that defaults to user 'basic'.</dd>
 </dl></p>
 
 <pre>
