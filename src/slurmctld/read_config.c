@@ -658,9 +658,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		old_node_table_ptr    = node_record_table_ptr;
 		for (i=0, node_ptr=old_node_table_ptr; i<node_record_count;
 		     i++, node_ptr++) {
-			xfree(node_ptr->arch);
 			xfree(node_ptr->features);
-			xfree(node_ptr->os);
 			node_ptr->features = xstrdup(
 				node_ptr->config_ptr->feature);
 			/* Store the original configured CPU count somewhere
@@ -919,11 +917,13 @@ static int _restore_node_state(int recover,
 			      node_ptr->name, old_node_ptr->port,
 			      node_ptr->config_ptr->cpus);
 		}
+		node_ptr->boot_time     = old_node_ptr->boot_time; 
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
 		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;
+		node_ptr->slurmd_start_time = old_node_ptr->slurmd_start_time; 
 		node_ptr->tmp_disk      = old_node_ptr->tmp_disk;
 		node_ptr->weight        = old_node_ptr->weight;
 
