@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- Add scontrol ability to increment or decrement a job or step time limit.
  -- Add support for SLURM_TIME_FORMAT environment variable to control time
     stamp output format. Work by Gerrit Renker, CSCS.
+ -- Fix error handling in mvapich plugin that could cause srun to enter an
+    infinite loop under rare circumstances.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
