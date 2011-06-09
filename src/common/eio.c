@@ -235,7 +235,8 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 	/* move new eio objects from the new_objs to the obj_list */
 	list_transfer(eio->obj_list, eio->new_objs);
 
-	if (rc < 0) return error("eio_clear: read: %m");
+	if (rc < 0)
+		return error("eio_clear: read: %m");
 
 	return 0;
 }
@@ -301,8 +302,10 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds)
 	int n;
 	while ((n = poll(pfds, nfds, -1)) < 0) {
 		switch (errno) {
-		case EINTR : return 0;
-		case EAGAIN: continue;
+		case EINTR :
+			return 0;
+		case EAGAIN:
+			continue;
 		default:
 			error("poll: %m");
 			return -1;

@@ -425,7 +425,7 @@ static int mvapich_poll_internal (struct mvapich_poll *mp)
 {
 	int n;
 	while ((n = poll (mp->fds, mp->nfds, startup_timeout (mp->st))) < 0) {
-		if (errno != EINTR && errno != EAGAIN)
+		if ((errno != EINTR) && (errno != EAGAIN))
 			return (-1);
 	}
 	return (n);
