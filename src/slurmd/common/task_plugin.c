@@ -74,7 +74,8 @@ typedef struct slurmd_task_context {
 	slurmd_task_ops_t	ops;
 } slurmd_task_context_t;
 
-static slurmd_task_context_t	*g_task_context = NULL;
+static slurmd_task_context_t	**g_task_context = NULL;
+static int			g_task_context_num = -1;
 static pthread_mutex_t		g_task_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
@@ -197,34 +198,58 @@ _slurmd_task_context_destroy(slurmd_task_context_t *c)
  */
 extern int slurmd_task_init(void)
 {
-	int retval = SLURM_SUCCESS;
+	int retval = SLURM_SUCCESS, i;
 	char *task_plugin_type = NULL;
+	char *last = NULL, *task_plugin_list, *task_plugin = NULL;
 
 	slurm_mutex_lock( &g_task_context_lock );
 
-	if ( g_task_context )
+	if ( g_task_context_num >= 0 )
 		goto done;
 
 	task_plugin_type = slurm_get_task_plugin();
-	g_task_context = _slurmd_task_context_create( task_plugin_type );
-	if ( g_task_context == NULL ) {
-		error( "cannot create task context for %s",
-			 task_plugin_type );
-		retval = SLURM_ERROR;
+	g_task_context_num = 0; /* mark it before anything else */
+	if (task_plugin_type == NULL || task_plugin_type[0] == '\0')
 		goto done;
-	}
 
-	if ( _slurmd_task_get_ops( g_task_context ) == NULL ) {
-		error( "cannot resolve task plugin operations" );
-		_slurmd_task_context_destroy( g_task_context );
-		g_task_context = NULL;
-		retval = SLURM_ERROR;
+	task_plugin_list = task_plugin_type;
+	while ((task_plugin = strtok_r(task_plugin_list, ",", &last))) {
+		i = g_task_context_num++;
+		xrealloc(g_task_context,
+			 (sizeof(slurmd_task_context_t *) * g_task_context_num));
+		if (strncmp(task_plugin, "task/", 5) == 0)
+			task_plugin += 5; /* backward compatibility */
+		task_plugin = xstrdup_printf("task/%s", task_plugin);
+		g_task_context[i] = _slurmd_task_context_create( task_plugin );
+		if ( g_task_context[i] == NULL ) {
+			error( "cannot create task context for %s",
+				 task_plugin );
+			goto error;
+		}
+
+		if ( _slurmd_task_get_ops( g_task_context[i] ) == NULL ) {
+			error( "cannot resolve task plugin operations for %s",
+			       task_plugin );
+			goto error;
+		}
+		xfree(task_plugin);
+		task_plugin_list = NULL; /* for next iteration */
 	}
 
  done:
 	slurm_mutex_unlock( &g_task_context_lock );
 	xfree(task_plugin_type);
 	return retval;
+
+error:
+	xfree(task_plugin);
+	retval = SLURM_ERROR;
+	for (i = 0; i < g_task_context_num; i++)
+		if (g_task_context[i])
+			_slurmd_task_context_destroy(g_task_context[i]);
+	xfree(g_task_context);
+	g_task_context_num = -1;
+	goto done;
 }
 
 /*
@@ -234,13 +259,24 @@ extern int slurmd_task_init(void)
  */
 extern int slurmd_task_fini(void)
 {
-	int rc;
+	int i, rc = SLURM_SUCCESS;
 
+	slurm_mutex_lock( &g_task_context_lock );
 	if (!g_task_context)
-		return SLURM_SUCCESS;
+		goto done;
 
-	rc = _slurmd_task_context_destroy(g_task_context);
-	g_task_context = NULL;
+	for (i = 0; i < g_task_context_num; i++) {
+		if (_slurmd_task_context_destroy(g_task_context[i]) !=
+		    SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+		}
+	}
+
+	xfree(g_task_context);
+	g_task_context_num = -1;
+
+done:
+	slurm_mutex_unlock( &g_task_context_lock );
 	return rc;
 }
 
@@ -251,10 +287,19 @@ extern int slurmd_task_fini(void)
  */
 extern int slurmd_batch_request(uint32_t job_id, batch_job_launch_msg_t *req)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.slurmd_batch_request))(job_id, req);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++) {
+		rc = (*(g_task_context[i]->ops.slurmd_batch_request))(job_id,
+								      req);
+	}
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -266,10 +311,19 @@ extern int slurmd_launch_request(uint32_t job_id,
 				 launch_tasks_request_msg_t *req,
 				 uint32_t node_id)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.slurmd_launch_request))(job_id, req, node_id);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++) {
+		rc = (*(g_task_context[i]->ops.slurmd_launch_request))
+					(job_id, req, node_id);
+	}
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -281,10 +335,19 @@ extern int slurmd_reserve_resources(uint32_t job_id,
 				    launch_tasks_request_msg_t *req,
 				    uint32_t node_id )
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.slurmd_reserve_resources))(job_id, req, node_id);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++) {
+		rc = (*(g_task_context[i]->ops.slurmd_reserve_resources))
+					(job_id, req, node_id);
+	}
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -294,10 +357,17 @@ extern int slurmd_reserve_resources(uint32_t job_id,
  */
 extern int slurmd_suspend_job(uint32_t job_id)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.slurmd_suspend_job))(job_id);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(g_task_context[i]->ops.slurmd_suspend_job))(job_id);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -307,10 +377,17 @@ extern int slurmd_suspend_job(uint32_t job_id)
  */
 extern int slurmd_resume_job(uint32_t job_id)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.slurmd_resume_job))(job_id);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(g_task_context[i]->ops.slurmd_resume_job))(job_id);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -320,10 +397,19 @@ extern int slurmd_resume_job(uint32_t job_id)
  */
 extern int slurmd_release_resources(uint32_t job_id)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.slurmd_release_resources))(job_id);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++) {
+		rc = (*(g_task_context[i]->ops.slurmd_release_resources))
+				(job_id);
+	}
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -334,10 +420,17 @@ extern int slurmd_release_resources(uint32_t job_id)
  */
 extern int pre_setuid(slurmd_job_t *job)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.pre_setuid))(job);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(g_task_context[i]->ops.pre_setuid))(job);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -347,10 +440,17 @@ extern int pre_setuid(slurmd_job_t *job)
  */
 extern int pre_launch(slurmd_job_t *job)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.pre_launch))(job);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(g_task_context[i]->ops.pre_launch))(job);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -360,10 +460,17 @@ extern int pre_launch(slurmd_job_t *job)
  */
 extern int post_term(slurmd_job_t *job)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.post_term))(job);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(g_task_context[i]->ops.post_term))(job);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }
 
 /*
@@ -373,8 +480,15 @@ extern int post_term(slurmd_job_t *job)
  */
 extern int post_step(slurmd_job_t *job)
 {
+	int i, rc = SLURM_SUCCESS;
+
 	if (slurmd_task_init())
 		return SLURM_ERROR;
 
-	return (*(g_task_context->ops.post_step))(job);
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(g_task_context[i]->ops.post_step))(job);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
 }

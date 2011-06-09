@@ -1810,8 +1810,8 @@ See \fBTaskProlog\fR for execution order details.
 \fBTaskPlugin\fR
 Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific
-processors).
-Acceptable values include :
+processors). More than one task plugin can be specified in a comma separated
+list. The prefix of "task/" is optional. Acceptable values include:
 .RS
 .TP 15
 \fBtask/affinity\fR

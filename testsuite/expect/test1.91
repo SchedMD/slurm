@@ -47,7 +47,7 @@ set affinity 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "task/affinity" {
+	-re "affinity" {
 		set affinity 1
 		exp_continue
 	}

@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     stamp output format. Work by Gerrit Renker, CSCS.
  -- Fix error handling in mvapich plugin that could cause srun to enter an
     infinite loop under rare circumstances.
+ -- Add support for multiple task plugins. Patch from Andriy Grytsenko (Massive
+    Solutions Limited).
 
 * Changes in SLURM 2.3.0.pre5
 =============================

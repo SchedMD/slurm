@@ -49,6 +49,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   given this time interval before termination.
 * Added AccountingStoreJobComment to control storing job's comment field in
   the accounting database.
+* More than one TaskPlugin can be configured in a comma separated list.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

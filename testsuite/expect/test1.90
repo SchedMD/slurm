@@ -51,7 +51,7 @@ expect {
 		set fast_sched $expect_out(1,string)
 		exp_continue
 	}
-	-re "task/affinity" {
+	-re "affinity" {
 		set affinity 1
 		exp_continue
 	}
