@@ -52,7 +52,7 @@
 cray_config_t *cray_conf = NULL;
 
 s_p_options_t cray_conf_file_options[] = {
-	{"AlpsDir", S_P_STRING},
+	{"AlpsDir", S_P_STRING},	/* Vestigial option */
 	{"apbasil", S_P_STRING},
 	{"apkill", S_P_STRING},
 	{"SDBdb", S_P_STRING},
@@ -101,7 +101,6 @@ extern int create_config(void)
 	cray_conf_file = _get_cray_conf();
 
 	if (stat(cray_conf_file, &config_stat) < 0) {
-		cray_conf->alps_dir = xstrdup(DEFAULT_ALPS_DIR);
 		cray_conf->apbasil  = xstrdup(DEFAULT_APBASIL);
 		cray_conf->apkill   = xstrdup(DEFAULT_APKILL);
 		cray_conf->sdb_db   = xstrdup(DEFAULT_CRAY_SDB_DB);
@@ -136,14 +135,11 @@ extern int create_config(void)
 		      "conf file");
 	xfree(cray_conf_file);
 
-	if (!s_p_get_string(&cray_conf->alps_dir, "AlpsDir", tbl))
-		cray_conf->alps_dir = xstrdup(DEFAULT_ALPS_DIR);
 	if (!s_p_get_string(&cray_conf->apbasil, "apbasil", tbl))
-		cray_conf->apbasil = xstrdup_printf("%s/bin/apbasil",
-						    cray_conf->alps_dir);
+		cray_conf->apbasil = xstrdup(DEFAULT_APBASIL);
 	if (!s_p_get_string(&cray_conf->apkill, "apkill", tbl))
-		cray_conf->apkill = xstrdup_printf("%s/bin/apkill",
-						   cray_conf->alps_dir);
+		cray_conf->apkill = xstrdup(DEFAULT_APKILL);
+
 	if (!s_p_get_string(&cray_conf->sdb_db, "SDBdb", tbl))
 		cray_conf->sdb_db = xstrdup(DEFAULT_CRAY_SDB_DB);
 	if (!s_p_get_string(&cray_conf->sdb_host, "SDBhost", tbl))
@@ -160,7 +156,6 @@ end_it:
 
 #if 0
 	info("Cray conf is...");
-	info("\tAlpsDir=\t%s", cray_conf->alps_dir);
 	info("\tapbasil=\t%s", cray_conf->apbasil);
 	info("\tapkill=\t\t%s", cray_conf->apkill);
 	info("\tSDBdb=\t\t%s", cray_conf->sdb_db);
@@ -177,7 +172,6 @@ extern int destroy_config(void)
 	int rc = SLURM_SUCCESS;
 
 	if (cray_conf) {
-		xfree(cray_conf->alps_dir);
 		xfree(cray_conf->apbasil);
 		xfree(cray_conf->apkill);
 		xfree(cray_conf->sdb_db);

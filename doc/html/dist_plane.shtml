@@ -17,7 +17,7 @@ task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 <p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 <...></i>.
 
 <p>The distribution results in a plane distribution with plane_size 21.
-Even thought the user specified a plane_size of 4 the final plane
+Even though the user specified a plane_size of 4 the final plane
 distribution results in a plane_size of 21.
 
 <p>
@@ -114,7 +114,7 @@ task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 
 <p>On <u>One (1)</u> node:
 <i>srun -N 1-1 -n 21 -m plane=4 --cpu_bind=core <...></i>.
-Even thought the user specified a plane_size of 4 the final plane
+Even though the user specified a plane_size of 4 the final plane
 distribution results in a plane distribution with plane_size=8.
 
 <p>

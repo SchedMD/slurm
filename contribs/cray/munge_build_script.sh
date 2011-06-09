@@ -6,7 +6,6 @@
 #----------------------------------------------------------------------------
 # CONFIGURATION
 #----------------------------------------------------------------------------
-shopt -s nullglob
 # source and build directories
 LIBROOT="${LIBROOT:-/ufs/slurm/build}"
 MUNGE_BUILD="${LIBROOT}/munge"
@@ -15,11 +14,8 @@ MUNGE_BUILD="${LIBROOT}/munge"
 DESTDIR="/tmp/munge-build"
 
 # installation and runtime directories
-# installation directory for commands and headers
 MUNGE_DIR="/opt/slurm/munge"
 MUNGE_LOG="/var"
-# to avoid problems with truncated LD_LIBRARY_PATH, install libraries in /usr
-MUNGE_LIB="/usr/lib64"
 
 # input and output tarballs
 ZIP="${MUNGE_BUILD}/zip"
@@ -60,37 +56,26 @@ test -n "${DESTDIR}"    || die "DESTDIR not set"
 rm -rf ${DESTDIR} ${TARBALL}
 
 # DEPENDENT CONFIGURATION
+shopt -s nullglob
 MUNGE_SRC="${MUNGE_BUILD}/$(extract_top_level_from_tarball ${MUNGE_TAR})" || exit 1
-
-test -d "${MUNGE_SRC}" || tar jxvf ${MUNGE_TAR} -C ${MUNGE_BUILD}
-test -d "${MUNGE_SRC}" || die "need to extract munge tarball"
+MUNGE_LIB="${DESTDIR}${MUNGE_DIR}/lib"
 
 # extract source
+test -d "${LIBROOT}"   || mkdir -vp "${LIBROOT}"
+test -d "${MUNGE_SRC}" || tar jxvf ${MUNGE_TAR} -C ${MUNGE_BUILD}
+test -d "${MUNGE_SRC}" || die "need to extract munge tarball"
 cd ${MUNGE_SRC}
-set -e
-	./configure			\
-	--prefix=${MUNGE_DIR}		\
-  	--libdir=${MUNGE_LIB}		\
-	--localstatedir=${MUNGE_LOG}
 
 # Build
+set -e
+./configure --prefix=${MUNGE_DIR} --localstatedir=${MUNGE_LOG}
+
 make -j
 
-# Installation
 mkdir -p ${DESTDIR}
 make DESTDIR=${DESTDIR%/}/ install
 
-# Generate a rudimentary key for testing
-MUNGE_ETC="${DESTDIR}${MUNGE_DIR}/etc"
-MUNGE_KEY="${MUNGE_ETC}/munge.key"
-
-mkdir -vp $MUNGE_ETC
-# dd if=/dev/random  bs=1 count=1024	> $MUNGE_KEY	# true random data (takes ~15 minutes)
-dd if=/dev/urandom bs=1 count=1024	> $MUNGE_KEY	# pseudo-random data (faster)
-# echo -n "foo"|sha1sum|cut -d' ' -f1	> $MUNGE_KEY	# sha1 hash of 'foo' password
-# echo "clear_text_password"		> $MUNGE_KEY	# plaintext password (BAD)
-chmod 0700 $MUNGE_ETC
-chmod 0400 $MUNGE_KEY
-
-# tarball
-tar -C ${DESTDIR} -zcpPvf ${TARBALL} .${MUNGE_DIR%/}/{share,include,bin,sbin,etc} .${MUNGE_LIB}
+# final tarball
+tar -C ${DESTDIR} -zcpPvf ${TARBALL} .${MUNGE_DIR%/}
+# scp ${TARBALL} boot:
+echo generated output tarball ${TARBALL}

@@ -1303,6 +1303,14 @@ static bool _opt_verify(void)
 	if (!opt.wait_all_nodes)
 		info("Cray needs --wait-all-nodes to wait on ALPS reservation");
 	opt.wait_all_nodes = true;
+	if (opt.kill_command_signal_set) {
+		/*
+		 * Disabled to avoid that the user supplies a weaker signal that
+		 * could cause the child processes not to terminate.
+		 */
+		info("The --kill-command is not supported on Cray.");
+		opt.kill_command_signal_set = false;
+	}
 #elif defined(HAVE_BGL)
 	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
 		error("invalid BlrtsImage given '%s'", opt.blrtsimage);

@@ -45,24 +45,10 @@
 
 #include "slurm/slurm.h"
 
-typedef struct {
-	char *alps_dir;
-	char *apbasil;
-	char *apkill;
-	char *sdb_db;
-	char *sdb_host;
-	char *sdb_pass;
-	uint32_t sdb_port;
-	char *sdb_user;
-	uint32_t slurm_debug_flags;
-} cray_config_t;
-
-/* Location of Alps install dir */
-#define DEFAULT_ALPS_DIR          "/usr"
-/* Location of Alps apbasil executable (supported on XT/XE CNL) */
-#define DEFAULT_APBASIL           DEFAULT_ALPS_DIR "/bin/apbasil"
-/* Location of Alps apkill executable (supported on XT/XE CNL) */
-#define DEFAULT_APKILL            DEFAULT_ALPS_DIR "/bin/apkill"
+/* Location of ALPS apbasil executable (supported on XT/XE CNL) */
+#define DEFAULT_APBASIL           "/usr/bin/apbasil"
+/* Location of ALPS apkill executable (supported on XT/XE CNL) */
+#define DEFAULT_APKILL            "/usr/bin/apkill"
 /* database name to use  */
 #define DEFAULT_CRAY_SDB_DB       "XTAdmin"
 /* DNS name of SDB host */
@@ -73,6 +59,29 @@ typedef struct {
 #define DEFAULT_CRAY_SDB_PORT     0
 /* If NULL, use value from my.cnf */
 #define DEFAULT_CRAY_SDB_USER     NULL
+
+/**
+ * cray_config_t - Parsed representation of cray.conf
+ * @apbasil:	full path to ALPS 'apbasil' executable
+ * @apkill:	full path to ALPS 'apkill' executable
+ * @sdb_host:	DNS name of SDB host
+ * @sdb_db:	SDB database name to use (default XTAdmin)
+ * @sdb_user:	SDB database username
+ * @sdb_pass:	SDB database password
+ * @sdb_port:	port number of SDB host
+ * @slurm_debug_flags: see code for details
+ */
+typedef struct {
+	char		*apbasil;
+	char		*apkill;
+
+	char		*sdb_host;
+	char		*sdb_db;
+	char		*sdb_user;
+	char		*sdb_pass;
+	uint32_t	sdb_port;
+	uint32_t	slurm_debug_flags;
+} cray_config_t;
 
 extern cray_config_t *cray_conf;
 
