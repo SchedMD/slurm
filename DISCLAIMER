@@ -1,6 +1,7 @@
 SLURM was produced at Lawrence Livermore National Laboratory in collaboration
 with various organizations.
 
+Copyright (C) 2011 Trinity Centre for High Performance Computing
 Copyright (C) 2010-2011 SchedMD LLC
 Copyright (C) 2009 CEA/DAM/DIF
 Copyright (C) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
@@ -10,10 +11,13 @@ Copyright (C) 2007-2008 Red Hat, Inc.
 Copyright (C) 2007-2009 National University of Defense Technology, China
 Copyright (C) 2007-2011 Bull
 Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
+Copyright (C) 2004-2009, Marcus Holland-Moritz
 Copyright (C) 2002-2007 The Regents of the University of California
 Copyright (C) 2002-2003 Linux NetworX
 Copyright (C) 2002 University of Chicago
+Copyright (C) 2001, Paul Marquess
 Copyright (C) 2000 Markus Friedl
+Copyright (C) 1999, Kenneth Albanowski
 Copyright (C) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
 Copyright (C) 1996-2003 Maximum Entropy Data Consultants Ltd,
 Copyright (C) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
