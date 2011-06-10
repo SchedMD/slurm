@@ -41,6 +41,7 @@ int g_node_scaling = 1;
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_ARCH,
 	SORTID_BOOT_TIME,
 	SORTID_COLOR,
 	SORTID_CPUS,
@@ -110,6 +111,8 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_ARCH, "Arch", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE,
@@ -280,6 +283,10 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   tmp_cnt);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
+						 SORTID_ARCH),
+				   node_ptr->arch);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
 						 SORTID_FEATURES),
 				   node_ptr->features);
 	add_display_treestore_line(update, treestore, &iter,
@@ -355,6 +362,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, iter,
+			   SORTID_ARCH,      node_ptr->arch,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos
