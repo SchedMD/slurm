@@ -207,6 +207,9 @@ documents those changes that are of interest to users and admins.
  -- When restarting slurmctld with priority/basic, increment all job priorities
     so the highest job priority becomes TOP_PRIORITY.
 
+* Changes in SLURM 2.2.8
+========================
+
 * Changes in SLURM 2.2.7
 ========================
  -- Eliminate zombie process created if salloc exits with stopped child
