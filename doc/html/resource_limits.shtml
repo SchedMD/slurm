@@ -63,7 +63,8 @@ each association in the database.  By setting this option, the
   set to true.
 </li>
 </ul>
-(NOTE: The association is a combination of cluster, account,
+
+<p>(NOTE: The association is a combination of cluster, account,
 user names and optional partition name.)
 <br>
 Without AccountingStorageEnforce being set (the default behavior)
@@ -72,7 +73,7 @@ cluster.
 <br>
 It is advisable to run without the option 'limits' set when running a
 scheduler on top of SLURM, like Moab, that does not update in real
-time their limits per association.</li>
+time their limits per association.
 </p>
 
 <h2>Tools</h2>
@@ -108,51 +109,28 @@ specified then no limit will apply.</p>
 
 <p>Currently available scheduling policy options:</p>
 <ul>
-<li><b>Fairshare=</b> Used for determining priority.  Essentially
-  this is the amount of claim this association and it's children have
-  to the above system.</li>
+<li><b>Fairshare=</b> Integer value used for determining priority.
+  Essentially this is the amount of claim this association and it's
+  children have to the above system. Can also be the string "parent",
+  this means that the parent association is used for fairshare.
 </li>
 
-<!-- For future use
 <li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
   running from this association and its children.  If this limit is
   reached all jobs running in this group will be killed, and no new
   jobs will be allowed to run.
 </li>
--->
 
-<!-- For future use
-<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
-  running from this association.  If this limit is
-  reached the job will be killed will be allowed to run.
-</li>
--->
-
-<!-- For future use
 <li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
   time from jobs running from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
 </li>
--->
-
-<!-- For future use
-<li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
-  have from this association.  If this limit is reached the job will
-  be denied at submission.
-</li>
--->
 
 <li><b>GrpJobs=</b> The total number of jobs able to run at any given
   time from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after previous jobs complete from this group.
-</li>
-
-<li><b>MaxJobs=</b> The total number of jobs able to run at any given
-  time from this association.  If this limit is reached new jobs will
-  be queued but only allowed to run after previous jobs complete from
-  this association.
 </li>
 
 <li><b>GrpNodes=</b> The total count of nodes able to be used at any given
@@ -161,15 +139,31 @@ specified then no limit will apply.</p>
   run after resources have been relinquished from this group.
 </li>
 
-<li><b>MaxNodesPerJob=</b> The maximum size in nodes any given job can
-  have from this association.  If this limit is reached the job will
-  be denied at submission.
-</li>
-
 <li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
   to the system at any given time from this association and its children.  If
   this limit is reached new submission requests will be denied until
   previous jobs complete from this group.
+</li>
+
+<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
+  this group can run for.  If this limit is reached submission requests
+  will be denied.
+</li>
+
+<li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
+  have from this association.  If this limit is reached the job will
+  be denied at submission.
+</li>
+
+<li><b>MaxJobs=</b> The total number of jobs able to run at any given
+  time from this association.  If this limit is reached new jobs will
+  be queued but only allowed to run after previous jobs complete from
+  this association.
+</li>
+
+<li><b>MaxNodesPerJob=</b> The maximum size in nodes any given job can
+  have from this association.  If this limit is reached the job will
+  be denied at submission.
 </li>
 
 <li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
@@ -178,19 +172,22 @@ specified then no limit will apply.</p>
   previous jobs complete from this association.
 </li>
 
-<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
-  this group can run for.  Submitting jobs that specify a wall clock
-  time limit that exceeds this limit will be denied.</li>
-
 <li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
-  submitted to this association can run for.  Submitting jobs that
-  specify a wall clock time limit that exceeds this limit will be
-  denied.
+  submitted to this association can run for.  If this limit is reached
+  the job will be denied at submission.
 </li>
 
 <li><b>QOS=</b> comma separated list of QOS's this association is
   able to run.
 </li>
+
+<!-- For future use
+<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
+  running from this association.  If this limit is
+  reached the job will be killed will be allowed to run.
+</li>
+-->
+
 </ul>
 
 <p>The <b>MaxNodes</b> and <b>MaxWall</b> options already exist in
@@ -205,6 +202,6 @@ data maintained in the SLURM database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 9 October 2009</p>
+<p style="text-align: center;">Last modified 10 June 2011</p>
 
 </ul></body></html>

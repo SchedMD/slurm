@@ -425,7 +425,7 @@ static int mvapich_poll_internal (struct mvapich_poll *mp)
 {
 	int n;
 	while ((n = poll (mp->fds, mp->nfds, startup_timeout (mp->st))) < 0) {
-		if (errno != EINTR && errno != EAGAIN)
+		if ((errno != EINTR) && (errno != EAGAIN))
 			return (-1);
 	}
 	return (n);
@@ -480,9 +480,10 @@ again:
 
 		mvapich_debug3 ("mvapich_poll_next (nfds=%d, timeout=%d)",
 				mp->nfds, startup_timeout (st));
-		if ((rc = mvapich_poll_internal (mp)) < 0)
+		if ((rc = mvapich_poll_internal (mp)) < 0) {
 			mvapich_terminate_job (st, "mvapich_poll_next: %m");
-		else if (rc == 0) {
+			return (NULL);
+		} else if (rc == 0) {
 			/*
 			 *  If we timed out, then report all tasks that we were
 			 *   still waiting for.

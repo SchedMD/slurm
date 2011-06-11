@@ -1,10 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Accounting</h1>
-
-<p>NOTE: This documents accounting features available in SLURM version
-1.3, which are far more extensive than those available in previous
-releases.</p>
+<h1>Accounting and Resource Limits</h1>
 
 <p>SLURM can be configured to collect accounting information for every
 job and job step executed.
@@ -386,7 +382,7 @@ make sure the StorageUser is given permissions in MySQL to do so.
 As the <i>mysql</i> user grant privileges to that user using a
 command such as:</p>
 
-<p>GRANT ALL ON StorageLoc.* TO 'StorageUser'@'StorageHost';
+<p>GRANT ALL ON StorageLoc.* TO 'StorageUser'@'StorageHost';<br>
 (The ticks are needed)</p>
 
 <p>(You need to be root to do this. Also in the info for password
@@ -394,7 +390,7 @@ usage there is a line that starts with '->'. This a continuation
 prompt since the previous mysql statement did not end with a ';'. It
 assumes that you wish to input more info.)</p>
 
-<p>live example:</p>
+<p>Live example:</p>
 
 <pre>
 mysql@snowflake:~$ mysql
@@ -664,8 +660,10 @@ If a user has a limit set SLURM will read in those,
 if not we will refer to the account associated with the job.
 If the account doesn't have the limit set we will refer to
 the cluster's limits.
-If the cluster doesn't have the limit set no limit will be enforced.
-<p>All of the above entities can include limits as described below...
+If the cluster doesn't have the limit set no limit will be enforced.</p>
+
+<p>All of the above entities can include limits as described below and
+in the <a href="resource_limits.html">Resource Limits</a> document.</p>
 
 <ul>
 
@@ -673,7 +671,6 @@ If the cluster doesn't have the limit set no limit will be enforced.
   Essentially this is the amount of claim this association and it's
   children have to the above system. Can also be the string "parent",
   this means that the parent association is used for fairshare.
-  </li>
 </li>
 
 <li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
@@ -780,7 +777,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 27 January 2010</p>
+<p style="text-align: center;">Last modified 10 June 2010</p>
 
 <!--#include virtual="footer.txt"-->
 

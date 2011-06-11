@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "March 2011" "slurm.conf 2.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "June 2011" "slurm.conf 2.3" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1810,29 +1810,30 @@ See \fBTaskProlog\fR for execution order details.
 \fBTaskPlugin\fR
 Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific
-processors).
-Acceptable values include :
+processors). More than one task plugin can be specified in a comma separated
+list. The prefix of "task/" is optional. Acceptable values include:
 .RS
-.TP 20
-\fBtask/none\fR
-for systems requiring no special handling
-.TP
-\fBtask/cgroup\fR
-to enable resource containment using linux control cgroups.
-NOTE: see "man cgroup.conf" for configuration details
-.TP
+.TP 15
 \fBtask/affinity\fR
-"task/affinity" to enable the \-\-cpu_bind and/or \-\-mem_bind
-srun options.
-
-.RE
-The default value is "task/none".
+enables resource containment using CPUSETs.
+This enables the \-\-cpu_bind and/or \-\-mem_bind srun options.
 If you use "task/affinity" and encounter problems, it may be due to
 the variety of system calls used to implement task affinity on
 different operating systems.
-If that is the case, you may want to use Portable Linux
+If that is the case, you may want to install Portable Linux
 Process Affinity (PLPA, see http://www.open-mpi.org/software/plpa),
 which is supported by SLURM.
+.TP
+\fBtask/cgroup\fR
+enables resource containment using Linux control cgroups.
+This enables the \-\-cpu_bind and/or \-\-mem_bind srun options.
+NOTE: see "man cgroup.conf" for configuration details.
+.TP
+\fBtask/none\fR
+for systems requiring no special handling of user tasks.
+Lacks support for the \-\-cpu_bind and/or \-\-mem_bind srun options.
+The default value is "task/none".
+.RE
 
 .TP
 \fBTaskPluginParam\fR

@@ -1,48 +1,111 @@
-Copyright (C) 2008 Lawrence Livermore National Security and Hewlett-Packard.
-Copyright (C) 2002-2007 The Regents of the University of California, 
-   Linux NetworX, Hewlett-Packard and Bull.
-Produced at Lawrence Livermore National Laboratory, Hewlett-Packard, 
-Bull, Linux NetworX, and others.
+SLURM was produced at Lawrence Livermore National Laboratory in collaboration
+with various organizations.
+
+Copyright (C) 2011 Trinity Centre for High Performance Computing
+Copyright (C) 2010-2011 SchedMD LLC
+Copyright (C) 2009 CEA/DAM/DIF
+Copyright (C) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
+Copyright (C) 2008-2011 Lawrence Livermore National Security
+Copyright (C) 2008 Vijay Ramasubramanian
+Copyright (C) 2007-2008 Red Hat, Inc.
+Copyright (C) 2007-2009 National University of Defense Technology, China
+Copyright (C) 2007-2011 Bull
+Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
+Copyright (C) 2004-2009, Marcus Holland-Moritz
+Copyright (C) 2002-2007 The Regents of the University of California
+Copyright (C) 2002-2003 Linux NetworX
+Copyright (C) 2002 University of Chicago
+Copyright (C) 2001, Paul Marquess
+Copyright (C) 2000 Markus Friedl
+Copyright (C) 1999, Kenneth Albanowski
+Copyright (C) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
+Copyright (C) 1996-2003 Maximum Entropy Data Consultants Ltd,
+Copyright (C) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
+Copyright (C) 1989-1994, 1996-1999, 2001 Free Software Foundation, Inc.
+Many other organizations contributed code and/or documentation without
+including a copyright notice.
 
 Written by:
-Don Albert <Don.Albert(at)bull.com>
-Ernest Artiaga <ernest.artiaga(at)bsc.es>
-Danny Auble <auble1(at)llnl.gov>
-Susanne Balle <susanne.balle(at)hp.com>
-Anton Blanchard <anton(at)samba.org>
-Hongjia Cao <hgcao(at)nudt.edu.cn>
-Chuck Clouston <Chuck.Clouston(at)bull.com>
-Daniel Christians <Daniel.Christians(at)hp.com>
-Gilles Civario <gilles.civario(at)bull.net>
-Chris Dunlap <cdunlap(at)llnl.gov>
-Joey Ekstrom <ekstrom1(at)llnl.gov>
-Jim Garlick <garlick(at)llnl.gov>
-Mark Grondona <mgrondona(at)llnl.gov>
-Christopher Holmes <cholmes(at)hp.com>
-Takao Hatazaki <takao.hatazaki(at)hp.com>
-Nathan Huff <nhuff(at)geekshanty.com>
-David Jackson <jacksond(at)clusterresources.com>
-Greg Johnson <gjohnson(at)lanl.gov>
-Morris Jette <jette1(at)llnl.gov>
-Jason King <king49(at)llnl.gov>
-Nancy Kritkausky <Nancy.Kritkausky(at)bull.com>
-Bernard Li <bli(at)bcgsc.ca>
-Puenlap Lee <Puen-Lap.Lee(at)bull.com>
-Donna Mecozzi <mecozzi1(at)llnl.gov>
-Chris Morrone <morrone2(at)llnl.gov>
-Bryan O'Sullivan <bos(at)pathscale.com>
-Gennaro Oliva <oliva.g(at)na.icar.cnr.it>
-Daniel Palermo <dan.palermo(at)hp.com>
-Dan Phung <phung4(at)llnl.gov>
-Ashley Pitman <ashley(at)quadrics.com>
-Andy Riebs <Andy.Riebs(at)hp.com>
-Asier Roa <asier.roa(at)bsc.es>
-Federico Sacerdoti <Federico.Sacerdoti(at)deshaw.com>
-Jeff Squyres <jsquyres(at)lam-mpi.org>
-Keven Tew <tew1(at)llnl.gov>
-Prashanth Tamraparni <prashanth.tamraparni(at)hp.com>
-Jay Windley <jwindley(at)lnxi.com>
-Ann-Marie Wunderlin<Anne-Marie.Wunderlin(at)Bull.com>
+Amjad Majid Ali (Colorado State University)
+Par Andersson (National Supercomputer Centre, Sweden)
+Don Albert (Bull)
+Ernest Artiaga (Barcelona Supercomputer Center, Spain)
+Danny Auble (LLNL, SchedMD LLC)
+Susanne Balle (HP)
+Anton Blanchard (Samba)
+Janne Blomqvist (Aalto University, Finland)
+David Bremer (LLNL)
+Jon Bringhurst (LANL)
+Bill Brophy (Bull)
+Hongjia Cao (National University of Defense Techonogy, China)
+Daniel Christians (HP)
+Gilles Civario (Bull)
+Chuck Clouston (Bull)
+Joseph Donaghy (LLNL)
+Chris Dunlap (LLNL)
+Joey Ekstrom (LLNL/Bringham Young University)
+Josh England (TGS Management Corporation)
+Kent Engstrom (National Supercomputer Centre, Sweden)
+Jim Garlick (LLNL)
+Didier Gazen (Laboratoire d'Aerologie, France)
+Raphael Geissert (Debian)
+Yiannis Georgiou (Bull)
+Andriy Grytsenko (Massive Solutions Limited, Ukraine)
+Mark Grondona (LLNL)
+Takao Hatazaki (HP, Japan)
+Matthieu Hautreux (CEA, France)
+Chris Holmes (HP)
+David Hoppner
+Nathan Huff (North Dakota State University)
+David Jackson (Adaptive Computing)
+Morris Jette (LLNL, SchedMD LLC)
+Klaus Joas (University Karlsruhe, Germany)
+Greg Johnson (LANL)
+Jason King (LLNL)
+Aaron Knister (Environmental Protection Agency)
+Nancy Kritkausky (Bull)
+Roman Kurakin (Institute of Natural Science and Ecology, Russia)
+Eric Lin (Bull)
+Don Lipari (LLNL)
+Puenlap Lee (Bull)
+Dennis Leepow
+Bernard Li (Genome Sciences Centre, Canada)
+Donald Lipari (LLNL)
+Steven McDougall (SiCortex)
+Donna Mecozzi (LLNL)
+Bjorn-Helge Mevik (University of Oslo, Norway)
+Chris Morrone (LLNL)
+Pere Munt (Barcelona Supercomputer Center, Spain)
+Michal Novotny (Masaryk University, Czech Republic)
+Bryan O'Sullivan (Pathscale)
+Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)
+Alejandro Lucero Palau (Barcelona Supercomputer Center, Spain)
+Daniel Palermo (HP)
+Dan Phung (LLNL/Columbia University)
+Ashley Pittman (Quadrics, UK)
+Vijay Ramasubramanian (University of Maryland)
+Krishnakumar Ravi[KK] (HP)
+Petter Reinholdtsen (University of Oslo, Norway)
+Gerrit Renker (Swiss National Computer Centre)
+Andy Riebs (HP)
+Asier Roa (Barcelona Supercomputer Center, Spain)
+Miguel Ros (Barcelona Supercomputer Center, Spain)
+Beat Rubischon (DALCO AG, Switzerland)
+Dan Rusak (Bull)
+Eygene Ryabinkin (Kurchatov Institute, Russia)
+Federico Sacerdoti (D.E. Shaw)
+Rod Schultz (Bull)
+Tyler Strickland (University of Florida)
+Jeff Squyres (LAM MPI)
+Prashanth Tamraparni (HP, India)
+Jimmy Tang (Trinity College, Ireland)
+Kevin Tew (LLNL/Bringham Young University)
+Adam Todorski (Rensselaer Polytechnic Institute)
+Nathan Weeks (Iowa State University)
+Tim Wickberg (Rensselaer Polytechnic Institute)
+Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)
+Jay Windley (Linux NetworX)
+Anne-Marie Wunderlin (Bull)
 
 CODE-OCEC-09-009. All rights reserved.
 
