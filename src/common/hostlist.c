@@ -67,6 +67,7 @@
 #include <ctype.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <slurm/slurmdb.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -370,7 +371,7 @@ static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
 static int           hostrange_hn_within(hostrange_t, hostname_t);
 static size_t        hostrange_to_string(hostrange_t hr, size_t, char *,
 					 char *, int);
-static size_t        hostrange_numstr(hostrange_t, size_t, char *);
+static size_t        hostrange_numstr(hostrange_t, size_t, char *, int);
 
 static hostlist_t  hostlist_new(void);
 static hostlist_t _hostlist_create_bracketed(const char *, char *,
@@ -1210,9 +1211,10 @@ truncated:
 }
 
 /* Place the string representation of the numeric part of hostrange into buf
- * writing at most n chars including NUL termination.
+ * writing at most n chars including NUL termination. The width argument
+ * controls the number of leading zeroes.
  */
-static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
+static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf, int width)
 {
 	int len = 0;
 	int dims = slurmdb_setup_cluster_name_dims();
@@ -1225,6 +1227,9 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	if (n <= dims)
 		return -1;
 
+	if (width < 0 || width > hr->width)
+		width = hr->width;
+
 	if ((dims > 1) && (hr->width == dims)) {
 		int i2 = 0;
 		int coord[dims];
@@ -1235,7 +1240,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 			buf[len++] = alpha_num[coord[i2++]];
 		buf[len] = '\0';
 	} else {
-		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
+		len = snprintf(buf, n, "%0*lu", hr->width - width, hr->lo);
 		if (len < 0 || len >= n)
 			return -1;
 	}
@@ -1255,7 +1260,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 			buf[len] = '\0';
 		} else {
 			int len2 = snprintf(buf + len, n - len, "-%0*lu",
-					    hr->width, hr->hi);
+					    hr->width - width, hr->hi);
 			if (len2 < 0 || (len += len2) >= n)
 				return -1;
 		}
@@ -2588,8 +2593,33 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	int i = *start;
 	int m, len = 0;
 	int bracket_needed = _is_bracket_needed(hl, i);
+	int zeropad = 0;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	len = snprintf(buf, n, "%s", hr[i]->prefix);
+	if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+		/*
+		 * Find minimum common zero-padding prefix. Cray has nid%05u
+		 * syntax, factoring this out makes host strings much shorter.
+		 */
+		zeropad = _zero_padded(hr[i]->hi, hr[i]->width);
+
+		/* Find the minimum common zero-padding prefix. */
+		for (m = i + 1; zeropad && m < hl->nranges; m++) {
+			int pad = 0;
+
+			if (!hostrange_within_range(hr[m], hr[m-1]))
+				break;
+			if (hl->hr[m]->width == hl->hr[m-1]->width)
+				pad = _zero_padded(hr[m]->hi, hr[m]->width);
+			if (pad < zeropad)
+				zeropad = pad;
+		}
+	}
+
+	if (zeropad)
+		len = snprintf(buf, n, "%s%0*u", hr[i]->prefix, zeropad, 0);
+	else
+		len = snprintf(buf, n, "%s", hr[i]->prefix);
 	if (len < 0 || len + 4 >= n)	/* min: '[', <digit>, ']', '\0' */
 		return n;		/* truncated, buffer filled */
 
@@ -2599,7 +2629,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	do {
 		if (i > *start)
 			buf[len++] = ',';
-		m = hostrange_numstr(hr[i], n - len, buf + len);
+		m = hostrange_numstr(hr[i], n - len, buf + len, zeropad);
 		if (m < 0 || (len += m) >= n - 1)	/* insufficient space */
 			return n;
 	} while (++i < hl->nranges && hostrange_within_range(hr[i], hr[i-1]));
