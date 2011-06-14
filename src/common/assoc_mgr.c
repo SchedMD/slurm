@@ -1649,8 +1649,10 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->max_cpu_mins_pj = found_qos->max_cpu_mins_pj;
 	qos->max_cpu_run_mins_pu = found_qos->max_cpu_run_mins_pu;
 	qos->max_cpus_pj     = found_qos->max_cpus_pj;
+	qos->max_cpus_pu     = found_qos->max_cpus_pu;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
 	qos->max_nodes_pj    = found_qos->max_nodes_pj;
+	qos->max_nodes_pu    = found_qos->max_nodes_pu;
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
 
@@ -2911,11 +2913,19 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 				update_jobs = true;
 				rec->max_cpus_pj = object->max_cpus_pj;
 			}
+			if (object->max_cpus_pu != NO_VAL) {
+				update_jobs = true;
+				rec->max_cpus_pu = object->max_cpus_pu;
+			}
 			if (object->max_jobs_pu != NO_VAL)
 				rec->max_jobs_pu = object->max_jobs_pu;
 			if (object->max_nodes_pj != NO_VAL) {
 				update_jobs = true;
 				rec->max_nodes_pj = object->max_nodes_pj;
+			}
+			if (object->max_nodes_pu != NO_VAL) {
+				update_jobs = true;
+				rec->max_nodes_pu = object->max_nodes_pu;
 			}
 			if (object->max_submit_jobs_pu != NO_VAL)
 				rec->max_submit_jobs_pu =

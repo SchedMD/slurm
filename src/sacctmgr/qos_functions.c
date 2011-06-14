@@ -293,12 +293,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				       &qos->grp_cpu_mins,
 				       "GrpCPUMins") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCpus",
+		} else if (!strncasecmp (argv[i], "GrpCPUs",
 					 MAX(command_len, 7))) {
 			if(!qos)
 				continue;
 			if (get_uint(argv[i]+end, &qos->grp_cpus,
-			    "GrpCpus") == SLURM_SUCCESS)
+			    "GrpCPUs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpJobs",
 					 MAX(command_len, 4))) {
@@ -343,12 +343,19 @@ static int _set_rec(int *start, int argc, char *argv[],
 				       &qos->max_cpu_mins_pj,
 				       "MaxCPUMins") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCpusPerJob",
+		} else if (!strncasecmp (argv[i], "MaxCPUsPerJob",
 					 MAX(command_len, 7))) {
 			if(!qos)
 				continue;
 			if (get_uint(argv[i]+end, &qos->max_cpus_pj,
-			    "MaxCpus") == SLURM_SUCCESS)
+			    "MaxCPUs") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxCPUsPerUser",
+					 MAX(command_len, 11))) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->max_cpus_pu,
+			    "MaxCPUsPerUser") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxJobsPerUser",
 					 MAX(command_len, 4))) {
@@ -364,6 +371,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end,
 			    &qos->max_nodes_pj,
 			    "MaxNodes") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxNodesPerUser",
+					 MAX(command_len, 8))) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end,
+			    &qos->max_nodes_pu,
+			    "MaxNodesPerUser") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxSubmitJobsPerUser",
 					 MAX(command_len, 4))) {
@@ -600,8 +615,10 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 
 			qos->max_cpu_mins_pj = start_qos->max_cpu_mins_pj;
 			qos->max_cpus_pj = start_qos->max_cpus_pj;
+			qos->max_cpus_pu = start_qos->max_cpus_pu;
 			qos->max_jobs_pu = start_qos->max_jobs_pu;
 			qos->max_nodes_pj = start_qos->max_nodes_pj;
+			qos->max_nodes_pu = start_qos->max_nodes_pu;
 			qos->max_submit_jobs_pu = start_qos->max_submit_jobs_pu;
 			qos->max_wall_pj = start_qos->max_wall_pj;
 
@@ -803,6 +820,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 						     qos->max_cpus_pj,
 						     (curr_inx == field_count));
 				break;
+			case PRINT_MAXCU:
+				field->print_routine(field,
+						     qos->max_cpus_pu,
+						     (curr_inx == field_count));
+				break;
 			case PRINT_MAXJ:
 				field->print_routine(field,
 						     qos->max_jobs_pu,
@@ -811,6 +833,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			case PRINT_MAXN:
 				field->print_routine(field,
 						     qos->max_nodes_pj,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_MAXNU:
+				field->print_routine(field,
+						     qos->max_nodes_pu,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXS:

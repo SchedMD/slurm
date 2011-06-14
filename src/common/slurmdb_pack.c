@@ -371,7 +371,24 @@ extern void slurmdb_pack_used_limits(void *in, uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_used_limits_t *object = (slurmdb_used_limits_t *)in;
 
-	if(rpc_version >= 8) {
+	if(rpc_version >= 9) {
+		if(!object) {
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			return;
+		}
+
+		pack64(object->cpu_run_mins, buffer);
+		pack32(object->cpus, buffer);
+		pack32(object->jobs, buffer);
+		pack32(object->nodes, buffer);
+		pack32(object->submit_jobs, buffer);
+		pack32(object->uid, buffer);
+	} else if (rpc_version >= 8) {
 		if(!object) {
 			pack64(0, buffer);
 			pack32(0, buffer);
@@ -406,7 +423,14 @@ extern int slurmdb_unpack_used_limits(void **object,
 
 	*object = (void *)object_ptr;
 
-	if(rpc_version >= 8) {
+	if (rpc_version >= 9) {
+		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
+		safe_unpack32(&object_ptr->cpus, buffer);
+		safe_unpack32(&object_ptr->jobs, buffer);
+		safe_unpack32(&object_ptr->nodes, buffer);
+		safe_unpack32(&object_ptr->submit_jobs, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+	} else if (rpc_version >= 8) {
 		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
 		safe_unpack32(&object_ptr->jobs, buffer);
 		safe_unpack32(&object_ptr->submit_jobs, buffer);
@@ -1313,6 +1337,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
 			packnull(buffer);
 
@@ -1343,8 +1369,10 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack64(object->max_cpu_mins_pj, buffer);
 		pack64(object->max_cpu_run_mins_pu, buffer);
 		pack32(object->max_cpus_pj, buffer);
+		pack32(object->max_cpus_pu, buffer);
 		pack32(object->max_jobs_pu, buffer);
 		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_nodes_pu, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
 		pack32(object->max_wall_pj, buffer);
 
@@ -1552,8 +1580,10 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
 		safe_unpack64(&object_ptr->max_cpu_run_mins_pu, buffer);
 		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 

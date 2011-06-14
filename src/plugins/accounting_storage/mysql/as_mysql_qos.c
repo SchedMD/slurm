@@ -112,10 +112,14 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
 		if (qos->max_cpus_pj == NO_VAL)
 			qos->max_cpus_pj = INFINITE;
+		if (qos->max_cpus_pu == NO_VAL)
+			qos->max_cpus_pu = INFINITE;
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
 		if (qos->max_nodes_pj == NO_VAL)
 			qos->max_nodes_pj = INFINITE;
+		if (qos->max_nodes_pu == NO_VAL)
+			qos->max_nodes_pu = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
@@ -286,6 +290,17 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", max_cpus_per_job=%u", qos->max_cpus_pj);
 	}
 
+	if (qos->max_cpus_pu == INFINITE) {
+		xstrcat(*cols, ", max_cpus_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpus_per_user=NULL");
+	} else if ((qos->max_cpus_pu != NO_VAL)
+		   && ((int32_t)qos->max_cpus_pu >= 0)) {
+		xstrcat(*cols, ", max_cpus_per_user");
+		xstrfmtcat(*vals, ", %u", qos->max_cpus_pu);
+		xstrfmtcat(*extra, ", max_cpus_per_user=%u", qos->max_cpus_pu);
+	}
+
 	if (qos->max_jobs_pu == INFINITE) {
 		xstrcat(*cols, ", max_jobs_per_user");
 		xstrcat(*vals, ", NULL");
@@ -307,6 +322,18 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*vals, ", %u", qos->max_nodes_pj);
 		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
 			   qos->max_nodes_pj);
+	}
+
+	if (qos->max_nodes_pu == INFINITE) {
+		xstrcat(*cols, ", max_nodes_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_nodes_per_user=NULL");
+	} else if ((qos->max_nodes_pu != NO_VAL)
+		   && ((int32_t)qos->max_nodes_pu >= 0)) {
+		xstrcat(*cols, ", max_nodes_per_user");
+		xstrfmtcat(*vals, ", %u", qos->max_nodes_pu);
+		xstrfmtcat(*extra, ", max_nodes_per_user=%u",
+			   qos->max_nodes_pu);
 	}
 
 	if (qos->max_submit_jobs_pu == INFINITE) {
@@ -660,10 +687,12 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->grp_wall = qos->grp_wall;
 
 		qos_rec->max_cpus_pj = qos->max_cpus_pj;
+		qos_rec->max_cpus_pu = qos->max_cpus_pu;
 		qos_rec->max_cpu_mins_pj = qos->max_cpu_mins_pj;
 		qos_rec->max_cpu_run_mins_pu = qos->max_cpu_run_mins_pu;
 		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
 		qos_rec->max_nodes_pj = qos->max_nodes_pj;
+		qos_rec->max_nodes_pu = qos->max_nodes_pu;
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
 
@@ -944,8 +973,10 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_cpu_mins_per_job",
 		"max_cpu_run_mins_per_user",
 		"max_cpus_per_job",
+		"max_cpus_per_user",
 		"max_jobs_per_user",
 		"max_nodes_per_job",
+		"max_nodes_per_user",
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_job",
 		"preempt",
@@ -970,8 +1001,10 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_MCMPJ,
 		QOS_REQ_MCRM,
 		QOS_REQ_MCPJ,
+		QOS_REQ_MCPU,
 		QOS_REQ_MJPU,
 		QOS_REQ_MNPJ,
+		QOS_REQ_MNPU,
 		QOS_REQ_MSJPU,
 		QOS_REQ_MWPJ,
 		QOS_REQ_PREE,
@@ -1125,6 +1158,10 @@ empty:
 			qos->max_cpus_pj = slurm_atoul(row[QOS_REQ_MCPJ]);
 		else
 			qos->max_cpus_pj = INFINITE;
+		if (row[QOS_REQ_MCPU])
+			qos->max_cpus_pu = slurm_atoul(row[QOS_REQ_MCPU]);
+		else
+			qos->max_cpus_pu = INFINITE;
 		if (row[QOS_REQ_MJPU])
 			qos->max_jobs_pu = slurm_atoul(row[QOS_REQ_MJPU]);
 		else
@@ -1133,6 +1170,10 @@ empty:
 			qos->max_nodes_pj = slurm_atoul(row[QOS_REQ_MNPJ]);
 		else
 			qos->max_nodes_pj = INFINITE;
+		if (row[QOS_REQ_MNPU])
+			qos->max_nodes_pu = slurm_atoul(row[QOS_REQ_MNPU]);
+		else
+			qos->max_nodes_pu = INFINITE;
 		if (row[QOS_REQ_MSJPU])
 			qos->max_submit_jobs_pu =
 				slurm_atoul(row[QOS_REQ_MSJPU]);

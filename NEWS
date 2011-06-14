@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
     infinite loop under rare circumstances.
  -- Add support for multiple task plugins. Patch from Andriy Grytsenko (Massive
     Solutions Limited).
+ -- Addition of per-user node/cpu limits for QOS's. Patch from Aaron Knister,
+    UMBC.
 
 * Changes in SLURM 2.3.0.pre5
 =============================

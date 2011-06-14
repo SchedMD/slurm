@@ -205,10 +205,14 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
 		if(qos->max_cpus_pj == NO_VAL)
 			qos->max_cpus_pj = INFINITE;
+		if(qos->max_cpus_pu == NO_VAL)
+			qos->max_cpus_pu = INFINITE;
 		if(qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
 		if(qos->max_nodes_pj == NO_VAL)
 			qos->max_nodes_pj = INFINITE;
+		if(qos->max_nodes_pu == NO_VAL)
+			qos->max_nodes_pu = INFINITE;
 		if(qos->max_submit_jobs_pu == NO_VAL)
 			qos->max_submit_jobs_pu = INFINITE;
 		if(qos->max_wall_pj == NO_VAL)

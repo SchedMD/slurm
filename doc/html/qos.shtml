@@ -78,10 +78,12 @@ QOS</P>
 <LI><b>MaxCPUMinsPerJob</b> Maximum number of CPU*minutes any job with this QOS can run.
 <LI><b>GrpCpus</b> Maximum number of CPU's all jobs with this QOS can be allocated.
 <LI><b>MaxCpusPerJob</b> Maximum number of CPU's any job with this QOS can be allocated.
+<LI><b>MaxCpusPerUser</b> Maximum number of CPU's any user with this QOS can be allocated.
 <LI><b>GrpJobs</b> Maximum number of jobs that can run with this QOS.
 <LI><b>MaxJobsPerUser</b> Maximum number of jobs a user can run with this QOS.
 <LI><b>GrpNodes</b> Maximum number of nodes that can be allocated to all jobs with this QOS.
 <LI><b>MaxNodesPerJob</b> Maximum number of nodes that can be allocated to any job with this QOS.
+<LI><b>MaxNodesPerUser</b> Maximum number of nodes that can be allocated to any user with this QOS.
 <LI><b>GrpSubmitJobs</b> Maximum number of jobs with this QOS that can be in the system (no matter what state).
 <LI><b>MaxSubmitJobsPerUser</b> Maximum number of jobs with this QOS that can be in the system.
 <LI><b>GrpWall</b> Wall clock limit for all jobs running with this QOS.

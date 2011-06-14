@@ -344,6 +344,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxCPUs");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MaxCPUsPerUser", object,
+				MAX(command_len, 11))) {
+		field->type = PRINT_MAXCU;
+		field->name = xstrdup("MaxCPUsPerUser");
+		field->len = 14;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxJobs", object, MAX(command_len, 4))) {
 		field->type = PRINT_MAXJ;
 		field->name = xstrdup("MaxJobs");
@@ -354,6 +360,12 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXN;
 		field->name = xstrdup("MaxNodes");
 		field->len = 8;
+		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MaxNodesPerUser", object,
+				MAX(command_len, 12))) {
+		field->type = PRINT_MAXNU;
+		field->name = xstrdup("MaxNodesPerUser");
+		field->len = 15;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxSubmitJobs", object, MAX(command_len, 4))) {
 		field->type = PRINT_MAXS;
@@ -1440,6 +1452,11 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	else if (qos->max_cpus_pj != NO_VAL)
 		printf("  MaxCPUs        = %u\n", qos->max_cpus_pj);
 
+	if (qos->max_cpus_pu == INFINITE)
+		printf("  MaxCPUsPerUser        = NONE\n");
+	else if (qos->max_cpus_pu != NO_VAL)
+		printf("  MaxCPUsPerUser        = %u\n", qos->max_cpus_pu);
+
 	if (qos->max_jobs_pu == INFINITE)
 		printf("  MaxJobs        = NONE\n");
 	else if (qos->max_jobs_pu != NO_VAL)
@@ -1449,6 +1466,11 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  MaxNodes       = NONE\n");
 	else if (qos->max_nodes_pj != NO_VAL)
 		printf("  MaxNodes       = %u\n", qos->max_nodes_pj);
+
+	if (qos->max_nodes_pu == INFINITE)
+		printf("  MaxNodesPerUser       = NONE\n");
+	else if (qos->max_nodes_pu != NO_VAL)
+		printf("  MaxNodesPerUser       = %u\n", qos->max_nodes_pu);
 
 	if (qos->max_submit_jobs_pu == INFINITE)
 		printf("  MaxSubmitJobs  = NONE\n");

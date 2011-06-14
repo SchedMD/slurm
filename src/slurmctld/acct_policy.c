@@ -57,6 +57,24 @@ enum {
 	ACCT_POLICY_JOB_FINI
 };
 
+static slurmdb_used_limits_t *_get_used_limits_for_user(
+	List user_limit_list, uint32_t user_id)
+{
+	slurmdb_used_limits_t *used_limits = NULL;
+	ListIterator itr = NULL;
+
+	if (!user_limit_list)
+		return NULL;
+
+	itr = list_iterator_create(user_limit_list);
+	while ((used_limits = list_next(itr))) {
+		if (used_limits->uid == user_id)
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	return used_limits;
+}
 static void _cancel_job(struct job_record *job_ptr)
 {
 	time_t now = time(NULL);
@@ -114,21 +132,17 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 
 	assoc_mgr_lock(&locks);
 	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
-		ListIterator itr = NULL;
 		slurmdb_qos_rec_t *qos_ptr = NULL;
 		slurmdb_used_limits_t *used_limits = NULL;
 
 		qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		if(!qos_ptr->usage->user_limit_list)
+		if (!qos_ptr->usage->user_limit_list)
 			qos_ptr->usage->user_limit_list =
 				list_create(slurmdb_destroy_used_limits);
-		itr = list_iterator_create(qos_ptr->usage->user_limit_list);
-		while((used_limits = list_next(itr))) {
-			if(used_limits->uid == job_ptr->user_id)
-				break;
-		}
-		list_iterator_destroy(itr);
-		if(!used_limits) {
+		used_limits = _get_used_limits_for_user(
+			qos_ptr->usage->user_limit_list,
+			job_ptr->user_id);
+		if (!used_limits) {
 			used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
 			used_limits->uid = job_ptr->user_id;
 			list_append(qos_ptr->usage->user_limit_list,
@@ -160,34 +174,58 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			qos_ptr->usage->grp_used_cpus += job_ptr->total_cpus;
 			qos_ptr->usage->grp_used_nodes += job_ptr->node_cnt;
 			used_limits->jobs++;
+			used_limits->cpus += job_ptr->total_cpus;
+			used_limits->nodes += job_ptr->node_cnt;
 			break;
 		case ACCT_POLICY_JOB_FINI:
-			if(qos_ptr->usage->grp_used_jobs)
-				qos_ptr->usage->grp_used_jobs--;
-			else
+
+			qos_ptr->usage->grp_used_jobs--;
+			if ((int32_t)qos_ptr->usage->grp_used_jobs < 0) {
+				qos_ptr->usage->grp_used_jobs = 0;
 				debug2("acct_policy_job_fini: used_jobs "
 				       "underflow for qos %s", qos_ptr->name);
+			}
 
 			qos_ptr->usage->grp_used_cpus -= job_ptr->total_cpus;
-			if((int32_t)qos_ptr->usage->grp_used_cpus < 0) {
+			if ((int32_t)qos_ptr->usage->grp_used_cpus < 0) {
 				qos_ptr->usage->grp_used_cpus = 0;
 				debug2("acct_policy_job_fini: grp_used_cpus "
 				       "underflow for qos %s", qos_ptr->name);
 			}
 
 			qos_ptr->usage->grp_used_nodes -= job_ptr->node_cnt;
-			if((int32_t)qos_ptr->usage->grp_used_nodes < 0) {
+			if ((int32_t)qos_ptr->usage->grp_used_nodes < 0) {
 				qos_ptr->usage->grp_used_nodes = 0;
 				debug2("acct_policy_job_fini: grp_used_nodes "
 				       "underflow for qos %s", qos_ptr->name);
 			}
 
-			if(used_limits->jobs)
-				used_limits->jobs--;
-			else
+			used_limits->cpus -= job_ptr->total_cpus;
+			if ((int32_t)used_limits->cpus < 0) {
+				used_limits->cpus = 0;
+				debug2("acct_policy_job_fini: "
+				       "used_limits->cpus "
+				       "underflow for qos %s user %d",
+				       qos_ptr->name, used_limits->uid);
+			}
+
+			used_limits->jobs--;
+			if ((int32_t)used_limits->jobs < 0) {
+				used_limits->jobs = 0;
 				debug2("acct_policy_job_fini: used_jobs "
 				       "underflow for qos %s user %d",
 				       qos_ptr->name, used_limits->uid);
+			}
+
+			used_limits->nodes -= job_ptr->node_cnt;
+			if ((int32_t)used_limits->nodes < 0) {
+				used_limits->nodes = 0;
+				debug2("acct_policy_job_fini: "
+				       "used_limits->nodes"
+				       "underflow for qos %s user %d",
+				       qos_ptr->name, used_limits->uid);
+			}
+
 			break;
 		default:
 			error("acct_policy: qos unknown type %d", type);
@@ -299,6 +337,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	int parent = 0;
 	char *user_name = NULL;
 	bool rc = true;
+	uint32_t qos_max_cpus_limit = INFINITE;
+	uint32_t qos_max_nodes_limit = INFINITE;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -315,13 +355,29 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 	assoc_mgr_lock(&locks);
 	if (qos_ptr) {
+		slurmdb_used_limits_t *used_limits = NULL;
+
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_cpu_mins.
 		 */
+		qos_max_cpus_limit =
+			MIN(qos_ptr->grp_cpus, qos_ptr->max_cpus_pu);
 		if (((*limit_set_max_cpus) == ADMIN_SET_LIMIT)
-		    || (qos_ptr->grp_cpus == INFINITE)
+		    || (qos_max_cpus_limit == INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
 			/* no need to check/set */
+		} else if ((job_desc->min_cpus != NO_VAL)
+			   && (job_desc->min_cpus > qos_ptr->max_cpus_pu)) {
+			info("job submit for user %s(%u): "
+			     "min cpu request %u exceeds "
+			     "per-user max cpu limit %u for qos '%s'",
+			     user_name,
+			     job_desc->user_id,
+			     job_desc->min_cpus,
+			     qos_ptr->max_cpus_pu,
+			     qos_ptr->name);
+			rc = false;
+			goto end_it;
 		} else if ((job_desc->min_cpus != NO_VAL)
 			   && (job_desc->min_cpus > qos_ptr->grp_cpus)) {
 			info("job submit for user %s(%u): "
@@ -336,30 +392,44 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			goto end_it;
 		} else if ((job_desc->max_cpus == NO_VAL)
 			   || ((*limit_set_max_cpus)
-			       && (job_desc->max_cpus > qos_ptr->grp_cpus))) {
-			job_desc->max_cpus = qos_ptr->grp_cpus;
+			       && (job_desc->max_cpus > qos_max_cpus_limit))) {
+			job_desc->max_cpus = qos_max_cpus_limit;
 			(*limit_set_max_cpus) = 1;
-		} else if (job_desc->max_cpus > qos_ptr->grp_cpus) {
+		} else if (job_desc->max_cpus > qos_max_cpus_limit) {
 			info("job submit for user %s(%u): "
 			     "max cpu changed %u -> %u because "
 			     "of qos limit",
 			     user_name,
 			     job_desc->user_id,
 			     job_desc->max_cpus,
-			     qos_ptr->grp_cpus);
+			     qos_max_cpus_limit);
 			if (job_desc->max_cpus == NO_VAL)
 				(*limit_set_max_cpus) = 1;
-			job_desc->max_cpus = qos_ptr->grp_cpus;
+			job_desc->max_cpus = qos_max_cpus_limit;
 		}
 
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_jobs.
 		 */
 
+		qos_max_nodes_limit =
+			MIN(qos_ptr->grp_nodes, qos_ptr->max_nodes_pu);
 		if (((*limit_set_max_nodes) == ADMIN_SET_LIMIT)
-		    || (qos_ptr->grp_nodes == INFINITE)
+		    || (qos_max_nodes_limit == INFINITE)
 		    || (update_call && (job_desc->max_nodes == NO_VAL))) {
 			/* no need to check/set */
+		} else if ((job_desc->min_nodes != NO_VAL)
+			   && (job_desc->min_nodes > qos_ptr->max_nodes_pu)) {
+			info("job submit for user %s(%u): "
+			     "min node request %u exceeds "
+			     "per-user max node limit %u for qos '%s'",
+			     user_name,
+			     job_desc->user_id,
+			     job_desc->min_nodes,
+			     qos_ptr->max_nodes_pu,
+			     qos_ptr->name);
+			rc = false;
+			goto end_it;
 		} else if ((job_desc->min_nodes != NO_VAL)
 			   && (job_desc->min_nodes > qos_ptr->grp_nodes)) {
 			info("job submit for user %s(%u): "
@@ -374,20 +444,21 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			goto end_it;
 		} else if ((job_desc->max_nodes == 0)
 			   || ((*limit_set_max_nodes)
-			       && (job_desc->max_nodes > qos_ptr->grp_nodes))) {
-			job_desc->max_nodes = qos_ptr->grp_nodes;
+			       && (job_desc->max_nodes
+				   > qos_max_nodes_limit))) {
+			job_desc->max_nodes = qos_max_nodes_limit;
 			(*limit_set_max_nodes) = 1;
-		} else if (job_desc->max_nodes > qos_ptr->grp_nodes) {
+		} else if (job_desc->max_nodes > qos_max_nodes_limit) {
 			info("job submit for user %s(%u): "
 			     "max node changed %u -> %u because "
 			     "of qos limit",
 			     user_name,
 			     job_desc->user_id,
 			     job_desc->max_nodes,
-			     qos_ptr->grp_nodes);
+			     qos_max_nodes_limit);
 			if (job_desc->max_nodes == NO_VAL)
 				(*limit_set_max_nodes) = 1;
-			job_desc->max_nodes = qos_ptr->grp_nodes;
+			job_desc->max_nodes = qos_max_nodes_limit;
 		}
 
 		if ((qos_ptr->grp_submit_jobs != INFINITE) &&
@@ -488,17 +559,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		}
 
 		if (qos_ptr->max_submit_jobs_pu != INFINITE) {
-			slurmdb_used_limits_t *used_limits = NULL;
-			if (qos_ptr->usage->user_limit_list) {
-				ListIterator itr = list_iterator_create(
-					qos_ptr->usage->user_limit_list);
-				while((used_limits = list_next(itr))) {
-					if (used_limits->uid
-					    == job_desc->user_id)
-						break;
-				}
-				list_iterator_destroy(itr);
-			}
+			if (!used_limits)
+				used_limits = _get_used_limits_for_user(
+					qos_ptr->usage->user_limit_list,
+					job_desc->user_id);
 			if (used_limits && (used_limits->submit_jobs
 					    >= qos_ptr->max_submit_jobs_pu)) {
 				info("job submit for user %s(%u): "
@@ -832,9 +896,14 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
 	if(qos_ptr) {
+		slurmdb_used_limits_t *used_limits = NULL;
 		usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
 		wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
+		/*
+		 * If the QOS has a GrpCPU limit set and the current usage
+		 * of the QOS exceeds that limit then hold the job
+		 */
 		if ((qos_ptr->grp_cpu_mins != (uint64_t)INFINITE)
 		    && (usage_mins >= qos_ptr->grp_cpu_mins)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
@@ -851,6 +920,11 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			goto end_it;
 		}
 
+		/* If the JOB's cpu limit wasn't administratively set and the
+		 * QOS has a GrpCPU limit, cancel the job if its minimum
+		 * cpu requirement has exceeded the limit for all CPUs
+		 * usable by the QOS
+		 */
 		if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
 		    && qos_ptr->grp_cpus != INFINITE) {
 			if (job_ptr->details->min_cpus > qos_ptr->grp_cpus) {
@@ -962,7 +1036,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			    (job_cpu_time_limit > cpu_time_limit)) {
 				info("job %u being cancelled, "
 				     "cpu time limit %"PRIu64" exceeds "
-				     "qos max per job %"PRIu64"",
+				     "qos max per-job %"PRIu64"",
 				     job_ptr->job_id,
 				     job_cpu_time_limit,
 				     cpu_time_limit);
@@ -978,7 +1052,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			    qos_ptr->max_cpus_pj) {
 				info("job %u being cancelled, "
 				     "min cpu limit %u exceeds "
-				     "qos max %u",
+				     "qos per-job max %u",
 				     job_ptr->job_id,
 				     job_ptr->details->min_cpus,
 				     qos_ptr->max_cpus_pj);
@@ -988,22 +1062,61 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			}
 		}
 
-		if (qos_ptr->max_jobs_pu != INFINITE) {
-			slurmdb_used_limits_t *used_limits = NULL;
-			if(qos_ptr->usage->user_limit_list) {
-				ListIterator itr = list_iterator_create(
-					qos_ptr->usage->user_limit_list);
-				while((used_limits = list_next(itr))) {
-					if(used_limits->uid == job_ptr->user_id)
-						break;
-				}
-				list_iterator_destroy(itr);
+		if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT) &&
+		    (qos_ptr->max_cpus_pu != INFINITE)) {
+			/* Cancel the job if it exceeds the per-user
+			 * CPU limit for the given QOS
+			 */
+			if(job_ptr->details->min_cpus >
+			   qos_ptr->max_cpus_pu) {
+				info("job %u being cancelled, "
+				     "min cpu limit %u exceeds "
+				     "qos per-user max %u",
+				     job_ptr->job_id,
+				     job_ptr->details->min_cpus,
+				     qos_ptr->max_cpus_pu);
+				cancel_job = 1;
+				rc = false;
+				goto end_it;
 			}
-			if(used_limits && (used_limits->jobs
-					   >= qos_ptr->max_jobs_pu)) {
+			/* Hold the job if the user has exceeded
+			 * the QOS per-user CPU limit with their
+			 * current usage */
+			if (!used_limits)
+				used_limits = _get_used_limits_for_user(
+					qos_ptr->usage->user_limit_list,
+					job_ptr->user_id);
+			if (used_limits && (used_limits->cpus
+					    >= qos_ptr->max_cpus_pu)) {
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
 				debug2("job %u being held, "
 				       "the job is at or exceeds "
-				       "max jobs limit %u with %u for QOS %s",
+				       "max cpus per-user limit "
+				       "%u with %u for QOS %s",
+				       job_ptr->job_id,
+				       qos_ptr->max_cpus_pu,
+				       used_limits->cpus, qos_ptr->name);
+				rc = false;
+				goto end_it;
+			}
+		}
+
+
+		if (qos_ptr->max_jobs_pu != INFINITE) {
+			if (!used_limits)
+				used_limits = _get_used_limits_for_user(
+					qos_ptr->usage->user_limit_list,
+					job_ptr->user_id);
+
+			if (used_limits && (used_limits->jobs
+					    >= qos_ptr->max_jobs_pu)) {
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				debug2("job %u being held, "
+				       "the job is at or exceeds "
+				       "max jobs per-user limit "
+				       "%u with %u for QOS %s",
 				       job_ptr->job_id,
 				       qos_ptr->max_jobs_pu,
 				       used_limits->jobs, qos_ptr->name);
@@ -1023,6 +1136,49 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->details->min_nodes,
 				     qos_ptr->max_nodes_pj);
 				cancel_job = 1;
+				rc = false;
+				goto end_it;
+			}
+		}
+
+		if ((job_ptr->limit_set_min_nodes != ADMIN_SET_LIMIT) &&
+		    (qos_ptr->max_nodes_pu != INFINITE)) {
+			/* Cancel the job if it exceeds the per-user
+			 * node limit for the given QOS
+			 */
+			if (job_ptr->details->min_nodes >
+			    qos_ptr->max_nodes_pu) {
+				info("job %u being cancelled, "
+				     "min node per-puser limit %u exceeds "
+				     "qos max %u",
+				     job_ptr->job_id,
+				     job_ptr->details->min_nodes,
+				     qos_ptr->max_nodes_pu);
+				cancel_job = 1;
+				rc = false;
+				goto end_it;
+			}
+
+			/*
+			* Hold the job if the user has exceeded
+			* the QOS per-user CPU limit with their
+			* current usage
+			*/
+			if (!used_limits)
+				used_limits = _get_used_limits_for_user(
+					qos_ptr->usage->user_limit_list,
+					job_ptr->user_id);
+			if (used_limits && (used_limits->nodes
+					    >= qos_ptr->max_nodes_pu)) {
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				debug2("job %u being held, "
+				       "the job is at or exceeds "
+				       "max nodes per-user "
+				       "limit %u with %u for QOS %s",
+				       job_ptr->job_id,
+				       qos_ptr->max_nodes_pu,
+				       used_limits->nodes, qos_ptr->name);
 				rc = false;
 				goto end_it;
 			}

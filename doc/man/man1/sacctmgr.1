@@ -981,12 +981,20 @@ Maximum number of CPU minutes each job is able to use.
 Maximum number of CPUs each job is able to use.
 
 .TP
+\fIMaxCpusPerUser\fP
+Maximum number of CPUs each user is able to use.
+
+.TP
 \fIMaxJobs\fP
 Maximum number of jobs each user is allowed to run at one time.
 
 .TP
 \fIMaxNodes\fP
 Maximum number of nodes each job is able to use.
+
+.TP
+\fIMaxNodesPerUser\fP
+Maximum number of nodes each user is able to use.
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -1112,6 +1120,11 @@ You can still set this, but have to wait for future versions of SLURM
 before it is enforced.)
 
 .TP
+\fIMaxCpusPerUser\fP
+Maximum number of CPUs each user is able to use.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
 \fIMaxJobs\fP
 Maximum number of jobs each user is allowed to run at one time.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -1119,6 +1132,11 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fIMaxNodes\fP
 Maximum number of nodes each job is able to use.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxNodesPerUser\fP
+Maximum number of nodes each user is able to use.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP

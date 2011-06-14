@@ -1093,8 +1093,10 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 	qos->max_cpu_mins_pj = (uint64_t)NO_VAL;
 	qos->max_cpu_run_mins_pu = (uint64_t)NO_VAL;
 	qos->max_cpus_pj = NO_VAL;
+	qos->max_cpus_pu = NO_VAL;
 	qos->max_jobs_pu = NO_VAL;
 	qos->max_nodes_pj = NO_VAL;
+	qos->max_nodes_pu = NO_VAL;
 	qos->max_submit_jobs_pu = NO_VAL;
 	qos->max_wall_pj = NO_VAL;
 
