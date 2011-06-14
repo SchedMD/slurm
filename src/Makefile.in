@@ -34,6 +34,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@BUILD_SRUN2APRUN_FALSE@am__append_1 = srun
+@WITH_BLCR_TRUE@am__append_2 = srun_cr
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -322,16 +324,10 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@WITH_BLCR_FALSE@SRUN_CR = 
-@WITH_BLCR_TRUE@SRUN_CR = srun_cr
-@BUILD_SRUN2APRUN_FALSE@SRUN = srun
-@BUILD_SRUN2APRUN_TRUE@SRUN = 
-SUBDIRS = common api db_api database \
-	slurmctld slurmd slurmdbd plugins sbcast \
-	scontrol scancel squeue sinfo smap sview salloc \
-	sbatch sattach strigger sacct sacctmgr sreport sstat \
-	sshare sprio $(SRUN) $(SRUN_CR)
-
+SUBDIRS = common api db_api database slurmctld slurmd slurmdbd plugins \
+	sbcast scontrol scancel squeue sinfo smap sview salloc sbatch \
+	sattach strigger sacct sacctmgr sreport sstat sshare sprio \
+	$(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:

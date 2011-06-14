@@ -399,7 +399,7 @@ current = $(SLURM_API_CURRENT)
 age = $(SLURM_API_AGE)
 rev = $(SLURM_API_REVISION)
 
-# libpmi version informaiton
+# libpmi version information
 #
 # The libpmi interface shouldn't be changing any time soon, so for SLURM's
 # libpmi only the library REVISION and AGE should change (and it is debatable
