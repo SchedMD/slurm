@@ -5,7 +5,9 @@ SUBDIRS = common api db_api database \
 	sshare sprio
 
 if !BUILD_SRUN2APRUN
+if !BG_L_P_LOADED
 SUBDIRS += srun
+endif
 endif
 
 if WITH_BLCR
