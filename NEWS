@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.8
 ========================
+ -- Prevent background salloc disconnecting terminal at termination. Patch by
+    Don Albert, Bull.
 
 * Changes in SLURM 2.2.7
 ========================
