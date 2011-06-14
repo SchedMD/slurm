@@ -484,7 +484,6 @@ install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/fed
 %endif
 
 %if %{slurm_with bluegene}
-rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
 mkdir -p ${RPM_BUILD_ROOT}/etc/ld.so.conf.d
 echo "%{_libdir}/slurm" > ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
@@ -560,25 +559,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc doc/html
-%{_bindir}/sacct
-%{_bindir}/sacctmgr
-%{_bindir}/salloc
-%{_bindir}/sattach
-%{_bindir}/sbatch
-%{_bindir}/sbcast
-%{_bindir}/scancel
-%{_bindir}/scontrol
-%{_bindir}/sinfo
-%{_bindir}/smap*
-%{_bindir}/sprio
-%{_bindir}/squeue
-%{_bindir}/sreport
-%if ! %{slurm_with srun2aprun}
-%{_bindir}/srun
-%endif
-%{_bindir}/sshare
-%{_bindir}/sstat
-%{_bindir}/strigger
+%{_bindir}/s*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
@@ -611,6 +592,9 @@ rm -rf $RPM_BUILD_ROOT
 %if !%{slurm_with blcr}
 %exclude %{_mandir}/man1/srun_cr*
 %exclude %{_bindir}/srun_cr
+%endif
+%if %{slurm_with srun2aprun}
+%exclude %{_bindir}/srun*
 %endif
 #############################################################################
 
