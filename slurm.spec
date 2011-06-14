@@ -589,7 +589,7 @@ rm -rf $RPM_BUILD_ROOT
 %config (noreplace) %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
-%if !%{slurm_with blcr}
+%if %{slurm_with blcr}
 %exclude %{_mandir}/man1/srun_cr*
 %exclude %{_bindir}/srun_cr
 %endif
