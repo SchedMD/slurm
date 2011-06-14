@@ -16,6 +16,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Don Albert (Bull)</li>
 <li>Ernest Artiaga (Barcelona Supercomputer Center, Spain)</li>
 <li>Susanne Balle (HP)</li>
+<li>Ralph Bean (Rochester Institute of Technology)</li>
 <li>Anton Blanchard (Samba)</li>
 <li>Janne Blomqvist (Aalto University, Finland)</li>
 <li>David Bremer (LLNL)</li>
@@ -45,7 +46,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Klaus Joas (University Karlsruhe, Germany)</li>
 <li>Greg Johnson (LANL)</li>
 <li>Jason King (LLNL)</li>
-<li>Aaron Knister (Environmental Protection Agency)</li>
+<li>Aaron Knister (Environmental Protection Agency, UMBC)</li>
 <li>Nancy Kritkausky (Bull)</li>
 <li>Roman Kurakin (Institute of Natural Science and Ecology, Russia)</li>
 <li>Eric Lin (Bull)</li>
@@ -91,6 +92,6 @@ organizations. The current SLURM development staff includes: </p>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 May 2011</p>
+<p style="text-align:center;">Last modified 14 June 2011</p>
 
 <!--#include virtual="footer.txt"-->
