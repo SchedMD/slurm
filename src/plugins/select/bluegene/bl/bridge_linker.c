@@ -767,7 +767,7 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 	ba_switch_t *ba_switch = NULL;
 	ba_mp_t *ba_mp = NULL;
 	ListIterator itr = NULL;
-	rm_partition_t *block_ptr = (rm_partition_t *)bg_record->bg_block_id;
+	rm_partition_t *block_ptr = (rm_partition_t *)bg_record->bg_block;
 
 	debug2("getting info for block %s", bg_record->bg_block_id);
 
@@ -909,37 +909,6 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 					goto end_it;
 				}
 			}
-			switch(curr_conn.p1) {
-			case RM_PORT_S1:
-				curr_conn.p1 = 1;
-				break;
-			case RM_PORT_S2:
-				curr_conn.p1 = 2;
-				break;
-			case RM_PORT_S4:
-				curr_conn.p1 = 4;
-				break;
-			default:
-				error("1 unknown port %d",
-				      _port_enum(curr_conn.p1));
-				goto end_it;
-			}
-
-			switch(curr_conn.p2) {
-			case RM_PORT_S0:
-				curr_conn.p2 = 0;
-				break;
-			case RM_PORT_S3:
-				curr_conn.p2 = 3;
-				break;
-			case RM_PORT_S5:
-				curr_conn.p2 = 5;
-				break;
-			default:
-				error("2 unknown port %d",
-				      _port_enum(curr_conn.p2));
-				goto end_it;
-			}
 
 			if (curr_conn.p1 == 1 && dim == X) {
 				if (ba_node->used) {
@@ -980,8 +949,10 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 	}
 	return SLURM_SUCCESS;
 end_it:
-	if (bg_record->ba_mp_list)
+	if (bg_record->ba_mp_list) {
 		list_destroy(bg_record->ba_mp_list);
+		bg_record->ba_mp_list = NULL;
+	}
 	return SLURM_ERROR;
 }
 
