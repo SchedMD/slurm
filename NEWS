@@ -38,6 +38,7 @@ documents those changes that are of interest to users and admins.
     Solutions Limited).
  -- Addition of per-user node/cpu limits for QOS's. Patch from Aaron Knister,
     UMBC.
+ -- Fix logic for multiple job resize operations.
 
 * Changes in SLURM 2.3.0.pre5
 =============================

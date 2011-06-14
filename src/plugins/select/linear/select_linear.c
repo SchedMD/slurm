@@ -1501,6 +1501,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	bool from_node_used, to_node_used;
 	int from_node_offset, to_node_offset, new_node_offset;
 	int first_bit, last_bit;
+	bitstr_t *tmp_bitmap, *tmp_bitmap2;
 
 	xassert(from_job_ptr);
 	xassert(to_job_ptr);
@@ -1552,18 +1553,22 @@ static int _job_expand(struct job_record *from_job_ptr,
 		bit_nclear(to_job_resrcs_ptr->core_bitmap_used, 0, i-1);
 	}
 
-	node_cnt = bit_set_count(from_job_resrcs_ptr->node_bitmap) +
-		   bit_set_count(to_job_resrcs_ptr->node_bitmap)   -
-		   bit_overlap(from_job_resrcs_ptr->node_bitmap,
-			       to_job_resrcs_ptr->node_bitmap);
+	tmp_bitmap = bit_copy(to_job_resrcs_ptr->node_bitmap);
+	if (!tmp_bitmap)
+		fatal("bit_copy: malloc failure");
+	bit_or(tmp_bitmap, from_job_resrcs_ptr->node_bitmap);
+	tmp_bitmap2 = bit_copy(to_job_ptr->node_bitmap);
+	if (!tmp_bitmap)
+		fatal("bit_copy: malloc failure");
+	bit_or(tmp_bitmap2, from_job_ptr->node_bitmap);
+	bit_and(tmp_bitmap, tmp_bitmap2);
+	bit_free(tmp_bitmap2);
+	node_cnt = bit_set_count(tmp_bitmap);
 	new_job_resrcs_ptr = _create_job_resources(node_cnt);
 	new_job_resrcs_ptr->ncpus = from_job_resrcs_ptr->ncpus +
 				    to_job_resrcs_ptr->ncpus;
 	new_job_resrcs_ptr->node_req = to_job_resrcs_ptr->node_req;
-	new_job_resrcs_ptr->node_bitmap = bit_copy(to_job_resrcs_ptr->
-						   node_bitmap);
-	bit_or(new_job_resrcs_ptr->node_bitmap,
-	       from_job_resrcs_ptr->node_bitmap);
+	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
 	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
 						     node_bitmap);
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
@@ -1580,11 +1585,11 @@ static int _job_expand(struct job_record *from_job_ptr,
 	for (i = first_bit; i <= last_bit; i++) {
 		from_node_used = to_node_used = false;
 		if (bit_test(from_job_resrcs_ptr->node_bitmap, i)) {
-			from_node_used = true;
+			from_node_used = bit_test(from_job_ptr->node_bitmap,i);
 			from_node_offset++;
 		}
 		if (bit_test(to_job_resrcs_ptr->node_bitmap, i)) {
-			to_node_used = true;
+			to_node_used = bit_test(to_job_ptr->node_bitmap, i);
 			to_node_offset++;
 		}
 		if (!from_node_used && !to_node_used)
