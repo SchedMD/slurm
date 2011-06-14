@@ -800,15 +800,12 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 			error("find_bp_loc: bpid %s not known", switchid);
 			goto end_it;
 		}
-		ba_node = xmalloc(sizeof(ba_mp_t));
+		ba_node = ba_copy_mp(ba_mp);
+		ba_setup_mp(ba_node, 0, 0);
+		ba_node->used = BA_MP_USED_TRUE;
 		if (!bg_record->ba_mp_list)
 			bg_record->ba_mp_list = list_create(destroy_ba_mp);
 		list_push(bg_record->ba_mp_list, ba_node);
-		ba_node->coord[X] = ba_mp->coord[X];
-		ba_node->coord[Y] = ba_mp->coord[Y];
-		ba_node->coord[Z] = ba_mp->coord[Z];
-
-		ba_node->used = TRUE;
 		return SLURM_SUCCESS;
 	}
 	for (i=0; i<switch_cnt; i++) {
@@ -874,15 +871,12 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 		}
 
 		if (!ba_node) {
-			ba_node = xmalloc(sizeof(ba_mp_t));
+			ba_node = ba_copy_mp(ba_mp);
+			ba_setup_mp(ba_node, 0, 0);
 			if (!bg_record->ba_mp_list)
 				bg_record->ba_mp_list =
 					list_create(destroy_ba_mp);
-
 			list_push(bg_record->ba_mp_list, ba_node);
-			ba_node->coord[X] = ba_mp->coord[X];
-			ba_node->coord[Y] = ba_mp->coord[Y];
-			ba_node->coord[Z] = ba_mp->coord[Z];
 		}
 		ba_switch = &ba_node->axis_switch[dim];
 		for (j=0; j<cnt; j++) {
