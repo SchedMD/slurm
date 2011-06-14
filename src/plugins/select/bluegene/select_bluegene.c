@@ -685,6 +685,8 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	if (ver_str) {
 		if (!strcmp(ver_str, BLOCK_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, BLOCK_2_2_STATE_VERSION)) {
+			protocol_version = SLURM_2_2_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, BLOCK_2_1_STATE_VERSION)) {
 			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
