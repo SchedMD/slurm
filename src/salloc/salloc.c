@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 		}
 	}
 #else
-	} else if (!opt.no_shell) {
+	} else if ((!opt.no_shell) && (getpgrp() == tcgetpgrp(STDIN_FILENO))) {
 		is_interactive = true;
 	}
 #endif
