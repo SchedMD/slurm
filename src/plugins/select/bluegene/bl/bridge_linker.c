@@ -533,7 +533,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 #if defined HAVE_BG_FILES
 	int rc;
 	int send_psets=bg_conf->ionodes_per_mp;
-
+	rm_connection_type_t conn_type = bg_record->conn_type[0];
 #ifdef HAVE_BGL
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,
 				  bg_record->blrtsimage)) != SLURM_SUCCESS)
@@ -580,8 +580,9 @@ static void _pre_allocate(bg_record_t *bg_record)
 		error("bridge_set_data(RM_PartitionMloaderImg): %s",
 		      bg_err_str(rc));
 
+	/* Don't send a * uint16_t into this it messes things up. */
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionConnection,
-				  &bg_record->conn_type[0])) != SLURM_SUCCESS)
+				  &conn_type)) != SLURM_SUCCESS)
 		error("bridge_set_data(RM_PartitionConnection): %s",
 		      bg_err_str(rc));
 
@@ -1166,21 +1167,24 @@ static bg_record_t *_translate_object_to_block(rm_partition_t *block_ptr,
 		       bg_record->bg_block_id,
 		       bg_record->ionode_str);
 	} else {
+		rm_connection_type_t conn_type;
 #ifdef HAVE_BGL
 		bg_record->cpu_cnt = bg_conf->cpus_per_mp
 			* bg_record->mp_count;
 		bg_record->cnode_cnt =  bg_conf->mp_cnode_cnt
 			* bg_record->mp_count;
 #endif
+		/* Don't send a * uint16_t into this it messes things up. */
 		if ((rc = bridge_get_data(block_ptr,
 					  RM_PartitionConnection,
-					  &bg_record->conn_type[0]))
+					  &conn_type))
 		    != SLURM_SUCCESS) {
 			error("bridge_get_data"
 			      "(RM_PartitionConnection): %s",
 			      bg_err_str(rc));
 			goto end_it;
 		}
+		bg_record->conn_type[0] = conn_type;
 		/* Set the bitmap blank here if it is a full
 		   node we don't want anything set we also
 		   don't want the bg_record->ionodes set.
