@@ -1613,8 +1613,8 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 
 	rc = _bg_errtrans((*(bridge_api.create_partition))
 			  (bg_record->bg_block_id));
-	if (rc == BG_ERROR_INVALID_STATE)
-		rc = BG_ERROR_BOOT_ERROR;
+	/* if (rc == BG_ERROR_INVALID_STATE) */
+	/* 	rc = BG_ERROR_BOOT_ERROR; */
 
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
@@ -1636,8 +1636,8 @@ extern int bridge_block_free(bg_record_t *bg_record)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = _bg_errtrans(_bg_errtrans((*(bridge_api.destroy_partition))
-				       (bg_record->bg_block)));
+	rc = _bg_errtrans((*(bridge_api.destroy_partition))
+			  (bg_record->bg_block_id));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 #else
@@ -1834,7 +1834,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 	info("querying the system for existing blocks");
 	for(block_number=0; block_number<block_count; block_number++) {
-		uint16_t state;
+		int state;
 		if (block_number) {
 			if ((rc = bridge_get_data(block_list,
 						  RM_PartListNextPart,
@@ -1882,7 +1882,8 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			     bg_block_id);
 			bg_record = _translate_object_to_block(
 				block_ptr, bg_block_id);
-			slurm_list_append(curr_block_list, bg_record);
+			if (bg_record)
+				list_push(curr_block_list, bg_record);
 		}
 		free(bg_block_id);
 		bg_record->modifying = 1;
@@ -2149,7 +2150,7 @@ extern status_t bridge_get_data(rm_element_t* element,
 			*state = BG_BLOCK_TERM;
 			break;
 		case RM_PARTITION_ERROR:
-			*state |= BG_BLOCK_ERROR_FLAG;
+			*state = BG_BLOCK_ERROR_FLAG;
 			break;
 		case RM_PARTITION_NAV:
 			*state = BG_BLOCK_NAV;
