@@ -2046,6 +2046,7 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 			xfree(msg->topo_array[i].nodes);
 			xfree(msg->topo_array[i].switches);
 		}
+		xfree(msg->topo_array);
 		xfree(msg);
 	}
 }

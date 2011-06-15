@@ -70,7 +70,7 @@ static char *_get_cray_conf(void)
 	int i;
 
 	if (!val)
-		return xstrdup(CRAY_CONFIG_FILE);
+		return CRAY_CONFIG_FILE;
 
 	/* Replace file name on end of path */
 	i = strlen(val) - strlen("slurm.conf") + strlen("cray.conf") + 1;
