@@ -971,6 +971,13 @@ static bg_record_t *_translate_object_to_block(rm_partition_t *block_ptr,
 	bg_record->magic = BLOCK_MAGIC;
 	bg_record->bg_block = block_ptr;
 	bg_record->bg_block_id = xstrdup(bg_block_id);
+
+	/* we don't need anything else since we are just getting rid
+	   of the thing.
+	*/
+	if (!bg_recover)
+		return bg_record;
+
 #ifndef HAVE_BGL
 	if ((rc = bridge_get_data(block_ptr, RM_PartitionSize, &mp_cnt))
 	    != SLURM_SUCCESS) {
@@ -979,9 +986,10 @@ static bg_record_t *_translate_object_to_block(rm_partition_t *block_ptr,
 		goto end_it;
 	}
 
-	if (mp_cnt==0)
+	if (mp_cnt==0) {
+		error("it appear we have 0 cnodes in block %s", bg_block_id);
 		goto end_it;
-
+	}
 	bg_record->cnode_cnt = mp_cnt;
 	bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->cnode_cnt;
 #endif
@@ -993,8 +1001,10 @@ static bg_record_t *_translate_object_to_block(rm_partition_t *block_ptr,
 		goto end_it;
 	}
 
-	if (mp_cnt==0)
+	if (mp_cnt==0) {
+		error("it appear we have 0 Midplanes in block %s", bg_block_id);
 		goto end_it;
+	}
 	bg_record->mp_count = mp_cnt;
 
 	debug3("has %d MPs", bg_record->mp_count);
@@ -1349,8 +1359,13 @@ static bg_record_t *_translate_object_to_block(rm_partition_t *block_ptr,
 
 	return bg_record;
 end_it:
-	destroy_bg_record(bg_record);
-	return NULL;
+	error("Something bad happened with load of %s", bg_block_id);
+	if (bg_recover) {
+		error("Can't use %s not adding", bg_block_id);
+		destroy_bg_record(bg_record);
+		bg_record = NULL;
+	}
+	return bg_record;
 }
 #endif
 
