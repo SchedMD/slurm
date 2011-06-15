@@ -394,7 +394,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					bg_record->state = BG_BLOCK_TERM;
 #endif
 				} else {
-					error("bridge_block_remove"
+					error("bridge_block_free"
 					      "(%s): %s State = %d",
 					      bg_record->bg_block_id,
 					      bg_err_str(rc),
