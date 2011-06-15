@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
  -- Addition of per-user node/cpu limits for QOS's. Patch from Aaron Knister,
     UMBC.
  -- Fix logic for multiple job resize operations.
+ -- BLUEGENE - many fixes to make things work correctly on a L/P system.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
