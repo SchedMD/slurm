@@ -623,7 +623,8 @@ static int _do_block_poll(void)
 		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionMode): %s",
 			      bg_err_str(rc));
-			updated = -1;
+			if (!updated)
+				updated = -1;
 			goto next_block;
 		} else if (bg_record->node_use != node_use) {
 			debug("node_use of Block %s was %d "
@@ -645,7 +646,8 @@ static int _do_block_poll(void)
 			    != SLURM_SUCCESS) {
 				error("bridge_get_data(RM_PartitionOptions): "
 				      "%s", bg_err_str(rc));
-				updated = -1;
+				if (!updated)
+					updated = -1;
 				goto next_block;
 			} else if (mode) {
 				switch(mode[0]) {
@@ -684,11 +686,12 @@ static int _do_block_poll(void)
 		    != SLURM_SUCCESS) {
 			error("bridge_get_data(RM_PartitionState): %s",
 			      bg_err_str(rc));
-			updated = -1;
+			if (!updated)
+				updated = -1;
 			goto next_block;
-		} else
-			updated = bg_status_update_block_state(
-				bg_record, state, kill_job_list);
+		} else if (bg_status_update_block_state(
+				   bg_record, state, kill_job_list) == 1)
+			updated = 1;
 
 	next_block:
 		if ((rc = bridge_free_block(block_ptr))
@@ -827,6 +830,7 @@ extern int bridge_status_update_block_list_state(List block_list)
 	int rc;
 	rm_partition_t *block_ptr = NULL;
 	rm_partition_state_t state;
+	uint16_t real_state;
 	char *name = NULL;
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
@@ -841,6 +845,7 @@ extern int bridge_status_update_block_list_state(List block_list)
 			continue;
 
 		name = bg_record->bg_block_id;
+		real_state = bg_record->state & (~BG_BLOCK_ERROR_FLAG);
 		if ((rc = bridge_get_block_info(name, &block_ptr))
 		    != SLURM_SUCCESS) {
 			if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
@@ -886,12 +891,14 @@ extern int bridge_status_update_block_list_state(List block_list)
 			      bg_err_str(rc));
 			updated = -1;
 			goto next_block;
-		} else if (bg_record->state != state) {
+		} else if (real_state != state) {
 			debug("freeing state of Block %s was %d and now is %d",
 			      bg_record->bg_block_id,
 			      bg_record->state,
 			      state);
 
+			if (bg_record->state & BG_BLOCK_ERROR_FLAG)
+				state |= BG_BLOCK_ERROR_FLAG;
 			bg_record->state = state;
 			updated = 1;
 		}

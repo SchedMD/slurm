@@ -394,11 +394,12 @@ static void _do_block_poll(void)
 		}
 		const Block::Ptr &block_ptr = *(vec.begin());
 
-		updated = bg_status_update_block_state(
-			bg_record,
-			bridge_translate_status(
-				block_ptr->getStatus().toValue()),
-			kill_job_list);
+		if (bg_status_update_block_state(
+			    bg_record,
+			    bridge_translate_status(
+				    block_ptr->getStatus().toValue()),
+			    kill_job_list))
+			updated = 1;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
 
