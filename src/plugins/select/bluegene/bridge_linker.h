@@ -102,7 +102,6 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name);
 extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name);
 extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 					 char *user_name);
-extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name);
 
 extern int bridge_blocks_load_curr(List curr_block_list);
 

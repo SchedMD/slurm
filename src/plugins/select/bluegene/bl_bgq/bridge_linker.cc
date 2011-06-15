@@ -608,8 +608,16 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		rc = SLURM_ERROR;
 	}
 
-	if (bridge_block_set_owner(
-		    bg_record, bg_conf->slurm_user_name) != SLURM_SUCCESS)
+	if ((rc = bridge_block_remove_all_users(
+		     bg_record, bg_conf->slurm_user_name)) == REMOVE_USER_ERR) {
+		error("bridge_block_remove_all_users: Something "
+		      "happened removing users from block %s",
+		      bg_record->bg_block_id);
+		return SLURM_ERROR;
+	} else if (rc == REMOVE_USER_NONE && user_name)
+		rc = bridge_block_add_user(bg_record, user_name);
+
+	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
         try {
@@ -839,27 +847,6 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	}
 
 #endif
-	return rc;
-}
-
-extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name)
-{
-	int rc = SLURM_SUCCESS;
-	if (!bridge_init(NULL))
-		return SLURM_ERROR;
-
-	if (!bg_record || !bg_record->bg_block_id || !user_name)
-		return SLURM_ERROR;
-
-	if ((rc = bridge_block_remove_all_users(
-		     bg_record, user_name)) == REMOVE_USER_ERR) {
-		error("bridge_block_set_owner: Something happened removing "
-		      "users from block %s",
-		      bg_record->bg_block_id);
-		return SLURM_ERROR;
-	} else if (rc == REMOVE_USER_NONE && user_name)
-		rc = bridge_block_add_user(bg_record, user_name);
-
 	return rc;
 }
 

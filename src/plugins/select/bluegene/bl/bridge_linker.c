@@ -1584,6 +1584,18 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
+	if ((rc = _bg_errtrans((*(bridge_api.set_part_owner))(
+				  bg_record->bg_block_id,
+				  bg_conf->slurm_user_name)))
+	    != SLURM_SUCCESS) {
+		error("bridge_set_block_owner(%s,%s): %s",
+		      bg_record->bg_block_id,
+		      bg_conf->slurm_user_name,
+		      bg_err_str(rc));
+		slurm_mutex_unlock(&api_file_mutex);
+		return rc;
+	}
+
 	rc = _bg_errtrans((*(bridge_api.create_partition))
 			  (bg_record->bg_block_id));
 	if (rc == BG_ERROR_INVALID_STATE)
@@ -1760,11 +1772,6 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 	}
 #endif
 	return returnc;
-}
-
-extern int bridge_block_set_owner(bg_record_t *bg_record, char *user_name)
-{
-	return SLURM_ERROR;
 }
 
 /*
@@ -2348,19 +2355,6 @@ extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
 
 	slurm_mutex_lock(&api_file_mutex);
 	rc = _bg_errtrans((*(bridge_api.free_nodecard))(nodecard));
-	slurm_mutex_unlock(&api_file_mutex);
-	return rc;
-
-}
-
-extern status_t bridge_set_block_owner(pm_partition_id_t pid, const char *name)
-{
-	int rc = BG_ERROR_CONNECTION_ERROR;
-	if (!bridge_init(NULL))
-		return rc;
-
-	slurm_mutex_lock(&api_file_mutex);
-	rc = _bg_errtrans((*(bridge_api.set_part_owner))(pid, name));
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 
