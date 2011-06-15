@@ -2049,13 +2049,15 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		list_destroy(delete_list);
 		put_block_in_error_state(bg_record, reason);
 	} else if (block_desc_ptr->state == BG_BLOCK_FREE) {
+		/* Resume the block first and then free the block */
+		resume_block(bg_record);
+
 		/* Increment free_cnt to make sure we don't loose this
 		 * block since bg_free_block will unlock block_state_mutex.
 		 */
 		bg_record->free_cnt++;
 		bg_free_block(bg_record, 0, 1);
 		bg_record->free_cnt--;
-		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else if (block_desc_ptr->state == BG_BLOCK_TERM) {
 		/* This can't be RM_PARTITION_READY since the enum
