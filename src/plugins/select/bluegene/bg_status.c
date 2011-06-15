@@ -143,7 +143,7 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 	     && !(bg_record->state & BG_BLOCK_ERROR_FLAG))
 	    && state == BG_BLOCK_FREE)
 		skipped_dealloc = 1;
-	else if ((bg_record->state == BG_BLOCK_INITED)
+	else if ((real_state == BG_BLOCK_INITED)
 		 && (state == BG_BLOCK_BOOTING)) {
 		/* This means the user did a reboot through
 		   mpirun but we missed the state
@@ -155,7 +155,7 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 		      bg_record->user_name);
 		xfree(bg_record->target_name);
 		bg_record->target_name = xstrdup(bg_record->user_name);
-	} else if ((bg_record->state == BG_BLOCK_TERM)
+	} else if ((real_state == BG_BLOCK_TERM)
 		   && (state == BG_BLOCK_BOOTING))
 		/* This is a funky state IBM says
 		   isn't a bug, but all their
@@ -165,26 +165,24 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 		   that. So we will just skip this
 		   state and act like this didn't happen. */
 		goto nochange_state;
-
+	real_state = state;
 	if (bg_record->state & BG_BLOCK_ERROR_FLAG)
 		state |= BG_BLOCK_ERROR_FLAG;
-	else if (state & BG_BLOCK_ERROR_FLAG)
-		bg_record->state |= state;
-	else
-		bg_record->state = state;
 
-	if (bg_record->state == BG_BLOCK_TERM || skipped_dealloc)
+	bg_record->state = state;
+
+	if (real_state == BG_BLOCK_TERM || skipped_dealloc)
 		_block_is_deallocating(bg_record, kill_job_list);
-	else if (bg_record->state == BG_BLOCK_BOOTING) {
+	else if (real_state == BG_BLOCK_BOOTING) {
 		debug("Setting bootflag for %s", bg_record->bg_block_id);
 		bg_record->boot_state = 1;
-	} else if (bg_record->state == BG_BLOCK_FREE) {
+	} else if (real_state == BG_BLOCK_FREE) {
 		if (remove_from_bg_list(bg_lists->job_running, bg_record)
 		    == SLURM_SUCCESS)
 			num_unused_cpus += bg_record->cpu_cnt;
 		remove_from_bg_list(bg_lists->booted,
 				    bg_record);
-	} else if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
+	} else if (real_state & BG_BLOCK_ERROR_FLAG) {
 		if (bg_record->boot_state)
 			error("Block %s in an error state while booting.",
 			      bg_record->bg_block_id);
@@ -193,7 +191,7 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 			      bg_record->bg_block_id);
 		remove_from_bg_list(bg_lists->booted, bg_record);
 		trigger_block_error();
-	} else if (bg_record->state == BG_BLOCK_INITED) {
+	} else if (real_state == BG_BLOCK_INITED) {
 		if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 			list_push(bg_lists->booted, bg_record);
 	}
@@ -216,7 +214,7 @@ nochange_state:
 			return updated;
 		}
 
-		switch (bg_record->state) {
+		switch (real_state) {
 		case BG_BLOCK_BOOTING:
 			debug3("checking to make sure user %s "
 			       "is the user.",
@@ -294,7 +292,7 @@ nochange_state:
 			debug("Hey the state of block "
 			      "%s is %d(%s) doing nothing.",
 			      bg_record->bg_block_id,
-			      bg_record->state,
+			      real_state,
 			      bg_block_state_string(bg_record->state));
 			break;
 		}
