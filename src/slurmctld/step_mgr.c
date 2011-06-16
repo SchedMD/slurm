@@ -80,6 +80,8 @@ static struct step_record * _create_step_record(struct job_record *job_ptr);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
 static bool _is_mem_resv(void);
+static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
+			 uint32_t *usable_cpu_cnt);
 static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			  int nodes_avail, int nodes_picked_cnt);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer,
@@ -98,6 +100,32 @@ static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 static int _step_hostname_to_inx(struct step_record *step_ptr,
 				char *node_name);
 static void _step_dealloc_lps(struct step_record *step_ptr);
+
+/* Determine how many more CPUs are required for a job step */
+static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
+			 uint32_t *usable_cpu_cnt)
+{
+	int rem_cpus = step_min_cpus;
+	int first_bit, last_bit, i;
+
+	if (!node_bitmap)
+		return rem_cpus;
+	xassert(usable_cpu_cnt);
+	first_bit = bit_ffs(node_bitmap);
+	if (first_bit >= 0)
+		last_bit = bit_fls(node_bitmap);
+	else
+		last_bit = first_bit - 1;
+	for (i = first_bit; i <= last_bit; i++) {
+		if (!bit_test(node_bitmap, i))
+			continue;
+		if (usable_cpu_cnt[i] >= rem_cpus)
+			return 0;
+		rem_cpus -= usable_cpu_cnt[i];
+	}
+
+	return rem_cpus;
+}
 
 /* Select the optimal node count for a job step based upon it's min and 
  * max target, available resources, and nodes already picked */
@@ -520,9 +548,14 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 	usable_cpu_array = xmalloc(sizeof(int) * cpu_target);
 	rem_nodes = node_cnt;
 	rem_cpus  = cpu_cnt;
-	first_bit = bit_ffs(job_ptr->job_resrcs->node_bitmap);
-	last_bit  = bit_fls(job_ptr->job_resrcs->node_bitmap);
+	first_bit = bit_ffs(nodes_bitmap);
+	if (first_bit >= 0)
+		last_bit  = bit_fls(nodes_bitmap);
+	else
+		last_bit = first_bit - 1;
 	for (i = first_bit; i <= last_bit; i++) {
+		if (!bit_test(nodes_bitmap, i))
+			continue;
 		if (usable_cpu_cnt[i] < cpu_target) {
 			usable_cpu_array[usable_cpu_cnt[i]]++;
 			continue;
@@ -566,6 +599,8 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 
 	/* Pick nodes with CPU counts below original target */
 	for (i = first_bit; i <= last_bit; i++) {
+		if (!bit_test(nodes_bitmap, i))
+			continue;
 		if (usable_cpu_cnt[i] >= cpu_target)
 			continue;	/* already picked */
 		if (usable_cpu_array[usable_cpu_cnt[i]] == 0)
@@ -637,8 +672,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	/* If we have a select plugin that figures this out for us
-	   just return.  Else just do the normal operations.
-	*/
+	 * just return.  Else just do the normal operations.
+	 */
 	if ((nodes_picked = select_g_step_pick_nodes(
 		     job_ptr, select_jobinfo, node_count)))
 		return nodes_picked;
@@ -1045,11 +1080,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-		char *temp1, *temp2;
+		char *temp1, *temp2, *temp3;
 		temp1 = bitmap2node_name(nodes_avail);
 		temp2 = bitmap2node_name(nodes_idle);
-		info("step pick %u-%u nodes, avail:%s idle:%s",
-		     step_spec->min_nodes, step_spec->max_nodes, temp1, temp2);
+		if (step_spec->node_list)
+			temp3 = step_spec->node_list;
+		else
+			temp3 = "NONE";
+		info("step pick %u-%u nodes, avail:%s idle:%s picked:%s",
+		     step_spec->min_nodes, step_spec->max_nodes, temp1, temp2,
+		     temp3);
 		xfree(temp1);
 		xfree(temp2);
 	}
@@ -1075,7 +1115,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (step_spec->min_nodes) {
-		int node_avail_cnt, nodes_needed;
+		int cpus_needed, node_avail_cnt, nodes_needed;
 
 		if (usable_cpu_cnt == NULL) {
 			usable_cpu_cnt = xmalloc(sizeof(uint32_t) *
@@ -1103,13 +1143,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		nodes_needed = step_spec->min_nodes - nodes_picked_cnt;
 		if ((nodes_needed > 0) &&
 		    (node_avail_cnt >= nodes_needed)) {
+			cpus_needed = _opt_cpu_cnt(step_spec->cpu_count,
+						   nodes_picked,
+						   usable_cpu_cnt);
 			nodes_needed = _opt_node_cnt(step_spec->min_nodes,
 						     step_spec->max_nodes,
 						     node_avail_cnt,
 						     nodes_picked_cnt);
 			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_idle,
 							 nodes_needed,
-							 step_spec->cpu_count,
+							 cpus_needed,
 							 usable_cpu_cnt);
 			if (node_tmp) {
 				bit_or  (nodes_picked, node_tmp);
@@ -1128,13 +1171,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			node_avail_cnt = 0;
 		if ((nodes_needed > 0) &&
 		    (node_avail_cnt >= nodes_needed)) {
+			cpus_needed = _opt_cpu_cnt(step_spec->cpu_count,
+						   nodes_picked,
+						   usable_cpu_cnt);
 			nodes_needed = _opt_node_cnt(step_spec->min_nodes,
 						     step_spec->max_nodes,
 						     node_avail_cnt,
 						     nodes_picked_cnt);
 			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_avail,
 							 nodes_needed,
-							 step_spec->cpu_count,
+							 cpus_needed,
 							 usable_cpu_cnt);
 			if (node_tmp == NULL) {
 				int avail_node_cnt = bit_set_count(nodes_avail);
@@ -1969,7 +2015,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 	*new_step_record = step_ptr;
 
-	if(!with_slurmdbd && !job_ptr->db_index)
+	if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);

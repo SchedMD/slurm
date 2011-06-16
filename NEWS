@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
     UMBC.
  -- Fix logic for multiple job resize operations.
  -- BLUEGENE - many fixes to make things work correctly on a L/P system.
+ -- Fix bug in layout of job step with --nodelist option plus node count. Old
+    code could allocate too few nodes.
 
 * Changes in SLURM 2.3.0.pre5
 =============================
