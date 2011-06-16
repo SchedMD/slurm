@@ -125,8 +125,8 @@
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
  * "configure --enable-memory-leak-debug" then execute
- * > valgrind --tool=memcheck --leak-check=yes --num-callers=6 \
- *    --leak-resolution=med slurmctld -D
+ * $ valgrind --tool=memcheck --leak-check=yes --num-callers=8 \
+ *   --leak-resolution=med ./slurmctld -Dc >valg.ctld.out 2>&1
  *
  * Then exercise the slurmctld functionality before executing
  * > scontrol shutdown

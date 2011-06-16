@@ -226,9 +226,17 @@ not change gnats bug state, but records source files associated
 with the bug.
 
 For memory leaks (for AIX use zerofault, zf; for linux use valgrind)
- - run configure with the option --enable-memory-leak-debug
- - valgrind --tool=memcheck --leak-check=yes --num-callers=6 --leak-resolution=med \
-   ./slurmctld -Dc >ctld.out 2>&1    (or similar like for slurmd)
+ - Run configure with the option "--enable-memory-leak-debug" to completely
+   release allocated memory when the daemons exit
+ - valgrind --tool=memcheck --leak-check=yes --num-callers=8 --leak-resolution=med \
+   ./slurmctld -Dc >valg.ctld.out 2>&1
+ - valgrind --tool=memcheck --leak-check=yes --num-callers=8 --leak-resolution=med \
+   ./slurmd -Dc >valg.slurmd.out 2>&1    (Probably only one one node of cluster)
+ - Run the regression test. In the globals.local file include:
+   "set enable_memory_leak_debug 1"
+ - Shutdown the daemons using "scontrol shutdown"
+ - Examine the end of the log files for leaks. pthread_create() and dlopen()
+   have small memory leaks on some systems, which do not grow over time
 
 Before new major release:
  - Test on ia64, i386, x86_64, BGL, AIX, OSX, XCPU
