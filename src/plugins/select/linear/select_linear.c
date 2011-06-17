@@ -1267,7 +1267,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			    (sufficient && (best_fit_sufficient == 0)) ||
 			    (sufficient &&
 			     (switches_cpu_cnt[j] < best_fit_cpus)) ||
-			    ((sufficient == 0) &&
+			    (!sufficient &&
 			     (switches_cpu_cnt[j] > best_fit_cpus))) {
 				best_fit_cpus =  switches_cpu_cnt[j];
 				best_fit_nodes = switches_node_cnt[j];
@@ -2569,7 +2569,11 @@ extern int select_p_state_restore(char *dir_name)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_init(List job_list)
+/*
+ * Note the initialization of job records, issued upon restart of
+ * slurmctld and used to synchronize any job state.
+ */
+extern int select_p_job_init(List job_list_arg)
 {
 	return SLURM_SUCCESS;
 }
@@ -2606,7 +2610,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_block_init(List part_list)
+extern int select_p_block_init(List block_list)
 {
 	return SLURM_SUCCESS;
 }
@@ -2693,6 +2697,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return rc;
 }
 
+/*
+ * Note initiation of job is about to begin. Called immediately
+ * after select_p_job_test(). Executed from slurmctld.
+ * IN job_ptr - pointer to job being initiated
+ */
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
@@ -2722,13 +2731,18 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();
-	_add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_begin", 1);
+	if (rc == SLURM_SUCCESS)
+		rc = _add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_begin", 1);
 	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
 
-/* Determine if allocated nodes are usable (powered up) */
+/*
+ * Determine if allocated nodes are usable (powered up)
+ * IN job_ptr - pointer to job being tested
+ * RET -1 on error, 1 if ready to execute, 0 otherwise
+ */
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 	int i, i_first, i_last;
@@ -2774,6 +2788,11 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	return rc;
 }
 
+/*
+ * Modify internal data structures for a job that has changed size
+ *      Only support jobs shrinking now.
+ * RET: 0 or an error code
+ */
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
@@ -2806,6 +2825,10 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Note termination of job is starting. Executed from slurmctld.
+ * IN job_ptr - pointer to job being terminated
+ */
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
@@ -2829,29 +2852,45 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();
-	_rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_fini", true);
+	if (_rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_fini", true) !=
+	    SLURM_SUCCESS)
+		rc = SLURM_ERROR;
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
 
+/*
+ * Suspend a job. Executed from slurmctld.
+ * IN job_ptr - pointer to job being suspended
+ * RET SLURM_SUCCESS or error code
+ */
 extern int select_p_job_suspend(struct job_record *job_ptr)
 {
+	int rc;
+
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();
-	_rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_suspend", false);
+	rc = _rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_suspend", false);
 	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
+/*
+ * Resume a job. Executed from slurmctld.
+ * IN job_ptr - pointer to job being resumed
+ * RET SLURM_SUCCESS or error code
+ */
 extern int select_p_job_resume(struct job_record *job_ptr)
 {
+	int rc;
+
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();
-	_add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_resume", 0);
+	rc = _add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_resume", 0);
 	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
@@ -3026,11 +3065,22 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
+/*
+ * allocate storage for a select job credential
+ * RET        - storage for a select job credential
+ * NOTE: storage must be freed using select_p_select_jobinfo_free
+ */
 extern select_jobinfo_t *select_p_select_jobinfo_alloc(void)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
+/*
+ * fill in a previously allocated select job credential
+ * IN/OUT jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * IN data - the data to enter into job credential
+ */
 extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 				       enum select_jobdata_type data_type,
 				       void *data)
@@ -3038,6 +3088,13 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * get data from a select job credential
+ * IN jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * OUT data - the data to get from job credential, caller must xfree
+ *      data for data_type == SELECT_JOBDATA_PART_ID
+ */
 extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
 					enum select_jobdata_type data_type,
 					void *data)
@@ -3045,23 +3102,49 @@ extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
 	return SLURM_ERROR;
 }
 
+/*
+ * copy a select job credential
+ * IN jobinfo - the select job credential to be copied
+ * RET        - the copy or NULL on failure
+ * NOTE: returned value must be freed using select_p_select_jobinfo_free
+ */
 extern select_jobinfo_t *select_p_select_jobinfo_copy(
 	select_jobinfo_t *jobinfo)
 {
 	return NULL;
 }
 
+/*
+ * free storage previously allocated for a select job credential
+ * IN jobinfo  - the select job credential to be freed
+ * RET         - slurm error code
+ */
 extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
 
+/*
+ * pack a select job credential into a buffer in machine independent form
+ * IN jobinfo  - the select job credential to be saved
+ * OUT buffer  - buffer with select credential appended
+ * IN protocol_version - slurm protocol version of client
+ * RET         - slurm error code
+ */
 extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 					 uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
 
+/*
+ * unpack a select job credential from a buffer
+ * OUT jobinfo - the select job credential read
+ * IN  buffer  - buffer with select credential read from current pointer loc
+ * IN protocol_version - slurm protocol version of client
+ * RET         - slurm error code
+ * NOTE: returned value must be freed using select_p_select_jobinfo_free
+ */
 extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
 					   Buf buffer,
 					   uint16_t protocol_version)
@@ -3085,17 +3168,17 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return NULL;
 }
 
-extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
+extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
+extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_get_info_from_plugin (enum select_jobdata_type info,
+extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
 {
