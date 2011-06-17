@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre6
 =============================
+ -- NOTE: THERE HAS BEEN A NEW FIELD ADDED TO THE CONFIGURATION RESPONSE RPC
+    AS SHOWN BY "SCONTROL SHOW CONFIG". THIS FUNCTION WILL ONLY WORK WHEN THE
+    SERVER AND CLIENT ARE BOTH RUNNING SLURM VERSION 2.3.0.pre6
  -- Modify job expansion logic to support licenses, generic resources, and
     currently running job steps.
  -- Added an rpath if using the --with-munge option of configure.
