@@ -70,7 +70,7 @@ static char *_get_cray_conf(void)
 	int i;
 
 	if (!val)
-		return CRAY_CONFIG_FILE;
+		return xstrdup(CRAY_CONFIG_FILE);
 
 	/* Replace file name on end of path */
 	i = strlen(val) - strlen("slurm.conf") + strlen("cray.conf") + 1;
@@ -108,6 +108,7 @@ extern int create_config(void)
 		cray_conf->sdb_pass = xstrdup(DEFAULT_CRAY_SDB_PASS);
 		cray_conf->sdb_port = DEFAULT_CRAY_SDB_PORT;
 		cray_conf->sdb_user = xstrdup(DEFAULT_CRAY_SDB_USER);
+		xfree(cray_conf_file);
 		goto end_it;
 	}
 	if (cray_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
