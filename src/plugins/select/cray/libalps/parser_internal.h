@@ -103,4 +103,8 @@ extern void eh_inventory_3_1(struct ud *ud, const XML_Char **attrs);
 extern void eh_node_3_1(struct ud *ud, const XML_Char **attrs);
 extern void eh_resv_3_1(struct ud *ud, const XML_Char **attrs);
 
+/* Basil 4.0 and above common handlers */
+extern void eh_accel(struct ud *ud, const XML_Char **attrs);
+extern void eh_accel_alloc(struct ud *ud, const XML_Char **attrs);
+
 #endif /*__PARSER_INTERNAL_H__ */

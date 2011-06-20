@@ -143,4 +143,20 @@ const char *nam_gpc_mode[BGM_MAX] = {
 	[BGM_UNKNOWN]   = "UNKNOWN"
 };
 
+/*
+ * Enum-to-string mapping tables introduced in Alps 4.0
+ */
+const char *nam_acceltype[BA_MAX] = {
+	[BA_NONE]	= "UNDEFINED",
+	[BA_GPU]	= "GPU",
+	[BA_UNKNOWN]	= "UNKNOWN"
+};
+
+const char *nam_accelstate[BAS_MAX] = {
+	[BAS_NONE]	= "UNDEFINED",
+	[BAS_UP]	= "UP",
+	[BAS_DOWN]	= "DOWN",
+	[BAS_UNKNOWN]	= "UNKNOWN"
+};
+
 #endif /* __PARSER_COMMON_H__ */

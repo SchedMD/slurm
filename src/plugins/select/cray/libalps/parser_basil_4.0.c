@@ -57,6 +57,75 @@ static void eh_node_array_4_0(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal change_count = %s", attribs[0]);
 }
 
+/** Basil 4.0 'Accelerator' element */
+void eh_accel(struct ud *ud, const XML_Char **attrs)
+{
+	struct basil_node_accelerator accel = {0};
+	char *attribs[] = { "ordinal", "type", "state", "family",
+			    "memory_mb", "clock_mhz" };
+
+	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
+
+	if (atou32(attribs[0], &accel.ordinal) < 0)
+		fatal("illegal ordinal = %s", attribs[0]);
+	if (accel.ordinal != 0)		/* Basil 4.0: only 1 GPU/Node */
+		fatal("Basil 4.0 Accelerator.ordinal > 0 (%u)", accel.ordinal);
+
+	for (accel.type = BA_GPU; accel.type < BA_MAX; accel.type++)
+		if (strcmp(attribs[1], nam_acceltype[accel.type]) == 0)
+			break;
+	if (accel.type != BA_GPU)	/* Basil 4.0: GPU only supported type */
+		fatal("Basil 4.0 Accelerator.type not 'GPU' (%s)", attribs[1]);
+
+	for (accel.state = BAS_UP; accel.state < BAS_MAX; accel.state++)
+		if (strcmp(attribs[2], nam_accelstate[accel.state]) == 0)
+			break;
+
+	strncpy(accel.family, attribs[3], sizeof(accel.family));
+
+	if (atou32(attribs[4], &accel.memory_mb) < 0)
+		fatal("illegal Accelerator.memory_mb = %s", attribs[4]);
+
+	if (atou32(attribs[5], &accel.clock_mhz) < 0)
+		fatal("illegal Accelerator.clock_mhz = %s", attribs[5]);
+
+	if (ud->ud_inventory) {
+		struct basil_node_accelerator *new = parse_zalloc(sizeof(*new));
+
+		*new = accel;
+		xassert(ud->ud_inventory->node_head != NULL);
+		xassert(ud->ud_inventory->node_head->accel_head == NULL);
+
+		if (ud->ud_inventory->node_head->accel_head)
+			new->next = ud->ud_inventory->node_head->accel_head;
+		ud->ud_inventory->node_head->accel_head = new;
+	}
+}
+
+/** Basil 4.0 'AcceleratorAllocation' element */
+void eh_accel_alloc(struct ud *ud, const XML_Char **attrs)
+{
+	char *attribs[] = { "reservation_id" };
+	uint32_t rsvn_id;
+
+	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
+
+	if (atou32(attribs[0], &rsvn_id) < 0)
+		fatal("illegal Accelerator reservation_id = %s", attribs[0]);
+
+	if (ud->ud_inventory) {
+		struct basil_accel_alloc *new = parse_zalloc(sizeof(*new));
+
+		new->rsvn_id = rsvn_id;
+
+		xassert(ud->ud_inventory->node_head != NULL);
+		xassert(ud->ud_inventory->node_head->accel_head != NULL);
+		xassert(!ud->ud_inventory->node_head->accel_head->allocation);
+
+		ud->ud_inventory->node_head->accel_head->allocation = new;
+	}
+}
+
 const struct element_handler basil_4_0_elements[] = {
 	[BT_MESSAGE]	= {
 			.tag	= "Message",
@@ -189,6 +258,24 @@ const struct element_handler basil_4_0_elements[] = {
 			.depth	= 8,
 			.uniq	= false,
 			.hnd	= eh_label
+	},
+	[BT_ACCELARRAY]	= {
+			.tag	= "AcceleratorArray",
+			.depth	= 5,
+			.uniq	= true,
+			.hnd	= NULL
+	},
+	[BT_ACCEL]	= {
+			.tag	= "Accelerator",
+			.depth	= 6,
+			.uniq	= false,
+			.hnd	= eh_accel
+	},
+	[BT_ACCELALLOC]	= {
+			.tag	= "AcceleratorAllocation",
+			.depth	= 7,
+			.uniq	= false,
+			.hnd	= eh_accel_alloc
 	},
 	[BT_RESARRAY]	= {
 			.tag	= "ReservationArray",

@@ -71,6 +71,9 @@ const char *nam_proc[BPT_MAX];
 const char *nam_rsvn_mode[BRM_MAX];
 const char *nam_gpc_mode[BGM_MAX];
 
+const char *nam_acceltype[BA_MAX];
+const char *nam_accelstate[BAS_MAX];
+
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */
 #define _ADD_DELAYS  0

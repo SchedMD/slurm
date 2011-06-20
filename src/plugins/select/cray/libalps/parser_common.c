@@ -26,6 +26,9 @@ const char *nam_gpc_mode[BGM_MAX];
 const char *nam_gpc_mode[BGM_MAX];
 const char *nam_rsvn_mode[BRM_MAX];
 
+const char *nam_acceltype[BA_MAX];
+const char *nam_accelstate[BAS_MAX];
+
 /*
  *	General-purpose routines
  */
@@ -205,7 +208,8 @@ void eh_node(struct ud *ud, const XML_Char **attrs)
 		ud->ud_inventory->node_head = new;
 	}
 
-	ud->counter[BT_SEGMARRAY] = 0;
+	ud->counter[BT_SEGMARRAY]  = 0;
+	ud->counter[BT_ACCELARRAY] = 0;
 
 	/* Cover up Basil version differences by faking a segment. */
 	if (ud->bp->version < BV_1_1)
@@ -518,6 +522,7 @@ static enum basil_method tag_to_method(const enum basil_element tag)
 		return BM_release;
 	case BT_ENGINE:
 		return BM_engine;
+	case BT_ACCELARRAY ... BT_ACCELALLOC:	/* INVENTORY, Basil >= 4.0 */
 	case BT_SEGMARRAY ... BT_COMMAND:	/* INVENTORY, Basil >= 1.1 */
 	case BT_INVENTORY ... BT_RESVN:		/* INVENTORY, Basil >= 1.0 */
 		return BM_inventory;
