@@ -79,6 +79,7 @@ const char *nam_accelstate[BAS_MAX];
 #define _ADD_DELAYS  0
 #define _DEBUG       0
 #define MAX_RESV_CNT 500
+#define NODES_PER_COORDINATE 4
 
 static MYSQL *mysql_handle = NULL;
 static MYSQL_BIND *my_bind_col = NULL;
@@ -214,7 +215,7 @@ static void _incr_dims(int *coord, int dims)
 /* Initialize the hardware pointer records */
 static void _init_hw_recs(int dims)
 {
-	int j;
+	int j, spur_cnt;
 
 	hw_cabinet = 0;
 	hw_row = 0;
@@ -224,7 +225,9 @@ static void _init_hw_recs(int dims)
 
 	my_node_ptr = node_record_table_ptr;
 	my_node_inx = 0;
-	_get_dims(node_record_count, max_dim, 3);
+	spur_cnt = node_record_count + NODES_PER_COORDINATE - 1;
+	spur_cnt /= NODES_PER_COORDINATE;
+	_get_dims(spur_cnt, max_dim, 3);
 
 	last_spur_inx = 0;
 	for (j = 0; j < dims; j++)
@@ -238,7 +241,8 @@ static void _incr_hw_recs(void)
 		return;	/* end of node table */
 
 	my_node_ptr++;
-	_incr_dims(coord, 3);
+	if ((my_node_inx % NODES_PER_COORDINATE) == 0)
+		_incr_dims(coord, 3);
 	hw_cpu++;
 	if (hw_cpu > 3) {
 		hw_cpu = 0;
