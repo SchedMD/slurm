@@ -684,8 +684,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 	snprintf(batch_id, sizeof(batch_id), "%u", job_ptr->job_id);
 	user = uid_to_string(job_ptr->user_id);
-	rc   = basil_reserve(user, batch_id, mppwidth,
-			     mppdepth, mppnppn, mppmem, ns_head);
+	rc   = basil_reserve(user, batch_id, mppwidth, mppdepth, mppnppn,
+			     mppmem, ns_head, NULL);
 	xfree(user);
 	if (rc <= 0) {
 		/* errno value will be resolved by select_g_job_begin() */

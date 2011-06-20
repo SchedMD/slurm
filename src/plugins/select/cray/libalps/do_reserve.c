@@ -44,10 +44,12 @@ static int rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
  * @nppn:	mppnppn  >= 0 (0 meaning 'use defaults')
  * @mem_mb:	mppmem   >= 0 (0 meaning 'use defaults', else size in MB)
  * @mppnodes:	comma-separated nodelist (will be freed if not NULL)
+ * @accel:	accelerator parameters (will be freed if not NULL)
  */
 static int rsvn_add_params(struct basil_reservation *resv,
 			   uint32_t width, uint32_t depth, uint32_t nppn,
-			   uint32_t mem_mb, char *mppnodes)
+			   uint32_t mem_mb, char *mppnodes,
+			   struct basil_accel_param *accel)
 {
 	struct basil_rsvn_param *rp = calloc(1, sizeof(*rp));
 
@@ -59,6 +61,7 @@ static int rsvn_add_params(struct basil_reservation *resv,
 	rp->depth = depth;
 	rp->nppn  = nppn;
 	rp->nodes = mppnodes;
+	rp->accel = accel;
 
 	if (mem_mb && rsvn_add_mem_param(rp, mem_mb) < 0) {
 		rsvn_free_param(rp);
@@ -91,13 +94,15 @@ static struct basil_reservation *alloc_rsvn(uint32_t rsvn_id)
  * @nppn:	mppnppn  >= 0 (0 meaning 'use default')
  * @mem_mb:	mppmem   >= 0 (0 meaning 'use defaults', else size in MB)
  * @mppnodes:	comma-separated nodelist (will be freed if not NULL)
+ * @accel:	accelerator parameters or NULL
  *
  * The reservation ID is initially 0, since 0 is an invalid reservation ID.
  */
 static struct basil_reservation *rsvn_new(const char *user, const char *batch_id,
 					  uint32_t width, uint32_t depth,
 					  uint32_t nppn, uint32_t mem_mb,
-					  char *mppnodes)
+					  char *mppnodes,
+					  struct basil_accel_param *accel)
 {
 	struct basil_reservation *res;
 
@@ -115,7 +120,7 @@ static struct basil_reservation *rsvn_new(const char *user, const char *batch_id
 	if (batch_id && *batch_id)
 		strncpy(res->batch_id, batch_id, sizeof(res->batch_id));
 
-	if (rsvn_add_params(res, width, depth, nppn, mem_mb, mppnodes) < 0) {
+	if (rsvn_add_params(res, width, depth, nppn, mem_mb, mppnodes, accel) < 0) {
 		free_rsvn(res);
 		return NULL;
 	}
@@ -125,18 +130,20 @@ static struct basil_reservation *rsvn_new(const char *user, const char *batch_id
 
 /**
  * basil_reserve  -  wrapper around rsvn_new.
- * @user:     owner of the reservation
- * @batch_id: (numeric) job ID
- * @width:    mppwidth (aprun -n)
- * @depth:    mppdepth (aprun -d)
- * @nppn:     mppnppn  (aprun -N)
- * @mem_mb:   mppmem   (aprun -m)
- * @ns_head:  list of requested mppnodes (will be freed if not NULL)
+ * @user:       owner of the reservation
+ * @batch_id:   (numeric) job ID
+ * @width:      mppwidth (aprun -n)
+ * @depth:      mppdepth (aprun -d)
+ * @nppn:       mppnppn  (aprun -N)
+ * @mem_mb:     mppmem   (aprun -m)
+ * @ns_head:    list of requested mppnodes (will be freed if not NULL)
+ * @accel_head: optional accelerator parameters
  * Returns reservation ID > 0 if ok, negative %enum basil_error on error.
  */
 long basil_reserve(const char *user, const char *batch_id,
 		   uint32_t width, uint32_t depth, uint32_t nppn,
-		   uint32_t mem_mb, struct nodespec *ns_head)
+		   uint32_t mem_mb, struct nodespec *ns_head,
+		   struct basil_accel_param *accel_head)
 {
 	struct basil_reservation *rsvn;
 	struct basil_parse_data bp = {0};
@@ -144,7 +151,8 @@ long basil_reserve(const char *user, const char *batch_id,
 	long rc;
 
 	free_nodespec(ns_head);
-	rsvn = rsvn_new(user, batch_id, width, depth, nppn, mem_mb, mppnodes);
+	rsvn = rsvn_new(user, batch_id, width, depth, nppn, mem_mb,
+			mppnodes, accel_head);
 	if (rsvn == NULL)
 		return -BE_INTERNAL;
 

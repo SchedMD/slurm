@@ -24,7 +24,8 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 			nam_arch[param->arch],
 			param->width, param->depth, param->nppn);
 
-		if (param->memory || param->labels || param->nodes) {
+		if (param->memory || param->labels ||
+		    param->nodes  || param->accel) {
 			fprintf(fp, ">\n");
 		} else {
 			fprintf(fp, "/>\n");
@@ -72,6 +73,25 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 			fprintf(fp, "   <NodeParamArray>\n"
 				    "    <NodeParam>%s</NodeParam>\n"
 				    "   </NodeParamArray>\n", param->nodes);
+		}
+
+		if (param->accel) {
+			struct basil_accel_param *accel;
+
+			fprintf(fp, "   <AccelParamArray>\n");
+			for (accel = param->accel; accel; accel = accel->next) {
+				fprintf(fp, "    <AccelParam type=\"%s\"",
+					nam_acceltype[accel->type]);
+
+				if (accel->family && *accel->family)
+					fprintf(fp, " family=\"%s\"",
+						accel->family);
+				if (accel->memory_mb)
+					fprintf(fp, " memory_mb=\"%u\"",
+						accel->memory_mb);
+				fprintf(fp, "/>\n");
+			}
+			fprintf(fp, "   </AccelParamArray>\n");
 		}
 
 		fprintf(fp, "  </ReserveParam>\n");

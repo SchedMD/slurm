@@ -120,11 +120,20 @@ static void rsvn_free_param_mem(struct basil_memory_param *m)
 	}
 }
 
+static void rsvn_free_param_accel(struct basil_accel_param *a)
+{
+	if (a) {
+		rsvn_free_param_accel(a->next);
+		free(a);
+	}
+}
+
 void rsvn_free_param(struct basil_rsvn_param *p)
 {
 	if (p) {
 		rsvn_free_param(p->next);
 		rsvn_free_param_mem(p->memory);
+		rsvn_free_param_accel(p->accel);
 		free_basil_label(p->labels);
 		free(p->nodes);
 		free(p);

@@ -418,6 +418,14 @@ struct basil_memory_param {
 	struct basil_memory_param *next;
 };
 
+struct basil_accel_param {
+	enum basil_acceltype	type;
+	char 			family[BASIL_STRING_LONG];
+	uint32_t		memory_mb;
+
+	struct basil_accel_param *next;
+};
+
 struct basil_rsvn_param {
 	enum basil_node_arch	arch;		/* "architecture", XT or X2, -a  */
 	long			width,		/* required mppwidth > 0,    -n  */
@@ -430,6 +438,7 @@ struct basil_rsvn_param {
 	char				*nodes;		/* NodeParamArray   */
 	struct basil_label		*labels;	/* LabelParamArray  */
 	struct basil_memory_param	*memory;	/* MemoryParamArray */
+	struct basil_accel_param	*accel;		/* AccelParamArray  */
 
 	struct basil_rsvn_param		*next;
 };
@@ -595,7 +604,8 @@ extern void   free_inv(struct basil_inventory *inv);
 
 extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
-			  uint32_t mem_mb, struct nodespec *ns_head);
+			  uint32_t mem_mb, struct nodespec *ns_head,
+			  struct basil_accel_param *accel_head);
 extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id);
 extern const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,
 						 uint32_t resvn_id);

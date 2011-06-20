@@ -85,6 +85,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Jimmy Tang (Trinity College, Ireland)</li>
 <li>Kevin Tew (LLNL/Bringham Young University)</li>
 <li>Adam Todorski (Rensselaer Polytechnic Institute)</li>
+<li>Stephen Trofinoff (Swiss National Computer Centre)</li>
 <li>Nathan Weeks (Iowa State University)</li>
 <li>Tim Wickberg (Rensselaer Polytechnic Institute)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
@@ -92,6 +93,6 @@ organizations. The current SLURM development staff includes: </p>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 14 June 2011</p>
+<p style="text-align:center;">Last modified 19 June 2011</p>
 
 <!--#include virtual="footer.txt"-->
