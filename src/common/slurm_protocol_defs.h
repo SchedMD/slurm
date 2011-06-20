@@ -153,11 +153,6 @@ enum task_flag_vals {
 	TASK_UNUSED2 = 0x4
 };
 
-enum suspend_opts {
-	SUSPEND_JOB,		/* Suspend a job now */
-	RESUME_JOB		/* Resume a job now */
-};
-
 /*
  * SLURM Message types
  *
@@ -307,6 +302,7 @@ typedef enum {
 	SRUN_USER_MSG,
 	SRUN_EXEC,
 	SRUN_STEP_MISSING,
+	SRUN_REQUEST_SUSPEND,
 
 	PMI_KVS_PUT_REQ = 7201,
 	PMI_KVS_PUT_RESP,
@@ -838,11 +834,6 @@ typedef struct checkpoint_resp_msg {
 	uint32_t error_code;	/* error code on failure */
 	char   * error_msg;	/* error message on failure */
 } checkpoint_resp_msg_t;
-
-typedef struct suspend_msg {
-	uint16_t op;            /* suspend operation, see enum suspend_opts */
-	uint32_t job_id;        /* slurm job_id */
-} suspend_msg_t;
 
 typedef struct kvs_get_msg {
 	uint32_t task_id;	/* job step's task id */

@@ -1039,6 +1039,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					  msg->protocol_version);
 		break;
 	case REQUEST_SUSPEND:
+	case SRUN_REQUEST_SUSPEND:
 		_pack_suspend_msg((suspend_msg_t *)msg->data, buffer,
 				  msg->protocol_version);
 		break;
@@ -1569,6 +1570,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						 msg->protocol_version);
 		break;
 	case REQUEST_SUSPEND:
+	case SRUN_REQUEST_SUSPEND:
 		rc = _unpack_suspend_msg((suspend_msg_t **) &msg->data,
 					 buffer,
 					 msg->protocol_version);

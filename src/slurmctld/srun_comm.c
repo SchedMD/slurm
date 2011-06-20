@@ -372,6 +372,29 @@ extern void srun_job_complete (struct job_record *job_ptr)
 }
 
 /*
+ * srun_job_suspend - notify salloc of suspend/resume operation
+ * IN job_ptr - pointer to the slurmctld job record
+ * IN op - 
+ */
+extern void srun_job_suspend (struct job_record *job_ptr, uint16_t op)
+{
+	slurm_addr_t * addr;
+	suspend_msg_t *msg_arg;
+
+	xassert(job_ptr);
+
+	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
+		msg_arg = xmalloc(sizeof(suspend_msg_t));
+		msg_arg->job_id  = job_ptr->job_id;
+		msg_arg->op     = op;
+		_srun_agent_launch(addr, job_ptr->alloc_node,
+				   SRUN_REQUEST_SUSPEND, msg_arg);
+	}
+}
+
+/*
  * srun_step_complete - notify srun of a job step's termination
  * IN step_ptr - pointer to the slurmctld job step record
  */

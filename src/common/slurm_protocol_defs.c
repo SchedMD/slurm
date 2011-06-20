@@ -2334,6 +2334,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_front_end_info_request_msg(data);
 		break;
 	case REQUEST_SUSPEND:
+	case SRUN_REQUEST_SUSPEND:
 		slurm_free_suspend_msg(data);
 		break;
 	case REQUEST_JOB_READY:

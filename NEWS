@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- select/cray: Add support for Accelerator information including model and
     memory options.
+ -- Cray systems: Add support to suspend/resume salloc command to insure that
+    aprun does not get initiated when the job is suspended.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

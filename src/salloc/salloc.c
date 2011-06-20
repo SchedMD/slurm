@@ -93,9 +93,11 @@ char *work_dir = NULL;
 static int is_interactive;
 
 enum possible_allocation_states allocation_state = NOT_GRANTED;
+pthread_cond_t  allocation_state_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool exit_flag = false;
+static bool suspend_flag = false;
 static bool allocation_interrupted = false;
 static uint32_t pending_job_id = 0;
 static time_t last_timeout = 0;
@@ -106,6 +108,7 @@ static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static pid_t  _fork_command(char **command);
 static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
+static void _job_suspend_handler(suspend_msg_t *msg);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
@@ -277,6 +280,7 @@ int main(int argc, char *argv[])
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
 	callbacks.job_complete = _job_complete_handler;
+	callbacks.job_suspend = _job_suspend_handler;
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
@@ -399,6 +403,7 @@ int main(int argc, char *argv[])
 	if (allocation_state == REVOKED) {
 		error("Allocation was revoked for job %u before command could "
 		      "be run", alloc->job_id);
+		pthread_cond_broadcast(&allocation_state_cond);
 		pthread_mutex_unlock(&allocation_state_lock);
 		if (slurm_complete_job(alloc->job_id, status) != 0) {
 			error("Unable to clean up allocation for job %u: %m",
@@ -407,6 +412,7 @@ int main(int argc, char *argv[])
 		return 1;
  	}
 	allocation_state = GRANTED;
+	pthread_cond_broadcast(&allocation_state_cond);
 	pthread_mutex_unlock(&allocation_state_lock);
 
 	/*  Ensure that salloc has initial terminal foreground control.  */
@@ -424,8 +430,13 @@ int main(int argc, char *argv[])
 
 		tcsetpgrp(STDIN_FILENO, pid);
 	}
-
+	pthread_mutex_lock(&allocation_state_lock);
+	if (suspend_flag)
+		pthread_cond_wait(&allocation_state_cond, &allocation_state_lock);
 	command_pid = _fork_command(command_argv);
+	pthread_cond_broadcast(&allocation_state_cond);
+	pthread_mutex_unlock(&allocation_state_lock);
+
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
 	 * signal.  Either way, we are going to release the allocation next.
@@ -438,12 +449,10 @@ int main(int argc, char *argv[])
 		/* NOTE: Do not process signals in separate pthread.
 		 * The signal will cause waitpid() to exit immediately. */
 		xsignal(SIGHUP,  _exit_on_signal);
-
 		/* Use WUNTRACED to treat stopped children like terminated ones */
 		do {
 			rc_pid = waitpid(command_pid, &status, WUNTRACED);
-		} while ((rc_pid == -1) && (!exit_flag));
-
+		} while (WIFSTOPPED(status) || ((rc_pid == -1) && (!exit_flag)));
 		if ((rc_pid == -1) && (errno != EINTR))
 			error("waitpid for %s failed: %m", command_argv[0]);
 	}
@@ -467,6 +476,7 @@ relinquish:
 		pthread_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
+	pthread_cond_broadcast(&allocation_state_cond);
 	pthread_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
@@ -810,6 +820,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			}
 		}
 		allocation_state = REVOKED;
+		pthread_cond_broadcast(&allocation_state_cond);
 		pthread_mutex_unlock(&allocation_state_lock);
 		/*
 		 * Clean up child process: only if the forked process has not
@@ -851,6 +862,24 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 		verbose("Job step %u.%u is finished.",
 			comp->job_id, comp->step_id);
 	}
+}
+
+static void _job_suspend_handler(suspend_msg_t *msg)
+{
+	pthread_mutex_lock(&allocation_state_lock);
+	if (msg->op == SUSPEND_JOB) {
+		verbose("job has been suspended");
+		suspend_flag = true;
+		if (command_pid > 0)
+			killpg(command_pid, SIGSTOP);
+	} else if (msg->op == RESUME_JOB) {
+		verbose("job has been resumed");
+		suspend_flag = false;
+		if (command_pid > 0)
+			killpg(command_pid, SIGCONT);
+	}
+	pthread_cond_broadcast(&allocation_state_cond);
+	pthread_mutex_unlock(&allocation_state_lock);
 }
 
 /*

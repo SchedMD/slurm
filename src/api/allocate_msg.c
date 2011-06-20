@@ -224,6 +224,7 @@ static void _handle_ping(struct allocation_msg_thread *msg_thr,
 
 	slurm_free_srun_ping_msg(msg->data);
 }
+
 static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
 				 slurm_msg_t *msg)
 {
@@ -234,6 +235,18 @@ static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
 		(msg_thr->callback.job_complete)(comp);
 
 	slurm_free_srun_job_complete_msg(msg->data);
+}
+
+static void _handle_suspend(struct allocation_msg_thread *msg_thr,
+			    slurm_msg_t *msg)
+{
+	suspend_msg_t *sus_msg = (suspend_msg_t *)msg->data;
+	debug3("received suspend message");
+
+	if (msg_thr->callback.job_suspend != NULL)
+		(msg_thr->callback.job_suspend)(sus_msg);
+
+	slurm_free_suspend_msg(msg->data);
 }
 
 static void
@@ -265,6 +278,9 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		break;
 	case SRUN_NODE_FAIL:
 		_handle_node_fail(msg_thr, msg);
+		break;
+	case SRUN_REQUEST_SUSPEND:
+		_handle_suspend(msg_thr, msg);
 		break;
 	default:
 		error("received spurious message type: %d",

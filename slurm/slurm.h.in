@@ -1192,6 +1192,16 @@ typedef struct srun_step_missing_msg {
 	uint32_t step_id;	/* step_id or NO_VAL */
 } srun_step_missing_msg_t;
 
+enum suspend_opts {
+	SUSPEND_JOB,		/* Suspend a job now */
+	RESUME_JOB		/* Resume a job now */
+};
+
+typedef struct suspend_msg {
+	uint16_t op;            /* suspend operation, see enum suspend_opts */
+	uint32_t job_id;        /* slurm job_id */
+} suspend_msg_t;
+
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	uint32_t cpu_count;	/* number of required processors */
@@ -1287,6 +1297,7 @@ typedef struct {
 	void (*timeout)(srun_timeout_msg_t *);
 	void (*user_msg)(srun_user_msg_t *);
 	void (*node_fail)(srun_node_fail_msg_t *);
+	void (*job_suspend)(suspend_msg_t *);
 } slurm_allocation_callbacks_t;
 
 typedef struct {

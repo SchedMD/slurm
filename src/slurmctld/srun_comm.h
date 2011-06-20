@@ -65,12 +65,19 @@ extern void srun_allocate_abort(struct job_record *job_ptr);
  */
 extern void srun_exec(struct step_record *step_ptr, char **argv);
 
-
 /*
  * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
  */
 extern void srun_job_complete (struct job_record *job_ptr);
+
+
+/*
+ * srun_job_suspend - notify salloc of suspend/resume operation
+ * IN job_ptr - pointer to the slurmctld job record
+ * IN op - 
+ */
+extern void srun_job_suspend (struct job_record *job_ptr, uint16_t op);
 
 /*
  * srun_step_complete - notify srun of a job step's termination

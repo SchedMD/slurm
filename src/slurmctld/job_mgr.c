@@ -8961,6 +8961,11 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
+	/* Send message to salloc, required on Crays with ALPS */
+#if defined(HAVE_CRAY) || 1
+	srun_job_suspend(job_ptr, sus_ptr->op);
+#endif
+
 	/* perform the operation */
 	if (sus_ptr->op == SUSPEND_JOB) {
 		if (!IS_JOB_RUNNING(job_ptr)) {
