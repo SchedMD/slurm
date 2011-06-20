@@ -74,53 +74,17 @@ typedef struct key_value {
 \*****************************************************************************/
 
 /*
- * now - Get the current time
- * RET time_t * : Pointer to the memory holding the current time
- */
-time_t now();
-
-/*
- * ld_partition_info - Issue slurm to load the partition info into part_pptr
- *
- * IN part_pptr - place to store a partition configuration pointer
- * IN show_flags - partition filtering options
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_partition_info_msg
- */
-int ld_partition_info(partition_info_msg_t **part_pptr, uint16_t show_flags);
-
-/*
- * ld_node_info - Issue slurm to load the node info into node_pptr
- *
- * IN node_pptr - place to store a node configuration pointer
- * IN show_flags - partition filtering options
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_node_info_msg
- */
-int ld_node_info(node_info_msg_t **node_pptr, uint16_t show_flags);
-
-/*
- * ld_job_info - Issue slurm to load the job info into job_pptr
- *
- * IN job_pptr - place to store a node configuration pointer
- * IN show_flags - partition filtering options
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_job_info_msg
- */
-int ld_job_info(job_info_msg_t **job_pptr, uint16_t show_flags);
-
-/*
- * parse_node_pointer - Parse a node pointer's contents into an
+ * _parse_node_pointer - Parse a node pointer's contents into an
  *	assocative zval array where the key is descriptive to the
  *	value
  *
  * IN sub_arr - array to store the contents of the node pointer
  * IN node_arr - node pointer that needs parsing
  */
-void parse_node_pointer(zval *sub_arr, node_info_t *node_arr);
+void _parse_node_pointer(zval *sub_arr, node_info_t *node_arr);
 
 /*
- * parse_assoc_array - Parse a character array where the elements are
+ * _parse_assoc_array - Parse a character array where the elements are
  *	key-value pairs separated by delimiters into an associative
  *	array
  *
@@ -128,35 +92,20 @@ void parse_node_pointer(zval *sub_arr, node_info_t *node_arr);
  * IN delims - character array that contains the delimeters used in parsing
  * IN result_arr - associative array used to store the key_value pairs in
  */
-void parse_assoc_array(char *char_arr, char *delims, zval *result_arr);
+void _parse_assoc_array(char *char_arr, char *delims, zval *result_arr);
 
 /*
- * parse_array - Parse a character array where the elements are values
+ * _parse_array - Parse a character array where the elements are values
  *	 separated by delimiters into a numerically indexed array
  *
  * IN char_arr - character array that needs parsing
  * IN delims - character array that contains the delimeters used in parsing
  * IN result_arr - numerically indexed array used to store the values in
  */
-void parse_array(char *char_arr, char *delims, zval *rslt_arr);
+void _parse_array(char *char_arr, char *delims, zval *rslt_arr);
 
 /*
- * get_partition_from_name - Load the information about a specific partition
- *	 by passing on a character array containing the partition name
- *
- * IN name - character array containing the partition name
- * IN prt_data - pointer to store the partition information in (if a
- *	partition is found with that specific name)
- * IN prt_ptr - pointer containing all the partition information of all the
- *	 arrays
- * RET partition_info_t pointer that contains the partition data, or
- *      null if the partition wasn't found
- */
-partition_info_t *get_partition_from_name(
-	char *name, partition_info_t *prt_data, partition_info_msg_t *prt_ptr);
-
-/*
- * zend_add_valid_assoc_string - checks a character array to see if
+ * _zend_add_valid_assoc_string - checks a character array to see if
  *	it's NULL or not, if so an associative null is added, if not
  *	an associative string is added.
  *
@@ -164,10 +113,10 @@ partition_info_t *get_partition_from_name(
  * IN key - character array used as the associative key
  * IN val - character array to be validated and added as value if valid
  */
-void zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val);
+void _zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val);
 
 /*
- * zend_add_valid_assoc_time_string - checks a unix timestamp to see if it's
+ * _zend_add_valid_assoc_time_string - checks a unix timestamp to see if it's
  * 	0 or not, if so an associative null is added, if not a formatted string
  *	is added.
  *
@@ -177,7 +126,7 @@ void zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val);
  * NOTE : If you'd like to change the format in which the valid strings are
  * returned, you can change the TIME_FORMAT_STRING macro to the needed format
  */
-void zend_add_valid_assoc_time_string(zval *rstl_arr, char *key, time_t *val);
+void _zend_add_valid_assoc_time_string(zval *rstl_arr, char *key, time_t *val);
 
 
 /*****************************************************************************\
