@@ -592,7 +592,6 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	uint32_t mppmem = 0, node_min_mem = 0;
 	uint32_t resv_id;
 	int i, first_bit, last_bit;
-	hostlist_t hl;
 	long rc;
 	char *user, batch_id[16];
 
@@ -627,10 +626,6 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		node_min_mem = job_ptr->details->pn_min_memory;
 	}
 
-	hl = hostlist_create("");
-	if (hl == NULL)
-		fatal("hostlist_create: malloc error");
-
 	for (i = first_bit; i <= last_bit; i++) {
 		struct node_record *node_ptr = node_record_table_ptr + i;
 		uint32_t basil_node_id;
@@ -642,7 +637,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			continue;	/* bad node */
 
 		if (sscanf(node_ptr->name, "nid%05u", &basil_node_id) != 1)
-			fatal("can not read basil_node_id from %s", node_ptr->name);
+			fatal("can not read basil_node_id from %s",
+			      node_ptr->name);
 
 		if (ns_add_node(&ns_head, basil_node_id) != 0) {
 			error("can not add node %s (nid%05u)", node_ptr->name,
