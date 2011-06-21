@@ -152,6 +152,7 @@ extern int create_config(void)
 	if (!s_p_get_string(&cray_conf->sdb_user, "SDBuser", tbl))
 		cray_conf->sdb_user = xstrdup(DEFAULT_CRAY_SDB_USER);
 
+	s_p_hashtbl_destroy(tbl);
 end_it:
 	cray_conf->slurm_debug_flags = slurmctld_conf.debug_flags;
 
