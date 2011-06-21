@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     memory options.
  -- Cray systems: Add support to suspend/resume salloc command to insure that
     aprun does not get initiated when the job is suspended.
+ -- Cray systems: Modify smap and sview to display all nodes even if multiple
+    nodes exist at each coordinate.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

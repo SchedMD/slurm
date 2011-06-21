@@ -781,6 +781,7 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 
 	if (select_cray_dim_size[0] == -1) {
 		node_info_t *node_ptr;
+		int nodes_per_coord = 1;
 
 		/* init the rest of the dim sizes. All current (2011)
 		 * XT/XE installations have a maximum dimension of 3,
@@ -791,6 +792,9 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 		for (i = 1; i < SYSTEM_DIMENSIONS; i++)
 			select_cray_dim_size[i] = -1;
 
+		node_ptr = &(node_info_ptr->node_array[i]);
+		if (node_ptr->arch && !strcmp(node_ptr->arch, "XE"))
+			nodes_per_coord = 4;
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &(node_info_ptr->node_array[i]);
 			if (!node_ptr->node_addr ||
@@ -799,6 +803,8 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			for (j = 0; j < SYSTEM_DIMENSIONS; j++) {
 				offset = select_char2coord(
 					node_ptr->node_addr[j]);
+				if (j == 0)
+					offset *= nodes_per_coord;
 				select_cray_dim_size[j] =
 					MAX((offset+1),
 					    select_cray_dim_size[j]);
