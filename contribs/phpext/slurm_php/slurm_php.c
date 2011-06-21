@@ -90,11 +90,65 @@ zend_module_entry slurm_php_module_entry = {
 ZEND_GET_MODULE(slurm_php)
 #endif
 
-#ifdef HAVE_XMALLOC_H
-#define malloc(size) xmalloc(size)
-#define free(ptr) xfree(ptr)
-#endif
+/*****************************************************************************\
+ *	HELPER FUNCTION PROTOTYPES
+\*****************************************************************************/
 
+/*
+ * _parse_node_pointer - Parse a node pointer's contents into an
+ *	assocative zval array where the key is descriptive to the
+ *	value
+ *
+ * IN sub_arr - array to store the contents of the node pointer
+ * IN node_arr - node pointer that needs parsing
+ */
+static void _parse_node_pointer(zval *sub_arr, node_info_t *node_arr);
+
+/*
+ * _parse_assoc_array - Parse a character array where the elements are
+ *	key-value pairs separated by delimiters into an associative
+ *	array
+ *
+ * IN char_arr - character array that needs parsing
+ * IN delims - character array that contains the delimeters used in parsing
+ * IN result_arr - associative array used to store the key_value pairs in
+ */
+static void _parse_assoc_array(char *char_arr, char *delims, zval *result_arr);
+
+/*
+ * _parse_array - Parse a character array where the elements are values
+ *	 separated by delimiters into a numerically indexed array
+ *
+ * IN char_arr - character array that needs parsing
+ * IN delims - character array that contains the delimeters used in parsing
+ * IN result_arr - numerically indexed array used to store the values in
+ */
+static void _parse_array(char *char_arr, char *delims, zval *rslt_arr);
+
+/*
+ * _zend_add_valid_assoc_string - checks a character array to see if
+ *	it's NULL or not, if so an associative null is added, if not
+ *	an associative string is added.
+ *
+ * IN rstl_arr - array to store the associative key_value pairs in
+ * IN key - character array used as the associative key
+ * IN val - character array to be validated and added as value if valid
+ */
+static void _zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val);
+
+/*
+ * _zend_add_valid_assoc_time_string - checks a unix timestamp to see if it's
+ * 	0 or not, if so an associative null is added, if not a formatted string
+ *	is added.
+ *
+ * IN rstl_arr - array to store the associative key_value pairs in
+ * IN key - character array used as the associative key
+ * IN val - time_t unix timestamp to be validated and added if valid
+ * NOTE : If you'd like to change the format in which the valid strings are
+ * returned, you can change the TIME_FORMAT_STRING macro to the needed format
+ */
+static void _zend_add_valid_assoc_time_string(
+	zval *rstl_arr, char *key, time_t *val);
 
 /*****************************************************************************\
  *	TODO
@@ -112,7 +166,7 @@ ZEND_GET_MODULE(slurm_php)
  *	HELPER FUNCTIONS
 \*****************************************************************************/
 
-void _parse_node_pointer(zval *sub_arr, node_info_t *node_arr)
+static void _parse_node_pointer(zval *sub_arr, node_info_t *node_arr)
 {
 	zval *sub_arr_2 = NULL;
 
@@ -159,7 +213,7 @@ void _parse_node_pointer(zval *sub_arr, node_info_t *node_arr)
 }
 
 
-void _parse_assoc_array(char *char_arr, char *delims, zval *result_arr)
+static void _parse_assoc_array(char *char_arr, char *delims, zval *result_arr)
 {
 	char *rslt = NULL;
 	char *tmp;
@@ -186,40 +240,35 @@ void _parse_assoc_array(char *char_arr, char *delims, zval *result_arr)
 }
 
 
-void _parse_array(char *char_arr, char *delims, zval *rslt_arr)
+static void _parse_array(char *char_arr, char *delims, zval *rslt_arr)
 {
 	char *rslt = NULL;
 	char *tmp = NULL;
 
 	rslt = strtok(char_arr, delims);
 	while (rslt != NULL) {
-		if (strcmp(rslt,"(null)")==0) {
+		if (strcmp(rslt, "(null)")==0) {
 			add_next_index_null(rslt_arr);
 		} else {
-			tmp = malloc(strlen(rslt) + 1);
-			strcpy(tmp,rslt);
+			tmp = slurm_xstrdup(rslt);
 			add_next_index_string(rslt_arr, tmp, 1);
-			free(tmp);
+			xfree(tmp);
 		}
 		rslt = strtok(NULL, delims);
 	}
 }
 
-void _zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val)
+static void _zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val)
 {
-	char *tmp = NULL;
-	if (val==NULL) {
+	if (!val)
 		add_assoc_null(rstl_arr, key);
-	} else {
-		tmp = malloc(strlen(val) + 1);
-		strcpy(tmp,val);
-		add_assoc_string(rstl_arr, key, tmp, 1);
-		free(tmp);
-	}
+	else
+		add_assoc_string(rstl_arr, key, val, 1);
 }
 
 
-void _zend_add_valid_assoc_time_string(zval *rstl_arr, char *key, time_t *val)
+static void _zend_add_valid_assoc_time_string(
+	zval *rstl_arr, char *key, time_t *val)
 {
 	char buf[80];
 	struct tm *timeinfo;
@@ -228,7 +277,7 @@ void _zend_add_valid_assoc_time_string(zval *rstl_arr, char *key, time_t *val)
 		add_assoc_null(rstl_arr, key);
 	} else {
 		timeinfo = localtime(val);
-		strftime(buf,80,TIME_FORMAT_STRING,timeinfo);
+		strftime(buf, 80, TIME_FORMAT_STRING, timeinfo);
 		add_assoc_string(rstl_arr, key, buf, 1);
 	}
 }
@@ -332,7 +381,6 @@ PHP_FUNCTION(slurm_hostlist_to_array)
 {
 	long lngth = 0;
 	char *host_list = NULL;
-	int err = SLURM_SUCCESS;
 	hostlist_t hl = NULL;
 	int hl_length = 0;
 	int i=0;
@@ -355,7 +403,9 @@ PHP_FUNCTION(slurm_hostlist_to_array)
 
 	array_init(return_value);
 	for (i=0; i<hl_length; i++) {
-		add_next_index_string(return_value,slurm_hostlist_shift(hl),1);
+		char *name = slurm_hostlist_shift(hl);
+		add_next_index_string(return_value, name, 1);
+		free(name);
 	}
 }
 
@@ -364,7 +414,6 @@ PHP_FUNCTION(slurm_array_to_hostlist)
 {
 	zval *node_arr = NULL, **data;
 	hostlist_t hl = NULL;
-	int i = 0;
 	HashTable *arr_hash;
 	HashPosition pointer;
 	int arr_length = 0;
@@ -398,7 +447,8 @@ PHP_FUNCTION(slurm_array_to_hostlist)
 
 	array_init(return_value);
 	buf = slurm_hostlist_ranged_string_xmalloc(hl);
-	_zend_add_valid_assoc_string(return_value,"HOSTLIST",buf);
+	_zend_add_valid_assoc_string(return_value, "HOSTLIST", buf);
+	xfree(buf);
 }
 
 
@@ -411,7 +461,6 @@ PHP_FUNCTION(slurm_print_partition_names)
 	int err = SLURM_SUCCESS;
 	int i;
 	partition_info_msg_t *prt_ptr = NULL;
-	char *tmp;
 
 	err = slurm_load_partitions((time_t) NULL, &prt_ptr, 0);
 
@@ -421,18 +470,11 @@ PHP_FUNCTION(slurm_print_partition_names)
 
 	array_init(return_value);
 	for (i = 0; i < prt_ptr->record_count; i++) {
-		tmp = malloc(strlen(prt_ptr->partition_array->name)+1);
-		strcpy(tmp,prt_ptr->partition_array->name);
 		add_next_index_string(return_value,
-				      tmp, 1);
-		free(tmp);
-		prt_ptr->partition_array++;
+				      prt_ptr->partition_array[i].name, 1);
 	}
 
-	if(prt_ptr != NULL) {
-		prt_ptr->partition_array -= i;
-		slurm_free_partition_info_msg(prt_ptr);
-	}
+	slurm_free_partition_info_msg(prt_ptr);
 
 	if (i == 0) {
 		RETURN_LONG(-1);
@@ -446,7 +488,6 @@ PHP_FUNCTION(slurm_get_specific_partition_info)
 	int err = SLURM_SUCCESS;
 	partition_info_msg_t *prt_ptr = NULL;
 	partition_info_t *prt_data = NULL;
-	partition_info_t *prt_data_tmp = NULL;
 	char *name = NULL;
 	char *tmp = NULL;
 	int i = 0;
@@ -470,21 +511,17 @@ PHP_FUNCTION(slurm_get_specific_partition_info)
 	if (prt_ptr->record_count != 0) {
 		for (i = 0; i < prt_ptr->record_count; i++) {
 			if (strcmp(prt_ptr->partition_array->name, name) == 0) {
-				prt_data = prt_ptr->partition_array;
+				prt_data = &prt_ptr->partition_array[i];
 				tmp = slurm_sprint_partition_info(prt_data, 1);
 				array_init(return_value);
 				_parse_assoc_array(tmp, "= ", return_value);
 				y++;
 				break;
 			}
-			prt_ptr->partition_array++;
 		}
 	}
 
-	if(prt_ptr != NULL) {
-		prt_ptr->partition_array -= i;
-		slurm_free_partition_info_msg(prt_ptr);
-	}
+	slurm_free_partition_info_msg(prt_ptr);
 
 	if (y == 0) {
 		RETURN_LONG(-1);
@@ -499,7 +536,6 @@ PHP_FUNCTION(slurm_get_partition_node_names)
 	int err = SLURM_SUCCESS;
 	partition_info_msg_t *prt_ptr = NULL;
 	partition_info_t *prt_data = NULL;
-	char *tmp = NULL;
 	int i = 0;
 	int y = 0;
 
@@ -514,34 +550,26 @@ PHP_FUNCTION(slurm_get_partition_node_names)
 
 	err = slurm_load_partitions((time_t) NULL, &prt_ptr, 0);
 
-	if (err) {
+	if (err)
 		RETURN_LONG(-2);
-	}
 
 	if (prt_ptr->record_count != 0) {
 		for (i = 0; i < prt_ptr->record_count; i++) {
-			if (strcmp(prt_ptr->partition_array->name, prt_name) == 0) {
-				prt_data = prt_ptr->partition_array;
+			if (!strcmp(prt_ptr->partition_array->name, prt_name)) {
+				prt_data = &prt_ptr->partition_array[i];
 				array_init(return_value);
-				tmp = malloc(strlen(prt_data->nodes)+1);
-				strcpy(tmp,prt_data->nodes);
-				add_next_index_string(return_value,tmp,1);
-				free(tmp);
+				add_next_index_string(
+					return_value, prt_data->nodes, 1);
 				y++;
 				break;
 			}
-			prt_ptr->partition_array++;
 		}
 	}
 
-	if(prt_ptr != NULL) {
-		prt_ptr->partition_array -= i;
-		slurm_free_partition_info_msg(prt_ptr);
-	}
+	slurm_free_partition_info_msg(prt_ptr);
 
-	if (y == 0) {
+	if (y == 0)
 		RETURN_LONG(-1);
-	}
 }
 
 
@@ -554,7 +582,6 @@ PHP_FUNCTION(slurm_get_node_names)
 	int err = SLURM_SUCCESS;
 	int i = 0;
 	node_info_msg_t *node_ptr = NULL;
-	char *tmp;
 
 	err = slurm_load_node((time_t) NULL, &node_ptr, 0);
 	if (err) {
@@ -564,18 +591,13 @@ PHP_FUNCTION(slurm_get_node_names)
 	if (node_ptr->record_count > 0) {
 		array_init(return_value);
 		for (i = 0; i < node_ptr->record_count; i++) {
-			tmp = malloc(strlen(node_ptr->node_array->name));
-			strcpy(tmp,node_ptr->node_array->name);
-			add_next_index_string(return_value,tmp, 1);
-			free(tmp);
-			node_ptr->node_array++;
+			add_next_index_string(
+				return_value, node_ptr->node_array[i].name, 1);
 		}
 	}
 
-	if (node_ptr != NULL) {
-		node_ptr->node_array-=i;
-		slurm_free_node_info_msg(node_ptr);
-	}
+	slurm_free_node_info_msg(node_ptr);
+
 	if(i==0) {
 		RETURN_LONG(-1);
 	}
@@ -588,7 +610,6 @@ PHP_FUNCTION(slurm_get_node_elements)
 	int i = 0;
 	node_info_msg_t *node_ptr;
 	zval *sub_arr = NULL;
-	char *tmp;
 
 	err = slurm_load_node((time_t) NULL, &node_ptr, 0);
 	if (err) {
@@ -600,20 +621,14 @@ PHP_FUNCTION(slurm_get_node_elements)
 		for (i = 0; i < node_ptr->record_count; i++) {
 			ALLOC_INIT_ZVAL(sub_arr);
 			array_init(sub_arr);
-			_parse_node_pointer(sub_arr, node_ptr->node_array);
-			tmp = malloc(strlen(node_ptr->node_array->name)+1);
-			strcpy(tmp,node_ptr->node_array->name);
-			add_assoc_zval(return_value, tmp,
+			_parse_node_pointer(sub_arr, &node_ptr->node_array[i]);
+			add_assoc_zval(return_value,
+				       node_ptr->node_array[i].name,
 				       sub_arr);
-			free(tmp);
-			node_ptr->node_array++;
 		}
 	}
 
-	if (node_ptr != NULL) {
-		node_ptr->node_array -= i;
-		slurm_free_node_info_msg(node_ptr);
-	}
+	slurm_free_node_info_msg(node_ptr);
 
 	if(i==0) {
 		RETURN_LONG(-1);
@@ -651,18 +666,14 @@ PHP_FUNCTION(slurm_get_node_element_by_name)
 			y++;
 			ALLOC_INIT_ZVAL(sub_arr);
 			array_init(sub_arr);
-			_parse_node_pointer(sub_arr, node_ptr->node_array);
+			_parse_node_pointer(sub_arr, &node_ptr->node_array[i]);
 			add_assoc_zval(return_value, node_name,
 				       sub_arr);
 			break;
 		}
-		node_ptr->node_array++;
 	}
 
-	if (node_ptr != NULL) {
-		node_ptr->node_array -= i;
-		slurm_free_node_info_msg(node_ptr);
-	}
+	slurm_free_node_info_msg(node_ptr);
 
 	if (y == 0) {
 		RETURN_LONG(-1);
@@ -695,16 +706,12 @@ PHP_FUNCTION(slurm_get_node_state_by_name)
 	for (i = 0; i < node_ptr->record_count; i++) {
 		if (strcmp(node_ptr->node_array->name, node_name) == 0) {
 			y++;
-			RETURN_LONG(node_ptr->node_array->node_state);
+			RETURN_LONG(node_ptr->node_array[i].node_state);
 			break;
 		}
-		node_ptr->node_array++;
 	}
 
-	if(node_ptr != NULL) {
-		node_ptr->node_array -= i;
-		slurm_free_node_info_msg(node_ptr);
-	}
+	slurm_free_node_info_msg(node_ptr);
 
 	if (i == 0) {
 		RETURN_LONG(-1);
@@ -721,7 +728,6 @@ PHP_FUNCTION(slurm_get_node_states)
 	int err = SLURM_SUCCESS;
 	int i = 0;
 	node_info_msg_t *node_ptr;
-	zval *sub_arr = NULL;
 
 	err = slurm_load_node((time_t) NULL, &node_ptr, 0);
 	if (err) {
@@ -731,14 +737,10 @@ PHP_FUNCTION(slurm_get_node_states)
 	array_init(return_value);
 	for (i = 0; i < node_ptr->record_count; i++) {
 		add_next_index_long(return_value,
-				    node_ptr->node_array->node_state);
-		node_ptr->node_array++;
+				    node_ptr->node_array[i].node_state);
 	}
 
-	if (node_ptr != NULL) {
-		node_ptr->node_array -= i;
-		slurm_free_node_info_msg(node_ptr);
-	}
+	slurm_free_node_info_msg(node_ptr);
 
 	if (i == 0) {
 		RETURN_LONG(-1);
@@ -771,7 +773,7 @@ PHP_FUNCTION(slurm_get_control_configuration_keys)
 	iter = slurm_list_iterator_create(lst);
 	array_init(return_value);
 	while ((k_p = slurm_list_next(iter))) {
-		add_next_index_string(return_value,k_p->name, 1);
+		add_next_index_string(return_value, k_p->name, 1);
 	}
 
 	slurm_free_ctl_conf(ctrl_conf_ptr);
@@ -829,21 +831,17 @@ PHP_FUNCTION(slurm_load_job_information)
 
 	array_init(return_value);
 	for (i = 0; i < job_ptr->record_count; i++) {
-		tmp = malloc(sizeof(uint32_t) + 1);
-		sprintf(tmp, "%d", job_ptr->job_array->job_id);
 		ALLOC_INIT_ZVAL(sub_arr);
 		array_init(sub_arr);
-		_parse_assoc_array(slurm_sprint_job_info(job_ptr->job_array, 1),
-				  "= ", sub_arr);
+		_parse_assoc_array(slurm_sprint_job_info(
+					   &job_ptr->job_array[i], 1),
+				   "= ", sub_arr);
+		tmp = slurm_xstrdup_printf("%u", job_ptr->job_array[i].job_id);
 		add_assoc_zval(return_value, tmp, sub_arr);
-		job_ptr->job_array++;
-		free(tmp);
+		xfree(tmp);
 	}
 
-	if (job_ptr != NULL) {
-		job_ptr->job_array -= i;
-		slurm_free_job_info_msg(job_ptr);
-	}
+	slurm_free_job_info_msg(job_ptr);
 
 	if (i == 0) {
 		RETURN_LONG(-1);
@@ -880,23 +878,19 @@ PHP_FUNCTION(slurm_load_partition_jobs)
 	for (i = 0; i < job_ptr->record_count; i++) {
 		if (!strcmp(job_ptr->job_array->partition, pname)) {
 			checker++;
-			tmp = malloc(sizeof(uint32_t) + 1);
-			sprintf(tmp, "%d", job_ptr->job_array->job_id);
 			ALLOC_INIT_ZVAL(sub_arr);
 			array_init(sub_arr);
-			_parse_assoc_array(
-				slurm_sprint_job_info(job_ptr->job_array, 1),
-				"= ", sub_arr);
+			_parse_assoc_array(slurm_sprint_job_info(
+						   &job_ptr->job_array[i], 1),
+					   "= ", sub_arr);
+			tmp = slurm_xstrdup_printf(
+				"%u", job_ptr->job_array[i].job_id);
 			add_assoc_zval(return_value, tmp, sub_arr);
-			free(tmp);
+			xfree(tmp);
 		}
-		job_ptr->job_array++;
 	}
 
-	if (job_ptr != NULL) {
-		job_ptr->job_array -= i;
-		slurm_free_job_info_msg(job_ptr);
-	}
+	slurm_free_job_info_msg(job_ptr);
 
 	if (i == 0) {
 		RETURN_LONG(-1);

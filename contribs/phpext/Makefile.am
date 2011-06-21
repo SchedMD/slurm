@@ -1,11 +1,11 @@
 AUTOMAKE_OPTIONS = foreign
-php_dir = slurm_php
-phpize = /usr/bin/phpize
+php_dir=slurm_php
+phpize=/usr/bin/phpize
 
 if HAVE_AIX
-	add_flags = "CC=\"$(CC)\" CCFLAGS=\"-g -static $(CFLAGS)\""
+config_line=CC="$(CC)" CCFLAGS="-g -static $(CFLAGS)" ./configure
 else
-	add_flags = "CC=\"$(CC)\" LD=\"$(CC) $(CFLAGS)\" CCFLAGS=\"-g -static $(CFLAGS)\""
+config_line=CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="-g -static $(CFLAGS)" CFLAGS="$(CFLAGS)" ./configure
 endif
 
 all-local:
@@ -14,12 +14,12 @@ all-local:
 		if [ ! -f configure ]; then \
 			$(phpize); \
 		fi && \
-		./configure ; \
+		$(config_line); \
 		if [ ! -f Makefile ]; then \
 			exit 0;\
 		fi \
 	fi && \
-	$(MAKE) $(add_flags); \
+	$(MAKE); \
 	cd ..;
 
 install-exec-local:
@@ -27,7 +27,7 @@ install-exec-local:
 	if [ ! -f Makefile ]; then \
 		exit 0;\
 	fi && \
-	$(MAKE) INSTALL_ROOT=$(DESTDIR) $(add_flags) install && \
+	$(MAKE) INSTALL_ROOT=$(DESTDIR) install && \
 	cd ..;
 
 clean-generic:
