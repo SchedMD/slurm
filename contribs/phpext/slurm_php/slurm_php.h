@@ -57,6 +57,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "src/common/xmalloc.h"
+
 extern zend_module_entry slurm_php_module_entry;
 
 /*****************************************************************************\
@@ -68,65 +70,22 @@ typedef struct key_value {
 	char *value;		/* value */
 } key_pair_t;
 
-
-/*****************************************************************************\
- *	HELPER FUNCTION PROTOTYPES
-\*****************************************************************************/
+/* define functions needed to avoid warnings (they are defined in
+ * src/common/xstring.h)  If you can figure out a way to make it so we
+ * don't have to make these declarations that would be awesome.  I
+ * didn't have time to spend on it when I was working on it. -da
+ */
 
 /*
- * _parse_node_pointer - Parse a node pointer's contents into an
- *	assocative zval array where the key is descriptive to the
- *	value
- *
- * IN sub_arr - array to store the contents of the node pointer
- * IN node_arr - node pointer that needs parsing
- */
-void _parse_node_pointer(zval *sub_arr, node_info_t *node_arr);
+** strdup which uses xmalloc routines
+*/
+char *slurm_xstrdup(const char *str);
 
 /*
- * _parse_assoc_array - Parse a character array where the elements are
- *	key-value pairs separated by delimiters into an associative
- *	array
- *
- * IN char_arr - character array that needs parsing
- * IN delims - character array that contains the delimeters used in parsing
- * IN result_arr - associative array used to store the key_value pairs in
- */
-void _parse_assoc_array(char *char_arr, char *delims, zval *result_arr);
-
-/*
- * _parse_array - Parse a character array where the elements are values
- *	 separated by delimiters into a numerically indexed array
- *
- * IN char_arr - character array that needs parsing
- * IN delims - character array that contains the delimeters used in parsing
- * IN result_arr - numerically indexed array used to store the values in
- */
-void _parse_array(char *char_arr, char *delims, zval *rslt_arr);
-
-/*
- * _zend_add_valid_assoc_string - checks a character array to see if
- *	it's NULL or not, if so an associative null is added, if not
- *	an associative string is added.
- *
- * IN rstl_arr - array to store the associative key_value pairs in
- * IN key - character array used as the associative key
- * IN val - character array to be validated and added as value if valid
- */
-void _zend_add_valid_assoc_string(zval *rstl_arr, char *key, char *val);
-
-/*
- * _zend_add_valid_assoc_time_string - checks a unix timestamp to see if it's
- * 	0 or not, if so an associative null is added, if not a formatted string
- *	is added.
- *
- * IN rstl_arr - array to store the associative key_value pairs in
- * IN key - character array used as the associative key
- * IN val - time_t unix timestamp to be validated and added if valid
- * NOTE : If you'd like to change the format in which the valid strings are
- * returned, you can change the TIME_FORMAT_STRING macro to the needed format
- */
-void _zend_add_valid_assoc_time_string(zval *rstl_arr, char *key, time_t *val);
+** strdup formatted which uses xmalloc routines
+*/
+char *slurm_xstrdup_printf(const char *fmt, ...)
+  __attribute__ ((format (printf, 1, 2)));
 
 
 /*****************************************************************************\

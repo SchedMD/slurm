@@ -282,6 +282,8 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 php_dir = slurm_php
 phpize = /usr/bin/phpize
+@HAVE_AIX_FALSE@config_line = CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="-g -static $(CFLAGS)" CFLAGS="$(CFLAGS)" ./configure
+@HAVE_AIX_TRUE@config_line = CC="$(CC)" CCFLAGS="-g -static $(CFLAGS)" ./configure
 all: all-am
 
 .SUFFIXES:
@@ -462,21 +464,18 @@ uninstall-am:
 	ps ps-am uninstall uninstall-am
 
 
-@HAVE_AIX_TRUE@	add_flags = "CC=\"$(CC)\" CCFLAGS=\"-g -static $(CFLAGS)\""
-@HAVE_AIX_FALSE@	add_flags = "CC=\"$(CC)\" LD=\"$(CC) $(CFLAGS)\" CCFLAGS=\"-g -static $(CFLAGS)\""
-
 all-local:
 	@cd $(php_dir) && \
 	if [ ! -f Makefile ]; then \
 		if [ ! -f configure ]; then \
 			$(phpize); \
 		fi && \
-		./configure ; \
+		$(config_line); \
 		if [ ! -f Makefile ]; then \
 			exit 0;\
 		fi \
 	fi && \
-	$(MAKE) $(add_flags); \
+	$(MAKE); \
 	cd ..;
 
 install-exec-local:
@@ -484,7 +483,7 @@ install-exec-local:
 	if [ ! -f Makefile ]; then \
 		exit 0;\
 	fi && \
-	$(MAKE) INSTALL_ROOT=$(DESTDIR) $(add_flags) install && \
+	$(MAKE) INSTALL_ROOT=$(DESTDIR) install && \
 	cd ..;
 
 clean-generic:
