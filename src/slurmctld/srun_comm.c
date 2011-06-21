@@ -374,12 +374,14 @@ extern void srun_job_complete (struct job_record *job_ptr)
 /*
  * srun_job_suspend - notify salloc of suspend/resume operation
  * IN job_ptr - pointer to the slurmctld job record
- * IN op - 
+ * IN op - SUSPEND_JOB or RESUME_JOB (enum suspend_opts from slurm.h)
+ * RET - true if message send, otherwise false
  */
-extern void srun_job_suspend (struct job_record *job_ptr, uint16_t op)
+extern bool srun_job_suspend (struct job_record *job_ptr, uint16_t op)
 {
 	slurm_addr_t * addr;
 	suspend_msg_t *msg_arg;
+	bool msg_sent = false;
 
 	xassert(job_ptr);
 
@@ -391,7 +393,9 @@ extern void srun_job_suspend (struct job_record *job_ptr, uint16_t op)
 		msg_arg->op     = op;
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   SRUN_REQUEST_SUSPEND, msg_arg);
+		msg_sent = true;
 	}
+	return msg_sent;
 }
 
 /*
