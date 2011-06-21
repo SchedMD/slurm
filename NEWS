@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     aprun does not get initiated when the job is suspended.
  -- Cray systems: Modify smap and sview to display all nodes even if multiple
     nodes exist at each coordinate.
+ -- Improve efficiency of select/linear plugin with topology/tree plugin
+    configured, Patch by Andriy Grytsenko (Massive Solutions Limited).
 
 * Changes in SLURM 2.3.0.pre6
 =============================
