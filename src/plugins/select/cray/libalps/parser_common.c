@@ -498,7 +498,7 @@ static const struct element_handler *basil_tables[BV_MAX] = {
  * tag_to_method - Look up Basil method by tag.
  * NOTE: This must be kept in synch with the order in %basil_element!
  */
-static enum basil_method tag_to_method(const enum basil_element tag)
+static enum basil_method _tag_to_method(const enum basil_element tag)
 {
 	switch (tag) {
 	case BT_MESSAGE ... BT_RESPDATA:	/* generic, no method */
@@ -521,8 +521,8 @@ static enum basil_method tag_to_method(const enum basil_element tag)
 	}
 }
 
-static void start_handler(void *user_data,
-			  const XML_Char *el, const XML_Char **attrs)
+static void _start_handler(void *user_data,
+			   const XML_Char *el, const XML_Char **attrs)
 {
 	struct ud *ud = user_data;
 	const struct element_handler *table = basil_tables[ud->bp->version];
@@ -535,7 +535,7 @@ static void start_handler(void *user_data,
 	if (table[tag].tag == NULL)
 		fatal("Unrecognized XML start tag '%s'", el);
 
-	method = tag_to_method(tag);
+	method = _tag_to_method(tag);
 	if (method == BM_UNKNOWN)
 		fatal("Unsupported XML start tag '%s'", el);
 	if (method != BM_none && method != ud->bp->method)
@@ -565,7 +565,7 @@ static void start_handler(void *user_data,
 	ud->depth++;
 }
 
-static void end_handler(void *user_data, const XML_Char *el)
+static void _end_handler(void *user_data, const XML_Char *el)
 {
 	struct ud *ud = user_data;
 	const struct element_handler *table = basil_tables[ud->bp->version];
@@ -604,7 +604,7 @@ static void end_handler(void *user_data, const XML_Char *el)
 	}
 }
 
-static void cdata_handler(void *user_data, const XML_Char *s, int len)
+static void _cdata_handler(void *user_data, const XML_Char *s, int len)
 {
 	struct ud *ud = user_data;
 	size_t mrest;
@@ -643,8 +643,8 @@ int parse_basil(struct basil_parse_data *bp, int fd)
 		fatal("can not allocate memory for parser");
 
 	XML_SetUserData(parser, &ud);
-	XML_SetElementHandler(parser, start_handler, end_handler);
-	XML_SetCharacterDataHandler(parser, cdata_handler);
+	XML_SetElementHandler(parser, _start_handler, _end_handler);
+	XML_SetCharacterDataHandler(parser, _cdata_handler);
 	do {
 		len = read(fd, xmlbuf, sizeof(xmlbuf));
 		if (len == -1)

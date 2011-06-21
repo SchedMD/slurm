@@ -4,18 +4,14 @@
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
  * Licensed under the GPLv2.
  */
-#include "../basil_alps.h"
-
-/* Internal helper functions */
-extern void rsvn_free_param(struct basil_rsvn_param *p);
-extern void free_rsvn(struct basil_reservation *r);
+#include "memory_handling.h"
 
 /**
  * rsvn_add_mem_param  -  Add memory allocation request to reservation.
  * @rp:     reservation to add to
  * @mem_mb: memory size in MB requested for @rp
  */
-static int rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
+static int _rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
 {
 	struct basil_memory_param *mp;
 
@@ -46,10 +42,10 @@ static int rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
  * @mppnodes:	comma-separated nodelist (will be freed if not NULL)
  * @accel:	accelerator parameters (will be freed if not NULL)
  */
-static int rsvn_add_params(struct basil_reservation *resv,
-			   uint32_t width, uint32_t depth, uint32_t nppn,
-			   uint32_t mem_mb, char *mppnodes,
-			   struct basil_accel_param *accel)
+static int _rsvn_add_params(struct basil_reservation *resv,
+			    uint32_t width, uint32_t depth, uint32_t nppn,
+			    uint32_t mem_mb, char *mppnodes,
+			    struct basil_accel_param *accel)
 {
 	struct basil_rsvn_param *rp = xmalloc(sizeof(*rp));
 
@@ -63,7 +59,7 @@ static int rsvn_add_params(struct basil_reservation *resv,
 	rp->nodes = mppnodes;
 	rp->accel = accel;
 
-	if (mem_mb && rsvn_add_mem_param(rp, mem_mb) < 0) {
+	if (mem_mb && _rsvn_add_mem_param(rp, mem_mb) < 0) {
 		rsvn_free_param(rp);
 		return -1;
 	}
@@ -73,15 +69,6 @@ static int rsvn_add_params(struct basil_reservation *resv,
 	resv->params = rp;
 
 	return 0;
-}
-
-static struct basil_reservation *alloc_rsvn(uint32_t rsvn_id)
-{
-	struct basil_reservation *new = xmalloc(sizeof(*new));
-
-	if (new != NULL)
-		new->rsvn_id = rsvn_id;
-	return new;
 }
 
 /**
@@ -98,12 +85,12 @@ static struct basil_reservation *alloc_rsvn(uint32_t rsvn_id)
  *
  * The reservation ID is initially 0, since 0 is an invalid reservation ID.
  */
-static struct basil_reservation *rsvn_new(const char *user,
-					  const char *batch_id,
-					  uint32_t width, uint32_t depth,
-					  uint32_t nppn, uint32_t mem_mb,
-					  char *mppnodes,
-					  struct basil_accel_param *accel)
+static struct basil_reservation *_rsvn_new(const char *user,
+					   const char *batch_id,
+					   uint32_t width, uint32_t depth,
+					   uint32_t nppn, uint32_t mem_mb,
+					   char *mppnodes,
+					   struct basil_accel_param *accel)
 {
 	struct basil_reservation *res;
 
@@ -112,17 +99,18 @@ static struct basil_reservation *rsvn_new(const char *user,
 	if (width <= 0 || depth < 0 || nppn < 0)
 		return NULL;
 
-	res = alloc_rsvn(0);
+	res = xmalloc(sizeof(*res));
 	if (res == NULL)
 		return NULL;
 
+	res->rsvn_id = 0;
 	strncpy(res->user_name, user, sizeof(res->user_name));
 
 	if (batch_id && *batch_id)
 		strncpy(res->batch_id, batch_id, sizeof(res->batch_id));
 
-	if (rsvn_add_params(res, width, depth, nppn,
-			    mem_mb, mppnodes, accel) < 0) {
+	if (_rsvn_add_params(res, width, depth, nppn,
+			     mem_mb, mppnodes, accel) < 0) {
 		free_rsvn(res);
 		return NULL;
 	}
@@ -154,8 +142,8 @@ long basil_reserve(const char *user, const char *batch_id,
 	long rc;
 
 	free_nodespec(ns_head);
-	rsvn = rsvn_new(user, batch_id, width, depth, nppn, mem_mb,
-			mppnodes, accel_head);
+	rsvn = _rsvn_new(user, batch_id, width, depth, nppn, mem_mb,
+			 mppnodes, accel_head);
 	if (rsvn == NULL)
 		return -BE_INTERNAL;
 

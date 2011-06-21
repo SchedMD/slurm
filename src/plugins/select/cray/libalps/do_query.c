@@ -25,6 +25,21 @@ static const char *_get_alps_engine(char *buf, size_t buflen)
 	return buf;
 }
 
+/** Return true if @seg has at least a processor or a memory allocation. */
+static bool _segment_is_allocated(const struct basil_segment *seg)
+{
+	struct basil_node_processor *proc;
+	struct basil_node_memory *mem;
+
+	for (proc = seg->proc_head; proc; proc = proc->next)
+		if (proc->allocation != NULL)
+			return true;
+	for (mem = seg->mem_head; mem; mem = mem->next)
+		if (mem->a_head != NULL)
+			return true;
+	return false;
+}
+
 /**
  * get_basil_version  -  Detect highest BASIL version supported by ALPS.
  *
@@ -50,7 +65,7 @@ static const char *_get_alps_engine(char *buf, size_t buflen)
  * Starting from Basil 3.1, there is also a 'basil_support' attribute to query
  * the supported 'Basil Protocol' list.
  */
-enum basil_version get_basil_version(void)
+extern enum basil_version get_basil_version(void)
 {
 	char engine_version[BASIL_STRING_LONG];
 	static enum basil_version bv = BV_MAX;
@@ -86,32 +101,22 @@ enum basil_version get_basil_version(void)
 	return bv;
 }
 
-static struct basil_inventory *alloc_inv(bool do_full_inventory)
-{
-	struct basil_inventory *inv = xmalloc(sizeof(*inv));
-	
-	if (inv != NULL && do_full_inventory) {
-		inv->f = xmalloc(sizeof(struct basil_full_inventory));
-		if (inv->f == NULL) {
-			xfree(inv);
-			inv = NULL;
-		}
-	}
-	return inv;
-}
-
-/**
- * get_inventory  -  generic INVENTORY request
- * Caller must free result structure by calling free_inv().
- */
-static struct basil_inventory *get_inventory(enum basil_version version,
-					     bool do_full_inventory)
+/** Perform a detailed inventory */
+extern struct basil_inventory *get_full_inventory(enum basil_version version)
 {
 	struct basil_parse_data bp = {0};
 
 	bp.version   = version;
 	bp.method    = BM_inventory;
-	bp.mdata.inv = alloc_inv(do_full_inventory);
+	bp.mdata.inv = xmalloc(sizeof(*bp.mdata.inv));
+
+	if (bp.mdata.inv) {
+		bp.mdata.inv->f = xmalloc(sizeof(struct basil_full_inventory));
+		if (bp.mdata.inv->f == NULL) {
+			xfree(bp.mdata.inv);
+			bp.mdata.inv = NULL;
+		}
+	}
 
 	if (bp.mdata.inv == NULL)
 		return NULL;
@@ -124,45 +129,24 @@ static struct basil_inventory *get_inventory(enum basil_version version,
 	return bp.mdata.inv;
 }
 
-/** Perform a detailed inventory */
-extern struct basil_inventory *get_full_inventory(enum basil_version version)
-{
-	return get_inventory(version, true);
-}
-
 /*
  *	Informations extracted from INVENTORY
  */
 
-/** Return true if @seg has at least a processor or a memory allocation. */
-static bool segment_is_allocated(const struct basil_segment *seg)
-{
-	struct basil_node_processor *proc;
-	struct basil_node_memory *mem;
-
-	for (proc = seg->proc_head; proc; proc = proc->next)
-		if (proc->allocation != NULL)
-			return true;
-	for (mem = seg->mem_head; mem; mem = mem->next)
-		if (mem->a_head != NULL)
-			return true;
-	return false;
-}
-
 /** Return true if @node has at least a processor or a memory allocation. */
-bool node_is_allocated(const struct basil_node *node)
+extern bool node_is_allocated(const struct basil_node *node)
 {
 	struct basil_segment *seg;
 
 	for (seg = node->seg_head; seg; seg = seg->next)
-		if (segment_is_allocated(seg))
+		if (_segment_is_allocated(seg))
 			return true;
 	return false;
 }
 
 /** Search @inv for a particular reservation identified by @rsvn_id */
-const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,
-					  uint32_t rsvn_id)
+extern const struct basil_rsvn *basil_rsvn_by_id(
+	const struct basil_inventory *inv, uint32_t rsvn_id)
 {
 	const struct basil_rsvn *rsvn;
 
@@ -180,8 +164,8 @@ const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,
  *          @rsvn_id, additional information is required to confirm whether
  *          that particular node is indeed in use by the given apid.
  */
-uint64_t *basil_get_rsvn_aprun_apids(const struct basil_inventory *inv,
-				     uint32_t rsvn_id)
+extern uint64_t *basil_get_rsvn_aprun_apids(const struct basil_inventory *inv,
+					    uint32_t rsvn_id)
 {
 	const struct basil_rsvn	*rsvn = basil_rsvn_by_id(inv, rsvn_id);
 	const struct basil_rsvn_app *app;
