@@ -402,6 +402,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != SRUN_EXEC)		&&
 	    (agent_arg_ptr->msg_type != SRUN_TIMEOUT)		&&
 	    (agent_arg_ptr->msg_type != SRUN_NODE_FAIL)		&&
+	    (agent_arg_ptr->msg_type != SRUN_REQUEST_SUSPEND)	&&
 	    (agent_arg_ptr->msg_type != SRUN_USER_MSG)		&&
 	    (agent_arg_ptr->msg_type != SRUN_STEP_MISSING)	&&
 	    (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {

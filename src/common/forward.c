@@ -315,9 +315,9 @@ void *_fwd_tree_thread(void *arg)
 	send_msg.data = fwd_tree->orig_msg->data;
 
 	/* repeat until we are sure the message was sent */
-	while((name = hostlist_shift(fwd_tree->tree_hl))) {
-		if(slurm_conf_get_addr(name, &send_msg.address)
-		   == SLURM_ERROR) {
+	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
+		if (slurm_conf_get_addr(name, &send_msg.address)
+		    == SLURM_ERROR) {
 			error("fwd_tree_thread: can't find address for host "
 			      "%s, check slurm.conf", name);
 			slurm_mutex_lock(fwd_tree->tree_mutex);
