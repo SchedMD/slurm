@@ -88,12 +88,12 @@ enum basil_version get_basil_version(void)
 
 static struct basil_inventory *alloc_inv(bool do_full_inventory)
 {
-	struct basil_inventory *inv = calloc(1, sizeof(*inv));
+	struct basil_inventory *inv = xmalloc(sizeof(*inv));
 	
 	if (inv != NULL && do_full_inventory) {
-		inv->f = calloc(1, sizeof(struct basil_full_inventory));
+		inv->f = xmalloc(sizeof(struct basil_full_inventory));
 		if (inv->f == NULL) {
-			free(inv);
+			xfree(inv);
 			inv = NULL;
 		}
 	}
@@ -200,7 +200,7 @@ uint64_t *basil_get_rsvn_aprun_apids(const struct basil_inventory *inv,
 		 *   actual aprun job steps (whose APIDs we are interested in).
 		 */
 		if (app->timestamp) {
-			apids = realloc(apids, (n + 1) * sizeof(*apids));
+			apids = xrealloc(apids, (n + 1) * sizeof(*apids));
 			if (apids == NULL)
 				fatal("failed to allocate Apid entry");
 			apids[n-1] = app->apid;

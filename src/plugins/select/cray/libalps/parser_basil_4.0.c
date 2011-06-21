@@ -90,7 +90,7 @@ void eh_accel(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal Accelerator.clock_mhz = %s", attribs[5]);
 
 	if (ud->ud_inventory) {
-		struct basil_node_accelerator *new = parse_zalloc(sizeof(*new));
+		struct basil_node_accelerator *new = xmalloc(sizeof(*new));
 
 		*new = accel;
 		xassert(ud->ud_inventory->node_head != NULL);
@@ -114,7 +114,7 @@ void eh_accel_alloc(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal Accelerator reservation_id = %s", attribs[0]);
 
 	if (ud->ud_inventory) {
-		struct basil_accel_alloc *new = parse_zalloc(sizeof(*new));
+		struct basil_accel_alloc *new = xmalloc(sizeof(*new));
 
 		new->rsvn_id = rsvn_id;
 

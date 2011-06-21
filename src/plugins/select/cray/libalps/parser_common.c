@@ -38,16 +38,6 @@ const char *basil_strerror(int rc)
 	return be_names_long[decode_basil_error(rc)];
 }
 
-/** allocate @size zero-filled bytes */
-void *parse_zalloc(size_t size)
-{
-	void *mem = calloc(1, size);
-
-	if (mem == NULL)
-		fatal("can not allocate %d", (int)size);
-	return mem;
-}
-
 /*
  * Overwrite @reqc attribute keys supplied in @reqv with corresponding
  * attribute value from @attr_list.
@@ -200,7 +190,7 @@ void eh_node(struct ud *ud, const XML_Char **attrs)
 	ud->current_node.reserved  = false;
 
 	if (ud->ud_inventory) {
-		struct basil_node *new = parse_zalloc(sizeof(*new));
+		struct basil_node *new = xmalloc(sizeof(*new));
 
 		*new = node;
 		if (ud->ud_inventory->node_head)
@@ -229,7 +219,7 @@ void eh_segment(struct ud *ud, const XML_Char **attrs)
 	}
 
 	if (ud->ud_inventory) {
-		struct basil_segment *new = parse_zalloc(sizeof(*new));
+		struct basil_segment *new = xmalloc(sizeof(*new));
 
 		new->ordinal = ordinal;
 		xassert(ud->ud_inventory->node_head);
@@ -263,7 +253,7 @@ void eh_proc(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal clock_mhz = %s", attribs[2]);
 
 	if (ud->ud_inventory) {
-		struct basil_node_processor *new = parse_zalloc(sizeof(*new));
+		struct basil_node_processor *new = xmalloc(sizeof(*new));
 
 		*new = proc;
 		xassert(ud->ud_inventory->node_head);
@@ -291,7 +281,7 @@ void eh_proc_alloc(struct ud *ud, const XML_Char **attrs)
 	ud->current_node.reserved = true;
 
 	if (ud->ud_inventory) {
-		struct basil_proc_alloc *new = parse_zalloc(sizeof(*new));
+		struct basil_proc_alloc *new = xmalloc(sizeof(*new));
 
 		new->rsvn_id = rsvn_id;
 		xassert(ud->ud_inventory->node_head);
@@ -326,7 +316,7 @@ void eh_mem(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal page_count = %s", attribs[2]);
 
 	if (ud->ud_inventory) {
-		struct basil_node_memory *new = parse_zalloc(sizeof(*new));
+		struct basil_node_memory *new = xmalloc(sizeof(*new));
 
 		*new = memory;
 		xassert(ud->ud_inventory->node_head);
@@ -356,7 +346,7 @@ void eh_mem_alloc(struct ud *ud, const XML_Char **attrs)
 	ud->current_node.reserved = true;
 
 	if (ud->ud_inventory) {
-		struct basil_mem_alloc *new = parse_zalloc(sizeof(*new));
+		struct basil_mem_alloc *new = xmalloc(sizeof(*new));
 
 		*new = memalloc;
 		xassert(ud->ud_inventory->node_head);
@@ -389,7 +379,7 @@ void eh_label(struct ud *ud, const XML_Char **attrs)
 			break;
 
 	if (ud->ud_inventory) {
-		struct basil_label *new = parse_zalloc(sizeof(*new));
+		struct basil_label *new = xmalloc(sizeof(*new));
 
 		*new = label;
 		xassert(ud->ud_inventory->node_head);
@@ -414,7 +404,7 @@ void eh_resv(struct ud *ud, const XML_Char **attrs)
 		fatal("illegal reservation_id '%s'", attribs[0]);
 
 	if (ud->ud_inventory) {
-		struct basil_rsvn *new = parse_zalloc(sizeof(*new));
+		struct basil_rsvn *new = xmalloc(sizeof(*new));
 
 		new->rsvn_id = rsvn_id;
 		strncpy(new->user_name, attribs[1], sizeof(new->user_name));
@@ -438,7 +428,7 @@ void eh_application(struct ud *ud, const XML_Char **attrs)
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 
 	if (ud->ud_inventory) {
-		struct basil_rsvn_app *new = parse_zalloc(sizeof(*new));
+		struct basil_rsvn_app *new = xmalloc(sizeof(*new));
 
 		if (atou64(attribs[0], &new->apid) < 0)
 			fatal("invalid application_id '%s'", attribs[0]);
@@ -467,7 +457,7 @@ void eh_command(struct ud *ud, const XML_Char **attrs)
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 
 	if (ud->ud_inventory) {
-		struct basil_rsvn_app_cmd *new = parse_zalloc(sizeof(*new));
+		struct basil_rsvn_app_cmd *new = xmalloc(sizeof(*new));
 
 		xassert(ud->ud_inventory->rsvn_head);
 		xassert(ud->ud_inventory->rsvn_head->app_head);

@@ -270,7 +270,7 @@ extern void free_nodespec(struct nodespec *head)
 
 	if (head) {
 		free_nodespec(head->next);
-		free(head);
+		xfree(head);
 	}
 }
 

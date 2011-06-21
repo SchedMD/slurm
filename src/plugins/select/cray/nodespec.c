@@ -13,7 +13,7 @@
 /* internal constructor */
 static struct nodespec *ns_new(uint32_t start, uint32_t end)
 {
-	struct nodespec *new = calloc(1, sizeof(*new));
+	struct nodespec *new = xmalloc(sizeof(*new));
 
 	if (new) {
 		new->start = start;
@@ -130,7 +130,7 @@ static ssize_t ns_ranged_string(const struct nodespec *head,
 	return len;
 }
 
-/* Compress @head into nodestring. Result must be free()d. */
+/* Compress @head into nodestring. Result must be xfree()d. */
 char *ns_to_string(const struct nodespec *head)
 {
 	char *buf = NULL;
@@ -140,7 +140,7 @@ char *ns_to_string(const struct nodespec *head)
 		/* Over-estimation: using all digits, plus either '-' or '\0' */
 		size *= CRAY_MAX_DIGITS + 1;
 
-		buf = malloc(size);
+		buf = xmalloc(size);
 		if (buf == NULL)
 			fatal("can not allocate %d", (int)size);
 

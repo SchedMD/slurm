@@ -22,7 +22,7 @@ static int rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
 	if (mem_mb == 0)	/* 0 means 'use defaults' */
 		return 0;
 
-	mp = calloc(1, sizeof(*mp));
+	mp = xmalloc(sizeof(*mp));
 	if (mp == NULL)
 		return -1;
 
@@ -51,7 +51,7 @@ static int rsvn_add_params(struct basil_reservation *resv,
 			   uint32_t mem_mb, char *mppnodes,
 			   struct basil_accel_param *accel)
 {
-	struct basil_rsvn_param *rp = calloc(1, sizeof(*rp));
+	struct basil_rsvn_param *rp = xmalloc(sizeof(*rp));
 
 	if (rp == NULL)
 		return -1;
@@ -77,7 +77,7 @@ static int rsvn_add_params(struct basil_reservation *resv,
 
 static struct basil_reservation *alloc_rsvn(uint32_t rsvn_id)
 {
-	struct basil_reservation *new = calloc(1, sizeof(*new));
+	struct basil_reservation *new = xmalloc(sizeof(*new));
 
 	if (new != NULL)
 		new->rsvn_id = rsvn_id;
@@ -98,7 +98,8 @@ static struct basil_reservation *alloc_rsvn(uint32_t rsvn_id)
  *
  * The reservation ID is initially 0, since 0 is an invalid reservation ID.
  */
-static struct basil_reservation *rsvn_new(const char *user, const char *batch_id,
+static struct basil_reservation *rsvn_new(const char *user,
+					  const char *batch_id,
 					  uint32_t width, uint32_t depth,
 					  uint32_t nppn, uint32_t mem_mb,
 					  char *mppnodes,
@@ -120,7 +121,8 @@ static struct basil_reservation *rsvn_new(const char *user, const char *batch_id
 	if (batch_id && *batch_id)
 		strncpy(res->batch_id, batch_id, sizeof(res->batch_id));
 
-	if (rsvn_add_params(res, width, depth, nppn, mem_mb, mppnodes, accel) < 0) {
+	if (rsvn_add_params(res, width, depth, nppn,
+			    mem_mb, mppnodes, accel) < 0) {
 		free_rsvn(res);
 		return NULL;
 	}
@@ -147,6 +149,7 @@ long basil_reserve(const char *user, const char *batch_id,
 {
 	struct basil_reservation *rsvn;
 	struct basil_parse_data bp = {0};
+	/* do not free mppnodes it is stored/freed in the rsvn struct */
 	char *mppnodes = ns_to_string(ns_head);
 	long rc;
 

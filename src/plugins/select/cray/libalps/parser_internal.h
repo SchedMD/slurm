@@ -71,7 +71,6 @@ extern unsigned char wait_for_child(pid_t pid);
  * parser_common.c
  */
 extern int parse_basil(struct basil_parse_data *bp, int fd);
-extern void *parse_zalloc(size_t size);
 extern void extract_attributes(const XML_Char **attrs, char **reqv, int reqc);
 
 /* Basil 1.0/1.1 common handlers */

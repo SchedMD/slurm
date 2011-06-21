@@ -34,6 +34,7 @@
 #include "src/common/log.h"
 #include "src/common/fd.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 #include "cray_config.h"
 
 /*

@@ -68,7 +68,7 @@ int basil_signal_apids(int32_t rsvn_id, int signal, struct basil_inventory *inv)
 			if (system(cmd) < 0)
 				error("system(%s) failed", cmd);
 		}
-		free(apids);
+		xfree(apids);
 	}
 	if (inv == NULL)
 		free_inv(new_inv);
