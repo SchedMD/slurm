@@ -75,9 +75,10 @@ extern void srun_job_complete (struct job_record *job_ptr);
 /*
  * srun_job_suspend - notify salloc of suspend/resume operation
  * IN job_ptr - pointer to the slurmctld job record
- * IN op - 
+ * IN op - SUSPEND_JOB or RESUME_JOB (enum suspend_opts from slurm.h)
+ * RET - true if message send, otherwise false
  */
-extern void srun_job_suspend (struct job_record *job_ptr, uint16_t op);
+extern bool srun_job_suspend (struct job_record *job_ptr, uint16_t op);
 
 /*
  * srun_step_complete - notify srun of a job step's termination

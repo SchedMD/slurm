@@ -6,7 +6,10 @@ documents those changes that are of interest to users and admins.
  -- select/cray: Add support for Accelerator information including model and
     memory options.
  -- Cray systems: Add support to suspend/resume salloc command to insure that
-    aprun does not get initiated when the job is suspended.
+    aprun does not get initiated when the job is suspended. Processes suspended
+    and resumed are determined by using process group ID and parent process ID,
+    so some processes may be missed. Since salloc runs as a normal user, it's
+    ability to identify processes associated with a job is limited.
  -- Cray systems: Modify smap and sview to display all nodes even if multiple
     nodes exist at each coordinate.
  -- Improve efficiency of select/linear plugin with topology/tree plugin
