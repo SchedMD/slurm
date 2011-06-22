@@ -741,6 +741,10 @@ extern int parse_format( char* format )
 						      field_size,
 						      right_justify,
 						      suffix );
+			else if (field[0] == 'W')
+				job_format_add_licenses( params.format_list,
+						     field_size,
+						     right_justify, suffix );
 			else if (field[0] == 'x')
 				job_format_add_exc_nodes( params.format_list,
 							  field_size,

@@ -16,7 +16,8 @@ documents those changes that are of interest to users and admins.
     configured, Patch by Andriy Grytsenko (Massive Solutions Limited).
  -- For front-end architectures on which job steps are run (emulated Cray and
     BlueGene systems only), fix bug that would free memory still in use.
-
+ -- Add squeue support to display a job's license information. Patch by Andy
+    Roosen (University of Deleware).
 
 * Changes in SLURM 2.3.0.pre6
 =============================
