@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
     nodes exist at each coordinate.
  -- Improve efficiency of select/linear plugin with topology/tree plugin
     configured, Patch by Andriy Grytsenko (Massive Solutions Limited).
+ -- For front-end architectures on which job steps are run (emulated Cray and
+    BlueGene systems only), fix bug that would free memory still in use.
+
 
 * Changes in SLURM 2.3.0.pre6
 =============================

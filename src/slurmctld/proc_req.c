@@ -1679,7 +1679,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 #ifdef HAVE_FRONT_END
 		if (step_rec->job_ptr->batch_host) {
 			job_step_resp.step_layout->front_end =
-				step_rec->job_ptr->batch_host;
+				xstrdup(step_rec->job_ptr->batch_host);
 		}
 #endif
 		job_step_resp.cred        = slurm_cred;
