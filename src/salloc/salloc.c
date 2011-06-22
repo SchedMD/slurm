@@ -866,6 +866,8 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				 verbose("Sending signal %d to command \"%s\","
 					 " pid %d",
 					 signal, command_argv[0], command_pid);
+				if (suspend_flag)
+					_forward_signal(SIGCONT);
 				_forward_signal(signal);
 			}
 		}
