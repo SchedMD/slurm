@@ -662,17 +662,6 @@ static int _add_button_to_list(node_info_t *node_ptr,
 					node_ptr->node_addr[len_a-2]);
 				z = select_char2coord(
 					node_ptr->node_addr[len_a-1]);
-				if (node_ptr->arch &&
-				    !strcmp(node_ptr->arch, "XE")) {
-					int recs, cab, row, cage, slot, cpu;
-					recs = sscanf(node_ptr->node_hostname,
-						      "c%u-%uc%us%un%u",
-						      &cab, &row, &cage, &slot,
-						      &cpu);
-					if ((recs == 5) && (cpu >= 0)) {
-						x = x * 4 + cpu;
-					}
-				}
 			} else {
 				x = select_char2coord(node_ptr->name[len-3]);
 				y = select_char2coord(node_ptr->name[len-2]);

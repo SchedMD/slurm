@@ -106,16 +106,13 @@ static int *_get_cluster_dims(node_info_msg_t *node_info_ptr)
 {
 	int *dim_size = slurmdb_setup_cluster_dim_size();
 
-	if ((params.cluster_flags & CLUSTER_FLAG_CRAYXT) && dim_size &&
-	    node_info_ptr->record_count) {
+	if ((params.cluster_flags & CLUSTER_FLAG_CRAYXT) && dim_size) {
 		static int cray_dim_size[3] = {-1, -1, -1};
 		/* For now, assume one node per coordinate all
 		 * May need to refine. */
 		cray_dim_size[0] = dim_size[0];
 		cray_dim_size[1] = dim_size[1];
 		cray_dim_size[2] = dim_size[2];
-		if (!strcmp(node_info_ptr->node_array[0].arch, "XE"))
-			cray_dim_size[0] *= 4;
 		return cray_dim_size;
 	}
 
@@ -186,16 +183,6 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 				node_ptr->coord[j] = select_char2coord(
 					node_info_ptr->node_array[i].
 					node_addr[len_a+j]);
-			}
-			if (node_info_ptr->node_array[i].arch &&
-			    !strcmp(node_info_ptr->node_array[i].arch, "XE")) {
-				int recs, cab, row, cage, slot, cpu;
-				recs = sscanf(node_info_ptr->node_array[i].
-					      node_hostname, "c%u-%uc%us%un%u",
-					      &cab, &row, &cage, &slot, &cpu);
-				if ((recs == 5) && (cpu >= 0))
-					node_ptr->coord[0] *= 4;
-					node_ptr->coord[0] += cpu;
 			}
 		} else {
 			len -= params.cluster_dims;
