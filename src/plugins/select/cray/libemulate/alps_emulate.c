@@ -79,7 +79,7 @@ const char *nam_accelstate[BAS_MAX];
 #define _ADD_DELAYS  0
 #define _DEBUG       0
 #define MAX_RESV_CNT 500
-#define NODES_PER_COORDINATE 4
+#define NODES_PER_COORDINATE 1
 
 static MYSQL *mysql_handle = NULL;
 static MYSQL_BIND *my_bind_col = NULL;
