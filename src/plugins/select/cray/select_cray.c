@@ -127,7 +127,7 @@ static int select_cray_dim_size[SYSTEM_DIMENSIONS] = {-1};
  */
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
-uint32_t plugin_id	        = 104;
+uint32_t plugin_id		= 104;
 const uint32_t plugin_version	= 100;
 
 /*
@@ -825,7 +825,7 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			working_cluster_rec->dim_size[j] =
 				select_cray_dim_size[j];
 	}
-       
+
 	other_ba_init(node_info_ptr, sanity_check);
 }
 
