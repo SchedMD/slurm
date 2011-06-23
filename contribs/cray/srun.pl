@@ -406,7 +406,8 @@ if ($num_tasks) {
 }
 if ($ntasks_per_node) {
 	$command .= " -N $ntasks_per_node";
-} elsif ($num_nodes && $num_tasks) {
+} elsif ($num_nodes) {
+	$num_tasks = $num_nodes if !$num_tasks;
 	$ntasks_per_node = int (($num_tasks + $num_nodes - 1) / $num_nodes);
 	$command .= " -N $ntasks_per_node";
 }
