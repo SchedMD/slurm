@@ -1715,8 +1715,8 @@ extern void slurm_free_job_alloc_info_response_msg(
 		job_alloc_info_response_msg_t *msg)
 {
 	if (msg) {
-		select_g_select_jobinfo_free(msg->select_jobinfo);
-		msg->select_jobinfo = NULL;
+		if (msg->select_jobinfo)
+			select_g_select_jobinfo_free(msg->select_jobinfo);
 		xfree(msg->node_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
@@ -1739,7 +1739,8 @@ extern void slurm_free_job_step_create_response_msg(
 		xfree(msg->resv_ports);
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
-		select_g_select_jobinfo_free(msg->select_jobinfo);
+		if (msg->select_jobinfo)
+			select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->switch_job)
 			switch_free_jobinfo(msg->switch_job);
 
@@ -1757,8 +1758,7 @@ extern void slurm_free_job_step_create_response_msg(
  */
 extern void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
 {
-	if (msg)
-		xfree(msg);
+	xfree(msg);
 }
 
 
