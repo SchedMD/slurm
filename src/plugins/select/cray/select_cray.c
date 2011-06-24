@@ -346,11 +346,23 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 
 extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 {
+	if (job_ptr == NULL)
+		return SLURM_SUCCESS;
+
+	if (do_basil_switch(job_ptr, 1) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
 	return other_job_suspend(job_ptr, indf_susp);
 }
 
 extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 {
+	if (job_ptr == NULL)
+		return SLURM_SUCCESS;
+
+	if (do_basil_switch(job_ptr, 0) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
 	return other_job_resume(job_ptr, indf_susp);
 }
 

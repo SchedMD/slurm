@@ -72,7 +72,7 @@ static int ns_add_range(struct nodespec **head,
 		if (next->end > new_end)
 			cur->end = next->end;
 		cur->next = next->next;
-		free(next);
+		xfree(next);
 	}
 	/* next == NULL || next->start > new_end + 1 */
 

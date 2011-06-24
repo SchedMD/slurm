@@ -2,6 +2,7 @@
  * Fork apbasil process as co-process, parse output.
  *
  * Copyright (c) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
+ * Portions Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
  * Licensed under the GPLv2.
  */
 #include "parser_internal.h"
@@ -157,6 +158,21 @@ int basil_request(struct basil_parse_data *bp)
 	case BM_release:
 		fprintf(apbasil, "reservation_id=\"%u\"/>\n",
 			bp->mdata.res->rsvn_id);
+		break;
+	case BM_switch:
+	{
+		char *suspend = bp->mdata.res->suspended ? "IN" : "OUT";
+		fprintf(apbasil, ">\n");
+		fprintf(apbasil, " <ApplicationArray>\n");
+		fprintf(apbasil, " </ApplicationArray>\n");
+		fprintf(apbasil, " <ReservationArray>\n");
+		fprintf(apbasil, "  <Reservation reservation_id=\"%u\" action=\"%s\"/>\n",
+			bp->mdata.res->rsvn_id, suspend);
+		fprintf(apbasil, " </ReservationArray>\n");
+		fprintf(apbasil, "</BasilRequest>\n");
+		info("sent the switch to %s for %u", suspend, bp->mdata.res->rsvn_id);
+	}
+		break;
 	default: /* ignore BM_none, BM_MAX, and BM_UNKNOWN covered above */
 		break;
 	}

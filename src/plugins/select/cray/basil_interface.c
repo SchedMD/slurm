@@ -589,6 +589,9 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 {
 	struct nodespec *ns_head = NULL;
 	uint16_t mppwidth = 0, mppdepth, mppnppn;
+	/* mppmem must be at least 1 for gang scheduling to work so
+	 * if you are wondering why gang scheduling isn't working you
+	 * should check your slurm.conf for DefMemPerNode */
 	uint32_t mppmem = 0, node_min_mem = 0;
 	uint32_t resv_id;
 	int i, first_bit, last_bit;
@@ -813,5 +816,27 @@ extern int do_basil_release(struct job_record *job_ptr)
 	 * contexts of this function (deallocate_nodes, batch_finish) only print
 	 * additional error text: no further action is taken at this stage.
 	 */
+	return SLURM_SUCCESS;
+}
+
+/**
+ * do_basil_switch - suspend/resume BASIL reservation
+ * IN job_ptr - pointer to job which has just been deallocated resources
+ * IN suspend - to suspend or not to suspend
+ * RET see below
+ */
+extern int do_basil_switch(struct job_record *job_ptr, bool suspend)
+{
+	uint32_t resv_id;
+
+	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+		error("can not read resId for JobId=%u", job_ptr->job_id);
+	} else if (resv_id && basil_switch(resv_id, suspend) == 0) {
+		/* The resv_id is non-zero only if the job is or was running. */
+		debug("%s ALPS resId %u for JobId %u",
+		      suspend ? "Suspended" : "Resumed",
+		      resv_id, job_ptr->job_id);
+	}
 	return SLURM_SUCCESS;
 }

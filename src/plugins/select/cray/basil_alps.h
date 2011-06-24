@@ -66,6 +66,7 @@ enum basil_method {
 	BM_release,	/* RELEASE method          */
 	BM_engine,	/* QUERY of type ENGINE    */
 	BM_inventory,	/* QUERY of type INVENTORY */
+	BM_switch,	/* SWITCH method           */
 	BM_MAX,
 	BM_UNKNOWN
 };
@@ -118,6 +119,11 @@ enum basil_element {
 	BT_ACCELARRAY,		/* Basil 4.0 Inventory/Node */
 	BT_ACCEL,		/* Basil 4.0 Inventory/Node */
 	BT_ACCELALLOC,		/* Basil 4.0 Inventory/Node */
+	BT_SWITCH,              /* SWITCH */
+	BT_SWITCHRES,   	/* Response for Switch reservation */
+	BT_SWITCHAPP,   	/* Response for Switch application */
+	BT_SWITCHRESARRAY,	/* Response for Switch reservation array */
+	BT_SWITCHAPPARRAY,	/* Response for Switch application array */
 #define BT_4_0_MAX              (BT_ACCELALLOC + 1)	/* End of Basil 4.0 */
 	/* FIXME: the Basil 4.1 interface is not yet fully released */
 #define BT_4_1_MAX              BT_4_0_MAX              /* End of Basil 4.1 */
@@ -260,16 +266,16 @@ enum basil_accelstate {	/* Alps 4.x (Basil 1.2) */
 /*
  * Inventory structs
  */
-struct basil_proc_alloc {
-	uint32_t		rsvn_id;
-	/* NB: processor is indivisible, i.e. at most 1 allocation */
-};
-
 struct basil_node_processor {
 	uint32_t		ordinal;
 	uint32_t		clock_mhz;
 	enum basil_proc_type	arch;
-	struct basil_proc_alloc	*allocation;
+
+	/* With gang scheduling we can have more than 1 rsvn per node,
+	   so this is just here to see if the node itself is allocated
+	   at all.
+	*/
+	uint32_t		rsvn_id;
 
 	struct basil_node_processor *next;
 };
@@ -449,6 +455,7 @@ struct basil_rsvn_param {
  * @rsvn_id:      assigned by RESERVE method
  * @pagg_id:      used by CONFIRM method (session ID or CSA PAGG ID)
  * @claims:	  number of claims outstanding against @rsvn_id (Basil 4.0)
+ * @suspended:	  If the reservation is suspended or not (Basil 4.0)
  * @rsvd_nodes:   assigned by Basil 3.1 RESERVE method
  * @user_name:    required by RESERVE method
  * @account_name: optional Basil 1.0 RESERVE parameter
@@ -462,6 +469,8 @@ struct basil_reservation {
 	uint32_t	rsvn_id;
 	uint64_t	pagg_id;
 	uint32_t        claims;
+	bool            suspended;
+
 	struct nodespec *rsvd_nodes;
 	/*
 	 * Static (IN) parameters
@@ -616,5 +625,6 @@ extern int basil_release(uint32_t rsvn_id);
 extern int basil_signal_apids(int32_t rsvn_id, int signal,
 			      struct basil_inventory *inv);
 extern int basil_safe_release(int32_t rsvn_id, struct basil_inventory *inv);
+extern int basil_switch(uint32_t rsvn_id, bool suspend);
 
 #endif /* __BASIL_ALPS_H__ */

@@ -281,17 +281,12 @@ void eh_proc_alloc(struct ud *ud, const XML_Char **attrs)
 	ud->current_node.reserved = true;
 
 	if (ud->ud_inventory) {
-		struct basil_proc_alloc *new = xmalloc(sizeof(*new));
-
-		new->rsvn_id = rsvn_id;
 		xassert(ud->ud_inventory->node_head);
 		xassert(ud->ud_inventory->node_head->seg_head);
 		xassert(ud->ud_inventory->node_head->seg_head->proc_head);
-		xassert(!ud->ud_inventory->node_head->seg_head->
-			proc_head->allocation);
 
-		ud->ud_inventory->node_head->seg_head->proc_head->allocation =
-			new;
+		ud->ud_inventory->node_head->seg_head->proc_head->rsvn_id =
+			rsvn_id;
 	}
 }
 
@@ -516,6 +511,8 @@ static enum basil_method _tag_to_method(const enum basil_element tag)
 	case BT_SEGMARRAY ... BT_COMMAND:	/* INVENTORY, Basil >= 1.1 */
 	case BT_INVENTORY ... BT_RESVN:		/* INVENTORY, Basil >= 1.0 */
 		return BM_inventory;
+	case BT_SWITCH ... BT_SWITCHAPPARRAY:
+		return BM_switch;
 	default:
 		return BM_UNKNOWN;
 	}
@@ -529,15 +526,33 @@ static void _start_handler(void *user_data,
 	enum basil_method method;
 	enum basil_element tag;
 
-	for (tag = BT_MESSAGE; table[tag].tag; tag++)
-		if (strcmp(table[tag].tag, el) == 0)
+	for (tag = BT_MESSAGE; table[tag].tag; tag++) {
+		if (strcmp(table[tag].tag, el) == 0) {
+			/* since BM_inventory is returned for Arrays
+			   if the method is switch we need to "switch"
+			   it up here.
+			*/
+			if (ud->bp->method == BM_switch) {
+				if(!strcmp(table[tag].tag, "ReservationArray"))
+					tag = BT_SWITCHRESARRAY;
+				else if(!strcmp(table[tag].tag, "Reservation"))
+					tag = BT_SWITCHRES;
+				else if(!strcmp(table[tag].tag,
+						"ApplicationArray"))
+					tag = BT_SWITCHAPPARRAY;
+				else if(!strcmp(table[tag].tag,	"Application"))
+					tag = BT_SWITCHAPP;
+			}
 			break;
+		}
+	}
 	if (table[tag].tag == NULL)
 		fatal("Unrecognized XML start tag '%s'", el);
 
 	method = _tag_to_method(tag);
 	if (method == BM_UNKNOWN)
 		fatal("Unsupported XML start tag '%s'", el);
+
 	if (method != BM_none && method != ud->bp->method)
 		fatal("Unexpected '%s' start tag within %u response, "
 		      "expected %u",
@@ -573,8 +588,27 @@ static void _end_handler(void *user_data, const XML_Char *el)
 
 	--ud->depth;
 	for (end_tag = BT_MESSAGE; table[end_tag].tag; end_tag++)
-		if (strcmp(table[end_tag].tag, el) == 0)
+		if (strcmp(table[end_tag].tag, el) == 0) {
+			/* since BM_inventory is returned for Arrays
+			   if the method is switch we need to "switch"
+			   it up here.
+			*/
+			if (ud->bp->method == BM_switch) {
+				if(!strcmp(table[end_tag].tag,
+					   "ReservationArray"))
+					end_tag = BT_SWITCHRESARRAY;
+				else if(!strcmp(table[end_tag].tag,
+						"Reservation"))
+					end_tag = BT_SWITCHRES;
+				else if(!strcmp(table[end_tag].tag,
+						"ApplicationArray"))
+					end_tag = BT_SWITCHAPPARRAY;
+				else if(!strcmp(table[end_tag].tag,
+						"Application"))
+					end_tag = BT_SWITCHAPP;
+			}
 			break;
+		}
 	if (table[end_tag].tag == NULL) {
 		fatal("Unknown end tag '%s'", el);
 	} else if (end_tag != ud->stack[ud->depth]) {

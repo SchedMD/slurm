@@ -32,7 +32,7 @@ static bool _segment_is_allocated(const struct basil_segment *seg)
 	struct basil_node_memory *mem;
 
 	for (proc = seg->proc_head; proc; proc = proc->next)
-		if (proc->allocation != NULL)
+		if (proc->rsvn_id)
 			return true;
 	for (mem = seg->mem_head; mem; mem = mem->next)
 		if (mem->a_head != NULL)
