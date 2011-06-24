@@ -166,11 +166,11 @@ int basil_request(struct basil_parse_data *bp)
 		fprintf(apbasil, " <ApplicationArray>\n");
 		fprintf(apbasil, " </ApplicationArray>\n");
 		fprintf(apbasil, " <ReservationArray>\n");
-		fprintf(apbasil, "  <Reservation reservation_id=\"%u\" action=\"%s\"/>\n",
+		fprintf(apbasil, "  <Reservation reservation_id=\"%u\" "
+			"action=\"%s\"/>\n",
 			bp->mdata.res->rsvn_id, suspend);
 		fprintf(apbasil, " </ReservationArray>\n");
 		fprintf(apbasil, "</BasilRequest>\n");
-		info("sent the switch to %s for %u", suspend, bp->mdata.res->rsvn_id);
 	}
 		break;
 	default: /* ignore BM_none, BM_MAX, and BM_UNKNOWN covered above */
