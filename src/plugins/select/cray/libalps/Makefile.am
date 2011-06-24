@@ -20,6 +20,7 @@ libalps_la_SOURCES =		\
 	do_reserve.c		\
 	do_release.c		\
 	do_confirm.c		\
+	do_switch.c		\
 	memory_handling.c	\
 	popen2.c		\
 	atoul.c

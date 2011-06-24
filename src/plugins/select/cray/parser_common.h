@@ -40,6 +40,7 @@ const char *bm_names[BM_MAX] = {
 	[BM_reserve]	= "RESERVE",
 	[BM_confirm]	= "CONFIRM",
 	[BM_release]	= "RELEASE",
+	[BM_switch]	= "SWITCH",
 };
 
 /* Error codes */

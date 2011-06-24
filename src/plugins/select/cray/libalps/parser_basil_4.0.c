@@ -126,6 +126,25 @@ void eh_accel_alloc(struct ud *ud, const XML_Char **attrs)
 	}
 }
 
+void eh_switch_resv(struct ud *ud, const XML_Char **attrs)
+{
+	char *attribs[] = { "reservation_id", "status" };
+
+	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
+
+	debug2("resv id %s switch status is %s", attribs[0], attribs[1]);
+}
+
+void eh_switch_app(struct ud *ud, const XML_Char **attrs)
+{
+	char *attribs[] = { "application_id", "status" };
+
+	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
+
+	debug2("app id %s switch status is %s", attribs[0], attribs[1]);
+}
+
+
 const struct element_handler basil_4_0_elements[] = {
 	[BT_MESSAGE]	= {
 			.tag	= "Message",
@@ -312,6 +331,30 @@ const struct element_handler basil_4_0_elements[] = {
 			.depth	= 8,
 			.uniq	= false,
 			.hnd	= eh_command
+	},
+	[BT_SWITCHRES]	= {
+			.tag	= "Reservation",
+			.depth	= 3,
+			.uniq	= false,
+			.hnd	= eh_switch_resv
+	},
+	[BT_SWITCHAPP]	= {
+			.tag	= "Application",
+			.depth	= 3,
+			.uniq	= false,
+			.hnd	= eh_switch_app
+	},
+	[BT_SWITCHRESARRAY]	= {
+			.tag	= "ReservationArray",
+			.depth	= 2,
+			.uniq	= true,
+			.hnd	= NULL
+	},
+	[BT_SWITCHAPPARRAY]	= {
+			.tag	= "ApplicationArray",
+			.depth	= 2,
+			.uniq	= true,
+			.hnd	= NULL
 	},
 	[BT_4_0_MAX]	= {
 			NULL, 0, 0, NULL

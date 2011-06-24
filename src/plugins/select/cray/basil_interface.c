@@ -818,3 +818,25 @@ extern int do_basil_release(struct job_record *job_ptr)
 	 */
 	return SLURM_SUCCESS;
 }
+
+/**
+ * do_basil_switch - suspend/resume BASIL reservation
+ * IN job_ptr - pointer to job which has just been deallocated resources
+ * IN suspend - to suspend or not to suspend
+ * RET see below
+ */
+extern int do_basil_switch(struct job_record *job_ptr, bool suspend)
+{
+	uint32_t resv_id;
+
+	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+		error("can not read resId for JobId=%u", job_ptr->job_id);
+	} else if (resv_id && basil_switch(resv_id, suspend) == 0) {
+		/* The resv_id is non-zero only if the job is or was running. */
+		debug("%s ALPS resId %u for JobId %u",
+		      suspend ? "Suspended" : "Resumed",
+		      resv_id, job_ptr->job_id);
+	}
+	return SLURM_SUCCESS;
+}
