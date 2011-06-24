@@ -497,8 +497,9 @@ higher to gang schedule (time-slice) parallell jobs. Review SLURM's
 information about gang scheduling. Be certain to configure approriate values
 for default and/or maximum memory limits (e.g. <b>DefMemPerNode</b> and
 <b>MaxMemPerNode</b>), enable enforcement of memory limits (e.g.
-<b>SelectTypeParameters=CR_Memory</b>) and set an appropriate multi-programming
-level in each partition (e.g. <b>Shared=FORCE:2</b>).</p>
+<b>SelectTypeParameters=CR_Memory</b>), set an appropriate multi-programming
+level in each partition (e.g. <b>Shared=FORCE:2</b>), and enable gang
+scheduling (e.g. <b>PreemptMode=GANG</b>).</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
