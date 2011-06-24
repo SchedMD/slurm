@@ -418,7 +418,7 @@ applicable.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> avail_bitmap</span>&nbsp; &nbsp;&nbsp;(input)
 a bitmap of the nodes which are available for use in creating the reservation.<br>
-span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input)
+<span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input)
 number of nodes required to satisfy the reservation request.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A bitmap of the nodes which should
 be used for the advanced reservation or NULL if the selected nodes can not
