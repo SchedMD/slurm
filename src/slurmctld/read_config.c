@@ -996,6 +996,8 @@ static int _restore_node_state(int recover,
 		node_ptr->tmp_disk      = old_node_ptr->tmp_disk;
 		node_ptr->weight        = old_node_ptr->weight;
 
+		node_ptr->sus_job_cnt   = old_node_ptr->sus_job_cnt;
+
 		if (node_ptr->gres_list)
 			list_destroy(node_ptr->gres_list);
 		node_ptr->gres_list = old_node_ptr->gres_list;
@@ -1507,6 +1509,10 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 					       node_flags;
 		}
 	}
+
+	if (IS_JOB_RUNNING(job_ptr) && job_ptr->front_end_ptr)
+		job_ptr->front_end_ptr->job_cnt_run++;
+
 	return cnt;
 }
 
