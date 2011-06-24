@@ -18,6 +18,10 @@ documents those changes that are of interest to users and admins.
     BlueGene systems only), fix bug that would free memory still in use.
  -- Add squeue support to display a job's license information. Patch by Andy
     Roosen (University of Deleware).
+ -- Add flag to the select APIs for job suspend/resume indicating if the action
+    is for gang scheduling or an explicit job suspend/resume by the user. Only
+    an explicit job suspend/resume will reset the job's priority and make
+    resources exclusively held by the job available to other jobs.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

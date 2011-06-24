@@ -344,14 +344,14 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	return other_job_fini(job_ptr);
 }
 
-extern int select_p_job_suspend(struct job_record *job_ptr)
+extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 {
-	return other_job_suspend(job_ptr);
+	return other_job_suspend(job_ptr, indf_susp);
 }
 
-extern int select_p_job_resume(struct job_record *job_ptr)
+extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 {
-	return other_job_resume(job_ptr);
+	return other_job_resume(job_ptr, indf_susp);
 }
 
 extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,

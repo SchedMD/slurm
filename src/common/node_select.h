@@ -162,8 +162,10 @@ typedef struct slurm_select_ops {
 	int		(*job_signal)		(struct job_record *job_ptr,
 						 int signal);
 	int		(*job_fini)		(struct job_record *job_ptr);
-	int		(*job_suspend)		(struct job_record *job_ptr);
-	int		(*job_resume)		(struct job_record *job_ptr);
+	int		(*job_suspend)		(struct job_record *job_ptr,
+						 bool indf_susp);
+	int		(*job_resume)		(struct job_record *job_ptr,
+						 bool indf_susp);
 	bitstr_t *      (*step_pick_nodes)      (struct job_record *job_ptr,
 						 select_jobinfo_t *step_jobinfo,
 						 uint32_t node_count);
@@ -470,16 +472,20 @@ extern int select_g_job_fini(struct job_record *job_ptr);
 /*
  * Suspend a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being suspended
+ * IN indf_susp - set if job is being suspended indefinitely by user
+ *                or admin, otherwise suspended for gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_g_job_suspend(struct job_record *job_ptr);
+extern int select_g_job_suspend(struct job_record *job_ptr, bool indf_susp);
 
 /*
  * Resume a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being resumed
+ * IN indf_susp - set if job is being resumed from indefinite suspend by user
+ *                or admin, otherwise resume from gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_g_job_resume(struct job_record *job_ptr);
+extern int select_g_job_resume(struct job_record *job_ptr, bool indf_susp);
 
 /*
  * Select the "best" nodes for given job from those available

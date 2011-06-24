@@ -213,16 +213,20 @@ extern int other_job_fini(struct job_record *job_ptr);
 /*
  * Suspend a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being suspended
+ * indf_susp IN - set if job is being suspended indefinitely by user
+ *                or admin, otherwise suspended for gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int other_job_suspend(struct job_record *job_ptr);
+extern int other_job_suspend(struct job_record *job_ptr, bool indf_susp);
 
 /*
  * Resume a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being resumed
+ * indf_susp IN - set if job is being resumed from indefinite suspend by user
+ *                or admin, otherwise resume from gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int other_job_resume(struct job_record *job_ptr);
+extern int other_job_resume(struct job_record *job_ptr, bool indf_susp);
 
 /*
  * Select the "best" nodes for given job from those available

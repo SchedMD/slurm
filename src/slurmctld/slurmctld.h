@@ -1059,15 +1059,14 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply,
  *              -1 if none
- * IN clear_prio - if set, then clear the job's priority after
- *		   suspending it, this is used to distinguish
- *		   jobs explicitly suspended by admins/users from
- *		   jobs suspended though automatic preemption
+ * indf_susp IN - set if job is being suspended indefinitely by user or admin
+ *                and we should clear it's priority, otherwise suspended
+ *		  temporarily for gang scheduling
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       slurm_fd_t conn_fd, bool clear_prio,
+		       slurm_fd_t conn_fd, bool indf_susp,
 		       uint16_t protocol_version);
 
 /*

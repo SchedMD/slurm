@@ -2082,18 +2082,24 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 /* NOTE: This function is not called with gang scheduling because it
  * needs to track how many jobs are running or suspended on each node.
  * This sum is compared with the partition's Shared parameter */
-extern int select_p_job_suspend(struct job_record *job_ptr)
+extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 {
 	xassert(job_ptr);
+
+	if (!indf_susp)
+		return SLURM_SUCCESS;
 
 	return _rm_job_from_res(select_part_record, select_node_usage,
 				job_ptr, 2);
 }
 
 /* See NOTE with select_p_job_suspend above */
-extern int select_p_job_resume(struct job_record *job_ptr)
+extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 {
 	xassert(job_ptr);
+
+	if (!indf_susp)
+		return SLURM_SUCCESS;
 
 	return _add_job_to_res(job_ptr, 2);
 }

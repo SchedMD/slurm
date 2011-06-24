@@ -177,14 +177,14 @@ static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
-static int  _resume_job_nodes(struct job_record *job_ptr, bool clear_prio);
+static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op);
-static int  _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio);
+static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
@@ -8803,16 +8803,21 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 	agent_queue_request(agent_args);
 	return;
 }
-/* Specified job is being suspended, release allocated nodes */
-static int _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio)
+
+/*
+ * Specified job is being suspended, release allocated nodes
+ * job_ptr IN - job to be suspended
+ * indf_susp IN - set if job is being suspended indefinitely by user
+ *                or admin, otherwise suspended for gang scheduling
+ */
+static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 {
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
 	time_t now = time(NULL);
 
-	if (clear_prio &&
-	    (rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS)
+	if ((rc = select_g_job_suspend(job_ptr, indf_susp)) != SLURM_SUCCESS)
 		return rc;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
@@ -8856,15 +8861,19 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio)
 	return rc;
 }
 
-/* Specified job is being resumed, re-allocate the nodes */
-static int _resume_job_nodes(struct job_record *job_ptr, bool clear_prio)
+/*
+ * Specified job is being resumed, re-allocate the nodes
+ * job_ptr IN - job to be resumed
+ * indf_susp IN - set i f job is being resumed from indefinite suspend by user
+ *                or admin, otherwise resume from gang scheduling
+ */
+static int _resume_job_nodes(struct job_record *job_ptr, bool indf_susp)
 {
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
 
-	if (clear_prio &&
-	    (rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS)
+	if ((rc = select_g_job_resume(job_ptr, indf_susp)) != SLURM_SUCCESS)
 		return rc;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
@@ -8900,23 +8909,20 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool clear_prio)
 	return rc;
 }
 
-
 /*
  * job_suspend - perform some suspend/resume operation
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply,
  *              -1 if none
- * IN clear_prio - if set, then clear the job's priority after
- *		   suspending it, this is used to distinguish
- *		   jobs explicitly suspended by admins/users from
- *		   jobs suspended through automatic preemption
- *		   (the gang scheduler)
+ * indf_susp IN - set if job is being suspended indefinitely by user or admin
+ *                and we should clear it's priority, otherwise suspended
+ *		  temporarily for gang scheduling
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       slurm_fd_t conn_fd, bool clear_prio,
+		       slurm_fd_t conn_fd, bool indf_susp,
 		       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -8961,8 +8967,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	/* Send message to salloc, required on Crays with ALPS */
 #if defined HAVE_CRAY
+	/* Send message to salloc, required on Cray systems with ALPS */
 	srun_job_suspend(job_ptr, sus_ptr->op);
 #endif
 
@@ -8972,12 +8978,12 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
-		rc = _suspend_job_nodes(job_ptr, clear_prio);
+		rc = _suspend_job_nodes(job_ptr, indf_susp);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_SUSPENDED;
-		if (clear_prio)
+		if (indf_susp)
 			job_ptr->priority = 0;
 		if (job_ptr->suspend_time) {
 			job_ptr->pre_sus_time +=
@@ -8994,7 +9000,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
-		rc = _resume_job_nodes(job_ptr, clear_prio);
+		rc = _resume_job_nodes(job_ptr, indf_susp);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);

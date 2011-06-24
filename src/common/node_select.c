@@ -722,29 +722,33 @@ extern int select_g_job_fini(struct job_record *job_ptr)
 /*
  * Suspend a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being suspended
+ * IN indf_susp - set if job is being suspended indefinitely by user
+ *                or admin, otherwise suspended for gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_g_job_suspend(struct job_record *job_ptr)
+extern int select_g_job_suspend(struct job_record *job_ptr, bool indf_susp)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(select_context[select_context_default].ops.job_suspend))
-		(job_ptr);
+		(job_ptr, indf_susp);
 }
 
 /*
  * Resume a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being resumed
+ * IN indf_susp - set if job is being resumed from indefinite suspend by user
+ *                or admin, otherwise resume from gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_g_job_resume(struct job_record *job_ptr)
+extern int select_g_job_resume(struct job_record *job_ptr, bool indf_susp)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(select_context[select_context_default].ops.job_resume))
-		(job_ptr);
+		(job_ptr, indf_susp);
 }
 
 /*
