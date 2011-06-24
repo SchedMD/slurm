@@ -680,6 +680,7 @@ typedef struct launch_tasks_request_msg {
 	char *restart_dir;	/* restart from checkpoint if set */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
+	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
 } launch_tasks_request_msg_t;
 
 typedef struct task_user_managed_io_msg {

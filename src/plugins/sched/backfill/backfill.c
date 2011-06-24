@@ -756,8 +756,11 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
 
 	rc = select_nodes(job_ptr, false, NULL);
-	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
-	job_ptr->details->exc_node_bitmap = orig_exc_nodes;
+	if (job_ptr->details) { /* select_nodes() might cancel the job! */
+		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
+		job_ptr->details->exc_node_bitmap = orig_exc_nodes;
+	} else
+		FREE_NULL_BITMAP(orig_exc_nodes);
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */
 		last_job_update = time(NULL);

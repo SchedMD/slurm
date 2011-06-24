@@ -22,6 +22,10 @@ documents those changes that are of interest to users and admins.
     is for gang scheduling or an explicit job suspend/resume by the user. Only
     an explicit job suspend/resume will reset the job's priority and make
     resources exclusively held by the job available to other jobs.
+ -- Fix possible invalid memory reference in sched/backfill. Patch by Andriy
+    Grytsenko (Massive Solutions Limited).
+ -- Add select_jobinfo to the task launch RPC. Based upon patch by Andriy
+    Grytsenko (Massive Solutions Limited).
 
 * Changes in SLURM 2.3.0.pre6
 =============================

@@ -489,8 +489,20 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
+<h3>Gang Scheduling</h3>
+
+<p>SLURM version 2.3.0-pre7 (or higher) can be used with BASIL version 1.2 or
+higher to gang schedule (time-slice) parallell jobs. Review SLURM's
+<a href="gang_scheduling.html">Gang Scheduling</a> guide for general
+information about gang scheduling. Be certain to configure approriate values
+for default and/or maximum memory limits (e.g. <b>DefMemPerNode</b> and
+<b>MaxMemPerNode</b>), enable enforcement of memory limits (e.g.
+<b>SelectTypeParameters=CR_Memory</b>), set an appropriate multi-programming
+level in each partition (e.g. <b>Shared=FORCE:2</b>), and enable gang
+scheduling (e.g. <b>PreemptMode=GANG</b>).</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 May 2011</p></td>
+<p style="text-align:center;">Last modified 24 June 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
