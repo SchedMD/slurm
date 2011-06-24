@@ -414,8 +414,10 @@ if {![string compare $select_type "bluegene"]} {
 	}
 	set node_scaling [get_bluegene_procs_per_cnode]
 	set smallest [expr $smallest * $node_scaling]
-} elseif {![string compare $select_type "linear"]} {
+} elseif {![string compare $select_type "cray"]} {
 	set smallest $inode_procs
+} elseif {![string compare $select_type "linear"]} {
+	 set smallest $inode_procs
 } else {
 	set select_params [test_select_type_params]
 	if {$part_exclusive == 1} {
