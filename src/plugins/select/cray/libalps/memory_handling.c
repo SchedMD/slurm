@@ -10,7 +10,7 @@ static void _free_basil_processor(struct basil_node_processor *p)
 {
 	if (p) {
 		_free_basil_processor(p->next);
-		xfree(p->allocation);
+		p->rsvn_id = 0; /* just to be safe */
 		xfree(p);
 	}
 }

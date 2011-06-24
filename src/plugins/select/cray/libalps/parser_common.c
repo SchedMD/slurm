@@ -281,17 +281,12 @@ void eh_proc_alloc(struct ud *ud, const XML_Char **attrs)
 	ud->current_node.reserved = true;
 
 	if (ud->ud_inventory) {
-		struct basil_proc_alloc *new = xmalloc(sizeof(*new));
-
-		new->rsvn_id = rsvn_id;
 		xassert(ud->ud_inventory->node_head);
 		xassert(ud->ud_inventory->node_head->seg_head);
 		xassert(ud->ud_inventory->node_head->seg_head->proc_head);
-		xassert(!ud->ud_inventory->node_head->seg_head->
-			proc_head->allocation);
 
-		ud->ud_inventory->node_head->seg_head->proc_head->allocation =
-			new;
+		ud->ud_inventory->node_head->seg_head->proc_head->rsvn_id =
+			rsvn_id;
 	}
 }
 

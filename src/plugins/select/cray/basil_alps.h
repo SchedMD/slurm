@@ -260,16 +260,16 @@ enum basil_accelstate {	/* Alps 4.x (Basil 1.2) */
 /*
  * Inventory structs
  */
-struct basil_proc_alloc {
-	uint32_t		rsvn_id;
-	/* NB: processor is indivisible, i.e. at most 1 allocation */
-};
-
 struct basil_node_processor {
 	uint32_t		ordinal;
 	uint32_t		clock_mhz;
 	enum basil_proc_type	arch;
-	struct basil_proc_alloc	*allocation;
+
+	/* With gang scheduling we can have more than 1 rsvn per node,
+	   so this is just here to see if the node itself is allocated
+	   at all.
+	*/
+	uint32_t		rsvn_id;
 
 	struct basil_node_processor *next;
 };
