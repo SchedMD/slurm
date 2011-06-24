@@ -690,6 +690,9 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	if (msg->options)
 		job_options_destroy(msg->options);
 
+	if (msg->select_jobinfo)
+		select_g_select_jobinfo_free(msg->select_jobinfo);
+
 	xfree(msg);
 }
 

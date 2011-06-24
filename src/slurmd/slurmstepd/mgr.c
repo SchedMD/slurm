@@ -233,6 +233,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 
 	job->envtp->cli = cli;
 	job->envtp->self = self;
+	job->envtp->select_jobinfo = msg->select_jobinfo;
 
 	return job;
 }
