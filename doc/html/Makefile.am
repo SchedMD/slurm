@@ -53,6 +53,7 @@ generated_html = \
 	cpu_management.html \
 	cray.html \
 	crypto_plugins.html \
+	disclaimer.html \
 	dist_plane.html \
 	documentation.html \
 	download.html \
