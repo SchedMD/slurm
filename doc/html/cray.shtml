@@ -428,7 +428,7 @@ configuration parameters. <b>This file is NOT needed for production systems</b>,
 but is provided for advanced configurations. If used, <i>cray.conf</i> must be
 located in the same directory as the <i>slurm.conf</i> file.</p>
 
-<dl>
+<p><dl>
 <dt><b>apbasil</b></dt>
 <dd>Fully qualified pathname to the apbasil command.
 The default value is <i>/usr/bin/apbasil</i>.</dd>
@@ -502,12 +502,12 @@ level in each partition (e.g. <b>Shared=FORCE:2</b>), and enable gang
 scheduling (e.g. <b>PreemptMode=GANG</b>).</p>
 <pre>
 # Excerpt of slurm.conf
-DefMemPerNode=1000
-MaxMemPerNode=1000
+DefMemPerNode=8000
+MaxMemPerNode=8000
 SelectType=select/cray
 SelectTypeParameters=CR_Memeory
 FrontEndName=frontend[00-03]
-NodeName=nid[00000-00511] Memory=4000 CPUs=6
+NodeName=nid[00000-00511] Memory=32000 CPUs=6
 PartitionName=batch Nodes=nid[00000-00511] Shared=FORCE:4
 </pre>
 
