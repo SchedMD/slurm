@@ -53,6 +53,7 @@
  * be called once, immediately after reading the slurm.conf file. */
 extern void nodes_to_hilbert_curve(void)
 {
+	static bool first_run = true;
 	int coord_inx, i, j, k, max_coord = 0;
 	int *coords;
 	struct node_record *node_ptr;
@@ -66,6 +67,12 @@ extern void nodes_to_hilbert_curve(void)
 		fatal("current logic only supports 3-dimensions");
 #endif	/* SYSTEM_DIMENSIONS != 3) */
 #endif	/* !HAVE_SUN_CONST */
+
+	/* We can only re-order the nodes once at slurmctld startup.
+	 * After that time, many bitmaps are created based upon the
+	 * index of each node name in the array. */
+	if (!first_run)
+		return;
 
 	/* Get the coordinates for each node based upon its numeric suffix */
 	coords = xmalloc(sizeof(int) * node_record_count * dims);

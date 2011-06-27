@@ -128,16 +128,8 @@ static void _validate_node_proc_count(void);
 static void _reorder_node_record_table(void)
 {
 	struct node_record *node_ptr, *node_ptr2;
-	static bool first_run = true;
 	int i, j, min_inx;
 	uint32_t min_val;
-
-	/* We can only re-order the nodes once at slurmctld startup.
-	 * After that time, many bitmaps are created based upon the
-	 * index of each node name in the array. */
-	if (!first_run)
-		return;
-	first_run = false;
 
 	/* Now we need to sort the node records */
 	for (i = 0; i < node_record_count; i++) {
