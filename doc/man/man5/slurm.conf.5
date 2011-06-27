@@ -2513,6 +2513,33 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 
 .TP
+\fBDefMemPerCPU\fR
+Default real memory size available per allocated CPU in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBDefMemPerCPU\fR would generally be used if individual processors
+are allocated to jobs (\fBSelectType=select/cons_res\fR).
+If not set, the \fBDefMemPerCPU\fR value for the entire cluster will be used.
+Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+\fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
+
+.TP
+\fBDefMemPerNode\fR
+Default real memory size available per allocated node in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBDefMemPerNode\fR would generally be used if whole nodes
+are allocated to jobs (\fBSelectType=select/linear\fR) and
+resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+If not set, the \fBDefMemPerNode\fR value for the entire cluster will be used.
+Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+\fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
+
+.TP
 \fBDefaultTime\fR
 Run time limit used for jobs that don't specify a value. If not set
 then MaxTime will be used.
@@ -2542,6 +2569,33 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 Note that partitions that a user lacks access to by virtue of the
 \fBAllowGroups\fR parameter will also be hidden by default.
+
+.TP
+\fBMaxMemPerCPU\fR
+Maximum real memory size available per allocated CPU in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBMaxMemPerCPU\fR would generally be used if individual processors
+are allocated to jobs (\fBSelectType=select/cons_res\fR).
+If not set, the \fBMaxMemPerCPU\fR value for the entire cluster will be used.
+Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+\fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
+
+.TP
+\fBMaxMemPerNode\fR
+Maximum real memory size available per allocated node in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBMaxMemPerNode\fR would generally be used if whole nodes
+are allocated to jobs (\fBSelectType=select/linear\fR) and
+resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+If not set, the \fBMaxMemPerNode\fR value for the entire cluster will be used.
+Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+\fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
 
 .TP
 \fBMaxNodes\fR

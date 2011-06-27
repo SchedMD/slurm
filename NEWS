@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
     Grytsenko (Massive Solutions Limited).
  -- Add select_jobinfo to the task launch RPC. Based upon patch by Andriy
     Grytsenko (Massive Solutions Limited).
+ -- Add DefMemPerCPU/Node and MaxMemPerCPU/Node to partition configuration.
+    This improves flexibility when gang scheduling only specific partitions.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

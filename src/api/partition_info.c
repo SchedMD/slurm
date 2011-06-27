@@ -312,6 +312,33 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	sprintf(tmp_line, " TotalNodes=%s", tmp2);
 	xstrcat(out, tmp_line);
+
+	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
+		snprintf(tmp_line, sizeof(tmp_line), " DefMemPerCPU=%u",
+			 part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
+		xstrcat(out, tmp_line);
+
+	} else if (part_ptr->def_mem_per_cpu == 0) {
+		xstrcat(out, " DefMemPerNode=UNLIMITED");
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line), " DefMemPerNode=%u",
+			 part_ptr->def_mem_per_cpu);
+		xstrcat(out, tmp_line);
+	}
+
+	if (part_ptr->max_mem_per_cpu & MEM_PER_CPU) {
+		snprintf(tmp_line, sizeof(tmp_line), " MaxMemPerCPU=%u",
+			 part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
+		xstrcat(out, tmp_line);
+
+	} else if (part_ptr->max_mem_per_cpu == 0) {
+		xstrcat(out, " MaxMemPerNode=UNLIMITED");
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line), " MaxMemPerNode=%u",
+			 part_ptr->max_mem_per_cpu);
+		xstrcat(out, tmp_line);
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

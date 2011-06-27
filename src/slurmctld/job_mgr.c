@@ -188,7 +188,7 @@ static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
-			       uid_t submit_uid);
+			       uid_t submit_uid, struct part_record *part_ptr);
 static void _validate_job_files(List batch_dirs);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
@@ -3613,7 +3613,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	xstrtolower(job_desc->account);
 	xstrtolower(job_desc->wckey);
 
-	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid))) {
+	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid,
+					     part_ptr))) {
 		error_code = error_code;
 		goto cleanup_fail;
 	}
@@ -4643,11 +4644,17 @@ static char *_copy_nodelist_no_dup(char *node_list)
 	return buf;
 }
 
-static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)
+static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
+			      struct part_record *part_ptr)
 {
 	uint32_t job_mem_limit = job_desc_msg->pn_min_memory;
-	uint32_t sys_mem_limit = slurmctld_conf.max_mem_per_cpu;
+	uint32_t sys_mem_limit;
 	uint16_t cpus_per_node, ratio;
+
+	if (part_ptr && part_ptr->max_mem_per_cpu)
+		sys_mem_limit = part_ptr->max_mem_per_cpu;
+	else
+		sys_mem_limit = slurmctld_conf.max_mem_per_cpu;
 
 	if (sys_mem_limit == 0)
 		return true;
@@ -5025,7 +5032,7 @@ static void _job_timed_out(struct job_record *job_ptr)
  * IN submit_uid - who request originated
  */
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
-			      uid_t submit_uid)
+			      uid_t submit_uid, struct part_record *part_ptr)
 {
 	if ((job_desc_msg->min_cpus  == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
@@ -5088,8 +5095,14 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->pn_min_memory == NO_VAL) {
 		/* Default memory limit is DefMemPerCPU (if set) or no limit */
-		job_desc_msg->pn_min_memory = slurmctld_conf.def_mem_per_cpu;
-	} else if (!_valid_pn_min_mem(job_desc_msg))
+		if (part_ptr && part_ptr->def_mem_per_cpu) {
+			job_desc_msg->pn_min_memory =
+					part_ptr->def_mem_per_cpu;
+		} else {
+			job_desc_msg->pn_min_memory =
+					slurmctld_conf.def_mem_per_cpu;
+		}
+	} else if (!_valid_pn_min_mem(job_desc_msg, part_ptr))
 		return ESLURM_INVALID_TASK_MEMORY;
 
 	if (job_desc_msg->min_nodes == NO_VAL)

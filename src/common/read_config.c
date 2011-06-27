@@ -792,11 +792,15 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"AllocNodes", S_P_STRING},
 		{"AllowGroups", S_P_STRING},
 		{"Alternate", S_P_STRING},
+		{"DefMemPerCPU", S_P_UINT32},
+		{"DefMemPerNode", S_P_UINT32},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"GraceTime", S_P_UINT32},
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
+		{"MaxMemPerCPU", S_P_UINT32},
+		{"MaxMemPerNode", S_P_UINT32},
 		{"MaxTime", S_P_STRING},
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
 		{"MinNodes", S_P_UINT32},
@@ -851,6 +855,34 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
 		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
 			p->default_flag = false;
+
+		if (!s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode",
+				    tbl) &&
+		    !s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode", 
+				    dflt)) {
+			if (s_p_get_uint32(&p->def_mem_per_cpu,
+					   "DefMemPerCPU", tbl) ||
+			    s_p_get_uint32(&p->def_mem_per_cpu,
+					   "DefMemPerCPU", dflt)) {
+				p->def_mem_per_cpu |= MEM_PER_CPU;
+			} {
+				p->def_mem_per_cpu = 0;
+			}
+		}
+
+		if (!s_p_get_uint32(&p->max_mem_per_cpu, "MaxMemPerNode",
+				    tbl) &&
+		    !s_p_get_uint32(&p->max_mem_per_cpu, "MaxMemPerNode", 
+				    dflt)) {
+			if (s_p_get_uint32(&p->max_mem_per_cpu,
+					   "MaxMemPerCPU", tbl) ||
+			    s_p_get_uint32(&p->max_mem_per_cpu,
+					   "MaxMemPerCPU", dflt)) {
+				p->max_mem_per_cpu |= MEM_PER_CPU;
+			} else {
+				p->max_mem_per_cpu = 0;
+			}
+		}
 
 		if (!s_p_get_boolean((bool *)&p->disable_root_jobs,
 				     "DisableRootJobs", tbl))

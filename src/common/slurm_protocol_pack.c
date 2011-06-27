@@ -3577,6 +3577,8 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack32(&part->min_nodes,    buffer);
 		safe_unpack32(&part->total_nodes,  buffer);
 		safe_unpack32(&part->total_cpus,   buffer);
+		safe_unpack32(&part->def_mem_per_cpu, buffer);
+		safe_unpack32(&part->max_mem_per_cpu, buffer);
 		safe_unpack16(&part->flags,        buffer);
 		safe_unpack16(&part->max_share,    buffer);
 		safe_unpack16(&part->preempt_mode, buffer);

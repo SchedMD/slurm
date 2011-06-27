@@ -50,6 +50,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * Added AccountingStoreJobComment to control storing job's comment field in
   the accounting database.
 * More than one TaskPlugin can be configured in a comma separated list.
+* DefMemPerCPU, DefMemPerNode, MaxMemPerCPU and MaxMemPerNode configuration
+  options added on a per-partition basis.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -105,6 +107,9 @@ job_desc_msg_t
 
 job_step_info_t
 	Added	    select_jobinfo
+
+partition_info_t
+	Added       def_mem_per_cpu and max_mem_per_cpu
 
 Added the following struct definitions
 ======================================

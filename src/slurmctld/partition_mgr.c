@@ -979,6 +979,8 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
 		pack32(altered,              buffer);
 		pack32(part_ptr->total_cpus, buffer);
+		pack32(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_mem_per_cpu, buffer);
 		pack16(part_ptr->flags,      buffer);
 		pack16(part_ptr->max_share,  buffer);
 		pack16(part_ptr->preempt_mode, buffer);

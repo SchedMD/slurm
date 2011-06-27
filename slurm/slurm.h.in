@@ -1464,9 +1464,11 @@ typedef struct partition_info {
 	char *allow_groups;	/* comma delimited list of groups,
 				 * null indicates all */
 	char *alternate; 	/* name of alternate partition */
+	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint16_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */
+	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */

@@ -188,6 +188,7 @@ typedef struct slurm_conf_partition {
 	char *allow_groups;	/* comma delimited list of groups,
 				 * NULL indicates all */
 	char *alternate;	/* name of alternate partition */
+	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	bool default_flag;	/* Set if default partition */
 	uint32_t default_time;	/* minutes or INFINITE */
 	uint16_t disable_root_jobs; /* if set then user root can't run
@@ -197,6 +198,7 @@ typedef struct slurm_conf_partition {
 	bool     hidden_flag;	/* 1 if hidden by default */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t min_nodes;	/* per job */
 	char	*name;		/* name of the partition */
