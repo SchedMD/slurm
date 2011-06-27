@@ -602,3 +602,8 @@ extern bool node_is_allocated(const struct basil_node *node)
 
 	return IS_NODE_ALLOCATED(node_ptr);
 }
+
+int basil_switch(uint32_t rsvn_id, bool suspend)
+{
+	return 0;
+}
