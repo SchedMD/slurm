@@ -188,7 +188,7 @@ extern List build_job_queue(bool clear_start)
 			/* released behind active dependency? */
 			job_ptr->state_reason = WAIT_DEPENDENCY;
 			xfree(job_ptr->state_desc);
-		}	
+		}
 
 		if (!job_indepen)	/* can not run now */
 			continue;
@@ -932,7 +932,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				failure = true;
 				break;
 			} else if ((dep_ptr->job_ptr->end_time != 0) &&
-			           (dep_ptr->job_ptr->end_time > now)) {
+				   (dep_ptr->job_ptr->end_time > now)) {
 				job_ptr->time_limit = dep_ptr->job_ptr->
 						      end_time - now;
 				job_ptr->time_limit /= 60;  /* sec to min */
@@ -947,7 +947,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
  			char *rmv_dep;
  			rmv_dep = xstrdup_printf(":%u",
 						 dep_ptr->job_ptr->job_id);
-			xstrsubstitute(job_ptr->details->dependency, 
+			xstrsubstitute(job_ptr->details->dependency,
 				       rmv_dep, "");
 			xfree(rmv_dep);
 		}
