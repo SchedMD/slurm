@@ -2,7 +2,6 @@
  *  partition_mgr.c - manage the partition information of slurm
  *	Note: there is a global partition list (part_list) and
  *	time stamp (last_part_update)
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -1314,6 +1313,35 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		     part_ptr->alternate, part_desc->name);
 	}
 
+	if (part_desc->def_mem_per_cpu != NO_VAL) {
+		char *key;
+		uint32_t value;
+		if (part_desc->def_mem_per_cpu & MEM_PER_CPU) {
+			key = "DefMemPerCpu";
+			value = part_desc->def_mem_per_cpu & (~MEM_PER_CPU);
+		} else {
+			key = "DefMemPerNode";
+			value = part_desc->def_mem_per_cpu;
+		}
+		info("update_part: setting %s to %u for partition %s",
+		     key, value, part_desc->name);
+		part_ptr->def_mem_per_cpu = part_desc->def_mem_per_cpu;
+	}
+
+	if (part_desc->max_mem_per_cpu != NO_VAL) {
+		char *key;
+		uint32_t value;
+		if (part_desc->max_mem_per_cpu & MEM_PER_CPU) {
+			key = "MaxMemPerCpu";
+			value = part_desc->max_mem_per_cpu & (~MEM_PER_CPU);
+		} else {
+			key = "MaxMemPerNode";
+			value = part_desc->max_mem_per_cpu;
+		}
+		info("update_part: setting %s to %u for partition %s",
+		     key, value, part_desc->name);
+		part_ptr->max_mem_per_cpu = part_desc->max_mem_per_cpu;
+	}
 
 	if (part_desc->nodes != NULL) {
 		char *backup_node_list = part_ptr->nodes;

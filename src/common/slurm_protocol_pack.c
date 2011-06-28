@@ -2785,6 +2785,8 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		pack32(msg-> default_time, buffer);
 		pack32(msg-> max_nodes,    buffer);
 		pack32(msg-> min_nodes,    buffer);
+		pack32(msg-> def_mem_per_cpu, buffer);
+		pack32(msg-> max_mem_per_cpu, buffer);
 		packstr(msg->name,         buffer);
 		packstr(msg->nodes,        buffer);
 		pack16(msg-> flags,        buffer);
@@ -2879,6 +2881,8 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpack32(&tmp_ptr->default_time, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
 		safe_unpack32(&tmp_ptr->min_nodes, buffer);
+		safe_unpack32(&tmp_ptr->def_mem_per_cpu, buffer);
+		safe_unpack32(&tmp_ptr->max_mem_per_cpu, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
 

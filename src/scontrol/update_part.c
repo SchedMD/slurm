@@ -268,6 +268,32 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->grace_time = slurm_atoul(val);
 			(*update_cnt_ptr)++;
 		}
+		else if (strncasecmp(tag, "DefMemPerCPU",
+				     MAX(taglen, 10)) == 0) {
+			part_msg_ptr->def_mem_per_cpu = (uint32_t) strtol(val,
+							(char **) NULL, 10);
+			part_msg_ptr->def_mem_per_cpu |= MEM_PER_CPU;
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "DefMemPerNode",
+				     MAX(taglen, 10)) == 0) {
+			part_msg_ptr->def_mem_per_cpu = (uint32_t) strtol(val,
+							(char **) NULL, 10);
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "MaxMemPerCPU",
+				     MAX(taglen, 10)) == 0) {
+			part_msg_ptr->max_mem_per_cpu = (uint32_t) strtol(val,
+							(char **) NULL, 10);
+			part_msg_ptr->max_mem_per_cpu |= MEM_PER_CPU;
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "MaxMemPerNode",
+				     MAX(taglen, 10)) == 0) {
+			part_msg_ptr->max_mem_per_cpu = (uint32_t) strtol(val,
+							(char **) NULL, 10);
+			(*update_cnt_ptr)++;
+		}
 		else {
 			exit_code = 1;
 			error("Update of this parameter is not "

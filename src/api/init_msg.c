@@ -120,7 +120,9 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
 	memset(update_part_msg, 0, sizeof(update_part_msg_t));
 	update_part_msg->default_time   = (uint32_t) NO_VAL;
+	update_part_msg->def_mem_per_cpu = (uint32_t) NO_VAL;
 	update_part_msg->grace_time     = (uint32_t) NO_VAL;
+	update_part_msg->max_mem_per_cpu = (uint32_t) NO_VAL;
 	update_part_msg->max_nodes 	= NO_VAL;
 	update_part_msg->max_share 	= (uint16_t) NO_VAL;
 	update_part_msg->min_nodes 	= NO_VAL;

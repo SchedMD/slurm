@@ -869,6 +869,15 @@ then MaxTime will be used.
 Format is the same as for MaxTime.
 
 .TP
+\fIDefMemPerCPU\fP=<MB>
+Set the default memory to be allocated per CPU for jobs in this partition.
+The memory size is specified in megabytes.
+.TP
+\fIDefMemPerCNode\fP=<MB>
+Set the default memory to be allocated per node for jobs in this partition.
+The memory size is specified in megabytes.
+
+.TP
 \fIDisableRootJobs\fP=<yes|no>
 Specify if jobs can be executed as user root.
 Possible values are "YES" and "NO".
@@ -887,6 +896,15 @@ Specify if the partition and its jobs should be hidden from view.
 Hidden partitions will by default not be reported by SLURM APIs
 or commands.
 Possible values are "YES" and "NO".
+
+.TP
+\fIMaxMemPerCPU\fP=<MB>
+Set the maximum memory to be allocated per CPU for jobs in this partition.
+The memory size is specified in megabytes.
+.TP
+\fIMaxMemPerCNode\fP=<MB>
+Set the maximum memory to be allocated per node for jobs in this partition.
+The memory size is specified in megabytes.
 
 .TP
 \fIMaxNodes\fP=<count>
