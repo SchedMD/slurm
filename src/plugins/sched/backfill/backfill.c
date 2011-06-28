@@ -510,7 +510,10 @@ static int _attempt_backfill(void)
 
 		if ((job_ptr->state_reason == WAIT_ASSOC_JOB_LIMIT) ||
 		    (job_ptr->state_reason == WAIT_ASSOC_RESOURCE_LIMIT) ||
-		    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT)) {
+		    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
 			debug2("backfill: job %u is not allowed to run now. "
 			       "Skipping it. State=%s. Reason=%s. Priority=%u",
 			       job_ptr->job_id,

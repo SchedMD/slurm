@@ -915,6 +915,12 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "InvalidQOS";
 	case WAIT_QOS_THRES:
 		return "QOSUsageThreshold";
+	case WAIT_QOS_JOB_LIMIT:
+		return "QOSJobLimit";
+	case WAIT_QOS_RESOURCE_LIMIT:
+		return "QOSResourceLimit";
+	case WAIT_QOS_TIME_LIMIT:
+		return "QOSTimeLimit";
 	default:
 		return "?";
 	}

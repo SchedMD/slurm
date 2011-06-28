@@ -886,7 +886,10 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	/* clear old state reason */
         if ((job_ptr->state_reason == WAIT_ASSOC_JOB_LIMIT) ||
 	    (job_ptr->state_reason == WAIT_ASSOC_RESOURCE_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT))
+	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT))
                 job_ptr->state_reason = WAIT_NO_REASON;
 
 
@@ -906,7 +909,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		 */
 		if ((qos_ptr->grp_cpu_mins != (uint64_t)INFINITE)
 		    && (usage_mins >= qos_ptr->grp_cpu_mins)) {
-			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
 			debug2("Job %u being held, "
 			       "the job is at or exceeds QOS %s's "
@@ -944,7 +947,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			if ((qos_ptr->usage->grp_used_cpus +
 			     job_ptr->details->min_cpus) > qos_ptr->grp_cpus) {
 				job_ptr->state_reason =
-					WAIT_ASSOC_RESOURCE_LIMIT;
+					WAIT_QOS_RESOURCE_LIMIT;
 				xfree(job_ptr->state_desc);
 				debug2("job %u being held, "
 				       "the job is at or exceeds "
@@ -963,7 +966,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 		if ((qos_ptr->grp_jobs != INFINITE) &&
 		    (qos_ptr->usage->grp_used_jobs >= qos_ptr->grp_jobs)) {
-			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
 			debug2("job %u being held, "
 			       "the job is at or exceeds "
@@ -996,7 +999,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			     job_ptr->details->min_nodes) >
 			    qos_ptr->grp_nodes) {
 				job_ptr->state_reason =
-					WAIT_ASSOC_RESOURCE_LIMIT;
+					WAIT_QOS_RESOURCE_LIMIT;
 				xfree(job_ptr->state_desc);
 				debug2("job %u being held, "
 				       "the job is at or exceeds "
@@ -1017,7 +1020,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 		if ((qos_ptr->grp_wall != INFINITE)
 		    && (wall_mins >= qos_ptr->grp_wall)) {
-			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
 			debug2("job %u being held, "
 			       "the job is at or exceeds "
@@ -1089,7 +1092,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			if (used_limits && (used_limits->cpus
 					    >= qos_ptr->max_cpus_pu)) {
 				job_ptr->state_reason =
-					WAIT_ASSOC_RESOURCE_LIMIT;
+					WAIT_QOS_RESOURCE_LIMIT;
 				debug2("job %u being held, "
 				       "the job is at or exceeds "
 				       "max cpus per-user limit "
@@ -1112,7 +1115,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			if (used_limits && (used_limits->jobs
 					    >= qos_ptr->max_jobs_pu)) {
 				job_ptr->state_reason =
-					WAIT_ASSOC_RESOURCE_LIMIT;
+					WAIT_QOS_RESOURCE_LIMIT;
 				debug2("job %u being held, "
 				       "the job is at or exceeds "
 				       "max jobs per-user limit "
@@ -1171,7 +1174,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			if (used_limits && (used_limits->nodes
 					    >= qos_ptr->max_nodes_pu)) {
 				job_ptr->state_reason =
-					WAIT_ASSOC_RESOURCE_LIMIT;
+					WAIT_QOS_RESOURCE_LIMIT;
 				debug2("job %u being held, "
 				       "the job is at or exceeds "
 				       "max nodes per-user "
@@ -1612,7 +1615,10 @@ extern bool acct_policy_node_usable(struct job_record *job_ptr,
 	/* clear old state reason */
         if ((job_ptr->state_reason == WAIT_ASSOC_JOB_LIMIT) ||
 	    (job_ptr->state_reason == WAIT_ASSOC_RESOURCE_LIMIT) ||
-	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT))
+	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT))
                 job_ptr->state_reason = WAIT_NO_REASON;
 
 

@@ -287,7 +287,10 @@ enum job_state_reason {
 	FAIL_INACTIVE_LIMIT,	/* reached slurm InactiveLimit */
 	FAIL_ACCOUNT,   	/* invalid account */
 	FAIL_QOS,        	/* invalid QOS */
-	WAIT_QOS_THRES        	/* required QOS threshold has been breached */
+	WAIT_QOS_THRES,        	/* required QOS threshold has been breached */
+	WAIT_QOS_JOB_LIMIT,	/* QOS job limit reached */
+	WAIT_QOS_RESOURCE_LIMIT,/* QOS resource limit reached */
+	WAIT_QOS_TIME_LIMIT     /* QOS time limit reached */
 };
 
 enum job_acct_types {
