@@ -489,7 +489,7 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
-<h3>Gang Scheduling</h3>
+<a name="gang"><h3>Gang Scheduling</h3></a>
 
 <p>SLURM version 2.3.0-pre7 (or higher) can be used with BASIL version 1.2 or
 higher to gang schedule (time-slice) parallell jobs. Review SLURM's
@@ -506,6 +506,7 @@ DefMemPerNode=8000
 MaxMemPerNode=8000
 SelectType=select/cray
 SelectTypeParameters=CR_Memeory
+PreemptMode=GANG
 FrontEndName=frontend[00-03]
 NodeName=nid[00000-00511] Memory=32000 CPUs=6
 PartitionName=batch Nodes=nid[00000-00511] Shared=FORCE:4
@@ -528,6 +529,6 @@ loadLimit  4      # set to 2 for Gemini
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 June 2011</p></td>
+<p style="text-align:center;">Last modified 28 June 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
