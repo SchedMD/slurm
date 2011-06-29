@@ -186,14 +186,14 @@
 	</tr>
 	
 	<tr>
-	  <td width="15%" rowspan="4">09:00 - 10:30</td>
+	  <td width="15%" rowspan="4">09:00 - 10:40</td>
 	  <td width="85%" colspan="3">&nbsp;Welcome</td>
 	</tr>
 	
 	<tr>
 	  <td width="15%">&nbsp;Keynote</td>
 	  <td width="25%">&nbsp;William Kramer (NCSA)</td>
-	  <td width="45%">&nbsp;TBD</td>
+	  <td width="45%">&nbsp;Challenges and Opportunities for Exscale Resource Management and how Today's Petascale Systems are Guiding the Way</td>
 	</tr>
 	<tr>
 	  <td width="15%">&nbsp;Session #1</td>
@@ -207,7 +207,7 @@
 	</tr>
 
 	<tr>
-	  <td width="15%" bgcolor="#F0F1C9">10:30 - 11:00</td>
+	  <td width="15%" bgcolor="#F0F1C9">10:40 - 11:00</td>
 	  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Coffee break</td>
 	</tr>
 	
@@ -236,18 +236,18 @@
 	<tr>
 	  <td width="15%" rowspan="3">14:00 - 15:30</td>
 	  <td width="15%">&nbsp;Session #6</td>
-	  <td width="25%">&nbsp;Don Lipari (LLNL)</td>
-	  <td width="45%">&nbsp;Proposed Design for Enhanced Enterprise-wide Scheduling</td>
+	  <td width="25%">&nbsp;Mariusz Mamo&#324;ski (Pozna&#324; University)</td>
+	  <td width="45%">&nbsp;Introduction to SLURM DRMAA</td>
 	</tr>
 	<tr>
 	  <td width="15%">&nbsp;Session #7</td>
-	  <td width="25%">&nbsp;Morris Jette (SchedMD)</td>
-	  <td width="45%">&nbsp;Proposed Design for Job Step Management in User Space</td>
+	  <td width="25%">&nbsp;Dr. Matthijs van Leeuwen (Bright Computing)</td>
+	  <td width="45%">&nbsp;Integration of SLURM with Bright Cluster Manager</td>
 	</tr>
 	<tr>
 	  <td width="15%">&nbsp;Session #8</td>
-	  <td width="25%">&nbsp;Mariusz Mamo&#324;ski (Pozna&#324; University)</td>
-	  <td width="45%">&nbsp;Introduction to SLURM DRMAA</td>
+	  <td width="25%">&nbsp;Morris Jette (SchedMD)</td>
+	  <td width="45%">&nbsp;Proposed Design for Job Step Management in User Space</td>
 	</tr>
 
 	<tr>
@@ -256,8 +256,14 @@
 	</tr>
 
 	<tr>
-	  <td width="15%" rowspan="2">16:00 - 17:30</td>
+	  <td width="15%" rowspan="3">16:00 - 17:30</td>
 	  <td width="15%">&nbsp;Session #9</td>
+	  <td width="25%">&nbsp;Don Lipari (LLNL)</td>
+	  <td width="45%">&nbsp;Proposed Design for Enhanced Enterprise-wide Scheduling</td>
+	</tr>
+
+	<tr>
+	  <td width="15%">&nbsp;Session #10</td>
 	  <td width="25%">&nbsp;Danny Auble and Morris Jette (SchedMD)</td>
 	  <td width="45%">&nbsp;SLURM Version 2.3 and plans for future releases</td>
 	</tr>
@@ -340,7 +346,12 @@
 	</ul>
 
 	<h2> Keynote Speaker</h2>
-	William Kramer (NCSA)
+	Challenges and Opportunities for Exscale Resource Management and how
+	Today's Petascale Systems are Guiding the Way<br>
+	William Kramer (NCSA)<br><br>
+	Resource management challenges currently experienced on the Blue Waters
+	computer will be described. These experiences will be extended to describe
+	the additional challenges faced in exascale and trans-petascale systems.
 
 	<h2>Session #1</h2>
 	CEA Site report<br>
@@ -390,19 +401,21 @@
 	will discuss the design and operation of SLURM with respect to Cray systems.
 
 	<h2>Session #6</h2>
-	Proposed Design for Enhanced Enterprise-wide Scheduling<br>
-	Don Lipari (LLNL)<br><br>
-	SLURM currently supports the ability to submit and status jobs between 
-	computers at site, however the current design has some limitations. When a job 
-	is submitted with several possible computers usable for its execution, the 
-	job is routed to the computer on which it is expected to start earliest. 
-	Changes in the workload or system failures could make moving the job to another 
-	computer result in faster initiation, but that is currently impossible. SLURM 
-	is also unable to support dependencies between jobs executing on different 
-	computers. The design of a SLURM meta-scheduler with enhanced enterprise-wide 
-	scheduling capabilities will be presented.
+	Introduction to SLURM DRMAA<br>
+	Mariusz Mamo&#324;ski (Pozna&#324; University)<br><br>
+	DRMAA or Distributed Resource Management Application API is a high-level
+	Open Grid Forum API specification for the submission and control of jobs
+	in a Grid architecture.
 
 	<h2>Session #7</h2>
+	Integration of SLURM with Bright Cluster Manager<br>
+	Dr. Matthijs van Leeuwen (Bright Computing)<br><br>
+	The integration of SLURM and the
+	<a href="http://www.brightcomputing.com/Linux-Cluster-Workload-Management.php">
+	Bright Cluster Manager</a>
+	for a complete cluster management solution will be described.
+
+	<h2>Session #8</h2>
 	Proposed Design for Job Step Management in User Space<br>
 	Morris Jette (SchedMD)<br><br>
 	SLURM currently creates and manages job steps using SLURM's control daemon,
@@ -412,14 +425,20 @@
 	scalability and performance. A possible implementation of this will be 
 	presented.
 
-	<h2>Session #8</h2>
-	Introduction to SLURM DRMAA<br>
-	Mariusz Mamo&#324;ski (Pozna&#324; University)<br><br>
-	DRMAA or Distributed Resource Management Application API is a high-level
-	Open Grid Forum API specification for the submission and control of jobs
-	in a Grid architecture.
-
 	<h2>Session #9</h2>
+	Proposed Design for Enhanced Enterprise-wide Scheduling<br>
+	Don Lipari (LLNL)<br><br>
+	SLURM currently supports the ability to submit and status jobs between
+	computers at site, however the current design has some limitations. When a job
+	is submitted with several possible computers usable for its execution, the
+	job is routed to the computer on which it is expected to start earliest.
+	Changes in the workload or system failures could make moving the job to another
+	computer result in faster initiation, but that is currently impossible. SLURM
+	is also unable to support dependencies between jobs executing on different
+	computers. The design of a SLURM meta-scheduler with enhanced enterprise-wide
+	scheduling capabilities will be presented.
+
+	<h2>Session #10</h2>
 	Contents of SLURM Version 2.3 and plans for future releases<br>
 	Danny Auble and Morris Jette (SchedMD)<br><br>
 	An overview of the changes SLURM Version 2.3 will be presented along with 
