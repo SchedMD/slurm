@@ -161,7 +161,7 @@ int basil_request(struct basil_parse_data *bp)
 		break;
 	case BM_switch:
 	{
-		char *suspend = bp->mdata.res->suspended ? "IN" : "OUT";
+		char *suspend = bp->mdata.res->suspended ? "OUT" : "IN";
 		fprintf(apbasil, ">\n");
 		fprintf(apbasil, " <ApplicationArray>\n");
 		fprintf(apbasil, " </ApplicationArray>\n");
