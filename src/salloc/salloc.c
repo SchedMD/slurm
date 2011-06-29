@@ -132,14 +132,6 @@ static int _blocks_dealloc(void);
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 #endif
 
-typedef struct xppid_s {
-	int pid;
-	int ppid;
-	int pgid;
-	struct xppid_s *next;
-} xppid_t;
-static xppid_t *pid_hash[HASH_RECS];
-
 bool salloc_shutdown = false;
 /* Signals that are considered terminal before resource allocation. */
 int sig_array[] = {
@@ -877,156 +869,13 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 	}
 }
 
-/* Build a hash table of process ID information */
-static void _push_to_hash(int pid, int ppid, int pgid)
-{
-	int hash_inx = pid % HASH_RECS;
-	xppid_t *ppid_rec = xmalloc(sizeof(xppid_t));
-	ppid_rec->pid  = pid;
-	ppid_rec->ppid = ppid;
-	ppid_rec->pgid = pgid;
-	ppid_rec->next = pid_hash[hash_inx];
-	pid_hash[hash_inx] = ppid_rec;
-}
-
-/* Find a specific process ID's record in the hash table, NULL if not found */
-static xppid_t * _find_hash_rec(int pid)
-{
-	int hash_inx = pid % HASH_RECS;
-	xppid_t *this_hash = pid_hash[hash_inx];
-
-	while (this_hash) {
-		if (this_hash->pid == pid)
-			return this_hash;
-		this_hash = this_hash->next;
-	}
-	return NULL;
-}
-
-/* Determine if s specific process ID is a child of the spawed process
- * (command_pid) */
-static bool _is_child_of(int command_pid, xppid_t *this_hash)
-{
-	while (this_hash) {
-		if (this_hash->ppid == command_pid)
-			return true;
-		if (this_hash->ppid <= 1)
-			return false;
-		this_hash = _find_hash_rec(this_hash->ppid);
-	}
-	return false;
-}
-
-/* Scan the entire process hash table and signal all children of a specific
- * process ID */
-static void _kill_by_hash(int command_pid, int sig)
-{
-	int i;
-	xppid_t *this_hash;
-
-	for (i = 0; i < HASH_RECS; i++) {
-		this_hash = pid_hash[i];
-		while (this_hash) {
-			if ((this_hash->pgid != command_pid) &&
-			    _is_child_of(command_pid, this_hash))
-				kill(this_hash->pid, sig);
-			this_hash = this_hash->next;
-		}
-	}
-}
-
-/* Free all memory allocated to the process hash table */
-static void _free_hash(void)
-{
-	int i;
-	xppid_t *this_hash, *next_hash;
-
-	for (i = 0; i < HASH_RECS; i++) {
-		this_hash = pid_hash[i];
-		while (this_hash) {
-			next_hash = this_hash->next;
-			xfree(this_hash);
-			this_hash = next_hash;
-		}
-		pid_hash[i] = NULL;
-	}
-}
-
-/* Signal all child processses. Since salloc executes a the user, it is unable
- * to create most job containers (e.g. cgroups), so it identifies child
- * processes using process group ID and parent process IDs. This means that
- * child processes can become children of the init process and avoid being
- * suspended. */
-static void _signal_children(int sig)
-{
-	int fd;
-	DIR *dir;
-	struct dirent *de;
-	char path[PATH_MAX], *endptr, *num, rbuf[1024];
-	char cmd[1024];
-	char state;
-	int pid, ppid, pgid;
-	long ret_l;
-
-	if (command_pid <= 0)
-		return;
-
-	killpg(command_pid, sig);
-
-	if ((dir = opendir("/proc")) == NULL) {
-		error("opendir(/proc): %m");
-		return;
-	}
-	while ((de = readdir(dir)) != NULL) {
-		num = de->d_name;
-		if ((num[0] < '0') || (num[0] > '9'))
-			continue;
-		ret_l = strtol(num, &endptr, 10);
-		if ((ret_l == LONG_MIN) || (ret_l == LONG_MAX) ||
-		    (errno == ERANGE)) {
-			error("couldn't do a strtol on str %s(%ld): %m",
-			      num, ret_l);
-		}
-		if ((endptr == NULL) || (*endptr != 0))
-			continue;
-		sprintf(path, "/proc/%s/stat", num);
-		if ((fd = open(path, O_RDONLY)) < 0) {
-			continue;
-		}
-		if (read(fd, rbuf, 1024) <= 0) {
-			close(fd);
-			continue;
-		}
-		if (sscanf(rbuf, "%d %s %c %d %d", &pid, cmd, &state, &ppid,
-		           &pgid) != 5) {
-			close(fd);
-			continue;
-		}
-		_push_to_hash(pid, ppid, pgid);
-		close(fd);
-	}
-	closedir(dir);
-
-	_kill_by_hash(command_pid, sig);
-	_free_hash();
-
-	return;
-}
-
 static void _job_suspend_handler(suspend_msg_t *msg)
 {
-	pthread_mutex_lock(&allocation_state_lock);
 	if (msg->op == SUSPEND_JOB) {
 		verbose("job has been suspended");
-		suspend_flag = true;
-		_signal_children(SIGSTOP);
 	} else if (msg->op == RESUME_JOB) {
 		verbose("job has been resumed");
-		suspend_flag = false;
-		_signal_children(SIGCONT);
 	}
-	pthread_cond_broadcast(&allocation_state_cond);
-	pthread_mutex_unlock(&allocation_state_lock);
 }
 
 /*
