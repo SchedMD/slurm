@@ -163,8 +163,6 @@ int basil_request(struct basil_parse_data *bp)
 	{
 		char *suspend = bp->mdata.res->suspended ? "OUT" : "IN";
 		fprintf(apbasil, ">\n");
-		fprintf(apbasil, " <ApplicationArray>\n");
-		fprintf(apbasil, " </ApplicationArray>\n");
 		fprintf(apbasil, " <ReservationArray>\n");
 		fprintf(apbasil, "  <Reservation reservation_id=\"%u\" "
 			"action=\"%s\"/>\n",
