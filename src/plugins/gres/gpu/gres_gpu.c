@@ -166,7 +166,10 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 				    dev_list);
 		xfree(dev_list);
 	} else {
-		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES", "");
+		/* The gres.conf file must identify specific device files
+		 * in order to set the CUDA_VISIBLE_DEVICES env var */
+		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
+				    "NoDevFiles");
 	}
 }
 
@@ -200,6 +203,9 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 				    dev_list);
 		xfree(dev_list);
 	} else {
-		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES", "");
+		/* The gres.conf file must identify specific device files
+		 * in order to set the CUDA_VISIBLE_DEVICES env var */
+		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
+				    "NoDevFiles");
 	}
 }
