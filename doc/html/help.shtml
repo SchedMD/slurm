@@ -17,9 +17,9 @@ their support staff.</li>
 </ol>
 
 <h1>Commercial Support</h1>
-<p>Several companies provide commercial support for SLURM, although LLNL
-policy prevents their identification here.</p>
+<p>Several companies provide commercial support for SLURM including
+<a href="http://www.schedmd.com">SchedMD</a>.</p>
 
-<p style="text-align:center;">Last modified 5 May 2011</p>
+<p style="text-align:center;">Last modified 30 June 2011</p>
 
 <!--#include virtual="footer.txt"-->
