@@ -8,18 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management,
 Linux clusters, high-performance computing, Livermore Computing">
-<meta name="LLNLRandR" content="LLNL-WEB-411573">
-<meta name="LLNLRandRdate" content="26 March 2009">
-<meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
-<meta name="copyright"
-content="This document is copyrighted U.S.
-Department of Energy under Contract DE-AC52-07NA27344">
-<meta name="Author" content="Morris Jette">
-<meta name="email" content="jette1@llnl.gov">
-<meta name="Classification"
-content="DOE:DOE Web sites via organizational
-structure:Laboratories and Other Field Facilities">
 <title>Simple Linux Utility for Resource Management</title>
 <link href="linuxstyles.css" rel="stylesheet" type="text/css">
 <link href="slurmstyles.css" rel="stylesheet" type="text/css">
