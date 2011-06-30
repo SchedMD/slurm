@@ -603,7 +603,8 @@ extern void cr_sort_part_rows(struct part_res_record *p_ptr)
  *
  * IN/OUT: p_ptr   - the partition that has jobs to be optimized
  */
-static void _build_row_bitmaps(struct part_res_record *p_ptr)
+static void _build_row_bitmaps(struct part_res_record *p_ptr,
+			       struct job_record *job_ptr)
 {
 	uint32_t i, j, num_jobs, size;
 	int x, *jstart;
@@ -620,21 +621,13 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 				size = bit_size(this_row->row_bitmap);
 				bit_nclear(this_row->row_bitmap, 0, size-1);
 			}
-			return;
+		} else {
+			xassert(job_ptr);
+			xassert(job_ptr->job_resrcs);
+			remove_job_from_cores(job_ptr->job_resrcs,
+					      &this_row->row_bitmap,
+					      cr_node_num_cores);
 		}
-
-		/* rebuild the row bitmap */
-		num_jobs = this_row->num_jobs;
-		tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));
-		for (i = 0; i < num_jobs; i++) {
-			tmpjobs[i] = this_row->job_list[i];
-			this_row->job_list[i] = NULL;
-		}
-		this_row->num_jobs = 0; /* this resets the row_bitmap */
-		for (i = 0; i < num_jobs; i++) {
-			_add_job_to_row(tmpjobs[i], this_row);
-		}
-		xfree(tmpjobs);
 		return;
 	}
 
@@ -1151,7 +1144,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* deallocate resources to the given job
+/* deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
@@ -1277,7 +1270,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 
 		if (n) {
 			/* job was found and removed, so refresh the bitmaps */
-			_build_row_bitmaps(p_ptr);
+			_build_row_bitmaps(p_ptr, job_ptr);
 
 			/* Adjust the node_state of all nodes affected by
 			 * the removal of this job. If all cores are now
@@ -1414,7 +1407,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 
 
 	/* job was found and removed from core-bitmap, so refresh CR bitmaps */
-	_build_row_bitmaps(p_ptr);
+	_build_row_bitmaps(p_ptr, job_ptr);
 
 	/* Adjust the node_state of the node removed from this job.
 	 * If all cores are now available, set node_state = NODE_CR_AVAILABLE */

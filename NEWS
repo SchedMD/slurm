@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     This improves flexibility when gang scheduling only specific partitions.
  -- Added new enums to print out when a job is held by a QOS instead of an
     association limit.
+ -- Enhancements to sched/backfill performance with select/cons_res plugin.
+    Patch from Bjørn-Helge Mevik, University of Oslo.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

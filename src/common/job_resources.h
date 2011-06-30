@@ -257,6 +257,17 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     bitstr_t **full_core_bitmap,
 			     const uint16_t *bits_per_node);
 
+/*
+ * Remove job from full-length core_bitmap
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ * IN bits_per_node - bits per node in the full_bitmap
+ * RET 1 on success, 0 otherwise
+ */
+extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
+			       bitstr_t **full_core_bitmap,
+			       const uint16_t *bits_per_node);
+
 /* Given a job pointer and a global node index, return the index of that
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
 extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr, 
