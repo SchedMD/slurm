@@ -354,6 +354,7 @@
 #define s_p_get_string			slurm_s_p_get_string
 #define s_p_get_uint32			slurm_s_p_get_uint32
 #define s_p_hashtbl_create		slurm_s_p_hashtbl_create
+#define s_p_hashtbl_destroy		slurm_s_p_hashtbl_destroy
 #define s_p_parse_file			slurm_s_p_parse_file
 
 #endif /* USE_ALIAS */
