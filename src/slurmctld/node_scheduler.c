@@ -1262,8 +1262,22 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * free up. total_cpus is set within _get_req_features */
 	job_ptr->cpu_cnt = job_ptr->total_cpus;
 
-	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS))
-		_preempt_jobs(preemptee_job_list, &error_code);
+	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS)){
+		struct job_details *detail_ptr = job_ptr->details;
+		time_t now = time(NULL);
+		if ((detail_ptr->preempt_start_time != 0) &&
+		    (detail_ptr->preempt_start_time >
+		     (now - slurmctld_conf.kill_wait -
+		      slurmctld_conf.msg_timeout))) {
+			/* Job preemption still in progress,
+			 * do not preempt any more jobs yet */
+			error_code = ESLURM_NODES_BUSY;
+		} else {
+			_preempt_jobs(preemptee_job_list, &error_code);
+			if (error_code == ESLURM_NODES_BUSY)
+  				detail_ptr->preempt_start_time = now;
+		}
+	}
 	if (error_code) {
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Too many nodes requested */

@@ -33,6 +33,7 @@ documents those changes that are of interest to users and admins.
  -- Enhancements to sched/backfill performance with select/cons_res plugin.
     Patch from Bjørn-Helge Mevik, University of Oslo.
  -- Correct job run time reported by smap for suspended jobs.
+ -- Improve job preemption logic to avoid preempting more jobs than needed.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

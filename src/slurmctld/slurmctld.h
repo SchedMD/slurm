@@ -398,6 +398,8 @@ struct job_details {
 					 * for this job while it was pending */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
 	uint16_t *req_node_layout;	/* task layout for required nodes */
+	time_t preempt_start_time;	/* time that preeption began to start
+					 * this job */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
 	char *restart_dir;	        /* restart execution from ckpt images
