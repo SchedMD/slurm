@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
     association limit.
  -- Enhancements to sched/backfill performance with select/cons_res plugin.
     Patch from Bjørn-Helge Mevik, University of Oslo.
+ -- Correct job run time reported by smap for suspended jobs.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

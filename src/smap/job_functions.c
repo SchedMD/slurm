@@ -2,7 +2,7 @@
  *  job_functions.c - Functions related to job display mode of smap.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-201` Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -261,6 +261,26 @@ static void _print_header_job(void)
 			printf("NODELIST\n");
 	}
 }
+static long _job_time_used(job_info_t * job_ptr)
+{
+	time_t end_time;
+
+	if ((job_ptr->start_time == 0) || IS_JOB_PENDING(job_ptr))
+		return 0L;
+
+	if (IS_JOB_SUSPENDED(job_ptr))
+		return (long) job_ptr->pre_sus_time;
+
+	if (IS_JOB_RUNNING(job_ptr) || (job_ptr->end_time == 0))
+		end_time = time(NULL);
+	else
+		end_time = job_ptr->end_time;
+
+	if (job_ptr->suspend_time)
+		return (long) (difftime(end_time, job_ptr->suspend_time)
+				+ job_ptr->pre_sus_time);
+	return (long) (difftime(end_time, job_ptr->start_time));
+}
 
 static int _print_text_job(job_info_t * job_ptr)
 {
@@ -341,7 +361,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		if (!strcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"00:00:00");
 		} else {
-			time_diff = now_time - job_ptr->start_time;
+			time_diff = (time_t) _job_time_used(job_ptr);
 			secs2time_str(time_diff, time_buf, sizeof(time_buf));
 		}
 		width = strlen(time_buf);
@@ -414,7 +434,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		if (!strcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"00:00:00");
 		} else {
-			time_diff = now_time - job_ptr->start_time;
+			time_diff = (time_t) _job_time_used(job_ptr);
 			secs2time_str(time_diff, time_buf, sizeof(time_buf));
 		}
 
