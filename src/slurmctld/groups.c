@@ -144,7 +144,7 @@ extern uid_t *get_group_members(char *group_name)
 				}
 				if (my_uid == 0)
 					continue;
-				if (j >= uid_cnt) {
+				if (j+1 >= uid_cnt) {
 					uid_cnt += 100;
 					xrealloc(group_uids, 
 						 (sizeof(uid_t) * uid_cnt));
@@ -171,7 +171,7 @@ extern uid_t *get_group_members(char *group_name)
 #endif
  		if (pwd_result->pw_gid != my_gid)
 			continue;
-		if (j >= uid_cnt) {
+		if (j+1 >= uid_cnt) {
 			uid_cnt += 100;
 			xrealloc(group_uids, (sizeof(uid_t) * uid_cnt));
 		}
@@ -183,7 +183,7 @@ extern uid_t *get_group_members(char *group_name)
 	endpwent();
 #endif
 
-	_put_group_cache(group_name, group_uids, uid_cnt);
+	_put_group_cache(group_name, group_uids, j);
 	_log_group_members(group_name, group_uids);
 	return group_uids;
 }
@@ -254,11 +254,11 @@ static void _put_group_cache(char *group_name, void *group_uids, int uid_cnt)
 			fatal("list_create: malloc failure:");
 	}
 
-	sz = sizeof(uid_t) * (uid_cnt + 1);
+	sz = sizeof(uid_t) * (uid_cnt);
 	cache_rec = xmalloc(sizeof(struct group_cache_rec));
 	cache_rec->group_name = xstrdup(group_name);
 	cache_rec->uid_cnt    = uid_cnt;
-	cache_rec->group_uids = (uid_t *) xmalloc(sz);
+	cache_rec->group_uids = (uid_t *) xmalloc(sizeof(uid_t) + sz);
 	if (uid_cnt > 0)
 		memcpy(cache_rec->group_uids, group_uids, sz);
 	list_append(group_cache_list, cache_rec);

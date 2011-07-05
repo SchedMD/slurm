@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
     1 second delay.
  -- Add support for managing devices based upon Linux cgroup container. Based
     upon patch by Yiannis Georgiou, Bull.
+ -- Fix memory buffering bug if a AllowGroups parameter of a partition has 100
+    or more users. Patch by Andriy Grytsenko (Massive Solutions Limited).
 
 * Changes in SLURM 2.3.0.pre6
 =============================
