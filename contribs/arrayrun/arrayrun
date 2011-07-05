@@ -1,0 +1,69 @@
+#!/bin/bash
+### Simulate an array job
+### $Id: arrayrun,v 1.6 2011/02/10 11:57:53 root Exp $
+
+### Copyright 2009,2010 Bjørn-Helge Mevik <b.h.mevik@usit.uio.no>
+###
+### This program is free software; you can redistribute it and/or modify
+### it under the terms of the GNU General Public License version 2 as
+### published by the Free Software Foundation.
+###
+### This program is distributed in the hope that it will be useful,
+### but WITHOUT ANY WARRANTY; without even the implied warranty of
+### MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### GNU General Public License version 2 for more details.
+###
+### A copy of the GPL v. 2 text is available here:
+### http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+
+
+## Debugging
+#set -x
+
+### Configuration:
+## The work horse:
+WORKER=/site/lib/arrayrun_worker
+
+## Documentation:
+function usage () {
+    echo "Run many instances of the same job or command in the queue system.
+The instances are submitted via sbatch, and each get their own value
+of the environment variable TASK_ID.  This can be used to select which
+intput or output file to use, etc.
+
+Usage:
+ arrayrun [-r] taskids [sbatch arguments] command [arguments]
+ arrayrun [-h | --help]
+
+Arguments:
+ '-r':         Restart a job if it fails.  For security reasons, each job is
+               restarted only once, and no more than 5 jobs will be restarted.
+ 'taskids':    Run 'command' with TASK_ID set to the values specified in
+               'taskids'.  'taskids' is a comma separated list of integers,
+               ranges of integers (first-last) or ranges with step size
+               (first-last:step).  For instance
+                 1-5 means 1, 2, 3, 4, 5
+                 1,4,6 means 1, 4, 6
+                 10-20:5 means 10, 15, 20
+                 1-5,15,100-150:25 means 1, 2, 3, 4, 5, 15, 100, 125, 150
+               Note: spaces, negative number or decimal numbers are not allowed.
+ 'sbatch arguments': Any command line arguments for the implied sbatch.  This
+               is most useful when 'command' is not a job script.
+ 'command':    The command or job script to run.  If it is a job script, it can
+               contain #SBATCH lines in addition to or instead of the 'sbatch
+               arguments'.
+ 'arguments':  Any arguments for 'command'.
+ '-h', '--help' (or no arguments): Display this help."
+}
+
+if [ $# == 0 -o "$1" == '--help' -o "$1" == '-h' ]; then
+    usage
+    exit 0
+fi
+
+if [ -n "$SLURM_JOB_ID" ]; then
+    ## Started in a job script.  Run with srun to make "scancel" work
+    exec srun --ntasks=1 $WORKER "$@"
+else
+    exec $WORKER "$@"
+fi

@@ -34,6 +34,9 @@ documents those changes that are of interest to users and admins.
     Patch from Bjørn-Helge Mevik, University of Oslo.
  -- Correct job run time reported by smap for suspended jobs.
  -- Improve job preemption logic to avoid preempting more jobs than needed.
+ -- Add contribs/arrayrun tool providing support for job arrays. Contributed by
+    Bjørn-Helge Mevik, University of Oslo. NOTE: Not currently packaged as RPM
+    and manual file editing is required.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

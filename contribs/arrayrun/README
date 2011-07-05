@@ -1,0 +1,132 @@
+-*- text -*- $Id: README.arrayrun,v 1.2 2011/06/28 11:21:27 bhm Exp $
+
+Overview
+========
+
+Arrayrun is an attempt to simulate arrayjobs as found in SGE and PBS.  It
+works very similarly to mpirun:
+
+   arrayrun [-r] taskids [sbatch arguments] YourCommand [arguments]
+
+In principle, arrayrun does 
+
+   TASK_ID=id sbatch [sbatch arguments] YourCommand [arguments]
+
+for each id in the 'taskids' specification.  'taskids' is a comma separated
+list of integers, ranges of integers (first-last) or ranges with step size
+(first-last:step).  If -r is specified, arrayrun will restart a job that has
+failed.  To avoid endless loops, a job is only restarted once, and a maximum
+of 10 (configurable) jobs will be restarted.
+
+The idea is to submit a master job that calls arrayrun to start the jobs,
+for instance
+
+   $ cat workerScript
+   #!/bin/sh
+   #SBATCH --account=YourProject
+   #SBATCH --time=1:0:0
+   #SBATCH --mem-per-cpu=1G
+
+   DATASET=dataset.$TASK_ID
+   OUTFILE=result.$TASK_ID
+   cd $SCRATCH
+   YourProgram $DATASET > $OUTFILE
+   # end of workerScript
+
+   $ cat submitScript
+   #!/bin/sh
+   #SBATCH --account=YourProject
+   #SBATCH --time=50:0:0
+   #SBATCH --mem-per-cpu=100M
+
+   arrayrun 1-200 workerScript
+   # end of submitScript
+
+   $ sbatch submitScript
+
+The --time specification in the master script must be long enough for all
+jobs to finish.
+
+Alternatively, arrayrun can be run on the command line of a login or master
+node.
+
+If the master job is cancelled, or the arrayrun process is killed, it tries
+to scancel all running or pending jobs before it exits.
+
+Arrayrun tries not to flood the queue with jobs.  It works by submitting a
+limited number of jobs, sleeping a while, checking the status of its jobs,
+and iterating, until all jobs have finished.  All limits and times are
+configurable (see below).  It also tries to handle all errors in a graceful
+manner.
+
+
+Installation and configuration
+==============================
+
+There are two files, arrayrun (to be called by users) and arrayrun_worker
+(exec'ed or srun'ed by arrayrun, to make scancel work).
+
+arrayrun should be placed somewhere on the $PATH.  arrayrun_worker can be
+place anywhere.  Both files should be accessible from all nodes.
+
+There are quite a few configuration variables, so arrayrun can be tuned to
+work under different policies and work loads.
+
+Configuration variables in arrayrun:
+
+- WORKER: the location of arrayrun_worker
+
+Configuration variables in arrayrun_worker:
+
+- $maxJobs:          The maximal number of jobs arrayrun will allow in the
+		     queue at any time
+- $maxIdleJobs:	     The maximal number of _pending_ jobs arrayrun will allow
+		     in the queue at any time
+- $maxBurst:	     The maximal number of jobs submitted at a time
+- $pollSeconds:	     How many seconds to sleep between each iteration
+- $maxFails:	     The maximal number of errors to accept when submitting a
+		     job
+- $retrySleep:	     The number of seconds to sleep between each retry when
+		     submitting a job
+- $doubleCheckSleep: The number of seconds to sleep after a failed sbatch
+		     before runnung squeue to double check whether the job
+		     was submitted or not.
+- $maxRestarts:	     The maximal number of restarts all in all
+- $sbatch:	     The full path of the sbatch command to use
+
+
+Notes and caveats
+=================
+
+Arrayrun is an attempt to simulate array jobs.  As such, it is not
+perfect or foolproof.  Here are a couple of caveats.
+
+- Sometimes, arrayrun fails to scancel all jobs when it is itself cancelled
+
+- When arrayrun is run as a master job, it consumes one CPU for the whole
+  duration of the job.  Also, the --time limit must be long enough.  This can
+  be avoided by running arrayrun interactively on a master/login node (in
+  which case running it under screen is probably a good idea).
+
+- Arrayrun does (currently) not checkpoint, so if an arrayrun is restarted,
+  it starts from scratch with the first taskid.
+
+We welcome any suggestions for improvements or additional functionality!
+
+
+Copyright
+=========
+
+Copyright 2009,2010,2011 Bjørn-Helge Mevik <b.h.mevik@usit.uio.no>
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License version 2 for more details.
+
+A copy of the GPL v. 2 text is available here:
+http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
