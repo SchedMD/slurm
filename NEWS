@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
  -- When suspending a job, wait 2 seconds instead of 1 second between sending
     SIGTSTP and SIGSTOP. Some MPI implementation were not stopping within the
     1 second delay.
+ -- Add support for managing devices based upon Linux cgroup container. Based
+    upon patch by Yiannis Georgiou, Bull.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

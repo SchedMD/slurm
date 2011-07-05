@@ -172,6 +172,35 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt);
 extern int gres_plugin_node_config_pack(Buf buffer);
 
 /*
+ * Return information about the configured gres devices on the node
+ * OUT dev_path - the devices paths as written on gres.conf file
+ * OUT gres_name - the names of the devices (ex. gpu, nic,..)
+ * IN array_len - count of elements in dev_path and gres_name
+ * OUT int - number of lines of gres.conf file
+ */
+extern int gres_plugin_node_config_devices_path(char **dev_path,
+						char **gres_name,
+						int array_len);
+
+/*
+ * Provide information about the allocate gres devices for a particular job
+ * IN gres_list - jobs allocated gres devices
+ * IN gres_count - count of gres.conf records for each gres name
+ * OUT gres_bit_alloc - the exact devices which are allocated
+ */
+extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
+				       int *gres_count);
+
+/*
+ * Provide information about the allocate gres devices for a particular step
+ * IN gres_list - jobs allocated gres devices
+ * IN gres_count - count of gres.conf records for each gres name
+ * OUT gres_bit_alloc - the exact devices which are allocated
+ */
+extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
+					int *gres_count);
+
+/*
  **************************************************************************
  *                 PLUGIN CALLS FOR SLURMCTLD DAEMON                      *
  **************************************************************************

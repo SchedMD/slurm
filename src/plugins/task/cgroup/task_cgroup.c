@@ -51,7 +51,7 @@
 
 #include "task_cgroup_cpuset.h"
 #include "task_cgroup_memory.h"
-//#include "task_cgroup_devices.h"
+#include "task_cgroup_devices.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -119,7 +119,7 @@ extern int init (void)
 
 	if (slurm_cgroup_conf.constrain_devices) {
 		use_devices = true;
-		/* here we should initialize the devices subsystem */
+		task_cgroup_devices_init(&slurm_cgroup_conf);
 		debug("%s: now constraining jobs allocated devices",
 		      plugin_type);
 	}
@@ -142,7 +142,7 @@ extern int fini (void)
 		task_cgroup_memory_fini(&slurm_cgroup_conf);
 	}
 	if (use_devices) {
-		;
+		task_cgroup_devices_fini(&slurm_cgroup_conf);
 	}
 
 	/* unload configuration */
@@ -223,6 +223,7 @@ extern int task_pre_setuid (slurmd_job_t *job)
 	}
 
 	if (use_devices) {
+		task_cgroup_devices_create(job);
 		/* here we should create the devices container as we are root */
 	}
 
@@ -252,7 +253,7 @@ extern int task_pre_launch (slurmd_job_t *job)
 	}
 
 	if (use_devices) {
-		;
+		task_cgroup_devices_attach_task(job);
 	}
 
 	return SLURM_SUCCESS;

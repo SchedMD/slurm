@@ -748,6 +748,58 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 	list_iterator_destroy(iter);
 }
 
+extern int gres_plugin_node_config_devices_path(char **dev_path,
+						char **gres_name,
+						int array_len)
+{
+	static s_p_options_t _gres_options[] = {
+		{"Name", S_P_ARRAY, _parse_gres_config, NULL},
+		{NULL}
+	};
+
+	int count, i, rc;
+	struct stat config_stat;
+	s_p_hashtbl_t *tbl;
+	gres_slurmd_conf_t **gres_array;
+	char *gres_conf_file;
+
+	rc = gres_plugin_init();
+
+	gres_conf_file = _get_gres_conf();
+	slurm_mutex_lock(&gres_context_lock);
+	if (stat(gres_conf_file, &config_stat) < 0)
+		fatal("can't stat gres.conf file %s: %m", gres_conf_file);
+	tbl = s_p_hashtbl_create(_gres_options);
+	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
+		fatal("error opening/reading %s", gres_conf_file);
+	FREE_NULL_LIST(gres_conf_list);
+	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
+	if (gres_conf_list == NULL)
+		fatal("list_create: malloc failure");
+	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
+		if (count > array_len) {
+			error("GRES device count exceeds array size (%d > %d)",
+			      count, array_len);
+			count = array_len;
+		}
+		for (i = 0; i < count; i++) {
+			if ((gres_array[i]) && (gres_array[i]->file)) {
+				dev_path[i]   = gres_array[i]->file;
+				gres_name[i]  = gres_array[i]->name;
+				gres_array[i] = NULL;
+			}
+		}
+	}
+	s_p_hashtbl_destroy(tbl);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	xfree(gres_conf_file);
+	return count;
+
+}
+
+
+
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  * IN cpu_cnt - Number of CPUs on configured on this node
@@ -777,6 +829,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 	tbl = s_p_hashtbl_create(_gres_options);
 	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
 		fatal("error opening/reading %s", gres_conf_file);
+	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 	if (gres_conf_list == NULL)
 		fatal("list_create: malloc failure");
@@ -3182,6 +3235,61 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
+extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
+				       int *gres_count)
+{
+	int i, j, gres_cnt=0, len, p, found=0;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr;
+	gres_job_state_t *gres_job_ptr;
+
+	if (gres_list == NULL)
+		return;
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	gres_iter = list_iterator_create(gres_list);
+	if (!gres_iter)
+		fatal("list_iterator_create: malloc failure");
+	
+	for (j=0; j<gres_context_cnt; j++) {
+		found = 0;
+		list_iterator_reset(gres_iter);
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))){
+			if (gres_ptr->plugin_id !=
+			    gres_context[j].plugin_id ) {
+				continue;
+			}
+			found = 1;
+			gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
+			if ((gres_job_ptr != NULL) &&
+			    (gres_job_ptr->node_cnt == 1) &&
+			    (gres_job_ptr->gres_bit_alloc != NULL) &&
+			    (gres_job_ptr->gres_bit_alloc[0] != NULL)) {
+			     	len = bit_size(gres_job_ptr->gres_bit_alloc[0]);
+				for (i=0; i<len; i++) {
+					if (!bit_test(gres_job_ptr->
+						      gres_bit_alloc[0], i))
+						gres_bit_alloc[gres_cnt] = 0;
+					else
+						gres_bit_alloc[gres_cnt] = 1;
+					gres_cnt++;
+				}
+			}
+			break;
+		}
+		if (found == 0) {
+			for (p=0; p<gres_count[j]; p++){
+				gres_bit_alloc[gres_cnt] = 0;
+				gres_cnt++;
+			}
+		}
+	}
+	list_iterator_destroy(gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+
 static void _step_state_delete(void *gres_data)
 {
 	int i;
@@ -4221,3 +4329,59 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 
 	return rc;
 }
+
+extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc, 
+					int *gres_count)
+{
+	int i, j, p, gres_cnt = 0, len, found;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr;
+	gres_step_state_t *gres_step_ptr;
+
+	if (gres_list == NULL)
+		return;
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	gres_iter = list_iterator_create(gres_list);
+	if (!gres_iter)
+		fatal("list_iterator_create: malloc failure");
+
+	for (j=0; j<gres_context_cnt; j++) {
+		found = 0;
+		list_iterator_reset(gres_iter);
+		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))){
+			if (gres_ptr->plugin_id !=
+			    gres_context[j].plugin_id) {
+				continue;
+			}
+			found = 1;
+			gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
+			if ((gres_step_ptr != NULL) &&
+			    (gres_step_ptr->node_cnt == 1) &&
+			    (gres_step_ptr->gres_bit_alloc != NULL) &&
+			    (gres_step_ptr->gres_bit_alloc[0] != NULL)) {
+				len = bit_size(gres_step_ptr->gres_bit_alloc[0]);
+				for (i=0; i<len; i++) {
+					 if (!bit_test(gres_step_ptr->
+						       gres_bit_alloc[0], i))
+						 gres_bit_alloc[gres_cnt] = 0;
+					 else
+						 gres_bit_alloc[gres_cnt] = 1;
+					gres_cnt++;
+				}
+			}
+			break;
+		}
+		if (found == 0) {
+			for (p=0; p<gres_count[j]; p++){
+				gres_bit_alloc[gres_cnt] = 0;
+				gres_cnt++;
+			}
+		}
+	}
+
+	list_iterator_destroy(gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
