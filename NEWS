@@ -37,6 +37,9 @@ documents those changes that are of interest to users and admins.
  -- Add contribs/arrayrun tool providing support for job arrays. Contributed by
     Bjørn-Helge Mevik, University of Oslo. NOTE: Not currently packaged as RPM
     and manual file editing is required.
+ -- When suspending a job, wait 2 seconds instead of 1 second between sending
+    SIGTSTP and SIGSTOP. Some MPI implementation were not stopping within the
+    1 second delay.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

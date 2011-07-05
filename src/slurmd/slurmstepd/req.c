@@ -1182,13 +1182,20 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		/* SIGTSTP is sent first to let MPI daemons stop their
-		 * tasks, then we send SIGSTOP to stop everything else */
+		/* SIGTSTP is sent first to let MPI daemons stop their tasks,
+		 * then wait 2 seconds, then send SIGSTOP to the spawned
+		 * process's container to stop everything else.
+		 *
+		 * In some cases, 1 second has proven insufficient. Longer
+		 * delays may help insure that all MPI tasks have been stopped
+		 * (that depends upon the MPI implementaiton used), but will
+		 * also permit longer time periods when more than one job can
+		 * be running on each resource (not good). */
 		if (slurm_container_signal(job->cont_id, SIGTSTP) < 0) {
 			verbose("Error suspending %u.%u (SIGTSTP): %m",
 				job->jobid, job->stepid);
 		} else
-			sleep(1);
+			sleep(2);
 
 		if (slurm_container_signal(job->cont_id, SIGSTOP) < 0) {
 			verbose("Error suspending %u.%u (SIGSTOP): %m",
