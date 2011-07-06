@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
     upon patch by Yiannis Georgiou, Bull.
  -- Fix memory buffering bug if a AllowGroups parameter of a partition has 100
     or more users. Patch by Andriy Grytsenko (Massive Solutions Limited).
+ -- Fix bug in generic resource tracking of gres associated with specific CPUs.
+    Resources were being over-allocated.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

@@ -2528,9 +2528,10 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				break;
 			}
 			cpus_avail[top_inx] = 0;
-			i = node_gres_ptr->topo_gres_cnt_avail[top_inx] -
-			    node_gres_ptr->topo_gres_cnt_alloc[top_inx];
-			if (i <= 0) {
+			i = node_gres_ptr->topo_gres_cnt_avail[top_inx];
+			if (!use_total_gres)
+			    i -= node_gres_ptr->topo_gres_cnt_alloc[top_inx];
+			if (i < 0) {
 				error("gres/%s: topology allocation error on "
 				      "node %s", gres_name, node_name);
 				continue;
@@ -2687,7 +2688,6 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 
 	/*
 	 * Select the specific resources to use for this job.
-	 * We'll need to add topology information in the future
 	 */
 	if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		/* Resuming a suspended job, resources already allocated */
@@ -2727,6 +2727,18 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		}
 	} else {
 		node_gres_ptr->gres_cnt_alloc += job_gres_ptr->gres_cnt_alloc;
+	}
+	if (job_gres_ptr->gres_bit_alloc &&
+	    job_gres_ptr->gres_bit_alloc[node_offset] &&
+	    node_gres_ptr->topo_gres_bitmap &&
+	    node_gres_ptr->topo_gres_cnt_alloc) {
+		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
+			gres_cnt = bit_overlap(job_gres_ptr->
+					       gres_bit_alloc[node_offset],
+					       node_gres_ptr->
+					       topo_gres_bitmap[i]);
+			node_gres_ptr->topo_gres_cnt_alloc[i] += gres_cnt;
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -2810,7 +2822,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
 			char *node_name)
 {
-	int i, len;
+	int i, len, gres_cnt;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 
@@ -2863,6 +2875,19 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		node_gres_ptr->gres_cnt_alloc = 0;
 		error("gres/%s: job %u node %s gres count underflow",
 		      gres_name, job_id, node_name);
+	}
+
+	if (job_gres_ptr->gres_bit_alloc &&
+	    job_gres_ptr->gres_bit_alloc[node_offset] &&
+	    node_gres_ptr->topo_gres_bitmap &&
+	    node_gres_ptr->topo_gres_cnt_alloc) {
+		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
+			gres_cnt = bit_overlap(job_gres_ptr->
+					       gres_bit_alloc[node_offset],
+					       node_gres_ptr->
+					       topo_gres_bitmap[i]);
+			node_gres_ptr->topo_gres_cnt_alloc[i] -= gres_cnt;
+		}
 	}
 
 	return SLURM_SUCCESS;
