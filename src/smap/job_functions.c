@@ -294,7 +294,6 @@ static int _print_text_job(job_info_t * job_ptr)
 	char tmp_cnt[8];
 	uint32_t node_cnt = 0;
 	char *ionodes = NULL, *uname;
-	time_t now_time = time(NULL);
 
 	if (params.cluster_flags & CLUSTER_FLAG_BG) {
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
