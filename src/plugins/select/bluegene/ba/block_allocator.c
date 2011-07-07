@@ -1616,8 +1616,6 @@ static int _emulate_ext_wiring(ba_mp_t ***grid)
 		}
 	} else {
 		int y,z;
-		init_wires();
-
 		for(x=0;x<DIM_SIZE[X];x++) {
 			for(y=0;y<DIM_SIZE[Y];y++) {
 				for(z=0;z<DIM_SIZE[Z];z++) {
@@ -1773,11 +1771,13 @@ extern void ba_create_system()
 			}
 		}
 	}
-#ifndef HAVE_BG_FILES
 	if ((cluster_flags & CLUSTER_FLAG_BGL) ||
-	    (cluster_flags & CLUSTER_FLAG_BGP))
+	    (cluster_flags & CLUSTER_FLAG_BGP)) {
+		init_wires();
+#ifndef HAVE_BG_FILES
 		_emulate_ext_wiring(ba_main_grid);
 #endif
+	}
 
 	path = list_create(_delete_path_list);
 	best_path = list_create(_delete_path_list);
