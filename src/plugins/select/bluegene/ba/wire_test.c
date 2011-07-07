@@ -127,7 +127,7 @@ int main(int argc, char** argv)
 
 	slurm_conf_reinit(NULL);
 	ba_init(NULL, 1);
-	init_wires(NULL);
+	init_wires();
 
 	/* [010x831] */
 /* 	results = list_create(NULL); */

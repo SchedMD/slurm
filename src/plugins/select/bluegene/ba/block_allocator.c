@@ -581,7 +581,7 @@ extern void print_ba_request(select_ba_request_t* ba_request)
  * If a real bluegene system, query the system and get all wiring
  * information of the system.
  */
-extern void init_wires()
+extern void init_wires(void)
 {
 	int x, y, z, i;
 	ba_mp_t *source = NULL;

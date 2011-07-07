@@ -61,7 +61,7 @@ extern ba_mp_t ***ba_main_grid;
  * If a real bluegene system, query the system and get all wiring
  * information of the system.
  */
-extern void init_wires();
+extern void init_wires(void);
 
 /*
  * get the used wires for a block out of the database and return the
