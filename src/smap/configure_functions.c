@@ -1061,7 +1061,7 @@ static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 		    ((nodes[fin] == ']') || (nodes[fin] == ','))) {
 			j++;	/* Skip leading '[' or ',' */
 			for (i = 0; i < params.cluster_dims; i++, j++) {
-				start[i] = _coord(nodes[j]);
+				start[i] = select_char2coord(nodes[j]);
 				my_coord[i] = start[i];
 			}
 			j++;	/* Skip middle 'x' or '-' */
