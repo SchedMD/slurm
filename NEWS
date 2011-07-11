@@ -3,6 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.pre7
 =============================
+ -- NOTE THERE HAVE BEEN NEW FIELDS ADDED TO THE JOB AND PARTITION STATE SAVE
+    FILES AND RPCS. PENDING AND RUNNING JOBS WILL BE LOST WHEN UPGRADING FROM
+    EARLIER VERSION 2.3 PRE-RELEASES AND RPCS WILL NOT WORK WITH EARLIER
+    VERSIONS.
  -- select/cray: Add support for Accelerator information including model and
     memory options.
  -- Cray systems: Add support to suspend/resume salloc command to insure that
