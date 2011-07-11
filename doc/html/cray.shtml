@@ -489,46 +489,8 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
-<a name="gang"><h3>Gang Scheduling</h3></a>
-
-<p>SLURM version 2.3.0-pre7 (or higher) can be used with BASIL version 1.2 or
-higher to gang schedule (time-slice) parallell jobs. Review SLURM's
-<a href="gang_scheduling.html">Gang Scheduling</a> guide for general
-information about gang scheduling. Be certain to configure approriate values
-for default and/or maximum memory limits (e.g. <b>DefMemPerNode</b> and
-<b>MaxMemPerNode</b>), enable enforcement of memory limits (e.g.
-<b>SelectTypeParameters=CR_Memory</b>), set an appropriate multi-programming
-level in each partition (e.g. <b>Shared=FORCE:2</b>), and enable gang
-scheduling (e.g. <b>PreemptMode=GANG</b>).</p>
-<pre>
-# Excerpt of slurm.conf
-DefMemPerNode=8000
-MaxMemPerNode=8000
-SelectType=select/cray
-SelectTypeParameters=CR_Memeory
-PreemptMode=GANG
-FrontEndName=frontend[00-03]
-NodeName=nid[00000-00511] Memory=32000 CPUs=6
-PartitionName=batch Nodes=nid[00000-00511] Shared=FORCE:4
-</pre>
-
-<p>ALPS' configuration file, <i>alps.conf</i>, also requires some modifcations
-in order to support gang scheduling. A sample configuration is shown below.
-Of particular note, <b>slice</b> is the time slice interval and should be set
-equal to zero in order for an entity external to ALPS (i.e. SLURM) to control
-when jobs are suspended and resumed. <b>loadLimit</b> indicates the maximum
-number of jobs per node and should be set to 2 for a Gemini interconnect and
-up to 4 otherwise.</p>
-<pre>
-# Excerpt of alps.conf
-nodeShare  share  # over-subscribe nodes
-sliceArch  xt
-slice      0
-loadLimit  4      # set to 2 for Gemini
-</pre>
-
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 June 2011</p></td>
+<p style="text-align:center;">Last modified 11 July 2011</p></td>
 
 <!--#include virtual="footer.txt"-->

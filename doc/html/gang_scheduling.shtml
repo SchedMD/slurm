@@ -48,8 +48,7 @@ gang scheduling:
 <LI>
 <B>SelectType</B>: The SLURM gang scheduler supports nodes
 allocated by the <I>select/linear</I> plugin and socket/core/CPU resources
-allocated by the <I>select/cons_res</I> plugin. The <I>select/cray</I> is
-also supported for Cray computers running BASIL version 1.2 or higher.
+allocated by the <I>select/cons_res</I> plugin.
 </LI>
 <LI>
 <B>SelectTypeParameter</B>: Since resources will be getting overallocated
