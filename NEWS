@@ -272,6 +272,8 @@ documents those changes that are of interest to users and admins.
     Don Albert, Bull.
  -- Fixed issue where preempt mode is skipped when creating a QOS. Patch by
     Bill Brophy, Bull.
+ -- Fixed documention (html) for PriorityUsageResetPeriod to match that in the
+    man pages. Patch by Nancy Kritkausky, Bull.
 
 * Changes in SLURM 2.2.7
 ========================
