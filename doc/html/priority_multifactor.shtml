@@ -465,8 +465,22 @@ factor as it is currently configured.</P>
   use the PriorityDecayHalfLife option to avoid not having anything
   running on your cluster, but if your schema is set up to only allow
   certain amounts of time on your system this is the way to do it.
-  The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
-  days-hr). The default value is not set (turned off).
+  Applicable only if PriorityType=priority/multifactor. The unit is a
+  time string (i.e. NONE, NOW, DAILY, WEEKLY).  The default is NONE.
+
+    NONE        Never clear historic usage. The default value.
+
+    NOW         Clear the historic usage now.  Executed at startup and reconfiguration time.
+
+    DAILY       Cleared every day at midnight.
+
+    WEEKLY      Cleared every week on Sunday at time 00:00.
+
+    MONTHLY     Cleared on the first day of each month at time 00:00.
+
+    QUARTERLY   Cleared on the first day of each quarter at time 00:00.
+
+    YEARLY      Cleared on the first day of each year at time 00:00.
 
 <DT> PriorityFavorSmall
 <DD> A boolean that sets the polarity of the job size factor.  The
@@ -535,8 +549,8 @@ PriorityType=priority/multifactor
 # apply no decay
 PriorityDecayHalfLife=0
 
-# reset usage after 28 days
-PriorityUsageResetPeriod=28-0
+# reset usage after 1 month
+PriorityUsageResetPeriod=MONTHLY
 
 # The larger the job, the greater its job size priority.
 PriorityFavorSmall=NO
@@ -559,4 +573,3 @@ PriorityWeightQOS=0 # don't use the qos factor
 <p style="text-align:center;">Last modified 2 November 2010</p>
 
 <!--#include virtual="footer.txt"-->
-
