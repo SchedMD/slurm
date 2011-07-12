@@ -1468,7 +1468,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		char *temp_char = xstrtolower(
 			preempt_mode_string(qos->preempt_mode));
 		if (temp_char) {
-			printf("  PreemptMode    = %s\n", tmp_char);
+			printf("  PreemptMode    = %s\n", temp_char);
 			xfree(temp_char);
 		}
 	}
