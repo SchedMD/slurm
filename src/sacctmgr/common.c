@@ -1496,6 +1496,15 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		}
 	}
 
+	if (qos->preempt_mode) {
+		char *temp_char = xstrtolower(
+			preempt_mode_string(qos->preempt_mode));
+		if (temp_char) {
+			printf("  PreemptMode    = %s\n", tmp_char);
+			xfree(temp_char);
+		}
+	}
+
 	if (qos->priority == INFINITE)
 		printf("  Priority       = NONE\n");
 	else if (qos->priority != NO_VAL)
