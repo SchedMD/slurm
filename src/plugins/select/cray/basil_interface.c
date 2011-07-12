@@ -652,6 +652,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 		if (node_min_mem) {
 			uint32_t node_cpus, node_mem;
+			uint16_t tmp_mppmem;
 
 			if (slurmctld_conf.fast_schedule) {
 				node_cpus = node_ptr->config_ptr->cpus;
@@ -665,10 +666,17 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			 * which in slurm is --ntasks-per-node and 'mppnppn' in
 			 * PBS: if --ntasks is specified, default to the number
 			 * of cores per node (also the default for 'aprun -N').
+			 * On a heterogeneous system the nodes aren't
+			 * always the same so keep track of the lowest
+			 * mppmem and use it as the level for all
+			 * nodes (mppmem is 0 when coming in).
 			 */
-			node_mem /= mppnppn ? mppnppn : node_cpus;
-
-			mppmem = node_min_mem = MIN(node_mem, node_min_mem);
+			tmp_mppmem = node_min_mem = MIN(node_mem, node_min_mem);
+			tmp_mppmem /= mppnppn ? mppnppn : node_cpus;
+			if (mppmem)
+				mppmem = MIN(mppmem, tmp_mppmem);
+			else
+				mppmem = tmp_mppmem;
 		}
 	}
 
