@@ -598,6 +598,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 
 			qos->preempt_list =
 				copy_char_list(start_qos->preempt_list);
+			qos->preempt_mode = start_qos->preempt_mode;
 
 			qos->priority = start_qos->priority;
 

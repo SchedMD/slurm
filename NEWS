@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Prevent background salloc disconnecting terminal at termination. Patch by
     Don Albert, Bull.
+ -- Fixed issue where preempt mode is skipped when creating a QOS. Patch by
+    Bill Brophy, Bull.
 
 * Changes in SLURM 2.2.7
 ========================
