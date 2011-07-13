@@ -390,9 +390,9 @@ if ($have_job == 0) {
 }
 # Options that get set if aprun is launch either under salloc or directly
 $command .= " $alps"					if $alps;
-# $command .= " -a"		no srun equivalent
-# $command .= " -b"		no srun equivalent
-# $command .= " -B"		no srun equivalent
+# $command .= " -a"		no srun equivalent, architecture
+# $command .= " -b"		no srun equivalent, bypass transfer of executable
+# $command .= " -B"		no srun equivalent, reservation options
 # $command .= " -cc"		NO GOOD MAPPING, cpu binding
 $command .= " -d $cpus_per_task"			if $cpus_per_task;
 # $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
@@ -412,9 +412,9 @@ if ($ntasks_per_node) {
 	$command .= " -N $ntasks_per_node";
 }
 $command .= " -q";
-# $command .= " -r"		no srun equivalent
+# $command .= " -r"		no srun equivalent, core specialization
 $command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
-# $command .= " -sl"		no srun equivalent
+# $command .= " -sl"		no srun equivalent, task placement on nodes
 $command .= " -sn $sockets_per_node" 			if $sockets_per_node;
 if ($memory_bind && ($memory_bind =~ /local/i)) {
 	$command .= " -ss"
