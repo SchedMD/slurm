@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
     or more users. Patch by Andriy Grytsenko (Massive Solutions Limited).
  -- Fix bug in generic resource tracking of gres associated with specific CPUs.
     Resources were being over-allocated.
+ -- On systems with front-end nodes (IBM BlueGene and Cray) limit batch jobs to
+    only one CPU of these shared resources.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

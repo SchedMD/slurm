@@ -168,8 +168,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
 	uint16_t sockets=0, cores=0, num_cpus;
-	int start, p, t, task_cnt=0;
-	char *str;
+	int start, task_cnt=0;
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
 		error("task/affinity: job lacks a credential");
@@ -199,6 +198,19 @@ void batch_bind(batch_job_launch_msg_t *req)
 		return;
 	}
 
+#ifdef HAVE_FRONT_END
+{
+	/* Since the front-end nodes are a shared resource, we limit each job
+	 * to one CPU based upon monotonically increasing sequence number */
+	static int last_id = 0;
+	bit_set(hw_map, ((last_id++) % conf->block_map_size));
+	task_cnt = 1;
+}
+#else
+{
+	char *str;
+	int t, p;
+
 	/* Transfer core_bitmap data to local req_map.
 	 * The MOD function handles the case where fewer processes
 	 * physically exist than are configured (slurmd is out of
@@ -207,6 +219,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 		if (bit_test(arg.job_core_bitmap, p))
 			bit_set(req_map, (p % num_cpus));
 	}
+
 	str = (char *)bit_fmt_hexmask(req_map);
 	debug3("task/affinity: job %u CPU mask from slurmctld: %s",
 		req->job_id, str);
@@ -229,6 +242,8 @@ void batch_bind(batch_job_launch_msg_t *req)
 			task_cnt++;
 		}
 	}
+}
+#endif
 	if (task_cnt) {
 		req->cpu_bind_type = CPU_BIND_MASK;
 		if (conf->task_plugin_param & CPU_BIND_VERBOSE)
