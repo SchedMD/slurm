@@ -467,21 +467,15 @@ factor as it is currently configured.</P>
   certain amounts of time on your system this is the way to do it.
   Applicable only if PriorityType=priority/multifactor. The unit is a
   time string (i.e. NONE, NOW, DAILY, WEEKLY).  The default is NONE.
-
-    NONE        Never clear historic usage. The default value.
-
-    NOW         Clear the historic usage now.  Executed at startup and reconfiguration time.
-
-    DAILY       Cleared every day at midnight.
-
-    WEEKLY      Cleared every week on Sunday at time 00:00.
-
-    MONTHLY     Cleared on the first day of each month at time 00:00.
-
-    QUARTERLY   Cleared on the first day of each quarter at time 00:00.
-
-    YEARLY      Cleared on the first day of each year at time 00:00.
-
+<ul>
+<li>NONE: Never clear historic usage. The default value.</li>
+<li>NOW: Clear the historic usage now. Executed at startup and reconfiguration time.</li>
+<li>DAILY: Cleared every day at midnight.</li>
+<li>WEEKLY: Cleared every week on Sunday at time 00:00.</li>
+<li>MONTHLY: Cleared on the first day of each month at time 00:00.</li>
+<li>QUARTERLY: Cleared on the first day of each quarter at time 00:00.</li>
+<li>YEARLY: Cleared on the first day of each year at time 00:00.</li>
+</ul>
 <DT> PriorityFavorSmall
 <DD> A boolean that sets the polarity of the job size factor.  The
   default setting is NO which results in larger node sizes having a
