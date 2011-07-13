@@ -475,11 +475,7 @@ $command .= " $script";
 
 # Print here for debugging
 #print "command=$command\n";
-my $return_code = system($command);
-# Make this look like it is coming from srun
-if ($return_code != 0) {
-	die "exit code $return_code\n";
-}
+exec $command;
 
 # Convert a SLURM time format to a number of seconds
 sub get_seconds {
@@ -646,7 +642,7 @@ B<--threads-per-core=threads>.
 
 =item B<--begin=time>
 
-Defer job initiation until the specified time.cores_per_socket
+Defer job initiation until the specified time.
 
 =item B<--checkpoint=interval>
 
@@ -675,8 +671,7 @@ Count of cores to be allocated per per socket.
 =item B<--cpu_bind=options>
 
 Strategy to be used for binding tasks to the CPUs.
-Options include: quiet, verbose, none, rank, map_cpu, mask_cpu, rank_ldom,
-map_ldom, mask_ldom, sockets, cores, threads, ldoms and help.
+Not supported by aprun on Cray computers.
 
 =item B<-c> | B<--cpus-per-task=number>
 
