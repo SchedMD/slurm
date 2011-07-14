@@ -401,18 +401,23 @@ $command .= " -d $cpus_per_task"			if $cpus_per_task;
 $nid_list = get_nids($nodelist)				if $nodelist;
 $command .= " -L $nid_list"				if $nodelist;
 $command .= " -m $memory_per_cpu"			if $memory_per_cpu;
-if ($num_tasks) {
-	$command .= " -n $num_tasks";
-} elsif ($num_nodes) {
-	$command .= " -n $num_nodes";
-}
 if ($ntasks_per_node) {
 	$command .= " -N $ntasks_per_node";
+	if (!$num_tasks && $num_nodes) {
+		$num_tasks = $ntasks_per_node * $num_nodes;
+	}
 } elsif ($num_nodes) {
 	$num_tasks = $num_nodes if !$num_tasks;
 	$ntasks_per_node = int (($num_tasks + $num_nodes - 1) / $num_nodes);
 	$command .= " -N $ntasks_per_node";
 }
+
+if ($num_tasks) {
+	$command .= " -n $num_tasks";
+} elsif ($num_nodes) {
+	$command .= " -n $num_nodes";
+}
+
 $command .= " -q";
 # $command .= " -r"		no srun equivalent, core specialization
 $command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
