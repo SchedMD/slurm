@@ -849,6 +849,12 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
 		alloc_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
+		if (job_ptr->details) {
+			alloc_msg.pn_min_memory = job_ptr->details->
+						  pn_min_memory;
+		} else {
+			alloc_msg.pn_min_memory = 0;
+		}
 		unlock_slurmctld(job_write_lock);
 
 		slurm_msg_t_init(&response_msg);
@@ -3630,6 +3636,10 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
 	launch_msg_ptr->restart_cnt = job_ptr->restart_cnt;
+	if (job_ptr->details) {
+		launch_msg_ptr->pn_min_memory = job_ptr->details->
+						pn_min_memory;
+	}
 
 	if (make_batch_job_cred(launch_msg_ptr, job_ptr)) {
 		error("aborting batch step %u.%u", job_ptr->job_id,

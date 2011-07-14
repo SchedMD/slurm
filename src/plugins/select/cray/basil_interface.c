@@ -719,6 +719,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		basil_release(resv_id);
 		return SLURM_ERROR;
 	}
+	if (mppmem)
+		job_ptr->details->pn_min_memory = mppmem | MEM_PER_CPU;
 
 	info("ALPS RESERVATION #%u, JobId %u: BASIL -n %d -N %d -d %d -m %d",
 	     resv_id, job_ptr->job_id, mppwidth, mppnppn, mppdepth, mppmem);

@@ -164,6 +164,8 @@ foreach (keys %ENV) {
 	$job_name = $ENV{$_}		if $_ eq "SLURM_JOB_NAME";
 	$label = 1			if $_ eq "SLURM_LABELIO";
 	$memory_bind = $ENV{$_}		if $_ eq "SLURM_MEM_BIND";
+	$mem_per_cpu = $ENV{$_}		if $_ eq "SLURM_MEM_PER_CPU";
+	$memory = $ENV{$_}		if $_ eq "SLURM_MEM_PER_NODE";
 	$mpi_type = $ENV{$_}		if $_ eq "SLURM_MPI_TYPE";
 	$network = $ENV{$_}		if $_ eq "SLURM_NETWORK";
 	$ntasks_per_core = $ENV{$_}	if $_ eq "SLURM_NTASKS_PER_CORE";

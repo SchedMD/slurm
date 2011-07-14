@@ -96,6 +96,10 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg->num_cpu_groups	= job_resrcs_ptr->cpu_array_cnt;
 		msg_arg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
 					  job_resrcs_ptr->cpu_array_cnt);
+		if (job_ptr->details) {
+			msg_arg->pn_min_memory = job_ptr->details->
+						 pn_min_memory;
+		}
 		memcpy(msg_arg->cpus_per_node,
 		       job_resrcs_ptr->cpu_array_value,
 		       (sizeof(uint16_t) * job_resrcs_ptr->cpu_array_cnt));

@@ -1504,6 +1504,9 @@ typedef struct resource_allocation_response_msg {
 						 * use
 						 * slurm_get_select_jobinfo()
 						 * to access contents */
+	uint32_t pn_min_memory;  /* minimum real memory per node OR
+				  * real memory per CPU | MEM_PER_CPU,
+				  * default=0 (no limit) */
 } resource_allocation_response_msg_t;
 
 typedef struct job_alloc_info_response_msg {

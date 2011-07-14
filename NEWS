@@ -52,6 +52,10 @@ documents those changes that are of interest to users and admins.
     Resources were being over-allocated.
  -- On systems with front-end nodes (IBM BlueGene and Cray) limit batch jobs to
     only one CPU of these shared resources.
+ -- Set SLURM_MEM_PER_CPU or SLURM_MEM_PER_NODE environment variables for both
+    interactive (salloc) and batch jobs if the job has a memory limit. For Cray
+    systems also set CRAY_AUTO_APRUN_OPTIONS environment variable with the
+    memory limit.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

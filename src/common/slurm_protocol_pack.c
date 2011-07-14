@@ -2415,6 +2415,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 
 	pack32(msg->error_code, buffer);
 	pack32(msg->job_id, buffer);
+	pack32(msg->pn_min_memory, buffer);
 	packstr(msg->node_list, buffer);
 
 	pack32(msg->num_cpu_groups, buffer);
@@ -2445,6 +2446,7 @@ _unpack_resource_allocation_response_msg(
 	/* load the data values */
 	safe_unpack32(&tmp_ptr->error_code, buffer);
 	safe_unpack32(&tmp_ptr->job_id, buffer);
+	safe_unpack32(&tmp_ptr->pn_min_memory, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
 
 	safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
@@ -8556,6 +8558,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
 	pack32(msg->ntasks, buffer);
+	pack32(msg->pn_min_memory, buffer);
 
 	pack8(msg->open_mode, buffer);
 	pack8(msg->overcommit, buffer);
@@ -8613,6 +8616,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 	safe_unpack32(&launch_msg_ptr->uid, buffer);
 	safe_unpack32(&launch_msg_ptr->gid, buffer);
 	safe_unpack32(&launch_msg_ptr->ntasks, buffer);
+	safe_unpack32(&launch_msg_ptr->pn_min_memory, buffer);
 
 	safe_unpack8(&launch_msg_ptr->open_mode, buffer);
 	safe_unpack8(&launch_msg_ptr->overcommit, buffer);
