@@ -90,7 +90,9 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	int rc;
+#ifdef HAVE_BG
 	int mapset = 0;
+#endif
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
@@ -117,13 +119,19 @@ int main(int argc, char *argv[])
 	}
 
 	_init_colors();
-	select_g_ba_init(new_node_ptr, 0);
+
+#ifdef HAVE_BG
+	ba_init(new_node_ptr, 0);
+#endif
+
 	init_grid(new_node_ptr);
 
 	if (params.resolve) {
 		char *ret_str = resolve_mp(params.resolve);
-		if (ret_str)
-			printf("%s", ret_string);
+		if (ret_str) {
+			printf("%s", ret_str);
+			xfree(ret_str);
+		}
 		if (!mapset)
 			mapset = 1;
 		_smap_exit(0);	/* Calls exit(), no return */
@@ -216,19 +224,19 @@ redraw:
 			get_slurm_part();
 			break;
 		case COMMANDS:
-			if (params.cluster_flags & CLUSTER_FLAG_BG) {
-				if (!mapset) {
-					mapset = 1;
-					wclear(text_win);
-				}
-				get_command();
-			} else {
-				error("Must be on a BG SYSTEM to "
-				      "run this command");
-				if (!params.commandline)
-					endwin();
-				_smap_exit(1);	/* Calls exit(), no return */
+#ifdef HAVE_BG
+			if (!mapset) {
+				mapset = 1;
+				wclear(text_win);
 			}
+			get_command();
+#else
+			error("Must be on a real BG SYSTEM to "
+			      "run this command");
+			if (!params.commandline)
+				endwin();
+			_smap_exit(1);	/* Calls exit(), no return */
+#endif
 			break;
 		case BGPART:
 			if (params.cluster_flags & CLUSTER_FLAG_BG)
@@ -346,8 +354,14 @@ static void _smap_exit(int rc)
 {
 #ifdef MEMORY_LEAK_DEBUG
 	free_grid();
-	select_g_ba_fini();
+
+#ifdef HAVE_BG
+	ba_fini();
 #endif
+
+#endif
+	if (!params.commandline)
+		curs_set(1);
 	exit(rc);
 }
 
@@ -520,8 +534,9 @@ static void *_resize_handler(int sig)
 		get_slurm_part();
 		break;
 	case COMMANDS:
-		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			get_command();
+#ifdef HAVE_BG
+		get_command();
+#endif
 		break;
 	case BGPART:
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
