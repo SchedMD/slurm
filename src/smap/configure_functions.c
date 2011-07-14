@@ -42,13 +42,73 @@
 #include "src/smap/smap.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/plugins/select/bluegene/bg_read_config.h"
 
-#if 1
-void get_command(void)
+/* These are here to avoid linking issues with the bridge for
+ * unresolved symbols.
+ */
+time_t last_job_update;
+time_t last_bg_update;
+bg_config_t *bg_conf;
+bg_lists_t *bg_lists;
+pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+int bg_recover = 1;
+int blocks_are_created = 0;
+bool have_db2 = false;
+int num_unused_cpus;
+
+extern int bridge_init(char *properties_file)
 {
-	fatal("fixme");
+	return SLURM_ERROR;
+}
+
+extern int bridge_fini()
+{
+	return SLURM_ERROR;
+}
+
+extern int bridge_get_size(int *size)
+{
+	return SLURM_ERROR;
+}
+
+extern int bridge_setup_system()
+{
+	return SLURM_ERROR;
+}
+
+extern int bridge_free_bg(my_bluegene_t *bg)
+{
+	return SLURM_ERROR;
+}
+
+extern int bridge_get_bg(my_bluegene_t **bg)
+{
+	return SLURM_ERROR;
+}
+
+#ifdef HAVE_BG_FILES
+extern int bridge_get_data(rm_element_t* element,
+			   enum rm_specification field, void *data)
+{
+	return SLURM_ERROR;
 }
 #else
+extern int bridge_get_data(void* element,
+			   int field, void *data)
+{
+	return SLURM_ERROR;
+}
+#endif
+
+extern int add_bg_record(List records, List *used_nodes,
+			 select_ba_request_t *blockreq,
+			 bool no_check, bitoff_t io_start)
+{
+	return SLURM_ERROR;
+}
+
+///////////////////////////////////////////////////////////////////////
 
 typedef struct {
 	int color;
