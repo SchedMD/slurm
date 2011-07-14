@@ -141,8 +141,9 @@ my (	$account,
 	$wc_key
 );
 
-my $aprun  = "aprun";
+my $aprun  = "${FindBin::Bin}/aprun";
 my $salloc = "${FindBin::Bin}/salloc";
+my $srun   = "${FindBin::Bin}/srun";
 
 my $have_job;
 $aprun_line_buf = 1;
@@ -195,10 +196,21 @@ foreach (keys %ENV) {
 	$wc_key = $ENV{$_}		if $_ eq "SLURM_WCKEY";
 }
 
+# Make fully copy of execute line. This is needed only so that srun can run
+# again and get the job's memory allocation for aprun (which is not available
+# until after the allocation has been made.
+my ($i, $len, $orig_exec_line);
+for ($i = 0; $i < $#ARGV; $i++) {
+	if ($i == 0) {
+		$orig_exec_line = "$ARGV[$i]";
+	} else {
+		$orig_exec_line .= " $ARGV[$i]";
+	}
+}
+
 # The perl GetOptions function does not support a single letter option
 # followed by an argument without a space. This logic adds a space. For
 # example, "-N2" is changed into "-N 2".
-my ($i, $len);
 for ($i = 0; $i < $#ARGV; $i++) {
 	$len = length($ARGV[$i]);
 	if (($len > 2) &&
@@ -207,7 +219,6 @@ for ($i = 0; $i < $#ARGV; $i++) {
 	     (substr($ARGV[$i], 1, 1) ge "A" && substr($ARGV[$i], 1, 1) le "Z"))) {
 		splice(@ARGV, $i, 1, substr($ARGV[$i], 0, 2), substr($ARGV[$i], 2));
 	}
-
 }
 
 GetOptions(
@@ -390,113 +401,115 @@ if ($have_job == 0) {
 	$command .= " --verbose"			if $verbose;
 	$command .= " --wait=$wait"			if $wait;
 	$command .= " --wckey=$wc_key"			if $wc_key;
-	$command .= " $aprun";
+	$command .= " $srun";
+	$command .= " $orig_exec_line";
 } else {
 	$command = "$aprun";
-}
-# Options that get set if aprun is launch either under salloc or directly
-if ($alps) {
-#	aprun fails when arguments are duplicated, prevent duplicates here
-	$command .= " $alps";
-	if (index($alps, "-d") >= 0)  { $cpus_per_task = 0 };
-	if (index($alps, "-L") >= 0)  { $nodelist = 0 };
-	if (index($alps, "-m") >= 0)  { $memory_per_cpu = 0 };
-	if (index($alps, "-n") >= 0)  { $num_tasks = 0; $num_nodes = 0; }
-	if (index($alps, "-N") >= 0)  { $ntasks_per_node = 0; $num_nodes = 0; }
-	if (index($alps, "-q") >= 0)  { $aprun_quiet = 0 };
-	if (index($alps, "-S") >= 0)  { $ntasks_per_socket = 0 };
-	if (index($alps, "-sn") >= 0) { $sockets_per_node = 0 };
-	if (index($alps, "-ss") >= 0) { $memory_bind = 0 };
-	if (index($alps, "-T") >= 0)  { $aprun_line_buf = 0 };
-	if (index($alps, "-t") >= 0)  { $time_limit = 0 };
-}
-# $command .= " -a"		no srun equivalent, architecture
-# $command .= " -b"		no srun equivalent, bypass transfer of executable
-# $command .= " -B"		no srun equivalent, reservation options
-# $command .= " -cc"		NO GOOD MAPPING, cpu binding
-$command .= " -d $cpus_per_task"			if $cpus_per_task;
-# $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
-$nid_list = get_nids($nodelist)				if $nodelist;
-$command .= " -L $nid_list"				if $nodelist;
-$command .= " -m $memory_per_cpu"			if $memory_per_cpu;
-if ($ntasks_per_node) {
-	$command .= " -N $ntasks_per_node";
-	if (!$num_tasks && $num_nodes) {
-		$num_tasks = $ntasks_per_node * $num_nodes;
+
+	# Options that get set if aprun is launch either under salloc or directly
+	if ($alps) {
+	#	aprun fails when arguments are duplicated, prevent duplicates here
+		$command .= " $alps";
+		if (index($alps, "-d") >= 0)  { $cpus_per_task = 0 };
+		if (index($alps, "-L") >= 0)  { $nodelist = 0 };
+		if (index($alps, "-m") >= 0)  { $memory_per_cpu = 0 };
+		if (index($alps, "-n") >= 0)  { $num_tasks = 0; $num_nodes = 0; }
+		if (index($alps, "-N") >= 0)  { $ntasks_per_node = 0; $num_nodes = 0; }
+		if (index($alps, "-q") >= 0)  { $aprun_quiet = 0 };
+		if (index($alps, "-S") >= 0)  { $ntasks_per_socket = 0 };
+		if (index($alps, "-sn") >= 0) { $sockets_per_node = 0 };
+		if (index($alps, "-ss") >= 0) { $memory_bind = 0 };
+		if (index($alps, "-T") >= 0)  { $aprun_line_buf = 0 };
+		if (index($alps, "-t") >= 0)  { $time_limit = 0 };
 	}
-} elsif ($num_nodes) {
-	$num_tasks = $num_nodes if !$num_tasks;
-	$ntasks_per_node = int (($num_tasks + $num_nodes - 1) / $num_nodes);
-	$command .= " -N $ntasks_per_node";
-}
-
-if ($num_tasks) {
-	$command .= " -n $num_tasks";
-} elsif ($num_nodes) {
-	$command .= " -n $num_nodes";
-}
-
-$command .= " -q"					if $aprun_quiet;
-# $command .= " -r"		no srun equivalent, core specialization
-$command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
-# $command .= " -sl"		no srun equivalent, task placement on nodes
-$command .= " -sn $sockets_per_node" 			if $sockets_per_node;
-if ($memory_bind && ($memory_bind =~ /local/i)) {
-	$command .= " -ss"
-}
-$command .= " -T"					if $aprun_line_buf;
-$time_secs = get_seconds($time_limit)			if $time_limit;
-$command .= " -t $time_secs"				if $time_secs;
-$script = get_multi_prog($script)			if $multi_prog;
-
-# Input and output file options are not supported by aprun, but can be handled by perl
-$command .= " <$input_file"				if $input_file;
-if ($error_file && ($error_file eq "none")) {
-	$error_file = "/dev/null"
-}
-if ($output_file && ($output_file eq "none")) {
-	$output_file = "/dev/null"
-}
-if ($open_mode && ($open_mode eq "a")) {
-	$command .= " >>$output_file"			if $output_file;
-	if ($error_file) {
-		$command .= " 2>>$error_file";
-	} elsif ($output_file) {
-		$command .= " 2>&1";
+	# $command .= " -a"		no srun equivalent, architecture
+	# $command .= " -b"		no srun equivalent, bypass transfer of executable
+	# $command .= " -B"		no srun equivalent, reservation options
+	# $command .= " -cc"		NO GOOD MAPPING, cpu binding
+	$command .= " -d $cpus_per_task"			if $cpus_per_task;
+	# $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
+	$nid_list = get_nids($nodelist)				if $nodelist;
+	$command .= " -L $nid_list"				if $nodelist;
+	$command .= " -m $memory_per_cpu"			if $memory_per_cpu;
+	if ($ntasks_per_node) {
+		$command .= " -N $ntasks_per_node";
+		if (!$num_tasks && $num_nodes) {
+			$num_tasks = $ntasks_per_node * $num_nodes;
+		}
+	} elsif ($num_nodes) {
+		$num_tasks = $num_nodes if !$num_tasks;
+		$ntasks_per_node = int (($num_tasks + $num_nodes - 1) / $num_nodes);
+		$command .= " -N $ntasks_per_node";
 	}
-} else {
-	$command .= " >$output_file"			if $output_file;
-	if ($error_file) {
-		$command .= " 2>$error_file";
-	} elsif ($output_file) {
-		$command .= " 2>&1";
+
+	if ($num_tasks) {
+		$command .= " -n $num_tasks";
+	} elsif ($num_nodes) {
+		$command .= " -n $num_nodes";
 	}
+
+	$command .= " -q"					if $aprun_quiet;
+	# $command .= " -r"		no srun equivalent, core specialization
+	$command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
+	# $command .= " -sl"		no srun equivalent, task placement on nodes
+	$command .= " -sn $sockets_per_node" 			if $sockets_per_node;
+	if ($memory_bind && ($memory_bind =~ /local/i)) {
+		$command .= " -ss"
+	}
+	$command .= " -T"					if $aprun_line_buf;
+	$time_secs = get_seconds($time_limit)			if $time_limit;
+	$command .= " -t $time_secs"				if $time_secs;
+	$script = get_multi_prog($script)			if $multi_prog;
+
+	# Input and output file options are not supported by aprun, but can be handled by perl
+	$command .= " <$input_file"				if $input_file;
+	if ($error_file && ($error_file eq "none")) {
+		$error_file = "/dev/null"
+	}
+	if ($output_file && ($output_file eq "none")) {
+		$output_file = "/dev/null"
+	}
+	if ($open_mode && ($open_mode eq "a")) {
+		$command .= " >>$output_file"			if $output_file;
+		if ($error_file) {
+			$command .= " 2>>$error_file";
+		} elsif ($output_file) {
+			$command .= " 2>&1";
+		}
+	} else {
+		$command .= " >$output_file"			if $output_file;
+		if ($error_file) {
+			$command .= " 2>$error_file";
+		} elsif ($output_file) {
+			$command .= " 2>&1";
+		}
+	}
+
+	# Srun option which are not supported by aprun
+	#	$command .= " --disable-status"			if $disable_status;
+	#	$command .= " --epilog=$epilog"			if $epilog;
+	#	$command .= " --kill-on-bad-exit"		if $kill_on_bad_exit;
+	#	$command .= " --label"				if $label;
+	#	$command .= " --mpi=$mpi_type"			if $mpi_type;
+	#	$command .= " --msg-timeout=$msg_timeout"	if $msg_timeout;
+	#	$command .= " --no-allocate"			if $no_allocate;
+	#	$command .= " --open-mode=$open_mode"		if $open_mode;
+	#	$command .= " --preserve_env"			if $preserve_env;
+	#	$command .= " --prolog=$prolog"			if $prolog;
+	#	$command .= " --propagate=$propagate"		if $propagate;
+	#	$command .= " --pty"				if $pty;
+	#	$command .= " --quit-on-interrupt"		if $quit_on_interrupt;
+	#	$command .= " --relative=$relative"		if $relative;
+	#	$command .= " --restart-dir=$restart_dir"	if $restart_dir;
+	#	$command .= " --resv-ports"			if $resv_ports;
+	#	$command .= " --slurmd-debug=$slurmd_debug"	if $slurmd_debug;
+	#	$command .= " --task-epilog=$task_epilog"	if $task_epilog;
+	#	$command .= " --task-prolog=$task_prolog"	if $task_prolog;
+	#	$command .= " --test-only"			if $test_only;
+	#	$command .= " --unbuffered"			if $unbuffered;
+
+	$command .= " $script";
 }
-
-# Srun option which are not supported by aprun
-#	$command .= " --disable-status"			if $disable_status;
-#	$command .= " --epilog=$epilog"			if $epilog;
-#	$command .= " --kill-on-bad-exit"		if $kill_on_bad_exit;
-#	$command .= " --label"				if $label;
-#	$command .= " --mpi=$mpi_type"			if $mpi_type;
-#	$command .= " --msg-timeout=$msg_timeout"	if $msg_timeout;
-#	$command .= " --no-allocate"			if $no_allocate;
-#	$command .= " --open-mode=$open_mode"		if $open_mode;
-#	$command .= " --preserve_env"			if $preserve_env;
-#	$command .= " --prolog=$prolog"			if $prolog;
-#	$command .= " --propagate=$propagate"		if $propagate;
-#	$command .= " --pty"				if $pty;
-#	$command .= " --quit-on-interrupt"		if $quit_on_interrupt;
-#	$command .= " --relative=$relative"		if $relative;
-#	$command .= " --restart-dir=$restart_dir"	if $restart_dir;
-#	$command .= " --resv-ports"			if $resv_ports;
-#	$command .= " --slurmd-debug=$slurmd_debug"	if $slurmd_debug;
-#	$command .= " --task-epilog=$task_epilog"	if $task_epilog;
-#	$command .= " --task-prolog=$task_prolog"	if $task_prolog;
-#	$command .= " --test-only"			if $test_only;
-#	$command .= " --unbuffered"			if $unbuffered;
-
-$command .= " $script";
 
 # Print here for debugging
 #print "command=$command\n";
