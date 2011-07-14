@@ -407,11 +407,6 @@ extern int ba_reset_all_removed_mps(void);
  */
 extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state);
 
-/*
- * find a rack/midplace location based on ABCD coords
- */
-extern char *find_mp_rack_mid(char* coords);
-
 /* make sure a node is in the system return 1 if it is 0 if not */
 extern int validate_coord(uint16_t *coord);
 

@@ -1509,21 +1509,6 @@ extern void ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
 	ba_mp->state = state;
 }
 
-/*
- * find a rack/midplace location
- */
-extern char *find_mp_rack_mid(char* coords)
-{
-	ba_mp_t *curr_mp;
-
-	if(!(curr_mp = str2ba_mp(coords)))
-		return NULL;
-
-	bridge_setup_system();
-
-	return curr_mp->loc;
-}
-
 /* */
 extern int validate_coord(uint16_t *coord)
 {
