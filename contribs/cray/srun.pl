@@ -54,6 +54,8 @@ use Switch;
 my (	$account,
 	$acctg_freq,
 	$alps,
+	$aprun_line_buf,
+	$aprun_quiet,
 	$begin_time,
 	$chdir,
 	$check_time,
@@ -143,6 +145,8 @@ my $aprun  = "aprun";
 my $salloc = "${FindBin::Bin}/salloc";
 
 my $have_job;
+$aprun_line_buf = 1;
+$aprun_quiet = 1;
 $have_job = 0;
 
 foreach (keys %ENV) {
@@ -164,7 +168,7 @@ foreach (keys %ENV) {
 	$job_name = $ENV{$_}		if $_ eq "SLURM_JOB_NAME";
 	$label = 1			if $_ eq "SLURM_LABELIO";
 	$memory_bind = $ENV{$_}		if $_ eq "SLURM_MEM_BIND";
-	$mem_per_cpu = $ENV{$_}		if $_ eq "SLURM_MEM_PER_CPU";
+	$memory_per_cpu = $ENV{$_}	if $_ eq "SLURM_MEM_PER_CPU";
 	$memory = $ENV{$_}		if $_ eq "SLURM_MEM_PER_NODE";
 	$mpi_type = $ENV{$_}		if $_ eq "SLURM_MPI_TYPE";
 	$network = $ENV{$_}		if $_ eq "SLURM_NETWORK";
@@ -391,7 +395,21 @@ if ($have_job == 0) {
 	$command = "$aprun";
 }
 # Options that get set if aprun is launch either under salloc or directly
-$command .= " $alps"					if $alps;
+if ($alps) {
+#	aprun fails when arguments are duplicated, prevent duplicates here
+	$command .= " $alps";
+	if (index($alps, "-d") >= 0)  { $cpus_per_task = 0 };
+	if (index($alps, "-L") >= 0)  { $nodelist = 0 };
+	if (index($alps, "-m") >= 0)  { $memory_per_cpu = 0 };
+	if (index($alps, "-n") >= 0)  { $num_tasks = 0; $num_nodes = 0; }
+	if (index($alps, "-N") >= 0)  { $ntasks_per_node = 0; $num_nodes = 0; }
+	if (index($alps, "-q") >= 0)  { $aprun_quiet = 0 };
+	if (index($alps, "-S") >= 0)  { $ntasks_per_socket = 0 };
+	if (index($alps, "-sn") >= 0) { $sockets_per_node = 0 };
+	if (index($alps, "-ss") >= 0) { $memory_bind = 0 };
+	if (index($alps, "-T") >= 0)  { $aprun_line_buf = 0 };
+	if (index($alps, "-t") >= 0)  { $time_limit = 0 };
+}
 # $command .= " -a"		no srun equivalent, architecture
 # $command .= " -b"		no srun equivalent, bypass transfer of executable
 # $command .= " -B"		no srun equivalent, reservation options
@@ -418,7 +436,7 @@ if ($num_tasks) {
 	$command .= " -n $num_nodes";
 }
 
-$command .= " -q";
+$command .= " -q"					if $aprun_quiet;
 # $command .= " -r"		no srun equivalent, core specialization
 $command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
 # $command .= " -sl"		no srun equivalent, task placement on nodes
@@ -426,7 +444,7 @@ $command .= " -sn $sockets_per_node" 			if $sockets_per_node;
 if ($memory_bind && ($memory_bind =~ /local/i)) {
 	$command .= " -ss"
 }
-$command .= " -T";		# Line buffered is srun default
+$command .= " -T"					if $aprun_line_buf;
 $time_secs = get_seconds($time_limit)			if $time_limit;
 $command .= " -t $time_secs"				if $time_secs;
 $script = get_multi_prog($script)			if $multi_prog;
