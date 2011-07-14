@@ -1386,31 +1386,3 @@ extern int select_g_ba_remove_block(List mps, bool is_small)
 	return (*(select_context[plugin_id].ops.ba_remove_block))
 		(mps, is_small);
 }
-
-extern char *select_g_ba_passthroughs_string(uint16_t passthrough)
-{
-	char *pass = NULL;
-
-	if (passthrough & PASS_FOUND_A)
-		xstrcat(pass, "A");
-	if (passthrough & PASS_FOUND_X) {
-		if (pass)
-			xstrcat(pass, ",X");
-		else
-			xstrcat(pass, "X");
-	}
-	if (passthrough & PASS_FOUND_Y) {
-		if (pass)
-			xstrcat(pass, ",Y");
-		else
-			xstrcat(pass, "Y");
-	}
-	if (passthrough & PASS_FOUND_Z) {
-		if (pass)
-			xstrcat(pass, ",Z");
-		else
-			xstrcat(pass, "Z");
-	}
-
-	return pass;
-}

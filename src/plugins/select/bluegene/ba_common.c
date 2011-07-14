@@ -1600,3 +1600,32 @@ extern void reset_ba_system(bool track_down_mps)
 
 	_internal_reset_ba_system(0, coords, track_down_mps);
 }
+
+extern char *ba_passthroughs_string(uint16_t passthrough)
+{
+	char *pass = NULL;
+
+	if (passthrough & PASS_FOUND_A)
+		xstrcat(pass, "A");
+	if (passthrough & PASS_FOUND_X) {
+		if (pass)
+			xstrcat(pass, ",X");
+		else
+			xstrcat(pass, "X");
+	}
+	if (passthrough & PASS_FOUND_Y) {
+		if (pass)
+			xstrcat(pass, ",Y");
+		else
+			xstrcat(pass, "Y");
+	}
+	if (passthrough & PASS_FOUND_Z) {
+		if (pass)
+			xstrcat(pass, ",Z");
+		else
+			xstrcat(pass, "Z");
+	}
+
+	return pass;
+}
+

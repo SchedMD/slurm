@@ -54,18 +54,6 @@
 #define NO_JOB_RUNNING -1
 #define NOT_FROM_CONTROLLER -2
 
-#define PASS_DENY_A    0x0001
-#define PASS_DENY_X    0x0002
-#define PASS_DENY_Y    0x0004
-#define PASS_DENY_Z    0x0008
-#define PASS_DENY_ALL  0x00ff
-
-#define PASS_FOUND_A   0x0100
-#define PASS_FOUND_X   0x0200
-#define PASS_FOUND_Y   0x0400
-#define PASS_FOUND_Z   0x0800
-#define PASS_FOUND_ANY 0xff00
-
 typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
 				     * not required to satisfy the request
@@ -108,7 +96,7 @@ typedef struct {
 	char *ramdiskimage;            /* RamDiskImage for this block */
 	bool rotate;                   /* whether allow elongation or not */
 	int rotate_count;              /* number of times rotated */
-	char *save_name;               /* name of blocks in midplanes */
+	char *save_name;               /* name of midplanes in block */
 	int size;                      /* count of midplanes in block */
 	uint16_t small16;              /* number of blocks using 16 cnodes in
 					* block, only used for small
@@ -648,9 +636,5 @@ extern int *select_g_ba_get_dims(void);
 extern void select_g_ba_reset(bool track_down_nodes);
 extern int select_g_ba_request_apply(select_ba_request_t *ba_request);
 extern int select_g_ba_remove_block(List mps, bool is_small);
-
-/* Convert PASS_FOUND_* into equivalent string
- * Caller MUST xfree() the returned value */
-extern char *select_g_ba_passthroughs_string(uint16_t passthrough);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

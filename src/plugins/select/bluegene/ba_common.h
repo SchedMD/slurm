@@ -58,6 +58,18 @@
 extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
 					  * each dimension */
 
+#define PASS_DENY_A    0x0001
+#define PASS_DENY_X    0x0002
+#define PASS_DENY_Y    0x0004
+#define PASS_DENY_Z    0x0008
+#define PASS_DENY_ALL  0x00ff
+
+#define PASS_FOUND_A   0x0100
+#define PASS_FOUND_X   0x0200
+#define PASS_FOUND_Y   0x0400
+#define PASS_FOUND_Z   0x0800
+#define PASS_FOUND_ANY 0xff00
+
 #define BA_MP_USED_FALSE          0x0000
 #define BA_MP_USED_TRUE           0x0001
 #define BA_MP_USED_TEMP           0x0002
@@ -536,5 +548,9 @@ extern int ba_clear_sub_block_cnodes(
 /* set the ionode str based off the block allocator, either ionodes
  * or cnode coords */
 extern char *ba_set_ionode_str(bitstr_t *bitmap);
+
+/* Convert PASS_FOUND_* into equivalent string
+ * Caller MUST xfree() the returned value */
+extern char *ba_passthroughs_string(uint16_t passthrough);
 
 #endif
