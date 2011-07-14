@@ -532,6 +532,8 @@ geo_error_message:
 static int _resolve(char *com)
 {
 	int i=0;
+	char *ret_str;
+
 #ifdef HAVE_BG_FILES
 	int len=strlen(com);
 	char *rack_mid = NULL;
@@ -545,51 +547,18 @@ static int _resolve(char *com)
 	}
 	if (com[i] == 'r')
 		com[i] = 'R';
-
-	memset(error_string, 0, 255);
-#ifdef HAVE_BG_FILES
-	if (!have_db2) {
-		sprintf(error_string, "Must be on BG SN to resolve\n");
-		goto resolve_error;
+	ret_str = resolve_mp(com+i);
+	if (ret_str) {
+		snprintf(error_string, sizeof(error_string), "%s", ret_str);
+		xfree(ret_str);
 	}
 
-	if (len-i<3) {
-		sprintf(error_string, "Must enter 3 coords to resolve.\n");
-		goto resolve_error;
-	}
-	if (com[i] != 'R') {
-		rack_mid = find_bp_rack_mid(com+i);
-
-		if (rack_mid)
-			sprintf(error_string,
-				"X=%c Y=%c Z=%c resolves to %s\n",
-				com[X+i],com[Y+i],com[Z+i], rack_mid);
-		else
-			sprintf(error_string,
-				"X=%c Y=%c Z=%c has no resolve\n",
-				com[X+i],com[Y+i],com[Z+i]);
-
-	} else {
-		coord = find_bp_loc(com+i);
-
-		if (coord)
-			sprintf(error_string,
-				"%s resolves to X=%d Y=%d Z=%d\n",
-				com+i,coord[X],coord[Y],coord[Z]);
-		else
-			sprintf(error_string, "%s has no resolve.\n",
-				com+i);
-	}
-resolve_error:
-#else
-			sprintf(error_string,
-				"Must be on BG SN to resolve.\n");
-#endif
 	wnoutrefresh(text_win);
 	doupdate();
 
 	return 1;
 }
+
 static int _change_state_all_bps(char *com, int state)
 {
 	char start_loc[32], end_loc[32];

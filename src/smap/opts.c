@@ -203,6 +203,48 @@ extern void clear_window(WINDOW *win)
 	wnoutrefresh(win);
 }
 
+extern char *resolve_mp(char *desc)
+{
+	char *ret_str = NULL;
+#if defined HAVE_BG_FILES
+	ba_mp_t *ba_mp = NULL;
+	int i;
+
+	if (!desc) {
+		ret_str = xstrdup("No Description given.\n");
+		goto fini;
+	}
+
+	i = strlen(desc) - params.cluster_dims;
+	if (i < 0) {
+		ret_str = xstrdup_printf("Must enter %d coords to resolve.\n",
+					 params.cluster_dim);
+		goto fini;
+	}
+
+	if (desc[0] != 'R') {
+		ba_mp = str2ba_mp(desc+len);
+		if (ba_mp)
+			ret_str = xstrdup_printf("%s resolves to %s\n",
+						 ba_mp->coord_str, ba_mp->loc);
+		else
+			ret_str = xstrdup_printf("%s has no resolve\n", desc+i);
+	} else {
+		ba_mp = loc2ba_mp(desc);
+		if (ba_mp)
+			ret_str = xstrdup_printf("%s resolves to %s\n",
+						 desc, ba_mp->coord_str);
+		else
+			ret_str = xstrdup_printf("%s has no resolve.\n", desc);
+	}
+fini:
+#else
+	ret_str = xstrdup("Must be physically on a BlueGene system for support "
+			  "of resolve option.\n");
+#endif
+	return ret_str;
+}
+
 static void _usage(void)
 {
 #ifdef HAVE_BG

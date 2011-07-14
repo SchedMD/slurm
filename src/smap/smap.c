@@ -121,57 +121,11 @@ int main(int argc, char *argv[])
 	init_grid(new_node_ptr);
 
 	if (params.resolve) {
-#if defined HAVE_BG_FILES && defined HAVE_BG_L_P
-#if 1
-		error("this doesn't work in the current 2.3 code. FIXME");
-#else
-		if (!have_db2) {
-			printf("Required libraries can not be found "
-			       "to access the Bluegene system.\nPlease "
-			       "set your LD_LIBRARY_PATH correctly to "
-			       "point to them.\n");
-			goto part_fini;
-		}
-
+		char *ret_str = resolve_mp(params.resolve);
+		if (ret_str)
+			printf("%s", ret_string);
 		if (!mapset)
 			mapset = 1;
-		if (params.resolve[0] != 'R') {
-			i = strlen(params.resolve);
-			i -= 3;
-			if (i < 0) {
-				printf("No real block was entered\n");
-				goto part_fini;
-			}
-			char *rack_mid = find_bp_rack_mid(params.resolve+i);
-			if (rack_mid) {
-				printf("X=%c Y=%c Z=%c resolves to %s\n",
-				       params.resolve[0+i],
-				       params.resolve[1+i],
-				       params.resolve[2+i],
-				       rack_mid);
-			} else {
-				printf("X=%c Y=%c Z=%c has no resolve\n",
-				       params.resolve[0+i],
-				       params.resolve[1+i],
-				       params.resolve[2+i]);
-			}
-		} else {
-			uint16_t *coord = find_bp_loc(params.resolve);
-			if (coord) {
-				printf("%s resolves to X=%d Y=%d Z=%d\n",
-				       params.resolve,
-				       coord[0], coord[1], coord[2]);
-			} else {
-				printf("%s has no resolve.\n",
-				       params.resolve);
-			}
-		}
-part_fini:
-#endif
-#else
-		printf("Must be physically on a BlueGene system for support "
-		       "of resolve option.\n");
-#endif
 		_smap_exit(0);	/* Calls exit(), no return */
 	}
 	if (!params.commandline) {
