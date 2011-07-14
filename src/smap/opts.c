@@ -55,6 +55,7 @@ extern void parse_command_line(int argc, char *argv[])
 
 	static struct option long_options[] = {
 		{"commandline", no_argument, 0, 'c'},
+		{"command", required_argument, 0, 'C'},
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
@@ -75,7 +76,7 @@ extern void parse_command_line(int argc, char *argv[])
 	memset(&params, 0, sizeof(params));
 
 	while ((opt_char =
-		getopt_long(argc, argv, "cD:hi:I:Hn:M:QR:vV",
+		getopt_long(argc, argv, "cC:D:hi:I:Hn:M:QR:vV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
@@ -85,6 +86,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case 'c':
 			params.commandline = TRUE;
+			break;
+		case 'C':
+			params.command = xstrdup(optarg);
 			break;
 		case 'D':
 			if (!strcmp(optarg, "j"))

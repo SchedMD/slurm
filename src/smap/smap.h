@@ -128,6 +128,7 @@ typedef struct {
 	uint16_t cluster_dims;
 	uint32_t cluster_flags;
 	bool commandline;
+	char *command;
 	int display;
 	int iterate;
 	bitstr_t *io_bit;
