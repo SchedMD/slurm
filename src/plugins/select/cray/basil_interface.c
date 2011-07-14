@@ -652,7 +652,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 		if (node_min_mem) {
 			uint32_t node_cpus, node_mem;
-			uint16_t tmp_mppmem;
+			int32_t tmp_mppmem;
 
 			if (slurmctld_conf.fast_schedule) {
 				node_cpus = node_ptr->config_ptr->cpus;
@@ -673,6 +673,14 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			 */
 			tmp_mppmem = node_min_mem = MIN(node_mem, node_min_mem);
 			tmp_mppmem /= mppnppn ? mppnppn : node_cpus;
+
+			/* If less than or equal to 0 make sure you
+			   have 1 at least since 0 means give all the
+			   memory to the job.
+			*/
+			if (tmp_mppmem <= 0)
+				tmp_mppmem = 1;
+
 			if (mppmem)
 				mppmem = MIN(mppmem, tmp_mppmem);
 			else
