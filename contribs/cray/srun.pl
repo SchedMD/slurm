@@ -818,7 +818,7 @@ Applies only when creating a job allocation.
 =item B<--mem_bind=type>
 
 Bind tasks to memory. The only option supported on Cray systems is local which
-confiles memory use to the local NUMA node.
+confines memory use to the local NUMA node.
 
 =item B<--mincpus>
 
