@@ -1233,7 +1233,6 @@ extern char *ba_set_ionode_str(bitstr_t *ionode_bitmap)
 	return ionode_str;
 }
 
-
 /*
  * This function is here to check options for rotating and elongating
  * and set up the request based on the count of each option

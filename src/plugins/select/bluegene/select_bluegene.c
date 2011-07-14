@@ -2704,4 +2704,3 @@ extern int select_p_ba_remove_block(List mps, bool is_small)
 {
 	return remove_block(mps, is_small);
 }
-
