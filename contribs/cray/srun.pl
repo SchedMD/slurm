@@ -298,7 +298,7 @@ if ($version) {
 	exit(0);
 }
 
-# Display usage if necessary
+# Display man page or usage if necessary
 pod2usage(0) if $man;
 if ($help) {
 	if ($< == 0) {   # Cannot invoke perldoc as root
@@ -611,6 +611,9 @@ first create a resource allocation in which to run the parallel job.
 
 =head1 OPTIONS
 
+NOTE: Many options only apply only when creating a job allocation as noted
+below. When srun is allocated within an existing job allocation, these options
+are silently ignored.
 The following aprun options have no equivalent in srun and must be specified
 by using the B<--alps> option: B<-a>, B<-b>, B<-B>, B<-cc>, B<-f>, B<-r>, and
 B<-sl>.  Many other options do not exact functionality matches, but duplication
@@ -621,10 +624,12 @@ srun behavior to the extent possible.
 =item B<-A> | B<--account=account>
 
 Charge resources used by this job to specified account.
+Applies only when creating a job allocation.
 
 =item B<--acctg-freq=seconds>
 
 Specify the accounting sampling interval.
+Applies only when creating a job allocation.
 
 =item B<--alps=options>
 
@@ -639,39 +644,48 @@ cores per socket, and threads per core.
 The individual levels can also be specified in separate options if desired:
 B<--sockets-per-node=sockets>, B<--cores-per-socket=cores>, and
 B<--threads-per-core=threads>.
+Applies only when creating a job allocation.
 
 =item B<--begin=time>
 
 Defer job initiation until the specified time.
+Applies only when creating a job allocation.
 
 =item B<--checkpoint=interval>
 
 Specify the time interval between checkpoint creations.
+Not supported on Cray computers.
 
 =item B<--checkpoint-dir=directory>
 
 Directory where the checkpoint image should be written.
+Not supported on Cray computers.
 
 =item B<--comment=string>
 
 An arbitrary comment.
+Applies only when creating a job allocation.
 
 =item B<-C> | B<--constraint=string>
 
 Constrain job allocation to nodes with the specified features.
+Applies only when creating a job allocation.
 
 =item B<--contiguous>
 
 Constrain job allocation to contiguous nodes.
+Applies only when creating a job allocation.
 
 =item B<--cores-per-socket=number>
 
 Count of cores to be allocated per per socket.
+Applies only when creating a job allocation.
 
 =item B<--cpu_bind=options>
 
 Strategy to be used for binding tasks to the CPUs.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers due to many incompatible options.
+Use --alps="-cc=..." instead.
 
 =item B<-c> | B<--cpus-per-task=number>
 
@@ -681,39 +695,44 @@ Count of CPUs required per task.
 
 Wait for job(s) to enter specified condition before starting the job.
 Valid conditions include after, afterany, afternotok, and singleton.
+Applies only when creating a job allocation.
 
 =item B<-D> | B<--chdir=directory>
 
 Execute the program from the specified directory.
+Applies only when creating a job allocation.
 
 =item B<--epilog=filename>
 
 Execute the specified program after the job step completes.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<-e> | B<--error=filename>
 
 Write stderr to the specified file.
-Not supported by aprun on Cray computers.
 
 =item B<--exclusive>
 
 The job or job step will not share resources with other jobs or job steps.
+Applies only when creating a job allocation.
 
 =item B<-E> | B<--preserve-env>
 
 Pass the current values of environment variables SLURM_NNODES and
 SLURM_NTASKS through to the executable, rather than computing them
-from command line parameters. Not supported by aprun on Cray computers.
+from command line parameters.
+Not supported on Cray computers.
 
 =item B<--gid=group>
 
 If user root, then execute the job using the specified group access permissions.
 Specify either a group name or ID.
+Applies only when creating a job allocation.
 
 =item B<--gres=gres_name[*count]>
 
 Allocate the specified generic resources on each allocated node.
+Applies only when creating a job allocation.
 
 =item B<-?> | B<--help>
 
@@ -721,51 +740,53 @@ Print brief help message.
 
 =item B<--hint=type>
 
-Bind tasks according to application hints: compute_bound, memory_bound,
-multithread, nomultithread, or help.
+Bind tasks according to application hints.
+Not supported on Cray computers.
 
 =item B<-H> | B<--hold>
 
 Submit the job in a held state.
+Applies only when creating a job allocation.
 
 =item B<-I> | B<--immediate>
 
 Exit if resources are not available immediately.
+Applies only when creating a job allocation.
 
 =item B<-i> | B<--input=filename>
 
 Read stdin from the specified file.
-Not supported by aprun on Cray computers.
 
 =item B<--jobid=number>
 
 Specify the job ID number. Usable only by SlurmUser or user root.
+Applies only when creating a job allocation.
 
 =item B<-J> | B<--job-name=name>
 
 Specify a name for the job.
+Applies only when creating a job allocation.
 
 =item B<-K> | B<--kill-on-bad-exit>
 
 Immediately terminate a job if any task exits with a non-zero exit code.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<-l> | B<--label>
 
 Prepend task number to lines of stdout/err.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<-l> | B<--licenses=names>
 
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
+Applies only when creating a job allocation.
 
 =item B<-m> | B<--distribution=layout>
 
 Specification of distribution of tasks across nodes.
-Supported layouts include: block, cyclic, arbitrary, plane=size.
-The options block and cyclic may be followed by :block or :cyclic
-to control the distribution of tasks across sockets on the node.
+Not supported on Cray computers.
 
 =item B<--man>
 
@@ -775,38 +796,43 @@ Print full documentation.
 
 Send email when certain event types occur.
 Valid events values are BEGIN, END, FAIL, REQUEUE, and ALL (any state change).
+Applies only when creating a job allocation.
 
 =item B<--mail-user=user>
 
 Send email to the specified user(s). The default is the submitting user.
+Applies only when creating a job allocation.
 
-=item B<--mem=MG>
+=item B<--mem=MB>
 
 Specify the real memory required per node in MegaBytes.
+Applies only when creating a job allocation.
 
-=item B<--mem-per-cpu=MG>
+=item B<--mem-per-cpu=MB>
 
 Specify the real memory required per CPU in MegaBytes.
+Applies only when creating a job allocation.
 
 =item B<--mem_bind=type>
 
-Bind tasks to memory. Options include: quite, verbose, none, rank, local,
-map_mem, mask_mem, and help.
+Bind tasks to memory. The only option supported on Cray systems is local which
+confiles memory use to the local NUMA node.
 
 =item B<--mincpus>
 
 Specify a minimum number of logical CPUs per node.
+Applies only when creating a job allocation.
 
 =item B<--msg-timeout=second>
 
 Modify the job launch message timeout.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--mpi=implementation>
 
 Identify the type of MPI to be used. May result in unique initiation
-procedures. Options include: list, lam, mpich1_shmem, mpichgm, mvapich,
-openmpi, and none. Not supported by aprun on Cray computers.
+procedures.
+Not supported on Cray computers.
 
 =item B<--multi-prog>
 
@@ -818,22 +844,27 @@ arguments for each task.
 =item B<--network=type>
 
 Specify the communication protocol to be used.
+Not supported on Cray computers.
 
 =item B<--nice=adjustment>
 
 Run the job with an adjusted scheduling priority within SLURM.
+Applies only when creating a job allocation.
 
 =item B<--ntasks-per-core=ntasks>
 
 Request the maximum ntasks be invoked on each core.
+Applies only when creating a job allocation.
 
 =item B<--ntasks-per-node=ntasks>
 
 Request the maximum ntasks be invoked on each node.
+Applies only when creating a job allocation.
 
 =item B<--ntasks-per-socket=ntasks>
 
 Request the maximum ntasks be invoked on each socket.
+Applies only when creating a job allocation.
 
 =item B<-N> | B<--nodes=num_nodes>
 
@@ -846,37 +877,36 @@ Number of tasks to launch.
 =item B<--overcommit>
 
 Overcommit resources. Launch more than one task per CPU.
+Applies only when creating a job allocation.
 
 =item B<-o> | B<--output=filename>
 
 Specify the mode for stdout redirection.
-Not supported by aprun on Cray computers.
 
 =item B<--open-mode=append|truncate>
 
 Open the output and error files using append or truncate mode as specified.
-Not supported by aprun on Cray computers.
 
 =item B<--partition=name>
 
 Request a specific partition for the resource allocation.
+Applies only when creating a job allocation.
 
 =item B<--prolog=filename>
 
 Execute the specified file before launching the job step.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--propagate=rlimits>
 
 Allows users to specify which of the modifiable (soft) resource limits
-to propagate to the compute nodes and apply to their jobs. Supported options
-include: AS, CORE, CPU, DATA, FSIZE, MEMLOCK, NOFILE, NPROC, RSS, STACK and
-ALL. Not supported by aprun on Cray computers.
+to propagate to the compute nodes and apply to their jobs.
+Not supported on Cray computers.
 
 =item B<--pty>
 
 Execute task zero in pseudo terminal mode.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--quiet>
 
@@ -885,35 +915,38 @@ Suppress informational messages. Errors will still be displayed.
 =item B<-q> | B<--quit-on-interrupt>
 
 Quit immediately on single SIGINT (Ctrl-C).
-Not supported by aprun on Cray computers.
+This is the default behavior on Cray computers.
 
 =item B<--qos=quality_of_service>
 
-Request a quality of service for the job.
+Request a specific quality of service for the job.
+Applies only when creating a job allocation.
 
 =item B<-r> | B<--relative=offset>
 
 Run a job step at the specified node offset in the current allocation.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--resv-ports=filename>
 
 Reserve communication ports for this job. Used for OpenMPI.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--reservation=name>
 
 Allocate resources for the job from the named reservation.
+Applies only when creating a job allocation.
 
 =item B<--restart-dir=directory>
 
 Specifies the directory from which the job or job step's checkpoint should
-be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
-Not supported by aprun on Cray computers.
+be read.
+Not supported on Cray computers.
 
 =item B<-s> | B<--share>
 
 The job can share nodes with other running jobs.
+Applies only when creating a job allocation.
 
 =item B<--signal=signal_number[@seconds]>
 
@@ -923,28 +956,27 @@ send it the specified signal number.
 =item B<--slurmd-debug=level>
 
 Specify a debug level for slurmd daemon.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--sockets-per-node=number>
 
 Allocate the specified number of sockets per node.
+Applies only when creating a job allocation.
 
 =item B<--task-epilog=filename>
 
 Execute the specified program after each task terminates.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--task-prolog=filename>
 
 Execute the specified program before launching each task.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--test-only>
 
-Returns an estimate of when a job would be scheduled to run given the
-current job queue and all the other B<srun> arguments specifying
-the job. No job is actually submitted.
-Not supported by aprun on Cray computers.
+Returns an estimate of when a job would be scheduled.
+Not supported on Cray computers.
 
 =item B<-t> | B<--time=limit>
 
@@ -954,20 +986,23 @@ Time limit in minutes or hours:minutes:seconds.
 
 The minimum acceptable time limit in minutes or hours:minutes:seconds.
 The default value is the same as the maximum time limit.
+Applies only when creating a job allocation.
 
 =item B<--tmp=mb>
 
 Specify a minimum amount of temporary disk space.
+Applies only when creating a job allocation.
 
 =item B<-u> | B<--unbuffered>
 
 Do not line buffer stdout from remote tasks.
-Not supported by aprun on Cray computers.
+Not supported on Cray computers.
 
 =item B<--uid=user>
 
 If user root, then execute the job as the specified user.
 Specify either a user name or ID.
+Applies only when creating a job allocation.
 
 =item B<--usage>
 
@@ -985,6 +1020,7 @@ Increase the verbosity of srun's informational messages.
 
 Specify how long to wait after the first task terminates before terminating
 all remaining tasks.
+Not supported on Cray computers.
 
 =item B<-w> | B<--nodelist=hostlist|filename>
 
@@ -993,21 +1029,24 @@ Request a specific list of hosts to use.
 =item B<--wckey=key>
 
 Specify wckey to be used with job.
+Applies only when creating a job allocation.
 
 =item B<-X> | B<--disable-status>
 
-Disable the display of task status when srun receives a single SIGINT
-(Ctrl-C). Not supported by aprun on Cray computers.
+Disable the display of task status when srun receives a single SIGINT (Ctrl-C).
+Not supported on Cray computers.
 
 =item B<-x> | B<--exclude=hostlist>
 
 Request a specific list of hosts to not use
+Applies only when creating a job allocation.
 
 =item B<-Z> | B<--no-allocate>
 
 Run the specified tasks on a set of nodes without creating a SLURM
 "job" in the SLURM queue structure, bypassing the normal resource
-allocation step. Not supported by aprun on Cray computers.
+allocation step.
+Not supported on Cray computers.
 
 =back
 
