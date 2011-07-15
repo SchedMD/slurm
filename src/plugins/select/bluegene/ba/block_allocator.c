@@ -682,6 +682,12 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 
 extern ba_mp_t *coord2ba_mp(const uint16_t *coord)
 {
+	if ((coord[X] >= DIM_SIZE[X]) || (coord[Y] >= DIM_SIZE[Y]) ||
+	    (coord[Z] >= DIM_SIZE[Z])) {
+		error("Invalid coordinate %d:%d:%d",
+		      coord[X], coord[Y], coord[Z]);
+		return NULL;
+	}
 	return &ba_main_grid[coord[X]][coord[Y]][coord[Z]];
 }
 
