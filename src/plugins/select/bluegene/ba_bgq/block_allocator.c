@@ -383,6 +383,12 @@ extern void print_ba_request(select_ba_request_t* ba_request)
 
 extern ba_mp_t *coord2ba_mp(const uint16_t *coord)
 {
+	if ((coord[A] >= DIM_SIZE[A]) || (coord[X] >= DIM_SIZE[X]) ||
+	    (coord[Y] >= DIM_SIZE[Y]) || (coord[Z] >= DIM_SIZE[Z])) {
+		error("Invalid coordinate %d:%d:%d:%d",
+		      coord[A], coord[X], coord[Y], coord[Z]);
+		return NULL;
+	}
 	return &ba_main_grid[coord[A]][coord[X]][coord[Y]][coord[Z]];
 }
 
