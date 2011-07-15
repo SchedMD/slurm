@@ -478,6 +478,8 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 		return;
 	}
 	curr_mp = coord2ba_mp(coords);
+	if (!curr_mp)
+		return;
 	if (bitmap)
 		is_set = bit_test(bitmap, curr_mp->index);
 	if (!bitmap || (is_set && !except) || (!is_set && except)) {
@@ -517,6 +519,8 @@ static void _internal_reset_ba_system(int level, uint16_t *coords,
 		return;
 	}
 	curr_mp = coord2ba_mp(coords);
+	if (!curr_mp)
+		return;
 	ba_setup_mp(curr_mp, track_down_mps, false);
 	bit_clear(ba_main_mp_bitmap, curr_mp->index);
 }
@@ -547,7 +551,8 @@ static ba_mp_t *_internal_loc2ba_mp(int level, uint16_t *coords,
 	}
 
 	curr_mp = coord2ba_mp(coords);
-
+	if (!curr_mp)
+		return NULL;
 	if (strcasecmp(check, curr_mp->loc))
 		curr_mp = NULL;
 
@@ -594,6 +599,8 @@ static void _init_grid(node_info_msg_t * node_info_ptr)
 		nodeinfo = node_ptr->select_nodeinfo->data;
 		xassert(nodeinfo);
 		nodeinfo->ba_mp = coord2ba_mp(coord);
+		if (!nodeinfo->ba_mp)
+			continue;
 		nodeinfo->ba_mp->index = j;
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
 			ba_update_mp_state(

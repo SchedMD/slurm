@@ -440,7 +440,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		*/
 		ba_mp = coord2ba_mp(ba_mp->coord);
 		for (i=0; i<bg_conf->mp_nodecard_cnt; i++) {
-			if (use_nc[i])
+			if (use_nc[i] && ba_mp)
 				nodecards.push_back(ba_mp->nodecard_loc[i]);
 		}
 
@@ -462,6 +462,8 @@ extern int bridge_block_create(bg_record_t *bg_record)
 			   real one from the system and use it.
 			*/
 			ba_mp_t *main_mp = coord2ba_mp(ba_mp->coord);
+			if (!main_mp)
+				continue;
 			info("got %s(%s) %d", main_mp->coord_str,
 			     main_mp->loc, ba_mp->used);
 			if (ba_mp->used)

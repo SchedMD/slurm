@@ -1954,6 +1954,8 @@ static void _setup_next_mps(int level, uint16_t *coords)
 		return;
 	}
 	curr_mp = coord2ba_mp(coords);
+	if (!curr_mp)
+		return;
 	for (dim = 0; dim < cluster_dims; dim++) {
 		memcpy(next_coords, coords, sizeof(next_coords));
 		memcpy(prev_coords, coords, sizeof(prev_coords));
