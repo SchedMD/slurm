@@ -1688,10 +1688,17 @@ static void _opt_args(int argc, char **argv)
 	opt.argv[i++] = xstrdup(":");
 
 	/* Sanity check to make sure we set it up correctly. */
-	if (i != command_pos)
+	if (i != command_pos) {
 		fatal ("command_pos is set to %d but we are going to put "
 		       "it at %d, please update src/srun/opt.c",
 		       command_pos, i);
+	}
+
+	/* Set default job name to the executable name rather than "runjob" */
+	if (!opt.job_name_set_cmd && (command_pos < opt.argc)) {
+		opt.job_name_set_cmd = true;
+		opt.job_name = xstrdup(rest[0]);
+	}
 #endif
 	for (i = command_pos; i < opt.argc; i++)
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
