@@ -548,4 +548,6 @@ extern char *ba_set_ionode_str(bitstr_t *bitmap);
  * Caller MUST xfree() the returned value */
 extern char *ba_passthroughs_string(uint16_t passthrough);
 
+extern char *give_geo(uint16_t *int_geo, int dims, bool with_sep);
+
 #endif

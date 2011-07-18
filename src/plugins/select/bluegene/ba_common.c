@@ -1614,3 +1614,21 @@ extern char *ba_passthroughs_string(uint16_t passthrough)
 	return pass;
 }
 
+/* This is defined here so we can get it on non-bluegene systems since
+ * it is needed in pack/unpack functions, and bluegene.c isn't
+ * compiled for non-bluegene machines, and it didn't make since to
+ * compile the whole file just for this one function.
+ */
+extern char *give_geo(uint16_t *int_geo, int dims, bool with_sep)
+{
+	char *geo = NULL;
+	int i;
+
+	for (i=0; i<dims; i++) {
+		if (geo && with_sep)
+			xstrcat(geo, "x");
+		xstrfmtcat(geo, "%c", alpha_num[int_geo[i]]);
+	}
+	return geo;
+}
+
