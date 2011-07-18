@@ -102,7 +102,7 @@ parameters are not critical.
 The PreemptMode can be specified on a system-wide basis or on a per-partition
 basis when <I>PreemptType=preempt/partition_prio</I>. Note that when specified 
 on a partition, a compatible mode must also be specified system-wide;
-specifically if a PreemptMode is set to SUSPEND for any partition or QOS, then
+specifically if a PreemptMode is set to SUSPEND for any partition, then
 the system-wide PreemptMode must include the GANG parameter so the module
 responsible for resuming jobs executes.
 Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>,
@@ -139,7 +139,9 @@ can preempt jobs from lower priority partitions.</LI>
 can preempt jobs from a lower QOS. These jobs can be in the same partition
 or different partitions. PreemptMode must be set to CANCEL, CHECKPOINT,
 or REQUEUE. This option requires the use of a database identifying
-available QOS and their preemption rules. </LI>
+available QOS and their preemption rules. This option is not compatible with
+PreemptMode=OFF or PreemptMode=SUSPEND (i.e. preempted jobs must be removed
+from the resources).</LI>
 </UL>
 </LI>
 <LI>
