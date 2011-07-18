@@ -141,9 +141,9 @@ my (	$account,
 	$wc_key
 );
 
-my $aprun  = "${FindBin::Bin}/aprun";
-my $salloc = "${FindBin::Bin}/salloc";
-my $srun   = "${FindBin::Bin}/srun";
+my $aprun  = "aprun";
+my $salloc = "salloc";
+my $srun   = "srun";
 
 my $have_job;
 $aprun_line_buf = 1;
@@ -200,11 +200,9 @@ foreach (keys %ENV) {
 # again and get the job's memory allocation for aprun (which is not available
 # until after the allocation has been made.
 my ($i, $len, $orig_exec_line);
-for ($i = 0; $i < $#ARGV; $i++) {
-	if ($i == 0) {
-		$orig_exec_line = "$ARGV[$i]";
-	} else {
-		$orig_exec_line .= " $ARGV[$i]";
+if ($ARGV[0]) {
+	foreach (@ARGV) {
+		$orig_exec_line .= "$_ ";
 	}
 }
 
