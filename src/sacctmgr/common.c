@@ -588,8 +588,11 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 
 	if (!list_count(assoc_cond->cluster_list)) {
 		char *temp = slurm_get_cluster_name();
-		if (temp)
+		if (temp) {
+			printf("No cluster specified, resetting "
+			       "on local cluster %s\n", temp);
 			list_append(assoc_cond->cluster_list, temp);
+		}
 		if (!list_count(assoc_cond->cluster_list)) {
 			error("A cluster name is required to remove usage");
 			return SLURM_ERROR;
