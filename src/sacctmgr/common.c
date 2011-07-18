@@ -583,10 +583,17 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 	slurmdb_cluster_cond_t cluster_cond;
 	int rc = SLURM_SUCCESS;
 
-	if (!assoc_cond->cluster_list ||
-	    !list_count(assoc_cond->cluster_list)) {
-		error("A cluster name is required to remove usage");
-		return SLURM_ERROR;
+	if (!assoc_cond->cluster_list)
+		assoc_cond->cluster_list = list_create(slurm_destroy_char);
+
+	if (!list_count(assoc_cond->cluster_list)) {
+		char *temp = slurm_get_cluster_name();
+		if (temp)
+			list_append(assoc_cond->cluster_list, temp);
+		if (!list_count(assoc_cond->cluster_list)) {
+			error("A cluster name is required to remove usage");
+			return SLURM_ERROR;
+		}
 	}
 
 	if(!commit_check("Would you like to reset usage?")) {
