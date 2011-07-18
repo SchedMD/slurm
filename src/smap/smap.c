@@ -132,8 +132,10 @@ int main(int argc, char *argv[])
 			printf("%s", ret_str);
 			xfree(ret_str);
 		}
+#ifdef HAVE_BG
 		if (!mapset)
 			mapset = 1;
+#endif
 		_smap_exit(0);	/* Calls exit(), no return */
 	}
 	if (!params.commandline) {
