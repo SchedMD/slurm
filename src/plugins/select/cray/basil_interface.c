@@ -171,7 +171,12 @@ extern int basil_inventory(void)
 	debug("BASIL %s INVENTORY: %d/%d batch nodes available",
 	      bv_names_long[version], inv->batch_avail, inv->batch_total);
 
-	if (!inv->f->node_head || !inv->batch_avail || !inv->batch_total)
+	/* Avoid checking for inv->batch_avail here since if we are
+	   gang scheduling returning an error for a full system is
+	   probably the wrong thing to do. (the schedule() function
+	   in the slurmctld will never run ;)).
+	*/
+	if (!inv->f->node_head || !inv->batch_total)
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 
 	for (node = inv->f->node_head; node; node = node->next) {
