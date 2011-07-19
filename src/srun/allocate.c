@@ -536,6 +536,7 @@ job_desc_msg_create_from_opts (void)
 {
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	hostlist_t hl = NULL;
+	int i;
 
 	slurm_init_job_desc_msg(j);
 
@@ -638,15 +639,16 @@ job_desc_msg_create_from_opts (void)
 		j->job_id	= opt.jobid;
 #ifdef HAVE_BG
 	if (opt.geometry[0] > 0) {
-		int i;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			j->geometry[i] = opt.geometry[i];
 	}
 #endif
 
-	if (opt.conn_type != (uint16_t) NO_VAL)
-		j->conn_type[0] = opt.conn_type;
-
+	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
+		if (opt.conn_type[i] == (uint16_t)NO_VAL)
+			break;
+		j->conn_type[i] = opt.conn_type[i];
+	}
 	if (opt.reboot)
 		j->reboot = 1;
 	if (opt.no_rotate)

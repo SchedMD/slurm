@@ -149,25 +149,10 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 	return result;
 }
 
-/*
- * verify that a connection type in arg is of known form
- * returns the connection_type or -1 if not recognized
- */
-uint16_t verify_conn_type(const char *arg)
+static uint16_t _get_conn_type(char *arg, bool no_bgl)
 {
 	uint16_t len = strlen(arg);
-	bool no_bgl = 1;
-
-	if(working_cluster_rec) {
-		if(working_cluster_rec->flags & CLUSTER_FLAG_BGL)
-			no_bgl = 0;
-	} else {
-#ifdef HAVE_BGL
-		no_bgl = 0;
-#endif
-	}
-
-	if(!len) {
+	if (!len) {
 		/* no input given */
 		error("no conn-type argument given.");
 		return (uint16_t)NO_VAL;
@@ -178,8 +163,8 @@ uint16_t verify_conn_type(const char *arg)
 	else if (!strncasecmp(arg, "NAV", len))
 		return SELECT_NAV;
 	else if (no_bgl) {
-		if(!strncasecmp(arg, "HTC", len)
-		   || !strncasecmp(arg, "HTC_S", len))
+		if (!strncasecmp(arg, "HTC", len) ||
+		    !strncasecmp(arg, "HTC_S", len))
 			return SELECT_HTC_S;
 		else if (!strncasecmp(arg, "HTC_D", len))
 			return SELECT_HTC_D;
@@ -188,8 +173,46 @@ uint16_t verify_conn_type(const char *arg)
 		else if (!strncasecmp(arg, "HTC_L", len))
 			return SELECT_HTC_L;
 	}
+
 	error("invalid conn-type argument '%s' ignored.", arg);
 	return (uint16_t)NO_VAL;
+}
+
+/*
+ * verify comma separated list of connection types to array of uint16_t 
+ * connection_types or NO_VAL if not recognized
+ */
+extern void verify_conn_type(const char *arg, uint16_t *conn_type)
+{
+	bool no_bgl = 1;
+	int inx = 0;
+	char *arg_tmp = xstrdup(arg), *tok, *save_ptr = NULL;
+
+	if (working_cluster_rec) {
+		if (working_cluster_rec->flags & CLUSTER_FLAG_BGL)
+			no_bgl = 0;
+	} else {
+#ifdef HAVE_BGL
+		no_bgl = 0;
+#endif
+	}
+
+	tok = strtok_r(arg_tmp, ",", &save_ptr);
+	while (tok) {
+		if (inx >= HIGHEST_DIMENSIONS) {
+			error("too many conn-type arguments: %s", arg);
+			break;
+		}
+		conn_type[inx++] = _get_conn_type(tok, no_bgl);
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	if (inx == 0)
+		error("invalid conn-type argument '%s' ignored.", arg);
+	for ( ; inx < HIGHEST_DIMENSIONS; inx++) {
+		conn_type[inx] = (uint16_t)NO_VAL;
+	}
+
+	xfree(arg_tmp);
 }
 
 /*

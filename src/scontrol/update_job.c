@@ -681,7 +681,7 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {
-			job_msg.conn_type[0] = verify_conn_type(val);
+			verify_conn_type(val, job_msg.conn_type);
 			if(job_msg.conn_type[0] != (uint16_t)NO_VAL)
 				update_cnt++;
 		}

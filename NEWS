@@ -64,6 +64,8 @@ documents those changes that are of interest to users and admins.
     relevent if FastSchedule=0).
  -- For Cray systems with the srun2aprun wrapper, rebuild the srun man page
     identifying the srun optioins which are valid on that system.
+ -- BlueGene: Permit users to specify a separate connection type for each
+    dimension (e.g. "--conn-type=torus,mesh,torus").
 
 * Changes in SLURM 2.3.0.pre6
 =============================

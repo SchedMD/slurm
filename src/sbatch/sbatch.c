@@ -252,6 +252,7 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
+		int i;
 	extern char **environ;
 
 	if (opt.jobid_set)
@@ -313,16 +314,18 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.hold)
 		desc->priority     = 0;
 
-	if ((int)opt.geometry[0] > 0) {
-		int i;
+	if (opt.geometry[0] != (uint16_t) NO_VAL) {
 		int dims = slurmdb_setup_cluster_dims();
 
 		for (i=0; i<dims; i++)
 			desc->geometry[i] = opt.geometry[i];
 	}
 
-	if (opt.conn_type != (uint16_t) NO_VAL)
-		desc->conn_type[0] = opt.conn_type;
+	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
+		if (opt.conn_type[i] == (uint16_t)NO_VAL)
+			break;
+		desc->conn_type[i] = opt.conn_type[i];
+	}
 	if (opt.reboot)
 		desc->reboot = 1;
 	if (opt.no_rotate)

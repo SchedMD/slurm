@@ -347,11 +347,12 @@ static void _opt_default()
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 
-	for (i=0; i<HIGHEST_DIMENSIONS; i++)
+	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
+		opt.conn_type[i]    = (uint16_t) NO_VAL;
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
+	}
 	opt.reboot          = false;
 	opt.no_rotate	    = false;
-	opt.conn_type	    = (uint16_t) NO_VAL;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -575,7 +576,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_CONN_TYPE:
-		opt.conn_type = verify_conn_type(val);
+		verify_conn_type(val, opt.conn_type);
 		break;
 
 	case OPT_NO_ROTATE:
@@ -1411,7 +1412,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_CONNTYPE:
-			opt.conn_type = verify_conn_type(optarg);
+			verify_conn_type(optarg, opt.conn_type);
 			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg, 0);
@@ -2626,8 +2627,9 @@ static void _fullpath(char **filename, const char *cwd)
 
 #define tf_(b) (b == true) ? "true" : "false"
 
-static void _opt_list()
+static void _opt_list(void)
 {
+	int i;
 	char *str;
 
 	info("defined options for program `%s'", opt.progname);
@@ -2681,8 +2683,11 @@ static void _opt_list()
 	str = print_constraints();
 	info("constraints       : %s", str);
 	xfree(str);
-	if (opt.conn_type != (uint16_t) NO_VAL)
-		info("conn_type         : %u", opt.conn_type);
+	for (i = 0; i < HIGHEST_DIMENSIONS; i++) {
+		if (opt.conn_type[i] == (uint16_t) NO_VAL)
+			break;
+		info("conn_type[%d]    : %u", i, opt.conn_type[i]);
+	}
 	str = print_geometry(opt.geometry);
 	info("geometry          : %s", str);
 	xfree(str);

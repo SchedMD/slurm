@@ -571,6 +571,7 @@ static void _set_submit_dir_env(void)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
+	int i;
 #ifdef HAVE_REAL_CRAY
 	uint64_t pagg_id = job_getjid(getpid());
 	/*
@@ -652,13 +653,15 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->priority     = 0;
 #ifdef HAVE_BG
 	if (opt.geometry[0] > 0) {
-		int i;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			desc->geometry[i] = opt.geometry[i];
 	}
 #endif
-	if (opt.conn_type != (uint16_t)NO_VAL)
-		desc->conn_type[0] = opt.conn_type;
+	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
+		if (opt.conn_type[i] == (uint16_t)NO_VAL)
+			break;
+		desc->conn_type[i] = opt.conn_type[i];
+	}
 	if (opt.reboot)
 		desc->reboot = 1;
 	if (opt.no_rotate)
