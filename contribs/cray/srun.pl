@@ -670,6 +670,10 @@ Applies only when creating a job allocation.
 =item B<--alps=options>
 
 Specify the options to be passed to the aprun command.
+If conflicting native srun options and --alps options are specified, the srun
+option will take precedence for creating the job allocation (if necessary) and
+the --alps options will take precedence for launching tasks with the aprun
+command.
 
 =item B<-B> | B<--extra-node-info=sockets[:cores[:threads]]>
 
