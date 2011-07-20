@@ -9,7 +9,7 @@
 <div style="clear:both;"></div>
 </div>
 
-</div>
+</div> <!-- closes "container" -->
 
 </body>
 </html>
