@@ -58,6 +58,10 @@ documents those changes that are of interest to users and admins.
     memory limit.
  -- Fix bug in select/cons_res task distribution logic when tasks-per-node=0.
     Patch from Rod Schultz, Bull.
+ -- Restore node configuration information (CPUs, memory, etc.) for powered
+    down when slurmctld daemon restarts rather than waiting for the node to be
+    restored to service and getting the information from the node (NOTE: Only
+    relevent if FastSchedule=0).
 
 * Changes in SLURM 2.3.0.pre6
 =============================

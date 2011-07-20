@@ -430,6 +430,14 @@ extern int load_all_node_state ( bool state_only )
 						hostset_insert(hs, node_name);
 					else
 						hs = hostset_create(node_name);
+					/* Recover hardware state for powered
+					 * down nodes */
+					node_ptr->cpus          = cpus;
+					node_ptr->sockets       = sockets;
+					node_ptr->cores         = cores;
+					node_ptr->threads       = threads;
+					node_ptr->real_memory   = real_memory;
+					node_ptr->tmp_disk      = tmp_disk;
 				}
 				if (node_state & NODE_STATE_POWER_UP) {
 					if (power_save_mode) {
