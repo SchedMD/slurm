@@ -56,6 +56,8 @@ documents those changes that are of interest to users and admins.
     interactive (salloc) and batch jobs if the job has a memory limit. For Cray
     systems also set CRAY_AUTO_APRUN_OPTIONS environment variable with the
     memory limit.
+ -- Fix bug in select/cons_res task distribution logic when tasks-per-node=0.
+    Patch from Rod Schultz, Bull.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

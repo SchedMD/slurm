@@ -75,24 +75,22 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
-
-	if (job_ptr->details->ntasks_per_node == 0)
-		maxtasks = job_res->ncpus;
-	else
-		maxtasks = job_res->ncpus * job_ptr->details->ntasks_per_node;
-
+	maxtasks = job_res->ncpus;
 	avail_cpus = job_res->cpus;
-
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 
 	/* ncpus is already set the number of tasks if overcommit is used */
-	if (!job_ptr->details->overcommit
-	    && (job_ptr->details->cpus_per_task > 1))
-		maxtasks = maxtasks / job_ptr->details->cpus_per_task;
+	if (!job_ptr->details->overcommit &&
+	    (job_ptr->details->cpus_per_task > 1)) {
+		if (job_ptr->details->ntasks_per_node == 0)
+			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
+		else
+			maxtasks = job_ptr->details->ntasks_per_node;
+	}
 
 	/* Safe guard if the user didn't specified a lower number of
 	 * cpus than cpus_per_task or didn't specify the number. */
-	if(!maxtasks) {
+	if (!maxtasks) {
 		error("_compute_c_b_task_dist: request was for 0 tasks, "
 		      "setting to 1");
 		maxtasks = 1;
