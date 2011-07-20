@@ -127,10 +127,6 @@ expect {
 		exec date
 		exp_continue
 	}
-	-re "Job allocation ($number) has been revoked." {
-		exec date
-		exp_continue
-	}
 	-re "FINI" {
 		send_user "\nFAILURE: job time limit not honored\n"
 		exec date
@@ -160,10 +156,6 @@ expect {
 		exp_continue
 	}
 	-re "Job allocation time limit to be reached at" {
-		exec date
-		exp_continue
-	}
-	-re "Job allocation ($number) has been revoked." {
 		exec date
 		exp_continue
 	}
