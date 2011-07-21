@@ -88,8 +88,12 @@ def llnl_references(line):
             return lineFix
         return line
 
-def relative_reference(lineIn):
-    fullRef = "http://localhost/cgi-bin/man/man2html"
+# NOTE: Different versions of man2html generated different paths
+def relative_reference(lineIn, mode):
+    if mode == 1:
+        fullRef = "http://localhost/cgi-bin/man/man2html"
+    else:
+        fullRef = "/cgi-bin/man/man2html"
     lenRef = len(fullRef)
     lineOt = ""
     cursor = 0
@@ -185,7 +189,8 @@ for filename in files:
         #insert tags for some options
         insert_tag(html, line)
         # Make man2html links relative ones
-        line = relative_reference(line)
+        line = relative_reference(line, 1)
+        line = relative_reference(line, 2)
 
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
