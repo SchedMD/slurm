@@ -88,14 +88,23 @@ def llnl_references(line):
             return lineFix
         return line
 
-def relative_reference(lineIn, fullRef):
+def relative_reference(lineIn):
+    fullRef = "http://localhost/cgi-bin/man/man2html"
+    lenRef = len(fullRef)
     lineOt = ""
     cursor = 0
     
     posHREF = lineIn.find(fullRef,cursor)
+    if posHREF == -1:
+        return lineIn
+    if lineIn[posHREF+lenRef] != "?":
+        pos = lineIn.find("Return to Main Contents",cursor)
+        if pos != -1:
+            return ""
+        return "<i>man2html</i> "
     while posHREF != -1:
         lineOt = lineOt + lineIn[cursor:posHREF-1]
-        cursor = posHREF + len(fullRef) + 2
+        cursor = posHREF + lenRef + 3
         lineOt = lineOt + '"'
         posQuote = lineIn.find('"',cursor)
         lineOt = lineOt + lineIn[cursor:posQuote] + ".html" 
@@ -176,7 +185,7 @@ for filename in files:
         #insert tags for some options
         insert_tag(html, line)
         # Make man2html links relative ones
-        line = relative_reference(line,"http://localhost/cgi-bin/man/man2html?")
+        line = relative_reference(line)
 
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
