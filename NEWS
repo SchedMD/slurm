@@ -62,6 +62,8 @@ documents those changes that are of interest to users and admins.
     down when slurmctld daemon restarts rather than waiting for the node to be
     restored to service and getting the information from the node (NOTE: Only
     relevent if FastSchedule=0).
+ -- For Cray systems with the srun2aprun wrapper, rebuild the srun man page
+    identifying the srun optioins which are valid on that system.
 
 * Changes in SLURM 2.3.0.pre6
 =============================
