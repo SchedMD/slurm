@@ -10,6 +10,12 @@
 # set slurm_dir "/usr/local"
 # set mpicc     "/usr/local/bin/mpicc"
 #
+# If you want to have more than one test going at the same time for multiple
+# installs you can have multiple globals.local files and set the
+# SLURM_LOCAL_GLOBALS_FILE env var, and have that set to the correct
+# globals.local file for your various installs.  The file can be named anything,
+# not just globals.local.
+#
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
