@@ -112,6 +112,7 @@ extern int add_bg_record(List records, List *used_nodes,
 
 typedef struct {
 	int color;
+	int color_count;
 	char letter;
 	List nodes;
 	select_ba_request_t *request;
@@ -125,8 +126,6 @@ static int	_change_state_all_bps(char *com, int state);
 static int	_change_state_bps(char *com, int state);
 static int	_copy_allocation(char *com, List allocated_blocks);
 static int	_create_allocation(char *com, List allocated_blocks);
-static void	_delete_allocated_blocks(List allocated_blocks);
-static bool	_incr_coord(uint16_t *start, uint16_t *end, uint16_t *current);
 static int	_load_configuration(char *com, List allocated_blocks);
 static allocated_block_t *_make_request(select_ba_request_t *request);
 static void	_print_header_command(void);
@@ -138,38 +137,61 @@ static int      _set_layout(char *com);
 static int      _set_base_part_cnt(char *com);
 static int      _set_nodecard_cnt(char *com);
 
+int color_count = 0;
 char error_string[255];
 int base_part_node_cnt = 512;
 int nodecard_node_cnt = 32;
 char *layout_mode = "STATIC";
 
-static void _delete_allocated_blocks(List allocated_blocks)
+static void _set_nodes(List nodes, int color, char letter)
 {
-	bool is_small;
-	allocated_block_t *allocated_block = NULL;
+	ListIterator itr;
+	smap_node_t *smap_node;
+	ba_mp_t *ba_mp;
 
-	while ((allocated_block = list_pop(allocated_blocks)) != NULL) {
-		is_small = (allocated_block->request->conn_type[0] ==
-			    SELECT_SMALL);
-		select_g_ba_remove_block(allocated_block->nodes, is_small);
-		list_destroy(allocated_block->nodes);
-/* NOTE: delete_ba_request() is not exported, but probably should be */
-		delete_ba_request(allocated_block->request);
+	if (!nodes)
+		return;
+
+	itr = list_iterator_create(nodes);
+	while ((ba_mp = list_next(itr))) {
+		if (!ba_mp->used)
+			continue;
+		smap_node = smap_system_ptr->grid[ba_mp->index];
+		smap_node->color = color;
+		smap_node->letter = letter;
+	}
+	list_iterator_destroy(itr);
+	return;
+}
+
+static void _destroy_allocated_block(void *object)
+{
+	allocated_block_t *allocated_block = (allocated_block_t *)object;
+
+	if (allocated_block) {
+		bool is_small = (allocated_block->request->conn_type[0] >=
+				 SELECT_SMALL);
+		if (allocated_block->nodes) {
+			_set_nodes(allocated_block->nodes, 0, '.');
+			remove_block(allocated_block->nodes, is_small);
+			list_destroy(allocated_block->nodes);
+		}
+		destroy_select_ba_request(allocated_block->request);
 		xfree(allocated_block);
 	}
-	list_destroy(allocated_blocks);
 }
 
 static allocated_block_t *_make_request(select_ba_request_t *request)
 {
 	List results = list_create(NULL);
-	ListIterator results_i;
 	allocated_block_t *allocated_block = NULL;
-/* NOTE: ba_node_t is currently not exported */
-	ba_node_t *current = NULL;
 
-/* NOTE: allocate_block() is not exported,. It is not clear to me what
- * should be done here */
+#ifdef HAVE_BGQ
+	results = list_create(destroy_ba_mp);
+#else
+	results = list_create(NULL);
+#endif
+
 	if (!allocate_block(request, results)) {
 		char tmp_char[32];
 		_build_coord_string(tmp_char, sizeof(tmp_char),
@@ -177,32 +199,92 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 		memset(error_string, 0, 255);
 		sprintf(error_string, "allocate failure for size %s",
 			tmp_char);
-		return NULL;
 	} else {
-		char *pass;
-		pass = select_g_ba_passthroughs_string(request->deny_pass);
+		char *pass = ba_passthroughs_string(request->deny_pass);
 		if (pass) {
 			sprintf(error_string,"THERE ARE PASSTHROUGHS IN "
 				"THIS ALLOCATION DIM %s!!!!!!!", pass);
 			xfree(pass);
 		}
 
-		allocated_block = (allocated_block_t *)xmalloc(
-			sizeof(allocated_block_t));
+		allocated_block = xmalloc(sizeof(allocated_block_t));
 		allocated_block->request = request;
-		allocated_block->nodes = list_create(NULL);
-		results_i = list_iterator_create(results);
-		while ((current = list_next(results_i)) != NULL) {
-			list_append(allocated_block->nodes, current);
-			allocated_block->color  = current->color;
-			allocated_block->letter = current->letter;
-		}
-		list_iterator_destroy(results_i);
+		allocated_block->nodes = results;
+		allocated_block->letter = letters[color_count%62];
+		allocated_block->color  = colors[color_count%6];
+		allocated_block->color_count = color_count++;
+		_set_nodes(allocated_block->nodes,
+			   allocated_block->color,
+			   allocated_block->letter);
+		results = NULL;
 	}
-	list_destroy(results);
 
-	return(allocated_block);
+	if (results)
+		list_destroy(results);
+	return allocated_block;
 
+}
+
+static void _full_request(select_ba_request_t *request,
+			  bitstr_t *usable_mp_bitmap,
+			  List allocated_blocks)
+{
+	char *tmp_char, *tmp_char2;
+	allocated_block_t *allocated_block;
+
+	if (!strcasecmp(layout_mode,"OVERLAP"))
+		reset_ba_system(true);
+
+	if (usable_mp_bitmap)
+		ba_set_removable_mps(usable_mp_bitmap, 1);
+
+	/*
+	 * Here is where we do the allocating of the partition.
+	 * It will send a request back which we will throw into
+	 * a list just incase we change something later.
+	 */
+	if (!new_ba_request(request)) {
+		memset(error_string, 0, 255);
+		if (request->size != -1) {
+			sprintf(error_string,
+				"Problems with request for %d\n"
+				"Either you put in something "
+				"that doesn't work,\n"
+				"or we are unable to process "
+				"your request.",
+				request->size);
+		} else {
+			tmp_char = give_geo(request->geometry,
+					    params.cluster_dims, 1);
+			sprintf(error_string,
+				"Problems with request of size %s\n"
+				"Either you put in something "
+				"that doesn't work,\n"
+				"or we are unable to process "
+				"your request.",
+				tmp_char);
+			xfree(tmp_char);
+		}
+	} else {
+		if ((allocated_block = _make_request(request)) != NULL)
+			list_append(allocated_blocks, allocated_block);
+		else {
+			tmp_char = give_geo(request->geometry,
+					    params.cluster_dims, 1);
+			tmp_char2 = give_geo(request->start,
+					     params.cluster_dims, 1);
+
+			sprintf(error_string + strlen(error_string),
+				"\nGeo requested was %d (%s)\n"
+				"Start position was %s",
+				request->size, tmp_char, tmp_char2);
+			xfree(tmp_char);
+			xfree(tmp_char2);
+		}
+	}
+
+	if (usable_mp_bitmap)
+		ba_reset_all_removed_mps();
 }
 
 static int _set_layout(char *com)
@@ -288,12 +370,14 @@ static int _create_allocation(char *com, List allocated_blocks)
 {
 	int i=6, j, geoi=-1, starti=-1, i2=0, small32=-1, small128=-1;
 	int len = strlen(com);
-	allocated_block_t *allocated_block = NULL;
 	select_ba_request_t *request;
-	char fini_char, block_start[32], block_size[32];
+	char fini_char;
 	int diff=0;
 #ifndef HAVE_BGL
-	int small16=-1, small64=-1, small256=-1;
+#ifdef HAVE_BGP
+	int small16=-1;
+#endif
+	int small64=-1, small256=-1;
 #endif
 	request = (select_ba_request_t*) xmalloc(sizeof(select_ba_request_t));
 	request->rotate = false;
@@ -304,7 +388,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->small128 = 0;
 	request->deny_pass = 0;
 	request->avail_mp_bitmap = NULL;
-	for (j = 1; j < params.cluster_dims; j++) {
+	for (j = 0; j < params.cluster_dims; j++) {
 		request->geometry[j]  = (uint16_t) NO_VAL;
 		request->conn_type[j] = SELECT_TORUS;
 	}
@@ -361,19 +445,22 @@ static int _create_allocation(char *com, List allocated_blocks)
 			small128 = i;
 			i++;
 		}
-#ifndef HAVE_BGL
+#ifdef HAVE_BGP
 		else if (!strncasecmp(com+i, "16CN", 4)) {
 			small16 = 0;
 			i += 4;
-		} else if (!strncasecmp(com+i, "64CN", 4)) {
+		} else if (small16 == 0 && (com[i] >= '0' && com[i] <= '9')) {
+			small16 = i;
+			i++;
+		}
+#endif
+#ifndef HAVE_BGL
+		else if (!strncasecmp(com+i, "64CN", 4)) {
 			small64 = 0;
 			i += 4;
 		} else if (!strncasecmp(com+i, "256CN", 5)) {
 			small256 = 0;
 			i += 5;
-		} else if (small16 == 0 && (com[i] >= '0' && com[i] <= '9')) {
-			small16 = i;
-			i++;
 		} else if (small64 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small64 = i;
 			i++;
@@ -382,9 +469,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 			i++;
 		}
 #endif
-		else if ((geoi < 0) && 
-		        (((com[i] >= '0') && (com[i] <= '9')) ||
-			 ((com[i] >= 'A') && (com[i] <= 'Z')))) {
+		else if ((geoi < 0) &&
+			 (((com[i] >= '0') && (com[i] <= '9')) ||
+			  ((com[i] >= 'A') && (com[i] <= 'Z')))) {
 			geoi = i;
 			i++;
 		} else {
@@ -395,12 +482,13 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 	if (request->conn_type[0] == SELECT_SMALL) {
 		int total = 512;
-#ifndef HAVE_BGL
+#ifdef HAVE_BGP
 		if (small16 > 0) {
 			request->small16 = atoi(&com[small16]);
 			total -= request->small16 * 16;
 		}
-
+#endif
+#ifndef HAVE_BGL
 		if (small64 > 0) {
 			request->small64 = atoi(&com[small64]);
 			total -= request->small64 * 64;
@@ -443,10 +531,14 @@ static int _create_allocation(char *com, List allocated_blocks)
 			} else if (total >= 32) {
 				request->small32++;
 				total -= 32;
-			} else if (total >= 16) {
+			}
+#ifdef HAVE_BGP
+			else if (total >= 16) {
 				request->small16++;
 				total -= 16;
-			} else
+			}
+#endif
+			else
 				break;
 		}
 #else
@@ -479,8 +571,13 @@ static int _create_allocation(char *com, List allocated_blocks)
 			if (request->size)
 				break;
 			if ((com[i2] == ' ') || (i2 == (len-1))) {
+				char *p;
 				/* for size */
-				request->size = atoi(&com[geoi]);
+				request->size = strtol(&com[geoi], &p, 10);
+				if (*p == 'k' || *p == 'K') {
+					request->size *= 2; /* (1024 / 512) */
+					p++;
+				}
 				break;
 			}
 			if (com[i2]=='x') {
@@ -530,54 +627,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 			}
 		}
 	start_request:
-		if (!strcasecmp(layout_mode,"OVERLAP"))
-			select_g_ba_reset(true);
-
-		/*
-		 * Here is where we do the allocating of the partition.
-		 * It will send a request back which we will throw into
-		 * a list just incase we change something later.
-		 */
-		if (!select_g_ba_request_apply(request)) {
-			memset(error_string, 0, 255);
-			if (request->size!=-1) {
-				sprintf(error_string,
-					"Problems with request for %d\n"
-					"Either you put in something "
-					"that doesn't work,\n"
-					"or we are unable to process "
-					"your request.",
-					request->size);
-			} else {
-				_build_coord_string(block_size,
-						    sizeof(block_size),
-						    request->geometry, true);
-				sprintf(error_string,
-					"Problems with request of size %s\n"
-					"Either you put in something "
-					"that doesn't work,\n"
-					"or we are unable to process "
-					"your request.",
-					block_size);
-			}
-		} else {
-			if ((allocated_block = _make_request(request)) != NULL)
-				list_append(allocated_blocks, allocated_block);
-			else {
-				_build_coord_string(block_size,
-						    sizeof(block_size),
-						    request->geometry, true);
-				_build_coord_string(block_start,
-						    sizeof(block_start),
-						    request->start, true);
-				i2 = strlen(error_string);
-				sprintf(error_string+i2,
-					"\nGeo requested was %d (%s)\n"
-					"Start position was %s",
-					request->size, block_size,
-					block_start);
-			}
-		}
+		_full_request(request, NULL, allocated_blocks);
 	}
 	return 1;
 
@@ -641,14 +691,15 @@ static int _change_state_all_bps(char *com, int state)
 }
 static int _change_state_bps(char *com, int state)
 {
-	char start_loc[32], end_loc[32];
-	int i = 0, x;
-	uint16_t start[params.cluster_dims], end[params.cluster_dims];
-	int y=0, z=0, j=0;
+	char *host;
+	int i = 0;
+	uint16_t pos[params.cluster_dims];
 	char letter = '.';
 	char opposite = '#';
 	bool used = false;
 	char *c_state = "up";
+	hostlist_t hl = NULL;
+	int rc = 1;
 
 	if (state == NODE_STATE_DOWN) {
 		letter = '#';
@@ -657,7 +708,7 @@ static int _change_state_bps(char *com, int state)
 		c_state = "down";
 	}
 
-	while (com[i] &&
+	while (com[i] && (com[i] != '[') &&
 	       ((com[i] < '0') || (com[i] > '9')) &&
 	       ((com[i] < 'A') || (com[i] > 'Z')))
 		i++;
@@ -670,55 +721,35 @@ static int _change_state_bps(char *com, int state)
 		return 0;
 	}
 
-	for (j = 0; j < params.cluster_dims; j++) {
-		start[j] = 0;
-		end[j]   = 0;
+	if (!(hl = hostlist_create(com+i))) {
+		memset(error_string, 0, 255);
+		sprintf(error_string, "Bad hostlist given '%s'", com+i);
+		return 0;
+
 	}
-	for (j = 0; j < params.cluster_dims; i++, j++) {
-		start[j] = select_char2coord(com[i]);
-	}
-	if ((com[i] == 'x') || (com[i] == '-')) {
-		for (j = 0; j < params.cluster_dims; i++, j++) {
-			end[j] = select_char2coord(com[i]);
+
+	while ((host = hostlist_shift(hl))) {
+		ba_mp_t *ba_mp;
+		smap_node_t *smap_node;
+
+		for (i = 0; i < params.cluster_dims; i++)
+			pos[i] = select_char2coord(host[i]);
+		if (!(ba_mp = coord2ba_mp(pos))) {
+			memset(error_string, 0, 255);
+			sprintf(error_string, "Bad host given '%s'", host);
+			rc = 0;
+			break;
 		}
-	} else {
-		for (j = 0; j < params.cluster_dims; j++) {
-			end[j] = start[j];
-		}
+		ba_update_mp_state(ba_mp, state);
+		smap_node = smap_system_ptr->grid[ba_mp->index];
+		smap_node->color = 0;
+		smap_node->letter = letter;
+		smap_node->used = used;
+		free(host);
 	}
+	hostlist_destroy(hl);
 
-	for (j = 0; j < params.cluster_dims; j++) {
-		if ((start[j] < 0)      || (end[j] < 0) ||
-		    (start[j] > end[j]) || (end[j] >= dim_size[j]))
-			goto error_message;
-	}
-
-/* NOTE: We don't have direct access to ba_system_ptr, so I'm not sure
- * what to do with this logic. */
-	for(x=start[X];x<=end[X];x++) {
-		for(y=start[Y];y<=end[Y];y++) {
-			for(z=start[Z];z<=end[Z];z++) {
-				if (ba_system_ptr->grid[x][y][z].letter
-				   != opposite)
-					continue;
-				ba_system_ptr->grid[x][y][z].color = 0;
-				ba_system_ptr->grid[x][y][z].letter = letter;
-				ba_system_ptr->grid[x][y][z].used = used;
-			}
-		}
-	}
-
-	return 1;
-
-error_message:
-	memset(error_string, 0, 255);
-	_build_coord_string(start_loc, sizeof(start_loc), start, false);
-	_build_coord_string(end_loc,   sizeof(end_loc),   end,   false);
-	memset(error_string, 0, 255);
-	sprintf(error_string,
-		"Problem with base partitions, specified range was %sx%s",
-		start_loc, end_loc);
-	return 0;
+	return rc;
 }
 
 static void _build_coord_string(char *buf, int buf_len, uint16_t *coord,
@@ -744,7 +775,6 @@ static int _remove_allocation(char *com, List allocated_blocks)
 	int len = strlen(com);
 	char letter;
 
-	int color_count = 0;
 	while (com[i-1]!=' ' && i<len) {
 		i++;
 	}
@@ -759,36 +789,19 @@ static int _remove_allocation(char *com, List allocated_blocks)
 		results_i = list_iterator_create(allocated_blocks);
 		while ((allocated_block = list_next(results_i)) != NULL) {
 			if (found) {
-/* NOTE: redo_block() rebuilds a block to get proper network connections.
- * Function not currently exported, but might be able to do using other
- * exported functions. */
-				if (redo_block(allocated_block->nodes,
-					      allocated_block->
-					      request->geometry,
-					      allocated_block->
-					      request->conn_type,
-					      color_count) == SLURM_ERROR) {
-					memset(error_string, 0, 255);
-					sprintf(error_string,
-						"problem redoing the part.");
-					return 0;
-				}
 				allocated_block->letter =
 					letters[color_count%62];
 				allocated_block->color =
 					colors[color_count%6];
-
+				allocated_block->color_count = color_count++;
+				_set_nodes(allocated_block->nodes,
+					   allocated_block->color,
+					   allocated_block->letter);
 			} else if (allocated_block->letter == letter) {
 				found = 1;
-				select_g_ba_remove_block(allocated_block->nodes,
-						allocated_block->request->
-						conn_type);
-				list_destroy(allocated_block->nodes);
-				delete_ba_request(allocated_block->request);
-				list_remove(results_i);
-				color_count--;
+				color_count = allocated_block->color_count;
+				list_delete_item(results_i);
 			}
-			color_count++;
 		}
 		list_iterator_destroy(results_i);
 	}
@@ -934,41 +947,51 @@ static int _save_allocation(char *com, List allocated_blocks)
 	file_ptr = fopen(filename,"w");
 
 	if (file_ptr!=NULL) {
+		char *image_dir = NULL;
+
 		xstrcat(save_string,
 			"#\n# bluegene.conf file generated by smap\n");
 		xstrcat(save_string,
 			"# See the bluegene.conf man page for "
 			"more information\n");
 		xstrcat(save_string, "#\n");
-#ifndef HAVE_BGL
-		xstrcat(save_string, "CnloadImage="
-			"/bgsys/drivers/ppcfloor/boot/cns,"
-			"/bgsys/drivers/ppcfloor/boot/cnk\n");
-		xstrcat(save_string, "MloaderImage="
-			"/bgsys/drivers/ppcfloor/boot/uloader\n");
-		xstrcat(save_string, "IoloadImage="
-			"/bgsys/drivers/ppcfloor/boot/cns,"
-			"/bgsys/drivers/ppcfloor/boot/linux,"
-			"/bgsys/drivers/ppcfloor/boot/ramdisk\n");
-#else
-		xstrcat(save_string, "BlrtsImage="
-		       "/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts\n");
-		xstrcat(save_string, "LinuxImage="
-		       "/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf\n");
-		xstrcat(save_string, "MloaderImage="
-		       "/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts\n");
-		xstrcat(save_string, "RamDiskImage="
-		       "/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf\n");
-#endif
-		xstrcat(save_string, "BridgeAPILogFile="
-		       "/var/log/slurm/bridgeapi.log\n");
-#ifndef HAVE_BGL
+#ifdef HAVE_BGL
+		image_dir = "/bgl/BlueLight/ppcfloor/bglsys/bin";
+		xstrfmtcat(save_string, "BlrtsImage=%s/rts_hw.rts\n",
+			   image_dir);
+		xstrfmtcat(save_string, "LinuxImage=%s/zImage.elf\n",
+			   image_dir);
+		xstrfmtcat(save_string,
+			   "MloaderImage=%s/mmcs-mloader.rts\n",
+			   image_dir);
+		xstrfmtcat(save_string,
+			   "RamDiskImage=%s/ramdisk.elf\n",
+			   image_dir);
+
+		xstrcat(save_string, "Numpsets=8 # io poor\n");
+		xstrcat(save_string, "# Numpsets=64 # io rich\n");
+#elif defined HAVE_BGP
+		image_dir = "/bgsys/drivers/ppcfloor/boot";
+		xstrfmtcat(save_string, "CnloadImage=%s/cns,%s/cnk\n",
+			   image_dir, image_dir);
+		xstrfmtcat(save_string, "MloaderImage=%s/uloader\n",
+			   image_dir);
+		xstrfmtcat(save_string,
+			   "IoloadImage=%s/cns,%s/linux,%s/ramdisk\n",
+			   image_dir, image_dir, image_dir);
 		xstrcat(save_string, "Numpsets=4 # io poor\n");
 		xstrcat(save_string, "# Numpsets=32 # io rich\n");
 #else
-		xstrcat(save_string, "Numpsets=8 # io poor\n");
-		xstrcat(save_string, "# Numpsets=64 # io rich\n");
+		image_dir = "/bgsys/drivers/ppcfloor/boot";
+		xstrfmtcat(save_string, "MloaderImage=%s/uloader\n",
+			   image_dir);
+		xstrcat(save_string, "Numpsets=4 # io semi-poor\n");
+		xstrcat(save_string, "# Numpsets=16 # io rich\n");
 #endif
+
+		xstrcat(save_string, "BridgeAPILogFile="
+		       "/var/log/slurm/bridgeapi.log\n");
+
 		xstrcat(save_string, "BridgeAPIVerbose=2\n");
 
 		xstrfmtcat(save_string, "BasePartitionNodeCnt=%d\n",
@@ -983,34 +1006,45 @@ static int _save_allocation(char *com, List allocated_blocks)
 		}
 		results_i = list_iterator_create(allocated_blocks);
 		while ((allocated_block = list_next(results_i)) != NULL) {
-			if (allocated_block->request->conn_type[0] ==
-			    SELECT_TORUS)
+			select_ba_request_t *request = allocated_block->request;
+			if (request->conn_type[0] == SELECT_TORUS)
 				conn_type = "TORUS";
-			else if (allocated_block->request->conn_type
-				== SELECT_MESH)
+			else if (request->conn_type[0] == SELECT_MESH)
 				conn_type = "MESH";
 			else {
 				conn_type = "SMALL";
-#ifndef HAVE_BGL
+#ifdef HAVE_BGL
 				xstrfmtcat(extra,
-					   " 16CNBlocks=%d 32CNBlocks=%d "
-					   "64CNBlocks=%d 128CNBlocks=%d "
+					   " 32CNBlocks=%d "
+					   "128CNBlocks=%d",
+					   request->small32,
+					   request->small128);
+#elif defined HAVE_BGP
+				xstrfmtcat(extra,
+					   " 16CNBlocks=%d "
+					   "32CNBlocks=%d "
+					   "64CNBlocks=%d "
+					   "128CNBlocks=%d "
 					   "256CNBlocks=%d",
-					   allocated_block->request->small16,
-					   allocated_block->request->small32,
-					   allocated_block->request->small64,
-					   allocated_block->request->small128,
-					   allocated_block->request->small256);
+					   request->small16,
+					   request->small32,
+					   request->small64,
+					   request->small128,
+					   request->small256);
 #else
 				xstrfmtcat(extra,
-					   " 32CNBlocks=%d 128CNBlocks=%d",
-					   allocated_block->request->small32,
-					   allocated_block->request->small128);
-
+					   " 32CNBlocks=%d "
+					   "64CNBlocks=%d "
+					   "128CNBlocks=%d "
+					   "256CNBlocks=%d",
+					   request->small32,
+					   request->small64,
+					   request->small128,
+					   request->small256);
 #endif
 			}
 			xstrfmtcat(save_string, "BPs=%s Type=%s",
-				   allocated_block->request->save_name,
+				   request->save_name,
 				   conn_type);
 			if (extra) {
 				xstrfmtcat(save_string, "%s\n", extra);
@@ -1028,60 +1062,82 @@ static int _save_allocation(char *com, List allocated_blocks)
 	return 1;
 }
 
-/* increment an array, return false if can't be incremented (reached limts) */
-static bool _incr_coord(uint16_t *start, uint16_t *end, uint16_t *current)
-{
-	int i;
-
-	for (i = 0; i < params.cluster_dims; i++) {
-		current[i]++;
-		if (current[i] <= end[i])
-			return true;
-		current[i] = start[i];
-	}
-	return false;
-}
-
 static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 {
+	int rc = 1;
 #ifdef HAVE_BG
-	char *nodes = NULL, *conn_type = NULL;
-	int bp_count = 0;
+	char *nodes = NULL, *host;
 	int diff = 0;
 	int largest_diff = -1;
-	uint16_t my_coord[params.cluster_dims];
 	uint16_t start[params.cluster_dims];
 	uint16_t end[params.cluster_dims];
-	uint16_t start1[params.cluster_dims];
-	uint16_t end1[params.cluster_dims];
-	uint16_t geo[params.cluster_dims];
-	char com[255], block_size[32], block_start[32];
+	uint16_t best_start[params.cluster_dims];
 	int i, j = 0;
-	int len = 0;
+	hostlist_t hl = NULL;
+	bitstr_t *mark_bitmap = NULL;
+	char tmp_char[params.cluster_dims+1],
+		tmp_char2[params.cluster_dims+1];
+
+	memset(tmp_char, 0, sizeof(tmp_char));
+	memset(tmp_char2, 0, sizeof(tmp_char2));
 
 	for (i = 0; i < params.cluster_dims; i++) {
-		geo[i]    = 0;
-		start1[i] = -1;
-		end1[i]   = -1;
-	}
-
-	switch(blockreq->conn_type[0]) {
-	case SELECT_MESH:
-		conn_type = "mesh";
-		break;
-	case SELECT_SMALL:
-		conn_type = "small";
-		break;
-	case SELECT_TORUS:
-	default:
-		conn_type = "torus";
-		break;
+		best_start[0] = 0;
+		blockreq->geometry[i] = 0;
+		end[i] = (int16_t)-1;
 	}
 
 	nodes = blockreq->save_name;
 	if (!nodes)
 		return SLURM_SUCCESS;
-	len = strlen(nodes);
+
+	while (nodes[j] && (nodes[j] != '[') &&
+	       ((nodes[j] < '0') || (nodes[j] > '9')) &&
+	       ((nodes[j] < 'A') || (nodes[j] > 'Z')))
+		j++;
+	if (nodes[j] == '\0') {
+		snprintf(error_string, sizeof(error_string),
+			 "This block '%s' for some reason didn't contain "
+			 "any midplanes.",
+			 nodes);
+		rc = 0;
+		goto fini;
+	}
+
+	if (!(hl = hostlist_create(nodes+j))) {
+		snprintf(error_string, sizeof(error_string),
+			 "Bad hostlist given '%s'", nodes+j);
+		rc = 0;
+		goto fini;
+	}
+	/* figure out the geo and the size */
+	mark_bitmap = bit_alloc(smap_system_ptr->node_cnt);
+	while ((host = hostlist_shift(hl))) {
+		ba_mp_t *ba_mp;
+		uint16_t pos[params.cluster_dims];
+		for (i = 0; i < params.cluster_dims; i++)
+			pos[i] = select_char2coord(host[i]);
+		free(host);
+		if (!(ba_mp = coord2ba_mp(pos))) {
+			memset(error_string, 0, 255);
+			sprintf(error_string, "Bad host given '%s'", host);
+			rc = 0;
+			break;
+		}
+		bit_set(mark_bitmap, ba_mp->index);
+		for (i = 0; i < params.cluster_dims; i++) {
+			if (ba_mp->coord[i] > (int16_t)end[i]) {
+				blockreq->geometry[i]++;
+				end[i] = ba_mp->coord[i];
+			}
+		}
+	}
+	hostlist_destroy(hl);
+
+	if (!rc)
+		goto fini;
+
+	/* figure out the start pos */
 	while (nodes[j] != '\0') {
 		int mid = j   + params.cluster_dims + 1;
 		int fin = mid + params.cluster_dims + 1;
@@ -1089,73 +1145,48 @@ static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 		    ((nodes[mid] == 'x') || (nodes[mid] == '-')) &&
 		    ((nodes[fin] == ']') || (nodes[fin] == ','))) {
 			j++;	/* Skip leading '[' or ',' */
-			for (i = 0; i < params.cluster_dims; i++, j++) {
+			for (i = 0; i < params.cluster_dims; i++, j++)
 				start[i] = select_char2coord(nodes[j]);
-				my_coord[i] = start[i];
-			}
 			j++;	/* Skip middle 'x' or '-' */
 			for (i = 0; i < params.cluster_dims; i++, j++)
 				end[i] = select_char2coord(nodes[j]);
 			diff = end[0] - start[0];
-			if (diff > largest_diff) {
-				for (i = 0; i < params.cluster_dims; i++)
-					start1[i] = start[i];
-			}
-			do {
-				for (i = 0; i < params.cluster_dims; i++) {
-					if (my_coord[i] > end1[i]) {
-						end1[i] = my_coord[i];
-						geo[i] = end1[i] -start1[i] +1;
-					}
-				}
-				bp_count++;
-			} while (_incr_coord(start, end, my_coord));
-			if (nodes[j] != ',')
-				break;
-			j--;
 		} else if (((nodes[j] >= '0') && (nodes[j] <= '9')) ||
 			   ((nodes[j] >= 'A') && (nodes[j] <= 'Z'))) {
 			for (i = 0; i < params.cluster_dims; i++, j++)
 				start[i] = select_char2coord(nodes[j]);
 			diff = 0;
-			if (diff > largest_diff) {
-				for (i = 0; i < params.cluster_dims; i++)
-					start1[i] = start[i];
-			}
-			for (i = 0; i < params.cluster_dims; i++) {
-				if (start[i] > end1[i]) {
-					end1[i] = start[i];
-					geo[i] = end1[i] - start1[i] + 1;
-				}
-			}
-			bp_count++;
-			if (nodes[j] != ',')
-				break;
-			j--;
+		} else {
+			j++;
+			continue;
 		}
-		j++;
-	}
-	memset(com, 0, 255);
-	_build_coord_string(block_start, sizeof(block_start), start1, true);
-	_build_coord_string(block_size,  sizeof(block_size),  geo, true);
-	sprintf(com, "create block of size %s starting at %s "
-		"conn_type=%s small32=%d small128=%d",
-		block_size, block_start, conn_type,
-		blockreq->small32, blockreq->small128);
-	if (!strcasecmp(layout_mode, "OVERLAP"))
-		select_g_ba_reset(false);
 
-/* NOTE: set_all_bps_except() marks all other midplanes as in use. Function
- * not currently exported, but might be done using exported functions. */
-	set_all_bps_except(nodes);
-	_create_allocation(com, allocated_blocks);
-/* NOTE: reset_all_removed_bps(): Resets the virtual system to the pervious
- * state. Function not currently exported. */
-	reset_all_removed_bps();
+		if (diff > largest_diff) {
+			largest_diff = diff;
+			memcpy(best_start, start, sizeof(best_start));
+		}
+		if (nodes[j] != ',')
+			break;
+	}
+
+	if (largest_diff == -1) {
+		snprintf(error_string, sizeof(error_string),
+			 "No hostnames given here");
+		goto fini;
+	}
+
+	memcpy(blockreq->start, best_start, sizeof(blockreq->start));
+
+
+	_full_request(blockreq, mark_bitmap, allocated_blocks);
+
+fini:
+	FREE_NULL_BITMAP(mark_bitmap);
 
 #endif
-	return SLURM_SUCCESS;
+	return rc;
 }
+
 static int _load_configuration(char *com, List allocated_blocks)
 {
 	int len = strlen(com);
@@ -1166,8 +1197,10 @@ static int _load_configuration(char *com, List allocated_blocks)
 	select_ba_request_t **blockreq_array = NULL;
 	int count = 0;
 
-	_delete_allocated_blocks(allocated_blocks);
-	allocated_blocks = list_create(NULL);
+	if (allocated_blocks)
+		list_flush(allocated_blocks);
+	else
+		allocated_blocks = list_create(_destroy_allocated_block);
 
 	memset(filename, 0, 100);
 	if (len>5)
@@ -1193,7 +1226,6 @@ static int _load_configuration(char *com, List allocated_blocks)
 		sprintf(filename,"bluegene.conf");
 	}
 
-/* NOTE: bg_conf_file_options identifies options supported by bluegene.conf */
 	tbl = s_p_hashtbl_create(bg_conf_file_options);
 	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
 		memset(error_string,0,255);
@@ -1223,6 +1255,10 @@ static int _load_configuration(char *com, List allocated_blocks)
 
 		for (i = 0; i < count; i++) {
 			_add_bg_record(blockreq_array[i], allocated_blocks);
+			/* The freeing of this will happen when
+			   allocated_blocks gets freed.
+			*/
+			blockreq_array[i] = NULL;
 		}
 	}
 
@@ -1254,7 +1290,7 @@ static void _print_header_command(void)
 #endif
 	main_xcord += 10;
 
-#ifndef HAVE_BGL
+#ifdef HAVE_BGP
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "16CN");
 	main_xcord += 5;
@@ -1326,40 +1362,45 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	main_xcord += 10;
 
 	if (allocated_block->request->conn_type[0] == SELECT_SMALL) {
-#ifndef HAVE_BGL
+#ifdef HAVE_BGP
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small16);
 		main_xcord += 5;
 #endif
+
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small32);
 		main_xcord += 5;
+
 #ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small64);
 		main_xcord += 5;
 #endif
+
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small128);
 		main_xcord += 6;
+
 #ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",
 			  allocated_block->request->small256);
 		main_xcord += 6;
 #endif
-
-	} else
-#ifndef HAVE_BGL
+	} else {
+#ifdef HAVE_BGL
+		main_xcord += 11;
+#elif defined HAVE_BGP
 		main_xcord += 27;
 #else
-		main_xcord += 11;
+		main_xcord += 22;
 #endif
-
+	}
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%s",
 		  allocated_block->request->save_name);
@@ -1379,25 +1420,47 @@ void get_command(void)
 	int i = 0;
 	int count = 0;
 
-	WINDOW *command_win;
-        List allocated_blocks;
+	WINDOW *command_win = NULL;
+        List allocated_blocks = NULL;
 	ListIterator results_i;
 
-	if (params.commandline) {
+	if (params.commandline && !params.command) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
-		select_g_ba_fini();
+		ba_fini();
 		exit(0);
 	}
 
-/* NOTE: init_wires() may be removed */
-	init_wires();
-	allocated_blocks = list_create(NULL);
+	if (working_cluster_rec) {
+		char *cluster_name = slurm_get_cluster_name();
+		if (strcmp(working_cluster_rec->name, cluster_name)) {
+			xfree(cluster_name);
+			endwin();
+			printf("To use the configure option you must be on the "
+			       "cluster the configure is for.\nCross cluster "
+			       "support doesn't exist today.\nSorry for the "
+			       "inconvenince.\n");
+			ba_fini();
+			exit(0);
+		}
+		xfree(cluster_name);
+	}
 
-	text_width = text_win->_maxx;
-	text_startx = text_win->_begx;
-	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
-	echo();
+	color_count = 0;
+
+	allocated_blocks = list_create(_destroy_allocated_block);
+
+	if (params.commandline) {
+		snprintf(com, sizeof(com), "%s", params.command);
+		goto run_command;
+	} else {
+		text_width = text_win->_maxx;
+		text_startx = text_win->_begx;
+		command_win = newwin(3, text_width - 1, LINES - 4,
+				     text_startx + 1);
+		curs_set(1);
+		echo();
+	}
 
 	while (strcmp(com, "quit")) {
 		clear_window(grid_win);
@@ -1457,10 +1520,12 @@ void get_command(void)
 
 		if (!strcmp(com, "exit")) {
 			endwin();
-			_delete_allocated_blocks(allocated_blocks);
-			select_g_ba_fini();
+			if (allocated_blocks)
+				list_destroy(allocated_blocks);
+			ba_fini();
 			exit(0);
 		}
+	run_command:
 
 		if (!strcmp(com, "quit") || !strcmp(com, "\\q")) {
 			break;
@@ -1505,22 +1570,28 @@ void get_command(void)
 			_load_configuration(com, allocated_blocks);
 		} else if (!strncasecmp(com, "clear all", 9)
 			|| !strncasecmp(com, "clear", 5)) {
-			_delete_allocated_blocks(allocated_blocks);
-			allocated_blocks = list_create(NULL);
+			list_flush(allocated_blocks);
 		} else {
 			memset(error_string, 0, 255);
 			sprintf(error_string, "Unknown command '%s'",com);
 		}
+
+		if (params.commandline) {
+			ba_fini();
+			exit(1);
+		}
 	}
-	_delete_allocated_blocks(allocated_blocks);
+	if (allocated_blocks)
+		list_destroy(allocated_blocks);
 	params.display = 0;
 	noecho();
 
 	clear_window(text_win);
 	main_xcord = 1;
 	main_ycord = 1;
+	curs_set(0);
 	print_date();
 	get_job();
 	return;
 }
-#endif
+
