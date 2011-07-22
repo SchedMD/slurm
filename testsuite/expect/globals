@@ -47,8 +47,14 @@ proc cset {name value} {
 	}
 }
 
-if [file exists globals.local] {
-	source globals.local
+cset local_globals_file "./globals.local"
+
+if {[info exists env(SLURM_LOCAL_GLOBALS_FILE)]} {
+	set local_globals_file $env(SLURM_LOCAL_GLOBALS_FILE)
+}
+
+if [file exists $local_globals_file] {
+	source $local_globals_file
 }
 
 #
