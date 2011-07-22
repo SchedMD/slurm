@@ -677,7 +677,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if ((nodes_picked = select_g_step_pick_nodes(
 		     job_ptr, select_jobinfo, node_count)))
 		return nodes_picked;
-#ifdef HAVE_BG
+#ifdef HAVE_BGQ
 	*return_code = ESLURM_NODES_BUSY;
 	return NULL;
 #endif
