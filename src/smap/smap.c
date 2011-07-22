@@ -124,8 +124,6 @@ int main(int argc, char *argv[])
 	ba_init(new_node_ptr, 0);
 #endif
 
-	init_grid(new_node_ptr);
-
 	if (params.resolve) {
 		char *ret_str = resolve_mp(params.resolve);
 		if (ret_str) {
@@ -140,6 +138,9 @@ int main(int argc, char *argv[])
 	}
 	if (!params.commandline) {
 		int check_width = min_screen_width;
+
+		init_grid(new_node_ptr);
+
 		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
 
