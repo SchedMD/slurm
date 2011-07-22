@@ -1508,7 +1508,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 
 	/* do RPC call */
 	/* First set node DOWN if fatal error */
-	if (comp_msg->slurm_rc == ESLURM_ALREADY_DONE) {
+	if ((comp_msg->slurm_rc == ESLURM_ALREADY_DONE) ||
+	    (comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED)) {
 		/* race condition on job termination, not a real error */
 		info("slurmd error running JobId=%u from %s=%s: %s",
 		     comp_msg->job_id,
@@ -1528,17 +1529,13 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		dump_job = job_requeue = true;
 #endif
 	/* Handle non-fatal errors here */
-	} else if (comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR
-	    || comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED
-	    || comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) {
-		error("slurmd error %u running JobId=%u on %s=%s: %s",
-		      comp_msg->slurm_rc,
-		      comp_msg->job_id,
-		      msg_title, nodes,
+	} else if ((comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
+	           (comp_msg->slurm_rc == ESLURM_USER_ID_MISSING)) {
+		error("Slurmd error running JobId=%u on %s=%s: %s",
+		      comp_msg->job_id, msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 	} else if (comp_msg->slurm_rc != SLURM_SUCCESS) {
-		error("slurmd error %u running JobId=%u on %s=%s: %s",
-		      comp_msg->slurm_rc,
+		error("slurmd error running JobId=%u on %s=%s: %s",
 		      comp_msg->job_id,
 		      msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));

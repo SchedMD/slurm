@@ -1815,7 +1815,7 @@ _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;
 
-	info("sending REQUEST_COMPLETE_BATCH_SCRIPT");
+	info("sending REQUEST_COMPLETE_BATCH_SCRIPT, error:%u", err);
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i=0; i<=MAX_RETRY; i++) {
