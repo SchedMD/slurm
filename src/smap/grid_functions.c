@@ -40,47 +40,6 @@
 
 #include "src/smap/smap.h"
 
-extern void set_grid_inx(int start, int end, int count)
-{
-	int i;
-
-	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		if ((smap_system_ptr->grid[i]->index < start) ||
-		    (smap_system_ptr->grid[i]->index > end))
-			continue;
-		if ((smap_system_ptr->grid[i]->state == NODE_STATE_DOWN) ||
-		    (smap_system_ptr->grid[i]->state & NODE_STATE_DRAIN))
-			continue;
-
-		smap_system_ptr->grid[i]->letter = letters[count%62];
-		smap_system_ptr->grid[i]->color  = colors[count%6];
-	}
-}
-
-/* This function is only called when HAVE_BG is set */
-extern int set_grid_bg(int *start, int *end, int count, int set)
-{
-	int node_cnt = 0, i, j;
-
-	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		for (j = 0; j < params.cluster_dims; j++) {
-			if ((smap_system_ptr->grid[i]->coord[j] < start[j]) ||
-			    (smap_system_ptr->grid[i]->coord[j] > end[j]))
-				break;
-		}
-		if (j < params.cluster_dims)
-			continue;	/* outside of boundary */
-		if (set ||
-		    ((smap_system_ptr->grid[i]->letter == '.') &&
-		     (smap_system_ptr->grid[i]->letter != '#'))) {
-			smap_system_ptr->grid[i]->letter = letters[count%62];
-			smap_system_ptr->grid[i]->color  = colors[count%6];
-		}
-		node_cnt++;
-	}
-	return node_cnt;
-}
-
 static void _calc_coord_3d(int x, int y, int z, int default_y_offset,
 			   int *coord_x, int *coord_y, int *dim_size)
 {
@@ -125,12 +84,89 @@ static int *_get_cluster_dims(node_info_msg_t *node_info_ptr)
 	return dim_size;
 }
 
+static void _internal_setup_grid(int level, uint16_t *coords)
+{
+	ba_mp_t *ba_mp;
+	smap_node_t *smap_node;
+
+	if (level > params.cluster_dims)
+		return;
+
+	if (dim_size == NULL) {
+		dim_size = _get_cluster_dims(NULL);
+		if ((dim_size == NULL) || (dim_size[0] < 1))
+			fatal("Invalid system dimensions");
+	}
+
+	if (level < params.cluster_dims) {
+		for (coords[level] = 0;
+		     coords[level] < dim_size[level];
+		     coords[level]++) {
+			/* handle the outer dims here */
+			_internal_setup_grid(level+1, coords);
+		}
+		return;
+	}
+	ba_mp = coord2ba_mp(coords);
+
+	if (!ba_mp || ba_mp->index > smap_system_ptr->node_cnt)
+		return;
+	smap_node = xmalloc(sizeof(smap_node_t));
+	smap_node->coord = xmalloc(sizeof(uint16_t) * params.cluster_dims);
+
+	memcpy(smap_node->coord, coords,
+	       sizeof(uint16_t) * params.cluster_dims);
+	smap_node->index = ba_mp->index;
+	smap_system_ptr->grid[smap_node->index] = smap_node;
+}
+
+extern void set_grid_inx(int start, int end, int count)
+{
+	int i;
+
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		if ((smap_system_ptr->grid[i]->index < start) ||
+		    (smap_system_ptr->grid[i]->index > end))
+			continue;
+		if ((smap_system_ptr->grid[i]->state == NODE_STATE_DOWN) ||
+		    (smap_system_ptr->grid[i]->state & NODE_STATE_DRAIN))
+			continue;
+
+		smap_system_ptr->grid[i]->letter = letters[count%62];
+		smap_system_ptr->grid[i]->color  = colors[count%6];
+	}
+}
+
+/* This function is only called when HAVE_BG is set */
+extern int set_grid_bg(int *start, int *end, int count, int set)
+{
+	int node_cnt = 0, i, j;
+
+	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		for (j = 0; j < params.cluster_dims; j++) {
+			if ((smap_system_ptr->grid[i]->coord[j] < start[j]) ||
+			    (smap_system_ptr->grid[i]->coord[j] > end[j]))
+				break;
+		}
+		if (j < params.cluster_dims)
+			continue;	/* outside of boundary */
+		if (set ||
+		    ((smap_system_ptr->grid[i]->letter == '.') &&
+		     (smap_system_ptr->grid[i]->letter != '#'))) {
+			smap_system_ptr->grid[i]->letter = letters[count%62];
+			smap_system_ptr->grid[i]->color  = colors[count%6];
+		}
+		node_cnt++;
+	}
+	return node_cnt;
+}
+
 /* Build the smap_system_ptr structure from the node records */
 extern void init_grid(node_info_msg_t *node_info_ptr)
 {
 	int i, j, len;
 	int default_y_offset = 0;
-	smap_node_t *node_ptr;
+	smap_node_t *smap_node;
 
 	if (dim_size == NULL) {
 		dim_size = _get_cluster_dims(node_info_ptr);
@@ -139,70 +175,81 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 	}
 
 	smap_system_ptr = xmalloc(sizeof(smap_system_t));
-	smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
-				      node_info_ptr->record_count);
-	for (i = 0; i < node_info_ptr->record_count; i++) {
-		if ((node_info_ptr->node_array[i].name == NULL) ||
-		    (node_info_ptr->node_array[i].name[0] == '\0'))
-			continue;
-		node_ptr = xmalloc(sizeof(smap_node_t));
-		len = strlen(node_info_ptr->node_array[i].name);
-		if (params.cluster_dims == 1) {
-			node_ptr->coord = xmalloc(sizeof(uint16_t));
-			j = len - 1;
-			while ((node_info_ptr->node_array[i].name[j] >= '0') &&
-			       (node_info_ptr->node_array[i].name[j] <= '9')) {
-				node_ptr->coord[0] *= 10;
-				node_ptr->coord[0] +=
-					node_info_ptr->node_array[i].name[j]
-					- '0';
-				j++;
-			}
-		} else if (params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
-			int len_a, len_h;
-			len_a = strlen(node_info_ptr->node_array[i].node_addr);
-			len_h = strlen(node_info_ptr->node_array[i].
-				       node_hostname);
-			if (len_a < params.cluster_dims) {
-				printf("Invalid node addr %s\n",
-				       node_info_ptr->node_array[i].node_addr);
-				xfree(node_ptr);
+
+	if (!node_info_ptr) {
+		uint16_t coords[params.cluster_dims];
+
+		smap_system_ptr->node_cnt = 1;
+		for (i=0; i<params.cluster_dims; i++)
+			smap_system_ptr->node_cnt *= dim_size[i];
+		smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
+						smap_system_ptr->node_cnt);
+		_internal_setup_grid(0, coords);
+	} else {
+		smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
+						node_info_ptr->record_count);
+		for (i = 0; i < node_info_ptr->record_count; i++) {
+			node_info_t *node_ptr = &node_info_ptr->node_array[i];
+
+			if ((node_ptr->name == NULL) ||
+			    (node_ptr->name[0] == '\0'))
 				continue;
+
+			smap_node = xmalloc(sizeof(smap_node_t));
+
+			len = strlen(node_ptr->name);
+			if (params.cluster_dims == 1) {
+				smap_node->coord = xmalloc(sizeof(uint16_t));
+				j = len - 1;
+				while ((node_ptr->name[j] >= '0') &&
+				       (node_ptr->name[j] <= '9')) {
+					smap_node->coord[0] *= 10;
+					smap_node->coord[0] +=
+						node_ptr->name[j] - '0';
+					j++;
+				}
+			} else if (params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
+				int len_a, len_h;
+				len_a = strlen(node_ptr->node_addr);
+				len_h = strlen(node_ptr->node_hostname);
+				if (len_a < params.cluster_dims) {
+					printf("Invalid node addr %s\n",
+					       node_ptr->node_addr);
+					xfree(smap_node);
+					continue;
+				}
+				if (len_h < 1) {
+					printf("Invalid node hostname %s\n",
+					       node_ptr->node_hostname);
+					xfree(smap_node);
+					continue;
+				}
+				smap_node->coord = xmalloc(sizeof(uint16_t) *
+							   params.cluster_dims);
+				len_a -= params.cluster_dims;
+				for (j = 0; j < params.cluster_dims; j++) {
+					smap_node->coord[j] = select_char2coord(
+						node_ptr->node_addr[len_a+j]);
+				}
+			} else {
+				len -= params.cluster_dims;
+				if (len < 0) {
+					printf("Invalid node name: %s.\n",
+					       node_ptr->name);
+					xfree(smap_node);
+					continue;
+				}
+				smap_node->coord = xmalloc(sizeof(uint16_t) *
+							   params.cluster_dims);
+				for (j = 0; j < params.cluster_dims; j++) {
+					smap_node->coord[j] = select_char2coord(
+						node_ptr->name[len+j]);
+				}
 			}
-			if (len_h < 1) {
-				printf("Invalid node hostname %s\n",
-				       node_info_ptr->node_array[i].
-				       node_hostname);
-				xfree(node_ptr);
-				continue;
-			}
-			node_ptr->coord = xmalloc(sizeof(uint16_t) *
-						  params.cluster_dims);
-			len_a -= params.cluster_dims;
-			for (j = 0; j < params.cluster_dims; j++) {
-				node_ptr->coord[j] = select_char2coord(
-					node_info_ptr->node_array[i].
-					node_addr[len_a+j]);
-			}
-		} else {
-			len -= params.cluster_dims;
-			if (len < 0) {
-				printf("Invalid node name: %s.\n",
-				       node_info_ptr->node_array[i].name);
-				xfree(node_ptr);
-				continue;
-			}
-			node_ptr->coord = xmalloc(sizeof(uint16_t) *
-						  params.cluster_dims);
-			for (j = 0; j < params.cluster_dims; j++) {
-				node_ptr->coord[j] = select_char2coord(
-					node_info_ptr->node_array[i].
-					name[len+j]);
-			}
+			smap_node->index = i;
+			smap_system_ptr->grid[i] = smap_node;
+			smap_system_ptr->node_cnt++;
 		}
-		node_ptr->index = i;
-		smap_system_ptr->grid[i] = node_ptr;
-		smap_system_ptr->node_cnt++;
 	}
 
 	if (params.cluster_dims == 3) {
@@ -213,38 +260,38 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 				   (dim_size[2] - dim_size[3]);
 	}
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		node_ptr = smap_system_ptr->grid[i];
+		smap_node = smap_system_ptr->grid[i];
 		if (params.cluster_dims == 1) {
-			node_ptr->grid_xcord = i + 1;
-			node_ptr->grid_ycord = 1;
+			smap_node->grid_xcord = i + 1;
+			smap_node->grid_ycord = 1;
 		} else if (params.cluster_dims == 2) {
-			node_ptr->grid_xcord = node_ptr->coord[0] + 1;
-			node_ptr->grid_ycord = dim_size[1] - node_ptr->coord[1];
+			smap_node->grid_xcord = smap_node->coord[0] + 1;
+			smap_node->grid_ycord = dim_size[1] - smap_node->coord[1];
 		} else if (params.cluster_dims == 3) {
-			_calc_coord_3d(node_ptr->coord[0], node_ptr->coord[1],
-				       node_ptr->coord[2],
+			_calc_coord_3d(smap_node->coord[0], smap_node->coord[1],
+				       smap_node->coord[2],
 				       default_y_offset,
-				       &node_ptr->grid_xcord,
-				       &node_ptr->grid_ycord, dim_size);
+				       &smap_node->grid_xcord,
+				       &smap_node->grid_ycord, dim_size);
 		} else if (params.cluster_dims == 4) {
-			_calc_coord_4d(node_ptr->coord[0], node_ptr->coord[1],
-				       node_ptr->coord[2], node_ptr->coord[3],
+			_calc_coord_4d(smap_node->coord[0], smap_node->coord[1],
+				       smap_node->coord[2], smap_node->coord[3],
 				       default_y_offset,
-				       &node_ptr->grid_xcord,
-				       &node_ptr->grid_ycord, dim_size);
+				       &smap_node->grid_xcord,
+				       &smap_node->grid_ycord, dim_size);
 		}
 	}
 }
 
 extern void clear_grid(void)
 {
-	smap_node_t *node_ptr;
+	smap_node_t *smap_node;
 	int i;
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		node_ptr = smap_system_ptr->grid[i];
-		node_ptr->color = COLOR_WHITE;
-		node_ptr->letter = '.';
+		smap_node = smap_system_ptr->grid[i];
+		smap_node->color = COLOR_WHITE;
+		smap_node->letter = '.';
 	}
 }
 
@@ -256,9 +303,9 @@ extern void free_grid(void)
 		return;
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		smap_node_t *node_ptr = smap_system_ptr->grid[i];
-		xfree(node_ptr->coord);
-		xfree(node_ptr);
+		smap_node_t *smap_node = smap_system_ptr->grid[i];
+		xfree(smap_node->coord);
+		xfree(smap_node);
 	}
 	xfree(smap_system_ptr->grid);
 	xfree(smap_system_ptr);
