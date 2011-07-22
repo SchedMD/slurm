@@ -120,8 +120,6 @@ typedef struct {
 
 static int	_add_bg_record(select_ba_request_t *blockreq,
 			       List allocated_blocks);
-static void	_build_coord_string(char *buf, int buf_len, uint16_t *coord,
-				    bool x);
 static int	_change_state_all_bps(char *com, int state);
 static int	_change_state_bps(char *com, int state);
 static int	_copy_allocation(char *com, List allocated_blocks);
@@ -192,14 +190,7 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 	results = list_create(NULL);
 #endif
 
-	if (!allocate_block(request, results)) {
-		char tmp_char[32];
-		_build_coord_string(tmp_char, sizeof(tmp_char),
-				    request->geometry, true);
-		memset(error_string, 0, 255);
-		sprintf(error_string, "allocate failure for size %s",
-			tmp_char);
-	} else {
+	if (allocate_block(request, results)) {
 		char *pass = ba_passthroughs_string(request->deny_pass);
 		if (pass) {
 			sprintf(error_string,"THERE ARE PASSTHROUGHS IN "
@@ -225,12 +216,13 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 
 }
 
-static void _full_request(select_ba_request_t *request,
-			  bitstr_t *usable_mp_bitmap,
-			  List allocated_blocks)
+static int _full_request(select_ba_request_t *request,
+			 bitstr_t *usable_mp_bitmap,
+			 List allocated_blocks)
 {
-	char *tmp_char, *tmp_char2;
+	char *tmp_char = NULL, *tmp_char2 = NULL;
 	allocated_block_t *allocated_block;
+	int rc = 1;
 
 	if (!strcasecmp(layout_mode,"OVERLAP"))
 		reset_ba_system(true);
@@ -253,6 +245,7 @@ static void _full_request(select_ba_request_t *request,
 				"or we are unable to process "
 				"your request.",
 				request->size);
+			rc = 0;
 		} else {
 			tmp_char = give_geo(request->geometry,
 					    params.cluster_dims, 1);
@@ -264,27 +257,43 @@ static void _full_request(select_ba_request_t *request,
 				"your request.",
 				tmp_char);
 			xfree(tmp_char);
+			rc = 0;
 		}
 	} else {
 		if ((allocated_block = _make_request(request)) != NULL)
 			list_append(allocated_blocks, allocated_block);
 		else {
-			tmp_char = give_geo(request->geometry,
-					    params.cluster_dims, 1);
+			if (request->geometry[0] != (uint16_t)NO_VAL)
+				tmp_char = give_geo(request->geometry,
+						    params.cluster_dims, 1);
 			tmp_char2 = give_geo(request->start,
 					     params.cluster_dims, 1);
 
+			memset(error_string, 0, 255);
+			sprintf(error_string,
+				"allocate failure\nSize requested "
+				"was %d MidPlanes\n",
+				request->size);
+			if (tmp_char) {
+				sprintf(error_string + strlen(error_string),
+					"Geo requested was %s\n", tmp_char);
+				xfree(tmp_char);
+			} else {
+				sprintf(error_string + strlen(error_string),
+					"No geometry could be laid out "
+					"for that size\n");
+			}
 			sprintf(error_string + strlen(error_string),
-				"\nGeo requested was %d (%s)\n"
-				"Start position was %s",
-				request->size, tmp_char, tmp_char2);
-			xfree(tmp_char);
+				"Start position was %s", tmp_char2);
 			xfree(tmp_char2);
+			rc = 0;
 		}
 	}
 
 	if (usable_mp_bitmap)
 		ba_reset_all_removed_mps();
+
+	return rc;
 }
 
 static int _set_layout(char *com)
@@ -627,11 +636,14 @@ static int _create_allocation(char *com, List allocated_blocks)
 			}
 		}
 	start_request:
-		_full_request(request, NULL, allocated_blocks);
+		if(!_full_request(request, NULL, allocated_blocks))
+			destroy_select_ba_request(request);
+
 	}
 	return 1;
 
 geo_error_message:
+	destroy_select_ba_request(request);
 	memset(error_string, 0, 255);
 	sprintf(error_string,
 		"Error in geo dimension specified, please re-enter");
@@ -751,21 +763,6 @@ static int _change_state_bps(char *com, int state)
 
 	return rc;
 }
-
-static void _build_coord_string(char *buf, int buf_len, uint16_t *coord,
-				bool x)
-{
-	int i;
-
-	xassert(params.cluster_dims < buf_len);
-	for (i = 0; i < params.cluster_dims; i++) {
-		if (x && (i > 0))
-			buf[i++] = 'x';
-		buf[i] = alpha_num[coord[i] - 1];
-	}
-	buf[i] = '\0';
-}
-
 
 static int _remove_allocation(char *com, List allocated_blocks)
 {
@@ -1178,8 +1175,8 @@ static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 	memcpy(blockreq->start, best_start, sizeof(blockreq->start));
 
 
-	_full_request(blockreq, mark_bitmap, allocated_blocks);
-
+	if(!_full_request(blockreq, mark_bitmap, allocated_blocks))
+		destroy_select_ba_request(blockreq);
 fini:
 	FREE_NULL_BITMAP(mark_bitmap);
 
