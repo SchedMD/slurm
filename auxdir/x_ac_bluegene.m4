@@ -15,6 +15,7 @@
 
 AC_DEFUN([X_AC_BGL],
 [
+	ac_real_bluegene_loaded=no
 	ac_bluegene_loaded=no
 
    	AC_ARG_WITH(db2-dir, AS_HELP_STRING(--with-db2-dir=PATH,Specify path to parent directory of DB2 library), [ trydb2dir=$withval ])
@@ -109,6 +110,7 @@ AC_DEFUN([X_AC_BGL],
      		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
+		ac_real_bluegene_loaded=yes
   	fi
 
    	AC_SUBST(BG_INCLUDES)
@@ -193,7 +195,8 @@ AC_DEFUN([X_AC_BGP],
      		AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
-   	fi
+		ac_real_bluegene_loaded=yes
+	fi
 
    	AC_SUBST(BG_INCLUDES)
 ])
@@ -297,8 +300,9 @@ AC_DEFUN([X_AC_BGQ],
      		# AC_DEFINE_UNQUOTED(BG_SERIAL, "$bg_serial", [Define the BG_SERIAL value])
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
+		ac_real_bluegene_loaded=yes
 		ac_bgq_loaded=yes
-   	fi
+	fi
 
    	AC_SUBST(BG_INCLUDES)
    	AC_SUBST(BG_LDFLAGS)

@@ -39,6 +39,11 @@ dnl so handle it later.
 AM_CONDITIONAL(BG_L_P_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BG_L_P_LOADED)
 
+dnl ok now check if We are on a real L or P system, (test if to build srun
+dnl or not.  If we are emulating things we should build it.
+AM_CONDITIONAL(REAL_BG_L_P_LOADED, test "x$ac_real_bluegene_loaded" = "xyes")
+AC_SUBST(REAL_BG_L_P_LOADED)
+
 X_AC_BGQ
 
 dnl We need to know if this is a Q system
