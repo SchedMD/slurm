@@ -89,8 +89,10 @@ def llnl_references(line):
         return line
 
 def relative_reference(lineIn):
-    fullRef = "http://localhost/cgi-bin/man/man2html"
+    fullRef = "/cgi-bin/man/man2html"
     lenRef = len(fullRef)
+    refAnchor="<A HREF=";
+    lenRefAnchor = len(refAnchor)
     lineOt = ""
     cursor = 0
     
@@ -103,7 +105,8 @@ def relative_reference(lineIn):
             return ""
         return "<i>man2html</i> "
     while posHREF != -1:
-        lineOt = lineOt + lineIn[cursor:posHREF-1]
+        posRefAnchor = lineIn.find(refAnchor,cursor)
+        lineOt = lineOt + lineIn[cursor:posRefAnchor+lenRefAnchor]
         cursor = posHREF + lenRef + 3
         lineOt = lineOt + '"'
         posQuote = lineIn.find('"',cursor)
