@@ -266,7 +266,8 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 			smap_node->grid_ycord = 1;
 		} else if (params.cluster_dims == 2) {
 			smap_node->grid_xcord = smap_node->coord[0] + 1;
-			smap_node->grid_ycord = dim_size[1] - smap_node->coord[1];
+			smap_node->grid_ycord =
+				dim_size[1] - smap_node->coord[1];
 		} else if (params.cluster_dims == 3) {
 			_calc_coord_3d(smap_node->coord[0], smap_node->coord[1],
 				       smap_node->coord[2],
