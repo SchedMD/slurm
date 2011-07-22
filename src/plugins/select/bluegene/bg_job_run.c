@@ -736,7 +736,7 @@ extern int start_job(struct job_record *job_ptr)
 				   SELECT_JOBDATA_BLRTS_IMAGE,
 				   bg_action_ptr->blrtsimage);
 	}
-# elif HAVE_BGP
+# elif defined HAVE_BGP
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_CONN_TYPE,
 			   &(bg_action_ptr->conn_type));

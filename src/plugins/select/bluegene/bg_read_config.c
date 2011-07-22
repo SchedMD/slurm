@@ -53,7 +53,7 @@ s_p_options_t bg_conf_file_options[] = {
 	{"AltBlrtsImage", S_P_ARRAY, parse_image, NULL},
 	{"AltLinuxImage", S_P_ARRAY, parse_image, NULL},
 	{"AltRamDiskImage", S_P_ARRAY, parse_image, NULL},
-#elif HAVE_BGP
+#elif defined HAVE_BGP
 	{"CnloadImage", S_P_STRING},
 	{"IoloadImage", S_P_STRING},
 	{"AltCnloadImage", S_P_ARRAY, parse_image, NULL},
