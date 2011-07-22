@@ -633,7 +633,11 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_CLUSTERS:
 		if (!(opt.clusters = slurmdb_get_info_cluster((char *)val))) {
-			error("'%s' invalid entry for --clusters", val);
+			error("'%s' can't be reached now, "
+			      "or it is an invalid entry for "
+			      "--cluster.  Use 'sacctmgr --list "
+			      "cluster' to see avaliable clusters.",
+			      optarg);
 			exit(1);
 		}
 		break;
@@ -1228,7 +1232,10 @@ static void _set_options(int argc, char **argv)
 				list_destroy(opt.clusters);
 			if (!(opt.clusters =
 			      slurmdb_get_info_cluster(optarg))) {
-				error("'%s' invalid entry for --clusters",
+				error("'%s' can't be reached now, "
+				      "or it is an invalid entry for "
+				      "--cluster.  Use 'sacctmgr --list "
+				      "cluster' to see avaliable clusters.",
 				      optarg);
 				exit(1);
 			}

@@ -136,7 +136,10 @@ extern void parse_command_line(int argc, char *argv[])
 				list_destroy(params.clusters);
 			if(!(params.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
-				error("'%s' invalid entry for --cluster",
+				error("'%s' can't be reached now, "
+				      "or it is an invalid entry for "
+				      "--cluster.  Use 'sacctmgr --list "
+				      "cluster' to see avaliable clusters.",
 				      optarg);
 				exit(1);
 			}

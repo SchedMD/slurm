@@ -369,7 +369,10 @@ static void _opt_args(int argc, char **argv)
 				list_destroy(opt.clusters);
 			opt.clusters = slurmdb_get_info_cluster(optarg);
 			if (!opt.clusters) {
-				error("'%s' invalid entry for --cluster",
+				error("'%s' can't be reached now, "
+				      "or it is an invalid entry for "
+				      "--cluster.  Use 'sacctmgr --list "
+				      "cluster' to see avaliable clusters.",
 				      optarg);
 				exit(1);
 			}

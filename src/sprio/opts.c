@@ -82,7 +82,11 @@ static void _opt_env(void)
 
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
 		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
-			error("'%s' invalid entry for SLURM_CLUSTERS", env_val);
+			error("'%s' can't be reached now, "
+			      "or it is an invalid entry for "
+			      "SLURM_CLUSTERS.  Use 'sacctmgr --list "
+			      "cluster' to see avaliable clusters.",
+			      env_val);
 			exit(1);
 		}
 	}
@@ -142,7 +146,10 @@ parse_command_line( int argc, char* argv[] )
 				list_destroy(params.clusters);
 			if(!(params.clusters =
 			     slurmdb_get_info_cluster(optarg))) {
-				error("'%s' invalid entry for --cluster",
+				error("'%s' can't be reached now, "
+				      "or it is an invalid entry for "
+				      "--cluster.  Use 'sacctmgr --list "
+				      "cluster' to see avaliable clusters.",
 				      optarg);
 				exit(1);
 			}

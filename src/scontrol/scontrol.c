@@ -121,7 +121,11 @@ main (int argc, char *argv[])
 		all_flag= 1;
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
 		if (!(clusters = slurmdb_get_info_cluster(env_val))) {
-			error("'%s' invalid entry for SLURM_CLUSTERS", env_val);
+			error("'%s' can't be reached now, "
+			      "or it is an invalid entry for "
+			      "SLURM_CLUSTERS.  Use 'sacctmgr --list "
+			      "cluster' to see avaliable clusters.",
+			      env_val);
 			exit(1);
 		}
 		working_cluster_rec = list_peek(clusters);
@@ -156,7 +160,10 @@ main (int argc, char *argv[])
 				working_cluster_rec = NULL;
 			}
 			if (!(clusters = slurmdb_get_info_cluster(optarg))) {
-				error("'%s' invalid entry for --cluster",
+				error("'%s' can't be reached now, "
+				      "or it is an invalid entry for "
+				      "--cluster.  Use 'sacctmgr --list "
+				      "cluster' to see avaliable clusters.",
 				      optarg);
 				exit(1);
 			}
@@ -596,7 +603,10 @@ _process_command (int argc, char *argv[])
 		}
 		if (argc >= 2) {
 			if (!(clusters = slurmdb_get_info_cluster(argv[1]))) {
-				error("'%s' invalid entry for --cluster",
+				error("'%s' can't be reached now, "
+				      "or it is an invalid entry for "
+				      "--cluster.  Use 'sacctmgr --list "
+				      "cluster' to see avaliable clusters.",
 				      optarg);
 				exit(1);
 			}
