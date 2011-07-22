@@ -295,6 +295,9 @@ extern void clear_grid(void)
 	smap_node_t *smap_node;
 	int i;
 
+	if (!smap_system_ptr || !smap_system_ptr->grid)
+		return;
+
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		smap_node = smap_system_ptr->grid[i];
 		smap_node->color = COLOR_WHITE;
@@ -306,15 +309,17 @@ extern void free_grid(void)
 {
 	int i;
 
-	if (smap_system_ptr == NULL)
+	if (!smap_system_ptr)
 		return;
 
-	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
-		smap_node_t *smap_node = smap_system_ptr->grid[i];
-		xfree(smap_node->coord);
-		xfree(smap_node);
+	if (smap_system_ptr->grid) {
+		for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+			smap_node_t *smap_node = smap_system_ptr->grid[i];
+			xfree(smap_node->coord);
+			xfree(smap_node);
+		}
+		xfree(smap_system_ptr->grid);
 	}
-	xfree(smap_system_ptr->grid);
 	xfree(smap_system_ptr);
 }
 
