@@ -634,6 +634,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		 * requested */
 		for (t = 0; t < (*hw_threads); t++) {
 			uint16_t bit = new_p * (*hw_threads) + t;
+			bit %= conf->block_map_size;
 			bit_set(hw_map, bit);
 		}
 	}
