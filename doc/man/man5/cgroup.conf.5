@@ -136,6 +136,18 @@ If configured to "yes" then constrain the job's allowed devices based on GRES
 allocated resources. It uses the devices subsystem for that.
 The default value is "no".
 
+.TP
+\fBAllowedDevicesFile\fR=<path_to_allowed_devices_file>
+If the ConstrainDevices field is set to "yes" then this file has to be used to declare 
+the devices that need to be allowed by default for all the jobs. The current implementation 
+of cgroup devices subsystem works as a whitelist of entries, which means that in order to
+isolate the access of a job upon particular devices we need to allow the access on all
+the devices, supported by default and then deny on those that the job does not have the 
+permission to use. The default value is "/etc/slurm/cgroup_allowed_devices_file.conf". The syntax of 
+the file accepts one device per line and it permits lines like /dev/sda* or /dev/cpu/*/*. 
+See also an example of this file in etc/allowed_devices_file.conf.example.
+
+
 .SH "EXAMPLE"
 .LP
 .br
