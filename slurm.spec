@@ -419,6 +419,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 %endif
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
+install -D -m755 etc/cgroup_allowed_devices_file.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_common.example
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_freezer
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_cpuset
@@ -587,6 +588,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/slurm/src
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/cgroup.conf.example
+%config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
 %config %{_sysconfdir}/cgroup.release_common.example
 %config (noreplace) %{_sysconfdir}/cgroup/release_freezer
 %config (noreplace) %{_sysconfdir}/cgroup/release_cpuset

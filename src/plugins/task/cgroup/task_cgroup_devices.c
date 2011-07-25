@@ -467,15 +467,14 @@ static int read_allowed_devices_file(char **allowed_devices)
 {
 	
 	FILE *file = fopen (cgroup_allowed_devices_file, "r" );
-	int i, j, l, num_lines;
+	int i, l, num_lines = 0;
 	char line[256];
 	glob_t globbuf;
 
 	for( i=0; i<256; i++ )
 		line[i] = '\0';
 
-	if ( file != NULL ){ 
-		num_lines=0; 
+	if ( file != NULL ){
 		while ( fgets ( line, sizeof line, file ) != NULL ){
 			line[strlen(line)-1] = '\0';
 			
@@ -484,7 +483,7 @@ static int read_allowed_devices_file(char **allowed_devices)
 				debug3("Device %s does not exist", line);	
 			}else{
 				for(l=0; l < globbuf.gl_pathc; l++){
-					allowed_devices[num_lines] = 
+					allowed_devices[num_lines] =
 						xstrdup(globbuf.gl_pathv[l]);
 					num_lines++;
 				}
