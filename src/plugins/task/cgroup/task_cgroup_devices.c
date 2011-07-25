@@ -157,7 +157,7 @@ extern int task_cgroup_devices_create(slurmd_job_t *job)
 	
 	int *gres_bit_alloc = NULL;
 	int *gres_step_bit_alloc = NULL;
-	int *gres_count;
+	int *gres_count = NULL;
 
 	xcgroup_t devices_cg;
 	uint32_t jobid = job->jobid;
@@ -237,7 +237,7 @@ extern int task_cgroup_devices_create(slurmd_job_t *job)
 	  */
 	_calc_device_major(dev_path,gres_cgroup,gres_conf_lines);
 
-	gres_count = (int*)xmalloc ( sizeof (int) );
+	gres_count = xmalloc ( sizeof (int) * (gres_conf_lines) );
 
 	/* 
 	 * calculate the number of gres.conf records for each gres name
