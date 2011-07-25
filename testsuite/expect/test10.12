@@ -54,7 +54,7 @@ if {[file exists $smap] == 0} {
 #
 spawn $smap --resolve 000
 expect {
-	-re "Must be physically on a BG" {
+	-re "Must be physically on a BlueGene" {
 		set non_bg 1
 		exp_continue;
 	}
@@ -72,7 +72,7 @@ expect {
 	}
 }
 if {$non_bg != 0} {
-	send_user "\nWARNING: This test is only valid on a Blue Gene system Service Node\n"
+	send_user "\nWARNING: This test is only valid on a BlueGene system Service Node\n"
 	exit 0
 }
 if {$check != 1} {

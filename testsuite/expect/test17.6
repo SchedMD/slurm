@@ -37,10 +37,16 @@ set test_id     "17.6"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
-set task_cnt    2
 set tasks       0
 
 print_header $test_id
+
+if {[test_bluegene]} {
+	# We never launch more than one task on emulated Bluegene
+	set task_cnt    1
+} else {
+	set task_cnt    2
+}
 
 #
 # Submit a slurm job that will execute 'id' on $task_cnt tasks (or try anyway)
