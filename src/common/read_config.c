@@ -531,7 +531,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		}
 
 		if (default_nodename_tbl != NULL) {
-			s_p_hashtbl_merge(tbl, default_frontend_tbl);
+			s_p_hashtbl_merge(tbl, default_nodename_tbl);
 			s_p_hashtbl_destroy(default_nodename_tbl);
 		}
 		default_nodename_tbl = tbl;
