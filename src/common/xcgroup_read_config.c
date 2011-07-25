@@ -84,6 +84,7 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		slurm_cgroup_conf->memlimit_enforcement = 0 ;
 		slurm_cgroup_conf->memlimit_threshold = 100 ;
 		slurm_cgroup_conf->constrain_devices = false ;
+		xfree(slurm_cgroup_conf->allowed_devices_file);
 	}
 }
 
@@ -108,6 +109,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
 		{"MemoryLimitThreshold", S_P_UINT32},
 		{"ConstrainDevices", S_P_BOOLEAN},
+		{"AllowedDevicesFile", S_P_STRING},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
@@ -179,6 +181,12 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_devices,
 				     "ConstrainDevices", tbl))
 			slurm_cgroup_conf->constrain_devices = false;
+
+		s_p_get_string(&slurm_cgroup_conf->allowed_devices_file,
+                               "AllowedDevicesFile", tbl);
+                if (! slurm_cgroup_conf->allowed_devices_file)
+                        slurm_cgroup_conf->allowed_devices_file =
+                                xstrdup("/etc/slurm/cgroup_allowed_devices_file.conf");
 
 		s_p_hashtbl_destroy(tbl);
 	}

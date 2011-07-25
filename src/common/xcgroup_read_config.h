@@ -71,6 +71,7 @@ typedef struct slurm_cgroup_conf {
 	uint32_t  memlimit_threshold;
 
 	bool      constrain_devices;
+	char *    allowed_devices_file;
 
 } slurm_cgroup_conf_t;
 
