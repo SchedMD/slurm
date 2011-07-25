@@ -206,10 +206,18 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 
 	/* now build the individual node structures */
 	while ((alias = hostlist_shift(alias_list))) {
-		if (hostname_count)
+		if (hostname_count > 0) {
+			hostname_count--;
+			if (hostname)
+				free(hostname);
 			hostname = hostlist_shift(hostname_list);
-		if (address_count)
+		}
+		if (address_count > 0) {
+			address_count--;
+			if (address)
+				free(address);
 			address = hostlist_shift(address_list);
+		}
 		/* find_node_record locks this to get the
 		 * alias so we need to unlock */
 		node_rec = find_node_record(alias);
@@ -231,14 +239,14 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 			error("reconfiguration for node %s, ignoring!", alias);
 		}
 		free(alias);
-		if (hostname_count--)
-			free(hostname);
-		if (address_count--)
-			free(address);
 	}
 
 	/* free allocated storage */
 cleanup:
+	if (address)
+		free(address);
+	if (hostname)
+		free(hostname);
 	if (alias_list)
 		hostlist_destroy(alias_list);
 	if (hostname_list)
