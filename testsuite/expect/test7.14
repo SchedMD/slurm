@@ -125,7 +125,9 @@ if {$matches != 2} {
 
 #
 # Modify the DerivedExitCode and String of the job
+# (after waiting for the job to get written from slurmctld daemon to slurmdbd)
 #
+sleep 5
 set matches 0
 spawn $sacctmgr -i modify job job=$job_id set DerivedExitCode=22 Comment=hello
 expect {
