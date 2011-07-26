@@ -838,6 +838,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	int size, max_tasks = req->tasks_to_launch[(int)node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
+	int avail_size;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
 
@@ -846,6 +847,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
 	if (!avail_map)
 		return SLURM_ERROR;
+	avail_size = bit_size(avail_map);
 
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
@@ -876,6 +878,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				for (s = 0; s < hw_sockets; s++) {
 					uint16_t bit = s*(hw_cores*hw_threads) +
 						       c*(hw_threads) + t;
+					/* In case hardware and config differ */
+					bit %= avail_size;
 					if (bit_test(avail_map, bit) == 0)
 						continue;
 					if (masks[taskcount] == NULL) {
