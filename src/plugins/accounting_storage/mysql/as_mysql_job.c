@@ -614,8 +614,8 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_append(ret_list, object);
 		mysql_free_result(result);
 	} else {
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		debug3("didn't effect anything\n%s", query);
+		errno = ESLURM_INVALID_JOB_ID;
+		debug3("as_mysql_modify_job: Job not found\n%s", query);
 		xfree(vals);
 		xfree(query);
 		mysql_free_result(result);
