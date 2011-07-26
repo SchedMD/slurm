@@ -119,6 +119,7 @@ static void _lllp_free_masks(const uint32_t maxtasks, bitstr_t **masks)
 {
     	int i;
 	bitstr_t *bitmask;
+
 	for (i = 0; i < maxtasks; i++) {
 		bitmask = masks[i];
 		FREE_NULL_BITMAP(bitmask);
@@ -428,7 +429,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		      req->job_id, buf_type);
 		error("Verify socket/core/thread counts in configuration");
 	}
-	_lllp_free_masks(maxtasks, masks);
+	if (masks)
+		_lllp_free_masks(maxtasks, masks);
 }
 
 
