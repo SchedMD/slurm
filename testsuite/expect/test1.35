@@ -57,11 +57,15 @@ if {[test_cray]} {
 # Build input script file
 # Sleep between initiation of job steps to avoid overwhelming slurmd
 #
+# NOTE: Explicity set a small memory limit. Without explicitly setting the step
+#   memory limit, it will use the system default (same as the job) which may
+#   prevent the level of parallelism desired.
+#
 exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
   for ((i = 0; i < $steps_started; i++)); do
     j=`expr $steps_started + 15 - \$i`
-    $srun $bin_sleep \$j &
+    $srun -N1 -n1 --mem-per-cpu=1 $bin_sleep \$j &
     $bin_sleep 1
   done
   $bin_sleep 2

@@ -64,14 +64,17 @@ if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
 # NOTE: The initial sleep is so that all of the submissions have time
 #   to occur before contending with a multitude of job step creations.
 #   This is especially important on very slow systems (e.g. AIX).
+# NOTE: Explicity set a small memory limit. Without explicitly setting the step
+#   memory limit, it will use the system default (same as the job) which may
+#   prevent the level of parallelism desired.
 #
 make_bash_script $file_in "
 $bin_sleep 5
 ulimit -u `ulimit -u -H`
 for ((inx=0; inx < $task_cnt; inx++)) ; do
-        $srun -N1 -n1 $bin_sleep $sleep_time &
+        $srun -N1 -n1 --mem-per-cpu=1 $bin_sleep $sleep_time &
 done
-$srun -N1 -n1 $bin_sleep $sleep_time
+$srun -N1 -n1 --mem-per-cpu=1 $bin_sleep $sleep_time
 "
 
 #
