@@ -126,6 +126,9 @@ extern void set_grid_inx(int start, int end, int count)
 {
 	int i;
 
+	if (!smap_system_ptr || !smap_system_ptr->grid)
+		return;
+
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		if ((smap_system_ptr->grid[i]->index < start) ||
 		    (smap_system_ptr->grid[i]->index > end))
@@ -143,6 +146,9 @@ extern void set_grid_inx(int start, int end, int count)
 extern int set_grid_bg(int *start, int *end, int count, int set)
 {
 	int node_cnt = 0, i, j;
+
+	if (!smap_system_ptr || !smap_system_ptr->grid)
+		return 0;
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		for (j = 0; j < params.cluster_dims; j++) {
@@ -328,6 +334,9 @@ extern void free_grid(void)
 extern void print_grid(void)
 {
 	int i;
+
+	if (!smap_system_ptr || !smap_system_ptr->grid)
+		return;
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		if (smap_system_ptr->grid[i]->color)
