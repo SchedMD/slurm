@@ -43,7 +43,7 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
    For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
 
 <p>Cray XT/XE systems come with a 3D torus by default. On smaller systems the cabling in X dimension is
-   left out, resulting in a two-dimensional torus (1 x Y x Z). On Gemini/XE systems, pairs of adjacent nodes
+   omitted, resulting in a two-dimensional torus (1 x Y x Z). On Gemini/XE systems, pairs of adjacent nodes
    (nodes 0/1 and 2/3 on each blade) share one network interface each. This causes the same Y coordinate to
    be  assigned to those nodes, so that the number of distinct torus coordinates is half the number of total
    nodes.</p>
@@ -72,8 +72,8 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
 <h3>Specifying number of tasks per node</h3>
 <p>SLURM uses the same default as ALPS, assigning each task to a single core/CPU. In order to
    make more resources available per task, you can reduce the number of processing elements
-   per node (aprun -N parameter, mppnppn in PBS) with the <i>--ntasks-per-node</i> option of
-   sbatch/salloc.
+   per node (<i>aprun -N</i> parameter, <i>mppnppn</i> in PBS) with the
+   <i>--ntasks-per-node</i> option of <i>sbatch/salloc</i>.
    This is in particular necessary when tasks require more memory than the per-CPU default.</p>
 
 <h3>Specifying per-task memory</h3>
@@ -99,14 +99,14 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
    Setting <i>--ntasks-per-node</i> to the number of cores per node yields the default per-CPU share
    minimum value.</p>
 
-<p>For all cases in between these extremes, set --mem=per_task_memory and
+<p>For all cases in between these extremes, set --mem=per_task_memory and</p>
 <pre>
    --ntasks-per-node=floor(node_memory / per_task_memory)
 </pre>
-  whenever per_task_memory needs to be larger than the per-CPU share.</p>
+<p>whenever per_task_memory needs to be larger than the per-CPU share.</p>
 
 <p><b>Example:</b> An application with 64 tasks needs 7500MB per task on a cluster with 32000MB and 24 cores
-   per node.  Hence  ntasks_per_node = floor(32000/7500) = 4.
+   per node.  Hence  ntasks_per_node = floor(32000/7500) = 4.</p>
 <pre>
     #SBATCH --comment="requesting 7500MB per task on 32000MB/24-core nodes"
     #SBATCH --ntasks=64
@@ -114,27 +114,33 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
     #SBATCH --mem=7500
 </pre>
 <p>If you would like to fine-tune the memory limit of your application, you can set the same parameters in
-   a salloc session and then check directly, using
+   a salloc session and then check directly, using</p>
 <pre>
     apstat -rvv -R $BASIL_RESERVATION_ID
-</pre>to see how much memory has been requested.</p>
+</pre>
+<p>to see how much memory has been requested.</p>
 
 <h3>Using aprun -B</h3>
-<p>CLE 3.x allows a nice aprun shortcut via the <i>-B</i> option, which reuses all the batch system parameters
-   (--ntasks, --ntasks-per-node, --cpus-per-task, --mem) at application launch, as if the corresponding
-   (-n, -N, -d, -m) parameters had been set; see the aprun(1) manpage on CLE 3.x systems for details.</p>
+<p>CLE 3.x allows a nice <i>aprun</i> shortcut via the <i>-B</i> option, which
+   reuses all the batch system parameters (<i>--ntasks, --ntasks-per-node,
+   --cpus-per-task, --mem</i>) at application launch, as if the corresponding
+   (<i>-n, -N, -d, -m</i>) parameters had been set; see the aprun(1) manpage
+   on CLE 3.x systems for details.</p>
 
 <h3>Node ordering options</h3>
 <p>SLURM honours the node ordering policy set for Cray's Application Level Placement Scheduler (ALPS). Node 
    ordering is a configurable system option (ALPS_NIDORDER in /etc/sysconfig/alps). The current
    setting is reported by '<i>apstat -svv</i>'  (look for the line starting with "nid ordering option") and
    can not be changed at  runtime. The resulting, effective node ordering is revealed by '<i>apstat -no</i>'
-   (if no special node ordering has been configured, 'apstat -no' shows the same order as 'apstat -n').</p>
+   (if no special node ordering has been configured, 'apstat -no' shows the
+   same order as '<i>apstat -n</i>').</p>
 
-<p>SLURM uses exactly the same order as 'apstat -no' when selecting nodes for a job. With the <i>--contiguous</i>
-   option to sbatch/salloc you can request a contiguous (relative to the current ALPS nid ordering) set of nodes.
-   Note that on a busy system there is typically more fragmentation, hence it may take longer (or even prove
-   impossible) to allocate contiguous sets of a larger size.</p>
+<p>SLURM uses exactly the same order as '<i>apstat -no</i>' when selecting
+   nodes for a job. With the <i>--contiguous</i> option to <i>sbatch/salloc</i>
+   you can request a contiguous (relative to the current ALPS nid ordering) set
+   of nodes. Note that on a busy system there is typically more fragmentation,
+   hence it may take longer (or even prove impossible) to allocate contiguous
+   sets of a larger size.</p>
 
 <p>Cray/ALPS node ordering is a topic of ongoing work, some information can be found in the CUG-2010 paper
    "<i>ALPS, Topology, and Performance</i>" by Carl Albing and Mark Baker.</p>
@@ -151,19 +157,34 @@ SuSe/Novell.
 are two SDK iso files for SDK)</li>
 </ul></p>
 
-<p>You can check by
-<ul>
-<li>Login to the bootnode:</li>
-<li><i>xtopview</i></li>
-<li><i>rpm -qa</i></li>
-</ul></p>
+<p>You can check by logging onto the boot node and running</p>
+<pre>
+boot: # xtopview
+default: # rpm -qa
+</pre>
 
-<p>The list of packages that should be installed is:
+<p>The list of packages that should be installed is:</p>
 <ul>
 <li>expat-2.0.xxx</li>
 <li>libexpat-devel-2.0.xxx</li>
 <li>cray-MySQL-devel-enterprise-5.0.64 (this should be on the Cray iso)</li>
-</ul></p>
+</ul>
+
+<p>For example, loading MySQL can be done like this:</p>
+<pre>
+smw: # mkdir mnt
+smw: # mount -o loop, ro xe-sles11sp1-trunk.201107070231a03.iso mnt
+smw: # find mnt -name cray-MySQL-devel-enterprise\*
+mnt/craydist/xt-packages/cray-MySQL-devel-enterprise-5.0.64.1.0000.2899.19.2.x86_64.rpm
+smw: # scp mnt/craydist/xt-packages/cray-MySQL-devel-enterprise-5.0.64.1.0000.2899.19.2.x86_64
+</pre>
+
+<p>Then switch to boot node and run:</p>
+<pre>
+boot: # xtopview
+default: # rpm -ivh /software/cray-MySQL-devel-enterprise-5.0.64.1.0000.2899.19.2.x86_64.rpm
+default: # exit
+</pre>
 
 <p>All Cray-specific PrgEnv and compiler modules should be removed and root
 privileges will be required to install these files.</p>
@@ -173,19 +194,23 @@ privileges will be required to install these files.</p>
 <p>The build is done on a normal service node, where you like
 (e.g. <i>/ufs/slurm/build</i> would work).
 Most scripts check for the environment variable LIBROOT. 
-You can either edit the scripts or export this variable. Easiest way:
-<ul>
-<li><i>export LIBROOT=/ufs/slurm/build</i></li>
-<li><i>mkdir -vp $LIBROOT</i></li>
-<li><i>cd $LIBROOT</i></li>
-</ul></p>
+You can either edit the scripts or export this variable. Easiest way:</p>
 
-<h3>Install modulefile</h3>
+<pre>
+login: # export LIBROOT=/ufs/slurm/build
+login: # mkdir -vp $LIBROOT
+login: # cd $LIBROOT
+</pre>
+
+<h3>Install SLURM modulefile</h3>
 
 <p>This file is distributed as part the SLURM tar-ball in
 <i>contribs/cray/opt_modulefiles_slurm</i>. Install it as
 <i>/opt/modulefiles/slurm</i> (or anywhere else in your module path).
 It means that you can use Munge as soon as it is built.</p>
+<pre>
+login: # scp ~/slurm/contribs/cray/opt_modulefiles_slurm root@boot:/rr/current/software/
+</pre>
 
 <h3>Build and install Munge</h3>
 
@@ -194,42 +219,60 @@ somewhat from that described in the
 <a href="http://code.google.com/p/munge/wiki/InstallationGuide">
 MUNGE Installation Guide</a>.</p>
 
-<p>Munge is the authentication daemon and needed by SLURM.
-<ul>
-<li><i>cp munge_build_script.sh $LIBROOT</i></li>
-<li><i>mkdir -vp ${LIBROOT}/munge/zip</i></li>
-<li>Download munge-0.5.10.tar.bz2 or newer from
+<p>Munge is the authentication daemon and needed by SLURM. Download
+munge-0.5.10.tar.bz2 or newer from
 <a href="http://code.google.com/p/munge/downloads/list">
-http://code.google.com/p/munge/downloads/list</a></li>
-<li>Copy that into  <i>${LIBROOT}/munge/zip</i></li>
-<li>Execute: <i>./munge_build_script.sh</i></li>
-</ul></p>
-<p>This generates a tar-ball called <i>$LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz</i>.</p>
+http://code.google.com/p/munge/downloads/list</a>. This is how one
+can build on a login node and install it.</p>
+<pre>
+login: # cd $LIBROOT
+login: # cp ~/slurm/contribs/cray/munge_build_script.sh $LIBROOT
+login: # mkdir -p ${LIBROOT}/munge/zip
+login: # curl -O http://munge.googlecode.com/files/munge-0.5.10.tar.bz2
+login: # cp munge-0.5.10.tar.bz2 ${LIBROOT}/munge/zip
+login: # chmod u+x ${LIBROOT}/munge/zip/munge_build_script.sh
+login: # ${LIBROOT}/munge/zip/munge_build_script.sh
+(generates lots of output and enerates a tar-ball called
+$LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz)
+login: # scp munge_build-2011-07-12.tar.gz root@boot:/rr/current/software
+</pre>
 
-<p>Install the tar-ball by executing:
-<ul>
-<li><i>scp $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz boot:</i></li>
-<li><i>ssh boot</i></li>
-<li><i>tar -zxvf munge_build-*.tar.gz -C /rr/current</i></li>
-</ul></p>
+<p>Install the tar-ball by on the boot node and build an encryption
+key file executing:
+<pre>
+boot: # xtopview
+default: # tar -zxvf $LIBROOT/munge_build-*.tar.gz -C /rr/current /
+default: # dd if=/dev/urandom bs=1 count=1024 >/opt/slurm/munge/etc/munge.key
+default: # chmod go-rxw /opt/slurm/munge/etc/munge.key
+default: # exit
+</pre>
 
 <h3>Configure Munge</h3>
 
-<p>The following steps apply to each service node where
+<p>The following steps apply to each login node and the sdb, where
 <ul>
 <li>The <i>slurmd</i> or <i>slurmctld</i> daemon will run and/or</li>
 <li>Users will be submitting jobs</li>
 </ul></p>
 
-<p><ol>
-<li>On each login host create directory hierarchy:<br>
-    <i>mkdir --mode=0711 -vp /var/lib/munge</i><br>
-    <i>mkdir --mode=0700 -vp /var/log/munge</i><br>
-    <i>mkdir --mode=0755 -vp /var/run/munge</i></li>
-<li><i>module load slurm</i> as root, to get the correct SLURM paths</li>
-<li><i>munged --key-file /opt/slurm/munge/etc/munge.key</i></li>
-<li>Try a "<i>munge -n</i>" to see if munged accepts input</li>
-</ol></p>
+<pre>
+login: # mkdir --mode=0711 -vp /var/lib/munge
+login: # mkdir --mode=0700 -vp /var/log/munge
+login: # mkdir --mode=0755 -vp /var/run/munge
+login: # module load slurm
+</pre>
+<pre>
+sdb: # mkdir --mode=0711 -vp /var/lib/munge
+sdb: # mkdir --mode=0700 -vp /var/log/munge
+sdb: # mkdir --mode=0755 -vp /var/run/munge
+</pre>
+
+<p>Start the munge daemon and test it.</p>
+<pre>
+login: # munged --key-file /opt/slurm/munge/etc/munge.key
+login: # munge -n
+MUNGE:AwQDAAAEy341MRViY+LacxYlz+mchKk5NUAGrYLqKRUvYkrR+MJzHTgzSm1JALqJcunWGDU6k3vpveoDFLD7fLctee5+OoQ4dCeqyK8slfAFvF9DT5pccPg=:
+</pre>
 
 <p>When done, verify network connectivity by executing:
 <ul>
@@ -238,14 +281,22 @@ http://code.google.com/p/munge/downloads/list</a></li>
 
 
 <p>If you decide to keep the installation, you may be interested in automating
-the process using an <i>init.d</i> script distributed with the Munge as
-<i>src/etc/munge.init</i>. This is installed by</p>
-<ul>
-<li><i>scp contribs/cray/etc_init_d_munge boot:/rr/current/software/munge</i></li>
-<li><i>xtopview -c login</i></li>
-<li><i>cp /software/munge /etc/init.d</i></li>
-<li><i>chkconfig munge on</i></li>
-</ul></p>
+the process using an <i>init.d</i> script distributed with the Munge. This
+should be installed on all nodes running munge, e.g., 'xtopview -c login' and
+'xtopview -n sdbNodeID'
+</p>
+<pre>
+boot: # xtopview -c login
+login: # cp /software/etc_init_d_munge /etc/init.d/munge
+login: # chmod u+x /etc/init.d/munge
+login: # chkconfig munge on
+login: # exit
+boot: # xtopview -n 31
+node/31: # cp /software/etc_init_d_munge /etc/init.d/munge
+node/31: # chmod u+x /etc/init.d/munge
+node/31: # chkconfig munge on
+node/31: # exit
+</pre>
 
 <h3>Enable the Cray job service</h3>
 
@@ -254,20 +305,58 @@ the process using an <i>init.d</i> script distributed with the Munge as
    ALPS to track running (aprun) job steps. The default (session IDs) is not unique
    across multiple login nodes. This standard procedure is described in chapter 9 of
    <a href="http://docs.cray.com/books/S-2393-30/">S-2393</a> and takes only two
-   steps, both to be done on all 'login' class nodes (xtopview -c login):
+   steps, both to be done on all 'login' class nodes (xtopview -c login):</p>
    <ul>
 	   <li>make sure that the /etc/init.d/job service is enabled (chkconfig) and started</li>
 	   <li>enable the pam_job.so module from /opt/cray/job/default in /etc/pam.d/common-session<br/>
 	   (NB: the default pam_job.so is very verbose, a simpler and quieter variant is provided
 		in contribs/cray.)</li>
    </ul>
-   The latter step is required only if you would like to run interactive salloc sessions.</p>
+<p>The latter step is required only if you would like to run interactive
+   <i>salloc</i> sessions.</p>
+<pre>
+boot: # xtopview -c login
+login: # chkconfig job on
+login: # emacs -nw /etc/pam.d/common-session
+(uncomment the pam_job.so line)
+session optional /opt/cray/job/default/lib64/security/pam_job.so
+login: # exit
+boot: # xtopview -n 31
+node/31:# chkconfig job on
+node/31:# emacs -nw /etc/pam.d/common-session
+(uncomment the pam_job.so line as shown above)
+</pre>
 
 <h3>Build and Configure SLURM</h3>
 
 <p>SLURM can be built and installed as on any other computer as described
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
-When building SLURM's <i>slurm.conf</i> configuration file, use the
+An example of building and installing SLURM version 2.3.0 is shown below.</p>
+
+<pre>
+login: # mkdir build && cd build
+login: # slurm/configure \
+  --prefix=/opt/slurm/2.3.0 \
+  --with-munge=/opt/slurm/munge/ \
+  --with-mysql_config=/opt/cray/MySQL/5.0.64-1.0000.2899.20.2.gem/bin \
+  --with-srun2aprun
+login: # make -j
+login: # mkdir install
+login: # make DESTDIR=/tmp/slurm/build/install install
+login: # make DESTDIR=/tmp/slurm/build/install install-contrib
+login: # cd install
+login: # tar czf slurm_opt.tar.gz opt
+login: # scp slurm_opt.tar.gz boot:/rr/current/software
+</pre>
+
+<pre>
+boot: # xtopview
+default: # tar xzf /software/slurm_opt.tar.gz -C /
+default: # cd /opt/slurm/
+default: # ln -s 2.3.0 default
+</pre>
+
+<p>When building SLURM's <i>slurm.conf</i> configuration file, use the
 <i>NodeName</i> parameter to specify all batch nodes to be scheduled.
 If nodes are defined in ALPS, but not defined in the <i>slurm.conf</i> file, a
 complete list of all batch nodes configured in ALPS will be logged by
@@ -426,7 +515,8 @@ PartitionName=day Default=YES Priority=1 MaxTime=01:00:00
 <p>SLURM supports an optional <i>cray.conf</i> file containing Cray-specific
 configuration parameters. <b>This file is NOT needed for production systems</b>,
 but is provided for advanced configurations. If used, <i>cray.conf</i> must be
-located in the same directory as the <i>slurm.conf</i> file.</p>
+located in the same directory as the <i>slurm.conf</i> file. Configuration
+parameters supported by <i>cray.conf</i> are listed below.</p>
 
 <p><dl>
 <dt><b>apbasil</b></dt>
@@ -489,8 +579,48 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
+<p>SLURM's <i>init.d</i> script should also be installed to automatically
+start SLURM daemons when nodes boot as shown below. Be sure to edit the script
+as appropriate to reference the proper file location (modify the variable
+<i>PREFIX</i>).
+
+<pre>
+login: # scp /home/crayadm/ben/slurm/etc/init.d.slurm boot:/rr/current/software/
+</pre>
+
+<p>Now create the needed directories for logs and state files then start the
+daemons on the sdb and login nodes as shown below.</p>
+
+<pre>
+sdb: # mkdir -p /ufs/slurm/log
+sdb: # mkdir -p /ufs/slurm/spool
+sdb: # /etc/init.d/slurm start
+</pre>
+
+<pre>
+login: # /etc/init.d/slurm start
+</pre>
+
+<h3>Srun wrapper configuration</h3>
+
+<p>The <i>srun</i> wrapper to <i>aprun</i> may require modification to run
+at each site. Explicitly setting the <i>$aprun</i>, <i>$salloc</i> and
+<i>$srun</i> variables to the absolute pathnames of those executable files
+is recommended. In order to debug <i>srun</i>, uncomment the line</p>
+<pre>
+print "comment=$command\n"
+</pre>
+<p>If the <i>srun</i> wrapper is executed from
+within an existing SLURM job allocation (i.e. within <i>salloc</i> or an
+<i>sbatch</i> script), then it just executes the <i>aprun</i> command with
+appropriate options. If executed without an allocation, the wrapper executes
+<i>salloc</i>, which then executes the <i>srun</i> wrapper again. This second
+execution of the <i>srun</i> wrapper is required in order to process environment
+variables that are set by the <i>salloc</i> command based upon the resource
+allocation.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 July 2011</p></td>
+<p style="text-align:center;">Last modified 27 July 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
