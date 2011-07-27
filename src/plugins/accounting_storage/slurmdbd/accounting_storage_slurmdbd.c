@@ -2022,6 +2022,32 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	return rc;
 }
 
+static char *_strip_quotes(char *option)
+{
+	char *meat = NULL;
+	int i=0, start=0;
+
+	if (!option)
+		return NULL;
+
+	/* first strip off the ("|')'s */
+	if (option[i] == '\"' || option[i] == '\'')
+		i++;
+	start = i;
+
+	while (option[i]) {
+		if(option[i] == '\"' || option[i] == '\'') {
+			break;
+		}
+		i++;
+	}
+
+	meat = xmalloc((i-start)+1);
+	memcpy(meat, option+start, (i-start));
+
+	return meat;
+}
+
 /*
  * load into the storage the end of a job
  */
@@ -2042,7 +2068,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 
 	req.assoc_id    = job_ptr->assoc_id;
 	if (slurmctld_conf.acctng_store_job_comment)
-		req.comment     = job_ptr->comment;
+		req.comment     = _strip_quotes(job_ptr->comment);
 	else
 		req.comment     = NULL;
 	req.db_index    = job_ptr->db_index;
@@ -2071,8 +2097,11 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	msg.msg_type    = DBD_JOB_COMPLETE;
 	msg.data        = &req;
 
-	if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0)
+	if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0) {
+		xfree(req.comment);
 		return SLURM_ERROR;
+	}
+	xfree(req.comment);
 
 	return SLURM_SUCCESS;
 }
