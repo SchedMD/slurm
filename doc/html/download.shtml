@@ -2,8 +2,8 @@
 
 <h1>Download</h1>
 <p>SLURM source can be downloaded from
-<a href="http://sourceforge.net/projects/slurm/">
-http://sourceforge.net/projects/slurm/</a><br>
+<a href="http://www.schedmd.com/#repos">
+http://www.schedmd.com/#repos</a><br>
 SLURM has also been packaged for
 <a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and
 <a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
@@ -53,7 +53,7 @@ for the application to manage Kerberos V credentials.</li>
 See our <a href="accounting.html">Accounting</a> web page for more information.</li>
 <ul>
 <li><a href="http://www.mysql.com/">MySQL</a> (recommended)</li>
-<li><a href="http://www.postgresql.org/">PostgreSQL</a></li>
+<li><a href="http://www.postgresql.org/">PostgreSQL</a> (Not fully functional)</li>
 </ul><br>
 
 <li><b>Debuggers</b> and debugging tools</li>
@@ -101,8 +101,8 @@ the <b>qsnetlibs</b> development libraries from
 plugin also requires the <b>libelanhosts</b> library and
 a corresponding /etc/elanhosts configuration file, used to map
 hostnames to Elan IDs. The libelanhosts source is available from
-<a href="https://sourceforge.net/projects/slurm/">
-https://sourceforge.net/projects/slurm/</a>.
+<a href="http://www.schedmd.com/download/extras/libelanhosts-0.9-1.tgz">
+http://www.schedmd.com/download/extras/libelanhosts-0.9-1.tgz</a>.
 </ul><br>
 
 <li><b>I/O Watchdog</b><br>
@@ -131,15 +131,15 @@ http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
 <li><a href="http://www.quadrics.com/">Quadrics MPI</a></li>
 </ul><br>
 
-<li><b>PAM Modules (pam_slurm)</b><br>
+<li><b>PAM Module (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes
 where SLURM performs resource management. Access to the node is restricted to
 user root and users who have been allocated resources on that node.
 NOTE: pam_slurm is included within the SLURM distribution for version 2.1
 or higher.
 For earlier SLURM versions, pam_slurm is available for download from<br>
-<a href="https://sourceforge.net/projects/slurm/">
-https://sourceforge.net/projects/slurm/</a><br>
+<a href="http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2">
+http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2</a><br>
 SLURM's PAM module has also been packaged for
 <a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and
 <a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
@@ -188,20 +188,6 @@ http://code.google.com/p/slurm-spank-plugins/</a>.<br>
 The current source for the plugins can be checked out of the subversion
 repository with the following command:<br>
 <i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i></li><br>
-
-<li><b>PAM Module (pam_slurm)</b><br>
-Pluggable Authentication Module (PAM) for restricting access to compute nodes
-where SLURM performs resource management. Access to the node is restricted to
-user root and users who have been allocated resources on that node.
-NOTE: pam_slurm is included within the SLURM distribution for version 2.1
-or higher.
-For earlier SLURM versions, pam_slurm is available for download from<br>
-<a href="https://sourceforge.net/projects/slurm/">
-https://sourceforge.net/projects/slurm/</a><br>
-SLURM's PAM module has also been packaged for
-<a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and
-<a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
-(both named <i>libpam-slurm</i>).</li><br>
 
 <li><b>Sqlog</b><br>
 A set of scripts that leverages SLURM's job completion logging facility
