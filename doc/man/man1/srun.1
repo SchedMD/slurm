@@ -386,9 +386,10 @@ parameter in slurm.conf.
 .TP
 \fB\-\-exclusive\fR
 When used to initiate a job, the job allocation cannot share nodes with
-other running jobs.  This is the oposite of \-\-share, whichever option
-is seen last on the command line will win.  (The default shared/exclusive
-behavior depends on system configuration.)
+other running jobs.  This is the opposite of \-\-share, whichever option
+is seen last on the command line will win. The default shared/exclusive
+behavior depends on system configuration and the partition's \fBShared\fR
+option takes precedence over the job's option.
 
 This option can also be used when initiating more than one job step within
 an existing resource allocation, where you want separate processors to
@@ -894,7 +895,7 @@ The default value is specified by the system configuration parameter
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
 Request a specific partition for the resource allocation.  If not specified,
-the default behaviour is to allow the slurm controller to select the default
+the default behavior is to allow the slurm controller to select the default
 partition as designated by the system administrator. If the job can use more
 than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used.
@@ -1010,8 +1011,14 @@ be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 
 .TP
 \fB\-s\fR, \fB\-\-share\fR
-The job can share nodes with other running jobs. This may result in faster job
-initiation and higher system utilization, but lower application performance.
+The job allocation can share nodes with other running jobs.
+This is the opposite of \-\-exclusive, whichever option is seen last
+on the command line will be used. The default shared/exclusive
+behavior depends on system configuration and the partition's \fBShared\fR
+option takes precedence over the job's option.
+This option may result the allocation being granted sooner than if the \-\-share
+option was not set and allow higher system utilization, but application
+performance will likely suffer due to competition for resources within a node.
 
 .TP
 \fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]

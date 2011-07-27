@@ -336,10 +336,11 @@ change directory to \fIpath\fR before beginning execution.
 
 .TP
 \fB\-\-exclusive\fR
-The job allocation cannot share nodes with other running jobs.  This is
-the oposite of \-\-share, whichever option is seen last on the command line
-will win.  (The default shared/exclusive behaviour depends on system
-configuration.)
+The job allocation can not share nodes with other running jobs.
+This is the opposite of \-\-share, whichever option is seen last
+on the command line will be used. The default shared/exclusive
+behavior depends on system configuration and the partition's \fBShared\fR
+option takes precedence over the job's option.
 
 .TP
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
@@ -795,7 +796,7 @@ allowing more than one task per processor.  However no more than
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
 Request a specific partition for the resource allocation.  If not specified,
-the default behaviour is to allow the slurm controller to select the default
+the default behavior is to allow the slurm controller to select the default
 partition as designated by the system administrator. If the job can use more
 than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used.
@@ -818,9 +819,12 @@ Allocate resources for the job from the named reservation.
 
 .TP
 \fB\-s\fR, \fB\-\-share\fR
-The job allocation can share nodes with other running jobs.  (The default
-shared/exclusive behaviour depends on system configuration.)
-This may result the allocation being granted sooner than if the \-\-share
+The job allocation can share nodes with other running jobs.
+This is the opposite of \-\-exclusive, whichever option is seen last
+on the command line will be used. The default shared/exclusive
+behavior depends on system configuration and the partition's \fBShared\fR
+option takes precedence over the job's option.
+This option may result the allocation being granted sooner than if the \-\-share
 option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
