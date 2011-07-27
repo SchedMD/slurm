@@ -55,6 +55,7 @@
 typedef struct slurm_cgroup_conf {
 
 	bool      cgroup_automount;
+	char *    cgroup_mountpoint;
 	char *    cgroup_subsystems;
 	char *    cgroup_release_agent;
 

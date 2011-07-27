@@ -129,7 +129,7 @@ int _slurm_cgroup_init(void)
 	}
 
 	/* initialize freezer cgroup namespace */
-	if (xcgroup_ns_create(&freezer_ns, CGROUP_BASEDIR "/freezer", "",
+	if (xcgroup_ns_create(&slurm_cgroup_conf, &freezer_ns, "/freezer", "",
 			       "freezer", release_agent_path)
 	     != XCGROUP_SUCCESS) {
 		error("unable to create freezer cgroup namespace");

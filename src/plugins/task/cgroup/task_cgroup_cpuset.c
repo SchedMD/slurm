@@ -94,7 +94,7 @@ extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		error("task/cgroup: unable to build cpuset release agent path");
 		goto error;
 	}
-	if (xcgroup_ns_create(&cpuset_ns,CGROUP_BASEDIR "/cpuset","",
+	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuset_ns, "/cpuset", "",
 			       "cpuset",release_agent_path) !=
 	     XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create cpuset namespace");

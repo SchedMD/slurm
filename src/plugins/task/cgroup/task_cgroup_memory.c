@@ -84,7 +84,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		error("task/cgroup: unable to build memory release agent path");
 		goto error;
 	}
-	if (xcgroup_ns_create(&memory_ns,CGROUP_BASEDIR "/memory","",
+	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "/memory", "",
 			       "memory",release_agent_path) !=
 	     XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create memory namespace");
