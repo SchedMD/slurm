@@ -56,15 +56,11 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    --nosnapshot will name the tar-ball and RPMs based upon the META file
    --snapshot will name the tar-ball and RPMs based upon the META file plus a
    timestamp. Do this to make a tar-ball for a non-tagged release.
-4. Remove the RPMs that we don't want:
-   > rm -f slurm-perlapi*rpm slurm-torque*rpm
-5. Move the RPMs to
-   /usr/local/admin/rpms/llnl/RPMS-RHEL4/x86_64 (odevi, or gauss)
-   /usr/local/admin/rpms/llnl/RPMS-RHEL4/i386/ (adevi)
-   /usr/local/admin/rpms/llnl/RPMS-RHEL4/ia64/ (tdevi)
-   send an announcement email (with the latest entry from the NEWS
-   file) out to linux-admin@lists.llnl.gov.
-6. Copy bzip file to sourceforge.net using their web interface
+   NOTE: <local_dir> should be a fully-qualified pathname
+4. scp the files to schedmd.com in to ~/www/download/development or
+   ~/www/download/development. Move the older files to ~/www/download/archive,
+   login to schedmd.com, cd to ~/download, and execute "php process.php" to
+   update the web pages.
 
 BlueGene build notes:
 0. If on a bgp system and you want sview export these variables
