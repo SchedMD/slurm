@@ -98,6 +98,9 @@ how many jobs can share a resource (FORCE[:max_share]). By default the
 max_share value is 4. To allow up to 6 jobs from this partition to be
 allocated to a common resource, set <I>Shared=FORCE:6</I>. To only let 2 jobs
 timeslice on the same resources, set <I>Shared=FORCE:2</I>.
+NOTE: Gang scheduling is performed independently for each partition, so
+configuring partitions with overlapping nodes and gang scheduling is generally
+not recommended.
 </LI>
 </UL>
 <P>

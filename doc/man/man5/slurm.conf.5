@@ -890,6 +890,9 @@ preempts jobs by checkpointing them (if possible) or canceling them.
 .TP
 \fBGANG\fR
 enables gang scheduling (time slicing) of jobs in the same partition.
+NOTE: Gang scheduling is performed independently for each partition, so
+configuring partitions with overlapping nodes and gang scheduling is generally
+not recommended.
 .TP
 \fBREQUEUE\fR
 preempts jobs by requeuing them (if possible) or canceling them.
