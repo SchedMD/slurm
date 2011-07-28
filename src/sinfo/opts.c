@@ -565,6 +565,7 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (field[0] == 'H') {
+			params.match_flags.reason_timestamp_flag = true;
 			format_add_timestamp( params.format_list,
 					      field_size,
 					      right_justify,
@@ -811,6 +812,8 @@ void _print_options( void )
 			"true" : "false");
 	printf("reason_flag     = %s\n", params.match_flags.reason_flag ?
 			"true" : "false");
+	printf("reason_timestamp_flag = %s\n",
+			params.match_flags.reason_timestamp_flag ?  "true" : "false");
 	printf("root_flag       = %s\n", params.match_flags.root_flag ?
 			"true" : "false");
 	printf("share_flag      = %s\n", params.match_flags.share_flag ?

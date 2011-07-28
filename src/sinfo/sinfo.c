@@ -514,6 +514,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	    (_strcmp(node_ptr->reason, sinfo_ptr->reason)))
 		return false;
 
+	if (sinfo_ptr->nodes &&
+	    params.match_flags.reason_timestamp_flag &&
+	    (node_ptr->reason_time != sinfo_ptr->reason_time))
+		return false;
+
 	if (params.match_flags.state_flag) {
 		char *state1, *state2;
 		state1 = node_state_string(node_ptr->node_state);
