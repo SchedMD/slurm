@@ -142,6 +142,7 @@ struct sinfo_match_flags {
 	bool state_flag;
 	bool weight_flag;
 	bool reason_timestamp_flag;
+	bool reason_user_flag;
 };
 
 /* Input parameters */

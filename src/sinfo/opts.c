@@ -647,11 +647,13 @@ _parse_format( char* format )
 					       right_justify,
 					       suffix );
 		} else if (field[0] == 'u') {
+			params.match_flags.reason_user_flag = true;
 			format_add_user( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
 		} else if (field[0] == 'U') {
+			params.match_flags.reason_user_flag = true;
 			format_add_user_long( params.format_list,
 					      field_size,
 					      right_justify,
@@ -814,6 +816,8 @@ void _print_options( void )
 			"true" : "false");
 	printf("reason_timestamp_flag = %s\n",
 			params.match_flags.reason_timestamp_flag ?  "true" : "false");
+	printf("reason_user_flag = %s\n",
+			params.match_flags.reason_user_flag ?  "true" : "false");
 	printf("root_flag       = %s\n", params.match_flags.root_flag ?
 			"true" : "false");
 	printf("share_flag      = %s\n", params.match_flags.share_flag ?
