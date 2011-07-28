@@ -344,6 +344,17 @@ my %node_opts;
 my $command;
 
 if ($have_job == 0) {
+	for ($memory_per_cpu) {
+		$i = index($memory_per_cpu, "hs");
+		if ($i >= 0) {
+			$memory_per_cpu = substr($memory_per_cpu, 0, $i);
+		}
+		$i = index($memory_per_cpu, "h");
+		if ($i >= 0) {
+			$memory_per_cpu = substr($memory_per_cpu, 0, $i);
+		}
+	}
+
 	$command = "$salloc";
 	$command .= " --account=$account"		if $account;
 	$command .= " --acctg-freq=$acctg_freq"		if $acctg_freq;
@@ -848,10 +859,11 @@ Applies only when creating a job allocation.
 Specify the real memory required per node in MegaBytes.
 Applies only when creating a job allocation.
 
-=item B<--mem-per-cpu=MB>
+=item B<--mem-per-cpu=MB>[h|hs]
 
 Specify the real memory required per CPU in MegaBytes.
 Applies only when creating a job allocation.
+Append "h" or "hs" for huge page support.
 
 =item B<--mem_bind=type>
 
