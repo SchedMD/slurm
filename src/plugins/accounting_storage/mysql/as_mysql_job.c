@@ -641,7 +641,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				 struct job_record *job_ptr)
 {
-	char *query = NULL, *nodes = NULL;
+	char *query = NULL, *nodes = NULL, *comment = NULL;
 	int rc = SLURM_SUCCESS, job_state;
 	time_t submit_time, end_time;
 
@@ -718,16 +718,23 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
+	/*
+	 * make sure we handle any quotes that may be in the comment
+	 */
+
+	if (job_ptr->comment)
+		comment = slurm_add_slash_to_quotes(job_ptr->comment);
+
 	query = xstrdup_printf("update \"%s_%s\" set "
 			       "time_end=%ld, state=%d, nodelist='%s', "
 			       "derived_ec=%d, derived_es='%s', exit_code=%d, "
 			       "kill_requid=%d where job_db_inx=%d;",
 			       mysql_conn->cluster_name, job_table,
 			       end_time, job_state, nodes,
-			       job_ptr->derived_ec, job_ptr->comment,
+			       job_ptr->derived_ec, comment,
 			       job_ptr->exit_code, job_ptr->requid,
 			       job_ptr->db_index);
-
+	xfree(comment);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn, query);
