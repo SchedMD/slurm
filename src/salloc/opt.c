@@ -1294,7 +1294,7 @@ static bool _opt_verify(void)
 		return false;
 	}
 	if (opt.shared && opt.shared != (uint16_t)NO_VAL) {
-		info("Node sharing is not (yet) supported on Cray.");
+		info("Space sharing nodes is not supported on Cray systems");
 		opt.shared = false;
 	}
 	if (opt.overcommit) {
