@@ -835,26 +835,13 @@ if [ -x /sbin/ldconfig ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
     fi
 fi
-if [ ! -f %{_sysconfdir}/slurm.conf ]; then
-    echo "You need to build and install a slurm.conf file"
-    echo "Edit %{_sysconfdir}/slurm.conf.example and copy it to slurm.conf or"
-    echo "Build a new one using http://www.llnl.gov/linux/slurm/configurator.html"
-fi
 
 %post slurmdbd
-if [ ! -f %{_sysconfdir}/slurmdbd.conf ]; then
-    echo "You need to build and install a slurmdbd.conf file"
-    echo "Edit %{_sysconfdir}/slurmdbd.conf.example and copy it to slurmdbd.conf"
-fi
 
 %if %{slurm_with bluegene}
 %post bluegene
 if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}/slurm
-fi
-if [ ! -f %{_sysconfdir}/bluegene.conf ]; then
-    echo "You need to build and install a bluegene.conf file"
-    echo "Edit %{_sysconfdir}/bluegene.conf.example and copy it to bluegene.conf"
 fi
 %endif
 
