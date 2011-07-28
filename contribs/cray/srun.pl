@@ -198,11 +198,16 @@ foreach (keys %ENV) {
 
 # Make fully copy of execute line. This is needed only so that srun can run
 # again and get the job's memory allocation for aprun (which is not available
-# until after the allocation has been made.
+# until after the allocation has been made). Add quotes if an argument contains
+# spaces (e.g. --alps="-r 1" needs to be treadted as a single argument).
 my ($i, $len, $orig_exec_line);
 if ($ARGV[0]) {
 	foreach (@ARGV) {
-		$orig_exec_line .= "$_ ";
+		if (index($_, " ") == -1) {
+			$orig_exec_line .= "$_ ";
+		} else {
+			$orig_exec_line .= "\"$_\" ";
+		}
 	}
 }
 
@@ -344,7 +349,7 @@ my %node_opts;
 my $command;
 
 if ($have_job == 0) {
-	for ($memory_per_cpu) {
+	if ($memory_per_cpu) {
 		$i = index($memory_per_cpu, "hs");
 		if ($i >= 0) {
 			$memory_per_cpu = substr($memory_per_cpu, 0, $i);
