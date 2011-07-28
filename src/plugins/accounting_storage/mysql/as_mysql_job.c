@@ -638,9 +638,32 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
+static char *_strip_quotes(char *str)
+{
+	char *meat = NULL;
+	int i=0, start=0;
+
+	if (str[i] == '\"' || str[i] == '\'')
+		i++;
+	start = i;
+
+	while (str[i]) {
+		if(str[i] == '\"' || str[i] == '\'') {
+			break;
+		}
+		i++;
+	}
+
+	meat = xmalloc((i-start)+1);
+	memcpy(meat, str+start, (i-start));
+
+	return meat;
+}
+
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				 struct job_record *job_ptr)
 {
+	char *comment = NULL;
 	char *query = NULL, *nodes = NULL;
 	int rc = SLURM_SUCCESS, job_state;
 	time_t submit_time, end_time;
@@ -718,19 +741,27 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
+/*
+ *	Strip off leading/trailing " or ' from the comment
+ *	to prevent errors in the update request
+ */
+	if (job_ptr->comment)
+		comment = _strip_quotes(job_ptr->comment);
+
 	query = xstrdup_printf("update \"%s_%s\" set "
 			       "time_end=%ld, state=%d, nodelist='%s', "
 			       "derived_ec=%d, derived_es='%s', exit_code=%d, "
 			       "kill_requid=%d where job_db_inx=%d;",
 			       mysql_conn->cluster_name, job_table,
 			       end_time, job_state, nodes,
-			       job_ptr->derived_ec, job_ptr->comment,
+			       job_ptr->derived_ec, comment,
 			       job_ptr->exit_code, job_ptr->requid,
 			       job_ptr->db_index);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn, query);
+	xfree(comment);
 	xfree(query);
 
 	return rc;
