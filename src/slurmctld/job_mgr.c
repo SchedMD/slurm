@@ -3594,15 +3594,22 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		}
 		if (job_desc->contiguous)
 			bit_fill_gaps(req_bitmap);
-
 		i = bit_set_count(req_bitmap);
 		if (i > job_desc->min_nodes)
 			job_desc->min_nodes = i * node_scaling;
 		if (i > job_desc->min_cpus)
 			job_desc->min_cpus = i * cpus_per_mp;
 		if (job_desc->max_nodes &&
-		    (job_desc->min_nodes > job_desc->max_nodes))
+		    (job_desc->min_nodes > job_desc->max_nodes)) {
+#if 0
+			info("_job_create: max node count less than required "
+			     "hostlist size for user %u", job_desc->user_id);
 			job_desc->max_nodes = job_desc->min_nodes;
+#else
+			error_code = ESLURM_INVALID_NODE_COUNT;
+			goto cleanup_fail;
+#endif
+		}
 	}
 
 	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,

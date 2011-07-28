@@ -1241,6 +1241,17 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		max_nodes = MIN(job_ptr->details->max_nodes,
 				part_ptr->max_nodes);
 
+	if (job_ptr->details->req_node_bitmap && job_ptr->details->max_nodes) {
+		i = bit_set_count(job_ptr->details->req_node_bitmap);
+		if (i > job_ptr->details->max_nodes) {
+			info("Job %u required node list has more node than "
+			     "the job can use (%d > %u)",
+			     job_ptr->job_id, i, job_ptr->details->max_nodes);
+			error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+			goto cleanup;
+		}
+	}
+
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
 	if (!job_ptr->limit_set_max_nodes && job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
