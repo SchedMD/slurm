@@ -97,15 +97,28 @@ if {$job_id2 == 0} {
 exec $bin_rm -f $file_in
 
 #
-# Look at all jobs with scontrol
+# Look for these jobs with scontrol
+#
+# NOTE: Running "scontrol show job" and looking for these job IDs
+# may not work due to a bug in awk not scanning large output buffers
 #
 set matches 0
-spawn $scontrol show job
+spawn $scontrol show job $job_id1
 expect {
 	-re "JobId=$job_id1 " {
 		incr matches
 		exp_continue
 	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $scontrol show job $job_id2
+expect {
 	-re "JobId=$job_id2 " {
 		incr matches
 		exp_continue
