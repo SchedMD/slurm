@@ -380,6 +380,12 @@ This is specified in the <i>slurm.conf</i> file by using the
 <i>FrontendName</i> and optionally the <i>FrontEndAddr</i> fields
 as seen in the examples below.</p>
 
+<p>Note that SLURM will by default kill running jobs when a node goes DOWN,
+while a DOWN node in ALPS only prevents new jobs from being scheduled on the
+node. To help avoid confusion, we recommend that <i>SlurmdTimeout</i> in the
+<i>slurm.conf</i> file be set to the same value as the <i>suspectend</i>
+parameter in ALPS' <i>nodehealth.conf</i> file.</p>
+
 <p>You need to specify the appropriate resource selection plugin (the
 <i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration file).
 Configure <i>SelectType</i> to <i>select/cray</i> The <i>select/cray</i> 
@@ -449,6 +455,10 @@ SlurmdPidFile=/var/run/slurmd.pid
 #---------------------------------------------------------------------
 # Return DOWN nodes to service when e.g. slurmd has been unresponsive
 ReturnToService=1
+
+# Configure the suspectend parameter in ALPS' nodehealth.conf file to the same
+# value as SlurmdTimeout for consistent behavior (e.g. "suspectend: 600")
+SlurmdTimeout=600
 
 # Controls how a node's configuration specifications in slurm.conf are
 # used.
@@ -621,6 +631,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 July 2011</p></td>
+<p style="text-align:center;">Last modified 28 July 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
