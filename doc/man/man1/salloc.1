@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.3" "June 2011" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.3" "July 2011" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -845,6 +845,18 @@ the default time will be 60 seconds.
 Restrict node selection to nodes with at least the specified number of
 sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled.
+
+.TP
+\fB\-\-switch\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
+When a tree topology is used, this defines the maximum count of switches
+desired for the job allocation and optionally the maximum time to wait
+for that number of switches. If SLURM finds an allocation containing more
+switches than the count specified, the job remain pending until it either finds
+an allocation with desired switch ount or the time limit expires. By default
+there is no switch count limit and there is no delay in starting the job.
+The job's maximum time delay may be limited by the system administrator using
+the \fBSchedulerParameters\fR configuration parameter with the
+\fBmax_switch_wait\fR parameter option.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>

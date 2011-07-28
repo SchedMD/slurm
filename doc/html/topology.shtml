@@ -48,6 +48,14 @@ on its underlying leaf switches using a best-fit algorithm.
 Use of this logic requires a configuration setting of
 <i>TopologyPlugin=topology/tree</i>.</p>
 
+<p>Note that slurm uses a best-fit algorithm on the currently
+available resources. This may result in an allocation with
+more that the optimum number of switches. The user can request
+a maximum number of switches for the job as well as a
+maximum time willing to wait for that number using the <i>--switch</i>
+option with the salloc, sbatch and srun commands. The parameters can
+also be changed for pending jobs using the scontrol and squeue commands.</p>
+
 <p>At some point in the future SLURM code may be provided to
 gather network topology information directly.
 Now the network topology information must be included
@@ -124,6 +132,6 @@ SwitchName=s3 Nodes=tux[12-15]
 SwitchName=s4 Switches=s[0-3]
 </pre>
 
-<p style="text-align:center;">Last modified 20 August 2009</p>
+<p style="text-align:center;">Last modified 8 July 2011</p>
 
 <!--#include virtual="footer.txt"-->

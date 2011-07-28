@@ -168,6 +168,8 @@ typedef struct sbatch_options {
  	int ckpt_interval;	/* --checkpoint (int minutes)   */
  	char *ckpt_interval_str;/* --checkpoint (string)        */
  	char *ckpt_dir;		/* --checkpoint-dir (string)    */
+	int req_switch;		/* Minimum number of switches   */
+	int wait4switch;	/* Maximum time to wait for minimum switches */
 	char **spank_job_env;	/* SPANK controlled environment for job
 				 * Prolog and Epilog		*/
 	int spank_job_env_size;	/* size of spank_job_env	*/

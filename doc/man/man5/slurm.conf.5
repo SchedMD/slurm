@@ -1388,6 +1388,10 @@ In the case of large clusters (more than 1000 nodes) configured with
 \fBSelectType=select/cons_res\fR, configuring a relatively small value may be
 desirable.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+.TP
+\fBmax_switch_wait=#\fR
+Maximum number of seconds that a job can delay execution waiting for the
+specified desired switch count. The default value is 60 seconds.
 .RE
 
 .TP

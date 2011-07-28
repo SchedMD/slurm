@@ -182,6 +182,7 @@
 #define LONG_OPT_TIME_MIN        0x150
 #define LONG_OPT_GRES            0x151
 #define LONG_OPT_ALPS            0x152
+#define LONG_OPT_REQ_SWITCH      0x153
 
 extern char **environ;
 
@@ -453,6 +454,8 @@ static void _opt_default()
 	opt.acctg_freq = -1;
 	opt.reservation = NULL;
 	opt.wckey = NULL;
+	opt.req_switch = -1;
+	opt.wait4switch = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -536,6 +539,8 @@ env_vars_t env_vars[] = {
 {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
 {"SLURM_WCKEY",         OPT_STRING,     &opt.wckey,         NULL             },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
+{"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
+{"SLURM_WAIT4SWITCH",   OPT_INT,        &opt.wait4switch,   NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -817,6 +822,7 @@ static void set_options(const int argc, char **argv)
 		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 		{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+		{"switches",         optional_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -831,6 +837,7 @@ static void set_options(const int argc, char **argv)
 	};
 	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
+	char *pos_delimit;
 #ifdef HAVE_PTY_H
 	char *tmp_str;
 #endif
@@ -1463,6 +1470,16 @@ static void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_ALPS:
 			verbose("Not running ALPS. --alps option ignored.");
+			break;
+		case LONG_OPT_REQ_SWITCH:
+			pos_delimit = strstr(optarg,"@");
+			if (pos_delimit != NULL) {
+				pos_delimit[0] = '\0';
+				pos_delimit++;
+				opt.wait4switch = time_str2mins(pos_delimit) * 60;
+			}
+			opt.req_switch = _get_int(optarg, "switches",
+				true);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2278,6 +2295,8 @@ static void _opt_list(void)
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
+	info("switch         : %d", opt.req_switch);
+	info("wait-for-switch: %d", opt.wait4switch);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if(opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
@@ -2421,6 +2440,7 @@ static void _usage(void)
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
+"            [--switch=max-switches{@max-time-to-wait}]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2495,6 +2515,8 @@ static void _help(void)
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -X, --disable-status        Disable Ctrl-C status feature\n"
+"      --switch=max-switches{@max-time-to-wait}\n"
+"                              Optimum switches and max time to wait for optimum\n"
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"

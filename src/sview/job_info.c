@@ -163,6 +163,7 @@ enum {
 /* 	SORTID_SOCKETS_MIN, */
 	SORTID_STATE,
 	SORTID_STATE_NUM,
+	SORTID_SWITCHES,
 	SORTID_TASKS,
 /* 	SORTID_THREADS_MAX, */
 /* 	SORTID_THREADS_MIN, */
@@ -352,6 +353,8 @@ static display_data_t display_data_job[] = {
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REASON, "Reason Waiting",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_SWITCHES, "Switches",
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GRES, "Gres",
@@ -701,6 +704,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	uint16_t rotate;
 	uint16_t conn_type;
 	char* token, *delimiter = ",x", *next_ptr;
+	char *sep_char;
 	int j;
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	char* geometry_tmp = xstrdup(new_text);
@@ -1072,6 +1076,15 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if (job_msg->begin_time < time(NULL))
 			job_msg->begin_time = time(NULL);
 		break;
+	case SORTID_SWITCHES:
+		type = "switches";
+		job_msg->req_switch =
+			(uint32_t) strtol(new_text, &sep_char, 10);
+		if (sep_char && sep_char[0] == '@') {
+			job_msg->wait4switch = time_str2mins(sep_char+1) * 60;
+		}
+
+		break;
 	default:
 		type = "unknown";
 		break;
@@ -1236,6 +1249,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 {
 	char *nodes = NULL, *reason = NULL, *uname = NULL;
 	char tmp_char[50];
+	char time_buf[32];
 	char running_char[50];
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
@@ -1745,6 +1759,15 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_TIME_SUSPEND),
 				   tmp_char);
 
+	secs2time_str((time_t) job_ptr->wait4switch, time_buf,
+			sizeof(time_buf));
+	snprintf(tmp_char, sizeof(tmp_char), "%u@%s\n",
+			job_ptr->req_switch, time_buf);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_SWITCHES),
+				   tmp_char);
+
 	uname = uid_to_string((uid_t)job_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -1774,8 +1797,10 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
+	char tmp_rqswitch[40];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reason, *tmp_nodes;
+	char time_buf[32];
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
 	GtkTreeIter step_iter;
@@ -1943,6 +1968,21 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	secs2time_str(suspend_secs, tmp_time_sus, sizeof(tmp_time_sus));
 
+	if (job_ptr->req_switch != NO_VAL) {
+		if (job_ptr->wait4switch != NO_VAL) {
+			secs2time_str((time_t) job_ptr->wait4switch, time_buf,
+					sizeof(time_buf));
+			sprintf(tmp_rqswitch, "%u@%s",
+					job_ptr->req_switch, time_buf);
+		} else {
+			sprintf(tmp_rqswitch, "%u", job_ptr->req_switch);
+		}
+
+	} else {
+		sprintf(tmp_rqswitch, "N/A");
+	}
+
+
 	tmp_uname = uid_to_string((uid_t)job_ptr->user_id);
 
 	gtk_tree_store_set(treestore, iter,
@@ -1992,6 +2032,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_STATE,
 				job_state_string(job_ptr->job_state),
 			   SORTID_STATE_NUM,    job_ptr->job_state,
+			   SORTID_SWITCHES,     tmp_rqswitch,
 			   SORTID_TIME_ELIGIBLE,tmp_time_elig,
 			   SORTID_TIME_END,     tmp_time_end,
 			   SORTID_TIME_RESIZE,  tmp_time_resize,

@@ -372,8 +372,8 @@ extern int schedule(uint32_t job_limit)
 
 		sched_params = slurm_get_sched_params();
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "default_queue_depth="))) {
-		/*                                 01234567890123456789 */
+		    (tmp_ptr = strstr(sched_params, "default_queue_depth="))) {
+		/*                                   01234567890123456789 */
 			i = atoi(tmp_ptr + 20);
 			if (i < 0) {
 				error("ignoring SchedulerParameters: "

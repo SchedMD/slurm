@@ -155,6 +155,8 @@ typedef struct salloc_options {
 	char *reservation;	/* --reservation		*/
 	uint16_t wait_all_nodes;  /* --wait-nodes-ready=val	*/
 	char *wckey;            /* --wckey workload characterization key */
+	int req_switch;		/* Minimum number of switches	*/
+	int wait4switch;	/* Maximum time to wait for minimum switches */
 	char **spank_job_env;	/* SPANK controlled environment for job
 				 * Prolog and Epilog		*/
 	int spank_job_env_size;	/* size of spank_job_env	*/

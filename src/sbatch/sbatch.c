@@ -430,6 +430,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->spank_job_env      = opt.spank_job_env;
 		desc->spank_job_env_size = opt.spank_job_env_size;
 	}
+	if (opt.req_switch >= 0)
+		desc->req_switch = opt.req_switch;
+	if (opt.wait4switch >= 0)
+		desc->wait4switch = opt.wait4switch;
+
 
 	return 0;
 }

@@ -574,6 +574,22 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.wckey = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "Switches", MAX(taglen, 5)) == 0) {
+			char *sep_char;
+			job_msg.req_switch =
+				(uint32_t) strtol(val, &sep_char, 10);
+			update_cnt++;
+			if (sep_char && sep_char[0] == '@') {
+				job_msg.wait4switch = time_str2mins(sep_char+1)
+						      * 60;
+			}
+		}
+		else if (strncasecmp(tag, "wait-for-switch", MAX(taglen, 5))
+			 == 0) {
+			job_msg.wait4switch =
+				(uint32_t) strtol(val, (char **) NULL, 10);
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "Shared", MAX(taglen, 2)) == 0) {
 			if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				job_msg.shared = 1;

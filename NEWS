@@ -66,6 +66,12 @@ documents those changes that are of interest to users and admins.
     identifying the srun optioins which are valid on that system.
  -- BlueGene: Permit users to specify a separate connection type for each
     dimension (e.g. "--conn-type=torus,mesh,torus").
+ -- Add the ability for a user to limit the number of leaf switches in a job's
+    allocation using the --switch option of salloc, sbatch and srun. There is
+    also a new SchedulerParameters value of max_switch_wait, which a SLURM
+    administrator can used to set a maximum job delay and prevent a user job
+    from blocking lower priority jobs for too long. Based on work by Rod
+    Schultz, Bull.
 
 * Changes in SLURM 2.3.0.pre6
 =============================

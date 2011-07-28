@@ -109,6 +109,7 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 		av_store(av, j+1, newSVuv(job_info->req_node_inx[j+1]));
 	}
 	hv_store_sv(hv, "req_node_inx", newRV_noinc((SV*)av));
+	STORE_FIELD(hv, job_info, req_switch, uint32_t);
 	STORE_FIELD(hv, job_info, requeue, uint16_t);
 	STORE_FIELD(hv, job_info, resize_time, time_t);
 	STORE_FIELD(hv, job_info, restart_cnt, uint16_t);
@@ -127,6 +128,7 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	STORE_FIELD(hv, job_info, time_limit, uint32_t);
 	STORE_FIELD(hv, job_info, time_min, uint32_t);
 	STORE_FIELD(hv, job_info, user_id, uint32_t);
+	STORE_FIELD(hv, job_info, wait4switch, uint32_t);
 	if(job_info->wckey)
 		STORE_FIELD(hv, job_info, wckey, charp);
 	if(job_info->work_dir)
@@ -226,6 +228,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	} else {
 		/* nothing to do */
 	}
+	FETCH_FIELD(hv, job_info, req_switch, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_info, requeue, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, resize_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, restart_cnt, uint16_t, TRUE);
@@ -241,6 +244,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, suspend_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, time_limit, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, time_min, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, wait4switch, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_info, wckey, charp, FALSE);
 	FETCH_FIELD(hv, job_info, work_dir, charp, FALSE);
 	return 0;

@@ -223,6 +223,8 @@ typedef struct srun_options {
 	char **spank_job_env;	/* SPANK controlled environment for job
 				 * Prolog and Epilog		*/
 	int spank_job_env_size;	/* size of spank_job_env	*/
+	int req_switch;		/* Minimum number of switches	*/
+	int wait4switch;	/* Maximum time to wait for minimum switches */
 } opt_t;
 
 extern opt_t opt;

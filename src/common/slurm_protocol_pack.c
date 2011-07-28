@@ -3994,6 +3994,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);
+		safe_unpack32(&job->req_switch, buffer);
+		safe_unpack32(&job->wait4switch, buffer);
+
 		safe_unpackstr_xmalloc(&job->alloc_node, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
 		if (node_inx_str == NULL)
@@ -5798,6 +5801,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->warn_signal, buffer);
 		pack16(job_desc_ptr->warn_time, buffer);
 		packstr(job_desc_ptr->wckey, buffer);
+		pack32(job_desc_ptr->req_switch, buffer);
+		pack32(job_desc_ptr->wait4switch, buffer);
 
 		if (job_desc_ptr->select_jobinfo) {
 			select_g_select_jobinfo_pack(
@@ -6264,6 +6269,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->warn_time, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->wckey,
 				       &uint32_tmp, buffer);
+		safe_unpack32(&job_desc_ptr->req_switch, buffer);
+		safe_unpack32(&job_desc_ptr->wait4switch, buffer);
 
 		if (select_g_select_jobinfo_unpack(
 			    &job_desc_ptr->select_jobinfo,

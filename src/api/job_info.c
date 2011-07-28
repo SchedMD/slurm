@@ -797,6 +797,7 @@ line15:
 			 job_ptr->comment);
 		xstrcat(out, tmp_line);
 	}
+
 	/****** Line 27 (optional) ******/
 	if (job_ptr->batch_script) {
 		if (one_liner)
@@ -807,6 +808,21 @@ line15:
 		xstrcat(out, job_ptr->batch_script);
 	}
 
+	/****** Line 28 (optional) ******/
+	if (job_ptr->req_switch) {
+		char time_buf[32];
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		secs2time_str((time_t) job_ptr->wait4switch, time_buf,
+			      sizeof(time_buf));
+		snprintf(tmp_line, sizeof(tmp_line), "Switches=%u@%s\n",
+			 job_ptr->req_switch, time_buf);
+		xstrcat(out, tmp_line);
+	}
+
+	/****** Line 29 (optional) ******/
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

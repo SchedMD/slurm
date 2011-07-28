@@ -161,6 +161,7 @@
 #define LONG_OPT_TIME_MIN        0x140
 #define LONG_OPT_GRES            0x141
 #define LONG_OPT_WAIT_ALL_NODES  0x142
+#define LONG_OPT_REQ_SWITCH      0x143
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -357,6 +358,8 @@ static void _opt_default()
 	opt.reservation     = NULL;
 	opt.wait_all_nodes  = (uint16_t) NO_VAL;
 	opt.wckey           = NULL;
+	opt.req_switch      = -1;
+	opt.wait4switch     = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -401,6 +404,8 @@ env_vars_t env_vars[] = {
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
+  {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
+  {"SALLOC_WAIT4SWITCH",   OPT_INT,        &opt.wait4switch,   NULL          },
   {NULL, 0, NULL, NULL}
 };
 
@@ -667,10 +672,12 @@ void set_options(const int argc, char **argv)
 		{"uid",           required_argument, 0, LONG_OPT_UID},
 		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
+		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
 		"+A:B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRst:uU:vVw:W:x:";
+	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
 
@@ -1129,6 +1136,16 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
+			break;
+		case LONG_OPT_REQ_SWITCH:
+			pos_delimit = strstr(optarg,"@");
+			if (pos_delimit != NULL) {
+				pos_delimit[0] = '\0';
+				pos_delimit++;
+				opt.wait4switch = time_str2mins(pos_delimit) *
+						   60;
+			}
+			opt.req_switch = _get_int(optarg, "switches");
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {
@@ -1770,6 +1787,8 @@ static void _opt_list(void)
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	str = print_commandline(command_argc, command_argv);
 	info("user command   : `%s'", str);
+	info("switch         : %d", opt.req_switch);
+	info("wait-for-switch: %d", opt.wait4switch);
 	xfree(str);
 
 }
@@ -1800,6 +1819,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list]\n"
+"              [--switch=max-switches[@max-time-to-wait]]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1847,6 +1867,8 @@ static void _help(void)
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+"      --switch=max-switches{@max-time-to-wait}\n"
+"                              Optimum switches and max time to wait for optimum\n"
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"

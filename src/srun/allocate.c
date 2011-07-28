@@ -703,6 +703,11 @@ job_desc_msg_create_from_opts (void)
 	if (opt.warn_time)
 		j->warn_time = opt.warn_time;
 
+	if (opt.req_switch >= 0)
+		j->req_switch = opt.req_switch;
+	if (opt.wait4switch >= 0)
+		j->wait4switch = opt.wait4switch;
+
 	/* srun uses the same listening port for the allocation response
 	 * message as all other messages */
 	j->alloc_resp_port = slurmctld_comm_addr.port;

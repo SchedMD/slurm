@@ -157,6 +157,7 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer,
 			      uint16_t protocol_version);
 static int  _load_job_state(Buf buffer,	uint16_t protocol_version);
+static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
 static int  _open_job_state_file(char **state_file);
@@ -313,6 +314,34 @@ static void _delete_job_desc_files(uint32_t job_id)
 	if (stat(dir_name, &sbuf) == 0)	/* remove job directory as needed */
 		(void) rmdir(dir_name);
 	xfree(dir_name);
+}
+
+static uint32_t _max_switch_wait(uint32_t input_wait)
+{
+	static time_t sched_update = 0;
+	static uint32_t max_wait = 60;
+	char *sched_params, *tmp_ptr;
+	int i;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		sched_params = slurm_get_sched_params();
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "max_switch_wait="))) {
+		/*                                   0123456789012345 */
+			i = atoi(tmp_ptr + 16);
+			if (i < 0) {
+				error("ignoring SchedulerParameters: "
+				      "max_switch_wait of %d", i);
+			} else {
+				      max_wait = i;
+			}
+		}
+		xfree(sched_params);
+	}
+
+	if (max_wait > input_wait)
+		return input_wait;
+	return max_wait;
 }
 
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -734,6 +763,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->resv_id, buffer);
 	pack32(dump_job_ptr->next_step_id, buffer);
 	pack32(dump_job_ptr->qos_id, buffer);
+	pack32(dump_job_ptr->req_switch, buffer);
+	pack32(dump_job_ptr->wait4switch, buffer);
 
 	pack_time(dump_job_ptr->preempt_time, buffer);
 	pack_time(dump_job_ptr->start_time, buffer);
@@ -829,6 +860,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t exit_code, assoc_id, db_index, name_len, time_min;
 	uint32_t next_step_id, total_cpus, total_nodes = 0, cpu_cnt;
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
+	uint32_t req_switch = 0, wait4switch = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
@@ -894,6 +926,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&resv_id, buffer);
 		safe_unpack32(&next_step_id, buffer);
 		safe_unpack32(&qos_id, buffer);
+		safe_unpack32(&req_switch, buffer);
+		safe_unpack32(&wait4switch, buffer);
 
 		safe_unpack_time(&preempt_time, buffer);
 		safe_unpack_time(&start_time, buffer);
@@ -1419,6 +1453,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->limit_set_min_cpus  = limit_set_max_cpus;
 	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
 	job_ptr->limit_set_time      = limit_set_time;
+	job_ptr->req_switch      = req_switch;
+	job_ptr->wait4switch     = wait4switch;
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 
@@ -3951,6 +3987,12 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		}
 	}
 
+	if (job_desc->req_switch != NO_VAL) /* Max # of switches */
+		job_ptr->req_switch = job_desc->req_switch;
+	if (job_desc->wait4switch != NO_VAL)
+		job_ptr->wait4switch = _max_switch_wait(job_desc->wait4switch);
+	job_ptr->best_switch = true;
+
 	if (fail_reason != WAIT_NO_REASON) {
 		if (fail_reason == WAIT_QOS_THRES)
 			error_code = ESLURM_QOS_THRES;
@@ -5495,6 +5537,9 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		packstr(dump_job_ptr->name, buffer);
 		packstr(dump_job_ptr->wckey, buffer);
+		pack32(dump_job_ptr->req_switch, buffer);
+		pack32(dump_job_ptr->wait4switch, buffer);
+		
 		packstr(dump_job_ptr->alloc_node, buffer);
 		if (!IS_JOB_COMPLETING(dump_job_ptr))
 			pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
@@ -6602,6 +6647,17 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_specs->job_id);
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto fini;
+	}
+
+	if (job_specs->req_switch != NO_VAL) {
+		job_ptr->req_switch = job_specs->req_switch;
+		info("Change of switches to %u job %u",
+		     job_specs->req_switch, job_specs->job_id);
+	}
+	if (job_specs->wait4switch != NO_VAL) {
+		job_ptr->wait4switch = _max_switch_wait(job_specs->wait4switch);
+		info("Change of switch wait to %u secs job %u",
+		     job_ptr->wait4switch, job_specs->job_id);
 	}
 
 	if (job_specs->partition) {

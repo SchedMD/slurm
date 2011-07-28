@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "June 2011" "scontrol 2.3" "Slurm components"
+.TH SCONTROL "1" "July 2011" "scontrol 2.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -633,6 +633,19 @@ year is assumed, unless the combination of MM/DD and HH:MM:SS has
 already passed for that year, in which case the next year is used.
 .RE
 .TP
+\fISwitches\fP=<count>[@<max\-time\-to\-wait>]
+When a tree topology is used, this defines the maximum count of switches
+desired for the job allocation. If SLURM finds an allocation containing more
+switches than the count specified, the job remain pending until it either finds
+an allocation with desired switch count or the time limit expires. By default
+there is no switch count limit and no time limit delay. Set the count
+to zero in order to clean any previously set count (disabling the limit).
+The job's maximum time delay may be limited by the system administrator using
+the \fBSchedulerParameters\fR configuration parameter with the
+\fBmax_switch_wait\fR parameter option.
+Also see \fIwait\-for\-switch\fP.
+
+.TP
 \fITimeLimit\fP=<time>
 The job's time limit.
 Output format is [days\-]hours:minutes:seconds or "UNLIMITED".
@@ -647,6 +660,18 @@ time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
 current time limit, the \fIJobId\fP specification must preceed the
 \fITimeLimit\fP specification.
 
+.TP
+\fIwait\-for\-switch\fP=<max\-time\-to\-wait>
+When a tree topology is used, this defines the  maximum time to wait for the
+desired count of switches. If SLURM finds an allocation containing more
+switches than the count specified, the job remain pending until it either finds
+an allocation with desired switch count or the time limit expires. By default
+there is no switch count limit and there is not time delay. Set the time
+to zero in order to clean any previously set time limit (disabling the limit).
+The job's maximum time delay may be limited by the system administrator using
+the \fBSchedulerParameters\fR configuration parameter with the
+\fBmax_switch_wait parameter\fR option.
+Also see \fISwitches\fP.
 .TP
 \fIWCKey\fP=<key>
 Set the job's workload characterization key to the specified value.

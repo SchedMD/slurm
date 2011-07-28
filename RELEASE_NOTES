@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.3
-7 June 2011
+28 July 2011
 
 
 IMPORTANT NOTE:
@@ -32,6 +32,8 @@ HIGHLIGHTS
   NOTE: The slurmctld daemon will report the lack of a front_end_state file
   as an error when first started in this configuration.
 * The ability to expand running jobs was added
+* The ability to control how many leaf switches a job is allocated and the
+  maximum delay to get that leaf switch count can be controlled.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
@@ -52,6 +54,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * More than one TaskPlugin can be configured in a comma separated list.
 * DefMemPerCPU, DefMemPerNode, MaxMemPerCPU and MaxMemPerNode configuration
   options added on a per-partition basis.
+* SchedulerParameters can now control the maximum delay that a job can set in
+  order to be allocated some desired leaf switch count by specifying a value
+  for max_switch_wait.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -70,6 +75,10 @@ COMMAND CHANGES (see man pages for details)
   job whose resource allocation is intended to be used to expand the allocation
   of another job. See https://computing.llnl.gov/linux/slurm//faq.html#job_size
   for a description of it's use.
+* Added --switches option to salloc, sbatch and srun commands to control the
+  desired number of switches allocated to a job and the maximum delay before
+  starting the job with more leaf switches.
+* Added scontrol ability to modify a job's desired switch count or delay.
 
 BLUEGENE SPECIFIC CHANGES
 =========================
@@ -123,6 +132,8 @@ job_info_t
 	batch_host		name of the host running the batch script
 	batch_script		contents of batch script
 	preempt_time		time that a job become preempted
+	req_switches		maximum number of leaf switches
+	wait4switches		maximum delay to get desired leaf switch count
 
 job_step_create_response_msg_t
 	select_jobinfo		data needed from the select plugin for a step
