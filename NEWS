@@ -1,7 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.3.0.pre7
+* Changes in SLURM 2.3.0.rc2
+=============================
+
+* Changes in SLURM 2.3.0.rc1
 =============================
  -- NOTE THERE HAVE BEEN NEW FIELDS ADDED TO THE JOB AND PARTITION STATE SAVE
     FILES AND RPCS. PENDING AND RUNNING JOBS WILL BE LOST WHEN UPGRADING FROM
