@@ -2280,6 +2280,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
 	time_t now_time = time(NULL);
 	enum job_states state;
+	int color_inx = step_ptr->step_id % sview_colors_cnt;
 
 	convert_num_unit((float)step_ptr->num_cpus, tmp_cpu_min,
 			 sizeof(tmp_cpu_min), UNIT_NONE);
@@ -2331,9 +2332,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ALLOC,        0,
-			   SORTID_COLOR,	sview_colors[
-				   (step_ptr->step_id % sview_colors_cnt)],
-			   SORTID_COLOR_INX,    step_ptr->step_id,
+			   SORTID_COLOR,	sview_colors[color_inx],
+			   SORTID_COLOR_INX,    color_inx,
 			   SORTID_CPUS,         tmp_cpu_min,
 			   SORTID_GRES,         step_ptr->gres,
 			   SORTID_JOBID,        step_ptr->step_id,
@@ -2728,8 +2728,8 @@ need_refresh:
 					     k <= step_ptr->node_inx[j+1];
 					     k++) {
 						color_set_flag[k] = true;
-						color_inx[k] = step_ptr->
-							       step_id;
+						color_inx[k] = step_ptr->step_id
+							% sview_colors_cnt;
 					}
 					j += 2;
 				}
