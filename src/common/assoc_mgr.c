@@ -3836,7 +3836,8 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 
 	/* get qos before association since it is used there */
 	if (cache_level & ASSOC_MGR_CACHE_QOS)
-		if (_refresh_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
+		if (_refresh_assoc_mgr_qos_list(db_conn, enforce)
+		    == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	/* get user before association/wckey since it is used there */
