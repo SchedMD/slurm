@@ -2148,7 +2148,8 @@ extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
 			error("couldn't set sql_mode");
 			acct_storage_p_close_connection(&mysql_conn);
 			errno = rc;
-		}
+		} else
+			errno = SLURM_SUCCESS;
 	}
 
 	return (void *)mysql_conn;
