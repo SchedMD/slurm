@@ -1065,7 +1065,9 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	}
 
 	if (args) {
+		cache_level = args->cache_level;
 		enforce = args->enforce;
+
 		if (args->remove_assoc_notify)
 			remove_assoc_notify = args->remove_assoc_notify;
 		if (args->remove_qos_notify)
@@ -1076,7 +1078,6 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 			update_qos_notify = args->update_qos_notify;
 		if (args->update_resvs)
 			update_resvs = args->update_resvs;
-		cache_level = args->cache_level;
 		assoc_mgr_refresh_lists(db_conn, args);
 	}
 
