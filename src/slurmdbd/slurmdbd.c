@@ -150,8 +150,6 @@ int main(int argc, char *argv[])
 	if (xsignal_block(dbd_sigarray) < 0)
 		error("Unable to block signals");
 
-	db_conn = acct_storage_g_get_connection(NULL, 0, false, NULL);
-
 	/* Create attached thread for signal handling */
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&signal_handler_thread, &thread_attr,
@@ -167,7 +165,8 @@ int main(int argc, char *argv[])
 	if (slurmdbd_conf->track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
-	if (assoc_mgr_init(db_conn, &assoc_init_arg) == SLURM_ERROR) {
+	db_conn = acct_storage_g_get_connection(NULL, 0, false, NULL);
+	if (assoc_mgr_init(db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);
 		goto end_it;

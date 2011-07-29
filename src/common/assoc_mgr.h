@@ -163,7 +163,8 @@ extern uint32_t g_qos_max_priority; /* max priority in all qos's */
 extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
 
 
-extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
+extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
+			  int db_conn_errno);
 extern int assoc_mgr_fini(char *state_save_location);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);

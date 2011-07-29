@@ -1048,7 +1048,8 @@ static void _wr_wrunlock(lock_datatype_t datatype)
 	slurm_mutex_unlock(&locks_mutex);
 }
 
-extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
+extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
+			  int db_conn_errno)
 {
 	static uint16_t enforce = 0;
 	static uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
@@ -1093,8 +1094,9 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		assoc_mgr_cluster_name = slurm_get_cluster_name();
 	}
 
-	/* check if we can't talk to the db yet */
-	if (errno == ESLURM_ACCESS_DENIED)
+	/* check if we can't talk to the db yet (Do this after all
+	 * the initialization above) */
+	if (db_conn_errno != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	/* get qos before association since it is used there */

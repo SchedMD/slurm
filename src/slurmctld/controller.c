@@ -353,14 +353,6 @@ int main(int argc, char *argv[])
 		      slurmctld_conf.accounting_storage_type);
 	}
 
-	callbacks.acct_full   = trigger_primary_ctld_acct_full;
-	callbacks.dbd_fail    = trigger_primary_dbd_fail;
-	callbacks.dbd_resumed = trigger_primary_dbd_res_op;
-	callbacks.db_fail     = trigger_primary_db_fail;
-	callbacks.db_resumed  = trigger_primary_db_res_op;
-	acct_db_conn = acct_storage_g_get_connection(&callbacks, 0, false,
-						     slurmctld_cluster_name);
-
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.update_resvs = update_assocs_in_resvs;
@@ -374,7 +366,14 @@ int main(int argc, char *argv[])
 	if (slurmctld_conf.track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
-	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg)) {
+	callbacks.acct_full   = trigger_primary_ctld_acct_full;
+	callbacks.dbd_fail    = trigger_primary_dbd_fail;
+	callbacks.dbd_resumed = trigger_primary_dbd_res_op;
+	callbacks.db_fail     = trigger_primary_db_fail;
+	callbacks.db_resumed  = trigger_primary_db_res_op;
+	acct_db_conn = acct_storage_g_get_connection(&callbacks, 0, false,
+						     slurmctld_cluster_name);
+	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			error("Association database appears down, "
 			      "reading from state file.");
@@ -499,7 +498,7 @@ int main(int argc, char *argv[])
 			 * we call this since we are setting up static
 			 * variables inside the function sending a
 			 * NULL will just use those set before. */
-			if (assoc_mgr_init(acct_db_conn, NULL) &&
+			if (assoc_mgr_init(acct_db_conn, NULL, errno) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
 			    !running_cache) {
 				trigger_primary_dbd_fail();
