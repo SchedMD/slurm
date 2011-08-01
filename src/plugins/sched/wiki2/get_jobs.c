@@ -703,6 +703,7 @@ extern void wiki_job_requeue(struct job_record *job_ptr, char *reason)
 {
 	int empty = -1, i;
 
+	job_ptr->priority = 0;
 	for (i=0; i<REJECT_MSG_MAX; i++) {
 		if ((reject_msgs[i].job_id == 0) && (empty == -1)) {
 			empty = i;

@@ -171,7 +171,7 @@ char *slurm_sched_strerror( int errnum )
 /**************************************************************************/
 void slurm_sched_plugin_requeue( struct job_record *job_ptr, char *reason )
 {
-	/* Empty. */
+	job_ptr->priority = 0;
 }
 
 /**************************************************************************/

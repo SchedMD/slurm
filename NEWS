@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.0.rc2
 ============================
+ -- With sched/wiki or sched/wiki2 (Maui or Moab scheduler), insure that a
+    requeued job's priority is reset to zero. 
 
 * Changes in SLURM 2.3.0.rc1
 ============================
