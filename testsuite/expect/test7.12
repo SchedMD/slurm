@@ -138,6 +138,7 @@ if {$matches < 1} {
 } elseif {$matches != 2} {
 	send_user "\nWARNING: Failed to load PIDs associated with job step.\n"
 	send_user "         This is dependent upon the ProctrackType configured.\n"
+	send_user "         proctrack/pgid does NOT support this functionality.\n"
 }
 
 cancel_job $job_id
