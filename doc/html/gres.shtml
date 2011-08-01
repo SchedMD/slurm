@@ -100,11 +100,14 @@ for use by other jobs.</P>
 
 <P>Job steps can be allocated generic resources from those allocated to the
 job using the <I>--gres</I> option with the <I>srun</I> command as described
-above. By default a job step will have access to all generic resources
-allocated to the job, but lower values may be specified if running more than
-one job step concurrently. The job step will be allocated specific generic
-resources and those resources will not be available to other job steps. A
-simple example is shown below.</P>
+above. By default, a job step will be allocated none of the generic resources
+allocated to the job, but must explicitly request desired generic resources.
+This design choice was based upon a scenario where each job executes many
+job steps. If job steps were granted access to all generic resources by
+default, some job steps would need to explicitly specify zero generic resource
+counts, which we considered more confusing. The job step can be allocated
+specific generic resources and those resources will not be available to other
+job steps. A simple example is shown below.</P>
 
 <PRE>
 #!/bin/bash
@@ -123,8 +126,13 @@ wait
 <h2>GPU Management</h2>
 
 <P>In the case of SLURM's GRES plugin for GPUs, the environment variable
-CUDA_VISIBLE_DEVICES is set for each job steps to determine which GPUs are
-available for its use. CUDA version 3.1 (or higher) uses this environment
+CUDA_VISIBLE_DEVICES is set for each job step to determine which GPUs are
+available for its use on each node. This environment variable is only set
+when tasks are launched on a specific compute node (no global environment
+variable is set for the <i>salloc</i> command and the environment variable set
+for the <i>sbatch</i> command only reflects the GPUs allocated to that job
+on that node, node zero of the allocation).
+CUDA version 3.1 (or higher) uses this environment
 variable in order to run multiple jobs or job steps on a node with GPUs
 and insure that the resources assigned to each are unique. In the example
 above, the allocated node may have four or more graphics devices. In that
@@ -140,13 +148,7 @@ JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
 <P>NOTE: Be sure to specify the <I>File</I> parameters in the <I>gres.conf</I>
 file and insure they are in the increasing numeric order.</P>
 <!-------------------------------------------------------------------------->
-<h2>Future</h2>
 
-<P>Our plans for the near future call for integrating SLURM GRES support with
-Linux <I>cgroups</I> in order to remove access to devices not allocated to
-a job or job step.</P>
-<!-------------------------------------------------------------------------->
-
-<p style="text-align: center;">Last modified 16 September 2010</p>
+<p style="text-align: center;">Last modified 1 August 2011</p>
 
 </body></html>
