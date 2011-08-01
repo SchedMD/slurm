@@ -24,8 +24,8 @@ install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(DESTDIR)$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
 	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/cray/$$p.pl > $(DESTDIR)$(bindir)/$$p"; \
-	   sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/cray/$$p.pl >$(DESTDIR)$(bindir)/$$p; \
+	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/cray/$$p.pl | sed 's%BINDIR%@bindir@%' > $(DESTDIR)$(bindir)/$$p"; \
+	         sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/cray/$$p.pl | sed "s%BINDIR%@bindir@%" > $(DESTDIR)$(bindir)/$$p; \
 	   chmod 755 $(DESTDIR)$(bindir)/$$p;\
 	done
 

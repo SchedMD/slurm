@@ -613,10 +613,12 @@ login: # /etc/init.d/slurm start
 
 <h3>Srun wrapper configuration</h3>
 
-<p>The <i>srun</i> wrapper to <i>aprun</i> may require modification to run
-at each site. Explicitly setting the <i>$aprun</i>, <i>$salloc</i> and
-<i>$srun</i> variables to the absolute pathnames of those executable files
-is recommended. In order to debug <i>srun</i>, uncomment the line</p>
+<p>The <i>srun</i> wrapper to <i>aprun</i> might require modification to run
+as desired. Specifically the <i>$aprun</i> variable could be set to the
+absolute pathname of that executable file. Without that modification, the
+<i>aprun</i> command executed will depend upon the user's search path.</p>
+
+<p>In order to debug the <i>srun</i> wrapper, uncomment the line</p>
 <pre>
 print "comment=$command\n"
 </pre>
@@ -631,6 +633,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 July 2011</p></td>
+<p style="text-align:center;">Last modified 1 August 2011</p></td>
 
 <!--#include virtual="footer.txt"-->

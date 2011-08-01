@@ -142,8 +142,8 @@ my (	$account,
 );
 
 my $aprun  = "aprun";
-my $salloc = "salloc";
-my $srun   = "srun";
+my $salloc = "BINDIR/salloc";
+my $srun   = "BINDIR/srun";
 
 my $have_job;
 $aprun_line_buf = 1;
