@@ -61,7 +61,7 @@ static void _calc_coord_4d(int a, int x, int y, int z, int default_y_offset,
 	*coord_y = (y_offset - y) + z;
 }
 
-static int *_get_cluster_dims(node_info_msg_t *node_info_ptr)
+extern int *get_cluster_dims(node_info_msg_t *node_info_ptr)
 {
 	int *dim_size = slurmdb_setup_cluster_dim_size();
 
@@ -92,12 +92,6 @@ static void _internal_setup_grid(int level, uint16_t *coords)
 
 	if (level > params.cluster_dims)
 		return;
-
-	if (dim_size == NULL) {
-		dim_size = _get_cluster_dims(NULL);
-		if ((dim_size == NULL) || (dim_size[0] < 1))
-			fatal("Invalid system dimensions");
-	}
 
 	if (level < params.cluster_dims) {
 		for (coords[level] = 0;
@@ -175,12 +169,6 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 	int i, j, len;
 	int default_y_offset = 0;
 	smap_node_t *smap_node;
-
-	if (dim_size == NULL) {
-		dim_size = _get_cluster_dims(node_info_ptr);
-		if ((dim_size == NULL) || (dim_size[0] < 1))
-			fatal("Invalid system dimensions");
-	}
 
 	smap_system_ptr = xmalloc(sizeof(smap_system_t));
 

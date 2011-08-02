@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     get registered again with the DBD.
  -- Fixed issue where if the DBD connection from the ctld goes away because of
     a POLLERR the dbd_fail callback is called.
+ -- BLUEGENE - Fix to smap command-line mode display.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

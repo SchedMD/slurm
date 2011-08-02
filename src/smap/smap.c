@@ -118,6 +118,11 @@ int main(int argc, char *argv[])
 		sleep(10);	/* keep trying to reconnect */
 	}
 
+	if (dim_size == NULL) {
+		dim_size = get_cluster_dims(new_node_ptr);
+		if ((dim_size == NULL) || (dim_size[0] < 1))
+			fatal("Invalid system dimensions");
+	}
 	_init_colors();
 
 #ifdef HAVE_BG
