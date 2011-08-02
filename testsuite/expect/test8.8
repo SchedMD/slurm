@@ -44,10 +44,10 @@ set sleep_time  5
 
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node_cnt node error_cnt check} {
-	global salloc number alpha_numeric_under max_job_delay prompt
+	global salloc number alpha_numeric_under bin_bash max_job_delay prompt
 	set job_id 0
 	set block ""
-	set line "-N$node_cnt-$node_cnt"
+	set line "-N$node_cnt-$node_cnt -t5 $bin_bash"
 	if {[string compare $node ""]} {
 		set line "$line -w $node"
 	}
