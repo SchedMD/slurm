@@ -1646,9 +1646,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	select_jobinfo_t *jobinfo = NULL;
 	xassert(job_ptr);
 
-#ifdef HAVE_BG_L_P
-	return NULL;
-#endif
 	slurm_mutex_lock(&block_state_mutex);
 	jobinfo = job_ptr->select_jobinfo->data;
 	bg_record = jobinfo->bg_record;
