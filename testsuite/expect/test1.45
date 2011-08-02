@@ -144,8 +144,12 @@ if {$num_procs_test1 != $num_procs_test2} {
 }
 
 if {$num_nodes_test3 != 1} {
-	send_user "\nFAILURE: SLURM_NNODES should be 1 ($num_nodes_test3 != 1)\n"
-	set exit_code 1
+	if { [test_bluegene] } {
+		send_user "\nWARNING: Can not confirm SLURM_NNODES value, likely expanded to smallest block size\n"
+	} else {
+		send_user "\nFAILURE: SLURM_NNODES should be 1 ($num_nodes_test3 != 1)\n"
+		set exit_code 1
+	}
 }
 
 if {$num_procs_test3 != 1} {
