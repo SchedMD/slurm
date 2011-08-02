@@ -534,7 +534,7 @@ extern void trigger_primary_ctld_fail(void)
 }
 
 extern void trigger_primary_ctld_res_op(void)
-{	
+{
 	slurm_mutex_lock(&trigger_mutex);
 	trigger_pri_ctld_res_op = true;
 	ctld_failure = 0;
@@ -583,7 +583,7 @@ extern void trigger_backup_ctld_as_ctrl(void)
 extern void trigger_primary_dbd_fail(void)
 {
 	slurm_mutex_lock(&trigger_mutex);
-	if (dbd_failure != 1) {	
+	if (dbd_failure != 1) {
 		trigger_pri_dbd_fail = true;
 		dbd_failure = 1;
 	}
@@ -601,7 +601,7 @@ extern void trigger_primary_dbd_res_op(void)
 extern void trigger_primary_db_fail(void)
 {
 	slurm_mutex_lock(&trigger_mutex);
-	if (db_failure != 1) {	
+	if (db_failure != 1) {
 		trigger_pri_db_fail = true;
 		db_failure = 1;
 	}
