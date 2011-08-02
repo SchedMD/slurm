@@ -493,6 +493,7 @@ env_vars_t env_vars[] = {
 {"SLURM_EPILOG",        OPT_STRING,     &opt.epilog,        NULL             },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
+{"SLURM_GRES",          OPT_STRING,     &opt.gres,          NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
 {"SLURM_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL             },
 /* SLURM_JOBID was used in slurm version 1.3 and below, it is now vestigial */
