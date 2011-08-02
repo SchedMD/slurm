@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue where if there was a network issue between the slurmctld and
     the DBD where both remained up but were disconnected the slurmctld would
     get registered again with the DBD.
+ -- Fixed issue where if the DBD connection from the ctld goes away because of
+    a POLLERR the dbd_fail callback is called.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

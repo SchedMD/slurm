@@ -1863,6 +1863,8 @@ static int _fd_writeable(slurm_fd_t fd)
 		}
 		if (ufds.revents & POLLERR) {
 			error("SlurmDBD connection experienced an error: %m");
+			if (callbacks_requested)
+				(callback.dbd_fail)();
 			return 0;
 		}
 		if ((ufds.revents & POLLOUT) == 0) {
