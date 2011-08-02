@@ -1620,9 +1620,9 @@ static void _opt_args(int argc, char **argv)
 	} else {
 		if (opt.nodes_set) {
 			if (node_cnt > opt.ntasks) {
-				error("You asked for %d nodes, but only "
-				      "%d tasks, resetting.",
-				      node_cnt, opt.ntasks);
+				info("You asked for %d nodes, but only "
+				     "%d tasks, resetting node count to %u",
+				     node_cnt, opt.ntasks, opt.ntasks);
 				opt.max_nodes = opt.min_nodes = node_cnt
 					= opt.ntasks;
 			}
