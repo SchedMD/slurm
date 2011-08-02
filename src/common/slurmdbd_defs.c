@@ -236,13 +236,13 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	} else {	/* resp->msg_type == DBD_RC */
 		dbd_rc_msg_t *msg = resp->data;
 		*resp_code = msg->return_code;
-		if(msg->return_code != SLURM_SUCCESS
-		   && msg->return_code != ACCOUNTING_FIRST_REG) {
+		if (msg->return_code != SLURM_SUCCESS
+		    && msg->return_code != ACCOUNTING_FIRST_REG) {
 			char *comment = msg->comment;
-			if(!comment)
+			if (!comment)
 				comment = slurm_strerror(msg->return_code);
-			if(msg->sent_type == DBD_REGISTER_CTLD &&
-			   slurm_get_accounting_storage_enforce()) {
+			if (msg->sent_type == DBD_REGISTER_CTLD &&
+			    slurm_get_accounting_storage_enforce()) {
 				error("slurmdbd: Issue with call "
 				      "%s(%u): %u(%s)",
 				      slurmdbd_msg_type_2_str(
@@ -1579,8 +1579,8 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 		    == SLURM_SUCCESS) {
 			rc = msg->return_code;
 			if (rc != SLURM_SUCCESS) {
-				if(msg->sent_type == DBD_REGISTER_CTLD &&
-				   slurm_get_accounting_storage_enforce()) {
+				if (msg->sent_type == DBD_REGISTER_CTLD &&
+				    slurm_get_accounting_storage_enforce()) {
 					error("slurmdbd: DBD_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
@@ -1673,8 +1673,8 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 		    == SLURM_SUCCESS) {
 			rc = msg->return_code;
 			if (rc != SLURM_SUCCESS) {
-				if(msg->sent_type == DBD_REGISTER_CTLD &&
-				   slurm_get_accounting_storage_enforce()) {
+				if (msg->sent_type == DBD_REGISTER_CTLD &&
+				    slurm_get_accounting_storage_enforce()) {
 					error("slurmdbd: DBD_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
