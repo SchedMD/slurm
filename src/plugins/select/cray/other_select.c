@@ -121,9 +121,6 @@ static slurm_select_ops_t *_other_select_get_ops(slurm_select_context_t *c)
 		"select_p_ba_init",
 		"select_p_ba_fini",
 		"select_p_ba_get_dims",
-		"select_p_ba_reset",
-		"select_p_ba_request_apply",
-		"select_p_ba_remove_block",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -863,28 +860,4 @@ extern int *other_ba_get_dims(void)
 		return NULL;
 
 	return (*(other_select_context->ops.ba_get_dims))();
-}
-
-extern void other_ba_reset(bool track_down_nodes)
-{
-	if (other_select_init() < 0)
-		return;
-
-	(*(other_select_context->ops.ba_reset))(track_down_nodes);
-}
-
-extern int other_ba_request_apply(select_ba_request_t *ba_request)
-{
-	if (other_select_init() < 0)
-		return 0;
-
-	return (*(other_select_context->ops.ba_request_apply))(ba_request);
-}
-
-extern int other_ba_remove_block(List mps, bool is_small)
-{
-	if (other_select_init() < 0)
-		return 0;
-
-	return (*(other_select_context->ops.ba_remove_block))(mps, is_small);
 }

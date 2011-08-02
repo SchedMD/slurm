@@ -218,10 +218,6 @@ typedef struct slurm_select_ops {
 						 bool sanity_check);
 	void            (*ba_fini)              (void);
 	int *           (*ba_get_dims)          (void);
-	void            (*ba_reset)             (bool track_down_nodes);
-	int             (*ba_request_apply)     (select_ba_request_t
-						 *ba_request);
-	int             (*ba_remove_block)      (List mps, bool is_small);
 
 } slurm_select_ops_t;
 
@@ -633,8 +629,5 @@ extern bitstr_t *select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt);
 extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 extern void select_g_ba_fini(void);
 extern int *select_g_ba_get_dims(void);
-extern void select_g_ba_reset(bool track_down_nodes);
-extern int select_g_ba_request_apply(select_ba_request_t *ba_request);
-extern int select_g_ba_remove_block(List mps, bool is_small);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

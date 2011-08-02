@@ -2688,18 +2688,3 @@ extern int *select_p_ba_get_dims(void)
 	return NULL;
 #endif
 }
-
-extern void select_p_ba_reset(bool track_down_nodes)
-{
-	reset_ba_system(track_down_nodes);
-}
-
-extern int select_p_ba_request_apply(select_ba_request_t *ba_request)
-{
-	return new_ba_request(ba_request);
-}
-
-extern int select_p_ba_remove_block(List mps, bool is_small)
-{
-	return remove_block(mps, is_small);
-}

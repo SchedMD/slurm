@@ -126,9 +126,6 @@ static int _select_get_ops(char *select_type,
 		"select_p_ba_init",
 		"select_p_ba_fini",
 		"select_p_ba_get_dims",
-		"select_p_ba_reset",
-		"select_p_ba_request_apply",
-		"select_p_ba_remove_block",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -1326,7 +1323,7 @@ extern void select_g_ba_fini(void)
 	(*(select_context[plugin_id].ops.ba_fini))();
 }
 
-extern int *select_g_ba_get_dims()
+extern int *select_g_ba_get_dims(void)
 {
 	uint32_t plugin_id;
 
@@ -1339,50 +1336,4 @@ extern int *select_g_ba_get_dims()
 		plugin_id = select_context_default;
 
 	return (*(select_context[plugin_id].ops.ba_get_dims))();
-}
-
-extern void select_g_ba_reset(bool track_down_nodes)
-{
-	uint32_t plugin_id;
-
-	if (slurm_select_init(0) < 0)
-		return;
-
-	if (working_cluster_rec)
-		plugin_id = working_cluster_rec->plugin_id_select;
-	else
-		plugin_id = select_context_default;
-
-	(*(select_context[plugin_id].ops.ba_reset))(track_down_nodes);
-}
-
-extern int select_g_ba_request_apply(select_ba_request_t *ba_request)
-{
-	uint32_t plugin_id;
-
-	if (slurm_select_init(0) < 0)
-		return 0;
-
-	if (working_cluster_rec)
-		plugin_id = working_cluster_rec->plugin_id_select;
-	else
-		plugin_id = select_context_default;
-
-	return (*(select_context[plugin_id].ops.ba_request_apply))(ba_request);
-}
-
-extern int select_g_ba_remove_block(List mps, bool is_small)
-{
-	uint32_t plugin_id;
-
-	if (slurm_select_init(0) < 0)
-		return 0;
-
-	if (working_cluster_rec)
-		plugin_id = working_cluster_rec->plugin_id_select;
-	else
-		plugin_id = select_context_default;
-
-	return (*(select_context[plugin_id].ops.ba_remove_block))
-		(mps, is_small);
 }
