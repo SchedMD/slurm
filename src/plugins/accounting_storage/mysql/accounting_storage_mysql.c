@@ -5,8 +5,9 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2011 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Written by Danny Auble <da@schedmd.com, da@llnl.gov>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -467,6 +468,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "name", "tinytext not null" },
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "int unsigned not null default 0" },
+		{ "last_port", "int unsigned not null default 0" },
 		{ "rpc_version", "smallint unsigned not null default 0" },
 		{ "classification", "smallint unsigned default 0" },
 		{ "dimensions", "smallint unsigned default 1" },
@@ -2583,6 +2585,58 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 
 	return as_mysql_register_ctld(
 		mysql_conn, mysql_conn->cluster_name, port);
+}
+
+extern uint16_t clusteracct_storage_p_register_disconn_ctld(
+	mysql_conn_t *mysql_conn, char *control_host)
+{
+	uint16_t control_port = 0;
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return control_port;
+	} else if (!control_host) {
+		error("%s:%d no control host for cluster %s",
+		      THIS_FILE, __LINE__, mysql_conn->cluster_name);
+		return control_port;
+	}
+
+	query = xstrdup_printf("select last_port from %s where name='%s';",
+			       cluster_table, mysql_conn->cluster_name);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		error("register_disconn_ctld: no result given for cluster %s",
+		      mysql_conn->cluster_name);
+		return control_port;
+	}
+	xfree(query);
+
+	if ((row = mysql_fetch_row(result))) {
+		control_port = slurm_atoul(row[0]);
+		/* If there is ever a network issue talking to the DBD, and
+		   both the DBD and the ctrl stay up when the ctld goes to
+		   talk to the DBD again it may not re-register (<=2.2).
+		   Since the slurmctld didn't go down we can presume the port
+		   is still the same and just use the last information as the
+		   information we should use and go along our merry way.
+		*/
+		query = xstrdup_printf(
+			"update %s set control_host='%s', "
+			"control_port=%u where name='%s';",
+			cluster_table, control_host, control_port,
+			mysql_conn->cluster_name);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
+			control_port = 0;
+		xfree(query);
+	}
+	mysql_free_result(result);
+
+	return control_port;
 }
 
 extern int clusteracct_storage_p_fini_ctld(mysql_conn_t *mysql_conn,

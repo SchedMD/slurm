@@ -1002,6 +1002,12 @@ static int _cluster_cpus(slurmdbd_conn_t *slurmdbd_conn,
 end_it:
 	if (rc == SLURM_SUCCESS)
 		slurmdbd_conn->cluster_cpus = cluster_cpus_msg->cpu_count;
+	if (!slurmdbd_conn->ctld_port) {
+		info("DBD_CLUSTER_CPUS: cluster not registered");
+		slurmdbd_conn->ctld_port =
+			clusteracct_storage_g_register_disconn_ctld(
+				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
+	}
 
 	slurmdbd_free_cluster_cpus_msg(cluster_cpus_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
@@ -1795,6 +1801,14 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	/* just incase this gets set we need to clear it */
 	xfree(job.wckey);
+
+	if (!slurmdbd_conn->ctld_port) {
+		info("DBD_JOB_COMPLETE: cluster not registered");
+		slurmdbd_conn->ctld_port =
+			clusteracct_storage_g_register_disconn_ctld(
+				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
+	}
+
 end_it:
 	slurmdbd_free_job_complete_msg(job_comp_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
@@ -2609,6 +2623,13 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	/* just incase job.wckey was set because we didn't send one */
 	if (!job_start_msg->wckey)
 		xfree(job.wckey);
+
+	if (!slurmdbd_conn->ctld_port) {
+		info("DBD_JOB_START: cluster not registered");
+		slurmdbd_conn->ctld_port =
+			clusteracct_storage_g_register_disconn_ctld(
+				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
+	}
 }
 
 static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
@@ -3439,6 +3460,14 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 		rc = SLURM_SUCCESS;
 	/* just incase this gets set we need to clear it */
 	xfree(job.wckey);
+
+	if (!slurmdbd_conn->ctld_port) {
+		info("DBD_STEP_COMPLETE: cluster not registered");
+		slurmdbd_conn->ctld_port =
+			clusteracct_storage_g_register_disconn_ctld(
+				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
+	}
+
 end_it:
 	slurmdbd_free_step_complete_msg(step_comp_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
@@ -3508,6 +3537,14 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	/* just incase this gets set we need to clear it */
 	xfree(job.wckey);
+
+	if (!slurmdbd_conn->ctld_port) {
+		info("DBD_STEP_START: cluster not registered");
+		slurmdbd_conn->ctld_port =
+			clusteracct_storage_g_register_disconn_ctld(
+				slurmdbd_conn->db_conn, slurmdbd_conn->ip);
+	}
+
 end_it:
 	slurmdbd_free_step_start_msg(step_start_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,

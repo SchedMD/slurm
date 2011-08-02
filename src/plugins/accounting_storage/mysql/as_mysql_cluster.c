@@ -353,7 +353,8 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (cluster->control_port) {
-		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
+		xstrfmtcat(vals, ", control_port=%u, last_port=%u",
+			   cluster->control_port, cluster->control_port);
 		set++;
 		clust_reg = true;
 	}
@@ -1144,9 +1145,10 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"update %s set deleted=0, mod_time=%ld, "
-		"control_host='%s', control_port=%u, rpc_version=%d, "
-		"dimensions=%d, flags=%u, plugin_id_select=%d where name='%s';",
-		cluster_table, now, address, port, SLURMDBD_VERSION,
+		"control_host='%s', control_port=%u, last_port=%u, "
+		"rpc_version=%d, dimensions=%d, flags=%u, "
+		"plugin_id_select=%d where name='%s';",
+		cluster_table, now, address, port, port, SLURMDBD_VERSION,
 		SYSTEM_DIMENSIONS, flags, select_get_plugin_id(), cluster);
 	xstrfmtcat(query,
 		   "insert into %s "

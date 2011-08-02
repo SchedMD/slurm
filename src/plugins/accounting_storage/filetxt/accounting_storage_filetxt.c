@@ -533,6 +533,12 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	return SLURM_SUCCESS;
 }
 
+extern int clusteracct_storage_p_register_disconn_ctld(
+	void *db_conn, char *control_host)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int clusteracct_storage_p_fini_ctld(void *db_conn,
 					   char *ip, uint16_t port,
 					   char *cluster_nodes)

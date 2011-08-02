@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- With sched/wiki or sched/wiki2 (Maui or Moab scheduler), insure that a
     requeued job's priority is reset to zero.
  -- BLUEGENE - fix to run steps correctly in a BGL/P emulated system.
+ -- Fixed issue where if there was a network issue between the slurmctld and
+    the DBD where both remained up but were disconnected the slurmctld would
+    get registered again with the DBD.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

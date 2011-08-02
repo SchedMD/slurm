@@ -166,6 +166,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*cluster_cpus)      (void *db_conn, char *cluster_nodes,
 				   uint32_t cpus, time_t event_time);
 	int  (*register_ctld)      (void *db_conn, uint16_t port);
+	int  (*register_disconn_ctld)(void *db_conn, char *control_host);
 	int  (*fini_ctld)          (void *db_conn,
 				    slurmdb_cluster_rec_t *cluster_rec);
 	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
@@ -265,6 +266,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"clusteracct_storage_p_node_up",
 		"clusteracct_storage_p_cluster_cpus",
 		"clusteracct_storage_p_register_ctld",
+		"clusteracct_storage_p_register_disconn_ctld",
 		"clusteracct_storage_p_fini_ctld",
 		"jobacct_storage_p_job_start",
 		"jobacct_storage_p_job_complete",
@@ -871,6 +873,15 @@ extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.register_ctld))(db_conn, port);
+}
+
+extern int clusteracct_storage_g_register_disconn_ctld(
+	void *db_conn, char *control_host)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.register_disconn_ctld))
+		(db_conn, control_host);
 }
 
 extern int clusteracct_storage_g_fini_ctld(void *db_conn,
