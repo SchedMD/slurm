@@ -68,7 +68,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr);
 }
 
-int _setup_assoc_list()
+int _setup_assoc_list(void)
 {
 	slurmdb_update_object_t update;
 	slurmdb_association_rec_t *assoc = NULL;
@@ -84,7 +84,7 @@ int _setup_assoc_list()
 	/* we just want make it so we setup_childern so just pretend
 	   we are running off cache */
 	running_cache = 1;
-	assoc_mgr_init(NULL, NULL);
+	assoc_mgr_init(NULL, NULL, SLURM_SUCCESS);
 
 	/* Here we make the associations we want to add to the
 	   system.  We do this as an update to avoid having to do
