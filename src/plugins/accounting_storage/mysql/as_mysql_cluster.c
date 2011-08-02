@@ -1119,6 +1119,7 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	char hostname[255];
 	time_t now = time(NULL);
 	uint32_t flags = slurmdb_setup_cluster_flags();
+	int rc = SLURM_SUCCESS;
 
 	if (slurmdbd_conf)
 		fatal("clusteracct_storage_g_register_ctld "
@@ -1159,7 +1160,9 @@ extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
-	return mysql_db_query(mysql_conn, query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	return rc;
 }
 
 extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
