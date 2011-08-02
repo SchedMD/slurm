@@ -107,6 +107,8 @@ static bool      rollback_started    = 0;
 static bool      halt_agent          = 0;
 static slurm_trigger_callbacks_t callback;
 static bool      callbacks_requested = 0;
+static bool      from_ctld           = 0;
+static bool      need_to_register    = 0;
 
 static void * _agent(void *x);
 static void   _close_slurmdbd_fd(void);
@@ -260,7 +262,8 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 					      msg->sent_type, 1),
 				      msg->sent_type, msg->return_code,
 				      comment);
-		}
+		} else if (msg->sent_type == DBD_REGISTER_CTLD)
+			need_to_register = 0;
 		slurmdbd_free_rc_msg(msg);
 	}
 	xfree(resp);
@@ -434,10 +437,15 @@ again:
 			int rc;
 			fd_set_nonblocking(slurmdbd_fd);
 			rc = _send_init_msg();
-			if ((rc == SLURM_SUCCESS) && callbacks_requested) {
-				(callback.dbd_resumed)();
-				(callback.db_resumed)();
+			if (rc == SLURM_SUCCESS) {
+				if (from_ctld)
+					need_to_register = 1;
+				if (callbacks_requested) {
+					(callback.dbd_resumed)();
+					(callback.db_resumed)();
+				}
 			}
+
 			if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
 			    (rc == SLURM_SUCCESS)) {
 				debug("slurmdbd: Sent DbdInit msg");
@@ -593,6 +601,8 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 					     buffer);
 		break;
 	case DBD_REGISTER_CTLD:
+		from_ctld = 1;
+		need_to_register = 0;
 		slurmdbd_pack_register_ctld_msg(
 			(dbd_register_ctld_msg_t *)req->data, rpc_version,
 			buffer);
@@ -1601,7 +1611,8 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 					      msg->sent_type,
 					      msg->comment);
 
-			}
+			} else if (msg->sent_type == DBD_REGISTER_CTLD)
+				need_to_register = 0;
 			slurmdbd_free_rc_msg(msg);
 		} else
 			error("slurmdbd: unpack message error");
@@ -1694,7 +1705,9 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 						      msg->sent_type, 1),
 					      msg->sent_type,
 					      msg->comment);
-			}
+			} else if (msg->sent_type == DBD_REGISTER_CTLD)
+				need_to_register = 0;
+
 			slurmdbd_free_rc_msg(msg);
 		} else
 			error("slurmdbd: unpack message error");
@@ -2076,6 +2089,15 @@ static void *_agent(void *x)
 		slurm_mutex_unlock(&agent_lock);
 		/* END_TIMER; */
 		/* info("at the end with %s", TIME_STR); */
+		if (need_to_register) {
+			need_to_register = 0;
+			/* This is going to be always using the
+			   SlurmDBD plugin so sending NULL as the
+			   connection should be ok.
+			*/
+			clusteracct_storage_g_register_ctld(
+				NULL, slurmctld_conf.slurmctld_port);
+		}
 	}
 
 	slurm_mutex_lock(&agent_lock);
