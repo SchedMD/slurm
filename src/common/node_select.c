@@ -473,6 +473,7 @@ fini:	slurm_mutex_unlock(&select_context_lock);
 	return rc;
 }
 
+/* Get this plugin's sequence number in SLURM's internal tables */
 extern int select_get_plugin_id_pos(uint32_t plugin_id)
 {
 	int i;
@@ -481,15 +482,16 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id)
 		return SLURM_ERROR;
 
 	for (i=0; i<select_context_cnt; i++) {
-		if(*(select_context[i].ops.plugin_id) == plugin_id)
+		if (*(select_context[i].ops.plugin_id) == plugin_id)
 			break;
 	}
-	if(i >= select_context_cnt)
+	if (i >= select_context_cnt)
 		return SLURM_ERROR;
 	return i;
 }
 
-extern int select_get_plugin_id()
+/* Get the plugin ID number. Unique for each select plugin type */
+extern int select_get_plugin_id(void)
 {
 	if (slurm_select_init(0) < 0)
 		return 0;

@@ -238,7 +238,7 @@ the plugin should return SLURM_ERROR.</p>
 
 <p class="commandline">int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 enum select_nodedata_type dinfo, enum node_states state, void *data);</p>
-<p style="margin-left:.2in"><b>Description</b>: Get information from a the
+<p style="margin-left:.2in"><b>Description</b>: Get information from a
 select plugin's node specific data structure.</p>
 <p style="margin-left:.2in"><b>Argument</b>:<br>
 <span class="commandline"> nodeinfo</span>&nbsp; &nbsp;&nbsp;(input) Node information
@@ -293,7 +293,7 @@ number and the function will alter it so SLURM can understand what the
 user really means in SLURM terms.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> type</span>&nbsp;&nbsp;&nbsp;(input) enum
-telling the plug in what the user is really wanting.<br>
+telling the plugin how to transform the data.<br>
 <span class="commandline"> data</span>&nbsp;&nbsp;&nbsp;(input/output)
 Is a void * and the actual data type depends upon the first argument to this
 function (type).</p>
@@ -305,7 +305,7 @@ function (type).</p>
 <h3>Block-Specific Functions</h3>
 
 <p class="commandline">int select_p_update_sub_node (update_block_msg_t *block_desc_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: update the state of a portion of
+<p style="margin-left:.2in"><b>Description</b>: Update the state of a portion of
 a SLURM node. Currently used on BlueGene systems to place node cards within a
 midplane into or out of an error state.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -614,9 +614,10 @@ failure, the plugin should return a SLURM error code.</p>
 <p class="commandline">bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 select_jobinfo_t *step_jobinfo, uint32_t node_count)</p>
 <p style="margin-left:.2in"><b>Description</b>: If the select plugin needs to
-select nodes for a job step, then do so here. NOTE: Only select/bluegene
-selects the job step resources. The logic within the slurmctld daemon directly
-selects resources for a job step for all other select plugins.</p>
+select nodes for a job step, then do so here.<br>
+<b>NOTE:</b> Only select/bluegene selects the job step resources. The logic
+within the slurmctld daemon directly selects resources for a job step for all
+other select plugins.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Pointer to the job which is attempting to allocate a job step.</br>
@@ -680,11 +681,13 @@ the plugin should return SLURM_ERROR.</p>
 uint16_t show_flags, Buf *buffer_ptr, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Pack plugin-specific information
 about its general state into a buffer. Currently only used by select/bluegene
-to pack block state information.</p>
-<p>NOTE: No unpack function in select plugin. Unpack performed by
+to pack block state information.<br>
+<b>NOTE:</b> Functions to work with this data may be needed on computers
+without the plugin which generated the data, so those functions are in
+src/common modules. The unpack function is performed by
 slurm_unpack_block_info_members() in src/common/slurm_protocol_pack.c
-using BlueGene specific data structures. This should probably be moved to
-the select plugin. We should also have a free function in the select plugin.</p>
+using BlueGene specific data structures. Use destroy_select_ba_request()
+in src/common/noe_select.c to free the data structure's memory.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> last_query_time</span>&nbsp; &nbsp;&nbsp;(input)
 Time when the data was previously requested (used so only updated information
