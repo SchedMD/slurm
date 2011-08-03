@@ -1820,7 +1820,8 @@ extern int select_p_pack_select_info(time_t last_query_time,
 
 		*buffer_ptr = buffer;
 	} else {
-		error("select_p_pack_node_info: bg_lists->main not ready yet");
+		error("select_p_pack_select_info: bg_lists->main not created "
+		      "yet");
 		return SLURM_ERROR;
 	}
 
