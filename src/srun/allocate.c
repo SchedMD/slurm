@@ -787,7 +787,6 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_dir = opt.ckpt_dir;
-	job->ctx_params.gres = opt.gres;
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
 	if (opt.immediate == 1)
 		job->ctx_params.immediate = (uint16_t)opt.immediate;
