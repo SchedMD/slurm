@@ -28,7 +28,7 @@ many non-parallel programs sharing nodes. For more information see
 plugin not only selects the nodes for a job, but performs some initialization
 and termination functions for the job. This plugin also serves as a wrapper
 for the <i>select/linear</i> plugin which enforces various limits and
-provides support for resource selection optimized for the system toplogy.</li>
+provides support for resource selection optimized for the system topology.</li>
 <li><b>linear</b>&#151;A plugin that selects nodes assuming a one-dimensional
 array of nodes. The nodes are selected so as to minimize the number of consecutive
 sets of nodes utilizing a best-fit algorithm. While supporting shared nodes,
@@ -104,7 +104,7 @@ be stubbed.</p>
 <p style="margin-left:.2in"><b>Description</b>: Save any global node selection state
 information to a file within the specified directory. The actual file name used is plugin specific.
 It is recommended that the global switch state contain a magic number for validation purposes.
-This function is called by the slurmctld deamon on shutdown.</p>
+This function is called by the slurmctld daemon on shutdown.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> dir_name</span>&nbsp;
 &nbsp;&nbsp;(input) fully-qualified pathname of a directory into which user SlurmUser (as defined
 in slurm.conf) can create a file and write state information into that file. Cannot be NULL.</p>
@@ -115,7 +115,7 @@ the plugin should return SLURM_ERROR.</p>
 <p style="margin-left:.2in"><b>Description</b>: Restore any global node selection state
 information from a file within the specified directory. The actual file name used is plugin specific.
 It is recommended that any magic number associated with the global switch state be verified.
-This function is called by the slurmctld deamon on startup.</p>
+This function is called by the slurmctld daemon on startup.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> dir_name</span>&nbsp;
 &nbsp;&nbsp;(input) fully-qualified pathname of a directory containing a state information file
 from which user SlurmUser (as defined in slurm.conf) can read. Cannot be NULL.</p>
@@ -154,7 +154,7 @@ consider that nodes can be removed from one partition and added to a different p
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <p class="commandline">int select_p_job_init(List job_list);<p>
-<p style="margin-left:.2in"><b>Description</b>: Used at slurmctld daemopn
+<p style="margin-left:.2in"><b>Description</b>: Used at slurmctld daemon
 startup to synchronize plugin (and node) state with that of currently active
 jobs.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
@@ -185,19 +185,19 @@ to free this data structure.</p>
 <p class="commandline">int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 Buf buffer, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Pack select plugin specific
-information about a node into a buffer for node querries.</p>
+information about a node into a buffer for node queries.</p>
 <p style="margin-left:.2in"><b>Argument</b>:<br>
 <span class="commandline"> nodeinfo</span>&nbsp; &nbsp;&nbsp;(input) Node information to be packed.<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) pointer
 to buffer into which the node information is packed.<br>
 <span class="commandline"> protocol_version</span>&nbsp; &nbsp;&nbsp;(input)
-Version number of the data packing mechanism (needed for backward compatability).</p>
+Version number of the data packing mechanism (needed for backward compatibility).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
 <p class="commandline">int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 Buf buffer, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Unpack select plugin specific
-information about a node from a buffer for node querries. Use
+information about a node from a buffer for node queries. Use
 select_p_select_nodeinfo_free() to free the returned data structure.</p>
 <p style="margin-left:.2in"><b>Argument</b>:<br>
 <span class="commandline"> nodeinfo</span>&nbsp; &nbsp;&nbsp;(output) Node
@@ -206,7 +206,7 @@ to free the returned data structure.<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) pointer
 to buffer from which the node information is to be unpacked.<br>
 <span class="commandline"> protocol_version</span>&nbsp; &nbsp;&nbsp;(input)
-Version number of the data packing mechanism (needed for backward compatability).</p>
+Version number of the data packing mechanism (needed for backward compatibility).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
 <p class="commandline">int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);</p>
@@ -263,7 +263,7 @@ of the node in reference to the entire system.<br>
 
 <p class="commandline">bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)</p>
 <p style="margin-left:.2in"><b>Description</b>: This function is called by the slurmctld
-daemon at start time to set node rank information for reording the nodes to
+daemon at start time to set node rank information for recording the nodes to
 optimize application performance. </p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> node_ptr</span>&nbsp;&nbsp;&nbsp;(input/output) pointer
@@ -369,7 +369,7 @@ to the select plugin specific information about a job.<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) pointer
 to buffer into which the job information is packed.<br>
 <span class="commandline"> protocol_version</span>&nbsp; &nbsp;&nbsp;(input)
-Version number of the data packing mechanism (needed for backward compatability).</p>
+Version number of the data packing mechanism (needed for backward compatibility).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
@@ -385,7 +385,7 @@ be freed using select_p_select_jobinfo_free().<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) pointer
 to buffer from which the job information is unpacked.<br>
 <span class="commandline"> protocol_version</span>&nbsp; &nbsp;&nbsp;(input)
-Version number of the data packing mechanism (needed for backward compatability).</p>
+Version number of the data packing mechanism (needed for backward compatibility).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
@@ -508,7 +508,7 @@ later execution.</p>
 <p class="commandline">int select_p_job_ready (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Test if resources are configured
 and ready for job execution. This function is only used in the job prolog for
-BlueGene systems to determine if the bglblock has been booted and is ready for use.</p>
+BlueGene systems to determine if the bgblock has been booted and is ready for use.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
 to the job being initialized. Data in this job record may safely be read.
@@ -536,7 +536,7 @@ This is needed for architectures where the job steps are launched by a
 mechanism outside of SLURM, for example when ALPS is used on Cray systems.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
-to the job to be signalled.<br>
+to the job to be signaled.<br>
 <span class="commandline"> signal</span>&nbsp; &nbsp;&nbsp;(input) signal to
 be sent to the job.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
@@ -621,7 +621,7 @@ selects resources for a job step for all other select plugins.</p>
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Pointer to the job which is attempting to allocate a job step.</br>
 <span class="commandline"> jobinfo</span>&nbsp; &nbsp;&nbsp;(input/output)
-On input, this is a pointer to an empty buffer. On output for a sucessful
+On input, this is a pointer to an empty buffer. On output for a successful
 job step allocation, this structure is filled in with detailed information
 about the job step allocation.</br>
 <span class="commandline"> node_count</span>&nbsp; &nbsp;&nbsp;(input)
@@ -693,8 +693,8 @@ needs to be sent).<br>
 the type of data requested.<br>
 <span class="commandline"> buffer_ptr</span>&nbsp; &nbsp;&nbsp;(input/output)
 Pointer to buffer filled in with select plugin state information.</br>
-<span class="commandline"> progocol_version</span>&nbsp; &nbsp;&nbsp;(input)
-Version number of the data packing mechanism (needed for backward compatability).</p>
+<span class="commandline"> protocol_version</span>&nbsp; &nbsp;&nbsp;(input)
+Version number of the data packing mechanism (needed for backward compatibility).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
