@@ -617,6 +617,8 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
  * OUT buffer - location to hold the data, consumer must free
  * IN protocol_version - slurm protocol version of client
  * RET - slurm error code
+ *
+ * NOTE: The unpack for this is in common/slurm_protocol_pack.c
  */
 extern int select_g_pack_select_info(time_t last_query_time,
 				     uint16_t show_flags, Buf *buffer,
