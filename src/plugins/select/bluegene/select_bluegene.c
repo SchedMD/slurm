@@ -440,6 +440,10 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 }
 
 /* Pack all relevent information about a block */
+/* NOTE: There is a matching pack function in
+ * common/slurm_protocol_pack.c dealing with the block_info_t
+ * structure there.  If anything changes here please update that as well.
+ */
 static void _pack_block(bg_record_t *bg_record, Buf buffer,
 			uint16_t protocol_version)
 {

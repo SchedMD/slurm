@@ -7821,8 +7821,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* NOTE: The matching pack functions are directly in the select/bluegene
- * plugin.  */
+/* NOTE: There is a matching pack function directly in the select/bluegene
+ * plugin dealing with the bg_record_t structure there.  If anything
+ * changes here please update that as well.
+ */
 static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 				 uint16_t protocol_version)
 {
