@@ -339,7 +339,7 @@ extern int other_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					Buf buffer,
 					uint16_t protocol_version);
 
-extern select_nodeinfo_t *other_select_nodeinfo_alloc(uint32_t size);
+extern select_nodeinfo_t *other_select_nodeinfo_alloc(void);
 
 extern int other_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 

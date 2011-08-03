@@ -164,7 +164,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  List preemptee_candidates,
 			  List *preemptee_job_list);
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc();
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /*
@@ -2996,7 +2996,7 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 {
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
-	nodeinfo_ptr = select_p_select_nodeinfo_alloc(NO_VAL);
+	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
 	safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
@@ -3011,7 +3011,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 

@@ -192,7 +192,7 @@ struct select_nodeinfo {
 	uint16_t alloc_cpus;
 };
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Procedure Declarations */
@@ -2133,7 +2133,7 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 {
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
-	nodeinfo_ptr = select_p_select_nodeinfo_alloc(NO_VAL);
+	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
 	safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
@@ -2148,7 +2148,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 

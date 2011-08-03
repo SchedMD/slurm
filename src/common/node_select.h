@@ -168,7 +168,7 @@ typedef struct slurm_select_ops {
 	int		(*nodeinfo_unpack)	(select_nodeinfo_t **nodeinfo,
 						 Buf buffer,
 						 uint16_t protocol_version);
-	select_nodeinfo_t *(*nodeinfo_alloc)	(uint32_t size);
+	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
 	int		(*nodeinfo_set_all)	(time_t last_query_time);
 	int		(*nodeinfo_set)		(struct job_record *job_ptr);
@@ -592,7 +592,7 @@ extern int select_g_select_nodeinfo_unpack(
 	dynamic_plugin_data_t **nodeinfo, Buf buffer,
 	uint16_t protocol_version);
 
-extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(uint32_t size);
+extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void);
 
 extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
 

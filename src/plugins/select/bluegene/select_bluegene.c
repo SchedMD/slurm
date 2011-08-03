@@ -1845,9 +1845,9 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	return select_nodeinfo_unpack(nodeinfo, buffer, protocol_version);
 }
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
-	return select_nodeinfo_alloc(size);
+	return select_nodeinfo_alloc(0);
 }
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)

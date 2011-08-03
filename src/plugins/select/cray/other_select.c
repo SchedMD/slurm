@@ -557,12 +557,12 @@ extern int other_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 		(nodeinfo, buffer, protocol_version);
 }
 
-extern select_nodeinfo_t *other_select_nodeinfo_alloc(uint32_t size)
+extern select_nodeinfo_t *other_select_nodeinfo_alloc(void)
 {
 	if (other_select_init() < 0)
 		return NULL;
 
-	return (*(other_select_context->ops.nodeinfo_alloc))(size);
+	return (*(other_select_context->ops.nodeinfo_alloc))();
 }
 
 extern int other_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)

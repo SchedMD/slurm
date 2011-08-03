@@ -862,7 +862,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(uint32_t size)
+extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void)
 {
 	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
 	uint32_t plugin_id;
@@ -876,7 +876,7 @@ extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(uint32_t size)
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	nodeinfo_ptr->plugin_id = plugin_id;
 	nodeinfo_ptr->data = (*(select_context[plugin_id].ops.
-				nodeinfo_alloc))(size);
+				nodeinfo_alloc))();
 	return nodeinfo_ptr;
 }
 

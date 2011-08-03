@@ -386,12 +386,12 @@ extern int select_p_pack_select_info(time_t last_query_time,
 				      protocol_version);
 }
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 
 	nodeinfo->magic = NODEINFO_MAGIC;
-	nodeinfo->other_nodeinfo = other_select_nodeinfo_alloc(size);
+	nodeinfo->other_nodeinfo = other_select_nodeinfo_alloc();
 
 	return nodeinfo;
 }

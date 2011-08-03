@@ -718,7 +718,7 @@ extern struct node_record *create_node_record (
 	node_ptr->threads = config_ptr->threads;
 	node_ptr->real_memory = config_ptr->real_memory;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
-	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc(NO_VAL);
+	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
 	return node_ptr;
 }
