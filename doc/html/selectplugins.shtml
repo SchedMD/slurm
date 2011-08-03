@@ -174,13 +174,10 @@ The plugin will test global variables for changes as appropriate.</p>
 
 <h3>Node-Specific Functions</h3>
 
-<p class="commandline">select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);</p>
+<p class="commandline">select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocate a buffer for select
 plugin specific information about a node. Use select_p_select_nodeinfo_free()
 to free the returned data structure.</p>
-<p style="margin-left:.2in"><b>Argument</b>:
-<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) Node size information.
-For IBM Bluegene systems, this is the number of psets on each node/midplane.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A buffer for select plugin specific
 information about a node or NULL on failure. Use select_p_select_nodeinfo_free()
 to free this data structure.</p>
