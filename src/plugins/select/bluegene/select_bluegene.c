@@ -443,6 +443,7 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 /* NOTE: There is a matching pack function in
  * common/slurm_protocol_pack.c dealing with the block_info_t
  * structure there.  If anything changes here please update that as well.
+ * The unpack for this is in common/slurm_protocol_pack.c
  */
 static void _pack_block(bg_record_t *bg_record, Buf buffer,
 			uint16_t protocol_version)
@@ -538,7 +539,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 	}
 }
 
-/* Pack all extra information about a block */
+/* Pack all extra information about a block (Only needed for saving state.) */
 static void _pack_block_ext(bg_record_t *bg_record, Buf buffer,
 			    uint16_t protocol_version)
 {
@@ -1777,6 +1778,7 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	return rc;
 }
 
+/* The unpack for this is in common/slurm_protocol_pack.c */
 extern int select_p_pack_select_info(time_t last_query_time,
 				     uint16_t show_flags, Buf *buffer_ptr,
 				     uint16_t protocol_version)
