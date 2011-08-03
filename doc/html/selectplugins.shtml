@@ -273,13 +273,13 @@ of nodes configured on the system.</p>
 <p style="margin-left:.2in"><b>Returns</b>: true if node rank information has
 been set.</p>
 
-<p class="commandline">int select_p_update_node_state (int index);</p>
+<p class="commandline">int select_p_update_node_state (struct node_record *node_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: push a node state change
 into the plugin. The index should be the index from the slurmctld of
 the entire system.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> index</span>&nbsp;&nbsp;&nbsp;(input) zero origin index
-of the node in reference to the entire system.</p>
+<span class="commandline"> node_ptr</span>&nbsp;&nbsp;&nbsp;(input/output) pointer
+to the node data structure. Each node's node rank field may be set.<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
 <p class="commandline">int select_p_alter_node_cnt (enum
@@ -373,7 +373,7 @@ Version number of the data packing mechanism (needed for backward compatibility)
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+<p class="commandline">int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 Buf buffer, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Pack from a buffer the contents
 of the select plugin specific information about a job.
@@ -612,7 +612,7 @@ failure, the plugin should return a SLURM error code.</p>
 <h3>Step-Specific Functions</h3>
 
 <p class="commandline">bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
-select_jobinfo_t *jobinfo, uint32_t node_count)</p>
+select_jobinfo_t *step_jobinfo, uint32_t node_count)</p>
 <p style="margin-left:.2in"><b>Description</b>: If the select plugin needs to
 select nodes for a job step, then do so here. NOTE: Only select/bluegene
 selects the job step resources. The logic within the slurmctld daemon directly
@@ -620,7 +620,7 @@ selects resources for a job step for all other select plugins.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Pointer to the job which is attempting to allocate a job step.</br>
-<span class="commandline"> jobinfo</span>&nbsp; &nbsp;&nbsp;(input/output)
+<span class="commandline"> step_jobinfo</span>&nbsp; &nbsp;&nbsp;(input/output)
 On input, this is a pointer to an empty buffer. On output for a successful
 job step allocation, this structure is filled in with detailed information
 about the job step allocation.</br>
@@ -707,10 +707,10 @@ contain the values 8, 4, 4.</p>
 <p style="margin-left:.2in"><b>Returns</b>: An array containing the number of
 elements in each dimension of the system size.</p>
 
-<p class="commandline">void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);</p>
+<p class="commandline">void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);</p>
 <p style="margin-left:.2in"><b>Description</b>: Construct an internal block allocation
 table containing information about the nodes on a computer. This allocated memory
-should be released  by calling select_g_ba_fini();</p>
+should be released  by calling select_p_ba_fini();</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> node_info_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Information about the nodes on a system.<br>
@@ -718,9 +718,9 @@ Information about the nodes on a system.<br>
 then validate that the node name suffix values represent coordinated which are
 within the system's dimension size (see function select_p_ba_get_dims).</p>
 
-<p class="commandline">void select_g_ba_fini(void);</p>
+<p class="commandline">void select_p_ba_fini(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Free storage allocated by
-select_g_ba_init().</p>
+select_p_ba_init().</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
