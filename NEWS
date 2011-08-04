@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     allocated to the job will be allocated to the job step.
  -- Add srun environment value of SLURM_STEP_GRES to set default --gres value
     for a job step.
+ -- Require SchedulerTimeSlice configuration parameter to be at least 5 seconds
+    to avoid thrashing slurmd daemon.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

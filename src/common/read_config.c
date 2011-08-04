@@ -2864,6 +2864,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
 	    hashtbl))
 		conf->sched_time_slice = DEFAULT_SCHED_TIME_SLICE;
+	else if (conf->sched_time_slice < 5) {
+		error("SchedulerTimeSlice must be at least 5 seconds");
+		conf->sched_time_slice = DEFAULT_SCHED_TIME_SLICE;
+	}
 
 	if (!s_p_get_string(&conf->schedtype, "SchedulerType", hashtbl))
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
