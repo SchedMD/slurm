@@ -775,7 +775,10 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 
 	if (opt.mem_per_cpu != NO_VAL)
 		job->ctx_params.mem_per_cpu = opt.mem_per_cpu;
-	job->ctx_params.gres = opt.gres;
+	if (opt.gres)
+		job->ctx_params.gres = opt.gres;
+	else
+		job->ctx_params.gres = getenv("SLURM_STEP_GRES");
 
 	if (use_all_cpus)
 		job->ctx_params.cpu_count = job->cpu_count;

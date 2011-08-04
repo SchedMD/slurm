@@ -1813,6 +1813,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->no_kill > 1)
 		step_specs->no_kill = 1;
 
+	if (step_specs->gres && !strcasecmp(step_specs->gres, "NONE"))
+		xfree(step_specs->gres);
+	else if (step_specs->gres == NULL)
+		step_specs->gres = xstrdup(job_ptr->gres);
 	i = gres_plugin_step_state_validate(step_specs->gres, &step_gres_list,
 					    job_ptr->gres_list, job_ptr->job_id,
 					    NO_VAL);

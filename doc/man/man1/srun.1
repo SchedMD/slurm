@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.3" "July 2011" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.3" "August 2011" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -423,7 +423,12 @@ The available generic consumable resources is configurable by the system
 administrator.
 A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
-Examples of use include "\-\-gres=gpus:2*cpu,disk=40G" and "\-\-gres=help".
+Examples of use include "\-\-gres=gpu:2*cpu,disk=40G" and "\-\-gres=help".
+NOTE: By default, a job step is allocated all of the generic resources that
+have allocated to the job. To change the behavior so that each job step is
+allocated no generic resources, explicitly set the value of \-\-gres to specify
+zero counts for each generic resource OR set "\-\-gres=none" OR set the
+SLURM_STEP_GRES environment variable to "none".
 
 .TP
 \fB\-H, \-\-hold\fR
@@ -1521,7 +1526,7 @@ Also see \fBSLURM_EXIT_ERROR\fR.
 Same as \fB\-g, \-\-geometry\fR
 .TP
 \fBSLURM_GRES\fR
-Same as \fB\-\-gres\fR
+Same as \fB\-\-gres\fR. Also see \fBSLURM_STEP_GRES\fR
 .TP
 \fBSLURM_JOB_NAME\fR
 Same as \fB\-J, \-\-job\-name\fR except within an existing
@@ -1601,6 +1606,10 @@ Same as \fB\-e, \-\-error\fR
 .TP
 \fBSLURM_STDINMODE\fR
 Same as \fB\-i, \-\-input\fR
+.TP
+\fBSLURM_STEP_GRES\fR
+Same as \fB\-\-gres\fR (only applies to job steps, not to job allocations).
+Also see \fBSLURM_GRES\fR
 .TP
 \fBSLURM_STDOUTMODE\fR
 Same as \fB\-o, \-\-output\fR

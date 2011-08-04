@@ -12,6 +12,12 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue where if the DBD connection from the ctld goes away because of
     a POLLERR the dbd_fail callback is called.
  -- BLUEGENE - Fix to smap command-line mode display.
+ -- Change in GRES behavior for job steps: A job step's default generic
+    resource allocation will be set to that of the job. If a job step's --gres
+    value is set to "none" then none of the generic resources which have been
+    allocated to the job will be allocated to the job step.
+ -- Add srun environment value of SLURM_STEP_GRES to set default --gres value
+    for a job step.
 
 * Changes in SLURM 2.3.0.rc1
 ============================
