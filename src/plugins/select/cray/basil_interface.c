@@ -6,6 +6,7 @@
  */
 #include "basil_interface.h"
 #include "basil_alps.h"
+#include "src/common/slurm_accounting_storage.h"
 
 #define _DEBUG 0
 
@@ -240,6 +241,14 @@ extern int basil_inventory(void)
 			node_ptr->node_state |= NODE_STATE_UNKNOWN;
 
 			make_node_idle(node_ptr, NULL);
+			if (!IS_NODE_DRAIN(node_ptr)
+			    && !IS_NODE_FAIL(node_ptr)) {
+				xfree(node_ptr->reason);
+				node_ptr->reason_time = 0;
+				node_ptr->reason_uid = NO_VAL;
+				clusteracct_storage_g_node_up(
+					acct_db_conn, node_ptr, time(NULL));
+			}
 		}
 	}
 
