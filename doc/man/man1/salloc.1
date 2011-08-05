@@ -672,11 +672,9 @@ Specify a minimum number of logical cpus/processors per node.
 .TP
 \fB\-N\fR, \fB\-\-nodes\fR=<\fIminnodes\fR[\-\fImaxnodes\fR]>
 Request that a minimum of \fIminnodes\fR nodes be allocated to this job.
-The scheduler may decide to launch the job on more than \fIminnodes\fR nodes.
-A limit on the maximum node count may be specified with \fImaxnodes\fR
-(e.g. "\-\-nodes=2\-4").  The minimum and maximum node count may be the
-same to specify a specific number of nodes (e.g. "\-\-nodes=2\-2" will ask
-for two and ONLY two nodes).
+A maximum node count may also be specified with \fImaxnodes\fR.
+If only one number is specified, this is used as both the minimum and
+maximum node count.
 The partition's node limits supersede those of the job.
 If a job's node limits are outside of the range permitted for its
 associated partition, the job will be left in a PENDING state.
