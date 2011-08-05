@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     for a job step.
  -- Require SchedulerTimeSlice configuration parameter to be at least 5 seconds
     to avoid thrashing slurmd daemon.
+ -- Cray - fix to make nodes come back up in accounting if they were
+    previously marked down by alps.
 
 * Changes in SLURM 2.3.0.rc1
 ============================
