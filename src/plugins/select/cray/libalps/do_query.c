@@ -77,7 +77,7 @@ extern enum basil_version get_basil_version(void)
 		fatal("can not determine ALPS Engine version");
 	else if (strncmp(engine_version, "4.1.0", 5) == 0)
 		bv = BV_4_1;
-	else if (strncmp(engine_version, "4.0.0", 5) == 0)
+	else if (strncmp(engine_version, "4.0", 3) == 0)
 		bv = BV_4_0;
 	else if (strncmp(engine_version, "3.1.0", 5) == 0)
 		bv = BV_3_1;

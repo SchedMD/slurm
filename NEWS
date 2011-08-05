@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     to avoid thrashing slurmd daemon.
  -- Cray - fix to make nodes come back up in accounting if they were
     previously marked down by alps.
+ -- CRAY - Fix to work with 4.0.* instead of just 4.0.0
 
 * Changes in SLURM 2.3.0.rc1
 ============================
