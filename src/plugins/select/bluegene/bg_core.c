@@ -411,7 +411,7 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 			 * just incase the state was ERROR(SOMETHING ELSE) */
 			bg_record->state = BG_BLOCK_ERROR_FLAG;
 			break;
-		} else if (count >= 3)
+		} else if (!wait || (count >= 3))
 			bg_record->state = BG_BLOCK_FREE;
 		else if (bg_record->state != BG_BLOCK_FREE)
 			bg_record->state = BG_BLOCK_TERM;
