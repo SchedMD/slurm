@@ -49,7 +49,7 @@ print_header $test_id
 
 spawn $sinfo --Node --long --exact
 expect {
-	-re "($end_of_line)($name_string) *($number) *($name_string) *($alpha_cap)" {
+	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
 		if (![string compare $node_name ""]) {
 			set node_name $expect_out(2,string)
 		}
@@ -77,11 +77,15 @@ expect {
 
 spawn $sinfo --Node --long --exact --state=$node_state
 expect {
-	-re "($end_of_line)($name_string) *($number) *($name_string) *($alpha_cap)" {
+	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
 		if ([string compare $expect_out(5,string) $node_state]) {
 			incr mismatches
 		}
 		exp_continue
+	}
+	-re "error:" {
+		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		set exit_code 1
 	}
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
@@ -102,11 +106,15 @@ expect {
 
 spawn $sinfo --Node --long --exact --nodes=$node_name
 expect {
-	-re "($end_of_line)($name_string) *($number) *($name_string) *($alpha_cap)" {
+	-re "($end_of_line)($name_string) *($number_with_suffix) *($name_string) *($alpha)" {
 		if ([string compare $expect_out(2,string) $node_name]) {
 			incr mismatches
 		}
 		exp_continue
+	}
+	-re "error:" {
+		send_user "\nFAILURE: Unexpected error from sinfo\n"
+		set exit_code 1
 	}
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
