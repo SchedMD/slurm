@@ -30,12 +30,11 @@
 <tr><td><a href="slurmdbd.conf.html">slurmdbd.conf</a></td><td>Slurm Database Daemon (SlurmDBD) configuration file</td></tr>
 <tr><td><a href="topology.conf.html">topology.conf</a></td><td>Slurm configuration file for defining the network topology</td></tr>
 <tr><td><a href="wiki.conf.html">wiki.conf</a></td><td>Slurm configuration file for wiki and wiki2 scheduler plugins</td></tr>
-<tr><td><a href="slurm_setup.sh.html">slurm_setup.sh</a></td><td>A script to help install and setup SLURM</td></tr>
 <tr><td><a href="slurmctld.html">slurmctld</a></td><td>The central management daemon of Slurm.</td></tr>
 <tr><td><a href="slurmd.html">slurmd</a></td><td>The compute node daemon for SLURM.</td></tr>
 <tr><td><a href="slurmdbd.html">slurmdbd</a></td><td>Slurm Database Daemon.</td></tr>
 <tr><td><a href="slurmstepd.html">slurmstepd</a></td><td>The job step manager for SLURM.</td></tr>
-<tr><td><a href="SPANK.html">SPANK</a></td><td>SLURM Plug-in Architecture for Node and job (K)control</td></tr>
+<tr><td><a href="spank.html">SPANK</a></td><td>SLURM Plug-in Architecture for Node and job (K)control</td></tr>
 </table>
 
 
