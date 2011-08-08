@@ -8555,7 +8555,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				continue;
 			node_ptr = &node_record_table_ptr[i];
 			if (return_code)
-				set_node_down(node_ptr->name, "Epilog error");
+				set_node_down_ptr(node_ptr, "Epilog error");
 			else
 				make_node_idle(node_ptr, job_ptr);
 		}

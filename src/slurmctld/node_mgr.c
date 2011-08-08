@@ -2317,13 +2317,26 @@ extern void node_no_resp_msg(void)
 void set_node_down (char *name, char *reason)
 {
 	struct node_record *node_ptr;
-	time_t now = time(NULL);
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("set_node_down unable to find node %s", name);
 		return;
 	}
+	set_node_down_ptr (node_ptr, reason);
+
+	return;
+}
+
+/*
+ * set_node_down_ptr - make the specified compute node's state DOWN and
+ *	kill jobs as needed
+ * IN node_ptr - node_ptr to the node
+ * IN reason - why the node is DOWN
+ */
+void set_node_down_ptr (struct node_record *node_ptr, char *reason)
+{
+	time_t now = time(NULL);
 
 	if ((node_ptr->reason == NULL) ||
 	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
@@ -2333,7 +2346,7 @@ void set_node_down (char *name, char *reason)
 		node_ptr->reason_uid = slurm_get_slurm_user_id();
 	}
 	_make_node_down(node_ptr, now);
-	(void) kill_running_job_by_node_name(name);
+	(void) kill_running_job_by_node_name(node_ptr->name);
 	_sync_bitmaps(node_ptr, 0);
 
 	return;

@@ -1535,6 +1535,14 @@ extern int send_nodes_to_accounting(time_t event_time);
 extern void set_node_down (char *name, char *reason);
 
 /*
+ * set_node_down_ptr - make the specified compute node's state DOWN and
+ *	kill jobs as needed
+ * IN node_ptr - node_ptr to the node
+ * IN reason - why the node is DOWN
+ */
+void set_node_down_ptr (struct node_record *node_ptr, char *reason);
+
+/*
  * set_slurmctld_state_loc - create state directory as needed and "cd" to it
  */
 extern void set_slurmctld_state_loc(void);

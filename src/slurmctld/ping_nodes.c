@@ -257,7 +257,7 @@ void ping_nodes (void)
 				if (down_hostlist == NULL)
 					fatal("hostlist_create: malloc error");
 			}
-			set_node_down(node_ptr->name, "Not responding");
+			set_node_down_ptr(node_ptr, "Not responding");
 			node_ptr->not_responding = false;  /* logged below */
 			continue;
 		}
