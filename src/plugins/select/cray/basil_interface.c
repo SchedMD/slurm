@@ -225,13 +225,14 @@ extern int basil_inventory(void)
 			reason = "arch not XT/XE";
 		}
 
+		/* Base state entirely derives from ALPS */
 		if (reason) {
 			if (!IS_NODE_DOWN(node_ptr)) {
 				xfree(node_ptr->reason);
-				debug("MARKING %s DOWN (%s)",
-				      node_ptr->name, reason);
+				info("MARKING %s DOWN (%s)",
+				     node_ptr->name, reason);
 				/* set_node_down also kills any running jobs */
-				set_node_down(node_ptr->name, reason);
+				set_node_down_ptr(node_ptr, reason);
 			}
 		} else if (IS_NODE_DOWN(node_ptr)) {
 			xfree(node_ptr->reason);
@@ -241,8 +242,8 @@ extern int basil_inventory(void)
 			node_ptr->node_state |= NODE_STATE_UNKNOWN;
 
 			make_node_idle(node_ptr, NULL);
-			if (!IS_NODE_DRAIN(node_ptr)
-			    && !IS_NODE_FAIL(node_ptr)) {
+			if (!IS_NODE_DRAIN(node_ptr) &&
+			    !IS_NODE_FAIL(node_ptr)) {
 				xfree(node_ptr->reason);
 				node_ptr->reason_time = 0;
 				node_ptr->reason_uid = NO_VAL;
@@ -530,9 +531,9 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		dim_size[1] = MAX(dim_size[1], (y_coord - 1));
 		dim_size[2] = MAX(dim_size[2], (z_coord - 1));
 #if _DEBUG
-		info("%s  %s  %s  cpus=%u, mem=%u", node_ptr->name,
+		info("%s  %s  %s  cpus=%u, mem=%u reason=%s", node_ptr->name,
 		     node_ptr->node_hostname, node_ptr->comm_name,
-		     node_cpus, node_mem);
+		     node_cpus, node_mem, reason);
 #endif
 		/*
 		 * Check the current state reported by ALPS inventory, unless it
@@ -563,7 +564,9 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			}
 		}
 
-		/* Base state entirely derives from ALPS */
+		/* Base state entirely derives from ALPS
+		 * NOTE: The node bitmaps are not defined when this code is
+		 * initially executed. */
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		if (reason) {
 			if (node_ptr->reason) {
@@ -574,13 +577,27 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 					node_ptr->name, reason);
 				node_ptr->reason = xstrdup(reason);
 			}
+			/* Node state flags preserved above */
 			node_ptr->node_state |= NODE_STATE_DOWN;
+			clusteracct_storage_g_node_down(acct_db_conn, node_ptr,
+							time(NULL), NULL,
+							slurm_get_slurm_user_id());
 		} else {
+			bool node_up_flag = IS_NODE_DOWN(node_ptr) &&
+					    !IS_NODE_DRAIN(node_ptr) &&
+					    !IS_NODE_FAIL(node_ptr);
 			if (node_is_allocated(node))
 				node_ptr->node_state |= NODE_STATE_ALLOCATED;
 			else
 				node_ptr->node_state |= NODE_STATE_IDLE;
 			xfree(node_ptr->reason);
+			if (node_up_flag) {
+				info("ALPS returned node %s to service",
+				     node_ptr->name);
+				clusteracct_storage_g_node_up(acct_db_conn,
+							      node_ptr,
+							      time(NULL));
+			}
 		}
 
 		free_stmt_result(stmt);
