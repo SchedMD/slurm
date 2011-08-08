@@ -332,9 +332,7 @@ file. It will appear on your web browser. Save the file in text format
 as <I>slurm.conf</I> for use by SLURM.
 
 <P>For more information about SLURM, see
-<A HREF="https://computing.llnl.gov/linux/slurm/">https://computing.llnl.gov/linux/slurm/</A>
-<P>
-<A HREF="https://www.llnl.gov/disclaimer.html"><B>Privacy and legal notice</B></A>
+<A HREF="http://www.schedmd.com/slurmdocs/slurm.html">http://www.schedmd.com/slurmdocs/slurm.html</A>
 
 <H2>Control Machines</H2>
 Define the hostname of the computer on which the SLURM controller and
@@ -342,7 +340,7 @@ optional backup controller will execute. You can also specify addresses
 of these computers if desired (defaults to their hostnames).
 The IP addresses can be either numeric IP addresses or names.
 Hostname values should should not be the fully qualified domain
-name (e.g. use <I>linux</I> rather than <I>linux.llnl.gov</I>).
+name (e.g. use <I>tux</I> rather than <I>tux.abc.com</I>).
 <P>
 <input type="text" name="control_machine" value="linux0"> <B>ControlMachine</B>:
 Master Controller Hostname
@@ -844,6 +842,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 <P>
 </FORM>
 <HR>
-<P class="footer">LLNL-WEB-402631<BR>
-Last modified 25 August 2010</P>
+<a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
+Last modified 8 August 2011</P>
 </BODY>
