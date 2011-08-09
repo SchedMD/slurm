@@ -162,6 +162,7 @@ extern int basil_inventory(void)
 	struct basil_rsvn *rsvn;
 	int slurm_alps_mismatch = 0;
 	int rc = SLURM_SUCCESS;
+	time_t now = time(NULL);
 
 	inv = get_full_inventory(version);
 	if (inv == NULL) {
@@ -227,7 +228,15 @@ extern int basil_inventory(void)
 
 		/* Base state entirely derives from ALPS */
 		if (reason) {
-			if (!IS_NODE_DOWN(node_ptr)) {
+			if (node_ptr->down_time == 0)
+				node_ptr->down_time = now;
+			if (IS_NODE_DOWN(node_ptr)) {
+				/* node still down */
+			} else if (slurmctld_conf.slurmd_timeout &&
+				   ((now - node_ptr->down_time) <
+				    slurmctld_conf.slurmd_timeout)) {
+				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+			} else {
 				xfree(node_ptr->reason);
 				info("MARKING %s DOWN (%s)",
 				     node_ptr->name, reason);
@@ -236,19 +245,25 @@ extern int basil_inventory(void)
 			}
 		} else if (IS_NODE_DOWN(node_ptr)) {
 			xfree(node_ptr->reason);
+			node_ptr->down_time = 0;
+			info("MARKING %s UP", node_ptr->name);
 
 			/* Reset state, make_node_idle figures out the rest */
 			node_ptr->node_state &= NODE_STATE_FLAGS;
+			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			node_ptr->node_state |= NODE_STATE_UNKNOWN;
 
 			make_node_idle(node_ptr, NULL);
 			if (!IS_NODE_DRAIN(node_ptr) &&
 			    !IS_NODE_FAIL(node_ptr)) {
+				int node_inx = node_ptr - node_record_table_ptr;
+				bit_set(avail_node_bitmap, node_inx);
+				bit_set(up_node_bitmap, node_inx);
 				xfree(node_ptr->reason);
 				node_ptr->reason_time = 0;
 				node_ptr->reason_uid = NO_VAL;
 				clusteracct_storage_g_node_up(
-					acct_db_conn, node_ptr, time(NULL));
+					acct_db_conn, node_ptr, now);
 			}
 		}
 	}
@@ -351,6 +366,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	my_bool		is_null[COLUMN_COUNT];
 	my_bool		is_error[COLUMN_COUNT];
 	int		is_gemini, i;
+	time_t		now = time(NULL);
 
 	memset(params, 0, sizeof(params));
 	params[0].buffer_type = MYSQL_TYPE_LONG;
@@ -569,34 +585,43 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		 * initially executed. */
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		if (reason) {
-			if (node_ptr->reason) {
+			if (node_ptr->down_time == 0)
+				node_ptr->down_time = now;
+			if (IS_NODE_DOWN(node_ptr)) {
+				/* node still down */
 				debug("Initial DOWN node %s - %s",
 					node_ptr->name, node_ptr->reason);
+			} else if (slurmctld_conf.slurmd_timeout &&
+				   ((now - node_ptr->down_time) <
+				    slurmctld_conf.slurmd_timeout)) {
+				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 			} else {
 				info("Initial DOWN node %s - %s",
-					node_ptr->name, reason);
+				     node_ptr->name, reason);
 				node_ptr->reason = xstrdup(reason);
+				/* Node state flags preserved above */
+				node_ptr->node_state |= NODE_STATE_DOWN;
+				clusteracct_storage_g_node_down(acct_db_conn,
+								node_ptr,
+								now, NULL,
+								slurm_get_slurm_user_id());
 			}
-			/* Node state flags preserved above */
-			node_ptr->node_state |= NODE_STATE_DOWN;
-			clusteracct_storage_g_node_down(acct_db_conn, node_ptr,
-							time(NULL), NULL,
-							slurm_get_slurm_user_id());
 		} else {
 			bool node_up_flag = IS_NODE_DOWN(node_ptr) &&
 					    !IS_NODE_DRAIN(node_ptr) &&
 					    !IS_NODE_FAIL(node_ptr);
+			node_ptr->down_time = 0;
 			if (node_is_allocated(node))
 				node_ptr->node_state |= NODE_STATE_ALLOCATED;
 			else
 				node_ptr->node_state |= NODE_STATE_IDLE;
+			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			xfree(node_ptr->reason);
 			if (node_up_flag) {
 				info("ALPS returned node %s to service",
 				     node_ptr->name);
 				clusteracct_storage_g_node_up(acct_db_conn,
-							      node_ptr,
-							      time(NULL));
+							      node_ptr, now);
 			}
 		}
 

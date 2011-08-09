@@ -1819,7 +1819,10 @@ static front_end_record_t * _front_end_reg(
 	}
 	if (state_base == NODE_STATE_UNKNOWN)
 		state_base = NODE_STATE_IDLE;
+#ifndef HAVE_CRAY
+	/* This is handled by the select/cray plugin */
 	state_flags &= (~NODE_STATE_NO_RESPOND);
+#endif
 	front_end_ptr->node_state = state_base | state_flags;
 	last_front_end_update = now;
 	return front_end_ptr;
@@ -1988,7 +1991,10 @@ extern int validate_nodes_via_front_end(
 
 		if (IS_NODE_NO_RESPOND(node_ptr)) {
 			update_node_state = true;
+#ifndef HAVE_CRAY
+			/* This is handled by the select/cray plugin */
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+#endif
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		}
 
@@ -2122,11 +2128,14 @@ static void _node_did_resp(front_end_record_t *node_ptr)
 	time_t now = time(NULL);
 
 	node_ptr->last_response = now;
+#ifndef HAVE_CRAY
+	/* This is handled by the select/cray plugin */
 	if (IS_NODE_NO_RESPOND(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		last_front_end_update = now;
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 	}
+#endif
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_UNKNOWN(node_ptr)) {
 		last_front_end_update = now;

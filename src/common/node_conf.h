@@ -149,6 +149,7 @@ struct node_record {
 #ifdef HAVE_CRAY
 	uint32_t basil_node_id;		/* Cray-XT BASIL node ID,
 					 * no need to save/restore */
+	time_t down_time;		/* When first set to DOWN state */
 #endif	/* HAVE_CRAY */
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
