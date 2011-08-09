@@ -41,8 +41,8 @@ def insert_tag(html, lineIn):
 
 
 def llnl_references(line):
-        manStr = "Refer to the mc_support.html document"
-        htmlStr = 'Refer to the <a href="mc_support.html">mc_support</a> document'
+        manStr = "Refer to mc_support.html"
+        htmlStr = 'Refer to <a href="mc_support.html">mc_support</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
