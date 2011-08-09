@@ -182,6 +182,7 @@ extern int basil_inventory(void)
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 
 	for (node = inv->f->node_head; node; node = node->next) {
+		int node_inx;
 		struct node_record *node_ptr;
 		char *reason = NULL;
 
@@ -192,6 +193,7 @@ extern int basil_inventory(void)
 			      nam_nodestate[node->state]);
 			continue;
 		}
+		node_inx = node_ptr - node_record_table_ptr;
 
 		if (node_is_allocated(node) && !IS_NODE_ALLOCATED(node_ptr)) {
 			/*
@@ -236,6 +238,7 @@ extern int basil_inventory(void)
 				   ((now - node_ptr->down_time) <
 				    slurmctld_conf.slurmd_timeout)) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+				bit_clear(avail_node_bitmap, node_inx);
 			} else {
 				xfree(node_ptr->reason);
 				info("MARKING %s DOWN (%s)",
@@ -256,14 +259,17 @@ extern int basil_inventory(void)
 			make_node_idle(node_ptr, NULL);
 			if (!IS_NODE_DRAIN(node_ptr) &&
 			    !IS_NODE_FAIL(node_ptr)) {
-				int node_inx = node_ptr - node_record_table_ptr;
-				bit_set(avail_node_bitmap, node_inx);
-				bit_set(up_node_bitmap, node_inx);
 				xfree(node_ptr->reason);
 				node_ptr->reason_time = 0;
 				node_ptr->reason_uid = NO_VAL;
 				clusteracct_storage_g_node_up(
 					acct_db_conn, node_ptr, now);
+			}
+		} else if (IS_NODE_NO_RESPOND(node_ptr)) {
+			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+			if (!IS_NODE_DRAIN(node_ptr) &&
+			    !IS_NODE_FAIL(node_ptr)) {
+				bit_set(avail_node_bitmap, node_inx);
 			}
 		}
 	}
