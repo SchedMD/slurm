@@ -26,7 +26,10 @@ documents those changes that are of interest to users and admins.
     SlurmdTimeout. In the interim, the node state will be NO_RESPOND. This
     change makes behavior makes SLURM handling of the node DOWN state more
     consistent with ALPS. This change effects only Cray systems.
- -- CRAY - Fix to work with 4.0.* instead of just 4.0.0
+ -- Cray - Fix to work with 4.0.* instead of just 4.0.0
+ -- Cray - Modify srun/aprun wrapper to map --exclusive to -F exclusive and
+    --share to -F share. Note this does not consider the partition's Shared
+    configuration, so it is an imperfect mapping of options.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

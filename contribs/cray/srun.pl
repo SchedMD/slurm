@@ -441,7 +441,13 @@ if ($have_job == 0) {
 	# $command .= " -B"		no srun equivalent, reservation options
 	# $command .= " -cc"		NO GOOD MAPPING, cpu binding
 	$command .= " -d $cpus_per_task"			if $cpus_per_task;
-	# $command .= " -F"		NO GOOD MAPPING, cpu/memory binding
+	# Resource sharing largely controlled by SLURM configuration,
+	# so this is an imperfect mapping of options
+	if $share {
+		$command .= " -F share";
+	} elsif $exclusive {
+		$command .= " -F exclusive";
+	}
 	$nid_list = get_nids($nodelist)				if $nodelist;
 	$command .= " -L $nid_list"				if $nodelist;
 	$command .= " -m $memory_per_cpu"			if $memory_per_cpu;
