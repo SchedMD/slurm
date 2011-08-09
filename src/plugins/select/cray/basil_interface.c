@@ -482,19 +482,19 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		}
 
 		if (!is_gemini) {
-				/*
-				 * SeaStar: each node has unique coordinates
-				 */
-				if (node_ptr->arch == NULL)
-					node_ptr->arch = xstrdup("XT");
+			/*
+			 * SeaStar: each node has unique coordinates
+			 */
+			if (node_ptr->arch == NULL)
+				node_ptr->arch = xstrdup("XT");
 		} else {
-				/*
-				 * Gemini: each 2 nodes share the same network
-				 * interface (i.e., nodes 0/1 and 2/3 each have
-				 * the same coordinates).
-				 */
-				if (node_ptr->arch == NULL)
-					node_ptr->arch = xstrdup("XE");
+			/*
+			 * Gemini: each 2 nodes share the same network
+			 * interface (i.e., nodes 0/1 and 2/3 each have
+			 * the same coordinates).
+			 */
+			if (node_ptr->arch == NULL)
+				node_ptr->arch = xstrdup("XE");
 		}
 
 		xfree(node_ptr->node_hostname);
