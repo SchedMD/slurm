@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- Cray - Modify srun/aprun wrapper to map --exclusive to -F exclusive and
     --share to -F share. Note this does not consider the partition's Shared
     configuration, so it is an imperfect mapping of options.
+ -- BLUEGENE - Added notice in the print config to tell if you are emulated
+    or not.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

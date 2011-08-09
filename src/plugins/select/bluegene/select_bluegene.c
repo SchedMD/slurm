@@ -1037,6 +1037,13 @@ static List _get_config(void)
 	if (!my_list)
 		fatal("malloc failure on list_create");
 
+#ifndef HAVE_BG_FILES
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("Emulated");
+	key_pair->value = xstrdup("yes");
+	list_append(my_list, key_pair);
+#endif
+
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MidPlaneNodeCnt");
 	key_pair->value = xstrdup_printf("%u", bg_conf->mp_cnode_cnt);
@@ -1046,7 +1053,6 @@ static List _get_config(void)
 	key_pair->name = xstrdup("NodeCPUCnt");
 	key_pair->value = xstrdup_printf("%u", bg_conf->cpu_ratio);
 	list_append(my_list, key_pair);
-
 
 #ifdef HAVE_BGL
 	key_pair = xmalloc(sizeof(config_key_pair_t));
