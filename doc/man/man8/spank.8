@@ -73,12 +73,12 @@ Called for each task just after fork, but before all elevated privileges
 are dropped. (remote context only)
 .TP
 \fBslurm_spank_task_init\fR
-Called for each task just before execve(2). (remote context only)
+Called for each task just before execve (2). (remote context only)
 .TP
 \fBslurm_spank_task_post_fork\fR
-Called for each task from parent process after fork(2) is complete.
+Called for each task from parent process after fork (2) is complete.
 Due to the fact that \fBslurmd\fR does not exec any tasks until all
-tasks have completed fork(2), this call is guaranteed to run before
+tasks have completed fork (2), this call is guaranteed to run before
 the user task is executed. (remote context only)
 .TP
 \fBslurm_spank_task_exit\fR
@@ -166,8 +166,8 @@ the job's environment. The prototypes are:
 .fi
 .LP
 These are only necessary in remote context since modifications of
-the standard process environment using \fBsetenv\fR(3), \fBgetenv\fR(3),
-and \fBunsetenv\fR(3) may be used in local context.
+the standard process environment using \fBsetenv\fR (3), \fBgetenv\fR (3),
+and \fBunsetenv\fR (3) may be used in local context.
 .LP
 Functions are also available from within the \fBSPANK\fR plugins to
 establish environment variables to be exported to the SLURM
@@ -244,7 +244,7 @@ is a short description of the option suitable for \-\-help output.
 .TP
 .I has_arg
 0 if option takes no argument, 1 if option takes an argument, and
-2 if the option takes an optional argument. (See \fBgetopt_long\fR(3)).
+2 if the option takes an optional argument. (See \fBgetopt_long\fR (3)).
 .TP
 .I val
 A plugin\-local value to return to the option callback function.
