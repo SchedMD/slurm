@@ -13,7 +13,7 @@ dirname = ''
 
 # Instert tags for options
 #   Two styles are processed.
-#       <DT><B>pppppp</B><DD> 
+#       <DT><B>pppppp</B><DD>
 #           has tag <a id="OPT_pppppp"></a>
 #       <DT><B>--pppppp</B> or <DT><B>-P</B>, <B>--pppppp</B>
 #           has tag <a id="OPT_pppppp"></a>
@@ -24,7 +24,7 @@ def insert_tag(html, lineIn):
         if posEnd != -1:
             html.write('<a id="SECTION_' + lineIn[4:posEnd] + '"></a>\n')
             return
-        
+
     if lineIn[0:7] != "<DT><B>":
         return
     posBgn = lineIn.find("--")
@@ -39,7 +39,7 @@ def insert_tag(html, lineIn):
     html.write('<a id="OPT_' + lineIn[posBgn:posEnd] + '"></a>\n')
     return
 
-            
+
 def llnl_references(line):
         manStr = "Refer to the mc_support.html document"
         htmlStr = 'Refer to the <a href="mc_support.html">mc_support</a> document'
@@ -95,7 +95,7 @@ def relative_reference(lineIn):
     lenRefAnchor = len(refAnchor)
     lineOt = ""
     cursor = 0
-    
+
     posHREF = lineIn.find(fullRef,cursor)
     if posHREF == -1:
         return lineIn
@@ -110,7 +110,7 @@ def relative_reference(lineIn):
         cursor = posHREF + lenRef + 3
         lineOt = lineOt + '"'
         posQuote = lineIn.find('"',cursor)
-        lineOt = lineOt + lineIn[cursor:posQuote] + ".html" 
+        lineOt = lineOt + lineIn[cursor:posQuote] + ".html"
         cursor = posQuote
         posHREF = lineIn.find(fullRef,cursor)
     lineOt = lineOt + lineIn[cursor:]
@@ -148,7 +148,7 @@ def url_rewrite(matchobj):
         return matchobj.group(1) + newname + matchobj.group(4)
     else:
         return matchobj.group(0)
-  
+
 files = []
 for f in sys.argv[3:]:
     posLastDot = f.rfind(".")
