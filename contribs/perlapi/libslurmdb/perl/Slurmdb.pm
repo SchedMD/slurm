@@ -135,7 +135,7 @@ None by default.
 
 =head1 SEE ALSO
 
-https://computing.llnl.gov/linux/slurm/accounting.html
+http://www.schedmd.com/slurmdocs/accounting.html
 
 =head1 AUTHOR
 
@@ -148,7 +148,7 @@ Don Lipari, <lt>lipari@llnl.gov<gt>
  CODE-OCEC-09-009. All rights reserved.
 
  This file is part of SLURM, a resource management program.  For
- details, see <https://computing.llnl.gov/linux/slurm/>.  Please also
+ details, see <http://www.schedmd.com/slurmdocs/>.  Please also
  read the included file: DISCLAIMER.
 
  SLURM is free software; you can redistribute it and/or modify it

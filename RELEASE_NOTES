@@ -73,7 +73,7 @@ COMMAND CHANGES (see man pages for details)
   limited to the compute nodes associated with the reservation.
 * The dependency option of "expand" has been added. This option identifies a
   job whose resource allocation is intended to be used to expand the allocation
-  of another job. See https://computing.llnl.gov/linux/slurm//faq.html#job_size
+  of another job. See http://www.schedmd.com/slurmdocs//faq.html#job_size
   for a description of it's use.
 * Added --switches option to salloc, sbatch and srun commands to control the
   desired number of switches allocated to a job and the maximum delay before

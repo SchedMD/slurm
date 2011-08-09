@@ -46,42 +46,42 @@ def llnl_references(line):
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://computing.llnl.gov/linux/slurm/mc_support.html">https://computing.llnl.gov/linux/slurm/mc_support.html</A>'
+        manStr = '<A HREF="http://www.schedmd.com/slurmdocs/mc_support.html">http://www.schedmd.com/slurmdocs/mc_support.html</A>'
         htmlStr = 'the <a href="mc_support.html">mc_support</a> document'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://computing.llnl.gov/linux/slurm/dist_plane.html.">https://computing.llnl.gov/linux/slurm/dist_plane.html.</A>'
+        manStr = '<A HREF="http://www.schedmd.com/slurmdocs/dist_plane.html.">http://www.schedmd.com/slurmdocs/dist_plane.html.</A>'
         htmlStr = 'the <a href="dist_plane.html">dist_plane</a> document'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '&lt;<A HREF="https://computing.llnl.gov/linux/slurm/mpi_guide.html">https://computing.llnl.gov/linux/slurm/mpi_guide.html</A>&gt;'
+        manStr = '&lt;<A HREF="http://www.schedmd.com/slurmdocs/mpi_guide.html">http://www.schedmd.com/slurmdocs/mpi_guide.html</A>&gt;'
         htmlStr = '<a href="mpi_guide.html">mpi_guide</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '(<A HREF="https://computing.llnl.gov/linux/slurm/power_save.html).">https://computing.llnl.gov/linux/slurm/power_save.html).</A>'
+        manStr = '(<A HREF="http://www.schedmd.com/slurmdocs/power_save.html).">http://www.schedmd.com/slurmdocs/power_save.html).</A>'
         htmlStr = '<a href="power_save.html">power_save</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://computing.llnl.gov/linux/slurm/cons_res.html">https://computing.llnl.gov/linux/slurm/cons_res.html</A>'
+        manStr = '<A HREF="http://www.schedmd.com/slurmdocs/cons_res.html">http://www.schedmd.com/slurmdocs/cons_res.html</A>'
         htmlStr = '<a href="cons_res.html">cons_res</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://computing.llnl.gov/linux/slurm/cons_res_share.html">https://computing.llnl.gov/linux/slurm/cons_res_share.html</A>'
+        manStr = '<A HREF="http://www.schedmd.com/slurmdocs/cons_res_share.html">http://www.schedmd.com/slurmdocs/cons_res_share.html</A>'
         htmlStr = '<a href="cons_res_share.html">cons_res_share</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://computing.llnl.gov/linux/slurm/gang_scheduling.html">https://computing.llnl.gov/linux/slurm/gang_scheduling.html</A>'
+        manStr = '<A HREF="http://www.schedmd.com/slurmdocs/gang_scheduling.html">http://www.schedmd.com/slurmdocs/gang_scheduling.html</A>'
         htmlStr = '<a href="gang_scheduling.html">gang_scheduling</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://computing.llnl.gov/linux/slurm/preempt.html">https://computing.llnl.gov/linux/slurm/preempt.html</A>'
+        manStr = '<A HREF="http://www.schedmd.com/slurmdocs/preempt.html">http://www.schedmd.com/slurmdocs/preempt.html</A>'
         htmlStr = '<a href="preempt.html">preempt</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
