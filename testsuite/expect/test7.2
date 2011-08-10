@@ -87,8 +87,13 @@ if { $exit_code == 0 } {
 #
 set timeout $max_job_delay
 if { [test_bluegene] } {
-	set node_cnt 1-1024
-	set task_cnt 8
+	if { [test_emulated] } {
+		set node_cnt 1
+		set task_cnt 1
+	} else {
+		set node_cnt 1-1024
+		set task_cnt 8
+	}
 } else {
 	if { [test_xcpu] } {
 		set node_cnt 1-1

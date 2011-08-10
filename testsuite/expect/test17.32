@@ -37,7 +37,6 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
-set task_cnt    10
 
 print_header $test_id
 
@@ -57,6 +56,15 @@ make_bash_script $file_in "
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
+if { [test_bluegene] } {
+	if { [test_emulated] } {
+		set task_cnt 1
+	} else {
+		set task_cnt 10
+	}
+} else {
+	set task_cnt 10
+}
 spawn $sbatch --ntasks=$task_cnt --overcommit -N1 --output=$file_out -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -113,7 +121,7 @@ if {$matches != 2} {
 }
 if {$task_cnt != $tasks} {
 	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "$task_cnt, $tasks\n"
+	send_user "($task_cnt != $tasks)\n"
 	set exit_code 1
 }
 

@@ -43,7 +43,11 @@ set env_name_nnodes  "SLURM_NNODES"
 if { [test_bluegene] } {
 	set min_nodes        1
 	set max_nodes        1024
-	set env_valu_nprocs  5
+	if { [test_emulated] } {
+		set env_valu_nprocs  1
+	} else {
+		set env_valu_nprocs  32
+	}
 } else {
 	set min_nodes        1
 	set max_nodes        2
@@ -142,19 +146,22 @@ expect {
 
 if {$task_cnt != $env_valu_nprocs} {
 	send_user "\nFAILURE: did not process"
-	send_user " $env_name_nprocs environment variable\n"
+	send_user " $env_name_nprocs environment variable"
+	send_user " ($task_cnt != $env_valu_nprocs)\n"
 	set exit_code 1
 }
 # Note zero origin conversion
 incr max_node_val
 if {$max_node_val < $min_nodes} {
 	send_user "\nFAILURE: did not process"
-	send_user " $env_name_nnodes environment variable\n"
+	send_user " $env_name_nnodes environment variable"
+	send_user " ($max_node_val < $min_nodes)\n"
 	set exit_code 1
 }
 if {$max_node_val > $max_nodes} {
 	send_user "\nFAILURE: did not process"
-	send_user " $env_name_nnodes environment variable\n"
+	send_user " $env_name_nnodes environment variable"
+	send_user " ($max_node_val > $max_nodes)\n"
 	set exit_code 1
 }
 

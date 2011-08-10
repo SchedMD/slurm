@@ -41,8 +41,14 @@ set file_out     "test$test_id.output"
 set job_name     "test$test_id"
 
 set cycle_count [get_cycle_count]
+set task_cnt    $max_stress_tasks
 if { [test_bluegene] } {
-	set node_cnt 1-2048
+	if { [test_emulated] } {
+		set node_cnt 1
+		set task_cnt 1
+	} else {
+		set node_cnt 1-2048
+	}
 } else {
 	if { [test_xcpu] } {
 		set node_cnt 1-1
@@ -51,7 +57,6 @@ if { [test_bluegene] } {
 	}
 }
 set other_opts   "-O"
-set task_cnt     $max_stress_tasks
 
 print_header $test_id
 

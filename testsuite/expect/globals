@@ -1193,6 +1193,38 @@ proc test_cray { } {
 
 	return $cray
 }
+
+################################################################
+#
+# Proc: test_emulated
+#
+# Purpose: Determine if the system is emulated (not running on
+#          actual Cray or Bluegene hardware
+#
+# Returns 1 if the system is emulated otherwise
+#
+################################################################
+
+proc test_emulated { } {
+	global scontrol bin_bash
+
+	log_user 0
+	set emulated 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config"
+	expect {
+		"Emulated * = yes" {
+			set emulated 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $emulated
+}
+
 ################################################################
 #
 # Proc: get_cycle_count

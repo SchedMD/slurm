@@ -35,7 +35,6 @@ source ./globals
 set test_id              "1.49"
 set exit_code            0
 set cwd                  "[$bin_pwd]"
-set tasks                4
 set file_in		 "$cwd/test$test_id.in"
 set task_prolog          "$cwd/test$test_id.prolog"
 set task_epilog          "$cwd/test$test_id.epilog"
@@ -84,8 +83,14 @@ make_bash_script $file_in "
 #
 set matches 0
 set timeout [expr $max_job_delay + 30]
+set tasks   4
 if { [test_bluegene] } {
-	set node_cnt 1-1024
+	if { [test_emulated] } {
+		set node_cnt 1
+		set tasks    1
+	} else {
+		set node_cnt 1-1024
+	}
 } else {
 	set node_cnt 1-1
 }

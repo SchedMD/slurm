@@ -49,6 +49,18 @@ if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit 0
 }
+if { [test_bluegene] } {
+	if { [test_emulated] } {
+		set node_cnt 1
+		set task_cnt 1
+	} else {
+		set node_cnt 1-4
+		set task_cnt 4
+	}
+} else {
+	set node_cnt 1-4
+	set task_cnt 4
+}
 
 #
 # Delete left-over program and rebuild it
@@ -61,7 +73,7 @@ exec $bin_chmod 700 $file_prog
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1-4 -t2 $srun -n4 --overcommit $file_prog]
+set salloc_pid [spawn $salloc -N $node_cnt -t2 $srun -n $task_cnt --overcommit $file_prog]
 set init_id $spawn_id
 expect {
         -i $init_id
@@ -71,7 +83,7 @@ expect {
 	}
 	-re "WAITING" {
 		incr matches
-		if {$matches != 4} {
+		if {$matches != $task_cnt} {
 			exp_continue
 		}
 	}
@@ -91,7 +103,7 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: job submit failure\n"
 	exit 1
 }
-if {$matches != 4} {
+if {$matches != $task_cnt} {
 	send_user "\nFAILURE: job run time failure\n"
 	exit 1
 }
@@ -104,7 +116,7 @@ spawn $sattach --layout $job_id.0
 set attach_id $spawn_id
 expect {
 	-i $attach_id
-	-re "4 tasks, ($number) nodes" {
+	-re "($number) tasks, ($number) nodes" {
 		incr matches
 		exp_continue
 	}
@@ -126,12 +138,12 @@ if {$matches == 0} {
 #
 set matches     0
 set timeout     10
-set attach_pid [spawn $sattach -l --output-filter=2 $job_id.0]
+set attach_pid [spawn $sattach -l --output-filter=[expr $task_cnt - 1] $job_id.0]
 set attach_id $spawn_id
 expect {
         -i $attach_id
 	-re "($number): WAITING" {
-		if {$expect_out(1,string) != 2} {
+		if {$expect_out(1,string) != [expr $task_cnt - 1]} {
 			send_user "\nFAILURE: output filtering by task failed\n"
 			set exit_code 1
 		} else {
@@ -168,7 +180,7 @@ expect {
 	}
 	-re "($number): WAITING" {
 		incr matches
-		if {$matches == 4} {
+		if {$matches == [expr $task_cnt + 1]} {
 			send -i $attach_id "exit\r"
 		}
 		exp_continue
@@ -181,8 +193,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 5} {
-	send_user "\nFAILURE: job run time failure\n"
+if {$matches != [expr $task_cnt + 1]} {
+	send_user "\nFAILURE: job run time failure ($matches != [expr $task_cnt + 1])\n"
 	set exit_code 1
 }
 
