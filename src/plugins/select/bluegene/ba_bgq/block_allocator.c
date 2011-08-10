@@ -928,11 +928,13 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	bg_record_t *bg_record, uint32_t *node_count, select_jobinfo_t *jobinfo)
 {
 	ListIterator itr = NULL;
-	ba_mp_t *ba_mp = NULL;
+	ba_mp_t *ba_mp = NULL, *empty_ba_mp = NULL;
 	ba_geo_table_t *geo_table = NULL;
 	char *tmp_char = NULL, *tmp_char2 = NULL;
 	uint32_t orig_node_count = *node_count;
 	int dim;
+	uint32_t max_clear_cnt = 0, clear_cnt;
+	bool already_tried = 0;
 
 	xassert(ba_mp_geo_system);
 	xassert(bg_record->ba_mp_list);
@@ -940,7 +942,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	xassert(!jobinfo->units_used);
 
 	jobinfo->dim_cnt = ba_mp_geo_system->dim_count;
-
+try_again:
 	while (!(geo_table = ba_mp_geo_system->geo_table_ptr[*node_count])) {
 		debug2("ba_pick_sub_block_cnodes: No geometries of size %u ",
 		       *node_count);
@@ -1026,7 +1028,8 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 				}
 			}
 		}
-		if (bit_clear_count(ba_mp->cnode_bitmap) < *node_count) {
+		clear_cnt = bit_clear_count(ba_mp->cnode_bitmap);
+		if (clear_cnt < *node_count) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("ba_pick_sub_block_cnodes: "
 				     "only have %d avail in %s need %d",
@@ -1089,11 +1092,43 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 		if (geo_table)
 			break;
 
+		/* User asked for a bad CPU count or we can't place it
+		   here in this small allocation. */
+		if (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt) {
+			list_iterator_destroy(itr);
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+				info("We couldn't place a sub block of %d",
+				     *node_count);
+			(*node_count)++;
+			goto try_again;
+		}
+
+		/* Grab the most empty midplane to be used later if we
+		   can't find a spot.
+		*/
+		if (max_clear_cnt < clear_cnt) {
+			max_clear_cnt = clear_cnt;
+			empty_ba_mp = ba_mp;
+		}
+
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("couldn't place it on %s", ba_mp->coord_str);
 		geo_table = ba_mp_geo_system->geo_table_ptr[*node_count];
 	}
 	list_iterator_destroy(itr);
+
+	/* This is to vet we have a good geo on this request.  So if a
+	   person asks for 12 and the only reason they can't get it is
+	   because they can't get that geo and if they would of asked
+	   for 16 then they could run we do that for them.
+	*/
+	if (!already_tried && !ba_mp && (max_clear_cnt > (*node_count)+1)) {
+		already_tried = 1;
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			info("trying with a larger size");
+		(*node_count)++;
+		goto try_again;
+	}
 
 	return ba_mp;
 }

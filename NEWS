@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added notice in the print config to tell if you are emulated
     or not.
  -- BLUEGENE - Fix job step scalability issue with large task count.
+ -- BGQ - Improved c-node selection when asked for a sub-block job that
+    cannot fit into the available shape.
 
 * Changes in SLURM 2.3.0.rc1
 ============================
