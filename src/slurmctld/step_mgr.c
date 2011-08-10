@@ -1669,7 +1669,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
 	int cpus_per_task, ret_code, i;
-	uint32_t node_count = 0, max_tasks;
+	uint32_t node_count = 0;
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
 	uint32_t orig_cpu_count;
@@ -1677,6 +1677,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 #if defined HAVE_BG
 	static uint16_t cpus_per_mp = (uint16_t)NO_VAL;
+#else
+	uint32_t max_tasks;
 #endif
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
@@ -1860,6 +1862,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->num_tasks = node_count;
 	}
 
+#ifndef HAVE_BG
 	max_tasks = node_count * slurmctld_conf.max_tasks_per_node;
 	if (step_specs->num_tasks > max_tasks) {
 		error("step has invalid task count: %u max is %u",
@@ -1870,7 +1873,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		select_g_select_jobinfo_free(select_jobinfo);
 		return ESLURM_BAD_TASK_COUNT;
 	}
-
+#endif
 	step_ptr = _create_step_record(job_ptr);
 	if (step_ptr == NULL) {
 		if (step_gres_list)

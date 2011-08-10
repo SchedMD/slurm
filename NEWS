@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
     configuration, so it is an imperfect mapping of options.
  -- BLUEGENE - Added notice in the print config to tell if you are emulated
     or not.
+ -- BLUEGENE - Fix job step scalability issue with large task count.
 
 * Changes in SLURM 2.3.0.rc1
 ============================
