@@ -104,16 +104,37 @@ if {$created != 1} {
 	set exit_code 1
 }
 
+set type [get_bluegene_type]
+set match_target 0
+if {![string compare $type "L"]} {
+#	 Bluegene/L
+	set match_target 11
+} elseif {![string compare $type "P"]} {
+#	 Bluegene/P
+	set match_target 10
+} else {
+#	Bluegene/Q
+	set match_target 9
+}
+
 set matches       0
 if { $exit_code != 1 } {
 	spawn more $file
 	expect {
 		-re "BlrtsImage" {
+#			Absent from Bluegene/P and Bluegene/Q
+			set stuff [concat $stuff "1"]
+			incr matches
+			exp_continue
+		}
+		-re "CnloadImage" {
+#			Present only Bluegene/P
 			set stuff [concat $stuff "1"]
 			incr matches
 			exp_continue
 		}
 		-re "LinuxImage" {
+#			Absent from Bluegene/P and Bluegene/Q
 			set stuff [concat $stuff "2"]
 			incr matches
 			exp_continue
@@ -124,16 +145,23 @@ if { $exit_code != 1 } {
 			exp_continue
 		}
 		-re "RamDiskImage" {
+#			Absent from Bluegene/P and Bluegene/Q
 			set stuff [concat $stuff "4"]
 			incr matches
 			exp_continue
 		}
-		-re "BridgeAPILogFile" {
+		-re "IoloadImage" {
+#			Present only Bluegene/P
+			set stuff [concat $stuff "4"]
+			incr matches
+			exp_continue
+		}
+		-re "Numpsets" {
 			set stuff [concat $stuff "5"]
 			incr matches
 			exp_continue
 		}
-		-re "Numpsets.*io poor" {
+		-re "BridgeAPILogFile" {
 			set stuff [concat $stuff "6"]
 			incr matches
 			exp_continue
@@ -168,15 +196,16 @@ if { $exit_code != 1 } {
 		}
 	}
 
-	if {$matches != 11} {
-		send_user "$matches\n$stuff"
+	if {$matches != $match_target} {
+		send_user "match count: $matches != $match_target\n"
+		send_user "matches: $stuff"
 		send_user "\nFAILURE: smap bluegene.conf file was created but corrupt\n"
 		set exit_code 1
 	}
 
 }
-exec rm -f $file
 if {$exit_code == 0} {
+	exec rm -f $file
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
