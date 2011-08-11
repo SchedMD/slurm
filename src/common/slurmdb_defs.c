@@ -461,6 +461,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->account);
 		xfree(job->blockid);
 		xfree(job->cluster);
+		xfree(job->derived_es);
 		xfree(job->jobname);
 		xfree(job->partition);
 		xfree(job->nodes);
