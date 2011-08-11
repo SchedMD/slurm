@@ -1685,13 +1685,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 				xstrdup(step_rec->job_ptr->batch_host);
 		}
 #endif
-		job_step_resp.cred        = slurm_cred;
+		job_step_resp.cred           = slurm_cred;
 		job_step_resp.select_jobinfo = step_rec->select_jobinfo;
-		job_step_resp.switch_job  =  switch_copy_jobinfo(
-					     step_rec->switch_job);
-		job_step_resp.select_jobinfo = select_g_select_jobinfo_copy(
-					       step_rec->job_ptr->
-					       select_jobinfo);
+		job_step_resp.switch_job     =  step_rec->switch_job;
 
 		unlock_slurmctld(job_write_lock);
 		slurm_msg_t_init(&resp);
@@ -1703,8 +1699,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 		slurm_send_node_msg(msg->conn_fd, &resp);
 		slurm_cred_destroy(slurm_cred);
-		switch_free_jobinfo(job_step_resp.switch_job);
-		select_g_select_jobinfo_free(job_step_resp.select_jobinfo);
 		schedule_job_save();	/* Sets own locks */
 	}
 }

@@ -38,6 +38,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Modify "scontrol show step" to show  I/O nodes (BGL and BGP) or
     c-nodes (BGQ) allocated to each step. Change field name from "Nodes=" to
     "BP_List=".
+ -- Code cleanup on step request to get the correct select_jobinfo.
 
 * Changes in SLURM 2.3.0.rc1
 ============================
