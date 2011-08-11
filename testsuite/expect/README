@@ -1,6 +1,7 @@
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
-# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Copyright (C) 2008-2011 Lawrence Livermore National Security.
+# Copyright (C) 2010-2011 SchedMD LLC
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # Additionals by Joseph Donaghy <donaghy1@llnl.gov>
@@ -327,6 +328,9 @@ test8.5    Test creation of all blocks 1 midplane and smaller.
 test8.6    Stress test Dynamic mode block creation.
 test8.7    Test of Blue Gene scheduling with sched/wik2 plugin.
 test8.8    Test result of marking smaller blocks in an error state.
+**NOTE**   The following tests are specificallly for Bluegene/Q systems
+test8.20   Bluegene/Q only: Test that job step allocations are a valid size
+           and within the job's allocation
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
