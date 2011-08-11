@@ -1115,6 +1115,9 @@ Returns an estimate of when a job would be scheduled to run given the
 current job queue and all the other \fBsrun\fR arguments specifying
 the job.  This limits \fBsrun's\fR behavior to just return
 information; no job is actually submitted.
+EXCEPTION: On Bluegene/Q systems on when running within an existing job
+allocation, this disables the use of "runjob" to launch tasks. The program
+will be executed directly by the slurmd dameon.
 
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>

@@ -1639,85 +1639,95 @@ static void _opt_args(int argc, char **argv)
 	}
 
 #if defined HAVE_BG_FILES
- 	/* Since we need the opt.argc to allocate the opt.argv array
-	 * we need to do this before actually messing with
-	 * things. All the extra options added to argv will be
-	 * handled after the allocation. */
+	if (!opt.test_only) {
+	 	/* Since we need the opt.argc to allocate the opt.argv array
+		 * we need to do this before actually messing with
+		 * things. All the extra options added to argv will be
+		 * handled after the allocation. */
 
-	/* Default location of the actual command to be ran. We always have
-	 * to add 3 options no matter what. */
-	command_pos = 3;
+		/* Default location of the actual command to be ran. We always
+		 * have to add 3 options no matter what. */
+		command_pos = 3;
 
-	if (opt.ntasks_per_node != NO_VAL)
-		command_pos += 2;
-	if (opt.ntasks_set)
-		command_pos += 2;
-	if (opt.cwd_set)
-		command_pos += 2;
-	if (opt.labelio)
-		command_pos += 2;
-	opt.argc += command_pos;
+		if (opt.ntasks_per_node != NO_VAL)
+			command_pos += 2;
+		if (opt.ntasks_set)
+			command_pos += 2;
+		if (opt.cwd_set)
+			command_pos += 2;
+		if (opt.labelio)
+			command_pos += 2;
+		opt.argc += command_pos;
+	}
 #endif
 
 #endif
 
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
 
-#if defined HAVE_BG_FILES && defined HAVE_BGQ
-	i = 0;
-	/* Instead of running the actual job, the slurmstepd will be
-	   running runjob to run the job.  srun is just wrapping it
-	   making things all kosher.
-	*/
-	opt.argv[i++] = xstrdup(runjob_loc);
-	if (opt.ntasks_per_node != NO_VAL) {
-		opt.argv[i++]  = xstrdup("-p");
-		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks_per_node);
-	}
-
-	if (opt.ntasks_set) {
-		opt.argv[i++]  = xstrdup("--np");
-		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
-	}
-
-	if (opt.cwd_set) {
-		opt.argv[i++]  = xstrdup("--cwd");
-		opt.argv[i++]  = xstrdup(opt.cwd);
-	}
-
-	if (opt.labelio) {
-		opt.argv[i++]  = xstrdup("--label");
-		opt.argv[i++]  = xstrdup("short");
-		/* Since we are getting labels from runjob. and we don't
-		   want 2 sets (slurm's will always be 000) remove it
-		   case.
+#if defined HAVE_BGQ
+#if defined HAVE_BG_FILES
+	if (!opt.test_only) {
+		i = 0;
+		/* Instead of running the actual job, the slurmstepd will be
+		   running runjob to run the job.  srun is just wrapping it
+		   making things all kosher.
 		*/
-		opt.labelio = 0;
+		opt.argv[i++] = xstrdup(runjob_loc);
+		if (opt.ntasks_per_node != NO_VAL) {
+			opt.argv[i++]  = xstrdup("-p");
+			opt.argv[i++]  = xstrdup_printf("%d",
+							opt.ntasks_per_node);
+		}
+
+		if (opt.ntasks_set) {
+			opt.argv[i++]  = xstrdup("--np");
+			opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
+		}
+
+		if (opt.cwd_set) {
+			opt.argv[i++]  = xstrdup("--cwd");
+			opt.argv[i++]  = xstrdup(opt.cwd);
+		}
+
+		if (opt.labelio) {
+			opt.argv[i++]  = xstrdup("--label");
+			opt.argv[i++]  = xstrdup("short");
+			/* Since we are getting labels from runjob. and we
+			 * don't want 2 sets (slurm's will always be 000)
+			 * remove it case. */
+			opt.labelio = 0;
+		}
+
+		/* Export all the environment so the runjob_mux will get the
+		 * correct info about the job, namely the block. */
+		opt.argv[i++] = xstrdup("--env_all");
+
+		/* With runjob anything after a ':' is treated as the actual
+		 * job, which in this case is exactly what it is.  So, very
+		 * sweet. */
+		opt.argv[i++] = xstrdup(":");
+
+		/* Sanity check to make sure we set it up correctly. */
+		if (i != command_pos) {
+			fatal ("command_pos is set to %d but we are going to "
+			       "put it at %d, please update src/srun/opt.c",
+			       command_pos, i);
+		}
+
+		/* Set default job name to the executable name rather than
+		 * "runjob" */
+		if (!opt.job_name_set_cmd && (command_pos < opt.argc)) {
+			opt.job_name_set_cmd = true;
+			opt.job_name = xstrdup(rest[0]);
+		}
+	}
+#endif
+	if (opt.test_only && !opt.jobid_set && (opt.jobid != NO_VAL)) {
+		/* Do not perform allocate test, only disable use of "runjob" */
+		opt.test_only = false;
 	}
 
-	/* Export all the environment so the runjob_mux will get the
-	   correct info about the job, namely the block.
-	*/
-	opt.argv[i++] = xstrdup("--env_all");
-
-	/* With runjob anything after a ':' is treated as the actual
-	   job, which in this case is exactly what it is.  So, very
-	   sweet.
-	*/
-	opt.argv[i++] = xstrdup(":");
-
-	/* Sanity check to make sure we set it up correctly. */
-	if (i != command_pos) {
-		fatal ("command_pos is set to %d but we are going to put "
-		       "it at %d, please update src/srun/opt.c",
-		       command_pos, i);
-	}
-
-	/* Set default job name to the executable name rather than "runjob" */
-	if (!opt.job_name_set_cmd && (command_pos < opt.argc)) {
-		opt.job_name_set_cmd = true;
-		opt.job_name = xstrdup(rest[0]);
-	}
 #endif
 	for (i = command_pos; i < opt.argc; i++)
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
