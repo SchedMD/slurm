@@ -115,6 +115,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 		coord->name = xstrdup(row[0]);
 		coord->direct = 0;
 	}
+	mysql_free_result(result);
 	return SLURM_SUCCESS;
 }
 
