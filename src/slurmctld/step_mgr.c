@@ -2663,13 +2663,6 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		*/
 		req->range_last = nodes - 1;
 #endif
-		if (req->range_last >= nodes) {	/* range is zero origin */
-			error("step_partial_comp: StepID=%u.%u last=%u "
-			      "nodes=%d",
-			      req->job_id, req->job_step_id, req->range_last,
-			      nodes);
-			return EINVAL;
-		}
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
 		if (step_ptr->exit_node_bitmap == NULL)
 			fatal("bit_alloc: %m");
@@ -2682,14 +2675,15 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		*/
 		req->range_last = nodes - 1;
 #endif
-		if (req->range_last >= nodes) {	/* range is zero origin */
-			error("step_partial_comp: StepID=%u.%u last=%u "
-			      "nodes=%d",
-			      req->job_id, req->job_step_id, req->range_last,
-			      nodes);
-			return EINVAL;
-		}
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
+	}
+	if ((req->range_first >= nodes) || (req->range_last >= nodes) ||
+	    (req->range_first > req->range_last)) {
+		/* range is zero origin */
+		error("step_partial_comp: StepID=%u.%u range=%u-%u nodes=%d",
+		      req->job_id, req->job_step_id, req->range_first,
+		      req->range_last, nodes);
+		return EINVAL;
 	}
 
 	bit_nset(step_ptr->exit_node_bitmap,
