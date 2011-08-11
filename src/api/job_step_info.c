@@ -48,6 +48,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
@@ -137,6 +138,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	char limit_str[32];
 	char tmp_line[128];
 	char *out = NULL;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	/****** Line 1 ******/
 	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str,
@@ -157,10 +159,23 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		"Partition=%s Nodes=%s Gres=%s",
-		job_step_ptr->partition, job_step_ptr->nodes,
-		job_step_ptr->gres);
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		char *io_nodes;
+		select_g_select_jobinfo_get(job_step_ptr->select_jobinfo,
+					    SELECT_JOBDATA_IONODES,
+					    &io_nodes);
+		snprintf(tmp_line, sizeof(tmp_line),
+			"Partition=%s BP_List=%s[%s] Gres=%s",
+			job_step_ptr->partition,
+			job_step_ptr->nodes, io_nodes,
+			job_step_ptr->gres);
+		xfree(io_nodes);
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"Partition=%s Nodes=%s Gres=%s",
+			job_step_ptr->partition, job_step_ptr->nodes,
+			job_step_ptr->gres);
+	}
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

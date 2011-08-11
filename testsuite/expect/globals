@@ -613,6 +613,9 @@ proc wait_for_step { step_id } {
 		if {[regexp {Nodes=} $line foo] == 1} {
 			return 0
 		}
+		if {[regexp {BP_List=} $line foo] == 1} {
+			return 0
+		}
 		if { $my_delay > $max_job_state_delay } {
 			send_user "FAILURE: Timeout waiting for job step\n"
 			return 1

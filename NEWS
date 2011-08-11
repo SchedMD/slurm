@@ -35,6 +35,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix job step scalability issue with large task count.
  -- BGQ - Improved c-node selection when asked for a sub-block job that
     cannot fit into the available shape.
+ -- BLUEGENE - Modify "scontrol show step" to show  I/O nodes (BGL and BGP) or
+    c-nodes (BGQ) allocated to each step. Change field name from "Nodes=" to
+    "BP_List=".
 
 * Changes in SLURM 2.3.0.rc1
 ============================
