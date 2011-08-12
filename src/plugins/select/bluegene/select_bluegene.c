@@ -1668,6 +1668,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		      job_ptr->job_id);
 
 	xassert(bg_record->mp_used_bitmap);
+	xassert(!step_jobinfo->units_used);
 
 	if (!(avail_mps = bit_copy(bg_record->mp_used_bitmap)))
 		fatal("bit_copy malloc failure");
@@ -1706,6 +1707,20 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		}
 		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
 			fatal("bit_copy malloc failure");
+
+		if (cluster_flags & CLUSTER_FLAG_BGQ
+		    && (bg_record->mp_count == 1)) {
+			ba_mp = list_peek(bg_record->ba_mp_list);
+			xassert(ba_mp);
+			if (!ba_mp->cnode_bitmap)
+				ba_mp->cnode_bitmap =
+					ba_create_ba_mp_cnode_bitmap(bg_record);
+			step_jobinfo->units_used =
+				bit_copy(ba_mp->cnode_bitmap);
+			bit_not(step_jobinfo->units_used);
+			bit_or(ba_mp->cnode_bitmap, step_jobinfo->units_used);
+		}
+
 		bit_or(bg_record->mp_used_bitmap, picked_mps);
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
 		goto found_it;

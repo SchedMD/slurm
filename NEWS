@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
     "BP_List=".
  -- Code cleanup on step request to get the correct select_jobinfo.
  -- Memory leak fixed for rolling up accounting with down clusters.
+ -- BGQ - fix issue where if first job step is the entire block and then the
+    next parallel step is ran on a sub block, SLURM won't over subscribe cnodes.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

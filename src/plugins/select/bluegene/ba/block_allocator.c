@@ -1837,6 +1837,11 @@ extern int ba_clear_sub_block_cnodes(
 	return SLURM_SUCCESS;
 }
 
+extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record)
+{
+	return NULL;
+}
+
 extern char *ba_set_ionode_str(bitstr_t *bitmap)
 {
 	char bitstring[BITSIZE];

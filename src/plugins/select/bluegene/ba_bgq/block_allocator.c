@@ -930,7 +930,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	ListIterator itr = NULL;
 	ba_mp_t *ba_mp = NULL, *empty_ba_mp = NULL;
 	ba_geo_table_t *geo_table = NULL;
-	char *tmp_char = NULL, *tmp_char2 = NULL;
+	char *tmp_char = NULL;
 	uint32_t orig_node_count = *node_count;
 	int dim;
 	uint32_t max_clear_cnt = 0, clear_cnt;
@@ -942,6 +942,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	xassert(!jobinfo->units_used);
 
 	jobinfo->dim_cnt = ba_mp_geo_system->dim_count;
+
 try_again:
 	while (!(geo_table = ba_mp_geo_system->geo_table_ptr[*node_count])) {
 		debug2("ba_pick_sub_block_cnodes: No geometries of size %u ",
@@ -968,7 +969,6 @@ try_again:
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = list_next(itr))) {
 		int cnt = 0;
-		int start;
 
 		if (!ba_mp->used)
 			continue;
@@ -977,57 +977,9 @@ try_again:
 		 * is a copy of the original and the cnode_bitmap is
 		 * only used for sub-block jobs we only create it
 		 * when needed. */
-		if (!ba_mp->cnode_bitmap) {
-			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
-			if (bg_record->ionode_bitmap
-			    && ((start = bit_ffs(bg_record->ionode_bitmap))
-				!= -1)) {
-				int ionode_num;
-				int end = bit_fls(bg_record->ionode_bitmap);
-
-				for (ionode_num = start;
-				     ionode_num <= end;
-				     ionode_num++) {
-					int nc_num, nc_start, nc_end;
-					if (!bit_test(bg_record->ionode_bitmap,
-						      ionode_num))
-						continue;
-
-					nc_start = ionode_num
-						* (int)bg_conf->nc_ratio;
-					nc_end = nc_start
-						+ (int)bg_conf->nc_ratio;
-					for (nc_num = nc_start;
-					     nc_num < nc_end;
-					     nc_num++)
-						ba_node_map_set_range(
-							ba_mp->cnode_bitmap,
-							g_nc_coords[nc_num].
-							start,
-							g_nc_coords[nc_num].
-							end,
-							ba_mp_geo_system);
-				}
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-					tmp_char = ba_node_map_ranged_hostlist(
-						ba_mp->cnode_bitmap,
-						ba_mp_geo_system);
-
-				bit_not(ba_mp->cnode_bitmap);
-
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
-					tmp_char2 = ba_node_map_ranged_hostlist(
-						ba_mp->cnode_bitmap,
-						ba_mp_geo_system);
-					info("ba_pick_sub_block_cnodes: "
-					     "can only use %s cnodes of "
-					     "this midplane leaving %s "
-					     "unusable", tmp_char, tmp_char2);
-					xfree(tmp_char);
-					xfree(tmp_char2);
-				}
-			}
-		}
+		if (!ba_mp->cnode_bitmap)
+			ba_mp->cnode_bitmap =
+				ba_create_ba_mp_cnode_bitmap(bg_record);
 		clear_cnt = bit_clear_count(ba_mp->cnode_bitmap);
 		if (clear_cnt < *node_count) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
@@ -1064,23 +1016,21 @@ try_again:
 			}
 
 			bit_or(ba_mp->cnode_bitmap, jobinfo->units_used);
+			jobinfo->ionode_str = ba_node_map_ranged_hostlist(
+				jobinfo->units_used, ba_mp_geo_system);
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
-				tmp_char = ba_node_map_ranged_hostlist(
-					jobinfo->units_used, ba_mp_geo_system);
 				bit_not(ba_mp->cnode_bitmap);
-				tmp_char2 = ba_node_map_ranged_hostlist(
+				tmp_char = ba_node_map_ranged_hostlist(
 					ba_mp->cnode_bitmap, ba_mp_geo_system);
 				bit_not(ba_mp->cnode_bitmap);
 				info("ba_pick_sub_block_cnodes: "
 				     "using %s cnodes on mp %s "
 				     "leaving '%s' usable in this block (%s)",
-				     tmp_char, ba_mp->coord_str, tmp_char2,
+				     jobinfo->ionode_str,
+				     ba_mp->coord_str, tmp_char,
 				     bg_record->bg_block_id);
 				xfree(tmp_char);
-				xfree(tmp_char2);
 			}
-			jobinfo->ionode_str = ba_node_map_ranged_hostlist(
-				jobinfo->units_used, ba_mp_geo_system);
 			for (dim = 0; dim < jobinfo->dim_cnt; dim++) {
 				jobinfo->geometry[dim] =
 					geo_table->geometry[dim];
@@ -1148,9 +1098,10 @@ extern int ba_clear_sub_block_cnodes(
 	jobinfo = step_ptr->select_jobinfo->data;
 	xassert(jobinfo);
 
-	/* If we are using the entire block we don't need to do
-	   anything. */
-	if (jobinfo->cnode_cnt == bg_record->cnode_cnt)
+	/* If we are using the entire block and the block is larger
+	 * than 1 midplane we don't need to do anything. */
+	if ((jobinfo->cnode_cnt == bg_record->cnode_cnt)
+	    && (bg_record->mp_count != 1))
 		return SLURM_SUCCESS;
 
 	if ((bit = bit_ffs(step_ptr->step_node_bitmap)) == -1) {
@@ -1194,6 +1145,50 @@ extern int ba_clear_sub_block_cnodes(
 
 	return SLURM_SUCCESS;
 }
+
+extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record)
+{
+	int start, end, ionode_num;
+	char *tmp_char, *tmp_char2;
+	bitstr_t *cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+
+	if (!bg_record->ionode_bitmap
+	    || ((start = bit_ffs(bg_record->ionode_bitmap)) == -1))
+		return cnode_bitmap;
+
+	end = bit_fls(bg_record->ionode_bitmap);
+	for (ionode_num = start; ionode_num <= end; ionode_num++) {
+		int nc_num, nc_start, nc_end;
+		if (!bit_test(bg_record->ionode_bitmap, ionode_num))
+			continue;
+
+		nc_start = ionode_num * (int)bg_conf->nc_ratio;
+		nc_end = nc_start + (int)bg_conf->nc_ratio;
+		for (nc_num = nc_start; nc_num < nc_end; nc_num++)
+			ba_node_map_set_range(cnode_bitmap,
+					      g_nc_coords[nc_num].start,
+					      g_nc_coords[nc_num].end,
+					      ba_mp_geo_system);
+	}
+
+	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		tmp_char = ba_node_map_ranged_hostlist(cnode_bitmap,
+						       ba_mp_geo_system);
+
+	bit_not(cnode_bitmap);
+
+	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+		tmp_char2 = ba_node_map_ranged_hostlist(cnode_bitmap,
+							ba_mp_geo_system);
+		info("ba_create_ba_mp_cnode_bitmap: can only use %s cnodes of "
+		     "this midplane leaving %s unusable", tmp_char, tmp_char2);
+		xfree(tmp_char);
+		xfree(tmp_char2);
+	}
+
+	return cnode_bitmap;
+}
+
 
 static int _ba_set_ionode_str_internal(int level, int *coords,
 				       int *start_offset, int *end_offset,
