@@ -331,6 +331,8 @@ test8.8    Test result of marking smaller blocks in an error state.
 **NOTE**   The following tests are specificallly for Bluegene/Q systems
 test8.20   Bluegene/Q only: Test that job step allocations are a valid size
            and within the job's allocation
+test8.21   Bluegene/Q only: Test that multple job step allocations are
+           properly packed within the job's allocation
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
