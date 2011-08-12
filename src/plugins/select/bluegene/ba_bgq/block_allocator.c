@@ -934,7 +934,6 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	uint32_t orig_node_count = *node_count;
 	int dim;
 	uint32_t max_clear_cnt = 0, clear_cnt;
-	bool already_tried = 0;
 
 	xassert(ba_mp_geo_system);
 	xassert(bg_record->ba_mp_list);
@@ -950,6 +949,11 @@ try_again:
 		(*node_count)++;
 		if (*node_count > bg_record->cnode_cnt)
 			break;
+	}
+	if (*node_count > bg_record->cnode_cnt) {
+		debug("ba_pick_sub_block_cnodes: requested sub-block larger "
+		      "than block");
+		return NULL;
 	}
 
 	if (orig_node_count != *node_count)
@@ -1072,8 +1076,7 @@ try_again:
 	   because they can't get that geo and if they would of asked
 	   for 16 then they could run we do that for them.
 	*/
-	if (!already_tried && !ba_mp && (max_clear_cnt > (*node_count)+1)) {
-		already_tried = 1;
+	if (!ba_mp && (max_clear_cnt > (*node_count)+1)) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("trying with a larger size");
 		(*node_count)++;
