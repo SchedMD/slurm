@@ -140,6 +140,7 @@ if {$actual_job_size != $job_size} {
 #       automatically increase step size as needed
 #
 set step_id 0
+set max_step_size 0
 for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size * 2]} {
 	send_user "\nRunning step $job_id.$step_id at size $step_size\n"
 	set step_start1 -1
@@ -212,6 +213,15 @@ for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size
 #		at least 6 c-nodes (3x2x1x1x1). The actual size depends upon
 #		the geometry of the job allocation.
 		send_user "\nWARNING: step allocation too large ($actual_step_size != $step_size)\n"
+	}
+
+	if {$step_size < $max_step_size} {
+		send_user "\nFAILURE: step allocation getting smaller ($step_size < $max_step_sizee)\n"
+		set exit_code 1
+		break
+	}
+	if {$step_size > $max_step_size} {
+		set max_step_size $step_size
 	}
 
 	if {$step_start1 > $job_fini1 || $step_fini1 < $job_start1 ||
