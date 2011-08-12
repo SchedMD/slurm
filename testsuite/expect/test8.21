@@ -149,8 +149,8 @@ for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
 	}
 }
 
-set timeout 30
-send "./$file_prog $srun $squeue $job_id $actual_job_size\r"
+set timeout 60
+send "./$file_prog $srun $squeue $job_id $actual_job_size 1\r"
 expect {
 	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set step_prefix $expect_out(1,string)
@@ -200,8 +200,7 @@ expect {
 		exp_continue
 	}
 	-re $prompt {
-		send "exit\r"
-		exp_continue
+		#break
 	}
 	timeout {
 		send_user "\nFAILURE: job not responding\n"
@@ -218,6 +217,109 @@ for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
 			for {set dim4 $job_start4} {$dim4 <= $job_fini4} {incr dim4} {
 				for {set dim5 $job_start5} {$dim5 <= $job_fini5} {incr dim5} {
 					if {$use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) != 1} {
+						send_user "\nFAILURE: cnode at \[$dim1,$dim2,$dim3,$dim4,$dim5\] "
+						send_user "allocated $use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) times\n"
+						set exit_code 1
+					}
+				}
+			}
+		}
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSo far, so good...\n\n"
+}
+
+#
+# Clear the count the job's c-nodes which have been allocated to steps
+#
+for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
+	for {set dim2 $job_start2} {$dim2 <= $job_fini2} {incr dim2} {
+		for {set dim3 $job_start3} {$dim3 <= $job_fini3} {incr dim3} {
+			for {set dim4 $job_start4} {$dim4 <= $job_fini4} {incr dim4} {
+				for {set dim5 $job_start5} {$dim5 <= $job_fini5} {incr dim5} {
+					set use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) 0
+				}
+			}
+		}
+	}
+}
+
+#
+# This is a randomized variation on the above logic and includes a full
+# allocation job step. Some job steps may not start due to packing issues
+#
+set timeout 60
+send "./$file_prog $srun $squeue $job_id $actual_job_size 2\r"
+expect {
+	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+		set step_prefix $expect_out(1,string)
+		set step_start1 $expect_out(2,string)
+		set step_start2 $expect_out(3,string)
+		set step_start3 $expect_out(4,string)
+		set step_start4 $expect_out(5,string)
+		set step_start5 $expect_out(6,string)
+		set step_fini1 $expect_out(7,string)
+		set step_fini2 $expect_out(8,string)
+		set step_fini3 $expect_out(9,string)
+		set step_fini4 $expect_out(10,string)
+		set step_fini5 $expect_out(11,string)
+		for {set dim1 $step_start1} {$dim1 <= $step_fini1} {incr dim1} {
+			for {set dim2 $step_start2} {$dim2 <= $step_fini2} {incr dim2} {
+				for {set dim3 $step_start3} {$dim3 <= $step_fini3} {incr dim3} {
+					for {set dim4 $step_start4} {$dim4 <= $step_fini4} {incr dim4} {
+						for {set dim5 $step_start5} {$dim5 <= $step_fini5} {incr dim5} {
+							if [info exists use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)] {
+								incr use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)
+							} else {
+								send_user "\nFAILURE: invalid step cnode allocation at "
+								send_user "\[$dim1,$dim2,$dim3,$dim4,$dim5\]/"
+								set exit_code 1
+							}
+						}
+					}
+				}
+			}
+		}
+		exp_continue
+	}
+	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)" {
+		set step_prefix $expect_out(1,string)
+		set dim1 $expect_out(2,string)
+		set dim2 $expect_out(3,string)
+		set dim3 $expect_out(4,string)
+		set dim4 $expect_out(5,string)
+		set dim5 $expect_out(6,string)
+		if [info exists use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)] {
+			incr use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)
+		} else {
+			send_user "\nFAILURE: invalid step cnode allocation at "
+			send_user "\[$dim1,$dim2,$dim3,$dim4,$dim5\]\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	-re $prompt {
+		send_user "\nNOTE: Step create errors due to busy nodes are expected\n"
+		send "exit\r"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: job not responding\n"
+		set exit_code 1
+	}
+}
+
+#
+# Test that each of the job's c-nodes have been allocated no more than once to some step
+#
+for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
+	for {set dim2 $job_start2} {$dim2 <= $job_fini2} {incr dim2} {
+		for {set dim3 $job_start3} {$dim3 <= $job_fini3} {incr dim3} {
+			for {set dim4 $job_start4} {$dim4 <= $job_fini4} {incr dim4} {
+				for {set dim5 $job_start5} {$dim5 <= $job_fini5} {incr dim5} {
+					if {$use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) > 1} {
 						send_user "\nFAILURE: cnode at \[$dim1,$dim2,$dim3,$dim4,$dim5\] "
 						send_user "allocated $use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) times\n"
 						set exit_code 1

@@ -139,9 +139,10 @@ if {$actual_job_size != $job_size} {
 # NOTE: Change this to increment step size by one once SLURM logic can
 #       automatically increase step size as needed
 #
+set timeout 60
 set step_id 0
 set max_step_size 0
-for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size * 2]} {
+for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size + 1]} {
 	send_user "\nRunning step $job_id.$step_id at size $step_size\n"
 	set step_start1 -1
 	send "$srun -N$step_size --test-only $scontrol show step $job_id.$step_id\r"
