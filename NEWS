@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
     c-nodes (BGQ) allocated to each step. Change field name from "Nodes=" to
     "BP_List=".
  -- Code cleanup on step request to get the correct select_jobinfo.
+ -- Memory leak fixed for rolling up accounting with down clusters.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

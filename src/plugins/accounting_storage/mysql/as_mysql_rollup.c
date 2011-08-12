@@ -587,6 +587,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		if (!(result = mysql_db_query_ret(
 			     mysql_conn, query, 0))) {
 			xfree(query);
+			_destroy_local_cluster_usage(c_usage);
 			return SLURM_ERROR;
 		}
 		xfree(query);
@@ -684,6 +685,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		if (!(result = mysql_db_query_ret(
 			     mysql_conn, query, 0))) {
 			xfree(query);
+			_destroy_local_cluster_usage(c_usage);
 			return SLURM_ERROR;
 		}
 		xfree(query);
@@ -735,6 +737,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					     mysql_conn,
 					     query, 0))) {
 					xfree(query);
+					_destroy_local_cluster_usage(c_usage);
 					return SLURM_ERROR;
 				}
 				xfree(query);
@@ -972,8 +975,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		if ((rc = _process_cluster_usage(
 			     mysql_conn, cluster_name, curr_start,
-			     curr_end, now, c_usage)) != SLURM_SUCCESS)
+			     curr_end, now, c_usage)) != SLURM_SUCCESS) {
+			_destroy_local_cluster_usage(c_usage);
 			goto end_it;
+		}
 
 		list_iterator_reset(a_itr);
 		while ((a_usage = list_next(a_itr))) {
@@ -1012,6 +1017,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
+				_destroy_local_cluster_usage(c_usage);
 				goto end_it;
 			}
 		}
@@ -1056,11 +1062,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add wckey hour rollup");
+				_destroy_local_cluster_usage(c_usage);
 				goto end_it;
 			}
 		}
 
 	end_loop:
+		_destroy_local_cluster_usage(c_usage);
 		list_flush(assoc_usage_list);
 		list_flush(cluster_down_list);
 		list_flush(wckey_usage_list);
