@@ -252,6 +252,9 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 
 	xassert(job_ptr);
 	error_code = ENOENT;
+	if (!job_ptr->step_list)
+		return error_code;
+
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
