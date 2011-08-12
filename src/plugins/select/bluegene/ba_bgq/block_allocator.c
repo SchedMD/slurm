@@ -985,7 +985,7 @@ try_again:
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("ba_pick_sub_block_cnodes: "
 				     "only have %d avail in %s need %d",
-				     bit_clear_count(ba_mp->cnode_bitmap),
+				     clear_cnt,
 				     ba_mp->coord_str, *node_count);
 			continue;
 		}
