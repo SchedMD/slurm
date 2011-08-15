@@ -52,7 +52,7 @@ make_bash_script $file_in "sleep 300"
 set matches    0
 set timeout    $max_job_delay
 set job_id(1)  0
-set sbatch_pid [spawn $sbatch -N$job_size -t2 $file_in]
+set sbatch_pid [spawn $sbatch -N$job_size -t2 --output=/dev/null $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id(1) $expect_out(1,string)
@@ -84,7 +84,7 @@ if {[wait_for_job $job_id(1) RUNNING] != 0} {
 	exit 1
 }
 set job_start(1,1) -1
-spawn $scontrol show job $job_id(1)
+spawn $squeue --jobs=$job_id(1) --noheader -o "%i BP_List=%N"
 expect {
 	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set job_prefix(1) $expect_out(1,string)
@@ -101,7 +101,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+		send_user "\nFAILURE: squeue not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -144,7 +144,7 @@ if {$actual_job_size != $job_size} {
 #
 set job_count [expr 512 / $actual_job_size]
 for {set inx 2} {$inx <= $job_count} {incr inx} {
-	set sbatch_pid [spawn $sbatch -N$job_size -w $job_prefix(1) -t2 $file_in]
+	set sbatch_pid [spawn $sbatch -N$job_size -w $job_prefix(1) -t2 --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id($inx) $expect_out(1,string)
@@ -174,7 +174,7 @@ for {set inx 2} {$inx <= $job_count} {incr inx} {
 sleep 15
 for {set inx 2} {$inx <= $job_count} {incr inx} {
 	set job_start($inx,1) -1
-	spawn $scontrol show job $job_id($inx)
+	spawn $squeue --jobs=$job_id($inx) --noheader -o "%i BP_List=%N"
 	expect {
 		-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 			set job_prefix($inx) $expect_out(1,string)
@@ -191,7 +191,7 @@ for {set inx 2} {$inx <= $job_count} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			send_user "\nFAILURE: squeue not responding\n"
 			set exit_code 1
 		}
 		eof {
