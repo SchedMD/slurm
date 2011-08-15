@@ -205,6 +205,8 @@ EXTRA_DIST = \
 	test8.20			\
 	test8.21			\
 	test8.21.bash			\
+	test8.22			\
+	test8.23			\
 	test9.1				\
 	test9.2				\
 	test9.3				\

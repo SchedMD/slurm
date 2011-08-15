@@ -172,7 +172,7 @@ expect {
 							if [info exists use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)] {
 								incr use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)
 							} else {
-								send_user "\nFAILURE: invalid step cnode allocation at "
+								send_user "\nFAILURE: invalid step c-node allocation at "
 								send_user "\[$dim1,$dim2,$dim3,$dim4,$dim5\]/"
 								set exit_code 1
 							}
@@ -193,7 +193,7 @@ expect {
 		if [info exists use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)] {
 			incr use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)
 		} else {
-			send_user "\nFAILURE: invalid step cnode allocation at "
+			send_user "\nFAILURE: invalid step c-node allocation at "
 			send_user "\[$dim1,$dim2,$dim3,$dim4,$dim5\]\n"
 			set exit_code 1
 		}
@@ -217,7 +217,7 @@ for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
 			for {set dim4 $job_start4} {$dim4 <= $job_fini4} {incr dim4} {
 				for {set dim5 $job_start5} {$dim5 <= $job_fini5} {incr dim5} {
 					if {$use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) != 1} {
-						send_user "\nFAILURE: cnode at \[$dim1,$dim2,$dim3,$dim4,$dim5\] "
+						send_user "\nFAILURE: c-node at \[$dim1,$dim2,$dim3,$dim4,$dim5\] "
 						send_user "allocated $use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) times\n"
 						set exit_code 1
 					}
@@ -273,7 +273,7 @@ expect {
 							if [info exists use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)] {
 								incr use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)
 							} else {
-								send_user "\nFAILURE: invalid step cnode allocation at "
+								send_user "\nFAILURE: invalid step c-node allocation at "
 								send_user "\[$dim1,$dim2,$dim3,$dim4,$dim5\]/"
 								set exit_code 1
 							}
@@ -294,7 +294,7 @@ expect {
 		if [info exists use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)] {
 			incr use_cnt($dim1,$dim2,$dim3,$dim4,$dim5)
 		} else {
-			send_user "\nFAILURE: invalid step cnode allocation at "
+			send_user "\nFAILURE: invalid step c-node allocation at "
 			send_user "\[$dim1,$dim2,$dim3,$dim4,$dim5\]\n"
 			set exit_code 1
 		}
@@ -320,7 +320,7 @@ for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
 			for {set dim4 $job_start4} {$dim4 <= $job_fini4} {incr dim4} {
 				for {set dim5 $job_start5} {$dim5 <= $job_fini5} {incr dim5} {
 					if {$use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) > 1} {
-						send_user "\nFAILURE: cnode at \[$dim1,$dim2,$dim3,$dim4,$dim5\] "
+						send_user "\nFAILURE: c-node at \[$dim1,$dim2,$dim3,$dim4,$dim5\] "
 						send_user "allocated $use_cnt($dim1,$dim2,$dim3,$dim4,$dim5) times\n"
 						set exit_code 1
 					}

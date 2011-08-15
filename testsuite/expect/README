@@ -333,6 +333,10 @@ test8.20   Bluegene/Q only: Test that job step allocations are a valid size
            and within the job's allocation
 test8.21   Bluegene/Q only: Test that multple job step allocations are
            properly packed within the job's allocation
+test8.22   Bluegene/Q only: Stress test of running many job step allocations
+           within the job's allocation
+test8.23   Bluegene/Q only: Test that multple jobs allocations are properly
+           packed within a midplane
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
