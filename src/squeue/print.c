@@ -620,10 +620,12 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 		char *nodes = xstrdup(job->nodes);
 		char *ionodes = NULL;
 
-		select_g_select_jobinfo_get(job->select_jobinfo,
-					    SELECT_JOBDATA_IONODES,
-					    &ionodes);
-		if(ionodes) {
+		if (nodes) {
+			select_g_select_jobinfo_get(job->select_jobinfo,
+						    SELECT_JOBDATA_IONODES,
+						    &ionodes);
+		}
+		if (ionodes) {
 			xstrfmtcat(nodes, "[%s]", ionodes);
 			xfree(ionodes);
 			_print_str(nodes, width, right, false);
@@ -1314,10 +1316,12 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 		char *nodes = xstrdup(step->nodes);
 		char *ionodes = NULL;
 
-		select_g_select_jobinfo_get(step->select_jobinfo,
-					    SELECT_JOBDATA_IONODES,
-					    &ionodes);
-		if(ionodes) {
+		if (nodes) {
+			select_g_select_jobinfo_get(step->select_jobinfo,
+						    SELECT_JOBDATA_IONODES,
+						    &ionodes);
+		}
+		if (ionodes) {
 			xstrfmtcat(nodes, "[%s]", ionodes);
 			xfree(ionodes);
 			_print_str(nodes, width, right, false);
