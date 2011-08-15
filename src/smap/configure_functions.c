@@ -638,12 +638,6 @@ static int _resolve(char *com)
 	int i=0;
 	char *ret_str;
 
-#ifdef HAVE_BG_FILES
-	int len=strlen(com);
-	char *rack_mid = NULL;
-	uint16_t *coord = NULL;
-#endif
-
 	while (com[i] != '\0') {
 		if ((i>0) && (com[i-1] != ' '))
 			break;

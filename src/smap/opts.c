@@ -230,7 +230,7 @@ extern char *resolve_mp(char *desc)
 	}
 
 	if (desc[0] != 'R') {
-		ba_mp = str2ba_mp(desc+len);
+		ba_mp = str2ba_mp(desc+i);
 		if (ba_mp)
 			ret_str = xstrdup_printf("%s resolves to %s\n",
 						 ba_mp->coord_str, ba_mp->loc);
