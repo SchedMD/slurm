@@ -225,7 +225,7 @@ extern char *resolve_mp(char *desc)
 	i = strlen(desc) - params.cluster_dims;
 	if (i < 0) {
 		ret_str = xstrdup_printf("Must enter %d coords to resolve.\n",
-					 params.cluster_dim);
+					 params.cluster_dims);
 		goto fini;
 	}
 
