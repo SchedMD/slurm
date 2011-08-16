@@ -29,7 +29,7 @@ else
 ba_lib_dir = $(bg_dir)/ba_bgq
 endif
 
-smap_LDADD += $(bg_dir)/select_bluegene.la
+smap_LDADD += $(bg_dir)/bg_read_config.o $(bg_dir)/libba_common.la $(ba_lib_dir)/libblock_allocator.la
 
 smap_SOURCES += configure_functions.c
 

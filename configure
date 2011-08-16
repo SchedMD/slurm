@@ -4824,7 +4824,7 @@ _ACEOF
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
 		ac_real_bluegene_loaded=yes
-	fi
+  	fi
 
 
 
@@ -5383,8 +5383,8 @@ $as_echo "$as_me: Running on a legitimate BG/Q system" >&6;}
  		#define ac_bluegene_loaded so we don't load another bluegene conf
 		ac_bluegene_loaded=yes
 		ac_real_bluegene_loaded=yes
-		ac_bgq_loaded=yes
-	fi
+ 		ac_bgq_loaded=yes
+  	fi
 
 
 
