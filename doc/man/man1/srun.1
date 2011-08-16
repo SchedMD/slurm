@@ -793,6 +793,9 @@ behavior is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
 The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
+The node count specification may include a numeric value followed by a suffix
+of "k" (multiplies numeric value by 1,024) or "m" (multiplies numeric value by
+1,048,576).
 
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>

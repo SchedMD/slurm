@@ -320,6 +320,10 @@ _str_to_nodes(const char *num_str, char **leftover)
 		num *= 1024;
 		endptr++;
 	}
+	if (*endptr != '\0' && (*endptr == 'm' || *endptr == 'M')) {
+		num *= (1024 * 1024);
+		endptr++;
+	}
 	*leftover = endptr;
 
 	return (int)num;
