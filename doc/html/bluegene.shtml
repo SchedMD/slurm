@@ -12,16 +12,17 @@ described in this document.</p>
 
 <p>BlueGene systems have several unique features making for a few
 differences in how SLURM operates there.
-The BlueGene system consists of one or more <i>base partitions</i> or
-<i>midplanes</i> connected in a three-dimensional torus.
-Each <i>base partition</i> consists of 512 <i>c-nodes</i> each containing two 
-or more cores;
-one designed primarily for managing communications while the others are used
-primarily for computations.
-The <i>c-nodes</i> can execute only one process and thus are unable to execute
-both the user's jobs and SLURM's <i>slurmd</i> daemon.
-Thus the <i>slurmd</i> daemons executes on one or more of the BlueGene <i>Front
-End Nodes</i>.
+BlueGene systems consists of one or more <i>base partitions</i> or
+<i>midplanes</i> connected in a three-dimensional (BlueGene/L and BlueGene/P
+systems) or five-dimensional (BlueGene/Q) torus.
+Each <i>base partition</i> typically includes 512 <i>c-nodes</i> or compute
+nodes each containing two or more cores;
+one core is typically designed primarily for managing communications while the
+other cores are used primarily for computations.
+Each <i>c-node</i> can execute only one process and thus are unable to execute
+both the user's application plus SLURM's <i>slurmd</i> daemon.
+Thus the <i>slurmd</i> daemon(s) executes on one or more of the BlueGene
+<i>Front End Nodes</i>.
 The <i>slurmd</i> daemons provide (almost) all of the normal SLURM services
 for every <i>base partition</i> on the system. </p>
 
@@ -29,21 +30,21 @@ for every <i>base partition</i> on the system. </p>
 a processor count equal to the number of cores on the base partition, which
 keeps the number of entities being managed by SLURM more reasonable.
 Since the current BlueGene software can sub-allocate a <i>base partition</i>
-into blocks of 32 and/or 128 <i>c-nodes</i>, more than one user job can execute
-on each <i>base partition</i> (subject to system administrator configuration).
+into smaller blocks, more than one user job can execute on each <i>base
+partition</i> (subject to system administrator configuration). In the case of
+BlueGene/Q systems, more than one user job can also execute in each block.
 To effectively utilize this environment, SLURM tools present the user with
 the view that each <i>c-node</i> is a separate node, so allocation requests
-and status information use <i>c-node</i> counts (this is a new feature in
-SLURM version 1.1).
+and status information use <i>c-node</i> counts.
 Since the <i>c-node</i> count can be very large, the suffix "k" can be used
-to represent multiples of 1024 (e.g. "2k" is equivalent to "2048").</p>
+to represent multiples of 1024 or "m" for multiples of 1,048,576 (1024 x 1024).
+For example, "2k" is equivalent to "2048".</p>
 
 <h2>User Tools</h2>
 
-<p>The normal set of SLURM user tools: sbatch, scancel, sinfo, squeue, and scontrol
-provide all of the expected services except support for job steps.
-SLURM performs resource allocation for the job, but initiation of tasks is performed
-using the <i>mpirun</i> command. SLURM has no concept of a job step on BlueGene.
+<p>The normal set of SLURM user tools: sbatch, scancel, sinfo, squeue, and
+scontrol provide all of the expected services except support for job steps,
+which is detailed later.
 Seven new sbatch options are available:
 <i>--geometry</i> (specify job size in each dimension),
 <i>--no-rotate</i> (disable rotation of geometry),
@@ -56,25 +57,25 @@ Seven new sbatch options are available:
 <i>--ramdisk-image</i> (specify alternative ramdisk image for bluegene block.  Default if not set, BGL only.)
 The <i>--nodes</i> option with a minimum and (optionally) maximum node count continues
 to be available.
-
 Note that this is a c-node count.</p>
 
-<p>To reiterate: sbatch is used to submit a job script,
-but mpirun is used to launch the parallel tasks.
-Note that a SLURM batch job's default stdout and stderr file names are generated
-using the SLURM job ID.
-When the SLURM control daemon is restarted, SLURM job ID values can be repeated,
-therefore it is recommended that batch jobs explicitly specify unique names for
-stdout and stderr files using the srun options <i>--output</i> and <i>--error</i>
-respectively.
-While the salloc command may be used to create an interactive SLURM job,
-it will be the responsibility of the user to insure that the <i>bgblock</i>
-is ready for use before initiating any mpirun commands.
-SLURM will assume this responsibility for batch jobs.
-The script that you submit to SLURM can contain multiple invocations of mpirun as
-well as any desired commands for pre- and post-processing.
+<h3>Task Launch on BlueGene/Q only</h3>
+
+<p>Use SLURM's srun command to launch tasks (srun is a wrapper for IBM's
+<i>runjob</i> command.
+SLURM job step information including accounting functions as expected.</p>
+
+<h3>Task Launch on BlueGene/L and BlueGene/P only</h3>
+
+<p>SLURM performs resource allocation for the job, but initiation of tasks is
+performed using the <i>mpirun</i> command. SLURM has no concept of a job step
+on BlueGene/L or BlueGene/P systems.
+To reiterate: salloc or sbatch are used to create a job allocation, but
+<i>mpirun</i> is used to launch the parallel tasks.
+The script that you submit to SLURM can contain multiple invocations of mpirun
+as well as any desired commands for pre- and post-processing.
 The mpirun command will get its <i>bgblock</i> information from the
-<i>MPIRUN_PARTITION</i> as set by SLURM. A sample script is shown below.
+<i>MPIRUN_PARTITION</i> as set by SLURM. A sample script is shown below.</p>
 <pre>
 #!/bin/bash
 # pre-processing
@@ -84,44 +85,46 @@ mpirun -exec /home/user/prog -cwd /home/user -args 123
 mpirun -exec /home/user/prog -cwd /home/user -args 124
 # post-processing
 date
-</pre></p>
+</pre>
 
 <h3><a name="naming">Naming Conventions</a></h3>
-<p>The naming of base partitions includes a three-digit suffix representing the its
-coordinates in the X, Y and Z dimensions with a zero origin.
-For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2.  In a system
-configured with <i>small blocks</i> (any block less than a full base partition) there will be divisions
-into the base partition notation.  For example, if there were 64 psets in the
-configuration, bg012[0-15] represents
-the first quarter or first 16 ionodes of a midplane.  In BlueGene/L
-this would be 128 c-node block.  To represent the first nodecard in the
-second quarter or ionodes 16-19 the notation would be bg012[16-19], or
-a 32 c-node block.
-Since jobs must allocate consecutive base partitions in all three dimensions, we have developed
-an abbreviated format for describing the base partitions in one of these three-dimensional blocks.
-The base partition has a prefix determined from the system which is followed by the end-points
-of the block enclosed in square-brackets and separated by an "x".
-For example, "bg[620x731]" is used to represent the eight base partitions enclosed in a block
-with end-points and bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721,
-bg730 and bg731).</p></a>
+<p>The naming of base partitions includes a numeric suffix representing the its
+coordinates with a zero origin. The suffix contains three digits on BlueGene/L
+and BlueGene/P systems, while four digits are required for the BlueGene/Q
+systems. For example, "bgp012" represents the base partition whose coordinate
+is at X=0, Y=1 and Z=2.
+SLURM uses an abbreviated format for describing base partitions in which the
+end-points of the block enclosed are in square-brackets and separated by an "x".
+For example, "bgp[620x731]" is used to represent the eight base partitions
+enclosed in a block with end-points and bgp620 and bgp731 (bgp620, bgp621,
+bgp630, bgp631, bgp720, bgp721, bgp730 and bgp731).</p>
 
-<p>
-<b>IMPORTANT:</b> SLURM version 1.2 or higher can handle a bluegene system of
-sizes up to 36x36x36.  To try to keep with the 'three-digit suffix
-representing the its coordinates in the X, Y and Z dimensions with a
-zero origin', we now support A-Z as valid numbers.  This makes it so
-the prefix <b>must always be lower case</b>, and any letters in the
-three-digit suffix <b> must always be upper case</b>.  This schema
-should be used in your slurm.conf file and in your bluegene.conf file
-if you put a prefix there even though it is not necessary there.  This
-schema should also be used to specify midplanes or locations in
-configure mode of smap.
-
+<p><b>IMPORTANT:</b> SLURM higher can support up to 36 elements in each
+BlueGene dimension by supporting "A-Z" as valid numbers. SLURM requires the
+prefix to be lower case and any letters in the suffix must always be upper
+case. This schema must be used in both the slurm.conf and bluegene.conf
+configuration files when specifying midplane/node names (the prefix is
+optional). This schema should also be used to specify midplanes or locations
+in configure mode of smap:
 <br>
 valid: bgl[000xC44], bgl000, bglZZZ
 <br>
 invalid: BGL[000xC44], BglC00, bglb00, Bglzzz
 </p>
+
+<p>In a system configured with <i>small blocks</i> (any block less
+than a full base partition) there will be divisions in the base partition
+notation. On BlueGene/L and BlueGene/P systems, the base partition name may
+be followed by a square bracket enclosing ID numbers of the IO nodes associated
+with the block. For example, if there are 64 psets in a BlueGene/L
+configuration, "bgl012[0-15]" represents the first quarter or first 16 IO nodes
+of a midplane.  In BlueGene/L this would be 128 c-node block.  To represent
+the first nodecard in the second quarter or IO nodes 16-19, the notation would
+be "bgl012[16-19]", or a 32 c-node block. On BlueGene/Q systems, the specific
+c-nodes would be identified in square brackets using their five digit
+coordinates. For example "bgq0123[00000x11111]" would represent the 32 c-nodes
+in midplane "bgq0123" having coordinates (within that midplane) from zero to
+one in each of the five dimensions.</p>
 
 <p>Two topology-aware graphical user interfaces are provided: <i>smap</i> and
 <i>sview</i> (<i>sview</i> provides more viewing and configuring options).
@@ -235,9 +238,9 @@ distributed among the slurmd daemons to balance the workload.
 You can use the scontrol command to drain individual compute nodes as desired
 and return them to service.</p>
 
-<p>The <i>slurm.conf</i> (configuration) file needs to have the value of <i>InactiveLimit</i>
-set to zero or not specified (it defaults to a value of zero).
-This is because there are no job steps and we don't want to purge jobs prematurely.
+<p>The <i>slurm.conf</i> (configuration) file needs to have the value of
+<i>InactiveLimit</i> set to zero or not specified (it defaults to a value of zero).
+This is because if there are no job steps, we don't want to purge jobs prematurely.
 The value of <i>SelectType</i> must be set to "select/bluegene" in order to have
 node selection performed using a system aware of the system's topography
 and interfaces.
@@ -327,8 +330,8 @@ FrontendName=frontend[00-01] State=UNKNOWN
 NodeName=bg[000x733] CPUs=1024 State=UNKNOWN
 </pre>
 
-<p>While users are unable to initiate SLURM job steps on BlueGene systems,
-this restriction does not apply to user root or <i>SlurmUser</i>.
+<p>While users are unable to initiate SLURM job steps on BlueGene/L or BlueGene/P
+systems, this restriction does not apply to user root or <i>SlurmUser</i>.
 Be advised that the slurmd daemon is unable to manage a large number of job
 steps, so this ability should be used only to verify normal SLURM operation.
 If large numbers of job steps are initiated by slurmd, expect the daemon to
@@ -347,7 +350,7 @@ System administrators should use the <i>smap</i> tool to build appropriate
 configuration file for static partitioning.
 Note that <i>smap -Dc</i> can be run without the SLURM daemons
 active to establish the initial configuration.
-Note that the defined bgblocks may not overlap (except for the
+Note that the bgblocks defined using smap may not overlap (except for the
 full-system bgblock, which is implicitly created).
 See the smap man page for more information.</p>
 
@@ -405,12 +408,12 @@ for this mode.</p>
 (i.e. "<i>scontrol update BlockName=RMP0 state=error</i>").
 This will end any job on the block and set the state of the block to ERROR
 making it so no job will run on the block.  To set it back to a usable
-state set the state to free (i.e.
+state, set the state to free (i.e.
 "<i>scontrol update BlockName=RMP0 state=free</i>").
 
 <p>Alternatively, if only part of a base partition needs to be put
 into an error state which isn't already in a block of the size you
-need, you can set a set of ionodes into an error state with scontrol,
+need, you can set a collection of IO nodes into an error state using scontrol
 (i.e. "<i>scontrol update subbpname=bg000[0-3] state=error</i>").
 This will end any job on the nodes listed, create a block there, and set
 the state of the block to ERROR making it so no job will run on the
@@ -432,14 +435,19 @@ file (i.e. <i>BasePartitionNodeCnt=512</i> and <i>NodeCardNodeCnt=32</i>).</p>
 
 <p>Note that the <i>Numpsets</i> values defined in
 <i>bluegene.conf</i> is used only when SLURM creates bgblocks this
-determines if the system is IO rich or not.  For most bluegene/L
+determines if the system is IO rich or not.  For most BlueGene/L
 systems this value is either 8 (for IO poor systems) or 64 (for IO rich
-systems).
-<p>The <i>Images</i> can change during job start based on input from
-the user.
+systems).</p>
+
+<p>The <i>Images</i> file specifications identify which images are used when
+booting a bgblock and the valid images are different for each BlueGene system
+type (e.g. L, P and Q). Their values can change during job allocation based on
+input from the user.
 If you change the bgblock layout, then slurmctld and slurmd should
-both be cold-started (e.g. <b>/etc/init.d/slurm startclean</b>).
-If you wish to modify the <i>Numpsets</i> values
+both be cold-started (without preserving any state information,
+"/etc/init.d/slurm startclean").</p>
+
+<p>If you wish to modify the <i>Numpsets</i> values
 for existing bgblocks, either modify them manually or destroy the bgblocks
 and let SLURM recreate them.
 Note that in addition to the bgblocks defined in <i>bluegene.conf</i>, an
@@ -450,7 +458,7 @@ bgblocks.
 A sample <i>bluegene.conf</i> file is shown below.
 <pre>
 ###############################################################################
-# Global specifications for BlueGene system
+# Global specifications for a BlueGene/L system
 #
 # BlrtsImage:           BlrtsImage used for creation of all bgblocks.
 # LinuxImage:           LinuxImage used for creation of all bgblocks.
@@ -552,7 +560,7 @@ BridgeAPIVerbose=0
 # volume = 1x1x1 = 1
 BPs=[000x000] Type=TORUS                            # 1x1x1 =  1 midplane
 BPs=[001x001] Type=SMALL 32CNBlocks=4 128CNBlocks=3 # 1x1x1 = 4-Nodecard sized
-                                                    # cnode blocks 3-Base
+                                                    # c-node blocks 3-Base
                                                     # Partition Quarter sized
                                                     # c-node blocks
 
@@ -560,8 +568,8 @@ BPs=[001x001] Type=SMALL 32CNBlocks=4 128CNBlocks=3 # 1x1x1 = 4-Nodecard sized
 
 <p>The above <i>bluegene.conf</i> file defines multiple bgblocks to be
 created in a single midplane (see the "SMALL" option).
-Using this mechanism, up to 32 independent jobs each consisting of 1
-  32 cnodes can be executed
+Using this mechanism, up to 32 independent jobs each consisting of
+32 c-nodes can be executed
 simultaneously on a one-rack BlueGene system.
 If defining bgblocks of <i>Type=SMALL</i>, the SLURM partition
 containing them as defined in <i>slurm.conf</i> must have the
@@ -573,9 +581,10 @@ scheduler performance.
 As in all SLURM configuration files, parameters and values
 are case insensitive.</p>
 
-<p> With a BlueGene/P system the image names are different.  The
-  correct image names are CnloadImage, MloaderImage, and IoloadImage.
-  You can also use alternate images just the same as described above.
+<p>The valid image names on a BlueGene/P system are CnloadImage, MloaderImage,
+and IoloadImage. The only image name on BlueGene/Q systems is MloaderImage.
+Alternate images may be specified as described above for all BlueGene system
+types.</p>
 
 <p>One more thing is required to support SLURM interactions with
 the DB2 database (at least as of the time this was written).
@@ -622,9 +631,9 @@ repeated reboots and the likely failure of user jobs.
 A system administrator should address the problem before returning
 the base partitions to service.</p>
 
-<p>If you cold-start slurmctld (<b>/etc/init.d/slurm startclean</b>
-or <b>slurmctld -c</b>) it is recommended that you also cold-start
-the slurmd at the same time.
+<p>If the slurmctld daemon is cold-started (<b>/etc/init.d/slurm startclean</b>
+or <b>slurmctld -c</b>) it is recommended that the slurmd daemon(s) be
+cold-started at the same time.
 Failure to do so may result in errors being reported by both slurmd
 and slurmctld due to bgblocks that previously existed being deleted.</p>
 
@@ -635,11 +644,18 @@ Run <i>sfree --help</i> for more information.</p>
 
 <h4>Resource Reservations</h4>
 
+<p>SLURM's advance reservation mechanism can accept a node count specification
+as input rather than identification of specific nodes/midplanes. In that case,
+SLURM may reserve nodes/midplanes which may not be formed into an appropriate
+bgblock. Work is planned for SLURM version 2.4 to remedy this problem. Until
+that time, identifying the specific nodes/midplanes to be included in an
+advanced reservation may be necessary.</p>
+
 <p>SLURM's advance reservation mechanism is designed to reserve resources
 at the level of whole nodes, which on a BlueGene systems would represent
 whole midplanes. In order to support advanced reservations with a finer
-grained resolution, you can configure one license per cnode on the system
-and reserve cnodes instead of entire midplanes. Note that reserved licenses
+grained resolution, you can configure one license per c-node on the system
+and reserve c-nodes instead of entire midplanes. Note that reserved licenses
 are treated somewhat differently than reserved nodes. When nodes are reserved
 then jobs using that reservation can use only those nodes. Reserved licenses
 can only be used by jobs associated with that reservation, but licenses not
@@ -649,11 +665,11 @@ explicitly reserved are available to any job.</p>
 "<i>Licenses=cnode*512</i>". Then create an advanced reservation with a
 command like this:<br>
 "<i>scontrol create reservation licenses="cnode*32" starttime=now duration=30:00 users=joe</i>".<br>
-Jobs run in this reservation will then have <b>at least</b> 32 cnodes
+Jobs run in this reservation will then have <b>at least</b> 32 c-nodes
 available for their use, but could use more given an appropriate workload.</p>
 
 <p>There is also a job_submit/cnode plugin available for use that will
-automatically set a job's license specification to match its cnode request
+automatically set a job's license specification to match its c-node request
 (i.e. a command like<br>
 "<i>sbatch -N32 my.sh</i>" would automatically be translated to<br>
 "<i>sbatch -N32 --licenses=cnode*32 my.sh</i>" by the slurmctld daemon.
@@ -685,18 +701,22 @@ Run <b>configure</b> with the <b>--enable-bgl-emulation</b> option.
 This will define "HAVE_BG", "HAVE_BGL", and "HAVE_FRONT_END" in the
 config.h file.
 You can also emulate a BlueGene/P system with
-  the <b>--enable-bgp-emulation</b> option.
+the <b>--enable-bgp-emulation</b> option.
 This will define "HAVE_BG", "HAVE_BGP", and "HAVE_FRONT_END" in the
+config.h file.
+You can also emulate a BlueGene/Q system using
+the <b>--enable-bgq-emulation</b> option.
+This will define "HAVE_BG", "HAVE_BGQ", and "HAVE_FRONT_END" in the
 config.h file.
 Then execute <b>make</b> normally.
 These variables will build the code as if it were running
 on an actual BlueGene computer, but avoid making calls to the
-Bridge libary (that is controlled by the variable "HAVE_BG_FILES",
+Bridge library (that is controlled by the variable "HAVE_BG_FILES",
 which is left undefined). You can use this to test configurations,
 scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 March 2011</p>
+<p style="text-align:center;">Last modified 16 August 2011</p>
 
 <!--#include virtual="footer.txt"-->
