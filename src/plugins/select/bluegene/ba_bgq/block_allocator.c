@@ -501,7 +501,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 		xfree(tmp_char);
 		if (ba_geo_test_all(ba_main_mp_bitmap,
 				    &success_bitmap,
-				    ba_request->geo_table, &cnt,
+				    ba_geo_table, &cnt,
 				    ba_main_geo_system, deny_pass,
 				    start_loc, &scan_offset)
 		    != SLURM_SUCCESS) {
@@ -555,7 +555,9 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 		}
 		itr = list_iterator_create(main_mps);
 		while ((ba_mp = list_next(itr))) {
-			info("here for %s", ba_mp->coord_str);
+			if (ba_mp->used & BA_MP_USED_PASS_BIT)
+				continue;
+			info("here for %s %x", ba_mp->coord_str, ba_mp->used);
 			for (dim=0; dim<cluster_dims; dim++) {
 				if ((ba_geo_table->geometry[dim] == 1)
 				    || (ba_mp->coord[dim] != start_loc[dim]))
@@ -2281,7 +2283,7 @@ static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
 				add = 1;
 				curr_mp->used |= BA_MP_USED_ALTERED_PASS;
 			} else {
-				error("WHAT?");
+				error("WHAT? %s", curr_mp->coord_str);
 			}
 			alter_switch->usage |= BG_SWITCH_PASS;
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
