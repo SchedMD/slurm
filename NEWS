@@ -42,7 +42,6 @@ documents those changes that are of interest to users and admins.
  -- Memory leak fixed for rolling up accounting with down clusters.
  -- BGQ - fix issue where if first job step is the entire block and then the
     next parallel step is ran on a sub block, SLURM won't over subscribe cnodes.
- -- BLUEGENE - updated to smap to compile correctly on real bluegene systems.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

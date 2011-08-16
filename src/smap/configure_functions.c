@@ -44,50 +44,68 @@
 #include "src/common/xstring.h"
 #include "src/plugins/select/bluegene/bg_read_config.h"
 
-/* These are here to avoid direct linking issues with the bluegene plugin.
+/* These are here to avoid linking issues with the bridge for
+ * unresolved symbols.
  */
+time_t last_job_update;
+time_t last_bg_update;
+bg_config_t *bg_conf;
+bg_lists_t *bg_lists;
+pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
+int bg_recover = 1;
+int blocks_are_created = 0;
+bool have_db2 = false;
+int num_unused_cpus;
 
-extern int slurm_drain_nodes(char *node_list, char *reason, uint32_t reason_uid)
+extern int bridge_init(char *properties_file)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
-extern int job_fail(uint32_t job_id)
+extern int bridge_fini()
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
-extern int slurm_fail_job(uint32_t job_id)
+extern int bridge_get_size(int *size)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
-extern void lock_slurmctld(int lock_levels)
+extern int bridge_setup_system()
 {
+	return SLURM_ERROR;
 }
 
-extern void unlock_slurmctld(int lock_levels)
+extern int bridge_free_bg(my_bluegene_t *bg)
 {
+	return SLURM_ERROR;
 }
 
-extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
+extern int bridge_get_bg(my_bluegene_t **bg)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
-extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
-			uint16_t protocol_version, bool preempt)
+#ifdef HAVE_BG_FILES
+extern int bridge_get_data(rm_element_t* element,
+			   enum rm_specification field, void *data)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
-
-extern struct job_record *find_job_record(uint32_t job_id)
+#else
+extern int bridge_get_data(void* element,
+			   int field, void *data)
 {
-	return NULL;
+	return SLURM_ERROR;
 }
+#endif
 
-extern void trigger_block_error(void)
+extern int add_bg_record(List records, List *used_nodes,
+			 select_ba_request_t *blockreq,
+			 bool no_check, bitoff_t io_start)
 {
+	return SLURM_ERROR;
 }
 
 ///////////////////////////////////////////////////////////////////////
