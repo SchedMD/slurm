@@ -69,7 +69,7 @@ static ba_geo_system_t *ba_main_geo_system = NULL;
 static ba_geo_system_t *ba_mp_geo_system = NULL;
 static uint16_t *deny_pass = NULL;
 static ba_nc_coords_t g_nc_coords[16];
-
+static ba_mp_t **ba_main_grid_array = NULL;
 /* increment Y -> Z -> A -> X -> E
  * used for doing nodecard coords */
 static int ba_nc_dim_order[5] = {Y, Z, A, X, E};
@@ -124,44 +124,6 @@ extern void ba_create_system()
 	if (ba_main_grid)
 		ba_destroy_system();
 
-	ba_main_grid = (ba_mp_t****)
-		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
-	for (a = 0; a < DIM_SIZE[A]; a++) {
-		ba_main_grid[a] = (ba_mp_t***)
-			xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
-		for (x = 0; x < DIM_SIZE[X]; x++) {
-			ba_main_grid[a][x] = (ba_mp_t**)
-				xmalloc(sizeof(ba_mp_t*) * DIM_SIZE[Y]);
-			for (y = 0; y < DIM_SIZE[Y]; y++) {
-				ba_main_grid[a][x][y] = (ba_mp_t*)
-					xmalloc(sizeof(ba_mp_t) * DIM_SIZE[Z]);
-				for (z = 0; z < DIM_SIZE[Z]; z++) {
-					ba_mp_t *ba_mp = &ba_main_grid
-						[a][x][y][z];
-					ba_mp->coord[A] = a;
-					ba_mp->coord[X] = x;
-					ba_mp->coord[Y] = y;
-					ba_mp->coord[Z] = z;
-
-					snprintf(ba_mp->coord_str,
-						 sizeof(ba_mp->coord_str),
-						 "%c%c%c%c",
-						 alpha_num[ba_mp->coord[A]],
-						 alpha_num[ba_mp->coord[X]],
-						 alpha_num[ba_mp->coord[Y]],
-						 alpha_num[ba_mp->coord[Z]]);
-					ba_setup_mp(ba_mp, true, false);
-					ba_mp->state = NODE_STATE_IDLE;
-					/* This might get changed
-					   later, but just incase set
-					   it up here.
-					*/
-					ba_mp->index = i++;
-				}
-			}
-		}
-	}
-
 	/* build all the possible geos for the mid planes */
 	ba_main_geo_system =  xmalloc(sizeof(ba_geo_system_t));
 	ba_main_geo_system->dim_count = SYSTEM_DIMENSIONS;
@@ -187,8 +149,6 @@ extern void ba_create_system()
 	ba_mp_geo_system->dim_size[4] = 2;
 	ba_create_geo_table(ba_mp_geo_system);
 	//ba_print_geo_table(ba_mp_geo_system);
-
-	_setup_next_mps(A, coords);
 
 	/* Now set it up to mark the corners of each nodecard.  This
 	   is used if running a sub-block job on a small block later.
@@ -244,12 +204,66 @@ extern void ba_create_system()
 		/*      alpha_num[g_nc_coords[i].end[E]]); */
 		_increment_nc_coords(0, mp_coords, ba_mp_geo_system->dim_size);
 	}
+
+	/* Set up a flat array to be used in conjunction with the
+	   ba_geo system.
+	*/
+	ba_main_grid_array = xmalloc(sizeof(ba_mp_t *) *
+				     ba_main_geo_system->total_size);
+
+	ba_main_grid = (ba_mp_t****)
+		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
+	for (a = 0; a < DIM_SIZE[A]; a++) {
+		ba_main_grid[a] = (ba_mp_t***)
+			xmalloc(sizeof(ba_mp_t**) * DIM_SIZE[X]);
+		for (x = 0; x < DIM_SIZE[X]; x++) {
+			ba_main_grid[a][x] = (ba_mp_t**)
+				xmalloc(sizeof(ba_mp_t*) * DIM_SIZE[Y]);
+			for (y = 0; y < DIM_SIZE[Y]; y++) {
+				ba_main_grid[a][x][y] = (ba_mp_t*)
+					xmalloc(sizeof(ba_mp_t) * DIM_SIZE[Z]);
+				for (z = 0; z < DIM_SIZE[Z]; z++) {
+					ba_mp_t *ba_mp = &ba_main_grid
+						[a][x][y][z];
+					ba_mp->coord[A] = a;
+					ba_mp->coord[X] = x;
+					ba_mp->coord[Y] = y;
+					ba_mp->coord[Z] = z;
+
+					snprintf(ba_mp->coord_str,
+						 sizeof(ba_mp->coord_str),
+						 "%c%c%c%c",
+						 alpha_num[ba_mp->coord[A]],
+						 alpha_num[ba_mp->coord[X]],
+						 alpha_num[ba_mp->coord[Y]],
+						 alpha_num[ba_mp->coord[Z]]);
+					ba_setup_mp(ba_mp, true, false);
+					ba_mp->state = NODE_STATE_IDLE;
+					/* This might get changed
+					   later, but just incase set
+					   it up here.
+					*/
+					ba_mp->index = i++;
+					ba_mp->ba_geo_index =
+						ba_node_xlate_to_1d(
+							ba_mp->coord,
+							ba_main_geo_system);
+					ba_main_grid_array[ba_mp->ba_geo_index]
+						= ba_mp;
+				}
+			}
+		}
+	}
+
+	_setup_next_mps(A, coords);
 }
 
 /** */
 extern void ba_destroy_system(void)
 {
 	int a, x, y;
+
+	xfree(ba_main_grid_array);
 
 	if (ba_main_grid) {
 		for (a=0; a<DIM_SIZE[A]; a++) {
@@ -556,7 +570,8 @@ extern int remove_block(List mps, bool is_small)
 		if (curr_ba_mp->used) {
 			ba_mp->used &= (~BA_MP_USED_TRUE);
 			if (ba_mp->used == BA_MP_USED_FALSE)
-				bit_clear(ba_main_mp_bitmap, ba_mp->index);
+				bit_clear(ba_main_mp_bitmap,
+					  ba_mp->ba_geo_index);
 		}
 		ba_mp->used &= (~BA_MP_USED_ALTERED_PASS);
 
@@ -675,8 +690,9 @@ extern int check_and_set_mp_list(List mps)
 
 		if (ba_mp->used) {
 			curr_ba_mp->used = ba_mp->used;
-			xassert(!bit_test(ba_main_mp_bitmap, ba_mp->index));
-			bit_set(ba_main_mp_bitmap, ba_mp->index);
+			xassert(!bit_test(ba_main_mp_bitmap,
+					  ba_mp->ba_geo_index));
+			bit_set(ba_main_mp_bitmap, ba_mp->ba_geo_index);
 		}
 
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)

@@ -145,24 +145,6 @@ static bool _incr_geo(int *geo, ba_geo_system_t *my_geo_system)
 	return false;
 }
 
-/* Translate a multi-dimension coordinate (3-D, 4-D, 5-D, etc.) into a 1-D
- * offset in the cnode* bitmap */
-static void _ba_node_xlate_to_1d(int *offset_1d, int *full_offset,
-				 ba_geo_system_t *my_geo_system)
-{
-	int i, map_offset;
-
-	xassert(offset_1d);
-	xassert(full_offset);
-	i = my_geo_system->dim_count - 1;
-	map_offset = full_offset[i];
-	for (i-- ; i >= 0; i--) {
-		map_offset *= my_geo_system->dim_size[i];
-		map_offset += full_offset[i];
-	}
-	*offset_1d = map_offset;
-}
-
 #if DISPLAY_FULL_DIM
 /* Translate a 1-D offset in the cnode bitmap to a multi-dimension
  * coordinate (3-D, 4-D, 5-D, etc.) */
@@ -180,13 +162,11 @@ static void _ba_node_xlate_from_1d(int offset_1d, int *full_offset,
 }
 #endif
 
-static int _ba_node_map_set_range_internal(int level, int *coords,
+static int _ba_node_map_set_range_internal(int level, uint16_t *coords,
 					   int *start_offset, int *end_offset,
 					   bitstr_t *node_bitmap,
 					   ba_geo_system_t *my_geo_system)
 {
-	int offset_1d;
-
 	xassert(my_geo_system);
 
 	if (level > my_geo_system->dim_count)
@@ -206,8 +186,7 @@ static int _ba_node_map_set_range_internal(int level, int *coords,
 		return 1;
 	}
 
-	_ba_node_xlate_to_1d(&offset_1d, coords, my_geo_system);
-	bit_set(node_bitmap, offset_1d);
+	ba_node_map_set(node_bitmap, coords, my_geo_system);
 	return 1;
 }
 
@@ -345,7 +324,7 @@ static bitstr_t * _test_geo(bitstr_t *node_bitmap,
 {
 	int i;
 	bitstr_t *alloc_node_bitmap;
-	int offset[my_geo_system->dim_count];
+	uint16_t offset[my_geo_system->dim_count];
 
 	alloc_node_bitmap = bit_alloc(my_geo_system->total_size);
 	memset(offset, 0, sizeof(offset));
@@ -359,7 +338,8 @@ static bitstr_t * _test_geo(bitstr_t *node_bitmap,
 		}
 		/* Test if this coordinate is available for use */
 		if (i >= my_geo_system->dim_count) {
-			if (ba_node_map_test(node_bitmap,offset,my_geo_system))
+			if (ba_node_map_test(
+				    node_bitmap, offset, my_geo_system))
 				break;	/* not available */
 			/* Set it in our bitmap for this job */
 			ba_node_map_set(alloc_node_bitmap, offset,
@@ -496,11 +476,12 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("can't use %s", curr_mp->coord_str);
 			curr_mp->used |= BA_MP_USED_TEMP;
-			bit_set(ba_main_mp_bitmap, curr_mp->index);
+			bit_set(ba_main_mp_bitmap, curr_mp->ba_geo_index);
 		} else {
 			curr_mp->used &= (~BA_MP_USED_TEMP);
 			if (curr_mp->used == BA_MP_USED_FALSE)
-				bit_clear(ba_main_mp_bitmap, curr_mp->index);
+				bit_clear(ba_main_mp_bitmap,
+					  curr_mp->ba_geo_index);
 		}
 	}
 }
@@ -527,7 +508,7 @@ static void _internal_reset_ba_system(int level, uint16_t *coords,
 	if (!curr_mp)
 		return;
 	ba_setup_mp(curr_mp, track_down_mps, false);
-	bit_clear(ba_main_mp_bitmap, curr_mp->index);
+	bit_clear(ba_main_mp_bitmap, curr_mp->ba_geo_index);
 }
 
 #if defined HAVE_BG_FILES
@@ -868,6 +849,7 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 	if (!orig_mp)
 		goto unpack_error;
 	ba_mp->index = orig_mp->index;
+	ba_mp->ba_geo_index = orig_mp->ba_geo_index;
 
 	return SLURM_SUCCESS;
 
@@ -1174,13 +1156,10 @@ extern void ba_node_map_free(bitstr_t *node_bitmap,
  * IN full_offset - N-dimension zero-origin offset to set
  * IN my_geo_system - system geometry specification
  */
-extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
+extern void ba_node_map_set(bitstr_t *node_bitmap, uint16_t *full_offset,
 			    ba_geo_system_t *my_geo_system)
 {
-	int offset_1d;
-
-	_ba_node_xlate_to_1d(&offset_1d, full_offset, my_geo_system);
-	bit_set(node_bitmap, offset_1d);
+	bit_set(node_bitmap, ba_node_xlate_to_1d(full_offset, my_geo_system));
 }
 
 /*
@@ -1194,7 +1173,7 @@ extern void ba_node_map_set_range(bitstr_t *node_bitmap,
 				  int *start_offset, int *end_offset,
 				  ba_geo_system_t *my_geo_system)
 {
-	int coords[5];
+	uint16_t coords[HIGHEST_DIMENSIONS];
 
 	_ba_node_map_set_range_internal(0, coords, start_offset, end_offset,
 					node_bitmap, my_geo_system);
@@ -1206,13 +1185,11 @@ extern void ba_node_map_set_range(bitstr_t *node_bitmap,
  * IN full_offset - N-dimension zero-origin offset to test
  * IN my_geo_system - system geometry specification
  */
-extern int ba_node_map_test(bitstr_t *node_bitmap, int *full_offset,
+extern int ba_node_map_test(bitstr_t *node_bitmap, uint16_t *full_offset,
 			    ba_geo_system_t *my_geo_system)
 {
-	int offset_1d;
-
-	_ba_node_xlate_to_1d(&offset_1d, full_offset, my_geo_system);
-	return bit_test(node_bitmap, offset_1d);
+	return bit_test(node_bitmap,
+			ba_node_xlate_to_1d(full_offset, my_geo_system));
 }
 
 /*
@@ -1396,6 +1373,24 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			    start_pos, scan_offset, deny_wrap);
 
 	return rc;
+}
+
+/* Translate a multi-dimension coordinate (3-D, 4-D, 5-D, etc.) into a 1-D
+ * offset in the cnode* bitmap */
+extern int ba_node_xlate_to_1d(uint16_t *full_offset,
+			       ba_geo_system_t *my_geo_system)
+{
+	int i, map_offset;
+
+	xassert(full_offset);
+	xassert(my_geo_system);
+	i = my_geo_system->dim_count - 1;
+	map_offset = full_offset[i];
+	for (i-- ; i >= 0; i--) {
+		map_offset *= my_geo_system->dim_size[i];
+		map_offset += full_offset[i];
+	}
+	return map_offset;
 }
 
 /*

@@ -148,13 +148,17 @@ typedef struct block_allocator_mp {
 	ba_switch_t alter_switch[HIGHEST_DIMENSIONS];
 	/* a switch for each dimensions */
 	ba_switch_t axis_switch[HIGHEST_DIMENSIONS];
+	/* index into the ba_main_grid_array (BGQ) used for easy look
+	 * up of the miplane in that system */
+	uint32_t ba_geo_index;
 	/* Bitmap of available cnodes */
 	bitstr_t *cnode_bitmap;
 	/* coordinates of midplane */
 	uint16_t coord[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane in str format */
 	char coord_str[HIGHEST_DIMENSIONS+1];
-	/* midplane index used for easy look up of the miplane */
+	/* index into the node_record_table_ptr used for easy look up
+	 * of the miplane in that system */
 	uint32_t index;
 	/* rack-midplane location. */
 	char *loc;
@@ -284,7 +288,7 @@ extern void ba_node_map_free(bitstr_t *node_bitmap,
  * IN full_offset - N-dimension zero-origin offset to set
  * IN my_geo_system - system geometry specification
  */
-extern void ba_node_map_set(bitstr_t *node_bitmap, int *full_offset,
+extern void ba_node_map_set(bitstr_t *node_bitmap, uint16_t *full_offset,
 			    ba_geo_system_t *my_geo_system);
 
 /*
@@ -304,7 +308,7 @@ extern void ba_node_map_set_range(bitstr_t *node_bitmap,
  * IN full_offset - N-dimension zero-origin offset to test
  * IN my_geo_system - system geometry specification
  */
-extern int ba_node_map_test(bitstr_t *node_bitmap, int *full_offset,
+extern int ba_node_map_test(bitstr_t *node_bitmap, uint16_t *full_offset,
 			    ba_geo_system_t *my_geo_system);
 
 /*
@@ -385,6 +389,16 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			   ba_geo_system_t *my_geo_system, uint16_t *deny_pass,
 			   uint16_t *start_pos, int *scan_offset,
 			   bool deny_wrap);
+
+/* Translate a multi-dimension coordinate (3-D, 4-D, 5-D, etc.) into a 1-D
+ * offset in the ba_geo_system_t bitmap
+ *
+ * IN full_offset - N-dimension zero-origin offset to test
+ * IN my_geo_system - system geometry specification
+ * RET - 1-D offset
+ */
+extern int ba_node_xlate_to_1d(uint16_t *full_offset,
+			       ba_geo_system_t *my_geo_system);
 
 /*
  * Used to set all midplanes in a special used state except the ones
