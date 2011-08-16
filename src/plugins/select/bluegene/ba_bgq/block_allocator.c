@@ -103,6 +103,9 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		      uint16_t geometry, uint16_t conn_type,
 		      int *block_start, int *block_end);
 
+static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
+			  uint16_t geometry, uint16_t conn_type);
+
 /* */
 static void _setup_next_mps(int level, uint16_t *coords);
 
@@ -418,6 +421,204 @@ extern ba_mp_t *coord2ba_mp(const uint16_t *coord)
  * return: success or error of request
  */
 extern int allocate_block(select_ba_request_t* ba_request, List results)
+{
+	uint16_t start[cluster_dims];
+	int dim, startx, rc = 1;
+	ba_geo_table_t *ba_geo_table = NULL;
+	bitstr_t *success_bitmap = NULL;
+	List main_mps = NULL;
+	uint16_t local_deny_pass = ba_deny_pass;
+	ba_mp_t *ba_mp = NULL, *start_ba_mp = NULL;
+
+	if (!ba_initialized){
+		error("Error, configuration not initialized, "
+		      "calling ba_init(NULL, 1)");
+		ba_init(NULL, 1);
+	}
+
+	if (!ba_request){
+		error("allocate_block Error, request not initialized");
+		return 0;
+	}
+
+	if (!(cluster_flags & CLUSTER_FLAG_BG))
+		return 0;
+
+	memset(start, 0, sizeof(start));
+	startx = (start[X]-1);
+
+	if (startx == -1)
+		startx = DIM_SIZE[X]-1;
+	if (ba_request->start_req) {
+		for (dim = 0; dim < cluster_dims; dim++) {
+			if (ba_request->start[dim] >= DIM_SIZE[dim])
+				return 0;
+			start[dim] = ba_request->start[dim];
+		}
+	}
+
+	/* set up the geo_table */
+	if (ba_request->geometry[0] == (uint16_t)NO_VAL) {
+		if (!(ba_request->geo_table =
+		      ba_main_geo_system->geo_table_ptr[ba_request->size])) {
+			error("allocate_block: "
+			      "No geometries for %d midplanes",
+			      ba_request->size);
+			return 0;
+		}
+		ba_geo_table = (ba_geo_table_t *)ba_request->geo_table;
+		if (!ba_geo_table || !ba_geo_table->geometry) {
+			error("allocate_block: no geo table");
+			return 0;
+		}
+
+		memcpy(ba_request->geometry, ba_geo_table->geometry,
+		       sizeof(ba_geo_table->geometry));
+	} else
+		ba_request->geo_table = NULL;
+
+	if (!deny_pass)
+		deny_pass = &local_deny_pass;
+
+	while (ba_geo_table) {
+		ListIterator itr;
+		int scan_offset = 0, cnt = 0, i=0;
+		uint16_t start_loc[ba_main_geo_system->dim_count];
+		char *tmp_char;
+
+	try_again:
+		if (success_bitmap)
+			FREE_NULL_BITMAP(success_bitmap);
+		if (main_mps && list_count(main_mps)) {
+			_reset_altered_mps(main_mps, 0);
+			list_flush(main_mps);
+		}
+		bit_not(ba_main_mp_bitmap);
+		tmp_char = ba_node_map_ranged_hostlist(
+			ba_main_mp_bitmap, ba_main_geo_system);
+		bit_not(ba_main_mp_bitmap);
+		info("free space %s", tmp_char);
+		xfree(tmp_char);
+		if (ba_geo_test_all(ba_main_mp_bitmap,
+				    &success_bitmap,
+				    ba_request->geo_table, &cnt,
+				    ba_main_geo_system, deny_pass,
+				    start_loc, &scan_offset)
+		    != SLURM_SUCCESS) {
+			ba_geo_table = ba_geo_table->next_ptr;
+			continue;
+		}
+		tmp_char = ba_node_map_ranged_hostlist(
+			success_bitmap, ba_main_geo_system);
+		info("looking to allocate %s", tmp_char);
+		xfree(tmp_char);
+		start_ba_mp = coord2ba_mp(start_loc);
+		info("start is %s", start_ba_mp->coord_str);
+		main_mps = list_create(NULL);
+		for (i=0; i<node_record_count; i++) {
+			if (!bit_test(success_bitmap, i))
+				continue;
+			ba_mp = ba_main_grid_array[i];
+			xassert(ba_mp);
+
+			for (dim=0; dim<cluster_dims; dim++) {
+				if (_mp_used(ba_mp, dim)) {
+					info("need to try again");
+					goto try_again;
+				}
+				info("geo for %d is %d", dim, ba_geo_table->geometry[dim]);
+				if (ba_geo_table->geometry[dim] == 1) {
+					/* Always check MESH here since we
+					 * only care about the IN/OUT ports.
+					 * all 1 dimensions need a TORUS */
+					ba_mp->alter_switch[dim].usage
+						|= BG_SWITCH_WRAPPED;
+					if (ba_debug_flags
+					    & DEBUG_FLAG_BG_ALGO_DEEP)
+						info("_fill_in_wires: "
+						     "using mp %s(%d) "
+						     "in 1 geo %s added %s",
+						     ba_mp->coord_str, dim,
+						     ba_switch_usage_str(
+							     ba_mp->
+							     axis_switch[dim].
+							     usage),
+						     ba_switch_usage_str(
+							     ba_mp->
+							     alter_switch[dim].
+							     usage));
+					continue;
+				}
+			}
+			ba_mp->used = BA_MP_USED_ALTERED;
+			list_append(main_mps, ba_mp);
+		}
+		itr = list_iterator_create(main_mps);
+		while ((ba_mp = list_next(itr))) {
+			info("here for %s", ba_mp->coord_str);
+			for (dim=0; dim<cluster_dims; dim++) {
+				if ((ba_geo_table->geometry[dim] == 1)
+				    || (ba_mp->coord[dim] != start_loc[dim]))
+					continue;
+				if (!_fill_in_wires(
+					    main_mps, ba_mp, dim,
+					    ba_geo_table->geometry[dim],
+					    ba_request->conn_type[dim])) {
+					list_iterator_destroy(itr);
+					goto try_again;
+				}
+			}
+		}
+		list_iterator_destroy(itr);
+
+		break;
+	}
+
+	if (success_bitmap)
+		FREE_NULL_BITMAP(success_bitmap);
+
+	if (ba_geo_table) {
+		/* success */
+		if (results)
+			ba_request->save_name =
+				_copy_from_main(main_mps, results);
+		else
+			ba_request->save_name = _reset_altered_mps(main_mps, 1);
+	}
+
+	if (main_mps) {
+		/* handle failure */
+		if (!ba_request->save_name)
+			_reset_altered_mps(main_mps, 0);
+		list_destroy(main_mps);
+		main_mps = NULL;
+	}
+
+	if (deny_pass == &local_deny_pass)
+		deny_pass = NULL;
+
+	if (ba_request->save_name) {
+		debug2("allocate_block: name = %s", ba_request->save_name);
+		rc = 1;
+	} else {
+		debug2("allocate_block: can't allocate");
+		rc = 0;
+	}
+
+	return rc;
+}
+
+/*
+ * Try to allocate a block.
+ *
+ * IN - ba_request: allocation request
+ * OUT - results: List of results of the allocation request.  Each
+ * list entry will be a coordinate.  allocate_block will create the
+ * list, but the caller must destroy it.
+ *
+ * return: success or error of request
+ */
+extern int allocate_block_old(select_ba_request_t* ba_request, List results)
 {
 	uint16_t start[cluster_dims];
 	char *name=NULL;
@@ -1980,6 +2181,150 @@ static int _find_path(List mps, ba_mp_t *start_mp, int dim,
 		   from an unused mp */
 		if (axis_switch->usage & BG_SWITCH_IN_PASS) {
 			info("_find_path: 2 got a bad axis_switch at %s %d %s",
+			     curr_mp->coord_str, dim,
+			     ba_switch_usage_str(axis_switch->usage));
+			xassert(0);
+		}
+
+		alter_switch->usage |= BG_SWITCH_IN_PASS;
+		alter_switch->usage |= BG_SWITCH_IN;
+	}
+
+	return 1;
+}
+
+static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
+			  uint16_t geometry, uint16_t conn_type)
+{
+	ba_mp_t *curr_mp = start_mp->next_mp[dim];
+	ba_switch_t *axis_switch = NULL;
+	ba_switch_t *alter_switch = NULL;
+	int count = 1;
+	int add = 0;
+
+	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		info("_fill_in_wires: at mp %s(%d) geo %d switches "
+		     "at %s and %s",
+		     start_mp->coord_str, dim, geometry,
+		     ba_switch_usage_str(start_mp->axis_switch[dim].usage),
+		     ba_switch_usage_str(start_mp->alter_switch[dim].usage));
+
+	axis_switch = &start_mp->axis_switch[dim];
+	alter_switch = &start_mp->alter_switch[dim];
+
+	if (_mp_out_used(start_mp, dim)) {
+		info("out used?");
+		return 0;
+	}
+	alter_switch->usage |= BG_SWITCH_OUT;
+	alter_switch->usage |= BG_SWITCH_OUT_PASS;
+
+	while (curr_mp != start_mp) {
+		add = 0;
+		xassert(curr_mp);
+		axis_switch = &curr_mp->axis_switch[dim];
+		alter_switch = &curr_mp->alter_switch[dim];
+
+		/* This should never happen since we got here
+		   from an unused mp */
+		if (axis_switch->usage & BG_SWITCH_IN_PASS) {
+			info("_fill_in_wires: got a bad axis_switch "
+			     "at %s %d %s %s",
+			     curr_mp->coord_str, dim,
+			     ba_switch_usage_str(axis_switch->usage),
+			     ba_switch_usage_str(alter_switch->usage));
+			xassert(0);
+		}
+
+		if ((count < geometry)
+		    && (curr_mp->used & BA_MP_USED_ALTERED)) {
+			/* if (curr_mp->coord[dim] < start_mp->coord[dim]) { */
+			/* 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) */
+			/* 		info("Available mp %s(%d) is less " */
+			/* 		     "than our starting point " */
+			/* 		     "of %s(%d) since we already " */
+			/* 		     "looked at this return.", */
+			/* 		     curr_mp->coord_str, dim, */
+			/* 		     start_mp->coord_str, dim); */
+			/* 	return 0; */
+			/* } */
+			count++;
+			alter_switch->usage |= BG_SWITCH_IN_PASS;
+			alter_switch->usage |= BG_SWITCH_IN;
+			if ((count < geometry) || (conn_type == SELECT_TORUS)) {
+				alter_switch->usage |= BG_SWITCH_OUT;
+				alter_switch->usage |= BG_SWITCH_OUT_PASS;
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("_fill_in_wires: using mp %s(%d) "
+					     "%d(%d) %s added %s",
+					     curr_mp->coord_str, dim,
+					     count, geometry,
+					     ba_switch_usage_str(
+						     axis_switch->usage),
+					     ba_switch_usage_str(
+						     alter_switch->usage));
+			} else if (conn_type == SELECT_MESH) {
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("_fill_in_wires: using mp %s(%d) "
+					     "%d(%d) %s added %s",
+					     curr_mp->coord_str, dim,
+					     count, geometry,
+					     ba_switch_usage_str(
+						     axis_switch->usage),
+					     ba_switch_usage_str(
+						     alter_switch->usage));
+				return 1;
+			}
+		} else if (!_mp_out_used(curr_mp, dim)
+			   && !_check_deny_pass(dim)) {
+			if (!(curr_mp->used & BA_MP_USED_ALTERED)) {
+				add = 1;
+				curr_mp->used |= BA_MP_USED_ALTERED_PASS;
+			} else {
+				error("WHAT?");
+			}
+			alter_switch->usage |= BG_SWITCH_PASS;
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+				if (count == geometry) {
+					info("_fill_in_wires: using mp %s(%d) "
+					     "to finish torus %s added %s",
+					     curr_mp->coord_str, dim,
+					     ba_switch_usage_str(
+						     axis_switch->usage),
+					     ba_switch_usage_str(
+						     alter_switch->usage));
+				} else {
+					info("_fill_in_wires: using mp %s(%d) "
+					     "as passthrough %s added %s",
+					     curr_mp->coord_str, dim,
+					     ba_switch_usage_str(
+						     axis_switch->usage),
+					     ba_switch_usage_str(
+						     alter_switch->usage));
+				}
+			}
+		} else {
+			/* we can't use this so return with a nice 0 */
+			info("_fill_in_wires: we can't use this so return");
+			return 0;
+		}
+
+		if (add)
+			list_append(mps, curr_mp);
+		curr_mp = curr_mp->next_mp[dim];
+	}
+
+	if (count != geometry)
+		return 0;
+
+	if (curr_mp == start_mp) {
+		axis_switch = &curr_mp->axis_switch[dim];
+		alter_switch = &curr_mp->alter_switch[dim];
+		/* This should never happen since we got here
+		   from an unused mp */
+		if (axis_switch->usage & BG_SWITCH_IN_PASS) {
+			info("_fill_in_wires: 2 got a bad axis_switch "
+			     "at %s %d %s",
 			     curr_mp->coord_str, dim,
 			     ba_switch_usage_str(axis_switch->usage));
 			xassert(0);
