@@ -552,4 +552,6 @@ extern char *ba_passthroughs_string(uint16_t passthrough);
 
 extern char *give_geo(uint16_t *int_geo, int dims, bool with_sep);
 
+extern const char *bg_err_str(int inx);
+
 #endif
