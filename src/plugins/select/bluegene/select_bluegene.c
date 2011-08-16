@@ -1440,12 +1440,39 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 }
 
 /* All initialization is performed by init() */
-extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
+extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 {
 #ifdef HAVE_BG
+	int i = 0;
+
+	if (!node_ptr_array)
+		return SLURM_SUCCESS;
+
 	if (node_cnt>0 && bg_conf)
-		if (node_ptr->cpus >= bg_conf->mp_cnode_cnt)
-			bg_conf->cpus_per_mp = node_ptr->cpus;
+		if (node_ptr_array->cpus >= bg_conf->mp_cnode_cnt)
+			bg_conf->cpus_per_mp = node_ptr_array->cpus;
+
+	for (i = 0; i < node_cnt; i++) {
+		struct node_record *node_ptr = &node_ptr_array[i];
+		select_nodeinfo_t *nodeinfo = NULL;
+
+		if (!node_ptr->name)
+			continue;
+
+		xassert(node_ptr->select_nodeinfo);
+		nodeinfo = node_ptr->select_nodeinfo->data;
+		xassert(nodeinfo);
+
+		nodeinfo->ba_mp = str2ba_mp(node_ptr->name);
+
+		if (!nodeinfo->ba_mp)
+			continue;
+		nodeinfo->ba_mp->index = i;
+		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr))
+			ba_update_mp_state(
+				nodeinfo->ba_mp, node_ptr->node_state);
+		nodeinfo->ba_mp->state = node_ptr->node_state;
+	}
 
 	return SLURM_SUCCESS;
 #else
