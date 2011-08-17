@@ -60,8 +60,6 @@ typedef struct {
 	gid_t gid;
 } image_group_t;
 
-extern s_p_options_t bg_conf_file_options[];
-
 extern void destroy_image_group_list(void *ptr);
 extern void destroy_image(void *ptr);
 
@@ -76,5 +74,6 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 		       const char *line, char **leftover);
 
 extern int read_bg_conf(void);
+extern s_p_hashtbl_t *config_make_tbl(char *filename);
 
 #endif

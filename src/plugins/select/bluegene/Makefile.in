@@ -124,6 +124,9 @@ LTLIBRARIES = $(noinst_LTLIBRARIES) $(pkglib_LTLIBRARIES)
 libba_common_la_LIBADD =
 am_libba_common_la_OBJECTS = ba_common.lo
 libba_common_la_OBJECTS = $(am_libba_common_la_OBJECTS)
+libconfigure_api_la_LIBADD =
+am_libconfigure_api_la_OBJECTS = configure_api.lo
+libconfigure_api_la_OBJECTS = $(am_libconfigure_api_la_OBJECTS)
 libsched_if_la_LIBADD =
 am__libsched_if_la_SOURCES_DIST = libsched_if64.c
 @BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_OBJECTS = libsched_if64.lo
@@ -215,12 +218,13 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libba_common_la_SOURCES) $(libsched_if_la_SOURCES) \
-	$(libsched_if64_la_SOURCES) $(runjob_plugin_la_SOURCES) \
-	$(select_bluegene_la_SOURCES) \
+SOURCES = $(libba_common_la_SOURCES) $(libconfigure_api_la_SOURCES) \
+	$(libsched_if_la_SOURCES) $(libsched_if64_la_SOURCES) \
+	$(runjob_plugin_la_SOURCES) $(select_bluegene_la_SOURCES) \
 	$(nodist_EXTRA_select_bluegene_la_SOURCES) \
 	$(slurm_epilog_SOURCES) $(slurm_prolog_SOURCES)
 DIST_SOURCES = $(libba_common_la_SOURCES) \
+	$(libconfigure_api_la_SOURCES) \
 	$(am__libsched_if_la_SOURCES_DIST) \
 	$(am__libsched_if64_la_SOURCES_DIST) \
 	$(am__runjob_plugin_la_SOURCES_DIST) \
@@ -471,13 +475,14 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 pkglib_LTLIBRARIES = select_bluegene.la $(am__append_2) \
 	$(am__append_3) $(am__append_5)
-noinst_LTLIBRARIES = libba_common.la
+noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \
 	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_6)
 libba_common_la_SOURCES = ba_common.c ba_common.h
+libconfigure_api_la_SOURCES = configure_api.c
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 select_bluegene_la_LIBADD = libba_common.la $(am__append_7)
 @BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1) $(am__append_4)
@@ -574,6 +579,8 @@ clean-pkglibLTLIBRARIES:
 	done
 libba_common.la: $(libba_common_la_OBJECTS) $(libba_common_la_DEPENDENCIES) 
 	$(LINK)  $(libba_common_la_OBJECTS) $(libba_common_la_LIBADD) $(LIBS)
+libconfigure_api.la: $(libconfigure_api_la_OBJECTS) $(libconfigure_api_la_DEPENDENCIES) 
+	$(LINK)  $(libconfigure_api_la_OBJECTS) $(libconfigure_api_la_LIBADD) $(LIBS)
 libsched_if.la: $(libsched_if_la_OBJECTS) $(libsched_if_la_DEPENDENCIES) 
 	$(libsched_if_la_LINK) $(am_libsched_if_la_rpath) $(libsched_if_la_OBJECTS) $(libsched_if_la_LIBADD) $(LIBS)
 libsched_if64.la: $(libsched_if64_la_OBJECTS) $(libsched_if64_la_DEPENDENCIES) 
@@ -650,6 +657,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_record_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_status.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/configure_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsched_if64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runjob_plugin.Plo@am__quote@

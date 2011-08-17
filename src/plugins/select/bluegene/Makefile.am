@@ -11,7 +11,7 @@ INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 pkglib_LTLIBRARIES = select_bluegene.la
 
-noinst_LTLIBRARIES = libba_common.la
+noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
@@ -22,6 +22,7 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 
 libba_common_la_SOURCES = ba_common.c ba_common.h
 
+libconfigure_api_la_SOURCES = configure_api.c
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 select_bluegene_la_LIBADD = libba_common.la

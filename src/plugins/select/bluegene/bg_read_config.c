@@ -45,7 +45,7 @@
 
 #include <stdlib.h>
 
-s_p_options_t bg_conf_file_options[] = {
+static s_p_options_t bg_conf_file_options[] = {
 #ifdef HAVE_BGL
 	{"BlrtsImage", S_P_STRING},
 	{"LinuxImage", S_P_STRING},
@@ -335,9 +335,7 @@ extern int read_bg_conf(void)
 
 	/* initialization */
 	/* bg_conf defined in bg_node_alloc.h */
-	tbl = s_p_hashtbl_create(bg_conf_file_options);
-
-	if (s_p_parse_file(tbl, NULL, bg_conf_file, false) == SLURM_ERROR)
+	if (!(tbl = config_make_tbl(bg_conf_file)))
 		fatal("something wrong with opening/reading bluegene "
 		      "conf file");
 	xfree(bg_conf_file);
@@ -781,4 +779,20 @@ no_calc:
 	s_p_hashtbl_destroy(tbl);
 
 	return SLURM_SUCCESS;
+}
+
+extern s_p_hashtbl_t *config_make_tbl(char *filename)
+{
+	s_p_hashtbl_t *tbl = NULL;
+
+	xassert(filename);
+
+	tbl = s_p_hashtbl_create(bg_conf_file_options);
+
+	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
+		s_p_hashtbl_destroy(tbl);
+		tbl = NULL;
+	}
+
+	return tbl;
 }
