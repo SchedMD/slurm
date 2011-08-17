@@ -608,8 +608,12 @@ static int _resolve(char *com)
 		xfree(ret_str);
 	}
 
-	wnoutrefresh(text_win);
-	doupdate();
+	if (params.commandline)
+		printf("%s", error_string);
+	else {
+		wnoutrefresh(text_win);
+		doupdate();
+	}
 
 	return 1;
 }
