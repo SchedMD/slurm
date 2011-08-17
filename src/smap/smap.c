@@ -90,9 +90,6 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i;
 	int rc;
-#ifdef HAVE_BG
-	int mapset = 0;
-#endif
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
@@ -134,10 +131,6 @@ int main(int argc, char *argv[])
 			printf("%s", ret_str);
 			xfree(ret_str);
 		}
-#ifdef HAVE_BG
-		if (!mapset)
-			mapset = 1;
-#endif
 		_smap_exit(0);	/* Calls exit(), no return */
 	}
 	if (!params.commandline) {
@@ -232,10 +225,7 @@ redraw:
 			break;
 		case COMMANDS:
 #ifdef HAVE_BG
-			if (!mapset) {
-				mapset = 1;
-				wclear(text_win);
-			}
+			wclear(text_win);
 			get_command();
 #else
 			error("Must be on a real BG SYSTEM to "

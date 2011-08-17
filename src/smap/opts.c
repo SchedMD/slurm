@@ -222,6 +222,9 @@ extern char *resolve_mp(char *desc)
 		goto fini;
 	}
 
+#ifdef HAVE_BG
+	bg_configure_ba_setup_wires();
+#endif
 	i = strlen(desc) - params.cluster_dims;
 	if (i < 0) {
 		ret_str = xstrdup_printf("Must enter %d coords to resolve.\n",

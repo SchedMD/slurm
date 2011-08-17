@@ -1375,6 +1375,8 @@ void get_command(void)
 		xfree(cluster_name);
 	}
 
+	bg_configure_ba_setup_wires();
+
 	color_count = 0;
 
 	allocated_blocks = list_create(_destroy_allocated_block);
