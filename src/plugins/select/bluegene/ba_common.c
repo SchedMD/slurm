@@ -459,17 +459,13 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 {
 	ba_mp_t *curr_mp;
 	int is_set;
-	static int *dims = NULL;
 
 	if (level > cluster_dims)
 		return;
 
-	if (!dims)
-		dims = select_g_ba_get_dims();
-
 	if (level < cluster_dims) {
 		for (coords[level] = 0;
-		     coords[level] < dims[level];
+		     coords[level] < DIM_SIZE[level];
 		     coords[level]++) {
 			/* handle the outer dims here */
 			_internal_removable_set_mps(
@@ -500,17 +496,13 @@ static void _internal_reset_ba_system(int level, uint16_t *coords,
 				      bool track_down_mps)
 {
 	ba_mp_t *curr_mp;
-	static int *dims = NULL;
 
 	if (level > cluster_dims)
 		return;
 
-	if (!dims)
-		dims = select_g_ba_get_dims();
-
 	if (level < cluster_dims) {
 		for (coords[level] = 0;
-		     coords[level] < dims[level];
+		     coords[level] < DIM_SIZE[level];
 		     coords[level]++) {
 			/* handle the outer dims here */
 			_internal_reset_ba_system(
@@ -530,17 +522,13 @@ static ba_mp_t *_internal_loc2ba_mp(int level, uint16_t *coords,
 				    const char *check)
 {
 	ba_mp_t *curr_mp = NULL;
-	static int *dims = NULL;
 
 	if (!check || (level > cluster_dims))
 		return NULL;
 
-	if (!dims)
-		dims = select_g_ba_get_dims();
-
 	if (level < cluster_dims) {
 		for (coords[level] = 0;
-		     coords[level] < dims[level];
+		     coords[level] < DIM_SIZE[level];
 		     coords[level]++) {
 			/* handle the outer dims here */
 			if ((curr_mp = _internal_loc2ba_mp(
@@ -881,10 +869,6 @@ extern ba_mp_t *str2ba_mp(const char *coords)
 {
 	uint16_t coord[cluster_dims];
 	int len, dim;
-	static int *dims = NULL;
-
-	if (!dims)
-		dims = select_g_ba_get_dims();
 
 	if (!coords)
 		return NULL;
@@ -894,7 +878,7 @@ extern ba_mp_t *str2ba_mp(const char *coords)
 
 	for (dim = 0; dim < cluster_dims; dim++, len++) {
 		coord[dim] = select_char2coord(coords[len]);
-		if (coord[dim] > dims[dim])
+		if (coord[dim] > DIM_SIZE[dim])
 			break;
 	}
 
@@ -902,7 +886,7 @@ extern ba_mp_t *str2ba_mp(const char *coords)
 		char tmp_char[cluster_dims+1];
 		memset(tmp_char, 0, sizeof(tmp_char));
 		for (dim=0; dim<cluster_dims; dim++)
-			tmp_char[dim] = alpha_num[dims[dim]];
+			tmp_char[dim] = alpha_num[DIM_SIZE[dim]];
 		error("This location %s is not possible in our system %s",
 		      coords, tmp_char);
 		return NULL;
