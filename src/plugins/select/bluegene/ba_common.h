@@ -203,6 +203,9 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
  */
 extern void ba_fini(void);
 
+/* setup the wires for the system */
+extern void ba_setup_wires(void);
+
 extern void destroy_ba_mp(void *ptr);
 extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version);
 extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr, Buf buffer,

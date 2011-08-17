@@ -560,58 +560,6 @@ static ba_mp_t *_internal_loc2ba_mp(int level, uint16_t *coords,
 }
 #endif
 
-/*
- * set values of every grid point (used in smap)
- */
-static void _init_grid(node_info_msg_t * node_info_ptr)
-{
-	int i = 0, j, x;
-
-	if (!node_info_ptr)
-		return;
-
-	for (j = 0; j < (int)node_info_ptr->record_count; j++) {
-		uint16_t coord[cluster_dims];
-		node_info_t *node_ptr = &node_info_ptr->node_array[j];
-		select_nodeinfo_t *nodeinfo = NULL;
-
-		if (!node_ptr->name)
-			continue;
-
-		memset(coord, 0, sizeof(coord));
-		if (cluster_dims == 1) {
-			coord[0] = j;
-		} else {
-			if ((i = strlen(node_ptr->name)) < cluster_dims)
-				continue;
-			for (x=0; x<cluster_dims; x++)
-				coord[x] = select_char2coord(
-					node_ptr->name[i-(cluster_dims+x)]);
-		}
-
-		for (x=0; x<cluster_dims; x++)
-			if ((int16_t)coord[x] < 0)
-				break;
-		if (x < cluster_dims)
-			continue;
-
-		xassert(node_ptr->select_nodeinfo);
-		nodeinfo = node_ptr->select_nodeinfo->data;
-		xassert(nodeinfo);
-		nodeinfo->ba_mp = coord2ba_mp(coord);
-		if (!nodeinfo->ba_mp)
-			continue;
-		nodeinfo->ba_mp->index = j;
-		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
-			ba_update_mp_state(
-				nodeinfo->ba_mp, node_ptr->node_state);
-		}
-		nodeinfo->ba_mp->state = node_ptr->node_state;
-
-		//nodeinfo->ba_mp = ba_mp;
-	}
-}
-
 /**
  * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
@@ -630,7 +578,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 	slurm_conf_node_t **ptr_array;
 	int coords[HIGHEST_DIMENSIONS];
 	char *p = '\0';
-	int num_mps = 0;
 	int real_dims[HIGHEST_DIMENSIONS];
 	char dim_str[HIGHEST_DIMENSIONS+1];
 
@@ -690,7 +637,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			}
 			hostlist_parse_int_to_array(
 				number, coords, cluster_dims, cluster_base);
-
 			memcpy(DIM_SIZE, coords, sizeof(DIM_SIZE));
 		}
 		for (j=0; j<cluster_dims; j++) {
@@ -698,7 +644,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 			/* this will probably be reset below */
 			real_dims[j] = DIM_SIZE[j];
 		}
-		num_mps = node_info_ptr->record_count;
 	}
 node_info_error:
 	for (j=0; j<cluster_dims; j++)
@@ -754,12 +699,10 @@ node_info_error:
 			info("are you sure you only have 1 midplane? %s",
 			     ptr_array[0]->nodenames);
 
-		num_mps = 1;
 		for (j=0; j<cluster_dims; j++) {
 			DIM_SIZE[j]++;
 			/* this will probably be reset below */
 			real_dims[j] = DIM_SIZE[j];
-			num_mps *= DIM_SIZE[j];
 		}
 	}
 
@@ -800,25 +743,10 @@ setup_done:
 		debug("We are using %s of the system.", dim_str);
 	}
 
-	if (bg_recover != NOT_FROM_CONTROLLER) {
-		if (!num_mps) {
-			num_mps = 1;
-			for (i=0; i<cluster_dims; i++)
-				num_mps *= DIM_SIZE[i];
-		}
-
-		ba_main_mp_bitmap = bit_alloc(num_mps);
-
-		ba_create_system();
-		bridge_setup_system();
-
-		_init_grid(node_info_ptr);
-
-		for (i = 1; i <= LONGEST_BGQ_DIM_LEN; i++)
-			_build_geo_bitmap_arrays(i);
-	}
-
 	ba_initialized = true;
+
+	if (bg_recover != NOT_FROM_CONTROLLER)
+		ba_setup_wires();
 }
 
 
@@ -842,6 +770,29 @@ extern void ba_fini(void)
 	ba_initialized = false;
 
 //	debug3("pa system destroyed");
+}
+
+extern void ba_setup_wires(void)
+{
+	int num_mps, i;
+	static bool wires_setup = 0;
+
+	if (!ba_initialized || wires_setup)
+		return;
+
+	wires_setup = 1;
+
+	num_mps = 1;
+	for (i=0; i<cluster_dims; i++)
+		num_mps *= DIM_SIZE[i];
+
+	ba_main_mp_bitmap = bit_alloc(num_mps);
+
+	ba_create_system();
+	bridge_setup_system();
+
+	for (i = 1; i <= LONGEST_BGQ_DIM_LEN; i++)
+		_build_geo_bitmap_arrays(i);
 }
 
 extern void destroy_ba_mp(void *ptr)
@@ -1522,18 +1473,13 @@ extern int validate_coord(uint16_t *coord)
 	int dim, i;
 	char coord_str[cluster_dims+1];
 	char dim_str[cluster_dims+1];
-	static int *dims = NULL;
-
-	if (!dims)
-		dims = select_g_ba_get_dims();
-	xassert(!dims);
 
 	for (dim=0; dim < cluster_dims; dim++) {
-		if (coord[dim] >= dims[dim]) {
+		if (coord[dim] >= DIM_SIZE[dim]) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
 				for (i=0; i<cluster_dims; i++) {
 					coord_str[i] = alpha_num[coord[i]];
-					dim_str[i] = alpha_num[dims[i]];
+					dim_str[i] = alpha_num[DIM_SIZE[i]];
 				}
 				coord_str[i] = '\0';
 				dim_str[i] = '\0';
