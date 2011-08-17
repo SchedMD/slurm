@@ -103,16 +103,21 @@ int main(int argc, char *argv[])
 	} else if (params.cluster_dims == 3)
 		min_screen_width = 92;
 
-	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) {
-		error_code = slurm_get_errno();
-		printf("slurm_load_node: %s\n", slurm_strerror(error_code));
-		if (params.display == COMMANDS) {
-			new_node_ptr = NULL;
-			break;		/* just continue */
+	/* no need for this if you are resolving */
+	if (!params.resolve) {
+		while (slurm_load_node((time_t) NULL,
+				       &new_node_ptr, SHOW_ALL)) {
+			error_code = slurm_get_errno();
+			printf("slurm_load_node: %s\n",
+			       slurm_strerror(error_code));
+			if (params.display == COMMANDS) {
+				new_node_ptr = NULL;
+				break;		/* just continue */
+			}
+			if (params.iterate == 0)
+				_smap_exit(1);	/* Calls exit(), no return */
+			sleep(10);	/* keep trying to reconnect */
 		}
-		if (params.iterate == 0)
-			_smap_exit(1);	/* Calls exit(), no return */
-		sleep(10);	/* keep trying to reconnect */
 	}
 
 #ifdef HAVE_BG
