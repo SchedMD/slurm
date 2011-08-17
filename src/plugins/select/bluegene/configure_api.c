@@ -45,6 +45,7 @@ typedef struct {
 	void (*ba_init)                (node_info_msg_t *node_info_ptr,
 					bool load_bridge);
 	void (*ba_fini)                (void);
+	void (*ba_setup_wires)         (void);
 	void (*reset_ba_system)        (bool track_down_mps);
 	void (*destroy_ba_mp)          (void *ptr);
 	char *(*ba_passthroughs_string)(uint16_t passthrough);
@@ -84,6 +85,7 @@ static bg_configure_api_ops_t *_get_ops(bg_configure_context_t *c)
 	static const char *syms[] = {
 		"ba_init",
 		"ba_fini",
+		"ba_setup_wires",
 		"reset_ba_system",
 		"destroy_ba_mp",
 		"ba_passthroughs_string",
@@ -233,6 +235,14 @@ extern void bg_configure_ba_fini(void)
 		return;
 
 	(*(bg_configure_context->ops.ba_fini))();
+}
+
+extern void bg_configure_ba_setup_wires(void)
+{
+	if (bg_configure_init() < 0)
+		return;
+
+	(*(bg_configure_context->ops.ba_setup_wires))();
 }
 
 extern void bg_configure_reset_ba_system(bool track_down_mps)

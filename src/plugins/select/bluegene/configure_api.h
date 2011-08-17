@@ -68,6 +68,11 @@ extern void bg_configure_ba_init(
  */
 extern void bg_configure_ba_fini(void);
 
+/* Setup the wires on the system and the structures needed to create
+ * blocks.  This should be called before trying to create blocks.
+ */
+extern void bg_configure_ba_setup_wires(void);
+
 /*
  * Resets the virtual system to a virgin state.  If track_down_mps is set
  * then those midplanes are not set to idle, but kept in a down state.
