@@ -38,75 +38,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/node_select.h"
 #include "src/smap/smap.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
-#include "src/plugins/select/bluegene/bg_read_config.h"
-
-/* These are here to avoid linking issues with the bridge for
- * unresolved symbols.
- */
-time_t last_job_update;
-time_t last_bg_update;
-bg_config_t *bg_conf;
-bg_lists_t *bg_lists;
-pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
-int bg_recover = 1;
-int blocks_are_created = 0;
-bool have_db2 = false;
-int num_unused_cpus;
-
-extern int bridge_init(char *properties_file)
-{
-	return SLURM_ERROR;
-}
-
-extern int bridge_fini()
-{
-	return SLURM_ERROR;
-}
-
-extern int bridge_get_size(int *size)
-{
-	return SLURM_ERROR;
-}
-
-extern int bridge_setup_system()
-{
-	return SLURM_ERROR;
-}
-
-extern int bridge_free_bg(my_bluegene_t *bg)
-{
-	return SLURM_ERROR;
-}
-
-extern int bridge_get_bg(my_bluegene_t **bg)
-{
-	return SLURM_ERROR;
-}
-
-#ifdef HAVE_BG_FILES
-extern int bridge_get_data(rm_element_t* element,
-			   enum rm_specification field, void *data)
-{
-	return SLURM_ERROR;
-}
-#else
-extern int bridge_get_data(void* element,
-			   int field, void *data)
-{
-	return SLURM_ERROR;
-}
-#endif
-
-extern int add_bg_record(List records, List *used_nodes,
-			 select_ba_request_t *blockreq,
-			 bool no_check, bitoff_t io_start)
-{
-	return SLURM_ERROR;
-}
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -147,7 +81,7 @@ static void _set_nodes(List nodes, int color, char letter)
 	smap_node_t *smap_node;
 	ba_mp_t *ba_mp;
 
-	if (!nodes)
+	if (!nodes || !smap_system_ptr)
 		return;
 
 	itr = list_iterator_create(nodes);
@@ -171,7 +105,8 @@ static void _destroy_allocated_block(void *object)
 				 SELECT_SMALL);
 		if (allocated_block->nodes) {
 			_set_nodes(allocated_block->nodes, 0, '.');
-			remove_block(allocated_block->nodes, is_small);
+			bg_configure_remove_block(
+				allocated_block->nodes, is_small);
 			list_destroy(allocated_block->nodes);
 		}
 		destroy_select_ba_request(allocated_block->request);
@@ -185,13 +120,14 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 	allocated_block_t *allocated_block = NULL;
 
 #ifdef HAVE_BGQ
-	results = list_create(destroy_ba_mp);
+	results = list_create(bg_configure_destroy_ba_mp);
 #else
 	results = list_create(NULL);
 #endif
 
-	if (allocate_block(request, results)) {
-		char *pass = ba_passthroughs_string(request->deny_pass);
+	if (bg_configure_allocate_block(request, results)) {
+		char *pass = bg_configure_ba_passthroughs_string(
+			request->deny_pass);
 		if (pass) {
 			sprintf(error_string,"THERE ARE PASSTHROUGHS IN "
 				"THIS ALLOCATION DIM %s!!!!!!!", pass);
@@ -225,17 +161,17 @@ static int _full_request(select_ba_request_t *request,
 	int rc = 1;
 
 	if (!strcasecmp(layout_mode,"OVERLAP"))
-		reset_ba_system(true);
+		bg_configure_reset_ba_system(true);
 
 	if (usable_mp_bitmap)
-		ba_set_removable_mps(usable_mp_bitmap, 1);
+		bg_configure_ba_set_removable_mps(usable_mp_bitmap, 1);
 
 	/*
 	 * Here is where we do the allocating of the partition.
 	 * It will send a request back which we will throw into
 	 * a list just incase we change something later.
 	 */
-	if (!new_ba_request(request)) {
+	if (!bg_configure_new_ba_request(request)) {
 		memset(error_string, 0, 255);
 		if (request->size != -1) {
 			sprintf(error_string,
@@ -247,8 +183,9 @@ static int _full_request(select_ba_request_t *request,
 				request->size);
 			rc = 0;
 		} else {
-			tmp_char = give_geo(request->geometry,
-					    params.cluster_dims, 1);
+			tmp_char = bg_configure_give_geo(request->geometry,
+							 params.cluster_dims,
+							 1);
 			sprintf(error_string,
 				"Problems with request of size %s\n"
 				"Either you put in something "
@@ -264,10 +201,12 @@ static int _full_request(select_ba_request_t *request,
 			list_append(allocated_blocks, allocated_block);
 		else {
 			if (request->geometry[0] != (uint16_t)NO_VAL)
-				tmp_char = give_geo(request->geometry,
-						    params.cluster_dims, 1);
-			tmp_char2 = give_geo(request->start,
-					     params.cluster_dims, 1);
+				tmp_char = bg_configure_give_geo(
+					request->geometry,
+					params.cluster_dims, 1);
+			tmp_char2 = bg_configure_give_geo(request->start,
+							  params.cluster_dims,
+							  1);
 
 			memset(error_string, 0, 255);
 			sprintf(error_string,
@@ -291,7 +230,7 @@ static int _full_request(select_ba_request_t *request,
 	}
 
 	if (usable_mp_bitmap)
-		ba_reset_all_removed_mps();
+		bg_configure_ba_reset_all_removed_mps();
 
 	return rc;
 }
@@ -740,13 +679,13 @@ static int _change_state_bps(char *com, int state)
 
 		for (i = 0; i < params.cluster_dims; i++)
 			pos[i] = select_char2coord(host[i]);
-		if (!(ba_mp = coord2ba_mp(pos))) {
+		if (!(ba_mp = bg_configure_coord2ba_mp(pos))) {
 			memset(error_string, 0, 255);
 			sprintf(error_string, "Bad host given '%s'", host);
 			rc = 0;
 			break;
 		}
-		ba_update_mp_state(ba_mp, state);
+		bg_configure_ba_update_mp_state(ba_mp, state);
 		smap_node = smap_system_ptr->grid[ba_mp->index];
 		smap_node->color = 0;
 		smap_node->letter = letter;
@@ -1109,7 +1048,7 @@ static int _add_bg_record(select_ba_request_t *blockreq, List allocated_blocks)
 		for (i = 0; i < params.cluster_dims; i++)
 			pos[i] = select_char2coord(host[i]);
 		free(host);
-		if (!(ba_mp = coord2ba_mp(pos))) {
+		if (!(ba_mp = bg_configure_coord2ba_mp(pos))) {
 			memset(error_string, 0, 255);
 			sprintf(error_string, "Bad host given '%s'", host);
 			rc = 0;
@@ -1217,8 +1156,7 @@ static int _load_configuration(char *com, List allocated_blocks)
 		sprintf(filename,"bluegene.conf");
 	}
 
-	tbl = s_p_hashtbl_create(bg_conf_file_options);
-	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
+	if (!(tbl = bg_configure_config_make_tbl(filename))) {
 		memset(error_string,0,255);
 		sprintf(error_string, "ERROR: couldn't open/read %s",
 			filename);
@@ -1418,7 +1356,7 @@ void get_command(void)
 	if (params.commandline && !params.command) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
-		ba_fini();
+		bg_configure_ba_fini();
 		exit(0);
 	}
 
@@ -1431,7 +1369,7 @@ void get_command(void)
 			       "cluster the configure is for.\nCross cluster "
 			       "support doesn't exist today.\nSorry for the "
 			       "inconvenince.\n");
-			ba_fini();
+			bg_configure_ba_fini();
 			exit(0);
 		}
 		xfree(cluster_name);
@@ -1445,6 +1383,9 @@ void get_command(void)
 		snprintf(com, sizeof(com), "%s", params.command);
 		goto run_command;
 	} else {
+		/* make sure we don't get any noisy debug */
+		ba_configure_set_ba_debug_flags(0);
+
 		text_width = text_win->_maxx;
 		text_startx = text_win->_begx;
 		command_win = newwin(3, text_width - 1, LINES - 4,
@@ -1513,7 +1454,7 @@ void get_command(void)
 			endwin();
 			if (allocated_blocks)
 				list_destroy(allocated_blocks);
-			ba_fini();
+			bg_configure_ba_fini();
 			exit(0);
 		}
 	run_command:
@@ -1568,7 +1509,7 @@ void get_command(void)
 		}
 
 		if (params.commandline) {
-			ba_fini();
+			bg_configure_ba_fini();
 			exit(1);
 		}
 	}

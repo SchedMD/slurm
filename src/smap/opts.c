@@ -230,14 +230,14 @@ extern char *resolve_mp(char *desc)
 	}
 
 	if (desc[0] != 'R') {
-		ba_mp = str2ba_mp(desc+i);
+		ba_mp = bg_configure_str2ba_mp(desc+i);
 		if (ba_mp)
 			ret_str = xstrdup_printf("%s resolves to %s\n",
 						 ba_mp->coord_str, ba_mp->loc);
 		else
 			ret_str = xstrdup_printf("%s has no resolve\n", desc+i);
 	} else {
-		ba_mp = loc2ba_mp(desc);
+		ba_mp = bg_configure_loc2ba_mp(desc);
 		if (ba_mp)
 			ret_str = xstrdup_printf("%s resolves to %s\n",
 						 desc, ba_mp->coord_str);

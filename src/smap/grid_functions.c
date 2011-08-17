@@ -102,7 +102,7 @@ static void _internal_setup_grid(int level, uint16_t *coords)
 		}
 		return;
 	}
-	ba_mp = coord2ba_mp(coords);
+	ba_mp = bg_configure_coord2ba_mp(coords);
 
 	if (!ba_mp || ba_mp->index > smap_system_ptr->node_cnt)
 		return;

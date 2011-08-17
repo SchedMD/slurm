@@ -113,6 +113,7 @@
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 #include "src/plugins/select/bluegene/ba_common.h"
+#include "src/plugins/select/bluegene/configure_api.h"
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP	0x100
