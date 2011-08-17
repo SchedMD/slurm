@@ -9,7 +9,7 @@
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2011 SchedMD LLC
-# Written by Morris Jette <jette@schedmd.gov>
+# Written by Morris Jette <jette@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.schedmd.com/slurmdocs/>.
