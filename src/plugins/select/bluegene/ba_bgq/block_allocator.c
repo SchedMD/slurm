@@ -428,7 +428,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 	bitstr_t *success_bitmap = NULL;
 	List main_mps = NULL;
 	uint16_t local_deny_pass = ba_deny_pass;
-	ba_mp_t *ba_mp = NULL, *start_ba_mp = NULL;
+	ba_mp_t *ba_mp = NULL;
 
 	if (!ba_initialized){
 		error("Error, configuration not initialized, "
@@ -484,7 +484,6 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 		ListIterator itr;
 		int scan_offset = 0, cnt = 0, i=0;
 		uint16_t start_loc[ba_main_geo_system->dim_count];
-		char *tmp_char;
 
 	try_again:
 		if (success_bitmap)
@@ -493,12 +492,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 			_reset_altered_mps(main_mps, 0);
 			list_flush(main_mps);
 		}
-		bit_not(ba_main_mp_bitmap);
-		tmp_char = ba_node_map_ranged_hostlist(
-			ba_main_mp_bitmap, ba_main_geo_system);
-		bit_not(ba_main_mp_bitmap);
-		info("free space %s", tmp_char);
-		xfree(tmp_char);
+
 		if (ba_geo_test_all(ba_main_mp_bitmap,
 				    &success_bitmap,
 				    ba_geo_table, &cnt,
@@ -508,12 +502,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 			ba_geo_table = ba_geo_table->next_ptr;
 			continue;
 		}
-		tmp_char = ba_node_map_ranged_hostlist(
-			success_bitmap, ba_main_geo_system);
-		info("looking to allocate %s", tmp_char);
-		xfree(tmp_char);
-		start_ba_mp = coord2ba_mp(start_loc);
-		info("start is %s", start_ba_mp->coord_str);
+
 		main_mps = list_create(NULL);
 		for (i=0; i<node_record_count; i++) {
 			if (!bit_test(success_bitmap, i))
@@ -526,7 +515,6 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 					info("need to try again");
 					goto try_again;
 				}
-				info("geo for %d is %d", dim, ba_geo_table->geometry[dim]);
 				if (ba_geo_table->geometry[dim] == 1) {
 					/* Always check MESH here since we
 					 * only care about the IN/OUT ports.
@@ -557,7 +545,6 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 		while ((ba_mp = list_next(itr))) {
 			if (ba_mp->used & BA_MP_USED_PASS_BIT)
 				continue;
-			info("here for %s %x", ba_mp->coord_str, ba_mp->used);
 			for (dim=0; dim<cluster_dims; dim++) {
 				if ((ba_geo_table->geometry[dim] == 1)
 				    || (ba_mp->coord[dim] != start_loc[dim]))
