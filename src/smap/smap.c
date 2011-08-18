@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 				break;		/* just continue */
 			}
 			if (params.iterate == 0)
-				_smap_exit(1);	/* Calls exit(), no return */
+				exit(1);
 			sleep(10);	/* keep trying to reconnect */
 		}
 	}
@@ -359,7 +359,7 @@ static void _smap_exit(int rc)
 	free_grid();
 
 #ifdef HAVE_BG
-	ba_fini();
+	bg_configure_ba_fini();
 #endif
 
 #endif

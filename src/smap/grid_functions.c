@@ -183,6 +183,11 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 			smap_system_ptr->node_cnt *= dim_size[i];
 		smap_system_ptr->grid = xmalloc(sizeof(smap_node_t *) *
 						smap_system_ptr->node_cnt);
+		/* We need to make sure we set up the wires if we
+		   don't have a node_info_ptr.
+		*/
+		bg_configure_ba_setup_wires();
+
 		_internal_setup_grid(0, coords);
 #endif
 	} else {
