@@ -85,7 +85,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		if (job_ptr->details->ntasks_per_node == 0)
 			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
 		else
-			maxtasks = job_ptr->details->ntasks_per_node;
+			maxtasks = job_ptr->details->ntasks_per_node * job_res->nhosts;
 	}
 
 	/* Safe guard if the user didn't specified a lower number of
