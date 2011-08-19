@@ -226,7 +226,7 @@ static void _validate_switches(void)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j;
-	struct switch_record *switch_ptr;
+	struct switch_record *switch_ptr, *prior_ptr;
 	hostlist_t hl, invalid_hl = NULL;
 	char *child;
 	bitstr_t *multi_homed_bitmap = NULL;	/* nodes on >1 leaf switch */
@@ -249,6 +249,14 @@ static void _validate_switches(void)
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
 		ptr = ptr_array[i];
 		switch_ptr->name = xstrdup(ptr->switch_name);
+		/* See if switch name has already been defined. */
+		prior_ptr = switch_record_table;
+		for (j=0; j<i; j++, prior_ptr++) {
+			if (strcmp(switch_ptr->name, prior_ptr->name) == 0) {
+				fatal("Switch (%s) has already been defined",
+				      prior_ptr->name);
+			}
+		}
 		switch_ptr->link_speed = ptr->link_speed;
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */

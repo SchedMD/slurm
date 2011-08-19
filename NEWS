@@ -41,7 +41,9 @@ documents those changes that are of interest to users and admins.
  -- Code cleanup on step request to get the correct select_jobinfo.
  -- Memory leak fixed for rolling up accounting with down clusters.
  -- BGQ - fix issue where if first job step is the entire block and then the
-    next parallel step is ran on a sub block, SLURM won't over subscribe cnodes.
+    next parallel step is ran on a sub block, SLURM won't over subscribe cnodes
+ -- Treat duplicate switch name in topology.conf as fatal error. Patch from Rod
+    Schultz, Bull
 
 * Changes in SLURM 2.3.0.rc1
 ============================
