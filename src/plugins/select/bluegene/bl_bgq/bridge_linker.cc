@@ -616,8 +616,8 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		      "happened removing users from block %s",
 		      bg_record->bg_block_id);
 		return SLURM_ERROR;
-	} else if (rc == REMOVE_USER_NONE && user_name)
-		rc = bridge_block_add_user(bg_record, user_name);
+	} else if (rc == REMOVE_USER_NONE && bg_conf->slurm_user_name)
+		rc = bridge_block_add_user(bg_record, bg_conf->slurm_user_name);
 
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
