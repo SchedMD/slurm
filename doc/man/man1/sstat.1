@@ -1,4 +1,4 @@
-.TH SSTAT "1" "January 2009" "sstat 2.0" "Slurm components"
+.TH SSTAT "1" "August 2011" "sstat 2.3" "Slurm components"
 
 .SH "NAME"
 sstat \- Display various status information
@@ -183,11 +183,11 @@ Total number of tasks in a job or step.
 .SH "EXAMPLES"
 
 .TP
-\f3sstat \-\-format=AveCPU,AvePages,AveRSS,AveVSize,JobID \-j 11\fP
+\f3sstat \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11\fP
 25:02.000  0K         1.37M      5.93M      9.0
 
 .TP
-\f3sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVSize,JobID \-j 11\fP
+\f3sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11\fP
 25:02.000|0K|1.37M|5.93M|9.0|
 
 .SH "COPYING"
