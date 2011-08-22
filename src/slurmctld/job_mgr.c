@@ -3937,7 +3937,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	detail_ptr = job_ptr->details;
 	fail_reason= WAIT_NO_REASON;
 	if ((job_desc->min_nodes > part_ptr->max_nodes) &&
-	    (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MAX_NODE))) {
+	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+				       & QOS_FLAG_PART_MAX_NODE)))) {
 		info("Job %u requested too many nodes (%u) of "
 		     "partition %s(MaxNodes %u)",
 		     job_ptr->job_id, job_desc->min_nodes,
@@ -3945,7 +3946,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   ((job_desc->max_nodes < part_ptr->min_nodes) &&
-		    (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) {
+		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+					       & QOS_FLAG_PART_MIN_NODE))))) {
 		info("Job %u requested too few nodes (%u) of "
 		     "partition %s(MinNodes %u)",
 		     job_ptr->job_id, job_desc->max_nodes,
@@ -3961,8 +3963,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		fail_reason = WAIT_PART_INACTIVE;
 	} else if ((job_ptr->time_limit != NO_VAL) &&
 		   ((job_ptr->time_limit > part_ptr->max_time) &&
-		    (qos_ptr &&
-		     !(qos_ptr->flags & QOS_FLAG_PART_TIME_LIMIT)))) {
+		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+					       & QOS_FLAG_PART_TIME_LIMIT))))) {
 		info("Job %u exceeds partition time limit", job_ptr->job_id);
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
