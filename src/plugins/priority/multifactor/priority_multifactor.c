@@ -786,6 +786,11 @@ static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
 
 	run_delta = (int) (end_period - start_period);
 
+	/* job already has been accounted for
+	   go to next */
+	if (run_delta < 1)
+		return 0;
+
 	/* cpu_run_delta will is used to
 	   decrease qos and assocs
 	   grp_used_cpu_run_secs values. When
@@ -806,12 +811,6 @@ static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
 			(job_time_limit_ends - (uint64_t)start_period);
 	else
 		cpu_run_delta = job_ptr->total_cpus * run_delta;
-
-
-	/* job already has been accounted for
-	   go to next */
-	if (run_delta < 1)
-		return 0;
 
 	if (priority_debug)
 		info("job %u ran for %d seconds on %u cpus",
