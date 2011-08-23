@@ -48,6 +48,7 @@ documents those changes that are of interest to users and admins.
     partition in the slurm.conf.
  -- Fix problem with _job_create() when not using qos's.  It makes
     _job_create() consistent with similar logic in select_nodes().
+ -- GrpCPURunMins in a QOS flushed out.
 
 * Changes in SLURM 2.3.0.rc1
 ============================

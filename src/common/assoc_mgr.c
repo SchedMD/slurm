@@ -101,6 +101,8 @@ static int _addto_used_info(slurmdb_association_rec_t *assoc1,
 	assoc1->usage->grp_used_cpus += assoc2->usage->grp_used_cpus;
 	assoc1->usage->grp_used_nodes += assoc2->usage->grp_used_nodes;
 	assoc1->usage->grp_used_wall += assoc2->usage->grp_used_wall;
+	assoc1->usage->grp_used_cpu_run_secs +=
+		assoc2->usage->grp_used_cpu_run_secs;
 
 	assoc1->usage->used_jobs += assoc2->usage->used_jobs;
 	assoc1->usage->used_submit_jobs += assoc2->usage->used_submit_jobs;
@@ -116,6 +118,7 @@ static int _clear_used_assoc_info(slurmdb_association_rec_t *assoc)
 
 	assoc->usage->grp_used_cpus = 0;
 	assoc->usage->grp_used_nodes = 0;
+	assoc->usage->grp_used_cpu_run_secs = 0;
 
 	assoc->usage->used_jobs  = 0;
 	assoc->usage->used_submit_jobs = 0;
@@ -134,6 +137,7 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 
 	qos->usage->grp_used_cpus = 0;
 	qos->usage->grp_used_nodes = 0;
+	qos->usage->grp_used_cpu_run_secs = 0;
 
 	qos->usage->grp_used_jobs  = 0;
 	qos->usage->grp_used_submit_jobs = 0;
@@ -1499,6 +1503,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	/* if (!assoc->usage->childern_list) */
 	/* 	assoc->usage->childern_list = ret_assoc->usage->childern_list; */
 	/* assoc->usage->grp_used_cpus   = ret_assoc->usage->grp_used_cpus; */
+	/* assoc->usage->grp_used_cpu_run_mins  = */
+	/* 	ret_assoc->usage->grp_used_cpu_run_mins; */
 	/* assoc->usage->grp_used_nodes  = ret_assoc->usage->grp_used_nodes; */
 	/* assoc->usage->grp_used_wall   = ret_assoc->usage->grp_used_wall; */
 
@@ -1676,6 +1682,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	   use the pointer that is returned. */
 
 	/* qos->usage->grp_used_cpus   = found_qos->usage->grp_used_cpus; */
+	/* qos->usage->grp_used_cpu_run_mins  = */
+	/* 	found_qos->usage->grp_used_cpu_run_mins; */
 	/* qos->usage->grp_used_jobs   = found_qos->usage->grp_used_jobs; */
 	/* qos->usage->grp_used_nodes  = found_qos->usage->grp_used_nodes; */
 	/* qos->usage->grp_used_submit_jobs = */

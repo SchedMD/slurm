@@ -468,7 +468,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 
 	if (job_ptr->assoc_ptr && weight_fs) {
 		job_ptr->prio_factors->priority_fs =
-				_get_fairshare_priority(job_ptr);
+			_get_fairshare_priority(job_ptr);
 	}
 
 	if (weight_js) {
@@ -662,6 +662,91 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	return mktime(&last_tm);
 }
 
+/*
+  Remove previously used time from qos and assocs
+  grp_used_cpu_run_secs.
+
+  When restarting slurmctld acct_policy_job_begin() is called for all
+  running jobs. There every jobs total requested cputime (total_cpus *
+  time_limit) is added to grp_used_cpu_run_secs of assocs and qos.
+
+  This function will subtract all cputime that was used until the
+  decay thread last ran. This kludge is necessary as the decay thread
+  last_ran variable can't be accessed from acct_policy_job_begin().
+*/
+void _init_grp_used_cpu_run_secs(time_t last_ran)
+{
+	struct job_record *job_ptr = NULL;
+	ListIterator itr;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	uint64_t delta;
+	slurmdb_qos_rec_t *qos;
+	slurmdb_association_rec_t *assoc;
+
+	if(priority_debug)
+		info("Initializing grp_used_cpu_run_secs");
+
+	if (!(job_list && list_count(job_list)))
+		return;
+
+	lock_slurmctld(job_read_lock);
+	itr = list_iterator_create(job_list);
+	if (itr == NULL)
+		fatal("list_iterator_create: malloc failure");
+
+	while ((job_ptr = list_next(itr))) {
+		if (priority_debug)
+			debug2("job: %u",job_ptr->job_id);
+		qos = NULL;
+		assoc = NULL;
+		delta = 0;
+
+		if (!IS_JOB_RUNNING(job_ptr))
+			continue;
+
+		if (job_ptr->start_time > last_ran)
+			continue;
+
+		delta = job_ptr->total_cpus * (last_ran - job_ptr->start_time);
+
+		assoc_mgr_lock(&locks);
+		qos = (slurmdb_qos_rec_t *) job_ptr->qos_ptr;
+		assoc = (slurmdb_association_rec_t *) job_ptr->assoc_ptr;
+
+		if(qos) {
+			if (priority_debug)
+				info("Subtracting %"PRIu64" from qos "
+				     "%u grp_used_cpu_run_secs "
+				     "%"PRIu64" = %"PRIu64"",
+				     delta,
+				     qos->id,
+				     qos->usage->grp_used_cpu_run_secs,
+				     qos->usage->grp_used_cpu_run_secs -
+				     delta);
+			qos->usage->grp_used_cpu_run_secs -= delta;
+		}
+		while (assoc) {
+			if (priority_debug)
+				info("Subtracting %"PRIu64" from assoc %u "
+				     "grp_used_cpu_run_secs "
+				     "%"PRIu64" = %"PRIu64"",
+				     delta,
+				     assoc->id,
+				     assoc->usage->grp_used_cpu_run_secs,
+				     assoc->usage->grp_used_cpu_run_secs -
+				     delta);
+			assoc->usage->grp_used_cpu_run_secs -= delta;
+			assoc = assoc->usage->parent_assoc_ptr;
+		}
+		assoc_mgr_unlock(&locks);
+	}
+	list_iterator_destroy(itr);
+	unlock_slurmctld(job_read_lock);
+}
+
 static void *_decay_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
@@ -699,6 +784,8 @@ static void *_decay_thread(void *no_data)
 	_read_last_decay_ran(&last_ran, &last_reset);
 	if (last_reset == 0)
 		last_reset = start_time;
+
+	_init_grp_used_cpu_run_secs(last_ran);
 
 	while (1) {
 		time_t now = time(NULL);
@@ -789,6 +876,8 @@ static void *_decay_thread(void *no_data)
 				time_t start_period = last_ran;
 				time_t end_period = start_time;
 				double run_decay = 0;
+				uint64_t cpu_run_delta = 0;
+				uint64_t job_time_limit_ends = 0;
 				assoc_mgr_lock_t qos_read_lock =
 					{ NO_LOCK, NO_LOCK,
 					  READ_LOCK, NO_LOCK, NO_LOCK };
@@ -811,7 +900,31 @@ static void *_decay_thread(void *no_data)
 				    && (end_period > job_ptr->end_time))
 					end_period = job_ptr->end_time;
 
-				run_delta = (int)end_period - (int)start_period;
+				run_delta = (int) (end_period - start_period);
+
+				/* cpu_run_delta will is used to
+				   decrease qos and assocs
+				   grp_used_cpu_run_secs values. When
+				   a job is started only seconds until
+				   start_time+time_limit is added, so
+				   for jobs running over their
+				   timelimit we should only subtract
+				   the used time until the time
+				   limit. */
+				job_time_limit_ends =
+					(uint64_t)job_ptr->start_time +
+					(uint64_t)job_ptr->time_limit*60;
+				if ((uint64_t)start_period
+				    >= job_time_limit_ends) {
+					cpu_run_delta = 0;
+				} else if (end_period > job_time_limit_ends) {
+					cpu_run_delta = job_ptr->total_cpus *
+						(job_time_limit_ends -
+						 (uint64_t)start_period);
+				} else {
+					cpu_run_delta = job_ptr->total_cpus
+						* run_delta;
+				}
 
 				/* job already has been accounted for
 				   go to next */
@@ -819,8 +932,10 @@ static void *_decay_thread(void *no_data)
 					continue;
 
 				if (priority_debug)
-					info("job %u ran for %d seconds",
-					     job_ptr->job_id, run_delta);
+					info("job %u ran for %d seconds "
+					     "on %u cpus",
+					     job_ptr->job_id, run_delta,
+					     job_ptr->total_cpus);
 
 				/* get the time in decayed fashion */
 				run_decay = run_delta
@@ -848,6 +963,26 @@ static void *_decay_thread(void *no_data)
 					qos->usage->grp_used_wall += run_decay;
 					qos->usage->usage_raw +=
 						(long double)real_decay;
+					if (qos->usage->grp_used_cpu_run_secs
+					    >= cpu_run_delta) {
+						if (priority_debug)
+							info("grp_used_cpu_run_secs is %"PRIu64", will subtract %"PRIu64"",
+							     qos->usage->grp_used_cpu_run_secs,
+							     cpu_run_delta);
+						qos->usage->
+							grp_used_cpu_run_secs -=
+							cpu_run_delta;
+					} else {
+						if (priority_debug)
+							info("jobid %u, qos %s: setting grp_used_cpu_run_secs "
+							     "to 0 because %"PRIu64" < %"PRIu64"",
+							     job_ptr->job_id, qos->name,
+							     qos->usage->grp_used_cpu_run_secs,
+							     cpu_run_delta);
+						qos->usage->
+							grp_used_cpu_run_secs =
+							0;
+					}
 				}
 
 				/* We want to do this all the way up
@@ -857,6 +992,24 @@ static void *_decay_thread(void *no_data)
 				   and use that to normalize against.
 				*/
 				while (assoc) {
+					if (assoc->usage->grp_used_cpu_run_secs
+					    >= cpu_run_delta) {
+						if(priority_debug)
+							info("grp_used_cpu_run_secs is %"PRIu64", will subtract %"PRIu64"",
+							     assoc->usage->grp_used_cpu_run_secs,
+							     cpu_run_delta);
+						assoc->usage->grp_used_cpu_run_secs -=
+							cpu_run_delta;
+					} else {
+						if (priority_debug)
+							info("jobid %u, assoc %u: setting grp_used_cpu_run_secs "
+							     "to 0 because %"PRIu64" < %"PRIu64"",
+							     job_ptr->job_id, assoc->id,
+							     assoc->usage->grp_used_cpu_run_secs,
+							     cpu_run_delta);
+						assoc->usage->grp_used_cpu_run_secs = 0;
+					}
+
 					assoc->usage->grp_used_wall +=
 						run_decay;
 					assoc->usage->usage_raw +=
@@ -866,13 +1019,17 @@ static void *_decay_thread(void *no_data)
 						     "assoc %u (user='%s' "
 						     "acct='%s') raw usage "
 						     "is now %Lf.  Group wall "
-						     "added %f making it %f.",
+						     "added %f making it %f. "
+						     "GrpCPURunMins is "
+						     "%"PRIu64"",
 						     real_decay, assoc->id,
 						     assoc->user, assoc->acct,
 						     assoc->usage->usage_raw,
 						     run_decay,
 						     assoc->usage->
-						     grp_used_wall);
+						     grp_used_wall,
+						     assoc->usage->
+						     grp_used_cpu_run_secs/60);
 					assoc = assoc->usage->parent_assoc_ptr;
 				}
 				assoc_mgr_unlock(&locks);
