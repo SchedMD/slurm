@@ -747,6 +747,161 @@ void _init_grp_used_cpu_run_secs(time_t last_ran)
 	unlock_slurmctld(job_read_lock);
 }
 
+/* If the job is running then apply decay to the job.
+ *
+ * Return 0 if we don't need to process the job any further, 1 if
+ * futher processing is needed.
+ */
+static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
+			    time_t start_period, time_t end_period)
+{
+	slurmdb_qos_rec_t *qos;
+	slurmdb_association_rec_t *assoc;
+	int run_delta = 0;
+	double run_decay = 0.0, real_decay = 0.0;
+	uint64_t cpu_run_delta = 0;
+	uint64_t job_time_limit_ends = 0;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t qos_read_lock = { NO_LOCK, NO_LOCK,
+					   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	/* If usage_factor is 0 just skip this
+	   since we don't add the usage.
+	*/
+	assoc_mgr_lock(&qos_read_lock);
+	qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+	if (qos && !qos->usage_factor) {
+		assoc_mgr_unlock(&qos_read_lock);
+		return 0;
+	}
+	assoc_mgr_unlock(&qos_read_lock);
+
+	if (job_ptr->start_time > start_period)
+		start_period = job_ptr->start_time;
+
+	if (job_ptr->end_time
+	    && (end_period > job_ptr->end_time))
+		end_period = job_ptr->end_time;
+
+	run_delta = (int) (end_period - start_period);
+
+	/* cpu_run_delta will is used to
+	   decrease qos and assocs
+	   grp_used_cpu_run_secs values. When
+	   a job is started only seconds until
+	   start_time+time_limit is added, so
+	   for jobs running over their
+	   timelimit we should only subtract
+	   the used time until the time
+	   limit. */
+	job_time_limit_ends =
+		(uint64_t)job_ptr->start_time +
+		(uint64_t)job_ptr->time_limit * 60;
+
+	if ((uint64_t)start_period  >= job_time_limit_ends)
+		cpu_run_delta = 0;
+	else if (end_period > job_time_limit_ends)
+		cpu_run_delta = job_ptr->total_cpus *
+			(job_time_limit_ends - (uint64_t)start_period);
+	else
+		cpu_run_delta = job_ptr->total_cpus * run_delta;
+
+
+	/* job already has been accounted for
+	   go to next */
+	if (run_delta < 1)
+		return 0;
+
+	if (priority_debug)
+		info("job %u ran for %d seconds on %u cpus",
+		     job_ptr->job_id, run_delta, job_ptr->total_cpus);
+
+	/* get the time in decayed fashion */
+	run_decay = run_delta * pow(decay_factor, (double)run_delta);
+
+	real_decay = run_decay * (double)job_ptr->total_cpus;
+
+	assoc_mgr_lock(&locks);
+	/* Just to make sure we don't make a
+	   window where the qos_ptr could of
+	   changed make sure we get it again
+	   here.
+	*/
+	qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+	assoc = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+
+	/* now apply the usage factor for this qos */
+	if (qos) {
+		if (qos->usage_factor >= 0) {
+			real_decay *= qos->usage_factor;
+			run_decay *= qos->usage_factor;
+		}
+		qos->usage->grp_used_wall += run_decay;
+		qos->usage->usage_raw += (long double)real_decay;
+		if (qos->usage->grp_used_cpu_run_secs >= cpu_run_delta) {
+			if (priority_debug)
+				info("grp_used_cpu_run_secs is %"PRIu64", "
+				     "will subtract %"PRIu64"",
+				     qos->usage->grp_used_cpu_run_secs,
+				     cpu_run_delta);
+			qos->usage->grp_used_cpu_run_secs -= cpu_run_delta;
+		} else {
+			if (priority_debug)
+				info("jobid %u, qos %s: setting "
+				     "grp_used_cpu_run_secs "
+				     "to 0 because %"PRIu64" < %"PRIu64"",
+				     job_ptr->job_id, qos->name,
+				     qos->usage->grp_used_cpu_run_secs,
+				     cpu_run_delta);
+			qos->usage->grp_used_cpu_run_secs = 0;
+		}
+	}
+
+	/* We want to do this all the way up
+	   to and including root.  This way we
+	   can keep track of how much usage
+	   has occured on the entire system
+	   and use that to normalize against.
+	*/
+	while (assoc) {
+		if (assoc->usage->grp_used_cpu_run_secs >= cpu_run_delta) {
+			if(priority_debug)
+				info("grp_used_cpu_run_secs is %"PRIu64", "
+				     "will subtract %"PRIu64"",
+				     assoc->usage->grp_used_cpu_run_secs,
+				     cpu_run_delta);
+			assoc->usage->grp_used_cpu_run_secs -= cpu_run_delta;
+		} else {
+			if (priority_debug)
+				info("jobid %u, assoc %u: setting "
+				     "grp_used_cpu_run_secs "
+				     "to 0 because %"PRIu64" < %"PRIu64"",
+				     job_ptr->job_id, assoc->id,
+				     assoc->usage->grp_used_cpu_run_secs,
+				     cpu_run_delta);
+			assoc->usage->grp_used_cpu_run_secs = 0;
+		}
+
+		assoc->usage->grp_used_wall += run_decay;
+		assoc->usage->usage_raw += (long double)real_decay;
+		if (priority_debug)
+			info("adding %f new usage to assoc %u (user='%s' "
+			     "acct='%s') raw usage is now %Lf.  Group wall "
+			     "added %f making it %f. GrpCPURunMins is "
+			     "%"PRIu64"",
+			     real_decay, assoc->id,
+			     assoc->user, assoc->acct,
+			     assoc->usage->usage_raw,
+			     run_decay,
+			     assoc->usage->grp_used_wall,
+			     assoc->usage->grp_used_cpu_run_secs/60);
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+	assoc_mgr_unlock(&locks);
+	return 1;
+}
+
 static void *_decay_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
@@ -766,7 +921,7 @@ static void *_decay_thread(void *no_data)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (decay_hl > 0)
 		decay_factor = 1 - (0.693 / decay_hl);
@@ -871,168 +1026,9 @@ static void *_decay_thread(void *no_data)
 			/* apply new usage */
 			if (!IS_JOB_PENDING(job_ptr) &&
 			    job_ptr->start_time && job_ptr->assoc_ptr) {
-				slurmdb_qos_rec_t *qos;
-				slurmdb_association_rec_t *assoc;
-				time_t start_period = last_ran;
-				time_t end_period = start_time;
-				double run_decay = 0;
-				uint64_t cpu_run_delta = 0;
-				uint64_t job_time_limit_ends = 0;
-				assoc_mgr_lock_t qos_read_lock =
-					{ NO_LOCK, NO_LOCK,
-					  READ_LOCK, NO_LOCK, NO_LOCK };
-
-				/* If usage_factor is 0 just skip this
-				   since we don't add the usage.
-				*/
-				assoc_mgr_lock(&qos_read_lock);
-				qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-				if (qos && !qos->usage_factor) {
-					assoc_mgr_unlock(&qos_read_lock);
+				if (!_apply_new_usage(job_ptr, decay_factor,
+						      last_ran, start_time))
 					continue;
-				}
-				assoc_mgr_unlock(&qos_read_lock);
-
-				if (job_ptr->start_time > start_period)
-					start_period = job_ptr->start_time;
-
-				if (job_ptr->end_time
-				    && (end_period > job_ptr->end_time))
-					end_period = job_ptr->end_time;
-
-				run_delta = (int) (end_period - start_period);
-
-				/* cpu_run_delta will is used to
-				   decrease qos and assocs
-				   grp_used_cpu_run_secs values. When
-				   a job is started only seconds until
-				   start_time+time_limit is added, so
-				   for jobs running over their
-				   timelimit we should only subtract
-				   the used time until the time
-				   limit. */
-				job_time_limit_ends =
-					(uint64_t)job_ptr->start_time +
-					(uint64_t)job_ptr->time_limit*60;
-				if ((uint64_t)start_period
-				    >= job_time_limit_ends) {
-					cpu_run_delta = 0;
-				} else if (end_period > job_time_limit_ends) {
-					cpu_run_delta = job_ptr->total_cpus *
-						(job_time_limit_ends -
-						 (uint64_t)start_period);
-				} else {
-					cpu_run_delta = job_ptr->total_cpus
-						* run_delta;
-				}
-
-				/* job already has been accounted for
-				   go to next */
-				if (run_delta < 1)
-					continue;
-
-				if (priority_debug)
-					info("job %u ran for %d seconds "
-					     "on %u cpus",
-					     job_ptr->job_id, run_delta,
-					     job_ptr->total_cpus);
-
-				/* get the time in decayed fashion */
-				run_decay = run_delta
-					* pow(decay_factor, (double)run_delta);
-
-				real_decay = run_decay
-					* (double)job_ptr->total_cpus;
-
-				assoc_mgr_lock(&locks);
-				/* Just to make sure we don't make a
-				   window where the qos_ptr could of
-				   changed make sure we get it again
-				   here.
-				*/
-				qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-				assoc = (slurmdb_association_rec_t *)
-					job_ptr->assoc_ptr;
-				/* now apply the usage factor for this
-				   qos */
-				if (qos) {
-					if (qos->usage_factor >= 0) {
-						real_decay *= qos->usage_factor;
-						run_decay *= qos->usage_factor;
-					}
-					qos->usage->grp_used_wall += run_decay;
-					qos->usage->usage_raw +=
-						(long double)real_decay;
-					if (qos->usage->grp_used_cpu_run_secs
-					    >= cpu_run_delta) {
-						if (priority_debug)
-							info("grp_used_cpu_run_secs is %"PRIu64", will subtract %"PRIu64"",
-							     qos->usage->grp_used_cpu_run_secs,
-							     cpu_run_delta);
-						qos->usage->
-							grp_used_cpu_run_secs -=
-							cpu_run_delta;
-					} else {
-						if (priority_debug)
-							info("jobid %u, qos %s: setting grp_used_cpu_run_secs "
-							     "to 0 because %"PRIu64" < %"PRIu64"",
-							     job_ptr->job_id, qos->name,
-							     qos->usage->grp_used_cpu_run_secs,
-							     cpu_run_delta);
-						qos->usage->
-							grp_used_cpu_run_secs =
-							0;
-					}
-				}
-
-				/* We want to do this all the way up
-				   to and including root.  This way we
-				   can keep track of how much usage
-				   has occured on the entire system
-				   and use that to normalize against.
-				*/
-				while (assoc) {
-					if (assoc->usage->grp_used_cpu_run_secs
-					    >= cpu_run_delta) {
-						if(priority_debug)
-							info("grp_used_cpu_run_secs is %"PRIu64", will subtract %"PRIu64"",
-							     assoc->usage->grp_used_cpu_run_secs,
-							     cpu_run_delta);
-						assoc->usage->grp_used_cpu_run_secs -=
-							cpu_run_delta;
-					} else {
-						if (priority_debug)
-							info("jobid %u, assoc %u: setting grp_used_cpu_run_secs "
-							     "to 0 because %"PRIu64" < %"PRIu64"",
-							     job_ptr->job_id, assoc->id,
-							     assoc->usage->grp_used_cpu_run_secs,
-							     cpu_run_delta);
-						assoc->usage->grp_used_cpu_run_secs = 0;
-					}
-
-					assoc->usage->grp_used_wall +=
-						run_decay;
-					assoc->usage->usage_raw +=
-						(long double)real_decay;
-					if (priority_debug)
-						info("adding %f new usage to "
-						     "assoc %u (user='%s' "
-						     "acct='%s') raw usage "
-						     "is now %Lf.  Group wall "
-						     "added %f making it %f. "
-						     "GrpCPURunMins is "
-						     "%"PRIu64"",
-						     real_decay, assoc->id,
-						     assoc->user, assoc->acct,
-						     assoc->usage->usage_raw,
-						     run_decay,
-						     assoc->usage->
-						     grp_used_wall,
-						     assoc->usage->
-						     grp_used_cpu_run_secs/60);
-					assoc = assoc->usage->parent_assoc_ptr;
-				}
-				assoc_mgr_unlock(&locks);
 			}
 
 			/*
@@ -1056,12 +1052,10 @@ static void *_decay_thread(void *no_data)
 
 	get_usage:
 		/* now calculate all the normalized usage here */
-		locks.qos = NO_LOCK;
 		assoc_mgr_lock(&locks);
 		_set_children_usage_efctv(
 			assoc_mgr_root_assoc->usage->childern_list);
 		assoc_mgr_unlock(&locks);
-		locks.qos = WRITE_LOCK;
 
 		last_ran = start_time;
 
