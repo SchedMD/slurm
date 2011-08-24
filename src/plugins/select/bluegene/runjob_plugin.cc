@@ -210,8 +210,14 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		for (dim=0; dim<Dimension::NodeDims; dim++)
 			geo[dim] = tmp_uint16[dim];
 
+		/* Since IBM's stuff relies on a relative location we
+		   have stored this information in the conn_type of
+		   the select_jobinfo structure.  If you want the
+		   absolute location use the SELECT_JOBDATA_START_LOC
+		   variable.
+		*/
 		if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
-					     SELECT_JOBDATA_START_LOC,
+					     SELECT_JOBDATA_CONN_TYPE,
 					     &tmp_uint16)) {
 			std::cerr << "Can't figure out the start loc "
 				  << "for sub-block job!" << std::endl;

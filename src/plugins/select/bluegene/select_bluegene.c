@@ -1727,10 +1727,26 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	} else if ((ba_mp = ba_pick_sub_block_cnodes(
 			    bg_record, &node_count,
 			    step_jobinfo))) {
+		int dim;
 		if (!(picked_mps = bit_alloc(bit_size(job_ptr->node_bitmap))))
 			fatal("bit_copy malloc failure");
 		bit_set(bg_record->mp_used_bitmap, ba_mp->index);
 		bit_set(picked_mps, ba_mp->index);
+		for (dim = 0; dim < jobinfo->dim_cnt; dim++) {
+			/* The IBM software works off a relative
+			   position in the block instead of the
+			   absolute position used in SLURM.
+			   Since conn_type doesn't mean anything for a
+			   step we can just overload it since it is getting
+			   sent aready and we don't need to bloat
+			   anything if we don't have to.
+			   So setting it here we can have both
+			   absolute and relative.
+			*/
+			step_jobinfo->conn_type[dim] =
+				step_jobinfo->start_loc[dim]
+				- jobinfo->start_loc[dim];
+		}
 	}
 
 found_it:
