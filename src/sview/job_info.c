@@ -3231,7 +3231,11 @@ display_it:
 		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(info_list);
 		while ((sview_job_info_ptr = list_next(itr))) {
+			uint16_t base_state;
 			job_ptr = sview_job_info_ptr->job_ptr;
+			base_state = job_ptr->job_state & JOB_STATE_BASE;
+			if (base_state != JOB_RUNNING)
+				continue;
 			j = 0;
 			while (job_ptr->node_inx[j] >= 0) {
 				top_node_inx = MAX(top_node_inx,
