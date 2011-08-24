@@ -1168,10 +1168,11 @@ _set_batch_job_limits(slurm_msg_t *msg)
 			last_bit = arg.sockets_per_node[0] *
 				   arg.cores_per_socket[0];
 			for (i=0; i<last_bit; i++) {
-				if (bit_test(arg.job_core_bitmap, i)) {
+				if (!bit_test(arg.job_core_bitmap, i))
+					continue;
+				if (cpu_log)
 					info("JobNode[0] CPU[%u] Job alloc",i);
-					alloc_lps++;
-				}
+				alloc_lps++;
 			}
 		}
 		if (cpu_log)
