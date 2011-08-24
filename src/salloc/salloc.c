@@ -147,6 +147,11 @@ static void _reset_input_mode (void)
 	int sig_block[] = { SIGTTOU, SIGTTIN, 0 };
 	xsignal_block (sig_block);
 	tcsetattr (STDIN_FILENO, TCSANOW, &saved_tty_attributes);
+	/* If salloc was run as interactive, with job control, reset the
+	 * foreground process group of the terminal to the process group of
+	 * the parent pid before exiting */
+	if (is_interactive)
+		tcsetpgrp(STDIN_FILENO, getpgid(getppid()));
 }
 
 int main(int argc, char *argv[])

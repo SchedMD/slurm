@@ -52,6 +52,9 @@ documents those changes that are of interest to users and admins.
  -- Fix for squeue -t "CONFIGURING" to actually work.
  -- CRAY - Add cray.conf parameter of SyncTimeout, maximum time to defer job
     scheduling if SLURM node or job state are out of synchronization with ALPS.
+ -- If salloc was run as interactive, with job control, reset the foreground
+    process group of the terminal to the process group of the parent pid before
+    exiting. Patch from Don Albert, Bull.
 
 * Changes in SLURM 2.3.0.rc1
 ============================
