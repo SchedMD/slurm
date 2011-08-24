@@ -292,9 +292,9 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 		/* FIXME: We sould tell the slurmctld about this
 		   instead of just printing it out.
 		*/
-		std::cout << nodes.size() << " failed nodes" << std::endl;
+		std::cerr << nodes.size() << " failed nodes" << std::endl;
 		BOOST_FOREACH(const bgsched::runjob::Node& i, nodes) {
-			std::cout << i.location() << ": "
+			std::cerr << i.location() << ": "
 				  << i.coordinates() << std::endl;
 		}
 	}
