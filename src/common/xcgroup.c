@@ -1048,7 +1048,7 @@ int _file_write_content(char* file_path, char* content, size_t csize)
 	/* check read size */
 	if (rc < csize) {
 		debug2("unable to write %lu bytes to file '%s' : %m",
-		       csize, file_path);
+		       (long unsigned int) csize, file_path);
 		fstatus = XCGROUP_ERROR;
 	}
 	else
