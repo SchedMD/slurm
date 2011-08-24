@@ -55,6 +55,11 @@ documents those changes that are of interest to users and admins.
  -- If salloc was run as interactive, with job control, reset the foreground
     process group of the terminal to the process group of the parent pid before
     exiting. Patch from Don Albert, Bull.
+ -- BGQ - set up the corner of a sub block correctly based on a relative
+    position in the block instead of absolute.
+ -- BGQ - make sure the recently added select_jobinfo of a step launch request
+    isn't sent to the slurmd where environment variables would be overwritten
+    incorrectly.
 
 * Changes in SLURM 2.3.0.rc1
 ============================
