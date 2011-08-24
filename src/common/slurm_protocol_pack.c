@@ -6839,6 +6839,7 @@ static void
 _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 			       uint16_t protocol_version)
 {
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int i=0;
 	xassert(msg != NULL);
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
@@ -6900,8 +6901,18 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->acctg_freq, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->restart_dir, buffer);
-		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
-					     protocol_version);
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+			/* If on a Blue Gene cluster do not send this to the
+			   slurmstepd, it will overwrite the environment that is
+			   already set up correctly for both the job
+			   and the step.  The slurmstep treats this
+			   select_jobinfo as if it were for the job
+			   instead of for the step.
+			*/
+			select_g_select_jobinfo_pack(msg->select_jobinfo,
+						     buffer,
+						     protocol_version);
+		}
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
@@ -7027,6 +7038,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 				 msg_ptr, Buf buffer,
 				 uint16_t protocol_version)
 {
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint32_t uint32_tmp;
 	launch_tasks_request_msg_t *msg;
 	int i=0;
@@ -7124,8 +7136,11 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->acctg_freq, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
-		select_g_select_jobinfo_unpack(&msg->select_jobinfo, buffer,
-					       protocol_version);
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+			select_g_select_jobinfo_unpack(&msg->select_jobinfo,
+						       buffer,
+						       protocol_version);
+		}
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
