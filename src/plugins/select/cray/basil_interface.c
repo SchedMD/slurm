@@ -163,6 +163,8 @@ extern int basil_inventory(void)
 	int slurm_alps_mismatch = 0;
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
+	static time_t slurm_alps_mismatch_time = (time_t) 0;
+	static bool logged_sync_timeout = false;
 
 	inv = get_full_inventory(version);
 	if (inv == NULL) {
@@ -310,9 +312,27 @@ extern int basil_inventory(void)
 	}
 	free_inv(inv);
 
-	if (slurm_alps_mismatch)
-		/* ALPS will take some time, do not schedule now. */
-		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+	if (slurm_alps_mismatch) {
+		/* If SLURM and ALPS state are not in synchronization,
+		 * do not schedule any more jobs until waiting at least
+		 * SyncTimeout seconds. */
+		if (slurm_alps_mismatch_time == 0) {
+			slurm_alps_mismatch_time = now;
+		} else if (cray_conf->sync_timeout == 0) {
+			/* Wait indefinitely */
+		} else if (difftime(now, slurm_alps_mismatch_time) <
+			   cray_conf->sync_timeout) {
+			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		} else if (!logged_sync_timeout) {
+			error("Could not synchronize SLURM with ALPS for %u "
+			      "seconds, proceeding with job scheduling",
+			      cray_conf->sync_timeout);
+			logged_sync_timeout = true;
+		}
+	} else {
+		slurm_alps_mismatch_time = 0;
+		logged_sync_timeout = false;
+	}
 	return rc;
 }
 

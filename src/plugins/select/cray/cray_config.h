@@ -59,6 +59,9 @@
 #define DEFAULT_CRAY_SDB_PORT     0
 /* If NULL, use value from my.cnf */
 #define DEFAULT_CRAY_SDB_USER     NULL
+/* Default maximum delay for ALPS and SLURM to synchronize. Do not schedule
+ * jobs while out of sync until this time is reached (seconds) */
+#define DEFAULT_CRAY_SYNC_TIMEOUT 3600
 
 /**
  * cray_config_t - Parsed representation of cray.conf
@@ -70,6 +73,8 @@
  * @sdb_pass:	SDB database password
  * @sdb_port:	port number of SDB host
  * @slurm_debug_flags: see code for details
+ * @sync_timeout: seconds to wait for ALPS and SLURM to sync without scheduling
+ *                jobs
  */
 typedef struct {
 	char		*apbasil;
@@ -81,6 +86,7 @@ typedef struct {
 	char		*sdb_pass;
 	uint32_t	sdb_port;
 	uint32_t	slurm_debug_flags;
+	uint32_t	sync_timeout;
 } cray_config_t;
 
 extern cray_config_t *cray_conf;

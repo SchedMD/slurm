@@ -1,4 +1,4 @@
-.TH "cray.conf" "5" "March 2011" "cray.conf 2.3" "Slurm configuration file"
+.TH "cray.conf" "5" "August 2011" "cray.conf 2.3" "Slurm configuration file"
 
 .SH "NAME"
 cray.conf \- Slurm configuration file for the Cray\-specific information
@@ -60,6 +60,15 @@ The default value is 0.
 Name of user used to access the ALPS database.
 The default value is NULL, which will load the user name from the \fImy.cnf\fR file.
 
+.TP
+\fBSyncTimeout\fR=<seconds>
+SLURM does not normally schedule jobs while its job or node state information
+is out of synchronization with that of ALPS. This parameter specifies a maximum
+time to defer job scheduling while waiting for consistent state.  The
+inconsistent state might be caused by a variety of hardware or software
+failures and proceeding could result in more failures. The default value is
+3600 (one hour). A value of zero will wait indefinitely for consistent state.
+
 .SH "EXAMPLE"
 .LP
 .br
@@ -76,8 +85,6 @@ SDBhost=localhost
 SDBuser=alps_user
 .br
 SDBdb=XT5istanbul
-.br
-ConstrainCores=yes
 
 .SH "COPYING"
 Copyright (C) 2011 SchedMD LLC.

@@ -60,6 +60,7 @@ s_p_options_t cray_conf_file_options[] = {
 	{"SDBpass", S_P_STRING},
 	{"SDBport", S_P_UINT32},
 	{"SDBuser", S_P_STRING},
+	{"SyncTimeout", S_P_UINT32},
 	{NULL}
 };
 
@@ -108,6 +109,7 @@ extern int create_config(void)
 		cray_conf->sdb_pass = xstrdup(DEFAULT_CRAY_SDB_PASS);
 		cray_conf->sdb_port = DEFAULT_CRAY_SDB_PORT;
 		cray_conf->sdb_user = xstrdup(DEFAULT_CRAY_SDB_USER);
+		cray_conf->sync_timeout = DEFAULT_CRAY_SYNC_TIMEOUT;
 		xfree(cray_conf_file);
 		goto end_it;
 	}
@@ -151,6 +153,8 @@ extern int create_config(void)
 		cray_conf->sdb_port = DEFAULT_CRAY_SDB_PORT;
 	if (!s_p_get_string(&cray_conf->sdb_user, "SDBuser", tbl))
 		cray_conf->sdb_user = xstrdup(DEFAULT_CRAY_SDB_USER);
+	if (!s_p_get_uint32(&cray_conf->sync_timeout, "SyncTimeout", tbl))
+		cray_conf->sync_timeout = DEFAULT_CRAY_SYNC_TIMEOUT;
 
 	s_p_hashtbl_destroy(tbl);
 end_it:
@@ -165,6 +169,7 @@ end_it:
 	info("\tSDBpass=\t%s", cray_conf->sdb_pass);
 	info("\tSDBport=\t%u", cray_conf->sdb_port);
 	info("\tSDBuser=\t%s", cray_conf->sdb_user);
+	info("\tSyncTimeout=\t%u", cray_conf->sync_timeout);
 #endif
 	return rc;
 }
