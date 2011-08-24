@@ -3610,9 +3610,10 @@ static bool
 _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 {
 	int sec = 0;
+	int pause = 1;
 	bool rc = false;
 
-	while ((sec++ < max_time) || (max_time == 0)) {
+	while ((sec < max_time) || (max_time == 0)) {
 		rc = (_job_still_running (job_id) ||
 			xcpu_signal(0, nodes));
 		if (!rc)
@@ -3621,12 +3622,15 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 			xcpu_signal(SIGKILL, nodes);
 			_terminate_all_steps(job_id, true);
 		}
-		if (sec < 10)
-			sleep(1);
-		else {
-			/* Reduce logging about unkillable tasks */
-			sleep(60);
+		if (sec > 10) {
+			/* Reduce logging frequency about unkillable tasks */
+			if (max_time)
+				pause = MIN((max_time - sec), 10);
+			else
+				pause = 10;
 		}
+		sleep(pause);
+		sec += pause;
 	}
 
 	/*
