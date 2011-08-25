@@ -97,9 +97,10 @@ bitstr_t *avail_node_bitmap = NULL;
 
 /* All current (2011) XT/XE installations have a maximum dimension of 3,
  * smaller systems deploy a 2D Torus which has no connectivity in
- * X-dimension.  Just incase SYSTEM_DIMENSIONS is ever set to 2
- * instead of 3 we will initialize them later in the ba_init function. */
-static int select_cray_dim_size[SYSTEM_DIMENSIONS] = {-1};
+ * X-dimension.  We know the highest system dimensions possible here
+ * are 3 so we set it to that.  Do not use SYSTEM_DIMENSIONS since
+ * that could easily be wrong if built on a non Cray system. */
+static int select_cray_dim_size[3] = {-1};
 
 /*
  * These variables are required by the generic plugin interface.  If they
