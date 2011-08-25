@@ -841,7 +841,6 @@ extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 
 extern int *select_p_ba_get_dims(void)
 {
-	info("got here with %d", select_cray_dim_size[0]);
 	/* Size of system in each dimension as set by basil_geometry(),
 	 * which might not be called yet */
 	if (select_cray_dim_size[0] != -1)
