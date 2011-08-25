@@ -187,17 +187,17 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		if (tmp_char) {
 #ifdef HAVE_BGQ
 			jobinfo->dim_cnt = 5;
+			for (i=0; i<jobinfo->dim_cnt; i++) {
+				jobinfo->start_loc[i] =
+					select_char2coord(tmp_char[i]);
+			}
 #else
 			jobinfo->dim_cnt = SYSTEM_DIMENSIONS;
 #endif
+			jobinfo->ionode_str = xstrdup(tmp_char);
 		} else
 			jobinfo->dim_cnt = SYSTEM_DIMENSIONS;
 
-		jobinfo->ionode_str = xstrdup(tmp_char);
-		for (i=0; i<jobinfo->dim_cnt; i++) {
-			jobinfo->start_loc[i] =
-				select_char2coord(jobinfo->ionode_str[i]);
-		}
 		break;
 	case SELECT_JOBDATA_NODE_CNT:
 		jobinfo->cnode_cnt = *uint32;
