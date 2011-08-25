@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ============================
  -- BLUEGENE - make sure we only set the jobinfo_select start_loc on a job
     when we are on a small block, not a regular one.
+ -- BGQ - fix issue where not copying the correct amount of memory.
 
 * Changes in SLURM 2.3.0.rc2
 ============================

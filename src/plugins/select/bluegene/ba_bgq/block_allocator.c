@@ -454,7 +454,7 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 		}
 
 		memcpy(ba_request->geometry, ba_geo_table->geometry,
-		       sizeof(ba_geo_table->geometry));
+		       sizeof(ba_request->geometry));
 	} else
 		ba_request->geo_table = NULL;
 
