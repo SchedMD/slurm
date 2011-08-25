@@ -583,7 +583,8 @@ static int _add_button_to_list(node_info_t *node_ptr,
 			return SLURM_ERROR;
 		}
 		if ((dim_size[0] < 1) || (cluster_dims < 1)) {
-			g_error("Invalid dim_size or cluster_dims\n");
+			g_error("Invalid dim_size %d or cluster_dims %d\n",
+				dim_size[0], cluster_dims);
 			return SLURM_ERROR;
 		}
 
