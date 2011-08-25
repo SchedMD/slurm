@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix clean start if jobs were running when the slurmctld was
     shutdown and then the system size changed.  This would probably only happen
     if you were emulating a system.
+ -- Fix sview for calling a cray system from a non-cray system to get the
+    correct geometry of the system.
 
 * Changes in SLURM 2.3.0.rc2
 ============================
