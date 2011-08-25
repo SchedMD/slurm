@@ -322,15 +322,17 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	used_bitmap = bit_alloc(node_record_count);
 	ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
 
-	if (inx2bitstr(mp_bitmap, block_info->mp_inx) == -1)
+	if (bg_recover && (inx2bitstr(mp_bitmap, block_info->mp_inx) == -1))
 		fatal("Job state recovered incompatible with "
 		      "bluegene.conf. mp=%u",
 		      node_record_count);
-	if (inx2bitstr(used_bitmap, block_info->mp_used_inx) == -1)
+	if (bg_recover
+	    && (inx2bitstr(used_bitmap, block_info->mp_used_inx) == -1))
 		fatal("Job state recovered incompatible with "
 		      "bluegene.conf. used=%u",
 		      node_record_count);
-	if (inx2bitstr(ionode_bitmap, block_info->ionode_inx) == -1)
+	if (bg_recover
+	    && (inx2bitstr(ionode_bitmap, block_info->ionode_inx) == -1))
 		fatal("Job state recovered incompatible with "
 		      "bluegene.conf. ionodes=%u",
 		      bg_conf->ionodes_per_mp);
