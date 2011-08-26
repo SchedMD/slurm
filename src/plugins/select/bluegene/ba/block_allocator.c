@@ -886,45 +886,48 @@ end_it:
  * IN/OUT results - a list with a NULL destroyer filled in with
  *        midplanes and wires set to create the block with the api. If
  *        only interested in the hostlist NULL can be excepted also.
- * IN start - where to start the allocation.
- * IN geometry - the requested geometry of the block.
- * IN conn_type - mesh, torus, or small.
+ * IN ba_request - request for the block
+ *
+ * To be set in the ba_request
+ *    start - where to start the allocation. (optional)
+ *    geometry or size - the requested geometry of the block. (required)
+ *    conn_type - mesh, torus, or small. (required)
  *
  * RET char * - hostlist of midplanes results represent must be
  *     xfreed.  NULL on failure
  */
-extern char *set_bg_block(List results, uint16_t *start,
-			  uint16_t *geometry, uint16_t *conn_type)
+extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 {
 	char *name = NULL;
 	ba_mp_t* ba_node = NULL;
-	int size = 0;
 	int send_results = 0;
 	int found = 0;
 
-	if (cluster_dims == 1) {
-		if (start[X]>=DIM_SIZE[X])
-			return NULL;
-		size = geometry[X];
-		ba_node = &ba_main_grid[start[X]][0][0];
-	} else {
-		if (start[X]>=DIM_SIZE[X]
-		    || start[Y]>=DIM_SIZE[Y]
-		    || start[Z]>=DIM_SIZE[Z])
-			return NULL;
+	xassert(ba_request);
 
-		if (geometry[X] <= 0 || geometry[Y] <= 0 || geometry[Z] <= 0) {
-			error("problem with geometry %c%c%c, needs to be "
-			      "at least 111",
-			      alpha_num[geometry[X]],
-			      alpha_num[geometry[Y]],
-			      alpha_num[geometry[Z]]);
+	if (cluster_dims == 1) {
+		if (ba_request->start[X]>=DIM_SIZE[X])
 			return NULL;
+		ba_request->size = ba_request->geometry[X];
+		ba_node = &ba_main_grid[ba_request->start[X]][0][0];
+	} else {
+		int dim;
+
+		ba_request->size = 1;
+		for (dim=0; dim<cluster_dims; dim++) {
+			if (ba_request->start[dim] >= DIM_SIZE[dim])
+				return NULL;
+			if ((int16_t)ba_request->geometry[dim] <= 0) {
+				error("problem with geometry of %c in dim %d, "
+				      "needs to be at least 1",
+				      alpha_num[ba_request->geometry[dim]],
+				      dim);
+				return NULL;
+			}
+			ba_request->size *= ba_request->geometry[dim];
 		}
-		/* info("looking at %d%d%d", geometry[X], */
-		/*      geometry[Y], geometry[Z]); */
-		size = geometry[X] * geometry[Y] * geometry[Z];
-		ba_node = &ba_main_grid[start[X]][start[Y]][start[Z]];
+
+		ba_node = coord2ba_mp(ba_request->start);
 	}
 
 	if (!ba_node)
@@ -938,7 +941,7 @@ extern char *set_bg_block(List results, uint16_t *start,
 	/* This midplane should have already been checked if it was in
 	   use or not */
 	list_append(results, ba_node);
-	if (conn_type[0] >= SELECT_SMALL) {
+	if (ba_request->conn_type[0] >= SELECT_SMALL) {
 		/* adding the ba_node and ending */
 		ba_node->used |= BA_MP_USED_TRUE;
 		name = xstrdup_printf("%s", ba_node->coord_str);
@@ -946,13 +949,13 @@ extern char *set_bg_block(List results, uint16_t *start,
 	}
 	found = _find_x_path(results, ba_node,
 			     ba_node->coord,
-			     geometry[X],
+			     ba_request->geometry[X],
 			     1,
-			     conn_type[0], BLOCK_ALGO_FIRST);
+			     ba_request->conn_type[0], BLOCK_ALGO_FIRST);
 
 	if (!found) {
 		bool is_small = 0;
-		if (conn_type[0] == SELECT_SMALL)
+		if (ba_request->conn_type[0] == SELECT_SMALL)
 			is_small = 1;
 		debug2("trying less efficient code");
 		remove_block(results, is_small);
@@ -960,9 +963,10 @@ extern char *set_bg_block(List results, uint16_t *start,
 		list_append(results, ba_node);
 		found = _find_x_path(results, ba_node,
 				     ba_node->coord,
-				     geometry[X],
+				     ba_request->geometry[X],
 				     1,
-				     conn_type[0], BLOCK_ALGO_SECOND);
+				     ba_request->conn_type[0],
+				     BLOCK_ALGO_SECOND);
 	}
 	if (found) {
 		if (cluster_flags & CLUSTER_FLAG_BG) {
@@ -978,8 +982,8 @@ extern char *set_bg_block(List results, uint16_t *start,
 
 			if (!_fill_in_coords(results,
 					     start_list,
-					     geometry,
-					     conn_type[0])) {
+					     ba_request->geometry,
+					     ba_request->conn_type[0])) {
 				list_destroy(start_list);
 				goto end_it;
 			}
@@ -990,8 +994,8 @@ extern char *set_bg_block(List results, uint16_t *start,
 	}
 
 	name = _set_internal_wires(results,
-				   size,
-				   conn_type[0]);
+				   ba_request->size,
+				   ba_request->conn_type[0]);
 end_it:
 	if (!send_results && results) {
 		list_destroy(results);
@@ -1867,28 +1871,14 @@ static void _delete_path_list(void *object)
 static int _find_match(select_ba_request_t *ba_request, List results)
 {
 	int x=0;
-	uint16_t start[cluster_dims];
+
 	ba_mp_t *ba_node = NULL;
 	char *name=NULL;
-	int startx;
+	int startx = DIM_SIZE[X]-1;
 	uint16_t *geo_ptr;
 
 	if (!(cluster_flags & CLUSTER_FLAG_BG))
 		return 0;
-
-	memset(start, 0, sizeof(start));
-	startx = (start[X]-1);
-
-	if (startx == -1)
-		startx = DIM_SIZE[X]-1;
-	if (ba_request->start_req) {
-		for(x=0;x<cluster_dims;x++) {
-			if (ba_request->start[x]>=DIM_SIZE[x])
-				return 0;
-			start[x] = ba_request->start[x];
-		}
-	}
-	x=0;
 
 	/* set up the geo here */
 	if (!(geo_ptr = list_peek(ba_request->elongate_geos)))
@@ -1918,28 +1908,20 @@ start_again:
 			     alpha_num[ba_request->geometry[Z]],
 			     x);
 	new_node:
+		ba_node = coord2ba_mp(ba_request->start);
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("starting at %c%c%c",
-			     alpha_num[start[X]],
-			     alpha_num[start[Y]],
-			     alpha_num[start[Z]]);
-
-		ba_node = &ba_main_grid[start[X]][start[Y]][start[Z]];
+			info("starting at %s", ba_node->coord_str);
 
 		if (!_node_used(ba_node, ba_request->geometry[X])) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-				info("trying this node %c%c%c %c%c%c %d",
-				     alpha_num[start[X]],
-				     alpha_num[start[Y]],
-				     alpha_num[start[Z]],
+				info("trying this node %s %c%c%c %d",
+				     ba_node->coord_str,
 				     alpha_num[ba_request->geometry[X]],
 				     alpha_num[ba_request->geometry[Y]],
 				     alpha_num[ba_request->geometry[Z]],
 				     ba_request->conn_type[X]);
-			name = set_bg_block(results,
-					    start,
-					    ba_request->geometry,
-					    ba_request->conn_type);
+			name = set_bg_block(results, ba_request);
+
 			if (name) {
 				ba_request->save_name = xstrdup(name);
 				xfree(name);
@@ -1960,28 +1942,28 @@ start_again:
 
 		}
 
-		if ((DIM_SIZE[Z]-start[Z]-1)
+		if ((DIM_SIZE[Z] - ba_request->start[Z]-1)
 		    >= ba_request->geometry[Z])
-			start[Z]++;
+			ba_request->start[Z]++;
 		else {
-			start[Z] = 0;
-			if ((DIM_SIZE[Y]-start[Y]-1)
+			ba_request->start[Z] = 0;
+			if ((DIM_SIZE[Y] - ba_request->start[Y]-1)
 			    >= ba_request->geometry[Y])
-				start[Y]++;
+				ba_request->start[Y]++;
 			else {
-				start[Y] = 0;
-				if ((DIM_SIZE[X]-start[X]-1)
+				ba_request->start[Y] = 0;
+				if ((DIM_SIZE[X] - ba_request->start[X]-1)
 				    >= ba_request->geometry[X])
-					start[X]++;
+					ba_request->start[X]++;
 				else {
 					if (ba_request->size == 1)
 						goto requested_end;
 					if (!_check_for_options(ba_request))
 						return 0;
 					else {
-						start[X]=0;
-						start[Y]=0;
-						start[Z]=0;
+						memset(ba_request->start, 0,
+						       sizeof(ba_request->
+							      start));
 						goto start_again;
 					}
 				}
