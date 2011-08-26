@@ -668,7 +668,6 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 		      ba_request->size);
 		return NULL;
 	}
-
 	if (!deny_pass)
 		deny_pass = &local_deny_pass;
 
@@ -699,7 +698,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 				    &success_bitmap,
 				    ba_geo_table, &cnt,
 				    ba_main_geo_system, deny_pass,
-				    start_loc, &scan_offset)
+				    start_loc, &scan_offset, false)
 		    != SLURM_SUCCESS) {
 			if (ba_request->geometry[0] != (uint16_t)NO_VAL) {
 				ba_geo_table = NULL;
