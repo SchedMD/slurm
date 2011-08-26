@@ -682,13 +682,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			   that geo_table. */
 			if (memcmp(ba_request->geometry, ba_geo_table->geometry,
 				   sizeof(uint16_t) * cluster_dims)) {
-				char *tmp_char = give_geo(ba_request->geometry,
-							  cluster_dims, 0);
-				char *tmp_char2 = give_geo(ba_geo_table->geometry,
-							  cluster_dims, 0);
-				info("geo %s != %s", tmp_char, tmp_char2);
-				xfree(tmp_char);
-				xfree(tmp_char2);
+				ba_geo_table = ba_geo_table->next_ptr;
 				continue;
 			}
 		}
@@ -723,21 +717,12 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			   or startup this handling it this way
 			   shouldn't be that big of a deal. */
 			if (memcmp(ba_request->start, start_loc,
-				   sizeof(uint16_t) * cluster_dims)) {
-				char *tmp_char = give_geo(ba_request->start,
-							  cluster_dims, 0);
-				char *tmp_char2 = give_geo(start_loc,
-							  cluster_dims, 0);
-				info("start_loc %s != %s", tmp_char, tmp_char2);
-				xfree(tmp_char);
-				xfree(tmp_char2);
+				   sizeof(uint16_t) * cluster_dims))
 				goto try_again;
-			}
-
 		}
 
 		main_mps = list_create(NULL);
-		for (i=0; i<node_record_count; i++) {
+		for (i=0; i<ba_main_geo_system->total_size; i++) {
 			if (!bit_test(success_bitmap, i))
 				continue;
 			ba_mp = ba_main_grid_array[i];
@@ -774,6 +759,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			ba_mp->used = BA_MP_USED_ALTERED;
 			list_append(main_mps, ba_mp);
 		}
+
 		itr = list_iterator_create(main_mps);
 		while ((ba_mp = list_next(itr))) {
 			if (ba_mp->used & BA_MP_USED_PASS_BIT)
@@ -792,7 +778,6 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			}
 		}
 		list_iterator_destroy(itr);
-
 		break;
 	}
 
