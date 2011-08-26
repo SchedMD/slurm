@@ -902,7 +902,6 @@ extern char *set_bg_block(List results, uint16_t *start,
 	int send_results = 0;
 	int found = 0;
 
-
 	if (cluster_dims == 1) {
 		if (start[X]>=DIM_SIZE[X])
 			return NULL;

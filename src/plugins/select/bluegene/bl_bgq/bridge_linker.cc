@@ -105,6 +105,7 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 	hostlist_t hostlist;
 	char *node_char = NULL;
 	char mp_str[256];
+	select_ba_request_t ba_request;
 
 	bg_record->magic = BLOCK_MAGIC;
 	bg_record->bg_block_id = xstrdup(block_ptr->getName().c_str());
@@ -184,10 +185,14 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 	else
 		bg_record->ba_mp_list = list_create(destroy_ba_mp);
 
-	node_char = set_bg_block(bg_record->ba_mp_list,
-				 bg_record->start,
-				 bg_record->geo,
-				 bg_record->conn_type);
+	memset(&ba_request, 0, sizeof(ba_request));
+	memcpy(ba_request.start, bg_record->start, sizeof(bg_record->start));
+	memcpy(ba_request.geometry, bg_record->geo, sizeof(bg_record->geo));
+	memcpy(ba_request.conn_type, bg_record->conn_type,
+	       sizeof(bg_record->conn_type));
+	ba_request.start_req = 1;
+	node_char = set_bg_block(bg_record->ba_mp_list, &ba_request);
+
 	ba_reset_all_removed_mps();
 	if (!node_char)
 		fatal("I was unable to make the requested block.");

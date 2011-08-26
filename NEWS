@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.0.pre1
 =============================
+ -- BGQ - use the ba_geo_tables to figure out the blocks instead of the old
+    algorithm.  The improves timing in the worst cases and simplifies the code
+    greatly.
 
 * Changes in SLURM 2.3.0
 ========================

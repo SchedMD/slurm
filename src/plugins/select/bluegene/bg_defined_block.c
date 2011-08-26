@@ -55,7 +55,6 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 	int i;
-	uint16_t geo[SYSTEM_DIMENSIONS];
 	char temp[256];
 	struct part_record *part_ptr = NULL;
 	bitstr_t *usable_mp_bitmap = bit_alloc(node_record_count);
@@ -117,10 +116,10 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					      bg_record->bg_block_id);
 
 				for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-					geo[i] = bg_record->geo[i];
 					start_char[i] = alpha_num[
 						bg_record->start[i]];
-					geo_char[i] = alpha_num[geo[i]];
+					geo_char[i] = alpha_num[
+						bg_record->geo[i]];
 				}
 				start_char[i] = '\0';
 				geo_char[i] = '\0';
@@ -149,11 +148,21 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 #else
 					List results = list_create(NULL);
 #endif
-					name = set_bg_block(
-						results,
-						bg_record->start,
-						geo,
-						bg_record->conn_type);
+					select_ba_request_t ba_request;
+					memset(&ba_request, 0,
+					       sizeof(ba_request));
+					memcpy(ba_request.start,
+					       bg_record->start,
+					       sizeof(bg_record->start));
+					memcpy(ba_request.geometry,
+					       bg_record->geo,
+					       sizeof(bg_record->geo));
+					memcpy(ba_request.conn_type,
+					       bg_record->conn_type,
+					       sizeof(bg_record->conn_type));
+					ba_request.start_req = 1;
+					name = set_bg_block(results,
+							    &ba_request);
 					ba_reset_all_removed_mps();
 					if (!name) {
 						error("I was unable to "
@@ -276,6 +285,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	bool larger = 0;
 	char start_char[SYSTEM_DIMENSIONS+1];
 	char geo_char[SYSTEM_DIMENSIONS+1];
+	select_ba_request_t ba_request;
 
 	if (!dims) {
 		dims = select_g_ba_get_dims();
@@ -400,10 +410,14 @@ extern int create_full_system_block(List bg_found_block_list)
 #else
 	results = list_create(NULL);
 #endif
-	name = set_bg_block(results,
-			    bg_record->start,
-			    bg_record->geo,
-			    bg_record->conn_type);
+	memset(&ba_request, 0, sizeof(ba_request));
+	memcpy(ba_request.start, bg_record->start, sizeof(bg_record->start));
+	memcpy(ba_request.geometry, bg_record->geo, sizeof(bg_record->geo));
+	memcpy(ba_request.conn_type, bg_record->conn_type,
+	       sizeof(bg_record->conn_type));
+	ba_request.start_req = 1;
+	name = set_bg_block(results, &ba_request);
+
 	if (!name) {
 		error("I was unable to make the full system block.");
 		list_destroy(results);

@@ -760,6 +760,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 					      "around though",
 					      bg_record->bg_block_id);
 		} else {
+			select_ba_request_t ba_request;
 			ba_set_removable_mps(usable_mp_bitmap, 1);
 			/* we want the mps that aren't
 			 * in this record to mark them as used
@@ -776,10 +777,16 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 #endif
 			/* info("adding back %s %s", bg_record->bg_block_id, */
 			/*      bg_record->mp_str); */
-			name = set_bg_block(results,
-					    bg_record->start,
-					    bg_record->geo,
-					    bg_record->conn_type);
+			memset(&ba_request, 0, sizeof(ba_request));
+			memcpy(ba_request.start, bg_record->start,
+			       sizeof(bg_record->start));
+			memcpy(ba_request.geometry, bg_record->geo,
+			       sizeof(bg_record->geo));
+			memcpy(ba_request.conn_type, bg_record->conn_type,
+			       sizeof(bg_record->conn_type));
+			ba_request.start_req = 1;
+			name = set_bg_block(results, &ba_request);
+
 			ba_reset_all_removed_mps();
 
 			if (!name) {

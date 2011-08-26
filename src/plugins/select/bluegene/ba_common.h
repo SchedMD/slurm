@@ -534,14 +534,17 @@ extern int check_and_set_mp_list(List mps);
  * IN/OUT results - a list with a NULL destroyer filled in with
  *        midplanes and wires set to create the block with the api. If
  *        only interested in the hostlist NULL can be excepted also.
- * IN start - where to start the allocation.
- * IN geometry - the requested geometry of the block.
- * IN conn_type - mesh, torus, or small.
+ * IN ba_request - request for the block
+ *
+ * To be set in the ba_request
+ *    start - where to start the allocation. (optional)
+ *    geometry or size - the requested geometry of the block. (required)
+ *    conn_type - mesh, torus, or small. (required)
+ *
  * RET char * - hostlist of midplanes results represent must be
  *     xfreed.  NULL on failure
  */
-extern char *set_bg_block(List results, uint16_t *start,
-			  uint16_t *geometry, uint16_t *conn_type);
+extern char *set_bg_block(List results, select_ba_request_t* ba_request);
 
 /*
  * Set up the map for resolving
