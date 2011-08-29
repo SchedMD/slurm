@@ -1028,7 +1028,7 @@ try_again:
 					ba_mp->cnode_bitmap, ba_mp_geo_system);
 				bit_not(ba_mp->cnode_bitmap);
 				info("ba_pick_sub_block_cnodes: "
-				     "using %s cnodes on mp %s "
+				     "using cnodes %s on mp %s "
 				     "leaving '%s' usable in this block (%s)",
 				     jobinfo->ionode_str,
 				     ba_mp->coord_str, tmp_char,
@@ -1136,7 +1136,7 @@ extern int ba_clear_sub_block_cnodes(
 				ba_mp->cnode_bitmap, ba_mp_geo_system);
 			bit_not(ba_mp->cnode_bitmap);
 			info("ba_clear_sub_block_cnodes: "
-			     "cleared %s cnodes on mp %s, making '%s' usable "
+			     "cleared cnodes %s on mp %s, making '%s' usable "
 			     "in this block (%s)",
 			     tmp_char, ba_mp->coord_str, tmp_char2,
 			     bg_record->bg_block_id);
