@@ -302,14 +302,22 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 void event_handler::handleSwitchStateChangedRealtimeEvent(
 	const SwitchStateChangedEventInfo& event)
 {
-	const char *mp_name = event.getMidplaneLocation().c_str();
-	int dim = event.getDimension();
-	ba_mp_t *ba_mp = loc2ba_mp(mp_name);
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	int dim;
+	ba_mp_t *ba_mp;
+
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	dim = event.getDimension();
+	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
 		error("Switch in dim '%d' on Midplane %s, state "
 		      "went from %d to %d, but is not in our system",
-		      dim, mp_name,
+		      dim, event.getMidplaneLocation().c_str(),
 		      event.getPreviousState(),
 		      event.getState());
 	}
@@ -318,9 +326,10 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 		/* Don't do anything, wait for admin to fix things,
 		 * just note things are better. */
 
-		info("Switch in dim '%u' on Midplane %s, "
+		info("Switch in dim '%u' on Midplane %s(%s), "
 		     "has returned to service",
-		     dim, mp_name);
+		     dim, event.getMidplaneLocation().c_str(),
+		     ba_mp->coord_str);
 		return;
 	}
 
@@ -335,7 +344,15 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 {
 	const char *mp_name = event.getLocation().substr(0,6).c_str();
 	const char *nb_name = event.getLocation().substr(7,3).c_str();
-	ba_mp_t *ba_mp = loc2ba_mp(mp_name);
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	int dim;
+	ba_mp_t *ba_mp;
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
 		error("Nodeboard '%s' on Midplane %s, state went from %d to %d,"
@@ -351,7 +368,8 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 
 		info("Nodeboard '%s' on Midplane %s(%s), "
 		     "has returned to service",
-		     nb_name, mp_name, ba_mp->coord_str);
+		     nb_name, mp_name,
+		     ba_mp->coord_str);
 		return;
 	}
 
