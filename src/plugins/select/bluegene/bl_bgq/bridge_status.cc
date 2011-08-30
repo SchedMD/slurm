@@ -100,11 +100,11 @@ public:
 	virtual void handleNodeBoardStateChangedRealtimeEvent(
 		const NodeBoardStateChangedEventInfo& event);
 
-	// /*
-	//  * Handle a cable state changed real-time event.
-	//  */
-	// virtual void handleCableStateChangedRealtimeEvent(
-	// 	const CableStateChangedEventInfo& event);
+	/*
+	 * Handle a cable state changed real-time event.
+	 */
+	virtual void handleCableStateChangedRealtimeEvent(
+		const CableStateChangedEventInfo& event);
 
 } event_handler_t;
 
@@ -186,6 +186,31 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 		       nb_name, bg_down_node, state.toValue());
 	return;
 }
+
+static void _handle_bad_cable(int dim, const char *mp_coords,
+			       EnumWrapper<Hardware::State> state)
+{
+	/* FIX ME: if the cable goes down you can probably still use
+	   the midplane.  This is a place holder of sorts until the
+	   real code can be done.
+	*/
+	char bg_down_node[128];
+
+	assert(mp_coords);
+
+	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+		 bg_conf->slurm_node_prefix, mp_coords);
+
+	if (!node_already_down(bg_down_node)) {
+		error("FIXME: Cable at dim '%d' on Midplane %s, "
+		      "state went to %d, marking midplane down.",
+		      dim, bg_down_node, state.toValue());
+		slurm_drain_nodes(bg_down_node,
+				  (char *)"select_bluegene: MMCS cable not UP",
+				  slurm_get_slurm_user_id());
+	}
+}
+
 
 void event_handler::handleBlockStateChangedRealtimeEvent(
         const BlockStateChangedEventInfo& event)
@@ -284,6 +309,38 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	return;
 }
 
+void event_handler::handleCableStateChangedRealtimeEvent(
+	const CableStateChangedEventInfo& event)
+{
+	// const char *from_mp_name = event.getFromLocation().substr(0,6).c_str();
+	// const char *to_mp_name = event.getToLocation().substr(0,6).c_str();
+	// ba_mp_t *ba_mp = loc2ba_mp(mp_name);
+
+	// if (!ba_mp) {
+	// 	error("Cable  in dim '%d' on Midplane %s, state "
+	// 	      "went from %d to %d, but is not in our system",
+	// 	      dim, mp_name,
+	// 	      event.getPreviousState(),
+	// 	      event.getState());
+	// }
+
+	// if (event.getState() == Hardware::Available) {
+	// 	/* Don't do anything, wait for admin to fix things,
+	// 	 * just note things are better. */
+
+	// 	info("Switch in dim '%u' on Midplane %s, "
+	// 	     "has returned to service",
+	// 	     dim, mp_name);
+	// 	return;
+	// }
+
+	// /* Else mark the midplane down */
+	// _handle_bad_cable(dim, ba_mp->coord_str, event.getState());
+
+	return;
+}
+
+
 static int _real_time_connect(void)
 {
 	int rc = SLURM_ERROR;
@@ -318,6 +375,8 @@ static void *_real_time(void *no_data)
 	rt_filter.setSwitches(true);
 	rt_filter.setBlocks(true);
 
+	rt_filter.setCables(true);
+
 	block_statuses.insert(Block::Free);
 	block_statuses.insert(Block::Booting);
 	block_statuses.insert(Block::Initialized);
@@ -325,8 +384,6 @@ static void *_real_time(void *no_data)
 	rt_filter.setBlockStatuses(&block_statuses);
 
  	// rt_filter.get().setMidplanes(true);
- 	// rt_filter.get().setCables(true);
-
 	rt_client_ptr->addListener(event_hand);
 
 	rc = _real_time_connect();
@@ -434,6 +491,13 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 			_handle_bad_switch(dim,
 					   ba_mp->coord_str,
 					   my_switch->getState());
+		else {
+			Cable::ConstPtr my_cable = my_switch->getCable();
+			if (my_cable->getState() != Hardware::Available)
+				_handle_bad_cable(dim,
+						  ba_mp->coord_str,
+						  my_switch->getState());
+		}
 	}
 }
 
