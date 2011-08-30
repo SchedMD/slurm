@@ -490,7 +490,6 @@ static void *_real_time(void *no_data)
 
 static void _do_block_poll(void)
 {
-#if defined HAVE_BG_FILES
 	bg_record_t *bg_record;
 	ListIterator itr;
 	int updated = 0;
@@ -534,7 +533,6 @@ static void _do_block_poll(void)
 	if (updated == 1)
 		last_bg_update = time(NULL);
 
-#endif
 }
 
 static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
