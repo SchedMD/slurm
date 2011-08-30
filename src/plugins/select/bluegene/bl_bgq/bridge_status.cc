@@ -576,22 +576,28 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 	}
 }
 
-static void _do_hardware_poll(void)
+static void _do_hardware_poll(int level, uint16_t *coords,
+			      ComputeHardware::ConstPtr bgqsys)
 {
-#if defined HAVE_BG_FILES
-	if (!ba_main_grid)
+	ba_mp_t *ba_mp;
+
+	if (!ba_main_grid || (level > SYSTEM_DIMENSIONS))
 		return;
 
-	ComputeHardware::ConstPtr bgq = getComputeHardware();
-
-	for (int a = 0; a < DIM_SIZE[A]; a++)
-		for (int x = 0; x < DIM_SIZE[X]; x++)
-			for (int y = 0; y < DIM_SIZE[Y]; y++)
-				for (int z = 0; z < DIM_SIZE[Z]; z++)
-					_handle_midplane_update(
-						bgq, &ba_main_grid[a][x][y][z]);
-#endif
+	if (level < SYSTEM_DIMENSIONS) {
+		for (coords[level] = 0;
+		     coords[level] < DIM_SIZE[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			_do_hardware_poll(level+1, coords, bgqsys);
+		}
+		return;
+	}
+	ba_mp = coord2ba_mp(coords);
+	if (ba_mp)
+		_handle_midplane_update(bgqsys, ba_mp);
 }
+
 static void *_poll(void *no_data)
 {
 	event_handler_t event_hand;
@@ -609,8 +615,11 @@ static void *_poll(void *no_data)
 		curr_time = time(NULL);
 		_do_block_poll();
 		/* only do every 30 seconds */
-		if ((curr_time - 30) >= last_ran)
-			_do_hardware_poll();
+		if ((curr_time - 30) >= last_ran) {
+			ComputeHardware::ConstPtr bgqsys = getComputeHardware();
+			uint16_t coords[SYSTEM_DIMENSIONS];
+			_do_hardware_poll(0, coords, bgqsys);
+		}
 
 		slurm_mutex_unlock(&rt_mutex);
 		last_ran = time(NULL);
