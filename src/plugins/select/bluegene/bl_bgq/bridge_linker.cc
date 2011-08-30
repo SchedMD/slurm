@@ -243,7 +243,7 @@ static int _block_wait_for_jobs(char *bg_block_id)
 			return SLURM_SUCCESS;
 
 		BOOST_FOREACH(const Job::ConstPtr& job_ptr, job_vec) {
-			debug("waiting on job %lu to finish on block %s",
+			debug("waiting on mmcs job %lu to finish on block %s",
 			      job_ptr->getId(), bg_block_id);
 		}
 		sleep(POLL_INTERVAL);
