@@ -114,6 +114,26 @@ static pthread_t poll_thread;
 static bgsched::realtime::Client *rt_client_ptr = NULL;
 pthread_mutex_t rt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static void _handle_bad_midplane(const char *mp_coords,
+				 EnumWrapper<Hardware::State> state)
+{
+	char bg_down_node[128];
+
+	assert(mp_coords);
+
+	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+		 bg_conf->slurm_node_prefix, mp_coords);
+
+	if (!node_already_down(bg_down_node)) {
+		error("Midplane %s, state went to %d, marking midplane down.",
+		      bg_down_node, state.toValue());
+		slurm_drain_nodes(
+			bg_down_node,
+			(char *)"select_bluegene: MMCS midplane not UP",
+			slurm_get_slurm_user_id());
+	}
+}
+
 static void _handle_bad_switch(int dim, const char *mp_coords,
 			       EnumWrapper<Hardware::State> state)
 {
@@ -244,7 +264,38 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	const MidplaneStateChangedEventInfo& event)
 {
-//	const char *midplane = event.getMidplaneId().c_str();
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	ba_mp_t *ba_mp;
+	int dim;
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	ba_mp = coord2ba_mp(coords);
+
+	if (!ba_mp) {
+		error("Midplane %s, state went from %d to %d, "
+		      "but is not in our system",
+		      event.getLocation().c_str(),
+		      event.getPreviousState(),
+		      event.getState());
+	}
+
+	if (event.getState() == Hardware::Available) {
+		/* Don't do anything, wait for admin to fix things,
+		 * just note things are better. */
+
+		info("Midplane %s(%s), has returned to service",
+		     event.getLocation().c_str(),
+		     ba_mp->coord_str);
+		return;
+	}
+
+	/* Else mark the midplane down */
+	_handle_bad_midplane(ba_mp->coord_str, event.getState());
+
+	return;
 
 }
 
@@ -375,6 +426,7 @@ static void *_real_time(void *no_data)
 	rt_filter.setSwitches(true);
 	rt_filter.setBlocks(true);
 
+	rt_filter.setMidplanes(true);
 	rt_filter.setCables(true);
 
 	block_statuses.insert(Block::Free);
@@ -383,7 +435,6 @@ static void *_real_time(void *no_data)
 	block_statuses.insert(Block::Terminating);
 	rt_filter.setBlockStatuses(&block_statuses);
 
- 	// rt_filter.get().setMidplanes(true);
 	rt_client_ptr->addListener(event_hand);
 
 	rc = _real_time_connect();
@@ -476,6 +527,12 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 	Midplane::ConstPtr mp_ptr = bgq->getMidplane(coords);
 	int i;
 	Dimension dim;
+
+	if (mp_ptr->getState() != Hardware::Available) {
+		_handle_bad_midplane(ba_mp->coord_str, mp_ptr->getState());
+		/* no reason to continue */
+		return;
+	}
 
 	for (i=0; i<16; i++) {
 		NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
