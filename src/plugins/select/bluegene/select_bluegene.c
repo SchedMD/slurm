@@ -336,48 +336,6 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 		fatal("Job state recovered incompatible with "
 		      "bluegene.conf. ionodes=%u",
 		      bg_conf->ionodes_per_mp);
-	/* j = 0; */
-	/* while (block_info->mp_inx[j] >= 0) { */
-	/* 	if (block_info->mp_inx[j+1] >= node_record_count) { */
-	/* 		fatal("Job state recovered incompatible with " */
-	/* 		      "bluegene.conf. mp=%u state=%d", */
-	/* 		      node_record_count, */
-	/* 		      block_info->mp_inx[j+1]); */
-	/* 	} */
-	/* 	bit_nset(mp_bitmap, */
-	/* 		 block_info->mp_inx[j], */
-	/* 		 block_info->mp_inx[j+1]); */
-	/* 	j += 2; */
-	/* } */
-
-	/* j = 0; */
-	/* while (block_info->ionode_inx[j] >= 0) { */
-	/* 	if (block_info->ionode_inx[j+1] */
-	/* 	    >= bg_conf->ionodes_per_mp) { */
-	/* 		fatal("Job state recovered incompatible with " */
-	/* 		      "bluegene.conf. ionodes=%u state=%d", */
-	/* 		      bg_conf->ionodes_per_mp, */
-	/* 		      block_info->ionode_inx[j+1]); */
-	/* 	} */
-	/* 	bit_nset(ionode_bitmap, */
-	/* 		 block_info->ionode_inx[j], */
-	/* 		 block_info->ionode_inx[j+1]); */
-	/* 	j += 2; */
-	/* } */
-
-	/* j = 0; */
-	/* while (block_info->mp_used_inx[j] >= 0) { */
-	/* 	if (block_info->mp_used_inx[j+1] >= node_record_count) { */
-	/* 		fatal("Job state recovered incompatible with " */
-	/* 		      "bluegene.conf. mp=%u state=%d", */
-	/* 		      node_record_count, */
-	/* 		      block_info->mp_used_inx[j+1]); */
-	/* 	} */
-	/* 	bit_nset(used_bitmap, */
-	/* 		 block_info->mp_used_inx[j], */
-	/* 		 block_info->mp_used_inx[j+1]); */
-	/* 	j += 2; */
-	/* } */
 
 	bg_record = xmalloc(sizeof(bg_record_t));
 	bg_record->magic = BLOCK_MAGIC;
