@@ -322,18 +322,19 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	used_bitmap = bit_alloc(node_record_count);
 	ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
 
-	if (bg_recover && (inx2bitstr(mp_bitmap, block_info->mp_inx) == -1))
-		fatal("Job state recovered incompatible with "
+	if (block_info->mp_inx
+	    && inx2bitstr(mp_bitmap, block_info->mp_inx) == -1)
+		error("Job state recovered incompatible with "
 		      "bluegene.conf. mp=%u",
 		      node_record_count);
-	if (bg_recover
-	    && (inx2bitstr(used_bitmap, block_info->mp_used_inx) == -1))
-		fatal("Job state recovered incompatible with "
+	if (block_info->mp_used_inx
+	    && inx2bitstr(used_bitmap, block_info->mp_used_inx) == -1)
+		error("Job state recovered incompatible with "
 		      "bluegene.conf. used=%u",
 		      node_record_count);
-	if (bg_recover
-	    && (inx2bitstr(ionode_bitmap, block_info->ionode_inx) == -1))
-		fatal("Job state recovered incompatible with "
+	if (block_info->ionode_inx
+	    && inx2bitstr(ionode_bitmap, block_info->ionode_inx) == -1)
+		error("Job state recovered incompatible with "
 		      "bluegene.conf. ionodes=%u",
 		      bg_conf->ionodes_per_mp);
 
@@ -715,6 +716,18 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 		if (_unpack_block_ext(bg_record, buffer, protocol_version)
 		    != SLURM_SUCCESS) {
 			goto unpack_error;
+		}
+
+		/* This means the block here wasn't able to be
+		   processed correctly, so don't add.
+		*/
+		if (!bg_record->mp_count) {
+			error("block %s(%s) can't be made in the current "
+			      "system, but was around in the previous one.",
+			      bg_record->bg_block_id, bg_record->mp_str);
+			list_destroy(results);
+			destroy_bg_record(bg_record);
+			continue;
 		}
 
 		if ((bg_conf->layout_mode == LAYOUT_OVERLAP)
