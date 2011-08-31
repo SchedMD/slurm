@@ -849,7 +849,7 @@ static int _validate_config_blocks(List curr_block_list,
 		return SLURM_ERROR;
 
 #ifdef HAVE_BG_FILES
-	/* Since we just checked all the blocks from state aganst that
+	/* Since we just checked all the blocks from state against that
 	   in the database we can now check to see if there were once
 	   blocks that are now gone from the database and remove them
 	   from the list.
