@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     if you were emulating a system.
  -- Fix sview for calling a cray system from a non-cray system to get the
     correct geometry of the system.
+ -- BLUEGENE - fix to correctly import pervious version of block state file.
 
 * Changes in SLURM 2.3.0.rc2
 ============================

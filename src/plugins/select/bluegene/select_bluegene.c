@@ -669,6 +669,16 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	xfree(ver_str);
 	safe_unpack32(&record_count, buffer);
 
+	/* In older versions of the code we stored things in a
+	   block_info_msg_t.  This isn't the case anymore so in the
+	   newer code we don't store the timestamp since it isn't
+	   really needed.
+	*/
+	if (protocol_version <= SLURM_2_2_PROTOCOL_VERSION) {
+		time_t last_save;
+		safe_unpack_time(&last_save, buffer);
+	}
+
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(true);
 
