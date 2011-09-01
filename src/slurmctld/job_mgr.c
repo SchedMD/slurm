@@ -716,7 +716,6 @@ extern int load_last_job_id( void )
 		return EFAULT;
 	}
 	xfree(ver_str);
-	debug3("Version string in job_state header is %s", ver_str);
 
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32( &job_id_sequence, buffer);
