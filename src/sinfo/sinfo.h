@@ -1,7 +1,5 @@
 /****************************************************************************\
  *  sinfo.h - definitions used for sinfo data functions
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -107,6 +105,7 @@ typedef struct {
 	time_t reason_time;
 	uint32_t reason_uid;
 
+	hostlist_t hostnames;
 	hostlist_t nodes;
 	hostlist_t ionodes;
 
@@ -129,6 +128,7 @@ struct sinfo_match_flags {
 	bool features_flag;
 	bool groups_flag;
 	bool gres_flag;
+	bool hostnames_flag;
 	bool job_size_flag;
 	bool default_time_flag;
 	bool max_time_flag;

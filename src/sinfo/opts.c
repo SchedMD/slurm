@@ -594,6 +594,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'n') {
+			params.match_flags.hostnames_flag = true;
+			format_add_node_hostnames( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'N') {
 			format_add_node_list( params.format_list,
 					field_size,

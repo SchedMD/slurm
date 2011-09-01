@@ -575,6 +575,28 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_node_hostnames(sinfo_data_t * sinfo_data, int width,
+			  bool right_justify, char *suffix)
+{
+	if (params.node_field_flag)
+		width = params.node_field_size;
+
+	if (sinfo_data) {
+		char *tmp = NULL;
+		tmp = hostlist_ranged_string_xmalloc(
+				sinfo_data->hostnames);
+		_print_str(tmp, width, right_justify, true);
+		xfree(tmp);
+	} else {
+		char *title = "HOSTNAMES";
+		_print_str(title, width, right_justify, false);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 		   bool right_justify, char *suffix)
 {

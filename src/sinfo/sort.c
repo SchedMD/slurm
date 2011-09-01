@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2011 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>,
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -59,6 +59,7 @@ static int _sort_by_threads(void *void1, void *void2);
 static int _sort_by_disk(void *void1, void *void2);
 static int _sort_by_features(void *void1, void *void2);
 static int _sort_by_groups(void *void1, void *void2);
+static int _sort_by_hostnames(void *void1, void *void2);
 static int _sort_by_job_size(void *void1, void *void2);
 static int _sort_by_max_time(void *void1, void *void2);
 static int _sort_by_memory(void *void1, void *void2);
@@ -127,6 +128,8 @@ void sort_sinfo_list(List sinfo_list)
 				list_sort(sinfo_list, _sort_by_memory);
 		else if (params.sort[i] == 'M')
 				list_sort(sinfo_list, _sort_by_preempt_mode);
+		else if (params.sort[i] == 'n')
+				list_sort(sinfo_list, _sort_by_hostnames);
 		else if (params.sort[i] == 'N')
 				list_sort(sinfo_list, _sort_by_node_list);
 		else if (params.sort[i] == 'p')
@@ -298,6 +301,61 @@ static int _sort_by_groups(void *void1, void *void2)
 
 	if (reverse_order)
 		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_hostnames(void *void1, void *void2)
+{
+	int diff = 0;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+	char *val1, *val2;
+#if	PURE_ALPHA_SORT == 0
+	int inx;
+#endif
+
+	val1 = hostlist_shift(sinfo1->hostnames);
+	if (val1) {
+		hostlist_push_host(sinfo1->hostnames, val1);
+		hostlist_sort(sinfo1->hostnames);
+	} else
+		val1 = "";
+
+	val2 = hostlist_shift(sinfo2->hostnames);
+	if (val2) {
+		hostlist_push_host(sinfo2->hostnames, val2);
+		hostlist_sort(sinfo2->hostnames);
+	} else
+		val2 = "";
+
+#if	PURE_ALPHA_SORT
+	diff = strcmp(val1, val2);
+#else
+	for (inx=0; ; inx++) {
+		if (val1[inx] == val2[inx]) {
+			if (val1[inx] == '\0')
+				break;
+			continue;
+		}
+		if ((isdigit((int)val1[inx])) &&
+		    (isdigit((int)val2[inx]))) {
+			int num1, num2;
+			num1 = atoi(val1+inx);
+			num2 = atoi(val2+inx);
+			diff = num1 - num2;
+		} else
+			diff = strcmp(val1, val2);
+		break;
+	}
+#endif
+	if (strlen(val1))
+		free(val1);
+	if (strlen(val2))
+		free(val2);
+
+	if (reverse_order)
+		diff = -diff;
+
 	return diff;
 }
 

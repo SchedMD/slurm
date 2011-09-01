@@ -93,6 +93,8 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_gres)
 #define format_add_memory(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_memory)
+#define format_add_node_hostnames(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_node_hostnames)
 #define format_add_node_list(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_node_list)
 #define format_add_nodes(list,wid,right,suffix) \
@@ -166,6 +168,8 @@ int _print_gres(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_memory(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
+int _print_node_hostnames(sinfo_data_t * sinfo_data, int width,
+			  bool right_justify, char *suffix);
 int _print_node_list(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
