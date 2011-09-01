@@ -240,6 +240,12 @@ end_it:
 		debug("\n\n");
 		while ((found_record = (bg_record_t *) list_next(itr))
 		       != NULL) {
+			/* If we are deleting old blocks they will
+			   have been added to the main list, so we
+			   want to skip over them.
+			*/
+			if (found_record->free_cnt)
+				continue;
 			print_bg_record(found_record);
 		}
 		list_iterator_destroy(itr);
@@ -343,6 +349,13 @@ extern int create_full_system_block(List bg_found_block_list)
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = (bg_record_t *) list_next(itr))
 		       != NULL) {
+			/* If we are deleting old blocks they will
+			   have been added to the main list, so we
+			   want to skip over them.
+			*/
+			if (bg_record->free_cnt)
+				continue;
+
 			if (!strcmp(name, bg_record->mp_str)) {
 				xfree(name);
 				list_iterator_destroy(itr);
