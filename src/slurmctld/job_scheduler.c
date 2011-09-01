@@ -88,6 +88,7 @@ static bool	_scan_depend(List dependency_list, uint32_t job_id);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
 
+static int	save_last_part_update = 0;
 
 /*
  * _build_user_job_list - build list of jobs for a given user
@@ -447,6 +448,21 @@ extern int schedule(uint32_t job_limit)
 			       job_ptr->priority);
 			continue;
 		}
+
+		/* If a patition update has occurred, then do a limit check. */
+		if (save_last_part_update != last_part_update) {
+			int fail_reason = job_limits_check(&job_ptr);
+			if (fail_reason != WAIT_NO_REASON) {
+				job_ptr->state_reason = fail_reason;
+				job_ptr->priority = 1;
+				continue;
+			}
+		} else if ((job_ptr->state_reason == WAIT_PART_TIME_LIMIT) ||
+			   (job_ptr->state_reason == WAIT_PART_NODE_LIMIT)) {
+				job_ptr->start_time = 0;
+				job_ptr->priority = 1;
+				continue;
+		}
 		if (job_ptr->part_ptr != part_ptr) {
 			/* Cycle through partitions usable for this job */
 			job_ptr->part_ptr = part_ptr;
@@ -614,6 +630,7 @@ extern int schedule(uint32_t job_limit)
 		}
 	}
 
+	save_last_part_update = last_part_update;
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);

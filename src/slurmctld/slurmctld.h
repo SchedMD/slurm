@@ -698,6 +698,13 @@ extern struct job_record * create_job_record (int *error_code);
 extern struct part_record *create_part_record (void);
 
 /*
+ * job_limits_check - check the limits specified for the job.
+ * IN job_ptr - pointer to job table entry.
+ * RET WAIT_NO_REASON on success, fail status otherwise.
+ */
+extern int job_limits_check(struct job_record **job_pptr);
+
+/*
  * delete_job_details - delete a job's detail record and clear it's pointer
  *	this information can be deleted as soon as the job is allocated
  *	resources and running (could need to restart batch job)
