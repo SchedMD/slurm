@@ -87,6 +87,12 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	if (bg_lists->main) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = list_next(itr))) {
+			/* If we are deleting old blocks they will
+			   have been added to the main list, so we
+			   want to skip over them.
+			*/
+			if (bg_record->free_cnt)
+				continue;
 			if (bg_record->mp_count > 0
 			    && !bg_record->full_block
 			    && bg_record->cpu_cnt >= bg_conf->cpus_per_mp) {
