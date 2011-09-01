@@ -7,8 +7,9 @@
  *
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
+ *  Copyright (C) 2011 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <auble1@llnl.gov> et. al.
+ *  Written by Danny Auble <da@schedmd.com> et. al.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
