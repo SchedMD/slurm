@@ -605,6 +605,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'o') {
+			params.match_flags.node_addr_flag = true;
+			format_add_node_address( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'p') {
 			params.match_flags.priority_flag = true;
 			format_add_priority( params.format_list,

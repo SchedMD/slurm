@@ -64,6 +64,7 @@ static int _sort_by_job_size(void *void1, void *void2);
 static int _sort_by_max_time(void *void1, void *void2);
 static int _sort_by_memory(void *void1, void *void2);
 static int _sort_by_node_list(void *void1, void *void2);
+static int _sort_by_node_addr(void *void1, void *void2);
 static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
@@ -132,6 +133,8 @@ void sort_sinfo_list(List sinfo_list)
 				list_sort(sinfo_list, _sort_by_hostnames);
 		else if (params.sort[i] == 'N')
 				list_sort(sinfo_list, _sort_by_node_list);
+		else if (params.sort[i] == 'o')
+				list_sort(sinfo_list, _sort_by_node_addr);
 		else if (params.sort[i] == 'p')
 				list_sort(sinfo_list, _sort_by_priority);
 		else if (params.sort[i] == 'P')
@@ -301,6 +304,61 @@ static int _sort_by_groups(void *void1, void *void2)
 
 	if (reverse_order)
 		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_node_addr(void *void1, void *void2)
+{
+	int diff = 0;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+	char *val1, *val2;
+#if	PURE_ALPHA_SORT == 0
+	int inx;
+#endif
+
+	val1 = hostlist_shift(sinfo1->node_addr);
+	if (val1) {
+		hostlist_push_host(sinfo1->node_addr, val1);
+		hostlist_sort(sinfo1->node_addr);
+	} else
+		val1 = "";
+
+	val2 = hostlist_shift(sinfo2->node_addr);
+	if (val2) {
+		hostlist_push_host(sinfo2->node_addr, val2);
+		hostlist_sort(sinfo2->node_addr);
+	} else
+		val2 = "";
+
+#if	PURE_ALPHA_SORT
+	diff = strcmp(val1, val2);
+#else
+	for (inx=0; ; inx++) {
+		if (val1[inx] == val2[inx]) {
+			if (val1[inx] == '\0')
+				break;
+			continue;
+		}
+		if ((isdigit((int)val1[inx])) &&
+		    (isdigit((int)val2[inx]))) {
+			int num1, num2;
+			num1 = atoi(val1+inx);
+			num2 = atoi(val2+inx);
+			diff = num1 - num2;
+		} else
+			diff = strcmp(val1, val2);
+		break;
+	}
+#endif
+	if (strlen(val1))
+		free(val1);
+	if (strlen(val2))
+		free(val2);
+
+	if (reverse_order)
+		diff = -diff;
+
 	return diff;
 }
 

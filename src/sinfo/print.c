@@ -550,6 +550,25 @@ int _print_memory(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_node_address(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	if (sinfo_data) {
+		char *tmp = NULL;
+		tmp = hostlist_ranged_string_xmalloc(
+				sinfo_data->node_addr);
+		_print_str(tmp, width, right_justify, true);
+		xfree(tmp);
+	} else {
+		char *title = "NODE_ADDR";
+		_print_str(title, width, right_justify, false);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_node_list(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {

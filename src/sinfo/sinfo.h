@@ -106,6 +106,7 @@ typedef struct {
 	uint32_t reason_uid;
 
 	hostlist_t hostnames;
+	hostlist_t node_addr;
 	hostlist_t nodes;
 	hostlist_t ionodes;
 
@@ -133,6 +134,7 @@ struct sinfo_match_flags {
 	bool default_time_flag;
 	bool max_time_flag;
 	bool memory_flag;
+	bool node_addr_flag;
 	bool partition_flag;
 	bool preempt_mode_flag;
 	bool priority_flag;

@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2011 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -499,7 +499,8 @@ static void _sort_hostlist(List sinfo_list)
 
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
-	if (params.match_flags.hostnames_flag)
+	if (params.match_flags.hostnames_flag ||
+	    params.match_flags.node_addr_flag)
 		return false;
 
 	if (sinfo_ptr->nodes &&
@@ -703,7 +704,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			sinfo_ptr->max_weight = node_ptr->weight;
 	}
 
-	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
+	hostlist_push(sinfo_ptr->nodes,     node_ptr->name);
+	hostlist_push(sinfo_ptr->node_addr, node_ptr->node_addr);
 	hostlist_push(sinfo_ptr->hostnames, node_ptr->node_hostname);
 
 	total_cpus = node_ptr->cpus;
@@ -910,7 +912,8 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 
 	sinfo_ptr->part_info = part_ptr;
 	sinfo_ptr->part_inx = part_inx;
-	sinfo_ptr->nodes = hostlist_create("");
+	sinfo_ptr->nodes     = hostlist_create("");
+	sinfo_ptr->node_addr = hostlist_create("");
 	sinfo_ptr->hostnames = hostlist_create("");
 
 	if (node_ptr)
@@ -924,6 +927,7 @@ static void _sinfo_list_delete(void *data)
 	sinfo_data_t *sinfo_ptr = data;
 
 	hostlist_destroy(sinfo_ptr->nodes);
+	hostlist_destroy(sinfo_ptr->node_addr);
 	hostlist_destroy(sinfo_ptr->hostnames);
 	xfree(sinfo_ptr);
 }

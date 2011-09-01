@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2011 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -93,6 +93,8 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_gres)
 #define format_add_memory(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_memory)
+#define format_add_node_address(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_node_address)
 #define format_add_node_hostnames(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_node_hostnames)
 #define format_add_node_list(list,wid,right,suffix) \
@@ -170,6 +172,8 @@ int _print_memory(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_node_hostnames(sinfo_data_t * sinfo_data, int width,
 			  bool right_justify, char *suffix);
+int _print_node_address(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
 int _print_node_list(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_nodes_t(sinfo_data_t * sinfo_data, int width,

@@ -14,7 +14,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix to correctly import pervious version of block state file.
  -- BLUEGENE - handle loading better when doing a clean start with static
     blocks.
- -- Add sinfo format and sort option "%n" for node_hostname.
+ -- Add sinfo format and sort option "%n" for NodeHostName and "%o" for
+    NodeAddr.
 
 * Changes in SLURM 2.3.0.rc2
 ============================
