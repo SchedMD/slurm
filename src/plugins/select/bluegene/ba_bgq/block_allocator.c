@@ -1002,7 +1002,7 @@ try_again:
 					    &jobinfo->units_used,
 					    geo_table, &cnt,
 					    ba_mp_geo_system, NULL,
-					    start_loc, &scan_offset)
+					    start_loc, &scan_offset, true)
 			    != SLURM_SUCCESS) {
 				geo_table = geo_table->next_ptr;
 				continue;

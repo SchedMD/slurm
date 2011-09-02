@@ -170,6 +170,8 @@ typedef struct {
 	int elem_count;			/* length of arrays set_count_array
 					 * and set_bits_array */
 	int *gap_count;			/* number of gaps in this array */
+	bool *has_wrap;			/* true if uses torus to wrap alloc,
+					 * implies gap_count <= 1 */
 	int *set_count_array;		/* number of set bits in this array */
 	bitstr_t **set_bits_array;	/* bitmap rows to use */
 	uint16_t *start_coord;		/* array of lowest coord in block */
@@ -373,13 +375,16 @@ extern char *ba_node_map_ranged_hostlist(bitstr_t *node_bitmap,
  *		allocation selected by the algorithm is not acceptable, call
  *		the function repeatedly with the previous output value of
  *		scan_offset
+ * IN deny_wrap - If set then do not permit the allocation to wrap (i.e. do
+ *		not treat as having a torus interconnect)
  * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
  */
 extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			   bitstr_t **alloc_node_bitmap,
 			   ba_geo_table_t *geo_req, int *attempt_cnt,
 			   ba_geo_system_t *my_geo_system, uint16_t *deny_pass,
-			   uint16_t *start_pos, int *scan_offset);
+			   uint16_t *start_pos, int *scan_offset,
+			   bool deny_wrap);
 
 /*
  * Used to set all midplanes in a special used state except the ones

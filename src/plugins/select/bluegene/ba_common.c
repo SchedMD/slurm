@@ -222,6 +222,7 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 	combos = &geo_combos[size-1];
 	combos->elem_count = (1 << size) - 1;
 	combos->gap_count       = xmalloc(sizeof(int) * combos->elem_count);
+	combos->has_wrap        = xmalloc(sizeof(bool) * combos->elem_count);
 	combos->set_count_array = xmalloc(sizeof(int) * combos->elem_count);
 	combos->set_bits_array  = xmalloc(sizeof(bitstr_t *) *
 					  combos->elem_count);
@@ -229,6 +230,7 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 	combos->block_size  = xmalloc(sizeof(uint16_t *) * combos->elem_count);
 
 	for (i = 1; i <= combos->elem_count; i++) {
+		bool some_bit_set = false, some_gap_set = false;
 		combos->set_bits_array[i-1] = bit_alloc(size);
 		if (combos->set_bits_array[i-1] == NULL)
 			fatal("bit_alloc: malloc failure");
@@ -244,6 +246,8 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 					gap_count++;
 					gap_start = j;
 				}
+				if (some_bit_set)  /* ignore leading gap */
+					some_gap_set = true;
 				continue;
 			}
 			if (gap_len > max_gap_len) {
@@ -253,6 +257,9 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 			gap_len = 0;
 			bit_set(combos->set_bits_array[i-1], j);
 			combos->set_count_array[i-1]++;
+			if (some_bit_set && some_gap_set)
+				combos->has_wrap[i-1] = true;
+			some_bit_set = true;
 		}
 		if (gap_len) {	/* test for wrap in gap */
 			for (j = 0; j < size; j++) {
@@ -284,10 +291,10 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 		char buf[64];
 		bit_fmt(buf, sizeof(buf), combos->set_bits_array[i]);
 		info("cnt:%d bits:%10s start_coord:%u block_size:%u "
-		     "gap_count:%d",
+		     "gap_count:%d has_wrap:%d",
 		     combos->set_count_array[i], buf,
 		     combos->start_coord[i], combos->block_size[i],
-		     combos->gap_count[i]);
+		     combos->gap_count[i], (int)combos->has_wrap[i]);
 	}
 	info("\n\n");
 #endif
@@ -307,6 +314,7 @@ static void _free_geo_bitmap_arrays(void)
 				bit_free(combos->set_bits_array[j]);
 		}
 		xfree(combos->gap_count);
+		xfree(combos->has_wrap);
 		xfree(combos->set_count_array);
 		xfree(combos->set_bits_array);
 		xfree(combos->start_coord);
@@ -318,11 +326,12 @@ static void _free_geo_bitmap_arrays(void)
  * that contains req_bit_cnt elements to use. Return -1 if none found. */
 static int _find_next_geo_inx(ba_geo_combos_t *geo_combo_ptr,
 			      int last_inx, uint16_t req_bit_cnt,
-			      bool deny_pass)
+			      bool deny_pass, bool deny_wrap)
 {
 	while (++last_inx < geo_combo_ptr->elem_count) {
 		if ((req_bit_cnt == geo_combo_ptr->set_count_array[last_inx])&&
-		    (!deny_pass || (geo_combo_ptr->gap_count[last_inx] < 2)))
+		    (!deny_pass || (geo_combo_ptr->gap_count[last_inx] < 2)) &&
+		    (!deny_wrap || !geo_combo_ptr->has_wrap[last_inx]))
 			return last_inx;
 	}
 	return -1;
@@ -378,7 +387,8 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
 			  bitstr_t **alloc_node_bitmap,
 			  ba_geo_table_t *geo_req, int *attempt_cnt,
 			  ba_geo_system_t *my_geo_system, uint16_t *deny_pass,
-			  uint16_t *start_pos, int *scan_offset)
+			  uint16_t *start_pos, int *scan_offset,
+			  bool deny_wrap)
 {
 	int i, current_offset = -1;
 	ba_geo_combos_t *geo_array[my_geo_system->dim_count];
@@ -399,7 +409,8 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
 		geo_array[i] = &geo_combos[my_geo_system->dim_size[i] - 1];
 		geo_array_inx[i] = _find_next_geo_inx(geo_array[i], -1,
 						      geo_req->geometry[i],
-						      dim_deny_pass);
+						      dim_deny_pass,
+						      deny_wrap);
 		if (geo_array_inx[i] == -1) {
 			error("Request to allocate %u nodes in dimension %d, "
 			      "which only has %d elements",
@@ -431,12 +442,14 @@ static int _geo_test_maps(bitstr_t *node_bitmap,
 			geo_array_inx[i] = _find_next_geo_inx(geo_array[i],
 							geo_array_inx[i],
 						     	geo_req->geometry[i],
-						     	dim_deny_pass);
+						     	dim_deny_pass,
+						     	deny_wrap);
 			if (geo_array_inx[i] != -1)
 				break;
 			geo_array_inx[i] = _find_next_geo_inx(geo_array[i], -1,
 							geo_req->geometry[i],
-						     	dim_deny_pass);
+						     	dim_deny_pass,
+						     	deny_wrap);
 		}
 		if (i >= my_geo_system->dim_count)
 			return SLURM_ERROR;
@@ -1359,13 +1372,16 @@ extern char *ba_node_map_ranged_hostlist(bitstr_t *node_bitmap,
  *		allocation selected by the algorithm is not acceptable, call
  *		the function repeatedly with the previous output value of
  *		scan_offset
+ * IN deny_wrap - If set then do not permit the allocation to wrap (i.e. do
+ *		not treat as having a torus interconnect)
  * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
  */
 extern int ba_geo_test_all(bitstr_t *node_bitmap,
 			   bitstr_t **alloc_node_bitmap,
 			   ba_geo_table_t *geo_req, int *attempt_cnt,
 			   ba_geo_system_t *my_geo_system, uint16_t *deny_pass,
-			   uint16_t *start_pos, int *scan_offset)
+			   uint16_t *start_pos, int *scan_offset,
+			   bool deny_wrap)
 {
 	int rc;
 
@@ -1377,7 +1393,7 @@ extern int ba_geo_test_all(bitstr_t *node_bitmap,
 	*attempt_cnt = 0;
 	rc = _geo_test_maps(node_bitmap, alloc_node_bitmap, geo_req,
 			    attempt_cnt, my_geo_system, deny_pass,
-			    start_pos, scan_offset);
+			    start_pos, scan_offset, deny_wrap);
 
 	return rc;
 }
