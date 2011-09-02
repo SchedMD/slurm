@@ -7652,23 +7652,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
 		} else if (IS_JOB_PENDING(job_ptr)) {
-			if (job_ptr->license_list)
-				list_destroy(job_ptr->license_list);
+			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
+			info("sched: update_job: changing licenses from '%s' "
+			     "to '%s' for pending job %u",
+			     job_ptr->licenses, job_specs->licenses,
+			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = job_specs->licenses;
 			job_specs->licenses = NULL; /* nothing to free */
-			info("sched: update_job: setting licenses to %s for "
-			     "job %u", job_ptr->licenses, job_ptr->job_id);
-		} else if (IS_JOB_RUNNING(job_ptr) && authorized) {
+		} else if (IS_JOB_RUNNING(job_ptr) &&
+			   (authorized || (license_list == NULL))) {
 			/* NOTE: This can result in oversubscription of
 			 * licenses */
 			license_job_return(job_ptr);
-			if (job_ptr->license_list)
-				list_destroy(job_ptr->license_list);
+			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
-			info("sched: update_job: changing licenses from %s to "
-			     "%s for  running job %u",
+			info("sched: update_job: changing licenses from '%s' "
+			     "to '%s' for running job %u",
 			     job_ptr->licenses, job_specs->licenses,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
@@ -7681,7 +7682,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: could not change licenses "
 			     "for job %u", job_ptr->job_id);
 			error_code = ESLURM_DISABLED;
-			list_destroy(license_list);
+			FREE_NULL_LIST(license_list);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)

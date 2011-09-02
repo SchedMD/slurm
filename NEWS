@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     NodeAddr.
  -- If a job is deferred due to partition limits, then re-test those limits
     after a partition is modified. Patch from Don Lipari.
+ -- Fix bug which would crash slurmcld if job's owner (not root) tries to clear
+    a job's licenses by setting value to "".
 
 * Changes in SLURM 2.3.0.rc2
 ============================
