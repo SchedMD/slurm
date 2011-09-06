@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     after a partition is modified. Patch from Don Lipari.
  -- Fix bug which would crash slurmcld if job's owner (not root) tries to clear
     a job's licenses by setting value to "".
+ -- Cosmetic fix for printing out debug info in the priority plugin.
 
 * Changes in SLURM 2.3.0.rc2
 ============================

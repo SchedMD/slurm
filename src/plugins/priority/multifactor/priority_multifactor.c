@@ -550,7 +550,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	/* figure out the priority */
 	_get_priority_factors(start_time, job_ptr);
 	memcpy(&pre_factors, job_ptr->prio_factors,
-	       sizeof(job_ptr->prio_factors));
+	       sizeof(priority_factors_object_t));
 
 	job_ptr->prio_factors->priority_age *= (double)weight_age;
 	job_ptr->prio_factors->priority_fs *= (double)weight_fs;
