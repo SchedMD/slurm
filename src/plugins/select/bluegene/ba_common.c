@@ -1372,8 +1372,8 @@ extern char *ba_node_map_ranged_hostlist(bitstr_t *node_bitmap,
  *		allocation selected by the algorithm is not acceptable, call
  *		the function repeatedly with the previous output value of
  *		scan_offset
- * IN deny_wrap - If set then do not permit the allocation to wrap (i.e. do
- *		not treat as having a torus interconnect)
+ * IN deny_wrap - If set then do not permit the allocation to wrap (i.e. in
+ *		a dimension with a count of 4, 3 does not connect to 0)
  * RET - SLURM_SUCCESS if allocation can be made, otherwise SLURM_ERROR
  */
 extern int ba_geo_test_all(bitstr_t *node_bitmap,
