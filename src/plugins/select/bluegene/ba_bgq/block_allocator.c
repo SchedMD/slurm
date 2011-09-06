@@ -998,6 +998,12 @@ try_again:
 			int scan_offset = 0;
 			uint16_t start_loc[ba_mp_geo_system->dim_count];
 
+			/* FIXME: In the current IBM API it doesn't
+			   allow wrapping inside the midplane.  In the
+			   future this will change.  When that happens
+			   there will need to be a flag that is sent
+			   here instead of always true.
+			*/
 			if (ba_geo_test_all(ba_mp->cnode_bitmap,
 					    &jobinfo->units_used,
 					    geo_table, &cnt,
