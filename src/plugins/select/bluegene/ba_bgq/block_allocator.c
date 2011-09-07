@@ -536,16 +536,9 @@ extern int check_and_set_mp_list(List mps)
 
 	itr = list_iterator_create(mps);
 	while ((ba_mp = list_next(itr))) {
-		/* info("checking %c%c%c", */
-/* 		     ba_mp->coord[X],  */
-/* 		     ba_mp->coord[Y], */
-/* 		     ba_mp->coord[Z]); */
+		/* info("checking %s", ba_mp->coord_str);  */
 
-		curr_ba_mp = &ba_main_grid
-			[ba_mp->coord[A]]
-			[ba_mp->coord[X]]
-			[ba_mp->coord[Y]]
-			[ba_mp->coord[Z]];
+		curr_ba_mp = coord2ba_mp(ba_mp->coord);
 
 		if (ba_mp->used && curr_ba_mp->used) {
 			/* Only error if the midplane isn't already
