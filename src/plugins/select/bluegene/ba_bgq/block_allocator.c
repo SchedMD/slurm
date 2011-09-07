@@ -428,7 +428,6 @@ extern int allocate_block(select_ba_request_t* ba_request, List results)
 	return 0;
 }
 
-
 /*
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
