@@ -99,7 +99,7 @@ BridgeAPIVerbose=0
 #   will be based upon the NodeName defined in slurm.conf.
 ###############################################################################
 # LEAVE NEXT LINE AS A COMMENT, Full-system bgblock, implicitly created
-# BP=[000x333] Type=TORUS         # 4x4x4 = 64 midplanes
+# BPs=[000x333] Type=TORUS         # 4x4x4 = 64 midplanes
 ###############################################################################
 # smap bgblock layout here:
 BPs=[000x133] Type=TORUS          # 2x4x4 = 32
