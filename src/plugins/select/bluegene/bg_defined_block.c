@@ -319,16 +319,13 @@ extern int create_full_system_block(List bg_found_block_list)
 		start_char[i] = alpha_num[0];
 	}
 
-	i = (10+strlen(bg_conf->slurm_node_prefix));
-	name = xmalloc(i);
-
 	if (!larger)
-		snprintf(name, i, "%s%s",
-			 bg_conf->slurm_node_prefix, start_char);
+		name = xstrdup_printf("%s%s",
+				      bg_conf->slurm_node_prefix, start_char);
 	else
-		snprintf(name, i, "%s[%sx%s]",
-			 bg_conf->slurm_node_prefix, start_char, geo_char);
-
+		name = xstrdup_printf("%s[%sx%s]",
+				      bg_conf->slurm_node_prefix,
+				      start_char, geo_char);
 
 	if (bg_found_block_list) {
 		itr = list_iterator_create(bg_found_block_list);

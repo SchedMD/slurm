@@ -24,6 +24,7 @@ documents those changes that are of interest to users and admins.
  -- In sview when switching from a bluegene machine to a regular linux cluster
     and vice versa the node->base partition lists will be displayed if setup
     in your .slurm/sviewrc file.
+ -- BLUEGENE - Fix for creating full system static block on a BGQ system.
 
 * Changes in SLURM 2.3.0.rc2
 ============================
