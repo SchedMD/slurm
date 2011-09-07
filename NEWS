@@ -21,6 +21,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug which would crash slurmcld if job's owner (not root) tries to clear
     a job's licenses by setting value to "".
  -- Cosmetic fix for printing out debug info in the priority plugin.
+ -- In sview when switching from a bluegene machine to a regular linux cluster
+    and vice versa the node->base partition lists will be displayed if setup
+    in your .slurm/sviewrc file.
 
 * Changes in SLURM 2.3.0.rc2
 ============================
