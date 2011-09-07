@@ -136,13 +136,16 @@ pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
 
 	if ((auth != PAM_SUCCESS) && (!opts.enable_silence))
 		_send_denial_msg(pamh, &opts, user, uid);
+
+	/*
+	 *  Generate an entry to the system log if access was
+	 *   denied (!PAM_SUCCESS) or disable_sys_info is not set
+	 */
 	if ((auth != PAM_SUCCESS) || (!opts.disable_sys_info)) {
 		_log_msg(LOG_INFO, "access %s for user %s (uid=%d)",
 			 (auth == PAM_SUCCESS) ? "granted" : "denied",
 			 user, uid);
 	}
-	_log_msg(LOG_INFO, "access %s for user %s (uid=%d)",
-		 (auth == PAM_SUCCESS) ? "granted" : "denied", user, uid);
 
 	return(auth);
 }
