@@ -241,8 +241,8 @@
 	</tr>
 	<tr>
 	  <td width="15%">&nbsp;Session #7</td>
-	  <td width="25%">&nbsp;Dr. Matthijs van Leeuwen (Bright Computing)</td>
-	  <td width="45%">&nbsp;Integration of SLURM with Bright Cluster Manager</td>
+	  <td width="25%">&nbsp;Robert Stober, Sr. (Bright Computing)</td>
+	  <td width="45%">&nbsp;Bright Cluster Manager & SLURM: Benefits of Seamless Integration</td>
 	</tr>
 	<tr>
 	  <td width="15%">&nbsp;Session #8</td>
@@ -408,12 +408,21 @@
 	in a Grid architecture.
 
 	<h2>Session #7</h2>
-	Integration of SLURM with Bright Cluster Manager<br>
-	Dr. Matthijs van Leeuwen (Bright Computing)<br><br>
-	The integration of SLURM and the
-	<a href="http://www.brightcomputing.com/Linux-Cluster-Workload-Management.php">
-	Bright Cluster Manager</a>
-	for a complete cluster management solution will be described.
+	Bright Cluster Manager & SLURM: Benefits of Seamless Integration<br>
+	Robert Stober, Sr. (Bright Computing)<br><br>
+	Bright Cluster Manager, tightly integrated with SLURM, simplifies HPC
+	cluster installation and management while boosting system throughput. Bright
+	automatically installs, configures and deploys SLURM so that clusters are
+	ready to use in minutes rather than days. Bright provides extensive and
+	extensible monitoring and management through its intuitive Bright Cluster
+	Manager GUI, powerful cluster management shell, and customizable web-based
+	user portal.
+	Additional integration benefits include sampling, analysis and visualization
+	of all key SLURM metrics from within the Bright GUI, automatic head node
+	failover, and extensive pre-job health checking capability. Regarding the
+	latter, say good-bye to the black hole node syndrome: Bright plus SLURM
+	effectively prevent this productivity-killing problem by identifying and
+	sidelining problematic nodes before the job is run.
 
 	<h2>Session #8</h2>
 	Proposed Design for Job Step Management in User Space<br>
