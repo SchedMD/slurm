@@ -3981,6 +3981,19 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 		return;
 	}
 
+	/*
+	 * If slurmctld_conf.sched_logfile is NULL, then this operation
+	 *  will fail, since there is no sched logfile for which to alter
+	 *  the log level. (Calling sched_log_alter with a NULL filename
+	 *  is likely to cause a segfault at the next sched log call)
+	 *  So just give up and return "Operation Disabled"
+	 */
+	if (slurmctld_conf.sched_logfile == NULL) {
+		error("set scheduler log level failed: no log file!");
+		slurm_send_rc_msg (msg, ESLURM_DISABLED);
+		return;
+	}
+
 	schedlog_level = MIN (request_msg->debug_level, (LOG_LEVEL_QUIET + 1));
 	schedlog_level = MAX (schedlog_level, LOG_LEVEL_QUIET);
 
