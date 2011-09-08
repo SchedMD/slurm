@@ -746,7 +746,7 @@ satisfied. The job requesting additional resources could also use the sbatch
 command and permit the original job to continue execution at its initial size.
 Note that the development of additional user tools to manage SLURM resource
 allocations is planned in the future to make this process both simpler and
-more flexible.</p
+more flexible.</p>
 
 <pre>
 $ salloc -N4 bash
@@ -1469,6 +1469,6 @@ dset TV::parallel_configs {
 </pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 May 2011</p>
+<p style="text-align:center;">Last modified 8 August 2011</p>
 
 <!--#include virtual="footer.txt"-->
