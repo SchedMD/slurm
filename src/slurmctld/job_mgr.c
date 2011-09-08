@@ -7897,6 +7897,14 @@ fini:
 						    job_ptr);
 		}
 	}
+
+	/* If job update is successful and priority is calculated (not only
+	 * based upon job submit order), recalculate the job priority, since
+	 * many factors of an update may affect priority considerations. */
+	if ((error_code == SLURM_SUCCESS) &&
+	    strcmp(slurmctld_conf.priority_type, "priority/basic"))
+		_set_job_prio(job_ptr);
+
 	return error_code;
 }
 
