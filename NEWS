@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix deadlock issue if toggling between Dynamic and Static block
     allocation with jobs running on blocks that don't exist in the static
     setup.
+ -- BLUEGENE - Modify code to only give HTC states to BGP systems and not
+    allow them on Q systems.
 
 * Changes in SLURM 2.3.0.rc2
 ============================

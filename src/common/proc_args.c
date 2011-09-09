@@ -149,7 +149,7 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 	return result;
 }
 
-static uint16_t _get_conn_type(char *arg, bool no_bgl)
+static uint16_t _get_conn_type(char *arg, bool bgp)
 {
 	uint16_t len = strlen(arg);
 	if (!len) {
@@ -162,7 +162,7 @@ static uint16_t _get_conn_type(char *arg, bool no_bgl)
 		return SELECT_TORUS;
 	else if (!strncasecmp(arg, "NAV", len))
 		return SELECT_NAV;
-	else if (no_bgl) {
+	else if (bgp) {
 		if (!strncasecmp(arg, "HTC", len) ||
 		    !strncasecmp(arg, "HTC_S", len))
 			return SELECT_HTC_S;
@@ -179,35 +179,43 @@ static uint16_t _get_conn_type(char *arg, bool no_bgl)
 }
 
 /*
- * verify comma separated list of connection types to array of uint16_t 
+ * verify comma separated list of connection types to array of uint16_t
  * connection_types or NO_VAL if not recognized
  */
 extern void verify_conn_type(const char *arg, uint16_t *conn_type)
 {
-	bool no_bgl = 1;
+	bool got_bgp = 0;
 	int inx = 0;
+	int highest_dims = 1;
 	char *arg_tmp = xstrdup(arg), *tok, *save_ptr = NULL;
 
 	if (working_cluster_rec) {
-		if (working_cluster_rec->flags & CLUSTER_FLAG_BGL)
-			no_bgl = 0;
+		if (working_cluster_rec->flags & CLUSTER_FLAG_BGP)
+			got_bgp = 1;
+		else if (working_cluster_rec->flags & CLUSTER_FLAG_BGQ)
+			highest_dims = 4;
 	} else {
-#ifdef HAVE_BGL
-		no_bgl = 0;
+#ifdef HAVE_BGP
+		got_bgp = 1;
+# elif defined HAVE_BGQ
+		highest_dims = 4;
 #endif
 	}
 
 	tok = strtok_r(arg_tmp, ",", &save_ptr);
 	while (tok) {
-		if (inx >= HIGHEST_DIMENSIONS) {
+		if (inx >= highest_dims) {
 			error("too many conn-type arguments: %s", arg);
 			break;
 		}
-		conn_type[inx++] = _get_conn_type(tok, no_bgl);
+		conn_type[inx++] = _get_conn_type(tok, got_bgp);
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	if (inx == 0)
 		error("invalid conn-type argument '%s' ignored.", arg);
+	/* Fill the rest in with NO_VALS (use HIGHEST_DIMS here
+	 * instead of highest_dims since that is the size of the
+	 * array. */
 	for ( ; inx < HIGHEST_DIMENSIONS; inx++) {
 		conn_type[inx] = (uint16_t)NO_VAL;
 	}
