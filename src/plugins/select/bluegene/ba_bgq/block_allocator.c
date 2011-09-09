@@ -1501,10 +1501,13 @@ static int _finish_torus(List results, int level, int *block_start,
 		if (!(start_mp->alter_switch[dim].usage & BG_SWITCH_OUT_PASS)) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("finish_torus: mp %s(%d) already "
-				     "terminated",
-				     curr_mp->coord_str, dim);
+				     "terminated %s",
+				     curr_mp->coord_str, dim,
+				     ba_switch_usage_str(
+					     start_mp->alter_switch->usage));
 			continue;
 		}
+
 		curr_mp = start_mp->next_mp[dim];
 		while (curr_mp != start_mp) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)

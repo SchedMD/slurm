@@ -133,14 +133,15 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					if ((rc = check_and_set_mp_list(
 						     bg_record->ba_mp_list))
 					    != SLURM_SUCCESS) {
-						debug2("something happened in "
-						       "the load of %s"
-						       "Did you use smap to "
-						       "make the "
-						       "bluegene.conf file?",
+						error("Something happened in "
+						      "the load of %s.  "
+						      "Did you use smap to "
+						      "make the "
+						      "bluegene.conf file?",
 						       bg_record->bg_block_id);
 						break;
 					}
+					ba_reset_all_removed_mps();
 				} else {
 #ifdef HAVE_BGQ
 					List results =
