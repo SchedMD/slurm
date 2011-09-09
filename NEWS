@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     setup.
  -- BLUEGENE - Modify code to only give HTC states to BGP systems and not
     allow them on Q systems.
+ -- BLUEGENE - Make it possible for an admin to define multiple dimension
+    conn_types in a block definition.
 
 * Changes in SLURM 2.3.0.rc2
 ============================

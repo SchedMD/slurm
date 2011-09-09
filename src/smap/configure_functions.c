@@ -42,6 +42,7 @@
 #include "src/smap/smap.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -343,12 +344,22 @@ static int _create_allocation(char *com, List allocated_blocks)
 	}
 
 	while (i < len) {
-		if (!strncasecmp(com+i, "mesh", 4)) {
-			request->conn_type[0] = SELECT_MESH;
-			i += 4;
-		} else if (!strncasecmp(com+i, "small", 5)) {
-			request->conn_type[0] = SELECT_SMALL;
-			i += 5;
+		if (!strncasecmp(com+i, "mesh", 4)
+		    || !strncasecmp(com+i, "small", 5)
+		    || !strncasecmp(com+i, "torus", 5)) {
+			char conn_type[200];
+			j = i;
+			while (j < len) {
+				if (com[j] == ' ')
+					break;
+				conn_type[j-i] = com[j];
+				j++;
+				if (j >= 200)
+					break;
+			}
+			conn_type[(j-i)+1] = '\0';
+			verify_conn_type(conn_type, request->conn_type);
+			i += j;
 		} else if (!strncasecmp(com+i, "deny", 4)) {
 			i += 4;
 			if (strstr(com+i, "A"))
@@ -429,7 +440,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 	}
 
-	if (request->conn_type[0] == SELECT_SMALL) {
+	if (request->conn_type[0] >= SELECT_SMALL) {
 		int total = 512;
 #ifdef HAVE_BGP
 		if (small16 > 0) {
@@ -855,7 +866,6 @@ static int _save_allocation(char *com, List allocated_blocks)
 	char filename[50];
 	char *save_string = NULL;
 	FILE *file_ptr = NULL;
-	char *conn_type = NULL;
 	char *extra = NULL;
 
 	ListIterator results_i;
@@ -942,12 +952,10 @@ static int _save_allocation(char *com, List allocated_blocks)
 		results_i = list_iterator_create(allocated_blocks);
 		while ((allocated_block = list_next(results_i)) != NULL) {
 			select_ba_request_t *request = allocated_block->request;
-			if (request->conn_type[0] == SELECT_TORUS)
-				conn_type = "TORUS";
-			else if (request->conn_type[0] == SELECT_MESH)
-				conn_type = "MESH";
-			else {
-				conn_type = "SMALL";
+
+			if (request->small16 || request->small32
+			    || request->small64 || request->small128
+			    || request->small256) {
 #ifdef HAVE_BGL
 				xstrfmtcat(extra,
 					   " 32CNBlocks=%d "
@@ -978,9 +986,20 @@ static int _save_allocation(char *com, List allocated_blocks)
 					   request->small256);
 #endif
 			}
-			xstrfmtcat(save_string, "BPs=%s Type=%s",
-				   request->save_name,
-				   conn_type);
+
+			xstrfmtcat(save_string, "BPs=%s", request->save_name);
+
+			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+				if (request->conn_type[i] == (uint16_t)NO_VAL)
+					break;
+				if (i)
+					xstrcat(save_string, ",");
+				else
+					xstrcat(save_string, " Type=");
+				xstrfmtcat(save_string, "%s", conn_type_string(
+						   request->conn_type[i]));
+			}
+
 			if (extra) {
 				xstrfmtcat(save_string, "%s\n", extra);
 				xfree(extra);
@@ -1208,7 +1227,7 @@ static void _print_header_command(void)
 	main_xcord += 4;
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "TYPE");
-	main_xcord += 7;
+	main_xcord += 8;
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "ROTATE");
 	main_xcord += 7;
@@ -1258,22 +1277,41 @@ static void _print_header_command(void)
 
 static void _print_text_command(allocated_block_t *allocated_block)
 {
+	int i, len = 0;
+
 	wattron(text_win,
 		COLOR_PAIR(allocated_block->color));
 
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%c", allocated_block->letter);
 	main_xcord += 4;
-	if (allocated_block->request->conn_type[0] == SELECT_TORUS)
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "TORUS");
-	else if (allocated_block->request->conn_type[0] == SELECT_MESH)
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "MESH");
-	else
-		mvwprintw(text_win, main_ycord,
-			  main_xcord, "SMALL");
-	main_xcord += 7;
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		if (allocated_block->request->conn_type[i] == (uint16_t)NO_VAL)
+			break;
+		if (i) {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, ",");
+			main_xcord++;
+			len++;
+		}
+		if (allocated_block->request->conn_type[i] == SELECT_TORUS) {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "T");
+			main_xcord++;
+			len++;
+		} else if (allocated_block->request->conn_type[i]
+			   == SELECT_MESH) {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "M");
+			main_xcord++;
+			len++;
+		} else {
+			mvwprintw(text_win, main_ycord,
+				  main_xcord, "SMALL");
+			break;
+		}
+	}
+	main_xcord += 8-len;
 
 	if (allocated_block->request->rotate)
 		mvwprintw(text_win, main_ycord,
@@ -1295,7 +1333,7 @@ static void _print_text_command(allocated_block_t *allocated_block)
 		  main_xcord, "%d", allocated_block->request->size);
 	main_xcord += 10;
 
-	if (allocated_block->request->conn_type[0] == SELECT_SMALL) {
+	if (allocated_block->request->conn_type[0] >= SELECT_SMALL) {
 #ifdef HAVE_BGP
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d",

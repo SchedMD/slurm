@@ -42,6 +42,7 @@
 #include "src/common/node_select.h"
 #include "src/common/xstring.h"
 #include "src/common/uid.h"
+#include "src/common/proc_args.h"
 
 #include <stdlib.h>
 
@@ -195,13 +196,10 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	s_p_get_string(&n->mloaderimage, "MloaderImage", tbl);
 
 	s_p_get_string(&tmp, "Type", tbl);
-	if (!tmp || !strcasecmp(tmp,"TORUS"))
-		n->conn_type[0] = SELECT_TORUS;
-	else if (!strcasecmp(tmp,"MESH"))
-		n->conn_type[0] = SELECT_MESH;
-	else
-		n->conn_type[0] = SELECT_SMALL;
-	xfree(tmp);
+	if (tmp) {
+		verify_conn_type(tmp, n->conn_type);
+		xfree(tmp);
+	}
 
 	if (!s_p_get_uint16(&n->small32, "32CNBlocks", tbl)) {
 #ifdef HAVE_BGL
@@ -223,7 +221,44 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	s_p_get_uint16(&n->small64, "64CNBlocks", tbl);
 	s_p_get_uint16(&n->small256, "256CNBlocks", tbl);
 #endif
+	if (n->small16 || n->small32 || n->small64
+	    || n->small128 || n->small256) {
+		if (n->conn_type[0] >= SELECT_SMALL) {
+			error("Block def on midplane(s) %s is "
+			      "asking for small blocks but given "
+			      "TYPE=%s, setting it to Small",
+			      n->save_name, conn_type_string(n->conn_type[0]));
+			n->conn_type[0] = SELECT_SMALL;
+		}
+	} else {
+		if (n->conn_type[0] == (uint16_t)NO_VAL) {
+			n->conn_type[0] = SELECT_TORUS;
+		} else if (n->conn_type[0] >= SELECT_SMALL) {
+			error("Block def on midplane(s) %s is given "
+			      "TYPE=%s but isn't asking for any small "
+			      "blocks.  Giving it Torus.",
+			      n->save_name, conn_type_string(n->conn_type[0]));
+			n->conn_type[0] = SELECT_TORUS;
+		}
+#ifndef HAVE_BG_L_P
+		int i;
+		int first_conn_type = n->conn_type[0];
 
+		for (i=1; i<SYSTEM_DIMENSIONS; i++) {
+			if (n->conn_type[i] == (uint16_t)NO_VAL)
+				n->conn_type[1] = first_conn_type;
+			else if (n->conn_type[i] >= SELECT_SMALL) {
+				error("Block def on midplane(s) %s dim %d "
+				      "is given TYPE=%s but isn't asking "
+				      "for any small blocks.  Giving it %s.",
+				      n->save_name, i,
+				      conn_type_string(n->conn_type[i]),
+				      conn_type_string(first_conn_type));
+				n->conn_type[1] = first_conn_type;
+			}
+		}
+#endif
+	}
 	s_p_hashtbl_destroy(tbl);
 
 	*dest = (void *)n;
