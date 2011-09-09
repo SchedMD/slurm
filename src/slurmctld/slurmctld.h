@@ -415,6 +415,7 @@ struct job_details {
 	uint16_t task_dist;		/* task layout for this job. Only
 					 * useful when Consumable Resources
                                          * is enabled */
+	uint32_t usable_nodes;		/* node count needed by preemption */
 	char *work_dir;			/* pathname of working directory */
 };
 

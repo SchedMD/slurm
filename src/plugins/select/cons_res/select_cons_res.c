@@ -208,6 +208,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
 		    List preemptee_candidates, List *preemptee_job_list);
+static int _sort_usable_nodes_dec(struct job_record *job_a,
+				  struct job_record *job_b);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
  		      uint32_t req_nodes, uint16_t job_node_req);
@@ -1495,6 +1497,21 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	return rc;
 }
 
+/*
+ * Sort the usable_node element to put jobs in the correct
+ * preemption order.
+ */
+static int _sort_usable_nodes_dec(struct job_record *job_a,
+				  struct job_record *job_b)
+{
+	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
+		return -1;
+	else if (job_a->details->usable_nodes < job_b->details->usable_nodes)
+		return 1;
+
+	return 0;
+}
+
 /* Allocate resources for a job now, if possible */
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
@@ -1502,15 +1519,17 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    List preemptee_candidates, List *preemptee_job_list)
 {
 	int rc;
-	bitstr_t *orig_map;
+	bitstr_t *orig_map = NULL, *save_bitmap;
 	struct job_record *tmp_job_ptr;
 	ListIterator job_iterator, preemptee_iterator;
 	struct part_res_record *future_part;
 	struct node_use_record *future_usage;
 	bool remove_some_jobs = false;
+	uint16_t pass_count = 0;
 	uint16_t mode;
 
-	orig_map = bit_copy(bitmap);
+	save_bitmap = bit_copy(bitmap);
+top:	orig_map = bit_copy(save_bitmap);
 	if (!orig_map)
 		fatal("bit_copy: malloc failure");
 
@@ -1524,16 +1543,18 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		future_part = _dup_part_data(select_part_record);
 		if (future_part == NULL) {
 			FREE_NULL_BITMAP(orig_map);
+			FREE_NULL_BITMAP(save_bitmap);
 			return SLURM_ERROR;
 		}
 		future_usage = _dup_node_usage(select_node_usage);
 		if (future_usage == NULL) {
 			_destroy_part_data(future_part);
 			FREE_NULL_BITMAP(orig_map);
+			FREE_NULL_BITMAP(save_bitmap);
 			return SLURM_ERROR;
 		}
 
-		job_iterator = list_iterator_create(job_list);
+		job_iterator = list_iterator_create(preemptee_candidates);
 		if (job_iterator == NULL)
 			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = (struct job_record *)
@@ -1546,20 +1567,37 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			    (mode != PREEMPT_MODE_CHECKPOINT) &&
 			    (mode != PREEMPT_MODE_CANCEL))
 				continue;	/* can't remove job */
-			if (_is_preemptable(tmp_job_ptr,
-					    preemptee_candidates)) {
-				/* Remove preemptable job now */
-				_rm_job_from_res(future_part, future_usage,
-						 tmp_job_ptr, 0);
-				bit_or(bitmap, orig_map);
-				rc = cr_job_test(job_ptr, bitmap, min_nodes,
-						 max_nodes, req_nodes,
-						 SELECT_MODE_WILL_RUN,
-						 cr_type, job_node_req,
-						 select_node_cnt,
-						 future_part, future_usage);
-				if (rc == SLURM_SUCCESS)
+			/* Remove preemptable job now */
+			_rm_job_from_res(future_part, future_usage,
+					 tmp_job_ptr, 0);
+			bit_or(bitmap, orig_map);
+			rc = cr_job_test(job_ptr, bitmap, min_nodes,
+					 max_nodes, req_nodes,
+					 SELECT_MODE_WILL_RUN,
+					 cr_type, job_node_req,
+					 select_node_cnt,
+					 future_part, future_usage);
+			tmp_job_ptr->details->usable_nodes =
+				 bit_overlap(bitmap, tmp_job_ptr->node_bitmap);
+			/*
+			 * If successful, set the last job's usable count to a
+			 * large value so that it will be first after sorting.
+			 * Note: usable_count is only used for sorting purposes
+			 */
+			if (rc == SLURM_SUCCESS) {
+				if (pass_count++ ||
+				    (list_count(preemptee_candidates) == 1))
 					break;
+				tmp_job_ptr->details->usable_nodes = 9999;
+				while ((tmp_job_ptr = (struct job_record *)
+					list_next(job_iterator))) {
+					tmp_job_ptr->details->usable_nodes = 0;
+				}
+				list_sort(preemptee_candidates,
+					  (ListCmpF)_sort_usable_nodes_dec);
+				FREE_NULL_BITMAP(orig_map);
+				list_iterator_destroy(job_iterator);
+				goto top;
 			}
 		}
 		list_iterator_destroy(job_iterator);
@@ -1587,6 +1625,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 				if (bit_overlap(bitmap,
 						tmp_job_ptr->node_bitmap) == 0)
 					continue;
+				if (tmp_job_ptr->details->usable_nodes == 0)
+					continue;
 				list_append(*preemptee_job_list,
 					    tmp_job_ptr);
 				remove_some_jobs = true;
@@ -1602,6 +1642,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		_destroy_node_data(future_usage, NULL);
 	}
 	FREE_NULL_BITMAP(orig_map);
+	FREE_NULL_BITMAP(save_bitmap);
 
 	return rc;
 }
