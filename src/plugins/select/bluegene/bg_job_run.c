@@ -616,7 +616,7 @@ static List _get_all_allocated_blocks(void)
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
-		if ((bg_record->magic != BLOCK_MAGIC)
+		if ((bg_record->magic != BLOCK_MAGIC) || bg_record->free_cnt
 		    || !bg_record->user_name || !bg_record->bg_block_id)
 			continue;
 		rm_record = xmalloc(sizeof(bg_record_t));

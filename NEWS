@@ -25,6 +25,9 @@ documents those changes that are of interest to users and admins.
     and vice versa the node->base partition lists will be displayed if setup
     in your .slurm/sviewrc file.
  -- BLUEGENE - Fix for creating full system static block on a BGQ system.
+ -- BLUEGENE - Fix deadlock issue if toggling between Dynamic and Static block
+    allocation with jobs running on blocks that don't exist in the static
+    setup.
 
 * Changes in SLURM 2.3.0.rc2
 ============================

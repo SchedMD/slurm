@@ -276,6 +276,21 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 				   disappear. */
 				if (init_record->state & BG_BLOCK_ERROR_FLAG)
 					resume_block(init_record);
+
+				/* Since we can't requeue a running
+				   job in the free block function (not
+				   thread safe here) we must do it
+				   now.
+				*/
+				if (init_record->job_running > NO_JOB_RUNNING) {
+					/* The slurmctld is already
+					   locked here so don't worry
+					   about locking the job lock.
+					*/
+					init_record->job_running =
+						NO_JOB_RUNNING;
+					init_record->job_ptr = NULL;
+				}
 				list_push(destroy_list, init_record);
 			}
 		}
