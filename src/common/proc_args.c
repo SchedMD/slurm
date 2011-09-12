@@ -162,6 +162,8 @@ static uint16_t _get_conn_type(char *arg, bool bgp)
 		return SELECT_TORUS;
 	else if (!strncasecmp(arg, "NAV", len))
 		return SELECT_NAV;
+	else if (!strncasecmp(arg, "SMALL", len))
+		return SELECT_SMALL;
 	else if (bgp) {
 		if (!strncasecmp(arg, "HTC", len) ||
 		    !strncasecmp(arg, "HTC_S", len))
