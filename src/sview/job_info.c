@@ -706,7 +706,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	char* token, *delimiter = ",x", *next_ptr;
 	char *sep_char;
 	int j;
-	uint16_t geo[SYSTEM_DIMENSIONS];
+	uint16_t geo[cluster_dims];
 	char* geometry_tmp = xstrdup(new_text);
 	char* original_ptr = geometry_tmp;
 
@@ -951,9 +951,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_GEOMETRY:
 		type = "geometry";
 		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-		for (j=0; j<SYSTEM_DIMENSIONS; j++)
+		for (j=0; j<cluster_dims; j++)
 			geo[j] = (uint16_t) NO_VAL;
-		for (j=0; j<SYSTEM_DIMENSIONS; j++) {
+		for (j=0; j<cluster_dims; j++) {
 			if (!token) {
 				//error("insufficient dimensions in "
 				//      "Geometry");
