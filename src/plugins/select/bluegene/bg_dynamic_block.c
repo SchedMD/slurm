@@ -523,7 +523,10 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 
 	process_nodes(found_record, false);
 
-	found_record->conn_type[0] = SELECT_SMALL;
+	if (bg_record->conn_type[0] >= SELECT_SMALL)
+		found_record->conn_type[0] = bg_record->conn_type[0];
+	else
+		found_record->conn_type[0] = SELECT_SMALL;
 
 	xassert(bg_conf->cpu_ratio);
 	found_record->cpu_cnt = bg_conf->cpu_ratio * size;
