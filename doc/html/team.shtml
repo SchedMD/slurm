@@ -48,6 +48,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Aaron Knister (Environmental Protection Agency, UMBC)</li>
 <li>Nancy Kritkausky (Bull)</li>
 <li>Roman Kurakin (Institute of Natural Science and Ecology, Russia)</li>
+<li>Sam Lang</li>
 <li>Puenlap Lee (Bull)</li>
 <li>Dennis Leepow</li>
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
@@ -93,6 +94,6 @@ organizations. The current SLURM development staff includes: </p>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 27 June 2011</p>
+<p style="text-align:center;">Last modified 12 September 2011</p>
 
 <!--#include virtual="footer.txt"-->
