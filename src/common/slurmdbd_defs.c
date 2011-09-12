@@ -1666,13 +1666,19 @@ static int _handle_mult_rc_ret(uint16_t rpc_version, int read_timeout)
 		if (agent_list) {
 			ListIterator itr =
 				list_iterator_create(list_msg->my_list);
-			while((out_buf = list_next(itr))) {
-				if((rc = _unpack_return_code(
+			while ((out_buf = list_next(itr))) {
+				Buf b;
+				if ((rc = _unpack_return_code(
 					    rpc_version, out_buf))
 				    != SLURM_SUCCESS)
 					break;
 
-				free_buf(list_dequeue(agent_list));
+				if ((b = list_dequeue(agent_list))) {
+					free_buf(b);
+				} else {
+					error("slurmdbd: DBD_GOT_MULT_MSG "
+					      "unpack message error");
+				}
 			}
 			list_iterator_destroy(itr);
 		}
