@@ -664,9 +664,10 @@ Initiation time of the job in the same format as \f3end\fP.
 Displays the job status, or state.
 
 Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
-TIMEOUT, PREEMPTED or NODE_FAIL. If multiple job states are found for a single
-job (e.g. the job was requeued after a NODE_FAIL and then COMPLETED)
-then the last job state will be displayed followed by a "+".
+TIMEOUT, PREEMPTED or NODE_FAIL. If more information is available on the job state
+than will fit into the current field width (for example, the uid that CANCELLED
+a job) the state will be followed by a "+".  You can increase the size of
+the displayed state using the "%NUMBER" format modifier described earlier.
 
 .TP
 \f3submit\fP
