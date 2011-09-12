@@ -998,6 +998,9 @@ static int _save_allocation(char *com, List allocated_blocks)
 					xstrcat(save_string, " Type=");
 				xstrfmtcat(save_string, "%s", conn_type_string(
 						   request->conn_type[i]));
+#ifdef HAVE_BG_L_P
+				break;
+#endif
 			}
 
 			if (extra) {
@@ -1277,7 +1280,7 @@ static void _print_header_command(void)
 
 static void _print_text_command(allocated_block_t *allocated_block)
 {
-	int i, len = 0;
+	char *tmp_char = NULL;
 
 	wattron(text_win,
 		COLOR_PAIR(allocated_block->color));
@@ -1285,33 +1288,11 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%c", allocated_block->letter);
 	main_xcord += 4;
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-		if (allocated_block->request->conn_type[i] == (uint16_t)NO_VAL)
-			break;
-		if (i) {
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, ",");
-			main_xcord++;
-			len++;
-		}
-		if (allocated_block->request->conn_type[i] == SELECT_TORUS) {
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "T");
-			main_xcord++;
-			len++;
-		} else if (allocated_block->request->conn_type[i]
-			   == SELECT_MESH) {
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "M");
-			main_xcord++;
-			len++;
-		} else {
-			mvwprintw(text_win, main_ycord,
-				  main_xcord, "SMALL");
-			break;
-		}
-	}
-	main_xcord += 8-len;
+
+	tmp_char = conn_type_string_full(allocated_block->request->conn_type);
+	mvwprintw(text_win, main_ycord, main_xcord, tmp_char);
+	xfree(tmp_char);
+	main_xcord += 8;
 
 	if (allocated_block->request->rotate)
 		mvwprintw(text_win, main_ycord,
