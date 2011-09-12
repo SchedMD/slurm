@@ -36,6 +36,7 @@
 #include "src/common/node_select.h"
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 
 #define _DEBUG 0
 #define MAX_CANCEL_RETRY 10
@@ -702,7 +703,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	int temp_int = 0;
 	char *p;
 	uint16_t rotate;
-	uint16_t conn_type;
+	uint16_t conn_type[cluster_dims];
 	char* token, *delimiter = ",x", *next_ptr;
 	char *sep_char;
 	int j;
@@ -998,22 +999,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) &rotate);
 		break;
 	case SORTID_CONNECTION:
+		verify_conn_type(new_text, conn_type);
+
 		type = "connection";
-		if (!strcasecmp(new_text, "torus")) {
-			conn_type = SELECT_TORUS;
-		} else if (!strcasecmp(new_text, "mesh")) {
-			conn_type = SELECT_MESH;
-		} else if (!strcasecmp(new_text, "htc smp")) {
-			conn_type = SELECT_HTC_S;
-		} else if (!strcasecmp(new_text, "htc dual")) {
-			conn_type = SELECT_HTC_D;
-		} else if (!strcasecmp(new_text, "htc virtual")) {
-			conn_type = SELECT_HTC_V;
-		} else if (!strcasecmp(new_text, "htc linux")) {
-			conn_type = SELECT_HTC_L;
-		} else {
-			conn_type = SELECT_NAV;
-		}
 
 		if (!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
