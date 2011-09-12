@@ -948,8 +948,20 @@ static int _validate_config_blocks(List curr_block_list,
 			if ((bg_record->conn_type[0] < SELECT_SMALL)
 			    && (init_bg_record->conn_type[0] < SELECT_SMALL)) {
 				for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-					if (bg_record->conn_type[dim]
-					    != init_bg_record->conn_type[dim])
+					/* Only look at how far we
+					   have set.  The bg_record
+					   should of been set up
+					   correctly in the
+					   parse_blockreq() function.
+					*/
+					if (bg_record->conn_type[dim] ==
+					    (uint16_t)NO_VAL) {
+						dim = SYSTEM_DIMENSIONS;
+						break;
+					}
+
+					if (bg_record->conn_type[dim] !=
+					    init_bg_record->conn_type[dim])
 						break; /* wrong conn_type */
 				}
 				if (dim < SYSTEM_DIMENSIONS)
