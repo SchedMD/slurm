@@ -64,7 +64,7 @@ expect {
 		set non_bg 1
 		exp_continue
 	}
-	-re "TORUS" {
+	-re (Torus|T,T,T,T) {
 		set created 1
 		exp_continue
 	}
@@ -114,12 +114,12 @@ if {![string compare $type "L"]} {
 	set match_target 10
 } else {
 #	Bluegene/Q
-	set match_target 9
+	set match_target 8
 }
 
 set matches       0
 if { $exit_code != 1 } {
-	spawn more $file
+	spawn grep -v \^\# $file
 	expect {
 		-re "BlrtsImage" {
 #			Absent from Bluegene/P and Bluegene/Q
