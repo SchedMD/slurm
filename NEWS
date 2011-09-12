@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
     allow them on Q systems.
  -- BLUEGENE - Make it possible for an admin to define multiple dimension
     conn_types in a block definition.
+ -- BGQ - Alter tools to output multiple dimensional conn_type.
 
 * Changes in SLURM 2.3.0.rc2
 ============================
