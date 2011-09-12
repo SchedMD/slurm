@@ -223,7 +223,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 #endif
 	if (n->small16 || n->small32 || n->small64
 	    || n->small128 || n->small256) {
-		if (n->conn_type[0] >= SELECT_SMALL) {
+		if (n->conn_type[0] < SELECT_SMALL) {
 			error("Block def on midplane(s) %s is "
 			      "asking for small blocks but given "
 			      "TYPE=%s, setting it to Small",
@@ -246,7 +246,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 
 		for (i=1; i<SYSTEM_DIMENSIONS; i++) {
 			if (n->conn_type[i] == (uint16_t)NO_VAL)
-				n->conn_type[1] = first_conn_type;
+				n->conn_type[i] = first_conn_type;
 			else if (n->conn_type[i] >= SELECT_SMALL) {
 				error("Block def on midplane(s) %s dim %d "
 				      "is given TYPE=%s but isn't asking "
