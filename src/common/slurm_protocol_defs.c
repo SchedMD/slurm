@@ -77,6 +77,7 @@ strong_alias(node_state_string_compact, slurm_node_state_string_compact);
 strong_alias(private_data_string, slurm_private_data_string);
 strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(conn_type_string,	slurm_conn_type_string);
+strong_alias(conn_type_string_full, slurm_conn_type_string_full);
 strong_alias(node_use_string, slurm_node_use_string);
 strong_alias(bg_block_state_string, slurm_bg_block_state_string);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
@@ -1614,6 +1615,29 @@ extern char *conn_type_string(enum connection_type conn_type)
 		return "n/a";
 	}
 	return "n/a";
+}
+
+/* caller must xfree after call */
+extern char *conn_type_string_full(uint16_t *conn_type)
+{
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+
+	if ((cluster_flags & CLUSTER_FLAG_BGQ)
+	    && (conn_type[0] < SELECT_SMALL)) {
+		int dim, pos = 0;
+		uint16_t cluster_dims = slurmdb_setup_cluster_dims();
+		char conn_type_part[cluster_dims*2], *tmp_char;
+
+		for (dim = 0; dim < cluster_dims; dim++) {
+			if (pos)
+				conn_type_part[pos++] = ',';
+			tmp_char = conn_type_string(conn_type[dim]);
+			conn_type_part[pos++] = tmp_char[0];
+		}
+		conn_type_part[pos] = '\0';
+		return xstrdup(conn_type_part);
+	} else
+		return xstrdup(conn_type_string(conn_type[0]));
 }
 
 extern char* node_use_string(enum node_use_type node_use)
