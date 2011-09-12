@@ -953,12 +953,14 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	while ((col_name = list_next(itr))) {
 		replus(col_name);
 		if (strstr(col_name, "list")) {
-			if (cluster_flags & CLUSTER_FLAG_BG)
-				xstrsubstitute(col_name, "node", "bp");
-			else
-				xstrsubstitute(col_name, "bp", "node");
+			if (cluster_flags & CLUSTER_FLAG_BG) {
+				xstrsubstitute(col_name, "node", "bp ");
+				xstrsubstitute(col_name, "midplane", "bp ");
+			} else {
+				xstrsubstitute(col_name, "bp ", "node");
+				xstrsubstitute(col_name, "midplane", "node");
+			}
 		}
-
 		while (display_data++) {
 			if (display_data->id == -1)
 				break;
