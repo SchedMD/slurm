@@ -179,21 +179,23 @@ static int _bg_report(block_info_msg_t *block_ptr)
 	}
 
 	if (!params.no_header)
-		printf("BG_BLOCK         MIDPLANES    OWNER    STATE    CONNECTION USE\n");
+		printf("BG_BLOCK         MIDPLANES       OWNER    STATE    CONNECTION USE\n");
 /*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
 /*                      RMP_22Apr1544018 bg[123x456]  name     READY    TORUS      COPROCESSOR */
 
 	for (i=0; i<block_ptr->record_count; i++) {
-		printf("%-16.16s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
+		char *conn_str = conn_type_string_full(
+			block_ptr->block_array[i].conn_type);
+		printf("%-16.16s %-15.15s %-8.8s %-8.8s %-10.10s %s\n",
 		       block_ptr->block_array[i].bg_block_id,
 		       block_ptr->block_array[i].mp_str,
 		       block_ptr->block_array[i].owner_name,
 		       bg_block_state_string(
 			       block_ptr->block_array[i].state),
-		       conn_type_string(
-			       block_ptr->block_array[i].conn_type[0]),
+		       conn_str,
 		       node_use_string(
 			       block_ptr->block_array[i].node_use));
+		xfree(conn_str);
 	}
 
 	return SLURM_SUCCESS;

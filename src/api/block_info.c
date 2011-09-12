@@ -115,7 +115,7 @@ char *slurm_sprint_block_info(
 	block_info_t * block_ptr, int one_liner)
 {
 	int j;
-	char tmp1[16];
+	char tmp1[16], *tmp_char = NULL;
 	char *out = NULL;
 	char *line_end = "\n   ";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
@@ -137,10 +137,10 @@ char *slurm_sprint_block_info(
 		xstrfmtcat(out, "JobRunning=%u ", block_ptr->job_running);
 	else
 		xstrcat(out, "JobRunning=NONE ");
-
+	tmp_char = conn_type_string_full(block_ptr->conn_type);
 	xstrfmtcat(out, "User=%s ConnType=%s",
-		   block_ptr->owner_name,
-		   conn_type_string(block_ptr->conn_type[0]));
+		   block_ptr->owner_name, tmp_char);
+	xfree(tmp_char);
 	if(cluster_flags & CLUSTER_FLAG_BGL)
 		xstrfmtcat(out, " NodeUse=%s",
 			   node_use_string(block_ptr->node_use));

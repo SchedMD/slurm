@@ -38,7 +38,7 @@ typedef struct {
 	char *bg_block_name;
 	char *slurm_part_name;
 	char *mp_str;
-	uint16_t bg_conn_type;
+	uint16_t bg_conn_type[HIGHEST_DIMENSIONS];
 	uint16_t bg_node_use;
 	uint16_t state;
 	int size;
@@ -227,6 +227,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 				 int update)
 {
 	char tmp_cnt[18];
+	char *tmp_char = NULL;
 	GtkTreeIter iter;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -235,12 +236,13 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_NODELIST),
 				   block_ptr->mp_str);
-
+	tmp_char = conn_type_string_full(block_ptr->bg_conn_type);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
 						 SORTID_CONN),
-				   conn_type_string(
-					   block_ptr->bg_conn_type));
+				   tmp_char);
+	xfree(tmp_char);
+
 	if (cluster_flags & CLUSTER_FLAG_BGL) {
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_block,
@@ -315,6 +317,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char job_running[20], cnode_cnt[20];
+	char *tmp_char = NULL;
 
 	if (block_ptr->job_running > NO_JOB_RUNNING)
 		snprintf(job_running, sizeof(job_running),
@@ -325,14 +328,15 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	convert_num_unit((float)block_ptr->cnode_cnt, cnode_cnt, sizeof(cnode_cnt),
 			 UNIT_NONE);
 
+	tmp_char = conn_type_string_full(block_ptr->bg_conn_type);
+
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_BLOCK,        block_ptr->bg_block_name,
 			   SORTID_COLOR,
 				sview_colors[block_ptr->color_inx],
 			   SORTID_COLOR_INX,    block_ptr->color_inx,
-			   SORTID_CONN,
-				conn_type_string(block_ptr->bg_conn_type),
+			   SORTID_CONN,		tmp_char,
 			   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
 			   SORTID_IMAGELINUX,   block_ptr->imagelinux,
 			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
@@ -347,6 +351,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_USER,         block_ptr->bg_user_name,
 			   SORTID_UPDATED,      1,
 			   -1);
+	xfree(tmp_char);
 
 	if (cluster_flags & CLUSTER_FLAG_BGL) {
 		gtk_tree_store_set(treestore, iter,
@@ -556,8 +561,9 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 		block_ptr->state
 			= block_info_ptr->block_array[i].state;
-		block_ptr->bg_conn_type
-			= block_info_ptr->block_array[i].conn_type[0];
+		memcpy(block_ptr->bg_conn_type,
+		       block_info_ptr->block_array[i].conn_type,
+		       sizeof(block_ptr->bg_conn_type));
 
 		if (cluster_flags & CLUSTER_FLAG_BGL)
 			block_ptr->bg_node_use
@@ -578,7 +584,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		}
 		block_ptr->job_running =
 			block_info_ptr->block_array[i].job_running;
-		if (block_ptr->bg_conn_type >= SELECT_SMALL)
+		if (block_ptr->bg_conn_type[0] >= SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);

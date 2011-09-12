@@ -47,7 +47,7 @@
 
 typedef struct {
 	char *bg_block_name;
-	uint16_t bg_conn_type;
+	uint16_t bg_conn_type[HIGHEST_DIMENSIONS];
 	uint16_t bg_node_use;
 	char *bg_user_name;
 	char *ionode_str;
@@ -304,8 +304,11 @@ extern void get_bg_part(void)
 		block_ptr->bg_user_name
 			= xstrdup(new_bg_ptr->block_array[i].owner_name);
 		block_ptr->state = new_bg_ptr->block_array[i].state;
-		block_ptr->bg_conn_type	= new_bg_ptr->block_array[i].
-					  conn_type[0];
+
+		memcpy(block_ptr->bg_conn_type,
+		       new_bg_ptr->block_array[i].conn_type,
+		       sizeof(block_ptr->bg_conn_type));
+
 		if (params.cluster_flags & CLUSTER_FLAG_BGL)
 			block_ptr->bg_node_use =
 				new_bg_ptr->block_array[i].node_use;
@@ -330,7 +333,7 @@ extern void get_bg_part(void)
 		}
 		block_ptr->job_running =
 			new_bg_ptr->block_array[i].job_running;
-		if (block_ptr->bg_conn_type >= SELECT_SMALL)
+		if (block_ptr->bg_conn_type[0] >= SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);
@@ -474,7 +477,7 @@ static void _print_header_part(void)
 			mvwprintw(text_win,
 				  main_ycord,
 				  main_xcord, "CONN");
-			main_xcord += 7;
+			main_xcord += 8;
 			if (params.cluster_flags & CLUSTER_FLAG_BGL) {
 				mvwprintw(text_win,
 					  main_ycord,
@@ -504,7 +507,7 @@ static void _print_header_part(void)
 			printf("STATE ");
 			printf("   JOBID ");
 			printf("    USER ");
-			printf(" CONN ");
+			printf("    CONN ");
 			if (params.cluster_flags & CLUSTER_FLAG_BGL)
 				printf(" NODE_USE ");
 		}
@@ -525,7 +528,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int prefixlen;
 	int i = 0;
 	int width = 0;
-	char *nodes = NULL, time_buf[20];
+	char *nodes = NULL, time_buf[20], *conn_str = NULL;
 	char tmp_cnt[8];
 	char tmp_char[8];
 
@@ -619,13 +622,15 @@ static int _print_text_part(partition_info_t *part_ptr,
 					  db2_info_ptr->bg_user_name);
 				main_xcord += 9;
 
+				conn_str = conn_type_string_full(
+					db2_info_ptr->bg_conn_type);
 				mvwprintw(text_win,
 					  main_ycord,
-					  main_xcord, "%.5s",
-					  conn_type_string(
-						  db2_info_ptr->
-						  bg_conn_type));
-				main_xcord += 7;
+					  main_xcord, "%.7s",
+					  conn_str);
+				xfree(conn_str);
+				main_xcord += 8;
+
 				if (params.cluster_flags & CLUSTER_FLAG_BGL) {
 					mvwprintw(text_win,
 						  main_ycord,
@@ -763,8 +768,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 				printf("%8.8s ", tmp_char);
 				printf("%8.8s ", db2_info_ptr->bg_user_name);
 
-				printf("%5.5s ", conn_type_string(
-					       db2_info_ptr->bg_conn_type));
+				conn_str = conn_type_string_full(
+					db2_info_ptr->bg_conn_type);
+				printf("%8.8s ", conn_str);
+				xfree(conn_str);
+
 				if (params.cluster_flags & CLUSTER_FLAG_BGL)
 					printf("%9.9s ", node_use_string(
 						       db2_info_ptr->
