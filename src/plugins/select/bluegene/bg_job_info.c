@@ -120,6 +120,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	char *tmp_char = (char *) data;
 	bg_record_t *bg_record = (bg_record_t *) data;
 	uint32_t new_size;
+	uint16_t first_conn_type;
 
 	xassert(jobinfo);
 
@@ -137,6 +138,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_GEOMETRY:
 		new_size = 1;
+		first_conn_type = jobinfo->conn_type[0];
 		for (i=0; i<jobinfo->dim_cnt; i++) {
 			jobinfo->geometry[i] = uint16[i];
 			new_size *= uint16[i];
@@ -144,7 +146,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 			/* Make sure the conn type is correct with the
 			 * new count */
 			if ((new_size > 1)
-			    && (jobinfo->conn_type[0] == SELECT_SMALL))
+			    && (first_conn_type >= SELECT_SMALL))
 				jobinfo->conn_type[i] = SELECT_TORUS;
 		}
 
