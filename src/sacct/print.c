@@ -1107,7 +1107,7 @@ void print_fields(type_t type, void *object)
 			}
 
 			if (((tmp_int & JOB_STATE_BASE) == JOB_CANCELLED) &&
-			    (tmp_int2 != NO_VAL))
+			    (tmp_int2 != -1))
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s by %d",
 					 job_state_string(tmp_int),
