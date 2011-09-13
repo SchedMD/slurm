@@ -597,7 +597,7 @@ extern int schedule(uint32_t job_limit)
 			} else {
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
-			info("sched: Allocate JobId=%u BPList=%s",
+			info("sched: Allocate JobId=%u MidplaneList=%s",
 			     job_ptr->job_id, tmp_char);
 			xfree(ionodes);
 #else

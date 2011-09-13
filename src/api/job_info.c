@@ -161,7 +161,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		nodelist = "BP_List";
+		nodelist = "MidplaneList";
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &ionodes);

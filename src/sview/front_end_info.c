@@ -1069,7 +1069,7 @@ extern void cluster_change_front_end(void)
 				display_data->name = "Blocks";
 				break;
 			case NODE_PAGE:
-				display_data->name = "Base Partitions";
+				display_data->name = "Midplanes";
 				break;
 			}
 		} else {

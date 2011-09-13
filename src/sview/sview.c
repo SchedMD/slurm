@@ -130,7 +130,7 @@ display_data_t main_display_data[] = {
 	 refresh_main, NULL, NULL,
 	 get_info_block, specific_info_block,
 	 set_menus_block, NULL},
-	{G_TYPE_NONE, NODE_PAGE, "Base Partitions", FALSE, -1,
+	{G_TYPE_NONE, NODE_PAGE, "Midplanes", FALSE, -1,
 	 refresh_main, NULL, NULL,
 	 get_info_node, specific_info_node,
 	 set_menus_node, NULL},
@@ -1004,12 +1004,12 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "Search for BG Blocks having given state",
 		 G_CALLBACK(create_search_popup)},
 		{"node_name_bg", NULL,
-		 "Base Partition(s) Name",
-		 "", "Search for a specific Base Partition(s)",
+		 "Midplane(s) Name",
+		 "", "Search for a specific Midplane(s)",
 		 G_CALLBACK(create_search_popup)},
 		{"node_state_bg", NULL,
-		 "Base Partition State",
-		 "", "Search for a Base Partition in a given state",
+		 "Midplane State",
+		 "", "Search for a Midplane in a given state",
 		 G_CALLBACK(create_search_popup)},
 	};
 
@@ -1344,7 +1344,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 				display_data->show = TRUE;
 				break;
 			case NODE_PAGE:
-				display_data->name = "Base Partitions";
+				display_data->name = "Midplanes";
 				break;
 			default:
 				break;

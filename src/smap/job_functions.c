@@ -239,7 +239,7 @@ static void _print_header_job(void)
 		main_xcord += 6;
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			mvwprintw(text_win, main_ycord,
-				  main_xcord, "BP_LIST");
+				  main_xcord, "MIDPLANELIST");
 		else
 			mvwprintw(text_win, main_ycord,
 				  main_xcord, "NODELIST");
@@ -256,7 +256,7 @@ static void _print_header_job(void)
 		printf("      TIME ");
 		printf("NODES ");
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
-			printf("BP_LIST\n");
+			printf("MIDPLANELIST\n");
 		else
 			printf("NODELIST\n");
 	}

@@ -71,10 +71,6 @@ enum {
 enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ALTERNATE,
-#ifdef HAVE_BG
-	SORTID_NODELIST,
-	SORTID_NODES_ALLOWED,
-#endif
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_CPUS,
@@ -85,6 +81,10 @@ enum {
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
 	SORTID_MEM,
+#ifdef HAVE_BG
+	SORTID_NODELIST,
+	SORTID_NODES_ALLOWED,
+#endif
 	SORTID_NAME,
 #ifndef HAVE_BG
 	SORTID_NODELIST,
@@ -166,7 +166,7 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
@@ -222,7 +222,7 @@ static display_data_t create_data_part[] = {
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
@@ -237,15 +237,15 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, PART_PAGE, "Edit Partition", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Remove Partition", TRUE, ADMIN_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, PART_PAGE, "Drain Base Partitions",
+	{G_TYPE_STRING, PART_PAGE, "Drain Midplanes",
 	 TRUE, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Resume Base Partitions",
+	{G_TYPE_STRING, PART_PAGE, "Resume Midplanes",
 	 TRUE, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Put Base Partitions Down",
+	{G_TYPE_STRING, PART_PAGE, "Put Midplanes Down",
 	 TRUE, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Make Base Partitions Idle",
+	{G_TYPE_STRING, PART_PAGE, "Make Midplanes Idle",
 	 TRUE, ADMIN_PAGE | EXTRA_NODES},
-	{G_TYPE_STRING, PART_PAGE, "Update Base Partition Features",
+	{G_TYPE_STRING, PART_PAGE, "Update Midplane Features",
 	 TRUE, ADMIN_PAGE | EXTRA_NODES},
 #else
 	{G_TYPE_STRING, PART_PAGE, "Drain Nodes",
@@ -264,7 +264,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, PART_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, PART_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Midplanes", TRUE, PART_PAGE},
 #else
 	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, PART_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
@@ -2665,11 +2665,11 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		if (cluster_flags & CLUSTER_FLAG_BG) {
 			if (!state || !strlen(state))
 				snprintf(title, 100,
-					 "Base partition(s) in partition %s",
+					 "Midplane(s) in partition %s",
 					 name);
 			else
 				snprintf(title, 100,
-					 "Base partition(s) in partition %s "
+					 "Midplane(s) in partition %s "
 					 "that are in '%s' state",
 					 name, state);
 		} else {
@@ -2969,7 +2969,7 @@ extern void cluster_change_part(void)
 		if (cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
 			case SORTID_NODELIST:
-				display_data->name = "BP List";
+				display_data->name = "MidplaneList";
 				break;
 			default:
 				break;
@@ -2995,24 +2995,24 @@ extern void cluster_change_part(void)
 				display_data->name = "Blocks";
 				break;
 			case NODE_PAGE:
-				display_data->name = "Base Partitions";
+				display_data->name = "Midplanes";
 				break;
 			}
 
 			if (!display_data->name) {
 			} else if (!strcmp(display_data->name, "Drain Nodes"))
-				display_data->name = "Drain Base Partitions";
+				display_data->name = "Drain Midplanes";
 			else if (!strcmp(display_data->name, "Resume Nodes"))
-				display_data->name = "Resume Base Partitions";
+				display_data->name = "Resume Midplanes";
 			else if (!strcmp(display_data->name, "Put Nodes Down"))
-				display_data->name = "Put Base Partitions Down";
+				display_data->name = "Put Midplanes Down";
 			else if (!strcmp(display_data->name, "Make Nodes Idle"))
 				display_data->name =
-					"Make Base Partitions Idle";
+					"Make Midplanes Idle";
 			else if (!strcmp(display_data->name,
 					 "Update Node Features"))
 				display_data->name =
-					"Update Base Partitions Features";
+					"Update Midplanes Features";
 		} else {
 			switch(display_data->id) {
 			case BLOCK_PAGE:
@@ -3025,21 +3025,21 @@ extern void cluster_change_part(void)
 
 			if (!display_data->name) {
 			} else if (!strcmp(display_data->name,
-					   "Drain Base Partitions"))
+					   "Drain Midplanes"))
 				display_data->name = "Drain Nodes";
 			else if (!strcmp(display_data->name,
-					 "Resume Base Partitions"))
+					 "Resume Midplanes"))
 				display_data->name = "Resume Nodes";
 			else if (!strcmp(display_data->name,
-					 "Put Base Partitions Down"))
+					 "Put Midplanes Down"))
 				display_data->name = "Put Nodes Down";
 			else if (!strcmp(display_data->name,
-					 "Make Base Partitions Idle"))
+					 "Make Midplanes Idle"))
 				display_data->name = "Make Nodes Idle";
 			else if (!strcmp(display_data->name,
 					 "Update Node Features"))
 				display_data->name =
-					"Update Base Partitions Features";
+					"Update Midplanes Features";
 		}
 	}
 	get_info_part(NULL, NULL);

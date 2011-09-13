@@ -72,7 +72,7 @@ void _search_entry(sview_search_info_t *sview_search_info)
 	char *type;
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
-		type = "Base partition";
+		type = "Midplane";
 	else
 		type = "Node";
 
@@ -545,7 +545,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			"Reservation creation specifications\n\n"
 			"Specify Time_Start and either Duration or Time_End.\n"
 #ifdef HAVE_BG
-			"Specify either Node_Count or BP_List.\n"
+			"Specify either Node_Count or Midplane_List.\n"
 #else
 			"Specify either Node_Count or Node_List.\n"
 #endif
@@ -713,7 +713,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		sview_search_info.search_type = SEARCH_NODE_NAME;
 		entry = create_entry();
 		if (cluster_flags & CLUSTER_FLAG_BG)
-			label = gtk_label_new("Which base partition(s)?\n"
+			label = gtk_label_new("Which Midplane(s)?\n"
 					      "(ranged or comma separated)");
 		else
 			label = gtk_label_new("Which node(s)?\n"

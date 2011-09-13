@@ -95,11 +95,6 @@ enum {
 	SORTID_ALPS_RESV_ID,
 	SORTID_BATCH,
 	SORTID_BATCH_HOST,
-#ifdef HAVE_BG
-	SORTID_NODELIST,
-	SORTID_NODELIST_EXC,
-	SORTID_NODELIST_REQ,
-#endif
 	SORTID_BLOCK,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
@@ -135,6 +130,11 @@ enum {
 	SORTID_CPU_REQ,
 	SORTID_MEM_MIN,
 	SORTID_TMP_DISK,
+#ifdef HAVE_BG
+	SORTID_NODELIST,
+	SORTID_NODELIST_EXC,
+	SORTID_NODELIST_REQ,
+#endif
 	SORTID_NAME,
 	SORTID_NETWORK,
 	SORTID_NICE,
@@ -292,11 +292,11 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_CPUS, "CPU Count",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODELIST_EXC, "BP List Excluded",
+	{G_TYPE_STRING, SORTID_NODELIST_EXC, "MidplaneList Excluded",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_NODELIST_REQ, "BP List Requested",
+	{G_TYPE_STRING, SORTID_NODELIST_REQ, "MidplaneList Requested",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", FALSE,
@@ -415,7 +415,7 @@ static display_data_t options_data_job[] = {
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, JOB_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Block", TRUE, JOB_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, JOB_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Midplanes", TRUE, JOB_PAGE},
 #else
 	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, JOB_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
@@ -3597,7 +3597,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	char *type;
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
-		type = "Base partition";
+		type = "Midplane";
 	else
 		type = "Node";
 
@@ -4209,13 +4209,13 @@ extern void cluster_change_job(void)
 				display_data->name = "Image Mloader";
 				break;
 			case SORTID_NODELIST:
-				display_data->name = "BP List";
+				display_data->name = "MidplaneList";
 				break;
 			case SORTID_NODELIST_EXC:
-				display_data->name = "BP List Excluded";
+				display_data->name = "MidplaneList Excluded";
 				break;
 			case SORTID_NODELIST_REQ:
-				display_data->name = "BP List Requested";
+				display_data->name = "MidplaneList Requested";
 				break;
 			default:
 				break;
@@ -4294,7 +4294,7 @@ extern void cluster_change_job(void)
 				display_data->name = "Blocks";
 				break;
 			case NODE_PAGE:
-				display_data->name = "Base Partitions";
+				display_data->name = "Midplanes";
 				break;
 			}
 		} else {

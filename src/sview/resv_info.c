@@ -90,7 +90,7 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
-	 "BP List",
+	 "MidplaneList",
 #else
 	 "Node List",
 #endif
@@ -131,7 +131,7 @@ static display_data_t create_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODELIST,
 #ifdef HAVE_BG
-	 "BP_List",
+	 "Midplane_List",
 #else
 	 "Node_List",
 #endif
@@ -166,7 +166,7 @@ static display_data_t options_data_resv[] = {
 	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, RESV_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, RESV_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Midplanes", TRUE, RESV_PAGE},
 #else
 	{G_TYPE_STRING, BLOCK_PAGE, NULL, TRUE, RESV_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, RESV_PAGE},
@@ -1393,7 +1393,7 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case NODE_PAGE:
 		if (cluster_flags & CLUSTER_FLAG_BG)
 			snprintf(title, 100,
-				 "Base partitions(s) in reservation %s",
+				 "Midplane(s) in reservation %s",
 				 name);
 		else
 			snprintf(title, 100, "Node(s) in reservation %s ",
@@ -1625,7 +1625,7 @@ extern void cluster_change_resv(void)
 		if (cluster_flags & CLUSTER_FLAG_BG) {
 			switch(display_data->id) {
 			case SORTID_NODELIST:
-				display_data->name = "BP List";
+				display_data->name = "MidplaneList";
 				break;
 			default:
 				break;
@@ -1651,7 +1651,7 @@ extern void cluster_change_resv(void)
 				display_data->name = "Blocks";
 				break;
 			case NODE_PAGE:
-				display_data->name = "Base Partitions";
+				display_data->name = "Midplanes";
 				break;
 			}
 		} else {

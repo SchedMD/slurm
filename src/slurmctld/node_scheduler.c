@@ -2163,19 +2163,20 @@ extern void re_kill_job(struct job_record *job_ptr)
 	host_str = hostlist_ranged_string_xmalloc(kill_hostlist);
 #ifdef HAVE_BG
 	if (job_ptr->job_id != last_job_id) {
-		info("Resending TERMINATE_JOB request JobId=%u BPlist=%s",
-			job_ptr->job_id, host_str);
+		info("Resending TERMINATE_JOB request JobId=%u Midplanelist=%s",
+		     job_ptr->job_id, host_str);
 	} else {
-		debug("Resending TERMINATE_JOB request JobId=%u BPlist=%s",
-			job_ptr->job_id, host_str);
+		debug("Resending TERMINATE_JOB request JobId=%u "
+		      "Midplanelist=%s",
+		      job_ptr->job_id, host_str);
 	}
 #else
 	if (job_ptr->job_id != last_job_id) {
 		info("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
-			job_ptr->job_id, host_str);
+		     job_ptr->job_id, host_str);
 	} else {
 		debug("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
-			job_ptr->job_id, host_str);
+		      job_ptr->job_id, host_str);
 	}
 #endif
 	xfree(host_str);

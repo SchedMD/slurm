@@ -132,11 +132,11 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, NODE_PAGE, "Drain Base Partition", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Resume Base Partition", TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Set Base Partition Down",
+	{G_TYPE_STRING, NODE_PAGE, "Drain Midplane", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Resume Midplane", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Set Midplane Down",
 	 TRUE, ADMIN_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Make Base Partition Idle",
+	{G_TYPE_STRING, NODE_PAGE, "Make Midplane Idle",
 	 TRUE, ADMIN_PAGE},
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Drain Node", TRUE, ADMIN_PAGE},
@@ -511,7 +511,7 @@ need_refresh:
 			GtkTreeModel *model = NULL;
 
 			if (cluster_flags & CLUSTER_FLAG_BG)
-				temp = "BP NOT FOUND\n";
+				temp = "MIDPLANE NOT FOUND\n";
 			else
 				temp = "NODE NOT FOUND\n";
 			/* only time this will be run so no update */
@@ -1558,7 +1558,7 @@ extern void popup_all_node_name(char *name, int id)
 	char *node;
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
-		node = "Base partition";
+		node = "Midplane";
 	else
 		node = "Node";
 
@@ -1693,7 +1693,7 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 
 	if (!strcasecmp("Update Features", type)
 	    || !strcasecmp("Update Node Features", type)
-	    || !strcasecmp("Update Base Partition Features",
+	    || !strcasecmp("Update Midplane Features",
 			   type)) { /* update features */
 		update_features_node(GTK_DIALOG(popup), name, old_value);
 	} else if (!strcasecmp("Update Gres", type)) { /* update gres */
@@ -1721,14 +1721,14 @@ extern void cluster_change_node(void)
 
 			if (!display_data->name) {
 			} else if (!strcmp(display_data->name, "Drain Node"))
-				display_data->name = "Drain Base Partition";
+				display_data->name = "Drain Midplane";
 			else if (!strcmp(display_data->name, "Resume Node"))
-				display_data->name = "Resume Base Partition";
+				display_data->name = "Resume Midplane";
 			else if (!strcmp(display_data->name, "Put Node Down"))
-				display_data->name = "Put Base Partition Down";
+				display_data->name = "Put Midplane Down";
 			else if (!strcmp(display_data->name, "Make Node Idle"))
 				display_data->name =
-					"Make Base Partition Idle";
+					"Make Midplane Idle";
 		} else {
 			switch(display_data->id) {
 			case BLOCK_PAGE:
@@ -1738,16 +1738,16 @@ extern void cluster_change_node(void)
 
 			if (!display_data->name) {
 			} else if (!strcmp(display_data->name,
-					   "Drain Base Partitions"))
+					   "Drain Midplanes"))
 				display_data->name = "Drain Nodes";
 			else if (!strcmp(display_data->name,
-					 "Resume Base Partitions"))
+					 "Resume Midplanes"))
 				display_data->name = "Resume Nodes";
 			else if (!strcmp(display_data->name,
-					 "Put Base Partitions Down"))
+					 "Put Midplanes Down"))
 				display_data->name = "Put Nodes Down";
 			else if (!strcmp(display_data->name,
-					 "Make Base Partitions Idle"))
+					 "Make Midplanes Idle"))
 				display_data->name = "Make Nodes Idle";
 		}
 	}

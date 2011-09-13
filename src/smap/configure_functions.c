@@ -1239,7 +1239,7 @@ static void _print_header_command(void)
 	main_xcord += 7;
 #ifdef HAVE_BG
 	mvwprintw(text_win, main_ycord,
-		  main_xcord, "BP_COUNT");
+		  main_xcord, "MIDPLANES");
 #else
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "NODES");
@@ -1269,7 +1269,7 @@ static void _print_header_command(void)
 #endif
 #ifdef HAVE_BG
 	mvwprintw(text_win, main_ycord,
-		  main_xcord, "BP_LIST");
+		  main_xcord, "MIDPLANELIST");
 #else
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "NODELIST");

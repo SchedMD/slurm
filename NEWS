@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - use the ba_geo_tables to figure out the blocks instead of the old
     algorithm.  The improves timing in the worst cases and simplifies the code
     greatly.
+ -- BLUEGENE - Change to output tools labels from BP to Midplane
+    (i.e. BP List -> MidplaneList).
 
 * Changes in SLURM 2.3.0
 ========================

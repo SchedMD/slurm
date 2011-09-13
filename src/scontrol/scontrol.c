@@ -1397,7 +1397,8 @@ _update_it (int argc, char *argv[])
 			step_tag = 1;
 		} else if (!strncasecmp(tag, "BlockName", MAX(tag_len, 3))) {
 			block_tag = 1;
-		} else if (!strncasecmp(tag, "SubBPName", MAX(tag_len, 3))) {
+		} else if (!strncasecmp(tag, "SubBPName", MAX(tag_len, 3))
+			   || !strncasecmp(tag, "SubMPName", MAX(tag_len, 3))) {
 			sub_tag = 1;
 		} else if (!strncasecmp(tag, "FrontendName",
 					MAX(tag_len, 2))) {
@@ -1408,7 +1409,7 @@ _update_it (int argc, char *argv[])
 		} else if (!strncasecmp(tag, "SlurmctldDebug",
 					MAX(tag_len, 2))) {
 			debug_tag= 1;
-		} 
+		}
 	}
 
 	/* The order of tests matters here.  An update job request can include
@@ -1441,7 +1442,7 @@ _update_it (int argc, char *argv[])
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
 		if(cluster_flags & CLUSTER_FLAG_BG) {
-			fprintf(stderr, "\"BlockName\", \"SubBPName\" "
+			fprintf(stderr, "\"BlockName\", \"SubMPName\" "
 				"(i.e. bgl000[0-3]),");
 		}
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
@@ -1574,12 +1575,13 @@ _update_bluegene_subbp (int argc, char *argv[])
 			vallen = strlen(val);
 		} else {
 			exit_code = 1;
-			error("Invalid input for BlueGene SubBPName update %s",
+			error("Invalid input for BlueGene SubMPName update %s",
 			      argv[i]);
 			return 0;
 		}
 
-		if (!strncasecmp(tag, "SubBPName", MAX(tag_len, 2)))
+		if (!strncasecmp(tag, "SubBPName", MAX(tag_len, 2))
+		    || !strncasecmp(tag, "SubMPName", MAX(tag_len, 2)))
 			block_msg.mp_str = val;
 		else if (!strncasecmp(tag, "State", MAX(tag_len, 2))) {
 			if (!strncasecmp(val, "ERROR", MAX(vallen, 1)))
@@ -1597,7 +1599,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 			update_cnt++;
 		} else {
 			exit_code = 1;
-			error("Invalid input for BlueGene SubBPName update %s",
+			error("Invalid input for BlueGene SubMPName update %s",
 			      argv[i]);
 			return 0;
 		}

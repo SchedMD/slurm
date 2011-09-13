@@ -483,11 +483,11 @@ static void _each_highlight_selected(GtkTreeModel *model,
 }
 
 
-static int _block_in_node(int *bp_inx, int inx)
+static int _block_in_node(int *mp_inx, int inx)
 {
 	int j=0;
-	if (bp_inx[j] >= 0) {
-		if ((bp_inx[j] == inx) && (bp_inx[j+1] == inx))
+	if (mp_inx[j] >= 0) {
+		if ((mp_inx[j] == inx) && (mp_inx[j+1] == inx))
 			return 1;
 	}
 	return 0;

@@ -614,7 +614,7 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL) {       /* Print the Header instead */
 		char *title = "NODELIST";
 		if(params.cluster_flags & CLUSTER_FLAG_BG)
-			title = "BP_LIST";
+			title = "MIDPLANELIST";
 		_print_str(title, width, right, false);
 	} else {
 		char *nodes = xstrdup(job->nodes);
@@ -645,7 +645,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 	if (job == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST(REASON)";
 		if(params.cluster_flags & CLUSTER_FLAG_BG)
-			title = "BP_LIST(REASON)";
+			title = "MIDPLANELIST(REASON)";
 		_print_str(title, width, right, false);
 	} else if (!IS_JOB_COMPLETING(job)
 		   && (IS_JOB_PENDING(job)
@@ -1309,7 +1309,7 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 	if (step == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST";
 		if(params.cluster_flags & CLUSTER_FLAG_BG)
-			title = "BP_LIST";
+			title = "MIDPLANELIST";
 
 		_print_str(title, width, right, false);
 	} else {

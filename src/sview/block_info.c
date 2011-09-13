@@ -43,7 +43,7 @@ typedef struct {
 	uint16_t state;
 	int size;
 	int cnode_cnt;
-	int *bp_inx;            /* list index pairs into node_table for *mp_str:
+	int *mp_inx;            /* list index pairs into node_table for *mp_str:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	int color_inx;
@@ -59,7 +59,6 @@ typedef struct {
 enum {
 	SORTID_POS = POS_LOC,
 	SORTID_BLOCK,
-	SORTID_NODELIST,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_CONN,
@@ -74,6 +73,7 @@ enum {
 	SORTID_IMAGERAMDISK,
 	SORTID_IMAGEMLOADER,
 #endif
+	SORTID_NODELIST,
 	SORTID_MP_STR,
 	SORTID_PARTITION,
 	SORTID_STATE,
@@ -88,7 +88,7 @@ enum {
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
 static char *_initial_page_opts = "Block_ID,State,JobID,User,Node_Count,"
-	"Node_Use,BP_List,Partition";
+	"Node_Use,MidplaneList,Partition";
 
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_block,
@@ -109,7 +109,7 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type",
 	 FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", FALSE,
+	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE,
 	 EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition",
 	 FALSE, EDIT_NONE, refresh_block,
@@ -161,7 +161,7 @@ static display_data_t options_data_block[] = {
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, BLOCK_PAGE},
-	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Midplanes", TRUE, BLOCK_PAGE},
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, BLOCK_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", TRUE, BLOCK_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -190,7 +190,7 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->imagelinux);
 		xfree(block_ptr->imagemloader);
 		xfree(block_ptr->imageramdisk);
-		/* don't xfree(block_ptr->bp_inx);
+		/* don't xfree(block_ptr->mp_inx);
 		   it isn't copied like the chars and is freed in the api
 		*/
 		xfree(block_ptr);
@@ -198,17 +198,17 @@ static void _block_list_del(void *object)
 	}
 }
 
-static int _in_slurm_partition(int *part_inx, int *bp_inx)
+static int _in_slurm_partition(int *part_inx, int *mp_inx)
 {
 	int found = 0;
 	int i=0, j=0;
 
-	while (bp_inx[i] >= 0) {
+	while (mp_inx[i] >= 0) {
 		j = 0;
 		found = 0;
 		while (part_inx[j] >= 0) {
-			if ((bp_inx[i] >= part_inx[j])
-			    && bp_inx[i+1] <= part_inx[j+1]) {
+			if ((mp_inx[i] >= part_inx[j])
+			    && mp_inx[i+1] <= part_inx[j+1]) {
 				found = 1;
 				break;
 			}
@@ -341,7 +341,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_IMAGELINUX,   block_ptr->imagelinux,
 			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
 			   SORTID_JOB,          job_running,
-			   SORTID_NODE_INX,     block_ptr->bp_inx,
+			   SORTID_NODE_INX,     block_ptr->mp_inx,
 			   SORTID_MP_STR,        cnode_cnt,
 			   SORTID_NODELIST,     block_ptr->mp_str,
 			   SORTID_PARTITION,    block_ptr->slurm_part_name,
@@ -571,12 +571,12 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 		block_ptr->cnode_cnt
 			= block_info_ptr->block_array[i].cnode_cnt;
-		block_ptr->bp_inx
+		block_ptr->mp_inx
 			= block_info_ptr->block_array[i].mp_inx;
 		for(j = 0; j < part_info_ptr->record_count; j++) {
 			part = part_info_ptr->partition_array[j];
 			if (_in_slurm_partition(part.node_inx,
-						block_ptr->bp_inx)) {
+						block_ptr->mp_inx)) {
 				block_ptr->slurm_part_name
 					= xstrdup(part.name);
 				break;
@@ -641,11 +641,11 @@ need_refresh:
 				state = NODE_STATE_IDLE;
 
 			j = 0;
-			while (block_ptr->bp_inx[j] >= 0) {
+			while (block_ptr->mp_inx[j] >= 0) {
 				change_grid_color(
 					popup_win->grid_button_list,
-					block_ptr->bp_inx[j],
-					block_ptr->bp_inx[j+1],
+					block_ptr->mp_inx[j],
+					block_ptr->mp_inx[j+1],
 					block_ptr->color_inx, true,
 					0);
 				j += 2;
@@ -1022,11 +1022,11 @@ display_it:
 		itr = list_iterator_create(block_list);
 		while ((sview_block_info_ptr = list_next(itr))) {
 			j=0;
-			while (sview_block_info_ptr->bp_inx[j] >= 0) {
+			while (sview_block_info_ptr->mp_inx[j] >= 0) {
 				change_grid_color(
 					grid_button_list,
-					sview_block_info_ptr->bp_inx[j],
-					sview_block_info_ptr->bp_inx[j+1],
+					sview_block_info_ptr->mp_inx[j],
+					sview_block_info_ptr->mp_inx[j+1],
 					sview_block_info_ptr->color_inx,
 					true, 0);
 				j += 2;
@@ -1277,11 +1277,11 @@ display_it:
 			state = NODE_STATE_IDLE;
 
 		j=0;
-		while (block_ptr->bp_inx[j] >= 0) {
+		while (block_ptr->mp_inx[j] >= 0) {
 			change_grid_color(
 				popup_win->grid_button_list,
-				block_ptr->bp_inx[j],
-				block_ptr->bp_inx[j+1], block_ptr->color_inx,
+				block_ptr->mp_inx[j],
+				block_ptr->mp_inx[j+1], block_ptr->color_inx,
 				true, state);
 			j += 2;
 		}
@@ -1362,7 +1362,7 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			 name);
 		break;
 	case NODE_PAGE:
-		snprintf(title, 100, "Base Partition(s) in block %s", name);
+		snprintf(title, 100, "Midplane(s) in block %s", name);
 		break;
 	case SUBMIT_PAGE:
 		snprintf(title, 100, "Submit job on %s", name);

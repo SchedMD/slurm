@@ -165,7 +165,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 					    SELECT_JOBDATA_IONODES,
 					    &io_nodes);
 		snprintf(tmp_line, sizeof(tmp_line),
-			"Partition=%s BP_List=%s[%s] Gres=%s",
+			"Partition=%s MidplaneList=%s[%s] Gres=%s",
 			job_step_ptr->partition,
 			job_step_ptr->nodes, io_nodes,
 			job_step_ptr->gres);

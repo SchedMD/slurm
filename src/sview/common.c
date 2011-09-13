@@ -355,7 +355,7 @@ cleanup:
 
 /* Translate a three-digit alpha-numeric value into it's
  * base 36 equivalent number */
-static int _xlate_bp_coord(const char *name)
+static int _xlate_mp_coord(const char *name)
 {
 	int i, rc = 0;
 
@@ -374,7 +374,7 @@ static int _xlate_bp_coord(const char *name)
  *       bg[234x235] ->  2,704,999
  *       bglZZZ      -> 46,655,999
  */
-static int _bp_coordinate(const char *name)
+static int _mp_coordinate(const char *name)
 {
 	int i, io_val = 999, low_val = -1;
 
@@ -382,14 +382,14 @@ static int _bp_coordinate(const char *name)
 		if (name[i] == '[') {
 			i++;
 			if (low_val < 0)
-				low_val = _xlate_bp_coord(name+i);
+				low_val = _xlate_mp_coord(name+i);
 			else
 				io_val = atoi(name+i);
 			break;
 		} else if ((low_val < 0) &&
 			   ((name[i] >= '0' && (name[i] <= '9')) ||
 			    (name[i] >= 'A' && (name[i] <= 'Z')))) {
-			low_val = _xlate_bp_coord(name+i);
+			low_val = _xlate_mp_coord(name+i);
 			i += 2;
 		}
 	}
@@ -399,7 +399,7 @@ static int _bp_coordinate(const char *name)
 	return ((low_val * 1000) + io_val);
 }
 
-static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
+static int _sort_iter_compare_func_mp_list(GtkTreeModel *model,
 					   GtkTreeIter  *a,
 					   GtkTreeIter  *b,
 					   gpointer      userdata)
@@ -417,7 +417,7 @@ static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
 		ret = (name1 == NULL) ? -1 : 1;
 	else {
 		/* Sort in numeric order based upon coordinates */
-		ret = _bp_coordinate(name1) - _bp_coordinate(name2);
+		ret = _mp_coordinate(name1) - _mp_coordinate(name2);
 	}
 cleanup:
 	g_free(name1);
@@ -953,13 +953,11 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	while ((col_name = list_next(itr))) {
 		replus(col_name);
 		if (strstr(col_name, "list")) {
-			if (cluster_flags & CLUSTER_FLAG_BG) {
-				xstrsubstitute(col_name, "node", "bp ");
-				xstrsubstitute(col_name, "midplane", "bp ");
-			} else {
-				xstrsubstitute(col_name, "bp ", "node");
+			xstrsubstitute(col_name, "bp ", "midplane");
+			if (cluster_flags & CLUSTER_FLAG_BG)
+				xstrsubstitute(col_name, "node", "midplane");
+			else
 				xstrsubstitute(col_name, "midplane", "node");
-			}
 		}
 		while (display_data++) {
 			if (display_data->id == -1)
@@ -1240,11 +1238,11 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 					NULL);
 				break;
 			} else if (!strcasecmp(display_data[i].name,
-					       "BP List")) {
+					       "MidplaneList")) {
 				gtk_tree_sortable_set_sort_func(
 					GTK_TREE_SORTABLE(treestore),
 					display_data[i].id,
-					_sort_iter_compare_func_bp_list,
+					_sort_iter_compare_func_mp_list,
 					GINT_TO_POINTER(display_data[i].id),
 					NULL);
 				break;

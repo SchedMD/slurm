@@ -584,7 +584,7 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 	} else {
 		char *title = "NODELIST";
 		if(params.cluster_flags & CLUSTER_FLAG_BG)
-			title = "BP_LIST";
+			title = "MIDPLANELIST";
 
 		_print_str(title, width, right_justify, false);
 	}
