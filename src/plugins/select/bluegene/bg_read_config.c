@@ -800,10 +800,14 @@ no_calc:
 	/* add blocks defined in file */
 	if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		if (!s_p_get_array((void ***)&blockreq_array,
-				   &count, "BPs", tbl)) {
-			info("WARNING: no blocks defined in bluegene.conf, "
-			     "only making full system block");
-			/* create_full_system_block(NULL); */
+				   &count, "MPs", tbl)) {
+			if (!s_p_get_array((void ***)&blockreq_array,
+					   &count, "BPs", tbl)) {
+				info("WARNING: no blocks defined in "
+				     "bluegene.conf, "
+				     "only making full system block");
+				/* create_full_system_block(NULL); */
+			}
 		}
 
 		for (i = 0; i < count; i++) {

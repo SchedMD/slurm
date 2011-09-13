@@ -90,6 +90,7 @@ static void _set_nodes(List nodes, int color, char letter)
 	while ((ba_mp = list_next(itr))) {
 		if (!ba_mp->used)
 			continue;
+		info("got %d", ba_mp->index);
 		smap_node = smap_system_ptr->grid[ba_mp->index];
 		smap_node->color = color;
 		smap_node->letter = letter;
@@ -987,7 +988,7 @@ static int _save_allocation(char *com, List allocated_blocks)
 #endif
 			}
 
-			xstrfmtcat(save_string, "BPs=%s", request->save_name);
+			xstrfmtcat(save_string, "MPs=%s", request->save_name);
 
 			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 				if (request->conn_type[i] == (uint16_t)NO_VAL)
@@ -1202,11 +1203,14 @@ static int _load_configuration(char *com, List allocated_blocks)
 
 	if (strcasecmp(layout_mode, "DYNAMIC")) {
 		if (!s_p_get_array((void ***)&blockreq_array,
-				   &count, "BPs", tbl)) {
-			memset(error_string, 0, 255);
-			sprintf(error_string,
-				"WARNING: no blocks defined in "
-				"bluegene.conf");
+				   &count, "MPs", tbl)) {
+			if (!s_p_get_array((void ***)&blockreq_array,
+					   &count, "BPs", tbl)) {
+				memset(error_string, 0, 255);
+				sprintf(error_string,
+					"WARNING: no blocks defined in "
+					"bluegene.conf");
+			}
 		}
 
 		for (i = 0; i < count; i++) {

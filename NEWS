@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     greatly.
  -- BLUEGENE - Change to output tools labels from BP to Midplane
     (i.e. BP List -> MidplaneList).
+ -- BLUEGENE - read MPs and BPs from the bluegene.conf
 
 * Changes in SLURM 2.3.0
 ========================
