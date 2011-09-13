@@ -953,12 +953,26 @@ extern void set_page_opts(int page, display_data_t *display_data,
 	while ((col_name = list_next(itr))) {
 		replus(col_name);
 		if (strstr(col_name, "list")) {
+			char *orig_ptr = col_name;
 			if (cluster_flags & CLUSTER_FLAG_BG) {
 				xstrsubstitute(col_name, "node", "bp ");
 				xstrsubstitute(col_name, "midplane", "bp ");
 			} else {
 				xstrsubstitute(col_name, "bp ", "node");
 				xstrsubstitute(col_name, "midplane", "node");
+			}
+
+			/* Make sure we have the correct pointer here
+			   since xstrsubstitute() could of changed it
+			   on us.
+			*/
+			if (col_name != orig_ptr) {
+				list_insert(itr, col_name);
+				/* Don't use list_delete_item().
+				   xstrsubstitute() has already
+				   deleted it for us.
+				*/
+				list_remove(itr);
 			}
 		}
 		while (display_data++) {

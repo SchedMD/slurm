@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.3.1
+========================
+ -- Fix for memory issue inside sview.
+
 * Changes in SLURM 2.3.0
 ========================
  -- BLUEGENE - make sure we only set the jobinfo_select start_loc on a job
