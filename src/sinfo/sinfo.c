@@ -501,7 +501,6 @@ static void _sort_hostlist(List sinfo_list)
 
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
-
 	if (params.match_flags.hostnames_flag ||
 	    params.match_flags.node_addr_flag)
 		return false;
