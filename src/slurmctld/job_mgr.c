@@ -1454,6 +1454,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->limit_set_time      = limit_set_time;
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
+	/* This needs to always to initialized to "true".  The select
+	   plugin will deal with it every time it goes through the
+	   logic if req_switch or wait4switch are set.
+	*/
+	job_ptr->best_switch     = true;
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 

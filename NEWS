@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.3.1
 ========================
  -- Fix for memory issue inside sview.
+ -- Fix issue where if a job was pending and the slurmctld was restarted a
+    variable wasn't initialized in the job structure making it so that job
+    wouldn't run.
 
 * Changes in SLURM 2.3.0
 ========================
