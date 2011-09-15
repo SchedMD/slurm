@@ -610,7 +610,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		else {
 			Cable::ConstPtr my_cable = my_switch->getCable();
 			_handle_cable_change(dim, ba_mp,
-					     my_switch->getState());
+					     my_cable->getState());
 		}
 	}
 }
