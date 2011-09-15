@@ -581,6 +581,15 @@ extern int check_and_set_mp_list(List mps)
 
 			if (ba_switch->usage == BG_SWITCH_NONE)
 				continue;
+			else if ((ba_switch->usage == BG_SWITCH_CABLE_ERROR)
+				 || (ba_switch->usage ==
+				     BG_SWITCH_CABLE_ERROR_SET)) {
+				error("check_and_set_mp_list: Somehow we got "
+				      "a switch with an error set in it.  "
+				      "This should never happen.");
+				continue;
+			}
+
 
 			if (ba_switch->usage & curr_ba_switch->usage) {
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)

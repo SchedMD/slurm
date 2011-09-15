@@ -969,10 +969,22 @@ extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps, bool wrap_it)
 			ba_mp->axis_switch[i].int_wire[j].port_tar = j;
 		}
 #endif
+		if (ba_mp->axis_switch[i].usage & BG_SWITCH_CABLE_ERROR)
+			set_error = 1;
+
 		if (wrap_it)
 			ba_mp->axis_switch[i].usage = BG_SWITCH_WRAPPED;
 		else
 			ba_mp->axis_switch[i].usage = BG_SWITCH_NONE;
+
+		if (set_error) {
+			if (track_down_mps)
+				ba_mp->axis_switch[i].usage
+					|= BG_SWITCH_CABLE_ERROR_SET;
+			else
+				ba_mp->axis_switch[i].usage
+					|= BG_SWITCH_CABLE_ERROR;
+		}
 		ba_mp->alter_switch[i].usage = BG_SWITCH_NONE;
 	}
 }
@@ -1491,8 +1503,16 @@ extern int validate_coord(uint16_t *coord)
 
 extern char *ba_switch_usage_str(uint16_t usage)
 {
-	switch (usage) {
+	bool error_set = (usage & BG_SWITCH_CABLE_ERROR);
+	uint16_t local_usage = usage;
+
+	if (error_set)
+		local_usage &= (~BG_SWITCH_CABLE_ERROR_SET);
+
+	switch (local_usage) {
 	case BG_SWITCH_NONE:
+		if (error_set)
+			return "ErrorOut";
 		return "None";
 	case BG_SWITCH_WRAPPED_PASS:
 		return "WrappedPass";
@@ -1501,14 +1521,20 @@ extern char *ba_switch_usage_str(uint16_t usage)
 	case BG_SWITCH_PASS:
 		return "Passthrough";
 	case BG_SWITCH_WRAPPED:
+		if (error_set)
+			return "Wrapped,ErrorOut";
 		return "Wrapped";
 	case (BG_SWITCH_OUT | BG_SWITCH_OUT_PASS):
 		return "OutLeaving";
 	case BG_SWITCH_OUT:
 		return "Out";
 	case (BG_SWITCH_IN | BG_SWITCH_IN_PASS):
+		if (error_set)
+			return "InComming,ErrorOut";
 		return "InComming";
 	case BG_SWITCH_IN:
+		if (error_set)
+			return "In,ErrorOut";
 		return "In";
 	default:
 		error("unknown switch usage %u", usage);

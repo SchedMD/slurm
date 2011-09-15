@@ -210,23 +210,71 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				 EnumWrapper<Hardware::State> state)
 {
-	/* FIXME: uncomment this code when the block_allocator is
-	   ready to handle the new BG_SWITCH_CABLE_ERROR.
-	*/
-	// if (state == Hardware::Available) {
-	// 	/* no change */
-	// 	if (!(ba_mp->axis_switch[dim] & BG_SWITCH_CABLE_ERROR))
-	// 		return;
-	// 	ba_mp->axis_switch[dim] &= (~BG_SWITCH_CABLE_ERROR);
-	// 	info("Cable in dim '%u' on Midplane %s(%s), "
-	// 	     "has returned to service",
-	// 	     dim, ba_mp->coord_str);
-	// } else if (!(ba_mp->axis_switch[dim] & BG_SWITCH_CABLE_ERROR)) {
-	// 	ba_mp->axis_switch[dim] |= BG_SWITCH_CABLE_ERROR;
-	// 	error("Cable at dim '%d' on Midplane %s, "
-	// 	      "state went to %d, marking midplane down.",
-	// 	      dim, ba_mp->coord_str, state.toValue());
-	// }
+	if (state == Hardware::Available) {
+		/* no change */
+		if (!(ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR))
+			return;
+		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_SET);
+		info("Cable in dim '%u' on Midplane %s, "
+		     "has returned to service",
+		     dim, ba_mp->coord_str);
+		/* Don't resume any blocks in the error, Admins will
+		   do this when they make sure it is ready.  Really
+		   only matters for static blocks.  On a dynamic
+		   system no block will be left around if a cable is bad.
+		*/
+	} else if (!(ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR)) {
+		bg_record_t *bg_record = NULL, *smallest_bg_record = NULL;
+		ListIterator itr;
+		List delete_list = NULL;
+		ba_mp_t *next_ba_mp = ba_mp->next_mp[dim];
+		bool delete_it = 0;
+		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_SET;
+		error("Cable at dim '%d' on Midplane %s, "
+		      "state went to %d, marking cable down.",
+		      dim, ba_mp->coord_str, state.toValue());
+
+		/* Now handle potential overlapping blocks. */
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			delete_it = 1;
+
+		slurm_mutex_lock(&block_state_mutex);
+		delete_list = list_create(NULL);
+		itr = list_iterator_create(bg_lists->main);
+		while ((bg_record = (bg_record_t *)list_next(itr))) {
+			if (bg_record->mp_count == 1)
+				continue;
+			if (!bit_test(bg_record->mp_bitmap, ba_mp->index))
+				continue;
+			if (!bit_test(bg_record->mp_bitmap, next_ba_mp->index))
+				continue;
+			/* This block uses the wire so we need to take
+			 * care of it.  We only need to put one block
+			 * in an error, so pick the smallest one.
+			 */
+			if ((bg_conf->layout_mode != LAYOUT_DYNAMIC)
+			    && (!smallest_bg_record
+				|| (smallest_bg_record->mp_count
+				    > bg_record->mp_count)))
+				smallest_bg_record = bg_record;
+
+			list_push(delete_list, bg_record);
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&block_state_mutex);
+
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
+		list_destroy(delete_list);
+
+		if (smallest_bg_record) {
+			char reason[200];
+			snprintf(reason, sizeof(reason),
+				 "Cable going from %s -> %s went into "
+				 "an error state (%d).", ba_mp->coord_str,
+				 next_ba_mp->coord_str, state.toValue());
+			put_block_in_error_state(smallest_bg_record, reason);
+		}
+	}
 }
 
 

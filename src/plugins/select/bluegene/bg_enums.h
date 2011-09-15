@@ -126,6 +126,17 @@ typedef enum {
 #define BG_SWITCH_PASS         0x001C /* just passthough used */
 #define BG_SWITCH_WRAPPED_PASS 0x001F /* all ports are in use, but no torus */
 #define BG_SWITCH_TORUS        0x000F /* all ports are in use in a torus */
+#define BG_SWITCH_CABLE_ERROR  0x0100 /* Flag to notify cable is in a
+				       * error state.
+				       */
+#define BG_SWITCH_CABLE_ERROR_SET  0x0104 /* If a cable goes into an error
+					   * state we set the cable in
+					   * an error and the OUT_PASS
+					   * as well.
+					   * Currently SLURM only really
+					   * cares about the out port of a
+					   * switch.
+					   */
 #define BG_SWITCH_START        0x0200 /* modified from the start list */
 
 /*
