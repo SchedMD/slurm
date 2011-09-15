@@ -1017,7 +1017,6 @@ static int _find_best_block_match(List block_list,
 
 		/* set the bitmap and do other allocation activities */
 		if (bg_record) {
-#ifdef HAVE_BG_L_P
 			if (!is_test) {
 				if (bridge_block_check_mp_states(
 					    bg_record->bg_block_id, 1)
@@ -1042,7 +1041,7 @@ static int _find_best_block_match(List block_list,
 					continue;
 				}
 			}
-#endif
+
 			format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 
 			debug("_find_best_block_match %s <%s>",
