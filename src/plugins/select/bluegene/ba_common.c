@@ -952,11 +952,12 @@ extern void ba_setup_mp(ba_mp_t *ba_mp, bool track_down_mps, bool wrap_it)
 	int i;
 	uint16_t node_base_state = ba_mp->state & NODE_STATE_BASE;
 
-	if (!track_down_mps ||((node_base_state != NODE_STATE_DOWN)
-			       && !(ba_mp->state & NODE_STATE_DRAIN)))
+	if (!track_down_mps || ((node_base_state != NODE_STATE_DOWN)
+				&& !(ba_mp->state & NODE_STATE_DRAIN)))
 		ba_mp->used = BA_MP_USED_FALSE;
 
-	for (i=0; i<cluster_dims; i++){
+	for (i=0; i<cluster_dims; i++) {
+		bool set_error = 0;
 #ifdef HAVE_BG_L_P
 		int j;
 		for (j=0;j<NUM_PORTS_PER_NODE;j++) {
