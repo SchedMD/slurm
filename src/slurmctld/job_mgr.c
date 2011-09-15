@@ -7705,8 +7705,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		job_ptr->state_reason = fail_reason;
 		xfree(job_ptr->state_desc);
 		return error_code;
-	} else
+	} else if ((job_ptr->state_reason != WAIT_HELD) &&
+		   (job_ptr->state_reason != WAIT_HELD_USER)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
+	}
 
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
