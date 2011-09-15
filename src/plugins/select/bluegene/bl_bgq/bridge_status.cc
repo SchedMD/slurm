@@ -609,8 +609,12 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 					   my_switch->getState());
 		else {
 			Cable::ConstPtr my_cable = my_switch->getCable();
-			_handle_cable_change(dim, ba_mp,
-					     my_cable->getState());
+			/* Dimensions of length 1 do not have a
+			   cable. (duh).
+			*/
+			if (my_cable)
+				_handle_cable_change(dim, ba_mp,
+						     my_cable->getState());
 		}
 	}
 }
