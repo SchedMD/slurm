@@ -1441,6 +1441,8 @@ static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
 			alter_switch->usage |= BG_SWITCH_IN_PASS;
 			alter_switch->usage |= BG_SWITCH_IN;
 			if ((count < geometry) || (conn_type == SELECT_TORUS)) {
+				if (_mp_out_used(curr_mp, dim))
+					return 0;
 				alter_switch->usage |= BG_SWITCH_OUT;
 				alter_switch->usage |= BG_SWITCH_OUT_PASS;
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
