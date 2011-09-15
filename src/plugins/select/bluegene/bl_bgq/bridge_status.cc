@@ -640,7 +640,7 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 static void *_poll(void *no_data)
 {
 	event_handler_t event_hand;
-	time_t last_ran = time(NULL);
+	time_t last_ran = 0;
 	time_t curr_time;
 
 	while (bridge_status_inited) {
@@ -658,10 +658,10 @@ static void *_poll(void *no_data)
 			ComputeHardware::ConstPtr bgqsys = getComputeHardware();
 			uint16_t coords[SYSTEM_DIMENSIONS];
 			_do_hardware_poll(0, coords, bgqsys);
+			last_ran = time(NULL);
 		}
 
 		slurm_mutex_unlock(&rt_mutex);
-		last_ran = time(NULL);
 		sleep(1);
 	}
 	return NULL;
