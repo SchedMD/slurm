@@ -46,6 +46,8 @@ extern "C" {
 #  include "config.h"
 #endif
 #include "src/common/xmalloc.h"
+#include "src/common/list.h"
+#include "src/common/hostlist.h"
 #include <slurm/slurm.h>
 
 }
@@ -86,11 +88,38 @@ private:
 	boost::mutex _mutex;
 };
 
+typedef struct {
+	char *bg_block_id;
+	pid_t pid;             /* The only way we can track things
+				  since we don't have a jobid from
+				  mmcs in the verify state.
+			       */
+	uint32_t job_id;
+	uint32_t step_id;
+	char *total_cnodes;
+} runjob_job_t;
+
+static List runjob_list = NULL;
+static pthread_mutex_t runjob_list_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
+static void _destroy_runjob_job(void *object)
+{
+	runjob_job_t *runjob_job = (runjob_job_t *)object;
+	if (runjob_job) {
+		xfree(runjob_job->bg_block_id);
+		xfree(runjob_job->total_cnodes);
+		xfree(runjob_job);
+	}
+}
+
 Plugin::Plugin() :
 	bgsched::runjob::Plugin(),
 	_mutex()
 {
 	assert(HIGHEST_DIMENSIONS >= Dimension::NodeDims);
+
+	runjob_list = list_create(_destroy_runjob_job);
 
 	std::cout << "Slurm runjob plugin loaded" << std::endl;
 }
@@ -98,6 +127,10 @@ Plugin::Plugin() :
 Plugin::~Plugin()
 {
 	std::cout << "Slurm runjob plugin finished" << std::endl;
+	slurm_mutex_lock(&runjob_list_lock);
+	list_destroy(runjob_list);
+	runjob_list = NULL;
+	slurm_mutex_unlock(&runjob_list_lock);
 }
 
 void Plugin::execute(bgsched::runjob::Verify& verify)
@@ -112,11 +145,14 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	bool sub_block_job = 0;
 	job_step_info_response_msg_t * step_resp = NULL;
 	job_step_info_t *step_ptr = NULL;
-	uint32_t job_id = NO_VAL, step_id = NO_VAL;
-	char *bg_block_id = NULL;
+	runjob_job_t *runjob_job = NULL;
 
 	geo[0] = NO_VAL;
 	start_coords[0] = NO_VAL;
+
+	runjob_job = (runjob_job_t *)xmalloc(sizeof(runjob_job_t));
+	runjob_job->job_id = NO_VAL;
+	runjob_job->step_id = NO_VAL;
 
 	/* Get the job/step id's from the environment and then go
 	 * verify with the slurmctld where this step should be running.
@@ -124,10 +160,10 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	BOOST_FOREACH(const bgsched::runjob::Environment& env_var,
 		      verify.envs()) {
 		if (env_var.getKey() == "SLURM_JOB_ID") {
-			job_id = atoi(env_var.getValue().c_str());
+			runjob_job->job_id = atoi(env_var.getValue().c_str());
 			found++;
 		} else if (env_var.getKey() == "SLURM_STEP_ID") {
-			step_id = atoi(env_var.getValue().c_str());
+			runjob_job->step_id = atoi(env_var.getValue().c_str());
 			found++;
 		}
 
@@ -138,7 +174,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	if (found != looking_for)
 		goto deny_job;
 
-	if (slurm_get_job_steps((time_t) 0, job_id, step_id,
+	if (slurm_get_job_steps((time_t) 0, runjob_job->job_id,
+				runjob_job->step_id,
 				&step_resp, SHOW_ALL)) {
 		slurm_perror((char *)"slurm_get_job_steps error");
 		goto deny_job;
@@ -146,7 +183,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 
 	if (!step_resp->job_step_count) {
 		std::cerr << "No steps match this id "
-			  << job_id << "." << step_id << std::endl;
+			  << runjob_job->job_id << "."
+			  << runjob_job->step_id << std::endl;
 		goto deny_job;
 	}
 
@@ -156,7 +194,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	   supposed to be running.
 	*/
 	if (verify.user().uid() != step_ptr->user_id) {
-		std::cerr << "Jobstep " << job_id << "." << step_id
+		std::cerr << "Jobstep " << runjob_job->job_id << "."
+			  << runjob_job->step_id
 			  << " should be ran by uid " << step_ptr->user_id
 			  << " but it is trying to be ran by "
 			  << verify.user().uid() << std::endl;
@@ -165,12 +204,18 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_BLOCK_ID,
-				     &bg_block_id)) {
+				     &runjob_job->bg_block_id)) {
 		std::cerr << "Can't get the block id!" << std::endl;
 		goto deny_job;
 	}
-	verify.block(bg_block_id);
-	xfree(bg_block_id);
+	verify.block(runjob_job->bg_block_id);
+
+	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
+				     SELECT_JOBDATA_IONODES,
+				     &runjob_job->total_cnodes)) {
+		std::cerr << "Can't get the cnode string!" << std::endl;
+		goto deny_job;
+	}
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_BLOCK_NODE_CNT,
@@ -269,10 +314,18 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	// const ProcessTree tree( verify.pid() );
 	// std::cout << tree << std::endl;
 
+	runjob_job->pid = verify.pid();
+
+	slurm_mutex_lock(&runjob_list_lock);
+	if (runjob_list)
+		list_append(runjob_list, runjob_job);
+	slurm_mutex_unlock(&runjob_list_lock);
+
 	slurm_free_job_step_info_response_msg(step_resp);
 	return;
 
 deny_job:
+	_destroy_runjob_job(runjob_job);
 	slurm_free_job_step_info_response_msg(step_resp);
 	verify.deny_job(bgsched::runjob::Verify::DenyJob::Yes);
 	return;
@@ -287,6 +340,10 @@ void Plugin::execute(const bgsched::runjob::Started& data)
 
 void Plugin::execute(const bgsched::runjob::Terminated& data)
 {
+	ListIterator itr = NULL;
+	runjob_job_t *runjob_job = NULL;
+	block_cnode_fail_t block_cnode_fail;
+
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	// std::cout << "runjob " << data.pid() << " shadowing job "
 	// 	  << data.job() << " finished with status "
@@ -295,16 +352,82 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 	// output failed nodes
 	const bgsched::runjob::Terminated::Nodes& nodes =
 		data.software_error_nodes();
-	if (!nodes.empty()) {
-		/* FIXME: We sould tell the slurmctld about this
-		   instead of just printing it out.
-		*/
+
+	slurm_mutex_lock(&runjob_list_lock);
+	if (runjob_list) {
+		itr = list_iterator_create(runjob_list);
+		while ((runjob_job = (runjob_job_t *)list_next(itr))) {
+			if (runjob_job->pid == data.pid()) {
+				list_remove(itr);
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+	slurm_mutex_unlock(&runjob_list_lock);
+
+	if (!runjob_job) {
+		if (runjob_list)
+			std::cerr << "Couldn't find job running with pid "
+				  << data.pid() << std::endl;
+	} else if (data.kill_timeout()) {
+		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
+			  << " had a kill_timeout()" << std::endl;
+		memset(&block_cnode_fail, 0, sizeof(block_cnode_fail_t));
+		block_cnode_fail.bg_block_id = runjob_job->bg_block_id;
+		block_cnode_fail.cnodes = runjob_job->total_cnodes;
+		block_cnode_fail.job_id = runjob_job->job_id;
+		block_cnode_fail.step_id = runjob_job->step_id;
+		/* FIXME: send to the slurmctld here */
+
+	} else if (!nodes.empty()) {
+		hostlist_t hl = hostlist_create_dims(NULL, 5);
+		char tmp_char[6];
+
 		std::cerr << nodes.size() << " failed nodes" << std::endl;
 		BOOST_FOREACH(const bgsched::runjob::Node& i, nodes) {
+			sprintf(tmp_char, "%u%u%u%u%u",
+				i.coordinates().a(),
+				i.coordinates().b(),
+				i.coordinates().c(),
+				i.coordinates().d(),
+				i.coordinates().e());
+			hostlist_push_host_dims(hl, tmp_char, 5);
 			std::cerr << i.location() << ": "
-				  << i.coordinates() << std::endl;
+				  << i.coordinates()
+				  << tmp_char << std::endl;
 		}
+
+		memset(&block_cnode_fail, 0, sizeof(block_cnode_fail_t));
+		block_cnode_fail.bg_block_id = runjob_job->bg_block_id;
+		block_cnode_fail.cnodes =
+			hostlist_ranged_string_xmalloc_dims(hl, 5, 0);
+		hostlist_destroy(hl);
+		hl = NULL;
+		block_cnode_fail.job_id = runjob_job->job_id;
+		block_cnode_fail.step_id = runjob_job->step_id;
+		block_cnode_fail.relative = 1;
+
+		std::cerr << "total was "
+			  << block_cnode_fail.cnodes << std::endl;
+
+
+		/* FIXME: send to the slurmctld here */
+		xfree(block_cnode_fail.cnodes);
+	} else if (!data.message().empty()) {
+		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
+			  << " had a message of '" << data.message()
+			  << "'.  Failing the cnodes on the job."
+			  << std::endl;
+		memset(&block_cnode_fail, 0, sizeof(block_cnode_fail_t));
+		block_cnode_fail.bg_block_id = runjob_job->bg_block_id;
+		block_cnode_fail.cnodes = runjob_job->total_cnodes;
+		block_cnode_fail.job_id = runjob_job->job_id;
+		block_cnode_fail.step_id = runjob_job->step_id;
+		/* FIXME: send to the slurmctld here */
 	}
+
+	_destroy_runjob_job(runjob_job);
 }
 
 extern "C" bgsched::runjob::Plugin* create()

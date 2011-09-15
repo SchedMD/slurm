@@ -1537,6 +1537,17 @@ typedef struct partition_info_msg {
 /* BLUEGENE specific information */
 
 typedef struct {
+	char *bg_block_id;      /* name of block that had the failing */
+	char *cnodes;           /* cnodes that failed */
+	uint32_t job_id;        /* jobid of job that was involved in
+				   the failing */
+	uint16_t relative;      /* if the cnodes are relative or
+				   absolute */
+	uint32_t step_id;       /* stepid of job that was involved in
+				 * the failing */
+} block_cnode_fail_t;
+
+typedef struct {
 	char *cnodes;           /* used for sub-block jobs */
 	int *cnode_inx;         /* list index pairs for cnodes in the
 				 * node listed for *cnodes:
