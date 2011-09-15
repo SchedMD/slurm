@@ -742,7 +742,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 						|= BG_SWITCH_WRAPPED;
 					if (ba_debug_flags
 					    & DEBUG_FLAG_BG_ALGO_DEEP)
-						info("_fill_in_wires: "
+						info("set_bg_block: "
 						     "using mp %s(%d) "
 						     "in 1 geo %s added %s",
 						     ba_mp->coord_str, dim,
