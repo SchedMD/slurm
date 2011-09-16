@@ -282,10 +282,21 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 				   thread safe here) we must do it
 				   now.
 				*/
-				if (init_record->job_running > NO_JOB_RUNNING) {
-					/* The slurmctld is already
-					   locked here so don't worry
-					   about locking the job lock.
+				if ((init_record->job_running > NO_JOB_RUNNING)
+				    || init_record->job_ptr) {
+					/* Don't worry about dealing
+					   with this job here.  Trying
+					   to requeue/cancel now will
+					   cause a race condition
+					   locking up the slurmctld.
+					   It will be handled when the
+					   blocks are synced.  This
+					   should only happen if the
+					   bluegene.conf gets changed
+					   and jobs are running on
+					   blocks that don't exist in
+					   the new config (hopefully
+					   rarely).
 					*/
 					init_record->job_running =
 						NO_JOB_RUNNING;
