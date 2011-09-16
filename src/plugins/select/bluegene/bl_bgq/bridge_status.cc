@@ -214,7 +214,7 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		/* no change */
 		if (!(ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR))
 			return;
-		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_SET);
+		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_FULL);
 		info("Cable in dim '%u' on Midplane %s, "
 		     "has returned to service",
 		     dim, ba_mp->coord_str);
@@ -229,7 +229,7 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		List delete_list = NULL;
 		ba_mp_t *next_ba_mp = ba_mp->next_mp[dim];
 		bool delete_it = 0;
-		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_SET;
+		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_FULL;
 		error("Cable at dim '%d' on Midplane %s, "
 		      "state went to %d, marking cable down.",
 		      dim, ba_mp->coord_str, state.toValue());

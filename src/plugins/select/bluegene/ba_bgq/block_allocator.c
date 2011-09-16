@@ -581,9 +581,8 @@ extern int check_and_set_mp_list(List mps)
 
 			if (ba_switch->usage == BG_SWITCH_NONE)
 				continue;
-			else if ((ba_switch->usage == BG_SWITCH_CABLE_ERROR)
-				 || (ba_switch->usage ==
-				     BG_SWITCH_CABLE_ERROR_SET)) {
+			else if (ba_switch->usage
+				 & BG_SWITCH_CABLE_ERROR_FULL) {
 				error("check_and_set_mp_list: Somehow we got "
 				      "a switch with an error set in it.  "
 				      "This should never happen.");
@@ -1621,8 +1620,9 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim)
 	xassert(ba_mp);
 
 	/* If the mp is already used just check the PASS_USED. */
-	if ((ba_mp->axis_switch[dim].usage & BG_SWITCH_PASS_USED)
-	    || (ba_mp->alter_switch[dim].usage & BG_SWITCH_PASS_USED)) {
+	if ((ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR_SET)
+	    || (ba_mp->axis_switch[dim].usage & BG_SWITCH_OUT_PASS)
+	    || (ba_mp->alter_switch[dim].usage & BG_SWITCH_OUT_PASS)) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("mp %s(%d) has passthroughs used (%s)",
 			     ba_mp->coord_str, dim, ba_switch_usage_str(
