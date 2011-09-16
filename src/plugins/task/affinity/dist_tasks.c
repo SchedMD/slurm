@@ -340,6 +340,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		      "nodes:%d sockets:%d:%d cores:%d:%d threads:%d",
 		      max_tasks, whole_nodes, whole_sockets ,part_sockets,
 		      whole_cores, part_cores, whole_threads);
+
 		if ((max_tasks == whole_sockets) && (part_sockets == 0)) {
 			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 			goto make_auto;
@@ -672,39 +673,38 @@ static void _blot_mask(bitstr_t *mask, uint16_t blot)
 	}
 }
 
-/* helper function for _expand_masks() 
- * foreach task, consider which other tasks have set bits on the same socket */
+/* helper function for _expand_masks()
+ * for each task, consider which other bits are set in avail_map
+ * on the same socket */
 static void _blot_mask_sockets(const uint32_t maxtasks, const uint32_t task,
-			       bitstr_t **masks, uint16_t blot)
+			       bitstr_t **masks, uint16_t blot,
+			       bitstr_t *avail_map)
 {
-        uint16_t i, j, size = 0;
-        uint32_t q;
+  	uint16_t i, j, size = 0;
 
-        if (!masks[task])
-                return;
+	if (!masks[task])
+ 		return;
 
-        size = bit_size(masks[task]);
-        for (i = 0; i < size; i++) {
-                if (bit_test(masks[task], i)) {
-			/* check if other tasks have set bits on this socket */
-                        uint16_t start = (i / blot) * blot;
-                        for (j = start; j < start+blot; j++) {
-                                for (q = 0; q < maxtasks; q++) {
-                                        if ((q != task) &&
-					    bit_test(masks[q], j)) {
-						bit_set(masks[task], j);
-					}
-				}
+	size = bit_size(masks[task]);
+	for (i = 0; i < size; i++) {
+		if (bit_test(masks[task], i)) {
+			/* check if other bits are set in avail_map on this
+			 * socket and set each corresponding bit in masks */
+			uint16_t start = (i / blot) * blot;
+			for (j = start; j < start+blot; j++) {
+				if (bit_test(avail_map, j))
+					bit_set(masks[task], j);
 			}
 		}
 	}
 }
 
-/* foreach mask, expand the mask around the set bits to include the
+/* for each mask, expand the mask around the set bits to include the
  * complete resource to which the set bits are to be bound */
 static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
 			  bitstr_t **masks, uint16_t hw_sockets,
-			  uint16_t hw_cores, uint16_t hw_threads)
+			  uint16_t hw_cores, uint16_t hw_threads,
+			  bitstr_t *avail_map)
 {
 	uint32_t i;
 
@@ -722,7 +722,8 @@ static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
 		if (hw_threads*hw_cores < 2)
 			return;
 		for (i = 0; i < maxtasks; i++) {
-			_blot_mask_sockets(maxtasks, i, masks, hw_threads*hw_cores);
+   			_blot_mask_sockets(maxtasks, i, masks,
+					   hw_threads*hw_cores, avail_map);
 		}
 		return;
 	}
@@ -801,12 +802,12 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 				break;
 		}
 	}
-	FREE_NULL_BITMAP(avail_map);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
 	_expand_masks(req->cpu_bind_type, max_tasks, masks,
-			hw_sockets, hw_cores, hw_threads);
+			hw_sockets, hw_cores, hw_threads, avail_map);
+	FREE_NULL_BITMAP(avail_map);
 
 	return SLURM_SUCCESS;
 }
@@ -891,6 +892,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 								  block_map_size);
 					}
 					bit_set(masks[taskcount], bit);
+
 					if (++i < req->cpus_per_task)
 						continue;
 					i = 0;
@@ -904,12 +906,12 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				break;
 		}
 	}
-	FREE_NULL_BITMAP(avail_map);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
 	_expand_masks(req->cpu_bind_type, max_tasks, masks,
-			hw_sockets, hw_cores, hw_threads);
+			hw_sockets, hw_cores, hw_threads, avail_map);
+	FREE_NULL_BITMAP(avail_map);
 
 	return SLURM_SUCCESS;
 }
@@ -1048,12 +1050,12 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 
 	xfree(task_array);
-	FREE_NULL_BITMAP(avail_map);
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
 	_expand_masks(req->cpu_bind_type, max_tasks, masks,
-			hw_sockets, hw_cores, hw_threads);
+			hw_sockets, hw_cores, hw_threads, avail_map);
+	FREE_NULL_BITMAP(avail_map);
 
 	return SLURM_SUCCESS;
 }
