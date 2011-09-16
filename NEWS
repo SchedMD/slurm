@@ -10,6 +10,15 @@ documents those changes that are of interest to users and admins.
     (i.e. BP List -> MidplaneList).
  -- BLUEGENE - read MPs and BPs from the bluegene.conf
 
+* Changes in SLURM 2.3.1
+========================
+ -- Do not remove the backup slurmctld's pid file when it assumes control, only
+    when it actually shuts down. Patch from Andriy Grytsenko (Massive Solutions
+    Limited).
+ -- Avoid clearing a job's reason from JobHeldAdmin or JobHeldUser when it is
+    otherwise updated using scontrol or sview commands. Patch based upon work
+    by Phil Eckert (LLNL).
+
 * Changes in SLURM 2.3.0-2
 ==========================
  -- Fix for memory issue inside sview.
