@@ -175,7 +175,7 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 
 	process_nodes(bg_record, true);
 
-	reset_ba_system(true);
+	reset_ba_system(false);
 	if (ba_set_removable_mps(bg_record->mp_bitmap, 1) != SLURM_SUCCESS)
 		fatal("It doesn't seem we have a bitmap for %s",
 		      bg_record->bg_block_id);
