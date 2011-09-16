@@ -106,7 +106,7 @@ ReservationName=root_5 StartTime=2009-02-04T16:22:57
    Users=root Accounts=(null)
 </pre>
 
-<p>Our final example is to reserve ten nodes in the default
+<p>Our next example is to reserve ten nodes in the default
 SLURM partition starting at noon and with a duration of 60
 minutes occurring daily. The reservation will be available
 only to users alan and brenda.</p>
@@ -130,6 +130,28 @@ users to stage files to the nodes in preparation for use during the
 reservation. Note that the reservation creation request can also
 identify the partition from which to select the nodes or _one_
 feature that every selected node must contain.</p>
+
+<p>On a smaller system, one might want to reserve specific CPUs rather than
+whole nodes. While the resolution of SLURM's resource reservation is that of
+whole nodes, one might configure each CPU as a license to SLURM and reserve
+those instead (we understand this is a kludge, but it does provide a way to
+work around this shortcoming in SLURM's code). Proper enforcement then requires
+that each job request one "cpu" license for each CPU to be allocated, which
+can be accomplished by an appropriate job_submit plugin. In the example below,
+we configure the system with one license named "cpu" for each CPU in the
+system, 64 in this example, then create a reservation for 32 CPUs. The
+user developed job_submit plugin would then explicitly set the job's
+licenses field to require one "cpu" for each physical CPU required to satisfy
+the request.</p>
+<pre>
+$ scontrol show configuration | grep Licenses
+Licenses  = cpu*64
+
+$ scontrol create reservation starttime=2009-04-06T16:00:00 \
+   duration=120 user=bob flags=maint,ignore_jobs \
+   licenses=cpu*32
+Reservation created: bob_5
+</pre>
 
 <h2>Reservation Use</h2>
 
@@ -252,9 +274,11 @@ the highest level rather than the actual level of time-slicing when
 considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</li>
+<li>Add support to reserve specific CPU counts rather than require whole
+nodes be reserved (work around described above).</li>
 </ol>
 
-<p style="text-align: center;">Last modified 16 March 2011</p>
+<p style="text-align: center;">Last modified 15 September 2011</p>
 
 <!--#include virtual="footer.txt"-->
 
