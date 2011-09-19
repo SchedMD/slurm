@@ -2,13 +2,15 @@ This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.1
-======================== 
+========================
  -- Do not remove the backup slurmctld's pid file when it assumes control, only
     when it actually shuts down. Patch from Andriy Grytsenko (Massive Solutions
     Limited).
  -- Avoid clearing a job's reason from JobHeldAdmin or JobHeldUser when it is
     otherwise updated using scontrol or sview commands. Patch based upon work
     by Phil Eckert (LLNL).
+ -- BLUEGENE - Fix for if changing the defined blocks in the bluegene.conf and
+    jobs happen to be running on blocks not in the new config.
 
 * Changes in SLURM 2.3.0-2
 ==========================
