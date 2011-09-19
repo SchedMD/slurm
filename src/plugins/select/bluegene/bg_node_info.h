@@ -55,6 +55,9 @@ typedef struct {
 struct select_nodeinfo {
 	ba_mp_t *ba_mp;
 	uint16_t bitmap_size;
+	char *extra_info;       /* Currently used to tell if a cable
+				   is in an error state.
+				*/
 	uint16_t magic;		/* magic number */
 	List subgrp_list;
 };

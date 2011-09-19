@@ -133,7 +133,25 @@ extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 	node_subgrp_t *subgrp = NULL;
 	uint16_t count = 0;
 
-	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		pack16(nodeinfo->bitmap_size, buffer);
+
+		packstr(nodeinfo->extra_info, buffer);
+
+		if (nodeinfo->subgrp_list)
+			count = list_count(nodeinfo->subgrp_list);
+
+		pack16(count, buffer);
+
+		if (count > 0) {
+			itr = list_iterator_create(nodeinfo->subgrp_list);
+			while ((subgrp = list_next(itr))) {
+				_pack_node_subgrp(subgrp, buffer,
+						  protocol_version);
+			}
+			list_iterator_destroy(itr);
+		}
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		pack16(nodeinfo->bitmap_size, buffer);
 
 		if (nodeinfo->subgrp_list)
@@ -150,6 +168,7 @@ extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 			list_iterator_destroy(itr);
 		}
 	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -159,8 +178,29 @@ extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
 	uint16_t size = 0;
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 	uint32_t j = 0;
+	uint32_t uint32_tmp;
 
-	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		safe_unpack16(&size, buffer);
+
+		nodeinfo_ptr = select_nodeinfo_alloc((uint32_t)size);
+		*nodeinfo = nodeinfo_ptr;
+
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->extra_info,
+				       &uint32_tmp, buffer);
+
+		safe_unpack16(&size, buffer);
+		nodeinfo_ptr->subgrp_list = list_create(_free_node_subgrp);
+		for (j=0; j<size; j++) {
+			node_subgrp_t *subgrp = NULL;
+			if (_unpack_node_subgrp(&subgrp, buffer,
+						nodeinfo_ptr->bitmap_size,
+						protocol_version)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+			list_append(nodeinfo_ptr->subgrp_list, subgrp);
+		}
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpack16(&size, buffer);
 
 		nodeinfo_ptr = select_nodeinfo_alloc((uint32_t)size);
@@ -168,7 +208,7 @@ extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
 
 		safe_unpack16(&size, buffer);
 		nodeinfo_ptr->subgrp_list = list_create(_free_node_subgrp);
-		for(j=0; j<size; j++) {
+		for (j=0; j<size; j++) {
 			node_subgrp_t *subgrp = NULL;
 			if (_unpack_node_subgrp(&subgrp, buffer,
 						nodeinfo_ptr->bitmap_size,
@@ -219,6 +259,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 			return EINVAL;
 		}
 		nodeinfo->magic = 0;
+		xfree(nodeinfo->extra_info);
 		if (nodeinfo->subgrp_list)
 			list_destroy(nodeinfo->subgrp_list);
 		xfree(nodeinfo);
@@ -410,6 +451,9 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			}
 		}
 		list_iterator_destroy(itr);
+		break;
+	case SELECT_NODEDATA_EXTRA_INFO:
+		*tmp_char = xstrdup(nodeinfo->extra_info);
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

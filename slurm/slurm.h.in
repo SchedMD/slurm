@@ -360,6 +360,8 @@ enum select_nodedata_type {
 	SELECT_NODEDATA_STR,         /* data-> char *  needs to be
 				      * freed with xfree */
 	SELECT_NODEDATA_PTR,         /* data-> select_nodeinfo_t *nodeinfo */
+	SELECT_NODEDATA_EXTRA_INFO,  /* data-> char *  needs to be
+				      * freed with xfree */
 };
 
 enum select_print_mode {
