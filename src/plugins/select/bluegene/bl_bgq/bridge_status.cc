@@ -210,10 +210,22 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				 EnumWrapper<Hardware::State> state)
 {
+	select_nodeinfo_t *nodeinfo;
+	struct node_record *node_ptr = NULL;
+	char reason[200];
+	ba_mp_t *next_ba_mp = NULL;;
+
 	if (state == Hardware::Available) {
 		/* no change */
 		if (!(ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR))
 			return;
+		next_ba_mp = ba_mp->next_mp[dim];
+
+		node_ptr = &(node_record_table_ptr[ba_mp->index]);
+		assert(node_ptr->select_nodeinfo);
+		nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
+		assert(nodeinfo);
+
 		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_FULL);
 		info("Cable in dim '%u' on Midplane %s, "
 		     "has returned to service",
@@ -223,16 +235,41 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		   only matters for static blocks.  On a dynamic
 		   system no block will be left around if a cable is bad.
 		*/
+		snprintf(reason, sizeof(reason),
+			 "Cable going from %s -> %s (%d) is not available.\n",
+			 ba_mp->coord_str, next_ba_mp->coord_str, dim);
+
+		xstrsubstitute(nodeinfo->extra_info, reason, NULL);
+		if (nodeinfo->extra_info && !strlen(nodeinfo->extra_info))
+			xfree(nodeinfo->extra_info);
+
 	} else if (!(ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR)) {
 		bg_record_t *bg_record = NULL, *smallest_bg_record = NULL;
 		ListIterator itr;
 		List delete_list = NULL;
-		ba_mp_t *next_ba_mp = ba_mp->next_mp[dim];
 		bool delete_it = 0;
+
+		next_ba_mp = ba_mp->next_mp[dim];
+
+		node_ptr = &(node_record_table_ptr[ba_mp->index]);
+		assert(node_ptr->select_nodeinfo);
+		nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
+		assert(nodeinfo);
+
 		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_FULL;
+
 		error("Cable at dim '%d' on Midplane %s, "
 		      "state went to %d, marking cable down.",
 		      dim, ba_mp->coord_str, state.toValue());
+
+		snprintf(reason, sizeof(reason),
+			 "Cable going from %s -> %s (%d) is not available.\n",
+			 ba_mp->coord_str, next_ba_mp->coord_str, dim);
+		if (nodeinfo->extra_info) {
+			if (!strstr(nodeinfo->extra_info, reason))
+				xstrcat(nodeinfo->extra_info, reason);
+		} else
+			nodeinfo->extra_info = xstrdup(reason);
 
 		/* Now handle potential overlapping blocks. */
 		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
@@ -267,7 +304,6 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		list_destroy(delete_list);
 
 		if (smallest_bg_record) {
-			char reason[200];
 			snprintf(reason, sizeof(reason),
 				 "Cable going from %s -> %s went into "
 				 "an error state (%d).", ba_mp->coord_str,

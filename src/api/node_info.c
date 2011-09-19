@@ -278,9 +278,18 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, tmp_line);
 		xfree(user_name);
 	} else {
-		snprintf(tmp_line, sizeof(tmp_line), "Reason=%s",
-			 node_ptr->reason);
-		xstrcat(out, tmp_line);
+		char *extra_info = NULL;
+		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
+					  SELECT_NODEDATA_EXTRA_INFO,
+					  0, &extra_info);
+
+		if (node_ptr->reason) {
+			if (extra_info)
+				xstrcat(extra_info, "   ");
+			xstrcat(extra_info, node_ptr->reason);
+		}
+		xstrfmtcat(out, "Reason=%s", extra_info);
+		xfree(extra_info);
 	}
 	if (one_liner)
 		xstrcat(out, "\n");
