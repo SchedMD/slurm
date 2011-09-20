@@ -81,7 +81,7 @@ if {$job_id == 0} {
 }
 
 #
-# Wait for step  to begin execution
+# Wait for step to begin execution
 #
 if {[wait_for_step $job_id.0] != 0} {
 	send_user "\nFAILURE: waiting for step $job_id.0 to run\n"
@@ -90,7 +90,7 @@ if {[wait_for_step $job_id.0] != 0} {
 }
 
 #
-# Enable/disable/test ability to heckpoint
+# Enable/disable/test ability to checkpoint
 #
 spawn $scontrol check disable $job_id.0
 expect {
