@@ -80,7 +80,7 @@ if {$job_id == 0} {
 set job_start1 -1
 send "$scontrol show job $job_id\r"
 expect {
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set job_prefix $expect_out(1,string)
 		set job_start1 $expect_out(2,string)
 		set job_start2 $expect_out(3,string)

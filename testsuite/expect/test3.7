@@ -158,7 +158,7 @@ expect {
 		set host_name $expect_out(1,string)
 		exp_continue
 	}
-	-re "BP_List=($alpha_numeric_under)" {
+	-re "MidplaneList=($alpha_numeric_under)" {
 		set host_name $expect_out(1,string)
 		exp_continue
 	}

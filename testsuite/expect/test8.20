@@ -79,7 +79,7 @@ set timeout 5
 set job_start1 -1
 send "$scontrol show job $job_id\r"
 expect {
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set job_prefix $expect_out(1,string)
 		set job_start1 $expect_out(2,string)
 		set job_start2 $expect_out(3,string)
@@ -147,7 +147,7 @@ for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size
 	set step_start1 -1
 	send "$srun -N$step_size --test-only $scontrol show step $job_id.$step_id\r"
 	expect {
-		-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+		-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 			set step_prefix $expect_out(1,string)
 			set step_start1 $expect_out(2,string)
 			set step_start2 $expect_out(3,string)
@@ -161,7 +161,7 @@ for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size
 			set step_fini5 $expect_out(11,string)
 			exp_continue
 		}
-		-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)" {
+		-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)" {
 			set step_prefix $expect_out(1,string)
 			set step_start1 $expect_out(2,string)
 			set step_start2 $expect_out(3,string)

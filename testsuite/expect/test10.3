@@ -55,7 +55,7 @@ expect {
 		set too_small 1
 		exp_continue
 	}
-	-re "ID" {
+	-re "ID " {
 		incr matches
 		exp_continue
 	}
@@ -80,7 +80,7 @@ expect {
 		send "q"
 		exp_continue
 	}
-	-re "BP_LIST" {
+	-re "MIDPLANELIST" {
 		incr matches
 		send "q"
 		exp_continue
@@ -100,7 +100,7 @@ if {$too_small != 0} {
 	exit 0
 }
 if {$matches != 6} {
-	send_user "\nFAILURE: smap slurm partition display in curses mode\n"
+	send_user "\nFAILURE: smap slurm partition display in curses mode ($matches of 6)\n"
 	set exit_code 1
 }
 

@@ -36,7 +36,7 @@ source ./globals
 set test_id       "10.6"
 set exit_code     0
 set matches       0
-set non_bg       0
+set non_bg        0
 
 print_header $test_id
 
@@ -83,7 +83,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "BP_LIST" {
+	-re "MIDPLANELIST" {
 		incr matches
 		exp_continue
 	}

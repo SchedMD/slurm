@@ -81,7 +81,7 @@ set timeout 5
 set job_start1 -1
 send "$scontrol show job $job_id\r"
 expect {
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set job_prefix $expect_out(1,string)
 		set job_start1 $expect_out(2,string)
 		set job_start2 $expect_out(3,string)
@@ -152,7 +152,7 @@ for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
 set timeout 60
 send "./$file_prog $srun $squeue $job_id $actual_job_size 1\r"
 expect {
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set step_prefix $expect_out(1,string)
 		set step_start1 $expect_out(2,string)
 		set step_start2 $expect_out(3,string)
@@ -183,7 +183,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)" {
 		set step_prefix $expect_out(1,string)
 		set dim1 $expect_out(2,string)
 		set dim2 $expect_out(3,string)
@@ -253,7 +253,7 @@ for {set dim1 $job_start1} {$dim1 <= $job_fini1} {incr dim1} {
 set timeout 60
 send "./$file_prog $srun $squeue $job_id $actual_job_size 2\r"
 expect {
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set step_prefix $expect_out(1,string)
 		set step_start1 $expect_out(2,string)
 		set step_start2 $expect_out(3,string)
@@ -284,7 +284,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)" {
 		set step_prefix $expect_out(1,string)
 		set dim1 $expect_out(2,string)
 		set dim2 $expect_out(3,string)

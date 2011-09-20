@@ -48,7 +48,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "REASON *USER *TIMESTAMP *BP_LIST" {
+	-re "REASON *USER *TIMESTAMP *MIDPLANELIST" {
 		incr matches
 		exp_continue
 	}

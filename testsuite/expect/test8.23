@@ -84,9 +84,9 @@ if {[wait_for_job $job_id(1) RUNNING] != 0} {
 	exit 1
 }
 set job_start(1,1) -1
-spawn $squeue --jobs=$job_id(1) --noheader -o "%i BP_List=%N"
+spawn $squeue --jobs=$job_id(1) --noheader -o "%i MidplaneList=%N"
 expect {
-	-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+	-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 		set job_prefix(1) $expect_out(1,string)
 		set job_start(1,1) $expect_out(2,string)
 		set job_start(1,2) $expect_out(3,string)
@@ -174,9 +174,9 @@ for {set inx 2} {$inx <= $job_count} {incr inx} {
 sleep 15
 for {set inx 2} {$inx <= $job_count} {incr inx} {
 	set job_start($inx,1) -1
-	spawn $squeue --jobs=$job_id($inx) --noheader -o "%i BP_List=%N"
+	spawn $squeue --jobs=$job_id($inx) --noheader -o "%i MidplaneList=%N"
 	expect {
-		-re "BP_List=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
+		-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 			set job_prefix($inx) $expect_out(1,string)
 			set job_start($inx,1) $expect_out(2,string)
 			set job_start($inx,2) $expect_out(3,string)

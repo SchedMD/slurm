@@ -97,7 +97,7 @@ expect {
 		send "q\n"
 		exp_continue
 	}
-	-re "BP_LIST" {
+	-re "MIDPLANELIST" {
 		set stuff [concat $stuff "7b"]
 		incr matches
 		send "q\n"

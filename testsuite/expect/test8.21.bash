@@ -40,4 +40,4 @@ done
 
 $srun -N1  --test-only sleep 50 &
 sleep 5
-$squeue --jobs=$job_id --steps --noheader --format='Step_ID=%i BP_List=%N'
+$squeue --jobs=$job_id --steps --noheader --format='Step_ID=%i MidplaneList=%N'
