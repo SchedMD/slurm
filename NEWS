@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Change to output tools labels from BP to Midplane
     (i.e. BP List -> MidplaneList).
  -- BLUEGENE - read MPs and BPs from the bluegene.conf
+ -- Modify srun's SIGINT handling logic timer (two SIGINTs within one second) to
+    be based microsecond rather than second timer.
 
 * Changes in SLURM 2.3.1
 ========================

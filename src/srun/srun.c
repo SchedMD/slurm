@@ -1360,13 +1360,23 @@ _task_finish(task_exit_msg_t *msg)
 		_setup_max_wait_timer();
 }
 
+static long _diff_tv_str(struct timeval *tv1,struct timeval *tv2)
+{
+	long delta_t;
+
+	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	return delta_t;
+}
+
 static void _handle_intr(void)
 {
-	static time_t last_intr      = 0;
-	static time_t last_intr_sent = 0;
-	time_t now = time(NULL);
+	static struct timeval last_intr = { 0, 0 };
+	static struct timeval last_intr_sent = { 0, 0 };
+	struct timeval now;
 
-	if (!opt.quit_on_intr && ((now - last_intr) > 1)) {
+	gettimeofday(&now, NULL);
+	if (!opt.quit_on_intr && (_diff_tv_str(&last_intr, &now) > 1000000)) {
 		if  (opt.disable_status) {
 			info("sending Ctrl-C to job %u.%u",
 			     job->jobid, job->stepid);
@@ -1378,12 +1388,12 @@ static void _handle_intr(void)
 			info("interrupt (abort already in progress)");
 			task_state_print(task_state, (log_f) info);
 		}
-		last_intr = time(NULL);
+		last_intr = now;
 	} else  { /* second Ctrl-C in half as many seconds */
 		update_job_state(job, SRUN_JOB_CANCELLED);
 		/* terminate job */
 		if (job->state < SRUN_JOB_FORCETERM) {
-			if ((now - last_intr_sent) < 1) {
+			if (_diff_tv_str(&last_intr_sent, &now) < 1000000) {
 				job_force_termination(job);
 				slurm_step_launch_abort(job->step_ctx);
 				return;
@@ -1400,7 +1410,6 @@ static void _handle_intr(void)
 		}
 	}
 }
-
 static void _default_sigaction(int sig)
 {
 	struct sigaction act;
