@@ -142,7 +142,8 @@ static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 				slurmdb_association_rec_t *assoc_ptr,
-				slurmdb_qos_rec_t *qos_rec, int *error_code);
+				bool admin, slurmdb_qos_rec_t *qos_rec,
+				int *error_code);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -345,7 +346,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 }
 
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
-	slurmdb_association_rec_t *assoc_ptr,
+	slurmdb_association_rec_t *assoc_ptr, bool admin,
 	slurmdb_qos_rec_t *qos_rec,
 	int *error_code)
 {
@@ -382,6 +383,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 
 	if((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 	   && assoc_ptr
+	   && !admin
 	   && (!assoc_ptr->usage->valid_qos
 	       || !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
 		error("This association %d(account='%s', "
@@ -789,6 +791,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->limit_set_min_cpus, buffer);
 	pack16(dump_job_ptr->limit_set_min_nodes, buffer);
 	pack16(dump_job_ptr->limit_set_time, buffer);
+	pack16(dump_job_ptr->limit_set_qos, buffer);
 
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -868,9 +871,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, resv_flags, ckpt_interval;
 	uint16_t wait_all_nodes, warn_signal, warn_time;
-	uint16_t limit_set_max_cpus = 0, limit_set_max_nodes = 0,
-		limit_set_min_cpus = 0, limit_set_min_nodes = 0,
-		limit_set_time = 0;
+	uint16_t limit_set_max_cpus = 0, limit_set_max_nodes = 0;
+	uint16_t limit_set_min_cpus = 0, limit_set_min_nodes = 0;
+	uint16_t limit_set_time = 0, limit_set_qos = 0;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -888,7 +891,158 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		safe_unpack32(&assoc_id, buffer);
+		safe_unpack32(&job_id, buffer);
+
+		/* validity test as possible */
+		if (job_id == 0) {
+			verbose("Invalid job_id %u", job_id);
+			goto unpack_error;
+		}
+
+		job_ptr = find_job_record(job_id);
+		if (job_ptr == NULL) {
+			job_ptr = create_job_record(&error_code);
+			if (error_code) {
+				error("Create job entry failed for job_id %u",
+				      job_id);
+				goto unpack_error;
+			}
+			job_ptr->job_id = job_id;
+			_add_job_hash(job_ptr);
+		}
+
+		safe_unpack32(&user_id, buffer);
+		safe_unpack32(&group_id, buffer);
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&time_min, buffer);
+		safe_unpack32(&priority, buffer);
+		safe_unpack32(&alloc_sid, buffer);
+		safe_unpack32(&total_cpus, buffer);
+		safe_unpack32(&total_nodes, buffer);
+		safe_unpack32(&cpu_cnt, buffer);
+		safe_unpack32(&exit_code, buffer);
+		safe_unpack32(&derived_ec, buffer);
+		safe_unpack32(&db_index, buffer);
+		safe_unpack32(&resv_id, buffer);
+		safe_unpack32(&next_step_id, buffer);
+		safe_unpack32(&qos_id, buffer);
+		safe_unpack32(&req_switch, buffer);
+		safe_unpack32(&wait4switch, buffer);
+
+		safe_unpack_time(&preempt_time, buffer);
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&end_time, buffer);
+		safe_unpack_time(&suspend_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&resize_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+
+		safe_unpack16(&direct_set_prio, buffer);
+		safe_unpack16(&job_state, buffer);
+		safe_unpack16(&kill_on_node_fail, buffer);
+		safe_unpack16(&batch_flag, buffer);
+		safe_unpack16(&mail_type, buffer);
+		safe_unpack16(&state_reason, buffer);
+		safe_unpack16(&restart_cnt, buffer);
+		safe_unpack16(&resv_flags, buffer);
+		safe_unpack16(&wait_all_nodes, buffer);
+		safe_unpack16(&warn_signal, buffer);
+		safe_unpack16(&warn_time, buffer);
+		safe_unpack16(&limit_set_max_cpus, buffer);
+		safe_unpack16(&limit_set_max_nodes, buffer);
+		safe_unpack16(&limit_set_min_cpus, buffer);
+		safe_unpack16(&limit_set_min_nodes, buffer);
+		safe_unpack16(&limit_set_time, buffer);
+		safe_unpack16(&limit_set_qos, buffer);
+
+		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
+
+		safe_unpack16(&alloc_resp_port, buffer);
+		safe_unpack16(&other_port, buffer);
+
+		if (job_state & JOB_COMPLETING) {
+			safe_unpackstr_xmalloc(&nodes_completing,
+					       &name_len, buffer);
+		}
+		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+		if (partition == NULL) {
+			error("No partition for job %u", job_id);
+			goto unpack_error;
+		}
+		part_ptr = find_part_record (partition);
+		if (part_ptr == NULL) {
+			part_ptr_list = get_part_list(partition);
+			if (part_ptr_list)
+				part_ptr = list_peek(part_ptr_list);
+		}
+		if (part_ptr == NULL) {
+			verbose("Invalid partition (%s) for job_id %u",
+				partition, job_id);
+			/* not fatal error, partition could have been removed,
+			 * reset_job_bitmaps() will clean-up this job */
+		}
+
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
+		safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
+		safe_unpackstr_xmalloc(&account, &name_len, buffer);
+		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
+		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
+		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
+
+		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
+						   protocol_version))
+			goto unpack_error;
+		if (unpack_job_resources(&job_resources, buffer,
+					 protocol_version))
+			goto unpack_error;
+
+		safe_unpack16(&ckpt_interval, buffer);
+		if (checkpoint_alloc_jobinfo(&check_job) ||
+		    checkpoint_unpack_jobinfo(check_job, buffer,
+					      protocol_version))
+			goto unpack_error;
+
+		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
+				     buffer);
+
+		if (gres_plugin_job_state_unpack(&gres_list, buffer, job_id,
+						 protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		gres_plugin_job_state_log(gres_list, job_id);
+
+		safe_unpack16(&details, buffer);
+		if ((details == DETAILS_FLAG) &&
+		    (_load_job_details(job_ptr, buffer, protocol_version))) {
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
+			job_ptr->state_reason = FAIL_SYSTEM;
+			xfree(job_ptr->state_desc);
+			job_ptr->end_time = now;
+			goto unpack_error;
+		}
+		safe_unpack16(&step_flag, buffer);
+
+		while (step_flag == STEP_FLAG) {
+			/* No need to put these into accounting if they
+			 * haven't been since all information will be
+			 * put in when the job is finished.
+			 */
+			if ((error_code = load_step_state(job_ptr, buffer,
+							  protocol_version)))
+				goto unpack_error;
+			safe_unpack16(&step_flag, buffer);
+		}
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -1452,6 +1606,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->limit_set_min_cpus  = limit_set_max_cpus;
 	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
 	job_ptr->limit_set_time      = limit_set_time;
+	job_ptr->limit_set_qos       = limit_set_qos;
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
 	/* This needs to always to initialized to "true".  The select
@@ -1517,8 +1672,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
-			job_ptr->assoc_ptr, &qos_rec, &qos_error);
-		if (qos_error != SLURM_SUCCESS) {
+			job_ptr->assoc_ptr, false, &qos_rec, &qos_error);
+		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set_qos) {
 			info("Cancelling job %u with invalid qos", job_id);
 			job_ptr->job_state = JOB_CANCELLED;
 			job_ptr->state_reason = FAIL_QOS;
@@ -3662,6 +3817,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t limit_set_min_cpus = 0;
 	uint16_t limit_set_min_nodes = 0;
 	uint16_t limit_set_time = 0;
+	uint16_t limit_set_qos = 0;
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -3788,7 +3944,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			qos_rec.name = "standby";
 	}
 
-	qos_ptr = _determine_and_validate_qos(assoc_ptr, &qos_rec, &qos_error);
+	qos_ptr = _determine_and_validate_qos(assoc_ptr, false, &qos_rec,
+					      &qos_error);
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
 		goto cleanup_fail;
@@ -3954,6 +4111,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->limit_set_min_cpus = limit_set_min_cpus;
 	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
 	job_ptr->limit_set_time = limit_set_time;
+	job_ptr->limit_set_qos = limit_set_qos;
 
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
@@ -6468,7 +6626,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
-	bool authorized = false;
+	bool authorized = false, admin = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
 	struct job_record *job_ptr;
@@ -6517,7 +6675,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	authorized = validate_operator(uid) || assoc_mgr_is_user_acct_coord(
+	admin = validate_operator(uid);
+	authorized = admin || assoc_mgr_is_user_acct_coord(
 		acct_db_conn, uid, job_ptr->account);
 	if ((job_ptr->user_id != uid) && !authorized) {
 		error("Security violation, JOB_UPDATE RPC from uid %d",
@@ -6780,7 +6939,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					qos_rec.name = "standby";
 
 				job_ptr->qos_ptr = _determine_and_validate_qos(
-					job_ptr->assoc_ptr, &qos_rec,
+					job_ptr->assoc_ptr, admin, &qos_rec,
 					&error_code);
 				if (error_code == SLURM_SUCCESS) {
 					job_ptr->qos_id = qos_rec.id;
@@ -6794,6 +6953,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->qos) {
 		slurmdb_qos_rec_t qos_rec;
+		uint16_t save_qos_id;
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
@@ -6803,10 +6963,18 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 			qos_rec.name = job_specs->qos;
 
+			save_qos_id = job_ptr->qos_id;
 			job_ptr->qos_ptr = _determine_and_validate_qos(
-				job_ptr->assoc_ptr, &qos_rec, &error_code);
+				job_ptr->assoc_ptr, admin, &qos_rec,
+				&error_code);
 			if (error_code == SLURM_SUCCESS) {
 				job_ptr->qos_id = qos_rec.id;
+				if ((save_qos_id != job_ptr->qos_id) && admin){
+					job_ptr->limit_set_qos =
+						ADMIN_SET_LIMIT;
+				} else {
+					job_ptr->limit_set_qos = 0;
+				}
 				update_accounting = true;
 			}
 		}

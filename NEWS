@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
     be based microsecond rather than second timer.
  -- Modify advance reservation to accept multiple specific block sizes rather
     than a single node count.
+ -- Permit administrator to change a job's QOS to any value without validating
+    the job's owner has permission to use that QOS. Based upon patch by Phil
+    Eckert (LLNL).
 
 * Changes in SLURM 2.3.1
 ========================
