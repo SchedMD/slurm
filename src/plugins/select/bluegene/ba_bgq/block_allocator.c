@@ -603,6 +603,21 @@ extern int check_and_set_mp_list(List mps)
 						     curr_ba_switch->usage));
 				rc = SLURM_ERROR;
 				goto end_it;
+			} else if ((curr_ba_switch->usage
+				    & BG_SWITCH_CABLE_ERROR_SET)
+				   && (ba_switch->usage & BG_SWITCH_OUT_PASS)) {
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+					info("check_and_set_mp_list: "
+					     "%s(%d)'s cable is not available "
+					     "can't make this block.  "
+					     "We need %s and system is %s",
+					     ba_mp->coord_str, i,
+					     ba_switch_usage_str(
+						     ba_switch->usage),
+					     ba_switch_usage_str(
+						     curr_ba_switch->usage));
+				rc = SLURM_ERROR;
+				goto end_it;
 			}
 
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)

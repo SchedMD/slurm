@@ -244,7 +244,7 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 			xfree(nodeinfo->extra_info);
 
 	} else if (!(ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR)) {
-		bg_record_t *bg_record = NULL, *smallest_bg_record = NULL;
+		bg_record_t *bg_record = NULL;
 		ListIterator itr;
 		List delete_list = NULL;
 		bool delete_it = 0;
@@ -285,16 +285,6 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				continue;
 			if (!bit_test(bg_record->mp_bitmap, next_ba_mp->index))
 				continue;
-			/* This block uses the wire so we need to take
-			 * care of it.  We only need to put one block
-			 * in an error, so pick the smallest one.
-			 */
-			if ((bg_conf->layout_mode != LAYOUT_DYNAMIC)
-			    && (!smallest_bg_record
-				|| (smallest_bg_record->mp_count
-				    > bg_record->mp_count)))
-				smallest_bg_record = bg_record;
-
 			list_push(delete_list, bg_record);
 		}
 		list_iterator_destroy(itr);
@@ -302,14 +292,6 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 
 		free_block_list(NO_VAL, delete_list, delete_it, 0);
 		list_destroy(delete_list);
-
-		if (smallest_bg_record) {
-			snprintf(reason, sizeof(reason),
-				 "Cable going from %s -> %s went into "
-				 "an error state (%d).", ba_mp->coord_str,
-				 next_ba_mp->coord_str, state.toValue());
-			put_block_in_error_state(smallest_bg_record, reason);
-		}
 	}
 }
 

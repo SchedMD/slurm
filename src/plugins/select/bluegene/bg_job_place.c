@@ -403,6 +403,24 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 		}
 
+#ifndef HAVE_BG_L_P
+		if (!SELECT_IS_TEST(query_mode)
+		    && (bg_conf->layout_mode != LAYOUT_DYNAMIC)) {
+			/* make sure we don't have any bad cables.
+			 * We need to reset the system with true here
+			 * to reveal any bad cables. */
+			reset_ba_system(true);
+			if (check_and_set_mp_list(bg_record->ba_mp_list)
+			    == SLURM_ERROR) {
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("bg block %s has unavailable "
+					     "overlapping hardware.",
+					     bg_record->bg_block_id);
+				continue;
+			}
+		}
+#endif
 		if (_check_for_booted_overlapping_blocks(
 			    block_list, itr, bg_record,
 			    overlap_check, overlapped_list, query_mode))
