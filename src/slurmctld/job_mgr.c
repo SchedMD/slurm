@@ -356,36 +356,36 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	   with the association.  If not just fill in the qos and
 	   continue. */
 
-	if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 		xassert(assoc_ptr);
 	xassert(qos_rec);
 
-	if(!qos_rec->name && !qos_rec->id) {
-		if(assoc_ptr && assoc_ptr->usage->valid_qos)
-			if(assoc_ptr->def_qos_id)
+	if (!qos_rec->name && !qos_rec->id) {
+		if (assoc_ptr && assoc_ptr->usage->valid_qos) {
+			if (assoc_ptr->def_qos_id)
 				qos_rec->id = assoc_ptr->def_qos_id;
-			else if(bit_set_count(assoc_ptr->usage->valid_qos) == 1)
+			else if (bit_set_count(assoc_ptr->usage->valid_qos)
+				 == 1) {
 				qos_rec->id =
 					bit_ffs(assoc_ptr->usage->valid_qos);
-			else
+			} else
 				qos_rec->name = "normal";
-		else
+		} else
 			qos_rec->name = "normal";
 	}
 
-	if(assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
-				 &qos_ptr)
-	   != SLURM_SUCCESS) {
+	if (assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
+				  &qos_ptr) != SLURM_SUCCESS) {
 		error("Invalid qos (%s)", qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
 
-	if((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
-	   && assoc_ptr
-	   && !admin
-	   && (!assoc_ptr->usage->valid_qos
-	       || !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
+	if ((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
+	    && assoc_ptr
+	    && !admin
+	    && (!assoc_ptr->usage->valid_qos
+	        || !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
 		error("This association %d(account='%s', "
 		      "user='%s', partition='%s') does not have "
 		      "access to qos %s",
