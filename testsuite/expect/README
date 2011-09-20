@@ -337,6 +337,8 @@ test8.22   Bluegene/Q only: Stress test of running many job step allocations
            within the job's allocation
 test8.23   Bluegene/Q only: Test that multple jobs allocations are properly
            packed within a midplane
+test8.24   Bluegene/Q only: Test advanced reservation creation with mutliple
+           blocks.
 
 
 test9.#    System stress testing. Exercises all commands and daemons.

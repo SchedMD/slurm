@@ -244,19 +244,38 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			}
 		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
-			char *endptr = NULL;
-			resv_msg_ptr->node_cnt = strtol(val, &endptr, 10);
-			if (endptr != NULL &&
-			    ((endptr[0] == 'k') || (endptr[0] == 'K'))) {
-				resv_msg_ptr->node_cnt *= 1024;
-
-			} else if ((endptr == NULL) || (endptr[0] != '\0') ||
-				   (val[0] == '\0')) {
-				exit_code = 1;
-				error("Invalid node count %s.  %s",
-				      argv[i], msg);
-				return -1;
+			char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
+			int node_inx = 0;
+			node_cnt = xstrdup(val);
+			tok = strtok_r(node_cnt, ",", &ptrptr);
+			while (tok) {
+				xrealloc(resv_msg_ptr->node_cnt,
+					 sizeof(uint32_t) * (node_inx + 2));
+				resv_msg_ptr->node_cnt[node_inx] =
+					strtol(tok, &endptr, 10);
+				if ((endptr != NULL) &&
+				    ((endptr[0] == 'k') ||
+				     (endptr[0] == 'K'))) {
+					resv_msg_ptr->node_cnt[node_inx] *=
+						1024;
+				} else if ((endptr != NULL) &&
+					   ((endptr[0] == 'm') ||
+					    (endptr[0] == 'M'))) {
+					resv_msg_ptr->node_cnt[node_inx] *=
+						1024 * 1024;
+				} else if ((endptr == NULL) ||
+					   (endptr[0] != '\0') ||
+					   (tok[0] == '\0')) {
+					exit_code = 1;
+					error("Invalid node count %s.  %s",
+					      argv[i], msg);
+					xfree(node_cnt);
+					return -1;
+				}
+				node_inx++;
+				tok = strtok_r(NULL, ",", &ptrptr);
 			}
+			xfree(node_cnt);
 		} else if (strncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			resv_msg_ptr->node_list = val;
 
@@ -396,7 +415,7 @@ scontrol_create_res(int argc, char *argv[])
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.node_cnt == NO_VAL &&
+	if ((resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0')) {
 		exit_code = 1;

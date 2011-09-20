@@ -124,6 +124,29 @@ ReservationName=alan_6 StartTime=2009-02-05T12:00:00
    Users=alan,brenda Accounts=(null)
 </pre>
 
+<p>Reservations can be optimized with respect to system topology if the
+reservation request includes information about the sizes of jobs to be created.
+This is especially important for BlueGene systems due to restrictive rules
+about the topology of created blocks (due to hardware constraints and/or
+SLURM's configuration). To take advantage of this optimization, specify the
+sizes of jobs of to be concurrently executed. The example below creates a
+reservation containing 4096 c-nodes on a BlueGene system so that two 2048
+c-node jobs can execute simultaneously.</p>
+
+<pre>
+$ scontrol create reservation user=alan,brenda \
+   starttime=noon duration=60 nodecnt=2k,2k
+Reservation created: alan_8
+
+$ scontrol show res
+ReservationName=alan_9 StartTime=2011-12-05T12:00:00
+   EndTime=2011-12-05T13:00:00 Duration=60
+   Nodes=bgp[000x011,210x311] NodeCnt=4096
+   Features=(null) PartitionName=pdebug
+   Flags= Licenses=(null)
+   Users=alan,brenda Accounts=(null)
+</pre>
+
 <p>Note that specific nodes to be associated with the reservation are
 made immediately after creation of the reservation. This permits
 users to stage files to the nodes in preparation for use during the

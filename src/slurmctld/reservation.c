@@ -115,6 +115,9 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
 				  resv_desc_msg_t *resv_desc_ptr);
+static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
+				     resv_desc_msg_t *resv_desc_ptr,
+				     uint32_t node_cnt);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
@@ -300,7 +303,8 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 
 	char start_str[32] = "-1", end_str[32] = "-1", *flag_str = NULL;
-	int duration;
+	char *node_cnt_str = NULL;
+	int duration, i;
 
 	if (!(slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION))
 		return;
@@ -321,15 +325,28 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	else
 		duration = resv_ptr->duration;
 
+	if (resv_ptr->node_cnt) {
+		for (i = 0; resv_ptr->node_cnt[i]; i++) {
+			if (node_cnt_str) {
+				xstrfmtcat(node_cnt_str, ",%u",
+					   resv_ptr->node_cnt[i]);
+			} else {
+				xstrfmtcat(node_cnt_str, "%u",
+					   resv_ptr->node_cnt[i]);
+			}
+		}
+	}
+
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
-	     "Flags=%s NodeCnt=%d NodeList=%s Features=%s "
+	     "Flags=%s NodeCnt=%s NodeList=%s Features=%s "
 	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
-	     flag_str, resv_ptr->node_cnt, resv_ptr->node_list,
+	     flag_str, node_cnt_str, resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses);
 
 	xfree(flag_str);
+	xfree(node_cnt_str);
 }
 
 static void _generate_resv_id(void)
@@ -1171,7 +1188,7 @@ static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr)
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	struct part_record *part_ptr = NULL;
 	bitstr_t *node_bitmap = NULL;
@@ -1182,6 +1199,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	char start_time[32], end_time[32];
 	List license_list = (List) NULL;
 	char *name1, *name2, *val1, *val2;
+	uint32_t total_node_cnt = NO_VAL;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1257,9 +1275,25 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_LICENSES;
 			goto bad_parse;
 		}
-		if ((resv_desc_ptr->node_cnt == NO_VAL) &&
-		    (resv_desc_ptr->node_list == NULL))
-			resv_desc_ptr->node_cnt = 0;
+	}
+
+	/* Sort the list of jobs in descending order */
+	if (resv_desc_ptr->node_cnt) {
+		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
+			int max_inx = i;
+			for (j = (i + 1); resv_desc_ptr->node_cnt[j]; j++) {
+				if (resv_desc_ptr->node_cnt[j] >
+				    resv_desc_ptr->node_cnt[max_inx])
+					max_inx = j;
+			}
+			if (max_inx != i) {	/* swap the values */
+				uint32_t max_val = resv_desc_ptr->
+						   node_cnt[max_inx];
+				resv_desc_ptr->node_cnt[max_inx] =
+					resv_desc_ptr->node_cnt[i];
+				resv_desc_ptr->node_cnt[i] = max_val;
+			}
+		}
 	}
 
 #ifdef HAVE_BG
@@ -1267,10 +1301,33 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
 					&cnodes_per_bp);
 	}
-	if ((resv_desc_ptr->node_cnt != NO_VAL) && cnodes_per_bp) {
+	if (resv_desc_ptr->node_cnt && cnodes_per_bp) {
+		/* Pack multiple small blocks into midplane rather than
+		 * allocating a whole midplane for each small block */
+		int small_block_nodes = 0, small_block_count = 0;
+		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
+			if (resv_desc_ptr->node_cnt[i] < cnodes_per_bp)
+				small_block_nodes += resv_desc_ptr->node_cnt[i];
+		}
+		small_block_count  =  small_block_nodes;
+		small_block_count += (cnodes_per_bp - 1);
+		small_block_count /=  cnodes_per_bp;
+
 		/* Convert c-node count to midplane count */
-		resv_desc_ptr->node_cnt = (resv_desc_ptr->node_cnt + 
-					   cnodes_per_bp - 1) / cnodes_per_bp;
+		total_node_cnt = 0;
+		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
+			if (resv_desc_ptr->node_cnt[i] < cnodes_per_bp) {
+				if (small_block_count == 0) {
+					resv_desc_ptr->node_cnt[i] = 0;
+					break;
+				}
+				small_block_count--;
+			}
+
+			resv_desc_ptr->node_cnt[i] += (cnodes_per_bp - 1);
+			resv_desc_ptr->node_cnt[i] /=  cnodes_per_bp;
+			total_node_cnt += resv_desc_ptr->node_cnt[i];
+		}
 	}
 #endif
 
@@ -1287,8 +1344,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
 		}
-		if (resv_desc_ptr->node_cnt == NO_VAL)
-			resv_desc_ptr->node_cnt = 0;
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) &&
 		    _resv_overlap(resv_desc_ptr->start_time,
 				  resv_desc_ptr->end_time,
@@ -1298,7 +1353,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_RESERVATION_OVERLAP;
 			goto bad_parse;
 		}
-		resv_desc_ptr->node_cnt = bit_set_count(node_bitmap);
+		total_node_cnt = bit_set_count(node_bitmap);
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    _job_overlap(resv_desc_ptr->start_time,
 				 resv_desc_ptr->flags, node_bitmap)) {
@@ -1306,13 +1361,18 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
 		}
-	} else if (resv_desc_ptr->node_cnt == NO_VAL) {
+	} else if ((resv_desc_ptr->node_cnt == NULL) ||
+		   (resv_desc_ptr->node_cnt[0] == 0)){
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;
 	} else if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap))
 		   != SLURM_SUCCESS) {
 		goto bad_parse;
+	} else {
+		/* Get count of allocated nodes, on BlueGene systems, this
+		 * might be more than requested */
+		total_node_cnt = bit_set_count(node_bitmap);
 	}
 
 	_generate_resv_id();
@@ -1354,7 +1414,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->resv_id       = top_suffix;
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
-	resv_ptr->node_cnt	= resv_desc_ptr->node_cnt;
+	resv_ptr->node_cnt	= total_node_cnt;
 	resv_ptr->node_list	= resv_desc_ptr->node_list;
 	resv_desc_ptr->node_list = NULL;	/* Nothing left to free */
 	resv_ptr->node_bitmap	= node_bitmap;	/* May be unset */
@@ -1423,7 +1483,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 {
 	time_t now = time(NULL);
 	slurmctld_resv_t *resv_backup, *resv_ptr;
-	int error_code = SLURM_SUCCESS, rc;
+	int error_code = SLURM_SUCCESS, i, rc;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
 
@@ -1495,8 +1555,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 	}
 	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {
-		if ((resv_desc_ptr->node_cnt == 0) ||
-		    ((resv_desc_ptr->node_cnt == NO_VAL) &&
+		if (((resv_desc_ptr->node_cnt != NULL)  &&
+		     (resv_desc_ptr->node_cnt[0] == 0)) ||
+		    ((resv_desc_ptr->node_cnt == NULL)  &&
 		     (resv_ptr->node_cnt == 0))) {
 			info("Reservation attempt to clear licenses with "
 			     "NodeCount=0");
@@ -1593,8 +1654,12 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		xfree(resv_ptr->node_list);
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = bit_alloc(node_record_count);
-		if (resv_desc_ptr->node_cnt == NO_VAL)
-			resv_desc_ptr->node_cnt = resv_ptr->node_cnt;
+		if ((resv_desc_ptr->node_cnt == NULL) ||
+		    (resv_desc_ptr->node_cnt[0] == 0)) {
+			xrealloc(resv_desc_ptr->node_cnt, sizeof(uint32_t) * 2);
+			resv_desc_ptr->node_cnt[0] = resv_ptr->node_cnt;
+			resv_desc_ptr->node_cnt[1] = 0;
+		}
 		resv_ptr->node_cnt = 0;
 	}
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
@@ -1615,7 +1680,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->node_bitmap = node_bitmap;
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
-	if (resv_desc_ptr->node_cnt != NO_VAL) {
+	if (resv_desc_ptr->node_cnt) {
+		uint32_t total_node_cnt = 0;
+
 #ifdef HAVE_BG
 		if (!cnodes_per_bp) {
 			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -1623,12 +1690,16 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		if (cnodes_per_bp) {
 			/* Convert c-node count to midplane count */
-			resv_desc_ptr->node_cnt = (resv_desc_ptr->node_cnt + 
-						   cnodes_per_bp - 1) /
-						   cnodes_per_bp;
+			for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
+				resv_desc_ptr->node_cnt[i] += cnodes_per_bp - 1;
+				resv_desc_ptr->node_cnt[i] /= cnodes_per_bp;
+			}
 		}
 #endif
-		rc = _resize_resv(resv_ptr, resv_desc_ptr->node_cnt);
+		for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
+			total_node_cnt += resv_desc_ptr->node_cnt[i];
+		}
+		rc = _resize_resv(resv_ptr, total_node_cnt);
 		if (rc) {
 			error_code = rc;
 			goto update_failure;
@@ -2080,8 +2151,10 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
-	resv_desc.node_cnt   = resv_ptr->node_cnt - i;
+	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
+	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap);
+	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
@@ -2358,8 +2431,10 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
 	resv_desc.flags      = resv_ptr->flags;
-	resv_desc.node_cnt   = 0 - delta_node_cnt;
+	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
+	resv_desc.node_cnt[0]= 0 - delta_node_cnt;
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap);
+	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
@@ -2504,22 +2579,97 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 				  resv_desc_msg_t *resv_desc_ptr)
 {
+	int i;
+	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
+	uint32_t total_node_cnt = 0;
+	bool resv_debug;
+#ifdef HAVE_BG
+	static uint16_t static_blocks = (uint16_t)NO_VAL;
+	if (static_blocks == (uint16_t)NO_VAL) {
+		/* Since this never changes we can just set it once
+		 * and not look at it again. */
+		select_g_get_info_from_plugin(SELECT_STATIC_PART, NULL,
+					      &static_blocks);
+	}
+#else
+	static uint16_t static_blocks = 0;
+#endif
+
+	if (resv_desc_ptr->node_cnt == NULL) {
+		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr, 0);
+	} else if ((resv_desc_ptr->node_cnt[0] == 0) ||
+		   (resv_desc_ptr->node_cnt[1] == 0)) {
+		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
+					   resv_desc_ptr->node_cnt[0]);
+	}
+
+	/* Try to create a single reservation that can contain all blocks
+	 * unless we have static blocks on a BlueGene system */
+	if (static_blocks != 0) {
+		for (i = 0; resv_desc_ptr->node_cnt[i]; i++)
+			total_node_cnt += resv_desc_ptr->node_cnt[i];
+		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
+						 total_node_cnt);
+		if (tmp_bitmap) {
+			if (total_node_cnt == bit_set_count(tmp_bitmap))
+				return tmp_bitmap;
+			/* Oversized allocation, possibly due to BlueGene block
+			 * size limitations. Need to create as multiple
+			 * blocks */
+			FREE_NULL_BITMAP(tmp_bitmap);
+		}
+	}
+
+	/* Need to create reservation containing multiple blocks */
+	resv_debug = slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION;
+	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
+		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
+						 resv_desc_ptr->node_cnt[i]);
+		if (tmp_bitmap == NULL) {	/* allocation failure */
+			if (resv_debug) {
+				info("reservation of %u nodes failed",
+				     resv_desc_ptr->node_cnt[i]);
+			}
+			FREE_NULL_BITMAP(ret_bitmap);
+			return NULL;
+		}
+		if (resv_debug) {
+			char *tmp_name;
+			tmp_name = bitmap2node_name(tmp_bitmap);
+			info("reservation of %u nodes, using %s",
+			     resv_desc_ptr->node_cnt[i], tmp_name);
+			xfree(tmp_name);
+		}
+		if (ret_bitmap)
+			bit_or(ret_bitmap, tmp_bitmap);
+		else
+			ret_bitmap = bit_copy(tmp_bitmap);
+		bit_not(tmp_bitmap);
+		bit_and(avail_bitmap, tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
+	}
+
+	return ret_bitmap;
+}
+
+static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
+				     resv_desc_msg_t *resv_desc_ptr,
+				     uint32_t node_cnt)
+{
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	bitstr_t *save_bitmap, *ret_bitmap, *tmp_bitmap;
 
-	if (bit_set_count(avail_bitmap) < resv_desc_ptr->node_cnt) {
+	if (bit_set_count(avail_bitmap) < node_cnt) {
 		verbose("reservation requests more nodes than are available");
 		return NULL;
 	}
 
 	save_bitmap = bit_copy(avail_bitmap);
 	/* First: Try to reserve nodes that are currently IDLE */
-	if (bit_overlap(avail_bitmap, idle_node_bitmap) >=
-	    resv_desc_ptr->node_cnt) {
+	if (bit_overlap(avail_bitmap, idle_node_bitmap) >= node_cnt) {
 		bit_and(avail_bitmap, idle_node_bitmap);
-		ret_bitmap = select_g_resv_test(avail_bitmap,
-						resv_desc_ptr->node_cnt);
+		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt);
 		if (ret_bitmap)
 			goto fini;
 	}
@@ -2539,7 +2689,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 		bit_not(job_ptr->node_bitmap);
 	}
 	list_iterator_destroy(job_iterator);
-	ret_bitmap = select_g_resv_test(avail_bitmap, resv_desc_ptr->node_cnt);
+	ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt);
 	if (ret_bitmap)
 		goto fini;
 
@@ -2563,7 +2713,6 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 			if (bit_set_count(tmp_bitmap) > 0) {
 				bit_or(avail_bitmap, tmp_bitmap);
 				ret_bitmap = select_g_resv_test(avail_bitmap,
-								resv_desc_ptr->
 								node_cnt);
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);

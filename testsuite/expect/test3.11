@@ -107,8 +107,8 @@ proc create_res { res_params failure_expected } {
 					send_user "$res_params\n"
 				}
 				set ret_code 1
-				exp_continue
 			}
+			exp_continue
 		}
 		-re "No reservations in the system" {
 			if {!$failure_expected} {
@@ -127,6 +127,13 @@ proc create_res { res_params failure_expected } {
 			}
 			set ret_code 1
 			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set ret_code 1
+		}
+		eof {
+			wait
 		}
 	}
 	#exp_internal 0
@@ -214,8 +221,6 @@ proc delete_res { res_name } {
 }
 
 
-
-
 #
 # Identify usable nodes in default partition
 #
@@ -268,6 +273,7 @@ expect {
 # Make a list of lists with a series of parameters to test.  All the tests
 # in goodtests should pass, all those in badtests should fail.
 #
+send_user "\n+++++ STARTING TEST 1 +++++\n"
 set badtests "
 	{}
 	{Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
@@ -275,6 +281,7 @@ set badtests "
 	{StartTime=midnight   Duration=600   User=$user_name Flags=ignore_jobs}
 	{StartTime=now   Duration=5   Nodes=ALL Flags=ignore_jobs}
 	{StartTime=now   Duration=5   NodeCnt=  Nodes=   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   NodeCnt=1,A}
 	{StartTime=now   Duration=5   User=$user_name Flags=ignore_jobs}
 	{StartTime=blah   Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
 	{StartTime=now   Duration=foo   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
@@ -322,12 +329,13 @@ foreach test $goodtests {
 		exit $ret_code
 	}
 }
-
 spawn $scontrol show res
+
 #
 # TEST 2
 # Create a reservation and update it in various ways
 #
+send_user "\n+++++ STARTING TEST 2 +++++\n"
 set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 if {$ret_code != 0} {
 	send_user "\nFAILURE: Unable to create a valid reservation\n"
@@ -339,8 +347,8 @@ set goodupdates "
 	{PartitionName=}
 	{Duration=90}
 	{StartTime=now+30minutes}
-	{Nodes=$def_node}
 	{EndTime=now+60minutes Flags=Maint NodeCnt=1 Nodes=}
+	{Nodes=$def_node}
 "
 #	{Flags=Maint}
 #	{Flags=}
@@ -371,7 +379,7 @@ if {$ret_code != 0} {
 # Make a reservation, submit a job to it, confirm that the job is paired
 # with the reservation.
 #
-
+send_user "\n+++++ STARTING TEST 3 +++++\n"
 # Make the reservation
 set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 if {$ret_code != 0} {
@@ -461,6 +469,7 @@ if {$ret_code != 0} {
 # If not running as root, make a reservation restricted to root, submit a job,
 # and confirm that the job is rejected.
 #
+send_user "\n+++++ STARTING TEST 4 +++++\n"
 if {$user_name != "root"} {
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root" 0]
@@ -514,7 +523,7 @@ if {$user_name != "root"} {
 # TEST 5
 # Test node reservation conflict
 #
-
+send_user "\n+++++ STARTING TEST 5 +++++\n"
 # Make the reservation
 set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 0]
 if {$ret_code != 0} {
@@ -544,7 +553,7 @@ if {$ret_code != 0} {
 # TEST 6
 # Test time reservation conflict
 #
-
+send_user "\n+++++ STARTING TEST 6 +++++\n"
 # Make the reservation
 set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 0]
 if {$ret_code != 0} {

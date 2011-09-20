@@ -2970,15 +2970,41 @@ static void
 _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
+	uint32_t array_len;
 	xassert(msg != NULL);
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time,   buffer);
 		pack32(msg->duration,      buffer);
 		pack16(msg->flags,         buffer);
-		pack32(msg->node_cnt,      buffer);
+		if (msg->node_cnt) {
+			for (array_len = 0; msg->node_cnt[array_len];
+			     array_len++) {
+				/* determine array length */
+			}
+			array_len++;	/* Include trailing zero */
+		} else
+			array_len = 0;
+		pack32_array(msg->node_cnt, array_len, buffer);
+		packstr(msg->node_list,    buffer);
+		packstr(msg->features,     buffer);
+		packstr(msg->licenses,     buffer);
+		packstr(msg->partition,    buffer);
+
+		packstr(msg->users,        buffer);
+		packstr(msg->accounts,     buffer);
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		packstr(msg->name,         buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->end_time,   buffer);
+		pack32(msg->duration,      buffer);
+		pack16(msg->flags,         buffer);
+		if (msg->node_cnt)
+			pack32(msg->node_cnt[0], buffer);
+		else
+			pack32(NO_VAL,     buffer);
 		packstr(msg->node_list,    buffer);
 		packstr(msg->features,     buffer);
 		packstr(msg->licenses,     buffer);
@@ -3002,13 +3028,46 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(resv_desc_msg_t));
 	*msg = tmp_ptr;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
 		safe_unpack_time(&tmp_ptr->start_time, buffer);
 		safe_unpack_time(&tmp_ptr->end_time,   buffer);
 		safe_unpack32(&tmp_ptr->duration,      buffer);
 		safe_unpack16(&tmp_ptr->flags,         buffer);
-		safe_unpack32(&tmp_ptr->node_cnt,      buffer);
+		safe_unpack32_array(&tmp_ptr->node_cnt, &uint32_tmp, buffer);
+		if (uint32_tmp > 0) {
+			/* Must be zero terminated */
+			if (tmp_ptr->node_cnt[uint32_tmp-1] != 0)
+				goto unpack_error;
+		} else {
+			/* This avoids a pointer to a zero length buffer */
+			xfree(tmp_ptr->node_cnt);
+		}
+		safe_unpackstr_xmalloc(&tmp_ptr->node_list,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->features,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->licenses,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->partition,
+				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&tmp_ptr->users,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->accounts,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		uint32_t node_cnt;
+		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
+		safe_unpack_time(&tmp_ptr->start_time, buffer);
+		safe_unpack_time(&tmp_ptr->end_time,   buffer);
+		safe_unpack32(&tmp_ptr->duration,      buffer);
+		safe_unpack16(&tmp_ptr->flags,         buffer);
+		safe_unpack32(&node_cnt, buffer);
+		if (node_cnt != NO_VAL) {
+			tmp_ptr->node_cnt = xmalloc(sizeof(uint32_t) * 2);
+			tmp_ptr->node_cnt[0] = node_cnt;
+		}
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features,
@@ -3023,6 +3082,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->accounts,
 				       &uint32_tmp, buffer);
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:

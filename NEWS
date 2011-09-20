@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - read MPs and BPs from the bluegene.conf
  -- Modify srun's SIGINT handling logic timer (two SIGINTs within one second) to
     be based microsecond rather than second timer.
+ -- Modify advance reservation to accept multiple specific block sizes rather
+    than a single node count.
 
 * Changes in SLURM 2.3.1
 ========================

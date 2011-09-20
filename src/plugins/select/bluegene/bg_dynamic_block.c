@@ -69,7 +69,7 @@ extern List create_dynamic_block(List block_list,
 
 	if (cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
-		      "on this system ionodes_per_mp is %d",
+		      "on this system ionodes_per_mp is %u",
 		      request->procs,
 		      bg_conf->ionodes_per_mp);
 		goto finished;

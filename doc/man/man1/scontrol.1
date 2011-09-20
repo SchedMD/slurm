@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "July 2011" "scontrol 2.3" "Slurm components"
+.TH SCONTROL "1" "August 2011" "scontrol 2.4" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1057,10 +1057,16 @@ A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
 
 .TP
-\fINodeCnt\fP=<num>
-Identify number of nodes to be reserved.
-On BlueGene systems, this number represents a cnode (compute node) count and
-will be rounded up as needed to represent whole nodes (midplanes).
+\fINodeCnt\fP=<num>[,num,...]
+Identify number of nodes to be reserved. The number can include a suffix of
+"k" or "K", in which case the number specified is multiplied by 1024.
+On BlueGene systems, this number represents a c\-node (compute node) count and
+will be rounded up as needed to reserve whole nodes (midplanes).
+In order to optimize the topology of the resource allocation on a new
+reservation (not on an updated reservation), specific sizes
+required for the reservation may be specified. For example, if you want to
+reserve 4096 c\-nodes on a BlueGene system that can be used to allocate two
+jobs each with 2048 c\-nodes, specify "NodeCnt=2k,2k".
 A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
 

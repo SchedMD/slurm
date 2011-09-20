@@ -2473,10 +2473,10 @@ extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 		*tmp32 = 0;
 		break;
 	case SELECT_STATIC_PART:
-		if (bg_conf->layout_mode == LAYOUT_STATIC)
-			*tmp16 = 1;
-		else
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			*tmp16 = 0;
+		else /* LAYOUT_STATIC || LAYOUT_OVERLAP */
+			*tmp16 = 1;
 		break;
 
 	case SELECT_CONFIG_INFO:
@@ -2766,6 +2766,67 @@ extern int select_p_reconfigure(void)
 
 extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 {
+#ifdef HAVE_BG
+	/* Reserve a block of appropriate geometry by issuing a fake job
+	 * WILL_RUN call */
+	int i, rc;
+	uint32_t tmp_u32;
+	uint16_t conn_type[SYSTEM_DIMENSIONS];
+	uint16_t geo[SYSTEM_DIMENSIONS];
+	uint16_t reboot = 0;
+	uint16_t rotate = 1;
+	List preemptee_candidates, preemptee_job_list;
+	struct job_record job_rec;
+	bitstr_t *tmp_bitmap;
+
+	memset(&job_rec, 0, sizeof(struct job_record));
+	job_rec.details = xmalloc(sizeof(struct job_details));
+	job_rec.select_jobinfo = select_g_select_jobinfo_alloc();
+	tmp_u32 = 1;
+	set_select_jobinfo(job_rec.select_jobinfo->data,
+			   SELECT_JOBDATA_ALTERED, &tmp_u32);
+	set_select_jobinfo(job_rec.select_jobinfo->data,
+			   SELECT_JOBDATA_NODE_CNT, &node_cnt);
+	for (i = 0; i < SYSTEM_DIMENSIONS; i++) {
+		conn_type[i] = SELECT_TORUS;
+		geo[i] = 0;
+	}
+	select_g_select_jobinfo_set(job_rec.select_jobinfo,
+				    SELECT_JOBDATA_GEOMETRY, &geo);
+	select_g_select_jobinfo_set(job_rec.select_jobinfo,
+				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
+	select_g_select_jobinfo_set(job_rec.select_jobinfo,
+				    SELECT_JOBDATA_REBOOT, &reboot);
+	select_g_select_jobinfo_set(job_rec.select_jobinfo,
+				    SELECT_JOBDATA_ROTATE, &rotate);
+
+	job_rec.details->min_cpus = node_cnt * bg_conf->cpus_per_mp;
+	job_rec.details->max_cpus = job_rec.details->min_cpus;
+	tmp_bitmap = bit_copy(avail_bitmap);
+
+	preemptee_candidates = list_create(NULL);
+	if (preemptee_candidates == NULL)
+		fatal("list_create: malloc failure");
+
+	rc = submit_job(&job_rec, tmp_bitmap, node_cnt, node_cnt, node_cnt,
+			SELECT_MODE_WILL_RUN, preemptee_candidates,
+			&preemptee_job_list);
+
+	list_destroy(preemptee_candidates);
+	xfree(job_rec.details);
+	select_g_select_jobinfo_free(job_rec.select_jobinfo);
+
+	if (rc == SLURM_SUCCESS) {
+		char *resv_nodes = bitmap2node_name(tmp_bitmap);
+		info("Reservation request for %u nodes satisfied with %s",
+		     node_cnt, resv_nodes);
+		xfree(resv_nodes);
+		return tmp_bitmap;
+	} else {
+		info("Reservation request for %u nodes failed", node_cnt);
+		FREE_NULL_BITMAP(tmp_bitmap);
+	}
+#endif
 	return NULL;
 }
 

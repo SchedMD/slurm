@@ -1281,18 +1281,11 @@ extern int select_g_reconfigure (void)
  */
 extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 {
-#if 0
-	/* Wait for Danny to checkin select/bgq logic before using new plugin
-	 * function calls. The select_p_resv_test() function is currently only
-	 * available in select/linear and select/cons_res */
 	if (slurm_select_init(0) < 0)
 		return NULL;
 
 	return (*(select_context[select_context_default].ops.resv_test))
 		(avail_bitmap, node_cnt);
-#else
-	return bit_pick_cnt(avail_bitmap, node_cnt);
-#endif
 }
 
 extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

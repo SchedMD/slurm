@@ -541,6 +541,7 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 		xfree(msg->features);
 		xfree(msg->licenses);
 		xfree(msg->name);
+		xfree(msg->node_cnt);
 		xfree(msg->node_list);
 		xfree(msg->partition);
 		xfree(msg->users);
