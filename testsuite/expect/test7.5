@@ -156,11 +156,8 @@ expect {
 		# sleep to make sure the process is actually running
 		exec $bin_sleep 1
 		exec $bin_kill -INT $srun_pid
-		exec $bin_usleep   1000
 		exec $bin_kill -INT $srun_pid
-		exec $bin_usleep   1000
-		exec $bin_kill -INT $srun_pid
-		send_user "\nSent SIGINT * 3\n"
+		send_user "\nSent SIGINT * 2\n"
 		exp_continue
 	}
 	-re "Received signal" {
