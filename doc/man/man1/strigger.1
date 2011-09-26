@@ -1,4 +1,4 @@
-.TH STRIGGER "1" "December 2010" "strigger 2.3" "Slurm components"
+.TH STRIGGER "1" "September 2011" "strigger 2.4" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -30,7 +30,8 @@ that interval.
 The record of those events (e.g. nodes which went DOWN in the previous
 15 seconds) will then be cleared.
 The trigger program must set a new trigger before the end of the next
-interval to insure that no trigger events are missed.
+interval to insure that no trigger events are missed OR the trigger must be
+created with an argument of "\-\-flags=PERM".
 If desired, multiple trigger programs can be set for the same event.
 
 \fBIMPORTANT NOTE:\fR This command can only set triggers if run by the
@@ -98,6 +99,16 @@ Trigger an event if the specified node goes into a FAILING state.
 .TP
 \fB\-f\fR, \fB\-\-fini\fR
 Trigger an event when the specified job completes execution.
+
+.TP
+\fB\-\-flags\fR=\fItype\fR
+Associate flags with the reservation. Multiple flags should be comma separated.
+Valid flags include:
+.RS
+.TP
+PERM
+Make the trigger permanent. Do not purge it after the event occurs.
+.RE
 
 .TP
 \fB\-\-front_end\fR

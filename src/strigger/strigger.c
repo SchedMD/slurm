@@ -63,6 +63,7 @@
 static int   _clear_trigger(void);
 static int   _get_trigger(void);
 static int   _set_trigger(void);
+static char *_trig_flags(uint16_t flags);
 static int   _trig_offset(uint16_t offset);
 static char *_trig_user(uint32_t user_id);
 
@@ -204,7 +205,8 @@ static int _set_trigger(void)
 		ti.res_type = TRIGGER_RES_TYPE_DATABASE;
 	}
 
-	ti.offset = params.offset + 0x8000;
+	ti.flags   = params.flags;
+	ti.offset  = params.offset + 0x8000;
 	ti.program = params.program;
 
 	while (slurm_set_trigger(&ti)) {
@@ -397,23 +399,31 @@ static int _get_trigger(void)
 			/*      35353535353535353535353535353535353 */
 			       "TYPE                                "
 
-			/*      666666 88888888 xxxxxxx */
-			       "OFFSET USER     PROGRAM\n");
+			/*      666666 88888888 55555 xxxxxxx */
+			       "OFFSET USER     FLAGS PROGRAM\n");
 		}
 		line_no++;
 
-		printf("%7u %-9s %7s %-35s %6d %-8s %s\n",
+		printf("%7u %-9s %7s %-35s %6d %-8s %-5s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			trigger_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
 			trigger_type(trig_msg->trigger_array[i].trig_type),
 			_trig_offset(trig_msg->trigger_array[i].offset),
 			_trig_user(trig_msg->trigger_array[i].user_id),
+			_trig_flags(trig_msg->trigger_array[i].flags),
 			trig_msg->trigger_array[i].program);
 	}
 
 	slurm_free_trigger_msg(trig_msg);
 	return 0;
+}
+
+static char *_trig_flags(uint16_t flags)
+{
+	if (flags & TRIGGER_FLAG_PERM)
+		return "PERM";
+	return "";
 }
 
 static int _trig_offset(uint16_t offset)

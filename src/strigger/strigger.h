@@ -52,6 +52,7 @@
 struct strigger_parameters {
 	bool     block_err;
 	List     clusters;
+	uint16_t flags;
 	bool     front_end;
 	bool     job_fini;
 	uint32_t job_id;

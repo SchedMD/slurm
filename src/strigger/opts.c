@@ -73,6 +73,7 @@
 #define OPT_LONG_USER      0x105
 #define OPT_LONG_BLOCK_ERR 0x106
 #define OPT_LONG_FRONT_END 0x107
+#define OPT_LONG_FLAGS     0x108
 
 /* getopt_long options, integers but not characters */
 
@@ -127,6 +128,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"version",                             no_argument, 0, 'V'},
 		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
 		{"clear",     no_argument,       0, OPT_LONG_CLEAR},
+		{"flags",     required_argument, 0, OPT_LONG_FLAGS},
 		{"front_end", no_argument,       0, OPT_LONG_FRONT_END},
 		{"get",       no_argument,       0, OPT_LONG_GET},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
@@ -268,6 +270,14 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) OPT_LONG_CLEAR:
 			params.mode_clear = true;
 			break;
+		case (int) OPT_LONG_FLAGS:
+			if (!strncasecmp(optarg, "perm", 4))
+				params.flags = TRIGGER_FLAG_PERM;
+			else {
+				error("Invalid flags %s", optarg);
+				exit(1);
+			}
+			break;
 		case (int) OPT_LONG_FRONT_END:
 			params.front_end = true;
 			break;
@@ -307,6 +317,7 @@ static void _init_options( void )
 	params.bu_ctld_fail = false;
 	params.bu_ctld_res_op = false;
 	params.bu_ctld_as_ctrl = false;
+	params.flags        = 0;
 	params.front_end    = false;
 	params.node_down    = false;
 	params.node_drained = false;
@@ -338,6 +349,7 @@ static void _print_options( void )
 	verbose("get          = %s", params.mode_get ? "true" : "false");
 	verbose("clear        = %s", params.mode_clear ? "true" : "false");
 	verbose("block_err    = %s", params.block_err ? "true" : "false");
+	verbose("flags        = %u", params.flags);
 	verbose("front_end    = %s", params.front_end ? "true" : "false");
 	verbose("job_id       = %u", params.job_id);
 	verbose("job_fini     = %s", params.job_fini ? "true" : "false");
@@ -489,6 +501,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
                       trigger event when primary slurmctld acct buffer full\n\
   -F, --fail          trigger event when node is expected to FAIL\n\
   -f, --fini          trigger event when job finishes\n\
+      --flags=perm    trigger event flag (perm = permanent)\n\n\
   -g, --primary_slurmdbd_failure\n\
                       trigger when primary slurmdbd fails\n\
   -G, --primary_slurmdbd_resumed_operation\n\

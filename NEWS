@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Permit administrator to change a job's QOS to any value without validating
     the job's owner has permission to use that QOS. Based upon patch by Phil
     Eckert (LLNL).
+ -- Add trigger flag for a permanent trigger. The trigger will NOT be purged
+    after an event occurs, but only when explicitly deleted.
 
 * Changes in SLURM 2.3.1
 ========================
