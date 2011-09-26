@@ -656,7 +656,6 @@ static int _change_state_bps(char *com, int state)
 	int i = 0;
 	uint16_t pos[params.cluster_dims];
 	char letter = '.';
-	char opposite = '#';
 	bool used = false;
 	char *c_state = "up";
 	hostlist_t hl = NULL;
@@ -664,7 +663,6 @@ static int _change_state_bps(char *com, int state)
 
 	if (state == NODE_STATE_DOWN) {
 		letter = '#';
-		opposite = '.';
 		used = true;
 		c_state = "down";
 	}

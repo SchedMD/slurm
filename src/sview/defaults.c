@@ -709,7 +709,7 @@ end_it:
 	       sizeof(sview_config_t));
 
 	xfree(pathname);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int save_defaults(bool final_save)
@@ -914,11 +914,14 @@ end_it:
 	if (rc)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
-		int ign;	/* avoid warning */
 		(void) unlink(old_file);
-		ign =  link(reg_file, old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
 		(void) unlink(reg_file);
-		ign =  link(new_file, reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
 		(void) unlink(new_file);
 	}
 

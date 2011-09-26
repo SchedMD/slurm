@@ -375,7 +375,6 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 		GTK_STOCK_CLOSE,
 		GTK_RESPONSE_OK,
 		NULL);
-	int error_code;
 	GtkTreeStore *treestore =
 		_local_create_treestore_2cols(popup, 600, 400);
 	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
@@ -385,7 +384,7 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 	g_signal_connect(G_OBJECT(popup), "response",
 			 G_CALLBACK(_delete_popup), NULL);
 
-	error_code = get_new_info_config(&slurm_ctl_conf_ptr);
+	(void) get_new_info_config(&slurm_ctl_conf_ptr);
 	_layout_conf_ctl(treestore, slurm_ctl_conf_ptr);
 
 	gtk_widget_show_all(popup);
@@ -1051,7 +1050,6 @@ extern void about_popup(GtkAction *action, gpointer user_data)
 		GTK_WINDOW(user_data),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
-	int response = 0;
 	char *version = NULL;
 
 	version = xstrdup_printf("SLURM Version: %s", SLURM_VERSION_STRING);
@@ -1075,7 +1073,7 @@ extern void about_popup(GtkAction *action, gpointer user_data)
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
 
 	gtk_widget_show_all(popup);
-	response = gtk_dialog_run (GTK_DIALOG(popup));
+	(void) gtk_dialog_run (GTK_DIALOG(popup));
 
 	gtk_widget_destroy(popup);
 
@@ -1092,7 +1090,6 @@ extern void usage_popup(GtkAction *action, gpointer user_data)
 		GTK_WINDOW(user_data),
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		NULL);
-	int response = 0;
 	char *help_msg =
 		"sview can be used to view and modify many of SLURM's\n"
 		"records.\n\n"
@@ -1126,7 +1123,7 @@ extern void usage_popup(GtkAction *action, gpointer user_data)
 	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
 
 	gtk_widget_show_all(popup);
-	response = gtk_dialog_run (GTK_DIALOG(popup));
+	(void) gtk_dialog_run (GTK_DIALOG(popup));
 
 	gtk_widget_destroy(popup);
 

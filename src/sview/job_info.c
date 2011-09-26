@@ -3488,8 +3488,7 @@ display_it:
 				name,
 				sizeof(name),
 				SELECT_PRINT_BG_ID);
-			if (!name
-			    || strcmp(search_info->gchar_data, name))
+			if (strcmp(search_info->gchar_data, name))
 				continue;
 			break;
 		case NODE_PAGE:
@@ -4023,7 +4022,6 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	int response = 0;
 	char tmp_char[255];
 	int edit_type = 0;
-	int row_count=0;
 	job_desc_msg_t *job_msg;
 	GtkWidget *label = NULL;
 	GtkWidget *entry = NULL;
@@ -4039,10 +4037,6 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
-
-	if (treeview)
-		row_count = gtk_tree_selection_count_selected_rows(
-			gtk_tree_view_get_selection(treeview));
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);

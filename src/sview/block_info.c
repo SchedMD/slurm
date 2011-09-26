@@ -604,15 +604,12 @@ void _display_info_block(List block_list,
 	char *name = (char *)spec_info->search_info->gchar_data;
 	int j = 0, found = 0;
 	sview_block_info_t *block_ptr = NULL;
-	char *info = NULL;
 	int update = 0;
 	GtkTreeView *treeview = NULL;
 	ListIterator itr = NULL;
 
-	if (!spec_info->search_info->gchar_data) {
-		info = xstrdup("No pointer given!");
+	if (!spec_info->search_info->gchar_data)
 		goto finished;
-	}
 
 need_refresh:
 	if (!spec_info->display_widget) {
@@ -647,7 +644,7 @@ need_refresh:
 					block_ptr->bp_inx[j],
 					block_ptr->bp_inx[j+1],
 					block_ptr->color_inx, true,
-					0);
+					state);
 				j += 2;
 			}
 			_layout_block_record(treeview, block_ptr, update);
