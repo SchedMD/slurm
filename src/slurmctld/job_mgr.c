@@ -8685,7 +8685,6 @@ void job_fini (void)
 extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 {
 	int base_state;
-	bool sent_start = false;
 
 	xassert(job_ptr);
 
@@ -8738,7 +8737,6 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 			/* we have to call job start again because the
 			 * associd does not get updated in job complete */
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-			sent_start = true;
 		}
 	}
 

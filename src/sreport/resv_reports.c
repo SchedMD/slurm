@@ -78,7 +78,6 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 	int local_cluster_flag = all_clusters_flag;
 	time_t start_time, end_time;
 	int command_len = 0;
-	int option = 0;
 
 	if(!resv_cond) {
 		error("We need an slurmdb_reservation_cond to call this");
@@ -95,8 +94,7 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}

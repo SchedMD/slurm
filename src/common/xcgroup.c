@@ -420,7 +420,6 @@ int xcgroup_instanciate(xcgroup_t* cg)
 	mode_t omask;
 
 	xcgroup_ns_t* cgns;
-	char* uri;
 	char* file_path;
 	uid_t uid;
 	gid_t gid;
@@ -429,7 +428,6 @@ int xcgroup_instanciate(xcgroup_t* cg)
 
 	/* init variables based on input cgroup */
 	cgns = cg->ns;
-	uri = cg->name;
 	file_path = cg->path;
 	uid = cg->uid;
 	gid = cg->gid;

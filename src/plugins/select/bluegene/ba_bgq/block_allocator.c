@@ -928,7 +928,7 @@ extern ba_mp_t *ba_pick_sub_block_cnodes(
 	bg_record_t *bg_record, uint32_t *node_count, select_jobinfo_t *jobinfo)
 {
 	ListIterator itr = NULL;
-	ba_mp_t *ba_mp = NULL, *empty_ba_mp = NULL;
+	ba_mp_t *ba_mp = NULL;
 	ba_geo_table_t *geo_table = NULL;
 	char *tmp_char = NULL;
 	uint32_t orig_node_count = *node_count;
@@ -1068,7 +1068,6 @@ try_again:
 		*/
 		if (max_clear_cnt < clear_cnt) {
 			max_clear_cnt = clear_cnt;
-			empty_ba_mp = ba_mp;
 		}
 
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)

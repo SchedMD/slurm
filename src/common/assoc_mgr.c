@@ -3473,7 +3473,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 extern int load_assoc_usage(char *state_save_location)
 {
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	int data_allocated, data_read = 0;
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
@@ -3495,7 +3495,6 @@ extern int load_assoc_usage(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Assoc usage file (%s) to recover", state_file);
-		error_code = ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -3580,7 +3579,7 @@ unpack_error:
 
 extern int load_qos_usage(char *state_save_location)
 {
-	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	int data_allocated, data_read = 0;
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
@@ -3602,7 +3601,6 @@ extern int load_qos_usage(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Qos usage file (%s) to recover", state_file);
-		error_code = ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);

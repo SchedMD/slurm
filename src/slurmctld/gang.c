@@ -439,12 +439,11 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
  * each used socket to avoid activating another job on the same socket */
 static void _fill_sockets(bitstr_t *job_nodemap, struct gs_part *p_ptr)
 {
-	uint32_t c, i, size;
+	uint32_t c, i;
 	int n, first_bit, last_bit;
 
 	if (!job_nodemap || !p_ptr || !p_ptr->active_resmap)
 		return;
-	size      = bit_size(job_nodemap);
 	first_bit = bit_ffs(job_nodemap);
 	last_bit  = bit_fls(job_nodemap);
 	if ((first_bit < 0) || (last_bit < 0))

@@ -2835,7 +2835,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	*node_bitmap = (bitstr_t *) NULL;
 
 	if (job_ptr->resv_name) {
-		bool overlap_resv = false;
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 				_find_resv_name, job_ptr->resv_name);
 		job_ptr->resv_ptr = resv_ptr;
@@ -2892,7 +2891,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			bit_not(res2_ptr->node_bitmap);
 			bit_and(*node_bitmap, res2_ptr->node_bitmap);
 			bit_not(res2_ptr->node_bitmap);
-			overlap_resv = true;
 		}
 		list_iterator_destroy(iter);
 

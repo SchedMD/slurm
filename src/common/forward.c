@@ -84,7 +84,6 @@ void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
 	Buf buffer = init_buf(fwd_msg->buf_len);
-	int i=0;
 	List ret_list = NULL;
 	slurm_fd_t fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
@@ -182,7 +181,6 @@ void *_forward_thread(void *arg)
 			list_push(fwd_msg->ret_list, ret_data_info);
 			ret_data_info->node_name = xstrdup(name);
 			free(name);
-			i=0;
 			while((name = hostlist_shift(hl))) {
 				ret_data_info =
 					xmalloc(sizeof(ret_data_info_t));

@@ -605,7 +605,6 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	print_field_t *field = NULL;
 	print_field_t total_field;
-	uint32_t total_time = 0;
 	slurmdb_report_time_format_t temp_format;
 
 	List slurmdb_report_cluster_grouping_list = NULL;
@@ -660,7 +659,6 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
-	total_time = job_cond->usage_end - job_cond->usage_start;
 
 	header_list = list_create(NULL);
 	list_append_list(header_list, print_fields_list);
@@ -815,7 +813,6 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 
 	print_field_t *field = NULL;
 	print_field_t total_field;
-	uint32_t total_time = 0;
 	slurmdb_report_time_format_t temp_format;
 
 	List slurmdb_report_cluster_grouping_list = NULL;
@@ -870,7 +867,6 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
-	total_time = job_cond->usage_end - job_cond->usage_start;
 
 	header_list = list_create(NULL);
 	list_append_list(header_list, print_fields_list);
@@ -1026,7 +1022,6 @@ extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
 
 	print_field_t *field = NULL;
 	print_field_t total_field;
-	uint32_t total_time = 0;
 	slurmdb_report_time_format_t temp_format;
 
 	List slurmdb_report_cluster_grouping_list = NULL;
@@ -1081,7 +1076,6 @@ extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
-	total_time = job_cond->usage_end - job_cond->usage_start;
 
 	header_list = list_create(NULL);
 	list_append_list(header_list, print_fields_list);

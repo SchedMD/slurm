@@ -53,7 +53,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int a_set = 0;
 	int end = 0;
 	int command_len = 0;
-	int option = 0;
 
 	with_deleted = 0;
 	without_limits = 0;
@@ -64,8 +63,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}
@@ -929,14 +927,12 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	for (i = 0; i < argc; i++) {
 		int end = parse_option_end(argv[i]);
-		int option = 0;
 
 		if (!end)
 			command_len = strlen(argv[i]);
 		else {
 			command_len = end - 1;
 			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
 				end++;
 			}
 		}

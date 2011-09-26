@@ -1069,7 +1069,7 @@ static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover)
 {
-	s_p_hashtbl_t *tbl, *dflt;
+	s_p_hashtbl_t *tbl;
 	slurm_conf_downnodes_t *n;
 	static s_p_options_t _downnodes_options[] = {
 		{"Reason", S_P_STRING},
@@ -1082,8 +1082,6 @@ static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 	/* s_p_dump_values(tbl, _downnodes_options); */
 
 	n = xmalloc(sizeof(slurm_conf_node_t));
-	dflt = default_nodename_tbl;
-
 	n->nodenames = xstrdup(value);
 
 	if (!s_p_get_string(&n->reason, "Reason", tbl))

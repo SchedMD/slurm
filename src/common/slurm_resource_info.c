@@ -140,7 +140,7 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 	uint16_t max_avail_cpus = 0xffff;	/* for alloc_* accounting */
 	uint16_t min_sockets = 1, max_sockets = 0xffff;
 	uint16_t min_cores   = 1, max_cores   = 0xffff;
-	uint16_t min_threads = 1, max_threads = 0xffff;
+	uint16_t                  max_threads = 0xffff;
 	int i;
 
         /* pick defaults for any unspecified items */
@@ -149,7 +149,7 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 	if (core_cnt != (uint16_t) NO_VAL)
 		min_cores = max_cores = core_cnt;	
 	if (thread_cnt != (uint16_t) NO_VAL)
-		min_threads = max_threads = thread_cnt;
+		max_threads = thread_cnt;
 	if (cpus_per_task <= 0)
 		cpus_per_task = 1;
 	if (*threads <= 0)

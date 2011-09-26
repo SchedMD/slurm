@@ -627,7 +627,6 @@ extern int add_bg_record(List records, List *used_nodes,
 	ListIterator itr;
 	uid_t pw_uid;
 	int i, len;
-	int small_count = 0;
 
 	xassert(bg_conf->slurm_user_name);
 
@@ -808,7 +807,6 @@ extern int add_bg_record(List records, List *used_nodes,
 			      "base partition with %u nodes.",
 			      i, blockreq->small32, blockreq->small128,
 			      bg_conf->mp_cnode_cnt);
-		small_count = blockreq->small32+blockreq->small128;
 #else
 		if (!blockreq->small16 && !blockreq->small32
 		    && !blockreq->small64 && !blockreq->small128
@@ -835,11 +833,6 @@ extern int add_bg_record(List records, List *used_nodes,
 			      i, blockreq->small16, blockreq->small32,
 			      blockreq->small64, blockreq->small128,
 			      blockreq->small256, bg_conf->mp_cnode_cnt);
-		small_count = blockreq->small16
-			+ blockreq->small32
-			+ blockreq->small64
-			+ blockreq->small128
-			+ blockreq->small256;
 #endif
 	no_check:
 		/* Automatically create 2-way split if

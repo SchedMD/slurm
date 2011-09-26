@@ -1524,7 +1524,8 @@ _exec_prog(slurm_msg_t *msg)
 	} else {
 		close(pfd[1]);
 		len = read(pfd[0], buf, sizeof(buf));
-		close(pfd[0]);
+		if (len >= 1)
+			close(pfd[0]);
 		waitpid(child, &status, 0);
 		exit_code = WEXITSTATUS(status);
 	}
@@ -1618,11 +1619,8 @@ _check_io_timeout(void *_sls)
 {
 	int ii;
 	time_t now, next_deadline;
-	client_io_t *cio;
 	struct timespec ts = {0, 0};
 	step_launch_state_t *sls = (step_launch_state_t *)_sls;
-
-	cio = sls->io.normal;
 
 	pthread_mutex_lock(&sls->lock);
 

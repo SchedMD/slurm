@@ -326,8 +326,7 @@ char *xstrdup_printf(const char *fmt, ...)
  */
 char * xstrndup(const char *str, size_t n)
 {
-	size_t siz,
-	       rsiz;
+	size_t siz;
 	char   *result;
 
 	if (str == NULL)
@@ -339,7 +338,7 @@ char * xstrndup(const char *str, size_t n)
 	siz++;
 	result = (char *)xmalloc(siz);
 
-	rsiz = strlcpy(result, str, siz);
+	(void) strlcpy(result, str, siz);
 
 	return result;
 }

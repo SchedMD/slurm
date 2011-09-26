@@ -946,7 +946,6 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	char *cluster_name = NULL;
 	void *db_conn = NULL;
 	ListIterator itr, itr2;
-	int err = 0;
 	bool all_clusters = 0;
 
 	if (cluster_names && !strcmp(cluster_names, "all"))
@@ -971,7 +970,6 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	if (!cluster_names || all_clusters) {
 		while ((cluster_rec = list_next(itr))) {
 			if (_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
-				err = 1;
 				list_delete_item(itr);
 			}
 		}
@@ -987,12 +985,10 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 			if (!cluster_rec) {
 				error("No cluster '%s' known by database.",
 				      cluster_name);
-				err = 1;
 				goto next;
 			}
 
 			if (_setup_cluster_rec(cluster_rec) != SLURM_SUCCESS) {
-				err = 1;
 				list_delete_item(itr);
 			}
 		next:

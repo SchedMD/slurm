@@ -61,7 +61,7 @@ extern int
 scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
+	uint32_t job_id = 0, step_id = 0;
 	char *next_str;
 	uint32_t ckpt_errno;
 	char *ckpt_strerror = NULL;
@@ -74,7 +74,6 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 		if (next_str[0] == '.') {
 			step_id = (uint32_t) strtol (&next_str[1], &next_str,
 						     10);
-			step_id_set = 1;
 		} else
 			step_id = NO_VAL;
 		if (next_str[0] != '\0') {

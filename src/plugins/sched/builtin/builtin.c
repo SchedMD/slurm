@@ -190,23 +190,24 @@ static void _compute_start_times(void)
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
 				       preemptee_candidates, NULL);
-		last_job_update = now;
-
-		if (job_ptr->time_limit == INFINITE)
-			time_limit = 365 * 24 * 60 * 60;
-		else if (job_ptr->time_limit != NO_VAL)
-			time_limit = job_ptr->time_limit * 60;
-		else if (job_ptr->part_ptr &&
-			 (job_ptr->part_ptr->max_time != INFINITE))
-			time_limit = job_ptr->part_ptr->max_time * 60;
-		else
-			time_limit = 365 * 24 * 60 * 60;
-		if (bit_overlap(alloc_bitmap, avail_bitmap) &&
-		    (job_ptr->start_time <= last_job_alloc)) {
-			job_ptr->start_time = last_job_alloc;
+		if (rc == SLURM_SUCCESS) {
+			last_job_update = now;
+			if (job_ptr->time_limit == INFINITE)
+				time_limit = 365 * 24 * 60 * 60;
+			else if (job_ptr->time_limit != NO_VAL)
+				time_limit = job_ptr->time_limit * 60;
+			else if (job_ptr->part_ptr &&
+				 (job_ptr->part_ptr->max_time != INFINITE))
+				time_limit = job_ptr->part_ptr->max_time * 60;
+			else
+				time_limit = 365 * 24 * 60 * 60;
+			if (bit_overlap(alloc_bitmap, avail_bitmap) &&
+			    (job_ptr->start_time <= last_job_alloc)) {
+				job_ptr->start_time = last_job_alloc;
+			}
+			bit_or(alloc_bitmap, avail_bitmap);
+			last_job_alloc = job_ptr->start_time + time_limit;
 		}
-		bit_or(alloc_bitmap, avail_bitmap);
-		last_job_alloc = job_ptr->start_time + time_limit;
 		FREE_NULL_BITMAP(avail_bitmap);
 
 		if ((time(NULL) - sched_start) >= sched_timeout) {

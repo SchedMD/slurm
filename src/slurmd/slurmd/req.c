@@ -922,7 +922,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	uid_t    req_uid;
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;
+#ifndef HAVE_FRONT_END
 	bool     first_job_run;
+#endif
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
 	socklen_t adlen;
@@ -953,7 +955,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	env_array_overwrite(&req->env, "SLURM_SRUN_COMM_HOST", host);
 	req->envc = envcount(req->env);
 
+#ifndef HAVE_FRONT_END
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
+#endif
 	if (_check_job_credential(req, req_uid, nodeid, &step_hset) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m",

@@ -189,7 +189,6 @@ int srun(int ac, char **av)
 	resource_allocation_response_msg_t *resp;
 	int debug_level;
 	env_t *env = xmalloc(sizeof(env_t));
-	uint32_t job_id = 0;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
@@ -288,8 +287,6 @@ int srun(int ac, char **av)
 			exit(error_exit);
 		}
 	} else if ((resp = existing_allocation())) {
-
-		job_id = resp->job_id;
 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
 					&resp->node_cnt);
 		if (opt.nodes_set_env && !opt.nodes_set_opt &&

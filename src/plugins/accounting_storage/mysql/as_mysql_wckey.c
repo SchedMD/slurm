@@ -635,7 +635,6 @@ extern List as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL, *vals = NULL;
 	char *user_name = NULL;
-	int set = 0;
 	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr;
 
@@ -671,7 +670,7 @@ extern List as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	}
 is_same_user:
 
-	set = _setup_wckey_cond_limits(wckey_cond, &extra);
+	(void) _setup_wckey_cond_limits(wckey_cond, &extra);
 
 	if (wckey->is_def == 1)
 		xstrcat(vals, ", is_def=1");
@@ -721,7 +720,6 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL;
 	char *user_name = NULL;
-	int set = 0;
 	List use_cluster_list = as_mysql_cluster_list;
 	ListIterator itr;
 
@@ -733,7 +731,7 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	set = _setup_wckey_cond_limits(wckey_cond, &extra);
+	(void) _setup_wckey_cond_limits(wckey_cond, &extra);
 
 	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
@@ -778,7 +776,6 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	char *tmp = NULL;
 	char *cluster_name = NULL;
 	List wckey_list = NULL;
-	int set = 0;
 	int i=0, is_admin=1;
 	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
@@ -809,7 +806,7 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
-	set = _setup_wckey_cond_limits(wckey_cond, &extra);
+	(void) _setup_wckey_cond_limits(wckey_cond, &extra);
 
 	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;

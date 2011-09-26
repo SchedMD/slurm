@@ -757,14 +757,13 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 		{NULL}
 	};
 
-	int count, i, rc;
+	int count, i;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file;
 
-	rc = gres_plugin_init();
-
+	gres_plugin_init();
 	gres_conf_file = _get_gres_conf();
 	slurm_mutex_lock(&gres_context_lock);
 	if (stat(gres_conf_file, &config_stat) < 0)
@@ -795,7 +794,6 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 
 	xfree(gres_conf_file);
 	return count;
-
 }
 
 
@@ -3646,7 +3644,7 @@ void gres_plugin_step_state_rebase(List gres_list,
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 	gres_step_state_t *gres_step_ptr;
-	int old_node_cnt, new_node_cnt;
+	int new_node_cnt;
 	int i_first, i_last, i;
 	int old_inx, new_inx;
 	bitstr_t *new_node_in_use;
@@ -3670,7 +3668,6 @@ void gres_plugin_step_state_rebase(List gres_list,
 			      "NULL");
 			continue;
 		}
-		old_node_cnt = bit_set_count(orig_job_node_bitmap);
 		new_node_cnt = bit_set_count(new_job_node_bitmap);
 		i_first = MIN(bit_ffs(orig_job_node_bitmap),
 			      bit_ffs(new_job_node_bitmap));

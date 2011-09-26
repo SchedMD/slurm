@@ -145,7 +145,7 @@ static void _kvs_xmit_tasks(void)
 static void *_msg_thread(void *x)
 {
 	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
-	int rc, success = 0, timeout;
+	int rc, timeout;
 	slurm_msg_t msg_send;
 
 	slurm_msg_t_init(&msg_send);
@@ -167,7 +167,6 @@ static void *_msg_thread(void *x)
 			msg_arg_ptr->bar_ptr->hostname, rc);
 	} else {
 		/* successfully transmitted KVS keypairs */
-		success = 1;
 	}
 
 	slurm_mutex_lock(&agent_mutex);
