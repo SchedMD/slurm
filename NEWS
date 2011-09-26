@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     jobs happen to be running on blocks not in the new config.
  -- Many cosmetic modifications to eliminate warning message from GCC version
     4.6 compiler.
+ -- Fix for sview reservation tab when finding correct reservation.
 
 * Changes in SLURM 2.3.0-2
 ==========================

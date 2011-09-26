@@ -3477,8 +3477,9 @@ display_it:
 				continue;
 			break;
 		case RESV_PAGE:
-			if (strcmp(search_info->gchar_data,
-				   job_ptr->resv_name))
+			if (!job_ptr->resv_name
+			    || strcmp(search_info->gchar_data,
+				      job_ptr->resv_name))
 				continue;
 			break;
 		case BLOCK_PAGE:
@@ -3487,7 +3488,8 @@ display_it:
 				name,
 				sizeof(name),
 				SELECT_PRINT_BG_ID);
-			if (strcmp(search_info->gchar_data, name))
+			if (!name
+			    || strcmp(search_info->gchar_data, name))
 				continue;
 			break;
 		case NODE_PAGE:
