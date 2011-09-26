@@ -628,7 +628,6 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	GtkTreeIter iter;
 	int column = 0;
 	char *name = NULL;
-	const char *col_name = NULL;
 
 	if (!part_msg)
 		return;
@@ -646,7 +645,7 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 	gtk_tree_model_get(model, &iter, 0, &name, -1);
 	gtk_tree_model_get(model, &iter, 1, &column, -1);
 
-	col_name = _set_part_msg(part_msg, name, column);
+	(void) _set_part_msg(part_msg, name, column);
 	if (name)
 		g_free(name);
 }
@@ -1705,14 +1704,11 @@ static void _display_info_part(List info_list,	popup_info_t *popup_win)
 	sview_part_info_t *sview_part_info = NULL;
 	int update = 0;
 	int j = 0;
-	int first_time = 0;
 
 	if (!spec_info->search_info->gchar_data) {
 		//info = xstrdup("No pointer given!");
 		goto finished;
 	}
-	if (!list_count(popup_win->grid_button_list))
-		first_time = 1;
 
 need_refresh:
 	if (!spec_info->display_widget) {

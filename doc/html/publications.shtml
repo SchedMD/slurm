@@ -7,6 +7,74 @@
 <h2>Presentations</h2>
 <ul>
 
+<li><b>Presentations from SLURM User Group Meeting, September 2011</b></li>
+<ul>
+
+<li><a href="slurm_ug_2011/Basic_Configuration_Usage.pdf">Basic
+    Configuration and Usage</a>,
+Rod Schultz, Groupe Bull</li>
+
+<li><a href="slurm_ug_2011/Advanced_Usage_Tutorial.pdf">SLURM:
+    Advanced Usage</a>,
+Rod Schultz, Groupe Bull</li>
+
+<li><a href="slurm_ug_2011/cons_res.pdf">CPU Management Allocation
+    and Binding</a>,
+Martin Perry, Groupe Bull
+</li>
+
+<li><a href="slurm_ug_2011/SLURM_HA_Tutorial.pdf">Configuring SLURM for HA</a>,
+David Egolf - Bill Brophy, Groupe Bull
+</li>
+
+<li><a href="slurm_ug_2011/SLURM_UserGroup2011_cgroups.pdf">SLURM Resources isolation through cgroups</a>,
+Yiannis Georgiou, Groupe Bull
+<br>Matthieu Hautreux, CEA
+</li>
+
+<li><a href="slurm_ug_2011/SLURM.Cray.pdf">SLURM Operation on Cray XT and XE</a>,
+Moe Jette, SchedMD LLC
+</li>
+
+<!-- day 2 -->
+
+<li><a href="slurm_ug_2011/SLURM-Keynode-v.pdf">Challenges and Opportunities for Exscale
+Resource Management and How Today's Petascale Systems are Guiding the Way</a>,
+William Kramer, NCSA
+</li>
+
+<li><a href="slurm_ug_2011/cea_site_report-1.0.pdf">CEA Site report</a>,
+Matthieu Hautreux, CEA
+</li>
+
+<li><a href="slurm_ug_2011/LLNL_Site_Report_2011.pdf">LLNL Site Report</a>,
+Don Lipari, LLNL
+</li>
+
+<li><a href="slurm_ug_2011/SLURM.v23.status.pdf">SLURM Version 2.3 and
+    Beyond</a>,
+Moe Jette, SchedMD LLC
+</li>
+
+<li><a href="slurm_ug_2011/SLURM_Grid_Ideas.pdf">Proposed Design for Enhanced
+Enterprise-wide Scheduling</a>,
+Don Lipari, LLNL
+</li>
+
+<li><a href="slurm_ug_2011/Bright_Computing_SLURM_integration.pdf">Bright
+    Cluster Manager & SLURM</a>,
+Robert Stober, Bright Computing
+</li>
+
+<li><a href="slurm_ug_2011/User.steps.design.pdf">Job Step Management in User Space</a>,
+Moe Jette, SchedMD LLC
+</li>
+
+<li><a href="slurm_ug_2011/SLURM.BGQ.pdf">SLURM Operation IBM BlueGene/Q</a>,
+Danny Auble, SchedMD LLC
+</li>
+</ul>
+
 <li><a href="http://mescal.imag.fr/membres/yiannis.georgiou/publications/thesis_Georgiou-2010-UJF.pdf">
 Contributions For Resource and Job Management in High Performance Computing</a>,
 Yiannis Georgiou, Universite de Grenoble, France (Thesis, November 2010)</li>

@@ -179,7 +179,7 @@ extern void get_slurm_part(void)
 
 extern void get_bg_part(void)
 {
-	int error_code, i, j, recs=0, count = 0, last_count = -1;
+	int error_code, i, recs=0, count = 0, last_count = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	static block_info_msg_t *bg_info_ptr = NULL;
@@ -348,7 +348,6 @@ extern void get_bg_part(void)
 		recs = 0;
 
 	for (i = 0; i < recs; i++) {
-		j = 0;
 		part = new_part_ptr->partition_array[i];
 
 		if (!part.nodes || (part.nodes[0] == '\0'))

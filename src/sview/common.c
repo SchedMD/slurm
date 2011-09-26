@@ -1391,7 +1391,6 @@ extern gboolean key_pressed(GtkTreeView *tree_view,
 {
 	GtkTreePath *path = NULL;
 	GtkTreeViewColumn *column;
-	GtkTreeSelection *selection = NULL;
 
 	control_key_in_effect = FALSE;
 	enter_key_in_effect = FALSE;
@@ -1400,22 +1399,23 @@ extern gboolean key_pressed(GtkTreeView *tree_view,
 	    (event->keyval == GDK_Control_R))
 		control_key_in_effect = TRUE;
 	else if (event->keyval == GDK_Return) {
+		each_t each;
+		GtkTreeSelection *selection = NULL;
+
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(tree_view),
 					 &path, &column);
 		selection = gtk_tree_view_get_selection(tree_view);
-		each_t each;
 		memset(&each, 0, sizeof(each_t));
 		each.tree_view = tree_view;
 		each.display_data = signal_params->display_data;
-		global_row_count = gtk_tree_selection_count_selected_rows(
-			gtk_tree_view_get_selection(tree_view));
+		global_row_count =
+			gtk_tree_selection_count_selected_rows(selection);
 		popup_pos.x = 10;
 		popup_pos.x = 10;
 		popup_pos.cntr = 1;
 		popup_pos.slider = 0;
 		gtk_tree_selection_selected_foreach(
-			gtk_tree_view_get_selection(tree_view),
-			_foreach_full_info, &each);
+			selection, _foreach_full_info, &each);
 		/*prevent row_activation from
 		 * performing a redundant 'full info'*/
 		enter_key_in_effect = TRUE;

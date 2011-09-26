@@ -389,7 +389,6 @@ static void _each_highlightd(GtkTreeModel *model,
 
 	int j=0;
 	GdkColor color;
-	bool changed = 0;
 
 	grid_foreach_t *grid_foreach = userdata;
 
@@ -420,10 +419,9 @@ static void _each_highlightd(GtkTreeModel *model,
 		    || (grid_button->inx > node_inx[j+1]))
 			continue;
 
-		if (_change_button_color(grid_button, color_inx,
-					 sview_colors[color_inx],
-					 color, 0, 0))
-			changed = 1;
+		(void)_change_button_color(grid_button, color_inx,
+				     sview_colors[color_inx],
+				     color, 0, 0);
 
 		if (GTK_WIDGET_STATE(grid_button->button) != GTK_STATE_NORMAL)
 			gtk_widget_set_state(grid_button->button,
