@@ -3834,34 +3834,32 @@ inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg)
 
 inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 {
-	int error_code = SLURM_SUCCESS;
+	int error_code;
 	/* Locks: read job */
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	job_notify_msg_t * notify_msg = (job_notify_msg_t *) msg->data;
+	struct job_record *job_ptr;
 	DEF_TIMERS;
 
 	START_TIMER;
 	debug("Processing RPC: REQUEST_JOB_NOTIFY from uid=%d", uid);
-	if (!validate_slurm_user(uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%d",
-		      uid);
-	}
 
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		struct job_record *job_ptr;
-		lock_slurmctld(job_read_lock);
-		job_ptr = find_job_record(notify_msg->job_id);
-		if (job_ptr) {
-			error_code = srun_user_message(job_ptr,
-						       notify_msg->message);
-		} else
-			error_code = ESLURM_INVALID_JOB_ID;
-		unlock_slurmctld(job_read_lock);
+	/* do RPC call */
+	lock_slurmctld(job_read_lock);
+	job_ptr = find_job_record(notify_msg->job_id);
+	if (!job_ptr)
+		error_code = ESLURM_INVALID_JOB_ID;
+	else if ((job_ptr->user_id == uid) || validate_slurm_user(uid))
+		error_code = srun_user_message(job_ptr, notify_msg->message);
+	else {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, REQUEST_JOB_NOTIFY RPC "
+		      "from uid=%d for jobid %u owner %d",
+		      uid, notify_msg->job_id, job_ptr->user_id);
 	}
+	unlock_slurmctld(job_read_lock);
 
 	END_TIMER2("_slurm_rpc_job_notify");
 	slurm_send_rc_msg(msg, error_code);
