@@ -2379,15 +2379,14 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	slurmdb_association_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *txn_query = NULL,
-		*extra = NULL, *query = NULL, *update = NULL, *tmp_extra = NULL;
+	char *cols = NULL, *vals = NULL, *txn_query = NULL;
+	char *extra = NULL, *query = NULL, *update = NULL, *tmp_extra = NULL;
 	char *parent = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	char *tmp_char = NULL;
 	int assoc_id = 0;
 	int incr = 0, my_left = 0, my_par_id = 0;
-	int affect_rows = 0;
 	int moved_parent = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -2657,7 +2656,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				object->rgt = rgt;
 			}
 
-			affect_rows = 2;
 			xstrfmtcat(query,
 				   "update \"%s_%s\" set deleted=0, "
 				   "id_assoc=LAST_INSERT_ID(id_assoc)%s %s;",
@@ -2682,7 +2680,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * the assoc_id will already be set
 		 */
 		if (!assoc_id) {
-			affect_rows = last_affected_rows(mysql_conn);
+			(void) last_affected_rows(mysql_conn);
 			assoc_id = mysql_insert_id(mysql_conn->db_conn);
 			//info("last id was %d", assoc_id);
 		}
@@ -2968,7 +2966,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL;
-	int set = 0, i = 0;
+	int i = 0;
 	bool is_admin=0, same_user=0;
 	MYSQL_RES *result = NULL;
 	slurmdb_user_rec_t user;
@@ -3028,7 +3026,7 @@ is_same_user:
 	    || assoc_cond->with_sub_accts)
 		prefix = "t2";
 
-	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
+	(void) _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
 	/* This needs to be here to make sure we only modify the
 	   correct set of associations The first clause was already
@@ -3132,7 +3130,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	char *object = NULL, *cluster_name = NULL;
 	char *extra = NULL, *query = NULL, *name_char = NULL;
-	int set = 0, i = 0, is_admin=0;
+	int i = 0, is_admin = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
@@ -3165,7 +3163,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	    || assoc_cond->with_sub_accts)
 		prefix = "t2";
 
-	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
+	(void)_setup_association_cond_limits(assoc_cond, prefix, &extra);
 
 	xstrcat(object, rassoc_req_inx[0]);
 	for(i=1; i<RASSOC_COUNT; i++)
@@ -3279,7 +3277,6 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	char *tmp = NULL;
 	List assoc_list = NULL;
 	ListIterator itr = NULL;
-	int set = 0;
 	int i=0, is_admin=1;
 	uint16_t private_data = 0;
 	slurmdb_user_rec_t user;
@@ -3315,7 +3312,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	    || assoc_cond->with_sub_accts)
 		prefix = "t2";
 
-	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
+	(void) _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;

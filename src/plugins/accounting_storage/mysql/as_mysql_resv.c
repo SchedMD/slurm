@@ -471,7 +471,6 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	char *extra = NULL;
 	char *tmp = NULL;
 	List resv_list = NULL;
-	int set = 0;
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -542,7 +541,7 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		job_cond.usage_end = resv_cond->time_end;
 	}
 
-	set = _setup_resv_cond_limits(resv_cond, &extra);
+	(void) _setup_resv_cond_limits(resv_cond, &extra);
 
 	with_usage = resv_cond->with_usage;
 

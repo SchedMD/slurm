@@ -328,7 +328,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	int set = 0;
 	char *prefix="t2";
 	int rc = SLURM_SUCCESS;
-	int last_id = -1, curr_id = -1, last_state = -1;
+	int last_id = -1, curr_id = -1;
 	local_cluster_t *curr_cluster = NULL;
 
 	/* This is here to make sure we are looking at only this user
@@ -452,7 +452,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		job = slurmdb_create_job_rec();
 		job->state = slurm_atoul(row[JOB_REQ_STATE]);
-		last_state = job->state;
 		if (curr_id == last_id)
 			/* put in reverse so we order by the submit getting
 			   larger which it is given to us in reverse

@@ -802,7 +802,6 @@ static void *_thread_per_group_rpc(void *args)
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_data_info_t *ret_data_info = NULL;
-	int found = 0;
 	int sig_array[2] = {SIGUSR1, 0};
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
@@ -883,7 +882,6 @@ static void *_thread_per_group_rpc(void *args)
 	}
 
 	//info("got %d messages back", list_count(ret_list));
-	found = 0;
 	itr = list_iterator_create(ret_list);
 	while ((ret_data_info = list_next(itr)) != NULL) {
 		rc = slurm_get_return_code(ret_data_info->type,

@@ -2656,15 +2656,13 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	Buf      buffer;
 	int      rc;
 	void *   auth_cred;
-	uint16_t auth_flags = SLURM_PROTOCOL_NO_FLAGS;
 
 	/*
 	 * Initialize header with Auth credential and message type.
 	 */
-	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
-		auth_flags = SLURM_GLOBAL_AUTH_KEY;
+	if (msg->flags & SLURM_GLOBAL_AUTH_KEY)
 		auth_cred = g_slurm_auth_create(NULL, 2, _global_auth_key());
-	} else
+	else
 		auth_cred = g_slurm_auth_create(NULL, 2, NULL);
 	if (auth_cred == NULL) {
 		error("authentication: %s",

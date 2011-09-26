@@ -703,7 +703,9 @@ _read_config(void)
 {
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
+#ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
+#endif
 
 	cf = slurm_conf_lock();
 
@@ -721,10 +723,12 @@ _read_config(void)
 	if (!conf->logfile)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
 
+#ifndef HAVE_FRONT_END
 	if (!strcmp(cf->select_type, "select/cons_res"))
 		cr_flag = true;
 	if (cf->preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
+#endif
 
 	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */

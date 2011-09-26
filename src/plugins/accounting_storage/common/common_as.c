@@ -630,16 +630,10 @@ extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 		   char *cluster_name, time_t last_submit)
 {
 	char * args[] = {arch_cond->archive_script, NULL};
-	const char *tmpdir;
 	struct stat st;
 	char **env = NULL;
 	time_t curr_end;
 
-#ifdef _PATH_TMP
-	tmpdir = _PATH_TMP;
-#else
-	tmpdir = "/tmp";
-#endif
 	if (stat(arch_cond->archive_script, &st) < 0) {
 		errno = errno;
 		error("archive_run_script: failed to stat %s: %m",
@@ -831,11 +825,12 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 	if (rc)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
-		int ign;	/* avoid warning */
 		(void) unlink(old_file);
-		ign =  link(reg_file, old_file);
+		if (link(reg_file, old_file))
+			error("Link(%s, %s): %m", reg_file, old_file);
 		(void) unlink(reg_file);
-		ign =  link(new_file, reg_file);
+		if (link(new_file, reg_file))
+			error("Link(%s, %s): %m", new_file, reg_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);

@@ -127,7 +127,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpack_time(valp,buf) do {			\
-	assert((valp) != NULL); 			\
 	assert(sizeof(*valp) == sizeof(time_t));	\
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack_time(valp,buf))			\
@@ -141,7 +140,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpackdouble(valp,buf) do {		\
-	assert((valp) != NULL); 			\
 	assert(sizeof(*valp) == sizeof(double));        \
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpackdouble(valp,buf))			\
@@ -155,7 +153,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpack64(valp,buf) do {			\
-	assert((valp) != NULL); 			\
 	assert(sizeof(*valp) == sizeof(uint64_t));      \
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack64(valp,buf))				\
@@ -169,7 +166,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpack32(valp,buf) do {			\
-	assert((valp) != NULL); 			\
 	assert(sizeof(*valp) == sizeof(uint32_t));      \
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack32(valp,buf))				\
@@ -183,7 +179,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpack16(valp,buf) do {			\
-	assert((valp) != NULL); 			\
 	assert(sizeof(*valp) == sizeof(uint16_t)); 	\
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack16(valp,buf))				\
@@ -197,7 +192,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpack8(valp,buf) do {			\
-	assert((valp) != NULL); 			\
 	assert(sizeof(*valp) == sizeof(uint8_t)); 	\
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack8(valp,buf))				\
@@ -211,7 +205,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpack16_array(valp,size_valp,buf) do {    \
-        assert(valp != NULL);                           \
         assert(sizeof(*size_valp) == sizeof(uint32_t)); \
         assert(buf->magic == BUF_MAGIC);                \
         if (unpack16_array(valp,size_valp,buf))         \
@@ -219,7 +212,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpack32_array(valp,size_valp,buf) do {	\
-	assert(valp != NULL);				\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
 	if (unpack32_array(valp,size_valp,buf))		\
@@ -234,7 +226,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpackmem(valp,size_valp,buf) do {		\
-	assert(valp != NULL);		                \
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
 	if (unpackmem(valp,size_valp,buf))		\
@@ -242,7 +233,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpackmem_ptr(valp,size_valp,buf) do {	\
-	assert(valp != NULL);				\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
 	if (unpackmem_ptr(valp,size_valp,buf))		\
@@ -250,7 +240,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpackmem_xmalloc(valp,size_valp,buf) do {	\
-	assert(valp != NULL);				\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
 	if (unpackmem_xmalloc(valp,size_valp,buf))	\
@@ -258,7 +247,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpackmem_malloc(valp,size_valp,buf) do {	\
-	assert(valp != NULL);				\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
 	if (unpackmem_malloc(valp,size_valp,buf))	\
@@ -377,8 +365,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_unpackstr_array(valp,size_valp,buf) do {	\
-	assert(valp != NULL);				\
-	assert(size_valp != NULL);			\
 	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
 	if (unpackstr_array(valp,size_valp,buf))	\

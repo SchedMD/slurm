@@ -300,10 +300,8 @@ static void _gmpi_wait_abort(gmpi_state_t *st)
 static void *_gmpi_thr(void *arg)
 {
 	gmpi_state_t *st;
-	mpi_plugin_client_info_t *job;
 
 	st = (gmpi_state_t *) arg;
-	job = st->job;
 
 	debug3("GMPI master thread pid=%lu", (unsigned long) getpid());
 	_gmpi_establish_map(st);

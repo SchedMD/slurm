@@ -1075,12 +1075,15 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 				if (fptr)
 					*fptr = 0;
 				break;
-			} else
+			} else {
 				*fptr++ = 0;
+			}
 		}
-		f[++i] = 0;
+		if (i < MAX_RECORD_FIELDS)
+			i++;
+		f[i] = 0;
 
-		if(i < HEADER_LENGTH) {
+		if (i < HEADER_LENGTH) {
 			continue;
 		}
 

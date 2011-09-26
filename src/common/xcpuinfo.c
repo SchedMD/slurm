@@ -746,18 +746,12 @@ xcpuinfo_absmap_to_macmap(uint16_t *amap,uint16_t amap_size,
 	/* int i; */
 
 	/* abstract to machine conversion using block map */
-	uint16_t *cmap;
 	uint16_t *map_out;
-	cmap = block_map;
+
 	*bmap_size = amap_size;
 	map_out = (uint16_t*) xmalloc(amap_size*sizeof(uint16_t));
-	/* for( i = 0 ; i < amap_size ; i++) { */
-	/* 	if ( amap[i] ) */
-	/* 		map_out[cmap[i]]=1; */
-	/* 	else */
-	/* 		map_out[cmap[i]]=0; */
-	/* } */
 	*bmap = map_out;
+
 	return XCPUINFO_SUCCESS;
 }
 

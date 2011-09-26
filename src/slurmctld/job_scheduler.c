@@ -341,8 +341,8 @@ extern int schedule(uint32_t job_limit)
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 	char tmp_char[256];
-#endif
 	static bool backfill_sched = false;
+#endif
 	static time_t sched_update = 0;
 	static bool wiki_sched = false;
 	static int sched_timeout = 0;
@@ -362,9 +362,11 @@ extern int schedule(uint32_t job_limit)
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
+#ifdef HAVE_BG
 		/* On BlueGene, do FIFO only with sched/backfill */
 		if (strcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
+#endif
 		/* Disable avoiding of fragmentation with sched/wiki */
 		if ((strcmp(sched_type, "sched/wiki") == 0) ||
 		    (strcmp(sched_type, "sched/wiki2") == 0))
@@ -1739,7 +1741,7 @@ static void *_run_prolog(void *arg)
 extern int build_feature_list(struct job_record *job_ptr)
 {
 	struct job_details *detail_ptr = job_ptr->details;
-	char *tmp_requested, *str_ptr1, *str_ptr2, *feature = NULL;
+	char *tmp_requested, *str_ptr, *feature = NULL;
 	int bracket = 0, count = 0, i;
 	bool have_count = false, have_or = false;
 	struct feature_record *feat;
@@ -1750,20 +1752,19 @@ extern int build_feature_list(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	tmp_requested = xstrdup(detail_ptr->features);
-	str_ptr1 = tmp_requested;
 	detail_ptr->feature_list = list_create(_feature_list_delete);
 	for (i=0; ; i++) {
 		if (tmp_requested[i] == '*') {
 			tmp_requested[i] = '\0';
 			have_count = true;
-			count = strtol(&tmp_requested[i+1], &str_ptr2, 10);
+			count = strtol(&tmp_requested[i+1], &str_ptr, 10);
 			if ((feature == NULL) || (count <= 0)) {
 				info("Job %u invalid constraint %s",
 					job_ptr->job_id, detail_ptr->features);
 				xfree(tmp_requested);
 				return ESLURM_INVALID_FEATURE;
 			}
-			i = str_ptr2 - tmp_requested - 1;
+			i = str_ptr - tmp_requested - 1;
 		} else if (tmp_requested[i] == '&') {
 			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (bracket != 0)) {

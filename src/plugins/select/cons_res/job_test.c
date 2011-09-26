@@ -1334,9 +1334,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (job_ptr->req_switch) {
 		time_t     time_now;
-		struct tm *time_now_tm;
 		time_now = time(NULL);
-		time_now_tm = localtime(&time_now);
 		if (job_ptr->wait4switch_start == 0)
 			job_ptr->wait4switch_start = time_now;
 		time_waiting = time_now - job_ptr->wait4switch_start;

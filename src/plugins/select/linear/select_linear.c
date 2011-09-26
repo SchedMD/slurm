@@ -1058,9 +1058,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (job_ptr->req_switch) {
 		time_t     time_now;
-		struct tm *time_now_tm;
 		time_now = time(NULL);
-		time_now_tm = localtime(&time_now);
 		if (job_ptr->wait4switch_start == 0)
 			job_ptr->wait4switch_start = time_now;
 		time_waiting = time_now - job_ptr->wait4switch_start;
@@ -1812,7 +1810,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	int i, node_inx, node_offset;
 	job_resources_t *job_resrcs_ptr;
 	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
-	int first_bit, last_bit;
+	int first_bit;
 	uint16_t cpu_cnt;
 	List gres_list;
 
@@ -1849,7 +1847,6 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		return SLURM_ERROR;
 	}
 	first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
-	last_bit  = node_inx;
 	node_offset = -1;
 	for (i = first_bit; i <= node_inx; i++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))

@@ -1071,7 +1071,6 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 			 bool label)
 {
 	client_io_t *cio;
-	int len;
 	int i;
 	uint32_t siglen;
 	char *sig;
@@ -1088,8 +1087,6 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 		cio->label_width = _wid(cio->num_tasks);
 	else
 		cio->label_width = 0;
-
-	len = sizeof(uint32_t) * num_tasks;
 
 	if (slurm_cred_get_signature(cred, &sig, &siglen) < 0) {
 		error("client_io_handler_create, invalid credential");

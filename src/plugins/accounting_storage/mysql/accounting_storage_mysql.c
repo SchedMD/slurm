@@ -2213,7 +2213,6 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 	}
 
 	if (commit && list_count(mysql_conn->update_list)) {
-		int rc;
 		char *query = NULL;
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
@@ -2233,7 +2232,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while ((row = mysql_fetch_row(result))) {
-			rc = slurmdb_send_accounting_update(
+			(void) slurmdb_send_accounting_update(
 				mysql_conn->update_list,
 				row[2], row[0],
 				slurm_atoul(row[1]),
@@ -2241,7 +2240,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		mysql_free_result(result);
 	skip:
-		rc = assoc_mgr_update(mysql_conn->update_list);
+		(void) assoc_mgr_update(mysql_conn->update_list);
 
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 		itr2 = list_iterator_create(as_mysql_cluster_list);

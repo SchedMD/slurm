@@ -78,7 +78,7 @@ extern int scontrol_update_step (int argc, char *argv[])
 {
 	int i, update_cnt = 0;
 	char *tag, *val;
-	int taglen, vallen;
+	int taglen;
 	step_update_request_msg_t step_msg;
 
 	slurm_init_update_step_msg (&step_msg);
@@ -89,7 +89,6 @@ extern int scontrol_update_step (int argc, char *argv[])
 		if (val) {
 			taglen = val - argv[i];
 			val++;
-			vallen = strlen(val);
 		} else {
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);

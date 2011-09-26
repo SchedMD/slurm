@@ -2945,7 +2945,6 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	ba_mp_t *ba_node = NULL;
 
 	ListIterator itr;
-	static bool found = false;
 
 	path_add->geometry[X] = node_src[X];
 #ifdef HAVE_3D
@@ -2983,7 +2982,6 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 
 		list_flush(best_path);
 
-		found = true;
 		path_add->out = target_port;
 		list_push(path, path_add);
 
@@ -3096,7 +3094,6 @@ static int _finish_torus(List results,
 	int i;
 	int used=0;
 	ListIterator itr;
-	static bool found = false;
 
 	path_add->geometry[X] = node_src[X];
 	path_add->geometry[Y] = node_src[Y];
@@ -3119,7 +3116,6 @@ static int _finish_torus(List results,
 
 			list_flush(best_path);
 
-			found = true;
 			path_add->out = target_port;
 			list_push(path, path_add);
 

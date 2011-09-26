@@ -80,7 +80,6 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 	int command_len = 0;
 	int local_cluster_flag = all_clusters_flag;
 	time_t start_time, end_time;
-	int option = 0;
 
 	if(!wckey_cond) {
 		error("No wckey_cond given");
@@ -99,8 +98,7 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}
@@ -185,7 +183,6 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 	int local_cluster_flag = all_clusters_flag;
 	time_t start_time, end_time;
 	int command_len = 0;
-	int option = 0;
 
 	if(!assoc_cond) {
 		error("We need an slurmdb_association_cond to call this");
@@ -203,8 +200,7 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}
@@ -288,7 +284,6 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 	int local_cluster_flag = all_clusters_flag;
 	time_t start_time, end_time;
 	int command_len = 0;
-	int option = 0;
 
 	if(!cluster_cond) {
 		error("We need an slurmdb_cluster_cond to call this");
@@ -306,8 +301,7 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}

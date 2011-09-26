@@ -555,7 +555,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
  	if (part->allow_alloc_nodes) {
  		if (part_ptr->allow_alloc_nodes) {
- 			int cnt_tot, cnt_uniq, buf_size;
+ 			int cnt_tot, cnt_uniq;
  			hostlist_t hl = hostlist_create(part_ptr->
 							allow_alloc_nodes);
 
@@ -567,8 +567,6 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
  				fatal("Duplicate Allowed Allocating Nodes for "
 				      "Partition %s", part->name);
  			}
- 			buf_size = strlen(part_ptr->allow_alloc_nodes) + 1 +
-				   strlen(part->allow_alloc_nodes) + 1;
  			xfree(part_ptr->allow_alloc_nodes);
  			part_ptr->allow_alloc_nodes =
 				hostlist_ranged_string_xmalloc(hl);
@@ -584,7 +582,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
 	if (part->nodes) {
 		if (part_ptr->nodes) {
-			int cnt_tot, cnt_uniq, buf_size;
+			int cnt_tot, cnt_uniq;
 			hostlist_t hl = hostlist_create(part_ptr->nodes);
 
 			hostlist_push(hl, part->nodes);
@@ -595,8 +593,6 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 				fatal("Duplicate Nodes for Partition %s",
 					part->name);
 			}
-			buf_size = strlen(part_ptr->nodes) + 1 +
-				   strlen(part->nodes) + 1;
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = hostlist_ranged_string_xmalloc(hl);
 			hostlist_destroy(hl);

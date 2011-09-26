@@ -118,7 +118,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
-	int option = 0;
 
 	if(!qos_cond) {
 		error("No qos_cond given");
@@ -131,8 +130,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}

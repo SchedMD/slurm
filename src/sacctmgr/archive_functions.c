@@ -141,7 +141,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
-	int option = 0;
  	uint32_t tmp;
 	slurmdb_job_cond_t *job_cond = NULL;
 
@@ -159,8 +158,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}
@@ -478,7 +476,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_rec_t *arch_rec =
 		xmalloc(sizeof(slurmdb_archive_rec_t));
-	int i=0, command_len = 0, option = 0;
+	int i=0, command_len = 0;
 	struct stat st;
 
 	for (i=0; i<argc; i++) {
@@ -487,8 +485,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
-			if(argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
+			if (argv[i][end] == '=') {
 				end++;
 			}
 		}

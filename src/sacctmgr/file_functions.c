@@ -1151,7 +1151,6 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		     slurmdb_user_rec_t *user, char *cluster, char *parent)
 {
-	int rc;
 	int set = 0;
 	int changed = 0;
 	char *def_acct = NULL, *def_wckey = NULL, *my_info = NULL;
@@ -1253,9 +1252,9 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		slurmdb_coord_rec_t *coord = NULL;
 		int first = 1;
 		notice_thread_init();
-		rc = acct_storage_g_add_coord(db_conn, my_uid,
-					      file_opts->coord_list,
-					      &user_cond);
+		(void) acct_storage_g_add_coord(db_conn, my_uid,
+					        file_opts->coord_list,
+					        &user_cond);
 		notice_thread_fini();
 
 		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
@@ -1313,9 +1312,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 		if (list_count(add_list)) {
 			notice_thread_init();
-			rc = acct_storage_g_add_coord(db_conn, my_uid,
-						      add_list,
-						      &user_cond);
+			(void) acct_storage_g_add_coord(db_conn, my_uid,
+							add_list, &user_cond);
 			notice_thread_fini();
 			set = 1;
 		}
@@ -1352,8 +1350,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		printf(" for user '%s'\n", user->name);
 		set = 1;
 		notice_thread_init();
-		rc = acct_storage_g_add_wckeys(db_conn, my_uid,
-					       user->wckey_list);
+		acct_storage_g_add_wckeys(db_conn, my_uid, user->wckey_list);
 		notice_thread_fini();
 	} else if ((user->wckey_list && list_count(user->wckey_list))
 		   && (file_opts->wckey_list
@@ -1392,8 +1389,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 		if (list_count(add_list)) {
 			notice_thread_init();
-			rc = acct_storage_g_add_wckeys(db_conn, my_uid,
-						       add_list);
+			acct_storage_g_add_wckeys(db_conn, my_uid, add_list);
 			notice_thread_fini();
 			set = 1;
 		}
@@ -1869,14 +1865,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	for (i=0; i<argc; i++) {
-		int option = 0;
 		int end = parse_option_end(argv[i]);
 		if (!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
 			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
 				end++;
 			}
 		}
