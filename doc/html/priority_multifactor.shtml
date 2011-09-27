@@ -41,7 +41,7 @@
 <DT> Fair-share
 <DD> the difference between the portion of the computing resource that has been promised and the amount of resources that has been consumed
 <DT> Job size
-<DD> the number of nodes a job is allocated
+<DD> the number of nodes or CPUs a job is allocated
 <DT> Partition
 <DD> a factor associated with each node partition
 <DT> QOS
@@ -99,7 +99,13 @@ Job_priority =
 <a name=jobsize>
 <h2>Job Size Factor</h2></a>
 
-<P> The job size factor correlates to the number of nodes the job has requested.  This factor can be configured to favor larger jobs or smaller jobs based on the state of the <i>PriorityFavorSmall</i> boolean in the slurm.conf file.  When <i>PriorityFavorSmall</i> is NO, the larger the job, the greater its job size factor will be.  A job that requests all the nodes on the machine will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean is YES, the single node job will receive the 1.0 job size factor.</P>
+<P>The job size factor correlates to the number of nodes or CPUs the job has
+requested.  This factor can be configured to favor larger jobs or smaller jobs
+based on the state of the <i>PriorityFavorSmall</i> boolean in the slurm.conf
+file.  When <i>PriorityFavorSmall</i> is NO, the larger the job, the greater
+its job size factor will be.  A job that requests all the nodes on the machine
+will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean
+is YES, the single node job will receive the 1.0 job size factor.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=partition>
@@ -564,6 +570,6 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 2 November 2010</p>
+<p style="text-align:center;">Last modified 27 September 2011</p>
 
 <!--#include virtual="footer.txt"-->
