@@ -130,6 +130,33 @@ static int _clear_used_assoc_info(slurmdb_association_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
+static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
+{
+	slurmdb_used_limits_t *used_limits = NULL;
+	ListIterator itr = NULL;
+
+	if (!qos_ptr->usage->user_limit_list
+	    || !list_count(qos_ptr->usage->user_limit_list))
+		return;
+
+	itr = list_iterator_create(qos_ptr->usage->user_limit_list);
+	while ((used_limits = list_next(itr))) {
+		used_limits->cpu_run_mins = 0; /* Currently isn't used
+						  in the code but put
+						  here for future
+						  reference when/if it
+						  is.
+					       */
+		used_limits->cpus = 0;
+		used_limits->jobs = 0;
+		used_limits->nodes = 0;
+		used_limits->submit_jobs = 0;
+	}
+	list_iterator_destroy(itr);
+
+	return;
+}
+
 static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 {
 	if (!qos || !qos->usage)
@@ -145,6 +172,8 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	 * if you need to reset it do it
 	 * else where since sometimes we call this and do not want
 	 * shares reset */
+
+	_clear_qos_user_limit_info(qos);
 
 	return SLURM_SUCCESS;
 }

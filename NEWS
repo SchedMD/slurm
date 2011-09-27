@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- Many cosmetic modifications to eliminate warning message from GCC version
     4.6 compiler.
  -- Fix for sview reservation tab when finding correct reservation.
+ -- Fix for handling QOS limits per user on a reconfig of the slurmctld.
 
 * Changes in SLURM 2.3.0-2
 ==========================
