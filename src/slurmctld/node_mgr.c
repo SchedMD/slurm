@@ -70,6 +70,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -615,7 +616,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 			    (_node_is_hidden(node_ptr)))
 				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr))
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 !IS_NODE_MAINT(node_ptr)) /* reboot req sent */
 				hidden = true;
 			else if ((node_ptr->name == NULL) ||
 				 (node_ptr->name[0] == '\0'))
@@ -1669,11 +1671,15 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			last_node_update = time (NULL);
 		}
 	} else {
-		if (IS_NODE_UNKNOWN(node_ptr)) {
+		if (IS_NODE_UNKNOWN(node_ptr) || IS_NODE_FUTURE(node_ptr)) {
 			reset_job_priority();
 			debug("validate_node_specs: node %s registered with "
 			      "%u jobs",
 			      reg_msg->node_name,reg_msg->job_count);
+			if (IS_NODE_FUTURE(node_ptr) &&
+			    IS_NODE_MAINT(node_ptr) &&
+			    !is_node_in_maint_reservation(node_inx))
+				node_flags &= (~NODE_STATE_MAINT);
 			if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 					node_flags;
@@ -2172,6 +2178,8 @@ static void _node_did_resp(struct node_record *node_ptr)
 		reset_job_priority();
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+		if (!is_node_in_maint_reservation(node_inx))
+			node_ptr->node_state &= (~NODE_STATE_MAINT);
 		last_node_update = now;
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;

@@ -158,6 +158,7 @@ function displayfile()
    "#PropagatePrioProcess=0 <br>" +
    "#PropagateResourceLimits= <br>" +
    "#PropagateResourceLimitsExcept= <br>" +
+   "#RebootProgram= <br>" +
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
    "#SallocDefaultCommand= <br>" +
    "SlurmctldPidFile=" + document.config.slurmctld_pid_file.value + "<br>" +

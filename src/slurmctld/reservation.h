@@ -74,6 +74,9 @@ extern int send_resvs_to_accounting(void);
 /* Set or clear NODE_STATE_MAINT for node_state as needed */
 extern void set_node_maint_mode(void);
 
+/* checks if node within node_record_table_ptr is in maint reservation */
+extern bool is_node_in_maint_reservation(int nodenum);
+
 /* After an assocation has been added or removed update the lists. */
 extern void update_assocs_in_resvs(void);
 

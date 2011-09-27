@@ -1300,7 +1300,8 @@ extern char *node_state_string(uint16_t inx)
 	if (maint_flag) {
 		if (no_resp_flag)
 			return "MAINT*";
-		return "MAINT";
+		if (base != NODE_STATE_ALLOCATED)
+			return "MAINT";
 	}
 	if (drain_flag) {
 		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
@@ -1417,7 +1418,8 @@ extern char *node_state_string_compact(uint16_t inx)
 	if (maint_flag) {
 		if (no_resp_flag)
 			return "MAINT*";
-		return "MAINT";
+		if (inx != NODE_STATE_ALLOCATED)
+			return "MAINT";
 	}
 	if (drain_flag) {
 		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
@@ -2462,6 +2464,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
+	case REQUEST_REBOOT_NODES:
 		/* No body to free */
 		break;
 	case ACCOUNTING_UPDATE_MSG:

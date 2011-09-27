@@ -148,6 +148,7 @@ static void _rpc_terminate_job(slurm_msg_t *);
 static void _rpc_update_time(slurm_msg_t *);
 static void _rpc_shutdown(slurm_msg_t *msg);
 static void _rpc_reconfig(slurm_msg_t *msg);
+static void _rpc_reboot(slurm_msg_t *msg);
 static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
 static int  _rpc_ping(slurm_msg_t *);
@@ -311,6 +312,10 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_RECONFIGURE:
 		_rpc_reconfig(msg);
 		last_slurmctld_msg = time(NULL);
+		/* No body to free */
+		break;
+	case REQUEST_REBOOT_NODES:
+		_rpc_reboot(msg);
 		/* No body to free */
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
@@ -1495,6 +1500,42 @@ _rpc_shutdown(slurm_msg_t *msg)
 	}
 
 	/* Never return a message, slurmctld does not expect one */
+}
+
+static void
+_rpc_reboot(slurm_msg_t *msg)
+{
+	char *reboot_program, *sp;
+	slurm_ctl_conf_t *cfg;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	int exit_code;
+
+	if (!_slurm_authorized_user(req_uid))
+		error("Security violation, reboot RPC from uid %d",
+		      req_uid);
+	else {
+		cfg = slurm_conf_lock();
+		reboot_program = cfg->reboot_program;
+		if (reboot_program) {
+			sp = strchr(reboot_program, ' ');
+			if (sp)
+				sp = xstrndup(reboot_program,
+					      (sp - reboot_program));
+			else
+			    sp = xstrdup(reboot_program);
+			if (access(sp, R_OK | X_OK) < 0)
+				error("Cannot run RebootProgram [%s]: %m", sp);
+			else if ((exit_code = system(reboot_program)))
+				error("system(%s) returned %d", reboot_program,
+				      exit_code);
+			xfree(sp);
+		} else
+			error("RebootProgram isn't defined in config");
+		slurm_conf_unlock();
+	}
+
+	/* Never return a message, slurmctld does not expect one */
+	/* slurm_send_rc_msg(msg, rc); */
 }
 
 static void _job_limits_free(void *x)

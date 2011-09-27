@@ -161,6 +161,7 @@ int association_based_accounting = 0;
 bool ping_nodes_now = false;
 uint32_t      cluster_cpus = 0;
 int   with_slurmdbd = 0;
+bool want_nodes_reboot = true;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -1251,6 +1252,55 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 	unlock_slurmctld(job_write_lock);
 }
 
+static void _queue_reboot_msg(void)
+{
+	agent_arg_t *reboot_agent_args = NULL;
+	struct node_record *node_ptr;
+	char *host_str;
+	time_t now = time(NULL);
+	int i;
+	bool want_reboot;
+
+	want_nodes_reboot = false;
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (!IS_NODE_MAINT(node_ptr) || /* do it only if node */
+		    is_node_in_maint_reservation(i)) /*isn't in reservation */
+			continue;
+		want_nodes_reboot = true; /* mark it for the next cycle */
+		if (IS_NODE_IDLE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr) &&
+		    !IS_NODE_POWER_UP(node_ptr)) /* only active idle nodes */
+			want_reboot = true;
+		else if (IS_NODE_FUTURE(node_ptr) &&
+			 (node_ptr->last_response == (time_t) 0))
+			want_reboot = true; /* system just restarted */
+		else
+			want_reboot = false;
+		if (!want_reboot)
+			continue;
+		if (reboot_agent_args == NULL) {
+			reboot_agent_args = xmalloc(sizeof(agent_arg_t));
+			reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
+			reboot_agent_args->retry = 0;
+			reboot_agent_args->hostlist = hostlist_create("");
+		}
+		hostlist_push(reboot_agent_args->hostlist, node_ptr->name);
+		reboot_agent_args->node_count++;
+		node_ptr->node_state = NODE_STATE_FUTURE |
+				(node_ptr->node_state & NODE_STATE_FLAGS);
+		node_ptr->last_response = now;
+	}
+	if (reboot_agent_args != NULL) {
+		hostlist_uniq(reboot_agent_args->hostlist);
+		host_str = hostlist_ranged_string_xmalloc(
+				reboot_agent_args->hostlist);
+		debug("Queuing reboot request for nodes %s", host_str);
+		xfree(host_str);
+		agent_queue_request(reboot_agent_args);
+		last_node_update = now;
+	}
+}
+
 /*
  * _slurmctld_background - process slurmctld background activities
  *	purge defunct job records, save state, schedule jobs, and
@@ -1273,6 +1323,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_node_acct;
 	static time_t last_ctld_bu_ping;
 	static time_t last_uid_update;
+	static time_t last_reboot_msg_time;
 	static bool ping_msg_sent = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
@@ -1308,7 +1359,7 @@ static void *_slurmctld_background(void *no_data)
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
 	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
-	last_uid_update = now;
+	last_uid_update = last_reboot_msg_time = now;
 
 	if ((slurmctld_conf.min_job_age > 0) &&
 	    (slurmctld_conf.min_job_age < PURGE_JOB_INTERVAL)) {
@@ -1434,6 +1485,14 @@ static void *_slurmctld_background(void *no_data)
 			lock_slurmctld(job_read_lock);
 			srun_ping();
 			unlock_slurmctld(job_read_lock);
+		}
+
+		if (want_nodes_reboot && (now > last_reboot_msg_time)) {
+			now = time(NULL);
+			last_reboot_msg_time = now;
+			lock_slurmctld(node_write_lock);
+			_queue_reboot_msg();
+			unlock_slurmctld(node_write_lock);
 		}
 
 		/* Process any pending agent work */

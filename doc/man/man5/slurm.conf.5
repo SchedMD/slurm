@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "June 2011" "slurm.conf 2.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2011" "slurm.conf 2.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1236,6 +1236,12 @@ the \fBPropagateResourceLimits\fR parameter), except for the limits
 appearing in this list.   The user can override this by specifying which
 resource limits to propagate with the srun commands "\-\-propagate" option.
 See \fBPropagateResourceLimits\fR above for a list of valid limit names.
+
+.TP
+\fBRebootProgram\fR
+Program to be executed on each compute node to reboot it. Invoked on each node
+once it becomes idle after the command "scontrol reboot_nodes" is executed by
+an authorized user. After being rebooting, the node is returned to normal use.
 
 .TP
 \fBResumeProgram\fR

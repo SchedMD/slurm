@@ -21,6 +21,10 @@ documents those changes that are of interest to users and admins.
  -- Interpret a reservation with Nodes=ALL and a Partition specification as
     reserving all nodes within the specified partition rather than all nodes
     on the system. Based upon patch by Phil Eckert (LLNL).
+ -- Add the ability to reboot all compute nodes after they become idle. The
+    RebootProgram configuration parameter must be set and an authorized user
+    must execute the command "scontrol reboot_nodes". Patch from Andriy
+    Grytsenko (Massive Solutions Limited).
 
 * Changes in SLURM 2.3.1
 ========================

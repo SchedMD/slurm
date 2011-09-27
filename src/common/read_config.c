@@ -239,6 +239,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
+	{"RebootProgram", S_P_STRING},
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
 	{"ResumeTimeout", S_P_UINT16},
@@ -1808,6 +1809,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->prolog_slurmctld);
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
+	xfree (ctl_conf_ptr->reboot_program);
 	xfree (ctl_conf_ptr->resume_program);
 	xfree (ctl_conf_ptr->salloc_default_command);
 	xfree (ctl_conf_ptr->sched_logfile);
@@ -1924,6 +1926,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
+	xfree (ctl_conf_ptr->reboot_program);
 	ctl_conf_ptr->resume_timeout		= 0;
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
@@ -2904,6 +2907,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->resume_rate = DEFAULT_RESUME_RATE;
 	if (!s_p_get_uint16(&conf->resume_timeout, "ResumeTimeout", hashtbl))
 		conf->resume_timeout = DEFAULT_RESUME_TIMEOUT;
+
+	s_p_get_string(&conf->reboot_program, "RebootProgram", hashtbl);
 
 	s_p_get_string(&conf->salloc_default_command, "SallocDefaultCommand",
 			hashtbl);

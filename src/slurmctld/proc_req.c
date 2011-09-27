@@ -129,6 +129,7 @@ inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
+inline static void  _slurm_rpc_reboot_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_update(slurm_msg_t * msg);
@@ -426,6 +427,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_dump_spank(msg);
 		slurm_free_spank_env_request_msg(msg->data);
 		break;
+	case REQUEST_REBOOT_NODES:
+		_slurm_rpc_reboot_nodes(msg);
+		/* No body to free */
+		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
@@ -561,6 +566,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->propagate_rlimits_except = xstrdup(conf->
 						     propagate_rlimits_except);
 
+	conf_ptr->reboot_program      = xstrdup(conf->reboot_program);
 	conf_ptr->resume_program      = xstrdup(conf->resume_program);
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->resume_timeout      = conf->resume_timeout;
@@ -4036,6 +4042,44 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
 	slurm_send_rc_msg(msg, rc);
+}
+
+/* _slurm_rpc_reboot_nodes - process RPC to schedule nodes reboot */
+inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
+{
+	struct node_record *node_ptr;
+	int i;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	/* Locks: write node lock */
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_REBOOT_NODES from uid=%d", uid);
+	if (!validate_super_user(uid)) {
+		error("Security violation, REBOOT_NODES RPC from uid=%d", uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+#ifdef HAVE_FRONT_END
+	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+#else
+	/* do RPC call */
+	lock_slurmctld(node_write_lock);
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (IS_NODE_MAINT(node_ptr)) /* already on maintenance */
+			continue;
+		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_DOWN(node_ptr))
+			continue;
+		node_ptr->node_state |= NODE_STATE_MAINT;
+		want_nodes_reboot = true;
+	}
+	unlock_slurmctld(node_write_lock);
+	END_TIMER2("_slurm_rpc_reboot_nodes");
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+#endif
 }
 
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)

@@ -3137,6 +3137,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	char **tmp_char = (char **) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
@@ -3161,6 +3162,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_PTR:
 		*select_nodeinfo = nodeinfo;
+		break;
+	case SELECT_NODEDATA_EXTRA_INFO:
+		*tmp_char = NULL;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

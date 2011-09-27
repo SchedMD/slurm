@@ -544,6 +544,28 @@ _print_aliases (char* node_hostname)
 }
 
 /*
+ * _reboot_nodes - issue RPC to have computing nodes reboot when idle
+ * RET 0 or a slurm error code
+ */
+static int _reboot_nodes(void)
+{
+	int rc;
+	slurm_msg_t req;
+
+	slurm_msg_t_init(&req);
+
+	req.msg_type = REQUEST_REBOOT_NODES;
+
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+		return SLURM_ERROR;
+
+	if (rc)
+		slurm_seterrno_ret(rc);
+
+	return rc;
+}
+
+/*
  * _process_command - process the user's command
  * IN argc - count of arguments
  * IN argv - the arguments
@@ -734,6 +756,20 @@ _process_command (int argc, char *argv[])
 				 tag);
 		}
 		exit_flag = 1;
+	}
+	else if (strncasecmp (tag, "reboot_nodes", MAX(tag_len, 3)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 tag);
+		}
+		error_code = _reboot_nodes();
+		if (error_code) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				slurm_perror ("scontrol_reboot_nodes error");
+		}
 	}
 	else if (strncasecmp (tag, "reconfigure", MAX(tag_len, 3)) == 0) {
 		if (argc > 2) {
@@ -1701,6 +1737,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
+     reboot_nodes             reboot the nodes when they become idle       \n\
      reconfigure              re-read configuration files.                 \n\
      release <job_id>         permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\

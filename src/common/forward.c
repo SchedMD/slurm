@@ -175,7 +175,8 @@ void *_forward_thread(void *arg)
 		}
 
 		if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
-		    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE)) {
+		    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE) ||
+		    (fwd_msg->header.msg_type == REQUEST_REBOOT_NODES)) {
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			ret_data_info = xmalloc(sizeof(ret_data_info_t));
 			list_push(fwd_msg->ret_list, ret_data_info);

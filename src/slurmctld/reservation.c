@@ -3305,6 +3305,32 @@ extern void set_node_maint_mode(void)
 	list_iterator_destroy(iter);
 }
 
+/* checks if node within node_record_table_ptr is in maint reservation */
+extern bool is_node_in_maint_reservation(int nodenum)
+{
+	bool res = false;
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+
+	if (nodenum < 0 || nodenum >= node_record_count || !resv_list)
+		return false;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
+			continue;
+		if (bit_test(resv_ptr->node_bitmap, nodenum)) {
+			res = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return res;
+}
+
 extern void update_assocs_in_resvs(void)
 {
 	slurmctld_resv_t *resv_ptr = NULL;

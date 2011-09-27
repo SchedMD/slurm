@@ -183,6 +183,7 @@ extern int   with_slurmdbd;
 \*****************************************************************************/
 extern uint32_t total_cpus;		/* count of CPUs in the entire cluster */
 extern bool ping_nodes_now;		/* if set, ping nodes immediately */
+extern bool want_nodes_reboot;		/* if set, check for idle nodes */
 
 /*****************************************************************************\
  *  NODE states and bitmaps
