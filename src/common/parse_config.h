@@ -191,6 +191,11 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
  */
+int s_p_parse_pair(s_p_hashtbl_t *hashtbl, const char *key, const char *value);
+
+/*
+ * Returns 1 if the line is parsed cleanly, and 0 otherwise.
+ */
 int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover);
 
 /*

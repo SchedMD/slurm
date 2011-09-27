@@ -296,6 +296,7 @@ static pid_t _run_prog(char *prog, char *arg)
 	int i;
 	char program[1024], arg0[1024], arg1[1024], *pname;
 	pid_t child;
+	slurm_ctl_conf_t *ctlconf;
 
 	if (prog == NULL)	/* disabled, useful for testing */
 		return -1;
@@ -318,6 +319,9 @@ static pid_t _run_prog(char *prog, char *arg)
 #else
 		setpgrp();
 #endif
+		ctlconf = slurm_conf_lock();
+		setenv("SLURM_CONF", ctlconf->slurm_conf, 1);
+		slurm_conf_unlock();
 		execl(program, arg0, arg1, NULL);
 		exit(1);
 	} else if (child < 0) {

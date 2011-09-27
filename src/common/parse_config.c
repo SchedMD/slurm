@@ -991,6 +991,44 @@ void s_p_hashtbl_merge(s_p_hashtbl_t *to_hashtbl, s_p_hashtbl_t *from_hashtbl)
 }
 
 /*
+ * Returns 1 if the line is parsed cleanly, and 0 otherwise.
+ */
+int s_p_parse_pair(s_p_hashtbl_t *hashtbl, const char *key, const char *value)
+{
+	s_p_values_t *p;
+	char *leftover, *v;
+
+	if ((p = _conf_hashtbl_lookup(hashtbl, key)) == NULL) {
+		error("Parsing error at unrecognized key: %s", key);
+		return 0;
+	}
+	/* we have value separated from key here so parse it different way */
+	while (*value != '\0' && isspace(*value))
+		value++; /* skip spaces at start if any */
+	if (*value == '"') { /* quoted value */
+		v = (char *)value + 1;
+		leftover = strchr(v, '"');
+		if (leftover == NULL) {
+			error("Parse error in data for key %s: %s", key, value);
+			return 0;
+		}
+	} else { /* unqouted value */
+		leftover = v = (char *)value;
+		while (*leftover != '\0' && !isspace(*leftover))
+			leftover++;
+	}
+	value = xstrndup(v, leftover - v);
+	if (*leftover != '\0')
+		leftover++;
+	while (*leftover != '\0' && isspace(*leftover))
+		leftover++; /* skip trailing spaces */
+	_handle_keyvalue_match(p, value, leftover, &leftover);
+	xfree(value);
+
+	return 1;
+}
+
+/*
  * s_p_get_string
  *
  * Search for a key in a s_p_hashtbl_t with value of type

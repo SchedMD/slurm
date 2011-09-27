@@ -68,6 +68,7 @@
 #include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -1984,6 +1985,68 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	return;
 }
 
+/* handle config name in form (example) slurmdbd:10.0.0.254:6819
+ *
+ * NOTE: Changes are required in the accounting_storage/slurmdbd plugin in
+ * order for this to work as desired. Andriy Grytsenko (Massive Solutions
+ * Limited) has a private accounting_storage plugin with this functionality */
+static int _config_is_storage(s_p_hashtbl_t *hashtbl, char *name)
+{
+	char *tst, *port;
+	void *db_conn;
+	config_key_pair_t *pair;
+	List config;
+	ListIterator iter;
+	int rc = -1;
+
+	tst = strchr(name, ':');
+	if (tst == NULL)
+		return (-1);
+	port = strrchr(&tst[1], ':');
+	if (port == NULL)
+		return (-1);
+	conf_ptr->accounting_storage_type = xstrdup_printf("accounting_storage/%.*s",
+							   (int)(tst - name), name);
+	tst++;
+	conf_ptr->accounting_storage_host = xstrndup(tst, port - tst);
+	port++;
+	debug3("trying retrieve config via %s from host %s on port %s",
+	       conf_ptr->accounting_storage_type,
+	       conf_ptr->accounting_storage_host, port);
+	conf_ptr->accounting_storage_port = atoi(port);
+	conf_ptr->plugindir = xstrdup(default_plugin_path);
+	/* unlock conf_lock and set as initialized before accessing it */
+	conf_initialized = true;
+	pthread_mutex_unlock(&conf_lock);
+	db_conn = acct_storage_g_get_connection(NULL, 0, false, NULL);
+	if (db_conn == NULL)
+		goto end; /* plugin will out error itself */
+	config = acct_storage_g_get_config(db_conn);
+	acct_storage_g_close_connection(&db_conn); /* ignore error code */
+	if (config == NULL) {
+		error("cannot retrieve config from storage");
+		goto end;
+	}
+	iter = list_iterator_create(config);
+	while ((pair = list_next(iter)) != NULL)
+		s_p_parse_pair(hashtbl, pair->name, pair->value);
+	list_iterator_destroy(iter);
+	list_destroy(config);
+	rc = 0; /* done */
+
+end:
+	/* restore status quo now */
+	pthread_mutex_lock(&conf_lock);
+	conf_initialized = false;
+	xfree(conf_ptr->accounting_storage_type);
+	xfree(conf_ptr->accounting_storage_host);
+	xfree(conf_ptr->plugindir);
+	conf_ptr->accounting_storage_type = NULL;
+	conf_ptr->accounting_storage_host = NULL;
+	conf_ptr->plugindir = NULL;
+	return (rc);
+}
+
 /* caller must lock conf_lock */
 static void _init_slurm_conf(const char *file_name)
 {
@@ -2003,8 +2066,9 @@ static void _init_slurm_conf(const char *file_name)
 
 	/* init hash to 0 */
 	conf_ptr->hash_val = 0;
-	if (s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name, false)
-	    == SLURM_ERROR)
+	if ((_config_is_storage(conf_hashtbl, name) < 0) &&
+	    (s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name, false)
+ 	     == SLURM_ERROR))
 		fatal("something wrong with opening/reading conf file");
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 	_validate_and_set_defaults(conf_ptr, conf_hashtbl);
