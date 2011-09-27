@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
     Eckert (LLNL).
  -- Add trigger flag for a permanent trigger. The trigger will NOT be purged
     after an event occurs, but only when explicitly deleted.
+ -- Interpret a reservation with Nodes=ALL and a Partition specification as
+    reserving all nodes within the specified partition rather than all nodes
+    on the system. Based upon patch by Phil Eckert (LLNL).
 
 * Changes in SLURM 2.3.1
 ========================

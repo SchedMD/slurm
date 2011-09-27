@@ -366,6 +366,36 @@ SCONTROL_UPDATE_RES_CLEANUP:
 
 
 /*
+ * Determine total node count for named partition.
+ */
+static uint32_t _partition_node_count(char *partition_name)
+{
+	int error_code, i;
+	uint16_t show_flags = 0;
+	uint32_t node_count = 0;
+	partition_info_msg_t *part_info_ptr = NULL;
+	partition_info_t *part_ptr = NULL;
+
+	error_code = slurm_load_partitions((time_t) NULL,
+					   &part_info_ptr, show_flags);
+	if (error_code != SLURM_SUCCESS) {
+		slurm_free_partition_info_msg (part_info_ptr);
+		return NO_VAL;
+	}
+
+	part_ptr = part_info_ptr->partition_array;;
+	for (i = 0; i < part_info_ptr->record_count; i++) {
+		if (strcmp (partition_name, part_ptr[i].name))
+			continue;
+		node_count = part_ptr[i].total_nodes;
+	}
+	slurm_free_partition_info_msg (part_info_ptr);
+	return node_count;
+}
+
+
+
+/*
  * scontrol_create_res - create the slurm reservation configuration per the
  *     supplied arguments
  * IN argc - count of arguments
@@ -376,9 +406,11 @@ SCONTROL_UPDATE_RES_CLEANUP:
 extern int
 scontrol_create_res(int argc, char *argv[])
 {
-	resv_desc_msg_t   resv_msg;
+	resv_desc_msg_t resv_msg;
 	char *new_res_name = NULL;
 	int free_user_str = 0, free_acct_str = 0;
+	int free_node_cnt = 0;
+	uint32_t node_count = 0;
 	int err, ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
@@ -415,13 +447,50 @@ scontrol_create_res(int argc, char *argv[])
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
+	/*
+	 * If "all" is specified for the nodes and a partition is specified,
+	 * only allocate all of the nodes the partition.
+	 */
+
+	if ((resv_msg.partition != NULL) && (resv_msg.node_list != NULL) &&
+	    (strcasecmp(resv_msg.node_list, "ALL") == 0)) {
+		node_count = _partition_node_count(resv_msg.partition);
+		if (node_count == NO_VAL) {
+			exit_code = 1;
+			error("Can not determine node count for partition. "
+			      "No reservation created.");
+			goto SCONTROL_CREATE_RES_CLEANUP;
+		} else {
+			free_node_cnt = 1;
+			resv_msg.node_cnt = xmalloc(sizeof(uint32_t) * 2);
+			*resv_msg.node_cnt = node_count;
+			resv_msg.node_list = NULL;
+		}
+	}
+
+	/*
+	 * If  the following parameters are null, but a partition is named, then
+	 * make the reservation for the whole partition.
+	 */
 	if ((resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0')) {
-		exit_code = 1;
-		error("Nodes, NodeCnt or Licenses must be specified.  "
-		      "No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
+		if (resv_msg.partition == NULL) {
+			exit_code = 1;
+			error("Nodes, NodeCnt or Licenses must be specified.  "
+			      "No reservation created.");
+			goto SCONTROL_CREATE_RES_CLEANUP;
+		} else if ((node_count = _partition_node_count(resv_msg.partition))
+			    == NO_VAL) {
+			exit_code = 1;
+			error("Can not determine node count for partition. "
+			      "No reservation created.");
+			goto SCONTROL_CREATE_RES_CLEANUP;
+		} else {
+			free_node_cnt = 1;
+			resv_msg.node_cnt = xmalloc(sizeof(uint32_t) * 2);
+			*resv_msg.node_cnt = node_count;
+		}
 	}
 	if ((resv_msg.users == NULL    || resv_msg.users[0] == '\0') &&
 	    (resv_msg.accounts == NULL || resv_msg.accounts[0] == '\0')) {
@@ -446,5 +515,7 @@ SCONTROL_CREATE_RES_CLEANUP:
 		xfree(resv_msg.users);
 	if (free_acct_str)
 		xfree(resv_msg.accounts);
+	if (free_node_cnt)
+		xfree(resv_msg.node_cnt);
 	return ret;
 }
