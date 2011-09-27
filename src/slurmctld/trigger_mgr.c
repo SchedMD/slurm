@@ -117,14 +117,21 @@ typedef struct trig_mgr_info {
 	uint32_t group_id;	/* user's group id */
 	char *   program;	/* program to execute */
 	uint8_t  state;		/* 0=pending, 1=pulled, 2=completed */
+
+	/* The orig_ fields are used to save  and clone the orignal values */
+	bitstr_t *orig_bitmap;	/* bitmap of requested nodes (if applicable) */
+	char *   orig_res_id;	/* original node name or job_id (string) */
+	time_t   orig_time;	/* offset (pending) or time stamp (complete) */
 } trig_mgr_info_t;
 
 /* Prototype for ListDelF */
 void _trig_del(void *x) {
 	trig_mgr_info_t * tmp = (trig_mgr_info_t *) x;
 	xfree(tmp->res_id);
+	xfree(tmp->orig_res_id);
 	xfree(tmp->program);
 	FREE_NULL_BITMAP(tmp->nodes_bitmap);
+	FREE_NULL_BITMAP(tmp->orig_bitmap);
 	xfree(tmp);
 }
 
@@ -427,14 +434,20 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		next_trigger_id++;
 		trig_add->flags = msg->trigger_array[i].flags;
 		trig_add->res_type = msg->trigger_array[i].res_type;
-		trig_add->nodes_bitmap = bitmap;
+		if (bitmap) {
+			trig_add->nodes_bitmap = bitmap;
+			trig_add->orig_bitmap  = bit_copy(bitmap);
+		}
 		trig_add->job_id = job_id;
 		trig_add->job_ptr = job_ptr;
-		/* move don't copy "res_id" */
-		trig_add->res_id = msg->trigger_array[i].res_id;
-		msg->trigger_array[i].res_id = NULL;
+		if (msg->trigger_array[i].res_id) {
+			trig_add->res_id = msg->trigger_array[i].res_id;
+			trig_add->orig_res_id = xstrdup(trig_add->res_id);
+			msg->trigger_array[i].res_id = NULL; /* moved */
+		}
 		trig_add->trig_type = msg->trigger_array[i].trig_type;
 		trig_add->trig_time = msg->trigger_array[i].offset;
+		trig_add->orig_time = msg->trigger_array[i].offset;
 		trig_add->user_id = (uint32_t) uid;
 		trig_add->group_id = (uint32_t) gid;
 		/* move don't copy "program" */
@@ -640,12 +653,12 @@ static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 	pack16   (trig_ptr->flags,     buffer);
 	pack32   (trig_ptr->trig_id,   buffer);
 	pack16   (trig_ptr->res_type,  buffer);
-	packstr  (trig_ptr->res_id,    buffer);
+	packstr  (trig_ptr->orig_res_id, buffer);  /* restores res_id too */
 	/* rebuild nodes_bitmap as needed from res_id */
 	/* rebuild job_id as needed from res_id */
 	/* rebuild job_ptr as needed from res_id */
 	pack32   (trig_ptr->trig_type, buffer);
-	pack_time(trig_ptr->trig_time, buffer);
+	pack_time(trig_ptr->orig_time, buffer);    /* restores trig_time too */
 	pack32   (trig_ptr->user_id,   buffer);
 	pack32   (trig_ptr->group_id,  buffer);
 	packstr  (trig_ptr->program,   buffer);
@@ -735,7 +748,12 @@ static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
 				      &trig_ptr->nodes_bitmap) != 0))
 			goto unpack_error;
 	}
-
+	if (trig_ptr->nodes_bitmap)
+		trig_ptr->orig_bitmap = bit_copy(trig_ptr->nodes_bitmap);
+	if (trig_ptr->res_id)
+		trig_ptr->orig_res_id = xstrdup(trig_ptr->res_id);
+	trig_ptr->orig_time = trig_ptr->trig_time;
+	
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_list == NULL)
 		trigger_list = list_create(_trig_del);
@@ -1540,8 +1558,7 @@ static void _clear_event_triggers(void)
 }
 
 /* Make a copy of a trigger and pre-pend it on our list */
-static void _trigger_clone(trig_mgr_info_t *trig_in, time_t orig_time,
-			   char **orig_res_id, bitstr_t **orig_bitmap)
+static void _trigger_clone(trig_mgr_info_t *trig_in)
 {
 	trig_mgr_info_t *trig_add;
 
@@ -1549,18 +1566,19 @@ static void _trigger_clone(trig_mgr_info_t *trig_in, time_t orig_time,
 	trig_add->flags     = trig_in->flags;
 	trig_add->trig_id   = trig_in->trig_id;
 	trig_add->res_type  = trig_in->res_type;
-	if (*orig_res_id) {
-		trig_add->res_id = *orig_res_id;
-		*orig_res_id = NULL;	/* Nothing left to free */
+	if (trig_in->orig_res_id) {
+		trig_add->res_id = xstrdup(trig_in->orig_res_id);
+		trig_add->orig_res_id = xstrdup(trig_in->orig_res_id);
 	}
-	if (*orig_bitmap) {
-		trig_add->nodes_bitmap = *orig_bitmap;
-		*orig_bitmap = NULL;	/* Nothing left to free */
+	if (trig_in->orig_bitmap) {
+		trig_add->nodes_bitmap = bit_copy(trig_in->orig_bitmap);
+		trig_add->orig_bitmap  = bit_copy(trig_in->orig_bitmap);
 	}
 	trig_add->job_id    = trig_in->job_id;
 	trig_add->job_ptr   = trig_in->job_ptr;
 	trig_add->trig_type = trig_in->trig_type;
-	trig_add->trig_time = orig_time;
+	trig_add->trig_time = trig_in->orig_time;
+	trig_add->orig_time = trig_in->orig_time;
 	trig_add->user_id   = trig_in->user_id;
 	trig_add->group_id  = trig_in->group_id;
 	trig_add->program   = xstrdup(trig_in->program);;
@@ -1582,16 +1600,7 @@ extern void trigger_process(void)
 
 	trig_iter = list_iterator_create(trigger_list);
 	while ((trig_in = list_next(trig_iter))) {
-		time_t orig_time;
-		char  *orig_res_id = NULL;
-		bitstr_t *orig_bitmap = NULL;
 		if (trig_in->state == 0) {
-			if (trig_in->res_id)
-				orig_res_id = xstrdup(trig_in->res_id);
-			if (trig_in->nodes_bitmap)
-				orig_bitmap = bit_copy(trig_in->nodes_bitmap);
-			orig_time = trig_in->trig_time;
-
 			if (trig_in->res_type == TRIGGER_RES_TYPE_JOB)
 				_trigger_job_event(trig_in, now);
 			else if (trig_in->res_type == TRIGGER_RES_TYPE_NODE)
@@ -1619,8 +1628,7 @@ extern void trigger_process(void)
 				     trig_in->program, trig_in->res_id);
 			}
 			if (trig_in->flags & TRIGGER_FLAG_PERM) {
-				_trigger_clone(trig_in, orig_time,
-					       &orig_res_id, &orig_bitmap);
+				_trigger_clone(trig_in);
 			}
 			trig_in->state = 2;
 			trig_in->trig_time = now;
@@ -1672,8 +1680,6 @@ extern void trigger_process(void)
 			    ((rc == -1) && (errno == ECHILD)))
 				trig_in->child_pid = 0;
 		}
-		xfree(orig_res_id);
-		FREE_NULL_BITMAP(orig_bitmap);
 	}
 	list_iterator_destroy(trig_iter);
 	_clear_event_triggers();
