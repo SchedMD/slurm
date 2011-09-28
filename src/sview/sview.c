@@ -892,7 +892,8 @@ static char *_get_ui_description()
 		"      <menuitem action='topoorder'/>"
 #endif
 		"      <menuitem action='ruled'/>");
-	if (!(cluster_flags & CLUSTER_FLAG_BG))
+	if (!(cluster_flags & CLUSTER_FLAG_BG) &&
+	    !(cluster_flags & CLUSTER_FLAG_CRAYXT))
 		xstrcat(ui_description,
 			"      <menuitem action='grid_specs'/>");
 
