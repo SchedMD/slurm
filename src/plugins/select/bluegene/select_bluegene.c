@@ -2029,12 +2029,22 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				 "Removed all blocks on midplane %s",
 				 bg_record->mp_str);
 
-	} else
+	} else {
+		uint16_t state = bg_record->state;
+
+		if (block_desc_ptr->state == BG_BLOCK_ERROR_FLAG)
+			state |= BG_BLOCK_ERROR_FLAG;
+		else if (state & BG_BLOCK_ERROR_FLAG)
+			state &= (~BG_BLOCK_ERROR_FLAG);
+		else
+			state = block_desc_ptr->state;
+
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
 			 "Admin set block %s state to %s",
 			 bg_record->bg_block_id,
-			 bg_block_state_string(block_desc_ptr->state));
+			 bg_block_state_string(state));
+	}
 
 	/* First fail any job running on this block */
 	if (bg_record->job_running > NO_JOB_RUNNING) {

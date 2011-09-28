@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for handling QOS limits per user on a reconfig of the slurmctld.
  -- Do not treat the absence of a gres.conf file as a fatal error on systems
     configured with GRES, but set GRES counts to zero.
+ -- BLUEGENE - Update correctly the state in the reason of a block if an
+    admin sets the state to error.
 
 * Changes in SLURM 2.3.0-2
 ==========================
