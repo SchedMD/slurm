@@ -4063,6 +4063,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		return;
 	}
 #ifdef HAVE_FRONT_END
+	END_TIMER2("_slurm_rpc_reboot_nodes");
 	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
 #else
 	/* do RPC call */
