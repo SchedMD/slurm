@@ -14,12 +14,6 @@ location of this file. The SLURM daemons also allow you to override
 both the built\-in and environment\-provided location using the "\-f"
 option on the command line.
 .LP
-Note the while SLURM daemons create log files and other files as needed,
-it treats the lack of parent directories as a fatal error.
-This prevents the daemons from running if critical file systems are
-not mounted and will minimize the risk of cold\-starting (starting
-without preserving jobs).
-.LP
 The contents of the file are case insensitive except for the names of nodes
 and partitions. Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
@@ -37,7 +31,7 @@ Note on file permissions:
 The \fIslurm.conf\fR file must be readable by all users of SLURM, since it
 is used by many of the SLURM commands.  Other files that are defined
 in the \fIslurm.conf\fR file, such as log files and job accounting files,
-may need to be created/owned by the "SlurmUser" uid to be successfully
+may need to be created/owned by the user "SlurmUser" to be successfully
 accessed.  Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
 See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
@@ -1597,7 +1591,8 @@ The default value is 3.
 Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's
 logs are written.
 The default value is none (performs logging via syslog).
-
+.br
+See the section \fBLOGGING\fR if a pathname is specified.
 .TP
 \fBSlurmctldPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmctld\fR daemon
@@ -1637,6 +1632,8 @@ logs are written.
 The default value is none (performs logging via syslog).
 Any "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
+.br
+See the section \fBLOGGING\fR if a pathname is specified.
 
 .TP
 \fBSlurmdPidFile\fR
@@ -3149,6 +3146,72 @@ The file must exist on every compute node.
 \fBUnkillableStepProgram\fR
 Must be executable by user \fBSlurmUser\fR.
 The file must be accessible by the primary and backup control machines.
+
+.SH "LOGGING"
+.LP
+Note that while SLURM daemons create log files and other files as needed,
+it treats the lack of parent directories as a fatal error.
+This prevents the daemons from running if critical file systems are
+not mounted and will minimize the risk of cold\-starting (starting
+without preserving jobs).
+.LP
+Log files and job accounting files,
+may need to be created/owned by the "SlurmUser" uid to be successfully
+accessed.  Use the "chown" and "chmod" commands to set the ownership
+and permissions appropriately.
+See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
+about the various files and directories used by SLURM.
+.LP
+It is recommended that the logrotate utility be used to insure that
+various log files do not become too large. 
+This also applies to text files used for accounting,
+process tracking, and the slurmdbd log if they are used.
+.LP
+Here is a sample logrotate configuration. Make appropriate site modifications
+and save as /etc/logrotate.d/slurm on all nodes.
+See the \fBlogrotate\fR man page for more details.
+.LP
+## 
+.br
+# SLURM Logrotate Configuration 
+.br
+## 
+.br
+/var/log/slurm/*log {
+.br
+    compress 
+.br
+    missingok 
+.br
+    nocopytruncate 
+.br
+    nocreate 
+.br
+    nodelaycompress 
+.br
+    nomail 
+.br
+    notifempty 
+.br
+    noolddir 
+.br
+    rotate 5 
+.br
+    sharedscripts 
+.br
+    size=5M 
+.br
+    create 640 slurm root 
+.br
+    postrotate 
+.br
+        /etc/init.d/slurm reconfig 
+.br
+    endscript 
+.br
+}
+.br
+
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
