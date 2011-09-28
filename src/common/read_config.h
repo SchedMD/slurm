@@ -112,7 +112,7 @@ extern char *default_plugstack;
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_RESUME_RATE         300
 #define DEFAULT_RESUME_TIMEOUT      60
-#define DEFAULT_SAVE_STATE_LOC      "/tmp"
+#define DEFAULT_SAVE_STATE_LOC      "/var/spool"
 #define DEFAULT_SCHEDROOTFILTER     1
 #define DEFAULT_SCHEDULER_PORT      7321
 #define DEFAULT_SCHED_LOG_LEVEL     0

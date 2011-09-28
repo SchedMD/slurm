@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     modified in the same fashion for SlurmctldDebug and SlurmdDebug values.
     The output of sview and "scontrol show config" was also modified to report
     those values as strings rather than numeric values.
+ -- Change default value of StateSaveLocation configuration parameter from
+    /tmp to /var/spool.
 
 * Changes in SLURM 2.3.1
 ========================
