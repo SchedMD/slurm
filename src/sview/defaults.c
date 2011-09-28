@@ -506,7 +506,7 @@ static int _write_to_file(int fd, char *data)
 	return rc;
 }
 
-static void _init_sview_conf()
+static void _init_sview_conf(void)
 {
 	int i;
 

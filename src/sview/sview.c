@@ -1325,6 +1325,8 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		working_sview_config.grid_hori = default_sview_config.grid_hori;
 		working_sview_config.grid_vert = default_sview_config.grid_vert;
 	}
+	gtk_table_set_col_spacings(main_grid_table, 0);
+	gtk_table_set_row_spacings(main_grid_table, 0);
 
 	if (!orig_cluster_name)
 		orig_cluster_name = slurm_get_cluster_name();
@@ -1482,7 +1484,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	g_free(tmp);
 }
 
-static GtkWidget *_create_cluster_combo()
+static GtkWidget *_create_cluster_combo(void)
 {
 	GtkListStore *model = NULL;
 	GtkWidget *combo = NULL;
