@@ -992,6 +992,8 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 		working_sview_config.grid_vert =
 			gtk_spin_button_get_value_as_int(
 				GTK_SPIN_BUTTON(vert_sb));
+		memcpy(&default_sview_config, &working_sview_config,
+		       sizeof(sview_config_t));
 		if ((width == working_sview_config.grid_x_width)
 		    && (hori == working_sview_config.grid_hori)
 		    && (vert == working_sview_config.grid_vert)) {
