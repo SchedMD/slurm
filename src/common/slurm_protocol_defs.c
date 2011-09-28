@@ -1022,6 +1022,70 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 	return mode_num;
 }
 
+/* Convert log level number to equivalent string */
+extern char *log_num2string(uint16_t inx)
+{
+	switch (inx) {
+	case 0:
+		return "quiet";
+	case 1:
+		return "fatal";
+	case 2:
+		return "error";
+	case 3:
+		return "info";
+	case 4:
+		return "verbose";
+	case 5:
+		return "debug";
+	case 6:
+		return "debug2";
+	case 7:
+		return "debug3";
+	case 8:
+		return "debug4";
+	case 9:
+		return "debug5";
+	default:
+		return "unknown";
+	}
+}
+
+/* Convert log level string to equivalent number */
+extern uint16_t log_string2num(char *name)
+{
+	if (name == NULL)
+		return (uint16_t) NO_VAL;
+
+	if ((name[0] >= '0') && (name[0] <= '9'))
+		return (uint16_t) atoi(name);
+
+	if (!strcasecmp(name, "quiet"))
+		return (uint16_t) 0;
+	if (!strcasecmp(name, "fatal"))
+		return (uint16_t) 1;
+	if (!strcasecmp(name, "error"))
+		return (uint16_t) 2;
+	if (!strcasecmp(name, "info"))
+		return (uint16_t) 3;
+	if (!strcasecmp(name, "verbose"))
+		return (uint16_t) 4;
+	if (!strcasecmp(name, "debug"))
+		return (uint16_t) 5;
+	if (!strcasecmp(name, "debug2"))
+		return (uint16_t) 6;
+	if (!strcasecmp(name, "debug3"))
+		return (uint16_t) 7;
+	if (!strcasecmp(name, "debug4"))
+		return (uint16_t) 8;
+	if (!strcasecmp(name, "debug5"))
+		return (uint16_t) 9;
+	if (!strcasecmp(name, "debug2"))
+		return (uint16_t) 6;
+
+	return (uint16_t) NO_VAL;
+}
+
 /* Convert SelectTypeParameter to equivalent string
  * NOTE: Not reentrant */
 extern char *sched_param_type_string(uint16_t select_type_param)

@@ -256,12 +256,12 @@ s_p_options_t slurm_conf_options[] = {
 	{"SelectTypeParameters", S_P_STRING},
 	{"SlurmUser", S_P_STRING},
 	{"SlurmdUser", S_P_STRING},
-	{"SlurmctldDebug", S_P_UINT16},
+	{"SlurmctldDebug", S_P_STRING},
 	{"SlurmctldLogFile", S_P_STRING},
 	{"SlurmctldPidFile", S_P_STRING},
 	{"SlurmctldPort", S_P_STRING},
 	{"SlurmctldTimeout", S_P_UINT16},
-	{"SlurmdDebug", S_P_UINT16},
+	{"SlurmdDebug", S_P_STRING},
 	{"SlurmdLogFile", S_P_STRING},
 	{"SlurmdPidFile",  S_P_STRING},
 	{"SlurmdPort", S_P_UINT32},
@@ -3014,9 +3014,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	}
 
-	if (s_p_get_uint16(&conf->slurmctld_debug, "SlurmctldDebug", hashtbl))
+	if (s_p_get_string(&temp_str, "SlurmctldDebug", hashtbl)) {
+		conf->slurmctld_debug = log_string2num(temp_str);
+		if (conf->slurmctld_debug == (uint16_t) NO_VAL)
+			fatal("Invalid SlurmctldDebug %s", temp_str);
+		xfree(temp_str);
 		_normalize_debug_level(&conf->slurmctld_debug);
-	else
+	} else
 		conf->slurmctld_debug = LOG_LEVEL_INFO;
 
 	if (!s_p_get_string(&conf->slurmctld_pidfile,
@@ -3059,9 +3063,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "SlurmctldTimeout", hashtbl))
 		conf->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
 
-	if (s_p_get_uint16(&conf->slurmd_debug, "SlurmdDebug", hashtbl))
+	if (s_p_get_string(&temp_str, "SlurmdDebug", hashtbl)) {
+		conf->slurmd_debug = log_string2num(temp_str);
+		if (conf->slurmd_debug == (uint16_t) NO_VAL)
+			fatal("Invalid SlurmdDebug %s", temp_str);
+		xfree(temp_str);
 		_normalize_debug_level(&conf->slurmd_debug);
-	else
+	} else
 		conf->slurmd_debug = LOG_LEVEL_INFO;
 
 	s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);

@@ -144,9 +144,39 @@ slurm.conf file.
 .TP
 \fBDebugLevel\fR
 The level of detail to provide the Slurm Database Daemon's logs.
-Values from 0 to 9 are legal, with `0' being "quiet" operation and
-`9' being insanely verbose.
-The default value is 3.
+The default valus is \fBinfo\fR.
+.RS
+.TP 10
+\fBquiet\fR
+Log nothing
+.TP
+\fBfatal\fR
+Log only fatal errors
+.TP
+\fBerror\fR
+Log only errors
+.TP
+\fBinfo\fR
+Log errors and general informational messages
+.TP
+\fBverbose\fR
+Log errors and verbose informational messages
+.TP
+\fBdebug\fR
+Log errors and verbose informational messages and debugging messages
+.TP
+\fBdebug2\fR
+Log errors and verbose informational messages and more debugging messages
+.TP
+\fBdebug3\fR
+Log errors and verbose informational messages and even more debugging messages
+.TP
+\fBdebug4\fR
+Log errors and verbose informational messages and even more debugging messages
+.TP
+\fBdebug5\fR
+Log errors and verbose informational messages and even more debugging messages
+.RE
 
 .TP
 \fBDefaultQOS\fR

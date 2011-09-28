@@ -836,8 +836,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	snprintf(tmp_str, sizeof(tmp_str), "%u",
-		 slurm_ctl_conf_ptr->slurmctld_debug);
+	snprintf(tmp_str, sizeof(tmp_str), "%s",
+		 log_num2string(slurm_ctl_conf_ptr->slurmctld_debug));
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmctldDebug");
 	key_pair->value = xstrdup(tmp_str);
@@ -874,8 +874,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	snprintf(tmp_str, sizeof(tmp_str), "%u",
-		 slurm_ctl_conf_ptr->slurmd_debug);
+	snprintf(tmp_str, sizeof(tmp_str), "%s",
+		 log_num2string(slurm_ctl_conf_ptr->slurmd_debug));
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmdDebug");
 	key_pair->value = xstrdup(tmp_str);

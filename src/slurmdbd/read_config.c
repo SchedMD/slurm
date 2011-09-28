@@ -138,7 +138,7 @@ extern int read_slurmdbd_conf(void)
 		{"DbdBackupHost", S_P_STRING},
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
-		{"DebugLevel", S_P_UINT16},
+		{"DebugLevel", S_P_STRING},
 		{"DefaultQOS", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
@@ -212,7 +212,14 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
-		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
+
+		if (s_p_get_string(&temp_str, "DebugLevel", tbl)) {
+			slurmdbd_conf->debug_level = log_string2num(temp_str);
+			if (slurmdbd_conf->debug_level == (uint16_t) NO_VAL)
+				fatal("Invalid DebugLevel %s", temp_str);
+			xfree(temp_str);
+		}
+
 		s_p_get_string(&slurmdbd_conf->default_qos, "DefaultQOS", tbl);
 		if (s_p_get_uint32(&slurmdbd_conf->purge_job,
 				   "JobPurge", tbl)) {
@@ -682,7 +689,8 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DebugLevel");
 	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->debug_level);
+	snprintf(key_pair->value, 32, "%s",
+		 log_num2string(slurmdbd_conf->debug_level));
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

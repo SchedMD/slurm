@@ -25,6 +25,11 @@ documents those changes that are of interest to users and admins.
     RebootProgram configuration parameter must be set and an authorized user
     must execute the command "scontrol reboot_nodes". Patch from Andriy
     Grytsenko (Massive Solutions Limited).
+ -- Modify slurmdbd.conf parsing to accept DebugLevel strings (quiet, fatal,
+    info, etc.) in addition to numeric values. The parsing of slurm.conf was
+    modified in the same fashion for SlurmctldDebug and SlurmdDebug values.
+    The output of sview and "scontrol show config" was also modified to report
+    those values as strings rather than numeric values.
 
 * Changes in SLURM 2.3.1
 ========================
