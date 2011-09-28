@@ -765,9 +765,13 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 
 	gres_plugin_init();
 	gres_conf_file = _get_gres_conf();
+	if (stat(gres_conf_file, &config_stat) < 0) {
+		error("can't stat gres.conf file %s: %m", gres_conf_file);
+		xfree(gres_conf_file);
+		return 0;
+	}
+
 	slurm_mutex_lock(&gres_context_lock);
-	if (stat(gres_conf_file, &config_stat) < 0)
-		fatal("can't stat gres.conf file %s: %m", gres_conf_file);
 	tbl = s_p_hashtbl_create(_gres_options);
 	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
 		fatal("error opening/reading %s", gres_conf_file);
@@ -796,7 +800,32 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 	return count;
 }
 
+/* No gres.conf file found.
+ * Initialize gres table with zero counts of all resources.
+ * Counts can be altered by node_config_load() in the gres plugin. */
+static int _no_gres_conf(uint32_t cpu_cnt)
+{
+	int i, rc = SLURM_SUCCESS;
+	gres_slurmd_conf_t *p;
 
+	slurm_mutex_lock(&gres_context_lock);
+	FREE_NULL_LIST(gres_conf_list);
+	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
+	if (gres_conf_list == NULL)
+		fatal("list_create: malloc failure");
+	p = xmalloc(sizeof(gres_slurmd_conf_t *) * gres_context_cnt);
+	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		p = xmalloc(sizeof(gres_slurmd_conf_t));
+		p->cpu_cnt	= cpu_cnt;
+		p->name		= xstrdup(gres_context[i].gres_name);
+		p->plugin_id	= gres_context[i].plugin_id;
+		list_append(gres_conf_list, p);
+		rc = (*(gres_context[i].ops.node_config_load))(gres_conf_list);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
 
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
@@ -820,10 +849,15 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 		return SLURM_SUCCESS;
 
 	gres_conf_file = _get_gres_conf();
+	if (stat(gres_conf_file, &config_stat) < 0) {
+		error("can't stat gres.conf file %s, assuming zero resource "
+		      "counts", gres_conf_file);
+		xfree(gres_conf_file);
+		return _no_gres_conf(cpu_cnt);
+	}
+
 	slurm_mutex_lock(&gres_context_lock);
 	gres_cpu_cnt = cpu_cnt;
-	if (stat(gres_conf_file, &config_stat) < 0)
-		fatal("can't stat gres.conf file %s: %m", gres_conf_file);
 	tbl = s_p_hashtbl_create(_gres_options);
 	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
 		fatal("error opening/reading %s", gres_conf_file);
