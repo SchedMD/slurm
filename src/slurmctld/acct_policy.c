@@ -230,7 +230,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			if (unused_cpu_run_secs >
 			    qos_ptr->usage->grp_used_cpu_run_secs) {
 				qos_ptr->usage->grp_used_cpu_run_secs = 0;
-				info("acct_policy_job_fini: "
+				debug2("acct_policy_job_fini: "
 				       "grp_used_cpu_run_secs "
 				       "underflow for qos %s", qos_ptr->name);
 			} else
