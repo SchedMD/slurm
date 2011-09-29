@@ -4047,12 +4047,15 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 /* _slurm_rpc_reboot_nodes - process RPC to schedule nodes reboot */
 inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 {
-	struct node_record *node_ptr;
-	int i;
+	int rc;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+#ifndef HAVE_FRONT_END
+	int i;
+	struct node_record *node_ptr;
 	/* Locks: write node lock */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+#endif
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -4063,8 +4066,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		return;
 	}
 #ifdef HAVE_FRONT_END
-	END_TIMER2("_slurm_rpc_reboot_nodes");
-	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+	rc = ESLURM_NOT_SUPPORTED;
 #else
 	/* do RPC call */
 	lock_slurmctld(node_write_lock);
@@ -4078,9 +4080,10 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		want_nodes_reboot = true;
 	}
 	unlock_slurmctld(node_write_lock);
-	END_TIMER2("_slurm_rpc_reboot_nodes");
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	rc = SLURM_SUCCESS;
 #endif
+	END_TIMER2("_slurm_rpc_reboot_nodes");
+	slurm_send_rc_msg(msg, rc);
 }
 
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
