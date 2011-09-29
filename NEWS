@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
     admin sets the state to error.
  -- BLUEGENE - handle reason of blocks in error more correctly between
     restarts of the slurmctld.
+ -- BLUEGENE - Fix minor potential memory leak when setting block error reason.
 
 * Changes in SLURM 2.3.0-2
 ==========================

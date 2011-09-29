@@ -1391,8 +1391,6 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 		return SLURM_ERROR;
 	}
 
-	info("Setting Block %s to ERROR state. (reason: '%s')",
-	     bg_record->bg_block_id, reason);
 	/* we add the block to these lists so we don't try to schedule
 	   on them. */
 	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
@@ -1409,7 +1407,6 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 	xfree(bg_record->target_name);
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
-	bg_record->reason = xstrdup(reason);
 
 	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
 		error("No such user: %s", bg_record->user_name);
@@ -1418,8 +1415,15 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 
 	/* Only send if reason is set.  If it isn't set then
 	   accounting should already know about this error state */
-	if (reason)
+	if (reason) {
+		info("Setting Block %s to ERROR state. (reason: '%s')",
+		     bg_record->bg_block_id, reason);
+		xfree(bg_record->reason);
+		bg_record->reason = xstrdup(reason);
 		_set_block_nodes_accounting(bg_record, reason);
+	}
+
+	last_bg_update = time(NULL);
 	slurm_mutex_unlock(&block_state_mutex);
 
 	trigger_block_error();
