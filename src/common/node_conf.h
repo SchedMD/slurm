@@ -163,6 +163,18 @@ extern time_t last_node_update;		/* time of last node record update */
 
 
 /*
+ * bitmap2node_name_sortable - given a bitmap, build a list of comma
+ *	separated node names. names may include regular expressions
+ *	(e.g. "lx[01-10]")
+ * IN bitmap - bitmap pointer
+ * IN sort   - returned ordered list or not
+ * RET pointer to node list or NULL on error
+ * globals: node_record_table_ptr - pointer to node table
+ * NOTE: the caller must xfree the memory at node_list when no longer required
+ */
+char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort);
+
+/*
  * bitmap2node_name - given a bitmap, build a list of comma separated node
  *	names. names may include regular expressions (e.g. "lx[01-10]")
  * IN bitmap - bitmap pointer
