@@ -50,6 +50,11 @@
 #include <stdint.h>
 #endif  /* HAVE_CONFIG_H */
 
+/*  Default lower bound on memory limit in MB. This is required so we
+ *   don't immediately kill slurmstepd on mem cgroup creation if
+ *   an administrator or user sets and absurdly low mem limit.
+ */
+#define XCGROUP_DEFAULT_MIN_RAM 30
 
 /* Slurm cgroup plugins configuration parameters */
 typedef struct slurm_cgroup_conf {
@@ -65,6 +70,8 @@ typedef struct slurm_cgroup_conf {
 	bool      constrain_ram_space;
 	float     allowed_ram_space;
 	float     max_ram_percent;       /* Upper bound on memory as % of RAM*/
+
+	uint32_t  min_ram_space;         /* Lower bound on memory limit (MB) */
 
 	bool      constrain_swap_space;
 	float     allowed_swap_space;

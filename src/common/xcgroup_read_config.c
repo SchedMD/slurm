@@ -83,6 +83,7 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		slurm_cgroup_conf->constrain_ram_space = false ;
 		slurm_cgroup_conf->allowed_ram_space = 100 ;
 		slurm_cgroup_conf->max_ram_percent = 100 ;
+		slurm_cgroup_conf->min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 		slurm_cgroup_conf->constrain_swap_space = false ;
 		slurm_cgroup_conf->allowed_swap_space = 0 ;
 		slurm_cgroup_conf->max_swap_percent = 100 ;
@@ -138,6 +139,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_STRING},
 		{"MaxRAMPercent", S_P_STRING},
+		{"MinRAMSpace", S_P_UINT32},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
 		{"AllowedSwapSpace", S_P_STRING},
 		{"MaxSwapPercent", S_P_STRING},
@@ -221,6 +223,9 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		conf_get_float (tbl,
 				"MaxSwapPercent",
 				&slurm_cgroup_conf->max_swap_percent);
+
+		s_p_get_uint32 (&slurm_cgroup_conf->min_ram_space,
+		                "MinRAMSpace", tbl);
 
 		/* Memory limits */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->memlimit_enforcement,
