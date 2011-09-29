@@ -1120,7 +1120,7 @@ static int _accounting_cluster_ready()
 	*/
 	total_node_bitmap = bit_alloc(node_record_count);
 	bit_nset(total_node_bitmap, 0, node_record_count-1);
-	cluster_nodes = bitmap2node_name(total_node_bitmap);
+	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
 	FREE_NULL_BITMAP(total_node_bitmap);
 	unlock_slurmctld(node_read_lock);
 

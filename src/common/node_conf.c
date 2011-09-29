@@ -426,14 +426,16 @@ static int _list_find_config (void *config_entry, void *key)
 }
 
 /*
- * bitmap2node_name - given a bitmap, build a list of comma separated node
- *	names. names may include regular expressions (e.g. "lx[01-10]")
+ * bitmap2node_name_sortable - given a bitmap, build a list of comma
+ *	separated node names. names may include regular expressions
+ *	(e.g. "lx[01-10]")
  * IN bitmap - bitmap pointer
+ * IN sort   - returned sorted list or not
  * RET pointer to node list or NULL on error
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-char * bitmap2node_name (bitstr_t *bitmap)
+char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
 {
 	int i, first, last;
 	hostlist_t hl;
@@ -455,11 +457,26 @@ char * bitmap2node_name (bitstr_t *bitmap)
 			continue;
 		hostlist_push(hl, node_record_table_ptr[i].name);
 	}
-	hostlist_uniq(hl);
+	if (sort)
+		hostlist_sort(hl);
 	buf = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
 
 	return buf;
+}
+
+/*
+ * bitmap2node_name - given a bitmap, build a list of sorted, comma
+ *	separated node names. names may include regular expressions
+ *	(e.g. "lx[01-10]")
+ * IN bitmap - bitmap pointer
+ * RET pointer to node list or NULL on error
+ * globals: node_record_table_ptr - pointer to node table
+ * NOTE: the caller must xfree the memory at node_list when no longer required
+ */
+char * bitmap2node_name (bitstr_t *bitmap)
+{
+	return bitmap2node_name_sortable(bitmap, 1);
 }
 
 /*
