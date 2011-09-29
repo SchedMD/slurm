@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - handle reason of blocks in error more correctly between
     restarts of the slurmctld.
  -- BLUEGENE - Fix minor potential memory leak when setting block error reason.
+ -- BLUEGENE - Fix if running in Static/Overlap mode and full system block
+    is in an error state, won't deny jobs.
 
 * Changes in SLURM 2.3.0-2
 ==========================

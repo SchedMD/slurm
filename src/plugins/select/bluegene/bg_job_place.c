@@ -307,19 +307,10 @@ static bg_record_t *_find_matching_block(List block_list,
 		if (bg_record->job_ptr)
 			bg_record->job_running = bg_record->job_ptr->job_id;
 
-		/*block is messed up some how (BLOCK_ERROR_STATE_FLAG)
-		 * ignore it or if state == BG_BLOCK_ERROR */
-		if ((bg_record->job_running == BLOCK_ERROR_STATE)
-		    || (bg_record->state & BG_BLOCK_ERROR_FLAG)) {
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("block %s is in an error "
-				     "state (can't use)",
-				     bg_record->bg_block_id);
-			continue;
-		} else if ((bg_conf->layout_mode == LAYOUT_DYNAMIC)
-			   || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
-				|| SELECT_IS_MODE_RUN_NOW(query_mode))
-			       && (bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
+		if ((bg_conf->layout_mode == LAYOUT_DYNAMIC)
+		    || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
+			 || SELECT_IS_MODE_RUN_NOW(query_mode))
+			&& (bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
 			if (bg_record->free_cnt) {
 				/* No reason to look at a block that
 				   is being freed unless we are
@@ -330,6 +321,18 @@ static bg_record_t *_find_matching_block(List block_list,
 				    & DEBUG_FLAG_BG_PICK)
 					info("block %s being free for other "
 					     "job(s), skipping",
+					     bg_record->bg_block_id);
+				continue;
+			} else if ((bg_record->job_running == BLOCK_ERROR_STATE)
+				   || (bg_record->state
+				       & BG_BLOCK_ERROR_FLAG)) {
+				/* block is messed up some how
+				 * (BLOCK_ERROR_STATE_FLAG)
+				 * ignore it or if state == BG_BLOCK_ERROR */
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("block %s is in an error "
+					     "state (can't use)",
 					     bg_record->bg_block_id);
 				continue;
 			} else if ((bg_record->job_running != NO_JOB_RUNNING)
