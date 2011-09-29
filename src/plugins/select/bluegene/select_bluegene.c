@@ -422,6 +422,9 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	bg_record->ramdiskimage = block_info->ramdiskimage;
 	block_info->ramdiskimage = NULL;
 
+	bg_record->reason = block_info->reason;
+	block_info->reason = NULL;
+
 	slurm_free_block_info_members(block_info);
 	return bg_record;
 }

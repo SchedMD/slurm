@@ -1022,9 +1022,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 		if (!IS_NODE_DOWN(node_ptr) &&
 		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
-			xfree(node_ptr->reason);
-			node_ptr->reason_time = 0;
-			node_ptr->reason_uid = NO_VAL;
+			/* reason information is handled in
+			   clusteracct_storage_g_node_up()
+			*/
+			clusteracct_storage_g_node_up(
+				acct_db_conn, node_ptr, now);
 		}
 
 		free (this_node_name);
@@ -1685,9 +1687,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			last_node_update = now;
 			if (!IS_NODE_DRAIN(node_ptr)
 			    && !IS_NODE_FAIL(node_ptr)) {
-				xfree(node_ptr->reason);
-				node_ptr->reason_time = 0;
-				node_ptr->reason_uid = NO_VAL;
+				/* reason information is handled in
+				   clusteracct_storage_g_node_up()
+				*/
 				clusteracct_storage_g_node_up(
 					acct_db_conn, node_ptr, now);
 			}
@@ -1712,9 +1714,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			last_node_update = now;
 			if (!IS_NODE_DRAIN(node_ptr)
 			    && !IS_NODE_FAIL(node_ptr)) {
-				xfree(node_ptr->reason);
-				node_ptr->reason_time = 0;
-				node_ptr->reason_uid = NO_VAL;
+				/* reason information is handled in
+				   clusteracct_storage_g_node_up()
+				*/
 				clusteracct_storage_g_node_up(
 					acct_db_conn, node_ptr, now);
 			}
@@ -2020,9 +2022,9 @@ extern int validate_nodes_via_front_end(
 				}
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)) {
-					xfree(node_ptr->reason);
-					node_ptr->reason_time = 0;
-					node_ptr->reason_uid = NO_VAL;
+					/* reason information is handled in
+					   clusteracct_storage_g_node_up()
+					*/
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
 						node_ptr, now);
@@ -2047,9 +2049,9 @@ extern int validate_nodes_via_front_end(
 				trigger_node_up(node_ptr);
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)) {
-					xfree(node_ptr->reason);
-					node_ptr->reason_time = 0;
-					node_ptr->reason_uid = NO_VAL;
+					/* reason information is handled in
+					   clusteracct_storage_g_node_up()
+					*/
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
 						node_ptr, now);
@@ -2199,9 +2201,9 @@ static void _node_did_resp(struct node_record *node_ptr)
 		trigger_node_up(node_ptr);
 		last_node_update = now;
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
-			xfree(node_ptr->reason);
-			node_ptr->reason_time = 0;
-			node_ptr->reason_uid = NO_VAL;
+			/* reason information is handled in
+			   clusteracct_storage_g_node_up()
+			*/
 			clusteracct_storage_g_node_up(acct_db_conn,
 						      node_ptr, now);
 		}

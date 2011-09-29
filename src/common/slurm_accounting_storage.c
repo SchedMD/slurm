@@ -822,19 +822,39 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 
 	/* on some systems we need to make sure we don't say something
 	   is completely up if there are cpus in an error state */
-	if(node_ptr->select_nodeinfo) {
+	if (node_ptr->select_nodeinfo) {
 		uint16_t err_cpus = 0;
+		static uint32_t node_scaling = 0;
+		static uint16_t cpu_cnt = 1;
+
+		if (!node_scaling) {
+			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+						&node_scaling);
+			select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+						&cpu_cnt);
+			if (!node_scaling)
+				node_scaling = 1;
+		}
+
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_SUBCNT,
 					     NODE_STATE_ERROR,
 					     &err_cpus);
-		if(err_cpus) {
+		if (err_cpus) {
 			char *reason = "Setting partial node down.";
 			struct node_record send_node;
 			struct config_record config_rec;
-			uint16_t cpu_cnt = 0;
-			select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-						&cpu_cnt);
+
+			if (!node_ptr->reason) {
+				if (err_cpus == node_scaling)
+					reason = "Setting node down.";
+				node_ptr->reason = xstrdup(reason);
+				node_ptr->reason_time = event_time;
+				node_ptr->reason_uid =
+					slurm_get_slurm_user_id();
+			} else
+				reason = node_ptr->reason;
+
 			err_cpus *= cpu_cnt;
 			memset(&send_node, 0, sizeof(struct node_record));
 			memset(&config_rec, 0, sizeof(struct config_record));
@@ -848,7 +868,15 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 			return (*(g_acct_storage_context->ops.node_down))
 				(db_conn, &send_node,
 				 event_time, reason, slurm_get_slurm_user_id());
+		} else {
+			xfree(node_ptr->reason);
+			node_ptr->reason_time = 0;
+			node_ptr->reason_uid = NO_VAL;
 		}
+	} else {
+		xfree(node_ptr->reason);
+		node_ptr->reason_time = 0;
+		node_ptr->reason_uid = NO_VAL;
 	}
 
  	return (*(g_acct_storage_context->ops.node_up))

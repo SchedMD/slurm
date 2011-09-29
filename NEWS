@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     configured with GRES, but set GRES counts to zero.
  -- BLUEGENE - Update correctly the state in the reason of a block if an
     admin sets the state to error.
+ -- BLUEGENE - handle reason of blocks in error more correctly between
+    restarts of the slurmctld.
 
 * Changes in SLURM 2.3.0-2
 ==========================
