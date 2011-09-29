@@ -49,6 +49,13 @@ documents those changes that are of interest to users and admins.
  -- Fix for handling QOS limits per user on a reconfig of the slurmctld.
  -- Do not treat the absence of a gres.conf file as a fatal error on systems
     configured with GRES, but set GRES counts to zero.
+ -- BLUEGENE - Update correctly the state in the reason of a block if an
+    admin sets the state to error.
+ -- BLUEGENE - handle reason of blocks in error more correctly between
+    restarts of the slurmctld.
+ -- BLUEGENE - Fix minor potential memory leak when setting block error reason.
+ -- BLUEGENE - Fix if running in Static/Overlap mode and full system block
+    is in an error state, won't deny jobs.
 
 * Changes in SLURM 2.3.0-2
 ==========================

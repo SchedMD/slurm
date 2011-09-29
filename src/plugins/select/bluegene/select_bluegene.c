@@ -422,6 +422,9 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	bg_record->ramdiskimage = block_info->ramdiskimage;
 	block_info->ramdiskimage = NULL;
 
+	bg_record->reason = block_info->reason;
+	block_info->reason = NULL;
+
 	slurm_free_block_info_members(block_info);
 	return bg_record;
 }
@@ -2063,12 +2066,22 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				 "Removed all blocks on midplane %s",
 				 bg_record->mp_str);
 
-	} else
+	} else {
+		uint16_t state = bg_record->state;
+
+		if (block_desc_ptr->state == BG_BLOCK_ERROR_FLAG)
+			state |= BG_BLOCK_ERROR_FLAG;
+		else if (state & BG_BLOCK_ERROR_FLAG)
+			state &= (~BG_BLOCK_ERROR_FLAG);
+		else
+			state = block_desc_ptr->state;
+
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
 			 "Admin set block %s state to %s",
 			 bg_record->bg_block_id,
-			 bg_block_state_string(block_desc_ptr->state));
+			 bg_block_state_string(state));
+	}
 
 	/* First fail any job running on this block */
 	if (bg_record->job_running > NO_JOB_RUNNING) {
