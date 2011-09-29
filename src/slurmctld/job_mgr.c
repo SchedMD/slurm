@@ -3110,11 +3110,13 @@ extern int job_fail(uint32_t job_id)
 			job_ptr->end_time       = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
-		build_cg_bitmap(job_ptr);
 		job_ptr->exit_code = 1;
 		job_ptr->state_reason = FAIL_LAUNCH;
 		xfree(job_ptr->state_desc);
-		deallocate_nodes(job_ptr, false, suspended, false);
+		if (job_ptr->node_bitmap) {
+			build_cg_bitmap(job_ptr);
+			deallocate_nodes(job_ptr, false, suspended, false);
+		}
 		job_completion_logger(job_ptr, false);
 		return SLURM_SUCCESS;
 	}

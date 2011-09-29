@@ -908,10 +908,10 @@ extern int sync_jobs(List job_list)
 			good_block = false;
 		}
 		if (!good_block) {
-			job_ptr->job_state = JOB_FAILED
-				| JOB_COMPLETING;
-			job_ptr->end_time = time(NULL);
-			last_job_update = time(NULL);
+			/* Don't use slurm_fail_job, locks are already
+			   in place.
+			*/
+			job_fail(job_ptr->job_id);
 			_destroy_bg_action(bg_action_ptr);
 			continue;
 		}
