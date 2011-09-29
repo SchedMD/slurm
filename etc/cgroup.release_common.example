@@ -13,10 +13,21 @@
 # to ensure coherency of the cgroups contents.
 #
 
-base_path=/cgroup
 progname=$(basename $0)
 subsystem=${progname##*_}
-orphancg=${base_path}/${subsystem}/orphan
+
+get_mount_dir()
+{
+    local lssubsys=$(type -p lssubsys)
+    if [ -x $lssubsys ]; then
+        $lssubsys -m $subsystem | awk '{print $2}'
+    else
+        awk "/release_agent=$0/ { print \$2 }"
+    fi
+}
+
+mountdir=$(get_mount_dir)
+orphancg=${mountdir}/orphan
 
 if [[ $# -eq 0 ]]
 then
@@ -30,8 +41,8 @@ then
     mkdir ${orphancg}
     case ${subsystem} in 
 	cpuset)
-	    cat ${base_path}/${subsystem}/cpuset.cpus > ${orphancg}/cpuset.cpus
-	    cat ${base_path}/${subsystem}/cpuset.mems > ${orphancg}/cpuset.mems
+	    cat ${mountdir}/cpuset.cpus > ${orphancg}/cpuset.cpus
+	    cat ${mountdir}/cpuset.mems > ${orphancg}/cpuset.mems
 	    ;;
 	*)
 	    ;;
@@ -42,7 +53,7 @@ fi
 if [[ $# -eq 1 ]]
 then
 
-    rmcg=${base_path}/${subsystem}$@
+    rmcg=${mountdir}$@
 
     # try to extract the uid cgroup from the input one
     # ( extract /uid_% from /uid%/job_*...)
@@ -51,13 +62,13 @@ then
     then
 	# not a slurm job pattern, perhaps the uidcg, just remove 
 	# the dir with a lock and exit
-	flock -x ${base_path}/${subsystem} -c "rmdir ${rmcg}"
+	flock -x ${mountdir} -c "rmdir ${rmcg}"
 	exit $?
     fi
 
-    if [[ -d ${base_path}/${subsystem} ]]
+    if [[ -d ${mountdir} ]]
     then
-	flock -x ${base_path}/${subsystem} -c "$0 sync $@"
+	flock -x ${mountdir} -c "$0 sync $@"
     fi
 
     exit $?
@@ -68,7 +79,7 @@ elif [[ $# -eq 2 ]] && [[ $1 == "sync" ]]
 then
 
     shift
-    rmcg=${base_path}/${subsystem}$@
+    rmcg=${mountdir}$@
     uidcg=${rmcg%/job_*}
 
     # remove this cgroup
