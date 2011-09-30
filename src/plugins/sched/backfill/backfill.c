@@ -567,6 +567,7 @@ static int _attempt_backfill(void)
 		}
 		comp_time_limit = time_limit;
 		orig_time_limit = job_ptr->time_limit;
+		qos_ptr = job_ptr->qos_ptr;
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			time_limit = job_ptr->time_limit = 1;
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
@@ -634,15 +635,17 @@ static int _attempt_backfill(void)
 		bit_not(resv_bitmap);
 
 		if ((time(NULL) - sched_start) >= this_sched_timeout) {
+			uint32_t save_time_limit = job_ptr->time_limit;
+			job_ptr->time_limit = orig_time_limit;
 			debug("backfill: loop taking too long, yielding locks");
 			if (_yield_locks()) {
 				debug("backfill: system state changed, "
 				      "breaking out");
 				rc = 1;
 				break;
-			} else {
-				this_sched_timeout += sched_timeout;
 			}
+			job_ptr->time_limit = save_time_limit;
+			this_sched_timeout += sched_timeout;
 		}
 		/* this is the time consuming operation */
 		debug2("backfill: entering _try_sched for job %u.",
@@ -664,8 +667,11 @@ static int _attempt_backfill(void)
 		}
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
-			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)){
 				job_ptr->time_limit = orig_time_limit;
+				job_ptr->end_time = job_ptr->start_time +
+						    (orig_time_limit * 60);
+			}
 			else if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
 				/* Set time limit as high as possible */
 				job_ptr->time_limit = comp_time_limit;
@@ -724,7 +730,6 @@ static int _attempt_backfill(void)
 		/*
 		 * Add reservation to scheduling table if appropriate
 		 */
-		qos_ptr = job_ptr->qos_ptr;
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
 		bit_not(avail_bitmap);

@@ -914,12 +914,12 @@ any jobs submitted with this QOS that fall below the UsageThreshold
 will be held until their Fairshare Usage goes above the Threshold.
 .TP
 \fINoReserve\fP
-If set, and using backfill, jobs using this QOS will all be considered
-at the same level within this QOS meaning if a larger, higher priority
-job is unable to run a smaller job will run if possible even if the
-larger higher priority job will be delayed starting.
-NOTE: This could cause starvation on these larger jobs, but if that is
-ok, this flag most likely will increase utilization.
+If this flag is set and backfill scheduling is used, jobs using this QOS will
+not reserve resources in the backfill schedule's  map of resources allocated
+through time. This flag is intended for use with a QOS that may be preempted
+by jobs associated with all other QOS (e.g use with a "standby" QOS). If the
+allocated is used with a QOS which can not be preempted by all other QOS, it
+could result in starvation of larger jobs.
 .TP
 \fIPartitionMaxNodes\fP
 If set jobs using this QOS will be able to

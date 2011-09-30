@@ -2653,7 +2653,12 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 					    cpu_start_bit, cpu_end_bit,
 					    &topo_set, job_id, node_name,
 					    gres_context[i].gres_name);
-			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
+			if (tmp_cnt != NO_VAL) {
+				if (cpu_cnt == NO_VAL)
+					cpu_cnt = tmp_cnt;
+				else
+					cpu_cnt = MIN(tmp_cnt, cpu_cnt);
+			}
 			break;
 		}
 		if (cpu_cnt == 0)
@@ -4062,7 +4067,12 @@ extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 					     node_offset, ignore_alloc,
 					     gres_context[i].gres_name,
 					     job_id, step_id);
-			cpu_cnt = MIN(tmp_cnt, cpu_cnt);
+			if (tmp_cnt != NO_VAL) {
+				if (cpu_cnt == NO_VAL)
+					cpu_cnt = tmp_cnt;
+				else
+					cpu_cnt = MIN(tmp_cnt, cpu_cnt);
+			}
 			break;
 		}
 		if (cpu_cnt == 0)
