@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for accounting where your cluster isn't numbered in counting order
     (i.e. 1-9,0 instead of 0-9).  The bug would cause 'sacct -N nodename' to
     not give correct results on these systems.
+ -- Fix to GRES allocation logic when resources are associated with specific
+    CPUs on a node. Patch from Steve Trofinoff, CSCS.
 
 * Changes in SLURM 2.3.0-2
 ==========================
