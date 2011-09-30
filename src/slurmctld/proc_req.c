@@ -157,7 +157,7 @@ inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
-inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
 
 inline static void  _update_cred_key(void);
 
