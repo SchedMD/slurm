@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
     not give correct results on these systems.
  -- Fix to GRES allocation logic when resources are associated with specific
     CPUs on a node. Patch from Steve Trofinoff, CSCS.
+ -- Fix bugs in sched/backfill with respect to QOS reservation support and job
+    time limits. Patch from Alejandro Lucero Palau (Barcelona Supercomputer
+    Center).
 
 * Changes in SLURM 2.3.0-2
 ==========================
