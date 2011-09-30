@@ -391,10 +391,7 @@ extern int slurm_select_init(bool only_default)
 					    select_context[j].select_type))
 					break;
 			}
-			if (j < select_context_cnt) {
-				error("Duplicate plugin %s ignored",
-				      select_context[j].select_type);
-			} else {
+			if (j >= select_context_cnt) {
 				xrealloc(select_context,
 					 (sizeof(slurm_select_context_t) *
 					  (select_context_cnt + 1)));
