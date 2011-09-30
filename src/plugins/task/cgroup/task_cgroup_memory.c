@@ -54,6 +54,8 @@
 #define PATH_MAX 256
 #endif
 
+extern slurmd_conf_t *conf;
+
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];
 static char jobstep_cgroup_path[PATH_MAX];
@@ -67,6 +69,14 @@ static xcgroup_t step_memory_cg;
 static int allowed_ram_space;
 static int allowed_swap_space;
 
+static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes  */
+static uint64_t max_swap;       /* Upper bound for swap                   */
+static uint64_t totalram;       /* Total real memory available on node    */
+
+static uint64_t percent_in_bytes (uint64_t mb, uint32_t percent)
+{
+	return ((mb * 1024 * 1024) * (percent / 100.0));
+}
 
 extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
@@ -109,6 +119,13 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	allowed_ram_space = slurm_cgroup_conf->allowed_ram_space;
 	allowed_swap_space = slurm_cgroup_conf->allowed_swap_space;
+
+	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
+		error ("task/cgroup: Unable to get RealMemory size");
+
+	max_ram = percent_in_bytes(totalram, slurm_cgroup_conf->max_ram_percent);
+	max_swap = percent_in_bytes(totalram, slurm_cgroup_conf->max_swap_percent);
+	max_swap += max_ram;
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
@@ -176,8 +193,8 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
  */
 static uint64_t mem_limit_in_bytes (uint64_t mem)
 {
-	mem = mem * 1024 * 1024;
-	return (uint64_t) (mem * (allowed_ram_space / 100.0));
+	mem = percent_in_bytes (mem, allowed_ram_space);
+	return ((mem < max_ram) ? mem : max_ram);
 }
 
 /*
@@ -191,8 +208,8 @@ static uint64_t mem_limit_in_bytes (uint64_t mem)
  */
 static uint64_t swap_limit_in_bytes (uint64_t mem)
 {
-	mem = mem * 1024 * 1024;
-	return mem * ((allowed_ram_space + allowed_swap_space) / 100.0);
+	mem *= ((allowed_ram_space + allowed_swap_space)/100.0) * 1024 * 1024;
+	return ((mem < max_swap) ? mem : max_swap);
 }
 
 static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
