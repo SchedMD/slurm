@@ -63,15 +63,15 @@ typedef struct slurm_cgroup_conf {
 	bool      task_affinity;
 
 	bool      constrain_ram_space;
-	uint32_t  allowed_ram_space;
-	uint32_t  max_ram_percent;       /* Upper bound on memory as % of RAM*/
+	float     allowed_ram_space;
+	float     max_ram_percent;       /* Upper bound on memory as % of RAM*/
 
 	bool      constrain_swap_space;
-	uint32_t  allowed_swap_space;
-	uint32_t  max_swap_percent;      /* Upper bound on swap as % of RAM  */
+	float     allowed_swap_space;
+	float     max_swap_percent;      /* Upper bound on swap as % of RAM  */
 
 	bool      memlimit_enforcement;
-	uint32_t  memlimit_threshold;
+	float     memlimit_threshold;
 
 	bool      constrain_devices;
 	char *    allowed_devices_file;

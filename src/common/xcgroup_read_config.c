@@ -94,6 +94,34 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 }
 
 /*
+ *   Parse a floating point value in s and return in val
+ *    Return -1 on error and leave *val unchanged.
+ */
+static int str_to_float (char *s, float *val)
+{
+	float f;
+	char *p;
+
+	errno = 0;
+	f = strtof (s, &p);
+
+	if ((*p != '\0') || (errno != 0))
+		return (-1);
+
+	*val = f;
+	return (0);
+}
+
+static void conf_get_float (s_p_hashtbl_t *t, char *name, float *fp)
+{
+	char *str;
+	if (!s_p_get_string(&str, name, t))
+		return;
+	if (str_to_float (str, fp) < 0)
+		fatal ("cgroup.conf: Invalid value '%s' for %s", str, name);
+}
+
+/*
  * read_slurm_cgroup_conf - load the Slurm cgroup configuration from the
  *	cgroup.conf file.
  * RET SLURM_SUCCESS if no error, otherwise an error code
@@ -108,14 +136,14 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		{"ConstrainCores", S_P_BOOLEAN},
 		{"TaskAffinity", S_P_BOOLEAN},
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
-		{"AllowedRAMSpace", S_P_UINT32},
-		{"MaxRAMPercent", S_P_UINT32},
+		{"AllowedRAMSpace", S_P_STRING},
+		{"MaxRAMPercent", S_P_STRING},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
-		{"AllowedSwapSpace", S_P_UINT32},
-		{"MaxSwapPercent", S_P_UINT32},
+		{"AllowedSwapSpace", S_P_STRING},
+		{"MaxSwapPercent", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
-		{"MemoryLimitThreshold", S_P_UINT32},
+		{"MemoryLimitThreshold", S_P_STRING},
 		{"ConstrainDevices", S_P_BOOLEAN},
 		{"AllowedDevicesFile", S_P_STRING},
 		{NULL} };
@@ -173,33 +201,35 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_ram_space,
 				     "ConstrainRAMSpace", tbl))
 			slurm_cgroup_conf->constrain_ram_space = false;
-		if (!s_p_get_uint32(&slurm_cgroup_conf->allowed_ram_space,
-				    "AllowedRAMSpace", tbl))
-			slurm_cgroup_conf->allowed_ram_space = 100;
+
+		conf_get_float (tbl,
+				"AllowedRAMSpace",
+				&slurm_cgroup_conf->allowed_ram_space);
+
+		conf_get_float (tbl,
+				"MaxRAMPercent",
+				&slurm_cgroup_conf->max_ram_percent);
+
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_swap_space,
 				     "ConstrainSwapSpace", tbl))
 			slurm_cgroup_conf->constrain_swap_space = false;
-		if (!s_p_get_uint32(&slurm_cgroup_conf->allowed_swap_space,
-				    "AllowedSwapSpace", tbl))
-			slurm_cgroup_conf->allowed_swap_space = 0;
 
-		if (s_p_get_uint32(&slurm_cgroup_conf->max_ram_percent,
-				    "MaxRAMPercent", tbl)
-		   && (slurm_cgroup_conf->max_ram_percent > 100))
-			fatal ("%s: Invalid MaxRAMPercent\n", conf_path);
+		conf_get_float (tbl,
+				"AllowedSwapSpace",
+				&slurm_cgroup_conf->allowed_swap_space);
 
-		if (s_p_get_uint32(&slurm_cgroup_conf->max_swap_percent,
-				    "MaxSwapPercent", tbl)
-		   && (slurm_cgroup_conf->max_swap_percent > 100))
-			fatal ("%s: Invalid MaxSwapPercent\n", conf_path);
+		conf_get_float (tbl,
+				"MaxSwapPercent",
+				&slurm_cgroup_conf->max_swap_percent);
 
 		/* Memory limits */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->memlimit_enforcement,
 				     "MemoryLimitEnforcement", tbl))
 			slurm_cgroup_conf->memlimit_enforcement = false;
-		if (!s_p_get_uint32(&slurm_cgroup_conf->memlimit_threshold,
-				    "MemoryLimitThreshold", tbl))
-			slurm_cgroup_conf->memlimit_threshold = 0;
+
+		conf_get_float (tbl,
+				"MemoryLimitThreshold",
+				&slurm_cgroup_conf->memlimit_threshold);
 
 		/* Devices constraint related conf items */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_devices,

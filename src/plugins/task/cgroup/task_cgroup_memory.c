@@ -66,14 +66,14 @@ static xcgroup_t user_memory_cg;
 static xcgroup_t job_memory_cg;
 static xcgroup_t step_memory_cg;
 
-static int allowed_ram_space;
-static int allowed_swap_space;
+static float allowed_ram_space;   /* Allowed RAM in percent       */
+static float allowed_swap_space;  /* Allowed Swap percent         */
 
 static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes  */
 static uint64_t max_swap;       /* Upper bound for swap                   */
 static uint64_t totalram;       /* Total real memory available on node    */
 
-static uint64_t percent_in_bytes (uint64_t mb, uint32_t percent)
+static uint64_t percent_in_bytes (uint64_t mb, float percent)
 {
 	return ((mb * 1024 * 1024) * (percent / 100.0));
 }
