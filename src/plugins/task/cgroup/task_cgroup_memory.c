@@ -193,7 +193,15 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
  */
 static uint64_t mem_limit_in_bytes (uint64_t mem)
 {
-	mem = percent_in_bytes (mem, allowed_ram_space);
+	/* 
+	 *  If mem == 0 then assume there was no SLURM limit imposed
+	 *   on the amount of memory for job or step. Use the total
+	 *   amount of available RAM instead.
+	 */
+	if (mem == 0)
+		mem = totalram * 1024 * 1024;
+	else
+		mem = percent_in_bytes (mem, allowed_ram_space);
 	return ((mem < max_ram) ? mem : max_ram);
 }
 
@@ -203,12 +211,15 @@ static uint64_t mem_limit_in_bytes (uint64_t mem)
  *   Swap limit is calculated as:
  *
  *     mem_limit_in_bytes + (configured_swap_percent * allocated_mem_in_bytes)
- *       or equivalently:
- *     available_mem * ((configured_swap_percent + configured_mem_percent)/100)
  */
 static uint64_t swap_limit_in_bytes (uint64_t mem)
 {
-	mem *= ((allowed_ram_space + allowed_swap_space)/100.0) * 1024 * 1024;
+	uint64_t swap;
+	/*
+	 *  If mem == 0 assume "unlimited" and use totalram.
+	 */
+	swap = percent_in_bytes (mem ? mem : totalram, allowed_swap_space);
+	mem = mem_limit_in_bytes (mem) + swap;
 	return ((mem < max_swap) ? mem : max_swap);
 }
 
