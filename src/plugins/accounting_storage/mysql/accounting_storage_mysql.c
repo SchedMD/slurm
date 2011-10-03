@@ -260,9 +260,8 @@ static void _process_running_jobs_result(char *cluster_name,
 }
 
 /* this function is here to see if any of what we are trying to remove
- * has jobs that are or were once running.  So if we have jobs and the
- * object is less than a day old we don't want to delete it only set
- * the deleted flag.
+ * has jobs that are not completed.  If we have jobs and the object is less
+ * than a day old we don't want to delete it, only set the deleted flag.
  */
 static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 				      char *cluster_name,
@@ -295,11 +294,11 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			"where t1.lft between "
 			"t2.lft and t2.rgt && (%s) "
 			"and t0.id_assoc=t1.id_assoc "
-			"and t0.time_end=0 && t0.state=%d;",
+			"and t0.time_end=0 && t0.state<%d;",
 			object, cluster_name, job_table,
 			cluster_name, assoc_table,
 			cluster_name, assoc_table,
-			assoc_char, JOB_RUNNING);
+			assoc_char, JOB_COMPLETE);
 		xfree(object);
 	} else {
 		query = xstrdup_printf(
@@ -368,10 +367,10 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf("select %s "
 				       "from \"%s_%s\" as t1, \"%s_%s\" as t2 "
 				       "where (%s) and t1.id_assoc=t2.id_assoc "
-				       "and t1.time_end=0 && t1.state=%d;",
+				       "and t1.time_end=0 && t1.state<%d;",
 				       object, cluster_name, job_table,
 				       cluster_name, assoc_table,
-				       assoc_char, JOB_RUNNING);
+				       assoc_char, JOB_COMPLETE);
 		xfree(object);
 	} else {
 		query = xstrdup_printf(

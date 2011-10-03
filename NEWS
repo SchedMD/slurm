@@ -32,6 +32,9 @@ documents those changes that are of interest to users and admins.
     those values as strings rather than numeric values.
  -- Change default value of StateSaveLocation configuration parameter from
     /tmp to /var/spool.
+ -- Prevent associations from being delete if it has any jobs in running,
+    pending or suspended state. Previous code prevented this only for running
+    jobs.
 
 * Changes in SLURM 2.3.1
 ========================
