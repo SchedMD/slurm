@@ -262,8 +262,11 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	xcgroup_set_uint64_param (cg, "memory.limit_in_bytes", mlb);
 	xcgroup_set_uint64_param (cg, "memory.memsw.limit_in_bytes", mls);
 
-	debug("task/cgroup: %s: mem.limit=%"PRIu64"MB memsw.limit=%"PRIu64"MB",
-	      path, mlb/(1024*1024), mls/(1024*1024));
+	info ("task/cgroup: %s: alloc=%luMB mem.limit=%luMB memsw.limit=%luMB",
+		path,
+		(unsigned long) mem_limit,
+		(unsigned long) mlb/(1024*1024),
+		(unsigned long) mls/(1024*1024));
 
 	return 0;
 }
