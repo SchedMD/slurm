@@ -69,6 +69,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bugs in sched/backfill with respect to QOS reservation support and job
     time limits. Patch from Alejandro Lucero Palau (Barcelona Supercomputer
     Center).
+ -- BGQ - fix to set up corner correctly for sub block jobs.
 
 * Changes in SLURM 2.3.0-2
 ==========================
