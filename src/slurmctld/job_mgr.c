@@ -182,7 +182,6 @@ static void _reset_step_bitmaps(struct job_record *job_ptr);
 static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
-static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op);
@@ -1636,16 +1635,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				    &job_ptr->assoc_ptr) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 	    && (!IS_JOB_FINISHED(job_ptr))) {
-		info("Cancelling job %u with invalid association",
-		     job_id);
-		job_ptr->job_state = JOB_CANCELLED;
-		job_ptr->state_reason = FAIL_ACCOUNT;
+		info("Holding job %u with invalid association", job_id);
 		xfree(job_ptr->state_desc);
-		if (IS_JOB_PENDING(job_ptr))
-			job_ptr->start_time = now;
-		job_ptr->end_time = now;
-		job_completion_logger(job_ptr, false);
-		job_finished = 1;
+		job_ptr->state_reason = FAIL_ACCOUNT;
+		job_ptr->priority = 1;	/* Move to end of queue */
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
@@ -1668,21 +1661,17 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 	}
 
-	if (!job_finished && job_ptr->qos_id) {
+	if (!job_finished && job_ptr->qos_id &&
+	    job_ptr->state_reason != FAIL_ACCOUNT) {
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->assoc_ptr, false, &qos_rec, &qos_error);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set_qos) {
-			info("Cancelling job %u with invalid qos", job_id);
-			job_ptr->job_state = JOB_CANCELLED;
-			job_ptr->state_reason = FAIL_QOS;
+			info("Holding job %u with invalid qos", job_id);
 			xfree(job_ptr->state_desc);
-			if (IS_JOB_PENDING(job_ptr))
-				job_ptr->start_time = now;
-			job_ptr->end_time = now;
-			job_completion_logger(job_ptr, false);
-			job_finished = 1;
+			job_ptr->state_reason = FAIL_QOS;
+			job_ptr->priority = 1;	/* Move to end of queue */
 		}
 		job_ptr->qos_id = qos_rec.id;
 	}
@@ -2303,7 +2292,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 
 				info("requeue job %u due to failure of node %s",
 				     job_ptr->job_id, node_name);
-				_set_job_prio(job_ptr);
+				set_job_prio(job_ptr);
 				snprintf(requeue_msg, sizeof(requeue_msg),
 					 "Job requeued due to failure "
 					 "of node %s",
@@ -2937,7 +2926,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 * job is eligible.
 	 */
 	if (job_ptr->priority == NO_VAL)
-		_set_job_prio(job_ptr);
+		set_job_prio(job_ptr);
 
 	if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS)
 		independent = false;
@@ -5011,7 +5000,7 @@ void job_time_limit(void)
 			 * service, we pick them up here. There will be a small
 			 * delay in restting a job's priority, but the code is
 			 * a lot cleaner this way. */
-			_set_job_prio(job_ptr);
+			set_job_prio(job_ptr);
 		}
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
@@ -6426,11 +6415,10 @@ static void _set_job_id(struct job_record *job_ptr)
 
 
 /*
- * _set_job_prio - set a default job priority
+ * set_job_prio - set a default job priority
  * IN job_ptr - pointer to the job_record
- * NOTE: this is a simple prototype, we need to re-establish value on restart
  */
-static void _set_job_prio(struct job_record *job_ptr)
+extern void set_job_prio(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
@@ -6479,7 +6467,7 @@ extern void reset_job_priority(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->priority == 1) && (!IS_JOB_FINISHED(job_ptr))) {
-			_set_job_prio(job_ptr);
+			set_job_prio(job_ptr);
 			count++;
 		}
 	}
@@ -7369,7 +7357,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else if ((job_ptr->priority == 0) &&
 			   (job_ptr->state_reason == WAIT_HELD_USER)) {
 			job_ptr->direct_set_prio = 0;
-			_set_job_prio(job_ptr);
+			set_job_prio(job_ptr);
 			info("sched: update_job: releasing user hold "
 			     "for job_id %u", job_specs->job_id);
 			job_ptr->state_reason = WAIT_NO_REASON;
@@ -7380,7 +7368,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_ptr->details->nice = NICE_OFFSET;
 			if (job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
-				_set_job_prio(job_ptr);
+				set_job_prio(job_ptr);
 			} else {
 				job_ptr->direct_set_prio = 1;
 				job_ptr->priority = job_specs->priority;
@@ -7804,7 +7792,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			update_accounting = true;
 			if ((job_ptr->priority == 1) &&
 			    (detail_ptr->begin_time <= now))
-				_set_job_prio(job_ptr);
+				set_job_prio(job_ptr);
 			slurm_make_time_str(&detail_ptr->begin_time, time_str,
 					    sizeof(time_str));
 			info("sched: update_job: setting begin to %s for "
@@ -8080,7 +8068,7 @@ fini:
 	 * many factors of an update may affect priority considerations. */
 	if ((error_code == SLURM_SUCCESS) &&
 	    strcmp(slurmctld_conf.priority_type, "priority/basic"))
-		_set_job_prio(job_ptr);
+		set_job_prio(job_ptr);
 
 	return error_code;
 }
@@ -9508,12 +9496,12 @@ extern void update_job_nodes_completing(void)
 }
 
 /*
- * job_cancel_by_assoc_id - Cancel all pending and running jobs with a given
+ * job_hold_by_assoc_id - Hold all pending jobs with a given
  *	association ID. This happens when an association is deleted (e.g. when
  *	a user is removed from the association database).
- * RET count of cancelled jobs
+ * RET count of held jobs
  */
-extern int job_cancel_by_assoc_id(uint32_t assoc_id)
+extern int job_hold_by_assoc_id(uint32_t assoc_id)
 {
 	int cnt = 0;
 	ListIterator job_iterator;
@@ -9555,12 +9543,11 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		if(IS_JOB_FINISHED(job_ptr))
 			continue;
 
-		info("Association deleted, cancelling job %u",
+		info("Association deleted, holding job %u",
 		     job_ptr->job_id);
-		/* make sure the assoc_mgr_lock isn't locked before this. */
-		job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
-		job_ptr->state_reason = FAIL_ACCOUNT;
 		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = FAIL_ACCOUNT;
+		job_ptr->priority = 1;	/* Move to end of queue */
 		cnt++;
 	}
 	list_iterator_destroy(job_iterator);
@@ -9569,12 +9556,12 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 }
 
 /*
- * job_cancel_by_qos_id - Cancel all pending and running jobs with a given
+ * job_hold_by_qos_id - Hold all pending jobs with a given
  *	QOS ID. This happens when a QOS is deleted (e.g. when
  *	a QOS is removed from the association database).
- * RET count of cancelled jobs
+ * RET count of held jobs
  */
-extern int job_cancel_by_qos_id(uint32_t qos_id)
+extern int job_hold_by_qos_id(uint32_t qos_id)
 {
 	int cnt = 0;
 	ListIterator job_iterator;
@@ -9609,12 +9596,10 @@ extern int job_cancel_by_qos_id(uint32_t qos_id)
 		if(IS_JOB_FINISHED(job_ptr))
 			continue;
 
-		info("QOS deleted, cancelling job %u",
-		     job_ptr->job_id);
-		/* make sure the assoc_mgr_lock isn't locked before this. */
-		job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
-		job_ptr->state_reason = FAIL_QOS;
+		info("QOS deleted, holding job %u", job_ptr->job_id);
 		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = FAIL_QOS;
+		job_ptr->priority = 1;	/* Move to end of queue */
 		cnt++;
 	}
 	list_iterator_destroy(job_iterator);
@@ -9764,7 +9749,6 @@ extern int send_jobs_to_accounting(void)
 	struct job_record *job_ptr;
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	time_t now = time(NULL);
 
 	/* send jobs in pending or running state */
 	lock_slurmctld(job_write_lock);
@@ -9785,15 +9769,12 @@ extern int send_jobs_to_accounting(void)
 				   &job_ptr->assoc_ptr) &&
 			   (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			   && (!IS_JOB_FINISHED(job_ptr))) {
-				info("Cancelling job %u with "
+				info("Holding job %u with "
 				     "invalid association",
 				     job_ptr->job_id);
-				job_ptr->job_state = JOB_CANCELLED;
+				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_ACCOUNT;
-				if (IS_JOB_PENDING(job_ptr))
-					job_ptr->start_time = now;
-				job_ptr->end_time = now;
-				job_completion_logger(job_ptr, false);
+				job_ptr->priority = 1;	/* Move to end of queue */
 				continue;
 			} else
 				job_ptr->assoc_id = assoc_rec.id;

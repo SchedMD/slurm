@@ -465,6 +465,36 @@ extern int schedule(uint32_t job_limit)
 				job_ptr->priority = 1;
 				continue;
 		}
+		if (job_ptr->state_reason == FAIL_ACCOUNT) {
+			slurmdb_association_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			assoc_rec.acct      = job_ptr->account;
+			assoc_rec.partition = job_ptr->partition;
+			assoc_rec.uid       = job_ptr->user_id;
+	
+			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+						    accounting_enforce,
+						    (slurmdb_association_rec_t **)
+						    &job_ptr->assoc_ptr)) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->assoc_id = assoc_rec.id;
+			} else
+				continue;
+		}
+		if (job_ptr->qos_id) {
+			slurmdb_association_rec_t *assoc_ptr;
+			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+			if (assoc_ptr &&
+			    !bit_test(assoc_ptr->usage->valid_qos,
+				      job_ptr->qos_id)) {
+				info("sched: JobId=%u has invalid QOS",
+					job_ptr->job_id);
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = FAIL_QOS;
+				job_ptr->priority = 1;	/* Move to end of queue */
+				continue;
+			}
+		}
 		if (job_ptr->part_ptr != part_ptr) {
 			/* Cycle through partitions usable for this job */
 			job_ptr->part_ptr = part_ptr;
@@ -521,13 +551,9 @@ extern int schedule(uint32_t job_limit)
 			info("sched: JobId=%u has invalid account",
 			     job_ptr->job_id);
 			last_job_update = time(NULL);
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			job_completion_logger(job_ptr, false);
-			delete_job_details(job_ptr);
+			job_ptr->priority = 1;	/* Move to end of queue */
 			continue;
 		}
 
@@ -1623,7 +1649,6 @@ static void *_run_prolog(void *arg)
 		READ_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 	bitstr_t *node_bitmap = NULL;
 	static int last_job_requeue = 0;
-
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
 	argv[1] = NULL;

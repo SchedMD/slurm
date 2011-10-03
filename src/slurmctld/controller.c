@@ -1183,10 +1183,10 @@ static void _remove_assoc(slurmdb_association_rec_t *rec)
 {
 	int cnt = 0;
 
-	cnt = job_cancel_by_assoc_id(rec->id);
+	cnt = job_hold_by_assoc_id(rec->id);
 
 	if (cnt) {
-		info("Removed association id:%u user:%s, cancelled %u jobs",
+		info("Removed association id:%u user:%s, held %u jobs",
 		     rec->id, rec->user, cnt);
 	} else
 		debug("Removed association id:%u user:%s", rec->id, rec->user);
@@ -1196,10 +1196,10 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
 
-	cnt = job_cancel_by_qos_id(rec->id);
+	cnt = job_hold_by_qos_id(rec->id);
 
 	if (cnt) {
-		info("Removed QOS:%s cancelled %u jobs", rec->name, cnt);
+		info("Removed QOS:%s held %u jobs", rec->name, cnt);
 	} else
 		debug("Removed QOS:%s", rec->name);
 }

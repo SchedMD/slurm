@@ -937,20 +937,20 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		int allocate, uid_t submit_uid, struct job_record **job_pptr);
 
 /*
- * job_cancel_by_assoc_id - Cancel all pending and running jobs with a given
+ * job_hold_by_assoc_id - Hold all pending jobs with a given
  *	association ID. This happens when an association is deleted (e.g. when
  *	a user is removed from the association database).
- * RET count of cancelled jobs
+ * RET count of held jobs
  */
-extern int job_cancel_by_assoc_id(uint32_t assoc_id);
+extern int job_hold_by_assoc_id(uint32_t assoc_id);
 
 /*
- * job_cancel_by_qos_id - Cancel all pending and running jobs with a given
+ * job_hold_by_qos_id - Hold all pending jobs with a given
  *	QOS ID. This happens when a QOS is deleted (e.g. when
  *	a QOS is removed from the association database).
- * RET count of cancelled jobs
+ * RET count of held jobs
  */
-extern int job_cancel_by_qos_id(uint32_t qos_id);
+extern int job_hold_by_qos_id(uint32_t qos_id);
 
 /* Perform checkpoint operation on a job */
 extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
@@ -1536,6 +1536,12 @@ extern int send_jobs_to_accounting();
  * first registration
  */
 extern int send_nodes_to_accounting(time_t event_time);
+
+/*
+ * set_job_prio - set a default job priority
+ * IN job_ptr - pointer to the job_record
+ */
+extern void set_job_prio(struct job_record *job_ptr);
 
 /*
  * set_node_down - make the specified node's state DOWN if possible

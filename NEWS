@@ -35,6 +35,10 @@ documents those changes that are of interest to users and admins.
  -- Prevent associations from being delete if it has any jobs in running,
     pending or suspended state. Previous code prevented this only for running
     jobs.
+ -- If a job can not run due to QOS or association limits, then do not cancel
+    the job, but leave it pending in a system held state (priority = 1). The
+    job will run when its limits or the QOS/association limits change. Based
+    upon a patch by Phil Ekcert (LLNL).
  -- BGQ - Added logic to keep track of cnodes in an error state inside of a
     booted block.
 
