@@ -662,7 +662,7 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 static void *_poll(void *no_data)
 {
 	event_handler_t event_hand;
-	time_t last_ran = 0;
+	static time_t last_ran = 0;
 	time_t curr_time;
 
 	while (bridge_status_inited) {
@@ -674,7 +674,8 @@ static void *_poll(void *no_data)
 		}
 		//debug("polling taking over, realtime is dead");
 		curr_time = time(NULL);
-		_do_block_poll();
+		if (blocks_are_created)
+			_do_block_poll();
 		/* only do every 30 seconds */
 		if ((curr_time - 30) >= last_ran) {
 			ComputeHardware::ConstPtr bgqsys = getComputeHardware();
@@ -684,6 +685,10 @@ static void *_poll(void *no_data)
 		}
 
 		slurm_mutex_unlock(&rt_mutex);
+		/* This means we are doing outside of the thread so
+		   break */
+		if (!blocks_are_created)
+			break;
 		sleep(1);
 	}
 	return NULL;
@@ -703,6 +708,9 @@ extern int bridge_status_init(void)
 
 	if (!kill_job_list)
 		kill_job_list = bg_status_create_kill_job_list();
+
+	/* get initial state */
+	_poll(NULL);
 
 	rt_client_ptr = new(bgsched::realtime::Client);
 
