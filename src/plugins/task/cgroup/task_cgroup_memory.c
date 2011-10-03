@@ -129,6 +129,17 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	max_swap += max_ram;
 	min_ram_space = slurm_cgroup_conf->min_ram_space * 1024 * 1024;
 
+	debug ("task/cgroup/memory: total:%luM allowed:%.4g%%, swap:%.4g%%, "
+	      "max:%.4g%%(%luM) max+swap:%.4g%%(%luM) min:%uM",
+	      (unsigned long) totalram,
+	      allowed_ram_space,
+	      allowed_swap_space,
+	      slurm_cgroup_conf->max_ram_percent,
+	      (unsigned long) (max_ram/(1024*1024)),
+	      slurm_cgroup_conf->max_swap_percent,
+	      (unsigned long) (max_swap/(1024*1024)),
+	      (unsigned) slurm_cgroup_conf->min_ram_space);
+
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
          *  or it would be destroyed if the application use
