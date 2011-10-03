@@ -91,9 +91,4 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr);
  */
 extern int acct_policy_update_pending_job(struct job_record *job_ptr);
 
-extern bool acct_policy_node_usable(struct job_record *job_ptr,
-				    uint32_t used_cpus,
-				    char *node_name, uint32_t node_cpus);
-
-
 #endif /* !_HAVE_ACCT_POLICY_H */
