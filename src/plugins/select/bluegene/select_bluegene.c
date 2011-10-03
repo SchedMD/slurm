@@ -1756,7 +1756,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			fatal("bit_copy malloc failure");
 		bit_set(bg_record->mp_used_bitmap, ba_mp->index);
 		bit_set(picked_mps, ba_mp->index);
-		for (dim = 0; dim < jobinfo->dim_cnt; dim++) {
+		for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
 			/* The IBM software works off a relative
 			   position in the block instead of the
 			   absolute position used in SLURM.
