@@ -333,6 +333,10 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 				 uint16_t protocol_version);
 static int _unpack_block_info(block_info_t **block_info, Buf buffer,
 			      uint16_t protocol_version);
+static void _pack_block_fail_cnode(block_fail_cnode_t *msg, Buf buffer,
+				   uint16_t protocol_version);
+static int _unpack_block_fail_cnode(block_fail_cnode_t **msg, Buf buffer,
+				    uint16_t protocol_version);
 
 static void _pack_job_step_info_req_msg(job_step_info_request_msg_t * msg,
 					Buf buffer,
@@ -823,6 +827,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_UPDATE_BLOCK:
 		_pack_block_info_msg((block_info_t *)msg->data, buffer,
 				     msg->protocol_version);
+		break;
+	case REQUEST_FAIL_CNODE:
+		_pack_block_fail_cnode((block_fail_cnode_t *)msg->data, buffer,
+				       msg->protocol_version);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		_pack_reattach_tasks_request_msg(
@@ -1330,6 +1338,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_UPDATE_BLOCK:
 		rc = _unpack_block_info(
 			(block_info_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_FAIL_CNODE:
+		rc = _unpack_block_fail_cnode(
+			(block_fail_cnode_t **)&(msg->data), buffer,
 			msg->protocol_version);
 		break;
 	case RESPONSE_RESERVATION_INFO:
@@ -8824,6 +8837,38 @@ static int _unpack_block_info(block_info_t **block_info, Buf buffer,
 	else
 		*block_info = bg_rec;
 	return rc;
+}
+
+static void _pack_block_fail_cnode(block_fail_cnode_t *msg, Buf buffer,
+				   uint16_t protocol_version)
+{
+	packstr(msg->bg_block_id, buffer);
+	packstr(msg->cnodes, buffer);
+	pack32(msg->job_id, buffer);
+	pack16(msg->relative, buffer);
+	pack32(msg->step_id, buffer);
+}
+
+static int _unpack_block_fail_cnode(block_fail_cnode_t **msg, Buf buffer,
+				    uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	block_fail_cnode_t *block_fail_cnode =
+		xmalloc(sizeof(block_fail_cnode_t));
+	*msg = block_fail_cnode;
+
+	safe_unpackstr_xmalloc(&block_fail_cnode->bg_block_id,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&block_fail_cnode->cnodes, &uint32_tmp, buffer);
+	safe_unpack32(&block_fail_cnode->job_id, buffer);
+	safe_unpack16(&block_fail_cnode->relative, buffer);
+	safe_unpack32(&block_fail_cnode->step_id, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_block_fail_cnode(block_fail_cnode);
+	*msg = NULL;
+	return SLURM_ERROR;
 }
 
 static void

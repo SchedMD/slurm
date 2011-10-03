@@ -102,6 +102,14 @@ extern int other_update_block(update_block_msg_t *block_desc_ptr);
 extern int other_update_sub_node(update_block_msg_t *block_desc_ptr);
 
 /*
+ * Fail certain cnodes in a blocks midplane (usually comes from the
+ *        IBM runjob mux)
+ * IN block_fail_cnode - list of information about the cnodes needing
+ *        to be failed
+ */
+extern int other_fail_cnode (block_fail_cnode_t *block_fail_cnode);
+
+/*
  * Get select data from a plugin
  * IN node_pts  - current node record
  * IN dinfo   - type of data to get from the node record

@@ -1547,7 +1547,7 @@ typedef struct {
 				   absolute */
 	uint32_t step_id;       /* stepid of job that was involved in
 				 * the failing */
-} block_cnode_fail_t;
+} block_fail_cnode_t;
 
 typedef struct {
 	char *cnodes;           /* used for sub-block jobs */
@@ -1659,6 +1659,7 @@ extern int slurm_update_block PARAMS((update_block_msg_t *block_msg));
 
 void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 
+extern int slurm_fail_cnode PARAMS((block_fail_cnode_t *block_fail_cnode));
 
 /*********************************/
 
