@@ -88,7 +88,7 @@ SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
   core files?</a></li>
 <li><a href="#limit_propagation">Is resource limit propagation
   useful on a homogeneous cluster?</a></li>
-<li<a href="#clock">Do I need to maintain synchronized clocks
+<li><a href="#clock">Do I need to maintain synchronized clocks
   on the cluster?</a></li>
 <li><a href="#cred_invalid">Why are &quot;Invalid job credential&quot; errors
   generated?</a></li>
@@ -1394,7 +1394,7 @@ address instead of the correct address and make it so the
 communication doesn't work.  Solution is to either remove this line or
 set a different nodeaddr that is known by your other nodes.</p>
 
-<p><a name="stop_sched"><b>38. How can I stop SLURM from scheduling jobs?</b></a></br>
+<p><a name="stop_sched"><b>39. How can I stop SLURM from scheduling jobs?</b></a></br>
 You can stop SLURM from scheduling jobs on a per partition basis by setting
 that partition's state to DOWN. Set its state UP to resume scheduling.
 For example:
@@ -1403,7 +1403,7 @@ $ scontrol update PartitionName=foo State=DOWN
 $ scontrol update PartitionName=bar State=UP
 </pre></p>
 
-<p><a name="scontrol_multi_jobs"><b>39. Can I update multiple jobs with a
+<p><a name="scontrol_multi_jobs"><b>40. Can I update multiple jobs with a
 single <i>scontrol</i> command?</b></a></br>
 No, but you can probably use <i>squeue</i> to build the script taking
 advantage of its filtering and formatting options. For example:
@@ -1411,7 +1411,7 @@ advantage of its filtering and formatting options. For example:
 $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
 </pre></p>
 
-<p><a name="amazon_ec2"><b>40. Can SLURM be used to run jobs on 
+<p><a name="amazon_ec2"><b>41. Can SLURM be used to run jobs on 
 Amazon's EC2?</b></a></br>
 <p>Yes, here is a description of use SLURM use with 
 <a href="http://aws.amazon.com/ec2/">Amazon's EC2</a> courtesy of 
@@ -1435,7 +1435,7 @@ which I then copy over the /usr/local on the first instance and NFS export to
 all other instances.  This way I have persistent home directories and a very
 simple first-login script that configures the virtual cluster for me.</p>
 
-<p><a name="core_dump"><b>41. If a SLURM daemon core dumps, where can I find the
+<p><a name="core_dump"><b>42. If a SLURM daemon core dumps, where can I find the
 core file?</b></a></br>
 <p>For <i>slurmctld</i> the core file will be in the same directory as its
 log files (<i>SlurmctldLogFile</i>) iif configured using an fully qualified
@@ -1451,7 +1451,7 @@ Otherwise it will be found in directory used for saving state
 occurs. It will either be in spawned job's working directory on the same 
 location as that described above for the <i>slurmd</i> daemon.</p>
 
-<p><a name="totalview"><b>42. How can TotalView be configured to operate with
+<p><a name="totalview"><b>43. How can TotalView be configured to operate with
 SLURM?</b></a></br>
 <p>The following lines should also be added to the global <i>.tvdrc</i> file
 for TotalView to operate with SLURM:
@@ -1469,6 +1469,6 @@ dset TV::parallel_configs {
 </pre></p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 August 2011</p>
+<p style="text-align:center;">Last modified 4 September 2011</p>
 
 <!--#include virtual="footer.txt"-->
