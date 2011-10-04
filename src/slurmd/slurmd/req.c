@@ -316,7 +316,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_REBOOT_NODES:
 		_rpc_reboot(msg);
-		/* No body to free */
+		slurm_free_reboot_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */

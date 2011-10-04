@@ -275,6 +275,11 @@ static int _unpack_launch_tasks_response_msg(
 	launch_tasks_response_msg_t **msg_ptr, Buf buffer,
 	uint16_t protocol_version);
 
+static void _pack_reboot_msg(reboot_msg_t * msg, Buf buffer,
+			     uint16_t protocol_version);
+static int _unpack_reboot_msg(reboot_msg_t ** msg_ptr, Buf buffer,
+			      uint16_t protocol_version);
+
 static void _pack_shutdown_msg(shutdown_msg_t * msg, Buf buffer,
 			       uint16_t protocol_version);
 static int _unpack_shutdown_msg(shutdown_msg_t ** msg_ptr, Buf buffer,
@@ -759,8 +764,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
-	case REQUEST_REBOOT_NODES:
 		/* Message contains no body/information */
+		break;
+	case REQUEST_REBOOT_NODES:
+		_pack_reboot_msg((reboot_msg_t *)msg->data, buffer,
+				 msg->protocol_version);
 		break;
 	case REQUEST_SHUTDOWN:
 		_pack_shutdown_msg((shutdown_msg_t *) msg->data, buffer,
@@ -1271,8 +1279,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
-	case REQUEST_REBOOT_NODES:
 		/* Message contains no body/information */
+		break;
+	case REQUEST_REBOOT_NODES:
+		rc = _unpack_reboot_msg((reboot_msg_t **) msg->data, buffer,
+					msg->protocol_version);
 		break;
 	case REQUEST_SHUTDOWN:
 		rc = _unpack_shutdown_msg((shutdown_msg_t **) & (msg->data),
@@ -7967,6 +7978,35 @@ _unpack_checkpoint_tasks_msg(checkpoint_tasks_msg_t ** msg_ptr, Buf buffer,
 
 unpack_error:
 	slurm_free_checkpoint_tasks_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_reboot_msg(reboot_msg_t * msg, Buf buffer,
+		 uint16_t protocol_version)
+{
+	if (msg->node_list)
+		packstr(msg->node_list, buffer);
+	else
+		packnull(buffer);
+}
+
+static int
+_unpack_reboot_msg(reboot_msg_t ** msg_ptr, Buf buffer,
+		   uint16_t protocol_version)
+ {
+	reboot_msg_t *msg;
+	uint32_t uint32_tmp;
+
+	msg = xmalloc(sizeof(reboot_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_reboot_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

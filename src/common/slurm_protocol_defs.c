@@ -281,6 +281,14 @@ extern void slurm_free_last_update_msg(last_update_msg_t * msg)
 	xfree(msg);
 }
 
+extern void slurm_free_reboot_msg(reboot_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->node_list);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_shutdown_msg(shutdown_msg_t * msg)
 {
 	xfree(msg);
@@ -2538,8 +2546,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
-	case REQUEST_REBOOT_NODES:
 		/* No body to free */
+		break;
+	case REQUEST_REBOOT_NODES:
+		slurm_free_reboot_msg(data);
 		break;
 	case ACCOUNTING_UPDATE_MSG:
 		slurm_free_accounting_update_msg(data);

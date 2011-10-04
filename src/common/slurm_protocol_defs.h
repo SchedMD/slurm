@@ -557,6 +557,10 @@ typedef struct epilog_complete_msg {
 	switch_node_info_t *switch_nodeinfo;
 } epilog_complete_msg_t;
 
+typedef struct reboot_msg {
+	char *node_list;
+} reboot_msg_t;
+
 typedef struct shutdown_msg {
 	uint16_t options;
 } shutdown_msg_t;
@@ -987,6 +991,8 @@ extern void slurm_free_priority_factors_response_msg(
 
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)
+
+extern void slurm_free_reboot_msg(reboot_msg_t * msg);
 
 extern void slurm_free_shutdown_msg(shutdown_msg_t * msg);
 

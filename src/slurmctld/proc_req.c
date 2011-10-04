@@ -422,7 +422,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case ACCOUNTING_REGISTER_CTLD:
 		_slurm_rpc_accounting_register_ctld(msg);
-		/* No body to free */
+		slurm_free_reboot_msg(msg->data);
 		break;
 	case REQUEST_TOPO_INFO:
 		_slurm_rpc_get_topo(msg);
@@ -4092,6 +4092,9 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 #ifndef HAVE_FRONT_END
 	int i;
 	struct node_record *node_ptr;
+	reboot_msg_t *reboot_msg = (reboot_msg_t *)msg->data;
+	char *nodelist = NULL;
+	bitstr_t *bitmap = NULL;
 	/* Locks: write node lock */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
@@ -4109,9 +4112,19 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	rc = ESLURM_NOT_SUPPORTED;
 #else
 	/* do RPC call */
+	if (reboot_msg)
+		nodelist = reboot_msg->node_list;
+	if (!nodelist || node_name2bitmap(nodelist, false, &bitmap) != 0) {
+		FREE_NULL_BITMAP(bitmap);
+		error("Invalid node list in REBOOT_NODES request");
+		slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
+		return;
+	}
 	lock_slurmctld(node_write_lock);
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
+		if (bit_test(bitmap, i) == 0)
+			continue;
 		if (IS_NODE_MAINT(node_ptr)) /* already on maintenance */
 			continue;
 		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_DOWN(node_ptr))
@@ -4120,6 +4133,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		want_nodes_reboot = true;
 	}
 	unlock_slurmctld(node_write_lock);
+	FREE_NULL_BITMAP(bitmap);
 	rc = SLURM_SUCCESS;
 #endif
 	END_TIMER2("_slurm_rpc_reboot_nodes");

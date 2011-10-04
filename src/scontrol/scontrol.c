@@ -547,16 +547,19 @@ _print_aliases (char* node_hostname)
  * _reboot_nodes - issue RPC to have computing nodes reboot when idle
  * RET 0 or a slurm error code
  */
-static int _reboot_nodes(void)
+static int _reboot_nodes(char *node_list)
 {
 	int rc;
-	slurm_msg_t req;
+	slurm_msg_t msg;
+	reboot_msg_t req;
 
-	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&msg);
 
-	req.msg_type = REQUEST_REBOOT_NODES;
+	req.node_list = node_list;
+	msg.msg_type = REQUEST_REBOOT_NODES;
+	msg.data = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
 		return SLURM_ERROR;
 
 	if (rc)
@@ -758,13 +761,18 @@ _process_command (int argc, char *argv[])
 		exit_flag = 1;
 	}
 	else if (strncasecmp (tag, "reboot_nodes", MAX(tag_len, 3)) == 0) {
-		if (argc > 1) {
+		if (argc > 2) {
 			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n",
 				 tag);
-		}
-		error_code = _reboot_nodes();
+		} else if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too few arguments for keyword:%s\n",
+				 tag);
+		} else
+			error_code = _reboot_nodes(argv[1]);
 		if (error_code) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1737,7 +1745,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     reboot_nodes             reboot the nodes when they become idle       \n\
+     reboot_nodes <nodelist>  reboot the nodes when they become idle       \n\
      reconfigure              re-read configuration files.                 \n\
      release <job_id>         permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\
