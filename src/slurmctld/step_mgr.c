@@ -1678,6 +1678,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t orig_cpu_count;
 	List step_gres_list = (List) NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
+#ifdef HAVE_CRAY
+	uint32_t resv_id = 0;
+#endif
 #if defined HAVE_BG
 	static uint16_t cpus_per_mp = (uint16_t)NO_VAL;
 #else
@@ -1741,6 +1744,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	if (job_ptr->next_step_id >= slurmctld_conf.max_step_cnt)
 		return ESLURM_STEP_LIMIT;
+
+#ifdef HAVE_CRAY
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID, &resv_id);
+#endif
 
 #if defined HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -1836,7 +1844,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* make sure this exists since we need it so we don't core on
 	 * a xassert */
 	select_jobinfo = select_g_select_jobinfo_alloc();
-
 	nodeset = _pick_step_nodes(job_ptr, step_specs, step_gres_list,
 				   cpus_per_task, node_count, select_jobinfo,
 				   &ret_code);
@@ -1846,6 +1853,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 		select_g_select_jobinfo_free(select_jobinfo);
 		return ret_code;
 	}
+#ifdef HAVE_CRAY
+	select_g_select_jobinfo_set(select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID, &resv_id);
+#endif
 #ifdef HAVE_BGQ
 	/* Things might of changed here since sometimes users ask for
 	   the wrong size in cnodes to make a block.
