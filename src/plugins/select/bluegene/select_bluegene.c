@@ -2475,6 +2475,9 @@ extern int select_p_fail_cnode(block_fail_cnode_t *block_fail_cnode)
 {
 #ifndef HAVE_BG_L_P
 	char *cnodes;
+	bg_record_t *bg_record;
+
+	xassert(block_fail_cnode);
 
 	if (!block_fail_cnode->bg_block_id) {
 		error("Trying to fail cnodes without a block id");
@@ -2494,7 +2497,6 @@ extern int select_p_fail_cnode(block_fail_cnode_t *block_fail_cnode)
 	else
 		cnodes = block_fail_cnode->cnodes;
 	/* FIXME: This needs to be flushed out on a Q */
-	xassert(block_fail_cnode);
 	error("on block %s cnodes %s aren't available anymore from job %u.%u",
 	      block_fail_cnode->bg_block_id, cnodes,
 	      block_fail_cnode->job_id, block_fail_cnode->step_id);
