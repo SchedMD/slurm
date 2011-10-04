@@ -314,7 +314,6 @@ extern int bridge_init(char *properties_file)
 		properties_file = (char *)"";
 	bgsched::init(properties_file);
 #endif
-	bridge_status_init();
 	initialized = true;
 
 	return 1;
@@ -365,6 +364,8 @@ extern int bridge_setup_system()
 					_setup_ba_mp(
 						bgq, &ba_main_grid[a][x][y][z]);
 #endif
+
+	bridge_status_init();
 
 	return SLURM_SUCCESS;
 }
