@@ -174,7 +174,7 @@ hv_to_update_reservation_msg(HV *hv, resv_desc_msg_t *resv_msg)
 	FETCH_FIELD(hv, resv_msg, flags, uint16_t, FALSE);
 	FETCH_FIELD(hv, resv_msg, licenses, charp, FALSE);
 	FETCH_FIELD(hv, resv_msg, name, charp, FALSE);
-	FETCH_FIELD(hv, resv_msg, node_cnt, uint32_t, FALSE);
+	FETCH_PTR_FIELD(hv, resv_msg, node_cnt, "SLURM::uint32_t", FALSE);
 	FETCH_FIELD(hv, resv_msg, node_list, charp, FALSE);
 	FETCH_FIELD(hv, resv_msg, partition, charp, FALSE);
 	FETCH_FIELD(hv, resv_msg, start_time, time_t, FALSE);
