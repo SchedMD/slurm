@@ -443,9 +443,9 @@ if ($have_job == 0) {
 	$command .= " -d $cpus_per_task"			if $cpus_per_task;
 	# Resource sharing largely controlled by SLURM configuration,
 	# so this is an imperfect mapping of options
-	if $share {
+	if ($share) {
 		$command .= " -F share";
-	} elsif $exclusive {
+	} elsif ($exclusive) {
 		$command .= " -F exclusive";
 	}
 	$nid_list = get_nids($nodelist)				if $nodelist;
