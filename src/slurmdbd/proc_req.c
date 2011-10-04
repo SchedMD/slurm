@@ -1150,21 +1150,56 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
+static int _unpack_config_name(char **object, Buf buffer)
+{
+	char *config_name;
+	uint32_t uint32_tmp;
+
+	safe_unpackstr_xmalloc(&config_name, &uint32_tmp, buffer);
+	*object = config_name;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
+	char *config_name = NULL;
 	dbd_list_msg_t list_msg = { NULL };
 
 	debug2("DBD_GET_CONFIG: called");
-	/* No message body to unpack */
+	if (slurmdbd_conn->rpc_version >= 10 &&
+	    _unpack_config_name(&config_name, in_buffer) != SLURM_SUCCESS) {
+		char *comment = "Failed to unpack DBD_GET_CONFIG message";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      SLURM_ERROR, comment,
+					      DBD_GET_CONFIG);
+		return SLURM_ERROR;
+	}
 
-	list_msg.my_list = dump_config();
+	if (config_name == NULL ||
+	    strcmp(config_name, "slurmdbd.conf") == 0)
+		list_msg.my_list = dump_config();
+	else if ((list_msg.my_list = acct_storage_g_get_config(
+			slurmdbd_conn->db_conn, config_name)) == NULL) {
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      errno, slurm_strerror(errno),
+					      DBD_GET_CONFIG);
+		xfree(config_name);
+		return SLURM_ERROR;
+	}
+
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_CONFIG, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_CONFIG, *out_buffer);
 	if (list_msg.my_list)
 		list_destroy(list_msg.my_list);
+	xfree(config_name);
 
 	return SLURM_SUCCESS;
 }

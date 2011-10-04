@@ -327,7 +327,7 @@ extern List acct_storage_g_get_clusters(
  * RET: List of config_key_pairs_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_config(void *db_conn);
+extern List acct_storage_g_get_config(void *db_conn, char *config_name);
 
 /*
  * get info from the storage

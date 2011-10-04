@@ -2499,7 +2499,7 @@ end_it:
 	return ret_list;
 }
 
-extern List acct_storage_p_get_config(void *db_conn)
+extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 {
 	return NULL;
 }

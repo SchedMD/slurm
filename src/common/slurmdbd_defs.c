@@ -620,7 +620,8 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 			buffer);
 		break;
 	case DBD_GET_CONFIG:
-		/* No message to pack */
+		if (rpc_version >= 10)
+			packstr((char *)req->data, buffer);
 		break;
 	case DBD_GET_JOBS:
 		/* Defunct RPC */

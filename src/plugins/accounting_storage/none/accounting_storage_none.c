@@ -275,7 +275,7 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_get_config(void *db_conn)
+extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 {
 	return NULL;
 }

@@ -55,7 +55,7 @@
  */
 extern List slurmdb_config_get(void *db_conn)
 {
-	return acct_storage_g_get_config(db_conn);
+	return acct_storage_g_get_config(db_conn, "slurmdbd.conf");
 }
 
 /*

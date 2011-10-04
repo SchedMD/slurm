@@ -1393,7 +1393,7 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_config(void *db_conn)
+extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_list_msg_t *got_msg;
@@ -1401,7 +1401,7 @@ extern List acct_storage_p_get_config(void *db_conn)
 	List ret_list = NULL;
 
 	req.msg_type = DBD_GET_CONFIG;
-	req.data = NULL;
+	req.data = config_name;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)

@@ -122,7 +122,7 @@ extern List acct_storage_p_get_accts(pgsql_conn_t *pg_conn, uid_t uid,
 				     slurmdb_account_cond_t *acct_cond);
 extern List acct_storage_p_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
 					slurmdb_cluster_cond_t *cluster_cond);
-extern List acct_storage_p_get_config(pgsql_conn_t *pg_conn);
+extern List acct_storage_p_get_config(pgsql_conn_t *pg_conn, char *config_name);
 extern List acct_storage_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
 					    slurmdb_association_cond_t *assoc_cond);
 extern List acct_storage_p_get_problems(pgsql_conn_t *pg_conn, uid_t uid,

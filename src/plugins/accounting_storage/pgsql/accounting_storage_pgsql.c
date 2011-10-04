@@ -498,7 +498,7 @@ extern List acct_storage_p_get_clusters(pgsql_conn_t *pg_conn, uid_t uid,
 	return as_pg_get_clusters(pg_conn, uid, cluster_cond);
 }
 
-extern List acct_storage_p_get_config(pgsql_conn_t *pg_conn)
+extern List acct_storage_p_get_config(pgsql_conn_t *pg_conn, char *config_name)
 {
 	return NULL;
 }
