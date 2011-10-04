@@ -232,9 +232,10 @@ Print no warning or informational messages, only fatal error messages.
 Terminate the execution of scontrol.
 
 .TP
-\fBreboot_nodes\fP
+\fBreboot_nodes\fP [\fINodeList\fP]
 Reboot all nodes in the system when they become idle using the
 \fBRebootProgram\fP as configured in SLURM's slurm.conf file.
+Accepts an option list of nodes to reboot. By default all nodes are rebooted.
 
 .TP
 \fBreconfigure\fP

@@ -1282,8 +1282,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		/* Message contains no body/information */
 		break;
 	case REQUEST_REBOOT_NODES:
-		rc = _unpack_reboot_msg((reboot_msg_t **) msg->data, buffer,
-					msg->protocol_version);
+		rc = _unpack_reboot_msg((reboot_msg_t **) & (msg->data),
+					buffer, msg->protocol_version);
 		break;
 	case REQUEST_SHUTDOWN:
 		rc = _unpack_shutdown_msg((shutdown_msg_t **) & (msg->data),
@@ -7986,7 +7986,7 @@ static void
 _pack_reboot_msg(reboot_msg_t * msg, Buf buffer,
 		 uint16_t protocol_version)
 {
-	if (msg->node_list)
+	if (msg && msg->node_list)
 		packstr(msg->node_list, buffer);
 	else
 		packnull(buffer);

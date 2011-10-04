@@ -767,10 +767,7 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n",
 				 tag);
 		} else if (argc < 2) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "too few arguments for keyword:%s\n",
-				 tag);
+			error_code = _reboot_nodes("ALL");
 		} else
 			error_code = _reboot_nodes(argv[1]);
 		if (error_code) {
@@ -1745,7 +1742,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     reboot_nodes <nodelist>  reboot the nodes when they become idle       \n\
+     reboot_nodes [<nodelist>]  reboot the nodes when they become idle.    \n\
+                              By default all nodes are rebooted.           \n\
      reconfigure              re-read configuration files.                 \n\
      release <job_id>         permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\

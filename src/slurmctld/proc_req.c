@@ -4114,12 +4114,18 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	/* do RPC call */
 	if (reboot_msg)
 		nodelist = reboot_msg->node_list;
-	if (!nodelist || node_name2bitmap(nodelist, false, &bitmap) != 0) {
+	if (!nodelist || !strcasecmp(nodelist, "ALL")) {
+		bitmap = bit_alloc(node_record_count);
+		if (!bitmap)
+			fatal("malloc failure");
+		bit_nset(bitmap, 0, (node_record_count - 1));
+	} else if (node_name2bitmap(nodelist, false, &bitmap) != 0) {
 		FREE_NULL_BITMAP(bitmap);
 		error("Invalid node list in REBOOT_NODES request");
 		slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
 		return;
 	}
+
 	lock_slurmctld(node_write_lock);
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
