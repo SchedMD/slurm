@@ -69,16 +69,34 @@ static bool initialized = false;
 
 #ifdef HAVE_BG_FILES
 
-static void _setup_ba_mp(ComputeHardware::ConstPtr bgq, ba_mp_t *ba_mp)
+static void _setup_ba_mp(int level, uint16_t *coords,
+			 ComputeHardware::ConstPtr bgqsys)
 {
-	// int i;
-	Coordinates::Coordinates coords(ba_mp->coord[A], ba_mp->coord[X],
-					ba_mp->coord[Y], ba_mp->coord[Z]);
+	ba_mp_t *ba_mp;
 	Midplane::ConstPtr mp_ptr;
 	int i;
 
+	if (level > SYSTEM_DIMENSIONS)
+		return;
+
+	if (level < SYSTEM_DIMENSIONS) {
+		for (coords[level] = 0;
+		     coords[level] < DIM_SIZE[level];
+		     coords[level]++) {
+			/* handle the outter dims here */
+			_setup_ba_mp(level+1, coords, bgqsys);
+		}
+		return;
+	}
+
+	if (!(ba_mp = coord2ba_mp(coords)))
+		return;
+
 	try {
-		mp_ptr = bgq->getMidplane(coords);
+		Coordinates::Coordinates coords(
+			ba_mp->coord[A], ba_mp->coord[X],
+			ba_mp->coord[Y], ba_mp->coord[Z]);
+		mp_ptr = bgqsys->getMidplane(coords);
 	} catch (const bgsched::InputException& err) {
 		int rc = bridge_handle_input_errors(
 			"ComputeHardware::getMidplane",
@@ -354,15 +372,12 @@ extern int bridge_setup_system()
 		return SLURM_ERROR;
 
 	inited = true;
-#ifdef HAVE_BG_FILES
-	ComputeHardware::ConstPtr bgq = getComputeHardware();
 
-	for (int a = 0; a < DIM_SIZE[A]; a++)
-		for (int x = 0; x < DIM_SIZE[X]; x++)
-			for (int y = 0; y < DIM_SIZE[Y]; y++)
-				for (int z = 0; z < DIM_SIZE[Z]; z++)
-					_setup_ba_mp(
-						bgq, &ba_main_grid[a][x][y][z]);
+	assert(ba_main_grid);
+
+#ifdef HAVE_BG_FILES
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	_setup_ba_mp(0, coords, getComputeHardware());
 #endif
 
 	bridge_status_init();
