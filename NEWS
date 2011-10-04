@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
     upon a patch by Phil Ekcert (LLNL).
  -- BGQ - Added logic to keep track of cnodes in an error state inside of a
     booted block.
+ -- Add the ability to update a node's NodeAddr and NodeHostName with scontrol.
+    Also enable setting a node's state to "future" using scontrol.
 
 * Changes in SLURM 2.3.1
 ========================

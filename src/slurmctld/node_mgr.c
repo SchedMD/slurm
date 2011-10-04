@@ -817,28 +817,64 @@ void set_slurmd_addr (void)
  */
 int update_node ( update_node_msg_t * update_node_msg )
 {
-	int error_code = 0, node_inx;
+	int error_code = 0, node_cnt, node_inx;
 	struct node_record *node_ptr = NULL;
 	char  *this_node_name = NULL;
-	hostlist_t host_list;
-	uint16_t base_state = 0, state_val;
+	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
+	uint16_t base_state = 0, node_flags, state_val;
 	time_t now = time(NULL);
 
-	if (update_node_msg -> node_names == NULL ) {
-		error ("update_node: invalid node name  %s",
+	if (update_node_msg->node_names == NULL ) {
+		info("update_node: invalid node name  %s",
 		       update_node_msg -> node_names );
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
-	if ( (host_list = hostlist_create (update_node_msg -> node_names))
-								 == NULL) {
-		error ("hostlist_create error on %s: %m",
-		       update_node_msg -> node_names);
+	host_list = hostlist_create(update_node_msg->node_names);
+	if (host_list == NULL) {
+		info("update_node: hostlist_create error on %s: %m",
+		      update_node_msg->node_names);
 		return ESLURM_INVALID_NODE_NAME;
+	}
+	node_cnt = hostlist_count(host_list);
+
+	if (update_node_msg->node_addr) {
+		hostaddr_list = hostlist_create(update_node_msg->node_addr);
+		if (hostaddr_list == NULL) {
+			info("update_node: hostlist_create error on %s: %m",
+			     update_node_msg->node_addr);
+			FREE_NULL_HOSTLIST(host_list);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+		if (node_cnt != hostlist_count(hostaddr_list)) {
+			info("update_node: nodecount mismatch");
+			FREE_NULL_HOSTLIST(host_list);
+			FREE_NULL_HOSTLIST(hostaddr_list);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+	}
+
+	if (update_node_msg->node_hostname) {
+		hostname_list = hostlist_create(update_node_msg->node_hostname);
+		if (hostname_list == NULL) {
+			info("update_node: hostlist_create error on %s: %m",
+			     update_node_msg->node_hostname);
+			FREE_NULL_HOSTLIST(host_list);
+			FREE_NULL_HOSTLIST(hostaddr_list);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+		if (node_cnt != hostlist_count(hostname_list)) {
+			info("update_node: nodecount mismatch");
+			FREE_NULL_HOSTLIST(host_list);
+			FREE_NULL_HOSTLIST(hostaddr_list);
+			FREE_NULL_HOSTLIST(hostname_list);
+			return ESLURM_INVALID_NODE_NAME;
+		}
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
+
 		state_val = update_node_msg->node_state;
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
@@ -848,6 +884,19 @@ int update_node ( update_node_msg_t * update_node_msg )
 			error_code = ESLURM_INVALID_NODE_NAME;
 			free (this_node_name);
 			break;
+		}
+
+		if (hostaddr_list) {
+			char *this_addr = hostlist_shift(hostaddr_list);
+			xfree(node_ptr->comm_name);
+			node_ptr->comm_name = xstrdup(this_addr);
+			free(this_addr);
+		}
+		if (hostname_list) {
+			char *this_hostname = hostlist_shift(hostname_list);
+			xfree(node_ptr->node_hostname);
+			node_ptr->node_hostname = xstrdup(this_hostname);
+			free(this_hostname);
 		}
 
 		if (update_node_msg->features) {
@@ -887,6 +936,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
 			base_state &= NODE_STATE_BASE;
+			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 		}
 		if (state_val != (uint16_t) NO_VAL) {
 			if (state_val == NODE_RESUME) {
@@ -929,11 +979,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 				} else
 					state_val = base_state;
 			}
-			if (state_val == NODE_STATE_DOWN) {
+			if ((state_val == NODE_STATE_DOWN) ||
+			    (state_val == NODE_STATE_FUTURE)) {
 				/* We must set node DOWN before killing
 				 * its jobs */
 				_make_node_down(node_ptr, now);
 				kill_running_job_by_node_name (this_node_name);
+				if (state_val == NODE_STATE_FUTURE) {
+					node_ptr->node_state = NODE_STATE_FUTURE
+							       | node_flags;
+				}
 			} else if (state_val == NODE_STATE_IDLE) {
 				/* assume they want to clear DRAIN and
 				 * FAIL flags too */
@@ -1033,7 +1088,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 		free (this_node_name);
 	}
-	hostlist_destroy (host_list);
+	FREE_NULL_HOSTLIST(host_list);
+	FREE_NULL_HOSTLIST(hostaddr_list);
+	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
 	if ((error_code == 0) && (update_node_msg->features)) {
@@ -1482,6 +1539,12 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 			    (base_state == NODE_STATE_FUTURE) ||
 			    (node_flags & NODE_STATE_DRAIN)   ||
 			    (node_flags & NODE_STATE_FAIL))
+				return true;
+			break;
+
+		case NODE_STATE_FUTURE:
+			if ((base_state == NODE_STATE_DOWN) ||
+			    (base_state == NODE_STATE_IDLE))
 				return true;
 			break;
 

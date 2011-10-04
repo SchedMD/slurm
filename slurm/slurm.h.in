@@ -1981,10 +1981,14 @@ typedef struct submit_response_msg {
 	uint32_t error_code;	/* error code for warning message */
 } submit_response_msg_t;
 
+/* NOTE: If setting node_addr and/or node_hostname then comma separate names
+ * and include an equal number of node_names */
 typedef struct slurm_update_node_msg {
 	char *features;		/* new feature for node */
 	char *gres;		/* new generic resources for node */
-	char *node_names;	/* comma separated list of required nodes */
+	char *node_addr;	/* communication name (optional) */
+	char *node_hostname;	/* node's hostname (optional) */
+	char *node_names;	/* nodelist expression */
 	uint16_t node_state;	/* see enum node_states */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t reason_uid;	/* user ID of sending (needed if user

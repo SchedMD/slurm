@@ -72,9 +72,17 @@ scontrol_update_node (int argc, char *argv[])
 			error("Invalid input: %s  Request aborted", argv[i]);
 			return -1;
 		}
-		if (strncasecmp(tag, "NodeName", MAX(tag_len, 1)) == 0)
+
+		if (strncasecmp(tag, "NodeAddr", MAX(tag_len, 5)) == 0) {
+			node_msg.node_addr = val;
+			update_cnt++;
+		} else if (strncasecmp(tag, "NodeHostName", MAX(tag_len, 5))
+			   == 0) {
+			node_msg.node_hostname = val;
+			update_cnt++;
+		} else if (strncasecmp(tag, "NodeName", MAX(tag_len, 1)) == 0) {
 			node_msg.node_names = val;
-		else if (strncasecmp(tag, "Features", MAX(tag_len, 1)) == 0) {
+		} else if (strncasecmp(tag, "Features", MAX(tag_len, 1)) == 0) {
 			node_msg.features = val;
 			update_cnt++;
 		} else if (strncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
@@ -155,6 +163,10 @@ scontrol_update_node (int argc, char *argv[])
 			} else if (strncasecmp(val, "FAIL",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_FAIL;
+				update_cnt++;
+			} else if (strncasecmp(val, "FUTURE",
+				   MAX(val_len, 3)) == 0) {
+				node_msg.node_state = NODE_STATE_FUTURE;
 				update_cnt++;
 			} else if (strncasecmp(val, "RESUME",
 				   MAX(val_len, 3)) == 0) {

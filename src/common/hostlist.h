@@ -64,6 +64,12 @@
 #endif
 #define HIGHEST_BASE 36
 
+#define FREE_NULL_HOSTLIST(_X)			\
+	do {					\
+		if (_X) hostlist_destroy (_X);	\
+		_X	= NULL; 		\
+	} while (0)
+
 extern char *alpha_num;
 
 /* Notes:
