@@ -74,6 +74,8 @@ documents those changes that are of interest to users and admins.
     time limits. Patch from Alejandro Lucero Palau (Barcelona Supercomputer
     Center).
  -- BGQ - fix to set up corner correctly for sub block jobs.
+ -- Major re-write of the CPU Management User and Administrator Guide (web
+    page) by Martin Perry, Bull.
 
 * Changes in SLURM 2.3.0-2
 ==========================
