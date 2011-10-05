@@ -1,0 +1,113 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">SLURM Elastic Computing</a></h1>
+
+<h1>DRAFT  DRAFT  DRAFT  DRAFT  DRAFT  DRAFT  DRAFT</h1>
+
+<h2>Overview</h2>
+
+<p>SLURM version 2.4 has the ability to support a cluster that grows and
+shrinks on demand, typically relying upon a service such as
+<a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
+for resources.
+These resources can be combined with an existing cluster or it can operate as
+an independent cluster.
+Good responsiveness and throughput can be achieved while you only pay for the
+resources needed.</p>
+
+<h2>Mode of Operation</h2>
+
+<p>TBD: Need high-level overview here after scripts are ready.</p>
+
+<h2>SLURM Configuration</h2>
+
+<p>If SLURM is configured to allocate individual CPUs to jobs rather than whole
+nodes (e.g. SelectType=select/cons_res rather than SelectType=select/linear),
+the SLURM controller daemon (slurmctld) maintains bitmaps to track the state of
+every CPU in the system.
+If the number of CPUs to be allocated on each node is not known when the
+slurmctld daemon is started, one must allocate whole nodes to jobs rather
+than individual processors.</p>
+
+<p>There are many ways to configure SLURM's use of resources.
+Some parameters that are of interest include:
+<dl>
+<dt><b>Feature</b>
+<dd>A node feature can be associated with resources acquired from the cloud and
+user jobs can specify their preference for resource use with the "--constraint"
+option.
+<dt><b>State</b>
+<dd>Nodes which are to be be added on demand should have a state of "FUTURE".
+These nodes will not actually appear in SLURM commands until after they are
+configured for use.
+<dt><b>Weight</b>
+<dd>Each node can be configured with a weight indicating the desirability of
+using that resource. Nodes with lower weights are used before those with higher
+weights.
+</dl>
+</p>
+
+<p>Nodes to be acquired on demand can be placed into their own SLURM partition.
+This mode of operation can be used to use these nodes only if so requested by
+the user. Note that jobs can be submitted to multiple partitions and will use
+resources from whichever partition permits faster initiation.
+A sample configuration in which nodes are added from the cloud when the workload
+exceeds available resources. Users can explicitly request local resources or
+resoures from the cloud by using the "--constraint" option.
+</p>
+
+<pre>
+# SLURM configuration
+# Excerpt of slurm.conf
+SelectType=select/linear
+
+NodeName=tux[0-127] Weight=1  Feature=local State=UNKNOWN
+NodeName=ec[0-127]  Weight=10 Feature=cloud State=FUTURE
+PartitionName=debug MaxNodes=16 MaxTime=1:00:00  Nodes=tux[0-32] Default=yes
+PartitionName=batch MaxNodes=64 MaxTime=24:00:00 Nodes=tux[0-127],ec[0-127] Default=no
+</pre>
+
+<h2>Operational Details</h2>
+
+<p>When the slurmctld daemon starts, all nodes with a state of FUTURE will be
+included in its internal tables, but these node records will not be seen with
+user commands or used by applications.
+To make a new node available:</p>
+<ol>
+<li>Boot the node</li>
+<li>Configure and start Munge (depends upon configuration)</li>
+<li>Build SLURM configuration file on that node including its NodeHostname and NodeAddr</li>
+<li>Tell the slurmctld to add that node to service:<br>
+  <i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i></li>
+<li>Start slurmd on the node</li>
+</ol>
+
+<p>In order to remove the node from service</p>
+<ol>
+<li>Set the node's state to "FUTURE":<br>
+<i>scontrol update nodename=ec0 State=Future</i></li>
+<li>Relinquish the resource to the cloud</li>
+</ol>
+
+<h2>Remaining Work</h2>
+
+<ul>
+<li>Questions: Does it make more sense to use the SLURM state of FUTURE or
+POWER_DOWN for these resources? Do we want to see the nodes or not?
+Using power save mode also provides a place from which to execute these
+scripts.</li>
+<li>Message forwarding between the slurmd daemons needs work since each slurmd
+does not necessarily recognize the address of every other slurmd.</li>
+<li>Slurmctld needs to preserve the state of the nodes secured from the cloud
+in case of being started. This is already done if we use the node state of
+POWER_DOWN.</li>
+<li>We need scripts to provision resources from EC2.</li>
+</ul>
+
+<h1>DRAFT  DRAFT  DRAFT  DRAFT  DRAFT  DRAFT  DRAFT</h1>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 5 October 2011</p>
+
+<!--#include virtual="footer.txt"-->
