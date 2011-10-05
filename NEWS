@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - fix to set up corner correctly for sub block jobs.
  -- Major re-write of the CPU Management User and Administrator Guide (web
     page) by Martin Perry, Bull.
+ -- BLUEGENE - If removing blocks from system that once existed cleanup of old
+    block happens correctly now.
 
 * Changes in SLURM 2.3.0-2
 ==========================
