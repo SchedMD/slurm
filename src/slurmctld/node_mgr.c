@@ -941,9 +941,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
 			base_state &= NODE_STATE_BASE;
-			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 		}
+
 		if (state_val != (uint16_t) NO_VAL) {
+			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (state_val == NODE_RESUME) {
 				if (IS_NODE_IDLE(node_ptr) &&
 				    (IS_NODE_DRAIN(node_ptr) ||
