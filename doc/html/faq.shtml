@@ -1010,9 +1010,10 @@ names used only by SLURM) as <i>NodeName</i> along with the actual
 address of the physical node in <i>NodeHostname</i>. Multiple
 <i>NodeName</i> values can be mapped to a single
 <i>NodeHostname</i>.  Note that each <i>NodeName</i> on a single
-physical node needs to be configured to use a different port number.  You
+physical node needs to be configured to use a different port number
+(set <i>Port</i> to a unique value on each line for each node).  You
 will also want to use the "%n" symbol in slurmd related path options in
-slurm.conf. </li>
+slurm.conf (<i>SlurmdLogFile</i> and <i>SlurmdPidFile</i>). </li>
 <li>When starting the <i>slurmd</i> daemon, include the <i>NodeName</i>
 of the node that it is supposed to serve on the execute line (e.g.
 "slurmd -N hostname").</li>

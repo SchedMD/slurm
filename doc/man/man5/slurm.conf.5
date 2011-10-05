@@ -1692,6 +1692,8 @@ logs are written.
 The default value is none (performs logging via syslog).
 Any "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
+Any "%n" within the name is replaced with the SLURM node name on which the
+\fBslurmd\fR is running.
 .br
 See the section \fBLOGGING\fR if a pathname is specified.
 
@@ -1699,6 +1701,10 @@ See the section \fBLOGGING\fR if a pathname is specified.
 \fBSlurmdPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write
 its process id. This may be used for automated signal processing.
+Any "%h" within the name is replaced with the hostname on which the
+\fBslurmd\fR is running.
+Any "%n" within the name is replaced with the SLURM node name on which the
+\fBslurmd\fR is running.
 The default value is "/var/run/slurmd.pid".
 
 .TP
