@@ -30,9 +30,9 @@ documents those changes that are of interest to users and admins.
     modified in the same fashion for SlurmctldDebug and SlurmdDebug values.
     The output of sview and "scontrol show config" was also modified to report
     those values as strings rather than numeric values.
- -- Change default value of StateSaveLocation configuration parameter from
+ -- Changed default value of StateSaveLocation configuration parameter from
     /tmp to /var/spool.
- -- Prevent associations from being delete if it has any jobs in running,
+ -- Prevent associations from being deleted if it has any jobs in running,
     pending or suspended state. Previous code prevented this only for running
     jobs.
  -- If a job can not run due to QOS or association limits, then do not cancel
@@ -41,8 +41,8 @@ documents those changes that are of interest to users and admins.
     upon a patch by Phil Ekcert (LLNL).
  -- BGQ - Added logic to keep track of cnodes in an error state inside of a
     booted block.
- -- Add the ability to update a node's NodeAddr and NodeHostName with scontrol.
-    Also enable setting a node's state to "future" using scontrol.
+ -- Added the ability to update a node's NodeAddr and NodeHostName with
+    scontrol. Also enable setting a node's state to "future" using scontrol.
 
 * Changes in SLURM 2.3.1
 ========================

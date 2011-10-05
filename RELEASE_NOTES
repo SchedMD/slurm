@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.4
-12 Sept 2011
+5 October 2011
 
 
 IMPORTANT NOTE:
@@ -24,21 +24,44 @@ other state information.
 
 HIGHLIGHTS
 ==========
+* Major modifications to support IBM BlueGene/Q systems
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
+* "RebootProgram" added
+* "SlurmdDebugLevel" and "SlurmctldDebugLevel" now accept string names in
+  addition to numeric values (e.g. "info", "verbose", "debug", etc.). Output
+  of scontrol and sview commands also use the string names.
+* Changed default value of "StateSaveLocation" configuration parameter from
+  "/tmp" to "/var/spool" to help avoid purging.
+
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+* Modified advance reservation to select resources optimized for network
+  topology and accept multiple specific block sizes rather than a single node
+  count.
+* Added trigger flag for a permanent trigger. The trigger will NOT be purged
+  after an event occurs, but only when explicitly deleted.
+* Added the ability to reboot all compute nodes after they become idle. The
+  RebootProgram configuration parameter must be set and an authorized user
+  must execute the command "scontrol reboot_nodes".
+* Added the ability to update a node's NodeAddr and NodeHostName with scontrol.
+
 
 BLUEGENE SPECIFIC CHANGES
 =========================
+* Changde to output tools labels from "BP" to "Midplane" (i.e. "BP_List" was
+  changed to "MidplaneList").
+
 
 OTHER CHANGES
 =============
 
+
 API CHANGES
 ===========
+
 
 Changed members of the following structs
 ========================================
@@ -46,10 +69,13 @@ Changed members of the following structs
 
 Added the following struct definitions
 ======================================
+trigger_info_t:		flags added
+update_node_msg_t:	node_addr and node_hostname added
 
 
 Changed the following enums and #defines
 ========================================
+TRIGGER_FLAG_PERM	Added
 
 
 Added the following API's
