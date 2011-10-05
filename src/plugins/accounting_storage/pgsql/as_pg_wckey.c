@@ -397,7 +397,7 @@ as_pg_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
 {
 	char *cond = NULL;
 	List wckey_list = NULL;
-	int with_usage, is_admin;
+	int is_admin;
 	slurmdb_user_rec_t user;
 
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
@@ -410,7 +410,6 @@ as_pg_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
 	}
 
 	if (wckey_cond) {
-		with_usage = wckey_cond->with_usage;
 		cond = _make_wckey_cond(wckey_cond);
 	}
 	if (!is_admin)
