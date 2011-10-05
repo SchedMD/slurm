@@ -73,6 +73,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 uint16_t *limit_set_max_cpus,
 				 uint16_t *limit_set_max_nodes,
 				 uint16_t *limit_set_time, bool update_call);
+
 /*
  * acct_policy_job_runnable - Determine of the specified job can execute
  *	right now or not depending upon accounting policy (e.g. running
@@ -81,6 +82,12 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
  *	then cancel the job.
  */
 extern bool acct_policy_job_runnable(struct job_record *job_ptr);
+
+/*
+ * Determine of the specified job can execute right now or is currently
+ * blocked by an association or QOS limit. Does not re-validate job state.
+ */
+extern bool acct_policy_job_runnable_state(struct job_record *job_ptr);
 
 /*
  * acct_policy_update_pending_job - Make sure the limits imposed on a

@@ -6525,7 +6525,8 @@ static bool _top_priority(struct job_record *job_ptr)
 				 * indicative of job requeue */
 				continue;
 			}
-			if (!job_independent(job_ptr2, 0))
+			if (!acct_policy_job_runnable_state(job_ptr2) ||
+			    !job_independent(job_ptr2, 0))
 				continue;
 			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
 			    ((!job_ptr2->resv_name) && job_ptr->resv_name))
