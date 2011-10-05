@@ -898,6 +898,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 			node_ptr->node_hostname = xstrdup(this_hostname);
 			free(this_hostname);
 		}
+		if (hostaddr_list || hostname_list) {
+			/* This updates the lookup table addresses */
+			slurm_reset_alias(node_ptr->name, node_ptr->comm_name,
+					  node_ptr->node_hostname);
+		}
 
 		if (update_node_msg->features) {
 			xfree(node_ptr->features);

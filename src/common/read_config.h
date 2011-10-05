@@ -315,6 +315,12 @@ extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
 extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
 
 /*
+ * slurm_reset_alias - Reset the address and hostname of a specific node name
+ */
+extern void slurm_reset_alias(char *node_name, char *node_addr,
+			      char *node_hostname);
+
+/*
  * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
  *
  * Returned string was allocated with xmalloc(), and must be freed by
