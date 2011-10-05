@@ -870,7 +870,7 @@ unpack_error:
  *       since the bg_lists->main will contain the complete list of pointers
  *       and be destroyed with it.
  *
- * RET - SLURM_SUCCESS if they match, else an error
+ * RET - SLURM_SUCCESS if no blocks need to be deleted, else an error
  * code. Writes bg_block_id into bg_lists->main records.
  */
 
@@ -895,9 +895,6 @@ static int _validate_config_blocks(List curr_block_list,
 #ifndef HAVE_BG_FILES
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	/* This needs to be reset to SLURM_ERROR or it will never be
-	   that way again ;). */
-	rc = SLURM_ERROR;
 #endif
 	/* read current bg block info into curr_block_list This
 	 * happens in the state load before this in emulation mode */
@@ -1002,7 +999,6 @@ static int _validate_config_blocks(List curr_block_list,
 			info("Block found in bluegene.conf to be "
 			     "created: Nodes:%s",
 			     tmp_char);
-			rc = SLURM_ERROR;
 		} else {
 			if (bg_record->full_block)
 				full_created = 1;
@@ -1057,6 +1053,8 @@ static int _validate_config_blocks(List curr_block_list,
 	list_iterator_destroy(itr_curr);
 	if (!list_count(curr_block_list))
 		rc = SLURM_SUCCESS;
+	else
+		rc = SLURM_ERROR;
 	return rc;
 }
 
