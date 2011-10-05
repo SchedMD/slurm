@@ -224,6 +224,7 @@ void run_backup(void)
 	}
 	slurmctld_config.shutdown_time = (time_t) 0;
 	unlock_slurmctld(config_write_lock);
+	select_g_select_nodeinfo_set_all(time(NULL));
 
 	return;
 }
