@@ -58,6 +58,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
