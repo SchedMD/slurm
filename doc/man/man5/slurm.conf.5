@@ -1,7 +1,8 @@
-.TH "slurm.conf" "5" "September 2011" "slurm.conf 2.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "October 2011" "slurm.conf 2.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
+
 .SH "DESCRIPTION"
 \fB/etc/slurm.conf\fP is an ASCII file which describes general SLURM
 configuration information, the nodes to be managed, information about
@@ -2421,6 +2422,12 @@ Acceptable values are "BUSY", "DOWN", "DRAIN", "FAIL",
 "FAILING, "IDLE", and "UNKNOWN".
 .RS
 .TP 10
+\fBCLOUD\fP
+Indicates the node exists in the cloud.
+It's initial state will be treated as powered down.
+The node will be available for use after it's state is recovered from SLURM's
+state save file or the slurmd daemon starts on the compute node.
+.TP
 \fBDOWN\fP
 Indicates the node failed and is unavailable to be allocated work.
 .TP

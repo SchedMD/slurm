@@ -123,7 +123,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 			 int node_scaling, int one_liner )
 {
 	uint16_t my_state = node_ptr->node_state;
-	char *comp_str = "", *drain_str = "", *power_str = "";
+	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
 	char tmp_line[512], time_str[32];
 	char *out = NULL;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
@@ -134,6 +134,10 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	if (node_scaling)
 		cpus_per_node = node_ptr->cpus / node_scaling;
 
+	if (my_state & NODE_STATE_CLOUD) {
+		my_state &= (~NODE_STATE_CLOUD);
+		cloud_str = "+CLOUD";
+	}
 	if (my_state & NODE_STATE_COMPLETING) {
 		my_state &= (~NODE_STATE_COMPLETING);
 		comp_str = "+COMPLETING";
@@ -236,8 +240,9 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** Line 6 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "State=%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
-		 node_state_string(my_state), comp_str, drain_str, power_str,
+		 "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
+		 node_state_string(my_state),
+		 cloud_str, comp_str, drain_str, power_str,
 		 node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight);
 	xstrcat(out, tmp_line);
 	if (one_liner)

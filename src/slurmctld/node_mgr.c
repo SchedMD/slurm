@@ -82,8 +82,9 @@
 #define MAX_RETRIES	10
 
 /* Change NODE_STATE_VERSION value when changing the state save format */
-#define NODE_STATE_VERSION      "VER004"
-#define NODE_2_2_STATE_VERSION  "VER004"	/* SLURM version 2.2 */
+#define NODE_STATE_VERSION      "VER005"
+#define NODE_2_4_STATE_VERSION  "VER005"	/* SLURM version 2.4 */
+#define NODE_2_2_STATE_VERSION  "VER004"	/* SLURM version 2.2 & 2.3 */
 #define NODE_2_1_STATE_VERSION  "VER003"	/* SLURM version 2.1 */
 
 /* Global variables */
@@ -205,7 +206,9 @@ int dump_all_node_state ( void )
 static void
 _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 {
+	packstr (dump_node_ptr->comm_name, buffer);
 	packstr (dump_node_ptr->name, buffer);
+	packstr (dump_node_ptr->node_hostname, buffer);
 	packstr (dump_node_ptr->reason, buffer);
 	packstr (dump_node_ptr->features, buffer);
 	packstr (dump_node_ptr->gres, buffer);
@@ -263,6 +266,7 @@ static int _open_node_state_file(char **state_file)
  */
 extern int load_all_node_state ( bool state_only )
 {
+	char *comm_name = NULL, *node_hostname = NULL;
 	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
 	char *features = NULL, *gres = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
@@ -319,10 +323,12 @@ extern int load_all_node_state ( bool state_only )
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
-	if(ver_str) {
-		if(!strcmp(ver_str, NODE_STATE_VERSION)) {
+	if (ver_str) {
+		if (!strcmp(ver_str, NODE_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if(!strcmp(ver_str, NODE_2_1_STATE_VERSION)) {
+		} else if (!strcmp(ver_str, NODE_2_2_STATE_VERSION)) {
+			protocol_version = SLURM_2_2_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, NODE_2_1_STATE_VERSION)) {
 			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
@@ -341,7 +347,29 @@ extern int load_all_node_state ( bool state_only )
 
 	while (remaining_buf (buffer) > 0) {
 		uint16_t base_state;
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_hostname,
+							    &name_len, buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
+			safe_unpack16 (&node_state,  buffer);
+			safe_unpack16 (&cpus,        buffer);
+			safe_unpack16 (&sockets,     buffer);
+			safe_unpack16 (&cores,       buffer);
+			safe_unpack16 (&threads,     buffer);
+			safe_unpack32 (&real_memory, buffer);
+			safe_unpack32 (&tmp_disk,    buffer);
+			safe_unpack32 (&reason_uid,  buffer);
+			safe_unpack_time (&reason_time, buffer);
+			if (gres_plugin_node_state_unpack(
+				    &gres_list, buffer, node_name,
+				    protocol_version) != SLURM_SUCCESS)
+				goto unpack_error;
+			base_state = node_state & NODE_STATE_BASE;
+		} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
@@ -360,7 +388,7 @@ extern int load_all_node_state ( bool state_only )
 				    protocol_version) != SLURM_SUCCESS)
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
-		} else if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
@@ -401,7 +429,31 @@ extern int load_all_node_state ( bool state_only )
 		} else if (state_only) {
 			uint16_t orig_flags;
 			node_cnt++;
-			if (IS_NODE_UNKNOWN(node_ptr)) {
+			if (IS_NODE_CLOUD(node_ptr)) {
+				if ((!power_save_mode) &&
+				    ((node_state & NODE_STATE_POWER_SAVE) ||
+	 			     (node_state & NODE_STATE_POWER_UP))) {
+					node_state &= (~NODE_STATE_POWER_SAVE);
+					node_state &= (~NODE_STATE_POWER_UP);
+					if (hs)
+						hostset_insert(hs, node_name);
+					else
+						hs = hostset_create(node_name);
+				}
+				if (comm_name && node_hostname) {
+					/* Recover NodeAddr and NodeHostName */
+					xfree(node_ptr->comm_name);
+					node_ptr->comm_name = comm_name;
+					comm_name = NULL;  /* Nothing to free */
+					xfree(node_ptr->node_hostname);
+					node_ptr->node_hostname = node_hostname;
+					node_hostname = NULL;  /* Nothing to free */
+					slurm_reset_alias(node_ptr->name,
+							  node_ptr->comm_name,
+							  node_ptr->node_hostname);
+				}
+				node_ptr->node_state    = node_state;
+			} else if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					orig_flags = node_ptr->node_state &
 						     NODE_STATE_FLAGS;
@@ -470,6 +522,19 @@ extern int load_all_node_state ( bool state_only )
 				else
 					hs = hostset_create(node_name);
 			}
+			if (IS_NODE_CLOUD(node_ptr) &&
+			    comm_name && node_hostname) {
+				/* Recover NodeAddr and NodeHostName */
+				xfree(node_ptr->comm_name);
+				node_ptr->comm_name = comm_name;
+				comm_name = NULL;	/* Nothing to free */
+				xfree(node_ptr->node_hostname);
+				node_ptr->node_hostname = node_hostname;
+				node_hostname = NULL;	/* Nothing to free */
+				slurm_reset_alias(node_ptr->name,
+						  node_ptr->comm_name,
+						  node_ptr->node_hostname);
+			}
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
 			node_ptr->reason	= reason;
@@ -505,6 +570,8 @@ extern int load_all_node_state ( bool state_only )
 			list_destroy(gres_list);
 			gres_list = NULL;
 		}
+		xfree (comm_name);
+		xfree (node_hostname);
 		xfree (node_name);
 		xfree(reason);
 	}
@@ -618,6 +685,9 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr) &&
 				 !IS_NODE_MAINT(node_ptr)) /* reboot req sent */
+				hidden = true;
+			else if (IS_NODE_CLOUD(node_ptr) &&
+				 IS_NODE_POWER_SAVE(node_ptr))
 				hidden = true;
 			else if ((node_ptr->name == NULL) ||
 				 (node_ptr->name[0] == '\0'))
@@ -793,6 +863,8 @@ void set_slurmd_addr (void)
 		    (node_ptr->name[0] == '\0'))
 			continue;
 		if (IS_NODE_FUTURE(node_ptr))
+			continue;
+		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
 			continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurmctld_conf.slurmd_port;
@@ -2542,6 +2614,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (IS_NODE_FUTURE(node_ptr))
+			continue;
+		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
 			continue;
 		hostlist_push(kill_agent_args->hostlist, node_ptr->name);
 		kill_agent_args->node_count++;

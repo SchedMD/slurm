@@ -967,7 +967,10 @@ extern int state_str2int(const char *state_str, char *node_name)
 		}
 	}
 	if (i >= NODE_STATE_END) {
-		if (strncasecmp("DRAIN", state_str, 5) == 0)
+		if (strncasecmp("CLOUD", state_str, 5) == 0)
+			state_val = NODE_STATE_IDLE | NODE_STATE_CLOUD |
+				    NODE_STATE_POWER_SAVE;
+		else if (strncasecmp("DRAIN", state_str, 5) == 0)
 			state_val = NODE_STATE_UNKNOWN | NODE_STATE_DRAIN;
 		else if (strncasecmp("FAIL", state_str, 4) == 0)
 			state_val = NODE_STATE_IDLE | NODE_STATE_FAIL;

@@ -467,9 +467,9 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			s_p_get_string(&n->reason, "Reason", dflt);
 
 		if (!s_p_get_string(&node_state, "State", tbl) &&
-		    !s_p_get_string(&node_state, "State", dflt))
+		    !s_p_get_string(&node_state, "State", dflt)) {
 			n->node_state = NODE_STATE_UNKNOWN;
-		else {
+		} else {
 			n->node_state = state_str2int(node_state,
 						      (char *) value);
 			if (n->node_state == (uint16_t) NO_VAL)

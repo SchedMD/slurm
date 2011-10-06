@@ -4135,6 +4135,8 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 			continue;
 		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_DOWN(node_ptr))
 			continue;
+		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+			continue;
 		node_ptr->node_state |= NODE_STATE_MAINT;
 		want_nodes_reboot = true;
 	}

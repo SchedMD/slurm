@@ -24,7 +24,8 @@ other state information.
 
 HIGHLIGHTS
 ==========
-* Major modifications to support IBM BlueGene/Q systems
+* Major modifications to support IBM BlueGene/Q systems.
+
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================

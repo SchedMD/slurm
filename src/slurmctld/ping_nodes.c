@@ -360,7 +360,10 @@ extern void run_health_check(void)
 #else
 	for (i=0, node_ptr=node_record_table_ptr;
 	     i<node_record_count; i++, node_ptr++) {
-		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr))
+		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_POWER_SAVE(node_ptr))
+			continue;
+		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
 			continue;
 		hostlist_push(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;

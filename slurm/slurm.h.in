@@ -491,8 +491,9 @@ enum node_states {
 	NODE_STATE_FUTURE,	/* node slot reserved for future use */
 	NODE_STATE_END		/* last entry in table */
 };
-#define NODE_STATE_BASE       0x00ff
-#define NODE_STATE_FLAGS      0xff00
+#define NODE_STATE_BASE       0x000f
+#define NODE_STATE_FLAGS      0xfff0
+#define NODE_STATE_CLOUD      0x0080	/* node comes from cloud */
 #define NODE_RESUME           0x0100	/* Restore a DRAINED, DRAINING, DOWN
 					 * or FAILING node to service (e.g.
 					 * IDLE or ALLOCATED). Used in
