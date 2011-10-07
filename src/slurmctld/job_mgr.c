@@ -4885,7 +4885,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 	else
 		sys_mem_limit = slurmctld_conf.max_mem_per_cpu;
 
-	if (sys_mem_limit == 0)
+	if ((sys_mem_limit == 0) || (sys_mem_limit == MEM_PER_CPU))
 		return true;
 
 	if ((job_mem_limit & MEM_PER_CPU) && (sys_mem_limit & MEM_PER_CPU)) {

@@ -860,7 +860,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 	time_t now;
 	int elapsed;
 	int comp_status;
-	int cpus = 0, tasks = 0;
+	int cpus = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
 	double ave_vsize = 0, ave_rss = 0, ave_pages = 0;
@@ -904,20 +904,17 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 
 	if(slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
-		tasks = step_ptr->job_ptr->details->num_tasks;
 		cpus = step_ptr->cpu_count;
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG
-		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
+		cpus = step_ptr->job_ptr->details->min_cpus;
 
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			tasks = cpus = step_ptr->job_ptr->total_cpus;
-		else {
+			cpus = step_ptr->job_ptr->total_cpus;
+		else
 			cpus = step_ptr->cpu_count;
-			tasks = step_ptr->step_layout->task_cnt;
-		}
 #endif
 	}
 
@@ -1014,7 +1011,6 @@ js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
 {
  	char *query = NULL;
  	int rc = SLURM_SUCCESS;
- 	time_t submit_time;
  	uint32_t job_db_inx;
 
  	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
@@ -1024,11 +1020,6 @@ js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
  		error("cluster %s not in db", pg_conn->cluster_name);
  		return SLURM_ERROR;
  	}
-
- 	if (job_ptr->resize_time)
- 		submit_time = job_ptr->resize_time;
- 	else
- 		submit_time = job_ptr->details->submit_time;
 
  	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
  		return SLURM_SUCCESS;

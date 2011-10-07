@@ -901,7 +901,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	time_t now;
 	int elapsed;
 	int comp_status;
-	int cpus = 0, tasks = 0;
+	int cpus = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
 	double ave_vsize = 0, ave_rss = 0, ave_pages = 0;
@@ -940,23 +940,20 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 	if (slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
-		tasks = step_ptr->job_ptr->details->num_tasks;
 		cpus = step_ptr->cpu_count;
 	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
 		now = time(NULL);
-		cpus = tasks = 1;
+		cpus = 1;
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG_L_P
 		/* Only L and P use this code */
-		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
+		cpus = step_ptr->job_ptr->details->min_cpus;
 #else
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			tasks = cpus = step_ptr->job_ptr->total_cpus;
-		else {
+			cpus = step_ptr->job_ptr->total_cpus;
+		else
 			cpus = step_ptr->cpu_count;
-			tasks = step_ptr->step_layout->task_cnt;
-		}
 #endif
 	}
 
