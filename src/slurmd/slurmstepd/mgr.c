@@ -2183,6 +2183,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 {
 	int status, rc, opt;
 	pid_t cpid;
+	struct exec_wait_info *ei;
 
 	xassert(env);
 	if (path == NULL || path[0] == '\0')
@@ -2199,11 +2200,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 	    (slurm_container_create(job) != SLURM_SUCCESS))
 		error("slurm_container_create: %m");
 
-	if ((cpid = fork()) < 0) {
+	if ((ei = fork_child_with_wait_info(0)) == NULL) {
 		error ("executing %s: fork: %m", name);
 		return -1;
 	}
-	if (cpid == 0) {
+	if ((cpid = exec_wait_get_pid (ei)) == 0) {
 		struct priv_state sprivs;
 		char *argv[2];
 
@@ -2230,6 +2231,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 #else
 		setpgrp();
 #endif
+		/*
+		 *  Wait for signal from parent
+		 */
+		exec_wait_child_wait_for_parent (ei);
+
 		execve(path, argv, env);
 		error("execve(): %m");
 		exit(127);
@@ -2237,6 +2243,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 
 	if (slurm_container_add(job, cpid) != SLURM_SUCCESS)
 		error("slurm_container_add: %m");
+
+	if (exec_wait_signal_child (ei) < 0)
+		error ("run_script_as_user: Failed to wakeup %s", name);
+	exec_wait_info_destroy (ei);
+
 	if (max_wait < 0)
 		opt = 0;
 	else
