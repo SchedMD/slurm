@@ -1189,12 +1189,10 @@ _fork_all_tasks(slurmd_job_t *job)
 {
 	int rc = SLURM_SUCCESS;
 	int i;
-	int *writefds; /* array of write file descriptors */
-	int *readfds; /* array of read file descriptors */
-	int fdpair[2];
 	struct priv_state sprivs;
 	jobacct_id_t jobacct_id;
 	char *oom_value;
+	List exec_wait_list = NULL;
 
 	xassert(job != NULL);
 
@@ -1210,36 +1208,6 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 	debug2("After call to spank_init()");
-
-	/*
-	 * Pre-allocate a pipe for each of the tasks
-	 */
-	debug3("num tasks on this node = %d", job->node_tasks);
-	writefds = (int *) xmalloc (job->node_tasks * sizeof(int));
-	if (!writefds) {
-		error("writefds xmalloc failed!");
-		return SLURM_ERROR;
-	}
-	readfds = (int *) xmalloc (job->node_tasks * sizeof(int));
-	if (!readfds) {
-		error("readfds xmalloc failed!");
-		return SLURM_ERROR;
-	}
-
-
-	for (i = 0; i < job->node_tasks; i++) {
-		fdpair[0] = -1; fdpair[1] = -1;
-		if (pipe (fdpair) < 0) {
-			error ("exec_all_tasks: pipe: %m");
-			return SLURM_ERROR;
-		}
-		debug3("New fdpair[0] = %d, fdpair[1] = %d",
-		       fdpair[0], fdpair[1]);
-		fd_set_close_on_exec(fdpair[0]);
-		fd_set_close_on_exec(fdpair[1]);
-		readfds[i] = fdpair[0];
-		writefds[i] = fdpair[1];
-	}
 
 	set_oom_adj(0);	/* the tasks may be killed by OOM */
 	if (pre_setuid(job)) {
@@ -1278,27 +1246,33 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 
+	exec_wait_list = list_create ((ListDelF) exec_wait_info_destroy);
+	if (!exec_wait_list)
+		return error ("Unable to create exec_wait_list");
+
 	/*
 	 * Fork all of the task processes.
 	 */
 	for (i = 0; i < job->node_tasks; i++) {
 		char time_stamp[256];
 		pid_t pid;
-		if ((pid = fork ()) < 0) {
+		struct exec_wait_info *ei;
+
+		if ((ei = fork_child_with_wait_info (i)) == NULL) {
 			error("child fork: %m");
 			goto fail2;
-		} else if (pid == 0)  { /* child */
-			int j;
+		} else if ((pid = exec_wait_get_pid (ei)) == 0)  { /* child */
+			/*
+			 *  Destroy exec_wait_list in the child.
+			 *   Only exec_wait_info for previous tasks have been
+			 *   added to the list so far, so everything else
+			 *   can be discarded.
+			 */
+			list_destroy (exec_wait_list);
 
 #ifdef HAVE_AIX
 			(void) mkcrid(0);
 #endif
-			/* Close file descriptors not needed by the child */
-			for (j = 0; j < job->node_tasks; j++) {
-				close(writefds[j]);
-				if (j > i)
-					close(readfds[j]);
-			}
 			/* jobacct_gather_g_endpoll();
 			 * closing jobacct files here causes deadlock */
 
@@ -1322,14 +1296,15 @@ _fork_all_tasks(slurmd_job_t *job)
 
 			xsignal_unblock(slurmstepd_blocked_signals);
 
-			exec_task(job, i, readfds[i]);
+			exec_task(job, i, ei->childfd);
 		}
 
 		/*
 		 * Parent continues:
 		 */
 
-		close(readfds[i]);
+		list_append (exec_wait_list, ei);
+
 		LOG_TIMESTAMP(time_stamp);
 		verbose ("task %lu (%lu) started %s",
 			(unsigned long) job->task[i]->gtid,
@@ -1399,16 +1374,10 @@ _fork_all_tasks(slurmd_job_t *job)
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
+	list_for_each (exec_wait_list, (ListForF) exec_wait_signal, job);
+	list_destroy (exec_wait_list);
+
 	for (i = 0; i < job->node_tasks; i++) {
-		char c = '\0';
-
-		debug3("Unblocking %u.%u task %d, writefd = %d",
-		       job->jobid, job->stepid, i, writefds[i]);
-		if (write (writefds[i], &c, sizeof (c)) != 1)
-			error ("write to unblock task %d failed", i);
-
-		close(writefds[i]);
-
 		/*
 		 * Prepare process for attach by parallel debugger
 		 * (if specified and able)
@@ -1417,17 +1386,14 @@ _fork_all_tasks(slurmd_job_t *job)
 				== SLURM_ERROR)
 			rc = SLURM_ERROR;
 	}
-	xfree(writefds);
-	xfree(readfds);
 
 	return rc;
 
 fail2:
 	_reclaim_privileges (&sprivs);
+	if (exec_wait_list)
+		list_destroy (exec_wait_list);
 fail1:
-	xfree(writefds);
-	xfree(readfds);
-
 	pam_finish();
 	return SLURM_ERROR;
 }
