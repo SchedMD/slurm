@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
     page) by Martin Perry, Bull.
  -- BLUEGENE - If removing blocks from system that once existed cleanup of old
     block happens correctly now.
+ -- Prevent slurmctld crashing with configuration of MaxMemPerCPU=0.
 
 * Changes in SLURM 2.3.0-2
 ==========================
