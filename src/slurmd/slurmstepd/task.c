@@ -329,26 +329,14 @@ _setup_mpi(slurmd_job_t *job, int ltaskid)
  *  Current process is running as the user when this is called.
  */
 void
-exec_task(slurmd_job_t *job, int i, int waitfd)
+exec_task(slurmd_job_t *job, int i)
 {
-	char c;
 	uint32_t *gtids;		/* pointer to arrary of ranks */
 	int fd, j;
-	int rc;
 	slurmd_task_info_t *task = job->task[i];
 
 	if (i == 0)
 		_make_tmpdir(job);
-
-	/*
-	 * Stall exec until all tasks have joined the same process group
-	 */
-	if ((rc = read (waitfd, &c, sizeof (c))) != 1) {
-		error ("_exec_task read failed, fd = %d, rc=%d: %m", waitfd, rc);
-		log_fini();
-		exit(1);
-	}
-	close(waitfd);
 
 	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
 	for (j = 0; j < job->node_tasks; j++)

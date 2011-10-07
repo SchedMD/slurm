@@ -52,6 +52,6 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-void exec_task(slurmd_job_t *job, int i, int waitfd);
+void exec_task(slurmd_job_t *job, int i);
 
 #endif /* !_TASK_H */

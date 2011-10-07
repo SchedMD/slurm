@@ -1319,7 +1319,15 @@ _fork_all_tasks(slurmd_job_t *job)
 			 */
 			prepare_tty (job, job->task[i]);
 
-			exec_task(job, i, ei->childfd);
+			/*
+			 *  Block until parent notifies us that it is ok to
+			 *   proceed. This allows the parent to place all
+			 *   children in any process groups or containers
+			 *   before they make a call to exec(2).
+			 */
+			exec_wait_child_wait_for_parent (ei);
+
+			exec_task(job, i);
 		}
 
 		/*
