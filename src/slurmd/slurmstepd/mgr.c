@@ -75,6 +75,13 @@
 #  include <stdlib.h>
 #endif
 
+#ifdef HAVE_PTY_H
+#  include <pty.h>
+#  ifdef HAVE_UTMP_H
+#    include <utmp.h>
+#  endif
+#endif
+
 #include "slurm/slurm_errno.h"
 
 #include "src/common/cbuf.h"
@@ -1180,7 +1187,18 @@ static int exec_wait_signal (struct exec_wait_info *e, slurmd_job_t *job)
 	return (0);
 }
 
-
+static void prepare_tty (slurmd_job_t *job, slurmd_task_info_t *task)
+{
+#ifdef HAVE_PTY_H
+	if (job->pty && (task->gtid == 0)) {
+		if (login_tty(task->stdin_fd))
+			error("login_tty: %m");
+		else
+			debug3("login_tty good");
+	}
+#endif
+	return;
+}
 
 /* fork and exec N tasks
  */
@@ -1295,6 +1313,11 @@ _fork_all_tasks(slurmd_job_t *job)
 			/* log_fini(); */ /* note: moved into exec_task() */
 
 			xsignal_unblock(slurmstepd_blocked_signals);
+
+			/*
+			 *  Setup tty before any setpgid() calls
+			 */
+			prepare_tty (job, job->task[i]);
 
 			exec_task(job, i, ei->childfd);
 		}
