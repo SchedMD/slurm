@@ -1088,6 +1088,99 @@ _spank_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
 	return(_drop_privileges (job, true, sp));
 }
 
+struct exec_wait_info {
+	int id;
+	pid_t pid;
+	int parentfd;
+	int childfd;
+};
+
+static struct exec_wait_info * exec_wait_info_create (int i)
+{
+	int fdpair[2];
+	struct exec_wait_info * e;
+
+	if (pipe (fdpair) < 0) {
+		error ("exec_wait_info_create: pipe: %m");
+		return NULL;
+	}
+
+	fd_set_close_on_exec(fdpair[0]);
+	fd_set_close_on_exec(fdpair[1]);
+
+	e = xmalloc (sizeof (*e));
+	e->childfd = fdpair[0];
+	e->parentfd = fdpair[1];
+	e->id = i;
+	e->pid = -1;
+
+	return (e);
+}
+
+static void exec_wait_info_destroy (struct exec_wait_info *e)
+{
+	if (e == NULL)
+		return;
+
+	close (e->parentfd);
+	close (e->childfd);
+	e->id = -1;
+	e->pid = -1;
+}
+
+static pid_t exec_wait_get_pid (struct exec_wait_info *e)
+{
+	if (e == NULL)
+		return (-1);
+	return (e->pid);
+}
+
+static struct exec_wait_info * fork_child_with_wait_info (int id)
+{
+	struct exec_wait_info *e;
+
+	if (!(e = exec_wait_info_create (id)))
+		return (NULL);
+
+	if ((e->pid = fork ()) < 0) {
+		exec_wait_info_destroy (e);
+		return (NULL);
+	}
+	else if (e->pid == 0)  /* In child, close parent fd */
+		close (e->parentfd);
+
+	return (e);
+}
+
+static int exec_wait_child_wait_for_parent (struct exec_wait_info *e)
+{
+	char c;
+
+	if (read (e->childfd, &c, sizeof (c)) != 1)
+		return error ("wait_for_parent: failed: %m");
+
+	return (0);
+}
+
+static int exec_wait_signal_child (struct exec_wait_info *e)
+{
+	char c = '\0';
+
+	if (write (e->parentfd, &c, sizeof (c)) != 1)
+		return error ("write to unblock task %d failed: %m", e->id);
+
+	return (0);
+}
+
+static int exec_wait_signal (struct exec_wait_info *e, slurmd_job_t *job)
+{
+	debug3 ("Unblocking %u.%u task %d, writefd = %d",
+	        job->jobid, job->stepid, e->id, e->parentfd);
+	exec_wait_signal_child (e);
+	return (0);
+}
+
+
 
 /* fork and exec N tasks
  */
