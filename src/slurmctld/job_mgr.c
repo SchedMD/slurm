@@ -7379,12 +7379,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     job_specs->job_id);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (authorized &&
-				    (job_specs->alloc_sid !=
+				if ((job_ptr->user_id == uid) ||
+				    (job_specs->alloc_sid ==
 				     ALLOC_SID_USER_HOLD)) {
-					job_ptr->state_reason = WAIT_HELD;
-				} else
 					job_ptr->state_reason = WAIT_HELD_USER;
+				} else 
+					job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
 			} else if ((job_ptr->state_reason == WAIT_HELD) ||
 				   (job_ptr->state_reason == WAIT_HELD_USER)) {
