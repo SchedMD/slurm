@@ -16,7 +16,7 @@ void eh_resvd_node(struct ud *ud, const XML_Char **attrs)
 
 	if (atou32(attribs[0], &node_id) < 0)
 		fatal("illegal node_id = %s", attribs[0]);
-	if (ns_add_node(&ud->bp->mdata.res->rsvd_nodes, node_id) < 0)
+	if (ns_add_node(&ud->bp->mdata.res->rsvd_nodes, node_id, true) < 0)
 		fatal("could not add node %u", node_id);
 }
 

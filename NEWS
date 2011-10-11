@@ -45,6 +45,8 @@ documents those changes that are of interest to users and admins.
     scontrol. Also enable setting a node's state to "future" using scontrol.
  -- Add a node state flag of CLOUD and save/restore NodeAddr and NodeHostName
     information for nodes with a flag of CLOUD.
+ -- Cray: Add support for job reservations with node IDs that are not in
+    numeric order. Fix for Bugzilla #5.
 
 * Changes in SLURM 2.3.1
 ========================

@@ -1,6 +1,8 @@
 /*
- * Strictly-ordered, singly-linked list to represent disjoint node ranges
- * of the type 'a' (single node) or 'a-b' (range, with a < b).
+ * Functions to maintain a list of numeric node ranges. Depending upon the
+ * parameter "sorted" used when adding elements, this list may be a strictly-
+ * ordered, singly-linked list to represent disjoint node ranges of the type
+ * 'a' (single node) or 'a-b' (range, with a < b).
  *
  * For example, '1,7-8,20,33-29'
  *
@@ -11,39 +13,51 @@
 #define CRAY_MAX_DIGITS	5	/* nid%05d format */
 
 /* internal constructor */
-static struct nodespec *ns_new(uint32_t start, uint32_t end)
+static struct nodespec *_ns_new(uint32_t start, uint32_t end)
 {
 	struct nodespec *new = xmalloc(sizeof(*new));
 
-	if (new) {
-		new->start = start;
-		new->end   = end;
-	}
+	new->start = start;
+	new->end   = end;
 	return new;
 }
 
 /**
- * ns_add_range  -  Insert/merge new range into existing nodespec list.
+ * _ns_add_range  -  Insert/merge new range into existing nodespec list.
  * @head:       head of the ordered list
  * @new_start:  start value of node range to insert
  * @new_end:    end value of node range to insert
+ * @sorted:	if set, then maintain @head as duplicate-free list, ordered
+ *		in ascending order of node-specifier intervals, with a gap of
+ *		at least 2 between adjacent entries. Otherwise maintain @head
+ *		as a list of elements in the order added
  *
- * Maintains @head as duplicate-free list, ordered in ascending order of
- * node-specifier intervals, with a gap of at least 2 between adjacent entries.
+ * Maintains @head as list
  * Returns 0 if ok, -1 on failure.
  */
-static int ns_add_range(struct nodespec **head,
-			uint32_t new_start,
-			uint32_t new_end)
+static int _ns_add_range(struct nodespec **head,
+			 uint32_t new_start, uint32_t new_end, bool sorted)
 {
 	struct nodespec *cur = *head, *next;
 
 	assert(new_start <= new_end);
 
+	if (!sorted) {
+		if (cur) {
+			while (cur->next)	/* find end of list */
+				cur = cur->next;
+			if (new_start == (cur->end + 1))
+				cur->end = new_end;
+			else
+				cur->next = _ns_new(new_start, new_end);
+		} else {
+			*head = _ns_new(new_start, new_end);
+		}
+		return 0;
+	}
+
 	if (cur == NULL || new_end + 1 < cur->start) {
-		*head = ns_new(new_start, new_end);
-		if (*head == NULL)
-			return -1;
+		*head = _ns_new(new_start, new_end);
 		(*head)->next = cur;
 		return 0;
 	}
@@ -52,9 +66,7 @@ static int ns_add_range(struct nodespec **head,
 	     new_start > cur->end + 1;
 	     cur = next, next = cur->next)
 		if (next == NULL || new_end + 1 < next->start) {
-			next = ns_new(new_start, new_end);
-			if (next == NULL)
-				return -1;
+			next = _ns_new(new_start, new_end);
 			next->next = cur->next;
 			cur->next  = next;
 			return 0;
@@ -80,9 +92,9 @@ static int ns_add_range(struct nodespec **head,
 }
 
 /** Add a single node (1-element range) */
-int ns_add_node(struct nodespec **head, uint32_t node_id)
+extern int ns_add_node(struct nodespec **head, uint32_t node_id, bool sorted)
 {
-	return ns_add_range(head, node_id, node_id);
+	return _ns_add_range(head, node_id, node_id, sorted);
 }
 
 /* count the number of nodes starting at @head */

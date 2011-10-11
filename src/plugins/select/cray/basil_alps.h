@@ -543,7 +543,7 @@ struct nodespec {
 	struct nodespec *next;
 };
 
-extern int ns_add_node(struct nodespec **head, uint32_t node_id);
+extern int ns_add_node(struct nodespec **head, uint32_t node_id, bool sorted);
 extern char *ns_to_string(const struct nodespec *head);
 extern void free_nodespec(struct nodespec *head);
 
