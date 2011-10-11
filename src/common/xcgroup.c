@@ -822,7 +822,8 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr, file_path);
-			fstatus = XCGROUP_ERROR;
+			if ( errno != ESRCH )
+				fstatus = XCGROUP_ERROR;
 		}
 
 	}
@@ -942,7 +943,8 @@ int _file_write_uint32s(char* file_path, uint32_t* values, int nb)
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr, file_path);
-			fstatus = XCGROUP_ERROR;
+			if ( errno != ESRCH )
+				fstatus = XCGROUP_ERROR;
 		}
 
 	}

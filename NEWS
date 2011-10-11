@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - If removing blocks from system that once existed cleanup of old
     block happens correctly now.
  -- Prevent slurmctld crashing with configuration of MaxMemPerCPU=0.
+ -- Prevent job hold by operator or account coordinator of his own job from
+    being an Administrator Hold rather than User Hold by default.
 
 * Changes in SLURM 2.3.0-2
 ==========================
