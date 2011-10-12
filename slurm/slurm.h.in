@@ -1501,6 +1501,7 @@ typedef struct delete_partition_msg {
 typedef struct resource_allocation_response_msg {
 	uint32_t job_id;	/* assigned job id */
 	char *node_list;	/* assigned list of nodes */
+	char *alias_list;	/* node name/address aliases */
 	uint32_t num_cpu_groups;/* elements in below cpu arrays */
 	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */

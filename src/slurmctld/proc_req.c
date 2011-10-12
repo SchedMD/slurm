@@ -858,6 +858,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.job_id         = job_ptr->job_id;
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
 		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
+		alloc_msg.alias_list     = xstrdup(job_ptr->alias_list);
 		alloc_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		if (job_ptr->details) {
@@ -2074,6 +2075,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		job_info_resp_msg.job_id         = job_info_msg->job_id;
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
+		job_info_resp_msg.alias_list     = xstrdup(job_ptr->alias_list);
 		job_info_resp_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
@@ -2125,7 +2127,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else if ((sbcast_cred = create_sbcast_cred(slurmctld_config.cred_ctx,
-						     job_ptr->job_id, job_ptr->nodes)) == NULL) {
+						     job_ptr->job_id,
+						     job_ptr->nodes)) == NULL){
 		unlock_slurmctld(job_read_lock);
 		error("_slurm_rpc_job_sbcast_cred JobId=%u cred create error",
 		      job_info_msg->job_id);

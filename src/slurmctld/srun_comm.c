@@ -93,6 +93,7 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg = xmalloc(sizeof(resource_allocation_response_msg_t));
 		msg_arg->job_id 	= job_ptr->job_id;
 		msg_arg->node_list	= xstrdup(job_ptr->nodes);
+		msg_arg->alias_list	= xstrdup(job_ptr->alias_list);
 		msg_arg->num_cpu_groups	= job_resrcs_ptr->cpu_array_cnt;
 		msg_arg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
 					  job_resrcs_ptr->cpu_array_cnt);

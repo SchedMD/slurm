@@ -5378,6 +5378,7 @@ static void _list_delete_job(void *job_entry)
 
 	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
+	xfree(job_ptr->alias_list);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->batch_host);
 	xfree(job_ptr->comment);

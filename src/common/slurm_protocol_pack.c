@@ -2465,6 +2465,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 	pack32(msg->error_code, buffer);
 	pack32(msg->job_id, buffer);
 	pack32(msg->pn_min_memory, buffer);
+	packstr(msg->alias_list, buffer);
 	packstr(msg->node_list, buffer);
 
 	pack32(msg->num_cpu_groups, buffer);
@@ -2493,31 +2494,61 @@ _unpack_resource_allocation_response_msg(
 	*msg = tmp_ptr;
 
 	/* load the data values */
-	safe_unpack32(&tmp_ptr->error_code, buffer);
-	safe_unpack32(&tmp_ptr->job_id, buffer);
-	safe_unpack32(&tmp_ptr->pn_min_memory, buffer);
-	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->pn_min_memory, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->alias_list, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
+				       buffer);
 
-	safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
-	if (tmp_ptr->num_cpu_groups > 0) {
-		safe_unpack16_array(&tmp_ptr->cpus_per_node, &uint32_tmp,
-				    buffer);
-		if (tmp_ptr->num_cpu_groups != uint32_tmp)
-			goto unpack_error;
-		safe_unpack32_array(&tmp_ptr->cpu_count_reps, &uint32_tmp,
-				    buffer);
-		if (tmp_ptr->num_cpu_groups != uint32_tmp)
+		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
+		if (tmp_ptr->num_cpu_groups > 0) {
+			safe_unpack16_array(&tmp_ptr->cpus_per_node,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+		} else {
+			tmp_ptr->cpus_per_node = NULL;
+			tmp_ptr->cpu_count_reps = NULL;
+		}
+
+		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+						   buffer, protocol_version))
 			goto unpack_error;
 	} else {
-		tmp_ptr->cpus_per_node = NULL;
-		tmp_ptr->cpu_count_reps = NULL;
+		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->pn_min_memory, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
+		if (tmp_ptr->num_cpu_groups > 0) {
+			safe_unpack16_array(&tmp_ptr->cpus_per_node,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+		} else {
+			tmp_ptr->cpus_per_node = NULL;
+			tmp_ptr->cpu_count_reps = NULL;
+		}
+
+		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
 	}
-
-	safe_unpack32(&tmp_ptr->node_cnt, buffer);
-
-	if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo, buffer,
-					   protocol_version))
-		goto unpack_error;
 
 	return SLURM_SUCCESS;
 

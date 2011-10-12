@@ -129,6 +129,7 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 extern void allocate_nodes(struct job_record *job_ptr)
 {
 	int i;
+	struct node_record *node_ptr;
 
 #ifdef HAVE_FRONT_END
 	job_ptr->front_end_ptr = assign_front_end();
@@ -137,13 +138,22 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
 #endif
 
-	for (i = 0; i < node_record_count; i++) {
+	xfree(job_ptr->alias_list);
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
+		if (IS_NODE_CLOUD(node_ptr)) {
+			if (job_ptr->alias_list)
+				xstrcat(job_ptr->alias_list, ",");
+			xstrcat(job_ptr->alias_list, node_ptr->name);
+			xstrcat(job_ptr->alias_list, ":");
+			xstrcat(job_ptr->alias_list, node_ptr->comm_name);
+		}
 		make_node_alloc(&node_record_table_ptr[i], job_ptr);
 		if (job_ptr->batch_host)
 			continue;
-		job_ptr->batch_host = xstrdup(node_record_table_ptr[i].name);
+		job_ptr->batch_host = xstrdup(node_ptr->name);
 	}
 	last_node_update = time(NULL);
 

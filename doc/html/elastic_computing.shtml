@@ -126,10 +126,18 @@ option is used.</li>
 <p>The <i>SuspendProgram</i> only needs to relinquish the node back to the
 cloud.</p>
 
+<p>An environment variable SLURM_NODE_ALIASES is set with the node name and
+communication address pairs. The variable is set by salloc, sbatch, and srun.
+It is then used by srun to determine the destination for job launch
+communication messages.</p>
+
 <h2>Remaining Work</h2>
 
 <ul>
-<li>srun commands are not currently aware of the addresses of nodes in the cloud.</li>
+<li>The sbatch logicneeds modifcation to set the SLURM_NODE_ALIASES
+environment variable.</li>
+<li>The SLURM_NODE_ALIASES environment varilable needs to change if jobs
+size changes.</li>
 <li>We need scripts to provision resources from EC2.</li>
 </ul>
 

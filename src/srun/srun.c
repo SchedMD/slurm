@@ -149,8 +149,9 @@ static void  _pty_restore(void);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
-static void  _set_cpu_env_var(resource_allocation_response_msg_t *resp);
+static void  _set_env_vars(resource_allocation_response_msg_t *resp);
 static void  _set_exit_code(void);
+static void  _set_node_alias(void);
 static void  _step_opt_exclusive(void);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 static void  _set_submit_dir_env(void);
@@ -309,7 +310,7 @@ int srun(int ac, char **av)
 			opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)
 			_step_opt_exclusive();
-		_set_cpu_env_var(resp);
+		_set_env_vars(resp);
 		if (_validate_relative(resp))
 			exit(error_exit);
 		job = job_step_create_allocation(resp);
@@ -345,7 +346,7 @@ int srun(int ac, char **av)
 			exit(error_exit);
 		got_alloc = 1;
 		_print_job_information(resp);
-		_set_cpu_env_var(resp);
+		_set_env_vars(resp);
 		if (_validate_relative(resp)) {
 			slurm_complete_job(resp->job_id, 1);
 			exit(error_exit);
@@ -438,6 +439,7 @@ int srun(int ac, char **av)
 	setup_env(env, opt.preserve_env);
 	xfree(env->task_count);
 	xfree(env);
+	_set_node_alias();
 
  re_launch:
 #if defined HAVE_BGQ
@@ -779,19 +781,29 @@ static void _set_exit_code(void)
 	}
 }
 
-static void _set_cpu_env_var(resource_allocation_response_msg_t *resp)
+static void _set_env_vars(resource_allocation_response_msg_t *resp)
 {
 	char *tmp;
 
-	if (getenv("SLURM_JOB_CPUS_PER_NODE"))
-		return;
+	if (!getenv("SLURM_JOB_CPUS_PER_NODE")) {
+		tmp = uint32_compressed_to_str(resp->num_cpu_groups,
+					       resp->cpus_per_node,
+					       resp->cpu_count_reps);
+		if (setenvf(NULL, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp) < 0) {
+			error("unable to set SLURM_JOB_CPUS_PER_NODE in "
+			      "environment");
+		}
+		xfree(tmp);
+	}
 
-	tmp = uint32_compressed_to_str(resp->num_cpu_groups,
-				       resp->cpus_per_node,
-				       resp->cpu_count_reps);
-	if (setenvf(NULL, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp) < 0)
-		error("unable to set SLURM_JOB_CPUS_PER_NODE in environment");
-	xfree(tmp);
+	if (!getenv("SLURM_NODE_ALIASES") && resp->alias_list) {
+		if (setenvf(NULL, "SLURM_NODE_ALIASES", "%s",
+			    resp->alias_list) < 0) {
+			error("unable to set SLURM_NODE_ALIASES in "
+			      "environment");
+		}
+	}
+
 	return;
 }
 
@@ -873,6 +885,27 @@ static int _set_rlimit_env(void)
 	}
 
 	return rc;
+}
+
+static void _set_node_alias(void)
+{
+	char *aliases, *save_ptr = NULL, *tmp;
+	char *addr, *name;
+
+	tmp = getenv("SLURM_NODE_ALIASES");
+	if (!tmp)
+		return;
+	aliases = xstrdup(tmp);
+	name = strtok_r(aliases, ":", &save_ptr);
+	while (name) {
+		addr = strtok_r(NULL, ",", &save_ptr);
+		if (addr) {
+			slurm_reset_alias(name, addr, addr);
+			name = strtok_r(NULL, ":", &save_ptr);
+		} else
+			name = NULL;
+	}
+	xfree(aliases);
 }
 
 static int _become_user (void)

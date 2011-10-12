@@ -943,17 +943,19 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
 				alloc->node_list);
+	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
+				alloc->alias_list);
 
 	_set_distribution(desc->task_dist, &dist, &lllp_dist);
-	if(dist)
+	if (dist)
 		env_array_overwrite_fmt(dest, "SLURM_DISTRIBUTION", "%s",
 					dist);
 
-	if(desc->task_dist == SLURM_DIST_PLANE)
+	if (desc->task_dist == SLURM_DIST_PLANE)
 		env_array_overwrite_fmt(dest, "SLURM_DIST_PLANESIZE",
 					"%u", desc->plane_size);
 
-	if(lllp_dist)
+	if (lllp_dist)
 		env_array_overwrite_fmt(dest, "SLURM_DIST_LLLP", "%s",
 					lllp_dist);
 
