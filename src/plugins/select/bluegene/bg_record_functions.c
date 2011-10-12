@@ -232,6 +232,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 
 	list_sort(bg_record->ba_mp_list, (ListCmpF) _ba_mp_cmpf_inc);
 
+	FREE_NULL_BITMAP(bg_record->mp_bitmap);
+	bg_record->mp_bitmap = bit_alloc(node_record_count);
 	bg_record->mp_count = 0;
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = list_next(itr))) {
@@ -250,6 +252,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					   (int16_t)bg_record->start[dim]))
 				bg_record->start[dim] =	ba_mp->coord[dim];
 		}
+		bit_set(bg_record->mp_bitmap, ba_mp->index);
 	}
 	list_iterator_destroy(itr);
 	if (bg_conf->slurm_debug_level >= LOG_LEVEL_DEBUG3) {
@@ -278,13 +281,6 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	} else if (bg_record->cnode_cnt == bg_conf->mp_cnode_cnt)
 		bg_record->full_block = 1;
 
-	FREE_NULL_BITMAP(bg_record->mp_bitmap);
-	if (node_name2bitmap(bg_record->mp_str,
-			     false,
-			     &bg_record->mp_bitmap)) {
-		fatal("process_nodes: Unable to convert nodes %s to bitmap",
-		      bg_record->mp_str);
-	}
 	return;
 }
 
