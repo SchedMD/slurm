@@ -51,5 +51,6 @@ enum {A, X, Y, Z, E};
 
 /* Global */
 extern ba_mp_t ****ba_main_grid;
+extern ba_geo_system_t *ba_mp_geo_system;
 
 #endif /* _BLOCK_ALLOCATOR_H_ */

@@ -65,9 +65,9 @@ typedef struct {
 /* _ba_system is the "current" system that the structures will work
  *  on */
 ba_mp_t ****ba_main_grid = NULL;
+ba_geo_system_t *ba_mp_geo_system = NULL;
 
 static ba_geo_system_t *ba_main_geo_system = NULL;
-static ba_geo_system_t *ba_mp_geo_system = NULL;
 static uint16_t *deny_pass = NULL;
 static ba_nc_coords_t g_nc_coords[16];
 static ba_mp_t **ba_main_grid_array = NULL;
