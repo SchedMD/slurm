@@ -474,42 +474,49 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		ba_mp = list_peek(bg_record->ba_mp_list);
 	if (!ba_mp) {
 		if (bg_record->mp_str) {
-			hostlist_t hl = hostlist_create(bg_record->mp_str);
-			char *host = hostlist_shift(hl);
-			hostlist_destroy(hl);
-			found_record->mp_str = xstrdup(host);
-			free(host);
+			int j = 0, dim;
+			char *nodes = bg_record->mp_str;
+			uint16_t coords[SYSTEM_DIMENSIONS];
+			while (nodes[j] != '\0') {
+				if ((nodes[j] >= '0' && nodes[j] <= '9')
+				    || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
+					break;
+				}
+				j++;
+			}
+			if (nodes[j] && ((strlen(nodes)
+					  - (j + SYSTEM_DIMENSIONS)) >= 0)) {
+				for (dim = 0; dim < SYSTEM_DIMENSIONS;
+				     dim++, j++)
+					coords[dim] = select_char2coord(
+						nodes[j]);
+				ba_mp = coord2ba_mp(coords);
+			}
 			error("you gave me a list with no ba_mps using %s",
-			      found_record->mp_str);
+			      ba_mp->coord_str);
 		} else {
-			char tmp_char[SYSTEM_DIMENSIONS+1];
-			int dim;
-			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-				tmp_char[dim] =
-					alpha_num[found_record->start[dim]];
-			tmp_char[dim] = '\0';
-			found_record->mp_str = xstrdup_printf(
-				"%s%s",
-				bg_conf->slurm_node_prefix,
-				tmp_char);
+			ba_mp = coord2ba_mp(found_record->start);
 			error("you gave me a record with no ba_mps "
 			      "and no nodes either using %s",
-			      found_record->mp_str);
+			      ba_mp->coord_str);
 		}
-	} else {
-		new_ba_mp = ba_copy_mp(ba_mp);
-		/* We need to have this node wrapped in Q to handle
-		   wires correctly when creating around the midplane.
-		*/
-		ba_setup_mp(new_ba_mp, false, true);
-
-		new_ba_mp->used = BA_MP_USED_TRUE;
-		list_append(found_record->ba_mp_list, new_ba_mp);
-		found_record->mp_count = 1;
-		found_record->mp_str = xstrdup_printf(
-			"%s%s",
-			bg_conf->slurm_node_prefix, new_ba_mp->coord_str);
 	}
+
+	xassert(ba_mp);
+
+	new_ba_mp = ba_copy_mp(ba_mp);
+	/* We need to have this node wrapped in Q to handle
+	   wires correctly when creating around the midplane.
+	*/
+	ba_setup_mp(new_ba_mp, false, true);
+
+	new_ba_mp->used = BA_MP_USED_TRUE;
+	list_append(found_record->ba_mp_list, new_ba_mp);
+	found_record->mp_count = 1;
+	found_record->mp_str = xstrdup_printf(
+		"%s%s",
+		bg_conf->slurm_node_prefix, new_ba_mp->coord_str);
+
 
 #ifdef HAVE_BGL
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
