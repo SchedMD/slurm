@@ -41,7 +41,7 @@ Some general SLURM configuration parameters that are of interest include:
 <dd>The program executed when a node has been allocated and should be made
 available for use.
 <dt><b>SelectType</b>
-<dd>Must be "select/linear".
+<dd>Generally must be "select/linear".
 <dt><b>SuspendExcNodes</b>
 <dd>Nodes not subject to suspend/resume logic. This may be used to avoid
 suspending and resuming nodes which are not in the clould. Alternately the
@@ -53,6 +53,12 @@ relinquished to the cloud.
 <dt><b>SuspendTime</b>
 <dd>The time interval that a node will be left idle before a request is made to
 relinquish it. Units are seconds.
+<dt><b>TreeWidth</b>
+<dd>Since the slurmd daemons are not aware of the network addresses of nodes in
+the cloud, the slurmd daemons on each node should be sent messages directly and
+not forward those messages between each other. To do so, configure TreeWidth to
+a number at least as large as the maximum node count. The value may not exceed
+65533.
 </dl>
 </p>
 
@@ -89,9 +95,9 @@ SelectType=select/linear
 
 SuspendProgram=/usr/sbin/slurm_suspend
 ResumeProgram=/usr/sbin/slurm_suspend
-SuspendTime=10
+SuspendTime=600
 SuspendExcNodes=tux[0-127]
-
+TreeWidth=128
 
 NodeName=tux[0-127] Weight=1  Feature=local State=UNKNOWN
 NodeName=ec[0-127]  Weight=10 Feature=cloud State=CLOUD
@@ -110,23 +116,25 @@ allocated, the <i>ResumeProgram</i> is executed and should do the following:</p>
 <li>Configure and start Munge (depends upon configuration)</li>
 <li>Build SLURM configuration file on that node including its NodeHostname and NodeAddr</li>
 <li>Notify the slurmctld daemon of the node's name and network address:<br>
-  <i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i></li>
-<li>Start slurmd on the node</li>
+  <i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i><br>
+Note that the node address and name information set by the scontrol command are
+are preserved when the slurmctld daemon is restarted unless the "-c" (cold-start)
+option is used.</li>
+<li>Start the slurmd daemon on the node</li>
 </ol>
 
-<p>The <i>ResumeProgram</i> only needs to relinquish the node back to the
+<p>The <i>SuspendProgram</i> only needs to relinquish the node back to the
 cloud.</p>
 
 <h2>Remaining Work</h2>
 
 <ul>
-<li>Message forwarding between the slurmd daemons needs work since each slurmd
-does not necessarily recognize the address of every other slurmd.</li>
+<li>srun commands are not currently aware of the addresses of nodes in the cloud.</li>
 <li>We need scripts to provision resources from EC2.</li>
 </ul>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 October 2011</p>
+<p style="text-align:center;">Last modified 12 October 2011</p>
 
 <!--#include virtual="footer.txt"-->
