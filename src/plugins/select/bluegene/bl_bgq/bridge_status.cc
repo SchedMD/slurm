@@ -732,6 +732,7 @@ extern int bridge_status_fini(void)
 
 	bridge_status_inited = false;
 #if defined HAVE_BG_FILES
+	slurm_mutex_lock(&rt_mutex);
 	/* make the rt connection end. */
 	rt_client_ptr->disconnect();
 
@@ -749,6 +750,7 @@ extern int bridge_status_fini(void)
 		pthread_join(poll_thread, NULL);
 		poll_thread = 0;
 	}
+	slurm_mutex_unlock(&rt_mutex);
 	pthread_mutex_destroy(&rt_mutex);
 	delete(rt_client_ptr);
 #endif
