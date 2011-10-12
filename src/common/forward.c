@@ -543,7 +543,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 
 	ret_list = list_create(destroy_data_info);
 
-	while((name = hostlist_shift(hl))) {
+	while ((name = hostlist_shift(hl))) {
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
 		int retries = 0;
@@ -567,16 +567,16 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 
 		fwd_tree->tree_hl = hostlist_create(name);
 		free(name);
-		for(j = 0; j < span[thr_count]; j++) {
+		for (j = 0; j < span[thr_count]; j++) {
 			name = hostlist_shift(hl);
-			if(!name)
+			if (!name)
 				break;
 			hostlist_push(fwd_tree->tree_hl, name);
 			free(name);
 		}
 
-		while(pthread_create(&thread_agent, &attr_agent,
-				     _fwd_tree_thread, (void *)fwd_tree)) {
+		while (pthread_create(&thread_agent, &attr_agent,
+				      _fwd_tree_thread, (void *)fwd_tree)) {
 			error("pthread_create error %m");
 			if (++retries > MAX_RETRIES)
 				fatal("Can't create pthread");
@@ -591,7 +591,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 
 	count = list_count(ret_list);
 	debug2("Tree head got back %d looking for %d", count, host_count);
-	while((count < host_count)) {
+	while ((count < host_count)) {
 		pthread_cond_wait(&notify, &tree_mutex);
 		count = list_count(ret_list);
 		debug2("Tree head got back %d", count);
