@@ -142,6 +142,10 @@ expect {
 		set read_state 1
 		exp_continue
 	}
+	-re "State=($alpha_cap).CLOUD.DRAIN" {
+		set read_state 1
+		exp_continue
+	}
 	-re "Reason=($alpha_cap)" {
 		set reason_code $expect_out(1,string)
 		exp_continue
@@ -200,6 +204,10 @@ set read_state 0
 spawn  $scontrol show node $node_name
 expect {
 	-re "State=($alpha_cap).DRAIN" {
+		set read_state 1
+		exp_continue
+	}
+	-re "State=($alpha_cap).CLOUD.DRAIN" {
 		set read_state 1
 		exp_continue
 	}
