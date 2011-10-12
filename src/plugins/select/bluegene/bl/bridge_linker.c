@@ -1435,7 +1435,6 @@ extern int bridge_init(char *properties_file)
 #else
 	fatal("No BG_SERIAL is set, can't run.");
 #endif
-	bridge_status_init();
 #endif
 	return 1;
 

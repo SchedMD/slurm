@@ -41,7 +41,6 @@
 
 #include "bridge_helper.h"
 
-extern int bridge_status_init(void);
 extern int bridge_status_fini(void);
 
 #endif

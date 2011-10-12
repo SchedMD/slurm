@@ -47,6 +47,8 @@ extern List bg_status_create_kill_job_list(void);
 extern void bg_status_process_kill_job_list(List kill_job_list);
 
 /* defined in the various bridge_status' */
+extern int bridge_status_init(void);
+
 extern int bridge_block_check_mp_states(char *bg_block_id,
 					bool slurmctld_locked);
 /* This needs to have block_state_mutex locked before hand. */

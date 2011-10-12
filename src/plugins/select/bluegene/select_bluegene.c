@@ -1956,6 +1956,9 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 
 extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 {
+        if (bg_recover != NOT_FROM_CONTROLLER)
+                bridge_status_init();
+
 	return select_nodeinfo_set_all(last_query_time);
 }
 

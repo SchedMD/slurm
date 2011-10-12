@@ -380,8 +380,6 @@ extern int bridge_setup_system()
 	_setup_ba_mp(0, coords, getComputeHardware());
 #endif
 
-	bridge_status_init();
-
 	return SLURM_SUCCESS;
 }
 

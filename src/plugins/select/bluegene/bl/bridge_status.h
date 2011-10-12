@@ -39,7 +39,6 @@
 #ifndef _BRIDGE_STATUS_H_
 #define _BRIDGE_STATUS_H_
 
-extern int bridge_status_init(void);
 extern int bridge_status_fini(void);
 
 #endif

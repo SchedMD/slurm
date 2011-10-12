@@ -71,6 +71,8 @@ static bool bridge_status_inited = false;
 
 #if defined HAVE_BG_FILES
 
+static bool initial_poll = true;
+
 /*
  * Handle compute block status changes as a result of a block allocate.
  */
@@ -687,10 +689,11 @@ static void *_poll(void *no_data)
 		slurm_mutex_unlock(&rt_mutex);
 		/* This means we are doing outside of the thread so
 		   break */
-		if (!blocks_are_created)
+		if (initial_poll)
 			break;
 		sleep(1);
 	}
+
 	return NULL;
 }
 
@@ -699,7 +702,7 @@ static void *_poll(void *no_data)
 extern int bridge_status_init(void)
 {
 	if (bridge_status_inited)
-		return SLURM_ERROR;
+		return SLURM_SUCCESS;
 
 	bridge_status_inited = true;
 
@@ -711,6 +714,7 @@ extern int bridge_status_init(void)
 
 	/* get initial state */
 	_poll(NULL);
+	initial_poll = false;
 
 	rt_client_ptr = new(bgsched::realtime::Client);
 
