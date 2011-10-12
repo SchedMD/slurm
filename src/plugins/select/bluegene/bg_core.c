@@ -43,9 +43,7 @@
 #include "bg_defined_block.h"
 #include "src/slurmctld/locks.h"
 #include <fcntl.h>
-#ifdef HAVE_BG_L_P
-#include "bl/bridge_status.h"
-#endif
+
 #define MAX_FREE_RETRIES           200 /* max number of
 					* FREE_SLEEP_INTERVALS to wait
 					* before putting a
@@ -181,10 +179,10 @@ static void *_track_freeing_blocks(void *args)
 	while (retry_cnt < MAX_FREE_RETRIES) {
 		free_cnt = 0;
 		slurm_mutex_lock(&block_state_mutex);
-#ifdef HAVE_BG_L_P
+
 		/* just to make sure state is updated */
 		bridge_status_update_block_list_state(track_list);
-#endif
+
 		list_iterator_reset(itr);
 		/* just incase this changes from the update function */
 		track_cnt = list_count(track_list);

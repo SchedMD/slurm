@@ -757,6 +757,61 @@ extern int bridge_status_fini(void)
 	return SLURM_SUCCESS;
 }
 
+/* This needs to have block_state_mutex locked before hand. */
+extern int bridge_status_update_block_list_state(List block_list)
+{
+	int updated = 0;
+#if defined HAVE_BG_FILES
+	uint16_t real_state, state;
+	bg_record_t *bg_record = NULL;
+	ListIterator itr = NULL;
+
+	itr = list_iterator_create(block_list);
+	while ((bg_record = (bg_record_t *) list_next(itr))) {
+		BlockFilter filter;
+		Block::Ptrs vec;
+		if (bg_record->magic != BLOCK_MAGIC) {
+			/* block is gone */
+			list_remove(itr);
+			continue;
+		} else if (!bg_record->bg_block_id)
+			continue;
+
+		filter.setName(string(bg_record->bg_block_id));
+
+		vec = getBlocks(filter, BlockSort::AnyOrder);
+		if (vec.empty()) {
+			debug("bridge_status_update_block_list_state: "
+			      "block %s not found, removing from slurm",
+			      bg_record->bg_block_id);
+			/* block is gone? */
+			list_remove(itr);
+			continue;
+		}
+		const Block::Ptr &block_ptr = *(vec.begin());
+
+		real_state = bg_record->state & (~BG_BLOCK_ERROR_FLAG);
+		state = bridge_translate_status(
+			block_ptr->getStatus().toValue());
+
+		if (real_state != state) {
+			if (bg_record->state & BG_BLOCK_ERROR_FLAG)
+				state |= BG_BLOCK_ERROR_FLAG;
+
+			debug("freeing state of Block %s was %s and now is %s",
+			      bg_record->bg_block_id,
+			      bg_block_state_string(bg_record->state),
+			      bg_block_state_string(state));
+
+			bg_record->state = state;
+			updated = 1;
+		}
+	}
+	list_iterator_destroy(itr);
+#endif
+	return updated;
+}
+
 /*
  * This could potentially lock the node lock in the slurmctld with
  * slurm_drain_node, so if slurmctld_locked is called we will call the
