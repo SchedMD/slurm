@@ -3675,6 +3675,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	launch_msg_ptr->nodes = xstrdup(job_ptr->alias_list);
 	launch_msg_ptr->restart_cnt = job_ptr->restart_cnt;
 	if (job_ptr->details) {
 		launch_msg_ptr->pn_min_memory = job_ptr->details->

@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.3" "August 2011" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.4" "October 2011" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -1281,6 +1281,12 @@ Do not allocate a block on Blue Gene systems only.
 .TP
 \fBMPIRUN_NOFREE\fR
 Do not free a block on Blue Gene systems only.
+.TP
+\fBSLURM_NODE_ALIASES\fR
+Sets of node name, communication address and hostname for nodes allocated to
+the job from the cloud. Each element in the set if colon separated and each
+set is comma separated. For example:
+SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
 Number of tasks requested per core.

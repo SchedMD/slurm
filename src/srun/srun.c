@@ -890,20 +890,22 @@ static int _set_rlimit_env(void)
 static void _set_node_alias(void)
 {
 	char *aliases, *save_ptr = NULL, *tmp;
-	char *addr, *name;
+	char *addr, *hostname, *slurm_name;
 
 	tmp = getenv("SLURM_NODE_ALIASES");
 	if (!tmp)
 		return;
 	aliases = xstrdup(tmp);
-	name = strtok_r(aliases, ":", &save_ptr);
-	while (name) {
-		addr = strtok_r(NULL, ",", &save_ptr);
-		if (addr) {
-			slurm_reset_alias(name, addr, addr);
-			name = strtok_r(NULL, ":", &save_ptr);
-		} else
-			name = NULL;
+	slurm_name = strtok_r(aliases, ":", &save_ptr);
+	while (slurm_name) {
+		addr = strtok_r(NULL, ":", &save_ptr);
+		if (!addr)
+			break;
+		slurm_reset_alias(slurm_name, addr, addr);
+		hostname = strtok_r(NULL, ",", &save_ptr);
+		if (!hostname)
+			break;
+		slurm_name = strtok_r(NULL, ":", &save_ptr);
 	}
 	xfree(aliases);
 }

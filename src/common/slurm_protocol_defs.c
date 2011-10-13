@@ -414,6 +414,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 	int i;
 
 	if (msg) {
+		xfree(msg->alias_list);
 		xfree(msg->nodes);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_node);

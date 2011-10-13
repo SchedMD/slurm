@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.3" "August 2011" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.4" "October 2011" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1710,6 +1710,12 @@ Node local task ID for the process within a job
 .TP
 \fBSLURM_NNODES\fR
 Total number of nodes in the job's resource allocation
+.TP
+\fBSLURM_NODE_ALIASES\fR
+Sets of node name, communication address and hostname for nodes allocated to
+the job from the cloud. Each element in the set if colon separated and each
+set is comma separated. For example:
+SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 .TP
 \fBSLURM_NODEID\fR
 The relative node ID of the current node

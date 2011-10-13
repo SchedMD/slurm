@@ -149,6 +149,8 @@ extern void allocate_nodes(struct job_record *job_ptr)
 			xstrcat(job_ptr->alias_list, node_ptr->name);
 			xstrcat(job_ptr->alias_list, ":");
 			xstrcat(job_ptr->alias_list, node_ptr->comm_name);
+			xstrcat(job_ptr->alias_list, ":");
+			xstrcat(job_ptr->alias_list, node_ptr->node_hostname);
 		}
 		make_node_alloc(&node_record_table_ptr[i], job_ptr);
 		if (job_ptr->batch_host)
@@ -156,7 +158,6 @@ extern void allocate_nodes(struct job_record *job_ptr)
 		job_ptr->batch_host = xstrdup(node_ptr->name);
 	}
 	last_node_update = time(NULL);
-
 	license_job_get(job_ptr);
 	return;
 }

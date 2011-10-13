@@ -721,6 +721,7 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->uid = job_ptr->user_id;
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
+	launch_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
 	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
 	launch_msg_ptr->open_mode  = job_ptr->details->open_mode;

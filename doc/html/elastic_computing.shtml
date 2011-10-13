@@ -44,7 +44,7 @@ available for use.
 <dd>Generally must be "select/linear".
 <dt><b>SuspendExcNodes</b>
 <dd>Nodes not subject to suspend/resume logic. This may be used to avoid
-suspending and resuming nodes which are not in the clould. Alternately the
+suspending and resuming nodes which are not in the cloud. Alternately the
 suspend/resume programs can treat local nodes differently from nodes being
 provisioned from cloud.
 <dt><b>SuspendProgram</b>
@@ -54,11 +54,11 @@ relinquished to the cloud.
 <dd>The time interval that a node will be left idle before a request is made to
 relinquish it. Units are seconds.
 <dt><b>TreeWidth</b>
-<dd>Since the slurmd daemons are not aware of the network addresses of nodes in
-the cloud, the slurmd daemons on each node should be sent messages directly and
-not forward those messages between each other. To do so, configure TreeWidth to
-a number at least as large as the maximum node count. The value may not exceed
-65533.
+<dd>Since the slurmd daemons are not aware of the network addresses of other
+nodes in the cloud, the slurmd daemons on each node should be sent messages
+directly and not forward those messages between each other. To do so,
+configure TreeWidth to a number at least as large as the maximum node count.
+The value may not exceed 65533.
 </dl>
 </p>
 
@@ -68,6 +68,10 @@ a number at least as large as the maximum node count. The value may not exceed
 <dd>A node feature can be associated with resources acquired from the cloud and
 user jobs can specify their preference for resource use with the "--constraint"
 option.
+<dt><b>NodeName</b>
+<dd>This is the name by which SLURM refers to the node. A name containing a
+numeric suffix is recommended for convenience. The NodeAddr and NodeHostname
+should not be set, but will be configured later using scripts.
 <dt><b>State</b>
 <dd>Nodes which are to be be added on demand should have a state of "CLOUD".
 These nodes will not actually appear in SLURM commands until after they are
@@ -114,35 +118,46 @@ allocated, the <i>ResumeProgram</i> is executed and should do the following:</p>
 <ol>
 <li>Boot the node</li>
 <li>Configure and start Munge (depends upon configuration)</li>
-<li>Build SLURM configuration file on that node including its NodeHostname and NodeAddr</li>
-<li>Notify the slurmctld daemon of the node's name and network address:<br>
-  <i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i><br>
-Note that the node address and name information set by the scontrol command are
-are preserved when the slurmctld daemon is restarted unless the "-c" (cold-start)
-option is used.</li>
+<li>Install the SLURM configuration file, slurm.conf, on the node.
+Note that configuration file will generally be identical on all nodes and not
+include NodeAddr or NodeHostname configuration parameters for this node.
+SLURM commands executed on this node only need to communicate with the
+slurmctld daemon on the ControlMachine.
+<li>Notify the slurmctld daemon of the node's hostname and network address:<br>
+<i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i><br>
+Note that the node address and hostname information set by the scontrol command
+are are preserved when the slurmctld daemon is restarted unless the "-c"
+(cold-start) option is used.</li>
 <li>Start the slurmd daemon on the node</li>
 </ol>
 
 <p>The <i>SuspendProgram</i> only needs to relinquish the node back to the
 cloud.</p>
 
-<p>An environment variable SLURM_NODE_ALIASES is set with the node name and
-communication address pairs. The variable is set by salloc, sbatch, and srun.
+<p>An environment variable SLURM_NODE_ALIASES contains sets of node name,
+communication address and hostname.
+The variable is set by salloc, sbatch, and srun.
 It is then used by srun to determine the destination for job launch
-communication messages.</p>
+communication messages.
+This environment variable is only set for nodes allocated from the cloud.
+If a job is allocated some resources from the local cluster and others from
+Each set of names and addresses is comma separated and
+the elements within the set are separated by colons. For example:<br>
+SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2,123.45.67.9:bar</p>
 
 <h2>Remaining Work</h2>
 
 <ul>
-<li>The sbatch logicneeds modifcation to set the SLURM_NODE_ALIASES
+<li>The sbatch logic needs modifcation to set the SLURM_NODE_ALIASES
 environment variable.</li>
-<li>The SLURM_NODE_ALIASES environment varilable needs to change if jobs
-size changes.</li>
+<li>The SLURM_NODE_ALIASES environment varilable needs to change if a job
+expands (adds resources).</li>
 <li>We need scripts to provision resources from EC2.</li>
+<li>Some MPI implementations will not work due to the node naming.</li>
 </ul>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 October 2011</p>
+<p style="text-align:center;">Last modified 13 October 2011</p>
 
 <!--#include virtual="footer.txt"-->

@@ -772,6 +772,7 @@ typedef struct batch_job_launch_msg {
 	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint16_t cpus_per_task;	/* number of CPUs requested per task */
+	char *alias_list;	/* node name/address/hostnamne aliases */
 	char *nodes;		/* list of nodes allocated to job_step */
 	char *script;		/* the actual job script, default NONE */
 	char *std_err;		/* pathname of stderr */

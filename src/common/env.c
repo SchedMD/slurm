@@ -904,6 +904,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
+ *	SLURM_NODE_ALIASES
  *	LOADLBATCH (AIX only)
  *	SLURM_BG_NUM_NODES, MPIRUN_PARTITION, MPIRUN_NOFREE, and
  *	MPIRUN_NOALLOCATE (BG only)
@@ -1054,6 +1055,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
+ *	SLURM_NODE_ALIASES
  *	ENVIRONMENT=BATCH
  *	HOSTNAME
  *	LOADLBATCH (AIX only)
@@ -1095,6 +1097,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					"%u", num_nodes);
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
+	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
+				batch->alias_list);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
 				       batch->cpus_per_node,
