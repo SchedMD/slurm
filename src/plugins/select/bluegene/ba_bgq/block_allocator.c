@@ -102,6 +102,9 @@ static bool _mp_used(ba_mp_t* ba_mp, int dim);
 /** */
 static bool _mp_out_used(ba_mp_t* ba_mp, int dim);
 
+/** */
+static uint16_t _find_distance(uint16_t start, uint16_t end, int dim);
+
 extern void ba_create_system()
 {
 	int a,x,y,z, i = 0, dim;
@@ -1658,5 +1661,13 @@ static bool _mp_out_used(ba_mp_t* ba_mp, int dim)
 	}
 
 	return false;
+}
+
+static uint16_t _find_distance(uint16_t start, uint16_t end, int dim)
+{
+	if (end < start)
+		return (((DIM_SIZE[dim]-1) - start) + end) * 4;
+	else
+		return (end - start) * 4;
 }
 
