@@ -52,6 +52,8 @@
 #include "src/common/xcgroup.h"
 #include "src/common/xcpuinfo.h"
 
+#include "task_cgroup.h"
+
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
 #include <hwloc/glibc-sched.h>
@@ -165,15 +167,25 @@ extern int task_cgroup_cpuset_create(slurmd_job_t *job)
 	char* cpus = NULL;
 	size_t cpus_size;
 
+	char* slurm_cgpath ;
+
+	/* create slurm root cg in this cg namespace */
+	slurm_cgpath = task_cgroup_create_slurm_cg(&cpuset_ns);
+	if ( slurm_cgpath == NULL ) {
+		return SLURM_ERROR;
+	}
+
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
-		if (snprintf(user_cgroup_path,PATH_MAX,
-			      "/uid_%u",uid) >= PATH_MAX) {
-			error("task/cgroup: unable to build uid %u cpuset "
-			      "cg relative path : %m",uid);
+		if (snprintf(user_cgroup_path, PATH_MAX,
+			     "%s/uid_%u", slurm_cgpath, uid) >= PATH_MAX) {
+			error("unable to build uid %u cgroup relative "
+			      "path : %m", uid);
+			xfree(slurm_cgpath);
 			return SLURM_ERROR;
 		}
 	}
+	xfree(slurm_cgpath);
 
 	/* build job cgroup relative path if no set (should not be) */
 	if (*job_cgroup_path == '\0') {

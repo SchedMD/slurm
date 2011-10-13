@@ -75,6 +75,7 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		slurm_cgroup_conf->cgroup_automount = false ;
 		xfree(slurm_cgroup_conf->cgroup_subsystems);
 		xfree(slurm_cgroup_conf->cgroup_release_agent);
+		xfree(slurm_cgroup_conf->cgroup_prepend);
 		slurm_cgroup_conf->constrain_cores = false ;
 		slurm_cgroup_conf->task_affinity = false ;
 		slurm_cgroup_conf->constrain_ram_space = false ;
@@ -146,6 +147,13 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		if (! slurm_cgroup_conf->cgroup_release_agent)
 			slurm_cgroup_conf->cgroup_release_agent =
 				xstrdup("/etc/slurm/cgroup");
+
+		/* cgroup prepend directory */
+#ifndef MULTIPLE_SLURMD
+		slurm_cgroup_conf->cgroup_prepend = xstrdup("/slurm");
+#else
+		slurm_cgroup_conf->cgroup_prepend = xstrdup("/slurm_%n");
+#endif
 
 		/* Cores constraints related conf items */
 		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_cores,

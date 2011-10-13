@@ -54,6 +54,7 @@
 
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xcgroup.h"
+#include "src/common/xstring.h"
 #include "src/common/xcpuinfo.h"
 
 #include <sys/types.h>
@@ -158,15 +159,42 @@ int _slurm_cgroup_init(void)
 
 int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 {
+	/* we do it here as we do not have access to the conf structure */
+	/* in libslurm (src/common/xcgroup.c) */
+	xcgroup_t slurm_cg;
+	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+#ifdef MULTIPLE_SLURMD
+	if ( conf->node_name != NULL )
+		xstrsubstitute(pre,"%n", conf->node_name);
+	else {
+		xfree(pre);
+		pre = (char*) xstrdup("/slurm");
+	}
+#endif
+
+	/* create slurm cgroup in the freezer ns (it could already exist) */
+	if (xcgroup_create(&freezer_ns, &slurm_cg,pre,
+			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+		return SLURM_ERROR;
+	}
+	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
+		xcgroup_destroy(&slurm_cg);
+		return SLURM_ERROR;
+	}
+	else
+		xcgroup_destroy(&slurm_cg);
+
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
 		if (snprintf(user_cgroup_path, PATH_MAX,
-			      "/uid_%u", uid) >= PATH_MAX) {
+			     "%s/uid_%u", pre, uid) >= PATH_MAX) {
 			error("unable to build uid %u cgroup relative "
 			      "path : %m", uid);
+			xfree(pre);
 			return SLURM_ERROR;
 		}
 	}
+	xfree(pre);
 
 	/* build job cgroup relative path if no set (should not be) */
 	if (*job_cgroup_path == '\0') {

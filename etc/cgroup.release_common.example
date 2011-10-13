@@ -16,13 +16,29 @@
 base_path=/cgroup
 progname=$(basename $0)
 subsystem=${progname##*_}
-orphancg=${base_path}/${subsystem}/orphan
 
 if [[ $# -eq 0 ]]
 then
     echo "Usage: $(basename $0) [sync] cgroup"
     exit 1
 fi
+
+# build orphan cg path
+if [[ $# -eq 1 ]]
+then
+    rmcg=${base_path}/${subsystem}$1
+else
+    rmcg=${base_path}/${subsystem}$2
+fi
+slurmcg=${rmcg%/uid_*}
+if [[ ${slurmcg} == ${rmcg} ]]
+then
+    # not a slurm job pattern, perhaps the slurmcg, just remove 
+    # the dir with a lock and exit
+    flock -x ${base_path}/${subsystem} -c "rmdir ${rmcg}"
+    exit $?
+fi
+orphancg=${slurmcg}/orphan
 
 # make sure orphan cgroup is existing
 if [[ ! -d ${orphancg} ]]

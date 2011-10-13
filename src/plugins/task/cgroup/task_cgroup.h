@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  xcgroup_read_config.h - functions and declarations for reading cgroup.conf
+ *  task_cgroup.h - cgroup common primitives for task/cgroup
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
@@ -34,61 +34,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CGROUP_READ_CONFIG_H
-#define _CGROUP_READ_CONFIG_H
-
 #if HAVE_CONFIG_H
-#  include "config.h"
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#else  /* !HAVE_INTTYPES_H */
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#include <stdint.h>
-#endif  /* HAVE_CONFIG_H */
+#   include "config.h"
+#endif
 
+#ifndef _TASK_CGROUP_H_
+#define _TASK_CGROUP_H_
 
-/* Slurm cgroup plugins configuration parameters */
-typedef struct slurm_cgroup_conf {
+#include "src/common/xcgroup_read_config.h"
 
-	bool      cgroup_automount;
-	char *    cgroup_subsystems;
-	char *    cgroup_release_agent;
+static slurm_cgroup_conf_t slurm_cgroup_conf;
 
-	char *    cgroup_prepend;
+extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
 
-	bool      constrain_cores;
-	bool      task_affinity;
-
-	bool      constrain_ram_space;
-	uint32_t  allowed_ram_space;
-
-	bool      constrain_swap_space;
-	uint32_t  allowed_swap_space;
-
-	bool      memlimit_enforcement;
-	uint32_t  memlimit_threshold;
-
-	bool      constrain_devices;
-	char *    allowed_devices_file;
-
-} slurm_cgroup_conf_t;
-
-/*
- * read_slurm_cgroup_conf - load the Slurm cgroup configuration from the
- *      cgroup.conf  file.
- *      This function can be called more than once if so desired.
- * RET SLURM_SUCCESS if no error, otherwise an error code
- */
-extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
-
-/*
- * free_slurm_cgroup_conf - free storage associated with the global variable
- *	slurm_cgroup_conf
- */
-extern void free_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
-
-#endif /* !_DBD_READ_CONFIG_H */
+#endif
