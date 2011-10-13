@@ -168,12 +168,32 @@ extern int task_cgroup_cpuset_create(slurmd_job_t *job)
 	size_t cpus_size;
 
 	char* slurm_cgpath ;
+	xcgroup_t slurm_cg;
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = task_cgroup_create_slurm_cg(&cpuset_ns);
 	if ( slurm_cgpath == NULL ) {
 		return SLURM_ERROR;
 	}
+
+	/* check that this cgroup has cpus allowed or initialize them */
+	if (xcgroup_load(&cpuset_ns,&slurm_cg,slurm_cgpath)
+	    != XCGROUP_SUCCESS) {
+		error("task/cgroup: unable to load slurm cpuset xcgroup");
+		xfree(slurm_cgpath);
+		return SLURM_ERROR;
+	}
+	rc = xcgroup_get_param(&slurm_cg,"cpuset.cpus",&cpus,&cpus_size);
+	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
+		/* initialize the cpusets as it was inexistant */
+		if (_xcgroup_cpuset_init(&slurm_cg) !=
+		    XCGROUP_SUCCESS) {
+			xfree(slurm_cgpath);
+			xcgroup_destroy(&slurm_cg);
+			return SLURM_ERROR;
+		}
+	}
+	xfree(cpus);
 
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
