@@ -93,10 +93,13 @@ int _file_write_content(char* file_path, char* content, size_t csize);
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_create(xcgroup_ns_t* cgns, char* mnt_point, char* mnt_args,
+int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
+		xcgroup_ns_t* cgns, char* mnt_point, char* mnt_args,
 		      char* subsys, char* notify_prog) {
 
-	cgns->mnt_point = xstrdup(mnt_point);
+	cgns->mnt_point = xstrdup(conf->cgroup_mountpoint);
+	xstrcat(cgns->mnt_point, mnt_point);
+
 	cgns->mnt_args = xstrdup(mnt_args);
 	cgns->subsystems = xstrdup(subsys);
 	cgns->notify_prog = xstrdup(notify_prog);

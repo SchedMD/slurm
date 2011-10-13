@@ -103,7 +103,7 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		error("task/cgroup: unable to build devices release agent path");
 		goto error;
 	}
-	if ( xcgroup_ns_create(&devices_ns,CGROUP_BASEDIR "/devices","",
+	if (xcgroup_ns_create(slurm_cgroup_conf, &devices_ns, "/devices","",
 			       "devices",release_agent_path) != 
 	     XCGROUP_SUCCESS ) {
 		error("task/cgroup: unable to create devices namespace");

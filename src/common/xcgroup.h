@@ -43,13 +43,10 @@
 
 #include <sys/types.h>
 #include <dirent.h>
+#include "xcgroup_read_config.h"
 
 #define XCGROUP_ERROR    1
 #define XCGROUP_SUCCESS  0
-
-#ifndef CGROUP_BASEDIR
-#define CGROUP_BASEDIR "/cgroup"
-#endif
 
 typedef struct xcgroup_ns {
 
@@ -80,7 +77,8 @@ typedef struct xcgroup {
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_create(xcgroup_ns_t* cgns,
+int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
+		      xcgroup_ns_t* cgns,
 		      char* mnt_point,char* mnt_args,
 		      char* subsys,char* notify_prog);
 

@@ -56,6 +56,8 @@
 #define PATH_MAX 256
 #endif
 
+extern slurmd_conf_t *conf;
+
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];
 static char jobstep_cgroup_path[PATH_MAX];
@@ -66,8 +68,18 @@ static xcgroup_t user_memory_cg;
 static xcgroup_t job_memory_cg;
 static xcgroup_t step_memory_cg;
 
-static int allowed_ram_space;
-static int allowed_swap_space;
+static float allowed_ram_space;   /* Allowed RAM in percent       */
+static float allowed_swap_space;  /* Allowed Swap percent         */
+
+static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes  */
+static uint64_t max_swap;       /* Upper bound for swap                   */
+static uint64_t totalram;       /* Total real memory available on node    */
+static uint64_t min_ram_space;  /* Don't constrain RAM below this value       */
+
+static uint64_t percent_in_bytes (uint64_t mb, float percent)
+{
+	return ((mb * 1024 * 1024) * (percent / 100.0));
+}
 
 extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
@@ -85,7 +97,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		error("task/cgroup: unable to build memory release agent path");
 		goto error;
 	}
-	if (xcgroup_ns_create(&memory_ns,CGROUP_BASEDIR "/memory","",
+	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "/memory", "",
 			       "memory",release_agent_path) !=
 	     XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create memory namespace");
@@ -110,6 +122,25 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	allowed_ram_space = slurm_cgroup_conf->allowed_ram_space;
 	allowed_swap_space = slurm_cgroup_conf->allowed_swap_space;
+
+	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
+		error ("task/cgroup: Unable to get RealMemory size");
+
+	max_ram = percent_in_bytes(totalram, slurm_cgroup_conf->max_ram_percent);
+	max_swap = percent_in_bytes(totalram, slurm_cgroup_conf->max_swap_percent);
+	max_swap += max_ram;
+	min_ram_space = slurm_cgroup_conf->min_ram_space * 1024 * 1024;
+
+	debug ("task/cgroup/memory: total:%luM allowed:%.4g%%, swap:%.4g%%, "
+	      "max:%.4g%%(%luM) max+swap:%.4g%%(%luM) min:%uM",
+	      (unsigned long) totalram,
+	      allowed_ram_space,
+	      allowed_swap_space,
+	      slurm_cgroup_conf->max_ram_percent,
+	      (unsigned long) (max_ram/(1024*1024)),
+	      slurm_cgroup_conf->max_swap_percent,
+	      (unsigned long) (max_swap/(1024*1024)),
+	      (unsigned) slurm_cgroup_conf->min_ram_space);
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
@@ -172,6 +203,76 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	return SLURM_SUCCESS;
 }
 
+/*
+ *  Return configured memory limit in bytes given a memory limit in MB.
+ */
+static uint64_t mem_limit_in_bytes (uint64_t mem)
+{
+	/* 
+	 *  If mem == 0 then assume there was no SLURM limit imposed
+	 *   on the amount of memory for job or step. Use the total
+	 *   amount of available RAM instead.
+	 */
+	if (mem == 0)
+		mem = totalram * 1024 * 1024;
+	else
+		mem = percent_in_bytes (mem, allowed_ram_space);
+	if (mem < min_ram_space)
+		return (min_ram_space);
+	if (mem > max_ram)
+		return (max_ram);
+	return (mem);
+}
+
+/*
+ *  Return configured swap limit in bytes given a memory limit in MB.
+ *
+ *   Swap limit is calculated as:
+ *
+ *     mem_limit_in_bytes + (configured_swap_percent * allocated_mem_in_bytes)
+ */
+static uint64_t swap_limit_in_bytes (uint64_t mem)
+{
+	uint64_t swap;
+	/*
+	 *  If mem == 0 assume "unlimited" and use totalram.
+	 */
+	swap = percent_in_bytes (mem ? mem : totalram, allowed_swap_space);
+	mem = mem_limit_in_bytes (mem) + swap;
+	if (mem < min_ram_space)
+		return (min_ram_space);
+	if (mem > max_swap)
+		return (max_swap);
+	return (mem);
+}
+
+static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
+		char *path, uint64_t mem_limit, uid_t uid, gid_t gid)
+{
+	uint64_t mlb = mem_limit_in_bytes (mem_limit);
+	uint64_t mls = swap_limit_in_bytes  (mem_limit);
+
+	if (xcgroup_create (ns, cg, path, uid, gid) != XCGROUP_SUCCESS)
+		return -1;
+
+	if (xcgroup_instanciate (cg) != XCGROUP_SUCCESS) {
+		xcgroup_destroy (cg);
+		return -1;
+	}
+
+	xcgroup_set_param (cg, "memory.use_hierarchy","1");
+	xcgroup_set_uint64_param (cg, "memory.limit_in_bytes", mlb);
+	xcgroup_set_uint64_param (cg, "memory.memsw.limit_in_bytes", mls);
+
+	info ("task/cgroup: %s: alloc=%luMB mem.limit=%luMB memsw.limit=%luMB",
+		path,
+		(unsigned long) mem_limit,
+		(unsigned long) mlb/(1024*1024),
+		(unsigned long) mls/(1024*1024));
+
+	return 0;
+}
+
 extern int task_cgroup_memory_create(slurmd_job_t *job)
 {
 	int rc;
@@ -182,9 +283,8 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 	uint32_t jobid = job->jobid;
 	uint32_t stepid = job->stepid;
 	uid_t uid = job->uid;
-	uid_t gid = job->gid;
+	gid_t gid = job->gid;
 	pid_t pid;
-	uint64_t ml,mlb,mls;
 
 	char* slurm_cgpath ;
 
@@ -276,58 +376,22 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 	 * container in order to guarantee that a job will stay on track
 	 * regardless of the consumption of each step.
 	 */
-	ml = (uint64_t) job->job_mem;
-	ml = ml * 1024 * 1024 ;
-	mlb = (uint64_t) (ml * (allowed_ram_space / 100.0)) ;
-	mls = (uint64_t) mlb + (ml * (allowed_swap_space / 100.0)) ;
-	if (xcgroup_create(&memory_ns,&job_memory_cg,
-			    job_cgroup_path,
-			    getuid(),getgid()) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_memory_cg);
+	if (memcg_initialize (&memory_ns, &job_memory_cg, job_cgroup_path,
+	                      job->job_mem, getuid(), getgid()) < 0) {
+		xcgroup_destroy (&user_memory_cg);
 		goto error;
 	}
-	if (xcgroup_instanciate(&job_memory_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_memory_cg);
-		xcgroup_destroy(&job_memory_cg);
-		goto error;
-	}
-	xcgroup_set_param(&job_memory_cg,"memory.use_hierarchy","1");
-	xcgroup_set_uint64_param(&job_memory_cg,
-				 "memory.limit_in_bytes",mlb);
-	xcgroup_set_uint64_param(&job_memory_cg,
-				 "memory.memsw.limit_in_bytes",mls);
-	debug("task/cgroup: job mem.limit=%"PRIu64"MB memsw.limit=%"PRIu64"MB",
-	      mlb/(1024*1024),mls/(1024*1024));
 
 	/*
 	 * Create step cgroup in the memory ns (it should not exists)
 	 * and set the associated memory limits.
 	 */
-	ml = (uint64_t) job->step_mem;
-	ml = ml * 1024 * 1024 ;
-	mlb = (uint64_t) (ml * (allowed_ram_space / 100.0)) ;
-	mls = (uint64_t) mlb + (ml * (allowed_swap_space / 100.0)) ;
-	if (xcgroup_create(&memory_ns,&step_memory_cg,
-			    jobstep_cgroup_path,
-			    uid,gid) != XCGROUP_SUCCESS) {
-		/* do not delete user/job cgroup as */
-		/* they can exist for other steps */
+	if (memcg_initialize (&memory_ns, &step_memory_cg, jobstep_cgroup_path,
+	                      job->step_mem, uid, gid) < 0) {
 		xcgroup_destroy(&user_memory_cg);
 		xcgroup_destroy(&job_memory_cg);
 		goto error;
 	}
-	if (xcgroup_instanciate(&step_memory_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_memory_cg);
-		xcgroup_destroy(&job_memory_cg);
-		xcgroup_destroy(&step_memory_cg);
-		goto error;
-	}
-	xcgroup_set_uint64_param(&step_memory_cg,
-				 "memory.limit_in_bytes",mlb);
-	xcgroup_set_uint64_param(&step_memory_cg,
-				 "memory.memsw.limit_in_bytes",mls);
-	debug("task/cgroup: step mem.limit=%"PRIu64"MB memsw.limit=%"PRIu64"MB",
-	      mlb/(1024*1024),mls/(1024*1024));
 
 	/*
 	 * Attach the slurmstepd to the step memory cgroup
