@@ -337,6 +337,17 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		itr = list_iterator_create(fir_record->ba_mp_list);
 		while ((ba_mp = list_next(itr))) {
 			new_ba_mp = ba_copy_mp(ba_mp);
+
+			if (ba_mp->cnode_bitmap)
+				new_ba_mp->cnode_bitmap =
+					bit_copy(ba_mp->cnode_bitmap);
+			if (ba_mp->cnode_err_bitmap)
+				new_ba_mp->cnode_err_bitmap =
+					bit_copy(ba_mp->cnode_err_bitmap);
+			if (ba_mp->cnode_usable_bitmap)
+				new_ba_mp->cnode_usable_bitmap =
+					bit_copy(ba_mp->cnode_usable_bitmap);
+
 			list_append(sec_record->ba_mp_list, new_ba_mp);
 		}
 		list_iterator_destroy(itr);
