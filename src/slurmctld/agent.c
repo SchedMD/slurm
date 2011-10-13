@@ -1522,7 +1522,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	batch_job_launch_msg_t *launch_msg_ptr;
 	time_t now = time(NULL);
 	struct job_record  *job_ptr;
-	int delay_time, nodes_ready = 0;
+	int delay_time, nodes_ready = 0, tmp;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
@@ -1544,7 +1544,19 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	if (job_ptr->wait_all_nodes) {
-		(void) job_node_ready(launch_msg_ptr->job_id, &nodes_ready);
+		(void) job_node_ready(launch_msg_ptr->job_id, &tmp);
+		if (tmp == (READY_JOB_STATE | READY_NODE_STATE)) {
+			nodes_ready = 1;
+			if (launch_msg_ptr->alias_list &&
+			    !strcmp(launch_msg_ptr->alias_list, "TBD")) {
+				struct job_record *job_ptr;
+				job_ptr = find_job_record(launch_msg_ptr->
+							  job_id);
+				xfree(launch_msg_ptr->alias_list);
+				launch_msg_ptr->alias_list = xstrdup(job_ptr->
+								     alias_list);
+			}
+		}
 	} else {
 #ifdef HAVE_FRONT_END
 		nodes_ready = 1;

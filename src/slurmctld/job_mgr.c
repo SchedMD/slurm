@@ -8530,6 +8530,12 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	if (job_ptr->alias_list && !strcmp(job_ptr->alias_list, "TBD") &&
+	    job_ptr->node_bitmap &&
+	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
+		set_job_alias_list(job_ptr);
+	}
+
 	*job_pptr = job_ptr;
 	return SLURM_SUCCESS;
 }
@@ -8992,17 +8998,22 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	/* Always call select_g_job_ready() so that select/bluegene can
 	 * test and update block state information. */
 	rc = select_g_job_ready(job_ptr);
-
 	if (rc == READY_JOB_FATAL)
 		return ESLURM_INVALID_PARTITION_NAME;
 	if (rc == READY_JOB_ERROR)
 		return EAGAIN;
-
 	if (rc)
 		rc = READY_NODE_STATE;
 
 	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 		rc |= READY_JOB_STATE;
+
+	if ((rc == (READY_NODE_STATE | READY_JOB_STATE)) &&
+	    job_ptr->alias_list && !strcmp(job_ptr->alias_list, "TBD") &&
+	    job_ptr->node_bitmap &&
+	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
+		set_job_alias_list(job_ptr);
+	}
 
 	*ready = rc;
 	return SLURM_SUCCESS;

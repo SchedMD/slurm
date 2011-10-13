@@ -1538,6 +1538,9 @@ extern int send_jobs_to_accounting();
  */
 extern int send_nodes_to_accounting(time_t event_time);
 
+/* Set a job's alias_list string */
+extern void set_job_alias_list(struct job_record *job_ptr);
+
 /*
  * set_job_prio - set a default job priority
  * IN job_ptr - pointer to the job_record

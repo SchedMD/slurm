@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 		}
 #else
 		if (!_wait_nodes_ready(alloc)) {
-			if(!allocation_interrupted)
+			if (!allocation_interrupted)
 				error("Something is wrong with the "
 				      "boot of the nodes.");
 			goto relinquish;
@@ -1076,6 +1076,8 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	pending_job_id = alloc->job_id;
 
+	if (alloc->alias_list && !strcmp(alloc->alias_list, "TBD"))
+		opt.wait_all_nodes = 1;	/* Wait for boot & addresses */
 	if (opt.wait_all_nodes == (uint16_t) NO_VAL)
 		opt.wait_all_nodes = DEFAULT_WAIT_ALL_NODES;
 
@@ -1110,8 +1112,18 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			break;
 	}
 	if (is_ready) {
+		resource_allocation_response_msg_t *resp;
+		char *tmp_str;
 		if (i > 0)
-     			info ("Nodes %s are ready for job", alloc->node_list);
+     			info("Nodes %s are ready for job", alloc->node_list);
+		if (alloc->alias_list && !strcmp(alloc->alias_list, "TBD") &&
+		    (slurm_allocation_lookup_lite(pending_job_id, &resp)
+		     == SLURM_SUCCESS)) {
+			tmp_str = alloc->alias_list;
+			alloc->alias_list = resp->alias_list;
+			resp->alias_list = tmp_str;
+			slurm_free_resource_allocation_response_msg(resp);
+		}
 	} else if (!allocation_interrupted)
 		error("Nodes %s are still not ready", alloc->node_list);
 	else	/* allocation_interrupted or slurmctld not responing */

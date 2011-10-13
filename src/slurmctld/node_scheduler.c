@@ -114,6 +114,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    uint32_t req_nodes, bool test_only,
 			    List preemptee_candidates,
 			    List *preemptee_job_list);
+static void _set_alias_list(struct job_record *job_ptr);
 static bool _valid_feature_counts(struct job_details *detail_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_details *detail_ptr,
@@ -130,6 +131,7 @@ extern void allocate_nodes(struct job_record *job_ptr)
 {
 	int i;
 	struct node_record *node_ptr;
+	bool has_cloud = false, has_cloud_power_save = false;
 
 #ifdef HAVE_FRONT_END
 	job_ptr->front_end_ptr = assign_front_end();
@@ -138,12 +140,52 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
 #endif
 
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+
+		if (IS_NODE_CLOUD(node_ptr)) {
+			has_cloud = true;
+			if (IS_NODE_POWER_SAVE(node_ptr))
+				has_cloud_power_save = true;
+		}
+		make_node_alloc(&node_record_table_ptr[i], job_ptr);
+		if (job_ptr->batch_host == NULL)
+			job_ptr->batch_host = xstrdup(node_ptr->name);
+	}
+	last_node_update = time(NULL);
+	license_job_get(job_ptr);
+
+	if (has_cloud) {
+		if (has_cloud_power_save) {
+			job_ptr->alias_list = xstrdup("TBD");
+			job_ptr->wait_all_nodes = 1;
+		} else
+			set_job_alias_list(job_ptr);
+	}
+
+	return;
+}
+
+/* Set a job's alias_list string */
+extern void set_job_alias_list(struct job_record *job_ptr)
+{
+	int i;
+	struct node_record *node_ptr;
+
 	xfree(job_ptr->alias_list);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
+
 		if (IS_NODE_CLOUD(node_ptr)) {
+			if (IS_NODE_POWER_SAVE(node_ptr)) {
+				xfree(job_ptr->alias_list);
+				job_ptr->alias_list = xstrdup("TBD");
+				break;
+			}
 			if (job_ptr->alias_list)
 				xstrcat(job_ptr->alias_list, ",");
 			xstrcat(job_ptr->alias_list, node_ptr->name);
@@ -152,16 +194,8 @@ extern void allocate_nodes(struct job_record *job_ptr)
 			xstrcat(job_ptr->alias_list, ":");
 			xstrcat(job_ptr->alias_list, node_ptr->node_hostname);
 		}
-		make_node_alloc(&node_record_table_ptr[i], job_ptr);
-		if (job_ptr->batch_host)
-			continue;
-		job_ptr->batch_host = xstrdup(node_ptr->name);
 	}
-	last_node_update = time(NULL);
-	license_job_get(job_ptr);
-	return;
 }
-
 
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make
