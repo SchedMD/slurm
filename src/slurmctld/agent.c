@@ -1549,6 +1549,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 			nodes_ready = 1;
 			if (launch_msg_ptr->alias_list &&
 			    !strcmp(launch_msg_ptr->alias_list, "TBD")) {
+				/* Update launch RPC with correct node
+				 * aliases */
 				struct job_record *job_ptr;
 				job_ptr = find_job_record(launch_msg_ptr->
 							  job_id);

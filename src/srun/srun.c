@@ -796,12 +796,13 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp)
 		xfree(tmp);
 	}
 
-	if (!getenv("SLURM_NODE_ALIASES") && resp->alias_list) {
-		if (setenvf(NULL, "SLURM_NODE_ALIASES", "%s",
-			    resp->alias_list) < 0) {
+	if (resp->alias_list) {
+		if (setenv("SLURM_NODE_ALIASES", resp->alias_list, 1) < 0) {
 			error("unable to set SLURM_NODE_ALIASES in "
 			      "environment");
 		}
+	} else {
+		unsetenv("SLURM_NODE_ALIASES");
 	}
 
 	return;

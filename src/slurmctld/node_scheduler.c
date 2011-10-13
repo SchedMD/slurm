@@ -114,7 +114,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    uint32_t req_nodes, bool test_only,
 			    List preemptee_candidates,
 			    List *preemptee_job_list);
-static void _set_alias_list(struct job_record *job_ptr);
 static bool _valid_feature_counts(struct job_details *detail_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_details *detail_ptr,
