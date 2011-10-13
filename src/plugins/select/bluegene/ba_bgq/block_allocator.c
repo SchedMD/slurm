@@ -964,6 +964,19 @@ try_again:
 				continue;
 			}
 
+			/* Since we use conn_type as the relative
+			   start point, if the block uses more than 1
+			   midplane we need to give the relative start
+			   point a boost when we go to a different
+			   midplane.
+			*/
+			memset(jobinfo->conn_type, 0,
+			       sizeof(jobinfo->conn_type));
+			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+				jobinfo->conn_type[dim] = _find_distance(
+					bg_record->start[dim],
+					ba_mp->coord[dim], dim);
+
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
 				info("scan_offset=%d", scan_offset);
 				for (dim = 0;

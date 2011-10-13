@@ -1796,10 +1796,16 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			   step we can just overload it since it is getting
 			   sent aready and we don't need to bloat
 			   anything if we don't have to.
+
 			   So setting it here we can have both
 			   absolute and relative.
+
+			   We add here since if not using the first
+			   midplane we have already setup the
+			   conn_type to point to the starting point of
+			   the relative position in the block.
 			*/
-			step_jobinfo->conn_type[dim] =
+			step_jobinfo->conn_type[dim] +=
 				step_jobinfo->start_loc[dim]
 				- jobinfo->start_loc[dim];
 		}
