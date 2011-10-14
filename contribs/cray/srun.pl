@@ -45,7 +45,7 @@
 
 use strict;
 use FindBin;
-use Getopt::Long 2.24 qw(:config no_ignore_case require_order autoabbrev);
+use Getopt::Long 2.24 qw(:config no_ignore_case require_order autoabbrev bundling);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
@@ -208,19 +208,6 @@ if ($ARGV[0]) {
 		} else {
 			$orig_exec_line .= "\"$_\" ";
 		}
-	}
-}
-
-# The perl GetOptions function does not support a single letter option
-# followed by an argument without a space. This logic adds a space. For
-# example, "-N2" is changed into "-N 2".
-for ($i = 0; $i < $#ARGV; $i++) {
-	$len = length($ARGV[$i]);
-	if (($len > 2) &&
-	    (substr($ARGV[$i], 0, 1) eq "-" && substr($ARGV[$i], 2, 1) ne " ") &&
-	    ((substr($ARGV[$i], 1, 1) ge "a" && substr($ARGV[$i], 1, 1) le "z") ||
-	     (substr($ARGV[$i], 1, 1) ge "A" && substr($ARGV[$i], 1, 1) le "Z"))) {
-		splice(@ARGV, $i, 1, substr($ARGV[$i], 0, 2), substr($ARGV[$i], 2));
 	}
 }
 
