@@ -378,6 +378,8 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		delete_list = list_create(NULL);
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = (bg_record_t *)list_next(itr))) {
+			if (bg_record->free_cnt)
+				continue;
 			if (bg_record->mp_count == 1)
 				continue;
 			if (!bit_test(bg_record->mp_bitmap, ba_mp->index))
@@ -443,6 +445,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		      event.getLocation().c_str(),
 		      event.getPreviousState(),
 		      event.getState());
+		return;
 	}
 
 	if (event.getState() == Hardware::Available) {
@@ -483,6 +486,7 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 		      dim, event.getMidplaneLocation().c_str(),
 		      event.getPreviousState(),
 		      event.getState());
+		return;
 	}
 
 	if (event.getState() == Hardware::Available) {
@@ -523,6 +527,7 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 		      nb_name, mp_name,
 		      event.getPreviousState(),
 		      event.getState());
+		return;
 	}
 
 	if (event.getState() == Hardware::Available) {
@@ -594,6 +599,7 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 		      dim, event.getFromMidplaneLocation().c_str(),
 		      event.getPreviousState(),
 		      event.getState());
+		return;
 	}
 
 	/* Else mark the midplane down */
