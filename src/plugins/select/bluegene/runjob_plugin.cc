@@ -115,17 +115,14 @@ static void _destroy_runjob_job(void *object)
 
 static void _send_failed_cnodes(block_fail_cnode_t *block_fail_cnode)
 {
-	int rc, count = 0;
+	int rc;
 
 	if (!block_fail_cnode)
 		return;
 
-	while ((rc = slurm_fail_cnode(block_fail_cnode))) {
+	if ((rc = slurm_fail_cnode(block_fail_cnode))) {
 		std::cerr << "Trying to fail cnodes, but slurmctld is "
-			"not responding, trying for " << count * 5 <<
-			" seconds." << std::endl;
-		sleep(5);
-		count++;
+			"not responding, not sending." << std::endl;
 	}
 }
 
@@ -430,18 +427,18 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 
 		_send_failed_cnodes(&block_fail_cnode);
 		xfree(block_fail_cnode.cnodes);
-	} else if (!data.message().empty()) {
-		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
-			  << " had a message of '" << data.message()
-			  << "'.  Failing the cnodes on the job. ("
-			  << runjob_job->total_cnodes << ")" << std::endl;
-		memset(&block_fail_cnode, 0, sizeof(block_fail_cnode_t));
-		block_fail_cnode.bg_block_id = runjob_job->bg_block_id;
-		block_fail_cnode.cnodes = runjob_job->total_cnodes;
-		block_fail_cnode.job_id = runjob_job->job_id;
-		block_fail_cnode.step_id = runjob_job->step_id;
-		_send_failed_cnodes(&block_fail_cnode);
-	}
+	} // else if (!data.message().empty()) {
+	// 	std::cerr << runjob_job->job_id << "." << runjob_job->step_id
+	// 		  << " had a message of '" << data.message()
+	// 		  << "'.  Failing the cnodes on the job. ("
+	// 		  << runjob_job->total_cnodes << ")" << std::endl;
+	// 	memset(&block_fail_cnode, 0, sizeof(block_fail_cnode_t));
+	// 	block_fail_cnode.bg_block_id = runjob_job->bg_block_id;
+	// 	block_fail_cnode.cnodes = runjob_job->total_cnodes;
+	// 	block_fail_cnode.job_id = runjob_job->job_id;
+	// 	block_fail_cnode.step_id = runjob_job->step_id;
+	// 	_send_failed_cnodes(&block_fail_cnode);
+	// }
 
 	_destroy_runjob_job(runjob_job);
 }
