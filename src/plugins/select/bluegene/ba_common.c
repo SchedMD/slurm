@@ -782,6 +782,8 @@ extern void destroy_ba_mp(void *ptr)
 	ba_mp_t *ba_mp = (ba_mp_t *)ptr;
 	if (ba_mp) {
 		FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
+		FREE_NULL_BITMAP(ba_mp->cnode_err_bitmap);
+		FREE_NULL_BITMAP(ba_mp->cnode_usable_bitmap);
 		xfree(ba_mp->loc);
 		if (ba_mp->nodecard_loc) {
 			int i;
@@ -808,6 +810,10 @@ extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version)
 		*/
 	}
 	pack_bit_fmt(ba_mp->cnode_bitmap, buffer);
+
+	/* currently there is no need to pack ba_mp->cnode_err_bitmap */
+	/* currently there is no need to pack ba_mp->cnode_usable_bitmap */
+
 	pack16(ba_mp->used, buffer);
 	/* These are only used on the original, not in the block ba_mp's.
 	   ba_mp->alter_switch, ba_mp->index, ba_mp->loc, ba_mp->next_mp,
@@ -1004,6 +1010,7 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	ba_mp_t *new_ba_mp = (ba_mp_t *)xmalloc(sizeof(ba_mp_t));
 
 	memcpy(new_ba_mp, ba_mp, sizeof(ba_mp_t));
+
 	/* we have to set this or we would be pointing to the original */
 	memset(new_ba_mp->next_mp, 0, sizeof(new_ba_mp->next_mp));
 	/* we have to set this or we would be pointing to the original */
@@ -1012,6 +1019,8 @@ extern ba_mp_t *ba_copy_mp(ba_mp_t *ba_mp)
 	new_ba_mp->nodecard_loc = NULL;
 	new_ba_mp->loc = NULL;
 	new_ba_mp->cnode_bitmap = NULL;
+	new_ba_mp->cnode_err_bitmap = NULL;
+	new_ba_mp->cnode_usable_bitmap = NULL;
 
 	return new_ba_mp;
 }

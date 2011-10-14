@@ -153,6 +153,10 @@ typedef struct block_allocator_mp {
 	uint32_t ba_geo_index;
 	/* Bitmap of available cnodes */
 	bitstr_t *cnode_bitmap;
+	/* Bitmap of available cnodes in error (usually software) */
+	bitstr_t *cnode_err_bitmap;
+	/* Bitmap of available cnodes in the containing block */
+	bitstr_t *cnode_usable_bitmap;
 	/* coordinates of midplane */
 	uint16_t coord[HIGHEST_DIMENSIONS];
 	/* coordinates of midplane in str format */

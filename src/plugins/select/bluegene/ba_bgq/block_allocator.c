@@ -926,6 +926,7 @@ try_again:
 	itr = list_iterator_create(bg_record->ba_mp_list);
 	while ((ba_mp = list_next(itr))) {
 		int cnt = 0;
+		bitstr_t *total_bitmap;
 
 		if (!ba_mp->used)
 			continue;
@@ -937,13 +938,20 @@ try_again:
 		if (!ba_mp->cnode_bitmap)
 			ba_mp->cnode_bitmap =
 				ba_create_ba_mp_cnode_bitmap(bg_record);
-		clear_cnt = bit_clear_count(ba_mp->cnode_bitmap);
+		if (!ba_mp->cnode_err_bitmap)
+			ba_mp->cnode_err_bitmap =
+				bit_alloc(bg_conf->mp_cnode_cnt);
+		total_bitmap = bit_copy(ba_mp->cnode_bitmap);
+		bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
+
+		clear_cnt = bit_clear_count(total_bitmap);
 		if (clear_cnt < *node_count) {
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
 				info("ba_pick_sub_block_cnodes: "
 				     "only have %d avail in %s need %d",
 				     clear_cnt,
 				     ba_mp->coord_str, *node_count);
+			FREE_NULL_BITMAP(total_bitmap);
 			continue;
 		}
 
@@ -957,7 +965,7 @@ try_again:
 			   there will need to be a flag that is sent
 			   here instead of always true.
 			*/
-			if (ba_geo_test_all(ba_mp->cnode_bitmap,
+			if (ba_geo_test_all(total_bitmap,
 					    &jobinfo->units_used,
 					    geo_table, &cnt,
 					    ba_mp_geo_system, NULL,
@@ -1015,6 +1023,7 @@ try_again:
 			}
 			break;
 		}
+		FREE_NULL_BITMAP(total_bitmap);
 
 		if (geo_table)
 			break;
