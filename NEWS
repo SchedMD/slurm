@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
  -- Prevent slurmctld crashing with configuration of MaxMemPerCPU=0.
  -- Prevent job hold by operator or account coordinator of his own job from
     being an Administrator Hold rather than User Hold by default.
+ -- Cray - Fix for srun.pl parsing to avoid adding spaces between option and
+    argument (e.g. "-N2" parsed properly without changing to "-N 2").
 
 * Changes in SLURM 2.3.0-2
 ==========================
