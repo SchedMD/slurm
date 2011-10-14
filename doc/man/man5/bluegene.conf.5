@@ -160,6 +160,17 @@ and starvation of larger jobs.
 .RE
 
 .TP
+\fBMaxBlockInError\fR
+MaxBlockInError is used on BGQ systems to specify the percentage of a block
+allowed in an error state before no future jobs are allowed.  Since cnodes can
+go into Software Failure and allow the block to not fail this option is used
+when allowing multiple jobs to run on a block and once the percentage of cnodes
+in that block breach this limit no future jobs will be allowed to be run on
+the block.  After all jobs are finished on the block the block is freed which
+will resolve any cnodes in an error state.  Default is 0, which means once
+any cnodes are in an error state disallow future jobs.
+
+.TP
 \fBMloaderImage\fR
 MloaderImage used for creation of all bgblocks.
 There is no default value and this must be specified.

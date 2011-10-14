@@ -69,6 +69,7 @@ static s_p_options_t bg_conf_file_options[] = {
 	{"NodeCardNodeCnt", S_P_UINT16},
 	{"Numpsets", S_P_UINT16},
 	{"IONodesPerMP", S_P_UINT16},
+	{"MaxBlockInError", S_P_UINT16},
 	{"BPs", S_P_ARRAY, parse_blockreq, destroy_select_ba_request},
 	{"MPs", S_P_ARRAY, parse_blockreq, destroy_select_ba_request},
 	/* these are just going to be put into a list that will be
@@ -625,6 +626,8 @@ extern int read_bg_conf(void)
 			fatal("Warning: IONodesPerMP not configured "
 			      "in bluegene.conf");
 	}
+
+	s_p_get_uint16(&bg_conf->max_block_err, "MaxBlockInError", tbl);
 
 #ifdef HAVE_BGQ
 	/* You can only have 16 ionodes per midplane */

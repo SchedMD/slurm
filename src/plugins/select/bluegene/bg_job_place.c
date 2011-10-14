@@ -351,6 +351,22 @@ static bg_record_t *_find_matching_block(List block_list,
 					     bg_record->user_name,
 					     bg_record->job_running);
 				continue;
+			} else if (bg_record->err_ratio &&
+				   (bg_record->err_ratio
+				    >= bg_conf->max_block_err)) {
+				/* This means the block is higher than
+				   the given max_block_err defined in
+				   the bluegene.conf.
+				*/
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("block %s can't be used anymore, "
+					     "%u%% of the block is in error "
+					     "state >= %u%%",
+					     bg_record->bg_block_id,
+					     bg_record->err_ratio,
+					     bg_conf->max_block_err);
+				continue;
 			}
 		}
 

@@ -65,6 +65,7 @@ typedef struct {
 	uint16_t ionodes_per_mp;
 	bg_layout_t layout_mode;
 	List linux_list;
+	uint16_t max_block_err;
 	List mloader_list;
 	uint16_t mp_cnode_cnt;
 	uint16_t mp_nodecard_cnt;
@@ -102,8 +103,13 @@ typedef struct bg_record {
 					   0 = not booting,
 					   1 = booting */
 	uint32_t cnode_cnt;             /* count of cnodes per block */
+	uint32_t cnode_err_cnt;         /* count of cnodes in error on
+					   block */
 	uint16_t conn_type[SYSTEM_DIMENSIONS];  /* MESH or Torus or NAV */
 	uint32_t cpu_cnt;               /* count of cpus per block */
+	uint16_t err_ratio;             /* ratio of how much of this
+					   block is in an error
+					   state. (doesn't apply to BGL/P) */
 	int free_cnt;                   /* How many are trying
 					   to free this block at the
 					   same time */

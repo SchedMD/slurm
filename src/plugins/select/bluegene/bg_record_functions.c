@@ -372,10 +372,12 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		sec_record->mp_used_bitmap = NULL;
 	}
 	sec_record->cnode_cnt = fir_record->cnode_cnt;
+	sec_record->cnode_err_cnt = fir_record->cnode_err_cnt;
 
 	memcpy(sec_record->conn_type, fir_record->conn_type,
 	       sizeof(sec_record->conn_type));
 	sec_record->cpu_cnt = fir_record->cpu_cnt;
+	sec_record->err_ratio = fir_record->err_ratio;
 	sec_record->free_cnt = fir_record->free_cnt;
 	sec_record->full_block = fir_record->full_block;
 
@@ -1514,6 +1516,18 @@ extern int bg_reset_block(bg_record_t *bg_record)
 			   == SLURM_SUCCESS) {
 				num_unused_cpus += bg_record->cpu_cnt;
 			}
+
+		/* At this point, no job is running on the block
+		   anymore, so if there are any errors on it, free it
+		   now.
+		*/
+		if (bg_record->cnode_err_cnt) {
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("%s has %d in error",
+				     bg_record->bg_block_id,
+				     bg_record->cnode_err_cnt);
+			bg_free_block(bg_record, 0, 1);
+		}
 	} else {
 		error("No block given to reset");
 		rc = SLURM_ERROR;
