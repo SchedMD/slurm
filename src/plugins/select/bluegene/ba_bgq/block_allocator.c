@@ -939,7 +939,7 @@ try_again:
 				ba_create_ba_mp_cnode_bitmap(bg_record);
 		clear_cnt = bit_clear_count(ba_mp->cnode_bitmap);
 		if (clear_cnt < *node_count) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
 				info("ba_pick_sub_block_cnodes: "
 				     "only have %d avail in %s need %d",
 				     clear_cnt,
@@ -980,7 +980,7 @@ try_again:
 					bg_record->start[dim],
 					ba_mp->coord[dim], dim);
 
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO) {
 				info("scan_offset=%d", scan_offset);
 				for (dim = 0;
 				     dim < ba_mp_geo_system->dim_count;
@@ -994,7 +994,7 @@ try_again:
 			bit_or(ba_mp->cnode_bitmap, jobinfo->units_used);
 			jobinfo->ionode_str = ba_node_map_ranged_hostlist(
 				jobinfo->units_used, ba_mp_geo_system);
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+			if (ba_debug_flags & DEBUG_FLAG_BG_PICK) {
 				bit_not(ba_mp->cnode_bitmap);
 				tmp_char = ba_node_map_ranged_hostlist(
 					ba_mp->cnode_bitmap, ba_mp_geo_system);
@@ -1023,7 +1023,7 @@ try_again:
 		   here in this small allocation. */
 		if (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt) {
 			list_iterator_destroy(itr);
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+			if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("We couldn't place a sub block of %d",
 				     *node_count);
 			(*node_count)++;
@@ -1037,7 +1037,7 @@ try_again:
 			max_clear_cnt = clear_cnt;
 		}
 
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("couldn't place it on %s", ba_mp->coord_str);
 		geo_table = ba_mp_geo_system->geo_table_ptr[*node_count];
 	}
@@ -1049,7 +1049,7 @@ try_again:
 	   for 16 then they could run we do that for them.
 	*/
 	if (!ba_mp && (max_clear_cnt > (*node_count)+1)) {
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
+		if (ba_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("trying with a larger size");
 		(*node_count)++;
 		goto try_again;
@@ -1099,7 +1099,7 @@ extern int ba_clear_sub_block_cnodes(
 
 		bit_not(jobinfo->units_used);
 		bit_and(ba_mp->cnode_bitmap, jobinfo->units_used);
-		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
 			bit_not(jobinfo->units_used);
 			tmp_char = ba_node_map_ranged_hostlist(
 				jobinfo->units_used, ba_mp_geo_system);
