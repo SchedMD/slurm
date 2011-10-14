@@ -324,9 +324,6 @@ extern int bridge_init(char *properties_file)
 	if (initialized)
 		return 1;
 
-	if (bg_recover == NOT_FROM_CONTROLLER)
-		return 0;
-
 #ifdef HAVE_BG_FILES
 	if (!properties_file)
 		properties_file = (char *)"";

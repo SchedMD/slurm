@@ -887,6 +887,9 @@ extern ba_mp_t *str2ba_mp(const char *coords)
 		return NULL;
 	}
 
+	if (bridge_setup_system() != SLURM_SUCCESS)
+		return NULL;
+
 	return coord2ba_mp(coord);
 }
 
