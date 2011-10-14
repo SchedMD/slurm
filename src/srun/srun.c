@@ -450,6 +450,7 @@ int srun(int ac, char **av)
 #endif
 	slurm_step_launch_params_t_init(&launch_params);
 	launch_params.gid = opt.gid;
+	launch_params.alias_list = job->alias_list;
 	launch_params.argc = opt.argc;
 	launch_params.argv = opt.argv;
 	launch_params.multi_prog = opt.multi_prog ? true : false;

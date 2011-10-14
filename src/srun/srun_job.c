@@ -73,14 +73,15 @@
  * about node allocation to be passed to _job_create_structure()
  */
 typedef struct allocation_info {
-	uint32_t                jobid;
-	uint32_t                stepid;
-	char                   *nodelist;
-	uint32_t                nnodes;
-	uint32_t                num_cpu_groups;
+	char                   *alias_list;
 	uint16_t               *cpus_per_node;
 	uint32_t               *cpu_count_reps;
+	uint32_t                jobid;
+	uint32_t                nnodes;
+	char                   *nodelist;
+	uint32_t                num_cpu_groups;
 	dynamic_plugin_data_t  *select_jobinfo;
+	uint32_t                stepid;
 } allocation_info_t;
 
 /*
@@ -101,7 +102,7 @@ srun_job_t *
 job_create_noalloc(void)
 {
 	srun_job_t *job = NULL;
-	allocation_info_t *ai = xmalloc(sizeof(*ai));
+	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
 	uint16_t cpn = 1;
 	hostlist_t  hl = hostlist_create(opt.nodelist);
 
@@ -145,7 +146,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 {
 	uint32_t job_id = resp->job_id;
 	srun_job_t *job = NULL;
-	allocation_info_t *ai = xmalloc(sizeof(*ai));
+	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
 	hostlist_t hl = NULL;
 	char *buf = NULL;
 	int count = 0;
@@ -153,7 +154,8 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
-	ai->nodelist = opt.alloc_nodelist;
+	ai->alias_list     = resp->alias_list;
+	ai->nodelist       = opt.alloc_nodelist;
 	hl = hostlist_create(ai->nodelist);
 	hostlist_uniq(hl);
 	alloc_count = hostlist_count(hl);
@@ -178,7 +180,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				hostlist_delete_nth(hl, inx);
 				ai->nnodes--;	/* decrement node count */
 			}
-			if(inc_hl) {
+			if (inc_hl) {
 				inx = hostlist_find(inc_hl, node_name);
 				if (inx >= 0) {
 					error("Requested node %s is also "
@@ -342,8 +344,9 @@ extern srun_job_t *
 job_create_allocation(resource_allocation_response_msg_t *resp)
 {
 	srun_job_t *job;
-	allocation_info_t *i = xmalloc(sizeof(*i));
+	allocation_info_t *i = xmalloc(sizeof(allocation_info_t));
 
+	i->alias_list     = resp->alias_list;
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->jobid          = resp->job_id;
@@ -461,6 +464,7 @@ _job_create_structure(allocation_info_t *ainfo)
 	pthread_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
+ 	job->alias_list = xstrdup(ainfo->alias_list);
  	job->nodelist = xstrdup(ainfo->nodelist);
 	job->stepid  = ainfo->stepid;
 

@@ -689,6 +689,7 @@ typedef struct launch_tasks_request_msg {
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
+	char *alias_list;	/* node name/address/hostnamne aliases */
 } launch_tasks_request_msg_t;
 
 typedef struct task_user_managed_io_msg {

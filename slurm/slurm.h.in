@@ -1249,6 +1249,7 @@ typedef struct {
 } slurm_step_ctx_params_t;
 
 typedef struct {
+	char *alias_list;	/* node name/address/hostnamne aliases */
 	uint32_t argc;
 	char **argv;
 	uint32_t envc;
