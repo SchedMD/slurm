@@ -707,8 +707,7 @@ static void _do_block_poll(void)
 		if (vec.empty()) {
 			debug("block %s not found, removing "
 			      "from slurm", bg_record->bg_block_id);
-			list_remove(itr);
-			destroy_bg_record(bg_record);
+			list_delete_item(itr);
 			continue;
 		}
 		const Block::Ptr &block_ptr = *(vec.begin());
@@ -802,8 +801,8 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 		}
 		return;
 	}
-	ba_mp = coord2ba_mp(coords);
-	if (ba_mp)
+
+	if ((ba_mp = coord2ba_mp(coords)))
 		_handle_midplane_update(bgqsys, ba_mp);
 }
 
@@ -826,9 +825,8 @@ static void *_poll(void *no_data)
 			_do_block_poll();
 		/* only do every 30 seconds */
 		if ((curr_time - 30) >= last_ran) {
-			ComputeHardware::ConstPtr bgqsys = getComputeHardware();
 			uint16_t coords[SYSTEM_DIMENSIONS];
-			_do_hardware_poll(0, coords, bgqsys);
+			_do_hardware_poll(0, coords, getComputeHardware());
 			last_ran = time(NULL);
 		}
 

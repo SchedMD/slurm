@@ -1447,6 +1447,7 @@ extern int select_p_job_init(List job_list)
 	/* after we have synced the blocks then we say they are
 	   created. */
 	blocks_are_created = 1;
+
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -1509,6 +1510,7 @@ extern int select_p_block_init(List part_list)
 	/* select_p_node_init needs to be called before this to set
 	   this up correctly
 	*/
+
 	if (read_bg_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
 		return SLURM_ERROR;
@@ -1527,6 +1529,7 @@ extern int select_p_block_init(List part_list)
 		}
 		list_iterator_destroy(itr);
 	}
+
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;

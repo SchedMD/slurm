@@ -355,7 +355,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 
 	FREE_NULL_BITMAP(sec_record->mp_bitmap);
 	if (fir_record->mp_bitmap
-	    && (sec_record->mp_bitmap = bit_copy(fir_record->mp_bitmap)) == NULL) {
+	    && !(sec_record->mp_bitmap = bit_copy(fir_record->mp_bitmap))) {
 		error("Unable to copy bitmap for %s", fir_record->mp_str);
 		sec_record->mp_bitmap = NULL;
 	}
