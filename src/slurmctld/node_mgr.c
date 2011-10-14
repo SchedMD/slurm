@@ -687,7 +687,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			else if (IS_NODE_FUTURE(node_ptr) &&
 				 !IS_NODE_MAINT(node_ptr)) /* reboot req sent */
 				hidden = true;
-			else if (IS_NODE_CLOUD(node_ptr) && 0 &&
+			else if (IS_NODE_CLOUD(node_ptr) &&
 				 IS_NODE_POWER_SAVE(node_ptr))
 				hidden = true;
 			else if ((node_ptr->name == NULL) ||
