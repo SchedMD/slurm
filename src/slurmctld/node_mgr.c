@@ -558,11 +558,12 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
 			node_ptr->last_response = (time_t) 0;
-			node_ptr->last_idle	= now;
 		}
 
-		if (node_ptr)
+		if (node_ptr) {
+			node_ptr->last_idle	= now;
 			select_g_update_node_state(node_ptr);
+		}
 
 		xfree(features);
 		xfree(gres);
@@ -686,7 +687,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			else if (IS_NODE_FUTURE(node_ptr) &&
 				 !IS_NODE_MAINT(node_ptr)) /* reboot req sent */
 				hidden = true;
-			else if (IS_NODE_CLOUD(node_ptr) &&
+			else if (IS_NODE_CLOUD(node_ptr) && 0 &&
 				 IS_NODE_POWER_SAVE(node_ptr))
 				hidden = true;
 			else if ((node_ptr->name == NULL) ||

@@ -969,6 +969,18 @@ static int _restore_node_state(int recover,
 				hs = hostset_create(node_ptr->name);
 		}
 
+		if (IS_NODE_CLOUD(node_ptr) && !IS_NODE_POWER_SAVE(node_ptr)) {
+			/* Preserve NodeHostname + NodeAddr set by scontrol */
+			xfree(node_ptr->comm_name);
+			node_ptr->comm_name = old_node_ptr->comm_name;
+			old_node_ptr->comm_name = NULL;
+			xfree(node_ptr->node_hostname);
+			node_ptr->node_hostname = old_node_ptr->node_hostname;
+			old_node_ptr->node_hostname = NULL;
+			slurm_reset_alias(node_ptr->name, node_ptr->comm_name,
+					  node_ptr->node_hostname);
+		}
+
 		node_ptr->last_response = old_node_ptr->last_response;
 		if (old_node_ptr->port != node_ptr->config_ptr->cpus) {
 			rc = ESLURM_NEED_RESTART;
@@ -979,6 +991,7 @@ static int _restore_node_state(int recover,
 		node_ptr->boot_time     = old_node_ptr->boot_time; 
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
+		node_ptr->last_idle     = old_node_ptr->last_idle;
 		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;
