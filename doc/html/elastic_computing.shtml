@@ -8,8 +8,9 @@
 shrinks on demand, typically relying upon a service such as
 <a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
 for resources.
-These resources can be combined with an existing cluster or it can operate as
-an independent cluster.
+These resources can be combined with an existing cluster to process excess
+workload (cloud bursting) or it can operate as an independent self-contained
+cluster.
 Good responsiveness and throughput can be achieved while you only pay for the
 resources needed.</p>
 
@@ -21,17 +22,11 @@ This logic initiates programs when nodes are required for use and another
 program when those nodes are no longer required.
 For Elastic Computing, these programs will need to provision the resources
 from the cloud and notify SLURM of the node's name and network address and
-later reliquish the nodes back to the cloud.</p>
+later relinquish the nodes back to the cloud.
+Most of the SLURM changes to support Elastic Computing were changes to
+support node addressing that can change.</p>
 
 <h2>SLURM Configuration</h2>
-
-<p>If SLURM is configured to allocate individual CPUs to jobs rather than whole
-nodes (e.g. SelectType=select/cons_res rather than SelectType=select/linear),
-the SLURM controller daemon, slurmctld, maintains bitmaps to track the state of
-every CPU in the system.
-If the number of CPUs to be allocated on each node is not known when the
-slurmctld daemon is started, one must allocate whole nodes to jobs rather
-than individual processors.</p>
 
 <p>There are many ways to configure SLURM's use of resources.
 See the slurm.conf man page for more details about these options.
@@ -42,6 +37,14 @@ Some general SLURM configuration parameters that are of interest include:
 available for use.
 <dt><b>SelectType</b>
 <dd>Generally must be "select/linear".
+If SLURM is configured to allocate individual CPUs to jobs rather than whole
+nodes (e.g. SelectType=select/cons_res rather than SelectType=select/linear),
+then SLURM maintains bitmaps to track the state of every CPU in the system.
+If the number of CPUs to be allocated on each node is not known when the
+slurmctld daemon is started, one must allocate whole nodes to jobs rather
+than individual processors.
+The use of "select/cons_res" requires each node to have a CPU count set and
+the node eventually selected must have at least that number of CPUs.
 <dt><b>SuspendExcNodes</b>
 <dd>Nodes not subject to suspend/resume logic. This may be used to avoid
 suspending and resuming nodes which are not in the cloud. Alternately the
@@ -89,7 +92,7 @@ the user. Note that jobs can be submitted to multiple partitions and will use
 resources from whichever partition permits faster initiation.
 A sample configuration in which nodes are added from the cloud when the workload
 exceeds available resources. Users can explicitly request local resources or
-resoures from the cloud by using the "--constraint" option.
+resources from the cloud by using the "--constraint" option.
 </p>
 
 <pre>
@@ -103,10 +106,10 @@ SuspendTime=600
 SuspendExcNodes=tux[0-127]
 TreeWidth=128
 
-NodeName=tux[0-127] Weight=1  Feature=local State=UNKNOWN
-NodeName=ec[0-127]  Weight=10 Feature=cloud State=CLOUD
-PartitionName=debug MaxNodes=16 MaxTime=1:00:00  Nodes=tux[0-32] Default=yes
-PartitionName=batch MaxNodes=64 MaxTime=24:00:00 Nodes=tux[0-127],ec[0-127] Default=no
+NodeName=tux[0-127] Weight=1 Feature=local State=UNKNOWN
+NodeName=ec[0-127]  Weight=8 Feature=cloud State=CLOUD
+PartitionName=debug MaxTime=1:00:00 Nodes=tux[0-32] Default=yes
+PartitionName=batch MaxTime=8:00:00 Nodes=tux[0-127],ec[0-127] Default=no
 </pre>
 
 <h2>Operational Details</h2>
@@ -120,7 +123,8 @@ allocated, the <i>ResumeProgram</i> is executed and should do the following:</p>
 <li>Configure and start Munge (depends upon configuration)</li>
 <li>Install the SLURM configuration file, slurm.conf, on the node.
 Note that configuration file will generally be identical on all nodes and not
-include NodeAddr or NodeHostname configuration parameters for this node.
+include NodeAddr or NodeHostname configuration parameters for any nodes in the
+cloud.
 SLURM commands executed on this node only need to communicate with the
 slurmctld daemon on the ControlMachine.
 <li>Notify the slurmctld daemon of the node's hostname and network address:<br>
@@ -141,6 +145,7 @@ It is then used by srun to determine the destination for job launch
 communication messages.
 This environment variable is only set for nodes allocated from the cloud.
 If a job is allocated some resources from the local cluster and others from
+the cloud, only those nodes from the cloud will appear in SLURM_NODE_ALIASES.
 Each set of names and addresses is comma separated and
 the elements within the set are separated by colons. For example:<br>
 SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2,123.45.67.9:bar</p>
@@ -148,16 +153,15 @@ SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2,123.45.67.9:bar</p>
 <h2>Remaining Work</h2>
 
 <ul>
-<li>The sbatch logic needs modifcation to set the SLURM_NODE_ALIASES
-environment variable.</li>
+<li>We need scripts to provision resources from EC2.</li>
 <li>The SLURM_NODE_ALIASES environment varilable needs to change if a job
 expands (adds resources).</li>
-<li>We need scripts to provision resources from EC2.</li>
 <li>Some MPI implementations will not work due to the node naming.</li>
+<li>Some tests in SLURM's test suite fail.</li>
 </ul>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 October 2011</p>
+<p style="text-align:center;">Last modified 14 October 2011</p>
 
 <!--#include virtual="footer.txt"-->
