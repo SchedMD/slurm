@@ -409,6 +409,15 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		children = 0;
 		depth = 0;
 		max_depth = 0;
+	} else if ((type == LAUNCH_TASKS) &&
+		   (((launch_tasks_request_msg_t *)req)->alias_list)) {
+		/* In the cloud, each task talks directly to the slurmctld
+		 * since node addressing is abnormal */
+		rank = 0;
+		parent_rank = -1;
+		children = 0;
+		depth = 0;
+		max_depth = 0;
 	} else {
 #ifndef HAVE_FRONT_END
 		int count;
@@ -420,7 +429,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
 			int rc;
 			/* Find the slurm_addr_t of this node's parent slurmd
-			   in the step host list */
+			 * in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
 			rc = slurm_conf_get_addr(parent_alias, &parent_addr);
 			if (rc != SLURM_SUCCESS) {
@@ -475,7 +484,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	free_buf(buffer);
 
 	/* send self address over to slurmstepd */
-	if(self) {
+	if (self) {
 		buffer = init_buf(0);
 		slurm_pack_slurm_addr(self, buffer);
 		len = get_buf_offset(buffer);
