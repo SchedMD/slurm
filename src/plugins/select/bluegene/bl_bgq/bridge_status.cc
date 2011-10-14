@@ -103,6 +103,12 @@ public:
 		const NodeBoardStateChangedEventInfo& event);
 
 	/*
+	 * Handle a cnode state changed real-time event.
+	 */
+	virtual void handleNodeStateChangedRealtimeEvent(
+		const NodeStateChangedEventInfo& event);
+
+	/*
 	 * Handle a cable state changed real-time event.
 	 */
 	virtual void handleTorusCableStateChangedRealtimeEvent(
@@ -207,6 +213,97 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 		       "but error was returned when trying to make it so",
 		       nb_name, bg_down_node, state.toValue());
 	return;
+}
+
+static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
+				EnumWrapper<Hardware::State> state)
+{
+	Coordinates ibm_cnode_coords = getNodeMidplaneCoordinates(cnode_loc);
+	uint16_t cnode_coords[Dimension::NodeDims];
+	int inx, set, changed = 0;
+	uint16_t dim;
+	bg_record_t *bg_record;
+	ba_mp_t *found_ba_mp;
+	ListIterator itr, itr2;
+
+	if (!ba_mp->cnode_err_bitmap)
+		ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+
+	for (dim = 0; dim < Dimension::NodeDims; dim++)
+		cnode_coords[dim] = ibm_cnode_coords[dim];
+
+	inx = ba_node_xlate_to_1d(cnode_coords, ba_mp_geo_system);
+	if (inx >= bit_size(ba_mp->cnode_err_bitmap)) {
+		error("trying to set cnode %d but we only have %d",
+		      inx, bit_size(ba_mp->cnode_err_bitmap));
+		return;
+	}
+
+	set = bit_test(ba_mp->cnode_err_bitmap, inx);
+	if (state != Hardware::Available) {
+		if (!set) {
+			bit_set(ba_mp->cnode_err_bitmap, inx);
+			changed = 1;
+		}
+	} else if (set) {
+		bit_clear(ba_mp->cnode_err_bitmap, inx);
+		changed = 1;
+	}
+
+	if (!changed)
+		return;
+
+	info("_handle_node_change: state for %s - %s is %d",
+	     ba_mp->coord_str, cnode_loc.c_str(), state.toValue());
+
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = (bg_record_t *)list_next(itr))) {
+		if (bg_record->free_cnt)
+			continue;
+		if (!bit_test(bg_record->mp_bitmap, ba_mp->index))
+			continue;
+		itr2 = list_iterator_create(bg_record->ba_mp_list);
+		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
+			if (found_ba_mp->index != ba_mp->index)
+				continue;
+			if (!found_ba_mp->used)
+				continue;
+			/* perhaps this block isn't involved in this
+			   error */
+			if (found_ba_mp->cnode_usable_bitmap) {
+				if (bit_test(found_ba_mp->cnode_usable_bitmap,
+					     inx))
+					continue;
+			}
+
+			if (!found_ba_mp->cnode_err_bitmap)
+				found_ba_mp->cnode_err_bitmap =
+					bit_alloc(bg_conf->mp_cnode_cnt);
+
+			if (state != Hardware::Available) {
+				bit_set(found_ba_mp->cnode_err_bitmap, inx);
+				bg_record->cnode_err_cnt++;
+			} else if (set) {
+				bit_clear(found_ba_mp->cnode_err_bitmap, inx);
+				bg_record->cnode_err_cnt--;
+			}
+
+			bg_record->err_ratio =
+				bg_record->cnode_err_cnt / bg_record->cnode_cnt;
+			/* handle really small ratios */
+			if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
+				bg_record->err_ratio = 1;
+			debug("count in error for %s is %u with ratio at %u",
+			      bg_record->bg_block_id, bg_record->cnode_err_cnt,
+			      bg_record->err_ratio);
+			break;
+		}
+		list_iterator_destroy(itr2);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+
 }
 
 static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
@@ -444,6 +541,39 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	return;
 }
 
+void event_handler::handleNodeStateChangedRealtimeEvent(
+	const NodeStateChangedEventInfo& event)
+{
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	int dim;
+	ba_mp_t *ba_mp;
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	ba_mp = coord2ba_mp(coords);
+
+	if (!ba_mp) {
+		const char *mp_name = event.getLocation().substr(0,6).c_str();
+		error("Node '%s' on Midplane %s, state went from %d to %d,"
+		      "but is not in our system",
+		      event.getLocation().c_str(), mp_name,
+		      event.getPreviousState(),
+		      event.getState());
+		return;
+	}
+
+	info("Node '%s' on Midplane %s, state went from %d to %d",
+	     event.getLocation().c_str(), ba_mp->coord_str,
+	     event.getPreviousState(),
+	     event.getState());
+
+	_handle_node_change(ba_mp, event.getLocation(), event.getState());
+
+	return;
+}
+
 void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	const TorusCableStateChangedEventInfo& event)
 {
@@ -503,6 +633,7 @@ static void *_real_time(void *no_data)
 	Filter::BlockStatuses block_statuses;
   	Filter rt_filter(Filter::createNone());
 
+	rt_filter.setNodes(true);
 	rt_filter.setNodeBoards(true);
 	rt_filter.setSwitches(true);
 	rt_filter.setBlocks(true);
@@ -615,10 +746,25 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 
 	for (i=0; i<16; i++) {
 		NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
-		if (nodeboard->getState() != Hardware::Available)
+		/* FIXME: the Hardware::Error can/should be taken away after
+		   IBM fixes it so when a cnode is in an error state
+		   it doesn't put the nodeboard in an error state as
+		   well.
+		*/
+		if ((nodeboard->getState() != Hardware::Available)
+		    && (nodeboard->getState() != Hardware::Error))
 			_handle_bad_nodeboard(
 				nodeboard->getLocation().substr(7,3).c_str(),
 				ba_mp->coord_str, nodeboard->getState());
+		else {
+			Node::ConstPtrs vec =
+				getNodes(nodeboard->getLocation());
+			BOOST_FOREACH(const Node::ConstPtr& cnode_ptr, vec) {
+				_handle_node_change(ba_mp,
+						    cnode_ptr->getLocation(),
+						    cnode_ptr->getState());
+			}
+		}
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
