@@ -37,6 +37,7 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_strcasestr.h"
 
 #define _DEBUG 0
 #define MAX_CANCEL_RETRY 10
@@ -341,7 +342,7 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPU_REQ, "Min CPUs Per Node",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_MEM_MIN, "Min Memory Per Node",
+	{G_TYPE_STRING, SORTID_MEM_MIN, "Min Memory",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TMP_DISK, "Min Tmp Disk Per Node",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
@@ -835,11 +836,17 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			temp_int *= 1024;
 		else if (*p == 'm' || *p == 'M')
 			temp_int *= 1048576;
+		p = slurm_strcasestr((char *)new_text, "cpu");
+		if (p)
+			type = "min memory per cpu";
+		else
+			type = "min memory per node";
 
-		type = "min memory per node";
 		if (temp_int <= 0)
 			goto return_error;
 		job_msg->pn_min_memory = (uint32_t)temp_int;
+		if (p)
+			job_msg->pn_min_memory |= MEM_PER_CPU;
 		break;
 	case SORTID_TMP_DISK:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -1244,6 +1251,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
+	uint32_t min_mem = 0;
 
 	GtkTreeIter iter;
 	GtkTreeStore *treestore =
@@ -1518,15 +1526,26 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_CPU_REQ),
 				   tmp_char);
 
-	if (job_ptr->pn_min_memory > 0)
-		convert_num_unit((float)job_ptr->pn_min_memory,
+	min_mem = job_ptr->pn_min_memory;
+	if (min_mem & MEM_PER_CPU)
+		min_mem &= (~MEM_PER_CPU);
+
+	if (min_mem > 0) {
+		int len;
+		convert_num_unit((float)min_mem,
 				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
-	else
+		len = strlen(tmp_char);
+		if (job_ptr->pn_min_memory & MEM_PER_CPU)
+			sprintf(tmp_char+len, " Per CPU");
+		else
+			sprintf(tmp_char+len, " Per Node");
+	} else
 		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_MEM_MIN),
 				   tmp_char);
+
 	if (job_ptr->pn_min_tmp_disk > 0)
 		convert_num_unit((float)job_ptr->pn_min_tmp_disk,
 				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
@@ -1795,6 +1814,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
+	uint32_t min_mem = 0;
 
 	snprintf(tmp_alloc_node, sizeof(tmp_alloc_node), "%s:%u",
 		 job_ptr->alloc_node, job_ptr->alloc_sid);
@@ -1859,8 +1879,21 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			 job_ptr->group_id);
 	}
 
-	convert_num_unit((float)job_ptr->pn_min_memory,
-			 tmp_mem_min, sizeof(tmp_mem_min), UNIT_MEGA);
+	min_mem = job_ptr->pn_min_memory;
+	if (min_mem & MEM_PER_CPU)
+		min_mem &= (~MEM_PER_CPU);
+
+	if (min_mem > 0) {
+		int len;
+		convert_num_unit((float)min_mem,
+				 tmp_mem_min, sizeof(tmp_mem_min), UNIT_MEGA);
+		len = strlen(tmp_mem_min);
+		if (job_ptr->pn_min_memory & MEM_PER_CPU)
+			sprintf(tmp_mem_min+len, " Per CPU");
+		else
+			sprintf(tmp_mem_min+len, " Per Node");
+	} else
+		sprintf(tmp_mem_min, " ");
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)sview_job_info_ptr->node_cnt,
