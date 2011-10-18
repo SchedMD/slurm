@@ -26,6 +26,12 @@ The following cgroup.conf parameters are defined to control the general behavior
 of Slurm cgroup plugins.
 
 .TP
+\fBCgroupMountpoint\fR=\fIPATH\fR
+Specify the \fIPATH\fR under which cgroups should be mounted. This
+should be a writeable directory which will contain cgroups mounted
+one per subsystem. The default \fIPATH\fR is /cgroup.
+
+.TP
 \fBCgroupAutomount\fR=<yes|no>
 Slurm cgroup plugins require valid and functional cgroup subsystem to be mounted
 under /cgroup/<subsystem_name>.
@@ -105,17 +111,19 @@ would be added :
 .TP
 \fBAllowedRAMSpace\fR=<number>
 Constrain the job cgroup RAM to this percentage of the allocated memory.
-The default value is 100.
-If the limit is exceeded, the job steps will be killed and a warning message
-will be written to standard error.
-Also see \fBConstrainRAMSpace\fR.
+The default value is 100. If SLURM is not allocating memory to jobs,
+The percentage supplied may be expressed as floating point
+number, e.g. 98.5. If the \fBAllowedRAMSpace\fR limit is exceeded, the
+job steps will be killed and a warning message will be written to standard
+error.  Also see \fBConstrainRAMSpace\fR.
 
 .TP
 \fBAllowedSwapSpace\fR=<number>
-Constrain the job cgroup swap space to this percentage of the allocated memory.
-The default value is 0.
-If the limit is exceeded, the job steps will be killed and a warning message
-will be written to standard error.
+Constrain the job cgroup swap space to this percentage of the allocated
+memory.  The default value is 0, which means that RAM+Swap will be limited
+to \fBAllowedRAMSpace\fR. The supplied percentage may be expressed as a
+floating point number, e.g. 50.5.  If the limit is exceeded, the job steps
+will be killed and a warning message will be written to standard error.
 Also see \fBConstrainSwapSpace\fR.
 
 .TP
@@ -129,6 +137,28 @@ Also see \fBAllowedRAMSpace\fR.
 If configured to "yes" then constrain the job's swap space usage.
 The default value is "no".
 Also see \fBAllowedSwapSpace\fR.
+
+.TP
+\fBMaxRAMPercent\fR=\fIPERCENT\fR
+Set an upper bound in percent of total RAM on the RAM constraint for a job.
+This will be the memory constraint applied to jobs that are not explicitly
+allocated memory by SLURM. The \fIPERCENT\fR may be an arbitrary floating
+point number. The default value is 100.
+
+.TP
+\fBMaxSwapPercent\fR=\fIPERCENT\fR
+Set an upper bound (in percent of total RAM) on the amount of RAM+Swap
+that may be used for a job. This will be the swap limit applied to jobs
+on systems where memory is not being explicitly allocated to job. The
+\fIPERCENT\fR may be an arbitrary floating point number between 0 and 100.
+The default value is 100.
+
+.TP
+\fBMinRAMSpace\fR=<number>
+Set a lower bound (in MB) on the memory limits defined by
+\fBAllowedRAMSpace\fR and \fBAllowedSwapSpace\fR. This prevents
+accidentally creating a memory cgroup with such a low limit that slurmstepd
+is immediately killed due to lack of RAM. The default limit is 30M.
 
 .TP
 \fBConstrainDevices\fR=<yes|no>

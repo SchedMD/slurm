@@ -45,10 +45,12 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-#include "src/common/xcgroup_read_config.h"
+#include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/xcgroup.h"
+#include "src/common/xstring.h"
+#include "src/common/xcgroup_read_config.h"
 
+#include "task_cgroup.h"
 #include "task_cgroup_cpuset.h"
 #include "task_cgroup_memory.h"
 #include "task_cgroup_devices.h"
@@ -277,4 +279,42 @@ extern int task_post_step (slurmd_job_t *job)
 {
 	fini();
 	return SLURM_SUCCESS;
+}
+
+extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
+
+	/* we do it here as we do not have access to the conf structure */
+	/* in libslurm (src/common/xcgroup.c) */
+	xcgroup_t slurm_cg;
+	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+#ifdef MULTIPLE_SLURMD
+	if ( conf->node_name != NULL )
+		xstrsubstitute(pre,"%n", conf->node_name);
+	else {
+		xfree(pre);
+		pre = (char*) xstrdup("/slurm");
+	}
+#endif
+
+	/* create slurm cgroup in the ns (it could already exist) */
+	if (xcgroup_create(ns,&slurm_cg,pre,
+			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+		xfree(pre);
+		return pre;
+	}
+	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
+		error("unable to build slurm cgroup for ns %s: %m",
+		      ns->subsystems);
+		xcgroup_destroy(&slurm_cg);
+		xfree(pre);
+		return pre;
+	}
+	else {
+		debug3("slurm cgroup %s successfully created for ns %s: %m",
+		       pre,ns->subsystems);
+		xcgroup_destroy(&slurm_cg);
+	}
+
+exit:
+	return pre;
 }
