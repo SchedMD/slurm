@@ -93,10 +93,13 @@ int _file_write_content(char* file_path, char* content, size_t csize);
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_create(xcgroup_ns_t* cgns, char* mnt_point, char* mnt_args,
+int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
+		xcgroup_ns_t* cgns, char* mnt_point, char* mnt_args,
 		      char* subsys, char* notify_prog) {
 
-	cgns->mnt_point = xstrdup(mnt_point);
+	cgns->mnt_point = xstrdup(conf->cgroup_mountpoint);
+	xstrcat(cgns->mnt_point, mnt_point);
+
 	cgns->mnt_args = xstrdup(mnt_args);
 	cgns->subsystems = xstrdup(subsys);
 	cgns->notify_prog = xstrdup(notify_prog);
@@ -822,7 +825,8 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr, file_path);
-			fstatus = XCGROUP_ERROR;
+			if ( errno != ESRCH )
+				fstatus = XCGROUP_ERROR;
 		}
 
 	}
@@ -942,7 +946,8 @@ int _file_write_uint32s(char* file_path, uint32_t* values, int nb)
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr, file_path);
-			fstatus = XCGROUP_ERROR;
+			if ( errno != ESRCH )
+				fstatus = XCGROUP_ERROR;
 		}
 
 	}

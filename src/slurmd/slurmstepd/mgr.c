@@ -75,6 +75,13 @@
 #  include <stdlib.h>
 #endif
 
+#ifdef HAVE_PTY_H
+#  include <pty.h>
+#  ifdef HAVE_UTMP_H
+#    include <utmp.h>
+#  endif
+#endif
+
 #include "slurm/slurm_errno.h"
 
 #include "src/common/cbuf.h"
@@ -1088,6 +1095,110 @@ _spank_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
 	return(_drop_privileges (job, true, sp));
 }
 
+struct exec_wait_info {
+	int id;
+	pid_t pid;
+	int parentfd;
+	int childfd;
+};
+
+static struct exec_wait_info * exec_wait_info_create (int i)
+{
+	int fdpair[2];
+	struct exec_wait_info * e;
+
+	if (pipe (fdpair) < 0) {
+		error ("exec_wait_info_create: pipe: %m");
+		return NULL;
+	}
+
+	fd_set_close_on_exec(fdpair[0]);
+	fd_set_close_on_exec(fdpair[1]);
+
+	e = xmalloc (sizeof (*e));
+	e->childfd = fdpair[0];
+	e->parentfd = fdpair[1];
+	e->id = i;
+	e->pid = -1;
+
+	return (e);
+}
+
+static void exec_wait_info_destroy (struct exec_wait_info *e)
+{
+	if (e == NULL)
+		return;
+
+	close (e->parentfd);
+	close (e->childfd);
+	e->id = -1;
+	e->pid = -1;
+}
+
+static pid_t exec_wait_get_pid (struct exec_wait_info *e)
+{
+	if (e == NULL)
+		return (-1);
+	return (e->pid);
+}
+
+static struct exec_wait_info * fork_child_with_wait_info (int id)
+{
+	struct exec_wait_info *e;
+
+	if (!(e = exec_wait_info_create (id)))
+		return (NULL);
+
+	if ((e->pid = fork ()) < 0) {
+		exec_wait_info_destroy (e);
+		return (NULL);
+	}
+	else if (e->pid == 0)  /* In child, close parent fd */
+		close (e->parentfd);
+
+	return (e);
+}
+
+static int exec_wait_child_wait_for_parent (struct exec_wait_info *e)
+{
+	char c;
+
+	if (read (e->childfd, &c, sizeof (c)) != 1)
+		return error ("wait_for_parent: failed: %m");
+
+	return (0);
+}
+
+static int exec_wait_signal_child (struct exec_wait_info *e)
+{
+	char c = '\0';
+
+	if (write (e->parentfd, &c, sizeof (c)) != 1)
+		return error ("write to unblock task %d failed: %m", e->id);
+
+	return (0);
+}
+
+static int exec_wait_signal (struct exec_wait_info *e, slurmd_job_t *job)
+{
+	debug3 ("Unblocking %u.%u task %d, writefd = %d",
+	        job->jobid, job->stepid, e->id, e->parentfd);
+	exec_wait_signal_child (e);
+	return (0);
+}
+
+static void prepare_tty (slurmd_job_t *job, slurmd_task_info_t *task)
+{
+#ifdef HAVE_PTY_H
+	if (job->pty && (task->gtid == 0)) {
+		if (login_tty(task->stdin_fd))
+			error("login_tty: %m");
+		else
+			debug3("login_tty good");
+	}
+#endif
+	return;
+}
 
 /* fork and exec N tasks
  */
@@ -1096,12 +1207,10 @@ _fork_all_tasks(slurmd_job_t *job)
 {
 	int rc = SLURM_SUCCESS;
 	int i;
-	int *writefds; /* array of write file descriptors */
-	int *readfds; /* array of read file descriptors */
-	int fdpair[2];
 	struct priv_state sprivs;
 	jobacct_id_t jobacct_id;
 	char *oom_value;
+	List exec_wait_list = NULL;
 
 	xassert(job != NULL);
 
@@ -1117,36 +1226,6 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 	debug2("After call to spank_init()");
-
-	/*
-	 * Pre-allocate a pipe for each of the tasks
-	 */
-	debug3("num tasks on this node = %d", job->node_tasks);
-	writefds = (int *) xmalloc (job->node_tasks * sizeof(int));
-	if (!writefds) {
-		error("writefds xmalloc failed!");
-		return SLURM_ERROR;
-	}
-	readfds = (int *) xmalloc (job->node_tasks * sizeof(int));
-	if (!readfds) {
-		error("readfds xmalloc failed!");
-		return SLURM_ERROR;
-	}
-
-
-	for (i = 0; i < job->node_tasks; i++) {
-		fdpair[0] = -1; fdpair[1] = -1;
-		if (pipe (fdpair) < 0) {
-			error ("exec_all_tasks: pipe: %m");
-			return SLURM_ERROR;
-		}
-		debug3("New fdpair[0] = %d, fdpair[1] = %d",
-		       fdpair[0], fdpair[1]);
-		fd_set_close_on_exec(fdpair[0]);
-		fd_set_close_on_exec(fdpair[1]);
-		readfds[i] = fdpair[0];
-		writefds[i] = fdpair[1];
-	}
 
 	set_oom_adj(0);	/* the tasks may be killed by OOM */
 	if (pre_setuid(job)) {
@@ -1185,27 +1264,33 @@ _fork_all_tasks(slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 
+	exec_wait_list = list_create ((ListDelF) exec_wait_info_destroy);
+	if (!exec_wait_list)
+		return error ("Unable to create exec_wait_list");
+
 	/*
 	 * Fork all of the task processes.
 	 */
 	for (i = 0; i < job->node_tasks; i++) {
 		char time_stamp[256];
 		pid_t pid;
-		if ((pid = fork ()) < 0) {
+		struct exec_wait_info *ei;
+
+		if ((ei = fork_child_with_wait_info (i)) == NULL) {
 			error("child fork: %m");
 			goto fail2;
-		} else if (pid == 0)  { /* child */
-			int j;
+		} else if ((pid = exec_wait_get_pid (ei)) == 0)  { /* child */
+			/*
+			 *  Destroy exec_wait_list in the child.
+			 *   Only exec_wait_info for previous tasks have been
+			 *   added to the list so far, so everything else
+			 *   can be discarded.
+			 */
+			list_destroy (exec_wait_list);
 
 #ifdef HAVE_AIX
 			(void) mkcrid(0);
 #endif
-			/* Close file descriptors not needed by the child */
-			for (j = 0; j < job->node_tasks; j++) {
-				close(writefds[j]);
-				if (j > i)
-					close(readfds[j]);
-			}
 			/* jobacct_gather_g_endpoll();
 			 * closing jobacct files here causes deadlock */
 
@@ -1229,14 +1314,28 @@ _fork_all_tasks(slurmd_job_t *job)
 
 			xsignal_unblock(slurmstepd_blocked_signals);
 
-			exec_task(job, i, readfds[i]);
+			/*
+			 *  Setup tty before any setpgid() calls
+			 */
+			prepare_tty (job, job->task[i]);
+
+			/*
+			 *  Block until parent notifies us that it is ok to
+			 *   proceed. This allows the parent to place all
+			 *   children in any process groups or containers
+			 *   before they make a call to exec(2).
+			 */
+			exec_wait_child_wait_for_parent (ei);
+
+			exec_task(job, i);
 		}
 
 		/*
 		 * Parent continues:
 		 */
 
-		close(readfds[i]);
+		list_append (exec_wait_list, ei);
+
 		LOG_TIMESTAMP(time_stamp);
 		verbose ("task %lu (%lu) started %s",
 			(unsigned long) job->task[i]->gtid,
@@ -1306,16 +1405,10 @@ _fork_all_tasks(slurmd_job_t *job)
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
+	list_for_each (exec_wait_list, (ListForF) exec_wait_signal, job);
+	list_destroy (exec_wait_list);
+
 	for (i = 0; i < job->node_tasks; i++) {
-		char c = '\0';
-
-		debug3("Unblocking %u.%u task %d, writefd = %d",
-		       job->jobid, job->stepid, i, writefds[i]);
-		if (write (writefds[i], &c, sizeof (c)) != 1)
-			error ("write to unblock task %d failed", i);
-
-		close(writefds[i]);
-
 		/*
 		 * Prepare process for attach by parallel debugger
 		 * (if specified and able)
@@ -1324,17 +1417,14 @@ _fork_all_tasks(slurmd_job_t *job)
 				== SLURM_ERROR)
 			rc = SLURM_ERROR;
 	}
-	xfree(writefds);
-	xfree(readfds);
 
 	return rc;
 
 fail2:
 	_reclaim_privileges (&sprivs);
+	if (exec_wait_list)
+		list_destroy (exec_wait_list);
 fail1:
-	xfree(writefds);
-	xfree(readfds);
-
 	pam_finish();
 	return SLURM_ERROR;
 }
@@ -2124,6 +2214,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 {
 	int status, rc, opt;
 	pid_t cpid;
+	struct exec_wait_info *ei;
 
 	xassert(env);
 	if (path == NULL || path[0] == '\0')
@@ -2140,11 +2231,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 	    (slurm_container_create(job) != SLURM_SUCCESS))
 		error("slurm_container_create: %m");
 
-	if ((cpid = fork()) < 0) {
+	if ((ei = fork_child_with_wait_info(0)) == NULL) {
 		error ("executing %s: fork: %m", name);
 		return -1;
 	}
-	if (cpid == 0) {
+	if ((cpid = exec_wait_get_pid (ei)) == 0) {
 		struct priv_state sprivs;
 		char *argv[2];
 
@@ -2171,6 +2262,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 #else
 		setpgrp();
 #endif
+		/*
+		 *  Wait for signal from parent
+		 */
+		exec_wait_child_wait_for_parent (ei);
+
 		execve(path, argv, env);
 		error("execve(): %m");
 		exit(127);
@@ -2178,6 +2274,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 
 	if (slurm_container_add(job, cpid) != SLURM_SUCCESS)
 		error("slurm_container_add: %m");
+
+	if (exec_wait_signal_child (ei) < 0)
+		error ("run_script_as_user: Failed to wakeup %s", name);
+	exec_wait_info_destroy (ei);
+
 	if (max_wait < 0)
 		opt = 0;
 	else

@@ -54,6 +54,7 @@
 
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xcgroup.h"
+#include "src/common/xstring.h"
 #include "src/common/xcpuinfo.h"
 
 #include <sys/types.h>
@@ -129,7 +130,7 @@ int _slurm_cgroup_init(void)
 	}
 
 	/* initialize freezer cgroup namespace */
-	if (xcgroup_ns_create(&freezer_ns, CGROUP_BASEDIR "/freezer", "",
+	if (xcgroup_ns_create(&slurm_cgroup_conf, &freezer_ns, "/freezer", "",
 			       "freezer", release_agent_path)
 	     != XCGROUP_SUCCESS) {
 		error("unable to create freezer cgroup namespace");
@@ -158,15 +159,42 @@ int _slurm_cgroup_init(void)
 
 int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 {
+	/* we do it here as we do not have access to the conf structure */
+	/* in libslurm (src/common/xcgroup.c) */
+	xcgroup_t slurm_cg;
+	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+#ifdef MULTIPLE_SLURMD
+	if ( conf->node_name != NULL )
+		xstrsubstitute(pre,"%n", conf->node_name);
+	else {
+		xfree(pre);
+		pre = (char*) xstrdup("/slurm");
+	}
+#endif
+
+	/* create slurm cgroup in the freezer ns (it could already exist) */
+	if (xcgroup_create(&freezer_ns, &slurm_cg,pre,
+			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+		return SLURM_ERROR;
+	}
+	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
+		xcgroup_destroy(&slurm_cg);
+		return SLURM_ERROR;
+	}
+	else
+		xcgroup_destroy(&slurm_cg);
+
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
 		if (snprintf(user_cgroup_path, PATH_MAX,
-			      "/uid_%u", uid) >= PATH_MAX) {
+			     "%s/uid_%u", pre, uid) >= PATH_MAX) {
 			error("unable to build uid %u cgroup relative "
 			      "path : %m", uid);
+			xfree(pre);
 			return SLURM_ERROR;
 		}
 	}
+	xfree(pre);
 
 	/* build job cgroup relative path if no set (should not be) */
 	if (*job_cgroup_path == '\0') {
@@ -240,13 +268,19 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 		return SLURM_ERROR;
 	}
 
+	/* inhibit release agent for the step cgroup thus letting 
+	 * slurmstepd being able to add new pids to the container 
+	 * when the job ends (TaskEpilog,...) */
+	xcgroup_set_param(&step_freezer_cg,"notify_on_release","0");
+
 	return SLURM_SUCCESS;
 }
 
 int _slurm_cgroup_destroy(void)
 {
 	if (jobstep_cgroup_path[0] != '\0') {
-		xcgroup_delete(&step_freezer_cg);
+		if ( xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS )
+			return SLURM_ERROR;
 		xcgroup_destroy(&step_freezer_cg);
 	}
 
@@ -500,8 +534,7 @@ extern int slurm_container_plugin_signal (uint64_t id, int signal)
 
 extern int slurm_container_plugin_destroy (uint64_t id)
 {
-	_slurm_cgroup_destroy();
-	return SLURM_SUCCESS;
+	return _slurm_cgroup_destroy();
 }
 
 extern uint64_t slurm_container_plugin_find(pid_t pid)
@@ -529,6 +562,7 @@ extern int slurm_container_plugin_wait(uint64_t cont_id)
 	}
 
 	/* Spin until the container is successfully destroyed */
+	/* This indicates that all tasks have exited the container */
 	while (slurm_container_plugin_destroy(cont_id) != SLURM_SUCCESS) {
 		slurm_container_plugin_signal(cont_id, SIGKILL);
 		sleep(delay);
