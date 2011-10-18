@@ -239,9 +239,6 @@ main (int argc, char *argv[])
 	}
 	init_setproctitle(argc, argv);
 
-	if (slurm_select_init(1) != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin" );
-
 	xsignal(SIGTERM, &_term_handler);
 	xsignal(SIGINT,  &_term_handler);
 	xsignal(SIGHUP,  &_hup_handler );
@@ -1203,13 +1200,10 @@ _slurmd_init(void)
 	/*
 	 * Build nodes table like in slurmctld
 	 * This is required by the topology stack
-	 * Node tables setup must preceed _read_config() so that the 
+	 * Node tables setup must preceed _read_config() so that the
 	 * proper hostname is set.
 	 */
 	slurm_conf_init(conf->conffile);
-	init_node_conf();
-	build_all_nodeline_info(true);
-	build_all_frontend_info(true);
 
 	/*
 	 * Read global slurm config file, override necessary values from
@@ -1217,7 +1211,21 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
+	init_node_conf();
+
+	/* slurm_select_init must be called before
+	   build_all_nodeline_info to be set up correctly.
+	   slurm_select_init will be call inside
+	   build_all_nodeline_info without the 1 otherwise.
+	*/
+	if (slurm_select_init(1) != SLURM_SUCCESS )
+		return SLURM_FAILURE;
+
+	build_all_nodeline_info(true);
+	build_all_frontend_info(true);
+
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
 	    (gres_plugin_node_config_load(cpu_cnt) != SLURM_SUCCESS))
 		return SLURM_FAILURE;
