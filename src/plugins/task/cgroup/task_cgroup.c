@@ -48,6 +48,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/xcgroup.h"
 #include "src/common/xstring.h"
+#include "src/common/xcgroup_read_config.h"
 
 #include "task_cgroup.h"
 #include "task_cgroup_cpuset.h"
@@ -89,6 +90,7 @@ static bool use_cpuset  = false;
 static bool use_memory  = false;
 static bool use_devices = false;
 
+static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

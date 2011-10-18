@@ -41,10 +41,6 @@
 #ifndef _TASK_CGROUP_H_
 #define _TASK_CGROUP_H_
 
-#include "src/common/xcgroup_read_config.h"
-
-static slurm_cgroup_conf_t slurm_cgroup_conf;
-
 extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
 
 #endif
