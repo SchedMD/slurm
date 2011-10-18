@@ -1375,7 +1375,6 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 	if (error_code == SLURM_SUCCESS) {
 		slurm_sched_partition_change();	/* notify sched plugin */
 		select_g_reconfigure();		/* notify select plugin too */
-		reset_job_priority();		/* free jobs */
 	}
 
 	return error_code;
@@ -1577,7 +1576,40 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr)
 
 	slurm_sched_partition_change();	/* notify sched plugin */
 	select_g_reconfigure();		/* notify select plugin too */
-	reset_job_priority();		/* free jobs */
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Determine of the specified job can execute right now or is currently
+ * blocked by a miscellaneous limit. This does not re-validate job state,
+ * but relies upon schedule() in src/slurmctld/job_scheduler.c to do so.
+ */
+extern bool misc_policy_job_runnable_state(struct job_record *job_ptr)
+{
+	if ((job_ptr->state_reason == FAIL_ACCOUNT) ||
+	    (job_ptr->state_reason == FAIL_QOS) ||
+	    (job_ptr->state_reason == WAIT_NODE_NOT_AVAIL)) {
+		return false;
+	}
+
+	return true;
+}
+
+/*
+ * Determine of the specified job can execute right now or is currently
+ * blocked by a partition state or limit. Execute job_limits_check() to
+ * re-validate job state.
+ */
+extern bool part_policy_job_runnable_state(struct job_record *job_ptr)
+{
+	if ((job_ptr->state_reason == WAIT_PART_DOWN) ||
+	    (job_ptr->state_reason == WAIT_PART_INACTIVE) ||
+	    (job_ptr->state_reason == WAIT_PART_NODE_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_PART_TIME_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_QOS_THRES)) {
+		return false;
+	}
+
+	return true;
 }

@@ -1247,7 +1247,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			return ESLURM_JOB_HELD;
 		}
 		job_ptr->state_reason = fail_reason;
-		job_ptr->priority = 1;	/* sys hold, move to end of queue */
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 
@@ -1340,8 +1339,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
 			xfree(job_ptr->state_desc);
-			if (job_ptr->priority != 0)  /* Move to end of queue */
-				job_ptr->priority = 1;
 			last_job_update = now;
 		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
 			/* Required nodes are down or drained */
@@ -1349,8 +1346,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
-			if (job_ptr->priority != 0)  /* Move to end of queue */
-				job_ptr->priority = 1;
 			last_job_update = now;
 		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
 			job_ptr->state_reason = WAIT_RESERVATION;

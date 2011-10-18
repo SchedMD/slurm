@@ -1638,7 +1638,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		info("Holding job %u with invalid association", job_id);
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_ACCOUNT;
-		job_ptr->priority = 1;	/* Move to end of queue */
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
@@ -1662,7 +1661,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	}
 
 	if (!job_finished && job_ptr->qos_id &&
-	    job_ptr->state_reason != FAIL_ACCOUNT) {
+	    (job_ptr->state_reason != FAIL_ACCOUNT)) {
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
@@ -1671,7 +1670,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			info("Holding job %u with invalid qos", job_id);
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = FAIL_QOS;
-			job_ptr->priority = 1;	/* Move to end of queue */
 		}
 		job_ptr->qos_id = qos_rec.id;
 	}
@@ -4176,7 +4174,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			error_code = ESLURM_QOS_THRES;
 		else
 			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		job_ptr->priority = 1;      /* Move to end of queue */
 		job_ptr->state_reason = fail_reason;
 		xfree(job_ptr->state_desc);
 	}
@@ -4994,14 +4991,6 @@ void job_time_limit(void)
 		 * running, suspended and pending job */
 		resv_status = job_resv_check(job_ptr);
 
-		if ((job_ptr->priority == 1) && (!IS_JOB_FINISHED(job_ptr))) {
-			/* Rather than resetting job priorities whenever a
-			 * DOWN, DRAINED or non-responsive node is returned to
-			 * service, we pick them up here. There will be a small
-			 * delay in restting a job's priority, but the code is
-			 * a lot cleaner this way. */
-			set_job_prio(job_ptr);
-		}
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
@@ -6456,27 +6445,6 @@ extern void sync_job_priorities(void)
 	lowest_prio += prio_boost;
 }
 
-
-/* After a node is returned to service, reset the priority of jobs
- * which may have been held due to that node being unavailable */
-extern void reset_job_priority(void)
-{
-	ListIterator job_iterator;
-	struct job_record *job_ptr;
-	int count = 0;
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->priority == 1) && (!IS_JOB_FINISHED(job_ptr))) {
-			set_job_prio(job_ptr);
-			count++;
-		}
-	}
-	list_iterator_destroy(job_iterator);
-	if (count)
-		last_job_update = time(NULL);
-}
-
 /*
  * _top_priority - determine if any other job has a higher priority than the
  *	specified job
@@ -6497,7 +6465,7 @@ static bool _top_priority(struct job_record *job_ptr)
 	 * execute on different sets of nodes. While sched/backfill would
 	 * eventually start the job if delayed here based upon priority,
 	 * that could delay the initiation of a job by a few seconds. */
-	if(static_part == (uint16_t)NO_VAL) {
+	if (static_part == (uint16_t)NO_VAL) {
 		/* Since this never changes we can just set it once
 		   and not look at it again. */
 		rc = select_g_get_info_from_plugin(SELECT_STATIC_PART, job_ptr,
@@ -6527,6 +6495,8 @@ static bool _top_priority(struct job_record *job_ptr)
 				continue;
 			}
 			if (!acct_policy_job_runnable_state(job_ptr2) ||
+			    !misc_policy_job_runnable_state(job_ptr2) ||
+			    !part_policy_job_runnable_state(job_ptr2) ||
 			    !job_independent(job_ptr2, 0))
 				continue;
 			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
@@ -6570,7 +6540,7 @@ static bool _top_priority(struct job_record *job_ptr)
 				job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
 			}
-		} else if (job_ptr->priority != 1) {	/* not system hold */
+		} else if (job_ptr->state_reason == WAIT_NO_REASON) {
 			job_ptr->state_reason = WAIT_PRIORITY;
 			xfree(job_ptr->state_desc);
 		}
@@ -7864,7 +7834,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = SLURM_SUCCESS;
 		else
 			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		job_ptr->priority = 1;      /* Move to end of queue */
 		job_ptr->state_reason = fail_reason;
 		xfree(job_ptr->state_desc);
 		return error_code;
@@ -9563,7 +9532,6 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 		     job_ptr->job_id);
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_ACCOUNT;
-		job_ptr->priority = 1;	/* Move to end of queue */
 		cnt++;
 	}
 	list_iterator_destroy(job_iterator);
@@ -9615,7 +9583,6 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 		info("QOS deleted, holding job %u", job_ptr->job_id);
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_QOS;
-		job_ptr->priority = 1;	/* Move to end of queue */
 		cnt++;
 	}
 	list_iterator_destroy(job_iterator);
@@ -9770,7 +9737,7 @@ extern int send_jobs_to_accounting(void)
 	lock_slurmctld(job_write_lock);
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		if(!job_ptr->assoc_id) {
+		if (!job_ptr->assoc_id) {
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_association_rec_t));
@@ -9790,7 +9757,6 @@ extern int send_jobs_to_accounting(void)
 				     job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_ACCOUNT;
-				job_ptr->priority = 1;	/* Move to end of queue */
 				continue;
 			} else
 				job_ptr->assoc_id = assoc_rec.id;

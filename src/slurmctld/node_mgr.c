@@ -1092,7 +1092,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
 				node_ptr->last_idle = now;
-				reset_job_priority();
 			} else if (state_val == NODE_STATE_ALLOCATED) {
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)  &&
@@ -1794,7 +1793,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	reg_msg->os = NULL;	/* Nothing left to free */
 
 	if (IS_NODE_NO_RESPOND(node_ptr)) {
-		reset_job_priority();
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		last_node_update = time (NULL);
@@ -1816,7 +1814,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		}
 	} else {
 		if (IS_NODE_UNKNOWN(node_ptr) || IS_NODE_FUTURE(node_ptr)) {
-			reset_job_priority();
 			debug("validate_node_specs: node %s registered with "
 			      "%u jobs",
 			      reg_msg->node_name,reg_msg->job_count);
@@ -1857,7 +1854,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			}
 			info("node %s returned to service",
 			     reg_msg->node_name);
-			reset_job_priority();
 			trigger_node_up(node_ptr);
 			last_node_update = now;
 			if (!IS_NODE_DRAIN(node_ptr)
@@ -2244,10 +2240,8 @@ extern int validate_nodes_via_front_end(
 		hostlist_destroy(reg_hostlist);
 	}
 
-	if (update_node_state) {
-		reset_job_priority();
+	if (update_node_state)
 		last_node_update = time (NULL);
-	}
 	return error_code;
 }
 
@@ -2319,7 +2313,6 @@ static void _node_did_resp(struct node_record *node_ptr)
 	node_ptr->last_response = now;
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
-		reset_job_priority();
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		if (!is_node_in_maint_reservation(node_inx))
