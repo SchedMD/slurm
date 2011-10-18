@@ -50,6 +50,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue where sview wasn't displaying correct nice value for jobs.
  -- Fixed issue where sview wasn't displaying correct min memory per node/cpu
     value for jobs.
+ -- Disable some SelectTypeParameters for select/linear that aren't compatible.
 
 * Changes in SLURM 2.3.0-2
 ==========================
