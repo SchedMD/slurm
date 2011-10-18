@@ -45,6 +45,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	pack16(conf->sockets, buffer);
 	pack16(conf->cores, buffer);
 	pack16(conf->threads, buffer);
+	pack32(conf->real_memory_size, buffer);
 	packstr(conf->spooldir, buffer);
 	packstr(conf->node_name, buffer);
 	packstr(conf->logfile, buffer);
@@ -70,6 +71,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	safe_unpack16(&conf->sockets, buffer);
 	safe_unpack16(&conf->cores, buffer);
 	safe_unpack16(&conf->threads, buffer);
+	safe_unpack32(&conf->real_memory_size, buffer);
 	safe_unpackstr_xmalloc(&conf->spooldir,    &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->node_name,   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);

@@ -65,14 +65,6 @@
 #  include <sys/checkpnt.h>
 #endif
 
-#ifdef HAVE_PTY_H
-#  include <pty.h>
-#endif
-
-#ifdef HAVE_UTMP_H
-#  include <utmp.h>
-#endif
-
 #include <sys/resource.h>
 
 #include "slurm/slurm_errno.h"
@@ -337,36 +329,14 @@ _setup_mpi(slurmd_job_t *job, int ltaskid)
  *  Current process is running as the user when this is called.
  */
 void
-exec_task(slurmd_job_t *job, int i, int waitfd)
+exec_task(slurmd_job_t *job, int i)
 {
-	char c;
 	uint32_t *gtids;		/* pointer to arrary of ranks */
 	int fd, j;
-	int rc;
 	slurmd_task_info_t *task = job->task[i];
-
-#ifdef HAVE_PTY_H
-	/* Execute login_tty() before setpgid() calls */
-	if (job->pty && (task->gtid == 0)) {
-		if (login_tty(task->stdin_fd))
-			error("login_tty: %m");
-		else
-			debug3("login_tty good");
-	}
-#endif
 
 	if (i == 0)
 		_make_tmpdir(job);
-
-	/*
-	 * Stall exec until all tasks have joined the same process group
-	 */
-	if ((rc = read (waitfd, &c, sizeof (c))) != 1) {
-		error ("_exec_task read failed, fd = %d, rc=%d: %m", waitfd, rc);
-		log_fini();
-		exit(1);
-	}
-	close(waitfd);
 
 	gtids = xmalloc(job->node_tasks * sizeof(uint32_t));
 	for (j = 0; j < job->node_tasks; j++)
@@ -422,14 +392,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		}
 	}
 
-#ifdef HAVE_PTY_H
-	if (job->pty && (task->gtid == 0)) {
-		/* Need to perform the login_tty() before all tasks
-		 * register and the process groups are reset, otherwise
-		 * login_tty() gets disabled */
-	} else
-#endif
-		io_dup_stdio(task);
+	io_dup_stdio(task);
 
 	/* task-specific pre-launch activities */
 

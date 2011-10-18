@@ -52,6 +52,8 @@
 #include "src/common/xcgroup.h"
 #include "src/common/xcpuinfo.h"
 
+#include "task_cgroup.h"
+
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
 #include <hwloc/glibc-sched.h>
@@ -94,7 +96,7 @@ extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		error("task/cgroup: unable to build cpuset release agent path");
 		goto error;
 	}
-	if (xcgroup_ns_create(&cpuset_ns,CGROUP_BASEDIR "/cpuset","",
+	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuset_ns, "/cpuset", "",
 			       "cpuset",release_agent_path) !=
 	     XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create cpuset namespace");
@@ -165,15 +167,45 @@ extern int task_cgroup_cpuset_create(slurmd_job_t *job)
 	char* cpus = NULL;
 	size_t cpus_size;
 
-	/* build user cgroup relative path if not set (should not be) */
-	if (*user_cgroup_path == '\0') {
-		if (snprintf(user_cgroup_path,PATH_MAX,
-			      "/uid_%u",uid) >= PATH_MAX) {
-			error("task/cgroup: unable to build uid %u cpuset "
-			      "cg relative path : %m",uid);
+	char* slurm_cgpath ;
+	xcgroup_t slurm_cg;
+
+	/* create slurm root cg in this cg namespace */
+	slurm_cgpath = task_cgroup_create_slurm_cg(&cpuset_ns);
+	if ( slurm_cgpath == NULL ) {
+		return SLURM_ERROR;
+	}
+
+	/* check that this cgroup has cpus allowed or initialize them */
+	if (xcgroup_load(&cpuset_ns,&slurm_cg,slurm_cgpath)
+	    != XCGROUP_SUCCESS) {
+		error("task/cgroup: unable to load slurm cpuset xcgroup");
+		xfree(slurm_cgpath);
+		return SLURM_ERROR;
+	}
+	rc = xcgroup_get_param(&slurm_cg,"cpuset.cpus",&cpus,&cpus_size);
+	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
+		/* initialize the cpusets as it was inexistant */
+		if (_xcgroup_cpuset_init(&slurm_cg) !=
+		    XCGROUP_SUCCESS) {
+			xfree(slurm_cgpath);
+			xcgroup_destroy(&slurm_cg);
 			return SLURM_ERROR;
 		}
 	}
+	xfree(cpus);
+
+	/* build user cgroup relative path if not set (should not be) */
+	if (*user_cgroup_path == '\0') {
+		if (snprintf(user_cgroup_path, PATH_MAX,
+			     "%s/uid_%u", slurm_cgpath, uid) >= PATH_MAX) {
+			error("unable to build uid %u cgroup relative "
+			      "path : %m", uid);
+			xfree(slurm_cgpath);
+			return SLURM_ERROR;
+		}
+	}
+	xfree(slurm_cgpath);
 
 	/* build job cgroup relative path if no set (should not be) */
 	if (*job_cgroup_path == '\0') {

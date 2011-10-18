@@ -305,6 +305,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	 * contain the reservation ID, so just use some non-zero value here
 	 * for testing purposes. */
 	job->resv_id = 1;
+	select_g_select_jobinfo_set(msg->select_jobinfo, SELECT_JOBDATA_RESV_ID,
+				    &job->resv_id);
 #endif
 
 	get_cred_gres(msg->cred, conf->node_name,

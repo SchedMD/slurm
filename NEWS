@@ -90,6 +90,11 @@ documents those changes that are of interest to users and admins.
     being an Administrator Hold rather than User Hold by default.
  -- Cray - Fix for srun.pl parsing to avoid adding spaces between option and
     argument (e.g. "-N2" parsed properly without changing to "-N 2").
+ -- Major updates to cgroup support by Mark Grondona (LLNL) and Matthieu
+    Hautreux (CEA) and Sam Lang. Fixes timing problems with respect to the
+    task_epilog. Allows cgroup mount point to be configurable. Added new
+    configuration parameters MaxRAMPercent and MaxSwapPercent. Allow cgroup
+    configuration parameters that are precentages to be floating point.
 
 * Changes in SLURM 2.3.0-2
 ==========================
