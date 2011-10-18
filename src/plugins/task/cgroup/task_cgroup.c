@@ -315,6 +315,5 @@ extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
 		xcgroup_destroy(&slurm_cg);
 	}
 
-exit:
 	return pre;
 }
