@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
     task_epilog. Allows cgroup mount point to be configurable. Added new
     configuration parameters MaxRAMPercent and MaxSwapPercent. Allow cgroup
     configuration parameters that are precentages to be floating point.
+ -- Fixed issue where sview wasn't displaying correct nice value for jobs.
 
 * Changes in SLURM 2.3.0-2
 ==========================

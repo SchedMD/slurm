@@ -1548,7 +1548,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 							 SORTID_NETWORK),
 					   job_ptr->network);
 
-	if (job_ptr->pn_min_memory > 0)
+	if (job_ptr->nice > 0)
 		sprintf(tmp_char, "%u", job_ptr->nice - NICE_OFFSET);
 	else
 		sprintf(tmp_char, " ");
