@@ -508,17 +508,6 @@ static int _attempt_backfill(void)
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill test for job %u", job_ptr->job_id);
 
-		if (!acct_policy_job_runnable_state(job_ptr) ||
-		    !acct_policy_job_runnable(job_ptr)) {
-			debug2("backfill: job %u is not allowed to run now. "
-			       "Skipping it. State=%s. Reason=%s. Priority=%u",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
-			continue;
-		}
-
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL))
 		 	continue;

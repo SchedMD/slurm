@@ -183,7 +183,7 @@ extern List build_job_queue(bool clear_start)
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority);
 			continue;
-		} else if ((job_ptr->priority == 1) && !job_indepen &&
+		} else if (!job_indepen &&
 			   ((job_ptr->state_reason == WAIT_HELD) ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			/* released behind active dependency? */
@@ -200,6 +200,11 @@ extern List build_job_queue(bool clear_start)
 				fatal("list_iterator_create malloc failure");
 			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
+				job_ptr->part_ptr = part_ptr;
+				if ((job_limits_check(&job_ptr) !=
+				     WAIT_NO_REASON)  ||
+				    !acct_policy_job_runnable(job_ptr))
+					continue;
 				_job_queue_append(job_queue, job_ptr, part_ptr);
 			}
 			list_iterator_destroy(part_iterator);
@@ -217,6 +222,18 @@ extern List build_job_queue(bool clear_start)
 				      "part %s", job_ptr->job_id,
 				      job_ptr->partition);
 			}
+			if (!part_policy_job_runnable_state(job_ptr)) {
+				if (job_limits_check(&job_ptr) ==
+				    WAIT_NO_REASON) {
+					job_ptr->state_reason = WAIT_NO_REASON;
+					xfree(job_ptr->state_desc);
+				} else {
+					continue;
+				}
+			}
+			if (!acct_policy_job_runnable_state(job_ptr) ||
+			    !acct_policy_job_runnable(job_ptr))
+				continue;
 			_job_queue_append(job_queue, job_ptr,
 					  job_ptr->part_ptr);
 		}
@@ -429,6 +446,8 @@ extern int schedule(uint32_t job_limit)
 	while ((job_queue_rec = list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
+		/* Cycle through partitions usable for this job */
+		job_ptr->part_ptr = part_ptr;
 		xfree(job_queue_rec);
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
@@ -451,20 +470,7 @@ extern int schedule(uint32_t job_limit)
 			continue;
 		}
 
-		/* If a patition update has occurred, then do a limit check. */
-		if (save_last_part_update != last_part_update) {
-			int fail_reason = job_limits_check(&job_ptr);
-			if (fail_reason != WAIT_NO_REASON) {
-				job_ptr->state_reason = fail_reason;
-				job_ptr->priority = 1;
-				continue;
-			}
-		} else if ((job_ptr->state_reason == WAIT_PART_TIME_LIMIT) ||
-			   (job_ptr->state_reason == WAIT_PART_NODE_LIMIT)) {
-				job_ptr->start_time = 0;
-				job_ptr->priority = 1;
-				continue;
-		}
+		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
@@ -478,8 +484,9 @@ extern int schedule(uint32_t job_limit)
 						    &job_ptr->assoc_ptr)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				job_ptr->assoc_id = assoc_rec.id;
-			} else
+			} else {
 				continue;
+			}
 		}
 		if (job_ptr->qos_id) {
 			slurmdb_association_rec_t *assoc_ptr;
@@ -491,18 +498,23 @@ extern int schedule(uint32_t job_limit)
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = FAIL_QOS;
-				job_ptr->priority = 1;	/* Move to end of queue */
 				continue;
+			} else if (job_ptr->state_reason == FAIL_QOS) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_NO_REASON;
 			}
 		}
-		if (job_ptr->part_ptr != part_ptr) {
-			/* Cycle through partitions usable for this job */
-			job_ptr->part_ptr = part_ptr;
+		if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
+		    job_ptr->details && job_ptr->details->req_node_bitmap &&
+		    !bit_super_set(job_ptr->details->req_node_bitmap,
+				   avail_node_bitmap)) {
+			continue;
 		}
+
 		if ((job_ptr->resv_name == NULL) &&
 		    _failed_partition(job_ptr->part_ptr, failed_parts,
 				      failed_part_cnt)) {
-			if (job_ptr->priority != 1) {	/* not system hold */
+			if (job_ptr->state_reason == WAIT_NO_REASON) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
 			}
@@ -553,7 +565,6 @@ extern int schedule(uint32_t job_limit)
 			last_job_update = time(NULL);
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
-			job_ptr->priority = 1;	/* Move to end of queue */
 			continue;
 		}
 

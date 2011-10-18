@@ -1316,6 +1316,13 @@ extern void make_node_comp(struct node_record *node_ptr,
 extern void make_node_idle(struct node_record *node_ptr,
 			   struct job_record *job_ptr);
 
+/*
+ * Determine of the specified job can execute right now or is currently
+ * blocked by a miscellaneous limit. This does not re-validate job state,
+ * but relies upon schedule() in src/slurmctld/job_scheduler.c to do so.
+ */
+extern bool misc_policy_job_runnable_state(struct job_record *job_ptr);
+
 /* msg_to_slurmd - send given msg_type every slurmd, no args */
 extern void msg_to_slurmd (slurm_msg_type_t msg_type);
 
@@ -1457,6 +1464,13 @@ extern void part_filter_set(uid_t uid);
 extern void part_fini (void);
 
 /*
+ * Determine of the specified job can execute right now or is currently
+ * blocked by a partition state or limit. Execute job_limits_check() to
+ * re-validate job state.
+ */
+extern bool part_policy_job_runnable_state(struct job_record *job_ptr);
+
+/*
  * partition_in_use - determine whether a partition is in use by a RUNNING
  *	PENDING or SUSPENDED job
  * IN part_name - name of a partition
@@ -1498,10 +1512,6 @@ extern void reset_first_job_id(void);
  *	job_list - pointer to global job list
  */
 extern void reset_job_bitmaps (void);
-
-/* After a node is returned to service, reset the priority of jobs
- * which may have been held due to that node being unavailable */
-extern void reset_job_priority(void);
 
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields
