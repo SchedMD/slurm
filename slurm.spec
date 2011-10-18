@@ -589,10 +589,10 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
-%config %{_sysconfdir}/cgroup.release_common.example
-%config %{_sysconfdir}/cgroup/release_freezer
-%config %{_sysconfdir}/cgroup/release_cpuset
-%config %{_sysconfdir}/cgroup/release_memory
+%config (replace) %{_sysconfdir}/cgroup.release_common.example
+%config (replace) %{_sysconfdir}/cgroup/release_freezer
+%config (replace) %{_sysconfdir}/cgroup/release_cpuset
+%config (replace) %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
 %if %{slurm_with blcr}
