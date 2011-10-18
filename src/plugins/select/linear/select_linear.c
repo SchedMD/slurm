@@ -2629,6 +2629,9 @@ extern int init ( void )
 	rc = _init_status_pthread();
 #endif
 	cr_type = slurmctld_conf.select_type_param;
+	if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE) ||
+	    (cr_type & CR_CPU))
+		fatal("Invalid SelectTypeParameter for select/linear");
 	return rc;
 }
 
