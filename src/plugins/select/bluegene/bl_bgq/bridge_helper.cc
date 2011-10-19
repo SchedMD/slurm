@@ -66,6 +66,10 @@ extern int bridge_handle_database_errors(
 	case bgsched::DatabaseErrors::ConnectionError:
 		error("%s: Can't connect to the database!", function);
 		break;
+	case bgsched::DatabaseErrors::UnexpectedError:
+		error("%s: UnexpectedError returned from the database!",
+		      function);
+		break;
 	default:
 		error("%s: Unexpected Database exception value %d",
 		      function, err);
@@ -149,6 +153,9 @@ extern int bridge_handle_input_errors(const char *function, const uint32_t err,
 		break;
 	case bgsched::InputErrors::InvalidNodeBoardCount:
 		error("%s: Invalid NodeBoard count.", function);
+		break;
+	case bgsched::InputErrors::InvalidNodeBoardPosition:
+		error("%s: Invalid NodeBoard position.", function);
 		break;
 	case bgsched::InputErrors::InvalidMidplanes:
 		error("%s: Invalid midplanes given.", function);
@@ -250,6 +257,9 @@ extern int bridge_handle_runtime_errors(const char *function,
 	        break;
 	case bgsched::RuntimeErrors::AuthorityError:
 	 	error("%s: Authority Error.", function);
+	        break;
+	case bgsched::RuntimeErrors::HardwareInUseError:
+		error("%s: Hardware in use Error.", function);
 	        break;
 	default:
 		error("%s: Unexpected Runtime exception value %d.",
