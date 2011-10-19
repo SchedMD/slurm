@@ -638,8 +638,13 @@ extern int read_bg_conf(void)
 
 		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK */
 		if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt) {
+#ifdef HAVE_BGQ
+			bg_conf->quarter_ionode_cnt = 1;
+			bg_conf->nodecard_ionode_cnt = 1;
+#else
 			bg_conf->quarter_ionode_cnt = 2;
 			bg_conf->nodecard_ionode_cnt = 2;
+#endif
 		} else {
 			bg_conf->quarter_ionode_cnt = bg_conf->ionodes_per_mp/4;
 			bg_conf->nodecard_ionode_cnt =
@@ -698,6 +703,10 @@ extern int read_bg_conf(void)
 			bg_conf->nodecard_ionode_cnt = 0;
 		} else {
 			bg_lists->valid_small32 = list_create(_destroy_bitmap);
+			/* This is suppose to be = and not ==, we only
+			   want to decrement when small_size equals
+			   something.
+			*/
 			if ((small_size = bg_conf->nodecard_ionode_cnt))
 				small_size--;
 			i = 0;
@@ -803,6 +812,11 @@ no_calc:
 				   &count, "BPs", tbl)) {
 			info("WARNING: no blocks defined in bluegene.conf, "
 			     "only making full system block");
+			if (bg_conf->mp_cnode_cnt
+			    == bg_conf->nodecard_cnode_cnt)
+				fatal("On a sub-midplane system you need to "
+				      "define the blocks you want on your "
+				      "system.");
 			/* create_full_system_block(NULL); */
 		}
 
@@ -810,7 +824,11 @@ no_calc:
 			add_bg_record(bg_lists->main, NULL,
 				      blockreq_array[i], 0, 0);
 		}
-	}
+	} else if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
+		/* we can't do dynamic here on a sub-midplane system */
+		fatal("On a sub-midplane system we can only do OVERLAP or "
+		      "STATIC LayoutMode.  Please update your bluegene.conf.");
+
 	s_p_hashtbl_destroy(tbl);
 
 	return SLURM_SUCCESS;

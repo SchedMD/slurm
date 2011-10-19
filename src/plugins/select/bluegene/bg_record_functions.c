@@ -769,7 +769,7 @@ extern int add_bg_record(List records, List *used_nodes,
 				      "IonodesPerMP=%u. (Try setting it "
 				      "to at least 16)",
 				      bg_conf->ionodes_per_mp);
-#ifndef HAVE_BGL
+#ifdef HAVE_BGP
 			if (blockreq->small16)
 				fatal("add_bg_record: "
 				      "There is an error in your "
@@ -778,6 +778,9 @@ extern int add_bg_record(List records, List *used_nodes,
 				      "IonodesPerMP=%u. (Try setting it to "
 				      "at least 32)",
 				      bg_conf->ionodes_per_mp);
+#endif
+
+#ifndef HAVE_BGL
 			if ((bg_conf->io_ratio < 0.5) && blockreq->small64)
 				fatal("add_bg_record: "
 				      "There is an error in your "

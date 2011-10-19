@@ -3662,16 +3662,24 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t limit_set_min_cpus = 0;
 	uint16_t limit_set_min_nodes = 0;
 	uint16_t limit_set_time = 0;
+	static uint32_t node_scaling = 1;
+	static uint32_t cpus_per_mp = 1;
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	uint16_t reboot;
 	uint16_t rotate;
 	uint16_t conn_type[SYSTEM_DIMENSIONS];
-	static uint32_t cpus_per_mp = 0;
+	static bool sub_mp_system = 0;
 
-	if (!cpus_per_mp)
-		select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT, &cpus_per_mp);
+	if (node_scaling == 1) {
+		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+					&node_scaling);
+		select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT,
+					&cpus_per_mp);
+		if (node_scaling < 512)
+			sub_mp_system = 1;
+	}
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
@@ -3693,16 +3701,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
-		static uint32_t node_scaling = 1;
-		static uint32_t cpus_per_mp = 1;
-#ifdef HAVE_BG
-		if (node_scaling == 1) {
-			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-						&node_scaling);
-			select_g_alter_node_cnt(SELECT_GET_MP_CPU_CNT,
-						&cpus_per_mp);
-		}
-#endif
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
 					      &req_bitmap);
 		if (error_code) {
@@ -3888,9 +3886,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 					    SELECT_JOBDATA_CONN_TYPE,
 					    &conn_type);
 	} else if(((conn_type[0] >= SELECT_SMALL)
-		   && (job_desc->min_cpus >= cpus_per_mp))
-		  || (((conn_type[0] == SELECT_TORUS)
-		       || (conn_type[0] == SELECT_MESH))
+		   && ((job_desc->min_cpus >= cpus_per_mp) && !sub_mp_system))
+		  || (!sub_mp_system
+		      && ((conn_type[0] == SELECT_TORUS)
+			  || (conn_type[0] == SELECT_MESH))
 		      && (job_desc->min_cpus < cpus_per_mp))) {
 		/* check to make sure we have a valid conn_type with
 		 * the cpu count */
