@@ -102,6 +102,9 @@ documents those changes that are of interest to users and admins.
  -- Disable some SelectTypeParameters for select/linear that aren't compatible.
  -- Move slurm_select_init to proper place to avoid loading multiple select
     plugins in the slurmd.
+ -- BGQ - Include runjob_plugin.so in the bluegene rpm.
+ -- Report correct job "Reason" if needed nodes are DOWN, DRAINED, or
+    NOT_RESPONDING, "Resources" rather than "PartitionNodeLimit".
 
 * Changes in SLURM 2.3.0-2
 ==========================

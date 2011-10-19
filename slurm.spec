@@ -447,6 +447,7 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_cnode.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/sfree
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_epilog
@@ -500,6 +501,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so &&
    echo %{_libdir}/slurm/libsched_if.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so &&
    echo %{_libdir}/slurm/libsched_if64.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so &&
+   echo %{_libdir}/slurm/runjob_plugin.so >> $LIST
 
 %endif
 
@@ -589,10 +592,10 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
-%config (replace) %{_sysconfdir}/cgroup.release_common.example
-%config (replace) %{_sysconfdir}/cgroup/release_freezer
-%config (replace) %{_sysconfdir}/cgroup/release_cpuset
-%config (replace) %{_sysconfdir}/cgroup/release_memory
+%config %{_sysconfdir}/cgroup.release_common.example
+%config %{_sysconfdir}/cgroup/release_freezer
+%config %{_sysconfdir}/cgroup/release_cpuset
+%config %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
 %if %{slurm_with blcr}

@@ -1052,7 +1052,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
 	if (!runable_avail)
-		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		error_code = ESLURM_NODE_NOT_AVAIL;
 	if (!runable_ever) {
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job %u never runnable",
