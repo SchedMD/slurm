@@ -2031,7 +2031,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	       list_count(job_list));
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		if(job_ptr->assoc_id) {
+		if (job_ptr->assoc_id) {
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;

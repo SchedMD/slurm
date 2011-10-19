@@ -101,12 +101,13 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 	    (assoc_ptr->uid != job_ptr->user_id)) {
 		error("Invalid assoc_ptr for jobid=%u", job_ptr->job_id);
 		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
-		if(job_ptr->assoc_id)
+		if (job_ptr->assoc_id)
 			assoc_rec.id = job_ptr->assoc_id;
 		else {
-			assoc_rec.uid       = job_ptr->user_id;
-			assoc_rec.partition = job_ptr->partition;
 			assoc_rec.acct      = job_ptr->account;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
 		}
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					    accounting_enforce,

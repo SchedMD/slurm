@@ -475,7 +475,8 @@ extern int schedule(uint32_t job_limit)
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 			assoc_rec.acct      = job_ptr->account;
-			assoc_rec.partition = job_ptr->partition;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
 	
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,

@@ -1621,11 +1621,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	 * association record.  If not look for it by
 	 * account,partition, user_id.
 	 */
-	if(job_ptr->assoc_id)
+	if (job_ptr->assoc_id)
 		assoc_rec.id = job_ptr->assoc_id;
 	else {
 		assoc_rec.acct      = job_ptr->account;
-		assoc_rec.partition = job_ptr->partition;
+		if (job_ptr->part_ptr)
+			assoc_rec.partition = job_ptr->part_ptr->name;
 		assoc_rec.uid       = job_ptr->user_id;
 	}
 
@@ -3891,9 +3892,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
-	assoc_rec.uid       = job_desc->user_id;
-	assoc_rec.partition = part_ptr->name;
 	assoc_rec.acct      = job_desc->account;
+	assoc_rec.partition = part_ptr->name;
+	assoc_rec.uid       = job_desc->user_id;
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, &assoc_ptr)) {
@@ -6840,9 +6841,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_association_rec_t));
-			assoc_rec.uid       = job_ptr->user_id;
-			assoc_rec.partition = tmp_part_ptr->name;
 			assoc_rec.acct      = job_ptr->account;
+			assoc_rec.partition = tmp_part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
@@ -8859,18 +8860,19 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 	if (IS_JOB_RESIZING(job_ptr))
 		return;
 
-	if(!job_ptr->assoc_id) {
+	if (!job_ptr->assoc_id) {
 		slurmdb_association_rec_t assoc_rec;
 		/* In case accounting enabled after starting the job */
 		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
 		assoc_rec.acct      = job_ptr->account;
-		assoc_rec.partition = job_ptr->partition;
+		if (job_ptr->part_ptr)
+			assoc_rec.partition = job_ptr->part_ptr->name;
 		assoc_rec.uid       = job_ptr->user_id;
 
-		if(!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					     accounting_enforce,
-					     (slurmdb_association_rec_t **)
-					     &job_ptr->assoc_ptr))) {
+		if (!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					      accounting_enforce,
+					      (slurmdb_association_rec_t **)
+					      &job_ptr->assoc_ptr))) {
 			job_ptr->assoc_id = assoc_rec.id;
 			/* we have to call job start again because the
 			 * associd does not get updated in job complete */
@@ -9610,9 +9612,10 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
-	assoc_rec.uid       = job_ptr->user_id;
-	assoc_rec.partition = job_ptr->partition;
 	assoc_rec.acct      = new_account;
+	if (job_ptr->part_ptr)
+		assoc_rec.partition = job_ptr->part_ptr->name;
+	assoc_rec.uid       = job_ptr->user_id;
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_association_rec_t **)
@@ -9620,9 +9623,9 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
-	} else if(association_based_accounting &&
-		  !job_ptr->assoc_ptr          &&
-		  !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+	} else if (association_based_accounting &&
+		   !job_ptr->assoc_ptr          &&
+		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		/* if not enforcing associations we want to look for
 		 * the default account and use it to avoid getting
 		 * trash in the accounting records.
@@ -9632,7 +9635,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 					accounting_enforce,
 					(slurmdb_association_rec_t **)
 					&job_ptr->assoc_ptr);
-		if(!job_ptr->assoc_ptr) {
+		if (!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
 			      "'%s' and user '%u', and we can't seem to find "
 			      "a default one either.  Keeping new account "
@@ -9741,17 +9744,18 @@ extern int send_jobs_to_accounting(void)
 			slurmdb_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_association_rec_t));
-			assoc_rec.uid       = job_ptr->user_id;
-			assoc_rec.partition = job_ptr->partition;
 			assoc_rec.acct      = job_ptr->account;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
 
-			if(assoc_mgr_fill_in_assoc(
+			if (assoc_mgr_fill_in_assoc(
 				   acct_db_conn, &assoc_rec,
 				   accounting_enforce,
 				   (slurmdb_association_rec_t **)
 				   &job_ptr->assoc_ptr) &&
-			   (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-			   && (!IS_JOB_FINISHED(job_ptr))) {
+			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+			    && (!IS_JOB_FINISHED(job_ptr))) {
 				info("Holding job %u with "
 				     "invalid association",
 				     job_ptr->job_id);
@@ -9763,7 +9767,7 @@ extern int send_jobs_to_accounting(void)
 		}
 
 		/* we only want active, un accounted for jobs */
-		if(job_ptr->db_index || IS_JOB_FINISHED(job_ptr))
+		if (job_ptr->db_index || IS_JOB_FINISHED(job_ptr))
 			continue;
 
 		debug("first reg: starting job %u in accounting",

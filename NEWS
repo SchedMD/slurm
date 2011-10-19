@@ -48,6 +48,7 @@ documents those changes that are of interest to users and admins.
  -- Cray: Add support for job reservations with node IDs that are not in
     numeric order. Fix for Bugzilla #5.
  -- BGQ - Fix issue with smap -R
+ -- Fix association limit support for jobs queued for multiple partitions.
 
 * Changes in SLURM 2.3.1
 ========================
