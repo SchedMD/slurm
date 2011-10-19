@@ -447,6 +447,7 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_cnode.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/sfree
 rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_epilog
@@ -500,6 +501,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if.so &&
    echo %{_libdir}/slurm/libsched_if.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so &&
    echo %{_libdir}/slurm/libsched_if64.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so &&
+   echo %{_libdir}/slurm/runjob_plugin.so >> $LIST
 
 %endif
 
