@@ -297,6 +297,13 @@ extern int slurm_select_init(bool only_default)
 			fatal("Use SelectType=select/linear");
 		}
 #endif
+		if (!strcasecmp(select_type, "select/linear")) {
+			uint16_t cr_type = slurm_get_select_type_param();
+			if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE) ||
+			    (cr_type & CR_CPU))
+				fatal("Invalid SelectTypeParameter "
+				      "for select/linear");
+		}
 
 #ifdef HAVE_BG
 		if (strcasecmp(select_type, "select/bluegene")) {

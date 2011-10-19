@@ -561,6 +561,12 @@ char *slurm_get_sched_type(void);
  */
 char *slurm_get_select_type(void);
 
+/* slurm_get_select_type_param
+ * get select_type_param from slurmctld_conf object
+ * RET uint16_t   - select_type_param
+ */
+uint16_t slurm_get_select_type_param(void);
+
 /** Return true if (remote) system runs Cray XT/XE */
 bool is_cray_select_type(void);
 
