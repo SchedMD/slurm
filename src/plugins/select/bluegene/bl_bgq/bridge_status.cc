@@ -133,8 +133,9 @@ static void _handle_bad_midplane(const char *mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (!node_already_down(bg_down_node)) {
-		error("Midplane %s, state went to %d, marking midplane down.",
-		      bg_down_node, state.toValue());
+		error("Midplane %s, state went to '%s', marking midplane down.",
+		      bg_down_node,
+		      bridge_hardware_state_string(state.toValue()));
 		slurm_drain_nodes(
 			bg_down_node,
 			(char *)"select_bluegene: MMCS midplane not UP",
@@ -153,9 +154,10 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (!node_already_down(bg_down_node)) {
-		error("Switch at dim '%d' on Midplane %s, state went to %d, "
+		error("Switch at dim '%d' on Midplane %s, state went to '%s', "
 		      "marking midplane down.",
-		      dim, bg_down_node, state.toValue());
+		      dim, bg_down_node,
+		      bridge_hardware_state_string(state.toValue()));
 		slurm_drain_nodes(bg_down_node,
 				  (char *)"select_bluegene: MMCS switch not UP",
 				  slurm_get_slurm_user_id());
@@ -206,12 +208,14 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (down_nodecard(bg_down_node, io_start, 0) == SLURM_SUCCESS)
-		debug("nodeboard %s on %s is in an error state (%d)",
-		      nb_name, bg_down_node, state.toValue());
+		debug("nodeboard %s on %s is in an error state '%s'",
+		      nb_name, bg_down_node,
+		      bridge_hardware_state_string(state.toValue()));
 	else
-		debug2("nodeboard %s on %s is in an error state (%d), "
+		debug2("nodeboard %s on %s is in an error state '%s', "
 		       "but error was returned when trying to make it so",
-		       nb_name, bg_down_node, state.toValue());
+		       nb_name, bg_down_node,
+		       bridge_hardware_state_string(state.toValue()));
 	return;
 }
 
@@ -253,8 +257,9 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	if (!changed)
 		return;
 
-	info("_handle_node_change: state for %s - %s is %d",
-	     ba_mp->coord_str, cnode_loc.c_str(), state.toValue());
+	info("_handle_node_change: state for %s - %s is '%s'",
+	     ba_mp->coord_str, cnode_loc.c_str(),
+	     bridge_hardware_state_string(state.toValue()));
 
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
@@ -358,8 +363,9 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_FULL;
 
 		error("Cable at dim '%d' on Midplane %s, "
-		      "state went to %d, marking cable down.",
-		      dim, ba_mp->coord_str, state.toValue());
+		      "state went to '%s', marking cable down.",
+		      dim, ba_mp->coord_str,
+		      bridge_hardware_state_string(state.toValue()));
 
 		snprintf(reason, sizeof(reason),
 			 "Cable going from %s -> %s (%d) is not available.\n",
@@ -440,11 +446,11 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
-		error("Midplane %s, state went from %d to %d, "
+		error("Midplane %s, state went from '%s' to '%s', "
 		      "but is not in our system",
 		      event.getLocation().c_str(),
-		      event.getPreviousState(),
-		      event.getState());
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
 		return;
 	}
 
@@ -482,10 +488,10 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 
 	if (!ba_mp) {
 		error("Switch in dim '%d' on Midplane %s, state "
-		      "went from %d to %d, but is not in our system",
+		      "went from '%s' to '%s', but is not in our system",
 		      dim, event.getMidplaneLocation().c_str(),
-		      event.getPreviousState(),
-		      event.getState());
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
 		return;
 	}
 
@@ -522,11 +528,11 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
-		error("Nodeboard '%s' on Midplane %s, state went from %d to %d,"
-		      "but is not in our system",
+		error("Nodeboard '%s' on Midplane %s, state went from "
+		      "'%s' to '%s', but is not in our system",
 		      nb_name, mp_name,
-		      event.getPreviousState(),
-		      event.getState());
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
 		return;
 	}
 
@@ -561,18 +567,18 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 
 	if (!ba_mp) {
 		const char *mp_name = event.getLocation().substr(0,6).c_str();
-		error("Node '%s' on Midplane %s, state went from %d to %d,"
+		error("Node '%s' on Midplane %s, state went from '%s' to '%s',"
 		      "but is not in our system",
 		      event.getLocation().c_str(), mp_name,
-		      event.getPreviousState(),
-		      event.getState());
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
 		return;
 	}
 
-	info("Node '%s' on Midplane %s, state went from %d to %d",
+	info("Node '%s' on Midplane %s, state went from '%s' to '%s'",
 	     event.getLocation().c_str(), ba_mp->coord_str,
-	     event.getPreviousState(),
-	     event.getState());
+	     bridge_hardware_state_string(event.getPreviousState()),
+	     bridge_hardware_state_string(event.getState()));
 
 	_handle_node_change(ba_mp, event.getLocation(), event.getState());
 
@@ -595,10 +601,10 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	from_ba_mp = coord2ba_mp(coords);
 	if (!from_ba_mp) {
 		error("Cable in dim '%d' on Midplane %s, state "
-		      "went from %d to %d, but is not in our system",
+		      "went from '%s' to '%s', but is not in our system",
 		      dim, event.getFromMidplaneLocation().c_str(),
-		      event.getPreviousState(),
-		      event.getState());
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
 		return;
 	}
 

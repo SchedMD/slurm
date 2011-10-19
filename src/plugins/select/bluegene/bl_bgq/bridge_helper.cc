@@ -315,4 +315,24 @@ extern uint16_t bridge_translate_switch_usage(bgsched::Switch::InUse usage_in)
 
 	return BG_SWITCH_NONE;
 }
+
+extern const char *bridge_hardware_state_string(const int state)
+{
+	switch(state) {
+	case Hardware::Available:
+		return "Available";
+	case Hardware::Missing:
+		return "Missing";
+	case Hardware::Error:
+		return "Error";
+	case Hardware::Service:
+		return "Service";
+	case Hardware::SoftwareFailure:
+		return "SoftwareFailure";
+	default:
+		return "Unknown";
+	}
+	return "Unknown";
+}
+
 #endif
