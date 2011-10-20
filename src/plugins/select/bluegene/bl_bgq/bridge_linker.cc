@@ -110,9 +110,17 @@ static void _setup_ba_mp(int level, uint16_t *coords,
 	ba_mp->nodecard_loc =
 		(char **)xmalloc(sizeof(char *) * bg_conf->mp_nodecard_cnt);
 	for (i=0; i<bg_conf->mp_nodecard_cnt; i++) {
-		NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
-		ba_mp->nodecard_loc[i] =
-			xstrdup(nodeboard->getLocation().c_str());
+		try {
+			NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
+			ba_mp->nodecard_loc[i] =
+				xstrdup(nodeboard->getLocation().c_str());
+		} catch (const bgsched::InputException& err) {
+			int rc = bridge_handle_input_errors(
+				"Midplane::getNodeBoard",
+				err.getError().toValue(), NULL);
+			if (rc != SLURM_SUCCESS)
+			       ;
+		}
 	}
 }
 
