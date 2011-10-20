@@ -57,6 +57,7 @@ documents those changes that are of interest to users and admins.
  -- Report correct job "Reason" if needed nodes are DOWN, DRAINED, or
     NOT_RESPONDING, "Resources" rather than "PartitionNodeLimit".
  -- BLUEGENE - Fixed issues with running on a sub-midplane system.
+ -- Added some missing calls to allow older versions of SLURM to talk to newer.
 
 * Changes in SLURM 2.3.0-2
 ==========================
