@@ -119,6 +119,7 @@ int check_header_version(header_t * header)
 		case REQUEST_PARTITION_INFO:
 		case REQUEST_PING:
 		case REQUEST_PRIORITY_FACTORS:
+		case REQUEST_REBOOT_NODES:
 		case REQUEST_RECONFIGURE:
 		case REQUEST_RESERVATION_INFO:
 		case REQUEST_SET_DEBUG_FLAGS:
@@ -151,6 +152,7 @@ int check_header_version(header_t * header)
 			    || (header->version == SLURM_2_1_PROTOCOL_VERSION))
 				break;
 		default:
+			debug("unsupported RPC %d", header->msg_type);
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 			break;
 		}
