@@ -1657,7 +1657,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 
-#ifdef HAVE_FRONT_END	/* Limited job step support */
+#if defined HAVE_FRONT_END && !defined HAVE_BGQ	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
 	 * A single slurmd can not handle a heavy load. */
 	if (!validate_slurm_user(uid)) {
@@ -2563,7 +2563,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			job_ptr = NULL;
 
 		if (job_ptr) {	/* Active job allocation */
-#ifdef HAVE_FRONT_END	/* Limited job step support */
+#if defined HAVE_FRONT_END && !defined HAVE_BGQ	/* Limited job step support */
 			/* Non-super users not permitted to run job steps on
 			 * front-end. A single slurmd can not handle a heavy
 			 * load. */
