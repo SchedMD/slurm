@@ -52,6 +52,22 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
+log_user 0
+set job_mem_opt  "--comment=no_mem"
+set step_mem_opt "--comment=no_mem"
+spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
+expect {
+	-re "MEMORY" {
+		set job_mem_opt  "--mem-per-cpu=32"
+		set step_mem_opt "--mem-per-cpu=1"
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
 #
 # Delete left-over input script plus stdout/err files
 # Build input script file
@@ -65,7 +81,7 @@ exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
   for ((i = 0; i < $steps_started; i++)); do
     j=`expr $steps_started + 15 - \$i`
-    $srun -N1 -n1 --mem-per-cpu=1 $bin_sleep \$j &
+    $srun -N1 -n1 $step_mem_opt $bin_sleep \$j &
     $bin_sleep 1
   done
   $bin_sleep 2
@@ -77,15 +93,18 @@ make_bash_script $file_in "
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-
 if { [test_xcpu] } {
 	set node_cnt 1-1
 } else {
 	set node_cnt 1-4
 }
 
-set srun_pid [spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 $file_in]
+set srun_pid [spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 $job_mem_opt $file_in]
 expect {
+	-re "Requested node configuration is not available" {
+		send_user "\nFAILURE: Memory is allocated, but your nodes don't have even 32MB configured\n"
+		set exit_code 1
+	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
