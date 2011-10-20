@@ -552,6 +552,10 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 
 	process_nodes(found_record, false);
 
+	/* Force small blocks to always be non-full system blocks.
+	 * This really only plays a part on sub-midplane systems. */
+	found_record->full_block = 0;
+
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("made small block of %s[%s]",
 		     found_record->mp_str, found_record->ionode_str);

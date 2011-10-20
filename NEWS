@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
     numeric order. Fix for Bugzilla #5.
  -- BGQ - Fix issue with smap -R
  -- Fix association limit support for jobs queued for multiple partitions.
+ -- BLUEGENE - fix issue for sub-midplane systems to create a full system
+    block correctly.
 
 * Changes in SLURM 2.3.1
 ========================
