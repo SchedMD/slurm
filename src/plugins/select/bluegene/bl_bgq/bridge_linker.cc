@@ -408,7 +408,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 
 
 #ifdef HAVE_BG_FILES
-	if (bg_record->cnode_cnt < bg_conf->mp_cnode_cnt) {
+	if (bg_record->conn_type[0] == SELECT_SMALL) {
 		bool use_nc[bg_conf->mp_nodecard_cnt];
 		int i, nc_pos = 0, num_ncards = 0;
 
