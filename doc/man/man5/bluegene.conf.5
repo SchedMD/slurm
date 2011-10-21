@@ -182,9 +182,8 @@ There is no default value and this must be specified. For BlueGene/L systems
 this is usually 32.
 
 .TP
-\fBNumPsets\fR
-The Numpsets used for creation of all bgblocks.  This value really means the
-number of IO nodes on a base partition.  This number must be the smallest
+\fBIonodesPerMidplane\fR
+The number of IO nodes on a midplane.  This number must be the smallest
 number if you have a heterogeneous system.
 There is no default value and this must be specified.  The typical settings
 for BlueGene/L systems are as follows: For IO rich systems, 64 is the value that
@@ -212,7 +211,7 @@ Define only the numeric coordinates of the bgblocks here. The prefix
 will be based upon the NodeName defined in slurm.conf
 
 .TP
-\fBBPs\fR
+\fBMPs\fR
 Define the coordinates of the bgblock end points.
 For BlueGene/L and BlueGene/P systems there will be three coordinates (X, Y, and Z).
 For BlueGene/Q systems there will be for coordinates (A, X, Y, and Z).

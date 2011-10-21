@@ -1142,6 +1142,11 @@ static List _get_config(void)
 	}
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("IONodesPerMP");
+	key_pair->value = xstrdup_printf("%u", bg_conf->ionodes_per_mp);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("LayoutMode");
 	switch(bg_conf->layout_mode) {
 	case LAYOUT_STATIC:
@@ -1175,10 +1180,6 @@ static List _get_config(void)
 		key_pair->value = xstrdup("Yes");
 		list_append(my_list, key_pair);
 	}
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("IONodesPerMP");
-	key_pair->value = xstrdup_printf("%u", bg_conf->ionodes_per_mp);
-	list_append(my_list, key_pair);
 
 	list_sort(my_list, (ListCmpF) sort_key_pairs);
 
