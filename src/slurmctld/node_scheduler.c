@@ -1205,6 +1205,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		fail_reason = WAIT_HELD;
 	else if ((job_ptr->time_limit != NO_VAL) &&
 		 ((job_ptr->time_limit > part_ptr->max_time) &&
+		  (job_ptr->time_min   > part_ptr->max_time) &&
 		  (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 					     & QOS_FLAG_PART_TIME_LIMIT)))))
 		fail_reason = WAIT_PART_TIME_LIMIT;
@@ -1376,7 +1377,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * is for the job when we place it
 	 */
 	job_ptr->start_time = job_ptr->time_last_active = now;
-	if (job_ptr->time_limit == NO_VAL) {
+	if ((job_ptr->time_limit == NO_VAL) ||
+	    ((job_ptr->time_limit > part_ptr->max_time) &&
+	     (!qos_ptr || (qos_ptr && !(qos_ptr->flags
+					& QOS_FLAG_PART_TIME_LIMIT))))) {
 		if (part_ptr->default_time != NO_VAL)
 			job_ptr->time_limit = part_ptr->default_time;
 		else

@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue where if a job ended with ESLURMD_UID_NOT_FOUND and
     ESLURMD_GID_NOT_FOUND where slurm would be a little over zealous
     in treating missing a GID or UID as a fatal error.
+ -- If job time limit exceeds partition maximum, but job's minimum time limit
+    does not, set job's time limit to partition maximum at allocation time.
 
 * Changes in SLURM 2.3.1
 ========================
