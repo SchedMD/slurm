@@ -764,8 +764,9 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 
 	_push_job_desc(job_desc);
 	_push_partition_list(job_desc->user_id, submit_uid);
+	lua_pushnumber (L, submit_uid);
 	_stack_dump("job_submit, before lua_pcall", L);
-	if (lua_pcall (L, 2, 1, 0) != 0) {
+	if (lua_pcall (L, 3, 1, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {
@@ -802,8 +803,9 @@ extern int job_modify(struct job_descriptor *job_desc,
 	_push_job_desc(job_desc);
 	_push_job_rec(job_ptr);
 	_push_partition_list(job_ptr->user_id, submit_uid);
+	lua_pushnumber (L, submit_uid);
 	_stack_dump("job_modify, before lua_pcall", L);
-	if (lua_pcall (L, 3, 1, 0) != 0) {
+	if (lua_pcall (L, 4, 1, 0) != 0) {
 		error("%s/lua: %s: %s",
 		      __func__, lua_script_path, lua_tostring (L, -1));
 	} else {

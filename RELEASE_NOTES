@@ -62,7 +62,7 @@ OTHER CHANGES
 
 API CHANGES
 ===========
-
+* Added the UserID of the user issuing the RPC to the job_submit/lua functions.
 
 Changed members of the following structs
 ========================================

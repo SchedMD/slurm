@@ -7,7 +7,7 @@
  set up logic in each function unchanged. Change only the logic after
  the line containing "*** YOUR LOGIC GOES BELOW ***".
 
- For use, this script should be copied into a file name job_"submit.lua"
+ For use, this script should be copied into a file name "job_submit.lua"
  in the same directory as the SLURM configuration file, slurm.conf.
 
 --]]
@@ -27,7 +27,7 @@ end
 --
 --########################################################################--
 
-function slurm_job_submit ( job_desc, part_list )
+function slurm_job_submit ( job_desc, part_list, submit_uid )
 	setmetatable (job_desc, job_req_meta)
 	local part_rec = _build_part_table (part_list)
 
@@ -35,7 +35,7 @@ function slurm_job_submit ( job_desc, part_list )
 	if job_desc.account == nil then
 		local account = "***TEST_ACCOUNT***"
 		log_info("slurm_job_submit: job from uid %d, setting default account value: %s",
-			 job_desc.user_id, account)
+			 submit_uid, account)
 		job_desc.account = account
 	end
 --	If no default partition, set the partition to the highest
@@ -66,7 +66,7 @@ function slurm_job_submit ( job_desc, part_list )
 	return 0
 end
 
-function slurm_job_modify ( job_desc, job_rec, part_list )
+function slurm_job_modify ( job_desc, job_rec, part_list, modify_uid )
 	setmetatable (job_desc, job_req_meta)
 	setmetatable (job_rec,  job_rec_meta)
 	local part_rec = _build_part_table (part_list)
@@ -74,8 +74,8 @@ function slurm_job_modify ( job_desc, job_rec, part_list )
 --      *** YOUR LOGIC GOES BELOW ***
 	if job_desc.comment == nil then
 		local comment = "***TEST_COMMENT***"
-		log_info("slurm_job_modify: for job %u, setting default comment value: %s",
-			 job_rec.job_id, comment)
+		log_info("slurm_job_modify: for job %u from uid %d, setting default comment value: %s",
+			 job_rec.job_id, modify_uid, comment)
 		job_desc.comment = comment
 	end
 
