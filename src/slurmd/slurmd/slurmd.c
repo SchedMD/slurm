@@ -1204,25 +1204,19 @@ _slurmd_init(void)
 	 * proper hostname is set.
 	 */
 	slurm_conf_init(conf->conffile);
+	init_node_conf();
+	/* slurm_select_init() must be called before
+	 * build_all_nodeline_info() to be called with proper argument. */
+	if (slurm_select_init(1) != SLURM_SUCCESS )
+		return SLURM_FAILURE;
+	build_all_nodeline_info(true);
+	build_all_frontend_info(true);
 
 	/*
 	 * Read global slurm config file, override necessary values from
 	 * defaults and command line.
 	 */
 	_read_config();
-
-	init_node_conf();
-
-	/* slurm_select_init must be called before
-	   build_all_nodeline_info to be set up correctly.
-	   slurm_select_init will be call inside
-	   build_all_nodeline_info without the 1 otherwise.
-	*/
-	if (slurm_select_init(1) != SLURM_SUCCESS )
-		return SLURM_FAILURE;
-
-	build_all_nodeline_info(true);
-	build_all_frontend_info(true);
 
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 
