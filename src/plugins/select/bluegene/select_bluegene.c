@@ -1074,6 +1074,11 @@ static List _get_config(void)
 #endif
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MaxBlockInError");
+	key_pair->value = xstrdup_printf("%u", bg_conf->max_block_err);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MidPlaneNodeCnt");
 	key_pair->value = xstrdup_printf("%u", bg_conf->mp_cnode_cnt);
 	list_append(my_list, key_pair);
