@@ -201,9 +201,8 @@ extern List build_job_queue(bool clear_start)
 			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
-				if (!acct_policy_job_runnable(job_ptr) ||
-				    (job_limits_check(&job_ptr) !=
-				     WAIT_NO_REASON))
+				if (job_limits_check(&job_ptr) !=
+				    WAIT_NO_REASON)
 					continue;
 				_job_queue_append(job_queue, job_ptr, part_ptr);
 			}
@@ -222,9 +221,6 @@ extern List build_job_queue(bool clear_start)
 				      "part %s", job_ptr->job_id,
 				      job_ptr->partition);
 			}
-			if (!acct_policy_job_runnable_state(job_ptr) ||
-			    !acct_policy_job_runnable(job_ptr))
-				continue;
 			if (!part_policy_job_runnable_state(job_ptr)) {
 				if (job_limits_check(&job_ptr) ==
 				    WAIT_NO_REASON) {

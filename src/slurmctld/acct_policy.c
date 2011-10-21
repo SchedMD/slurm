@@ -947,7 +947,6 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 	if (!_valid_job_assoc(job_ptr)) {
 		job_ptr->state_reason = FAIL_ACCOUNT;
-		job_ptr->priority = 1;	/* Move to end of queue */
 		return false;
 	}
 
