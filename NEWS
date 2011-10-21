@@ -55,6 +55,9 @@ documents those changes that are of interest to users and admins.
     a sub midplane system.
  -- Added the UserID of the user issuing the RPC to the job_submit/lua
     functions.
+ -- Fixed issue where if a job ended with ESLURMD_UID_NOT_FOUND and
+    ESLURMD_GID_NOT_FOUND where slurm would be a little over zealous
+    in treating missing a GID or UID as a fatal error.
 
 * Changes in SLURM 2.3.1
 ========================
