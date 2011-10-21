@@ -53,6 +53,8 @@ documents those changes that are of interest to users and admins.
     block correctly.
  -- BLUEGENE - Added option to the bluegene.conf to tell you are running on
     a sub midplane system.
+ -- Added the UserID of the user issuing the RPC to the job_submit/lua
+    functions.
 
 * Changes in SLURM 2.3.1
 ========================

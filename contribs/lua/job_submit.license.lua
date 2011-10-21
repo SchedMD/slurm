@@ -3,7 +3,7 @@
  Example lua script demonstrating the SLURM job_submit/lua interface.
  This is only an example, not meant for use in its current form.
 
- For use, this script should be copied into a file name job_"submit.lua"
+ For use, this script should be copied into a file name "job_submit.lua"
  in the same directory as the SLURM configuration file, slurm.conf.
 
 --]]
@@ -31,7 +31,7 @@ end
 --
 --########################################################################--
 
-function slurm_job_submit ( job_desc, part_list )
+function slurm_job_submit ( job_desc, part_list, submit_uid )
 	setmetatable (job_desc, job_req_meta)
 	local bad_license_count = 0
 
@@ -48,7 +48,7 @@ function slurm_job_submit ( job_desc, part_list )
 	return 0
 end
 
-function slurm_job_modify ( job_desc, job_rec, part_list )
+function slurm_job_modify ( job_desc, job_rec, part_list, modify_uid )
 	setmetatable (job_desc, job_req_meta)
 	setmetatable (job_rec,  job_rec_meta)
 	local bad_license_count = 0
