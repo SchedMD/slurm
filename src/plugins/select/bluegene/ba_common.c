@@ -800,25 +800,51 @@ extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version)
 	int dim;
 
 	xassert(ba_mp);
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+			_pack_ba_switch(&ba_mp->axis_switch[dim], buffer,
+					protocol_version);
+			pack16(ba_mp->coord[dim], buffer);
+			/* No need to pack the coord_str, we can figure that
+			   out from the coords packed.
+			*/
+		}
+		pack_bit_fmt(ba_mp->cnode_bitmap, buffer);
 
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-		_pack_ba_switch(&ba_mp->axis_switch[dim], buffer,
-				protocol_version);
-		pack16(ba_mp->coord[dim], buffer);
-		/* No need to pack the coord_str, we can figure that
-		   out from the coords packed.
+		/* currently there is no need to pack
+		 * ba_mp->cnode_err_bitmap */
+
+		pack_bit_fmt(ba_mp->cnode_usable_bitmap, buffer);
+
+		pack16(ba_mp->used, buffer);
+		/* These are only used on the original, not in the
+		   block ba_mp's.
+		   ba_mp->alter_switch, ba_mp->index, ba_mp->loc,
+		   ba_mp->next_mp, ba_mp->nodecard_loc,
+		   ba_mp->prev_mp, ba_mp->state
+		*/
+	} else {
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+			_pack_ba_switch(&ba_mp->axis_switch[dim], buffer,
+					protocol_version);
+			pack16(ba_mp->coord[dim], buffer);
+			/* No need to pack the coord_str, we can figure that
+			   out from the coords packed.
+			*/
+		}
+		pack_bit_fmt(ba_mp->cnode_bitmap, buffer);
+
+		/* currently there is no need to pack
+		 * ba_mp->cnode_err_bitmap */
+
+		pack16(ba_mp->used, buffer);
+		/* These are only used on the original, not in the
+		   block ba_mp's.
+		   ba_mp->alter_switch, ba_mp->index, ba_mp->loc,
+		   ba_mp->next_mp, ba_mp->nodecard_loc,
+		   ba_mp->prev_mp, ba_mp->state
 		*/
 	}
-	pack_bit_fmt(ba_mp->cnode_bitmap, buffer);
-
-	/* currently there is no need to pack ba_mp->cnode_err_bitmap */
-	/* currently there is no need to pack ba_mp->cnode_usable_bitmap */
-
-	pack16(ba_mp->used, buffer);
-	/* These are only used on the original, not in the block ba_mp's.
-	   ba_mp->alter_switch, ba_mp->index, ba_mp->loc, ba_mp->next_mp,
-	   ba_mp->nodecard_loc, ba_mp->prev_mp, ba_mp->state
-	*/
 }
 
 extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
@@ -832,31 +858,66 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 
 	*ba_mp_pptr = ba_mp;
 
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-		if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
-				      protocol_version)
-		    != SLURM_SUCCESS)
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+			if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
+					      protocol_version)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+			safe_unpack16(&ba_mp->coord[dim], buffer);
+			ba_mp->coord_str[dim] = alpha_num[ba_mp->coord[dim]];
+		}
+		ba_mp->coord_str[dim] = '\0';
+
+		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
+		if (bit_char) {
+			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+			bit_unfmt(ba_mp->cnode_bitmap, bit_char);
+			xfree(bit_char);
+		}
+		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
+		if (bit_char) {
+			ba_mp->cnode_usable_bitmap =
+				bit_alloc(bg_conf->mp_cnode_cnt);
+			bit_unfmt(ba_mp->cnode_usable_bitmap, bit_char);
+			xfree(bit_char);
+		}
+		safe_unpack16(&ba_mp->used, buffer);
+
+		/* Since index could of changed here we will go figure
+		 * it out again. */
+		orig_mp = coord2ba_mp(ba_mp->coord);
+		if (!orig_mp)
 			goto unpack_error;
-		safe_unpack16(&ba_mp->coord[dim], buffer);
-		ba_mp->coord_str[dim] = alpha_num[ba_mp->coord[dim]];
+		ba_mp->index = orig_mp->index;
+		ba_mp->ba_geo_index = orig_mp->ba_geo_index;
+	} else {
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
+			if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
+					      protocol_version)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+			safe_unpack16(&ba_mp->coord[dim], buffer);
+			ba_mp->coord_str[dim] = alpha_num[ba_mp->coord[dim]];
+		}
+		ba_mp->coord_str[dim] = '\0';
+
+		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
+		if (bit_char) {
+			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+			bit_unfmt(ba_mp->cnode_bitmap, bit_char);
+			xfree(bit_char);
+		}
+		safe_unpack16(&ba_mp->used, buffer);
+
+		/* Since index could of changed here we will go figure
+		 * it out again. */
+		orig_mp = coord2ba_mp(ba_mp->coord);
+		if (!orig_mp)
+			goto unpack_error;
+		ba_mp->index = orig_mp->index;
+		ba_mp->ba_geo_index = orig_mp->ba_geo_index;
 	}
-	ba_mp->coord_str[dim] = '\0';
-
-	safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
-	if (bit_char) {
-		ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
-		bit_unfmt(ba_mp->cnode_bitmap, bit_char);
-		xfree(bit_char);
-	}
-	safe_unpack16(&ba_mp->used, buffer);
-
-	/* Since index could of changed here we will go figure it out again. */
-	orig_mp = coord2ba_mp(ba_mp->coord);
-	if (!orig_mp)
-		goto unpack_error;
-	ba_mp->index = orig_mp->index;
-	ba_mp->ba_geo_index = orig_mp->ba_geo_index;
-
 	return SLURM_SUCCESS;
 
 unpack_error:
