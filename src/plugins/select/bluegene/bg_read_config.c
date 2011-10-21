@@ -75,6 +75,7 @@ static s_p_options_t bg_conf_file_options[] = {
 	/* these are just going to be put into a list that will be
 	   freed later don't free them after reading them */
 	{"AltMloaderImage", S_P_ARRAY, parse_image, NULL},
+	{"SubMidplaneSystem", S_P_BOOLEAN},
 	{NULL}
 };
 
@@ -330,6 +331,7 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 extern int read_bg_conf(void)
 {
 	int i;
+	bool tmp_bool = 0;
 	int count = 0;
 	s_p_hashtbl_t *tbl = NULL;
 	char *layout = NULL;
@@ -628,7 +630,8 @@ extern int read_bg_conf(void)
 	}
 
 	s_p_get_uint16(&bg_conf->max_block_err, "MaxBlockInError", tbl);
-
+	s_p_get_boolean(&tmp_bool, "SubMidplaneSystem", tbl);
+	bg_conf->sub_mp_sys = tmp_bool;
 #ifdef HAVE_BGQ
 	/* You can only have 16 ionodes per midplane */
 	if (bg_conf->ionodes_per_mp > bg_conf->mp_nodecard_cnt)

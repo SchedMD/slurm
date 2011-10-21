@@ -194,6 +194,11 @@ For BlueGene/P IO rich systems, 32 is the value that should be used to create
 small blocks since there are only 2 IO nodes per nodecard instead of 4 as on
 BlueGene/L.
 
+.TP
+\fBSubMidplaneSystem\fR
+Set to Yes if this system is not a full midplane in size, Default is No
+(regular system).
+
 .LP
 Each bgblock is defined by the base partitions used to construct it.
 Ordering is very important for laying out switch wires.  Please use the smap

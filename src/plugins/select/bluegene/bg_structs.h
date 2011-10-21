@@ -80,6 +80,7 @@ typedef struct {
 	char *slurm_node_prefix;
 	char *slurm_user_name;
 	uint32_t smallest_block;
+	uint16_t sub_mp_sys;
 } bg_config_t;
 
 typedef struct {

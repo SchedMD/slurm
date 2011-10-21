@@ -1169,6 +1169,12 @@ static List _get_config(void)
 	key_pair->value = xstrdup_printf("%u", bg_conf->nodecard_cnode_cnt);
 	list_append(my_list, key_pair);
 
+	if (bg_conf->sub_mp_sys) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("SubMidplaneSys");
+		key_pair->value = xstrdup("Yes");
+		list_append(my_list, key_pair);
+	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("IONodesPerMP");
 	key_pair->value = xstrdup_printf("%u", bg_conf->ionodes_per_mp);
