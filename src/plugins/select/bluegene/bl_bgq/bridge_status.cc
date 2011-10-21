@@ -270,6 +270,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			continue;
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
+			float err_ratio;
+
 			if (found_ba_mp->index != ba_mp->index)
 				continue;
 			if (!found_ba_mp->used)
@@ -294,8 +296,10 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				bg_record->cnode_err_cnt--;
 			}
 
-			bg_record->err_ratio =
-				bg_record->cnode_err_cnt / bg_record->cnode_cnt;
+			err_ratio = (float)bg_record->cnode_err_cnt
+				/ (float)bg_record->cnode_cnt;
+                        bg_record->err_ratio = err_ratio * 100;
+
 			/* handle really small ratios */
 			if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
 				bg_record->err_ratio = 1;
