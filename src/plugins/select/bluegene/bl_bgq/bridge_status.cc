@@ -229,6 +229,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	bg_record_t *bg_record;
 	ba_mp_t *found_ba_mp;
 	ListIterator itr, itr2;
+	List delete_list = NULL;
 
 	if (!ba_mp->cnode_err_bitmap)
 		ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
@@ -284,6 +285,17 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 					continue;
 			}
 
+			if (bg_conf->sub_mp_sys
+			    && (state == Hardware::Missing)) {
+				if (!delete_list)
+					delete_list = list_create(NULL);
+				debug("Removing block %s, "
+				      "it has missing cnodes",
+				      bg_record->bg_block_id);
+				list_push(delete_list, bg_record);
+				break;
+			}
+
 			if (!found_ba_mp->cnode_err_bitmap)
 				found_ba_mp->cnode_err_bitmap =
 					bit_alloc(bg_conf->mp_cnode_cnt);
@@ -313,6 +325,10 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
 
+	if (delete_list) {
+		free_block_list(NO_VAL, delete_list, 1, 0);
+		list_destroy(delete_list);
+	}
 }
 
 static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
