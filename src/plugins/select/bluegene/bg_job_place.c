@@ -1469,7 +1469,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if (conn_type[0] == SELECT_NAV) {
-		if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
+		if (bg_conf->sub_mp_sys)
 			conn_type[0] = SELECT_SMALL;
 		else if (min_nodes > 1) {
 			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)

@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
  -- Fix association limit support for jobs queued for multiple partitions.
  -- BLUEGENE - fix issue for sub-midplane systems to create a full system
     block correctly.
+ -- BLUEGENE - Added option to the bluegene.conf to tell you are running on
+    a sub midplane system.
 
 * Changes in SLURM 2.3.1
 ========================

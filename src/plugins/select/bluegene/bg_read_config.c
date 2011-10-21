@@ -642,8 +642,14 @@ extern int read_bg_conf(void)
 		bitstr_t *tmp_bitmap = NULL;
 		int small_size = 1;
 
-		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK */
-		if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt) {
+		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK,
+		 * Sometime on a Q system the nodecard isn't in the 0
+		 * spot so only do this if you know it is in that
+		 * spot.  Otherwise say the whole midplane is there
+		 * and just make blocks over the whole thing.  They
+		 * you can error out the blocks that aren't usable. */
+		if (bg_conf->sub_mp_sys
+		    && bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt) {
 #ifdef HAVE_BGQ
 			bg_conf->quarter_ionode_cnt = 1;
 			bg_conf->nodecard_ionode_cnt = 1;
@@ -822,8 +828,9 @@ no_calc:
 				     "bluegene.conf, "
 				     "only making full system block");
 				/* create_full_system_block(NULL); */
-				if (bg_conf->mp_cnode_cnt
-				    == bg_conf->nodecard_cnode_cnt)
+				if (bg_conf->sub_mp_sys ||
+				    (bg_conf->mp_cnode_cnt ==
+				     bg_conf->nodecard_cnode_cnt))
 					fatal("On a sub-midplane system you "
 					      "need to define the blocks you "
 					      "want on your system.");
@@ -834,7 +841,8 @@ no_calc:
 			add_bg_record(bg_lists->main, NULL,
 				      blockreq_array[i], 0, 0);
 		}
-	} else if (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
+	} else if (bg_conf->sub_mp_sys ||
+		   (bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt))
 		/* we can't do dynamic here on a sub-midplane system */
 		fatal("On a sub-midplane system we can only do OVERLAP or "
 		      "STATIC LayoutMode.  Please update your bluegene.conf.");

@@ -475,8 +475,20 @@ extern int bridge_block_create(bg_record_t *bg_record)
 				"Block::createSmallBlock",
 				err.getError().toValue(),
 				bg_record);
-			if (rc != SLURM_SUCCESS)
+			if (rc != SLURM_SUCCESS) {
+				/* This is needed because sometimes we
+				   get a sub midplane system with not
+				   all the hardware there.  This way
+				   we can try to create blocks on all
+				   the hardware and the good ones will
+				   work and the bad ones will just be
+				   removed after everything is done
+				   being created.
+				*/
+				if (bg_conf->sub_mp_sys)
+					rc = SLURM_SUCCESS;
 				return rc;
+			}
 		}
 	} else {
 		ListIterator itr = list_iterator_create(bg_record->ba_mp_list);
@@ -517,7 +529,19 @@ extern int bridge_block_create(bg_record_t *bg_record)
 				err.getError().toValue(),
 				bg_record);
 			if (rc != SLURM_SUCCESS) {
-				assert(0);
+				/* This is needed because sometimes we
+				   get a sub midplane system with not
+				   all the hardware there.  This way
+				   we can try to create blocks on all
+				   the hardware and the good ones will
+				   work and the bad ones will just be
+				   removed after everything is done
+				   being created.
+				*/
+				if (bg_conf->sub_mp_sys)
+					rc = SLURM_SUCCESS;
+				else
+					assert(0);
 				return rc;
 			}
 		}

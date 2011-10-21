@@ -204,7 +204,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	case SELECT_JOBDATA_NODE_CNT:
 		jobinfo->cnode_cnt = *uint32;
 		/* Make sure the conn type is correct with the new count */
-		if ((bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
+		if (bg_conf->sub_mp_sys
 		    || (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt)) {
 			if (jobinfo->conn_type[0] < SELECT_SMALL)
 				jobinfo->conn_type[0] = SELECT_SMALL;
@@ -212,7 +212,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				jobinfo->conn_type[i] = SELECT_TORUS;
 
-		if ((bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
+		if (bg_conf->sub_mp_sys
 		    || (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt))
 			jobinfo->conn_type[0] = SELECT_SMALL;
 		else if (jobinfo->conn_type[0] == SELECT_SMALL)
