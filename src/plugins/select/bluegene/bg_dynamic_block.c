@@ -540,7 +540,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	/* Create these now so we can deal with error cnodes if/when
 	   they happen.  Since this is the easiest place to figure it
 	   out for blocks that don't use the entire block */
-	new_ba_mp->cnode_bitmap = ba_create_ba_mp_cnode_bitmap(bg_record);
+	new_ba_mp->cnode_bitmap = ba_create_ba_mp_cnode_bitmap(found_record);
 	new_ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
 	new_ba_mp->cnode_usable_bitmap = bit_copy(new_ba_mp->cnode_bitmap);
 
