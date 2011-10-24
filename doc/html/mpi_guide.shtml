@@ -8,10 +8,9 @@ by these various MPI implementations.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization
 of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,
-MVAPICH, MVAPICH2, some MPICH1 modes, and future versions of OpenMPI).</li>
+MVAPICH, MVAPICH2, some MPICH1 modes, and OpenMPI version 1.5 or higher).</li>
 <li>SLURM creates a resource allocation for the job and then
-mpirun launches tasks using SLURM's infrastructure (OpenMPI,
-LAM/MPI and HP-MPI).</li>
+mpirun launches tasks using SLURM's infrastructure (LAM/MPI and HP-MPI).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using some mechanism other than SLURM,
 such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
@@ -73,7 +72,7 @@ Repeated failures should be reported to your system administrator in
 order to rectify the problem by cancelling the processes holding those
 ports.</p>
 
-<h2>Older releases</h2>
+<h3>Version 1.4 or earlier</h3>
 <p>Older versions of Open MPI and SLURM rely upon SLURM to allocate resources
 for the job and then mpirun to initiate the tasks.
 For example:
@@ -246,8 +245,22 @@ $ srun -n16 --mpi=none a.out
 
 <h2><a name="bluegene_mpi" href="http://www.research.ibm.com/bluegene/"><b>BlueGene MPI</b></a></h2>
 
-<p>BlueGene MPI relies upon SLURM to create the resource allocation and then
-uses the native <span class="commandline">mpirun</span> command to launch tasks.
+<p>All IBM BlueGene Systems rely upon SLURM to create a job's resource
+allocation, but the task launch mechanism differs by system type.</p>
+
+<h3>BlueGene/Q</h3>
+<p>The BlueGene/Q systems support the ability to allocate different portions of
+a BlueGene block to different users and different jobs, so SLURM must be
+directly involved in each task launch request.
+<b>The following is subject to change in order to support debugging.</b>
+In order to accomplish this, SLURM's srun command is executed to launch tasks.
+The srun command creates a job step allocation then invokes IBM's
+<span class="commandline">runjob</span> command to launch tasks within the
+allocated resources.</p>
+
+<h3>BlueGene/L and BlueGene/P</h3>
+<p>BlueGene/L and P MPI relies upon the native
+<span class="commandline">mpirun</span> command to launch tasks.
 Build a job script containing one or more invocations of the
 <span class="commandline">mpirun</span> command. Then submit
 the script to SLURM using <span class="commandline">sbatch</span>.
@@ -321,6 +334,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched
 outside of its control.</p>
 
-<p style="text-align:center;">Last modified 15 October 2010</p>
+<p style="text-align:center;">Last modified 24 October 2011</p>
 
 <!--#include virtual="footer.txt"-->
