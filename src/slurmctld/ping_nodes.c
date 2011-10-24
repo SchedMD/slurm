@@ -363,8 +363,6 @@ extern void run_health_check(void)
 		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;
-		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
-			continue;
 		hostlist_push(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;
 	}

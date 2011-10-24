@@ -61,6 +61,9 @@ documents those changes that are of interest to users and admins.
  -- If job time limit exceeds partition maximum, but job's minimum time limit
     does not, set job's time limit to partition maximum at allocation time.
 
+* Changes in SLURM 2.3.2
+========================
+
 * Changes in SLURM 2.3.1
 ========================
  -- Do not remove the backup slurmctld's pid file when it assumes control, only
@@ -119,6 +122,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fixed issues with running on a sub-midplane system.
  -- Added some missing calls to allow older versions of SLURM to talk to newer.
  -- BGQ - allow steps to be ran.
+ -- Do not attempt to run HeathCheckProgram on powered down nodes. Patch from
+    Ramiro Alba, Centre Tecnològic de Tranferència de Calor, Spain.
 
 * Changes in SLURM 2.3.0-2
 ==========================
