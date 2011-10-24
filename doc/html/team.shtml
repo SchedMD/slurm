@@ -10,6 +10,7 @@ organizations. The current SLURM development staff includes: </p>
 
 <p> SLURM contributers include: </p>
 <ul>
+<li>Ramiro Alba (Centre Tecnol&ograve;gic de Tranfer&egrave;ncia de Calor, Spain)</li>
 <li>Amjad Majid Ali (Colorado State University)</li>
 <li>P&auml;r Andersson (National Supercomputer Centre, Sweden)</li>
 <li>Don Albert (Bull)</li>
@@ -93,6 +94,6 @@ organizations. The current SLURM development staff includes: </p>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 27 June 2011</p>
+<p style="text-align:center;">Last modified 24 October 2011</p>
 
 <!--#include virtual="footer.txt"-->
