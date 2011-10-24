@@ -1666,8 +1666,13 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	/* return result */
 	if (error_code) {
 		unlock_slurmctld(job_write_lock);
-		info("_slurm_rpc_job_step_create for job %u: %s",
-		     req_step_msg->job_id, slurm_strerror(error_code));
+		if (error_code == ESLURM_PROLOG_RUNNING) {
+			debug("_slurm_rpc_job_step_create for job %u: %s",
+			      req_step_msg->job_id, slurm_strerror(error_code));
+		} else {
+			info("_slurm_rpc_job_step_create for job %u: %s",
+			     req_step_msg->job_id, slurm_strerror(error_code));
+		}
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		slurm_step_layout_t *layout = step_rec->step_layout;
