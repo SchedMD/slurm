@@ -81,7 +81,7 @@ static int _rsvn_add_params(struct basil_reservation *resv,
  * @nppn:	mppnppn  >= 0 (0 meaning 'use default')
  * @mem_mb:	mppmem   >= 0 (0 meaning 'use defaults', else size in MB)
  * @mppnodes:	comma-separated nodelist (will be freed if not NULL)
- * @accel:	accelerator parameters or NULL
+ * @accel:	accelerator parameters or NULL  (will be freed if not NULL)
  *
  * The reservation ID is initially 0, since 0 is an invalid reservation ID.
  */
@@ -96,12 +96,7 @@ static struct basil_reservation *_rsvn_new(const char *user,
 
 	assert(user != NULL && *user != '\0');
 
-	if (width <= 0 || depth < 0 || nppn < 0)
-		return NULL;
-
 	res = xmalloc(sizeof(*res));
-	if (res == NULL)
-		return NULL;
 
 	res->rsvn_id = 0;
 	strncpy(res->user_name, user, sizeof(res->user_name));
