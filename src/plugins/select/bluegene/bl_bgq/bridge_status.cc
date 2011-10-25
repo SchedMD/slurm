@@ -72,12 +72,25 @@ static bool bridge_status_inited = false;
 #if defined HAVE_BG_FILES
 
 static bool initial_poll = true;
+static bool rt_running = false;
 
 /*
  * Handle compute block status changes as a result of a block allocate.
  */
 typedef class event_handler: public bgsched::realtime::ClientEventListener {
 public:
+	/*
+	 * Handle a real-time started event.
+	 */
+	virtual void handleRealtimeStartedRealtimeEvent(
+		const RealtimeStartedEventInfo& event);
+
+	/*
+	 * Handle a real-time ended event.
+	 */
+	virtual void handleRealtimeEndedRealtimeEvent(
+		const RealtimeEndedEventInfo& event);
+
 	/*
 	 *  Handle a block state changed real-time event.
 	 */
@@ -475,7 +488,10 @@ static void *_real_time(void *no_data)
 		bgsched::realtime::Filter::Id filter_id; // Assigned filter id
 
 		slurm_mutex_lock(&rt_mutex);
+		rt_running = 1;
+
 		if (!bridge_status_inited) {
+			rt_running = 0;
 			slurm_mutex_unlock(&rt_mutex);
 			break;
 		}
@@ -487,6 +503,7 @@ static void *_real_time(void *no_data)
 		} else
 			failed = true;
 
+		rt_running = 0;
 		slurm_mutex_unlock(&rt_mutex);
 
 		if (bridge_status_inited && failed) {
@@ -657,6 +674,32 @@ static void *_poll(void *no_data)
 	}
 
 	return NULL;
+}
+
+void event_handler::handleRealtimeStartedRealtimeEvent(
+	const RealtimeStartedEventInfo& event)
+{
+	if (!rt_running) {
+		uint16_t coords[SYSTEM_DIMENSIONS];
+		slurm_mutex_lock(&rt_mutex);
+		info("RealTime server started backup!");
+		rt_running = 1;
+		/* To make sure we don't have any missing state */
+		if (blocks_are_created)
+			_do_block_poll();
+		/* only do every 30 seconds */
+		_do_hardware_poll(0, coords, getComputeHardware());
+	}
+}
+
+void event_handler::handleRealtimeEndedRealtimeEvent(
+	const RealtimeEndedEventInfo& event)
+{
+	if (rt_running) {
+		rt_running = 0;
+		slurm_mutex_unlock(&rt_mutex);
+		info("RealTime server stopped serving info");
+	}
 }
 
 void event_handler::handleBlockStateChangedRealtimeEvent(
