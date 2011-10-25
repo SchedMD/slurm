@@ -81,7 +81,7 @@ public:
 	/*
 	 *  Handle a block state changed real-time event.
 	 */
-	void handleBlockStateChangedRealtimeEvent(
+	virtual void handleBlockStateChangedRealtimeEvent(
 		const BlockStateChangedEventInfo& event);
 
 	/*
