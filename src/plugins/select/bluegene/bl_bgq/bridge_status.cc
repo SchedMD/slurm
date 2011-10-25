@@ -773,6 +773,13 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		_handle_bad_midplane(ba_mp->coord_str, mp_ptr->getState());
 		/* no reason to continue */
 		return;
+	} else {
+		Node::ConstPtrs vec = getMidplaneNodes(mp_ptr->getLocation());
+		BOOST_FOREACH(const Node::ConstPtr& cnode_ptr, vec) {
+			_handle_node_change(ba_mp,
+					    cnode_ptr->getLocation(),
+					    cnode_ptr->getState());
+		}
 	}
 
 	for (i=0; i<16; i++) {
@@ -787,15 +794,6 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 			_handle_bad_nodeboard(
 				nodeboard->getLocation().substr(7,3).c_str(),
 				ba_mp->coord_str, nodeboard->getState());
-		else {
-			Node::ConstPtrs vec =
-				getNodes(nodeboard->getLocation());
-			BOOST_FOREACH(const Node::ConstPtr& cnode_ptr, vec) {
-				_handle_node_change(ba_mp,
-						    cnode_ptr->getLocation(),
-						    cnode_ptr->getState());
-			}
-		}
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
