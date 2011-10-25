@@ -117,6 +117,7 @@ html_DATA = \
 	${generated_html} \
 	allocation_pies.gif \
 	arch.gif \
+	bull.jpg \
 	coding_style.pdf \
 	configurator.html \
 	entities.gif \

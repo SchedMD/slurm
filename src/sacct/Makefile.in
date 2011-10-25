@@ -88,8 +88,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sacct_OBJECTS = sacct.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
-	options.$(OBJEXT)
+am_sacct_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) process.$(OBJEXT) \
+	sacct.$(OBJEXT)
 sacct_OBJECTS = $(am_sacct_OBJECTS)
 sacct_DEPENDENCIES = $(top_builddir)/src/db_api/libslurmdb.o
 sacct_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -317,7 +317,13 @@ INCLUDES = -I$(top_srcdir)
 sacct_LDADD = $(top_builddir)/src/db_api/libslurmdb.o -ldl
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 noinst_HEADERS = sacct.c
-sacct_SOURCES = sacct.c process.c print.c options.c
+sacct_SOURCES = \
+	options.c	\
+	print.c		\
+	process.c	\
+	sacct.c		\
+	sacct.h
+
 all: all-am
 
 .SUFFIXES:

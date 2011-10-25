@@ -17,7 +17,6 @@
 
 # Makefile for sstat
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -40,8 +39,7 @@ host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = sstat$(EXEEXT)
 subdir = src/sstat
-DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -88,8 +86,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sstat_OBJECTS = sstat.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
-	options.$(OBJEXT)
+am_sstat_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) process.$(OBJEXT) \
+	sstat.$(OBJEXT)
 sstat_OBJECTS = $(am_sstat_OBJECTS)
 sstat_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 sstat_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -110,7 +108,6 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(sstat_SOURCES)
 DIST_SOURCES = $(sstat_SOURCES)
-HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -314,8 +311,13 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 sstat_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
-noinst_HEADERS = sstat.c
-sstat_SOURCES = sstat.c process.c print.c options.c
+sstat_SOURCES = \
+	options.c	\
+	print.c		\
+	process.c	\
+	sstat.c		\
+	sstat.h
+
 sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
@@ -520,7 +522,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \

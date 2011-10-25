@@ -8,9 +8,12 @@ bin_PROGRAMS = sstat
 
 sstat_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 
-
-noinst_HEADERS = sstat.c
-sstat_SOURCES = sstat.c process.c print.c options.c
+sstat_SOURCES =		\
+	options.c	\
+	print.c		\
+	process.c	\
+	sstat.c		\
+	sstat.h
 
 force:
 $(sstat_LDADD) : force
