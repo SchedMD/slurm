@@ -564,8 +564,25 @@ locked memory limit ulimit to be unlimited on the compute nodes (see
 <i>"man limits.conf"</i>) and insuring that <i>slurmd</i> takes
 full advantage of this limit (e.g. by adding something like
 <i>"ulimit -l unlimited"</i> to the <i>/etc/init.d/slurm</i>
-script used to initiate <i>slurmd</i>).
+script used to initiate <i>slurmd</i>). It may also be desirable to lock
+the slurmd daemon's memory to help insure that it keeps responding if memory
+swapping begings. A sample <i>/etc/sysconfig/slurm</i> file is shown below.
 Related information about <a href="#pam">PAM</a> is also available.</p>
+<pre>
+#
+# Example /etc/sysconfig/slurm
+#
+# Increase the memlock limit so that user tasks can get
+# unlimited memlock
+ulimit -l unlimited
+#
+# Increase the open file limit
+ulimit -n 8192
+#
+# Memlocks the slurmd process's memory so that if a node
+# starts swapping, the slurmd will continue to respond
+SLURMD_OPTIONS="-M"
+</pre>
 
 <p><a name="inactive"><b>19. Why is my batch job that launches no
 job steps being killed?</b></a><br>
@@ -1481,6 +1498,6 @@ https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 September 2011</p>
+<p style="text-align:center;">Last modified 25 October 2011</p>
 
 <!--#include virtual="footer.txt"-->
