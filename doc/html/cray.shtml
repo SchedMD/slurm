@@ -145,6 +145,11 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
 <p>Cray/ALPS node ordering is a topic of ongoing work, some information can be found in the CUG-2010 paper
    "<i>ALPS, Topology, and Performance</i>" by Carl Albing and Mark Baker.</p>
 
+<h3>GPU Use</h3>
+
+<p>Users may specify GPU memory required per node using the <i>--gres=gpu_mem:#</i>
+option to any of the commands used to create a job allocation/reservation.</p>
+
 <h2>Administrator Guide</h2>
 
 <h3>Install supporting rpms</h3>
@@ -426,8 +431,11 @@ SchedulerType=sched/backfill
 # node, see aprun(1), section LIMITATIONS).
 #
 # Add CR_memory as parameter to support --mem/--mem-per-cpu.
+# GPU memory allocation supported as generic resource.
+# NOTE: No gres/gpu_mem plugin is required, only generic SLURM GRES logic.
 SelectType=select/cray
 SelectTypeParameters=CR_Memory
+GresTypes=gpu_mem
 
 # Proctrack plugin: only/default option is proctrack/sgi_job
 # ALPS requires cluster-unique job container IDs and thus the /etc/init.d/job
@@ -472,8 +480,10 @@ FastSchedule=2
 # here, since the Magny Cours hosts two NUMA nodes each, which is
 # also visible in the ALPS inventory (4 Segments per node, each
 # containing 6 'Processors'/Cores).
+# Also specify that 2 GB of GPU memory is available on every node
 NodeName=DEFAULT Sockets=4 CoresPerSocket=6 ThreadsPerCore=1
 NodeName=DEFAULT RealMemory=32000 State=UNKNOWN
+NodeName=DEFAULT Gres=gpu_mem:2g
 
 # List the nodes of the compute partition below (service nodes are not
 # allowed to appear)
@@ -633,6 +643,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 August 2011</p></td>
+<p style="text-align:center;">Last modified 25 October 2011</p></td>
 
 <!--#include virtual="footer.txt"-->
