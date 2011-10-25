@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.0.pre2
 =============================
+ -- CRAY - Add support for GPU memory allocation using SLURM GRES (Generic
+    RESource) support. Work by Steve Trofinoff, CSCS.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

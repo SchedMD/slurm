@@ -6,6 +6,7 @@
  */
 #include "basil_interface.h"
 #include "basil_alps.h"
+#include "src/common/gres.h"
 #include "src/common/slurm_accounting_storage.h"
 
 #define _DEBUG 0
@@ -662,6 +663,36 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	return SLURM_SUCCESS;
 }
 
+struct basil_accel_param* build_accel_param(struct job_record* job_ptr)
+{
+	int gpu_mem_req;
+	struct basil_accel_param* head,* bap_ptr;
+
+	gpu_mem_req = gres_plugin_get_job_value_by_type(job_ptr->gres_list,
+							"gpu_mem");
+
+	if (gpu_mem_req == NO_VAL)
+		gpu_mem_req = 0;
+
+	if (!job_ptr) {
+		info("The job_ptr is NULL; nothing to do!");
+		return NULL;
+	} else if (!job_ptr->details) {
+		info("The job_ptr->details is NULL; nothing to do!");
+		return NULL;
+	}
+
+	head = xmalloc(sizeof(struct basil_accel_param));
+	bap_ptr = head;
+	bap_ptr->type = BA_GPU;	/* Currently BASIL only permits
+				 * generic resources of type GPU. */
+	bap_ptr->memory_mb = gpu_mem_req;
+	bap_ptr->next = NULL;
+
+	return head;
+}
+
+
 /**
  * do_basil_reserve - create a BASIL reservation.
  * IN job_ptr - pointer to job which has just been allocated resources
@@ -679,6 +710,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	int i, first_bit, last_bit;
 	long rc;
 	char *user, batch_id[16];
+	struct basil_accel_param* bap;
 
 	if (!job_ptr->job_resrcs || job_ptr->job_resrcs->nhosts == 0)
 		return SLURM_SUCCESS;
@@ -781,8 +813,14 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 	snprintf(batch_id, sizeof(batch_id), "%u", job_ptr->job_id);
 	user = uid_to_string(job_ptr->user_id);
+
+	if (job_ptr->gres_list)
+		bap = build_accel_param(job_ptr);
+	else
+		bap = NULL;
+
 	rc   = basil_reserve(user, batch_id, mppwidth, mppdepth, mppnppn,
-			     mppmem, ns_head, NULL);
+			     mppmem, ns_head, bap);
 	xfree(user);
 	if (rc <= 0) {
 		/* errno value will be resolved by select_g_job_begin() */
