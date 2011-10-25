@@ -294,6 +294,7 @@ EXTRA_DIST = \
 	pkill				\
 	README				\
 	regression			\
+	regression.py			\
 	test1.1				\
 	test1.2				\
 	test1.3				\
@@ -330,8 +331,10 @@ EXTRA_DIST = \
 	test1.32.prog.c			\
 	test1.33			\
 	test1.34			\
+	test1.34.prog.c			\
 	test1.35			\
 	test1.36			\
+	test1.37			\
 	test1.38			\
 	test1.40			\
 	test1.41			\
@@ -346,6 +349,8 @@ EXTRA_DIST = \
 	test1.50			\
 	test1.51			\
 	test1.52			\
+	test1.53			\
+	test1.53.prog.c			\
 	test1.54			\
 	test1.55			\
 	test1.56			\
@@ -602,6 +607,10 @@ EXTRA_DIST = \
 	test19.5			\
 	test19.6			\
 	test19.7			\
+	test20.1			\
+	test20.2			\
+	test20.3			\
+	test20.4			\
 	test21.1			\
 	test21.2			\
 	test21.3			\
