@@ -423,218 +423,6 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 }
 
 
-void event_handler::handleBlockStateChangedRealtimeEvent(
-        const BlockStateChangedEventInfo& event)
-{
-	bg_record_t *bg_record = NULL;
-	const char *bg_block_id = event.getBlockName().c_str();
-
-	if (!bg_lists->main)
-		return;
-
-	slurm_mutex_lock(&block_state_mutex);
-	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
-	if (!bg_record) {
-		slurm_mutex_unlock(&block_state_mutex);
-		info("bridge_status: bg_record %s isn't in the main list",
-		     bg_block_id);
-		return;
-	}
-
-	bg_status_update_block_state(bg_record,
-				     bridge_translate_status(event.getStatus()),
-				     kill_job_list);
-
-	slurm_mutex_unlock(&block_state_mutex);
-
-	bg_status_process_kill_job_list(kill_job_list);
-
-	last_bg_update = time(NULL);
-}
-
-void event_handler::handleMidplaneStateChangedRealtimeEvent(
-	const MidplaneStateChangedEventInfo& event)
-{
-	Coordinates ibm_coords = event.getMidplaneCoordinates();
-	uint16_t coords[SYSTEM_DIMENSIONS];
-	ba_mp_t *ba_mp;
-	int dim;
-
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
-		coords[dim] = ibm_coords[dim];
-
-	ba_mp = coord2ba_mp(coords);
-
-	if (!ba_mp) {
-		error("Midplane %s, state went from '%s' to '%s', "
-		      "but is not in our system",
-		      event.getLocation().c_str(),
-		      bridge_hardware_state_string(event.getPreviousState()),
-		      bridge_hardware_state_string(event.getState()));
-		return;
-	}
-
-	if (event.getState() == Hardware::Available) {
-		/* Don't do anything, wait for admin to fix things,
-		 * just note things are better. */
-
-		info("Midplane %s(%s), has returned to service",
-		     event.getLocation().c_str(),
-		     ba_mp->coord_str);
-		return;
-	}
-
-	/* Else mark the midplane down */
-	_handle_bad_midplane(ba_mp->coord_str, event.getState());
-
-	return;
-
-}
-
-void event_handler::handleSwitchStateChangedRealtimeEvent(
-	const SwitchStateChangedEventInfo& event)
-{
-	Coordinates ibm_coords = event.getMidplaneCoordinates();
-	uint16_t coords[SYSTEM_DIMENSIONS];
-	int dim;
-	ba_mp_t *ba_mp;
-
-
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
-		coords[dim] = ibm_coords[dim];
-
-	dim = event.getDimension();
-	ba_mp = coord2ba_mp(coords);
-
-	if (!ba_mp) {
-		error("Switch in dim '%d' on Midplane %s, state "
-		      "went from '%s' to '%s', but is not in our system",
-		      dim, event.getMidplaneLocation().c_str(),
-		      bridge_hardware_state_string(event.getPreviousState()),
-		      bridge_hardware_state_string(event.getState()));
-		return;
-	}
-
-	if (event.getState() == Hardware::Available) {
-		/* Don't do anything, wait for admin to fix things,
-		 * just note things are better. */
-
-		info("Switch in dim '%u' on Midplane %s(%s), "
-		     "has returned to service",
-		     dim, event.getMidplaneLocation().c_str(),
-		     ba_mp->coord_str);
-		return;
-	}
-
-	/* Else mark the midplane down */
-	_handle_bad_switch(dim, ba_mp->coord_str, event.getState());
-
-	return;
-}
-
-void event_handler::handleNodeBoardStateChangedRealtimeEvent(
-	const NodeBoardStateChangedEventInfo& event)
-{
-	const char *mp_name = event.getLocation().substr(0,6).c_str();
-	const char *nb_name = event.getLocation().substr(7,3).c_str();
-	Coordinates ibm_coords = event.getMidplaneCoordinates();
-	uint16_t coords[SYSTEM_DIMENSIONS];
-	int dim;
-	ba_mp_t *ba_mp;
-
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
-		coords[dim] = ibm_coords[dim];
-
-	ba_mp = coord2ba_mp(coords);
-
-	if (!ba_mp) {
-		error("Nodeboard '%s' on Midplane %s, state went from "
-		      "'%s' to '%s', but is not in our system",
-		      nb_name, mp_name,
-		      bridge_hardware_state_string(event.getPreviousState()),
-		      bridge_hardware_state_string(event.getState()));
-		return;
-	}
-
-	if (event.getState() == Hardware::Available) {
-		/* Don't do anything, wait for admin to fix things,
-		 * just note things are better. */
-
-		info("Nodeboard '%s' on Midplane %s(%s), "
-		     "has returned to service",
-		     nb_name, mp_name,
-		     ba_mp->coord_str);
-		return;
-	}
-
-	_handle_bad_nodeboard(nb_name, ba_mp->coord_str, event.getState());
-
-	return;
-}
-
-void event_handler::handleNodeStateChangedRealtimeEvent(
-	const NodeStateChangedEventInfo& event)
-{
-	Coordinates ibm_coords = event.getMidplaneCoordinates();
-	uint16_t coords[SYSTEM_DIMENSIONS];
-	int dim;
-	ba_mp_t *ba_mp;
-
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
-		coords[dim] = ibm_coords[dim];
-
-	ba_mp = coord2ba_mp(coords);
-
-	if (!ba_mp) {
-		const char *mp_name = event.getLocation().substr(0,6).c_str();
-		error("Node '%s' on Midplane %s, state went from '%s' to '%s',"
-		      "but is not in our system",
-		      event.getLocation().c_str(), mp_name,
-		      bridge_hardware_state_string(event.getPreviousState()),
-		      bridge_hardware_state_string(event.getState()));
-		return;
-	}
-
-	info("Node '%s' on Midplane %s, state went from '%s' to '%s'",
-	     event.getLocation().c_str(), ba_mp->coord_str,
-	     bridge_hardware_state_string(event.getPreviousState()),
-	     bridge_hardware_state_string(event.getState()));
-
-	_handle_node_change(ba_mp, event.getLocation(), event.getState());
-
-	return;
-}
-
-void event_handler::handleTorusCableStateChangedRealtimeEvent(
-	const TorusCableStateChangedEventInfo& event)
-{
-	Coordinates ibm_coords = event.getFromMidplaneCoordinates();
-	uint16_t coords[SYSTEM_DIMENSIONS];
-	int dim;
-	ba_mp_t *from_ba_mp;
-
-
-	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
-		coords[dim] = ibm_coords[dim];
-
-	dim = event.getDimension();
-	from_ba_mp = coord2ba_mp(coords);
-	if (!from_ba_mp) {
-		error("Cable in dim '%d' on Midplane %s, state "
-		      "went from '%s' to '%s', but is not in our system",
-		      dim, event.getFromMidplaneLocation().c_str(),
-		      bridge_hardware_state_string(event.getPreviousState()),
-		      bridge_hardware_state_string(event.getState()));
-		return;
-	}
-
-	/* Else mark the midplane down */
-	_handle_cable_change(dim, from_ba_mp, event.getState());
-
-	return;
-}
-
-
 static int _real_time_connect(void)
 {
 	int rc = SLURM_ERROR;
@@ -869,6 +657,217 @@ static void *_poll(void *no_data)
 	}
 
 	return NULL;
+}
+
+void event_handler::handleBlockStateChangedRealtimeEvent(
+        const BlockStateChangedEventInfo& event)
+{
+	bg_record_t *bg_record = NULL;
+	const char *bg_block_id = event.getBlockName().c_str();
+
+	if (!bg_lists->main)
+		return;
+
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
+	if (!bg_record) {
+		slurm_mutex_unlock(&block_state_mutex);
+		info("bridge_status: bg_record %s isn't in the main list",
+		     bg_block_id);
+		return;
+	}
+
+	bg_status_update_block_state(bg_record,
+				     bridge_translate_status(event.getStatus()),
+				     kill_job_list);
+
+	slurm_mutex_unlock(&block_state_mutex);
+
+	bg_status_process_kill_job_list(kill_job_list);
+
+	last_bg_update = time(NULL);
+}
+
+void event_handler::handleMidplaneStateChangedRealtimeEvent(
+	const MidplaneStateChangedEventInfo& event)
+{
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	ba_mp_t *ba_mp;
+	int dim;
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	ba_mp = coord2ba_mp(coords);
+
+	if (!ba_mp) {
+		error("Midplane %s, state went from '%s' to '%s', "
+		      "but is not in our system",
+		      event.getLocation().c_str(),
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
+	if (event.getState() == Hardware::Available) {
+		/* Don't do anything, wait for admin to fix things,
+		 * just note things are better. */
+
+		info("Midplane %s(%s), has returned to service",
+		     event.getLocation().c_str(),
+		     ba_mp->coord_str);
+		return;
+	}
+
+	/* Else mark the midplane down */
+	_handle_bad_midplane(ba_mp->coord_str, event.getState());
+
+	return;
+
+}
+
+void event_handler::handleSwitchStateChangedRealtimeEvent(
+	const SwitchStateChangedEventInfo& event)
+{
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	int dim;
+	ba_mp_t *ba_mp;
+
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	dim = event.getDimension();
+	ba_mp = coord2ba_mp(coords);
+
+	if (!ba_mp) {
+		error("Switch in dim '%d' on Midplane %s, state "
+		      "went from '%s' to '%s', but is not in our system",
+		      dim, event.getMidplaneLocation().c_str(),
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
+	if (event.getState() == Hardware::Available) {
+		/* Don't do anything, wait for admin to fix things,
+		 * just note things are better. */
+
+		info("Switch in dim '%u' on Midplane %s(%s), "
+		     "has returned to service",
+		     dim, event.getMidplaneLocation().c_str(),
+		     ba_mp->coord_str);
+		return;
+	}
+
+	/* Else mark the midplane down */
+	_handle_bad_switch(dim, ba_mp->coord_str, event.getState());
+
+	return;
+}
+
+void event_handler::handleNodeBoardStateChangedRealtimeEvent(
+	const NodeBoardStateChangedEventInfo& event)
+{
+	const char *mp_name = event.getLocation().substr(0,6).c_str();
+	const char *nb_name = event.getLocation().substr(7,3).c_str();
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	int dim;
+	ba_mp_t *ba_mp;
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	ba_mp = coord2ba_mp(coords);
+
+	if (!ba_mp) {
+		error("Nodeboard '%s' on Midplane %s, state went from "
+		      "'%s' to '%s', but is not in our system",
+		      nb_name, mp_name,
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
+	if (event.getState() == Hardware::Available) {
+		/* Don't do anything, wait for admin to fix things,
+		 * just note things are better. */
+
+		info("Nodeboard '%s' on Midplane %s(%s), "
+		     "has returned to service",
+		     nb_name, mp_name,
+		     ba_mp->coord_str);
+		return;
+	}
+
+	_handle_bad_nodeboard(nb_name, ba_mp->coord_str, event.getState());
+
+	return;
+}
+
+void event_handler::handleNodeStateChangedRealtimeEvent(
+	const NodeStateChangedEventInfo& event)
+{
+	Coordinates ibm_coords = event.getMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	int dim;
+	ba_mp_t *ba_mp;
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	ba_mp = coord2ba_mp(coords);
+
+	if (!ba_mp) {
+		const char *mp_name = event.getLocation().substr(0,6).c_str();
+		error("Node '%s' on Midplane %s, state went from '%s' to '%s',"
+		      "but is not in our system",
+		      event.getLocation().c_str(), mp_name,
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
+	info("Node '%s' on Midplane %s, state went from '%s' to '%s'",
+	     event.getLocation().c_str(), ba_mp->coord_str,
+	     bridge_hardware_state_string(event.getPreviousState()),
+	     bridge_hardware_state_string(event.getState()));
+
+	_handle_node_change(ba_mp, event.getLocation(), event.getState());
+
+	return;
+}
+
+void event_handler::handleTorusCableStateChangedRealtimeEvent(
+	const TorusCableStateChangedEventInfo& event)
+{
+	Coordinates ibm_coords = event.getFromMidplaneCoordinates();
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	int dim;
+	ba_mp_t *from_ba_mp;
+
+
+	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+		coords[dim] = ibm_coords[dim];
+
+	dim = event.getDimension();
+	from_ba_mp = coord2ba_mp(coords);
+	if (!from_ba_mp) {
+		error("Cable in dim '%d' on Midplane %s, state "
+		      "went from '%s' to '%s', but is not in our system",
+		      dim, event.getFromMidplaneLocation().c_str(),
+		      bridge_hardware_state_string(event.getPreviousState()),
+		      bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
+	/* Else mark the midplane down */
+	_handle_cable_change(dim, from_ba_mp, event.getState());
+
+	return;
 }
 
 #endif
