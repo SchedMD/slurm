@@ -261,9 +261,8 @@ static int _load_gres_plugin(char *plugin_name,
 		return SLURM_ERROR;
 	}
 
-	verbose("gres: Couldn't find the specified plugin name for %s "
-		"looking at all files",
-	      plugin_context->gres_type);
+	debug("gres: Couldn't find the specified plugin name for %s looking "
+	      "at all files", plugin_context->gres_type);
 
 	/* Get plugin list */
 	if (plugin_context->plugin_list == NULL) {
@@ -286,8 +285,8 @@ static int _load_gres_plugin(char *plugin_name,
 					plugin_context->plugin_list,
 					plugin_context->gres_type );
 	if (plugin_context->cur_plugin == PLUGIN_INVALID_HANDLE) {
-		verbose("Cannot find plugin of type %s",
-			plugin_context->gres_type);
+		debug("Cannot find plugin of type %s, just track gres counts",
+		      plugin_context->gres_type);
 		return SLURM_ERROR;
 	}
 
