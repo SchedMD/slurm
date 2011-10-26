@@ -268,6 +268,141 @@ extern int bridge_handle_runtime_errors(const char *function,
 	return rc;
 }
 
+/* RealTime errors */
+
+extern int bridge_handle_realtime_client_errors(const char *function,
+						const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::realtime::ClientStateErrors::MustBeConnected:
+		error("%s: The real-time client must be connected before "
+		      "this method is called, and apparently you are not",
+		      function);
+		break;
+	default:
+		error("%s: Unexpected Realtime client error: %d.",
+		      function, err);
+	}
+	return rc;
+}
+
+extern int bridge_handle_realtime_configuration_errors(const char *function,
+						       const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::realtime::ConfigurationErrors::InvalidHost:
+		error("%s: The host value given is not in the correct format",
+		      function);
+		break;
+	case bgsched::realtime::ConfigurationErrors::MissingSecurityProperty:
+		error("%s: A required security configuration property is "
+		      "missing from the bg.properties file",
+		      function);
+		break;
+	default:
+		error("%s: Unexpected Realtime Configuration error: %d.",
+		      function, err);
+	}
+	return rc;
+}
+
+extern int bridge_handle_realtime_connection_errors(const char *function,
+						    const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::realtime::ConnectionErrors::CannotResolve:
+		error("%s: Cannot resolve the real-time server host or port",
+		      function);
+		break;
+	case bgsched::realtime::ConnectionErrors::CannotConnect:
+		error("%s: Cannot connect to the real-time server",
+		      function);
+		break;
+	case bgsched::realtime::ConnectionErrors::LostConnection:
+		error("%s: Unexpectedly lost the connection to the "
+		      "real-time server",
+		      function);
+		break;
+	default:
+		error("%s: Unexpected Realtime Connection error: %d.",
+		      function, err);
+	}
+	return rc;
+}
+
+extern int bridge_handle_realtime_filter_errors(const char *function,
+						const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::realtime::FilterErrors::PatternNotValid:
+		error("%s: The pattern supplied to the filter option "
+		      "is not valid", function);
+		break;
+	default:
+		error("%s: Unexpected Realtime Filter error: %d.",
+		      function, err);
+	}
+	return rc;
+}
+
+extern int bridge_handle_realtime_internal_errors(const char *function,
+						  const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::realtime::InternalErrors::ApiUnexpectedFailure:
+		error("%s: An API called by the real-time client "
+		      "failed in an unexpected way.", function);
+		break;
+	default:
+		error("%s: Unexpected Realtime Internal error: %d.",
+		      function, err);
+	}
+	return rc;
+}
+
+extern int bridge_handle_realtime_protocol_errors(const char *function,
+						  const uint32_t err)
+{
+	int rc = SLURM_ERROR;
+
+	switch (err) {
+	case bgsched::realtime::ProtocolErrors::MessageTooLong:
+		error("%s: A message received from the real-time server is "
+		      "too long", function);
+		break;
+	case bgsched::realtime::ProtocolErrors::UnexpectedMessageType:
+		error("%s: The type of message received from the real-time "
+		      "server is not expected", function);
+		break;
+	case bgsched::realtime::ProtocolErrors::ErrorReadingMessage:
+		error("%s: An error occurred parsing a message received "
+		      "from the real-time server", function);
+		break;
+	case bgsched::realtime::ProtocolErrors::UnexpectedDbChangeType:
+		error("%s: The type of DB change message received "
+		      "from the real-time server is not expected", function);
+		break;
+	case bgsched::realtime::ProtocolErrors::MessageNotValid:
+		error("%s: A message received from the real-time server "
+		      "is not valid", function);
+		break;
+	default:
+		error("%s: Unexpected Realtime Protocol error: %d.",
+		      function, err);
+	}
+	return rc;
+}
+
 extern uint16_t bridge_translate_status(bgsched::Block::Status state_in)
 {
 	switch (state_in) {

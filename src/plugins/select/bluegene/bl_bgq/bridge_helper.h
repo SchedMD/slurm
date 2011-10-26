@@ -56,12 +56,20 @@ extern "C" {
 #include <bgsched/Block.h>
 #include <bgsched/core/core.h>
 
+#include <bgsched/realtime/ClientStateException.h>
+#include <bgsched/realtime/ConnectionException.h>
+#include <bgsched/realtime/InternalErrorException.h>
+#include <bgsched/realtime/ConfigurationException.h>
+#include <bgsched/realtime/FilterException.h>
+#include <bgsched/realtime/ProtocolException.h>
+
 #include <boost/foreach.hpp>
 
 using namespace std;
 using namespace bgsched;
 using namespace bgsched::core;
 
+/* core errors */
 extern int bridge_handle_database_errors(
 	const char *function, const uint32_t err);
 extern int bridge_handle_init_errors(
@@ -74,6 +82,21 @@ extern int bridge_handle_runtime_errors(const char *function,
 					const uint32_t err,
 					bg_record_t *bg_record);
 
+/* realtime errors */
+extern int bridge_handle_realtime_client_errors(const char *function,
+						const uint32_t err);
+extern int bridge_handle_realtime_configuration_errors(const char *function,
+						       const uint32_t err);
+extern int bridge_handle_realtime_connection_errors(const char *function,
+						    const uint32_t err);
+extern int bridge_handle_realtime_filter_errors(const char *function,
+						const uint32_t err);
+extern int bridge_handle_realtime_internal_errors(const char *function,
+						  const uint32_t err);
+extern int bridge_handle_realtime_protocol_errors(const char *function,
+						  const uint32_t err);
+
+/* traslate functions */
 extern uint16_t bridge_translate_status(bgsched::Block::Status state_in);
 extern uint16_t bridge_translate_switch_usage(bgsched::Switch::InUse usage_in);
 extern const char *bridge_hardware_state_string(const int state);
