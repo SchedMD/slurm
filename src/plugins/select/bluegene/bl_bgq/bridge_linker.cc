@@ -76,6 +76,9 @@ static void _setup_ba_mp(int level, uint16_t *coords,
 	Midplane::ConstPtr mp_ptr;
 	int i;
 
+	if (!bgqsys)
+		fatal("_setup_ba_mp: No ComputeHardware ptr");
+
 	if (level > SYSTEM_DIMENSIONS)
 		return;
 
@@ -89,38 +92,19 @@ static void _setup_ba_mp(int level, uint16_t *coords,
 		return;
 	}
 
-	if (!(ba_mp = coord2ba_mp(coords)))
+	if (!(ba_mp = coord2ba_mp(coords))
+	    || !(mp_ptr = bridge_get_midplane(bgqsys, ba_mp)))
 		return;
-
-	try {
-		Coordinates::Coordinates coords(
-			ba_mp->coord[A], ba_mp->coord[X],
-			ba_mp->coord[Y], ba_mp->coord[Z]);
-		mp_ptr = bgqsys->getMidplane(coords);
-	} catch (const bgsched::InputException& err) {
-		int rc = bridge_handle_input_errors(
-			"ComputeHardware::getMidplane",
-			err.getError().toValue(), NULL);
-		if (rc != SLURM_SUCCESS)
-			return;
-	}
 
 	ba_mp->loc = xstrdup(mp_ptr->getLocation().c_str());
 
 	ba_mp->nodecard_loc =
 		(char **)xmalloc(sizeof(char *) * bg_conf->mp_nodecard_cnt);
 	for (i=0; i<bg_conf->mp_nodecard_cnt; i++) {
-		try {
-			NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
+		NodeBoard::ConstPtr nb_ptr = bridge_get_nodeboard(mp_ptr, i);
+		if (nb_ptr)
 			ba_mp->nodecard_loc[i] =
-				xstrdup(nodeboard->getLocation().c_str());
-		} catch (const bgsched::InputException& err) {
-			int rc = bridge_handle_input_errors(
-				"Midplane::getNodeBoard",
-				err.getError().toValue(), NULL);
-			if (rc != SLURM_SUCCESS)
-			       ;
-		}
+				xstrdup(nb_ptr->getLocation().c_str());
 	}
 }
 
@@ -167,9 +151,18 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 		bg_record->conn_type[0] = SELECT_SMALL;
 	} else {
 		for (Dimension dim=Dimension::A; dim<=Dimension::D; dim++) {
-			bg_record->conn_type[dim] =
-				block_ptr->isTorus(dim) ?
-				SELECT_TORUS : SELECT_MESH;
+			try {
+				bg_record->conn_type[dim] =
+					block_ptr->isTorus(dim) ?
+					SELECT_TORUS : SELECT_MESH;
+			} catch (const bgsched::InputException& err) {
+				bridge_handle_input_errors(
+					"Block::isTorus",
+					err.getError().toValue(),
+					NULL);
+			} catch (...) {
+				error("Unknown error from Block::isTorus.");
+			}
 		}
 		/* Set the bitmap blank here if it is a full
 		   node we don't want anything set we also
@@ -269,13 +262,24 @@ static int _block_wait_for_jobs(char *bg_block_id)
 	job_filter.setStatuses(&job_statuses);
 
 	while (1) {
-		job_vec = getJobs(job_filter);
-		if (job_vec.empty())
-			return SLURM_SUCCESS;
+		try {
+			job_vec = getJobs(job_filter);
+			if (job_vec.empty())
+				return SLURM_SUCCESS;
 
-		BOOST_FOREACH(const Job::ConstPtr& job_ptr, job_vec) {
-			debug("waiting on mmcs job %lu to finish on block %s",
-			      job_ptr->getId(), bg_block_id);
+			BOOST_FOREACH(const Job::ConstPtr& job_ptr, job_vec) {
+				debug("waiting on mmcs job %lu to "
+				      "finish on block %s",
+				      job_ptr->getId(), bg_block_id);
+			}
+		} catch (const bgsched::DatabaseException& err) {
+			bridge_handle_database_errors("getJobs",
+						      err.getError().toValue());
+		} catch (const bgsched::InternalException& err) {
+			bridge_handle_internal_errors("getJobs",
+						      err.getError().toValue());
+		} catch (...) {
+			error("Unknown error from getJobs.");
 		}
 		sleep(POLL_INTERVAL);
 	}
@@ -335,7 +339,15 @@ extern int bridge_init(char *properties_file)
 #ifdef HAVE_BG_FILES
 	if (!properties_file)
 		properties_file = (char *)"";
-	bgsched::init(properties_file);
+	try {
+		bgsched::init(properties_file);
+	} catch (const bgsched::InitializationException& err) {
+		bridge_handle_init_errors("bgsched::init",
+					  err.getError().toValue());
+		fatal("can't init bridge");
+	} catch (...) {
+		fatal("Unknown error from bgsched::init, can't continue");
+	}
 #endif
 	initialized = true;
 
@@ -358,9 +370,16 @@ extern int bridge_get_size(int *size)
 #ifdef HAVE_BG_FILES
 	memset(size, 0, sizeof(int) * SYSTEM_DIMENSIONS);
 
-	Coordinates bgq_size = core::getMachineSize();
-	for (int dim=0; dim< SYSTEM_DIMENSIONS; dim++)
-		size[dim] = bgq_size[dim];
+	try {
+		Coordinates bgq_size = core::getMachineSize();
+		for (int dim=0; dim< SYSTEM_DIMENSIONS; dim++)
+			size[dim] = bgq_size[dim];
+	} catch (const bgsched::DatabaseException& err) {
+		bridge_handle_database_errors("core::getMachineSize",
+					      err.getError().toValue());
+	} catch (...) {
+		error("Unknown error from core::getMachineSize");
+	}
 #endif
 
 	return SLURM_SUCCESS;
@@ -382,7 +401,7 @@ extern int bridge_setup_system()
 
 #ifdef HAVE_BG_FILES
 	uint16_t coords[SYSTEM_DIMENSIONS];
-	_setup_ba_mp(0, coords, getComputeHardware());
+	_setup_ba_mp(0, coords, bridge_get_compute_hardware());
 #endif
 
 	return SLURM_SUCCESS;
@@ -470,26 +489,22 @@ extern int bridge_block_create(bg_record_t *bg_record)
 
 		try {
 			block_ptr = Block::create(nodecards);
+			rc = SLURM_SUCCESS;
 		} catch (const bgsched::InputException& err) {
 			rc = bridge_handle_input_errors(
 				"Block::createSmallBlock",
 				err.getError().toValue(),
 				bg_record);
-			if (rc != SLURM_SUCCESS) {
-				/* This is needed because sometimes we
-				   get a sub midplane system with not
-				   all the hardware there.  This way
-				   we can try to create blocks on all
-				   the hardware and the good ones will
-				   work and the bad ones will just be
-				   removed after everything is done
-				   being created.
-				*/
-				if (bg_conf->sub_mp_sys)
-					rc = SLURM_SUCCESS;
-				return rc;
-			}
+		} catch (const bgsched::RuntimeException& err) {
+			rc = bridge_handle_runtime_errors(
+				"Block::createSmallBlock",
+				err.getError().toValue(),
+				bg_record);
+		} catch (...) {
+			error("Unknown Error from Block::createSmallBlock");
+			rc = SLURM_ERROR;
 		}
+
 	} else {
 		ListIterator itr = list_iterator_create(bg_record->ba_mp_list);
 		while ((ba_mp = (ba_mp_t *)list_next(itr))) {
@@ -523,39 +538,64 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		try {
 			block_ptr = Block::create(midplanes,
 						  pt_midplanes, conn_type);
+			rc = SLURM_SUCCESS;
 		} catch (const bgsched::InputException& err) {
 			rc = bridge_handle_input_errors(
 				"Block::create",
 				err.getError().toValue(),
 				bg_record);
-			if (rc != SLURM_SUCCESS) {
-				/* This is needed because sometimes we
-				   get a sub midplane system with not
-				   all the hardware there.  This way
-				   we can try to create blocks on all
-				   the hardware and the good ones will
-				   work and the bad ones will just be
-				   removed after everything is done
-				   being created.
-				*/
-				if (bg_conf->sub_mp_sys)
-					rc = SLURM_SUCCESS;
-				else
-					assert(0);
-				return rc;
-			}
+		} catch (...) {
+			error("Unknown Error from Block::createSmallBlock");
+			rc = SLURM_ERROR;
 		}
 	}
 
+	if (rc != SLURM_SUCCESS) {
+		/* This is needed because sometimes we
+		   get a sub midplane system with not
+		   all the hardware there.  This way
+		   we can try to create blocks on all
+		   the hardware and the good ones will
+		   work and the bad ones will just be
+		   removed after everything is done
+		   being created.
+		*/
+		if (bg_conf->sub_mp_sys)
+			rc = SLURM_SUCCESS;
+		else if (bg_record->conn_type[0] != SELECT_SMALL)
+			assert(0);
+		return rc;
+	}
+
 	info("block created correctly");
-	block_ptr->setName(bg_record->bg_block_id);
-	block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
+	try {
+		block_ptr->setName(bg_record->bg_block_id);
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::setName",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (...) {
+                error("Unknown error from Block::setName().");
+		rc = SLURM_ERROR;
+	}
+
+	try {
+		block_ptr->setMicroLoaderImage(bg_record->mloaderimage);
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::MicroLoaderImage",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (...) {
+                error("Unknown error from Block::setMicroLoaderImage().");
+		rc = SLURM_ERROR;
+	}
 
 	try {
 		block_ptr->add("");
-		// block_ptr->addUser(bg_record->bg_block_id,
-		// 		   bg_record->user_name);
-		//info("got past add");
 	} catch (const bgsched::InputException& err) {
 		rc = bridge_handle_input_errors("Block::add",
 						err.getError().toValue(),
@@ -618,7 +658,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 			return rc;
 	} catch (const bgsched::InternalException& err) {
 		rc = bridge_handle_internal_errors("Block::checkIOLinksSummary",
-						err.getError().toValue());
+						   err.getError().toValue());
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (...) {

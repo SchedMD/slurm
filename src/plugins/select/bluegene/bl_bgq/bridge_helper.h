@@ -103,6 +103,13 @@ extern const char *bridge_hardware_state_string(const int state);
 
 /* helper functions */
 extern Block::Ptrs bridge_get_blocks(BlockFilter filter);
+extern Midplane::ConstPtr bridge_get_midplane(ComputeHardware::ConstPtr bgqsys,
+					      ba_mp_t *ba_mp);
+extern Node::ConstPtrs bridge_get_midplane_nodes(const std::string& loc);
+extern NodeBoard::ConstPtr bridge_get_nodeboard(Midplane::ConstPtr mp_ptr,
+						int nodeboard_num);
+extern Switch::ConstPtr bridge_get_switch(Midplane::ConstPtr mp_ptr, int dim);
+extern ComputeHardware::ConstPtr bridge_get_compute_hardware();
 
 #endif
 

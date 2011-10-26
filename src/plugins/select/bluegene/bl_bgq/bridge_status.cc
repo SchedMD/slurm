@@ -497,9 +497,31 @@ static void *_real_time(void *no_data)
 		}
 
 		if (rc == SLURM_SUCCESS) {
-			rt_client_ptr->setFilter(rt_filter, &filter_id, NULL);
-			rt_client_ptr->requestUpdates(NULL);
-			rt_client_ptr->receiveMessages(NULL, NULL, &failed);
+			/* receiveMessages will set this to false if
+			   all is well.  Otherwise we did fail.
+			*/
+			failed = true;
+			try {
+				rt_client_ptr->setFilter(rt_filter, &filter_id,
+							 NULL);
+				rt_client_ptr->requestUpdates(NULL);
+				rt_client_ptr->receiveMessages(NULL, NULL,
+							       &failed);
+			} catch (bgsched::realtime::ClientStateException& err) {
+				bridge_handle_input_errors(
+					"RealTime Setup",
+					err.getError().toValue(), NULL);
+			} catch (bgsched::realtime::ConnectionException& err) {
+				bridge_handle_input_errors(
+					"RealTime Setup",
+					err.getError().toValue(), NULL);
+			} catch (bgsched::realtime::ProtocolException& err) {
+				bridge_handle_input_errors(
+					"RealTime Setup",
+					err.getError().toValue(), NULL);
+			} catch (...) {
+				error("RealTime Setup: Unknown error thrown?");
+			}
 		} else
 			failed = true;
 
@@ -568,53 +590,63 @@ static void _do_block_poll(void)
 static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 				    ba_mp_t *ba_mp)
 {
-	Coordinates::Coordinates coords(ba_mp->coord[A], ba_mp->coord[X],
-					ba_mp->coord[Y], ba_mp->coord[Z]);
-	Midplane::ConstPtr mp_ptr = bgq->getMidplane(coords);
+	Midplane::ConstPtr mp_ptr = bridge_get_midplane(bgq, ba_mp);
 	int i;
 	Dimension dim;
+
+	if (!mp_ptr) {
+		info("no midplane in the system at %s", ba_mp->coord_str);
+		return;
+	}
 
 	if (mp_ptr->getState() != Hardware::Available) {
 		_handle_bad_midplane(ba_mp->coord_str, mp_ptr->getState());
 		/* no reason to continue */
 		return;
 	} else {
-		Node::ConstPtrs vec = getMidplaneNodes(mp_ptr->getLocation());
-		BOOST_FOREACH(const Node::ConstPtr& cnode_ptr, vec) {
-			_handle_node_change(ba_mp,
-					    cnode_ptr->getLocation(),
-					    cnode_ptr->getState());
+		Node::ConstPtrs vec = bridge_get_midplane_nodes(
+			mp_ptr->getLocation());
+		if (!vec.empty()) {
+			BOOST_FOREACH(const Node::ConstPtr& cnode_ptr, vec) {
+				_handle_node_change(ba_mp,
+						    cnode_ptr->getLocation(),
+						    cnode_ptr->getState());
+			}
 		}
 	}
 
 	for (i=0; i<16; i++) {
-		NodeBoard::ConstPtr nodeboard = mp_ptr->getNodeBoard(i);
+		NodeBoard::ConstPtr nb_ptr = bridge_get_nodeboard(mp_ptr, i);
 		/* FIXME: the Hardware::Error can/should be taken away after
 		   IBM fixes it so when a cnode is in an error state
 		   it doesn't put the nodeboard in an error state as
 		   well.
 		*/
-		if ((nodeboard->getState() != Hardware::Available)
-		    && (nodeboard->getState() != Hardware::Error))
+		if (nb_ptr && (nb_ptr->getState() != Hardware::Available)
+		    && (nb_ptr->getState() != Hardware::Error))
 			_handle_bad_nodeboard(
-				nodeboard->getLocation().substr(7,3).c_str(),
-				ba_mp->coord_str, nodeboard->getState());
+				nb_ptr->getLocation().substr(7,3).c_str(),
+				ba_mp->coord_str, nb_ptr->getState());
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
-		Switch::ConstPtr my_switch = mp_ptr->getSwitch(dim);
-		if (my_switch->getState() != Hardware::Available)
-			_handle_bad_switch(dim,
-					   ba_mp->coord_str,
-					   my_switch->getState());
-		else {
-			Cable::ConstPtr my_cable = my_switch->getCable();
-			/* Dimensions of length 1 do not have a
-			   cable. (duh).
-			*/
-			if (my_cable)
-				_handle_cable_change(dim, ba_mp,
-						     my_cable->getState());
+		Switch::ConstPtr switch_ptr = bridge_get_switch(mp_ptr, dim);
+		if (switch_ptr) {
+			if (switch_ptr->getState() != Hardware::Available)
+				_handle_bad_switch(dim,
+						   ba_mp->coord_str,
+						   switch_ptr->getState());
+			else {
+				Cable::ConstPtr my_cable =
+					switch_ptr->getCable();
+				/* Dimensions of length 1 do not have a
+				   cable. (duh).
+				*/
+				if (my_cable)
+					_handle_cable_change(
+						dim, ba_mp,
+						my_cable->getState());
+			}
 		}
 	}
 }
@@ -623,6 +655,11 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 			      ComputeHardware::ConstPtr bgqsys)
 {
 	ba_mp_t *ba_mp;
+
+	if (!bgqsys) {
+		error("_do_hardware_poll: No ComputeHardware ptr");
+		return;
+	}
 
 	if (!ba_main_grid || (level > SYSTEM_DIMENSIONS))
 		return;
@@ -661,7 +698,8 @@ static void *_poll(void *no_data)
 		/* only do every 30 seconds */
 		if ((curr_time - 30) >= last_ran) {
 			uint16_t coords[SYSTEM_DIMENSIONS];
-			_do_hardware_poll(0, coords, getComputeHardware());
+			_do_hardware_poll(0, coords,
+					  bridge_get_compute_hardware());
 			last_ran = time(NULL);
 		}
 
@@ -688,7 +726,7 @@ void event_handler::handleRealtimeStartedRealtimeEvent(
 		if (blocks_are_created)
 			_do_block_poll();
 		/* only do every 30 seconds */
-		_do_hardware_poll(0, coords, getComputeHardware());
+		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
 	}
 }
 
@@ -953,8 +991,16 @@ extern int bridge_status_fini(void)
 	bridge_status_inited = false;
 #if defined HAVE_BG_FILES
 	slurm_mutex_lock(&rt_mutex);
+
 	/* make the rt connection end. */
-	rt_client_ptr->disconnect();
+	try {
+		rt_client_ptr->disconnect();
+	} catch (bgsched::realtime::InternalErrorException& err) {
+		bridge_handle_realtime_internal_errors(
+			"realtime::disconnect", err.getError().toValue());
+	} catch (...) {
+		error("Unknown error from realtime::disconnect");
+	}
 
 	if (kill_job_list) {
 		list_destroy(kill_job_list);

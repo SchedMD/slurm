@@ -487,7 +487,7 @@ extern Block::Ptrs bridge_get_blocks(BlockFilter filter)
 	Block::Ptrs vec;
 
 	try {
-		vec = getBlocks(filter, BlockSort::AnyOrder);
+		vec = getBlocks(filter);
 	} catch (const bgsched::DatabaseException& err) {
 		bridge_handle_database_errors("getBlocks",
 					      err.getError().toValue());
@@ -505,4 +505,95 @@ extern Block::Ptrs bridge_get_blocks(BlockFilter filter)
 	return vec;
 }
 
+extern Midplane::ConstPtr bridge_get_midplane(ComputeHardware::ConstPtr bgqsys,
+					      ba_mp_t *ba_mp)
+{
+	Midplane::ConstPtr mp_ptr;
+
+	assert(ba_mp);
+
+	try {
+		Coordinates::Coordinates coords(
+			ba_mp->coord[0], ba_mp->coord[1],
+			ba_mp->coord[2], ba_mp->coord[3]);
+		mp_ptr = bgqsys->getMidplane(coords);
+	} catch (const bgsched::InputException& err) {
+		bridge_handle_input_errors(
+			"ComputeHardware::getMidplane",
+			err.getError().toValue(), NULL);
+	} catch (...) {
+              error("Unknown error from ComputeHardware::getMidplane.");
+	}
+	return mp_ptr;
+}
+
+extern Node::ConstPtrs bridge_get_midplane_nodes(const std::string& loc)
+{
+	Node::ConstPtrs vec;
+
+	try {
+		vec = getMidplaneNodes(loc);
+	} catch (const bgsched::DatabaseException& err) {
+		bridge_handle_database_errors("getMidplaneNodes",
+					      err.getError().toValue());
+	} catch (const bgsched::InputException& err) {
+		bridge_handle_input_errors("getMidplaneNodes",
+					   err.getError().toValue(),
+					   NULL);
+	} catch (const bgsched::InternalException& err) {
+		bridge_handle_internal_errors("getMidplaneNodes",
+						   err.getError().toValue());
+	} catch (...) {
+                error("Unknown error from getMidplaneNodes.");
+	}
+	return vec;
+}
+
+extern NodeBoard::ConstPtr bridge_get_nodeboard(Midplane::ConstPtr mp_ptr,
+						int nodeboard_num)
+{
+	NodeBoard::ConstPtr nb_ptr;
+
+	try {
+		nb_ptr = mp_ptr->getNodeBoard(nodeboard_num);
+	} catch (const bgsched::InputException& err) {
+		bridge_handle_input_errors("Midplane::getNodeBoard",
+					   err.getError().toValue(),
+					   NULL);
+	} catch (...) {
+                error("Unknown error from Midplane::getNodeBoard.");
+	}
+	return nb_ptr;
+}
+
+extern Switch::ConstPtr bridge_get_switch(Midplane::ConstPtr mp_ptr, int dim)
+{
+	Switch::ConstPtr switch_ptr;
+
+	try {
+		switch_ptr = mp_ptr->getSwitch(dim);
+	} catch (const bgsched::InputException& err) {
+		bridge_handle_input_errors("Midplane::getSwitch",
+					   err.getError().toValue(),
+					   NULL);
+	} catch (...) {
+                error("Unknown error from Midplane::getSwitch.");
+	}
+	return switch_ptr;
+}
+
+extern ComputeHardware::ConstPtr bridge_get_compute_hardware()
+{
+	ComputeHardware::ConstPtr bgqsys;
+
+	try {
+		bgqsys = getComputeHardware();
+	} catch (const bgsched::InternalException& err) {
+		bridge_handle_internal_errors("getComputeHardware",
+					      err.getError().toValue());
+	} catch (...) {
+		error("Unknown error from getComputeHardware");
+	}
+	return bgqsys;
+}
 #endif
