@@ -3743,11 +3743,12 @@ extern int job_limits_check(struct job_record **job_pptr)
 		info("Job %u requested inactive partition %s",
 		     job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_INACTIVE;
-	} else if ((job_ptr->time_limit != NO_VAL) &&
-		   ((job_ptr->time_limit > part_ptr->max_time) &&
-		    (job_ptr->time_min   > part_ptr->max_time) &&
-		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-					       QOS_FLAG_PART_TIME_LIMIT))))) {
+	} else if ((((job_ptr->time_limit != NO_VAL) &&
+		     (job_ptr->time_limit > part_ptr->max_time)) ||
+		    ((job_ptr->time_min   != NO_VAL) &&
+		     (job_ptr->time_min   > part_ptr->max_time))) &&
+		     (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
+		 			       QOS_FLAG_PART_TIME_LIMIT)))) {
 		info("Job %u exceeds partition time limit", job_ptr->job_id);
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&

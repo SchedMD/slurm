@@ -1214,11 +1214,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		fail_reason = WAIT_PART_INACTIVE;
 	else if (job_ptr->priority == 0)       /* user or administrator hold */
 		fail_reason = WAIT_HELD;
-	else if ((job_ptr->time_limit != NO_VAL) &&
-		 ((job_ptr->time_limit > part_ptr->max_time) &&
-		  (job_ptr->time_min   > part_ptr->max_time) &&
-		  (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-					     & QOS_FLAG_PART_TIME_LIMIT)))))
+	else if ((((job_ptr->time_limit != NO_VAL) &&
+		   (job_ptr->time_limit > part_ptr->max_time)) ||
+		  ((job_ptr->time_min   != NO_VAL) &&
+		   (job_ptr->time_min   > part_ptr->max_time))) &&
+		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
+		 			     QOS_FLAG_PART_TIME_LIMIT))))
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	else if (((job_ptr->details->max_nodes != 0) &&
 	          ((job_ptr->details->max_nodes < part_ptr->min_nodes) &&
