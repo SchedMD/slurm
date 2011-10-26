@@ -333,10 +333,11 @@ extern time_t last_job_update;	/* time of last update to job records */
 #define JOB_MAGIC	0xf0b7392c
 #define STEP_MAGIC	0xce593bc1
 
-#define FEATURE_OP_OR  0
-#define FEATURE_OP_AND 1
-#define FEATURE_OP_XOR 2
-#define FEATURE_OP_END 3		/* last entry lacks separator */
+#define FEATURE_OP_OR   0
+#define FEATURE_OP_AND  1
+#define FEATURE_OP_XOR  2
+#define FEATURE_OP_XAND 3
+#define FEATURE_OP_END  4		/* last entry lacks separator */
 struct feature_record {
 	char *name;			/* name of feature */
 	uint16_t count;			/* count of nodes with this feature */
@@ -1237,6 +1238,14 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
 /* list_compare_config - compare two entry from the config list based upon
  *	weight, see common/list.h for documentation */
 int list_compare_config (void *config_entry1, void *config_entry2);
+
+/*
+ * list_find_feature - find an entry in the feature list, see list.h for
+ *	documentation
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+extern int list_find_feature(void *feature_entry, void *key);
 
 /*
  * list_find_part - find an entry in the partition list, see common/list.h

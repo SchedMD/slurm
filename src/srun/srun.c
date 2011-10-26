@@ -355,6 +355,7 @@ int srun(int ac, char **av)
 
 		opt.exclusive = false;	/* not applicable for this step */
 		opt.time_limit = NO_VAL;/* not applicable for step, only job */
+		xfree(opt.constraints);	/* not applicable for this step */
 		if (!opt.job_name_set_cmd && opt.job_name_set_env) {
 			/* use SLURM_JOB_NAME env var */
 			opt.job_name_set_cmd = true;

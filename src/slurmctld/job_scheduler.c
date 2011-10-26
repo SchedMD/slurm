@@ -1801,7 +1801,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 			i = str_ptr - tmp_requested - 1;
 		} else if (tmp_requested[i] == '&') {
 			tmp_requested[i] = '\0';
-			if ((feature == NULL) || (bracket != 0)) {
+			if (feature == NULL) {
 				info("Job %u invalid constraint %s",
 					job_ptr->job_id, detail_ptr->features);
 				xfree(tmp_requested);
@@ -1810,7 +1810,10 @@ extern int build_feature_list(struct job_record *job_ptr)
 			feat = xmalloc(sizeof(struct feature_record));
 			feat->name = xstrdup(feature);
 			feat->count = count;
-			feat->op_code = FEATURE_OP_AND;
+			if (bracket)
+				feat->op_code = FEATURE_OP_XAND;
+			else
+				feat->op_code = FEATURE_OP_AND;
 			list_append(detail_ptr->feature_list, feat);
 			feature = NULL;
 			count = 0;
@@ -1901,7 +1904,8 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 
 	feat_iter = list_iterator_create(feature_list);
 	while ((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
-		if (feat_ptr->op_code == FEATURE_OP_XOR) {
+		if ((feat_ptr->op_code == FEATURE_OP_XOR) ||
+		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
 			if (bracket == 0)
 				xstrcat(buf, "[");
 			bracket = 1;
@@ -1913,11 +1917,14 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 			snprintf(tmp, sizeof(tmp), "*%u", feat_ptr->count);
 			xstrcat(buf, tmp);
 		}
-		if (bracket && (feat_ptr->op_code != FEATURE_OP_XOR)) {
+		if (bracket &&
+		    ((feat_ptr->op_code != FEATURE_OP_XOR) &&
+		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
 			xstrcat(buf, "]");
 			bracket = 0;
 		}
-		if (feat_ptr->op_code == FEATURE_OP_AND)
+		if ((feat_ptr->op_code == FEATURE_OP_AND) ||
+		    (feat_ptr->op_code == FEATURE_OP_XAND))
 			xstrcat(buf, "&");
 		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
 			 (feat_ptr->op_code == FEATURE_OP_XOR))

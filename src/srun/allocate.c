@@ -841,6 +841,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		job->ctx_params.name = opt.job_name;
 	else
 		job->ctx_params.name = opt.cmd_name;
+	job->ctx_params.features = opt.constraints;
 
 	debug("requesting job %u, user %u, nodes %u including (%s)",
 	      job->ctx_params.job_id, job->ctx_params.uid,

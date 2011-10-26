@@ -101,7 +101,6 @@ static int  _build_node_list(struct job_record *job_ptr,
 			     int *node_set_size);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr);
-static int _list_find_feature(void *feature_entry, void *key);
 static int _match_feature(char *seek, struct node_set *node_set_ptr);
 static int _nodes_in_sets(bitstr_t *req_bitmap,
 			  struct node_set * node_set_ptr,
@@ -113,7 +112,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only,
 			    List preemptee_candidates,
-			    List *preemptee_job_list);
+			    List *preemptee_job_list, bool has_xand);
 static bool _valid_feature_counts(struct job_details *detail_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_details *detail_ptr,
@@ -364,7 +363,7 @@ static int _match_feature(char *seek, struct node_set *node_set_ptr)
 	if (seek == NULL)
 		return 1;	/* nothing to look for */
 
-	feat_ptr = list_find_first(feature_list, _list_find_feature,
+	feat_ptr = list_find_first(feature_list, list_find_feature,
 				   (void *) seek);
 	if (feat_ptr == NULL)
 		return 0;	/* no such feature */
@@ -473,6 +472,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
 	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap = NULL;
 	List preemptee_candidates = NULL;
+	bool has_xand = false;
 
 	/* Mark nodes reserved for other jobs as off limit for this job.
 	 * If the job has a reservation, we've already limited the contents
@@ -567,7 +567,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					job_ptr, part_ptr, min_nodes,
 					max_nodes, req_nodes, test_only,
 					preemptee_candidates,
-					preemptee_job_list);
+					preemptee_job_list, false);
 #if 0
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
@@ -588,7 +588,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			if (error_code != SLURM_SUCCESS)
 				break;
 			if (feature_bitmap) {
-				if (job_ptr->details->req_node_bitmap) {
+				if (feat_ptr->op_code == FEATURE_OP_XAND)
+					has_xand = true;
+				if (has_xand) {
+					/* Don't make it required since we
+					 * check value on each call to
+					 * _pick_best_nodes() */
+				} else if (job_ptr->details->req_node_bitmap) {
 					bit_or(job_ptr->details->
 					       req_node_bitmap,
 					       feature_bitmap);
@@ -652,12 +658,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				select_bitmap, job_ptr, part_ptr, min_nodes,
 				max_nodes, req_nodes, test_only,
-				preemptee_candidates, preemptee_job_list);
+				preemptee_candidates, preemptee_job_list,
+				has_xand);
 	}
 #if 0
 {
 	char *tmp_str = bitmap2node_name(*select_bitmap);
-	info("job %u allocated nodes %s err:%u",
+	info("job %u allocated nodes:%s err:%u",
 		job_ptr->job_id, tmp_str, error_code);
 	xfree(tmp_str);
 }
@@ -694,6 +701,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
  * IN test_only - do not actually allocate resources
  * IN/OUT preemptee_job_list - list of pointers to jobs to be preempted
  *	NULL on first entry
+ * IN has_xand - set of the constraint list includes XAND operators *and*
+ *		 we have already satisfied them all
  * RET SLURM_SUCCESS on success,
  *	ESLURM_NODES_BUSY if request can not be satisfied now,
  *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never
@@ -723,7 +732,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 struct part_record *part_ptr,
 		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
 		 bool test_only, List preemptee_candidates,
-		 List *preemptee_job_list)
+		 List *preemptee_job_list, bool has_xand)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;
@@ -855,16 +864,18 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (!bit_super_set(job_ptr->details->req_node_bitmap,
 					   avail_bitmap))
 				missing_required_nodes = true;
-			FREE_NULL_BITMAP(avail_bitmap);
+
 			if (missing_required_nodes)
 				continue;
+			FREE_NULL_BITMAP(avail_bitmap);
 			avail_bitmap = bit_copy(job_ptr->details->
 						req_node_bitmap);
 			if (avail_bitmap == NULL)
 				fatal("bit_copy malloc failure");
 		}
 		for (i = 0; i < node_set_size; i++) {
-			if (!bit_test(node_set_ptr[i].feature_bits, j))
+			if (!has_xand &&
+			    !bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
 
 			if (total_bitmap) {
@@ -1465,12 +1476,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 }
 
 /*
- * _list_find_feature - find an entry in the feature list, see list.h for
+ * list_find_feature - find an entry in the feature list, see list.h for
  *	documentation
  * IN key - is feature name or NULL for all features
  * RET 1 if found, 0 otherwise
  */
-static int _list_find_feature(void *feature_entry, void *key)
+extern int list_find_feature(void *feature_entry, void *key)
 {
 	struct features_record *feature_ptr;
 
@@ -1485,7 +1496,7 @@ static int _list_find_feature(void *feature_entry, void *key)
 
 /*
  * _valid_feature_counts - validate a job's features can be satisfied
- *	by the selected nodes (NOTE: does not process XOR operators)
+ *	by the selected nodes (NOTE: does not process XOR or XAND operators)
  * IN detail_ptr - job details
  * IN/OUT node_bitmap - nodes available for use, clear if unusable
  * RET true if valid, false otherwise
@@ -1516,16 +1527,17 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 		fatal("list_iterator_create malloc error");
 	while ((job_feat_ptr = (struct feature_record *)
 			list_next(job_feat_iter))) {
-		feat_ptr = list_find_first(feature_list, _list_find_feature,
+		feat_ptr = list_find_first(feature_list, list_find_feature,
 					   (void *) job_feat_ptr->name);
 		if (feat_ptr) {
 			if (last_op == FEATURE_OP_AND)
 				bit_and(feature_bitmap, feat_ptr->node_bitmap);
-			else if (last_op == FEATURE_OP_XOR) {
+			else if (last_op == FEATURE_OP_OR)
+				bit_or(feature_bitmap, feat_ptr->node_bitmap);
+			else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
 				*has_xor = true;
 				bit_or(feature_bitmap, feat_ptr->node_bitmap);
-			} else	/* FEATURE_OP_OR */
-				bit_or(feature_bitmap, feat_ptr->node_bitmap);
+			}
 		} else {	/* feature not found */
 			if (last_op == FEATURE_OP_AND) {
 				bit_nclear(feature_bitmap, 0,
@@ -1548,7 +1560,7 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 			if (job_feat_ptr->count == 0)
 				continue;
 			feat_ptr = list_find_first(feature_list,
-						   _list_find_feature,
+						   list_find_feature,
 						   (void *)job_feat_ptr->name);
 			if (!feat_ptr) {
 				rc = false;
@@ -2073,10 +2085,12 @@ static bitstr_t *_valid_features(struct job_details *details_ptr,
 		fatal("list_iterator_create malloc failure");
 	while ((job_feat_ptr = (struct feature_record *)
 			list_next(feat_iter))) {
-		if ((job_feat_ptr->op_code == FEATURE_OP_XOR) ||
+		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
+		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||
+		    (last_op == FEATURE_OP_XAND) ||
 		    (last_op == FEATURE_OP_XOR)) {
 			feat_ptr = list_find_first(feature_list,
-						   _list_find_feature,
+						   list_find_feature,
 						   (void *)job_feat_ptr->name);
 			if (feat_ptr &&
 			    bit_super_set(config_ptr->node_bitmap,

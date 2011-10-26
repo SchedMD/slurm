@@ -127,32 +127,57 @@ An arbitrary comment.
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
-Specify a list of constraints.
-The constraints are features that have been assigned to the nodes by
-the slurm administrator.
-The \fIlist\fR of constraints may include multiple features separated
-by ampersand (AND) and/or vertical bar (OR) operators.
-For example: \fB\-\-constraint="opteron&video"\fR or
-\fB\-\-constraint="fast|faster"\fR.
-In the first example, only nodes having both the feature "opteron" AND
-the feature "video" will be used.
-There is no mechanism to specify that you want one node with feature
-"opteron" and another node with feature "video" in case no
-node has both features.
+Nodes can have \fBfeatures\fR assigned to them by the SLURM administrator.
+Users can specify which of these \fBfeatures\fR are required by their job
+using the constraint option.
+Only nodes having features matching the job constraints will be used to
+satisfy the request.
+Multiple constraints may be specified with AND, OR, exclusive OR, 
+resource counts, etc.
+Supported \fbconstraint\fR options include:
+.PD 1
+.RS
+.TP
+\fBSingle Name\fR
+Only nodes which have the specified feature will be used.
+For example, \fB\-\-constraint="intel"\fR
+.TP
+\fBNode Count\fB
+A request can specify the number of nodes needed with some feature
+by appending an asterisk and count after the feature name.
+For example "\fB\-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
+indicates that the job requires 16 nodes at that at least four of those
+nodes must have the feature "graphics."
+.TP
+\fBAND\fR
+If only nodes with all of specified features will be used.
+The ampersand is used for an AND operator.
+For example, \fB\-\-constraint="intel&gpu"\fR
+.TP
+\fBOR\fR
+If only nodes with at least one of specified features will be used.
+The vertical bar is used for an OR operator.
+For example, \fB\-\-constraint="intel|amd"\fR
+.TP
+\fBExclusive OR\fR
 If only one of a set of possible options should be used for all allocated
 nodes, then use the OR operator and enclose the options within square brackets.
 For example: "\fB\-\-constraint=[rack1|rack2|rack3|rack4]"\fR might
 be used to specify that all nodes must be allocated on a single rack of
 the cluster, but any of those four racks can be used.
-A request can also specify the number of nodes needed with some feature
-by appending an asterisk and count after the feature name.
-For example "\fBsrun \-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
-indicates that the job requires 16 nodes at that at least four of those
-nodes must have the feature "graphics."
-Constraints with node counts may only be combined with AND operators.
-If no nodes have the requested features, then the job will be rejected
-by the slurm job manager. This option is used for job allocations, but ignored
-for job step allocations.
+.TP
+\fBMultiple Counts\fR
+Specific counts of multiple resources may be specified by using the AND
+operator and enclosing the options within square brackets.
+For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
+be used to specify that two nodes must be allocated from nodes with the feature
+of "rack1" and four nodes must be allocated from nodes with the feature 
+"rack2".
+.RE
+
+\fBWARNING\fR: When srun is executed from within salloc or sbatch,
+the constraint value can only contain a single feature name. None of the
+other operators are currently supported for job steps.
 
 .TP
 \fB\-\-contiguous\fR

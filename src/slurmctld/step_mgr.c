@@ -293,8 +293,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   mem_per_cpu=%u resv_port_cnt=%u immediate=%u no_kill=%u",
 	       step_spec->mem_per_cpu, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
-	debug3("   overcommit=%d time_limit=%u gres=%s",
-	       step_spec->overcommit, step_spec->time_limit, step_spec->gres);
+	debug3("   overcommit=%d time_limit=%u gres=%s constraints=%s",
+	       step_spec->overcommit, step_spec->time_limit, step_spec->gres,
+	       step_spec->features);
 }
 
 
@@ -688,6 +689,17 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if (nodes_avail == NULL)
 		fatal("bit_copy malloc failure");
 	bit_and (nodes_avail, up_node_bitmap);
+	if (step_spec->features) {
+		/* We only select for a single feature name here.
+		 * Add support for AND, OR, etc. here if desired */
+		struct features_record *feat_ptr;
+		feat_ptr = list_find_first(feature_list, list_find_feature,
+					   (void *) step_spec->features);
+		if (feat_ptr && feat_ptr->node_bitmap)
+			bit_and(nodes_avail, feat_ptr->node_bitmap);
+		else
+			bit_nclear(nodes_avail, 0, (bit_size(nodes_avail)-1));
+	}
 
 	if (step_spec->mem_per_cpu &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||

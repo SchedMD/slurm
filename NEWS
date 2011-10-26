@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 =============================
  -- CRAY - Add support for GPU memory allocation using SLURM GRES (Generic
     RESource) support. Work by Steve Trofinoff, CSCS.
+ -- Add support for job allocations with multiple job constraint counts. For
+    example: salloc -C "[rack1*2&rack2*4]" ... will allocate the job 2 nodes
+    from rack1 and 4 nodes from rack2. Support for only a single constraint
+    name been added to job step support.
 
 * Changes in SLURM 2.4.0.pre1
 =============================
