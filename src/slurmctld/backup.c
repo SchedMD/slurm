@@ -372,9 +372,6 @@ static void *_background_rpc_mgr(void *no_data)
 
 		slurm_free_msg(msg);
 
-		/* close should only be called when the socket
-		 * implementation is being used the following call will
-		 * be a no-op in a message/mongo implementation */
 		slurm_close_accepted_conn(newsockfd);	/* close new socket */
 	}
 
