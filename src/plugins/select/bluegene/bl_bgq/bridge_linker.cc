@@ -914,7 +914,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 	/* Get the midplane info */
 	filter.setExtendedInfo(true);
 
-	vec = getBlocks(filter, BlockSort::AnyOrder);
+	vec = bridge_get_blocks(filter);
 	if (vec.empty()) {
 		debug("No blocks in the current system");
 		return SLURM_SUCCESS;

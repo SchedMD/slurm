@@ -540,7 +540,7 @@ static void _do_block_poll(void)
 
 		filter.setName(string(bg_record->bg_block_id));
 
-		vec = getBlocks(filter, BlockSort::AnyOrder);
+		vec = bridge_get_blocks(filter);
 		if (vec.empty()) {
 			debug("block %s not found, removing "
 			      "from slurm", bg_record->bg_block_id);
@@ -999,7 +999,7 @@ extern int bridge_status_update_block_list_state(List block_list)
 
 		filter.setName(string(bg_record->bg_block_id));
 
-		vec = getBlocks(filter, BlockSort::AnyOrder);
+		vec = bridge_get_blocks(filter);
 		if (vec.empty()) {
 			debug("bridge_status_update_block_list_state: "
 			      "block %s not found, removing from slurm",

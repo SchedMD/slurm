@@ -101,6 +101,9 @@ extern uint16_t bridge_translate_status(bgsched::Block::Status state_in);
 extern uint16_t bridge_translate_switch_usage(bgsched::Switch::InUse usage_in);
 extern const char *bridge_hardware_state_string(const int state);
 
+/* helper functions */
+extern Block::Ptrs bridge_get_blocks(BlockFilter filter);
+
 #endif
 
 #endif

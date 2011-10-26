@@ -480,4 +480,29 @@ extern const char *bridge_hardware_state_string(const int state)
 	return "Unknown";
 }
 
+/* helper functions */
+
+extern Block::Ptrs bridge_get_blocks(BlockFilter filter)
+{
+	Block::Ptrs vec;
+
+	try {
+		vec = getBlocks(filter, BlockSort::AnyOrder);
+	} catch (const bgsched::DatabaseException& err) {
+		bridge_handle_database_errors("getBlocks",
+					      err.getError().toValue());
+	} catch (const bgsched::InternalException& err) {
+		bridge_handle_internal_errors("getBlocks",
+					      err.getError().toValue());
+	} catch (const bgsched::RuntimeException& err) {
+		bridge_handle_runtime_errors("getBlocks",
+					     err.getError().toValue(),
+					     NULL);
+	} catch (...) {
+              error("Unknown error from getBlocks().");
+	}
+
+	return vec;
+}
+
 #endif
