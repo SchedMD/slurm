@@ -18,7 +18,8 @@ select_cray_la_SOURCES = 	\
 	other_select.c 		\
 	other_select.h		\
 	parser_common.h		\
-	cray_config.c
+	cray_config.c		\
+	cray_config.h
 select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_CRAY

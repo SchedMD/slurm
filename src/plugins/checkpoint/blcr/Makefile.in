@@ -347,6 +347,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @WITH_BLCR_TRUE@checkpoint_blcr_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @WITH_BLCR_TRUE@dist_pkglibexec_SCRIPTS = cr_checkpoint.sh cr_restart.sh
 @WITH_BLCR_FALSE@EXTRA_checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
+@WITH_BLCR_FALSE@EXTRA_DIST = cr_checkpoint.sh cr_restart.sh
 all: all-am
 
 .SUFFIXES:

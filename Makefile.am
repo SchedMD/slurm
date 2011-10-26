@@ -7,6 +7,7 @@ EXTRA_DIST =			\
 	etc/bluegene.conf.example \
 	etc/federation.conf.example \
 	etc/slurm.conf.example	\
+	etc/slurmdbd.conf.example \
 	etc/slurm.epilog.clean	\
 	etc/init.d.slurm	\
 	etc/init.d.slurmdbd	\

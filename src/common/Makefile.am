@@ -97,6 +97,7 @@ libcommon_la_SOURCES = 			\
 	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\
+	slurm_selecttype_info.h		\
 	slurm_resource_info.c 		\
 	slurm_resource_info.h		\
 	hostlist.c hostlist.h		\

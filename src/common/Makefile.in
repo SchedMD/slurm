@@ -125,14 +125,15 @@ am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
 	slurm_topology.c slurm_topology.h switch.c switch.h arg_desc.c \
 	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
 	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
-	slurm_resource_info.c slurm_resource_info.h hostlist.c \
-	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h job_resources.c job_resources.h \
-	parse_time.c parse_time.h job_options.c job_options.h \
-	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
-	stepd_api.h write_labelled_message.c write_labelled_message.h \
-	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
-	node_conf.h node_conf.c gres.h gres.c
+	slurm_selecttype_info.h slurm_resource_info.c \
+	slurm_resource_info.h hostlist.c hostlist.h \
+	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
+	checkpoint.h job_resources.c job_resources.h parse_time.c \
+	parse_time.h job_options.c job_options.h global_defaults.c \
+	timers.c timers.h slurm_xlator.h stepd_api.c stepd_api.h \
+	write_labelled_message.c write_labelled_message.h proc_args.c \
+	proc_args.h slurm_strcasestr.c slurm_strcasestr.h node_conf.h \
+	node_conf.c gres.h gres.c
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xcgroup_read_config.lo xcgroup.lo \
 	xcpuinfo.lo assoc_mgr.lo xmalloc.lo xassert.lo xstring.lo \
@@ -479,6 +480,7 @@ libcommon_la_SOURCES = \
 	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	slurm_selecttype_info.c 	\
+	slurm_selecttype_info.h		\
 	slurm_resource_info.c 		\
 	slurm_resource_info.h		\
 	hostlist.c hostlist.h		\

@@ -43,11 +43,28 @@ target_triplet = @target@
 @BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_3 = libsched_if.la
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_4 = bl_bgq ba_bgq
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_5 = runjob_plugin.la
-@BLUEGENE_LOADED_TRUE@am__append_6 = bg_core.c bg_defined_block.c \
-@BLUEGENE_LOADED_TRUE@			bg_dynamic_block.c bg_job_place.c \
-@BLUEGENE_LOADED_TRUE@			bg_job_run.c bg_list_functions.c \
-@BLUEGENE_LOADED_TRUE@			bg_read_config.c bg_record_functions.c \
-@BLUEGENE_LOADED_TRUE@			bg_status.c
+@BLUEGENE_LOADED_TRUE@am__append_6 = \
+@BLUEGENE_LOADED_TRUE@			bg_core.c		\
+@BLUEGENE_LOADED_TRUE@			bg_core.h		\
+@BLUEGENE_LOADED_TRUE@			bg_defined_block.c	\
+@BLUEGENE_LOADED_TRUE@			bg_defined_block.h	\
+@BLUEGENE_LOADED_TRUE@			bg_dynamic_block.c	\
+@BLUEGENE_LOADED_TRUE@			bg_dynamic_block.h	\
+@BLUEGENE_LOADED_TRUE@			bg_enums.h		\
+@BLUEGENE_LOADED_TRUE@			bg_job_place.c		\
+@BLUEGENE_LOADED_TRUE@			bg_job_place.h		\
+@BLUEGENE_LOADED_TRUE@			bg_job_run.c		\
+@BLUEGENE_LOADED_TRUE@			bg_job_run.h		\
+@BLUEGENE_LOADED_TRUE@			bg_list_functions.c	\
+@BLUEGENE_LOADED_TRUE@			bg_list_functions.h	\
+@BLUEGENE_LOADED_TRUE@			bg_read_config.c	\
+@BLUEGENE_LOADED_TRUE@			bg_read_config.h	\
+@BLUEGENE_LOADED_TRUE@			bg_record_functions.c	\
+@BLUEGENE_LOADED_TRUE@			bg_record_functions.h	\
+@BLUEGENE_LOADED_TRUE@			bg_status.c		\
+@BLUEGENE_LOADED_TRUE@			bg_status.h		\
+@BLUEGENE_LOADED_TRUE@			bg_structs.h		\
+@BLUEGENE_LOADED_TRUE@			bridge_linker.h
 
 @BLUEGENE_LOADED_TRUE@am__append_7 = $(block_allocator_lib) $(BG_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@sbin_PROGRAMS = slurm_prolog$(EXEEXT) \
@@ -162,9 +179,12 @@ select_bluegene_la_DEPENDENCIES = libba_common.la \
 	$(am__DEPENDENCIES_2)
 am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_job_info.c \
 	bg_job_info.h bg_node_info.c bg_node_info.h bg_core.c \
-	bg_defined_block.c bg_dynamic_block.c bg_job_place.c \
-	bg_job_run.c bg_list_functions.c bg_read_config.c \
-	bg_record_functions.c bg_status.c
+	bg_core.h bg_defined_block.c bg_defined_block.h \
+	bg_dynamic_block.c bg_dynamic_block.h bg_enums.h \
+	bg_job_place.c bg_job_place.h bg_job_run.c bg_job_run.h \
+	bg_list_functions.c bg_list_functions.h bg_read_config.c \
+	bg_read_config.h bg_record_functions.c bg_record_functions.h \
+	bg_status.c bg_status.h bg_structs.h bridge_linker.h
 @BLUEGENE_LOADED_TRUE@am__objects_1 = bg_core.lo bg_defined_block.lo \
 @BLUEGENE_LOADED_TRUE@	bg_dynamic_block.lo bg_job_place.lo \
 @BLUEGENE_LOADED_TRUE@	bg_job_run.lo bg_list_functions.lo \
@@ -482,7 +502,7 @@ convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \
 	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_6)
 libba_common_la_SOURCES = ba_common.c ba_common.h
-libconfigure_api_la_SOURCES = configure_api.c
+libconfigure_api_la_SOURCES = configure_api.c configure_api.h
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 select_bluegene_la_LIBADD = libba_common.la $(am__append_7)
 @BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1) $(am__append_4)

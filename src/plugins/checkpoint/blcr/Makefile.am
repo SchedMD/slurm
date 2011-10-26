@@ -21,4 +21,5 @@ $(checkpoint_blcr_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 else
 EXTRA_checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
+EXTRA_DIST = cr_checkpoint.sh cr_restart.sh
 endif

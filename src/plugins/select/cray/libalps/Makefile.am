@@ -22,6 +22,7 @@ libalps_la_SOURCES =		\
 	do_confirm.c		\
 	do_switch.c		\
 	memory_handling.c	\
+	memory_handling.h	\
 	popen2.c		\
 	atoul.c
 libalps_la_CFLAGS  = $(MYSQL_CFLAGS)
