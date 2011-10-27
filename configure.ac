@@ -25,6 +25,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
 
 dnl This needs to be close to the front to set CFLAGS=-m64
+X_AC_RPATH
 X_AC_BGL
 
 dnl we need to know if this is a bgl in the Makefile.am to do

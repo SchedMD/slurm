@@ -225,4 +225,25 @@ AC_SUBST(SLURM_VERSION_STRING)
 
 ]) dnl AC_SLURM_VERSION
  
+dnl
+dnl Test if we want to include rpath in the executables (default=yes)
+dnl Doing so is generally discouraged due to problems this causes in upgrading
+dnl software and general incompatability issues
+dnl
+AC_DEFUN([X_AC_RPATH], [
+  ac_with_rpath=yes
 
+  AC_MSG_CHECKING([whether to include rpath in build])
+  AC_ARG_WITH(
+    [rpath],
+    AS_HELP_STRING(--without-rpath, Do not include rpath in build),
+      [ case "$withval" in
+        yes) ac_with_rpath=yes ;;
+        no)  ac_with_rpath=no ;;
+        *)   AC_MSG_RESULT([doh!])
+             AC_MSG_ERROR([bad value "$withval" for --without-rpath]) ;;
+        esac
+      ]
+  )
+  AC_MSG_RESULT([$ac_with_rpath])
+])

@@ -54,7 +54,11 @@ AC_DEFUN([X_AC_MUNGE], [
   else
     MUNGE_LIBS="-lmunge"
     MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
-    MUNGE_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit -L$x_ac_cv_munge_dir/$bit"
+    if test "$ac_with_rpath" = "yes"; then
+      MUNGE_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit -L$x_ac_cv_munge_dir/$bit"
+    else
+      MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit"
+    fi
   fi
 
   AC_SUBST(MUNGE_LIBS)

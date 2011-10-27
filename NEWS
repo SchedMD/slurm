@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.2
 ========================
+ -- Add configure option of "--without-rpath" which builds SLURM tools without
+    the rpath option, which will work if Munge and BlueGene libraries are in
+    the default library search path and make system updates easier.
 
 * Changes in SLURM 2.3.1
 ========================
