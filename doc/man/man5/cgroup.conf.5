@@ -28,7 +28,7 @@ of Slurm cgroup plugins.
 .TP
 \fBCgroupMountpoint\fR=\fIPATH\fR
 Specify the \fIPATH\fR under which cgroups should be mounted. This
-should be a writeable directory which will contain cgroups mounted
+should be a writable directory which will contain cgroups mounted
 one per subsystem. The default \fIPATH\fR is /cgroup.
 
 .TP
@@ -220,7 +220,7 @@ links to a common release agent script, as shown in the example below:
 CgroupReleaseAgentDir="/etc/slurm/cgroup"
 .br
 
-[sulu] (slurm) etc> ls -al /etc/slurm/cgroup
+[sulu] (slurm) etc> ls \-al /etc/slurm/cgroup
 .br
 total 12
 .br
@@ -228,7 +228,7 @@ drwxr-xr-x 2 root root 4096 2010-04-23 14:55 .
 .br
 drwxr-xr-x 4 root root 4096 2010-07-22 14:48 ..
 .br
--rwxrwxrwx 1 root root  234 2010-04-23 14:52 release_common
+\-rwxrwxrwx 1 root root  234 2010-04-23 14:52 release_common
 .br
 lrwxrwxrwx 1 root root   32 2010-04-23 11:04 release_cpuset -> /etc/slurm/cgroup/release_common
 .br
@@ -249,11 +249,11 @@ rmcg=${base_path}/${subsystem}$@
 .br
 uidcg=${rmcg%/job*}
 .br
-if [[ -d ${base_path}/${subsystem} ]]
+if [[ \-d ${base_path}/${subsystem} ]]
 .br
 then
 .br
-     flock -x ${uidcg} -c "rmdir ${rmcg}"
+     flock \-x ${uidcg} \-c "rmdir ${rmcg}"
 .br
 fi
 .br

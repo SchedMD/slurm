@@ -372,7 +372,7 @@ static void _opt_args(int argc, char **argv)
 				error("'%s' can't be reached now, "
 				      "or it is an invalid entry for "
 				      "--cluster.  Use 'sacctmgr --list "
-				      "cluster' to see avaliable clusters.",
+				      "cluster' to see available clusters.",
 				      optarg);
 				exit(1);
 			}

@@ -242,13 +242,21 @@ AC_DEFUN([X_AC_BGQ],
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
-			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/hlcs/lib -L$bg_dir/hlcs/lib -l$libname"
+			if test "$ac_with_rpath" = "yes"; then
+				bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/hlcs/lib -L$bg_dir/hlcs/lib -l$libname"
+			else
+				bg_ldflags="$bg_ldflags -L$bg_dir/hlcs/lib -l$libname"
+			fi
 		fi
 
   		soloc=$bg_dir/extlib/lib/lib$loglibname.so
     		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
-			bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/extlib/lib -L$bg_dir/extlib/lib -l$loglibname"
+			if test "$ac_with_rpath" = "yes"; then
+				bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/extlib/lib -L$bg_dir/extlib/lib -l$loglibname"
+			else
+				bg_ldflags="$bg_ldflags -L$bg_dir/extlib/lib -l$loglibname"
+			fi
 		fi
 
       		# Search for headers in the directory

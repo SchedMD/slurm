@@ -483,7 +483,7 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 }
 
 /*
- * Comparator used for sorting blocks from earliest avaliable to lastest
+ * Comparator used for sorting blocks from earliest available to lastest
  *
  * returns: -1: rec_a < rec_b   0: rec_a == rec_b   1: rec_a > rec_b
  *
