@@ -641,7 +641,7 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("'%s' can't be reached now, "
 			      "or it is an invalid entry for "
 			      "--cluster.  Use 'sacctmgr --list "
-			      "cluster' to see avaliable clusters.",
+			      "cluster' to see available clusters.",
 			      optarg);
 			exit(1);
 		}
@@ -1242,7 +1242,7 @@ static void _set_options(int argc, char **argv)
 				error("'%s' can't be reached now, "
 				      "or it is an invalid entry for "
 				      "--cluster.  Use 'sacctmgr --list "
-				      "cluster' to see avaliable clusters.",
+				      "cluster' to see available clusters.",
 				      optarg);
 				exit(1);
 			}

@@ -1122,7 +1122,7 @@ static int _find_best_block_match(List block_list,
 			list_iterator_destroy(itr);
 
 			/* Block list is already in the correct order,
-			   earliest avaliable first,
+			   earliest available first,
 			   so the job list will also be. No need to
 			   sort. */
 			while (1) {
