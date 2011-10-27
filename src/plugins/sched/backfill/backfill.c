@@ -376,7 +376,6 @@ extern void backfill_reconfig(void)
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
 {
-	DEF_TIMERS;
 	time_t now;
 	double wait_time;
 	static time_t last_backfill_time = 0;
@@ -401,14 +400,10 @@ extern void *backfill_agent(void *args)
 		    !avail_front_end() || !_more_work(last_backfill_time))
 			continue;
 
-		START_TIMER;
 		lock_slurmctld(all_locks);
 		while (_attempt_backfill()) ;
 		last_backfill_time = time(NULL);
 		unlock_slurmctld(all_locks);
-		END_TIMER;
-		if (debug_flags & DEBUG_FLAG_BACKFILL)
-			info("backfill: completed, %s", TIME_STR);
 	}
 	return NULL;
 }
