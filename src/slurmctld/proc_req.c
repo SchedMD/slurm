@@ -157,7 +157,6 @@ inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
-inline static void  _slurm_rpc_fail_cnode(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
 
 inline static void  _update_cred_key(void);
@@ -326,10 +325,6 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_UPDATE_BLOCK:
 		_slurm_rpc_update_block(msg);
 		slurm_free_block_info(msg->data);
-		break;
-	case REQUEST_FAIL_CNODE:
-		_slurm_rpc_fail_cnode(msg);
-		slurm_free_block_fail_cnode(msg->data);
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
@@ -3193,41 +3188,6 @@ static void _slurm_rpc_update_block(slurm_msg_t * msg)
 		       name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
-}
-
-/* _slurm_rpc_fail_cnode - process RPC to fail cnodes from the IBM
- *	runjob mux */
-static void _slurm_rpc_fail_cnode(slurm_msg_t * msg)
-{
-	int error_code = SLURM_SUCCESS;
-	DEF_TIMERS;
-	block_fail_cnode_t *block_fail_cnode = (block_fail_cnode_t *) msg->data;
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	START_TIMER;
-
-	debug2("Processing RPC: REQUEST_FAIL_CNODE from uid=%d", uid);
-	if (!validate_slurm_user(uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, REQUEST_FAIL_CNODE RPC from uid=%d",
-		      uid);
-	} else {
-		/* do RPC call */
-		error_code = select_g_fail_cnode(block_fail_cnode);
-	}
-
-	END_TIMER2("_slurm_rpc_fail_cnode");
-
-	/* return result */
-	if (error_code) {
-		info("_slurm_rpc_fail_cnode: %s",
-		     slurm_strerror(error_code));
-	} else {
-		debug2("_slurm_rpc_fail_cnode success for %s(%s) job %u.%u %s",
-		       block_fail_cnode->bg_block_id, block_fail_cnode->cnodes,
-		       block_fail_cnode->job_id, block_fail_cnode->step_id,
-		       TIME_STR);
-	}
-	slurm_send_rc_msg(msg, error_code);
 }
 
 /* determine of nodes are ready for the job */

@@ -2493,44 +2493,6 @@ end_it:
 #endif
 }
 
-extern int select_p_fail_cnode(block_fail_cnode_t *block_fail_cnode)
-{
-#ifndef HAVE_BG_L_P
-	char *cnodes;
-	bg_record_t *bg_record;
-
-	xassert(block_fail_cnode);
-
-	if (!block_fail_cnode->bg_block_id) {
-		error("Trying to fail cnodes without a block id");
-		return SLURM_ERROR;
-	}
-
-	slurm_mutex_lock(&block_state_mutex);
-	if (!(bg_record = find_bg_record_in_list(
-		      bg_lists->main, block_fail_cnode->bg_block_id))) {
-		error("Couldn't find %s in the main list, can't fail cnodes",
-		      block_fail_cnode->bg_block_id);
-	}
-
-	if (!block_fail_cnode->cnodes)
-		/* means it was the entire block */
-		cnodes = bg_record->ionode_str;
-	else
-		cnodes = block_fail_cnode->cnodes;
-	/* FIXME: This needs to be flushed out on a Q */
-	error("on block %s cnodes %s aren't available anymore from job %u.%u",
-	      block_fail_cnode->bg_block_id, cnodes,
-	      block_fail_cnode->job_id, block_fail_cnode->step_id);
-
-	slurm_mutex_unlock(&block_state_mutex);
-
-	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif
-}
-
 extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)

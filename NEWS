@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     example: salloc -C "[rack1*2&rack2*4]" ... will allocate the job 2 nodes
     from rack1 and 4 nodes from rack2. Support for only a single constraint
     name been added to job step support.
+ -- BGQ - Remove old method for marking cnodes down.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

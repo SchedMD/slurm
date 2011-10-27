@@ -2264,15 +2264,6 @@ extern void slurm_free_block_info_request_msg(
 	xfree(msg);
 }
 
-extern void slurm_free_block_fail_cnode(block_fail_cnode_t *block_fail_cnode)
-{
-	if (block_fail_cnode) {
-		xfree(block_fail_cnode->bg_block_id);
-		xfree(block_fail_cnode->cnodes);
-		xfree(block_fail_cnode);
-	}
-}
-
 extern void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 {
 	int i;

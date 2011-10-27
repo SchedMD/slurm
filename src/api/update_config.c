@@ -198,18 +198,6 @@ slurm_update_block (update_block_msg_t * block_msg)
 	return _slurm_update ((void *) block_msg, REQUEST_UPDATE_BLOCK);
 }
 
-/*
- * slurm_fail_cnode - issue RPC to fail cnodes in a bluegene block,
- *      only usable by user root
- * IN block_fail_cnode - description of what cnodes failed
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
- */
-int
-slurm_fail_cnode (block_fail_cnode_t *block_fail_cnode)
-{
-	return _slurm_update ((void *) block_fail_cnode, REQUEST_FAIL_CNODE);
-}
-
 /* Update the time limit of a job step,
  * step_id == NO_VAL updates all job steps of the specified job_id
  * RET 0 or -1 on error */

@@ -225,7 +225,6 @@ typedef enum {
 	REQUEST_UPDATE_RESERVATION,
 	REQUEST_UPDATE_BLOCK,
 	REQUEST_UPDATE_FRONT_END,
-	REQUEST_FAIL_CNODE,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
 	RESPONSE_RESOURCE_ALLOCATION,
@@ -1096,7 +1095,6 @@ extern void slurm_free_block_info(block_info_t *block_info);
 extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
 extern void slurm_free_block_info_request_msg(
 		block_info_request_msg_t *msg);
-extern void slurm_free_block_fail_cnode(block_fail_cnode_t *block_fail_cnode);
 
 extern void slurm_free_job_notify_msg(job_notify_msg_t * msg);
 

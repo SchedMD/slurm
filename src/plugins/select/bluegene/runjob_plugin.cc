@@ -113,20 +113,6 @@ static void _destroy_runjob_job(void *object)
 	}
 }
 
-static void _send_failed_cnodes(block_fail_cnode_t *block_fail_cnode)
-{
-	int rc;
-
-	if (!block_fail_cnode)
-		return;
-
-	if ((rc = slurm_fail_cnode(block_fail_cnode))) {
-		std::cerr << "Trying to fail cnodes, but slurmctld is "
-			"not responding, not sending." << std::endl;
-	}
-}
-
-
 Plugin::Plugin() :
 	bgsched::runjob::Plugin(),
 	_mutex()
@@ -356,7 +342,6 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 {
 	ListIterator itr = NULL;
 	runjob_job_t *runjob_job = NULL;
-	block_fail_cnode_t block_fail_cnode;
 
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	// std::cout << "runjob " << data.pid() << " shadowing job "
@@ -387,18 +372,12 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 	} else if (data.kill_timeout()) {
 		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
 			  << " had a kill_timeout()" << std::endl;
-		memset(&block_fail_cnode, 0, sizeof(block_fail_cnode_t));
-		block_fail_cnode.bg_block_id = runjob_job->bg_block_id;
-		block_fail_cnode.cnodes = runjob_job->total_cnodes;
-		block_fail_cnode.job_id = runjob_job->job_id;
-		block_fail_cnode.step_id = runjob_job->step_id;
-
-		_send_failed_cnodes(&block_fail_cnode);
 	} else if (!nodes.empty()) {
-		hostlist_t hl = hostlist_create_dims(NULL, 5);
 		char tmp_char[6];
 
-		std::cerr << nodes.size() << " failed nodes" << std::endl;
+		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
+			  << " had " << nodes.size() << " nodes fail"
+			  << std::endl;
 		BOOST_FOREACH(const bgsched::runjob::Node& i, nodes) {
 			sprintf(tmp_char, "%u%u%u%u%u",
 				i.coordinates().a(),
@@ -406,39 +385,16 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 				i.coordinates().c(),
 				i.coordinates().d(),
 				i.coordinates().e());
-			hostlist_push_host_dims(hl, tmp_char, 5);
 			std::cerr << i.location() << ": "
 				  << i.coordinates()
 				  << tmp_char << std::endl;
 		}
-
-		memset(&block_fail_cnode, 0, sizeof(block_fail_cnode_t));
-		block_fail_cnode.bg_block_id = runjob_job->bg_block_id;
-		block_fail_cnode.cnodes =
-			hostlist_ranged_string_xmalloc_dims(hl, 5, 0);
-		hostlist_destroy(hl);
-		hl = NULL;
-		block_fail_cnode.job_id = runjob_job->job_id;
-		block_fail_cnode.step_id = runjob_job->step_id;
-		block_fail_cnode.relative = 1;
-
-		std::cerr << "total was "
-			  << block_fail_cnode.cnodes << std::endl;
-
-		_send_failed_cnodes(&block_fail_cnode);
-		xfree(block_fail_cnode.cnodes);
-	} // else if (!data.message().empty()) {
-	// 	std::cerr << runjob_job->job_id << "." << runjob_job->step_id
-	// 		  << " had a message of '" << data.message()
-	// 		  << "'.  Failing the cnodes on the job. ("
-	// 		  << runjob_job->total_cnodes << ")" << std::endl;
-	// 	memset(&block_fail_cnode, 0, sizeof(block_fail_cnode_t));
-	// 	block_fail_cnode.bg_block_id = runjob_job->bg_block_id;
-	// 	block_fail_cnode.cnodes = runjob_job->total_cnodes;
-	// 	block_fail_cnode.job_id = runjob_job->job_id;
-	// 	block_fail_cnode.step_id = runjob_job->step_id;
-	// 	_send_failed_cnodes(&block_fail_cnode);
-	// }
+	} else if (!data.message().empty()) {
+		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
+			  << " had a message of '" << data.message()
+			  << "'. ("
+			  << runjob_job->total_cnodes << ")" << std::endl;
+	}
 
 	_destroy_runjob_job(runjob_job);
 }
