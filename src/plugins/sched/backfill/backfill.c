@@ -84,6 +84,10 @@
 #  define BACKFILL_INTERVAL	30
 #endif
 
+#ifndef BACKFILL_RESOLUTION
+#  define BACKFILL_RESOLUTION	60
+#endif
+
 /* Do not build job/resource/time record for more than this
  * far in the future, in seconds, currently one day */
 #ifndef BACKFILL_WINDOW
@@ -108,6 +112,7 @@ static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static bool config_flag = false;
 static uint32_t debug_flags = 0;
 static int backfill_interval = BACKFILL_INTERVAL;
+static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int max_backfill_job_cnt = 50;
 
@@ -364,6 +369,13 @@ static void _load_config(void)
 		fatal("Invalid backfill scheduler max_job_bf: %d",
 		      max_backfill_job_cnt);
 	}
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_res=")))
+		backfill_resolution = atoi(tmp_ptr + 7);
+	if (backfill_resolution < 1) {
+		fatal("Invalid backfill scheduler resolution: %d",
+		      backfill_resolution);
+	}
+
 	xfree(sched_params);
 }
 
@@ -615,10 +627,12 @@ static int _attempt_backfill(void)
 				     avail_bitmap))) ||
 		    (job_req_node_filter(job_ptr, avail_bitmap))) {
 			if (later_start) {
-				job_ptr->start_time = 0;	
+				job_ptr->start_time = 0;
 				goto TRY_LATER;
 			}
+			/* Job can not start until too far in the future */
 			job_ptr->time_limit = orig_time_limit;
+			job_ptr->start_time = sched_start + backfill_window;
 			continue;
 		}
 
@@ -646,7 +660,7 @@ static int _attempt_backfill(void)
 				break;
 			}
 			job_ptr->time_limit = save_time_limit;
-			/* Reset backfill scheduling timers */
+			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
 			job_test_count = 0;
 			START_TIMER;
@@ -706,7 +720,7 @@ static int _attempt_backfill(void)
 		if (later_start && (job_ptr->start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */
-			job_ptr->start_time = 0;	
+			job_ptr->start_time = 0;
 			goto TRY_LATER;
 		}
 
@@ -727,7 +741,7 @@ static int _attempt_backfill(void)
 			 * job to be backfill scheduled, which the sched
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
-			job_ptr->start_time = 0;	
+			job_ptr->start_time = 0;
 			goto TRY_LATER;
 		}
 
@@ -871,6 +885,11 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 {
 	bool placed = false;
 	int i, j;
+
+	/* If we decrease the resolution of our timing information, this can
+	 * decrease the number of records managed and increase performance */
+	start_time = (start_time / backfill_resolution) * backfill_resolution;
+	end_reserve = (end_reserve / backfill_resolution) * backfill_resolution;
 
 	for (j=0; ; ) {
 		if (node_space[j].end_time > start_time) {
