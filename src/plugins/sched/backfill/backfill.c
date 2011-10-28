@@ -376,7 +376,6 @@ extern void backfill_reconfig(void)
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
 {
-	DEF_TIMERS;
 	time_t now;
 	double wait_time;
 	static time_t last_backfill_time = 0;
@@ -401,21 +400,17 @@ extern void *backfill_agent(void *args)
 		    !avail_front_end() || !_more_work(last_backfill_time))
 			continue;
 
-		START_TIMER;
 		lock_slurmctld(all_locks);
 		while (_attempt_backfill()) ;
 		last_backfill_time = time(NULL);
 		unlock_slurmctld(all_locks);
-		END_TIMER;
-		if (debug_flags & DEBUG_FLAG_BACKFILL)
-			info("backfill: completed, %s", TIME_STR);
 	}
 	return NULL;
 }
 
 /* Return non-zero to break the backfill loop if change in job, node or
  * partition state or the backfill scheduler needs to be stopped. */
-static int _yield_locks(void)
+static int _yield_locks(int secs)
 {
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -426,7 +421,7 @@ static int _yield_locks(void)
 	part_update = last_part_update;
 
 	unlock_slurmctld(all_locks);
-	_my_sleep(backfill_interval);
+	_my_sleep(secs);
 	lock_slurmctld(all_locks);
 
 	if ((last_job_update  == job_update)  &&
@@ -440,6 +435,7 @@ static int _yield_locks(void)
 
 static int _attempt_backfill(void)
 {
+	DEF_TIMERS;
 	bool filter_root = false;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
@@ -451,18 +447,11 @@ static int _attempt_backfill(void)
 	uint32_t time_limit, comp_time_limit, orig_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
-	time_t now = time(NULL), sched_start, later_start, start_res;
+	time_t now, sched_start, later_start, start_res;
 	node_space_map_t *node_space;
 	static int sched_timeout = 0;
 	int this_sched_timeout = 0, rc = 0;
-
-	sched_start = now;
-	if (sched_timeout == 0) {
-		sched_timeout = slurm_get_msg_timeout() / 2;
-		sched_timeout = MAX(sched_timeout, 1);
-		sched_timeout = MIN(sched_timeout, 10);
-	}
-	this_sched_timeout = sched_timeout;
+	int job_test_count = 0;
 
 #ifdef HAVE_CRAY
 	/*
@@ -470,11 +459,30 @@ static int _attempt_backfill(void)
 	 * plan, to avoid race conditions caused by ALPS node state change.
 	 * Needs to be done with the node-state lock taken.
 	 */
+	START_TIMER;
 	if (select_g_reconfigure()) {
 		debug4("backfill: not scheduling due to ALPS");
 		return SLURM_SUCCESS;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_BACKFILL)
+		info("backfill: ALPS inventory completed, %s", TIME_STR);
+
+	/* The Basil inventory can take a long time to complete. Process
+	 * pending RPCs before starting the backfill scheduling logic */
+	_yield_locks(1);
 #endif
+
+	START_TIMER;
+	if (debug_flags & DEBUG_FLAG_BACKFILL)
+		info("backfill: beginning");
+	sched_start = now = time(NULL);
+	if (sched_timeout == 0) {
+		sched_timeout = slurm_get_msg_timeout() / 2;
+		sched_timeout = MAX(sched_timeout, 1);
+		sched_timeout = MIN(sched_timeout, 10);
+	}
+	this_sched_timeout = sched_timeout;
 
 	if (slurm_get_root_filter())
 		filter_root = true;
@@ -498,6 +506,7 @@ static int _attempt_backfill(void)
 
 	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
+		job_test_count++;
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
 		xfree(job_queue_rec);
@@ -621,15 +630,26 @@ static int _attempt_backfill(void)
 		if ((time(NULL) - sched_start) >= this_sched_timeout) {
 			uint32_t save_time_limit = job_ptr->time_limit;
 			job_ptr->time_limit = orig_time_limit;
-			debug("backfill: loop taking too long, yielding locks");
-			if (_yield_locks()) {
-				debug("backfill: system state changed, "
-				      "breaking out");
+			if (debug_flags & DEBUG_FLAG_BACKFILL) {
+				END_TIMER;
+				info("backfill: yielding locks after testing "
+				     "%d jobs, %s",
+				     job_test_count, TIME_STR);
+			}
+			if (_yield_locks(backfill_interval)) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
+					info("backfill: system state changed, "
+					     "breaking out after testing %d "
+					     "jobs", job_test_count);
+				}
 				rc = 1;
 				break;
 			}
 			job_ptr->time_limit = save_time_limit;
-			this_sched_timeout += sched_timeout;
+			/* Reset backfill scheduling timers */
+			sched_start = time(NULL);
+			job_test_count = 0;
+			START_TIMER;
 		}
 		/* this is the time consuming operation */
 		debug2("backfill: entering _try_sched for job %u.",
@@ -732,6 +752,11 @@ static int _attempt_backfill(void)
 	}
 	xfree(node_space);
 	list_destroy(job_queue);
+	if (debug_flags & DEBUG_FLAG_BACKFILL) {
+		END_TIMER;
+		info("backfill: completed testing %d jobs, %s",
+		     job_test_count, TIME_STR);
+	}
 	return rc;
 }
 
