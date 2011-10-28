@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue where if a job ended with ESLURMD_UID_NOT_FOUND and
     ESLURMD_GID_NOT_FOUND where slurm would be a little over zealous
     in treating missing a GID or UID as a fatal error.
+ -- Backfill scheduling - Add SchedulerParameters configuration parameter of
+    "bf_res" to control the resolution in the backfill scheduler's data about
+    when jobs begin and end. Default value is 60 seconds (used to be 1 second).
 
 * Changes in SLURM 2.3.1
 ========================
