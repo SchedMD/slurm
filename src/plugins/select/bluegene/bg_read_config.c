@@ -66,7 +66,9 @@ static s_p_options_t bg_conf_file_options[] = {
 	{"BridgeAPILogFile", S_P_STRING},
 	{"BridgeAPIVerbose", S_P_UINT16},
 	{"BasePartitionNodeCnt", S_P_UINT16},
+	{"MidplaneNodeCnt", S_P_UINT16},
 	{"NodeCardNodeCnt", S_P_UINT16},
+	{"NodeBoardNodeCnt", S_P_UINT16},
 	{"Numpsets", S_P_UINT16},
 	{"IONodesPerMP", S_P_UINT16},
 	{"MaxBlockInError", S_P_UINT16},
@@ -574,19 +576,20 @@ extern int read_bg_conf(void)
 		list_push(bg_conf->mloader_list, image);
 	}
 
-	if (!s_p_get_uint16(
-		    &bg_conf->mp_cnode_cnt, "BasePartitionNodeCnt", tbl)) {
-		error("BasePartitionNodeCnt not configured in bluegene.conf "
-		      "defaulting to 512 as BasePartitionNodeCnt");
-		bg_conf->mp_cnode_cnt = 512;
-		bg_conf->quarter_cnode_cnt = 128;
-	} else {
-		if (bg_conf->mp_cnode_cnt <= 0)
-			fatal("You should have more than 0 nodes "
-			      "per base partition");
-
-		bg_conf->quarter_cnode_cnt = bg_conf->mp_cnode_cnt/4;
+	if (!s_p_get_uint16(&bg_conf->mp_cnode_cnt, "MidplaneNodeCnt", tbl)) {
+		if (!s_p_get_uint16(&bg_conf->mp_cnode_cnt,
+				    "BasePartitionNodeCnt", tbl)) {
+			error("MidplaneNodeCnt not configured in bluegene.conf "
+			      "defaulting to 512 as MidplaneNodeCnt");
+			bg_conf->mp_cnode_cnt = 512;
+		}
 	}
+
+	if (bg_conf->mp_cnode_cnt <= 0)
+		fatal("You should have more than 0 nodes "
+		      "per base partition");
+	bg_conf->quarter_cnode_cnt = bg_conf->mp_cnode_cnt/4;
+
 	/* bg_conf->cpus_per_mp should had already been set from the
 	 * node_init */
 	if (bg_conf->cpus_per_mp < bg_conf->mp_cnode_cnt) {
@@ -611,14 +614,17 @@ extern int read_bg_conf(void)
 		num_unused_cpus *= dims[i];
 	num_unused_cpus *= bg_conf->cpus_per_mp;
 
-	if (!s_p_get_uint16(
-		    &bg_conf->nodecard_cnode_cnt, "NodeCardNodeCnt", tbl)) {
-		error("NodeCardNodeCnt not configured in bluegene.conf "
-		      "defaulting to 32 as NodeCardNodeCnt");
-		bg_conf->nodecard_cnode_cnt = 32;
+	if (!s_p_get_uint16(&bg_conf->nodecard_cnode_cnt,
+			    "NodeBoardNodeCnt", tbl)) {
+		if (!s_p_get_uint16(&bg_conf->nodecard_cnode_cnt,
+				    "NodeCardNodeCnt", tbl)) {
+			error("NodeCardNodeCnt not configured in bluegene.conf "
+			      "defaulting to 32 as NodeCardNodeCnt");
+			bg_conf->nodecard_cnode_cnt = 32;
+		}
 	}
 
-	if (bg_conf->nodecard_cnode_cnt<=0)
+	if (bg_conf->nodecard_cnode_cnt <= 0)
 		fatal("You should have more than 0 nodes per nodecard");
 
 	bg_conf->mp_nodecard_cnt =
