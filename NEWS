@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     from rack1 and 4 nodes from rack2. Support for only a single constraint
     name been added to job step support.
  -- BGQ - Remove old method for marking cnodes down.
+ -- BGQ - Remove BGP images from view in sview.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

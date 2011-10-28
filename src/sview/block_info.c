@@ -123,7 +123,7 @@ static display_data_t display_data_block[] = {
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ramdisk",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-#else
+#elif defined HAVE_BGP
 	{G_TYPE_STRING, SORTID_USE, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGEBLRTS, NULL,
@@ -131,6 +131,15 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_IMAGELINUX, "Image Cnload",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ioload",
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+#elif defined HAVE_BGQ
+	{G_TYPE_STRING, SORTID_USE, NULL, FALSE, EDIT_NONE, refresh_block,
+	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_IMAGEBLRTS, NULL,
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_IMAGELINUX, NULL,
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_IMAGERAMDISK, NULL,
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 #endif
 	{G_TYPE_STRING, SORTID_IMAGEMLOADER, "Image Mloader",
@@ -243,7 +252,25 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   tmp_char);
 	xfree(tmp_char);
 
-	if (cluster_flags & CLUSTER_FLAG_BGL) {
+	if (cluster_flags & CLUSTER_FLAG_BGQ) {
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGEMLOADER),
+					   block_ptr->imagemloader);
+	} else if (cluster_flags & CLUSTER_FLAG_BGP) {
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGELINUX),
+					   block_ptr->imagelinux);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGERAMDISK),
+					   block_ptr->imageramdisk);
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_block,
+							 SORTID_IMAGEMLOADER),
+					   block_ptr->imagemloader);
+	} else if (cluster_flags & CLUSTER_FLAG_BGL) {
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_block,
 							 SORTID_IMAGEBLRTS),
@@ -260,19 +287,6 @@ static void _layout_block_record(GtkTreeView *treeview,
 					   find_col_name(display_data_block,
 							 SORTID_IMAGERAMDISK),
 					   block_ptr->imageramdisk);
-	} else {
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGELINUX),
-					   block_ptr->imagelinux);
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGERAMDISK),
-					   block_ptr->imageramdisk);
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_block,
-							 SORTID_IMAGEMLOADER),
-					   block_ptr->imagemloader);
 	}
 
 	if (block_ptr->job_running > NO_JOB_RUNNING)
@@ -337,8 +351,6 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 				sview_colors[block_ptr->color_inx],
 			   SORTID_COLOR_INX,    block_ptr->color_inx,
 			   SORTID_CONN,		tmp_char,
-			   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
-			   SORTID_IMAGELINUX,   block_ptr->imagelinux,
 			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
 			   SORTID_JOB,          job_running,
 			   SORTID_NODE_INX,     block_ptr->mp_inx,
@@ -353,8 +365,15 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   -1);
 	xfree(tmp_char);
 
-	if (cluster_flags & CLUSTER_FLAG_BGL) {
+	if (cluster_flags & CLUSTER_FLAG_BGP) {
 		gtk_tree_store_set(treestore, iter,
+				   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
+				   SORTID_IMAGELINUX,   block_ptr->imagelinux,
+				   -1);
+	} else if (cluster_flags & CLUSTER_FLAG_BGL) {
+		gtk_tree_store_set(treestore, iter,
+				   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
+				   SORTID_IMAGELINUX,   block_ptr->imagelinux,
 				   SORTID_IMAGEBLRTS,   block_ptr->imageblrts,
 				   SORTID_USE,
 					node_use_string(block_ptr->bg_node_use),
@@ -548,16 +567,22 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->bg_user_name
 			= xstrdup(block_info_ptr->
 				  block_array[i].owner_name);
-		if (cluster_flags & CLUSTER_FLAG_BGL)
+		if (cluster_flags & CLUSTER_FLAG_BGP) {
+			block_ptr->imagelinux = xstrdup(
+				block_info_ptr->block_array[i].linuximage);
+			block_ptr->imageramdisk = xstrdup(
+				block_info_ptr->block_array[i].ramdiskimage);
+		} else if (cluster_flags & CLUSTER_FLAG_BGL) {
 			block_ptr->imageblrts = xstrdup(
 				block_info_ptr->block_array[i].blrtsimage);
+			block_ptr->imagelinux = xstrdup(
+				block_info_ptr->block_array[i].linuximage);
+			block_ptr->imageramdisk = xstrdup(
+				block_info_ptr->block_array[i].ramdiskimage);
+		}
 
-		block_ptr->imagelinux = xstrdup(
-			block_info_ptr->block_array[i].linuximage);
 		block_ptr->imagemloader = xstrdup(
 			block_info_ptr->block_array[i].mloaderimage);
-		block_ptr->imageramdisk = xstrdup(
-			block_info_ptr->block_array[i].ramdiskimage);
 
 		block_ptr->state
 			= block_info_ptr->block_array[i].state;
@@ -1496,7 +1521,33 @@ extern void cluster_change_block(void)
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
-		if (cluster_flags & CLUSTER_FLAG_BGL) {
+		if (cluster_flags & CLUSTER_FLAG_BGQ) {
+			switch(display_data->id) {
+			case SORTID_USE:
+			case SORTID_IMAGEBLRTS:
+			case SORTID_IMAGELINUX:
+			case SORTID_IMAGERAMDISK:
+				display_data->name = NULL;
+				break;
+			default:
+				break;
+			}
+		} else if (cluster_flags & CLUSTER_FLAG_BGP) {
+			switch(display_data->id) {
+			case SORTID_USE:
+			case SORTID_IMAGEBLRTS:
+				display_data->name = NULL;
+				break;
+			case SORTID_IMAGELINUX:
+				display_data->name = "Image Cnload";
+				break;
+			case SORTID_IMAGERAMDISK:
+				display_data->name = "Image Ioload";
+				break;
+			default:
+				break;
+			}
+		} else if (cluster_flags & CLUSTER_FLAG_BGL) {
 			switch(display_data->id) {
 			case SORTID_USE:
 				display_data->name = "Node Use";
@@ -1509,23 +1560,6 @@ extern void cluster_change_block(void)
 				break;
 			case SORTID_IMAGERAMDISK:
 				display_data->name = "Image Ramdisk";
-				break;
-			default:
-				break;
-			}
-		} else {
-			switch(display_data->id) {
-			case SORTID_USE:
-				display_data->name = NULL;
-				break;
-			case SORTID_IMAGEBLRTS:
-				display_data->name = NULL;
-				break;
-			case SORTID_IMAGELINUX:
-				display_data->name = "Image Cnload";
-				break;
-			case SORTID_IMAGERAMDISK:
-				display_data->name = "Image Ioload";
 				break;
 			default:
 				break;
