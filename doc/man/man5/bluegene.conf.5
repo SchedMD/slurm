@@ -102,11 +102,6 @@ Groups is not specified then this image will be usable by all
 groups. You can put as many alternative images as you want in the conf file.
 
 .TP
-\fBBasePartitionNodeCount\fR
-The number of c\-nodes (compute nodes) per base partition.
-There is no default value and this must be specified (usually 512).
-
-.TP
 \fBBridgeAPILogFile\fR
 Fully qualified pathname of a into which the Bridge API logs are
 to be written.
@@ -138,6 +133,18 @@ specify "DenyPassthrough=X,Y".
 By default, pass\-throughs are enabled in every dimension.
 
 .TP
+\fBIonodesPerMidplane\fR
+The number of IO nodes on a midplane.  This number must be the smallest
+number if you have a heterogeneous system.
+There is no default value and this must be specified.  The typical settings
+for BlueGene/L systems are as follows: For IO rich systems, 64 is the value that
+should be used to create small blocks.  For systems that are not IO rich, or
+for which small blocks are not desirable, 8 is usually the number to use.
+For BlueGene/P IO rich systems, 32 is the value that should be used to create
+small blocks since there are only 2 IO nodes per nodecard instead of 4 as on
+BlueGene/L.
+
+.TP
 \fBLayoutMode\fR
 Describes how SLURM should create bgblocks.
 .RS
@@ -148,14 +155,13 @@ Create and use the defined non\-overlapping bgblocks.
 \fBOVERLAP\fR:
 Create and use the defined bgblocks, which may overlap.
 It is highly recommended that none of the bgblocks have any passthroughs
-in the X\-dimension.
+in the X\-dimension on BGL and BGP systems.
 \fBUse this mode with extreme caution.\fR
 .TP
 \fBDYNAMIC\fR:
 Create and use bgblocks as needed for each job.
 Bgblocks will not be defined in the bluegene.conf file.
-Dynamic partitioning may introduce fragmentation of resources
-and starvation of larger jobs.
+Dynamic partitioning may introduce fragmentation of resources.
 \fBUse this mode with caution.\fR
 .RE
 
@@ -171,27 +177,20 @@ will resolve any cnodes in an error state.  Default is 0, which means once
 any cnodes are in an error state disallow future jobs.
 
 .TP
+\fBMidplaneNodeCount\fR
+The number of c\-nodes (compute nodes) per midplane.
+There is no default value and this must be specified (usually 512).
+
+.TP
 \fBMloaderImage\fR
 MloaderImage used for creation of all bgblocks.
 There is no default value and this must be specified.
 
 .TP
-\fBNodeCardNodeCount\fR
-Number of c\-nodes per node card.
-There is no default value and this must be specified. For BlueGene/L systems
+\fBNodeCardNodeCount\fR \- \fBNodeBoardNodeCount\fR
+Number of c\-nodes per nodecard / nodeboard.
+There is no default value and this must be specified. For most BlueGene systems
 this is usually 32.
-
-.TP
-\fBIonodesPerMidplane\fR
-The number of IO nodes on a midplane.  This number must be the smallest
-number if you have a heterogeneous system.
-There is no default value and this must be specified.  The typical settings
-for BlueGene/L systems are as follows: For IO rich systems, 64 is the value that
-should be used to create small blocks.  For systems that are not IO rich, or
-for which small blocks are not desirable, 8 is usually the number to use.
-For BlueGene/P IO rich systems, 32 is the value that should be used to create
-small blocks since there are only 2 IO nodes per nodecard instead of 4 as on
-BlueGene/L.
 
 .TP
 \fBSubMidplaneSystem\fR
@@ -199,7 +198,7 @@ Set to Yes if this system is not a full midplane in size, Default is No
 (regular system).
 
 .LP
-Each bgblock is defined by the base partitions used to construct it.
+Each bgblock is defined by the midplanes used to construct it.
 Ordering is very important for laying out switch wires.  Please use the smap
 tool to define blocks and do not change the order of blocks created.
 A bgblock is implicitly created containing all resources on the system.
@@ -226,19 +225,20 @@ The default value is TORUS.
 Communication occur over a mesh.
 .TP
 \fBSMALL\fR:
-The base partition is divided into more than one bgblock.
-The administrator should define the number of single node cards and
-quarter base partition blocks using the options \fB32CNBlocks\fR and
-\fB128CNBlocks\fR respectively for a BlueGene/L system.  \fB16CNBlocks\fR,
-\fB64CNBlocks\fR, and \fB256CNBlocks\fR are also available for
-BlueGene/P systems.  Keep in mind you
-must have enough IO nodes to make all these configurations possible.
+The midplane is divided into more than one bgblock.
+The administrator should define the number of single nodecards and
+quarter midplane blocks using the options \fB32CNBlocks\fR and
+\fB128CNBlocks\fR respectively for a BlueGene/L system.  \fB64CNBlocks\fR,
+and \fB256CNBlocks\fR are also available for later BlueGene systems.
+\fB16CNBlocks\fR is also valid on BlueGene/P systems.  Keep in mind you
+must have at keast one IO node per block.  So if you only have 4 ionodes per
+midplane the smallest block you will be able to make is 128 c-nodes.
 
-The total number of c\-nodes in defined blocks must not exceed
-\fBBasePartitionNodeCnt\fR.
-If not specified, the base partition will be divided into four
-blocks.
+The total number of c\-nodes of the blocks in a small request must not exceed
+\fBMidplaneNodeCnt\fR.
+If none are specified, the midplane will be divided into four 128 c-node blocks.
 See example below.
+
 .TP
 \fBTORUS\fR:
 Communications occur over a torus (end\-points of network directly connect.
@@ -249,7 +249,7 @@ Communications occur over a torus (end\-points of network directly connect.
 .br
 ##################################################################
 .br
-# bluegene.conf
+# bluegene.conf for a Bluegene/L system
 .br
 # build by smap on 03/06/2006
 .br
@@ -267,11 +267,11 @@ MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs\-mloader.rts
 .br
 RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
 .br
-BasePartitionNodeCnt=512
+MidplaneNodeCnt=512
 .br
 NodeCardNodeCnt=32
 .br
-NumPsets=64	# An I/O rich environment
+IONodesPerMidplane=64	# An I/O rich environment
 .br
 LayoutMode=STATIC
 .br
@@ -295,7 +295,7 @@ BPs=[330x331] Type=TORUS          # 1x1x2 =  2
 .br
 BPs=[332] Type=TORUS          # 1x1x1 =  1
 .br
-BPs=[333] Type=SMALL 32CNBlocks=4 128CNBlocks=3 # 1/16 * 4 + 1/4 * 3
+BPs=[333] Type=SMALL 32CNBlocks=4 128CNBlocks=3 # 32 * 4 + 128 * 3 = 512
 
 .SH "COPYING"
 Copyright (C) 2006-2010 The Regents of the University of California.
