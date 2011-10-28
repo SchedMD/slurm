@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Add configure option of "--without-rpath" which builds SLURM tools without
     the rpath option, which will work if Munge and BlueGene libraries are in
     the default library search path and make system updates easier.
+ -- Fixed issue where if a job ended with ESLURMD_UID_NOT_FOUND and
+    ESLURMD_GID_NOT_FOUND where slurm would be a little over zealous
+    in treating missing a GID or UID as a fatal error.
 
 * Changes in SLURM 2.3.1
 ========================

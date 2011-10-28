@@ -1530,7 +1530,9 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 #endif
 	/* Handle non-fatal errors here */
 	} else if ((comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
-	           (comp_msg->slurm_rc == ESLURM_USER_ID_MISSING)) {
+	           (comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) ||
+		   (comp_msg->slurm_rc == ESLURMD_UID_NOT_FOUND) ||
+		   (comp_msg->slurm_rc == ESLURMD_GID_NOT_FOUND)) {
 		error("Slurmd error running JobId=%u on %s=%s: %s",
 		      comp_msg->job_id, msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
