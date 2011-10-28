@@ -631,7 +631,7 @@ static int _attempt_backfill(void)
 				     avail_bitmap))) ||
 		    (job_req_node_filter(job_ptr, avail_bitmap))) {
 			if (later_start) {
-				job_ptr->start_time = 0;	
+				job_ptr->start_time = 0;
 				goto TRY_LATER;
 			}
 			job_ptr->time_limit = orig_time_limit;
@@ -662,7 +662,7 @@ static int _attempt_backfill(void)
 				break;
 			}
 			job_ptr->time_limit = save_time_limit;
-			/* Reset backfill scheduling timers */
+			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
 			job_test_count = 0;
 			START_TIMER;
@@ -722,7 +722,7 @@ static int _attempt_backfill(void)
 		if (later_start && (job_ptr->start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */
-			job_ptr->start_time = 0;	
+			job_ptr->start_time = 0;
 			goto TRY_LATER;
 		}
 
@@ -743,7 +743,7 @@ static int _attempt_backfill(void)
 			 * job to be backfill scheduled, which the sched
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
-			job_ptr->start_time = 0;	
+			job_ptr->start_time = 0;
 			goto TRY_LATER;
 		}
 
