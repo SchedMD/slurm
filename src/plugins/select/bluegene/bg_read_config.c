@@ -624,14 +624,10 @@ extern int read_bg_conf(void)
 	bg_conf->mp_nodecard_cnt =
 		bg_conf->mp_cnode_cnt / bg_conf->nodecard_cnode_cnt;
 
-	if (!s_p_get_uint16(&bg_conf->ionodes_per_mp, "Numpsets", tbl))
-		fatal("Warning: Numpsets not configured in bluegene.conf");
-	if (!bg_conf->ionodes_per_mp) {
-		if (!s_p_get_uint16(&bg_conf->ionodes_per_mp,
-				    "IONodesPerMP", tbl))
+	if (!s_p_get_uint16(&bg_conf->ionodes_per_mp, "IONodesPerMP", tbl))
+		if (!s_p_get_uint16(&bg_conf->ionodes_per_mp, "Numpsets", tbl))
 			fatal("Warning: IONodesPerMP not configured "
 			      "in bluegene.conf");
-	}
 
 	s_p_get_uint16(&bg_conf->max_block_err, "MaxBlockInError", tbl);
 	s_p_get_boolean(&tmp_bool, "SubMidplaneSystem", tbl);
