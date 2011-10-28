@@ -164,11 +164,13 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		{"LinuxImage", S_P_STRING},
 		{"RamDiskImage", S_P_STRING},
 #else
+#ifdef HAVE_BGP
 		{"16CNBlocks", S_P_UINT16},
-		{"64CNBlocks", S_P_UINT16},
-		{"256CNBlocks", S_P_UINT16},
 		{"CnloadImage", S_P_STRING},
 		{"IoloadImage", S_P_STRING},
+#endif
+		{"64CNBlocks", S_P_UINT16},
+		{"256CNBlocks", S_P_UINT16},
 #endif
 		{"MloaderImage", S_P_STRING},
 		{NULL}
@@ -191,7 +193,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	s_p_get_string(&n->blrtsimage, "BlrtsImage", tbl);
 	s_p_get_string(&n->linuximage, "LinuxImage", tbl);
 	s_p_get_string(&n->ramdiskimage, "RamDiskImage", tbl);
-#else
+#elif defined HAVE_BGP
 	s_p_get_string(&n->linuximage, "CnloadImage", tbl);
 	s_p_get_string(&n->ramdiskimage, "IoloadImage", tbl);
 #endif
@@ -219,7 +221,9 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	}
 
 #ifndef HAVE_BGL
+#ifdef HAVE_BGP
 	s_p_get_uint16(&n->small16, "16CNBlocks", tbl);
+#endif
 	s_p_get_uint16(&n->small64, "64CNBlocks", tbl);
 	s_p_get_uint16(&n->small256, "256CNBlocks", tbl);
 #endif
