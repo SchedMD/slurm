@@ -135,6 +135,19 @@ static pthread_t poll_thread;
 static bgsched::realtime::Client *rt_client_ptr = NULL;
 pthread_mutex_t rt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* rt_mutex must be locked before calling this. */
+static void _bridge_status_disconnect()
+{
+	try {
+		rt_client_ptr->disconnect();
+	} catch (bgsched::realtime::InternalErrorException& err) {
+		bridge_handle_realtime_internal_errors(
+			"realtime::disconnect", err.getError().toValue());
+	} catch (...) {
+		error("Unknown error from realtime::disconnect");
+	}
+}
+
 static void _handle_bad_midplane(const char *mp_coords,
 				 EnumWrapper<Hardware::State> state)
 {
@@ -1003,14 +1016,7 @@ extern int bridge_status_fini(void)
 	slurm_mutex_lock(&rt_mutex);
 
 	/* make the rt connection end. */
-	try {
-		rt_client_ptr->disconnect();
-	} catch (bgsched::realtime::InternalErrorException& err) {
-		bridge_handle_realtime_internal_errors(
-			"realtime::disconnect", err.getError().toValue());
-	} catch (...) {
-		error("Unknown error from realtime::disconnect");
-	}
+	_bridge_status_disconnect();
 
 	if (kill_job_list) {
 		list_destroy(kill_job_list);
