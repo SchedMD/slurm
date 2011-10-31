@@ -1003,10 +1003,10 @@ try_again:
 			jobinfo->ionode_str = ba_node_map_ranged_hostlist(
 				jobinfo->units_used, ba_mp_geo_system);
 			if (ba_debug_flags & DEBUG_FLAG_BG_PICK) {
-				bit_not(ba_mp->cnode_bitmap);
+				bit_or(total_bitmap, jobinfo->units_used);
+				bit_not(total_bitmap);
 				tmp_char = ba_node_map_ranged_hostlist(
-					ba_mp->cnode_bitmap, ba_mp_geo_system);
-				bit_not(ba_mp->cnode_bitmap);
+					total_bitmap, ba_mp_geo_system);
 				info("ba_pick_sub_block_cnodes: "
 				     "using cnodes %s on mp %s "
 				     "leaving '%s' on this midplane "
@@ -1074,7 +1074,7 @@ extern int ba_clear_sub_block_cnodes(
 	ListIterator itr = NULL;
 	ba_mp_t *ba_mp = NULL;
 	select_jobinfo_t *jobinfo = NULL;
-	char *tmp_char = NULL, *tmp_char2 = NULL;
+	char *tmp_char = NULL, *tmp_char2 = NULL, *tmp_char3 = NULL;
 
 	xassert(bg_record);
 	xassert(step_ptr);
@@ -1109,20 +1109,32 @@ extern int ba_clear_sub_block_cnodes(
 		bit_not(jobinfo->units_used);
 		bit_and(ba_mp->cnode_bitmap, jobinfo->units_used);
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
+			bitstr_t *total_bitmap = bit_copy(ba_mp->cnode_bitmap);
+			if (ba_mp->cnode_err_bitmap) {
+				bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
+				bit_not(ba_mp->cnode_err_bitmap);
+				tmp_char3 = ba_node_map_ranged_hostlist(
+					ba_mp->cnode_err_bitmap,
+					ba_mp_geo_system);
+				bit_not(ba_mp->cnode_err_bitmap);
+			}
+
 			bit_not(jobinfo->units_used);
 			tmp_char = ba_node_map_ranged_hostlist(
 				jobinfo->units_used, ba_mp_geo_system);
-			bit_not(ba_mp->cnode_bitmap);
+			bit_not(total_bitmap);
 			tmp_char2 = ba_node_map_ranged_hostlist(
-				ba_mp->cnode_bitmap, ba_mp_geo_system);
-			bit_not(ba_mp->cnode_bitmap);
+				total_bitmap, ba_mp_geo_system);
 			info("ba_clear_sub_block_cnodes: "
 			     "cleared cnodes %s on mp %s, making '%s' "
-			     "on this midplane usable in this block (%s)",
+			     "on this midplane usable in this block (%s), "
+			     "%s are in Software Failure",
 			     tmp_char, ba_mp->coord_str, tmp_char2,
-			     bg_record->bg_block_id);
+			     bg_record->bg_block_id, tmp_char3);
 			xfree(tmp_char);
 			xfree(tmp_char2);
+			xfree(tmp_char3);
+			FREE_NULL_BITMAP(total_bitmap);
 		}
 	}
 	list_iterator_destroy(itr);
