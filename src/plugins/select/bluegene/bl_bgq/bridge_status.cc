@@ -534,14 +534,17 @@ static void *_real_time(void *no_data)
 				bridge_handle_input_errors(
 					"RealTime Setup",
 					err.getError().toValue(), NULL);
+				_bridge_status_disconnect();
 			} catch (bgsched::realtime::ConnectionException& err) {
 				bridge_handle_input_errors(
 					"RealTime Setup",
 					err.getError().toValue(), NULL);
+				_bridge_status_disconnect();
 			} catch (bgsched::realtime::ProtocolException& err) {
 				bridge_handle_input_errors(
 					"RealTime Setup",
 					err.getError().toValue(), NULL);
+				_bridge_status_disconnect();
 			} catch (...) {
 				error("RealTime Setup: Unknown error thrown?");
 			}
