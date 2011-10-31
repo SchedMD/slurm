@@ -137,6 +137,7 @@ extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 		pack16(nodeinfo->bitmap_size, buffer);
 
 		packstr(nodeinfo->extra_info, buffer);
+		packstr(nodeinfo->failed_cnodes, buffer);
 
 		if (nodeinfo->subgrp_list)
 			count = list_count(nodeinfo->subgrp_list);
@@ -187,6 +188,9 @@ extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
 		*nodeinfo = nodeinfo_ptr;
 
 		safe_unpackstr_xmalloc(&nodeinfo_ptr->extra_info,
+				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->failed_cnodes,
 				       &uint32_tmp, buffer);
 
 		safe_unpack16(&size, buffer);
@@ -260,6 +264,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 		}
 		nodeinfo->magic = 0;
 		xfree(nodeinfo->extra_info);
+		xfree(nodeinfo->failed_cnodes);
 		if (nodeinfo->subgrp_list)
 			list_destroy(nodeinfo->subgrp_list);
 		xfree(nodeinfo);
@@ -453,7 +458,15 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		list_iterator_destroy(itr);
 		break;
 	case SELECT_NODEDATA_EXTRA_INFO:
-		*tmp_char = xstrdup(nodeinfo->extra_info);
+		if (nodeinfo->extra_info && nodeinfo->failed_cnodes) {
+			/* \n already added to extra_info */
+			*tmp_char = xstrdup_printf("%sFailed cnodes=%s",
+						   nodeinfo->extra_info,
+						   nodeinfo->failed_cnodes);
+		} else if (nodeinfo->extra_info)
+			*tmp_char = xstrdup(nodeinfo->extra_info);
+		else if (nodeinfo->failed_cnodes)
+			*tmp_char = xstrdup(nodeinfo->failed_cnodes);
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

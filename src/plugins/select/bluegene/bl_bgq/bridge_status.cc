@@ -243,6 +243,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	ba_mp_t *found_ba_mp;
 	ListIterator itr, itr2;
 	List delete_list = NULL;
+	select_nodeinfo_t *nodeinfo;
+	struct node_record *node_ptr = NULL;
 
 	if (!ba_mp->cnode_err_bitmap)
 		ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
@@ -275,6 +277,13 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	     ba_mp->coord_str, cnode_loc.c_str(),
 	     bridge_hardware_state_string(state.toValue()));
 
+	node_ptr = &(node_record_table_ptr[ba_mp->index]);
+	assert(node_ptr->select_nodeinfo);
+	nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
+	assert(nodeinfo);
+	xfree(nodeinfo->failed_cnodes);
+	nodeinfo->failed_cnodes = ba_node_map_ranged_hostlist(
+		ba_mp->cnode_err_bitmap, ba_mp_geo_system);
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *)list_next(itr))) {
