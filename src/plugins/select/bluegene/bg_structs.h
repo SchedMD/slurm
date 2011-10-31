@@ -140,7 +140,7 @@ typedef struct bg_record {
 					   of block */
 	int mp_count;                   /* size */
 	char *mp_str;   		/* String of midplanes in block */
-	bitstr_t *mp_used_bitmap;       /* cnodes used in this bitmap */
+	bitstr_t *mp_used_bitmap;       /* midplanes used in this bitmap */
 	char *mp_used_str;   		/* String of midplanes used in block */
 	uint16_t node_use;      	/* either COPROCESSOR or VIRTUAL */
 	struct bg_record *original;     /* if this is a copy this is a
