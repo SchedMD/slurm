@@ -125,7 +125,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	uint16_t my_state = node_ptr->node_state;
 	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
 	char tmp_line[512], time_str[32];
-	char *out = NULL;
+	char *out = NULL, *reason_str = NULL, *select_reason_str = NULL;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 	int cpus_per_node = 1;
 	int total_used = node_ptr->cpus;
@@ -274,27 +274,43 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 8 ******/
-	if (node_ptr->reason_time) {
-		char *user_name = uid_to_string(node_ptr->reason_uid);
-		slurm_make_time_str ((time_t *)&node_ptr->reason_time,
-				     time_str, sizeof(time_str));
-		snprintf(tmp_line, sizeof(tmp_line), "Reason=%s [%s@%s]",
-			 node_ptr->reason, user_name, time_str);
-		xstrcat(out, tmp_line);
-		xfree(user_name);
-	} else {
-		char *extra_info = NULL;
-		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-					  SELECT_NODEDATA_EXTRA_INFO,
-					  0, &extra_info);
-
-		if (node_ptr->reason) {
-			if (extra_info)
-				xstrcat(extra_info, "   ");
-			xstrcat(extra_info, node_ptr->reason);
+	if (node_ptr->reason && node_ptr->reason[0])
+		xstrcat(reason_str, node_ptr->reason);
+	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
+				  SELECT_NODEDATA_EXTRA_INFO,
+				  0, &select_reason_str);
+	if (select_reason_str && select_reason_str[0]) {
+		if (reason_str)
+			xstrcat(reason_str, "\n");
+		xstrcat(reason_str, select_reason_str);
+	}
+	xfree(select_reason_str);
+	if (reason_str) {
+		int inx = 1;
+		char *save_ptr = NULL, *tok, *user_name;
+		tok = strtok_r(reason_str, "\n", &save_ptr);
+		while (tok) {
+			if (inx == 1) {
+				xstrcat(out, "Reason=");
+			} else {
+				if (one_liner)
+					xstrcat(out, " ");
+				else
+					xstrcat(out, "\n   ");
+				xstrcat(out, "       ");
+			}
+			snprintf(tmp_line, sizeof(tmp_line), "%s", tok);
+			xstrcat(out, tmp_line);
+			if ((inx++ == 1) && node_ptr->reason_time) {
+				user_name = uid_to_string(node_ptr->reason_uid);
+				slurm_make_time_str((time_t *)&node_ptr->reason_time,
+						    time_str,sizeof(time_str));
+				snprintf(tmp_line, sizeof(tmp_line),
+					 " [%s@%s]", user_name, time_str);
+				xstrcat(out, tmp_line);
+			}
+			tok = strtok_r(NULL, "\n", &save_ptr);
 		}
-		xstrfmtcat(out, "Reason=%s", extra_info);
-		xfree(extra_info);
 	}
 	if (one_liner)
 		xstrcat(out, "\n");
