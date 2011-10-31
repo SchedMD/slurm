@@ -272,7 +272,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 
 	if (!changed)
 		return;
-
+	last_bg_update = time(NULL);
 	info("_handle_node_change: state for %s - %s is '%s'",
 	     ba_mp->coord_str, cnode_loc.c_str(),
 	     bridge_hardware_state_string(state.toValue()));
@@ -442,6 +442,7 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		free_block_list(NO_VAL, delete_list, delete_it, 0);
 		list_destroy(delete_list);
 	}
+	last_bg_update = time(NULL);
 }
 
 
