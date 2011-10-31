@@ -1112,11 +1112,9 @@ extern int ba_clear_sub_block_cnodes(
 			bitstr_t *total_bitmap = bit_copy(ba_mp->cnode_bitmap);
 			if (ba_mp->cnode_err_bitmap) {
 				bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
-				bit_not(ba_mp->cnode_err_bitmap);
 				tmp_char3 = ba_node_map_ranged_hostlist(
 					ba_mp->cnode_err_bitmap,
 					ba_mp_geo_system);
-				bit_not(ba_mp->cnode_err_bitmap);
 			}
 
 			bit_not(jobinfo->units_used);
