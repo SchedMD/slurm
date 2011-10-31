@@ -2631,9 +2631,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   resp_host=%s alloc_resp_port=%u  other_port=%u",
 	       job_specs->resp_host,
 	       job_specs->alloc_resp_port, job_specs->other_port);
-	debug3("   dependency=%s account=%s comment=%s",
+	debug3("   dependency=%s account=%s qos=%s comment=%s",
 	       job_specs->dependency, job_specs->account,
-	       job_specs->comment);
+	       job_specs->qos, job_specs->comment);
 
 	num_tasks = (job_specs->num_tasks != (uint16_t) NO_VAL) ?
 		(long) job_specs->num_tasks : -1L;
