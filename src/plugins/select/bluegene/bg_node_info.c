@@ -279,6 +279,9 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	int i=0;
 	bg_record_t *bg_record = NULL;
 	static time_t last_set_all = 0;
+	ba_mp_t *ba_mp;
+	node_subgrp_t *subgrp = NULL;
+
 	//uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (!blocks_are_created)
@@ -307,6 +310,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	slurm_mutex_lock(&block_state_mutex);
 	for (i=0; i<node_record_count; i++) {
 		select_nodeinfo_t *nodeinfo;
+
 		node_ptr = &(node_record_table_ptr[i]);
 		xassert(node_ptr->select_nodeinfo);
 		nodeinfo = node_ptr->select_nodeinfo->data;
@@ -319,9 +323,9 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
 		enum node_states state = NODE_STATE_UNKNOWN;
-		node_subgrp_t *subgrp = NULL;
 		select_nodeinfo_t *nodeinfo;
 		bitstr_t *bitmap;
+		ListIterator itr2 = NULL;
 
 		/* Only mark unidle blocks */
 		if (bg_record->job_running == NO_JOB_RUNNING)
@@ -345,12 +349,14 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		/*     && (state != NODE_STATE_ERROR)) */
 		/* 	bitmap = bg_record->cnodes_used_bitmap; */
 		/* else */
-			bitmap = bg_record->ionode_bitmap;
+		bitmap = bg_record->ionode_bitmap;
 
-		for (i=0; i<node_record_count; i++) {
-			if (!bit_test(bg_record->mp_bitmap, i))
+		itr2 = list_iterator_create(bg_record->ba_mp_list);
+		while ((ba_mp = list_next(itr2))) {
+			if (!ba_mp->used)
 				continue;
-			node_ptr = &(node_record_table_ptr[i]);
+
+			node_ptr = &(node_record_table_ptr[ba_mp->index]);
 
 			xassert(node_ptr->select_nodeinfo);
 			nodeinfo = node_ptr->select_nodeinfo->data;
@@ -379,6 +385,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 				}
 			}
 		}
+		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
