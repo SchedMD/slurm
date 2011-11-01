@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Remove old method for marking cnodes down.
  -- BGQ - Remove BGP images from view in sview.
  -- BGQ - print out failed cnodes in scontrol show nodes.
+ -- BGQ - Add srun option of "--runjob-opts" to pass options to the runjob
+    command.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

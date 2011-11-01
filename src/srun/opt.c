@@ -183,6 +183,7 @@
 #define LONG_OPT_GRES            0x151
 #define LONG_OPT_ALPS            0x152
 #define LONG_OPT_REQ_SWITCH      0x153
+#define LONG_OPT_RUNJOB_OPTS     0x154
 
 extern char **environ;
 
@@ -456,6 +457,7 @@ static void _opt_default()
 	opt.wckey = NULL;
 	opt.req_switch = -1;
 	opt.wait4switch = -1;
+	opt.runjob_opts = NULL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -820,6 +822,7 @@ static void set_options(const int argc, char **argv)
 		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
+		{"runjob-opts",      required_argument, 0, LONG_OPT_RUNJOB_OPTS},
 		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 		{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
@@ -1440,6 +1443,10 @@ static void set_options(const int argc, char **argv)
 			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
 			break;
+		case LONG_OPT_RUNJOB_OPTS:
+			xfree(opt.runjob_opts);
+			opt.runjob_opts = xstrdup(optarg);
+			break;
 		case LONG_OPT_CHECKPOINT_DIR:
 			xfree(opt.ckpt_dir);
 			opt.ckpt_dir = xstrdup(optarg);
@@ -1697,6 +1704,17 @@ static void _opt_args(int argc, char **argv)
 			 * don't want 2 sets (slurm's will always be 000)
 			 * remove it case. */
 			opt.labelio = 0;
+		}
+
+		if (opt.runjob_opts) {
+			char *save_ptr = NULL, *tok;
+			char *tmp = xstrdup(opt.runjob_opts);
+			tok = strtok_r(tmp, " ", &save_ptr);
+			while (tok) {
+				opt.argv[i++]  = xstrdup(tok);
+				tok = strtok_r(NULL, " ", &save_ptr);
+			}
+			xfree(tmp);
 		}
 
 		/* Export all the environment so the runjob_mux will get the
@@ -2446,6 +2464,9 @@ static void _usage(void)
 "            [--cnload-image=path]\n"
 "            [--mloader-image=path] [--ioload-image=path]\n"
 #endif
+#ifdef HAVE_BGQ
+"            [--runjob-opts=options]\n"
+#endif
 #endif
 "            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
@@ -2600,6 +2621,9 @@ static void _help(void)
 "      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
 "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
 "      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
+#endif
+#ifdef HAVE_BGQ
+"      --runjob-opts=options   options for the runjob command\n"
 #endif
 #endif
 "\n"
