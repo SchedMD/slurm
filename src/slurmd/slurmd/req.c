@@ -944,8 +944,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	socklen_t adlen;
 	hostset_t step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
-	int nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
-
+	int nodeid = 0;
+#ifndef HAVE_FRONT_END
+	/* It is always 0 for front end systems */
+	nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
+#endif
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 

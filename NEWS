@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - print out failed cnodes in scontrol show nodes.
  -- BGQ - Add srun option of "--runjob-opts" to pass options to the runjob
     command.
+ -- FRONTEND - handle step launch failure better.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

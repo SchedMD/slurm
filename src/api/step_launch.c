@@ -1307,10 +1307,13 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	slurm_msg_t req;
 	step_complete_msg_t msg;
 	int rc = -1;
-	int nodeid = NO_VAL;
+	int nodeid = 0;
 	struct step_launch_state *sls = ctx->launch_state;
 
+#ifndef HAVE_FRONT_END
+	/* It is always 0 for front end systems */
 	nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
+#endif
 
 	pthread_mutex_lock(&sls->lock);
 	sls->abort = true;
