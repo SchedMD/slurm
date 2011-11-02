@@ -1181,10 +1181,10 @@ extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 		for (dim = 0; dim < my_geo_system->dim_count; dim++) {
 			geo_ptr->geometry[dim] = inx[dim];
 			product *= inx[dim];
-			passthru = inx[dim] - my_geo_system->dim_size[dim];
+			passthru = my_geo_system->dim_size[dim] - inx[dim];
 			if (passthru == 0)
 				geo_ptr->full_dim_cnt++;
-			else if (passthru > 1)
+			else if ((passthru > 1) && (inx[dim] > 1))
 				geo_ptr->passthru_cnt += passthru;
 		}
 		geo_ptr->size = product;
