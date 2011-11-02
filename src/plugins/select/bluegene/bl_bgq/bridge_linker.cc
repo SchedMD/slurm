@@ -68,7 +68,7 @@ static bool initialized = false;
 
 
 #ifdef HAVE_BG_FILES
-
+/* ba_system_mutex needs to be locked before coming here */
 static void _setup_ba_mp(int level, uint16_t *coords,
 			 ComputeHardware::ConstPtr bgqsys)
 {
@@ -174,6 +174,7 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 
 	hostlist = hostlist_create(NULL);
 	midplane_vec = block_ptr->getMidplanes();
+	slurm_mutex_lock(&ba_system_mutex);
 	BOOST_FOREACH(const std::string midplane, midplane_vec) {
 		char temp[256];
 		ba_mp_t *curr_mp = loc2ba_mp((char *)midplane.c_str());
@@ -188,6 +189,7 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 
 		hostlist_push(hostlist, temp);
 	}
+	slurm_mutex_unlock(&ba_system_mutex);
 	bg_record->mp_str = hostlist_ranged_string_xmalloc(hostlist);
 	hostlist_destroy(hostlist);
 	debug3("got nodes of %s", bg_record->mp_str);
@@ -397,12 +399,14 @@ extern int bridge_setup_system()
 
 	inited = true;
 
+	slurm_mutex_lock(&ba_system_mutex);
 	assert(ba_main_grid);
 
 #ifdef HAVE_BG_FILES
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	_setup_ba_mp(0, coords, bridge_get_compute_hardware());
 #endif
+	slurm_mutex_unlock(&ba_system_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -481,11 +485,13 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		   copy of this pointer we need to go out a get the
 		   real one from the system and use it.
 		*/
+		slurm_mutex_lock(&ba_system_mutex);
 		ba_mp = coord2ba_mp(ba_mp->coord);
 		for (i=0; i<bg_conf->mp_nodecard_cnt; i++) {
 			if (use_nc[i] && ba_mp)
 				nodecards.push_back(ba_mp->nodecard_loc[i]);
 		}
+		slurm_mutex_unlock(&ba_system_mutex);
 
 		try {
 			block_ptr = Block::create(nodecards);
@@ -512,15 +518,19 @@ extern int bridge_block_create(bg_record_t *bg_record)
 			   copy of this pointer we need to go out a get the
 			   real one from the system and use it.
 			*/
+			slurm_mutex_lock(&ba_system_mutex);
 			ba_mp_t *main_mp = coord2ba_mp(ba_mp->coord);
-			if (!main_mp)
+			if (!main_mp) {
+				slurm_mutex_unlock(&ba_system_mutex);
 				continue;
+			}
 			info("got %s(%s) %d", main_mp->coord_str,
 			     main_mp->loc, ba_mp->used);
 			if (ba_mp->used)
 				midplanes.push_back(main_mp->loc);
 			else
 				pt_midplanes.push_back(main_mp->loc);
+			slurm_mutex_unlock(&ba_system_mutex);
 		}
 		list_iterator_destroy(itr);
 

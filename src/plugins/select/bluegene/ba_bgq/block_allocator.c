@@ -114,6 +114,7 @@ extern void ba_create_system()
 	if (ba_main_grid)
 		ba_destroy_system();
 
+	slurm_mutex_lock(&ba_system_mutex);
 	/* build all the possible geos for the mid planes */
 	ba_main_geo_system =  xmalloc(sizeof(ba_geo_system_t));
 	ba_main_geo_system->dim_count = SYSTEM_DIMENSIONS;
@@ -246,6 +247,7 @@ extern void ba_create_system()
 	}
 
 	_setup_next_mps(A, coords);
+	slurm_mutex_unlock(&ba_system_mutex);
 }
 
 /** */
@@ -253,6 +255,7 @@ extern void ba_destroy_system(void)
 {
 	int a, x, y;
 
+	slurm_mutex_lock(&ba_system_mutex);
 	xfree(ba_main_grid_array);
 
 	if (ba_main_grid) {
@@ -281,6 +284,7 @@ extern void ba_destroy_system(void)
 	}
 
 	memset(DIM_SIZE, 0, sizeof(DIM_SIZE));
+	slurm_mutex_unlock(&ba_system_mutex);
 }
 
 /*
@@ -385,6 +389,7 @@ extern void print_ba_request(select_ba_request_t* ba_request)
 	debug("    elongate:\t%d", ba_request->elongate);
 }
 
+/* ba_system_mutex needs to be locked before calling this. */
 extern ba_mp_t *coord2ba_mp(const uint16_t *coord)
 {
 	if ((coord[A] >= DIM_SIZE[A]) || (coord[X] >= DIM_SIZE[X]) ||
@@ -442,15 +447,12 @@ extern int remove_block(List mps, bool is_small)
 	ba_mp_t* ba_mp = NULL;
 	ListIterator itr;
 
+	slurm_mutex_lock(&ba_system_mutex);
 	itr = list_iterator_create(mps);
 	while ((curr_ba_mp = (ba_mp_t*) list_next(itr))) {
 		/* since the list that comes in might not be pointers
 		   to the main list we need to point to that main list */
-		ba_mp = &ba_main_grid
-			[curr_ba_mp->coord[A]]
-			[curr_ba_mp->coord[X]]
-			[curr_ba_mp->coord[Y]]
-			[curr_ba_mp->coord[Z]];
+		ba_mp = coord2ba_mp(curr_ba_mp->coord);
 		if (curr_ba_mp->used) {
 			ba_mp->used &= (~BA_MP_USED_TRUE);
 			if (ba_mp->used == BA_MP_USED_FALSE)
@@ -508,6 +510,7 @@ extern int remove_block(List mps, bool is_small)
 		}
 	}
 	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&ba_system_mutex);
 
 	return 1;
 }
@@ -536,10 +539,10 @@ extern int check_and_set_mp_list(List mps)
 	if (!mps)
 		return rc;
 
+	slurm_mutex_lock(&ba_system_mutex);
 	itr = list_iterator_create(mps);
 	while ((ba_mp = list_next(itr))) {
 		/* info("checking %s", ba_mp->coord_str);  */
-
 		curr_ba_mp = coord2ba_mp(ba_mp->coord);
 
 		if (ba_mp->used && curr_ba_mp->used) {
@@ -636,6 +639,7 @@ extern int check_and_set_mp_list(List mps)
 	rc = SLURM_SUCCESS;
 end_it:
 	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&ba_system_mutex);
 	return rc;
 }
 
@@ -690,6 +694,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 	if (!deny_pass)
 		deny_pass = &local_deny_pass;
 
+	slurm_mutex_lock(&ba_system_mutex);
 	while (ba_geo_table) {
 		ListIterator itr;
 		int scan_offset = 0, cnt = 0, i=0;
@@ -817,6 +822,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 		list_destroy(main_mps);
 		main_mps = NULL;
 	}
+	slurm_mutex_unlock(&ba_system_mutex);
 
 	if (name)
 		debug2("name = %s", name);

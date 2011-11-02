@@ -1495,15 +1495,17 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 		nodeinfo = node_ptr->select_nodeinfo->data;
 		xassert(nodeinfo);
 
-		nodeinfo->ba_mp = str2ba_mp(node_ptr->name);
-
-		if (!nodeinfo->ba_mp)
+		slurm_mutex_lock(&ba_system_mutex);
+		if (!(nodeinfo->ba_mp = str2ba_mp(node_ptr->name))) {
+			slurm_mutex_unlock(&ba_system_mutex);
 			continue;
+		}
 		nodeinfo->ba_mp->index = i;
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr))
 			ba_update_mp_state(
 				nodeinfo->ba_mp, node_ptr->node_state);
 		nodeinfo->ba_mp->state = node_ptr->node_state;
+		slurm_mutex_unlock(&ba_system_mutex);
 	}
 
 	return SLURM_SUCCESS;
@@ -2543,14 +2545,17 @@ extern int select_p_update_node_state(struct node_record *node_ptr)
 {
 #ifdef HAVE_BG
 	ba_mp_t *curr_mp;
+	int rc = SLURM_SUCCESS;
 
 	xassert(node_ptr);
 
-	if(!(curr_mp = str2ba_mp(node_ptr->name)))
-		return SLURM_ERROR;
-
-	ba_update_mp_state(curr_mp, node_ptr->node_state);
-	return SLURM_SUCCESS;
+	slurm_mutex_lock(&ba_system_mutex);
+	if ((curr_mp = str2ba_mp(node_ptr->name)))
+		ba_update_mp_state(curr_mp, node_ptr->node_state);
+	else
+		rc = SLURM_ERROR;
+	slurm_mutex_unlock(&ba_system_mutex);
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif

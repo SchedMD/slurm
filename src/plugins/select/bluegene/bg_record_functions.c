@@ -1645,7 +1645,11 @@ static void _append_ba_mps(List my_list, int dim,
 		}
 		return;
 	}
+
+	slurm_mutex_lock(&ba_system_mutex);
 	curr_mp = ba_copy_mp(coord2ba_mp(coords));
+	slurm_mutex_unlock(&ba_system_mutex);
+
 	if (curr_mp) {
 		curr_mp->used = 1;
 		list_append(my_list, curr_mp);

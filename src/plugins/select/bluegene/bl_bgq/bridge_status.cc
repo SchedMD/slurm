@@ -699,9 +699,10 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 		}
 		return;
 	}
-
+	slurm_mutex_lock(&ba_system_mutex);
 	if ((ba_mp = coord2ba_mp(coords)))
 		_handle_midplane_update(bgqsys, ba_mp);
+	slurm_mutex_unlock(&ba_system_mutex);
 }
 
 static void *_poll(void *no_data)
@@ -806,6 +807,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
+	slurm_mutex_lock(&ba_system_mutex);
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
@@ -814,6 +816,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		      event.getLocation().c_str(),
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
@@ -824,12 +827,13 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		info("Midplane %s(%s), has returned to service",
 		     event.getLocation().c_str(),
 		     ba_mp->coord_str);
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
 	/* Else mark the midplane down */
 	_handle_bad_midplane(ba_mp->coord_str, event.getState());
-
+	slurm_mutex_unlock(&ba_system_mutex);
 	return;
 
 }
@@ -847,6 +851,7 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 		coords[dim] = ibm_coords[dim];
 
 	dim = event.getDimension();
+	slurm_mutex_lock(&ba_system_mutex);
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
@@ -855,6 +860,7 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 		      dim, event.getMidplaneLocation().c_str(),
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
@@ -866,11 +872,13 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 		     "has returned to service",
 		     dim, event.getMidplaneLocation().c_str(),
 		     ba_mp->coord_str);
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
 	/* Else mark the midplane down */
 	_handle_bad_switch(dim, ba_mp->coord_str, event.getState());
+	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
 }
@@ -888,6 +896,7 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
+	slurm_mutex_lock(&ba_system_mutex);
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
@@ -896,6 +905,7 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 		      nb_name, mp_name,
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
@@ -907,10 +917,12 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 		     "has returned to service",
 		     nb_name, mp_name,
 		     ba_mp->coord_str);
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
 	_handle_bad_nodeboard(nb_name, ba_mp->coord_str, event.getState());
+	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
 }
@@ -926,6 +938,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
+	slurm_mutex_lock(&ba_system_mutex);
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
@@ -935,6 +948,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 		      event.getLocation().c_str(), mp_name,
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
@@ -944,6 +958,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	     bridge_hardware_state_string(event.getState()));
 
 	_handle_node_change(ba_mp, event.getLocation(), event.getState());
+	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
 }
@@ -961,6 +976,8 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 		coords[dim] = ibm_coords[dim];
 
 	dim = event.getDimension();
+
+	slurm_mutex_lock(&ba_system_mutex);
 	from_ba_mp = coord2ba_mp(coords);
 	if (!from_ba_mp) {
 		error("Cable in dim '%d' on Midplane %s, state "
@@ -968,11 +985,13 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 		      dim, event.getFromMidplaneLocation().c_str(),
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
 	/* Else mark the midplane down */
 	_handle_cable_change(dim, from_ba_mp, event.getState());
+	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
 }

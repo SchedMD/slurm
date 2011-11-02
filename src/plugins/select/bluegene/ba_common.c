@@ -57,6 +57,7 @@ bool ba_initialized = false;
 uint32_t ba_debug_flags = 0;
 int DIM_SIZE[HIGHEST_DIMENSIONS];
 bitstr_t *ba_main_mp_bitmap = NULL;
+pthread_mutex_t ba_system_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _pack_ba_connection(ba_connection_t *ba_connection,
 				Buf buffer, uint16_t protocol_version)
@@ -466,9 +467,12 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 		}
 		return;
 	}
-	curr_mp = coord2ba_mp(coords);
-	if (!curr_mp)
+
+	slurm_mutex_lock(&ba_system_mutex);
+	if (!(curr_mp = coord2ba_mp(coords))) {
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
+	}
 	if (bitmap)
 		is_set = bit_test(bitmap, curr_mp->index);
 	if (!bitmap || (is_set && !except) || (!is_set && except)) {
@@ -484,6 +488,7 @@ static void _internal_removable_set_mps(int level, bitstr_t *bitmap,
 					  curr_mp->ba_geo_index);
 		}
 	}
+	slurm_mutex_unlock(&ba_system_mutex);
 }
 
 static void _internal_reset_ba_system(int level, uint16_t *coords,
@@ -504,14 +509,18 @@ static void _internal_reset_ba_system(int level, uint16_t *coords,
 		}
 		return;
 	}
-	curr_mp = coord2ba_mp(coords);
-	if (!curr_mp)
+	slurm_mutex_lock(&ba_system_mutex);
+	if (!(curr_mp = coord2ba_mp(coords))) {
+		slurm_mutex_unlock(&ba_system_mutex);
 		return;
+	}
 	ba_setup_mp(curr_mp, track_down_mps, false);
 	bit_clear(ba_main_mp_bitmap, curr_mp->ba_geo_index);
+	slurm_mutex_unlock(&ba_system_mutex);
 }
 
 #if defined HAVE_BG_FILES
+/* ba_system_mutex should be locked before calling. */
 static ba_mp_t *_internal_loc2ba_mp(int level, uint16_t *coords,
 				    const char *check)
 {
@@ -886,11 +895,14 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 
 		/* Since index could of changed here we will go figure
 		 * it out again. */
-		orig_mp = coord2ba_mp(ba_mp->coord);
-		if (!orig_mp)
+		slurm_mutex_lock(&ba_system_mutex);
+		if (!(orig_mp = coord2ba_mp(ba_mp->coord))) {
+			slurm_mutex_unlock(&ba_system_mutex);
 			goto unpack_error;
+		}
 		ba_mp->index = orig_mp->index;
 		ba_mp->ba_geo_index = orig_mp->ba_geo_index;
+		slurm_mutex_unlock(&ba_system_mutex);
 	} else {
 		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
 			if (_unpack_ba_switch(&ba_mp->axis_switch[dim], buffer,
@@ -912,11 +924,14 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 
 		/* Since index could of changed here we will go figure
 		 * it out again. */
-		orig_mp = coord2ba_mp(ba_mp->coord);
-		if (!orig_mp)
+		slurm_mutex_lock(&ba_system_mutex);
+		if (!(orig_mp = coord2ba_mp(ba_mp->coord))) {
+			slurm_mutex_unlock(&ba_system_mutex);
 			goto unpack_error;
+		}
 		ba_mp->index = orig_mp->index;
 		ba_mp->ba_geo_index = orig_mp->ba_geo_index;
+		slurm_mutex_unlock(&ba_system_mutex);
 	}
 	return SLURM_SUCCESS;
 
@@ -926,7 +941,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
+/* If used in the bluegene plugin this ba_system_mutex must be
+ * locked. Don't work about it in programs like smap.
+ */
 extern ba_mp_t *str2ba_mp(const char *coords)
 {
 	uint16_t coord[cluster_dims];
@@ -962,6 +979,8 @@ extern ba_mp_t *str2ba_mp(const char *coords)
 
 /*
  * find a base blocks bg location (rack/midplane)
+ * If used in the bluegene plugin this ba_system_mutex must be
+ * locked. Don't work about it in programs like smap.
  */
 extern ba_mp_t *loc2ba_mp(const char* mp_id)
 {

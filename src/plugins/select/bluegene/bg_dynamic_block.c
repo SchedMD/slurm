@@ -495,6 +495,8 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->mp_used_bitmap = bit_alloc(node_record_count);
 
 	found_record->ba_mp_list = list_create(destroy_ba_mp);
+
+	slurm_mutex_lock(&ba_system_mutex);
 	if (bg_record->ba_mp_list)
 		ba_mp = list_peek(bg_record->ba_mp_list);
 	if (!ba_mp) {
@@ -530,6 +532,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	xassert(ba_mp);
 
 	new_ba_mp = ba_copy_mp(ba_mp);
+	slurm_mutex_unlock(&ba_system_mutex);
 	/* We need to have this node wrapped in Q to handle
 	   wires correctly when creating around the midplane.
 	*/

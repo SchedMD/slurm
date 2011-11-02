@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Add srun option of "--runjob-opts" to pass options to the runjob
     command.
  -- FRONTEND - handle step launch failure better.
+ -- BGQ - Added a mutex to protect the now changing ba_system pointers.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

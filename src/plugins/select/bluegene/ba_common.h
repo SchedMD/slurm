@@ -195,6 +195,7 @@ extern int cluster_base;
 extern bool ba_initialized;
 extern uint32_t ba_debug_flags;
 extern bitstr_t *ba_main_mp_bitmap;
+extern pthread_mutex_t ba_system_mutex;
 
 /*
  * Initialize internal structures by either reading previous block
