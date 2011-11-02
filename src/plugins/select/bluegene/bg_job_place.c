@@ -1327,11 +1327,12 @@ static int _sync_block_lists(List full_list, List incomp_list)
 }
 
 static void _build_select_struct(struct job_record *job_ptr,
-				 bitstr_t *bitmap, uint32_t node_cnt)
+				 bitstr_t *bitmap, bg_record_t *bg_record)
 {
 	int i;
 	uint32_t total_cpus = 0;
 	job_resources_t *job_resrcs_ptr;
+	uint32_t node_cnt = bg_record->cnode_cnt;
 
 	xassert(job_ptr);
 
@@ -1688,7 +1689,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		if (SELECT_IS_MODE_RUN_NOW(local_mode))
 			_build_select_struct(job_ptr,
 					     slurm_block_bitmap,
-					     bg_record->cnode_cnt);
+					     bg_record);
 		/* set up the preempted job list */
 		if (SELECT_IS_PREEMPT_SET(local_mode)) {
 			if (*preemptee_job_list)
