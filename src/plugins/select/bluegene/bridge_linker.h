@@ -76,7 +76,6 @@ extern bg_config_t *bg_conf;
 extern bg_lists_t *bg_lists;
 extern time_t last_bg_update;
 extern pthread_mutex_t block_state_mutex;
-extern pthread_mutex_t request_list_mutex;
 extern int blocks_are_created;
 extern int num_unused_cpus;
 
