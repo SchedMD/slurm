@@ -84,9 +84,6 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 				fprintf(fp, "    <AccelParam type=\"%s\"",
 					nam_acceltype[accel->type]);
 
-				if (accel->family && *accel->family)
-					fprintf(fp, " family=\"%s\"",
-						accel->family);
 				if (accel->memory_mb)
 					fprintf(fp, " memory_mb=\"%u\"",
 						accel->memory_mb);

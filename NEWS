@@ -87,6 +87,7 @@ documents those changes that are of interest to users and admins.
  -- Backfill scheduling - Add SchedulerParameters configuration parameter of
     "bf_res" to control the resolution in the backfill scheduler's data about
     when jobs begin and end. Default value is 60 seconds (used to be 1 second).
+ -- Cray - Remove the "family" specification from the GPU reservation request.
 
 * Changes in SLURM 2.3.1
 ========================
