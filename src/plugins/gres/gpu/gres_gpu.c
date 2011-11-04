@@ -168,8 +168,8 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 	} else {
 		/* The gres.conf file must identify specific device files
 		 * in order to set the CUDA_VISIBLE_DEVICES env var */
-		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
-				    "NoDevFiles");
+		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
+		      "no device files configured");
 	}
 }
 
@@ -205,7 +205,7 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 	} else {
 		/* The gres.conf file must identify specific device files
 		 * in order to set the CUDA_VISIBLE_DEVICES env var */
-		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
-				    "NoDevFiles");
+		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
+		      "no device files configured");
 	}
 }
