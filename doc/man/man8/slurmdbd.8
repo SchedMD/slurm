@@ -26,6 +26,14 @@ Verbose operation. Multiple \fB\-v\fR's increase verbosity.
 \fB\-V\fR
 Print version information and exit.
 
+.SH "CORE FILE LOCATION"
+If slurmdbd is started with the \fB\-D\fR option then the core file will be
+written to the current working directory.
+Otherwise if \fBSlurmdbdLogFile\fR is a fully qualified path name (starting
+with a slash), the core file will be written to the same directory as the
+log file.
+Otherwise the core file will be written to the "/var/tmp" directory.
+
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific
 configuration parameters using a distinct configuration file

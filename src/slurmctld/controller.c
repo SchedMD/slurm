@@ -57,6 +57,7 @@
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -203,6 +204,7 @@ static void         _update_assoc(slurmdb_association_rec_t *rec);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
+static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(int wait_time);
 static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
@@ -255,25 +257,6 @@ int main(int argc, char *argv[])
 		sched_log_alter(sched_log_opts, LOG_DAEMON,
 				slurmctld_conf.sched_logfile);
 		debug("sched: slurmctld starting");
-
-		if (slurmctld_conf.slurmctld_logfile &&
-		    (slurmctld_conf.slurmctld_logfile[0] == '/')) {
-			char *slash_ptr, *work_dir;
-			work_dir = xstrdup(slurmctld_conf.slurmctld_logfile);
-			slash_ptr = strrchr(work_dir, '/');
-			if (slash_ptr == work_dir)
-				work_dir[1] = '\0';
-			else
-				slash_ptr[0] = '\0';
-			if (chdir(work_dir) < 0)
-				fatal("chdir(%s): %m", work_dir);
-			xfree(work_dir);
-		} else {
-			if (chdir(slurmctld_conf.state_save_location) < 0) {
-				fatal("chdir(%s): %m",
-				      slurmctld_conf.state_save_location);
-			}
-		}
 	} else {
 		slurmctld_config.daemonize = 0;
 	}
@@ -288,6 +271,7 @@ int main(int argc, char *argv[])
 	 */
 	_init_pidfile();
 	_become_slurm_user();
+	_set_work_dir();
 
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
@@ -2201,4 +2185,42 @@ static int _ping_backup_controller(void)
 		debug2("_ping_backup_controller/response error %d", rc);
 
 	return rc;
+}
+
+static void  _set_work_dir(void)
+{
+	bool success = false;
+
+	if (slurmctld_conf.slurmctld_logfile &&
+	    (slurmctld_conf.slurmctld_logfile[0] == '/')) {
+		char *slash_ptr, *work_dir;
+		work_dir = xstrdup(slurmctld_conf.slurmctld_logfile);
+		slash_ptr = strrchr(work_dir, '/');
+		if (slash_ptr == work_dir)
+			work_dir[1] = '\0';
+		else
+			slash_ptr[0] = '\0';
+		if ((access(work_dir, W_OK) != 0) || (chdir(work_dir) < 0))
+			error("chdir(%s): %m", work_dir);
+		else
+			success = true;
+		xfree(work_dir);
+	}
+
+	if (!success) {
+		if ((access(slurmctld_conf.state_save_location, W_OK) != 0) ||
+		    (chdir(slurmctld_conf.state_save_location) < 0)) {
+			error("chdir(%s): %m",
+			      slurmctld_conf.state_save_location);
+		} else
+			success = true;
+	}
+
+	if (!success) {
+		if ((access("/var/tmp", W_OK) != 0) ||
+		    (chdir("/var/tmp") < 0)) {
+			error("chdir(/var/tmp): %m");
+		} else
+			info("chdir to /var/tmp");
+	}
 }

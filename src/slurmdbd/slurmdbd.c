@@ -96,7 +96,8 @@ static void  _parse_commandline(int argc, char *argv[]);
 static void  _request_registrations(void *db_conn);
 static void  _rollup_handler_cancel();
 static void *_rollup_handler(void *no_data);
-static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
+static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
+static void  _set_work_dir(void);
 static void *_signal_handler(void *no_data);
 static void  _update_logging(void);
 static void  _update_nice(void);
@@ -140,6 +141,7 @@ int main(int argc, char *argv[])
 	 */
 	_init_pidfile();
 	_become_slurm_user();
+	_set_work_dir();
 	log_config();
 
 #ifdef PR_SET_DUMPABLE
@@ -444,6 +446,11 @@ static void _daemonize(void)
 	if (daemon(1, 1))
 		error("daemon(): %m");
 	log_alter(log_opts, LOG_DAEMON, slurmdbd_conf->log_file);
+}
+
+static void _set_work_dir(void)
+{
+	bool success = false;
 
 	if (slurmdbd_conf->log_file &&
 	    (slurmdbd_conf->log_file[0] == '/')) {
@@ -454,9 +461,19 @@ static void _daemonize(void)
 			work_dir[1] = '\0';
 		else
 			slash_ptr[0] = '\0';
-		if (chdir(work_dir) < 0)
-			fatal("chdir(%s): %m", work_dir);
+		if ((access(work_dir, W_OK) != 0) || (chdir(work_dir) < 0))
+			error("chdir(%s): %m", work_dir);
+		else
+			success = true;
 		xfree(work_dir);
+	}
+
+	if (!success) {
+		if ((access("/var/tmp", W_OK) != 0) ||
+		    (chdir("/var/tmp") < 0)) {
+			error("chdir(/var/tmp): %m");
+		} else
+			info("chdir to /var/tmp");
 	}
 }
 

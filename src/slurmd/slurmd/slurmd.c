@@ -1284,6 +1284,8 @@ _slurmd_init(void)
 	}
 
 	if (conf->daemonize) {
+		bool success = false;
+
 		if (conf->logfile && (conf->logfile[0] == '/')) {
 			char *slash_ptr, *work_dir;
 			work_dir = xstrdup(conf->logfile);
@@ -1292,17 +1294,29 @@ _slurmd_init(void)
 				work_dir[1] = '\0';
 			else
 				slash_ptr[0] = '\0';
-			if (chdir(work_dir) < 0) {
+			if ((access(work_dir, W_OK) != 0) ||
+			    (chdir(work_dir) < 0)) {
 				error("Unable to chdir to %s", work_dir);
-				xfree(work_dir);
-				return SLURM_FAILURE;
-			}
+			} else
+				success = true;
 			xfree(work_dir);
-		} else {
-			if (chdir(conf->spooldir) < 0) {
+		}
+
+		if (!success) {
+			if ((access(conf->spooldir, W_OK) != 0) ||
+			    (chdir(conf->spooldir) < 0)) {
 				error("Unable to chdir to %s", conf->spooldir);
+			} else
+				success = true;
+		}
+
+		if (!success) {
+			if ((access("/var/tmp", W_OK) != 0) ||
+			    (chdir("/var/tmp") < 0)) {
+				error("chdir(/var/tmp): %m");
 				return SLURM_FAILURE;
-			}
+			} else
+				info("chdir to /var/tmp");
 		}
 	}
 
