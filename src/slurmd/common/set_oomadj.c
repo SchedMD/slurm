@@ -48,14 +48,27 @@ extern int set_oom_adj(int adj)
 {
 	int fd;
 	char oom_adj[16];
+	char *oom_adj_file = "/proc/self/oom_score_adj";
 
-	fd = open("/proc/self/oom_adj", O_WRONLY);
+	fd = open(oom_adj_file, O_WRONLY);
 	if (fd < 0) {
-		if (errno == ENOENT)
-			debug("failed to open /proc/self/oom_adj: %m");
-		else
-			error("failed to open /proc/self/oom_adj: %m");
-		return -1;
+		if (errno == ENOENT) {
+			debug("%s not found. Falling back to oom_adj",
+			      oom_adj_file);
+			oom_adj_file = "/proc/self/oom_adj";
+			fd = open(oom_adj_file, O_WRONLY);
+			if (fd < 0) {
+				if (errno == ENOENT)
+					error("%s not found", oom_adj_file);
+				else
+					error("failed to open %s: %m",
+					      oom_adj_file);
+				return -1;
+			}
+		} else {
+			error("failed to open %s: %m", oom_adj_file);
+			return -1;
+		}
 	}
 	if (snprintf(oom_adj, 16, "%d", adj) >= 16) {
 		close(fd);
