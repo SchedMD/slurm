@@ -44,10 +44,12 @@
 #include <sys/wait.h>
 #include <sys/errno.h>
 #include <string.h>
+#include <glob.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
+#include "src/common/list.h"
 
 #include "src/slurmd/common/run_script.h"
 
@@ -62,8 +64,8 @@
  *	if NULL
  * RET 0 on success, -1 on failure.
  */
-int
-run_script(const char *name, const char *path, uint32_t jobid,
+static int
+run_one_script(const char *name, const char *path, uint32_t jobid,
 	   int max_wait, char **env)
 {
 	int status, rc, opt;
@@ -130,3 +132,86 @@ run_script(const char *name, const char *path, uint32_t jobid,
 
 	/* NOTREACHED */
 }
+
+static void _xfree_f (void *x)
+{
+	xfree (x);
+}
+
+
+static int _ef (const char *p, int errnum)
+{
+	return error ("run_script: glob: %s: %s", p, strerror (errno));
+}
+
+static List _script_list_create (const char *pattern)
+{
+	glob_t gl;
+	size_t i;
+	List l = NULL;
+
+	if (pattern == NULL)
+		return (NULL);
+
+	int rc = glob (pattern, GLOB_ERR, _ef, &gl);
+	switch (rc) {
+	case 0:
+		l = list_create ((ListDelF) _xfree_f);
+		if (l == NULL)
+			fatal("list_create: malloc failure");
+		for (i = 0; i < gl.gl_pathc; i++)
+			list_push (l, xstrdup (gl.gl_pathv[i]));
+		break;
+	case GLOB_NOMATCH:
+		break;
+	case GLOB_NOSPACE:
+		error ("run_script: glob(3): Out of memory");
+		break;
+	case GLOB_ABORTED:
+		error ("run_script: cannot read dir %s: %m", pattern);
+		break;
+	default:
+		error ("Unknown glob(3) return code = %d", rc);
+		break;
+	}
+
+	globfree (&gl);
+
+	return l;
+}
+
+int run_script(const char *name, const char *pattern, uint32_t jobid,
+	   int max_wait, char **env)
+{
+	int rc;
+	List l;
+	ListIterator i;
+	char *s;
+
+	if (pattern == NULL || pattern[0] == '\0')
+		return 0;
+
+	l = _script_list_create (pattern);
+	if (l == NULL)
+		return error ("Unable to run %s [%s]", name, pattern);
+
+	i = list_iterator_create (l);
+	if (i == NULL) {
+		list_destroy (l);
+		return error ("run_script: list_iterator_create: Out of memory");
+	}
+
+	while ((s = list_next (i))) {
+		rc = run_one_script (name, s, jobid, max_wait, env);
+		if (rc) {
+			error ("%s: exited with status 0x%04x\n", s, rc);
+			break;
+		}
+
+	}
+	list_iterator_destroy (i);
+	list_destroy (l);
+
+	return rc;
+}
+
