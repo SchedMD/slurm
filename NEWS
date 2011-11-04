@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     "bf_res" to control the resolution in the backfill scheduler's data about
     when jobs begin and end. Default value is 60 seconds (used to be 1 second).
  -- Cray - Remove the "family" specification from the GPU reservation request.
+ -- Updated set_oomadj.c, replacing deprecated oom_adj reference with
+    oom_score_adj
 
 * Changes in SLURM 2.3.1
 ========================
