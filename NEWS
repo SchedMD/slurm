@@ -91,6 +91,9 @@ documents those changes that are of interest to users and admins.
  -- Cray - Remove the "family" specification from the GPU reservation request.
  -- Updated set_oomadj.c, replacing deprecated oom_adj reference with
     oom_score_adj
+ -- Fix resource allocation bug, generic resources allocation was ignoring the
+    job's ntasks_per_node and cpus_per_task parameters. Patch from Carles
+    Fenoy, BSC.
 
 * Changes in SLURM 2.3.1
 ========================
