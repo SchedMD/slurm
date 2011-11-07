@@ -89,6 +89,8 @@ static int _sort_step_by_time_used(void *void1, void *void2);
 static int _sort_step_by_user_id(void *void1, void *void2);
 static int _sort_step_by_user_name(void *void1, void *void2);
 
+static time_t now;
+
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/
@@ -96,6 +98,7 @@ static int _sort_step_by_user_name(void *void1, void *void2);
 void sort_job_list(List job_list)
 {
 	int i;
+	now = time(NULL);
 
 	if (params.sort == NULL)
 		params.sort = xstrdup("P,t,-p"); /* Partition,state,priority */
@@ -190,6 +193,7 @@ void sort_jobs_by_start_time (List jobs)
 void sort_step_list(List step_list)
 {
 	int i;
+	now = time(NULL);
 
 	if (params.sort == NULL)
 		params.sort = xstrdup("P,i");	/* Partition, step id */
@@ -583,8 +587,6 @@ static int _sort_job_by_time_limit(void *void1, void *void2)
 
 static uint32_t _get_start_time(job_info_t *job)
 {
-	time_t now = time(NULL);
-
 	if (job->start_time == (time_t) 0)
 		return 0xffffffff;
 	if ((job->job_state == JOB_PENDING) && (job->start_time < now))
@@ -851,9 +853,8 @@ static int _sort_step_by_time_used(void *void1, void *void2)
 	int diff;
 	job_step_info_t *step1 = (job_step_info_t *) void1;
 	job_step_info_t *step2 = (job_step_info_t *) void2;
-	time_t now, used1, used2;
+	time_t used1, used2;
 
-	now = time(NULL);
 	used1 = difftime(now, step1->start_time);
 	used2 = difftime(now, step2->start_time);
 	diff = used1 - used2;
