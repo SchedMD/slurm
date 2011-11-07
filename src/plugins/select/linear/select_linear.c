@@ -677,7 +677,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			if ((gres_cpus < cpu_cnt) ||
 			    (gres_cpus < job_ptr->details->ntasks_per_node) ||
 			    ((job_ptr->details->cpus_per_task > 1) &&
-			     (gres_cpus < job_ptr->details->cpus_per_task)))
+			     (gres_cpus < job_ptr->details->cpus_per_task))) {
 				bit_clear(jobmap, i);
 				continue;
 			}
