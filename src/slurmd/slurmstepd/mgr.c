@@ -719,7 +719,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.step_rc = step_complete.step_rc;
 	msg.jobacct = jobacct_gather_g_create(NULL);
 	/************* acct stuff ********************/
-	if(!acct_sent) {
+	if (!acct_sent) {
 		jobacct_gather_g_aggregate(step_complete.jobacct, job->jobacct);
 		jobacct_gather_g_getinfo(step_complete.jobacct,
 					 JOBACCT_DATA_TOTAL, msg.jobacct);
@@ -731,48 +731,53 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	req.data = &msg;
 	req.address = step_complete.parent_addr;
 
-	/* Do NOT change this check to "step_complete.rank == 0", because
+	/* Do NOT change this check to "step_complete.rank != 0", because
 	 * there are odd situations where SlurmUser or root could
 	 * craft a launch without a valid credential, and no tree information
 	 * can be built with out the hostlist from the credential.
 	 */
-	if (step_complete.parent_rank == -1) {
+	if (step_complete.parent_rank != -1) {
+		debug3("Rank %d sending complete to rank %d, range %d to %d",
+		       step_complete.rank, step_complete.parent_rank,
+		       first, last);
+		/* On error, pause then try sending to parent again.
+		 * The parent slurmstepd may just not have started yet, because
+		 * of the way that the launch message forwarding works.
+		 */
+		for (i = 0; i < REVERSE_TREE_PARENT_RETRY; i++) {
+			if (i)
+				sleep(1);
+			retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 0);
+			if ((retcode == 0) && (rc == 0))
+				goto finished;
+		}
+		/* on error AGAIN, send to the slurmctld instead */
+		debug3("Rank %d sending complete to slurmctld instead, range "
+		       "%d to %d", step_complete.rank, first, last);
+	} else {
 		/* this is the base of the tree, its parent is slurmctld */
 		debug3("Rank %d sending complete to slurmctld, range %d to %d",
 		       step_complete.rank, first, last);
-		if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
-			slurm_get_ip_str(&step_complete.parent_addr, &port,
-					 ip_buf, sizeof(ip_buf));
-			error("Rank %d failed sending step completion message"
-			      " to slurmctld (parent, %s:%u)",
-			      step_complete.rank, ip_buf, port);
-		}
-		goto finished;
 	}
 
-	debug3("Rank %d sending complete to rank %d, range %d to %d",
-	       step_complete.rank, step_complete.parent_rank, first, last);
-	/* On error, pause then try sending to parent again.
-	 * The parent slurmstepd may just not have started yet, because
-	 * of the way that the launch message forwarding works.
-	 */
-	for (i = 0; i < REVERSE_TREE_PARENT_RETRY; i++) {
-		if (i)
-			sleep(1);
-		retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 0);
-		if (retcode == 0 && rc == 0)
-			goto finished;
+	/* Retry step complete RPC send to slurmctld indefinitely.
+	 * Prevent orphan job step if slurmctld is down */
+	i = 1;
+	while (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+		if (i++ == 1) {
+			slurm_get_ip_str(&step_complete.parent_addr, &port,
+					 ip_buf, sizeof(ip_buf));
+			error("Rank %d failed sending step completion message "
+			      "directly to slurmctld (%s:%u), retrying",
+			      step_complete.rank, ip_buf, port);
+		}
+		sleep(60);
 	}
-	/* on error AGAIN, send to the slurmctld instead */
-	debug3("Rank %d sending complete to slurmctld instead, range %d to %d",
-	       step_complete.rank, first, last);
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
-		slurm_get_ip_str(&step_complete.parent_addr, &port,
-				 ip_buf, sizeof(ip_buf));
-		error("Rank %d failed sending step completion message"
-		      " directly to slurmctld (%s:%u)",
-		      step_complete.rank, ip_buf, port);
+	if (i > 1) {
+		info("Rank %d sent step completion message directly to "
+		     "slurmctld (%s:%u)", step_complete.rank, ip_buf, port);
 	}
+
 finished:
 	jobacct_gather_g_destroy(msg.jobacct);
 }
