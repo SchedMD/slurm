@@ -673,9 +673,14 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 						 gres_list, use_total_gres,
 						 NULL, 0, 0, job_ptr->job_id,
 						 node_ptr->name);
-		if ((gres_cpus != NO_VAL) && (gres_cpus < cpu_cnt)) {
-			bit_clear(jobmap, i);
-			continue;
+		if (gres_cpus != NO_VAL) {
+			if ((gres_cpus < cpu_cnt) ||
+			    (gres_cpus < job_ptr->details->ntasks_per_node) ||
+			    ((job_ptr->details->cpus_per_task > 1) &&
+			     (gres_cpus < job_ptr->details->cpus_per_task)))
+				bit_clear(jobmap, i);
+				continue;
+			}
 		}
 
 		if (mode == SELECT_MODE_TEST_ONLY) {
