@@ -2983,6 +2983,7 @@ extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 	memset(&job_rec, 0, sizeof(struct job_record));
 	job_rec.details = xmalloc(sizeof(struct job_details));
 	job_rec.select_jobinfo = select_g_select_jobinfo_alloc();
+
 	tmp_u32 = 1;
 	set_select_jobinfo(job_rec.select_jobinfo->data,
 			   SELECT_JOBDATA_ALTERED, &tmp_u32);
