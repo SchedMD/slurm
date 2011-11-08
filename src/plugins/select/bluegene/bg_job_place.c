@@ -388,11 +388,11 @@ static bg_record_t *_find_matching_block(List block_list,
 						(float)bg_record->cpu_cnt,
 						tmp_char,
 						sizeof(tmp_char), UNIT_NONE);
-					info("block %s CPU count (%s) "
-					     "not suitable %u-%u %u",
+					info("block %s CPU count (%u) "
+					     "not suitable, asking for %u-%u",
 					     bg_record->bg_block_id,
-					     tmp_char, request->procs, max_cpus,
-					     bg_record->cpu_cnt);
+					     bg_record->cpu_cnt, request->procs,
+					     max_cpus);
 				}
 				continue;
 			}
