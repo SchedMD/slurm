@@ -1722,7 +1722,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					   SELECT_JOBDATA_BLOCK_PTR,
 					   NULL);
 		} else {
-			if (job_ptr->part_ptr->max_share <= 1) {
+			if (job_ptr->part_ptr
+			    && job_ptr->part_ptr->max_share <= 1) {
 				if (bg_record->ionode_str)
 					error("Small block used in a "
 					      "non-shared partition");
