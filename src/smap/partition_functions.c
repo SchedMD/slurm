@@ -49,7 +49,6 @@ typedef struct {
 	char *bg_block_name;
 	uint16_t bg_conn_type[HIGHEST_DIMENSIONS];
 	uint16_t bg_node_use;
-	char *bg_user_name;
 	char *ionode_str;
 	int job_running;
 	int letter_num;
@@ -301,8 +300,6 @@ extern void get_bg_part(void)
 		block_ptr->nodelist = list_create(_nodelist_del);
 		_make_nodelist(block_ptr->mp_str, block_ptr->nodelist);
 
-		block_ptr->bg_user_name
-			= xstrdup(new_bg_ptr->block_array[i].owner_name);
 		block_ptr->state = new_bg_ptr->block_array[i].state;
 
 		memcpy(block_ptr->bg_conn_type,
@@ -471,10 +468,6 @@ static void _print_header_part(void)
 			main_xcord += 8;
 			mvwprintw(text_win,
 				  main_ycord,
-				  main_xcord, "USER");
-			main_xcord += 9;
-			mvwprintw(text_win,
-				  main_ycord,
 				  main_xcord, "CONN");
 			main_xcord += 8;
 			if (params.cluster_flags & CLUSTER_FLAG_BGL) {
@@ -614,12 +607,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 					  main_xcord,
 					  "%.8s", tmp_char);
 				main_xcord += 8;
-
-				mvwprintw(text_win,
-					  main_ycord,
-					  main_xcord, "%.8s",
-					  db2_info_ptr->bg_user_name);
-				main_xcord += 9;
 
 				conn_str = conn_type_string_full(
 					db2_info_ptr->bg_conn_type);
@@ -765,7 +752,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 						 "-");
 
 				printf("%8.8s ", tmp_char);
-				printf("%8.8s ", db2_info_ptr->bg_user_name);
 
 				conn_str = conn_type_string_full(
 					db2_info_ptr->bg_conn_type);
@@ -800,7 +786,6 @@ static void _block_list_del(void *object)
 	db2_block_info_t *block_ptr = (db2_block_info_t *)object;
 
 	if (block_ptr) {
-		xfree(block_ptr->bg_user_name);
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->mp_str);

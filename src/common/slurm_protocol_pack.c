@@ -8642,7 +8642,90 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 	ListIterator itr;
 	block_job_info_t *job;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		if (!block_info) {
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			pack32(1, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+			packnull(buffer);
+			return;
+		}
+
+		packstr(block_info->bg_block_id, buffer);
+		packstr(block_info->blrtsimage, buffer);
+
+		if (block_info->mp_inx) {
+			char *bitfmt = inx2bitfmt(block_info->mp_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		pack32(cluster_dims, buffer);
+		for (dim = 0; dim < cluster_dims; dim++)
+			pack16(block_info->conn_type[dim], buffer);
+
+		packstr(block_info->ionode_str, buffer);
+
+		if (block_info->ionode_inx) {
+			char *bitfmt =
+				inx2bitfmt(block_info->ionode_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		if (block_info->job_list)
+			count = list_count(block_info->job_list);
+
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(block_info->job_list);
+			while ((job = list_next(itr))) {
+				slurm_pack_block_job_info(job, buffer,
+							  protocol_version);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(block_info->job_running, buffer);
+
+		packstr(block_info->linuximage, buffer);
+		packstr(block_info->mloaderimage, buffer);
+		packstr(block_info->mp_str, buffer);
+		packstr(block_info->mp_used_str, buffer);
+		pack32(block_info->cnode_cnt, buffer);
+		pack16(block_info->node_use, buffer);
+		packstr(block_info->ramdiskimage, buffer);
+		packstr(block_info->reason, buffer);
+		pack16(block_info->state, buffer);
+		if (block_info->mp_used_inx) {
+			char *bitfmt = inx2bitfmt(block_info->mp_used_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		if (!block_info) {
 			packnull(buffer);
 			packnull(buffer);
@@ -8717,7 +8800,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->mp_used_str, buffer);
 		pack32(block_info->cnode_cnt, buffer);
 		pack16(block_info->node_use, buffer);
-		packstr(block_info->owner_name, buffer);
+		packnull(buffer);
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
@@ -8785,7 +8868,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		pack32(block_info->cnode_cnt, buffer);
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			pack16(block_info->node_use, buffer);
-		packstr(block_info->owner_name, buffer);
+		packnull(buffer);
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
@@ -8845,7 +8928,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		pack32(block_info->cnode_cnt, buffer);
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			pack16(block_info->node_use, buffer);
-		packstr(block_info->owner_name, buffer);
+		packnull(buffer);
 		packstr(block_info->ramdiskimage, buffer);
 		pack16(block_info->state, buffer);
 	}
@@ -8887,7 +8970,7 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 
 	memset(block_info, 0, sizeof(block_info_t));
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&block_info->bg_block_id,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&block_info->blrtsimage,
@@ -8942,8 +9025,75 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				       buffer);
 		safe_unpack32(&block_info->cnode_cnt, buffer);
 		safe_unpack16(&block_info->node_use, buffer);
-		safe_unpackstr_xmalloc(&block_info->owner_name,
+		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->reason,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&block_info->state, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->mp_used_inx = bitfmt2int("");
+		} else {
+			block_info->mp_used_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
+		}
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&block_info->bg_block_id,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->blrtsimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->mp_inx = bitfmt2int("");
+		} else {
+			block_info->mp_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > HIGHEST_DIMENSIONS) {
+			error("slurm_unpack_block_info_members: count of "
+			      "system is %d but we can only handle %d",
+			      count, HIGHEST_DIMENSIONS);
+			goto unpack_error;
+		}
+		for (i=0; i<count; i++)
+			safe_unpack16(&block_info->conn_type[i], buffer);
+		safe_unpackstr_xmalloc(&(block_info->ionode_str),
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		if (mp_inx_str == NULL) {
+			block_info->ionode_inx = bitfmt2int("");
+		} else {
+			block_info->ionode_inx = bitfmt2int(mp_inx_str);
+			xfree(mp_inx_str);
+		}
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			block_info->job_list =
+				list_create(slurm_free_block_job_info);
+			for (i=0; i<count; i++) {
+				if (_unpack_block_job_info(&job, buffer,
+							   protocol_version)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(block_info->job_list, job);
+			}
+		}
+
+		safe_unpack32(&block_info->job_running, buffer);
+		safe_unpackstr_xmalloc(&block_info->linuximage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->mloaderimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(block_info->mp_str), &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&(block_info->mp_used_str), &uint32_tmp,
+				       buffer);
+		safe_unpack32(&block_info->cnode_cnt, buffer);
+		safe_unpack16(&block_info->node_use, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		xfree(mp_inx_str);
 		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&block_info->reason,
@@ -8989,8 +9139,8 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		safe_unpack32(&block_info->cnode_cnt, buffer);
 		if (cluster_flags & CLUSTER_FLAG_BGL)
 			safe_unpack16(&block_info->node_use, buffer);
-		safe_unpackstr_xmalloc(&block_info->owner_name,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		xfree(mp_inx_str);
 		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&block_info->reason,
@@ -9029,8 +9179,8 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		safe_unpack32(&block_info->cnode_cnt, buffer);
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			safe_unpack16(&block_info->node_use, buffer);
-		safe_unpackstr_xmalloc(&block_info->owner_name,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		xfree(mp_inx_str);
 		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&block_info->state, buffer);

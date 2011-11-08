@@ -34,7 +34,6 @@
 #define _DEBUG 0
 
 typedef struct {
-	char *bg_user_name;
 	char *bg_block_name;
 	char *slurm_part_name;
 	char *mp_str;
@@ -191,7 +190,6 @@ static void _block_list_del(void *object)
 	sview_block_info_t *block_ptr = (sview_block_info_t *)object;
 
 	if (block_ptr) {
-		xfree(block_ptr->bg_user_name);
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->mp_str);
@@ -321,10 +319,6 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_STATE),
 				   bg_block_state_string(block_ptr->state));
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_USER),
-				   block_ptr->bg_user_name);
 }
 
 static void _update_block_record(sview_block_info_t *block_ptr,
@@ -360,7 +354,6 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_SMALL_BLOCK,  block_ptr->small_block,
 			   SORTID_STATE,
 				bg_block_state_string(block_ptr->state),
-			   SORTID_USER,         block_ptr->bg_user_name,
 			   SORTID_UPDATED,      1,
 			   -1);
 	xfree(tmp_char);
@@ -564,9 +557,6 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			block_ptr->mp_str = xstrdup(tmp_mp_str);
 		}
 
-		block_ptr->bg_user_name
-			= xstrdup(block_info_ptr->
-				  block_array[i].owner_name);
 		if (cluster_flags & CLUSTER_FLAG_BGP) {
 			block_ptr->imagelinux = xstrdup(
 				block_info_ptr->block_array[i].linuximage);

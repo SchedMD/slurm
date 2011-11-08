@@ -138,8 +138,7 @@ char *slurm_sprint_block_info(
 	else
 		xstrcat(out, "JobRunning=NONE ");
 	tmp_char = conn_type_string_full(block_ptr->conn_type);
-	xstrfmtcat(out, "User=%s ConnType=%s",
-		   block_ptr->owner_name, tmp_char);
+	xstrfmtcat(out, "ConnType=%s", tmp_char);
 	xfree(tmp_char);
 	if(cluster_flags & CLUSTER_FLAG_BGL)
 		xstrfmtcat(out, " NodeUse=%s",

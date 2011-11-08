@@ -349,6 +349,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_BLOCK_NODE_CNT,	/* data-> uint32_t block_cnode_cnt */
 	SELECT_JOBDATA_START_LOC, /* data-> uint16_t
 				   * start_loc[SYSTEM_DIMENSIONS] */
+	SELECT_JOBDATA_USER_NAME, /* data-> char * user_name */
 };
 
 enum select_nodedata_type {
@@ -1578,7 +1579,6 @@ typedef struct {
 				 * start_range_2, .., -1  */
 	char *mp_used_str;
 	uint16_t node_use;
-	char *owner_name;
 	char *ramdiskimage;     /* RamDiskImage for this block */
 	char *reason;
 	uint16_t state;

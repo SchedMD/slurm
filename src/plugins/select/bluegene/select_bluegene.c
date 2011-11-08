@@ -465,8 +465,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		pack32(count, buffer);
 		if (count && count != NO_VAL) {
 			itr = list_iterator_create(bg_record->job_list);
-			while ((job = list_next(itr))) {
-				slurm_pack_block_job_info(job, buffer,
+			while ((job_ptr = list_next(itr))) {
 							  protocol_version);
 			}
 			list_iterator_destroy(itr);
@@ -480,7 +479,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->mp_used_str, buffer);
 		pack32((uint32_t)bg_record->cnode_cnt, buffer);
 		pack16((uint16_t)bg_record->node_use, buffer);
-		packstr(bg_record->user_name, buffer);
+		packnull(buffer); /* for user_name */
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
@@ -502,7 +501,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 #ifdef HAVE_BGL
 		pack16((uint16_t)bg_record->node_use, buffer);
 #endif
-		packstr(bg_record->user_name, buffer);
+		packnull(buffer); /* for user_name */
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
@@ -523,7 +522,7 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 #ifdef HAVE_BGL
 		pack16((uint16_t)bg_record->node_use, buffer);
 #endif
-		packstr(bg_record->user_name, buffer);
+		packnull(buffer); /* for user_name */
 		packstr(bg_record->ramdiskimage, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
 	}
