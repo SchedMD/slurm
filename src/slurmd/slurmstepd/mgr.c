@@ -590,6 +590,7 @@ _setup_user_managed_io(slurmd_job_t *job)
 static void
 _random_sleep(slurmd_job_t *job)
 {
+#if !defined HAVE_FRONT_END
 	long int delay = 0;
 	long int max   = (3 * job->nnodes);
 
@@ -597,8 +598,8 @@ _random_sleep(slurmd_job_t *job)
 
 	delay = lrand48() % ( max + 1 );
 	debug3("delaying %ldms", delay);
-	if (poll(NULL, 0, delay) == -1)
-		return;
+	poll(NULL, 0, delay);
+#endif
 }
 
 /*
@@ -625,8 +626,8 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	resp.msg_type		= MESSAGE_TASK_EXIT;
 
 	/*
-	 *  XXX Hack for TCP timeouts on exit of large, synchronized
-	 *  jobs. Delay a random amount if job->nnodes > 100
+	 *  Hack for TCP timeouts on exit of large, synchronized job
+	 *  termination. Delay a random amount if job->nnodes > 100
 	 */
 	if (job->nnodes > 100)
 		_random_sleep(job);
