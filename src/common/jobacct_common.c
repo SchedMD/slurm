@@ -77,7 +77,7 @@ unpack_error:
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct,
 				      jobacct_id_t *jobacct_id)
 {
-	if(!jobacct_id) {
+	if (!jobacct_id) {
 		jobacct_id_t temp_id;
 		temp_id.taskid = (uint16_t)NO_VAL;
 		temp_id.nodeid = (uint32_t)NO_VAL;
@@ -266,28 +266,30 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 				     struct jobacctinfo *from)
 {
 	xassert(dest);
-	xassert(from);
+
+	if (!from)
+		return;
 
 	slurm_mutex_lock(&jobacct_lock);
-	if(dest->max_vsize < from->max_vsize) {
+	if (dest->max_vsize < from->max_vsize) {
 		dest->max_vsize = from->max_vsize;
 		dest->max_vsize_id = from->max_vsize_id;
 	}
 	dest->tot_vsize += from->tot_vsize;
 
-	if(dest->max_rss < from->max_rss) {
+	if (dest->max_rss < from->max_rss) {
 		dest->max_rss = from->max_rss;
 		dest->max_rss_id = from->max_rss_id;
 	}
 	dest->tot_rss += from->tot_rss;
 
-	if(dest->max_pages < from->max_pages) {
+	if (dest->max_pages < from->max_pages) {
 		dest->max_pages = from->max_pages;
 		dest->max_pages_id = from->max_pages_id;
 	}
 	dest->tot_pages += from->tot_pages;
-	if((dest->min_cpu > from->min_cpu)
-	   || (dest->min_cpu == (uint32_t)NO_VAL)) {
+	if ((dest->min_cpu > from->min_cpu)
+	    || (dest->min_cpu == (uint32_t)NO_VAL)) {
 		if(from->min_cpu == (uint32_t)NO_VAL)
 			from->min_cpu = 0;
 		dest->min_cpu = from->min_cpu;
@@ -295,16 +297,16 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 	}
 	dest->tot_cpu += from->tot_cpu;
 
-	if(dest->max_vsize_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_vsize_id.taskid == (uint16_t)NO_VAL)
 		dest->max_vsize_id = from->max_vsize_id;
 
-	if(dest->max_rss_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_rss_id.taskid == (uint16_t)NO_VAL)
 		dest->max_rss_id = from->max_rss_id;
 
-	if(dest->max_pages_id.taskid == (uint16_t)NO_VAL)
+	if (dest->max_pages_id.taskid == (uint16_t)NO_VAL)
 		dest->max_pages_id = from->max_pages_id;
 
-	if(dest->min_cpu_id.taskid == (uint16_t)NO_VAL)
+	if (dest->min_cpu_id.taskid == (uint16_t)NO_VAL)
 		dest->min_cpu_id = from->min_cpu_id;
 
 	dest->user_cpu_sec	+= from->user_cpu_sec;
