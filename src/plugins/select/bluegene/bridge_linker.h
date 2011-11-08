@@ -65,6 +65,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/slurmctld/locks.h"
 #include "bg_list_functions.h"
 #include "bg_enums.h"
 
@@ -78,6 +79,7 @@ extern time_t last_bg_update;
 extern pthread_mutex_t block_state_mutex;
 extern int blocks_are_created;
 extern int num_unused_cpus;
+extern slurmctld_lock_t job_read_lock;
 
 extern int bridge_init(char *properties_file);
 extern int bridge_fini();
@@ -97,15 +99,17 @@ extern int bridge_block_boot(bg_record_t *bg_record);
 extern int bridge_block_free(bg_record_t *bg_record);
 extern int bridge_block_remove(bg_record_t *bg_record);
 
-extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name);
-extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name);
-extern int bridge_block_remove_all_users(bg_record_t *bg_record,
-					 char *user_name);
+extern int bridge_block_add_user(bg_record_t *bg_record,
+				 const char *user_name);
+extern int bridge_block_remove_user(bg_record_t *bg_record,
+				    const char *user_name);
+extern int bridge_block_sync_users(bg_record_t *bg_record);
 
 extern int bridge_blocks_load_curr(List curr_block_list);
 
 extern void bridge_reset_block_list(List block_list);
-extern void bridge_block_post_job(char *bg_block_id);
+extern void bridge_block_post_job(char *bg_block_id,
+				  struct job_record *job_ptr);
 extern int bridge_set_log_params(char *api_file_name, unsigned int level);
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P

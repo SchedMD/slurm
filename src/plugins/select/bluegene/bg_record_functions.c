@@ -115,8 +115,6 @@ extern void destroy_bg_record(void *object)
 		FREE_NULL_BITMAP(bg_record->mp_used_bitmap);
 		xfree(bg_record->ramdiskimage);
 		xfree(bg_record->reason);
-		xfree(bg_record->target_name);
-		xfree(bg_record->user_name);
 
 		xfree(bg_record);
 	}
@@ -381,10 +379,13 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->free_cnt = fir_record->free_cnt;
 	sec_record->full_block = fir_record->full_block;
 
-	for(i=0;i<SYSTEM_DIMENSIONS;i++) {
+	for (i=0;i<SYSTEM_DIMENSIONS;i++) {
 		sec_record->geo[i] = fir_record->geo[i];
 		sec_record->start[i] = fir_record->start[i];
 	}
+
+	for (i=0;i<HIGHEST_DIMENSIONS;i++)
+		sec_record->start_small[i] = fir_record->start_small[i];
 
 	xfree(sec_record->ionode_str);
 	sec_record->ionode_str = xstrdup(fir_record->ionode_str);
@@ -398,6 +399,16 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		sec_record->ionode_bitmap = NULL;
 	}
 
+	if (sec_record->job_list)
+		list_destroy(sec_record->job_list);
+	sec_record->job_list = list_create(NULL);
+	if (fir_record->job_list) {
+		struct job_record *job_ptr;
+		itr = list_iterator_create(fir_record->job_list);
+		while ((job_ptr = list_next(itr)))
+			list_append(sec_record->job_list, job_ptr);
+		list_iterator_destroy(itr);
+	}
 	sec_record->job_ptr = fir_record->job_ptr;
 	sec_record->job_running = fir_record->job_running;
 
@@ -433,13 +444,6 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->reason = xstrdup(fir_record->reason);
 
 	sec_record->state = fir_record->state;
-
-	xfree(sec_record->target_name);
-	sec_record->target_name = xstrdup(fir_record->target_name);
-	xfree(sec_record->user_name);
-	sec_record->user_name = xstrdup(fir_record->user_name);
-
-	sec_record->user_uid = fir_record->user_uid;
 }
 
 /*
@@ -510,95 +514,6 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	return bg_record_cmpf_inc(rec_a, rec_b);
 }
 
-/* All changes to the bg_list target_name must
-   be done before this function is called.
-   also slurm_conf_lock() must be called before calling this
-   function along with slurm_conf_unlock() afterwards.
-*/
-extern int update_block_user(bg_record_t *bg_record, int set)
-{
-	int rc=0;
-
-	if (!bg_record->target_name) {
-		error("Must set target_name to run update_block_user.");
-		return -1;
-	}
-	if (!bg_record->user_name) {
-		error("No user_name");
-		bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
-	}
-
-	if (set) {
-		if ((rc = bridge_block_remove_all_users(
-			     bg_record, bg_record->target_name))
-		    == REMOVE_USER_ERR) {
-			error("1 Something happened removing "
-			      "users from block %s",
-			      bg_record->bg_block_id);
-			return -1;
-		} else if (rc == REMOVE_USER_NONE) {
-			if (strcmp(bg_record->target_name,
-				   bg_conf->slurm_user_name)) {
-				info("Adding user %s to Block %s",
-				     bg_record->target_name,
-				     bg_record->bg_block_id);
-
-				if ((rc = bridge_block_add_user(
-					     bg_record,
-					     bg_record->target_name))
-				    != SLURM_SUCCESS) {
-					error("bridge_add_block_user"
-					      "(%s,%s): %s",
-					      bg_record->bg_block_id,
-					      bg_record->target_name,
-					      bg_err_str(rc));
-					return -1;
-				}
-			}
-		}
-	}
-
-	if (strcmp(bg_record->target_name, bg_record->user_name)) {
-		uid_t pw_uid;
-		xfree(bg_record->user_name);
-		bg_record->user_name = xstrdup(bg_record->target_name);
-		if (uid_from_string (bg_record->user_name, &pw_uid) < 0) {
-			error("No such user: %s", bg_record->user_name);
-			return -1;
-		} else {
-			bg_record->user_uid = pw_uid;
-		}
-		return 1;
-	}
-
-	return 0;
-}
-
-extern int set_block_user(bg_record_t *bg_record)
-{
-	int rc = 0;
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("resetting the boot state flag and "
-		     "counter for block %s.",
-		     bg_record->bg_block_id);
-	bg_record->boot_state = BG_BLOCK_FREE;
-	bg_record->boot_count = 0;
-
-	if ((rc = update_block_user(bg_record, 1)) == 1) {
-		last_bg_update = time(NULL);
-		rc = SLURM_SUCCESS;
-	} else if (rc == -1) {
-		error("Unable to add user name to block %s. "
-		      "Cancelling job.",
-		      bg_record->bg_block_id);
-		rc = SLURM_ERROR;
-	}
-	xfree(bg_record->target_name);
-	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
-
-	return rc;
-}
-
 /* Try to requeue job running on block and put block in an error state.
  * block_state_mutex must be unlocked before calling this.
  */
@@ -634,7 +549,6 @@ extern int add_bg_record(List records, List *used_nodes,
 	bg_record_t *bg_record = NULL;
 	ba_mp_t *ba_mp = NULL;
 	ListIterator itr;
-	uid_t pw_uid;
 	int i, len;
 
 	xassert(bg_conf->slurm_user_name);
@@ -645,14 +559,6 @@ extern int add_bg_record(List records, List *used_nodes,
 	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 
 	bg_record->magic = BLOCK_MAGIC;
-
-	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
-	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
-
-	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
-		error("add_bg_record: No such user: %s", bg_record->user_name);
-	else
-		bg_record->user_uid = pw_uid;
 
 	if (used_nodes && *used_nodes) {
 #ifdef HAVE_BGQ
@@ -758,6 +664,24 @@ extern int add_bg_record(List records, List *used_nodes,
 			       "destroying this mp list");
 			list_destroy(bg_record->ba_mp_list);
 			bg_record->ba_mp_list = NULL;
+		} else if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
+			ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
+			xassert(ba_mp);
+			/* This will be a list containing jobs running on this
+			   block */
+			bg_record->job_list = list_create(NULL);
+
+			/* Create these now so we can deal with error
+			   cnodes if/when they happen.  Since this is
+			   the easiest place to figure it out for
+			   blocks that don't use the entire block */
+			if ((ba_mp->cnode_bitmap =
+			     ba_create_ba_mp_cnode_bitmap(bg_record))) {
+		       		ba_mp->cnode_err_bitmap =
+					bit_alloc(bg_conf->mp_cnode_cnt);
+				ba_mp->cnode_usable_bitmap =
+					bit_copy(ba_mp->cnode_bitmap);
+			}
 		}
 	} else {
 		List ba_mp_list = NULL;
@@ -1370,8 +1294,6 @@ extern int up_nodecard(char *mp_name, bitstr_t *ionode_bitmap)
 /* block_state_mutex must be unlocked before calling this. */
 extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 {
-	uid_t pw_uid;
-
 	xassert(bg_record);
 
 	/* Only check this if the blocks are created, meaning this
@@ -1414,16 +1336,6 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 
 	bg_record->job_running = BLOCK_ERROR_STATE;
 	bg_record->state |= BG_BLOCK_ERROR_FLAG;
-
-	xfree(bg_record->user_name);
-	xfree(bg_record->target_name);
-	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
-	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
-
-	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
-		error("No such user: %s", bg_record->user_name);
-	else
-		bg_record->user_uid = pw_uid;
 
 	/* Only send if reason is set.  If it isn't set then
 	   accounting should already know about this error state */
@@ -1476,64 +1388,77 @@ extern int resume_block(bg_record_t *bg_record)
 }
 
 /* block_state_mutex should be locked before calling this function */
-extern int bg_reset_block(bg_record_t *bg_record)
+extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	if (bg_record) {
-		if (bg_record->job_running > NO_JOB_RUNNING) {
-			bg_record->job_running = NO_JOB_RUNNING;
-			bg_record->job_ptr = NULL;
-		}
-		/* remove user from list */
 
-		if (bg_record->target_name) {
-			if (strcmp(bg_record->target_name,
-				  bg_conf->slurm_user_name)) {
-				xfree(bg_record->target_name);
-				bg_record->target_name =
-					xstrdup(bg_conf->slurm_user_name);
-			}
-			update_block_user(bg_record, 1);
-		} else {
-			bg_record->target_name =
-				xstrdup(bg_conf->slurm_user_name);
-		}
+	if (!bg_record) {
+		error("bg_reset_block: No block given to reset");
+		return SLURM_ERROR;
+	}
 
+	if (bg_record->job_list)
+		ba_remove_job_in_block_job_list(bg_record, job_ptr);
 
-		/* Don't reset these (boot_(state/count)), they will be
-		   reset when state changes, and needs to outlast a job
-		   allocation.
+	if (bg_record->job_running > NO_JOB_RUNNING) {
+#ifndef HAVE_BG_L_P
+		/* Just in case the slurmctld wasn't up at the
+		   time a step completion message came through
+		   we will clear all the cnode_bitmaps of the
+		   midplanes of this block. So we can use
+		   those cnodes on the next job that uses this
+		   block.
 		*/
-		/* bg_record->boot_state = 0; */
-		/* bg_record->boot_count = 0; */
+		ba_mp_t *ba_mp = NULL;
+		ListIterator itr = list_iterator_create(
+			bg_record->ba_mp_list);
+		while ((ba_mp = list_next(itr))) {
+			if (!ba_mp->used)
+				continue;
+			FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
+		}
+		list_iterator_destroy(itr);
+#endif
+		bg_record->job_running = NO_JOB_RUNNING;
+		bg_record->job_ptr = NULL;
+	}
 
-		last_bg_update = time(NULL);
-		/* Only remove from the job_running list if
-		   job_running == NO_JOB_RUNNING, since blocks in
-		   error state could also be in this list and we don't
-		   want to remove them.
-		*/
-		if (bg_record->job_running == NO_JOB_RUNNING)
-			if (remove_from_bg_list(bg_lists->job_running,
-					       bg_record)
-			   == SLURM_SUCCESS) {
-				num_unused_cpus += bg_record->cpu_cnt;
-			}
+	/* remove user from list */
+	bridge_block_sync_users(bg_record);
 
+	/* Don't reset these (boot_(state/count)), they will be
+	   reset when state changes, and needs to outlast a job
+	   allocation.
+	*/
+	/* bg_record->boot_state = 0; */
+	/* bg_record->boot_count = 0; */
+
+	last_bg_update = time(NULL);
+	/* Only remove from the job_running list if
+	   job_running == NO_JOB_RUNNING, since blocks in
+	   error state could also be in this list and we don't
+	   want to remove them.
+	*/
+	if (bg_record->job_running == NO_JOB_RUNNING
+	    && (!bg_record->job_list
+		|| !list_count(bg_record->job_list))) {
+		if (remove_from_bg_list(bg_lists->job_running,
+					bg_record)
+		    == SLURM_SUCCESS) {
+			num_unused_cpus += bg_record->cpu_cnt;
+		}
 		/* At this point, no job is running on the block
 		   anymore, so if there are any errors on it, free it
 		   now.
 		*/
 		if (bg_record->cnode_err_cnt) {
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			if (bg_conf->slurm_debug_flags
+			    & DEBUG_FLAG_SELECT_TYPE)
 				info("%s has %d in error",
 				     bg_record->bg_block_id,
 				     bg_record->cnode_err_cnt);
 			bg_free_block(bg_record, 0, 1);
 		}
-	} else {
-		error("No block given to reset");
-		rc = SLURM_ERROR;
 	}
 
 	return rc;

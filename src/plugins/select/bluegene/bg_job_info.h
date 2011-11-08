@@ -76,8 +76,12 @@ struct select_jobinfo {
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t start_loc[HIGHEST_DIMENSIONS];	/* where in block we
 						 * are starting from */
-	bitstr_t *units_used;   /* Used for a step the cnodes used.
-				 */
+	bitstr_t *units_avail;  /* Used for a job allocation in a sub block,
+				   the cnodes available to be used are
+				   set. */
+	bitstr_t *units_used;   /* bit not set are available for running. */
+	char *user_name;        /* user name of the user_id only used
+				 * when running multiple jobs per block */
 };
 
 /* allocate storage for a select job credential

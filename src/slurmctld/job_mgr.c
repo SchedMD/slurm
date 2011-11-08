@@ -1597,6 +1597,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->preempt_time = preempt_time;
 	job_ptr->user_id      = user_id;
+	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_USER_NAME, &user_id);
 	job_ptr->wait_all_nodes = wait_all_nodes;
 	job_ptr->warn_signal  = warn_signal;
 	job_ptr->warn_time    = warn_time;
@@ -4836,7 +4838,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo =
 		select_g_select_jobinfo_copy(job_desc->select_jobinfo);
-
+	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_USER_NAME,
+				    &job_ptr->user_id);
 	if (job_desc->ckpt_dir)
 		detail_ptr->ckpt_dir = xstrdup(job_desc->ckpt_dir);
 	else
@@ -5710,7 +5714,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->wckey, buffer);
 		pack32(dump_job_ptr->req_switch, buffer);
 		pack32(dump_job_ptr->wait4switch, buffer);
-		
+
 		packstr(dump_job_ptr->alloc_node, buffer);
 		if (!IS_JOB_COMPLETING(dump_job_ptr))
 			pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);

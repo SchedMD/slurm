@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     command.
  -- FRONTEND - handle step launch failure better.
  -- BGQ - Added a mutex to protect the now changing ba_system pointers.
+ -- BGQ - added new functionality for sub-block allocations - no preemption
+    for this yet though.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

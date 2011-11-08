@@ -80,6 +80,7 @@ typedef struct {
 	char *slurm_node_prefix;
 	char *slurm_user_name;
 	uint32_t smallest_block;
+	uint16_t sub_blocks;
 	uint16_t sub_mp_sys;
 } bg_config_t;
 
@@ -122,8 +123,8 @@ typedef struct bg_record {
 					   are on.  NULL if not a small block*/
 	char *ionode_str;               /* String of ionodes in block
 					 * NULL if not a small block*/
-	List job_list;                  /* List of jobs running on a
-					   small block */
+	List job_list;                  /* List of job records running on a
+					   block that allows multiple jobs */
 	struct job_record *job_ptr;	/* pointer to job running on
 					 * block or NULL if no job */
 	int job_running;                /* job id of job running of if
@@ -150,13 +151,14 @@ typedef struct bg_record {
 	char *reason;                   /* reason block is in error state */
 	uint16_t state;                 /* Current state of the block */
 	uint16_t start[SYSTEM_DIMENSIONS];  /* start node */
+	uint16_t start_small[HIGHEST_DIMENSIONS]; /* On a small block
+						   * what the starting
+						   * cnode is to
+						   * figure out the
+						   * relative position
+						   * of jobs */
 	uint32_t switch_count;          /* number of switches
 					 * used. On L/P */
-	char *target_name;		/* when a block is freed this
-					   is the name of the user we
-					   want on the block */
-	char *user_name;		/* user using the block */
-	uid_t user_uid;   		/* Owner of block uid	*/
 } bg_record_t;
 
 #endif

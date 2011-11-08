@@ -47,6 +47,7 @@
 #include <stdlib.h>
 
 static s_p_options_t bg_conf_file_options[] = {
+	{"AllowSubBlockAllocations", S_P_BOOLEAN},
 #ifdef HAVE_BGL
 	{"BlrtsImage", S_P_STRING},
 	{"LinuxImage", S_P_STRING},
@@ -636,9 +637,16 @@ extern int read_bg_conf(void)
 			      "in bluegene.conf");
 
 	s_p_get_uint16(&bg_conf->max_block_err, "MaxBlockInError", tbl);
+
+	tmp_bool = 0;
 	s_p_get_boolean(&tmp_bool, "SubMidplaneSystem", tbl);
 	bg_conf->sub_mp_sys = tmp_bool;
+
 #ifdef HAVE_BGQ
+	tmp_bool = 0;
+	s_p_get_boolean(&tmp_bool, "AllowSubBlockAllocations", tbl);
+	bg_conf->sub_blocks = tmp_bool;
+
 	/* You can only have 16 ionodes per midplane */
 	if (bg_conf->ionodes_per_mp > bg_conf->mp_nodecard_cnt)
 		bg_conf->ionodes_per_mp = bg_conf->mp_nodecard_cnt;

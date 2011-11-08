@@ -1825,33 +1825,66 @@ extern void ba_destroy_system(void)
 	}
 }
 
-extern ba_mp_t *ba_pick_sub_block_cnodes(
-	bg_record_t *bg_record, uint32_t *node_count, select_jobinfo_t *jobinfo)
+extern bool ba_sub_block_in_bitmap(select_jobinfo_t *jobinfo,
+				   bitstr_t *usable_bitmap, bool step)
 {
 	/* This shouldn't be called. */
 	xassert(0);
-	return NULL;
+	return false;
 }
 
-extern int ba_clear_sub_block_cnodes(
+extern int ba_sub_block_in_bitmap_clear(select_jobinfo_t *jobinfo,
+					bitstr_t *usable_bitmap)
+{
+	/* this doesn't do anything since above doesn't. */
+	return SLURM_SUCCESS;
+}
+
+extern ba_mp_t *ba_sub_block_in_record(
+	bg_record_t *bg_record, uint32_t *node_count,
+	select_jobinfo_t *jobinfo)
+{
+	/* This shouldn't be called. */
+	xassert(0);
+	return false;
+}
+
+extern int ba_sub_block_in_record_clear(
 	bg_record_t *bg_record, struct step_record *step_ptr)
 {
 	/* this doesn't do anything since above doesn't. */
 	return SLURM_SUCCESS;
 }
 
+extern void ba_sync_job_to_block(bg_record_t *bg_record,
+				 struct job_record *job_ptr)
+{
+	xassert(bg_record);
+	xassert(job_ptr);
+
+	bg_record->job_running = job_ptr->job_id;
+	bg_record->job_ptr = job_ptr;
+}
+
+
 extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record)
 {
 	return NULL;
 }
 
-extern char *ba_set_ionode_str(bitstr_t *bitmap)
+extern void ba_set_ionode_str(bg_record_t *bg_record)
 {
 	char bitstring[BITSIZE];
-        if (bitmap) {
-		bit_fmt(bitstring, BITSIZE, bitmap);
-		return xstrdup(bitstring);
-	}
+        if (!bg_record->ionode_bitmap)
+		return;
+
+	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
+	bg_record->ionode_str = xstrdup(bitstring);
+}
+
+extern struct job_record *ba_remove_job_in_block_job_list(
+	bg_record_t *bg_record, struct job_record *in_job_ptr)
+{
 	return NULL;
 }
 

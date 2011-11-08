@@ -61,33 +61,16 @@ static void _destroy_kill_struct(void *object)
 static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 {
 	int jobid = bg_record->job_running;
-	char *user_name = NULL;
 
 	if (bg_record->modifying)
 		return SLURM_SUCCESS;
 
-	user_name = xstrdup(bg_conf->slurm_user_name);
-	if (bridge_block_remove_all_users(bg_record, NULL) == REMOVE_USER_ERR) {
-		error("Something happened removing users from block %s",
-		      bg_record->bg_block_id);
-	}
-
-	if (!bg_record->target_name) {
-		error("Target Name was not set for block %s.",
-		      bg_record->bg_block_id);
-		bg_record->target_name = xstrdup(bg_record->user_name);
-	}
-
-	if (!bg_record->user_name) {
-		error("User Name was not set for block %s.",
-		      bg_record->bg_block_id);
-		bg_record->user_name = xstrdup(user_name);
-	}
-
 	if (bg_record->boot_state) {
 		error("State went to free on a boot for block %s.",
 		      bg_record->bg_block_id);
-	} else if (jobid > NO_JOB_RUNNING) {
+	} else if (bg_record->job_ptr && (jobid > NO_JOB_RUNNING)) {
+		select_jobinfo_t *jobinfo =
+			bg_record->job_ptr->select_jobinfo->data;
 		if (kill_job_list) {
 			kill_job_struct_t *freeit =
 				(kill_job_struct_t *)
@@ -95,16 +78,47 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 			freeit->jobid = jobid;
 			list_push(kill_job_list, freeit);
 		}
-
 		error("Block %s was in a ready state "
 		      "for user %s but is being freed. "
 		      "Job %d was lost.",
 		      bg_record->bg_block_id,
-		      bg_record->user_name,
+		      jobinfo->user_name,
 		      jobid);
+		bg_record->job_ptr = NULL;
+	} else if (bg_record->job_list && list_count(bg_record->job_list)) {
+		struct job_record *job_ptr;
+
+		lock_slurmctld(job_read_lock);
+		while ((job_ptr = list_pop(bg_record->job_list))) {
+			select_jobinfo_t *jobinfo;
+
+			if (job_ptr->magic != JOB_MAGIC)
+				continue;
+
+			jobinfo = job_ptr->select_jobinfo->data;
+			if (kill_job_list) {
+				kill_job_struct_t *freeit =
+					(kill_job_struct_t *)
+					xmalloc(sizeof(freeit));
+				freeit->jobid = job_ptr->job_id;
+				list_push(kill_job_list, freeit);
+			}
+			error("Block %s was in a ready state "
+			      "for user %s but is being freed. "
+			      "Job %d was lost.",
+			      bg_record->bg_block_id,
+			      jobinfo->user_name,
+			      job_ptr->job_id);
+		}
+		unlock_slurmctld(job_read_lock);
 	} else {
 		debug("Block %s was in a ready state "
 		      "but is being freed. No job running.",
+		      bg_record->bg_block_id);
+	}
+
+	if (bridge_block_sync_users(bg_record) == REMOVE_USER_ERR) {
+		error("Something happened removing users from block %s",
 		      bg_record->bg_block_id);
 	}
 
@@ -112,8 +126,6 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 	    == SLURM_SUCCESS)
 		num_unused_cpus += bg_record->cpu_cnt;
 	remove_from_bg_list(bg_lists->booted, bg_record);
-
-	xfree(user_name);
 
 	return SLURM_SUCCESS;
 }
@@ -149,12 +161,8 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 		   mpirun but we missed the state
 		   change */
 		debug("Block %s skipped rebooting, "
-		      "but it really is.  "
-		      "Setting target_name back to %s",
-		      bg_record->bg_block_id,
-		      bg_record->user_name);
-		xfree(bg_record->target_name);
-		bg_record->target_name = xstrdup(bg_record->user_name);
+		      "but it really is.",
+		      bg_record->bg_block_id);
 	} else if ((real_state == BG_BLOCK_TERM)
 		   && (state == BG_BLOCK_BOOTING))
 		/* This is a funky state IBM says
@@ -235,15 +243,31 @@ nochange_state:
 
 		switch (real_state) {
 		case BG_BLOCK_BOOTING:
-			debug3("checking to make sure user %s "
-			       "is the user.",
-			       bg_record->target_name);
-
-			if (update_block_user(bg_record, 0) == 1)
-				last_bg_update = time(NULL);
-			if (bg_record->job_ptr) {
+			if (bg_record->job_ptr
+			    && !IS_JOB_CONFIGURING(bg_record->job_ptr)) {
+				debug3("Setting job %u on block %s "
+				       "to configuring",
+				       bg_record->job_ptr->job_id,
+				       bg_record->bg_block_id);
 				bg_record->job_ptr->job_state |=
 					JOB_CONFIGURING;
+				last_job_update = time(NULL);
+			} else if (bg_record->job_list
+				   && list_count(bg_record->job_list)) {
+				struct job_record *job_ptr;
+				ListIterator job_itr =
+					list_iterator_create(
+						bg_record->job_list);
+				lock_slurmctld(job_read_lock);
+				while ((job_ptr = list_next(job_itr))) {
+					if (job_ptr->magic != JOB_MAGIC) {
+						list_delete_item(job_itr);
+						continue;
+					}
+					job_ptr->job_state |= JOB_CONFIGURING;
+				}
+				unlock_slurmctld(job_read_lock);
+				list_iterator_destroy(job_itr);
 				last_job_update = time(NULL);
 			}
 			break;
@@ -261,9 +285,8 @@ nochange_state:
 				char *reason = (char *)
 					"status_check: Boot fails ";
 
-				error("Couldn't boot Block %s for user %s",
-				      bg_record->bg_block_id,
-				      bg_record->target_name);
+				error("Couldn't boot Block %s",
+				      bg_record->bg_block_id);
 
 				slurm_mutex_unlock(&block_state_mutex);
 				requeue_and_error(bg_record, reason);
@@ -283,14 +306,34 @@ nochange_state:
 		case BG_BLOCK_INITED:
 			debug("block %s is ready.",
 			      bg_record->bg_block_id);
-			if (bg_record->job_ptr) {
+			if (bg_record->job_ptr
+			    && IS_JOB_CONFIGURING(bg_record->job_ptr)) {
 				bg_record->job_ptr->job_state &=
 					(~JOB_CONFIGURING);
+				last_job_update = time(NULL);
+			} else if (bg_record->job_list
+				   && list_count(bg_record->job_list)) {
+				struct job_record *job_ptr;
+				ListIterator job_itr =
+					list_iterator_create(
+						bg_record->job_list);
+				lock_slurmctld(job_read_lock);
+				while ((job_ptr = list_next(job_itr))) {
+					if (job_ptr->magic != JOB_MAGIC) {
+						list_delete_item(job_itr);
+						continue;
+					}
+					job_ptr->job_state &=
+						(~JOB_CONFIGURING);
+				}
+				unlock_slurmctld(job_read_lock);
+				list_iterator_destroy(job_itr);
 				last_job_update = time(NULL);
 			}
 			/* boot flags are reset here */
 			if (kill_job_list &&
-			    set_block_user(bg_record) == SLURM_ERROR) {
+			    bridge_block_sync_users(bg_record)
+			    == SLURM_ERROR) {
 				freeit = (kill_job_struct_t *)
 					xmalloc(sizeof(kill_job_struct_t));
 				freeit->jobid = bg_record->job_running;

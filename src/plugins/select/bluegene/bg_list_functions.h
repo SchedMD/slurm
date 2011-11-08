@@ -60,5 +60,7 @@ extern int remove_from_bg_list(List my_list, bg_record_t *bg_record);
 extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 						     bg_record_t *bg_record);
 extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
+extern struct job_record *find_job_in_bg_record(bg_record_t *bg_record,
+						uint32_t job_id);
 
 #endif

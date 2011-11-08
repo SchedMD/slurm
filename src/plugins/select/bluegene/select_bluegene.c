@@ -38,7 +38,6 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/uid.h"
 #include "bg_core.h"
 #include "bg_read_config.h"
 #include "bg_defined_block.h"
@@ -49,7 +48,6 @@
 # include "ba/block_allocator.h"
 #endif
 
-//#include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include <fcntl.h>
 
@@ -126,6 +124,8 @@ time_t last_bg_update;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int blocks_are_created = 0;
 int num_unused_cpus = 0;
+slurmctld_lock_t job_read_lock = {
+	NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
 
@@ -301,7 +301,9 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 					init_record->job_running =
 						NO_JOB_RUNNING;
 					init_record->job_ptr = NULL;
-				}
+				} else if (init_record->job_list &&
+					   list_count(init_record->job_list))
+					list_flush(init_record->job_list);
 				list_push(destroy_list, init_record);
 			}
 		}
@@ -340,7 +342,6 @@ static void _set_bg_lists()
 
 static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 {
-	uid_t my_uid;
 	bg_record_t *bg_record = NULL;
 	bitstr_t *mp_bitmap = NULL, *ionode_bitmap = NULL, *used_bitmap = NULL;
 
@@ -391,27 +392,21 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	bg_record->job_running = block_info->job_running;
 	if (bg_record->job_running > NO_JOB_RUNNING)
 		bg_record->job_ptr = find_job_record(bg_record->job_running);
-	bg_record->job_list = block_info->job_list;
-	block_info->job_list = NULL;
 
 	bg_record->cnode_cnt = block_info->cnode_cnt;
 	bg_record->mp_count = bit_set_count(bg_record->mp_bitmap);
+
+	/* Don't copy the job_list from the block_info, we will fill
+	   it in later in the job sync.
+	*/
+	if (bg_conf->sub_blocks && (bg_record->mp_count == 1))
+		bg_record->job_list = list_create(NULL);
 
 #ifdef HAVE_BGL
 	bg_record->node_use = block_info->node_use;
 #endif
 	memcpy(bg_record->conn_type, block_info->conn_type,
 	       sizeof(bg_record->conn_type));
-
-	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
-	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
-
-	if (uid_from_string(bg_record->user_name, &my_uid) < 0) {
-		error("uid_from_strin(%s): %m",
-		      bg_record->user_name);
-	} else {
-		bg_record->user_uid = my_uid;
-	}
 
 	bg_record->blrtsimage = block_info->blrtsimage;
 	block_info->blrtsimage = NULL;
@@ -442,10 +437,13 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 	int dim;
 #endif
 	uint32_t count = NO_VAL;
-	block_job_info_t *job;
+	block_job_info_t block_job;
+	struct job_record *job_ptr;
 	ListIterator itr;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	memset(&block_job, 0, sizeof(block_job_info_t));
+
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 		packstr(bg_record->blrtsimage, buffer);
 		pack_bit_fmt(bg_record->mp_bitmap, buffer);
@@ -466,6 +464,70 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		if (count && count != NO_VAL) {
 			itr = list_iterator_create(bg_record->job_list);
 			while ((job_ptr = list_next(itr))) {
+				select_jobinfo_t *jobinfo;
+				if (job_ptr->magic != JOB_MAGIC) {
+					list_delete_item(itr);
+					continue;
+				}
+				jobinfo = job_ptr->select_jobinfo->data;
+
+				block_job.job_id = job_ptr->job_id;
+				block_job.user_id = job_ptr->user_id;
+				block_job.user_name = jobinfo->user_name;
+				block_job.cnodes = jobinfo->ionode_str;
+				/* block_job.cnode_inx -- try not to set */
+				slurm_pack_block_job_info(&block_job, buffer,
+							  protocol_version);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32((uint32_t)bg_record->job_running, buffer);
+		packstr(bg_record->linuximage, buffer);
+		packstr(bg_record->mloaderimage, buffer);
+		packstr(bg_record->mp_str, buffer);
+		packstr(bg_record->mp_used_str, buffer);
+		pack32((uint32_t)bg_record->cnode_cnt, buffer);
+		pack16((uint16_t)bg_record->node_use, buffer);
+		packstr(bg_record->ramdiskimage, buffer);
+		packstr(bg_record->reason, buffer);
+		pack16((uint16_t)bg_record->state, buffer);
+		pack_bit_fmt(bg_record->mp_used_bitmap, buffer);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		packstr(bg_record->bg_block_id, buffer);
+		packstr(bg_record->blrtsimage, buffer);
+		pack_bit_fmt(bg_record->mp_bitmap, buffer);
+#ifdef HAVE_BGQ
+		pack32(SYSTEM_DIMENSIONS, buffer);
+		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+			pack16(bg_record->conn_type[dim], buffer);
+#else
+		pack32(1, buffer); /* for dimensions of conn_type */
+		pack16(bg_record->conn_type[0], buffer);
+#endif
+		packstr(bg_record->ionode_str, buffer);
+		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+
+		if (bg_record->job_list)
+			count = list_count(bg_record->job_list);
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(bg_record->job_list);
+			while ((job_ptr = list_next(itr))) {
+				select_jobinfo_t *jobinfo;
+				if (job_ptr->magic != JOB_MAGIC) {
+					list_delete_item(itr);
+					continue;
+				}
+				jobinfo = job_ptr->select_jobinfo->data;
+
+				block_job.job_id = job_ptr->job_id;
+				block_job.user_id = job_ptr->user_id;
+				block_job.user_name = jobinfo->user_name;
+				block_job.cnodes = jobinfo->ionode_str;
+				/* block_job.cnode_inx -- try not to set */
+				slurm_pack_block_job_info(&block_job, buffer,
 							  protocol_version);
 			}
 			list_iterator_destroy(itr);
@@ -1173,6 +1235,13 @@ static List _get_config(void)
 	key_pair->value = xstrdup_printf("%u", bg_conf->nodecard_cnode_cnt);
 	list_append(my_list, key_pair);
 
+	if (bg_conf->sub_blocks) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("AllowSubBlockAllocations");
+		key_pair->value = xstrdup("Yes");
+		list_append(my_list, key_pair);
+	}
+
 	if (bg_conf->sub_mp_sys) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("SubMidplaneSys");
@@ -1621,23 +1690,30 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 
 		if (bg_record) {
 			uint32_t job_id = NO_JOB_RUNNING, uid = NO_VAL;
-			if (bg_record->job_list) {
-				block_job_info_t *job_info;
+			struct job_record *found_job_ptr = NULL;
+
+			if (bg_record->job_list
+			    && list_count(bg_record->job_list)) {
 				ListIterator itr = list_iterator_create(
 					bg_record->job_list);
 				xassert(itr);
-				while ((job_info = list_next(itr))) {
-					if (job_info->job_id
-					    == job_ptr->job_id) {
-						job_id = job_info->job_id;
-						uid = job_info->user_id;
-						break;
+				while ((found_job_ptr = list_next(itr))) {
+					if (found_job_ptr->magic != JOB_MAGIC) {
+						list_delete_item(itr);
+						continue;
 					}
+
+					if (found_job_ptr->job_id
+					    == job_ptr->job_id)
+						break;
 				}
 				list_iterator_destroy(itr);
-			} else {
-				uid = bg_record->user_uid;
-				job_id = bg_record->job_running;
+			} else if (bg_record->job_ptr)
+				found_job_ptr = bg_record->job_ptr;
+
+			if (found_job_ptr) {
+				job_id = found_job_ptr->job_id;
+				uid = found_job_ptr->user_id;
 			}
 
 			if (job_id != job_ptr->job_id) {
@@ -1653,7 +1729,6 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 				rc = 0;
 			else
 				rc = READY_JOB_ERROR;	/* try again */
-
 		} else {
 			/* This means the block has been removed and
 			   is no longer valid.  This could happen
@@ -1722,11 +1797,12 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  uint32_t node_count)
 {
 	bitstr_t *picked_mps = NULL;
-	bitstr_t *avail_mps = NULL;
 	bg_record_t *bg_record = NULL;
 	char *tmp_char = NULL, *tmp_char2 = NULL;
 	ba_mp_t *ba_mp = NULL;
 	select_jobinfo_t *jobinfo = NULL;
+	int dim;
+
 	xassert(job_ptr);
 
 	slurm_mutex_lock(&block_state_mutex);
@@ -1741,18 +1817,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 	xassert(bg_record->mp_used_bitmap);
 	xassert(!step_jobinfo->units_used);
-
-	if (!(avail_mps = bit_copy(bg_record->mp_used_bitmap)))
-		fatal("bit_copy malloc failure");
-
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
-		tmp_char = bitmap2node_name(avail_mps);
-		info("select_p_step_pick_nodes: looking to run a new "
-		     "step for job %u requesting %u nodes on block %s with "
-		     "used midplanes %s", job_ptr->job_id, node_count,
-		     bg_record->bg_block_id, tmp_char);
-		xfree(tmp_char);
-	}
 
 	xfree(step_jobinfo->bg_block_id);
 	step_jobinfo->bg_block_id = xstrdup(bg_record->bg_block_id);
@@ -1769,7 +1833,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		   big the step is since you can only run 1 step per block.
 		*/
 		step_jobinfo->dim_cnt = jobinfo->dim_cnt;
-		if (bit_ffs(avail_mps) != -1) {
+		if (list_count(job_ptr->step_list)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("select_p_step_pick_nodes: Looking "
 				     "for the entire block %s for job %u, "
@@ -1786,8 +1850,11 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			xassert(ba_mp);
 			if (!ba_mp->cnode_bitmap)
 				ba_mp->cnode_bitmap =
-					ba_create_ba_mp_cnode_bitmap(bg_record);
+					ba_create_ba_mp_cnode_bitmap(
+						bg_record);
 			step_jobinfo->units_used =
+				bit_copy(ba_mp->cnode_bitmap);
+			step_jobinfo->units_avail =
 				bit_copy(ba_mp->cnode_bitmap);
 			bit_not(step_jobinfo->units_used);
 			bit_or(ba_mp->cnode_bitmap, step_jobinfo->units_used);
@@ -1795,11 +1862,42 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 		bit_or(bg_record->mp_used_bitmap, picked_mps);
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
-		goto found_it;
-	} else if ((ba_mp = ba_pick_sub_block_cnodes(
-			    bg_record, &node_count,
-			    step_jobinfo))) {
-		int dim;
+	} else if (jobinfo->units_avail) {
+		/* handle a sub-block allocation where the allocation
+		   itself if a small block.
+		*/
+		step_jobinfo->cnode_cnt = node_count;
+		if (!(ba_sub_block_in_bitmap(step_jobinfo,
+					     jobinfo->units_used, 1)))
+			goto end_it;
+
+		node_count = step_jobinfo->cnode_cnt;
+		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
+			fatal("bit_copy malloc failure");
+		bit_or(bg_record->mp_used_bitmap, picked_mps);
+		bit_or(jobinfo->units_used, step_jobinfo->units_used);
+		for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
+			/* The IBM software works off a relative
+			   position in the block instead of the
+			   absolute position used in SLURM.
+			   Since conn_type doesn't mean anything for a
+			   step we can just overload it since it is getting
+			   sent aready and we don't need to bloat
+			   anything if we don't have to.
+
+			   So setting it here we can have both
+			   absolute and relative.
+
+			   We don't need to add here since we are
+			   always only dealing with a block that is 1
+			   midplane or less.
+			*/
+			step_jobinfo->conn_type[dim] =
+				step_jobinfo->start_loc[dim]
+				- bg_record->start_small[dim];
+		}
+	} else if ((ba_mp = ba_sub_block_in_record(
+			    bg_record, &node_count, step_jobinfo))) {
 		if (!(picked_mps = bit_alloc(bit_size(job_ptr->node_bitmap))))
 			fatal("bit_copy malloc failure");
 		bit_set(bg_record->mp_used_bitmap, ba_mp->index);
@@ -1823,15 +1921,15 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			*/
 			step_jobinfo->conn_type[dim] +=
 				step_jobinfo->start_loc[dim]
-				- jobinfo->start_loc[dim];
+				- bg_record->start_small[dim];
 		}
 	}
 
-found_it:
 	if (picked_mps) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
 			tmp_char = bitmap2node_name(picked_mps);
-			tmp_char2 = bitmap2node_name(bg_record->mp_used_bitmap);
+			tmp_char2 = bitmap2node_name(
+				bg_record->mp_used_bitmap);
 			info("select_p_step_pick_nodes: picked %s mps on "
 			     "block %s used is now %s",
 			     tmp_char, bg_record->bg_block_id,
@@ -1843,7 +1941,6 @@ found_it:
 	}
 
 end_it:
-	FREE_NULL_BITMAP(avail_mps);
 
 	slurm_mutex_unlock(&block_state_mutex);
 
@@ -1881,12 +1978,18 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 		tmp_char = bitmap2node_name(bg_record->mp_used_bitmap);
 		tmp_char2 = bitmap2node_name(step_ptr->step_node_bitmap);
 		info("select_p_step_finish: cleared %s "
-		     "from job %u, now %s used",
-		     tmp_char2, step_ptr->job_ptr->job_id, tmp_char);
+		     "from job step %u.%u, now %s used",
+		     tmp_char2, step_ptr->job_ptr->job_id, step_ptr->step_id,
+		     tmp_char);
 		xfree(tmp_char);
 		xfree(tmp_char2);
 	}
-	rc = ba_clear_sub_block_cnodes(bg_record, step_ptr);
+
+	if (jobinfo->units_avail)
+		rc = ba_sub_block_in_bitmap_clear(
+			step_ptr->select_jobinfo->data, jobinfo->units_used);
+	else
+		rc = ba_sub_block_in_record_clear(bg_record, step_ptr);
 
 	slurm_mutex_unlock(&block_state_mutex);
 
@@ -2123,6 +2226,21 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		   with a job in it.
 		*/
 		bg_record->job_ptr = NULL;
+	} else if (bg_record->job_list && list_count(bg_record->job_list)) {
+		struct job_record *job_ptr;
+		slurm_mutex_unlock(&block_state_mutex);
+		while ((job_ptr = list_pop(bg_record->job_list))) {
+			if (job_ptr->magic != JOB_MAGIC)
+				continue;
+			bg_requeue_job(job_ptr->job_id, 0);
+		}
+		slurm_mutex_lock(&block_state_mutex);
+		if (!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
+			slurm_mutex_unlock(&block_state_mutex);
+			error("while trying to put block in "
+			      "error state it disappeared");
+			return SLURM_ERROR;
+		}
 	}
 
 	if (block_desc_ptr->state == BG_BLOCK_ERROR_FLAG) {
@@ -2250,6 +2368,41 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				   free_block_list code below, just
 				   make note of it here.
 				*/
+			} else if (found_record->job_list &&
+				   list_count(found_record->job_list)) {
+				struct job_record *job_ptr = NULL;
+				ListIterator job_itr = list_iterator_create(
+					found_record->job_list);
+				while ((job_ptr = list_next(itr))) {
+					if (job_ptr->magic != JOB_MAGIC) {
+						list_delete_item(itr);
+						continue;
+					}
+					if (IS_JOB_CONFIGURING(job_ptr))
+						info("Pending job %u on "
+						     "block %s "
+						     "will try to be requeued "
+						     "because overlapping "
+						     "block %s "
+						     "is in an error state.",
+						     job_ptr->job_id,
+						     found_record->bg_block_id,
+						     bg_record->bg_block_id);
+					else
+						info("Failing job %u on "
+						     "block %s "
+						     "because overlapping "
+						     "block %s "
+						     "is in an error state.",
+						     job_ptr->job_id,
+						     found_record->bg_block_id,
+						     bg_record->bg_block_id);
+					/* This job will be requeued in the
+					   free_block_list code below, just
+					   make note of it here.
+					*/
+				}
+				list_iterator_destroy(job_itr);
 			} else {
 				debug2("block %s is part of to be freed %s "
 				       "but no running job",
@@ -2321,7 +2474,8 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				      bg_err_str(rc));
 			}
 		} else
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+			if (bg_conf->slurm_debug_flags
+			    & DEBUG_FLAG_SELECT_TYPE)
 				info("select_p_update_block: done %s",
 				     (char *)bg_record->bg_block_id);
 #endif
@@ -2697,13 +2851,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_cpus = bg_conf->cpus_per_mp/tmp;
 			job_desc->min_nodes = 1;
 #else
-			i = bg_conf->smallest_block;
-			while (i <= bg_conf->mp_cnode_cnt) {
-				if (job_desc->min_nodes <= i) {
-					job_desc->min_nodes = i;
-					break;
+			/* If it is allowed to run sub block allocations then
+			   an allocation can be any size.  If it doesn't line
+			   up with a geometry it will be massaged later.
+			*/
+			if (!bg_conf->sub_blocks) {
+				i = bg_conf->smallest_block;
+				while (i <= bg_conf->mp_cnode_cnt) {
+					if (job_desc->min_nodes <= i) {
+						job_desc->min_nodes = i;
+						break;
+					}
+					i *= 2;
 				}
-				i *= 2;
 			}
 
 			set_select_jobinfo(job_desc->select_jobinfo->data,
@@ -2747,13 +2907,15 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_cpus = bg_conf->cpus_per_mp/tmp;
 			job_desc->max_nodes = 1;
 #else
-			i = bg_conf->smallest_block;
-			while (i <= bg_conf->mp_cnode_cnt) {
-				if (job_desc->max_nodes <= i) {
-					job_desc->max_nodes = i;
-					break;
+			if (!bg_conf->sub_blocks) {
+				i = bg_conf->smallest_block;
+				while (i <= bg_conf->mp_cnode_cnt) {
+					if (job_desc->max_nodes <= i) {
+						job_desc->max_nodes = i;
+						break;
+					}
+					i *= 2;
 				}
-				i *= 2;
 			}
 			job_desc->max_cpus =
 				job_desc->max_nodes * bg_conf->cpu_ratio;
@@ -2847,9 +3009,11 @@ extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 	if (preemptee_candidates == NULL)
 		fatal("list_create: malloc failure");
 
+	lock_slurmctld(job_read_lock);
 	rc = submit_job(&job_rec, tmp_bitmap, node_cnt, node_cnt, node_cnt,
 			SELECT_MODE_WILL_RUN, preemptee_candidates,
 			&preemptee_job_list);
+	unlock_slurmctld(job_read_lock);
 
 	list_destroy(preemptee_candidates);
 	xfree(job_rec.details);

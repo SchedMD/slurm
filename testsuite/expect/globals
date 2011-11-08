@@ -1965,6 +1965,41 @@ proc get_bluegene_cnodes_per_mp { } {
 
 ################################################################
 #
+# Proc: get_bluegene_allow_sub_blocks
+#
+# Purpose: See if the BlueGene system allows sub blocks
+#
+# Returns 0 for no and 1 for yes.
+#
+################################################################
+
+proc get_bluegene_allow_sub_blocks { } {
+	global scontrol alpha
+
+	log_user 0
+	set type 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "AllowSubBlockAllocations" {
+			set type 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $type
+}
+
+################################################################
+#
 # Proc: get_node_cnt
 #
 # Purpose: Determine how many nodes are on the system

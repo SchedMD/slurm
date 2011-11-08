@@ -818,7 +818,8 @@ extern void pack_ba_mp(ba_mp_t *ba_mp, Buf buffer, uint16_t protocol_version)
 			   out from the coords packed.
 			*/
 		}
-		pack_bit_fmt(ba_mp->cnode_bitmap, buffer);
+		/* currently there is no need to pack
+		 * ba_mp->cnode_bitmap */
 
 		/* currently there is no need to pack
 		 * ba_mp->cnode_err_bitmap */
@@ -880,16 +881,12 @@ extern int unpack_ba_mp(ba_mp_t **ba_mp_pptr,
 
 		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
 		if (bit_char) {
-			ba_mp->cnode_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
-			bit_unfmt(ba_mp->cnode_bitmap, bit_char);
-			xfree(bit_char);
-		}
-		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
-		if (bit_char) {
 			ba_mp->cnode_usable_bitmap =
 				bit_alloc(bg_conf->mp_cnode_cnt);
 			bit_unfmt(ba_mp->cnode_usable_bitmap, bit_char);
 			xfree(bit_char);
+			ba_mp->cnode_bitmap =
+				bit_copy(ba_mp->cnode_usable_bitmap);
 		}
 		safe_unpack16(&ba_mp->used, buffer);
 

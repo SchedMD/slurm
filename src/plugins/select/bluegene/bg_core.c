@@ -491,7 +491,8 @@ extern int free_block_list(uint32_t job_id, List track_list,
 
 		if (bg_record->job_ptr
 		    && !IS_JOB_FINISHED(bg_record->job_ptr)) {
-			info("We are freeing a block (%s) that has job %u(%u).",
+			info("We are freeing a block (%s) that "
+			     "has job %u(%u).",
 			     bg_record->bg_block_id,
 			     bg_record->job_ptr->job_id,
 			     bg_record->job_running);
@@ -500,6 +501,23 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			   submit_job() or at startup. */
 			slurm_mutex_unlock(&block_state_mutex);
 			bg_requeue_job(bg_record->job_ptr->job_id, 0);
+			slurm_mutex_lock(&block_state_mutex);
+		} else if (bg_record->job_list
+			   && list_count(bg_record->job_list)) {
+			struct job_record *job_ptr;
+			info("We are freeing a block (%s) that has at "
+			     "least 1 job.",
+			     bg_record->bg_block_id);
+			/* This is not thread safe if called from
+			   bg_job_place.c anywhere from within
+			   submit_job() or at startup. */
+			slurm_mutex_unlock(&block_state_mutex);
+			while ((job_ptr = list_pop(bg_record->job_list))) {
+				if ((job_ptr->magic != JOB_MAGIC)
+				    || !IS_JOB_FINISHED(job_ptr))
+					continue;
+				bg_requeue_job(job_ptr->job_id, 0);
+			}
 			slurm_mutex_lock(&block_state_mutex);
 		}
 		if (remove_from_bg_list(bg_lists->job_running, bg_record)

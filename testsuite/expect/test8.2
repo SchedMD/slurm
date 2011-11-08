@@ -57,11 +57,22 @@ if {$type == 0} {
 global env
 set env(SBATCH_CONN_TYPE)    torus
 set env(SBATCH_NO_ROTATE)    1
+set conn_letter "Tt"
+
 if {![string compare $type "Q"]} {
-	set env(SBATCH_GEOMETRY)     1x1x1x1
+	set geometry    "1x1x1x1"
+	set expect_geo  $geometry
+
+	if {[get_bluegene_allow_sub_blocks] == 1} {
+		set expect_geo  "4x4x4x4x2"
+		set conn_letter "Nn"
+	}
 } else {
-	set env(SBATCH_GEOMETRY)     1x1x1
+	set geometry    "1x1x1"
+	set expect_geo  $geometry
 }
+
+set env(SBATCH_GEOMETRY)     $geometry
 
 #
 # Delete left-over input script files
@@ -103,7 +114,7 @@ if {$job_id == 0} {
 set matches 0
 spawn $scontrol show job $job_id
 expect {
-	-re "Connection=\[Tt\]" {
+	-re "Connection=\[$conn_letter\]" {
 		incr matches
 		exp_continue
 	}
@@ -111,7 +122,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Geometry=1x1x1" {
+	-re "Geometry=$expect_geo" {
 		incr matches
 		exp_continue
 	}

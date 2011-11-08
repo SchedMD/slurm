@@ -70,8 +70,6 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b);
 /* change username of a block bg_record_t target_name needs to be
    updated before call of function.
 */
-extern int set_block_user(bg_record_t *bg_record);
-extern int update_block_user(bg_record_t *bg_block_id, int set);
 extern void requeue_and_error(bg_record_t *bg_record, char *reason);
 
 extern int add_bg_record(List records, List *used_nodes, select_ba_request_t *blockreq,
@@ -85,6 +83,6 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start,
 extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap);
 extern int put_block_in_error_state(bg_record_t *bg_record, char *reason);
 extern int resume_block(bg_record_t *bg_record);
-extern int bg_reset_block(bg_record_t *bg_record);
+extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr);
 
 #endif /* _BLUEGENE_BG_RECORD_FUNCTIONS_H_ */

@@ -335,9 +335,8 @@ static bg_record_t *_find_matching_block(List block_list,
 					     "state (can't use)",
 					     bg_record->bg_block_id);
 				continue;
-			} else if ((bg_record->job_running != NO_JOB_RUNNING)
-				   && (bg_record->job_running
-				       != job_ptr->job_id)) {
+			} else if (bg_record->job_ptr
+				   && (bg_record->job_ptr != job_ptr)) {
 				/* Look here if you are trying to run now or
 				   if you aren't looking at the full set.  We
 				   don't continue on running blocks for the
@@ -346,10 +345,10 @@ static bg_record_t *_find_matching_block(List block_list,
 				*/
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK)
-					info("block %s in use by %s job %d",
+					info("block %s in use by %d job %d",
 					     bg_record->bg_block_id,
-					     bg_record->user_name,
-					     bg_record->job_running);
+					     bg_record->job_ptr->user_id,
+					     bg_record->job_ptr->job_id);
 				continue;
 			} else if (bg_record->err_ratio &&
 				   (bg_record->err_ratio
@@ -374,18 +373,29 @@ static bg_record_t *_find_matching_block(List block_list,
 		if ((bg_record->cpu_cnt < request->procs)
 		    || ((max_cpus != NO_VAL)
 			&& (bg_record->cpu_cnt > max_cpus))) {
-			/* We use the proccessor count per block here
-			   mostly to see if we can run on a smaller block.
+			/* If we are looking for a sub-block just pass
+			   this by since we will usually be given a
+			   larger block than our allocation request.
 			*/
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
-				convert_num_unit((float)bg_record->cpu_cnt,
-						 tmp_char,
-						 sizeof(tmp_char), UNIT_NONE);
-				info("block %s CPU count (%s) not suitable",
-				     bg_record->bg_block_id,
-				     tmp_char);
+			if (!bg_conf->sub_blocks || bg_record->mp_count > 1) {
+				/* We use the proccessor count per block here
+				   mostly to see if we can run on a
+				   smaller block.
+				*/
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK) {
+					convert_num_unit(
+						(float)bg_record->cpu_cnt,
+						tmp_char,
+						sizeof(tmp_char), UNIT_NONE);
+					info("block %s CPU count (%s) "
+					     "not suitable %u-%u %u",
+					     bg_record->bg_block_id,
+					     tmp_char, request->procs, max_cpus,
+					     bg_record->cpu_cnt);
+				}
+				continue;
 			}
-			continue;
 		}
 
 		/*
@@ -523,6 +533,46 @@ static bg_record_t *_find_matching_block(List block_list,
 		    && (!_check_rotate_geo(bg_record->geo, request->geometry,
 					   request->rotate)))
 			continue;
+
+		if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
+			bitstr_t *total_bitmap;
+			bool need_free = false;
+			ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
+
+			xassert(ba_mp);
+			xassert(ba_mp->cnode_bitmap);
+			xassert(ba_mp->cnode_usable_bitmap);
+
+			if (SELECT_IS_TEST(query_mode)
+			    && SELECT_IS_CHECK_FULL_SET(query_mode)) {
+				total_bitmap = ba_mp->cnode_usable_bitmap;
+			} else if (bg_record->err_ratio) {
+				xassert(ba_mp->cnode_err_bitmap);
+				total_bitmap = bit_copy(ba_mp->cnode_bitmap);
+				bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
+				need_free = true;
+			} else
+				total_bitmap = ba_mp->cnode_bitmap;
+
+			if (!ba_sub_block_in_bitmap(
+				    job_ptr->select_jobinfo->data,
+				    total_bitmap, 0)) {
+				if (need_free)
+					FREE_NULL_BITMAP(total_bitmap);
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK) {
+					info("block %s does not have a "
+					     "placement for a sub-block of "
+					     "this size (%u) ",
+					     bg_record->bg_block_id,
+					     request->procs);
+				}
+				continue;
+			}
+
+			if (need_free)
+				FREE_NULL_BITMAP(total_bitmap);
+		}
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("we found one! %s", bg_record->bg_block_id);
@@ -953,8 +1003,13 @@ static int _find_best_block_match(List block_list,
 
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_CONN_TYPE, &request.conn_type);
-	get_select_jobinfo(job_ptr->select_jobinfo->data,
-			   SELECT_JOBDATA_GEOMETRY, &req_geometry);
+
+	if (req_procs <= bg_conf->cpus_per_mp)
+		req_geometry[0] = (uint16_t)NO_VAL;
+	else
+		get_select_jobinfo(job_ptr->select_jobinfo->data,
+				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
+
 	get_select_jobinfo(job_ptr->select_jobinfo->data,
 			   SELECT_JOBDATA_ROTATE, &request.rotate);
 
@@ -1330,9 +1385,9 @@ static void _build_select_struct(struct job_record *job_ptr,
 				 bitstr_t *bitmap, bg_record_t *bg_record)
 {
 	int i;
-	uint32_t total_cpus = 0;
 	job_resources_t *job_resrcs_ptr;
-	uint32_t node_cnt = bg_record->cnode_cnt;
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+	uint32_t node_cnt = jobinfo->cnode_cnt;
 
 	xassert(job_ptr);
 
@@ -1357,14 +1412,15 @@ static void _build_select_struct(struct job_record *job_ptr,
 	job_resrcs_ptr->cpu_array_cnt = 1;
 	job_resrcs_ptr->cpu_array_value[0] = bg_conf->cpu_ratio;
 	job_resrcs_ptr->cpu_array_reps[0] = node_cnt;
-	total_cpus = bg_conf->cpu_ratio * node_cnt;
+	job_ptr->total_cpus = job_ptr->cpu_cnt = job_ptr->details->min_cpus =
+		bg_conf->cpu_ratio * node_cnt;
 
 	for (i=0; i<node_cnt; i++)
 		job_resrcs_ptr->cpus[i] = bg_conf->cpu_ratio;
 
-	if (job_resrcs_ptr->ncpus != total_cpus) {
+	if (job_resrcs_ptr->ncpus != job_ptr->total_cpus) {
 		error("select_p_job_test: ncpus mismatch %u != %u",
-		      job_resrcs_ptr->ncpus, total_cpus);
+		      job_resrcs_ptr->ncpus, job_ptr->total_cpus);
 	}
 }
 
@@ -1444,16 +1500,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int rc = SLURM_SUCCESS;
 	bg_record_t* bg_record = NULL;
 	char buf[256];
-	uint16_t conn_type[SYSTEM_DIMENSIONS];
 	List block_list = NULL;
 	int blocks_added = 0;
 	time_t starttime = time(NULL);
 	uint16_t local_mode = mode;
 	int avail_cpus = num_unused_cpus;
 	int dim = 0;
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 
-	for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-		conn_type[dim] = (uint16_t)NO_VAL;
 	if (preemptee_candidates && preemptee_job_list
 	    && list_count(preemptee_candidates))
 		local_mode |= SELECT_MODE_PREEMPT_FLAG;
@@ -1467,24 +1521,21 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	block_list = copy_bg_list(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
 
-	get_select_jobinfo(job_ptr->select_jobinfo->data,
-			   SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if (conn_type[0] == SELECT_NAV) {
+	if (!bg_conf->sub_blocks && (jobinfo->conn_type[0] == SELECT_NAV)) {
 		if (bg_conf->sub_mp_sys)
-			conn_type[0] = SELECT_SMALL;
+			jobinfo->conn_type[0] = SELECT_SMALL;
 		else if (min_nodes > 1) {
 			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-				conn_type[dim] = SELECT_TORUS;
-		} else if (job_ptr->details->min_cpus < bg_conf->cpus_per_mp)
-			conn_type[0] = SELECT_SMALL;
+				jobinfo->conn_type[dim] = SELECT_TORUS;
+		} else if (!bg_conf->sub_blocks &&
+			   (job_ptr->details->min_cpus < bg_conf->cpus_per_mp))
+			jobinfo->conn_type[0] = SELECT_SMALL;
 		else {
 			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
-				conn_type[dim] = SELECT_NAV;
+				jobinfo->conn_type[dim] = SELECT_NAV;
 		}
-		set_select_jobinfo(job_ptr->select_jobinfo->data,
-				   SELECT_JOBDATA_CONN_TYPE,
-				   &conn_type);
-	}
+	} else if (bg_conf->sub_blocks && (min_nodes < bg_conf->mp_cnode_cnt))
+		jobinfo->conn_type[0] = SELECT_NAV;
 
 	if (slurm_block_bitmap && !bit_set_count(slurm_block_bitmap)) {
 		error("no nodes given to place job %u.", job_ptr->job_id);
@@ -1564,6 +1615,29 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						NO_JOB_RUNNING;
 					avail_cpus += found_record->cpu_cnt;
 					break;
+				} else if (found_record->job_list &&
+					   list_count(found_record->job_list)) {
+					struct job_record *found_job_ptr;
+					ListIterator job_list_itr =
+						list_iterator_create(
+							found_record->job_list);
+					while ((found_job_ptr = list_next(
+							job_list_itr))) {
+						if (found_job_ptr
+						    == preempt_job_ptr) {
+							/* info("removing job %u running on %s", */
+							/*      preempt_job_ptr->job_id, */
+							/*      found_record->bg_block_id); */
+							list_remove(
+								job_list_itr);
+							avail_cpus +=
+								found_job_ptr->
+								details->
+								min_cpus;
+							break;
+						}
+					}
+					list_iterator_destroy(job_list_itr);
 				}
 			}
 			if (!found_record) {
@@ -1592,6 +1666,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	}
 
 	if (rc == SLURM_SUCCESS) {
+		time_t max_end_time = 0;
 		if (!bg_record)
 			fatal("we got a success, but no block back");
 		/* Here we see if there is a job running since
@@ -1601,14 +1676,27 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		 * past or current time) we add 5 seconds to
 		 * it so we don't use the block immediately.
 		 */
-		if (bg_record->job_ptr
-		    && bg_record->job_ptr->end_time) {
-			if (bg_record->job_ptr->end_time <= starttime)
-				starttime += 5;
-			else
-				starttime = bg_record->job_ptr->end_time;
+		if (bg_record->job_ptr && bg_record->job_ptr->end_time) {
+			max_end_time = bg_record->job_ptr->end_time;
 		} else if (bg_record->job_running == BLOCK_ERROR_STATE)
-			starttime = INFINITE;
+			max_end_time = INFINITE;
+		else if (bg_record->job_list
+			 && list_count(bg_record->job_list)) {
+			struct job_record *found_job_ptr;
+			time_t max_end_time = 0;
+			ListIterator job_list_itr =
+				list_iterator_create(bg_record->job_list);
+			while ((found_job_ptr = list_next(job_list_itr))) {
+				if (found_job_ptr->end_time > max_end_time)
+					max_end_time = found_job_ptr->end_time;
+			}
+			list_iterator_destroy(job_list_itr);
+		}
+
+		if (max_end_time <= starttime)
+			starttime += 5;
+		else
+			starttime = max_end_time;
 
 		/* make sure the job is eligible to run */
 		if (job_ptr->details->begin_time > starttime)
@@ -1616,29 +1704,32 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 		job_ptr->start_time = starttime;
 
-		set_select_jobinfo(job_ptr->select_jobinfo->data,
+		set_select_jobinfo(jobinfo,
 				   SELECT_JOBDATA_NODES,
 				   bg_record->mp_str);
-		set_select_jobinfo(job_ptr->select_jobinfo->data,
-				   SELECT_JOBDATA_IONODES,
-				   bg_record->ionode_str);
+		if (!bg_record->job_list)
+			set_select_jobinfo(jobinfo,
+					   SELECT_JOBDATA_IONODES,
+					   bg_record->ionode_str);
+
 		if (!bg_record->bg_block_id) {
 			debug("%d can start unassigned job %u "
 			      "at %ld on %s",
 			      local_mode, job_ptr->job_id,
 			      starttime, bg_record->mp_str);
 
-			set_select_jobinfo(job_ptr->select_jobinfo->data,
+			set_select_jobinfo(jobinfo,
 					   SELECT_JOBDATA_BLOCK_PTR,
 					   NULL);
-			set_select_jobinfo(job_ptr->select_jobinfo->data,
-					   SELECT_JOBDATA_NODE_CNT,
-					   &bg_record->cnode_cnt);
 		} else {
-			if ((bg_record->ionode_str)
-			    && (job_ptr->part_ptr->max_share <= 1))
-				error("Small block used in "
-				      "non-shared partition");
+			if (job_ptr->part_ptr->max_share <= 1) {
+				if (bg_record->ionode_str)
+					error("Small block used in a "
+					      "non-shared partition");
+				else if (jobinfo->ionode_str)
+					error("Sub-block jobs in a "
+					      "non-shared partition");
+			}
 
 			debug("%d(%d) can start job %u "
 			      "at %ld on %s(%s) %d",
@@ -1655,14 +1746,34 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				*/
 				if (bg_record->original)
 					bg_record = bg_record->original;
-				set_select_jobinfo(
-					job_ptr->select_jobinfo->data,
-					SELECT_JOBDATA_BLOCK_PTR,
-					bg_record);
+				set_select_jobinfo(jobinfo,
+						   SELECT_JOBDATA_BLOCK_PTR,
+						   bg_record);
 				if (job_ptr) {
-					bg_record->job_running =
-						job_ptr->job_id;
-					bg_record->job_ptr = job_ptr;
+					if (bg_record->job_list) {
+						/* Mark the ba_mp
+						 * cnodes as used now.
+						 */
+						select_jobinfo_t *jobinfo =
+							job_ptr->
+							select_jobinfo->data;
+						ba_mp_t *ba_mp = list_peek(
+							bg_record->ba_mp_list);
+						xassert(ba_mp);
+						xassert(ba_mp->cnode_bitmap);
+						bit_or(ba_mp->cnode_bitmap,
+						       jobinfo->units_avail);
+						if (!find_job_in_bg_record(
+							    bg_record,
+							    job_ptr->job_id))
+							list_append(bg_record->
+								    job_list,
+								    job_ptr);
+					} else {
+						bg_record->job_running =
+							job_ptr->job_id;
+						bg_record->job_ptr = job_ptr;
+					}
 
 					job_ptr->job_state |= JOB_CONFIGURING;
 					last_bg_update = time(NULL);
@@ -1681,11 +1792,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				bg_record->job_ptr = NULL;
 				bg_record->job_running = NO_JOB_RUNNING;
 			}
-
+		}
+		if (!bg_conf->sub_blocks || (bg_record->mp_count > 1))
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &bg_record->cnode_cnt);
-		}
+
 		if (SELECT_IS_MODE_RUN_NOW(local_mode))
 			_build_select_struct(job_ptr,
 					     slurm_block_bitmap,

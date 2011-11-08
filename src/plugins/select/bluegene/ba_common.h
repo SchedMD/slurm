@@ -563,18 +563,27 @@ extern int load_block_wiring(char *bg_block_id);
 
 extern void ba_rotate_geo(uint16_t *req_geo, int rot_cnt);
 
-extern ba_mp_t *ba_pick_sub_block_cnodes(
+extern bool ba_sub_block_in_bitmap(select_jobinfo_t *jobinfo,
+				   bitstr_t *usable_bitmap, bool step);
+
+extern int ba_sub_block_in_bitmap_clear(select_jobinfo_t *jobinfo,
+					bitstr_t *usable_bitmap);
+
+extern ba_mp_t *ba_sub_block_in_record(
 	bg_record_t *bg_record, uint32_t *node_count,
 	select_jobinfo_t *jobinfo);
 
-extern int ba_clear_sub_block_cnodes(
+extern int ba_sub_block_in_record_clear(
 	bg_record_t *bg_record, struct step_record *step_ptr);
+
+extern void ba_sync_job_to_block(bg_record_t *bg_record,
+				 struct job_record *job_ptr);
 
 extern bitstr_t *ba_create_ba_mp_cnode_bitmap(bg_record_t *bg_record);
 
 /* set the ionode str based off the block allocator, either ionodes
  * or cnode coords */
-extern char *ba_set_ionode_str(bitstr_t *bitmap);
+extern void ba_set_ionode_str(bg_record_t *bg_record);
 
 /* Convert PASS_FOUND_* into equivalent string
  * Caller MUST xfree() the returned value */
@@ -582,4 +591,6 @@ extern char *ba_passthroughs_string(uint16_t passthrough);
 
 extern char *give_geo(uint16_t *int_geo, int dims, bool with_sep);
 
+extern struct job_record *ba_remove_job_in_block_job_list(
+	bg_record_t *bg_record, struct job_record *job_ptr);
 #endif

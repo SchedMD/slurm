@@ -67,7 +67,10 @@ extern List create_dynamic_block(List block_list,
 	int cnodes = request->procs / bg_conf->cpu_ratio;
 	uint16_t start_geo[SYSTEM_DIMENSIONS];
 
-	if (cnodes < bg_conf->smallest_block) {
+	if (bg_conf->sub_blocks && (cnodes < bg_conf->mp_cnode_cnt)) {
+		cnodes = bg_conf->mp_cnode_cnt;
+		request->conn_type[0] = SELECT_TORUS;
+	} else if (cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
 		      "on this system the smallest block is %u",
 		      cnodes, bg_conf->smallest_block);
@@ -465,9 +468,11 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 	found_record->magic = BLOCK_MAGIC;
 
+	/* This will be a list containing jobs running on this
+	   block */
+	if (bg_conf->sub_blocks)
+		found_record->job_list = list_create(NULL);
 	found_record->job_running = NO_JOB_RUNNING;
-	found_record->user_name = xstrdup(bg_record->user_name);
-	found_record->user_uid = bg_record->user_uid;
 
 #ifdef HAVE_BGL
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
@@ -489,8 +494,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->cnode_cnt = size;
 
 	found_record->ionode_bitmap = bit_copy(ionodes);
-	found_record->ionode_str =
-		ba_set_ionode_str(found_record->ionode_bitmap);
+	ba_set_ionode_str(found_record);
 	found_record->mp_used_bitmap = bit_alloc(node_record_count);
 
 	found_record->ba_mp_list = list_create(destroy_ba_mp);
@@ -542,9 +546,12 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	/* Create these now so we can deal with error cnodes if/when
 	   they happen.  Since this is the easiest place to figure it
 	   out for blocks that don't use the entire block */
-	new_ba_mp->cnode_bitmap = ba_create_ba_mp_cnode_bitmap(found_record);
-	new_ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
-	new_ba_mp->cnode_usable_bitmap = bit_copy(new_ba_mp->cnode_bitmap);
+	if ((new_ba_mp->cnode_bitmap =
+	     ba_create_ba_mp_cnode_bitmap(found_record))) {
+		new_ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+		new_ba_mp->cnode_usable_bitmap =
+			bit_copy(new_ba_mp->cnode_bitmap);
+	}
 
 	list_append(found_record->ba_mp_list, new_ba_mp);
 	found_record->mp_count = 1;

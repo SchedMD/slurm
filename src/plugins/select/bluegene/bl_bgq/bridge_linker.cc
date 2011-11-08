@@ -235,7 +235,7 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 }
 #endif
 
-static int _block_wait_for_jobs(char *bg_block_id)
+static int _block_wait_for_jobs(char *bg_block_id, struct job_record *job_ptr)
 {
 #ifdef HAVE_BG_FILES
 	std::vector<Job::ConstPtr> job_vec;
@@ -263,16 +263,22 @@ static int _block_wait_for_jobs(char *bg_block_id)
 	job_statuses.insert(Job::Cleanup);
 	job_filter.setStatuses(&job_statuses);
 
+	if (job_ptr) {
+		char tmp_char[16];
+		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);
+		job_filter.setSchedulerData(tmp_char);
+	}
+
 	while (1) {
 		try {
 			job_vec = getJobs(job_filter);
 			if (job_vec.empty())
 				return SLURM_SUCCESS;
 
-			BOOST_FOREACH(const Job::ConstPtr& job_ptr, job_vec) {
+			BOOST_FOREACH(const Job::ConstPtr& job, job_vec) {
 				debug("waiting on mmcs job %lu to "
 				      "finish on block %s",
-				      job_ptr->getId(), bg_block_id);
+				      job->getId(), bg_block_id);
 			}
 		} catch (const bgsched::DatabaseException& err) {
 			bridge_handle_database_errors("getJobs",
@@ -289,7 +295,8 @@ static int _block_wait_for_jobs(char *bg_block_id)
 	return SLURM_SUCCESS;
 }
 
-static void _remove_jobs_on_block_and_reset(char *block_id)
+static void _remove_jobs_on_block_and_reset(char *block_id,
+					    struct job_record *job_ptr)
 {
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
@@ -299,17 +306,13 @@ static void _remove_jobs_on_block_and_reset(char *block_id)
 		return;
 	}
 
-	if (_block_wait_for_jobs(block_id) != SLURM_SUCCESS)
+	if (_block_wait_for_jobs(block_id, job_ptr) != SLURM_SUCCESS)
 		job_remove_failed = 1;
 
 	/* remove the block's users */
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main, block_id);
 	if (bg_record) {
-		debug("got the record %s user is %s",
-		      bg_record->bg_block_id,
-		      bg_record->user_name);
-
 		if (job_remove_failed) {
 			if (bg_record->mp_str)
 				slurm_drain_nodes(
@@ -322,7 +325,7 @@ static void _remove_jobs_on_block_and_reset(char *block_id)
 				      block_id);
 		}
 
-		bg_reset_block(bg_record);
+		bg_reset_block(bg_record, job_ptr);
 	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 		debug2("Hopefully we are destroying this block %s "
 		       "since it isn't in the bg_lists->main",
@@ -708,17 +711,12 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		rc = SLURM_ERROR;
 	}
 
-	if ((rc = bridge_block_remove_all_users(
-		     bg_record, bg_conf->slurm_user_name)) == REMOVE_USER_ERR) {
+	if ((rc = bridge_block_sync_users(bg_record)) != SLURM_SUCCESS) {
 		error("bridge_block_remove_all_users: Something "
 		      "happened removing users from block %s",
 		      bg_record->bg_block_id);
 		return SLURM_ERROR;
-	} else if (rc == REMOVE_USER_NONE && bg_conf->slurm_user_name)
-		rc = bridge_block_add_user(bg_record, bg_conf->slurm_user_name);
-
-	if (rc != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	}
 
         try {
 		Block::initiateBoot(bg_record->bg_block_id);
@@ -838,7 +836,7 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 	return rc;
 }
 
-extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
+extern int bridge_block_add_user(bg_record_t *bg_record, const char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
@@ -847,6 +845,30 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
+#ifdef HAVE_BG_FILES
+	try {
+		if (Block::isAuthorized(bg_record->bg_block_id, user_name)) {
+			debug("User %s is already able to run jobs on block %s",
+			      user_name, bg_record->bg_block_id);
+			return SLURM_SUCCESS;
+		}
+	} catch (const bgsched::InputException& err) {
+		rc = bridge_handle_input_errors("Block::isAuthorized",
+						err.getError().toValue(),
+						bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch (const bgsched::RuntimeException& err) {
+		rc = bridge_handle_runtime_errors("Block::isAuthorized",
+						  err.getError().toValue(),
+						  bg_record);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	} catch(...) {
+                error("isAuthorized user request failed ... continuing.");
+		rc = SLURM_ERROR;
+	}
+#endif
 	info("adding user %s to block %s", user_name, bg_record->bg_block_id);
 #ifdef HAVE_BG_FILES
         try {
@@ -871,7 +893,8 @@ extern int bridge_block_add_user(bg_record_t *bg_record, char *user_name)
 	return rc;
 }
 
-extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
+extern int bridge_block_remove_user(bg_record_t *bg_record,
+				    const char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	if (!bridge_init(NULL))
@@ -905,20 +928,20 @@ extern int bridge_block_remove_user(bg_record_t *bg_record, char *user_name)
 	return rc;
 }
 
-extern int bridge_block_remove_all_users(bg_record_t *bg_record,
-					 char *user_name)
+extern int bridge_block_sync_users(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BG_FILES
 	std::vector<std::string> vec;
 	vector<std::string>::iterator iter;
+	bool found = 0;
 #endif
 
 	if (!bridge_init(NULL))
-		return SLURM_ERROR;
+		return REMOVE_USER_ERR;
 
 	if (!bg_record || !bg_record->bg_block_id)
-		return SLURM_ERROR;
+		return REMOVE_USER_ERR;
 
 #ifdef HAVE_BG_FILES
 	try {
@@ -927,23 +950,59 @@ extern int bridge_block_remove_all_users(bg_record_t *bg_record,
 		bridge_handle_input_errors(
 			"Block::getUsers",
 			err.getError().toValue(), bg_record);
-		return REMOVE_USER_NONE;
+		return REMOVE_USER_ERR;
 	} catch (const bgsched::RuntimeException& err) {
 		bridge_handle_runtime_errors(
 			"Block::getUsers",
 			err.getError().toValue(), bg_record);
-		return REMOVE_USER_NONE;
+		return REMOVE_USER_ERR;
 	}
 
-	if (vec.empty())
-		return REMOVE_USER_NONE;
+	if (bg_record->job_ptr) {
+		select_jobinfo_t *jobinfo = (select_jobinfo_t *)
+			bg_record->job_ptr->select_jobinfo->data;
+		BOOST_FOREACH(const std::string& user, vec) {
+			if (!user.compare(bg_conf->slurm_user_name))
+				continue;
+			if (!user.compare(jobinfo->user_name)) {
+				found = 1;
+				continue;
+			}
+			bridge_block_remove_user(bg_record, user.c_str());
+		}
+		if (!found)
+			bridge_block_add_user(bg_record,
+					      jobinfo->user_name);
+	} else if (bg_record->job_list && list_count(bg_record->job_list)) {
+		ListIterator itr = list_iterator_create(bg_record->job_list);
+		struct job_record *job_ptr = NULL;
 
-	BOOST_FOREACH(const std::string& user, vec) {
-		if (user_name && (user == user_name))
-			continue;
-		if ((rc = bridge_block_remove_user(bg_record, user_name)
-		     != SLURM_SUCCESS))
-			break;
+		/* First add all that need to be added removing the
+		 * name from the vector as we go.
+		 */
+		while ((job_ptr = (struct job_record *)list_next(itr))) {
+			select_jobinfo_t *jobinfo = (select_jobinfo_t *)
+				job_ptr->select_jobinfo->data;
+			iter = std::find(vec.begin(), vec.end(),
+					 jobinfo->user_name);
+			if (iter == vec.end())
+				bridge_block_add_user(bg_record,
+						      jobinfo->user_name);
+			else
+				vec.erase(iter);
+		}
+		list_iterator_destroy(itr);
+
+		/* Then remove all that is left */
+		BOOST_FOREACH(const std::string& user, vec) {
+			bridge_block_remove_user(bg_record, user.c_str());
+		}
+	} else {
+		BOOST_FOREACH(const std::string& user, vec) {
+			if (!user.compare(bg_conf->slurm_user_name))
+				continue;
+			bridge_block_remove_user(bg_record, user.c_str());
+		}
 	}
 
 #endif
@@ -1013,29 +1072,6 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 		bg_record->mloaderimage =
 			xstrdup(block_ptr->getMicroLoaderImage().c_str());
-
-
-		/* If a user is on the block this will be filled in */
-		xfree(bg_record->user_name);
-		xfree(bg_record->target_name);
-		if (block_ptr->getUser() != "")
-			bg_record->user_name =
-				xstrdup(block_ptr->getUser().c_str());
-
-		if (!bg_record->user_name)
-			bg_record->user_name =
-				xstrdup(bg_conf->slurm_user_name);
-
-		if (!bg_record->boot_state)
-			bg_record->target_name =
-				xstrdup(bg_conf->slurm_user_name);
-		else
-			bg_record->target_name = xstrdup(bg_record->user_name);
-
-		if (uid_from_string(bg_record->user_name, &my_uid) < 0)
-			error("uid_from_string(%s): %m", bg_record->user_name);
-		else
-			bg_record->user_uid = my_uid;
 	}
 
 	slurm_mutex_unlock(&block_state_mutex);
@@ -1056,14 +1092,15 @@ extern void bridge_reset_block_list(List block_list)
 	while ((bg_record = (bg_record_t *)list_next(itr))) {
 		info("Queue clearing of users of BG block %s",
 		     bg_record->bg_block_id);
-		_remove_jobs_on_block_and_reset(bg_record->bg_block_id);
+		_remove_jobs_on_block_and_reset(bg_record->bg_block_id, NULL);
 	}
 	list_iterator_destroy(itr);
 }
 
-extern void bridge_block_post_job(char *bg_block_id)
+extern void bridge_block_post_job(char *bg_block_id,
+				  struct job_record *job_ptr)
 {
-	_remove_jobs_on_block_and_reset(bg_block_id);
+	_remove_jobs_on_block_and_reset(bg_block_id, job_ptr);
 }
 
 extern int bridge_set_log_params(char *api_file_name, unsigned int level)

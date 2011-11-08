@@ -79,6 +79,12 @@ extern int bridge_setup_system()
 	return SLURM_ERROR;
 }
 
+extern struct job_record *find_job_in_bg_record(bg_record_t *bg_record,
+						uint32_t job_id)
+{
+	return NULL;
+}
+
 /** */
 int main(int argc, char** argv)
 {

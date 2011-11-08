@@ -222,3 +222,29 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 	list_iterator_destroy(itr);
 	return found_record;
 }
+
+/* Check to see if a job has been added to the bg_record NO_VAL
+ * returns the first one on the list. */
+extern struct job_record *find_job_in_bg_record(bg_record_t *bg_record,
+						uint32_t job_id)
+{
+	ListIterator itr;
+	struct job_record *job_ptr;
+
+	xassert(bg_record);
+
+	if (!bg_record->job_list)
+		return NULL;
+	itr = list_iterator_create(bg_record->job_list);
+	while ((job_ptr = list_next(itr))) {
+		if (job_ptr->magic != JOB_MAGIC) {
+			list_delete_item(itr);
+			continue;
+		}
+
+		if ((job_ptr->job_id == job_id) || (job_id == NO_VAL))
+			break;
+	}
+	list_iterator_destroy(itr);
+	return job_ptr;
+}

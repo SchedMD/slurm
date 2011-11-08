@@ -146,6 +146,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	job_step_info_response_msg_t * step_resp = NULL;
 	job_step_info_t *step_ptr = NULL;
 	runjob_job_t *runjob_job = NULL;
+	char tmp_char[16];
 
 	geo[0] = NO_VAL;
 	start_coords[0] = NO_VAL;
@@ -171,8 +172,13 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 			break;
 	}
 
-	if (found != looking_for)
+	if (found != looking_for) {
+		std::cerr << "Couldn't find ENV VARS SLURM_JOB_ID and "
+			  << "SLURM_STEP_ID.  Are you out of SLURM?  "
+			  << "Use srun, not runjob."
+			  << std::endl;
 		goto deny_job;
+	}
 
 	if (slurm_get_job_steps((time_t) 0, runjob_job->job_id,
 				runjob_job->step_id,
@@ -253,9 +259,11 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		   that is depending on the arch) we need to convert
 		   our uint16_t to the unsigned array
 		*/
-		for (dim=0; dim<Dimension::NodeDims; dim++)
+		for (dim=0; dim<Dimension::NodeDims; dim++) {
+			if (tmp_uint16[dim] == (uint16_t)NO_VAL)
+				break;
 			geo[dim] = tmp_uint16[dim];
-
+		}
 		/* Since IBM's stuff relies on a relative location we
 		   have stored this information in the conn_type of
 		   the select_jobinfo structure.  If you want the
@@ -269,8 +277,11 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 				  << "for sub-block job!" << std::endl;
 			goto deny_job;
 		}
-		for (dim=0; dim<Dimension::NodeDims; dim++)
+		for (dim=0; dim<Dimension::NodeDims; dim++) {
+			if (tmp_uint16[dim] == (uint16_t)NO_VAL)
+				break;
 			start_coords[dim] = tmp_uint16[dim];
+		}
 	}
 
 	if (sub_block_job && start_coords[0] != NO_VAL)
@@ -291,6 +302,13 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		std::cerr << "YOU ARE OUTSIDE OF SLURM!!!!" << std::endl;
 		goto deny_job;
 	}
+
+
+	/* set the scheduler_data to be the job id so we can filter on
+	   it when we go to clean up the job in the slurmctld.
+	*/
+	snprintf(tmp_char, sizeof(tmp_char), "%u", runjob_job->job_id);
+	verify.scheduler_data(tmp_char);
 
 	// std::cout << "executable: " << verify.exe() << std::endl;
 	// std::cout << "args      : ";
