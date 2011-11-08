@@ -141,7 +141,8 @@ int main(int argc, char *argv[])
 	 */
 	_init_pidfile();
 	_become_slurm_user();
-	_set_work_dir();
+	if (foreground == 0)
+		_set_work_dir();
 	log_config();
 
 #ifdef PR_SET_DUMPABLE

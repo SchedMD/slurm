@@ -29,10 +29,12 @@ Print version information and exit.
 .SH "CORE FILE LOCATION"
 If slurmdbd is started with the \fB\-D\fR option then the core file will be
 written to the current working directory.
-Otherwise if \fBSlurmdbdLogFile\fR is a fully qualified path name (starting
-with a slash), the core file will be written to the same directory as the
-log file.
-Otherwise the core file will be written to the "/var/tmp" directory.
+Otherwise if \fBLogFile\fR in "slurmdbd.conf" is a fully qualified
+path name (starting with a slash), the core file will be written to
+the same directory as the log file, provided SlurmUser has write
+permission on the directory.  Otherwise the core file will be written
+to "/var/tmp/" as a last resort.  If neither of the above directories
+have write permission for SlurmUser, no core file will be produced.
 
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific

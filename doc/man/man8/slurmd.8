@@ -75,10 +75,12 @@ explicitly naming a configuration file on the command line.
 .SH "CORE FILE LOCATION"
 If slurmd is started with the \fB\-D\fR option then the core file will be
 written to the current working directory.
-Otherwise if \fBSlurmdLogFile\fR is a fully qualified path name (starting
-with a slash), the core file will be written to the same directory as the
-log file.
-Otherwise the core file will be written to the \fBSlurmdSpoolDir\fR.
+Otherwise if \fBSlurmdLogFile\fR is a fully qualified path name
+(starting with a slash), the core file will be written to the same
+directory as the log file.  Otherwise the core file will be written to
+the \fBSlurmSpoolDir\fR directory, or "/var/tmp/" as a last resort. If
+none of the above directories can be written, no core file will be
+produced.
 
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmd\fR specific
