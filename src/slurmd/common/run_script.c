@@ -183,7 +183,7 @@ static List _script_list_create (const char *pattern)
 int run_script(const char *name, const char *pattern, uint32_t jobid,
 	   int max_wait, char **env)
 {
-	int rc;
+	int rc = 0;
 	List l;
 	ListIterator i;
 	char *s;
