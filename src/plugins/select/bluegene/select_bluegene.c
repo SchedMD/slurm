@@ -399,8 +399,10 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	/* Don't copy the job_list from the block_info, we will fill
 	   it in later in the job sync.
 	*/
-	if (bg_conf->sub_blocks && (bg_record->mp_count == 1))
+	if (bg_conf->sub_blocks && (bg_record->mp_count == 1)) {
 		bg_record->job_list = list_create(NULL);
+		bg_record->job_running = NO_JOB_RUNNING;
+	}
 
 #ifdef HAVE_BGL
 	bg_record->node_use = block_info->node_use;
