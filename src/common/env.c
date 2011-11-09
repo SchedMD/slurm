@@ -705,10 +705,16 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	if (env->stepid >= 0
-	    && setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
-		error("Unable to set SLURM_STEPID environment");
-		rc = SLURM_FAILURE;
+	if (env->stepid >= 0) {
+		if (setenvf(&env->env, "SLURM_STEP_ID", "%d", env->stepid)) {
+			error("Unable to set SLURM_STEP_ID environment");
+			rc = SLURM_FAILURE;
+		}
+		/* and for backwards compatability... */
+		if (setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
+			error("Unable to set SLURM_STEPID environment");
+			rc = SLURM_FAILURE;
+		}
 	}
 
 	if (!preserve_env && env->nhosts
