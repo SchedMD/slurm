@@ -3010,11 +3010,9 @@ extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 	if (preemptee_candidates == NULL)
 		fatal("list_create: malloc failure");
 
-	lock_slurmctld(job_read_lock);
 	rc = submit_job(&job_rec, tmp_bitmap, node_cnt, node_cnt, node_cnt,
 			SELECT_MODE_WILL_RUN, preemptee_candidates,
 			&preemptee_job_list);
-	unlock_slurmctld(job_read_lock);
 
 	list_destroy(preemptee_candidates);
 	xfree(job_rec.details);
