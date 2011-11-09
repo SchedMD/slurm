@@ -644,7 +644,6 @@ if {$matches != 6} {
 	set exit_code 1
 }
 
-
 #
 # Use sacctmgr to delete the test account (shouldn't work, because of running jobs)
 #
@@ -656,7 +655,7 @@ expect {
 		incr damatches
 		exp_continue
 	}
-	"Job(s) running, cancel job(s) before remove" {
+	"Job(s) active, cancel job(s) before remove" {
 		send_user "This error was expected, no worries\n"
 		set needtodel 1
 	}
@@ -682,7 +681,11 @@ if {$needtodel == 1} {
 		}
 	}
 
-	sleep 1
+	if {[wait_for_job $job_id3 DONE] != 0} {
+		send_user "\nFAILURE: error completing job $job_id3\n"
+		cancel_job $job_id3
+		set exit_code 1
+	}
 
 	#
 	# Use sacctmgr to delete the test account
