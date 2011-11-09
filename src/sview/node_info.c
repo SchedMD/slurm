@@ -583,18 +583,22 @@ extern void refresh_node(GtkAction *action, gpointer user_data)
 
 /* don't destroy the list from this function */
 extern List create_node_info_list(node_info_msg_t *node_info_ptr,
-				  int changed, bool by_partition)
+				  bool by_partition)
 {
 	static List info_list = NULL;
+	static node_info_msg_t *last_node_info_ptr = NULL;
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
 	char user[32], time_str[32];
 
 	if (!by_partition) {
-		if (!node_info_ptr || (!changed && info_list))
+		if (!node_info_ptr
+		    || (info_list && (node_info_ptr == last_node_info_ptr)))
 			goto update_color;
 	}
+
+	last_node_info_ptr = node_info_ptr;
 
 	if (info_list)
 		list_flush(info_list);
@@ -1172,7 +1176,6 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
-	int changed = 1;
 	int i = 0, sort_key;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	ListIterator itr = NULL;
@@ -1208,7 +1211,6 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	    == SLURM_NO_CHANGE_IN_DATA) {
 		if (!display_widget || view == ERROR_VIEW)
 			goto display_it;
-		changed = 0;
 	} else if (error_code != SLURM_SUCCESS) {
 		if (view == ERROR_VIEW)
 			goto end_it;
@@ -1225,7 +1227,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	}
 
 display_it:
-	info_list = create_node_info_list(node_info_ptr, changed, FALSE);
+	info_list = create_node_info_list(node_info_ptr, FALSE);
 	if (!info_list)
 		goto reset_curs;
 	i = 0;
@@ -1315,7 +1317,6 @@ extern void specific_info_node(popup_info_t *popup_win)
 	List info_list = NULL;
 	List send_info_list = NULL;
 	ListIterator itr = NULL;
-	int changed = 1;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
 	hostlist_t hostlist = NULL;
@@ -1337,7 +1338,6 @@ extern void specific_info_node(popup_info_t *popup_win)
 	    == SLURM_NO_CHANGE_IN_DATA) {
 		if (!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		changed = 0;
 	} else if (error_code != SLURM_SUCCESS) {
 		if (spec_info->view == ERROR_VIEW)
 			goto end_it;
@@ -1356,7 +1356,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 	}
 display_it:
 
-	info_list = create_node_info_list(node_info_ptr, changed, FALSE);
+	info_list = create_node_info_list(node_info_ptr, FALSE);
 
 	if (!info_list)
 		return;

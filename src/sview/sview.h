@@ -512,7 +512,7 @@ extern void cluster_change_job(void);
 extern void refresh_node(GtkAction *action, gpointer user_data);
 /* don't destroy the list from this function */
 extern List create_node_info_list(node_info_msg_t *node_info_ptr,
-				  int changed, bool by_partition);
+				  bool by_partition);
 extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 				const char *old_features);
 extern int update_state_node(GtkDialog *dialog,

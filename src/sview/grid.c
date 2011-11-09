@@ -1583,18 +1583,15 @@ extern int get_system_stats(GtkTable *table)
 	int rc = SLURM_SUCCESS;
 	node_info_msg_t *node_info_ptr = NULL;
 	List node_list = NULL;
-	int changed = 1;
 
 	if ((rc = get_new_info_node(&node_info_ptr, force_refresh))
 	    == SLURM_NO_CHANGE_IN_DATA) {
-		changed = 0;
 	} else if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	select_g_ba_init(node_info_ptr, 0);
 
-	node_list = create_node_info_list(node_info_ptr,
-					  changed, FALSE);
+	node_list = create_node_info_list(node_info_ptr, FALSE);
 	if (grid_button_list) {
 		rc = update_grid_table(main_grid_table, grid_button_list,
 				       node_list);

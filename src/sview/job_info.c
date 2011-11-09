@@ -2569,10 +2569,12 @@ static int _sview_job_sort_aval_dec(sview_job_info_t* rec_a,
 
 static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 				  job_step_info_response_msg_t *step_info_ptr,
-				  int changed, int want_odd_states)
+				  int want_odd_states)
 {
 	static List info_list = NULL;
 	static List odd_info_list = NULL;
+	static job_info_msg_t *last_job_info_ptr = NULL;
+	static job_step_info_response_msg_t *last_step_info_ptr = NULL;
 	int i = 0, j = 0;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
@@ -2580,9 +2582,12 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 	char *ionodes = NULL;
 	char tmp_char[50];
 
-	if (!changed && info_list) {
+	if (info_list && (job_info_ptr == last_job_info_ptr)
+	    && (step_info_ptr == last_step_info_ptr))
 		goto update_color;
-	}
+
+	last_job_info_ptr = job_info_ptr;
+	last_step_info_ptr = step_info_ptr;
 
 	if (info_list) {
 		list_flush(info_list);
@@ -3154,7 +3159,6 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
-	int changed = 1;
 	int j, k;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
@@ -3213,7 +3217,6 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 		if ((!display_widget || view == ERROR_VIEW)
 		    || (job_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
-		changed = 0;
 	} else if (step_error_code != SLURM_SUCCESS) {
 		if (view == ERROR_VIEW)
 			goto end_it;
@@ -3230,8 +3233,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	}
 display_it:
 
-	info_list = _create_job_info_list(job_info_ptr, step_info_ptr,
-					  changed, 0);
+	info_list = _create_job_info_list(job_info_ptr, step_info_ptr, 0);
 	if (!info_list)
 		goto reset_curs;
 
@@ -3341,7 +3343,6 @@ extern void specific_info_job(popup_info_t *popup_win)
 	GtkTreeView *tree_view = NULL;
 	List info_list = NULL;
 	List send_info_list = NULL;
-	int changed = 1;
 	int i=-1, j, k;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
@@ -3390,7 +3391,6 @@ extern void specific_info_job(popup_info_t *popup_win)
 		     || spec_info->view == ERROR_VIEW)
 		    || (job_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
-		changed = 0;
 	} else if (step_error_code != SLURM_SUCCESS) {
 		if (spec_info->view == ERROR_VIEW)
 			goto end_it;
@@ -3407,8 +3407,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 		goto end_it;
 	}
 display_it:
-	info_list = _create_job_info_list(job_info_ptr, step_info_ptr,
-					  changed, 1);
+	info_list = _create_job_info_list(job_info_ptr, step_info_ptr, 1);
 	if (!info_list)
 		return;
 

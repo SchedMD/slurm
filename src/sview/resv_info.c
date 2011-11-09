@@ -734,16 +734,18 @@ static int _sview_resv_sort_aval_dec(sview_resv_info_t* rec_a,
 	return 0;
 }
 
-static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
-				   int changed)
+static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr)
 {
 	static List info_list = NULL;
 	int i = 0;
+	static reserve_info_msg_t *last_resv_info_ptr = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	reserve_info_t *resv_ptr = NULL;
 
-	if (!changed && info_list)
+	if (info_list && (resv_info_ptr == last_resv_info_ptr))
 		goto update_color;
+
+	last_resv_info_ptr = resv_info_ptr;
 
 	if (info_list)
 		list_flush(info_list);
@@ -1062,7 +1064,6 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	int j=0;
-	int changed = 1;
 	ListIterator itr = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	reserve_info_t *resv_ptr = NULL;
@@ -1098,7 +1099,6 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 
 	error_code = get_new_info_resv(&resv_info_ptr, force_refresh);
 	if (error_code == SLURM_NO_CHANGE_IN_DATA) {
-		changed = 0;
 	} else if (error_code != SLURM_SUCCESS) {
 		if (view == ERROR_VIEW)
 			goto end_it;
@@ -1115,7 +1115,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	}
 
 display_it:
-	info_list = _create_resv_info_list(resv_info_ptr, changed);
+	info_list = _create_resv_info_list(resv_info_ptr);
 	if (!info_list)
 		goto reset_curs;
 	/* set up the grid */
@@ -1198,7 +1198,6 @@ extern void specific_info_resv(popup_info_t *popup_win)
 	GtkTreeView *tree_view = NULL;
 	List resv_list = NULL;
 	List send_resv_list = NULL;
-	int changed = 1;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	int j=0, i=-1;
 	hostset_t hostset = NULL;
@@ -1219,7 +1218,6 @@ extern void specific_info_resv(popup_info_t *popup_win)
 	    == SLURM_NO_CHANGE_IN_DATA) {
 		if (!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		changed = 0;
 	} else if (resv_error_code != SLURM_SUCCESS) {
 		if (spec_info->view == ERROR_VIEW)
 			goto end_it;
@@ -1239,7 +1237,7 @@ extern void specific_info_resv(popup_info_t *popup_win)
 
 display_it:
 
-	resv_list = _create_resv_info_list(resv_info_ptr, changed);
+	resv_list = _create_resv_info_list(resv_info_ptr);
 
 	if (!resv_list)
 		return;

@@ -499,28 +499,60 @@ static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
 	return 0;
 }
 
-static List _create_block_list(partition_info_msg_t *part_info_ptr,
-			       block_info_msg_t *block_info_ptr,
-			       int changed)
+static void _set_block_partition(partition_info_msg_t *part_info_ptr,
+				 sview_block_info_t *block_ptr)
 {
-	int i, j;
-	static List block_list = NULL;
+	int j;
 	partition_info_t part;
+
+	for (j = 0; j < part_info_ptr->record_count; j++) {
+		part = part_info_ptr->partition_array[j];
+		if (_in_slurm_partition(part.node_inx,
+					block_ptr->mp_inx)) {
+			xfree(block_ptr->slurm_part_name);
+			block_ptr->slurm_part_name = xstrdup(part.name);
+			return;
+		}
+	}
+}
+
+static List _create_block_list(partition_info_msg_t *part_info_ptr,
+			       block_info_msg_t *block_info_ptr)
+{
+	int i;
+	static List block_list = NULL;
+	static partition_info_msg_t *last_part_info_ptr = NULL;
+	static block_info_msg_t *last_block_info_ptr = NULL;
 	sview_block_info_t *block_ptr = NULL;
 	char tmp_mp_str[50];
 
-	if (!changed && block_list) {
+	if (block_list && (part_info_ptr == last_part_info_ptr)
+	    && (block_info_ptr == last_block_info_ptr))
 		return block_list;
-	}
 
-	if (block_list)
+	last_part_info_ptr = part_info_ptr;
+	if (block_list) {
+		/* Only the partition info changed so lets update just
+		   that part.
+		*/
+		if (block_info_ptr == last_block_info_ptr) {
+			ListIterator itr = list_iterator_create(block_list);
+
+			while ((block_ptr = list_next(itr)))
+				_set_block_partition(part_info_ptr, block_ptr);
+
+			return block_list;
+		}
 		list_flush(block_list);
-	else
+	} else
 		block_list = list_create(_block_list_del);
 	if (!block_list) {
 		g_print("malloc error\n");
 		return NULL;
 	}
+
+	last_block_info_ptr = block_info_ptr;
+
 	for (i=0; i<block_info_ptr->record_count; i++) {
 		block_ptr = xmalloc(sizeof(sview_block_info_t));
 
@@ -588,17 +620,8 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= block_info_ptr->block_array[i].cnode_cnt;
 		block_ptr->mp_inx
 			= block_info_ptr->block_array[i].mp_inx;
-		for(j = 0; j < part_info_ptr->record_count; j++) {
-			part = part_info_ptr->partition_array[j];
-			if (_in_slurm_partition(part.node_inx,
-						block_ptr->mp_inx)) {
-				block_ptr->slurm_part_name
-					= xstrdup(part.name);
-				break;
-			}
-		}
-		block_ptr->job_running =
-			block_info_ptr->block_array[i].job_running;
+		_set_block_partition(part_info_ptr, block_ptr);
+
 		if (block_ptr->bg_conn_type[0] >= SELECT_SMALL)
 			block_ptr->size = 0;
 
@@ -920,7 +943,6 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	List block_list = NULL;
-	int changed = 1;
 	int j=0;
 	ListIterator itr = NULL;
 	sview_block_info_t *sview_block_info_ptr = NULL;
@@ -981,7 +1003,6 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		    || (part_error_code != SLURM_NO_CHANGE_IN_DATA)) {
 			goto display_it;
 		}
-		changed = 0;
 	} else if (block_error_code != SLURM_SUCCESS) {
 		if (view == ERROR_VIEW)
 			goto end_it;
@@ -1015,8 +1036,7 @@ display_it:
 	if (!part_info_ptr)
 		goto reset_curs;
 
-	block_list = _create_block_list(part_info_ptr, block_ptr,
-					changed);
+	block_list = _create_block_list(part_info_ptr, block_ptr);
 	if (!block_list)
 		goto reset_curs;
 
@@ -1098,7 +1118,6 @@ extern void specific_info_block(popup_info_t *popup_win)
 	GtkTreeView *tree_view = NULL;
 	List block_list = NULL;
 	List send_block_list = NULL;
-	int changed = 1;
 	sview_block_info_t *block_ptr = NULL;
 	int j=0, i=-1;
 	hostset_t hostset = NULL;
@@ -1143,8 +1162,6 @@ extern void specific_info_block(popup_info_t *popup_win)
 		    || (part_error_code != SLURM_NO_CHANGE_IN_DATA)) {
 			goto display_it;
 		}
-		changed = 0;
-
 	} else if (block_error_code != SLURM_SUCCESS) {
 		if (spec_info->view == ERROR_VIEW)
 			goto end_it;
@@ -1163,8 +1180,8 @@ extern void specific_info_block(popup_info_t *popup_win)
 	}
 
 display_it:
-	block_list = _create_block_list(part_info_ptr, block_info_ptr,
-					changed);
+	block_list = _create_block_list(part_info_ptr, block_info_ptr);
+
 	if (!block_list)
 		return;
 

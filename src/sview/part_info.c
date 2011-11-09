@@ -1637,18 +1637,22 @@ static int _sview_sub_part_sort(sview_part_sub_t* rec_a,
 }
 
 static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
-				   node_info_msg_t *node_info_ptr,
-				   int changed)
+				   node_info_msg_t *node_info_ptr)
 {
 	sview_part_info_t *sview_part_info = NULL;
 	partition_info_t *part_ptr = NULL;
+	static node_info_msg_t *last_node_info_ptr = NULL;
+	static partition_info_msg_t *last_part_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
 	int i, j2;
 
-	if (!changed && info_list) {
+	if (info_list && (node_info_ptr == last_node_info_ptr)
+	    && (part_info_ptr == last_part_info_ptr))
 		return info_list;
-	}
+
+	last_node_info_ptr = node_info_ptr;
+	last_part_info_ptr = part_info_ptr;
 
 	if (info_list)
 		list_flush(info_list);
@@ -2239,7 +2243,6 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
-	int changed = 1;
 	int j, k;
 	sview_part_info_t *sview_part_info = NULL;
 	partition_info_t *part_ptr = NULL;
@@ -2297,7 +2300,6 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		if ((!display_widget || view == ERROR_VIEW)
 		    || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
-		changed = 0;
 	} else if (node_error_code != SLURM_SUCCESS) {
 		if (view == ERROR_VIEW)
 			goto end_it;
@@ -2315,9 +2317,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 
 display_it:
 
-	info_list = _create_part_info_list(part_info_ptr,
-					   node_info_ptr,
-					   changed);
+	info_list = _create_part_info_list(part_info_ptr, node_info_ptr);
 	if (!info_list)
 		goto reset_curs;
 
@@ -2406,7 +2406,6 @@ extern void specific_info_part(popup_info_t *popup_win)
 	GtkTreeView *tree_view = NULL;
 	List info_list = NULL;
 	List send_info_list = NULL;
-	int changed = 1;
 	int j=0, i=-1;
 	sview_part_info_t *sview_part_info_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
@@ -2450,7 +2449,6 @@ extern void specific_info_part(popup_info_t *popup_win)
 		     || spec_info->view == ERROR_VIEW)
 		    || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
-		changed = 0;
 	} else if (node_error_code != SLURM_SUCCESS) {
 		if (spec_info->view == ERROR_VIEW)
 			goto end_it;
@@ -2468,9 +2466,8 @@ extern void specific_info_part(popup_info_t *popup_win)
 
 display_it:
 
-	info_list = _create_part_info_list(part_info_ptr,
-					   node_info_ptr,
-					   changed);
+	info_list = _create_part_info_list(part_info_ptr, node_info_ptr);
+
 	if (!info_list)
 		return;
 
