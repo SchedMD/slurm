@@ -8655,7 +8655,6 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			packnull(buffer);
 
 			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
 
 			packnull(buffer);
 			packnull(buffer);
@@ -8707,8 +8706,6 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			list_iterator_destroy(itr);
 		}
 		count = NO_VAL;
-
-		pack32(block_info->job_running, buffer);
 
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
@@ -8792,7 +8789,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		}
 		count = NO_VAL;
 
-		pack32(block_info->job_running, buffer);
+		pack32(NO_VAL, buffer); /* for job_running */
 
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
@@ -8800,7 +8797,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->mp_used_str, buffer);
 		pack32(block_info->cnode_cnt, buffer);
 		pack16(block_info->node_use, buffer);
-		packnull(buffer);
+		packnull(buffer); /* for user name */
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
@@ -8860,7 +8857,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		} else
 			packnull(buffer);
 
-		pack32(block_info->job_running, buffer);
+		pack32(NO_VAL, buffer); /* for job_running */
 
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
@@ -8868,7 +8865,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		pack32(block_info->cnode_cnt, buffer);
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			pack16(block_info->node_use, buffer);
-		packnull(buffer);
+		packnull(buffer); /* for user_name */
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
@@ -8920,7 +8917,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		} else
 			packnull(buffer);
 
-		pack32(block_info->job_running, buffer);
+		pack32(NO_VAL, buffer); /* for job_running */
 
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
@@ -8928,7 +8925,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		pack32(block_info->cnode_cnt, buffer);
 		if(cluster_flags & CLUSTER_FLAG_BGL)
 			pack16(block_info->node_use, buffer);
-		packnull(buffer);
+		packnull(buffer); /* for user_name */
 		packstr(block_info->ramdiskimage, buffer);
 		pack16(block_info->state, buffer);
 	}
@@ -9014,7 +9011,6 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			}
 		}
 
-		safe_unpack32(&block_info->job_running, buffer);
 		safe_unpackstr_xmalloc(&block_info->linuximage,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&block_info->mloaderimage,
@@ -9081,7 +9077,16 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			}
 		}
 
-		safe_unpack32(&block_info->job_running, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != (uint32_t)NO_JOB_RUNNING) {
+			block_job_info_t *job =
+				xmalloc(sizeof(block_job_info_t));;
+			if (!block_info->job_list)
+				block_info->job_list =
+					list_create(slurm_free_block_job_info);
+			job->job_id = uint32_tmp;
+			list_append(block_info->job_list, job);
+		}
 		safe_unpackstr_xmalloc(&block_info->linuximage,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&block_info->mloaderimage,
@@ -9129,7 +9134,16 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			block_info->ionode_inx = bitfmt2int(mp_inx_str);
 			xfree(mp_inx_str);
 		}
-		safe_unpack32(&block_info->job_running, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != (uint32_t)NO_JOB_RUNNING) {
+			block_job_info_t *job =
+				xmalloc(sizeof(block_job_info_t));;
+			if (!block_info->job_list)
+				block_info->job_list =
+					list_create(slurm_free_block_job_info);
+			job->job_id = uint32_tmp;
+			list_append(block_info->job_list, job);
+		}
 		safe_unpackstr_xmalloc(&block_info->linuximage,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&block_info->mloaderimage,
@@ -9169,7 +9183,16 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 			block_info->ionode_inx = bitfmt2int(mp_inx_str);
 			xfree(mp_inx_str);
 		}
-		safe_unpack32(&block_info->job_running, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != (uint32_t)NO_JOB_RUNNING) {
+			block_job_info_t *job =
+				xmalloc(sizeof(block_job_info_t));;
+			if (!block_info->job_list)
+				block_info->job_list =
+					list_create(slurm_free_block_job_info);
+			job->job_id = uint32_tmp;
+			list_append(block_info->job_list, job);
+		}
 		safe_unpackstr_xmalloc(&block_info->linuximage,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&block_info->mloaderimage,

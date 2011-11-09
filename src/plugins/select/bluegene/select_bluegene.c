@@ -426,6 +426,21 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	return bg_record;
 }
 
+static void _local_pack_block_job_info(struct job_record *job_ptr, Buf buffer,
+				       uint16_t protocol_version)
+{
+	block_job_info_t block_job;
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+
+	memset(&block_job, 0, sizeof(block_job_info_t));
+	block_job.job_id = job_ptr->job_id;
+	block_job.user_id = job_ptr->user_id;
+	block_job.user_name = jobinfo->user_name;
+	block_job.cnodes = jobinfo->ionode_str;
+	/* block_job.cnode_inx -- try not to set */
+	slurm_pack_block_job_info(&block_job, buffer, protocol_version);
+}
+
 /* Pack all relevent information about a block */
 /* NOTE: There is a matching pack function in
  * common/slurm_protocol_pack.c dealing with the block_info_t
@@ -438,12 +453,9 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 #ifdef HAVE_BGQ
 	int dim;
 #endif
-	uint32_t count = NO_VAL;
-	block_job_info_t block_job;
+	uint32_t count = NO_VAL, running_job = 0;
 	struct job_record *job_ptr;
 	ListIterator itr;
-
-	memset(&block_job, 0, sizeof(block_job_info_t));
 
 	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
@@ -462,30 +474,28 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 
 		if (bg_record->job_list)
 			count = list_count(bg_record->job_list);
-		pack32(count, buffer);
+
 		if (count && count != NO_VAL) {
+			pack32(count, buffer);
 			itr = list_iterator_create(bg_record->job_list);
 			while ((job_ptr = list_next(itr))) {
-				select_jobinfo_t *jobinfo;
 				if (job_ptr->magic != JOB_MAGIC) {
 					list_delete_item(itr);
 					continue;
 				}
-				jobinfo = job_ptr->select_jobinfo->data;
-
-				block_job.job_id = job_ptr->job_id;
-				block_job.user_id = job_ptr->user_id;
-				block_job.user_name = jobinfo->user_name;
-				block_job.cnodes = jobinfo->ionode_str;
-				/* block_job.cnode_inx -- try not to set */
-				slurm_pack_block_job_info(&block_job, buffer,
-							  protocol_version);
+				_local_pack_block_job_info(
+					job_ptr, buffer, protocol_version);
 			}
 			list_iterator_destroy(itr);
-		}
+		} else if (bg_record->job_ptr) {
+			pack32(1, buffer);
+			_local_pack_block_job_info(
+				bg_record->job_ptr, buffer, protocol_version);
+		} else
+			pack32(count, buffer);
+
 		count = NO_VAL;
 
-		pack32((uint32_t)bg_record->job_running, buffer);
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
@@ -517,26 +527,21 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		if (count && count != NO_VAL) {
 			itr = list_iterator_create(bg_record->job_list);
 			while ((job_ptr = list_next(itr))) {
-				select_jobinfo_t *jobinfo;
 				if (job_ptr->magic != JOB_MAGIC) {
 					list_delete_item(itr);
 					continue;
 				}
-				jobinfo = job_ptr->select_jobinfo->data;
-
-				block_job.job_id = job_ptr->job_id;
-				block_job.user_id = job_ptr->user_id;
-				block_job.user_name = jobinfo->user_name;
-				block_job.cnodes = jobinfo->ionode_str;
-				/* block_job.cnode_inx -- try not to set */
-				slurm_pack_block_job_info(&block_job, buffer,
-							  protocol_version);
+				_local_pack_block_job_info(
+					job_ptr, buffer, protocol_version);
 			}
 			list_iterator_destroy(itr);
 		}
+		if ((count == 1) && running_job)
+			pack32((uint32_t)running_job, buffer);
+		else
+			pack32((uint32_t)bg_record->job_running, buffer);
 		count = NO_VAL;
 
-		pack32((uint32_t)bg_record->job_running, buffer);
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
