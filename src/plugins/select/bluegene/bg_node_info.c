@@ -411,7 +411,7 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	}
 
 	if (nodeinfo->magic != NODEINFO_MAGIC) {
-		error("get_nodeinfo: jobinfo magic bad");
+		error("get_nodeinfo: nodeinfo magic bad");
 		return SLURM_ERROR;
 	}
 
