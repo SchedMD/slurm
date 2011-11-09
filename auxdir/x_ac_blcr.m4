@@ -40,7 +40,7 @@ AC_DEFUN([X_AC_BLCR], [
  	  _x_ac_blcr_libs_save="$LIBS"
 	  LIBS="-L$d/$bit -lcr $LIBS"
 	  AC_LINK_IFELSE(
-	    AC_LANG_CALL([], cr_init),
+	    [AC_LANG_CALL([], cr_init)],
 	    AS_VAR_SET(x_ac_cv_blcr_dir, $d))
 	  LIBS="$_x_ac_blcr_libs_save"
 	  test -n "$x_ac_cv_blcr_dir" && break
