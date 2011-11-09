@@ -158,7 +158,7 @@ static List _script_list_create (const char *pattern)
 	case 0:
 		l = list_create ((ListDelF) _xfree_f);
 		if (l == NULL)
-			fatal("list_create: malloc failure");
+			fatal("run_script: list_create: Out of memory");
 		for (i = 0; i < gl.gl_pathc; i++)
 			list_push (l, xstrdup (gl.gl_pathv[i]));
 		break;
@@ -196,10 +196,8 @@ int run_script(const char *name, const char *pattern, uint32_t jobid,
 		return error ("Unable to run %s [%s]", name, pattern);
 
 	i = list_iterator_create (l);
-	if (i == NULL) {
-		list_destroy (l);
-		return error ("run_script: list_iterator_create: Out of memory");
-	}
+	if (i == NULL)
+		fatal ("run_script: list_iterator_create: Out of memory");
 
 	while ((s = list_next (i))) {
 		rc = run_one_script (name, s, jobid, max_wait, env);
