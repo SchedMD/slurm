@@ -328,6 +328,30 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		ListIterator itr2 = NULL;
 
 		/* Only mark unidle blocks */
+		if (bg_record->job_list && list_count(bg_record->job_list)) {
+			struct job_record *job_ptr;
+			select_jobinfo_t *jobinfo;
+			ListIterator itr =
+				list_iterator_create(bg_record->job_list);
+			ba_mp = list_peek(bg_record->ba_mp_list);
+			node_ptr = &(node_record_table_ptr[ba_mp->index]);
+			xassert(node_ptr->select_nodeinfo);
+			nodeinfo = node_ptr->select_nodeinfo->data;
+			xassert(nodeinfo);
+			xassert(nodeinfo->subgrp_list);
+			/* FIXME: the subgrp->bitmap isn't set here. */
+
+			subgrp = _find_subgrp(nodeinfo->subgrp_list,
+					      NODE_STATE_ALLOCATED,
+					      g_bitmap_size);
+			while ((job_ptr = list_next(itr))) {
+				jobinfo = job_ptr->select_jobinfo->data;
+				subgrp->cnode_cnt += jobinfo->cnode_cnt;
+			}
+			list_iterator_destroy(itr);
+			continue;
+		}
+
 		if (bg_record->job_running == NO_JOB_RUNNING)
 			continue;
 
