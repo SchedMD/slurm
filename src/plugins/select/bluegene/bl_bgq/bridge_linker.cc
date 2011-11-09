@@ -1015,7 +1015,6 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 #ifdef HAVE_BG_FILES
 	Block::Ptrs vec;
 	BlockFilter filter;
-	uid_t my_uid;
 	bg_record_t *bg_record = NULL;
 
 	info("querying the system for existing blocks");
