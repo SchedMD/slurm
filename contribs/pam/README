@@ -34,6 +34,27 @@ Description:
     rsh_kludge    - prevent truncation of first char from rsh error msg
     rlogin_kludge - prevent "staircase-effect" following rlogin error msg
 
+Notes:
+  This module will not work on systems where the hostname returned by the
+     gethostname() differs from SLURM node name. This includes front-end
+     configurations (IBM BlueGene or Cray systems) or systems configured
+     in SLURM using the NodeHostName parameter.
+  rsh_kludge - The rsh service under RH71 (rsh-0.17-2.5) truncates the first
+     character of this message.  The rsh client sends 3 NUL-terminated ASCII
+     strings: client-user-name, server-user-name, and command string.  The
+     server then validates the user.  If the user is valid, it responds with a
+     1-byte zero; otherwise, it responds with a 1-byte one followed by an ASCII
+     error message and a newline.  RH's server is using the default PAM
+     conversation function which doesn't prepend the message with a
+     single-byte error code.  As a result, the client receives a string,
+     interprets the first byte as a non-zero status, and treats the
+     remaining string as an error message.  The rsh_kludge prepends a
+     newline which will be interpreted by the rsh client as an error status.
+  rlogin_kludge - The rlogin service under RH71 (rsh-0.17-2.5) does not perform
+     a carriage-return after the PAM error message is displayed which results
+     in the "staircase-effect" of the next message. The rlogin_kludge appends
+     a carriage-return to prevent this.
+
 Examples / Suggested Usage:
   Use of this module is recommended on any compute node where you want to
   limit access to just those users who are currently scheduled to run jobs.
