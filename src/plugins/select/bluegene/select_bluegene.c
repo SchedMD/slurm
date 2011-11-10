@@ -389,20 +389,15 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	*/
 	bg_record->state = block_info->state;
 
-	bg_record->job_running = block_info->job_running;
-	if (bg_record->job_running > NO_JOB_RUNNING)
-		bg_record->job_ptr = find_job_record(bg_record->job_running);
-
 	bg_record->cnode_cnt = block_info->cnode_cnt;
 	bg_record->mp_count = bit_set_count(bg_record->mp_bitmap);
 
 	/* Don't copy the job_list from the block_info, we will fill
 	   it in later in the job sync.
 	*/
-	if (bg_conf->sub_blocks && (bg_record->mp_count == 1)) {
+	bg_record->job_running = NO_JOB_RUNNING;
+	if (bg_conf->sub_blocks && (bg_record->mp_count == 1))
 		bg_record->job_list = list_create(NULL);
-		bg_record->job_running = NO_JOB_RUNNING;
-	}
 
 #ifdef HAVE_BGL
 	bg_record->node_use = block_info->node_use;

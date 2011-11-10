@@ -133,10 +133,18 @@ char *slurm_sprint_block_info(
 			     line_end);
 
 	/****** Line 2 ******/
-	if (block_ptr->job_running > NO_JOB_RUNNING)
-		xstrfmtcat(out, "JobRunning=%u ", block_ptr->job_running);
-	else
+	j = 0;
+	if (block_ptr->job_list)
+		j = list_count(block_ptr->job_list);
+
+	if (!j)
 		xstrcat(out, "JobRunning=NONE ");
+	else if (j == 1) {
+		block_job_info_t *block_job = list_peek(block_ptr->job_list);
+		xstrfmtcat(out, "JobRunning=%u ", block_job->job_id);
+	} else
+		xstrcat(out, "JobRunning=Multiple ");
+
 	tmp_char = conn_type_string_full(block_ptr->conn_type);
 	xstrfmtcat(out, "ConnType=%s", tmp_char);
 	xfree(tmp_char);

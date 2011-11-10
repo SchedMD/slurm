@@ -46,7 +46,7 @@ typedef struct {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	int color_inx;
-	int job_running;
+	List job_list;
 	bool printed;
 	bool small_block;
 	char *imageblrts;       /* ImageBlrts for this block */
@@ -185,6 +185,32 @@ static int _in_slurm_partition(int *part_inx, int *block_inx);
 static void _process_each_block(GtkTreeModel *model, GtkTreePath *path,
 				GtkTreeIter*iter, gpointer userdata);
 
+static char *_set_running_job_str(List job_list, bool compact)
+{
+	int cnt = list_count(job_list);
+	block_job_info_t *block_job;
+
+	if (!cnt) {
+		return xstrdup("-");
+	} else if (cnt == 1) {
+		block_job = list_peek(job_list);
+		return xstrdup_printf("%u", block_job->job_id);
+	} else if (compact)
+		return xstrdup("multiple");
+	else {
+		char *tmp_char = NULL;
+		ListIterator itr = list_iterator_create(job_list);
+		while ((block_job = list_next(itr))) {
+			if (tmp_char)
+				xstrcat(tmp_char, " ");
+			xstrfmtcat(tmp_char, "%u", block_job->job_id);
+		}
+		return tmp_char;
+	}
+
+	return NULL;
+}
+
 static void _block_list_del(void *object)
 {
 	sview_block_info_t *block_ptr = (sview_block_info_t *)object;
@@ -197,6 +223,12 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->imagelinux);
 		xfree(block_ptr->imagemloader);
 		xfree(block_ptr->imageramdisk);
+
+		if (block_ptr->job_list) {
+			list_destroy(block_ptr->job_list);
+			block_ptr->job_list = NULL;
+		}
+
 		/* don't xfree(block_ptr->mp_inx);
 		   it isn't copied like the chars and is freed in the api
 		*/
@@ -287,16 +319,13 @@ static void _layout_block_record(GtkTreeView *treeview,
 					   block_ptr->imageramdisk);
 	}
 
-	if (block_ptr->job_running > NO_JOB_RUNNING)
-		snprintf(tmp_cnt, sizeof(tmp_cnt),
-			 "%d", block_ptr->job_running);
-	else
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "-");
+	tmp_char = _set_running_job_str(block_ptr->job_list, 0);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
 						 SORTID_JOB),
-				   tmp_cnt);
+				   tmp_char);
+	xfree(tmp_char);
 	if (cluster_flags & CLUSTER_FLAG_BGL) {
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_block,
@@ -324,19 +353,14 @@ static void _layout_block_record(GtkTreeView *treeview,
 static void _update_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char job_running[20], cnode_cnt[20];
-	char *tmp_char = NULL;
+	char cnode_cnt[20];
+	char *tmp_char = NULL, *tmp_char2 = NULL;
 
-	if (block_ptr->job_running > NO_JOB_RUNNING)
-		snprintf(job_running, sizeof(job_running),
-			 "%d", block_ptr->job_running);
-	else
-		snprintf(job_running, sizeof(job_running), "-");
-
-	convert_num_unit((float)block_ptr->cnode_cnt, cnode_cnt, sizeof(cnode_cnt),
-			 UNIT_NONE);
+	convert_num_unit((float)block_ptr->cnode_cnt, cnode_cnt,
+			 sizeof(cnode_cnt), UNIT_NONE);
 
 	tmp_char = conn_type_string_full(block_ptr->bg_conn_type);
+	tmp_char2 = _set_running_job_str(block_ptr->job_list, 0);
 
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, iter,
@@ -346,7 +370,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_COLOR_INX,    block_ptr->color_inx,
 			   SORTID_CONN,		tmp_char,
 			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
-			   SORTID_JOB,          job_running,
+			   SORTID_JOB,          tmp_char2,
 			   SORTID_NODE_INX,     block_ptr->mp_inx,
 			   SORTID_MP_STR,        cnode_cnt,
 			   SORTID_NODELIST,     block_ptr->mp_str,
@@ -357,6 +381,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_UPDATED,      1,
 			   -1);
 	xfree(tmp_char);
+	xfree(tmp_char2);
 
 	if (cluster_flags & CLUSTER_FLAG_BGP) {
 		gtk_tree_store_set(treestore, iter,
@@ -471,11 +496,9 @@ static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
 	int size_a = rec_a->cnode_cnt;
 	int size_b = rec_b->cnode_cnt;
 
-	if ((rec_a->job_running == NO_JOB_RUNNING)
-	    && (rec_b->job_running != NO_JOB_RUNNING))
+	if (list_count(rec_a->job_list) < list_count(rec_b->job_list))
 		return 1;
-	else if ((rec_a->job_running != NO_JOB_RUNNING)
-		 && (rec_b->job_running == NO_JOB_RUNNING))
+	else if (list_count(rec_a->job_list) > list_count(rec_b->job_list))
 		return -1;
 
 	if ((rec_a->state == BG_BLOCK_FREE) && (rec_b->state != BG_BLOCK_FREE))
@@ -622,6 +645,11 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= block_info_ptr->block_array[i].mp_inx;
 		_set_block_partition(part_info_ptr, block_ptr);
 
+		block_ptr->job_list = list_create(slurm_free_block_job_info);
+		if (block_info_ptr->block_array[i].job_list)
+			list_transfer(block_ptr->job_list,
+				      block_info_ptr->block_array[i].job_list);
+
 		if (block_ptr->bg_conn_type[0] >= SELECT_SMALL)
 			block_ptr->size = 0;
 
@@ -670,7 +698,7 @@ need_refresh:
 
 			if (block_ptr->state & BG_BLOCK_ERROR_FLAG)
 				state = NODE_STATE_ERROR;
-			else if (block_ptr->job_running > NO_JOB_RUNNING)
+			else if (list_count(block_ptr->job_list))
 				state = NODE_STATE_ALLOCATED;
 			else
 				state = NODE_STATE_IDLE;
@@ -1300,7 +1328,7 @@ display_it:
 
 		if (block_ptr->state & BG_BLOCK_ERROR_FLAG)
 			state = NODE_STATE_ERROR;
-		else if (block_ptr->job_running > NO_JOB_RUNNING)
+		else if (list_count(block_ptr->job_list))
 			state = NODE_STATE_ALLOCATED;
 		else
 			state = NODE_STATE_IDLE;

@@ -1572,7 +1572,6 @@ typedef struct {
 				 * start_range_2, .., -1  */
 	char *ionode_str;
 	List job_list;          /* List of running jobs on each block */
-	uint32_t job_running;
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */
 	int *mp_inx;            /* list index pairs into node_table for *mp_str:
