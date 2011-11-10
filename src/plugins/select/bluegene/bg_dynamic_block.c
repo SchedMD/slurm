@@ -69,7 +69,6 @@ extern List create_dynamic_block(List block_list,
 
 	if (bg_conf->sub_blocks && (cnodes < bg_conf->mp_cnode_cnt)) {
 		cnodes = bg_conf->mp_cnode_cnt;
-		request->conn_type[0] = SELECT_TORUS;
 	} else if (cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
 		      "on this system the smallest block is %u",
@@ -295,8 +294,15 @@ extern List create_dynamic_block(List block_list,
 			info("small block not able to be placed inside others");
 	}
 
-	if (request->conn_type[0] == SELECT_NAV)
+	if (request->conn_type[0] == SELECT_NAV) {
+#ifndef HAVE_BG_L_P
+		int dim;
+		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
+			request->conn_type[dim] = SELECT_TORUS;
+#else
 		request->conn_type[0] = SELECT_TORUS;
+#endif
+	}
 
 	//debug("going to create %d", request->size);
 	if (!new_ba_request(request)) {
