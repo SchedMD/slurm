@@ -2992,7 +2992,7 @@ extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
 	set_select_jobinfo(job_rec.select_jobinfo->data,
 			   SELECT_JOBDATA_NODE_CNT, &node_cnt);
 	for (i = 0; i < SYSTEM_DIMENSIONS; i++) {
-		conn_type[i] = SELECT_TORUS;
+		conn_type[i] = SELECT_NAV;
 		geo[i] = 0;
 	}
 	select_g_select_jobinfo_set(job_rec.select_jobinfo,
