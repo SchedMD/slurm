@@ -40,6 +40,9 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
 #include <grp.h>
 #include <pthread.h>
 #include <signal.h>
