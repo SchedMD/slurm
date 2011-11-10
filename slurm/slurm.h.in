@@ -75,6 +75,12 @@
 /* Define to 1 if emulating or running on Blue Gene/P system */
 #undef HAVE_BGP
 
+/* Define to 1 if emulating or running on Blue Gene/L-P system */
+#undef HAVE_BG_L_P
+
+/* Define to 1 if emulating or running on Blue Gene/Q system */
+#undef HAVE_BGQ
+
 /* Number of dimensions the system has */
 #define SYSTEM_DIMENSIONS 1
 #define HIGHEST_DIMENSIONS 5
