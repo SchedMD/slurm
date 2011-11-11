@@ -31,8 +31,8 @@ or supporting sophisticated
 <p>While other resource managers do exist, SLURM is unique in several
 respects:
 <ul>
-<li>It is designed to operate in a heterogeneous cluster with up to 65,536 nodes
-and hundreds of thousands of processors.</li>
+<li>It is designed to operate in a heterogeneous cluster with up to millions of
+processors (2.1 million sockets scheduled on an emulated IBM BlueGene/Q system).</li>
 <li>It can sustain a throughput rate of over 120,000 jobs per hour with
 bursts of job submissions at several times that rate.</li>
 <li>Its source code is freely available under the
@@ -86,6 +86,6 @@ for molecular dynamics simulation using 512 custom-designed ASICs
 and a three-dimensional torus interconnect.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 May 2011</p>
+<p style="text-align:center;">Last modified 11 November 2011</p>
 
 <!--#include virtual="footer.txt"-->
