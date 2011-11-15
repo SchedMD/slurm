@@ -244,11 +244,21 @@ extern int task_slurmd_release_resources (uint32_t job_id)
 	 * happening reliably. */
 	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 		char base[PATH_MAX], path[PATH_MAX];
+#ifdef MULTIPLE_SLURMD
+		if (snprintf(base, PATH_MAX, "%s/slurm_%s_%u",
+			     CPUSET_DIR,
+			     (conf->node_name != NULL)?conf->node_name:"",
+			     job_id) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+#else
 		if (snprintf(base, PATH_MAX, "%s/slurm%u",
 				CPUSET_DIR, job_id) > PATH_MAX) {
 			error("cpuset path too long");
 			return SLURM_ERROR;
 		}
+#endif
 		if (rmdir(base) && (errno == ENOTEMPTY)) {
 			DIR *dirp;
 			struct dirent entry;
@@ -294,11 +304,21 @@ extern int task_pre_setuid (slurmd_job_t *job)
 	if (!(conf->task_plugin_param & CPU_BIND_CPUSETS))
 		return SLURM_SUCCESS;
 
+#ifdef MULTIPLE_SLURMD
+	if (snprintf(path, PATH_MAX, "%s/slurm_%s_%u",
+		     CPUSET_DIR,
+		     (conf->node_name != NULL)?conf->node_name:"",
+		     job->jobid) > PATH_MAX) {
+		error("cpuset path too long");
+		return SLURM_ERROR;
+	}
+#else
 	if (snprintf(path, PATH_MAX, "%s/slurm%u",
 			CPUSET_DIR, job->jobid) > PATH_MAX) {
 		error("cpuset path too long");
 		return SLURM_ERROR;
 	}
+#endif
 	return slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
 }
 
@@ -318,11 +338,21 @@ extern int task_pre_launch (slurmd_job_t *job)
 
 	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 		info("Using cpuset affinity for tasks");
+#ifdef MULTIPLE_SLURMD
+		if (snprintf(base, PATH_MAX, "%s/slurm_%s_%u",
+			     CPUSET_DIR,
+			     (conf->node_name != NULL)?conf->node_name:"",
+			     job->jobid) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+#else
 		if (snprintf(base, PATH_MAX, "%s/slurm%u",
 				CPUSET_DIR, job->jobid) > PATH_MAX) {
 			error("cpuset path too long");
 			return SLURM_ERROR;
 		}
+#endif
 		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
 				base, job->jobid, job->stepid,
 				job->envtp->localid) > PATH_MAX) {
@@ -416,11 +446,21 @@ extern int task_post_term (slurmd_job_t *job)
 	 * happening reliably. */
 	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 		char base[PATH_MAX], path[PATH_MAX];
+#ifdef MULTIPLE_SLURMD
+		if (snprintf(base, PATH_MAX, "%s/slurm_%s_%u",
+			     CPUSET_DIR,
+			     (conf->node_name != NULL)?conf->node_name:"",
+			     job->jobid) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+#else
 		if (snprintf(base, PATH_MAX, "%s/slurm%u",
 				CPUSET_DIR, job->jobid) > PATH_MAX) {
 			error("cpuset path too long");
 			return SLURM_ERROR;
 		}
+#endif
 		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
 				base, job->jobid, job->stepid,
 				job->envtp->localid) > PATH_MAX) {
