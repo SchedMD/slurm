@@ -3776,6 +3776,11 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 	xfree(name);
 	setenvf(&env, "SLURM_JOBID", "%u", jobid);
 	setenvf(&env, "SLURM_UID",   "%u", uid);
+
+	slurm_mutex_lock(&conf->config_mutex);
+	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
+	slurm_mutex_unlock(&conf->config_mutex);
+
 	if (resv_id) {
 #if defined(HAVE_BG)
 		setenvf(&env, "MPIRUN_PARTITION", "%s", resv_id);
