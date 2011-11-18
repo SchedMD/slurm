@@ -725,6 +725,17 @@ Time the job ran prior to last suspend.
 \fIReason\fP
 The reason job is not running: e.g., waiting "Resources".
 .TP
+\fISubmitTime\fP
+The time  and  date stamp (in Universal Time Coordiated, UTC)
+the job was submitted.  The format of the output is identical
+to that of the EndTime field.
+
+NOTE: If a job is requeued, the submit time is reset.
+To obtain the original submit time it is necessary
+to use the "sacct \-j <job_id[.<step_id>]" command also
+designating the \-D or \-\-duplicate option to display all
+duplicate entries for a job.
+.TP
 \fISuspendTime\fP
 Time the job was last suspended or resumed.
 .TP
