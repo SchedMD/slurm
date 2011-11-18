@@ -703,7 +703,8 @@ log goes to syslog, string "%h" in name gets replaced with hostname)
 <P>
 
 <H2>Job Completion Logging</H2>
-Define the job completion logging mechanism to be used.<BR>
+Define the job completion logging mechanism to be used. SlurmDBD and None are
+recommended. The PGSQL plugin is not fully supported. <BR>
 Select one value for <B>JobCompType</B>:<BR>
 <input type="radio" name="job_comp_type" value="none" checked> <B>None</B>:
 No job completion logging<BR>
@@ -761,7 +762,7 @@ save the data from many Slurm managed clusters into a common database<BR>
 <input type="radio" name="accounting_storage_type" value="mysql"> <B>MySQL</B>:
 Write job accounting to a MySQL database<BR>
 <input type="radio" name="accounting_storage_type" value="pgsql"> <B>PGSQL</B>:
-Write job accounting to a PostreSQL database<BR>
+Write job accounting to a PostreSQL database (not fully supported)<BR>
 <input type="radio" name="accounting_storage_type" value="slurmdbd"> <B>SlurmDBD</B>:
 Write job accounting to Slurm DBD (database daemon) which can securely
 save the data from many Slurm managed clusters into a common database<BR>
