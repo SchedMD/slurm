@@ -7,6 +7,23 @@
 <h2>Presentations</h2>
 <ul>
 
+<li>GreenSpot: Scheduling Energy Consumption in Green Datacenters,
+Inigo Goiri, et. al.
+(SuperComputing 2011, November 2011)</li>
+
+<li><b>Presentations from SLURM Birds Of a Feather,
+SuperComputing 2011, November 2011</b></li>
+<ul>
+<li><a href="SC11_BOF/SchedMD_BOF_SC11.pdf">SLURM Version 2.3 and Beyond</a>
+Morris Jette, SchedMD LLC</li>
+
+<li><a href="SC11_BOF/BULL_BOF_SC11.pdf">Bull's SLURM Roadmap</a>
+Eric Monchalin, Bull</li>
+
+<li><a href="SC11_BOF/Bright_BOF_SC11.pdf">Cloud Bursting with SLURM and Bright Cluster Manager</a>
+Martijn de Vries, Bright Computing</li>
+</ul>
+
 <li><b>Presentations from SLURM User Group Meeting, September 2011</b></li>
 <ul>
 
@@ -206,6 +223,6 @@ RCE 10: SLURM (podcast)</a>:
 Brock Palen and Jeff Squyres speak with Morris Jette and
 Danny Auble of LLNL about SLURM.</p>
 
-<p style="text-align:center;">Last modified 12 April 2011</p>
+<p style="text-align:center;">Last modified 18 November 2011</p>
 
 <!--#include virtual="footer.txt"-->
