@@ -22,9 +22,9 @@ AC_DEFUN([X_AC_LUA],
 
 	if test "x$x_ac_have_lua" = "xyes"; then
 	  saved_CFLAGS="$CFLAGS"
-	  saved_LDFLAGS="$LDFLAGS"
+	  saved_LIBS="$LIBS"
 	  CFLAGS="$CFLAGS $lua_CFLAGS"
-	  LDFLAGS="$LDFLAGS $lua_LIBS"
+	  LIBS="$LIBS $lua_LIBS"
 	  AC_MSG_CHECKING([for whether we can link to liblua])
 	  AC_TRY_LINK(
 		[#include <lua.h>
@@ -37,7 +37,7 @@ AC_DEFUN([X_AC_LUA],
 
 	  AC_MSG_RESULT([$x_ac_have_lua])
 	  CFLAGS="$saved_CFLAGS"
-	  LDFLAGS="$saved_LDFLAGS"
+	  LIBS="$saved_LIBS"
 	fi
 
 	AM_CONDITIONAL(HAVE_LUA, test "x$x_ac_have_lua" = "xyes")
