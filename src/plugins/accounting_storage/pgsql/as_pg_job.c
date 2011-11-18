@@ -1013,7 +1013,7 @@ js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
  	int rc = SLURM_SUCCESS;
  	uint32_t job_db_inx;
 
- 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+ 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
  		return ESLURM_DB_CONNECTION;
 
  	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
@@ -1024,8 +1024,8 @@ js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
  	if (_check_job_db_index(pg_conn, job_ptr) != SLURM_SUCCESS)
  		return SLURM_SUCCESS;
 
- 	if(IS_JOB_RESIZING(job_ptr)) {
- 		if(!old_db_inx) {
+ 	if (IS_JOB_RESIZING(job_ptr)) {
+ 		if (!old_db_inx) {
  			error("No old db inx given for job %u cluster %s, "
  			      "can't update suspend table.",
  			      job_ptr->job_id, pg_conn->cluster_name);
@@ -1041,14 +1041,14 @@ js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
  	} else
  		job_db_inx = job_ptr->db_index;
 
- 	query = xstrdup_printf(
+ 	xstrfmtcat(query,
  		"UPDATE %s.%s SET time_suspended=%d-time_suspended, state=%d "
- 		"WHERE job_db_inx=%d", pg_conn->cluster_name, job_table,
+ 		"WHERE job_db_inx=%d;", pg_conn->cluster_name, job_table,
  		(int)job_ptr->suspend_time,
  		(int)(job_ptr->job_state & JOB_STATE_BASE),
  		(int)job_ptr->db_index);
 
- 	if(IS_JOB_SUSPENDED(job_ptr))
+ 	if (IS_JOB_SUSPENDED(job_ptr))
  		xstrfmtcat(query,
  			   "INSERT INTO %s.%s (job_db_inx, id_assoc, "
  			   "  time_start, time_end) VALUES (%d, %d, %ld, 0);",
@@ -1064,10 +1064,10 @@ js_pg_suspend(pgsql_conn_t *pg_conn, uint32_t old_db_inx,
  			   job_ptr->db_index);
 
  	rc = DEF_QUERY_RET_RC;
- 	if(rc == SLURM_SUCCESS) {
+ 	if (rc == SLURM_SUCCESS) {
  		query = xstrdup_printf(
  			"UPDATE %s.%s SET time_suspended=%d-time_suspended, "
- 			"state=%d WHERE job_db_inx=%d and time_end=0",
+ 			"state=%d WHERE job_db_inx=%d and time_end=0;",
  			pg_conn->cluster_name,
  			step_table, (int)job_ptr->suspend_time,
  			(int)job_ptr->job_state, (int)job_ptr->db_index);
