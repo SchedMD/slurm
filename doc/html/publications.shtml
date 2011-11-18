@@ -7,10 +7,6 @@
 <h2>Presentations</h2>
 <ul>
 
-<li>GreenSpot: Scheduling Energy Consumption in Green Datacenters,
-Inigo Goiri, et. al.
-(SuperComputing 2011, November 2011)</li>
-
 <li><b>Presentations from SLURM Birds Of a Feather,
 SuperComputing 2011, November 2011</b></li>
 <ul>
@@ -95,10 +91,6 @@ Moe Jette, SchedMD LLC
 Danny Auble, SchedMD LLC
 </li>
 </ul>
-
-<li><a href="http://mescal.imag.fr/membres/yiannis.georgiou/publications/thesis_Georgiou-2010-UJF.pdf">
-Contributions For Resource and Job Management in High Performance Computing</a>,
-Yiannis Georgiou, Universite de Grenoble, France (Thesis, November 2010)</li>
 
 <!-- Use LLNL-PRES-461787 -->
 <li><a href="pdfs/slurm_sc10_bof.pdf">SLURM Version 2.2: Features and Release Plans</a>,
@@ -185,6 +177,11 @@ Morris Jette, Lawrence Livermore National Laboratory
 <h2>Publications</h2>
 
 <ul>
+
+<li>GreenSpot: Scheduling Energy Consumption in Green Datacenters,
+Inigo Goiri, et. al.
+(SuperComputing 2011, November 2011)</li>
+
 <li><a href="http://mescal.imag.fr/membres/yiannis.georgiou/publications/thesis_Georgiou-2010-UJF.pdf">
 <b>Contributions for Resource and Job Management in High Performance Computing</b></a>,
 Yiannis Georgiou, Universite Joseph Fourier
