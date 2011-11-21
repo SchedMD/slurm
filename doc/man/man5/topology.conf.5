@@ -4,10 +4,11 @@
 topology.conf \- Slurm configuration file for defining the network topology
 
 .SH "DESCRIPTION"
-\fB/etc/topology.conf\fP is an ASCII file which describes the
+\fBtopology.conf\fP is an ASCII file which describes the
 cluster's network topology for optimized job resource allocation.
 The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter. The file will always be located in the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
 same directory as the \fBslurm.conf\fP file.
 .LP
 Parameter names are case insensitive.

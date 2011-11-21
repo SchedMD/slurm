@@ -4,11 +4,12 @@
 bluegene.conf \- SLURM configuration file for BlueGene systems
 
 .SH "DESCRIPTION"
-\fB/etc/bluegene.conf\fP is an ASCII file which describes IBM BlueGene specific
+\fBbluegene.conf\fP is an ASCII file which describes IBM BlueGene specific
 SLURM configuration information. This includes specifications for bgblock
 layout, configuration, logging, etc.
 The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter. The file will always be located in the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
 same directory as the \fBslurm.conf\fP file.
 .LP
 Parameter names are case insensitive.

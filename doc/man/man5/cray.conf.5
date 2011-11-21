@@ -4,11 +4,14 @@
 cray.conf \- Slurm configuration file for the Cray\-specific information
 
 .SH "DESCRIPTION"
-\fB/etc/cray.conf\fP is an ASCII file which defines parameters used by 
-Slurm's select/cray plugin in support of Cray systems. The file will always
-be located in the same directory as the \fBslurm.conf\fP file. The default
-configuration parameters will work properly in a typical installation and
-this file will not be required.
+\fBcray.conf\fP is an ASCII file which defines parameters used by 
+Slurm's select/cray plugin in support of Cray systems.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
+same directory as the \fBslurm.conf\fP file.
+The default configuration parameters will work properly in a typical
+installation and this file will not be required.
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated

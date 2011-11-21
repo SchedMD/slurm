@@ -3,11 +3,12 @@
 gres.conf \- Slurm configuration file for generic resource management.
 
 .SH "DESCRIPTION"
-\fB/etc/gres.conf\fP is an ASCII file which describes the configuration
+\fBgres.conf\fP is an ASCII file which describes the configuration
 of generic resources on each compute node. Each node must contain a
 gres.conf file if generic resources are to be scheduled by SLURM.
 The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter. The file will always be located in the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
 same directory as the \fBslurm.conf\fP file. If generic resource counts are
 set by the gres plugin function node_config_load(), this file may be optional.
 .LP
