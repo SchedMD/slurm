@@ -231,6 +231,7 @@ AC_DEFUN([X_AC_BGQ],
 
 	libname=bgsched
 	loglibname=log4cxx
+	runjoblibname=runjob_client
 
    	for bg_dir in $trydb2dir "" $bg_default_dirs; do
       	# Skip directories that don't exist
@@ -259,7 +260,18 @@ AC_DEFUN([X_AC_BGQ],
 			fi
 		fi
 
-      		# Search for headers in the directory
+		soloc=$bg_dir/hlcs/lib/lib$runjoblibname.so
+		# Search for required BG API libraries in the directory
+		if test -z "$have_bg_ar" -a -f "$soloc" ; then
+			have_bgq_ar=yes
+			if test "$ac_with_rpath" = "yes"; then
+				runjob_ldflags="$runjob_ldflags -Wl,-rpath -Wl,$bg_dir/hlcs/lib -L$bg_dir/hlcs/lib -l$runjoblibname"
+			else
+				runjob_ldflags="$runjob_ldflags -L$bg_dir/hlcs/lib -l$runjoblibname"
+			fi
+		fi
+
+		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/hlcs/include/bgsched/bgsched.h" ; then
 			have_bgq_hdr=yes
 			bg_includes="-I$bg_dir/hlcs/include"
@@ -289,6 +301,7 @@ AC_DEFUN([X_AC_BGQ],
 
   	if test ! -z "$have_bgq_files" ; then
       		BG_LDFLAGS="$bg_ldflags"
+		RUNJOB_LDFLAGS="$runjob_ldflags"
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
    		CXXFLAGS="$CXXFLAGS $CFLAGS"
@@ -314,4 +327,5 @@ AC_DEFUN([X_AC_BGQ],
 
    	AC_SUBST(BG_INCLUDES)
    	AC_SUBST(BG_LDFLAGS)
+	AC_SUBST(RUNJOB_LDFLAGS)
 ])
