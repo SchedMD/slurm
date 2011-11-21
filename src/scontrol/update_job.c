@@ -344,7 +344,6 @@ scontrol_requeue(char *job_id_str)
 	return rc;
 }
 
-
 /*
  * scontrol_update_job - update the slurm job configuration per the supplied
  *	arguments
@@ -388,8 +387,11 @@ scontrol_update_job (int argc, char *argv[])
 		}
 
 		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
-			job_msg.job_id =
-				(uint32_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint32(val, &job_msg.job_id)) {
+				error ("Invalid JobId value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 		}
 		else if (strncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
 			job_msg.comment = val;
@@ -443,8 +445,11 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
-			job_msg.priority =
-				(uint32_t) strtoll(val, (char **) NULL, 10);
+			if (parse_uint32(val, &job_msg.priority)) {
+				error ("Invalid Priority value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Nice", MAX(taglen, 2)) == 0) {
@@ -466,7 +471,7 @@ scontrol_update_job (int argc, char *argv[])
 						   &max_cpus, false) ||
 			    (min_cpus <= 0) ||
 			    (max_cpus && (max_cpus < min_cpus))) {
-				error("Invalid NumCPUs value: %s", val);
+				error ("Invalid NumCPUs value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
@@ -477,13 +482,19 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		/* ReqProcs was removed in SLURM version 2.1 */
 		else if (strncasecmp(tag, "ReqProcs", MAX(taglen, 8)) == 0) {
-			job_msg.num_tasks =
-				(uint32_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint32(val, &job_msg.num_tasks)) {
+				error ("Invalid ReqProcs value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Requeue", MAX(taglen, 4)) == 0) {
-			job_msg.requeue =
-				(uint16_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint16(val, &job_msg.requeue)) {
+				error ("Invalid Requeue value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		/* ReqNodes was replaced by NumNodes in SLURM version 2.1 */
@@ -509,47 +520,71 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqSockets", MAX(taglen, 4)) == 0) {
-			job_msg.sockets_per_node =
-				(uint16_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint16(val, &job_msg.sockets_per_node)) {
+				error ("Invalid ReqSockets value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqCores", MAX(taglen, 4)) == 0) {
-			job_msg.cores_per_socket =
-				(uint16_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint16(val, &job_msg.cores_per_socket)) {
+				error ("Invalid ReqCores value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
                 else if (strncasecmp(tag, "TasksPerNode", MAX(taglen, 2))==0) {
-                        job_msg.ntasks_per_node =
-                                (uint16_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint16(val, &job_msg.ntasks_per_node)) {
+				error ("Invalid TasksPerNode value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
                         update_cnt++;
                 }
 		else if (strncasecmp(tag, "ReqThreads", MAX(taglen, 4)) == 0) {
-			job_msg.threads_per_core =
-				(uint16_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint16(val, &job_msg.threads_per_core)) {
+				error ("Invalid ReqThreads value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinCPUsNode", MAX(taglen, 4)) == 0) {
-			job_msg.pn_min_cpus =
-				(uint32_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint16(val, &job_msg.pn_min_cpus)) {
+				error ("Invalid MinCPUsNode value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinMemoryNode",
 				     MAX(taglen, 10)) == 0) {
-			job_msg.pn_min_memory =
-				(uint32_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint32(val, &job_msg.pn_min_memory)) {
+				error ("Invalid MinMemoryNode value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinMemoryCPU",
 				     MAX(taglen, 10)) == 0) {
-			job_msg.pn_min_memory =
-				(uint32_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint32(val, &job_msg.pn_min_memory)) {
+				error ("Invalid MinMemoryCPU value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			job_msg.pn_min_memory |= MEM_PER_CPU;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinTmpDiskNode",
 				     MAX(taglen, 5)) == 0) {
-			job_msg.pn_min_tmp_disk =
-				(uint32_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint32(val, &job_msg.pn_min_tmp_disk)) {
+				error ("Invalid MinTmpDiskNode value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Partition", MAX(taglen, 2)) == 0) {
@@ -585,8 +620,11 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "wait-for-switch", MAX(taglen, 5))
 			 == 0) {
-			job_msg.wait4switch =
-				(uint32_t) strtol(val, (char **) NULL, 10);
+			if (parse_uint32(val, &job_msg.wait4switch)) {
+				error ("Invalid wait-for-switch value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Shared", MAX(taglen, 2)) == 0) {
@@ -594,10 +632,11 @@ scontrol_update_job (int argc, char *argv[])
 				job_msg.shared = 1;
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.shared = 0;
-			else
-				job_msg.shared =
-					(uint16_t) strtol(val,
-							(char **) NULL, 10);
+			else if (parse_uint16(val, &job_msg.shared)) {
+				error ("Invalid wait-for-switch value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Contiguous", MAX(taglen, 3)) == 0) {
@@ -605,10 +644,11 @@ scontrol_update_job (int argc, char *argv[])
 				job_msg.contiguous = 1;
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.contiguous = 0;
-			else
-				job_msg.contiguous =
-					(uint16_t) strtol(val,
-							(char **) NULL, 10);
+			else if (parse_uint16(val, &job_msg.contiguous)) {
+				error ("Invalid Contiguous value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 3)) == 0){
@@ -689,10 +729,11 @@ scontrol_update_job (int argc, char *argv[])
 				rotate = 1;
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				rotate = 0;
-			else
-				rotate = (uint16_t) strtol(val,
-							   (char **) NULL, 10);
-			job_msg.rotate = rotate;
+			else if (parse_uint16(val, &job_msg.rotate)) {
+				error ("Invalid wait-for-switch value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {

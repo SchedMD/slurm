@@ -61,7 +61,7 @@
 #include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
-#include <stdlib.h>		/* getenv     */
+#include <stdlib.h>		/* getenv, strtoll */
 #include <pwd.h>		/* getpwuid   */
 #include <ctype.h>		/* isdigit    */
 #include <sys/param.h>		/* MAXPATHLEN */
@@ -870,4 +870,73 @@ int sig_name2num(char *signal_name)
 	}
 
 	return sig;
+}
+
+
+/*
+ * parse_uint32 - Convert anscii string to a 32 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 32 bit pointer. 
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int parse_uint32(char *aval, uint32_t *ival)
+{
+	/*
+	 * An unsigned 32 bit integer can have a maximum
+	 * value of 4294967295.
+	 *
+	 * First,  convert the ascii value it to a
+	 * long long int. If the result is greater
+	 * than or equal to 0 and less than 4294967295
+	 * set the value and return. Otherwise return
+	 * an error.
+	 */
+	uint32_t max32uint = 4294967295;
+	long long  tval;
+
+	/*
+ 	 * Return error for invalid value.
+	 */
+	tval = strtoll(aval, (char **) NULL, 10);
+	if ((tval == LLONG_MIN) || (tval == LLONG_MAX) ||
+	    (tval < 0) || (tval > max32uint))
+		return 1;
+
+	*ival = (uint32_t) tval;
+
+	return 0;
+}
+
+/*
+ * parse_uint16 - Convert anscii string to a 16 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 16 bit pointer. 
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int parse_uint16(char *aval, uint16_t *ival)
+{
+	/*
+	 * an unsigned 16 bit integer can have a maximum
+	 * value of 65535.
+	 *
+	 * First,  convert the ascii value it to a
+	 * long long int. If the result is greater
+	 * than or equal to 0 and less than 65535
+	 * set the value and return. Otherwise
+	 * return an error.
+	 */
+	long long  tval;
+	uint16_t max16uint = 65535;
+
+	/*
+ 	 * Return error for invalid value.
+	 */
+	tval = strtoll(aval, (char **) NULL, 10);
+	if ((tval == LLONG_MIN) || (tval == LLONG_MAX) ||
+	    (tval < 0) || (tval > max16uint))
+		return 1;
+
+	*ival = (uint16_t) tval;
+
+	return 0;
 }

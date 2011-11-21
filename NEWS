@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     D'Elia.
  -- BGQ - Added linking to runjob client libary which gives support to totalview
     to use srun instead of runjob.
+ -- Add numeric range checks to scontrol update options. Patch from Phil
+    Eckert, LLNL.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

@@ -145,4 +145,20 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time);
  * Return 0 on failure */
 int sig_name2num(char *signal_name);
 
+/*
+ * parse_uint16 - Convert anscii string to a 16 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 16 bit pointer. 
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int	parse_uint16(char *aval, uint16_t *ival);
+
+/*
+ * parse_uint32 - Convert anscii string to a 32 bit unsigned int.
+ * IN      aval - ascii string.
+ * IN/OUT  ival - 32 bit pointer. 
+ * RET     0 if no error, 1 otherwise.
+ */
+extern int	parse_uint32(char *aval, uint32_t *ival);
+
 #endif /* !_PROC_ARGS_H */

@@ -226,8 +226,10 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "Priority", MAX(taglen, 3)) == 0) {
-			part_msg_ptr->priority = (uint16_t) strtol(val,
-					(char **) NULL, 10);
+			if (parse_uint16(val, &part_msg_ptr->priority)) {
+				error ("Invalid Priority value: %s", val);
+				return -1;
+			}
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "State", MAX(taglen, 2)) == 0) {
@@ -265,33 +267,44 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "GraceTime", MAX(taglen, 5)) == 0) {
-			part_msg_ptr->grace_time = slurm_atoul(val);
+			if (parse_uint32(val, &part_msg_ptr->grace_time)) {
+				error ("Invalid GraceTime value: %s", val);
+				return -1;
+			}
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "DefMemPerCPU",
 				     MAX(taglen, 10)) == 0) {
-			part_msg_ptr->def_mem_per_cpu = (uint32_t) strtol(val,
-							(char **) NULL, 10);
+			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
+				error ("Invalid DefMemPerCPU value: %s", val);
+				return -1;
+			}
 			part_msg_ptr->def_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "DefMemPerNode",
 				     MAX(taglen, 10)) == 0) {
-			part_msg_ptr->def_mem_per_cpu = (uint32_t) strtol(val,
-							(char **) NULL, 10);
+			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
+				error ("Invalid DefMemPerNode value: %s", val);
+				return -1;
+			}
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "MaxMemPerCPU",
 				     MAX(taglen, 10)) == 0) {
-			part_msg_ptr->max_mem_per_cpu = (uint32_t) strtol(val,
-							(char **) NULL, 10);
+			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
+				error ("Invalid MaxMemPerCPU value: %s", val);
+				return -1;
+			}
 			part_msg_ptr->max_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "MaxMemPerNode",
 				     MAX(taglen, 10)) == 0) {
-			part_msg_ptr->max_mem_per_cpu = (uint32_t) strtol(val,
-							(char **) NULL, 10);
+			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
+				error ("Invalid MaxMemPerNode value: %s", val);
+				return -1;
+			}
 			(*update_cnt_ptr)++;
 		}
 		else {
