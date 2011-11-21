@@ -20697,9 +20697,9 @@ fi
 
 	if test "x$x_ac_have_lua" = "xyes"; then
 	  saved_CFLAGS="$CFLAGS"
-	  saved_LDFLAGS="$LDFLAGS"
+	  saved_LIBS="$LIBS"
 	  CFLAGS="$CFLAGS $lua_CFLAGS"
-	  LDFLAGS="$LDFLAGS $lua_LIBS"
+	  LIBS="$LIBS $lua_LIBS"
 	  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for whether we can link to liblua" >&5
 $as_echo_n "checking for whether we can link to liblua... " >&6; }
 	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -20728,7 +20728,7 @@ rm -f core conftest.err conftest.$ac_objext \
 	  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_have_lua" >&5
 $as_echo "$x_ac_have_lua" >&6; }
 	  CFLAGS="$saved_CFLAGS"
-	  LDFLAGS="$saved_LDFLAGS"
+	  LIBS="$saved_LIBS"
 	fi
 
 	 if test "x$x_ac_have_lua" = "xyes"; then
