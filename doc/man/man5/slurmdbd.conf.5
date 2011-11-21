@@ -3,10 +3,11 @@
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 
 .SH "DESCRIPTION"
-\fB/etc/slurmdb.conf\fP is an ASCII file which describes Slurm Database
+\fBslurmdb.conf\fP is an ASCII file which describes Slurm Database
 Daemon (SlurmDBD) configuration information.
-You can use the \fBSLURM_CONF\fR environment variable to override the built\-in
-location of this file.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable.
 .LP
 The contents of the file are case insensitive except for the names of nodes
 and files. Any text following a "#" in the configuration file is treated
