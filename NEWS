@@ -97,6 +97,7 @@ documents those changes that are of interest to users and admins.
     job's ntasks_per_node and cpus_per_task parameters. Patch from Carles
     Fenoy, BSC.
  -- Avoid orphan job step if slurmctld is down when a job step completes.
+ -- Fix Lua link order, patch from Pär Andersson, NSC.
 
 * Changes in SLURM 2.3.1
 ========================
