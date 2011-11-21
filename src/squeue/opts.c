@@ -69,6 +69,7 @@
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_HIDE  0x102
 #define OPT_LONG_START 0x103
+#define OPT_LONG_NAME  0x104
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -107,6 +108,7 @@ parse_command_line( int argc, char* argv[] )
 		{"long",       no_argument,       0, 'l'},
 		{"cluster",    required_argument, 0, 'M'},
 		{"clusters",   required_argument, 0, 'M'},
+		{"name",       required_argument, 0, OPT_LONG_NAME},
 		{"node",       required_argument, 0, 'n'},
 		{"nodes",      required_argument, 0, 'n'},
 		{"noheader",   no_argument,       0, 'h'},
@@ -266,6 +268,11 @@ parse_command_line( int argc, char* argv[] )
 		case OPT_LONG_HIDE:
 			params.all_flag = false;
 			break;
+		case OPT_LONG_NAME:
+			xfree(params.names);
+			params.names = xstrdup(optarg);
+			params.name_list = _build_str_list( params.names );
+			break;
 		case OPT_LONG_START:
 			params.start_flag = true;
 			break;
@@ -367,6 +374,12 @@ parse_command_line( int argc, char* argv[] )
 	     ( env_val = getenv("SQUEUE_USERS") ) ) {
 		params.users = xstrdup(env_val);
 		params.user_list = _build_user_list( params.users );
+	}
+
+	if ( ( params.names == NULL ) &&
+	     ( env_val = getenv("SQUEUE_NAMES") ) ) {
+		params.names = xstrdup(env_val);
+		params.name_list = _build_str_list( params.names );
 	}
 
 	if ( params.start_flag && !params.step_flag ) {
@@ -843,7 +856,7 @@ _print_options(void)
 {
 	ListIterator iterator;
 	int i;
-	char *part;
+	char *part, *name;
 	uint32_t *user;
 	enum job_states *state_id;
 	squeue_job_step_t *job_step_id;
@@ -863,6 +876,7 @@ _print_options(void)
 	printf( "job_flag    = %d\n", params.job_flag );
 	printf( "jobs        = %s\n", params.jobs );
 	printf( "max_cpus    = %d\n", params.max_cpus ) ;
+	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
 	printf( "partitions  = %s\n", params.partitions ) ;
 	printf( "reservation = %s\n", params.reservation ) ;
@@ -879,6 +893,16 @@ _print_options(void)
 		iterator = list_iterator_create( params.job_list );
 		while ( (job_id = list_next( iterator )) ) {
 			printf( "job_list[%d] = %u\n", i++, *job_id);
+		}
+		list_iterator_destroy( iterator );
+	}
+
+
+	if ((params.verbose > 1) && params.name_list) {
+		i = 0;
+		iterator = list_iterator_create( params.name_list );
+		while ( (name = list_next( iterator )) ) {
+			printf( "name_list[%d] = %u\n", i++, *name);
 		}
 		list_iterator_destroy( iterator );
 	}
@@ -1156,6 +1180,7 @@ Usage: squeue [OPTIONS]\n\
 				  default is pending and running,\n\
 				  '--states=all' reports all states\n\
   -u, --user=user_name(s)         comma separated list of users to view\n\
+      --name=job_name(s)          comma separated list of job names to view\n\
   -v, --verbose                   verbosity level\n\
   -V, --version                   output version information and exit\n\
 \nHelp options:\n\

@@ -100,10 +100,12 @@ struct squeue_parameters {
 	char* states;
 	char* steps;
 	char* users;
+	char* names;
 
 	List  account_list;
 	List  format_list;
 	List  job_list;
+	List  name_list;
 	List  part_list;
 	List  qos_list;
 	List  state_list;

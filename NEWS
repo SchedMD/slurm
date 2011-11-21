@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Added a mutex to protect the now changing ba_system pointers.
  -- BGQ - added new functionality for sub-block allocations - no preemption
     for this yet though.
+ -- Add --name option to squeue to filter output by job name. Patch from Yuri
+    D'Elia.
 
 * Changes in SLURM 2.4.0.pre1
 =============================
