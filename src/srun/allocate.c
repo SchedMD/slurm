@@ -753,10 +753,13 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.job_id = job->jobid;
 	job->ctx_params.uid = opt.uid;
 
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	/* On a Q and onward this we don't add this. */
+#else
 	/* set the jobid for totalview */
 	totalview_jobid = NULL;
 	xstrfmtcat(totalview_jobid, "%u", job->ctx_params.job_id);
-
+#endif
 	/* Validate minimum and maximum node counts */
 	if (opt.min_nodes && opt.max_nodes &&
 	    (opt.min_nodes > opt.max_nodes)) {

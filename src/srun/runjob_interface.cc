@@ -1,12 +1,9 @@
 /*****************************************************************************\
- *  debugger.c - Definitions needed for parallel debugger
- *  $Id: debugger.c 11149 2007-03-14 20:53:19Z morrone $
+ *  runjob_interface.cc
+ *
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2011 SchedMD LLC
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -38,42 +35,38 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-/* Use symbols from the runjob.so library provided by IBM.
- * Do NOT use debugger symbols local to the srun command */
-
-#else
-
-#include "src/common/log.h"
-
-#include "src/srun/debugger.h"
-#include "src/srun/srun_job.h"
-
-/*
- *  Instantiate extern variables from debugger.h
- */
-MPIR_PROCDESC *MPIR_proctable;
-int MPIR_proctable_size;
-VOLATILE int MPIR_debug_state;
-int MPIR_being_debugged;
-int MPIR_i_am_starter;
-int MPIR_acquired_pre_main;
-char *totalview_jobid;
-#ifdef DEBUGGER_PARTIAL_ATTACH
-  int MPIR_partial_attach_ok;
-#endif
-
-void MPIR_Breakpoint(srun_job_t *job)
-{
-	/*
-	 * This just notifies parallel debugger that some event of
-	 *  interest occurred.
-	 */
-	debug("In MPIR_Breakpoint");
-	slurm_step_launch_fwd_signal(job->step_ctx, SIG_DEBUG_WAKE);
+extern "C" {
+#include "runjob_interface.h"
 }
+
+#ifdef HAVE_BG_FILES
+
+#include <bgsched/runjob/Client.h>
+
+#include <iostream>
+
+#include <sys/wait.h>
+#include <unistd.h>
+
+static bgsched::runjob::Client *rj_client_ptr = NULL;
+
+
+extern int runjob_launch(int argc, char **argv,
+			 int input, int output, int error)
+{
+	try {
+		rj_client_ptr = new(bgsched::runjob::Client)(argc, argv);
+		return rj_client_ptr->start(input, output, error);
+	} catch (const std::exception& e) {
+		std::cerr << "could not runjob: " << e.what() << std::endl;
+		return -1;
+	}
+}
+
+extern void runjob_signal(int signal)
+{
+	if (rj_client_ptr)
+		rj_client_ptr->kill(signal);
+}
+
 #endif

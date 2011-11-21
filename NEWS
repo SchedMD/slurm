@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     for this yet though.
  -- Add --name option to squeue to filter output by job name. Patch from Yuri
     D'Elia.
+ -- BGQ - Added linking to runjob client libary which gives support to totalview
+    to use srun instead of runjob.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

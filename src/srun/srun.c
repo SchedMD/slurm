@@ -71,21 +71,21 @@
 #include <unistd.h>
 #include <grp.h>
 
-
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/mpi.h"
+#include "src/common/net.h"
+#include "src/common/plugstack.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/net.h"
-#include "src/common/mpi.h"
-#include "src/common/slurm_rlimits_info.h"
-#include "src/common/plugstack.h"
-#include "src/common/read_config.h"
-#include "src/common/uid.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/srun_job.h"
@@ -97,6 +97,10 @@
 #include "src/srun/task_state.h"
 #include "src/api/pmi_server.h"
 #include "src/api/step_launch.h"
+
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#include "src/srun/runjob_interface.h"
+#endif
 
 #if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
 #  ifndef strsignal
@@ -160,10 +164,14 @@ static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
 static int   _slurm_debug_env_val (void);
 static void *_srun_signal_mgr(void *no_data);
-static void  _task_start(launch_tasks_response_msg_t *msg);
-static void  _task_finish(task_exit_msg_t *msg);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 static int   _validate_relative(resource_allocation_response_msg_t *resp);
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+static void  _send_step_complete_rpc(int step_rc);
+#else
+static void  _task_start(launch_tasks_response_msg_t *msg);
+static void  _task_finish(task_exit_msg_t *msg);
+#endif
 
 /*
  * from libvirt-0.6.2 GPL2
@@ -191,11 +199,13 @@ int srun(int ac, char **av)
 	int debug_level;
 	env_t *env = xmalloc(sizeof(env_t));
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	slurm_step_launch_params_t launch_params;
-	slurm_step_launch_callbacks_t callbacks;
 	pthread_attr_t thread_attr;
 	pthread_t signal_thread = (pthread_t) 0;
 	int got_alloc = 0;
+#if !defined HAVE_BG_FILES || defined HAVE_BG_L_P
+	slurm_step_launch_params_t launch_params;
+	slurm_step_launch_callbacks_t callbacks;
+#endif
 
 	env->stepid = -1;
 	env->procid = -1;
@@ -324,7 +334,7 @@ int srun(int ac, char **av)
 			exit(error_exit);
 	} else {
 		/* Combined job allocation and job step launch */
-#if defined HAVE_FRONT_END && (!defined HAVE_BGQ || !defined HAVE_BG_FILES)
+#if defined HAVE_FRONT_END && (!defined HAVE_BG || defined HAVE_BG_L_P || !defined HAVE_BG_FILES)
 		uid_t my_uid = getuid();
 		if ((my_uid != 0) &&
 		    (my_uid != slurm_get_slurm_user_id())) {
@@ -442,13 +452,33 @@ int srun(int ac, char **av)
 	xfree(env);
 	_set_node_alias();
 
- re_launch:
-#if defined HAVE_BGQ
-//#if defined HAVE_BGQ && defined HAVE_BG_FILES
-	task_state = task_state_create(1);
+	if (!signal_thread) {
+		slurm_attr_init(&thread_attr);
+		while (pthread_create(&signal_thread, &thread_attr,
+				      _srun_signal_mgr, NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
+		slurm_attr_destroy(&thread_attr);
+	}
+
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	_run_srun_prolog(job);
+	if (_call_spank_local_user (job) < 0) {
+		error("Failure in local plugin stack");
+		exit(error_exit);
+	}
+	slurm_step_io_fds_t cio_fds;
+	memset(&cio_fds, 0, sizeof(slurm_step_io_fds_t));
+	_set_stdio_fds(job, &cio_fds);
+	global_rc = runjob_launch(opt.argc, opt.argv,
+				  cio_fds.in.fd,
+				  cio_fds.out.fd,
+				  cio_fds.err.fd);
+	_send_step_complete_rpc(global_rc);
 #else
+ re_launch:
 	task_state = task_state_create(opt.ntasks);
-#endif
 	slurm_step_launch_params_t_init(&launch_params);
 	launch_params.gid = opt.gid;
 	launch_params.alias_list = job->alias_list;
@@ -479,16 +509,6 @@ int srun(int ac, char **av)
 	launch_params.preserve_env      = opt.preserve_env;
 	launch_params.spank_job_env     = opt.spank_job_env;
 	launch_params.spank_job_env_size = opt.spank_job_env_size;
-	/* job structure should now be filled in */
-	if (!signal_thread) {
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&signal_thread, &thread_attr,
-				      _srun_signal_mgr, NULL)) {
-			error("pthread_create error %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
-	}
 
 	_set_stdio_fds(job, &launch_params.local_fds);
 
@@ -542,7 +562,7 @@ int srun(int ac, char **av)
 	}
 
 	slurm_step_launch_wait_finish(job->step_ctx);
-	if ((MPIR_being_debugged == 0) && retry_step_begin && 
+	if ((MPIR_being_debugged == 0) && retry_step_begin &&
 	    (retry_step_cnt < MAX_STEP_RETRIES)) {
 		retry_step_begin = false;
 		slurm_step_ctx_destroy(job->step_ctx);
@@ -556,8 +576,9 @@ int srun(int ac, char **av)
 		task_state_destroy(task_state);
 		goto re_launch;
 	}
-
 cleanup:
+#endif
+
 	if (got_alloc) {
 		cleanup_allocation();
 
@@ -1004,6 +1025,35 @@ static int _run_srun_script (srun_job_t *job, char *script)
 	/* NOTREACHED */
 }
 
+
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+static void
+_send_step_complete_rpc(int step_rc)
+{
+	slurm_msg_t req;
+	step_complete_msg_t msg;
+	int rc;
+
+	memset(&msg, 0, sizeof(step_complete_msg_t));
+	msg.job_id = job->jobid;
+	msg.job_step_id = job->stepid;
+	msg.range_first = 0;
+	msg.range_last = 0;
+	msg.step_rc = step_rc;
+	msg.jobacct = jobacct_gather_g_create(NULL);
+
+	slurm_msg_t_init(&req);
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+/*	req.address = step_complete.parent_addr; */
+
+	debug3("Sending step complete RPC to slurmctld");
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+		error("Error sending step complete RPC to slurmctld");
+	jobacct_gather_g_destroy(msg.jobacct);
+}
+#endif
+
 static int
 _is_local_file (fname_t *fname)
 {
@@ -1139,13 +1189,29 @@ static void _step_opt_exclusive(void)
 }
 
 static void
+_terminate_job_step(slurm_step_ctx_t *step_ctx)
+{
+	uint32_t job_id, step_id;
+
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
+	info("Terminating job step %u.%u", job_id, step_id);
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	runjob_signal(SIGKILL);
+#else
+	slurm_kill_job_step(job_id, step_id, SIGKILL);
+#endif
+}
+
+#if !defined HAVE_BG_FILES || defined HAVE_BG_L_P
+static void
 _task_start(launch_tasks_response_msg_t *msg)
 {
 	MPIR_PROCDESC *table;
 	int taskid;
 	int i;
 
-	if(msg->count_of_pids)
+	if (msg->count_of_pids)
 		verbose("Node %s, %d tasks started",
 			msg->node_name, msg->count_of_pids);
 	else
@@ -1170,17 +1236,6 @@ _task_start(launch_tasks_response_msg_t *msg)
 		}
 	}
 
-}
-
-static void
-_terminate_job_step(slurm_step_ctx_t *step_ctx)
-{
-	uint32_t job_id, step_id;
-
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
-	info("Terminating job step %u.%u", job_id, step_id);
-	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
 static char *
@@ -1393,6 +1448,7 @@ _task_finish(task_exit_msg_t *msg)
 	if (task_state_first_exit(task_state) && (opt.max_wait > 0))
 		_setup_max_wait_timer();
 }
+#endif
 
 static long _diff_tv_str(struct timeval *tv1,struct timeval *tv2)
 {
@@ -1414,7 +1470,11 @@ static void _handle_intr(void)
 		if  (opt.disable_status) {
 			info("sending Ctrl-C to job %u.%u",
 			     job->jobid, job->stepid);
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+			runjob_signal(SIGINT);
+#else
 			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
+#endif
 		} else if (job->state < SRUN_JOB_FORCETERM) {
 			info("interrupt (one more within 1 sec to abort)");
 			task_state_print(task_state, (log_f) info);
@@ -1429,18 +1489,30 @@ static void _handle_intr(void)
 		if (job->state < SRUN_JOB_FORCETERM) {
 			if (_diff_tv_str(&last_intr_sent, &now) < 1000000) {
 				job_force_termination(job);
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+				runjob_signal(SIGKILL);
+#else
 				slurm_step_launch_abort(job->step_ctx);
+#endif
 				return;
 			}
 
 			info("sending Ctrl-C to job %u.%u",
 			     job->jobid, job->stepid);
 			last_intr_sent = now;
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+			runjob_signal(SIGKILL);
+#else
 			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
 			slurm_step_launch_abort(job->step_ctx);
+#endif
 		} else {
 			job_force_termination(job);
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+			runjob_signal(SIGKILL);
+#else
 			slurm_step_launch_abort(job->step_ctx);
+#endif
 		}
 	}
 }
@@ -1466,7 +1538,11 @@ static void _handle_pipe(void)
 	if (ending)
 		return;
 	ending = 1;
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	runjob_signal(SIGKILL);
+#else
 	slurm_step_launch_abort(job->step_ctx);
+#endif
 }
 
 /* _srun_signal_mgr - Process daemon-wide signals */
@@ -1498,7 +1574,11 @@ static void *_srun_signal_mgr(void *no_data)
 			 * are ending the job now and we don't need to update
 			 * the state. */
 			info("forcing job termination");
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+			runjob_signal(SIGKILL);
+#else
 			slurm_step_launch_abort(job->step_ctx);
+#endif
 			break;
 		case SIGCONT:
 			info("got SIGCONT");
@@ -1514,7 +1594,11 @@ static void *_srun_signal_mgr(void *no_data)
 			}
 			break;
 		default:
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+			runjob_signal(sig);
+#else
 			slurm_step_launch_fwd_signal(job->step_ctx, sig);
+#endif
 			break;
 		}
 	}

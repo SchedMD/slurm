@@ -22,13 +22,21 @@ srun_SOURCES = \
 	task_state.c task_state.h \
 	srun.wrapper.c
 
+
+# pthread is needed for compiling with g++ (which is used for linking
+# no matter if on a BGQ or not because of mentioning a .cc file
 convenience_libs = \
-	$(top_builddir)/src/api/libslurm.o -ldl
+	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
 
 srun_LDADD = \
 	$(convenience_libs)
 
 srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
+if BGQ_LOADED
+srun_SOURCES += runjob_interface.cc
+srun_LDFLAGS += $(RUNJOB_LDFLAGS)
+endif
 
 force:
 $(convenience_libs) : force

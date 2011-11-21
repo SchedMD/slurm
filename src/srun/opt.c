@@ -194,10 +194,6 @@ int error_exit = 1;
 int immediate_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
-#if defined HAVE_BG_FILES && HAVE_BGQ
-static const char *runjob_loc = "/bgsys/drivers/ppcfloor/hlcs/bin/runjob";
-#endif
-
 typedef struct env_vars env_vars_t;
 
 
@@ -1225,7 +1221,13 @@ static void set_options(const int argc, char **argv)
 			/* make other parameters look like debugger
 			 * is really attached */
 			opt.parallel_debug   = true;
+#if defined HAVE_BG_FILES && !defined HAVE_BGL && !defined HAVE_BGP
+			/* Use symbols from the runjob.so library provided by
+			 * IBM. Do NOT use debugger symbols local to the srun
+			 * command */
+#else
 			MPIR_being_debugged  = 1;
+#endif
 			opt.max_launch_time = 120;
 			opt.max_threads     = 1;
 			pmi_server_max_threads(opt.max_threads);
@@ -1609,7 +1611,8 @@ static void _opt_args(int argc, char **argv)
 		while (rest[opt.argc] != NULL)
 			opt.argc++;
 	}
-#if defined HAVE_BGQ
+
+#if defined HAVE_BG && !defined HAVE_BG_L_P
 	/* A bit of setup for IBM's runjob.  runjob only has so many
 	   options, so it isn't that bad.
 	*/
@@ -1653,7 +1656,8 @@ static void _opt_args(int argc, char **argv)
 		 * handled after the allocation. */
 
 		/* Default location of the actual command to be ran. We always
-		 * have to add 3 options no matter what. */
+		 * have to add 3 options (calling prog, '--env-all' and ':') no
+		 * matter what. */
 		command_pos = 3;
 
 		if (opt.ntasks_per_node != NO_VAL)
@@ -1664,6 +1668,19 @@ static void _opt_args(int argc, char **argv)
 			command_pos += 2;
 		if (opt.labelio)
 			command_pos += 2;
+		if (_verbose)
+			command_pos += 2;
+		if (opt.runjob_opts) {
+			char *save_ptr = NULL, *tok;
+			char *tmp = xstrdup(opt.runjob_opts);
+			tok = strtok_r(tmp, " ", &save_ptr);
+			while (tok) {
+				command_pos++;
+				tok = strtok_r(NULL, " ", &save_ptr);
+			}
+			xfree(tmp);
+		}
+
 		opt.argc += command_pos;
 	}
 #endif
@@ -1672,15 +1689,16 @@ static void _opt_args(int argc, char **argv)
 
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
 
-#if defined HAVE_BGQ
+#if defined HAVE_BG && !defined HAVE_BG_L_P
 #if defined HAVE_BG_FILES
 	if (!opt.test_only) {
 		i = 0;
-		/* Instead of running the actual job, the slurmstepd will be
-		   running runjob to run the job.  srun is just wrapping it
-		   making things all kosher.
+		/* First arg has to be something when sending it to the
+		   runjob api.  This can be anything, srun seemed most
+		   logical, but it doesn't matter.
 		*/
-		opt.argv[i++] = xstrdup(runjob_loc);
+		opt.argv[i++] = xstrdup("srun");
+		/* srun launches tasks using runjob API. Slurmd is not used */
 		if (opt.ntasks_per_node != NO_VAL) {
 			opt.argv[i++]  = xstrdup("-p");
 			opt.argv[i++]  = xstrdup_printf("%d",
@@ -1706,6 +1724,11 @@ static void _opt_args(int argc, char **argv)
 			opt.labelio = 0;
 		}
 
+		if (_verbose) {
+			opt.argv[i++]  = xstrdup("--verbose");
+			opt.argv[i++]  = xstrdup_printf("%d", _verbose);
+		}
+
 		if (opt.runjob_opts) {
 			char *save_ptr = NULL, *tok;
 			char *tmp = xstrdup(opt.runjob_opts);
@@ -1719,7 +1742,7 @@ static void _opt_args(int argc, char **argv)
 
 		/* Export all the environment so the runjob_mux will get the
 		 * correct info about the job, namely the block. */
-		opt.argv[i++] = xstrdup("--env_all");
+		opt.argv[i++] = xstrdup("--env-all");
 
 		/* With runjob anything after a ':' is treated as the actual
 		 * job, which in this case is exactly what it is.  So, very
@@ -2434,7 +2457,13 @@ static void _opt_list(void)
 /* Determine if srun is under the control of a parallel debugger or not */
 static bool _under_parallel_debugger (void)
 {
+#if defined HAVE_BG_FILES && !defined HAVE_BGL && !defined HAVE_BGP
+	/* Use symbols from the runjob.so library provided by IBM.
+	 * Do NOT use debugger symbols local to the srun command */
+	return false;
+#else
 	return (MPIR_being_debugged != 0);
+#endif
 }
 
 

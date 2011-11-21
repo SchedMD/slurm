@@ -173,8 +173,12 @@ static void _do_log_msg (bitstr_t *b, log_f fn, const char *msg)
 
 void task_state_print (task_state_t ts, log_f fn)
 {
-	bitstr_t *unseen = bit_alloc (ts->n_tasks);
+	bitstr_t *unseen;
 
+	if (!ts)	/* Not built yet */
+		return;
+
+	unseen = bit_alloc (ts->n_tasks);
 	if (bit_set_count (ts->start_failed)) {
 		_do_log_msg (ts->start_failed, fn, "failed to start");
 		bit_or (unseen, ts->start_failed);
