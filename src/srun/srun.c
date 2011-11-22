@@ -382,7 +382,8 @@ int srun(int ac, char **av)
 	/*
 	 *  Enhance environment for job
 	 */
-	env->cpus_per_task = opt.cpus_per_task;
+	if (opt.cpus_set)
+		env->cpus_per_task = opt.cpus_per_task;
 	if (opt.ntasks_per_node != NO_VAL)
 		env->ntasks_per_node = opt.ntasks_per_node;
 	if (opt.ntasks_per_socket != NO_VAL)
@@ -468,7 +469,10 @@ int srun(int ac, char **av)
 	if (opt.acctg_freq >= 0)
 		launch_params.acctg_freq = opt.acctg_freq;
 	launch_params.pty = opt.pty;
-	launch_params.cpus_per_task	= opt.cpus_per_task;
+	if (opt.cpus_set)
+		launch_params.cpus_per_task	= opt.cpus_per_task;
+	else
+		launch_params.cpus_per_task	= 1;
 	launch_params.task_dist         = opt.distribution;
 	launch_params.ckpt_dir		= opt.ckpt_dir;
 	launch_params.restart_dir       = opt.restart_dir;

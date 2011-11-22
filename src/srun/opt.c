@@ -326,7 +326,7 @@ static void _opt_default()
 
 	opt.ntasks = 1;
 	opt.ntasks_set = false;
-	opt.cpus_per_task = 1;
+	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
@@ -1806,13 +1806,13 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.pn_min_cpus < opt.cpus_per_task)
+	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
 	if (opt.argc > 0)
 		opt.cmd_name = base_name(opt.argv[0]);
 
-	if(!opt.nodelist) {
+	if (!opt.nodelist) {
 		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
 			/* make sure the file being read in has a / in
 			   it to make sure it is a file in the
@@ -1897,7 +1897,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.cpus_per_task < 0) {
+	if (opt.cpus_set && (opt.cpus_per_task <= 0)) {
 		error("invalid number of cpus per task (-c %d)",
 		      opt.cpus_per_task);
 		verified = false;
@@ -2291,8 +2291,8 @@ static void _opt_list(void)
 	info("cwd            : %s", opt.cwd);
 	info("ntasks         : %d %s", opt.ntasks,
 	     opt.ntasks_set ? "(set)" : "(default)");
-	info("cpus_per_task  : %d %s", opt.cpus_per_task,
-	     opt.cpus_set ? "(set)" : "(default)");
+	if (opt.cpus_set)
+		info("cpus_per_task  : %d", opt.cpus_per_task);
 	if (opt.max_nodes)
 		info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
 	else {

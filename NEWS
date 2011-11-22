@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     Fenoy, BSC.
  -- Avoid orphan job step if slurmctld is down when a job step completes.
  -- Fix Lua link order, patch from Pär Andersson, NSC.
+ -- Set SLURM_CPUS_PER_TASK=1 when user specifies --cpus-per-task=1.
 
 * Changes in SLURM 2.3.1
 ========================

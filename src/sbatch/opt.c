@@ -292,7 +292,7 @@ static void _opt_default()
 
 	opt.ntasks = 1;
 	opt.ntasks_set = false;
-	opt.cpus_per_task = 1;
+	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
@@ -1160,8 +1160,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'c':
 			opt.cpus_set = true;
-			opt.cpus_per_task =
-				_get_int(optarg, "cpus-per-task");
+			opt.cpus_per_task = _get_int(optarg, "cpus-per-task");
 			break;
 		case 'C':
 			xfree(opt.constraints);
@@ -2135,7 +2134,7 @@ static bool _opt_verify(void)
 		opt.ntasks_set = 1;
 	}
 
-	if (opt.mincpus < opt.cpus_per_task)
+	if (opt.cpus_set && (opt.mincpus < opt.cpus_per_task))
 		opt.mincpus = opt.cpus_per_task;
 
 	if ((opt.job_name == NULL) && (opt.script_argc > 0))
@@ -2149,7 +2148,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.cpus_per_task <= 0) {
+	if (opt.cpus_set && (opt.cpus_per_task <= 0)) {
 		error("invalid number of cpus per task (-c %d)",
 		      opt.cpus_per_task);
 		verified = false;
@@ -2226,22 +2225,27 @@ static bool _opt_verify(void)
 		}
 	}
 
+	if (opt.cpus_set &&
+	    setenvf(NULL, "SLURM_CPUS_PER_TASK", "%d", opt.cpus_per_task)) {
+		error("Can't set SLURM_CPUS_PER_TASK env variable");
+	}
+
 	_set_distribution(opt.distribution, &dist, &lllp_dist);
-	if(dist)
-		if (setenvf(NULL, "SLURM_DISTRIBUTION", "%s", dist)) {
-			error("Can't set SLURM_DISTRIBUTION env variable");
-		}
+	if (dist &&
+	    setenvf(NULL, "SLURM_DISTRIBUTION", "%s", dist)) {
+		error("Can't set SLURM_DISTRIBUTION env variable");
+	}
 
-	if(opt.distribution == SLURM_DIST_PLANE)
-		if (setenvf(NULL, "SLURM_DIST_PLANESIZE", "%d",
-			    opt.plane_size)) {
-			error("Can't set SLURM_DIST_PLANESIZE env variable");
-		}
+	if ((opt.distribution == SLURM_DIST_PLANE) &&
+	    setenvf(NULL, "SLURM_DIST_PLANESIZE", "%d", opt.plane_size)) {
+		error("Can't set SLURM_DIST_PLANESIZE env variable");
+	}
 
-	if(lllp_dist)
-		if (setenvf(NULL, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
-			error("Can't set SLURM_DIST_LLLP env variable");
-		}
+	if (lllp_dist && setenvf(NULL, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
+		error("Can't set SLURM_DIST_LLLP env variable");
+	}
+
+	
 
 	/* bound threads/cores from ntasks_cores/sockets */
 	if (opt.ntasks_per_core > 0) {
@@ -2664,8 +2668,8 @@ static void _opt_list(void)
 	info("cwd               : %s", opt.cwd);
 	info("ntasks            : %d %s", opt.ntasks,
 		opt.ntasks_set ? "(set)" : "(default)");
-	info("cpus_per_task     : %d %s", opt.cpus_per_task,
-		opt.cpus_set ? "(set)" : "(default)");
+	if (opt.cpus_set)
+		info("cpus_per_task     : %d", opt.cpus_per_task);
 	if (opt.max_nodes) {
 		info("nodes             : %d-%d",
 		     opt.min_nodes, opt.max_nodes);

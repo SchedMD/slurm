@@ -1109,15 +1109,11 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
 
-	if((batch->cpus_per_task != 0) &&
-	   (batch->cpus_per_task != (uint16_t) NO_VAL))
+	if ((batch->cpus_per_task != 0) &&
+	    (batch->cpus_per_task != (uint16_t) NO_VAL))
 		cpus_per_task = batch->cpus_per_task;
 	else
 		cpus_per_task = 1;	/* default value */
-	if (cpus_per_task > 1) {
-		env_array_overwrite_fmt(dest, "SLURM_CPUS_PER_TASK", "%u",
-					cpus_per_task);
-	}
 
 	if(num_tasks) {
 		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",

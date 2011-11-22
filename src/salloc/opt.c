@@ -283,7 +283,7 @@ static void _opt_default()
 
 	opt.ntasks = 1;
 	opt.ntasks_set = false;
-	opt.cpus_per_task = 1;
+	opt.cpus_per_task = 0;
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
@@ -718,8 +718,7 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'c':
 			opt.cpus_set = true;
-			opt.cpus_per_task =
-				_get_int(optarg, "cpus-per-task");
+			opt.cpus_per_task = _get_int(optarg, "cpus-per-task");
 			break;
 		case 'C':
 			xfree(opt.constraints);
@@ -1261,7 +1260,7 @@ static bool _opt_verify(void)
 		opt.ntasks_set = 1;
 	}
 
-	if (opt.mincpus < opt.cpus_per_task)
+	if (opt.cpus_set && (opt.mincpus < opt.cpus_per_task))
 		opt.mincpus = opt.cpus_per_task;
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid))
@@ -1283,7 +1282,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.cpus_per_task <= 0) {
+	if (opt.cpus_set && (opt.cpus_per_task <= 0)) {
 		error("invalid number of cpus per task (-c %d)",
 		      opt.cpus_per_task);
 		verified = false;
