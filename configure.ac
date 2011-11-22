@@ -118,6 +118,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
+		 llapi.h nrt.h \
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
