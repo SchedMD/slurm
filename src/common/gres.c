@@ -2509,6 +2509,12 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		return NO_VAL;
 	} else if (job_gres_ptr->gres_cnt_alloc && node_gres_ptr->topo_cnt) {
 		/* Need to determine which specific CPUs can be used */
+		gres_avail = node_gres_ptr->gres_cnt_avail;
+		if (!use_total_gres)
+			gres_avail -= node_gres_ptr->gres_cnt_alloc;
+		if (job_gres_ptr->gres_cnt_alloc > gres_avail)
+			return (uint32_t) 0;	/* insufficient, gres to use */
+
 		if (cpu_bitmap) {
 			cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
 			if (cpus_ctld < 1) {
