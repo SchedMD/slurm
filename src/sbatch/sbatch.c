@@ -351,8 +351,10 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.overcommit) {
 		desc->min_cpus = MAX(opt.min_nodes, 1);
 		desc->overcommit = opt.overcommit;
-	} else
+	} else if (opt.cpus_set)
 		desc->min_cpus = opt.ntasks * opt.cpus_per_task;
+	else
+		desc->min_cpus = opt.ntasks;
 	desc->max_cpus = desc->max_cpus;
 
 	if (opt.ntasks_set)

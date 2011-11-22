@@ -692,8 +692,10 @@ job_desc_msg_create_from_opts (void)
 	if (opt.overcommit) {
 		j->min_cpus    = opt.min_nodes;
 		j->overcommit  = opt.overcommit;
-	} else
+	} else if (opt.cpus_set)
 		j->min_cpus    = opt.ntasks * opt.cpus_per_task;
+	else
+		j->min_cpus    = opt.ntasks;
 	if (opt.ntasks_set)
 		j->num_tasks   = opt.ntasks;
 
@@ -797,8 +799,10 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		job->ctx_params.cpu_count = job->cpu_count;
 	else if (opt.overcommit)
 		job->ctx_params.cpu_count = job->ctx_params.min_nodes;
+	else if (opt.cpus_set)
+		job->ctx_params.cpu_count = opt.ntasks * opt.cpus_per_task;
 	else
-		job->ctx_params.cpu_count = opt.ntasks*opt.cpus_per_task;
+		job->ctx_params.cpu_count = opt.ntasks;
 
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
