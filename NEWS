@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     to use srun instead of runjob.
  -- Add numeric range checks to scontrol update options. Patch from Phil
     Eckert, LLNL.
+ -- Add ReconfigFlags configuration option to control actions of "scontrol
+    reconfig". Patch from Don Albert, Bull.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

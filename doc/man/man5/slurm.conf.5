@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2011" "slurm.conf 2.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "November 2011" "slurm.conf 2.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1243,6 +1243,21 @@ See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 Program to be executed on each compute node to reboot it. Invoked on each node
 once it becomes idle after the command "scontrol reboot_nodes" is executed by
 an authorized user. After being rebooting, the node is returned to normal use.
+
+.TP
+\fBReconfigFlags\fR
+Flags to control various actions that may be taken when an "scontrol
+reconfig" command is issued. Currently the only option defined is:
+.RS
+.TP 17
+\fBKeepPartInfo\fR
+If set, an "scontrol reconfig" command will maintain the in\-memory
+state of partitions that may have been dynamically updated by
+"scontrol update".  Partition information in the slurm.conf file will
+be merged with in\-memory data.  The default is not set, and the
+"scontrol reconfig" will rebuild the partition information using only
+the definitions in the slurm.conf file.
+.RE
 
 .TP
 \fBResumeProgram\fR

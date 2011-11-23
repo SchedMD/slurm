@@ -109,6 +109,7 @@ extern char *default_plugstack;
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
 #define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
 #define DEFAULT_PRIORITY_TYPE       "priority/basic"
+#define DEFAULT_RECONF_KEEP_PART_STATE 0
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_RESUME_RATE         300
 #define DEFAULT_RESUME_TIMEOUT      60
@@ -442,6 +443,18 @@ extern char *debug_flags2str(uint32_t debug_flags);
  * Returns NO_VAL if invalid
  */
 extern uint32_t debug_str2flags(char *debug_flags);
+
+/*
+ * reconfig_flags2str - convert a ReconfigFlags uint16_t to the equivalent string
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *reconfig_flags2str(uint16_t reconfig_flags);
+
+/*
+ * reconfig_str2flags - Convert a ReconfigFlags string to the equivalent uint16_t
+ * Returns NO_VAL if invalid
+ */
+extern uint16_t reconfig_str2flags(char *reconfig_flags);
 
 extern void destroy_config_key_pair(void *object);
 extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);

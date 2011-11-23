@@ -778,7 +778,8 @@ int read_slurm_conf(int recover, bool reconfig)
 						 old_node_record_count);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
-		if (old_part_list && (recover > 1)) {
+		if (old_part_list && ((recover > 1) ||
+		    (slurmctld_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
 			info("restoring original partition state");
 			rc = _restore_part_state(old_part_list,
 						 old_def_part_name);

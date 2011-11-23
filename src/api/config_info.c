@@ -743,6 +743,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ReconfigFlags");
+	key_pair->value = reconfig_flags2str(slurm_ctl_conf_ptr->reconfig_flags);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ResumeProgram");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->resume_program);
 	list_append(ret_list, key_pair);

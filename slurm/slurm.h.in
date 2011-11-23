@@ -1775,6 +1775,8 @@ typedef struct reservation_name_msg {
 #define PREEMPT_MODE_CANCEL	0x0008	/* always cancel the job */
 #define PREEMPT_MODE_GANG	0x8000	/* enable gang scheduling */
 
+#define RECONFIG_KEEP_PART_INFO 0x0001 /* keep dynamic partition info on scontrol reconfig */
+
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	uint16_t accounting_storage_enforce; /* job requires valid association:
@@ -1889,6 +1891,7 @@ typedef struct slurm_ctl_conf {
 	char *propagate_rlimits;/* Propagate (all/specific) resource limits */
 	char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	char *reboot_program;	/* program to reboot the node */
+	uint16_t reconfig_flags;/* see RECONFIG_* */
 	char *resume_program;	/* program to make nodes full power */
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
 	uint16_t resume_timeout;/* time required in order to perform a node

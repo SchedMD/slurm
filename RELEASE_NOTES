@@ -30,6 +30,7 @@ HIGHLIGHTS
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
 * "RebootProgram" added
+* "ReconfigFlags" added
 * "SlurmdDebugLevel" and "SlurmctldDebugLevel" now accept string names in
   addition to numeric values (e.g. "info", "verbose", "debug", etc.). Output
   of scontrol and sview commands also use the string names.

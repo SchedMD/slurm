@@ -149,6 +149,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, propagate_rlimits, charp);
 	if(conf->propagate_rlimits_except)
 		STORE_FIELD(hv, conf, propagate_rlimits_except, charp);
+	STORE_FIELD(hv, conf, reconfig_flags, uint16_t);
 	if(conf->resume_program)
 		STORE_FIELD(hv, conf, resume_program, charp);
 	STORE_FIELD(hv, conf, resume_rate, uint16_t);
@@ -340,6 +341,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, propagate_prio_process, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, propagate_rlimits, charp, FALSE);
 	FETCH_FIELD(hv, conf, propagate_rlimits_except, charp, FALSE);
+	FETCH_FIELD(hv, conf, reconfig_flags, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, resume_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, resume_rate, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, resume_timeout, uint16_t, TRUE);

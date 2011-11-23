@@ -240,6 +240,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
 	{"RebootProgram", S_P_STRING},
+	{"ReconfigFlags", S_P_STRING},
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
 	{"ResumeTimeout", S_P_UINT16},
@@ -1961,6 +1962,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->reboot_program);
+	ctl_conf_ptr->reconfig_flags		= 0;
 	ctl_conf_ptr->resume_timeout		= 0;
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
@@ -2933,6 +2935,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			      conf->propagate_rlimits);
 	}
 
+	if (s_p_get_string(&temp_str, "ReconfigFlags", hashtbl)) {
+		conf->reconfig_flags = reconfig_str2flags(temp_str);
+		if (conf->reconfig_flags == 0xffff)
+			fatal("ReconfigFlags invalid: %s", temp_str);
+		xfree(temp_str);
+	} else  /* Default: no ReconfigFlags */
+		conf->reconfig_flags = 0;
+
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
 #ifdef HAVE_CRAY
@@ -3426,6 +3436,53 @@ extern uint32_t debug_str2flags(char *debug_flags)
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			rc = NO_VAL;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+
+	return rc;
+}
+
+/*
+ * reconfig_flags2str - convert a ReconfFlags uint16_t to the equivalent string
+ * Keep in sync with reconfig_str2flags() below
+ */
+extern char * reconfig_flags2str(uint16_t reconfig_flags)
+{
+	char *rc = NULL;
+
+	if (reconfig_flags & RECONFIG_KEEP_PART_INFO) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "KeepPartInfo");
+	}
+
+	return rc;
+}
+
+/*
+ * reconfig_str2flags - Convert a ReconfFlags string to the equivalent uint16_t
+ * Keep in sync with reconfig_flags2str() above
+ * Returns NO_VAL if invalid
+ */
+extern uint16_t reconfig_str2flags(char *reconfig_flags)
+{
+	uint16_t rc = 0;
+	char *tmp_str, *tok, *last = NULL;
+
+	if (!reconfig_flags)
+		 return rc;
+
+	tmp_str = xstrdup(reconfig_flags);
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok) {
+		if (strcasecmp(tok, "KeepPartInfo") == 0)
+			rc |= RECONFIG_KEEP_PART_INFO;
+		else {
+			error("Invalid ReconfigFlag: %s", tok);
+			rc = (uint16_t) NO_VAL;
 			break;
 		}
 		tok = strtok_r(NULL, ",", &last);

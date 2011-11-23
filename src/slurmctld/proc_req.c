@@ -567,6 +567,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 						     propagate_rlimits_except);
 
 	conf_ptr->reboot_program      = xstrdup(conf->reboot_program);
+	conf_ptr->reconfig_flags      = conf->reconfig_flags;
 	conf_ptr->resume_program      = xstrdup(conf->resume_program);
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->resume_timeout      = conf->resume_timeout;
