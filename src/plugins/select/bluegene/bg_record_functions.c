@@ -1359,7 +1359,8 @@ extern int resume_block(bg_record_t *bg_record)
 {
 	xassert(bg_record);
 
-	if (bg_record->job_running > NO_JOB_RUNNING)
+	if (bg_record->job_running > NO_JOB_RUNNING
+	    || (bg_record->job_list && list_count(bg_record->job_list)))
 		return SLURM_SUCCESS;
 
 	if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
