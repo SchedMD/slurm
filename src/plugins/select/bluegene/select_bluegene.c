@@ -1246,7 +1246,7 @@ static List _get_config(void)
 
 	if (bg_conf->sub_mp_sys) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
-		key_pair->name = xstrdup("SubMidplaneSys");
+		key_pair->name = xstrdup("SubMidplaneSystem");
 		key_pair->value = xstrdup("Yes");
 		list_append(my_list, key_pair);
 	}
