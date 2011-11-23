@@ -541,12 +541,6 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		   to the script initiation do clean up just
 		   incase the fail job isn't ran */
 		(void) slurm_fail_job(req_job_id);
-		slurm_mutex_lock(&block_state_mutex);
-		if (remove_from_bg_list(bg_lists->job_running, bg_record)
-		    == SLURM_SUCCESS)
-			num_unused_cpus += bg_record->cpu_cnt;
-
-		slurm_mutex_unlock(&block_state_mutex);
 	}
 }
 
