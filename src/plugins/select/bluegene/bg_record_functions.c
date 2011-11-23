@@ -1420,7 +1420,10 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		list_iterator_destroy(itr);
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
-		bg_record->job_ptr = NULL;
+		if (bg_record->job_ptr) {
+			num_unused_cpus += bg_record->job_ptr->total_cpus;
+			bg_record->job_ptr = NULL;
+		}
 	}
 
 	/* remove user from list */
@@ -1442,11 +1445,8 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 	if (bg_record->job_running == NO_JOB_RUNNING
 	    && (!bg_record->job_list
 		|| !list_count(bg_record->job_list))) {
-		if (remove_from_bg_list(bg_lists->job_running,
-					bg_record)
-		    == SLURM_SUCCESS) {
-			num_unused_cpus += bg_record->cpu_cnt;
-		}
+		remove_from_bg_list(bg_lists->job_running, bg_record);
+
 		/* At this point, no job is running on the block
 		   anymore, so if there are any errors on it, free it
 		   now.

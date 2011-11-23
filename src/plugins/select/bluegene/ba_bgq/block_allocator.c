@@ -1438,12 +1438,27 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 
 	itr = list_iterator_create(bg_record->job_list);
 	while ((job_ptr = list_next(itr))) {
-		if (job_ptr->magic != JOB_MAGIC || !in_job_ptr) {
+		if (job_ptr->magic != JOB_MAGIC) {
+			error("on block %s we found a job with bad magic",
+			      bg_record->bg_block_id);
+			list_delete_item(itr);
+			continue;
+		}
+		if (!in_job_ptr) {
+			/* if there is not an in_job_ptr it is because
+			   the jobs finished while the slurmctld
+			   wasn't running and somehow the state was
+			   messed up.  So the cpus were never added to
+			   the mix, so don't remove them. This should
+			   probably never happen.
+			*/
+			//num_unused_cpus += job_ptr->total_cpus;
 			list_delete_item(itr);
 			continue;
 		}
 
 		if (job_ptr == in_job_ptr) {
+			num_unused_cpus += job_ptr->total_cpus;
 			list_delete_item(itr);
 			break;
 		}

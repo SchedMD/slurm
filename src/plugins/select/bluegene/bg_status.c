@@ -124,7 +124,8 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 
 	if (remove_from_bg_list(bg_lists->job_running, bg_record)
 	    == SLURM_SUCCESS)
-		num_unused_cpus += bg_record->cpu_cnt;
+		debug("bg_status.c:%d: block was removed from job_running list",
+		      __LINE__);
 	remove_from_bg_list(bg_lists->booted, bg_record);
 
 	return SLURM_SUCCESS;
@@ -190,7 +191,9 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 
 		if (remove_from_bg_list(bg_lists->job_running, bg_record)
 		    == SLURM_SUCCESS)
-			num_unused_cpus += bg_record->cpu_cnt;
+			debug("bg_status.c:%d: "
+			      "block was removed from job_running list",
+			      __LINE__);
 		remove_from_bg_list(bg_lists->booted,
 				    bg_record);
 
@@ -294,10 +297,6 @@ nochange_state:
 
 				bg_record->boot_state = 0;
 				bg_record->boot_count = 0;
-				if (remove_from_bg_list(
-					    bg_lists->job_running, bg_record)
-				    == SLURM_SUCCESS)
-					num_unused_cpus += bg_record->cpu_cnt;
 
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);

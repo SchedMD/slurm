@@ -147,10 +147,11 @@ static void _sync_agent(bg_action_t *bg_action_ptr, bg_record_t *bg_record)
 			   SELECT_JOBDATA_BLOCK_PTR,
 			   bg_record);
 
-	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
+	num_unused_cpus -= job_ptr->total_cpus;
+
+	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record))
 		list_push(bg_lists->job_running, bg_record);
-		num_unused_cpus -= bg_record->cpu_cnt;
-	}
+
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
 
@@ -704,11 +705,11 @@ extern int start_job(struct job_record *job_ptr)
 		bg_record->job_running = bg_action_ptr->job_ptr->job_id;
 		bg_record->job_ptr = bg_action_ptr->job_ptr;
 	}
+	num_unused_cpus -= job_ptr->total_cpus;
 
-	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
+	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record))
 		list_push(bg_lists->job_running, bg_record);
-		num_unused_cpus -= bg_record->cpu_cnt;
-	}
+
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);

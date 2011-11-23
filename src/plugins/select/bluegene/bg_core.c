@@ -120,9 +120,6 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	   removed out of all the lists.
 	*/
 	remove_from_bg_list(bg_lists->booted, bg_record);
-	if (remove_from_bg_list(bg_lists->job_running, bg_record)
-	    == SLURM_SUCCESS)
-		num_unused_cpus += bg_record->cpu_cnt;
 
 	if (restore)
 		return SLURM_SUCCESS;
@@ -520,9 +517,6 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			}
 			slurm_mutex_lock(&block_state_mutex);
 		}
-		if (remove_from_bg_list(bg_lists->job_running, bg_record)
-		    == SLURM_SUCCESS)
-			num_unused_cpus += bg_record->cpu_cnt;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);

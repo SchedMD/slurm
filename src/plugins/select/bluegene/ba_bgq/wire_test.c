@@ -58,6 +58,7 @@ bg_config_t *bg_conf;
 bg_lists_t *bg_lists;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int bg_recover = 1;
+int num_unused_cpus = 0;
 
 extern int bridge_init(char *properties_file)
 {
