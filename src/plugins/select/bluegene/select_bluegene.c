@@ -371,10 +371,21 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	block_info->bg_block_id = NULL;
 	bg_record->mp_str = block_info->mp_str;
 	block_info->mp_str = NULL;
-	bg_record->ionode_str = block_info->ionode_str;
-	block_info->ionode_str = NULL;
 	bg_record->ionode_bitmap = ionode_bitmap;
 	ionode_bitmap = NULL;
+
+	if (block_info->ionode_str) {
+		ba_set_ionode_str(bg_record);
+		if (!bg_record->ionode_str
+		    || strcmp(block_info->ionode_str, bg_record->ionode_str)) {
+			error("block %s didn't compute with the correct "
+			      "ionode_str.  Stored as '%s' and "
+			      "came back as '%s'",
+			      bg_record->bg_block_id,
+			      block_info->ionode_str, bg_record->ionode_str);
+		}
+	}
+
 	bg_record->mp_used_bitmap = used_bitmap;
 	used_bitmap = NULL;
 
