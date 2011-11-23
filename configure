@@ -6059,7 +6059,7 @@ fi
 
    if test "x$$ac_with_load_leveler" = "xyes" ; then
 
-$as_echo "#define HAVE_LOADLEVELER 1" >>confdefs.h
+$as_echo "#define USE_LOADLEVELER 1" >>confdefs.h
 
    fi
 

@@ -160,9 +160,6 @@
 /* Define to 1 if you have the <llapi.h> header file. */
 #undef HAVE_LLAPI_H
 
-/* Define to 1 if running over LoadLeveler */
-#undef HAVE_LOADLEVELER
-
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC
@@ -499,6 +496,9 @@
 
 /* define if using ISO 8601 time format */
 #undef USE_ISO_8601
+
+/* Define to 1 if running over LoadLeveler */
+#undef USE_LOADLEVELER
 
 /* Version number of package */
 #undef VERSION
