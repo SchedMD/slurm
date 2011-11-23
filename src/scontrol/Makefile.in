@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = scontrol$(EXEEXT)
+@USE_LOADLEVELER_FALSE@bin_PROGRAMS = scontrol$(EXEEXT)
 subdir = src/scontrol
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -86,15 +86,26 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
-	info_job.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
-	info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
-	update_node.$(OBJEXT) update_part.$(OBJEXT) \
-	update_step.$(OBJEXT)
+am__scontrol_SOURCES_DIST = create_res.c info_block.c info_job.c \
+	info_node.c info_part.c info_res.c scontrol.c scontrol.h \
+	update_job.c update_node.c update_part.c update_step.c
+@USE_LOADLEVELER_FALSE@am_scontrol_OBJECTS = create_res.$(OBJEXT) \
+@USE_LOADLEVELER_FALSE@	info_block.$(OBJEXT) info_job.$(OBJEXT) \
+@USE_LOADLEVELER_FALSE@	info_node.$(OBJEXT) info_part.$(OBJEXT) \
+@USE_LOADLEVELER_FALSE@	info_res.$(OBJEXT) scontrol.$(OBJEXT) \
+@USE_LOADLEVELER_FALSE@	update_job.$(OBJEXT) \
+@USE_LOADLEVELER_FALSE@	update_node.$(OBJEXT) \
+@USE_LOADLEVELER_FALSE@	update_part.$(OBJEXT) \
+@USE_LOADLEVELER_FALSE@	update_step.$(OBJEXT)
+am__EXTRA_scontrol_SOURCES_DIST = create_res.c info_block.c info_job.c \
+	info_node.c info_part.c info_res.c scontrol.c scontrol.h \
+	update_job.c update_node.c update_part.c update_step.c
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@am__DEPENDENCIES_1 =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
 am__DEPENDENCIES_2 =
-scontrol_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
+@USE_LOADLEVELER_FALSE@scontrol_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@USE_LOADLEVELER_FALSE@	$(am__DEPENDENCIES_2)
 scontrol_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(scontrol_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -111,8 +122,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(scontrol_SOURCES)
-DIST_SOURCES = $(scontrol_SOURCES)
+SOURCES = $(scontrol_SOURCES) $(EXTRA_scontrol_SOURCES)
+DIST_SOURCES = $(am__scontrol_SOURCES_DIST) \
+	$(am__EXTRA_scontrol_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -318,26 +330,40 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-scontrol_SOURCES = \
-	create_res.c	\
-	info_block.c	\
-	info_job.c	\
-	info_node.c	\
-	info_part.c	\
-	info_res.c	\
-	scontrol.c	\
-	scontrol.h	\
-	update_job.c	\
-	update_node.c	\
-	update_part.c	\
-	update_step.c
+@USE_LOADLEVELER_FALSE@scontrol_SOURCES = \
+@USE_LOADLEVELER_FALSE@	create_res.c	\
+@USE_LOADLEVELER_FALSE@	info_block.c	\
+@USE_LOADLEVELER_FALSE@	info_job.c	\
+@USE_LOADLEVELER_FALSE@	info_node.c	\
+@USE_LOADLEVELER_FALSE@	info_part.c	\
+@USE_LOADLEVELER_FALSE@	info_res.c	\
+@USE_LOADLEVELER_FALSE@	scontrol.c	\
+@USE_LOADLEVELER_FALSE@	scontrol.h	\
+@USE_LOADLEVELER_FALSE@	update_job.c	\
+@USE_LOADLEVELER_FALSE@	update_node.c	\
+@USE_LOADLEVELER_FALSE@	update_part.c	\
+@USE_LOADLEVELER_FALSE@	update_step.c
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
-scontrol_LDADD = \
-	$(convenience_libs) \
-	$(READLINE_LIBS)
+@USE_LOADLEVELER_FALSE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
+@USE_LOADLEVELER_FALSE@scontrol_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(convenience_libs) \
+@USE_LOADLEVELER_FALSE@	$(READLINE_LIBS)
 
-scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_FALSE@scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_scontrol_SOURCES = \
+@USE_LOADLEVELER_TRUE@	create_res.c	\
+@USE_LOADLEVELER_TRUE@	info_block.c	\
+@USE_LOADLEVELER_TRUE@	info_job.c	\
+@USE_LOADLEVELER_TRUE@	info_node.c	\
+@USE_LOADLEVELER_TRUE@	info_part.c	\
+@USE_LOADLEVELER_TRUE@	info_res.c	\
+@USE_LOADLEVELER_TRUE@	scontrol.c	\
+@USE_LOADLEVELER_TRUE@	scontrol.h	\
+@USE_LOADLEVELER_TRUE@	update_job.c	\
+@USE_LOADLEVELER_TRUE@	update_node.c	\
+@USE_LOADLEVELER_TRUE@	update_part.c	\
+@USE_LOADLEVELER_TRUE@	update_step.c
+
 all: all-am
 
 .SUFFIXES:
@@ -665,9 +691,9 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-binPROGRAMS
 
 
-force:
-$(convenience_libs) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(convenience_libs) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

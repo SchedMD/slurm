@@ -42,9 +42,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_SOME_CURSES_TRUE@bin_PROGRAMS = smap$(EXEEXT)
-@BLUEGENE_LOADED_TRUE@@HAVE_SOME_CURSES_TRUE@am__append_1 = $(bg_dir)/libconfigure_api.la
-@BLUEGENE_LOADED_TRUE@@HAVE_SOME_CURSES_TRUE@am__append_2 = configure_functions.c
+@BUILD_SMAP_TRUE@bin_PROGRAMS = smap$(EXEEXT)
+@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__append_1 = $(bg_dir)/libconfigure_api.la
+@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__append_2 = configure_functions.c
 subdir = src/smap
 DIST_COMMON = $(am__noinst_HEADERS_DIST) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -97,20 +97,20 @@ PROGRAMS = $(bin_PROGRAMS)
 am__smap_SOURCES_DIST = smap.c job_functions.c partition_functions.c \
 	grid_functions.c reservation_functions.c opts.c \
 	configure_functions.c
-@BLUEGENE_LOADED_TRUE@@HAVE_SOME_CURSES_TRUE@am__objects_1 = configure_functions.$(OBJEXT)
-@HAVE_SOME_CURSES_TRUE@am_smap_OBJECTS = smap.$(OBJEXT) \
-@HAVE_SOME_CURSES_TRUE@	job_functions.$(OBJEXT) \
-@HAVE_SOME_CURSES_TRUE@	partition_functions.$(OBJEXT) \
-@HAVE_SOME_CURSES_TRUE@	grid_functions.$(OBJEXT) \
-@HAVE_SOME_CURSES_TRUE@	reservation_functions.$(OBJEXT) \
-@HAVE_SOME_CURSES_TRUE@	opts.$(OBJEXT) $(am__objects_1)
+@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__objects_1 = configure_functions.$(OBJEXT)
+@BUILD_SMAP_TRUE@am_smap_OBJECTS = smap.$(OBJEXT) \
+@BUILD_SMAP_TRUE@	job_functions.$(OBJEXT) \
+@BUILD_SMAP_TRUE@	partition_functions.$(OBJEXT) \
+@BUILD_SMAP_TRUE@	grid_functions.$(OBJEXT) \
+@BUILD_SMAP_TRUE@	reservation_functions.$(OBJEXT) \
+@BUILD_SMAP_TRUE@	opts.$(OBJEXT) $(am__objects_1)
 am__EXTRA_smap_SOURCES_DIST = smap.h smap.c job_functions.c \
 	partition_functions.c configure_functions.c grid_functions.c \
 	reservation_functions.c opts.c
 smap_OBJECTS = $(am_smap_OBJECTS)
-@HAVE_SOME_CURSES_TRUE@smap_DEPENDENCIES =  \
-@HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/api/libslurm.o \
-@HAVE_SOME_CURSES_TRUE@	$(am__append_1)
+@BUILD_SMAP_TRUE@smap_DEPENDENCIES =  \
+@BUILD_SMAP_TRUE@	$(top_builddir)/src/api/libslurm.o \
+@BUILD_SMAP_TRUE@	$(am__append_1)
 smap_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(smap_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -336,20 +336,19 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-@HAVE_SOME_CURSES_TRUE@noinst_HEADERS = smap.h
-@HAVE_SOME_CURSES_TRUE@smap_SOURCES = smap.c job_functions.c \
-@HAVE_SOME_CURSES_TRUE@	partition_functions.c grid_functions.c \
-@HAVE_SOME_CURSES_TRUE@	reservation_functions.c opts.c \
-@HAVE_SOME_CURSES_TRUE@	$(am__append_2)
-@HAVE_SOME_CURSES_TRUE@smap_LDADD =  \
-@HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl \
-@HAVE_SOME_CURSES_TRUE@	$(am__append_1)
-@BLUEGENE_LOADED_TRUE@@HAVE_SOME_CURSES_TRUE@bg_dir = $(top_builddir)/src/plugins/select/bluegene
-@HAVE_SOME_CURSES_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-@HAVE_SOME_CURSES_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
-@HAVE_SOME_CURSES_FALSE@	job_functions.c partition_functions.c \
-@HAVE_SOME_CURSES_FALSE@	configure_functions.c grid_functions.c \
-@HAVE_SOME_CURSES_FALSE@	reservation_functions.c opts.c
+@BUILD_SMAP_TRUE@noinst_HEADERS = smap.h
+@BUILD_SMAP_TRUE@smap_SOURCES = smap.c job_functions.c \
+@BUILD_SMAP_TRUE@	partition_functions.c grid_functions.c \
+@BUILD_SMAP_TRUE@	reservation_functions.c opts.c \
+@BUILD_SMAP_TRUE@	$(am__append_2)
+@BUILD_SMAP_TRUE@smap_LDADD = $(top_builddir)/src/api/libslurm.o -ldl \
+@BUILD_SMAP_TRUE@	$(am__append_1)
+@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@bg_dir = $(top_builddir)/src/plugins/select/bluegene
+@BUILD_SMAP_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@BUILD_SMAP_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
+@BUILD_SMAP_FALSE@	job_functions.c partition_functions.c \
+@BUILD_SMAP_FALSE@	configure_functions.c grid_functions.c \
+@BUILD_SMAP_FALSE@	reservation_functions.c opts.c
 
 all: all-am
 
@@ -674,9 +673,9 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-binPROGRAMS
 
 
-@HAVE_SOME_CURSES_TRUE@force:
-@HAVE_SOME_CURSES_TRUE@$(smap_LDADD) : force
-@HAVE_SOME_CURSES_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+@BUILD_SMAP_TRUE@force:
+@BUILD_SMAP_TRUE@$(smap_LDADD) : force
+@BUILD_SMAP_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

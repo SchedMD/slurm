@@ -375,6 +375,20 @@ dnl Check to build native SLURM srun command or an aprun (Cray ALPS) wrapper.
 dnl
 X_AC_SRUN2APRUN
 
+dnl
+dnl Set some configuration based upon multiple configuration parameters
+dnl
+ac_build_smap="no"
+if test "x$ac_have_some_curses" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_smap="yes"
+fi
+AM_CONDITIONAL(BUILD_SMAP, test "x$ac_build_smap" = "xyes")
+ac_build_sview="no"
+if test "x$ac_have_gtk" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_sview="yes"
+fi
+AM_CONDITIONAL(BUILD_SVIEW, test "x$ac_build_sview" = "xyes")
+
 dnl All slurm Makefiles:
 
 AC_CONFIG_FILES([Makefile

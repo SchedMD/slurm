@@ -160,6 +160,9 @@
 /* Define to 1 if you have the <llapi.h> header file. */
 #undef HAVE_LLAPI_H
 
+/* Define to 1 if running over LoadLeveler */
+#undef HAVE_LOADLEVELER
+
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC

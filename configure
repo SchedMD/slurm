@@ -612,6 +612,10 @@ ac_includes_default="\
 ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
+BUILD_SVIEW_FALSE
+BUILD_SVIEW_TRUE
+BUILD_SMAP_FALSE
+BUILD_SMAP_TRUE
 BUILD_SRUN2APRUN_FALSE
 BUILD_SRUN2APRUN_TRUE
 WITH_BLCR_FALSE
@@ -737,6 +741,8 @@ SED
 LIBTOOL
 WITH_CYGWIN_FALSE
 WITH_CYGWIN_TRUE
+USE_LOADLEVELER_FALSE
+USE_LOADLEVELER_TRUE
 HAVE_AIX_PROCTRACK_FALSE
 HAVE_AIX_PROCTRACK_TRUE
 EGREP
@@ -891,6 +897,7 @@ enable_bgp_emulation
 enable_bgq_emulation
 with_proctrack
 enable_largefile
+with_loadleveler
 enable_shared
 enable_static
 with_pic
@@ -1612,6 +1619,7 @@ Optional Packages:
   --with-bg-serial=NAME   set BG_SERIAL value
 
   --with-proctrack=PATH   Specify path to proctrack sources
+  --with-loadleveler      use LoadLeveler APIs instead of SLURM daemons
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
@@ -6021,6 +6029,39 @@ else
   HAVE_AIX_PROCTRACK_FALSE=
 fi
 
+
+   ac_with_load_leveler="no"
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for use of LoadLeveler APIs instead of SLURM daemons" >&5
+$as_echo_n "checking for use of LoadLeveler APIs instead of SLURM daemons... " >&6; }
+
+# Check whether --with-loadleveler was given.
+if test "${with_loadleveler+set}" = set; then :
+  withval=$with_loadleveler;   case "$withval" in
+          yes) ac_with_load_leveler=yes ;;
+          no)  ac_with_load_leveler=no ;;
+          *)   { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+               as_fn_error $? "bad value \"$withval\" for --with-loadleveler" "$LINENO" 5 ;;
+          esac
+
+
+fi
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_with_load_leveler" >&5
+$as_echo "$ac_with_load_leveler" >&6; }
+    if test "x$$ac_with_load_leveler" = "xyes"; then
+  USE_LOADLEVELER_TRUE=
+  USE_LOADLEVELER_FALSE='#'
+else
+  USE_LOADLEVELER_TRUE='#'
+  USE_LOADLEVELER_FALSE=
+fi
+
+   if test "x$$ac_with_load_leveler" = "xyes" ; then
+
+$as_echo "#define HAVE_LOADLEVELER 1" >>confdefs.h
+
+   fi
 
 
 case "$host" in
@@ -22095,6 +22136,31 @@ fi
 
 
 
+ac_build_smap="no"
+if test "x$ac_have_some_curses" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_smap="yes"
+fi
+ if test "x$ac_build_smap" = "xyes"; then
+  BUILD_SMAP_TRUE=
+  BUILD_SMAP_FALSE='#'
+else
+  BUILD_SMAP_TRUE='#'
+  BUILD_SMAP_FALSE=
+fi
+
+ac_build_sview="no"
+if test "x$ac_have_gtk" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_sview="yes"
+fi
+ if test "x$ac_build_sview" = "xyes"; then
+  BUILD_SVIEW_TRUE=
+  BUILD_SVIEW_FALSE='#'
+else
+  BUILD_SVIEW_TRUE='#'
+  BUILD_SVIEW_FALSE=
+fi
+
+
 
 ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/arrayrun/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/cray/libemulate/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
 
@@ -22260,6 +22326,10 @@ if test -z "${HAVE_AIX_PROCTRACK_TRUE}" && test -z "${HAVE_AIX_PROCTRACK_FALSE}"
   as_fn_error $? "conditional \"HAVE_AIX_PROCTRACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${USE_LOADLEVELER_TRUE}" && test -z "${USE_LOADLEVELER_FALSE}"; then
+  as_fn_error $? "conditional \"USE_LOADLEVELER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${WITH_CYGWIN_TRUE}" && test -z "${WITH_CYGWIN_FALSE}"; then
   as_fn_error $? "conditional \"WITH_CYGWIN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -22375,6 +22445,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_SRUN2APRUN_TRUE}" && test -z "${BUILD_SRUN2APRUN_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_SRUN2APRUN\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_SMAP_TRUE}" && test -z "${BUILD_SMAP_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_SMAP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_SVIEW_TRUE}" && test -z "${BUILD_SVIEW_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_SVIEW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

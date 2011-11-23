@@ -4,6 +4,8 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
+if ! USE_LOADLEVELER
+
 bin_PROGRAMS = scontrol
 
 scontrol_SOURCES =	\
@@ -32,3 +34,21 @@ scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+else
+
+EXTRA_scontrol_SOURCES =	\
+	create_res.c	\
+	info_block.c	\
+	info_job.c	\
+	info_node.c	\
+	info_part.c	\
+	info_res.c	\
+	scontrol.c	\
+	scontrol.h	\
+	update_job.c	\
+	update_node.c	\
+	update_part.c	\
+	update_step.c
+
+endif

@@ -9,7 +9,7 @@ AUTOMAKE_OPTIONS = foreign
 LIBS=$(NCURSES)
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
-if HAVE_SOME_CURSES
+if BUILD_SMAP
 
 bin_PROGRAMS = smap
 

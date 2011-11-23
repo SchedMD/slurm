@@ -5,7 +5,7 @@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
-if HAVE_GTK
+if BUILD_SVIEW
 
 bin_PROGRAMS = sview
 
