@@ -22,6 +22,9 @@ documents those changes that are of interest to users and admins.
  -- Fix Lua link order, patch from Pär Andersson, NSC.
  -- Set SLURM_CPUS_PER_TASK=1 when user specifies --cpus-per-task=1.
  -- Fix for fatal error managing GRES. Patch by Carles Fenoy, BSC.
+ -- Fixed race condition when using the DBD in accounting where if a job
+    wasn't started at the time the eligible message was sent but started
+    before the db_index was returned information like start time would be lost.
 
 * Changes in SLURM 2.3.1
 ========================

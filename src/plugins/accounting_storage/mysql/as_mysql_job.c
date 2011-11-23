@@ -236,23 +236,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 
 	job_state = job_ptr->job_state;
 
-	/* Since we need a new db_inx make sure the old db_inx
-	 * removed. This is most likely the only time we are going to
-	 * be notified of the change also so make the state without
-	 * the resize. */
-	if (IS_JOB_RESIZING(job_ptr)) {
-		/* If we have a db_index lets end the previous record. */
-		if (job_ptr->db_index)
-			as_mysql_job_complete(mysql_conn, job_ptr);
-		else
-			error("We don't have a db_index for job %u, "
-			      "this should never happen.", job_ptr->job_id);
-		job_state &= (~JOB_RESIZING);
-		job_ptr->db_index = 0;
-	}
-
-	job_state &= JOB_STATE_BASE;
-
 	if (job_ptr->resize_time) {
 		begin_time  = job_ptr->resize_time;
 		submit_time = job_ptr->resize_time;
@@ -262,6 +245,30 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 		submit_time = job_ptr->details->submit_time;
 		start_time  = job_ptr->start_time;
 	}
+
+	/* Since we need a new db_inx make sure the old db_inx
+	 * removed. This is most likely the only time we are going to
+	 * be notified of the change also so make the state without
+	 * the resize. */
+	if (IS_JOB_RESIZING(job_ptr)) {
+		/* If we have a db_index lets end the previous record. */
+		if (!job_ptr->db_index) {
+			error("We don't have a db_index for job %u, "
+			      "this should never happen.", job_ptr->job_id);
+			job_ptr->db_index = _get_db_index(mysql_conn,
+							  submit_time,
+							  job_ptr->job_id,
+							  job_ptr->assoc_id);
+		}
+
+		if (job_ptr->db_index)
+			as_mysql_job_complete(mysql_conn, job_ptr);
+
+		job_state &= (~JOB_RESIZING);
+		job_ptr->db_index = 0;
+	}
+
+	job_state &= JOB_STATE_BASE;
 
 	/* See what we are hearing about here if no start time. If
 	 * this job latest time is before the last roll up we will

@@ -1775,7 +1775,8 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	job.assoc_id = job_comp_msg->assoc_id;
 	job.comment = job_comp_msg->comment;
-	job.db_index = job_comp_msg->db_index;
+	if (job_comp_msg->db_index != NO_VAL)
+		job.db_index = job_comp_msg->db_index;
 	job.derived_ec = job_comp_msg->derived_ec;
 	job.end_time = job_comp_msg->end_time;
 	job.exit_code = job_comp_msg->exit_code;
@@ -1887,7 +1888,8 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.assoc_id = job_suspend_msg->assoc_id;
-	job.db_index = job_suspend_msg->db_index;
+	if (job_suspend_msg->db_index != NO_VAL)
+		job.db_index = job_suspend_msg->db_index;
 	job.job_id = job_suspend_msg->job_id;
 	job.job_state = job_suspend_msg->job_state;
 	details.submit_time = job_suspend_msg->submit_time;
@@ -2580,7 +2582,8 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.account = _replace_double_quotes(job_start_msg->account);
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
-	job.db_index = job_start_msg->db_index;
+	if (job_start_msg->db_index != NO_VAL)
+		job.db_index = job_start_msg->db_index;
 	details.begin_time = job_start_msg->eligible_time;
 	job.user_id = job_start_msg->uid;
 	job.group_id = job_start_msg->gid;
@@ -3439,7 +3442,8 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.assoc_id = step_comp_msg->assoc_id;
-	job.db_index = step_comp_msg->db_index;
+	if (step_comp_msg->db_index != NO_VAL)
+		job.db_index = step_comp_msg->db_index;
 	job.end_time = step_comp_msg->end_time;
 	step.exit_code = step_comp_msg->exit_code;
 	step.jobacct = step_comp_msg->jobacct;
@@ -3512,7 +3516,8 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&layout, 0, sizeof(slurm_step_layout_t));
 
 	job.assoc_id = step_start_msg->assoc_id;
-	job.db_index = step_start_msg->db_index;
+	if (step_start_msg->db_index != NO_VAL)
+		job.db_index = step_start_msg->db_index;
 	job.job_id = step_start_msg->job_id;
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;
