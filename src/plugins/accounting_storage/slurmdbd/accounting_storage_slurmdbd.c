@@ -202,9 +202,6 @@ static void *_set_db_inx_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
-	/* Read lock on jobs */
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -231,7 +228,7 @@ static void *_set_db_inx_thread(void *no_data)
 		 * faster and not lock up the
 		 * controller waiting for the db inx
 		 * back from the database. */
-		lock_slurmctld(job_read_lock);
+		lock_slurmctld(job_write_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			if (!job_ptr->db_index) {
@@ -242,6 +239,23 @@ static void *_set_db_inx_thread(void *no_data)
 					_partial_destroy_dbd_job_start(req);
 					continue;
 				}
+
+				/* We set the db_index to NO_VAL here
+				 * to avoid a potential race condition
+				 * where at this moment in time the
+				 * job is only eligible to run and
+				 * before this call to the DBD returns,
+				 * the job starts and needs to send
+				 * the start message as well, but
+				 * won't if the db_index is 0
+				 * resulting in lost information about
+				 * the allocation.  Setting
+				 * it to NO_VAL will inform the DBD of
+				 * this situation and it will handle
+				 * it accordingly.
+				 */
+				job_ptr->db_index = NO_VAL;
+
 				/* we only want to destory the pointer
 				   here not the contents (except
 				   block_id) so call special function
@@ -254,7 +268,7 @@ static void *_set_db_inx_thread(void *no_data)
 			}
 		}
 		list_iterator_destroy(itr);
-		unlock_slurmctld(job_read_lock);
+		unlock_slurmctld(job_write_lock);
 
 		if (local_job_list) {
 			slurmdbd_msg_t req, resp;
