@@ -724,11 +724,10 @@ scontrol_update_job (int argc, char *argv[])
 		}
 
 		else if (strncasecmp(tag, "Rotate", MAX(taglen, 2)) == 0) {
-			uint16_t rotate;
 			if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
-				rotate = 1;
+				job_msg.rotate = 1;
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
-				rotate = 0;
+				job_msg.rotate = 0;
 			else if (parse_uint16(val, &job_msg.rotate)) {
 				error ("Invalid wait-for-switch value: %s", val);
 				exit_code = 1;
