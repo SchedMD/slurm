@@ -126,7 +126,9 @@ static int _signal_job_step(const job_step_info_t *step,
 	int rc = SLURM_SUCCESS;
 
 	/* same remote procedure call for each node */
+#ifndef USE_LOADLEVELER
 	rpc.job_id = step->job_id;
+#endif
 	rpc.job_step_id = step->step_id;
 	rpc.signal = (uint32_t)signal;
 	rc = _local_send_recv_rc_msgs(allocation->node_list,
@@ -188,7 +190,9 @@ static int _terminate_job_step(const job_step_info_t *step,
 	/*
 	 *  Send REQUEST_TERMINATE_TASKS to all nodes of the step
 	 */
+#ifndef USE_LOADLEVELER
 	rpc.job_id = step->job_id;
+#endif
 	rpc.job_step_id = step->step_id;
 	rpc.signal = (uint32_t)-1; /* not used by slurmd */
 	rc = _local_send_recv_rc_msgs(allocation->node_list,
@@ -277,8 +281,12 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
  		goto fail;
  	}
 	for (i = 0; i < step_info->job_step_count; i++) {
-		if (step_info->job_steps[i].job_id == job_id
-		    && step_info->job_steps[i].step_id == step_id) {
+#ifdef USE_LOADLEVELER
+		if (0 &&
+#else
+		if ((step_info->job_steps[i].job_id == job_id) &&
+#endif
+		    (step_info->job_steps[i].step_id == step_id)) {
  			rc = _signal_job_step(&step_info->job_steps[i],
  					      alloc_info, signal);
  			save_errno = rc;
@@ -373,8 +381,12 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 		goto fail;
 	}
 	for (i = 0; i < step_info->job_step_count; i++) {
-		if (step_info->job_steps[i].job_id == job_id
-		    && step_info->job_steps[i].step_id == step_id) {
+#ifdef USE_LOADLEVELER
+		if (0 &&
+#else
+		if ((step_info->job_steps[i].job_id == job_id) &&
+#endif
+		    (step_info->job_steps[i].step_id == step_id)) {
 			rc = _terminate_job_step(&step_info->job_steps[i],
 						 alloc_info);
 			save_errno = errno;

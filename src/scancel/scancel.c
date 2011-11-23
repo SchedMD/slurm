@@ -189,8 +189,10 @@ _verify_job_ids (void)
 
 	for (j = 0; j < opt.job_cnt; j++ ) {
 		for (i = 0; i < job_buffer_ptr->record_count; i++) {
+#ifndef USE_LOADLEVELER
 			if (job_ptr[i].job_id == opt.job_id[j])
 				break;
+#endif
 		}
 		if (((job_ptr[i].job_state >= JOB_COMPLETE) ||
 		     (i >= job_buffer_ptr->record_count)) &&
@@ -328,8 +330,10 @@ _filter_job_records (void)
 		if (opt.job_cnt == 0)
 			continue;
 		for (j = 0; j < opt.job_cnt; j++) {
+#ifndef USE_LOADLEVELER
 			if (job_ptr[i].job_id == opt.job_id[j])
 				break;
+#endif
 		}
 		if (j >= opt.job_cnt) { /* not found */
 			job_ptr[i].job_id = 0;
@@ -360,9 +364,10 @@ _cancel_jobs_by_state(uint16_t job_state)
 		 * included a step id */
 		if (opt.job_cnt) {
 			for (j = 0; j < opt.job_cnt; j++ ) {
+#ifndef USE_LOADLEVELER
 				if (job_ptr[i].job_id != opt.job_id[j])
 					continue;
-
+#endif
 				if (opt.interactive &&
 				    (_confirmation(i, opt.step_id[j]) == 0))
 					continue;
@@ -370,7 +375,9 @@ _cancel_jobs_by_state(uint16_t job_state)
 				cancel_info =
 					(job_cancel_info_t *)
 					xmalloc(sizeof(job_cancel_info_t));
+#ifndef USE_LOADLEVELER
 				cancel_info->job_id  = job_ptr[i].job_id;
+#endif
 				cancel_info->sig     = opt.signal;
 				cancel_info->num_active_threads =
 					&num_active_threads;
@@ -414,7 +421,9 @@ _cancel_jobs_by_state(uint16_t job_state)
 
 			cancel_info = (job_cancel_info_t *)
 				xmalloc(sizeof(job_cancel_info_t));
+#ifndef USE_LOADLEVELER
 			cancel_info->job_id  = job_ptr[i].job_id;
+#endif
 			cancel_info->sig     = opt.signal;
 			cancel_info->num_active_threads = &num_active_threads;
 			cancel_info->num_active_threads_lock =
@@ -602,6 +611,17 @@ _confirmation (int i, uint32_t step_id)
 
 	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
+#ifdef USE_LOADLEVELER
+		if (step_id == SLURM_BATCH_SCRIPT) {
+			printf ("Cancel job_id=%s name=%s partition=%s [y/n]? ",
+			        job_ptr[i].job_id, job_ptr[i].name,
+				job_ptr[i].partition);
+		} else {
+			printf ("Cancel step_id=%s.%u name=%s partition=%s [y/n]? ",
+			        job_ptr[i].job_id, step_id, job_ptr[i].name,
+				job_ptr[i].partition);
+		}
+#else
 		if (step_id == SLURM_BATCH_SCRIPT) {
 			printf ("Cancel job_id=%u name=%s partition=%s [y/n]? ",
 			        job_ptr[i].job_id, job_ptr[i].name,
@@ -611,7 +631,7 @@ _confirmation (int i, uint32_t step_id)
 			        job_ptr[i].job_id, step_id, job_ptr[i].name,
 				job_ptr[i].partition);
 		}
-
+#endif
 		if (fgets(in_line, sizeof(in_line), stdin) == NULL)
 			continue;
 		if ((in_line[0] == 'y') || (in_line[0] == 'Y'))

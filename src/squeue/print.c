@@ -313,7 +313,11 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 		_print_str("JOBID", width, right, true);
 	else {
 		char id[FORMAT_STRING_SIZE];
+#ifdef USE_LOADLEVELER
+		snprintf(id, FORMAT_STRING_SIZE, "%s", job->job_id);
+#else
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
+#endif
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -1191,8 +1195,13 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("STEPID", width, right, true);
 	else {
+#ifdef USE_LOADLEVELER
+		snprintf(id, FORMAT_STRING_SIZE, "%s.%u", step->job_id,
+			 step->step_id);
+#else
 		snprintf(id, FORMAT_STRING_SIZE, "%u.%u", step->job_id,
 			 step->step_id);
+#endif
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -1373,10 +1382,12 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_id = list_next(iterator))) {
+#ifndef USE_LOADLEVELER
 			if (*job_id == job->job_id) {
 				filter = 0;
 				break;
 			}
+#endif
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)
@@ -1519,10 +1530,12 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_id = list_next(iterator))) {
+#ifndef USE_LOADLEVELER
 			if (*job_id == step->job_id) {
 				filter = 0;
 				break;
 			}
+#endif
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)
@@ -1547,7 +1560,11 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.step_list);
 		while ((job_step_id = list_next(iterator))) {
+#ifdef USE_LOADLEVELER
+			if (0 &&
+#else
 			if ((job_step_id->job_id == step->job_id) &&
+#endif
 			    (job_step_id->step_id == step->step_id)) {
 				filter = 0;
 				break;
