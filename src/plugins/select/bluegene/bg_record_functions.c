@@ -1411,8 +1411,7 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		   block.
 		*/
 		ba_mp_t *ba_mp = NULL;
-		ListIterator itr = list_iterator_create(
-			bg_record->ba_mp_list);
+		ListIterator itr = list_iterator_create(bg_record->ba_mp_list);
 		while ((ba_mp = list_next(itr))) {
 			if (!ba_mp->used)
 				continue;
