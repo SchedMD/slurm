@@ -1403,25 +1403,21 @@ static void _build_select_struct(struct job_record *job_ptr,
 	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
 /* 	job_resrcs_ptr->nhosts = node_cnt; */
 	job_resrcs_ptr->nhosts = bit_set_count(bitmap);
-	job_resrcs_ptr->ncpus = job_ptr->details->min_cpus;
-	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
-	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
-	if (job_resrcs_ptr->node_bitmap == NULL)
+
+	if (!(job_resrcs_ptr->node_bitmap = bit_copy(bitmap)))
 		fatal("bit_copy malloc failure");
+
+	job_resrcs_ptr->nodes = xstrdup(bg_record->mp_str);
 
 	job_resrcs_ptr->cpu_array_cnt = 1;
 	job_resrcs_ptr->cpu_array_value[0] = bg_conf->cpu_ratio;
 	job_resrcs_ptr->cpu_array_reps[0] = node_cnt;
-	job_ptr->total_cpus = job_ptr->cpu_cnt = job_ptr->details->min_cpus =
+	job_resrcs_ptr->ncpus = job_ptr->total_cpus =
+		job_ptr->cpu_cnt = job_ptr->details->min_cpus =
 		bg_conf->cpu_ratio * node_cnt;
 
 	for (i=0; i<node_cnt; i++)
 		job_resrcs_ptr->cpus[i] = bg_conf->cpu_ratio;
-
-	if (job_resrcs_ptr->ncpus != job_ptr->total_cpus) {
-		error("select_p_job_test: ncpus mismatch %u != %u",
-		      job_resrcs_ptr->ncpus, job_ptr->total_cpus);
-	}
 }
 
 static List _get_preemptables(uint16_t query_mode, bg_record_t *bg_record,
