@@ -6049,7 +6049,7 @@ fi
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_with_load_leveler" >&5
 $as_echo "$ac_with_load_leveler" >&6; }
-    if test "x$$ac_with_load_leveler" = "xyes"; then
+    if test "x$ac_with_load_leveler" = "xyes"; then
   USE_LOADLEVELER_TRUE=
   USE_LOADLEVELER_FALSE='#'
 else
@@ -6057,7 +6057,7 @@ else
   USE_LOADLEVELER_FALSE=
 fi
 
-   if test "x$$ac_with_load_leveler" = "xyes" ; then
+   if test "x$ac_with_load_leveler" = "xyes" ; then
 
 $as_echo "#define USE_LOADLEVELER 1" >>confdefs.h
 

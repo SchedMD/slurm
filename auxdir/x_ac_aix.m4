@@ -82,8 +82,8 @@ AC_DEFUN([X_AC_AIX],
        ]
      )
    AC_MSG_RESULT($ac_with_load_leveler)
-   AM_CONDITIONAL(USE_LOADLEVELER, test "x$$ac_with_load_leveler" = "xyes")
-   if test "x$$ac_with_load_leveler" = "xyes" ; then
+   AM_CONDITIONAL(USE_LOADLEVELER, test "x$ac_with_load_leveler" = "xyes")
+   if test "x$ac_with_load_leveler" = "xyes" ; then
       AC_DEFINE(USE_LOADLEVELER, 1, [Define to 1 if running over LoadLeveler])
    fi
 ])
