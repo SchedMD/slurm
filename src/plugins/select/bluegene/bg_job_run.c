@@ -190,6 +190,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	ListIterator itr;
 	List delete_list = NULL;
 	int requeue_job = 0;
+	uint32_t req_job_id = bg_action_ptr->job_ptr->job_id;
 
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
@@ -199,18 +200,17 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		error("block %s not found in bg_lists->main",
 		      bg_action_ptr->bg_block_id);
-		bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+		bg_requeue_job(req_job_id, 1);
 		return;
 	}
 
 	if ((bg_record->job_running <= NO_JOB_RUNNING)
-	    && !find_job_in_bg_record(bg_record,
-				      bg_action_ptr->job_ptr->job_id)) {
+	    && !find_job_in_bg_record(bg_record, req_job_id)) {
 		// bg_reset_block(bg_record); should already happened
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("job %u finished during the queueing job "
 		      "(everything is ok)",
-		      bg_action_ptr->job_ptr->job_id);
+		      req_job_id);
 		return;
 	}
 
@@ -251,7 +251,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			      "but there is a job %u running on an overlapping "
 			      "block %s it will not end until %ld.  "
 			      "This should never happen.",
-			      bg_action_ptr->job_ptr->job_id,
+			      req_job_id,
 			      bg_record->bg_block_id,
 			      job_ptr->job_id,
 			      found_record->bg_block_id,
@@ -273,20 +273,20 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		bg_reset_block(bg_record, bg_action_ptr->job_ptr);
 
 		slurm_mutex_unlock(&block_state_mutex);
-		bg_requeue_job(bg_action_ptr->job_ptr->job_id, 0);
+		bg_requeue_job(req_job_id, 0);
 		return;
 	}
 
 	slurm_mutex_unlock(&block_state_mutex);
 
-	rc = free_block_list(bg_action_ptr->job_ptr->job_id, delete_list, 0, 1);
+	rc = free_block_list(req_job_id, delete_list, 0, 1);
 	list_destroy(delete_list);
 	if (rc != SLURM_SUCCESS) {
 		error("Problem with deallocating blocks to run job %u "
-		      "on block %s", bg_action_ptr->job_ptr->job_id,
+		      "on block %s", req_job_id,
 		      bg_action_ptr->bg_block_id);
 		if (IS_JOB_CONFIGURING(bg_action_ptr->job_ptr))
-			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 0);
+			bg_requeue_job(req_job_id, 0);
 		return;
 	}
 
@@ -299,12 +299,11 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		return;
 
 	if ((bg_record->job_running <= NO_JOB_RUNNING)
-	    && !find_job_in_bg_record(bg_record,
-				      bg_action_ptr->job_ptr->job_id)) {
+	    && !find_job_in_bg_record(bg_record, req_job_id)) {
 		// bg_reset_block(bg_record); should already happened
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("job %u already finished before boot",
-		      bg_action_ptr->job_ptr->job_id);
+		      req_job_id);
 		return;
 	}
 
@@ -508,12 +507,11 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 
 	if ((bg_record->job_running <= NO_JOB_RUNNING)
-	    && !find_job_in_bg_record(bg_record,
-				      bg_action_ptr->job_ptr->job_id)) {
+	    && !find_job_in_bg_record(bg_record, req_job_id)) {
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("job %u finished during the start of the boot "
 		      "(everything is ok)",
-		      bg_action_ptr->job_ptr->job_id);
+		      req_job_id);
 		return;
 	}
 
@@ -542,7 +540,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		   is a no-op if issued prior
 		   to the script initiation do clean up just
 		   incase the fail job isn't ran */
-		(void) slurm_fail_job(bg_record->job_running);
+		(void) slurm_fail_job(req_job_id);
 		slurm_mutex_lock(&block_state_mutex);
 		if (remove_from_bg_list(bg_lists->job_running, bg_record)
 		    == SLURM_SUCCESS)
