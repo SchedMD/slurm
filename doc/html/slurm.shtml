@@ -61,6 +61,15 @@ with 140,000 Intel Xeon 7500 processing cores, 300TB of
 central memory and a theoretical computing power of 1.25 Petaflops. Europe's
 most powerful supercomputer.</li>
 
+<li><a href="http://compeng.uni-frankfurt.de/index.php?id=86">LOEWE-CSC</a>,
+a combined CPU-GPU Linux cluster
+at <a href="http://csc.uni-frankfurt.de">The Center for Scientific
+Computing (CSC)</a> of the Goethe University Frankfurt, Germany,
+with 20,928 AMD Magny-Cours CPU cores (176 Teraflops peak
+performance) plus 778 ATI Radeon 5870 GPUs (2.1 Petaflops peak
+performance single precision and 599 Teraflops double precision) and
+QDR Infiniband interconnect.</li>
+
 <li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Dawn</a>,
 a BlueGene/P system at <a href=https://www.llnl.gov">LLNL</a>
 with 147,456 PowerPC 450 cores with a peak
@@ -86,6 +95,6 @@ for molecular dynamics simulation using 512 custom-designed ASICs
 and a three-dimensional torus interconnect.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 11 November 2011</p>
+<p style="text-align:center;">Last modified 26 November 2011</p>
 
 <!--#include virtual="footer.txt"-->
