@@ -110,7 +110,7 @@ static int _ba_set_ionode_str_internal(int level, int *coords,
 				       int *start_offset, int *end_offset,
 				       hostlist_t hl);
 
-static bitstr_t *_find_sub_block(ba_geo_table_t *geo_table,
+static bitstr_t *_find_sub_block(ba_geo_table_t **geo_table,
 				 uint16_t *start_loc, bitstr_t *total_bitmap,
 				 uint32_t node_count);
 
@@ -932,7 +932,7 @@ try_again:
 		return false;
 
 	if (!(found_bits = _find_sub_block(
-		      geo_table, start_loc, usable_bitmap, node_count))) {
+		      &geo_table, start_loc, usable_bitmap, node_count))) {
 		/* This is to vet we have a good geo on this request.  So if a
 		   person asks for 12 and the only reason they can't get it is
 		   because they can't get that geo and if they would of asked
@@ -1074,7 +1074,7 @@ try_again:
 		bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
 
 		if ((jobinfo->units_used = _find_sub_block(
-			     geo_table, start_loc, total_bitmap, *node_count)))
+			     &geo_table, start_loc, total_bitmap, *node_count)))
 			break;
 
 		FREE_NULL_BITMAP(total_bitmap);
@@ -1994,13 +1994,14 @@ static int _ba_set_ionode_str_internal(int level, int *coords,
 	return 1;
 }
 
-static bitstr_t *_find_sub_block(ba_geo_table_t *geo_table,
+static bitstr_t *_find_sub_block(ba_geo_table_t **in_geo_table,
 				 uint16_t *start_loc, bitstr_t *total_bitmap,
 				 uint32_t node_count)
 {
 	int cnt = 0;
 	bitstr_t *found_bits = NULL;
 	uint32_t clear_cnt = bit_clear_count(total_bitmap);
+	ba_geo_table_t *geo_table = *in_geo_table;
 
 	if (clear_cnt < node_count) {
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
@@ -2039,6 +2040,8 @@ static bitstr_t *_find_sub_block(ba_geo_table_t *geo_table,
 		}
 		geo_table = geo_table->next_ptr;
 	}
+
+	*in_geo_table = geo_table;
 
 	return found_bits;
 }
