@@ -2810,9 +2810,22 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		   set min_nodes correctly
 		*/
 		if ((job_desc->min_cpus != NO_VAL)
-		    && (job_desc->min_cpus > job_desc->min_nodes))
-			job_desc->min_nodes =
-				job_desc->min_cpus / bg_conf->cpu_ratio;
+		    && (job_desc->min_cpus > job_desc->min_nodes)) {
+			float tmp_float = (float)job_desc->min_cpus
+				/ (float)bg_conf->cpu_ratio;
+			tmp = (uint32_t)tmp_float;
+			if (tmp_float != (float)tmp)
+				tmp++;
+
+			if ((job_desc->min_nodes > 1)
+			    && (tmp != job_desc->min_nodes))
+				error("Asking for more resources than "
+				      "possible.  Requested %u nodes and %u "
+				      "tasks, giving them %u nodes.",
+				      job_desc->min_nodes,
+				      job_desc->min_cpus, tmp);
+			job_desc->min_nodes = tmp;
+		}
 
 		/* initialize min_cpus to the min_nodes */
 		job_desc->min_cpus = job_desc->min_nodes * bg_conf->cpu_ratio;
@@ -2883,7 +2896,6 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			set_select_jobinfo(job_desc->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
-
 			job_desc->min_cpus = job_desc->min_nodes
 				* bg_conf->cpu_ratio;
 			job_desc->min_nodes = 1;
