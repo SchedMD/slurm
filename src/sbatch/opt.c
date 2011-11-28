@@ -1552,6 +1552,13 @@ static void _set_options(int argc, char **argv)
 			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_REBOOT:
+#if defined HAVE_BG && !defined HAVE_BG_L_P
+			info("WARNING: If your job is smaller than the block "
+			     "it is going to run on and other jobs are "
+			     "running on it the --reboot option will not be "
+			     "honored.  If this is the case, contact your "
+			     "admin to reboot the block for you.");
+#endif
 			opt.reboot = true;
 			break;
 		case LONG_OPT_WRAP:

@@ -308,6 +308,17 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		return;
 	}
 
+	if (bg_record->job_list
+	    && (bg_action_ptr->job_ptr->total_cpus != bg_record->cpu_cnt)
+	    && (list_count(bg_record->job_list) != 1)) {
+		/* We don't allow modification of a block or reboot of
+		   a block if we are running multiple jobs on the
+		   block.
+		*/
+		debug2("no reboot");
+		goto no_reboot;
+	}
+
 	rc = 0;
 #ifdef HAVE_BGL
 	if (bg_action_ptr->blrtsimage
@@ -471,6 +482,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		bg_record->modifying = 0;
 	}
 
+no_reboot:
 	if (bg_record->state == BG_BLOCK_FREE) {
 		if ((rc = bridge_block_boot(bg_record)) != SLURM_SUCCESS) {
 			char reason[200];
