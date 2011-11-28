@@ -1731,7 +1731,8 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 
 			if (job_id != job_ptr->job_id) {
 				rc = 0;
-			} else if ((uid == job_ptr->user_id)
+			} else if (!bg_record->free_cnt
+				   && (uid == job_ptr->user_id)
 				   && (bg_record->state == BG_BLOCK_INITED)) {
 				/* Clear the state just incase we
 				 * missed it somehow. */
