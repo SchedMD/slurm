@@ -226,6 +226,7 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 			list_push(bg_lists->booted, bg_record);
 	}
 	updated = 1;
+	last_bg_update = time(NULL);
 nochange_state:
 
 	/* check the boot state */

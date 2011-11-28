@@ -793,6 +793,7 @@ extern int bridge_block_free(bg_record_t *bg_record)
 	}
 #else
 	bg_record->state = BG_BLOCK_FREE;
+	last_bg_update = time(NULL);
 #endif
 	return rc;
 }
