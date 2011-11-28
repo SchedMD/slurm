@@ -46,6 +46,10 @@
 #  include <strings.h>
 #endif
 
+#ifndef __USE_ISOC99
+#define __USE_ISOC99
+#endif
+
 #ifdef HAVE_LIMITS_H
 #  include <limits.h>
 #endif
