@@ -1551,7 +1551,11 @@ static void _load_multi(int *argc, char **argv)
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
 static bool _check_is_pow_of_2(int32_t n) {
-	return ((n!=0) && (n&(n-1))==0);
+	/* Bitwise ANDing a power of 2 number like 16 with its
+	 * negative (-16) gives itself back.  Only integers which are power of
+	 * 2 behave like that.
+	 */
+	return ((n!=0) && (n&(-n))==n);
 }
 #endif
 
