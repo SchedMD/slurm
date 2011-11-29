@@ -203,7 +203,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 /*
  * opt_default(): used by initialize_and_process_args to set defaults
  */
-static void _opt_default()
+static void _opt_default(void)
 {
 	opt.account	= NULL;
 	opt.batch	= false;
@@ -233,7 +233,7 @@ static void _opt_default()
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void _opt_env()
+static void _opt_env(void)
 {
 	char *val;
 
@@ -548,7 +548,7 @@ static void _help(void)
 	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
 	printf("  -A, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
-/*	printf("      --ctld                      route request through slurmctld\n"); */
+/*	printf("      --ctld                      send request directly to slurmctld\n"); */
 	printf("  -i, --interactive               require response from user for each job\n");
 	printf("  -n, --name=job_name             act only on jobs with this name\n");
 	printf("  -p, --partition=partition       act only on jobs in this partition\n");
