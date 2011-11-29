@@ -220,6 +220,9 @@ int srun(int ac, char **av)
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 
+	if (slurm_select_init(1) != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin" );
+
 	/* This must happen before we spawn any threads
 	 * which are not designed to handle them */
 	if (xsignal_block(sig_array) < 0)
