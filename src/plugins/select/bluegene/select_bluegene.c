@@ -1877,13 +1877,24 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		bit_or(bg_record->mp_used_bitmap, picked_mps);
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
 	} else if (jobinfo->units_avail) {
+		bitstr_t *total_bitmap = jobinfo->units_used;
+		xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
+		if (ba_mp->cnode_err_bitmap) {
+			total_bitmap = bit_copy(jobinfo->units_used);
+			bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
+		}
 		/* handle a sub-block allocation where the allocation
 		   itself if a small block.
 		*/
 		step_jobinfo->cnode_cnt = node_count;
-		if (!(ba_sub_block_in_bitmap(step_jobinfo,
-					     jobinfo->units_used, 1)))
+		if (!(ba_sub_block_in_bitmap(step_jobinfo, total_bitmap, 1))) {
+			if (total_bitmap != jobinfo->units_used)
+				FREE_NULL_BITMAP(total_bitmap);
 			goto end_it;
+		}
+
+		if (total_bitmap != jobinfo->units_used)
+			FREE_NULL_BITMAP(total_bitmap);
 
 		node_count = step_jobinfo->cnode_cnt;
 		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
