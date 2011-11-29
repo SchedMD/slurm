@@ -1549,6 +1549,12 @@ static void _load_multi(int *argc, char **argv)
 	*argc = 2;
 }
 
+#if defined HAVE_BG && !defined HAVE_BG_L_P
+static bool _check_is_pow_of_2(int32_t n) {
+	return ((n!=0) && (n&(n-1))==0);
+}
+#endif
+
 /*
  * _opt_args() : set options via commandline args and popt
  */
@@ -1636,6 +1642,9 @@ static void _opt_args(int argc, char **argv)
 			opt.ntasks = node_cnt;
 		opt.ntasks_set = true;
 	} else {
+		int32_t ntpn;
+		bool figured = false;
+
 		if (opt.nodes_set) {
 			if (node_cnt > opt.ntasks) {
 				info("You asked for %d nodes, but only "
@@ -1647,12 +1656,21 @@ static void _opt_args(int argc, char **argv)
 		} else if (node_cnt > opt.ntasks)
 			opt.max_nodes = opt.min_nodes = node_cnt = opt.ntasks;
 
-		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL))
+		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL)) {
 			opt.ntasks_per_node = opt.ntasks / node_cnt;
-		else if ((opt.ntasks / opt.ntasks_per_node) != node_cnt)
-			fatal("You are requesting for %d tasks, but are "
-			      "also asking for %d tasks per node and %d nodes.",
-			      opt.ntasks, opt.ntasks_per_node, node_cnt);
+			figured = true;
+		}
+
+		/* On a Q we need ntasks_per_node to be a multiple of 2 */
+		ntpn = opt.ntasks_per_node;
+		while (!_check_is_pow_of_2(ntpn))
+			ntpn++;
+		if (!figured && (ntpn != opt.ntasks_per_node)) {
+			info("You requested --ntasks-per-node=%d, which is not "
+			     "a power of 2.  Setting --ntasks-per-node=%d "
+			     "for you.", opt.ntasks_per_node, ntpn);
+		}
+		opt.ntasks_per_node = ntpn;
 	}
 
 #if defined HAVE_BG_FILES
