@@ -1860,12 +1860,10 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 		if (cluster_flags & CLUSTER_FLAG_BGQ
 		    && (bg_record->mp_count == 1)) {
-			ba_mp = list_peek(bg_record->ba_mp_list);
-			xassert(ba_mp);
+			xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
 			if (!ba_mp->cnode_bitmap)
 				ba_mp->cnode_bitmap =
-					ba_create_ba_mp_cnode_bitmap(
-						bg_record);
+					ba_create_ba_mp_cnode_bitmap(bg_record);
 			step_jobinfo->units_used =
 				bit_copy(ba_mp->cnode_bitmap);
 			step_jobinfo->units_avail =
