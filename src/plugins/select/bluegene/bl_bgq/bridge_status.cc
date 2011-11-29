@@ -640,13 +640,15 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 
 	for (i=0; i<16; i++) {
 		NodeBoard::ConstPtr nb_ptr = bridge_get_nodeboard(mp_ptr, i);
-		/* FIXME: the Hardware::Error can/should be taken away after
-		   IBM fixes it so when a cnode is in an error state
-		   it doesn't put the nodeboard in an error state as
-		   well.
+		/* When a cnode is in error state a nodeboard is also
+		   set in an error state.  Since we want to track on
+		   the cnode level and not the nodeboard level we can
+		   use the isMetaState option that will tell me of
+		   this state.  If it isn't set then the nodeboard
+		   itself is in an error state so procede.
 		*/
-		if (nb_ptr && (nb_ptr->getState() != Hardware::Available)
-		    && (nb_ptr->getState() != Hardware::Error))
+		if (nb_ptr && !nb_ptr->isMetaState()
+		    && (nb_ptr->getState() != Hardware::Available))
 			_handle_bad_nodeboard(
 				nb_ptr->getLocation().substr(7,3).c_str(),
 				ba_mp->coord_str, nb_ptr->getState());
