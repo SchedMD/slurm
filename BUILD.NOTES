@@ -57,10 +57,7 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    --snapshot will name the tar-ball and RPMs based upon the META file plus a
    timestamp. Do this to make a tar-ball for a non-tagged release.
    NOTE: <local_dir> should be a fully-qualified pathname
-4. scp the files to schedmd.com in to ~/www/download/development or
-   ~/www/download/development. Move the older files to ~/www/download/archive,
-   login to schedmd.com, cd to ~/download, and execute "php process.php" to
-   update the web pages.
+4. Web pages are stored in a git repository and stored on schedmd.com.
 
 BlueGene build notes:
 0. If on a bgp system and you want sview export these variables
