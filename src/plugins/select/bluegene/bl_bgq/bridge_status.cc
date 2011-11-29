@@ -307,6 +307,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
 			float err_ratio;
+			struct job_record *job_ptr = NULL;
 
 			if (found_ba_mp->index != ba_mp->index)
 				continue;
@@ -353,6 +354,33 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			debug("count in error for %s is %u with ratio at %u",
 			      bg_record->bg_block_id, bg_record->cnode_err_cnt,
 			      bg_record->err_ratio);
+
+			if (bg_record->job_ptr)
+				job_ptr = bg_record->job_ptr;
+			else if (bg_record->job_list
+				 && list_count(bg_record->job_list)) {
+				ListIterator job_itr = list_iterator_create(
+					bg_record->job_list);
+				while ((job_ptr = (struct job_record *)
+					list_next(job_itr))) {
+					select_jobinfo_t *jobinfo =
+						(select_jobinfo_t *)
+						job_ptr->select_jobinfo->data;
+					/* If no units_avail we are
+					   using the whole thing, else
+					   check the index.
+					*/
+					if (!jobinfo->units_avail
+					    || bit_test(jobinfo->units_avail,
+							inx))
+						break;
+				}
+				list_iterator_destroy(job_itr);
+			}
+
+			if (job_ptr && job_ptr->kill_on_node_fail)
+				bg_requeue_job(job_ptr->job_id, 0);
+
 			break;
 		}
 		list_iterator_destroy(itr2);
