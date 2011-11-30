@@ -202,6 +202,9 @@ static void *_set_db_inx_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
+	/* Read lock on jobs */
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -227,8 +230,12 @@ static void *_set_db_inx_thread(void *no_data)
 		 * is can make submitting jobs much
 		 * faster and not lock up the
 		 * controller waiting for the db inx
-		 * back from the database. */
-		lock_slurmctld(job_write_lock);
+		 * back from the database.
+		 * Even though there is potential of modifying the
+		 * job db_index here we use a read lock since the
+		 * data isn't that sensitive and will only be updated
+		 * later in this function. */
+		lock_slurmctld(job_read_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			if (!job_ptr->db_index) {
@@ -268,7 +275,7 @@ static void *_set_db_inx_thread(void *no_data)
 			}
 		}
 		list_iterator_destroy(itr);
-		unlock_slurmctld(job_write_lock);
+		unlock_slurmctld(job_read_lock);
 
 		if (local_job_list) {
 			slurmdbd_msg_t req, resp;
