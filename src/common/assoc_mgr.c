@@ -2539,8 +2539,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 					goto is_user;
 				itr2 = list_iterator_create(
 					object->usage->childern_list);
-				while ((rec = list_next(itr2)))
-					count += rec->shares_raw;
+				while ((rec = list_next(itr2))) {
+					if (rec->shares_raw
+					    != SLURMDB_FS_USE_PARENT)
+						count += rec->shares_raw;
+				}
 				list_iterator_reset(itr2);
 				while ((rec = list_next(itr2)))
 					rec->usage->level_shares = count;

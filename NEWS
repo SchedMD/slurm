@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed race condition when using the DBD in accounting where if a job
     wasn't started at the time the eligible message was sent but started
     before the db_index was returned information like start time would be lost.
+ -- Fix issue in accounting where normalized shares could be updated
+    incorrectly when getting fairshare from the parent.
 
 * Changes in SLURM 2.3.1
 ========================
