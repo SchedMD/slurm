@@ -450,6 +450,30 @@ extern void srun_step_missing (struct step_record *step_ptr,
 }
 
 /*
+ * srun_step_signal - notify srun that a job step should be signalled
+ * NOTE: Needed on BlueGene/Q to signal runjob process
+ * IN step_ptr  - pointer to the slurmctld job step record
+ * IN signal - signal number
+ */
+extern void srun_step_signal (struct step_record *step_ptr, uint16_t signal)
+{
+	slurm_addr_t * addr;
+	job_step_kill_msg_t *msg_arg;
+
+	xassert(step_ptr);
+	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
+		msg_arg = xmalloc(sizeof(job_step_kill_msg_t));
+		msg_arg->job_id      = step_ptr->job_ptr->job_id;
+		msg_arg->job_step_id = step_ptr->step_id;
+		msg_arg->signal      = signal;
+		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_SIGNAL,
+				   msg_arg);
+	}
+}
+
+/*
  * srun_exec - request that srun execute a specific command
  *	and route it's output to stdout
  * IN step_ptr - pointer to the slurmctld job step record

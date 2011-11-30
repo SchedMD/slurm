@@ -406,6 +406,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != SRUN_REQUEST_SUSPEND)	&&
 	    (agent_arg_ptr->msg_type != SRUN_USER_MSG)		&&
 	    (agent_arg_ptr->msg_type != SRUN_STEP_MISSING)	&&
+	    (agent_arg_ptr->msg_type != SRUN_STEP_SIGNAL)	&&
 	    (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
 #ifdef HAVE_FRONT_END
 		span = set_span(agent_arg_ptr->node_count,
@@ -532,6 +533,7 @@ static void *_wdog(void *args)
 
 	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)			||
 	     (agent_ptr->msg_type == SRUN_STEP_MISSING)			||
+	     (agent_ptr->msg_type == SRUN_STEP_SIGNAL)			||
 	     (agent_ptr->msg_type == SRUN_EXEC)				||
 	     (agent_ptr->msg_type == SRUN_NODE_FAIL)			||
 	     (agent_ptr->msg_type == SRUN_PING)				||
@@ -620,6 +622,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		step_id = NO_VAL;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
 		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
+		   (agent_ptr->msg_type == SRUN_STEP_SIGNAL)		||
 		   (agent_ptr->msg_type == SRUN_EXEC)			||
 		   (agent_ptr->msg_type == SRUN_USER_MSG)) {
 		return;		/* no need to note srun response */
@@ -817,6 +820,7 @@ static void *_thread_per_group_rpc(void *args)
 			(msg_type == SRUN_EXEC)			||
 			(msg_type == SRUN_JOB_COMPLETE)		||
 			(msg_type == SRUN_STEP_MISSING)		||
+			(msg_type == SRUN_STEP_SIGNAL)		||
 			(msg_type == SRUN_TIMEOUT)		||
 			(msg_type == SRUN_USER_MSG)		||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
@@ -1381,6 +1385,9 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_srun_node_fail_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_STEP_MISSING)
 			slurm_free_srun_step_missing_msg(
+				agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_STEP_SIGNAL)
+			slurm_free_job_step_kill_msg(
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
 			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);

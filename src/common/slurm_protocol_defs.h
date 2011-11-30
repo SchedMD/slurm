@@ -306,6 +306,7 @@ typedef enum {
 	SRUN_EXEC,
 	SRUN_STEP_MISSING,
 	SRUN_REQUEST_SUSPEND,
+	SRUN_STEP_SIGNAL,	/* BluegeneQ: srun forwards signal to runjob */
 
 	PMI_KVS_PUT_REQ = 7201,
 	PMI_KVS_PUT_RESP,

@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
  -- Add ReconfigFlags configuration option to control actions of "scontrol
     reconfig". Patch from Don Albert, Bull.
  -- BGQ - handle reboots with multiple jobs running on a block.
+ -- BGQ - Add message handler thread to forward signals to runjob process.
 
 * Changes in SLURM 2.4.0.pre1
 =============================

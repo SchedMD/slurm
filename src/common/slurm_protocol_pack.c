@@ -880,6 +880,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					   msg->protocol_version);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
+	case SRUN_STEP_SIGNAL:
 		_pack_job_step_kill_msg((job_step_kill_msg_t *)
 					msg->data, buffer,
 					msg->protocol_version);
@@ -1401,6 +1402,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						  msg->protocol_version);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
+	case SRUN_STEP_SIGNAL:
 		rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
 					       & (msg->data), buffer,
 					       msg->protocol_version);

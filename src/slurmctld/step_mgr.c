@@ -370,6 +370,10 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P	
+	srun_step_signal(step_ptr, signal);
+#endif
+
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL) {
 		step_ptr->requid = uid;

@@ -78,6 +78,7 @@
 #include "src/common/net.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -127,6 +128,7 @@ static struct termios termdefaults;
 uint32_t global_rc = 0;
 srun_job_t *job = NULL;
 task_state_t task_state;
+slurm_fd_t slurmctld_fd;
 
 #define MAX_STEP_RETRIES 4
 time_t launch_start_time;
@@ -168,6 +170,7 @@ static char *_uint16_array_to_str(int count, const uint16_t *array);
 static int   _validate_relative(resource_allocation_response_msg_t *resp);
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 static void  _send_step_complete_rpc(int step_rc);
+static pthread_t _spawn_msg_handler(void);
 #else
 static void  _task_start(launch_tasks_response_msg_t *msg);
 static void  _task_finish(task_exit_msg_t *msg);
@@ -205,6 +208,9 @@ int srun(int ac, char **av)
 #if !defined HAVE_BG_FILES || defined HAVE_BG_L_P
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
+#else
+	slurm_step_io_fds_t cio_fds;
+	pthread_t msg_thread = (pthread_t) 0;
 #endif
 
 	env->stepid = -1;
@@ -281,7 +287,7 @@ int srun(int ac, char **av)
 	_set_submit_dir_env();
 
 	/* Set up slurmctld message handler */
-	slurmctld_msg_init();
+	slurmctld_fd = slurmctld_msg_init();
 
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
@@ -472,14 +478,19 @@ int srun(int ac, char **av)
 		error("Failure in local plugin stack");
 		exit(error_exit);
 	}
-	slurm_step_io_fds_t cio_fds;
 	memset(&cio_fds, 0, sizeof(slurm_step_io_fds_t));
 	_set_stdio_fds(job, &cio_fds);
+	msg_thread = _spawn_msg_handler();
 	global_rc = runjob_launch(opt.argc, opt.argv,
 				  cio_fds.in.fd,
 				  cio_fds.out.fd,
 				  cio_fds.err.fd);
 	_send_step_complete_rpc(global_rc);
+	if (msg_thread) {
+		srun_shutdown = true;
+		pthread_kill(msg_thread, SIGINT);
+		pthread_join(msg_thread, NULL);
+	}
 #else
  re_launch:
 	task_state = task_state_create(opt.ntasks);
@@ -1058,6 +1069,91 @@ _send_step_complete_rpc(int step_rc)
 	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 		error("Error sending step complete RPC to slurmctld");
 	jobacct_gather_g_destroy(msg.jobacct);
+}
+static void
+_handle_msg(slurm_msg_t *msg)
+{
+	static uint32_t slurm_uid = NO_VAL;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t uid = getuid();
+	job_step_kill_msg_t *ss;
+	srun_user_msg_t *um;
+
+	if (slurm_uid == NO_VAL)
+		slurm_uid = slurm_get_slurm_user_id();
+	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+		error ("Security violation, slurm message from uid %u",
+		       (unsigned int) req_uid);
+ 		return;
+	}
+
+	switch (msg->msg_type) {
+	case SRUN_PING:
+		debug3("slurmctld ping received");
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_free_srun_ping_msg(msg->data);
+		break;
+	case SRUN_JOB_COMPLETE:
+		debug("received job step complete message");
+		slurm_free_srun_job_complete_msg(msg->data);
+		break;
+	case SRUN_USER_MSG:
+		um = msg->data;
+		info("%s", um->msg);
+		slurm_free_srun_user_msg(msg->data);
+		break;
+	case SRUN_STEP_SIGNAL:
+		ss = msg->data;
+		debug("received step signal %u RPC", ss->signal);
+		runjob_signal(ss->signal);
+		slurm_free_job_step_kill_msg(msg->data);
+		break;
+	default:
+		debug("received spurious message type: %u",
+		      msg->msg_type);
+		break;
+	}
+	return;
+}
+
+static void *_msg_thr_internal(void *arg)
+{
+	slurm_addr_t cli_addr;
+	slurm_fd_t newsockfd;
+	slurm_msg_t *msg;
+
+	while (!srun_shutdown) {
+		newsockfd = slurm_accept_msg_conn(slurmctld_fd, &cli_addr);
+		if (newsockfd == SLURM_SOCKET_ERROR) {
+			if (errno != EINTR)
+				error("slurm_accept_msg_conn: %m");
+			continue;
+		}
+		msg = xmalloc(sizeof(slurm_msg_t));
+		if (slurm_receive_msg(newsockfd, msg, 0) != 0) {
+			error("slurm_receive_msg: %m");
+			/* close the new socket */
+			slurm_close_accepted_conn(newsockfd);
+			continue;
+		}
+		_handle_msg(msg);
+		slurm_free_msg(msg);
+		slurm_close_accepted_conn(newsockfd);
+	}
+	return NULL;
+}
+
+static pthread_t
+_spawn_msg_handler(void)
+{
+	pthread_attr_t attr;
+	pthread_t msg_thread;
+
+	slurm_attr_init(&attr);
+	if (pthread_create(&thread, &attr, _msg_thr_internal, NULL))
+		error("pthread_create of message thread: %m");
+	slurm_attr_destroy(&attr);
+	return msg_thread;
 }
 #endif
 
