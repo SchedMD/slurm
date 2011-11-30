@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     before the db_index was returned information like start time would be lost.
  -- Fix issue in accounting where normalized shares could be updated
     incorrectly when getting fairshare from the parent.
+ -- Fixed if not enforcing associations  but want QOS support for a default
+    qos on the cluster to fill that in correctly.
 
 * Changes in SLURM 2.3.1
 ========================

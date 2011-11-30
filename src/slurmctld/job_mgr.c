@@ -366,8 +366,14 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 			else if(bit_set_count(assoc_ptr->usage->valid_qos) == 1)
 				qos_rec->id =
 					bit_ffs(assoc_ptr->usage->valid_qos);
+			else if (assoc_mgr_root_assoc
+				 && assoc_mgr_root_assoc->def_qos_id)
+				qos_rec->id = assoc_mgr_root_assoc->def_qos_id;
 			else
 				qos_rec->name = "normal";
+		else if (assoc_mgr_root_assoc
+			 && assoc_mgr_root_assoc->def_qos_id)
+				qos_rec->id = assoc_mgr_root_assoc->def_qos_id;
 		else
 			qos_rec->name = "normal";
 	}
