@@ -1150,7 +1150,7 @@ _spawn_msg_handler(void)
 	pthread_t msg_thread;
 
 	slurm_attr_init(&attr);
-	if (pthread_create(&thread, &attr, _msg_thr_internal, NULL))
+	if (pthread_create(&msg_thread, &attr, _msg_thr_internal, NULL))
 		error("pthread_create of message thread: %m");
 	slurm_attr_destroy(&attr);
 	return msg_thread;
