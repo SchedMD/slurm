@@ -720,6 +720,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				continue;
 			node_ptr = node_record_table_ptr + i;
 			if (IS_NODE_POWER_SAVE(node_ptr) ||
+			    IS_NODE_FUTURE(node_ptr) ||
 			    IS_NODE_NO_RESPOND(node_ptr)) {
 				/* Node is/was powered down. Need to wait
 				 * for it to start responding again. */

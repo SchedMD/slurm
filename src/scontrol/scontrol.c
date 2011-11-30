@@ -549,9 +549,18 @@ _print_aliases (char* node_hostname)
  */
 static int _reboot_nodes(char *node_list)
 {
+	slurm_ctl_conf_t *conf;
 	int rc;
 	slurm_msg_t msg;
 	reboot_msg_t req;
+
+	conf = slurm_conf_lock();
+	if (conf->reboot_program == NULL) {
+		fprintf (stderr, "RebootProgram isn't defined");
+		slurm_conf_unlock();
+		return SLURM_ERROR;
+	}
+	slurm_conf_unlock();
 
 	slurm_msg_t_init(&msg);
 

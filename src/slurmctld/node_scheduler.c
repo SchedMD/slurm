@@ -941,6 +941,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				list_destroy(*preemptee_job_list);
 				*preemptee_job_list = NULL;
 			}
+			if (job_ptr->details->req_node_bitmap == NULL)
+				bit_and(avail_bitmap, avail_node_bitmap);
 			pick_code = select_g_job_test(job_ptr,
 						      avail_bitmap,
 						      min_nodes,

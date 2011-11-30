@@ -1270,6 +1270,8 @@ static void _queue_reboot_msg(void)
 		reboot_agent_args->node_count++;
 		node_ptr->node_state = NODE_STATE_FUTURE |
 				(node_ptr->node_state & NODE_STATE_FLAGS);
+		bit_clear(avail_node_bitmap, i);
+		bit_clear(idle_node_bitmap, i);
 		node_ptr->last_response = now;
 	}
 	if (reboot_agent_args != NULL) {
