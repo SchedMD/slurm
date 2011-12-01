@@ -1191,7 +1191,7 @@ extern int ba_sub_block_in_record_clear(
 			error("ba_sub_block_in_record_clear: "
 			      "didn't have the units_used bitmap "
 			      "for some reason?");
-			continue;
+			break;
 		}
 
 		bit_not(jobinfo->units_used);
@@ -1222,6 +1222,7 @@ extern int ba_sub_block_in_record_clear(
 			xfree(tmp_char3);
 			FREE_NULL_BITMAP(total_bitmap);
 		}
+		break;
 	}
 	list_iterator_destroy(itr);
 
