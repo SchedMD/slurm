@@ -895,7 +895,7 @@ extern int parse_uint32(char *aval, uint32_t *ival)
 	 * set the value and return. Otherwise return
 	 * an error.
 	 */
-	uint32_t max32uint = 4294967295;
+	uint32_t max32uint = NO_VAL;
 	long long  tval;
 
 	/*
@@ -903,7 +903,7 @@ extern int parse_uint32(char *aval, uint32_t *ival)
 	 */
 	tval = strtoll(aval, (char **) NULL, 10);
 	if ((tval == LLONG_MIN) || (tval == LLONG_MAX) ||
-	    (tval < 0) || (tval > max32uint))
+	    (tval < 0) || (tval >= max32uint))
 		return 1;
 
 	*ival = (uint32_t) tval;
@@ -930,14 +930,14 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 	 * return an error.
 	 */
 	long long  tval;
-	uint16_t max16uint = 65535;
+	uint16_t max16uint = (uint16_t) NO_VAL;
 
 	/*
  	 * Return error for invalid value.
 	 */
 	tval = strtoll(aval, (char **) NULL, 10);
 	if ((tval == LLONG_MIN) || (tval == LLONG_MAX) ||
-	    (tval < 0) || (tval > max16uint))
+	    (tval < 0) || (tval >= max16uint))
 		return 1;
 
 	*ival = (uint16_t) tval;
