@@ -501,7 +501,6 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 
 	found_record->ionode_bitmap = bit_copy(ionodes);
 	ba_set_ionode_str(found_record);
-	found_record->mp_used_bitmap = bit_alloc(node_record_count);
 
 	found_record->ba_mp_list = list_create(destroy_ba_mp);
 
