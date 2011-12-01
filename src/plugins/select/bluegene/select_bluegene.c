@@ -1976,23 +1976,27 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 
 	xassert(step_ptr);
 
-	slurm_mutex_lock(&block_state_mutex);
 
-	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
-	bg_record = jobinfo->bg_record;
-
-	if (!bg_record)
-		fatal("This step %u.%u does not have a bg block "
-		      "assigned to it, but for some reason we are "
-		      "trying to end the step?",
 		      step_ptr->job_ptr->job_id, step_ptr->step_id);
 	}
+
+	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
 
 	if (jobinfo->units_avail)
 		rc = ba_sub_block_in_bitmap_clear(
 			step_ptr->select_jobinfo->data, jobinfo->units_used);
-	else
+	else {
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record = jobinfo->bg_record;
+
+		if (!bg_record)
+			fatal("This step %u.%u does not have a bg block "
+			      "assigned to it, but for some reason we are "
+			      "trying to end the step?",
+			      step_ptr->job_ptr->job_id, step_ptr->step_id);
 		rc = ba_sub_block_in_record_clear(bg_record, step_ptr);
+		slurm_mutex_unlock(&block_state_mutex);
+	}
 
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
 		tmp_char = bitmap2node_name(step_ptr->step_node_bitmap);
@@ -2000,7 +2004,6 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 		     step_ptr->job_ptr->job_id, step_ptr->step_id, tmp_char);
 		xfree(tmp_char);
 	}
-	slurm_mutex_unlock(&block_state_mutex);
 
 	return rc;
 }
