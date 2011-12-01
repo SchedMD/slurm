@@ -1559,7 +1559,7 @@ static long _diff_tv_str(struct timeval *tv1,struct timeval *tv2)
 {
 	long delta_t;
 
-	delta_t  = MAX((tv2->tv_sec - tv1->tv_sec), 10);
+	delta_t  = MIN((tv2->tv_sec - tv1->tv_sec), 10);
 	delta_t *= 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	return delta_t;
