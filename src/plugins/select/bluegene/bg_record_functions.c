@@ -1390,7 +1390,8 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 	if (bg_record->job_list)
 		ba_remove_job_in_block_job_list(bg_record, job_ptr);
 
-	if (bg_record->job_running > NO_JOB_RUNNING) {
+	if ((bg_record->job_running > NO_JOB_RUNNING)
+	    && (!bg_record->job_list || !list_count(bg_record->job_list))) {
 #ifndef HAVE_BG_L_P
 		/* Just in case the slurmctld wasn't up at the
 		   time a step completion message came through
@@ -1409,10 +1410,11 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		list_iterator_destroy(itr);
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
-		if (bg_record->job_ptr) {
-			num_unused_cpus += bg_record->job_ptr->total_cpus;
-			bg_record->job_ptr = NULL;
-		}
+	}
+
+	if (bg_record->job_ptr) {
+		num_unused_cpus += bg_record->job_ptr->total_cpus;
+		bg_record->job_ptr = NULL;
 	}
 
 	/* remove user from list */
