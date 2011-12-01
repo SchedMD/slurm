@@ -432,8 +432,13 @@ static void _local_pack_block_job_info(struct job_record *job_ptr, Buf buffer,
 	memset(&block_job, 0, sizeof(block_job_info_t));
 	block_job.job_id = job_ptr->job_id;
 	block_job.user_id = job_ptr->user_id;
-	block_job.user_name = jobinfo->user_name;
-	block_job.cnodes = jobinfo->ionode_str;
+	if (jobinfo) {
+		block_job.user_name = jobinfo->user_name;
+		block_job.cnodes = jobinfo->ionode_str;
+	} else
+		error("NO JOBINFO for job %u magic %u!!!!!!!!!!!!!!",
+		      job_ptr->job_id, job_ptr->magic);
+
 	/* block_job.cnode_inx -- try not to set */
 	slurm_pack_block_job_info(&block_job, buffer, protocol_version);
 }
@@ -478,13 +483,17 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 			while ((job_ptr = list_next(itr))) {
 				if (job_ptr->magic != JOB_MAGIC) {
 					list_delete_item(itr);
+					slurm_pack_block_job_info(
+						NULL, buffer,
+						protocol_version);
 					continue;
 				}
 				_local_pack_block_job_info(
 					job_ptr, buffer, protocol_version);
 			}
 			list_iterator_destroy(itr);
-		} else if (bg_record->job_ptr) {
+		} else if (bg_record->job_ptr
+			   && (bg_record->job_ptr->magic == JOB_MAGIC)) {
 			pack32(1, buffer);
 			_local_pack_block_job_info(
 				bg_record->job_ptr, buffer, protocol_version);
