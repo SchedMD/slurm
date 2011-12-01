@@ -1192,6 +1192,22 @@ extern int ba_sub_block_in_record_clear(
 			      "didn't have the units_used bitmap "
 			      "for some reason?");
 			break;
+		} else if (!ba_mp->cnode_bitmap) {
+			/* If the job allocation has already finished
+			   before processing the job step completion
+			   this could happen, but it should already be
+			   checked before it gets here so this should
+			   never happen, this is just for safely sake.
+			*/
+			error("ba_sub_block_in_record_clear: no cnode_bitmap? "
+			      "job %u(%p) is in state %s on block %s %u(%p). "
+			      "This should never happen.",
+			      step_ptr->job_ptr->job_id, step_ptr->job_ptr,
+			      job_state_string(step_ptr->job_ptr->job_state
+					       & (~JOB_CONFIGURING)),
+			      bg_record->bg_block_id, bg_record->job_running,
+			      bg_record->job_ptr);
+			break;
 		}
 
 		bit_not(jobinfo->units_used);
