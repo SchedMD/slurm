@@ -117,6 +117,8 @@ documents those changes that are of interest to users and admins.
     incorrectly when getting fairshare from the parent.
  -- Fixed if not enforcing associations  but want QOS support for a default
     qos on the cluster to fill that in correctly.
+ -- Fix in select/cons_res for "fatal: cons_res: sync loop not progressing"
+    with some configurations and job option combinations.
 
 * Changes in SLURM 2.3.1
 ========================

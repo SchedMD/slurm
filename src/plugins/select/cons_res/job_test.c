@@ -152,6 +152,10 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 		if (mc_ptr->ntasks_per_core) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
+		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		    (mc_ptr->threads_per_core <  ntasks_per_core)) {
+			ntasks_per_core = mc_ptr->threads_per_core;
+		}
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	}
 
@@ -400,6 +404,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		}
 		if (mc_ptr->ntasks_per_core) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
+		}
+		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		    (mc_ptr->threads_per_core <  ntasks_per_core)) {
+			ntasks_per_core = mc_ptr->threads_per_core;
 		}
 	}
 
