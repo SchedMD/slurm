@@ -1384,6 +1384,9 @@ extern int select_p_state_save(char *dir_name)
 	char *old_file, *new_file, *reg_file;
 	uint32_t blocks_packed = 0, tmp_offset, block_offset;
 	Buf buffer = init_buf(BUF_SIZE);
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
 	DEF_TIMERS;
 
 	debug("bluegene: select_p_state_save");
@@ -1393,6 +1396,9 @@ extern int select_p_state_save(char *dir_name)
 	block_offset = get_buf_offset(buffer);
 	pack32(blocks_packed, buffer);
 
+	/* Lock job read before block to avoid deadlock job lock is
+	 * needed because we look at the job_ptr's to send job info. */
+	lock_slurmctld(job_read_lock);
 	/* write block records to buffer */
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
@@ -1408,6 +1414,7 @@ extern int select_p_state_save(char *dir_name)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+	unlock_slurmctld(job_read_lock);
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, block_offset);
 	pack32(blocks_packed, buffer);
@@ -2022,6 +2029,14 @@ extern int select_p_pack_select_info(time_t last_query_time,
 
 		if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 			if (bg_lists->main) {
+				slurmctld_lock_t job_read_lock =
+					{ NO_LOCK, READ_LOCK,
+					  NO_LOCK, NO_LOCK };
+				/* Lock job read before block to avoid
+				 * deadlock job lock is needed because
+				 * we look at the job_ptr's to send
+				 * job info. */
+				lock_slurmctld(job_read_lock);
 				slurm_mutex_lock(&block_state_mutex);
 				itr = list_iterator_create(bg_lists->main);
 				while ((bg_record = list_next(itr))) {
@@ -2033,6 +2048,7 @@ extern int select_p_pack_select_info(time_t last_query_time,
 				}
 				list_iterator_destroy(itr);
 				slurm_mutex_unlock(&block_state_mutex);
+				unlock_slurmctld(job_read_lock);
 			} else {
 				error("select_p_pack_select_info: "
 				      "no bg_lists->main");
