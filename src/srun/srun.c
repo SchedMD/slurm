@@ -1553,11 +1553,14 @@ _task_finish(task_exit_msg_t *msg)
 }
 #endif
 
+/* Return the number of microseconds between tv1 and tv2 with a maximum
+ * a maximum value of 10,000,000 to prevent overflows */
 static long _diff_tv_str(struct timeval *tv1,struct timeval *tv2)
 {
 	long delta_t;
 
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t  = MAX((tv2->tv_sec - tv1->tv_sec), 10);
+	delta_t *= 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	return delta_t;
 }
