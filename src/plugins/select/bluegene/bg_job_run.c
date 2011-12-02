@@ -217,15 +217,11 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 	if (bg_record->state == BG_BLOCK_TERM) {
 		debug("Block is in Deallocating state, waiting for free.");
-		/* Increment free_cnt to make sure we don't loose this
-		 * block since bg_free_block will unlock block_state_mutex.
-		 */
-		bg_record->free_cnt++;
-		bg_free_block(bg_record, 1, 1);
-		bg_record->free_cnt--;
-		/* no reason to reboot here since we are already
-		   deallocating */
-		bg_action_ptr->reboot = 0;
+		/* It doesn't appear state of a small block
+		   (conn_type) is held on a BGP system so
+		   if we to reset it so, just set the reboot flag and
+		   handle it later in that code. */
+		bg_action_ptr->reboot = 1;
 	}
 
 	delete_list = list_create(NULL);
@@ -384,7 +380,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		rc = 1;
 	}
 
-	if (rc) {
+	if (rc || bg_action_ptr->reboot) {
 		bg_record->modifying = 1;
 
 		/* Increment free_cnt to make sure we don't loose this
@@ -468,17 +464,6 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 			      bg_err_str(rc));
 
 #endif
-		bg_record->modifying = 0;
-	} else if (bg_action_ptr->reboot) {
-		bg_record->modifying = 1;
-
-		/* Increment free_cnt to make sure we don't loose this
-		 * block since bg_free_block will unlock block_state_mutex.
-		 */
-		bg_record->free_cnt++;
-		bg_free_block(bg_record, 1, 1);
-		bg_record->free_cnt--;
-
 		bg_record->modifying = 0;
 	}
 
