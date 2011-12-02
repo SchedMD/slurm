@@ -8726,18 +8726,11 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
 		packstr(block_info->mp_str, buffer);
-		packstr(block_info->mp_used_str, buffer);
 		pack32(block_info->cnode_cnt, buffer);
 		pack16(block_info->node_use, buffer);
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
-		if (block_info->mp_used_inx) {
-			char *bitfmt = inx2bitfmt(block_info->mp_used_inx);
-			packstr(bitfmt, buffer);
-			xfree(bitfmt);
-		} else
-			packnull(buffer);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		if (!block_info) {
 			packnull(buffer);
@@ -8810,19 +8803,14 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
 		packstr(block_info->mp_str, buffer);
-		packstr(block_info->mp_used_str, buffer);
+		packnull(buffer); /* for mp_used_str */
 		pack32(block_info->cnode_cnt, buffer);
 		pack16(block_info->node_use, buffer);
 		packnull(buffer); /* for user name */
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
 		pack16(block_info->state, buffer);
-		if (block_info->mp_used_inx) {
-			char *bitfmt = inx2bitfmt(block_info->mp_used_inx);
-			packstr(bitfmt, buffer);
-			xfree(bitfmt);
-		} else
-			packnull(buffer);
+		packnull(buffer); /* for mp_used_inx */
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		if (!block_info) {
 			packnull(buffer);
@@ -9033,8 +9021,6 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(block_info->mp_str), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(block_info->mp_used_str), &uint32_tmp,
-				       buffer);
 		safe_unpack32(&block_info->cnode_cnt, buffer);
 		safe_unpack16(&block_info->node_use, buffer);
 		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
@@ -9042,13 +9028,6 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		safe_unpackstr_xmalloc(&block_info->reason,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&block_info->state, buffer);
-		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
-		if (mp_inx_str == NULL) {
-			block_info->mp_used_inx = bitfmt2int("");
-		} else {
-			block_info->mp_used_inx = bitfmt2int(mp_inx_str);
-			xfree(mp_inx_str);
-		}
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&block_info->bg_block_id,
 				       &uint32_tmp, buffer);
@@ -9109,8 +9088,8 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&(block_info->mp_str), &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&(block_info->mp_used_str), &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
+		xfree(mp_inx_str);
 		safe_unpack32(&block_info->cnode_cnt, buffer);
 		safe_unpack16(&block_info->node_use, buffer);
 		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
@@ -9121,12 +9100,7 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&block_info->state, buffer);
 		safe_unpackstr_xmalloc(&mp_inx_str, &uint32_tmp, buffer);
-		if (mp_inx_str == NULL) {
-			block_info->mp_used_inx = bitfmt2int("");
-		} else {
-			block_info->mp_used_inx = bitfmt2int(mp_inx_str);
-			xfree(mp_inx_str);
-		}
+		xfree(mp_inx_str);
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&block_info->bg_block_id,
 				       &uint32_tmp, buffer);

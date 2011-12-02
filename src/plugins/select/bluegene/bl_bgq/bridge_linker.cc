@@ -300,6 +300,8 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 {
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!block_id) {
 		error("_remove_jobs_on_block_and_reset: no block name given");
@@ -310,6 +312,13 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 		job_remove_failed = 1;
 
 	/* remove the block's users */
+
+	/* Lock job read before block to avoid
+	 * issues where a step could complete after the job completion
+	 * has taken place (since we are on a thread here).
+	 */
+	if (job_ptr)
+		lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main, block_id);
 	if (bg_record) {
@@ -333,7 +342,8 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	}
 
 	slurm_mutex_unlock(&block_state_mutex);
-
+	if (job_ptr)
+		unlock_slurmctld(job_read_lock);
 }
 
 extern int bridge_init(char *properties_file)

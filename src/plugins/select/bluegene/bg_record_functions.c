@@ -111,8 +111,6 @@ extern void destroy_bg_record(void *object)
 		xfree(bg_record->linuximage);
 		xfree(bg_record->mloaderimage);
 		FREE_NULL_BITMAP(bg_record->mp_bitmap);
-		xfree(bg_record->mp_str);
-		FREE_NULL_BITMAP(bg_record->mp_used_bitmap);
 		xfree(bg_record->ramdiskimage);
 		xfree(bg_record->reason);
 
@@ -361,14 +359,6 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->boot_state = fir_record->boot_state;
 	sec_record->boot_count = fir_record->boot_count;
 
-	FREE_NULL_BITMAP(sec_record->mp_used_bitmap);
-	if (fir_record->mp_used_bitmap
-	    && (sec_record->mp_used_bitmap
-		= bit_copy(fir_record->mp_used_bitmap)) == NULL) {
-		error("Unable to copy mp_used_bitmap for %s",
-		      fir_record->mp_str);
-		sec_record->mp_used_bitmap = NULL;
-	}
 	sec_record->cnode_cnt = fir_record->cnode_cnt;
 	sec_record->cnode_err_cnt = fir_record->cnode_err_cnt;
 
@@ -594,7 +584,6 @@ extern int add_bg_record(List records, List *used_nodes,
 	   want anything set we also don't want the bg_record->ionode_str set.
 	*/
 	bg_record->ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
-	bg_record->mp_used_bitmap = bit_alloc(node_record_count);
 
 	len = strlen(blockreq->save_name);
 	i=0;
@@ -1401,7 +1390,8 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 	if (bg_record->job_list)
 		ba_remove_job_in_block_job_list(bg_record, job_ptr);
 
-	if (bg_record->job_running > NO_JOB_RUNNING) {
+	if ((bg_record->job_running > NO_JOB_RUNNING)
+	    && (!bg_record->job_list || !list_count(bg_record->job_list))) {
 #ifndef HAVE_BG_L_P
 		/* Just in case the slurmctld wasn't up at the
 		   time a step completion message came through
@@ -1420,10 +1410,11 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		list_iterator_destroy(itr);
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
-		if (bg_record->job_ptr) {
-			num_unused_cpus += bg_record->job_ptr->total_cpus;
-			bg_record->job_ptr = NULL;
-		}
+	}
+
+	if (bg_record->job_ptr) {
+		num_unused_cpus += bg_record->job_ptr->total_cpus;
+		bg_record->job_ptr = NULL;
 	}
 
 	/* remove user from list */

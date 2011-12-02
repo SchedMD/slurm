@@ -343,21 +343,15 @@ static void _set_bg_lists()
 static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 {
 	bg_record_t *bg_record = NULL;
-	bitstr_t *mp_bitmap = NULL, *ionode_bitmap = NULL, *used_bitmap = NULL;
+	bitstr_t *mp_bitmap = NULL, *ionode_bitmap = NULL;
 
 	mp_bitmap = bit_alloc(node_record_count);
-	used_bitmap = bit_alloc(node_record_count);
 	ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
 
 	if (block_info->mp_inx
 	    && inx2bitstr(mp_bitmap, block_info->mp_inx) == -1)
 		error("Job state recovered incompatible with "
 		      "bluegene.conf. mp=%u",
-		      node_record_count);
-	if (block_info->mp_used_inx
-	    && inx2bitstr(used_bitmap, block_info->mp_used_inx) == -1)
-		error("Job state recovered incompatible with "
-		      "bluegene.conf. used=%u",
 		      node_record_count);
 	if (block_info->ionode_inx
 	    && inx2bitstr(ionode_bitmap, block_info->ionode_inx) == -1)
@@ -385,9 +379,6 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 			      block_info->ionode_str, bg_record->ionode_str);
 		}
 	}
-
-	bg_record->mp_used_bitmap = used_bitmap;
-	used_bitmap = NULL;
 
 	bg_record->mp_bitmap = mp_bitmap;
 	mp_bitmap = NULL;
@@ -441,8 +432,13 @@ static void _local_pack_block_job_info(struct job_record *job_ptr, Buf buffer,
 	memset(&block_job, 0, sizeof(block_job_info_t));
 	block_job.job_id = job_ptr->job_id;
 	block_job.user_id = job_ptr->user_id;
-	block_job.user_name = jobinfo->user_name;
-	block_job.cnodes = jobinfo->ionode_str;
+	if (jobinfo) {
+		block_job.user_name = jobinfo->user_name;
+		block_job.cnodes = jobinfo->ionode_str;
+	} else
+		error("NO JOBINFO for job %u magic %u!!!!!!!!!!!!!!",
+		      job_ptr->job_id, job_ptr->magic);
+
 	/* block_job.cnode_inx -- try not to set */
 	slurm_pack_block_job_info(&block_job, buffer, protocol_version);
 }
@@ -487,13 +483,17 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 			while ((job_ptr = list_next(itr))) {
 				if (job_ptr->magic != JOB_MAGIC) {
 					list_delete_item(itr);
+					slurm_pack_block_job_info(
+						NULL, buffer,
+						protocol_version);
 					continue;
 				}
 				_local_pack_block_job_info(
 					job_ptr, buffer, protocol_version);
 			}
 			list_iterator_destroy(itr);
-		} else if (bg_record->job_ptr) {
+		} else if (bg_record->job_ptr
+			   && (bg_record->job_ptr->magic == JOB_MAGIC)) {
 			pack32(1, buffer);
 			_local_pack_block_job_info(
 				bg_record->job_ptr, buffer, protocol_version);
@@ -505,13 +505,11 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
-		packstr(bg_record->mp_used_str, buffer);
 		pack32((uint32_t)bg_record->cnode_cnt, buffer);
 		pack16((uint16_t)bg_record->node_use, buffer);
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
-		pack_bit_fmt(bg_record->mp_used_bitmap, buffer);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 		packstr(bg_record->blrtsimage, buffer);
@@ -551,14 +549,14 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
-		packstr(bg_record->mp_used_str, buffer);
+		packnull(buffer); /* for mp_used_str */
 		pack32((uint32_t)bg_record->cnode_cnt, buffer);
 		pack16((uint16_t)bg_record->node_use, buffer);
 		packnull(buffer); /* for user_name */
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
-		pack_bit_fmt(bg_record->mp_used_bitmap, buffer);
+		packnull(buffer); /* for mp_used_inx */
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
@@ -1386,6 +1384,9 @@ extern int select_p_state_save(char *dir_name)
 	char *old_file, *new_file, *reg_file;
 	uint32_t blocks_packed = 0, tmp_offset, block_offset;
 	Buf buffer = init_buf(BUF_SIZE);
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
 	DEF_TIMERS;
 
 	debug("bluegene: select_p_state_save");
@@ -1395,6 +1396,9 @@ extern int select_p_state_save(char *dir_name)
 	block_offset = get_buf_offset(buffer);
 	pack32(blocks_packed, buffer);
 
+	/* Lock job read before block to avoid deadlock job lock is
+	 * needed because we look at the job_ptr's to send job info. */
+	lock_slurmctld(job_read_lock);
 	/* write block records to buffer */
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
@@ -1410,6 +1414,7 @@ extern int select_p_state_save(char *dir_name)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+	unlock_slurmctld(job_read_lock);
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, block_offset);
 	pack32(blocks_packed, buffer);
@@ -1812,7 +1817,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 {
 	bitstr_t *picked_mps = NULL;
 	bg_record_t *bg_record = NULL;
-	char *tmp_char = NULL, *tmp_char2 = NULL;
+	char *tmp_char = NULL;
 	ba_mp_t *ba_mp = NULL;
 	select_jobinfo_t *jobinfo = NULL;
 	int dim;
@@ -1829,7 +1834,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		      "trying to start a step on it?",
 		      job_ptr->job_id);
 
-	xassert(bg_record->mp_used_bitmap);
 	xassert(!step_jobinfo->units_used);
 
 	xfree(step_jobinfo->bg_block_id);
@@ -1872,7 +1876,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			bit_or(ba_mp->cnode_bitmap, step_jobinfo->units_used);
 		}
 
-		bit_or(bg_record->mp_used_bitmap, picked_mps);
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
 	} else if (jobinfo->units_avail) {
 		bitstr_t *total_bitmap = jobinfo->units_used;
@@ -1897,7 +1900,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		node_count = step_jobinfo->cnode_cnt;
 		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
 			fatal("bit_copy malloc failure");
-		bit_or(bg_record->mp_used_bitmap, picked_mps);
 		bit_or(jobinfo->units_used, step_jobinfo->units_used);
 		for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
 			/* The IBM software works off a relative
@@ -1923,7 +1925,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			    bg_record, &node_count, step_jobinfo))) {
 		if (!(picked_mps = bit_alloc(bit_size(job_ptr->node_bitmap))))
 			fatal("bit_copy malloc failure");
-		bit_set(bg_record->mp_used_bitmap, ba_mp->index);
 		bit_set(picked_mps, ba_mp->index);
 		for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
 			/* The IBM software works off a relative
@@ -1951,14 +1952,10 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	if (picked_mps) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
 			tmp_char = bitmap2node_name(picked_mps);
-			tmp_char2 = bitmap2node_name(
-				bg_record->mp_used_bitmap);
-			info("select_p_step_pick_nodes: picked %s mps on "
-			     "block %s used is now %s",
-			     tmp_char, bg_record->bg_block_id,
-			     tmp_char2);
+			info("select_p_step_pick_nodes: new step for job %u "
+			     "will be running on %s(%s)",
+			     job_ptr->job_id, bg_record->bg_block_id, tmp_char);
 			xfree(tmp_char);
-			xfree(tmp_char2);
 		}
 		step_jobinfo->cnode_cnt = node_count;
 	}
@@ -1975,46 +1972,42 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	bg_record_t *bg_record = NULL;
 	select_jobinfo_t *jobinfo = NULL;
 	int rc = SLURM_SUCCESS;
-	char *tmp_char = NULL, *tmp_char2 = NULL;
+	char *tmp_char = NULL;
 
 	xassert(step_ptr);
 
-	slurm_mutex_lock(&block_state_mutex);
+
+	if (IS_JOB_COMPLETING(step_ptr->job_ptr)) {
+		debug("step completion %u.%u was received after job "
+		      "allocation is already completing, no cleanup needed",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		return SLURM_SUCCESS;
+	}
 
 	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
-	bg_record = jobinfo->bg_record;
-
-	if (!bg_record)
-		fatal("This step %u.%u does not have a bg block "
-		      "assigned to it, but for some reason we are "
-		      "trying to end the step?",
-		      step_ptr->job_ptr->job_id, step_ptr->step_id);
-	/* At this moment the step_node_bitmap has already been
-	   cleared and the step_node_bitmap has been set so use it
-	   instead.
-	*/
-	bit_not(step_ptr->step_node_bitmap);
-	bit_and(bg_record->mp_used_bitmap, step_ptr->step_node_bitmap);
-	bit_not(step_ptr->step_node_bitmap);
-
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
-		tmp_char = bitmap2node_name(bg_record->mp_used_bitmap);
-		tmp_char2 = bitmap2node_name(step_ptr->step_node_bitmap);
-		info("select_p_step_finish: cleared %s "
-		     "from job step %u.%u, now %s used",
-		     tmp_char2, step_ptr->job_ptr->job_id, step_ptr->step_id,
-		     tmp_char);
-		xfree(tmp_char);
-		xfree(tmp_char2);
-	}
 
 	if (jobinfo->units_avail)
 		rc = ba_sub_block_in_bitmap_clear(
 			step_ptr->select_jobinfo->data, jobinfo->units_used);
-	else
-		rc = ba_sub_block_in_record_clear(bg_record, step_ptr);
+	else {
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record = jobinfo->bg_record;
 
-	slurm_mutex_unlock(&block_state_mutex);
+		if (!bg_record)
+			fatal("This step %u.%u does not have a bg block "
+			      "assigned to it, but for some reason we are "
+			      "trying to end the step?",
+			      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		rc = ba_sub_block_in_record_clear(bg_record, step_ptr);
+		slurm_mutex_unlock(&block_state_mutex);
+	}
+
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
+		tmp_char = bitmap2node_name(step_ptr->step_node_bitmap);
+		info("select_p_step_finish: step %u.%u cleared from %s",
+		     step_ptr->job_ptr->job_id, step_ptr->step_id, tmp_char);
+		xfree(tmp_char);
+	}
 
 	return rc;
 }
@@ -2043,6 +2036,14 @@ extern int select_p_pack_select_info(time_t last_query_time,
 
 		if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 			if (bg_lists->main) {
+				slurmctld_lock_t job_read_lock =
+					{ NO_LOCK, READ_LOCK,
+					  NO_LOCK, NO_LOCK };
+				/* Lock job read before block to avoid
+				 * deadlock job lock is needed because
+				 * we look at the job_ptr's to send
+				 * job info. */
+				lock_slurmctld(job_read_lock);
 				slurm_mutex_lock(&block_state_mutex);
 				itr = list_iterator_create(bg_lists->main);
 				while ((bg_record = list_next(itr))) {
@@ -2054,6 +2055,7 @@ extern int select_p_pack_select_info(time_t last_query_time,
 				}
 				list_iterator_destroy(itr);
 				slurm_mutex_unlock(&block_state_mutex);
+				unlock_slurmctld(job_read_lock);
 			} else {
 				error("select_p_pack_select_info: "
 				      "no bg_lists->main");
