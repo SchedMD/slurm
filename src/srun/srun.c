@@ -97,6 +97,7 @@
 #include "src/srun/multi_prog.h"
 #include "src/srun/task_state.h"
 #include "src/api/pmi_server.h"
+#include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
 
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
@@ -128,7 +129,6 @@ static struct termios termdefaults;
 uint32_t global_rc = 0;
 srun_job_t *job = NULL;
 task_state_t task_state;
-slurm_fd_t slurmctld_fd;
 
 #define MAX_STEP_RETRIES 4
 time_t launch_start_time;
@@ -287,7 +287,7 @@ int srun(int ac, char **av)
 	_set_submit_dir_env();
 
 	/* Set up slurmctld message handler */
-	slurmctld_fd = slurmctld_msg_init();
+	slurmctld_msg_init();
 
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
@@ -1121,9 +1121,10 @@ static void *_msg_thr_internal(void *arg)
 	slurm_addr_t cli_addr;
 	slurm_fd_t newsockfd;
 	slurm_msg_t *msg;
+	int *slurmctld_fd_ptr = (int *)arg;
 
 	while (!srun_shutdown) {
-		newsockfd = slurm_accept_msg_conn(slurmctld_fd, &cli_addr);
+		newsockfd = slurm_accept_msg_conn(*slurmctld_fd_ptr, &cli_addr);
 		if (newsockfd == SLURM_SOCKET_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
@@ -1148,9 +1149,16 @@ _spawn_msg_handler(void)
 {
 	pthread_attr_t attr;
 	pthread_t msg_thread;
+	static int slurmctld_fd;
+
+	slurmctld_fd = job->step_ctx->launch_state->slurmctld_socket_fd;
+	if (slurmctld_fd < 0)
+		return (pthread_t) 0;
+	job->step_ctx->launch_state->slurmctld_socket_fd = -1;
 
 	slurm_attr_init(&attr);
-	if (pthread_create(&msg_thread, &attr, _msg_thr_internal, NULL))
+	if (pthread_create(&msg_thread, &attr, _msg_thr_internal,
+			   (void *) &slurmctld_fd))
 		error("pthread_create of message thread: %m");
 	slurm_attr_destroy(&attr);
 	return msg_thread;
