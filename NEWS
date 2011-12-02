@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
     qos on the cluster to fill that in correctly.
  -- Fix in select/cons_res for "fatal: cons_res: sync loop not progressing"
     with some configurations and job option combinations.
+ -- BLUEGNE - Fixed issue with handling HTC modes and rebooting.
 
 * Changes in SLURM 2.3.1
 ========================

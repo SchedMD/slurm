@@ -211,13 +211,6 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		} else if (jobinfo->conn_type[0] >= SELECT_SMALL)
 			for (i=0; i<SYSTEM_DIMENSIONS; i++)
 				jobinfo->conn_type[i] = SELECT_TORUS;
-
-		if ((bg_conf->mp_cnode_cnt == bg_conf->nodecard_cnode_cnt)
-		    || (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt))
-			jobinfo->conn_type[0] = SELECT_SMALL;
-		else if (jobinfo->conn_type[0] == SELECT_SMALL)
-			for (i=0; i<jobinfo->dim_cnt; i++)
-				jobinfo->conn_type[i] = SELECT_TORUS;
 		break;
 	case SELECT_JOBDATA_ALTERED:
 		jobinfo->altered = *uint16;
