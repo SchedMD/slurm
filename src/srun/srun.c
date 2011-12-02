@@ -488,7 +488,7 @@ int srun(int ac, char **av)
 	_send_step_complete_rpc(global_rc);
 	if (msg_thread) {
 		srun_shutdown = true;
-		pthread_kill(msg_thread, SIGINT);
+		pthread_cancel(msg_thread);
 		pthread_join(msg_thread, NULL);
 	}
 #else
@@ -1122,6 +1122,9 @@ static void *_msg_thr_internal(void *arg)
 	slurm_fd_t newsockfd;
 	slurm_msg_t *msg;
 	int *slurmctld_fd_ptr = (int *)arg;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	while (!srun_shutdown) {
 		newsockfd = slurm_accept_msg_conn(*slurmctld_fd_ptr, &cli_addr);
