@@ -1211,7 +1211,9 @@ The maximum amount of CPU time
 The maximum size of a process's data segment
 .TP
 \fBFSIZE\fR
-The maximum size of files created
+The maximum size of files created. Note that if the user sets FSIZE to less
+than the current size of the slurmd.log, job launches will fail with 
+a 'File size limit exceeded' error.
 .TP
 \fBMEMLOCK\fR
 The maximum size that may be locked into memory
