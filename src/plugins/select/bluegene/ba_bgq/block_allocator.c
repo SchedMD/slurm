@@ -1261,6 +1261,17 @@ extern void ba_sync_job_to_block(bg_record_t *bg_record,
 			ba_mp = list_peek(bg_record->ba_mp_list);
 			list_append(bg_record->job_list, job_ptr);
 			jobinfo = job_ptr->select_jobinfo->data;
+			/* If you were switching from no sub-block
+			   allocations to allowing it, the units_avail
+			   wouldn't be around for any jobs, but no
+			   problem since they were always the size of
+			   the block.
+			*/
+			if (!jobinfo->units_avail) {
+				jobinfo->units_avail =
+					bit_copy(ba_mp->cnode_bitmap);
+				bit_not(jobinfo->units_avail);
+			}
 			if (bit_overlap(ba_mp->cnode_bitmap,
 					jobinfo->units_avail)) {
 				error("we have an overlapping job allocation "
