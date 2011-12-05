@@ -501,6 +501,14 @@ extern int schedule(uint32_t job_limit)
 				job_ptr->state_reason = WAIT_NO_REASON;
 			}
 		}
+
+		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			acct_policy_job_runnable(job_ptr);
+		}
+
 		if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
 		    job_ptr->details && job_ptr->details->req_node_bitmap &&
 		    !bit_super_set(job_ptr->details->req_node_bitmap,

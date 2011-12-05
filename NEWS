@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.0.pre3
+=============================
+ -- Let a job be submitted even if it exceeds a QOS limit. Job will be left
+    in a pending state until the QOS limit or job parameters change. Patch by
+    Phil Eckert, LLNL.
+
 * Changes in SLURM 2.4.0.pre2
 =============================
  -- CRAY - Add support for GPU memory allocation using SLURM GRES (Generic

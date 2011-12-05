@@ -70,6 +70,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr,
 				 slurmdb_association_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
+				 uint16_t *state_reason,
 				 uint16_t *limit_set_max_cpus,
 				 uint16_t *limit_set_max_nodes,
 				 uint16_t *limit_set_time, bool update_call);

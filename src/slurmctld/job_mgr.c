@@ -3951,7 +3951,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
-				   assoc_ptr, qos_ptr,
+				   assoc_ptr, qos_ptr, NULL,
 				   &limit_set_max_cpus,
 				   &limit_set_max_nodes,
 				   &limit_set_time, 0))) {
@@ -6960,7 +6960,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  &limit_set_max_cpus,
+					  NULL, &limit_set_max_cpus,
 					  &limit_set_max_nodes,
 					  &limit_set_time, 1)) {
 			info("update_job: exceeded association's cpu, node or "
