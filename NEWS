@@ -91,6 +91,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.3
 ========================
+ -- Fix task/cgroup plugin error when used with GRES. Patch by Alexander
+    Bersenev (Institute of Mathematics and Mechanics, Russia).
 
 * Changes in SLURM 2.3.2
 ========================
