@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Let a job be submitted even if it exceeds a QOS limit. Job will be left
     in a pending state until the QOS limit or job parameters change. Patch by
     Phil Eckert, LLNL.
+ -- Add sacct support for the option "--name". Work by Yuri D'Elia, Center for
+    Biomedicine, EURAC Research, Italy.
 
 * Changes in SLURM 2.4.0.pre2
 =============================

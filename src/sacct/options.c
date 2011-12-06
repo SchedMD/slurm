@@ -45,7 +45,11 @@
 #include <time.h>
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_NAME  0x100
+#define OPT_LONG_ALLOCS	0x100
+#define OPT_LONG_DUP	0x101
+#define OPT_LONG_HELP	0x102
+#define OPT_LONG_USAGE	0x103
+#define OPT_LONG_NAME	0x104
 
 void _help_fields_msg(void);
 void _help_msg(void);
@@ -611,11 +615,11 @@ void parse_command_line(int argc, char **argv)
 	static struct option long_options[] = {
                 {"allusers",       no_argument,       0,                      'a'},
                 {"accounts",       required_argument, 0,                      'A'},
-                {"allocations",    no_argument,       &params.opt_allocs,     1},
+                {"allocations",    no_argument,       &params.opt_allocs,     OPT_LONG_ALLOCS},
                 {"brief",          no_argument,       0,                      'b'},
                 {"completion",     no_argument,       &params.opt_completion, 'c'},
                 {"dump",           no_argument,       0,                      'd'},
-                {"duplicates",     no_argument,       &params.opt_dup,        1},
+                {"duplicates",     no_argument,       &params.opt_dup,        OPT_LONG_DUP},
                 {"helpformat",     no_argument,       0,                      'e'},
                 {"help-fields",    no_argument,       0,                      'e'},
                 {"endtime",        required_argument, 0,                      'E'},
@@ -623,7 +627,7 @@ void parse_command_line(int argc, char **argv)
                 {"gid",            required_argument, 0,                      'g'},
                 {"group",          required_argument, 0,                      'g'},
                 {"help",           no_argument,       0,                      'h'},
-                {"helpformat",     no_argument,       &params.opt_help,       2},
+                {"helpformat",     no_argument,       &params.opt_help,       OPT_LONG_HELP},
                 {"name",           required_argument, 0,                      OPT_LONG_NAME},
                 {"nnodes",         required_argument, 0,                      'i'},
                 {"ncpus",          required_argument, 0,                      'I'},
@@ -647,7 +651,7 @@ void parse_command_line(int argc, char **argv)
                 {"starttime",      required_argument, 0,                      'S'},
                 {"truncate",       no_argument,       0,                      'T'},
                 {"uid",            required_argument, 0,                      'u'},
-                {"usage",          no_argument,       &params.opt_help,       3},
+                {"usage",          no_argument,       &params.opt_help,       OPT_LONG_USAGE},
                 {"user",           required_argument, 0,                      'u'},
                 {"verbose",        no_argument,       0,                      'v'},
                 {"version",        no_argument,       0,                      'V'},
