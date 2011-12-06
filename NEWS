@@ -101,6 +101,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix task/cgroup plugin error when used with GRES. Patch by Alexander
     Bersenev (Institute of Mathematics and Mechanics, Russia).
+ -- Permit pending job exceeding a partition limit to run if its QOS flag is
+    modified to permit the partition limit to be exceeded. Patch from Bill
+    Brophy, Bull.
 
 * Changes in SLURM 2.3.2
 ========================
