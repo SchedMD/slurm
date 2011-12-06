@@ -3928,6 +3928,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 			while((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
+			list_iterator_destroy(itr);
 		}
 		count = NO_VAL;
 
