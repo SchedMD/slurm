@@ -200,6 +200,10 @@ extern List build_job_queue(bool clear_start)
 				fatal("list_iterator_create malloc failure");
 			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
+				job_ptr->part_ptr = part_ptr;
+				if (job_limits_check(&job_ptr) !=
+				    WAIT_NO_REASON)
+					continue;
 				_job_queue_append(job_queue, job_ptr, part_ptr);
 			}
 			list_iterator_destroy(part_iterator);
