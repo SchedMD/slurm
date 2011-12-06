@@ -3932,6 +3932,19 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		count = NO_VAL;
 
+		if(object->jobname_list)
+			count = list_count(object->jobname_list);
+
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->jobname_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
 		pack32(object->nodes_max, buffer);
 		pack32(object->nodes_min, buffer);
 		if(object->partition_list)
@@ -4284,6 +4297,17 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->groupid_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->jobname_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->jobname_list, tmp_info);
 			}
 		}
 

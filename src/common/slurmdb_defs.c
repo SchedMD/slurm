@@ -725,6 +725,8 @@ extern void slurmdb_destroy_job_cond(void *object)
 			list_destroy(job_cond->cluster_list);
 		if(job_cond->groupid_list)
 			list_destroy(job_cond->groupid_list);
+		if(job_cond->jobname_list)
+			list_destroy(job_cond->jobname_list);
 		if(job_cond->partition_list)
 			list_destroy(job_cond->partition_list);
 		if(job_cond->qos_list)

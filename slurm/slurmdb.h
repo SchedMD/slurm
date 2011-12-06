@@ -253,6 +253,7 @@ typedef struct {
 	uint16_t duplicates;    /* report duplicate job entries */
 	int32_t exitcode;       /* exit code of job */
 	List groupid_list;	/* list of char * */
+	List jobname_list;	/* list of char * */
 	uint32_t nodes_max;     /* number of nodes high range */
 	uint32_t nodes_min;     /* number of nodes low range */
 	List partition_list;	/* list of char * */

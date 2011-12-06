@@ -44,6 +44,9 @@
 #include "sacct.h"
 #include <time.h>
 
+/* getopt_long options, integers but not characters */
+#define OPT_LONG_NAME  0x100
+
 void _help_fields_msg(void);
 void _help_msg(void);
 void _usage(void);
@@ -462,6 +465,8 @@ sacct [<OPTION>]                                                            \n\
      -N, --nodelist:                                                        \n\
                    Display jobs that ran on any of these nodes,             \n\
                    can be one or more using a ranged string.                \n\
+         --name:                                                            \n\
+                   Display jobs that have any of these name(s).             \n\
      -o, --format:                                                          \n\
 	           Comma separated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
@@ -604,50 +609,51 @@ void parse_command_line(int argc, char **argv)
 	bool set;
 
 	static struct option long_options[] = {
-		{"allusers", 0,0, 'a'},
-		{"accounts", 1, 0, 'A'},
-		{"allocations", 0, &params.opt_allocs,  1},
-		{"brief", 0, 0, 'b'},
-		{"completion", 0, &params.opt_completion, 'c'},
-		{"dump", 0, 0, 'd'},
-		{"duplicates", 0, &params.opt_dup, 1},
-		{"helpformat", 0, 0, 'e'},
-		{"help-fields", 0, 0, 'e'},
-		{"endtime", 1, 0, 'E'},
-		{"file", 1, 0, 'f'},
-		{"gid", 1, 0, 'g'},
-		{"group", 1, 0, 'g'},
-		{"help", 0, 0, 'h'},
-		{"helpformat", 0, &params.opt_help, 2},
-		{"nnodes", 1, 0, 'i'},
-		{"ncpus", 1, 0, 'I'},
-		{"jobs", 1, 0, 'j'},
-		{"timelimit-min", 1, 0, 'k'},
-		{"timelimit-max", 1, 0, 'K'},
-		{"long", 0, 0, 'l'},
-		{"allclusters", 0,0, 'L'},
-		{"cluster", 1, 0, 'M'},
-		{"clusters", 1, 0, 'M'},
-		{"nodelist", 1, 0, 'N'},
-		{"noheader", 0, 0, 'n'},
-		{"fields", 1, 0, 'o'},
-		{"format", 1, 0, 'o'},
-		{"formatted_dump", 0, 0, 'O'},
-		{"parsable", 0, 0, 'p'},
-		{"parsable2", 0, 0, 'P'},
-		{"qos", 1, 0, 'q'},
-		{"partition", 1, 0, 'r'},
-		{"state", 1, 0, 's'},
-		{"starttime", 1, 0, 'S'},
-		{"truncate", 0, 0, 'T'},
-		{"uid", 1, 0, 'u'},
-		{"usage", 0, &params.opt_help, 3},
-		{"user", 1, 0, 'u'},
-		{"verbose", 0, 0, 'v'},
-		{"version", 0, 0, 'V'},
-		{"wckeys", 1, 0, 'W'},
-		{"associations", 1, 0, 'x'},
-		{0, 0, 0, 0}};
+                {"allusers",       no_argument,       0,                      'a'},
+                {"accounts",       required_argument, 0,                      'A'},
+                {"allocations",    no_argument,       &params.opt_allocs,     1},
+                {"brief",          no_argument,       0,                      'b'},
+                {"completion",     no_argument,       &params.opt_completion, 'c'},
+                {"dump",           no_argument,       0,                      'd'},
+                {"duplicates",     no_argument,       &params.opt_dup,        1},
+                {"helpformat",     no_argument,       0,                      'e'},
+                {"help-fields",    no_argument,       0,                      'e'},
+                {"endtime",        required_argument, 0,                      'E'},
+                {"file",           required_argument, 0,                      'f'},
+                {"gid",            required_argument, 0,                      'g'},
+                {"group",          required_argument, 0,                      'g'},
+                {"help",           no_argument,       0,                      'h'},
+                {"helpformat",     no_argument,       &params.opt_help,       2},
+                {"name",           required_argument, 0,                      OPT_LONG_NAME},
+                {"nnodes",         required_argument, 0,                      'i'},
+                {"ncpus",          required_argument, 0,                      'I'},
+                {"jobs",           required_argument, 0,                      'j'},
+                {"timelimit-min",  required_argument, 0,                      'k'},
+                {"timelimit-max",  required_argument, 0,                      'K'},
+                {"long",           no_argument,       0,                      'l'},
+                {"allclusters",    no_argument,       0,                      'L'},
+                {"cluster",        required_argument, 0,                      'M'},
+                {"clusters",       required_argument, 0,                      'M'},
+                {"nodelist",       required_argument, 0,                      'N'},
+                {"noheader",       no_argument,       0,                      'n'},
+                {"fields",         required_argument, 0,                      'o'},
+                {"format",         required_argument, 0,                      'o'},
+                {"formatted_dump", no_argument,       0,                      'O'},
+                {"parsable",       no_argument,       0,                      'p'},
+                {"parsable2",      no_argument,       0,                      'P'},
+                {"qos",            required_argument, 0,                      'q'},
+                {"partition",      required_argument, 0,                      'r'},
+                {"state",          required_argument, 0,                      's'},
+                {"starttime",      required_argument, 0,                      'S'},
+                {"truncate",       no_argument,       0,                      'T'},
+                {"uid",            required_argument, 0,                      'u'},
+                {"usage",          no_argument,       &params.opt_help,       3},
+                {"user",           required_argument, 0,                      'u'},
+                {"verbose",        no_argument,       0,                      'v'},
+                {"version",        no_argument,       0,                      'V'},
+                {"wckeys",         required_argument, 0,                      'W'},
+                {"associations",   required_argument, 0,                      'x'},
+                {0,                0,		      0,                      0}};
 
 	params.opt_uid = getuid();
 	params.opt_gid = getgid();
@@ -790,6 +796,12 @@ void parse_command_line(int argc, char **argv)
 				break;
 			}
 			job_cond->used_nodes = xstrdup(optarg);
+			break;
+		case OPT_LONG_NAME:
+			if(!job_cond->jobname_list)
+				job_cond->jobname_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->jobname_list, optarg);
 			break;
 		case 'o':
 			xstrfmtcat(params.opt_field_list, "%s,", optarg);
@@ -1107,6 +1119,16 @@ void parse_command_line(int argc, char **argv)
 			sprintf(time_str+len, " - %s", tmp2);
 		}
 		debug2("Timelimit requested\t: %s", time_str);
+	}
+
+	/* specific jobnames requested? */
+	if (job_cond->jobname_list && list_count(job_cond->jobname_list)) {
+		debug2("Jobnames requested:");
+		itr = list_iterator_create(job_cond->jobname_list);
+		while((start = list_next(itr))) {
+			debug2("\t: %s", start);
+		}
+		list_iterator_destroy(itr);
 	}
 
 	/* select the output fields */

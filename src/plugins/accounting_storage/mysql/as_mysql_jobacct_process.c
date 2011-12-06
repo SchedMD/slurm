@@ -1125,6 +1125,24 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		xstrcat(*extra, ")");
 	}
 
+	if (job_cond->jobname_list && list_count(job_cond->jobname_list)) {
+		set = 0;
+		if (*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->jobname_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.job_name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
 	if (job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
 		if (*extra)

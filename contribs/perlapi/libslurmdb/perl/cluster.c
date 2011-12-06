@@ -167,6 +167,7 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
     FETCH_LIST_FIELD(hv, job_cond, associd_list);
     FETCH_LIST_FIELD(hv, job_cond, cluster_list);
     FETCH_LIST_FIELD(hv, job_cond, groupid_list);
+    FETCH_LIST_FIELD(hv, job_cond, jobname_list);
     FETCH_LIST_FIELD(hv, job_cond, partition_list);
     FETCH_LIST_FIELD(hv, job_cond, qos_list);
     FETCH_LIST_FIELD(hv, job_cond, resv_list);
