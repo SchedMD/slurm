@@ -1507,7 +1507,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				    max_nodes, req_nodes,
 				    &bg_record, local_mode, avail_cpus);
 
-	if (rc == SLURM_SUCCESS && SELECT_IS_PREEMPT_SET(local_mode)) {
+	if (rc != SLURM_SUCCESS && SELECT_IS_PREEMPT_SET(local_mode)) {
 		ListIterator itr;
 		ListIterator job_itr;
 		bg_record_t *found_record;

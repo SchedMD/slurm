@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Permit pending job exceeding a partition limit to run if its QOS flag is
     modified to permit the partition limit to be exceeded. Patch from Bill
     Brophy, Bull.
+ -- BLUEGENE - Fixed preemption issue.
 
 * Changes in SLURM 2.3.2
 ========================
