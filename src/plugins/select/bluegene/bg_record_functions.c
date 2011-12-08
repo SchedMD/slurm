@@ -50,6 +50,7 @@ static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason);
 static void _addto_mp_list(bg_record_t *bg_record,
 			   uint16_t *start, uint16_t *end);
 static int _ba_mp_cmpf_inc(ba_mp_t *node_a, ba_mp_t *node_b);
+static void _set_block_avail(bg_record_t *bg_record);
 
 extern void print_bg_record(bg_record_t* bg_record)
 {
@@ -490,16 +491,42 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	else if ((rec_a->job_running != BLOCK_ERROR_STATE)
 		 && (rec_b->job_running == BLOCK_ERROR_STATE))
 		return -1;
-	else if (!rec_a->job_ptr && rec_b->job_ptr)
-		return -1;
-	else if (rec_a->job_ptr && !rec_b->job_ptr)
+
+	if (!rec_a->avail_set)
+		_set_block_avail(rec_a);
+
+	if (!rec_b->avail_set)
+		_set_block_avail(rec_b);
+
+	/* Don't use this check below.  It will mess up preemption by
+	   sending this smaller block to the back of the list just
+	   because it is fully used.
+	*/
+	/* if (!rec_a->avail_cnode_cnt && rec_b->avail_cnode_cnt) */
+	/* 	return 1; */
+	/* else if (rec_a->avail_cnode_cnt && !rec_b->avail_cnode_cnt) */
+	/* 	return -1; */
+
+	if (rec_a->avail_cnode_cnt > rec_b->avail_cnode_cnt)
 		return 1;
-	else if (rec_a->job_ptr && rec_b->job_ptr) {
-		if (rec_a->job_ptr->end_time > rec_b->job_ptr->end_time)
-			return 1;
-		else if (rec_a->job_ptr->end_time < rec_b->job_ptr->end_time)
-			return -1;
-	}
+	else if (rec_a->avail_cnode_cnt < rec_b->avail_cnode_cnt)
+		return -1;
+
+	if (rec_a->avail_job_end > rec_b->avail_job_end)
+		return 1;
+	else if (rec_a->avail_job_end < rec_b->avail_job_end)
+		return -1;
+
+	/* if (!job_ptr_a && job_ptr_b) */
+	/* 	return -1; */
+	/* else if (job_ptr_a && !job_ptr_b) */
+	/* 	return 1; */
+	/* else if (job_ptr_a && job_ptr_b) { */
+	/* 	if (job_ptr_a->end_time > job_ptr_b->end_time) */
+	/* 		return 1; */
+	/* 	else if (job_ptr_a->end_time < job_ptr_b->end_time) */
+	/* 		return -1; */
+	/* } */
 
 	return bg_record_cmpf_inc(rec_a, rec_b);
 }
@@ -1649,4 +1676,30 @@ static int _ba_mp_cmpf_inc(ba_mp_t *mp_a, ba_mp_t *mp_b)
 	return rc;
 }
 
+static void _set_block_avail(bg_record_t *bg_record)
+{
+	bg_record->avail_set = true;
+	if (bg_record->job_ptr) {
+		bg_record->avail_cnode_cnt = 0;
+		bg_record->avail_job_end = bg_record->job_ptr->end_time;
+	} else if (bg_record->job_list) {
+		struct job_record *job_ptr;
+		ListIterator itr =
+			list_iterator_create(bg_record->job_list);
+
+		bg_record->avail_cnode_cnt = bg_record->cnode_cnt;
+		while ((job_ptr = list_next(itr))) {
+			select_jobinfo_t *jobinfo =
+				job_ptr->select_jobinfo->data;
+			if (job_ptr->end_time > bg_record->avail_job_end)
+				bg_record->avail_job_end =
+					job_ptr->end_time;
+			bg_record->avail_cnode_cnt -= jobinfo->cnode_cnt;
+		}
+		list_iterator_destroy(itr);
+	} else {
+		bg_record->avail_cnode_cnt = bg_record->cnode_cnt;
+		bg_record->avail_job_end = 0;
+	}
+}
 

@@ -95,6 +95,12 @@ typedef struct {
 } bg_lists_t;
 
 typedef struct bg_record {
+	bool avail_set;                 /* Used in sorting, don't copy
+					   or pack. */
+	uint32_t avail_cnode_cnt;       /* Used in sorting, don't copy
+					   or pack. */
+	time_t avail_job_end;           /* Used in sorting, don't copy
+					   or pack. */
 	void *bg_block;                 /* needed for L/P systems */
 	char *bg_block_id;     	        /* ID returned from MMCS */
 	List ba_mp_list;                /* List of midplanes in block */
