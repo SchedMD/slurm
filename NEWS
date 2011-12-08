@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     Phil Eckert, LLNL.
  -- Add sacct support for the option "--name". Work by Yuri D'Elia, Center for
     Biomedicine, EURAC Research, Italy.
+ -- BGQ - handle preemption.
 
 * Changes in SLURM 2.4.0.pre2
 =============================

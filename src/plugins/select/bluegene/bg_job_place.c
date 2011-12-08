@@ -1421,36 +1421,63 @@ static void _build_select_struct(struct job_record *job_ptr,
 }
 
 static List _get_preemptables(uint16_t query_mode, bg_record_t *bg_record,
-			      List preempt_jobs)
+			      struct job_record *in_job_ptr, List preempt_jobs)
 {
 	List preempt = NULL;
-	ListIterator itr;
 	ListIterator job_itr;
 	bg_record_t *found_record;
 	struct job_record *job_ptr;
+	select_jobinfo_t *in_jobinfo = in_job_ptr->select_jobinfo->data;
 
 	xassert(bg_record);
+	xassert(in_job_ptr);
 	xassert(preempt_jobs);
 
-	preempt = list_create(NULL);
 	slurm_mutex_lock(&block_state_mutex);
 	job_itr = list_iterator_create(preempt_jobs);
-	itr = list_iterator_create(bg_lists->main);
-	while ((found_record = list_next(itr))) {
-		if (!found_record->job_ptr
-		    || (!found_record->bg_block_id)
-		    || (bg_record == found_record)
+	while ((job_ptr = list_next(job_itr))) {
+		select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+		found_record = jobinfo->bg_record;
+
+		if (!found_record->bg_block_id || (bg_record == found_record)
 		    || !blocks_overlap(bg_record, found_record))
 			continue;
 
-		while ((job_ptr = list_next(job_itr))) {
-			if (job_ptr == found_record->job_ptr)
+		if (found_record->job_list) {
+			struct job_record *job_ptr2;
+			ListIterator job_itr2 = list_iterator_create(
+				found_record->job_list);
+			while ((job_ptr2 = list_next(job_itr2))) {
+				if (job_ptr != job_ptr2)
+					continue;
+				if (in_jobinfo->units_avail) {
+					if (!bit_overlap(
+						    in_jobinfo->units_avail,
+						    jobinfo->units_avail)) {
+						debug2("skipping unoverlapping "
+						       "%u", job_ptr->job_id);
+						continue;
+					}
+				}
 				break;
+			}
+			list_iterator_destroy(job_itr2);
+
+			/* We might of already gotten all we needed
+			   off this block.
+			*/
+			if (!job_ptr2)
+				continue;
 		}
+
 		if (job_ptr) {
+			if (!preempt)
+				preempt = list_create(NULL);
 			list_push(preempt, job_ptr);
-/* 			info("going to preempt %u running on %s", */
-/* 			     job_ptr->job_id, found_record->bg_block_id); */
+			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+				info("going to preempt %u running on %s",
+				     job_ptr->job_id,
+				     found_record->bg_block_id);
 		} else if (SELECT_IS_MODE_RUN_NOW(query_mode)) {
 			error("Job %u running on block %s "
 			      "wasn't in the preempt list, but needs to be "
@@ -1458,13 +1485,13 @@ static List _get_preemptables(uint16_t query_mode, bg_record_t *bg_record,
 			      found_record->job_ptr->job_id,
 			      found_record->bg_block_id,
 			      bg_record->bg_block_id);
-			list_destroy(preempt);
-			preempt = NULL;
+			if (preempt) {
+				list_destroy(preempt);
+				preempt = NULL;
+			}
 			break;
 		}
-		list_iterator_reset(job_itr);
 	}
-	list_iterator_destroy(itr);
 	list_iterator_destroy(job_itr);
 	slurm_mutex_unlock(&block_state_mutex);
 
@@ -1603,16 +1630,22 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		while ((preempt_job_ptr = list_next(job_itr))) {
 			while ((found_record = list_next(itr))) {
 				if (found_record->job_ptr == preempt_job_ptr) {
-					/* info("removing job %u running on %s", */
-					/*      preempt_job_ptr->job_id, */
-					/*      found_record->bg_block_id); */
+					if (bg_conf->slurm_debug_flags
+					    & DEBUG_FLAG_BG_PICK)
+						info("removing job %u running "
+						     "on %s",
+						     preempt_job_ptr->job_id,
+						     found_record->bg_block_id);
 					found_record->job_ptr = NULL;
 					found_record->job_running =
 						NO_JOB_RUNNING;
 					avail_cpus += found_record->cpu_cnt;
+					found_record->avail_set = false;
 					break;
 				} else if (found_record->job_list &&
 					   list_count(found_record->job_list)) {
+					select_jobinfo_t *jobinfo;
+					ba_mp_t *ba_mp;
 					struct job_record *found_job_ptr;
 					ListIterator job_list_itr =
 						list_iterator_create(
@@ -1620,20 +1653,38 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					while ((found_job_ptr = list_next(
 							job_list_itr))) {
 						if (found_job_ptr
-						    == preempt_job_ptr) {
-							/* info("removing job %u running on %s", */
-							/*      preempt_job_ptr->job_id, */
-							/*      found_record->bg_block_id); */
-							list_remove(
-								job_list_itr);
-							avail_cpus +=
-								found_job_ptr->
-								details->
-								min_cpus;
-							break;
-						}
+						    != preempt_job_ptr)
+							continue;
+						jobinfo = found_job_ptr->
+							select_jobinfo->data;
+						ba_mp = list_peek(found_record->
+								  ba_mp_list);
+
+						xassert(ba_mp);
+						xassert(ba_mp->cnode_bitmap);
+
+						bit_not(jobinfo->units_avail);
+						bit_and(ba_mp->cnode_bitmap,
+							jobinfo->units_avail);
+						bit_not(jobinfo->units_avail);
+
+						if (bg_conf->slurm_debug_flags
+						    & DEBUG_FLAG_BG_PICK)
+							info("removing job %u "
+							     "running on %s",
+							     preempt_job_ptr->
+							     job_id,
+							     found_record->
+							     bg_block_id);
+						list_delete_item(job_list_itr);
+						avail_cpus += found_job_ptr->
+							total_cpus;
+						found_record->avail_set = false;
+						break;
 					}
 					list_iterator_destroy(job_list_itr);
+					if (found_job_ptr)
+						break;
 				}
 			}
 			if (!found_record) {
@@ -1804,7 +1855,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			if (*preemptee_job_list)
 				list_destroy(*preemptee_job_list);
 			*preemptee_job_list = _get_preemptables(
-				local_mode, bg_record,
+				local_mode, bg_record, job_ptr,
 				preemptee_candidates);
 		}
 		if (!bg_record->bg_block_id) {
