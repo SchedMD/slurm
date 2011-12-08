@@ -392,7 +392,8 @@ exec_task(slurmd_job_t *job, int i)
 		}
 	}
 
-	io_dup_stdio(task);
+	if (!job->pty)
+		 io_dup_stdio(task);
 
 	/* task-specific pre-launch activities */
 
