@@ -1078,6 +1078,7 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 			      job_ptr->job_id);
 		} else {
 			error("Invalid preempt_mode: %u", mode);
+			rc = SLURM_ERROR;
 		}
 
 		if (rc != SLURM_SUCCESS) {
