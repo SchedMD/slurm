@@ -92,6 +92,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->description = xstrdup("");
 		if (qos->flags & QOS_FLAG_NOTSET)
 			qos->flags = 0;
+		if (qos->grace_time == NO_VAL)
+			qos->grace_time = 0;
 		if (qos->grp_cpu_mins == (uint64_t)NO_VAL)
 			qos->grp_cpu_mins = (uint64_t)INFINITE;
 		if (qos->grp_cpu_run_mins == (uint64_t)NO_VAL)
@@ -1115,8 +1117,6 @@ empty:
 
 		if (row[QOS_REQ_GRACE])
 			qos->grace_time = slurm_atoul(row[QOS_REQ_GRACE]);
-		else
-			qos->grace_time = (uint32_t)NO_VAL;
 
 		if (row[QOS_REQ_GCM])
 			qos->grp_cpu_mins = slurm_atoull(row[QOS_REQ_GCM]);
