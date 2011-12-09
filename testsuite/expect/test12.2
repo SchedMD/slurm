@@ -182,9 +182,14 @@ make_bash_script $file_in "
 # Run a simple job
 # Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
 #
+set config_prob 0
 set timeout [expr $max_job_delay + $sleep_time]
 set sbatch_pid [spawn $sbatch --mem-per-cpu=1024 --output=$file_out --error=$file_err -t2 $file_in]
 expect {
+	-re "Requested node configuration is not available" {
+		set config_prob 1
+		exp_continue
+	}		
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
@@ -197,6 +202,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$config_prob != 0} {
+	send_user "\nWARNING: Unable to test with current node configuration\n"
+	exit 0
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
