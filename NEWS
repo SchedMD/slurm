@@ -106,6 +106,7 @@ documents those changes that are of interest to users and admins.
     modified to permit the partition limit to be exceeded. Patch from Bill
     Brophy, Bull.
  -- BLUEGENE - Fixed preemption issue.
+ -- sacct search for jobs using filtering was ignoring wckey filter. 
 
 * Changes in SLURM 2.3.2
 ========================
