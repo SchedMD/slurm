@@ -206,7 +206,7 @@ extern int slurm_job_check_grace(struct job_record *job_ptr)
 {
 	/* Preempt modes: -1 (unset), 0 (none), 1 (partition), 2 (QOS) */
 	static int preempt_mode = 0;
-	static time_t last_update_time = 0;
+	static time_t last_update_time = (time_t) 0;
 	int rc = SLURM_SUCCESS;
 	uint32_t grace_time = 0;
 
@@ -225,6 +225,7 @@ extern int slurm_job_check_grace(struct job_record *job_ptr)
 		else
 			preempt_mode = 0;
 		xfree(preempt_type);
+		last_update_time = slurmctld_conf.last_update;
 	}
 
 	if (preempt_mode == 1)
@@ -235,9 +236,11 @@ extern int slurm_job_check_grace(struct job_record *job_ptr)
 		grace_time = qos_ptr->grace_time;
 	}
 
-	if (grace_time)
+	if (grace_time) {
+		debug("setting %u sec preemption grace time for job %u",
+		      grace_time, job_ptr->job_id);
 		_preempt_signal(job_ptr, grace_time);
-	else
+	} else
 		rc = SLURM_ERROR;
 
 	return rc;
