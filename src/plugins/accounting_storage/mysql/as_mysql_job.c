@@ -713,15 +713,23 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 				    submit_time,
 				    job_ptr->job_id,
 				    job_ptr->assoc_id))) {
+			/* Comment is overloaded in job_start to be
+			   the block_id, so we will need to store this
+			   for later.
+			*/
+			char *comment = job_ptr->comment;
+			job_ptr->comment = NULL;
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
 			if (as_mysql_job_start(
 				    mysql_conn, job_ptr) == SLURM_ERROR) {
+				job_ptr->comment = comment;
 				error("couldn't add job %u at job completion",
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;
 			}
+			job_ptr->comment = comment;
 		}
 	}
 

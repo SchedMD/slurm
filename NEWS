@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fixed preemption issue.
  -- sacct search for jobs using filtering was ignoring wckey filter.
  -- Fixed issue with QOS preemption when adding new QOS.
+ -- Fixed issue with comment field being used in a job finishing before it
+    starts in accounting.
 
 * Changes in SLURM 2.3.2
 ========================
