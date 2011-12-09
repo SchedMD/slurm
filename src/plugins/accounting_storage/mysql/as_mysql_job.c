@@ -584,9 +584,11 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (job->derived_ec != NO_VAL)
 		xstrfmtcat(vals, ", derived_ec=%u", job->derived_ec);
 
-	if (job->derived_es)
-		xstrfmtcat(vals, ", derived_es='%s'", job->derived_es);
-
+	if (job->derived_es) {
+		char *derived_es = slurm_add_slash_to_quotes(job->derived_es);
+		xstrfmtcat(vals, ", derived_es='%s'", derived_es);
+		xfree(derived_es);
+	}
 	if (!vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("No change specified for job modification");
