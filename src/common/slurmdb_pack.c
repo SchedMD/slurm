@@ -4033,6 +4033,9 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		count = NO_VAL;
 
+		if(object->wckey_list)
+			count = list_count(object->wckey_list);
+
 		pack32(count, buffer);
 		if(count && count != NO_VAL) {
 			itr = list_iterator_create(object->wckey_list);
@@ -4209,6 +4212,9 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 			list_iterator_destroy(itr);
 		}
 		count = NO_VAL;
+
+		if(object->wckey_list)
+			count = list_count(object->wckey_list);
 
 		pack32(count, buffer);
 		if(count && count != NO_VAL) {
