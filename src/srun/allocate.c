@@ -472,7 +472,7 @@ ignore_signal(int signo)
 }
 
 int
-cleanup_allocation()
+cleanup_allocation(void)
 {
 	slurm_allocation_msg_thr_destroy(msg_thr);
 	return SLURM_SUCCESS;

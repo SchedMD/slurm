@@ -164,6 +164,8 @@ static void  _set_submit_dir_env(void);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
+static void  _shepard_notify(int shepard_fd);
+static int   _shepard_spawn(srun_job_t *job, bool got_alloc);
 static int   _slurm_debug_env_val (void);
 static void *_srun_signal_mgr(void *no_data);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
@@ -204,7 +206,8 @@ int srun(int ac, char **av)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	pthread_attr_t thread_attr;
 	pthread_t signal_thread = (pthread_t) 0;
-	int got_alloc = 0;
+	bool got_alloc = false;
+	int shepard_fd = -1;
 #if !defined HAVE_BG_FILES || defined HAVE_BG_L_P
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
@@ -363,7 +366,7 @@ int srun(int ac, char **av)
 
 		if ( !(resp = allocate_nodes()) )
 			exit(error_exit);
-		got_alloc = 1;
+		got_alloc = true;
 		_print_job_information(resp);
 		_set_env_vars(resp);
 		if (_validate_relative(resp)) {
@@ -399,6 +402,12 @@ int srun(int ac, char **av)
 	 */
 	if (_become_user () < 0)
 		info("Warning: Unable to assume uid=%u", opt.uid);
+
+	/*
+	 * Spawn process to insure clean-up of job and/or step on abnormal
+	 * termination
+	 */
+	shepard_fd = _shepard_spawn(job, got_alloc);
 
 	/*
 	 *  Enhance environment for job
@@ -606,6 +615,7 @@ cleanup:
 		else
 			slurm_complete_job(job->jobid, global_rc);
 	}
+	_shepard_notify(shepard_fd);
 
 	if (signal_thread) {
 		srun_shutdown = true;
@@ -1043,7 +1053,6 @@ static int _run_srun_script (srun_job_t *job, char *script)
 	/* NOTREACHED */
 }
 
-
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 static void
 _send_step_complete_rpc(int step_rc)
@@ -1070,6 +1079,7 @@ _send_step_complete_rpc(int step_rc)
 		error("Error sending step complete RPC to slurmctld");
 	jobacct_gather_g_destroy(msg.jobacct);
 }
+
 static void
 _handle_msg(slurm_msg_t *msg)
 {
@@ -1720,4 +1730,63 @@ static void *_srun_signal_mgr(void *no_data)
 		}
 	}
 	return NULL;
+}
+
+static void  _shepard_notify(int shepard_fd)
+{
+	int rc;
+
+	while (1) {
+		rc = write(shepard_fd, "", 1);
+		if (rc == -1) {
+			if ((errno == EAGAIN) || (errno == EINTR))
+				continue;
+			error("write(shepard): %m");
+		}
+		break;
+	}
+	close(shepard_fd);
+}
+
+static int _shepard_spawn(srun_job_t *job, bool got_alloc)
+{
+	int shepard_pipe[2], rc;
+	pid_t shepard_pid;
+	char buf[1];
+
+	if (pipe(shepard_pipe)) {
+		error("pipe: %m");
+		return -1;
+	}
+
+	shepard_pid = fork();
+	if (shepard_pid == -1) {
+		error("fork: %m");
+		return -1;
+	}
+	if (shepard_pid != 0) {
+		close(shepard_pipe[0]);
+		return shepard_pipe[1];
+	}
+
+	/* Wait for parent to notify of completion or I/O error on abort */
+	close(shepard_pipe[1]);
+	while (1) {
+		rc = read(shepard_pipe[0], buf, 1);
+		if (rc == 1) {
+			exit(0);
+		} else if (rc == 0) {
+			break;	/* EOF */
+		} else if (rc == -1) {
+			if ((errno == EAGAIN) || (errno == EINTR))
+				continue;
+			break;
+		}
+	}
+
+	(void) slurm_terminate_job_step(job->jobid, job->stepid);
+	if (got_alloc)
+		slurm_complete_job(job->jobid, NO_VAL);
+	exit(0);
+	return -1;
 }

@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Add sacct support for the option "--name". Work by Yuri D'Elia, Center for
     Biomedicine, EURAC Research, Italy.
  -- BGQ - handle preemption.
+ -- Add an srun shepard process to cancel a job and/or step of the srun process
+    is killed abnormally (e.g. SIGKILL).
 
 * Changes in SLURM 2.4.0.pre2
 =============================
