@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue with QOS preemption when adding new QOS.
  -- Fixed issue with comment field being used in a job finishing before it
     starts in accounting.
+ -- Add slashes in front of derived exit code when modifying a job.
 
 * Changes in SLURM 2.3.2
 ========================
