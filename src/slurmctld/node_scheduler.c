@@ -1339,13 +1339,15 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		    (detail_ptr->preempt_start_time >
 		     (now - slurmctld_conf.kill_wait -
 		      slurmctld_conf.msg_timeout))) {
-			/* Job preemption still in progress,
+			/* Job preemption may still be in progress,
 			 * do not preempt any more jobs yet */
 			error_code = ESLURM_NODES_BUSY;
 		} else {
 			_preempt_jobs(preemptee_job_list, &error_code);
-			if (error_code == ESLURM_NODES_BUSY)
+			if ((error_code == ESLURM_NODES_BUSY) &&
+			    (detail_ptr->preempt_start_time == 0)) {
   				detail_ptr->preempt_start_time = now;
+			}
 		}
 	}
 	if (error_code) {
