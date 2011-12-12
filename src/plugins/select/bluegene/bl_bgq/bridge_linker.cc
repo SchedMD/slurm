@@ -729,6 +729,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	}
 
         try {
+		debug("booting block %s", bg_record->bg_block_id);
 		Block::initiateBoot(bg_record->bg_block_id);
 	} catch (const bgsched::RuntimeException& err) {
 		rc = bridge_handle_runtime_errors("Block::initiateBoot",
