@@ -227,10 +227,46 @@ extern int bridge_handle_runtime_errors(const char *function,
 
 	switch (err) {
 	case bgsched::RuntimeErrors::BlockBootError:
-		error("%s: Error booting block %s.", function,
-		      bg_record->bg_block_id);
+	{
+		BlockFilter filter;
+		Block::Ptrs vec;
+
 		rc = BG_ERROR_BOOT_ERROR;
+
+		if ((bg_record->magic != BLOCK_MAGIC)
+		    || !bg_record->bg_block_id) {
+			error("%s: bad block given to booting.", function);
+			break;
+		}
+
+		filter.setName(string(bg_record->bg_block_id));
+
+		vec = bridge_get_blocks(filter);
+		if (vec.empty()) {
+			debug("%s: block %s not found, removing "
+			      "from slurm", function, bg_record->bg_block_id);
+			break;
+		}
+		const Block::Ptr &block_ptr = *(vec.begin());
+		uint16_t state = bridge_translate_status(
+			block_ptr->getStatus().toValue());
+		if (state == BG_BLOCK_FREE) {
+			error("%s: Block %s was free but we got an error "
+			      "while trying to boot it. (system=%s) (us=%s)",
+			      function, bg_record->bg_block_id,
+			      bg_block_state_string(state),
+			      bg_block_state_string(bg_record->state));
+		} else {
+			debug("%s: tring to boot a block %s that wasn't "
+			      "free (system=%s) (us=%s), no real error.",
+			      function, bg_record->bg_block_id,
+			      bg_block_state_string(state),
+			      bg_block_state_string(bg_record->state));
+			rc = SLURM_SUCCESS;
+		}
+
 		break;
+	}
 	case bgsched::RuntimeErrors::BlockFreeError:
 		/* not a real error */
 		rc = BG_ERROR_INVALID_STATE;
