@@ -195,6 +195,7 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 {
 	char bg_down_node[128];
 	int io_start;
+	int rc;
 
 	assert(nb_name);
 	assert(mp_coords);
@@ -233,7 +234,13 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
 		 bg_conf->slurm_node_prefix, mp_coords);
 
-	if (down_nodecard(bg_down_node, io_start, 0) == SLURM_SUCCESS)
+	/* unlock mutex here since down_nodecard could produce
+	   deadlock */
+	slurm_mutex_unlock(&ba_system_mutex);
+	rc = down_nodecard(bg_down_node, io_start, 0);
+	slurm_mutex_lock(&ba_system_mutex);
+
+	if (rc == SLURM_SUCCESS)
 		debug("nodeboard %s on %s is in an error state '%s'",
 		      nb_name, bg_down_node,
 		      bridge_hardware_state_string(state.toValue()));
