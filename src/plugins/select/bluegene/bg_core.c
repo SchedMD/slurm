@@ -579,6 +579,8 @@ extern const char *bg_err_str(int inx)
 		return "Slurm Success";
 	case SLURM_ERROR:
 		return "Slurm Error";
+	case BG_ERROR_INVALID_STATE:
+		return "Invalid State";
 	case BG_ERROR_BLOCK_NOT_FOUND:
 		return "Block not found";
 	case BG_ERROR_BOOT_ERROR:
