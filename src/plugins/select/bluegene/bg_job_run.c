@@ -159,8 +159,8 @@ static void _sync_agent(bg_action_t *bg_action_ptr, bg_record_t *bg_record)
 		int sync_user_rc;
 		job_ptr->job_state &= (~JOB_CONFIGURING);
 		last_job_update = time(NULL);
-		/* Just in case set the boot flags */
-		bg_record->boot_state = BG_BLOCK_FREE;
+		/* Just in case reset the boot flags */
+		bg_record->boot_state = 0;
 		bg_record->boot_count = 0;
 		sync_user_rc = bridge_block_sync_users(bg_record);
 
@@ -520,8 +520,8 @@ no_reboot:
 
 	if (bg_record->state == BG_BLOCK_INITED) {
 		debug("block %s is ready.", bg_record->bg_block_id);
-		/* Just in case set the boot flags */
-		bg_record->boot_state = BG_BLOCK_FREE;
+		/* Just in case reset the boot flags */
+		bg_record->boot_state = 0;
 		bg_record->boot_count = 0;
 		set_user_rc = bridge_block_sync_users(bg_record);
 		if (bg_action_ptr->job_ptr) {

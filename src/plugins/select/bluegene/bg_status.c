@@ -330,7 +330,10 @@ nochange_state:
 				list_iterator_destroy(job_itr);
 				last_job_update = time(NULL);
 			}
-			/* boot flags are reset here */
+
+			bg_record->boot_state = 0;
+			bg_record->boot_count = 0;
+
 			if (kill_job_list &&
 			    bridge_block_sync_users(bg_record)
 			    == SLURM_ERROR) {

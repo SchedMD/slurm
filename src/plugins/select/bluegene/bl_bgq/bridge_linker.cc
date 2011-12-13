@@ -731,6 +731,12 @@ extern int bridge_block_boot(bg_record_t *bg_record)
         try {
 		debug("booting block %s", bg_record->bg_block_id);
 		Block::initiateBoot(bg_record->bg_block_id);
+		/* Set this here just to make sure we know we
+		   are suppose to be booting.  Just incase the
+		   block goes free before we notice we are
+		   configuring.
+		*/
+		bg_record->boot_state = 1;
 	} catch (const bgsched::RuntimeException& err) {
 		rc = bridge_handle_runtime_errors("Block::initiateBoot",
 						err.getError().toValue(),
@@ -752,11 +758,6 @@ extern int bridge_block_boot(bg_record_t *bg_record)
                 error("Boot block request failed ... continuing.");
 		rc = SLURM_ERROR;
 	}
-	/* Set this here just to make sure we know we are suppose to
-	   be booting.  Just incase the block goes free before we
-	   notice we are configuring.
-	*/
-	bg_record->boot_state = BG_BLOCK_BOOTING;
 #else
 	info("block %s is ready", bg_record->bg_block_id);
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
