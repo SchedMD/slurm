@@ -55,7 +55,6 @@
 
 extern "C" {
 #include "../ba_bgq/block_allocator.h"
-#include "../bg_record_functions.h"
 #include "src/common/parse_time.h"
 #include "src/common/uid.h"
 }
