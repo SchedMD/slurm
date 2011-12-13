@@ -378,10 +378,11 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					if (bg_conf->slurm_debug_flags
 					    & DEBUG_FLAG_SELECT_TYPE)
 						info("bridge_block_free"
-						     "(%s): %s State = %d",
+						     "(%s): %s State = %s",
 						     bg_record->bg_block_id,
 						     bg_err_str(rc),
-						     bg_record->state);
+						     bg_block_state_string(
+							     bg_record->state));
 #ifdef HAVE_BGQ
 					if (bg_record->state != BG_BLOCK_FREE
 					    && bg_record->state
@@ -390,10 +391,11 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 #endif
 				} else {
 					error("bridge_block_free"
-					      "(%s): %s State = %d",
+					      "(%s): %s State = %s",
 					      bg_record->bg_block_id,
 					      bg_err_str(rc),
-					      bg_record->state);
+					      bg_block_state_string(
+						      bg_record->state));
 				}
 			}
 		}
@@ -610,7 +612,7 @@ extern const char *bg_err_str(int inx)
 	   happens very rarely and usually in debugging, so it
 	   hopefully isn't really all that bad.
 	*/
-	snprintf(tmp_char, sizeof(tmp_char), "%u ?", inx);
+	snprintf(tmp_char, sizeof(tmp_char), "unknown %u?", inx);
 	return tmp_char;
 }
 
