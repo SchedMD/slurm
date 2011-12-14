@@ -3581,7 +3581,7 @@ extern int nodelist_find(const char *nodelist, const char *name)
 
 extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type)
 {
-	char *unit = "\0KMGP?";
+	char *unit = "\0KMGTP?";
 	int i = (int)num % 512;
 
 	if ((int)num == 0) {
@@ -3612,7 +3612,7 @@ extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type)
 
 extern int revert_num_unit(const char *buf)
 {
-	char *unit = "\0KMGP\0";
+	char *unit = "\0KMGTP\0";
 	int i = 1, j = 0, number = 0;
 
 	if (!buf)
