@@ -912,6 +912,29 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 		list_push(curr_block_list, bg_record);
 	}
 
+	/* Sanity check to make sure we have the correct setup from
+	   the save.
+	*/
+	if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
+		ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
+		xassert(ba_mp);
+		if (!ba_mp->cnode_bitmap) {
+			error("bad save for block %s, no cnode_bitmap, "
+			      "creating it",
+			      bg_record->bg_block_id);
+			if ((ba_mp->cnode_bitmap =
+			     ba_create_ba_mp_cnode_bitmap(bg_record))) {
+				if (!ba_mp->cnode_err_bitmap)
+					ba_mp->cnode_err_bitmap =
+						bit_alloc(bg_conf->
+							  mp_cnode_cnt);
+				FREE_NULL_BITMAP(ba_mp->cnode_usable_bitmap);
+				ba_mp->cnode_usable_bitmap =
+					bit_copy(ba_mp->cnode_bitmap);
+			}
+		}
+	}
+
 	FREE_NULL_BITMAP(usable_mp_bitmap);
 
 	sort_bg_record_inc_size(curr_block_list);
