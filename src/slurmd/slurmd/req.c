@@ -714,7 +714,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		      int node_id, hostset_t *step_hset)
 {
 	slurm_cred_arg_t arg;
-	hostset_t        j_hset = NULL, s_hset = NULL;
+	hostset_t        s_hset = NULL;
 	bool             user_ok = _slurm_authorized_user(uid);
 	bool             verified = true;
 	int              host_index = -1;
@@ -784,6 +784,10 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		uint32_t hi, i, i_first_bit=0, i_last_bit=0, j;
 		bool cpu_log = slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND;
 
+#ifdef HAVE_FRONT_END
+		host_index = 0;	/* It is always 0 for front end systems */
+#else
+		hostset_t j_hset;
 		/* Determine the CPU count based upon this node's index into
 		 * the _job's_ allocation (job's hostlist and core_bitmap) */
 		if (!(j_hset = hostset_create(arg.job_hostlist))) {
@@ -791,15 +795,14 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			      arg.job_hostlist);
 			goto fail;
 		}
-
 		host_index = hostset_find(j_hset, conf->node_name);
+		hostset_destroy(j_hset);
 		if ((host_index < 0) || (host_index >= arg.job_nhosts)) {
 			error("job cr credential invalid host_index %d for "
 			      "job %u", host_index, arg.jobid);
 			goto fail;
 		}
-		hostset_destroy(j_hset);
-		j_hset = NULL;
+#endif
 
 		if (cpu_log) {
 			char *per_job = "", *per_step = "";
@@ -917,8 +920,6 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	return SLURM_SUCCESS;
 
     fail:
-	if (j_hset)
-		hostset_destroy(j_hset);
 	if (s_hset)
 		hostset_destroy(s_hset);
 	*step_hset = NULL;
