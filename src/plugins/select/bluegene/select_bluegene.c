@@ -912,29 +912,6 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 		list_push(curr_block_list, bg_record);
 	}
 
-	/* Sanity check to make sure we have the correct setup from
-	   the save.
-	*/
-	if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
-		ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
-		xassert(ba_mp);
-		if (!ba_mp->cnode_bitmap) {
-			error("bad save for block %s, no cnode_bitmap, "
-			      "creating it",
-			      bg_record->bg_block_id);
-			if ((ba_mp->cnode_bitmap =
-			     ba_create_ba_mp_cnode_bitmap(bg_record))) {
-				if (!ba_mp->cnode_err_bitmap)
-					ba_mp->cnode_err_bitmap =
-						bit_alloc(bg_conf->
-							  mp_cnode_cnt);
-				FREE_NULL_BITMAP(ba_mp->cnode_usable_bitmap);
-				ba_mp->cnode_usable_bitmap =
-					bit_copy(ba_mp->cnode_bitmap);
-			}
-		}
-	}
-
 	FREE_NULL_BITMAP(usable_mp_bitmap);
 
 	sort_bg_record_inc_size(curr_block_list);
@@ -954,6 +931,47 @@ unpack_error:
 	return SLURM_FAILURE;
 }
 
+static void _handle_existing_block(bg_record_t *bg_record)
+{
+	char *conn_type;
+	char node_str[256];
+	xassert(bg_record);
+
+	format_node_name(bg_record, node_str, sizeof(node_str));
+	conn_type = conn_type_string_full(bg_record->conn_type);
+	info("Existing: BlockID:%s Nodes:%s Conn:%s",
+	     bg_record->bg_block_id, node_str, conn_type);
+	xfree(conn_type);
+	/* Sanity check to make sure we have the correct setup from
+	   the save.
+	*/
+	if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
+		ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
+		xassert(ba_mp);
+		if (!ba_mp->cnode_bitmap) {
+			error("_handle_existing_block: No cnode_bitmap "
+			      "for block %s, creating it",
+			      bg_record->bg_block_id);
+			if ((ba_mp->cnode_bitmap =
+			     ba_create_ba_mp_cnode_bitmap(bg_record))) {
+				if (!ba_mp->cnode_err_bitmap)
+					ba_mp->cnode_err_bitmap =
+						bit_alloc(bg_conf->
+							  mp_cnode_cnt);
+				FREE_NULL_BITMAP(ba_mp->cnode_usable_bitmap);
+				ba_mp->cnode_usable_bitmap =
+					bit_copy(ba_mp->cnode_bitmap);
+			}
+		}
+	}
+
+	if (bg_record->state & BG_BLOCK_ERROR_FLAG)
+		put_block_in_error_state(bg_record, NULL);
+	else if (((bg_record->state == BG_BLOCK_INITED)
+		  || (bg_record->state == BG_BLOCK_BOOTING))
+		 && !block_ptr_exist_in_list(bg_lists->booted, bg_record))
+		list_push(bg_lists->booted, bg_record);
+}
 
 /*
  * _validate_config_blocks - Match slurm configuration information with
@@ -1026,21 +1044,9 @@ static int _validate_config_blocks(List curr_block_list,
 		list_transfer(bg_lists->main, curr_block_list);
 
 		itr_conf = list_iterator_create(bg_lists->main);
-		while ((bg_record = list_next(itr_conf))) {
-			format_node_name(bg_record, tmp_char,
-					 sizeof(tmp_char));
-			info("Existing: BlockID:%s Nodes:%s Conn:%s",
-			     bg_record->bg_block_id,
-			     tmp_char,
-			     conn_type_string(bg_record->conn_type[0]));
-			if (bg_record->state & BG_BLOCK_ERROR_FLAG)
-				put_block_in_error_state(bg_record, NULL);
-			else if (((bg_record->state == BG_BLOCK_INITED)
-				  || (bg_record->state == BG_BLOCK_BOOTING))
-				 && !block_ptr_exist_in_list(bg_lists->booted,
-							     bg_record))
-				list_push(bg_lists->booted, bg_record);
-		}
+		while ((bg_record = list_next(itr_conf)))
+			_handle_existing_block(bg_record);
+
 		return SLURM_SUCCESS;
 	}
 
@@ -1099,19 +1105,7 @@ static int _validate_config_blocks(List curr_block_list,
 				full_created = 1;
 
 			list_push(found_block_list, bg_record);
-			format_node_name(bg_record, tmp_char,
-					 sizeof(tmp_char));
-			info("Existing: BlockID:%s Nodes:%s Conn:%s",
-			     bg_record->bg_block_id,
-			     tmp_char,
-			     conn_type_string(bg_record->conn_type[0]));
-			if (bg_record->state & BG_BLOCK_ERROR_FLAG)
-				put_block_in_error_state(bg_record, NULL);
-			else if (((bg_record->state == BG_BLOCK_INITED)
-				  || (bg_record->state == BG_BLOCK_BOOTING))
-				 && !block_ptr_exist_in_list(bg_lists->booted,
-							     bg_record))
-				list_push(bg_lists->booted, bg_record);
+			_handle_existing_block(bg_record);
 		}
 	}
 
@@ -1121,24 +1115,12 @@ static int _validate_config_blocks(List curr_block_list,
 			if (init_bg_record->full_block) {
 				list_remove(itr_curr);
 				bg_record = init_bg_record;
+
 				list_append(bg_lists->main, bg_record);
 				list_push(found_block_list, bg_record);
-				format_node_name(bg_record, tmp_char,
-						 sizeof(tmp_char));
-				info("Existing: BlockID:%s Nodes:%s Conn:%s",
-				     bg_record->bg_block_id,
-				     tmp_char,
-				     conn_type_string(bg_record->conn_type[0]));
-				if (bg_record->state & BG_BLOCK_ERROR_FLAG)
-					put_block_in_error_state(
-						bg_record, NULL);
-				else if (((bg_record->state
-					     == BG_BLOCK_INITED)
-					    || (bg_record->state
-						== BG_BLOCK_BOOTING))
-				    && !block_ptr_exist_in_list(
-					    bg_lists->booted, bg_record))
-					list_push(bg_lists->booted, bg_record);
+
+				_handle_existing_block(bg_record);
+
 				break;
 			}
 		}
