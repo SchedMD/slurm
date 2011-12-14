@@ -7916,8 +7916,9 @@ fini:
 
 	/* If job update is successful and priority is calculated (not only
 	 * based upon job submit order), recalculate the job priority, since
-	 * many factors of an update may affect priority considerations. */
-	if ((error_code == SLURM_SUCCESS) &&
+	 * many factors of an update may affect priority considerations.
+	 * If job has a hold then do nothing */
+	if ((error_code == SLURM_SUCCESS) && (job_ptr->priority > 1) &&
 	    strcmp(slurmctld_conf.priority_type, "priority/basic"))
 		_set_job_prio(job_ptr);
 

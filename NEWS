@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Add slashes in front of derived exit code when modifying a job.
  -- Handle numeric suffix of "T" for terabyte units. Patch from John Thiltges,
     University of Nebraska-Lincoln.
+ -- Prevent resetting a held job's priority when updating other job parameters.
+    Patch from Alejandro Lucero Palau, BSC.
 
 * Changes in SLURM 2.3.2
 ========================
