@@ -257,11 +257,11 @@ extern int bridge_handle_runtime_errors(const char *function,
 			      bg_block_state_string(state),
 			      bg_block_state_string(bg_record->state));
 		} else {
-			debug("%s: tring to boot a block %s that wasn't "
-			      "free (system=%s) (us=%s), no real error.",
-			      function, bg_record->bg_block_id,
-			      bg_block_state_string(state),
-			      bg_block_state_string(bg_record->state));
+			debug2("%s: tring to boot a block %s that wasn't "
+			       "free (system=%s) (us=%s), no real error.",
+			       function, bg_record->bg_block_id,
+			       bg_block_state_string(state),
+			       bg_block_state_string(bg_record->state));
 			rc = SLURM_SUCCESS;
 		}
 
