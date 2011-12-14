@@ -33,6 +33,7 @@ with SLURM are provided below.
 <ul>
 <li><a href="#bluegene_mpi">BlueGene MPI</a></li>
 <li><a href="#hp_mpi">HP-MPI</a></li>
+<li><a href="#intel_mpi">Intel-MPI</a></li>
 <li><a href="#lam_mpi">LAM/MPI</a></li>
 <li><a href="#mpich1">MPICH1</a></li>
 <li><a href="#mpich2">MPICH2</a></li>
@@ -87,17 +88,78 @@ $ salloc -n4 sh    # allocates 4 processors
 <hr size=4 width="100%">
 
 
-<h2><a name="quadrics_mpi" href="http://www.quadrics.com/"><b>Quadrics MPI</b></a></h2>
+<h2><a name="intel_mpi"><b>Intel MPI</b></a></h2>
 
-<p>Quadrics MPI relies upon SLURM to
-allocate resources for the job and <span class="commandline">srun</span>
-to initiate the tasks. One would build the MPI program in the normal manner
-then initiate it using a command line of this sort:</p>
+<p>Intel&reg; MPI Library for Linux OS supports the following methods of
+launching the MPI jobs under the control of the SLURM job manager:</p>
+<ul>
+<li>The <i>mpirun</i> command over the MPD Process Manager (PM)</li>
+<li>The <i>mpirun</i> command over the Hydra PM</li>
+<li>The <i>mpiexec.hydra</i> command (Hydra PM)</li>
+<li>The <i>srun</i> command (SLURM)</li>
+</ul>
+<p>This description provides detailed information on all of these methods.</p>
+
+<h3>The mpirun Command over the MPD Process Manager</h3>
+<p>SLURM is supported by the <i>mpirun</i> command of the Intel&reg; MPI Library 3.1
+Build 029 for Linux OS and later releases.</p>
+<p>When launched within a session allocated using the SLURM commands <i>sbatch</i> or
+<i>salloc</i>, the <i>mpirun</i> command automatically detects and queries certain SLURM
+environment variables to obtain the list of the allocated cluster nodes.</p>
+<p>Use the following commands to start an MPI job within an existing SLURM
+session over the MPD PM:</p>
 <pre>
-$ srun [options] &lt;program&gt; [program args]
+<i>export I_MPI_PROCESS_MANAGER=mpd
+mpirun -n &lt;num_procs&gt; a.out</i>
 </pre>
-<hr size=4 width="100%">
 
+<h3>The mpirun Command over the Hydra Process Manager</h3>
+<p>SLURM is supported by the <i>mpirun</i> command of the Intel&reg; MPI Library 4.0
+Update 3 through the Hydra PM by default. The behavior of this command is
+analogous to the MPD case described above.</p>
+<p>Use the one of the following commands to start an MPI job within an existing
+SLURM session over the Hydra PM:</p>
+<pre>
+<i>mpirun -n &lt;num_procs&gt; a.out</i>
+</pre>
+<p>or</p>
+<pre>
+<i>mpirun -bootstrap slurm -n &lt;num_procs&gt; a.out</i>
+</pre>
+<p>We recommend that you use the second command. It uses the <i>srun</i> command
+rather than the default <i>ssh</i> based method to launch the remote Hydra PM
+service processes.<p>
+
+<h3>The mpiexec.hydra Command (Hydra Process Manager)</h3>
+<p>SLURM is supported by the Intel&reg; MPI Library 4.0 Update 3 directly
+through the Hydra PM.</p>
+<p>Use the following command to start an MPI job within an existing SLURM session:</p>
+<pre>
+<i>mpiexec.hydra -bootstrap slurm -n &lt;num_procs&gt; a.out</i>
+</pre>
+
+<h3>The srun Command (SLURM)</h3>
+<p>This advanced method is supported by the Intel&reg; MPI Library 4.0 Update 3
+ Use the following commands to allocate a SLURM session and start an MPI job in
+it, or to start an MPI job within a SLURM session already created using the
+<i>sbatch</i> or <i>salloc</i> commands:</p>
+<ul>
+<li>Set the <i>I_MPI_PMI_LIBRARY</i> environment variable to point to the
+SLURM Process Management Interface (PMI) library:</li>
+<pre>
+<i>export I_MPI_PMI_LIBRARY=/path/to/slurm/pmi/library/libpmi.so</i>
+</pre>
+<li>Use the <i>srun</i> command to launch the MPI job:</li>
+<pre>
+<i>srun -n &lt;num_procs&gt; a.out</i>
+</pre>
+</ul>
+
+<p>Above information used by permission from <a href="http://www.intel.com">Intel</a>.
+For more information see
+<a href="http://software.intel.com/en-us/articles/intel-mpi-library/">Intel MPI Library</a>.
+
+<hr size=4 width="100%">
 
 <h2><a name="lam_mpi" href="http://www.lam-mpi.org/"><b>LAM/MPI</b></a></h2>
 
@@ -333,6 +395,19 @@ sbatch: Submitted batch job 1234
 <p>Note that in this example, mpirun uses the rsh command to launch
 tasks. These tasks are not managed by SLURM since they are launched
 outside of its control.</p>
+
+
+<h2><a name="quadrics_mpi" href="http://www.quadrics.com/"><b>Quadrics MPI</b></a></h2>
+
+<p>Quadrics MPI relies upon SLURM to
+allocate resources for the job and <span class="commandline">srun</span>
+to initiate the tasks. One would build the MPI program in the normal manner
+then initiate it using a command line of this sort:</p>
+<pre>
+$ srun [options] &lt;program&gt; [program args]
+</pre>
+<hr size=4 width="100%">
+
 
 <p style="text-align:center;">Last modified 24 October 2011</p>
 

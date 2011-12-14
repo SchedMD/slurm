@@ -20,8 +20,8 @@ organizations. The current SLURM development staff includes: </p>
 <li>Alexander Bersenev (Institute of Mathematics and Mechanics, Russia)</li>
 <li>Anton Blanchard (Samba)</li>
 <li>Janne Blomqvist (Aalto University, Finland)</li>
-<li>David Bremer (LLNL)</li>
-<li>Jon Bringhurst (LANL)</li>
+<li>David Bremer (Lawrence Livermore National Laboratory)</li>
+<li>Jon Bringhurst (Los Alamos National Laboratory)</li>
 <li>Bill Brophy (Bull)</li>
 <li>Hongjia Cao (National University of Defense Techonogy, China)</li>
 <li>Daniel Christians (HP)</li>
@@ -29,26 +29,27 @@ organizations. The current SLURM development staff includes: </p>
 <li>Chuck Clouston (Bull)</li>
 <li>Yuri D'Elia (Center for Biomedicine, EURAC Research, Italy)</li>
 <li>Carles Fenoy (Barcelona Supercomputer Center, Spain)</li>
-<li>Joseph Donaghy (LLNL)</li>
-<li>Chris Dunlap (LLNL)</li>
-<li>Joey Ekstrom (LLNL/Bringham Young University)</li>
+<li>Joseph Donaghy (Lawrence Livermore National Laboratory)</li>
+<li>Chris Dunlap (Lawrence Livermore National Laboratory)</li>
+<li>Joey Ekstrom (Lawrence Livermore National Laboratory/Bringham Young University)</li>
 <li>Josh England (TGS Management Corporation)</li>
 <li>Kent Engstr&ouml;m  (National Supercomputer Centre, Sweden)</li>
-<li>Jim Garlick (LLNL)</li>
+<li>Jim Garlick (Lawrence Livermore National Laboratory)</li>
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
 <li>Raphael Geissert (Debian)</li>
 <li>Yiannis Georgiou (Bull)</li>
 <li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
-<li>Mark Grondona (LLNL)</li>
-<li>Takao Hatazaki (HP, Japan)</li>
+<li>Mark Grondona (Lawrence Livermore National Laboratory)</li>
+<li>Takao Hatazaki (HP)</li>
 <li>Matthieu Hautreux (CEA, France)</li>
 <li>Chris Holmes (HP)</li>
 <li>David H&ouml;ppner</li>
 <li>Nathan Huff (North Dakota State University)</li>
 <li>David Jackson (Adaptive Computing)</li>
 <li>Klaus Joas (University Karlsruhe, Germany)</li>
-<li>Greg Johnson (LANL)</li>
-<li>Jason King (LLNL)</li>
+<li>Greg Johnson (Los Alamos National Laboratory)</li>
+<li>Jason King (Lawrence Livermore National Laboratory)</li>
+<li>Yury Kiryanov (Intel)<li>
 <li>Aaron Knister (Environmental Protection Agency, UMBC)</li>
 <li>Nancy Kritkausky (Bull)</li>
 <li>Roman Kurakin (Institute of Natural Science and Ecology, Russia)</li>
@@ -57,18 +58,18 @@ organizations. The current SLURM development staff includes: </p>
 <li>Dennis Leepow</li>
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
 <li>Eric Lin (Bull)</li>
-<li>Donald Lipari (LLNL)</li>
+<li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
 <li>Steven McDougall (SiCortex)</li>
-<li>Donna Mecozzi (LLNL)</li>
+<li>Donna Mecozzi (Lawrence Livermore National Laboratory)</li>
 <li>Bj&oslash;rn-Helge Mevik (University of Oslo, Norway)</li>
-<li>Chris Morrone (LLNL)</li>
+<li>Chris Morrone (Lawrence Livermore National Laboratory)</li>
 <li>Pere Munt (Barcelona Supercomputer Center, Spain)</li>
 <li>Michal Novotny (Masaryk University, Czech Republic)</li>
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)</li>
 <li>Alejandro Lucero Palau (Barcelona Supercomputer Center, Spain)</li>
 <li>Daniel Palermo (HP)</li>
-<li>Dan Phung (LLNL/Columbia University)</li>
+<li>Dan Phung (Lawrence Livermore National Laboratory/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
 <li>Vijay Ramasubramanian (University of Maryland)</li>
 <li>Krishnakumar Ravi[KK] (HP)</li>
@@ -87,7 +88,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Jeff Squyres (LAM MPI)</li>
 <li>Prashanth Tamraparni (HP, India)</li>
 <li>Jimmy Tang (Trinity College, Ireland)</li>
-<li>Kevin Tew (LLNL/Bringham Young University)</li>
+<li>Kevin Tew (Lawrence Livermore National Laboratory/Bringham Young University)</li>
 <li>Adam Todorski (Rensselaer Polytechnic Institute)</li>
 <li>Stephen Trofinoff (Swiss National Supercomputing Centre)</li>
 <li>Nathan Weeks (Iowa State University)</li>
