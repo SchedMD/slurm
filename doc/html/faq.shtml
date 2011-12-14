@@ -40,7 +40,7 @@
   (e.g. place it into a <i>hold</i> state)?</a></li>
 <li><a href="#mem_limit">Why are jobs not getting the appropriate
   memory limit?</a></li>
-<li><a href="#mailing_list">Is an archive available of messages posted to 
+<li><a href="#mailing_list">Is an archive available of messages posted to
 the <i>slurm-dev</i> mailing list?</a></li>
 <li><a href="#job_size">Can I change my job's size after it has started
 running?</a></li>
@@ -641,7 +641,7 @@ problem described above.
 Use the same solution for the AS (Address Space), RSS (Resident Set Size),
 or other limits as needed.</p>
 
-<p><a name="mailing_list"><b>23. Is an archive available of messages posted to 
+<p><a name="mailing_list"><b>23. Is an archive available of messages posted to
 the <i>slurm-dev</i> mailing list?</b></a><br>
 Yes, it is at <a href="http://groups.google.com/group/slurm-devel">
 http://groups.google.com/group/slurm-devel</a></p>
@@ -665,7 +665,7 @@ job to be expanded.</li>
 
 <p>Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
-(<i>NodeList=</i>) that you want the job to retain. 
+(<i>NodeList=</i>) that you want the job to retain.
 Any job steps running on the nodes which are reliquished by the job will be
 killed unless initiated with the <i>--no-kill</i> option.
 After the job size is changed, some environment variables created by SLURM
@@ -1288,15 +1288,15 @@ Index: src/slurmctld/ping_nodes.c
 --- src/slurmctld/ping_nodes.c  (revision 15166)
 +++ src/slurmctld/ping_nodes.c  (working copy)
 @@ -283,9 +283,6 @@
-                node_ptr   = &node_record_table_ptr[i];
-                base_state = node_ptr->node_state & NODE_STATE_BASE;
+		node_ptr   = &node_record_table_ptr[i];
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
 
 -               if (base_state == NODE_STATE_DOWN)
 -                       continue;
 -
  #ifdef HAVE_FRONT_END          /* Operate only on front-end */
-                if (i > 0)
-                        continue;
+		if (i > 0)
+			continue;
 </pre>
 
 <p><a name="batch_lost"><b>32. What is the meaning of the error
@@ -1411,10 +1411,10 @@ advantage of its filtering and formatting options. For example:
 $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
 </pre></p>
 
-<p><a name="amazon_ec2"><b>41. Can SLURM be used to run jobs on 
+<p><a name="amazon_ec2"><b>41. Can SLURM be used to run jobs on
 Amazon's EC2?</b></a></br>
-<p>Yes, here is a description of use SLURM use with 
-<a href="http://aws.amazon.com/ec2/">Amazon's EC2</a> courtesy of 
+<p>Yes, here is a description of use SLURM use with
+<a href="http://aws.amazon.com/ec2/">Amazon's EC2</a> courtesy of
 Ashley Pittman:</p>
 <p>I do this regularly and have no problem with it, the approach I take is to
 start as many instances as I want and have a wrapper around
@@ -1448,7 +1448,7 @@ pathname (starting with "/").
 Otherwise it will be found in directory used for saving state
 (<i>SlurmdSpoolDir</i>).</p>
 <p>For <i>slurmstepd</i> the core file will depend upon when the failure
-occurs. It will either be in spawned job's working directory on the same 
+occurs. It will either be in spawned job's working directory on the same
 location as that described above for the <i>slurmd</i> daemon.</p>
 
 <p><a name="totalview"><b>43. How can TotalView be configured to operate with
