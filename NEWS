@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Add an srun shepard process to cancel a job and/or step of the srun process
     is killed abnormally (e.g. SIGKILL).
  -- BGQ - handle deadlock issue when a nodeboard goes into an error state.
+ -- BGQ - more thorough handling of blocks with multiple jobs running on them.
 
 * Changes in SLURM 2.4.0.pre2
 =============================

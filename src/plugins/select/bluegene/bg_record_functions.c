@@ -545,7 +545,13 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 
 	if (bg_record->job_running > NO_JOB_RUNNING)
 		bg_requeue_job(bg_record->job_running, 0);
-
+	else if (bg_record->job_list) {
+		ListIterator itr = list_iterator_create(bg_record->job_list);
+		struct job_record *job_ptr;
+		while ((job_ptr = list_next(itr)))
+			bg_requeue_job(job_ptr->job_id, 0);
+		list_iterator_destroy(itr);
+	}
 	slurm_mutex_lock(&block_state_mutex);
 	rc = block_ptr_exist_in_list(bg_lists->main, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
@@ -1000,7 +1006,17 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 				job_fail(bg_record->job_running);
 			else
 				slurm_fail_job(bg_record->job_running);
-
+		} else if (bg_record->job_list) {
+			ListIterator job_itr = list_iterator_create(
+				bg_record->job_list);
+			struct job_record *job_ptr;
+			while ((job_ptr = list_next(job_itr))) {
+				if (slurmctld_locked)
+					job_fail(job_ptr->job_id);
+				else
+					slurm_fail_job(job_ptr->job_id);
+			}
+			list_iterator_destroy(job_itr);
 		}
 		/* If Running Dynamic mode and the block is
 		   smaller than the create size just continue on.
@@ -1071,7 +1087,9 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			debug2("combining smaller than nodecard "
 			       "dynamic block %s",
 			       bg_record->bg_block_id);
-			while (bg_record->job_running > NO_JOB_RUNNING)
+			while ((bg_record->job_running > NO_JOB_RUNNING)
+			       || (bg_record->job_list
+				   && list_count(bg_record->job_list)))
 				sleep(1);
 
 			bit_or(iobitmap, bg_record->ionode_bitmap);
@@ -1108,7 +1126,9 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			goto cleanup;
 		}
 
-		while (smallest_bg_record->job_running > NO_JOB_RUNNING)
+		while ((smallest_bg_record->job_running > NO_JOB_RUNNING)
+		       || (smallest_bg_record->job_list
+			   && list_count(smallest_bg_record->job_list)))
 			sleep(1);
 
 		if (smallest_bg_record->cnode_cnt == create_size) {
@@ -1320,15 +1340,23 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 		   to wait for the job to be removed.  We don't really
 		   need to free the block though since we may just
 		   want it to be in an error state for some reason. */
-		while (bg_record->job_running > NO_JOB_RUNNING) {
+		while ((bg_record->job_running > NO_JOB_RUNNING)
+			|| (bg_record->job_list
+			    && list_count(bg_record->job_list))) {
 			if (bg_record->magic != BLOCK_MAGIC) {
 				error("While putting block %s in a error "
 				      "state it was destroyed",
 				      bg_record->bg_block_id);
 				return SLURM_ERROR;
 			}
-			debug2("block %s is still running job %d",
-			       bg_record->bg_block_id, bg_record->job_running);
+			if (bg_record->job_running > NO_JOB_RUNNING)
+				debug2("block %s is still running job %d",
+				       bg_record->bg_block_id,
+				       bg_record->job_running);
+			else
+				debug2("block %s is still running jobs",
+				       bg_record->bg_block_id);
+
 			sleep(1);
 		}
 	}
@@ -1461,8 +1489,7 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 	   want to remove them.
 	*/
 	if (bg_record->job_running == NO_JOB_RUNNING
-	    && (!bg_record->job_list
-		|| !list_count(bg_record->job_list))) {
+	    && (!bg_record->job_list || !list_count(bg_record->job_list))) {
 		remove_from_bg_list(bg_lists->job_running, bg_record);
 
 		/* At this point, no job is running on the block

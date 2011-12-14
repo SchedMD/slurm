@@ -627,7 +627,9 @@ static int _check_for_booted_overlapping_blocks(
 			 */
 			if (is_test && overlapped_list
 			    && found_record->job_ptr
-			    && bg_record->job_running == NO_JOB_RUNNING) {
+			    && ((bg_record->job_running == NO_JOB_RUNNING)
+				&& (!bg_record->job_list
+				    || !list_count(bg_record->job_list)))) {
 				ListIterator itr = list_iterator_create(
 					overlapped_list);
 				bg_record_t *tmp_rec = NULL;
@@ -684,6 +686,8 @@ static int _check_for_booted_overlapping_blocks(
 				  || SELECT_IS_MODE_RUN_NOW(query_mode))
 				 && (bg_conf->layout_mode != LAYOUT_DYNAMIC)))
 			    && ((found_record->job_running != NO_JOB_RUNNING)
+				|| (found_record->job_list
+				    && list_count(found_record->job_list))
 				|| (found_record->state
 				    & BG_BLOCK_ERROR_FLAG))) {
 				if ((found_record->job_running
@@ -1190,7 +1194,9 @@ static int _find_best_block_match(List block_list,
 			*/
 			itr = list_iterator_create(block_list);
 			while ((bg_record = list_next(itr))) {
-				if (bg_record->job_running != NO_JOB_RUNNING)
+				if ((bg_record->job_running != NO_JOB_RUNNING)
+				    || (bg_record->job_list
+					&& list_count(bg_record->job_list)))
 					list_append(job_list, bg_record);
 				/* Since the error blocks are at the
 				   end we only really need to look at
@@ -1217,6 +1223,9 @@ static int _find_best_block_match(List block_list,
 				bool track_down_nodes = true;
 
 				if ((bg_record = list_pop(job_list))) {
+					/* FIXME: handle job_list here
+					   some how as well.
+					*/
 					if (bg_record->job_ptr) {
 						if (bg_conf->slurm_debug_flags
 						    & DEBUG_FLAG_BG_PICK)

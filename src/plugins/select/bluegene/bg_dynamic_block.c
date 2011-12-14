@@ -358,7 +358,9 @@ extern List create_dynamic_block(List block_list,
 		bool is_small = 0;
 		/* never check a block with a job running */
 		if (bg_record->free_cnt
-		    || bg_record->job_running != NO_JOB_RUNNING)
+		    || ((bg_record->job_running != NO_JOB_RUNNING)
+			&& (bg_record->job_list
+			    && list_count(bg_record->job_list))))
 			continue;
 
 		/* Here we are only looking for the first
@@ -376,8 +378,11 @@ extern List create_dynamic_block(List block_list,
 			*/
 			while ((found_record = list_next(itr2))) {
 				if (!found_record->free_cnt
-				    && (found_record->job_running
-					!= NO_JOB_RUNNING)
+				    && ((found_record->job_running
+					 != NO_JOB_RUNNING)
+					|| (found_record->job_list
+					    && list_count(
+						    found_record->job_list)))
 				    && bit_overlap(bg_record->mp_bitmap,
 						   found_record->mp_bitmap)) {
 					found = 1;
@@ -825,7 +830,8 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 		}
 		/* never look at a block if a job is running */
-		if (bg_record->job_running != NO_JOB_RUNNING)
+		if ((bg_record->job_running != NO_JOB_RUNNING)
+		    || (bg_record->job_list && list_count(bg_record->job_list)))
 			continue;
 		/* on the third time through look for just a block
 		 * that isn't used */

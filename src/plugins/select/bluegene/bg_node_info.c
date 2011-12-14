@@ -350,9 +350,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			}
 			list_iterator_destroy(itr);
 			continue;
-		}
-
-		if (bg_record->job_running == NO_JOB_RUNNING)
+		} else if (bg_record->job_running == NO_JOB_RUNNING)
 			continue;
 
 		if (bg_record->state & BG_BLOCK_ERROR_FLAG)
