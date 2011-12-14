@@ -95,35 +95,35 @@ SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
 <li><a href="#cred_replay">Why are
   &quot;Task launch failed on node ... Job credential replayed&quot;
   errors generated?</a></li>
-<li><a href="#globus">Can SLURM be used with Globus?</li>
-<li><a href="#time_format">Can SLURM time output format include the year?</li>
+<li><a href="#globus">Can SLURM be used with Globus?</a></li>
+<li><a href="#time_format">Can SLURM time output format include the year?</a></li>
 <li><a href="#file_limit">What causes the error
-  &quot;Unable to accept new connection: Too many open files&quot;?</li>
+  &quot;Unable to accept new connection: Too many open files&quot;?</a></li>
 <li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail
-  to log job step information at the appropriate level?</li>
+  to log job step information at the appropriate level?</a></li>
 <li><a href="#rpm">Why isn't the auth_none.so (or other file) in a
-  SLURM RPM?</li>
+  SLURM RPM?</a></li>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
-  regular database plugins?</li>
-<li><a href="#debug">How can I build SLURM with debugging symbols?</li>
+  regular database plugins?</a></li>
+<li><a href="#debug">How can I build SLURM with debugging symbols?</a></li>
 <li><a href="#state_preserve">How can I easily preserve drained node
-  information between major SLURM updates?</li>
+  information between major SLURM updates?</a></li>
 <li><a href="#health_check">Why doesn't the <i>HealthCheckProgram</i>
-  execute on DOWN nodes?</li>
+  execute on DOWN nodes?</a></li>
 <li><a href="#batch_lost">What is the meaning of the error
   &quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
 <li><a href="#accept_again">What does the messsage
   &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
   indicate?</a></li>
 <li><a href="#task_prolog">How could I automatically print a job's
-  SLURM job ID to its standard output?</li>
+  SLURM job ID to its standard output?</a></li>
 <li><a href="#moab_start">I run SLURM with the Moab or Maui scheduler.
-  How can I start a job under SLURM without the scheduler?</li>
+  How can I start a job under SLURM without the scheduler?</a></li>
 <li><a href="#orphan_procs">Why are user processes and <i>srun</i>
-  running even though the job is supposed to be completed?</li>
+  running even though the job is supposed to be completed?</a></li>
 <li><a href="#slurmd_oom">How can I prevent the <i>slurmd</i> and
   <i>slurmstepd</i> daemons from being killed when a node's memory
-  is exhausted?</li>
+  is exhausted?</a></li>
 <li><a href="#ubuntu">I see my host of my calling node as 127.0.1.1
   instead of the correct IP address.  Why is that?</a></li>
 <li><a href="#stop_sched">How can I stop SLURM from scheduling jobs?</a></li>
