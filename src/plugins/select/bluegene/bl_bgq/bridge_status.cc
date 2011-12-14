@@ -608,6 +608,9 @@ static void _do_block_poll(void)
 	if (!bg_lists->main)
 		return;
 
+	/* Always lock the slurmctld before locking the
+	 * block_state_mutex to avoid deadlock. */
+	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr))) {
@@ -637,6 +640,7 @@ static void _do_block_poll(void)
 			updated = 1;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
+	unlock_slurmctld(job_read_lock);
 
 	bg_status_process_kill_job_list(kill_job_list);
 
@@ -810,9 +814,13 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 	if (!bg_lists->main)
 		return;
 
+	/* Always lock the slurmctld before locking the
+	 * block_state_mutex to avoid deadlock. */
+	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
 	if (!bg_record) {
+		unlock_slurmctld(job_read_lock);
 		slurm_mutex_unlock(&block_state_mutex);
 		info("bridge_status: bg_record %s isn't in the main list",
 		     bg_block_id);
@@ -824,6 +832,7 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 				     kill_job_list);
 
 	slurm_mutex_unlock(&block_state_mutex);
+	unlock_slurmctld(job_read_lock);
 
 	bg_status_process_kill_job_list(kill_job_list);
 
