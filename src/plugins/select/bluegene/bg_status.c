@@ -88,7 +88,7 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 	} else if (bg_record->job_list && list_count(bg_record->job_list)) {
 		struct job_record *job_ptr;
 
-		lock_slurmctld(job_read_lock);
+//		lock_slurmctld(job_read_lock);
 		while ((job_ptr = list_pop(bg_record->job_list))) {
 			select_jobinfo_t *jobinfo;
 
@@ -110,7 +110,7 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 			      jobinfo->user_name,
 			      job_ptr->job_id);
 		}
-		unlock_slurmctld(job_read_lock);
+//		unlock_slurmctld(job_read_lock);
 	} else {
 		debug("Block %s was in a ready state "
 		      "but is being freed. No job running.",
@@ -262,7 +262,7 @@ nochange_state:
 				ListIterator job_itr =
 					list_iterator_create(
 						bg_record->job_list);
-				lock_slurmctld(job_read_lock);
+//				lock_slurmctld(job_read_lock);
 				while ((job_ptr = list_next(job_itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
 						list_delete_item(job_itr);
@@ -270,7 +270,7 @@ nochange_state:
 					}
 					job_ptr->job_state |= JOB_CONFIGURING;
 				}
-				unlock_slurmctld(job_read_lock);
+//				unlock_slurmctld(job_read_lock);
 				list_iterator_destroy(job_itr);
 				last_job_update = time(NULL);
 			}
@@ -317,7 +317,7 @@ nochange_state:
 				ListIterator job_itr =
 					list_iterator_create(
 						bg_record->job_list);
-				lock_slurmctld(job_read_lock);
+//				lock_slurmctld(job_read_lock);
 				while ((job_ptr = list_next(job_itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
 						list_delete_item(job_itr);
@@ -326,7 +326,7 @@ nochange_state:
 					job_ptr->job_state &=
 						(~JOB_CONFIGURING);
 				}
-				unlock_slurmctld(job_read_lock);
+//				unlock_slurmctld(job_read_lock);
 				list_iterator_destroy(job_itr);
 				last_job_update = time(NULL);
 			}
