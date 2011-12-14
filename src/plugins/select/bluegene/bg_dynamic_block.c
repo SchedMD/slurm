@@ -359,7 +359,7 @@ extern List create_dynamic_block(List block_list,
 		/* never check a block with a job running */
 		if (bg_record->free_cnt
 		    || ((bg_record->job_running != NO_JOB_RUNNING)
-			&& (bg_record->job_list
+			|| (bg_record->job_list
 			    && list_count(bg_record->job_list))))
 			continue;
 
