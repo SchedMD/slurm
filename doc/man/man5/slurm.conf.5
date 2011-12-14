@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "November 2011" "slurm.conf 2.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "December 2011" "slurm.conf 2.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1531,21 +1531,20 @@ The following values are supported for \fBSelectType=select/cons_res\fR:
 .TP
 \fBCR_CPU\fR
 CPUs are consumable resources.
-There is no notion of sockets, cores or threads;
-do not define those values in the node specification.  If these
-are defined, unexpected results will happen when hyper\-threading
-is enabled CPUs= should be used instead.
-On a multi\-core system, each core will be considered a CPU.
-On a multi\-core and hyper\-threaded system, each thread will be
-considered a CPU.
-On single\-core systems, each CPUs will be considered a CPU.
+Configure the number of \fBCPUs\fR on each node, which may be equal to the
+count of cores or hyper\-threads on the node depending upon the desired minimum
+resource allocation. The node's \fBSockets\fR, \fBCoresPerSocket\fR and
+\fBThreadsPerCore\fR may also be configured if desired and may result in job
+allocations which have improved locality.
+
 .TP
 \fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
-There is no notion of sockets, cores or threads;
-do not define those values in the node specification.  If these
-are defined, unexpected results will happen when hyper\-threading
-is enabled CPUs= should be used instead.
+Configure the number of \fBCPUs\fR on each node, which may be equal to the
+count of cores or hyper\-threads on the node depending upon the desired minimum
+resource allocation. The node's \fBSockets\fR, \fBCoresPerSocket\fR and
+\fBThreadsPerCore\fR may also be configured if desired and may result in job
+allocations which have improved locality.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
@@ -1553,12 +1552,16 @@ Cores are consumable resources.
 On nodes with hyper\-threads, each thread is counted as a CPU to
 satisfy a job's resource requirement, but multiple jobs are not
 allocated threads on the same core.
+The count of CPUs allocated to a job may be rounded up to account for every
+CPU on an allocated core.
 .TP
 \fBCR_Core_Memory\fR
 Cores and memory are consumable resources.
 On nodes with hyper\-threads, each thread is counted as a CPU to
 satisfy a job's resource requirement, but multiple jobs are not
 allocated threads on the same core.
+The count of CPUs allocated to a job may be rounded up to account for every
+CPU on an allocated core.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_ONE_TASK_PER_CORE\fR
@@ -1577,16 +1580,16 @@ Sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-Note that jobs requesting one CPU will only be allocated
-that one CPU, but no other job will share the socket.
+The count of CPUs allocated to a job may be rounded up to account for every
+CPU on an allocated socket.
 .TP
 \fBCR_Socket_Memory\fR
 Memory and sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-Note that jobs requesting one CPU will only be allocated
-that one CPU, but no other job will share the socket.
+The count of CPUs allocated to a job may be rounded up to account for every
+CPU on an allocated socket.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Memory\fR
