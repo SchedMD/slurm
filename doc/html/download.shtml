@@ -94,6 +94,11 @@ http://www.nsc.liu.se/~kent/python-hostlist</a></li><br>
 
 <li><b>Interconnect</b> plugins (Switch plugin)</li>
 <ul>
+<li><b>Infiniband</b><br>
+The <b>topology.conf</b> file for an Infiniband switch can be automatically
+generated using the <b>ib2slurm</b> tool found here:
+<a href="https://github.com/fintler/ib2slurm">https://github.com/fintler/ib2slurm</a>.
+
 <li><b>QsNet</b><br>
 In order to build the "switch/elan" plugin for SLURM, you will need
 the <b>qsnetlibs</b> development libraries from
@@ -203,6 +208,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 24 May 2011</p>
+<p style="text-align:center;">Last modified 14 December 2011</p>
 
 <!--#include virtual="footer.txt"-->

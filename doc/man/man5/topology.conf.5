@@ -1,4 +1,4 @@
-.TH "topology.conf" "5" "March 2009" "topology.conf 2.0" "Slurm configuration file"
+.TH "topology.conf" "5" "December 2011" "topology.conf 2.0" "Slurm configuration file"
 
 .SH "NAME"
 topology.conf \- Slurm configuration file for defining the network topology
@@ -25,6 +25,10 @@ SLURM's hostlist expression parser is used, so the node and switch
 names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]"
 and "Switches=s[0\-2,4\-8,12]" will parse fine).
 An optional link speed may also be specified.
+.LP
+The \fBtopology.conf\fP file for an Infiniband switch can be automatically
+generated using the \fBib2slurm\fP tool found here:
+<https://github.com/fintler/ib2slurm>.
 .LP
 The overall configuration parameters available include:
 
