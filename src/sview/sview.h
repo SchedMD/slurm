@@ -303,14 +303,14 @@ typedef struct {
 } grid_button_t;
 
 typedef struct {
-	node_info_t *node_ptr;
-	char *color;
-	int pos;
 	char *boot_time;
+	char *color;
+	GtkTreeIter iter_ptr;
+	bool iter_set;
+	node_info_t *node_ptr;
+	int pos;
 	char *reason;
 	char *slurmd_start_time;
-	bool iter_set;
-	GtkTreeIter iter_ptr;
 } sview_node_info_t;
 
 typedef struct {
@@ -625,6 +625,7 @@ extern void destroy_signal_params(void *arg);
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title);
 extern gboolean delete_popups(void);
 extern void *popup_thr(popup_info_t *popup_win);
+extern void set_for_update(GtkTreeModel *model, int updated);
 extern void remove_old(GtkTreeModel *model, int updated);
 extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 					int count);

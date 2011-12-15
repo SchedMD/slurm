@@ -1872,13 +1872,35 @@ extern void *popup_thr(popup_info_t *popup_win)
 	return NULL;
 }
 
+extern void set_for_update(GtkTreeModel *model, int updated)
+{
+	GtkTreePath *path = gtk_tree_path_new_first();
+	GtkTreeIter iter;
+
+	/* mark all current rows as in need of an update. */
+	if (path && gtk_tree_model_get_iter(model, &iter, path)) {
+		/* This process will make sure all iter's in the
+		 * tree_store will be mark as needing to be updated.
+		 * If it is still 0 after the update then it is old
+		 * data and will be removed with remove_old()
+		 */
+		while (1) {
+			gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+					   updated, 0, -1);
+			if (!gtk_tree_model_iter_next(model, &iter)) {
+				break;
+			}
+		}
+	}
+}
+
 extern void remove_old(GtkTreeModel *model, int updated)
 {
 	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeIter iter;
 	int i;
 
-	/* remove all old partitions */
+	/* remove all old objects */
 	if (gtk_tree_model_get_iter(model, &iter, path)) {
 		while (1) {
 			gtk_tree_model_get(model, &iter, updated, &i, -1);
