@@ -53,9 +53,12 @@
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
 	int color_inx;
+	GtkTreeIter iter_ptr;
+	bool iter_set;
 	job_info_t *job_ptr;
 	int node_cnt;
 	char *nodes;
+	int pos;
 	bool small_block;
 	List step_list;
 } sview_job_info_t;
@@ -1793,8 +1796,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 }
 
 static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
-			       GtkTreeStore *treestore,
-			       GtkTreeIter *iter)
+			       GtkTreeStore *treestore)
 {
 	char tmp_time_run[40],  tmp_time_resize[40], tmp_time_submit[40];
 	char tmp_time_elig[40], tmp_time_start[40],  tmp_time_end[40];
@@ -2006,7 +2008,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	tmp_uname = uid_to_string((uid_t)job_ptr->user_id);
 
-	gtk_tree_store_set(treestore, iter,
+	gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr,
 			   SORTID_ACCOUNT,      job_ptr->account,
 			   SORTID_ALLOC,        1,
 			   SORTID_ALLOC_NODE,   tmp_alloc_node,
@@ -2072,7 +2074,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	xfree(tmp_uname);
 
 	if (cluster_flags & CLUSTER_FLAG_AIX) {
-		gtk_tree_store_set(treestore, iter,
+		gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr,
 				   SORTID_NETWORK, job_ptr->network, -1);
 	}
 
@@ -2108,7 +2110,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 					       tmp_rotate, sizeof(tmp_rotate),
 					       SELECT_PRINT_ROTATE);
 
-		gtk_tree_store_set(treestore, iter,
+		gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr,
 				   SORTID_BLOCK,         tmp_block,
 				   SORTID_CONNECTION,    tmp_conn,
 				   SORTID_GEOMETRY,      tmp_geo,
@@ -2128,7 +2130,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 					       tmp_blrts, sizeof(tmp_blrts),
 					       SELECT_PRINT_BLRTS_IMAGE);
 
-		gtk_tree_store_set(treestore, iter,
+		gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr,
 				   SORTID_IMAGE_BLRTS,   tmp_blrts,
 				   -1);
 	}
@@ -2140,23 +2142,26 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 					       tmp_resv_id, sizeof(tmp_resv_id),
 					       SELECT_PRINT_DATA);
 
-		gtk_tree_store_set(treestore, iter,
+		gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr,
 				   SORTID_ALPS_RESV_ID,  tmp_resv_id,
 				   -1);
 	}
 
 	if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
-					 &step_iter, iter))
+					 &step_iter,
+					 &sview_job_info_ptr->iter_ptr))
 		_update_info_step(sview_job_info_ptr,
-				  GTK_TREE_MODEL(treestore), &step_iter, iter);
+				  GTK_TREE_MODEL(treestore), &step_iter,
+				  &sview_job_info_ptr->iter_ptr);
 	else
 		_update_info_step(sview_job_info_ptr,
-				  GTK_TREE_MODEL(treestore), NULL, iter);
+				  GTK_TREE_MODEL(treestore), NULL,
+				  &sview_job_info_ptr->iter_ptr);
 
 	return;
 }
 
-static void _get_step_nodelist(job_step_info_t *step_ptr, char *buf, 
+static void _get_step_nodelist(job_step_info_t *step_ptr, char *buf,
 			       int buf_size)
 {
 	char *ionodes = NULL;
@@ -2378,12 +2383,12 @@ static void _update_step_record(job_step_info_t *step_ptr,
 }
 
 static void _append_job_record(sview_job_info_t *sview_job_info_ptr,
-			       GtkTreeStore *treestore, GtkTreeIter *iter,
-			       int line)
+			       GtkTreeStore *treestore)
 {
-	gtk_tree_store_append(treestore, iter, NULL);
-	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
-	_update_job_record(sview_job_info_ptr, treestore, iter);
+	gtk_tree_store_append(treestore, &sview_job_info_ptr->iter_ptr, NULL);
+	gtk_tree_store_set(treestore, &sview_job_info_ptr->iter_ptr, SORTID_POS,
+			   sview_job_info_ptr->pos, -1);
+	_update_job_record(sview_job_info_ptr, treestore);
 }
 
 static void _append_step_record(job_step_info_t *step_ptr,
@@ -2484,65 +2489,44 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 static void _update_info_job(List info_list,
 			     GtkTreeView *tree_view)
 {
-	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	GtkTreeIter iter;
+	static GtkTreeModel *last_model = NULL;
 	int jobid = 0;
 	job_info_t *job_ptr = NULL;
-	int line = 0;
-	char *host = NULL;
 	ListIterator itr = NULL;
 	sview_job_info_t *sview_job_info = NULL;
 
-	/* make sure all the jobs are still here */
-	if (gtk_tree_model_get_iter(model, &iter, path)) {
-		while (1) {
-			gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-					   SORTID_UPDATED, 0, -1);
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
-			}
-		}
-	}
+	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
 	while ((sview_job_info = (sview_job_info_t*) list_next(itr))) {
 		job_ptr = sview_job_info->job_ptr;
-		/* get the iter, or find out the list is empty goto add */
-		if (!gtk_tree_model_get_iter(model, &iter, path)) {
-			goto adding;
-		}
-		line = 0;
-		while (1) {
-			/* search for the jobid and check to see if
-			   it is in the list */
-			gtk_tree_model_get(model, &iter, SORTID_JOBID,
-					   &jobid, -1);
-			if (jobid == job_ptr->job_id) {
-				/* update with new info */
-				_update_job_record(sview_job_info,
-						   GTK_TREE_STORE(model),
-						   &iter);
-				goto found;
-			}
 
-			line++;
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
-			}
+		/* This means the tree_store changed (added new column
+		   or something). */
+		if (last_model != model)
+			sview_job_info->iter_set = false;
+
+		if (sview_job_info->iter_set) {
+			gtk_tree_model_get(model, &sview_job_info->iter_ptr,
+					   SORTID_JOBID, &jobid, -1);
+			if (jobid != job_ptr->job_id) /* Bad pointer */
+				sview_job_info->iter_set = false;
 		}
-	adding:
-		_append_job_record(sview_job_info, GTK_TREE_STORE(model),
-				   &iter, line);
-	found:
-		;
+		if (sview_job_info->iter_set)
+			_update_job_record(sview_job_info,
+					   GTK_TREE_STORE(model));
+		else {
+			_append_job_record(sview_job_info,
+					   GTK_TREE_STORE(model));
+			sview_job_info->iter_set = true;
+		}
 	}
 	list_iterator_destroy(itr);
-	if (host)
-		free(host);
-	gtk_tree_path_free(path);
+
 	/* remove all old jobs */
 	remove_old(model, SORTID_UPDATED);
+	last_model = model;
 	return;
 }
 
@@ -2607,6 +2591,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
 		sview_job_info_ptr->job_ptr = job_ptr;
 		sview_job_info_ptr->step_list = list_create(NULL);
+		sview_job_info_ptr->pos = i;
 		sview_job_info_ptr->node_cnt = 0;
 		sview_job_info_ptr->color_inx =
 			job_ptr->job_id % sview_colors_cnt;
