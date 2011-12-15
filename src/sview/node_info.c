@@ -407,6 +407,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+	static GtkTreeModel *last_model = NULL;
 	GtkTreeIter iter;
 	node_info_t *node_ptr = NULL;
 	char *name;
@@ -428,6 +429,12 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
 		node_ptr = sview_node_info->node_ptr;
+
+		/* This means the tree_store changed (added new column
+		   or something). */
+		if (last_model != model)
+			sview_node_info->iter_set = false;
+
 		if (sview_node_info->iter_set) {
 			gtk_tree_model_get(model, &sview_node_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
@@ -452,6 +459,8 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
        	gtk_tree_path_free(path);
 	/* remove all old nodes */
 	remove_old(model, SORTID_UPDATED);
+	if (last_model != model)
+		last_model = model;
 }
 
 static void _node_info_list_del(void *object)
