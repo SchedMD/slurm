@@ -43,10 +43,6 @@
 
 #define RETRY_BOOT_COUNT 3
 
-typedef struct {
-	int jobid;
-} kill_job_struct_t;
-
 static void _destroy_kill_struct(void *object);
 
 static void _destroy_kill_struct(void *object)

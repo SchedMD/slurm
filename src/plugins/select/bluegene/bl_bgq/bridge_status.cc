@@ -385,8 +385,14 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				list_iterator_destroy(job_itr);
 			}
 
-			if (job_ptr && job_ptr->kill_on_node_fail)
-				bg_requeue_job(job_ptr->job_id, 0);
+			/* block_state_mutex is locked so handle this later */
+			if (job_ptr && job_ptr->kill_on_node_fail) {
+				kill_job_struct_t *freeit =
+					(kill_job_struct_t *)
+					xmalloc(sizeof(freeit));
+				freeit->jobid = job_ptr->job_id;
+				list_push(kill_job_list, freeit);
+			}
 
 			break;
 		}
@@ -394,6 +400,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+
+	bg_status_process_kill_job_list(kill_job_list);
 
 	if (delete_list) {
 		free_block_list(NO_VAL, delete_list, 1, 0);
