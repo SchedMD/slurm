@@ -1627,7 +1627,7 @@ static char **_load_env_cache(const char *username)
 						break;
 					_strip_cr_nl(line);
 					if ((strlen(value) + strlen(line)) >
-					    (sizeof(value) - 1))
+					    (ENV_BUFSIZE - 2))
 						break;
 					strcat(value, "\n");
 					strcat(value, line);
@@ -1859,7 +1859,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 					if (!line)
 						break;
 					if ((strlen(value) + strlen(line)) >
-					    (sizeof(value) - 1))
+					    (ENV_BUFSIZE - 2))
 						break;
 					strcat(value, "\n");
 					strcat(value, line);
