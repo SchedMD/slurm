@@ -42,11 +42,14 @@ typedef struct {
 	uint16_t state;
 	int size;
 	int cnode_cnt;
+	GtkTreeIter iter_ptr;
+	bool iter_set;
 	int *mp_inx;            /* list index pairs into node_table for *mp_str:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	int color_inx;
 	List job_list;
+	int pos;
 	bool printed;
 	bool small_block;
 	char *imageblrts;       /* ImageBlrts for this block */
@@ -179,8 +182,7 @@ static display_data_t *local_display_data = NULL;
 
 static void _admin_block(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 static void _append_block_record(sview_block_info_t *block_ptr,
-				 GtkTreeStore *treestore, GtkTreeIter *iter,
-				 int line);
+				 GtkTreeStore *treestore);
 static int _in_slurm_partition(int *part_inx, int *block_inx);
 static void _process_each_block(GtkTreeModel *model, GtkTreePath *path,
 				GtkTreeIter*iter, gpointer userdata);
@@ -351,7 +353,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 }
 
 static void _update_block_record(sview_block_info_t *block_ptr,
-				 GtkTreeStore *treestore, GtkTreeIter *iter)
+				 GtkTreeStore *treestore)
 {
 	char cnode_cnt[20];
 	char *tmp_char = NULL, *tmp_char2 = NULL;
@@ -363,7 +365,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	tmp_char2 = _set_running_job_str(block_ptr->job_list, 0);
 
 	/* Combining these records provides a slight performance improvement */
-	gtk_tree_store_set(treestore, iter,
+	gtk_tree_store_set(treestore, &block_ptr->iter_ptr,
 			   SORTID_BLOCK,        block_ptr->bg_block_name,
 			   SORTID_COLOR,
 				sview_colors[block_ptr->color_inx],
@@ -384,12 +386,12 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	xfree(tmp_char2);
 
 	if (cluster_flags & CLUSTER_FLAG_BGP) {
-		gtk_tree_store_set(treestore, iter,
+		gtk_tree_store_set(treestore, &block_ptr->iter_ptr,
 				   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
 				   SORTID_IMAGELINUX,   block_ptr->imagelinux,
 				   -1);
 	} else if (cluster_flags & CLUSTER_FLAG_BGL) {
-		gtk_tree_store_set(treestore, iter,
+		gtk_tree_store_set(treestore, &block_ptr->iter_ptr,
 				   SORTID_IMAGERAMDISK, block_ptr->imageramdisk,
 				   SORTID_IMAGELINUX,   block_ptr->imagelinux,
 				   SORTID_IMAGEBLRTS,   block_ptr->imageblrts,
@@ -402,12 +404,12 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 }
 
 static void _append_block_record(sview_block_info_t *block_ptr,
-				 GtkTreeStore *treestore, GtkTreeIter *iter,
-				 int line)
+				 GtkTreeStore *treestore)
 {
-	gtk_tree_store_append(treestore, iter, NULL);
-	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
-	_update_block_record(block_ptr, treestore, iter);
+	gtk_tree_store_append(treestore, &block_ptr->iter_ptr, NULL);
+	gtk_tree_store_set(treestore, &block_ptr->iter_ptr, SORTID_POS,
+			   block_ptr->pos, -1);
+	_update_block_record(block_ptr, treestore);
 }
 
 static void _update_info_block(List block_list,
@@ -415,30 +417,16 @@ static void _update_info_block(List block_list,
 {
 	ListIterator itr;
 	sview_block_info_t *block_ptr = NULL;
-	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	GtkTreeIter iter;
+	static GtkTreeModel *last_model = NULL;
 	char *name = NULL;
-	char *host = NULL;
-	int line = 0;
 
 	if (!block_list) {
 		g_print("No block_list given");
 		return;
 	}
 
-	/* get the iter, or find out the list is empty goto add */
-	if (gtk_tree_model_get_iter(model, &iter, path)) {
-		/* make sure all the partitions are still here */
-		while (1) {
-			gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-					   SORTID_UPDATED, 0, -1);
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
-			}
-		}
-	}
-
+	set_for_update(model, SORTID_UPDATED);
 
  	/* Report the BG Blocks */
 
@@ -449,45 +437,35 @@ static void _update_info_block(List block_list,
 		if (!block_ptr->slurm_part_name)
 			block_ptr->slurm_part_name = xstrdup("no part");
 
-		/* get the iter, or find out the list is empty goto add */
-		if (!gtk_tree_model_get_iter(model, &iter, path)) {
-			goto adding;
-		}
-		line = 0;
-		while (1) {
-			/* search for the jobid and check to see if
-			   it is in the list */
-			gtk_tree_model_get(model, &iter, SORTID_BLOCK,
-					   &name, -1);
-			if (!strcmp(name, block_ptr->bg_block_name)) {
-				/* update with new info */
-				g_free(name);
-				_update_block_record(block_ptr,
-						     GTK_TREE_STORE(model),
-						     &iter);
-				goto found;
+		/* This means the tree_store changed (added new column
+		   or something). */
+		if (last_model != model)
+			block_ptr->iter_set = false;
+
+		if (block_ptr->iter_set) {
+			gtk_tree_model_get(model, &block_ptr->iter_ptr,
+					   SORTID_BLOCK, &name, -1);
+			if (strcmp(name, block_ptr->bg_block_name)) {
+				/* Bad pointer */
+				block_ptr->iter_set = false;
 			}
 			g_free(name);
-
-			line++;
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
-			}
 		}
-	adding:
-		_append_block_record(block_ptr, GTK_TREE_STORE(model),
-				     &iter, line);
-	found:
-		;
+		if (block_ptr->iter_set)
+			_update_block_record(block_ptr,
+					     GTK_TREE_STORE(model));
+		else {
+			_append_block_record(block_ptr,
+					     GTK_TREE_STORE(model));
+			block_ptr->iter_set = true;
+		}
 	}
 
 	list_iterator_destroy(itr);
-	if (host)
-		free(host);
 
-	gtk_tree_path_free(path);
 	/* remove all old blocks */
 	remove_old(model, SORTID_UPDATED);
+	last_model = model;
 }
 
 static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
@@ -577,16 +555,17 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	last_block_info_ptr = block_info_ptr;
 
 	for (i=0; i<block_info_ptr->record_count; i++) {
-		block_ptr = xmalloc(sizeof(sview_block_info_t));
+		/* If we don't have a block name just continue since
+		   ths block hasn't been made in the system yet. */
+		if (!block_info_ptr->block_array[i].bg_block_id)
+			continue;
 
+		block_ptr = xmalloc(sizeof(sview_block_info_t));
+		block_ptr->pos = i;
 		block_ptr->bg_block_name
 			= xstrdup(block_info_ptr->
 				  block_array[i].bg_block_id);
 
-		/* If we don't have a block name just continue since
-		   ths block hasn't been made in the system yet. */
-		if (!block_ptr->bg_block_name)
-			continue;
 
 		block_ptr->color_inx =
 			atoi(block_ptr->bg_block_name+7);
