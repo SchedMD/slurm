@@ -55,9 +55,12 @@ typedef struct {
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
 	int color_inx;
+	GtkTreeIter iter_ptr;
+	bool iter_set;
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share, groups */
 	partition_info_t* part_ptr;
+	int pos;
 	List sub_list;
 } sview_part_info_t;
 
@@ -1084,8 +1087,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 }
 
 static void _update_part_record(sview_part_info_t *sview_part_info,
-				GtkTreeStore *treestore,
-				GtkTreeIter *iter)
+				GtkTreeStore *treestore)
 {
 	char tmp_prio[40], tmp_size[40], tmp_share_buf[40], tmp_time[40];
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
@@ -1200,7 +1202,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	/* Combining these records provides a slight performance improvement
 	 * NOTE: Some of these fields are cleared here and filled in based upon
 	 * the configuration of nodes within this partition. */
-	gtk_tree_store_set(treestore, iter,
+	gtk_tree_store_set(treestore, &sview_part_info->iter_ptr,
 			   SORTID_ALTERNATE,  tmp_alt,
 			   SORTID_COLOR,
 				sview_colors[sview_part_info->color_inx],
@@ -1235,12 +1237,15 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   -1);
 
 	if (gtk_tree_model_iter_children(GTK_TREE_MODEL(treestore),
-					 &sub_iter, iter))
+					 &sub_iter,
+					 &sview_part_info->iter_ptr))
 		_subdivide_part(sview_part_info,
-				GTK_TREE_MODEL(treestore), &sub_iter, iter);
+				GTK_TREE_MODEL(treestore), &sub_iter,
+				&sview_part_info->iter_ptr);
 	else
 		_subdivide_part(sview_part_info,
-				GTK_TREE_MODEL(treestore), NULL, iter);
+				GTK_TREE_MODEL(treestore), NULL,
+				&sview_part_info->iter_ptr);
 
 	return;
 }
@@ -1351,12 +1356,12 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 }
 
 static void _append_part_record(sview_part_info_t *sview_part_info,
-				GtkTreeStore *treestore, GtkTreeIter *iter,
-				int line)
+				GtkTreeStore *treestore)
 {
-	gtk_tree_store_append(treestore, iter, NULL);
-	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
-	_update_part_record(sview_part_info, treestore, iter);
+	gtk_tree_store_append(treestore, &sview_part_info->iter_ptr, NULL);
+	gtk_tree_store_set(treestore, &sview_part_info->iter_ptr,
+			   SORTID_POS, sview_part_info->pos, -1);
+	_update_part_record(sview_part_info, treestore);
 }
 
 static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
@@ -1373,68 +1378,44 @@ static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 static void _update_info_part(List info_list,
 			      GtkTreeView *tree_view)
 {
-	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	GtkTreeIter iter;
+	static GtkTreeModel *last_model = NULL;
 	partition_info_t *part_ptr = NULL;
-	int line = 0;
-	char *host = NULL, *part_name = NULL;
+	char *name = NULL;
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
 
-	/* get the iter, or find out the list is empty goto add */
-	if (gtk_tree_model_get_iter(model, &iter, path)) {
-		/* make sure all the partitions are still here */
-		while (1) {
-			gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-					   SORTID_UPDATED, 0, -1);
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
-			}
-		}
-	}
+	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
-		/* get the iter, or find out the list is empty goto add */
-		if (!gtk_tree_model_get_iter(model, &iter, path)) {
-			goto adding;
-		}
-		line = 0;
-		while (1) {
-			/* search for the jobid and check to see if
-			   it is in the list */
-			gtk_tree_model_get(model, &iter, SORTID_NAME,
-					   &part_name, -1);
-			if (!strcmp(part_name, part_ptr->name)) {
-				/* update with new info */
-				g_free(part_name);
-				_update_part_record(sview_part_info,
-						    GTK_TREE_STORE(model),
-						    &iter);
-				goto found;
-			}
-			g_free(part_name);
+		/* This means the tree_store changed (added new column
+		   or something). */
+		if (last_model != model)
+			sview_part_info->iter_set = false;
 
-			line++;
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
-			}
+		if (sview_part_info->iter_set) {
+			gtk_tree_model_get(model, &sview_part_info->iter_ptr,
+					   SORTID_NAME, &name, -1);
+			if (strcmp(name, part_ptr->name)) /* Bad pointer */
+				sview_part_info->iter_set = false;
+			g_free(name);
 		}
-	adding:
-		_append_part_record(sview_part_info, GTK_TREE_STORE(model),
-				    &iter, line);
-	found:
-		;
+		if (sview_part_info->iter_set) {
+			_update_part_record(sview_part_info,
+					    GTK_TREE_STORE(model));
+		} else {
+			_append_part_record(sview_part_info,
+					    GTK_TREE_STORE(model));
+			sview_part_info->iter_set = true;
+		}
 	}
 	list_iterator_destroy(itr);
-	if (host)
-		free(host);
 
-	gtk_tree_path_free(path);
 	/* remove all old partitions */
 	remove_old(model, SORTID_UPDATED);
+	last_model = model;
 	return;
 }
 
@@ -1671,6 +1652,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		    part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
 		sview_part_info = _create_sview_part_info(part_ptr);
+		sview_part_info->pos = i;
 		list_append(info_list, sview_part_info);
 		sview_part_info->color_inx = i % sview_colors_cnt;
 
