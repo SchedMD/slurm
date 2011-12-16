@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     is killed abnormally (e.g. SIGKILL).
  -- BGQ - handle deadlock issue when a nodeboard goes into an error state.
  -- BGQ - more thorough handling of blocks with multiple jobs running on them.
+ -- Fix man2html process to compile in the build directory instead of the
+    source dir.
 
 * Changes in SLURM 2.4.0.pre2
 =============================
