@@ -240,6 +240,7 @@ static int _block_wait_for_jobs(char *bg_block_id, struct job_record *job_ptr)
 	std::vector<Job::ConstPtr> job_vec;
 	JobFilter job_filter;
 	JobFilter::Statuses job_statuses;
+	uint32_t job_id = 0;
 #endif
 
 	if (!bridge_init(NULL))
@@ -262,9 +263,10 @@ static int _block_wait_for_jobs(char *bg_block_id, struct job_record *job_ptr)
 	job_statuses.insert(Job::Cleanup);
 	job_filter.setStatuses(&job_statuses);
 
-	if (job_ptr) {
+	if (job_ptr && (job_ptr->magic == JOB_MAGIC)) {
 		char tmp_char[16];
-		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);
+		job_id = job_ptr->job_id;
+		snprintf(tmp_char, sizeof(tmp_char), "%u", job_id);
 		job_filter.setSchedulerData(tmp_char);
 	}
 
@@ -275,9 +277,16 @@ static int _block_wait_for_jobs(char *bg_block_id, struct job_record *job_ptr)
 				return SLURM_SUCCESS;
 
 			BOOST_FOREACH(const Job::ConstPtr& job, job_vec) {
-				debug("waiting on mmcs job %lu to "
-				      "finish on block %s",
-				      job->getId(), bg_block_id);
+				if (job_id)
+					debug("waiting on mmcs job %lu "
+					      "in slurm job %u to "
+					      "finish on block %s",
+					      job->getId(), job_id,
+					      bg_block_id);
+				else
+					debug("waiting on mmcs job %lu to "
+					      "finish on block %s",
+					      job->getId(), bg_block_id);
 			}
 		} catch (const bgsched::DatabaseException& err) {
 			bridge_handle_database_errors("getJobs",
