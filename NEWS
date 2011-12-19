@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
  -- BGQ - more thorough handling of blocks with multiple jobs running on them.
  -- Fix man2html process to compile in the build directory instead of the
     source dir.
+ -- Behavior of srun --multi-prog modified so that any program arguments
+    specified on the command line will be appended to the program arguments
+    specified in the program configuration file.
 
 * Changes in SLURM 2.4.0.pre2
 =============================

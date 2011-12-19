@@ -520,7 +520,8 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 		if (job->multi_prog) {
 			multi_prog_get_argv(job->argv[1], job->env, gtid[i],
 					    &job->task[i]->argc,
-					    &job->task[i]->argv);
+					    &job->task[i]->argv,
+					    job->argc, job->argv);
 		} else {
 			job->task[i]->argc = job->argc;
 			job->task[i]->argv = job->argv;

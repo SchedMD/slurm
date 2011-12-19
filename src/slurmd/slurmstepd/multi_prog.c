@@ -56,6 +56,8 @@
 #include "src/common/xstring.h"
 #include "multi_prog.h"
 
+#define MAX_ARGC 128
+
 /*
  * Test if the specified rank is included in the supplied task range 
  * IN rank    - this task's rank
@@ -139,12 +141,12 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
  *	to retrieve the argv arrays for each task on this node, rather
  *	than calling multi_prog_get_argv once for each task.
  */
-extern int
-multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
-		    int *argc, char ***argv)
+extern int multi_prog_get_argv(char *config_data, char **prog_env,
+			       int task_rank, int *argc, char ***argv,
+			       int global_argc, char **global_argv)
 {
 	char *line = NULL;
-	int line_num = 0;
+	int i, line_num = 0;
 	int task_offset;
 	char *p = NULL, *s = NULL, *ptrptr = NULL;
 	char *rank_spec = NULL, *args_spec = NULL;
@@ -152,7 +154,7 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 	char **prog_argv = NULL;
 	char *local_data = NULL;
 
-	prog_argv = (char **)xmalloc(sizeof(char *) * 128);
+	prog_argv = (char **)xmalloc(sizeof(char *) * MAX_ARGC);
 
 	if (task_rank < 0) {
 		error("Invalid task rank %d", task_rank);
@@ -161,7 +163,7 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 		return -1;
 	}
 
-	local_data = xstrdup(file_contents);
+	local_data = xstrdup(config_data);
 
 	line = strtok_r(local_data, "\n", &ptrptr);
 	while (line) {
@@ -209,6 +211,10 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 		while (*args_spec != '\0') { 
 			/* Only simple quote and escape supported */
 			prog_argv[prog_argc ++] = args_spec;
+			if ((prog_argc + 1) >= MAX_ARGC) {
+				info("Exceeded multi-prog argc limit");
+				break;
+			}
 		CONT:	while (*args_spec != '\0' && *args_spec != '\\'
 			&&     *args_spec != '%'
 			&&     *args_spec != '\'' && !isspace (*args_spec)) {
@@ -265,6 +271,13 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 
 		}
 
+		for (i = 2; i < global_argc; i++) {
+			if ((prog_argc + 1) >= MAX_ARGC) {
+				info("Exceeded multi-prog argc limit");
+				break;
+			}
+			prog_argv[prog_argc++] = xstrdup(global_argv[i]);
+		}
 		prog_argv[prog_argc] = NULL;
 
 		*argc = prog_argc;

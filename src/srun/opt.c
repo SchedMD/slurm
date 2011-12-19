@@ -1543,10 +1543,12 @@ static void _load_multi(int *argc, char **argv)
 			data_read += i;
 	}
 	close(config_fd);
-	for (i=1; i<*argc; i++)
-		xfree(argv[i]);
+
+	argv[*argc+1] = (char *) xmalloc(sizeof(char *));
+	for (i = *argc+1; i > 1; i--)
+		argv[i] = argv[i-1];
 	argv[1] = data_buf;
-	*argc = 2;
+	*argc += 1;
 }
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
