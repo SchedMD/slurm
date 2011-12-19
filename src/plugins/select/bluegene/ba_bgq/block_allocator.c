@@ -1251,7 +1251,7 @@ extern void ba_sync_job_to_block(bg_record_t *bg_record,
 	struct step_record *step_ptr;
 	ListIterator itr;
 	ba_mp_t *ba_mp;
-	select_jobinfo_t *jobinfo;
+	select_jobinfo_t *jobinfo, *step_jobinfo;
 
 	xassert(bg_record);
 	xassert(job_ptr);
@@ -1272,6 +1272,17 @@ extern void ba_sync_job_to_block(bg_record_t *bg_record,
 					bit_copy(ba_mp->cnode_bitmap);
 				bit_not(jobinfo->units_avail);
 			}
+
+			/* Since we are syncing this information lets
+			   clear out the old stuff. (You need to use
+			   the jobinfo->units_avail here instead of
+			   ba_mp->cnode_bitmap because the above trick
+			   only works when coming from a system where
+			   no sub-block allocation was allowed.)
+			*/
+			FREE_NULL_BITMAP(jobinfo->units_used);
+			jobinfo->units_used = bit_copy(jobinfo->units_avail);
+			bit_not(jobinfo->units_used);
 			if (bit_overlap(ba_mp->cnode_bitmap,
 					jobinfo->units_avail)) {
 				error("we have an overlapping job allocation "
@@ -1283,16 +1294,16 @@ extern void ba_sync_job_to_block(bg_record_t *bg_record,
 			/*      bit_clear_count(ba_mp->cnode_bitmap)); */
 			itr = list_iterator_create(job_ptr->step_list);
 			while ((step_ptr = list_next(itr))) {
-				jobinfo = step_ptr->select_jobinfo->data;
+				step_jobinfo = step_ptr->select_jobinfo->data;
 				if (bit_overlap(jobinfo->units_used,
-						jobinfo->units_avail)) {
+						step_jobinfo->units_avail)) {
 					error("we have an overlapping step "
 					      "(%u.%u) mp %s", job_ptr->job_id,
 					      step_ptr->step_id,
 					      ba_mp->coord_str);
 				}
 				bit_or(jobinfo->units_used,
-				       jobinfo->units_avail);
+				       step_jobinfo->units_avail);
 				/* info("allocation %u now has %d left", */
 				/*      job_ptr->job_id, */
 				/*      bit_clear_count(jobinfo->units_used));*/
