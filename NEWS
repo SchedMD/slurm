@@ -124,6 +124,9 @@ documents those changes that are of interest to users and admins.
     University of Nebraska-Lincoln.
  -- Prevent resetting a held job's priority when updating other job parameters.
     Patch from Alejandro Lucero Palau, BSC.
+ -- Improve logic to import a user's environment. Needed with --get-user-env
+    option used with Moab. Patch from Mark Grondona, LLNL.
+ -- Fix bug in sview layout if node count less than configured grid_x_width.
 
 * Changes in SLURM 2.3.2
 ========================
@@ -688,7 +691,7 @@ documents those changes that are of interest to users and admins.
     different connection types (i.e. one torus, one mesh).
  -- Fix memory leak if MPI ports are reserved (for OpenMPI) and srun's
     --resv-ports option is used.
- -- Fix some anomalies in select/cons_res task layout when using the 
+ -- Fix some anomalies in select/cons_res task layout when using the
     --cpus-per-task option. Patch from Martin Perry, Bull.
  -- Improve backfill scheduling logic when job specifies --ntasks-per-node and
     --mem-per-cpu options on a heterogeneous cluster. Patch from Bjorn-Helge
@@ -1148,7 +1151,7 @@ documents those changes that are of interest to users and admins.
  -- Fix for slurmd restart on completing node with no tasks to get the correct
     state, completing. Patch from Hongjia Cao (NUDT).
  -- Prevent scontrol setting a node's Reason="". Patch from Hongjia Cao (NUDT).
- -- Add new functions hostlist_ranged_string_malloc, 
+ -- Add new functions hostlist_ranged_string_malloc,
     hostlist_ranged_string_xmalloc, hostlist_deranged_string_malloc, and
     hostlist_deranged_string_xmalloc which will allocate memory as needed.
  -- Make the slurm commands support both the --cluster and --clusters option.
@@ -1586,12 +1589,12 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res, for jobs that can run on a single node, use a best-fit
     packing approach.
  -- Add support for new partition states of DRAIN and INACTIVE and new partition
-    option of "Alternate" (alternate partition to use for jobs submitted to 
+    option of "Alternate" (alternate partition to use for jobs submitted to
     partitions that are currently in a state of DRAIN or INACTIVE).
  -- Add group membership cache. This can substantially speed up slurmctld
     startup or reconfiguration if many partitions have AllowGroups configured.
  -- Added slurmdb api for accessing slurm DB information.
- -- In select/linear: Modify data structures for better performance and to 
+ -- In select/linear: Modify data structures for better performance and to
     avoid underflow error messages when slurmctld restarts while jobs are
     in completing state.
  -- Added hash for slurm.conf so when nodes check in to the controller it can
@@ -1607,28 +1610,28 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre2
 =============================
- -- Add support for spank_get_item() to get S_STEP_ALLOC_CORES and 
-    S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and 
-    S_JOB_ALLOC_MEM. 
- -- Kill individual job steps that exceed their memory limit rather than 
+ -- Add support for spank_get_item() to get S_STEP_ALLOC_CORES and
+    S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and
+    S_JOB_ALLOC_MEM.
+ -- Kill individual job steps that exceed their memory limit rather than
     killing an entire job if one step exceeds its memory limit.
- -- Added configuration parameter VSizeFactor to enforce virtual memory limits 
+ -- Added configuration parameter VSizeFactor to enforce virtual memory limits
     for jobs and job steps as a percentage of their real memory allocation.
  -- Add scontrol ability to update job step's time limits.
  -- Add scontrol ability to update job's NumCPUs count.
- -- Add --time-min options to salloc, sbatch and srun. The scontrol command 
+ -- Add --time-min options to salloc, sbatch and srun. The scontrol command
     has been modified to display and modify the new field. sched/backfill
-    plugin has been changed to alter time limits of jobs with the 
+    plugin has been changed to alter time limits of jobs with the
     --time-min option if doing so permits earlier job initiation.
  -- Add support for TotalView symbol MPIR_partial_attach_ok with srun support
     to release processes which TotalView does not attach to.
- -- Add new option for SelectTypeParameters of CR_ONE_TASK_PER_CORE. This 
-    option will allocate one task per core by default. Without this option, 
-    by default one task will be allocated per thread on nodes with more than 
+ -- Add new option for SelectTypeParameters of CR_ONE_TASK_PER_CORE. This
+    option will allocate one task per core by default. Without this option,
+    by default one task will be allocated per thread on nodes with more than
     one ThreadsPerCore configured.
  -- Avoid accounting separately for a current pid corresponds to a Light Weight
     Process (Thread POSIX) appearing in the /proc directory. Only account for
-    the original process (pid==tgid) to avoid accounting for memory use more 
+    the original process (pid==tgid) to avoid accounting for memory use more
     than once.
  -- Add proctrack/cgroup plugin which uses Linux control groups (aka cgroup)
     to track processes on Linux systems having this feature enabled (kernel
@@ -1657,16 +1660,16 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre1
 =============================
  -- Added RunTime field to scontrol show job report
- -- Added SLURM_VERSION_NUMBER and removed SLURM_API_VERSION from 
+ -- Added SLURM_VERSION_NUMBER and removed SLURM_API_VERSION from
     slurm/slurm.h.
  -- Added support to handle communication with SLURM 2.1 clusters.  Job's
-    should not be lost in the future when upgrading to higher versions of 
+    should not be lost in the future when upgrading to higher versions of
     SLURM.
  -- Added withdeleted options for listing clusters, users, and accounts
  -- Remove PLPA task affinity functions due to that package being deprecated.
- -- Preserve current partition state information and node Feature and Weight 
-    information rather than use contents of slurm.conf file after slurmctld 
-    restart with -R option or SIGHUP. Replace information with contents of 
+ -- Preserve current partition state information and node Feature and Weight
+    information rather than use contents of slurm.conf file after slurmctld
+    restart with -R option or SIGHUP. Replace information with contents of
     slurm.conf after slurmctld restart without -R or "scontrol reconfigure".
     See RELEASE_NOTES file fore more details.
  -- Modify SLURM's PMI library (for MPICH2) to properly execute an executable
@@ -1675,7 +1678,7 @@ documents those changes that are of interest to users and admins.
  -- Moved all SQL dependant plugins into a seperate rpm slurm-sql.  This
     should be needed only where a connection to a database is needed (i.e.
     where the slurmdbd is running)
- -- Add command line option "no_sys_info" to PAM module to supress system 
+ -- Add command line option "no_sys_info" to PAM module to supress system
     logging of "access granted for user ...", access denied and other errors
     will still be logged.
  -- sinfo -R now has the user and timestamp in separate fields from the reason.
@@ -1739,7 +1742,7 @@ documents those changes that are of interest to users and admins.
  -- Fixed typo in job_mgr.c dealing with qos instead of associations.
  -- Make sure associations and qos' are initiated when added.
  -- Fixed wrong initialization for wckeys in the association manager.
- -- Added wiki.conf configuration parameter of HidePartitionNodes. See 
+ -- Added wiki.conf configuration parameter of HidePartitionNodes. See
     "man wiki.conf" for more information.
  -- Add "JobAggregationTime=#" field SchedulerParameter configuration parameter
     output.
@@ -2029,16 +2032,16 @@ documents those changes that are of interest to users and admins.
  -- Permit a batch script to reset umask and have that propagate to tasks
     spawed by subsequent srun. Previously the umask in effect when sbatch was
     executed was propagated to tasks spawed by srun.
- -- Modify slurm_job_cpus_allocated_on_node_id() and 
-    slurm_job_cpus_allocated_on_node() functions to not write explanation of 
+ -- Modify slurm_job_cpus_allocated_on_node_id() and
+    slurm_job_cpus_allocated_on_node() functions to not write explanation of
     failures to stderr. Only return -1 and set errno.
  -- Correction in configurator.html script. Prolog and Epilog were reversed.
  -- BLUEGENE - Fixed race condition where if a nodecard has an error on an
     un-booted block when a job comes to use it before the state checking
     thread notices it which could cause the slurmctld to lock up on a
     non-dynamic system.
- -- In select/cons_res with FastSchedule=0 and Procs=# defined for the node, 
-    but no specific socket/core/thread count configured, avoid fatal error if 
+ -- In select/cons_res with FastSchedule=0 and Procs=# defined for the node,
+    but no specific socket/core/thread count configured, avoid fatal error if
     the number of cores on a node is less than the number of Procs configured.
  -- Added ability for the perlapi to utilize opaque data types returned from
     the C api.
@@ -2058,23 +2061,23 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix for purge script in accounting to use correct options.
  -- If SelectType=select/linear and SelectTypeParameters=CR_Memory fix bug that
-    would fail to release memory reserved for a job if "scontrol reconfigure" 
+    would fail to release memory reserved for a job if "scontrol reconfigure"
     is executed while the job is in completing state.
- -- Fix bug in handling event trigger for job time limit while job is still 
+ -- Fix bug in handling event trigger for job time limit while job is still
     in pending state.
  -- Fixed display of Ave/MaxCPU in sacct for jobs. Steps were printed
     correctly.
  -- When node current features differs from slurm.conf, log the node names
     using a hostlist expression rather than listing individual node names.
  -- Improve ability of srun to abort job step for some task launch failures.
- -- Fix mvapich plugin logic to release the created job allocation on 
-    initialization failure (previously the failures would cancel job step, 
+ -- Fix mvapich plugin logic to release the created job allocation on
+    initialization failure (previously the failures would cancel job step,
     but retain job allocation).
  -- Fix bug in srun for task count so large that it overflows int data type.
  -- Fix important bug in select/cons_res handling of ntasks-per-core parameter
     that was uncovered by a bug fixed in v2.1.3. Bug produced fatal error for
     slurmctld: "cons_res: cpus computation error".
- -- Fix bug in select/cons_res handling of partitions configured with 
+ -- Fix bug in select/cons_res handling of partitions configured with
     Shared=YES. Prior logic failed to support running multiple jobs per node.
 
 * Changes in SLURM 2.1.3-2
@@ -2088,11 +2091,11 @@ documents those changes that are of interest to users and admins.
     was drained you would not be able to create new blocks on it.
  -- In sched/wiki2 (for Moab): Add excluded host list to job information
     using new keyword "EXCLUDE_HOSTLIST".
- -- Correct slurmd reporting of incorrect socket/core/thread counts.  
+ -- Correct slurmd reporting of incorrect socket/core/thread counts.
  -- For sched/wiki2 (Moab): Do not extend a job's end time for suspend/resume
     or startup delay due to node boot time. A job's end time will always be
     its start time plus time limit.
- -- Added build-time option (to configure program) of --with-pam_dir to 
+ -- Added build-time option (to configure program) of --with-pam_dir to
     specify the directory into which PAM modules get installed, although it
     should pick the proper directory by default. "make install" and "rpmbuild"
     should now put the pam_slurm.so file in the proper directory.
@@ -2103,12 +2106,12 @@ documents those changes that are of interest to users and admins.
     modes).
  -- For topology/tree, log invalid hostnames in a single hostlist expression
     rather than one per line.
- -- A job step's default time limit will be UNLIMITED rather than partition's 
+ -- A job step's default time limit will be UNLIMITED rather than partition's
     default time limit. The step will automatically be cancelled as part of the
     job termination logic when the job's time limit is reached.
  -- sacct - fixed bug when checking jobs against a reservation
  -- In select/cons_res, fix support for job allocation with --ntasks_per_node
-    option. Previously could allocate too few CPUs on some nodes.  
+    option. Previously could allocate too few CPUs on some nodes.
  -- Adjustment made to init message to the slurmdbd to allow backwards
     compatibility with future 2.2 release. YOU NEED TO UPGRADE SLURMDBD
     BEFORE ANYTHING ELSE.
@@ -2121,16 +2124,16 @@ documents those changes that are of interest to users and admins.
     under some conditions.
  -- When a node silently fails which is already drained/down the reason
     for draining for the node is not changed.
- -- Srun will ignore SLURM_NNODES environment variable and use the count of 
-    currently allocated nodes if that count changes during the job's lifetime 
-    (e.g. job allocation uses the --no-kill option and a node goes DOWN, job 
+ -- Srun will ignore SLURM_NNODES environment variable and use the count of
+    currently allocated nodes if that count changes during the job's lifetime
+    (e.g. job allocation uses the --no-kill option and a node goes DOWN, job
     step would previously always fail).
  -- Made it so sacctmgr can't add blank user or account.  The MySQL plugin
     will also reject such requests.
  -- Revert libpmi.so version for compatibility with SLURM version 2.0 and
     earlier to avoid forcing applications using a specific libpmi.so version to
     rebuild unnecessarily (revert from libpmi.so.21.0.0 to libpmi.so.0.0.0).
- -- Restore support for a pending job's constraints (required node features) 
+ -- Restore support for a pending job's constraints (required node features)
     when slurmctld is restarted (internal structure needed to be rebuilt).
  -- Removed checkpoint_blcr.so from the plugin rpm in the slurm.spec since
     it is also in the blcr rpm.
@@ -2138,7 +2141,7 @@ documents those changes that are of interest to users and admins.
     of jobs to share resources.
  -- BLUEGENE - Fixed issue where tasks on steps weren't being displayed
     correctly with scontrol and sview.
- -- BLUEGENE - fixed wiki2 plugin to report correct task count for pending 
+ -- BLUEGENE - fixed wiki2 plugin to report correct task count for pending
     jobs.
  -- BLUEGENE - Added /etc/ld.so.conf.d/slurm.conf to point to the
     directory holding libsched_if64.so when building rpms.
@@ -2155,7 +2158,7 @@ documents those changes that are of interest to users and admins.
     beginning of the day if not set previously.
  -- Defined slurm_free_reservation_info_msg and slurm_free_topo_info_msg
     in common/slurm_protocol_defs.h
- -- Avoid generating error when a job step includes a memory specification and 
+ -- Avoid generating error when a job step includes a memory specification and
     memory is not configured as a consumable resource.
  -- Patch for small memory leak in src/common/plugstack.c
  -- Fix sview search on node state.
@@ -2168,12 +2171,12 @@ documents those changes that are of interest to users and admins.
  -- Fix spelling issues (from Gennaro Oliva)
  -- Fix issue when changing parents of an account in accounting all childern
     weren't always sent to their respected slurmctlds until a restart.
- -- Restore support for srun/salloc/sbatch option --hint=nomultithread to 
+ -- Restore support for srun/salloc/sbatch option --hint=nomultithread to
     bind tasks to cores rather than threads (broken in slurm v2.1.0-pre5).
  -- Fix issue where a 2.0 sacct could not talk correctly to a 2.1 slurmdbd.
  -- BLUEGENE - Fix issue where no partitions have any nodes assigned them to
     alert user no blocks can be created.
- -- BLUEGENE - Fix smap to put BGP images when using -Dc on a Blue Gene/P 
+ -- BLUEGENE - Fix smap to put BGP images when using -Dc on a Blue Gene/P
     system.
  -- Set SLURM_SUBMIT_DIR environment variable for srun and salloc commands to
     match behavior of sbatch command.
@@ -2184,7 +2187,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - critical fix where jobs would be killed incorrectly.
  -- BLUEGENE - fix for sview putting multiple ionodes on to nodelists when
     viewing the jobs tab.
- 
+
 * Changes in SLURM 2.1.0
 ========================
  -- Improve sview layout of blocks in use.
@@ -2192,7 +2195,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - improved startup speed further for large numbers of defined
     blocks
  -- Fix to _get_job_min_nodes() in wiki2/get_jobs.c suggested by Michal Novotny
- -- BLUEGENE - fixed issues when updating a pending job when a node 
+ -- BLUEGENE - fixed issues when updating a pending job when a node
     count was incorrect for the asked for connection type.
  -- BLUEGENE - fixed issue when combining blocks that are in ready states to
     make a larger block from those or make multiple smaller blocks by

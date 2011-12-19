@@ -1581,17 +1581,16 @@ static void _strip_cr_nl(char *line)
  * Special case: return -1 if no open brackets are found */
 static int _bracket_cnt(char *value)
 {
-	int open_br = 0, close_br = 0, i;
+	int count = 0, i;
 	for (i=0; value[i]; i++) {
 		if (value[i] == '{')
-			open_br++;
+			count++;
 		else if (value[i] == '}')
-			close_br++;
+			count--;
 	}
-	if (open_br == 0)
-		return -1;
-	return (open_br - close_br);
+	return count;
 }
+
 
 /*
  * Load user environment from a cache file located in
@@ -1633,13 +1632,12 @@ static char **_load_env_cache(const char *username)
 			if (value[0] == '(') {
 				/* This is a bash function.
 				 * It may span multiple lines */
-				int bracket_cnt;
-				while ((bracket_cnt = _bracket_cnt(value))) {
+				while (_bracket_cnt(value) > 0) {
 					if (!fgets(line, ENV_BUFSIZE, fp))
 						break;
 					_strip_cr_nl(line);
 					if ((strlen(value) + strlen(line)) >
-					    (sizeof(value) - 1))
+					    (ENV_BUFSIZE - 2))
 						break;
 					strcat(value, "\n");
 					strcat(value, line);
@@ -1865,13 +1863,12 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 			if (value[0] == '(') {
 				/* This is a bash function.
 				 * It may span multiple lines */
-				int bracket_cnt;
-				while ((bracket_cnt = _bracket_cnt(value))) {
+				while (_bracket_cnt(value) > 0) {
 					line = strtok_r(NULL, "\n", &last);
 					if (!line)
 						break;
 					if ((strlen(value) + strlen(line)) >
-					    (sizeof(value) - 1))
+					    (ENV_BUFSIZE - 2))
 						break;
 					strcat(value, "\n");
 					strcat(value, line);
