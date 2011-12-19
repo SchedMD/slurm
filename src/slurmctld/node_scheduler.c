@@ -804,11 +804,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						   share_node_bitmap)) {
 					return ESLURM_NODES_BUSY;
 				}
+#ifndef HAVE_BG
 				if (bit_overlap(job_ptr->details->
 						req_node_bitmap,
 						cg_node_bitmap)) {
 					return ESLURM_NODES_BUSY;
 				}
+#endif
 			} else {
 				if (!bit_super_set(job_ptr->details->
 						   req_node_bitmap,
@@ -817,9 +819,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 				/* Note: IDLE nodes are not COMPLETING */
 			}
+#ifndef HAVE_BG
 		} else if (bit_overlap(job_ptr->details->req_node_bitmap,
 				       cg_node_bitmap)) {
 			return ESLURM_NODES_BUSY;
+#endif
 		}
 
 		/* still must go through select_g_job_test() to
@@ -893,20 +897,24 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
 						share_node_bitmap);
+#ifndef HAVE_BG
 					bit_not(cg_node_bitmap);
 					bit_and(node_set_ptr[i].my_bitmap,
 						cg_node_bitmap);
 					bit_not(cg_node_bitmap);
+#endif
 				} else {
 					bit_and(node_set_ptr[i].my_bitmap,
 						idle_node_bitmap);
 					/* IDLE nodes are not COMPLETING */
 				}
 			} else {
+#ifndef HAVE_BG
 				bit_not(cg_node_bitmap);
 				bit_and(node_set_ptr[i].my_bitmap,
 					cg_node_bitmap);
 				bit_not(cg_node_bitmap);
+#endif
 			}
 			if (avail_bitmap) {
 				bit_or(avail_bitmap,
