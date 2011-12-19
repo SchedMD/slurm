@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     Patch from Alejandro Lucero Palau, BSC.
  -- Improve logic to import a user's environment. Needed with --get-user-env
     option used with Moab. Patch from Mark Grondona, LLNL.
+ -- Fix bug in sview layout if node count less than configured grid_x_width.
 
 * Changes in SLURM 2.3.2
 ========================

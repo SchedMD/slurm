@@ -848,7 +848,8 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 	/* This is needed to get the correct width of the grid window.
 	 * If it is not given then we get a really narrow window. */
 	gtk_table_set_row_spacing(button_processor->table,
-				  (*button_processor->coord_y)-1, 1);
+				  (*button_processor->coord_y)?
+				  ((*button_processor->coord_y)-1):0, 1);
 
 	return rc;
 
@@ -878,11 +879,11 @@ static int _grid_table_by_list(button_processor_t *button_processor,
 	list_iterator_destroy(itr);
 	rc = _add_button_to_list(NULL, button_processor);
 
-	/* This is needed to get the correct width of the grid
-	   window.  If it is not given then we get a really narrow
-	   window. */
+	/* This is needed to get the correct width of the grid window.
+	 * If it is not given then we get a really narrow window. */
 	gtk_table_set_row_spacing(button_processor->table,
-				  (*button_processor->coord_y)-1, 1);
+				  (*button_processor->coord_y)?
+				  ((*button_processor->coord_y)-1):0, 1);
 
 
 	return rc;
@@ -1502,7 +1503,7 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	if (cluster_dims == 0) {
 		/* This is needed to get the correct width of the grid window.
 		 * If it is not given then we get a really narrow window. */
-		gtk_table_set_row_spacing(table, coord_y-1, 1);
+		gtk_table_set_row_spacing(table, coord_y?(coord_y-1):0, 1);
 	}
 	gtk_widget_show_all(GTK_WIDGET(table));
 }
@@ -1567,10 +1568,9 @@ extern int update_grid_table(GtkTable *table, List button_list, List node_list)
 	}
 	rc = _add_button_to_list(NULL, &button_processor);
 
-	/* This is needed to get the correct width of the grid
-	   window.  If it is not given then we get a really narrow
-	   window. */
-	gtk_table_set_row_spacing(table, coord_y-1, 1);
+	/* This is needed to get the correct width of the grid window.
+	 * If it is not given then we get a really narrow window. */
+	gtk_table_set_row_spacing(table, coord_y?(coord_y-1):0, 1);
 
 end_it:
 	list_iterator_destroy(itr);
