@@ -774,11 +774,14 @@ extern int sync_jobs(List job_list)
 	/* Insure that all running jobs own the specified block */
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		if (!IS_JOB_RUNNING(job_ptr))
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_COMPLETING(job_ptr))
 			continue;
 
 		bg_action_ptr = xmalloc(sizeof(bg_action_t));
-		bg_action_ptr->op = START_OP;
+		if (IS_JOB_COMPLETING(job_ptr))
+			bg_action_ptr->op = TERM_OP;
+		else
+			bg_action_ptr->op = START_OP;
 		bg_action_ptr->job_ptr = job_ptr;
 
 		get_select_jobinfo(job_ptr->select_jobinfo->data,
@@ -852,7 +855,13 @@ extern int sync_jobs(List job_list)
 
 	/* Insure that all other blocks are free of users */
 	if (block_list) {
-		bridge_reset_block_list(block_list);
+		itr = list_iterator_create(block_list);
+		while ((bg_record = list_next(itr))) {
+			info("Queue clearing of users of BG block %s",
+			     bg_action_ptr->bg_block_id);
+			term_jobs_on_block(bg_record->bg_block_id);
+		}
+		list_iterator_destroy(itr);
 		list_destroy(block_list);
 	} else {
 		/* this should never happen,

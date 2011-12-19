@@ -1916,62 +1916,6 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 	return rc;
 }
 
-extern void bridge_reset_block_list(List block_list)
-{
-	ListIterator itr = NULL;
-	bg_record_t *bg_record = NULL;
-	rm_job_list_t *job_list = NULL;
-	int jobs = 0;
-
-#if defined HAVE_BG_FILES
-	int live_states, rc;
-#endif
-
-	if (!block_list)
-		return;
-
-#if defined HAVE_BG_FILES
-	debug2("getting the job info");
-	live_states = JOB_ALL_FLAG
-		& (~JOB_TERMINATED_FLAG)
-		& (~JOB_KILLED_FLAG)
-		& (~JOB_ERROR_FLAG);
-
-	if ((rc = _get_jobs(live_states, &job_list)) != SLURM_SUCCESS) {
-		error("bridge_get_jobs(): %s", bg_err_str(rc));
-
-		return;
-	}
-
-	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs))
-	    != SLURM_SUCCESS) {
-		error("bridge_get_data(RM_JobListSize): %s", bg_err_str(rc));
-		jobs = 0;
-	}
-	debug2("job count %d",jobs);
-#endif
-	itr = list_iterator_create(block_list);
-	while ((bg_record = list_next(itr))) {
-		if (bg_record->job_ptr)
-			continue;
-		info("Queue clearing of users of BG block %s",
-		     bg_record->bg_block_id);
-#ifndef HAVE_BG_FILES
-		/* simulate jobs running and need to be cleared from MMCS */
-		if (bg_record->job_ptr)
-			jobs = 1;
-#endif
-		_remove_jobs_on_block_and_reset(job_list, jobs,
-						bg_record->bg_block_id);
-	}
-	list_iterator_destroy(itr);
-
-#if defined HAVE_BG_FILES
-	if ((rc = _free_job_list(job_list)) != SLURM_SUCCESS)
-		error("bridge_free_job_list(): %s", bg_err_str(rc));
-#endif
-}
-
 extern void bridge_block_post_job(char *bg_block_id, struct job_record *job_ptr)
 {
 	int jobs = 0;
@@ -1999,6 +1943,9 @@ extern void bridge_block_post_job(char *bg_block_id, struct job_record *job_ptr)
 		jobs = 0;
 	}
 	debug2("job count %d",jobs);
+#else
+	/* simulate jobs running and need to be cleared from MMCS */
+	jobs = 1;
 #endif
 	_remove_jobs_on_block_and_reset(job_list, jobs,	bg_block_id);
 

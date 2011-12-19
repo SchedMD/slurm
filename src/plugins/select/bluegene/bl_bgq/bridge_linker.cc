@@ -1100,23 +1100,6 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 	return rc;
 }
 
-extern void bridge_reset_block_list(List block_list)
-{
-	ListIterator itr = NULL;
-	bg_record_t *bg_record = NULL;
-
-	if (!block_list)
-		return;
-
-	itr = list_iterator_create(block_list);
-	while ((bg_record = (bg_record_t *)list_next(itr))) {
-		info("Queue clearing of users of BG block %s",
-		     bg_record->bg_block_id);
-		_remove_jobs_on_block_and_reset(bg_record->bg_block_id, NULL);
-	}
-	list_iterator_destroy(itr);
-}
-
 extern void bridge_block_post_job(char *bg_block_id,
 				  struct job_record *job_ptr)
 {
