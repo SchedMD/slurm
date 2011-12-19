@@ -412,7 +412,8 @@ static bg_record_t *_find_matching_block(List block_list,
 				char *temp2 = bitmap2node_name(
 					slurm_block_bitmap);
 				info("bg block %s has nodes not "
-				     "usable by this job %s %s",
+				     "usable by this job %s available "
+				     "midplanes were %s",
 				     bg_record->bg_block_id, temp, temp2);
 				xfree(temp);
 				xfree(temp2);
