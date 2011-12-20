@@ -1582,6 +1582,23 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 		if (!node_ptr->name)
 			continue;
 
+		/* Set up some knowns that perhaps aren't all the way
+		   in the slurm.conf.
+		*/
+#ifdef HAVE_BGL
+		node_ptr->threads = 1;
+		node_ptr->cores = 2;
+#elif defined HAVE_BGP
+		node_ptr->threads = 1;
+		node_ptr->cores = 4;
+#else
+		/* BGQ */
+		node_ptr->threads = 4;
+		node_ptr->cores = 16;
+#endif
+		node_ptr->sockets = bg_conf->mp_cnode_cnt;
+		node_ptr->cpus = node_ptr->sockets * node_ptr->cores;
+
 		xassert(node_ptr->select_nodeinfo);
 		nodeinfo = node_ptr->select_nodeinfo->data;
 		xassert(nodeinfo);
