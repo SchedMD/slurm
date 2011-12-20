@@ -992,7 +992,6 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		    && (usage_mins >= qos_ptr->grp_cpu_mins)) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
-			xfree(job_ptr->state_desc);
 			debug2("Job %u being held, "
 			       "the job is at or exceeds QOS %s's "
 			       "group max cpu minutes of %"PRIu64" "
