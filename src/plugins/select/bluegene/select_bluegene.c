@@ -1567,6 +1567,7 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 {
 #ifdef HAVE_BG
 	int i = 0;
+	uint32_t real_memory;
 
 	if (!node_ptr_array)
 		return SLURM_SUCCESS;
@@ -1575,6 +1576,19 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 		if (node_ptr_array->cpus >= bg_conf->mp_cnode_cnt)
 			bg_conf->cpus_per_mp = node_ptr_array->cpus;
 
+	/* we need the amount of memory for a midplane */
+	real_memory = bg_conf->mp_cnode_cnt;
+	info("first got real memory of %u %u", real_memory, bg_conf->mp_cnode_cnt);
+	/* amount of memory per cnode */
+#ifdef HAVE_BGL
+	real_memory *= 512;
+#elif defined HAVE_BGP
+	real_memory *= 2048;
+#else
+	/* BGQ */
+	real_memory *= 16384;
+#endif
+	info("got real memory of %u %u", real_memory, bg_conf->mp_cnode_cnt);
 	for (i = 0; i < node_cnt; i++) {
 		struct node_record *node_ptr = &node_ptr_array[i];
 		select_nodeinfo_t *nodeinfo = NULL;
@@ -1598,6 +1612,7 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 #endif
 		node_ptr->sockets = bg_conf->mp_cnode_cnt;
 		node_ptr->cpus = node_ptr->sockets * node_ptr->cores;
+		node_ptr->real_memory = real_memory;
 
 		xassert(node_ptr->select_nodeinfo);
 		nodeinfo = node_ptr->select_nodeinfo->data;
