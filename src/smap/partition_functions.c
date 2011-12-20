@@ -499,7 +499,7 @@ static void _print_header_part(void)
 			mvwprintw(text_win,
 				  main_ycord,
 				  main_xcord, "STATE");
-			main_xcord += 7;
+			main_xcord += 8;
 			mvwprintw(text_win,
 				  main_ycord,
 				  main_xcord, "JOBID");
@@ -535,7 +535,7 @@ static void _print_header_part(void)
 		} else {
 			printf("        BG_BLOCK ");
 			printf("STATE ");
-			printf("   JOBID ");
+			printf("    JOBID ");
 			printf("    CONN ");
 			if (params.cluster_flags & CLUSTER_FLAG_BGL)
 				printf(" NODE_USE ");
@@ -628,10 +628,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 				main_xcord += 18;
 				mvwprintw(text_win,
 					  main_ycord,
-					  main_xcord,
+					  main_xcord, "%.7s",
 					  bg_block_state_string(
 						  db2_info_ptr->state));
-				main_xcord += 7;
+				main_xcord += 8;
 
 				snprintf(tmp_char, sizeof(tmp_char),
 					 "%s", job_running);
@@ -669,7 +669,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(text_win,
 					  main_ycord,
 					  main_xcord, "?");
-				main_xcord += 7;
+				main_xcord += 8;
 				mvwprintw(text_win,
 					  main_ycord,
 					  main_xcord, "?");
@@ -776,7 +776,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 					db2_info_ptr->job_list, 1);
 				printf("%16.16s ",
 				       db2_info_ptr->bg_block_name);
-				printf("%5.5s ",
+				printf("%-7.7s ",
 				       bg_block_state_string(
 					       db2_info_ptr->state));
 
