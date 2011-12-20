@@ -925,7 +925,7 @@ extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
  * will call the functions without locking the locks again.
  */
 extern int down_nodecard(char *mp_name, bitoff_t io_start,
-			 bool slurmctld_locked)
+			 bool slurmctld_locked, char *reason)
 {
 	List requests = NULL;
 	List delete_list = NULL;
@@ -938,9 +938,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	static int create_size = NO_VAL;
 	static select_ba_request_t blockreq;
 	int rc = SLURM_SUCCESS;
-	char *reason = "select_bluegene: nodecard down";
 
 	xassert(mp_name);
+
+	if (!reason)
+		reason = "select_bluegene: nodecard down";
 
 	if (io_cnt == NO_VAL) {
 		io_cnt = 1;
@@ -1192,7 +1194,6 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			break;
 		case 512:
 			if (!node_already_down(mp_name)) {
-				char *reason = "select_bluegene: nodecard down";
 				if (slurmctld_locked)
 					drain_nodes(mp_name, reason,
 						    slurm_get_slurm_user_id());

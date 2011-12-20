@@ -2651,7 +2651,8 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 					/* find first bit in nc */
 					int start_io =
 						(int)nc_pos * bg_conf->io_ratio;
-					down_nodecard(node_name, start_io, 0);
+					down_nodecard(node_name, start_io,
+						      0, NULL);
 					last_pos = nc_pos;
 				}
 			}

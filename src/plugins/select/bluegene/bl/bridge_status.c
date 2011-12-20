@@ -272,7 +272,7 @@ static int _test_nodecard_state(rm_nodecard_t *ncard, int nc_id,
 
 	/* we have to handle each nodecard separately to make
 	   sure we don't create holes in the system */
-	if (down_nodecard(node_name, io_start, slurmctld_locked)
+	if (down_nodecard(node_name, io_start, slurmctld_locked, NULL)
 	    == SLURM_SUCCESS) {
 		debug("nodecard %s on %s is in an error state",
 		      nc_name, node_name);
