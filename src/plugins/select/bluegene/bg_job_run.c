@@ -858,7 +858,7 @@ extern int sync_jobs(List job_list)
 		itr = list_iterator_create(block_list);
 		while ((bg_record = list_next(itr))) {
 			info("Queue clearing of users of BG block %s",
-			     bg_action_ptr->bg_block_id);
+			     bg_record->bg_block_id);
 			term_jobs_on_block(bg_record->bg_block_id);
 		}
 		list_iterator_destroy(itr);
