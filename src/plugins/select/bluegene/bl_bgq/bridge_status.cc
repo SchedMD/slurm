@@ -282,16 +282,15 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 
 	set = bit_test(ba_mp->cnode_err_bitmap, inx);
 	if (bg_conf->sub_mp_sys && (state == Hardware::Missing)) {
-		/* Remove this hardware from the system. */
+		/* If Missing we are just going to throw any block
+		   away so don't set the err bitmap. Remove the
+		   hardware from the system instead. */
 		node_ptr->cpus -= bg_conf->cpu_ratio;
 		node_ptr->sockets -= bg_conf->cpu_ratio;
 		node_ptr->cores -= bg_conf->cpu_ratio;
 		node_ptr->threads -= bg_conf->cpu_ratio;
 		changed = 1;
 	} else if (state != Hardware::Available) {
-		/* If Missing we are just going to throw any block
-		   away so don't set it up as missing.
-		*/
 		if (!set) {
 			bit_set(ba_mp->cnode_err_bitmap, inx);
 			changed = 1;
