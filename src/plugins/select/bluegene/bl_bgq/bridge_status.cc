@@ -314,12 +314,13 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			 "On midplane %s nodeboard %s had cnode "
 			 "%u%u%u%u%u(%s) go into an error state.",
 			 ba_mp->coord_str,
+			 nc_name,
 			 cnode_coords[0],
 			 cnode_coords[1],
 			 cnode_coords[2],
 			 cnode_coords[3],
 			 cnode_coords[4],
-			 cnode_loc.c_str(), nc_name);
+			 cnode_loc.c_str());
 		error("%s", reason);
 		_handle_bad_nodeboard(nc_name, ba_mp->coord_str, state, reason);
 		return;
