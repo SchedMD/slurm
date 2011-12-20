@@ -1285,7 +1285,7 @@ extern int init(void)
 		*/
 		bg_conf = xmalloc(sizeof(bg_config_t));
 		/* set some defaults for most systems */
-		bg_conf->mp_cnode_cnt = 512;
+		bg_conf->actual_cnodes_per_mp = bg_conf->mp_cnode_cnt = 512;
 		bg_conf->quarter_cnode_cnt = 128;
 		bg_conf->nodecard_cnode_cnt = 32;
 		bg_conf->mp_nodecard_cnt = bg_conf->mp_cnode_cnt
@@ -2778,8 +2778,12 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 	switch (type) {
 	case SELECT_GET_NODE_SCALING:
-		if ((*nodes) != INFINITE)
-			(*nodes) = bg_conf->mp_cnode_cnt;
+		if ((*nodes) != INFINITE) {
+			if (bg_conf->sub_mp_sys)
+				(*nodes) = bg_conf->actual_cnodes_per_mp;
+			else
+				(*nodes) = bg_conf->mp_cnode_cnt;
+		}
 		break;
 	case SELECT_GET_NODE_CPU_CNT:
 		if ((*cpus) != (uint16_t)INFINITE)

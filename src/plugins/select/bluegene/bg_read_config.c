@@ -589,6 +589,7 @@ extern int read_bg_conf(void)
 	if (bg_conf->mp_cnode_cnt <= 0)
 		fatal("You should have more than 0 nodes "
 		      "per base partition");
+	bg_conf->actual_cnodes_per_mp = bg_conf->mp_cnode_cnt;
 	bg_conf->quarter_cnode_cnt = bg_conf->mp_cnode_cnt/4;
 
 	/* bg_conf->cpus_per_mp should had already been set from the

@@ -50,6 +50,7 @@
 #include "src/common/bitstring.h"
 
 typedef struct {
+	uint32_t actual_cnodes_per_mp; /* used only on sub_mp_systems */
 	List blrts_list;
 	char *bridge_api_file;
 	uint16_t bridge_api_verb;
