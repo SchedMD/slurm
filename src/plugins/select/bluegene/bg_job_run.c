@@ -755,7 +755,6 @@ extern int sync_jobs(List job_list)
 {
 	ListIterator itr;
 	struct job_record  *job_ptr = NULL;
-	bg_action_t *bg_action_ptr = NULL;
 	List block_list = NULL;
 	static bool run_already = false;
 	bg_record_t *bg_record = NULL;
@@ -774,6 +773,7 @@ extern int sync_jobs(List job_list)
 	/* Insure that all running jobs own the specified block */
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
+		bg_action_t *bg_action_ptr = NULL;
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_COMPLETING(job_ptr))
 			continue;
 
