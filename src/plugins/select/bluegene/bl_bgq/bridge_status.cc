@@ -191,7 +191,8 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 }
 
 static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
-				  EnumWrapper<Hardware::State> state)
+				  EnumWrapper<Hardware::State> state,
+				  char *reason)
 {
 	char bg_down_node[128];
 	int io_start;
@@ -292,6 +293,30 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	} else if (set) {
 		bit_clear(ba_mp->cnode_err_bitmap, inx);
 		changed = 1;
+	}
+
+	/* If the state is error this could happen after a software
+	   error and thus mean it wasn't changed so we need to handle
+	   it no matter what.
+	*/
+	if (state == Hardware::Error) {
+		int nc_loc = ba_translate_coord2nc(cnode_coords);
+		char nc_name[10];
+		char reason[255];
+		snprintf(nc_name, sizeof(nc_name), "N%d", nc_loc);
+		snprintf(reason, sizeof(reason),
+			 "On midplane %s nodeboard %s had cnode "
+			 "%u%u%u%u%u(%s) go into an error state.",
+			 ba_mp->coord_str,
+			 cnode_coords[0],
+			 cnode_coords[1],
+			 cnode_coords[2],
+			 cnode_coords[3],
+			 cnode_coords[4],
+			 cnode_loc.c_str(), nc_name);
+		error("%s", reason);
+		_handle_bad_nodeboard(nc_name, ba_mp->coord_str, state, reason);
+		return;
 	}
 
 	if (!changed)
@@ -711,7 +736,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		    && (nb_ptr->getState() != Hardware::Available))
 			_handle_bad_nodeboard(
 				nb_ptr->getLocation().substr(7,3).c_str(),
-				ba_mp->coord_str, nb_ptr->getState());
+				ba_mp->coord_str, nb_ptr->getState(), NULL);
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
@@ -985,7 +1010,8 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 		return;
 	}
 
-	_handle_bad_nodeboard(nb_name, ba_mp->coord_str, event.getState());
+	_handle_bad_nodeboard(nb_name, ba_mp->coord_str,
+			      event.getState(), NULL);
 	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
