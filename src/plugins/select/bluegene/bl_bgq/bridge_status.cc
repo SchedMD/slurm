@@ -281,12 +281,18 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	}
 
 	set = bit_test(ba_mp->cnode_err_bitmap, inx);
-	if (state != Hardware::Available) {
+	if (bg_conf->sub_mp_sys && (state == Hardware::Missing)) {
+		/* Remove this hardware from the system. */
+		node_ptr->cpus -= bg_conf->cpu_ratio;
+		node_ptr->sockets -= bg_conf->cpu_ratio;
+		node_ptr->cores -= bg_conf->cpu_ratio;
+		node_ptr->threads -= bg_conf->cpu_ratio;
+		changed = 1;
+	} else if (state != Hardware::Available) {
 		/* If Missing we are just going to throw any block
 		   away so don't set it up as missing.
 		*/
-		if (!set && (!bg_conf->sub_mp_sys
-			     || (state != Hardware::Missing))) {
+		if (!set) {
 			bit_set(ba_mp->cnode_err_bitmap, inx);
 			changed = 1;
 		}
@@ -327,14 +333,6 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	     bridge_hardware_state_string(state.toValue()));
 
 	node_ptr = &(node_record_table_ptr[ba_mp->index]);
-
-	/* Remove this hardware from the system. */
-	if (bg_conf->sub_mp_sys && (state == Hardware::Missing)) {
-		node_ptr->cpus -= bg_conf->cpu_ratio;
-		node_ptr->sockets -= bg_conf->cpu_ratio;
-		node_ptr->cores -= bg_conf->cpu_ratio;
-		node_ptr->threads -= bg_conf->cpu_ratio;
-	}
 
 	assert(node_ptr->select_nodeinfo);
 	nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
