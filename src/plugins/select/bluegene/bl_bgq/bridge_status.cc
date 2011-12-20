@@ -280,6 +280,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		return;
 	}
 
+	node_ptr = &(node_record_table_ptr[ba_mp->index]);
 	set = bit_test(ba_mp->cnode_err_bitmap, inx);
 	if (bg_conf->sub_mp_sys && (state == Hardware::Missing)) {
 		/* If Missing we are just going to throw any block
@@ -330,8 +331,6 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	info("_handle_node_change: state for %s - %s is '%s'",
 	     ba_mp->coord_str, cnode_loc.c_str(),
 	     bridge_hardware_state_string(state.toValue()));
-
-	node_ptr = &(node_record_table_ptr[ba_mp->index]);
 
 	assert(node_ptr->select_nodeinfo);
 	nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
