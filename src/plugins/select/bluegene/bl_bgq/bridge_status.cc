@@ -267,6 +267,11 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	select_nodeinfo_t *nodeinfo;
 	struct node_record *node_ptr = NULL;
 
+	/* This will be handled on the initial poll only */
+	if (!initial_poll && bg_conf->sub_mp_sys
+	    && (state == Hardware::Missing))
+		return;
+
 	if (!ba_mp->cnode_err_bitmap)
 		ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
 
@@ -283,13 +288,28 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	node_ptr = &(node_record_table_ptr[ba_mp->index]);
 	set = bit_test(ba_mp->cnode_err_bitmap, inx);
 	if (bg_conf->sub_mp_sys && (state == Hardware::Missing)) {
+		struct part_record *part_ptr;
 		/* If Missing we are just going to throw any block
 		   away so don't set the err bitmap. Remove the
 		   hardware from the system instead. */
-		node_ptr->cpus -= bg_conf->cpu_ratio;
-		node_ptr->sockets -= bg_conf->cpu_ratio;
-		node_ptr->cores -= bg_conf->cpu_ratio;
-		node_ptr->threads -= bg_conf->cpu_ratio;
+		if (node_ptr->cpus >= bg_conf->cpu_ratio)
+			node_ptr->cpus -= bg_conf->cpu_ratio;
+		if (node_ptr->sockets)
+			node_ptr->sockets--;
+		if (node_ptr->real_memory >= 16384)
+			node_ptr->real_memory -= 16384;
+
+		if (bg_conf->actual_cnodes_per_mp)
+			bg_conf->actual_cnodes_per_mp--;
+		itr = list_iterator_create(part_list);
+		while ((part_ptr = (struct part_record *)list_next(itr))) {
+			if (!bit_test(part_ptr->node_bitmap, ba_mp->index))
+				continue;
+			if (part_ptr->total_cpus >= bg_conf->cpu_ratio)
+				part_ptr->total_cpus -= bg_conf->cpu_ratio;
+		}
+		list_iterator_destroy(itr);
+
 		changed = 1;
 	} else if (state != Hardware::Available) {
 		if (!set) {
