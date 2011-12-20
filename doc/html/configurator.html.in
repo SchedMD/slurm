@@ -129,7 +129,7 @@ function displayfile()
    "#DisableRootJobs=NO <br>" +
    "#EnforcePartLimits=NO <br>" +
    get_field("Epilog",document.config.epilog) + "<br>" +
-   "#PrologSlurmctld= <br>" +
+   "#EpilogSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
    "#MaxJobId=999999 <br>" +
    "#GresTypes= <br>" +
@@ -166,6 +166,7 @@ function displayfile()
    "SlurmdPort=" + document.config.slurmd_port.value + "<br>" +
    "SlurmdSpoolDir=" + document.config.slurmd_spool_dir.value + "<br>" +
    "SlurmUser=" + document.config.slurm_user.value + "<br>" +
+   "#SlurmdUser=root <br>" +
    get_field("SrunEpilog",document.config.srun_epilog) + "<br>" +
    get_field("SrunProlog",document.config.srun_prolog) + "<br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
