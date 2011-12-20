@@ -737,6 +737,10 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		packstr (dump_node_ptr->node_hostname, buffer);
 		packstr (dump_node_ptr->comm_name, buffer);
 		pack16  (dump_node_ptr->node_state, buffer);
+		/* On a bluegene system always use the regular node
+		 * infomation not what is in the config_ptr.
+		 */
+#ifndef HAVE_BG
 		if (slurmctld_conf.fast_schedule) {
 			/* Only data from config_record used for scheduling */
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
@@ -746,6 +750,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
 		} else {
+#endif
 			/* Individual node data used for scheduling */
 			pack16(dump_node_ptr->cpus, buffer);
 			pack16(dump_node_ptr->sockets, buffer);
@@ -753,7 +758,9 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			pack16(dump_node_ptr->threads, buffer);
 			pack32(dump_node_ptr->real_memory, buffer);
 			pack32(dump_node_ptr->tmp_disk, buffer);
+#ifndef HAVE_BG
 		}
+#endif
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
 
