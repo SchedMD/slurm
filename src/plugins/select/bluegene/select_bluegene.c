@@ -1578,7 +1578,6 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 
 	/* we need the amount of memory for a midplane */
 	real_memory = bg_conf->mp_cnode_cnt;
-	info("first got real memory of %u %u", real_memory, bg_conf->mp_cnode_cnt);
 	/* amount of memory per cnode */
 #ifdef HAVE_BGL
 	real_memory *= 512;
@@ -1588,7 +1587,6 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 	/* BGQ */
 	real_memory *= 16384;
 #endif
-	info("got real memory of %u %u", real_memory, bg_conf->mp_cnode_cnt);
 	for (i = 0; i < node_cnt; i++) {
 		struct node_record *node_ptr = &node_ptr_array[i];
 		select_nodeinfo_t *nodeinfo = NULL;
