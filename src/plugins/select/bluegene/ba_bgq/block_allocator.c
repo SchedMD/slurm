@@ -1571,6 +1571,27 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	return job_ptr;
 }
 
+extern int ba_translate_coord2nc(uint16_t *cnode_coords)
+{
+	int nc_loc, dim, match;
+	/* need to figure out which nodeboard this cnode is in */
+	for (nc_loc=0; nc_loc<16; nc_loc++) {
+		match = 0;
+		for (dim = 0; dim < 5; dim++) {
+			if ((cnode_coords[dim]
+			     >= g_nc_coords[nc_loc].start[dim])
+			    && (cnode_coords[dim]
+				<= g_nc_coords[nc_loc].end[dim]))
+				match++;
+		}
+		if (match == 5)
+			break;
+	}
+	xassert(nc_loc < 16);
+	return nc_loc;
+}
+
+
 static char *_copy_from_main(List main_mps, List ret_list)
 {
 	ListIterator itr;

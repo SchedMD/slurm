@@ -53,4 +53,5 @@ enum {A, X, Y, Z, E};
 extern ba_mp_t ****ba_main_grid;
 extern ba_geo_system_t *ba_mp_geo_system;
 
+extern int ba_translate_coord2nc(uint16_t *cnode_coords);
 #endif /* _BLOCK_ALLOCATOR_H_ */
