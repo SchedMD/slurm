@@ -1465,7 +1465,7 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	bg_record_t *bg_record, struct job_record *in_job_ptr)
 {
 	ListIterator itr;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	select_jobinfo_t *jobinfo;
 	ba_mp_t *ba_mp;
 	char *tmp_char = NULL, *tmp_char2 = NULL, *tmp_char3 = NULL;
@@ -1475,6 +1475,18 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	if (!bg_record->job_list)
 		return NULL;
 
+	if (in_job_ptr && in_job_ptr->magic != JOB_MAGIC) {
+		/* This can if the mmcs job hang out in the system
+		 * forever. And it gets cleared after the job is out
+		 * of the system.
+		 */
+		error("On block %s we were trying to remove "
+		      "a job with bad magic, you should "
+		      "probably reboot the block.",
+		      bg_record->bg_block_id);
+		return NULL;
+	}
+
 	itr = list_iterator_create(bg_record->job_list);
 	while ((job_ptr = list_next(itr))) {
 		if (job_ptr->magic != JOB_MAGIC) {
@@ -1483,6 +1495,7 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 			list_delete_item(itr);
 			continue;
 		}
+
 		if (!in_job_ptr) {
 			/* if there is not an in_job_ptr it is because
 			   the jobs finished while the slurmctld
