@@ -1507,7 +1507,7 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	if (in_job_ptr && !job_ptr) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			error("ba_remove_job_in_block_job_list: "
-			      "Couldn't removing sub-block job %u from "
+			      "Couldn't remove sub-block job %u from "
 			      "block %s",
 			      in_job_ptr->job_id, bg_record->bg_block_id);
 		}
