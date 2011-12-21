@@ -62,6 +62,7 @@ typedef struct {
 	partition_info_t* part_ptr;
 	int pos;
 	List sub_list;
+	sview_part_sub_t sub_part_total;
 } sview_part_info_t;
 
 enum {
@@ -832,66 +833,30 @@ static void _layout_part_record(GtkTreeView *treeview,
 				int update)
 {
 	GtkTreeIter iter;
-	ListIterator itr = NULL;
 	char time_buf[20], tmp_buf[20];
 	char tmp_cnt[8];
 	char tmp_cnt1[8];
 	char tmp_cnt2[8];
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	sview_part_sub_t *sview_part_sub = NULL;
-	sview_part_sub_t *temp_part_sub = NULL;
-	sview_part_sub_t alloc_part_sub;
-	sview_part_sub_t idle_part_sub;
-	sview_part_sub_t other_part_sub;
 	char ind_cnt[1024];
 	char *temp_char = NULL;
 	uint16_t temp_uint16 = 0;
-	int global_set = 0, i;
+	int i;
 	int yes_no = -1;
 	int up_down = -1;
 	uint32_t limit_set = NO_VAL;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 
-	memset(&alloc_part_sub, 0, sizeof(sview_part_sub_t));
-	memset(&idle_part_sub, 0, sizeof(sview_part_sub_t));
-	memset(&other_part_sub, 0, sizeof(sview_part_sub_t));
-
-	itr = list_iterator_create(sview_part_info->sub_list);
-	while ((sview_part_sub = list_next(itr))) {
-		if (sview_part_sub->node_state == NODE_STATE_IDLE)
-			temp_part_sub = &idle_part_sub;
-		else if (sview_part_sub->node_state == NODE_STATE_ALLOCATED)
-			temp_part_sub = &alloc_part_sub;
-		else
-			temp_part_sub = &other_part_sub;
-		temp_part_sub->node_cnt += sview_part_sub->node_cnt;
-		temp_part_sub->cpu_alloc_cnt += sview_part_sub->cpu_alloc_cnt;
-		temp_part_sub->cpu_error_cnt += sview_part_sub->cpu_error_cnt;
-		temp_part_sub->cpu_idle_cnt += sview_part_sub->cpu_idle_cnt;
-		/* temp_part_sub->disk_total += sview_part_sub->disk_total; */
-/* 		temp_part_sub->mem_total += sview_part_sub->mem_total; */
-
-		if (!global_set) {
-			global_set = 1;
-			/* store features and reasons in the others
-			   group */
-			other_part_sub.features = sview_part_sub->features;
-			other_part_sub.reason = sview_part_sub->reason;
-			other_part_sub.disk_total = sview_part_sub->disk_total;
-			other_part_sub.mem_total = sview_part_sub->mem_total;
-		} else {
-			other_part_sub.disk_total += sview_part_sub->disk_total;
-			other_part_sub.mem_total += sview_part_sub->mem_total;
-		}
-	}
-	list_iterator_destroy(itr);
-
-	convert_num_unit((float)alloc_part_sub.node_cnt,
+	convert_num_unit((float)sview_part_info->sub_part_total.cpu_alloc_cnt
+			 / cpus_per_node,
 			 tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
-	convert_num_unit((float)idle_part_sub.node_cnt,
+	convert_num_unit((float)sview_part_info->sub_part_total.cpu_idle_cnt
+			 / cpus_per_node,
 			 tmp_cnt1, sizeof(tmp_cnt1), UNIT_NONE);
-	convert_num_unit((float)other_part_sub.node_cnt,
+	convert_num_unit((float)sview_part_info->sub_part_total.cpu_error_cnt
+			 / cpus_per_node,
 			 tmp_cnt2, sizeof(tmp_cnt2), UNIT_NONE);
 	snprintf(ind_cnt, sizeof(ind_cnt), "%s/%s/%s",
 		 tmp_cnt, tmp_cnt1, tmp_cnt2);
@@ -963,7 +928,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 			temp_char = time_buf;
 			break;
 		case SORTID_MEM:
-			convert_num_unit((float)other_part_sub.mem_total,
+			convert_num_unit((float)sview_part_info->
+					 sub_part_total.mem_total,
 					 tmp_cnt, sizeof(tmp_cnt),
 					 UNIT_MEGA);
 			temp_char = tmp_cnt;
@@ -1034,7 +1000,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_TMP_DISK:
 			convert_num_unit(
-				(float)other_part_sub.disk_total,
+				(float)sview_part_info->sub_part_total.
+				disk_total,
 				time_buf, sizeof(time_buf), UNIT_NONE);
 			temp_char = time_buf;
 			break;
@@ -1495,6 +1462,12 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 			err_cpus *= cpus_per_node;
 
 		idle_cpus -= err_cpus;
+	} else if (sview_part_sub->node_state == NODE_STATE_ALLOCATED) {
+		alloc_cpus = idle_cpus;
+		idle_cpus = 0;
+	} else if (sview_part_sub->node_state != NODE_STATE_IDLE) {
+		err_cpus = idle_cpus;
+		idle_cpus = 0;
 	}
 
 	sview_part_sub->cpu_alloc_cnt += alloc_cpus;
@@ -1627,6 +1600,8 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
 	int i, j2;
+	sview_part_sub_t *sview_part_sub = NULL;
+	ListIterator itr;
 
 	if (info_list && (node_info_ptr == last_node_info_ptr)
 	    && (part_info_ptr == last_part_info_ptr))
@@ -1673,6 +1648,34 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		}
 		list_sort(sview_part_info->sub_list,
 			  (ListCmpF)_sview_sub_part_sort);
+
+		/* Need to do this after the fact so we deal with
+		   complete sub parts.
+		*/
+		itr = list_iterator_create(sview_part_info->sub_list);
+		while ((sview_part_sub = list_next(itr))) {
+			sview_part_info->sub_part_total.node_cnt +=
+				sview_part_sub->node_cnt;
+			sview_part_info->sub_part_total.cpu_alloc_cnt +=
+				sview_part_sub->cpu_alloc_cnt;
+			sview_part_info->sub_part_total.cpu_error_cnt +=
+				sview_part_sub->cpu_error_cnt;
+			sview_part_info->sub_part_total.cpu_idle_cnt +=
+				sview_part_sub->cpu_idle_cnt;
+			sview_part_info->sub_part_total.disk_total +=
+				sview_part_sub->disk_total;
+			sview_part_info->sub_part_total.mem_total +=
+				sview_part_sub->mem_total;
+			if (!sview_part_info->sub_part_total.features) {
+				/* store features and reasons
+				   in the others group */
+				sview_part_info->sub_part_total.features
+					= sview_part_sub->features;
+				sview_part_info->sub_part_total.reason
+					= sview_part_sub->reason;
+			}
+		}
+		list_iterator_destroy(itr);
 	}
 	list_sort(info_list, (ListCmpF)_sview_part_sort_aval_dec);
 
