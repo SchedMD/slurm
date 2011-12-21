@@ -680,9 +680,42 @@ static void _update_info_resv(List info_list,
 			_update_resv_record(sview_resv_info,
 					    GTK_TREE_STORE(model));
 		} else {
-			_append_resv_record(sview_resv_info,
-					    GTK_TREE_STORE(model));
-			sview_resv_info->iter_set = true;
+			GtkTreePath *path = gtk_tree_path_new_first();
+
+			/* get the iter, or find out the list is empty
+			 * goto add */
+			if (gtk_tree_model_get_iter(
+				    model, &sview_resv_info->iter_ptr, path)) {
+				do {
+					/* search for the jobid and
+					   check to see if it is in
+					   the list */
+					gtk_tree_model_get(
+						model,
+						&sview_resv_info->iter_ptr,
+						SORTID_NAME,
+						&name, -1);
+					if (!strcmp(name, resv_ptr->name)) {
+						/* update with new info */
+						g_free(name);
+						_update_resv_record(
+							sview_resv_info,
+							GTK_TREE_STORE(model));
+						sview_resv_info->iter_set = 1;
+						break;
+					}
+					g_free(name);
+				} while (gtk_tree_model_iter_next(
+						 model,
+						 &sview_resv_info->iter_ptr));
+			}
+
+			if (!sview_resv_info->iter_set) {
+				_append_resv_record(sview_resv_info,
+						    GTK_TREE_STORE(model));
+				sview_resv_info->iter_set = true;
+			}
+			gtk_tree_path_free(path);
 		}
 	}
 	list_iterator_destroy(itr);
