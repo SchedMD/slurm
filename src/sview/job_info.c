@@ -2517,9 +2517,41 @@ static void _update_info_job(List info_list,
 			_update_job_record(sview_job_info,
 					   GTK_TREE_STORE(model));
 		else {
-			_append_job_record(sview_job_info,
-					   GTK_TREE_STORE(model));
-			sview_job_info->iter_set = true;
+			GtkTreePath *path = gtk_tree_path_new_first();
+
+			/* get the iter, or find out the list is empty
+			 * goto add */
+			if (gtk_tree_model_get_iter(
+				    model, &sview_job_info->iter_ptr, path)) {
+				do {
+					/* search for the jobid and
+					   check to see if it is in
+					   the list */
+					gtk_tree_model_get(
+						model,
+						&sview_job_info->iter_ptr,
+						SORTID_JOBID,
+						&jobid, -1);
+					if (jobid == job_ptr->job_id) {
+						/* update with new info */
+						_update_job_record(
+							sview_job_info,
+							GTK_TREE_STORE(model));
+						sview_job_info->iter_set = 1;
+						break;
+					}
+				} while (gtk_tree_model_iter_next(
+						 model,
+						 &sview_job_info->iter_ptr));
+			}
+
+			if (!sview_job_info->iter_set) {
+				_append_job_record(sview_job_info,
+						   GTK_TREE_STORE(model));
+				sview_job_info->iter_set = true;
+			}
+
+			gtk_tree_path_free(path);
 		}
 	}
 	list_iterator_destroy(itr);
