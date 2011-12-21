@@ -83,7 +83,6 @@
 #include "src/common/xmalloc.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/task.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
@@ -391,9 +390,6 @@ exec_task(slurmd_job_t *job, int i)
 			exit(1);
 		}
 	}
-
-	if (!job->pty)
-		 io_dup_stdio(task);
 
 	/* task-specific pre-launch activities */
 
