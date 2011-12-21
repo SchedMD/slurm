@@ -978,7 +978,8 @@ extern void set_page_opts(int page, display_data_t *display_data,
 				break;
 			if (!display_data->name)
 				continue;
-			if (!strcasecmp(col_name, display_data->name)) {
+			if (!strncasecmp(col_name, display_data->name,
+					 strlen(col_name))) {
 				display_data->show = TRUE;
 				break;
 			}
