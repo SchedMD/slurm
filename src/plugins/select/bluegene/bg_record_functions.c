@@ -1341,15 +1341,10 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 		   to wait for the job to be removed.  We don't really
 		   need to free the block though since we may just
 		   want it to be in an error state for some reason. */
-		while ((bg_record->job_running > NO_JOB_RUNNING)
-			|| (bg_record->job_list
-			    && list_count(bg_record->job_list))) {
-			if (bg_record->magic != BLOCK_MAGIC) {
-				error("While putting block %s in a error "
-				      "state it was destroyed",
-				      bg_record->bg_block_id);
-				return SLURM_ERROR;
-			}
+		while ((bg_record->magic == BLOCK_MAGIC)
+		       && ((bg_record->job_running > NO_JOB_RUNNING)
+			   || (bg_record->job_list
+			       && list_count(bg_record->job_list)))) {
 			if (bg_record->job_running > NO_JOB_RUNNING)
 				debug2("block %s is still running job %d",
 				       bg_record->bg_block_id,
