@@ -24,7 +24,8 @@ abbreviation for the type of switch. We recommend, for example:</p>
 switch service. This is the case for Ethernet and Myrinet interconnects.</li>
 <li><b>elan</b>&#151;<a href="http://www.quadrics.com/">Quadrics</a>  Elan3 or Elan4
 interconnect.</li>
-<li><b>federation</b>&#151;IBM Federation interconnects (presently under development).</li>
+<li><b>federation</b>&#151;IBM Federation interconnects.</li>
+<li><b>nrt</b>&#151;IBM Network Resource Table (presently under development).</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
@@ -513,6 +514,6 @@ plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 September 2008</p>
+<p style="text-align:center;">Last modified 21 December 2011</p>
 
 <!--#include virtual="footer.txt"-->

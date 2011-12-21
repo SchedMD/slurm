@@ -1,3 +1,3 @@
 # Makefile for switch plugins
 
-SUBDIRS = elan none federation
+SUBDIRS = elan none nrt federation
