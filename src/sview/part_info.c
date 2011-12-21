@@ -1369,17 +1369,49 @@ static void _update_info_part(List info_list,
 				sview_part_info->iter_set = false;
 			g_free(name);
 		}
-		if (sview_part_info->iter_set) {
+		if (sview_part_info->iter_set)
 			_update_part_record(sview_part_info,
 					    GTK_TREE_STORE(model));
-		} else {
-			_append_part_record(sview_part_info,
-					    GTK_TREE_STORE(model));
-			sview_part_info->iter_set = true;
+		else {
+			GtkTreePath *path = gtk_tree_path_new_first();
+
+			/* get the iter, or find out the list is empty
+			 * goto add */
+			if (gtk_tree_model_get_iter(
+				    model, &sview_part_info->iter_ptr, path)) {
+				do {
+					/* search for the jobid and
+					   check to see if it is in
+					   the list */
+					gtk_tree_model_get(
+						model,
+						&sview_part_info->iter_ptr,
+						SORTID_NAME,
+						&name, -1);
+					if (!strcmp(name, part_ptr->name)) {
+						/* update with new info */
+						g_free(name);
+						_update_part_record(
+							sview_part_info,
+							GTK_TREE_STORE(model));
+						sview_part_info->iter_set = 1;
+						break;
+					}
+					g_free(name);
+				} while (gtk_tree_model_iter_next(
+						 model,
+						 &sview_part_info->iter_ptr));
+			}
+
+			if (!sview_part_info->iter_set) {
+				_append_part_record(sview_part_info,
+						    GTK_TREE_STORE(model));
+				sview_part_info->iter_set = true;
+			}
+			gtk_tree_path_free(path);
 		}
 	}
 	list_iterator_destroy(itr);
-
 	/* remove all old partitions */
 	remove_old(model, SORTID_UPDATED);
 	last_model = model;
