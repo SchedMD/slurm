@@ -187,12 +187,12 @@ static void _update_front_end_record(
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_BOOT_TIME,
 				sview_front_end_info_ptr->boot_time,
-			   SORTID_COLOR,
-				sview_colors[sview_front_end_info_ptr->color_inx],
+			   SORTID_COLOR, sview_colors[
+				   sview_front_end_info_ptr->color_inx],
 			   SORTID_COLOR_INX,
 				sview_front_end_info_ptr->color_inx,
 			   SORTID_NODE_INX,
-				sview_front_end_info_ptr->node_inx, 
+				sview_front_end_info_ptr->node_inx,
 			   SORTID_NAME,    front_end_ptr->name,
 			   SORTID_REASON,  sview_front_end_info_ptr->reason,
 			   SORTID_SLURMD_START_TIME,
@@ -235,7 +235,7 @@ static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_front_end_info = (sview_front_end_info_t*) list_next(itr))) {
+	while ((sview_front_end_info = list_next(itr))) {
 		front_end_ptr = sview_front_end_info->front_end_ptr;
 		/* get the iter, or find out the list is empty goto add */
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
@@ -263,8 +263,9 @@ static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 			}
 		}
 	adding:
-		_append_front_end_record(sview_front_end_info, GTK_TREE_STORE(model),
-				    &iter, line);
+		_append_front_end_record(sview_front_end_info,
+					 GTK_TREE_STORE(model),
+					 &iter, line);
 	found:
 		;
 	}
@@ -277,8 +278,8 @@ static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 	return;
 }
 
-static List _create_front_end_info_list(front_end_info_msg_t *front_end_info_ptr,
-					int changed)
+static List _create_front_end_info_list(
+	front_end_info_msg_t *front_end_info_ptr, int changed)
 {
 	char *upper = NULL;
 	char user[32], time_str[32];
@@ -390,7 +391,7 @@ need_refresh:
 			while (sview_fe_info->node_inx[j] >= 0) {
 				change_grid_color(popup_win->grid_button_list,
 						  sview_fe_info->node_inx[j],
-						  sview_fe_info->node_inx[j + 1],
+						  sview_fe_info->node_inx[j+1],
 						  sview_fe_info->color_inx,
 						  true, 0);
 				j += 2;
@@ -822,10 +823,12 @@ extern void set_menus_front_end(void *arg, void *arg2, GtkTreePath *path,
 
 	switch (type) {
 	case TAB_CLICKED:
-		make_fields_menu(NULL, menu, display_data_front_end, SORTID_CNT);
+		make_fields_menu(NULL, menu, display_data_front_end,
+				 SORTID_CNT);
 		break;
 	case ROW_CLICKED:
-		make_options_menu(tree_view, path, menu, options_data_front_end);
+		make_options_menu(tree_view, path, menu,
+				  options_data_front_end);
 		break;
 	case ROW_LEFT_CLICKED:
 		highlight_grid(tree_view, SORTID_NODE_INX,
