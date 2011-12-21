@@ -30,6 +30,9 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
 #include <ctype.h>
 #include <errno.h>
@@ -357,12 +360,23 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
  */
 extern void libpam_slurm_init (void)
 {
+	char current_major[64];
+
 	if (slurm_h)
 		return;
 
-	if (!(slurm_h = dlopen("libslurm.so", RTLD_NOW|RTLD_GLOBAL)))
+	/* First try to use the same libslurm version ("libslurm.so.24.0.0"),
+	 * Second try to match the major version number ("libslurm.so.24"),
+	 * Otherwise use "libslurm.so" */
+	snprintf(current_major, sizeof(current_major), "libslurm.so.%d",
+		 SLURM_API_CURRENT);
+	if (!(slurm_h = dlopen("libslurm.so." SLURM_VERSION_STRING,
+					      RTLD_NOW|RTLD_GLOBAL)) &&
+	    !(slurm_h = dlopen(current_major, RTLD_NOW|RTLD_GLOBAL)) &&
+	    !(slurm_h = dlopen("libslurm.so", RTLD_NOW|RTLD_GLOBAL))) {
 		_log_msg (LOG_ERR, "Unable to dlopen libslurm: %s\n",
 			  dlerror ());
+	}
 
 	return;
 }
