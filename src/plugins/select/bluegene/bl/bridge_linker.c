@@ -1760,8 +1760,7 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 
 		if (user_name && !strcmp(user, user_name)) {
 			returnc = REMOVE_USER_FOUND;
-			if ((rc = bridge_block_add_user(
-				     bg_record->bg_block_id, user))
+			if ((rc = bridge_block_add_user(bg_record, user))
 			    != SLURM_SUCCESS) {
 				debug("couldn't add user %s to block %s",
 				      user, bg_record->bg_block_id);
