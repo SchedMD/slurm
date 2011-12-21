@@ -2103,7 +2103,7 @@ static void _init_slurm_conf(const char *file_name)
 		if (name == NULL)
 			name = default_slurm_config_file;
 	}
-       	if(conf_initialized) {
+       	if (conf_initialized) {
 		error("the conf_hashtbl is already inited");
 	}
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
@@ -2113,8 +2113,9 @@ static void _init_slurm_conf(const char *file_name)
 	conf_ptr->hash_val = 0;
 	if ((_config_is_storage(conf_hashtbl, name) < 0) &&
 	    (s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name, false)
- 	     == SLURM_ERROR))
+ 	     == SLURM_ERROR)) {
 		fatal("something wrong with opening/reading conf file");
+	}
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 	_validate_and_set_defaults(conf_ptr, conf_hashtbl);
 	conf_ptr->slurm_conf = xstrdup(name);
@@ -2224,7 +2225,7 @@ slurm_conf_mutex_init(void)
 }
 
 extern void
-slurm_conf_install_fork_handlers()
+slurm_conf_install_fork_handlers(void)
 {
 	int err;
 	if ((err = pthread_atfork(NULL, NULL, &slurm_conf_mutex_init)))
@@ -2324,10 +2325,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->cluster_name, "ClusterName", hashtbl);
 	/* Some databases are case sensitive so we have to make sure
-	   the cluster name is lower case since sacctmgr makes sure
-	   this is the case as well.
-	*/
-	if(conf->cluster_name) {
+	 * the cluster name is lower case since sacctmgr makes sure
+	 * this is the case as well.
+	 */
+	if (conf->cluster_name) {
 		int i;
 		for (i = 0; conf->cluster_name[i] != '\0'; i++)
 			conf->cluster_name[i] =

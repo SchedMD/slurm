@@ -111,4 +111,4 @@ echo "now run ./configure to configure slurm for your environment."
 echo
 echo "NOTE: This script has most likely just modified files that are under"
 echo "      version control.  Make sure that you really want these changes"
-echo "      applied to the repository before you run \"svn commit\"."
+echo "      applied to the repository before you run \"git commit\"."

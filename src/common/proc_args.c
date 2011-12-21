@@ -886,17 +886,14 @@ int sig_name2num(char *signal_name)
 extern int parse_uint32(char *aval, uint32_t *ival)
 {
 	/*
-	 * An unsigned 32 bit integer can have a maximum
-	 * value of 4294967295.
-	 *
 	 * First,  convert the ascii value it to a
 	 * long long int. If the result is greater
-	 * than or equal to 0 and less than 4294967295
+	 * than or equal to 0 and less than NO_VAL
 	 * set the value and return. Otherwise return
 	 * an error.
 	 */
-	uint32_t max32uint = NO_VAL;
-	long long  tval;
+	uint32_t max32uint = (uint32_t) NO_VAL;
+	long long tval;
 
 	/*
  	 * Return error for invalid value.
@@ -920,17 +917,14 @@ extern int parse_uint32(char *aval, uint32_t *ival)
 extern int parse_uint16(char *aval, uint16_t *ival)
 {
 	/*
-	 * an unsigned 16 bit integer can have a maximum
-	 * value of 65535.
-	 *
 	 * First,  convert the ascii value it to a
-	 * long long int. If the result is greater
-	 * than or equal to 0 and less than 65535
+	 * long long int. If the result is greater then
+	 * or equal to 0 and less than (uint16_t) NO_VAL
 	 * set the value and return. Otherwise
 	 * return an error.
 	 */
-	long long  tval;
 	uint16_t max16uint = (uint16_t) NO_VAL;
+	long long tval;
 
 	/*
  	 * Return error for invalid value.

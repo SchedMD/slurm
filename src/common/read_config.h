@@ -271,7 +271,7 @@ extern void slurm_conf_mutex_init(void);
 /* slurm_conf_install_fork_handlers
  * installs what to do with a fork with the conf mutex
  */
-void slurm_conf_install_fork_handlers();
+void slurm_conf_install_fork_handlers(void);
 
 /*
  * NOTE: Caller must NOT be holding slurm_conf_lock().

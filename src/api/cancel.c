@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  cancel.c - cancel a slurm job or job step
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -57,7 +56,7 @@
  * IN batch_flag - 1 to signal batch shell only, otherwise 0
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-int
+extern int
 slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag)
 {
 	int rc;
@@ -92,7 +91,7 @@ slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag)
  * IN signal     - signal number
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-int
+extern int
 slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 {
 	int rc;

@@ -107,11 +107,14 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 job_submit_lua_la_LIBADD =
-am_job_submit_lua_la_OBJECTS = job_submit_lua.lo
+am__job_submit_lua_la_SOURCES_DIST = job_submit_lua.c
+@HAVE_LUA_TRUE@am_job_submit_lua_la_OBJECTS = job_submit_lua.lo
+am__EXTRA_job_submit_lua_la_SOURCES_DIST = job_submit_lua.c
 job_submit_lua_la_OBJECTS = $(am_job_submit_lua_la_OBJECTS)
 job_submit_lua_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(job_submit_lua_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_LUA_TRUE@am_job_submit_lua_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -125,8 +128,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(job_submit_lua_la_SOURCES)
-DIST_SOURCES = $(job_submit_lua_la_SOURCES)
+SOURCES = $(job_submit_lua_la_SOURCES) \
+	$(EXTRA_job_submit_lua_la_SOURCES)
+DIST_SOURCES = $(am__job_submit_lua_la_SOURCES_DIST) \
+	$(am__EXTRA_job_submit_lua_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -334,11 +339,12 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\"
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(lua_CFLAGS)
-pkglib_LTLIBRARIES = job_submit_lua.la
 
 # Job submit lua plugin.
-job_submit_lua_la_SOURCES = job_submit_lua.c
-job_submit_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(lua_LIBS)
+@HAVE_LUA_TRUE@pkglib_LTLIBRARIES = job_submit_lua.la
+@HAVE_LUA_TRUE@job_submit_lua_la_SOURCES = job_submit_lua.c
+@HAVE_LUA_TRUE@job_submit_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(lua_LIBS)
+@HAVE_LUA_FALSE@EXTRA_job_submit_lua_la_SOURCES = job_submit_lua.c
 all: all-am
 
 .SUFFIXES:
@@ -405,7 +411,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 job_submit_lua.la: $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_DEPENDENCIES) 
-	$(job_submit_lua_la_LINK) -rpath $(pkglibdir) $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_LIBADD) $(LIBS)
+	$(job_submit_lua_la_LINK) $(am_job_submit_lua_la_rpath) $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

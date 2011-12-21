@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #ifndef _PLUGSTACK_H
+#define _PLUGSTACK_H
 
 #if HAVE_CONFIG_H
 #  include <config.h>

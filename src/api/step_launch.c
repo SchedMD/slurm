@@ -1682,7 +1682,3 @@ _check_io_timeout(void *_sls)
 	pthread_mutex_unlock(&sls->lock);
 	return NULL;
 }
-
-
-
-
