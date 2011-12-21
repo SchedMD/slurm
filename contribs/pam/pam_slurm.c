@@ -360,7 +360,7 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
  */
 extern void libpam_slurm_init (void)
 {
-	char current_major[64];
+	char libslurmname[64];
 
 	if (slurm_h)
 		return;
@@ -368,14 +368,27 @@ extern void libpam_slurm_init (void)
 	/* First try to use the same libslurm version ("libslurm.so.24.0.0"),
 	 * Second try to match the major version number ("libslurm.so.24"),
 	 * Otherwise use "libslurm.so" */
-	snprintf(current_major, sizeof(current_major), "libslurm.so.%d",
-		 SLURM_API_CURRENT);
-	if (!(slurm_h = dlopen("libslurm.so." SLURM_VERSION_STRING,
-					      RTLD_NOW|RTLD_GLOBAL)) &&
-	    !(slurm_h = dlopen(current_major, RTLD_NOW|RTLD_GLOBAL)) &&
-	    !(slurm_h = dlopen("libslurm.so", RTLD_NOW|RTLD_GLOBAL))) {
-		_log_msg (LOG_ERR, "Unable to dlopen libslurm: %s\n",
-			  dlerror ());
+	if (snprintf(libslurmname, sizeof(libslurmname), 
+			"libslurm.so.%d.%d.%d", SLURM_API_CURRENT,
+			SLURM_API_REVISION, SLURM_API_AGE) >=
+			sizeof(libslurmname) ) {
+		_log_msg (LOG_ERR, "Unable to write libslurmname\n");
+	} else if (!(slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
+		_log_msg (LOG_INFO, "Unable to dlopen %s: %s\n",
+			libslurmname, dlerror ());
+	}
+
+	if (snprintf(libslurmname, sizeof(libslurmname), "libslurm.so.%d",
+			SLURM_API_CURRENT) >= sizeof(libslurmname) ) {
+		_log_msg (LOG_ERR, "Unable to write libslurmname\n");
+	} else if (!(slurm_h = dlopen(libslurmname, RTLD_NOW|RTLD_GLOBAL))) {
+		_log_msg (LOG_INFO, "Unable to dlopen %s: %s\n",
+			libslurmname, dlerror ());
+	}
+
+	if (!(slurm_h = dlopen("libslurm.so", RTLD_NOW|RTLD_GLOBAL))) {
+		_log_msg (LOG_ERR, "Unable to dlopen libslurm.so: %s\n",
+ 			  dlerror ());
 	}
 
 	return;
