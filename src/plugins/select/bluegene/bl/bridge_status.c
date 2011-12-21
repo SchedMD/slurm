@@ -570,6 +570,7 @@ static int _do_block_poll(void)
 	if (!bg_lists->main)
 		return updated;
 
+	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
@@ -702,6 +703,7 @@ static int _do_block_poll(void)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+	unlock_slurmctld(job_read_lock);
 
 	bg_status_process_kill_job_list(kill_job_list);
 
