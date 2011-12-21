@@ -76,7 +76,8 @@ typedef struct {
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
 static char *_initial_page_opts = "Name,State,CPU_Count,Used_CPU_Count,"
-	"Error_CPU_Count,Cores,Sockets,Threads,Real_Memory,Tmp_Disk";
+	"Error_CPU_Count,CoresPerSocket,Sockets,ThreadsPerCore,"
+	"Real_Memory,Tmp_Disk";
 
 static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,
@@ -99,11 +100,11 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_CORES, "Cores", FALSE,
+	{G_TYPE_INT, SORTID_CORES, "CoresPerSocket", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_SOCKETS, "Sockets", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_THREADS, "Threads", FALSE,
+	{G_TYPE_INT, SORTID_THREADS, "ThreadsPerCore", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
