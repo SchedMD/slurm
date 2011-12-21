@@ -367,7 +367,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos
 				% sview_colors_cnt],
-			   SORTID_CORES,     node_ptr->cpus,
+			   SORTID_CORES,     node_ptr->cores,
 			   SORTID_CPUS,      node_ptr->cpus,
 			   SORTID_DISK,      tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,
