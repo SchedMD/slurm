@@ -455,9 +455,43 @@ static void _update_info_block(List block_list,
 			_update_block_record(block_ptr,
 					     GTK_TREE_STORE(model));
 		else {
-			_append_block_record(block_ptr,
-					     GTK_TREE_STORE(model));
-			block_ptr->iter_set = true;
+			GtkTreePath *path = gtk_tree_path_new_first();
+
+			/* get the iter, or find out the list is empty
+			 * goto add */
+			if (gtk_tree_model_get_iter(
+				    model, &block_ptr->iter_ptr, path)) {
+				do {
+					/* search for the jobid and
+					   check to see if it is in
+					   the list */
+					gtk_tree_model_get(
+						model,
+						&block_ptr->iter_ptr,
+						SORTID_BLOCK,
+						&name, -1);
+					if (!strcmp(name,
+						    block_ptr->bg_block_name)) {
+						/* update with new info */
+						g_free(name);
+						_update_block_record(
+							block_ptr,
+							GTK_TREE_STORE(model));
+						block_ptr->iter_set = 1;
+						break;
+					}
+					g_free(name);
+				} while (gtk_tree_model_iter_next(
+						 model,
+						 &block_ptr->iter_ptr));
+			}
+
+			if (!block_ptr->iter_set) {
+				_append_block_record(block_ptr,
+						    GTK_TREE_STORE(model));
+				block_ptr->iter_set = true;
+			}
+			gtk_tree_path_free(path);
 		}
 	}
 
