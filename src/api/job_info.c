@@ -168,13 +168,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line 1 ******/
-#ifdef USE_LOADLEVELER
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "JobId=%s Name=%s", job_ptr->job_id, job_ptr->name);
-#else
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "JobId=%u Name=%s", job_ptr->job_id, job_ptr->name);
-#endif
 	out = xstrdup(tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

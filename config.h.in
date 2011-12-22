@@ -497,9 +497,6 @@
 /* define if using ISO 8601 time format */
 #undef USE_ISO_8601
 
-/* Define to 1 if running over LoadLeveler */
-#undef USE_LOADLEVELER
-
 /* Version number of package */
 #undef VERSION
 

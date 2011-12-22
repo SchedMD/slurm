@@ -741,8 +741,6 @@ SED
 LIBTOOL
 WITH_CYGWIN_FALSE
 WITH_CYGWIN_TRUE
-USE_LOADLEVELER_FALSE
-USE_LOADLEVELER_TRUE
 HAVE_AIX_PROCTRACK_FALSE
 HAVE_AIX_PROCTRACK_TRUE
 EGREP
@@ -897,7 +895,6 @@ enable_bgp_emulation
 enable_bgq_emulation
 with_proctrack
 enable_largefile
-with_loadleveler
 enable_shared
 enable_static
 with_pic
@@ -1619,7 +1616,6 @@ Optional Packages:
   --with-bg-serial=NAME   set BG_SERIAL value
 
   --with-proctrack=PATH   Specify path to proctrack sources
-  --with-loadleveler      use LoadLeveler APIs instead of SLURM daemons
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
@@ -6029,39 +6025,6 @@ else
   HAVE_AIX_PROCTRACK_FALSE=
 fi
 
-
-   ac_with_load_leveler="no"
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for use of LoadLeveler APIs instead of SLURM daemons" >&5
-$as_echo_n "checking for use of LoadLeveler APIs instead of SLURM daemons... " >&6; }
-
-# Check whether --with-loadleveler was given.
-if test "${with_loadleveler+set}" = set; then :
-  withval=$with_loadleveler;   case "$withval" in
-          yes) ac_with_load_leveler=yes ;;
-          no)  ac_with_load_leveler=no ;;
-          *)   { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-               as_fn_error $? "bad value \"$withval\" for --with-loadleveler" "$LINENO" 5 ;;
-          esac
-
-
-fi
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_with_load_leveler" >&5
-$as_echo "$ac_with_load_leveler" >&6; }
-    if test "x$ac_with_load_leveler" = "xyes"; then
-  USE_LOADLEVELER_TRUE=
-  USE_LOADLEVELER_FALSE='#'
-else
-  USE_LOADLEVELER_TRUE='#'
-  USE_LOADLEVELER_FALSE=
-fi
-
-   if test "x$ac_with_load_leveler" = "xyes" ; then
-
-$as_echo "#define USE_LOADLEVELER 1" >>confdefs.h
-
-   fi
 
 
 case "$host" in
@@ -22324,10 +22287,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_AIX_PROCTRACK_TRUE}" && test -z "${HAVE_AIX_PROCTRACK_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_AIX_PROCTRACK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${USE_LOADLEVELER_TRUE}" && test -z "${USE_LOADLEVELER_FALSE}"; then
-  as_fn_error $? "conditional \"USE_LOADLEVELER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_CYGWIN_TRUE}" && test -z "${WITH_CYGWIN_FALSE}"; then

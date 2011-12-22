@@ -148,17 +148,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	else
 		secs2time_str ((time_t)job_step_ptr->time_limit * 60,
 				limit_str, sizeof(limit_str));
-#ifdef USE_LOADLEVELER
-	snprintf(tmp_line, sizeof(tmp_line),
-		"StepId=%s.%u UserId=%u StartTime=%s TimeLimit=%s",
-		job_step_ptr->job_id, job_step_ptr->step_id,
-		job_step_ptr->user_id, time_str, limit_str);
-#else
 	snprintf(tmp_line, sizeof(tmp_line),
 		"StepId=%u.%u UserId=%u StartTime=%s TimeLimit=%s",
 		job_step_ptr->job_id, job_step_ptr->step_id,
 		job_step_ptr->user_id, time_str, limit_str);
-#endif
 	out = xstrdup(tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -349,9 +342,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	slurm_msg_t_init(&req_msg);
 
 	memset(&req, 0, sizeof(job_step_id_msg_t));
-#ifndef USE_LOADLEVELER
 	resp_out->job_id = req.job_id = job_id;
-#endif
 	resp_out->step_id = req.step_id = step_id;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;

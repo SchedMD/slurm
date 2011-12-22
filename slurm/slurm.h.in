@@ -1055,11 +1055,7 @@ typedef struct job_info {
 	char *features;		/* comma separated list of required features */
 	char *gres;		/* comma separated list of generic resources */
 	uint32_t group_id;	/* group job sumitted as */
-#ifdef USE_LOADLEVELER
-	char *job_id;		/* job ID */
-#else
 	uint32_t job_id;	/* job ID */
-#endif
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
@@ -1333,11 +1329,7 @@ typedef struct {
 	char *ckpt_dir;		/* path to store checkpoint image files */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	char *gres;		/* generic resources required */
-#ifdef USE_LOADLEVELER
-	char *job_id;		/* job ID */
-#else
 	uint32_t job_id;	/* job ID */
-#endif
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
 	char *nodes;		/* list of nodes allocated to job_step */
@@ -1385,11 +1377,7 @@ typedef struct {
 } job_step_stat_t;
 
 typedef struct {
-#ifdef USE_LOADLEVELER
-	char *job_id;		/* job ID */
-#else
 	uint32_t job_id;	/* job ID */
-#endif
 	List stats_list;	/* List of job_step_stat_t *'s */
 	uint32_t step_id;
 } job_step_stat_response_msg_t;

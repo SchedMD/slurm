@@ -68,22 +68,4 @@ AC_DEFUN([X_AC_AIX],
       AC_SYS_LARGEFILE
    fi
    AM_CONDITIONAL(HAVE_AIX_PROCTRACK, test "x$ac_have_aix_proctrack" = "xyes")
-
-   ac_with_load_leveler="no"
-   AC_MSG_CHECKING([for use of LoadLeveler APIs instead of SLURM daemons])
-   AC_ARG_WITH([loadleveler],
-     AS_HELP_STRING(--with-loadleveler,use LoadLeveler APIs instead of SLURM daemons),
-       [  case "$withval" in
-          yes) ac_with_load_leveler=yes ;;
-          no)  ac_with_load_leveler=no ;;
-          *)   AC_MSG_RESULT([doh!])
-               AC_MSG_ERROR([bad value "$withval" for --with-loadleveler]) ;;
-          esac
-       ]
-     )
-   AC_MSG_RESULT($ac_with_load_leveler)
-   AM_CONDITIONAL(USE_LOADLEVELER, test "x$ac_with_load_leveler" = "xyes")
-   if test "x$ac_with_load_leveler" = "xyes" ; then
-      AC_DEFINE(USE_LOADLEVELER, 1, [Define to 1 if running over LoadLeveler])
-   fi
 ])

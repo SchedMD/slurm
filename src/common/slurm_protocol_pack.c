@@ -3900,9 +3900,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 	char *node_inx_str;
 
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-#ifndef USE_LOADLEVELER
 		safe_unpack32(&step->job_id, buffer);
-#endif
 		safe_unpack32(&step->step_id, buffer);
 		safe_unpack16(&step->ckpt_interval, buffer);
 		safe_unpack32(&step->user_id, buffer);
@@ -3931,9 +3929,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 						   buffer, protocol_version))
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-#ifndef USE_LOADLEVELER
 		safe_unpack32(&step->job_id, buffer);
-#endif
 		safe_unpack32(&step->step_id, buffer);
 		safe_unpack16(&step->ckpt_interval, buffer);
 		safe_unpack32(&step->user_id, buffer);
@@ -3959,9 +3955,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 			xfree(node_inx_str);
 		}
 	} else {
-#ifndef USE_LOADLEVELER
 		safe_unpack32(&step->job_id, buffer);
-#endif
 		safe_unpack32(&step->step_id, buffer);
 		safe_unpack16(&step->ckpt_interval, buffer);
 		safe_unpack32(&step->user_id, buffer);
@@ -4083,9 +4077,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack32(&job->assoc_id, buffer);
-#ifndef USE_LOADLEVELER
 		safe_unpack32(&job->job_id, buffer);
-#endif
 		safe_unpack32(&job->user_id, buffer);
 		safe_unpack32(&job->group_id, buffer);
 
@@ -4197,9 +4189,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		}
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&job->assoc_id, buffer);
-#ifndef USE_LOADLEVELER
 		safe_unpack32(&job->job_id, buffer);
-#endif
 		safe_unpack32(&job->user_id, buffer);
 		safe_unpack32(&job->group_id, buffer);
 
@@ -4307,9 +4297,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		}
 	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpack32(&job->assoc_id, buffer);
-#ifndef USE_LOADLEVELER
 		safe_unpack32(&job->job_id, buffer);
-#endif
 		safe_unpack32(&job->user_id, buffer);
 		safe_unpack32(&job->group_id, buffer);
 
