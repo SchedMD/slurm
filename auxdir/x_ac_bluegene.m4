@@ -90,7 +90,7 @@ AC_DEFUN([X_AC_BGL],
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
-		CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64 --std=gnu99"
 		CXXFLAGS="$CXXFLAGS $CFLAGS"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
   		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
