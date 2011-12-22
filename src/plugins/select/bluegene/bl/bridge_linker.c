@@ -609,7 +609,6 @@ static int _post_allocate(bg_record_t *bg_record)
 #if defined HAVE_BG_FILES
 	int i;
 	pm_partition_id_t block_id;
-	uid_t my_uid;
 
 	/* Add partition record to the DB */
 	debug2("adding block");
@@ -1761,8 +1760,7 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 
 		if (user_name && !strcmp(user, user_name)) {
 			returnc = REMOVE_USER_FOUND;
-			if ((rc = bridge_block_add_user(
-				     bg_record->bg_block_id, user))
+			if ((rc = bridge_block_add_user(bg_record, user))
 			    != SLURM_SUCCESS) {
 				debug("couldn't add user %s to block %s",
 				      user, bg_record->bg_block_id);
@@ -1798,9 +1796,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 
 	int mp_cnt;
 	rm_partition_t *block_ptr = NULL;
-	char *user_name = NULL;
 	bg_record_t *bg_record = NULL;
-	uid_t my_uid;
 
 	int block_number, block_count;
 	char *bg_block_id = NULL;

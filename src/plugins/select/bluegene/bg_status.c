@@ -284,8 +284,16 @@ nochange_state:
 				error("Couldn't boot Block %s",
 				      bg_record->bg_block_id);
 
+				/* We can't push on the kill_job_list
+				   here since we have to put this
+				   block in an error and that means
+				   the killing has to take place
+				   before the erroring of the block.
+				*/
 				slurm_mutex_unlock(&block_state_mutex);
+				unlock_slurmctld(job_read_lock);
 				requeue_and_error(bg_record, reason);
+				lock_slurmctld(job_read_lock);
 				slurm_mutex_lock(&block_state_mutex);
 
 				bg_record->boot_state = 0;
