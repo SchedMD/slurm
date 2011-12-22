@@ -4536,7 +4536,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
-		CFLAGS="$CFLAGS -m64"
+		CFLAGS="$CFLAGS -m64 --std=gnu99"
 		CXXFLAGS="$CXXFLAGS $CFLAGS"
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
