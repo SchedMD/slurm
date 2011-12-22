@@ -187,8 +187,11 @@ int main(int argc, char *argv[])
 			error("%s", msg);
 		sleep (++retries);
         }
-
+#ifdef USE_LOADLEVELER
+	printf("Submitted batch job %s", resp->job_id);
+#else
 	printf("Submitted batch job %u", resp->job_id);
+#endif
 	if (working_cluster_rec)
 		printf(" on cluster %s", working_cluster_rec->name);
 	printf("\n");

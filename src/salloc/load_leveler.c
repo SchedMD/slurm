@@ -59,6 +59,11 @@
 
 #ifdef USE_LOADLEVELER
 
+/* PTY_MODE indicates if the salloc back-end is to spawn its task using a
+ * psuedo-terminate for stdio/out/err. If set, then stdout and stderr are
+ * combined into a single data stream, but the output is flushed regularly.
+ * If not set, then I/O may not be flushed very regularly. We might want this
+ * to be configurable by job. */
 #define PTY_MODE true
 
 /* Set this to generate debugging information for salloc front-end/back-end
@@ -485,7 +490,7 @@ extern int salloc_front_end (int argc, char **argv)
 	fd_set except_fds, read_fds;
 	char *exec_line = NULL, hostname[1024];
 	int i, n_fds, status = -1;
-bool pty = PTY_MODE;
+	bool pty = PTY_MODE;
 
 	/* Open sockets for back-end program to communicate with */
 	/* Socket for stdin/stdout */
@@ -697,7 +702,7 @@ extern int salloc_back_end (int argc, char **argv)
 	fd_set read_fds;
 	pid_t pid;
 	int i, n_fds, status = 0;
-bool pty = PTY_MODE;
+	bool pty = PTY_MODE;
 
 	if (argc >= 6) {
 		host   = argv[1];

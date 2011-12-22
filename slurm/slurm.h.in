@@ -1984,7 +1984,11 @@ typedef struct slurmd_status_msg {
 } slurmd_status_t;
 
 typedef struct submit_response_msg {
+#ifdef USE_LOADLEVELER
+	char *job_id;		/* job ID */
+#else
 	uint32_t job_id;	/* job ID */
+#endif
 	uint32_t step_id;	/* step ID */
 	uint32_t error_code;	/* error code for warning message */
 } submit_response_msg_t;
@@ -2116,10 +2120,17 @@ extern int slurm_allocate_resources PARAMS(
  *      with no allocation granted)
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
+#ifdef USE_LOADLEVELER
+extern resource_allocation_response_msg_t *
+slurm_allocate_resources_blocking PARAMS(
+	(job_desc_msg_t *user_req, time_t timeout,
+	 void (*pending_callback)(char *job_id)));
+#else
 extern resource_allocation_response_msg_t *
 slurm_allocate_resources_blocking PARAMS(
 	(const job_desc_msg_t *user_req, time_t timeout,
 	 void (*pending_callback)(uint32_t job_id)));
+#endif
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource

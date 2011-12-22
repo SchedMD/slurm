@@ -1879,6 +1879,12 @@ static char *_massage_fname(char *slurm_fname)
 	return work_fname;
 }
 
+/* NOTE: Important difference for LoadLeveler:
+ * if req->spank_job_env_size >= 1 then
+ *	spank_job_env[0] contains monitor_program for llsubmit()
+ * if req->spank_job_env_size >= 2 then
+ *	spank_job_env[1] contains monitor_arg for llsubmit()
+ */
 extern int slurm_submit_batch_job(job_desc_msg_t *req,
 				  submit_response_msg_t **resp)
 {
@@ -2265,12 +2271,27 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 {
 	LL_job *job_info;
 	submit_response_msg_t *resp_ptr;
+	char *monitor_program = NULL, *monitor_arg = NULL;
+	char *sep1, *sep2;
 
-	rc = llsubmit(pathname, NULL, NULL, job_info, LL_JOB_VERSION);
+	if (req->spank_job_env_size >= 1)
+		monitor_program = spank_job_env[0];
+	if (req->spank_job_env_size >= 2)
+		monitor_arg = spank_job_env[1];
+	rc = llsubmit(pathname, monitor_program, monitor_arg, job_info,
+		      LL_JOB_VERSION);
 	if (rc == 0) {
 		resp_ptr = xmalloc(sizeof(submit_response_msg_t));
 		*resp = resp_ptr;
-		resp_ptr->job_id = xstrdup(job_info->jobid);
+		sep2 = strrchr(job_info->jobid, '.');
+		sep1 = strrchr(job_info->jobid, '.');
+		if (sep1) {
+			/* Reduce to short hostname.<jobid> */
+			sep1[0] = '\0';
+			xstrfmtcat(resp_ptr->job_id, "%s.%s", job_info->jobid,
+				   sep2+1);
+		} else
+			resp_ptr->job_id = xstrdup(job_info->jobid);
 		resp_ptr->step_id = job_info->stepid;
 		resp_ptr->error_code = SLURM_SUCCESS;
 		llfree_job_info(job_info, LL_JOB_VERSION);
@@ -2337,5 +2358,50 @@ extern void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 
 extern void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 {}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/allocate.c
+\*****************************************************************************/
+/*
+ * slurm_allocate_resources_blocking
+ *	allocate resources for a job request.  This call will block until
+ *	the allocation is granted, or the specified timeout limit is reached.
+ * IN req - description of resource allocation request
+ * IN timeout - amount of time, in seconds, to wait for a response before
+ * 	giving up.
+ *	A timeout of zero will wait indefinitely.
+ * IN pending_callback - If the allocation cannot be granted immediately,
+ *      the controller will put the job in the PENDING state.  If
+ *      pending callback is not NULL, it will be called with the job_id
+ *      of the pending job as the sole parameter.
+ *
+ * RET allocation structure on success, NULL on error set errno to
+ *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
+ *      with no allocation granted)
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
+ */
+resource_allocation_response_msg_t *
+slurm_allocate_resources_blocking (job_desc_msg_t *user_req,
+				   time_t timeout,
+				   void(*pending_callback)(char *job_id))
+{
+	submit_response_msg_t *submit_resp;
+
+/* FIXME: We might be able to set llsubmit's monitor_program and monitor_arg
+ * and use that to trigger job state check. Where does this program execute?
+ * setup using user_req->spank_job_env
+ * We could also trigger from the backend process connect. */
+	if (!user_req->script)
+		fatal("slurm_allocate_resources_blocking called without script");
+	if (slurm_submit_batch_job(user_req, &submit_resp) != SLURM_SUCCESS)
+		return NULL;
+	if (pending_callback) {
+		pending_callback(submit_resp->job_id);
+	}
+
+info("wait for job here");
+
+	return NULL;
+}
 
 #endif

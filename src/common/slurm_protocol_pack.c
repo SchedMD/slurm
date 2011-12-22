@@ -2691,8 +2691,9 @@ _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-
+#ifndef USE_LOADLEVELER
 	pack32((uint32_t)msg->job_id, buffer);
+#endif
 	pack32((uint32_t)msg->step_id, buffer);
 	pack32((uint32_t)msg->error_code, buffer);
 }
@@ -2709,7 +2710,9 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer,
 	*msg = tmp_ptr;
 
 	/* load the data values */
+#ifndef USE_LOADLEVELER
 	safe_unpack32(&tmp_ptr->job_id, buffer);
+#endif
 	safe_unpack32(&tmp_ptr->step_id, buffer);
 	safe_unpack32(&tmp_ptr->error_code, buffer);
 	return SLURM_SUCCESS;

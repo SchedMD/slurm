@@ -148,7 +148,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
-
+#ifndef USE_LOADLEVELER
 /*
  * slurm_allocate_resources_blocking
  *	allocate resources for a job request.  This call will block until
@@ -281,6 +281,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	errno = errnum;
 	return resp;
 }
+#endif
 
 /*
  * slurm_job_will_run - determine if a job would execute immediately if

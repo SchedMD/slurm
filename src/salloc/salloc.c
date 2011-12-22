@@ -120,12 +120,16 @@ static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
+#ifdef USE_LOADLEVELER
+static void _pending_callback(char *job_id);
+#else
 static void _pending_callback(uint32_t job_id);
+static void _set_spank_env(void);
+#endif
 static void _ping_handler(srun_ping_msg_t *msg);
 static void _ring_terminal_bell(void);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
-static void _set_spank_env(void);
 static void _set_submit_dir_env(void);
 static void _signal_while_allocating(int signo);
 static void _timeout_handler(srun_timeout_msg_t *msg);
@@ -167,7 +171,10 @@ int main(int argc, char *argv[])
 	job_desc_msg_t desc;
 	resource_allocation_response_msg_t *alloc;
 	time_t before, after;
+#ifndef USE_LOADLEVELER
 	allocation_msg_thread_t *msg_thr;
+	slurm_allocation_callbacks_t callbacks;
+#endif
 	char **env = NULL;
 	int status = 0;
 	int retries = 0;
@@ -176,8 +183,7 @@ int main(int argc, char *argv[])
 	pid_t rc_pid = 0;
 	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
-	slurm_allocation_callbacks_t callbacks;
-
+#if 0
 #ifdef USE_LOADLEVELER
 if (argc < 4)
 	rc = salloc_front_end (argc, argv);
@@ -185,10 +191,12 @@ else
 	rc = salloc_back_end (argc, argv);
 exit(rc);
 #endif
+#endif
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 
+#ifndef USE_LOADLEVELER
 	if (spank_init_allocator() < 0) {
 		error("Failed to initialize plugin stack");
 		exit(error_exit);
@@ -198,7 +206,7 @@ exit(rc);
 	 */
 	if (atexit((void (*) (void)) spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
-
+#endif
 
 	if (initialize_and_process_args(argc, argv) < 0) {
 		error("salloc parameter parsing");
@@ -217,7 +225,9 @@ exit(rc);
 		exit(error_exit);
 	}
 
+#ifndef USE_LOADLEVELER
 	_set_spank_env();
+#endif
 	_set_submit_dir_env();
 	if (opt.cwd && chdir(opt.cwd)) {
 		error("chdir(%s): %m", opt.cwd);
@@ -300,6 +310,7 @@ exit(rc);
 		}
 	}
 
+#ifndef USE_LOADLEVELER
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
 	callbacks.job_complete = _job_complete_handler;
@@ -309,7 +320,9 @@ exit(rc);
 	/* create message thread to handle pings and such from slurmctld */
 	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
 						  &callbacks);
-
+#else
+	desc.script = xstrdup("#!/bin/bash\nstart_back_end");
+#endif
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
 	for (i = 0; sig_array[i]; i++)
@@ -351,7 +364,9 @@ exit(rc);
 		} else {
 			error("Failed to allocate resources: %m");
 		}
+#ifndef USE_LOADLEVELER
 		slurm_allocation_msg_thr_destroy(msg_thr);
+#endif
 		exit(error_exit);
 	} else if (!allocation_interrupted) {
 		/*
@@ -503,8 +518,9 @@ relinquish:
 	pthread_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
+#ifndef USE_LOADLEVELER
 	slurm_allocation_msg_thr_destroy(msg_thr);
-
+#endif
 	/*
 	 * Figure out what return code we should use.  If the user's command
 	 * exited normally, return the user's return code.
@@ -560,6 +576,7 @@ static void _set_exit_code(void)
 	}
 }
 
+#ifdef USE_LOADLEVELER
 /* Propagate SPANK environment via SLURM_SPANK_ environment variables */
 static void _set_spank_env(void)
 {
@@ -572,6 +589,7 @@ static void _set_spank_env(void)
 		}
 	}
 }
+#endif
 
 /* Set SLURM_SUBMIT_DIR environment variable with current state */
 static void _set_submit_dir_env(void)
@@ -800,11 +818,19 @@ static pid_t _fork_command(char **command)
 	return pid;
 }
 
+#ifdef USE_LOADLEVELER
+static void _pending_callback(char *job_id)
+{
+	info("Pending job allocation %s", job_id);
+/* FIXME:	pending_job_id = job_id; */
+}
+#else
 static void _pending_callback(uint32_t job_id)
 {
 	info("Pending job allocation %u", job_id);
 	pending_job_id = job_id;
 }
+#endif
 
 static void _exit_on_signal(int signo)
 {
