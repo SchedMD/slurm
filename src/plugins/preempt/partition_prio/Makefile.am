@@ -6,9 +6,12 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
+if ! USE_LOADLEVELER
+
 pkglib_LTLIBRARIES = preempt_partition_prio.la
-
 preempt_partition_prio_la_SOURCES = preempt_partition_prio.c
-
 preempt_partition_prio_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
+else
+EXTRA_preempt_partition_prio_la_SOURCES = preempt_partition_prio.c
+endif

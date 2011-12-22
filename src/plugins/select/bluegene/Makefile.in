@@ -38,37 +38,37 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_1 = bl ba
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_2 = libsched_if64.la
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_3 = libsched_if.la
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_4 = bl_bgq ba_bgq
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am__append_5 = runjob_plugin.la
-@BLUEGENE_LOADED_TRUE@am__append_6 = \
-@BLUEGENE_LOADED_TRUE@			bg_core.c		\
-@BLUEGENE_LOADED_TRUE@			bg_core.h		\
-@BLUEGENE_LOADED_TRUE@			bg_defined_block.c	\
-@BLUEGENE_LOADED_TRUE@			bg_defined_block.h	\
-@BLUEGENE_LOADED_TRUE@			bg_dynamic_block.c	\
-@BLUEGENE_LOADED_TRUE@			bg_dynamic_block.h	\
-@BLUEGENE_LOADED_TRUE@			bg_enums.h		\
-@BLUEGENE_LOADED_TRUE@			bg_job_place.c		\
-@BLUEGENE_LOADED_TRUE@			bg_job_place.h		\
-@BLUEGENE_LOADED_TRUE@			bg_job_run.c		\
-@BLUEGENE_LOADED_TRUE@			bg_job_run.h		\
-@BLUEGENE_LOADED_TRUE@			bg_list_functions.c	\
-@BLUEGENE_LOADED_TRUE@			bg_list_functions.h	\
-@BLUEGENE_LOADED_TRUE@			bg_read_config.c	\
-@BLUEGENE_LOADED_TRUE@			bg_read_config.h	\
-@BLUEGENE_LOADED_TRUE@			bg_record_functions.c	\
-@BLUEGENE_LOADED_TRUE@			bg_record_functions.h	\
-@BLUEGENE_LOADED_TRUE@			bg_status.c		\
-@BLUEGENE_LOADED_TRUE@			bg_status.h		\
-@BLUEGENE_LOADED_TRUE@			bg_structs.h		\
-@BLUEGENE_LOADED_TRUE@			bridge_linker.h
+@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__append_1 = bl ba
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__append_2 = libsched_if64.la
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__append_3 = libsched_if.la
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__append_4 = bl_bgq ba_bgq
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__append_5 = runjob_plugin.la
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__append_6 = \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_core.c		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_core.h		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_defined_block.c	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_defined_block.h	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_dynamic_block.c	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_dynamic_block.h	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_enums.h		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_job_place.c		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_job_place.h		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_job_run.c		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_job_run.h		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_list_functions.c	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_list_functions.h	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_read_config.c	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_read_config.h	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_record_functions.c	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_record_functions.h	\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_status.c		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_status.h		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bg_structs.h		\
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@			bridge_linker.h
 
-@BLUEGENE_LOADED_TRUE@am__append_7 = $(block_allocator_lib) $(BG_LDFLAGS)
-@BLUEGENE_LOADED_TRUE@sbin_PROGRAMS = slurm_prolog$(EXEEXT) \
-@BLUEGENE_LOADED_TRUE@	slurm_epilog$(EXEEXT)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__append_7 = $(block_allocator_lib) $(BG_LDFLAGS)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@sbin_PROGRAMS = slurm_prolog$(EXEEXT) \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	slurm_epilog$(EXEEXT)
 subdir = src/plugins/select/bluegene
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -139,44 +139,48 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(sbindir)"
 LTLIBRARIES = $(noinst_LTLIBRARIES) $(pkglib_LTLIBRARIES)
 libba_common_la_LIBADD =
-am_libba_common_la_OBJECTS = ba_common.lo
+am__libba_common_la_SOURCES_DIST = ba_common.c ba_common.h
+@USE_LOADLEVELER_FALSE@am_libba_common_la_OBJECTS = ba_common.lo
 libba_common_la_OBJECTS = $(am_libba_common_la_OBJECTS)
+@USE_LOADLEVELER_FALSE@am_libba_common_la_rpath =
 libconfigure_api_la_LIBADD =
-am_libconfigure_api_la_OBJECTS = configure_api.lo
+am__libconfigure_api_la_SOURCES_DIST = configure_api.c configure_api.h
+@USE_LOADLEVELER_FALSE@am_libconfigure_api_la_OBJECTS =  \
+@USE_LOADLEVELER_FALSE@	configure_api.lo
 libconfigure_api_la_OBJECTS = $(am_libconfigure_api_la_OBJECTS)
+@USE_LOADLEVELER_FALSE@am_libconfigure_api_la_rpath =
 libsched_if_la_LIBADD =
 am__libsched_if_la_SOURCES_DIST = libsched_if64.c
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_OBJECTS = libsched_if64.lo
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_libsched_if_la_OBJECTS = libsched_if64.lo
 libsched_if_la_OBJECTS = $(am_libsched_if_la_OBJECTS)
 libsched_if_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libsched_if_la_LDFLAGS) $(LDFLAGS) -o $@
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if_la_rpath = -rpath \
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_libsched_if_la_rpath = -rpath \
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	$(pkglibdir)
 libsched_if64_la_LIBADD =
 am__libsched_if64_la_SOURCES_DIST = libsched_if64.c
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_OBJECTS = libsched_if64.lo
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_libsched_if64_la_OBJECTS = libsched_if64.lo
 libsched_if64_la_OBJECTS = $(am_libsched_if64_la_OBJECTS)
 libsched_if64_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libsched_if64_la_LDFLAGS) $(LDFLAGS) -o $@
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath = -rpath \
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_libsched_if64_la_rpath = -rpath \
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	$(pkglibdir)
 runjob_plugin_la_LIBADD =
 am__runjob_plugin_la_SOURCES_DIST = runjob_plugin.cc
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_runjob_plugin_la_OBJECTS =  \
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	runjob_plugin.lo
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_runjob_plugin_la_OBJECTS = runjob_plugin.lo
 runjob_plugin_la_OBJECTS = $(am_runjob_plugin_la_OBJECTS)
 runjob_plugin_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(runjob_plugin_la_LDFLAGS) $(LDFLAGS) -o $@
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_runjob_plugin_la_rpath =  \
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	-rpath $(pkglibdir)
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_runjob_plugin_la_rpath = -rpath \
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	$(pkglibdir)
 am__DEPENDENCIES_1 =
-@BLUEGENE_LOADED_TRUE@am__DEPENDENCIES_2 = $(block_allocator_lib) \
-@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_1)
-select_bluegene_la_DEPENDENCIES = libba_common.la \
-	$(am__DEPENDENCIES_2)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__DEPENDENCIES_2 = $(block_allocator_lib) \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	$(am__DEPENDENCIES_1)
+@USE_LOADLEVELER_FALSE@select_bluegene_la_DEPENDENCIES =  \
+@USE_LOADLEVELER_FALSE@	libba_common.la $(am__DEPENDENCIES_2)
 am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_job_info.c \
 	bg_job_info.h bg_node_info.c bg_node_info.h bg_core.c \
 	bg_core.h bg_defined_block.c bg_defined_block.h \
@@ -185,34 +189,39 @@ am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_job_info.c \
 	bg_list_functions.c bg_list_functions.h bg_read_config.c \
 	bg_read_config.h bg_record_functions.c bg_record_functions.h \
 	bg_status.c bg_status.h bg_structs.h bridge_linker.h
-@BLUEGENE_LOADED_TRUE@am__objects_1 = bg_core.lo bg_defined_block.lo \
-@BLUEGENE_LOADED_TRUE@	bg_dynamic_block.lo bg_job_place.lo \
-@BLUEGENE_LOADED_TRUE@	bg_job_run.lo bg_list_functions.lo \
-@BLUEGENE_LOADED_TRUE@	bg_read_config.lo bg_record_functions.lo \
-@BLUEGENE_LOADED_TRUE@	bg_status.lo
-am_select_bluegene_la_OBJECTS = select_bluegene.lo bg_job_info.lo \
-	bg_node_info.lo $(am__objects_1)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am__objects_1 =  \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_core.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_defined_block.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_dynamic_block.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_job_place.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_job_run.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_list_functions.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_read_config.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_record_functions.lo \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	bg_status.lo
+@USE_LOADLEVELER_FALSE@am_select_bluegene_la_OBJECTS =  \
+@USE_LOADLEVELER_FALSE@	select_bluegene.lo bg_job_info.lo \
+@USE_LOADLEVELER_FALSE@	bg_node_info.lo $(am__objects_1)
 select_bluegene_la_OBJECTS = $(am_select_bluegene_la_OBJECTS)
 select_bluegene_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(select_bluegene_la_LDFLAGS) $(LDFLAGS) -o $@
+@USE_LOADLEVELER_FALSE@am_select_bluegene_la_rpath = -rpath \
+@USE_LOADLEVELER_FALSE@	$(pkglibdir)
 PROGRAMS = $(sbin_PROGRAMS)
 am__slurm_epilog_SOURCES_DIST = slurm_epilog.c
-@BLUEGENE_LOADED_TRUE@am_slurm_epilog_OBJECTS =  \
-@BLUEGENE_LOADED_TRUE@	slurm_epilog.$(OBJEXT)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_slurm_epilog_OBJECTS = slurm_epilog.$(OBJEXT)
 slurm_epilog_OBJECTS = $(am_slurm_epilog_OBJECTS)
-am__DEPENDENCIES_3 = $(top_builddir)/src/api/libslurm.o
-@BLUEGENE_LOADED_TRUE@slurm_epilog_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_3)
+@USE_LOADLEVELER_FALSE@am__DEPENDENCIES_3 =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_epilog_DEPENDENCIES = $(am__DEPENDENCIES_3)
 slurm_epilog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_epilog_LDFLAGS) $(LDFLAGS) -o $@
 am__slurm_prolog_SOURCES_DIST = slurm_prolog.c
-@BLUEGENE_LOADED_TRUE@am_slurm_prolog_OBJECTS =  \
-@BLUEGENE_LOADED_TRUE@	slurm_prolog.$(OBJEXT)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@am_slurm_prolog_OBJECTS = slurm_prolog.$(OBJEXT)
 slurm_prolog_OBJECTS = $(am_slurm_prolog_OBJECTS)
-@BLUEGENE_LOADED_TRUE@slurm_prolog_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_3)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_prolog_DEPENDENCIES = $(am__DEPENDENCIES_3)
 slurm_prolog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_prolog_LDFLAGS) $(LDFLAGS) -o $@
@@ -243,8 +252,8 @@ SOURCES = $(libba_common_la_SOURCES) $(libconfigure_api_la_SOURCES) \
 	$(runjob_plugin_la_SOURCES) $(select_bluegene_la_SOURCES) \
 	$(nodist_EXTRA_select_bluegene_la_SOURCES) \
 	$(slurm_epilog_SOURCES) $(slurm_prolog_SOURCES)
-DIST_SOURCES = $(libba_common_la_SOURCES) \
-	$(libconfigure_api_la_SOURCES) \
+DIST_SOURCES = $(am__libba_common_la_SOURCES_DIST) \
+	$(am__libconfigure_api_la_SOURCES_DIST) \
 	$(am__libsched_if_la_SOURCES_DIST) \
 	$(am__libsched_if64_la_SOURCES_DIST) \
 	$(am__runjob_plugin_la_SOURCES_DIST) \
@@ -341,11 +350,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -362,6 +368,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -496,36 +503,42 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
-pkglib_LTLIBRARIES = select_bluegene.la $(am__append_2) \
-	$(am__append_3) $(am__append_5)
-noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+@USE_LOADLEVELER_FALSE@pkglib_LTLIBRARIES = select_bluegene.la \
+@USE_LOADLEVELER_FALSE@	$(am__append_2) $(am__append_3) \
+@USE_LOADLEVELER_FALSE@	$(am__append_5)
+@USE_LOADLEVELER_FALSE@noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
+@USE_LOADLEVELER_FALSE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
-select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \
-	bg_job_info.h bg_node_info.c bg_node_info.h $(am__append_6)
-libba_common_la_SOURCES = ba_common.c ba_common.h
-libconfigure_api_la_SOURCES = configure_api.c configure_api.h
-select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-select_bluegene_la_LIBADD = libba_common.la $(am__append_7)
-@BLUEGENE_LOADED_TRUE@SUBDIRS = sfree $(am__append_1) $(am__append_4)
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c
-@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_SOURCES = libsched_if64.c
-@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba_bgq/libblock_allocator.la
-@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba/libblock_allocator.la
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_SOURCES = runjob_plugin.cc
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(convenience_libs) -lpthread
+@USE_LOADLEVELER_FALSE@select_bluegene_la_SOURCES = select_bluegene.c \
+@USE_LOADLEVELER_FALSE@	bg_job_info.c bg_job_info.h \
+@USE_LOADLEVELER_FALSE@	bg_node_info.c bg_node_info.h \
+@USE_LOADLEVELER_FALSE@	$(am__append_6)
+@USE_LOADLEVELER_FALSE@libba_common_la_SOURCES = ba_common.c ba_common.h
+@USE_LOADLEVELER_FALSE@libconfigure_api_la_SOURCES = configure_api.c configure_api.h
+@USE_LOADLEVELER_FALSE@select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@USE_LOADLEVELER_FALSE@select_bluegene_la_LIBADD = libba_common.la \
+@USE_LOADLEVELER_FALSE@	$(am__append_7)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@SUBDIRS = sfree \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	$(am__append_1) \
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	$(am__append_4)
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@libsched_if64_la_SOURCES = libsched_if64.c
+@BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@libsched_if_la_SOURCES = libsched_if64.c
+@BGL_LOADED_FALSE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@libsched_if_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@block_allocator_lib = ba_bgq/libblock_allocator.la
+@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@block_allocator_lib = ba/libblock_allocator.la
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@runjob_plugin_la_SOURCES = runjob_plugin.cc
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@runjob_plugin_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	$(convenience_libs) -lpthread
 
-@BLUEGENE_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
-@BLUEGENE_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c
-@BLUEGENE_LOADED_TRUE@slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-@BLUEGENE_LOADED_TRUE@slurm_epilog_LDADD = $(convenience_libs)
-@BLUEGENE_LOADED_TRUE@slurm_epilog_SOURCES = slurm_epilog.c
-@BLUEGENE_LOADED_TRUE@slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_prolog_LDADD = $(convenience_libs)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_prolog_SOURCES = slurm_prolog.c
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_epilog_LDADD = $(convenience_libs)
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_epilog_SOURCES = slurm_epilog.c
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-recursive
 
 .SUFFIXES:
@@ -601,9 +614,9 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libba_common.la: $(libba_common_la_OBJECTS) $(libba_common_la_DEPENDENCIES) 
-	$(LINK)  $(libba_common_la_OBJECTS) $(libba_common_la_LIBADD) $(LIBS)
+	$(LINK) $(am_libba_common_la_rpath) $(libba_common_la_OBJECTS) $(libba_common_la_LIBADD) $(LIBS)
 libconfigure_api.la: $(libconfigure_api_la_OBJECTS) $(libconfigure_api_la_DEPENDENCIES) 
-	$(LINK)  $(libconfigure_api_la_OBJECTS) $(libconfigure_api_la_LIBADD) $(LIBS)
+	$(LINK) $(am_libconfigure_api_la_rpath) $(libconfigure_api_la_OBJECTS) $(libconfigure_api_la_LIBADD) $(LIBS)
 libsched_if.la: $(libsched_if_la_OBJECTS) $(libsched_if_la_DEPENDENCIES) 
 	$(libsched_if_la_LINK) $(am_libsched_if_la_rpath) $(libsched_if_la_OBJECTS) $(libsched_if_la_LIBADD) $(LIBS)
 libsched_if64.la: $(libsched_if64_la_OBJECTS) $(libsched_if64_la_DEPENDENCIES) 
@@ -611,7 +624,7 @@ libsched_if64.la: $(libsched_if64_la_OBJECTS) $(libsched_if64_la_DEPENDENCIES)
 runjob_plugin.la: $(runjob_plugin_la_OBJECTS) $(runjob_plugin_la_DEPENDENCIES) 
 	$(runjob_plugin_la_LINK) $(am_runjob_plugin_la_rpath) $(runjob_plugin_la_OBJECTS) $(runjob_plugin_la_LIBADD) $(LIBS)
 select_bluegene.la: $(select_bluegene_la_OBJECTS) $(select_bluegene_la_DEPENDENCIES) 
-	$(select_bluegene_la_LINK) -rpath $(pkglibdir) $(select_bluegene_la_OBJECTS) $(select_bluegene_la_LIBADD) $(LIBS)
+	$(select_bluegene_la_LINK) $(am_select_bluegene_la_rpath) $(select_bluegene_la_OBJECTS) $(select_bluegene_la_LIBADD) $(LIBS)
 install-sbinPROGRAMS: $(sbin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(sbindir)" || $(MKDIR_P) "$(DESTDIR)$(sbindir)"
@@ -1076,11 +1089,11 @@ uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 	uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 
 
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@  # force link with g++
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@  # force link with g++
 
-@BLUEGENE_LOADED_TRUE@force:
-@BLUEGENE_LOADED_TRUE@$(block_allocator_lib) $(convenience_libs) : force
-@BLUEGENE_LOADED_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@force:
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@$(block_allocator_lib) $(convenience_libs) : force
+@BLUEGENE_LOADED_TRUE@@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

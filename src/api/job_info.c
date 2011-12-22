@@ -837,6 +837,7 @@ line15:
 
 }
 
+#ifndef USE_LOADLEVELER
 /*
  * slurm_load_jobs - issue RPC to get all job configuration
  *	information if changed since update_time
@@ -883,7 +884,9 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 
 	return SLURM_PROTOCOL_SUCCESS ;
 }
+#endif
 
+#ifndef USE_LOADLEVELER
 /*
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
@@ -928,6 +931,7 @@ slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags)
 
 	return SLURM_PROTOCOL_SUCCESS ;
 }
+#endif
 
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id

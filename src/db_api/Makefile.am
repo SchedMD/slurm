@@ -3,6 +3,28 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+# This is needed if compiling on windows
+EXEEXT=
+
+LIBSLURMDB_LA_SOURCES =		\
+	account_functions.c	\
+	archive_functions.c	\
+	assoc_functions.c	\
+	cluster_functions.c	\
+	cluster_report_functions.c \
+	coord_functions.c	\
+	connection_functions.c	\
+	extra_get_functions.c	\
+	job_report_functions.c	\
+	qos_functions.c		\
+	resv_report_functions.c	\
+	usage_functions.c	\
+	user_functions.c	\
+	user_report_functions.c	\
+	wckey_functions.c
+
+if ! USE_LOADLEVELER
+
 INCLUDES = -I$(top_srcdir)
 
 if WITH_GNU_LD
@@ -51,25 +73,8 @@ BUILT_SOURCES = $(VERSION_SCRIPT) libslurmdb.la
 # and libslurmdb in the same program because of extra symbols this is needed.
 # libslurmdb.o are for convenience, and it is not installed.
 noinst_PROGRAMS = libslurmdb.o
-# This is needed if compiling on windows
-EXEEXT=
 
-libslurmdb_la_SOURCES =	\
-	account_functions.c \
-	archive_functions.c \
-	assoc_functions.c \
-	cluster_functions.c \
-	cluster_report_functions.c \
-	coord_functions.c \
-	connection_functions.c \
-	extra_get_functions.c \
-	job_report_functions.c \
-	qos_functions.c \
-	resv_report_functions.c \
-	usage_functions.c \
-	user_functions.c \
-	user_report_functions.c \
-	wckey_functions.c
+libslurmdb_la_SOURCES = $(LIBSLURMDB_LA_SOURCES)
 
 libslurmdb_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
 libslurmdb_la_LDFLAGS        = \
@@ -102,3 +107,7 @@ CLEANFILES = \
 
 DISTCLEANFILES = \
 	$(VERSION_SCRIPT)
+
+else
+EXTRA_libslurmdb_la_SOURCES = $(LIBSLURMDB_LA_SOURCES)
+endif

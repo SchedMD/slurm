@@ -1,0 +1,241 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">SLURM Interface for LoadLeveler</a></h1>
+
+<h2>Overview</h2>
+
+<p>SLURM version 2.4 has the ability to support a limited subset of SLURM
+commands over a
+<a href="http://publib.boulder.ibm.com/infocenter/clresctr/vxrx/index.jsp?topic=/com.ibm.cluster.loadl.doc/llbooks.html">
+LoadLeveler</a> infrastructure.
+The user is presented with a set of commands that look and feel like a native
+SLURM installation, but which interface an underlying LoadLeveler job scheduler.
+There are minimal changes to the SLURM commands, but a new SLURM library has
+been developed which communicates with the LoadLeveler rather than the SLURM
+daemons to get system information and submit jobs.
+The information in this document assumes a working knowledge of SLURM and is
+meant to describe the differences in SLURM operation with LoadLeveler.</p>
+
+<p>The supported commands include:
+<a href=#salloc>salloc</a>,
+<a href=#sbatch>sbatch</a>,
+<a href=#scancel>scancel</a>,
+<a href=#sinfo>sinfo</a>,
+<a href=#squeue>squeue</a>,
+<a href=#srun>srun</a>, and
+<a href=#sstat>sstat</a>.
+Details about each SLURM command's operation with LoadLeveler can be found
+below, but there are some general differences which apply to many of the commands.
+<ol>
+<li><b>Hostnames</b>: LoadLeveler can be configured to use fully qualified
+hostnames, which makes for rather verbose output. SLURM commands use only the
+hostname to the first period (e.g. "tux123.cluster.corporation.com" becomes
+"tux123").</li>
+<li><b>Job ID</b>: LoadLeveler jobs can be submitted to multiple controller
+daemons and a hostname is included as part of its job ID. SLURM commands were
+modified to include the hostname in the job ID, so it is treated as a string
+rather than a number in these SLURM commands. Note that the hostnames are
+truncated in the job ID also (e.g. "tux123.cluster.corporation.com.45678
+ becomes "tux123.45678").</li>
+<li><b>Partitions</b>: LoadLeveler classes are treated the same as SLURM
+partitions.</li>
+<li><b>Node Resources</b>: LoadLeveler node resources are treated the same as
+SLURM generic resources (GRES).</li>
+</ol> 
+</p>
+
+
+<h2><a name="salloc">salloc</a></h2>
+<p>LoadLeveler lacks an interactive job allocaiton mode equivalent to SLURM.
+The salloc command submits a batch job to LoadLeveler that will make a socket
+connection back to the salloc command once the resource allocation has been
+made.</p>
+
+<p>Most salloc options function as expected to submit a job to LoadLeveler.
+The following salloc options have no LoadLeveler equivalent and will be ignored:<p>
+<ul>
+<li>--acctg-freq (accounting polling interval (seconds)</li>
+<li>--contiguous (set if job requires contiguous nodes)</li>
+<li>--cores-per-socket (cores per socket required by job)</li>
+<li>-D, --dependency (synchronize this job with other jobs)</li>
+<li>-x, --exclude (nodes excluded from allocation request)</li>
+<li>--gid (group to use, if run as root)</li>
+<li>-I, --immediate (allocate to run or fail immediately)</li>
+<li>--jobid (user-specified job ID)</li>
+<li>-L, --licenses (licenses requiree by the job)</li>
+<li>--mincpus (minimum number of processors required)</li>
+<li>--no-kill (set to not kill job upon node failure)</li>
+<li>--ntasks-per-core (number of tasks to invoke per core)</li>
+<li>--ntasks-per-socket (number of tasks to invoke per socket)</li>
+<li>--open_mode (stdout/err open mode truncate or append)</li>
+<li>-O, --overcommit (over subscribe resources)</li>
+<li>--qos (Quality of Service)</li>
+<li>--signal (signal to send when near time limit and the time required)</li>
+<li>--sockets-per-node (sockets per node required by job)</li>
+<li>--switches (desired switch count and maximum delay)</li>
+<li>--time-min (minimum run time in minutes)</li>
+<li>--uid (user ID to use, if run as root)</li>
+<li>--wait-all-nodes (wait for all nodes to boot before starting script, LoadLeveler default)</li>
+<li>--wckey (workload characterization key)</li>
+</ul>
+
+<p>In addition, salloc some options are not fully compatable:
+Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
+options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
+
+
+<h2><a name="sbatch">sbatch</a></h2>
+<p>Most sbatch options function as expected to submit a job to LoadLeveler.
+The following sbatch options have no LoadLeveler equivalent and will be ignored:<p>
+
+<ul>
+<li>--acctg-freq (accounting polling interval (seconds)</li>
+<li>--contiguous (set if job requires contiguous nodes)</li>
+<li>--cores-per-socket (cores per socket required by job)</li>
+<li>-D, --dependency (synchronize this job with other jobs)</li>
+<li>-x, --exclude (nodes excluded from allocation request)</li>
+<li>--gid (group to use, if run as root)</li>
+<li>-I, --immediate (allocate to run or fail immediately)</li>
+<li>--jobid (user-specified job ID)</li>
+<li>-L, --licenses (licenses requiree by the job)</li>
+<li>--mincpus (minimum number of processors required)</li>
+<li>--no-kill (set to not kill job upon node failure)</li>
+<li>--ntasks-per-core (number of tasks to invoke per core)</li>
+<li>--ntasks-per-socket (number of tasks to invoke per socket)</li>
+<li>--open_mode (stdout/err open mode truncate or append)</li>
+<li>-O, --overcommit (over subscribe resources)</li>
+<li>--qos (Quality of Service)</li>
+<li>--signal (signal to send when near time limit and the time required)</li>
+<li>--sockets-per-node (sockets per node required by job)</li>
+<li>--switches (desired switch count and maximum delay)</li>
+<li>--time-min (minimum run time in minutes)</li>
+<li>--uid (user ID to use, if run as root)</li>
+<li>--wait-all-nodes (wait for all nodes to boot before starting script, LoadLeveler default)</li>
+<li>--wckey (workload characterization key)</li>
+</ul>
+
+<p>In addition, sbatch some options are not fully compatable:
+Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
+options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
+
+<p>Note that some LoadLeveler options lack a SLURM equivalent. Those options may
+be specified in the batch job submitted to sbatch. The first line of that
+script should identify the shell to interpret the script. Subsequent lines
+starting with "# @" and including LoadLeveler options will be left for
+LoadLeveler to interpret. For example:</p>
+
+<pre>
+#!/bin/bash
+# @ bulkxfer = yes
+srun a.out
+</pre>
+
+
+<h2><a name="scancel">scancel</a></h2>
+<p>LoadLeveler lacks the ability to send an arbitrary signal to any job or
+job step. It is only able to cancel specific a specific job. Any attempt to
+use scancel for signalling a job step or sending a signal other than SIGKILL
+to a job will result in an error message of "Requested operation not supported
+on this system". scancel's job filtering options however do work as expected
+(--account, --interactive, --name, --partition, --reservation, --state and
+--user).</p>
+
+
+<h2><a name="sinfo">sinfo</a></h2>
+<p>All sinfo options function as expected including filtering, sorting, and
+output formatting.
+LoadLeveler job classes are reported as a SLURM partition.
+LoadLevler node resources are reported as SLURM generic resources.
+The following SLURM partition information lack an equivalant in LoadLeveler:
+allow_alloc_nodes (nodes which can submit jobs to a partition),
+alternate (partition to which jobs are transferred if this partition is unable
+to accept new job requests),
+def_mem_per_cpu, def_mem_per_node, max_mem_per_cpu, max_mem_per_node
+(default and maximum memory limits for jobs),
+max_nodes (maximum job size in nodes).
+The following SLURM node information lack an equivalant in LoadLeveler:
+cores, sockets, threads (only CPU counts available),
+boot_time, slurmd_start_time,
+reason, reason_time, reason_uid, and weight.</p>
+
+
+<h2><a name="squeue">squeue</a></h2>
+<p>All squeue options function as expected including filtering, sorting, and
+output formatting.
+The default field sizes for job ID and step ID have been increased by ten
+characters to provided the space required for a hostname component.
+LoadLeveler job classes are reported as a SLURM partition.
+LoadLevler node resources are reported as SLURM generic resources.
+</p>
+
+
+<h2><a name="srun">srun</a></h2>
+<p>LoadLeveler lacks an interactive job allocaiton mode equivalent to SLURM.
+The srun command submits a batch job to LoadLeveler that will make a socket
+connection back to the srun command once the resource allocation has been
+made.</p>
+
+<p>Most srun options function as expected to submit a job to LoadLeveler.
+The following srun options have no LoadLeveler equivalent and will be ignored:<p>
+<ul>
+<li>--acctg-freq (accounting polling interval (seconds)</li>
+<li>--contiguous (set if job requires contiguous nodes)</li>
+<li>--cores-per-socket (cores per socket required by job)</li>
+<li>-D, --dependency (synchronize this job with other jobs)</li>
+<li>--epilog</li>
+<li>-x, --exclude (nodes excluded from allocation request)</li>
+<li>--gid (group to use, if run as root)</li>
+<li>-I, --immediate (allocate to run or fail immediately)</li>
+<li>--jobid (user-specified job ID)</li>
+<li>-K, --kill-on-bad-exit (terminate step if any task has non-zero exit code</li>
+<li>-L, --licenses (licenses requiree by the job)</li>
+<li>--msg-timeout (message timeout)</li>
+<li>--mpi (MPI type)</li>
+<li>--mincpus (minimum number of processors required)</li>
+<li>--no-kill (set to not kill job upon node failure)</li>
+<li>--ntasks-per-core (number of tasks to invoke per core)</li>
+<li>--ntasks-per-socket (number of tasks to invoke per socket)</li>
+<li>--open_mode (stdout/err open mode truncate or append)</li>
+<li>-O, --overcommit (over subscribe resources)</li>
+<li>--prolog</li>
+<li>-q, --quit-on-interrupt</li>
+<li>--qos (Quality of Service)</li>
+<li>-r, --relative (resource allocation offset within the job's allocation)</li>
+<li>--resv-ports (Communication ports reserved for OpenMPI)</li>
+<li>--runjob-opts (Used only on IBM BlueGene/Q systems)</li>
+<li>--signal (signal to send when near time limit and the time required)</li>
+<li>--slurmd-debug (SLURM daemon debugging option)</li>
+<li>--sockets-per-node (sockets per node required by job)</li>
+<li>--switches (desired switch count and maximum delay)</li>
+<li>--task-epilog (per-task epilog script)</li>
+<li>--task-prolog (per-task prolog script)</li>
+<li>--test-only (report estimated start time)</li>
+<li>--time-min (minimum run time in minutes)</li>
+<li>-u, --unbuffered (avoid line buffering)</li>
+<li>--uid (user ID to use, if run as root)</li>
+<li>-W, --wait (Specifies job wait time after first task exit)</li>
+<li>--wait-all-nodes (wait for all nodes to boot before starting script, LoadLeveler default)</li>
+<li>--wckey (workload characterization key)</li>
+<li>-X, --disable-status (disable task status reports with SIGINT)</li>
+<li>-Z, --no-allocate (launch tasks without creating job allocation)</li>
+</ul>
+
+<p>In addition, srun some options are not fully compatable:
+Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
+options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
+
+
+<h2><a name="sstat">sstat</a></h2>
+<p>All sstat options function as expected including filtering, sorting, and
+output formatting, however only a limited subset of information is available.
+The following sstat data is not available from LoadLeveler:
+pid (process ID),
+AveVMSize, MaxVMSize, MaxVMSizeNode, MaxVMSizeTask (virtual memory data),
+MaxPages, MaxPagesNode, and MaxPagesTask (paging data).</p>
+
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 20 December 2011</p>
+
+<!--#include virtual="footer.txt"-->

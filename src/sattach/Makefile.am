@@ -2,15 +2,19 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+SATTACH_SOURCES =		\
+	attach.c attach.h	\
+	opt.c opt.h		\
+	sattach.c		\
+	sattach.wrapper.c
+
+if ! USE_LOADLEVELER
+
 INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sattach
 
-sattach_SOURCES = \
-	attach.c attach.h \
-	opt.c opt.h \
-	sattach.c \
-	sattach.wrapper.c
+sattach_SOURCES = $(SATTACH_SOURCES)
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
@@ -37,3 +41,7 @@ install-exec-local:
 	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/sattach
 	$(INSTALL) -m 644 $(top_srcdir)/src/sattach/sattach.wrapper.c \
 		$(DESTDIR)$(pkglibdir)/src/sattach/sattach.wrapper.c
+
+else
+EXTRA_sattach_SOURCES = $(SATTACH_SOURCES)
+endif

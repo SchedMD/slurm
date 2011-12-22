@@ -107,9 +107,9 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@WITH_MYSQL_TRUE@accounting_storage_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la \
-@WITH_MYSQL_TRUE@	$(am__DEPENDENCIES_1) \
-@WITH_MYSQL_TRUE@	../common/libaccounting_storage_common.la
+@BUILD_MYSQL_TRUE@accounting_storage_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la \
+@BUILD_MYSQL_TRUE@	$(am__DEPENDENCIES_1) \
+@BUILD_MYSQL_TRUE@	../common/libaccounting_storage_common.la
 am__accounting_storage_mysql_la_SOURCES_DIST =  \
 	accounting_storage_mysql.c accounting_storage_mysql.h \
 	as_mysql_acct.c as_mysql_acct.h as_mysql_archive.c \
@@ -140,8 +140,8 @@ am__objects_1 =  \
 	accounting_storage_mysql_la-as_mysql_usage.lo \
 	accounting_storage_mysql_la-as_mysql_user.lo \
 	accounting_storage_mysql_la-as_mysql_wckey.lo
-@WITH_MYSQL_TRUE@am_accounting_storage_mysql_la_OBJECTS =  \
-@WITH_MYSQL_TRUE@	$(am__objects_1)
+@BUILD_MYSQL_TRUE@am_accounting_storage_mysql_la_OBJECTS =  \
+@BUILD_MYSQL_TRUE@	$(am__objects_1)
 am__EXTRA_accounting_storage_mysql_la_SOURCES_DIST =  \
 	accounting_storage_mysql.c accounting_storage_mysql.h \
 	as_mysql_acct.c as_mysql_acct.h as_mysql_archive.c \
@@ -161,8 +161,8 @@ accounting_storage_mysql_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) \
 	$(accounting_storage_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_MYSQL_TRUE@am_accounting_storage_mysql_la_rpath = -rpath \
-@WITH_MYSQL_TRUE@	$(pkglibdir)
+@BUILD_MYSQL_TRUE@am_accounting_storage_mysql_la_rpath = -rpath \
+@BUILD_MYSQL_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -232,11 +232,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -253,6 +250,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -403,17 +401,17 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_user.c as_mysql_user.h \
 		as_mysql_wckey.c as_mysql_wckey.h
 
-@WITH_MYSQL_TRUE@pkglib_LTLIBRARIES = accounting_storage_mysql.la
+@BUILD_MYSQL_TRUE@pkglib_LTLIBRARIES = accounting_storage_mysql.la
 
 # Mysql storage plugin.
-@WITH_MYSQL_TRUE@accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
-@WITH_MYSQL_TRUE@accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@WITH_MYSQL_TRUE@accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
-@WITH_MYSQL_TRUE@accounting_storage_mysql_la_LIBADD = \
-@WITH_MYSQL_TRUE@	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \
-@WITH_MYSQL_TRUE@	../common/libaccounting_storage_common.la
+@BUILD_MYSQL_TRUE@accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
+@BUILD_MYSQL_TRUE@accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BUILD_MYSQL_TRUE@accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
+@BUILD_MYSQL_TRUE@accounting_storage_mysql_la_LIBADD = \
+@BUILD_MYSQL_TRUE@	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \
+@BUILD_MYSQL_TRUE@	../common/libaccounting_storage_common.la
 
-@WITH_MYSQL_FALSE@EXTRA_accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
+@BUILD_MYSQL_FALSE@EXTRA_accounting_storage_mysql_la_SOURCES = $(AS_MYSQL_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -846,9 +844,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
 
-@WITH_MYSQL_TRUE@force:
-@WITH_MYSQL_TRUE@$(accounting_storage_mysql_la_LIBADD) : force
-@WITH_MYSQL_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+@BUILD_MYSQL_TRUE@force:
+@BUILD_MYSQL_TRUE@$(accounting_storage_mysql_la_LIBADD) : force
+@BUILD_MYSQL_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

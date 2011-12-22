@@ -70,11 +70,13 @@ static int   _check_cluster_specific_settings(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
 static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
+#ifndef USE_LOADLEVELER
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static void  _set_spank_env(void);
 static void  _set_submit_dir_env(void);
 static int   _set_umask_env(void);
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -89,6 +91,7 @@ int main(int argc, char *argv[])
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	_set_exit_code();
+#ifndef USE_LOADLEVELER
 	if (spank_init_allocator() < 0) {
 		error("Failed to intialize plugin stack");
 		exit(error_exit);
@@ -98,7 +101,7 @@ int main(int argc, char *argv[])
 	 */
 	if (atexit((void (*) (void)) spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
-
+#endif
 	script_name = process_options_first_pass(argc, argv);
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
@@ -130,6 +133,7 @@ int main(int argc, char *argv[])
 		exit(error_exit);
 	}
 
+#ifndef USE_LOADLEVELER
 	if (opt.get_user_env_time < 0) {
 		/* Moab does not propage the user's resource limits, so
 		 * slurmd determines the values at the same time that it
@@ -141,6 +145,7 @@ int main(int argc, char *argv[])
 	_set_spank_env();
 	_set_submit_dir_env();
 	_set_umask_env();
+#endif
 	slurm_init_job_desc_msg(&desc);
 	if (_fill_job_desc_from_opts(&desc) == -1) {
 		exit(error_exit);
@@ -454,6 +459,7 @@ static void _set_exit_code(void)
 	}
 }
 
+#ifndef USE_LOADLEVELER
 /* Propagate SPANK environment via SLURM_SPANK_ environment variables */
 static void _set_spank_env(void)
 {
@@ -536,6 +542,7 @@ static void  _set_prio_process_env(void)
 
 	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
+#endif	/* USE_LOADLEVELER */
 
 /*
  * Checks if the buffer starts with a shebang (#!).
@@ -678,6 +685,7 @@ static char *_script_wrap(char *command_string)
 	return script;
 }
 
+#ifndef USE_LOADLEVELER
 /* Set SLURM_RLIMIT_* environment variables with current resource
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
 static int _set_rlimit_env(void)
@@ -742,3 +750,4 @@ static int _set_rlimit_env(void)
 
 	return rc;
 }
+#endif	/* USE_LOADLEVELER */

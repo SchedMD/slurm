@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-if WITH_MYSQL
+if BUILD_MYSQL
 MYSQL_LIB = libslurm_mysql.la
 libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
 libslurm_mysql_la_LIBADD   = $(MYSQL_LIBS)
@@ -15,7 +15,7 @@ MYSQL_LIB =
 EXTRA_libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
 endif
 
-if WITH_PGSQL
+if BUILD_PGSQL
 PGSQL_LIB = libslurm_pgsql.la
 libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
 libslurm_pgsql_la_LIBADD   = $(PGSQL_LIBS)

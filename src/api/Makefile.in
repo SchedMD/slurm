@@ -40,6 +40,10 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 noinst_PROGRAMS = libslurm.o$(EXEEXT)
+@USE_LOADLEVELER_TRUE@am__append_1 = load_leveler.c
+@USE_LOADLEVELER_FALSE@am__append_2 = cancel.c signal.c step_ctx.c step_ctx.h step_io.c step_io.h	\
+@USE_LOADLEVELER_FALSE@	step_launch.c step_launch.h
+
 subdir = src/api
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -109,8 +113,11 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
-libpmi_la_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
-am_libpmi_la_OBJECTS = pmi.lo
+@USE_LOADLEVELER_FALSE@libpmi_la_DEPENDENCIES =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.la
+am__libpmi_la_SOURCES_DIST = pmi.c
+@USE_LOADLEVELER_FALSE@am_libpmi_la_OBJECTS = pmi.lo
+am__EXTRA_libpmi_la_SOURCES_DIST = pmi.c
 libpmi_la_OBJECTS = $(am_libpmi_la_OBJECTS)
 libpmi_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -124,14 +131,26 @@ libslurm_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
 	$(common_dir)/libspank.la $(common_dir)/libeio.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = allocate.lo allocate_msg.lo block_info.lo cancel.lo \
+am__libslurmhelper_la_SOURCES_DIST = allocate.c allocate_msg.c \
+	block_info.c checkpoint.c complete.c config_info.c \
+	front_end_info.c init_msg.c job_info.c job_step_info.c \
+	node_info.c partition_info.c reservation_info.c \
+	slurm_hostlist.c slurm_pmi.c slurm_pmi.h pmi_server.c \
+	pmi_server.h submit.c suspend.c topo_info.c triggers.c \
+	reconfigure.c update_config.c load_leveler.c cancel.c signal.c \
+	step_ctx.c step_ctx.h step_io.c step_io.h step_launch.c \
+	step_launch.h
+@USE_LOADLEVELER_TRUE@am__objects_1 = load_leveler.lo
+@USE_LOADLEVELER_FALSE@am__objects_2 = cancel.lo signal.lo step_ctx.lo \
+@USE_LOADLEVELER_FALSE@	step_io.lo step_launch.lo
+am__objects_3 = allocate.lo allocate_msg.lo block_info.lo \
 	checkpoint.lo complete.lo config_info.lo front_end_info.lo \
-	init_msg.lo job_info.lo job_step_info.lo load_leveler.lo \
-	node_info.lo partition_info.lo reservation_info.lo signal.lo \
-	slurm_hostlist.lo slurm_pmi.lo step_ctx.lo step_io.lo \
-	step_launch.lo pmi_server.lo submit.lo suspend.lo topo_info.lo \
-	triggers.lo reconfigure.lo update_config.lo
-am_libslurmhelper_la_OBJECTS = $(am__objects_1)
+	init_msg.lo job_info.lo job_step_info.lo node_info.lo \
+	partition_info.lo reservation_info.lo slurm_hostlist.lo \
+	slurm_pmi.lo pmi_server.lo submit.lo suspend.lo topo_info.lo \
+	triggers.lo reconfigure.lo update_config.lo $(am__objects_1) \
+	$(am__objects_2)
+am_libslurmhelper_la_OBJECTS = $(am__objects_3)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 PROGRAMS = $(noinst_PROGRAMS)
 am_libslurm_o_OBJECTS =
@@ -152,10 +171,12 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
-DIST_SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
+SOURCES = $(libpmi_la_SOURCES) $(EXTRA_libpmi_la_SOURCES) \
+	$(libslurm_la_SOURCES) $(libslurmhelper_la_SOURCES) \
+	$(libslurm_o_SOURCES)
+DIST_SOURCES = $(am__libpmi_la_SOURCES_DIST) \
+	$(am__EXTRA_libpmi_la_SOURCES_DIST) $(libslurm_la_SOURCES) \
+	$(am__libslurmhelper_la_SOURCES_DIST) $(libslurm_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -209,11 +230,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -230,6 +248,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -361,7 +380,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES) $(LOADLEVELER_INCLUDES)
 @WITH_GNU_LD_TRUE@VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	version.map
 
@@ -432,35 +451,17 @@ BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 # them to plugins that are loaded.
 # Also, libslurmhelper, libslurm.o are for convenience, they are not installed.
 noinst_LTLIBRARIES = libslurmhelper.la
-slurmapi_src = \
-	allocate.c       \
-	allocate_msg.c   \
-	block_info.c     \
-	cancel.c         \
-	checkpoint.c     \
-	complete.c       \
-	config_info.c    \
-	front_end_info.c \
-	init_msg.c       \
-	job_info.c       \
-	job_step_info.c  \
-	load_leveler.c   \
-	node_info.c      \
-	partition_info.c \
-	reservation_info.c \
-	signal.c         \
-	slurm_hostlist.c \
-	slurm_pmi.c slurm_pmi.h	\
-	step_ctx.c step_ctx.h \
-	step_io.c step_io.h \
-	step_launch.c step_launch.h \
-	pmi_server.c pmi_server.h \
-	submit.c         \
-	suspend.c        \
-	topo_info.c      \
-	triggers.c       \
-	reconfigure.c    \
-	update_config.c
+slurmapi_src = allocate.c allocate_msg.c block_info.c checkpoint.c \
+	complete.c config_info.c front_end_info.c init_msg.c \
+	job_info.c job_step_info.c node_info.c partition_info.c \
+	reservation_info.c slurm_hostlist.c slurm_pmi.c slurm_pmi.h \
+	pmi_server.c pmi_server.h submit.c suspend.c topo_info.c \
+	triggers.c reconfigure.c update_config.c $(am__append_1) \
+	$(am__append_2)
+@USE_LOADLEVELER_FALSE@EXTRA_slurmapi_src = load_leveler.c
+@USE_LOADLEVELER_TRUE@EXTRA_slurmapi_src = \
+@USE_LOADLEVELER_TRUE@	cancel.c signal.c step_ctx.c step_ctx.h step_io.c step_io.h	\
+@USE_LOADLEVELER_TRUE@	step_launch.c step_launch.h
 
 common_dir = $(top_builddir)/src/common
 slurmapi_add = \
@@ -491,12 +492,13 @@ libslurm_la_LDFLAGS = \
 # when running "make install", but removing it prevents essential slurm
 # symbols from being available in programs linking with libpmi
 #
-libpmi_la_SOURCES = pmi.c
-libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
-libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
-        -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
-        $(PMI_OTHER_FLAGS)
+@USE_LOADLEVELER_FALSE@libpmi_la_SOURCES = pmi.c
+@USE_LOADLEVELER_FALSE@libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
+@USE_LOADLEVELER_FALSE@libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
+@USE_LOADLEVELER_FALSE@        -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
+@USE_LOADLEVELER_FALSE@        $(PMI_OTHER_FLAGS)
 
+@USE_LOADLEVELER_TRUE@EXTRA_libpmi_la_SOURCES = pmi.c
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms

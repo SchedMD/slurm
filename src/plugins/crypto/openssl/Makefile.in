@@ -107,16 +107,16 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_DEPENDENCIES =  \
-@HAVE_OPENSSL_TRUE@	$(am__DEPENDENCIES_1)
+@BUILD_OPENSSL_TRUE@crypto_openssl_la_DEPENDENCIES =  \
+@BUILD_OPENSSL_TRUE@	$(am__DEPENDENCIES_1)
 am__crypto_openssl_la_SOURCES_DIST = crypto_openssl.c
-@HAVE_OPENSSL_TRUE@am_crypto_openssl_la_OBJECTS = crypto_openssl.lo
+@BUILD_OPENSSL_TRUE@am_crypto_openssl_la_OBJECTS = crypto_openssl.lo
 am__EXTRA_crypto_openssl_la_SOURCES_DIST = crypto_openssl.c
 crypto_openssl_la_OBJECTS = $(am_crypto_openssl_la_OBJECTS)
 crypto_openssl_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(crypto_openssl_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_OPENSSL_TRUE@am_crypto_openssl_la_rpath = -rpath $(pkglibdir)
+@BUILD_OPENSSL_TRUE@am_crypto_openssl_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -186,11 +186,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -207,6 +204,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -338,15 +336,13 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-@HAVE_OPENSSL_FALSE@openssl_lib = 
-@HAVE_OPENSSL_TRUE@openssl_lib = crypto_openssl.la
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = $(openssl_lib)
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_SOURCES = crypto_openssl.c
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(SSL_LDFLAGS)
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_LIBADD = $(SSL_LIBS)
-@HAVE_OPENSSL_FALSE@EXTRA_crypto_openssl_la_SOURCES = crypto_openssl.c
+@BUILD_OPENSSL_TRUE@pkglib_LTLIBRARIES = crypto_openssl.la
+@BUILD_OPENSSL_TRUE@crypto_openssl_la_SOURCES = crypto_openssl.c
+@BUILD_OPENSSL_TRUE@crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(SSL_LDFLAGS)
+@BUILD_OPENSSL_TRUE@crypto_openssl_la_LIBADD = $(SSL_LIBS)
+@BUILD_OPENSSL_FALSE@EXTRA_crypto_openssl_la_SOURCES = crypto_openssl.c
 all: all-am
 
 .SUFFIXES:

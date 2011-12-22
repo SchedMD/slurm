@@ -6,10 +6,7 @@ CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
-# noinst_LTLIBRARIES = libslurmctld.la
-# libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
-# libslurmctld_la_SOURCES =
-slurmctld_SOURCES =     \
+SLURMCTLD_SOURCES =	\
 	acct_policy.c	\
 	acct_policy.h	\
 	agent.c  	\
@@ -59,6 +56,12 @@ slurmctld_SOURCES =     \
 	trigger_mgr.c	\
 	trigger_mgr.h
 
+if ! USE_LOADLEVELER
+
+# noinst_LTLIBRARIES = libslurmctld.la
+# libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+# libslurmctld_la_SOURCES =
+slurmctld_SOURCES = $(SLURMCTLD_SOURCES)
 
 sbin_PROGRAMS = slurmctld
 
@@ -70,3 +73,7 @@ slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 force:
 $(slurmctld_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+else
+EXTRA_slurmctld_SOURCES = $(SLURMCTLD_SOURCES)
+endif

@@ -1,0 +1,2341 @@
+/*****************************************************************************\
+ *  load_leveler.c - Present SLURM commands with the standard SLURM APIs, but
+ *  interact with IBM's LoadLeveler rather than the SLURM daemons.
+ *
+ *  NOTES:
+ *  LoadLeveler JobID is a string and not a number
+ *  LoadLeveler ResourceRequirements are mapped to SLURM Generic Resources
+ *****************************************************************************
+ *  Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
+ *  Written by Morris Jette <jette@schedmd.com>
+ *
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#  ifdef HAVE_LLAPI_H
+#    include <llapi.h>
+#  endif
+#endif
+
+#include <fcntl.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <utmp.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/hostlist.h"
+#include "src/common/jobacct_common.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/uid.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#ifdef USE_LOADLEVELER
+
+#define PTY_MODE true
+
+/* Set this to generate debugging information for salloc front-end/back-end
+ *	program communications */
+#define _DEBUG_SALLOC 1
+
+/* Timeout for salloc front-end/back-end messages in usec */
+#define MSG_TIMEOUT 5000000
+
+#ifdef HAVE_LLAPI_H
+/*****************************************************************************\
+ * Local symbols
+\*****************************************************************************/
+static char *global_node_str = NULL;
+static uint32_t global_cpu_cnt = 0, global_node_cnt = 0;
+
+/*****************************************************************************\
+ * Local helper functions
+\*****************************************************************************/
+static void _jobacct_del(void *x);
+static void _load_adapter_info_job(LL_element *adapter, job_info_t *job_ptr);
+static void _load_adapter_info_step(LL_element *adapter,
+				    job_step_info_t *step_ptr);
+static void _load_credential_info_job(LL_element *credential,
+				      job_info_t *job_ptr);
+static void _load_credential_info_step(LL_element *credential,
+				       job_step_info_t *step_ptr);
+static void _load_global_node_list(void);
+static void _load_node_info_job(LL_element *node, job_info_t *job_ptr);
+static void _load_node_info_step(LL_element *node, job_step_info_t *step_ptr);
+static void _load_resource_info_job(LL_element *resource, job_info_t *job_ptr);
+static void _load_resource_info_step(LL_element *resource,
+				     job_step_info_t *step_ptr);
+static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
+				int step_inx);
+static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr);
+static void _load_task_info_job(LL_element *task, job_info_t *job_ptr);
+static void _proc_disp_use_stat(LL_element *disp_use,
+				jobacctinfo_t *job_acct_ptr,
+			        int node_inx, int task_inx);
+static int  _proc_mach_use_stat(LL_element *mach_use, List stats_list,
+				int node_inx, int task_inx, char *node_name);
+static void _proc_step_stat(LL_element *step, List stats_list);
+static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
+			   bool *match_job_id, bool *match_step_id);
+
+static void _jobacct_del(void *x)
+{
+	job_step_stat_t *step_stat_ptr = (job_step_stat_t *) x;
+
+	xfree(step_stat_ptr->jobacct);
+	xfree(step_stat_ptr->step_pids->pid);
+	xfree(step_stat_ptr->step_pids);
+	xfree(step_stat_ptr);
+}
+
+/* Load a adapter's information into a job record */
+static void _load_adapter_info_job(LL_element *adapter, job_info_t *job_ptr)
+{
+	char *mode;
+	int rc;
+
+	rc = ll_get_data(adapter, LL_AdapterReqMode, &mode);
+	if (!rc) {
+		job_ptr->network = xstrdup(mode);
+		free(mode);
+	}
+}
+
+/* Load a adapter's information into a step record */
+static void _load_adapter_info_step(LL_element *adapter,
+				    job_step_info_t *step_ptr)
+{
+	char *mode;
+	int rc;
+
+	rc = ll_get_data(adapter, LL_AdapterReqMode, &mode);
+	if (!rc) {
+		step_ptr->network = xstrdup(mode);
+		free(mode);
+	}
+}
+
+/* Load a credential's information into a job record */
+static void _load_credential_info_job(LL_element *credential,
+				      job_info_t *job_ptr)
+{
+	int rc;
+	int gid, uid;
+
+	rc = ll_get_data(credential, LL_CredentialGid, &gid);
+	if (!rc)
+		job_ptr->group_id = (uint32_t) gid;
+	rc = ll_get_data(credential, LL_CredentialUid, &uid);
+	if (!rc)
+		job_ptr->user_id = (uint32_t) uid;
+}
+
+/* Load a credential's information into a step record */
+static void _load_credential_info_step(LL_element *credential,
+				       job_step_info_t *step_ptr)
+{
+	int rc, uid;
+
+	rc = ll_get_data(credential, LL_CredentialUid, &uid);
+	if (!rc)
+		step_ptr->user_id = (uint32_t) uid;
+}
+
+/* Load global information about nodes (names, node count and CPU count) */
+static void _load_global_node_list(void)
+{
+	LL_element *query_object, *machine;
+	char *name;
+	hostlist_t hl;
+	int cpus, err_code, len, obj_count, rc;
+
+	if (global_node_str)
+		return;
+
+	query_object = ll_query(MACHINES);
+	if (!query_object) {
+		verbose("ll_query(MACHINES) failed");
+		return;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(MACHINES, ALL), error %d", rc);
+		return;
+	}
+
+	machine = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!machine) {
+		verbose("ll_get_objs(MACHINES), error %d", err_code);
+		return;
+	}
+
+	hl = hostlist_create(NULL);
+	while (machine) {
+		if (ll_get_data(machine, LL_MachineName, &name)) {
+			verbose("ll_get_data(LL_MachineName) failed");
+		} else {
+			char *sep = strchr(name, '.');
+			if (sep)
+				sep[0] = '\0';
+			hostlist_push(hl, name);
+			free(name);
+		}
+
+		if (ll_get_data(machine, LL_MachineCPUs, &cpus)) {
+			verbose("ll_get_data(LL_MachineCPUs) failed");
+		} else {
+			global_cpu_cnt += cpus;
+		}
+		global_node_cnt++;
+
+		machine = ll_next_obj(query_object);
+	}
+
+	len = (global_node_cnt + 1) * 16;
+	global_node_str = xmalloc(len);
+	while (hostlist_ranged_string(hl, len, global_node_str) < 0) {
+		len *= 2;
+		xrealloc(global_node_str, len);
+	}
+	hostlist_destroy(hl);
+
+	ll_free_objs(machine);
+	ll_deallocate(machine);
+}
+
+/* Load a node's information into a job record */
+static void _load_node_info_job(LL_element *node, job_info_t *job_ptr)
+{
+	int rc;
+	LL_element *resource = NULL, *task = NULL;
+
+	rc = ll_get_data(node, LL_NodeGetFirstResourceRequirement, &resource);
+	if (!rc && resource)
+		_load_resource_info_job(resource, job_ptr);
+	rc = ll_get_data(node, LL_NodeGetFirstTask, &task);
+	if (!rc && task)
+		_load_task_info_job(task, job_ptr);
+}
+
+/* Load a node's information into a step record */
+static void _load_node_info_step(LL_element *node, job_step_info_t *step_ptr)
+{
+	int rc;
+	LL_element *resource = NULL;
+
+	rc = ll_get_data(node, LL_NodeGetFirstResourceRequirement, &resource);
+	if (!rc && resource)
+		_load_resource_info_step(resource, step_ptr);
+}
+
+/* Load a resource's information into a job record */
+static void _load_resource_info_job(LL_element *resource, job_info_t *job_ptr)
+{
+	int rc;
+	char *name, *sep;
+	int value;
+
+	rc = ll_get_data(resource, LL_ResourceRequirementName, &name);
+	if (rc)
+		return;
+	rc = ll_get_data(resource, LL_ResourceRequirementValue, &value);
+	if (!rc) {
+		if (job_ptr->gres)
+			sep = ",";
+		else
+			sep = "";
+		xstrfmtcat(job_ptr->gres, "%s%s:%d", sep, name, value);
+	}
+	free(name);
+}
+
+/* Load a resource's information into a step record */
+static void _load_resource_info_step(LL_element *resource,
+				     job_step_info_t *step_ptr)
+{
+	int rc;
+	char *name, *sep;
+	int value;
+
+	rc = ll_get_data(resource, LL_ResourceRequirementName, &name);
+	if (rc)
+		return;
+	rc = ll_get_data(resource, LL_ResourceRequirementValue, &value);
+	if (!rc) {
+		if (step_ptr->gres)
+			sep = ",";
+		else
+			sep = "";
+		xstrfmtcat(step_ptr->gres, "%s%s:%d", sep, name, value);
+	}
+	free(name);
+}
+
+/* Load a step's information into a job record */
+static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
+				int step_inx)
+{
+	LL_element *adapter = NULL, *node = NULL;
+	int rc;
+	char *account, *class, *comment, *dependency, *end_ptr, *nodes_req;
+	char *resv_name, *state_desc, *step_id, *work_dir;
+	int cpus_core, exit_code, node_cnt, node_usage;
+	int priority, restart, start_cnt, step_state, task_cnt, tasks_node;
+	time_t fini_time, start_time;
+	char **hosts;
+	int64_t time_limit;
+
+	/* This must be first, exit code of all steps must be tested */
+	rc = ll_get_data(step, LL_StepCompletionCode, &exit_code);
+	if (!rc) {
+		if (step_inx == 0)
+			job_ptr->exit_code = exit_code;
+		job_ptr->derived_ec = MAX(job_ptr->derived_ec, exit_code);
+	}
+	if (step_inx > 0)
+		return;
+	/* The remaining fields only need to be read for the first step */
+
+	rc = ll_get_data(step, LL_StepAccountNumber, &account);
+	if (!rc) {
+		job_ptr->account = xstrdup(account);
+		free(account);
+	}
+
+	rc = ll_get_data(step, LL_StepJobClass, &class);
+	if (!rc) {
+		job_ptr->partition = xstrdup(class);
+		free(class);
+	}
+
+	rc = ll_get_data(step, LL_StepComment, &comment);
+	if (!rc) {
+		job_ptr->comment = xstrdup(comment);
+		free(comment);
+	}
+
+	rc = ll_get_data(step, LL_StepID, &step_id);
+	if (!rc) {
+		/* NOTE: JobID is a number: "<hostname>.<jobid>.<stepid>"
+		 * For SLURM's job ID, use only short hostname and
+		 * remove the trailing ".<stepid>" */
+		char *sep1, *sep2, *sep3;
+		sep3 = strrchr(step_id, '.');
+		if (sep3 && (sep3 != step_id))
+			sep3[0] = '\0';
+		sep2 = strrchr(step_id, '.');
+		if (sep2 && (sep2 != step_id))
+			sep2[0] = '\0';
+		sep1 = strchr(step_id, '.');
+		if (sep1)
+			sep1[0] = '\0';
+		job_ptr->job_id = NULL;
+		xstrfmtcat(job_ptr->job_id, "%s.%s", step_id, sep2+1);
+		free(step_id);
+	}
+
+	rc = ll_get_data(step, LL_StepCompletionDate, &fini_time);
+	if (!rc)
+		job_ptr->end_time = fini_time;
+
+	rc = ll_get_data(step, LL_StepCpusPerCore, &cpus_core);
+	if (!rc)
+		job_ptr->threads_per_core = cpus_core;
+
+	/* NOTE: Dependency format differs from SLURM */
+	rc = ll_get_data(step, LL_StepDependency, &dependency);
+	if (!rc) {
+		job_ptr->dependency = xstrdup(dependency);
+		free(dependency);
+	}
+
+	rc = ll_get_data(step, LL_StepEstimatedStartTime, &start_time);
+	if (!rc)
+		job_ptr->start_time = start_time;
+
+	rc = ll_get_data(step, LL_StepTotalNodesRequested, &nodes_req);
+	if (!rc && nodes_req) {
+		job_ptr->num_nodes = strtol(nodes_req, &end_ptr, 10);
+		if (end_ptr && (end_ptr[0] == ','))
+			job_ptr->max_nodes = strtol(end_ptr+1, &end_ptr, 10);
+		free(nodes_req);
+	}
+
+	rc = ll_get_data(step, LL_StepTotalTasksRequested, &task_cnt);
+	if (!rc) {
+		job_ptr->max_cpus = task_cnt;
+		job_ptr->num_cpus = task_cnt;
+	}
+
+	rc = ll_get_data(step, LL_StepState, &step_state);
+	if (rc) {
+		job_ptr->job_state = JOB_PENDING;	/* best guess */
+	} else if ((step_state == STATE_RUNNING) ||
+		   (step_state == STATE_STARTING)) {
+		job_ptr->job_state = JOB_RUNNING;
+		if (step_state == STATE_STARTING)
+			job_ptr->job_state |= JOB_CONFIGURING;
+		/* See LL_StepEstimatedStartTime above */
+		rc = ll_get_data(step, LL_StepDispatchTime, &start_time);
+		if (!rc)
+			job_ptr->start_time = start_time;
+
+		/* See LL_StepTotalNodesRequested above */
+		rc = ll_get_data(step, LL_StepNodeCount, &node_cnt);
+		if (!rc)
+			job_ptr->num_nodes = node_cnt;
+
+		/* See LL_StepTotalTasksRequested above*/
+		rc = ll_get_data(step, LL_StepTaskInstanceCount, &task_cnt);
+		if (!rc) {
+			job_ptr->max_cpus = task_cnt;
+			job_ptr->num_cpus = task_cnt;
+		}
+	} else if ((step_state == STATE_IDLE) ||
+		   (step_state == STATE_PENDING)) {
+		job_ptr->job_state = JOB_PENDING;
+	} else if (step_state == STATE_CANCELED) {
+		job_ptr->job_state = JOB_CANCELLED;
+	} else if ((step_state == STATE_PREEMPTED) ||
+		   (step_state == STATE_PREEMPT_PENDING)) {
+		job_ptr->job_state = JOB_PREEMPTED;
+	} else {
+		job_ptr->job_state = JOB_COMPLETE;
+	}
+
+	rc = ll_get_data(step, LL_StepHostList, &hosts);
+	if (!rc) {
+		int i, len;
+		hostlist_t hl;
+		hl = hostlist_create(NULL);
+		for (i = 0; hosts[i]; i++) {
+			char *sep = strchr(hosts[i], '.');
+			if (sep)
+				sep[0] = '\0';
+			if ((i == 0) && job_ptr->batch_flag)
+				job_ptr->batch_host = xstrdup(hosts[i]);
+			hostlist_push(hl, hosts[i]);
+			free(hosts[i]);
+		}
+		len = (i + 1) * 16;
+		job_ptr->nodes = xmalloc(len);
+		while (hostlist_ranged_string(hl, len, job_ptr->nodes) < 0) {
+			len *= 2;
+			xrealloc(job_ptr->nodes, len);
+		}
+		hostlist_destroy(hl);
+		free(hosts);
+	}
+
+	rc = ll_get_data(step, LL_StepIwd, &work_dir);
+	if (!rc) {
+		job_ptr->work_dir = xstrdup(work_dir);
+		free(work_dir);
+	}
+
+	rc = ll_get_data(step, LL_StepMessages, &state_desc);
+	if (!rc) {
+		if (state_desc[0] != '\0')
+			job_ptr->state_desc = xstrdup(state_desc);
+		free(state_desc);
+	}
+
+	rc = ll_get_data(step, LL_StepNodeUsage, &node_usage);
+	if (!rc && (node_usage == SHARED))
+		job_ptr->shared = 1;
+
+	rc = ll_get_data(step, LL_StepPriority, &priority);
+	if (!rc)
+		job_ptr->priority = priority;
+
+	rc = ll_get_data(step, LL_StepReservationID, &resv_name);
+	if (!rc) {
+		job_ptr->resv_name = xstrdup(resv_name);
+		free(resv_name);
+	}
+
+	rc = ll_get_data(step, LL_StepRestart, &restart);
+	if (!rc && restart)
+		job_ptr->requeue = 1;
+
+	rc = ll_get_data(step, LL_StepStartCount, &start_cnt);
+	if (!rc && start_cnt)
+		job_ptr->restart_cnt = start_cnt - 1;
+
+	rc = ll_get_data(step, LL_StepTasksPerNodeRequested, &tasks_node);
+	if (!rc)
+		job_ptr->ntasks_per_node = tasks_node;
+	rc = ll_get_data(step, LL_StepWallClockLimitHard64, &time_limit);
+	if (!rc) {
+		if (time_limit == 0x7fffffff)
+			job_ptr->time_limit = INFINITE;
+		else
+			job_ptr->time_limit = time_limit;
+	}
+
+	rc = ll_get_data(step, LL_StepWallClockLimitSoft64, &time_limit);
+	if (!rc) {
+		if (time_limit == 0x7fffffff)
+			job_ptr->time_min = INFINITE;
+		else
+			job_ptr->time_min = time_limit;
+	}
+
+	rc = ll_get_data(step, LL_StepGetFirstNode, &node);
+	if (!rc && node)
+		_load_node_info_job(node, job_ptr);
+
+	rc = ll_get_data(step, LL_StepGetFirstAdapterReq, &adapter);
+	if (!rc && adapter)
+		_load_adapter_info_job(node, job_ptr);
+
+	/* Set some default values for other fields */
+	job_ptr->state_reason = WAIT_NO_REASON;
+}
+
+/* Load a step's information into a step record */
+static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr)
+{
+	LL_element *adapter = NULL, *node = NULL;
+	int rc;
+	char *ckpt_dir, *class, *name, *step_id;
+	int step_state, task_cnt;
+	time_t start_time;
+	char **hosts;
+	int64_t time_limit;
+
+	rc = ll_get_data(step, LL_StepCkptExecuteDirectory, &ckpt_dir);
+	if (!rc) {
+		step_ptr->ckpt_dir = xstrdup(ckpt_dir);
+		free(ckpt_dir);
+	}
+
+	rc = ll_get_data(step, LL_StepJobClass, &class);
+	if (!rc) {
+		step_ptr->partition = xstrdup(class);
+		free(class);
+	}
+
+	rc = ll_get_data(step, LL_StepName, &name);
+	if (!rc) {
+		step_ptr->name = xstrdup(name);
+		free(name);
+	}
+
+	rc = ll_get_data(step, LL_StepID, &step_id);
+	if (!rc) {
+		/* NOTE: JobID is a number: "<hostname>.<jobid>.<stepid>"
+		 * For SLURM's job ID, use only short hostname and
+		 * remove the trailing ".<stepid>" */
+		char *sep1, *sep2, *sep3;
+		sep3 = strrchr(step_id, '.');
+		if (sep3 && (sep3 != step_id)) {
+			step_ptr->step_id = strtol(sep3+1, NULL, 10);
+			sep3[0] = '\0';
+		}
+		sep2 = strrchr(step_id, '.');
+		if (sep2 && (sep2 != step_id))
+			sep2[0] = '\0';
+		sep1 = strchr(step_id, '.');
+		if (sep1)
+			sep1[0] = '\0';
+		step_ptr->job_id = NULL;
+		xstrfmtcat(step_ptr->job_id, "%s.%s", step_id, sep2+1);
+		free(step_id);
+	}
+
+	rc = ll_get_data(step, LL_StepTotalTasksRequested, &task_cnt);
+	if (!rc) {
+		step_ptr->num_cpus = task_cnt;
+		step_ptr->num_tasks = task_cnt;
+	}
+
+	rc = ll_get_data(step, LL_StepState, &step_state);
+	if (!rc && (step_state == STATE_RUNNING)) {
+		/* See LL_StepEstimatedStartTime above */
+		rc = ll_get_data(step, LL_StepDispatchTime, &start_time);
+		if (!rc) {
+			step_ptr->start_time = start_time;
+			step_ptr->run_time = difftime(time(NULL), start_time);
+		}
+
+		/* See LL_StepTotalTasksRequested above*/
+		rc = ll_get_data(step, LL_StepTaskInstanceCount, &task_cnt);
+		if (!rc) {
+			step_ptr->num_cpus = task_cnt;
+			step_ptr->num_tasks = task_cnt;
+		}
+
+		rc = ll_get_data(step, LL_StepHostList, &hosts);
+		if (!rc) {
+			char *sep;
+			int i, len;
+			hostlist_t hl;
+			hl = hostlist_create(NULL);
+			for (i = 0; hosts[i]; i++) {
+				sep = strchr(hosts[i], '.');
+				if (sep)
+					sep[0] = '\0';
+				hostlist_push(hl, hosts[i]);
+				free(hosts[i]);
+			}
+			len = (i + 1) * 16;
+			step_ptr->nodes = xmalloc(len);
+			while (hostlist_ranged_string(hl, len,
+						      step_ptr->nodes) < 0) {
+				len *= 2;
+				xrealloc(step_ptr->nodes, len);
+			}
+			hostlist_destroy(hl);
+			free(hosts);
+		} else {
+			step_ptr->nodes = xstrdup("(UNKNOWN)");
+		}
+	} else {
+		step_ptr->run_time = NO_VAL;
+		step_ptr->nodes = xstrdup("(NOT_RUNNING)");
+	}
+
+	rc = ll_get_data(step, LL_StepWallClockLimitHard64, &time_limit);
+	if (!rc) {
+		if (time_limit == 0x7fffffff)
+			step_ptr->time_limit = INFINITE;
+		else
+			step_ptr->time_limit = time_limit;
+	}
+
+	rc = ll_get_data(step, LL_StepGetFirstNode, &node);
+	if (!rc && node)
+		_load_node_info_step(node, step_ptr);
+
+	rc = ll_get_data(step, LL_StepGetFirstAdapterReq, &adapter);
+	if (!rc && adapter)
+		_load_adapter_info_step(node, step_ptr);
+}
+
+/* Load a task's information into a job record */
+static void _load_task_info_job(LL_element *task, job_info_t *job_ptr)
+{
+	int rc;
+	char *command;
+
+	rc = ll_get_data(task, LL_TaskExecutable, &command);
+	if (!rc) {
+		job_ptr->command = xstrdup(command);
+		free(command);
+	}
+}
+
+/* NOTE: Fields not set: max_pages, max_pages_id, tot_pages,
+ *	 max_vsize, max_vsize_id, tot_vsize
+ * NOTE: pid is always set to 1 (init) */
+static void _proc_disp_use_stat(LL_element *disp_use,
+				jobacctinfo_t *job_acct_ptr,
+			        int node_inx, int task_inx)
+{
+	int64_t id_rss, is_rss, max_rss, tot_rss;
+	int64_t sys_time, user_time, tot_time;
+	bool first_pass = (job_acct_ptr->pid == 0);
+
+/* FIXME: What are the units of these values */
+	ll_get_data(disp_use, LL_DispUsageStepIdrss64, &id_rss);
+	ll_get_data(disp_use, LL_DispUsageStepIsrss64, &is_rss);
+	ll_get_data(disp_use, LL_DispUsageStepMaxrss64, &max_rss);
+	ll_get_data(disp_use, LL_DispUsageStepSystemTime64, &sys_time);
+	ll_get_data(disp_use, LL_DispUsageStepUserTime64, &user_time);
+
+	job_acct_ptr->pid = 1;
+	job_acct_ptr->sys_cpu_sec = sys_time;
+	job_acct_ptr->sys_cpu_usec = 0;
+	job_acct_ptr->user_cpu_sec = user_time;
+	job_acct_ptr->user_cpu_usec = 0;
+	tot_time = sys_time + user_time;
+	job_acct_ptr->tot_cpu += tot_time;
+	if (first_pass || (job_acct_ptr->min_cpu > tot_time)) {
+		job_acct_ptr->min_cpu = tot_time;
+		job_acct_ptr->min_cpu_id.nodeid = node_inx;
+		job_acct_ptr->min_cpu_id.taskid = task_inx;
+	}
+
+	tot_rss = id_rss + is_rss;
+	job_acct_ptr->tot_rss += tot_rss;
+	if (first_pass || (job_acct_ptr->max_rss < tot_rss)) {
+		job_acct_ptr->max_rss = tot_rss;
+		job_acct_ptr->max_rss_id.nodeid = node_inx;
+		job_acct_ptr->max_rss_id.taskid = task_inx;
+	}
+}
+
+/* Return the number of tasks dispatched on this machine */
+static int _proc_mach_use_stat(LL_element *mach_use, List stats_list,
+			       int node_inx, int task_inx, char *node_name)
+{
+	job_step_stat_t *step_stat_ptr;
+	jobacctinfo_t *job_acct_ptr;
+	job_step_pids_t *job_pids_ptr;
+	LL_element *disp_use = NULL;
+	int task_cnt = 0;
+
+	step_stat_ptr = xmalloc(sizeof(job_step_stat_t));
+	job_acct_ptr = xmalloc(sizeof(jobacctinfo_t));
+	step_stat_ptr->jobacct = job_acct_ptr;
+	job_pids_ptr = xmalloc(sizeof(job_step_pids_t));
+	step_stat_ptr->step_pids = job_pids_ptr;
+	list_append(stats_list, step_stat_ptr);
+
+	job_pids_ptr->pid_cnt = 1;
+	job_pids_ptr->pid = xmalloc(sizeof(uint32_t));
+	job_pids_ptr->pid[0] = 1;	/* sstat needs something here */
+	job_pids_ptr->node_name = xstrdup(node_name);
+
+	ll_get_data(mach_use, LL_MachUsageGetFirstDispUsage, &disp_use);
+	while (disp_use) {
+		_proc_disp_use_stat(mach_use, job_acct_ptr, node_inx, task_inx);
+		task_cnt++;
+		task_inx++;
+		disp_use = NULL;
+		ll_get_data(mach_use, LL_MachUsageGetNextDispUsage, &disp_use);
+	}
+	step_stat_ptr->num_tasks = task_cnt;
+
+	return task_cnt;
+}
+
+static void _proc_step_stat(LL_element *step, List stats_list)
+{
+	LL_element *machine = NULL, *mach_use = NULL;
+	char *node_name = NULL;
+	int node_inx = 0, task_inx = 0, rc;
+
+	ll_get_data(step, LL_StepGetFirstMachine, &machine);
+	ll_get_data(step, LL_StepGetFirstMachUsage, &mach_use);
+	while (mach_use) {
+		node_name = NULL;
+		if (machine) {
+			ll_get_data(machine, LL_MachineName, &node_name);
+			ll_get_data(step, LL_StepGetNextMachine, &machine);
+		}
+		rc = _proc_mach_use_stat(mach_use, stats_list, node_inx++,
+					 task_inx, node_name);
+		if (node_name)
+			free(node_name);
+		task_inx += rc;
+		mach_use = NULL;
+		ll_get_data(step, LL_StepGetNextMachUsage, &mach_use);
+	}
+}
+
+/* Test if this step record is matches the input job_id and step_id.
+ * Set match_job_id if job_ID matches, and
+ * set match_step_id if step_id and job ID both match */
+static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
+			   bool *match_job_id, bool *match_step_id)
+{
+	int rc;
+	char *read_id = NULL;
+	uint32_t this_step_id = NO_VAL;
+
+	*match_job_id = false;
+	*match_step_id = false;
+	rc = ll_get_data(step, LL_StepID, &read_id);
+	if (!rc) {
+		/* NOTE: JobID is a number: "<hostname>.<jobid>.<stepid>"
+		 * For SLURM's job ID, remove the trailing ".<stepid>" */
+		char *sep1, *sep2, *sep3, *new_job_id = NULL;
+		sep3 = strrchr(read_id, '.');
+		if (sep3 && (sep3 != read_id)) {
+			this_step_id = strtol(sep3+1, NULL, 10);
+			sep3[0] = '\0';
+		}
+		sep2 = strrchr(read_id, '.');
+		if (sep2)
+			sep2[0] = '\0';
+		sep1 = strchr(read_id, '.');
+		if (sep1)
+			sep1[0] = '\0';
+		xstrfmtcat(new_job_id, "%s.%s", read_id, sep2+1);
+		if (!job_id || !strcmp(job_id, new_job_id)) {
+			*match_job_id = true;
+			if ((step_id == NO_VAL) || (step_id == this_step_id))
+				*match_step_id = true;
+		}
+		xfree(new_job_id);
+		free(read_id);
+	}
+}
+#endif
+
+/*****************************************************************************\
+ * Replacement functions for src/api/cancel.c
+\*****************************************************************************/
+
+/*
+ * slurm_kill_job - send the specified signal to all steps of an existing job
+ * IN job_id     - the job's id
+ * IN signal     - signal number
+ * IN batch_flag - 1 to signal batch shell only, otherwise 0
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_kill_job (char *job_id, uint16_t signal,
+			   uint16_t batch_flag)
+{
+	if (signal != SIGKILL) {
+		slurm_seterrno(ESLURM_NOT_SUPPORTED);
+		return -1;
+	}
+	return slurm_terminate_job (job_id);
+}
+
+/*
+ * Kill a job step with job id "job_id" and step id "step_id", optionally
+ *	sending the processes in the job step a signal "signal"
+ * IN job_id     - the job's id
+ * IN step_id    - the job step's id
+ * IN signal     - signal number
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_kill_job_step (char *job_id, uint32_t step_id,
+				uint16_t signal)
+{
+	if (signal != SIGKILL) {
+		slurm_seterrno(ESLURM_NOT_SUPPORTED);
+		return -1;
+	}
+	return slurm_terminate_job_step (job_id, step_id);
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/job_info.c
+\*****************************************************************************/
+
+/*
+ * slurm_load_job - issue RPC to get job information for one job ID
+ * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN job_id -  ID of job we want information about
+ * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_job_info_msg
+ */
+extern int slurm_load_job (job_info_msg_t **resp, char *job_id,
+			   uint16_t show_flags)
+{
+#ifdef HAVE_LLAPI_H
+	job_info_msg_t *job_info_ptr;
+	job_info_t *job_ptr;
+	LL_element *credential, *job, *query_object, *step;
+	int err_code, job_type, obj_count, rc;
+	char *name, *submit_host;
+	bool match_job_id, match_step_id;
+	time_t submit_time;
+
+	query_object = ll_query(JOBS);
+	if (!query_object) {
+		verbose("ll_query(JOBS) failed");
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(JOBS, ALL), error %d", rc);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!job) {
+		verbose("ll_get_objs(JOBS), error %d", err_code);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	job_info_ptr = xmalloc(sizeof(job_info_msg_t));
+	job_info_ptr->last_update = time(NULL);
+	job_info_ptr->record_count = 0;
+	job_info_ptr->job_array = xmalloc(sizeof(job_info_t) * 1);
+
+	while (job) {
+		step = NULL;
+		match_job_id = match_step_id = false;
+		rc = ll_get_data(job, LL_JobGetFirstStep, &step);
+		if (!rc && step) {
+			_test_step_id(step, job_id, NO_VAL,
+				      &match_job_id, &match_step_id);
+		}
+		if (!match_job_id) {
+			job = ll_next_obj(query_object);
+			continue;	/* Try next job */
+		}
+
+		/* We found a match */
+		job_info_ptr->record_count = 1;
+		job_ptr = &job_info_ptr->job_array[0];
+		_load_step_info_job(step, job_ptr, 0);
+
+		submit_host = NULL;
+		rc = ll_get_data(job, LL_JobSubmitHost, &submit_host);
+		if (!rc) {
+			char *sep = strchr(submit_host, '.');
+			if (sep)
+				sep[0] = '\0';
+			job_ptr->alloc_node = xstrdup(submit_host);
+			free(submit_host);
+		}
+
+		credential = NULL;
+		rc = ll_get_data(job, LL_JobCredential, &credential);
+		if (!rc && credential)
+			_load_credential_info_job(credential, job_ptr);
+
+		name = NULL;
+		rc = ll_get_data(job, LL_JobName, &name);
+		if (!rc) {
+			job_ptr->name = xstrdup(name);
+			free(name);
+		}
+
+		rc = ll_get_data(job, LL_JobSubmitTime, &submit_time);
+		if (!rc)
+			job_ptr->submit_time = submit_time;
+
+		rc = ll_get_data(job, LL_JobStepType, &job_type);
+		if (!rc && (job_type = BATCH_JOB))
+			job_ptr->batch_flag = 1;
+		break;
+	}
+
+	ll_free_objs(job);
+	ll_deallocate(job);
+
+	*resp = job_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#else
+	job_info_msg_t *job_info_ptr;
+	verbose("running without loadleveler");
+	job_info_ptr = xmalloc(sizeof(job_info_msg_t));
+	job_info_ptr->last_update = time(NULL);
+	job_info_ptr->record_count = 0;
+	job_info_ptr->job_array = xmalloc(0);
+	*resp = job_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#endif
+}
+
+/*
+ * slurm_load_jobs - issue RPC to get slurm all job configuration
+ *	information if changed since update_time
+ * IN update_time - time of current configuration data
+ * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN show_flags - job filtering options
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_job_info_msg
+ */
+extern int slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
+			    uint16_t show_flags)
+{
+#ifdef HAVE_LLAPI_H
+	job_info_msg_t *job_info_ptr;
+	job_info_t *job_ptr;
+	LL_element *credential, *job, *query_object, *step;
+	int job_inx = -1, step_inx = -1;
+	int err_code, job_type, obj_count, rc;
+	char *name, *submit_host;
+	time_t submit_time;
+
+	query_object = ll_query(JOBS);
+	if (!query_object) {
+		verbose("ll_query(JOBS) failed");
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(JOBS, ALL), error %d", rc);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!job) {
+		verbose("ll_get_objs(JOBS), error %d", err_code);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	job_info_ptr = xmalloc(sizeof(job_info_msg_t));
+	job_info_ptr->last_update = time(NULL);
+	job_info_ptr->record_count = obj_count;
+	job_info_ptr->job_array = xmalloc(sizeof(job_info_t) * obj_count);
+
+	while (job) {
+		if (++job_inx >= obj_count) {
+			/* error handled outside of loop */
+			break;
+		}
+		job_ptr = &job_info_ptr->job_array[job_inx];
+
+		/* The following SLURM fields have no equivalent available
+		 * from LoadLeveler:
+		 * alloc_sid, assoc_id, batch_script, contiguous
+		 * features, licenses, nice, qos, show_flags
+		 * exc_nodes, exc_node_inx, req_nodes, req_node_inx
+		 * node_inx (this could be calculated, but requires reading
+		 *	     and searching the machine table)
+		 * cpus_per_task
+		 * cores_per_socket, sockets_per_node
+		 * ntasks_per_core, ntasks_per_socket
+		 * pn_min_memory, pn_min_cpus, pn_min_tmp_disk
+		 * eligible_time, preempt_time, pre_sus_time, resize_time
+		 * suspend_time
+		 * req_switch, wait4switch, wckey
+		 * job_resrcs, select_jobinfo
+		 */
+
+		submit_host = NULL;
+		rc = ll_get_data(job, LL_JobSubmitHost, &submit_host);
+		if (!rc) {
+			char *sep = strchr(submit_host, '.');
+			if (sep)
+				sep[0] = '\0';
+			job_ptr->alloc_node = xstrdup(submit_host);
+			free(submit_host);
+		}
+
+		credential = NULL;
+		rc = ll_get_data(job, LL_JobCredential, &credential);
+		if (!rc && credential)
+			_load_credential_info_job(credential, job_ptr);
+
+		name = NULL;
+		rc = ll_get_data(job, LL_JobName, &name);
+		if (!rc) {
+			job_ptr->name = xstrdup(name);
+			free(name);
+		}
+
+		rc = ll_get_data(job, LL_JobSubmitTime, &submit_time);
+		if (!rc)
+			job_ptr->submit_time = submit_time;
+
+		rc = ll_get_data(job, LL_JobStepType, &job_type);
+		if (!rc && (job_type = BATCH_JOB))
+			job_ptr->batch_flag = 1;
+
+		step = NULL;
+		rc = ll_get_data(job, LL_JobGetFirstStep, &step);
+		while (!rc && step) {
+			step_inx++;
+			_load_step_info_job(step, job_ptr, step_inx);
+			step = NULL;
+			rc = ll_get_data(job, LL_JobGetNextStep, &step);
+		}
+
+		job = ll_next_obj(query_object);
+	}
+
+	ll_free_objs(job);
+	ll_deallocate(job);
+	if (++job_inx != obj_count) {
+		verbose("ll_get_objs(JOBS), bad obj_count %d", obj_count);
+		slurm_free_job_info_msg(job_info_ptr);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	*resp = job_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#else
+	job_info_msg_t *job_info_ptr;
+	verbose("running without loadleveler");
+	job_info_ptr = xmalloc(sizeof(job_info_msg_t));
+	job_info_ptr->last_update = time(NULL);
+	job_info_ptr->record_count = 0;
+	job_info_ptr->job_array = xmalloc(0);
+	*resp = job_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#endif
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/job_step_info.c
+\*****************************************************************************/
+extern int slurm_job_step_get_pids(char * job_id, uint32_t step_id,
+				   char *node_list,
+				   job_step_pids_response_msg_t **resp)
+{
+	slurm_seterrno(ESLURM_NOT_SUPPORTED);
+	return -1;
+}
+
+/*
+ * slurm_get_job_steps - issue RPC to get specific slurm job step
+ *	configuration information if changed since update_time.
+ *	a job_id value of NO_VAL implies all jobs, a step_id value of
+ *	NO_VAL implies all steps
+ * IN update_time - time of current configuration data
+ * IN job_id - get information for specific job id, NULL for all jobs
+ * IN step_id - get information for specific job step id, NO_VAL for all
+ *	job steps
+ * IN step_response_pptr - place to store a step response pointer
+ * IN show_flags - job step filtering options
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the response using slurm_free_job_step_info_response_msg
+ */
+extern int slurm_get_job_steps (time_t update_time, char *job_id,
+				uint32_t step_id,
+				job_step_info_response_msg_t **resp,
+				uint16_t show_flags)
+{
+#ifdef HAVE_LLAPI_H
+	job_step_info_response_msg_t *step_info_ptr;
+	job_step_info_t *step_ptr;
+	LL_element *query_object, *credential, *job, *step;
+	int job_inx = -1, step_inx = -1, step_buf_cnt;
+	int err_code, obj_count, rc;
+	bool match_job_id, match_step_id;
+
+	query_object = ll_query(JOBS);
+	if (!query_object) {
+		verbose("ll_query(JOBS) failed");
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(JOBS, ALL), error %d", rc);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!job) {
+		verbose("ll_get_objs(JOBS), error %d", err_code);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	step_buf_cnt = obj_count * 2;
+	step_info_ptr = xmalloc(sizeof(node_info_msg_t));
+	step_info_ptr->last_update = time(NULL);
+	step_info_ptr->job_steps = xmalloc(sizeof(job_step_info_t) *
+					   step_buf_cnt);
+
+	while (job) {
+		if (++job_inx >= obj_count) {
+			/* error handled outside of loop */
+			break;
+		}
+
+		step = NULL;
+		match_job_id = match_step_id = false;
+		rc = ll_get_data(job, LL_JobGetFirstStep, &step);
+		if (!rc && step) {
+			_test_step_id(step, job_id, step_id,
+				      &match_job_id, &match_step_id);
+		}
+		if (!match_job_id || !match_step_id)
+			goto next_job;
+
+		if (++step_inx >= step_buf_cnt) {
+			/* Need to increase step buffer size */
+			step_buf_cnt *= 2;
+			xrealloc(step_info_ptr->job_steps,
+				 sizeof(job_step_info_t) * step_buf_cnt);
+		}
+		step_ptr = &step_info_ptr->job_steps[step_inx];
+
+		/* The following SLURM fields have no equivalent available
+		 * from LoadLeveler:
+		 * ckpt_interval, resv_ports, select_jobinfo
+		 * node_inx (this could be calculated, but requires reading
+		 *	     and searching the machine table)
+		 */
+
+		credential = NULL;
+		rc = ll_get_data(job, LL_JobCredential, &credential);
+		if (!rc && credential)
+			_load_credential_info_step(credential, step_ptr);
+
+		while (!rc && step) {
+			_load_step_info_step(step, step_ptr);
+			step = NULL;
+			rc = ll_get_data(job, LL_JobGetNextStep, &step);
+		}
+
+next_job:	job = ll_next_obj(query_object);
+	}
+
+	ll_free_objs(job);
+	ll_deallocate(job);
+	if (++job_inx != obj_count) {
+		verbose("ll_get_objs(JOBS), bad obj_count %d", obj_count);
+		slurm_free_job_step_info_response_msg(step_info_ptr);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	step_info_ptr->job_step_count = step_inx + 1;
+	*resp = step_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#else
+	job_step_info_response_msg_t *step_info_ptr;
+	verbose("running without loadleveler");
+	step_info_ptr = xmalloc(sizeof(node_info_msg_t));
+	step_info_ptr->last_update = time(NULL);
+	step_info_ptr->job_step_count = 0;
+	step_info_ptr->job_steps = xmalloc(0);
+	*resp = step_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#endif
+}
+
+/*
+ * slurm_job_step_stat - status a current step
+ *
+ * IN job_id
+ * IN step_id
+ * IN node_list, optional, if NULL then all nodes in step are returned.
+ * OUT resp
+ * RET SLURM_SUCCESS on success SLURM_ERROR else
+ *
+ * NOTE:
+ * pid information is not available (alwasys set to 1)
+ * vmem (virtual memory) information is not available
+ * page count information is not available
+ * task ID information assumes "block" distribution
+ */
+extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
+			       char *node_list,
+			       job_step_stat_response_msg_t **resp)
+{
+#ifdef HAVE_LLAPI_H
+	LL_element *query_object, *job, *step;
+	bool match_job_id, match_step_id;
+	int err_code, obj_count, rc;
+
+	query_object = ll_query(JOBS);
+	if (!query_object) {
+		verbose("ll_query(JOBS) failed");
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(JOBS, ALL), error %d", rc);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	job = ll_get_objs(query_object, LL_HISTORY_FILE, NULL, &obj_count,
+			  &err_code);
+	if (!job) {
+		verbose("ll_get_objs(JOBS), error %d", err_code);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	*resp = NULL;
+	while (job) {
+		step = NULL;
+		rc = ll_get_data(job, LL_JobGetFirstStep, &step);
+		while (!rc && step) {
+			match_job_id = match_step_id = false;
+			_test_step_id(step, job_id, step_id,
+				      &match_job_id, &match_step_id);
+			if (!match_job_id)
+				break;
+			if (match_step_id) {
+				step = NULL;
+				rc = ll_get_data(job, LL_JobGetNextStep, &step);
+				continue;
+			}
+
+			/* Process the match */
+			*resp = xmalloc(sizeof(job_step_stat_response_msg_t));
+			(*resp)->job_id = xstrdup(job_id);
+			(*resp)->step_id = step_id;
+			(*resp)->stats_list = list_create(_jobacct_del);
+			_proc_step_stat(step, (*resp)->stats_list);
+			goto fini;
+		}
+		job = ll_next_obj(query_object);
+	}
+
+fini:	ll_free_objs(job);
+	ll_deallocate(job);
+
+	if (match_job_id && match_step_id)
+		return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_ERROR;
+#else
+	verbose("running without loadleveler");
+	*resp = NULL;
+	return SLURM_ERROR;
+#endif
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/node_info.c
+\*****************************************************************************/
+
+/*
+ * slurm_load_node - issue RPC to get slurm all node configuration information
+ *	if changed since update_time
+ * IN update_time - time of current configuration data
+ * IN node_info_msg_pptr - place to store a node configuration pointer
+ * IN show_flags - node filtering options
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_node_info_msg
+ */
+extern int slurm_load_node (time_t update_time,
+			    node_info_msg_t **resp, uint16_t show_flags)
+{
+#ifdef HAVE_LLAPI_H
+	node_info_msg_t *node_info_ptr;
+	LL_element *query_object, *machine, *resource;
+	int cpus, err_code, i, obj_count, rc;
+	char *arch, *name, *os, *state;
+	char **feature_list;
+	int64_t disk, mem;
+	int node_inx = -1;
+	node_info_t *node_ptr;
+
+	query_object = ll_query(MACHINES);
+	if (!query_object) {
+		verbose("ll_query(MACHINES) failed");
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(MACHINES, ALL), error %d", rc);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	machine = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!machine) {
+		verbose("ll_get_objs(MACHINES), error %d", err_code);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	node_info_ptr = xmalloc(sizeof(node_info_msg_t));
+	node_info_ptr->last_update = time(NULL);
+	node_info_ptr->node_scaling = 1;
+	node_info_ptr->record_count = obj_count;
+	node_info_ptr->node_array = xmalloc(sizeof(node_info_t) * obj_count);
+
+	while (machine) {
+		if (++node_inx >= obj_count) {
+			/* error handled outside of loop */
+			break;
+		}
+		node_ptr = &node_info_ptr->node_array[node_inx];
+
+		/* The following SLURM fields have no equivalent available
+		 * from LoadLeveler:
+		 * boot_time, slurmd_start_time
+		 * cores, sockets, threads (these might be set from "cpus")
+		 * reason, reason_time, reason_uid
+		 * select_nodeinfo
+		 * weight
+		 */
+
+		if (ll_get_data(machine, LL_MachineArchitecture, &arch)) {
+			verbose("ll_get_data(LL_MachineArchitecture) failed");
+		} else {
+			node_ptr->arch = xstrdup(arch);
+			free(arch);
+		}
+
+		if (ll_get_data(machine, LL_MachineCPUs, &cpus)) {
+			verbose("ll_get_data(LL_MachineCPUs) failed");
+		} else {
+			node_ptr->cpus = cpus;
+		}
+
+		if (ll_get_data(machine, LL_MachineDisk64, &disk)) {
+			verbose("ll_get_data(LL_MachineDisk64) failed");
+		} else {
+			node_ptr->tmp_disk = disk * 1024;	/* KB -> MB */
+		}
+
+		if (ll_get_data(machine, LL_MachineFeatureList,&feature_list)){
+			verbose("ll_get_data(LL_MachineFeatureList) failed");
+		} else {
+			for (i = 0; feature_list[i]; i++) {
+				if (node_ptr->features)
+					xstrcat(node_ptr->features, ",");
+				xstrcat(node_ptr->features, feature_list[i]);
+				free(feature_list[i]);
+			}
+			free(feature_list);
+		}
+
+		if (ll_get_data(machine, LL_MachineName, &name)) {
+			verbose("ll_get_data(LL_MachineName) failed");
+		} else {
+			char *sep;
+			node_ptr->node_addr = xstrdup(name);
+			node_ptr->node_hostname = xstrdup(name);
+			sep = strchr(name, '.');
+			if (sep)
+				sep[0] = '\0';
+			node_ptr->name = xstrdup(name);
+			free(name);
+		}
+
+		if (ll_get_data(machine, LL_MachineOperatingSystem, &os)) {
+			verbose("ll_get_data(LL_MachineOperatingSystem) "
+				"failed");
+		} else {
+			node_ptr->os = xstrdup(os);
+			free(os);
+		}
+
+		if (ll_get_data(machine, LL_MachineRealMemory64, &mem)) {
+			verbose("ll_get_data(LL_MachineRealMemory64) failed");
+		} else {
+			node_ptr->real_memory = mem;
+		}
+
+		if (ll_get_data(machine, LL_MachineStartdState, &state)) {
+			verbose("ll_get_data(LL_MachineStartdState) failed");
+		} else {
+			if (!strcmp(state, "Down") ||
+			    !strcmp(state, "None")) {
+				node_ptr->node_state = NODE_STATE_DOWN;
+			} else if (!strcmp(state, "Drained") ||
+				   !strcmp(state, "Flush")) {
+				node_ptr->node_state = NODE_STATE_IDLE |
+						       NODE_STATE_DRAIN;
+			} else if (!strcmp(state, "Draining") ||
+				   !strcmp(state, "Suspend")) {
+				node_ptr->node_state = NODE_STATE_ALLOCATED |
+						       NODE_STATE_DRAIN;
+			} else if (!strcmp(state, "Busy") ||
+				   !strcmp(state, "Running")) {
+				node_ptr->node_state = NODE_STATE_ALLOCATED;
+			} else if (!strcmp(state, "Idle")) {
+				node_ptr->node_state = NODE_STATE_IDLE;
+			} else {
+				node_ptr->node_state = NODE_STATE_UNKNOWN;
+			}
+			free(state);
+		}
+
+		resource = NULL;
+		rc = ll_get_data(machine, LL_MachineGetFirstResource, &resource);
+		while (resource) {
+			char *name = NULL, value_str[64];
+			int value;
+			if (ll_get_data(resource, LL_ResourceName, &name) ||
+			    ll_get_data(resource, LL_ResourceInitialValue,
+					&value)) {
+				verbose("ll_get_data(LL_LL_Resouce*) failed");
+			} else {
+				if (node_ptr->gres)
+					xstrcat(node_ptr->gres, ",");
+				xstrcat(node_ptr->gres, name);
+				snprintf(value_str, sizeof(value_str), ":%d",
+					 value);
+				xstrcat(node_ptr->gres, value_str);
+			}
+			if (name)
+				free(name);
+			resource = NULL;
+			if (ll_get_data(machine, LL_MachineGetNextResource,
+					&resource)) {
+				verbose("ll_get_data(LL_MachineGetNextResource"
+					") failed");
+			}
+		}
+
+		machine = ll_next_obj(query_object);
+	}
+
+	ll_free_objs(machine);
+	ll_deallocate(machine);
+
+	if (++node_inx != obj_count) {
+		verbose("ll_get_objs(MACHINES), bad obj_count %d", obj_count);
+		slurm_free_node_info_msg(node_info_ptr);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	*resp = node_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#else
+	node_info_msg_t *node_info_ptr;
+	verbose("running without loadleveler");
+	node_info_ptr = xmalloc(sizeof(node_info_msg_t));
+	node_info_ptr->last_update = time(NULL);
+	node_info_ptr->node_scaling = 1;
+	node_info_ptr->record_count = 0;
+	node_info_ptr->node_array = xmalloc(0);
+	*resp = node_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#endif
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/partition_info.c
+\*****************************************************************************/
+
+/*
+ * slurm_load_partitions - issue RPC to get slurm all partition configuration
+ *	information if changed since update_time
+ * IN update_time - time of current configuration data
+ * IN node_info_msg_pptr - place to store a node configuration pointer
+ * IN show_flags - node filtering options
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_node_info_msg
+ */
+extern int slurm_load_partitions (time_t update_time,
+				  partition_info_msg_t **resp,
+				  uint16_t show_flags)
+{
+#ifdef HAVE_LLAPI_H
+	partition_info_msg_t *part_info_ptr;
+	partition_info_t *part_ptr;
+	int obj_count, part_inx = -1;
+	LL_element *query_object, *class;
+	int err_code, i, rc;
+	int priority;
+	int64_t time_limit;
+	char **groups, *name, *sep;
+
+
+	_load_global_node_list();
+
+	query_object = ll_query(CLASSES);
+	if (!query_object) {
+		verbose("ll_query(CLASSES) failed");
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(CLASSES, ALL), error %d", rc);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	class = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!class) {
+		verbose("ll_get_objs(CLASSES), error %d", err_code);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	part_info_ptr = xmalloc(sizeof(node_info_msg_t));
+	part_info_ptr->last_update = time(NULL);
+	part_info_ptr->record_count = obj_count;
+	part_info_ptr->partition_array = xmalloc(sizeof(partition_info_t) *
+						 obj_count);
+
+	while (class) {
+		if (++part_inx >= obj_count) {
+			/* error handled outside of loop */
+			break;
+		}
+		part_ptr = &part_info_ptr->partition_array[part_inx];
+
+		/* The following SLURM fields have no equivalent available
+		 * from LoadLeveler:
+		 * allow_alloc_nodes, alternate, grace_time
+		 * def_mem_per_cpu, max_mem_per_cpu
+		 * max_nodes (this might be derived from LL_ClassMaxProcessors)
+		 */
+
+		rc = ll_get_data(class, LL_ClassDefWallClockLimitHard,
+				 &time_limit);
+		if (!rc) {
+			if (time_limit == 0x7fffffff)
+				part_ptr->default_time = INFINITE;
+			else
+				part_ptr->default_time = time_limit;
+		}
+
+		rc = ll_get_data(class, LL_ClassWallClockLimitHard,
+				 &time_limit);
+		if (!rc) {
+			if (time_limit == 0x7fffffff)
+				part_ptr->max_time = INFINITE;
+			else
+				part_ptr->max_time = time_limit;
+		}
+
+		rc = ll_get_data(class, LL_ClassIncludeGroups, &groups);
+		if (!rc) {
+			for (i = 0; groups[i]; i++) {
+				if (part_ptr->allow_groups)
+					sep = ",";
+				else
+					sep = "";
+				xstrfmtcat(part_ptr->allow_groups, "%s%s",
+					   sep, groups[i]);
+				free(groups[i]);
+			}
+			free(groups);
+		}
+
+		rc = ll_get_data(class, LL_ClassName, &name);
+		if (!rc) {
+			part_ptr->name = xstrdup(name);
+			free(name);
+		}
+
+		rc = ll_get_data(class, LL_ClassPriority, &priority);
+		if (!rc)
+			part_ptr->priority = priority;
+
+		/* Set some default values for other fields */
+		part_ptr->flags = 0;
+		part_ptr->max_share = 1;
+		part_ptr->min_nodes = 1;
+		part_ptr->max_nodes = INFINITE;
+		part_ptr->nodes = xstrdup(global_node_str);
+		part_ptr->node_inx = xmalloc(sizeof(int) * 3);
+		part_ptr->node_inx[0] = 0;
+		part_ptr->node_inx[1] = global_node_cnt - 1;
+		part_ptr->node_inx[2] = -1;
+		part_ptr->total_cpus = global_cpu_cnt;
+		part_ptr->total_nodes = global_node_cnt;
+		part_ptr->preempt_mode = PREEMPT_MODE_SUSPEND; /* LL default */
+		part_ptr->state_up = PARTITION_UP;
+
+		class = ll_next_obj(query_object);
+	}
+
+	ll_free_objs(class);
+	ll_deallocate(class);
+
+	if (++part_inx != obj_count) {
+		verbose("ll_get_objs(CLASSES), bad obj_count %d", obj_count);
+		slurm_free_partition_info_msg(part_info_ptr);
+		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+	}
+
+	*resp = part_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#else
+	partition_info_msg_t *part_info_ptr;
+	verbose("running without loadleveler");
+	part_info_ptr = xmalloc(sizeof(node_info_msg_t));
+	part_info_ptr->last_update = time(NULL);
+	part_info_ptr->record_count = 0;
+	part_info_ptr->partition_array = xmalloc(0);
+	*resp = part_info_ptr;
+	return SLURM_PROTOCOL_SUCCESS;
+#endif
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/signal.c
+\*****************************************************************************/
+extern int slurm_notify_job (char *job_id, char *message)
+{
+	slurm_seterrno(ESLURM_NOT_SUPPORTED);
+	return -1;
+}
+
+/*
+ * slurm_signal_job - send the specified signal to all steps of an existing job
+ * IN job_id     - the job's id
+ * IN signal     - signal number
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_signal_job (char *job_id, uint16_t signal)
+{
+	if (signal != SIGKILL) {
+		slurm_seterrno(ESLURM_NOT_SUPPORTED);
+		return -1;
+	}
+	return slurm_terminate_job (job_id);
+}
+
+/*
+ * slurm_signal_job_step - send the specified signal to an existing job step
+ * IN job_id  - the job's id
+ * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
+ *              to send a signal to a job's batch script
+ * IN signal  - signal number
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_signal_job_step (char *job_id, uint32_t step_id,
+				  uint16_t signal)
+{
+	if (signal != SIGKILL) {
+		slurm_seterrno(ESLURM_NOT_SUPPORTED);
+		return -1;
+	}
+	return slurm_terminate_job_step (job_id, step_id);
+}
+
+/*
+ * slurm_terminate_job - terminates all steps of an existing job by sending
+ *	a REQUEST_TERMINATE_JOB rpc to all slurmd in the job allocation.
+ *	NOTE: No slurmd on LoadLeveler installations.
+ * IN job_id     - the job's id
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_terminate_job (char *job_id)
+{
+#ifdef HAVE_LLAPI_H
+	LL_element *job, *step, *query_object;
+	int err_code, found, i, obj_count, rc = 0;
+	bool match_job_id, match_step_id;
+	char *step_id_str;
+	uint32_t step_id;
+
+	/* Make up to 4 passes through job list to capture job steps started
+	 * while we are scanning and terminating job steps */
+	for (i = 0; i < 4; i++) {
+		found = 0;
+		/* Scan list of job steps for match */
+		query_object = ll_query(JOBS);
+		if (!query_object) {
+			verbose("ll_query(JOBS) failed");
+			slurm_seterrno(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+			return -1;
+		}
+
+		rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+		if (rc) {
+			verbose("ll_set_request(JOBS, ALL), error %d", rc);
+			slurm_seterrno(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+			return -1;
+		}
+
+		job = ll_get_objs(query_object, LL_CM, NULL, &obj_count,
+				  &err_code);
+		if (!job) {
+			verbose("ll_get_objs(JOBS), error %d", err_code);
+			slurm_seterrno(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+			return -1;
+		}
+		while (job) {
+			step = NULL;
+			match_job_id = match_step_id = false;
+			rc = ll_get_data(job, LL_JobGetFirstStep, &step);
+			while (!rc && step) {
+				_test_step_id(step, job_id, NO_VAL,
+					      &match_job_id, &match_step_id);
+				if (!match_job_id)
+					break;
+				step_id_str = NULL;
+				rc = ll_get_data(step, LL_StepID, &step_id_str);
+				if (rc || (step_id_str == NULL)) {
+					verbose("ll_get_data(StepID), error %d",
+						err_code);
+					rc = -1;
+				} else {
+					char *sep = strrchr(step_id_str, '.');
+					if (sep && (sep != step_id_str)) {
+						step_id = strtol(sep+1, NULL,
+								 10);
+						if (slurm_terminate_job_step
+								(job_id,
+								 step_id)) {
+							rc = -1;
+						} else {
+							found++;
+						}
+					}
+				}
+				step = NULL;
+				rc = ll_get_data(job, LL_JobGetNextStep, &step);
+			}
+
+			job = ll_next_obj(query_object);
+		}
+		if (found == 0)
+			break;
+	}
+	return rc;
+#else
+	slurm_seterrno(ESLURM_NOT_SUPPORTED);
+	return -1;
+#endif
+}
+
+/*
+ * slurm_terminate_job_step - terminates a job step by sending a
+ * 	REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step.
+ *	NOTE: No slurmd on LoadLeveler installations.
+ * IN job_id  - the job's id
+ * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
+ *              to terminate a job's batch script
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_terminate_job_step (char *job_id, uint32_t step_id)
+{
+#ifdef HAVE_LLAPI_H
+	int rc;
+	LL_terminate_job_info *cancel_info;
+
+/* FIXME: documentation not clear, probably needs work */
+	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
+	cancel_info->version_num =  LL_PROC_VERSION;
+#if 0
+	cancel_info->StepId.cluster =
+		jobs_info.JobList[0]->step_list[0]->id.cluster;
+	cancel_info->StepId.proc =
+		jobs_info.JobList[0]->step_list[0]->id.proc;
+	cancel_info->StepId.from_host =
+		strdup(jobs_info.JobList[0]->step_list[0]->id.from_host);
+#endif
+	cancel_info->msg =  "Manually terminated";
+	rc = ll_terminate_job(cancel_info);
+	xfree(cancel_info);
+
+	if (rc == API_OK)
+		return 0;
+	if (rc == -7)
+		slurm_seterrno(ESLURM_ACCESS_DENIED);
+	else
+		slurm_seterrno(SLURM_ERROR);
+	return -1;
+#else
+	slurm_seterrno(ESLURM_NOT_SUPPORTED);
+	return -1;
+#endif
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/signal.c
+\*****************************************************************************/
+/*
+ * Translate a SLURM stdin/out/err filename to the LoadLeveler equivalent
+ * slurm_fname IN - SLURM filename
+ * RET: LoadLeveler equivalent file name, must xfree()
+ */
+static char *_massage_fname(char *slurm_fname)
+{
+	char *match, *tmp_fname = NULL, *work_fname;
+
+	work_fname = xstrdup(slurm_fname);
+
+	match = strstr(work_fname, "%j");
+	if (match) {
+		match[0] = '\0';
+		xstrfmtcat(tmp_fname, "%s$(jobid)%s", work_fname, match + 2);
+		xfree(work_fname);
+		work_fname = tmp_fname;
+		tmp_fname = NULL;
+	}
+
+	match = strstr(work_fname, "%J");
+	if (match) {
+		match[0] = '\0';
+		xstrfmtcat(tmp_fname, "%s$(jobid).$(stepid)%s", work_fname,
+			   match + 2);
+		xfree(work_fname);
+		work_fname = tmp_fname;
+		tmp_fname = NULL;
+	}
+
+	match = strstr(work_fname, "%N");
+	if (match) {
+		match[0] = '\0';
+		xstrfmtcat(tmp_fname, "%s$(schedd_host)%s", work_fname,
+			   match + 2);
+		xfree(work_fname);
+		work_fname = tmp_fname;
+		tmp_fname = NULL;
+	}
+
+	match = strstr(work_fname, "%s");
+	if (match) {
+		match[0] = '\0';
+		xstrfmtcat(tmp_fname, "%s$(stepid)%s", work_fname, match + 2);
+		xfree(work_fname);
+		work_fname = tmp_fname;
+		tmp_fname = NULL;
+	}
+
+	return work_fname;
+}
+
+extern int slurm_submit_batch_job(job_desc_msg_t *req,
+				  submit_response_msg_t **resp)
+{
+	char *first_line, *pathname, *slurm_cmd_file = NULL;
+	int fd, i, rc;
+	size_t len, offset = 0, wrote;
+
+	/* Move first line of script, e.g. "#!/bin/bash"
+	 * also all subsequent lines that begin with "# @" */
+	first_line = strchr(req->script, '\n');
+	while (first_line && (first_line[1] == '#') &&
+	       (first_line[2] == ' ') && (first_line[3] == '@')) {
+		first_line = strchr(first_line+1, '\n');
+	}
+	if (first_line) {
+		first_line[0] = '\0';
+		xstrfmtcat(slurm_cmd_file, "%s\n", req->script);
+		first_line[0] = '\n';
+	} else
+		xstrfmtcat(slurm_cmd_file, "%s\n", req->script);
+
+	/* The following options are not supported with LoadLevler:
+	 * uint16_t acctg_freq;		accounting polling interval (seconds)
+	 * char *alloc_node;		node making resource allocation request
+	 * uint16_t alloc_resp_port;	port to send allocation confirmation to
+	 * uint32_t alloc_sid;		local sid making allocation request
+	 * uint16_t contiguous;		set if job requires contiguous nodes
+	 * uint16_t cores_per_socket;	cores per socket required by job
+	 * char *dependency;		synchronize this job with other jobs
+	 * time_t end_time;		time by which job must complete
+	 * char *exc_nodes;		nodes excluded from allocation request
+	 * uint32_t group_id;		group to assume, if run as root.
+	 * uint16_t immediate;		allocate to run or fail immediately
+	 * uint32_t job_id;		user-specified job ID
+	 * uint16_t kill_on_node_fail;	set if node failure to kill job
+	 * char *licenses;		licenses required by the job
+	 * uint32_t max_cpus;		maximum number of processors required
+	 * uint32_t min_cpus;		minimum number of processors required
+	 * uint16_t ntasks_per_core;	number of tasks to invoke per core
+	 * uint16_t ntasks_per_socket;	number of tasks to invoke per socket
+	 * uint8_t open_mode;		stdout/err open mode truncate or append
+	 * uint16_t other_port;		port to send notification msg to
+	 * uint8_t overcommit;		over subscribe resources
+	 * uint32_t priority;		only used for hold if priority==0
+	 *				SLURM nice mapped to LL priority
+	 * uint16_t pn_min_cpus;	minimum # CPUs per node
+	 * char *qos;			Quality of Service
+	 * uint16_t sockets_per_node;	sockets per node required by job
+	 * char **spank_job_env;	env vars for prolog/epilog from SPANK
+	 * uint32_t spank_job_env_size; element count in spank_env
+	 * uint32_t time_min;		 minimum run time in minutes
+	 * uint32_t user_id;		set only if different from current UID
+	 * uint32_t wait4switch;	Maximum time to wait for switch count
+	 * uint16_t wait_all_nodes;	set to wait for all nodes booted
+	 * Nuint16_t warn_signal;	signal to send when near time limit
+	 * uint16_t warn_time;		time before time limit to send signal
+	 * char *wckey;			wckey for job
+	 */
+
+	if (req->account) {
+		xstrfmtcat(slurm_cmd_file, "# @ account_no = %s\n",
+			   req->account);
+	}
+
+	if (req->argc) {
+		xstrfmtcat(slurm_cmd_file, "# @ arguments =");
+		for (i = 0; i < req->argc; i++)
+			xstrfmtcat(slurm_cmd_file, " %s", req->argv[i]);
+		xstrfmtcat(slurm_cmd_file, "\n");
+	}
+
+	if (!req->num_tasks)
+		;
+	else if (req->plane_size != (uint16_t) NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ blocking = %u\n",
+			   req->plane_size);
+	} else if ((req->task_dist != (uint16_t) NO_VAL) &&
+		   ((req->task_dist == SLURM_DIST_CYCLIC) ||
+		    (req->task_dist == SLURM_DIST_CYCLIC_BLOCK) ||
+		    (req->task_dist == SLURM_DIST_CYCLIC_CYCLIC))) {
+		xstrfmtcat(slurm_cmd_file, "# @ blocking = 1\n");
+	} else if ((req->task_dist != (uint16_t) NO_VAL) &&
+		   ((req->task_dist == SLURM_DIST_BLOCK) ||
+		    (req->task_dist == SLURM_DIST_BLOCK_BLOCK) ||
+		    (req->task_dist == SLURM_DIST_BLOCK_CYCLIC))) {
+		xstrfmtcat(slurm_cmd_file, "# @ blocking = unlimited\n");
+	}
+
+	if (req->ckpt_dir && req->ckpt_interval) {
+		/* LoadLeveler checkpoint is only available with AIX */
+		xstrfmtcat(slurm_cmd_file, "# @ ckpt_dir = %s\n",
+			   req->ckpt_dir);
+		/* System administrator must configure LoadLeveler with
+		 * MIN_CKPT_INTERVAL and MAX_CKPT_INTERVAL */
+		xstrfmtcat(slurm_cmd_file, "# @ checkpoint = interval\n");
+	}
+
+	if (req->partition)
+		xstrfmtcat(slurm_cmd_file, "# @ class = %s\n", req->partition);
+
+	if (req->comment)
+		xstrfmtcat(slurm_cmd_file, "# @ comment = %s\n", req->comment);
+
+	if (req->threads_per_core != (uint16_t) NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ cpus_per_core = %u\n",
+			   req->threads_per_core);
+	}
+
+	/* Copy entire environment by default for SLURM */
+	xstrfmtcat(slurm_cmd_file, "# @ env_copy = all\n");
+	xstrfmtcat(slurm_cmd_file, "# @ environment = COPY_ALL\n");
+
+	if (req->std_err) {
+		char *fname = _massage_fname(req->std_err);
+		xstrfmtcat(slurm_cmd_file, "# @ error = %s\n", fname);
+		xfree(fname);
+	} else {
+/* FIXME: Will both stdout/err go to same file?, default stderr to /dev/null */
+		xstrfmtcat(slurm_cmd_file, "# @ error = slurm.out.$(jobid)\n");
+	}
+
+#if 0
+	/* SLURM's Linux group different from a LoadLeveler group and only
+	 * user root can set the job's group ID */
+	if (req->group_id != NO_VAL) {
+		char *g_name;
+		if ((g_name = gid_to_string((gid_t) req->group_id))) {
+			xstrfmtcat(slurm_cmd_file, "# @ group = %s\n", g_name);
+			xfree(g_name);
+		}
+	}
+#endif
+
+	if (req->work_dir) {
+		xstrfmtcat(slurm_cmd_file, "# @ initialdir = %s\n",
+			   req->work_dir);
+	}
+
+	if (req->std_in) {
+		char *fname = _massage_fname(req->std_in);
+		xstrfmtcat(slurm_cmd_file, "# @ input = %s\n", fname);
+		xfree(fname);
+	}
+
+	if (req->priority == 0)
+		xstrfmtcat(slurm_cmd_file, "# @ hold = user\n");
+
+	if (req->name)
+		xstrfmtcat(slurm_cmd_file, "# @ job_name = %s\n", req->name);
+
+	xstrfmtcat(slurm_cmd_file, "# @ job_type = serial\n");
+
+	if (req->reservation) {
+		xstrfmtcat(slurm_cmd_file, "# @ ll_res_id = %s\n",
+			   req->reservation);
+	}
+
+	if (req->mem_bind_type  == (uint16_t) NO_VAL)
+		;
+	else if (req->mem_bind_type &
+	         (MEM_BIND_RANK | MEM_BIND_MAP |
+		  MEM_BIND_MASK | MEM_BIND_LOCAL)) {
+		xstrfmtcat(slurm_cmd_file,
+			   "# @ mcm_affinity_options = mcm_mem_req\n");
+	}
+
+	if (req->network)
+		xstrfmtcat(slurm_cmd_file, "# @ network = %s\n", req->network);
+
+	if ((req->min_nodes != NO_VAL) && (req->max_nodes != NO_VAL)) {
+		xstrfmtcat(slurm_cmd_file, "# @ node = %u,%u\n",
+			  req->min_nodes, req->max_nodes);
+	} else if (req->min_nodes != NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ node = %u\n", req->min_nodes);
+	} else if (req->max_nodes != NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ node = ,%u\n", req->max_nodes);
+	}
+
+	if (req->gres) {
+		bool gres_cnt = 0;
+		char *gres, *save_ptr, *sep, *tok;
+		int cnt;
+		gres = xstrdup(req->gres);
+		tok = strtok_r(gres, ",", &save_ptr);
+		while (tok) {
+			if (gres_cnt++ == 0) {
+				xstrfmtcat(slurm_cmd_file,
+					   "# @ node_resources =");
+			}
+			sep = strchr(tok, '*');
+			if (sep) {
+				sep[0] = '\0';
+				cnt = atoi(sep + 1);
+			} else {
+				cnt = 1;
+			}
+			xstrfmtcat(slurm_cmd_file, " %s(%d)", tok, cnt);
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		if (gres_cnt)
+			xstrfmtcat(slurm_cmd_file, "\n");
+		xfree(gres);
+	}
+
+	if (req->shared == 0)
+		xstrfmtcat(slurm_cmd_file, "# @ node_usage = not_shared\n");
+	else if (req->shared != (uint16_t) NO_VAL)
+		xstrfmtcat(slurm_cmd_file, "# @ node_usage = shared\n");
+
+	if (1) {
+		int notify_cnt = 0;
+		char *notify_str = NULL;
+		if (req->mail_type & MAIL_JOB_BEGIN) {
+			notify_str = "start";
+			notify_cnt++;
+		}
+		if (req->mail_type & MAIL_JOB_END) {
+			notify_str = "complete";
+			notify_cnt++;
+		}
+		if (req->mail_type & MAIL_JOB_FAIL) {
+			notify_str = "error";
+			notify_cnt++;
+		}
+		if (req->mail_type & MAIL_JOB_REQUEUE) {
+			notify_str = "complete";
+			notify_cnt++;
+		}
+		if (notify_cnt == 0)
+			notify_str = "never";
+		else if (notify_cnt > 1)
+			notify_str = "always";
+		xstrfmtcat(slurm_cmd_file, "# @ notification = %s\n",
+			   notify_str);
+	}
+
+	if (req->mail_user) {
+		xstrfmtcat(slurm_cmd_file, "# @ notify_user = %s\n",
+			   req->mail_user);
+	}
+
+	if (req->std_out) {
+		char *fname = _massage_fname(req->std_out);
+		xstrfmtcat(slurm_cmd_file, "# @ output = %s\n", fname);
+		xfree(fname);
+	} else {
+		xstrfmtcat(slurm_cmd_file, "# @ output = slurm.out.$(jobid)\n");
+	}
+
+	if (req->features || req->req_nodes ||
+	    ((req->pn_min_memory != NO_VAL) &&
+	     ((req->pn_min_memory & MEM_PER_CPU) == 0)) ||
+	    (req->pn_min_tmp_disk != NO_VAL)) {
+		char *name = NULL, *join = "";
+		hostlist_t hl = NULL;
+		xstrfmtcat(slurm_cmd_file, "# @ requirements =");
+
+		if (req->pn_min_tmp_disk != NO_VAL) {
+			xstrfmtcat(slurm_cmd_file, "%s(Disk == %u)",
+				   join, req->pn_min_tmp_disk);
+			join = " && ";
+		}
+		if (req->features) {
+			xstrfmtcat(slurm_cmd_file, "%s(Feature == %s)",
+				   join, req->features);
+			join = " && ";
+		}
+		if (req->req_nodes) {
+			hl = hostlist_create(req->req_nodes);
+			if (hl == NULL) {
+				error("invalid required host list: %s",
+				      req->req_nodes);
+			}
+		}
+		if (req->req_nodes && hl) {
+			xstrfmtcat(slurm_cmd_file, "%s(Machine == {", join);
+			while ((name = hostlist_pop(hl))) {
+				xstrfmtcat(slurm_cmd_file, " \"%s\" ", name);
+				free(name);
+			}
+			hostlist_destroy(hl);
+			xstrfmtcat(slurm_cmd_file, "}\n");
+			join = " && ";
+		}
+		if ((req->pn_min_memory != NO_VAL) &&
+		    ((req->pn_min_memory & MEM_PER_CPU) == 0)) {
+			/* This might also be accomplished on a per _task_
+			 * basis using "Resources=ConsumbleMemory(size)" */
+			xstrfmtcat(slurm_cmd_file, "%s(TotalMemory == %u)",
+				   join, req->pn_min_memory);
+			join = " && ";
+		}
+	}
+
+	if (req->requeue == 0)
+		xstrfmtcat(slurm_cmd_file, "# @ restart = no\n");
+	else if (req->requeue != (uint16_t) NO_VAL)
+		xstrfmtcat(slurm_cmd_file, "# @ restart = yes\n");
+
+	if (req->begin_time) {
+		struct tm *begin_tm = localtime(&req->begin_time);
+		xstrfmtcat(slurm_cmd_file,
+			   "# @ startdate = %2d/%2d/%4d %2d:%2d:%2d\n",
+			   begin_tm->tm_mon + 1, begin_tm->tm_mday,
+			   begin_tm->tm_year + 1900, begin_tm->tm_hour,
+			   begin_tm->tm_min, begin_tm->tm_sec);
+	}
+
+	if (req->cpus_per_task != (uint16_t) NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ task_affinity = cpu(%u)\n",
+			   req->cpus_per_task);
+	} else if (req->cpu_bind_type == (uint16_t) NO_VAL)
+		;
+	else if (req->cpu_bind_type & CPU_BIND_TO_CORES)
+		xstrfmtcat(slurm_cmd_file, "# @ task_affinity = core\n");
+	else if (req->cpu_bind_type & CPU_BIND_TO_THREADS)
+		xstrfmtcat(slurm_cmd_file, "# @ task_affinity = cpu\n");
+
+	if (req->ntasks_per_node != (uint16_t) NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ tasks_per_node = %u\n",
+			   req->ntasks_per_node);
+	}
+
+	if (req->num_tasks != NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ total_tasks = %u\n",
+			   req->num_tasks);
+	}
+
+	if (req->nice != (uint16_t) NO_VAL) {
+		int prio = 50 + (req->nice - NICE_OFFSET);
+		prio = MAX(prio, 0);
+		prio = MIN(prio, 100);
+		xstrfmtcat(slurm_cmd_file, "# @ user_priority = %d\n", prio);
+	}
+
+	if (req->time_limit != NO_VAL) {
+		xstrfmtcat(slurm_cmd_file, "# @ wall_clock_limit = %u\n",
+			   req->time_limit);
+	}
+
+	/* Copy all limits from current environment */
+	xstrfmtcat(slurm_cmd_file, "# @ as_limit      = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ core_limit    = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ cpu_limit     = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ data_limit    = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ file_limit    = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ job_cpu_limit = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ locks_limit   = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ memlock_limit = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ nofile_limit  = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ nproc_limit   = copy\n");
+	xstrfmtcat(slurm_cmd_file, "# @ stack_limit   = copy\n");
+
+	xstrfmtcat(slurm_cmd_file, "# @ queue\n");
+
+	/* Move the reset of the script */
+	if (first_line)
+		xstrfmtcat(slurm_cmd_file, "%s\n", first_line+1);
+
+	pathname = xmalloc(PATH_MAX);
+	if (!getcwd(pathname, PATH_MAX))
+		fatal("getcwd: %m");
+	xstrfmtcat(pathname, "/slurm.script.%u", (uint32_t)getpid());
+	while (1) {
+		fd = creat(pathname, 0700);
+		if (fd >= 0)
+			break;
+		if (errno == EINTR)
+			continue;
+		fatal("creat(%s): %m", pathname);
+	}
+	len = strlen(slurm_cmd_file) + 1;
+	while (offset < len) {
+		wrote = write(fd, slurm_cmd_file + offset, len - offset);
+		if (wrote < 0) {
+			if ((errno == EAGAIN) || (errno == EINTR))
+				continue;
+			fatal("write(%s): %m", pathname);
+		}
+		offset += wrote;
+	}
+
+#ifdef HAVE_LLAPI_H
+{
+	LL_job *job_info;
+	submit_response_msg_t *resp_ptr;
+
+	rc = llsubmit(pathname, NULL, NULL, job_info, LL_JOB_VERSION);
+	if (rc == 0) {
+		resp_ptr = xmalloc(sizeof(submit_response_msg_t));
+		*resp = resp_ptr;
+		resp_ptr->job_id = xstrdup(job_info->jobid);
+		resp_ptr->step_id = job_info->stepid;
+		resp_ptr->error_code = SLURM_SUCCESS;
+		llfree_job_info(job_info, LL_JOB_VERSION);
+	} else {
+		*resp = NULL;
+		slurm_seterrno(SLURM_ERROR);
+	}
+}
+#else
+	rc = -1;
+	info("script:\n%s", slurm_cmd_file);
+	slurm_seterrno(ESLURM_NOT_SUPPORTED);
+#endif
+	if (unlink(pathname))
+		error("unlink(%s): %m", pathname);
+	xfree(pathname);
+	xfree(slurm_cmd_file);
+
+	return rc;
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/step_ctx.c
+\*****************************************************************************/
+extern slurm_step_ctx_t *slurm_step_ctx_create (
+		const slurm_step_ctx_params_t *step_params)
+{ return NULL; }
+
+extern slurm_step_ctx_t *slurm_step_ctx_create_no_alloc (
+		const slurm_step_ctx_params_t *step_params, uint32_t step_id)
+{ return NULL; }
+
+extern int slurm_step_ctx_destroy (slurm_step_ctx_t *ctx)
+{ return SLURM_ERROR; }
+
+extern int slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
+{ return SLURM_ERROR; }
+
+extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
+{}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/step_launch.c
+\*****************************************************************************/
+extern void record_ppid(void)
+{}
+
+extern int slurm_step_launch(slurm_step_ctx_t *ctx,
+			     const slurm_step_launch_params_t *params,
+			     const slurm_step_launch_callbacks_t *callbacks)
+{ return SLURM_ERROR; }
+
+extern void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
+{}
+
+extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
+{}
+
+extern int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
+{ return SLURM_ERROR; }
+
+extern void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
+{}
+
+extern void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
+{}
+
+#endif

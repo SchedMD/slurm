@@ -612,10 +612,32 @@ ac_includes_default="\
 ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
+BUILD_LUA_FALSE
+BUILD_LUA_TRUE
+BUILD_AUTHD_FALSE
+BUILD_AUTHD_TRUE
+BUILD_MUNGE_FALSE
+BUILD_MUNGE_TRUE
+BUILD_OPENSSL_FALSE
+BUILD_OPENSSL_TRUE
+BUILD_BLCR_FALSE
+BUILD_BLCR_TRUE
+BUILD_AIX_CKPT_FALSE
+BUILD_AIX_CKPT_TRUE
+BUILD_SCHED_SETAFFINITY_FALSE
+BUILD_SCHED_SETAFFINITY_TRUE
+BUILD_PGSQL_FALSE
+BUILD_PGSQL_TRUE
+BUILD_MYSQL_FALSE
+BUILD_MYSQL_TRUE
 BUILD_SVIEW_FALSE
 BUILD_SVIEW_TRUE
 BUILD_SMAP_FALSE
 BUILD_SMAP_TRUE
+BUILD_FEDERATION_FALSE
+BUILD_FEDERATION_TRUE
+BUILD_ELAN_FALSE
+BUILD_ELAN_TRUE
 BUILD_SRUN2APRUN_FALSE
 BUILD_SRUN2APRUN_TRUE
 WITH_BLCR_FALSE
@@ -625,8 +647,8 @@ BLCR_CPPFLAGS
 BLCR_LIBS
 BLCR_HOME
 UTIL_LIBS
-WITH_AUTHD_FALSE
-WITH_AUTHD_TRUE
+HAVE_AUTHD_FALSE
+HAVE_AUTHD_TRUE
 AUTHD_CFLAGS
 AUTHD_LIBS
 WITH_MUNGE_FALSE
@@ -651,13 +673,7 @@ lua_LIBS
 lua_CFLAGS
 HAVE_SGI_JOB_FALSE
 HAVE_SGI_JOB_TRUE
-HAVE_FEDERATION
-HAVE_FEDERATION_FALSE
-HAVE_FEDERATION_TRUE
 FEDERATION_LDFLAGS
-HAVE_ELAN
-HAVE_ELAN_FALSE
-HAVE_ELAN_TRUE
 ELAN_LIBS
 SLURM_PREFIX
 SLURMCTLD_PORT_COUNT
@@ -684,13 +700,8 @@ WITH_MYSQL_TRUE
 MYSQL_CFLAGS
 MYSQL_LIBS
 HAVEMYSQLCONFIG
-HAVE_GTK_FALSE
-HAVE_GTK_TRUE
 GTK_LIBS
 GTK_CFLAGS
-HAVE_SOME_CURSES
-HAVE_SOME_CURSES_FALSE
-HAVE_SOME_CURSES_TRUE
 NCURSES
 SEMAPHORE_LIBS
 SEMAPHORE_SOURCES
@@ -743,6 +754,9 @@ WITH_CYGWIN_FALSE
 WITH_CYGWIN_TRUE
 USE_LOADLEVELER_FALSE
 USE_LOADLEVELER_TRUE
+HAVE_LLAPI_H_FALSE
+HAVE_LLAPI_H_TRUE
+LOADLEVELER_INCLUDES
 HAVE_AIX_PROCTRACK_FALSE
 HAVE_AIX_PROCTRACK_TRUE
 EGREP
@@ -1619,7 +1633,7 @@ Optional Packages:
   --with-bg-serial=NAME   set BG_SERIAL value
 
   --with-proctrack=PATH   Specify path to proctrack sources
-  --with-loadleveler      use LoadLeveler APIs instead of SLURM daemons
+  --with-loadleveler=PATH Specify path to LoadLeveler header and library
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
@@ -6030,25 +6044,39 @@ else
 fi
 
 
-   ac_with_load_leveler="no"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for use of LoadLeveler APIs instead of SLURM daemons" >&5
 $as_echo_n "checking for use of LoadLeveler APIs instead of SLURM daemons... " >&6; }
 
 # Check whether --with-loadleveler was given.
 if test "${with_loadleveler+set}" = set; then :
-  withval=$with_loadleveler;   case "$withval" in
-          yes) ac_with_load_leveler=yes ;;
-          no)  ac_with_load_leveler=no ;;
-          *)   { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-               as_fn_error $? "bad value \"$withval\" for --with-loadleveler" "$LINENO" 5 ;;
-          esac
+  withval=$with_loadleveler;  if test -f "$withval/lib64/libllapi.so" && test -f "$withval/include/llapi.h"; then
+          LDFLAGS="-L$withval/lib64 -lllapi $LDFLAGS"
+          LOADLEVELER_INCLUDES="-I$withval/include"
+
+$as_echo "#define HAVE_LLAPI_H 1" >>confdefs.h
+
+          ac_with_llapi_h="yes"
+       else
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libllapi.so or llapi.h not found. Emulating LoadLeveler" >&5
+$as_echo "$as_me: WARNING: libllapi.so or llapi.h not found. Emulating LoadLeveler" >&2;}
+       fi
+
+$as_echo "#define USE_LOADLEVELER 1" >>confdefs.h
+
+       ac_with_load_leveler="yes"
 
 
 fi
 
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_with_load_leveler" >&5
-$as_echo "$ac_with_load_leveler" >&6; }
+
+    if test "x$ac_with_llapi_h" = "xyes"; then
+  HAVE_LLAPI_H_TRUE=
+  HAVE_LLAPI_H_FALSE='#'
+else
+  HAVE_LLAPI_H_TRUE='#'
+  HAVE_LLAPI_H_FALSE=
+fi
+
     if test "x$ac_with_load_leveler" = "xyes"; then
   USE_LOADLEVELER_TRUE=
   USE_LOADLEVELER_FALSE='#'
@@ -6057,11 +6085,7 @@ else
   USE_LOADLEVELER_FALSE=
 fi
 
-   if test "x$ac_with_load_leveler" = "xyes" ; then
 
-$as_echo "#define USE_LOADLEVELER 1" >>confdefs.h
-
-   fi
 
 
 case "$host" in
@@ -17844,7 +17868,7 @@ for ac_header in mcheck.h values.h socket.h sys/socket.h  \
                  pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
-		 llapi.h nrt.h \
+		 nrt.h \
 
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -19743,15 +19767,6 @@ $as_echo "$as_me: WARNING: Can not build smap without curses or ncurses library"
       ac_have_some_curses="no"
    fi
 
- if test "x$ac_have_some_curses" = "xyes"; then
-  HAVE_SOME_CURSES_TRUE=
-  HAVE_SOME_CURSES_FALSE='#'
-else
-  HAVE_SOME_CURSES_TRUE='#'
-  HAVE_SOME_CURSES_FALSE=
-fi
-
-
 
 #
 #  Tests for GTK+
@@ -20024,14 +20039,6 @@ rm -f core conftest.err conftest.$ac_objext \
 
 
   rm -f conf.gtktest
-
- if test "x$ac_have_gtk" = "xyes"; then
-  HAVE_GTK_TRUE=
-  HAVE_GTK_FALSE='#'
-else
-  HAVE_GTK_TRUE='#'
-  HAVE_GTK_FALSE=
-fi
 
 
 if test ${gtk_config_minor_version=0} -gt 10 ; then
@@ -21193,15 +21200,6 @@ $as_echo "$as_me: Cannot build QsNet modules without libelanhosts" >&6;}
 
 
 
- if test "x$ac_have_elan" = "xyes"; then
-  HAVE_ELAN_TRUE=
-  HAVE_ELAN_FALSE='#'
-else
-  HAVE_ELAN_TRUE='#'
-  HAVE_ELAN_FALSE=
-fi
-
-
 
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable AIX Federation switch support" >&5
@@ -21241,15 +21239,6 @@ $as_echo "#define HAVE_LIBNTBL 1" >>confdefs.h
 
    fi
 
-
-
- if test "x$ac_have_federation" = "xyes"; then
-  HAVE_FEDERATION_TRUE=
-  HAVE_FEDERATION_FALSE='#'
-else
-  HAVE_FEDERATION_TRUE='#'
-  HAVE_FEDERATION_FALSE=
-fi
 
 
 
@@ -21952,11 +21941,11 @@ fi
 
 
  if test "x$have_authd" = "xyes"; then
-  WITH_AUTHD_TRUE=
-  WITH_AUTHD_FALSE='#'
+  HAVE_AUTHD_TRUE=
+  HAVE_AUTHD_FALSE='#'
 else
-  WITH_AUTHD_TRUE='#'
-  WITH_AUTHD_FALSE=
+  HAVE_AUTHD_TRUE='#'
+  HAVE_AUTHD_FALSE=
 fi
 
 LIBS="$savedLIBS"
@@ -22136,6 +22125,32 @@ fi
 
 
 
+ac_build_elan="no"
+if test "x$ac_have_elan" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_elan="yes"
+fi
+ if test "x$ac_build_elan" = "xyes"; then
+  BUILD_ELAN_TRUE=
+  BUILD_ELAN_FALSE='#'
+else
+  BUILD_ELAN_TRUE='#'
+  BUILD_ELAN_FALSE=
+fi
+
+
+ac_build_federation="no"
+if test "x$ac_have_federation" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_federation="yes"
+fi
+ if test "x$ac_build_federation" = "xyes"; then
+  BUILD_FEDERATION_TRUE=
+  BUILD_FEDERATION_FALSE='#'
+else
+  BUILD_FEDERATION_TRUE='#'
+  BUILD_FEDERATION_FALSE=
+fi
+
+
 ac_build_smap="no"
 if test "x$ac_have_some_curses" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
    ac_build_smap="yes"
@@ -22147,6 +22162,7 @@ else
   BUILD_SMAP_TRUE='#'
   BUILD_SMAP_FALSE=
 fi
+
 
 ac_build_sview="no"
 if test "x$ac_have_gtk" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
@@ -22161,8 +22177,125 @@ else
 fi
 
 
+ac_build_mysql="no"
+if test "x$ac_have_mysql" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_mysql="yes"
+fi
+ if test "x$ac_build_mysql" = "xyes"; then
+  BUILD_MYSQL_TRUE=
+  BUILD_MYSQL_FALSE='#'
+else
+  BUILD_MYSQL_TRUE='#'
+  BUILD_MYSQL_FALSE=
+fi
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/arrayrun/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/cray/libemulate/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
+
+ac_build_pgsql="no"
+if test "x$ac_have_pgsql" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_pgsql="yes"
+fi
+ if test "x$ac_build_pgsql" = "xyes"; then
+  BUILD_PGSQL_TRUE=
+  BUILD_PGSQL_FALSE='#'
+else
+  BUILD_PGSQL_TRUE='#'
+  BUILD_PGSQL_FALSE=
+fi
+
+
+ac_build_sched_setaffinity="no"
+if test "x$have_sched_setaffinity" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_sched_setaffinity="yes"
+fi
+ if test "x$ac_build_sched_setaffinity" = "xyes"; then
+  BUILD_SCHED_SETAFFINITY_TRUE=
+  BUILD_SCHED_SETAFFINITY_FALSE='#'
+else
+  BUILD_SCHED_SETAFFINITY_TRUE='#'
+  BUILD_SCHED_SETAFFINITY_FALSE=
+fi
+
+
+ac_build_aix_ckpt="no"
+if test "x$ac_have_aix" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_aix_ckpt="yes"
+fi
+ if test "x$ac_build_aix_ckpt" = "xyes"; then
+  BUILD_AIX_CKPT_TRUE=
+  BUILD_AIX_CKPT_FALSE='#'
+else
+  BUILD_AIX_CKPT_TRUE='#'
+  BUILD_AIX_CKPT_FALSE=
+fi
+
+
+ac_build_blcr="no"
+if test -n "$x_ac_cv_blcr_dir" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_blcr="yes"
+fi
+ if test "x$ac_build_blcr" = "xyes"; then
+  BUILD_BLCR_TRUE=
+  BUILD_BLCR_FALSE='#'
+else
+  BUILD_BLCR_TRUE='#'
+  BUILD_BLCR_FALSE=
+fi
+
+
+ac_build_openssl="no"
+if test ! -z "$ac_have_openssl" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_openssl="yes"
+fi
+ if test "x$ac_build_openssl" = "xyes"; then
+  BUILD_OPENSSL_TRUE=
+  BUILD_OPENSSL_FALSE='#'
+else
+  BUILD_OPENSSL_TRUE='#'
+  BUILD_OPENSSL_FALSE=
+fi
+
+
+ac_build_munge="no"
+if test -n "$x_ac_cv_munge_dir" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_munge="yes"
+fi
+ if test "x$ac_build_munge" = "xyes"; then
+  BUILD_MUNGE_TRUE=
+  BUILD_MUNGE_FALSE='#'
+else
+  BUILD_MUNGE_TRUE='#'
+  BUILD_MUNGE_FALSE=
+fi
+
+
+ac_build_authd="no"
+if test "x$have_authd" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_authd="yes"
+fi
+ if test "x$ac_build_authd" = "xyes"; then
+  BUILD_AUTHD_TRUE=
+  BUILD_AUTHD_FALSE='#'
+else
+  BUILD_AUTHD_TRUE='#'
+  BUILD_AUTHD_FALSE=
+fi
+
+
+ac_build_lua="no"
+if test "x$x_ac_have_lua" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_lua="yes"
+fi
+ if test "x$ac_build_lua" = "xyes"; then
+  BUILD_LUA_TRUE=
+  BUILD_LUA_FALSE='#'
+else
+  BUILD_LUA_TRUE='#'
+  BUILD_LUA_FALSE=
+fi
+
+
+
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/arrayrun/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/cray/libemulate/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/federation/Makefile src/plugins/switch/none/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -22326,6 +22459,10 @@ if test -z "${HAVE_AIX_PROCTRACK_TRUE}" && test -z "${HAVE_AIX_PROCTRACK_FALSE}"
   as_fn_error $? "conditional \"HAVE_AIX_PROCTRACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HAVE_LLAPI_H_TRUE}" && test -z "${HAVE_LLAPI_H_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LLAPI_H\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${USE_LOADLEVELER_TRUE}" && test -z "${USE_LOADLEVELER_FALSE}"; then
   as_fn_error $? "conditional \"USE_LOADLEVELER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -22367,14 +22504,6 @@ if test -z "${HAVE_UNSETENV_TRUE}" && test -z "${HAVE_UNSETENV_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_UNSETENV\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${HAVE_SOME_CURSES_TRUE}" && test -z "${HAVE_SOME_CURSES_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_SOME_CURSES\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_GTK_TRUE}" && test -z "${HAVE_GTK_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_GTK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${WITH_MYSQL_TRUE}" && test -z "${WITH_MYSQL_FALSE}"; then
   as_fn_error $? "conditional \"WITH_MYSQL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -22403,14 +22532,6 @@ if test -z "${DEBUG_MODULES_TRUE}" && test -z "${DEBUG_MODULES_FALSE}"; then
   as_fn_error $? "conditional \"DEBUG_MODULES\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${HAVE_ELAN_TRUE}" && test -z "${HAVE_ELAN_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_ELAN\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_FEDERATION_TRUE}" && test -z "${HAVE_FEDERATION_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_FEDERATION\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${HAVE_SGI_JOB_TRUE}" && test -z "${HAVE_SGI_JOB_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_SGI_JOB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -22435,8 +22556,8 @@ if test -z "${WITH_MUNGE_TRUE}" && test -z "${WITH_MUNGE_FALSE}"; then
   as_fn_error $? "conditional \"WITH_MUNGE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${WITH_AUTHD_TRUE}" && test -z "${WITH_AUTHD_FALSE}"; then
-  as_fn_error $? "conditional \"WITH_AUTHD\" was never defined.
+if test -z "${HAVE_AUTHD_TRUE}" && test -z "${HAVE_AUTHD_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_AUTHD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_BLCR_TRUE}" && test -z "${WITH_BLCR_FALSE}"; then
@@ -22447,12 +22568,56 @@ if test -z "${BUILD_SRUN2APRUN_TRUE}" && test -z "${BUILD_SRUN2APRUN_FALSE}"; th
   as_fn_error $? "conditional \"BUILD_SRUN2APRUN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${BUILD_ELAN_TRUE}" && test -z "${BUILD_ELAN_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_ELAN\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_FEDERATION_TRUE}" && test -z "${BUILD_FEDERATION_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_FEDERATION\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${BUILD_SMAP_TRUE}" && test -z "${BUILD_SMAP_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_SMAP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_SVIEW_TRUE}" && test -z "${BUILD_SVIEW_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_SVIEW\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_MYSQL_TRUE}" && test -z "${BUILD_MYSQL_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_MYSQL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_PGSQL_TRUE}" && test -z "${BUILD_PGSQL_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_PGSQL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_SCHED_SETAFFINITY_TRUE}" && test -z "${BUILD_SCHED_SETAFFINITY_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_SCHED_SETAFFINITY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_AIX_CKPT_TRUE}" && test -z "${BUILD_AIX_CKPT_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_AIX_CKPT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_BLCR_TRUE}" && test -z "${BUILD_BLCR_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_BLCR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_OPENSSL_TRUE}" && test -z "${BUILD_OPENSSL_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_OPENSSL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_MUNGE_TRUE}" && test -z "${BUILD_MUNGE_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_MUNGE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_AUTHD_TRUE}" && test -z "${BUILD_AUTHD_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_AUTHD\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_LUA_TRUE}" && test -z "${BUILD_LUA_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LUA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -23564,8 +23729,8 @@ do
     "src/plugins/select/linear/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/linear/Makefile" ;;
     "src/plugins/switch/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/Makefile" ;;
     "src/plugins/switch/elan/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/elan/Makefile" ;;
-    "src/plugins/switch/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/none/Makefile" ;;
     "src/plugins/switch/federation/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/federation/Makefile" ;;
+    "src/plugins/switch/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/none/Makefile" ;;
     "src/plugins/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/mpi/Makefile" ;;
     "src/plugins/mpi/mpich1_p4/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/mpi/mpich1_p4/Makefile" ;;
     "src/plugins/mpi/mpich1_shmem/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/mpi/mpich1_shmem/Makefile" ;;

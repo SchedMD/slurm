@@ -4970,6 +4970,7 @@ unpack_error:
 
 extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 {
+#ifndef USE_LOADLEVELER
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	ListIterator itr = NULL;
 	slurmdb_step_rec_t *step = NULL;
@@ -5086,17 +5087,18 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		packstr(job->wckey, buffer); /* added for rpc_version 4 */
 		pack32(job->wckeyid, buffer); /* added for rpc_version 4 */
 	}
+#endif
 }
 
 extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 {
+#ifndef USE_LOADLEVELER
 	slurmdb_job_rec_t *job_ptr = xmalloc(sizeof(slurmdb_job_rec_t));
 	int i = 0;
 	slurmdb_step_rec_t *step = NULL;
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
 	uint16_t uint16_tmp;
-
 	*job = job_ptr;
 
 	if(rpc_version >= 8) {
@@ -5227,6 +5229,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 
 unpack_error:
 	slurmdb_destroy_job_rec(job_ptr);
+#endif
 	*job = NULL;
 	return SLURM_ERROR;
 }
@@ -5554,16 +5557,18 @@ unpack_error:
 extern void slurmdb_pack_selected_step(slurmdb_selected_step_t *step,
 				       uint16_t rpc_version, Buf buffer)
 {
+#ifndef USE_LOADLEVELER
 	pack32(step->jobid, buffer);
 	pack32(step->stepid, buffer);
+#endif
 }
 
 extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 					uint16_t rpc_version, Buf buffer)
 {
+#ifndef USE_LOADLEVELER
 	slurmdb_selected_step_t *step_ptr =
 		xmalloc(sizeof(slurmdb_selected_step_t));
-
 	*step = step_ptr;
 
 	safe_unpack32(&step_ptr->jobid, buffer);
@@ -5573,6 +5578,7 @@ extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 
 unpack_error:
 	slurmdb_destroy_selected_step(step_ptr);
+#endif
 	*step = NULL;
 	return SLURM_ERROR;
 }

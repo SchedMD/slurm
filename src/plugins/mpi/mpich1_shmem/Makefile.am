@@ -6,7 +6,12 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-pkglib_LTLIBRARIES = mpi_mpich1_shmem.la
+if ! USE_LOADLEVELER
 
+pkglib_LTLIBRARIES = mpi_mpich1_shmem.la
 mpi_mpich1_shmem_la_SOURCES = mpich1_shmem.c
 mpi_mpich1_shmem_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+else
+EXTRA_mpi_mpich1_shmem_la_SOURCES = mpich1_shmem.c
+endif

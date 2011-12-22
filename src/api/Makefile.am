@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES) $(LOADLEVELER_INCLUDES)
 
 if WITH_GNU_LD
 VERSION_SCRIPT = \
@@ -82,7 +82,6 @@ slurmapi_src =           \
 	allocate.c       \
 	allocate_msg.c   \
 	block_info.c     \
-	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
@@ -90,16 +89,11 @@ slurmapi_src =           \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
-	load_leveler.c   \
 	node_info.c      \
 	partition_info.c \
 	reservation_info.c \
-	signal.c         \
 	slurm_hostlist.c \
 	slurm_pmi.c slurm_pmi.h	\
-	step_ctx.c step_ctx.h \
-	step_io.c step_io.h \
-	step_launch.c step_launch.h \
 	pmi_server.c pmi_server.h \
 	submit.c         \
 	suspend.c        \
@@ -107,6 +101,17 @@ slurmapi_src =           \
 	triggers.c       \
 	reconfigure.c    \
 	update_config.c
+
+if USE_LOADLEVELER
+slurmapi_src += load_leveler.c
+EXTRA_slurmapi_src =	\
+	cancel.c signal.c step_ctx.c step_ctx.h step_io.c step_io.h	\
+	step_launch.c step_launch.h
+else
+slurmapi_src += cancel.c signal.c step_ctx.c step_ctx.h step_io.c step_io.h	\
+	step_launch.c step_launch.h
+EXTRA_slurmapi_src = load_leveler.c
+endif
 
 common_dir = $(top_builddir)/src/common
 
@@ -137,11 +142,15 @@ libslurm_la_LDFLAGS        = \
 # when running "make install", but removing it prevents essential slurm
 # symbols from being available in programs linking with libpmi
 #
+if !USE_LOADLEVELER
 libpmi_la_SOURCES = pmi.c
 libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
         $(PMI_OTHER_FLAGS)
+else
+EXTRA_libpmi_la_SOURCES = pmi.c
+endif
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms

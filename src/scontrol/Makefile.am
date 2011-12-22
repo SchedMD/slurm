@@ -4,11 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
-if ! USE_LOADLEVELER
-
-bin_PROGRAMS = scontrol
-
-scontrol_SOURCES =	\
+SCONTROL_SOURCES =	\
 	create_res.c	\
 	info_block.c	\
 	info_job.c	\
@@ -21,6 +17,12 @@ scontrol_SOURCES =	\
 	update_node.c	\
 	update_part.c	\
 	update_step.c
+
+if ! USE_LOADLEVELER
+
+bin_PROGRAMS = scontrol
+
+scontrol_SOURCES = $(SCONTROL_SOURCES)
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
 
@@ -36,19 +38,5 @@ $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 else
-
-EXTRA_scontrol_SOURCES =	\
-	create_res.c	\
-	info_block.c	\
-	info_job.c	\
-	info_node.c	\
-	info_part.c	\
-	info_res.c	\
-	scontrol.c	\
-	scontrol.h	\
-	update_job.c	\
-	update_node.c	\
-	update_part.c	\
-	update_step.c
-
+EXTRA_scontrol_SOURCES = $(SCONTROL_SOURCES)
 endif

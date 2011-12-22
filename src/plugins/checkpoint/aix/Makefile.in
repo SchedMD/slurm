@@ -108,13 +108,13 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 checkpoint_aix_la_LIBADD =
 am__checkpoint_aix_la_SOURCES_DIST = checkpoint_aix.c
-@HAVE_AIX_TRUE@am_checkpoint_aix_la_OBJECTS = checkpoint_aix.lo
+@BUILD_AIX_CKPT_TRUE@am_checkpoint_aix_la_OBJECTS = checkpoint_aix.lo
 am__EXTRA_checkpoint_aix_la_SOURCES_DIST = checkpoint_aix.c
 checkpoint_aix_la_OBJECTS = $(am_checkpoint_aix_la_OBJECTS)
 checkpoint_aix_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(checkpoint_aix_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_AIX_TRUE@am_checkpoint_aix_la_rpath = -rpath $(pkglibdir)
+@BUILD_AIX_CKPT_TRUE@am_checkpoint_aix_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -184,11 +184,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -205,6 +202,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -340,10 +338,10 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 # AIX checkpoint plugin.
-@HAVE_AIX_TRUE@pkglib_LTLIBRARIES = checkpoint_aix.la
-@HAVE_AIX_TRUE@checkpoint_aix_la_SOURCES = checkpoint_aix.c
-@HAVE_AIX_TRUE@checkpoint_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_AIX_FALSE@EXTRA_checkpoint_aix_la_SOURCES = checkpoint_aix.c
+@BUILD_AIX_CKPT_TRUE@pkglib_LTLIBRARIES = checkpoint_aix.la
+@BUILD_AIX_CKPT_TRUE@checkpoint_aix_la_SOURCES = checkpoint_aix.c
+@BUILD_AIX_CKPT_TRUE@checkpoint_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BUILD_AIX_CKPT_FALSE@EXTRA_checkpoint_aix_la_SOURCES = checkpoint_aix.c
 all: all-am
 
 .SUFFIXES:

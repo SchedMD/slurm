@@ -16,6 +16,7 @@
 @SET_MAKE@
 
 #
+# Makefile for srun_cr
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -37,7 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = srun_cr$(EXEEXT)
+@USE_LOADLEVELER_FALSE@bin_PROGRAMS = srun_cr$(EXEEXT)
 subdir = src/srun_cr
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -86,11 +87,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_srun_cr_OBJECTS = srun_cr.$(OBJEXT)
+am__srun_cr_SOURCES_DIST = srun_cr.c
+am__objects_1 = srun_cr.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_srun_cr_OBJECTS = $(am__objects_1)
+am__EXTRA_srun_cr_SOURCES_DIST = srun_cr.c
 srun_cr_OBJECTS = $(am_srun_cr_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@am__DEPENDENCIES_1 =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
 am__DEPENDENCIES_2 =
-srun_cr_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
+@USE_LOADLEVELER_FALSE@srun_cr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@USE_LOADLEVELER_FALSE@	$(am__DEPENDENCIES_2)
 srun_cr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(srun_cr_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -107,8 +113,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(srun_cr_SOURCES)
-DIST_SOURCES = $(srun_cr_SOURCES)
+SOURCES = $(srun_cr_SOURCES) $(EXTRA_srun_cr_SOURCES)
+DIST_SOURCES = $(am__srun_cr_SOURCES_DIST) \
+	$(am__EXTRA_srun_cr_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -161,11 +168,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -182,6 +186,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -313,12 +318,14 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
-INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
-srun_cr_SOURCES = srun_cr.c
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
-srun_cr_LDADD = $(convenience_libs) $(BLCR_LIBS)
-srun_cr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BLCR_LDFLAGS)
+SRUN_CR_SOURCES = srun_cr.c
+@USE_LOADLEVELER_FALSE@CLEANFILES = core.*
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
+@USE_LOADLEVELER_FALSE@srun_cr_SOURCES = $(SRUN_CR_SOURCES)
+@USE_LOADLEVELER_FALSE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+@USE_LOADLEVELER_FALSE@srun_cr_LDADD = $(convenience_libs) $(BLCR_LIBS)
+@USE_LOADLEVELER_FALSE@srun_cr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BLCR_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_srun_cr_SOURCES = $(SRUN_CR_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -637,9 +644,9 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-binPROGRAMS
 
 
-force:
-$(convenience_libs) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(convenience_libs) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

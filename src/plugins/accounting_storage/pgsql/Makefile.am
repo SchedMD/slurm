@@ -24,7 +24,8 @@ AS_PG_SOURCES= accounting_storage_pgsql.c accounting_storage_pgsql.h \
 	       as_pg_user.c as_pg_user.h \
 	       as_pg_wckey.c as_pg_wckey.h
 
-if WITH_PGSQL
+if BUILD_PGSQL
+
 pkglib_LTLIBRARIES = accounting_storage_pgsql.la
 
 # Pgsql storage plugin.

@@ -9,6 +9,8 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 
 INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
+if ! USE_LOADLEVELER
+
 pkglib_LTLIBRARIES = select_bluegene.la
 
 noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
@@ -102,4 +104,5 @@ force:
 $(block_allocator_lib) $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
+endif
 endif

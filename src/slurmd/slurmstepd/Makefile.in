@@ -16,7 +16,7 @@
 @SET_MAKE@
 
 #
-# Makefile for slurmd
+# Makefile for slurmsted
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -38,7 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-sbin_PROGRAMS = slurmstepd$(EXEEXT)
+@USE_LOADLEVELER_FALSE@sbin_PROGRAMS = slurmstepd$(EXEEXT)
 subdir = src/slurmd/slurmstepd
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -87,16 +87,29 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
-	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
-	fname.$(OBJEXT) ulimits.$(OBJEXT) pdebug.$(OBJEXT) \
-	pam_ses.$(OBJEXT) req.$(OBJEXT) multi_prog.$(OBJEXT) \
-	step_terminate_monitor.$(OBJEXT)
+am__slurmstepd_SOURCES_DIST = fname.c fname.h io.c io.h mgr.c mgr.h \
+	multi_prog.c multi_prog.h pam_ses.c pam_ses.h pdebug.c \
+	pdebug.h req.c req.h slurmstepd.c slurmstepd.h \
+	slurmstepd_job.c slurmstepd_job.h step_terminate_monitor.c \
+	step_terminate_monitor.h task.c task.h ulimits.c ulimits.h
+am__objects_1 = fname.$(OBJEXT) io.$(OBJEXT) mgr.$(OBJEXT) \
+	multi_prog.$(OBJEXT) pam_ses.$(OBJEXT) pdebug.$(OBJEXT) \
+	req.$(OBJEXT) slurmstepd.$(OBJEXT) slurmstepd_job.$(OBJEXT) \
+	step_terminate_monitor.$(OBJEXT) task.$(OBJEXT) \
+	ulimits.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_slurmstepd_OBJECTS = $(am__objects_1)
+am__EXTRA_slurmstepd_SOURCES_DIST = fname.c fname.h io.c io.h mgr.c \
+	mgr.h multi_prog.c multi_prog.h pam_ses.c pam_ses.h pdebug.c \
+	pdebug.h req.c req.h slurmstepd.c slurmstepd.h \
+	slurmstepd_job.c slurmstepd_job.h step_terminate_monitor.c \
+	step_terminate_monitor.h task.c task.h ulimits.c ulimits.h
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
-slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) ../common/libslurmd_common.la
+@USE_LOADLEVELER_FALSE@slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o \
+@USE_LOADLEVELER_FALSE@	$(am__DEPENDENCIES_1) \
+@USE_LOADLEVELER_FALSE@	$(am__DEPENDENCIES_1) \
+@USE_LOADLEVELER_FALSE@	../common/libslurmd_common.la
 slurmstepd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurmstepd_LDFLAGS) $(LDFLAGS) -o $@
@@ -113,8 +126,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(slurmstepd_SOURCES)
-DIST_SOURCES = $(slurmstepd_SOURCES)
+SOURCES = $(slurmstepd_SOURCES) $(EXTRA_slurmstepd_SOURCES)
+DIST_SOURCES = $(am__slurmstepd_SOURCES_DIST) \
+	$(am__EXTRA_slurmstepd_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -167,11 +181,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -188,6 +199,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -319,32 +331,35 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir)
-slurmstepd_LDADD = \
-	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o -ldl \
-	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) \
-	../common/libslurmd_common.la
-
-slurmstepd_SOURCES = \
-	slurmstepd.c slurmstepd.h	\
-	mgr.c mgr.h			\
-	task.c task.h			\
-	slurmstepd_job.c slurmstepd_job.h \
-	io.c io.h			\
+SLURMSTEPD_SOURCES = \
 	fname.c fname.h			\
-	ulimits.c ulimits.h     	\
-	pdebug.c pdebug.h		\
-	pam_ses.c pam_ses.h		\
-	req.c req.h			\
+	io.c io.h			\
+	mgr.c mgr.h			\
 	multi_prog.c multi_prog.h	\
-	step_terminate_monitor.c step_terminate_monitor.h
+	pam_ses.c pam_ses.h		\
+	pdebug.c pdebug.h		\
+	req.c req.h			\
+	slurmstepd.c slurmstepd.h	\
+	slurmstepd_job.c		\
+	slurmstepd_job.h		\
+	step_terminate_monitor.c	\
+	step_terminate_monitor.h	\
+	task.c task.h			\
+	ulimits.c ulimits.h
 
-@HAVE_AIX_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir)
+@USE_LOADLEVELER_FALSE@slurmstepd_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/common/libdaemonize.la \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o -ldl \
+@USE_LOADLEVELER_FALSE@	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) \
+@USE_LOADLEVELER_FALSE@	../common/libslurmd_common.la
 
+@USE_LOADLEVELER_FALSE@slurmstepd_SOURCES = $(SLURMSTEPD_SOURCES)
+@HAVE_AIX_FALSE@@USE_LOADLEVELER_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-@HAVE_AIX_TRUE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+@HAVE_AIX_TRUE@@USE_LOADLEVELER_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+@USE_LOADLEVELER_TRUE@EXTRA_slurmstepd_SOURCES = $(SLURMSTEPD_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -674,9 +689,9 @@ uninstall-am: uninstall-sbinPROGRAMS
 	tags uninstall uninstall-am uninstall-sbinPROGRAMS
 
 
-force:
-$(slurmd_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(slurmd_LDADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

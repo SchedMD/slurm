@@ -21,7 +21,6 @@
 #       That means we have either curses or ncurses installed.
 #
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -46,8 +45,7 @@ target_triplet = @target@
 @BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__append_1 = $(bg_dir)/libconfigure_api.la
 @BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__append_2 = configure_functions.c
 subdir = src/smap
-DIST_COMMON = $(am__noinst_HEADERS_DIST) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -94,19 +92,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__smap_SOURCES_DIST = smap.c job_functions.c partition_functions.c \
-	grid_functions.c reservation_functions.c opts.c \
+am__smap_SOURCES_DIST = grid_functions.c job_functions.c opts.c \
+	partition_functions.c reservation_functions.c smap.c smap.h \
 	configure_functions.c
-@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__objects_1 = configure_functions.$(OBJEXT)
-@BUILD_SMAP_TRUE@am_smap_OBJECTS = smap.$(OBJEXT) \
-@BUILD_SMAP_TRUE@	job_functions.$(OBJEXT) \
-@BUILD_SMAP_TRUE@	partition_functions.$(OBJEXT) \
-@BUILD_SMAP_TRUE@	grid_functions.$(OBJEXT) \
-@BUILD_SMAP_TRUE@	reservation_functions.$(OBJEXT) \
-@BUILD_SMAP_TRUE@	opts.$(OBJEXT) $(am__objects_1)
-am__EXTRA_smap_SOURCES_DIST = smap.h smap.c job_functions.c \
-	partition_functions.c configure_functions.c grid_functions.c \
-	reservation_functions.c opts.c
+am__objects_1 = grid_functions.$(OBJEXT) job_functions.$(OBJEXT) \
+	opts.$(OBJEXT) partition_functions.$(OBJEXT) \
+	reservation_functions.$(OBJEXT) smap.$(OBJEXT)
+@BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@am__objects_2 = configure_functions.$(OBJEXT)
+@BUILD_SMAP_TRUE@am_smap_OBJECTS = $(am__objects_1) $(am__objects_2)
+am__EXTRA_smap_SOURCES_DIST = grid_functions.c job_functions.c opts.c \
+	partition_functions.c reservation_functions.c smap.c smap.h
 smap_OBJECTS = $(am_smap_OBJECTS)
 @BUILD_SMAP_TRUE@smap_DEPENDENCIES =  \
 @BUILD_SMAP_TRUE@	$(top_builddir)/src/api/libslurm.o \
@@ -129,8 +124,6 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(smap_SOURCES) $(EXTRA_smap_SOURCES)
 DIST_SOURCES = $(am__smap_SOURCES_DIST) $(am__EXTRA_smap_SOURCES_DIST)
-am__noinst_HEADERS_DIST = smap.h
-HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -183,11 +176,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -204,6 +194,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -336,20 +327,20 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-@BUILD_SMAP_TRUE@noinst_HEADERS = smap.h
-@BUILD_SMAP_TRUE@smap_SOURCES = smap.c job_functions.c \
-@BUILD_SMAP_TRUE@	partition_functions.c grid_functions.c \
-@BUILD_SMAP_TRUE@	reservation_functions.c opts.c \
-@BUILD_SMAP_TRUE@	$(am__append_2)
+SMAP_SOURCES = \
+	grid_functions.c	\
+	job_functions.c		\
+	opts.c			\
+	partition_functions.c	\
+	reservation_functions.c	\
+	smap.c smap.h
+
+@BUILD_SMAP_TRUE@smap_SOURCES = $(SMAP_SOURCES) $(am__append_2)
 @BUILD_SMAP_TRUE@smap_LDADD = $(top_builddir)/src/api/libslurm.o -ldl \
 @BUILD_SMAP_TRUE@	$(am__append_1)
 @BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@bg_dir = $(top_builddir)/src/plugins/select/bluegene
 @BUILD_SMAP_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-@BUILD_SMAP_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
-@BUILD_SMAP_FALSE@	job_functions.c partition_functions.c \
-@BUILD_SMAP_FALSE@	configure_functions.c grid_functions.c \
-@BUILD_SMAP_FALSE@	reservation_functions.c opts.c
-
+@BUILD_SMAP_FALSE@EXTRA_smap_SOURCES = $(SMAP_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -556,7 +547,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \

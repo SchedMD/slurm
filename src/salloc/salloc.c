@@ -66,8 +66,11 @@
 #include "src/common/xstring.h"
 #include "src/common/plugstack.h"
 
-#include "src/salloc/salloc.h"
+#ifdef USE_LOADLEVELER
+#include "src/salloc/load_leveler.h"
+#endif
 #include "src/salloc/opt.h"
+#include "src/salloc/salloc.h"
 
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
@@ -174,6 +177,14 @@ int main(int argc, char *argv[])
 	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
+
+#ifdef USE_LOADLEVELER
+if (argc < 4)
+	rc = salloc_front_end (argc, argv);
+else
+	rc = salloc_back_end (argc, argv);
+exit(rc);
+#endif
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();

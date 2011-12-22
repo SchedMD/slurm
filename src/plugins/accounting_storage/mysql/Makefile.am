@@ -23,7 +23,8 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_user.c as_mysql_user.h \
 		as_mysql_wckey.c as_mysql_wckey.h
 
-if WITH_MYSQL
+if BUILD_MYSQL
+
 pkglib_LTLIBRARIES = accounting_storage_mysql.la
 
 # Mysql storage plugin.

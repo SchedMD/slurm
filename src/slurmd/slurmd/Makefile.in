@@ -38,7 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-sbin_PROGRAMS = slurmd$(EXEEXT)
+@USE_LOADLEVELER_FALSE@sbin_PROGRAMS = slurmd$(EXEEXT)
 subdir = src/slurmd/slurmd
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -87,13 +87,20 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT) \
-	read_proc.$(OBJEXT) reverse_tree_math.$(OBJEXT) xcpu.$(OBJEXT)
-am_slurmd_OBJECTS = $(am__objects_1)
+am__slurmd_SOURCES_DIST = get_mach_stat.c get_mach_stat.h read_proc.c \
+	req.c req.h reverse_tree_math.c reverse_tree_math.h slurmd.c \
+	slurmd.h xcpu.c xcpu.h
+am__objects_1 = get_mach_stat.$(OBJEXT) read_proc.$(OBJEXT) \
+	req.$(OBJEXT) reverse_tree_math.$(OBJEXT) slurmd.$(OBJEXT) \
+	xcpu.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_slurmd_OBJECTS = $(am__objects_1)
+am__EXTRA_slurmd_SOURCES_DIST = get_mach_stat.c get_mach_stat.h \
+	read_proc.c req.c req.h reverse_tree_math.c \
+	reverse_tree_math.h slurmd.c slurmd.h xcpu.c xcpu.h
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
-slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o \
-	../common/libslurmd_common.la
+@USE_LOADLEVELER_FALSE@slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o \
+@USE_LOADLEVELER_FALSE@	../common/libslurmd_common.la
 slurmd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(slurmd_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -110,8 +117,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(slurmd_SOURCES)
-DIST_SOURCES = $(slurmd_SOURCES)
+SOURCES = $(slurmd_SOURCES) $(EXTRA_slurmd_SOURCES)
+DIST_SOURCES = $(am__slurmd_SOURCES_DIST) \
+	$(am__EXTRA_slurmd_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -164,11 +172,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -185,6 +190,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -317,26 +323,28 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-slurmd_LDADD = \
-	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o -ldl	   \
-	$(PLPA_LIBS) \
-	../common/libslurmd_common.la
-
 SLURMD_SOURCES = \
-	slurmd.c slurmd.h \
-	req.c req.h \
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
-	reverse_tree_math.c reverse_tree_math.h \
+	req.c req.h			\
+	reverse_tree_math.c		\
+	reverse_tree_math.h		\
+	slurmd.c slurmd.h		\
 	xcpu.c xcpu.h
 
-slurmd_SOURCES = $(SLURMD_SOURCES)
-@HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_FALSE@slurmd_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/common/libdaemonize.la \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o -ldl	   \
+@USE_LOADLEVELER_FALSE@	$(PLPA_LIBS) \
+@USE_LOADLEVELER_FALSE@	../common/libslurmd_common.la
+
+@USE_LOADLEVELER_FALSE@slurmd_SOURCES = $(SLURMD_SOURCES)
+@HAVE_AIX_FALSE@@USE_LOADLEVELER_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-@HAVE_AIX_TRUE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+@HAVE_AIX_TRUE@@USE_LOADLEVELER_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+@USE_LOADLEVELER_TRUE@EXTRA_slurmd_SOURCES = $(SLURMD_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -660,9 +668,9 @@ uninstall-am: uninstall-sbinPROGRAMS
 	tags uninstall uninstall-am uninstall-sbinPROGRAMS
 
 
-force:
-$(slurmd_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(slurmd_LDADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

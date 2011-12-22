@@ -91,6 +91,9 @@
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #undef HAVE_SYS_SOCKET_H
 
+/* Define to 1 if running over LoadLeveler */
+#undef USE_LOADLEVELER
+
 /* Default value for job's --wait-all-nodes option */
 #ifndef DEFAULT_WAIT_ALL_NODES
 #define DEFAULT_WAIT_ALL_NODES 0	/* don't wait */
@@ -2246,8 +2249,13 @@ extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
  * IN batch_flag - 1 to signal batch shell only, otherwise 0
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_kill_job PARAMS((char *job_id, uint16_t signal,
+				  uint16_t batch_flag));
+#else
 extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal,
 				  uint16_t batch_flag));
+#endif
 
 /*
  * slurm_kill_job_step - send the specified signal to an existing job step
@@ -2256,8 +2264,13 @@ extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal,
  * IN signal  - signal number
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_kill_job_step PARAMS((char *job_id, uint32_t step_id,
+				       uint16_t signal));
+#else
 extern int slurm_kill_job_step PARAMS((uint32_t job_id, uint32_t step_id,
 				       uint16_t signal));
+#endif
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
@@ -2265,7 +2278,11 @@ extern int slurm_kill_job_step PARAMS((uint32_t job_id, uint32_t step_id,
  * IN signal     - signal number
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_signal_job PARAMS((char *job_id, uint16_t signal));
+#else
 extern int slurm_signal_job PARAMS((uint32_t job_id, uint16_t signal));
+#endif
 
 /*
  * slurm_signal_job_step - send the specified signal to an existing job step
@@ -2275,9 +2292,13 @@ extern int slurm_signal_job PARAMS((uint32_t job_id, uint16_t signal));
  * IN signal  - signal number
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_signal_job_step PARAMS((char *job_id, uint32_t step_id,
+					 uint16_t signal));
+#else
 extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
 					 uint16_t signal));
-
+#endif
 
 /*****************************************************************************\
  *	JOB/STEP COMPLETION FUNCTIONS
@@ -2299,7 +2320,11 @@ extern int slurm_complete_job PARAMS((uint32_t job_id,
  * IN job_id     - the job's id
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_terminate_job PARAMS((char *job_id));
+#else
 extern int slurm_terminate_job PARAMS((uint32_t job_id));
+#endif
 
 /*
  * slurm_terminate_job_step - terminates a job step by sending a
@@ -2312,7 +2337,11 @@ extern int slurm_terminate_job PARAMS((uint32_t job_id));
  *              to terminate a job's batch script
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_terminate_job_step PARAMS((char *job_id, uint32_t step_id));
+#else
 extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
+#endif
 
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS
@@ -2436,6 +2465,14 @@ extern void slurm_step_launch_fwd_signal PARAMS((slurm_step_ctx_t *ctx,
  * Wake tasks stopped for debugging on nodes with running tasks
  */
 extern void slurm_step_launch_fwd_wake PARAMS((slurm_step_ctx_t *ctx));
+
+#ifdef USE_LOADLEVELER
+/*
+ * Funcions needed for salloc to spawn a LoadLeveler batch job and communicate
+ */
+extern int salloc_front_end PARAMS((int argc, char **argv));
+extern int salloc_back_end  PARAMS((int argc, char **argv));
+#endif
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -2604,8 +2641,13 @@ extern int slurm_job_node_ready(uint32_t job_id);
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_load_job PARAMS((job_info_msg_t **resp, char *job_id,
+				  uint16_t show_flags));
+#else
 extern int slurm_load_job PARAMS((job_info_msg_t **resp, uint32_t job_id,
 				  uint16_t show_flags));
+#endif
 
 /*
  * slurm_load_jobs - issue RPC to get slurm all job configuration
@@ -2627,7 +2669,11 @@ extern int slurm_load_jobs PARAMS(
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_notify_job PARAMS((char *job_id, char *message));
+#else
 extern int slurm_notify_job PARAMS((uint32_t job_id, char *message));
+#endif
 
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
@@ -2695,10 +2741,17 @@ extern int slurm_update_job PARAMS((job_desc_msg_t * job_msg));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_get_job_steps PARAMS(
+	(time_t update_time, char *job_id, uint32_t step_id,
+	 job_step_info_response_msg_t **step_response_pptr,
+	 uint16_t show_flags));
+#else
 extern int slurm_get_job_steps PARAMS(
 	(time_t update_time, uint32_t job_id, uint32_t step_id,
 	 job_step_info_response_msg_t **step_response_pptr,
 	 uint16_t show_flags));
+#endif
 
 /*
  * slurm_free_job_step_info_response_msg - free the job step
@@ -2762,9 +2815,15 @@ extern char *slurm_sprint_job_step_info PARAMS((job_step_info_t * step_ptr,
  * OUT resp
  * RET SLURM_SUCCESS on success SLURM_ERROR else
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_job_step_stat PARAMS((char *job_id, uint32_t step_id,
+				       char *node_list,
+				       job_step_stat_response_msg_t **resp));
+#else
 extern int slurm_job_step_stat PARAMS((uint32_t job_id, uint32_t step_id,
 				       char *node_list,
 				       job_step_stat_response_msg_t **resp));
+#endif
 
 /*
  * slurm_job_step_get_pids - get the complete list of pids for a given
@@ -2775,10 +2834,15 @@ extern int slurm_job_step_stat PARAMS((uint32_t job_id, uint32_t step_id,
  * OUT resp
  * RET SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurm_job_step_get_pids PARAMS(
-	(uint32_t job_id, uint32_t step_id,
-	 char *node_list,
-	 job_step_pids_response_msg_t **resp));
+#ifdef USE_LOADLEVELER
+extern int slurm_job_step_get_pids PARAMS((char *job_id, uint32_t step_id,
+				char *node_list,
+				job_step_pids_response_msg_t **resp));
+#else
+extern int slurm_job_step_get_pids PARAMS((uint32_t job_id, uint32_t step_id,
+				char *node_list,
+				job_step_pids_response_msg_t **resp));
+#endif
 
 extern void slurm_job_step_layout_free PARAMS((slurm_step_layout_t *layout));
 extern void slurm_job_step_pids_free PARAMS((job_step_pids_t *object));

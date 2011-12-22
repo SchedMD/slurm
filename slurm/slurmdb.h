@@ -537,7 +537,11 @@ typedef struct {
 	uint32_t exitcode;
 	void *first_step_ptr;
 	uint32_t gid;
+#ifdef USE_LOADLEVELER
+	char *jobid;
+#else
 	uint32_t jobid;
+#endif
 	char	*jobname;
 	uint32_t lft;
 	char	*partition;
@@ -663,7 +667,11 @@ typedef struct {
 } slurmdb_reservation_rec_t;
 
 typedef struct {
+#ifdef USE_LOADLEVELER
+	char *jobid;
+#else
 	uint32_t jobid;
+#endif
 	uint32_t stepid;
 } slurmdb_selected_step_t;
 

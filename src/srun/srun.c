@@ -90,6 +90,7 @@
 
 #include "src/srun/allocate.h"
 #include "src/srun/srun_job.h"
+#include "src/srun/load_leveler.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
 #include "src/srun/srun.h"
@@ -99,7 +100,6 @@
 #include "src/api/pmi_server.h"
 #include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
-
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 #include "src/srun/runjob_interface.h"
 #endif
@@ -147,7 +147,9 @@ static int sig_array[] = {
 static int   _become_user (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _default_sigaction(int sig);
+#ifndef USE_LOADLEVELER
 static void  _define_symbols(void);
+#endif
 static void  _handle_intr(void);
 static void  _handle_pipe(void);
 static void  _print_job_information(resource_allocation_response_msg_t *resp);
@@ -242,6 +244,7 @@ int srun(int ac, char **av)
 		exit(error_exit);
 	}
 #endif
+#ifndef USE_LOADLEVELER
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
 	init_spank_env();
@@ -255,7 +258,7 @@ int srun(int ac, char **av)
 	 */
 	if (atexit((void (*) (void)) spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
-
+#endif
 	/* set default options, process commandline arguments, and
 	 * verify some basic values
 	 */
@@ -264,12 +267,12 @@ int srun(int ac, char **av)
 		exit (1);
 	}
 	record_ppid();
-
+#ifndef USE_LOADLEVELER
 	if (spank_init_post_opt() < 0) {
 		error("Plugin stack post-option processing failed.");
 		exit(error_exit);
 	}
-
+#endif
 	/* reinit log with new verbosity (if changed by command line)
 	 */
 	if (_verbose || opt.quiet) {
@@ -283,7 +286,7 @@ int srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	} else
 		_verbose = debug_level;
-
+build_poe_command();
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
 	(void) _set_umask_env();
@@ -889,6 +892,7 @@ static int _set_rlimit_env(void)
 	slurm_rlimits_info_t *rli;
 
 	/* Modify limits with any command-line options */
+
 	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)){
 		error( "--propagate=%s is not valid.", opt.propagate );
 		exit(error_exit);
@@ -1277,6 +1281,7 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 	}
 }
 
+#ifndef USE_LOADLEVELER
 /* Plugins must be able to resolve symbols.
  * Since srun statically links with src/api/libslurmhelper rather than
  * dynamicaly linking with libslurm, we need to reference all needed
@@ -1287,6 +1292,7 @@ static void _define_symbols(void)
 	/* needed by mvapich and mpichgm */
 	slurm_signal_job_step(NO_VAL, NO_VAL, 0);
 }
+#endif
 
 static void _pty_restore(void)
 {
@@ -1312,6 +1318,7 @@ static void _step_opt_exclusive(void)
 	}
 }
 
+#ifndef USE_LOADLEVELER
 static void
 _terminate_job_step(slurm_step_ctx_t *step_ctx)
 {
@@ -1326,6 +1333,7 @@ _terminate_job_step(slurm_step_ctx_t *step_ctx)
 	slurm_kill_job_step(job_id, step_id, SIGKILL);
 #endif
 }
+#endif
 
 #if !defined HAVE_BG_FILES || defined HAVE_BG_L_P
 static void
@@ -1448,12 +1456,14 @@ _update_task_exit_state(uint32_t ntasks, uint32_t taskids[], int abnormal)
 		task_state_update(task_state, taskids[i], t);
 }
 
+#ifndef USE_LOADLEVELER
 static int _kill_on_bad_exit(void)
 {
 	if (opt.kill_bad_exit == NO_VAL)
 		return slurm_get_kill_on_bad_exit();
 	return opt.kill_bad_exit;
 }
+#endif
 
 static void _setup_max_wait_timer(void)
 {
@@ -1487,6 +1497,7 @@ _is_openmpi_port_error(int errcode)
 	return 1;
 }
 
+#ifndef USE_LOADLEVELER
 static void
 _handle_openmpi_port_error(const char *tasks, const char *hosts,
 			   slurm_step_ctx_t *step_ctx)
@@ -1509,6 +1520,7 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	info("Terminating job step %u.%u", job_id, step_id);
 	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
+#endif
 
 static void
 _task_finish(task_exit_msg_t *msg)
@@ -1532,8 +1544,10 @@ _task_finish(task_exit_msg_t *msg)
 			normal_exit = 1;
 		}
 		else if (_is_openmpi_port_error(rc)) {
+#ifndef USE_LOADLEVELER
 			_handle_openmpi_port_error(tasks, hosts,
 						   job->step_ctx);
+#endif
 		} else {
 			error("%s: %s %s: Exited with exit code %d",
 			      hosts, task_str, tasks, rc);
@@ -1566,9 +1580,10 @@ _task_finish(task_exit_msg_t *msg)
 	_update_task_exit_state(msg->num_tasks, msg->task_id_list,
 				!normal_exit);
 
+#ifndef USE_LOADLEVELER
 	if (task_state_first_abnormal_exit(task_state) && _kill_on_bad_exit())
   		_terminate_job_step(job->step_ctx);
-
+#endif
 	if (task_state_first_exit(task_state) && (opt.max_wait > 0))
 		_setup_max_wait_timer();
 }
@@ -1717,7 +1732,9 @@ static void *_srun_signal_mgr(void *no_data)
 			if (srun_max_timer) {
 				info("First task exited %ds ago", opt.max_wait);
 				task_state_print(task_state, (log_f) info);
+#ifndef USE_LOADLEVELER
 				_terminate_job_step(job->step_ctx);
+#endif
 			}
 			break;
 		default:

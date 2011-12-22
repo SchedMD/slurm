@@ -320,7 +320,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	return out;
 }
 
-
+#ifndef USE_LOADLEVELER
 /*
  * slurm_load_node - issue RPC to get slurm all node configuration information
  *	if changed since update_time
@@ -366,3 +366,4 @@ extern int slurm_load_node (time_t update_time,
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
+#endif

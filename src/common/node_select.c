@@ -70,6 +70,7 @@ static pthread_mutex_t		select_context_lock =
 /*
  * Locate and load the appropriate plugin
  */
+#ifndef USE_LOADLEVELER
 static int _select_get_ops(char *select_type,
 			   slurm_select_context_t *c)
 {
@@ -186,6 +187,7 @@ static int _select_get_ops(char *select_type,
 
 	return SLURM_SUCCESS;
 }
+#endif
 
 /*
  * Destroy a node selection context
@@ -274,6 +276,9 @@ extern int select_char2coord(char coord)
  */
 extern int slurm_select_init(bool only_default)
 {
+#ifdef USE_LOADLEVELER
+	return SLURM_SUCCESS;
+#else
 	int retval = SLURM_SUCCESS;
 	char *select_type = NULL;
 	int i, j, rc, len;
@@ -455,6 +460,7 @@ done:
 	xfree(select_type);
 	xfree(dir_array);
 	return retval;
+#endif	/* USE_LOADLEVELER */
 }
 
 extern int slurm_select_fini(void)
@@ -925,13 +931,16 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 					enum node_states state,
 					void *data)
 {
+#ifdef USE_LOADLEVELER
+	return SLURM_SUCCESS;
+#else
 	void *nodedata = NULL;
 	uint32_t plugin_id;
 
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if(nodeinfo) {
+	if (nodeinfo) {
 		nodedata = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
 	} else
@@ -939,6 +948,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 
 	return (*(select_context[plugin_id].ops.nodeinfo_get))
 		(nodedata, dinfo, state, data);
+#endif
 }
 
 extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void)
@@ -1007,6 +1017,9 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 				       enum select_jobdata_type data_type,
 				       void *data)
 {
+#ifdef USE_LOADLEVELER
+	return SLURM_SUCCESS;
+#else
 	void *jobdata = NULL;
 	uint32_t plugin_id;
 
@@ -1021,6 +1034,7 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 
 	return (*(select_context[plugin_id].ops.jobinfo_get))
 		(jobdata, data_type, data);
+#endif
 }
 
 /* copy a select job credential
@@ -1132,12 +1146,15 @@ unpack_error:
 extern char *select_g_select_jobinfo_sprint(dynamic_plugin_data_t *jobinfo,
 					    char *buf, size_t size, int mode)
 {
+#ifdef USE_LOADLEVELER
+	return NULL;
+#else
 	void *data = NULL;
 	uint32_t plugin_id;
 
 	if (slurm_select_init(0) < 0)
 		return NULL;
-	if(jobinfo) {
+	if (jobinfo) {
 		data = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
@@ -1146,7 +1163,9 @@ extern char *select_g_select_jobinfo_sprint(dynamic_plugin_data_t *jobinfo,
 	return (*(select_context[plugin_id].ops.
 		  jobinfo_sprint))
 		(data, buf, size, mode);
+#endif
 }
+
 /* write select job info to a string
  * IN jobinfo - a select job credential
  * IN mode    - print mode, see enum select_print_mode

@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-if HAVE_ELAN
+if BUILD_ELAN
 elan_testprogs = runqsw
 elan_lib = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
 else

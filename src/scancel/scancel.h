@@ -62,7 +62,11 @@ typedef struct scancel_options {
 	int verbose;		/* --verbose, -v		*/
 
 	uint16_t job_cnt;	/* count of job_id's specified	*/
+#ifdef USE_LOADLEVELER
+	char **job_id;		/* list of job_id's		*/
+#else
 	uint32_t *job_id;	/* list of job_id's		*/
+#endif
 	uint32_t *step_id;	/* list of job step id's	*/
 	char *wckey;		/* --wckey			*/
 	char *nodelist;		/* --nodelist, -w		*/

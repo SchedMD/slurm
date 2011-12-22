@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = sattach$(EXEEXT)
+@USE_LOADLEVELER_FALSE@bin_PROGRAMS = sattach$(EXEEXT)
 subdir = src/sattach
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -86,11 +86,17 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sattach_OBJECTS = attach.$(OBJEXT) opt.$(OBJEXT) sattach.$(OBJEXT) \
+am__sattach_SOURCES_DIST = attach.c attach.h opt.c opt.h sattach.c \
+	sattach.wrapper.c
+am__objects_1 = attach.$(OBJEXT) opt.$(OBJEXT) sattach.$(OBJEXT) \
 	sattach.wrapper.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_sattach_OBJECTS = $(am__objects_1)
+am__EXTRA_sattach_SOURCES_DIST = attach.c attach.h opt.c opt.h \
+	sattach.c sattach.wrapper.c
 sattach_OBJECTS = $(am_sattach_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
-sattach_DEPENDENCIES = $(am__DEPENDENCIES_1)
+@USE_LOADLEVELER_FALSE@am__DEPENDENCIES_1 =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@sattach_DEPENDENCIES = $(am__DEPENDENCIES_1)
 sattach_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sattach_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -107,8 +113,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(sattach_SOURCES)
-DIST_SOURCES = $(sattach_SOURCES)
+SOURCES = $(sattach_SOURCES) $(EXTRA_sattach_SOURCES)
+DIST_SOURCES = $(am__sattach_SOURCES_DIST) \
+	$(am__EXTRA_sattach_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -161,11 +168,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -182,6 +186,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -313,18 +318,20 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir)
-sattach_SOURCES = \
-	attach.c attach.h \
-	opt.c opt.h \
-	sattach.c \
+SATTACH_SOURCES = \
+	attach.c attach.h	\
+	opt.c opt.h		\
+	sattach.c		\
 	sattach.wrapper.c
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
-sattach_LDADD = \
-	$(convenience_libs)
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir)
+@USE_LOADLEVELER_FALSE@sattach_SOURCES = $(SATTACH_SOURCES)
+@USE_LOADLEVELER_FALSE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+@USE_LOADLEVELER_FALSE@sattach_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(convenience_libs)
 
-sattach_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_FALSE@sattach_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_sattach_SOURCES = $(SATTACH_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -558,6 +565,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@USE_LOADLEVELER_TRUE@install-exec-local:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
@@ -645,24 +653,24 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-am uninstall-binPROGRAMS
 
 
-force:
-$(convenience_libs) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(convenience_libs) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # debugging information is required for symbols in the attach
 # module so that a debugger can attach to spawned tasks
-attach.o : attach.c
-	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c
+@USE_LOADLEVELER_FALSE@attach.o : attach.c
+@USE_LOADLEVELER_FALSE@	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c
 
-install-exec-local:
-	umask 022; \
-	if [ -x /usr/lib/rpm/debugedit ]; then \
-		srcdir=`cd $(top_srcdir) && pwd`; \
-		/usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
-			$(DESTDIR)$(bindir)/sattach; fi; \
-	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/sattach
-	$(INSTALL) -m 644 $(top_srcdir)/src/sattach/sattach.wrapper.c \
-		$(DESTDIR)$(pkglibdir)/src/sattach/sattach.wrapper.c
+@USE_LOADLEVELER_FALSE@install-exec-local:
+@USE_LOADLEVELER_FALSE@	umask 022; \
+@USE_LOADLEVELER_FALSE@	if [ -x /usr/lib/rpm/debugedit ]; then \
+@USE_LOADLEVELER_FALSE@		srcdir=`cd $(top_srcdir) && pwd`; \
+@USE_LOADLEVELER_FALSE@		/usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
+@USE_LOADLEVELER_FALSE@			$(DESTDIR)$(bindir)/sattach; fi; \
+@USE_LOADLEVELER_FALSE@	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/sattach
+@USE_LOADLEVELER_FALSE@	$(INSTALL) -m 644 $(top_srcdir)/src/sattach/sattach.wrapper.c \
+@USE_LOADLEVELER_FALSE@		$(DESTDIR)$(pkglibdir)/src/sattach/sattach.wrapper.c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

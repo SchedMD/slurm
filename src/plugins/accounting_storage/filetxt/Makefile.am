@@ -2,12 +2,23 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+LIBACCOUNTING_STORAGE_FILETXT_LA_SOURCES =	\
+	accounting_storage_filetxt.c	\
+	filetxt_jobacct_process.c	\
+	filetxt_jobacct_process.h
+
+if ! USE_LOADLEVELER
+
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 pkglib_LTLIBRARIES = accounting_storage_filetxt.la
 
-accounting_storage_filetxt_la_SOURCES = accounting_storage_filetxt.c \
-		filetxt_jobacct_process.c filetxt_jobacct_process.h
+accounting_storage_filetxt_la_SOURCES =	$(LIBACCOUNTING_STORAGE_FILETXT_LA_SOURCES)
+
 accounting_storage_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+else
+EXTRA_accounting_storage_filetxt_la_SOURCES =	$(LIBACCOUNTING_STORAGE_FILETXT_LA_SOURCES)
+endif

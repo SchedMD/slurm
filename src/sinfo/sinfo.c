@@ -356,7 +356,7 @@ static int _build_sinfo_data(List sinfo_list,
 				     _filter_out(node_ptr)))
 					continue;
 
-				if(select_g_select_nodeinfo_get(
+				if (select_g_select_nodeinfo_get(
 					   node_ptr->select_nodeinfo,
 					   SELECT_NODEDATA_SUBGRP_SIZE,
 					   0,
@@ -449,7 +449,7 @@ static bool _filter_out(node_info_t *node_ptr)
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ERROR,
 					&cpus);
-				if(cpus) {
+				if (cpus) {
 					match = true;
 					break;
 				}

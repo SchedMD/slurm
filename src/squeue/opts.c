@@ -384,8 +384,13 @@ parse_command_line( int argc, char* argv[] )
 
 	if ( params.start_flag && !params.step_flag ) {
 		/* Set more defaults */
-		if (params.format == NULL)
+		if (params.format == NULL) {
+#ifdef USE_LOADLEVELER
+			params.format = xstrdup("%.17i %.9P %.8j %.8u  %.2t  %.19S %.6D %R");
+#else
 			params.format = xstrdup("%.7i %.9P %.8j %.8u  %.2t  %.19S %.6D %R");
+#endif
+		}
 		if (params.sort == NULL)
 			params.sort = xstrdup("S");
 		if (params.states == NULL) {
@@ -550,7 +555,7 @@ extern int parse_format( char* format )
 				xstrcat(prefix, token);
 				xfree(suffix);
 				suffix = prefix;
-				
+
 				step_format_add_invalid( params.format_list,
 							   field_size,
 							   right_justify,
@@ -779,7 +784,7 @@ extern int parse_format( char* format )
 				xstrcat(prefix, token);
 				xfree(suffix);
 				suffix = prefix;
-				
+
 				job_format_add_invalid( params.format_list,
 							   field_size,
 							   right_justify,
@@ -854,13 +859,17 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 static void
 _print_options(void)
 {
+#ifdef USE_LOADLEVELER
+	char *job_id;
+#else
+	uint32_t *job_id;
+#endif
 	ListIterator iterator;
 	int i;
 	char *part, *name;
 	uint32_t *user;
 	enum job_states *state_id;
 	squeue_job_step_t *job_step_id;
-	uint32_t *job_id;
 	char hostlist[8192];
 
 	if (params.nodes) {
@@ -892,7 +901,11 @@ _print_options(void)
 		i = 0;
 		iterator = list_iterator_create( params.job_list );
 		while ( (job_id = list_next( iterator )) ) {
+#ifdef USE_LOADLEVELER
+			printf( "job_list[%d] = %s\n", i++, job_id);
+#else
 			printf( "job_list[%d] = %u\n", i++, *job_id);
+#endif
 		}
 		list_iterator_destroy( iterator );
 	}
@@ -930,8 +943,13 @@ _print_options(void)
 		i = 0;
 		iterator = list_iterator_create( params.step_list );
 		while ( (job_step_id = list_next( iterator )) ) {
+#ifdef USE_LOADLEVELER
+			printf( "step_list[%d] = %s.%u\n", i++,
+				job_step_id->job_id, job_step_id->step_id );
+#else
 			printf( "step_list[%d] = %u.%u\n", i++,
 				job_step_id->job_id, job_step_id->step_id );
+#endif
 		}
 		list_iterator_destroy( iterator );
 	}
@@ -959,8 +977,6 @@ _build_job_list( char* str )
 {
 	List my_list;
 	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
-	int i;
-	uint32_t *job_id = NULL;
 
 	if ( str == NULL )
 		return NULL;
@@ -968,6 +984,11 @@ _build_job_list( char* str )
 	my_job_list = xstrdup( str );
 	job = strtok_r( my_job_list, ",", &tmp_char );
 	while (job) {
+#ifdef USE_LOADLEVELER
+		char *job_id = xstrdup(job);
+#else
+		int i;
+		uint32_t *job_id = NULL;
 		i = strtol( job, (char **) NULL, 10 );
 		if (i <= 0) {
 			error( "Invalid job id: %s", job );
@@ -975,9 +996,11 @@ _build_job_list( char* str )
 		}
 		job_id = xmalloc( sizeof( uint32_t ) );
 		*job_id = (uint32_t) i;
+#endif
 		list_append( my_list, job_id );
 		job = strtok_r (NULL, ",", &tmp_char);
 	}
+	xfree(my_job_list);
 	return my_list;
 }
 
@@ -997,11 +1020,11 @@ _build_str_list( char* str )
 	my_list = list_create( NULL );
 	my_part_list = xstrdup( str );
 	part = strtok_r( my_part_list, ",", &tmp_char );
-	while (part)
-	{
+	while (part) {
 		list_append( my_list, part );
 		part = strtok_r( NULL, ",", &tmp_char );
 	}
+	xfree(my_part_list);
 	return my_list;
 }
 
@@ -1025,14 +1048,14 @@ _build_state_list( char* str )
 	my_list = list_create( NULL );
 	my_state_list = xstrdup( str );
 	state = strtok_r( my_state_list, ",", &tmp_char );
-	while (state)
-	{
+	while (state) {
 		state_id = xmalloc( sizeof( uint16_t ) );
 		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
 			exit( 1 );
 		list_append( my_list, state_id );
 		state = strtok_r( NULL, ",", &tmp_char );
 	}
+	xfree(my_state_list);
 	return my_list;
 
 }
@@ -1073,9 +1096,8 @@ static List
 _build_step_list( char* str )
 {
 	List my_list;
-	char *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
-	char *job_name = NULL, *step_name = NULL, *my_step_list = NULL;
-	int i, j;
+	char *step = NULL, *tmp_char = NULL;
+	char *my_step_list = NULL;
 	squeue_job_step_t *job_step_id = NULL;
 
 	if ( str == NULL)
@@ -1083,8 +1105,27 @@ _build_step_list( char* str )
 	my_list = list_create( NULL );
 	my_step_list = xstrdup( str );
 	step = strtok_r( my_step_list, ",", &tmp_char );
-	while (step)
-	{
+	while (step) {
+#ifdef USE_LOADLEVELER
+		int j;
+		char *sep;
+		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
+		sep = strrchr(step, '.');
+		if (!sep) {
+			error ( "Invalid job_step id: %s", step );
+			exit( 1 );
+		}
+		sep[0] = '\0';
+		j = strtol( (sep + 1), (char **) NULL, 10 );
+		if (j < 0) {
+			error ( "Invalid job_step id: %s", step );
+			exit( 1 );
+		}
+		job_step_id->job_id = xstrdup(step);
+		job_step_id->step_id = (uint32_t) j;
+#else
+		int i, j;
+		char *job_name = NULL, *step_name = NULL, *tmps_char = NULL;
 		job_name = strtok_r( step, ".", &tmps_char );
 		step_name = strtok_r( NULL, ".", &tmps_char );
 		i = strtol( job_name, (char **) NULL, 10 );
@@ -1102,9 +1143,11 @@ _build_step_list( char* str )
 		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
 		job_step_id->job_id  = (uint32_t) i;
 		job_step_id->step_id = (uint32_t) j;
+#endif
 		list_append( my_list, job_step_id );
 		step = strtok_r( NULL, ",", &tmp_char);
 	}
+	xfree(my_step_list);
 	return my_list;
 }
 
@@ -1137,6 +1180,7 @@ _build_user_list( char* str )
 		}
 		user = strtok_r (NULL, ",", &tmp_char);
 	}
+	xfree(my_user_list);
 	return my_list;
 }
 

@@ -589,10 +589,15 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PRIORITY", width, right, true);
 	else {
+#ifdef USE_LOADLEVELER
+		sprintf(temp, "%u", job->priority);
+		_print_str(temp, width, right, true);
+#else
 		double prio = (double) job->priority /
 		              (double) ((uint32_t) 0xffffffff);
 		sprintf(temp, "%16.14f", prio);
 		_print_str(temp, width, right, true);
+#endif
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -648,7 +653,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 {
 	if (job == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST(REASON)";
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "MIDPLANELIST(REASON)";
 		_print_str(title, width, right, false);
 	} else if (!IS_JOB_COMPLETING(job)
@@ -669,7 +674,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		select_g_select_jobinfo_get(job->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &ionodes);
-		if(ionodes) {
+		if (ionodes) {
 			xstrfmtcat(nodes, "[%s]", ionodes);
 			xfree(ionodes);
 			_print_str(nodes, width, right, false);
@@ -1289,9 +1294,11 @@ int _print_step_time_start(job_step_info_t * step, int width, bool right,
 int _print_step_time_used(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {
-	if (step == NULL)	/* Print the Header instead */
+	if (step == NULL) {	/* Print the Header instead */
 		_print_str("TIME", width, right, true);
-	else {
+	} else if (step->run_time == NO_VAL) {
+		_print_str("NONE", width, right, true);
+	} else {
 		long delta_t = step->run_time;
 		_print_secs(delta_t, width, right, false);
 	}
@@ -1372,9 +1379,14 @@ int _print_step_gres(job_step_info_t * step, int width, bool right,
  * returns >0 if job should be filter out (not printed) */
 static int _filter_job(job_info_t * job)
 {
+#ifdef USE_LOADLEVELER
+	char *job_id;
+#else
+	uint32_t *job_id;
+#endif
 	int filter;
 	ListIterator iterator;
-	uint32_t *job_id, *user;
+	uint32_t *user;
 	uint16_t *state_id;
 	char *account, *part, *qos, *name;
 
@@ -1382,12 +1394,14 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_id = list_next(iterator))) {
-#ifndef USE_LOADLEVELER
+#ifdef USE_LOADLEVELER
+			if (!strcmp(job_id, job->job_id)) {
+#else
 			if (*job_id == job->job_id) {
+#endif
 				filter = 0;
 				break;
 			}
-#endif
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)
@@ -1520,9 +1534,14 @@ static int _filter_job(job_info_t * job)
  * returns 1 if step should be filter out (not printed) */
 static int _filter_step(job_step_info_t * step)
 {
+#ifdef USE_LOADLEVELER
+	char *job_id;
+#else
+	uint32_t *job_id;
+#endif
 	int filter;
 	ListIterator iterator;
-	uint32_t *job_id, *user;
+	uint32_t *user;
 	char *part;
 	squeue_job_step_t *job_step_id;
 
@@ -1530,12 +1549,14 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_id = list_next(iterator))) {
-#ifndef USE_LOADLEVELER
+#ifdef USE_LOADLEVELER
+			if (!strcmp(job_id, step->job_id)) {
+#else
 			if (*job_id == step->job_id) {
+#endif
 				filter = 0;
 				break;
 			}
-#endif
 		}
 		list_iterator_destroy(iterator);
 		if (filter == 1)
@@ -1561,7 +1582,7 @@ static int _filter_step(job_step_info_t * step)
 		iterator = list_iterator_create(params.step_list);
 		while ((job_step_id = list_next(iterator))) {
 #ifdef USE_LOADLEVELER
-			if (0 &&
+			if (!strcmp(job_step_id->job_id, step->job_id) &&
 #else
 			if ((job_step_id->job_id == step->job_id) &&
 #endif

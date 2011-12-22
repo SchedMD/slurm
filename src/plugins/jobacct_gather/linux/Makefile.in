@@ -107,12 +107,18 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_gather_linux_la_LIBADD =
-am_jobacct_gather_linux_la_OBJECTS = jobacct_gather_linux.lo
+am__jobacct_gather_linux_la_SOURCES_DIST = jobacct_gather_linux.c
+@USE_LOADLEVELER_FALSE@am_jobacct_gather_linux_la_OBJECTS =  \
+@USE_LOADLEVELER_FALSE@	jobacct_gather_linux.lo
+am__EXTRA_jobacct_gather_linux_la_SOURCES_DIST =  \
+	jobacct_gather_linux.c
 jobacct_gather_linux_la_OBJECTS =  \
 	$(am_jobacct_gather_linux_la_OBJECTS)
 jobacct_gather_linux_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(jobacct_gather_linux_la_LDFLAGS) $(LDFLAGS) -o $@
+@USE_LOADLEVELER_FALSE@am_jobacct_gather_linux_la_rpath = -rpath \
+@USE_LOADLEVELER_FALSE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -126,8 +132,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(jobacct_gather_linux_la_SOURCES)
-DIST_SOURCES = $(jobacct_gather_linux_la_SOURCES)
+SOURCES = $(jobacct_gather_linux_la_SOURCES) \
+	$(EXTRA_jobacct_gather_linux_la_SOURCES)
+DIST_SOURCES = $(am__jobacct_gather_linux_la_SOURCES_DIST) \
+	$(am__EXTRA_jobacct_gather_linux_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -180,11 +188,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -201,6 +206,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -334,11 +340,12 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = jobacct_gather_linux.la
 
 # Null job completion logging plugin.
-jobacct_gather_linux_la_SOURCES = jobacct_gather_linux.c
-jobacct_gather_linux_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@USE_LOADLEVELER_FALSE@pkglib_LTLIBRARIES = jobacct_gather_linux.la
+@USE_LOADLEVELER_FALSE@jobacct_gather_linux_la_SOURCES = jobacct_gather_linux.c
+@USE_LOADLEVELER_FALSE@jobacct_gather_linux_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_jobacct_gather_linux_la_SOURCES = jobacct_gather_linux.c
 all: all-am
 
 .SUFFIXES:
@@ -405,7 +412,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 jobacct_gather_linux.la: $(jobacct_gather_linux_la_OBJECTS) $(jobacct_gather_linux_la_DEPENDENCIES) 
-	$(jobacct_gather_linux_la_LINK) -rpath $(pkglibdir) $(jobacct_gather_linux_la_OBJECTS) $(jobacct_gather_linux_la_LIBADD) $(LIBS)
+	$(jobacct_gather_linux_la_LINK) $(am_jobacct_gather_linux_la_rpath) $(jobacct_gather_linux_la_OBJECTS) $(jobacct_gather_linux_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

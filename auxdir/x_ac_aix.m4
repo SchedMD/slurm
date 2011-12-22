@@ -8,7 +8,7 @@
 #    X_AC_AIX
 #
 #  DESCRIPTION:
-#    Check for AIX operating system and sets parameters accordingly, 
+#    Check for AIX operating system and sets parameters accordingly,
 #    also define HAVE_AIX and HAVE_LARGEFILE if appropriate.
 #  NOTE: AC_SYS_LARGEFILE may fail on AIX due to inconstencies within
 #    installed gcc header files.
@@ -69,21 +69,23 @@ AC_DEFUN([X_AC_AIX],
    fi
    AM_CONDITIONAL(HAVE_AIX_PROCTRACK, test "x$ac_have_aix_proctrack" = "xyes")
 
-   ac_with_load_leveler="no"
    AC_MSG_CHECKING([for use of LoadLeveler APIs instead of SLURM daemons])
    AC_ARG_WITH([loadleveler],
-     AS_HELP_STRING(--with-loadleveler,use LoadLeveler APIs instead of SLURM daemons),
-       [  case "$withval" in
-          yes) ac_with_load_leveler=yes ;;
-          no)  ac_with_load_leveler=no ;;
-          *)   AC_MSG_RESULT([doh!])
-               AC_MSG_ERROR([bad value "$withval" for --with-loadleveler]) ;;
-          esac
-       ]
-     )
-   AC_MSG_RESULT($ac_with_load_leveler)
+     AS_HELP_STRING(--with-loadleveler=PATH,Specify path to LoadLeveler header and library),
+     [ if test -f "$withval/lib64/libllapi.so" && test -f "$withval/include/llapi.h"; then
+          LDFLAGS="-L$withval/lib64 -lllapi $LDFLAGS"
+          LOADLEVELER_INCLUDES="-I$withval/include"
+          AC_DEFINE(HAVE_LLAPI_H, 1, [Define to 1 if llapi.h found])
+          ac_with_llapi_h="yes"
+       else
+          AC_MSG_WARN([libllapi.so or llapi.h not found. Emulating LoadLeveler])
+       fi
+       AC_DEFINE(USE_LOADLEVELER, 1, [Define to 1 if running over LoadLeveler])
+       ac_with_load_leveler="yes"
+     ]
+   )
+   AC_SUBST(LOADLEVELER_INCLUDES)
+   AM_CONDITIONAL(HAVE_LLAPI_H,    test "x$ac_with_llapi_h" = "xyes")
    AM_CONDITIONAL(USE_LOADLEVELER, test "x$ac_with_load_leveler" = "xyes")
-   if test "x$ac_with_load_leveler" = "xyes" ; then
-      AC_DEFINE(USE_LOADLEVELER, 1, [Define to 1 if running over LoadLeveler])
-   fi
+
 ])

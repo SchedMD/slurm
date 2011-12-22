@@ -84,7 +84,11 @@ static int  _verify_job_ids (void);
 static job_info_msg_t * job_buffer_ptr = NULL;
 
 typedef struct job_cancel_info {
+#ifdef USE_LOADLEVELER
+	char *job_id;
+#else
 	uint32_t job_id;
+#endif
 	uint32_t step_id;
 	uint16_t sig;
 	int             *num_active_threads;
@@ -187,12 +191,31 @@ _verify_job_ids (void)
 	job_info_t *job_ptr = job_buffer_ptr->job_array;
 	int rc = 0;
 
+#ifdef USE_LOADLEVELER
 	for (j = 0; j < opt.job_cnt; j++ ) {
 		for (i = 0; i < job_buffer_ptr->record_count; i++) {
-#ifndef USE_LOADLEVELER
+			if (!strcmp(job_ptr[i].job_id, opt.job_id[j]))
+				break;
+		}
+		if (((job_ptr[i].job_state >= JOB_COMPLETE) ||
+		     (i >= job_buffer_ptr->record_count)) &&
+		     (opt.verbose >= 0)) {
+			if (opt.step_id[j] == SLURM_BATCH_SCRIPT)
+				error("Kill job error on job id %s: %s",
+				      opt.job_id[j],
+				      slurm_strerror(ESLURM_INVALID_JOB_ID));
+			else
+				error("Kill job error on job step id %s.%u: %s",
+				      opt.job_id[j], opt.step_id[j],
+				      slurm_strerror(ESLURM_INVALID_JOB_ID));
+			rc = 1;
+		}
+	}
+#else
+	for (j = 0; j < opt.job_cnt; j++ ) {
+		for (i = 0; i < job_buffer_ptr->record_count; i++) {
 			if (job_ptr[i].job_id == opt.job_id[j])
 				break;
-#endif
 		}
 		if (((job_ptr[i].job_state >= JOB_COMPLETE) ||
 		     (i >= job_buffer_ptr->record_count)) &&
@@ -208,7 +231,7 @@ _verify_job_ids (void)
 			rc = 1;
 		}
 	}
-
+#endif
 	return rc;
 }
 
@@ -233,6 +256,113 @@ _filter_job_records (void)
 	uint16_t job_base_state;
 
 	job_ptr = job_buffer_ptr->job_array ;
+#ifdef USE_LOADLEVELER
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+		if (job_ptr[i].job_id == NULL)
+			continue;
+
+		job_base_state = job_ptr[i].job_state & JOB_STATE_BASE;
+		if ((job_base_state != JOB_PENDING) &&
+		    (job_base_state != JOB_RUNNING) &&
+		    (job_base_state != JOB_SUSPENDED)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if (opt.account != NULL &&
+		    _strcmp(job_ptr[i].account, opt.account)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if (opt.job_name != NULL &&
+		    _strcmp(job_ptr[i].name, opt.job_name)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if ((opt.partition != NULL) &&
+		    _strcmp(job_ptr[i].partition,opt.partition)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if ((opt.qos != NULL) &&
+		    _strcmp(job_ptr[i].qos, opt.qos)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if ((opt.reservation != NULL) &&
+		    _strcmp(job_ptr[i].resv_name, opt.reservation)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if ((opt.state != JOB_END) &&
+		    (job_ptr[i].job_state != opt.state)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if ((opt.user_name != NULL) &&
+		    (job_ptr[i].user_id != opt.user_id)) {
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+
+		if (opt.nodelist != NULL) {
+			/* If nodelist contains a '/', treat it as a file name */
+			if (strchr(opt.nodelist, '/') != NULL) {
+				char *reallist;
+				reallist = slurm_read_hostfile(opt.nodelist,
+							       NO_VAL);
+				if (reallist) {
+					xfree(opt.nodelist);
+					opt.nodelist = reallist;
+				}
+			}
+
+			hostset_t hs = hostset_create(job_ptr[i].nodes);
+			if (!hostset_intersects(hs, opt.nodelist)) {
+				xfree(job_ptr[i].job_id);
+				hostset_destroy(hs);
+				continue;
+			} else {
+				hostset_destroy(hs);
+			}
+		}
+
+		if (opt.wckey != NULL) {
+			char *job_key = job_ptr[i].wckey;
+
+			/*
+			 * A wckey that begins with '*' indicates that the wckey
+			 * was applied by default.  When the --wckey option does
+			 * not begin with a '*', act on all wckeys with the same
+			 * name, default or not.
+			 */
+			if ((opt.wckey[0] != '*') && (job_key[0] == '*'))
+				job_key++;
+
+			if (strcmp(job_key, opt.wckey) != 0) {
+				xfree(job_ptr[i].job_id);
+				continue;
+			}
+		}
+
+		if (opt.job_cnt == 0)
+			continue;
+		for (j = 0; j < opt.job_cnt; j++) {
+			if (!strcmp(job_ptr[i].job_id, opt.job_id[j]))
+				break;
+		}
+		if (j >= opt.job_cnt) { /* not found */
+			xfree(job_ptr[i].job_id);
+			continue;
+		}
+	}
+#else
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		if (job_ptr[i].job_id == 0)
 			continue;
@@ -330,16 +460,15 @@ _filter_job_records (void)
 		if (opt.job_cnt == 0)
 			continue;
 		for (j = 0; j < opt.job_cnt; j++) {
-#ifndef USE_LOADLEVELER
 			if (job_ptr[i].job_id == opt.job_id[j])
 				break;
-#endif
 		}
 		if (j >= opt.job_cnt) { /* not found */
 			job_ptr[i].job_id = 0;
 			continue;
 		}
 	}
+#endif
 }
 
 static void
@@ -364,7 +493,10 @@ _cancel_jobs_by_state(uint16_t job_state)
 		 * included a step id */
 		if (opt.job_cnt) {
 			for (j = 0; j < opt.job_cnt; j++ ) {
-#ifndef USE_LOADLEVELER
+#ifdef USE_LOADLEVELER
+				if (strcmp(job_ptr[i].job_id, opt.job_id[j]))
+					continue;
+#else
 				if (job_ptr[i].job_id != opt.job_id[j])
 					continue;
 #endif
@@ -375,9 +507,7 @@ _cancel_jobs_by_state(uint16_t job_state)
 				cancel_info =
 					(job_cancel_info_t *)
 					xmalloc(sizeof(job_cancel_info_t));
-#ifndef USE_LOADLEVELER
 				cancel_info->job_id  = job_ptr[i].job_id;
-#endif
 				cancel_info->sig     = opt.signal;
 				cancel_info->num_active_threads =
 					&num_active_threads;
@@ -421,9 +551,7 @@ _cancel_jobs_by_state(uint16_t job_state)
 
 			cancel_info = (job_cancel_info_t *)
 				xmalloc(sizeof(job_cancel_info_t));
-#ifndef USE_LOADLEVELER
 			cancel_info->job_id  = job_ptr[i].job_id;
-#endif
 			cancel_info->sig     = opt.signal;
 			cancel_info->num_active_threads = &num_active_threads;
 			cancel_info->num_active_threads_lock =
@@ -444,7 +572,11 @@ _cancel_jobs_by_state(uint16_t job_state)
 			if (err)
 				_cancel_job_id(cancel_info);
 		}
+#ifdef USE_LOADLEVELER
+		xfree(job_ptr[i].job_id);
+#else
 		job_ptr[i].job_id = 0;
+#endif
 	}
 }
 
@@ -485,7 +617,6 @@ _cancel_job_id (void *ci)
 	bool sig_set = true;
 	bool msg_to_ctld = opt.ctld;
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
-	uint32_t job_id = cancel_info->job_id;
 	uint16_t sig    = cancel_info->sig;
 
 	if (sig == (uint16_t)-1) {
@@ -494,23 +625,32 @@ _cancel_job_id (void *ci)
 	}
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
+#ifdef USE_LOADLEVELER
 		if (!sig_set)
-			verbose("Terminating job %u", job_id);
+			verbose("Terminating job %s", cancel_info->job_id);
 		else
-			verbose("Signal %u to job %u", sig, job_id);
-
+			verbose("Signal %u to job %s", sig,
+				cancel_info->job_id);
+#else
+		if (!sig_set)
+			verbose("Terminating job %u", cancel_info->job_id);
+		else
+			verbose("Signal %u to job %u", sig,
+				cancel_info->job_id);
+#endif
 		if ((sig == SIGKILL) || (!sig_set) ||
 		    msg_to_ctld || opt.clusters) {
-			error_code = slurm_kill_job (job_id, sig,
-						     (uint16_t)opt.batch);
+			error_code = slurm_kill_job(cancel_info->job_id, sig,
+						    (uint16_t)opt.batch);
 		} else {
 			if (opt.batch) {
 				error_code = slurm_signal_job_step(
-					job_id,
+					cancel_info->job_id,
 					SLURM_BATCH_SCRIPT,
 					sig);
 			} else {
-				error_code = slurm_signal_job (job_id, sig);
+				error_code = slurm_signal_job(cancel_info->
+							      job_id, sig);
 			}
 			if (error_code && (errno == ESLURM_JOB_PENDING)) {
 				/* Send request to directly to slurmctld */
@@ -529,8 +669,15 @@ _cancel_job_id (void *ci)
 		if ((opt.verbose > 0) ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
 		     (error_code != ESLURM_INVALID_JOB_ID)))
+#ifdef USE_LOADLEVELER
+			error("Kill job error on job id %s: %s",
+			      cancel_info->job_id,
+			      slurm_strerror(slurm_get_errno()));
+#else
 			error("Kill job error on job id %u: %s",
-				job_id, slurm_strerror(slurm_get_errno()));
+			      cancel_info->job_id,
+			      slurm_strerror(slurm_get_errno()));
+#endif
 	}
 
 	/* Purposely free the struct passed in here, so the caller doesn't have
@@ -550,7 +697,6 @@ _cancel_step_id (void *ci)
 {
 	int error_code = SLURM_SUCCESS, i;
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
-	uint32_t job_id  = cancel_info->job_id;
 	uint32_t step_id = cancel_info->step_id;
 	uint16_t sig     = cancel_info->sig;
 	bool sig_set = true;
@@ -560,34 +706,52 @@ _cancel_step_id (void *ci)
 		sig_set = false;
 	}
 
-	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (sig == SIGKILL)
-			verbose("Terminating step %u.%u", job_id, step_id);
-		else {
-			verbose("Signal %u to step %u.%u",
-				sig, job_id, step_id);
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+#ifdef USE_LOADLEVELER
+		if (sig == SIGKILL) {
+			verbose("Terminating step %s.%u", cancel_info->job_id,
+				step_id);
+		} else {
+			verbose("Signal %u to step %s.%u",
+				sig, cancel_info->job_id, step_id);
 		}
-
-		if ((!sig_set) || opt.ctld)
-			error_code = slurm_kill_job_step(job_id, step_id, sig);
-		else if (sig == SIGKILL)
-			error_code = slurm_terminate_job_step(job_id, step_id);
-		else
-			error_code = slurm_signal_job_step(job_id, step_id,
-							   sig);
-		if (error_code == 0
-		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
-			&& errno != ESLURM_JOB_PENDING))
+#else
+		if (sig == SIGKILL) {
+			verbose("Terminating step %u.%u", cancel_info->job_id,
+				step_id);
+		} else {
+			verbose("Signal %u to step %u.%u",
+				sig, cancel_info->job_id, step_id);
+		}
+#endif
+		if ((!sig_set) || opt.ctld) {
+			error_code = slurm_kill_job_step(cancel_info->job_id,
+							 step_id, sig);
+		} else if (sig == SIGKILL) {
+			error_code = slurm_terminate_job_step(cancel_info->
+							      job_id, step_id);
+		} else {
+			error_code = slurm_signal_job_step(cancel_info->job_id,
+							   step_id, sig);
+		}
+		if ((error_code == 0) ||
+		    ((errno != ESLURM_TRANSITION_STATE_NO_UPDATE) &&
+		     (errno != ESLURM_JOB_PENDING)))
 			break;
 		verbose("Job is in transistional state, retrying");
 		sleep ( 5 + i );
 	}
 	if (error_code) {
 		error_code = slurm_get_errno();
-		if ((opt.verbose > 0) || (error_code != ESLURM_ALREADY_DONE ))
+		if ((opt.verbose > 0) || (error_code != ESLURM_ALREADY_DONE )){
+#ifdef USE_LOADLEVELER
+			error("Kill job error on job step id %s.%u: %s",
+#else
 			error("Kill job error on job step id %u.%u: %s",
-		 		job_id, step_id,
+#endif
+		 		cancel_info->job_id, step_id,
 				slurm_strerror(slurm_get_errno()));
+		}
 	}
 
 	/* Purposely free the struct passed in here, so the caller doesn't have

@@ -40,6 +40,9 @@ target_triplet = @target@
 bin_PROGRAMS = srun$(EXEEXT)
 @BGQ_LOADED_TRUE@am__append_1 = runjob_interface.cc
 @BGQ_LOADED_TRUE@am__append_2 = $(RUNJOB_LDFLAGS)
+@BGQ_LOADED_FALSE@am__append_3 = runjob_interface.cc
+@USE_LOADLEVELER_TRUE@am__append_4 = load_leveler.c load_leveler.h
+@USE_LOADLEVELER_FALSE@am__append_5 = load_leveler.c load_leveler.h
 subdir = src/srun
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -88,15 +91,20 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__srun_SOURCES_DIST = srun.c srun.h opt.c opt.h srun_job.c \
-	srun_job.h srun_pty.c srun_pty.h debugger.h debugger.c fname.c \
-	fname.h allocate.c allocate.h multi_prog.c multi_prog.h \
-	task_state.c task_state.h srun.wrapper.c runjob_interface.cc
-@BGQ_LOADED_TRUE@am__objects_1 = runjob_interface.$(OBJEXT)
-am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
-	srun_pty.$(OBJEXT) debugger.$(OBJEXT) fname.$(OBJEXT) \
-	allocate.$(OBJEXT) multi_prog.$(OBJEXT) task_state.$(OBJEXT) \
-	srun.wrapper.$(OBJEXT) $(am__objects_1)
+am__srun_SOURCES_DIST = allocate.c allocate.h debugger.h debugger.c \
+	fname.c fname.h multi_prog.c multi_prog.h opt.c opt.h srun.c \
+	srun.h srun_job.c srun_job.h srun_pty.c srun_pty.h \
+	srun.wrapper.c task_state.c task_state.h runjob_interface.cc \
+	load_leveler.c load_leveler.h
+am__objects_1 = allocate.$(OBJEXT) debugger.$(OBJEXT) fname.$(OBJEXT) \
+	multi_prog.$(OBJEXT) opt.$(OBJEXT) srun.$(OBJEXT) \
+	srun_job.$(OBJEXT) srun_pty.$(OBJEXT) srun.wrapper.$(OBJEXT) \
+	task_state.$(OBJEXT)
+@BGQ_LOADED_TRUE@am__objects_2 = runjob_interface.$(OBJEXT)
+@USE_LOADLEVELER_TRUE@am__objects_3 = load_leveler.$(OBJEXT)
+am_srun_OBJECTS = $(am__objects_1) $(am__objects_2) $(am__objects_3)
+am__EXTRA_srun_SOURCES_DIST = runjob_interface.cc load_leveler.c \
+	load_leveler.h
 srun_OBJECTS = $(am_srun_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -125,8 +133,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(srun_SOURCES)
-DIST_SOURCES = $(am__srun_SOURCES_DIST)
+SOURCES = $(srun_SOURCES) $(EXTRA_srun_SOURCES)
+DIST_SOURCES = $(am__srun_SOURCES_DIST) $(am__EXTRA_srun_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -179,11 +187,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -200,6 +205,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -331,12 +337,31 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+SRUN_SOURCES = \
+	allocate.c	\
+	allocate.h	\
+	debugger.h	\
+	debugger.c	\
+	fname.c		\
+	fname.h		\
+	multi_prog.c	\
+	multi_prog.h	\
+	opt.c		\
+	opt.h		\
+	srun.c		\
+	srun.h		\
+	srun_job.c	\
+	srun_job.h	\
+	srun_pty.c	\
+	srun_pty.h	\
+	srun.wrapper.c	\
+	task_state.c	\
+	task_state.h
+
+EXTRA_srun_SOURCES = $(am__append_3) $(am__append_5)
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-srun_SOURCES = srun.c srun.h opt.c opt.h srun_job.c srun_job.h \
-	srun_pty.c srun_pty.h debugger.h debugger.c fname.c fname.h \
-	allocate.c allocate.h multi_prog.c multi_prog.h task_state.c \
-	task_state.h srun.wrapper.c $(am__append_1)
+srun_SOURCES = $(SRUN_SOURCES) $(am__append_1) $(am__append_4)
 
 # pthread is needed for compiling with g++ (which is used for linking
 # no matter if on a BGQ or not because of mentioning a .cc file
@@ -437,6 +462,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debugger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/load_leveler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runjob_interface.Po@am__quote@

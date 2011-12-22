@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_CRAY_TRUE@am__append_1 = basil_interface.c
+@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@am__append_1 = basil_interface.c
 subdir = src/plugins/select/cray
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -107,20 +107,25 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@select_cray_la_DEPENDENCIES =  \
-@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@	libalps/libalps.la
-@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@select_cray_la_DEPENDENCIES = libemulate/libalps.la
-am__select_cray_la_SOURCES_DIST = select_cray.c basil_interface.h \
-	nodespec.c other_select.c other_select.h parser_common.h \
-	cray_config.c cray_config.h basil_interface.c
-@HAVE_CRAY_TRUE@am__objects_1 = select_cray_la-basil_interface.lo
-am_select_cray_la_OBJECTS = select_cray_la-select_cray.lo \
+@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@select_cray_la_DEPENDENCIES = libalps/libalps.la
+@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@select_cray_la_DEPENDENCIES = libemulate/libalps.la
+am__select_cray_la_SOURCES_DIST = basil_interface.h cray_config.c \
+	cray_config.h nodespec.c other_select.c other_select.h \
+	parser_common.h select_cray.c basil_interface.c
+am__objects_1 = select_cray_la-cray_config.lo \
 	select_cray_la-nodespec.lo select_cray_la-other_select.lo \
-	select_cray_la-cray_config.lo $(am__objects_1)
+	select_cray_la-select_cray.lo
+@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@am__objects_2 = select_cray_la-basil_interface.lo
+@USE_LOADLEVELER_FALSE@am_select_cray_la_OBJECTS = $(am__objects_1) \
+@USE_LOADLEVELER_FALSE@	$(am__objects_2)
+am__EXTRA_select_cray_la_SOURCES_DIST = basil_interface.h \
+	cray_config.c cray_config.h nodespec.c other_select.c \
+	other_select.h parser_common.h select_cray.c
 select_cray_la_OBJECTS = $(am_select_cray_la_OBJECTS)
 select_cray_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(select_cray_la_CFLAGS) \
 	$(CFLAGS) $(select_cray_la_LDFLAGS) $(LDFLAGS) -o $@
+@USE_LOADLEVELER_FALSE@am_select_cray_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -134,8 +139,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(select_cray_la_SOURCES)
-DIST_SOURCES = $(am__select_cray_la_SOURCES_DIST)
+SOURCES = $(select_cray_la_SOURCES) $(EXTRA_select_cray_la_SOURCES)
+DIST_SOURCES = $(am__select_cray_la_SOURCES_DIST) \
+	$(am__EXTRA_select_cray_la_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -226,11 +232,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -247,6 +250,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -380,18 +384,29 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I.
-pkglib_LTLIBRARIES = select_cray.la
+SELECT_CRAY_LA_SOURCES = \
+	basil_interface.h	\
+	cray_config.c		\
+	cray_config.h		\
+	nodespec.c		\
+	other_select.c 		\
+	other_select.h		\
+	parser_common.h		\
+	select_cray.c
+
 
 # Cray node selection plugin.
-select_cray_la_SOURCES = select_cray.c basil_interface.h nodespec.c \
-	other_select.c other_select.h parser_common.h cray_config.c \
-	cray_config.h $(am__append_1)
-select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_CRAY_TRUE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
-@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@SUBDIRS = libalps
-@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@SUBDIRS = libemulate
-@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@select_cray_la_LIBADD = libalps/libalps.la
-@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@select_cray_la_LIBADD = libemulate/libalps.la
+@USE_LOADLEVELER_FALSE@pkglib_LTLIBRARIES = select_cray.la
+@USE_LOADLEVELER_FALSE@select_cray_la_SOURCES =  \
+@USE_LOADLEVELER_FALSE@	$(SELECT_CRAY_LA_SOURCES) \
+@USE_LOADLEVELER_FALSE@	$(am__append_1)
+@USE_LOADLEVELER_FALSE@select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@select_cray_la_CFLAGS = $(MYSQL_CFLAGS)
+@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@SUBDIRS = libalps
+@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@SUBDIRS = libemulate
+@HAVE_CRAY_EMULATION_FALSE@@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@select_cray_la_LIBADD = libalps/libalps.la
+@HAVE_CRAY_EMULATION_TRUE@@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@select_cray_la_LIBADD = libemulate/libalps.la
+@USE_LOADLEVELER_TRUE@EXTRA_select_cray_la_SOURCES = $(SELECT_CRAY_LA_SOURCES)
 all: all-recursive
 
 .SUFFIXES:
@@ -458,7 +473,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 select_cray.la: $(select_cray_la_OBJECTS) $(select_cray_la_DEPENDENCIES) 
-	$(select_cray_la_LINK) -rpath $(pkglibdir) $(select_cray_la_OBJECTS) $(select_cray_la_LIBADD) $(LIBS)
+	$(select_cray_la_LINK) $(am_select_cray_la_rpath) $(select_cray_la_OBJECTS) $(select_cray_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -493,12 +508,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-select_cray_la-select_cray.lo: select_cray.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-select_cray.lo -MD -MP -MF $(DEPDIR)/select_cray_la-select_cray.Tpo -c -o select_cray_la-select_cray.lo `test -f 'select_cray.c' || echo '$(srcdir)/'`select_cray.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/select_cray_la-select_cray.Tpo $(DEPDIR)/select_cray_la-select_cray.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='select_cray.c' object='select_cray_la-select_cray.lo' libtool=yes @AMDEPBACKSLASH@
+select_cray_la-cray_config.lo: cray_config.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-cray_config.lo -MD -MP -MF $(DEPDIR)/select_cray_la-cray_config.Tpo -c -o select_cray_la-cray_config.lo `test -f 'cray_config.c' || echo '$(srcdir)/'`cray_config.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/select_cray_la-cray_config.Tpo $(DEPDIR)/select_cray_la-cray_config.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cray_config.c' object='select_cray_la-cray_config.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-select_cray.lo `test -f 'select_cray.c' || echo '$(srcdir)/'`select_cray.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-cray_config.lo `test -f 'cray_config.c' || echo '$(srcdir)/'`cray_config.c
 
 select_cray_la-nodespec.lo: nodespec.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-nodespec.lo -MD -MP -MF $(DEPDIR)/select_cray_la-nodespec.Tpo -c -o select_cray_la-nodespec.lo `test -f 'nodespec.c' || echo '$(srcdir)/'`nodespec.c
@@ -514,12 +529,12 @@ select_cray_la-other_select.lo: other_select.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-other_select.lo `test -f 'other_select.c' || echo '$(srcdir)/'`other_select.c
 
-select_cray_la-cray_config.lo: cray_config.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-cray_config.lo -MD -MP -MF $(DEPDIR)/select_cray_la-cray_config.Tpo -c -o select_cray_la-cray_config.lo `test -f 'cray_config.c' || echo '$(srcdir)/'`cray_config.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/select_cray_la-cray_config.Tpo $(DEPDIR)/select_cray_la-cray_config.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cray_config.c' object='select_cray_la-cray_config.lo' libtool=yes @AMDEPBACKSLASH@
+select_cray_la-select_cray.lo: select_cray.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-select_cray.lo -MD -MP -MF $(DEPDIR)/select_cray_la-select_cray.Tpo -c -o select_cray_la-select_cray.lo `test -f 'select_cray.c' || echo '$(srcdir)/'`select_cray.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/select_cray_la-select_cray.Tpo $(DEPDIR)/select_cray_la-select_cray.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='select_cray.c' object='select_cray_la-select_cray.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-cray_config.lo `test -f 'cray_config.c' || echo '$(srcdir)/'`cray_config.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -c -o select_cray_la-select_cray.lo `test -f 'select_cray.c' || echo '$(srcdir)/'`select_cray.c
 
 select_cray_la-basil_interface.lo: basil_interface.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(select_cray_la_CFLAGS) $(CFLAGS) -MT select_cray_la-basil_interface.lo -MD -MP -MF $(DEPDIR)/select_cray_la-basil_interface.Tpo -c -o select_cray_la-basil_interface.lo `test -f 'basil_interface.c' || echo '$(srcdir)/'`basil_interface.c
@@ -851,9 +866,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	uninstall-pkglibLTLIBRARIES
 
 
-@HAVE_CRAY_TRUE@force:
-@HAVE_CRAY_TRUE@$(select_cray_la_LIBADD) : force
-@HAVE_CRAY_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@force:
+@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@$(select_cray_la_LIBADD) : force
+@HAVE_CRAY_TRUE@@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = sreport$(EXEEXT)
+@USE_LOADLEVELER_FALSE@bin_PROGRAMS = sreport$(EXEEXT)
 subdir = src/sreport
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -86,13 +86,22 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sreport_OBJECTS = sreport.$(OBJEXT) cluster_reports.$(OBJEXT) \
-	assoc_reports.$(OBJEXT) job_reports.$(OBJEXT) \
-	user_reports.$(OBJEXT) resv_reports.$(OBJEXT) common.$(OBJEXT)
+am__sreport_SOURCES_DIST = assoc_reports.c assoc_reports.h \
+	cluster_reports.c cluster_reports.h common.c job_reports.c \
+	job_reports.h resv_reports.c resv_reports.h sreport.c \
+	sreport.h user_reports.c user_reports.h
+am__objects_1 = assoc_reports.$(OBJEXT) cluster_reports.$(OBJEXT) \
+	common.$(OBJEXT) job_reports.$(OBJEXT) resv_reports.$(OBJEXT) \
+	sreport.$(OBJEXT) user_reports.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_sreport_OBJECTS = $(am__objects_1)
+am__EXTRA_sreport_SOURCES_DIST = assoc_reports.c assoc_reports.h \
+	cluster_reports.c cluster_reports.h common.c job_reports.c \
+	job_reports.h resv_reports.c resv_reports.h sreport.c \
+	sreport.h user_reports.c user_reports.h
 sreport_OBJECTS = $(am_sreport_OBJECTS)
 am__DEPENDENCIES_1 =
-sreport_DEPENDENCIES = $(top_builddir)/src/db_api/libslurmdb.o \
-	$(am__DEPENDENCIES_1)
+@USE_LOADLEVELER_FALSE@sreport_DEPENDENCIES = $(top_builddir)/src/db_api/libslurmdb.o \
+@USE_LOADLEVELER_FALSE@	$(am__DEPENDENCIES_1)
 sreport_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sreport_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -109,8 +118,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(sreport_SOURCES)
-DIST_SOURCES = $(sreport_SOURCES)
+SOURCES = $(sreport_SOURCES) $(EXTRA_sreport_SOURCES)
+DIST_SOURCES = $(am__sreport_SOURCES_DIST) \
+	$(am__EXTRA_sreport_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -163,11 +173,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -184,6 +191,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -315,22 +323,30 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
-INCLUDES = -I$(top_srcdir)
-sreport_SOURCES = \
-	sreport.c sreport.h \
-	cluster_reports.c cluster_reports.h \
-	assoc_reports.c assoc_reports.h	\
-	job_reports.c job_reports.h	\
-	user_reports.c user_reports.h	\
-	resv_reports.c resv_reports.h	\
-	common.c
+SREPORT_SOURCES = \
+	assoc_reports.c		\
+	assoc_reports.h		\
+	cluster_reports.c	\
+	cluster_reports.h	\
+	common.c		\
+	job_reports.c		\
+	job_reports.h		\
+	resv_reports.c		\
+	resv_reports.h		\
+	sreport.c		\
+	sreport.h		\
+	user_reports.c		\
+	user_reports.h
 
-sreport_LDADD = \
-	$(top_builddir)/src/db_api/libslurmdb.o -ldl \
-	$(READLINE_LIBS)
+@USE_LOADLEVELER_FALSE@CLEANFILES = core.*
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir)
+@USE_LOADLEVELER_FALSE@sreport_SOURCES = $(SREPORT_SOURCES)
+@USE_LOADLEVELER_FALSE@sreport_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/db_api/libslurmdb.o -ldl \
+@USE_LOADLEVELER_FALSE@	$(READLINE_LIBS)
 
-sreport_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_FALSE@sreport_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_sreport_SOURCES = $(SREPORT_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -655,9 +671,9 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-binPROGRAMS
 
 
-force:
-$(sreport_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(sreport_LDADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

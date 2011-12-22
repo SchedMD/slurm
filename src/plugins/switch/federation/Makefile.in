@@ -109,16 +109,17 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 switch_federation_la_LIBADD =
 am__switch_federation_la_SOURCES_DIST = federation.c federation.h \
 	federation_keys.h switch_federation.c
-@HAVE_FEDERATION_TRUE@am_switch_federation_la_OBJECTS = federation.lo \
-@HAVE_FEDERATION_TRUE@	switch_federation.lo
+am__objects_1 = federation.lo switch_federation.lo
+@BUILD_FEDERATION_TRUE@am_switch_federation_la_OBJECTS =  \
+@BUILD_FEDERATION_TRUE@	$(am__objects_1)
 am__EXTRA_switch_federation_la_SOURCES_DIST = federation.c \
 	federation.h federation_keys.h switch_federation.c
 switch_federation_la_OBJECTS = $(am_switch_federation_la_OBJECTS)
 switch_federation_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(switch_federation_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_FEDERATION_TRUE@am_switch_federation_la_rpath = -rpath \
-@HAVE_FEDERATION_TRUE@	$(pkglibdir)
+@BUILD_FEDERATION_TRUE@am_switch_federation_la_rpath = -rpath \
+@BUILD_FEDERATION_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -188,11 +189,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -209,6 +207,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -340,26 +339,20 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-@HAVE_FEDERATION_FALSE@federation_lib = 
-@HAVE_FEDERATION_TRUE@federation_lib = switch_federation.la
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = $(federation_lib)
+SWITCH_FEDERATION_LA_SOURCES = \
+	federation.c federation.h	\
+	federation_keys.h		\
+	switch_federation.c
 
-# Federation switch plugin.
-@HAVE_FEDERATION_TRUE@switch_federation_la_SOURCES = \
-@HAVE_FEDERATION_TRUE@	federation.c federation.h \
-@HAVE_FEDERATION_TRUE@	federation_keys.h \
-@HAVE_FEDERATION_TRUE@	switch_federation.c
+@BUILD_FEDERATION_FALSE@pkglib_LTLIBRARIES = 
+@BUILD_FEDERATION_TRUE@pkglib_LTLIBRARIES = switch_federation.la
+@BUILD_FEDERATION_TRUE@switch_federation_la_SOURCES = $(SWITCH_FEDERATION_LA_SOURCES)
+@BUILD_FEDERATION_TRUE@switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+@BUILD_FEDERATION_TRUE@	 $(FEDERATION_LDFLAGS)
 
-@HAVE_FEDERATION_TRUE@switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
-@HAVE_FEDERATION_TRUE@	 $(FEDERATION_LDFLAGS)
-
-@HAVE_FEDERATION_FALSE@EXTRA_switch_federation_la_SOURCES = \
-@HAVE_FEDERATION_FALSE@	federation.c federation.h \
-@HAVE_FEDERATION_FALSE@	federation_keys.h \
-@HAVE_FEDERATION_FALSE@	switch_federation.c
-
+@BUILD_FEDERATION_FALSE@EXTRA_switch_federation_la_SOURCES = $(SWITCH_FEDERATION_LA_SOURCES)
 all: all-am
 
 .SUFFIXES:

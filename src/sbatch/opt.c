@@ -2252,7 +2252,7 @@ static bool _opt_verify(void)
 		error("Can't set SLURM_DIST_LLLP env variable");
 	}
 
-	
+
 
 	/* bound threads/cores from ntasks_cores/sockets */
 	if (opt.ntasks_per_core > 0) {
@@ -2422,7 +2422,7 @@ static bool _opt_verify(void)
 		opt.network = "us,sn_all,bulk_xfer";
 	setenv("SLURM_NETWORK", opt.network, 1);
 #endif
-
+#ifndef USE_LOADLEVELER
 	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
 				  &opt.cpu_bind_type))
 		exit(error_exit);
@@ -2446,7 +2446,7 @@ static bool _opt_verify(void)
 			setenvf(NULL, "SBATCH_MEM_BIND", "%s", tmp);
 		}
 	}
-
+#endif
 	return verified;
 }
 

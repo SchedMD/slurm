@@ -38,7 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-sbin_PROGRAMS = slurmctld$(EXEEXT)
+@USE_LOADLEVELER_FALSE@sbin_PROGRAMS = slurmctld$(EXEEXT)
 subdir = src/slurmctld
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -87,20 +87,42 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
-	backup.$(OBJEXT) controller.$(OBJEXT) front_end.$(OBJEXT) \
-	gang.$(OBJEXT) groups.$(OBJEXT) job_mgr.$(OBJEXT) \
-	job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
-	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
-	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
-	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
-	preempt.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
-	reservation.$(OBJEXT) sched_plugin.$(OBJEXT) \
-	srun_comm.$(OBJEXT) state_save.$(OBJEXT) step_mgr.$(OBJEXT) \
-	trigger_mgr.$(OBJEXT)
+am__slurmctld_SOURCES_DIST = acct_policy.c acct_policy.h agent.c \
+	agent.h backup.c controller.c front_end.c front_end.h gang.c \
+	gang.h groups.c groups.h job_mgr.c job_scheduler.c \
+	job_scheduler.h job_submit.c job_submit.h licenses.c \
+	licenses.h locks.c locks.h node_mgr.c node_scheduler.c \
+	node_scheduler.h partition_mgr.c ping_nodes.c ping_nodes.h \
+	port_mgr.c port_mgr.h power_save.c preempt.c preempt.h \
+	proc_req.c proc_req.h read_config.c read_config.h \
+	reservation.c reservation.h sched_plugin.c sched_plugin.h \
+	slurmctld.h srun_comm.c srun_comm.h state_save.c state_save.h \
+	step_mgr.c trigger_mgr.c trigger_mgr.h
+am__objects_1 = acct_policy.$(OBJEXT) agent.$(OBJEXT) backup.$(OBJEXT) \
+	controller.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
+	groups.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
+	job_submit.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
+	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
+	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
+	port_mgr.$(OBJEXT) power_save.$(OBJEXT) preempt.$(OBJEXT) \
+	proc_req.$(OBJEXT) read_config.$(OBJEXT) reservation.$(OBJEXT) \
+	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
+	state_save.$(OBJEXT) step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_slurmctld_OBJECTS = $(am__objects_1)
+am__EXTRA_slurmctld_SOURCES_DIST = acct_policy.c acct_policy.h agent.c \
+	agent.h backup.c controller.c front_end.c front_end.h gang.c \
+	gang.h groups.c groups.h job_mgr.c job_scheduler.c \
+	job_scheduler.h job_submit.c job_submit.h licenses.c \
+	licenses.h locks.c locks.h node_mgr.c node_scheduler.c \
+	node_scheduler.h partition_mgr.c ping_nodes.c ping_nodes.h \
+	port_mgr.c port_mgr.h power_save.c preempt.c preempt.h \
+	proc_req.c proc_req.h read_config.c read_config.h \
+	reservation.c reservation.h sched_plugin.c sched_plugin.h \
+	slurmctld.h srun_comm.c srun_comm.h state_save.c state_save.h \
+	step_mgr.c trigger_mgr.c trigger_mgr.h
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
-slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
 slurmctld_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurmctld_LDFLAGS) $(LDFLAGS) -o $@
@@ -117,8 +139,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(slurmctld_SOURCES)
-DIST_SOURCES = $(slurmctld_SOURCES)
+SOURCES = $(slurmctld_SOURCES) $(EXTRA_slurmctld_SOURCES)
+DIST_SOURCES = $(am__slurmctld_SOURCES_DIST) \
+	$(am__EXTRA_slurmctld_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -171,11 +194,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -192,6 +212,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -325,11 +346,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-
-# noinst_LTLIBRARIES = libslurmctld.la
-# libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
-# libslurmctld_la_SOURCES =
-slurmctld_SOURCES = \
+SLURMCTLD_SOURCES = \
 	acct_policy.c	\
 	acct_policy.h	\
 	agent.c  	\
@@ -379,11 +396,17 @@ slurmctld_SOURCES = \
 	trigger_mgr.c	\
 	trigger_mgr.h
 
-slurmctld_LDADD = \
-	$(top_builddir)/src/common/libdaemonize.la  \
-	$(top_builddir)/src/api/libslurm.o -ldl
 
-slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+# noinst_LTLIBRARIES = libslurmctld.la
+# libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+# libslurmctld_la_SOURCES =
+@USE_LOADLEVELER_FALSE@slurmctld_SOURCES = $(SLURMCTLD_SOURCES)
+@USE_LOADLEVELER_FALSE@slurmctld_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/common/libdaemonize.la  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o -ldl
+
+@USE_LOADLEVELER_FALSE@slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_slurmctld_SOURCES = $(SLURMCTLD_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -729,9 +752,9 @@ uninstall-am: uninstall-sbinPROGRAMS
 	tags uninstall uninstall-am uninstall-sbinPROGRAMS
 
 
-force:
-$(slurmctld_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(slurmctld_LDADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -109,16 +109,16 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 am__jobcomp_pgsql_la_SOURCES_DIST = jobcomp_pgsql.c \
 	pgsql_jobcomp_process.c pgsql_jobcomp_process.h
-@WITH_PGSQL_TRUE@am_jobcomp_pgsql_la_OBJECTS =  \
-@WITH_PGSQL_TRUE@	jobcomp_pgsql_la-jobcomp_pgsql.lo \
-@WITH_PGSQL_TRUE@	jobcomp_pgsql_la-pgsql_jobcomp_process.lo
+am__objects_1 = jobcomp_pgsql_la-jobcomp_pgsql.lo \
+	jobcomp_pgsql_la-pgsql_jobcomp_process.lo
+@BUILD_PGSQL_TRUE@am_jobcomp_pgsql_la_OBJECTS = $(am__objects_1)
 am__EXTRA_jobcomp_pgsql_la_SOURCES_DIST = jobcomp_pgsql.c \
 	pgsql_jobcomp_process.c pgsql_jobcomp_process.h
 jobcomp_pgsql_la_OBJECTS = $(am_jobcomp_pgsql_la_OBJECTS)
 jobcomp_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(jobcomp_pgsql_la_CFLAGS) \
 	$(CFLAGS) $(jobcomp_pgsql_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_PGSQL_TRUE@am_jobcomp_pgsql_la_rpath = -rpath $(pkglibdir)
+@BUILD_PGSQL_TRUE@am_jobcomp_pgsql_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -188,11 +188,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -209,6 +206,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -342,21 +340,22 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-@WITH_PGSQL_TRUE@pkglib_LTLIBRARIES = jobcomp_pgsql.la
+JOBCOMP_PGSQL_LA_SOURCES = \
+	jobcomp_pgsql.c		\
+	pgsql_jobcomp_process.c	\
+	pgsql_jobcomp_process.h
+
+@BUILD_PGSQL_TRUE@pkglib_LTLIBRARIES = jobcomp_pgsql.la
 
 # Pgsql storage plugin.
-@WITH_PGSQL_TRUE@jobcomp_pgsql_la_SOURCES = jobcomp_pgsql.c \
-@WITH_PGSQL_TRUE@			pgsql_jobcomp_process.c pgsql_jobcomp_process.h
+@BUILD_PGSQL_TRUE@jobcomp_pgsql_la_SOURCES = $(JOBCOMP_PGSQL_LA_SOURCES)
+@BUILD_PGSQL_TRUE@jobcomp_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BUILD_PGSQL_TRUE@jobcomp_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
+@BUILD_PGSQL_TRUE@jobcomp_pgsql_la_LIBADD = $(top_builddir)/src/database/libslurm_pgsql.la \
+@BUILD_PGSQL_TRUE@	$(PGSQL_LIBS)
 
-@WITH_PGSQL_TRUE@jobcomp_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@WITH_PGSQL_TRUE@jobcomp_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-@WITH_PGSQL_TRUE@jobcomp_pgsql_la_LIBADD = $(top_builddir)/src/database/libslurm_pgsql.la \
-@WITH_PGSQL_TRUE@	$(PGSQL_LIBS)
-
-@WITH_PGSQL_TRUE@jobcomp_pgsql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_pgsql.la
-@WITH_PGSQL_FALSE@EXTRA_jobcomp_pgsql_la_SOURCES = jobcomp_pgsql.c \
-@WITH_PGSQL_FALSE@		pgsql_jobcomp_process.c pgsql_jobcomp_process.h
-
+@BUILD_PGSQL_TRUE@jobcomp_pgsql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_pgsql.la
+@BUILD_PGSQL_FALSE@EXTRA_jobcomp_pgsql_la_SOURCES = $(JOBCOMP_PGSQL_LA_SOURCES)
 all: all-am
 
 .SUFFIXES:

@@ -3,13 +3,17 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+STRIGGER_SOURCES = strigger.c strigger.h opts.c
+
+if ! USE_LOADLEVELER
+
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+
 bin_PROGRAMS = strigger
 
 strigger_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 
-noinst_HEADERS = strigger.h
-strigger_SOURCES = strigger.c opts.c
+strigger_SOURCES = $(STRIGGER_SOURCES)
 
 force:
 $(strigger_LDADD) : force
@@ -17,3 +21,6 @@ $(strigger_LDADD) : force
 
 strigger_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
+else
+EXTRA_strigger_SOURCES = $(STRIGGER_SOURCES)
+endif

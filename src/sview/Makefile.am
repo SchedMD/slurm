@@ -1,9 +1,24 @@
-# $Id: Makefile.am 6669 2005-11-21 22:41:16Z da $
 #
 # Makefile for sview
 
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+
+SVIEW_SOURCES =			\
+	admin_info.c		\
+	block_info.c		\
+	common.c		\
+	config_info.c		\
+	defaults.c		\
+	front_end_info.c	\
+	grid.c			\
+	job_info.c		\
+	node_info.c		\
+	part_info.c		\
+	popups.c		\
+	resv_info.c		\
+	submit_info.c		\
+	sview.c sview.h
 
 if BUILD_SVIEW
 
@@ -11,11 +26,7 @@ bin_PROGRAMS = sview
 
 sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o -ldl
 
-noinst_HEADERS = sview.h
-sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
-	block_info.c front_end_info.c node_info.c resv_info.c \
-	submit_info.c admin_info.c common.c \
-	config_info.c defaults.c
+sview_SOURCES = $(SVIEW_SOURCES)
 
 force:
 $(sview_LDADD) : force
@@ -25,9 +36,5 @@ sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS)
 sview_CFLAGS = $(GTK_CFLAGS)
 
 else
-
-EXTRA_sview_SOURCES = sview.h sview.c popups.c grid.c part_info.c job_info.c \
-	block_info.c front_end_info.c node_info.c resv_info.c \
-	submit_info.c admin_info.c common.c config_info.c defaults.c
-
+EXTRA_sview_SOURCES = $(SVIEW_SOURCES)
 endif

@@ -89,14 +89,12 @@ PROGRAMS = $(bin_PROGRAMS)
 am__scontrol_SOURCES_DIST = create_res.c info_block.c info_job.c \
 	info_node.c info_part.c info_res.c scontrol.c scontrol.h \
 	update_job.c update_node.c update_part.c update_step.c
-@USE_LOADLEVELER_FALSE@am_scontrol_OBJECTS = create_res.$(OBJEXT) \
-@USE_LOADLEVELER_FALSE@	info_block.$(OBJEXT) info_job.$(OBJEXT) \
-@USE_LOADLEVELER_FALSE@	info_node.$(OBJEXT) info_part.$(OBJEXT) \
-@USE_LOADLEVELER_FALSE@	info_res.$(OBJEXT) scontrol.$(OBJEXT) \
-@USE_LOADLEVELER_FALSE@	update_job.$(OBJEXT) \
-@USE_LOADLEVELER_FALSE@	update_node.$(OBJEXT) \
-@USE_LOADLEVELER_FALSE@	update_part.$(OBJEXT) \
-@USE_LOADLEVELER_FALSE@	update_step.$(OBJEXT)
+am__objects_1 = create_res.$(OBJEXT) info_block.$(OBJEXT) \
+	info_job.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
+	info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
+	update_node.$(OBJEXT) update_part.$(OBJEXT) \
+	update_step.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_scontrol_OBJECTS = $(am__objects_1)
 am__EXTRA_scontrol_SOURCES_DIST = create_res.c info_block.c info_job.c \
 	info_node.c info_part.c info_res.c scontrol.c scontrol.h \
 	update_job.c update_node.c update_part.c update_step.c
@@ -177,11 +175,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -198,6 +193,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -330,40 +326,28 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-@USE_LOADLEVELER_FALSE@scontrol_SOURCES = \
-@USE_LOADLEVELER_FALSE@	create_res.c	\
-@USE_LOADLEVELER_FALSE@	info_block.c	\
-@USE_LOADLEVELER_FALSE@	info_job.c	\
-@USE_LOADLEVELER_FALSE@	info_node.c	\
-@USE_LOADLEVELER_FALSE@	info_part.c	\
-@USE_LOADLEVELER_FALSE@	info_res.c	\
-@USE_LOADLEVELER_FALSE@	scontrol.c	\
-@USE_LOADLEVELER_FALSE@	scontrol.h	\
-@USE_LOADLEVELER_FALSE@	update_job.c	\
-@USE_LOADLEVELER_FALSE@	update_node.c	\
-@USE_LOADLEVELER_FALSE@	update_part.c	\
-@USE_LOADLEVELER_FALSE@	update_step.c
+SCONTROL_SOURCES = \
+	create_res.c	\
+	info_block.c	\
+	info_job.c	\
+	info_node.c	\
+	info_part.c	\
+	info_res.c	\
+	scontrol.c	\
+	scontrol.h	\
+	update_job.c	\
+	update_node.c	\
+	update_part.c	\
+	update_step.c
 
+@USE_LOADLEVELER_FALSE@scontrol_SOURCES = $(SCONTROL_SOURCES)
 @USE_LOADLEVELER_FALSE@convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
 @USE_LOADLEVELER_FALSE@scontrol_LDADD = \
 @USE_LOADLEVELER_FALSE@	$(convenience_libs) \
 @USE_LOADLEVELER_FALSE@	$(READLINE_LIBS)
 
 @USE_LOADLEVELER_FALSE@scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-@USE_LOADLEVELER_TRUE@EXTRA_scontrol_SOURCES = \
-@USE_LOADLEVELER_TRUE@	create_res.c	\
-@USE_LOADLEVELER_TRUE@	info_block.c	\
-@USE_LOADLEVELER_TRUE@	info_job.c	\
-@USE_LOADLEVELER_TRUE@	info_node.c	\
-@USE_LOADLEVELER_TRUE@	info_part.c	\
-@USE_LOADLEVELER_TRUE@	info_res.c	\
-@USE_LOADLEVELER_TRUE@	scontrol.c	\
-@USE_LOADLEVELER_TRUE@	scontrol.h	\
-@USE_LOADLEVELER_TRUE@	update_job.c	\
-@USE_LOADLEVELER_TRUE@	update_node.c	\
-@USE_LOADLEVELER_TRUE@	update_part.c	\
-@USE_LOADLEVELER_TRUE@	update_step.c
-
+@USE_LOADLEVELER_TRUE@EXTRA_scontrol_SOURCES = $(SCONTROL_SOURCES)
 all: all-am
 
 .SUFFIXES:

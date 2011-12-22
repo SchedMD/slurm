@@ -2051,7 +2051,9 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->node_addr);
 		xfree(node->os);
 		xfree(node->reason);
+#ifndef USE_LOADLEVELER
 		select_g_select_nodeinfo_free(node->select_nodeinfo);
+#endif
 		node->select_nodeinfo = NULL;
 	}
 }

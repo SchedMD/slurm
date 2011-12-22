@@ -54,30 +54,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
-{
-	int diff = 0;
-
-	if(!rec_a->node_name || !rec_b->node_name)
-		return 0;
-
-	diff = strcmp(rec_a->node_name, rec_b->node_name);
-	if (diff > 0)
-		return 1;
-	else if (diff < 0)
-		return -1;
-
-	return 0;
-}
-
-static int _sort_stats_by_name(job_step_stat_t *rec_a, job_step_stat_t *rec_b)
-{
-	if(!rec_a->step_pids || !rec_b->step_pids)
-		return 0;
-
-	return _sort_pids_by_name(rec_a->step_pids, rec_b->step_pids);
-}
-
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm
  *	job steps based upon message as loaded using slurm_get_job_steps
@@ -224,7 +200,8 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
-int
+#ifndef USE_LOADLEVELER
+extern int
 slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 		     job_step_info_response_msg_t **resp, uint16_t show_flags)
 {
@@ -264,6 +241,7 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
+#endif
 
 extern slurm_step_layout_t *
 slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
@@ -296,6 +274,31 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
 		errno = SLURM_UNEXPECTED_MSG_ERROR;
 		return NULL;
 	}
+}
+
+#ifndef USE_LOADLEVELER
+static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
+{
+	int diff = 0;
+
+	if (!rec_a->node_name || !rec_b->node_name)
+		return 0;
+
+	diff = strcmp(rec_a->node_name, rec_b->node_name);
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+
+	return 0;
+}
+
+static int _sort_stats_by_name(job_step_stat_t *rec_a, job_step_stat_t *rec_b)
+{
+	if (!rec_a->step_pids || !rec_b->step_pids)
+		return 0;
+
+	return _sort_pids_by_name(rec_a->step_pids, rec_b->step_pids);
 }
 
 /*
@@ -349,9 +352,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	slurm_msg_t_init(&req_msg);
 
 	memset(&req, 0, sizeof(job_step_id_msg_t));
-#ifndef USE_LOADLEVELER
 	resp_out->job_id = req.job_id = job_id;
-#endif
 	resp_out->step_id = req.step_id = step_id;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
@@ -514,6 +515,7 @@ cleanup:
 
         return rc;
 }
+#endif
 
 extern void slurm_job_step_layout_free(slurm_step_layout_t *layout)
 {

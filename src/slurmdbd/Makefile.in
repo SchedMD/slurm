@@ -38,7 +38,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-sbin_PROGRAMS = slurmdbd$(EXEEXT)
+@USE_LOADLEVELER_FALSE@sbin_PROGRAMS = slurmdbd$(EXEEXT)
 subdir = src/slurmdbd
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -87,12 +87,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am_slurmdbd_OBJECTS = agent.$(OBJEXT) backup.$(OBJEXT) \
-	proc_req.$(OBJEXT) read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) \
-	slurmdbd.$(OBJEXT)
+am__slurmdbd_SOURCES_DIST = agent.c agent.h backup.c backup.h \
+	proc_req.c proc_req.h read_config.c read_config.h rpc_mgr.c \
+	rpc_mgr.h slurmdbd.c
+am__objects_1 = agent.$(OBJEXT) backup.$(OBJEXT) proc_req.$(OBJEXT) \
+	read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) slurmdbd.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_slurmdbd_OBJECTS = $(am__objects_1)
+am__EXTRA_slurmdbd_SOURCES_DIST = agent.c agent.h backup.c backup.h \
+	proc_req.c proc_req.h read_config.c read_config.h rpc_mgr.c \
+	rpc_mgr.h slurmdbd.c
 slurmdbd_OBJECTS = $(am_slurmdbd_OBJECTS)
-slurmdbd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@slurmdbd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
 slurmdbd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(slurmdbd_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -109,8 +115,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(slurmdbd_SOURCES)
-DIST_SOURCES = $(slurmdbd_SOURCES)
+SOURCES = $(slurmdbd_SOURCES) $(EXTRA_slurmdbd_SOURCES)
+DIST_SOURCES = $(am__slurmdbd_SOURCES_DIST) \
+	$(am__EXTRA_slurmdbd_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -163,11 +170,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -184,6 +188,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -315,13 +320,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
-INCLUDES = -I$(top_srcdir)
-slurmdbd_LDADD = \
-	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o -ldl
-
-slurmdbd_SOURCES = \
+SLURMDBD_SOURCES = \
 	agent.c			\
 	agent.h			\
 	backup.c		\
@@ -332,10 +331,17 @@ slurmdbd_SOURCES = \
 	read_config.h		\
 	rpc_mgr.c		\
 	rpc_mgr.h		\
-	slurmdbd.c  		\
-	slurmdbd.h
+	slurmdbd.c
 
-slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_FALSE@CLEANFILES = core.*
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir)
+@USE_LOADLEVELER_FALSE@slurmdbd_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/common/libdaemonize.la \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o -ldl
+
+@USE_LOADLEVELER_FALSE@slurmdbd_SOURCES = $(SLURMDBD_SOURCES)
+@USE_LOADLEVELER_FALSE@slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_slurmdbd_SOURCES = $(SLURMDBD_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -660,9 +666,9 @@ uninstall-am: uninstall-sbinPROGRAMS
 	tags uninstall uninstall-am uninstall-sbinPROGRAMS
 
 
-force:
-$(slurmdbd_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(slurmdbd_LDADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

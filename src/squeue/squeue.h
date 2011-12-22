@@ -71,7 +71,11 @@
 #include "src/squeue/print.h"
 
 struct job_step {
+#ifdef USE_LOADLEVELER
+	char * job_id;
+#else
 	uint32_t job_id;
+#endif
 	uint32_t step_id;
 };
 typedef struct job_step squeue_job_step_t;

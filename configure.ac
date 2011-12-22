@@ -118,7 +118,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
-		 llapi.h nrt.h \
+		 nrt.h \
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -208,8 +208,6 @@ X_AC_XCPU
 X_AC_SLURM_SEMAPHORE
 
 X_AC_NCURSES
-AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
-AC_SUBST(HAVE_SOME_CURSES)
 
 #
 #  Tests for GTK+
@@ -225,7 +223,6 @@ if test -d "/opt/gnome/lib64/pkgconfig"; then
 fi
 
 AM_PATH_GTK_2_0([2.7.1], [ac_have_gtk="yes"], [ac_have_gtk="no"], [gthread])
-AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
 
 if test ${gtk_config_minor_version=0} -gt 10 ; then
        AC_DEFINE([GTK2_USE_RADIO_SET], 1, [Define to 1 if using gtk+-2.10.0 or higher])
@@ -280,14 +277,10 @@ AC_SUBST(SLURM_PREFIX)
 dnl check for whether to include Elan support
 dnl
 X_AC_ELAN
-AM_CONDITIONAL(HAVE_ELAN, test "x$ac_have_elan" = "xyes")
-AC_SUBST(HAVE_ELAN)
 
 dnl check for whether to include Federation support
 dnl
 X_AC_FEDERATION
-AM_CONDITIONAL(HAVE_FEDERATION, test "x$ac_have_federation" = "xyes")
-AC_SUBST(HAVE_FEDERATION)
 
 dnl check for SGI job container support
 dnl
@@ -351,7 +344,7 @@ CFLAGS="$SSL_CPPFLAGS $CFLAGS"
 AC_CHECK_LIB(auth, auth_init_credentials, [have_authd=yes], [have_authd=no])
 AC_SUBST(AUTHD_LIBS)
 AC_SUBST(AUTHD_CFLAGS)
-AM_CONDITIONAL(WITH_AUTHD, test "x$have_authd" = "xyes")
+AM_CONDITIONAL(HAVE_AUTHD, test "x$have_authd" = "xyes")
 LIBS="$savedLIBS"
 CFLAGS="$savedCFLAGS"
 
@@ -378,16 +371,83 @@ X_AC_SRUN2APRUN
 dnl
 dnl Set some configuration based upon multiple configuration parameters
 dnl
+ac_build_elan="no"
+if test "x$ac_have_elan" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_elan="yes"
+fi
+AM_CONDITIONAL(BUILD_ELAN, test "x$ac_build_elan" = "xyes")
+
+ac_build_federation="no"
+if test "x$ac_have_federation" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_federation="yes"
+fi
+AM_CONDITIONAL(BUILD_FEDERATION, test "x$ac_build_federation" = "xyes")
+
 ac_build_smap="no"
 if test "x$ac_have_some_curses" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
    ac_build_smap="yes"
 fi
 AM_CONDITIONAL(BUILD_SMAP, test "x$ac_build_smap" = "xyes")
+
 ac_build_sview="no"
 if test "x$ac_have_gtk" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
    ac_build_sview="yes"
 fi
 AM_CONDITIONAL(BUILD_SVIEW, test "x$ac_build_sview" = "xyes")
+
+ac_build_mysql="no"
+if test "x$ac_have_mysql" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_mysql="yes"
+fi
+AM_CONDITIONAL(BUILD_MYSQL, test "x$ac_build_mysql" = "xyes")
+
+ac_build_pgsql="no"
+if test "x$ac_have_pgsql" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_pgsql="yes"
+fi
+AM_CONDITIONAL(BUILD_PGSQL, test "x$ac_build_pgsql" = "xyes")
+
+ac_build_sched_setaffinity="no"
+if test "x$have_sched_setaffinity" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_sched_setaffinity="yes"
+fi
+AM_CONDITIONAL(BUILD_SCHED_SETAFFINITY, test "x$ac_build_sched_setaffinity" = "xyes")
+
+ac_build_aix_ckpt="no"
+if test "x$ac_have_aix" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_aix_ckpt="yes"
+fi
+AM_CONDITIONAL(BUILD_AIX_CKPT, test "x$ac_build_aix_ckpt" = "xyes")
+
+ac_build_blcr="no"
+if test -n "$x_ac_cv_blcr_dir" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_blcr="yes"
+fi
+AM_CONDITIONAL(BUILD_BLCR, test "x$ac_build_blcr" = "xyes")
+
+ac_build_openssl="no"
+if test ! -z "$ac_have_openssl" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_openssl="yes"
+fi
+AM_CONDITIONAL(BUILD_OPENSSL, test "x$ac_build_openssl" = "xyes")
+
+ac_build_munge="no"
+if test -n "$x_ac_cv_munge_dir" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_munge="yes"
+fi
+AM_CONDITIONAL(BUILD_MUNGE, test "x$ac_build_munge" = "xyes")
+
+ac_build_authd="no"
+if test "x$have_authd" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_authd="yes"
+fi
+AM_CONDITIONAL(BUILD_AUTHD, test "x$ac_build_authd" = "xyes")
+
+ac_build_lua="no"
+if test "x$x_ac_have_lua" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+   ac_build_lua="yes"
+fi
+AM_CONDITIONAL(BUILD_LUA, test "x$ac_build_lua" = "xyes")
 
 dnl All slurm Makefiles:
 
@@ -515,8 +575,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/elan/Makefile
-		 src/plugins/switch/none/Makefile
 		 src/plugins/switch/federation/Makefile
+		 src/plugins/switch/none/Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/mpich1_p4/Makefile
 		 src/plugins/mpi/mpich1_shmem/Makefile

@@ -51,7 +51,7 @@ char *_elapsed_time(long secs, long usecs)
 	long    subsec = 0;
 	char *str = NULL;
 
-	if(secs < 0 || secs == NO_VAL)
+	if (secs < 0 || secs == NO_VAL)
 		return NULL;
 
 
@@ -59,7 +59,7 @@ char *_elapsed_time(long secs, long usecs)
 		secs++;
 		usecs -= 1E6;
 	}
-	if(usecs > 0) {
+	if (usecs > 0) {
 		/* give me 3 significant digits to tack onto the sec */
 		subsec = (usecs/1000);
 	}
@@ -128,14 +128,25 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_JOBID:
-			if (step->stepid == NO_VAL)
+#ifdef USE_LOADLEVELER
+			if (step->stepid == NO_VAL) {
+				snprintf(outbuf, sizeof(outbuf), "%s.batch",
+					 step->job_ptr->jobid);
+			} else {
+				snprintf(outbuf, sizeof(outbuf), "%s.%u",
+					 step->job_ptr->jobid,
+					 step->stepid);
+			}
+#else
+			if (step->stepid == NO_VAL) {
 				snprintf(outbuf, sizeof(outbuf), "%u.batch",
 					 step->job_ptr->jobid);
-			else
+			} else {
 				snprintf(outbuf, sizeof(outbuf), "%u.%u",
 					 step->job_ptr->jobid,
 					 step->stepid);
-
+			}
+#endif
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));

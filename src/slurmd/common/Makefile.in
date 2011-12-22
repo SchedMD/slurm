@@ -85,9 +85,20 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libslurmd_common_la_LIBADD =
-am_libslurmd_common_la_OBJECTS = proctrack.lo setproctitle.lo \
-	slurmstepd_init.lo run_script.lo task_plugin.lo set_oomadj.lo
+am__libslurmd_common_la_SOURCES_DIST = proctrack.c proctrack.h \
+	reverse_tree.h run_script.c run_script.h set_oomadj.c \
+	set_oomadj.h setproctitle.c setproctitle.h slurmstepd_init.c \
+	slurmstepd_init.h task_plugin.c task_plugin.h
+am__objects_1 = proctrack.lo run_script.lo set_oomadj.lo \
+	setproctitle.lo slurmstepd_init.lo task_plugin.lo
+@USE_LOADLEVELER_FALSE@am_libslurmd_common_la_OBJECTS =  \
+@USE_LOADLEVELER_FALSE@	$(am__objects_1)
+am__EXTRA_libslurmd_common_la_SOURCES_DIST = proctrack.c proctrack.h \
+	reverse_tree.h run_script.c run_script.h set_oomadj.c \
+	set_oomadj.h setproctitle.c setproctitle.h slurmstepd_init.c \
+	slurmstepd_init.h task_plugin.c task_plugin.h
 libslurmd_common_la_OBJECTS = $(am_libslurmd_common_la_OBJECTS)
+@USE_LOADLEVELER_FALSE@am_libslurmd_common_la_rpath =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -101,8 +112,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libslurmd_common_la_SOURCES)
-DIST_SOURCES = $(libslurmd_common_la_SOURCES)
+SOURCES = $(libslurmd_common_la_SOURCES) \
+	$(EXTRA_libslurmd_common_la_SOURCES)
+DIST_SOURCES = $(am__libslurmd_common_la_SOURCES_DIST) \
+	$(am__EXTRA_libslurmd_common_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -155,11 +168,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -176,6 +186,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -309,18 +320,21 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
+LIBSLURMD_COMMON_LA_SOURCES = \
+	proctrack.c proctrack.h		\
+	reverse_tree.h			\
+	run_script.c run_script.h	\
+	set_oomadj.c set_oomadj.h	\
+	setproctitle.c setproctitle.h	\
+	slurmstepd_init.c		\
+	slurmstepd_init.h		\
+	task_plugin.c task_plugin.h
+
 
 # making a .la
-noinst_LTLIBRARIES = libslurmd_common.la
-libslurmd_common_la_SOURCES = \
-	proctrack.c proctrack.h \
-	setproctitle.c setproctitle.h \
-	slurmstepd_init.c slurmstepd_init.h \
-	run_script.c run_script.h \
-	task_plugin.c task_plugin.h \
-	set_oomadj.c set_oomadj.h \
-	reverse_tree.h
-
+@USE_LOADLEVELER_FALSE@noinst_LTLIBRARIES = libslurmd_common.la
+@USE_LOADLEVELER_FALSE@libslurmd_common_la_SOURCES = $(LIBSLURMD_COMMON_LA_SOURCES)
+@USE_LOADLEVELER_TRUE@EXTRA_libslurmd_common_la_SOURCES = $(LIBSLURMD_COMMON_LA_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -365,7 +379,7 @@ clean-noinstLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libslurmd_common.la: $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_DEPENDENCIES) 
-	$(LINK)  $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_LIBADD) $(LIBS)
+	$(LINK) $(am_libslurmd_common_la_rpath) $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

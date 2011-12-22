@@ -55,6 +55,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 
+#ifndef USE_LOADLEVELER
 /*
  * slurm_submit_batch_job - issue RPC to submit a job for later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg
@@ -119,3 +120,4 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
+#endif

@@ -512,6 +512,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
   echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so  &&
   echo %{_libdir}/slurm/switch_federation.so           >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so         &&
+  echo %{_libdir}/slurm/switch_nrt.so                  >> $LIST
 
 LIST=./slurmdbd.files
 touch $LIST

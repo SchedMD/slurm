@@ -3,24 +3,27 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-sbin_PROGRAMS = slurmd
-
-CPPFLAGS =  -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
+CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
 INCLUDES = -I$(top_srcdir)
+
+SLURMD_SOURCES =			\
+	get_mach_stat.c get_mach_stat.h	\
+	read_proc.c 	        	\
+	req.c req.h			\
+	reverse_tree_math.c		\
+	reverse_tree_math.h		\
+	slurmd.c slurmd.h		\
+	xcpu.c xcpu.h
+
+if ! USE_LOADLEVELER
+
+sbin_PROGRAMS = slurmd
 
 slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o -ldl	   \
 	$(PLPA_LIBS) \
 	../common/libslurmd_common.la
-
-SLURMD_SOURCES = \
-	slurmd.c slurmd.h \
-	req.c req.h \
-	get_mach_stat.c get_mach_stat.h	\
-	read_proc.c 	        	\
-	reverse_tree_math.c reverse_tree_math.h \
-	xcpu.c xcpu.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 
@@ -35,3 +38,7 @@ endif
 force:
 $(slurmd_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+else
+EXTRA_slurmd_SOURCES = $(SLURMD_SOURCES)
+endif

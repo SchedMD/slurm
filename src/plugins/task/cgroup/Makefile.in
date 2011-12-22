@@ -107,14 +107,24 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 task_cgroup_la_LIBADD =
-am_task_cgroup_la_OBJECTS = task_cgroup_la-task_cgroup.lo \
+am__task_cgroup_la_SOURCES_DIST = task_cgroup.h task_cgroup.c \
+	task_cgroup_cpuset.h task_cgroup_cpuset.c task_cgroup_memory.h \
+	task_cgroup_memory.c task_cgroup_devices.h \
+	task_cgroup_devices.c
+am__objects_1 = task_cgroup_la-task_cgroup.lo \
 	task_cgroup_la-task_cgroup_cpuset.lo \
 	task_cgroup_la-task_cgroup_memory.lo \
 	task_cgroup_la-task_cgroup_devices.lo
+@USE_LOADLEVELER_FALSE@am_task_cgroup_la_OBJECTS = $(am__objects_1)
+am__EXTRA_task_cgroup_la_SOURCES_DIST = task_cgroup.h task_cgroup.c \
+	task_cgroup_cpuset.h task_cgroup_cpuset.c task_cgroup_memory.h \
+	task_cgroup_memory.c task_cgroup_devices.h \
+	task_cgroup_devices.c
 task_cgroup_la_OBJECTS = $(am_task_cgroup_la_OBJECTS)
 task_cgroup_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(task_cgroup_la_LDFLAGS) $(LDFLAGS) -o $@
+@USE_LOADLEVELER_FALSE@am_task_cgroup_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -128,8 +138,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(task_cgroup_la_SOURCES)
-DIST_SOURCES = $(task_cgroup_la_SOURCES)
+SOURCES = $(task_cgroup_la_SOURCES) $(EXTRA_task_cgroup_la_SOURCES)
+DIST_SOURCES = $(am__task_cgroup_la_SOURCES_DIST) \
+	$(am__EXTRA_task_cgroup_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -182,11 +193,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -203,6 +211,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -334,18 +343,22 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = task_cgroup.la
+TASK_CGROUP_LA_SOURCES = \
+	task_cgroup.h task_cgroup.c		\
+	task_cgroup_cpuset.h task_cgroup_cpuset.c \
+	task_cgroup_memory.h task_cgroup_memory.c \
+	task_cgroup_devices.h task_cgroup_devices.c
+
+@USE_LOADLEVELER_FALSE@PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+@USE_LOADLEVELER_FALSE@pkglib_LTLIBRARIES = task_cgroup.la
+@USE_LOADLEVELER_TRUE@pkglib_LTLIBRARIES = 
 
 # cgroup task plugin.
-task_cgroup_la_SOURCES = task_cgroup.h task_cgroup.c \
-				task_cgroup_cpuset.h task_cgroup_cpuset.c \
-				task_cgroup_memory.h task_cgroup_memory.c \
-				task_cgroup_devices.h task_cgroup_devices.c
-
-task_cgroup_la_CPPFLAGS = $(HWLOC_CPPFLAGS)
-task_cgroup_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+@USE_LOADLEVELER_FALSE@task_cgroup_la_SOURCES = $(TASK_CGROUP_LA_SOURCES)
+@USE_LOADLEVELER_FALSE@task_cgroup_la_CPPFLAGS = $(HWLOC_CPPFLAGS)
+@USE_LOADLEVELER_FALSE@task_cgroup_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+@USE_LOADLEVELER_TRUE@EXTRA_task_cgroup_la_SOURCES = $(TASK_CGROUP_LA_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -412,7 +425,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 task_cgroup.la: $(task_cgroup_la_OBJECTS) $(task_cgroup_la_DEPENDENCIES) 
-	$(task_cgroup_la_LINK) -rpath $(pkglibdir) $(task_cgroup_la_OBJECTS) $(task_cgroup_la_LIBADD) $(LIBS)
+	$(task_cgroup_la_LINK) $(am_task_cgroup_la_rpath) $(task_cgroup_la_OBJECTS) $(task_cgroup_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

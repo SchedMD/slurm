@@ -55,7 +55,7 @@ void _help_fields_msg(void)
 	for (i = 0; fields[i].name; i++) {
 		if (i & 3)
 			printf("  ");
-		else if(i)
+		else if (i)
 			printf("\n");
 		printf("%-13s", fields[i].name);
 	}
@@ -129,11 +129,169 @@ void _do_help(void)
 	}
 }
 
-void _init_params()
+void _init_params(void)
 {
 	memset(&params, 0, sizeof(sstat_parameters_t));
 }
 
+#ifdef USE_LOADLEVELER
+static slurmdb_selected_step_t *_parse_job_id(char *name)
+{
+	/* NOTE: JobID is a number: "<hostname>.<jobid>.<stepid>" */
+	char *sep1, *sep2, *sep3, *end_ptr = NULL, *tmp_name;
+	uint32_t job_id = NO_VAL, step_id = NO_VAL;
+	slurmdb_selected_step_t *selected_step;
+
+	tmp_name = xstrdup(name);
+	sep3 = strrchr(tmp_name, '.');
+	if (sep3 && (sep3 != tmp_name))
+		sep3[0] = '\0';
+	sep2 = strrchr(tmp_name, '.');
+	if (sep2 && (sep2 != tmp_name))
+		sep2[0] = '\0';
+	sep1 = strchr(tmp_name, '.');
+	if (sep1)
+		sep1[0] = '\0';
+
+	if (sep2 && sep3) {
+		job_id = strtol(sep2+1, &end_ptr, 10);
+		if (end_ptr[0] == '\0') {
+			if (!strcmp(sep3+1, "batch")) {
+				step_id = INFINITE;
+			} else {
+				step_id = strtol(sep3+1, &end_ptr, 10);
+				if (end_ptr[0] != '\0') {
+					error("Invalid job id: %s", name);
+					xfree(tmp_name);
+					return NULL;
+				}
+			}
+		} else {
+			job_id = strtol(sep3+1, &end_ptr, 10);
+			if (end_ptr[0] != '\0') {
+				error("Invalid job id: %s", name);
+				xfree(tmp_name);
+				return NULL;
+			}
+			step_id = NO_VAL;
+		}
+	} else if (sep3) {
+		job_id = strtol(sep3+1, &end_ptr, 10);
+		if (end_ptr[0] != '\0') {
+			error("Invalid job id: %s", name);
+			xfree(tmp_name);
+			return NULL;
+		}
+		step_id = NO_VAL;
+	} else {
+		error("Invalid job id: %s", name);
+		xfree(tmp_name);
+		return NULL;
+	}
+
+	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
+	xstrfmtcat(selected_step->jobid, "%s.%u", tmp_name, job_id);
+	selected_step->stepid = step_id;
+	xfree(tmp_name);
+
+	return selected_step;
+}
+
+/* returns number of objects added to list */
+static int _addto_job_list(List job_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
+	slurmdb_selected_step_t *curr_step = NULL;
+
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	int count = 0;
+
+	if (!job_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	itr = list_iterator_create(job_list);
+	if (names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while (names[i]) {
+			//info("got %d - %d = %d", i, start, i-start);
+			if (quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if (names[i] == ',') {
+				if ((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					selected_step = _parse_job_id(name);
+					xfree(name);
+					while ((curr_step = list_next(itr))) {
+						if (!selected_step)
+							break;
+						if (!strcmp(curr_step->jobid,
+							  selected_step->jobid)
+						   && (curr_step->stepid
+						       == selected_step->
+						       stepid))
+							break;
+					}
+
+					if (!selected_step) {
+						;
+					} else if (!curr_step) {
+						list_append(job_list,
+							    selected_step);
+						count++;
+					} else {
+						slurmdb_destroy_selected_step(
+							selected_step);
+					}
+					list_iterator_reset(itr);
+				}
+				i++;
+				start = i;
+			}
+			i++;
+		}
+		if ((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+
+			selected_step = _parse_job_id(name);
+			xfree(name);
+			while ((curr_step = list_next(itr))) {
+				if (!selected_step)
+					break;
+				if (!strcmp(curr_step->jobid,
+					    selected_step->jobid)
+				   && (curr_step->stepid
+				       == selected_step->stepid))
+					break;
+			}
+
+			if (!selected_step) {
+				;
+			} else if (!curr_step) {
+				list_append(job_list, selected_step);
+				count++;
+			} else
+				slurmdb_destroy_selected_step(selected_step);
+		}
+	}
+	list_iterator_destroy(itr);
+	return count;
+}
+#else	/* !USE_LOADLEVELER */
 /* returns number of objects added to list */
 static int _addto_job_list(List job_list, char *names)
 {
@@ -147,27 +305,27 @@ static int _addto_job_list(List job_list, char *names)
 	int quote = 0;
 	int count = 0;
 
-	if(!job_list) {
+	if (!job_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
 	itr = list_iterator_create(job_list);
-	if(names) {
+	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
 			i++;
 		}
 		start = i;
-		while(names[i]) {
+		while (names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-			if(quote && names[i] == quote_c)
+			if (quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
 				names[i] = '`';
-			else if(names[i] == ',') {
-				if((i-start) > 0) {
+			else if (names[i] == ',') {
+				if ((i-start) > 0) {
 					char *dot = NULL;
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
@@ -179,7 +337,7 @@ static int _addto_job_list(List job_list, char *names)
 						debug2("No jobstep requested");
 						selected_step->stepid = NO_VAL;
 					} else {
-						*dot++ = 0;
+						*dot++ = '\0';
 						/* can't use NO_VAL
 						 * since that means all */
 						if (!strcmp(dot, "batch"))
@@ -192,8 +350,8 @@ static int _addto_job_list(List job_list, char *names)
 					selected_step->jobid = atoi(name);
 					xfree(name);
 
-					while((curr_step = list_next(itr))) {
-						if((curr_step->jobid
+					while ((curr_step = list_next(itr))) {
+						if ((curr_step->jobid
 						    == selected_step->jobid)
 						   && (curr_step->stepid
 						       == selected_step->
@@ -201,7 +359,7 @@ static int _addto_job_list(List job_list, char *names)
 							break;
 					}
 
-					if(!curr_step) {
+					if (!curr_step) {
 						list_append(job_list,
 							    selected_step);
 						count++;
@@ -215,7 +373,7 @@ static int _addto_job_list(List job_list, char *names)
 			}
 			i++;
 		}
-		if((i-start) > 0) {
+		if ((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 
@@ -226,7 +384,7 @@ static int _addto_job_list(List job_list, char *names)
 				debug2("No jobstep requested");
 				selected_step->stepid = NO_VAL;
 			} else {
-				*dot++ = 0;
+				*dot++ = '\0';
 				/* can't use NO_VAL since that means all */
 				if (!strcmp(dot, "batch"))
 					selected_step->stepid = INFINITE;
@@ -236,24 +394,24 @@ static int _addto_job_list(List job_list, char *names)
 			selected_step->jobid = atoi(name);
 			xfree(name);
 
-			while((curr_step = list_next(itr))) {
-				if((curr_step->jobid == selected_step->jobid)
+			while ((curr_step = list_next(itr))) {
+				if ((curr_step->jobid == selected_step->jobid)
 				   && (curr_step->stepid
 				       == selected_step->stepid))
 					break;
 			}
 
-			if(!curr_step) {
+			if (!curr_step) {
 				list_append(job_list, selected_step);
 				count++;
 			} else
-				slurmdb_destroy_selected_step(
-					selected_step);
+				slurmdb_destroy_selected_step(selected_step);
 		}
 	}
 	list_iterator_destroy(itr);
 	return count;
 }
+#endif	/* !USE_LOADLEVELER */
 
 int decode_state_char(char *state)
 {
@@ -331,6 +489,7 @@ void parse_command_line(int argc, char **argv)
 				   STAT_FIELDS_PID);
 			break;
 		case 'j':
+#ifndef USE_LOADLEVELER
 			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
 			    && (strspn(optarg, ".batch0123456789, ")
 				< strlen(optarg))) {
@@ -338,7 +497,8 @@ void parse_command_line(int argc, char **argv)
 					optarg);
 				exit(1);
 			}
-			if(!params.opt_job_list)
+#endif
+			if (!params.opt_job_list)
 				params.opt_job_list = list_create(
 					slurmdb_destroy_selected_step);
 			_addto_job_list(params.opt_job_list, optarg);
@@ -377,13 +537,14 @@ void parse_command_line(int argc, char **argv)
 		}
 	}
 
-	if(params.opt_help) {
+	if (params.opt_help) {
 		_do_help();
 		exit(0);
 	}
 
 	if (optind < argc) {
 		optarg = argv[optind];
+#ifndef USE_LOADLEVELER
 		if ((strspn(optarg, "0123456789, ") < strlen(optarg))
 		    && (strspn(optarg, ".batch0123456789, ")
 			< strlen(optarg))) {
@@ -391,13 +552,14 @@ void parse_command_line(int argc, char **argv)
 				optarg);
 			exit(1);
 		}
-		if(!params.opt_job_list)
+#endif
+		if (!params.opt_job_list)
 			params.opt_job_list = list_create(
 				slurmdb_destroy_selected_step);
 		_addto_job_list(params.opt_job_list, optarg);
 	}
 
-	if(!params.opt_field_list)
+	if (!params.opt_field_list)
 		xstrfmtcat(params.opt_field_list, "%s,", STAT_FIELDS);
 
 	if (params.opt_verbose) {
@@ -411,14 +573,26 @@ void parse_command_line(int argc, char **argv)
 	    && list_count(params.opt_job_list)) {
 		debug("Jobs requested:\n");
 		itr = list_iterator_create(params.opt_job_list);
-		while((selected_step = list_next(itr))) {
-			if(selected_step->stepid != NO_VAL)
-				debug("\t: %d.%d\n",
+		while ((selected_step = list_next(itr))) {
+#ifdef USE_LOADLEVELER
+			if (selected_step->stepid != NO_VAL) {
+				debug("\t: %s.%u",
 					selected_step->jobid,
 					selected_step->stepid);
-			else
-				debug("\t: %d\n",
+			} else {
+				debug("\t: %s",
 					selected_step->jobid);
+			}
+#else
+			if (selected_step->stepid != NO_VAL) {
+				debug("\t: %u.%u",
+					selected_step->jobid,
+					selected_step->stepid);
+			} else {
+				debug("\t: %u",
+					selected_step->jobid);
+			}
+#endif
 		}
 		list_iterator_destroy(itr);
 	}
@@ -432,10 +606,10 @@ void parse_command_line(int argc, char **argv)
 		*end = 0;
 		while (isspace(*start))
 			start++;	/* discard whitespace */
-		if(!(int)*start)
+		if (!(int)*start)
 			continue;
 
-		if((tmp_char = strstr(start, "\%"))) {
+		if ((tmp_char = strstr(start, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
@@ -449,7 +623,7 @@ void parse_command_line(int argc, char **argv)
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
 	foundfield:
-		if(newlen)
+		if (newlen)
 			fields[i].len = newlen;
 		list_append(print_fields_list, &fields[i]);
 		start = end + 1;

@@ -9,14 +9,20 @@ AUTOMAKE_OPTIONS = foreign
 LIBS=$(NCURSES)
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
+SMAP_SOURCES =			\
+	grid_functions.c	\
+	job_functions.c		\
+	opts.c			\
+	partition_functions.c	\
+	reservation_functions.c	\
+	smap.c smap.h
+
+
 if BUILD_SMAP
 
 bin_PROGRAMS = smap
 
-noinst_HEADERS = smap.h
-smap_SOURCES = smap.c \
-	job_functions.c partition_functions.c \
-	grid_functions.c reservation_functions.c opts.c
+smap_SOURCES = $(SMAP_SOURCES)
 
 smap_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 
@@ -36,12 +42,7 @@ $(smap_LDADD) : force
 smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 else
-
-EXTRA_smap_SOURCES = smap.h smap.c \
-	job_functions.c partition_functions.c \
-	configure_functions.c grid_functions.c \
-	reservation_functions.c opts.c
-
+EXTRA_smap_SOURCES = $(SMAP_SOURCES)
 endif
 
 

@@ -107,16 +107,17 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@HAVE_ELAN_TRUE@switch_elan_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-@HAVE_ELAN_TRUE@	$(top_builddir)/src/api/libslurm.la
+@BUILD_ELAN_TRUE@switch_elan_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@BUILD_ELAN_TRUE@	$(top_builddir)/src/api/libslurm.la
 am__switch_elan_la_SOURCES_DIST = switch_elan.c qsw.c qsw.h
-@HAVE_ELAN_TRUE@am_switch_elan_la_OBJECTS = switch_elan.lo qsw.lo
+am__objects_1 = switch_elan.lo qsw.lo
+@BUILD_ELAN_TRUE@am_switch_elan_la_OBJECTS = $(am__objects_1)
 am__EXTRA_switch_elan_la_SOURCES_DIST = switch_elan.c qsw.c qsw.h
 switch_elan_la_OBJECTS = $(am_switch_elan_la_OBJECTS)
 switch_elan_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(switch_elan_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_ELAN_TRUE@am_switch_elan_la_rpath = -rpath $(pkglibdir)
+@BUILD_ELAN_TRUE@am_switch_elan_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -185,11 +186,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -206,6 +204,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -337,28 +336,25 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-@HAVE_ELAN_FALSE@elan_lib = 
-@HAVE_ELAN_TRUE@elan_lib = switch_elan.la
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = $(elan_lib)
+SWITCH_ELAN_LA_SOURCES = \
+	switch_elan.c		\
+	qsw.c qsw.h
+
+@BUILD_ELAN_TRUE@PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+@BUILD_ELAN_TRUE@INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+@BUILD_ELAN_FALSE@pkglib_LTLIBRARIES = 
+@BUILD_ELAN_TRUE@pkglib_LTLIBRARIES = switch_elan.la
 
 # Quadrics elan3 or elan4 switch plugin.
-@HAVE_ELAN_TRUE@switch_elan_la_SOURCES = \
-@HAVE_ELAN_TRUE@	switch_elan.c		\
-@HAVE_ELAN_TRUE@	qsw.c qsw.h
-
+@BUILD_ELAN_TRUE@switch_elan_la_SOURCES = $(SWITCH_ELAN_LA_SOURCES)
 
 # Add libslurm to switch_elan to provide some symbols that are not
 #  available in slurmctld (slurm_setenvpf)
-@HAVE_ELAN_TRUE@switch_elan_la_LIBADD = $(ELAN_LIBS) \
-@HAVE_ELAN_TRUE@			$(top_builddir)/src/api/libslurm.la
+@BUILD_ELAN_TRUE@switch_elan_la_LIBADD = $(ELAN_LIBS) \
+@BUILD_ELAN_TRUE@			$(top_builddir)/src/api/libslurm.la
 
-@HAVE_ELAN_TRUE@switch_elan_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_ELAN_FALSE@EXTRA_switch_elan_la_SOURCES = \
-@HAVE_ELAN_FALSE@	switch_elan.c           \
-@HAVE_ELAN_FALSE@	qsw.c qsw.h
-
+@BUILD_ELAN_TRUE@switch_elan_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BUILD_ELAN_FALSE@EXTRA_switch_elan_la_SOURCES = $(SWITCH_ELAN_LA_SOURCES)
 all: all-am
 
 .SUFFIXES:

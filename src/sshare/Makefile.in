@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = sshare$(EXEEXT)
+@USE_LOADLEVELER_FALSE@bin_PROGRAMS = sshare$(EXEEXT)
 subdir = src/sshare
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -86,11 +86,15 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sshare_OBJECTS = process.$(OBJEXT) sshare.$(OBJEXT)
+am__sshare_SOURCES_DIST = process.c sshare.c sshare.h
+am__objects_1 = process.$(OBJEXT) sshare.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_sshare_OBJECTS = $(am__objects_1)
+am__EXTRA_sshare_SOURCES_DIST = process.c sshare.c sshare.h
 sshare_OBJECTS = $(am_sshare_OBJECTS)
 am__DEPENDENCIES_1 =
-sshare_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+@USE_LOADLEVELER_FALSE@sshare_DEPENDENCIES =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o \
+@USE_LOADLEVELER_FALSE@	$(am__DEPENDENCIES_1)
 sshare_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sshare_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -107,8 +111,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(sshare_SOURCES)
-DIST_SOURCES = $(sshare_SOURCES)
+SOURCES = $(sshare_SOURCES) $(EXTRA_sshare_SOURCES)
+DIST_SOURCES = $(am__sshare_SOURCES_DIST) \
+	$(am__EXTRA_sshare_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -161,11 +166,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -182,6 +184,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -313,17 +316,20 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
-INCLUDES = -I$(top_srcdir)
-sshare_LDADD = \
-	$(top_builddir)/src/api/libslurm.o -ldl -lm \
-	$(READLINE_LIBS)
+SSHARE_SOURCES = \
+	process.c	\
+	sshare.c	\
+	sshare.h
 
-sshare_SOURCES = \
-	process.c               \
-	sshare.c sshare.h
+@USE_LOADLEVELER_FALSE@CLEANFILES = core.*
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir)
+@USE_LOADLEVELER_FALSE@sshare_LDADD = \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o -ldl -lm \
+@USE_LOADLEVELER_FALSE@	$(READLINE_LIBS)
 
-sshare_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_FALSE@sshare_SOURCES = $(SSHARE_SOURCES)
+@USE_LOADLEVELER_FALSE@sshare_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_sshare_SOURCES = $(SSHARE_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -643,9 +649,9 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-binPROGRAMS
 
 
-force:
-$(sshare_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(sshare_LDADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

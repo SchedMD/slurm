@@ -39,7 +39,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-noinst_PROGRAMS = libslurmdb.o$(EXEEXT)
+@USE_LOADLEVELER_FALSE@noinst_PROGRAMS = libslurmdb.o$(EXEEXT)
 subdir = src/db_api
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -109,23 +109,39 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libslurmdb_la_DEPENDENCIES =  \
-	$(top_builddir)/src/api/libslurmhelper.la
-am_libslurmdb_la_OBJECTS = account_functions.lo archive_functions.lo \
+@USE_LOADLEVELER_FALSE@libslurmdb_la_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+am__libslurmdb_la_SOURCES_DIST = account_functions.c \
+	archive_functions.c assoc_functions.c cluster_functions.c \
+	cluster_report_functions.c coord_functions.c \
+	connection_functions.c extra_get_functions.c \
+	job_report_functions.c qos_functions.c resv_report_functions.c \
+	usage_functions.c user_functions.c user_report_functions.c \
+	wckey_functions.c
+am__objects_1 = account_functions.lo archive_functions.lo \
 	assoc_functions.lo cluster_functions.lo \
 	cluster_report_functions.lo coord_functions.lo \
 	connection_functions.lo extra_get_functions.lo \
 	job_report_functions.lo qos_functions.lo \
 	resv_report_functions.lo usage_functions.lo user_functions.lo \
 	user_report_functions.lo wckey_functions.lo
+@USE_LOADLEVELER_FALSE@am_libslurmdb_la_OBJECTS = $(am__objects_1)
+am__EXTRA_libslurmdb_la_SOURCES_DIST = account_functions.c \
+	archive_functions.c assoc_functions.c cluster_functions.c \
+	cluster_report_functions.c coord_functions.c \
+	connection_functions.c extra_get_functions.c \
+	job_report_functions.c qos_functions.c resv_report_functions.c \
+	usage_functions.c user_functions.c user_report_functions.c \
+	wckey_functions.c
 libslurmdb_la_OBJECTS = $(am_libslurmdb_la_OBJECTS)
 libslurmdb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libslurmdb_la_LDFLAGS) $(LDFLAGS) -o $@
+@USE_LOADLEVELER_FALSE@am_libslurmdb_la_rpath = -rpath $(libdir)
 PROGRAMS = $(noinst_PROGRAMS)
 am_libslurmdb_o_OBJECTS =
 libslurmdb_o_OBJECTS = $(am_libslurmdb_o_OBJECTS)
-libslurmdb_o_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@libslurmdb_o_DEPENDENCIES =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -139,8 +155,11 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libslurmdb_la_SOURCES) $(libslurmdb_o_SOURCES)
-DIST_SOURCES = $(libslurmdb_la_SOURCES) $(libslurmdb_o_SOURCES)
+SOURCES = $(libslurmdb_la_SOURCES) $(EXTRA_libslurmdb_la_SOURCES) \
+	$(libslurmdb_o_SOURCES)
+DIST_SOURCES = $(am__libslurmdb_la_SOURCES_DIST) \
+	$(am__EXTRA_libslurmdb_la_SOURCES_DIST) \
+	$(libslurmdb_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -184,6 +203,7 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 ELAN_LIBS = @ELAN_LIBS@
+
 # This is needed if compiling on windows
 EXEEXT = 
 FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
@@ -194,11 +214,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -215,6 +232,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -346,12 +364,29 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir)
-@WITH_GNU_LD_TRUE@VERSION_SCRIPT = \
-@WITH_GNU_LD_TRUE@	version.map
+LIBSLURMDB_LA_SOURCES = \
+	account_functions.c	\
+	archive_functions.c	\
+	assoc_functions.c	\
+	cluster_functions.c	\
+	cluster_report_functions.c \
+	coord_functions.c	\
+	connection_functions.c	\
+	extra_get_functions.c	\
+	job_report_functions.c	\
+	qos_functions.c		\
+	resv_report_functions.c	\
+	usage_functions.c	\
+	user_functions.c	\
+	user_report_functions.c	\
+	wckey_functions.c
 
-@WITH_GNU_LD_TRUE@OTHER_FLAGS = \
-@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT)
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir)
+@USE_LOADLEVELER_FALSE@@WITH_GNU_LD_TRUE@VERSION_SCRIPT = \
+@USE_LOADLEVELER_FALSE@@WITH_GNU_LD_TRUE@	version.map
+
+@USE_LOADLEVELER_FALSE@@WITH_GNU_LD_TRUE@OTHER_FLAGS = \
+@USE_LOADLEVELER_FALSE@@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT)
 
 
 # libslurmdb version information :
@@ -378,48 +413,33 @@ INCLUDES = -I$(top_srcdir)
 # If the interfaces have not changed, but underlying code has changed at all:
 # increment API_REVISION only (e.g. libslurmdb.so.2.4.6 -> libslurmdb.so.2.4.7)
 #
-current = $(SLURM_API_CURRENT)
-age = $(SLURM_API_AGE)
-rev = $(SLURM_API_REVISION)
-lib_LTLIBRARIES = libslurmdb.la
+@USE_LOADLEVELER_FALSE@current = $(SLURM_API_CURRENT)
+@USE_LOADLEVELER_FALSE@age = $(SLURM_API_AGE)
+@USE_LOADLEVELER_FALSE@rev = $(SLURM_API_REVISION)
+@USE_LOADLEVELER_FALSE@lib_LTLIBRARIES = libslurmdb.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
-BUILT_SOURCES = $(VERSION_SCRIPT) libslurmdb.la
-libslurmdb_la_SOURCES = \
-	account_functions.c \
-	archive_functions.c \
-	assoc_functions.c \
-	cluster_functions.c \
-	cluster_report_functions.c \
-	coord_functions.c \
-	connection_functions.c \
-	extra_get_functions.c \
-	job_report_functions.c \
-	qos_functions.c \
-	resv_report_functions.c \
-	usage_functions.c \
-	user_functions.c \
-	user_report_functions.c \
-	wckey_functions.c
-
-libslurmdb_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
-libslurmdb_la_LDFLAGS = \
-        $(LIB_LDFLAGS) \
-        -version-info $(current):$(rev):$(age) \
-        $(OTHER_FLAGS)
+@USE_LOADLEVELER_FALSE@BUILT_SOURCES = $(VERSION_SCRIPT) libslurmdb.la
+@USE_LOADLEVELER_FALSE@libslurmdb_la_SOURCES = $(LIBSLURMDB_LA_SOURCES)
+@USE_LOADLEVELER_FALSE@libslurmdb_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
+@USE_LOADLEVELER_FALSE@libslurmdb_la_LDFLAGS = \
+@USE_LOADLEVELER_FALSE@        $(LIB_LDFLAGS) \
+@USE_LOADLEVELER_FALSE@        -version-info $(current):$(rev):$(age) \
+@USE_LOADLEVELER_FALSE@        $(OTHER_FLAGS)
 
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
-libslurmdb_o_SOURCES = 
-libslurmdb_o_LDADD = $(top_builddir)/src/api/libslurm.o
-CLEANFILES = \
-	$(VERSION_SCRIPT)
+@USE_LOADLEVELER_FALSE@libslurmdb_o_SOURCES = 
+@USE_LOADLEVELER_FALSE@libslurmdb_o_LDADD = $(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@CLEANFILES = \
+@USE_LOADLEVELER_FALSE@	$(VERSION_SCRIPT)
 
-DISTCLEANFILES = \
-	$(VERSION_SCRIPT)
+@USE_LOADLEVELER_FALSE@DISTCLEANFILES = \
+@USE_LOADLEVELER_FALSE@	$(VERSION_SCRIPT)
 
+@USE_LOADLEVELER_TRUE@EXTRA_libslurmdb_la_SOURCES = $(LIBSLURMDB_LA_SOURCES)
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -487,7 +507,7 @@ clean-libLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libslurmdb.la: $(libslurmdb_la_OBJECTS) $(libslurmdb_la_DEPENDENCIES) 
-	$(libslurmdb_la_LINK) -rpath $(libdir) $(libslurmdb_la_OBJECTS) $(libslurmdb_la_LIBADD) $(LIBS)
+	$(libslurmdb_la_LINK) $(am_libslurmdb_la_rpath) $(libslurmdb_la_OBJECTS) $(libslurmdb_la_LIBADD) $(LIBS)
 
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -497,6 +517,9 @@ clean-noinstPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+@USE_LOADLEVELER_TRUE@libslurmdb.o$(EXEEXT): $(libslurmdb_o_OBJECTS) $(libslurmdb_o_DEPENDENCIES) 
+@USE_LOADLEVELER_TRUE@	@rm -f libslurmdb.o$(EXEEXT)
+@USE_LOADLEVELER_TRUE@	$(LINK) $(libslurmdb_o_OBJECTS) $(libslurmdb_o_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -754,19 +777,19 @@ uninstall-am: uninstall-libLTLIBRARIES
 	tags uninstall uninstall-am uninstall-libLTLIBRARIES
 
 
-libslurmdb.o: $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
-	$(LINK) $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
+@USE_LOADLEVELER_FALSE@libslurmdb.o: $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
+@USE_LOADLEVELER_FALSE@	$(LINK) $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
 
-force:
-$(libslurmdb_o_LDADD) $(libslurmdb_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(libslurmdb_o_LDADD) $(libslurmdb_la_LIBADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
-$(VERSION_SCRIPT) :
-	(echo "{ global:";   \
-	 echo "   slurm_*;"; \
-	 echo "   slurmdb_*;"; \
-	 echo "  local: *;"; \
-	 echo "};") > $(VERSION_SCRIPT)
+@USE_LOADLEVELER_FALSE@$(VERSION_SCRIPT) :
+@USE_LOADLEVELER_FALSE@	(echo "{ global:";   \
+@USE_LOADLEVELER_FALSE@	 echo "   slurm_*;"; \
+@USE_LOADLEVELER_FALSE@	 echo "   slurmdb_*;"; \
+@USE_LOADLEVELER_FALSE@	 echo "  local: *;"; \
+@USE_LOADLEVELER_FALSE@	 echo "};") > $(VERSION_SCRIPT)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

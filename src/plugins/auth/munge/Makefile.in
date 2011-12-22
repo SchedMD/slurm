@@ -107,13 +107,15 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-auth_munge_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_auth_munge_la_OBJECTS = auth_munge.lo
+@BUILD_MUNGE_TRUE@auth_munge_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__auth_munge_la_SOURCES_DIST = auth_munge.c
+@BUILD_MUNGE_TRUE@am_auth_munge_la_OBJECTS = auth_munge.lo
+am__EXTRA_auth_munge_la_SOURCES_DIST = auth_munge.c
 auth_munge_la_OBJECTS = $(am_auth_munge_la_OBJECTS)
 auth_munge_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(auth_munge_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_MUNGE_TRUE@am_auth_munge_la_rpath = -rpath $(pkglibdir)
+@BUILD_MUNGE_TRUE@am_auth_munge_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -127,8 +129,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(auth_munge_la_SOURCES)
-DIST_SOURCES = $(auth_munge_la_SOURCES)
+SOURCES = $(auth_munge_la_SOURCES) $(EXTRA_auth_munge_la_SOURCES)
+DIST_SOURCES = $(am__auth_munge_la_SOURCES_DIST) \
+	$(am__EXTRA_auth_munge_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -181,11 +184,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -202,6 +202,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -336,14 +337,12 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(MUNGE_CPPFLAGS)
 
-# Add your plugin to this line, following the naming conventions.
-@WITH_MUNGE_TRUE@MUNGE = auth_munge.la
-pkglib_LTLIBRARIES = $(MUNGE)
-
 # Munge authentication plugin
-auth_munge_la_SOURCES = auth_munge.c
-auth_munge_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
-auth_munge_la_LIBADD = $(MUNGE_LIBS)
+@BUILD_MUNGE_TRUE@pkglib_LTLIBRARIES = auth_munge.la
+@BUILD_MUNGE_TRUE@auth_munge_la_SOURCES = auth_munge.c
+@BUILD_MUNGE_TRUE@auth_munge_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
+@BUILD_MUNGE_TRUE@auth_munge_la_LIBADD = $(MUNGE_LIBS)
+@BUILD_MUNGE_FALSE@EXTRA_auth_munge_la_SOURCES = auth_munge.c
 all: all-am
 
 .SUFFIXES:

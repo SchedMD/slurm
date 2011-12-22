@@ -109,10 +109,10 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 task_affinity_la_LIBADD =
 am__task_affinity_la_SOURCES_DIST = affinity.c affinity.h cpuset.c \
 	dist_tasks.c dist_tasks.h numa.c schedutils.c task_affinity.c
-@HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_OBJECTS =  \
-@HAVE_SCHED_SETAFFINITY_TRUE@	affinity.lo cpuset.lo \
-@HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.lo numa.lo \
-@HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.lo task_affinity.lo
+am__objects_1 = affinity.lo cpuset.lo dist_tasks.lo numa.lo \
+	schedutils.lo task_affinity.lo
+@BUILD_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_OBJECTS =  \
+@BUILD_SCHED_SETAFFINITY_TRUE@	$(am__objects_1)
 am__EXTRA_task_affinity_la_SOURCES_DIST = affinity.c affinity.h \
 	cpuset.c dist_tasks.c dist_tasks.h numa.c schedutils.c \
 	task_affinity.c
@@ -120,8 +120,8 @@ task_affinity_la_OBJECTS = $(am_task_affinity_la_OBJECTS)
 task_affinity_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(task_affinity_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_rpath = -rpath \
-@HAVE_SCHED_SETAFFINITY_TRUE@	$(pkglibdir)
+@BUILD_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_rpath = -rpath \
+@BUILD_SCHED_SETAFFINITY_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -191,11 +191,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -212,6 +209,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -343,27 +341,22 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+TASK_AFFINITY_LA_SOURCES = \
+	affinity.c affinity.h	\
+	cpuset.c		\
+	dist_tasks.c		\
+	dist_tasks.h		\
+	numa.c			\
+	schedutils.c		\
+	task_affinity.c
+
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-@HAVE_SCHED_SETAFFINITY_FALSE@pkglib_LTLIBRARIES = 
-@HAVE_SCHED_SETAFFINITY_TRUE@pkglib_LTLIBRARIES = task_affinity.la
-@HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_SOURCES = \
-@HAVE_SCHED_SETAFFINITY_TRUE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_TRUE@	cpuset.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.c dist_tasks.h \
-@HAVE_SCHED_SETAFFINITY_TRUE@	numa.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.c \
-@HAVE_SCHED_SETAFFINITY_TRUE@	task_affinity.c
-
-@HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(NUMA_LIBS) $(PLPA_LIBS) $(PLUGIN_FLAGS)
-@HAVE_SCHED_SETAFFINITY_FALSE@EXTRA_task_affinity_la_SOURCES = \
-@HAVE_SCHED_SETAFFINITY_FALSE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_FALSE@	cpuset.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	dist_tasks.c dist_tasks.h \
-@HAVE_SCHED_SETAFFINITY_FALSE@	numa.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	schedutils.c \
-@HAVE_SCHED_SETAFFINITY_FALSE@	task_affinity.c
-
+@BUILD_SCHED_SETAFFINITY_FALSE@pkglib_LTLIBRARIES = 
+@BUILD_SCHED_SETAFFINITY_TRUE@pkglib_LTLIBRARIES = task_affinity.la
+@BUILD_SCHED_SETAFFINITY_TRUE@task_affinity_la_SOURCES = $(TASK_AFFINITY_LA_SOURCES)
+@BUILD_SCHED_SETAFFINITY_TRUE@task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(NUMA_LIBS) $(PLPA_LIBS) $(PLUGIN_FLAGS)
+@BUILD_SCHED_SETAFFINITY_FALSE@EXTRA_task_affinity_la_SOURCES = $(TASK_AFFINITY_LA_SOURCES)
 all: all-am
 
 .SUFFIXES:

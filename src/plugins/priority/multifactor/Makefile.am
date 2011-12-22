@@ -6,9 +6,17 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-pkglib_LTLIBRARIES = priority_multifactor.la
+PRIORITY_MULTIFACTOR_LA_SOURCES = priority_multifactor.c
+
+if ! USE_LOADLEVELER
 
 # Null priority logging plugin.
-priority_multifactor_la_SOURCES = priority_multifactor.c
+pkglib_LTLIBRARIES = priority_multifactor.la
+priority_multifactor_la_SOURCES = $(PRIORITY_MULTIFACTOR_LA_SOURCES)
 priority_multifactor_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 priority_multifactor_la_LIBADD  = -lm
+
+else
+pkglib_LTLIBRARIES =
+EXTRA_priority_multifactor_la_SOURCES = $(PRIORITY_MULTIFACTOR_LA_SOURCES)
+endif

@@ -44,7 +44,6 @@ void *_stat_thread(void *args);
 int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 		 uint32_t step_id);
 int _process_results();
-int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist);
 
 /*
  * Globals
@@ -80,7 +79,11 @@ List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
 
+#ifdef USE_LOADLEVELER
+int _do_stat(char *jobid, uint32_t stepid, char *nodelist)
+#else
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
+#endif
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
@@ -91,13 +94,23 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	int tot_tasks = 0;
 	hostlist_t hl = NULL;
 
+#ifdef USE_LOADLEVELER
+	debug("requesting info for job %s.%u", jobid, stepid);
+	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,
+				     &step_stat_response)) != SLURM_SUCCESS) {
+		error("problem getting step_layout for %s.%u: %s",
+		      jobid, stepid, slurm_strerror(rc));
+		return rc;
+	}
+#else
 	debug("requesting info for job %u.%u", jobid, stepid);
-	if((rc = slurm_job_step_stat(jobid, stepid, nodelist,
+	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,
 				     &step_stat_response)) != SLURM_SUCCESS) {
 		error("problem getting step_layout for %u.%u: %s",
 		      jobid, stepid, slurm_strerror(rc));
 		return rc;
 	}
+#endif
 
 	memset(&job, 0, sizeof(slurmdb_job_rec_t));
 	job.jobid = jobid;
@@ -117,20 +130,20 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 
 	hl = hostlist_create(NULL);
 	itr = list_iterator_create(step_stat_response->stats_list);
-	while((step_stat = list_next(itr))) {
-		if(!step_stat->step_pids || !step_stat->step_pids->node_name)
+	while ((step_stat = list_next(itr))) {
+		if (!step_stat->step_pids || !step_stat->step_pids->node_name)
 			continue;
 		if (step_stat->step_pids->pid_cnt > 0 ) {
 			int i;
 			for(i=0; i<step_stat->step_pids->pid_cnt; i++) {
-				if(step.pid_str)
+				if (step.pid_str)
 					xstrcat(step.pid_str, ",");
 				xstrfmtcat(step.pid_str, "%u",
 					   step_stat->step_pids->pid[i]);
 			}
 		}
 
-		if(params.pid_format) {
+		if (params.pid_format) {
 			step.nodes = step_stat->step_pids->node_name;
 			print_fields(&step);
 			xfree(step.pid_str);
@@ -153,7 +166,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	hostlist_destroy(hl);
 	tot_tasks += ntasks;
 
-	if(tot_tasks) {
+	if (tot_tasks) {
 		step.stats.cpu_ave /= (double)tot_tasks;
 		step.stats.rss_ave /= (double)tot_tasks;
 		step.stats.vsize_ave /= (double)tot_tasks;
@@ -176,7 +189,7 @@ int main(int argc, char **argv)
 	print_fields_itr = list_iterator_create(print_fields_list);
 
 	parse_command_line(argc, argv);
-	if(!params.opt_job_list || !list_count(params.opt_job_list)) {
+	if (!params.opt_job_list || !list_count(params.opt_job_list)) {
 		error("You didn't give me any jobs to stat.");
 		return 1;
 	}
@@ -185,15 +198,20 @@ int main(int argc, char **argv)
 	itr = list_iterator_create(params.opt_job_list);
 	while((selected_step = list_next(itr))) {
 		char *nodelist = NULL;
-		if(selected_step->stepid == INFINITE) {
+		if (selected_step->stepid == INFINITE) {
 			/* get the batch step info */
 			job_info_msg_t *job_ptr = NULL;
 			hostlist_t hl;
 
-			if(slurm_load_job(
+			if (slurm_load_job(
 				   &job_ptr, selected_step->jobid, SHOW_ALL)) {
+#ifdef USE_LOADLEVELER
+				error("couldn't get info for job %s",
+				      selected_step->jobid);
+#else
 				error("couldn't get info for job %u",
 				      selected_step->jobid);
+#endif
 				continue;
 			}
 
@@ -205,16 +223,21 @@ int main(int argc, char **argv)
 			nodelist = hostlist_pop(hl);
 			hostlist_destroy(hl);
 			slurm_free_job_info_msg(job_ptr);
-		} else if(selected_step->stepid != NO_VAL)
+		} else if (selected_step->stepid != NO_VAL)
 			stepid = selected_step->stepid;
-		else if(params.opt_all_steps) {
+		else if (params.opt_all_steps) {
 			job_step_info_response_msg_t *step_ptr = NULL;
 			int i = 0;
-			if(slurm_get_job_steps(
+			if (slurm_get_job_steps(
 				   0, selected_step->jobid, NO_VAL,
 				   &step_ptr, SHOW_ALL)) {
+#ifdef USE_LOADLEVELER
+				error("couldn't get steps for job %s",
+				      selected_step->jobid);
+#else
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
+#endif
 				continue;
 			}
 			for (i = 0; i < step_ptr->job_step_count; i++) {
@@ -227,16 +250,26 @@ int main(int argc, char **argv)
 		} else {
 			/* get the first running step to query against. */
 			job_step_info_response_msg_t *step_ptr = NULL;
-			if(slurm_get_job_steps(
+			if (slurm_get_job_steps(
 				   0, selected_step->jobid, NO_VAL,
 				   &step_ptr, SHOW_ALL)) {
+#ifdef USE_LOADLEVELER
+				error("couldn't get steps for job %s",
+				      selected_step->jobid);
+#else
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
+#endif
 				continue;
 			}
-			if(!step_ptr->job_step_count) {
+			if (!step_ptr->job_step_count) {
+#ifdef USE_LOADLEVELER
+				error("no steps running for job %s",
+				      selected_step->jobid);
+#else
 				error("no steps running for job %u",
 				      selected_step->jobid);
+#endif
 				continue;
 			}
 			stepid = step_ptr->job_steps[0].step_id;
@@ -247,12 +280,12 @@ int main(int argc, char **argv)
 	list_iterator_destroy(itr);
 
 	xfree(params.opt_field_list);
-	if(params.opt_job_list)
+	if (params.opt_job_list)
 		list_destroy(params.opt_job_list);
 
-	if(print_fields_itr)
+	if (print_fields_itr)
 		list_iterator_destroy(print_fields_itr);
-	if(print_fields_list)
+	if (print_fields_list)
 		list_destroy(print_fields_list);
 
 	return 0;

@@ -432,12 +432,67 @@ static void _opt_args(int argc, char **argv)
 		exit(1);
 }
 
+#ifdef USE_LOADLEVELER
+static int _parse_job_id(char *name, char **job_name, uint32_t *step_id)
+{
+	/* NOTE: JobID is a number: "<hostname>.<jobid>.<stepid>" */
+	char *sep1, *sep2, *sep3, *end_ptr = NULL, *tmp_name;
+	uint32_t job_id = NO_VAL;
+
+	tmp_name = xstrdup(name);
+	sep3 = strrchr(tmp_name, '.');
+	if (sep3 && (sep3 != tmp_name))
+		sep3[0] = '\0';
+	sep2 = strrchr(tmp_name, '.');
+	if (sep2 && (sep2 != tmp_name))
+		sep2[0] = '\0';
+	sep1 = strchr(tmp_name, '.');
+	if (sep1)
+		sep1[0] = '\0';
+
+	if (sep2 && sep3) {
+		job_id = strtol(sep2+1, &end_ptr, 10);
+		if (end_ptr[0] == '\0') {
+			*step_id = strtol(sep3+1, &end_ptr, 10);
+			if (end_ptr[0] != '\0') {
+				error("Invalid job id: %s", name);
+				xfree(tmp_name);
+				return -1;
+			}
+		} else {
+			job_id = strtol(sep3+1, &end_ptr, 10);
+			if (end_ptr[0] != '\0') {
+				error("Invalid job id: %s", name);
+				xfree(tmp_name);
+				return -1;
+			}
+			*step_id = SLURM_BATCH_SCRIPT;
+		}
+	} else if (sep3) {
+		job_id = strtol(sep3+1, &end_ptr, 10);
+		if (end_ptr[0] != '\0') {
+			error("Invalid job id: %s", name);
+			xfree(tmp_name);
+			return -1;
+		}
+		*step_id = SLURM_BATCH_SCRIPT;
+	} else {
+		error("Invalid job id: %s", name);
+		xfree(tmp_name);
+		return -1;
+	}
+
+	xstrfmtcat(*job_name, "%s.%u", tmp_name, job_id);
+	xfree(tmp_name);
+
+	return 0;
+}
+#endif
+
 static void
 _xlate_job_step_ids(char **rest)
 {
 	int i;
-	long tmp_l;
-	char *next_str;
 
 	opt.job_cnt = 0;
 
@@ -446,10 +501,21 @@ _xlate_job_step_ids(char **rest)
 			opt.job_cnt++;
 	}
 
+#ifdef USE_LOADLEVELER
+	opt.job_id  = xmalloc(opt.job_cnt * sizeof(char *));
+	opt.step_id = xmalloc(opt.job_cnt * sizeof(uint32_t));
+
+	for (i = 0; i < opt.job_cnt; i++) {
+		if (_parse_job_id(rest[i], &opt.job_id[i], &opt.step_id[i]))
+			exit(1);
+	}
+#else
 	opt.job_id  = xmalloc(opt.job_cnt * sizeof(uint32_t));
 	opt.step_id = xmalloc(opt.job_cnt * sizeof(uint32_t));
 
 	for (i=0; i<opt.job_cnt; i++) {
+		long tmp_l;
+		char *next_str;
 		tmp_l = strtol(rest[i], &next_str, 10);
 		if (tmp_l <= 0) {
 			error ("Invalid job_id %s", rest[i]);
@@ -472,6 +538,9 @@ _xlate_job_step_ids(char **rest)
 			exit (1);
 		}
 	}
+
+#endif
+
 }
 
 
@@ -531,7 +600,11 @@ static void _opt_list(void)
 	info("wckey          : %s", opt.wckey);
 
 	for (i=0; i<opt.job_cnt; i++) {
+#ifdef USE_LOADLEVELER
+		info("job_steps      : %s.%u ", opt.job_id[i], opt.step_id[i]);
+#else
 		info("job_steps      : %u.%u ", opt.job_id[i], opt.step_id[i]);
+#endif
 	}
 }
 

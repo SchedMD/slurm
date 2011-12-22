@@ -85,11 +85,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@WITH_MYSQL_TRUE@libslurm_mysql_la_DEPENDENCIES =  \
-@WITH_MYSQL_TRUE@	$(am__DEPENDENCIES_1)
+@BUILD_MYSQL_TRUE@libslurm_mysql_la_DEPENDENCIES =  \
+@BUILD_MYSQL_TRUE@	$(am__DEPENDENCIES_1)
 am__libslurm_mysql_la_SOURCES_DIST = mysql_common.c mysql_common.h
-@WITH_MYSQL_TRUE@am_libslurm_mysql_la_OBJECTS =  \
-@WITH_MYSQL_TRUE@	libslurm_mysql_la-mysql_common.lo
+@BUILD_MYSQL_TRUE@am_libslurm_mysql_la_OBJECTS =  \
+@BUILD_MYSQL_TRUE@	libslurm_mysql_la-mysql_common.lo
 am__EXTRA_libslurm_mysql_la_SOURCES_DIST = mysql_common.c \
 	mysql_common.h
 libslurm_mysql_la_OBJECTS = $(am_libslurm_mysql_la_OBJECTS)
@@ -97,12 +97,12 @@ libslurm_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libslurm_mysql_la_CFLAGS) $(CFLAGS) \
 	$(libslurm_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_MYSQL_TRUE@am_libslurm_mysql_la_rpath =
-@WITH_PGSQL_TRUE@libslurm_pgsql_la_DEPENDENCIES =  \
-@WITH_PGSQL_TRUE@	$(am__DEPENDENCIES_1)
+@BUILD_MYSQL_TRUE@am_libslurm_mysql_la_rpath =
+@BUILD_PGSQL_TRUE@libslurm_pgsql_la_DEPENDENCIES =  \
+@BUILD_PGSQL_TRUE@	$(am__DEPENDENCIES_1)
 am__libslurm_pgsql_la_SOURCES_DIST = pgsql_common.c pgsql_common.h
-@WITH_PGSQL_TRUE@am_libslurm_pgsql_la_OBJECTS =  \
-@WITH_PGSQL_TRUE@	libslurm_pgsql_la-pgsql_common.lo
+@BUILD_PGSQL_TRUE@am_libslurm_pgsql_la_OBJECTS =  \
+@BUILD_PGSQL_TRUE@	libslurm_pgsql_la-pgsql_common.lo
 am__EXTRA_libslurm_pgsql_la_SOURCES_DIST = pgsql_common.c \
 	pgsql_common.h
 libslurm_pgsql_la_OBJECTS = $(am_libslurm_pgsql_la_OBJECTS)
@@ -110,7 +110,7 @@ libslurm_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libslurm_pgsql_la_CFLAGS) $(CFLAGS) \
 	$(libslurm_pgsql_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_PGSQL_TRUE@am_libslurm_pgsql_la_rpath =
+@BUILD_PGSQL_TRUE@am_libslurm_pgsql_la_rpath =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -184,11 +184,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -205,6 +202,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -337,20 +335,20 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-@WITH_MYSQL_FALSE@MYSQL_LIB = 
-@WITH_MYSQL_TRUE@MYSQL_LIB = libslurm_mysql.la
-@WITH_MYSQL_TRUE@libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
-@WITH_MYSQL_TRUE@libslurm_mysql_la_LIBADD = $(MYSQL_LIBS)
-@WITH_MYSQL_TRUE@libslurm_mysql_la_LDFLAGS = $(LIB_LDFLAGS)
-@WITH_MYSQL_TRUE@libslurm_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
-@WITH_MYSQL_FALSE@EXTRA_libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
-@WITH_PGSQL_FALSE@PGSQL_LIB = 
-@WITH_PGSQL_TRUE@PGSQL_LIB = libslurm_pgsql.la
-@WITH_PGSQL_TRUE@libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
-@WITH_PGSQL_TRUE@libslurm_pgsql_la_LIBADD = $(PGSQL_LIBS)
-@WITH_PGSQL_TRUE@libslurm_pgsql_la_LDFLAGS = $(LIB_LDFLAGS)
-@WITH_PGSQL_TRUE@libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-@WITH_PGSQL_FALSE@EXTRA_libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
+@BUILD_MYSQL_FALSE@MYSQL_LIB = 
+@BUILD_MYSQL_TRUE@MYSQL_LIB = libslurm_mysql.la
+@BUILD_MYSQL_TRUE@libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
+@BUILD_MYSQL_TRUE@libslurm_mysql_la_LIBADD = $(MYSQL_LIBS)
+@BUILD_MYSQL_TRUE@libslurm_mysql_la_LDFLAGS = $(LIB_LDFLAGS)
+@BUILD_MYSQL_TRUE@libslurm_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
+@BUILD_MYSQL_FALSE@EXTRA_libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
+@BUILD_PGSQL_FALSE@PGSQL_LIB = 
+@BUILD_PGSQL_TRUE@PGSQL_LIB = libslurm_pgsql.la
+@BUILD_PGSQL_TRUE@libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
+@BUILD_PGSQL_TRUE@libslurm_pgsql_la_LIBADD = $(PGSQL_LIBS)
+@BUILD_PGSQL_TRUE@libslurm_pgsql_la_LDFLAGS = $(LIB_LDFLAGS)
+@BUILD_PGSQL_TRUE@libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
+@BUILD_PGSQL_FALSE@EXTRA_libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
 noinst_LTLIBRARIES = $(MYSQL_LIB) $(PGSQL_LIB)
 all: all-am
 

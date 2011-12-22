@@ -18,7 +18,6 @@
 #
 # Makefile for sbcast
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -39,10 +38,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = sbcast$(EXEEXT)
+@USE_LOADLEVELER_FALSE@bin_PROGRAMS = sbcast$(EXEEXT)
 subdir = src/sbcast
-DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -89,9 +87,13 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sbcast_OBJECTS = agent.$(OBJEXT) sbcast.$(OBJEXT) opts.$(OBJEXT)
+am__sbcast_SOURCES_DIST = agent.c sbcast.c sbcast.h opts.c
+am__objects_1 = agent.$(OBJEXT) sbcast.$(OBJEXT) opts.$(OBJEXT)
+@USE_LOADLEVELER_FALSE@am_sbcast_OBJECTS = $(am__objects_1)
+am__EXTRA_sbcast_SOURCES_DIST = agent.c sbcast.c sbcast.h opts.c
 sbcast_OBJECTS = $(am_sbcast_OBJECTS)
-sbcast_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
+@USE_LOADLEVELER_FALSE@sbcast_DEPENDENCIES =  \
+@USE_LOADLEVELER_FALSE@	$(top_builddir)/src/api/libslurm.o
 sbcast_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sbcast_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -108,9 +110,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(sbcast_SOURCES)
-DIST_SOURCES = $(sbcast_SOURCES)
-HEADERS = $(noinst_HEADERS)
+SOURCES = $(sbcast_SOURCES) $(EXTRA_sbcast_SOURCES)
+DIST_SOURCES = $(am__sbcast_SOURCES_DIST) \
+	$(am__EXTRA_sbcast_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -163,11 +165,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -184,6 +183,7 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -315,11 +315,17 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-sbcast_LDADD = $(top_builddir)/src/api/libslurm.o -ldl -lm
-noinst_HEADERS = sbcast.h
-sbcast_SOURCES = agent.c sbcast.c opts.c
-sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+SBCAST_SOURCES = \
+	agent.c		\
+	sbcast.c	\
+	sbcast.h	\
+	opts.c
+
+@USE_LOADLEVELER_FALSE@INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+@USE_LOADLEVELER_FALSE@sbcast_LDADD = $(top_builddir)/src/api/libslurm.o -ldl -lm
+@USE_LOADLEVELER_FALSE@sbcast_SOURCES = $(SBCAST_SOURCES)
+@USE_LOADLEVELER_FALSE@sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@USE_LOADLEVELER_TRUE@EXTRA_sbcast_SOURCES = $(SBCAST_SOURCES)
 all: all-am
 
 .SUFFIXES:
@@ -522,7 +528,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -639,9 +645,9 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-binPROGRAMS
 
 
-force:
-$(sbcast_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@USE_LOADLEVELER_FALSE@force:
+@USE_LOADLEVELER_FALSE@$(sbcast_LDADD) : force
+@USE_LOADLEVELER_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

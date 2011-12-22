@@ -6,8 +6,13 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-pkglib_LTLIBRARIES = auth_none.la
+if ! USE_LOADLEVELER
 
 # Null authentication plugin.
+pkglib_LTLIBRARIES = auth_none.la
 auth_none_la_SOURCES = auth_none.c
 auth_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+else
+EXTRA_auth_none_la_SOURCES = auth_none.c
+endif

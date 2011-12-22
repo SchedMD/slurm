@@ -172,7 +172,13 @@ _print_job ( bool clear_old )
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
 	int error_code;
 	uint16_t show_flags = 0;
+#ifdef USE_LOADLEVELER
+	char *job_id = NULL;
+	char *job_id_ptr;
+#else
 	uint32_t job_id = 0;
+	uint32_t *job_id_ptr;
+#endif
 
 	if (params.all_flag || (params.job_list && list_count(params.job_list)))
 		show_flags |= SHOW_ALL;
@@ -183,10 +189,13 @@ _print_job ( bool clear_old )
 
 	if (params.job_list && (list_count(params.job_list) == 1)) {
 		ListIterator iterator;
-		uint32_t *job_id_ptr;
 		iterator = list_iterator_create(params.job_list);
 		job_id_ptr = list_next(iterator);
+#ifdef USE_LOADLEVELER
+		job_id = job_id_ptr;
+#else
 		job_id = *job_id_ptr;
+#endif
 		list_iterator_destroy(iterator);
 	}
 
@@ -229,11 +238,21 @@ _print_job ( bool clear_old )
 	}
 
 	if (params.format == NULL) {
-		if (params.long_list)
+#ifdef USE_LOADLEVELER
+		if (params.long_list) {
+			params.format = "%.17i %.9P %.8j %.8u %.8T %.10M %.9l "
+				"%.6D %R";
+		} else {
+			params.format = "%.17i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
+		}
+#else
+		if (params.long_list) {
 			params.format = "%.7i %.9P %.8j %.8u %.8T %.10M %.9l "
 				"%.6D %R";
-		else
+		} else {
 			params.format = "%.7i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
+		}
+#endif
 	}
 	if (params.format_list == NULL)
 		parse_format(params.format);
@@ -261,8 +280,13 @@ _print_job_steps( bool clear_old )
 			old_step_ptr->last_update = 0;
 		/* Use a last_update time of 0 so that we can get an updated
 		 * run_time for jobs rather than just its start_time */
+#ifdef USE_LOADLEVELER
+		error_code = slurm_get_job_steps((time_t) 0, NULL, NO_VAL,
+						 &new_step_ptr, show_flags);
+#else
 		error_code = slurm_get_job_steps((time_t) 0, NO_VAL, NO_VAL,
 						 &new_step_ptr, show_flags);
+#endif
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -270,9 +294,15 @@ _print_job_steps( bool clear_old )
 			new_step_ptr = old_step_ptr;
 		}
 	}
-	else
+	else {
+#ifdef USE_LOADLEVELER
+		error_code = slurm_get_job_steps((time_t) 0, NULL, NO_VAL,
+						 &new_step_ptr, show_flags);
+#else
 		error_code = slurm_get_job_steps((time_t) 0, NO_VAL, NO_VAL,
 						 &new_step_ptr, show_flags);
+#endif
+	}
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
 		return SLURM_ERROR;
@@ -284,8 +314,13 @@ _print_job_steps( bool clear_old )
 		        (long) new_step_ptr->last_update);
 	}
 
-	if (params.format == NULL)
+	if (params.format == NULL) {
+#ifdef USE_LOADLEVELER
+		params.format = "%20i %.8j %.9P %.8u %.9M %N";
+#else
 		params.format = "%10i %.8j %.9P %.8u %.9M %N";
+#endif
+	}
 	if (params.format_list == NULL)
 		parse_format(params.format);
 

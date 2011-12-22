@@ -427,8 +427,11 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 
+#ifdef USE_LOADLEVELER
+	opt.propagate       = xstrdup("NONE");
+#else
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
-
+#endif
 	opt.prolog = slurm_get_srun_prolog();
 	opt.epilog = slurm_get_srun_epilog();
 	opt.begin = (time_t)0;

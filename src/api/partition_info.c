@@ -347,7 +347,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	return out;
 }
 
-
+#ifndef USE_LOADLEVELER
 /*
  * slurm_load_partitions - issue RPC to get slurm all partition configuration
  *	information if changed since update_time
@@ -396,3 +396,4 @@ extern int slurm_load_partitions (time_t update_time,
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
+#endif

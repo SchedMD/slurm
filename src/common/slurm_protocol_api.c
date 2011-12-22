@@ -437,8 +437,12 @@ char *slurm_get_mpi_params(void)
  */
 uint16_t slurm_get_msg_timeout(void)
 {
+#ifdef USE_LOADLEVELER
+        return 30;
+#else
 	uint16_t msg_timeout = 0;
 	slurm_ctl_conf_t *conf;
+
 
  	if (slurmdbd_conf) {
 		msg_timeout = slurmdbd_conf->msg_timeout;
@@ -451,6 +455,7 @@ uint16_t slurm_get_msg_timeout(void)
 #endif
 	}
 	return msg_timeout;
+#endif
 }
 
 /* slurm_get_plugin_dir
@@ -1700,6 +1705,9 @@ uint16_t slurm_get_select_type_param(void)
 /** Return true if (remote) system runs Cray XT/XE */
 bool is_cray_select_type(void)
 {
+#ifdef USE_LOADLEVELER
+        return false;
+#else
 	bool result = false;
 
 	if (slurmdbd_conf) {
@@ -1709,6 +1717,7 @@ bool is_cray_select_type(void)
 		slurm_conf_unlock();
 	}
 	return result;
+#endif
 }
 
 /* slurm_get_switch_type
@@ -1732,6 +1741,9 @@ char *slurm_get_switch_type(void)
  */
 uint16_t slurm_get_wait_time(void)
 {
+#ifdef USE_LOADLEVELER
+        return 0;
+#else
 	uint16_t wait_time = 0;
 	slurm_ctl_conf_t *conf;
 
@@ -1742,6 +1754,7 @@ uint16_t slurm_get_wait_time(void)
 		slurm_conf_unlock();
 	}
 	return wait_time;
+#endif
 }
 
 /* slurm_get_srun_prolog
@@ -1750,6 +1763,9 @@ uint16_t slurm_get_wait_time(void)
  */
 char *slurm_get_srun_prolog(void)
 {
+#ifdef USE_LOADLEVELER
+        return NULL;
+#else
 	char *prolog = NULL;
 	slurm_ctl_conf_t *conf;
 
@@ -1760,6 +1776,7 @@ char *slurm_get_srun_prolog(void)
 		slurm_conf_unlock();
 	}
 	return prolog;
+#endif
 }
 
 /* slurm_get_srun_epilog
@@ -1768,6 +1785,9 @@ char *slurm_get_srun_prolog(void)
  */
 char *slurm_get_srun_epilog(void)
 {
+#ifdef USE_LOADLEVELER
+        return NULL;
+#else
 	char *epilog = NULL;
 	slurm_ctl_conf_t *conf;
 
@@ -1778,6 +1798,7 @@ char *slurm_get_srun_epilog(void)
 		slurm_conf_unlock();
 	}
 	return epilog;
+#endif
 }
 
 /* slurm_get_task_epilog
@@ -1816,6 +1837,9 @@ char *slurm_get_task_prolog(void)
  * RET task_plugin name, must be xfreed by caller */
 char *slurm_get_task_plugin(void)
 {
+#ifdef USE_LOADLEVELER
+        return NULL;
+#else
 	char *task_plugin = NULL;
 	slurm_ctl_conf_t *conf;
 
@@ -1823,11 +1847,15 @@ char *slurm_get_task_plugin(void)
 	task_plugin = xstrdup(conf->task_plugin);
 	slurm_conf_unlock();
 	return task_plugin;
+#endif
 }
 
 /* slurm_get_task_plugin_param */
 uint16_t slurm_get_task_plugin_param(void)
 {
+#ifdef USE_LOADLEVELER
+        return 0;
+#else
 	uint16_t task_plugin_param = 0;
 	slurm_ctl_conf_t *conf;
 
@@ -1838,6 +1866,7 @@ uint16_t slurm_get_task_plugin_param(void)
 		slurm_conf_unlock();
 	}
 	return task_plugin_param;
+#endif
 }
 
 /* Change general slurm communication errors to slurmctld specific errors */
