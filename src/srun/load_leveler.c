@@ -80,7 +80,7 @@
 
 /* Set this to generate debugging information for srun front-end/back-end
  *	program communications */
-#define _DEBUG_SRUN 1
+#define _DEBUG_SRUN 0
 
 /* Timeout for srun front-end/back-end messages in usec */
 #define MSG_TIMEOUT 5000000
@@ -595,16 +595,13 @@ info("%s", cmd_line);
 
 /*
  * srun_front_end - Open stdin/out/err socket connections to communicate with
- *	a remote node process and spawn a job to claim that connection
- *	and execute the user's command using poe.
+ *	a remote node process and spawn a remote job to claim that connection
+ *	and execute the user's command.
  *
- * argc IN - Count of elements in argv
- * argv IN - [0]:  Our executable name (e.g. srun)
- *	     [1]:  Program to be spawned for user
- *	     [2+]: Arguments to spawned program
+ * cmd_line IN - Command execute line
  * RETURN - remote processes exit code or -1 if some internal error
  */
-extern int srun_front_end (int argc, char **argv)
+extern int srun_front_end (char *cmd_line)
 {
 	uint16_t port_e, port_o, port_s;
 	slurm_addr_t addr_e, addr_o, addr_s;
@@ -621,6 +618,11 @@ extern int srun_front_end (int argc, char **argv)
 	char *exec_line = NULL, hostname[1024];
 	int i, n_fds, status = -1;
 	bool pty = PTY_MODE;
+
+	if (!cmd_line || !cmd_line[0]) {
+		error("no command to execute");
+		goto fini;
+	}
 
 	/* Open sockets for back-end program to communicate with */
 	/* Socket for stdin/stdout */
@@ -659,10 +661,8 @@ extern int srun_front_end (int argc, char **argv)
 /* FIXME: Are environment variables, directory, limits and search path propagated? */
 	/* Generate back-end execute line */
 	gethostname_short(hostname, sizeof(hostname));
-	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu",
-		   SLURM_PREFIX, hostname, port_o, port_e, port_s);
-	for (i = 1; i < argc; i++)
-		xstrfmtcat(exec_line, " %s", argv[i]);
+	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %s",
+		   SLURM_PREFIX, hostname, port_o, port_e, port_s, cmd_line);
 	printf("%s\n", exec_line);
 	xfree(exec_line);
 /* FIXME: Monitor for job abort, if needed, break out of accept or I/O loop */

@@ -71,13 +71,10 @@ extern int srun_back_end (int argc, char **argv);
  *	a remote node process and spawn a remote job to claim that connection
  *	and execute the user's command.
  *
- * argc IN - Count of elements in argv
- * argv IN - [0]:  Our executable name (e.g. srun)
- *	     [1]:  Program to be spawned for user
- *	     [2+]: Arguments to spawned program
+ * cmd_line IN - Command execute line
  * RETURN - remote processes exit code or -1 if some internal error
  */
-extern int srun_front_end (int argc, char **argv);
+extern int srun_front_end (char *cmd_line);
 
 /*
  * srun front-end signal processing function, send a signal to back-end

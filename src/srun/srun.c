@@ -293,8 +293,7 @@ int srun(int ac, char **av)
 		_verbose = debug_level;
 #ifdef USE_LOADLEVELER
 	be_cmd_line = build_poe_command();
-	//exit(srun_front_end(be_argc, be_argv));
-	exit(0);
+	exit(srun_front_end(be_cmd_line));
 #endif
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
