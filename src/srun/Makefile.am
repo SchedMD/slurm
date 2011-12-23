@@ -39,6 +39,9 @@ convenience_libs = \
 
 srun_LDADD = \
 	$(convenience_libs)
+if USE_LOADLEVELER
+  srun_LDADD += $(UTIL_LIBS)
+endif
 
 srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 

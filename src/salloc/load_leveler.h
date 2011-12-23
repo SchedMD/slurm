@@ -82,6 +82,4 @@ extern int salloc_front_end (int argc, char **argv);
 */
 extern int salloc_send_signal(int sig_num);
 
-
-
 #endif	/* USE_LOADLEVELER */

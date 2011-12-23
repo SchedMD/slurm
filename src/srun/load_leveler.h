@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  load_leveler.h - Provide an srun command line interface over LoadLeveler.
+ *  load_leveler.h - Provide an srun command line interface to POE using a
+ *  front-end/back-end process.
  *****************************************************************************
  *  Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -43,7 +44,48 @@
 
 #ifdef USE_LOADLEVELER
 
+/* Build a POE command line based upon srun options (using global variables) */
 extern char *build_poe_command(void);
+
+/*
+ * srun_back_end - Open stdin/out/err socket connections to communicate with
+ *	the srun or srun command that submitted this program as a LoadLeveler
+ *	batch job, spawn the identified user program, forward its stdin/out/err
+ *	communications back, forward signals, and return the program's exit
+ *	code.
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - [0]:  Our executable name (e.g. srun)
+ *	     [1]:  Hostname or address of front-end
+ *	     [2]:  Port number for stdin/out
+ *	     [3]:  Port number for stderr
+ *	     [4]:  Port number for signals/exit status
+ *	     [5]:  Program to be spawned for user
+ *	     [6+]: Arguments to spawned program
+ * RETURN - remote processes exit code
+ */
+extern int srun_back_end (int argc, char **argv);
+
+/*
+ * srun_front_end - Open stdin/out/err socket connections to communicate with
+ *	a remote node process and spawn a remote job to claim that connection
+ *	and execute the user's command.
+ *
+ * argc IN - Count of elements in argv
+ * argv IN - [0]:  Our executable name (e.g. srun)
+ *	     [1]:  Program to be spawned for user
+ *	     [2+]: Arguments to spawned program
+ * RETURN - remote processes exit code or -1 if some internal error
+ */
+extern int srun_front_end (int argc, char **argv);
+
+/*
+ * srun front-end signal processing function, send a signal to back-end
+ *	program
+ * sig_num IN - signal to send
+ * RETURN 0 on success, -1 on error
+*/
+extern int srun_send_signal(int sig_num);
 
 #endif	/* USE_LOADLEVELER */
 #endif	/* SRUN_LOADLEVELER_H */

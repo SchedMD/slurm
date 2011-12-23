@@ -38,11 +38,12 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = srun$(EXEEXT)
-@BGQ_LOADED_TRUE@am__append_1 = runjob_interface.cc
-@BGQ_LOADED_TRUE@am__append_2 = $(RUNJOB_LDFLAGS)
-@BGQ_LOADED_FALSE@am__append_3 = runjob_interface.cc
-@USE_LOADLEVELER_TRUE@am__append_4 = load_leveler.c load_leveler.h
-@USE_LOADLEVELER_FALSE@am__append_5 = load_leveler.c load_leveler.h
+@USE_LOADLEVELER_TRUE@am__append_1 = $(UTIL_LIBS)
+@BGQ_LOADED_TRUE@am__append_2 = runjob_interface.cc
+@BGQ_LOADED_TRUE@am__append_3 = $(RUNJOB_LDFLAGS)
+@BGQ_LOADED_FALSE@am__append_4 = runjob_interface.cc
+@USE_LOADLEVELER_TRUE@am__append_5 = load_leveler.c load_leveler.h
+@USE_LOADLEVELER_FALSE@am__append_6 = load_leveler.c load_leveler.h
 subdir = src/srun
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -107,7 +108,9 @@ am__EXTRA_srun_SOURCES_DIST = runjob_interface.cc load_leveler.c \
 	load_leveler.h
 srun_OBJECTS = $(am_srun_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
-srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 =
+@USE_LOADLEVELER_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2)
+srun_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_3)
 srun_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(srun_LDFLAGS) $(LDFLAGS) -o $@
@@ -358,20 +361,18 @@ SRUN_SOURCES = \
 	task_state.c	\
 	task_state.h
 
-EXTRA_srun_SOURCES = $(am__append_3) $(am__append_5)
+EXTRA_srun_SOURCES = $(am__append_4) $(am__append_6)
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-srun_SOURCES = $(SRUN_SOURCES) $(am__append_1) $(am__append_4)
+srun_SOURCES = $(SRUN_SOURCES) $(am__append_2) $(am__append_5)
 
 # pthread is needed for compiling with g++ (which is used for linking
 # no matter if on a BGQ or not because of mentioning a .cc file
 convenience_libs = \
 	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
 
-srun_LDADD = \
-	$(convenience_libs)
-
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(am__append_2)
+srun_LDADD = $(convenience_libs) $(am__append_1)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(am__append_3)
 all: all-am
 
 .SUFFIXES:

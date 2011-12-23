@@ -217,7 +217,12 @@ int srun(int ac, char **av)
 	slurm_step_io_fds_t cio_fds;
 	pthread_t msg_thread = (pthread_t) 0;
 #endif
+#ifdef USE_LOADLEVELER
+	char *be_cmd_line;
 
+	if ((ac > 1) && !strcmp(av[1], "--srun-be"))
+		exit(srun_back_end (ac, av));
+#endif
 	env->stepid = -1;
 	env->procid = -1;
 	env->localid = -1;
@@ -286,7 +291,11 @@ int srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	} else
 		_verbose = debug_level;
-build_poe_command();
+#ifdef USE_LOADLEVELER
+	be_cmd_line = build_poe_command();
+	//exit(srun_front_end(be_argc, be_argv));
+	exit(0);
+#endif
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
 	(void) _set_umask_env();
