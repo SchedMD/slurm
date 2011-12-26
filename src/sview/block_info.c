@@ -104,8 +104,13 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_JOB, "JobID", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
+#ifdef HAVE_BG_L_P
 	{G_TYPE_STRING, SORTID_USER, "User", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
+#else
+	{G_TYPE_STRING, SORTID_USER, NULL, FALSE, EDIT_NONE, refresh_block,
+	 create_model_block, admin_edit_block},
+#endif
 	{G_TYPE_STRING, SORTID_NODE_CNT, "Node Count",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type",
@@ -1572,6 +1577,7 @@ extern void cluster_change_block(void)
 		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			switch(display_data->id) {
 			case SORTID_USE:
+			case SORTID_USER:
 			case SORTID_IMAGEBLRTS:
 			case SORTID_IMAGELINUX:
 			case SORTID_IMAGERAMDISK:
@@ -1592,6 +1598,9 @@ extern void cluster_change_block(void)
 			case SORTID_IMAGERAMDISK:
 				display_data->name = "Image Ioload";
 				break;
+			case SORTID_USER:
+				display_data->name = "User";
+				break;
 			default:
 				break;
 			}
@@ -1608,6 +1617,9 @@ extern void cluster_change_block(void)
 				break;
 			case SORTID_IMAGERAMDISK:
 				display_data->name = "Image Ramdisk";
+				break;
+			case SORTID_USER:
+				display_data->name = "User";
 				break;
 			default:
 				break;
