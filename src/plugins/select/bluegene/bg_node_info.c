@@ -487,15 +487,11 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		list_iterator_destroy(itr);
 		break;
 	case SELECT_NODEDATA_EXTRA_INFO:
-		if (nodeinfo->extra_info && nodeinfo->failed_cnodes) {
-			/* \n already added to extra_info */
-			*tmp_char = xstrdup_printf("%sFailed cnodes=%s",
-						   nodeinfo->extra_info,
-						   nodeinfo->failed_cnodes);
-		} else if (nodeinfo->extra_info)
+		if (nodeinfo->extra_info)
 			*tmp_char = xstrdup(nodeinfo->extra_info);
-		else if (nodeinfo->failed_cnodes)
-			*tmp_char = xstrdup(nodeinfo->failed_cnodes);
+		if (nodeinfo->failed_cnodes)
+			xstrfmtcat(*tmp_char, "Failed cnodes=%s",
+				   nodeinfo->failed_cnodes);
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
