@@ -64,7 +64,7 @@ AC_DEFUN([X_AC_DATABASES],
 				[ac_have_mysql="no"])
 			CFLAGS="$save_CFLAGS"
 			LIBS="$save_LIBS"
-       			if test "$ac_have_mysql" = yes; then
+			if test "$ac_have_mysql" = yes; then
 				AC_MSG_RESULT([MySQL test program built properly.])
 				AC_SUBST(MYSQL_LIBS)
 				AC_SUBST(MYSQL_CFLAGS)
@@ -89,7 +89,7 @@ AC_DEFUN([X_AC_DATABASES],
 				CFLAGS="$save_CFLAGS"
 				LIBS="$save_LIBS"
 
-    				if test "$ac_have_mysql" = yes; then
+				if test "$ac_have_mysql" = yes; then
 					AC_MSG_RESULT([MySQL (non-threaded) test program built properly.])
 					AC_SUBST(MYSQL_LIBS)
 					AC_SUBST(MYSQL_CFLAGS)
