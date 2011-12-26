@@ -6051,7 +6051,7 @@ case "$host" in
 		   LDFLAGS="$LDFLAGS -L/usr/sfw/lib"
 		   ;;
 esac
- if test x"$ac_have_cygwin" == x"yes"; then
+ if test x"$ac_have_cygwin" = x"yes"; then
   WITH_CYGWIN_TRUE=
   WITH_CYGWIN_FALSE='#'
 else
@@ -19366,6 +19366,8 @@ if test "${with_dimensions+set}" = set; then :
         x_ac_dimensions=yes
       fi
 
+else
+  x_ac_dimensions=no
 
 fi
 
@@ -19373,11 +19375,16 @@ fi
     if test $dimensions -lt 1; then
       as_fn_error $? "Invalid dimensions value $dimensions" "$LINENO" 5
     fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $dimensions" >&5
+$as_echo "$dimensions" >&6; };
 
 cat >>confdefs.h <<_ACEOF
 #define SYSTEM_DIMENSIONS $dimensions
 _ACEOF
 
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not set" >&5
+$as_echo "not set" >&6; };
   fi
 
 
@@ -19386,7 +19393,7 @@ _ACEOF
 	# Without this flag there is a bug when pointing to other functions
 	# and then using them.  It is also advised to set the flag if there
 	# are goto statements you may get better performance.
-	if test "$GCC" == "yes"; then
+	if test "$GCC" = yes; then
 		CFLAGS="$CFLAGS -fno-gcse"
 	fi
 
@@ -19672,9 +19679,9 @@ fi
    fi
 
    if test "$ac_have_some_curses" = "yes"; then
-        save_LIBS="$LIBS"
-        LIBS="$NCURSES $save_LIBS"
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	save_LIBS="$LIBS"
+	LIBS="$NCURSES $save_LIBS"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <${NCURSES_HEADER}>
 int
@@ -19692,14 +19699,14 @@ else
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-        LIBS="$save_LIBS"
-        if test "$ac_have_some_curses" == "yes"; then
-            { $as_echo "$as_me:${as_lineno-$LINENO}: result: NCURSES test program built properly." >&5
+	LIBS="$save_LIBS"
+	if test "$ac_have_some_curses" = "yes"; then
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: NCURSES test program built properly." >&5
 $as_echo "NCURSES test program built properly." >&6; }
-        else
-            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** NCURSES test program execution failed." >&5
+	else
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** NCURSES test program execution failed." >&5
 $as_echo "$as_me: WARNING: *** NCURSES test program execution failed." >&2;}
-        fi
+	fi
    else
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Can not build smap without curses or ncurses library" >&5
 $as_echo "$as_me: WARNING: Can not build smap without curses or ncurses library" >&2;}
@@ -20166,7 +20173,7 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 			CFLAGS="$save_CFLAGS"
 			LIBS="$save_LIBS"
-       			if test "$ac_have_mysql" == "yes"; then
+			if test "$ac_have_mysql" = yes; then
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: MySQL test program built properly." >&5
 $as_echo "MySQL test program built properly." >&6; }
 
@@ -20209,7 +20216,7 @@ rm -f core conftest.err conftest.$ac_objext \
 				CFLAGS="$save_CFLAGS"
 				LIBS="$save_LIBS"
 
-    				if test "$ac_have_mysql" == "yes"; then
+				if test "$ac_have_mysql" = yes; then
 					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: MySQL (non-threaded) test program built properly." >&5
 $as_echo "MySQL (non-threaded) test program built properly." >&6; }
 
@@ -20229,7 +20236,7 @@ $as_echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
 			fi
 		fi
       	fi
-	 if test x"$ac_have_mysql" == x"yes"; then
+	 if test x"$ac_have_mysql" = x"yes"; then
   WITH_MYSQL_TRUE=
   WITH_MYSQL_FALSE='#'
 else
@@ -20375,7 +20382,7 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 		LIBS="$save_LIBS"
        		CFLAGS="$save_CFLAGS"
-		if test "$ac_have_pgsql" == "yes"; then
+		if test "$ac_have_pgsql" = "yes"; then
     			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: PostgreSQL test program built properly." >&5
 $as_echo "PostgreSQL test program built properly." >&6; }
 
@@ -20390,7 +20397,7 @@ $as_echo "#define HAVE_PGSQL 1" >>confdefs.h
 $as_echo "$as_me: WARNING: *** PostgreSQL test program execution failed." >&2;}
 		fi
       	fi
-	 if test x"$ac_have_pgsql" == x"yes"; then
+	 if test x"$ac_have_pgsql" = x"yes"; then
   WITH_PGSQL_TRUE=
   WITH_PGSQL_FALSE='#'
 else
@@ -20935,7 +20942,7 @@ _ACEOF
 
 
 
-if test "x$prefix" == "xNONE" ; then
+if test "x$prefix" = "xNONE" ; then
 
 cat >>confdefs.h <<_ACEOF
 #define SLURM_PREFIX "/usr/local"
@@ -21442,7 +21449,7 @@ fi
 
 
 
-    if test "x$ac_have_man2html" == "xyes"; then
+    if test "x$ac_have_man2html" = "xyes"; then
   HAVE_MAN2HTML_TRUE=
   HAVE_MAN2HTML_FALSE='#'
 else
@@ -21494,13 +21501,13 @@ fi
 	*) have_solaris=no ;;
   esac
 
-  if test   "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib64/0@0.so.1; then
+  if test   "$printf_null_ok" = "no" -a "$have_solaris" = "yes" -a -d /usr/lib64/0@0.so.1; then
     as_fn_error $? "printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib64/0@0.so.1" "$LINENO" 5
-  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib/0@0.so.1; then
+  elif test "$printf_null_ok" = "no" -a "$have_solaris" = "yes" -a -d /usr/lib/0@0.so.1; then
     as_fn_error $? "printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1" "$LINENO" 5
-  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes"; then
+  elif test "$printf_null_ok" = "no" -a "$have_solaris" = "yes"; then
     as_fn_error $? "printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119" "$LINENO" 5
-  elif test "$printf_null_ok" == "no"; then
+  elif test "$printf_null_ok" = "no"; then
     as_fn_error $? "printf(\"%s\", NULL) results in abort" "$LINENO" 5
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -22100,7 +22107,7 @@ fi
 
 
 ac_build_smap="no"
-if test "x$ac_have_some_curses" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+if test "x$ac_have_some_curses" = "xyes" ; then
    ac_build_smap="yes"
 fi
  if test "x$ac_build_smap" = "xyes"; then
@@ -22111,8 +22118,9 @@ else
   BUILD_SMAP_FALSE=
 fi
 
+
 ac_build_sview="no"
-if test "x$ac_have_gtk" = "xyes" && test "x$ac_with_load_leveler" = "xno" ; then
+if test "x$ac_have_gtk" = "xyes" ; then
    ac_build_sview="yes"
 fi
  if test "x$ac_build_sview" = "xyes"; then
