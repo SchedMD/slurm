@@ -18,7 +18,7 @@ AC_DEFUN([X_AC_CFLAGS],
 	# Without this flag there is a bug when pointing to other functions 
 	# and then using them.  It is also advised to set the flag if there
 	# are goto statements you may get better performance.
-	if test "$GCC" == "yes"; then
+	if test "$GCC" = yes; then
 		CFLAGS="$CFLAGS -fno-gcse"    
 	fi
 ])

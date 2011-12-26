@@ -64,7 +64,7 @@ AC_DEFUN([X_AC_DATABASES],
 				[ac_have_mysql="no"])
 			CFLAGS="$save_CFLAGS"
 			LIBS="$save_LIBS"
-       			if test "$ac_have_mysql" == "yes"; then
+       			if test "$ac_have_mysql" = yes; then
 				AC_MSG_RESULT([MySQL test program built properly.])
 				AC_SUBST(MYSQL_LIBS)
 				AC_SUBST(MYSQL_CFLAGS)
@@ -89,7 +89,7 @@ AC_DEFUN([X_AC_DATABASES],
 				CFLAGS="$save_CFLAGS"
 				LIBS="$save_LIBS"
 
-    				if test "$ac_have_mysql" == "yes"; then
+    				if test "$ac_have_mysql" = yes; then
 					AC_MSG_RESULT([MySQL (non-threaded) test program built properly.])
 					AC_SUBST(MYSQL_LIBS)
 					AC_SUBST(MYSQL_CFLAGS)
@@ -103,7 +103,7 @@ AC_DEFUN([X_AC_DATABASES],
 			fi
 		fi
       	fi
-	AM_CONDITIONAL(WITH_MYSQL, test x"$ac_have_mysql" == x"yes")
+	AM_CONDITIONAL(WITH_MYSQL, test x"$ac_have_mysql" = x"yes")
 
 	#Check for PostgreSQL
 	ac_have_postgres="no"
@@ -145,7 +145,7 @@ AC_DEFUN([X_AC_DATABASES],
 			[ac_have_pgsql="no"])
 		LIBS="$save_LIBS"
        		CFLAGS="$save_CFLAGS"
-		if test "$ac_have_pgsql" == "yes"; then
+		if test "$ac_have_pgsql" = "yes"; then
     			AC_MSG_RESULT([PostgreSQL test program built properly.])
 			AC_SUBST(PGSQL_LIBS)
 			AC_SUBST(PGSQL_CFLAGS)
@@ -156,6 +156,6 @@ AC_DEFUN([X_AC_DATABASES],
        			AC_MSG_WARN([*** PostgreSQL test program execution failed.])
 		fi
       	fi
-	AM_CONDITIONAL(WITH_PGSQL, test x"$ac_have_pgsql" == x"yes")
+	AM_CONDITIONAL(WITH_PGSQL, test x"$ac_have_pgsql" = x"yes")
 
 ])

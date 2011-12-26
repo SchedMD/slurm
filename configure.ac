@@ -86,7 +86,7 @@ case "$host" in
 		   LDFLAGS="$LDFLAGS -L/usr/sfw/lib"
 		   ;;
 esac
-AM_CONDITIONAL(WITH_CYGWIN, test x"$ac_have_cygwin" == x"yes")
+AM_CONDITIONAL(WITH_CYGWIN, test x"$ac_have_cygwin" = x"yes")
 
 dnl Checks for programs.
 dnl
@@ -270,7 +270,7 @@ X_AC_SLURM_PORTS([6817], [6818], [6819], [1])
 
 dnl add SLURM_PREFIX to config.h
 dnl
-if test "x$prefix" == "xNONE" ; then
+if test "x$prefix" = "xNONE" ; then
   AC_DEFINE_UNQUOTED(SLURM_PREFIX, "/usr/local", [Define Slurm installation prefix])
 else
   AC_DEFINE_UNQUOTED(SLURM_PREFIX, "$prefix", [Define Slurm installation prefix])
