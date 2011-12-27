@@ -854,6 +854,16 @@ extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 	xfree(msg);
 }
 
+/*extern void slurm_free_stats_request_msg(stats_desc_msg_t *msg)
+{
+	xfree(msg);
+}*/
+
+extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg)
 {
 	xfree(msg);
@@ -2315,6 +2325,13 @@ extern void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 		xfree(msg);
 	}
 }
+
+
+inline void slurm_free_stats_info_request_msg(stats_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
 
 extern void slurm_destroy_priority_factors_object(void *object)
 {

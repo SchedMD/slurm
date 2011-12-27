@@ -213,6 +213,10 @@ typedef enum {
 	RESPONSE_FRONT_END_INFO,
 	REQUEST_SPANK_ENVIRONMENT,
 	RESPONCE_SPANK_ENVIRONMENT,
+	REQUEST_STATS_INFO,
+	RESPONSE_STATS_INFO,
+	REQUEST_STATS_RESET,
+	RESPONSE_STATS_RESET,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -981,6 +985,8 @@ extern void slurm_free_front_end_info_request_msg(
 		front_end_info_request_msg_t *msg);
 extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
+extern void slurm_free_stats_info_request_msg(stats_info_request_msg_t *msg);
+extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
 extern void slurm_free_set_debug_flags_msg(set_debug_flags_msg_t *msg);
 extern void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);

@@ -1124,7 +1124,6 @@ static void _list_delete_retry(void *retry_entry)
 	xfree(queued_req_ptr);
 }
 
-
 /*
  * agent_retry - Agent for retrying pending RPCs. One pending request is
  *	issued if it has been pending for at least min_wait seconds
@@ -1625,4 +1624,12 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 
 	queued_req_ptr->last_attempt  = now;
 	return 1;
+}
+
+/* Return length of agent's retry_list */
+extern int retry_list_size(void)
+{
+	if (retry_list == NULL)
+		return 0;
+	return list_count(retry_list);
 }

@@ -55,6 +55,7 @@ slurmctld_SOURCES =     \
 	srun_comm.h	\
 	state_save.c	\
 	state_save.h	\
+	statistics.c	\
 	step_mgr.c	\
 	trigger_mgr.c	\
 	trigger_mgr.h

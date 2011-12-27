@@ -94,6 +94,7 @@ slurmapi_src =           \
 	partition_info.c \
 	reservation_info.c \
 	signal.c         \
+	slurm_get_statistics.c \
 	slurm_hostlist.c \
 	slurm_pmi.c slurm_pmi.h	\
 	step_ctx.c step_ctx.h \
@@ -106,6 +107,7 @@ slurmapi_src =           \
 	triggers.c       \
 	reconfigure.c    \
 	update_config.c
+
 
 common_dir = $(top_builddir)/src/common
 

@@ -102,7 +102,10 @@ typedef struct node_space_map {
 	bitstr_t *avail_bitmap;
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
-int backfilled_jobs = 0;
+
+/* Diag statistics */
+extern diag_stats_t slurmctld_diag_stats;
+int bf_last_ints = 0;
 
 /*********************** local variables *********************/
 static bool stop_backfill = false;
@@ -385,6 +388,32 @@ extern void backfill_reconfig(void)
 	config_flag = true;
 }
 
+static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
+{
+	long delta_t;
+	long bf_interval_usecs = backfill_interval * 1000000;
+
+	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+
+	slurmctld_diag_stats.bf_cycle_counter++;
+	slurmctld_diag_stats.bf_cycle_sum += (delta_t -(bf_last_ints *
+							bf_interval_usecs));
+   	slurmctld_diag_stats.bf_cycle_last = delta_t - (bf_last_ints *
+							bf_interval_usecs);
+	slurmctld_diag_stats.bf_depth_sum += slurmctld_diag_stats.bf_last_depth;
+	slurmctld_diag_stats.bf_depth_try_sum += slurmctld_diag_stats.
+						 bf_last_depth_try;
+	if (slurmctld_diag_stats.bf_cycle_last >
+	    slurmctld_diag_stats.bf_cycle_max) {
+		slurmctld_diag_stats.bf_cycle_max = slurmctld_diag_stats.
+						    bf_cycle_last;
+	}
+
+	slurmctld_diag_stats.bf_active = 0;
+}
+
+
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
 {
@@ -433,6 +462,7 @@ static int _yield_locks(int secs)
 	part_update = last_part_update;
 
 	unlock_slurmctld(all_locks);
+	bf_last_ints++;
 	_my_sleep(secs);
 	lock_slurmctld(all_locks);
 
@@ -461,6 +491,7 @@ static int _attempt_backfill(void)
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res;
 	node_space_map_t *node_space;
+	struct timeval bf_time1, bf_time2;
 	static int sched_timeout = 0;
 	int this_sched_timeout = 0, rc = 0;
 	int job_test_count = 0;
@@ -506,6 +537,17 @@ static int _attempt_backfill(void)
 		return 0;
 	}
 
+	gettimeofday(&bf_time1, NULL);
+
+	slurmctld_diag_stats.bf_queue_len = list_count(job_queue);
+	slurmctld_diag_stats.bf_queue_len_sum += slurmctld_diag_stats.
+						 bf_queue_len;
+	slurmctld_diag_stats.bf_last_depth = 0;
+	slurmctld_diag_stats.bf_last_depth_try = 0;
+	slurmctld_diag_stats.bf_when_last_cycle = now;
+	bf_last_ints = 0;
+	slurmctld_diag_stats.bf_active = 1;
+
 	node_space = xmalloc(sizeof(node_space_map_t) *
 			     (max_backfill_job_cnt + 3));
 	node_space[0].begin_time = sched_start;
@@ -528,6 +570,8 @@ static int _attempt_backfill(void)
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill test for job %u", job_ptr->job_id);
+
+		slurmctld_diag_stats.bf_last_depth++;
 
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL))
@@ -668,6 +712,8 @@ static int _attempt_backfill(void)
 		/* this is the time consuming operation */
 		debug2("backfill: entering _try_sched for job %u.",
 		       job_ptr->job_id);
+
+		slurmctld_diag_stats.bf_last_depth_try++;
 		j = _try_sched(job_ptr, &avail_bitmap,
 			       min_nodes, max_nodes, req_nodes);
 		debug2("backfill: finished _try_sched for job %u.",
@@ -766,6 +812,8 @@ static int _attempt_backfill(void)
 	}
 	xfree(node_space);
 	list_destroy(job_queue);
+	gettimeofday(&bf_time2, NULL);
+	_do_diag_stats(&bf_time1, &bf_time2);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		END_TIMER;
 		info("backfill: completed testing %d jobs, %s",
@@ -802,10 +850,11 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 			srun_allocate(job_ptr->job_id);
 		else if (job_ptr->details->prolog_running == 0)
 			launch_job(job_ptr);
-		backfilled_jobs++;
+		slurmctld_diag_stats.backfilled_jobs++;
+		slurmctld_diag_stats.last_backfilled_jobs++;
 		if (debug_flags & DEBUG_FLAG_BACKFILL) {
-			info("backfill: Jobs backfilled since boot: %d",
-			     backfilled_jobs);
+			info("backfill: Jobs backfilled since boot: %u",
+			     slurmctld_diag_stats.backfilled_jobs);
 		}
 	} else if ((job_ptr->job_id != fail_jobid) &&
 		   (rc != ESLURM_ACCOUNTING_POLICY)) {

@@ -169,6 +169,40 @@ typedef struct slurmctld_config {
 #endif
 } slurmctld_config_t;
 
+/* Job scheduling statistics */
+typedef struct diag_stats {
+	int proc_req_threads;
+	int proc_req_raw;
+
+	uint32_t schedule_cycle_max;
+	uint32_t schedule_cycle_last;
+	uint32_t schedule_cycle_sum;
+	uint32_t schedule_cycle_counter;
+	uint32_t schedule_cycle_depth;
+	uint32_t schedule_queue_len;
+
+	uint32_t jobs_submitted;
+	uint32_t jobs_started;
+	uint32_t jobs_completed;
+	uint32_t jobs_canceled;
+	uint32_t jobs_failed;
+
+	uint32_t backfilled_jobs;
+	uint32_t last_backfilled_jobs;
+	uint32_t bf_cycle_counter;
+	uint32_t bf_cycle_last;
+	uint32_t bf_cycle_max;
+	uint32_t bf_cycle_sum;
+	uint32_t bf_last_depth;
+	uint32_t bf_last_depth_try;
+	uint32_t bf_depth_sum;
+	uint32_t bf_depth_try_sum;
+	uint32_t bf_queue_len;
+	uint32_t bf_queue_len_sum;
+	time_t   bf_when_last_cycle;
+	uint32_t bf_active;
+} diag_stats_t;
+
 extern slurmctld_config_t slurmctld_config;
 extern int   bg_recover;		/* state recovery mode */
 extern char *slurmctld_cluster_name;	/* name of cluster */
@@ -1387,6 +1421,10 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid,
 			   uint16_t protocol_version);
 
+/* Pack all scheduling statistics */
+extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
+			  uint16_t protocol_version);
+
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
  * IN job_id - specific id or zero for all
@@ -1521,6 +1559,9 @@ extern void reset_first_job_id(void);
  *	job_list - pointer to global job list
  */
 extern void reset_job_bitmaps (void);
+
+/* Reset all scheduling statistics */
+extern void reset_stats(void);
 
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields

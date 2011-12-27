@@ -90,6 +90,8 @@ static int	_valid_node_feature(char *feature);
 
 static int	save_last_part_update = 0;
 
+extern diag_stats_t slurmctld_diag_stats;
+
 /*
  * _build_user_job_list - build list of jobs for a given user
  *			  and an optional job name
@@ -326,6 +328,18 @@ static bool _failed_partition(struct part_record *part_ptr,
 	return false;
 }
 
+static void do_diag_stats(struct timeval tv1, struct timeval tv2)
+{
+	if (slurm_diff_tv(&tv1,&tv2) > slurmctld_diag_stats.schedule_cycle_max)
+		slurmctld_diag_stats.schedule_cycle_max = slurm_diff_tv(&tv1,
+									&tv2);
+
+	slurmctld_diag_stats.schedule_cycle_sum += slurm_diff_tv(&tv1, &tv2);
+	slurmctld_diag_stats.schedule_cycle_last = slurm_diff_tv(&tv1, &tv2);
+	slurmctld_diag_stats.schedule_cycle_counter++;
+}
+
+
 /*
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
@@ -439,6 +453,7 @@ extern int schedule(uint32_t job_limit)
 
 	debug("sched: Running job scheduler");
 	job_queue = build_job_queue(false);
+	slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
 	while ((job_queue_rec = list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
@@ -454,6 +469,9 @@ extern int schedule(uint32_t job_limit)
 			       job_depth);
 			break;
 		}
+
+		slurmctld_diag_stats.schedule_cycle_depth++;
+
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
 		if (job_ptr->priority == 0)	{ /* held */
@@ -630,6 +648,7 @@ extern int schedule(uint32_t job_limit)
 		} else if (error_code == SLURM_SUCCESS) {
 			/* job initiated */
 			debug3("sched: JobId=%u initiated", job_ptr->job_id);
+			slurmctld_diag_stats.jobs_started++;
 			last_job_update = now;
 #ifdef HAVE_BG
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -681,6 +700,9 @@ extern int schedule(uint32_t job_limit)
 	list_destroy(job_queue);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("schedule");
+
+	do_diag_stats(tv1, tv2);
+
 	return job_cnt;
 }
 

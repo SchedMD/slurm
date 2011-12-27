@@ -158,9 +158,11 @@ inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_stats(slurm_msg_t * msg);
 
 inline static void  _update_cred_key(void);
 
+extern diag_stats_t slurmctld_diag_stats;
 
 /*
  * slurmctld_req  - Process an individual RPC request
@@ -430,6 +432,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_REBOOT_NODES:
 		_slurm_rpc_reboot_nodes(msg);
 		/* No body to free */
+		break;
+	case REQUEST_STATS_INFO:
+		_slurm_rpc_dump_stats(msg);
+		slurm_free_stats_info_request_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -1349,6 +1355,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			if (job_step_kill_msg->signal == SIGKILL) {
 				info("sched: Cancel of JobId=%u by UID=%u, %s",
 				     job_step_kill_msg->job_id, uid, TIME_STR);
+				slurmctld_diag_stats.jobs_canceled++;
 			} else {
 				info("Signal %u of JobId=%u by UID=%u, %s",
 				     job_step_kill_msg->signal,
@@ -1549,6 +1556,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		      comp_msg->job_id,
 		      msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
+		slurmctld_diag_stats.jobs_failed++;
 		if (error_code == SLURM_SUCCESS) {
 #ifdef HAVE_BG
 			if (job_ptr) {
@@ -1617,6 +1625,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		debug2("_slurm_rpc_complete_batch_script JobId=%u %s",
 		       comp_msg->job_id, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
 	}
 	if (dump_job)
@@ -2651,6 +2660,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		slurmctld_diag_stats.jobs_submitted++;
 		schedule(0);		/* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
@@ -4218,3 +4228,39 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	slurm_free_spank_env_responce_msg(spank_resp_msg);
 }
+
+
+/* _slurm_rpc_dump_stats - process RPC for statistics information */
+static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
+{
+	char *dump;
+	int dump_size;
+	stats_info_request_msg_t *request_msg;
+	slurm_msg_t response_msg;
+
+	request_msg = (stats_info_request_msg_t *)msg->data;
+
+	info("SIM: Processing RPC: MESSAGE_REALTIME_STATS (command: %u)",
+	     request_msg->command_id);
+
+	slurm_msg_t_init(&response_msg);
+	response_msg.protocol_version = msg->protocol_version;
+	response_msg.address = msg->address;
+	response_msg.msg_type = RESPONSE_STATS_INFO;
+
+	if (request_msg->command_id == 0) {
+		reset_stats();
+		pack_all_stat(0, &dump, &dump_size, msg->protocol_version);
+		response_msg.data = dump;
+		response_msg.data_size = dump_size;
+	} else {
+		pack_all_stat(1, &dump, &dump_size, msg->protocol_version);
+		response_msg.data = dump;
+		response_msg.data_size = dump_size;
+	}
+
+	/* send message */
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	xfree(dump);
+}
+

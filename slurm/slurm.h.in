@@ -2010,6 +2010,46 @@ typedef struct job_sbcast_cred_msg {
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
 
+typedef struct stats_info_request_msg {
+	uint16_t command_id;
+} stats_info_request_msg_t;
+
+typedef struct stats_info_response_msg {
+	uint32_t parts_packed;
+	time_t req_time;
+	time_t req_time_start;
+	uint32_t server_thread_count;
+	uint32_t agent_queue_size;
+
+	uint32_t schedule_cycle_max;
+	uint32_t schedule_cycle_last;
+	uint32_t schedule_cycle_sum;
+	uint32_t schedule_cycle_counter;
+	uint32_t schedule_cycle_depth;
+	uint32_t schedule_queue_len;
+
+	uint32_t jobs_submitted;
+	uint32_t jobs_started;
+	uint32_t jobs_completed;
+	uint32_t jobs_canceled;
+	uint32_t jobs_failed;
+
+	uint32_t bf_backfilled_jobs;
+	uint32_t bf_last_backfilled_jobs;
+	uint32_t bf_cycle_counter;
+	uint32_t bf_cycle_sum;
+	uint32_t bf_cycle_last;
+	uint32_t bf_cycle_max;
+	uint32_t bf_last_depth;
+	uint32_t bf_last_depth_try;
+	uint32_t bf_depth_sum;
+	uint32_t bf_depth_try_sum;
+	uint32_t bf_queue_len;
+	uint32_t bf_queue_len_sum;
+	time_t   bf_when_last_cycle;
+	uint32_t bf_active;
+} stats_info_response_msg_t;
+
 #define TRIGGER_FLAG_PERM		0x0001
 
 #define TRIGGER_RES_TYPE_JOB            0x0001
@@ -2520,10 +2560,12 @@ void slurm_print_key_pairs PARAMS(
 extern void slurm_init_update_step_msg PARAMS(
 	(step_update_request_msg_t * step_msg));
 
-/* Update the time limit of a job step,
- * IN step_msg - step update messasge descriptor
- * RET 0 or -1 on error */
-extern int slurm_update_step PARAMS((step_update_request_msg_t * step_msg));
+/* Get scheduling statistics */
+extern int  slurm_get_statistics PARAMS((stats_info_response_msg_t **buf,
+					 stats_info_request_msg_t *req));
+
+/* Reset scheduling statistics */
+extern int  slurm_reset_statistics PARAMS((stats_info_request_msg_t *req));
 
 /*****************************************************************************\
  *	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
@@ -2773,6 +2815,11 @@ extern void slurm_job_step_pids_free PARAMS((job_step_pids_t *object));
 extern void slurm_job_step_pids_response_msg_free PARAMS((void *object));
 extern void slurm_job_step_stat_free(job_step_stat_t *object);
 extern void slurm_job_step_stat_response_msg_free(void *object);
+
+/* Update the time limit of a job step,
+ * IN step_msg - step update messasge descriptor
+ * RET 0 or -1 on error */
+extern int slurm_update_step PARAMS((step_update_request_msg_t * step_msg));
 
 /*****************************************************************************\
  *	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

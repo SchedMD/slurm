@@ -105,4 +105,7 @@ extern int get_agent_count(void);
  */
 extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type);
 
+/* Return length of agent's retry_list */
+extern int retry_list_size(void);
+
 #endif /* !_AGENT_H */

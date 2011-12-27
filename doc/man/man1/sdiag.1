@@ -1,0 +1,183 @@
+.TH "sdiag" "1" "SLURM 2.4" "December 2011" "SLURM Commands"
+.SH "NAME"
+.LP
+sdiag \- Diagnostic tool for SLURM
+
+.SH "SYNOPSIS"
+.LP
+sview
+
+.SH "DESCRIPTION"
+.LP
+sdiag shows information related to slurmctld execution about: threads, agents,
+jobs, and scheduling algorithms. The goal is to obtain data from slurmctld
+behaviour helping to adjust configuration parameters or queues policies. The
+main reason behind is to know SLURM behaviour under systems with a high throughput.
+.LP
+It has two execution modes. The default mode \fB\-\-all\fR shows several counters
+and statistics explained later, and there is another execution option
+\fB\-\-reset\fR for resetting those values.
+.LP
+Values are reset at midnight UTC time by default.
+.LP
+The first block of information is related to global slurmctld execution:
+.TP
+\fBServer thread count\fR
+The number of current active slurmctld threads. A high number would mean a high
+load processing events like job submissions, jobs dispatching, jobs completing,
+etc. If this is often close to MAX_SERVER_THREADS it could point to a potential
+bottleneck.
+
+.TP
+\fBAgent queue size\fR
+SLURM design has scalability in mind and sending messages to thousands of nodes
+is not a trivial task. The agent mechanism helps to control communication
+between the slurm daemons and the controller for a best effort. If this values
+is close to MAX_AGENT_CNT there could be some delays affecting jobs management.
+
+.TP
+\fBJobs submitted\fR
+Number of jobs submitted since last reset
+
+.TP
+\fBJobs started\fR
+Number of jobs started since last reset. This includes backfilled jobs.
+
+.TP
+\fBJobs completed\fR
+Number of jobs completed since last reset.
+
+.TP
+\fBJobs canceled\fR
+Number of jobs canceled since last reset.
+
+.TP
+\fBJobs failed\fR
+Number of jobs failed since last reset.
+
+.LP
+The second block of information is related to main scheduling algorithm based
+on jobs priorities. A scheduling cycle implies to get the job_write_lock lock,
+then trying to get resources for jobs pending, starting from the most priority
+one and going in descendent order. Once a job can not get the resources the
+loop keeps going but just for jobs requesting other partitions. Jobs with
+dependencies or affected  by accounts limits are not processed.
+
+.TP
+\fBLast cycle\fR
+Time in microseconds for last scheduling cycle. 
+
+.TP
+\fBMax cycle\fR
+Time in microseconds for the maximum scheduling cycle since last reset.
+
+.TP
+\fBTotal cycles\fR
+Number of scheduling cycles since last reset. Scheduling is done in
+periodically and when a job is submitted or a job is completed.
+
+.TP
+\fBMean cycle\fR
+Mean of scheduling cycles since last reset
+
+.TP
+\fBMean depth cycle\fR
+Mean of cycle depth. Depth means number of jobs processed in a scheduling cycle.
+
+.TP
+\fBCycles per minute\fR
+Counter of scheduling executions per minute
+
+.TP
+\fBLast queue length\fR
+Length of jobs pending queue.
+
+.LP
+The third block of information is related to backfilling scheduling algorithm.
+A backfilling scheduling cycle implies to get locks for jobs, nodes and
+partitions objects then trying to get resources for jobs pending. Jobs are
+processed based on priorities. If a job can not get resources the algorithm
+calculates when it could get them obtaining a future start time for the job.
+Then next job is processed and the algorithm tries to get resources for that
+job but avoiding to affect the \fIprevious ones\fR, and again it calculates
+the future start time if not current resources available. The backfilling
+algorithm takes more time for each new job to process since more priority jobs
+can not be affected. The algorithm itself takes measures for avoiding a long
+execution cycle and for taking all the locks for too long.
+
+.TP
+\fBTotal backfilled jobs (since last slurm start)\fR
+Number of jobs started thanks to backfilling since last slurm start.
+
+.TP
+\fBTotal backfilled jobs (since last stats cycle start)\fR
+Number of jobs started thanks to backfilling since last time stats where reset.
+By default these values are reset at midnight UTC time.
+
+.TP
+\fBTotal cycles\fR
+Number of scheduling cycles since last reset
+
+.TP
+\fBLast cycle when\fR
+Time when last execution cycle happened in format
+"weekday Month MonthDay hour:minute.seconds year"
+
+.TP
+\fBLast cycle\fR
+Time in microseconds of last backfilling cycle. It counts only execution time
+removing sleep time inside a scheduling cycle when it takes too much.
+
+.TP
+\fBMax cycle\fR
+Time in microseconds of maximum backfilling cycle execution since last reset
+
+.TP
+\fBMean cycle\fR
+Mean of backfilling scheduling cycles in microseconds since last reset
+
+
+.TP
+\fBLast depth cycle\fR
+Number of processed jobs during last backfilling scheduling cycle. It counts
+every process even if it has no option to execute due to dependencies or limits.
+
+.TP
+\fBLast depth cycle (try sched)\fR
+Number of processed jobs during last backfilling scheduling cycle. It counts
+only processes with a chance to run waiting for available resources. These
+jobs are which makes the backfilling algorithm heavier.
+
+.TP
+\fBDepth Mean\fR
+Mean of processed jobs during backfilling scheduling cycles since last reset.
+
+.TP
+\fBDepth Mean (try sched)\fR
+Mean of processed jobs during backfilling scheduling cycles since last reset.
+It counts only processes with a chance to run waiting for available resources.
+These jobs are which makes the backfilling algorithm heavier.
+
+.TP
+\fBLast queue length\fR
+Number of jobs pending to be processed by backfilling algorithm. A job appears
+as much times as partitions it requested.
+
+.TP
+\fBQueue length Mean\fR
+Mean of jobs pending to be processed by backfilling algorithm.
+
+.SH "COPYING"
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+sinfo(1), squeue(1), scontrol(1), slurm.conf(5),

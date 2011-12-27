@@ -73,6 +73,7 @@
 #define _pack_front_end_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
+#define _pack_stats_response_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_reserve_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 
 static void _pack_assoc_shares_object(void *in, Buf buffer,
@@ -603,6 +604,13 @@ static void _pack_spank_env_responce_msg(spank_env_responce_msg_t * msg,
 					 Buf buffer, uint16_t protocol_version);
 static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
 					  Buf buffer, uint16_t protocol_version);
+
+
+static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer);
+static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
+				      Buf buffer);
+static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
+				       Buf buffer);
 
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
@@ -1169,6 +1177,16 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(spank_env_responce_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+
+	case REQUEST_STATS_INFO:
+		_pack_stats_request_msg((stats_info_request_msg_t *)msg->data,
+					buffer);
+		break;
+
+	case RESPONSE_STATS_INFO:
+		_pack_stats_response_msg((slurm_msg_t *)msg, buffer);
+		break;
+
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1718,6 +1736,17 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(spank_env_responce_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
+
+	case REQUEST_STATS_INFO:
+		_unpack_stats_request_msg((stats_info_request_msg_t **)
+					  &msg->data, buffer);
+		break;
+
+	case RESPONSE_STATS_INFO:
+		_unpack_stats_response_msg((stats_info_response_msg_t **)
+					   &msg->data, buffer);
+		break;
+ 
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -11060,6 +11089,85 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack16(msg->command_id, buffer ) ;
+}
+
+static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
+				      Buf buffer)
+{
+	stats_info_request_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (stats_info_request_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack16(&msg->command_id, buffer ) ;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	info("SIM: unpack_stats_request_msg error");
+	*msg_ptr = NULL;
+	slurm_free_stats_info_request_msg(msg);
+	return SLURM_ERROR;
+}
+
+static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
+				       Buf buffer)
+{
+	stats_info_response_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (stats_info_response_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack32(&msg->parts_packed,	buffer ) ;
+	if (msg->parts_packed) {
+		safe_unpack_time(&msg->req_time,		buffer ) ;
+		safe_unpack_time(&msg->req_time_start,		buffer ) ;
+		safe_unpack32(&msg->server_thread_count,	buffer ) ;
+		safe_unpack32(&msg->agent_queue_size,		buffer ) ;
+		safe_unpack32(&msg->jobs_submitted,		buffer ) ;
+		safe_unpack32(&msg->jobs_started,		buffer ) ;
+		safe_unpack32(&msg->jobs_completed,		buffer ) ;
+		safe_unpack32(&msg->jobs_canceled,		buffer ) ;
+		safe_unpack32(&msg->jobs_failed,		buffer ) ;
+
+		safe_unpack32(&msg->schedule_cycle_max,		buffer ) ;
+		safe_unpack32(&msg->schedule_cycle_last,	buffer ) ;
+		safe_unpack32(&msg->schedule_cycle_sum,		buffer ) ;
+		safe_unpack32(&msg->schedule_cycle_counter,	buffer ) ;
+		safe_unpack32(&msg->schedule_cycle_depth,	buffer ) ;
+		safe_unpack32(&msg->schedule_queue_len,		buffer ) ;
+
+		safe_unpack32(&msg->bf_backfilled_jobs,		buffer ) ;
+		safe_unpack32(&msg->bf_last_backfilled_jobs,	buffer ) ;
+		safe_unpack32(&msg->bf_cycle_counter,		buffer ) ;
+		safe_unpack32(&msg->bf_cycle_sum,		buffer ) ;
+		safe_unpack32(&msg->bf_cycle_last,		buffer ) ;
+		safe_unpack32(&msg->bf_last_depth,		buffer ) ;
+		safe_unpack32(&msg->bf_last_depth_try,		buffer ) ;
+
+		safe_unpack32(&msg->bf_queue_len,		buffer ) ;
+		safe_unpack32(&msg->bf_cycle_max,		buffer ) ;
+		safe_unpack_time(&msg->bf_when_last_cycle,	buffer ) ;
+		safe_unpack32(&msg->bf_depth_sum,		buffer ) ;
+		safe_unpack32(&msg->bf_depth_try_sum,		buffer ) ;
+		safe_unpack32(&msg->bf_queue_len_sum,		buffer ) ;
+		safe_unpack32(&msg->bf_active,			buffer ) ;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	info("SIM: unpack_stats_response_msg error");
+	*msg_ptr = NULL;
+	slurm_free_stats_response_msg(msg);
+	return SLURM_ERROR;
+}
 
 /* template
    void pack_ ( * msg , Buf buffer )

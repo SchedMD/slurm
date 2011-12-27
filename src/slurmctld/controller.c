@@ -164,6 +164,9 @@ uint32_t      cluster_cpus = 0;
 int   with_slurmdbd = 0;
 bool want_nodes_reboot = true;
 
+/* Next used for stats/diagnostics */
+diag_stats_t slurmctld_diag_stats;
+
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
@@ -219,6 +222,9 @@ static bool         _wait_for_server_thread(void);
 typedef struct connection_arg {
 	int newsockfd;
 } connection_arg_t;
+
+time_t last_proc_req_start = 0;
+time_t next_stats_reset = 0;
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])
@@ -953,8 +959,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			no_thread = 0;
 
 		if (no_thread) {
-			_service_connection((void *) conn_arg);
-		}
+			slurmctld_diag_stats.proc_req_raw++;
+		       	_service_connection((void *) conn_arg);
+	       	}
 	}
 
 	debug3("_slurmctld_rpc_mgr shutting down");
@@ -1543,6 +1550,24 @@ static void *_slurmctld_background(void *no_data)
 			now = time(NULL);
 			last_node_acct = now;
 			_accounting_cluster_ready();
+		}
+ 
+
+		if (last_proc_req_start == 0) {
+			/* Stats will reset at midnight (aprox).
+			 * Uhmmm... UTC time?... It is  not so important.
+			 * Just resetting during the night */
+			last_proc_req_start = now;
+			next_stats_reset = last_proc_req_start -
+					   (last_proc_req_start % 86400) +
+					   86400;
+		}
+
+		if ((next_stats_reset > 0) && (now > next_stats_reset)) {
+			/* Resetting stats values */
+			last_proc_req_start = now;
+			next_stats_reset = now - (now % 86400) + 86400;
+			reset_stats();
 		}
 
 		/* Reassert this machine as the primary controller.

@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Behavior of srun --multi-prog modified so that any program arguments
     specified on the command line will be appended to the program arguments
     specified in the program configuration file.
+ -- Add new command, sdiag, which reports a variety of job scheduling
+    statistics. Based upon work by Alejandro Lucero Palau, BSC.
 
 * Changes in SLURM 2.4.0.pre2
 =============================
