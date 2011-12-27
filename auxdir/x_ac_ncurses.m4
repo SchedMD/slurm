@@ -28,22 +28,22 @@ AC_DEFUN([X_AC_NCURSES],
       ac_have_some_curses="yes"
    elif test "$ac_have_curses" = "yes"; then
       NCURSES="-lcurses"
-      NCURSES_HEADER="curses.h"	
+      NCURSES_HEADER="curses.h"
       ac_have_some_curses="yes"
    fi
 
-   if test "$ac_have_some_curses" = "yes"; then	
-        save_LIBS="$LIBS"
-        LIBS="$NCURSES $save_LIBS"
-        AC_TRY_LINK([#include <${NCURSES_HEADER}>],
-                    [(void)initscr(); (void)endwin();],
-                    [], [ac_have_some_curses="no"])
-        LIBS="$save_LIBS"
-        if test "$ac_have_some_curses" == "yes"; then
-            AC_MSG_RESULT([NCURSES test program built properly.])    
-        else
-            AC_MSG_WARN([*** NCURSES test program execution failed.])
-        fi	
+   if test "$ac_have_some_curses" = "yes"; then
+	save_LIBS="$LIBS"
+	LIBS="$NCURSES $save_LIBS"
+	AC_TRY_LINK([#include <${NCURSES_HEADER}>],
+		    [(void)initscr(); (void)endwin();],
+		    [], [ac_have_some_curses="no"])
+	LIBS="$save_LIBS"
+	if test "$ac_have_some_curses" = "yes"; then
+	    AC_MSG_RESULT([NCURSES test program built properly.])
+	else
+	    AC_MSG_WARN([*** NCURSES test program execution failed.])
+	fi
    else
       AC_MSG_WARN([Can not build smap without curses or ncurses library])
       ac_have_some_curses="no"

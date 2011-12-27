@@ -72,20 +72,23 @@ dnl Generic option for system dimensions
 dnl
 AC_DEFUN([X_AC_DIMENSIONS], [
   AC_MSG_CHECKING([System dimensions])
-  AC_ARG_WITH(
-    [dimensions],
+  AC_ARG_WITH([dimensions],
     AS_HELP_STRING(--with-dimensions=N, set system dimension count for generic computer system),
     [ if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
         dimensions="$withval"
         x_ac_dimensions=yes
       fi
-    ]
+    ],
+    [x_ac_dimensions=no]
   )
   if test "$x_ac_dimensions" = yes; then
     if test $dimensions -lt 1; then
       AC_MSG_ERROR([Invalid dimensions value $dimensions])
     fi
+    AC_MSG_RESULT([$dimensions]);
     AC_DEFINE_UNQUOTED(SYSTEM_DIMENSIONS, [$dimensions], [Define system dimension count])
+  else
+    AC_MSG_RESULT([not set]);
   fi
 ])
 

@@ -47,13 +47,13 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
 	*) have_solaris=no ;;
   esac
 
-  if test   "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib64/0@0.so.1; then
+  if test   "$printf_null_ok" = "no" -a "$have_solaris" = "yes" -a -d /usr/lib64/0@0.so.1; then
     AC_MSG_ERROR([printf("%s", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib64/0@0.so.1])
-  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib/0@0.so.1; then
+  elif test "$printf_null_ok" = "no" -a "$have_solaris" = "yes" -a -d /usr/lib/0@0.so.1; then
     AC_MSG_ERROR([printf("%s", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1])
-  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes"; then
+  elif test "$printf_null_ok" = "no" -a "$have_solaris" = "yes"; then
     AC_MSG_ERROR([printf("%s", NULL) results in abort, upgrade to OpenSolaris release 119])
-  elif test "$printf_null_ok" == "no"; then
+  elif test "$printf_null_ok" = "no"; then
     AC_MSG_ERROR([printf("%s", NULL) results in abort])
   else
     AC_MSG_RESULT([yes])

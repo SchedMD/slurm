@@ -51,6 +51,7 @@ typedef struct {
 	List job_list;
 	int pos;
 	bool printed;
+	char *reason;
 	bool small_block;
 	char *imageblrts;       /* ImageBlrts for this block */
 	char *imagelinux;       /* ImageLinux for this block */
@@ -76,8 +77,9 @@ enum {
 	SORTID_IMAGEMLOADER,
 #endif
 	SORTID_NODELIST,
-	SORTID_MP_STR,
+	SORTID_NODE_CNT,
 	SORTID_PARTITION,
+	SORTID_REASON,
 	SORTID_STATE,
 	SORTID_UPDATED,
 	SORTID_USE,
@@ -104,9 +106,14 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_JOB, "JobID", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
+#ifdef HAVE_BG_L_P
 	{G_TYPE_STRING, SORTID_USER, "User", FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_MP_STR, "Node Count",
+#else
+	{G_TYPE_STRING, SORTID_USER, NULL, FALSE, EDIT_NONE, refresh_block,
+	 create_model_block, admin_edit_block},
+#endif
+	{G_TYPE_STRING, SORTID_NODE_CNT, "Node Count",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type",
 	 FALSE, EDIT_NONE, refresh_block,
@@ -145,6 +152,8 @@ static display_data_t display_data_block[] = {
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 #endif
 	{G_TYPE_STRING, SORTID_IMAGEMLOADER, "Image Mloader",
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_REASON, "Reason",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE,
 	 refresh_block, create_model_resv, admin_edit_resv},
@@ -221,6 +230,7 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->mp_str);
+		xfree(block_ptr->reason);
 		xfree(block_ptr->imageblrts);
 		xfree(block_ptr->imagelinux);
 		xfree(block_ptr->imagemloader);
@@ -339,7 +349,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
-						 SORTID_MP_STR),
+						 SORTID_NODE_CNT),
 				   tmp_cnt);
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -350,6 +360,10 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_STATE),
 				   bg_block_state_string(block_ptr->state));
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_REASON),
+				   block_ptr->reason);
 }
 
 static void _update_block_record(sview_block_info_t *block_ptr,
@@ -374,9 +388,10 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
 			   SORTID_JOB,          tmp_char2,
 			   SORTID_NODE_INX,     block_ptr->mp_inx,
-			   SORTID_MP_STR,        cnode_cnt,
+			   SORTID_NODE_CNT,       cnode_cnt,
 			   SORTID_NODELIST,     block_ptr->mp_str,
 			   SORTID_PARTITION,    block_ptr->slurm_part_name,
+			   SORTID_REASON,       block_ptr->reason,
 			   SORTID_SMALL_BLOCK,  block_ptr->small_block,
 			   SORTID_STATE,
 				bg_block_state_string(block_ptr->state),
@@ -624,6 +639,8 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			xfree(block_ptr->mp_str);
 			block_ptr->mp_str = xstrdup(tmp_mp_str);
 		}
+		block_ptr->reason
+			= xstrdup(block_info_ptr->block_array[i].reason);
 
 		if (cluster_flags & CLUSTER_FLAG_BGP) {
 			block_ptr->imagelinux = xstrdup(
@@ -1572,6 +1589,7 @@ extern void cluster_change_block(void)
 		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			switch(display_data->id) {
 			case SORTID_USE:
+			case SORTID_USER:
 			case SORTID_IMAGEBLRTS:
 			case SORTID_IMAGELINUX:
 			case SORTID_IMAGERAMDISK:
@@ -1592,6 +1610,9 @@ extern void cluster_change_block(void)
 			case SORTID_IMAGERAMDISK:
 				display_data->name = "Image Ioload";
 				break;
+			case SORTID_USER:
+				display_data->name = "User";
+				break;
 			default:
 				break;
 			}
@@ -1608,6 +1629,9 @@ extern void cluster_change_block(void)
 				break;
 			case SORTID_IMAGERAMDISK:
 				display_data->name = "Image Ramdisk";
+				break;
+			case SORTID_USER:
+				display_data->name = "User";
 				break;
 			default:
 				break;
