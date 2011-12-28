@@ -94,8 +94,8 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_CPUS, "CPU Count", FALSE, EDIT_NONE, refresh_node,
-	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", FALSE,
@@ -314,8 +314,12 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 {
 	uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
-	char tmp_disk[20], tmp_err_cpus[20], tmp_mem[20], tmp_used_cpus[20];
+	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20],
+		tmp_mem[20], tmp_used_cpus[20];
 	char *tmp_state_lower, *tmp_state_upper;
+
+	convert_num_unit((float)node_ptr->cpus, tmp_cpus,
+			 sizeof(tmp_cpus), UNIT_NONE);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
@@ -369,7 +373,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				sview_colors[sview_node_info_ptr->pos
 				% sview_colors_cnt],
 			   SORTID_CORES,     node_ptr->cores,
-			   SORTID_CPUS,      node_ptr->cpus,
+			   SORTID_CPUS,      tmp_cpus,
 			   SORTID_DISK,      tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,
 			   SORTID_FEATURES,  node_ptr->features,
