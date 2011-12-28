@@ -2830,14 +2830,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		if (bg_conf->sub_mp_sys)
 			(*nodes) = bg_conf->actual_cnodes_per_mp;
 		else
-			(*nodes) = bg_conf->mp_cnode_cnt;
+			(*nodes) *= bg_conf->mp_cnode_cnt;
 		break;
 	case SELECT_APPLY_NODE_MAX_OFFSET:
 		if ((*nodes) != INFINITE) {
 			if (bg_conf->sub_mp_sys)
 				(*nodes) = bg_conf->actual_cnodes_per_mp;
 			else
-				(*nodes) = bg_conf->mp_cnode_cnt;
+				(*nodes) *= bg_conf->mp_cnode_cnt;
 		}
 		break;
 	case SELECT_SET_NODE_CNT:
