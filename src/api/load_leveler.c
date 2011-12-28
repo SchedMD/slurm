@@ -2457,6 +2457,7 @@ slurm_allocation_lookup_lite(char *jobid,
 			     resource_allocation_response_msg_t **info)
 {
 	int i, rc;
+	job_info_t *job_ptr;
 	job_info_msg_t *job_info_msg;
 	resource_allocation_response_msg_t *alloc_resp;
 
@@ -2468,6 +2469,7 @@ slurm_allocation_lookup_lite(char *jobid,
 		if (!strcmp(job_info_msg->job_array[i].job_id, jobid))
 			break;
 	}
+	job_ptr = &job_info_msg->job_array[i];
 	if (i >= job_info_msg->record_count) {
 		/* could not find this job */
 #ifdef HAVE_LLAPI_H
@@ -2496,8 +2498,10 @@ slurm_allocation_lookup_lite(char *jobid,
 		alloc_resp->cpu_count_reps[0] = alloc_resp->node_cnt;
 		*info = alloc_resp;
 #endif
+	} else if (job_ptr->job_state >= JOB_COMPLETE) {
+		slurm_seterrno(ESLURM_INVALID_JOB_ID);
+		rc = -1;
 	} else {
-		job_info_t *job_ptr = &job_info_msg->job_array[i];
 		alloc_resp = xmalloc(sizeof(
 				     resource_allocation_response_msg_t));
 		alloc_resp->job_id = xstrdup(jobid);

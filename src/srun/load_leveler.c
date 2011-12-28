@@ -44,8 +44,11 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <utmp.h>
 
 #include "slurm/slurm.h"
@@ -86,11 +89,16 @@
 /* Timeout for srun front-end/back-end messages in usec */
 #define MSG_TIMEOUT 5000000
 
+/* Timeout in seconds for select call, if no I/O then test for existance
+ * of job this frequently */
+#define SELECT_TIMEOUT 10
+
 static slurm_fd_t global_signal_conn = SLURM_SOCKET_ERROR;
 static bool disable_status = false;
 static bool quit_on_intr = false;
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int srun_state = 0;	/* 0=starting, 1=running, 2=ending */
+static char *srun_jobid = NULL;
 
 typedef struct srun_child_wait_data {
 	int dummy_pipe;
@@ -408,6 +416,37 @@ static bool _fe_proc_stdio(slurm_fd_t stdio_socket, int stdio_fd,
 	return false;
 }
 
+
+/* Test that the front-end job still exists */
+static void _fe_test_job_state(void)
+{
+	int i, rc;
+	job_info_t *job_ptr;
+	job_info_msg_t *job_info_msg;
+	bool job_active = false;
+
+	rc = slurm_load_job(&job_info_msg, srun_jobid, SHOW_ALL);
+	if (rc != SLURM_SUCCESS)
+		return;
+
+	for (i = 0; i < job_info_msg->record_count; i++) {
+		if (strcmp(job_info_msg->job_array[i].job_id, srun_jobid))
+			continue;
+		job_ptr = &job_info_msg->job_array[i];
+		if (job_ptr->job_state < JOB_COMPLETE)
+			job_active = true;
+		break;
+	}
+	slurm_free_job_info_msg(job_info_msg);
+
+	if (!job_active) {
+		info("job %s completed, aborting", srun_jobid);
+		pthread_mutex_lock(&state_mutex);
+		srun_state = 2;
+		pthread_mutex_unlock(&state_mutex);
+	}
+}
+
 /* write the exit status of spawned back-end process to the srun front-end */
 static void _be_proc_status(int status, slurm_fd_t signal_socket)
 {
@@ -687,6 +726,7 @@ extern char *build_poe_command(void)
 
 	disable_status = opt.disable_status;
 	quit_on_intr = opt.quit_on_intr;
+	srun_jobid = xstrdup(opt.jobid);
 
 info("%s", cmd_line);
 	return cmd_line;
@@ -717,6 +757,7 @@ extern int srun_front_end (char *cmd_line)
 	char *exec_line = NULL, hostname[1024];
 	int i, n_fds, status = -1;
 	bool pty = PTY_MODE;
+	struct timeval tv;
 
 	if (!cmd_line || !cmd_line[0]) {
 		error("no command to execute");
@@ -767,7 +808,31 @@ extern int srun_front_end (char *cmd_line)
 		   SLURM_PREFIX, hostname, port_o, port_e, port_s, cmd_line);
 	printf("%s\n", exec_line);
 	xfree(exec_line);
-/* FIXME: Monitor for job abort, if needed, break out of accept or I/O loop */
+
+	/* Wait for the back-end to start and poll on the job's existance */
+	n_fds = stdout_socket;
+	while ((srun_state < 2) && (stdout_conn == SLURM_SOCKET_ERROR)) {
+		FD_ZERO(&except_fds);
+		FD_SET(stdout_socket, &except_fds);
+		FD_ZERO(&read_fds);
+		FD_SET(stdout_socket, &read_fds);
+
+		tv.tv_sec = SELECT_TIMEOUT;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, &except_fds, &tv);
+		if (i == -1) {
+			if (errno == EINTR)
+				continue;
+			error("select: %m");
+			break;
+		} else if (i == 0) {
+			/* Periodically test for abnormal job termination */
+			_fe_test_job_state();
+			continue;
+		} else {	/* i > 0, ready for I/O */
+			break;
+		}
+	}
 
 	/* Accept connections from the back-end */
 	while (srun_state < 2) {
@@ -827,12 +892,19 @@ extern int srun_front_end (char *cmd_line)
 			FD_SET(stderr_conn, &read_fds);
 		FD_SET(signal_conn, &read_fds);
 
-		i = select((n_fds + 1), &read_fds, NULL, &except_fds, NULL);
+		tv.tv_sec = SELECT_TIMEOUT;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, &except_fds, &tv);
 		if (i == -1) {
 			if (errno == EINTR)
 				continue;
 			error("select: %m");
 			break;
+		}
+		if (i == 0) {
+			/* Periodically test for abnormal job termination */
+			_fe_test_job_state();
+			continue;
 		}
 		if ((local_stdin >= 0) &&
 		    (FD_ISSET(local_stdin, &except_fds) ||
