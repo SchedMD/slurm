@@ -1090,6 +1090,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		if (!bg_recover)
 			continue;
 
+		xfree(bg_record->mloaderimage);
 		bg_record->mloaderimage =
 			xstrdup(block_ptr->getMicroLoaderImage().c_str());
 	}
