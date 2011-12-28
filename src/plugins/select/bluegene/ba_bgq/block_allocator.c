@@ -2077,7 +2077,7 @@ static bitstr_t *_find_sub_block(ba_geo_table_t **in_geo_table,
 	ba_geo_table_t *geo_table = *in_geo_table;
 
 	if (clear_cnt < node_count) {
-		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 			info("ba_pick_sub_block: only have %d avail need %d",
 			     clear_cnt, node_count);
 		return NULL;
@@ -2098,7 +2098,7 @@ static bitstr_t *_find_sub_block(ba_geo_table_t **in_geo_table,
 				    ba_mp_geo_system, NULL,
 				    start_loc, &scan_offset, true)
 		    == SLURM_SUCCESS) {
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO) {
+			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
 				int dim;
 				info("scan_offset=%d", scan_offset);
 				for (dim = 0;
