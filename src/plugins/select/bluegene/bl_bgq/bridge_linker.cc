@@ -1066,7 +1066,13 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			bg_record = _translate_object_to_block(block_ptr);
 			slurm_list_append(curr_block_list, bg_record);
 		}
+
+		/* modifying will be ceared later in the
+		   _validate_config_blocks or _delete_old_blocks
+		   functions in select_bluegene.c
+		*/
 		bg_record->modifying = 1;
+
 		/* If we are in error we really just want to get the
 		   new state.
 		*/
