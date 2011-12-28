@@ -502,7 +502,11 @@ env_vars_t env_vars[] = {
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
 {"SLURM_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL             },
 /* SLURM_JOBID was used in slurm version 1.3 and below, it is now vestigial */
+#ifdef USE_LOADLEVELER
+{"SLURM_JOBID",         OPT_STRING,     &opt.jobid,         NULL             },
+#else
 {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
+#endif
 {"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &opt.job_name_set_env},
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },

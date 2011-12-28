@@ -2456,7 +2456,68 @@ extern int
 slurm_allocation_lookup_lite(char *jobid,
 			     resource_allocation_response_msg_t **info)
 {
-/* FIXME: Need to add code */
-	return SLURM_ERROR;
+	int i, rc;
+	job_info_msg_t *job_info_msg;
+	resource_allocation_response_msg_t *alloc_resp;
+
+	rc = slurm_load_job(&job_info_msg, jobid, SHOW_ALL);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	for (i = 0; i < job_info_msg->record_count; i++) {
+		if (!strcmp(job_info_msg->job_array[i].job_id, jobid))
+			break;
+	}
+	if (i >= job_info_msg->record_count) {
+		/* could not find this job */
+#ifdef HAVE_LLAPI_H
+		slurm_seterrno(ESLURM_INVALID_JOB_ID);
+		rc = -1;
+#else
+		/* Simulate existance of job for srun testing purposes */
+		char *sep;
+		alloc_resp = xmalloc(sizeof(
+				     resource_allocation_response_msg_t));
+		alloc_resp->job_id = xstrdup(jobid);
+		sep = strchr(jobid, '.');
+		if (sep)
+			sep[0] = '\0';
+		alloc_resp->node_list = xstrdup(jobid);
+		alloc_resp->alias_list = xstrdup(jobid);
+		if (sep)
+			sep[0] = '.';
+		alloc_resp->node_cnt = 1;
+		alloc_resp->num_cpu_groups = 1;
+		alloc_resp->cpus_per_node = xmalloc(sizeof(uint16_t) *
+						    alloc_resp->num_cpu_groups);
+		alloc_resp->cpus_per_node[0] = 1;
+		alloc_resp->cpu_count_reps = xmalloc(sizeof(uint32_t) *
+						    alloc_resp->num_cpu_groups);
+		alloc_resp->cpu_count_reps[0] = alloc_resp->node_cnt;
+		*info = alloc_resp;
+#endif
+	} else {
+		job_info_t *job_ptr = &job_info_msg->job_array[i];
+		alloc_resp = xmalloc(sizeof(
+				     resource_allocation_response_msg_t));
+		alloc_resp->job_id = xstrdup(jobid);
+		alloc_resp->node_list = xstrdup(job_ptr->nodes);
+		alloc_resp->alias_list = xstrdup(job_ptr->nodes);
+		alloc_resp->node_cnt = job_ptr->num_nodes;
+		alloc_resp->num_cpu_groups = 1;
+		alloc_resp->cpus_per_node = xmalloc(sizeof(uint16_t) *
+						    alloc_resp->num_cpu_groups);
+		alloc_resp->cpus_per_node[0] = 1;
+		alloc_resp->cpu_count_reps = xmalloc(sizeof(uint32_t) *
+						    alloc_resp->num_cpu_groups);
+		alloc_resp->cpu_count_reps[0] = alloc_resp->node_cnt;
+		/* alloc_resp->error_code = 0; */
+		/* alloc_resp->select_jobinfo = NULL; */
+		alloc_resp->pn_min_memory = job_ptr->pn_min_memory;
+		*info = alloc_resp;
+	}
+	slurm_free_job_info_msg(job_info_msg);
+
+	return rc;
 }
 #endif

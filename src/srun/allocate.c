@@ -799,14 +799,16 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 extern int
 create_job_step(srun_job_t *job, bool use_all_cpus)
 {
+#ifdef USE_LOADLEVELER
+ 	char *be_cmd_line = build_poe_command();
+ 	exit(srun_front_end(be_cmd_line));
+#else
 	int i, rc;
 	unsigned long my_sleep = 0;
 	time_t begin_time;
 
 	slurm_step_ctx_params_t_init(&job->ctx_params);
-#ifndef USE_LOADLEVELER
 	job->ctx_params.job_id = job->jobid;
-#endif
 	job->ctx_params.uid = opt.uid;
 
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
@@ -983,7 +985,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	 * Recreate filenames which may depend upon step id
 	 */
 	job_update_io_fnames(job);
-
+#endif
 	return 0;
 }
 

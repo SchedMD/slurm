@@ -218,8 +218,6 @@ int srun(int ac, char **av)
 	pthread_t msg_thread = (pthread_t) 0;
 #endif
 #ifdef USE_LOADLEVELER
-	char *be_cmd_line;
-
 	if ((ac > 1) && !strcmp(av[1], "--srun-be"))
 		exit(srun_back_end (ac, av));
 #endif
@@ -292,10 +290,6 @@ int srun(int ac, char **av)
 	} else
 		_verbose = debug_level;
 
-#ifdef USE_LOADLEVELER
-	be_cmd_line = build_poe_command();
-	exit(srun_front_end(be_cmd_line));
-#endif
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
 	(void) _set_umask_env();
@@ -331,6 +325,7 @@ int srun(int ac, char **av)
 		}
 #endif
 	} else if ((resp = existing_allocation())) {
+#ifndef USE_LOADLEVELER
 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
 					&resp->node_cnt);
 		if (opt.nodes_set_env && !opt.nodes_set_opt &&
@@ -349,6 +344,7 @@ int srun(int ac, char **av)
 			if (!opt.ntasks_set)
 				opt.ntasks = opt.min_nodes;
 		}
+#endif
 		if (opt.alloc_nodelist == NULL)
 			opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)
