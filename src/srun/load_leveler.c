@@ -86,6 +86,7 @@
 #define MSG_TIMEOUT 5000000
 
 static slurm_fd_t global_signal_conn = SLURM_SOCKET_ERROR;
+static int srun_state = 0;	/* 0=starting, 1=running, 2=ending */
 
 typedef struct srun_child_wait_data {
 	int dummy_pipe;
@@ -470,6 +471,93 @@ static pthread_t _wait_be_func(pid_t pid, slurm_fd_t signal_socket,
 	return thread_id;
 }
 
+/*
+ * A collection of signal handling functions follow
+ */
+static void _default_sigaction(int sig)
+{
+	struct sigaction act;
+	if (sigaction(sig, NULL, &act)) {
+		error("sigaction(%d): %m", sig);
+		return;
+	}
+	if (act.sa_handler != SIG_IGN)
+		return;
+
+	act.sa_handler = SIG_DFL;
+	if (sigaction(sig, &act, NULL))
+		error("sigaction(%d): %m", sig);
+}
+
+static void _print_step_state(void)
+{
+	if (srun_state == 0)
+		info("job step is starting");
+	else if (srun_state == 1)
+		info("job step is running");
+	else if (srun_state == 2)
+		info("job step is terminating");
+}
+
+static long _diff_tv_str(struct timeval *tv1,struct timeval *tv2)
+{
+	long delta_t;
+
+	delta_t  = MIN((tv2->tv_sec - tv1->tv_sec), 10);
+	delta_t *= 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	return delta_t;
+}
+
+static void _handle_intr(void)
+{
+	static struct timeval last_intr = { 0, 0 };
+	struct timeval now;
+
+	gettimeofday(&now, NULL);
+	if (_diff_tv_str(&last_intr, &now) > 1000000) {
+		if (srun_state < 2) {
+			info("interrupt (one more within 1 sec to abort)");
+			_print_step_state();
+		} else {
+			info("interrupt (abort already in progress)");
+			_print_step_state();
+		}
+		last_intr = now;
+	} else  { /* second Ctrl-C in half as many seconds */
+		info("aborting job step");
+		srun_state = 2;
+	}
+}
+
+static void _signal_handler(int signo)
+{
+	info("got signal %d", signo);
+	switch (signo) {
+		case SIGHUP:
+		case SIGTERM:
+		case SIGQUIT:
+			srun_state = 2;
+			break;
+		case SIGINT:
+			_handle_intr();
+	}
+}
+
+static void _setup_signal_handler(void)
+{
+	int i;
+	static int sig_array[] = {
+		SIGINT,  SIGQUIT, SIGTERM, SIGHUP, 0 };
+
+	/* Make sure no required signals are ignored (possibly inherited) */
+	(void) xsignal_unblock(sig_array);
+	for (i = 0; sig_array[i]; i++) {
+		_default_sigaction(sig_array[i]);
+		(void) xsignal(sig_array[i], _signal_handler);
+	}
+}
+
 /* Build a POE command line based upon srun options (using global variables) */
 extern char *build_poe_command(void)
 {
@@ -626,6 +714,8 @@ extern int srun_front_end (char *cmd_line)
 		goto fini;
 	}
 
+	_setup_signal_handler();
+
 	/* Open sockets for back-end program to communicate with */
 	/* Socket for stdin/stdout */
 	if ((stdout_socket = slurm_init_msg_engine_port(0)) < 0) {
@@ -670,7 +760,7 @@ extern int srun_front_end (char *cmd_line)
 /* FIXME: Monitor for job abort, if needed, break out of accept or I/O loop */
 
 	/* Accept connections from the back-end */
-	while (true) {
+	while (srun_state < 2) {
 		stdout_conn = slurm_accept_stream(stdout_socket, &stdout_addr);
 		if (stdout_conn != SLURM_SOCKET_ERROR)
 			break;
@@ -682,7 +772,7 @@ extern int srun_front_end (char *cmd_line)
 	if (pty) {
 		stderr_fini = true;
 	} else {
-		while (true) {
+		while (srun_state < 2) {
 			stderr_conn = slurm_accept_stream(stderr_socket,
 							  &stderr_addr);
 			if (stderr_conn != SLURM_SOCKET_ERROR)
@@ -693,7 +783,7 @@ extern int srun_front_end (char *cmd_line)
 			}
 		}
 	}
-	while (true) {
+	while (srun_state < 2) {
 		signal_conn = slurm_accept_stream(signal_socket, &signal_addr);
 		if (signal_conn != SLURM_SOCKET_ERROR)
 			break;
@@ -702,13 +792,16 @@ extern int srun_front_end (char *cmd_line)
 			goto fini;
 		}
 	}
+	if (srun_state < 2)
+		srun_state = 1;
 	global_signal_conn = signal_conn;
 
 	n_fds = local_stdin;
 	n_fds = MAX(stderr_conn, n_fds);
 	n_fds = MAX(stdout_conn, n_fds);
 	n_fds = MAX(signal_conn, n_fds);
-	while ( !(job_fini && stderr_fini && stdout_fini) ) {
+	while ((srun_state < 2) &&
+	       (!(job_fini && stderr_fini && stdout_fini))) {
 		FD_ZERO(&except_fds);
 		FD_ZERO(&read_fds);
 		if (local_stdin >= 0) {
@@ -752,7 +845,8 @@ extern int srun_front_end (char *cmd_line)
 		}
 	}
 
-fini:	if (stdout_conn != SLURM_SOCKET_ERROR)
+fini:	srun_state = 2;
+	if (stdout_conn != SLURM_SOCKET_ERROR)
 		slurm_close_accepted_conn(stdout_conn);
 	if (stderr_conn != SLURM_SOCKET_ERROR)
 		slurm_close_accepted_conn(stderr_conn);
