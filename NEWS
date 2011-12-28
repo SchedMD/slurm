@@ -131,6 +131,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in sview layout if node count less than configured grid_x_width.
  -- Modify PAM module to prefer to use SLURM library with same major release
     number that it was built with.
+ -- Permit gres count configuration of zero.
 
 * Changes in SLURM 2.3.2
 ========================
