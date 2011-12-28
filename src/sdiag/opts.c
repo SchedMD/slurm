@@ -80,12 +80,10 @@ extern void parse_command_line(int argc, char *argv[])
 				       &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'a':
-				printf("Using all option\n");
-				sdiag_param = 1;
+				sdiag_param = STAT_COMMAND_GET;
 				break;
 			case (int)'r':
-				printf("Using reset option\n");
-				sdiag_param = 0;
+				sdiag_param = STAT_COMMAND_RESET;
 				break;
 			case (int)'h':
 				_help();

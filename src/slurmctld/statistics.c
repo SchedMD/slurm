@@ -69,52 +69,60 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 	
 	buffer = init_buf(BUF_SIZE);
 	
-	parts_packed = resp;
-	pack32(parts_packed, buffer);
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		parts_packed = resp;
+		pack32(parts_packed, buffer);
 	
-	if (resp) {
-		pack_time(now, buffer);
-		debug("pack_all_stat: time = %u",
-		      (uint32_t) last_proc_req_start);
-		pack_time(last_proc_req_start, buffer);
+		if (resp) {
+			pack_time(now, buffer);
+			debug("pack_all_stat: time = %u",
+			      (uint32_t) last_proc_req_start);
+			pack_time(last_proc_req_start, buffer);
 			
-		debug("pack_all_stat: server_thread_count = %u",
-		      slurmctld_config.server_thread_count);
-		pack32(slurmctld_config.server_thread_count, buffer);
+			debug("pack_all_stat: server_thread_count = %u",
+			      slurmctld_config.server_thread_count);
+			pack32(slurmctld_config.server_thread_count, buffer);
 			
-		agent_queue_size = retry_list_size();
-		pack32(agent_queue_size, buffer);
+			agent_queue_size = retry_list_size();
+			pack32(agent_queue_size, buffer);
 			
-		pack32(slurmctld_diag_stats.jobs_submitted,	buffer);
-		pack32(slurmctld_diag_stats.jobs_started,	buffer);
-		pack32(slurmctld_diag_stats.jobs_completed,	buffer);
-		pack32(slurmctld_diag_stats.jobs_canceled,	buffer);
-		pack32(slurmctld_diag_stats.jobs_failed,	buffer);
+			pack32(slurmctld_diag_stats.jobs_submitted, buffer);
+			pack32(slurmctld_diag_stats.jobs_started, buffer);
+			pack32(slurmctld_diag_stats.jobs_completed, buffer);
+			pack32(slurmctld_diag_stats.jobs_canceled, buffer);
+			pack32(slurmctld_diag_stats.jobs_failed, buffer);
 
-		pack32(slurmctld_diag_stats.schedule_cycle_max,	buffer);
-		pack32(slurmctld_diag_stats.schedule_cycle_last,buffer);
-		pack32(slurmctld_diag_stats.schedule_cycle_sum,	buffer);
-		pack32(slurmctld_diag_stats.schedule_cycle_counter, buffer);
-		pack32(slurmctld_diag_stats.schedule_cycle_depth, buffer);
-		pack32(slurmctld_diag_stats.schedule_queue_len,	buffer);
+			pack32(slurmctld_diag_stats.schedule_cycle_max,
+			       buffer);
+			pack32(slurmctld_diag_stats.schedule_cycle_last,
+			       buffer);
+			pack32(slurmctld_diag_stats.schedule_cycle_sum,
+			       buffer);
+			pack32(slurmctld_diag_stats.schedule_cycle_counter,
+			       buffer);
+			pack32(slurmctld_diag_stats.schedule_cycle_depth,
+			       buffer);
+			pack32(slurmctld_diag_stats.schedule_queue_len, buffer);
 		
-		pack32(slurmctld_diag_stats.backfilled_jobs,	buffer);
-		pack32(slurmctld_diag_stats.last_backfilled_jobs, buffer);
-		pack32(slurmctld_diag_stats.bf_cycle_counter,	buffer);
-		pack32(slurmctld_diag_stats.bf_cycle_sum,	buffer);
-		pack32(slurmctld_diag_stats.bf_cycle_last,	buffer);
-		pack32(slurmctld_diag_stats.bf_last_depth,	buffer);
-		pack32(slurmctld_diag_stats.bf_last_depth_try,	buffer);
+			pack32(slurmctld_diag_stats.backfilled_jobs, buffer);
+			pack32(slurmctld_diag_stats.last_backfilled_jobs,
+			       buffer);
+			pack32(slurmctld_diag_stats.bf_cycle_counter, buffer);
+			pack32(slurmctld_diag_stats.bf_cycle_sum, buffer);
+			pack32(slurmctld_diag_stats.bf_cycle_last, buffer);
+			pack32(slurmctld_diag_stats.bf_last_depth, buffer);
+			pack32(slurmctld_diag_stats.bf_last_depth_try, buffer);
 
-		pack32(slurmctld_diag_stats.bf_queue_len,	buffer);
-		pack32(slurmctld_diag_stats.bf_cycle_max,	buffer);
-		pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
-		pack32(slurmctld_diag_stats.bf_depth_sum,	buffer);
-		pack32(slurmctld_diag_stats.bf_depth_try_sum,	buffer);
-		pack32(slurmctld_diag_stats.bf_queue_len_sum,	buffer);
-		pack32(slurmctld_diag_stats.bf_active,		buffer);
+			pack32(slurmctld_diag_stats.bf_queue_len, buffer);
+			pack32(slurmctld_diag_stats.bf_cycle_max, buffer);
+			pack_time(slurmctld_diag_stats.bf_when_last_cycle,
+				  buffer);
+			pack32(slurmctld_diag_stats.bf_depth_sum, buffer);
+			pack32(slurmctld_diag_stats.bf_depth_try_sum, buffer);
+			pack32(slurmctld_diag_stats.bf_queue_len_sum, buffer);
+			pack32(slurmctld_diag_stats.bf_active,	 buffer);
+		}
 	}
-
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);

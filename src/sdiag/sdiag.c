@@ -54,8 +54,8 @@ int sdiag_param = 1;
 
 stats_info_response_msg_t *buf;
 
-static void _get_info(void);
-static int  _print_info(void);
+static int _get_info(void);
+static int _print_info(void);
 
 stats_info_request_msg_t req;
 
@@ -67,23 +67,33 @@ int main(int argc, char *argv[])
 
 	parse_command_line(argc, argv);
 
-	if (sdiag_param == 0) {
-		req.command_id = 0;
-		slurm_reset_statistics((stats_info_request_msg_t *)&req);
+	if (sdiag_param == STAT_COMMAND_RESET) {
+		req.command_id = STAT_COMMAND_RESET;
+		rc = slurm_reset_statistics((stats_info_request_msg_t *)&req);
+		if (rc == SLURM_SUCCESS)
+			printf("Reset scheduling statistics\n");
+		else
+			slurm_perror("slurm_reset_statistics");
 		exit(rc);
-	} else
-		_get_info();
-
-	if (req.command_id)
-		_print_info();
+	} else {
+		rc = _get_info();
+		if (rc == SLURM_SUCCESS)
+			rc = _print_info();
+	}
 
 	exit(rc);
 }
 
-static void _get_info(void)
+static int _get_info(void)
 {
-	req.command_id = 1;
-	slurm_get_statistics(&buf, (stats_info_request_msg_t *)&req);
+	int rc;
+
+	req.command_id = STAT_COMMAND_GET;
+	rc = slurm_get_statistics(&buf, (stats_info_request_msg_t *)&req);
+	if (rc != SLURM_SUCCESS)
+		slurm_perror("slurm_get_statistics");
+
+	return rc;
 }
 
 static int _print_info(void)

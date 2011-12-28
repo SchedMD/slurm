@@ -2010,6 +2010,8 @@ typedef struct job_sbcast_cred_msg {
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
 
+#define STAT_COMMAND_RESET	0x0000
+#define STAT_COMMAND_GET	0x0001
 typedef struct stats_info_request_msg {
 	uint16_t command_id;
 } stats_info_request_msg_t;

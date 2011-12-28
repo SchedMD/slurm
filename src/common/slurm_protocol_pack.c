@@ -606,11 +606,12 @@ static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
 					  Buf buffer, uint16_t protocol_version);
 
 
-static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer);
+static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer,
+				    uint16_t protocol_version);
 static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
-				      Buf buffer);
+				      Buf buffer, uint16_t protocol_version);
 static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
-				       Buf buffer);
+				       Buf buffer, uint16_t protocol_version);
 
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
@@ -1180,7 +1181,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 
 	case REQUEST_STATS_INFO:
 		_pack_stats_request_msg((stats_info_request_msg_t *)msg->data,
-					buffer);
+					buffer, msg->protocol_version);
 		break;
 
 	case RESPONSE_STATS_INFO:
@@ -1739,12 +1740,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 
 	case REQUEST_STATS_INFO:
 		_unpack_stats_request_msg((stats_info_request_msg_t **)
-					  &msg->data, buffer);
+					  &msg->data, buffer,
+					  msg->protocol_version);
 		break;
 
 	case RESPONSE_STATS_INFO:
 		_unpack_stats_response_msg((stats_info_response_msg_t **)
-					   &msg->data, buffer);
+					   &msg->data, buffer,
+					   msg->protocol_version);
 		break;
  
 	default:
@@ -11089,23 +11092,27 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer)
+static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer,
+				    uint16_t protocol_version)
 {
 	xassert ( msg != NULL );
 
-	pack16(msg->command_id, buffer ) ;
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION)
+		pack16(msg->command_id, buffer);
 }
 
 static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
-				      Buf buffer)
+				      Buf buffer, uint16_t protocol_version)
 {
 	stats_info_request_msg_t * msg;
 	xassert ( msg_ptr != NULL );
 
-	msg = xmalloc ( sizeof (stats_info_request_msg_t) );
+	msg = xmalloc ( sizeof(stats_info_request_msg_t) );
 	*msg_ptr = msg ;
-
-	safe_unpack16(&msg->command_id, buffer ) ;
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION)
+		safe_unpack16(&msg->command_id, buffer);
+	else
+		goto unpack_error;
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -11116,7 +11123,7 @@ unpack_error:
 }
 
 static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
-				       Buf buffer)
+				       Buf buffer, uint16_t protocol_version)
 {
 	stats_info_response_msg_t * msg;
 	xassert ( msg_ptr != NULL );
@@ -11124,41 +11131,44 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 	msg = xmalloc ( sizeof (stats_info_response_msg_t) );
 	*msg_ptr = msg ;
 
-	safe_unpack32(&msg->parts_packed,	buffer ) ;
-	if (msg->parts_packed) {
-		safe_unpack_time(&msg->req_time,		buffer ) ;
-		safe_unpack_time(&msg->req_time_start,		buffer ) ;
-		safe_unpack32(&msg->server_thread_count,	buffer ) ;
-		safe_unpack32(&msg->agent_queue_size,		buffer ) ;
-		safe_unpack32(&msg->jobs_submitted,		buffer ) ;
-		safe_unpack32(&msg->jobs_started,		buffer ) ;
-		safe_unpack32(&msg->jobs_completed,		buffer ) ;
-		safe_unpack32(&msg->jobs_canceled,		buffer ) ;
-		safe_unpack32(&msg->jobs_failed,		buffer ) ;
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->parts_packed,	buffer);
+		if (msg->parts_packed) {
+			safe_unpack_time(&msg->req_time,	buffer);
+			safe_unpack_time(&msg->req_time_start,	buffer);
+			safe_unpack32(&msg->server_thread_count,buffer);
+			safe_unpack32(&msg->agent_queue_size,	buffer);
+			safe_unpack32(&msg->jobs_submitted,	buffer);
+			safe_unpack32(&msg->jobs_started,	buffer);
+			safe_unpack32(&msg->jobs_completed,	buffer);
+			safe_unpack32(&msg->jobs_canceled,	buffer);
+			safe_unpack32(&msg->jobs_failed,	buffer);
 
-		safe_unpack32(&msg->schedule_cycle_max,		buffer ) ;
-		safe_unpack32(&msg->schedule_cycle_last,	buffer ) ;
-		safe_unpack32(&msg->schedule_cycle_sum,		buffer ) ;
-		safe_unpack32(&msg->schedule_cycle_counter,	buffer ) ;
-		safe_unpack32(&msg->schedule_cycle_depth,	buffer ) ;
-		safe_unpack32(&msg->schedule_queue_len,		buffer ) ;
+			safe_unpack32(&msg->schedule_cycle_max,	buffer);
+			safe_unpack32(&msg->schedule_cycle_last,buffer);
+			safe_unpack32(&msg->schedule_cycle_sum,	buffer);
+			safe_unpack32(&msg->schedule_cycle_counter, buffer);
+			safe_unpack32(&msg->schedule_cycle_depth, buffer);
+			safe_unpack32(&msg->schedule_queue_len,	buffer);
 
-		safe_unpack32(&msg->bf_backfilled_jobs,		buffer ) ;
-		safe_unpack32(&msg->bf_last_backfilled_jobs,	buffer ) ;
-		safe_unpack32(&msg->bf_cycle_counter,		buffer ) ;
-		safe_unpack32(&msg->bf_cycle_sum,		buffer ) ;
-		safe_unpack32(&msg->bf_cycle_last,		buffer ) ;
-		safe_unpack32(&msg->bf_last_depth,		buffer ) ;
-		safe_unpack32(&msg->bf_last_depth_try,		buffer ) ;
+			safe_unpack32(&msg->bf_backfilled_jobs,	buffer);
+			safe_unpack32(&msg->bf_last_backfilled_jobs, buffer);
+			safe_unpack32(&msg->bf_cycle_counter,	buffer);
+			safe_unpack32(&msg->bf_cycle_sum,	buffer);
+			safe_unpack32(&msg->bf_cycle_last,	buffer);
+			safe_unpack32(&msg->bf_last_depth,	buffer);
+			safe_unpack32(&msg->bf_last_depth_try,	buffer);
 
-		safe_unpack32(&msg->bf_queue_len,		buffer ) ;
-		safe_unpack32(&msg->bf_cycle_max,		buffer ) ;
-		safe_unpack_time(&msg->bf_when_last_cycle,	buffer ) ;
-		safe_unpack32(&msg->bf_depth_sum,		buffer ) ;
-		safe_unpack32(&msg->bf_depth_try_sum,		buffer ) ;
-		safe_unpack32(&msg->bf_queue_len_sum,		buffer ) ;
-		safe_unpack32(&msg->bf_active,			buffer ) ;
-	}
+			safe_unpack32(&msg->bf_queue_len,	buffer);
+			safe_unpack32(&msg->bf_cycle_max,	buffer);
+			safe_unpack_time(&msg->bf_when_last_cycle, buffer);
+			safe_unpack32(&msg->bf_depth_sum,	buffer);
+			safe_unpack32(&msg->bf_depth_try_sum,	buffer);
+			safe_unpack32(&msg->bf_queue_len_sum,	buffer);
+			safe_unpack32(&msg->bf_active,		buffer);
+		}
+	} else
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 
