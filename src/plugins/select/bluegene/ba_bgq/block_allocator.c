@@ -682,6 +682,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 	uint16_t local_deny_pass = ba_deny_pass;
 	ba_geo_table_t *ba_geo_table = NULL;
 	bitstr_t *success_bitmap = NULL;
+	uint16_t orig_conn_type[HIGHEST_DIMENSIONS];
 
 	xassert(ba_initialized);
 
@@ -706,6 +707,9 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 	}
 	if (!deny_pass)
 		deny_pass = &local_deny_pass;
+
+	memcpy(orig_conn_type, ba_request->conn_type,
+	       sizeof(ba_request->conn_type));
 
 	slurm_mutex_lock(&ba_system_mutex);
 	while (ba_geo_table) {
@@ -796,6 +800,15 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			list_append(main_mps, ba_mp);
 		}
 
+		/* If we are going to take up the entire dimension
+		   might as well force it to be TORUS.
+		*/
+		for (dim=0; dim<cluster_dims; dim++) {
+			if ((ba_request->conn_type[dim] == SELECT_MESH)
+			    && (ba_geo_table->geometry[dim] == DIM_SIZE[dim]))
+				ba_request->conn_type[dim] = SELECT_TORUS;
+		}
+
 		itr = list_iterator_create(main_mps);
 		while ((ba_mp = list_next(itr))) {
 			if (ba_mp->used & BA_MP_USED_PASS_BIT)
@@ -809,6 +822,9 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 					    ba_geo_table->geometry[dim],
 					    ba_request->conn_type[dim])) {
 					list_iterator_destroy(itr);
+					memcpy(ba_request->conn_type,
+					       orig_conn_type,
+					       sizeof(ba_request->conn_type));
 					goto try_again;
 				}
 			}
