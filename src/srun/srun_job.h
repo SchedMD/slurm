@@ -87,7 +87,11 @@ typedef struct fname {
 } fname_t;
 
 typedef struct srun_job {
+#ifdef USE_LOADLEVELER
+	char *jobid;		/* assigned job id 	                  */
+#else
 	uint32_t jobid;		/* assigned job id 	                  */
+#endif
 	uint32_t stepid;	/* assigned step id 	                  */
 
 	uint32_t cpu_count;	/* allocated CPUs */

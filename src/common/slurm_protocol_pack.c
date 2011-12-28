@@ -2449,6 +2449,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 				       Buf buffer,
 				       uint16_t protocol_version)
 {
+#ifndef USE_LOADLEVELER
 	xassert(msg != NULL);
 
 	pack32(msg->error_code, buffer);
@@ -2467,6 +2468,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 
 	select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
 				     protocol_version);
+#endif
 }
 
 static int
@@ -2474,6 +2476,7 @@ _unpack_resource_allocation_response_msg(
 	resource_allocation_response_msg_t** msg, Buf buffer,
 	uint16_t protocol_version)
 {
+#ifndef USE_LOADLEVELER
 	uint32_t uint32_tmp;
 	resource_allocation_response_msg_t *tmp_ptr;
 
@@ -2544,6 +2547,7 @@ _unpack_resource_allocation_response_msg(
 unpack_error:
 	slurm_free_resource_allocation_response_msg(tmp_ptr);
 	*msg = NULL;
+#endif
 	return SLURM_ERROR;
 }
 

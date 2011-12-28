@@ -279,12 +279,14 @@ static bool _fe_proc_stdin(slurm_fd_t stdin_fd, slurm_fd_t stdin_socket)
 		msg_len = NO_VAL;
 	} else {
 		msg_len = in_len;
-/* FIXME: Test signal forwarding */
+#if 0
+		/* Temporary test of signal forwarding */
 		if (buf[0] == 'S') {
 			int sig_num = atoi(buf+1);
 			srun_send_signal(sig_num);
 			return false;
 		}
+#endif
 	}
 
 	buf_len = slurm_write_stream_timeout(stdin_socket, (char *)&msg_len,

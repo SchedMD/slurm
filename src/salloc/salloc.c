@@ -109,31 +109,35 @@ pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool exit_flag = false;
 static bool suspend_flag = false;
 static bool allocation_interrupted = false;
+#ifdef USE_LOADLEVELER
+static char *pending_job_id = NULL;
+#else
 static uint32_t pending_job_id = 0;
 static time_t last_timeout = 0;
+#endif
 static struct termios saved_tty_attributes;
 
 static void _exit_on_signal(int signo);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static pid_t  _fork_command(char **command);
 static void _forward_signal(int signo);
-static void _job_complete_handler(srun_job_complete_msg_t *msg);
-static void _job_suspend_handler(suspend_msg_t *msg);
-static void _node_fail_handler(srun_node_fail_msg_t *msg);
 #ifdef USE_LOADLEVELER
 static void _pending_callback(char *job_id);
 #else
+static void _job_complete_handler(srun_job_complete_msg_t *msg);
+static void _job_suspend_handler(suspend_msg_t *msg);
+static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _set_spank_env(void);
-#endif
 static void _ping_handler(srun_ping_msg_t *msg);
+static void _user_msg_handler(srun_user_msg_t *msg);
+static void _timeout_handler(srun_timeout_msg_t *msg);
+#endif
 static void _ring_terminal_bell(void);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
 static void _set_submit_dir_env(void);
 static void _signal_while_allocating(int signo);
-static void _timeout_handler(srun_timeout_msg_t *msg);
-static void _user_msg_handler(srun_user_msg_t *msg);
 
 #ifdef HAVE_BG
 static int _wait_bluegene_block_ready(
@@ -372,7 +376,11 @@ exit(rc);
 		/*
 		 * Allocation granted!
 		 */
+#ifdef USE_LOADLEVELER
+		info("Granted job allocation %s", alloc->job_id);
+#else
 		info("Granted job allocation %u", alloc->job_id);
+#endif
 		pending_job_id = alloc->job_id;
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(alloc)) {
@@ -439,13 +447,23 @@ exit(rc);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
+#ifdef USE_LOADLEVELER
+		error("Allocation was revoked for job %s before command could "
+		      "be run", alloc->job_id);
+#else
 		error("Allocation was revoked for job %u before command could "
 		      "be run", alloc->job_id);
+#endif
 		pthread_cond_broadcast(&allocation_state_cond);
 		pthread_mutex_unlock(&allocation_state_lock);
 		if (slurm_complete_job(alloc->job_id, status) != 0) {
+#ifdef USE_LOADLEVELER
+			error("Unable to clean up allocation for job %s: %m",
+			      alloc->job_id);
+#else
 			error("Unable to clean up allocation for job %u: %m",
 			      alloc->job_id);
+#endif
 		}
 		return 1;
  	}
@@ -505,12 +523,21 @@ relinquish:
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
 		pthread_mutex_unlock(&allocation_state_lock);
-
+#ifdef USE_LOADLEVELER
+		info("Relinquishing job allocation %s", alloc->job_id);
+#else
 		info("Relinquishing job allocation %d", alloc->job_id);
+#endif
 		if ((slurm_complete_job(alloc->job_id, status) != 0) &&
-		    (slurm_get_errno() != ESLURM_ALREADY_DONE))
+		    (slurm_get_errno() != ESLURM_ALREADY_DONE)) {
+#ifdef USE_LOADLEVELER
+			error("Unable to clean up job allocation %s: %m",
+			      alloc->job_id);
+#else
 			error("Unable to clean up job allocation %d: %m",
 			      alloc->job_id);
+#endif
+		}
 		pthread_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
@@ -576,7 +603,7 @@ static void _set_exit_code(void)
 	}
 }
 
-#ifdef USE_LOADLEVELER
+#ifndef USE_LOADLEVELER
 /* Propagate SPANK environment via SLURM_SPANK_ environment variables */
 static void _set_spank_env(void)
 {
@@ -847,11 +874,11 @@ static void _forward_signal(int signo)
 static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
-	if (pending_job_id != 0) {
+	if (pending_job_id)
 		slurm_complete_job(pending_job_id, 0);
-	}
 }
 
+#ifndef USE_LOADLEVELER
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
@@ -965,6 +992,7 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg)
 {
 	error("Node failure on %s", msg->nodelist);
 }
+#endif
 
 static void _set_rlimits(char **env)
 {
@@ -1102,6 +1130,7 @@ static int _blocks_dealloc(void)
 /* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 {
+#ifndef USE_LOADLEVELER
 	int is_ready = 0, i, rc;
 	int cur_delay = 0;
 	int suspend_time, resume_time, max_delay;
@@ -1130,9 +1159,9 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			cur_delay += POLL_SLEEP;
 		}
 
-		if (opt.wait_all_nodes)
+		if (opt.wait_all_nodes) {
 			rc = slurm_job_node_ready(alloc->job_id);
-		else {
+		} else {
 			is_ready = 1;
 			break;
 		}
@@ -1171,5 +1200,8 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	pending_job_id = 0;
 
 	return is_ready;
+#else
+	return 1;
+#endif
 }
 #endif	/* HAVE_BG */

@@ -132,7 +132,11 @@ typedef struct srun_options {
 	char *job_name;		/* --job-name=,     -J name	*/
 	bool job_name_set_cmd;	/* true if job_name set by cmd line option */
 	bool job_name_set_env;	/* true if job_name set by env var */
+#ifdef USE_LOADLEVELER
+	char *jobid;		/* --jobid=jobid                */
+#else
 	unsigned int jobid;     /* --jobid=jobid                */
+#endif
 	bool jobid_set;		/* true if jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/
 	char *dependency;	/* --dependency, -P type:jobid	*/

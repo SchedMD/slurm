@@ -1627,11 +1627,13 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		*p2int = slurmd_job->ngids;
 		break;
 	case S_JOB_ID:
+#ifndef USE_LOADLEVELER
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank_ctx == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->jobid;
 		else
 			*p2uint32 = slurmd_job->jobid;
+#endif
 		break;
 	case S_JOB_STEPID:
 		p2uint32 = va_arg(vargs, uint32_t *);

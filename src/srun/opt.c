@@ -359,7 +359,11 @@ static void _opt_default()
 	opt.job_name = NULL;
 	opt.job_name_set_cmd = false;
 	opt.job_name_set_env = false;
+#ifdef USE_LOADLEVELER
+	opt.jobid    = NULL;
+#else
 	opt.jobid    = NO_VAL;
+#endif
 	opt.jobid_set = false;
 	opt.dependency = NULL;
 	opt.account  = NULL;
@@ -1180,7 +1184,11 @@ static void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_JOBID:
+#ifdef USE_LOADLEVELER
+			opt.jobid = xstrdup(optarg);
+#else
 			opt.jobid = _get_int(optarg, "jobid", true);
+#endif
 			opt.jobid_set = true;
 			break;
 		case LONG_OPT_TIMEO:
@@ -2374,8 +2382,13 @@ static void _opt_list(void)
 		info("nodes          : %d %s", opt.min_nodes,
 		     opt.nodes_set ? "(set)" : "(default)");
 	}
+#ifdef USE_LOADLEVELER
+	info("jobid          : %s %s", opt.jobid,
+	     opt.jobid_set ? "(set)" : "(default)");
+#else
 	info("jobid          : %u %s", opt.jobid,
 	     opt.jobid_set ? "(set)" : "(default)");
+#endif
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);

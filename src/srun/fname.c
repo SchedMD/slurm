@@ -141,8 +141,11 @@ fname_create(srun_job_t *job, char *format)
 			 case 'j':  /* '%j' => jobid          */
 
 				 xmemcat(name, q, p - 1);
+#ifdef USE_LOADLEVELER
+				 xstrfmtcat(name, "%s", job->jobid);
+#else
 				 xstrfmtcat(name, "%0*d", wid, job->jobid);
-
+#endif
 				 if ((*p == 'J') && (job->stepid != NO_VAL))
 					 xstrfmtcat(name, ".%d", job->stepid);
 				 q = ++p;

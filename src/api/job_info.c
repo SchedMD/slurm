@@ -1149,6 +1149,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
  * IN job_id - slurm job id
  * RET: READY_* values as defined in slurm.h
  */
+#ifndef USE_LOADLEVELER
 extern int slurm_job_node_ready(uint32_t job_id)
 {
 	slurm_msg_t req, resp;
@@ -1182,6 +1183,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 
 	return rc;
 }
+#endif
 
 extern int slurm_job_cpus_allocated_on_node_id(
 	job_resources_t *job_resrcs_ptr, int node_id)

@@ -50,6 +50,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 
+#ifndef USE_LOADLEVELER
 /*
  * slurm_complete_job - note the completion of a job allocation
  * IN job_id - the job's id
@@ -78,3 +79,4 @@ slurm_complete_job (uint32_t job_id, uint32_t job_return_code)
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
+#endif

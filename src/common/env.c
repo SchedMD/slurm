@@ -946,7 +946,11 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 					"%u", node_cnt);
 	}
 
+#ifdef USE_LOADLEVELER
+	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%s", alloc->job_id);
+#else
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
+#endif
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
 				alloc->node_list);
@@ -1001,7 +1005,11 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	}
 
 	/* OBSOLETE, but needed by MPI, do not remove */
+#ifdef USE_LOADLEVELER
+	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%s", alloc->job_id);
+#else
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
+#endif
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
 

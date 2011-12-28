@@ -1188,7 +1188,11 @@ typedef struct srun_ping_msg {
 } srun_ping_msg_t;
 
 typedef struct srun_job_complete_msg {
+#ifdef USE_LOADLEVELER
+	char *job_id;           /* slurm job_id */
+#else
 	uint32_t job_id;        /* slurm job_id */
+#endif
 	uint32_t step_id;       /* step_id or NO_VAL */
 } srun_job_complete_msg_t;
 
@@ -1522,7 +1526,11 @@ typedef struct delete_partition_msg {
 } delete_part_msg_t;
 
 typedef struct resource_allocation_response_msg {
+#ifdef USE_LOADLEVELER
+	char *job_id;		/* assigned job id */
+#else
 	uint32_t job_id;	/* assigned job id */
+#endif
 	char *node_list;	/* assigned list of nodes */
 	char *alias_list;	/* node name/address/hostnamne aliases */
 	uint32_t num_cpu_groups;/* elements in below cpu arrays */
@@ -2157,8 +2165,13 @@ extern void slurm_free_job_alloc_info_response_msg PARAMS(
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free "info" using slurm_free_job_alloc_info_response_msg
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_allocation_lookup PARAMS(
+	(char *job_id, job_alloc_info_response_msg_t **info));
+#else
 extern int slurm_allocation_lookup PARAMS(
 	(uint32_t job_id, job_alloc_info_response_msg_t **info));
+#endif
 
 /*
  * slurm_allocation_lookup_lite - retrieve minor info for an existing
@@ -2168,8 +2181,13 @@ extern int slurm_allocation_lookup PARAMS(
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_allocation_lookup_lite PARAMS(
+	(char *job_id, resource_allocation_response_msg_t **info));
+#else
 extern int slurm_allocation_lookup_lite PARAMS(
 	(uint32_t job_id, resource_allocation_response_msg_t **info));
+#endif
 
 /*
  * slurm_read_hostfile - Read a SLURM hostfile specified by "filename".
@@ -2321,8 +2339,13 @@ extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
  * IN job_return_code - the highest exit code of any task of the job
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_complete_job PARAMS((char *job_id,
+				      uint32_t job_return_code));
+#else
 extern int slurm_complete_job PARAMS((uint32_t job_id,
 				      uint32_t job_return_code));
+#endif
 
 /*
  * slurm_terminate_job - terminates all steps of an existing job by sending
@@ -2642,8 +2665,11 @@ extern long slurm_get_rem_time PARAMS((uint32_t jobid));
  * IN job_id - slurm job id
  * RET: READY_* values defined above
  */
+#ifdef USE_LOADLEVELER
+extern int slurm_job_node_ready(char *job_id);
+#else
 extern int slurm_job_node_ready(uint32_t job_id);
-
+#endif
 /*
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer

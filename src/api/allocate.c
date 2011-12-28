@@ -81,10 +81,12 @@ typedef struct {
 } listen_t;
 
 static int _handle_rc_msg(slurm_msg_t *msg);
+#ifndef USE_LOADLEVELER
 static listen_t *_create_allocation_response_socket(char *interface_hostname);
 static void _destroy_allocation_response_socket(listen_t *listen);
 static resource_allocation_response_msg_t *_wait_for_allocation_response(
 	uint32_t job_id, const listen_t *listen, int timeout);
+#endif
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
@@ -395,6 +397,7 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
+#ifndef USE_LOADLEVELER
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource allocation
  * IN jobid - job allocation identifier
@@ -479,6 +482,7 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
+#endif
 
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
@@ -646,6 +650,7 @@ cleanup_hostfile:
 /***************************************************************************
  * Support functions for slurm_allocate_resources_blocking()
  ***************************************************************************/
+#ifndef USE_LOADLEVELER
 static listen_t *_create_allocation_response_socket(char *interface_hostname)
 {
 	listen_t *listen = NULL;
@@ -843,3 +848,4 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 	info("job %u has been allocated resources", job_id);
 	return resp;
 }
+#endif

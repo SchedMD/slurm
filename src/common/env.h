@@ -58,7 +58,11 @@ typedef struct env_options {
 	uint16_t comm_port;	/* srun's communication port */
 	slurm_addr_t *cli;	/* launch node address */
 	slurm_addr_t *self;
+#ifdef USE_LOADLEVELER
+	char *jobid;		/* assigned job id */
+#else
 	int jobid;		/* assigned job id */
+#endif
 	int stepid;	        /* assigned step id */
 	int procid;		/* global task id (across nodes) */
 	int localid;		/* local task id (within node) */

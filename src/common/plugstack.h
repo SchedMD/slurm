@@ -58,7 +58,11 @@
 struct spank_launcher_job_info {
 	uid_t       uid;
 	gid_t       gid;
+#ifdef USE_LOADLEVELER
+	char       *jobid;
+#else
 	uint32_t    jobid;
+#endif
 	uint32_t    stepid;
 	slurm_step_layout_t *step_layout;
 	int         argc;

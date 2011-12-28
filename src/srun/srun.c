@@ -291,6 +291,7 @@ int srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	} else
 		_verbose = debug_level;
+
 #ifdef USE_LOADLEVELER
 	be_cmd_line = build_poe_command();
 	exit(srun_front_end(be_cmd_line));
@@ -307,19 +308,28 @@ int srun(int ac, char **av)
 	 * create a job from opt
 	 */
 	if (opt.test_only) {
+#ifdef USE_LOADLEVELER
+		error("--test-only not supported with LoadLeveler");
+		exit (1);
+#else
 		int rc = allocate_test();
 		if (rc) {
 			slurm_perror("allocation failure");
 			exit (1);
 		}
 		exit (0);
-
+#endif
 	} else if (opt.no_alloc) {
+#ifdef USE_LOADLEVELER
+		error("--no-allocate not supported with LoadLeveler");
+		exit (1);
+#else
 		info("do not allocate resources");
 		job = job_create_noalloc();
 		if (create_job_step(job, false) < 0) {
 			exit(error_exit);
 		}
+#endif
 	} else if ((resp = existing_allocation())) {
 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
 					&resp->node_cnt);
@@ -595,8 +605,13 @@ int srun(int ac, char **av)
 		else
 			MPIR_Breakpoint(job);
 	} else {
+#ifdef USE_LOADLEVELER
+		info("Job step %s.%u aborted before step completely launched.",
+		     job->jobid, job->stepid);
+#else
 		info("Job step %u.%u aborted before step completely launched.",
 		     job->jobid, job->stepid);
+#endif
 	}
 
 	slurm_step_launch_wait_finish(job->step_ctx);
@@ -741,10 +756,13 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 
 	if (!_verbose)
 		return;
-
+#ifdef USE_LOADLEVELER
+	xstrfmtcat(str, "jobid %s: nodes(%u):`%s', cpu counts: ",
+		   resp->job_id, resp->node_cnt, resp->node_list);
+#else
 	xstrfmtcat(str, "jobid %u: nodes(%u):`%s', cpu counts: ",
 		   resp->job_id, resp->node_cnt, resp->node_list);
-
+#endif
 	for (i = 0; i < resp->num_cpu_groups; i++) {
 		xstrfmtcat(str, "%s%u(x%u)",
 			   sep, resp->cpus_per_node[i],
@@ -1618,8 +1636,13 @@ static void _handle_intr(void)
 	gettimeofday(&now, NULL);
 	if (!opt.quit_on_intr && (_diff_tv_str(&last_intr, &now) > 1000000)) {
 		if  (opt.disable_status) {
+#ifdef USE_LOADLEVELER
+			info("sending Ctrl-C to job %s.%u",
+			     job->jobid, job->stepid);
+#else
 			info("sending Ctrl-C to job %u.%u",
 			     job->jobid, job->stepid);
+#endif
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 			runjob_signal(SIGINT);
 #else
@@ -1646,9 +1669,13 @@ static void _handle_intr(void)
 #endif
 				return;
 			}
-
+#ifdef USE_LOADLEVELER
+			info("sending Ctrl-C to job %s.%u",
+			     job->jobid, job->stepid);
+#else
 			info("sending Ctrl-C to job %u.%u",
 			     job->jobid, job->stepid);
+#endif
 			last_intr_sent = now;
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 			runjob_signal(SIGKILL);

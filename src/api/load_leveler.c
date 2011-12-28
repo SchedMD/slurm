@@ -954,6 +954,17 @@ extern int slurm_load_job (job_info_msg_t **resp, char *job_id,
 }
 
 /*
+ * slurm_job_node_ready - report if nodes are ready for job to execute now
+ * IN job_id - slurm job id
+ * RET: READY_* values as defined in slurm.h
+ */
+extern int slurm_job_node_ready(char *job_id)
+{
+/* FIXME: Add LoadLeveler test here */
+	return (READY_NODE_STATE | READY_JOB_STATE);
+}
+
+/*
  * slurm_load_jobs - issue RPC to get slurm all job configuration
  *	information if changed since update_time
  * IN update_time - time of current configuration data
@@ -1650,6 +1661,20 @@ extern int slurm_load_partitions (time_t update_time,
 	*resp = part_info_ptr;
 	return SLURM_PROTOCOL_SUCCESS;
 #endif
+}
+
+/*****************************************************************************\
+ * Replacement functions for src/api/copmplete.c
+\*****************************************************************************/
+/*
+ * slurm_complete_job - note the completion of a job allocation
+ * IN job_id - the job's id
+ * IN job_return_code - the highest exit code of any task of the job
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_complete_job (char *job_id, uint32_t job_return_code)
+{
+	return slurm_terminate_job(job_id);
 }
 
 /*****************************************************************************\
@@ -2380,7 +2405,7 @@ extern void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
  *      with no allocation granted)
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-resource_allocation_response_msg_t *
+extern resource_allocation_response_msg_t *
 slurm_allocate_resources_blocking (job_desc_msg_t *user_req,
 				   time_t timeout,
 				   void(*pending_callback)(char *job_id))
@@ -2404,4 +2429,34 @@ info("wait for job here");
 	return NULL;
 }
 
+/*
+ * slurm_allocation_lookup - retrieve info for an existing resource allocation
+ * IN jobid - job allocation identifier
+ * OUT info - job allocation information
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the "resp" using slurm_free_resource_allocation_response_msg
+ */
+extern int
+slurm_allocation_lookup(char *jobid,
+			job_alloc_info_response_msg_t **info)
+{
+/* FIXME: Need to add code */
+	return SLURM_ERROR;
+}
+
+/*
+ * slurm_allocation_lookup_lite - retrieve info for an existing resource
+ *                                allocation without the addrs and such
+ * IN jobid - job allocation identifier
+ * OUT info - job allocation information
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg()
+ */
+extern int
+slurm_allocation_lookup_lite(char *jobid,
+			     resource_allocation_response_msg_t **info)
+{
+/* FIXME: Need to add code */
+	return SLURM_ERROR;
+}
 #endif

@@ -76,7 +76,11 @@ typedef struct allocation_info {
 	char                   *alias_list;
 	uint16_t               *cpus_per_node;
 	uint32_t               *cpu_count_reps;
+#ifdef USE_LOADLEVELER
+	char                   *jobid;
+#else
 	uint32_t                jobid;
+#endif
 	uint32_t                nnodes;
 	char                   *nodelist;
 	uint32_t                num_cpu_groups;
@@ -111,9 +115,11 @@ job_create_noalloc(void)
 		goto error;
 	}
 	srand48(getpid());
+#ifndef USE_LOADLEVELER
 	ai->jobid          = MIN_NOALLOC_JOBID +
 				((uint32_t) lrand48() %
 				(MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
+#endif
 	ai->stepid         = (uint32_t) (lrand48());
 	ai->nodelist       = opt.nodelist;
 	ai->nnodes         = hostlist_count(hl);
@@ -144,7 +150,7 @@ job_create_noalloc(void)
 srun_job_t *
 job_step_create_allocation(resource_allocation_response_msg_t *resp)
 {
-	uint32_t job_id = resp->job_id;
+	char *job_id = xstrdup(resp->job_id);
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
 	hostlist_t hl = NULL;
@@ -349,7 +355,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->alias_list     = resp->alias_list;
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
-	i->jobid          = resp->job_id;
+	i->jobid          = xstrdup(resp->job_id);
 	i->stepid         = NO_VAL;
 	i->num_cpu_groups = resp->num_cpu_groups;
 	i->cpus_per_node  = resp->cpus_per_node;
@@ -498,7 +504,7 @@ _job_create_structure(allocation_info_t *ainfo)
 	}
 #endif
 	job->select_jobinfo = ainfo->select_jobinfo;
-	job->jobid   = ainfo->jobid;
+	job->jobid   = xstrdup(ainfo->jobid);
 
 	job->ntasks  = opt.ntasks;
 	for (i=0; i<ainfo->num_cpu_groups; i++) {

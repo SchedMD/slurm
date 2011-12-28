@@ -79,8 +79,11 @@ resource_allocation_response_msg_t *global_resp = NULL;
 struct pollfd global_fds[1];
 
 extern char **environ;
-
+#ifdef USE_LOADLEVELER
+static char *pending_job_id = NULL;
+#else
 static uint32_t pending_job_id = 0;
+#endif
 
 static int sig_array[] = {
 	SIGHUP,  SIGINT,  SIGQUIT, SIGPIPE,
@@ -89,7 +92,6 @@ static int sig_array[] = {
 /*
  * Static Prototypes
  */
-static void _set_pending_job_id(uint32_t job_id);
 static void _signal_while_allocating(int signo);
 
 #ifdef HAVE_BG
@@ -102,6 +104,38 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 
 static sig_atomic_t destroy_job = 0;
 
+#ifdef USE_LOADLEVELER
+static void _set_pending_job_id(char *job_id)
+{
+	debug2("Pending job allocation %s", job_id);
+	pending_job_id = xstrdup(job_id);
+}
+
+static void _signal_while_allocating(int signo)
+{
+	destroy_job = 1;
+	if (pending_job_id) {
+		slurm_complete_job(pending_job_id, NO_VAL);
+		info("Job allocation %s has been revoked.", pending_job_id);
+
+	}
+}
+
+/* This typically signifies the job was cancelled by scancel */
+static void _job_complete_handler(srun_job_complete_msg_t *msg)
+{
+	if (pending_job_id && strcmp(pending_job_id, msg->job_id)) {
+		error("Ignoring bogus job_complete call: job %s is not "
+		      "job %s", pending_job_id, msg->job_id);
+		return;
+	}
+
+	if (msg->step_id == NO_VAL)
+		info("Force Terminated job %s", msg->job_id);
+	else
+		info("Force Terminated job %s.%u", msg->job_id, msg->step_id);
+}
+#else
 static void _set_pending_job_id(uint32_t job_id)
 {
 	debug2("Pending job allocation %u", job_id);
@@ -132,6 +166,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg)
 	else
 		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
 }
+#endif
 
 /*
  * Job has been notified of it's approaching time limit.
@@ -315,7 +350,11 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	max_delay = suspend_time + resume_time;
 	max_delay *= 5;		/* Allow for ResumeRate support */
 
+#ifdef USE_LOADLEVELER
+	pending_job_id = xstrdup(alloc->job_id);
+#else
 	pending_job_id = alloc->job_id;
+#endif
 
 	for (i = 0; (cur_delay < max_delay); i++) {
 		if (i) {
@@ -359,9 +398,11 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		error("Nodes %s are still not ready", alloc->node_list);
 	else	/* allocation_interrupted and slurmctld not responing */
 		is_ready = 0;
-
+#ifdef USE_LOADLEVELER
+	xfree(pending_job_id);
+#else
 	pending_job_id = 0;
-
+#endif
 	return is_ready;
 }
 #endif	/* HAVE_BG */
@@ -481,22 +522,31 @@ cleanup_allocation(void)
 resource_allocation_response_msg_t *
 existing_allocation(void)
 {
-	uint32_t old_job_id;
         resource_allocation_response_msg_t *resp = NULL;
 
-	if (opt.jobid != NO_VAL)
-		old_job_id = (uint32_t)opt.jobid;
-	else
+#ifdef USE_LOADLEVELER
+	if (opt.jobid == NULL)
                 return NULL;
-
-        if (slurm_allocation_lookup_lite(old_job_id, &resp) < 0) {
+#else
+	if (opt.jobid == NO_VAL)
+                return NULL;
+#endif
+        if (slurm_allocation_lookup_lite(opt.jobid, &resp) < 0) {
                 if (opt.parallel_debug || opt.jobid_set)
                         return NULL;    /* create new allocation as needed */
+#ifdef USE_LOADLEVELER
                 if (errno == ESLURM_ALREADY_DONE)
-                        error ("SLURM job %u has expired.", old_job_id);
+                        error ("SLURM job %s has expired.", opt.jobid);
+                else
+                        error ("Unable to confirm allocation for job %s: %m",
+			       opt.jobid);
+#else
+                if (errno == ESLURM_ALREADY_DONE)
+                        error ("SLURM job %u has expired.", opt.jobid);
                 else
                         error ("Unable to confirm allocation for job %u: %m",
-			       old_job_id);
+			       opt.jobid);
+#endif
                 info ("Check SLURM_JOB_ID environment variable "
                       "for expired or invalid job.");
                 exit(error_exit);
@@ -645,8 +695,10 @@ job_desc_msg_create_from_opts (void)
 
 	if (opt.hold)
 		j->priority     = 0;
+#ifndef USE_LOADLEVELER
 	if (opt.jobid != NO_VAL)
 		j->job_id	= opt.jobid;
+#endif
 #ifdef HAVE_BG
 	if (opt.geometry[0] > 0) {
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
@@ -752,7 +804,9 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	time_t begin_time;
 
 	slurm_step_ctx_params_t_init(&job->ctx_params);
+#ifndef USE_LOADLEVELER
 	job->ctx_params.job_id = job->jobid;
+#endif
 	job->ctx_params.uid = opt.uid;
 
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
