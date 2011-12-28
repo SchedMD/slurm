@@ -157,7 +157,8 @@ static bool _be_proc_stdin(int stdin_pipe, slurm_fd_t stdin_socket)
 	read_len = slurm_read_stream(stdin_socket, (char *)&buf_len,
 				     sizeof(buf_len));
 	if (read_len == -1) {
-		error("stdin read header error: %m");
+		if (errno != SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT)
+			error("stdin read header error: %m");
 		return fini_rc;	/* Error, treat like EOF */
 	}
 	if (read_len == 0)
@@ -317,7 +318,7 @@ static bool _fe_proc_stdin(slurm_fd_t stdin_fd, slurm_fd_t stdin_socket)
  */
 static int _fe_proc_exit(slurm_fd_t signal_socket)
 {
-	int return_code = 0;
+	int return_code = 0, status;
 	size_t buf_len;
 	uint32_t status_32;
 
@@ -328,18 +329,19 @@ static int _fe_proc_exit(slurm_fd_t signal_socket)
 		return 1;
 	}
 
-#if _DEBUG_SRUN
-{
-	int status = status_32;
-	if (WIFEXITED(status)) {
+	status = status_32;
+	if (WIFEXITED(status))
 		return_code = WEXITSTATUS(status);
-		info("exit status:%d", return_code);
+
+#if _DEBUG_SRUN
+	if (WIFEXITED(status)) {
+		info("exit status: %d", return_code);
 	} else if (WIFSIGNALED(status))
-		info("exit signaled:%d", WTERMSIG(status));
+		info("exit signaled: %d", WTERMSIG(status));
 	else
-		info("exit code:%d", status);
-}
+		info("exit code: %d", status);
 #endif
+
 	return return_code;
 }
 
