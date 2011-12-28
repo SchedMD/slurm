@@ -341,7 +341,7 @@ extern int read_bg_conf(void)
 	bool tmp_bool = 0;
 	int count = 0;
 	s_p_hashtbl_t *tbl = NULL;
-	char *layout = NULL;
+	char *tmp_char = NULL;
 	select_ba_request_t **blockreq_array = NULL;
 	image_t **image_array = NULL;
 	image_t *image = NULL;
@@ -800,37 +800,37 @@ no_calc:
 	else
 		_reopen_bridge_log();
 
-	if (s_p_get_string(&layout, "DenyPassthrough", tbl)) {
-		if (strstr(layout, "A"))
+	if (s_p_get_string(&tmp_char, "DenyPassthrough", tbl)) {
+		if (strstr(tmp_char, "A"))
 			ba_deny_pass |= PASS_DENY_A;
-		if (strstr(layout, "X"))
+		if (strstr(tmp_char, "X"))
 			ba_deny_pass |= PASS_DENY_X;
-		if (strstr(layout, "Y"))
+		if (strstr(tmp_char, "Y"))
 			ba_deny_pass |= PASS_DENY_Y;
-		if (strstr(layout, "Z"))
+		if (strstr(tmp_char, "Z"))
 			ba_deny_pass |= PASS_DENY_Z;
-		if (!strcasecmp(layout, "ALL"))
+		if (!strcasecmp(tmp_char, "ALL"))
 			ba_deny_pass |= PASS_DENY_ALL;
 		bg_conf->deny_pass = ba_deny_pass;
-		xfree(layout);
+		xfree(tmp_char);
 	}
 
-	if (!s_p_get_string(&layout, "LayoutMode", tbl)) {
+	if (!s_p_get_string(&tmp_char, "LayoutMode", tbl)) {
 		info("Warning: LayoutMode was not specified in bluegene.conf "
 		     "defaulting to STATIC partitioning");
 		bg_conf->layout_mode = LAYOUT_STATIC;
 	} else {
-		if (!strcasecmp(layout,"STATIC"))
+		if (!strcasecmp(tmp_char,"STATIC"))
 			bg_conf->layout_mode = LAYOUT_STATIC;
-		else if (!strcasecmp(layout,"OVERLAP"))
+		else if (!strcasecmp(tmp_char,"OVERLAP"))
 			bg_conf->layout_mode = LAYOUT_OVERLAP;
-		else if (!strcasecmp(layout,"DYNAMIC"))
+		else if (!strcasecmp(tmp_char,"DYNAMIC"))
 			bg_conf->layout_mode = LAYOUT_DYNAMIC;
 		else {
 			fatal("I don't understand this LayoutMode = %s",
-			      layout);
+			      tmp_char);
 		}
-		xfree(layout);
+		xfree(tmp_char);
 	}
 
 	/* add blocks defined in file */
