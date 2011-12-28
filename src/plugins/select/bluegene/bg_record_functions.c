@@ -1405,10 +1405,24 @@ extern int resume_block(bg_record_t *bg_record)
 		return SLURM_SUCCESS;
 
 	if (bg_record->state & BG_BLOCK_ERROR_FLAG) {
+		ba_mp_t *ba_mp;
+		ListIterator itr;
+		struct node_record *node_ptr;
+
 		bg_record->state &= (~BG_BLOCK_ERROR_FLAG);
 		info("Block %s put back into service after "
 		     "being in an error state.",
 		     bg_record->bg_block_id);
+
+		/* Remove the block error message from each slurm node. */
+		itr = list_iterator_create(bg_record->ba_mp_list);
+		while ((ba_mp = list_next(itr))) {
+			node_ptr = &node_record_table_ptr[ba_mp->index];
+			if (node_ptr->reason
+			    && !strncmp(node_ptr->reason, "update_block", 12))
+				xfree(node_ptr->reason);
+		}
+		list_iterator_destroy(itr);
 	}
 
 	if (remove_from_bg_list(bg_lists->job_running, bg_record)
