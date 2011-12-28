@@ -289,6 +289,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	static time_t last_set_all = 0;
 	ba_mp_t *ba_mp;
 	node_subgrp_t *subgrp = NULL;
+	int bit_count;
 
 	//uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -328,6 +329,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		if (nodeinfo->bitmap_size != g_bitmap_size)
 			nodeinfo->bitmap_size = g_bitmap_size;
 	}
+
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
 		enum node_states state = NODE_STATE_UNKNOWN;
@@ -347,13 +349,22 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			nodeinfo = node_ptr->select_nodeinfo->data;
 			xassert(nodeinfo);
 			xassert(nodeinfo->subgrp_list);
-			/* FIXME: the subgrp->bitmap isn't set here. */
+			if (ba_mp->cnode_err_bitmap
+			    && (bit_count =
+				bit_set_count(ba_mp->cnode_err_bitmap))) {
+				subgrp = _find_subgrp(nodeinfo->subgrp_list,
+						      NODE_STATE_ERROR,
+						      g_bitmap_size);
+				/* FIXME: the subgrp->bitmap isn't set here. */
+				subgrp->cnode_cnt += bit_count;
+			}
 
 			subgrp = _find_subgrp(nodeinfo->subgrp_list,
 					      NODE_STATE_ALLOCATED,
 					      g_bitmap_size);
 			while ((job_ptr = list_next(itr))) {
 				jobinfo = job_ptr->select_jobinfo->data;
+				/* FIXME: the subgrp->bitmap isn't set here. */
 				subgrp->cnode_cnt += jobinfo->cnode_cnt;
 			}
 			list_iterator_destroy(itr);
@@ -392,6 +403,17 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			nodeinfo = node_ptr->select_nodeinfo->data;
 			xassert(nodeinfo);
 			xassert(nodeinfo->subgrp_list);
+
+			if (ba_mp->cnode_err_bitmap
+			    && (state == NODE_STATE_ALLOCATED)
+			    && (bit_count =
+				bit_set_count(ba_mp->cnode_err_bitmap))) {
+				subgrp = _find_subgrp(nodeinfo->subgrp_list,
+						      NODE_STATE_ERROR,
+						      g_bitmap_size);
+				/* FIXME: the subgrp->bitmap isn't set here. */
+				subgrp->cnode_cnt += bit_count;
+			}
 
 			subgrp = _find_subgrp(nodeinfo->subgrp_list,
 					      state, g_bitmap_size);
