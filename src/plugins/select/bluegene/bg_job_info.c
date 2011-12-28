@@ -854,7 +854,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 	case SELECT_PRINT_DATA:
 		snprintf(buf, size,
 			 "%7.7s %6.6s %6.6s    %s %-16s",
-			 conn_type_string(jobinfo->conn_type[0]),
+			 conn_type_string_full(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 geo,
@@ -864,7 +864,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size,
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%s",
-			 conn_type_string(jobinfo->conn_type[0]),
+			 conn_type_string_full(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 geo);
@@ -873,7 +873,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size,
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%s Block_ID=%s",
-			 conn_type_string(jobinfo->conn_type[0]),
+			 conn_type_string_full(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 geo,
@@ -891,7 +891,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_PRINT_CONNECTION:
 		snprintf(buf, size, "%s",
-			 conn_type_string(jobinfo->conn_type[0]));
+			 conn_type_string_full(jobinfo->conn_type));
 		break;
 	case SELECT_PRINT_REBOOT:
 		snprintf(buf, size, "%s",
@@ -987,7 +987,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 	case SELECT_PRINT_DATA:
 		xstrfmtcat(buf,
 			   "%7.7s %6.6s %6.6s    %s %-16s",
-			   conn_type_string(jobinfo->conn_type[0]),
+			   conn_type_string_full(jobinfo->conn_type),
 			   _yes_no_string(jobinfo->reboot),
 			   _yes_no_string(jobinfo->rotate),
 			   geo,
@@ -997,7 +997,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		xstrfmtcat(buf,
 			   "Connection=%s Reboot=%s Rotate=%s "
 			   "Geometry=%s Block_ID=%s",
-			   conn_type_string(jobinfo->conn_type[0]),
+			   conn_type_string_full(jobinfo->conn_type),
 			   _yes_no_string(jobinfo->reboot),
 			   _yes_no_string(jobinfo->rotate),
 			   geo,
@@ -1015,7 +1015,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		break;
 	case SELECT_PRINT_CONNECTION:
 		xstrfmtcat(buf, "%s",
-			   conn_type_string(jobinfo->conn_type[0]));
+			   conn_type_string_full(jobinfo->conn_type));
 		break;
 	case SELECT_PRINT_REBOOT:
 		xstrfmtcat(buf, "%s",

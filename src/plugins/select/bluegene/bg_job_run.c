@@ -329,8 +329,8 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	if ((bg_action_ptr->conn_type[0] >= SELECT_SMALL)
 	   && (bg_action_ptr->conn_type[0] != bg_record->conn_type[0])) {
 		debug3("changing small block mode from %s to %s",
-		       conn_type_string(bg_record->conn_type[0]),
-		       conn_type_string(bg_action_ptr->conn_type[0]));
+		       conn_type_string_full(bg_record->conn_type),
+		       conn_type_string_full(bg_action_ptr->conn_type));
 		rc = 1;
 # ifndef HAVE_BG_FILES
 		/* since we don't check state on an emulated system we

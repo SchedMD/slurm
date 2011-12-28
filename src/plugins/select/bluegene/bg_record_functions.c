@@ -69,7 +69,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 	     bg_record->cpu_cnt);
 	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y],
 	     bg_record->geo[Z]);
-	info("\tconn_type: %s", conn_type_string(bg_record->conn_type[0]));
+	info("\tconn_type: %s", conn_type_string_full(bg_record->conn_type));
 #ifdef HAVE_BGL
 	info("\tnode_use: %s", node_use_string(bg_record->node_use));
 #endif
@@ -84,7 +84,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 		info("Record: BlockID:%s Nodes:%s Conn:%s",
 		     bg_record->bg_block_id, tmp_char,
-		     conn_type_string(bg_record->conn_type[0]));
+		     conn_type_string_full(bg_record->conn_type));
 	}
 #endif
 }
@@ -605,14 +605,14 @@ extern int add_bg_record(List records, List *used_nodes,
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("add_bg_record: asking for %s %d %d %s",
 		     blockreq->save_name, blockreq->small32, blockreq->small128,
-		     conn_type_string(blockreq->conn_type[0]));
+		     conn_type_string_full(blockreq->conn_type));
 #else
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("add_bg_record: asking for %s %d %d %d %d %d %s",
 		     blockreq->save_name, blockreq->small256,
 		     blockreq->small128, blockreq->small64,
 		     blockreq->small32, blockreq->small16,
-		     conn_type_string(blockreq->conn_type[0]));
+		     conn_type_string_full(blockreq->conn_type));
 #endif
 	/* Set the bitmap blank here if it is a full node we don't
 	   want anything set we also don't want the bg_record->ionode_str set.

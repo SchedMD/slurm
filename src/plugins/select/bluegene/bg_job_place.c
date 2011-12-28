@@ -520,8 +520,9 @@ static bg_record_t *_find_matching_block(List block_list,
 				info("bg block %s conn-type not usable "
 				     "asking for %s bg_record is %s",
 				     bg_record->bg_block_id,
-				     conn_type_string(request->conn_type[0]),
-				     conn_type_string(bg_record->conn_type[0]));
+				     conn_type_string_full(request->conn_type),
+				     conn_type_string_full(
+					     bg_record->conn_type));
 			continue;
 		}
 #ifdef HAVE_BGP
