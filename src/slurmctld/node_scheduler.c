@@ -1459,6 +1459,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (job_ptr->mail_type & MAIL_JOB_BEGIN)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
+	slurmctld_diag_stats.jobs_started++;
 	acct_policy_job_begin(job_ptr);
 
 	/* If ran with slurmdbd this is handled out of band in the

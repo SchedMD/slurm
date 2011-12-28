@@ -648,7 +648,6 @@ extern int schedule(uint32_t job_limit)
 		} else if (error_code == SLURM_SUCCESS) {
 			/* job initiated */
 			debug3("sched: JobId=%u initiated", job_ptr->job_id);
-			slurmctld_diag_stats.jobs_started++;
 			last_job_update = now;
 #ifdef HAVE_BG
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,

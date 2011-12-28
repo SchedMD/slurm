@@ -3012,6 +3012,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
 
+	slurmctld_diag_stats.jobs_submitted++;
 	acct_policy_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_NODES_BUSY) ||

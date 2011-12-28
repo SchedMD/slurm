@@ -48,11 +48,8 @@
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 
-extern slurmctld_config_t slurmctld_config;
-
 extern int retry_list_size(void);
 
-extern diag_stats_t slurmctld_diag_stats;
 extern time_t last_proc_req_start;
 
 /* Pack all scheduling statistics */
