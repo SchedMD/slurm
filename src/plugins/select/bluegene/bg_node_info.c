@@ -54,6 +54,17 @@ static void _free_node_subgrp(void *object)
 	}
 }
 
+static node_subgrp_t *_create_subgrp(List subgrp_list, enum node_states state,
+				     uint16_t size)
+{
+	node_subgrp_t *subgrp = xmalloc(sizeof(node_subgrp_t));
+	subgrp->state = state;
+	subgrp->bitmap = bit_alloc(size);
+	list_append(subgrp_list, subgrp);
+
+	return subgrp;
+}
+
 static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 				   uint16_t size)
 {
@@ -66,12 +77,9 @@ static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 			break;
 	}
 	list_iterator_destroy(itr);
-	if (!subgrp) {
-		subgrp = xmalloc(sizeof(node_subgrp_t));
-		subgrp->state = state;
-		subgrp->bitmap = bit_alloc(size);
-		list_append(subgrp_list, subgrp);
-	}
+
+	if (!subgrp)
+		subgrp = _create_subgrp(subgrp_list, state, size);
 
 	return subgrp;
 }
