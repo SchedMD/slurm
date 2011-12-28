@@ -111,6 +111,7 @@ extern void destroy_bg_record(void *object)
 
 		xfree(bg_record->linuximage);
 		xfree(bg_record->mloaderimage);
+		xfree(bg_record->mp_str);
 		FREE_NULL_BITMAP(bg_record->mp_bitmap);
 		xfree(bg_record->ramdiskimage);
 		xfree(bg_record->reason);

@@ -816,6 +816,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 
 		if (_unpack_block_ext(bg_record, buffer, protocol_version)
 		    != SLURM_SUCCESS) {
+			destroy_bg_record(bg_record);
 			goto unpack_error;
 		}
 
@@ -928,6 +929,7 @@ unpack_error:
 	slurm_mutex_unlock(&block_state_mutex);
 	error("Incomplete block data checkpoint file");
 	free_buf(buffer);
+
 	return SLURM_FAILURE;
 }
 
