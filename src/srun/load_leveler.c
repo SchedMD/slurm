@@ -68,6 +68,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/srun/load_leveler.h"
 #include "src/srun/opt.h"
 
 #ifdef USE_LOADLEVELER
@@ -86,6 +87,9 @@
 #define MSG_TIMEOUT 5000000
 
 static slurm_fd_t global_signal_conn = SLURM_SOCKET_ERROR;
+static bool disable_status = false;
+static bool quit_on_intr = false;
+static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int srun_state = 0;	/* 0=starting, 1=running, 2=ending */
 
 typedef struct srun_child_wait_data {
@@ -280,14 +284,6 @@ static bool _fe_proc_stdin(slurm_fd_t stdin_fd, slurm_fd_t stdin_socket)
 		msg_len = NO_VAL;
 	} else {
 		msg_len = in_len;
-#if 0
-		/* Temporary test of signal forwarding */
-		if (buf[0] == 'S') {
-			int sig_num = atoi(buf+1);
-			srun_send_signal(sig_num);
-			return false;
-		}
-#endif
 	}
 
 	buf_len = slurm_write_stream_timeout(stdin_socket, (char *)&msg_len,
@@ -515,8 +511,11 @@ static void _handle_intr(void)
 	struct timeval now;
 
 	gettimeofday(&now, NULL);
-	if (_diff_tv_str(&last_intr, &now) > 1000000) {
-		if (srun_state < 2) {
+	if (!quit_on_intr && _diff_tv_str(&last_intr, &now) > 1000000) {
+		if  (opt.disable_status) {
+			info("sending Ctrl-C to job");
+			srun_send_signal(SIGINT);
+		} else if (srun_state < 2) {
 			info("interrupt (one more within 1 sec to abort)");
 			_print_step_state();
 		} else {
@@ -526,18 +525,23 @@ static void _handle_intr(void)
 		last_intr = now;
 	} else  { /* second Ctrl-C in half as many seconds */
 		info("aborting job step");
+		pthread_mutex_lock(&state_mutex);
 		srun_state = 2;
+		pthread_mutex_unlock(&state_mutex);
+		srun_send_signal(SIGKILL);
 	}
 }
 
 static void _signal_handler(int signo)
 {
-	info("got signal %d", signo);
+	debug("got signal %d", signo);
 	switch (signo) {
 		case SIGHUP:
 		case SIGTERM:
 		case SIGQUIT:
+			pthread_mutex_lock(&state_mutex);
 			srun_state = 2;
+			pthread_mutex_unlock(&state_mutex);
 			break;
 		case SIGINT:
 			_handle_intr();
@@ -679,6 +683,9 @@ extern char *build_poe_command(void)
 		xstrfmtcat(cmd_line, " -stdoutmode unordered");
 	}
 
+	disable_status = opt.disable_status;
+	quit_on_intr = opt.quit_on_intr;
+
 info("%s", cmd_line);
 	return cmd_line;
 }
@@ -751,6 +758,7 @@ extern int srun_front_end (char *cmd_line)
 	port_s = ntohs(((struct sockaddr_in) addr_s).sin_port);
 
 /* FIXME: Are environment variables, directory, limits and search path propagated? */
+/* FIXME: Create SLURM/step specific environment variables */
 	/* Generate back-end execute line */
 	gethostname_short(hostname, sizeof(hostname));
 	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %s",
@@ -792,8 +800,11 @@ extern int srun_front_end (char *cmd_line)
 			goto fini;
 		}
 	}
+	pthread_mutex_lock(&state_mutex);
 	if (srun_state < 2)
 		srun_state = 1;
+	pthread_mutex_unlock(&state_mutex);
+
 	global_signal_conn = signal_conn;
 
 	n_fds = local_stdin;
@@ -845,7 +856,9 @@ extern int srun_front_end (char *cmd_line)
 		}
 	}
 
-fini:	srun_state = 2;
+fini:	pthread_mutex_lock(&state_mutex);
+	srun_state = 2;
+	pthread_mutex_unlock(&state_mutex);
 	if (stdout_conn != SLURM_SOCKET_ERROR)
 		slurm_close_accepted_conn(stdout_conn);
 	if (stderr_conn != SLURM_SOCKET_ERROR)
@@ -891,7 +904,9 @@ extern int srun_send_signal(int sig_num)
 		return -1;
 	}
 
+#if _DEBUG_SRUN
 	info("signal %d sent", sig_num);
+#endif
 	return 0;
 }
 
