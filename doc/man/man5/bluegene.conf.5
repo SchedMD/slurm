@@ -126,6 +126,15 @@ The default value is 0.
 .RE
 
 .TP
+\fBDefaultConnType\fR
+Specify the default Connection Type(s) to be used when generating new blocks
+in Dynamic LayoutMode. The default value is TORUS. On a BGQ system you can
+specify a different connection type for each dimension. (i.e. T,T,T,M would
+make the default be torus in all dimensions except Z where it would be mesh)
+NOTE - If a block is requested that can use all the midplanes in a dimension
+torus will always be used.
+
+.TP
 \fBDenyPassthrough\fR
 Specify which dimensions you do not want to allow pass\-throughs.
 Valid options are A, X, Y, Z or all ("A" applies only to BlueGene/Q systems).
@@ -219,7 +228,12 @@ For BlueGene/Q systems there will be for coordinates (A, X, Y, and Z).
 .TP
 \fBType\fR
 Define the network connection type for the bgblock.
-The default value is TORUS.
+The default value is TORUS. On a BGQ system you can
+specify a different connection type for each dimension. (i.e. T,T,T,M would
+make the default be torus in all dimensions except Z where it would be mesh)
+NOTE - If a block is requested that can use all the midplanes in a dimension
+torus will always be used.
+
 .RS
 .TP 8
 \fBMESH\fR:

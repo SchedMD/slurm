@@ -1560,7 +1560,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			jobinfo->conn_type[0] = SELECT_SMALL;
 		else if (min_nodes > 1) {
 			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-				jobinfo->conn_type[dim] = SELECT_TORUS;
+				jobinfo->conn_type[dim] =
+					bg_conf->default_conn_type[dim];
 		} else if (!bg_conf->sub_blocks &&
 			   (job_ptr->details->min_cpus < bg_conf->cpus_per_mp))
 			jobinfo->conn_type[0] = SELECT_SMALL;

@@ -1145,6 +1145,11 @@ static List _get_config(void)
 	if (!my_list)
 		fatal("malloc failure on list_create");
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DefaultConnType");
+	key_pair->value = conn_type_string_full(bg_conf->default_conn_type);
+	list_append(my_list, key_pair);
+
 #ifndef HAVE_BG_FILES
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("Emulated");

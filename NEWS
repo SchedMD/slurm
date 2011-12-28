@@ -20,6 +20,9 @@ documents those changes that are of interest to users and admins.
     specified in the program configuration file.
  -- Add new command, sdiag, which reports a variety of job scheduling
     statistics. Based upon work by Alejandro Lucero Palau, BSC.
+ -- BLUEGENE - Added DefaultConnType to the bluegene.conf file.  This makes it
+    so you can specify any connection type you would like (TORUS or MESH) as
+    the default in dynamic mode.  Previously it always defaulted to TORUS.
 
 * Changes in SLURM 2.4.0.pre2
 =============================

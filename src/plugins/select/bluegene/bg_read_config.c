@@ -61,6 +61,7 @@ static s_p_options_t bg_conf_file_options[] = {
 	{"AltCnloadImage", S_P_ARRAY, parse_image, NULL},
 	{"AltIoloadImage", S_P_ARRAY, parse_image, NULL},
 #endif
+	{"DefaultConnType", S_P_STRING},
 	{"DenyPassthrough", S_P_STRING},
 	{"LayoutMode", S_P_STRING},
 	{"MloaderImage", S_P_STRING},
@@ -241,29 +242,31 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		}
 	} else {
 		if (n->conn_type[0] == (uint16_t)NO_VAL) {
-			n->conn_type[0] = SELECT_TORUS;
+			n->conn_type[0] = bg_conf->default_conn_type[0];
 		} else if (n->conn_type[0] >= SELECT_SMALL) {
 			error("Block def on midplane(s) %s is given "
 			      "TYPE=%s but isn't asking for any small "
-			      "blocks.  Giving it Torus.",
-			      n->save_name, conn_type_string(n->conn_type[0]));
-			n->conn_type[0] = SELECT_TORUS;
+			      "blocks.  Giving it %s.",
+			      n->save_name, conn_type_string(n->conn_type[0]),
+			      conn_type_string(
+				      bg_conf->default_conn_type[0]));
+			n->conn_type[0] = bg_conf->default_conn_type[0];
 		}
 #ifndef HAVE_BG_L_P
 		int i;
-		int first_conn_type = n->conn_type[0];
 
 		for (i=1; i<SYSTEM_DIMENSIONS; i++) {
 			if (n->conn_type[i] == (uint16_t)NO_VAL)
-				n->conn_type[i] = first_conn_type;
+				n->conn_type[i] = bg_conf->default_conn_type[i];
 			else if (n->conn_type[i] >= SELECT_SMALL) {
 				error("Block def on midplane(s) %s dim %d "
 				      "is given TYPE=%s but isn't asking "
 				      "for any small blocks.  Giving it %s.",
 				      n->save_name, i,
 				      conn_type_string(n->conn_type[i]),
-				      conn_type_string(first_conn_type));
-				n->conn_type[1] = first_conn_type;
+				      conn_type_string(
+					      bg_conf->default_conn_type[i]));
+				n->conn_type[i] = bg_conf->default_conn_type[i];
 			}
 		}
 #endif
@@ -651,6 +654,32 @@ extern int read_bg_conf(void)
 	/* You can only have 16 ionodes per midplane */
 	if (bg_conf->ionodes_per_mp > bg_conf->mp_nodecard_cnt)
 		bg_conf->ionodes_per_mp = bg_conf->mp_nodecard_cnt;
+#endif
+
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		bg_conf->default_conn_type[i] = (uint16_t)NO_VAL;
+	s_p_get_string(&tmp_char, "DefaultConnType", tbl);
+	if (tmp_char) {
+		verify_conn_type(tmp_char, bg_conf->default_conn_type);
+		if ((bg_conf->default_conn_type[0] != SELECT_MESH)
+		    && (bg_conf->default_conn_type[0] != SELECT_TORUS))
+			fatal("Can't have a DefaultConnType of %s "
+			      "(only Mesh or Torus values are valid).",
+			      tmp_char);
+		xfree(tmp_char);
+	} else
+		bg_conf->default_conn_type[0] = SELECT_TORUS;
+
+#ifndef HAVE_BG_L_P
+	int first_conn_type = bg_conf->default_conn_type[0];
+	for (i=1; i<SYSTEM_DIMENSIONS; i++) {
+		if (bg_conf->default_conn_type[i] == (uint16_t)NO_VAL)
+			bg_conf->default_conn_type[i] = first_conn_type;
+		else if (bg_conf->default_conn_type[i] >= SELECT_SMALL)
+			fatal("Can't have a DefaultConnType of %s "
+			      "(only Mesh or Torus values are valid).",
+			      tmp_char);
+	}
 #endif
 
 	if (bg_conf->ionodes_per_mp) {

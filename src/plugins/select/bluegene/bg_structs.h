@@ -60,6 +60,7 @@ typedef struct {
 	char *default_linuximage;
 	char *default_mloaderimage;
 	char *default_ramdiskimage;
+	uint16_t default_conn_type[SYSTEM_DIMENSIONS];
 	uint16_t deny_pass;
 	double io_ratio;
 	uint16_t ionode_cnode_cnt;
