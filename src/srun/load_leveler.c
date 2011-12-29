@@ -723,6 +723,56 @@ static bool _be_get_env(slurm_fd_t stderr_socket)
 	return rc;
 }
 
+/*
+ * Socket connection authentication logic
+ */
+static bool _xmit_key(slurm_fd_t socket_conn, uint32_t auth_key)
+{
+	int i;
+
+	i = slurm_write_stream_timeout(socket_conn, (char *) &auth_key,
+				       sizeof(auth_key), MSG_TIMEOUT);
+	if ((i < 0) || (i <  sizeof(auth_key))) {
+		error("auth_key write: %m");
+		return false;
+	}
+
+	return true;
+}
+
+static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
+{
+	struct timeval tv;
+	fd_set read_fds;
+	uint32_t read_key;
+	bool valid = false;
+	int i, n_fds;
+
+	n_fds = socket_conn;
+	while (1) {
+		FD_ZERO(&read_fds);
+		FD_SET(socket_conn, &read_fds);
+
+		tv.tv_sec = 2;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, NULL, &tv);
+		if (i == 0)
+			break;
+		if (i < 0) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		i = slurm_read_stream(socket_conn, (char *)&read_key,
+				      sizeof(read_key));
+		if ((i == sizeof(read_key)) && (read_key == auth_key))
+			valid = true;
+		break;
+	}
+
+	return valid;
+}
+
 /* Build a POE command line based upon srun options (using global variables) */
 extern char *build_poe_command(void)
 {
@@ -881,6 +931,7 @@ extern int srun_front_end (char *cmd_line)
 	bool pty = PTY_MODE;
 	struct timeval tv;
 	Buf local_env;
+	uint32_t auth_key;
 
 	if (!cmd_line || !cmd_line[0]) {
 		error("no command to execute");
@@ -922,9 +973,9 @@ extern int srun_front_end (char *cmd_line)
 		goto fini;
 	}
 	port_s = ntohs(((struct sockaddr_in) addr_s).sin_port);
+	auth_key = port_o + port_e + port_s + getuid();
 
 /* FIXME: Create SLURM/step specific environment variables */
-/* FIXME: Need to authenticate socket connection */
 	/* Generate back-end execute line */
 	gethostname_short(hostname, sizeof(hostname));
 	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %s",
@@ -962,8 +1013,11 @@ extern int srun_front_end (char *cmd_line)
 	/* Accept connections from the back-end */
 	while (srun_state < 2) {
 		stdout_conn = slurm_accept_stream(stdout_socket, &stdout_addr);
-		if (stdout_conn != SLURM_SOCKET_ERROR)
+		if (stdout_conn != SLURM_SOCKET_ERROR) {
+			if (!_validate_connect(stdout_conn, auth_key))
+				continue;
 			break;
+		}
 		if (errno != EINTR) {
 			error("slurm_accept_stream: %m");
 			goto fini;
@@ -975,8 +1029,11 @@ extern int srun_front_end (char *cmd_line)
 		while (srun_state < 2) {
 			stderr_conn = slurm_accept_stream(stderr_socket,
 							  &stderr_addr);
-			if (stderr_conn != SLURM_SOCKET_ERROR)
+			if (stderr_conn != SLURM_SOCKET_ERROR) {
+				if (!_validate_connect(stderr_conn, auth_key))
+					continue;
 				break;
+			}
 			if (errno != EINTR) {
 				error("slurm_accept_stream: %m");
 				goto fini;
@@ -985,8 +1042,11 @@ extern int srun_front_end (char *cmd_line)
 	}
 	while (srun_state < 2) {
 		signal_conn = slurm_accept_stream(signal_socket, &signal_addr);
-		if (signal_conn != SLURM_SOCKET_ERROR)
+		if (signal_conn != SLURM_SOCKET_ERROR) {
+			if (!_validate_connect(signal_conn, auth_key))
+				continue;
 			break;
+		}
 		if (errno != EINTR) {
 			error("slurm_accept_stream: %m");
 			goto fini;
@@ -1143,6 +1203,7 @@ extern int srun_back_end (int argc, char **argv)
 	pid_t pid;
 	int i, n_fds, status = 0;
 	bool pty = PTY_MODE;
+	uint32_t auth_key;
 
 	if (argc >= 7) {
 		host   = argv[2];
@@ -1156,6 +1217,7 @@ extern int srun_back_end (int argc, char **argv)
 		      "<program> <args ...>\n");
 		return 1;
 	}
+	auth_key = port_o + port_e + port_s + getuid();
 
 	/* Set up stdin/out on first port,
 	 * Set up environment/stderr on second port,
@@ -1166,6 +1228,7 @@ extern int srun_back_end (int argc, char **argv)
 		error("slurm_open_msg_conn(%s:%hu): %m", host, port_o);
 		return 1;
 	}
+	_xmit_key(stdout_socket, auth_key);
 	stdin_socket = stdout_socket;
 
 	slurm_set_addr(&addr_e, port_e, host);
@@ -1174,6 +1237,7 @@ extern int srun_back_end (int argc, char **argv)
 		error("slurm_open_msg_conn(%s:%hu): %m", host, port_e);
 		return 1;
 	}
+	_xmit_key(stderr_socket, auth_key);
 
 	slurm_set_addr(&addr_s, port_s, host);
 	signal_socket = slurm_open_stream(&addr_s);
@@ -1181,6 +1245,7 @@ extern int srun_back_end (int argc, char **argv)
 		error("slurm_open_msg_conn(%s:%hu): %m", host, port_s);
 		return 1;
 	}
+	_xmit_key(signal_socket, auth_key);
 
 	_be_get_env(stderr_socket);
 
