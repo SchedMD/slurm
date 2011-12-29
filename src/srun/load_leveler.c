@@ -44,6 +44,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/param.h>	/* MAXPATHLEN */
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -60,6 +61,7 @@
 #include "src/common/log.h"
 #include "src/common/mpi.h"
 #include "src/common/net.h"
+#include "src/common/pack.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -73,6 +75,8 @@
 
 #include "src/srun/load_leveler.h"
 #include "src/srun/opt.h"
+
+extern char **environ;
 
 #ifdef USE_LOADLEVELER
 /* PTY_MODE indicates if the srun back-end is to spawn its task using a
@@ -603,6 +607,122 @@ static void _setup_signal_handler(void)
 	}
 }
 
+/*
+ * A collection of job environment handling functions follow
+ */
+static Buf _fe_build_env(void)
+{
+	int i;
+	char cwd[MAXPATHLEN + 1];
+	Buf buf;
+
+	if (!(buf = init_buf(2048)))
+		fatal("init_buf(), malloc failure");
+
+	if ((getcwd(cwd, MAXPATHLEN)) == NULL)
+		fatal("getcwd failed: %m");
+	packstr(cwd, buf);
+
+	if (environ) {
+		for (i = 0; environ[i]; i++)
+			packstr(environ[i], buf);
+	} else {
+		error("no environment variables are set");
+	}
+
+	return buf;
+}
+
+/* Send buffer with job environment across a socket.
+ * Return true on success, false on failure */
+static bool _fe_send_env(Buf env_buf, slurm_fd_t stderr_socket)
+{
+	int buf_len;
+	char *buf = get_buf_data(env_buf);
+	uint32_t msg_len = get_buf_offset(env_buf);
+
+	buf_len = slurm_write_stream_timeout(stderr_socket, (char *)&msg_len,
+					     sizeof(msg_len), MSG_TIMEOUT);
+	/* NOTE: Do not change test below
+	 * (-1 < sizeof(msg_len)) is false since
+	 * -1 gets converted to unsigned long first */
+	if ((buf_len < 0) || (buf_len < sizeof(msg_len))) {
+		error("environment write: %m");
+		return false;
+	}
+
+	buf_len = slurm_write_stream_timeout(stderr_socket, buf, msg_len,
+					     MSG_TIMEOUT);
+	if ((buf_len < 0) || (buf_len < msg_len)) {
+		error("environment write: %m");
+		return false;
+	}
+
+	return true;
+}
+
+/* Read buffer with job environment from a socket.
+ * Return true on success, false on failure */
+static bool _be_get_env(slurm_fd_t stderr_socket)
+{
+	Buf env_buf;
+	char *buf, *cwd, *env;
+	uint32_t buf_len = 0, u32_tmp = 0;
+	int read_len;
+	bool rc;
+
+	/* Read and process message header */
+	read_len = slurm_read_stream(stderr_socket, (char *)&buf_len,
+				     sizeof(buf_len));
+	if (read_len == -1) {
+		if (errno != SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT)
+			error("environment read header error: %m");
+		return false;
+	}
+	if (read_len == 0)
+		return false;	/* Abnornal EOF */
+	if (read_len < sizeof(buf_len)) {
+		error("environment read header, bad size (%d < %lu)",
+		      read_len, sizeof(buf_len));
+		return false;	/* Can not recover, treat like EOF */
+	}
+
+	/* Read and process message data */
+	rc = false;
+	buf = xmalloc(buf_len+1);
+	read_len = slurm_read_stream(stderr_socket, buf, buf_len);
+	if (read_len < 0) {
+		error("environment read buffer: %m");
+	} else if (read_len < buf_len) {
+		error("environment read short (%d < %d)", read_len, buf_len);
+	} else {
+		rc = true;
+		env_buf = create_buf(buf, buf_len);
+		if (unpackstr_ptr(&cwd, &u32_tmp, env_buf)) {
+			error("job environment not read properly");
+		} else {
+			if (chdir(cwd))
+				error("chdir(%s): %m", cwd);
+		}
+		while (!unpackstr_ptr(&env, &u32_tmp, env_buf)) {
+			char *sep, *work_env = xstrdup(env);
+			sep = strchr(work_env, '=');
+			if (sep) {
+				sep[0] = '\0';
+				if (setenv(work_env, sep+1, 1)) {
+					error("setenv(%s,%s): %m",
+					      work_env, sep+1);
+				}
+			} else
+				error("bad job environment variable: %s", env);
+			xfree(work_env);
+		}
+	}
+	xfree(buf);
+
+	return rc;
+}
+
 /* Build a POE command line based upon srun options (using global variables) */
 extern char *build_poe_command(void)
 {
@@ -693,7 +813,7 @@ extern char *build_poe_command(void)
 	if (opt.msg_timeout) {
 		char value[32];
 		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
-		setenv("MP_TIMEOUT", value, 0)
+		setenv("MP_TIMEOUT", value, 0);
 	}
 	if (opt.immediate)
 		xstrfmtcat(cmd_line, " -retry=0");
@@ -760,6 +880,7 @@ extern int srun_front_end (char *cmd_line)
 	int i, n_fds, status = -1;
 	bool pty = PTY_MODE;
 	struct timeval tv;
+	Buf local_env;
 
 	if (!cmd_line || !cmd_line[0]) {
 		error("no command to execute");
@@ -802,14 +923,16 @@ extern int srun_front_end (char *cmd_line)
 	}
 	port_s = ntohs(((struct sockaddr_in) addr_s).sin_port);
 
-/* FIXME: Are environment variables, directory, limits and search path propagated? */
 /* FIXME: Create SLURM/step specific environment variables */
+/* FIXME: Need to authenticate socket connection */
 	/* Generate back-end execute line */
 	gethostname_short(hostname, sizeof(hostname));
 	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %s",
 		   SLURM_PREFIX, hostname, port_o, port_e, port_s, cmd_line);
 	printf("%s\n", exec_line);
 	xfree(exec_line);
+
+	local_env = _fe_build_env();
 
 	/* Wait for the back-end to start and poll on the job's existance */
 	n_fds = stdout_socket;
@@ -875,6 +998,7 @@ extern int srun_front_end (char *cmd_line)
 	pthread_mutex_unlock(&state_mutex);
 
 	global_signal_conn = signal_conn;
+	(void) _fe_send_env(local_env, stderr_conn);
 
 	n_fds = local_stdin;
 	n_fds = MAX(stderr_conn, n_fds);
@@ -1032,8 +1156,8 @@ extern int srun_back_end (int argc, char **argv)
 		return 1;
 	}
 
-	/* Set up stdin/out on firt port,
-	 * Set up stderr on second port,
+	/* Set up stdin/out on first port,
+	 * Set up environment/stderr on second port,
 	 * Signals and exit code use third port */
 	slurm_set_addr(&addr_o, port_o, host);
 	stdout_socket = slurm_open_stream(&addr_o);
@@ -1056,6 +1180,8 @@ extern int srun_back_end (int argc, char **argv)
 		error("slurm_open_msg_conn(%s:%hu): %m", host, port_s);
 		return 1;
 	}
+
+	_be_get_env(stderr_socket);
 
 	if (pty) {
 		if (openpty(&stdin_pipe[1], &stdin_pipe[0],
@@ -1102,7 +1228,7 @@ extern int srun_back_end (int argc, char **argv)
 		(void) close(stdout_pipe[1]);
 
 		execvp(argv[6], argv+6);
-		error("execv(%s) error: %m", argv[5]);
+		error("execv(%s) error: %m", argv[6]);
 		return 1;
 	}
 
