@@ -998,7 +998,8 @@ extern int srun_front_end (char *cmd_line)
 	pthread_mutex_unlock(&state_mutex);
 
 	global_signal_conn = signal_conn;
-	(void) _fe_send_env(local_env, stderr_conn);
+	if (srun_state < 2)
+		(void) _fe_send_env(local_env, stderr_conn);
 
 	n_fds = local_stdin;
 	n_fds = MAX(stderr_conn, n_fds);

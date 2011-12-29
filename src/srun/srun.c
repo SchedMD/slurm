@@ -149,6 +149,10 @@ static int   _call_spank_local_user (srun_job_t *job);
 static void  _default_sigaction(int sig);
 #ifndef USE_LOADLEVELER
 static void  _define_symbols(void);
+static void  _set_prio_process_env(void);
+static void  _set_node_alias(void);
+static int   _set_rlimit_env(void);
+static int   _set_umask_env(void);
 #endif
 static void  _handle_intr(void);
 static void  _handle_pipe(void);
@@ -159,13 +163,9 @@ static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
 static void  _set_env_vars(resource_allocation_response_msg_t *resp);
 static void  _set_exit_code(void);
-static void  _set_node_alias(void);
 static void  _step_opt_exclusive(void);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 static void  _set_submit_dir_env(void);
-static void  _set_prio_process_env(void);
-static int   _set_rlimit_env(void);
-static int   _set_umask_env(void);
 static void  _shepard_notify(int shepard_fd);
 static int   _shepard_spawn(srun_job_t *job, bool got_alloc);
 static int   _slurm_debug_env_val (void);
@@ -289,10 +289,11 @@ int srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	} else
 		_verbose = debug_level;
-
+#ifndef USE_LOADLEVELER
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
 	(void) _set_umask_env();
+#endif
 	_set_submit_dir_env();
 
 	/* Set up slurmctld message handler */
@@ -486,7 +487,9 @@ int srun(int ac, char **av)
 	setup_env(env, opt.preserve_env);
 	xfree(env->task_count);
 	xfree(env);
+#ifndef USE_LOADLEVELER
 	_set_node_alias();
+#endif
 
 	if (!signal_thread) {
 		slurm_attr_init(&thread_attr);
@@ -768,7 +771,7 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 	verbose("%s", str);
 	xfree(str);
 }
-
+#ifndef USE_LOADLEVELER
 /* Set SLURM_UMASK environment variable with current state */
 static int _set_umask_env(void)
 {
@@ -790,7 +793,7 @@ static int _set_umask_env(void)
 	debug ("propagating UMASK=%s", mask_char);
 	return SLURM_SUCCESS;
 }
-
+#endif
 /* Set SLURM_SUBMIT_DIR environment variable with current state */
 static void _set_submit_dir_env(void)
 {
@@ -807,6 +810,7 @@ static void _set_submit_dir_env(void)
 	}
 }
 
+#ifndef USE_LOADLEVELER
 /*
  * _set_prio_process_env
  *
@@ -834,7 +838,7 @@ static void  _set_prio_process_env(void)
 
 	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
-
+#endif
 static void _set_exit_code(void)
 {
 	int i;
@@ -903,6 +907,7 @@ static int _validate_relative(resource_allocation_response_msg_t *resp)
 	return 0;
 }
 
+#ifndef USE_LOADLEVELER
 /* Set SLURM_RLIMIT_* environment variables with current resource
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
 static int _set_rlimit_env(void)
@@ -987,6 +992,7 @@ static void _set_node_alias(void)
 	}
 	xfree(aliases);
 }
+#endif
 
 static int _become_user (void)
 {

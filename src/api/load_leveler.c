@@ -2485,7 +2485,7 @@ slurm_allocation_lookup_lite(char *jobid,
 		if (sep)
 			sep[0] = '\0';
 		alloc_resp->node_list = xstrdup(jobid);
-		alloc_resp->alias_list = xstrdup(jobid);
+		/* alloc_resp->alias_list = xstrdup(jobid); */
 		if (sep)
 			sep[0] = '.';
 		alloc_resp->node_cnt = 1;
@@ -2506,7 +2506,7 @@ slurm_allocation_lookup_lite(char *jobid,
 				     resource_allocation_response_msg_t));
 		alloc_resp->job_id = xstrdup(jobid);
 		alloc_resp->node_list = xstrdup(job_ptr->nodes);
-		alloc_resp->alias_list = xstrdup(job_ptr->nodes);
+		/* alloc_resp->alias_list = xstrdup(job_ptr->nodes); */
 		alloc_resp->node_cnt = job_ptr->num_nodes;
 		alloc_resp->num_cpu_groups = 1;
 		alloc_resp->cpus_per_node = xmalloc(sizeof(uint16_t) *
