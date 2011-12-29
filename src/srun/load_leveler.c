@@ -691,7 +691,9 @@ extern char *build_poe_command(void)
 		close(fd);
 	}
 	if (opt.msg_timeout) {
-/* FIXME: Set MP_TIMEOUT env var */
+		char value[32];
+		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
+		setenv("MP_TIMEOUT", value, 0)
 	}
 	if (opt.immediate)
 		xstrfmtcat(cmd_line, " -retry=0");
