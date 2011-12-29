@@ -545,8 +545,8 @@ extern int bridge_block_create(bg_record_t *bg_record)
 				slurm_mutex_unlock(&ba_system_mutex);
 				continue;
 			}
-			info("got %s(%s) %d", main_mp->coord_str,
-			     main_mp->loc, ba_mp->used);
+			// info("got %s(%s) %d", main_mp->coord_str,
+			//      main_mp->loc, ba_mp->used);
 			if (ba_mp->used)
 				midplanes.push_back(main_mp->loc);
 			else
@@ -598,7 +598,7 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		return rc;
 	}
 
-	info("block created correctly");
+	debug("block created correctly");
 	try {
 		block_ptr->setName(bg_record->bg_block_id);
 	} catch (const bgsched::InputException& err) {
@@ -767,7 +767,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		rc = SLURM_ERROR;
 	}
 #else
-	info("block %s is ready", bg_record->bg_block_id);
+	debug("block %s is ready", bg_record->bg_block_id);
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 	 	list_push(bg_lists->booted, bg_record);
 	bg_record->state = BG_BLOCK_INITED;
@@ -785,7 +785,7 @@ extern int bridge_block_free(bg_record_t *bg_record)
 	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
-	info("freeing block %s", bg_record->bg_block_id);
+	debug("freeing block %s", bg_record->bg_block_id);
 
 #ifdef HAVE_BG_FILES
 	try {
@@ -827,7 +827,7 @@ extern int bridge_block_remove(bg_record_t *bg_record)
 	if (!bg_record || !bg_record->bg_block_id)
 		return SLURM_ERROR;
 
-	info("removing block %s %p", bg_record->bg_block_id, bg_record);
+	debug("removing block %s %p", bg_record->bg_block_id, bg_record);
 
 #ifdef HAVE_BG_FILES
 	try {
@@ -869,8 +869,9 @@ extern int bridge_block_add_user(bg_record_t *bg_record, const char *user_name)
 #ifdef HAVE_BG_FILES
 	try {
 		if (Block::isAuthorized(bg_record->bg_block_id, user_name)) {
-			debug("User %s is already able to run jobs on block %s",
-			      user_name, bg_record->bg_block_id);
+			debug2("User %s is already able to run "
+			       "jobs on block %s",
+			       user_name, bg_record->bg_block_id);
 			return SLURM_SUCCESS;
 		}
 	} catch (const bgsched::InputException& err) {
@@ -890,7 +891,7 @@ extern int bridge_block_add_user(bg_record_t *bg_record, const char *user_name)
 		rc = SLURM_ERROR;
 	}
 #endif
-	info("adding user %s to block %s", user_name, bg_record->bg_block_id);
+	debug("adding user %s to block %s", user_name, bg_record->bg_block_id);
 #ifdef HAVE_BG_FILES
         try {
 		Block::addUser(bg_record->bg_block_id, user_name);
@@ -924,8 +925,8 @@ extern int bridge_block_remove_user(bg_record_t *bg_record,
 	if (!bg_record || !bg_record->bg_block_id || !user_name)
 		return SLURM_ERROR;
 
-	info("removing user %s from block %s",
-	     user_name, bg_record->bg_block_id);
+	debug("removing user %s from block %s",
+	      user_name, bg_record->bg_block_id);
 #ifdef HAVE_BG_FILES
         try {
 		Block::removeUser(bg_record->bg_block_id, user_name);
@@ -1170,41 +1171,6 @@ extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 	logger_ptr->setLevel(level_ptr);
 	// Add the appender to the ibm logger.
 	logger_ptr->addAppender(appender_ptr);
-
-	// for (int i=1; i<7; i++) {
-	// switch (i) {
-	// case 0:
-	// 	level_ptr = log4cxx::Level::getOff();
-	// 	break;
-	// case 1:
-	// 	level_ptr = log4cxx::Level::getFatal();
-	// 	break;
-	// case 2:
-	// 	level_ptr = log4cxx::Level::getError();
-	// 	break;
-	// case 3:
-	// 	level_ptr = log4cxx::Level::getWarn();
-	// 	break;
-	// case 4:
-	// 	level_ptr = log4cxx::Level::getInfo();
-	// 	break;
-	// case 5:
-	// 	level_ptr = log4cxx::Level::getDebug();
-	// 	break;
-	// case 6:
-	// 	level_ptr = log4cxx::Level::getTrace();
-	// 	break;
-	// case 7:
-	// 	level_ptr = log4cxx::Level::getAll();
-	// 	break;
-	// default:
-	// 	level_ptr = log4cxx::Level::getDebug();
-	// 	break;
-	// }
-	// if (logger_ptr->isEnabledFor(level_ptr))
-	// 	info("we are doing %d", i);
-	// }
-
 #endif
 	return SLURM_SUCCESS;
 }

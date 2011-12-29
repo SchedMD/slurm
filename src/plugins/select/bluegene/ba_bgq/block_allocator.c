@@ -497,7 +497,7 @@ extern int remove_block(List mps, bool is_small)
 				/* 	     ba_mp->axis_switch[dim].usage)); */
 			} else if (curr_ba_mp->axis_switch[dim].usage
 				   != BG_SWITCH_NONE) {
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("remove_block: 2 %s(%d) %s %s "
 					     "removing %s",
 					     ba_mp->coord_str, dim,
@@ -511,7 +511,7 @@ extern int remove_block(List mps, bool is_small)
 				/* Just remove the usage set here */
 				ba_mp->axis_switch[dim].usage &=
 					(~curr_ba_mp->axis_switch[dim].usage);
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
+				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("remove_block: 2 %s(%d) is "
 					     "now at %s",
 					     ba_mp->coord_str, dim,
