@@ -49,19 +49,19 @@ extern char *build_poe_command(void);
 
 /*
  * srun_back_end - Open stdin/out/err socket connections to communicate with
- *	the srun or srun command that submitted this program as a LoadLeveler
- *	batch job, spawn the identified user program, forward its stdin/out/err
+ *	the srun command that spawned this one, forward its stdin/out/err
  *	communications back, forward signals, and return the program's exit
  *	code.
  *
  * argc IN - Count of elements in argv
  * argv IN - [0]:  Our executable name (e.g. srun)
- *	     [1]:  Hostname or address of front-end
- *	     [2]:  Port number for stdin/out
- *	     [3]:  Port number for stderr
- *	     [4]:  Port number for signals/exit status
- *	     [5]:  Program to be spawned for user
- *	     [6+]: Arguments to spawned program
+ *	     [1]:  "--srun-be" (argument to spawn srun backend)
+ *	     [2]:  Hostname or address of front-end
+ *	     [3]:  Port number for stdin/out
+ *	     [4]:  Port number for stderr
+ *	     [5]:  Port number for signals/exit status
+ *	     [6]:  Program to be spawned for user
+ *	     [7+]: Arguments to spawned program
  * RETURN - remote processes exit code
  */
 extern int srun_back_end (int argc, char **argv);

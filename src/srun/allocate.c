@@ -59,6 +59,7 @@
 #include "src/common/fd.h"
 
 #include "src/srun/allocate.h"
+#include "src/srun/load_leveler.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
 
