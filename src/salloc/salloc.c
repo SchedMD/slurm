@@ -187,16 +187,11 @@ int main(int argc, char *argv[])
 	pid_t rc_pid = 0;
 	int i, rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
-#if 0
-#ifdef USE_LOADLEVELER
-if (argc < 4)
-	rc = salloc_front_end (argc, argv);
-else
-	rc = salloc_back_end (argc, argv);
-exit(rc);
-#endif
-#endif
 
+#ifdef USE_LOADLEVELER
+	if ((argc > 1) && !strcmp(argv[1], "--salloc-be"))
+		exit(salloc_back_end (argc, argv));
+#endif
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 
@@ -325,7 +320,7 @@ exit(rc);
 	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
 						  &callbacks);
 #else
-	desc.script = xstrdup("#!/bin/bash\nstart_back_end");
+	desc.script = salloc_front_end();
 #endif
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */

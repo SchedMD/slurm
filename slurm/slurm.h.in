@@ -2500,14 +2500,6 @@ extern void slurm_step_launch_fwd_signal PARAMS((slurm_step_ctx_t *ctx,
  */
 extern void slurm_step_launch_fwd_wake PARAMS((slurm_step_ctx_t *ctx));
 
-#ifdef USE_LOADLEVELER
-/*
- * Funcions needed for salloc to spawn a LoadLeveler batch job and communicate
- */
-extern int salloc_front_end PARAMS((int argc, char **argv));
-extern int salloc_back_end  PARAMS((int argc, char **argv));
-#endif
-
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/

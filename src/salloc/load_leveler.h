@@ -43,43 +43,25 @@
 #ifdef USE_LOADLEVELER
 
 /*
- * salloc_back_end - Open stdin/out/err socket connections to communicate with
- *	the salloc or srun command that submitted this program as a LoadLeveler
- *	batch job, spawn the identified user program, forward its stdin/out/err
- *	communications back, forward signals, and return the program's exit
- *	code.
+ * salloc_front_end - Open socket connections to communicate with a remote
+ *	node process and build a batch script to submit.
+ *
+ * RETURN - remote processes exit code or -1 if some internal error
+ */
+extern char *salloc_front_end (void);
+
+/*
+ * salloc_back_end - Open socket connections with the salloc or srun command
+ *	that submitted this program as a LoadLeveler batch job and use that to
+ *	spawn other jobs (specificially, spawn poe for srun wrapper)
  *
  * argc IN - Count of elements in argv
  * argv IN - [0]:  Our executable name (e.g. salloc)
- *	     [1]:  Hostname or address of front-end
- *	     [2]:  Port number for stdin/out
- *	     [3]:  Port number for stderr
- *	     [4]:  Port number for signals/exit status
- *	     [5]:  Program to be spawned for user
- *	     [6+]: Arguments to spawned program
+ *	     [1]:  "--salloc-be" (argument to spawn salloc backend)
+ *	     [2]:  Hostname or address of front-end
+ *	     [3]:  Port number for communications
  * RETURN - remote processes exit code
  */
 extern int salloc_back_end (int argc, char **argv);
-
-/*
- * salloc_front_end - Open stdin/out/err socket connections to communicate with
- *	a remote node process and submit a batch job to claim that connection
- *	and execute the user's command.
- *
- * argc IN - Count of elements in argv
- * argv IN - [0]:  Our executable name (e.g. salloc)
- *	     [1]:  Program to be spawned for user
- *	     [2+]: Arguments to spawned program
- * RETURN - remote processes exit code or -1 if some internal error
- */
-extern int salloc_front_end (int argc, char **argv);
-
-/*
- * salloc front-end signal processing function, send a signal to back-end
- *	program
- * sig_num IN - signal to send
- * RETURN 0 on success, -1 on error
-*/
-extern int salloc_send_signal(int sig_num);
 
 #endif	/* USE_LOADLEVELER */

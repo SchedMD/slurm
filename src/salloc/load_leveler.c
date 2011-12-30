@@ -73,7 +73,8 @@
 /* Timeout for salloc front-end/back-end messages in usec */
 #define MSG_TIMEOUT 5000000
 
-static slurm_fd_t global_signal_conn = SLURM_SOCKET_ERROR;
+#define OP_CODE_EXIT 0x0101
+#define OP_CODE_EXEC 0x0102
 
 typedef struct salloc_child_wait_data {
 	int dummy_pipe;
@@ -88,159 +89,110 @@ typedef struct salloc_child_wait_data {
  * NOTE: These functions are needed even without llapi.h
 \*****************************************************************************/
 
-/* salloc back-end function, read message from signal_socket and signal the
- *	specified process
- * signal_socket IN - socket to read message from
- * pid IN - process to be signalled
- * RETURN true on EOF */
-static bool _be_proc_signal(slurm_fd_t signal_socket, pid_t pid)
-{
-	uint32_t sig_num = 0;
-	int read_len;
-	bool fini_rc = true;
-
-	/* Read and process message header */
-	read_len = slurm_read_stream(signal_socket, (char *)&sig_num,
-				     sizeof(sig_num));
-	if (read_len == -1) {
-		error("signal read error: %m");
-		/* Error, treat like EOF */
-	} else if (read_len == 0) {
-		/* EOF */
-	} else if (read_len < sizeof(sig_num)) {
-		error("signal read header, bad size (%d < %lu)",
-		      read_len, sizeof(sig_num));
-		/* Can not recover, treat like EOF */
-	} else {
-		if (kill(pid, (int) sig_num))
-			error("signal(%u): %m", sig_num);
-		else {
-#if _DEBUG_SALLOC
-			info("signal(%u) sent", sig_num);
-#endif
-		}
-		fini_rc = false;
-	}
-
-	return fini_rc;
-}
-
-/* salloc back-end function, read message from stdin_socket and write to pipe.
- * stdin_pipe IN   - pipe to spawned process, write message here
- * stdin_socket IN - socket to read message from
- * RETURN true on EOF */
-static bool _be_proc_stdin(int stdin_pipe, slurm_fd_t stdin_socket)
-{
-	char *buf;
-	uint32_t buf_len = 0;
-	int read_len;
-	bool fini_rc = true;
-
-	/* Read and process message header */
-	read_len = slurm_read_stream(stdin_socket, (char *)&buf_len,
-				     sizeof(buf_len));
-	if (read_len == -1) {
-		error("stdin read header error: %m");
-		return fini_rc;	/* Error, treat like EOF */
-	}
-	if (read_len == 0)
-		return fini_rc;	/* Abnornal EOF */
-	if (read_len < sizeof(buf_len)) {
-		error("stdin read header, bad size (%d < %lu)",
-		      read_len, sizeof(buf_len));
-		return fini_rc;	/* Can not recover, treat like EOF */
-	}
-	if (buf_len == NO_VAL) {
-#if _DEBUG_SALLOC
-		info("stdin EOF");
-#endif
-		return fini_rc;	/* EOF received */
-	}
-
-	/* Read and process message data */
-	fini_rc = false;
-	buf = xmalloc(buf_len+1);
-	read_len = slurm_read_stream(stdin_socket, buf, buf_len);
-	if (read_len < 0) {
-		error("stdin read buffer: %m");
-	} else if (read_len < buf_len) {
-		error("stdin read short (%d < %d)", read_len, buf_len);
-	} else {
-		int offset = 0, write_len;
-		buf[read_len] = '\0';
-#if _DEBUG_SALLOC
-		info("stdin:%s:%d", buf, read_len);
-#endif
-		while (offset < read_len) {
-			write_len = write(stdin_pipe, buf+offset,
-					  read_len-offset);
-			if (write_len < 0) {
-				if ((errno == EAGAIN) && (errno == EINTR))
-					continue;
-				error("stdin write: %m");
-				fini_rc = false;
-				break;
-			} else {
-				offset += write_len;
-			}
-		}
-	}
-	xfree(buf);
-
-	return fini_rc;
-}
-
-/* salloc back-end function, read message from stdout or stderr pipe and write
- *	it to a socket.
- * stdio_pipe IN   - stdout or stderr pipe to read data from
- * stdio_socket IN - stdout or stderr pipe to write data to
- * stdio_name IN   - "stdout" or "stderr" for logging
- * RETURN true on EOF
+/*
+ * Socket connection authentication logic
  */
-static bool _be_proc_stdio(int stdio_pipe, slurm_fd_t stdio_socket,
-			   char *stdio_name)
+static bool _xmit_resp(slurm_fd_t socket_conn, uint32_t resp_auth_key,
+		      uint32_t new_auth_key, uint16_t new_port)
 {
-	char buf[16 * 1024];
-	uint32_t buf_len;
-	int read_len, write_len;
-	bool fini_rc = false;
+	int i, buf_len;
+	char *buf_head;
+	Buf buf;
 
-	read_len = read(stdio_pipe, buf, (sizeof(buf) - 1));
-	if (read_len > 0) {
-		buf_len =  (uint32_t) read_len;
-		write_len = slurm_write_stream(stdio_socket, (char *)&buf_len,
-					       sizeof(buf_len));
-		if (write_len < 0) {
-			error("%s write_stream: %m", stdio_name);
-		} else {
-			write_len = slurm_write_stream(stdio_socket, buf,
-						       buf_len);
-		}
-#if _DEBUG_SALLOC
-		buf[buf_len] = '\0';
-		info("%s:%s:%u", stdio_name, buf, buf_len);
-#endif
-	} else if (read_len < 0) {
-		if ((errno ==  EAGAIN) || (errno == EINTR)) {
-			debug("%s read: %m", stdio_name);
-		} else if (errno == EIO) {	/* This from PTY mode */
-			debug("%s read: %m", stdio_name);
-			fini_rc = true;	/* Can not recover from error */
-		} else {
-			error("%s read: %m", stdio_name);
-			fini_rc = true;	/* Can not recover from error */
-		}
-	} else {	/* read_len == 0 means EOF */
-#if _DEBUG_SALLOC
-		info("%s EOF", stdio_name);
-#endif
-		buf_len =  NO_VAL;
-		write_len = slurm_write_stream(stdio_socket, (char *)&buf_len,
-					       sizeof(buf_len));
-		fini_rc = true;
+	if (!(buf = init_buf(64)))
+		fatal("init_buf(), malloc failure");
+
+	pack32(resp_auth_key, buf);
+	pack32(new_auth_key, buf);
+	pack16(new_port, buf);
+
+	buf_len = get_buf_offset(buf);
+	buf_head = get_buf_data(buf);
+	i = slurm_write_stream_timeout(socket_conn, buf_head, buf_len,
+				       MSG_TIMEOUT);
+	free_buf(buf);
+	if ((i < 0) || (i <  sizeof(buf_len))) {
+		error("xmit_resp write: %m");
+		return false;
 	}
 
-	return fini_rc;
+	return true;
+}
+
+static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
+{
+	struct timeval tv;
+	fd_set read_fds;
+	uint32_t read_key;
+	bool valid = false;
+	int i, n_fds;
+
+	n_fds = socket_conn;
+	while (1) {
+		FD_ZERO(&read_fds);
+		FD_SET(socket_conn, &read_fds);
+
+		tv.tv_sec = 2;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, NULL, &tv);
+		if (i == 0)
+			break;
+		if (i < 0) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		i = slurm_read_stream(socket_conn, (char *)&read_key,
+				      sizeof(read_key));
+		if ((i == sizeof(read_key)) && (read_key == auth_key))
+			valid = true;
+		break;
+	}
+
+	return valid;
+}
+
+/* Process incoming requests
+ * resp_socket IN - socket to read from
+ * auth_key IN - authentication key we are looking for
+ * RETURN true to terminate
+ */
+static bool _be_proc_comm(slurm_fd_t resp_socket, uint32_t auth_key)
+{
+	uint16_t op_code, msg_size;
+	char *msg;
+	int i;
+
+	if (!_validate_connect(resp_socket, auth_key))
+		return false;
+	i = slurm_read_stream(resp_socket, (char *)&op_code, sizeof(op_code));
+	if (i != sizeof(op_code)) {
+		error("socket read, bad op_code size: %d", i);
+		return false;
+	}
+	if (op_code == OP_CODE_EXIT)
+		return true;
+	if (op_code == OP_CODE_EXEC) {
+		i = slurm_read_stream(resp_socket, (char *)&msg_size,
+				      sizeof(msg_size));
+		if (i != sizeof(msg_size)) {
+			error("socket read, bad msg_size size: %d", i);
+			return false;
+		}
+		msg = xmalloc(msg_size);
+		i = slurm_read_stream(resp_socket, msg, msg_size);
+		if (i != sizeof(msg_size)) {
+			error("socket read, bad msg size: %d", i);
+			xfree(msg);
+			return false;
+		}
+/* FIXME: Do fork/exec here */
+info("msg: %s", msg);
+		xfree(msg);
+		return false;
+	}
+	error("socket read, bad op_code: %hu", op_code);
+	return false;
 }
 
 /* salloc front-end function, read message from local stdin and write it to
@@ -267,14 +219,6 @@ static bool _fe_proc_stdin(slurm_fd_t stdin_fd, slurm_fd_t stdin_socket)
 		msg_len = NO_VAL;
 	} else {
 		msg_len = in_len;
-#if 0
-		/* Temporary test of signal forwarding */
-		if (buf[0] == 'S') {
-			int sig_num = atoi(buf+1);
-			salloc_send_signal(sig_num);
-			return false;
-		}
-#endif
 	}
 
 	buf_len = slurm_write_stream_timeout(stdin_socket, (char *)&msg_len,
@@ -299,101 +243,6 @@ static bool _fe_proc_stdin(slurm_fd_t stdin_fd, slurm_fd_t stdin_socket)
 		info("stdin:%s:%d", buf, msg_len);
 #endif
 	}
-	return false;
-}
-
-/* salloc front-end exit code recording function
- * signal_socket IN - socket to read exit code from
- * RETURN the exit code from the remote process
- */
-static int _fe_proc_exit(slurm_fd_t signal_socket)
-{
-	int return_code = 0;
-	size_t buf_len;
-	uint32_t status_32;
-
-	buf_len = slurm_read_stream_timeout(signal_socket, (char *)&status_32,
-					    sizeof(status_32), MSG_TIMEOUT);
-	if (buf_len < sizeof(status_32)) {
-		error("signal ERROR: %m");
-		return 1;
-	}
-
-#if _DEBUG_SALLOC
-{
-	int status = status_32;
-	if (WIFEXITED(status)) {
-		return_code = WEXITSTATUS(status);
-		info("exit status:%d", return_code);
-	} else if (WIFSIGNALED(status))
-		info("exit signaled:%d", WTERMSIG(status));
-	else
-		info("exit code:%d", status);
-}
-#endif
-	return return_code;
-}
-
-/* salloc front-end I/O function, read message from stdout/stderr socket and
- *	write it to local stdout/stderr file descriptor
- * stdio_socket IN - socket to read message from
- * stdio_fd IN - file descriptor to write to
- * stdio_name IN   - "stdout" or "stderr" for logging
- * RETURN true on EOF
-*/
-static bool _fe_proc_stdio(slurm_fd_t stdio_socket, int stdio_fd,
-			   char *stdio_name)
-{
-	char *buf;
-	uint32_t msg_len = 0;
-	int buf_inx = 0, buf_len;
-
-	buf_len = slurm_read_stream_timeout(stdio_socket, (char *)&msg_len,
-					    sizeof(msg_len), MSG_TIMEOUT);
-	if ((buf_len < 0) || (buf_len < sizeof(msg_len))) {
-		error("%s read header: %m", stdio_name);
-		return true;
-	}
-	if (msg_len == NO_VAL) {
-#if _DEBUG_SALLOC
-		info("%s EOF", stdio_name);
-#endif
-		return true;
-	}
-
-	buf = xmalloc(msg_len + 1);
-	buf_len = slurm_read_stream_timeout(stdio_socket, buf+buf_inx, msg_len,
-					    MSG_TIMEOUT);
-	if ((buf_len < 0) || (buf_len < msg_len)) {
-		error("%s read buffer: %m", stdio_name);
-		if (buf_len < 0)
-			return true;
-	} else if (buf_len == 0) {
-#if _DEBUG_SALLOC
-		info("%s EOF", stdio_name);
-#endif
-		return true;
-	}
-#if _DEBUG_SALLOC
-	buf[buf_len] = '\0';
-	info("%s:%s:%d", stdio_name, buf, buf_len);
-#else
-{
-	int offset = 0, write_len;
-	while (offset < buf_len) {
-		write_len = write(stdio_fd, buf+offset, buf_len-offset);
-		if (write_len < 0) {
-			if ((errno == EAGAIN) && (errno == EINTR))
-				continue;
-			error("%s write: %m", stdio_name);
-			break;
-		} else {
-			offset += write_len;
-		}
-	}
-}
-#endif
-	xfree(buf);
 	return false;
 }
 
@@ -466,360 +315,100 @@ static pthread_t _wait_be_func(pid_t pid, slurm_fd_t signal_socket,
 
 
 /*
- * salloc_front_end - Open stdin/out/err socket connections to communicate with
- *	a remote node process and submit a batch job to claim that connection
- *	and execute the user's command.
+ * salloc_front_end - Open socket connections to communicate with a remote
+ *	node process and build a batch script to submit.
  *
- * argc IN - Count of elements in argv
- * argv IN - [0]:  Our executable name (e.g. salloc)
- *	     [1]:  Program to be spawned for user
- *	     [2+]: Arguments to spawned program
  * RETURN - remote processes exit code or -1 if some internal error
  */
-extern int salloc_front_end (int argc, char **argv)
+extern char *salloc_front_end (void)
 {
-	uint16_t port_e, port_o, port_s;
-	slurm_addr_t addr_e, addr_o, addr_s;
-	slurm_addr_t stderr_addr, stdout_addr, signal_addr;
-	slurm_fd_t local_stdin = 0;
-	slurm_fd_t stdout_socket = -1;
-	slurm_fd_t stderr_socket = -1;
-	slurm_fd_t signal_socket = -1;
-	slurm_fd_t stderr_conn = SLURM_SOCKET_ERROR;
-	slurm_fd_t stdout_conn = SLURM_SOCKET_ERROR;
-	slurm_fd_t signal_conn = SLURM_SOCKET_ERROR;
-	bool job_fini = false, stderr_fini = false, stdout_fini = false;
-	fd_set except_fds, read_fds;
-	char *exec_line = NULL, hostname[1024];
-	int i, n_fds, status = -1;
-	bool pty = PTY_MODE;
+	char hostname[256];
+	uint16_t comm_port;
+	slurm_addr_t comm_addr;
+	slurm_fd_t comm_socket = -1;
+	char *exec_line = NULL;
 
-	/* Open sockets for back-end program to communicate with */
-	/* Socket for stdin/stdout */
-	if ((stdout_socket = slurm_init_msg_engine_port(0)) < 0) {
+	/* Open socket for back-end program to communicate with */
+	if ((comm_socket = slurm_init_msg_engine_port(0)) < 0) {
 		error("init_msg_engine_port: %m");
 		goto fini;
 	}
-	if (slurm_get_stream_addr(stdout_socket, &addr_o) < 0) {
+	if (slurm_get_stream_addr(comm_socket, &comm_addr) < 0) {
 		error("slurm_get_stream_addr: %m");
 		goto fini;
 	}
-	port_o = ntohs(((struct sockaddr_in) addr_o).sin_port);
+	comm_port = ntohs(((struct sockaddr_in) comm_addr).sin_port);
+/* FIXME: Need to spawn a thread to read msg and set SALLOC_BE_HOST/PORT */
 
-	/* Socket for stderr */
-	if ((stderr_socket = slurm_init_msg_engine_port(0)) < 0) {
-		error("init_msg_engine_port: %m");
-		goto fini;
-	}
-	if (slurm_get_stream_addr(stderr_socket, &addr_e) < 0) {
-		error("slurm_get_stream_addr: %m");
-		goto fini;
-	}
-	port_e = ntohs(((struct sockaddr_in) addr_e).sin_port);
+	exec_line = xstrdup("#!/bin/bash\n");
+	if (gethostname_short(hostname, sizeof(hostname)))
+		fatal("gethostname_short(): %m");
+	xstrfmtcat(exec_line, "%s/bin/salloc --salloc-be %s %hu\n",
+		   SLURM_PREFIX, hostname, comm_port);
 
-	/* Socket for signals and exit code */
-	if ((signal_socket = slurm_init_msg_engine_port(0)) < 0) {
-		error("init_msg_engine_port: %m");
-		goto fini;
-	}
-	if (slurm_get_stream_addr(signal_socket, &addr_s) < 0) {
-		error("slurm_get_stream_addr: %m");
-		goto fini;
-	}
-	port_s = ntohs(((struct sockaddr_in) addr_s).sin_port);
-
-/* FIXME: Generate batch script
- * FIXME: Are environment variables, directory, limits and search path propagated? */
-	/* Generate back-end execute line */
-	gethostname_short(hostname, sizeof(hostname));
-	xstrfmtcat(exec_line, "%s/bin/salloc %s %hu %hu %hu",
-		   SLURM_PREFIX, hostname, port_o, port_e, port_s);
-	for (i = 1; i < argc; i++)
-		xstrfmtcat(exec_line, " %s", argv[i]);
-	printf("%s\n", exec_line);
-	xfree(exec_line);
-/* FIXME: Submit the batch script here */
-/* FIXME: Monitor for job abort, if needed, break out of accept or I/O loop */
-
-	/* Accept connections from the back-end */
-	while (true) {
-		stdout_conn = slurm_accept_stream(stdout_socket, &stdout_addr);
-		if (stdout_conn != SLURM_SOCKET_ERROR)
-			break;
-		if (errno != EINTR) {
-			error("slurm_accept_stream: %m");
-			goto fini;
-		}
-	}
-	if (pty) {
-		stderr_fini = true;
-	} else {
-		while (true) {
-			stderr_conn = slurm_accept_stream(stderr_socket,
-							  &stderr_addr);
-			if (stderr_conn != SLURM_SOCKET_ERROR)
-				break;
-			if (errno != EINTR) {
-				error("slurm_accept_stream: %m");
-				goto fini;
-			}
-		}
-	}
-	while (true) {
-		signal_conn = slurm_accept_stream(signal_socket, &signal_addr);
-		if (signal_conn != SLURM_SOCKET_ERROR)
-			break;
-		if (errno != EINTR) {
-			error("slurm_accept_stream: %m");
-			goto fini;
-		}
-	}
-	global_signal_conn = signal_conn;
-
-	n_fds = local_stdin;
-	n_fds = MAX(stderr_conn, n_fds);
-	n_fds = MAX(stdout_conn, n_fds);
-	n_fds = MAX(signal_conn, n_fds);
-	while ( !(job_fini && stderr_fini && stdout_fini) ) {
-		FD_ZERO(&except_fds);
-		FD_ZERO(&read_fds);
-		if (local_stdin >= 0) {
-			FD_SET(local_stdin, &except_fds);
-			FD_SET(local_stdin, &read_fds);
-		}
-		if (!stdout_fini)
-			FD_SET(stdout_conn, &read_fds);
-		if (!stderr_fini)
-			FD_SET(stderr_conn, &read_fds);
-		FD_SET(signal_conn, &read_fds);
-
-		i = select((n_fds + 1), &read_fds, NULL, &except_fds, NULL);
-		if (i == -1) {
-			if (errno == EINTR)
-				continue;
-			error("select: %m");
-			break;
-		}
-		if ((local_stdin >= 0) &&
-		    (FD_ISSET(local_stdin, &except_fds) ||
-		     FD_ISSET(local_stdin, &read_fds))) {
-			if (_fe_proc_stdin(local_stdin, stdout_conn)) {
-				local_stdin = -1;
-			}
-		}
-		if (FD_ISSET(stdout_conn, &read_fds) &&
-		    _fe_proc_stdio(stdout_conn, 1, "stdout")) {
-			/* Remote stderr closed */
-			stdout_fini = true;
-		}
-		if (FD_ISSET(stderr_conn, &read_fds) &&
-		    _fe_proc_stdio(stderr_conn, 2, "stderr")) {
-			/* Remote stderr closed */
-			stderr_fini = true;
-		}
-		if (FD_ISSET(signal_conn, &read_fds)) {
-			i = _fe_proc_exit(signal_conn);
-			status = MAX(status, i);
-			job_fini = true;
-		}
-	}
-
-fini:	if (stdout_conn != SLURM_SOCKET_ERROR)
-		slurm_close_accepted_conn(stdout_conn);
-	if (stderr_conn != SLURM_SOCKET_ERROR)
-		slurm_close_accepted_conn(stderr_conn);
-	if (signal_conn != SLURM_SOCKET_ERROR) {
-		global_signal_conn = SLURM_SOCKET_ERROR;
-		slurm_close_accepted_conn(signal_conn);
-	}
-	if (stdout_socket >= 0)
-		slurm_shutdown_msg_engine(stdout_socket);
-	if (stderr_socket >= 0)
-		slurm_shutdown_msg_engine(stderr_socket);
-	if (signal_socket >= 0)
-		slurm_shutdown_msg_engine(signal_socket);
-
-	return status;
-}
-
-
-/* salloc front-end signal processing function, send a signal to back-end
- *	program
- * sig_num IN - signal to send
- * RETURN 0 on success, -1 on error
-*/
-extern int salloc_send_signal(int sig_num)
-{
-	int buf_len;
-	uint32_t sig_msg = (uint32_t) sig_num;
-
-	if (global_signal_conn == SLURM_SOCKET_ERROR) {
-		error("signal write: back-end not connected");
-		return -1;
-	}
-	buf_len = slurm_write_stream_timeout(global_signal_conn,
-					     (char *)&sig_msg, sizeof(sig_msg),
-					     MSG_TIMEOUT);
-
-	/* NOTE: Do not change test below
-	 * (-1 < sizeof(sig_msg)) is false since
-	 * -1 gets converted to unsigned long first */
-	if ((buf_len < 0) || (buf_len < sizeof(sig_msg))) {
-		error("signal write: %m");
-		return -1;
-	}
-
-	info("signal %d sent", sig_num);
-	return 0;
+fini:
+	return exec_line;
 }
 
 /*
- * salloc_back_end - Open stdin/out/err socket connections to communicate with
- *	the salloc or srun command that submitted this program as a LoadLeveler
- *	batch job, spawn the identified user program, forward its stdin/out/err
- *	communications back, forward signals, and return the program's exit
- *	code.
+ * salloc_back_end - Open socket connections with the salloc or srun command
+ *	that submitted this program as a LoadLeveler batch job and use that to
+ *	spawn other jobs (specificially, spawn poe for srun wrapper)
  *
  * argc IN - Count of elements in argv
  * argv IN - [0]:  Our executable name (e.g. salloc)
- *	     [1]:  Hostname or address of front-end
- *	     [2]:  Port number for stdin/out
- *	     [3]:  Port number for stderr
- *	     [4]:  Port number for signals/exit status
- *	     [5]:  Program to be spawned for user
- *	     [6+]: Arguments to spawned program
+ *	     [1]:  "--salloc-be" (argument to spawn salloc backend)
+ *	     [2]:  Hostname or address of front-end
+ *	     [3]:  Port number for communications
  * RETURN - remote processes exit code
  */
 extern int salloc_back_end (int argc, char **argv)
 {
 	char *host = NULL;
-	uint16_t port_e = 0, port_o = 0, port_s = 0;
-	slurm_addr_t addr_e, addr_o, addr_s;
-	slurm_fd_t stderr_socket = 0, stdin_socket = 0, stdout_socket = -1;
-	slurm_fd_t signal_socket = 0;
-	bool job_fini = false;
-	bool signal_fini = false, stderr_fini = false, stdout_fini = false;
-	int dummy_pipe[2] = {-1, -1}, stderr_pipe[2] = {-1, -1};
-	int stdin_pipe[2] = {-1, -1}, stdout_pipe[2] = {-1, -1};
+	uint16_t comm_port = 0, resp_port = 0;
+	slurm_addr_t comm_addr, resp_addr;
+	slurm_fd_t comm_socket = SLURM_SOCKET_ERROR;
+	slurm_fd_t resp_socket = SLURM_SOCKET_ERROR;
 	fd_set read_fds;
-	pid_t pid;
-	int i, n_fds, status = 0;
-	bool pty = PTY_MODE;
+	int i, n_fds;
+	uint32_t new_auth_key, resp_auth_key;
 
-	if (argc >= 6) {
-		host   = argv[1];
-		port_o = atoi(argv[2]);
-		port_e = atoi(argv[3]);
-		port_s = atoi(argv[4]);
+	if (argc >= 4) {
+		host   = argv[2];
+		resp_port = atoi(argv[3]);
 	}
-	if ((argc < 6) || (port_o == 0) || (port_e == 0) || (port_s == 0)) {
-		error("Usage: <salloc_host> <salloc_stdin/out_port> "
-		      "<salloc_stderr_port> <signal/exit_status_port> "
-		      "<program> <args ...>\n");
+	if ((argc < 4) || (resp_port == 0)) {
+		error("Usage: salloc --salloc-be <salloc_host> "
+		      "<salloc_stdin/out_port>\n");
 		return 1;
 	}
+	resp_auth_key = resp_port + getuid();
 
-	/* Set up stdin/out on firt port,
-	 * Set up stderr on second port,
-	 * Signals and exit code use third port */
-	slurm_set_addr(&addr_o, port_o, host);
-	stdout_socket = slurm_open_stream(&addr_o);
-	if (stdout_socket < 0) {
-		error("slurm_open_msg_conn(%s:%hu): %m", host, port_o);
+	/* Open sockets for back-end program to communicate with */
+	/* Socket for stdin/stdout */
+	if ((comm_socket = slurm_init_msg_engine_port(0)) < 0) {
+		error("init_msg_engine_port: %m");
+		goto fini;
+	}
+	if (slurm_get_stream_addr(comm_socket, &comm_addr) < 0) {
+		error("slurm_get_stream_addr: %m");
+		goto fini;
+	}
+	comm_port = ntohs(((struct sockaddr_in) comm_addr).sin_port);
+	new_auth_key = comm_port + getuid();
+
+	slurm_set_addr(&resp_addr, resp_port, host);
+	resp_socket = slurm_open_stream(&resp_addr);
+	if (resp_socket < 0) {
+		error("slurm_open_msg_conn(%s:%hu): %m", host, resp_port);
 		return 1;
 	}
-	stdin_socket = stdout_socket;
+	_xmit_resp(resp_socket, resp_auth_key, new_auth_key, comm_port);
 
-	slurm_set_addr(&addr_e, port_e, host);
-	stderr_socket = slurm_open_stream(&addr_e);
-	if (stderr_socket < 0) {
-		error("slurm_open_msg_conn(%s:%hu): %m", host, port_e);
-		return 1;
-	}
-
-	slurm_set_addr(&addr_s, port_s, host);
-	signal_socket = slurm_open_stream(&addr_s);
-	if (signal_socket < 0) {
-		error("slurm_open_msg_conn(%s:%hu): %m", host, port_s);
-		return 1;
-	}
-
-	if (pty) {
-		if (openpty(&stdin_pipe[1], &stdin_pipe[0],
-			    NULL, NULL, NULL) < 0) {
-			error("stdin openpty: %m");
-			return 1;
-		}
-		stdout_pipe[0] = dup(stdin_pipe[1]);
-		stdout_pipe[1] = dup(stdin_pipe[0]);
-		if ((stdout_pipe[0] == -1) || (stdout_pipe[1] == -1)) {
-			error("dup(openpty): %m");
-			return 1;
-		}
-		/* In PTY mode, stderr goes to the same stream as stdout */
-		stderr_pipe[0] = stderr_pipe[1] = -1;
-		stderr_fini = true;
-	} else if ((pipe(stdin_pipe)  == -1) ||
-		   (pipe(stdout_pipe) == -1) ||
-		   (pipe(stderr_pipe) == -1)) {
-		error("pipe: %m");
-		return 1;
-	}
-
-	pid = fork();
-	if (pid < 0) {
-		error("fork: %m");
-		return 1;
-	} else if (pid == 0) {
-		if (pty) {
-			login_tty(stdin_pipe[0]);
-		} else {
-			if ((dup2(stdin_pipe[0],  0) == -1) ||
-			    (dup2(stdout_pipe[1], 1) == -1) ||
-			    (dup2(stderr_pipe[1], 2) == -1)) {
-				error("dup2: %m");
-				return 1;
-			}
-			(void) close(stderr_pipe[0]);
-			(void) close(stderr_pipe[1]);
-		}
-		(void) close(stdin_pipe[0]);
-		(void) close(stdin_pipe[1]);
-		(void) close(stdout_pipe[0]);
-		(void) close(stdout_pipe[1]);
-
-		execvp(argv[5], argv+5);
-		error("execv(%s) error: %m", argv[5]);
-		return 1;
-	}
-
-	(void) close(stdin_pipe[0]);
-	(void) close(stdout_pipe[1]);
-	(void) close(stderr_pipe[1]);
-
-	/* NOTE: dummy_pipe is only used to wake the select() function in the
-	 * loop below when the spawned process terminates */
-	if (pipe(dummy_pipe) == -1)
-		error("pipe: %m");
-	_wait_be_func(pid, signal_socket, &status, &job_fini, dummy_pipe[1]);
-
-	n_fds = dummy_pipe[0];
-	n_fds = MAX(signal_socket,  n_fds);
-	n_fds = MAX(stdin_socket,   n_fds);
-	n_fds = MAX(stderr_pipe[0], n_fds);
-	n_fds = MAX(stdout_pipe[0], n_fds);
-
-	while ( !(job_fini && stderr_fini && stdout_fini) ) {
+	n_fds = resp_socket;
+	while (true) {
 		FD_ZERO(&read_fds);
-		FD_SET(dummy_pipe[0], &read_fds);
-		if (!signal_fini)
-			FD_SET(signal_socket,  &read_fds);
-		if (stdin_pipe[1] >= 0)
-			FD_SET(stdin_socket,   &read_fds);
-		if (!stderr_fini)
-			FD_SET(stderr_pipe[0], &read_fds);
-		if (!stdout_fini)
-			FD_SET(stdout_pipe[0], &read_fds);
+		FD_SET(resp_socket, &read_fds);
 
 		i = select((n_fds + 1), &read_fds, NULL, NULL, NULL);
 		if (i == -1) {
@@ -828,42 +417,17 @@ extern int salloc_back_end (int argc, char **argv)
 			error("select: %m");
 			break;
 		}
-		if ((signal_socket >= 0) &&
-		    FD_ISSET(signal_socket, &read_fds) &&
-		    _be_proc_signal(signal_socket, pid)) {
-			/* Remote signal_socket closed */
-			signal_fini = true;
-		}
-		if ((stdin_socket >= 0) && FD_ISSET(stdin_socket, &read_fds) &&
-		    _be_proc_stdin(stdin_pipe[1], stdin_socket)) {
-			/* Remote stdin closed */
-			(void) close(stdin_pipe[1]);
-			stdin_pipe[1] = -1;
-		}
-		if (FD_ISSET(stderr_pipe[0], &read_fds) &&
-		    _be_proc_stdio(stderr_pipe[0], stderr_socket, "stderr")) {
-			/* Remote stderr closed */
-			stderr_fini = true;
-		}
-		if (FD_ISSET(stdout_pipe[0], &read_fds) &&
-		    _be_proc_stdio(stdout_pipe[0], stdout_socket, "stdout")) {
-			/* Remote stdout closed */
-			stdout_fini = true;
+		if (FD_ISSET(resp_socket, &read_fds) &&
+		    _be_proc_comm(resp_socket, new_auth_key)) {
+			/* Remote resp_socket closed */
+			break;
 		}
 	}
 
-	(void) close(dummy_pipe[0]);
-	(void) close(dummy_pipe[1]);
-	if (stdin_pipe[1] >= 0)
-		(void) close(stdin_pipe[1]);
-	(void) close(stderr_pipe[0]);
-	(void) close(stdout_pipe[0]);
-	slurm_close_stream(signal_socket);
-	slurm_close_stream(stderr_socket);
-	slurm_close_stream(stdout_socket);
-
-	if (WIFEXITED(status))
-		exit(WEXITSTATUS(status));
+fini:	if (comm_socket >= 0)
+		slurm_shutdown_msg_engine(comm_socket);
+	if (resp_socket >= 0)
+		slurm_shutdown_msg_engine(resp_socket);
 	exit(0);
 }
 
