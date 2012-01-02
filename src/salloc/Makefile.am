@@ -8,8 +8,6 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 bin_PROGRAMS = salloc
 
 salloc_SOURCES =		\
-	load_leveler.c		\
-	load_leveler.h		\
 	opt.c opt.h		\
 	salloc.c salloc.h
 
@@ -20,9 +18,6 @@ salloc_LDADD = \
 
 if HAVE_REAL_CRAY
   salloc_LDADD += -ljob
-endif
-if USE_LOADLEVELER
-  salloc_LDADD += $(UTIL_LIBS)
 endif
 
 salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

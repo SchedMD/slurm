@@ -66,9 +66,6 @@
 #include "src/common/xstring.h"
 #include "src/common/plugstack.h"
 
-#ifdef USE_LOADLEVELER
-#include "src/salloc/load_leveler.h"
-#endif
 #include "src/salloc/opt.h"
 #include "src/salloc/salloc.h"
 

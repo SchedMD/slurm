@@ -39,7 +39,6 @@ host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = salloc$(EXEEXT)
 @HAVE_REAL_CRAY_TRUE@am__append_1 = -ljob
-@USE_LOADLEVELER_TRUE@am__append_2 = $(UTIL_LIBS)
 subdir = src/salloc
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -88,14 +87,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_salloc_OBJECTS = load_leveler.$(OBJEXT) opt.$(OBJEXT) \
-	salloc.$(OBJEXT)
+am_salloc_OBJECTS = opt.$(OBJEXT) salloc.$(OBJEXT)
 salloc_OBJECTS = $(am_salloc_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 am__DEPENDENCIES_2 =
-@USE_LOADLEVELER_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2)
-salloc_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3)
+salloc_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 salloc_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(salloc_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -319,13 +315,11 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 salloc_SOURCES = \
-	load_leveler.c		\
-	load_leveler.h		\
 	opt.c opt.h		\
 	salloc.c salloc.h
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
-salloc_LDADD = $(convenience_libs) $(am__append_1) $(am__append_2)
+salloc_LDADD = $(convenience_libs) $(am__append_1)
 salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
@@ -414,7 +408,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/load_leveler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/salloc.Po@am__quote@
 
