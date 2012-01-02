@@ -86,8 +86,10 @@ typedef struct salloc_child_wait_data {
 	int *status_ptr;
 } salloc_child_wait_data_t;
 
-static slurm_fd_t fe_comm_socket = -1;
 static uint32_t   fe_auth_key = 0;
+static slurm_fd_t fe_comm_socket = -1;
+static char      *fe_job_id = NULL;
+static bool       fe_job_killed = false;
 
 #ifdef HAVE_LLAPI_H
 /*****************************************************************************\
@@ -952,13 +954,16 @@ info("msg: %s", msg);
 }
 
 /* Test that the front-end job still exists.
- * Return true if job is finished. */
+ * Return true if job is being killed or already finished. */
 static bool _fe_test_job_fini(char *job_id)
 {
 	int i, rc;
 	job_info_t *job_ptr;
 	job_info_msg_t *job_info_msg;
 	bool job_fini = false;
+
+	if (fe_job_killed)	/* SIGINT processed in salloc */
+		return true;
 
 	rc = slurm_load_job(&job_info_msg, job_id, SHOW_ALL);
 	if (rc != SLURM_SUCCESS)
@@ -2133,6 +2138,8 @@ extern int slurm_terminate_job (char *job_id)
 	}
 	return rc;
 #else
+	if (fe_job_id && !strcmp(fe_job_id, job_id))
+		fe_job_killed = true;
 	slurm_seterrno(ESLURM_NOT_SUPPORTED);
 	return -1;
 #endif
@@ -2153,7 +2160,13 @@ extern int slurm_terminate_job_step (char *job_id, uint32_t step_id)
 	int rc;
 	LL_terminate_job_info *cancel_info;
 
+	if (!job_id) {
+		slurm_seterrno(ESLURM_INVALID_JOB_ID);
+		return -1;
+	}
+
 /* FIXME: documentation not clear, probably needs work */
+/* FIXME: we may need to fully expand job id with full hostname too */
 	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
 	cancel_info->version_num =  LL_PROC_VERSION;
 #if 0
@@ -2768,8 +2781,10 @@ slurm_allocate_resources_blocking (job_desc_msg_t *user_req,
 	}
 	if (slurm_submit_batch_job(user_req, &submit_resp) != SLURM_SUCCESS)
 		return NULL;
+	xfree(fe_job_id);
+	fe_job_id = xstrdup(submit_resp->job_id);
 	if (pending_callback)
-		pending_callback(submit_resp->job_id);
+		pending_callback(fe_job_id);
 
 	n_fds = fe_comm_socket;
 	while (fe_comm_socket >= 0) {
@@ -2778,29 +2793,27 @@ slurm_allocate_resources_blocking (job_desc_msg_t *user_req,
 		FD_ZERO(&read_fds);
 		FD_SET(fe_comm_socket, &read_fds);
 
-/* FIXME: Should this just test for read? */
 		tv.tv_sec = 30;
 		tv.tv_usec = 0;
 		i = select((n_fds + 1), &read_fds, NULL, &except_fds, &tv);
-		if (i == -1) {
-			if (errno == EINTR)
-				continue;
-			error("select: %m");
-			break;
-		} else if (i == 0) {
-			/* Periodically test for abnormal job termination */
-			if (_fe_test_job_fini(submit_resp->job_id)) {
+		if ((i == 0) ||
+		    ((i == -1) && (errno == EINTR))) {
+			/* Test for abnormal job termination on timeout or
+			 * many signals */
+			if (_fe_test_job_fini(fe_job_id)) {
 				slurm_shutdown_msg_engine(fe_comm_socket);
 				fe_comm_socket = -1;
 				break;
 			}
 			continue;
+		} else if (i == -1) {
+			error("select: %m");
+			break;
 		} else {	/* i > 0, ready for I/O */
 			if (_fe_proc_connect(fe_comm_socket)) {
 				slurm_shutdown_msg_engine(fe_comm_socket);
 				fe_comm_socket = -1;
-				slurm_allocation_lookup_lite(submit_resp->
-							     job_id,
+				slurm_allocation_lookup_lite(fe_job_id,
 							     &alloc_resp);
 				break;
 			}

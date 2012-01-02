@@ -841,7 +841,7 @@ static pid_t _fork_command(char **command)
 static void _pending_callback(char *job_id)
 {
 	info("Pending job allocation %s", job_id);
-/* FIXME:	pending_job_id = job_id; */
+	pending_job_id = xstrdup(job_id);
 }
 #else
 static void _pending_callback(uint32_t job_id)
