@@ -87,6 +87,7 @@ typedef struct salloc_child_wait_data {
 } salloc_child_wait_data_t;
 
 static slurm_fd_t fe_comm_socket = -1;
+static uint32_t   fe_auth_key = 0;
 
 #ifdef HAVE_LLAPI_H
 /*****************************************************************************\
@@ -822,30 +823,56 @@ static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
  * Socket connection authentication logic
  */
 static bool _xmit_resp(slurm_fd_t socket_conn, uint32_t resp_auth_key,
-		      uint32_t new_auth_key, uint16_t new_port)
+		       uint32_t new_auth_key, uint16_t comm_port)
 {
-	int i, buf_len;
-	char *buf_head;
-	Buf buf;
+	int i;
+	char buf[32];
 
-	if (!(buf = init_buf(64)))
-		fatal("init_buf(), malloc failure");
+	memcpy(buf+0, &resp_auth_key, 4);
+	memcpy(buf+4, &new_auth_key,  4);
+	memcpy(buf+8, &comm_port,     2);
 
-	pack32(resp_auth_key, buf);
-	pack32(new_auth_key, buf);
-	pack16(new_port, buf);
-
-	buf_len = get_buf_offset(buf);
-	buf_head = get_buf_data(buf);
-	i = slurm_write_stream_timeout(socket_conn, buf_head, buf_len,
-				       MSG_TIMEOUT);
-	free_buf(buf);
-	if ((i < 0) || (i <  sizeof(buf_len))) {
+	i = slurm_write_stream_timeout(socket_conn, buf, 10, MSG_TIMEOUT);
+	if (i < 10) {
 		error("xmit_resp write: %m");
 		return false;
 	}
 
 	return true;
+}
+
+static void _read_be_key(slurm_fd_t socket_conn, char *hostname)
+{
+	char *sock_env = NULL;
+	uint32_t read_key;
+	uint16_t comm_port;
+	char buf[32];
+	int i;
+
+	i = slurm_read_stream(socket_conn, buf, 6);
+	if (i != 6) {
+		error("_read_be_key: %d", i);
+		return;
+	}
+	memcpy(&read_key,  buf+0, 4);
+	memcpy(&comm_port, buf+4, 2);
+
+
+	xstrfmtcat(sock_env, "%u", read_key);
+	if (setenv("SLURM_BE_KEY", sock_env, 1))
+		fatal("setenv(SLURM_BE_KEY): %m");
+#ifdef _DEBUG_SALLOC
+	info("SLURM_BE_KEY=%u", read_key);
+#endif
+	xfree(sock_env);
+
+	xstrfmtcat(sock_env, "%s:%hu", hostname, comm_port);
+	if (setenv("SLURM_BE_SOCKET", sock_env, 1))
+		fatal("setenv(SLURM_BE_SOCKET): %m");
+#ifdef _DEBUG_SALLOC
+	info("SLURM_BE_SOCKET=%s", sock_env);
+#endif
+	xfree(sock_env);
 }
 
 static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
@@ -924,116 +951,64 @@ info("msg: %s", msg);
 	return false;
 }
 
-/* salloc front-end function, read message from local stdin and write it to
- *	stdin_socket socket.
- * stdin_fd IN - the local stdin file descriptor to read message from
- * stdin_socket IN - the socket to write the message to
- * RETURN true on EOF
- */
-static bool _fe_proc_stdin(slurm_fd_t stdin_fd, slurm_fd_t stdin_socket)
+/* Test that the front-end job still exists.
+ * Return true if job is finished. */
+static bool _fe_test_job_fini(char *job_id)
 {
-	char buf[16 * 1024];
-	int buf_len, in_len;
-	uint32_t msg_len = 0;
+	int i, rc;
+	job_info_t *job_ptr;
+	job_info_msg_t *job_info_msg;
+	bool job_fini = false;
 
-	in_len = read(stdin_fd, buf, (sizeof(buf) - 1));
-	if (in_len < 0) {
-		error("stdin read: %m");
-		return false;
-	}
-	if (in_len == 0) {
-#if _DEBUG_SALLOC
-		info("stdin EOF");
-#endif
-		msg_len = NO_VAL;
-	} else {
-		msg_len = in_len;
-	}
+	rc = slurm_load_job(&job_info_msg, job_id, SHOW_ALL);
+	if (rc != SLURM_SUCCESS)
+		return false;	/* can't determine job state */
 
-	buf_len = slurm_write_stream_timeout(stdin_socket, (char *)&msg_len,
-					     sizeof(msg_len), MSG_TIMEOUT);
-	/* NOTE: Do not change test below
-	 * (-1 < sizeof(msg_len)) is false since
-	 * -1 gets converted to unsigned long first */
-	if ((buf_len < 0) || (buf_len < sizeof(msg_len))) {
-		error("stdin write: %m");
-		return false;
-	}
-	if (msg_len == NO_VAL)
-		return true;
-
-	buf_len = slurm_write_stream_timeout(stdin_socket, buf, msg_len,
-					     MSG_TIMEOUT);
-	if ((buf_len < 0) || (buf_len < msg_len)) {
-		error("stdin write: %m");
-	} else {
-#if _DEBUG_SALLOC
-		buf[msg_len] = '\0';
-		info("stdin:%s:%d", buf, msg_len);
-#endif
-	}
-	return false;
-}
-
-/* write the exit status of spawned back-end process to the salloc front-end */
-static void _be_proc_status(int status, slurm_fd_t signal_socket)
-{
-	uint32_t status_32;
-
-	status_32 = (uint32_t) status;
-	if (slurm_write_stream(signal_socket, (char *)&status_32,
-			       sizeof(status_32)) < 0) {
-		error("slurm_write_stream(exit_status): %m");
-	}
-}
-
-/* Thread spawned by _wait_be_func(). See that function for details. */
-static void *_wait_be_thread(void *x)
-{
-	salloc_child_wait_data_t *thread_data = (salloc_child_wait_data_t *)x;
-
-	waitpid(thread_data->pid, thread_data->status_ptr, 0);
-	_be_proc_status(*(thread_data->status_ptr), thread_data->signal_socket);
-	*(thread_data->job_fini_ptr) = true;
-	while (write(thread_data->dummy_pipe, "", 1) == -1) {
-		if ((errno == EAGAIN) || (errno == EINTR))
+	for (i = 0; i < job_info_msg->record_count; i++) {
+		if (strcmp(job_info_msg->job_array[i].job_id, job_id))
 			continue;
-		error("write(dummy_pipe): %m");
+		job_ptr = &job_info_msg->job_array[i];
+		if (job_ptr->job_state >= JOB_COMPLETE)
+			job_fini = true;
 		break;
 	}
+	slurm_free_job_info_msg(job_info_msg);
 
-	return NULL;
+	return job_fini;
 }
 
-/*
- * Wait for back-end process completion and send exit code to front-end
- * pid IN - process ID to wait for
- * signal_socket IN - socket used to transmit exit code
- * status_ptr IN - pointer to place for recording process exit status
- * job_fini_ptr IN - flag to set upon job completion
- * dummy_pipe IN - file just used to wake main process
- * RETURN - ID of spawned thread
- */
-static pthread_t _wait_be_func(pid_t pid, slurm_fd_t signal_socket,
-			       int *status_ptr, bool *job_fini_ptr,
-			       int dummy_pipe)
+/* Front-end processes connection from backed.
+ * Return true if connect is successful. */
+static bool _fe_proc_connect(slurm_fd_t fe_comm_socket)
 {
-	static salloc_child_wait_data_t thread_data;
-	pthread_attr_t thread_attr;
-	pthread_t thread_id = 0;
+	slurm_fd_t fe_comm_conn = -1;
+	slurm_addr_t be_addr;
+	bool be_connected = false;
 
-	slurm_attr_init(&thread_attr);
-	thread_data.dummy_pipe = dummy_pipe;
-	thread_data.job_fini_ptr = job_fini_ptr;
-	thread_data.pid = pid;
-	thread_data.signal_socket = signal_socket;
-	thread_data.status_ptr = status_ptr;
-	if (pthread_create(&thread_id, &thread_attr, _wait_be_thread,
-                           &thread_data)) {
-		error("pthread_create: %m");
+	while (1) {
+		fe_comm_conn = slurm_accept_stream(fe_comm_socket, &be_addr);
+		if (fe_comm_conn != SLURM_SOCKET_ERROR) {
+			if (_validate_connect(fe_comm_conn, fe_auth_key)) {
+				be_connected = true;
+			}
+			break;
+		}
+		if (errno != EINTR) {
+			error("slurm_accept_stream: %m");
+			goto fini;
+		}
 	}
-	slurm_attr_destroy(&thread_attr);
-	return thread_id;
+
+fini:	if (be_connected) {
+		char hostname[256];
+		uint16_t comm_port;
+		slurm_get_addr(&be_addr, &comm_port, hostname,
+			       sizeof(hostname));
+		_read_be_key(fe_comm_conn, hostname);
+	}
+	if (fe_comm_conn >= 0)
+		slurm_close_accepted_conn(fe_comm_conn);
+	return be_connected;
 }
 
 /*****************************************************************************\
@@ -1050,7 +1025,7 @@ static pthread_t _wait_be_func(pid_t pid, slurm_fd_t signal_socket,
  */
 extern char *salloc_front_end (void)
 {
-	char hostname[256], *sock_env = NULL;
+	char hostname[256];
 	uint16_t comm_port;
 	slurm_addr_t comm_addr;
 	char *exec_line = NULL;
@@ -1058,13 +1033,14 @@ extern char *salloc_front_end (void)
 	/* Open socket for back-end program to communicate with */
 	if ((fe_comm_socket = slurm_init_msg_engine_port(0)) < 0) {
 		error("init_msg_engine_port: %m");
-		goto fini;
+		return NULL;
 	}
 	if (slurm_get_stream_addr(fe_comm_socket, &comm_addr) < 0) {
 		error("slurm_get_stream_addr: %m");
-		goto fini;
+		return NULL;
 	}
 	comm_port = ntohs(((struct sockaddr_in) comm_addr).sin_port);
+	fe_auth_key = comm_port + getuid();
 
 	exec_line = xstrdup("#!/bin/bash\n");
 	if (gethostname_short(hostname, sizeof(hostname)))
@@ -1072,12 +1048,6 @@ extern char *salloc_front_end (void)
 	xstrfmtcat(exec_line, "%s/bin/salloc --salloc-be %s %hu\n",
 		   SLURM_PREFIX, hostname, comm_port);
 
-	xstrfmtcat(sock_env, "%s:%hu", hostname, comm_port);
-	if (setenv("SLURM_FE_HOST", sock_env, 1))
-		fatal("setenv(SLURM_FE_SOCKET): %m");
-	xfree(sock_env);
-
-fini:
 	return exec_line;
 }
 
@@ -1136,10 +1106,10 @@ extern int salloc_back_end (int argc, char **argv)
 	}
 	_xmit_resp(resp_socket, resp_auth_key, new_auth_key, comm_port);
 
-	n_fds = resp_socket;
+	n_fds = comm_socket;
 	while (true) {
 		FD_ZERO(&read_fds);
-		FD_SET(resp_socket, &read_fds);
+		FD_SET(comm_socket, &read_fds);
 
 		i = select((n_fds + 1), &read_fds, NULL, NULL, NULL);
 		if (i == -1) {
@@ -1148,8 +1118,8 @@ extern int salloc_back_end (int argc, char **argv)
 			error("select: %m");
 			break;
 		}
-		if (FD_ISSET(resp_socket, &read_fds) &&
-		    _be_proc_comm(resp_socket, new_auth_key)) {
+		if (FD_ISSET(comm_socket, &read_fds) &&
+		    _be_proc_comm(comm_socket, new_auth_key)) {
 			/* Remote resp_socket closed */
 			break;
 		}
@@ -2276,7 +2246,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 				  submit_response_msg_t **resp)
 {
 	char *first_line, *pathname, *slurm_cmd_file = NULL;
-	int fd, i, rc;
+	int fd, i, rc = 0;
 	size_t len, offset = 0, wrote;
 
 	/* Move first line of script, e.g. "#!/bin/bash"
@@ -2688,9 +2658,18 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 	}
 }
 #else
-	rc = -1;
 	info("script:\n%s", slurm_cmd_file);
+#if 0
+	rc = -1;
 	slurm_seterrno(ESLURM_NOT_SUPPORTED);
+#else
+{
+	submit_response_msg_t *resp_ptr;
+	resp_ptr = xmalloc(sizeof(submit_response_msg_t));
+	*resp = resp_ptr;
+	resp_ptr->job_id = xstrdup("jette.123");
+}
+#endif
 #endif
 	if (unlink(pathname))
 		error("unlink(%s): %m", pathname);
@@ -2774,6 +2753,10 @@ slurm_allocate_resources_blocking (job_desc_msg_t *user_req,
 				   void(*pending_callback)(char *job_id))
 {
 	submit_response_msg_t *submit_resp;
+	struct timeval tv;
+	fd_set except_fds, read_fds;
+	int i, n_fds;
+	resource_allocation_response_msg_t *alloc_resp = NULL;
 
 	if (fe_comm_socket < 0) {
 		fatal("slurm_allocate_resources_blocking called without "
@@ -2785,13 +2768,47 @@ slurm_allocate_resources_blocking (job_desc_msg_t *user_req,
 	}
 	if (slurm_submit_batch_job(user_req, &submit_resp) != SLURM_SUCCESS)
 		return NULL;
-	if (pending_callback) {
+	if (pending_callback)
 		pending_callback(submit_resp->job_id);
+
+	n_fds = fe_comm_socket;
+	while (fe_comm_socket >= 0) {
+		FD_ZERO(&except_fds);
+		FD_SET(fe_comm_socket, &except_fds);
+		FD_ZERO(&read_fds);
+		FD_SET(fe_comm_socket, &read_fds);
+
+/* FIXME: Should this just test for read? */
+		tv.tv_sec = 30;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, &except_fds, &tv);
+		if (i == -1) {
+			if (errno == EINTR)
+				continue;
+			error("select: %m");
+			break;
+		} else if (i == 0) {
+			/* Periodically test for abnormal job termination */
+			if (_fe_test_job_fini(submit_resp->job_id)) {
+				slurm_shutdown_msg_engine(fe_comm_socket);
+				fe_comm_socket = -1;
+				break;
+			}
+			continue;
+		} else {	/* i > 0, ready for I/O */
+			if (_fe_proc_connect(fe_comm_socket)) {
+				slurm_shutdown_msg_engine(fe_comm_socket);
+				fe_comm_socket = -1;
+				slurm_allocation_lookup_lite(submit_resp->
+							     job_id,
+							     &alloc_resp);
+				break;
+			}
+			continue;
+		}
 	}
 
-info("wait for job here");
-
-	return NULL;
+	return alloc_resp;
 }
 
 /*
