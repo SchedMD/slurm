@@ -824,6 +824,51 @@ static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
 /*
  * Socket connection authentication logic
  */
+/* Abort the back-end job
+ * Return true if abort message send */
+static bool _xmit_abort(void)
+{
+	char buf[32], *host, *sep;
+	uint32_t resp_auth_key;
+	uint16_t resp_port, op_code = OP_CODE_EXIT;
+	char *auth_key  = getenv("SLURM_BE_KEY");
+	char *sock_addr = getenv("SLURM_BE_SOCKET");
+	slurm_fd_t resp_socket;
+	slurm_addr_t resp_addr;
+	int i;
+
+	if (!auth_key || !sock_addr)
+		return false;
+
+	host = xstrdup(sock_addr);
+	sep = strchr(host, ':');
+	if (!sep) {
+		xfree(host);
+		return false;
+	}
+	sep[0] = '\0';
+	resp_port = atoi(sep+1);
+	slurm_set_addr(&resp_addr, resp_port, host);
+	xfree(host);
+	resp_socket = slurm_open_stream(&resp_addr);
+	if (resp_socket < 0) {
+		error("slurm_open_msg_conn(%s:%hu): %m", host, resp_port);
+		return false;
+	}
+
+	resp_auth_key = atoi(auth_key);
+	memcpy(buf+0, &resp_auth_key, 4);
+	memcpy(buf+4, &op_code,       2);
+	i = slurm_write_stream_timeout(resp_socket, buf, 6, MSG_TIMEOUT);
+	if (i < 6) {
+		error("xmit_resp abort: %m");
+		return false;
+	}
+	slurm_shutdown_msg_engine(resp_socket);
+
+	return true;
+}
+
 static bool _xmit_resp(slurm_fd_t socket_conn, uint32_t resp_auth_key,
 		       uint32_t new_auth_key, uint16_t comm_port)
 {
@@ -877,6 +922,8 @@ static void _read_be_key(slurm_fd_t socket_conn, char *hostname)
 	xfree(sock_env);
 }
 
+/* Validate a message connection
+ * Return: true=valid/authenticated */
 static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 {
 	struct timeval tv;
@@ -911,34 +958,44 @@ static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 }
 
 /* Process incoming requests
- * resp_socket IN - socket to read from
+ * comm_socket IN - socket to read from
  * auth_key IN - authentication key we are looking for
  * RETURN true to terminate
  */
-static bool _be_proc_comm(slurm_fd_t resp_socket, uint32_t auth_key)
+static bool _be_proc_comm(slurm_fd_t comm_socket, uint32_t auth_key)
 {
 	uint16_t op_code, msg_size;
+	slurm_fd_t be_comm_conn;
+	slurm_addr_t be_addr;
 	char *msg;
 	int i;
+	bool term_flag = false;
 
-	if (!_validate_connect(resp_socket, auth_key))
-		return false;
-	i = slurm_read_stream(resp_socket, (char *)&op_code, sizeof(op_code));
-	if (i != sizeof(op_code)) {
-		error("socket read, bad op_code size: %d", i);
+	be_comm_conn = slurm_accept_stream(comm_socket, &be_addr);
+	if (be_comm_conn == SLURM_SOCKET_ERROR) {
+		error("slurm_accept_stream: %m");
 		return false;
 	}
-	if (op_code == OP_CODE_EXIT)
-		return true;
-	if (op_code == OP_CODE_EXEC) {
-		i = slurm_read_stream(resp_socket, (char *)&msg_size,
+
+	if (!_validate_connect(be_comm_conn, auth_key))
+		goto fini;
+
+	i = slurm_read_stream(be_comm_conn, (char *)&op_code, sizeof(op_code));
+	if (i != sizeof(op_code)) {
+		error("socket read, bad op_code size: %d", i);
+		goto fini;
+	}
+	if (op_code == OP_CODE_EXIT) {
+		term_flag = true;
+	} else if (op_code == OP_CODE_EXEC) {
+		i = slurm_read_stream(be_comm_conn, (char *)&msg_size,
 				      sizeof(msg_size));
 		if (i != sizeof(msg_size)) {
 			error("socket read, bad msg_size size: %d", i);
 			return false;
 		}
 		msg = xmalloc(msg_size);
-		i = slurm_read_stream(resp_socket, msg, msg_size);
+		i = slurm_read_stream(be_comm_conn, msg, msg_size);
 		if (i != sizeof(msg_size)) {
 			error("socket read, bad msg size: %d", i);
 			xfree(msg);
@@ -947,13 +1004,16 @@ static bool _be_proc_comm(slurm_fd_t resp_socket, uint32_t auth_key)
 /* FIXME: Do fork/exec here */
 info("msg: %s", msg);
 		xfree(msg);
-		return false;
+	} else {
+		error("socket read, bad op_code: %hu", op_code);
 	}
-	error("socket read, bad op_code: %hu", op_code);
-	return false;
+
+fini:	if (be_comm_conn != SLURM_SOCKET_ERROR)
+		slurm_close_accepted_conn(be_comm_conn);
+	return term_flag;
 }
 
-/* Test that the front-end job still exists.
+/* Test that the job still exists in LoadLeveler.
  * Return true if job is being killed or already finished. */
 static bool _fe_test_job_fini(char *job_id)
 {
@@ -993,9 +1053,8 @@ static bool _fe_proc_connect(slurm_fd_t fe_comm_socket)
 	while (1) {
 		fe_comm_conn = slurm_accept_stream(fe_comm_socket, &be_addr);
 		if (fe_comm_conn != SLURM_SOCKET_ERROR) {
-			if (_validate_connect(fe_comm_conn, fe_auth_key)) {
+			if (_validate_connect(fe_comm_conn, fe_auth_key))
 				be_connected = true;
-			}
 			break;
 		}
 		if (errno != EINTR) {
@@ -1110,12 +1169,12 @@ extern int salloc_back_end (int argc, char **argv)
 		return 1;
 	}
 	_xmit_resp(resp_socket, resp_auth_key, new_auth_key, comm_port);
+	slurm_shutdown_msg_engine(resp_socket);
 
 	n_fds = comm_socket;
 	while (true) {
 		FD_ZERO(&read_fds);
 		FD_SET(comm_socket, &read_fds);
-
 		i = select((n_fds + 1), &read_fds, NULL, NULL, NULL);
 		if (i == -1) {
 			if (errno == EINTR)
@@ -1123,6 +1182,7 @@ extern int salloc_back_end (int argc, char **argv)
 			error("select: %m");
 			break;
 		}
+
 		if (FD_ISSET(comm_socket, &read_fds) &&
 		    _be_proc_comm(comm_socket, new_auth_key)) {
 			/* Remote resp_socket closed */
@@ -1132,8 +1192,6 @@ extern int salloc_back_end (int argc, char **argv)
 
 fini:	if (comm_socket >= 0)
 		slurm_shutdown_msg_engine(comm_socket);
-	if (resp_socket >= 0)
-		slurm_shutdown_msg_engine(resp_socket);
 	exit(0);
 }
 
@@ -2065,7 +2123,13 @@ extern int slurm_signal_job_step (char *job_id, uint32_t step_id,
  */
 extern int slurm_terminate_job (char *job_id)
 {
-#ifdef HAVE_LLAPI_H
+#ifndef HAVE_LLAPI_H
+	if (fe_job_id && !strcmp(fe_job_id, job_id))
+		fe_job_killed = true;
+	(void) _xmit_abort();
+	slurm_seterrno(ESLURM_NOT_SUPPORTED);
+	return -1;
+#else
 	LL_element *job, *step, *query_object;
 	int err_code, found, i, obj_count, rc = 0;
 	bool match_job_id, match_step_id;
@@ -2137,11 +2201,6 @@ extern int slurm_terminate_job (char *job_id)
 			break;
 	}
 	return rc;
-#else
-	if (fe_job_id && !strcmp(fe_job_id, job_id))
-		fe_job_killed = true;
-	slurm_seterrno(ESLURM_NOT_SUPPORTED);
-	return -1;
 #endif
 }
 
