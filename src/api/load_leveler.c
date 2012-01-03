@@ -1139,7 +1139,7 @@ extern char *salloc_front_end (void)
  *	     [1]:  "--salloc-be" (argument to spawn salloc backend)
  *	     [2]:  Hostname or address of front-end
  *	     [3]:  Port number for communications
- *           [4]:  Authentication key
+ *	     [4]:  Authentication key
  * RETURN - remote processes exit code
  */
 extern int salloc_back_end (int argc, char **argv)

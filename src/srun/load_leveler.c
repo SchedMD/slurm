@@ -463,6 +463,19 @@ static void _be_proc_status(int status, slurm_fd_t signal_socket)
 	}
 }
 
+/* Generate and return a pseudo-random authentication key */
+static uint32_t _gen_auth_key(void)
+{
+	struct timeval tv;
+	uint32_t key;
+
+	gettimeofday(&tv, NULL);
+	key  = (tv.tv_sec % 1000) * 1000000;
+	key += tv.tv_usec;
+
+	return key;
+}
+
 /* Thread spawned by _wait_be_func(). See that function for details. */
 static void *_wait_be_thread(void *x)
 {
@@ -933,6 +946,12 @@ extern int srun_front_end (char *cmd_line)
 	Buf local_env;
 	uint32_t auth_key;
 
+	if (!getenv("SLURM_BE_KEY") || !getenv("SLURM_BE_SOCKET")) {
+		error("Environment variables SLURM_BE_KEY and/or "
+		      "SLURM_BE_SOCKET not found");
+		goto fini;
+	}
+
 	if (!cmd_line || !cmd_line[0]) {
 		error("no command to execute");
 		goto fini;
@@ -973,13 +992,14 @@ extern int srun_front_end (char *cmd_line)
 		goto fini;
 	}
 	port_s = ntohs(((struct sockaddr_in) addr_s).sin_port);
-	auth_key = port_o + port_e + port_s + getuid();
+	auth_key = _gen_auth_key();
 
 /* FIXME: Create SLURM/step specific environment variables */
 	/* Generate back-end execute line */
 	gethostname_short(hostname, sizeof(hostname));
-	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %s",
-		   SLURM_PREFIX, hostname, port_o, port_e, port_s, cmd_line);
+	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %u %s",
+		   SLURM_PREFIX, hostname, port_o, port_e, port_s, auth_key,
+		   cmd_line);
 	printf("%s\n", exec_line);
 	xfree(exec_line);
 
@@ -1205,19 +1225,19 @@ extern int srun_back_end (int argc, char **argv)
 	bool pty = PTY_MODE;
 	uint32_t auth_key;
 
-	if (argc >= 7) {
+	if (argc >= 8) {
 		host   = argv[2];
 		port_o = atoi(argv[3]);
 		port_e = atoi(argv[4]);
 		port_s = atoi(argv[5]);
+		auth_key = atoi(argv[6]);
 	}
-	if ((argc < 7) || (port_o == 0) || (port_e == 0) || (port_s == 0)) {
+	if ((argc < 8) || (port_o == 0) || (port_e == 0) || (port_s == 0)) {
 		error("Usage: srun --srun-be <srun_host> <srun_stdin/out_port> "
 		      "<srun_stderr_port> <signal/exit_status_port> "
-		      "<program> <args ...>\n");
+		      "<auth_key> <program> <args ...>\n");
 		return 1;
 	}
-	auth_key = port_o + port_e + port_s + getuid();
 
 	/* Set up stdin/out on first port,
 	 * Set up environment/stderr on second port,
@@ -1293,8 +1313,8 @@ extern int srun_back_end (int argc, char **argv)
 		(void) close(stdout_pipe[0]);
 		(void) close(stdout_pipe[1]);
 
-		execvp(argv[6], argv+6);
-		error("execv(%s) error: %m", argv[6]);
+		execvp(argv[7], argv+7);
+		error("execv(%s) error: %m", argv[7]);
 		return 1;
 	}
 

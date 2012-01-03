@@ -121,21 +121,6 @@ static void _signal_while_allocating(int signo)
 
 	}
 }
-
-/* This typically signifies the job was cancelled by scancel */
-static void _job_complete_handler(srun_job_complete_msg_t *msg)
-{
-	if (pending_job_id && strcmp(pending_job_id, msg->job_id)) {
-		error("Ignoring bogus job_complete call: job %s is not "
-		      "job %s", pending_job_id, msg->job_id);
-		return;
-	}
-
-	if (msg->step_id == NO_VAL)
-		info("Force Terminated job %s", msg->job_id);
-	else
-		info("Force Terminated job %s.%u", msg->job_id, msg->step_id);
-}
 #else
 static void _set_pending_job_id(uint32_t job_id)
 {
@@ -167,7 +152,6 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg)
 	else
 		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
 }
-#endif
 
 /*
  * Job has been notified of it's approaching time limit.
@@ -203,8 +187,7 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg)
 {
 	error("Node failure on %s", msg->nodelist);
 }
-
-
+#endif
 
 static bool _retry(void)
 {
@@ -426,8 +409,10 @@ allocate_nodes(void)
 {
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-	slurm_allocation_callbacks_t callbacks;
 	int i;
+#ifndef USE_LOADLEVELER
+	slurm_allocation_callbacks_t callbacks;
+#endif
 
 	if (!j)
 		return NULL;
@@ -441,6 +426,7 @@ allocate_nodes(void)
 		if (!opt.jobid_set)	/* Let slurmctld set jobid */
 			j->job_id = NO_VAL;
 	}
+#ifndef USE_LOADLEVELER
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
 	callbacks.job_complete = _job_complete_handler;
@@ -450,7 +436,7 @@ allocate_nodes(void)
 
 	/* create message thread to handle pings and such from slurmctld */
 	msg_thr = slurm_allocation_msg_thr_create(&j->other_port, &callbacks);
-
+#endif
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
 	xsignal_unblock(sig_array);
