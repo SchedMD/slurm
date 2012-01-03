@@ -821,9 +821,19 @@ static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
  * NOTE: These functions are needed for testing purposes even without llapi.h
 \*****************************************************************************/
 
-/*
- * Socket connection authentication logic
- */
+/* Generate and return a pseudo-random authentication key */
+static uint32_t _gen_auth_key(void)
+{
+	struct timeval tv;
+	uint32_t key;
+
+	gettimeofday(&tv, NULL);
+	key  = (tv.tv_sec % 1000) * 1000000;
+	key += tv.tv_usec;
+
+	return key;
+}
+
 /* Abort the back-end job
  * Return true if abort message send */
 static bool _xmit_abort(void)
@@ -951,6 +961,10 @@ static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 				      sizeof(read_key));
 		if ((i == sizeof(read_key)) && (read_key == auth_key))
 			valid = true;
+		else {
+			error("error validating incoming socket connection");
+			sleep(1);	/* Help prevent brute force attack */
+		}
 		break;
 	}
 
@@ -1104,13 +1118,13 @@ extern char *salloc_front_end (void)
 		return NULL;
 	}
 	comm_port = ntohs(((struct sockaddr_in) comm_addr).sin_port);
-	fe_auth_key = comm_port + getuid();
+	fe_auth_key = _gen_auth_key();
 
 	exec_line = xstrdup("#!/bin/bash\n");
 	if (gethostname_short(hostname, sizeof(hostname)))
 		fatal("gethostname_short(): %m");
-	xstrfmtcat(exec_line, "%s/bin/salloc --salloc-be %s %hu\n",
-		   SLURM_PREFIX, hostname, comm_port);
+	xstrfmtcat(exec_line, "%s/bin/salloc --salloc-be %s %hu %u\n",
+		   SLURM_PREFIX, hostname, comm_port, fe_auth_key);
 
 	return exec_line;
 }
@@ -1125,6 +1139,7 @@ extern char *salloc_front_end (void)
  *	     [1]:  "--salloc-be" (argument to spawn salloc backend)
  *	     [2]:  Hostname or address of front-end
  *	     [3]:  Port number for communications
+ *           [4]:  Authentication key
  * RETURN - remote processes exit code
  */
 extern int salloc_back_end (int argc, char **argv)
@@ -1138,16 +1153,16 @@ extern int salloc_back_end (int argc, char **argv)
 	int i, n_fds;
 	uint32_t new_auth_key, resp_auth_key;
 
-	if (argc >= 4) {
+	if (argc >= 5) {
 		host   = argv[2];
 		resp_port = atoi(argv[3]);
+		resp_auth_key = atoi(argv[4]);
 	}
-	if ((argc < 4) || (resp_port == 0)) {
+	if ((argc < 5) || (resp_port == 0)) {
 		error("Usage: salloc --salloc-be <salloc_host> "
-		      "<salloc_stdin/out_port>\n");
+		      "<salloc_stdin/out_port> <auth_key>\n");
 		return 1;
 	}
-	resp_auth_key = resp_port + getuid();
 
 	/* Open sockets for back-end program to communicate with */
 	/* Socket for stdin/stdout */
@@ -1160,7 +1175,7 @@ extern int salloc_back_end (int argc, char **argv)
 		goto fini;
 	}
 	comm_port = ntohs(((struct sockaddr_in) comm_addr).sin_port);
-	new_auth_key = comm_port + getuid();
+	new_auth_key = _gen_auth_key();
 
 	slurm_set_addr(&resp_addr, resp_port, host);
 	resp_socket = slurm_open_stream(&resp_addr);
