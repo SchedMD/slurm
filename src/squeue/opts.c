@@ -69,7 +69,6 @@
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_HIDE  0x102
 #define OPT_LONG_START 0x103
-#define OPT_LONG_NAME  0x104
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -108,9 +107,10 @@ parse_command_line( int argc, char* argv[] )
 		{"long",       no_argument,       0, 'l'},
 		{"cluster",    required_argument, 0, 'M'},
 		{"clusters",   required_argument, 0, 'M'},
-		{"name",       required_argument, 0, OPT_LONG_NAME},
-		{"node",       required_argument, 0, 'n'},
-		{"nodes",      required_argument, 0, 'n'},
+		{"name",       required_argument, 0, 'n'},
+		{"node",       required_argument, 0, 'w'},
+		{"nodes",      required_argument, 0, 'w'},
+		{"nodelist",   required_argument, 0, 'w'},
 		{"noheader",   no_argument,       0, 'h'},
 		{"partitions", required_argument, 0, 'p'},
 		{"qos",        required_argument, 0, 'q'},
@@ -144,7 +144,7 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::ln:M:o:p:q:R:s::S:t:u:U:vV",
+				       "A:ahi:j::ln:M:o:p:q:R:s::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -198,15 +198,9 @@ parse_command_line( int argc, char* argv[] )
 			working_cluster_rec = list_peek(params.clusters);
 			break;
 		case (int) 'n':
-			if (params.nodes)
-				hostset_destroy(params.nodes);
-
-			params.nodes = hostset_create(optarg);
-			if (params.nodes == NULL) {
-				error("'%s' invalid entry for --nodes",
-				      optarg);
-				exit(1);
-			}
+			xfree(params.names);
+			params.names = xstrdup(optarg);
+			params.name_list = _build_str_list( params.names );
 			break;
 		case (int) 'o':
 			xfree(params.format);
@@ -262,16 +256,22 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'V':
 			print_slurm_version();
 			exit(0);
+		case (int) 'w':
+			if (params.nodes)
+				hostset_destroy(params.nodes);
+
+			params.nodes = hostset_create(optarg);
+			if (params.nodes == NULL) {
+				error("'%s' invalid entry for --nodelist",
+				      optarg);
+				exit(1);
+			}
+			break;
 		case OPT_LONG_HELP:
 			_help();
 			exit(0);
 		case OPT_LONG_HIDE:
 			params.all_flag = false;
-			break;
-		case OPT_LONG_NAME:
-			xfree(params.names);
-			params.names = xstrdup(optarg);
-			params.name_list = _build_str_list( params.names );
 			break;
 		case OPT_LONG_START:
 			params.start_flag = true;
@@ -351,6 +351,12 @@ parse_command_line( int argc, char* argv[] )
 		params.account_list = _build_str_list( params.accounts );
 	}
 
+	if ( ( params.names == NULL ) &&
+	     ( env_val = getenv("SQUEUE_NAMES") ) ) {
+		params.names = xstrdup(env_val);
+		params.name_list = _build_str_list( params.names );
+	}
+
 	if ( ( params.partitions == NULL ) &&
 	     ( env_val = getenv("SQUEUE_PARTITION") ) ) {
 		params.partitions = xstrdup(env_val);
@@ -374,12 +380,6 @@ parse_command_line( int argc, char* argv[] )
 	     ( env_val = getenv("SQUEUE_USERS") ) ) {
 		params.users = xstrdup(env_val);
 		params.user_list = _build_user_list( params.users );
-	}
-
-	if ( ( params.names == NULL ) &&
-	     ( env_val = getenv("SQUEUE_NAMES") ) ) {
-		params.names = xstrdup(env_val);
-		params.name_list = _build_str_list( params.names );
 	}
 
 	if ( params.start_flag && !params.step_flag ) {
@@ -1143,9 +1143,9 @@ _build_user_list( char* str )
 static void _usage(void)
 {
 	printf("\
-Usage: squeue [-i seconds] [-S fields] [--start] [-t states]\n\
-	      [-p partitions] [-n node] [-o format] [-u user_name]\n\
-	      [-R reservation] [--usage] [-ahjlsv]\n");
+Usage: squeue [-i seconds] [-n name] [-o format] [-p partitions]\n\
+              [-R reservation] [-S fields] [--start] [-t states]\n\
+              [-u user_name] [--usage] [-w nodes] [-ahjlsv]\n");
 }
 
 static void _help(void)
@@ -1164,8 +1164,7 @@ Usage: squeue [OPTIONS]\n\
   -M, --clusters=cluster_name     cluster to issue commands to.  Default is\n\
                                   current cluster.  cluster with no name will\n\
                                   reset to default.\n\
-  -n, --nodes=hostlist            list of nodes to view, default is \n\
-				  all nodes\n\
+  -n, --name=job_name(s)          comma separated list of job names to view\n\
   -o, --format=format             format specification\n\
   -p, --partition=partition(s)    comma separated list of partitions\n\
 				  to view, default is all partitions\n\
@@ -1183,6 +1182,8 @@ Usage: squeue [OPTIONS]\n\
       --name=job_name(s)          comma separated list of job names to view\n\
   -v, --verbose                   verbosity level\n\
   -V, --version                   output version information and exit\n\
+  -w, --nodelist=hostlist         list of nodes to view, default is \n\
+				  all nodes\n\
 \nHelp options:\n\
   --help                          show this help message\n\
   --usage                         display a brief summary of squeue options\n");

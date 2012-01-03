@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test squeue filtering (--jobs, --node, --states, --steps and
+#          Test squeue filtering (--jobs, --nodelist, --states, --steps and
 #          --user options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -210,7 +210,7 @@ expect {
 #
 # Check the squeue node filter option
 #
-spawn $squeue --format=%u --noheader --user=$this_uid --node=dummy_name
+spawn $squeue --format=%u --noheader --user=$this_uid --nodelist=dummy_name
 expect {
 	-re "($alpha_numeric_under)" {
 		send_user "\nFAILURE: squeue node filter failure\n"
@@ -242,7 +242,7 @@ expect {
 	}
 }
 if {$node_name_set == 1} {
-	spawn $squeue --format=%u --noheader --user=$this_uid --node=$node_name
+	spawn $squeue --format=%u --noheader --user=$this_uid --nodelist=$node_name
 	expect {
 		-re "($alpha_numeric_under)" {
 			set node_name_set 0

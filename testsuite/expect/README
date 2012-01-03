@@ -261,7 +261,7 @@ test5.3    Test squeue iteration (--iterate option).
 test5.4    Test squeue formating options (--noheader, --format and --step
            options and SQUEUE_FORMAT environment variable).
 test5.5    Test squeue sorting (--sort option).
-test5.6    Test squeue filtering (--jobs, --node, --states, --steps and
+test5.6    Test squeue filtering (--jobs, --nodelist, --states, --steps and
            --user options).
 test5.7    Confirm that squeue verbose option works (--verbose option).
 test5.8    Confirm that squeue reports a proper version number (--version

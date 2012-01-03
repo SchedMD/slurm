@@ -54,6 +54,9 @@ COMMAND CHANGES (see man pages for details)
   example: salloc -C "[rack1*2&rack2*4]" ... will allocate the job 2 nodes
   from rack1 and 4 nodes from rack2. Support for only a single constraint
   name been added to job step support.
+* Changed meaning of squeue "-n" option to job name from node name for
+  consistency with other commands. The "-w" option was added for a short
+  node name option. Long options --names and --nodes remain unchanged.
 
 OTHER CHANGES
 =============

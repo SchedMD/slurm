@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added DefaultConnType to the bluegene.conf file.  This makes it
     so you can specify any connection type you would like (TORUS or MESH) as
     the default in dynamic mode.  Previously it always defaulted to TORUS.
+ -- Made squeue -n and -w options more consistent with salloc, sbatch, srun,
+    and scancel. Patch by Don Lipari, LLNL.
 
 * Changes in SLURM 2.4.0.pre2
 =============================
