@@ -971,6 +971,63 @@ static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 	return valid;
 }
 
+/* Spawn a child process */
+static void *_wait_pid_thread(void *pid_buf)
+{
+	int status;
+	pid_t pid;
+
+	memcpy((char *) &pid, pid_buf, sizeof(pid_t));
+	waitpid(pid, &status, 0);
+	return NULL;
+}
+static void _wait_pid(pid_t pid)
+{
+	pthread_attr_t thread_attr;
+	pthread_t thread_id = 0;
+	char *pid_buf = xmalloc(sizeof(pid_t));
+
+	memcpy(pid_buf, (char *) &pid, sizeof(pid_t));
+	slurm_attr_init(&thread_attr);
+	if (pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	if (pthread_create(&thread_id, &thread_attr, _wait_pid_thread,
+                           (void *) pid_buf)) {
+		error("pthread_create: %m");
+	}
+	slurm_attr_destroy(&thread_attr);
+}
+static void _spawn_proc(char *exec_line)
+{
+	char **argv, *save_ptr = NULL, *tok;
+	pid_t pid;
+	int i;
+
+	info("msg: %s", exec_line);
+	pid = fork();
+	if (pid < 0) {
+		error("fork: %m");
+		return;
+	}
+	if (pid > 0) {
+		_wait_pid(pid);	/* Spawn thread to waid and avoid zombies */
+		return;
+	}
+
+/* Need to deal with quoted and escaped spaces */
+	i = 0;
+	argv = xmalloc(sizeof(char *) * (strlen(exec_line) / 2 + 2));
+	tok = strtok_r(exec_line, " ", &save_ptr);
+	while (tok) {
+		argv[i++] = tok;
+		tok = strtok_r(NULL, " ", &save_ptr);
+	}
+
+	for (i = 0; i < 128; i++)
+		(void) close(i);
+	execvp(argv[0], argv);
+}
+
 /* Process incoming requests
  * comm_socket IN - socket to read from
  * auth_key IN - authentication key we are looking for
@@ -1005,18 +1062,19 @@ static bool _be_proc_comm(slurm_fd_t comm_socket, uint32_t auth_key)
 		i = slurm_read_stream(be_comm_conn, (char *)&msg_size,
 				      sizeof(msg_size));
 		if (i != sizeof(msg_size)) {
-			error("socket read, bad msg_size size: %d", i);
+			error("socket read, bad msg_size size: (%d != %u)",
+			      i, (uint32_t) sizeof(msg_size));
 			return false;
 		}
 		msg = xmalloc(msg_size);
 		i = slurm_read_stream(be_comm_conn, msg, msg_size);
-		if (i != sizeof(msg_size)) {
-			error("socket read, bad msg size: %d", i);
+		if (i != msg_size) {
+			error("socket read, bad message size: (%d != %u)",
+			      i, msg_size);
 			xfree(msg);
 			return false;
 		}
-/* FIXME: Do fork/exec here */
-info("msg: %s", msg);
+		_spawn_proc(msg);
 		xfree(msg);
 	} else {
 		error("socket read, bad op_code: %hu", op_code);
@@ -1208,6 +1266,69 @@ extern int salloc_back_end (int argc, char **argv)
 fini:	if (comm_socket >= 0)
 		slurm_shutdown_msg_engine(comm_socket);
 	exit(0);
+}
+
+/* send spawn process request to salloc back-end
+ * exec_line IN - process execute line
+ * Return 0 on success, -1 on error */
+extern int salloc_be_spawn(char *exec_line)
+{
+	char buf[32], *host, *sep;
+	uint32_t resp_auth_key;
+	uint16_t exec_len, resp_port, op_code = OP_CODE_EXEC;
+	char *auth_key  = getenv("SLURM_BE_KEY");
+	char *sock_addr = getenv("SLURM_BE_SOCKET");
+	slurm_fd_t resp_socket;
+	slurm_addr_t resp_addr;
+	int i;
+
+	if (!exec_line) {
+		error("salloc_be_spawn(): exec_line is NULL");
+		return -1;
+	}
+	if (!auth_key || !sock_addr) {
+		error("salloc_be_spawn(): SLURM_BE_KEY snd/or SLURM_BE_SOCKET "
+		      "are NULL");
+		return -1;
+	}
+
+	host = xstrdup(sock_addr);
+	sep = strchr(host, ':');
+	if (!sep) {
+		error("salloc_be_spawn(): SLURM_BE_SOCKET is invalid: %s",
+		      sock_addr);
+		xfree(host);
+		return -1;
+	}
+	sep[0] = '\0';
+	resp_port = atoi(sep+1);
+	slurm_set_addr(&resp_addr, resp_port, host);
+	xfree(host);
+	resp_socket = slurm_open_stream(&resp_addr);
+	if (resp_socket < 0) {
+		error("slurm_open_msg_conn(%s:%hu): %m", host, resp_port);
+		return -1;
+	}
+
+	resp_auth_key = atoi(auth_key);
+	exec_len = strlen(exec_line) + 1;
+	memcpy(buf+0,  &resp_auth_key, 4);
+	memcpy(buf+4,  &op_code,       2);
+	memcpy(buf+6,  &exec_len,      2);
+	i = slurm_write_stream_timeout(resp_socket, buf, 8, MSG_TIMEOUT);
+	if (i < 8) {
+		error("salloc_be_spawn write: %m");
+		return -1;
+	}
+	i = slurm_write_stream_timeout(resp_socket, exec_line, exec_len,
+				       MSG_TIMEOUT);
+	if (i < exec_len) {
+		error("salloc_be_spawn write: %m");
+		return -1;
+	}
+	slurm_shutdown_msg_engine(resp_socket);
+
+	return 0;
 }
 
 /*****************************************************************************\

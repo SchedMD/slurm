@@ -1001,7 +1001,10 @@ extern int srun_front_end (char *cmd_line)
 		   SLURM_PREFIX, hostname, port_o, port_e, port_s, auth_key,
 		   cmd_line);
 	printf("%s\n", exec_line);
+	i = salloc_be_spawn(exec_line);
 	xfree(exec_line);
+	if (i)
+		goto fini;
 
 	local_env = _fe_build_env();
 
