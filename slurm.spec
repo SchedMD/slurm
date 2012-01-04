@@ -183,21 +183,21 @@ partition management, job management, scheduling and accounting modules.
 
 # First we remove $prefix/local and then just prefix to make
 # sure we get the correct installdir
-%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
+#%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
 # AIX doesn't always give the correct install prefix here for mans 
-%ifos aix5.3
-%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; $P="/usr/share"; $T =~ s/$P//; print $T;')
-%else
-%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
-%endif
+#%ifos aix5.3
+#%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; $P="/usr/share"; $T =~ s/$P//; print $T;')
+#%else
+#%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
+#%endif
 
-%define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
+#%define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
-%define _perldir %{_prefix}%{_perlarch}
-%define _perlman3dir %{_prefix}%{_perlman3}
-%define _perlarchlibdir %{_prefix}%{_perlarchlib}
-%define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
+#%define _perldir %{_prefix}%{_perlarch}
+#%define _perlman3dir %{_prefix}%{_perlman3}
+#%define _perlarchlibdir %{_prefix}%{_perlarchlib}
+#%define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
 
 #%package perlapi
 #Summary: Perl API to SLURM.
@@ -399,8 +399,7 @@ partition management, job management, scheduling and accounting modules.
 	%{?with_ssl}		\
 	%{?with_munge}      \
 	%{?with_blcr}      \
-%{?_with_loadleveler:--with-loadlevelerx=%{?_with_loadleveler}}	\
-	--with-loadleveler=%{?_with_loadleveler:%{?_with_loadleveler}}	\
+	%{?_with_loadleveler:--with-loadleveler=%{?_with_loadleveler}}	\
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
 
@@ -477,7 +476,7 @@ rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 ${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 %if %{slurm_with srun2aprun}
     rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
-    pod2man --section=1 contribs/cray/srun.pl > $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
+#    pod2man --section=1 contribs/cray/srun.pl > $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
 %endif
 
 # Build conditional file list for main package
