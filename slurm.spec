@@ -472,12 +472,12 @@ rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 %endif
 
 # Build man pages that are generated directly by the tools
-rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
-${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
-%if %{slurm_with srun2aprun}
-    rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
+#rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
+#${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
+#%if %{slurm_with srun2aprun}
+#    rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
 #    pod2man --section=1 contribs/cray/srun.pl > $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
-%endif
+#%endif
 
 # Build conditional file list for main package
 LIST=./slurm.files
