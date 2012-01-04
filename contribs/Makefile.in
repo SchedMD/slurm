@@ -322,8 +322,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@USE_LOADLEVELER_FALSE@SUBDIRS =
-@USE_LOADLEVELER_TRUE@SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit slurmdb-direct
+@USE_LOADLEVELER_FALSE@SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit slurmdb-direct
+@USE_LOADLEVELER_TRUE@SUBDIRS =
 EXTRA_DIST = \
 	env_cache_builder.c	\
 	make.slurm.patch	\

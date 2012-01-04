@@ -1,7 +1,7 @@
 if USE_LOADLEVELER
-SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit slurmdb-direct
-else
 SUBDIRS =
+else
+SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit slurmdb-direct
 endif
 
 EXTRA_DIST = \
