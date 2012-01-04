@@ -56,36 +56,45 @@ typedef struct spank_handle * spank_t;
  */
 typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
 
-/*  SPANK plugin operations. SPANK plugin should have at least one of 
+/*  SPANK plugin operations. SPANK plugin should have at least one of
  *   these functions defined non-NULL.
  *
  *  Plug-in callbacks are completed at the following points in slurmd:
  *
- *   slurmd -> slurmstepd
- *               `-> init ()
- *                -> process spank options
- *                -> init_post_opt ()
- *               + drop privileges (initgroups(), seteuid(), chdir()) 
- *               `-> user_init ()  
- *               + for each task
- *               |       + fork ()
- *               |       |
- *               |       + reclaim privileges
- *               |       `-> task_init_privileged ()
- *               |       |
- *               |       + become_user ()
- *               |       `-> task_init ()
- *               |       |
- *               |       + execve ()
- *               |
- *               + reclaim privileges
- *               + for each task 
- *               |     `-> task_post_fork ()
- *               |
- *               + for each task
- *               |       + wait ()
- *               |          `-> task_exit ()
- *               `-> exit ()
+ *   slurmd
+ *        `-> slurmd_init()
+ *        |
+ *        `-> job_prolog()
+ *        |
+ *        | `-> slurmstepd
+ *        |      `-> init ()
+ *        |       -> process spank options
+ *        |       -> init_post_opt ()
+ *        |      + drop privileges (initgroups(), seteuid(), chdir())
+ *        |      `-> user_init ()
+ *        |      + for each task
+ *        |      |       + fork ()
+ *        |      |       |
+ *        |      |       + reclaim privileges
+ *        |      |       `-> task_init_privileged ()
+ *        |      |       |
+ *        |      |       + become_user ()
+ *        |      |       `-> task_init ()
+ *        |      |       |
+ *        |      |       + execve ()
+ *        |      |
+ *        |      + reclaim privileges
+ *        |      + for each task
+ *        |      |     `-> task_post_fork ()
+ *        |      |
+ *        |      + for each task
+ *        |      |       + wait ()
+ *        |      |          `-> task_exit ()
+ *        |      `-> exit ()
+ *        |
+ *        `---> job_epilog()
+ *        |
+ *        `-> slurmd_exit()
  *
  *   In srun only the init(), init_post_opt() and local_user_init(), and exit()
  *    callbacks are used.
@@ -93,9 +102,14 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *   In sbatch/salloc only the init(), init_post_opt(), and exit() callbacks
  *    are used.
  *
+ *   In slurmd proper, only the slurmd_init(), slurmd_exit(), and
+ *    job_prolog/epilog callbacks are used.
+ *
  */
 
 extern spank_f slurm_spank_init;
+extern spank_f slurm_spank_slurmd_init;
+extern spank_f slurm_spank_job_prolog;
 extern spank_f slurm_spank_init_post_opt;
 extern spank_f slurm_spank_local_user_init;
 extern spank_f slurm_spank_user_init;
@@ -103,6 +117,8 @@ extern spank_f slurm_spank_task_init_privileged;
 extern spank_f slurm_spank_task_init;
 extern spank_f slurm_spank_task_post_fork;
 extern spank_f slurm_spank_task_exit;
+extern spank_f slurm_spank_job_epilog;
+extern spank_f slurm_spank_slurmd_exit;
 extern spank_f slurm_spank_exit;
 
 
@@ -189,6 +205,9 @@ enum spank_context {
     S_CTX_JOB_SCRIPT         /* prolog/epilog context                        */
 };
 
+#define HAVE_S_CTX_SLURMD 1     /* slurmd context supported                  */
+#define HAVE_S_CTX_JOB_SCRIPT 1 /* job script (prolog/epilog) supported      */
+
 typedef enum spank_context spank_context_t;
 
 /*
@@ -200,7 +219,7 @@ typedef enum spank_context spank_context_t;
  *   the plugin to distinguish between plugin-local options, `optarg'
  *   is an argument passed by the user (if applicable), and `remote'
  *   specifies whether this call is being made locally (e.g. in srun)
- *   or remotely (e.g. in slurmd).
+ *   or remotely (e.g. in slurmstepd/slurmd).
  */
 typedef int (*spank_opt_cb_f) (int val, const char *optarg, int remote);
 
@@ -256,7 +275,7 @@ int spank_symbol_supported (const char *symbol);
  *  Determine whether plugin is loaded in "remote" context
  * 
  *  Returns:
- *  = 1   remote context, i.e. plugin is loaded in slurmd.
+ *  = 1   remote context, i.e. plugin is loaded in /slurmstepd.
  *  = 0   not remote context
  *  < 0   spank handle was not valid.
  */
@@ -314,7 +333,7 @@ spank_err_t spank_option_getopt (spank_t spank, struct spank_option *opt,
  *   item is requested from outside a task context, ESPANK_BAD_ARG
  *   if invalid args are passed to spank_get_item or spank_get_item
  *   is called from an invalid context, and ESPANK_NOT_REMOTE 
- *   if not called from slurmd context or spank_user_local_init.
+ *   if not called from slurmstepd context or spank_user_local_init.
  */
 spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
 
@@ -337,7 +356,7 @@ spank_err_t spank_getenv (spank_t spank, const char *var, char *buf, int len);
  *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
  *     ESPANK_ENV_EXISTS  = var exists in job env and overwrite == 0.
  *     ESPANK_BAD_ARG     = spank handle invalid or var/val are NULL.
- *     ESPANK_NOT_REMOTE  = not called from slurmd.
+ *     ESPANK_NOT_REMOTE  = not called from slurmstepd.
  */
 spank_err_t spank_setenv (spank_t spank, const char *var, const char *val, 
         int overwrite);
@@ -348,7 +367,7 @@ spank_err_t spank_setenv (spank_t spank, const char *var, const char *val,
  *
  *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
  *    ESPANK_BAD_ARG   = spank handle invalid or var is NULL.
- *    ESPANK_NOT_REMOTE = not called from slurmd.
+ *    ESPANK_NOT_REMOTE = not called from slurmstepd.
  */
 spank_err_t spank_unsetenv (spank_t spank, const char *var);
 
