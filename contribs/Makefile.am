@@ -1,4 +1,8 @@
+if USE_LOADLEVELER
 SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit slurmdb-direct
+else
+SUBDIRS =
+endif
 
 EXTRA_DIST = \
 	env_cache_builder.c	\

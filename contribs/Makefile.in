@@ -96,7 +96,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit \
+	slurmdb-direct
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -321,7 +322,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit slurmdb-direct
+@USE_LOADLEVELER_FALSE@SUBDIRS =
+@USE_LOADLEVELER_TRUE@SUBDIRS = arrayrun cray lua pam perlapi torque sjobexit slurmdb-direct
 EXTRA_DIST = \
 	env_cache_builder.c	\
 	make.slurm.patch	\
