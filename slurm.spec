@@ -399,7 +399,7 @@ partition management, job management, scheduling and accounting modules.
 	%{?with_ssl}		\
 	%{?with_munge}      \
 	%{?with_blcr}      \
-	%{?with_loadleveler}:--with-loadleveler=%{?with_loadleveler}}	\
+	--with-loadleveler=%{?with_loadleveler:%{?with_loadleveler}}	\
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
 
