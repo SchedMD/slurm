@@ -6,7 +6,7 @@
  *  LoadLeveler JobID is a string and not a number
  *  LoadLeveler ResourceRequirements are mapped to SLURM Generic Resources
  *****************************************************************************
- *  Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
+ *  Copyright (C) 2011-2012 SchedMD <http://www.schedmd.com>.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -77,14 +77,6 @@
 
 #define OP_CODE_EXIT 0x0101
 #define OP_CODE_EXEC 0x0102
-
-typedef struct salloc_child_wait_data {
-	int dummy_pipe;
-	bool *job_fini_ptr;
-	pid_t pid;
-	slurm_fd_t signal_socket;
-	int *status_ptr;
-} salloc_child_wait_data_t;
 
 static uint32_t   fe_auth_key = 0;
 static slurm_fd_t fe_comm_socket = -1;

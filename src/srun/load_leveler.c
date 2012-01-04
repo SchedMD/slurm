@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  load_leveler.c - Provide an srun command line interface over LoadLeveler.
  *****************************************************************************
- *  Copyright (C) 2011 SchedMD <http://www.schedmd.com>.
+ *  Copyright (C) 2011-2012 SchedMD <http://www.schedmd.com>.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -917,6 +917,30 @@ info("%s", cmd_line);
 	return cmd_line;
 }
 
+/* If srun is executed from within a batch job, we need to fork/exec
+ * POE with the proper environment variables and signal handling. */
+static int _srun_spawn_batch(char *cmd_line)
+{
+	char **argv, *begin, *sep;
+	int i = strlen(cmd_line) / 2 + 2;
+
+	argv = (char **) xmalloc(sizeof(char *) * i);
+	begin = cmd_line;
+	i = 0;
+	while (1) {
+		sep = strchr(begin, ' ');
+		if (sep)
+			sep[0] = '\0';
+		argv[i++] = begin;
+		if (sep)
+			begin = sep + 1;
+		else
+			break;
+	}
+
+	return execvp(argv[0], argv);
+}
+
 /*
  * srun_front_end - Open stdin/out/err socket connections to communicate with
  *	a remote node process and spawn a remote job to claim that connection
@@ -947,7 +971,12 @@ extern int srun_front_end (char *cmd_line)
 	uint32_t auth_key;
 
 	if (!getenv("SLURM_BE_KEY") || !getenv("SLURM_BE_SOCKET")) {
-		error("Environment variables SLURM_BE_KEY and/or "
+		/* We should be running within a batch script */
+		return _srun_spawn_batch(cmd_line);
+	}
+
+	if (!getenv("SLURM_BE_KEY") || !getenv("SLURM_BE_SOCKET")) {
+		error("Environment variables SLURM_BE_KEY or "
 		      "SLURM_BE_SOCKET not found");
 		goto fini;
 	}
