@@ -886,7 +886,6 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 	_keyvalue_regex_init();
 	if (stat(filename, &stat_buf) < 0) {
 		info("s_p_parse_file: unable to status file \"%s\"", filename);
-abort();
 		return SLURM_ERROR;
 	}
 	if (stat_buf.st_size == 0) {

@@ -323,6 +323,9 @@ static int _blocks_dealloc(void)
 /* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 {
+#ifdef USE_LOADLEVELER
+	return 1;
+#else
 	int is_ready = 0, i, rc;
 	int cur_delay = 0;
 	int suspend_time, resume_time, max_delay;
@@ -334,11 +337,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	max_delay = suspend_time + resume_time;
 	max_delay *= 5;		/* Allow for ResumeRate support */
 
-#ifdef USE_LOADLEVELER
-	pending_job_id = xstrdup(alloc->job_id);
-#else
 	pending_job_id = alloc->job_id;
-#endif
 
 	for (i = 0; (cur_delay < max_delay); i++) {
 		if (i) {
@@ -382,12 +381,9 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		error("Nodes %s are still not ready", alloc->node_list);
 	else	/* allocation_interrupted and slurmctld not responing */
 		is_ready = 0;
-#ifdef USE_LOADLEVELER
-	xfree(pending_job_id);
-#else
 	pending_job_id = 0;
-#endif
 	return is_ready;
+#endif	/* USE_LOADLEVELER */
 }
 #endif	/* HAVE_BG */
 
@@ -436,6 +432,8 @@ allocate_nodes(void)
 
 	/* create message thread to handle pings and such from slurmctld */
 	msg_thr = slurm_allocation_msg_thr_create(&j->other_port, &callbacks);
+#else
+	j->script = salloc_front_end();
 #endif
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
@@ -788,7 +786,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 {
 #ifdef USE_LOADLEVELER
  	char *be_cmd_line = build_poe_command();
- 	exit(srun_front_end(be_cmd_line));
+ 	error_exit = srun_front_end(be_cmd_line);
+	return -1;
 #else
 	int i, rc;
 	unsigned long my_sleep = 0;
