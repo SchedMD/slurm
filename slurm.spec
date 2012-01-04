@@ -23,7 +23,7 @@
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
 # --with-srun2aprun  %_with_srun2aprun  1    build srun as aprun wrapper
-# --with-loadleveler %_with_loadleveler <dir> build with LoadLeveler wrappers
+# --with-loadleveler %_with_loadleveler dir  build with LoadLeveler wrappers
 
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacors
@@ -399,7 +399,7 @@ partition management, job management, scheduling and accounting modules.
 	%{?with_ssl}		\
 	%{?with_munge}      \
 	%{?with_blcr}      \
-	%{?with_loadleveler}	\
+	%{?with_loadleveler}:--with-loadleveler=%{?with_loadleveler}}	\
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
 
