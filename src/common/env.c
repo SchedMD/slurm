@@ -954,8 +954,10 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
 				alloc->node_list);
-	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
-				alloc->alias_list);
+	if (alloc->alias_list) {
+		env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
+					alloc->alias_list);
+	}
 
 	_set_distribution(desc->task_dist, &dist, &lllp_dist);
 	if (dist)
@@ -1111,8 +1113,10 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					"%u", num_nodes);
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
+	if (batch->alias_list) {
 	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
 				batch->alias_list);
+	}
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
 				       batch->cpus_per_node,

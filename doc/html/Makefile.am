@@ -87,6 +87,8 @@ html_DATA = \
 	example_usage.gif \
 	linuxstyles.css \
 	lll.gif \
+	loadleveler_fig1.gif \
+	loadleveler_fig2.gif \
 	mc_support.gif \
 	plane_ex1.gif \
 	plane_ex2.gif \

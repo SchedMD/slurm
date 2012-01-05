@@ -2,17 +2,32 @@
 
 <h1><a name="top">SLURM Interface for LoadLeveler</a></h1>
 
-<h2>Overview</h2>
+<h2>Contents</h2>
+<ul>
+<li><a href=#overview>Overview</a></li>
+<li><a href=#commands>Commands</a></li>
+<ul>
+<li><a href=#salloc>salloc</a></li>
+<li><a href=#sbatch>sbatch</a></li>
+<li><a href=#scancel>scancel</a></li>
+<li><a href=#sinfo>sinfo</a></li>
+<li><a href=#squeue>squeue</a></li>
+<li><a href=#srun>srun</a></li>
+<li><a href=#sstat>sstat</a></li>
+</ul>
+<li><a href=#install>Installation and Configuration</a></li>
+</ul>
+
+<h2><a name="overview">Overview</a></h2>
 
 <p>SLURM version 2.4 has the ability to support a limited subset of SLURM
 commands over a
 <a href="http://publib.boulder.ibm.com/infocenter/clresctr/vxrx/index.jsp?topic=/com.ibm.cluster.loadl.doc/llbooks.html">
 LoadLeveler</a> infrastructure.
 The user is presented with a set of commands that look and feel like a native
-SLURM installation, but which interface an underlying LoadLeveler job scheduler.
-There are minimal changes to the SLURM commands, but a new SLURM library has
-been developed which communicates with the LoadLeveler rather than the SLURM
-daemons to get system information and submit jobs.
+SLURM installation, but which interface to an underlying LoadLeveler job scheduler.
+Most changes are in the SLURM library which communicates with LoadLeveler rather
+than the SLURM daemons to get system information and submit jobs.
 The information in this document assumes a working knowledge of SLURM and is
 meant to describe the differences in SLURM operation with LoadLeveler.</p>
 
@@ -27,29 +42,36 @@ meant to describe the differences in SLURM operation with LoadLeveler.</p>
 Details about each SLURM command's operation with LoadLeveler can be found
 below, but there are some general differences which apply to many of the commands.
 <ol>
-<li><b>Hostnames</b>: LoadLeveler can be configured to use fully qualified
-hostnames, which makes for rather verbose output. SLURM commands use only the
-hostname to the first period (e.g. "tux123.cluster.corporation.com" becomes
+<li><b>Hostnames</b>: LoadLeveler is typically configured with fully qualified
+hostnames, which makes for rather verbose output. SLURM commands reports
+hostnames to the first period (e.g. "tux123.cluster.corporation.com" becomes
 "tux123").</li>
 <li><b>Job ID</b>: LoadLeveler jobs can be submitted to multiple controller
 daemons and a hostname is included as part of its job ID. SLURM commands were
 modified to include the hostname in the job ID, so it is treated as a string
 rather than a number in these SLURM commands. Note that the hostnames are
-truncated in the job ID also (e.g. "tux123.cluster.corporation.com.45678
- becomes "tux123.45678").</li>
-<li><b>Partitions</b>: LoadLeveler classes are treated the same as SLURM
+truncated in the job ID also (e.g. LoadLeveler job ID
+"tux123.cluster.corporation.com.45678" is reported as "tux123.45678" by the
+SLURM commands).</li>
+<li><b>Partitions</b>: LoadLeveler classes are treated as SLURM
 partitions.</li>
-<li><b>Node Resources</b>: LoadLeveler node resources are treated the same as
+<li><b>Node Resources</b>: LoadLeveler node resources are treated as
 SLURM generic resources (GRES).</li>
 </ol> 
 </p>
 
-
-<h2><a name="salloc">salloc</a></h2>
+<h2><a name="commands">Commands</a></h2>
+<h3><a name="salloc">salloc</a></h3>
 <p>LoadLeveler lacks an interactive job allocaiton mode equivalent to SLURM.
-The salloc command submits a batch job to LoadLeveler that will make a socket
-connection back to the salloc command once the resource allocation has been
-made.</p>
+The salloc command submits a batch job to LoadLeveler that will make an
+authenticated socket connection back to the salloc command once the resource 
+allocation has been made as shown in Figure 1. This socket connection will be
+used to spawn subsequent programs within the LoadLeveler job allocation</p>
+
+<div class="figure">
+  <a name="fig1"><img src=loadleveler_fig1.gif width=500></a><br>
+  Figure 1. Salloc Command Operation
+</div>
 
 <p>Most salloc options function as expected to submit a job to LoadLeveler.
 The following salloc options have no LoadLeveler equivalent and will be ignored:<p>
@@ -83,8 +105,25 @@ The following salloc options have no LoadLeveler equivalent and will be ignored:
 Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
 options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
 
+<p>The following environment variables are set for salloc jobs:
+SLURM_JOBID, SLURM_JOB_CPUS_PER_NODE, SLURM_JOB_ID, SLURM_JOB_NODELIST,
+SLURM_JOB_NUM_NODES, SLURM_NNODES, SLURM_NODELIST, SLURM_SUBMIT_DIR, and
+SLURM_TASKS_PER_NODE.
+In addition, the following two environment variables are used for communications
+between the salloc command and a batch job submitted to LoadLeveler:
+SLURM_BE_KEY, SLURM_BE_SOCKET. If SLURM's srun command is executed within an
+salloc command, an authenticated communication will be sent to the salloc
+back-end process to spawn an srun back-end process, which then spawns the
+LoadLeveler POE command, which will launch the user tasks as shown in Figure 2.
+Note that the srun back-end process manages standard input, output and error
+file traffic back to the srun which initiated it.</p>
 
-<h2><a name="sbatch">sbatch</a></h2>
+<div class="figure">
+  <a name="fig2"><img src=loadleveler_fig2.gif width=500></a><br>
+  Figure 2. Srun Command Operation under Salloc
+</div>
+
+<h3><a name="sbatch">sbatch</a></h3>
 <p>Most sbatch options function as expected to submit a job to LoadLeveler.
 The following sbatch options have no LoadLeveler equivalent and will be ignored:<p>
 
@@ -131,7 +170,7 @@ srun a.out
 </pre>
 
 
-<h2><a name="scancel">scancel</a></h2>
+<h3><a name="scancel">scancel</a></h3>
 <p>LoadLeveler lacks the ability to send an arbitrary signal to any job or
 job step. It is only able to cancel specific a specific job. Any attempt to
 use scancel for signalling a job step or sending a signal other than SIGKILL
@@ -141,7 +180,7 @@ on this system". scancel's job filtering options however do work as expected
 --user).</p>
 
 
-<h2><a name="sinfo">sinfo</a></h2>
+<h3><a name="sinfo">sinfo</a></h3>
 <p>All sinfo options function as expected including filtering, sorting, and
 output formatting.
 LoadLeveler job classes are reported as a SLURM partition.
@@ -159,7 +198,7 @@ boot_time, slurmd_start_time,
 reason, reason_time, reason_uid, and weight.</p>
 
 
-<h2><a name="squeue">squeue</a></h2>
+<h3><a name="squeue">squeue</a></h3>
 <p>All squeue options function as expected including filtering, sorting, and
 output formatting.
 The default field sizes for job ID and step ID have been increased by ten
@@ -169,11 +208,13 @@ LoadLevler node resources are reported as SLURM generic resources.
 </p>
 
 
-<h2><a name="srun">srun</a></h2>
+<h3><a name="srun">srun</a></h3>
 <p>LoadLeveler lacks an interactive job allocaiton mode equivalent to SLURM.
 The srun command submits a batch job to LoadLeveler that will make a socket
 connection back to the srun command once the resource allocation has been
-made.</p>
+made using the same mechanism as the salloc command shown in
+<a href="#fig2">Figure 2</a> except the salloc back-end is invoked directly
+by srun rather than the salloc command.</p>
 
 <p>Most srun options function as expected to submit a job to LoadLeveler.
 The following srun options have no LoadLeveler equivalent and will be ignored:<p>
@@ -225,7 +266,7 @@ Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
 options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
 
 
-<h2><a name="sstat">sstat</a></h2>
+<h3><a name="sstat">sstat</a></h3>
 <p>All sstat options function as expected including filtering, sorting, and
 output formatting, however only a limited subset of information is available.
 The following sstat data is not available from LoadLeveler:
@@ -233,9 +274,27 @@ pid (process ID),
 AveVMSize, MaxVMSize, MaxVMSizeNode, MaxVMSizeTask (virtual memory data),
 MaxPages, MaxPagesNode, and MaxPagesTask (paging data).</p>
 
+<h2><a name=install>Installation and Configuration</a></h2>
+
+<p>Because of the extensive changes required to the SLURM code for LoadLeveler
+support, this code is maintained in the "loadleveler" branch of the SLURM code
+rather than in the "master" SLURM code base. The source code and RPMs will be
+made available upon request.</p>
+
+<p>Building SLURM files to support LoadLeveler requires that SLURM's "configure"
+program (executed at build time) be invoked with the option
+"--with-loadleveler=&lt;path&gt;" where "&lt;path&gt;" identifies the
+fully qualified pathname of where LoadLeveler is installed (i.e. the "llapi.h"
+header file will be at "&lt;path&gt;/include/llapi.h"). If SLURM's "configure"
+program is invoked by the "rpmbuild" command, then in your "~/.rpmmacros" file
+include the line<br>
+"%_with_loadleveler &lt;path&gt;" for the same result.</p>
+
+<p>There is no need for any SLURM configuration files when operating with
+LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 December 2011</p>
+<p style="text-align:center;">Last modified 4 January 2012</p>
 
 <!--#include virtual="footer.txt"-->
