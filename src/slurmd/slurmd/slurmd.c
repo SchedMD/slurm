@@ -92,6 +92,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
@@ -1398,6 +1399,8 @@ _slurmd_init(void)
 		return SLURM_FAILURE;
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		return SLURM_FAILURE;
+	if (spank_slurmd_init() < 0)
+		return SLURM_FAILURE;
 
 	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
@@ -1581,6 +1584,7 @@ _slurmd_fini(void)
 	fini_setproctitle();
 	slurm_select_fini();
 	slurm_jobacct_gather_fini();
+	spank_slurmd_exit();
 	return SLURM_SUCCESS;
 }
 
