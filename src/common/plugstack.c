@@ -70,6 +70,7 @@
 
 struct spank_plugin_operations {
 	spank_f *init;
+	spank_f *slurmd_init;
 	spank_f *init_post_opt;
 	spank_f *local_user_init;
 	spank_f *user_init;
@@ -77,12 +78,14 @@ struct spank_plugin_operations {
 	spank_f *user_task_init;
 	spank_f *task_post_fork;
 	spank_f *task_exit;
+	spank_f *slurmd_exit;
 	spank_f *exit;
 };
 
-const int n_spank_syms = 9;
+const int n_spank_syms = 11;
 const char *spank_syms[] = {
 	"slurm_spank_init",
+	"slurm_spank_slurmd_init",
 	"slurm_spank_init_post_opt",
 	"slurm_spank_local_user_init",
 	"slurm_spank_user_init",
@@ -90,6 +93,7 @@ const char *spank_syms[] = {
 	"slurm_spank_task_init",
 	"slurm_spank_task_post_fork",
 	"slurm_spank_task_exit",
+	"slurm_spank_slurmd_exit",
 	"slurm_spank_exit"
 };
 
@@ -136,6 +140,7 @@ enum spank_context_type {
  */
 typedef enum step_fn {
 	SPANK_INIT = 0,
+	SPANK_SLURMD_INIT,
 	SPANK_INIT_POST_OPT,
 	LOCAL_USER_INIT,
 	STEP_USER_INIT,
@@ -143,6 +148,7 @@ typedef enum step_fn {
 	STEP_USER_TASK_INIT,
 	STEP_TASK_POST_FORK,
 	STEP_TASK_EXIT,
+	SPANK_SLURMD_EXIT,
 	SPANK_EXIT
 } step_fn_t;
 
@@ -593,6 +599,8 @@ static const char *_step_fn_name(step_fn_t type)
 	switch (type) {
 	case SPANK_INIT:
 		return ("init");
+	case SPANK_SLURMD_INIT:
+		return ("slurmd_init");
 	case SPANK_INIT_POST_OPT:
 		return ("init_post_opt");
 	case LOCAL_USER_INIT:
@@ -607,6 +615,8 @@ static const char *_step_fn_name(step_fn_t type)
 		return ("task_post_fork");
 	case STEP_TASK_EXIT:
 		return ("task_exit");
+	case SPANK_SLURMD_EXIT:
+		return ("slurmd_exit");
 	case SPANK_EXIT:
 		return ("exit");
 	}
@@ -620,6 +630,8 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 	switch (type) {
 	case SPANK_INIT:
 		return (sp->ops.init);
+	case SPANK_SLURMD_INIT:
+		return (sp->ops.slurmd_init);
 	case SPANK_INIT_POST_OPT:
 		return (sp->ops.init_post_opt);
 	case LOCAL_USER_INIT:
@@ -634,12 +646,15 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 		return (sp->ops.task_post_fork);
 	case STEP_TASK_EXIT:
 		return (sp->ops.task_exit);
+	case SPANK_SLURMD_EXIT:
+		return (sp->ops.slurmd_exit);
 	case SPANK_EXIT:
 		return (sp->ops.exit);
 	default:
 		error ("Unhandled spank function type=%d\n", type);
 		return (NULL);
 	}
+	return (NULL);
 }
 
 static int _do_call_stack(struct spank_stack *stack,
@@ -758,6 +773,11 @@ int spank_init_allocator (void)
 	return _spank_init (S_TYPE_ALLOCATOR, NULL);
 }
 
+int spank_slurmd_init (void)
+{
+	return _spank_init (S_TYPE_SLURMD, NULL);
+}
+
 int spank_init_post_opt (void)
 {
 	struct spank_stack *stack = global_spank_stack;
@@ -798,6 +818,15 @@ int spank_task_post_fork(slurmd_job_t * job, int taskid)
 int spank_task_exit(slurmd_job_t * job, int taskid)
 {
 	return (_do_call_stack(global_spank_stack, STEP_TASK_EXIT, job, taskid));
+}
+
+int spank_slurmd_exit (void)
+{
+	int rc;
+	rc =  _do_call_stack (global_spank_stack, SPANK_SLURMD_EXIT, NULL, 0);
+	spank_stack_destroy (global_spank_stack);
+	global_spank_stack = NULL;
+	return (rc);
 }
 
 int spank_fini(slurmd_job_t * job)
