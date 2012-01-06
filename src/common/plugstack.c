@@ -2016,19 +2016,29 @@ extern int dyn_spank_unset_job_env (const char *n)
 	return ((*fn) (n));
 }
 
+static spank_err_t spank_job_control_access_check (spank_t spank)
+{
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+
+	if (spank_remote (spank))
+		return (ESPANK_NOT_LOCAL);
+
+	return (ESPANK_SUCCESS);
+}
+
 
 spank_err_t spank_job_control_getenv (spank_t spank, const char *var,
 			char *buf, int len)
 {
 	const char *val;
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err;
+
+	if ((err = spank_job_control_access_check (spank)))
+		return (err);
 
 	if ((var == NULL) || (buf == NULL) || (len <= 0))
 		return (ESPANK_BAD_ARG);
-
-	if (spank_remote (spank))
-		return (ESPANK_NOT_LOCAL);
 
 	val = dyn_spank_get_job_env (var);
 	if (val == NULL)
@@ -2043,14 +2053,13 @@ spank_err_t spank_job_control_getenv (spank_t spank, const char *var,
 spank_err_t spank_job_control_setenv (spank_t spank, const char *var,
 			const char *val, int overwrite)
 {
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err;
+
+	if ((err = spank_job_control_access_check (spank)))
+		return (err);
 
 	if ((var == NULL) || (val == NULL))
 		return (ESPANK_BAD_ARG);
-
-	if (spank_remote (spank))
-		return (ESPANK_NOT_LOCAL);
 
 	if (dyn_spank_set_job_env (var, val, overwrite) < 0)
 		return (ESPANK_BAD_ARG);
@@ -2060,14 +2069,13 @@ spank_err_t spank_job_control_setenv (spank_t spank, const char *var,
 
 spank_err_t spank_job_control_unsetenv (spank_t spank, const char *var)
 {
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err;
+
+	if ((err = spank_job_control_access_check (spank)))
+		return (err);
 
 	if (var == NULL)
 		return (ESPANK_BAD_ARG);
-
-	if (spank_remote (spank))
-		return (ESPANK_NOT_LOCAL);
 
 	if (dyn_spank_unset_job_env (var) < 0)
 		return (ESPANK_BAD_ARG);
