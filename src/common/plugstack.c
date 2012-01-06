@@ -683,9 +683,8 @@ static int _do_call_stack(struct spank_stack *stack,
 	return (rc);
 }
 
-int _spank_init(enum spank_context_type context, slurmd_job_t * job)
+struct spank_stack *spank_stack_init(enum spank_context_type context)
 {
-	struct spank_stack *stack;
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	const char *path = conf->plugstack;
 	slurm_conf_unlock();
@@ -698,10 +697,17 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 		if (errno == ENOENT)
 			return (0);
 		error ("spank: Unable to open config file `%s': %m", path);
-		return (-1);
+		return (NULL);
 	}
 
-	if (!(stack = spank_stack_create (path, context)))
+	return spank_stack_create (path, context);
+}
+
+int _spank_init(enum spank_context_type context, slurmd_job_t * job)
+{
+	struct spank_stack *stack;
+
+	if (!(stack = spank_stack_init (context)))
 		return (-1);
 	global_spank_stack = stack;
 
