@@ -1514,7 +1514,12 @@ static spank_err_t _check_spank_item_validity (spank_t spank, spank_item_t item)
 		  break; /* fallthru */
 	}
 
-	if (spank->stack->type == S_TYPE_LOCAL) {
+	/*
+	 *  No spank_item_t is available in slurmd context at this time.
+	 */
+	if (spank->stack->type == S_TYPE_SLURMD)
+		return ESPANK_NOT_AVAIL;
+	else if (spank->stack->type == S_TYPE_LOCAL) {
 		if (!_valid_in_local_context (item))
 			return ESPANK_NOT_REMOTE;
 		else if (spank->job == NULL)
@@ -1982,6 +1987,9 @@ static spank_err_t spank_job_control_access_check (spank_t spank)
 
 	if (spank_remote (spank))
 		return (ESPANK_NOT_LOCAL);
+
+	if (spank->stack->type == S_TYPE_SLURMD)
+		return (ESPANK_NOT_AVAIL);
 
 	return (ESPANK_SUCCESS);
 }
