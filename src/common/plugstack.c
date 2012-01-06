@@ -610,6 +610,33 @@ static const char *_step_fn_name(step_fn_t type)
 	return ("unknown");
 }
 
+static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
+{
+	switch (type) {
+	case SPANK_INIT:
+		return (sp->ops.init);
+	case SPANK_INIT_POST_OPT:
+		return (sp->ops.init_post_opt);
+	case LOCAL_USER_INIT:
+		return (sp->ops.local_user_init);
+	case STEP_USER_INIT:
+		return (sp->ops.user_init);
+	case STEP_TASK_INIT_PRIV:
+		return (sp->ops.task_init_privileged);
+	case STEP_USER_TASK_INIT:
+		return (sp->ops.user_task_init);
+	case STEP_TASK_POST_FORK:
+		return (sp->ops.task_post_fork);
+	case STEP_TASK_EXIT:
+		return (sp->ops.task_exit);
+	case SPANK_EXIT:
+		return (sp->ops.exit);
+	default:
+		error ("Unhandled spank function type=%d\n", type);
+		return (NULL);
+	}
+}
+
 static int _do_call_stack(struct spank_stack *stack,
 	step_fn_t type, void * job, int taskid)
 {
@@ -632,84 +659,16 @@ static int _do_call_stack(struct spank_stack *stack,
 	i = list_iterator_create(stack->plugin_list);
 	while ((sp = list_next(i))) {
 		const char *name = xbasename(sp->fq_path);
+		spank_f *spank_fn;
 
 		spank->plugin = sp;
 
-		switch (type) {
-		case SPANK_INIT:
-			if (sp->ops.init) {
-				rc = (*sp->ops.init) (spank, sp->ac,
-						      sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case SPANK_INIT_POST_OPT:
-			if (sp->ops.init_post_opt) {
-				rc = (*sp->ops.init_post_opt) (spank, sp->ac,
-						      sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case LOCAL_USER_INIT:
-			if (sp->ops.local_user_init) {
-				rc = (*sp->ops.local_user_init) (spank, sp->ac,
-			 				         sp->argv);
-				debug2("spank: %s: %s = %d", name, fn_name, rc);
-			}
-			break;
-		case STEP_USER_INIT:
-			if (sp->ops.user_init) {
-				rc = (*sp->ops.user_init) (spank, sp->ac,
-							   sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_TASK_INIT_PRIV:
-			if (sp->ops.task_init_privileged) {
-				rc = (*sp->ops.task_init_privileged)
-					(spank, sp->ac, sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_USER_TASK_INIT:
-			if (sp->ops.user_task_init) {
-				rc = (*sp->ops.user_task_init) (spank,
-								sp->ac,
-								sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_TASK_POST_FORK:
-			if (sp->ops.task_post_fork) {
-				rc = (*sp->ops.task_post_fork) (spank,
-								sp->ac,
-								sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_TASK_EXIT:
-			if (sp->ops.task_exit) {
-				rc = (*sp->ops.task_exit) (spank, sp->ac,
-							   sp->argv);
-				debug2("spank: %s: %s = %d", name, fn_name,
-				       rc);
-			}
-			break;
-		case SPANK_EXIT:
-			if (sp->ops.exit) {
-				rc = (*sp->ops.exit) (spank, sp->ac,
-						      sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		}
+		spank_fn = spank_plugin_get_fn (sp, type);
+		if (!spank_fn)
+			continue;
+
+		rc = (*spank_fn) (spank, sp->ac, sp->argv);
+		debug2("spank: %s: %s = %d", name, fn_name, rc);
 
 		if ((rc < 0) && sp->required) {
 			error("spank: required plugin %s: "
