@@ -126,8 +126,9 @@ struct spank_plugin_opt {
 enum spank_context_type {
 	S_TYPE_NONE,
 	S_TYPE_LOCAL,           /* LOCAL == srun              */
-	S_TYPE_REMOTE,          /* REMOTE == slurmd           */
-	S_TYPE_ALLOCATOR        /* ALLOCATOR == sbatch/salloc */
+	S_TYPE_REMOTE,          /* REMOTE == slurmstepd       */
+	S_TYPE_ALLOCATOR,       /* ALLOCATOR == sbatch/salloc */
+	S_TYPE_SLURMD           /* SLURMD == slurmd           */
 };
 
 /*
@@ -1608,6 +1609,8 @@ spank_context_t spank_context (void)
 		  return S_CTX_LOCAL;
 	  case S_TYPE_ALLOCATOR:
 		  return S_CTX_ALLOCATOR;
+	  case S_TYPE_SLURMD:
+		  return S_CTX_SLURMD;
 	  default:
 		  return S_CTX_ERROR;
 	}

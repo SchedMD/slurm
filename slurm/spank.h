@@ -183,8 +183,9 @@ typedef enum spank_err spank_err_t;
 enum spank_context {
     S_CTX_ERROR,             /* Error obtaining current context              */
     S_CTX_LOCAL,             /* Local context (srun)                         */
-    S_CTX_REMOTE,            /* Remote context (slurmd)                      */
-    S_CTX_ALLOCATOR          /* Allocator context (sbatch/salloc)            */
+    S_CTX_REMOTE,            /* Remote context (slurmstepd)                  */
+    S_CTX_ALLOCATOR,         /* Allocator context (sbatch/salloc)            */
+    S_CTX_SLURMD             /* slurmd context                               */
 };
 
 typedef enum spank_context spank_context_t;
