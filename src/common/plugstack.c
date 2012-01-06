@@ -71,6 +71,7 @@
 struct spank_plugin_operations {
 	spank_f *init;
 	spank_f *slurmd_init;
+	spank_f *job_prolog;
 	spank_f *init_post_opt;
 	spank_f *local_user_init;
 	spank_f *user_init;
@@ -78,14 +79,16 @@ struct spank_plugin_operations {
 	spank_f *user_task_init;
 	spank_f *task_post_fork;
 	spank_f *task_exit;
+	spank_f *job_epilog;
 	spank_f *slurmd_exit;
 	spank_f *exit;
 };
 
-const int n_spank_syms = 11;
+const int n_spank_syms = 13;
 const char *spank_syms[] = {
 	"slurm_spank_init",
 	"slurm_spank_slurmd_init",
+	"slurm_spank_job_prolog",
 	"slurm_spank_init_post_opt",
 	"slurm_spank_local_user_init",
 	"slurm_spank_user_init",
@@ -93,6 +96,7 @@ const char *spank_syms[] = {
 	"slurm_spank_task_init",
 	"slurm_spank_task_post_fork",
 	"slurm_spank_task_exit",
+	"slurm_spank_job_epilog",
 	"slurm_spank_slurmd_exit",
 	"slurm_spank_exit"
 };
@@ -142,6 +146,7 @@ enum spank_context_type {
 typedef enum step_fn {
 	SPANK_INIT = 0,
 	SPANK_SLURMD_INIT,
+	SPANK_JOB_PROLOG,
 	SPANK_INIT_POST_OPT,
 	LOCAL_USER_INIT,
 	STEP_USER_INIT,
@@ -149,9 +154,18 @@ typedef enum step_fn {
 	STEP_USER_TASK_INIT,
 	STEP_TASK_POST_FORK,
 	STEP_TASK_EXIT,
+	SPANK_JOB_EPILOG,
 	SPANK_SLURMD_EXIT,
 	SPANK_EXIT
 } step_fn_t;
+
+/*
+ *  Job information in prolog/epilog context:
+ */
+struct job_script_info {
+	uint32_t  jobid;
+	uid_t     uid;
+};
 
 struct spank_handle {
 #   define SPANK_MAGIC 0x00a5a500
@@ -602,6 +616,8 @@ static const char *_step_fn_name(step_fn_t type)
 		return ("init");
 	case SPANK_SLURMD_INIT:
 		return ("slurmd_init");
+	case SPANK_JOB_PROLOG:
+		return ("job_prolog");
 	case SPANK_INIT_POST_OPT:
 		return ("init_post_opt");
 	case LOCAL_USER_INIT:
@@ -616,6 +632,8 @@ static const char *_step_fn_name(step_fn_t type)
 		return ("task_post_fork");
 	case STEP_TASK_EXIT:
 		return ("task_exit");
+	case SPANK_JOB_EPILOG:
+		return ("job_epilog");
 	case SPANK_SLURMD_EXIT:
 		return ("slurmd_exit");
 	case SPANK_EXIT:
@@ -633,6 +651,8 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 		return (sp->ops.init);
 	case SPANK_SLURMD_INIT:
 		return (sp->ops.slurmd_init);
+	case SPANK_JOB_PROLOG:
+		return (sp->ops.job_prolog);
 	case SPANK_INIT_POST_OPT:
 		return (sp->ops.init_post_opt);
 	case LOCAL_USER_INIT:
@@ -647,6 +667,8 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 		return (sp->ops.task_post_fork);
 	case STEP_TASK_EXIT:
 		return (sp->ops.task_exit);
+	case SPANK_JOB_EPILOG:
+		return (sp->ops.job_epilog);
 	case SPANK_SLURMD_EXIT:
 		return (sp->ops.slurmd_exit);
 	case SPANK_EXIT:
@@ -838,6 +860,37 @@ int spank_fini(slurmd_job_t * job)
 	global_spank_stack = NULL;
 
 	return (rc);
+}
+
+/*
+ *  Run job_epilog or job_prolog callbacks in a private spank context.
+ */
+static int spank_job_script (step_fn_t fn, uint32_t jobid, uid_t uid)
+{
+	int rc = 0;
+	struct spank_stack *stack;
+	struct job_script_info jobinfo = { jobid, uid };
+
+	stack = spank_stack_init (S_TYPE_JOB_SCRIPT);
+	if (!stack)
+		return (-1);
+	global_spank_stack = stack;
+
+	rc = _do_call_stack (stack, fn, &jobinfo, -1);
+
+	spank_stack_destroy (stack);
+	global_spank_stack = NULL;
+	return (rc);
+}
+
+int spank_job_prolog (uint32_t jobid, uid_t uid)
+{
+	return spank_job_script (SPANK_JOB_PROLOG, jobid, uid);
+}
+
+int spank_job_epilog (uint32_t jobid, uid_t uid)
+{
+	return spank_job_script (SPANK_JOB_EPILOG, jobid, uid);
 }
 
 /*
@@ -1549,8 +1602,10 @@ static spank_err_t _check_spank_item_validity (spank_t spank, spank_item_t item)
 	 */
 	if (spank->stack->type == S_TYPE_SLURMD)
 		return ESPANK_NOT_AVAIL;
-	else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
-		return ESPANK_NOT_AVAIL;
+	else if (spank->stack->type == S_TYPE_JOB_SCRIPT) {
+		if (item != S_JOB_UID && item != S_JOB_ID)
+			return ESPANK_NOT_AVAIL;
+	}
 	else if (spank->stack->type == S_TYPE_LOCAL) {
 		if (!_valid_in_local_context (item))
 			return ESPANK_NOT_REMOTE;
@@ -1674,6 +1729,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	slurmd_task_info_t *task;
 	slurmd_job_t  *slurmd_job = NULL;
 	struct spank_launcher_job_info *launcher_job = NULL;
+	struct job_script_info *s_job_info = NULL;
 	va_list vargs;
 	spank_err_t rc = ESPANK_SUCCESS;
 
@@ -1691,6 +1747,8 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		launcher_job = spank->job;
 	else if (spank->stack->type == S_TYPE_REMOTE)
 		slurmd_job = spank->job;
+	else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+		s_job_info = spank->job;
 
 	va_start(vargs, item);
 	switch (item) {
@@ -1700,6 +1758,8 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 			*p2uid = launcher_job->uid;
 		else if (spank->stack->type == S_TYPE_REMOTE)
 			*p2uid = slurmd_job->uid;
+		else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+			*p2uid = s_job_info->uid;
 		else
 			*p2uid = getuid();
 		break;
@@ -1722,8 +1782,10 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->jobid;
-		else
+		else if (spank->stack->type == S_TYPE_REMOTE)
 			*p2uint32 = slurmd_job->jobid;
+		else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+			*p2uint32 = s_job_info->jobid;
 		break;
 	case S_JOB_STEPID:
 		p2uint32 = va_arg(vargs, uint32_t *);
