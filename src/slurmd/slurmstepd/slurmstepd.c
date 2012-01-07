@@ -76,6 +76,7 @@ static slurmd_job_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
 #endif
+static int process_cmdline (int argc, char *argv[]);
 
 int slurmstepd_blocked_signals[] = {
 	SIGPIPE, 0
@@ -96,11 +97,9 @@ main (int argc, char *argv[])
 	gid_t *gids;
 	int rc = 0;
 
-	if ((argc == 2) && (strcmp(argv[1], "getenv") == 0)) {
-		print_rlimits();
-		_dump_user_env();
-		exit(0);
-	}
+	if (process_cmdline (argc, argv) < 0)
+		fatal ("Error in slurmstepd command line");
+
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
@@ -177,6 +176,21 @@ ending:
 	info("done with job");
 	return rc;
 }
+
+
+/*
+ *  Process special "modes" of slurmstepd passed as cmdline arguments.
+ */
+static int process_cmdline (int argc, char *argv[])
+{
+	if ((argc == 2) && (strcmp(argv[1], "getenv") == 0)) {
+		print_rlimits();
+		_dump_user_env();
+		exit(0);
+	}
+	return (0);
+}
+
 
 static void
 _send_ok_to_slurmd(int sock)
