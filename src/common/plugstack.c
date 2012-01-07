@@ -1903,19 +1903,26 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	return (rc);
 }
 
+spank_err_t spank_env_access_check (spank_t spank)
+{
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+	if (spank->stack->type != S_TYPE_REMOTE)
+		return (ESPANK_NOT_REMOTE);
+	if (spank->job == NULL)
+		return (ESPANK_BAD_ARG);
+	return (ESPANK_SUCCESS);
+
+}
+
 spank_err_t spank_getenv(spank_t spank, const char *var, char *buf,
 			 int len)
 {
 	char *val;
+	spank_err_t err = spank_env_access_check (spank);
 
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
-
-	if (spank->stack->type != S_TYPE_REMOTE)
-		return (ESPANK_NOT_REMOTE);
-
-	if (spank->job == NULL)
-		return (ESPANK_BAD_ARG);
+	if (err != ESPANK_SUCCESS)
+		return (err);
 
 	if (len < 0)
 		return (ESPANK_BAD_ARG);
@@ -1933,15 +1940,10 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 			 int overwrite)
 {
 	slurmd_job_t * job;
+	spank_err_t err = spank_env_access_check (spank);
 
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
-
-	if (spank->stack->type != S_TYPE_REMOTE)
-		return (ESPANK_NOT_REMOTE);
-
-	if (spank->job == NULL)
-		return (ESPANK_BAD_ARG);
+	if (err != ESPANK_SUCCESS)
+		return (err);
 
 	if ((var == NULL) || (val == NULL))
 		return (ESPANK_BAD_ARG);
@@ -1959,14 +1961,10 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 
 spank_err_t spank_unsetenv (spank_t spank, const char *var)
 {
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err = spank_env_access_check (spank);
 
-	if (spank->stack->type != S_TYPE_REMOTE)
-		return (ESPANK_NOT_REMOTE);
-
-	if (spank->job == NULL)
-		return (ESPANK_BAD_ARG);
+	if (err != ESPANK_SUCCESS)
+		return (err);
 
 	if (var == NULL)
 		return (ESPANK_BAD_ARG);
