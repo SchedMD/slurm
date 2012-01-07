@@ -6,8 +6,9 @@
 <ul>
 <li><a href="#21">SLURM Version 2.1, January 2010</a></li>
 <li><a href="#22">SLURM Version 2.2, December 2010</a></li>
-<li><a href="#23">SLURM Version 2.3, planned for Summer 2011</a></li>
-<li><a href="#24">SLURM Version 2.4 and beyond</a></li>
+<li><a href="#23">SLURM Version 2.3, September 2011</a></li>
+<li><a href="#24">SLURM Version 2.4, planned June 2012</a></li>
+<li><a href="#25">SLURM Version 2.5 and beyond2</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
 
@@ -54,7 +55,7 @@ several times that rate.</li>
 </ul>
 
 <h2><a name="23">Major Updates in SLURM Version 2.3</a></h2>
-<p>SLURM Version 2.3 release is planned for Summer 2011.
+<p>SLURM Version 2.2 was released in September 2011.
 Major enhancements currently planned include:
 <ul>
 <li>Support for Cray XT and XE computers (integration with ALPS/BASIL).</li>
@@ -63,13 +64,25 @@ Major enhancements currently planned include:
 BlueGene architectures, improves performance and fault tolerance).</li>
 <li>Support for Linux cgroup job containers including integration with
 generic resources.</li>
-<li> Resource reservations with a node count specification will select
-those nodes optimized for the system topology.</li>
 <li>Support for growing job allocations (support for shrinking jobs was added
 in version 2.2).</li>
 </ul>
 
-<h2><a name="24">Major Updates in SLURM Version 2.4 and beyond</a></h2>
+<h2><a name="24">Major Updates in SLURM Version 2.4</a></h2>
+<p>SLURM Version 2.4 release is planned for June 2012.
+Major enhancements currently planned include:
+<ul>
+<li>Support for BlueGene/Q computers (fully implemented).</li>
+<li>Resource reservations with a node count specification will select
+those nodes optimized for the system topology.</li>
+<li>Support for SLURM commands operating over a LoadLeveler resource manager.</li>
+<li>Support for job and step constraints with resource counts (e.g. a job
+request for two nodes with a feature of "Intel" plus four nodes with a feature
+of "AMD").</li>
+<li>New tool <i>sdiag</i> reports scheduling statistics.</li>
+</ul>
+
+<h2><a name="25">Major Updates in SLURM Version 2.5 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
@@ -111,6 +124,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 17 March 2011</p>
+<p style="text-align:center;">Last modified 6 January 2012</p>
 
 <!--#include virtual="footer.txt"-->
