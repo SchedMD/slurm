@@ -471,6 +471,21 @@ rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun_cr
 rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 %endif
 
+# Remove files not needed for LoadLeveler
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/sacct*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/sattach*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/sbcast*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/scontrol*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/smap*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/sprio*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/sreport*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/sshare*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/strigger*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/sview*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man3/*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man5/*
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man8/*
+
 # Build man pages that are generated directly by the tools
 #rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 #${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
