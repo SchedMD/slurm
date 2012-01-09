@@ -125,11 +125,11 @@ static char **_build_env(uint32_t jobid, uid_t uid, char *resv_id,
 			 char **spank_job_env, uint32_t spank_job_env_size);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
-static bool _slurm_authorized_user(uid_t uid);
+static int  _get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups,
+			   gid_t **groups);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
-static int  _init_groups(uid_t my_uid, gid_t my_gid);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
@@ -164,6 +164,7 @@ static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes,
 		int maxtime);
+static bool _slurm_authorized_user(uid_t uid);
 static void _sync_messages_kill(kill_job_msg_t *req);
 static int  _waiter_init (uint32_t jobid);
 static int  _waiter_complete (uint32_t jobid);
@@ -2416,24 +2417,27 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 	}
 }
 
+/* Creates an array of group ids and stores in it the list of groups
+ * that user my_uid belongs to. The pointer to the list is returned
+ * in groups and the count of gids in ngroups. The caller must free
+ * the group list array pointed to by groups */
 static int
-_init_groups(uid_t my_uid, gid_t my_gid)
+_get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups, gid_t **groups)
 {
 	char *user_name = uid_to_string(my_uid);
-	int rc;
 
 	if (user_name == NULL) {
 		error("sbcast: Could not find uid %ld", (long)my_uid);
 		return -1;
 	}
 
-	rc = initgroups(user_name, my_gid);
-	xfree(user_name);
-	if (rc) {
- 		error("sbcast: Error in initgroups(%s, %ld): %m",
-		      user_name, (long)my_gid);
-//		return -1;
+	*groups = (gid_t *) xmalloc(*ngroups * sizeof(gid_t));
+
+	if (getgrouplist(user_name, my_gid, *groups, ngroups) < 0) {
+	        *groups = xrealloc(*groups, *ngroups * sizeof(gid_t));
+	        getgrouplist(user_name, my_gid, *groups, ngroups);
 	}
+	xfree(user_name);
 	return 0;
 
 }
@@ -2480,6 +2484,8 @@ _rpc_file_bcast(slurm_msg_t *msg)
 {
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, offset, inx, rc;
+	int ngroups = 16;
+	gid_t *groups;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred, NULL);
 	pid_t child;
@@ -2503,21 +2509,32 @@ _rpc_file_bcast(slurm_msg_t *msg)
 
 	info("sbcast req_uid=%u fname=%s block_no=%u",
 	     req_uid, req->fname, req->block_no);
+
+	if ((rc = _get_grouplist(req_uid, req_gid, &ngroups, &groups)) < 0) {
+		error("sbcast: getgrouplist(%u): %m", req_uid);
+		return rc;
+	}
+
 	child = fork();
 	if (child == -1) {
 		error("sbcast: fork failure");
 		return errno;
 	} else if (child > 0) {
 		waitpid(child, &rc, 0);
+		xfree(groups);
 		return WEXITSTATUS(rc);
 	}
 
 	/* The child actually performs the I/O and exits with
 	 * a return code, do not return! */
-	if (_init_groups(req_uid, req_gid) < 0) {
-		error("sbcast: initgroups(%u): %m", req_uid);
-		exit(errno);
+
+	/* set the child's group list */
+        if (setgroups(ngroups, groups) < 0) {
+	        error("sbcast: uid: %u setgroups: %s", req_uid,
+		      strerror(errno));
+	        exit(errno);
 	}
+
 	if (setgid(req_gid) < 0) {
 		error("sbcast: uid:%u setgid(%u): %s", req_uid, req_gid,
 		      strerror(errno));
