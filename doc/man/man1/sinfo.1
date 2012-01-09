@@ -139,6 +139,7 @@ Number of nodes
 The reason a node is unavailable (down, drained, or draining states).
 This is the same as \fB%R\fR except the entries will be sorted by
 time rather than the reason string.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%f\fR
 Features associated with the nodes
@@ -150,7 +151,8 @@ state option ("%t" or "%T") or the different node states will
 be placed on separate lines.
 .TP
 \fB%g\fR
-Groups which may use the nodes
+Groups which may use the nodes.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%G\fR
 Generic resources (gres) associated with the nodes
@@ -160,6 +162,7 @@ Jobs may share nodes, "yes", "no", or "force"
 .TP
 \fB%H\fR
 Print the timestamp of the reason a node is unavailable.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%l\fR
 Maximum time for any job in the format "days\-hours:minutes:seconds"
@@ -179,7 +182,7 @@ List of node hostnames
 List of node names
 .TP
 \fB%o\fR
-List of node communication addresses
+List of node communication addresses.
 .TP
 \fB%P\fR
 Partition name
@@ -189,13 +192,16 @@ Only user root may initiate jobs, "yes" or "no"
 .TP
 \fB%R\fR
 The reason a node is unavailable (down, drained, draining,
-fail or failing states)
+fail or failing states).
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%s\fR
 Maximum job size in nodes
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%S\fR
 Allowed allocating nodes
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%t\fR
 State of nodes, compact form
@@ -205,24 +211,31 @@ State of nodes, extended form
 .TP
 \fB%u\fR
 Print the user name of who set the reason a node is unavailable.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%U\fR
 Print the user name and uid of who set the reason a node is unavailable.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%w\fR
-Scheduling weight of the nodes
+Scheduling weight of the nodes.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%X\fR
-Number of sockets per node
+Number of sockets per node.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%Y\fR
-Number of cores per socket
+Number of cores per socket.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%Z\fR
-Number of threads per core
+Number of threads per core.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%z\fR
-Extended processor information: number of sockets, cores, threads (S:C:T) per node
+Extended processor information: number of sockets, cores, threads (S:C:T) per node.
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%.<*>\fR
 right justification of the field

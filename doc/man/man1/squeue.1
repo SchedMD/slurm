@@ -133,6 +133,7 @@ Minimum number of CPUs (processors) per node requested by the job.
 This reports the value of the \fBsrun \-\-mincpus\fR option with a
 default value of zero.
 (Valid for jobs only)
+<li>%d  Temporary disk space required</li>
 .TP
 \fB%C\fR
 Number of CPUs (processors) requested by the job or allocated to
@@ -143,6 +144,7 @@ reflect the current number of CPUs allocated.
 \fB%d\fR
 Minimum size of temporary disk space (in MB) requested by the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%D\fR
 Number of nodes allocated to the job or the minimum number of nodes
@@ -166,6 +168,7 @@ completes.  A value of zero implies this job has no dependencies.
 \fB%f\fR
 Features required by the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%g\fR
 Group name of the job.
@@ -184,6 +187,7 @@ Number of sockets per node requested by the job.
 This reports the value of the \fBsrun \-\-sockets\-per\-node\fR option.
 When \-\-sockets\-per\-node has not been set, "*" is displayed.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%i\fR
 Job or job step id.
@@ -194,6 +198,7 @@ Number of cores per socket requested by the job.
 This reports the value of the \fBsrun \-\-cores\-per\-socket\fR option.
 When \-\-cores\-per\-socket has not been set, "*" is displayed.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%j\fR
 Job or job step name.
@@ -204,6 +209,7 @@ Number of threads per core requested by the job.
 This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
 When \-\-threads\-per\-core has not been set, "*" is displayed.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%k\fR
 Comment associated with the job.
@@ -224,6 +230,7 @@ The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
 \fB%m\fR
 Minimum size of memory (in MB) requested by the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%M\fR
 Time used by the job or job step in days\-hours:minutes:seconds.
@@ -235,9 +242,10 @@ If the time is obviously wrong (e.g. negative), it displays as "INVALID".
 (Valid for jobs and job steps)
 .TP
 \fB%n\fR
-List of node names (or base partitions on BlueGene systems) explicitly
+List of node names (or midplanes on BlueGene systems) explicitly
 requested by the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%N\fR
 List of nodes allocated to the job or job step. In the case of a
@@ -248,6 +256,7 @@ nodes that have not yet been returned to service.
 \fB%O\fR
 Are contiguous nodes requested by the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%p\fR
 Priority of the job (converted to a floating point number between 0.0 and 1.0).
@@ -261,6 +270,7 @@ Partition of the job or job step.
 \fB%q\fR
 Quality of service associated with the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%Q\fR
 Priority of the job (generally a very large unsigned integer).
@@ -288,6 +298,7 @@ Connection type (TORUS, MESH, or NAV == torus else mesh),
 Permit rotation of geometry (yes or no),
 Node use (VIRTUAL or COPROCESSOR), etc.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%S\fR
 Actual or expected start time of the job or job step.
@@ -323,19 +334,23 @@ Reservation for the job.
 \fB%w\fR
 Workload Characterization Key (wckey).
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%W\fR
 Licenses reserved for the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%x\fR
 List of node names explicitly excluded by the job.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .TP
 \fB%z\fR
 Number of requested sockets, cores, and threads (S:C:T) per node for the job.
 When (S:C:T) has not been set, "*" is displayed.
 (Valid for jobs only)
+NOTE: Not available on LoadLeveler\-based systems.
 .RE
 
 .TP

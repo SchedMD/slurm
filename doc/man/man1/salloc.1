@@ -48,6 +48,7 @@ This can be used to override the \fIJobAcctGatherFrequency\fR parameter in SLURM
 configuration file, \fIslurm.conf\fR.
 A value of zero disables real the periodic job sampling and provides accounting
 information only on job termination (reducing SLURM interference with the job).
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-B\fR \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
@@ -189,12 +190,14 @@ of "rack1" and four nodes must be allocated from nodes with the feature
 If set, then the allocated nodes must form a contiguous set.
 Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
 plugins, both of which can modify the node ordering.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
 Restrict node selection to nodes with at least the specified number of
 cores per socket.  See additional information under \fB\-B\fR option
 above when task/affinity plugin is enabled.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -245,6 +248,9 @@ CPUs that belong to the NUMA locality domain or "NUMA node".
 If NUMA locality domain options are used on systems with no NUMA support, then
 each socket is considered a locality domain.
 
+NOTE: On LoadLeveler\-based systems, only the "cores" and "threads" options
+are supported.
+
 Supported options include:
 .PD 1
 .RS
@@ -253,7 +259,8 @@ Supported options include:
 Quietly bind before task runs (default)
 .TP
 .B v[erbose]
-Verbosely report binding before task runs
+Verbosely report binding before task runs.
+NOTE: Ignored on LoadLeveler\-based systems.
 .TP
 .B no[ne]
 Do not bind tasks to CPUs (default)
@@ -269,18 +276,21 @@ where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
+NOTE: Ignored on LoadLeveler\-based systems.
 .TP
 .B mask_cpu:<list>
 Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'.
+NOTE: Ignored on LoadLeveler\-based systems.
 .TP
 .B sockets
 Automatically generate masks binding tasks to sockets.
 Only the CPUs on the socket which have been allocated to the job will be used.
 If the number of tasks differs from the number of allocated sockets
 this can result in sub\-optimal binding.
+NOTE: Ignored on LoadLeveler\-based systems.
 .TP
 .B cores
 Automatically generate masks binding tasks to cores.
@@ -296,6 +306,7 @@ this can result in sub\-optimal binding.
 Automatically generate masks binding tasks to NUMA locality domains.
 If the number of tasks differs from the number of allocated locality domains
 this can result in sub\-optimal binding.
+NOTE: Ignored on LoadLeveler\-based systems.
 .TP
 .B help
 Show this help message
@@ -324,6 +335,7 @@ satisfied completed.
 Many jobs can share the same dependency and these jobs may even belong to
 different  users. The  value may be changed after job submission using the
 scontrol command.
+NOTE: Ignored on LoadLeveler\-based systems.
 .PD
 .RS
 .TP
@@ -399,6 +411,7 @@ This option was originally created for use by Moab.
 If \fBsalloc\fR is run as root, and the \fB\-\-gid\fR option is used,
 submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
 may be the group name or the numerical group ID.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
@@ -454,6 +467,7 @@ If no argument is given, resources must be available immediately
 for the request to succeed.
 By default, \fB\-\-immediate\fR is off, and the command
 will block until resources become available.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
@@ -465,6 +479,7 @@ name is the name of the "command" specified on the command line.
 \fB\-\-jobid\fR=<\fIjobid\fR>
 Allocate resources as the specified job id.
 NOTE: Only valid for user root.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-command\fR[=\fIsignal\fR]
@@ -490,6 +505,7 @@ new job steps on the remaining nodes in their allocation.
 
 By default SLURM terminates the entire job allocation if any node fails in its
 range of allocated nodes.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
@@ -499,6 +515,7 @@ License names can be followed by an asterisk and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo*4,bar").
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
@@ -652,6 +669,9 @@ The following informational environment variables are set when
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
 of the individual SLURM_MEM_BIND* variables.
 
+NOTE: On LoadLeveler\-based systems, all mem_bind options are mapped to
+LoadLeveler's "mcm_affinity_options=mcm_mem_req".
+
 Supported options include:
 .RS
 .TP
@@ -691,6 +711,7 @@ show this help message
 .TP
 \fB\-\-mincpus\fR=<\fIn\fR>
 Specify a minimum number of logical cpus/processors per node.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-N\fR, \fB\-\-nodes\fR=<\fIminnodes\fR[\-\fImaxnodes\fR]>
@@ -763,6 +784,7 @@ is specified.
 NOTE: This option is not supported unless
 \fISelectTypeParameters=CR_Core\fR or
 \fISelectTypeParameters=CR_Core_Memory\fR is configured.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
@@ -775,6 +797,7 @@ is specified.
 NOTE: This option is not supported unless
 \fISelectTypeParameters=CR_Socket\fR or
 \fISelectTypeParameters=CR_Socket_Memory\fR is configured.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
@@ -816,6 +839,7 @@ Overcommit resources.  Normally, \fBsalloc\fR will allocate one task
 per processor.  By specifying \fB\-\-overcommit\fR you are explicitly
 allowing more than one task per processor.  However no more than
 \fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
@@ -836,6 +860,7 @@ for each user/cluster/account association in the SLURM database.
 Users will be limited to their association's defined set of qos's when
 the SLURM configuration parameter, AccountingStorageEnforce, includes
 "qos" in it's definition.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-reservation\fR=<\fIname\fR>
@@ -863,15 +888,17 @@ be sent up to 60 seconds earlier than specified.
 By default, no signal is sent before the job's end time.
 If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
 Restrict node selection to nodes with at least the specified number of
 sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
-\fB\-\-switch\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
+\fB\-\-switches\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. If SLURM finds an allocation containing more
@@ -881,6 +908,7 @@ there is no switch count limit and there is no delay in starting the job.
 The job's maximum time delay may be limited by the system administrator using
 the \fBSchedulerParameters\fR configuration parameter with the
 \fBmax_switch_wait\fR parameter option.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
@@ -913,6 +941,7 @@ otherwise reserved for higher priority jobs.
 Acceptable time formats include "minutes", "minutes:seconds", 
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
 "days\-hours:minutes:seconds".
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-\-tmp\fR=<\fIMB\fR>
@@ -931,6 +960,7 @@ may use this option to run jobs as a normal user in a RootOnly
 partition for example. If run as root, \fBsalloc\fR will drop
 its permissions to the uid specified after node allocation is
 successful. \fIuser\fR may be the user name or numerical user ID.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
@@ -958,6 +988,7 @@ will be sorted by SLURM.
 \fB\-\-wait\-all\-nodes\fR=<\fIvalue\fR>
 Controls when the execution of the command begins.
 By default the job will begin execution as soon as the allocation is made.
+NOTE: Ignored on LoadLeveler\-based systems.
 .RS
 .TP 5
 0
@@ -972,10 +1003,12 @@ Do not begin execution until all nodes are ready for use.
 \fB\-\-wckey\fR=<\fIwckey\fR>
 Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .TP
 \fB\-x\fR, \fB\-\-exclude\fR=<\fInode name list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
+NOTE: Ignored on LoadLeveler\-based systems.
 
 .PP
 The following options support Blue Gene systems, but may be
