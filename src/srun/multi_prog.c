@@ -111,7 +111,7 @@ _build_path(char* fname)
 }
 
 static void
-_set_range(int low_num, int high_num, char *exec_name)
+_set_range(int low_num, int high_num, char *exec_name, bool ignore_duplicates)
 {
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 	/* Use symbols from the runjob.so library provided by IBM.
@@ -122,11 +122,12 @@ _set_range(int low_num, int high_num, char *exec_name)
 	for (i = low_num; i <= high_num; i++) {
 		MPIR_PROCDESC *tv;
 		tv = &MPIR_proctable[i];
-		if (tv->executable_name) {
-			error("duplicate configuration for task %d ignored",
-				i);
-		} else
+		if (tv->executable_name == NULL) {
 			tv->executable_name = xstrdup(exec_name);
+		} else if (!ignore_duplicates) {
+			error("duplicate configuration for task %d ignored",
+			      i);
+		}
 	}
 #endif
 }
@@ -141,7 +142,7 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 	if ((ranks[0] == '*') && (ranks[1] == '\0')) {
 		low_num = 0;
 		high_num = ntasks - 1;
-		_set_range(low_num, high_num, exec_path);
+		_set_range(low_num, high_num, exec_path, true);
 		return;
 	}
 
@@ -155,14 +156,14 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 		if ((ptrptr[0] == ',') || (ptrptr[0] == '\0')) {
 			low_num = MAX(0, num);
 			high_num = MIN((ntasks-1), num);
-			_set_range(low_num, high_num, exec_path);
+			_set_range(low_num, high_num, exec_path, false);
 		} else if (ptrptr[0] == '-') {
 			low_num = MAX(0, num);
 			num = strtol(ptrptr+1, &ptrptr, 10);
 			if ((ptrptr[0] != ',') && (ptrptr[0] != '\0'))
 				goto invalid;
 			high_num = MIN((ntasks-1), num);
-			_set_range(low_num, high_num, exec_path);
+			_set_range(low_num, high_num, exec_path, false);
 		} else
 			goto invalid;
 		if (ptrptr[0] == '\0')
@@ -307,7 +308,8 @@ mpir_dump_proctable(void)
 }
 
 static int
-_update_task_mask(int low_num, int high_num, int ntasks, bitstr_t *task_mask)
+_update_task_mask(int low_num, int high_num, int ntasks, bitstr_t *task_mask,
+		  bool ignore_duplicates)
 {
 	int i;
 
@@ -325,6 +327,8 @@ _update_task_mask(int low_num, int high_num, int ntasks, bitstr_t *task_mask)
 	}
 	for (i=low_num; i<=high_num; i++) {
 		if (bit_test(task_mask, i)) {
+			if (ignore_duplicates)
+				continue;
 			error("Duplicate record for task %d", i);
 			return -1;
 		}
@@ -343,7 +347,8 @@ _validate_ranks(char *ranks, int ntasks, bitstr_t *task_mask)
 	if (ranks[0] == '*' && ranks[1] == '\0') {
 		low_num = 0;
 		high_num = ntasks - 1;
-		return _update_task_mask(low_num, high_num, ntasks, task_mask);
+		return _update_task_mask(low_num, high_num, ntasks, task_mask,
+					 true);
 	}
 
 	for (range = strtok_r(ranks, ",", &ptrptr); range != NULL;
@@ -371,7 +376,8 @@ _validate_ranks(char *ranks, int ntasks, bitstr_t *task_mask)
 			return -1;
 		}
 
-		if (_update_task_mask(low_num, high_num, ntasks, task_mask))
+		if (_update_task_mask(low_num, high_num, ntasks, task_mask,
+				      false))
 			return -1;
 	}
 	return 0;
