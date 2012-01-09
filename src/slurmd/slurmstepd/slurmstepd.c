@@ -54,6 +54,7 @@
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
@@ -178,6 +179,28 @@ ending:
 }
 
 
+static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
+{
+	const char *val;
+	char *p;
+
+	if (!(val = getenv ("SLURM_JOBID")))
+		return error ("Unable to get SLURM_JOBID in env!");
+
+	*jobidp = (uint32_t) strtoul (val, &p, 10);
+	if (*p != '\0')
+		return error ("Invalid SLURM_JOBID=%s", val);
+
+	if (!(val = getenv ("SLURM_UID")))
+		return error ("Unable to get SLURM_UID in env!");
+
+	*uidp = (uid_t) strtoul (val, &p, 10);
+	if (*p != '\0')
+		return error ("Invalid SLURM_UID=%s", val);
+
+	return (0);
+}
+
 /*
  *  Process special "modes" of slurmstepd passed as cmdline arguments.
  */
@@ -187,6 +210,31 @@ static int process_cmdline (int argc, char *argv[])
 		print_rlimits();
 		_dump_user_env();
 		exit(0);
+	}
+	if ((argc == 3) && (strcmp(argv[1], "spank") == 0)) {
+		const char *mode = argv[2];
+		uid_t uid = (uid_t) -1;
+		uint32_t jobid = (uint32_t) -1;
+		log_options_t opts = { LOG_LEVEL_DEBUG, LOG_LEVEL_DEBUG2, LOG_LEVEL_QUIET, 1, 0};
+		log_alter (opts, 0, NULL);
+
+		if (slurm_conf_init(NULL) != SLURM_SUCCESS)
+			fatal ("Failed to read slurm config");
+
+		if (get_jobid_uid_from_env (&jobid, &uid) < 0)
+			fatal ("spank environment invalid");
+
+		if (strcmp (mode, "prolog") == 0) {
+			if (spank_job_prolog (jobid, uid) < 0)
+				exit (1);
+			exit (0);
+		}
+		if (strcmp (mode, "epilog") == 0) {
+			if (spank_job_epilog (jobid, uid) < 0)
+				exit (1);
+			exit (0);
+		}
+		fatal ("Invalid slurmstepd spank mode specified");
 	}
 	return (0);
 }
