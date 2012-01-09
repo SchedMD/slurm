@@ -2474,7 +2474,16 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	/* The child actually performs the I/O and exits with
 	 * a return code, do not return! */
 
-	/* set the child's group list */
+	/*********************************************************************\
+	 * NOTE: It would be best to do an exec() immediately after the fork()
+	 * in order to help prevent a possible deadlock in the child process
+	 * due to locks being set at the time of the fork and being freed by
+	 * the parent process, but not freed by the child process. Performing
+	 * the work inline is done for simplicity. Note that the logging
+	 * performed by error() should be safe due to the use of
+	 * atfork_install_handlers() as defined in src/common/log.c.
+	 * Change the code below with caution.
+	\*********************************************************************/
         if (setgroups(ngroups, groups) < 0) {
 	        error("sbcast: uid: %u setgroups: %s", req_uid,
 		      strerror(errno));
