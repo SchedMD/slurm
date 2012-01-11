@@ -182,6 +182,21 @@ static const char * default_spank_path = NULL;
  */
 static int _spank_plugin_options_cache(struct spank_plugin *p);
 
+static int plugin_in_list (List l, struct spank_plugin *sp)
+{
+	int rc = 0;
+	struct spank_plugin *p;
+	ListIterator i = list_iterator_create (l);
+	while ((p = list_next (i))) {
+		if (p->fq_path == sp->fq_path) {
+			rc = 1;
+			break;
+		}
+	}
+	list_iterator_destroy (i);
+	return (rc);
+}
+
 static void _argv_append(char ***argv, int ac, const char *newarg)
 {
 	*argv = xrealloc(*argv, (++ac + 1) * sizeof(char *));
@@ -403,6 +418,12 @@ _spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
 	}
 	if (*stackp == NULL)
 		*stackp = list_create((ListDelF) _spank_plugin_destroy);
+	else if (plugin_in_list (*stackp, p)) {
+		error ("spank: %s: cowardly refusing to load a second time",
+			p->fq_path);
+		_spank_plugin_destroy (p);
+		return (0);
+	}
 
 	verbose ("spank: %s:%d: Loaded plugin %s",
 			file, line, xbasename (p->fq_path));
