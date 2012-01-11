@@ -601,12 +601,12 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	if (first_msg) {
 		first_msg = false;
-		info("Procs=%u Sockets=%u Cores=%u Threads=%u "
+		info("CPUs=%u Sockets=%u Cores=%u Threads=%u "
 		     "Memory=%u TmpDisk=%u Uptime=%u",
 		     msg->cpus, msg->sockets, msg->cores, msg->threads,
 		     msg->real_memory, msg->tmp_disk, msg->up_time);
 	} else {
-		debug3("Procs=%u Sockets=%u Cores=%u Threads=%u "
+		debug3("CPUs=%u Sockets=%u Cores=%u Threads=%u "
 		       "Memory=%u TmpDisk=%u Uptime=%u",
 		       msg->cpus, msg->sockets, msg->cores, msg->threads,
 		       msg->real_memory, msg->tmp_disk, msg->up_time);
@@ -806,7 +806,7 @@ _read_config(void)
 	     (conf->cores   != conf->actual_cores)   ||
 	     (conf->threads != conf->actual_threads))) {
 		info("Node configuration differs from hardware\n"
-		     "   Procs=%u:%u(hw) Sockets=%u:%u(hw)\n"
+		     "   CPUs=%u:%u(hw) Sockets=%u:%u(hw)\n"
 		     "   CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
 		     conf->cpus,    conf->actual_cpus,
 		     conf->sockets, conf->actual_sockets,
@@ -1080,7 +1080,7 @@ _print_config(void)
 		    &conf->actual_threads,
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
-	printf("Procs=%u Sockets=%u CoresPerSocket=%u ThreadsPerCore=%u ",
+	printf("CPUs=%u Sockets=%u CoresPerSocket=%u ThreadsPerCore=%u ",
 	       conf->actual_cpus, conf->actual_sockets, conf->actual_cores,
 	       conf->actual_threads);
 
