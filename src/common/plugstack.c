@@ -745,7 +745,7 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 	 *  Now that all options have been processed, we can
 	 *   call the post_opt handlers here in remote context.
 	 */
-	return (_do_call_stack(SPANK_INIT_POST_OPT, job, -1) < 0);
+	return (_do_call_stack(SPANK_INIT_POST_OPT, job, -1));
 }
 
 int spank_init (slurmd_job_t * job)
