@@ -376,6 +376,15 @@ option will implicitly be set to load other environment variables based upon
 the user's configuration on the cluster which executes the job.
 
 .TP
+\fB\-\-export\-file\fR=<\filename\fR>
+Export environment variables defined in <\filename\fR> to the job's
+execution environment. The file contains one or more environemnt
+variable definitions of the form NAME=VALUE spearated by a null
+character to allow the use of special characters in environment
+definitions. The \fB\-\-get\-user\-env\fR option will be ignored if
+\-\-export\-file is defined.
+
+.TP
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
 Much like \-\-nodelist, but the list is contained in a file of name
 \fInode file\fR.  The node names of the list may also span multiple lines
