@@ -1522,7 +1522,7 @@ extern void private_data_string(uint16_t private_data, char *str, int str_len)
 {
 	if (str_len > 0)
 		str[0] = '\0';
-	if (str_len < 42) {
+	if (str_len < 55) {
 		error("private_data_string: output buffer too small");
 		return;
 	}
@@ -1554,7 +1554,12 @@ extern void private_data_string(uint16_t private_data, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "accounts"); //9 len
 	}
-	// total len 42
+	if (private_data & PRIVATE_DATA_RESERVATIONS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "reservations"); //13 len
+	}
+	// total len 55
 
 	if (str[0] == '\0')
 		strcat(str, "none");
