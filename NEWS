@@ -141,6 +141,8 @@ documents those changes that are of interest to users and admins.
     daemon. Patch by Don Albert, Bull.
  -- Fix bug in srun --multi-prog configuration file to avoid printing duplicate
     record error when "*" is used at the end of the file for the task ID.
+ -- Let operators see reservation data even if "PrivateData=reservations" flag
+    is set in slurm.conf. Patch from Don Albert, Bull.
 
 * Changes in SLURM 2.3.2
 ========================

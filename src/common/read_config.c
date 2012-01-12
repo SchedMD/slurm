@@ -2889,6 +2889,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))
 		fatal("proctrack/linuxproc is incompatible with switch/elan");
 
+	conf->private_data = 0; /* Set to default before parsing PrivateData */
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
 		if (strstr(temp_str, "account"))
 			conf->private_data |= PRIVATE_DATA_ACCOUNTS;

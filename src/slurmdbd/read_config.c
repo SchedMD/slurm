@@ -240,6 +240,8 @@ extern int read_slurmdbd_conf(void)
 		}
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
 		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
+
+		slurmdbd_conf->private_data = 0; /* default visible to all */
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
 			if (strstr(temp_str, "account"))
 				slurmdbd_conf->private_data
