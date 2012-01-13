@@ -515,7 +515,7 @@ extern int resv_utilization(int argc, char *argv[])
 				break;
 			case PRINT_RESV_TIME:
 				field->print_routine(field,
-						     total_time,
+						     (uint64_t)total_time,
 						     (curr_inx ==
 						      field_count));
 				break;

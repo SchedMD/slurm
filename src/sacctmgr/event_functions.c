@@ -665,7 +665,8 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 					newend = time(NULL);
 				field->print_routine(
 					field,
-					(newend - event->period_start),
+					(uint64_t)(newend
+						   - event->period_start),
 					(curr_inx == field_count));
 				break;
 			case PRINT_END:
