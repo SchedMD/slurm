@@ -145,6 +145,8 @@ documents those changes that are of interest to users and admins.
     is set in slurm.conf. Patch from Don Albert, Bull.
  -- Added new sbatch option "--export-file" as needed for latest version of
     Moab. Patch from Phil Eckert, LLNL.
+ -- Fix for sacct printing CPUTime(RAW) where the the is greater than a 32 bit
+    number.
 
 * Changes in SLURM 2.3.2
 ========================

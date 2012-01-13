@@ -1208,6 +1208,13 @@ static void prepare_stdio (slurmd_job_t *job, slurmd_task_info_t *task)
 	return;
 }
 
+static void unblock_signals (void)
+{
+	sigset_t set;
+	sigemptyset(&set);
+	xsignal_set_mask (&set);
+}
+
 /* fork and exec N tasks
  */
 static int
@@ -1320,7 +1327,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 			/* log_fini(); */ /* note: moved into exec_task() */
 
-			xsignal_unblock(slurmstepd_blocked_signals);
+			unblock_signals();
 
 			/*
 			 *  Need to setup stdio before setpgid() is called

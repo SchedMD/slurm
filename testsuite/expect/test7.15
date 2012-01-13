@@ -1,0 +1,87 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Verify the ability to modify the Derived Exit Code and Comment
+#          fields of a job record in the database.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id          "7.15"
+set exit_code        0
+set file_prog       "test$test_id.prog"
+
+print_header $test_id
+
+#
+# Delete left-over programs and rebuild them.
+#
+exec $bin_rm -f $file_prog
+exec $bin_cc -O -o $file_prog ${file_prog}.c
+
+#
+#  Run on multiple nodes in case the failure of this test
+#   is intermittent.
+#
+if { $partition == "" } {
+   if { info exists $env(SLURM_PARTITION) } {
+       set partition $env(SLURM_PARTITION)
+   }
+   else {
+       set partition default_partition
+   }
+}
+set nnodes [available_nodes $partition]
+
+#
+#  Run the test_prog to ensure that no signals are blocked by
+#   default for the job.
+#
+set timeout $max_job_delay
+set srun_pid  [exp_spawn $srun -N$nnodes -p $partition ./$file_prog]
+expect {
+	-re "Signal (.*) appears to be ignored" {
+		send_user "FAILURE: At least one signal is ignored!\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		catch wait result
+		set exit_code [lindex $result 3]
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_prog
+}
+
+exit $exit_code

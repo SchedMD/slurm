@@ -783,7 +783,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 				break;
 			case PRINT_GRACE:
 				field->print_routine(
-					field, qos->grace_time,
+					field, (uint64_t)qos->grace_time,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:

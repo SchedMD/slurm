@@ -55,7 +55,7 @@ print_field_t fields[] = {
 	{10, "Cluster", print_fields_str, PRINT_CLUSTER},
 	{14, "Comment", print_fields_str, PRINT_COMMENT},
 	{10, "CPUTime", print_fields_time_from_secs, PRINT_CPU_TIME},
-	{10, "CPUTimeRAW", print_fields_int, PRINT_CPU_TIME_RAW},
+	{10, "CPUTimeRAW", print_fields_uint64, PRINT_CPU_TIME_RAW},
 	{15, "DerivedExitCode", print_fields_str, PRINT_DERIVED_EC},
 	{10, "Elapsed", print_fields_time_from_secs, PRINT_ELAPSED},
 	{19, "Eligible", print_fields_date, PRINT_ELIGIBLE},

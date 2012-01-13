@@ -97,9 +97,9 @@ extern void print_fields_uint32(
 extern void print_fields_uint64(
 	print_field_t *field, uint64_t value, int last);
 extern void print_fields_time_from_mins(print_field_t *field,
-					uint32_t value, int last);
+					uint64_t value, int last);
 extern void print_fields_time_from_secs(print_field_t *field,
-					uint32_t value, int last);
+					uint64_t value, int last);
 extern void print_fields_char_list(print_field_t *field, List value, int last);
 
 #define print_fields_uint print_fields_uint32

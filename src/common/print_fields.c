@@ -295,11 +295,11 @@ extern void print_fields_long_double(
 
 }
 
-extern void print_fields_time(print_field_t *field, uint32_t value, int last)
+extern void print_fields_time(print_field_t *field, uint64_t value, int last)
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if((value == NO_VAL) || (value == INFINITE)) {
+	if((value == (uint64_t)NO_VAL) || (value == (uint64_t)INFINITE)) {
 		if(print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
@@ -325,11 +325,11 @@ extern void print_fields_time(print_field_t *field, uint32_t value, int last)
 }
 
 extern void print_fields_time_from_secs(print_field_t *field,
-					uint32_t value, int last)
+					uint64_t value, int last)
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if((value == NO_VAL) || (value == INFINITE)) {
+	if((value == (uint64_t)NO_VAL) || (value == (uint64_t)INFINITE)) {
 		if(print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)

@@ -139,6 +139,7 @@ void print_fields(type_t type, void *object)
 		char *tmp_char = NULL;
 		int tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		double tmp_dub = (double)NO_VAL;
+		uint64_t tmp_uint64 = (uint64_t)NO_VAL;
 
 		memset(&outbuf, 0, sizeof(outbuf));
 		switch(field->type) {
@@ -333,10 +334,12 @@ void print_fields(type_t type, void *object)
 		case PRINT_CPU_TIME:
 			switch(type) {
 			case JOB:
-				tmp_int = job->elapsed * job->alloc_cpus;
+				tmp_uint64 = (uint64_t)job->elapsed
+					* (uint64_t)job->alloc_cpus;
 				break;
 			case JOBSTEP:
-				tmp_int = step->elapsed * step->ncpus;
+				tmp_uint64 = (uint64_t)step->elapsed
+					* (uint64_t)step->ncpus;
 				break;
 			case JOBCOMP:
 				break;
@@ -344,16 +347,18 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CPU_TIME_RAW:
 			switch(type) {
 			case JOB:
-				tmp_int = job->elapsed * job->alloc_cpus;
+				tmp_uint64 = (uint64_t)job->elapsed
+					* (uint64_t)job->alloc_cpus;
 				break;
 			case JOBSTEP:
-				tmp_int = step->elapsed * step->ncpus;
+				tmp_uint64 = (uint64_t)step->elapsed
+					* (uint64_t)step->ncpus;
 				break;
 			case JOBCOMP:
 				break;
@@ -361,7 +366,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_DERIVED_EC:
@@ -406,7 +411,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     (uint64_t)tmp_int,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_ELIGIBLE:
@@ -1020,7 +1025,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     (uint64_t)tmp_int,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_CPU:
@@ -1043,7 +1048,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     (uint64_t)tmp_int,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_CPU_RAW:
@@ -1160,7 +1165,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     (uint64_t)tmp_int,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_SYSTEMCPU:
