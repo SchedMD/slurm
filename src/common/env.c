@@ -1619,8 +1619,7 @@ char **env_array_from_file(const char *fname)
 	file_size = buffer.st_size;
 	buf = xmalloc(file_size);
 	if ((n = fd_read_n(fd, buf, file_size)) < 0) {
-		error("Could not read of environment file at %s",
-			fname);
+		error("Could not read of environment file at %s", fname);
 		close (fd);
 		xfree(buf);
 		return NULL;
@@ -1639,13 +1638,14 @@ char **env_array_from_file(const char *fname)
 	while (ptr) {
 		memset(line, 0, ENV_BUFSIZE);
 		eptr = strchr(ptr, separator);
-		if (ptr == eptr || eptr == NULL) break;
+		if ((ptr == eptr) || (eptr == NULL))
+			break;
 		strncpy(line, ptr,(eptr - ptr));
  		ptr = eptr+1;
 		if (_env_array_entry_splitter(line, name, sizeof(name),
 					      value, ENV_BUFSIZE) &&
-		    (!_discard_env(name, value))) {
-			if (name[0] == ' ') continue;
+		    (!_discard_env(name, value)) &&
+		    (name[0] != ' ')) {
                         env_array_overwrite(&env, name, value);
 		}
 	}
