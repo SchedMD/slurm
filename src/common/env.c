@@ -56,6 +56,7 @@
 #include "slurm/slurm.h"
 #include "src/common/log.h"
 #include "src/common/env.h"
+#include "src/common/fd.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -1591,6 +1592,81 @@ static int _bracket_cnt(char *value)
 	return count;
 }
 
+/* 
+ * Load user environment from a specified file.
+ * 
+ * This will read in a user specified file, that is invoked
+ * via the --export-file option in sbatch. This file must
+ * have NULL separated line. The NULL character is to allow
+ * special characters in the environment definitons.
+ *
+ * (Note: This is being added to a minor release. For the
+ * next major release, it might be a consideration to merge
+ * this funcitonality with that of load_env_cache and update
+ * env_cache_builder to use the NULL character.)
+ */
+char **env_array_from_file(const char *fname)
+{
+	char *buf = NULL, *ptr = NULL, *eptr = NULL;
+	char *line, *value;
+	char **env = NULL;
+	char name[256];
+	struct stat buffer;
+	ssize_t n;
+	int separator = '\0';
+	int file_size = 0;
+	int fd;
+
+	fd = open(fname,O_RDONLY );
+	if (fd == -1) {
+		error("Could not open user environment file at %s",
+			fname);
+		return NULL;
+	}
+
+	/*
+	 * Then read in the user's environment file data.
+	 */
+	fstat(fd, &buffer);
+	file_size = buffer.st_size;
+	buf = xmalloc(file_size);
+	if ((n = fd_read_n(fd, buf, file_size)) < 0) {
+		error("Could not read of environment file at %s", fname);
+		close (fd);
+		xfree(buf);
+		return NULL;
+	}
+	close(fd);
+
+	/*
+	 * Parse the buffer into indivudal environment variable names
+	 * and build the environment.
+	 */
+	verbose("Getting file of  environment variables at %s", fname);
+	env = env_array_create();
+	line   = xmalloc(ENV_BUFSIZE);
+	value  = xmalloc(ENV_BUFSIZE);
+	ptr = buf;
+	while (ptr) {
+		memset(line, 0, ENV_BUFSIZE);
+		eptr = strchr(ptr, separator);
+		if ((ptr == eptr) || (eptr == NULL))
+			break;
+		strncpy(line, ptr,(eptr - ptr));
+ 		ptr = eptr+1;
+		if (_env_array_entry_splitter(line, name, sizeof(name),
+					      value, ENV_BUFSIZE) &&
+		    (!_discard_env(name, value)) &&
+		    (name[0] != ' ')) {
+                        env_array_overwrite(&env, name, value);
+		}
+	}
+	xfree(buf);
+	xfree(line);
+	xfree(value);
+
+	return env;
+}
 
 /*
  * Load user environment from a cache file located in

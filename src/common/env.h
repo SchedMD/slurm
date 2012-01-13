@@ -252,6 +252,11 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 void env_array_set_environment(char **env_array);
 
 /*
+ * load environment from specified file name.
+ */
+char **env_array_from_file(const char *filename);
+
+/*
  * Return an array of strings representing the specified user's default
  * environment variables following a two-prongged approach.
  * 1. Execute (more or less): "/bin/su - <username> -c /usr/bin/env"

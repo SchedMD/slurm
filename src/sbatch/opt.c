@@ -168,6 +168,7 @@
 #define LONG_OPT_WAIT_ALL_NODES  0x150
 #define LONG_OPT_EXPORT          0x151
 #define LONG_OPT_REQ_SWITCH      0x152
+#define LONG_OPT_EXPORT_FILE     0x153
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -365,6 +366,7 @@ static void _opt_default()
 	opt.efname = NULL;
 
 	opt.export_env        = NULL;
+	opt.export_file       = NULL;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
 	opt.acctg_freq        = -1;
@@ -707,6 +709,7 @@ static struct option long_options[] = {
 	{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
 	{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
+	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gres",          required_argument, 0, LONG_OPT_GRES},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -1637,6 +1640,10 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_EXPORT:
 			xfree(opt.export_env);
 			opt.export_env = xstrdup(optarg);
+			break;
+		case LONG_OPT_EXPORT_FILE:
+			xfree(opt.export_file);
+			opt.export_file = xstrdup(optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			pos_delimit = strstr(optarg,"@");
@@ -2803,7 +2810,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--switch=max-switches{@max-time-to-wait}]\n"
-"              [--export[=names]] executable [args...]\n");
+"              [--export[=names]] [--export-file=file] executable [args...]\n");
 }
 
 static void _help(void)
@@ -2822,6 +2829,7 @@ static void _help(void)
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
 "      --export[=names]        specify environment variables to export\n"
+"      --export-file=file      specify environment variables file to export\n"
 "      --get-user-env          load environment from local cluster\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --gres=list             required generic resources\n"

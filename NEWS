@@ -143,6 +143,8 @@ documents those changes that are of interest to users and admins.
     record error when "*" is used at the end of the file for the task ID.
  -- Let operators see reservation data even if "PrivateData=reservations" flag
     is set in slurm.conf. Patch from Don Albert, Bull.
+ -- Added new sbatch option "--export-file" as needed for latest version of
+    Moab. Patch from Phil Eckert, LLNL.
 
 * Changes in SLURM 2.3.2
 ========================
