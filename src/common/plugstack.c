@@ -703,23 +703,11 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 		return (-1);
 	global_spank_stack = stack;
 
-	if (_do_call_stack(stack, SPANK_INIT, job, -1) < 0)
-		return (-1);
+	return (_do_call_stack(stack, SPANK_INIT, job, -1));
+}
 
-	/*
-	 *  Nothing more to do unless we are in remote context:
-	 */
-	if (stack->type != S_TYPE_REMOTE)
-		return (0);
-
-	/*
-	 *  Remote-specific code:
-	 */
-	if (!job) {
-		error("spank: spank_init called without job reference!");
-		return (-1);
-	}
-
+static int spank_stack_post_opt (struct spank_stack * stack, slurmd_job_t *job)
+{
 	/*
 	 *  Get any remote options from job launch message:
 	 */
@@ -741,12 +729,24 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 	 *   call the post_opt handlers here in remote context.
 	 */
 	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, job, -1) < 0);
+
+}
+
+static int spank_init_remote (slurmd_job_t *job)
+{
+	if (_spank_init (S_TYPE_REMOTE, job) < 0)
+		return (-1);
+
+	/*
+	 * _spank_init initializes global_spank_stack
+	 */
+	return (spank_stack_post_opt (global_spank_stack, job));
 }
 
 int spank_init (slurmd_job_t * job)
 {
 	if (job)
-		return _spank_init (S_TYPE_REMOTE, job);
+		return spank_init_remote (job);
 	else
 		return _spank_init (S_TYPE_LOCAL, NULL);
 }
