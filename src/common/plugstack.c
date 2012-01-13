@@ -180,6 +180,7 @@ static void _spank_plugin_destroy (struct spank_plugin *);
 static void _spank_plugin_opt_destroy (struct spank_plugin_opt *);
 static int spank_stack_get_remote_options(struct spank_stack *, job_options_t);
 static int spank_stack_get_remote_options_env (struct spank_stack *, char **);
+static int spank_stack_set_remote_options_env (struct spank_stack * stack);
 
 static void spank_stack_destroy (struct spank_stack *stack)
 {
@@ -763,7 +764,7 @@ int spank_init_post_opt (void)
 	 *  In allocator context, set remote options in env here.
 	 */
 	if (stack->type == S_TYPE_ALLOCATOR)
-		spank_set_remote_options_env();
+		spank_stack_set_remote_options_env (stack);
 
 	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, NULL, -1));
 }
@@ -1256,15 +1257,15 @@ static int _option_setenv (struct spank_plugin_opt *option)
 	return (0);
 }
 
-int spank_set_remote_options_env(void)
+static int spank_stack_set_remote_options_env (struct spank_stack *stack)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
 	List option_cache;
 
-	if (global_spank_stack == NULL)
+	if (stack == NULL)
 		return (0);
-	option_cache = global_spank_stack->option_cache;
+	option_cache = stack->option_cache;
 
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
 		return (0);
