@@ -1553,7 +1553,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 									name);
 							break;
 						}
-						
+
 						/* This means there wasn't a
 						   default on the
 						   current cluster.
@@ -1931,13 +1931,14 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	}
 
 	notice_thread_init();
-	if(cond_set == 1) {
+	if (cond_set == 1) {
 		ret_list = acct_storage_g_remove_users(
 			db_conn, my_uid, user_cond);
-	} else if(cond_set & 2) {
+	} else if (cond_set & 2) {
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, user_cond->assoc_cond);
 	}
+
 	rc = errno;
 	notice_thread_fini();
 
@@ -1984,8 +1985,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-
-	if(ret_list)
+	if (ret_list)
 		list_destroy(ret_list);
 
 	return rc;
@@ -2067,7 +2067,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		printf(" Removing all users from Accounts\n%s", acct_str);
 
 	notice_thread_init();
-        ret_list = acct_storage_g_remove_coord(db_conn, my_uid,
+	ret_list = acct_storage_g_remove_coord(db_conn, my_uid,
 					       user_cond->assoc_cond->acct_list,
 					       user_cond);
 	slurmdb_destroy_user_cond(user_cond);
