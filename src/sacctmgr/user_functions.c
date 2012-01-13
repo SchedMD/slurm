@@ -1946,6 +1946,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
+		List del_user_list = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
 		/* If there were jobs running with an association to
 		   be deleted, don't.
@@ -1968,8 +1969,82 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		}
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
+			if (cond_set & 2) {
+				if (!del_user_list)
+					del_user_list = list_create(
+						slurm_destroy_char);
+				slurm_addto_char_list(del_user_list,
+						      strstr(object, "U = ")+4);
+			}
 		}
 		list_iterator_destroy(itr);
+
+		/* Remove user if no associations left. */
+		if (cond_set & 2 && del_user_list) {
+			List user_list = NULL;
+			slurmdb_user_cond_t del_user_cond;
+			slurmdb_association_cond_t del_user_assoc_cond;
+			slurmdb_user_rec_t *user = NULL;
+
+			/* Use a fresh cond here so we check all
+			   clusters and such to make sure there are no
+			   associations.
+			*/
+			memset(&del_user_cond, 0, sizeof(slurmdb_user_cond_t));
+			memset(&del_user_assoc_cond, 0,
+			       sizeof(slurmdb_association_cond_t));
+			del_user_cond.with_assocs = 1;
+			del_user_assoc_cond.user_list = del_user_list;
+			/* No need to get all the extra info about the
+			   association, just want to know if it
+			   exists.
+			*/
+			del_user_assoc_cond.without_parent_info = 1;
+			del_user_cond.assoc_cond = &del_user_assoc_cond;
+			user_list = acct_storage_g_get_users(
+				db_conn, my_uid, &del_user_cond);
+			list_destroy(del_user_list);
+			del_user_list = NULL;
+
+			if (user_list) {
+				itr = list_iterator_create(user_list);
+				while ((user = list_next(itr))) {
+					if (user->assoc_list)
+						continue;
+					if (!del_user_list) {
+						del_user_list = list_create(
+							slurm_destroy_char);
+						printf(" Deleting users "
+						       "(No Associations)"
+						       "...\n");
+					}
+					printf("  %s\n", user->name);
+					slurm_addto_char_list(del_user_list,
+							      user->name);
+				}
+				list_iterator_destroy(itr);
+				list_destroy(user_list);
+			}
+
+			if (del_user_list) {
+				List del_user_ret_list = NULL;
+
+				memset(&del_user_cond, 0,
+				       sizeof(slurmdb_user_cond_t));
+				memset(&del_user_assoc_cond, 0,
+				       sizeof(slurmdb_association_cond_t));
+
+				del_user_assoc_cond.user_list = del_user_list;
+				del_user_cond.assoc_cond = &del_user_assoc_cond;
+
+				del_user_ret_list = acct_storage_g_remove_users(
+					db_conn, my_uid, &del_user_cond);
+				if (del_user_ret_list)
+					list_destroy(del_user_ret_list);
+				list_destroy(del_user_list);
+			}
+		}
+
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
 		} else {
