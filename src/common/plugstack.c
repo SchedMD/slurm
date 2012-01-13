@@ -132,7 +132,8 @@ enum spank_context_type {
 	S_TYPE_LOCAL,           /* LOCAL == srun              */
 	S_TYPE_REMOTE,          /* REMOTE == slurmstepd       */
 	S_TYPE_ALLOCATOR,       /* ALLOCATOR == sbatch/salloc */
-	S_TYPE_SLURMD           /* SLURMD == slurmd           */
+	S_TYPE_SLURMD,          /* SLURMD == slurmd           */
+	S_TYPE_JOB_SCRIPT,      /* JOB_SCRIPT == prolog/epilog*/
 };
 
 /*
@@ -1548,6 +1549,8 @@ static spank_err_t _check_spank_item_validity (spank_t spank, spank_item_t item)
 	 */
 	if (spank->stack->type == S_TYPE_SLURMD)
 		return ESPANK_NOT_AVAIL;
+	else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+		return ESPANK_NOT_AVAIL;
 	else if (spank->stack->type == S_TYPE_LOCAL) {
 		if (!_valid_in_local_context (item))
 			return ESPANK_NOT_REMOTE;
@@ -1645,6 +1648,8 @@ spank_context_t spank_context (void)
 		  return S_CTX_ALLOCATOR;
 	  case S_TYPE_SLURMD:
 		  return S_CTX_SLURMD;
+	  case S_TYPE_JOB_SCRIPT:
+		  return S_CTX_JOB_SCRIPT;
 	  default:
 		  return S_CTX_ERROR;
 	}

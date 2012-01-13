@@ -185,7 +185,8 @@ enum spank_context {
     S_CTX_LOCAL,             /* Local context (srun)                         */
     S_CTX_REMOTE,            /* Remote context (slurmstepd)                  */
     S_CTX_ALLOCATOR,         /* Allocator context (sbatch/salloc)            */
-    S_CTX_SLURMD             /* slurmd context                               */
+    S_CTX_SLURMD,            /* slurmd context                               */
+    S_CTX_JOB_SCRIPT         /* prolog/epilog context                        */
 };
 
 typedef enum spank_context spank_context_t;
