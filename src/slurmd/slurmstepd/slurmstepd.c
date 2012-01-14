@@ -246,6 +246,61 @@ static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
 	return (0);
 }
 
+static int handle_spank_mode (int argc, char *argv[])
+{
+	char prefix[64] = "spank-";
+	const char *mode = argv[2];
+	uid_t uid = (uid_t) -1;
+	uint32_t jobid = (uint32_t) -1;
+	log_options_t lopts = LOG_OPTS_INITIALIZER;
+
+	/*
+	 *  Not necessary to log to syslog
+	 */
+	lopts.syslog_level = LOG_LEVEL_QUIET;
+
+	/*
+	 *  Make our log prefix into spank-prolog: or spank-epilog:
+	 */
+	strcat (prefix, mode);
+	log_init(prefix, lopts, LOG_DAEMON, NULL);
+
+	/*
+	 *  When we are started from slurmd, a lightweight config is
+	 *   sent over the stdin fd. If we are able to read this conf
+	 *   use it to reinitialize the log.
+	 *  It is not a fatal error if we fail to read the conf file.
+	 *   This could happen if slurmstepd is run standalone for
+	 *   testing.
+	 */
+	if ((conf = read_slurmd_conf_lite (STDIN_FILENO)))
+		log_alter (conf->log_opts, 0, conf->logfile);
+	close (STDIN_FILENO);
+
+	if (slurm_conf_init(NULL) != SLURM_SUCCESS)
+		return error ("Failed to read slurm config");
+
+	if (get_jobid_uid_from_env (&jobid, &uid) < 0)
+		return error ("spank environment invalid");
+
+	verbose ("Running spank/%s for jobid [%u] uid [%u]",
+		mode, jobid, uid);
+
+	if (strcmp (mode, "prolog") == 0) {
+		if (spank_job_prolog (jobid, uid) < 0)
+			return (-1);
+	}
+	else if (strcmp (mode, "epilog") == 0) {
+		if (spank_job_epilog (jobid, uid) < 0)
+			return (-1);
+	}
+	else {
+		error ("Invalid mode %s specified!", mode);
+		return (-1);
+	}
+	return (0);
+}
+
 /*
  *  Process special "modes" of slurmstepd passed as cmdline arguments.
  */
@@ -257,29 +312,9 @@ static int process_cmdline (int argc, char *argv[])
 		exit(0);
 	}
 	if ((argc == 3) && (strcmp(argv[1], "spank") == 0)) {
-		const char *mode = argv[2];
-		uid_t uid = (uid_t) -1;
-		uint32_t jobid = (uint32_t) -1;
-		log_options_t opts = { LOG_LEVEL_DEBUG, LOG_LEVEL_DEBUG2, LOG_LEVEL_QUIET, 1, 0};
-		log_alter (opts, 0, NULL);
-
-		if (slurm_conf_init(NULL) != SLURM_SUCCESS)
-			fatal ("Failed to read slurm config");
-
-		if (get_jobid_uid_from_env (&jobid, &uid) < 0)
-			fatal ("spank environment invalid");
-
-		if (strcmp (mode, "prolog") == 0) {
-			if (spank_job_prolog (jobid, uid) < 0)
-				exit (1);
-			exit (0);
-		}
-		if (strcmp (mode, "epilog") == 0) {
-			if (spank_job_epilog (jobid, uid) < 0)
-				exit (1);
-			exit (0);
-		}
-		fatal ("Invalid slurmstepd spank mode specified");
+		if (handle_spank_mode (argc, argv) < 0)
+			exit (1);
+		exit (0);
 	}
 	return (0);
 }
