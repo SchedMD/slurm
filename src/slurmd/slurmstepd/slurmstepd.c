@@ -179,6 +179,51 @@ ending:
 }
 
 
+static slurmd_conf_t * read_slurmd_conf_lite (int fd)
+{
+	int rc;
+	int len;
+	Buf buffer;
+	slurmd_conf_t *confl;
+
+	/*  First check to see if we've already initialized the
+	 *   global slurmd_conf_t in 'conf'. Allocate memory if not.
+	 */
+	confl = conf ? conf : xmalloc (sizeof (*confl));
+
+	safe_read(fd, &len, sizeof(int));
+
+	buffer = init_buf(len);
+	safe_read(fd, buffer->head, len);
+
+	rc = unpack_slurmd_conf_lite_no_alloc(confl, buffer);
+	if (rc == SLURM_ERROR)
+		fatal("slurmstepd: problem with unpack of slurmd_conf");
+
+	free_buf(buffer);
+
+	confl->log_opts.stderr_level = confl->debug_level;
+	confl->log_opts.logfile_level = confl->debug_level;
+	confl->log_opts.syslog_level = confl->debug_level;
+	/*
+	 * If daemonizing, turn off stderr logging -- also, if
+	 * logging to a file, turn off syslog.
+	 *
+	 * Otherwise, if remaining in foreground, turn off logging
+	 * to syslog (but keep logfile level)
+	 */
+	if (confl->daemonize) {
+		confl->log_opts.stderr_level = LOG_LEVEL_QUIET;
+		if (confl->logfile)
+			confl->log_opts.syslog_level = LOG_LEVEL_QUIET;
+	} else
+		confl->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+
+	return (confl);
+rwfail:
+	return (NULL);
+}
+
 static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
 {
 	const char *val;
@@ -305,31 +350,8 @@ _init_from_slurmd(int sock, char **argv,
 	pthread_mutex_unlock(&step_complete.lock);
 
 	/* receive conf from slurmd */
-	safe_read(sock, &len, sizeof(int));
-	incoming_buffer = xmalloc(len);
-	safe_read(sock, incoming_buffer, len);
-	buffer = create_buf(incoming_buffer, len);
-	if (unpack_slurmd_conf_lite_no_alloc(conf, buffer) == SLURM_ERROR)
-		fatal("slurmstepd: problem with unpack of slurmd_conf");
-	free_buf(buffer);
-
-	conf->log_opts.stderr_level = conf->debug_level;
-	conf->log_opts.logfile_level = conf->debug_level;
-	conf->log_opts.syslog_level = conf->debug_level;
-
-	/*
-	 * If daemonizing, turn off stderr logging -- also, if
-	 * logging to a file, turn off syslog.
-	 *
-	 * Otherwise, if remaining in foreground, turn off logging
-	 * to syslog (but keep logfile level)
-	 */
-	if (conf->daemonize) {
-		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (conf->logfile)
-			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
-	} else
-		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+	if ((conf = read_slurmd_conf_lite (sock)) == NULL)
+		fatal("Failed to read conf from slurmd");
 	log_alter(conf->log_opts, 0, conf->logfile);
 
 	debug2("debug level is %d.", conf->debug_level);

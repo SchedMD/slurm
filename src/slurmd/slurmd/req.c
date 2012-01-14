@@ -382,6 +382,19 @@ slurmd_req(slurm_msg_t *msg)
 	}
 	return;
 }
+static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
+{
+	int len;
+	Buf buffer = init_buf(0);
+	pack_slurmd_conf_lite(cf, buffer);
+	len = get_buf_offset(buffer);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, get_buf_data(buffer), len);
+	free_buf(buffer);
+	return (0);
+ rwfail:
+	return (-1);
+}
 
 static int
 _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
@@ -476,12 +489,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	safe_write(fd, &parent_addr, sizeof(slurm_addr_t));
 
 	/* send conf over to slurmstepd */
-	buffer = init_buf(0);
-	pack_slurmd_conf_lite(conf, buffer);
-	len = get_buf_offset(buffer);
-	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, get_buf_data(buffer), len);
-	free_buf(buffer);
+	if (_send_slurmd_conf_lite(fd, conf) < 0)
+		goto rwfail;
 
 	/* send cli address over to slurmstepd */
 	buffer = init_buf(0);
