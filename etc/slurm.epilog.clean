@@ -8,10 +8,10 @@
 # SLURM_BIN can be used for testing with private version of SLURM
 #SLURM_BIN="/usr/bin/"
 #
-if [ x$SLURM_UID == "x" ] ; then 
+if [ x$SLURM_UID = "x" ] ; then 
 	exit 0
 fi
-if [ x$SLURM_JOB_ID == "x" ] ; then 
+if [ x$SLURM_JOB_ID = "x" ] ; then 
         exit 0
 fi
 
