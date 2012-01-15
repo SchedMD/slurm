@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Made squeue -n and -w options more consistent with salloc, sbatch, srun,
     and scancel. Patch by Don Lipari, LLNL.
  -- Have sacctmgr remove user records when no associations exist for that user.
+ -- Several header file changes for clean build with NetBSD. Patches from
+    Aleksej Saushev.
 
 * Changes in SLURM 2.4.0.pre2
 =============================
