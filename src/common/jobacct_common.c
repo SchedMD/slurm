@@ -39,7 +39,11 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "jobacct_common.h"
+#if defined(__NetBSD__)
+#include <sys/resource.h>
+#endif
+
+#include "src/common/jobacct_common.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
