@@ -42,6 +42,9 @@
 #  include "config.h"
 #endif
 
+#if defined(__NetBSD__)
+#include <sys/resource.h> /* for struct rlimit */
+#endif
 #include <dirent.h>
 #include <fcntl.h>
 #include <pwd.h>
