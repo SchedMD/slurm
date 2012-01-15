@@ -44,6 +44,17 @@
 #include <inttypes.h>
 
 /*
+ *  Same as waitpid(2) but kill process group for pid after timeout secs.
+ *   name    IN: name or class of program we're waiting on (for log messages)
+ *   pid     IN: child on which to call waitpid(2)
+ *   pstatus IN: pointer to integer status
+ *   timeout IN: timeout in seconds
+ *
+ *  Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
+ */
+int waitpid_timeout (const char *name, pid_t pid, int *pstatus, int timeout);
+
+/*
  * Run a prolog or epilog script (does NOT drop privileges)
  * name IN: class of program (prolog, epilog, etc.),
  * path IN: pathname of program to run

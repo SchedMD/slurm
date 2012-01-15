@@ -57,6 +57,42 @@
 
 #include "src/slurmd/common/run_script.h"
 
+/*
+ *  Same as waitpid(2) but kill process group for pid after timeout secs.
+ *   Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
+ */
+int waitpid_timeout (const char *name, pid_t pid, int *pstatus, int timeout)
+{
+	int rc, opt;
+
+	*pstatus = 0;
+	if (timeout <= 0)
+		opt = 0;
+	else
+		opt = WNOHANG;
+
+	while (1) {
+		rc = waitpid(pid, pstatus, opt);
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("waidpid: %m");
+			return -1;
+		} else if (rc == 0) {
+			sleep(1);
+			if ((--timeout) == 0) {
+				killpg(pid, SIGKILL);
+				opt = 0;
+			}
+		} else  {
+			killpg(pid, SIGKILL);	/* kill children too */
+			return 0;
+		}
+	}
+
+	/* NORETURN */
+}
+
 
 /*
  * Run a prolog or epilog script (does NOT drop privileges)
@@ -72,7 +108,7 @@ static int
 run_one_script(const char *name, const char *path, uint32_t jobid,
 	   int max_wait, char **env)
 {
-	int status, rc, opt;
+	int status;
 	pid_t cpid;
 
 	xassert(env);
@@ -110,31 +146,9 @@ run_one_script(const char *name, const char *path, uint32_t jobid,
 		exit(127);
 	}
 
-	if (max_wait < 0)
-		opt = 0;
-	else
-		opt = WNOHANG;
-
-	while (1) {
-		rc = waitpid(cpid, &status, opt);
-		if (rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("waidpid: %m");
-			return 0;
-		} else if (rc == 0) {
-			sleep(1);
-			if ((--max_wait) == 0) {
-				killpg(cpid, SIGKILL);
-				opt = 0;
-			}
-		} else  {
-			killpg(cpid, SIGKILL);	/* kill children too */
-			return status;
-		}
-	}
-
-	/* NOTREACHED */
+	if (waitpid_timeout(name, cpid, &status, max_wait) < 0)
+		return (-1);
+	return status;
 }
 
 static void _xfree_f (void *x)
