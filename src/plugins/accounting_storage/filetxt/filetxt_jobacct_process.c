@@ -40,6 +40,9 @@
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
+#if defined(__NetBSD__)
+#include <sys/resource.h> /* for struct rusage */
+#endif
 #include <stdlib.h>
 #include <ctype.h>
 #include <sys/stat.h>
