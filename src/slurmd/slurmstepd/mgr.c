@@ -1286,18 +1286,23 @@ _fork_all_tasks(slurmd_job_t *job)
 		      job->cwd);
 		if (chdir("/tmp") < 0) {
 			error("couldn't chdir to /tmp either. dying.");
-			goto fail2;
+			rc = SLURM_ERROR;
+			goto fail3;
 		}
 	}
 
 	if (spank_user (job) < 0) {
 		error("spank_user failed.");
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto fail4;
 	}
 
 	exec_wait_list = list_create ((ListDelF) exec_wait_info_destroy);
-	if (!exec_wait_list)
-		return error ("Unable to create exec_wait_list");
+	if (!exec_wait_list) {
+		error ("Unable to create exec_wait_list");
+		rc = SLURM_ERROR;
+		goto fail4;
+	}
 
 	/*
 	 * Fork all of the task processes.
@@ -1309,7 +1314,8 @@ _fork_all_tasks(slurmd_job_t *job)
 
 		if ((ei = fork_child_with_wait_info (i)) == NULL) {
 			error("child fork: %m");
-			goto fail2;
+			rc = SLURM_ERROR;
+			goto fail4;
 		} else if ((pid = exec_wait_get_pid (ei)) == 0)  { /* child */
 			/*
 			 *  Destroy exec_wait_list in the child.
@@ -1422,7 +1428,8 @@ _fork_all_tasks(slurmd_job_t *job)
 		if (slurm_container_add(job, job->task[i]->pid)
 		    == SLURM_ERROR) {
 			error("slurm_container_add: %m");
-			goto fail1;
+			rc = SLURM_ERROR;
+			goto fail2;
 		}
 		jobacct_id.nodeid = job->nodeid;
 		jobacct_id.taskid = job->task[i]->gtid;
@@ -1431,7 +1438,8 @@ _fork_all_tasks(slurmd_job_t *job)
 
 		if (spank_task_post_fork (job, i) < 0) {
 			error ("spank task %d post-fork failed", i);
-			goto fail1;
+			rc = SLURM_ERROR;
+			goto fail2;
 		}
 	}
 	jobacct_gather_g_set_proctrack_container_id(job->cont_id);
@@ -1454,15 +1462,19 @@ _fork_all_tasks(slurmd_job_t *job)
 
 	return rc;
 
-fail2:
+fail4:
+	if (chdir (sprivs.saved_cwd) < 0) {
+		error ("Unable to return to working directory");
+	}
+fail3:
 	_reclaim_privileges (&sprivs);
 	if (exec_wait_list)
 		list_destroy (exec_wait_list);
+fail2:
 fail1:
 	pam_finish();
-	return SLURM_ERROR;
+	return rc;
 }
-
 
 /*
  * Loop once through tasks looking for all tasks that have exited with
