@@ -63,36 +63,40 @@
  */
 int waitpid_timeout (const char *name, pid_t pid, int *pstatus, int timeout)
 {
-	int rc, opt;
+	int timeout_ms = 1000 * timeout; /* timeout in ms                   */
+	int max_delay =  1000;           /* max delay between waitpid calls */
+	int delay = 10;                  /* initial delay                   */
+	int rc;
+	int options = WNOHANG;
 
-	*pstatus = 0;
 	if (timeout <= 0)
-		opt = 0;
-	else
-		opt = WNOHANG;
+		options = 0;
 
-	while (1) {
-		rc = waitpid(pid, pstatus, opt);
+	while ((rc = waitpid (pid, pstatus, options)) <= 0) {
 		if (rc < 0) {
 			if (errno == EINTR)
 				continue;
 			error("waidpid: %m");
-			return -1;
-		} else if (rc == 0) {
-			sleep(1);
-			if ((--timeout) == 0) {
-				killpg(pid, SIGKILL);
-				opt = 0;
-			}
-		} else  {
-			killpg(pid, SIGKILL);	/* kill children too */
-			return 0;
+			return (-1);
+		}
+		else if (timeout_ms <= 0) {
+			info ("%s%stimeout after %ds: killing pgid %d",
+			      name != NULL ? name : "",
+			      name != NULL ? ": " : "",
+			      timeout, pid);
+			killpg(pid, SIGKILL);
+			options = 0;
+		}
+		else {
+			poll(NULL, 0, delay);
+			timeout_ms -= delay;
+			delay = MIN (timeout_ms, MIN(max_delay, delay*2));
 		}
 	}
 
-	/* NORETURN */
+	killpg(pid, SIGKILL);  /* kill children too */
+	return (0);
 }
-
 
 /*
  * Run a prolog or epilog script (does NOT drop privileges)
