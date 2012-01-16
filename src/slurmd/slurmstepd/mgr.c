@@ -893,6 +893,12 @@ job_manager(slurmd_job_t *job)
 
 	debug3("Entered job_manager for %u.%u pid=%d",
 	       job->jobid, job->stepid, job->jmgr_pid);
+
+#ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#endif /* PR_SET_DUMPABLE */
+
 	/*
 	 * Preload plugins.
 	 */
@@ -945,11 +951,6 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 #endif
-
-#ifdef PR_SET_DUMPABLE
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		debug ("Unable to set dumpable to 1");
-#endif /* PR_SET_DUMPABLE */
 
 	set_umask(job);		/* set umask for stdout/err files */
 	if (job->user_managed_io)
