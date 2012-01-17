@@ -1208,7 +1208,7 @@ static void prepare_stdio (slurmd_job_t *job, slurmd_task_info_t *task)
 	return;
 }
 
-static void unblock_signals (void)
+static void _unblock_signals (void)
 {
 	sigset_t set;
 	sigemptyset(&set);
@@ -1327,7 +1327,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
 			/* log_fini(); */ /* note: moved into exec_task() */
 
-			unblock_signals();
+			_unblock_signals();
 
 			/*
 			 *  Need to setup stdio before setpgid() is called

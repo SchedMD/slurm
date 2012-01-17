@@ -15,11 +15,16 @@ int main (int ac, char **av)
 	}
 	for (i = 1; i < SIGRTMAX; i++) {
 		sigaction (i, NULL, &act);
-		if (act.sa_handler == SIG_DFL)
-			continue;
-		fprintf (stderr, "%s: Signal %d appears to be ignored!\n",
-			hostname, i);
-		rc = 1;
+		if (act.sa_handler == SIG_IGN) {
+			fprintf (stderr, "%s: Signal %d is ignored!\n",
+				 hostname, i);
+			rc = 1;
+		} else if (act.sa_handler != SIG_DFL) {
+			fprintf (stderr,
+				 "%s: Signal %d has handler function!\n",
+				 hostname, i);
+			rc = 1;
+		}
 	}
 	return (rc);
 }
