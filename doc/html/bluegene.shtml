@@ -13,9 +13,9 @@ described in this document.</p>
 <p>BlueGene systems have several unique features making for a few
 differences in how SLURM operates there.
 BlueGene systems consists of one or more <i>base partitions</i> or
-<i>midplanes</i> connected in a three-dimensional (BlueGene/L and BlueGene/P
-systems) or five-dimensional (BlueGene/Q) torus.
-Each <i>base partition</i> typically includes 512 <i>c-nodes</i> or compute
+<i>midplanes</i> connected in a three-dimensional - XYZ - (BlueGene/L
+and BlueGene/P systems) or four-dimensional - AXYZ - (BlueGene/Q) torus.
+Each <i>midplane</i> typically includes 512 <i>c-nodes</i> or compute
 nodes each containing two or more cores;
 one core is typically designed primarily for managing communications while the
 other cores are used primarily for computations.
