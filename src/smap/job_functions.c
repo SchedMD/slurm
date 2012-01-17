@@ -138,7 +138,7 @@ extern void get_job(void)
 
 			if (!params.commandline) {
 				if ((count >= text_line_cnt) &&
-				    (printed_jobs < (text_win->_maxy-3))) {
+				    (printed_jobs < (getmaxy(text_win) - 4))) {
 					job_ptr->num_cpus =
 						(int)letters[count%62];
 					wattron(text_win,
@@ -166,7 +166,7 @@ extern void get_job(void)
 
 		if (!params.commandline) {
 			if ((count>=text_line_cnt) &&
-			    (printed_jobs < (text_win->_maxy-3))) {
+			    (printed_jobs < (getmaxy(text_win) - 4))) {
 				xfree(job_ptr->nodes);
 				job_ptr->nodes = xstrdup("waiting...");
 				job_ptr->num_cpus = (int) letters[count%62];
@@ -387,8 +387,7 @@ static int _print_text_job(job_info_t * job_ptr)
 				return printed;
 			}
 			main_xcord++;
-			width = text_win->_maxx
-				- main_xcord;
+			width = getmaxx(text_win) - 1 - main_xcord;
 			if (job_ptr->nodes[i] == '[')
 				prefixlen = i + 1;
 			else if (job_ptr->nodes[i] == ','

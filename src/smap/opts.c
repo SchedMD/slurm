@@ -201,9 +201,9 @@ extern void print_date(void)
 
 extern void clear_window(WINDOW *win)
 {
-	int x,y;
-	for(x=0; x<=win->_maxx; x++)
-		for(y=0; y<win->_maxy; y++) {
+	int x, y;
+	for (x = 0; x < getmaxx(win); x++)
+		for (y = 0; y < getmaxy(win); y++) {
 			mvwaddch(win, y, x, ' ');
 		}
 	wmove(win, 1, 1);

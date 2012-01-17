@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 		_set_pairs();
 
 		grid_win = newwin(height, width, starty, startx);
-		max_display = grid_win->_maxy * grid_win->_maxx;
+		max_display = (getmaxy(grid_win) - 1) * (getmaxx(grid_win) - 1);
 
 		if (params.cluster_dims == 4) {
 			startx = width;
@@ -445,7 +445,7 @@ static int _get_option(void)
 	case KEY_DOWN:
 		if (!(params.cluster_flags & CLUSTER_FLAG_BG)) {
 			grid_line_cnt++;
-			if ((((grid_line_cnt-2) * (grid_win->_maxx-1)) +
+			if ((((grid_line_cnt - 2) * (getmaxx(grid_win) - 2)) +
 			    max_display) > dim_size[0]) {
 				grid_line_cnt--;
 				return 0;
@@ -505,7 +505,7 @@ static void *_resize_handler(int sig)
 	}
 
 	grid_win = newwin(height, width, starty, startx);
-	max_display = grid_win->_maxy * grid_win->_maxx;
+	max_display = (getmaxy(grid_win) - 1) * (getmaxx(grid_win) - 1);
 
 	if (params.cluster_dims == 4) {
 		startx = width;

@@ -126,7 +126,7 @@ extern void get_slurm_part(void)
 	else
 		recs = 0;
 	if (!params.commandline)
-		if ((recs - text_line_cnt) < (text_win->_maxy - 3))
+		if ((recs - text_line_cnt) < (getmaxy(text_win) - 4))
 			text_line_cnt--;
 
 	if (params.hl)
@@ -264,7 +264,7 @@ extern void get_bg_part(void)
 	}
 	if (!params.commandline)
 		if ((new_bg_ptr->record_count - text_line_cnt)
-		   < (text_win->_maxy-3))
+		   < (getmaxy(text_win) - 4))
 			text_line_cnt--;
 	if (params.hl)
 		nodes_req = get_requested_node_bitmap();
@@ -703,8 +703,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 		i = 0;
 		prefixlen = i;
 		while (nodes && nodes[i]) {
-			width = text_win->_maxx
-				- main_xcord;
+			width = getmaxx(text_win) - 1 - main_xcord;
 
 			if (!prefixlen && (nodes[i] == '[') &&
 			    (nodes[i - 1] == ','))
@@ -713,12 +712,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 			if (nodes[i - 1] == ',' && (width - 12) <= 0) {
 				main_ycord++;
 				main_xcord = tempxcord + prefixlen;
-			} else if (main_xcord >
-				   text_win->_maxx) {
+			} else if (main_xcord >= getmaxx(text_win)) {
 				main_ycord++;
 				main_xcord = tempxcord + prefixlen;
 			}
-
 
 			if ((printed = mvwaddch(text_win,
 						main_ycord,

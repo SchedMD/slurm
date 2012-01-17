@@ -132,7 +132,7 @@ extern void get_reservation(void)
 		if (resv.node_inx[0] != -1) {
 			if (!params.commandline) {
 				if ((count >= text_line_cnt) &&
-				    (printed_resv  < (text_win->_maxy-3))) {
+				    (printed_resv  < (getmaxy(text_win) - 4))){
 					resv.flags = (int)letters[count%62];
 					wattron(text_win,
 						COLOR_PAIR(colors[count%6]));
