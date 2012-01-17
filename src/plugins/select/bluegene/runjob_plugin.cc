@@ -60,6 +60,7 @@ extern "C" {
 
 #include <boost/thread/mutex.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <iosfwd>
 
@@ -147,6 +148,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	job_step_info_t *step_ptr = NULL;
 	runjob_job_t *runjob_job = NULL;
 	char tmp_char[16];
+	std::string message = "Unknown failure";
 
 	geo[0] = NO_VAL;
 	start_coords[0] = NO_VAL;
@@ -173,24 +175,24 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	}
 
 	if (found != looking_for) {
-		std::cerr << "Couldn't find ENV VARS SLURM_JOB_ID and "
-			  << "SLURM_STEP_ID.  Are you out of SLURM?  "
-			  << "Use srun, not runjob."
-			  << std::endl;
+		message = "Couldn't find ENV VARS SLURM_JOB_ID and "
+			"SLURM_STEP_ID.  Are you out of SLURM?  "
+			"Use srun, not runjob.";
 		goto deny_job;
 	}
 
 	if (slurm_get_job_steps((time_t) 0, runjob_job->job_id,
 				runjob_job->step_id,
 				&step_resp, SHOW_ALL)) {
-		slurm_perror((char *)"slurm_get_job_steps error");
+		message = "slurm_get_job_steps error";
 		goto deny_job;
 	}
 
 	if (!step_resp->job_step_count) {
-		std::cerr << "No steps match this id "
-			  << runjob_job->job_id << "."
-			  << runjob_job->step_id << std::endl;
+		message = "No steps match this id "
+			+ boost::lexical_cast<std::string>(runjob_job->job_id)
+			+ "."
+			+ boost::lexical_cast<std::string>(runjob_job->step_id);
 		goto deny_job;
 	}
 
@@ -200,18 +202,21 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	   supposed to be running.
 	*/
 	if (verify.user().uid() != step_ptr->user_id) {
-		std::cerr << "Jobstep " << runjob_job->job_id << "."
-			  << runjob_job->step_id
-			  << " should be ran by uid " << step_ptr->user_id
-			  << " but it is trying to be ran by "
-			  << verify.user().uid() << std::endl;
+		message = "Jobstep "
+			+ boost::lexical_cast<std::string>(runjob_job->job_id)
+			+ "."
+			+ boost::lexical_cast<std::string>(runjob_job->step_id)
+			+ " should be ran by uid "
+			+ boost::lexical_cast<std::string>(step_ptr->user_id)
+			+ " but it is trying to be ran by "
+			+ boost::lexical_cast<std::string>(verify.user().uid());
 		goto deny_job;
 	}
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_BLOCK_ID,
 				     &runjob_job->bg_block_id)) {
-		std::cerr << "Can't get the block id!" << std::endl;
+		message = "Can't get the block id!";
 		goto deny_job;
 	}
 	verify.block(runjob_job->bg_block_id);
@@ -219,29 +224,30 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_IONODES,
 				     &runjob_job->total_cnodes)) {
-		std::cerr << "Can't get the cnode string!" << std::endl;
+		message = "Can't get the cnode string!";
 		goto deny_job;
 	}
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_BLOCK_NODE_CNT,
 				     &block_cnode_cnt)) {
-		std::cerr << "Can't get the block node count!" << std::endl;
+		message = "Can't get the block node count!";
 		goto deny_job;
 	}
 
 	if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 				     SELECT_JOBDATA_NODE_CNT,
 				     &step_cnode_cnt)) {
-		std::cerr << "Can't get the step node count!" << std::endl;
+		message = "Can't get the step node count!";
 		goto deny_job;
 	}
 
 	if (!step_cnode_cnt || !block_cnode_cnt) {
-		std::cerr << "We didn't get both the step cnode "
-			  << "count and the block cnode cnt! step="
-			  << step_cnode_cnt << " block="
-			  << block_cnode_cnt << std::endl;
+		message = "We didn't get both the step cnode "
+			"count and the block cnode cnt! step="
+			+ boost::lexical_cast<std::string>(step_cnode_cnt)
+			+ " block="
+			+ boost::lexical_cast<std::string>(block_cnode_cnt);
 		goto deny_job;
 	} else if (step_cnode_cnt < block_cnode_cnt) {
 		uint16_t dim;
@@ -251,8 +257,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 					     SELECT_JOBDATA_GEOMETRY,
 					     &tmp_uint16)) {
-			std::cerr << "Can't figure out the geo "
-				  << "given for sub-block job!" << std::endl;
+			message = "Can't figure out the geo "
+				"given for sub-block job!";
 			goto deny_job;
 		}
 		/* since geo is an unsigned (who really knows what
@@ -273,8 +279,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 		if (slurm_get_select_jobinfo(step_ptr->select_jobinfo,
 					     SELECT_JOBDATA_CONN_TYPE,
 					     &tmp_uint16)) {
-			std::cerr << "Can't figure out the start loc "
-				  << "for sub-block job!" << std::endl;
+			message = "Can't figure out the start loc "
+				"for sub-block job!";
 			goto deny_job;
 		}
 		for (dim=0; dim<Dimension::NodeDims; dim++) {
@@ -287,19 +293,19 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	if (sub_block_job && start_coords[0] != NO_VAL)
 		verify.corner(bgsched::runjob::Corner(start_coords));
 	else if (sub_block_job) {
-		std::cerr << "No corner given for sub-block job!" << std::endl;
+		message = "No corner given for sub-block job!";
 		goto deny_job;
 	}
 
 	if (sub_block_job && geo[0] != NO_VAL)
 		verify.shape(bgsched::runjob::Shape(geo));
 	else if (sub_block_job) {
-		std::cerr << "No shape given for sub-block job!" << std::endl;
+		message = "No shape given for sub-block job!";
 		goto deny_job;
 	}
 
 	if (verify.block().empty() || (verify.block().length() < 3)) {
-		std::cerr << "YOU ARE OUTSIDE OF SLURM!!!!" << std::endl;
+		message = "YOU ARE OUTSIDE OF SLURM!!!!";
 		goto deny_job;
 	}
 
@@ -345,7 +351,7 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 deny_job:
 	_destroy_runjob_job(runjob_job);
 	slurm_free_job_step_info_response_msg(step_resp);
-	verify.deny_job(bgsched::runjob::Verify::DenyJob::Yes);
+	verify.deny_job(message);
 	return;
 }
 
