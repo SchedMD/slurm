@@ -48,11 +48,10 @@ exec $bin_cc -O -o $file_prog ${file_prog}.c
 #   is intermittent.
 #
 if { $partition == "" } {
-   if { info exists $env(SLURM_PARTITION) } {
+   if {[info exists env(SLURM_PARTITION)] } {
        set partition $env(SLURM_PARTITION)
-   }
-   else {
-       set partition default_partition
+   } else {
+       set partition [default_partition]
    }
 }
 set nnodes [available_nodes $partition]
