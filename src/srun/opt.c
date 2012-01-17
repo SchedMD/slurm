@@ -1659,7 +1659,7 @@ static void _opt_args(int argc, char **argv)
 				opt.max_nodes = opt.min_nodes = node_cnt
 					= opt.ntasks;
 			}
-		} else if (node_cnt > opt.ntasks)
+		} else if (node_cnt < opt.ntasks)
 			opt.max_nodes = opt.min_nodes = node_cnt = opt.ntasks;
 
 		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL)) {
