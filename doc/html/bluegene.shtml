@@ -30,8 +30,7 @@ for every <i>midplane</i> on the system. </p>
 a processor count equal to the number of cores on the midplane, which
 keeps the number of entities being managed by SLURM more reasonable.
 Since the current BlueGene software can sub-allocate a <i>midplane</i>
-into smaller blocks, more than one user job can execute on each <i>base
-partition</i> (subject to system administrator configuration). In the case of
+into smaller blocks, more than one user job can execute on each <i>midplane</i> (subject to system administrator configuration). In the case of
 BlueGene/Q systems, more than one user job can also execute in each block.
 To effectively utilize this environment, SLURM tools present the user with
 the view that each <i>c-node</i> is a separate node, so allocation requests
@@ -384,8 +383,8 @@ Make sure you know what you doing to assure the bgblocks will
 boot without dependency on the state of any midplane
 not included the bgblock.</p>
 
-<p>In the two previous modes you must insure that the base
-partitions defined in <i>bluegene.conf</i> are consistent with
+<p>In the two previous modes you must insure that the midplanes
+defined in <i>bluegene.conf</i> are consistent with
 those defined in <i>slurm.conf</i>.
 Note the <i>bluegene.conf</i> file contains only the numeric
 coordinates of midplanes while <i>slurm.conf</i> contains
