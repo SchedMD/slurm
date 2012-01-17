@@ -252,7 +252,7 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 		*uint32 = jobacct->tot_cpu;
 		break;
 	default:
-		debug("jobacct_g_set_setinfo data_type %d invalid", type);
+		debug("jobacct_g_set_getinfo data_type %d invalid", type);
 	}
 	slurm_mutex_unlock(&jobacct_lock);
 	return rc;
