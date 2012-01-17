@@ -85,6 +85,10 @@
 #  endif
 #endif
 
+#if defined(__NetBSD__)
+#include <stdlib.h>
+#include <string.h>
+#endif
 #ifndef HAVE_SETPROCTITLE
 #include <stdlib.h>
 #include <stdio.h>
@@ -260,7 +264,11 @@ init_setproctitle(int argc, char *argv[])
 	save_argc = argc;
 	save_argv = argv;
 
+#if defined(__NetBSD__)
+	setprogname (argv[0]);
+#else
 	_init__progname (argv[0]);
+#endif
 
 #if SETPROCTITLE_STRATEGY == PS_USE_CLOBBER_ARGV
 	/*
