@@ -1675,8 +1675,39 @@ static void _opt_args(int argc, char **argv)
 			info("You requested --ntasks-per-node=%d, which is not "
 			     "a power of 2.  Setting --ntasks-per-node=%d "
 			     "for you.", opt.ntasks_per_node, ntpn);
+			figured = true;
 		}
 		opt.ntasks_per_node = ntpn;
+
+		ntpn = opt.ntasks / opt.ntasks_per_node;
+		/* Make sure we are requesting the correct number of nodes. */
+		if (node_cnt < ntpn) {
+			opt.max_nodes = opt.min_nodes = ntpn;
+			if (opt.nodes_set && !figured) {
+				fatal("You requested -N %d and -n %d "
+				      "with --ntasks-per-node=%d.  "
+				      "This isn't a valid request.",
+				      node_cnt, opt.ntasks,
+				      opt.ntasks_per_node);
+			}
+			node_cnt = opt.max_nodes;
+		}
+
+		/* Do this again to make sure we have a legitimate
+		   ratio. */
+		ntpn = opt.ntasks_per_node;
+		if ((node_cnt * ntpn) < opt.ntasks) {
+			ntpn++;
+			while (!_check_is_pow_of_2(ntpn))
+				ntpn++;
+			if (!figured && (ntpn != opt.ntasks_per_node))
+				info("You requested --ntasks-per-node=%d, "
+				     "which cannot spread across %d nodes "
+				     "correctly.  Setting --ntasks-per-node=%d "
+				     "for you.",
+				     opt.ntasks_per_node, node_cnt, ntpn);
+			opt.ntasks_per_node = ntpn;
+		}
 	}
 
 #if defined HAVE_BG_FILES
