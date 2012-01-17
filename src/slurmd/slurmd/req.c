@@ -3821,6 +3821,68 @@ _destroy_env(char **env)
 	return;
 }
 
+static int
+run_spank_job_script (const char *mode, char **env)
+{
+	pid_t cpid;
+	int status = 0;
+	int pfds[2];
+
+	if (pipe (pfds) < 0) {
+		error ("run_spank_job_script: pipe: %m");
+		return (-1);
+	}
+
+	fd_set_close_on_exec (pfds[1]);
+
+	if ((cpid = fork ()) < 0) {
+		error ("executing spank %s: %m", mode);
+		return (-1);
+	}
+	if (cpid == 0) {
+		/* Run slurmstepd spank [prolog|epilog] */
+		char *argv[4] = {
+			(char *) conf->stepd_loc,
+			"spank",
+			(char *) mode,
+			NULL };
+
+		/* Set the correct slurm.conf location */
+		setenvf (&env, "SLURM_CONF", conf->conffile);
+
+		if (dup2 (pfds[0], STDIN_FILENO) < 0)
+			fatal ("dup2: %m");
+#ifdef SETPGRP_TWO_ARGS
+                setpgrp(0, 0);
+#else
+                setpgrp();
+#endif
+		info ("Calling %s %s %s\n", argv[0], argv[1], argv[2]);
+		execve (argv[0], argv, env);
+		error ("execve: %m");
+		exit (127);
+	}
+
+	close (pfds[0]);
+
+	if (_send_slurmd_conf_lite (pfds[1], conf) < 0)
+		error ("Failed to send slurmd conf to slurmstepd\n");
+	close (pfds[1]);
+
+	/*
+	 *  Wait for up to 120s for all spank plugins to complete:
+	 */
+	if (waitpid_timeout (mode, cpid, &status, 120) < 0) {
+		error ("spank/%s timed out after 120s", mode);
+		return (-1);
+	}
+
+	if (status)
+		error ("spank/%s returned status 0x%04x", mode, status);
+
+	return (status);
+}
+
 #ifdef HAVE_BG
 /* a slow prolog is expected on bluegene systems */
 static int
@@ -3912,6 +3974,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
 	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
+	run_spank_job_script("prolog", my_env);
 	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
@@ -3951,6 +4014,7 @@ _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(jobid);
+	run_spank_job_script ("epilog", my_env);
 	error_code = run_script("epilog", my_epilog, jobid, -1, my_env);
 	xfree(my_epilog);
 	_destroy_env(my_env);
