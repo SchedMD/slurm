@@ -24,12 +24,12 @@ both the user's application plus SLURM's <i>slurmd</i> daemon.
 Thus the <i>slurmd</i> daemon(s) executes on one or more of the BlueGene
 <i>Front End Nodes</i>.
 The <i>slurmd</i> daemons provide (almost) all of the normal SLURM services
-for every <i>base partition</i> on the system. </p>
+for every <i>midplane</i> on the system. </p>
 
-<p>Internally SLURM treats each <i>base partition</i> as one node with
-a processor count equal to the number of cores on the base partition, which
+<p>Internally SLURM treats each <i>midplane</i> as one node with
+a processor count equal to the number of cores on the midplane, which
 keeps the number of entities being managed by SLURM more reasonable.
-Since the current BlueGene software can sub-allocate a <i>base partition</i>
+Since the current BlueGene software can sub-allocate a <i>midplane</i>
 into smaller blocks, more than one user job can execute on each <i>base
 partition</i> (subject to system administrator configuration). In the case of
 BlueGene/Q systems, more than one user job can also execute in each block.
@@ -48,7 +48,7 @@ which is detailed later.
 Seven new sbatch options are available:
 <i>--geometry</i> (specify job size in each dimension),
 <i>--no-rotate</i> (disable rotation of geometry),
-<i>--conn-type</i> (specify interconnect type between base partitions, mesh or torus).
+<i>--conn-type</i> (specify interconnect type between midplanes, mesh or torus).
 <i>--blrts-image</i> (specify alternative blrts image for bluegene --block.  Default if not set, BGL only.)
 <i>--cnload-image</i> (specify alternative c-node image for bluegene block.  Default if not set, BGP only.)
 <i>--ioload-image</i> (specify alternative io image for bluegene block.  Default if not set, BGP only.)
@@ -88,14 +88,14 @@ date
 </pre>
 
 <h3><a name="naming">Naming Conventions</a></h3>
-<p>The naming of base partitions includes a numeric suffix representing the its
+<p>The naming of midplanes includes a numeric suffix representing the its
 coordinates with a zero origin. The suffix contains three digits on BlueGene/L
 and BlueGene/P systems, while four digits are required for the BlueGene/Q
-systems. For example, "bgp012" represents the base partition whose coordinate
+systems. For example, "bgp012" represents the midplane whose coordinate
 is at X=0, Y=1 and Z=2.
-SLURM uses an abbreviated format for describing base partitions in which the
+SLURM uses an abbreviated format for describing midplanes in which the
 end-points of the block enclosed are in square-brackets and separated by an "x".
-For example, "bgp[620x731]" is used to represent the eight base partitions
+For example, "bgp[620x731]" is used to represent the eight midplanes
 enclosed in a block with end-points and bgp620 and bgp731 (bgp620, bgp621,
 bgp630, bgp631, bgp720, bgp721, bgp730 and bgp731).</p>
 
@@ -113,8 +113,8 @@ invalid: BGL[000xC44], BglC00, bglb00, Bglzzz
 </p>
 
 <p>In a system configured with <i>small blocks</i> (any block less
-than a full base partition) there will be divisions in the base partition
-notation. On BlueGene/L and BlueGene/P systems, the base partition name may
+than a full midplane) there will be divisions in the midplane
+notation. On BlueGene/L and BlueGene/P systems, the midplane name may
 be followed by a square bracket enclosing ID numbers of the IO nodes associated
 with the block. For example, if there are 64 psets in a BlueGene/L
 configuration, "bgl012[0-15]" represents the first quarter or first 16 IO nodes
@@ -130,9 +130,9 @@ one in each of the five dimensions.</p>
 <i>sview</i> (<i>sview</i> provides more viewing and configuring options).
 See each command's man page for details.
 A sample of smap output is provided below showing the location of five jobs.
-Note the format of the list of base partitions allocated to each job.
-Also note that idle (unassigned) base partitions are indicated by a period.
-Down and drained base partitions (those not available for use) are
+Note the format of the list of midplanes allocated to each job.
+Also note that idle (unassigned) midplanes are indicated by a period.
+Down and drained midplanes (those not available for use) are
 indicated by a number sign (bg703 in the display below).
 The legend is for illustrative purposes only.
 The origin (zero in every dimension) is shown at the rear left corner of the bottom plane.
@@ -174,11 +174,11 @@ You can identify the bgblock associated with your job using the command
 <i>smap -Db -c</i>.
 The time to boot a bgblock is related to its size, but should range from
 from a few minutes to about 15 minutes for a bgblock containing 128
-base partitions.
+midplanes.
 Only after the bgblock is READY will your job's output file be created
 and the script execution begin.
 If the bgblock boot fails, SLURM will attempt to reboot several times
-before draining the associated base partitions and aborting the job.</p>
+before draining the associated midplanes and aborting the job.</p>
 
 <p>The job will continue to be in a RUNNING state until the bgjob has
 completed and the bgblock ownership is changed.
@@ -233,7 +233,7 @@ it is capable of executing Bridge APIs.
 The slurmd daemons executes the user scripts and there must be at least one
 front end node configured for this purpose. Multiple front end nodes may be
 configured for slurmd use to improve performance and fault tolerance.
-Each slurmd can execute jobs for every base partition and the work will be
+Each slurmd can execute jobs for every midplane and the work will be
 distributed among the slurmd daemons to balance the workload.
 You can use the scontrol command to drain individual compute nodes as desired
 and return them to service.</p>
@@ -296,7 +296,7 @@ is enabled to execute jobs only at certain times; while a default partition
 could be configured to execute jobs at other times.
 Jobs could still be queued in a partition that is configured in a DOWN
 state and scheduled to execute when changed to an UP state.
-Base partitions can also be moved between slurm partitions either by changing
+midplanes can also be moved between slurm partitions either by changing
 the <i>slurm.conf</i> file and restarting the slurmctld daemon or by using
 the scontrol reconfig command. </p>
 
@@ -381,14 +381,14 @@ have any passthroughs in the X-dimension associated to them</b>.
 Usually this is only an issue on larger BlueGene systems.
 <b>It is advisable to use this mode with extreme caution.</b>
 Make sure you know what you doing to assure the bgblocks will
-boot without dependency on the state of any base partition
+boot without dependency on the state of any midplane
 not included the bgblock.</p>
 
 <p>In the two previous modes you must insure that the base
 partitions defined in <i>bluegene.conf</i> are consistent with
 those defined in <i>slurm.conf</i>.
 Note the <i>bluegene.conf</i> file contains only the numeric
-coordinates of base partitions while <i>slurm.conf</i> contains
+coordinates of midplanes while <i>slurm.conf</i> contains
 the name prefix in addition to the numeric coordinates.</p>
 
 <p>The final mode is <i>dynamic</i> partitioning.
@@ -411,7 +411,7 @@ making it so no job will run on the block.  To set it back to a usable
 state, set the state to free (i.e.
 "<i>scontrol update BlockName=RMP0 state=free</i>").
 
-<p>Alternatively, if only part of a base partition needs to be put
+<p>Alternatively, if only part of a midplane needs to be put
 into an error state which isn't already in a block of the size you
 need, you can set a collection of IO nodes into an error state using scontrol
 (i.e. "<i>scontrol update subbpname=bg000[0-3] state=error</i>").
@@ -421,13 +421,13 @@ block.  To set it back to a usable state set the state to free (i.e.
 "<i>scontrol update BlockName=RMP0 state=free</i>" or
  "<i>scontrol update subbpname=bg000[0-3] state=free</i>"). This is
  helpful to allow other jobs to run on the unaffected nodes in
- the base partition.
+ the midplane.
 
 
 <p>One of these modes must be defined in the <i>bluegene.conf</i> file
 with the option <i>LayoutMode=MODE</i> (where MODE=STATIC, DYNAMIC or OVERLAP).</p>
 
-<p>The number of c-nodes in a base partition and in a node card must
+<p>The number of c-nodes in a midplane and in a node card must
 be defined.
 This is done using the keywords <i>BasePartitionNodeCnt=NODE_COUNT</i>
 and <i>NodeCardNodeCnt=NODE_COUNT</i> respectively in the <i>bluegene.conf</i>
@@ -479,11 +479,11 @@ A sample <i>bluegene.conf</i> file is shown below.
 #                       STATIC:  Use defined non-overlapping bgblocks
 #                       OVERLAP: Use defined bgblocks, which may overlap
 #                       DYNAMIC: Create bgblocks as needed for each job
-# BasePartitionNodeCnt: Number of c-nodes per base partition
+# BasePartitionNodeCnt: Number of c-nodes per midplane
 # NodeCardNodeCnt:      Number of c-nodes per node card.
 # Numpsets:             The Numpsets used for creation of all bgblocks
 #                       equals this value multiplied by the number of
-#                       base partitions in the bgblock.
+#                       midplanes in the bgblock.
 #
 # BridgeAPILogFile:  Pathname of file in which to write the
 #                    Bridge API logs.
@@ -537,7 +537,7 @@ BridgeAPIVerbose=0
 ###############################################################################
 # Define the static/overlap partitions (bgblocks)
 #
-# BPs: The base partitions (midplanes) in the bgblock using XYZ coordinates
+# BPs: The midplanes (midplanes) in the bgblock using XYZ coordinates
 # Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS"
 #        Type SMALL will divide a midplane into multiple bgblocks
 #        based off options NodeCards and Quarters to determine type of
@@ -550,7 +550,7 @@ BridgeAPIVerbose=0
 # * A bgblock is implicitly created containing all resources on the system
 # * Bgblocks must not overlap (except for implicitly created bgblock)
 #   This will be the case when smap is used to create a configuration file
-# * All Base partitions defined here must also be defined in the slurm.conf file
+# * All midplanes defined here must also be defined in the slurm.conf file
 # * Define only the numeric coordinates of the bgblocks here. The prefix
 #   will be based upon the name defined in slurm.conf
 ###############################################################################
@@ -613,7 +613,7 @@ Subsequent jobs use this same bgblock without rebooting by changing
 the associated user field.
 The only time bgblocks should be freed and rebooted, in normal operation,
 is when going to or from full-system
-jobs (two or more bgblocks sharing base partitions can not be in a
+jobs (two or more bgblocks sharing midplanes can not be in a
 ready state at the same time).
 When this logic became available at LLNL, approximately 85 percent of
 bgblock boots were eliminated and the overhead of job startup went
@@ -626,10 +626,10 @@ or rebooting of bgblocks.  </p>
 <p>Be aware that SLURM will issue multiple bgblock boot requests as
 needed (e.g. when the boot fails).
 If the bgblock boot requests repeatedly fail, SLURM will configure
-the failing base partitions to a DRAINED state so as to avoid continuing
+the failing midplanes to a DRAINED state so as to avoid continuing
 repeated reboots and the likely failure of user jobs.
 A system administrator should address the problem before returning
-the base partitions to service.</p>
+the midplanes to service.</p>
 
 <p>If the slurmctld daemon is cold-started (<b>/etc/init.d/slurm startclean</b>
 or <b>slurmctld -c</b>) it is recommended that the slurmd daemon(s) be
@@ -691,7 +691,7 @@ information about every Bridge API call issued.</p>
 
 <p>Note that slurmcltld log messages of the sort
 <i>Nodes bg[000x133] not responding</i> are indicative of the slurmd
-daemon serving as a front-end to those base partitions is not responding (on
+daemon serving as a front-end to those midplanes is not responding (on
 non-BlueGene systems, the slurmd actually does run on the compute
 nodes, so the message is more meaningful there). </p>
 
