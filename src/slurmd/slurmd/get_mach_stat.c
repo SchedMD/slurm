@@ -68,6 +68,8 @@
 #if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__)
 #  include <sys/times.h>
 #  include <sys/types.h>
+#elif defined(__NetBSD__)
+#  include <sys/times.h> /* for times(3) */
 #else
 /* NOTE: Getting the system uptime on AIX uses completely different logic.
  * sys/sysinfo.h on AIX defines structures that conflict with SLURM code. */
@@ -343,7 +345,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 extern int get_up_time(uint32_t *up_time)
 {
-#if defined(HAVE_AIX) || defined(__sun)	|| defined(__APPLE__)
+#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__)
 	clock_t tm;
 	struct tms buf;
 
