@@ -1428,10 +1428,10 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
  	status=hostlist_find(hl,alloc_node);
  	hostlist_destroy(hl);
 
- 	if(status==-1)
-		status=0;
+ 	if (status == -1)
+		status = 0;
  	else
-		status=1;
+		status = 1;
 
  	return status;
 }
