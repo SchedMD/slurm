@@ -47,6 +47,10 @@
 #  include <sys/syslog.h>
 #endif
 
+#if defined(__NetBSD__)
+#include <sys/types.h> /* for pid_t */
+#include <sys/signal.h> /* for SIGKILL */
+#endif
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>

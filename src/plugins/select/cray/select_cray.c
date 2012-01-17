@@ -88,6 +88,10 @@ void *acct_db_conn = NULL;
 bitstr_t *avail_node_bitmap = NULL;
 #endif
 
+#if !defined (SIGRTMIN) && defined(__NetBSD__)
+/* protected definition in <sys/signal.h> */
+#  define SIGRTMIN (SIGPWR+1)
+#endif
 /*
  * SIGRTMIN isn't defined on osx, so lets keep it above the signals in use.
  */

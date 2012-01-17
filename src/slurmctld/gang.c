@@ -40,6 +40,10 @@
  * gang scheduler plugin for SLURM
  */
 
+#if defined(__NetBSD__)
+#include <sys/types.h> /* for pid_t */
+#include <sys/signal.h> /* for SIGKILL */
+#endif
 #include <pthread.h>
 #include <unistd.h>
 

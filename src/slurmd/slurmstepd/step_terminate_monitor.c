@@ -35,6 +35,10 @@
 #include "src/common/read_config.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
+#if defined(__NetBSD__)
+#include <sys/types.h> /* for pid_t */
+#include <sys/signal.h> /* for SIGKILL */
+#endif
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/errno.h>
