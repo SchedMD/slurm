@@ -1580,13 +1580,13 @@ static int _bracket_cnt(char *value)
 	return count;
 }
 
-/* 
- * Load user environment from a specified file.
- * 
- * This will read in a user specified file, that is invoked
- * via the --export-file option in sbatch. This file must
- * have NULL separated line. The NULL character is to allow
- * special characters in the environment definitons.
+/*
+ * Load user environment from a specified file or pipe.
+ *
+ * This will read in a user specified file or pipe, that is invoked
+ * via the --export-file option in sbatch. The NAME=value entries must
+ * be NULL separated to support special characters in the environment
+ * definitions.
  *
  * (Note: This is being added to a minor release. For the
  * next major release, it might be a consideration to merge
@@ -1596,44 +1596,59 @@ static int _bracket_cnt(char *value)
 char **env_array_from_file(const char *fname)
 {
 	char *buf = NULL, *ptr = NULL, *eptr = NULL;
-	char *line, *value;
+	char *line, *value, *p;
 	char **env = NULL;
 	char name[256];
-	struct stat buffer;
-	ssize_t n;
+	int buf_size = BUFSIZ, buf_left;
+	int file_size = 0, tmp_size;
 	int separator = '\0';
-	int file_size = 0;
 	int fd;
 
-	fd = open(fname,O_RDONLY );
-	if (fd == -1) {
-		error("Could not open user environment file at %s",
-			fname);
-		return NULL;
-	}
+	/*
+	 * If file name is a numeric value, then it is assumed to be a pipe.
+	 */
+	fd = (int)strtol(fname, &p, 10);
+	if ((*p != '\0') || (fd < 3) || (fd > sysconf(_SC_OPEN_MAX)) ||
+	    (fcntl(fd, F_GETFL) < 0)) {
+		fd = open(fname, O_RDONLY);
+		if (fd == -1) {
+			error("Could not open user environment file %s", fname);
+			return NULL;
+		}
+		verbose("Getting environment variables from %s", fname);
+	} else
+		verbose("Getting environment variables from pipe %d", fd);
 
 	/*
-	 * Then read in the user's environment file data.
+	 * Read in the user's environment data.
 	 */
-	fstat(fd, &buffer);
-	file_size = buffer.st_size;
-	buf = xmalloc(file_size);
-	if ((n = fd_read_n(fd, buf, file_size)) < 0) {
-		error("Could not read of environment file at %s", fname);
-		close (fd);
-		xfree(buf);
-		return NULL;
+	buf = ptr = xmalloc(buf_size);
+	buf_left = buf_size;
+	while ((tmp_size = read(fd, ptr, buf_left))) {
+		if (tmp_size < 0) {
+			if (errno == EINTR)
+				continue;
+			error("read(environment_file): %m");
+			break;
+		}
+		buf_left  -= tmp_size;
+		file_size += tmp_size;
+		if (buf_left == 0) {
+			buf_size += BUFSIZ;
+			xrealloc(buf, buf_size);
+		}
+		ptr = buf + file_size;
+		buf_left = buf_size - file_size;
 	}
 	close(fd);
 
 	/*
-	 * Parse the buffer into indivudal environment variable names
+	 * Parse the buffer into individual environment variable names
 	 * and build the environment.
 	 */
-	verbose("Getting file of  environment variables at %s", fname);
-	env = env_array_create();
-	line   = xmalloc(ENV_BUFSIZE);
-	value  = xmalloc(ENV_BUFSIZE);
+	env   = env_array_create();
+	line  = xmalloc(ENV_BUFSIZE);
+	value = xmalloc(ENV_BUFSIZE);
 	ptr = buf;
 	while (ptr) {
 		memset(line, 0, ENV_BUFSIZE);
@@ -1641,12 +1656,12 @@ char **env_array_from_file(const char *fname)
 		if ((ptr == eptr) || (eptr == NULL))
 			break;
 		strncpy(line, ptr,(eptr - ptr));
- 		ptr = eptr+1;
+ 		ptr = eptr + 1;
 		if (_env_array_entry_splitter(line, name, sizeof(name),
 					      value, ENV_BUFSIZE) &&
 		    (!_discard_env(name, value)) &&
 		    (name[0] != ' ')) {
-                        env_array_overwrite(&env, name, value);
+			env_array_overwrite(&env, name, value);
 		}
 	}
 	xfree(buf);
