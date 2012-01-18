@@ -2810,7 +2810,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--switch=max-switches{@max-time-to-wait}]\n"
-"              [--export[=names]] [--export-file=file] executable [args...]\n");
+"              [--export[=names]] [--export-file=file|pipe] executable [args...]\n");
 }
 
 static void _help(void)
@@ -2829,7 +2829,7 @@ static void _help(void)
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
 "      --export[=names]        specify environment variables to export\n"
-"      --export-file=file      specify environment variables file to export\n"
+"      --export-file=file|pipe specify environment variables file or pipe to export\n"
 "      --get-user-env          load environment from local cluster\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --gres=list             required generic resources\n"

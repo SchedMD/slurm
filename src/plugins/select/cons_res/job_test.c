@@ -1628,13 +1628,13 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 					best_fit_nodes = switches_node_cnt[j];
 					best_fit_location = j;
 					best_fit_sufficient = sufficient;
-					leaf_switch_count++;
 				}
 			}
 		}
 		if (best_fit_nodes == 0)
 			break;
 
+		leaf_switch_count++;
 		/* Use select nodes from this leaf */
 		first = bit_ffs(switches_bitmap[best_fit_location]);
 		last  = bit_fls(switches_bitmap[best_fit_location]);
@@ -2105,7 +2105,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				  bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only);
-	if (cpu_count) {
+	if ((cpu_count) && (job_ptr->best_switch)) {
 		/* job fits! We're done. */
 		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
 			info("cons_res: cr_job_test: test 1 pass - "
@@ -2319,7 +2319,7 @@ alloc_job:
 	FREE_NULL_BITMAP(orig_map);
 	FREE_NULL_BITMAP(avail_cores);
 	FREE_NULL_BITMAP(tmpcore);
-	if (!cpu_count) {
+	if ((!cpu_count) || (!job_ptr->best_switch)) {
 		/* we were sent here to cleanup and exit */
 		FREE_NULL_BITMAP(free_cores);
 		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {

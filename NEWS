@@ -152,6 +152,8 @@ documents those changes that are of interest to users and admins.
     Moab. Patch from Phil Eckert, LLNL.
  -- Fix for sacct printing CPUTime(RAW) where the the is greater than a 32 bit
     number.
+ -- Fix bug in --switch option with topology resulting in bad switch count use.
+    Patch from Alejandro Lucero Palau (Barcelona Supercomputer Center).
 
 * Changes in SLURM 2.3.2
 ========================

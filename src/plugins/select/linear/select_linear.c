@@ -1306,7 +1306,6 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				best_fit_nodes = switches_node_cnt[j];
 				best_fit_location = j;
 				best_fit_sufficient = sufficient;
-				leaf_switch_count++;
 			}
 		}
 #if SELECT_DEBUG
@@ -1344,6 +1343,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				break;
 		}
 		switches_node_cnt[best_fit_location] = 0;
+		leaf_switch_count++;
 		if (job_ptr->req_switch > 0) {
 			if (time_waiting > job_ptr->wait4switch) {
 				job_ptr->best_switch = true;
