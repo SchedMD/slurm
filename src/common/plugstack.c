@@ -440,6 +440,34 @@ static int _spank_conf_include (struct spank_stack *,
 	const char *, int, const char *);
 
 static int
+spank_stack_plugin_valid_for_context (struct spank_stack *stack,
+	struct spank_plugin *p)
+{
+	switch (stack->type) {
+	case S_TYPE_JOB_SCRIPT:
+		if (p->ops.job_prolog || p->ops.job_epilog)
+			return (1);
+		break;
+	case S_TYPE_SLURMD:
+		if (p->ops.slurmd_init || p->ops.slurmd_exit)
+			return (1);
+		break;
+	case S_TYPE_LOCAL:
+	case S_TYPE_ALLOCATOR:
+	case S_TYPE_REMOTE:
+		/*
+		 *  For backwards compatibility: All plugins were
+		 *   always loaded in these contexts, so continue
+		 *   to do so
+		 */
+		return (1);
+	default:
+		return (0);
+	}
+	return (0);
+}
+
+static int
 _spank_stack_process_line(struct spank_stack *stack,
 	const char *file, int line, char *buf)
 {
@@ -490,6 +518,12 @@ _spank_stack_process_line(struct spank_stack *stack,
 	if (plugin_in_list (stack->plugin_list, p)) {
 		error ("spank: %s: cowardly refusing to load a second time",
 			p->fq_path);
+		_spank_plugin_destroy (p);
+		return (0);
+	}
+
+	if (!spank_stack_plugin_valid_for_context (stack, p)) {
+		verbose ("spank: %s: no callbacks in this context", p->fq_path);
 		_spank_plugin_destroy (p);
 		return (0);
 	}
