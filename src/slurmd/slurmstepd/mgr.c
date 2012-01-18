@@ -169,6 +169,7 @@ typedef struct kill_thread {
  * Job manager related prototypes
  */
 static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
+static void _block_signals(void);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr_t *, int);
 static int  _drain_node(char *reason);
@@ -196,6 +197,7 @@ static void _setargs(slurmd_job_t *job);
 static void _random_sleep(slurmd_job_t *job);
 static int  _run_script_as_user(const char *name, const char *path,
 				slurmd_job_t *job, int max_wait, char **env);
+static void _unblock_signals(void);
 
 /*
  * Batch job management prototypes:
@@ -997,7 +999,7 @@ job_manager(slurmd_job_t *job)
 
 	io_close_task_fds(job);
 
-	xsignal_block(mgr_sigarray);
+	_block_signals();
 	reattach_job = job;
 
 	job->state = SLURMSTEPD_STEP_RUNNING;
@@ -1207,9 +1209,21 @@ static void prepare_stdio (slurmd_job_t *job, slurmd_task_info_t *task)
 	return;
 }
 
+static void _block_signals (void)
+{
+	int i;
+
+	for (i = 0; mgr_sigarray[i]; i++)	/* eliminate pending signals */
+		xsignal(mgr_sigarray[i], SIG_IGN);
+	xsignal_block (mgr_sigarray);
+}
 static void _unblock_signals (void)
 {
 	sigset_t set;
+	int i;
+
+	for (i = 0; mgr_sigarray[i]; i++)	/* eliminate pending signals */
+		xsignal(mgr_sigarray[i], SIG_DFL);
 	sigemptyset(&set);
 	xsignal_set_mask (&set);
 }
