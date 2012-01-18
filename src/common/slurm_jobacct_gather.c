@@ -297,13 +297,15 @@ extern int slurm_jobacct_gather_init(void)
 
 extern int slurm_jobacct_gather_fini(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	if (!g_jobacct_gather_context)
-		return SLURM_SUCCESS;
-
-	rc = _slurm_jobacct_gather_context_destroy(g_jobacct_gather_context);
-	g_jobacct_gather_context = NULL;
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if (g_jobacct_gather_context) {
+		rc = _slurm_jobacct_gather_context_destroy(
+				g_jobacct_gather_context);
+		g_jobacct_gather_context = NULL;
+	}
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );
 	return rc;
 }
 
