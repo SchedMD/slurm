@@ -63,7 +63,7 @@ set nnodes [available_nodes $partition]
 set timeout $max_job_delay
 set srun_pid  [exp_spawn $srun -N$nnodes -p $partition ./$file_prog]
 expect {
-	-re "Signal (.*) appears to be ignored" {
+	-re "Signal (.*) is ignored!" {
 		send_user "FAILURE: At least one signal is ignored!\n"
 		set exit_code 1
 	}
