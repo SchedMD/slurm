@@ -79,6 +79,7 @@ extern time_t last_bg_update;
 extern pthread_mutex_t block_state_mutex;
 extern int blocks_are_created;
 extern int num_unused_cpus;
+extern int num_possible_unused_cpus;
 extern slurmctld_lock_t job_read_lock;
 
 extern int bridge_init(char *properties_file);

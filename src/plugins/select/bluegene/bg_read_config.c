@@ -618,6 +618,7 @@ extern int read_bg_conf(void)
 	for (i = 0; i<SYSTEM_DIMENSIONS; i++)
 		num_unused_cpus *= dims[i];
 	num_unused_cpus *= bg_conf->cpus_per_mp;
+	num_possible_unused_cpus = num_unused_cpus;
 
 	if (!s_p_get_uint16(&bg_conf->nodecard_cnode_cnt,
 			    "NodeBoardNodeCnt", tbl)) {

@@ -124,6 +124,7 @@ time_t last_bg_update;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 int blocks_are_created = 0;
 int num_unused_cpus = 0;
+int num_possible_unused_cpus = 0;
 slurmctld_lock_t job_read_lock = {
 	NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
