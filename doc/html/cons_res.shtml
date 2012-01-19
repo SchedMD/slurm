@@ -45,9 +45,9 @@ this plug-in is described below.
      as consumable resources.</li>
    </ul>
   <li>In the cases where Memory is the consumable resource or one of
-      the two consumable resources the <b>Memory</b> parameter which
-      defines a node amount of real memory in slurm.conf must be
-      set when fastschedule=1.
+      the two consumable resources the <b>RealMemory</b> parameter, which
+      defines a node's amount of real memory in slurm.conf, must be
+      set when FastSchedule=1.
   <li>srun's <i>-E</i> extension for sockets, cores, and threads are
       ignored within the node allocation mechanism when CR_CPU or
       CR_CPU_MEMORY is selected. It is considered to compute the total
