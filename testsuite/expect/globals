@@ -1467,6 +1467,32 @@ proc available_nodes { partition } {
 	return $available
 }
 
+################################################################
+#
+# Proc: partition_shared
+#
+# Purpose: Determine the shared configuration of the specified
+#          partition
+#
+# Returns: Return the shared configuration of the specified
+#          partition
+#
+#
+# Input: partition - name of a partition
+#
+################################################################
+
+proc partition_shared { partition } {
+	global sinfo
+
+	set shared "No"
+	send_user "$sinfo --noheader --partition $partition --format %h\n"
+	set fd [open "|$sinfo --noheader --partition $partition --format %h"]
+	gets $fd line
+	catch {close $fd}
+	regexp {[a-zA-Z]+} $line shared
+	return $shared
+}
 
 ################################################################
 #

@@ -181,6 +181,13 @@ if {[string compare [get_bluegene_layout] Dynamic]} {
 	exit $exit_code
 }
 
+set part_name [default_partition]
+set shared [partition_shared $part_name]
+if {[string compare $shared FORCE]} {
+	send_user "\nFAILURE: System configured Dynamic, but Partition $part_name has Shared=$shared\n"
+	exit 1
+}
+
 set psets [get_bluegene_psets]
 
 if {$psets == 0} {
