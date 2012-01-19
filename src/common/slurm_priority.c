@@ -49,7 +49,7 @@ typedef struct slurm_priority_ops {
 	double   (*calc_fs_factor) (long double usage_efctv,
 				    long double shares_norm);
 	List	 (*get_priority_factors)
-	(priority_factors_request_msg_t *req_msg);
+	(priority_factors_request_msg_t *req_msg, uid_t uid);
 } slurm_priority_ops_t;
 
 typedef struct slurm_priority_context {
@@ -276,10 +276,10 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 }
 
 extern List priority_g_get_priority_factors_list(
-	priority_factors_request_msg_t *req_msg)
+	priority_factors_request_msg_t *req_msg, uid_t uid)
 {
 	if (slurm_priority_init() < 0)
 		return NULL;
 
-	return (*(g_priority_context->ops.get_priority_factors))(req_msg);
+	return (*(g_priority_context->ops.get_priority_factors))(req_msg, uid);
 }

@@ -155,7 +155,7 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 }
 
 extern List priority_p_get_priority_factors_list(
-	priority_factors_request_msg_t *req_msg)
+	priority_factors_request_msg_t *req_msg, uid_t uid)
 {
 	return(list_create(NULL));
 }

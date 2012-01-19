@@ -1340,7 +1340,7 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 }
 
 extern List priority_p_get_priority_factors_list(
-	priority_factors_request_msg_t *req_msg)
+	priority_factors_request_msg_t *req_msg, uid_t uid)
 {
 	List req_job_list;
 	List req_user_list;
@@ -1393,10 +1393,10 @@ extern List priority_p_get_priority_factors_list(
 				continue;
 
 			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-			    && (job_ptr->user_id != req_msg->uid)
-			    && !validate_operator(req_msg->uid)
+			    && (job_ptr->user_id != uid)
+			    && !validate_operator(uid)
 			    && !assoc_mgr_is_user_acct_coord(
-				    acct_db_conn, req_msg->uid,
+				    acct_db_conn, uid,
 				    job_ptr->account))
 				continue;
 

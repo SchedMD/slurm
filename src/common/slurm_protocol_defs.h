@@ -457,7 +457,6 @@ typedef struct priority_factors_object {
 typedef struct priority_factors_request_msg {
 	List	 job_id_list;
 	List	 uid_list;
-	uid_t    uid; /* used as a stop gap to verify auth DO NOT PACK */
 } priority_factors_request_msg_t;
 
 typedef struct priority_factors_response_msg {
