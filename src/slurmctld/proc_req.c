@@ -1059,6 +1059,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	slurm_msg_t response_msg;
 
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	req_msg->uid = uid;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_PRIORITY_FACTORS from uid=%d", uid);

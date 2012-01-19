@@ -154,6 +154,9 @@ documents those changes that are of interest to users and admins.
     number.
  -- Fix bug in --switch option with topology resulting in bad switch count use.
     Patch from Alejandro Lucero Palau (Barcelona Supercomputer Center).
+ -- Fix PrivateFlags bug when using Priority Multifactor plugin.  If using sprio
+    all jobs would be returned even if the flag was set.
+    Patch from Bill Brophy, Bull.
 
 * Changes in SLURM 2.3.2
 ========================
