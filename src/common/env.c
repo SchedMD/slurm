@@ -1593,9 +1593,9 @@ static int _bracket_cnt(char *value)
 }
 
 /*
- * Load user environment from a specified file or pipe.
+ * Load user environment from a specified file or file descriptor.
  *
- * This will read in a user specified file or pipe, that is invoked
+ * This will read in a user specified file or fd, that is invoked
  * via the --export-file option in sbatch. The NAME=value entries must
  * be NULL separated to support special characters in the environment
  * definitions.
@@ -1608,7 +1608,7 @@ static int _bracket_cnt(char *value)
 char **env_array_from_file(const char *fname)
 {
 	char *buf = NULL, *ptr = NULL, *eptr = NULL;
-	char *line, *value, *p;
+	char *value, *p;
 	char **env = NULL;
 	char name[256];
 	int buf_size = BUFSIZ, buf_left;
@@ -1617,7 +1617,8 @@ char **env_array_from_file(const char *fname)
 	int fd;
 
 	/*
-	 * If file name is a numeric value, then it is assumed to be a pipe.
+	 * If file name is a numeric value, then it is assumed to be a
+	 * file descriptor.
 	 */
 	fd = (int)strtol(fname, &p, 10);
 	if ((*p != '\0') || (fd < 3) || (fd > sysconf(_SC_OPEN_MAX)) ||
@@ -1629,7 +1630,7 @@ char **env_array_from_file(const char *fname)
 		}
 		verbose("Getting environment variables from %s", fname);
 	} else
-		verbose("Getting environment variables from pipe %d", fd);
+		verbose("Getting environment variables from fd %d", fd);
 
 	/*
 	 * Read in the user's environment data.
@@ -1659,25 +1660,18 @@ char **env_array_from_file(const char *fname)
 	 * and build the environment.
 	 */
 	env   = env_array_create();
-	line  = xmalloc(ENV_BUFSIZE);
 	value = xmalloc(ENV_BUFSIZE);
-	ptr = buf;
-	while (ptr) {
-		memset(line, 0, ENV_BUFSIZE);
+	for (ptr = buf; ; ptr = eptr+1) {
 		eptr = strchr(ptr, separator);
 		if ((ptr == eptr) || (eptr == NULL))
 			break;
-		strncpy(line, ptr,(eptr - ptr));
- 		ptr = eptr + 1;
-		if (_env_array_entry_splitter(line, name, sizeof(name),
+		if (_env_array_entry_splitter(ptr, name, sizeof(name),
 					      value, ENV_BUFSIZE) &&
-		    (!_discard_env(name, value)) &&
-		    (name[0] != ' ')) {
+		    (!_discard_env(name, value))) {
 			env_array_overwrite(&env, name, value);
 		}
 	}
 	xfree(buf);
-	xfree(line);
 	xfree(value);
 
 	return env;
