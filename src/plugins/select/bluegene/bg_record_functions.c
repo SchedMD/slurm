@@ -1527,7 +1527,7 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		      num_unused_cpus, num_possible_unused_cpus);
 		xassert(0);
 		num_unused_cpus = num_possible_unused_cpus;
-	    }
+	}
 
 	return rc;
 }
