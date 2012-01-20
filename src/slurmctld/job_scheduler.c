@@ -934,6 +934,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
  	bool run_now;
 	int count = 0;
  	struct job_record *qjob_ptr;
+	uint32_t del_jobid = 0;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL))
@@ -977,16 +978,19 @@ extern int test_job_dependency(struct job_record *job_ptr)
  		} else if ((dep_ptr->job_ptr->magic != JOB_MAGIC) ||
 			   (dep_ptr->job_ptr->job_id != dep_ptr->job_id)) {
 			/* job is gone, dependency lifted */
+			del_jobid = dep_ptr->job_ptr->job_id;
 			list_delete_item(depend_iter);
 			clear_dep = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
 			if (!IS_JOB_PENDING(dep_ptr->job_ptr)) {
+				del_jobid = dep_ptr->job_ptr->job_id;
 				list_delete_item(depend_iter);
 				clear_dep = true;
 			} else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
 			if (IS_JOB_FINISHED(dep_ptr->job_ptr)) {
+				del_jobid = dep_ptr->job_ptr->job_id;
 				list_delete_item(depend_iter);
 				clear_dep = true;
 			} else
@@ -995,6 +999,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
 				depends = true;
 			else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
+				del_jobid = dep_ptr->job_ptr->job_id;
 				list_delete_item(depend_iter);
 				clear_dep = true;
 			} else {
@@ -1005,6 +1010,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
 				depends = true;
 			else if (IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
+				del_jobid = dep_ptr->job_ptr->job_id;
 				list_delete_item(depend_iter);
 				clear_dep = true;
 			} else {
@@ -1033,8 +1039,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			failure = true;
 		if (clear_dep) {
  			char *rmv_dep;
- 			rmv_dep = xstrdup_printf(":%u",
-						 dep_ptr->job_ptr->job_id);
+ 			rmv_dep = xstrdup_printf(":%u", del_jobid);
 			xstrsubstitute(job_ptr->details->dependency,
 				       rmv_dep, "");
 			xfree(rmv_dep);
