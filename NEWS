@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
  -- Fix PrivateFlags bug when using Priority Multifactor plugin.  If using sprio
     all jobs would be returned even if the flag was set.
     Patch from Bill Brophy, Bull.
+ -- Fix for possible invalid memory reference in slurmctld in job dependency
+    logic. Patch from Carles Fenoy (Barcelona Supercomputer Center).
 
 * Changes in SLURM 2.3.2
 ========================
