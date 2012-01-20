@@ -79,6 +79,7 @@
 #include "src/common/util-net.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/reverse_tree_math.h"
@@ -3879,6 +3880,11 @@ run_spank_job_script (const char *mode, char **env)
 
 	if (status)
 		error ("spank/%s returned status 0x%04x", mode, status);
+
+	/*
+	 *  No longer need SPANK option env vars in environment
+	 */
+	spank_clear_remote_options_env (env);
 
 	return (status);
 }

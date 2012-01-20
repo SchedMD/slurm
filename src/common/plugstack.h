@@ -160,4 +160,7 @@ int spank_get_remote_options (job_options_t options);
  */
 int spank_get_remote_options_env (char **env);
 
+/*  Clear any spank remote options encoded in environment.
+ */
+int spank_clear_remote_options_env (char **env);
 #endif /* !_PLUGSTACK_H */

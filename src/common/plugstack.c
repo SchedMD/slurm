@@ -800,6 +800,11 @@ static int spank_stack_post_opt (struct spank_stack * stack, slurmd_job_t *job)
 	}
 
 	/*
+	 * Now clear any remaining options passed through environment
+	 */
+	spank_clear_remote_options_env (job->env);
+
+	/*
 	 *  Now that all options have been processed, we can
 	 *   call the post_opt handlers here in remote context.
 	 */
@@ -1563,6 +1568,36 @@ spank_stack_get_remote_options(struct spank_stack *stack, job_options_t opts)
 
 	return (0);
 }
+
+/*
+ *  Clear any environment variables for spank options.
+ *   spank option env vars  have a prefix of SPANK_OPTION_ENV_PREFIX,
+ *   or SPANK_ + SPANK_OPTION_ENV_PREFIX
+ */
+int spank_clear_remote_options_env (char **env)
+{
+	char **ep;
+	int len = strlen (SPANK_OPTION_ENV_PREFIX);
+
+	for (ep = env; *ep; ep++) {
+		char *p = *ep;
+		if (strncmp (*ep, "SPANK_", 6) == 0)
+			p = *ep+6;
+		if (strncmp (p, SPANK_OPTION_ENV_PREFIX, len) == 0) {
+			char *end = strchr (p+len, '=');
+			if (end) {
+				char name[1024];
+				memcpy (name, *ep, end - *ep);
+				name [end - *ep] = '\0';
+				info ("unsetenv (%s)\n", name);
+				unsetenvp (env, name);
+			}
+		}
+	}
+	return (0);
+}
+
+
 
 static int tasks_execd (spank_t spank)
 {
