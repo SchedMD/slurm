@@ -286,6 +286,22 @@ spank_context_t spank_context (void);
  */
 spank_err_t spank_option_register (spank_t spank, struct spank_option *opt);
 
+/*
+ *  Check whether spank plugin option [opt] has been activated.
+ *   If the option takes an argument, then the option argument
+ *   (if found) will be returned in *optarg.
+ *
+ *  Returns
+ *   ESPANK_SUCCESS if the option was used by user. In this case
+ *    *optarg will contain the option argument if opt->has_arg != 0.
+ *   ESPANK_ERROR if the option wasn't used.
+ *   ESPANK_BAD_ARG if an invalid argument was passed to the function,
+ *    such as NULL opt, NULL opt->name, or NULL optarg when opt->has_arg != 0.
+ *   ESPANK_NOT_AVAIL if called from improper context.
+ */
+spank_err_t spank_option_getopt (spank_t spank, struct spank_option *opt,
+	char **optarg);
+
 
 /*  Get the value for the current job or task item specified, 
  *   storing the result in the subsequent pointer argument(s).

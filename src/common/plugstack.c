@@ -1495,6 +1495,75 @@ spank_stack_find_option_by_name(struct spank_stack *stack, const char *str)
 	return (opt);
 }
 
+spank_err_t
+spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
+{
+	const char *val;
+	char var[1024];
+	List option_cache;
+	struct spank_plugin_opt *spopt;
+
+	if (argp)
+		*argp = NULL;
+
+	if (!sp->plugin) {
+		error ("spank_option_getopt: Not called from a plugin!?");
+		return (ESPANK_NOT_AVAIL);
+	}
+
+	if (sp->phase == SPANK_INIT)
+		return (ESPANK_NOT_AVAIL);
+
+	if (!opt || !opt->name)
+		return (ESPANK_BAD_ARG);
+
+	if (opt->has_arg && !argp)
+		return (ESPANK_BAD_ARG);
+
+	/*
+	 *   First check the cache:
+	 */
+	option_cache = sp->stack->option_cache;
+	spopt = list_find_first (option_cache,
+	                         (ListFindF) _opt_by_name,
+	                         opt->name);
+	if (spopt) {
+		if (opt->has_arg && argp)
+			*argp = spopt->optarg;
+		return (ESPANK_SUCCESS);
+	}
+
+	/*
+	 *  Otherwise, check current environment:
+	 *
+	 *  We need to check for variables that start with either
+	 *   the default spank option env prefix, or the default
+	 *   prefix + an *extra* prefix of SPANK_, in case we're
+	 *   running in prolog/epilog, where SLURM prepends SPANK_
+	 *   to all spank job environment variables.
+	 */
+	spopt = _spank_plugin_opt_create (sp->plugin, opt, 0);
+	memcpy (var, "SPANK_", 6);
+	if ((val = getenv (_opt_env_name(spopt, var+6, sizeof (var) - 6))) ||
+	    (val = getenv (var))) {
+		spopt->optarg = xstrdup (val);
+		spopt->found = 1;
+		if (opt->has_arg && argp)
+			*argp = spopt->optarg;
+	}
+
+	/*
+	 *  Cache the result
+	 */
+	list_append (option_cache, spopt);
+
+	if (!spopt->found)
+		return (ESPANK_ERROR);
+
+	return (ESPANK_SUCCESS);
+}
+
+
 int spank_get_remote_options_env (char **env)
 {
 	return spank_stack_get_remote_options_env (global_spank_stack, env);
