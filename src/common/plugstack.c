@@ -203,6 +203,7 @@ static void _spank_plugin_opt_destroy (struct spank_plugin_opt *);
 static int spank_stack_get_remote_options(struct spank_stack *, job_options_t);
 static int spank_stack_get_remote_options_env (struct spank_stack *, char **);
 static int spank_stack_set_remote_options_env (struct spank_stack * stack);
+static int dyn_spank_set_job_env (const char *var, const char *val, int ovwt);
 
 static void spank_stack_destroy (struct spank_stack *stack)
 {
@@ -838,11 +839,13 @@ int spank_slurmd_init (void)
 int spank_init_post_opt (void)
 {
 	struct spank_stack *stack = global_spank_stack;
+
 	/*
-	 *  In allocator context, set remote options in env here.
+	 *  Set remote options in our environment and the
+	 *   spank_job_env so that we can always pull them out
+	 *   on the remote side and/or job prolog epilog.
 	 */
-	if (stack->type == S_TYPE_ALLOCATOR)
-		spank_stack_set_remote_options_env (stack);
+	spank_stack_set_remote_options_env (stack);
 
 	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, NULL, -1));
 }
@@ -1370,6 +1373,9 @@ static int _option_setenv (struct spank_plugin_opt *option)
 	_opt_env_name (option, var, sizeof (var));
 
 	if (setenv (var, option->optarg, 1) < 0)
+	    error ("failed to set %s=%s in env", var, option->optarg);
+
+	if (dyn_spank_set_job_env (var, option->optarg, 1) < 0)
 	    error ("failed to set %s=%s in env", var, option->optarg);
 
 	return (0);
