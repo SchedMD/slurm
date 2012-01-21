@@ -213,9 +213,10 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node proc_cnt total_procs } {
-	global salloc scontrol sinfo number alpha_numeric_under
-	global prompt select_type procs_per_node
+	global bin_bash salloc scontrol sinfo number alpha_numeric_under
+	global prompt select_type procs_per_node test_id bin_rm
 
+	set file_in "test$test_id.input"
 	set job_id 0
 	set num_alloc 0
 	set block ""
@@ -223,7 +224,12 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 	set timeout 60
 	set idle_cpus [expr $total_procs - $proc_cnt]
 
-	set mypid [spawn $salloc -w $node -N 1 -t 5 -n $proc_cnt bash]
+	make_bash_script $file_in "
+	  export PS1=\"$prompt\"
+	  $bin_bash --norc
+	"
+
+	set mypid [spawn $salloc -w $node -N 1 -t 5 -n $proc_cnt ./$file_in]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -268,6 +274,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 			wait
 		}
 	}
+	exec $bin_rm -f $file_in
 
 	return $rc
 }

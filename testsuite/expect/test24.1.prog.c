@@ -50,6 +50,7 @@
 #include "src/sshare/sshare.h"
 
 /* set up some fake system */
+void *acct_db_conn = NULL;
 uint32_t cluster_cpus = 50;
 int long_flag = 1;
 int exit_code = 0;

@@ -36,6 +36,7 @@ source ./globals
 
 set test_id     "1.59"
 set exit_code   0
+set file_in     "test$test_id.input"
 set num_nodes   3
 set node_count  0
 set task_count  0
@@ -53,7 +54,7 @@ if {[string compare [switch_type] "elan"] == 0} {
 	send_user "\nWARNING: This test incompatible with Elan switch\n"
 	exit $exit_code
 }
-#find out if we have enough nodes to test functionality
+# find out if we have enough nodes to test functionality
 set partition [default_partition]
 spawn $scontrol show partition $partition
 expect {
@@ -84,8 +85,16 @@ set node2 0
 set node3 0
 set node4 0
 
+#
+# Build input script file
+#
+make_bash_script $file_in "
+  export PS1=\"$prompt\"
+  $bin_bash --norc
+"
+
 set timeout $max_job_delay
-spawn $salloc -N$num_nodes -v bash
+set salloc_pid [spawn $salloc -N$num_nodes -v -t1 ./$file_in]
 expect {
 	-re "salloc: Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -96,13 +105,14 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		slow_kill $salloc_pid
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
+exec $bin_rm -f $file_in
 if {$job_id == 0} {
 	send_user "\nFAILURE: salloc failure\n"
 	exit 1
