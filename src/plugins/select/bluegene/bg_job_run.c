@@ -192,6 +192,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	List delete_list = NULL;
 	int requeue_job = 0;
 	uint32_t req_job_id = bg_action_ptr->job_ptr->job_id;
+	bool block_inited = 0;
 
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
@@ -517,19 +518,27 @@ no_reboot:
 	   changes, and needs to outlast a job allocation.
 	*/
 	/* bg_record->boot_count = 0; */
-
 	if (bg_record->state == BG_BLOCK_INITED) {
 		debug("block %s is ready.", bg_record->bg_block_id);
 		/* Just in case reset the boot flags */
 		bg_record->boot_state = 0;
 		bg_record->boot_count = 0;
 		set_user_rc = bridge_block_sync_users(bg_record);
-		if (bg_action_ptr->job_ptr) {
-			bg_action_ptr->job_ptr->job_state &= (~JOB_CONFIGURING);
-			last_job_update = time(NULL);
-		}
+		block_inited = 1;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
+
+	/* This lock needs to happen after the block_state_mutex to
+	   avoid deadlock.
+	*/
+	if (block_inited && bg_action_ptr->job_ptr) {
+		slurmctld_lock_t job_write_lock = {
+			NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		lock_slurmctld(job_write_lock);
+		bg_action_ptr->job_ptr->job_state &= (~JOB_CONFIGURING);
+		last_job_update = time(NULL);
+		unlock_slurmctld(job_write_lock);
+	}
 
 	if (set_user_rc == SLURM_ERROR) {
 		sleep(2);
