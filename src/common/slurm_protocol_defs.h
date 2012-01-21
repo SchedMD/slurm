@@ -146,6 +146,8 @@
 #define IS_NODE_MAINT(_X)		\
 	(_X->node_state & NODE_STATE_MAINT)
 
+#define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
+
 /* used to define flags of the launch_tasks_request_msg_t and
  * spawn task_request_msg_t task_flags
  */
