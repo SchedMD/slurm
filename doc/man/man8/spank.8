@@ -20,7 +20,7 @@ behavior of SLURM job launch.
 .LP
 
 .SH "SPANK PLUGINS"
-\fBSPANK\fR plugins are loaded in up to three separate contexts during a
+\fBSPANK\fR plugins are loaded in up to five separate contexts during a
 \fBSLURM\fR job. Briefly, the three contexts are:
 .TP 8
 \fBlocal\fB
@@ -28,16 +28,36 @@ In \fBlocal\fR context, the plugin is loaded by \fBsrun\fR. (i.e. the "local"
 part of a parallel job).
 .TP
 \fBremote\fR
-In \fBremote\fR context, the plugin is loaded by \fBslurmd\fR. (i.e. the "remote"
+In \fBremote\fR context, the plugin is loaded by \fBslurmstepd\fR. (i.e. the "remote"
 part of a parallel job).
 .TP
 \fBallocator\fR
 In \fBallocator\fR context, the plugin is loaded in one of the job allocation
 utilities \fBsbatch\fR or \fBsalloc\fR.
 .LP
+.TP
+\fBslurmd\fR In \fBslurmd\fR context, the plugin is loaded in the
+\fBslurmd\fR daemon itself. \fBNote\fR: Plugins loaded in slurmd context
+persist for the entire time slurmd is running, so if configuration is
+changed or plugins are updated, slurmd must be restarted for the changes
+to take effect.
+.LP
+.TP
+\fBjob_script\fR
+In the \fBjob_script\fR context, plugins are loaded in the context of the
+job prolog or epilog. \fBNote\fR: Plugins are loaded in \fBjob_script\fR
+context on each run on the job prolog or epilog, in a separate address
+space from plugins in \fBslurmd\fR context. This means there is no
+state shared between this context and other contexts, or even between
+one call to \fBslurm_spank_job_prolog\fR or \fBslurm_spank_job_epilog\fR
+and subsequent calls.
+.LP
 In local context, only the \fBinit\fR, \fBexit\fR, \fBinit_post_opt\fR, and
 \fBuser_local_init\fR functions are called. In allocator context, only the
 \fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called.
+Similarly, in slurmd context, only the \fBslurmd_init\fR and \fBslurmd_exit\fR
+callbacks are active, and in the job_script context, only the \fBjob_prolog\fR
+and \fRjob_epilog\fR callbacks are used.
 Plugins may query the context in which they are running with the
 \fBspank_context\fR and \fBspank_remote\fR functions defined in
 \fB<slurm/spank.h>\fR.
@@ -48,7 +68,13 @@ launch. A plugin may define the following functions:
 \fBslurm_spank_init\fR
 Called just after plugins are loaded. In remote context, this is just
 after job step is initialized. This function is called before any plugin
-option processing.
+option processing. This function is not called in slurmd context.
+.TP
+\fBslurm_spank_slurmd_init\fR
+Called in slurmd just after the daemon is started.
+.TP
+\fBslurm_spank_job_prolog\fR
+Called at the same time as the job prolog.
 .TP
 \fBslurm_spank_init_post_opt\fR
 Called at the same point as \fBslurm_spank_init\fR, but after all
@@ -88,6 +114,12 @@ Called for each task as its exit status is collected by SLURM.
 \fBslurm_spank_exit\fR
 Called once just before \fBslurmstepd\fR exits in remote context.
 In local context, called before \fBsrun\fR exits.
+.TP
+\fBslurm_spank_job_epilog\fR
+Called at the same time as the job epilog.
+.TP
+\fBslurm_spank_slurmd_exit\fR
+Called in slurmd when the daemon is shut down.
 .LP
 All of these functions have the same prototype, for example:
 .nf
@@ -311,6 +343,22 @@ after \fBSPANK\fR plugins are loaded and before the \fBspank_init\fR
 handler is called. This allows plugins to modify behavior of all plugin
 functionality based on the value of user\-provided options.
 (See EXAMPLES below for a plugin that registers an option with \fBSLURM\fR).
+.LP
+As an alternative to use of an option callback and global variable,
+plugins can use the \fBspank_option_getopt\fR option to check for
+supplied options after option processing. This function has the prototype:
+.nf
+
+   spank_err_t spank_option_getopt(spank_t sp,
+       struct spank_option *opt, char **optargp);
+
+.nf
+This function returns \fBESPANK_SUCCESS\fR if the option defined in the
+struct spank_option \fIopt\fR has been used by the user. If \fIoptargp\fR
+is non-NULL then it is set to any option argument passed (if the option
+takes an argument). The use of this method is \fIrequired\fR to process
+options in \fBjob_script\fR context (\fBslurm_spank_job_prolog\R and
+\fBslurm_spank_job_epilog\fR).
 
 .SH "CONFIGURATION"
 .LP
