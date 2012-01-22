@@ -2088,12 +2088,6 @@ extern int validate_nodes_via_front_end(
 		}
 	}
 
-	if (reg_msg->job_count == 0) {
-		front_end_ptr->job_cnt_comp = 0;
-		front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
-	} else if (front_end_ptr->job_cnt_comp != 0)
-		front_end_ptr->node_state |= NODE_STATE_COMPLETING;
-
 	/* purge orphan batch jobs */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {

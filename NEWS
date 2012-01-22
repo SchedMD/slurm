@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     Aleksej Saushev.
  -- Fix for possible deadlock in accounting logic: Avoid calling
     jobacct_gather_g_getinfo() until there is data to read from the socket.
+ -- Fix race condition that could generate "job_cnt_comp underflow" errors on
+    front-end architectures.
 
 * Changes in SLURM 2.4.0.pre2
 =============================
