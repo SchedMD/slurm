@@ -406,9 +406,9 @@ assumed.  Export environment variables defined in <\fIfilename\fR> or
 read from <\fIfd\fR> to the job's execution environment. The
 content is one or more environment variable definitions of the form
 NAME=value, each separated by a null character.  This allows the use
-of special characters in environment definitions. The
-\fB\-\-get\-user\-env\fR option will be ignored if \-\-export\-file is
-defined.
+of special characters in environment definitions.(Note: primarily for use
+with Moab. outside of Moab, variables in the user's working environment
+may supercede the variables specified in the file.)
 
 .TP
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
