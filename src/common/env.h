@@ -181,6 +181,12 @@ env_array_for_step(char ***dest,
 char **env_array_create(void);
 
 /*
+ * Unset all of the environment variables in a user's current
+ * environment.
+ */
+void env_unset_environment(void);
+
+/*
  * Merge all of the environment variables in src_array into the
  * array dest_array.  Any variables already found in dest_array
  * will be overwritten with the value from src_array.

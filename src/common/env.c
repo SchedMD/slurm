@@ -81,6 +81,7 @@ strong_alias(env_array_append,		slurm_env_array_append);
 strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
+strong_alias(env_unset_environment,	slurm_env_unset_environment);
 
 #define ENV_BUFSIZE (256 * 1024)
 
@@ -1524,6 +1525,33 @@ void env_array_set_environment(char **env_array)
 	for (ptr = env_array; *ptr != NULL; ptr++) {
 		_env_array_putenv(*ptr);
 	}
+}
+
+/*
+ * Unset all of the environment variables in a user's current
+ * environment.
+ *
+ * (Note: becuae the environ array is decrementing with each
+ *  unsetenv, only increment the ptr on a failure to unset.)
+ */
+void env_unset_environment(void)
+{
+	extern char **environ;
+
+	int rc = 0;
+	char **ptr;
+	char name[256], *value;
+
+	value = xmalloc(ENV_BUFSIZE);
+	for (ptr = (char **)environ; *ptr != NULL; ) {
+		if ((_env_array_entry_splitter(*ptr, name, sizeof(name),
+					       value, ENV_BUFSIZE)) &&
+			(unsetenv(name) != -1))
+			rc = 1;
+		else
+			ptr++;
+	}
+	xfree(value);
 }
 
 /*
