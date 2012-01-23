@@ -367,6 +367,7 @@ _fill_in_adapter_cache(void)
 			return SLURM_ERROR;
 		}
 #if NRT_DEBUG
+		info("nrt_adapter_resources():");
 		nrt_dump_adapter(adapter_name, adapter_type, &res);
 #endif
 
@@ -2258,26 +2259,27 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 }
 
 static int
-_check_rdma_job_count(char *adapter)
+_check_rdma_job_count(char *adapter_name, uint16_t adapter_type)
 {
-	unsigned int job_count;
-	unsigned int *job_keys;
-	int rc, z;
+	uint16_t job_count;
+	uint16_t *job_keys;
+	int err, i;
 
-	rc = ntbl_rdma_jobs(NRT_VERSION, adapter,
+	err = nrt_rdma_jobs(NRT_VERSION, adapter_name,adapter_type
 			    &job_count, &job_keys);
-	if (rc != NTBL_SUCCESS) {
-		error("ntbl_rdma_jobs(): %d", rc);
+	if (err != NTBL_SUCCESS) {
+		error("ntbl_rdma_jobs(): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
-
-	debug3("Adapter %s, RDMA job_count = %u",
-	       adapter, job_count);
-	for (z = 0; z < job_count; z++)
-		debug3("  job key = %u", job_keys[z]);
+#if NRT_DEBUG
+	info("nrt_rdma_jobs:");
+	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
+	for (i = 0; i < job_count; i++)
+		info("  job_key[%d]:%hu", job_keys[i]);
+#endif
 	free(job_keys);
 	if (job_count >= 4) {
-		error("RDMA job_count is too high: %u", job_count);
+		error("RDMA job_count is too high: %hu", job_count);
 		return SLURM_ERROR;
 	}
 
@@ -2330,7 +2332,8 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 		winmem = jp->window_memory;	/* FIXME: Unused by NRT? */
 		if (jp->bulk_xfer) {
 			if (i == 0) {
-				rc = _check_rdma_job_count(adapter);
+				rc = _check_rdma_job_count(adapter_name,
+							   adapter_type);
 				if (rc != SLURM_SUCCESS)
 					return rc;
 			}

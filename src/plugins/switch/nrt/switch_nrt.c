@@ -315,6 +315,7 @@ extern int switch_p_clear_node_state(void)
 			continue;
 		}
 #if NRT_DEBUG
+		info("nrt_adapter_resources():");
 		nrt_dump_adapter(adapter_name, adapter_type, &res);
 #endif
 		for (j = 0; j < res.window_count; j++) {
