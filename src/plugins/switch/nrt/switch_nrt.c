@@ -546,7 +546,7 @@ extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
 /*
  * switch functions for job initiation
  */
-static int _ntbl_version_ok(void)
+static int _nrt_version_ok(void)
 {
 	return((nrt_version() == NRT_VERSION) ? 1 : 0);
 }
@@ -556,7 +556,7 @@ int switch_p_node_init(void)
 	/* check to make sure the version of the library we compiled with
 	 * matches the one dynamically linked
 	 */
-	if (!_ntbl_version_ok()) {
+	if (!_nrt_version_ok()) {
 		slurm_seterrno_ret(EVERSION);
 	}
 

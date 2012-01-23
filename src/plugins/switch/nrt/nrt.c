@@ -131,7 +131,7 @@ struct nrt_libstate {
 
 struct nrt_jobinfo {
 	uint32_t magic;
-	/* version from ntbl_version() */
+	/* version from nrt_version() */
 	/* adapter from lid in table */
 	/* network_id from lid in table */
 	/* uid from getuid() */
@@ -229,7 +229,7 @@ extern int
 nrt_slurmd_init(void)
 {
 	/*
-	 * This is a work-around for the ntbl_* functions calling umask(0)
+	 * This is a work-around for the nrt_* functions calling umask(0)
 	 */
 	nrt_umask = umask(0077);
 	umask(nrt_umask);
@@ -247,7 +247,7 @@ extern int
 nrt_slurmd_step_init(void)
 {
 	/*
-	 * This is a work-around for the ntbl_* functions calling umask(0)
+	 * This is a work-around for the nrt_* functions calling umask(0)
 	 */
 	nrt_umask = umask(0077);
 	umask(nrt_umask);
@@ -342,7 +342,7 @@ _init_adapter_cache(void)
 	}
 }
 
-/* Use ntbl_adapter_resources to cache information about local adapters.
+/* Use nrt_adapter_resources to cache information about local adapters.
  *
  * Used by: slurmstepd
  */
@@ -458,7 +458,7 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 	err = ntbl_adapter_resources(NRT_VERSION,
 					    adapter_name,
 					    &res);
-	if (err != NTBL_SUCCESS)
+	if (err != NRT_SUCCESS)
 		return SLURM_ERROR;
 	strncpy(nrt_adapter->name,
 		adapter_name,
@@ -2281,8 +2281,8 @@ _check_rdma_job_count(char *adapter_name, uint16_t adapter_type)
 
 	err = nrt_rdma_jobs(NRT_VERSION, adapter_name,adapter_type
 			    &job_count, &job_keys);
-	if (err != NTBL_SUCCESS) {
-		error("ntbl_rdma_jobs(): %s", nrt_err_str(err));
+	if (err != NRT_SUCCESS) {
+		error("nrt_rdma_jobs(): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 #if NRT_DEBUG
@@ -2388,7 +2388,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 					  bulk_xfer_resources,
 					  jp->tableinfo[i].table_length,
 					  jp->tableinfo[i].table);
-		if (err != NTBL_SUCCESS) {
+		if (err != NRT_SUCCESS) {
 			error("unable to load table: [%d] %s",
 			      err, nrt_err_str(err));
 			return SLURM_ERROR;
@@ -2413,12 +2413,13 @@ _unload_window(char *adapter_name, uint16_t adapter_type,
 	for (i = 0; i < retry; i++) {
 		if (i > 0)
 			sleep(1);
-		err = ntbl_unload_window(NRT_VERSION, adapter_name,
-					 job_key, window_id);
-		if (err == NTBL_SUCCESS)
+		err = nrt_unload_window(NRT_VERSION, adapter_name,
+					adapter_type, job_key, window_id);
+		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
-		debug("Unable to unload window %hu adapter %s job_key %hu: %s",
-		      window_id, adapter, job_key, _lookup_nrt_status_tab(err));
+		debug("Unable to unload window for job_key %hd, "
+		      "nrt_unload_window(%s, %u): %s",
+		      job_key, adapter_name, adapter_type, nrt_err_str(err));
 
 		err = nrt_clean_window(NRT_VERSION, adapter_name,
 				adapter_type, KILL, window_id);
