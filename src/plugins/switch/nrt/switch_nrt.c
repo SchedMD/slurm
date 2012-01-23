@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2011 SchedMD LLC.
+ *  Portions Copyright (C) 2011-2012 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -301,14 +301,14 @@ extern int switch_p_clear_node_state(void)
 {
 	int i, j;
 	adap_resources_t res;
-	char name[] = "sniN";
+	char *name = "sniN";
 	uint16_t adapter_type;	/* FIXME: How to fill in? */
 	int err;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
 		name[3] = i + (int) '0';
 		err = nrt_adapter_resources(NRT_VERSION, adapter_name,
-					     adapter_type, &res);
+					    adapter_type, &res);
 		if (err != NRT_SUCCESS) {
 			error("nrt_adapter_resources(%s, %hu): %s",
 			      adapter_name, adapter_type, nrt_err_str(rc));

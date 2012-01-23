@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2011 SchedMD LLC.
+ *  Portions Copyright (C) 2011-2012 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -446,23 +446,26 @@ _get_lid_from_adapter(char *adapter_name)
 static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 			   uint16_t adapter_type)
 {
-	ADAPTER_RESOURCES res;
+	adap_resoures_t res;
 	nrt_status_t *status = NULL;
 	struct NTBL_STATUS *old = NULL;
 	nrt_window_t *tmp_winlist = NULL;
 	uint16_t win_count = 0;
 	int err, i;
 
-	info("adapter_name is %s", adapter_name);
-
-	err = ntbl_adapter_resources(NRT_VERSION,
-					    adapter_name,
-					    &res);
-	if (err != NRT_SUCCESS)
+	err = nrt_adapter_resources(NRT_VERSION, adapter_name, adapter_type,
+				    &res);
+	if (err != NRT_SUCCESS) {
+		error("nrt_adapter_resources(%s, %hu): %s",
+		      adapter_name, adapter_type, nrt_err_str(rc));
 		return SLURM_ERROR;
-	strncpy(nrt_adapter->name,
-		adapter_name,
-		NRT_ADAPTERNAME_LEN);
+	}
+#if NRT_DEBUG
+	info("nrt_adapter_resources():");
+	nrt_dump_adapter(adapter_name, adapter_type, &res);
+#endif
+
+	strncpy(nrt_adapter->name, adapter_name, NRT_ADAPTERNAME_LEN);
 	nrt_adapter->lid = res.lid;
 	nrt_adapter->network_id = res.network_id;
 	/* FUTURE:  check that we don't lose information when converting
@@ -496,8 +499,6 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 #endif
 	tmp_winlist = (nrt_window_t *)xmalloc(sizeof(nrt_window_t) *
 					     res.window_count);
-	if (!tmp_winlist)
-		slurm_seterrno_ret(ENOMEM);
 	for (i = 0; i < res.window_count; i++) {
 		tmp_winlist[i].id = status->window_id;
 		tmp_winlist[i].status = status->rc;
@@ -506,6 +507,7 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 		free(old);
 	}
 	nrt_adapter->window_list = tmp_winlist;
+
 	return SLURM_SUCCESS;
 }
 
@@ -2210,26 +2212,44 @@ nrt_get_jobinfo(nrt_jobinfo_t *jp, int key, void *data)
  * Used by: slurmd
  */
 static int
-_wait_for_window_unloaded(char *adapter_name, unsigned short window_id,
-			  int retry)
+_wait_for_window_unloaded(char *adapter_name, uint16_t adapter_type,
+			  unsigned short window_id, int retry)
 {
-	int status;
-	int i;
+	int err, i;
+	uint16_t win_count;
+	nrt_status_t *status;
 
 	for (i = 0; i < retry; i++) {
-		ntbl_query_window(NRT_VERSION, adapter_name,
-				  window_id, &status);
-		if (status == NTBL_UNLOADED_STATE)
-			break;
-		debug2("Window %hu adapter %s is in use, sleeping 1 second",
-		       window_id, adapter_name);
-		sleep(1);
+		if (i > 0)
+			sleep(1);
+		err = nrt_status_adapter(NRT_VERSION, adapter_name,
+					 adapter_type, &win_count, &status);
+		if (err != NRT_SUCCESS) {
+			error("nrt_status_adapter(%s, %u): %s", adapter_name,
+			      adapter_type, nrt_err_str(err));
+			return SLURM_ERROR;
+		}
+		for (j = 0; j < win_count; j++) {
+			if (status[j]->window_id == window_id)
+				break;
+		}
+		if (j >= win_count) {
+			error("nrt_status_adapter(%s, %u), window %hu not "
+			      "found", adapter_name, adapter_type, window_id);
+			free(status);
+			return SLURM_ERROR;
+		}
+		if (status[j]->state == NRT_WIN_AVAILBLE)
+			free(status);
+			return SLURM_SUCCESS;
+		}
+		debug2("nrt_status_adapter(%s, %u), window %hu state %d"
+		       adapter_name, adapter_type, window_id,
+		       status[j]->state);
+		free(status);
 	}
 
-	if (status != NTBL_UNLOADED_STATE)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
 
