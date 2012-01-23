@@ -548,7 +548,7 @@ extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
  */
 static int _ntbl_version_ok(void)
 {
-	return((ntbl_version() == NRT_VERSION) ? 1 : 0);
+	return((nrt_version() == NRT_VERSION) ? 1 : 0);
 }
 
 int switch_p_node_init(void)

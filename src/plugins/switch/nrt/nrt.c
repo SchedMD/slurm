@@ -443,21 +443,22 @@ _get_lid_from_adapter(char *adapter_name)
 }
 
 
-static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name)
+static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
+			   uint16_t adapter_type)
 {
 	ADAPTER_RESOURCES res;
-	struct NTBL_STATUS *status = NULL;
+	nrt_status_t *status = NULL;
 	struct NTBL_STATUS *old = NULL;
 	nrt_window_t *tmp_winlist = NULL;
-	int win_count = 0, i;
-	int error_code;
+	uint16_t win_count = 0;
+	int err, i;
 
 	info("adapter_name is %s", adapter_name);
 
-	error_code = ntbl_adapter_resources(NRT_VERSION,
+	err = ntbl_adapter_resources(NRT_VERSION,
 					    adapter_name,
 					    &res);
-	if (error_code != NTBL_SUCCESS)
+	if (err != NTBL_SUCCESS)
 		return SLURM_ERROR;
 	strncpy(nrt_adapter->name,
 		adapter_name,
@@ -473,13 +474,26 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name)
 	nrt_adapter->window_count = res.window_count;
 	free(res.window_list);
 	_cache_lid(nrt_adapter);
-	error_code = ntbl_status_adapter(NRT_VERSION,
-					 adapter_name,
-					 &win_count,
-					 &status);
+	err = nrt_status_adapter(NRT_VERSION, adapter_name, adapter_type,
+				 &win_count, &status);
 	umask(nrt_umask);
-	if (error_code)
+	if (err != NRT_SUCCESS) {
+		error("nrt_status_adapter(%s, %u): %s", adapter_name,
+		      adapter_type, nrt_err_str(err));
 		slurm_seterrno_ret(ESTATUS);
+	}
+#if NRT_DEBUG
+	info("nrt_status_adapter:");
+	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
+	for (i = 0; i < win_count; i++) {
+		info("  client_pid[%d]:%u", i, (uint32_t)status[i].client_pid);
+		info("  uid[%d]:%u", i, (uint32_t) status[i].uid);
+		info("  window_id[%d]:%hu", i, status[i].window_id);
+		info("  bulk_xfer[%d]:%hu", i, status[i].bulk_transfer);
+		info("  rcontext_blocks[%d]:%u", i, status[i].rcontext_blocks);
+		info("  state[%d]:%d", i, status[i].state);
+	}
+#endif
 	tmp_winlist = (nrt_window_t *)xmalloc(sizeof(nrt_window_t) *
 					     res.window_count);
 	if (!tmp_winlist)
