@@ -2297,12 +2297,15 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 	int i;
 	int err;
 	unsigned long long winmem;
-	char *adapter;
+	char *adapter_name;
+	uint16_t adapter_type;
 	uint16_t network_id;
+	uint bulk_xfer_resources = 0;	/* Unused by NRT today */
 /* 	ADAPTER_RESOURCES res; */
 	int rc;
 
 #if NRT_DEBUG
+	int j;
 	char buf[2000];
 #endif
 	assert(jp);
@@ -2310,54 +2313,67 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 
 	for (i = 0; i < jp->tables_per_task; i++) {
 #if NRT_DEBUG
-		_print_table(jp->tableinfo[i].table, jp->tableinfo[i].table_length);
+		_print_table(jp->tableinfo[i].table,
+			     jp->tableinfo[i].table_length);
 		printf("%s", nrt_sprint_jobinfo(jp, buf, 2000));
 #endif
-		adapter = jp->tableinfo[i].adapter_name;
+		adapter_name = jp->tableinfo[i].adapter_name;
+		adapter_type = 0;	/* FIXME: Load from where? */
 		network_id = _get_network_id_from_adapter(adapter);
 
 		rc = _wait_for_all_windows(&jp->tableinfo[i]);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 
-		if (adapter == NULL)
+		if (adapter_name == NULL)
 			continue;
-		winmem = jp->window_memory;
+		winmem = jp->window_memory;	/* FIXME: Unused by NRT? */
 		if (jp->bulk_xfer) {
 			if (i == 0) {
 				rc = _check_rdma_job_count(adapter);
 				if (rc != SLURM_SUCCESS)
 					return rc;
 			}
-
-			err = ntbl_load_table_rdma(
-				NRT_VERSION,
-				adapter,
-				network_id,
-				uid,
-				pid,
-				jp->job_key,
-				jp->job_desc,
-				jp->bulk_xfer,
-				0,             /* rcontext_blocks */
-				jp->tableinfo[i].table_length,
-				jp->tableinfo[i].table);
-		} else {
-			err = ntbl_load_table(
-				NRT_VERSION,
-				adapter,
-				network_id,
-				uid,
-				pid,
-				jp->job_key,
-				jp->job_desc,
-				&winmem,
-				jp->tableinfo[i].table_length,
-				jp->tableinfo[i].table);
 		}
+#if NRT_DEBUG
+		info("attempting nrt_load_table_rdma:");
+		info("adapter_name:%s adapter_type:%hu", adapter_name,
+		     adapter_type);
+		info("  network_id:%u uid:%u pid:%u", network_id,
+		     (uint32_t)uid, (uint32_t)pid);
+		info("  job_key:%hd job_desc:%s", jp->job_key, jp->job_desc);
+		info("  bulk_xfer:%u bulk_xfer_res:%u", jp->bulk_xfer,
+		     bulk_xfer_resources);
+		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
+			info("  task_id[%d]:%hu", j,
+			     jp->tableinfo[i].table[j]->task_id);
+			info("  win_id[%d]:%hu", j,
+			     jp->tableinfo[i].table[j]->win_id);
+			info("  node_number[%d]:%u", j,
+			     jp->tableinfo[i].table[j]->node_number);
+			info("  device_name[%d]:%s", j,
+			     jp->tableinfo[i].table[j]->device_name);
+			info("  base_lid[%d]:%hu", j,
+			     jp->tableinfo[i].table[j]->base_lid);
+			info("  port_id[%d]:%hu", j,
+			     jp->tableinfo[i].table[j]->port_id);
+			info("  lmc[%d]:%hu", j,
+			     jp->tableinfo[i].table[j]->lmc);
+			info("  port_status[%d]:%hu", j,
+			     jp->tableinfo[i].table[j]->port_status);
+		}
+#endif
+		err = nrt_load_table_rdma(NRT_VERSION,
+					  adapter_name, adapter_type,
+					  network_id, uid, pid,
+					  jp->job_key, jp->job_desc,
+					  jp->bulk_xfer,
+					  bulk_xfer_resources,
+					  jp->tableinfo[i].table_length,
+					  jp->tableinfo[i].table);
 		if (err != NTBL_SUCCESS) {
 			error("unable to load table: [%d] %s",
-			      err, _lookup_nrt_status_tab(err));
+			      err, nrt_err_str(err));
 			return SLURM_ERROR;
 		}
 	}
@@ -2642,6 +2658,8 @@ extern char *nrt_err_str(int rc)
 	static char str[16];
 
 	switch (rc) {
+	case NRT_ALREADY_LOADED:
+		return "Already loaded";
 	case NRT_BAD_VERSION:
 		return "Bad version";
 	case NRT_EADAPTER:

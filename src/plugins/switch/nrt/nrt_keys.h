@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _FEDERATION_KEYS_INCLUDED
-#define _FEDERATION_KEYS_INCLUDED
+#ifndef _NRT_KEYS_INCLUDED
+#define _NRT_KEYS_INCLUDED
 
 #define FED_ADAPTERNAME_LEN 5
 
@@ -54,8 +54,8 @@ enum {
 /* Information shared between slurm_ll_api and the slurm federation driver */
 typedef struct fed_tableinfo {
 	uint32_t table_length;
-	NTBL **table;
+	nrt_creator_ib_per_task_input_t **table;
 	char adapter_name[FED_ADAPTERNAME_LEN];
 } fed_tableinfo_t;
 
-#endif /* _FEDERATION_KEYS_INCLUDED */
+#endif /* _NRT_KEYS_INCLUDED */
