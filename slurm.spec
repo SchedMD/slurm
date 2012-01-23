@@ -484,6 +484,8 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
 test -f $RPM_BUILD_ROOT/%{_bindir}/sview			&&
   echo %{_bindir}/sview					>> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so  	&&
+  echo %{_libdir}/slurm/switch_nrt.so			>> $LIST
 
 %if %{slurm_with aix}
 install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/federation.conf.example
