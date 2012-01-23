@@ -1537,8 +1537,6 @@ void env_array_set_environment(char **env_array)
 void env_unset_environment(void)
 {
 	extern char **environ;
-
-	int rc = 0;
 	char **ptr;
 	char name[256], *value;
 
@@ -1547,7 +1545,7 @@ void env_unset_environment(void)
 		if ((_env_array_entry_splitter(*ptr, name, sizeof(name),
 					       value, ENV_BUFSIZE)) &&
 			(unsetenv(name) != -1))
-			rc = 1;
+			;
 		else
 			ptr++;
 	}
