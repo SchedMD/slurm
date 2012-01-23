@@ -71,10 +71,12 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
+void *acct_db_conn  __attribute__((weak_import)) = NULL;
 uint32_t cluster_cpus __attribute__((weak_import)) = NO_VAL;
 List job_list  __attribute__((weak_import)) = NULL;
 time_t last_job_update __attribute__((weak_import));
 #else
+void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 List job_list = NULL;
 time_t last_job_update;
