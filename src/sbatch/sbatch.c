@@ -140,6 +140,13 @@ int main(int argc, char *argv[])
 		(void) _set_rlimit_env();
 	}
 
+	/*
+	 * if the environment is coming from a file, the
+	 * environment at execution startup, must be unset.
+	 */
+	if (opt.export_file != NULL)
+		env_unset_environment();
+
 	_set_prio_process_env();
 	_set_spank_env();
 	_set_submit_dir_env();
