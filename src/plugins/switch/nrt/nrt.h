@@ -76,9 +76,13 @@ enum {
 	EUNLOAD
 };
 
+#define NRT_DEBUG 1	/* Enable extra logging */
 #define NRT_MAXADAPTERS 2
 #define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
 
+extern char *nrt_err_str(int rc);
+extern void nrt_dump_adapter(char *adapter_name, uint16_t adapter_type,
+			     adap_resources_t *adapter_res);
 extern int nrt_slurmctld_init(void);
 extern int nrt_slurmd_init(void);
 extern int nrt_slurmd_step_init(void);

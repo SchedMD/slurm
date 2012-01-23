@@ -351,16 +351,24 @@ _fill_in_adapter_cache(void)
 {
 	hostlist_iterator_t adapters;
 	char *adapter_name = NULL;
-	ADAPTER_RESOURCES res;
+	uint16_t adapter_type;	/* FIXME: How to fill in? */
+	adap_resources_t res;
 	int num;
 	int rc;
 	int i;
 
 	adapters = hostlist_iterator_create(adapter_list);
 	for (i = 0; (adapter_name = hostlist_next(adapters)); i++) {
-		rc = ntbl_adapter_resources(NRT_VERSION, adapter_name, &res);
-		if (rc != NTBL_SUCCESS)
+		rc = nrt_adapter_resources(NRT_VERSION, adapter_name,
+					    adapter_type, &res);
+		if (rc != NRT_SUCCESS) {
+			error("nrt_adapter_resources(%s, %hu): %s",
+			      adapter_name, adapter_type, nrt_err_str(rc));
 			return SLURM_ERROR;
+		}
+#if NRT_DEBUG
+		nrt_dump_adapter(adapter_name, adapter_type, &res);
+#endif
 
 		num = adapter_name[3] - (int)'0';
 		assert(num < NRT_MAXADAPTERS);
@@ -2363,28 +2371,29 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
  * Try up to "retry" times to unload a window.
  */
 static int
-_unload_window(char *adapter, unsigned short job_key, unsigned short window_id,
-	       int retry)
+_unload_window(char *adapter_name, uint16_t adapter_type,
+	       unsigned short job_key, unsigned short window_id, int retry)
 {
 	int i;
 	int err;
 
 	for (i = 0; i < retry; i++) {
-		err = ntbl_unload_window(NRT_VERSION, adapter,
+		if (i > 0)
+			sleep(1);
+		err = ntbl_unload_window(NRT_VERSION, adapter_name,
 					 job_key, window_id);
 		if (err == NTBL_SUCCESS)
 			return SLURM_SUCCESS;
 		debug("Unable to unload window %hu adapter %s job_key %hu: %s",
 		      window_id, adapter, job_key, _lookup_nrt_status_tab(err));
 
-		err = ntbl_clean_window(NRT_VERSION, adapter,
-					ALWAYS_KILL, window_id);
-		if (err == NTBL_SUCCESS)
+		err = nrt_clean_window(NRT_VERSION, adapter_name,
+				adapter_type, KILL, window_id);
+		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
-		error("Unable to clean window %hu adapter %s job_key %hu: %s",
-		      window_id, adapter, job_key, _lookup_nrt_status_tab(err));
-
-		sleep(1);
+		error("Unable to clean window for job_key %hd, "
+		      "nrt_clean_window(%s, %u): %s",
+		      job_key, adapter_name, adapter_type, nrt_err_str(err));
 	}
 
 	return SLURM_FAILURE;
@@ -2626,4 +2635,54 @@ nrt_libstate_clear(void)
 	_unlock();
 
 	return SLURM_SUCCESS;
+}
+
+extern char *nrt_err_str(int rc)
+{
+	static char str[16];
+
+	switch (rc) {
+	case NRT_BAD_VERSION:
+		return "Bad version";
+	case NRT_EADAPTER:
+		return "Invalid adapter name";
+	case NRT_EADAPTYPE:
+		return "Invalid adapter type";
+	case NRT_EINVAL:
+		return "Invalid input paramter";
+	case NRT_EMEM:
+		return "Memory allocation error";
+	case NRT_EPERM:
+		return "Permission denied, not root";
+	case NRT_PNSDAPI:
+		return "Error communicating with Protocol Network Services "
+		       "Daemon";
+	case NRT_SUCCESS:
+		return "Success";
+	case NRT_WRONG_WINDOW_STATE:
+		return "Wrong window state";
+	}
+
+	snprintf(str, sizeof(str), "%d", rc);
+	return str;
+}
+
+extern void nrt_dump_adapter(char *adapter_name, uint16_t adapter_type,
+			     adap_resources_t *adapter_res)
+{
+	int i;
+
+	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
+	info("  node_number:%u", adapter_res->node_number);
+	info("  num_spigots:%hu", adapter_res->num_spigots);
+	for (i = 0; i < MAX_SPIGOTS; i++) {
+		info("  lid[%d]:%hu", i, adapter_res->lid[i]);
+		info("  network_id[%d]:%u", i, adapter_res->network_id[i]);
+		info("  lmc[%d]:%hu", i, adapter_res->lmc[i]);
+		info("  spigot_id[%d]:%hu", i, adapter_res->spigot_id[i]);
+	}
+	info("  window_count:%hu", adapter_res->window_count);
+	for (i = 0; i < adapter_res->window_count; i++)
+		info("  window_list[%d]:%hu", i, adapter_res->window_list);
+	info("  rcontext_block_count:%u", adapter_res->rcontext_block_count);
 }

@@ -294,25 +294,39 @@ extern int switch_p_libstate_clear(void)
  * notification of this will be forwarded to slurmctld.  We do not
  * enforce that in this function.
  */
-/* FIX ME! - should use adapter name from nrt.conf file now that
+/* FIXME! - should use adapter name from nrt.conf file now that
  *           we have that file support.
  */
-#define ZERO 48
 extern int switch_p_clear_node_state(void)
 {
 	int i, j;
-	ADAPTER_RESOURCES res;
+	adap_resources_t res;
 	char name[] = "sniN";
+	uint16_t adapter_type;	/* FIXME: How to fill in? */
 	int err;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
-		name[3] = i + ZERO;
-		err = ntbl_adapter_resources(NRT_VERSION, name, &res);
-		if (err != NTBL_SUCCESS)
+		name[3] = i + (int) '0';
+		err = nrt_adapter_resources(NRT_VERSION, adapter_name,
+					     adapter_type, &res);
+		if (err != NRT_SUCCESS) {
+			error("nrt_adapter_resources(%s, %hu): %s",
+			      adapter_name, adapter_type, nrt_err_str(rc));
 			continue;
-		for (j = 0; j < res.window_count; j++)
-			ntbl_clean_window(NRT_VERSION, name,
-				ALWAYS_KILL, res.window_list[j]);
+		}
+#if NRT_DEBUG
+		nrt_dump_adapter(adapter_name, adapter_type, &res);
+#endif
+		for (j = 0; j < res.window_count; j++) {
+			err = nrt_clean_window(NRT_VERSION, adapter_name,
+						adapter_type, KILL, 
+						res.window_list[j]);
+			if (err != NRT_SUCCESS) {
+				error("nrt_clean_window(%s, %hu): %s",
+				      adapter_name, adapter_type,
+				      nrt_err_str(rc));
+			}
+		}
 		free(res.window_list);
 	}
 
