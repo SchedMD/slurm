@@ -3471,7 +3471,8 @@ static int _part_access_check(struct part_record *part_ptr,
 {
 	uint32_t total_nodes;
 
-	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0)) {
+	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0) &&
+	    (submit_uid != slurmctld_conf.slurm_user_id)) {
 		info("_part_access_check: uid %u access to partition %s "
 		     "denied, not root",
 		     (unsigned int) submit_uid, part_ptr->name);
