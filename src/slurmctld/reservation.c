@@ -467,6 +467,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					    acct_db_conn, &assoc,
 					    accounting_enforce, assoc_list);
 				if (rc != SLURM_SUCCESS) {
+					error("No associations for UID %u",
+					      assoc.uid);
 					rc = ESLURM_INVALID_ACCOUNT;
 					goto end_it;
 				}

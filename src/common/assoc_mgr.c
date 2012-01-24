@@ -1325,12 +1325,12 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
-	if (set)
-		return SLURM_SUCCESS;
-	else {
-		debug("user %u does not have any associations", assoc->uid);
-		return SLURM_ERROR;
+	if (!set) {
+		debug("UID %u has no associations", assoc->uid);
+		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
+			return SLURM_ERROR;
 	}
+	return SLURM_SUCCESS;
 }
 
 extern int assoc_mgr_fill_in_assoc(void *db_conn,
