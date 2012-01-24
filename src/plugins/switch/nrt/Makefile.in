@@ -107,10 +107,10 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 switch_nrt_la_LIBADD =
-am__switch_nrt_la_SOURCES_DIST = nrt.c nrt.h nrt_keys.h switch_nrt.c
+am__switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h switch_nrt.c
 am__objects_1 = nrt.lo switch_nrt.lo
 @BUILD_FEDERATION_TRUE@am_switch_nrt_la_OBJECTS = $(am__objects_1)
-am__EXTRA_switch_nrt_la_SOURCES_DIST = nrt.c nrt.h nrt_keys.h \
+am__EXTRA_switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h \
 	switch_nrt.c
 switch_nrt_la_OBJECTS = $(am_switch_nrt_la_OBJECTS)
 switch_nrt_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -338,8 +338,9 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 SWITCH_NRT_LA_SOURCES = \
-	nrt.c nrt.h		\
+	nrt.c			\
 	nrt_keys.h		\
+	slurm_nrt.h		\
 	switch_nrt.c
 
 @BUILD_FEDERATION_FALSE@pkglib_LTLIBRARIES = 

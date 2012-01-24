@@ -8,8 +8,9 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 SWITCH_NRT_LA_SOURCES =		\
-	nrt.c nrt.h		\
+	nrt.c			\
 	nrt_keys.h		\
+	slurm_nrt.h		\
 	switch_nrt.c
 
 if BUILD_NRT

@@ -53,7 +53,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_xlator.h"
-#include "src/plugins/switch/nrt/nrt.h"
+#include "src/plugins/switch/nrt/slurm_nrt.h"
 
 #define NRT_BUF_SIZE 4096
 

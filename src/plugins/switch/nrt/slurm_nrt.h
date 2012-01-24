@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  nrt.h - Library routines for initiating jobs using IBM's NRT (Network
- *          Routing Table)
+ *  slurm_nrt.h - Library routines for initiating jobs using IBM's NRT
+ *                (Network Routing Table)
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Portions Copyright (C) 2011 SchedMD LLC.
@@ -44,8 +44,8 @@
 
 #include "src/common/slurm_xlator.h"
 
-#ifndef _NRT_INCLUDED
-#define _NRT_INCLUDED
+#ifndef _SLURM_NRT_INCLUDED
+#define _SLURM_NRT_INCLUDED
 
 #if HAVE_LIBNRT
 # include <nrt.h>
@@ -114,4 +114,4 @@ extern int nrt_slurmctld_init(void);
 extern int nrt_slurmd_init(void);
 extern int nrt_slurmd_step_init(void);
 
-#endif /* _NRT_INCLUDED */
+#endif /* _SLURM_NRT_INCLUDED */
