@@ -1,5 +1,5 @@
 /*****************************************************************************\
- **  federation_keys.h - Key definitions used by the get_jobinfo functions
+ **  nrt_keys.h - Key definitions used by the get_jobinfo functions
  **  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
@@ -40,22 +40,22 @@
 #ifndef _NRT_KEYS_INCLUDED
 #define _NRT_KEYS_INCLUDED
 
-#define FED_ADAPTERNAME_LEN 5
+#define NRT_ADAPTERNAME_LEN 5
 
 enum {
 	/* Federation specific get_jobinfo keys */
-	FED_JOBINFO_TABLEINFO,
-	FED_JOBINFO_TABLESPERTASK,
-	FED_JOBINFO_KEY,
-	FED_JOBINFO_PROTOCOL,
-	FED_JOBINFO_MODE
+	NRT_JOBINFO_TABLEINFO,
+	NRT_JOBINFO_TABLESPERTASK,
+	NRT_JOBINFO_KEY,
+	NRT_JOBINFO_PROTOCOL,
+	NRT_JOBINFO_MODE
 };
 
 /* Information shared between slurm_ll_api and the slurm federation driver */
-typedef struct fed_tableinfo {
+typedef struct nrt_tableinfo {
 	uint32_t table_length;
 	nrt_creator_ib_per_task_input_t **table;
-	char adapter_name[FED_ADAPTERNAME_LEN];
-} fed_tableinfo_t;
+	char adapter_name[NRT_ADAPTERNAME_LEN];
+} nrt_tableinfo_t;
 
 #endif /* _NRT_KEYS_INCLUDED */

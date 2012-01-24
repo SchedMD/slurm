@@ -102,9 +102,9 @@ typedef struct nrt_window {
 
 typedef struct nrt_adapter {
 	char name[NRT_ADAPTERNAME_LEN];
-	uint16_t lid;
-	uint16_t network_id;
-	uint32_t window_count;
+	uint16_t lid[MAX_SPIGOTS];
+	uint64_t network_id[MAX_SPIGOTS];
+	uint16_t window_count;
 	nrt_window_t *window_list;
 } nrt_adapter_t;
 
@@ -150,8 +150,8 @@ typedef struct {
 
 typedef struct {
 	char name[NRT_ADAPTERNAME_LEN];
-	uint16_t lid;
-	uint16_t network_id;
+	uint16_t lid[MAX_SPIGOTS];
+	uint64_t network_id[MAX_SPIGOTS];
 } nrt_cache_entry_t;
 
 /*
@@ -165,11 +165,11 @@ hostlist_t adapter_list;
 static nrt_cache_entry_t lid_cache[NRT_MAXADAPTERS];
 
 
+static int  _fill_in_adapter_cache(void);
 static void _hash_rebuild(nrt_libstate_t *state);
-static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name);
-static int _parse_nrt_file(hostlist_t *adapter_list);
 static void _init_adapter_cache(void);
-static int _fill_in_adapter_cache(void);
+static int  _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name);
+static int  _parse_nrt_file(hostlist_t *adapter_list);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a
  * global mutex.  Used to serialize access to the global library
@@ -288,12 +288,14 @@ extern char *nrt_sprint_jobinfo(nrt_jobinfo_t *j, char *buf, size_t size)
 static void
 _init_adapter_cache(void)
 {
-	int i;
+	int i, j;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
 		lid_cache[i].name[0] = 0;
-		lid_cache[i].lid = -1;
-		lid_cache[i].network_id = -1;
+		for (j = 0; j < MAX_SPIGOTS; j++) {
+			lid_cache[i].lid[j] = (uint16_t) -1;
+			lid_cache[i].network_id[j] = (uint64_t) -1;
+		}
 	}
 }
 
@@ -310,7 +312,7 @@ _fill_in_adapter_cache(void)
 	adap_resources_t res;
 	int num;
 	int rc;
-	int i;
+	int i, j;
 
 	adapters = hostlist_iterator_create(adapter_list);
 	for (i = 0; (adapter_name = hostlist_next(adapters)); i++) {
@@ -328,9 +330,12 @@ _fill_in_adapter_cache(void)
 
 		num = adapter_name[3] - (int)'0';
 		assert(num < NRT_MAXADAPTERS);
-		lid_cache[num].lid = res.lid;
-		lid_cache[num].network_id = res.network_id;
-		strncpy(lid_cache[num].name, adapter_name, NRT_ADAPTERNAME_LEN);
+		for (j = 0; j < MAX_SPIGOTS; j++) {
+			lid_cache[num].lid[j] = res.lid[j];
+			lid_cache[num].network_id[j] = res.network_id[j];
+		}
+		strncpy(lid_cache[num].name, adapter_name,
+			NRT_ADAPTERNAME_LEN);
 
 		free(res.window_list);
 		free(adapter_name);
@@ -350,12 +355,15 @@ _fill_in_adapter_cache(void)
 static void
 _cache_lid(nrt_adapter_t *ap)
 {
+	int j;
 	assert(ap);
 
 	int adapter_num = ap->name[3] - (int) '0';
 
-	lid_cache[adapter_num].lid = ap->lid;
-	lid_cache[adapter_num].network_id = ap->network_id;
+	for (j = 0; j < MAX_SPIGOTS; j++) {
+		lid_cache[adapter_num].lid[j] = ap->lid[j];
+		lid_cache[adapter_num].network_id[j] = ap->network_id[j];
+	}
 	strncpy(lid_cache[adapter_num].name, ap->name, NRT_ADAPTERNAME_LEN);
 }
 
@@ -364,15 +372,17 @@ _cache_lid(nrt_adapter_t *ap)
  *
  * Used by: slurmd
  */
-static uint16_t
+static uint64_t
 _get_network_id_from_adapter(char *adapter_name)
 {
 	int i;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
 		if (!strncmp(adapter_name, lid_cache[i].name,
-			     NRT_ADAPTERNAME_LEN))
-			return lid_cache[i].network_id;
+			     NRT_ADAPTERNAME_LEN)) {
+/* FIXME: Return which spigot's network_id? */
+			return lid_cache[i].network_id[0];
+		}
 	}
 
         return (uint16_t) -1;
@@ -390,8 +400,10 @@ _get_lid_from_adapter(char *adapter_name)
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
 		if (!strncmp(adapter_name, lid_cache[i].name,
-			     NRT_ADAPTERNAME_LEN))
-			return lid_cache[i].lid;
+			     NRT_ADAPTERNAME_LEN)) {
+/* FIXME: Return which spigot's lid? */
+			return lid_cache[i].lid[0];
+		}
 	}
 
         return (uint16_t) -1;
@@ -406,7 +418,7 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 	struct NTBL_STATUS *old = NULL;
 	nrt_window_t *tmp_winlist = NULL;
 	uint16_t win_count = 0;
-	int err, i;
+	int err, i, j;
 
 	err = nrt_adapter_resources(NRT_VERSION, adapter_name, adapter_type,
 				    &res);
@@ -421,8 +433,10 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 #endif
 
 	strncpy(nrt_adapter->name, adapter_name, NRT_ADAPTERNAME_LEN);
-	nrt_adapter->lid = res.lid;
-	nrt_adapter->network_id = res.network_id;
+	for (j = 0; j < MAX_SPIGOTS; j++) {
+		nrt_adapter->lid[j] = res.lid[j];
+		nrt_adapter->network_id[j] = res.network_id[j];
+	}
 	nrt_adapter->window_count = res.window_count;
 	free(res.window_list);
 	_cache_lid(nrt_adapter);
@@ -627,11 +641,11 @@ _print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
 	count = snprintf(buf, size,
 			"--Begin Adapter Resources--\n"
 			"  device_type = %x\n"
-			"  lid = %d\n"
-			"  network_id = %d\n"
+			"  lid[0] = %hu\n"
+			"  network_id[0] = %u\n"
 			"  fifo_slot_size = %lld\n"
-			"  window_count = %d\n"
-			"  window_list = %d\n"
+			"  window_count = %hu\n"
+			"  window_list[0] = %hu\n"
 #if NRT_VERSION == 120
 			"  reserved = %lld\n"
 #else
@@ -639,8 +653,8 @@ _print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
 #endif
 			"--End Adapter Resources--\n",
 			r->device_type,
-			r->lid,
-			r->network_id,
+			r->lid[0],
+			r->network_id[0],
 			r->fifo_slot_size,
 			r->window_count,
 			r->window_list[0],
@@ -707,16 +721,16 @@ nrt_print_nodeinfo(nrt_nodeinfo_t *n, char *buf, size_t size)
 		count = snprintf(tmp, remaining,
 #if NRT_VERBOSE_PRINT
 			"    Adapter: %s\n"
-			"      lid: %u\n"
-			"      network_id: %u\n"
-			"      window_count: %u\n",
+			"      lid[0]: %hu\n"
+			"      network_id[0]: %u\n"
+			"      window_count: %hu\n",
 			a->name,
-			a->lid,
-			a->network_id,
+			a->lid[0],
+			a->network_id[0],
 			a->window_count);
 #else
 			"  Adapter: %s\n"
-			"    Window count: %d\n"
+			"    Window count: %hu\n"
 			"    Active windows:\n",
 			a->name,
 			a->window_count);
@@ -756,7 +770,7 @@ nrt_print_nodeinfo(nrt_nodeinfo_t *n, char *buf, size_t size)
 extern int
 nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 {
-	int i,j;
+	int i, j;
 	nrt_adapter_t *a;
 	int offset;
 
@@ -771,9 +785,11 @@ nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 	for (i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
 		packmem(a->name, NRT_ADAPTERNAME_LEN, buf);
-		pack16(a->lid, buf);
-		pack16(a->network_id, buf);
-		pack32(a->window_count, buf);
+		for (j = 0; j < MAX_SPIGOTS; j++) {
+			pack16(a->lid[j], buf);
+			pack64(a->network_id[j], buf);
+		}
+		pack16(a->window_count, buf);
 		for (j = 0; j < a->window_count; j++) {
 			pack16(a->window_list[j].id, buf);
 			pack32(a->window_list[j].status, buf);
@@ -788,7 +804,7 @@ nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 static int
 _copy_node(nrt_nodeinfo_t *dest, nrt_nodeinfo_t *src)
 {
-	int i,j;
+	int i, j;
 	nrt_adapter_t *sa = NULL;
 	nrt_adapter_t *da = NULL;
 
@@ -803,11 +819,13 @@ _copy_node(nrt_nodeinfo_t *dest, nrt_nodeinfo_t *src)
 		sa = src->adapter_list + i;
 		da = dest->adapter_list +i;
 		strncpy(da->name, sa->name, NRT_ADAPTERNAME_LEN);
-		da->lid = sa->lid;
-		da->network_id = sa->network_id;
+		for (j = 0; j < MAX_SPIGOTS; j++) {
+			da->lid[j] = sa->lid[j];
+			da->network_id[j] = sa->network_id[j];
+		}
 		da->window_count = sa->window_count;
 		da->window_list = (nrt_window_t *)xmalloc(sizeof(nrt_window_t) *
-			da->window_count);
+				  da->window_count);
 		if (!da->window_list) {
 			slurm_seterrno_ret(ENOMEM);
 		}
@@ -1001,7 +1019,8 @@ static int
 _fake_unpack_adapters(Buf buf)
 {
 	uint32_t adapter_count;
-	uint32_t window_count;
+	uint16_t window_count;
+	uint64_t dummy64;
 	uint32_t dummy32;
 	uint16_t dummy16;
 	char *dummyptr;
@@ -1013,12 +1032,11 @@ _fake_unpack_adapters(Buf buf)
 		safe_unpackmem_ptr(&dummyptr, &dummy32, buf);
 		if (dummy32 != NRT_ADAPTERNAME_LEN)
 			goto unpack_error;
-		safe_unpack16(&dummy16, buf);
-		safe_unpack16(&dummy16, buf);
-		safe_unpack32(&dummy32, buf);
-		safe_unpack32(&dummy32, buf);
-		safe_unpack32(&dummy32, buf);
-		safe_unpack32(&window_count, buf);
+		for (j = 0; j < MAX_SPIGOTS; j++) {
+			safe_unpack16(&dummy16, buf);
+			safe_unpack64(&dummy64, buf);
+		}
+		safe_unpack16(&window_count, buf);
 		for (j = 0; j < window_count; j++) {
 			safe_unpack16(&dummy16, buf);
 			safe_unpack32(&dummy32, buf);
@@ -1114,9 +1132,11 @@ _unpack_nodeinfo(nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		if (size != NRT_ADAPTERNAME_LEN)
 			goto unpack_error;
 		memcpy(tmp_a->name, name_ptr, size);
-		safe_unpack16(&tmp_a->lid, buf);
-		safe_unpack16(&tmp_a->network_id, buf);
-		safe_unpack32(&tmp_a->window_count, buf);
+		for (j = 0; j < MAX_SPIGOTS; j++) {
+			safe_unpack16(&tmp_a->lid[j], buf);
+			safe_unpack64(&tmp_a->network_id[j], buf);
+		}
+		safe_unpack16(&tmp_a->window_count, buf);
 		tmp_w = (nrt_window_t *)xmalloc(sizeof(nrt_window_t) *
 			tmp_a->window_count);
 		if (!tmp_w)
@@ -1803,8 +1823,8 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 	pack32(tableinfo->table_length, buf);
 	for (i = 0; i < tableinfo->table_length; i++) {
 		pack16(tableinfo->table[i]->task_id, buf);
-		pack16(tableinfo->table[i]->lid, buf);
-		pack16(tableinfo->table[i]->window_id, buf);
+		pack16(tableinfo->table[i]->base_lid, buf);
+		pack16(tableinfo->table[i]->win_id, buf);
 	}
 	packmem(tableinfo->adapter_name, NRT_ADAPTERNAME_LEN, buf);
 }
@@ -1846,8 +1866,8 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 		tableinfo->table[i] = (NTBL *) xmalloc(sizeof(NTBL));
 
 		safe_unpack16(&tableinfo->table[i]->task_id, buf);
-		safe_unpack16(&tableinfo->table[i]->lid, buf);
-		safe_unpack16(&tableinfo->table[i]->window_id, buf);
+		safe_unpack16(&tableinfo->table[i]->base_lid, buf);
+		safe_unpack16(&tableinfo->table[i]->win_id, buf);
 	}
 	safe_unpackmem_ptr(&name_ptr, &size, buf);
 	if (size != NRT_ADAPTERNAME_LEN)
@@ -1882,8 +1902,6 @@ nrt_unpack_jobinfo(nrt_jobinfo_t *j, Buf buf)
 
 	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task
 						   * sizeof(nrt_tableinfo_t));
-	if (!j->tableinfo)
-		slurm_seterrno_ret(ENOMEM);
 	for (i = 0; i < j->tables_per_task; i++) {
 		if (_unpack_tableinfo(&j->tableinfo[i], buf) != 0)
 			goto unpack_error;
@@ -1895,7 +1913,7 @@ unpack_error:
 	error("nrt_unpack_jobinfo error");
 	if (j->tableinfo) {
 		for (i = 0; i < j->tables_per_task; i++) {
-			for (k=0; k<j->tableinfo[i].table_length; k++)
+			for (k = 0; k < j->tableinfo[i].table_length; k++)
 				xfree(j->tableinfo[i].table[k]);
 			xfree(j->tableinfo[i].table);
 		}
@@ -2176,7 +2194,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 	int err;
 	char *adapter_name;
 	uint16_t adapter_type;
-	uint16_t network_id;
+	uint64_t network_id;
 	uint bulk_xfer_resources = 0;	/* Unused by NRT today */
 /* 	ADAPTER_RESOURCES res; */
 	int rc;
@@ -2396,7 +2414,7 @@ _free_libstate(nrt_libstate_t *lp)
 	xfree(lp);
 }
 
-int
+extern int
 nrt_fini(void)
 {
 	xfree(nrt_conf);
@@ -2544,17 +2562,27 @@ extern char *nrt_err_str(int rc)
 		return "Invalid adapter name";
 	case NRT_EADAPTYPE:
 		return "Invalid adapter type";
+	case NRT_EAGAIN:
+		return "Try call again later";
 	case NRT_EINVAL:
 		return "Invalid input paramter";
+	case NRT_EIO:
+		return "Adapter reported a DOWN state";
 	case NRT_EMEM:
 		return "Memory allocation error";
 	case NRT_EPERM:
 		return "Permission denied, not root";
+	case NRT_ESYSTEM:
+		return "A system error occured";
+	case NRT_NO_RDMA_AVAIL:
+		return "No RDMA windows available";
 	case NRT_PNSDAPI:
 		return "Error communicating with Protocol Network Services "
 		       "Daemon";
 	case NRT_SUCCESS:
 		return "Success";
+	case NRT_UNKNOWN_ADAPTER:
+		return "Unknown adaper";
 	case NRT_WRONG_WINDOW_STATE:
 		return "Wrong window state";
 	}
