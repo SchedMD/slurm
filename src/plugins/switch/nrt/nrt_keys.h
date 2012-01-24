@@ -40,7 +40,11 @@
 #ifndef _NRT_KEYS_INCLUDED
 #define _NRT_KEYS_INCLUDED
 
-#define NRT_ADAPTERNAME_LEN 5
+#if HAVE_LIBNRT
+# include <nrt.h>
+#else
+# error "Must have libnrt to compile this module!"
+#endif
 
 enum {
 	/* Federation specific get_jobinfo keys */
@@ -54,8 +58,9 @@ enum {
 /* Information shared between slurm_ll_api and the slurm federation driver */
 typedef struct nrt_tableinfo {
 	uint32_t table_length;
-	nrt_creator_ib_per_task_input_t **table;
-	char adapter_name[NRT_ADAPTERNAME_LEN];
+	nrt_creator_per_task_input_t **table;
+	char adapter_name[NRT_MAX_DEVICENAME_SIZE];
+	uint16_t adapter_type;
 } nrt_tableinfo_t;
 
 #endif /* _NRT_KEYS_INCLUDED */
