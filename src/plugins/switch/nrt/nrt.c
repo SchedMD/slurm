@@ -104,9 +104,6 @@ typedef struct nrt_adapter {
 	char name[NRT_ADAPTERNAME_LEN];
 	uint16_t lid;
 	uint16_t network_id;
-	uint32_t max_winmem;
-	uint32_t min_winmem;
-	uint32_t avail_mem;
 	uint32_t window_count;
 	nrt_window_t *window_list;
 } nrt_adapter_t;
@@ -138,7 +135,6 @@ struct nrt_jobinfo {
 	/* pid from getpid() */
 	uint16_t job_key;
 	char job_desc[DESCLEN];
-	uint32_t window_memory;
 	uint8_t bulk_xfer;  /* flag */
 	uint16_t tables_per_task;
 	nrt_tableinfo_t *tableinfo;
@@ -168,26 +164,6 @@ pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 hostlist_t adapter_list;
 static nrt_cache_entry_t lid_cache[NRT_MAXADAPTERS];
 
-
-#define NRT_STATUS_UNKNOWN 99
-static nrt_status_t nrt_status_tab[]= {
-	{0, "NTBL_SUCCESS"},
-	{1, "NTBL_EINVAL"},
-	{2, "NTBL_EPERM"},
-	{3, "NTBL_EIOCTL"},
-	{4, "NTBL_EADAPTER"},
-	{5, "NTBL_ESYSTEM"},
-	{6, "NTBL_EMEM"},
-	{7, "NTBL_ELID"},
-	{8, "NTBL_EIO"},
-	{9, "NTBL_UNLOADED_STATE"},
-	{10, "NTBL_LOADED_STATE"},
-	{11, "NTBL_DISABLED_STATE"},
-	{12, "NTBL_ACTIVE_STATE"},
-	{13, "NTBL_BUSY_STATE"},
-	{14, "NTBL_NO_RDMA_AVAIL"},
-	{NRT_STATUS_UNKNOWN, "UNKNOWN_RESULT_CODE"}
-};
 
 static void _hash_rebuild(nrt_libstate_t *state);
 static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name);
@@ -264,25 +240,6 @@ nrt_slurmd_step_init(void)
 	return SLURM_SUCCESS;
 }
 
-static char *
-_lookup_nrt_status_tab(int status)
-{
-	char *res = NULL;
-	int i;
-
-	for (i = 0; i < sizeof(nrt_status_tab) / sizeof(nrt_status_t); i++) {
-		if (nrt_status_tab[i].status_number == status) {
-			res = nrt_status_tab[i].status_msg;
-			break;
-		}
-	}
-
-	if (!res)
-		res = nrt_status_tab[NRT_STATUS_UNKNOWN].status_msg;
-
-	return res;
-}
-
 /* Used by: slurmd, slurmctld */
 extern void nrt_print_jobinfo(FILE *fp, nrt_jobinfo_t *jobinfo)
 {
@@ -306,12 +263,10 @@ extern char *nrt_sprint_jobinfo(nrt_jobinfo_t *j, char *buf, size_t size)
 		"--Begin Jobinfo--\n"
 		"  job_key: %u\n"
 		"  job_desc: %s\n"
-		"  window_memory: %u\n"
 		"  table_size: %u\n"
 		"--End Jobinfo--\n",
 		j->job_key,
 		j->job_desc,
-		j->window_memory,
 		j->tables_per_task);
 	if (count < 0)
 		return buf;
@@ -468,12 +423,6 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 	strncpy(nrt_adapter->name, adapter_name, NRT_ADAPTERNAME_LEN);
 	nrt_adapter->lid = res.lid;
 	nrt_adapter->network_id = res.network_id;
-	/* FUTURE:  check that we don't lose information when converting
-	 * from 64 to 32 bit unsigned ints in the next three assignments.
-	 */
-	nrt_adapter->max_winmem = res.max_window_memory;
-	nrt_adapter->min_winmem = res.min_window_memory;
-	nrt_adapter->avail_mem = res.avail_adapter_memory;
 	nrt_adapter->window_count = res.window_count;
 	free(res.window_list);
 	_cache_lid(nrt_adapter);
@@ -606,7 +555,6 @@ nrt_alloc_jobinfo(nrt_jobinfo_t **j)
 		slurm_seterrno_ret(ENOMEM);
 	new->magic = NRT_JOBINFO_MAGIC;
 	new->job_key = -1;
-	new->window_memory = 0;
 	new->tables_per_task = 0;
 	new->tableinfo = NULL;
 	*j = new;
@@ -681,9 +629,6 @@ _print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
 			"  device_type = %x\n"
 			"  lid = %d\n"
 			"  network_id = %d\n"
-			"  max_window_memory = %lld\n"
-			"  min_window_memory = %lld\n"
-			"  avail_adapter_memory = %lld\n"
 			"  fifo_slot_size = %lld\n"
 			"  window_count = %d\n"
 			"  window_list = %d\n"
@@ -696,9 +641,6 @@ _print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
 			r->device_type,
 			r->lid,
 			r->network_id,
-			r->max_window_memory,
-			r->min_window_memory,
-			r->avail_adapter_memory,
 			r->fifo_slot_size,
 			r->window_count,
 			r->window_list[0],
@@ -712,81 +654,6 @@ _print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
 }
 
 static int
-_print_window_status(struct NTBL_STATUS *s, char *buf, size_t size)
-{
-	int count;
-
-	assert(s);
-	assert(buf);
-	assert(size > 0);
-
-	switch(s->rc) {
-	case NTBL_UNLOADED_STATE:
-		count = snprintf(buf, size,
-#if NRT_VERBOSE_PRINT
-			"--Begin NTBL Status For Window %d on %s--\n"
-			"  window_id = %u\n"
-			"  adapter = %s\n"
-			"  return code = %s\n"
-			"--End NTBL Status For Window %d on %s--\n",
-			s->window_id, s->adapter,
-			s->window_id,
-			s->adapter,
-			_lookup_nrt_status_tab(s->rc),
-			s->window_id, s->adapter);
-#else
-			"window %u on %s: %s\n",
-			s->window_id, s->adapter,
-			_lookup_nrt_status_tab(s->rc));
-#endif
-		break;
-	case NTBL_LOADED_STATE:
-	case NTBL_DISABLED_STATE:
-	case NTBL_ACTIVE_STATE:
-	case NTBL_BUSY_STATE:
-		count = snprintf(buf, size,
-#if NRT_VERBOSE_PRINT
-			"--Begin NTBL Status For Window %d on %s--\n"
-			"  user_name = %s\n"
-			"  client_pid = %d\n"
-			"  uid = %d\n"
-			"  window_id = %u\n"
-			"  adapter = %s\n"
-			"  memory_requested = %llu\n"
-			"  memory_allocated = %llu\n"
-			"  time_loaded = %s\n"
-			"  description = %s\n"
-			"  return code = %s\n"
-			"--End NTBL Status For Window %d on %s--\n",
-			s->window_id, s->adapter,
-			s->user_name,
-			s->client_pid,
-			s->uid,
-			s->window_id,
-			s->adapter,
-			s->memory_requested,
-			s->memory_allocated,
-			s->time_loaded,
-			s->description,
-			_lookup_nrt_status_tab(s->rc),
-			s->window_id, s->adapter);
-#else
-			"window %u on %s: %s\n",
-			s->window_id, s->adapter,
-			_lookup_nrt_status_tab(s->rc));
-#endif
-		break;
-	default:
-		count = snprintf(buf, size,
-			"Uknown NTBL Return Code For Window %d: %s\n",
-			 s->window_id,
-			 _lookup_nrt_status_tab(s->rc));
-	}
-
-	return count;
-}
-#endif
-static int
 _print_window_struct(nrt_window_t *w, char *buf, size_t size)
 {
 	int count;
@@ -799,7 +666,7 @@ _print_window_struct(nrt_window_t *w, char *buf, size_t size)
 	count = snprintf(buf, size,
 		"      Window %u: %s\n",
 		w->id,
-		_lookup_nrt_status_tab(w->status));
+		nrt_err_str(w->status));
 
 	return count;
 }
@@ -842,16 +709,10 @@ nrt_print_nodeinfo(nrt_nodeinfo_t *n, char *buf, size_t size)
 			"    Adapter: %s\n"
 			"      lid: %u\n"
 			"      network_id: %u\n"
-			"      max_window_memory: %u\n"
-			"      min_window_memory: %u\n"
-			"      avail_adapter_memory: %u\n"
 			"      window_count: %u\n",
 			a->name,
 			a->lid,
 			a->network_id,
-			a->max_winmem,
-			a->min_winmem,
-			a->avail_mem,
 			a->window_count);
 #else
 			"  Adapter: %s\n"
@@ -891,14 +752,7 @@ nrt_print_nodeinfo(nrt_nodeinfo_t *n, char *buf, size_t size)
 	return buf;
 }
 
-/* Note that when collecting max_winmem, min_winmem and avail_mem
- * we convert these values from 64 to 32 bit unisgned integers.  This
- * was to make the pack/unpack implementation easier.  I am taking a
- * chance here that IBM will not release NRT adapters with more
- * than 4GB of memory.
- *
- * Used by: all
- */
+/* Used by: all */
 extern int
 nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 {
@@ -919,9 +773,6 @@ nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 		packmem(a->name, NRT_ADAPTERNAME_LEN, buf);
 		pack16(a->lid, buf);
 		pack16(a->network_id, buf);
-		pack32(a->max_winmem, buf);
-		pack32(a->min_winmem, buf);
-		pack32(a->avail_mem, buf);
 		pack32(a->window_count, buf);
 		for (j = 0; j < a->window_count; j++) {
 			pack16(a->window_list[j].id, buf);
@@ -954,9 +805,6 @@ _copy_node(nrt_nodeinfo_t *dest, nrt_nodeinfo_t *src)
 		strncpy(da->name, sa->name, NRT_ADAPTERNAME_LEN);
 		da->lid = sa->lid;
 		da->network_id = sa->network_id;
-		da->max_winmem = sa->max_winmem;
-		da->min_winmem = sa->min_winmem;
-		da->avail_mem = sa->avail_mem;
 		da->window_count = sa->window_count;
 		da->window_list = (nrt_window_t *)xmalloc(sizeof(nrt_window_t) *
 			da->window_count);
@@ -1268,9 +1116,6 @@ _unpack_nodeinfo(nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		memcpy(tmp_a->name, name_ptr, size);
 		safe_unpack16(&tmp_a->lid, buf);
 		safe_unpack16(&tmp_a->network_id, buf);
-		safe_unpack32(&tmp_a->max_winmem, buf);
-		safe_unpack32(&tmp_a->min_winmem, buf);
-		safe_unpack32(&tmp_a->avail_mem, buf);
 		safe_unpack32(&tmp_a->window_count, buf);
 		tmp_w = (nrt_window_t *)xmalloc(sizeof(nrt_window_t) *
 			tmp_a->window_count);
@@ -1861,7 +1706,6 @@ nrt_build_jobinfo(nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	jp->job_key = _next_key();
 	snprintf(jp->job_desc, DESCLEN,
 		 "slurm switch/NRT driver key=%d", jp->job_key);
-	jp->window_memory = NRT_AUTO_WINMEM;
 
 	hi = hostlist_iterator_create(hl);
 
@@ -1978,7 +1822,6 @@ nrt_pack_jobinfo(nrt_jobinfo_t *j, Buf buf)
 	pack32(j->magic, buf);
 	pack16(j->job_key, buf);
 	packmem(j->job_desc, DESCLEN, buf);
-	pack32(j->window_memory, buf);
 	pack8(j->bulk_xfer, buf);
 	pack16(j->tables_per_task, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
@@ -2034,7 +1877,6 @@ nrt_unpack_jobinfo(nrt_jobinfo_t *j, Buf buf)
 	safe_unpackmem(j->job_desc, &size, buf);
 	if (size != DESCLEN)
 		goto unpack_error;
-	safe_unpack32(&j->window_memory, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
 	safe_unpack16(&j->tables_per_task, buf);
 
@@ -2332,7 +2174,6 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 {
 	int i;
 	int err;
-	unsigned long long winmem;
 	char *adapter_name;
 	uint16_t adapter_type;
 	uint16_t network_id;
@@ -2363,7 +2204,6 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 
 		if (adapter_name == NULL)
 			continue;
-		winmem = jp->window_memory;	/* FIXME: Unused by NRT? */
 		if (jp->bulk_xfer) {
 			if (i == 0) {
 				rc = _check_rdma_job_count(adapter_name,
