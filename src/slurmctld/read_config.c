@@ -499,14 +499,16 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
 
 	if (part->default_flag) {
-		if (default_part_name
-		&&  strcmp(default_part_name, part->name))
+		if (default_part_name &&
+		    strcmp(default_part_name, part->name)) {
 			info("_parse_part_spec: changing default partition "
-				"from %s to %s",
-				default_part_name, part->name);
+			     "from %s to %s", default_part_name, part->name);
+			default_part_loc->flags &= (~PART_FLAG_DEFAULT);
+		}
 		xfree(default_part_name);
 		default_part_name = xstrdup(part->name);
 		default_part_loc = part_ptr;
+		part_ptr->flags |= PART_FLAG_DEFAULT;
 	}
 
 	if (part->preempt_mode != (uint16_t) NO_VAL)
