@@ -149,6 +149,9 @@
 #undef HAVE_LIBJOB
 
 /* define if you have libntbl. */
+#undef HAVE_LIBNRT
+
+/* define if you have libntbl. */
 #undef HAVE_LIBNTBL
 
 /* Define to 1 if you have the <limits.h> header file. */

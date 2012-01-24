@@ -38,7 +38,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 subdir = src/plugins/switch/nrt
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -66,6 +66,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
+	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -107,16 +108,17 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 switch_nrt_la_LIBADD =
-am__switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h switch_nrt.c
+am__switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h \
+	switch_nrt.c
 am__objects_1 = nrt.lo switch_nrt.lo
-@BUILD_FEDERATION_TRUE@am_switch_nrt_la_OBJECTS = $(am__objects_1)
+@HAVE_NRT_TRUE@am_switch_nrt_la_OBJECTS = $(am__objects_1)
 am__EXTRA_switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h \
 	switch_nrt.c
 switch_nrt_la_OBJECTS = $(am_switch_nrt_la_OBJECTS)
 switch_nrt_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(switch_nrt_la_LDFLAGS) $(LDFLAGS) -o $@
-@BUILD_FEDERATION_TRUE@am_switch_nrt_la_rpath = -rpath $(pkglibdir)
+@HAVE_NRT_TRUE@am_switch_nrt_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -160,7 +162,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = -DFEDERATION_CONFIG_FILE=\"$(sysconfdir)/nrt.conf\"
+CPPFLAGS = -DNRT_CONFIG_FILE=\"$(sysconfdir)/nrt.conf\"
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -185,8 +187,12 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
+HAVE_ELAN = @HAVE_ELAN@
+HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
+HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
+HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -203,7 +209,6 @@ LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
-LOADLEVELER_INCLUDES = @LOADLEVELER_INCLUDES@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -217,6 +222,7 @@ MYSQL_LIBS = @MYSQL_LIBS@
 NCURSES = @NCURSES@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NRT_LDFLAGS = @NRT_LDFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
@@ -343,11 +349,11 @@ SWITCH_NRT_LA_SOURCES = \
 	slurm_nrt.h		\
 	switch_nrt.c
 
-@BUILD_FEDERATION_FALSE@pkglib_LTLIBRARIES = 
-@BUILD_FEDERATION_TRUE@pkglib_LTLIBRARIES = switch_nrt.la
-@BUILD_FEDERATION_TRUE@switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
-@BUILD_FEDERATION_TRUE@switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FEDERATION_LDFLAGS)
-@BUILD_FEDERATION_FALSE@EXTRA_switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
+@HAVE_NRT_FALSE@pkglib_LTLIBRARIES = 
+@HAVE_NRT_TRUE@pkglib_LTLIBRARIES = switch_nrt.la
+@HAVE_NRT_TRUE@switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
+@HAVE_NRT_TRUE@switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(NRT_LDFLAGS)
+@HAVE_NRT_FALSE@EXTRA_switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
 all: all-am
 
 .SUFFIXES:

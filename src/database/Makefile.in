@@ -66,6 +66,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
+	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -187,6 +188,7 @@ HAVE_AIX = @HAVE_AIX@
 HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
+HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
@@ -218,6 +220,7 @@ MYSQL_LIBS = @MYSQL_LIBS@
 NCURSES = @NCURSES@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NRT_LDFLAGS = @NRT_LDFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@

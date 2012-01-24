@@ -1,6 +1,6 @@
 # Makefile for switch/nrt plugin (NRT = IBM's Network Routing Table)
 
-CPPFLAGS =  -DFEDERATION_CONFIG_FILE=\"$(sysconfdir)/nrt.conf\"
+CPPFLAGS =  -DNRT_CONFIG_FILE=\"$(sysconfdir)/nrt.conf\"
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
@@ -13,10 +13,10 @@ SWITCH_NRT_LA_SOURCES =		\
 	slurm_nrt.h		\
 	switch_nrt.c
 
-if BUILD_NRT
+if HAVE_NRT
 pkglib_LTLIBRARIES = switch_nrt.la
 switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
-switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FEDERATION_LDFLAGS)
+switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(NRT_LDFLAGS)
 
 else
 pkglib_LTLIBRARIES =
