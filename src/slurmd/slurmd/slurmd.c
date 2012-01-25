@@ -1228,7 +1228,9 @@ _slurmd_init(void)
 
 	/*
 	 * Get and set slurmd topology information
+	 * Build node hash table first to speed up the topo build
 	 */
+	rehash_node();
 	slurm_topo_build_config();
 	_set_topo_info();
 
