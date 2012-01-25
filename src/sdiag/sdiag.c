@@ -50,7 +50,7 @@
 /********************
  * Global Variables *
  ********************/
-int sdiag_param = 1;
+int sdiag_param = STAT_COMMAND_GET;
 
 stats_info_response_msg_t *buf;
 

@@ -344,6 +344,7 @@ man1_MANS = \
 @HAVE_MAN2HTML_TRUE@	sbcast.html \
 @HAVE_MAN2HTML_TRUE@	scancel.html \
 @HAVE_MAN2HTML_TRUE@	scontrol.html \
+@HAVE_MAN2HTML_TRUE@	sdiag.html \
 @HAVE_MAN2HTML_TRUE@	sinfo.html \
 @HAVE_MAN2HTML_TRUE@	smap.html \
 @HAVE_MAN2HTML_TRUE@	sprio.html \

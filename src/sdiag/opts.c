@@ -70,23 +70,28 @@ extern void parse_command_line(int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"all",		no_argument,	0,	'a'},
-		{"reset",	no_argument,	0,	'r'},
 		{"help",	no_argument,	0,	'h'},
+		{"reset",	no_argument,	0,	'r'},
 		{"usage",	no_argument,	0,	OPT_LONG_USAGE},
+		{"version",     no_argument,	0,	'V'},
 		{NULL,		0,		0,	0}
 	};
 
-	while ((opt_char = getopt_long(argc, argv, "arh", long_options,
+	while ((opt_char = getopt_long(argc, argv, "ahrV", long_options,
 				       &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'a':
 				sdiag_param = STAT_COMMAND_GET;
 				break;
+			case (int)'h':
+				_help();
+				exit(0);
+				break;
 			case (int)'r':
 				sdiag_param = STAT_COMMAND_RESET;
 				break;
-			case (int)'h':
-				_help();
+			case (int) 'V':
+				print_slurm_version();
 				exit(0);
 				break;
 			case (int)OPT_LONG_USAGE:
@@ -107,9 +112,10 @@ static void _help( void )
 {
 	printf ("\
 Usage: sdiag [OPTIONS]\n\
-  --a       all statistics\n\
-  --r       reset statistics\n\
+  --a        all statistics\n\
+  --r        reset statistics\n\
 \nHelp options:\n\
-  --help    show this help message\n\
-  --usage   display brief usage message\n");
+  --help     show this help message\n\
+  --usage    display brief usage message\n\
+  --version  display current version number\n");
 }
