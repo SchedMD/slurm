@@ -377,7 +377,9 @@ static bg_record_t *_find_matching_block(List block_list,
 			   this by since we will usually be given a
 			   larger block than our allocation request.
 			*/
-			if (!bg_conf->sub_blocks || bg_record->mp_count > 1) {
+			if ((bg_record->cpu_cnt < request->procs)
+			    || !bg_conf->sub_blocks
+			    || (bg_record->mp_count > 1)) {
 				/* We use the proccessor count per block here
 				   mostly to see if we can run on a
 				   smaller block.
