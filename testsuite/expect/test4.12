@@ -386,9 +386,7 @@ if {![string compare $select_type "bluegene"]} {
 	}
 
 	if {![string compare $type "Q"]} {
-		if {$psets >= 32} {
-			set smallest 16
-		} elseif {$psets >= 16} {
+		if {$psets >= 16} {
 			set smallest 32
 		} elseif {$psets >= 8} {
 			set smallest 64
