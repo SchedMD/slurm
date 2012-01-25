@@ -1813,6 +1813,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				set_select_jobinfo(jobinfo,
 						   SELECT_JOBDATA_BLOCK_PTR,
 						   bg_record);
+				_build_job_resources_struct(job_ptr,
+							    slurm_block_bitmap,
+							    bg_record);
 				if (job_ptr) {
 					if (bg_record->job_list) {
 						/* Mark the ba_mp
@@ -1862,10 +1865,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &bg_record->cnode_cnt);
 
-		if (SELECT_IS_MODE_RUN_NOW(local_mode))
-			_build_job_resources_struct(job_ptr,
-						    slurm_block_bitmap,
-						    bg_record);
 		/* set up the preempted job list */
 		if (SELECT_IS_PREEMPT_SET(local_mode)) {
 			if (*preemptee_job_list)
