@@ -539,6 +539,8 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 
 		if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
+			select_jobinfo_t tmp_jobinfo, *jobinfo =
+				job_ptr->select_jobinfo->data;
 			bitstr_t *total_bitmap;
 			bool need_free = false;
 			ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
@@ -557,10 +559,9 @@ static bg_record_t *_find_matching_block(List block_list,
 				need_free = true;
 			} else
 				total_bitmap = ba_mp->cnode_bitmap;
-
+			memcpy(&tmp_jobinfo, jobinfo, sizeof(select_jobinfo_t));
 			if (!ba_sub_block_in_bitmap(
-				    job_ptr->select_jobinfo->data,
-				    total_bitmap, 0)) {
+				    &tmp_jobinfo, total_bitmap, 0)) {
 				if (need_free)
 					FREE_NULL_BITMAP(total_bitmap);
 				if (bg_conf->slurm_debug_flags
@@ -576,6 +577,30 @@ static bg_record_t *_find_matching_block(List block_list,
 
 			if (need_free)
 				FREE_NULL_BITMAP(total_bitmap);
+			/* Clear up what we just found if not running now. */
+			if (SELECT_IS_MODE_RUN_NOW(query_mode)) {
+				jobinfo->cnode_cnt = tmp_jobinfo.cnode_cnt;
+				jobinfo->dim_cnt = tmp_jobinfo.dim_cnt;
+
+				jobinfo->units_avail = tmp_jobinfo.units_avail;
+				tmp_jobinfo.units_avail = NULL;
+				jobinfo->units_used = tmp_jobinfo.units_used;
+				tmp_jobinfo.units_used = NULL;
+
+				jobinfo->ionode_str = tmp_jobinfo.ionode_str;
+				tmp_jobinfo.ionode_str = NULL;
+
+				memcpy(jobinfo->geometry, tmp_jobinfo.geometry,
+				       sizeof(jobinfo->geometry));
+				memcpy(jobinfo->start_loc,
+				       tmp_jobinfo.start_loc,
+				       sizeof(jobinfo->start_loc));
+
+			}
+
+			FREE_NULL_BITMAP(tmp_jobinfo.units_avail);
+			FREE_NULL_BITMAP(tmp_jobinfo.units_used);
+			xfree(tmp_jobinfo.ionode_str);
 		}
 
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
