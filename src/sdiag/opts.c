@@ -77,7 +77,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{NULL,		0,		0,	0}
 	};
 
-	while ((opt_char = getopt_long(argc, argv, "arh", long_options,
+	while ((opt_char = getopt_long(argc, argv, "ahrV", long_options,
 				       &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'a':
