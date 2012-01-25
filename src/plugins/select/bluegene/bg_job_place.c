@@ -1586,7 +1586,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			      buf, sizeof(buf),
 			      SELECT_PRINT_MIXED);
 
-	debug("bluegene:submit_job: %u mode=%d %s nodes=%u-%u-%u",
+	debug("bluegene:submit_job: %u mode=%d %s mps=%u-%u-%u",
 	      job_ptr->job_id, local_mode, buf,
 	      min_nodes, req_nodes, max_nodes);
 
