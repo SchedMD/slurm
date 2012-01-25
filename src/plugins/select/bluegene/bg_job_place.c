@@ -1394,8 +1394,8 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	return count;
 }
 
-static void _build_select_struct(struct job_record *job_ptr,
-				 bitstr_t *bitmap, bg_record_t *bg_record)
+static void _build_job_resources_struct(
+	struct job_record *job_ptr, bitstr_t *bitmap, bg_record_t *bg_record)
 {
 	int i;
 	job_resources_t *job_resrcs_ptr;
@@ -1405,7 +1405,8 @@ static void _build_select_struct(struct job_record *job_ptr,
 	xassert(job_ptr);
 
 	if (job_ptr->job_resrcs) {
-		error("select_p_job_test: already have select_job for job %u",
+		error("_build_job_resources_struct: already have job_resouces "
+		      "for job %u",
 		      job_ptr->job_id);
 		free_job_resources(&job_ptr->job_resrcs);
 	}
@@ -1862,9 +1863,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					   &bg_record->cnode_cnt);
 
 		if (SELECT_IS_MODE_RUN_NOW(local_mode))
-			_build_select_struct(job_ptr,
-					     slurm_block_bitmap,
-					     bg_record);
+			_build_job_resources_struct(job_ptr,
+						    slurm_block_bitmap,
+						    bg_record);
 		/* set up the preempted job list */
 		if (SELECT_IS_PREEMPT_SET(local_mode)) {
 			if (*preemptee_job_list)
