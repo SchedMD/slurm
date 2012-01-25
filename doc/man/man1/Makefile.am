@@ -36,6 +36,7 @@ html_DATA = \
 	sbcast.html \
 	scancel.html \
 	scontrol.html \
+	sdiag.html \
 	sinfo.html \
 	smap.html \
 	sprio.html \
