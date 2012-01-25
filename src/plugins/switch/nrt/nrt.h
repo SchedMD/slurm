@@ -20,7 +20,7 @@
 #define NRT_EPERM		2
 #define NRT_ESYSTEM		5
 #define NRT_NO_RDMA_AVAIL	8
-#define NRT_PNSDAPI		2
+#define NRT_PNSDAPI		3
 #define NRT_UNKNOWN_ADAPTER	13
 #define NRT_WRONG_WINDOW_STATE	12
 
@@ -39,7 +39,7 @@ typedef struct {
 } adap_resources_t;
 
 
-typedef enum { NRT_WIN_UNAVAILABLE,	//Initialization in progress
+typedef enum {	NRT_WIN_UNAVAILABLE,	//Initialization in progress
 		NRT_WIN_INVALID,	// Not a usable window
 		NRT_WIN_AVAILABLE,	// Ready for NRT load
 		NRT_WIN_RESERVED,	//Window reserved, NRT not loaded
@@ -89,8 +89,8 @@ typedef struct {
 } nrt_creator_hpce_per_task_input_t;
 
 typedef union {
-	nrt_creator_hpce_per_task_input_t hpce_per_task;
-	nrt_creator_ib_per_task_input_t        ib_per_task;
+	nrt_creator_hpce_per_task_input_t	hpce_per_task;
+	nrt_creator_ib_per_task_input_t		ib_per_task;
 } nrt_creator_per_task_input_t;
 
 int nrt_load_table_rdma (int version, char *adapter_or_string,
@@ -112,7 +112,7 @@ int nrt_status_adapter (int version, char *adapter_device_string,
 			nrt_status_t ** status_array);
 
 
-int nrt_upload_window 	(int version, char * adapter_device_string,
+int nrt_unload_window 	(int version, char * adapter_device_string,
 				uint16_t adapter_type, ushort job_key,
 				ushort window_id);
 

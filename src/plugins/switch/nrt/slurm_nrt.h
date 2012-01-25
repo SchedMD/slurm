@@ -49,6 +49,7 @@
 
 #if HAVE_LIBNRT
 # include <nrt.h>
+# define RSCT_DEVTYPE_INFINIBAND 32
 #else
 # error "Must have libnrt to compile this module!"
 #endif

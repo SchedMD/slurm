@@ -68,6 +68,7 @@
 #define NRT_JOBINFO_MAGIC	0xc00cc00b
 #define NRT_LIBSTATE_MAGIC	0xc00cc00c
 
+#define JOB_DESC_LEN 64	/* Length of job description */
 #define NRT_HOSTLEN 20
 #define NRT_VERBOSE_PRINT 0
 #define NRT_NODECOUNT 128
@@ -93,9 +94,9 @@ mode_t nrt_umask;
  */
 
 typedef struct nrt_window {
-	uint16_t id;
-	uint32_t status;
-	uint16_t job_key;
+	uint16_t window_id;
+	uint32_t state;
+	uint16_t job_key;  /* FIXME: Perhaps change to uid or client_pid? */
 } nrt_window_t;
 
 typedef struct nrt_adapter {
@@ -133,7 +134,7 @@ struct nrt_jobinfo {
 	/* uid from getuid() */
 	/* pid from getpid() */
 	uint16_t job_key;
-	char job_desc[DESCLEN];
+	char job_desc[JOB_DESC_LEN];
 	uint8_t bulk_xfer;  /* flag */
 	uint16_t tables_per_task;
 	nrt_tableinfo_t *tableinfo;
@@ -144,6 +145,7 @@ struct nrt_jobinfo {
 
 typedef struct {
 	char adapter_name[NRT_MAX_DEVICENAME_SIZE];
+	uint16_t adapter_type;
 	uint16_t lid[MAX_SPIGOTS];
 	uint64_t network_id[MAX_SPIGOTS];
 } nrt_cache_entry_t;
@@ -161,7 +163,8 @@ static nrt_cache_entry_t lid_cache[NRT_MAXADAPTERS];
 static int  _fill_in_adapter_cache(void);
 static void _hash_rebuild(nrt_libstate_t *state);
 static void _init_adapter_cache(void);
-static int  _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name);
+static int  _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
+			    uint16_t adapter_type);
 static int  _parse_nrt_file(hostlist_t *adapter_list);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a
@@ -284,7 +287,7 @@ _init_adapter_cache(void)
 	int i, j;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
-		lid_cache[i].name[0] = 0;
+		lid_cache[i].adapter_name[0] = '\0';
 		for (j = 0; j < MAX_SPIGOTS; j++) {
 			lid_cache[i].lid[j] = (uint16_t) -1;
 			lid_cache[i].network_id[j] = (uint64_t) -1;
@@ -327,7 +330,7 @@ _fill_in_adapter_cache(void)
 			lid_cache[num].lid[j] = res.lid[j];
 			lid_cache[num].network_id[j] = res.network_id[j];
 		}
-		strncpy(lid_cache[num].name, adapter_name,
+		strncpy(lid_cache[num].adapter_name, adapter_name,
 			NRT_MAX_DEVICENAME_SIZE);
 
 		free(res.window_list);
@@ -351,7 +354,7 @@ _cache_lid(nrt_adapter_t *ap)
 	int j;
 	assert(ap);
 
-	int adapter_num = ap->name[3] - (int) '0';
+	int adapter_num = ap->adapter_name[3] - (int) '0';
 
 	for (j = 0; j < MAX_SPIGOTS; j++) {
 		lid_cache[adapter_num].lid[j] = ap->lid[j];
@@ -373,7 +376,7 @@ _get_network_id_from_adapter(char *adapter_name)
 	int i;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
-		if (!strncmp(adapter_name, lid_cache[i].name,
+		if (!strncmp(adapter_name, lid_cache[i].adapter_name,
 			     NRT_MAX_DEVICENAME_SIZE)) {
 /* FIXME: Return which spigot's network_id? */
 			return lid_cache[i].network_id[0];
@@ -394,7 +397,7 @@ _get_lid_from_adapter(char *adapter_name)
 	int i;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
-		if (!strncmp(adapter_name, lid_cache[i].name,
+		if (!strncmp(adapter_name, lid_cache[i].adapter_name,
 			     NRT_MAX_DEVICENAME_SIZE)) {
 /* FIXME: Return which spigot's lid? */
 			return lid_cache[i].lid[0];
@@ -408,9 +411,8 @@ _get_lid_from_adapter(char *adapter_name)
 static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 			   uint16_t adapter_type)
 {
-	adap_resoures_t res;
+	adap_resources_t res;
 	nrt_status_t *status = NULL;
-	struct NTBL_STATUS *old = NULL;
 	nrt_window_t *tmp_winlist = NULL;
 	uint16_t win_count = 0;
 	int err, i, j;
@@ -460,12 +462,10 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 	tmp_winlist = (nrt_window_t *) xmalloc(sizeof(nrt_window_t) *
 					       res.window_count);
 	for (i = 0; i < res.window_count; i++) {
-		tmp_winlist[i].id = status->window_id;
-		tmp_winlist[i].status = status->rc;
-		old = status;
-		status = status->next;
-		free(old);
+		tmp_winlist[i].window_id = status->window_id;
+		tmp_winlist[i].state = status->state;
 	}
+	free(status);
 	nrt_adapter->window_list = tmp_winlist;
 
 	return SLURM_SUCCESS;
@@ -478,7 +478,7 @@ static char *_get_nrt_conf(void)
 	int i;
 
 	if (!val)
-		return xstrdup(NRTERATION_CONFIG_FILE);
+		return xstrdup(NRT_CONFIG_FILE);
 
 	/* Replace file name on end of path */
 	i = strlen(val) - strlen("slurm.conf") + strlen("nrt.conf") + 1;
@@ -630,8 +630,8 @@ _print_window_struct(nrt_window_t *w, char *buf, size_t size)
 
 	count = snprintf(buf, size,
 		"      Window %u: %s\n",
-		w->id,
-		nrt_err_str(w->status));
+		w->window_id,
+		nrt_err_str(w->state));
 
 	return count;
 }
@@ -703,7 +703,7 @@ nrt_print_nodeinfo(nrt_nodeinfo_t *n, char *buf, size_t size)
 			count = _print_window_struct(&w[j], tmp, remaining);
 #else
 
-			if (w[j].status != NTBL_UNLOADED_STATE)
+			if (w[j].state != NTBL_UNLOADED_STATE)
 				count = _print_window_struct(&w[j], tmp,
 						remaining);
 			else
@@ -747,8 +747,8 @@ nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 		}
 		pack16(a->window_count, buf);
 		for (j = 0; j < a->window_count; j++) {
-			pack16(a->window_list[j].id, buf);
-			pack32(a->window_list[j].status, buf);
+			pack16(a->window_list[j].window_id, buf);
+			pack32(a->window_list[j].state, buf);
 			pack16(a->window_list[j].job_key, buf);
 		}
 	}
@@ -1098,11 +1098,11 @@ _unpack_nodeinfo(nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		tmp_w = (nrt_window_t *) xmalloc(sizeof(nrt_window_t) *
 			tmp_a->window_count);
 		for (j = 0; j < tmp_a->window_count; j++) {
-			safe_unpack16(&tmp_w[j].id, buf);
-			safe_unpack32(&tmp_w[j].status, buf);
+			safe_unpack16(&tmp_w[j].window_id, buf);
+			safe_unpack32(&tmp_w[j].state, buf);
 			safe_unpack16(&tmp_w[j].job_key, buf);
 			if (!believe_window_status) {
-				tmp_w[j].status = NTBL_UNLOADED_STATE;
+				tmp_w[j].state = NTBL_UNLOADED_STATE;
 				tmp_w[j].job_key = 0;
 			}
 		}
@@ -1199,7 +1199,7 @@ _find_free_window(nrt_adapter_t *adapter) {
 
 	for (i = NRT_MIN_WIN; i < adapter->window_count; i++) {
 		window = &adapter->window_list[i];
-		if (window->status == NTBL_UNLOADED_STATE)
+		if (window->state == NTBL_UNLOADED_STATE)
 			return window;
 	}
 
@@ -1214,12 +1214,12 @@ _find_window(nrt_adapter_t *adapter, int window_id) {
 
 	for (i = NRT_MIN_WIN; i < adapter->window_count; i++) {
 		window = &adapter->window_list[i];
-		if (window->id == window_id)
+		if (window->window_id == window_id)
 			return window;
 	}
 
 	debug3("Unable to _find_window %d on adapter %s",
-	       window_id, adapter->name);
+	       window_id, adapter->adapter_name);
 	return (nrt_window_t *) NULL;
 }
 
@@ -1255,10 +1255,10 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		window = _find_free_window(adapter);
 		if (window == NULL) {
 			error("No free windows on node %s adapter %s",
-			      node->name, adapter->name);
+			      node->name, adapter->adapter_name);
 			return SLURM_ERROR;
 		}
-		window->status = NTBL_LOADED_STATE;
+		window->state = NTBL_LOADED_STATE;
 		window->job_key = job_key;
 
 		if (adapter->adapter_type == RSCT_DEV_TYPE_INFINIBAND) {
@@ -1266,7 +1266,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			ib_table = tableinfo[i].table[task_id].ib_per_task;
 			ib_table->task_id = task_id;
 			ib_table->base_lid = adapter->lid[0];
-			ib_table->win_id = window->id;
+			ib_table->win_id = window->window_id;
 		} else {
 			fatal("Missing support for adapter type %hu",
 			      adapter->adapter_type);
@@ -1309,7 +1309,8 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 
 	/* find the adapter */
 	for (i = 0; i < node->adapter_count; i++) {
-		debug("adapter %s at index %d", node->adapter_list[i].name, i);
+		debug("adapter %s at index %d",
+		      node->adapter_list[i].adapter_name, i);
 		if (strcasecmp(node->adapter_list[i].adapter_name,
 			       adapter_name) == 0) {
 			adapter = &node->adapter_list[i];
@@ -1330,13 +1331,13 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 		      node->name, adapter->name);
 		return SLURM_ERROR;
 	}
-	window->status = NTBL_LOADED_STATE;
+	window->state = NTBL_LOADED_STATE;
 	window->job_key = job_key;
 
 	table = tableinfo[0].table[task_id];
 	table->task_id = task_id;
 	table->lid = adapter->lid;
-	table->window_id = window->id;
+	table->window_id = window->window_id;
 
 	strncpy(tableinfo[0].adapter_name, adapter_name,
 		NRT_MAX_DEVICENAME_SIZE);
@@ -1410,10 +1411,10 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		       "lid %hu, window %hu for task %d",
 		       state == NTBL_UNLOADED_STATE ? "UNLOADED" : "LOADED",
 		       adapter->name,
-		       table->lid, table->window_id, task_id);
-		window = _find_window(adapter, table->window_id);
+		       table->lid, table->win_id, task_id);
+		window = _find_window(adapter, table->win_id);
 		if (window) {
-			window->status = state;
+			window->state = state;
 			window->job_key =
 				(state == NTBL_UNLOADED_STATE) ? 0 : job_key;
 		}
@@ -1440,23 +1441,6 @@ _print_table(NTBL **table, int size)
 		printf("  lid: %u\n", table[i]->lid);
 	}
 	printf("--End NTBL table--\n");
-}
-
-/* Used by: all */
-static void
-_print_index(char *index, int size)
-{
-	int i;
-
-	assert(index);
-	assert(size > 0);
-
-	printf("--Begin lid index--\n");
-	for (i = 0; i < size; i++) {
-		printf("  task_id: %u\n", i);
-		printf("  name: %s\n", index + (i * NRT_MAX_DEVICENAME_SIZE));
-	}
-	printf("--End lid index--\n");
 }
 #endif
 
@@ -1556,7 +1540,7 @@ _free_windows_by_job_key(uint16_t job_key, char *nodename)
 		if (adapter->window_list == NULL) {
 			error("_free_windows_by_job_key, "
 			      "window_list NULL for node %s adapter %s",
-			      nodename, adapter->name);
+			      node->name, adapter->adapter_name);
 			continue;
 		}
 		/* We could check here to see if this adapter's name
@@ -1572,7 +1556,7 @@ _free_windows_by_job_key(uint16_t job_key, char *nodename)
 			if (window->job_key == job_key) {
 				/* debug3("Freeing adapter %s window %d",
 				   adapter->name, window->id); */
-				window->status = NTBL_UNLOADED_STATE;
+				window->state = NTBL_UNLOADED_STATE;
 				window->job_key = 0;
 			}
 		}
@@ -1681,7 +1665,7 @@ nrt_build_jobinfo(nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 
 	jp->bulk_xfer = (uint8_t) bulk_xfer;
 	jp->job_key = _next_key();
-	snprintf(jp->job_desc, DESCLEN,
+	snprintf(jp->job_desc, JOB_DESC_LEN,
 		 "slurm switch/NRT driver key=%d", jp->job_key);
 
 	hi = hostlist_iterator_create(hl);
@@ -1798,7 +1782,7 @@ nrt_pack_jobinfo(nrt_jobinfo_t *j, Buf buf)
 
 	pack32(j->magic, buf);
 	pack16(j->job_key, buf);
-	packmem(j->job_desc, DESCLEN, buf);
+	packmem(j->job_desc, JOB_DESC_LEN, buf);
 	pack8(j->bulk_xfer, buf);
 	pack16(j->tables_per_task, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
@@ -1852,7 +1836,7 @@ nrt_unpack_jobinfo(nrt_jobinfo_t *j, Buf buf)
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 	safe_unpack16(&j->job_key, buf);
 	safe_unpackmem(j->job_desc, &size, buf);
-	if (size != DESCLEN)
+	if (size != JOB_DESC_LEN)
 		goto unpack_error;
 	safe_unpack8(&j->bulk_xfer, buf);
 	safe_unpack16(&j->tables_per_task, buf);
@@ -1909,8 +1893,9 @@ nrt_copy_jobinfo(nrt_jobinfo_t *job)
 
 		for (i = 0; i < job->tables_per_task; i++) {
 			new->tableinfo[i].table =
-				(NTBL **) xmalloc(job->tableinfo[i].table_length
-						  * sizeof(NTBL *));
+				(nrt_creator_per_task_input_t **)
+				xmalloc(job->tableinfo[i].table_length *
+				sizeof(nrt_creator_per_task_input_t *));
 			for (k = 0; k < new->tableinfo[i].table_length; k++) {
 				new->tableinfo[i].table[k] =
 					(NTBL *) xmalloc(sizeof(NTBL));
@@ -2003,9 +1988,9 @@ nrt_get_jobinfo(nrt_jobinfo_t *jp, int key, void *data)
  */
 static int
 _wait_for_window_unloaded(char *adapter_name, uint16_t adapter_type,
-			  unsigned short window_id, int retry)
+			  uint16_t window_id, int retry)
 {
-	int err, i;
+	int err, i, j;
 	uint16_t win_count;
 	nrt_status_t *status;
 
@@ -2024,16 +2009,16 @@ _wait_for_window_unloaded(char *adapter_name, uint16_t adapter_type,
 				break;
 		}
 		if (j >= win_count) {
-			error("nrt_status_adapter(%s, %u), window %hu not "
+			error("nrt_status_adapter(%s, %hu), window %hu not "
 			      "found", adapter_name, adapter_type, window_id);
 			free(status);
 			return SLURM_ERROR;
 		}
-		if (status[j]->state == NRT_WIN_AVAILBLE)
+		if (status[j]->state == NRT_WIN_AVAILBLE) {
 			free(status);
 			return SLURM_SUCCESS;
 		}
-		debug2("nrt_status_adapter(%s, %u), window %hu state %d"
+		debug2("nrt_status_adapter(%s, %u), window %u state %d",
 		       adapter_name, adapter_type, window_id,
 		       status[j]->state);
 		free(status);
@@ -2099,7 +2084,7 @@ _check_rdma_job_count(char *adapter_name, uint16_t adapter_type)
 	info("nrt_rdma_jobs:");
 	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
 	for (i = 0; i < job_count; i++)
-		info("  job_key[%d]:%hu", job_keys[i]);
+		info("  job_keys[%d]:%hu", i, job_keys[i]);
 #endif
 	free(job_keys);
 	if (job_count >= 4) {
@@ -2164,28 +2149,35 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 		info("attempting nrt_load_table_rdma:");
 		info("adapter_name:%s adapter_type:%hu", adapter_name,
 		     adapter_type);
-		info("  network_id:%u uid:%u pid:%u", network_id,
+		info("  network_id:%"PRIu64" uid:%u pid:%u", network_id,
 		     (uint32_t)uid, (uint32_t)pid);
 		info("  job_key:%hd job_desc:%s", jp->job_key, jp->job_desc);
 		info("  bulk_xfer:%u bulk_xfer_res:%u", jp->bulk_xfer,
 		     bulk_xfer_resources);
 		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
-			info("  task_id[%d]:%hu", j,
-			     jp->tableinfo[i].table[j]->task_id);
-			info("  win_id[%d]:%hu", j,
-			     jp->tableinfo[i].table[j]->win_id);
-			info("  node_number[%d]:%u", j,
-			     jp->tableinfo[i].table[j]->node_number);
-			info("  device_name[%d]:%s", j,
-			     jp->tableinfo[i].table[j]->device_name);
-			info("  base_lid[%d]:%hu", j,
-			     jp->tableinfo[i].table[j]->base_lid);
-			info("  port_id[%d]:%hu", j,
-			     jp->tableinfo[i].table[j]->port_id);
-			info("  lmc[%d]:%hu", j,
-			     jp->tableinfo[i].table[j]->lmc);
-			info("  port_status[%d]:%hu", j,
-			     jp->tableinfo[i].table[j]->port_status);
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
+			if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
+				ib_tbl_ptr = &jp->tableinfo[i].table[j]->
+					     ib_per_task;
+				info("  task_id[%d]:%hu", j,
+				     ib_tbl_ptr->task_id);
+				info("  win_id[%d]:%hu", j,
+				     ib_tbl_ptr->win_id);
+				info("  node_number[%d]:%u", j,
+				     ib_tbl_ptr->node_number);
+				info("  device_name[%d]:%s", j,
+				     ib_tbl_ptr->device_name);
+				info("  base_lid[%d]:%hu", j,
+				     ib_tbl_ptr->base_lid);
+				info("  port_id[%d]:%hu", j,
+				     ib_tbl_ptr->port_id);
+				info("  lmc[%d]:%hu", j, ib_tbl_ptr->lmc);
+				info("  port_status[%d]:%hu", j,
+				     ib_tbl_ptr->port_status);
+			} else {
+				fatal("nrt_load_table: lack HPCE code");
+			}
 		}
 #endif
 		err = nrt_load_table_rdma(NRT_VERSION,
@@ -2253,7 +2245,8 @@ nrt_unload_table(nrt_jobinfo_t *jp)
 	int i, j;
 	int err;
 	char *adapter_name;
-	NTBL **table;
+	uint16_t adapter_type;
+	nrt_creator_per_task_input_t **table;
 	uint32_t table_length;
 	int local_lid;
 	int rc = SLURM_SUCCESS;
@@ -2265,18 +2258,28 @@ nrt_unload_table(nrt_jobinfo_t *jp)
 		table        = jp->tableinfo[i].table;
 		table_length = jp->tableinfo[i].table_length;
 		adapter_name = jp->tableinfo[i].adapter_name;
+		adapter_type = jp->tableinfo[i].adapter_type;
 		local_lid = _get_lid_from_adapter(adapter_name);
 
 		for (j = 0; j < table_length; j++) {
-			if (table[j]->lid != local_lid)
-				continue;
-			debug3("freeing adapter %s lid %d window %d job_key %d",
-			       adapter_name, table[j]->lid,
-			       table[j]->window_id, jp->job_key);
-			err = _unload_window(adapter_name,
-					     jp->job_key,
-					     table[j]->window_id,
-					     retry);
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
+			if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
+				ib_tbl_ptr = &table[j]->ib_per_task;
+				if (ib_tbl_ptr->base_lid != local_lid)
+					continue;
+				debug3("freeing adapter %s base_lid %hu win_id %hu "
+				       "job_key %hu",
+				       adapter_name, ib_tbl_ptr->base_lid,
+				       ib_tbl_ptr->win_id, jp->job_key);
+				err = _unload_window(adapter_name,
+						     adapter_type,
+						     jp->job_key,
+						     ib_tbl_ptr->win_id,
+						     retry);
+			} else {
+				fatal("nrt_unload_table: lack HPCE code");
+			}
 			if (err != SLURM_SUCCESS) {
 				rc = err;
 				slurm_seterrno(EUNLOAD);
@@ -2390,13 +2393,10 @@ nrt_libstate_save(Buf buffer, bool free_flag)
 static int
 _unpack_libstate(nrt_libstate_t *lp, Buf buffer)
 {
-	int offset;
-	int node_count;
+	uint32_t node_count;
 	int i;
 
 	assert(lp->magic == NRT_LIBSTATE_MAGIC);
-
-	offset = get_buf_offset(buffer);
 
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
@@ -2415,7 +2415,7 @@ _unpack_libstate(nrt_libstate_t *lp, Buf buffer)
 
 unpack_error:
 	error("unpack error in _unpack_libstate");
-	slurm_seterrno_ret(EBADMAGIC_NRTLIBSTATE);
+	slurm_seterrno_ret(EBADMAGIC_NRT_LIBSTATE);
 	return SLURM_ERROR;
 }
 
@@ -2527,12 +2527,14 @@ extern void nrt_dump_adapter(char *adapter_name, uint16_t adapter_type,
 	info("  num_spigots:%hu", adapter_res->num_spigots);
 	for (i = 0; i < MAX_SPIGOTS; i++) {
 		info("  lid[%d]:%hu", i, adapter_res->lid[i]);
-		info("  network_id[%d]:%u", i, adapter_res->network_id[i]);
+		info("  network_id[%d]:%"PRIu64"",
+		     i, adapter_res->network_id[i]);
 		info("  lmc[%d]:%hu", i, adapter_res->lmc[i]);
 		info("  spigot_id[%d]:%hu", i, adapter_res->spigot_id[i]);
 	}
 	info("  window_count:%hu", adapter_res->window_count);
 	for (i = 0; i < adapter_res->window_count; i++)
-		info("  window_list[%d]:%hu", i, adapter_res->window_list);
-	info("  rcontext_block_count:%u", adapter_res->rcontext_block_count);
+		info("  window_list[%d]:%hu", i, adapter_res->window_list[i]);
+	info("  rcontext_block_count:%"PRIu64"",
+	     adapter_res->rcontext_block_count);
 }
