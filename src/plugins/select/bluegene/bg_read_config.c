@@ -601,7 +601,7 @@ extern int read_bg_conf(void)
 		fatal("For some reason we have only %u cpus per mp, but "
 		      "have %u cnodes per mp.  You need at least the same "
 		      "number of cpus as you have cnodes per mp.  "
-		      "Check the NodeName Procs= "
+		      "Check the NodeName CPUs= "
 		      "definition in the slurm.conf.",
 		      bg_conf->cpus_per_mp, bg_conf->mp_cnode_cnt);
 	}
