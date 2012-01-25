@@ -304,7 +304,7 @@ _fill_in_adapter_cache(void)
 {
 	hostlist_iterator_t adapters;
 	char *adapter_name = NULL;
-	uint16_t adapter_type;	/* FIXME: How to fill in? */
+	uint16_t adapter_type= RSCT_DEVTYPE_INFINIBAND;
 	adap_resources_t res;
 	int num;
 	int rc;
@@ -1214,7 +1214,7 @@ _find_free_window(nrt_adapter_t *adapter) {
 
 
 static nrt_window_t *
-_find_window(nrt_adapter_t *adapter, int window_id) {
+_find_window(nrt_adapter_t *adapter, uint16_t window_id) {
 	int i;
 	nrt_window_t *window;
 
@@ -1224,7 +1224,7 @@ _find_window(nrt_adapter_t *adapter, int window_id) {
 			return window;
 	}
 
-	debug3("Unable to _find_window %d on adapter %s",
+	debug3("Unable to _find_window %hu on adapter %s",
 	       window_id, adapter->adapter_name);
 	return (nrt_window_t *) NULL;
 }
@@ -1375,6 +1375,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	nrt_creator_per_task_input_t *table = NULL;
 	int i, j;
 	bool adapter_found;
+	uint16_t win_id = 0;
 
 	assert(tableinfo);
 	assert(hostname);
@@ -1405,27 +1406,38 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		/* Find the adapter that matches the one in tableinfo */
 		for (j = 0; j < node->adapter_count; j++) {
 			adapter = &node->adapter_list[j];
-			if ((strcasecmp(adapter->adapter_name,
-				        tableinfo[i].adapter_name) == 0)
-			    && (adapter->lid == table->lid)) {
-				adapter_found = true;
-				break;
+			if (strcasecmp(adapter->adapter_name,
+				       tableinfo[i].adapter_name))
+				continue;
+			if (adapter->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
+				ib_tbl_ptr = &table->ib_per_task;
+				if (adapter->lid[0] == ib_tbl_ptr->base_lid) {
+					adapter_found = true;
+					win_id = ib_tbl_ptr->win_id;
+					debug3("Setting status %s adapter %s "
+					       "lid %hu window %hu for task %d",
+					       state == NRT_WIN_UNAVAILABLE ?
+					       "UNLOADED" : "LOADED",
+					       adapter->adapter_name,
+					       ib_tbl_ptr->base_lid,
+					       ib_tbl_ptr->win_id, task_id);
+					break;
+				}
+			} else {
+				fatal("_window_state_set: Missing support for "
+				      "adapter type %hu",
+				      adapter->adapter_type);
+
 			}
 		}
 		if (!adapter_found) {
-			if (table->lid != 0)
-				error("Did not find the correct adapter: "
-				      "%hu vs. %hu",
-				      adapter->lid, table->lid);
+			error("Did not find adapter %s with lid %hu ",
+			      adapter->adapter_name, adapter->lid[0]);
 			return SLURM_ERROR;
 		}
 
-		debug3("Setting status %s adapter %s, "
-		       "lid %hu, window %hu for task %d",
-		       state == NRT_WIN_UNAVAILABLE ? "UNLOADED" : "LOADED",
-		       adapter->adapter_name,
-		       table->lid, table->win_id, task_id);
-		window = _find_window(adapter, table->win_id);
+		window = _find_window(adapter, win_id);
 		if (window) {
 			window->state = state;
 			window->job_key =
@@ -1785,10 +1797,17 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 	int i;
 
 	pack32(tableinfo->table_length, buf);
-	for (i = 0; i < tableinfo->table_length; i++) {
-		pack16(tableinfo->table[i]->task_id, buf);
-		pack16(tableinfo->table[i]->base_lid, buf);
-		pack16(tableinfo->table[i]->win_id, buf);
+	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
+		for (i = 0; i < tableinfo->table_length; i++) {
+			ib_tbl_ptr = &tableinfo[i].table[i]->ib_per_task;
+			pack16(ib_tbl_ptr->task_id, buf);
+			pack16(ib_tbl_ptr->base_lid, buf);
+			pack16(ib_tbl_ptr->win_id, buf);
+		}
+	} else {
+		fatal("_pack_tableinfo: Missing support for adapter "
+		      "type %hu", tableinfo->adapter_type);
 	}
 	packmem(tableinfo->adapter_name, NRT_MAX_DEVICENAME_SIZE, buf);
 }
@@ -1824,17 +1843,23 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 	int i;
 
 	safe_unpack32(&tableinfo->table_length, buf);
-	tableinfo->table = (nrt_creator_per_task_input_t **)
-			   xmalloc(tableinfo->table_length *
-			   sizeof(nrt_creator_per_task_input_t *));
-	for (i = 0; i < tableinfo->table_length; i++) {
-		tableinfo->table[i] = (nrt_creator_per_task_input_t *)
-				      xmalloc(sizeof(
-				      nrt_creator_per_task_input_t));
-
-		safe_unpack16(&tableinfo->table[i]->task_id, buf);
-		safe_unpack16(&tableinfo->table[i]->base_lid, buf);
-		safe_unpack16(&tableinfo->table[i]->win_id, buf);
+	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
+		tableinfo->table = (nrt_creator_per_task_input_t **)
+				   xmalloc(tableinfo->table_length *
+				   sizeof(nrt_creator_per_task_input_t *));
+		for (i = 0; i < tableinfo->table_length; i++) {
+			tableinfo->table[i] = (nrt_creator_per_task_input_t *)
+					      xmalloc(sizeof(
+					      nrt_creator_per_task_input_t));
+			ib_tbl_ptr = &tableinfo[i].table[i]->ib_per_task;
+			safe_unpack16(&ib_tbl_ptr->task_id, buf);
+			safe_unpack16(&ib_tbl_ptr->base_lid, buf);
+			safe_unpack16(&ib_tbl_ptr->win_id, buf);
+		}
+	} else {
+		fatal("_unpack_tableinfo: Missing support for adapter "
+		      "type %hu", tableinfo->adapter_type);
 	}
 	safe_unpackmem_ptr(&name_ptr, &size, buf);
 	if (size != NRT_MAX_DEVICENAME_SIZE)
@@ -2074,23 +2099,30 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 
 	lid = _get_lid_from_adapter(tableinfo->adapter_name);
 
-	for (i = 0; i < tableinfo->table_length; i++) {
-		if (tableinfo->table[i]->lid == lid) {
-			err = _wait_for_window_unloaded(
-				tableinfo->adapter_name,
-				tableinfo->adapter_type,
-				tableinfo->table[i]->window_id,
-				retry);
-			if (err != SLURM_SUCCESS) {
-				error("Window %hu adapter %s did not become"
-				      " free within %d seconds",
-				      tableinfo->table[i]->window_id,
-				      tableinfo->adapter_name,
-				      retry);
-				rc = err;
-				retry = 2;
+	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
+		for (i = 0; i < tableinfo->table_length; i++) {
+			ib_tbl_ptr = &tableinfo[i].table[i]->ib_per_task;
+			if (ib_tbl_ptr->base_lid == lid) {
+				err = _wait_for_window_unloaded(
+					tableinfo->adapter_name,
+					tableinfo->adapter_type,
+					ib_tbl_ptr->win_id,
+					retry);
+				if (err != SLURM_SUCCESS) {
+					error("Window %hu adapter %s did not "
+					      "become free within %d seconds",
+					      ib_tbl_ptr->win_id,
+					      tableinfo->adapter_name,
+					      retry);
+					rc = err;
+					retry = 2;
+				}
 			}
 		}
+	} else {
+		fatal("_wait_for_all_windows: Missing support for adapter "
+		      "type %hu", tableinfo->adapter_type);
 	}
 
 	return rc;
@@ -2209,6 +2241,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 			}
 		}
 #endif
+/* FIXME: nrt_load_table_rdma can not be array of pointers, but must be array of creator elements */
 		err = nrt_load_table_rdma(NRT_VERSION,
 					  adapter_name, adapter_type,
 					  network_id, uid, pid,
@@ -2272,13 +2305,12 @@ extern int
 nrt_unload_table(nrt_jobinfo_t *jp)
 {
 	int i, j;
-	int err;
+	int err = SLURM_SUCCESS, rc = SLURM_SUCCESS;
 	char *adapter_name;
 	uint16_t adapter_type;
 	nrt_creator_per_task_input_t **table;
 	uint32_t table_length;
 	int local_lid;
-	int rc = SLURM_SUCCESS;
 	int retry = 15;
 
         assert(jp);

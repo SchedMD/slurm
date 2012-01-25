@@ -51,8 +51,8 @@
 #include <stdlib.h>
 
 #include "slurm/slurm_errno.h"
-#include "src/common/macros.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/macros.h"
 #include "src/plugins/switch/nrt/slurm_nrt.h"
 
 #define NRT_BUF_SIZE 4096
@@ -301,17 +301,17 @@ extern int switch_p_clear_node_state(void)
 {
 	int i, j;
 	adap_resources_t res;
-	char *name = "sniN";
-	uint16_t adapter_type;	/* FIXME: How to fill in? */
+	char *adapter_name = "sniN";
+	uint16_t adapter_type= RSCT_DEVTYPE_INFINIBAND;	/* FIXME: How to fill in? */
 	int err;
 
 	for (i = 0; i < NRT_MAXADAPTERS; i++) {
-		name[3] = i + (int) '0';
+		adapter_name[3] = i + (int) '0';
 		err = nrt_adapter_resources(NRT_VERSION, adapter_name,
 					    adapter_type, &res);
 		if (err != NRT_SUCCESS) {
 			error("nrt_adapter_resources(%s, %hu): %s",
-			      adapter_name, adapter_type, nrt_err_str(rc));
+			      adapter_name, adapter_type, nrt_err_str(err));
 			continue;
 		}
 #if NRT_DEBUG
@@ -325,7 +325,7 @@ extern int switch_p_clear_node_state(void)
 			if (err != NRT_SUCCESS) {
 				error("nrt_clean_window(%s, %hu): %s",
 				      adapter_name, adapter_type,
-				      nrt_err_str(rc));
+				      nrt_err_str(err));
 			}
 		}
 		free(res.window_list);
@@ -673,6 +673,7 @@ static void *_state_save_thread(void *arg)
 			_switch_p_libstate_save(dir_name, false);
 		}
 	}
+	return NULL;
 }
 
 static void _spawn_state_save_thread(char *dir)
