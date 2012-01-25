@@ -1575,26 +1575,36 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 {
 #ifdef HAVE_BG
 	int i = 0;
-	uint32_t real_memory;
+	uint32_t real_memory, threads, cores;
 
 	if (!node_ptr_array)
 		return SLURM_SUCCESS;
 
-	if (node_cnt>0 && bg_conf)
-		if (node_ptr_array->cpus >= bg_conf->mp_cnode_cnt)
-			bg_conf->cpus_per_mp = node_ptr_array->cpus;
+	xassert(bg_conf);
 
 	/* we need the amount of memory for a midplane */
 	real_memory = bg_conf->mp_cnode_cnt;
-	/* amount of memory per cnode */
+
+	/* Set up some knowns that perhaps aren't all the way
+	   in the slurm.conf.
+	*/
 #ifdef HAVE_BGL
+	threads = 1;
+	cores = 2;
 	real_memory *= 512;
 #elif defined HAVE_BGP
+	threads = 1;
+	cores = 4;
 	real_memory *= 2048;
 #else
 	/* BGQ */
+	threads = 4;
+	cores = 16;
 	real_memory *= 16384;
 #endif
+
+	bg_conf->cpus_per_mp = bg_conf->mp_cnode_cnt * cores;
+
 	for (i = 0; i < node_cnt; i++) {
 		struct node_record *node_ptr = &node_ptr_array[i];
 		select_nodeinfo_t *nodeinfo = NULL;
@@ -1602,22 +1612,11 @@ extern int select_p_node_init(struct node_record *node_ptr_array, int node_cnt)
 		if (!node_ptr->name)
 			continue;
 
-		/* Set up some knowns that perhaps aren't all the way
-		   in the slurm.conf.
-		*/
-#ifdef HAVE_BGL
-		node_ptr->threads = 1;
-		node_ptr->cores = 2;
-#elif defined HAVE_BGP
-		node_ptr->threads = 1;
-		node_ptr->cores = 4;
-#else
-		/* BGQ */
-		node_ptr->threads = 4;
-		node_ptr->cores = 16;
-#endif
+		node_ptr->threads = threads;
+		node_ptr->cores = cores;
 		node_ptr->sockets = bg_conf->mp_cnode_cnt;
-		node_ptr->cpus = node_ptr->sockets * node_ptr->cores;
+		node_ptr->config_ptr->cpus = node_ptr->cpus =
+			bg_conf->cpus_per_mp;
 		node_ptr->real_memory = real_memory;
 
 		xassert(node_ptr->select_nodeinfo);
