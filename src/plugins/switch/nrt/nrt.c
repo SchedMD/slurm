@@ -75,7 +75,6 @@
 #define NRT_AUTO_WINMEM 0
 #define NRT_MAX_WIN 15
 #define NRT_MIN_WIN 0
-#define NRT_DEBUG 0
 
 #define BUFSIZE 4096
 
@@ -420,7 +419,7 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 				    &res);
 	if (err != NRT_SUCCESS) {
 		error("nrt_adapter_resources(%s, %hu): %s",
-		      adapter_name, adapter_type, nrt_err_str(rc));
+		      adapter_name, adapter_type, nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 #if NRT_DEBUG
@@ -617,44 +616,6 @@ nrt_build_nodeinfo(nrt_nodeinfo_t *n, char *name)
 		return err;
 	n->adapter_count = count;
 	return 0;
-}
-#if NRT_DEBUG
-static int
-_print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
-{
-	int count;
-
-	assert(r);
-	assert(buf);
-	assert(size > 0);
-
-	count = snprintf(buf, size,
-			"--Begin Adapter Resources--\n"
-			"  device_type = %x\n"
-			"  lid[0] = %hu\n"
-			"  network_id[0] = %u\n"
-			"  fifo_slot_size = %lld\n"
-			"  window_count = %hu\n"
-			"  window_list[0] = %hu\n"
-#if NRT_VERSION == 120
-			"  reserved = %lld\n"
-#else
-			"  rcontext_block_count = %lld\n"
-#endif
-			"--End Adapter Resources--\n",
-			r->device_type,
-			r->lid[0],
-			r->network_id[0],
-			r->fifo_slot_size,
-			r->window_count,
-			r->window_list[0],
-#if NRT_VERSION == 120
-			r->reserved);
-#else
-			r->rcontext_block_count);
-#endif
-
-	return count;
 }
 
 static int
