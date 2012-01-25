@@ -47,6 +47,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>David H&ouml;ppner</li>
 <li>Nathan Huff (North Dakota State University)</li>
 <li>David Jackson (Adaptive Computing)</li>
+<li>Alec Jensen (SchedMD)</li>
 <li>Klaus Joas (University Karlsruhe, Germany)</li>
 <li>Greg Johnson (Los Alamos National Laboratory)</li>
 <li>Jason King (Lawrence Livermore National Laboratory)</li>
@@ -68,6 +69,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Michal Novotny (Masaryk University, Czech Republic)</li>
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)</li>
+<li>R&eacute;mi Palancher</li>
 <li>Alejandro Lucero Palau (Barcelona Supercomputer Center, Spain)</li>
 <li>Daniel Palermo (HP)</li>
 <li>Dan Phung (Lawrence Livermore National Laboratory/Columbia University)</li>
@@ -99,8 +101,9 @@ organizations. The current SLURM development staff includes: </p>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
+<li>Nathan Yee (SchedMD)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 January 2012</p>
+<p style="text-align:center;">Last modified 24 January 2012</p>
 
 <!--#include virtual="footer.txt"-->

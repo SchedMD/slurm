@@ -123,6 +123,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.3.4
 ========================
+ -- Set DEFAULT flag in partition structure when slurmctld reads the
+    configuration file. Patch from Rémi Palancher.
 
 
 * Changes in SLURM 2.3.3
