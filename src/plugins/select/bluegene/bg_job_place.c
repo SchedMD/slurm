@@ -1403,7 +1403,8 @@ static void _build_select_struct(struct job_record *job_ptr,
 	xassert(job_ptr);
 
 	if (job_ptr->job_resrcs) {
-		error("select_p_job_test: already have select_job");
+		error("select_p_job_test: already have select_job for job %u",
+		      job_ptr->job_id);
 		free_job_resources(&job_ptr->job_resrcs);
 	}
 
