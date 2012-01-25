@@ -985,12 +985,18 @@ static int _restore_node_state(int recover,
 		}
 
 		node_ptr->last_response = old_node_ptr->last_response;
+
+#ifndef HAVE_BG
+		/* If running on a BlueGene system the cpus never
+		   change so just skip this.
+		*/
 		if (old_node_ptr->port != node_ptr->config_ptr->cpus) {
 			rc = ESLURM_NEED_RESTART;
 			error("Configured cpu count change on %s (%u to %u)",
 			      node_ptr->name, old_node_ptr->port,
 			      node_ptr->config_ptr->cpus);
 		}
+#endif
 		node_ptr->boot_time     = old_node_ptr->boot_time; 
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
