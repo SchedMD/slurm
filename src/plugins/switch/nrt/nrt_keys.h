@@ -58,7 +58,7 @@ enum {
 /* Information shared between slurm_ll_api and the slurm federation driver */
 typedef struct nrt_tableinfo {
 	uint32_t table_length;
-	nrt_creator_per_task_input_t **table;
+	nrt_creator_per_task_input_t *table;
 	char adapter_name[NRT_MAX_DEVICENAME_SIZE];
 	uint16_t adapter_type;
 } nrt_tableinfo_t;

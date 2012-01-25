@@ -1269,7 +1269,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 
 		if (adapter->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 			nrt_creator_ib_per_task_input_t *ib_table;
-			ib_table = &tableinfo[i].table[task_id]->ib_per_task;
+			ib_table = &tableinfo[i].table[task_id].ib_per_task;
 			ib_table->task_id = task_id;
 			ib_table->base_lid = adapter->lid[0];
 			ib_table->win_id = window->window_id;
@@ -1340,7 +1340,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 	window->state = NRT_WIN_UNAVAILABLE;
 	window->job_key = job_key;
 
-	table = tableinfo[0].table[task_id];
+	table = &tableinfo[0].table[task_id];
 	if (adapter->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 /* FIXME: table contains a union, it could contain either IB or HPCE data */
 		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
@@ -1396,7 +1396,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			error("tableinfo[%d].table is NULL", i);
 			return SLURM_ERROR;
 		}
-		table = tableinfo[i].table[task_id];
+		table = &tableinfo[i].table[task_id];
 		if (table == NULL) {
 			error("tableinfo[%d].table[%d] is NULL", i, task_id);
 			return SLURM_ERROR;
@@ -1452,7 +1452,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 #if NRT_DEBUG
 /* Used by: all */
 static void
-_print_table(nrt_creator_per_task_input_t **table, int size)
+_print_table(nrt_creator_per_task_input_t *table, int size)
 {
 	uint16_t adapter_type = RSCT_DEVTYPE_INFINIBAND;
 	int i;
@@ -1464,7 +1464,7 @@ _print_table(nrt_creator_per_task_input_t **table, int size)
 	for (i = 0; i < size; i++) {
 		if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 			nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-			ib_tbl_ptr = &table[i]->ib_per_task;
+			ib_tbl_ptr = &table[i].ib_per_task;
 			printf("  task_id: %u\n", ib_tbl_ptr->task_id);
 			printf("  window_id: %u\n", ib_tbl_ptr->win_id);
 			printf("  lid: %u\n", ib_tbl_ptr->base_lid);
@@ -1727,14 +1727,9 @@ nrt_build_jobinfo(nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 						    * sizeof(nrt_tableinfo_t));
 	for (i = 0; i < jp->tables_per_task; i++) {
 		jp->tableinfo[i].table_length = nprocs;
-		jp->tableinfo[i].table = (nrt_creator_per_task_input_t **)
+		jp->tableinfo[i].table = (nrt_creator_per_task_input_t *)
 					 xmalloc(nprocs *
-					 sizeof(nrt_creator_per_task_input_t *));
-		for (j = 0; j < nprocs; j++) {
-			jp->tableinfo[i].table[j] =
-				(nrt_creator_per_task_input_t *)
-				xmalloc(sizeof(nrt_creator_per_task_input_t));
-		}
+					 sizeof(nrt_creator_per_task_input_t));
 	}
 
 	debug("Allocating windows");
@@ -1800,7 +1795,7 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 		for (i = 0; i < tableinfo->table_length; i++) {
-			ib_tbl_ptr = &tableinfo[i].table[i]->ib_per_task;
+			ib_tbl_ptr = &tableinfo[i].table[i].ib_per_task;
 			pack16(ib_tbl_ptr->task_id, buf);
 			pack16(ib_tbl_ptr->base_lid, buf);
 			pack16(ib_tbl_ptr->win_id, buf);
@@ -1845,14 +1840,11 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 	safe_unpack32(&tableinfo->table_length, buf);
 	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-		tableinfo->table = (nrt_creator_per_task_input_t **)
+		tableinfo->table = (nrt_creator_per_task_input_t *)
 				   xmalloc(tableinfo->table_length *
-				   sizeof(nrt_creator_per_task_input_t *));
+				   sizeof(nrt_creator_per_task_input_t));
 		for (i = 0; i < tableinfo->table_length; i++) {
-			tableinfo->table[i] = (nrt_creator_per_task_input_t *)
-					      xmalloc(sizeof(
-					      nrt_creator_per_task_input_t));
-			ib_tbl_ptr = &tableinfo[i].table[i]->ib_per_task;
+			ib_tbl_ptr = &tableinfo[i].table[i].ib_per_task;
 			safe_unpack16(&ib_tbl_ptr->task_id, buf);
 			safe_unpack16(&ib_tbl_ptr->base_lid, buf);
 			safe_unpack16(&ib_tbl_ptr->win_id, buf);
@@ -1877,7 +1869,7 @@ int
 nrt_unpack_jobinfo(nrt_jobinfo_t *j, Buf buf)
 {
 	uint32_t size;
-	int i, k;
+	int i;
 
 	assert(j);
 	assert(j->magic == NRT_JOBINFO_MAGIC);
@@ -1904,11 +1896,8 @@ nrt_unpack_jobinfo(nrt_jobinfo_t *j, Buf buf)
 unpack_error:
 	error("nrt_unpack_jobinfo error");
 	if (j->tableinfo) {
-		for (i = 0; i < j->tables_per_task; i++) {
-			for (k = 0; k < j->tableinfo[i].table_length; k++)
-				xfree(j->tableinfo[i].table[k]);
+		for (i = 0; i < j->tables_per_task; i++)
 			xfree(j->tableinfo[i].table);
-		}
 		xfree(j->tableinfo);
 	}
 	slurm_seterrno_ret(EUNPACK);
@@ -1944,16 +1933,12 @@ nrt_copy_jobinfo(nrt_jobinfo_t *job)
 
 		for (i = 0; i < job->tables_per_task; i++) {
 			new->tableinfo[i].table =
-				(nrt_creator_per_task_input_t **)
+				(nrt_creator_per_task_input_t *)
 				xmalloc(job->tableinfo[i].table_length *
-				sizeof(nrt_creator_per_task_input_t *));
+				sizeof(nrt_creator_per_task_input_t));
 			for (k = 0; k < new->tableinfo[i].table_length; k++) {
-				new->tableinfo[i].table[k] =
-					(nrt_creator_per_task_input_t *)
-					xmalloc(sizeof(
-					nrt_creator_per_task_input_t));
-				memcpy(new->tableinfo[i].table[k],
-				       job->tableinfo[i].table[k],
+				memcpy(&new->tableinfo[i].table[k],
+				       &job->tableinfo[i].table[k],
 				       sizeof(nrt_tableinfo_t));
 			}
 		}
@@ -1966,7 +1951,7 @@ nrt_copy_jobinfo(nrt_jobinfo_t *job)
 extern void
 nrt_free_jobinfo(nrt_jobinfo_t *jp)
 {
-	int i, j;
+	int i;
 	nrt_tableinfo_t *tableinfo;
 
 	if (!jp) {
@@ -1982,13 +1967,6 @@ nrt_free_jobinfo(nrt_jobinfo_t *jp)
 	if (jp->tables_per_task > 0 && jp->tableinfo != NULL) {
 		for (i = 0; i < jp->tables_per_task; i++) {
 			tableinfo = &jp->tableinfo[i];
-			if (tableinfo->table == NULL)
-				continue;
-			for (j = 0; j < tableinfo->table_length; j++) {
-				if (tableinfo->table[j] == NULL)
-					continue;
-				xfree(tableinfo->table[j]);
-			}
 			xfree(tableinfo->table);
 		}
 		xfree(jp->tableinfo);
@@ -2102,7 +2080,7 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 		for (i = 0; i < tableinfo->table_length; i++) {
-			ib_tbl_ptr = &tableinfo[i].table[i]->ib_per_task;
+			ib_tbl_ptr = &tableinfo[i].table[i].ib_per_task;
 			if (ib_tbl_ptr->base_lid == lid) {
 				err = _wait_for_window_unloaded(
 					tableinfo->adapter_name,
@@ -2219,7 +2197,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 /* FIXME: table contains a union, it could contain either IB or HPCE data */
 			if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-				ib_tbl_ptr = &jp->tableinfo[i].table[j]->
+				ib_tbl_ptr = &jp->tableinfo[i].table[j].
 					     ib_per_task;
 				info("  task_id[%d]:%hu", j,
 				     ib_tbl_ptr->task_id);
@@ -2249,7 +2227,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 					  jp->bulk_xfer,
 					  bulk_xfer_resources,
 					  jp->tableinfo[i].table_length,
-					  *jp->tableinfo[i].table);
+					  jp->tableinfo[i].table);
 		if (err != NRT_SUCCESS) {
 			error("unable to load table: [%d] %s",
 			      err, nrt_err_str(err));
@@ -2308,7 +2286,7 @@ nrt_unload_table(nrt_jobinfo_t *jp)
 	int err = SLURM_SUCCESS, rc = SLURM_SUCCESS;
 	char *adapter_name;
 	uint16_t adapter_type;
-	nrt_creator_per_task_input_t **table;
+	nrt_creator_per_task_input_t *table;
 	uint32_t table_length;
 	int local_lid;
 	int retry = 15;
@@ -2326,7 +2304,7 @@ nrt_unload_table(nrt_jobinfo_t *jp)
 /* FIXME: table contains a union, it could contain either IB or HPCE data */
 			if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-				ib_tbl_ptr = &table[j]->ib_per_task;
+				ib_tbl_ptr = &table[j].ib_per_task;
 				if (ib_tbl_ptr->base_lid != local_lid)
 					continue;
 				debug3("freeing adapter %s base_lid %hu win_id %hu "
