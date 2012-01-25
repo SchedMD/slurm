@@ -536,7 +536,7 @@ static void _print_header_part(void)
 			printf("        BG_BLOCK ");
 			printf("STATE ");
 			printf("    JOBID ");
-			printf("    CONN ");
+			printf("     CONN ");
 			if (params.cluster_flags & CLUSTER_FLAG_BGL)
 				printf(" NODE_USE ");
 		}
