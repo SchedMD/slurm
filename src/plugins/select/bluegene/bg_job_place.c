@@ -1585,21 +1585,28 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if (!bg_conf->sub_blocks && (jobinfo->conn_type[0] == SELECT_NAV)) {
-		if (bg_conf->sub_mp_sys)
+		if (bg_conf->sub_mp_sys) {
 			jobinfo->conn_type[0] = SELECT_SMALL;
-		else if (min_nodes > 1) {
+			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
+				jobinfo->conn_type[dim] = SELECT_NAV;
+		} else if (min_nodes > 1) {
 			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
 				jobinfo->conn_type[dim] =
 					bg_conf->default_conn_type[dim];
 		} else if (!bg_conf->sub_blocks &&
-			   (job_ptr->details->min_cpus < bg_conf->cpus_per_mp))
+			   (job_ptr->details->min_cpus
+			    < bg_conf->cpus_per_mp)) {
 			jobinfo->conn_type[0] = SELECT_SMALL;
-		else {
+			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
+				jobinfo->conn_type[dim] = SELECT_NAV;
+		} else {
 			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
 				jobinfo->conn_type[dim] = SELECT_NAV;
 		}
-	} else if (bg_conf->sub_blocks && (min_nodes < bg_conf->mp_cnode_cnt))
-		jobinfo->conn_type[0] = SELECT_NAV;
+	} else if (bg_conf->sub_blocks && (min_nodes < bg_conf->mp_cnode_cnt)) {
+		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
+			jobinfo->conn_type[dim] = SELECT_NAV;
+	}
 
 	if (slurm_block_bitmap && !bit_set_count(slurm_block_bitmap)) {
 		error("no nodes given to place job %u.", job_ptr->job_id);
