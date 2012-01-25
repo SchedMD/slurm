@@ -1662,6 +1662,34 @@ extern int select_p_block_init(List part_list)
 		struct part_record *part_ptr = NULL;
 		ListIterator itr = list_iterator_create(part_list);
 		while ((part_ptr = list_next(itr))) {
+			char *this_node_name;
+			hostlist_t host_list;
+			part_ptr->total_cpus = 0;
+			if (!part_ptr->nodes) /* no nodes in partition */
+				continue;
+
+			if (!(host_list = hostlist_create(part_ptr->nodes))) {
+				error("hostlist_create error on %s, %m",
+				      part_ptr->nodes);
+				continue;
+			}
+
+			while ((this_node_name = hostlist_shift(host_list))) {
+				struct node_record *node_ptr =
+					find_node_record(this_node_name);
+				if (node_ptr == NULL) {
+					error("select_p_block_init: "
+					      "invalid node name %s",
+					      this_node_name);
+					free(this_node_name);
+					hostlist_destroy(host_list);
+					continue;
+				}
+				free(this_node_name);
+				part_ptr->total_cpus += node_ptr->cpus;
+			}
+			hostlist_destroy(host_list);
+
 			part_ptr->max_nodes = part_ptr->max_nodes_orig;
 			part_ptr->min_nodes = part_ptr->min_nodes_orig;
 			select_p_alter_node_cnt(SELECT_SET_MP_CNT,
