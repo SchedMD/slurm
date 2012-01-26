@@ -35,6 +35,7 @@ set test_id          "8.20"
 set exit_code        0
 set job_id           0
 set job_size         32
+set prompt           "PROMPT: "
 
 print_header $test_id
 
@@ -52,9 +53,14 @@ set salloc_pid [spawn $salloc -N$job_size -t1 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
-	-re $prompt {
+	-re "\"$prompt" {
+		# skip this, just echo of setting prompt"
+		exp_continue
+	}
+	-re "$prompt" {
 		#send_user "Job initiated\n"
 	}
 	timeout {
@@ -93,7 +99,7 @@ expect {
 		set job_fini5 $expect_out(11,string)
 		exp_continue
 	}
-	-re $prompt {
+	-re "$prompt" {
 		#break
 	}
 	timeout {
@@ -177,7 +183,7 @@ for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size
 			set step_fini5 $step_start5
 			exp_continue
 		}
-		-re $prompt {
+		-re "$prompt" {
 			#break
 		}
 		timeout {
