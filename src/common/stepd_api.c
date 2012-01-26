@@ -43,29 +43,30 @@
 #  define _GNU_SOURCE
 #endif
 
+#include <dirent.h>
+#include <inttypes.h>
+#include <regex.h>
+#include <signal.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <dirent.h>
-#include <regex.h>
-#include <string.h>
-#include <inttypes.h>
-#include <signal.h>
 
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/read_config.h"
 #include "src/common/stepd_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 static bool
 _slurm_authorized_user()
@@ -892,6 +893,38 @@ rwfail:
 	return -1;
 }
 
+/* Wait for a file descriptor to be readable (up to 300 seconds).
+ * Return 0 when readable or -1 on error */
+static int _wait_fd_readable(int fd)
+{
+	fd_set except_fds, read_fds;
+	struct timeval timeout;
+	int rc;
+
+	FD_ZERO(&except_fds);
+	FD_SET(fd, &except_fds);
+	FD_ZERO(&read_fds);
+	FD_SET(fd, &read_fds);
+	timeout.tv_sec  = 300;
+	timeout.tv_usec = 0;
+	while (1) {
+		rc = select(fd+1, &read_fds, NULL, &except_fds, &timeout);
+
+		if (rc > 0) {	/* activity on this fd */
+			if (FD_ISSET(fd, &read_fds))
+				return 0;
+			else	/* Exception */
+				return -1;
+		} else if (rc == 0) {
+			error("Timeout waiting for slurmstepd");
+			return -1;
+		} else if (errno == EINTR) {
+			error("select(): %m");
+			return -1;
+		}
+	}
+}
+
 /*
  *
  * Returns jobacctinfo_t struct on success, NULL on error.
@@ -902,7 +935,6 @@ stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
 {
 	int req = REQUEST_STEP_STAT;
 	int rc = SLURM_SUCCESS;
-	//jobacctinfo_t *jobacct = NULL;
 	int tasks = 0;
 
 	debug("Entering stepd_stat_jobacct for job %u.%u",
@@ -912,6 +944,11 @@ stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
 	/* Receive the jobacct struct and return */
 	resp->jobacct = jobacct_gather_g_create(NULL);
 
+	/* Do not attempt reading data until there is something to read.
+	 * Avoid locking the jobacct_gather plugin early and creating
+	 * possible deadlock. */
+	if (_wait_fd_readable(fd))
+		goto rwfail;
 	rc = jobacct_gather_g_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);
 
 	safe_read(fd, &tasks, sizeof(int));
