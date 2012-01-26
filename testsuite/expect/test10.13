@@ -186,7 +186,7 @@ if { $exit_code != 1 } {
 			incr matches
 			exp_continue
 		}
-		-re "BPs" {
+		-re "BPs|MPs" {
 			set stuff [concat $stuff "11"]
 			incr matches
 			exp_continue

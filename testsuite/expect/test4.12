@@ -85,7 +85,7 @@ proc scontrol_test { node proc_cnt } {
 }
 
 proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
-	global sinfo number prompt
+	global float number prompt sinfo slash
 	upvar spawn_id spawn_id
 
 	set found 0
@@ -99,22 +99,22 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 		}
 	}
 	expect {
-		-re "($number)(K?).($number)(K?).($number)(K?).($number)(K?) ($number)(K?).($number)(K?) $node" {
+		-re "($float)(K?)($slash)($float)(K?)($slash)($float)(K?)($slash)($float)(K?) ($number)($slash)($number) $node" {
 			set found 1
 			set num_alloc $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set num_alloc [expr $num_alloc * 1024]
 			}
-			set num_idle $expect_out(3,string)
-			if {[string compare $expect_out(4,string) ""]} {
+			set num_idle $expect_out(4,string)
+			if {[string compare $expect_out(5,string) ""]} {
 				set num_idle [expr $num_idle * 1024]
 			}
-			set num_other $expect_out(5,string)
-			if {[string compare $expect_out(6,string) ""]} {
+			set num_other $expect_out(7,string)
+			if {[string compare $expect_out(8,string) ""]} {
 				set num_other [expr $num_other * 1024]
 			}
-			set num_total $expect_out(7,string)
-			if {[string compare $expect_out(8,string) ""]} {
+			set num_total $expect_out(10,string)
+			if {[string compare $expect_out(11,string) ""]} {
 				set num_total [expr $num_total * 1024]
 			}
 

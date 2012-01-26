@@ -76,7 +76,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "USER" {
+	-re "JOBID|USER" {
 		set stuff [concat $stuff "4"]
 		incr matches
 		exp_continue
