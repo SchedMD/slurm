@@ -1,5 +1,7 @@
 ###############################################################################
 # Global specifications for BlueGene system
+# NOTE: BlueGene/L, P, and Q systems require different Image specifications.
+#       See "man bluegene.conf" for details
 #
 # BlrtsImage:           BlrtsImage used for creation of all bgblocks.
 # LinuxImage:           LinuxImage used for creation of all bgblocks.
@@ -20,11 +22,9 @@
 #                       STATIC:  Use defined non-overlapping bgblocks
 #                       OVERLAP: Use defined bgblocks, which may overlap
 #                       DYNAMIC: Create bgblocks as needed for each job
-# BasePartitionNodeCnt: Number of c-nodes per base partition.  
+# MidplaneNodeCnt:      Number of c-nodes per midplane.  
 # NodeCardNodeCnt:      Number of c-nodes per node card.
-# NumPsets:             The Numpsets used for creation of all bgblocks 
-#                       equals this value multiplied by the number of 
-#                       base partitions in the bgblock.
+# IONodesPerMP:         Number of I/O nodes per midplane.
 #
 # BridgeAPILogFile : Pathname of file in which to write the Bridge
 #                    API logs.
@@ -67,10 +67,10 @@ AltMloaderImage=* Groups=da,adamb
 AltRamDiskImage=*  Groups=da,adamb
 
 LayoutMode=STATIC
-BasePartitionNodeCnt=512
+MidplaneNodeCnt=512
 NodeCardNodeCnt=32
-#Numpsets=8 #used for IO poor systems (Can't create 32 cnode blocks)
-Numpsets=64 #used for IO rich systems
+#IONodesPerMP=8 #used for IO poor systems (Can't create 32 c-node blocks)
+IONodesPerMP=64 #used for IO rich systems
 
 BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
