@@ -391,11 +391,14 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		sec_record->ionode_bitmap = NULL;
 	}
 
-	if (sec_record->job_list)
+	if (sec_record->job_list) {
 		list_destroy(sec_record->job_list);
-	sec_record->job_list = list_create(NULL);
+		sec_record->job_list = NULL;
+	}
+
 	if (fir_record->job_list) {
 		struct job_record *job_ptr;
+		sec_record->job_list = list_create(NULL);
 		itr = list_iterator_create(fir_record->job_list);
 		while ((job_ptr = list_next(itr)))
 			list_append(sec_record->job_list, job_ptr);
