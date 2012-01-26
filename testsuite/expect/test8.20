@@ -108,10 +108,10 @@ if {$job_start1 == -1} {
 }
 send_user "\nJob allocation\n"
 send_user "prefix: $job_prefix\n"
-send_user "dim 1:  $job_start1 to $job_fini1  "
-send_user "dim 2:  $job_start2 to $job_fini2  "
-send_user "dim 3:  $job_start3 to $job_fini3  "
-send_user "dim 4:  $job_start4 to $job_fini4  "
+send_user "dim 1:  $job_start1 to $job_fini1\n"
+send_user "dim 2:  $job_start2 to $job_fini2\n"
+send_user "dim 3:  $job_start3 to $job_fini3\n"
+send_user "dim 4:  $job_start4 to $job_fini4\n"
 send_user "dim 5:  $job_start5 to $job_fini5\n"
 
 set job_dim1 [expr $job_fini1 - $job_start1 + 1]
@@ -191,10 +191,10 @@ for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size
 
 	send_user "\nStep allocation\n"
 	send_user "prefix: $step_prefix\n"
-	send_user "dim 1:  $step_start1 to $step_fini1  "
-	send_user "dim 2:  $step_start2 to $step_fini2  "
-	send_user "dim 3:  $step_start3 to $step_fini3  "
-	send_user "dim 4:  $step_start4 to $step_fini4  "
+	send_user "dim 1:  $step_start1 to $step_fini1\n"
+	send_user "dim 2:  $step_start2 to $step_fini2\n"
+	send_user "dim 3:  $step_start3 to $step_fini3\n"
+	send_user "dim 4:  $step_start4 to $step_fini4\n"
 	send_user "dim 5:  $step_start5 to $step_fini5\n"
 
 	set step_dim1 [expr $step_fini1 - $step_start1 + 1]
