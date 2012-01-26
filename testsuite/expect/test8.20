@@ -146,6 +146,8 @@ for {set step_size 1 } {$step_size <= $job_size} {set step_size [expr $step_size
 	send_user "\nRunning step $job_id.$step_id at size $step_size\n"
 	set step_start1 -1
 	send "$srun -N$step_size --test-only $scontrol show step $job_id.$step_id\r"
+	# sleep here just to make sure we get the scontrol output from the srun
+	sleep .25
 	expect {
 		-re "MidplaneList=($alpha_numeric).($digit)($digit)($digit)($digit)($digit)x($digit)($digit)($digit)($digit)($digit)" {
 			set step_prefix $expect_out(1,string)
