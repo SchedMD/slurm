@@ -8842,6 +8842,14 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 
 	xassert(job_ptr);
 
+#ifdef HAVE_BG
+	/* If on a bluegene system we want to remove the job_resrcs so
+	   we don't get an error message about them already existing
+	   when the job goes to run again.
+	*/
+	if (requeue)
+		free_job_resources(&job_ptr->job_resrcs);
+#endif
 	acct_policy_remove_job_submit(job_ptr);
 
 	if (!IS_JOB_RESIZING(job_ptr)) {
