@@ -47,8 +47,9 @@
 #include <stdlib.h>
 
 static s_p_options_t bg_conf_file_options[] = {
+#ifndef HAVE_BG_L_P
 	{"AllowSubBlockAllocations", S_P_BOOLEAN},
-#ifdef HAVE_BGL
+#elif defined HAVE_BGL
 	{"BlrtsImage", S_P_STRING},
 	{"LinuxImage", S_P_STRING},
 	{"RamDiskImage", S_P_STRING},
