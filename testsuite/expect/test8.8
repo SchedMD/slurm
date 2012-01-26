@@ -47,11 +47,10 @@ proc allocate_and_quit { node_cnt node error_cnt check} {
 	global salloc number alpha_numeric_under bin_bash max_job_delay prompt
 	set job_id 0
 	set block ""
-	set line "-N$node_cnt-$node_cnt -t5"
+	set line "-N$node_cnt-$node_cnt -t5 $bin_bash"
 	if {[string compare $node ""]} {
 		set line "$line -w $node"
 	}
-	set line "$line $bin_bash"
 	set part_config_prob 0
 	set timeout $max_job_delay
 	set my_pid [eval spawn $salloc $line]
