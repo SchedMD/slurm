@@ -143,7 +143,7 @@ specify "DenyPassthrough=X,Y".
 By default, pass\-throughs are enabled in every dimension.
 
 .TP
-\fBIonodesPerMidplane\fR
+\fBIONodesPerMP\fR
 The number of IO nodes on a midplane.  This number must be the smallest
 number if you have a heterogeneous system.
 There is no default value and this must be specified.  The typical settings
@@ -187,7 +187,7 @@ will resolve any cnodes in an error state.  Default is 0, which means once
 any cnodes are in an error state disallow future jobs.
 
 .TP
-\fBMidplaneNodeCount\fR
+\fBMidplaneNodeCnt\fR
 The number of c\-nodes (compute nodes) per midplane.
 There is no default value and this must be specified (usually 512).
 
@@ -197,7 +197,7 @@ MloaderImage used for creation of all bgblocks.
 There is no default value and this must be specified.
 
 .TP
-\fBNodeCardNodeCount\fR \- \fBNodeBoardNodeCount\fR
+\fBNodeCardNodeCnt\fR or \fBNodeBoardNodeCnt\fR
 Number of c\-nodes per nodecard / nodeboard.
 There is no default value and this must be specified. For most BlueGene systems
 this is usually 32.
@@ -286,7 +286,7 @@ MidplaneNodeCnt=512
 .br
 NodeCardNodeCnt=32
 .br
-IONodesPerMidplane=64	# An I/O rich environment
+IONodesPerMP=64	# An I/O rich environment
 .br
 LayoutMode=STATIC
 .br
