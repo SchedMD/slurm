@@ -11,7 +11,7 @@
     Add adapter type
     In the adapter resources, how "spigot" used?
     "lid" and "network_id" are now arrays, how are they used?
-    Resolve window state incompatabilities
+    Resolve window state incompatabilities (data structure union, IB or HPCE)
     Remove adapter memory specifications (done)
     Many window and adapter fields that do remain have different sizes
     We have no details about the differences in data structures between IB and HPCE,

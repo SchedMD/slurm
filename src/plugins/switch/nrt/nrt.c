@@ -166,6 +166,7 @@ static void _init_adapter_cache(void);
 static int  _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 			    uint16_t adapter_type);
 static int  _parse_nrt_file(hostlist_t *adapter_list);
+static char *_win_state_str(win_state_t state);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a
  * global mutex.  Used to serialize access to the global library
@@ -188,6 +189,25 @@ _unlock(void)
 
 	while (err) {
 		err = pthread_mutex_unlock(&global_lock);
+	}
+}
+
+static char *_win_state_str(win_state_t state)
+{
+	if (state == NRT_WIN_UNAVAILABLE)
+		return "Unavailable";
+	else if (state == NRT_WIN_INVALID)
+		return "Invalid";
+	else if (state == NRT_WIN_RESERVED)
+		return "Reserved";
+	else if (state == NRT_WIN_READY)
+		return "Ready";
+	else if (state == NRT_WIN_RUNNING)
+		return "Running";
+	else {
+		static char buf[16];
+		snprintf(buf, sizeof(buf), "%d", state);
+		return buf;
 	}
 }
 
@@ -456,7 +476,7 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 		info("  window_id[%d]:%hu", i, status[i].window_id);
 		info("  bulk_xfer[%d]:%hu", i, status[i].bulk_transfer);
 		info("  rcontext_blocks[%d]:%u", i, status[i].rcontext_blocks);
-		info("  state[%d]:%d", i, status[i].state);
+		info("  state[%d]:%s", i, _win_state_str(status[i].state));
 	}
 #endif
 	tmp_winlist = (nrt_window_t *) xmalloc(sizeof(nrt_window_t) *
@@ -2049,9 +2069,9 @@ _wait_for_window_unloaded(char *adapter_name, uint16_t adapter_type,
 			free(status);
 			return SLURM_SUCCESS;
 		}
-		debug2("nrt_status_adapter(%s, %u), window %u state %d",
+		debug2("nrt_status_adapter(%s, %u), window %u state %s",
 		       adapter_name, adapter_type, window_id,
-		       status[j].state);
+		       _win_state_str(status[j].state));
 		free(status);
 	}
 
@@ -2135,9 +2155,8 @@ _check_rdma_job_count(char *adapter_name, uint16_t adapter_type)
 }
 
 
-/* Load a network table on node.  If table contains more than
- * one window for a given adapter, load the table only once for that
- * adapter.
+/* Load a network table on node.  If table contains more than one window
+ * for a given adapter, load the table only once for that adapter.
  *
  * Used by: slurmd
  */
@@ -2150,7 +2169,6 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 	uint16_t adapter_type;
 	uint64_t network_id;
 	uint bulk_xfer_resources = 0;	/* Unused by NRT today */
-/* 	ADAPTER_RESOURCES res; */
 	int rc;
 
 #if NRT_DEBUG
@@ -2167,7 +2185,9 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 		printf("%s", nrt_sprint_jobinfo(jp, buf, 2000));
 #endif
 		adapter_name = jp->tableinfo[i].adapter_name;
-		adapter_type = 0;	/* FIXME: Load from where? */
+/* FIXME: Determine adapter_type from adapter_name and nrt.conf file contents.
+ * We probably do NOT want to store adapter_type in nrt_jobinfo_t */
+		adapter_type = RSCT_DEVTYPE_INFINIBAND;
 		network_id = _get_network_id_from_adapter(adapter_name);
 
 		rc = _wait_for_all_windows(&jp->tableinfo[i]);
@@ -2176,13 +2196,10 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 
 		if (adapter_name == NULL)
 			continue;
-		if (jp->bulk_xfer) {
-			if (i == 0) {
-				rc = _check_rdma_job_count(adapter_name,
-							   adapter_type);
-				if (rc != SLURM_SUCCESS)
-					return rc;
-			}
+		if (jp->bulk_xfer && (i == 0)) {
+			rc = _check_rdma_job_count(adapter_name, adapter_type);
+			if (rc != SLURM_SUCCESS)
+				return rc;
 		}
 #if NRT_DEBUG
 		info("attempting nrt_load_table_rdma:");
