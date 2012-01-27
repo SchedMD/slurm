@@ -256,43 +256,93 @@ nrt_slurmd_step_init(void)
 	return SLURM_SUCCESS;
 }
 
-/* Used by: slurmd, slurmctld */
-extern void nrt_print_jobinfo(FILE *fp, nrt_jobinfo_t *jobinfo)
+#if NRT_DEBUG
+/* Used by: slurmd */
+static void
+_print_adapter(char *adapter_name, uint16_t adapter_type, uint16_t win_count,
+	       nrt_status_t *status)
 {
-	assert(jobinfo->magic == NRT_JOBINFO_MAGIC);
+	int i;
 
-	/* stubbed out */
+	info("--Begin Adapter Status--");
+	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
+	for (i = 0; i < win_count; i++) {
+		info("  client_pid[%d]:%u", i, (uint32_t)status[i].client_pid);
+		info("  uid[%d]:%u", i, (uint32_t) status[i].uid);
+		info("  window_id[%d]:%hu", i, status[i].window_id);
+		info("  bulk_xfer[%d]:%hu", i, status[i].bulk_transfer);
+		info("  rcontext_blocks[%d]:%u", i, status[i].rcontext_blocks);
+		info("  state[%d]:%s", i, _win_state_str(status[i].state));
+	}
+	info("--End Adapter Status--");
 }
 
 /* Used by: slurmd, slurmctld */
-extern char *nrt_sprint_jobinfo(nrt_jobinfo_t *j, char *buf, size_t size)
+static void
+_print_jobinfo(nrt_jobinfo_t *j)
 {
-	int count;
-	char *tmp = buf;
-	int remaining = size;
-
-	assert(buf);
 	assert(j);
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 
-	count = snprintf(tmp, remaining,
-		"--Begin Jobinfo--\n"
-		"  job_key: %u\n"
-		"  job_desc: %s\n"
-		"  table_size: %u\n"
-		"--End Jobinfo--\n",
-		j->job_key,
-		j->job_desc,
-		j->tables_per_task);
-	if (count < 0)
-		return buf;
-	remaining -= count;
-	tmp += count;
-	if (remaining < 1)
-		return buf;
-
-	return buf;
+	info("--Begin Jobinfo--");
+	info("  job_key: %u", j->job_key);
+	info("  job_desc: %s", j->job_desc);
+	info("  table_size: %u", j->tables_per_task);
+	info("--End Jobinfo--");
 }
+
+/* Used by: slurmd, slurmctld */
+static void
+_print_nodeinfo(nrt_nodeinfo_t *n)
+{
+	int i, j;
+	nrt_adapter_t *a;
+	nrt_window_t *w;
+
+	assert(n);
+	assert(n->magic == NRT_NODEINFO_MAGIC);
+
+	info("Node: %s", n->name);
+	for (i = 0; i < n->adapter_count; i++) {
+		a = n->adapter_list + i;
+		info("    adapter: %s", a->adapter_name);
+		info("      type: %hu", a->adapter_type);
+		info("      window_count: %hu", a->window_count);
+#if NRT_VERBOSE_PRINT
+		info("      lid[0]: %hu", a->lid[0]);
+		info("      network_id[0]: %"PRIu64"", a->network_id[0]);
+#endif
+		w = a->window_list;
+		for (j = 0; j < a->window_count; j++) {
+#if (NRT_VERBOSE_PRINT < 1)
+			if (w[j].state != NRT_WIN_AVAILABLE)
+				continue;
+#endif
+			info("      Window %hu: %s", w->window_id,
+			     nrt_err_str(w->state));
+		}
+	}
+}
+
+/* Used by: slurmctld */
+static void
+_print_libstate(const nrt_libstate_t *l)
+{
+	int i;
+
+	assert(l);
+
+	info("--Begin libstate--\n");
+	info("  magic = %u", l->magic);
+	info("  node_count = %u", l->node_count);
+	info("  node_max = %u", l->node_max);
+	info("  hash_max = %u", l->hash_max);
+	for (i = 0; i < l->node_count; i++) {
+		_print_nodeinfo(&l->node_list[i]);
+	}
+	info("--End libstate--");
+}
+#endif
 
 /* The lid caching functions were created to avoid unnecessary
  * function calls each time we need to load network tables on a node.
@@ -468,16 +518,7 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 		slurm_seterrno_ret(ESTATUS);
 	}
 #if NRT_DEBUG
-	info("nrt_status_adapter:");
-	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
-	for (i = 0; i < win_count; i++) {
-		info("  client_pid[%d]:%u", i, (uint32_t)status[i].client_pid);
-		info("  uid[%d]:%u", i, (uint32_t) status[i].uid);
-		info("  window_id[%d]:%hu", i, status[i].window_id);
-		info("  bulk_xfer[%d]:%hu", i, status[i].bulk_transfer);
-		info("  rcontext_blocks[%d]:%u", i, status[i].rcontext_blocks);
-		info("  state[%d]:%s", i, _win_state_str(status[i].state));
-	}
+	_print_adapter(adapter_name,  adapter_type, win_count, status);
 #endif
 	tmp_winlist = (nrt_window_t *) xmalloc(sizeof(nrt_window_t) *
 					       res.window_count);
@@ -643,109 +684,6 @@ nrt_build_nodeinfo(nrt_nodeinfo_t *n, char *name)
 		return err;
 	n->adapter_count = count;
 	return 0;
-}
-
-static int
-_print_window_struct(nrt_window_t *w, char *buf, size_t size)
-{
-	int count;
-
-	assert(w);
-	assert(buf);
-	assert(size > 0);
-
-
-	count = snprintf(buf, size,
-		"      Window %u: %s\n",
-		w->window_id,
-		nrt_err_str(w->state));
-
-	return count;
-}
-
-/* Writes out nodeinfo structure to a buffer.  Maintains the
- * snprintf semantics by only filling the buffer up to the value
- * of size.  If NRT_VERBOSE_PRINT is defined this function will
- * dump the entire structure, otherwise only the "useful" part.
- *
- * Used by: slurmd, slurmctld
- */
-extern char *
-nrt_print_nodeinfo(nrt_nodeinfo_t *n, char *buf, size_t size)
-{
-	nrt_adapter_t *a;
-	int i,j;
-	nrt_window_t *w;
-	int remaining = size;
-	int count;
-	char *tmp = buf;
-
-	assert(n);
-	assert(buf);
-	assert(size > 0);
-	assert(n->magic == NRT_NODEINFO_MAGIC);
-
-	count = snprintf(tmp, remaining,
-			 "Node: %s\n",
-			 n->name);
-	if (count < 0)
-		return buf;
-	remaining -= count;
-	tmp += count;
-	if (remaining < 1)
-		return buf;
-	for (i = 0; i < n->adapter_count; i++) {
-		a = n->adapter_list + i;
-		count = snprintf(tmp, remaining,
-#if NRT_VERBOSE_PRINT
-			"    Adapter: %s\n"
-			"      type: %hu\n"
-			"      lid[0]: %hu\n"
-			"      network_id[0]: %u\n"
-			"      window_count: %hu\n",
-			a->adapter_name,
-			a->adapter_type,
-			a->lid[0],
-			a->network_id[0],
-			a->window_count);
-#else
-			"    Adapter: %s\n"
-			"      type: %hu\n"
-			"      Window count: %hu\n"
-			"      Active windows:\n",
-			a->adapter_name,
-			a->adapter_type,
-			a->window_count);
-#endif
-		if (count < 0)
-			return buf;
-		remaining -= count;
-		tmp += count;
-		if (remaining < 1)
-			return buf;
-
-		w = a->window_list;
-		for (j = 0; j < a->window_count; j++) {
-#if NRT_VERBOSE_PRINT
-			count = _print_window_struct(&w[j], tmp, remaining);
-#else
-
-			if (w[j].state != NRT_WIN_AVAILABLE)
-				count = _print_window_struct(&w[j], tmp,
-						remaining);
-			else
-				count = 0;
-#endif
-			if (count < 0)
-				return buf;
-			remaining -= count;
-			tmp += count;
-			if (remaining < 1)
-				return buf;
-		}
-	}
-
-	return buf;
 }
 
 /* Used by: all */
@@ -969,30 +907,6 @@ _alloc_node(nrt_libstate_t *lp, char *name)
 
 	return n;
 }
-#if NRT_DEBUG
-/* Used by: slurmctld */
-static void
-_print_libstate(const nrt_libstate_t *l)
-{
-	int i;
-	char buf[3000];
-
-	assert(l);
-
-	printf("--Begin libstate--\n");
-	printf("  magic = %u\n", l->magic);
-	printf("  node_count = %u\n", l->node_count);
-	printf("  node_max = %u\n", l->node_max);
-	printf("  hash_max = %u\n", l->hash_max);
-	for (i = 0; i < l->node_count; i++) {
-		memset(buf, 0, 3000);
-		nrt_print_nodeinfo(&l->node_list[i], buf, 3000);
-		printf("%s", buf);
-	}
-	printf("--End libstate--\n");
-}
-#endif
-
 
 /* Throw away adapter portion of the nodeinfo.
  *
@@ -1480,19 +1394,19 @@ _print_table(nrt_creator_per_task_input_t *table, int size)
 	assert(table);
 	assert(size > 0);
 
-	printf("--Begin NRT table--\n");
+	info("--Begin NRT table--");
 	for (i = 0; i < size; i++) {
 		if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 			nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 			ib_tbl_ptr = &table[i].ib_per_task;
-			printf("  task_id: %u\n", ib_tbl_ptr->task_id);
-			printf("  window_id: %u\n", ib_tbl_ptr->win_id);
-			printf("  lid: %u\n", ib_tbl_ptr->base_lid);
+			info("  task_id:  %hu", ib_tbl_ptr->task_id);
+			info("  win_id:   %hu", ib_tbl_ptr->win_id);
+			info("  base_lid: %hu", ib_tbl_ptr->base_lid);
 		} else {
 			fatal("_print_table: lack HPCE code");
 		}
 	}
-	printf("--End NRT table--\n");
+	info("--End NRT table--");
 }
 #endif
 
@@ -2173,7 +2087,6 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 
 #if NRT_DEBUG
 	int j;
-	char buf[2000];
 #endif
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
@@ -2182,7 +2095,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 #if NRT_DEBUG
 		_print_table(jp->tableinfo[i].table,
 			     jp->tableinfo[i].table_length);
-		printf("%s", nrt_sprint_jobinfo(jp, buf, 2000));
+		_print_jobinfo(jp);
 #endif
 		adapter_name = jp->tableinfo[i].adapter_name;
 /* FIXME: Determine adapter_type from adapter_name and nrt.conf file contents.

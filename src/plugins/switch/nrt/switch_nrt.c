@@ -599,8 +599,7 @@ extern int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job_id,
-		      step_id, (unsigned long) pgid);
+		debug("Job %u.%u: pgid value is zero", job_id, step_id);
 
 	err = nrt_unload_table((nrt_jobinfo_t *)jobinfo);
 	if (err != SLURM_SUCCESS)

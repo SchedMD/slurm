@@ -4,25 +4,28 @@
 #define _NRT_INCLUDED
 
 #include <stdint.h>
+
 #define MAX_SPIGOTS		4
 #define NRT_MAX_DEVICENAME_SIZE	6
 #define NRT_VERSION		100
 
 #define NRT_SUCCESS		0
-#define NRT_ALREADY_LOADED	15
-#define NRT_BAD_VERSION		10
-#define NRT_EADAPTER		4
-#define NRT_EADAPTYPE		9
-#define NRT_EAGAIN		11
 #define NRT_EINVAL		1
-#define NRT_EIO			7
-#define NRT_EMEM		6
 #define NRT_EPERM		2
-#define NRT_ESYSTEM		5
-#define NRT_NO_RDMA_AVAIL	8
 #define NRT_PNSDAPI		3
-#define NRT_UNKNOWN_ADAPTER	13
+#define NRT_EADAPTER		4
+#define NRT_ESYSTEM		5
+#define NRT_EMEM		6
+#define NRT_EIO			7
+#define NRT_NO_RDMA_AVAIL	8
+#define NRT_EADAPTYPE		9
+#define NRT_BAD_VERSION		10
+#define NRT_EAGAIN		11
 #define NRT_WRONG_WINDOW_STATE	12
+#define NRT_UNKNOWN_ADAPTER	13
+
+#define NRT_ALREADY_LOADED	15
+
 
 typedef struct {
 	uint32_t	node_number;			// to form unique ID
