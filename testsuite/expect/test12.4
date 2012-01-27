@@ -34,7 +34,6 @@ source ./globals
 
 set test_id     "12.4"
 set exit_code   0
-set file_in     "test.$test_id.input"
 set test_acct   "test_acct"
 set timeout 60
 print_header $test_id
@@ -142,9 +141,6 @@ expect {
 		wait
 	}
 }
-
-
-make_bash_script $file_in "$bin_id"
 
 #
 # Spawn a job via srun using this account
@@ -693,7 +689,6 @@ if {$damatches != 1} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
