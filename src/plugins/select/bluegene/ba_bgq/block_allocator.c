@@ -1093,6 +1093,7 @@ try_again:
 			     &geo_table, start_loc, total_bitmap, *node_count)))
 			break;
 
+		clear_cnt = bit_clear_count(total_bitmap);
 		FREE_NULL_BITMAP(total_bitmap);
 		/* User asked for a bad CPU count or we can't place it
 		   here in this small allocation. */
