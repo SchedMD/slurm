@@ -26,7 +26,7 @@ report only the jobs from a specified user or group.
 For the non\-root user, the \f3sacct\fP command limits the display of
 job accounting data to jobs that were launched with their own user
 identifier (UID) by default.  Data for other users can be displayed
-with the \f3\-\-all\fP, \f3\-\-user\fP, or \f3\-\-uid\fP options.
+with the \f3\-\-allusers\fP, \f3\-\-user\fP, or \f3\-\-uid\fP options.
 .TP "7"
 \f3Note: \fP\c
 If the AccountingStorageType is set to "accounting_storage/filetxt",
@@ -62,7 +62,9 @@ The default input file is the file named in the
 
 .TP "10"
 \f3\-a\fP\f3,\fP \f3\-\-allusers\fP
-Displays the current user's jobs. Displays all users jobs when run by root.
+Displays all users jobs when run by user root or if \fBPrivateData\fP is not
+configurred to \fBjobs\fP.
+Otherwise display the current user's jobs
 .IP
 
 .TP

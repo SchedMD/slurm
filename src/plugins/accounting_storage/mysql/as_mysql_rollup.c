@@ -948,7 +948,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				if (last_id != associd) {
 					list_iterator_reset(a_itr);
 					while ((a_usage = list_next(a_itr))) {
-						if (!a_usage->id == associd) {
+						if (a_usage->id == associd) {
 							last_id = a_usage->id;
 							break;
 						}

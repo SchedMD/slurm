@@ -127,6 +127,8 @@ documents those changes that are of interest to users and admins.
     configuration file. Patch from Rémi Palancher.
  -- Fix for possible deadlock in accounting logic: Avoid calling
     jobacct_gather_g_getinfo() until there is data to read from the socket.
+ -- Fix typo in accounting when using reservations. Patch from Alejandro
+    Lucero Palau.
 
 
 * Changes in SLURM 2.3.3
