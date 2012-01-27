@@ -618,7 +618,10 @@ extern int check_and_set_mp_list(List mps)
 				 & BG_SWITCH_CABLE_ERROR_FULL) {
 				error("check_and_set_mp_list: Somehow we got "
 				      "a switch with an error set in it.  "
-				      "This should never happen.");
+				      "This should never happen except "
+				      "on a system with missing cables such "
+				      "as a half rack system. %u",
+				      ba_switch->usage);
 				continue;
 			}
 
