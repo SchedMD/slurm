@@ -992,8 +992,11 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	const NodeBoardStateChangedEventInfo& event)
 {
-	const char *mp_name = event.getLocation().substr(0,6).c_str();
-	const char *nb_name = event.getLocation().substr(7,3).c_str();
+	/* When dealing with non-pointers these variables don't work
+	   out correctly, so copy them.
+	*/
+	const char *mp_name = xstrdup(event.getLocation().substr(0,6).c_str());
+	const char *nb_name = xstrdup(event.getLocation().substr(7,3).c_str());
 	Coordinates ibm_coords = event.getMidplaneCoordinates();
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	int dim;
@@ -1006,11 +1009,13 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
-		error("Nodeboard '%s' on Midplane %s, state went from "
+		error("Nodeboard '%s' on Midplane %s (%s), state went from "
 		      "'%s' to '%s', but is not in our system",
-		      nb_name, mp_name,
+		      nb_name, mp_name, event.getLocation().c_str(),
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
+		xfree(nb_name);
+		xfree(mp_name);
 		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
@@ -1023,12 +1028,16 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 		     "has returned to service",
 		     nb_name, mp_name,
 		     ba_mp->coord_str);
+		xfree(nb_name);
+		xfree(mp_name);
 		slurm_mutex_unlock(&ba_system_mutex);
 		return;
 	}
 
 	_handle_bad_nodeboard(nb_name, ba_mp->coord_str,
 			      event.getState(), NULL);
+	xfree(nb_name);
+	xfree(mp_name);
 	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
@@ -1049,10 +1058,10 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	ba_mp = coord2ba_mp(coords);
 
 	if (!ba_mp) {
-		const char *mp_name = event.getLocation().substr(0,6).c_str();
 		error("Node '%s' on Midplane %s, state went from '%s' to '%s',"
 		      "but is not in our system",
-		      event.getLocation().c_str(), mp_name,
+		      event.getLocation().c_str(),
+		      event.getLocation().substr(0,6).c_str(),
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
 		slurm_mutex_unlock(&ba_system_mutex);
