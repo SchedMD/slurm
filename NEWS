@@ -32,6 +32,7 @@ documents those changes that are of interest to users and admins.
     jobacct_gather_g_getinfo() until there is data to read from the socket.
  -- Fix race condition that could generate "job_cnt_comp underflow" errors on
     front-end architectures.
+ -- BGQ - Fix issue where a system with missing cables could cause core dump.
 
 * Changes in SLURM 2.4.0.pre2
 =============================

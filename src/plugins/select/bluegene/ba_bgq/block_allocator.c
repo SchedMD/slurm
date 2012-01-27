@@ -481,7 +481,14 @@ extern int remove_block(List mps, bool is_small)
 			     ba_mp->coord_str, ba_mp->used);
 
 		for (dim=0; dim<cluster_dims; dim++) {
+			/* House the altered usage here without any
+			   error so we don't take it from the original.
+			*/
+			uint16_t altered_usage;
+
 			if (curr_ba_mp == ba_mp) {
+				altered_usage = ba_mp->alter_switch[dim].usage
+					& (~BG_SWITCH_CABLE_ERROR_FULL);
 				/* Remove the usage that was altered */
 				/* info("remove_block: %s(%d) %s removing %s", */
 				/*      ba_mp->coord_str, dim, */
@@ -490,13 +497,21 @@ extern int remove_block(List mps, bool is_small)
 				/*      ba_switch_usage_str( */
 				/* 	     ba_mp->alter_switch[dim].usage)); */
 				ba_mp->axis_switch[dim].usage &=
-					(~ba_mp->alter_switch[dim].usage);
+					(~altered_usage);
 				/* info("remove_block: %s(%d) is now at %s", */
 				/*      ba_mp->coord_str, dim, */
 				/*      ba_switch_usage_str( */
 				/* 	     ba_mp->axis_switch[dim].usage)); */
-			} else if (curr_ba_mp->axis_switch[dim].usage
-				   != BG_SWITCH_NONE) {
+				continue;
+			}
+
+			/* Set this after we know curr_ba_mp isn't
+			   the same as ba_mp so we don't mess up the
+			   original.
+			*/
+			altered_usage = curr_ba_mp->axis_switch[dim].usage
+				& (~BG_SWITCH_CABLE_ERROR_FULL);
+			if (altered_usage != BG_SWITCH_NONE) {
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("remove_block: 2 %s(%d) %s %s "
 					     "removing %s",
@@ -506,11 +521,10 @@ extern int remove_block(List mps, bool is_small)
 						     ba_mp->axis_switch
 						     [dim].usage),
 					     ba_switch_usage_str(
-						     curr_ba_mp->axis_switch
-						     [dim].usage));
+						     altered_usage));
 				/* Just remove the usage set here */
 				ba_mp->axis_switch[dim].usage &=
-					(~curr_ba_mp->axis_switch[dim].usage);
+					(~altered_usage);
 				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 					info("remove_block: 2 %s(%d) is "
 					     "now at %s",
