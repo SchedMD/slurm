@@ -218,7 +218,7 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 			       nb_name);
 		else
 			error("We don't have the system configured "
-			      "for this nodecard %s, we only have "
+			      "for this nodeboard %s, we only have "
 			      "%d ionodes and this starts at %d",
 			      nb_name, bg_conf->ionodes_per_mp, io_start);
 		return;
