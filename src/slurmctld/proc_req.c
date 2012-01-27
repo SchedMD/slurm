@@ -4244,7 +4244,7 @@ static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 	    !validate_slurm_user(uid)) {
 		error("Security violation, MESSAGE_REALTIME_STATS reset "
 		      "from uid=%d", uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	}
 
