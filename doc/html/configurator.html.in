@@ -757,10 +757,7 @@ Select one value for <B>AccountingStorageType</B>:<BR>
 <input type="radio" name="accounting_storage_type" value="none" checked> <B>None</B>:
 No job accounting storage<BR>
 <input type="radio" name="accounting_storage_type" value="filetxt"> <B>FileTxt</B>:
-Write job accounting to a text file<BR>
-<input type="radio" name="accounting_storage_type" value="gold"> <B>Gold</B>:
-Write completion status to Gold database daemon which can securely
-save the data from many Slurm managed clusters into a common database<BR>
+Write job accounting to a text file (records limited information)<BR>
 <input type="radio" name="accounting_storage_type" value="mysql"> <B>MySQL</B>:
 Write job accounting to a MySQL database<BR>
 <input type="radio" name="accounting_storage_type" value="pgsql"> <B>PGSQL</B>:
@@ -846,5 +843,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 8 August 2011</P>
+Last modified 27 January 2012</P>
 </BODY>
