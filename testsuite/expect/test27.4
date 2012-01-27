@@ -70,8 +70,17 @@ sdiag_all
 set submit_begin $jobs_submitted
 set start_begin  $jobs_started
 
-spawn $srun -t1 $bin_hostname
-expect {
+#
+# Submit a slurm job to increment job counters
+#
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -t1 $bin_id]
+expect {	exp_continue
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
 	eof {
 		wait
 	}

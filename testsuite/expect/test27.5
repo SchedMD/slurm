@@ -69,7 +69,7 @@ if {$matches != 2} {
 sdiag_all
 
 set perm_denied 0
-spawn $sdiag --all
+spawn $sdiag --reset
 expect {
 	-re "permission denied" {
 		set perm_denied 1
