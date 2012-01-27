@@ -60,10 +60,10 @@ proc sdiag_all { } {
 		}
 	}
 
-if {$matches != 2} {
-	send_user "\nFAILURE: sdiag --all failed ($matches)\n"
-	set exit_code 1
-}
+	if {$matches != 2} {
+		send_user "\nFAILURE: sdiag --all failed ($matches)\n"
+		set exit_code 1
+	}
 }
 
 sdiag_all
