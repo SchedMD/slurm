@@ -4,10 +4,9 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2011-2012 SchedMD LLC.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jason King <jking@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2011-2012 SchedMD LLC.
+ *  Original switch/federation plugin written by Jason King <jking@llnl.gov>
+ *  Largely re-written for NRT support by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -70,14 +69,11 @@
 
 #define JOB_DESC_LEN 64	/* Length of job description */
 #define NRT_HOSTLEN 20
-#define NRT_VERBOSE_PRINT 0
 #define NRT_NODECOUNT 128
 #define NRT_HASHCOUNT 128
 #define NRT_AUTO_WINMEM 0
 #define NRT_MAX_WIN 15
 #define NRT_MIN_WIN 0
-
-#define BUFSIZE 4096
 
 char* nrt_conf = NULL;
 extern bool nrt_need_state_save;
@@ -258,14 +254,40 @@ nrt_slurmd_step_init(void)
 
 #if NRT_DEBUG
 /* Used by: slurmd */
+static void 
+_print_adapter_resources(char *adapter_name, uint16_t adapter_type,
+			 adap_resources_t *adapter_res)
+{
+	int i;
+
+	info("--Begin Adapter Resources--");
+	info("  adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
+	info("  node_number:%u", adapter_res->node_number);
+	info("  num_spigots:%hu", adapter_res->num_spigots);
+	for (i = 0; i < adapter_res->num_spigots; i++) {
+		info("  lid[%d]:%hu", i, adapter_res->lid[i]);
+		info("  network_id[%d]:%"PRIu64"",
+		     i, adapter_res->network_id[i]);
+		info("  lmc[%d]:%hu", i, adapter_res->lmc[i]);
+		info("  spigot_id[%d]:%hu", i, adapter_res->spigot_id[i]);
+	}
+	info("  window_count:%hu", adapter_res->window_count);
+	for (i = 0; i < adapter_res->window_count; i++)
+		info("  window_list[%d]:%hu", i, adapter_res->window_list[i]);
+	info("  rcontext_block_count:%"PRIu64"",
+	     adapter_res->rcontext_block_count);
+	info("--End Adapter Resources--");
+}
+
+/* Used by: slurmd */
 static void
-_print_adapter(char *adapter_name, uint16_t adapter_type, uint16_t win_count,
-	       nrt_status_t *status)
+_print_adapter_status(char *adapter_name, uint16_t adapter_type,
+		      uint16_t win_count, nrt_status_t *status)
 {
 	int i;
 
 	info("--Begin Adapter Status--");
-	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
+	info("  adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
 	for (i = 0; i < win_count; i++) {
 		info("  client_pid[%d]:%u", i, (uint32_t)status[i].client_pid);
 		info("  uid[%d]:%u", i, (uint32_t) status[i].uid);
@@ -281,6 +303,8 @@ _print_adapter(char *adapter_name, uint16_t adapter_type, uint16_t win_count,
 static void
 _print_jobinfo(nrt_jobinfo_t *j)
 {
+	char buf[128];
+
 	assert(j);
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 
@@ -288,6 +312,12 @@ _print_jobinfo(nrt_jobinfo_t *j)
 	info("  job_key: %u", j->job_key);
 	info("  job_desc: %s", j->job_desc);
 	info("  table_size: %u", j->tables_per_task);
+	info("  bulk_xfer: %u", j->bulk_xfer);
+	info("  tables_per_task: %hu", j->tables_per_task);
+	hostlist_ranged_string(j->nodenames, sizeof(buf), buf);
+	info("  nodenames: %s", buf);
+	info("  num_tasks: %d", j->num_tasks);
+	info("  tableinfo supressed");
 	info("--End Jobinfo--");
 }
 
@@ -302,26 +332,29 @@ _print_nodeinfo(nrt_nodeinfo_t *n)
 	assert(n);
 	assert(n->magic == NRT_NODEINFO_MAGIC);
 
-	info("Node: %s", n->name);
+	info("--Begin Node Info--");
+	info("  node: %s", n->name);
+	info("  adapter_count: %u", n->adapter_count);
 	for (i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
-		info("    adapter: %s", a->adapter_name);
-		info("      type: %hu", a->adapter_type);
-		info("      window_count: %hu", a->window_count);
-#if NRT_VERBOSE_PRINT
-		info("      lid[0]: %hu", a->lid[0]);
-		info("      network_id[0]: %"PRIu64"", a->network_id[0]);
+		info("  adapter: %s", a->adapter_name);
+		info("    type: %hu", a->adapter_type);
+		info("    window_count: %hu", a->window_count);
+#if (NRT_DEBUG > 1)
+		info("    lid[0]: %hu", a->lid[0]);
+		info("    network_id[0]: %"PRIu64"", a->network_id[0]);
 #endif
 		w = a->window_list;
 		for (j = 0; j < a->window_count; j++) {
-#if (NRT_VERBOSE_PRINT < 1)
+#if (NRT_DEBUG < 2)
 			if (w[j].state != NRT_WIN_AVAILABLE)
 				continue;
 #endif
-			info("      Window %hu: %s", w->window_id,
+			info("    window %hu: %s", w->window_id,
 			     nrt_err_str(w->state));
 		}
 	}
+	info("--End Node Info--");
 }
 
 /* Used by: slurmctld */
@@ -331,9 +364,9 @@ _print_libstate(const nrt_libstate_t *l)
 	int i;
 
 	assert(l);
+	assert(l->magic == NRT_LIBSTATE_MAGIC);
 
 	info("--Begin libstate--\n");
-	info("  magic = %u", l->magic);
 	info("  node_count = %u", l->node_count);
 	info("  node_max = %u", l->node_max);
 	info("  hash_max = %u", l->hash_max);
@@ -391,7 +424,7 @@ _fill_in_adapter_cache(void)
 		}
 #if NRT_DEBUG
 		info("nrt_adapter_resources():");
-		nrt_dump_adapter(adapter_name, adapter_type, &res);
+		_print_adapter_resources(adapter_name, adapter_type, &res);
 #endif
 
 		num = adapter_name[3] - (int)'0';
@@ -495,8 +528,8 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 		return SLURM_ERROR;
 	}
 #if NRT_DEBUG
-	info("nrt_adapter_resources():");
-	nrt_dump_adapter(adapter_name, adapter_type, &res);
+	info("_set_up_adapter: nrt_adapter_resources():");
+	_print_adapter_resources(adapter_name, adapter_type, &res);
 #endif
 
 	strncpy(nrt_adapter->adapter_name, adapter_name,
@@ -518,7 +551,8 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 		slurm_seterrno_ret(ESTATUS);
 	}
 #if NRT_DEBUG
-	_print_adapter(adapter_name,  adapter_type, win_count, status);
+	info("_set_up_adapter: nrt_status_adapter():");
+	_print_adapter_status(adapter_name,  adapter_type, win_count, status);
 #endif
 	tmp_winlist = (nrt_window_t *) xmalloc(sizeof(nrt_window_t) *
 					       res.window_count);
@@ -1057,6 +1091,7 @@ copy_node:
 		return SLURM_ERROR;
 
 #if NRT_DEBUG
+	info("_unpack_nodeinfo");
 	_print_libstate(nrt_state);
 #endif
 
@@ -1201,6 +1236,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		window->state = NRT_WIN_UNAVAILABLE;
 		window->job_key = job_key;
 
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
 		if (adapter->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 			nrt_creator_ib_per_task_input_t *ib_table;
 			ib_table = &tableinfo[i].table[task_id].ib_per_task;
@@ -1343,6 +1379,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			if (strcasecmp(adapter->adapter_name,
 				       tableinfo[i].adapter_name))
 				continue;
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
 			if (adapter->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 				ib_tbl_ptr = &table->ib_per_task;
@@ -1396,6 +1433,7 @@ _print_table(nrt_creator_per_task_input_t *table, int size)
 
 	info("--Begin NRT table--");
 	for (i = 0; i < size; i++) {
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
 		if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 			nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 			ib_tbl_ptr = &table[i].ib_per_task;
@@ -1707,6 +1745,7 @@ nrt_build_jobinfo(nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 
 
 #if NRT_DEBUG
+	info("nrt_build_jobinfo");
 	_print_table(jp->tableinfo[i].table, jp->tableinfo[i].table_length);
 #endif
 
@@ -1726,6 +1765,7 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 	int i;
 
 	pack32(tableinfo->table_length, buf);
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
 	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 		for (i = 0; i < tableinfo->table_length; i++) {
@@ -1772,6 +1812,7 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 	int i;
 
 	safe_unpack32(&tableinfo->table_length, buf);
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
 	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 		tableinfo->table = (nrt_creator_per_task_input_t *)
@@ -1969,6 +2010,11 @@ _wait_for_window_unloaded(char *adapter_name, uint16_t adapter_type,
 			      adapter_type, nrt_err_str(err));
 			return SLURM_ERROR;
 		}
+#if NRT_DEBUG
+		info("_wait_for_window_unloaded");
+		_print_adapter_status(adapter_name,  adapter_type, win_count,
+				      status);
+#endif
 		for (j = 0; j < win_count; j++) {
 			if (status[j].window_id == window_id)
 				break;
@@ -2011,6 +2057,7 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 
 	lid = _get_lid_from_adapter(tableinfo->adapter_name);
 
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
 	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
 		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 		for (i = 0; i < tableinfo->table_length; i++) {
@@ -2054,7 +2101,7 @@ _check_rdma_job_count(char *adapter_name, uint16_t adapter_type)
 		return SLURM_ERROR;
 	}
 #if NRT_DEBUG
-	info("nrt_rdma_jobs:");
+	info("_check_rdma_job_count: nrt_rdma_jobs:");
 	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
 	for (i = 0; i < job_count; i++)
 		info("  job_keys[%d]:%hu", i, job_keys[i]);
@@ -2087,6 +2134,8 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 
 #if NRT_DEBUG
 	int j;
+
+	info("nrt_load_table");
 #endif
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
@@ -2444,6 +2493,45 @@ nrt_libstate_clear(void)
 	return SLURM_SUCCESS;
 }
 
+/* FIXME! - should use adapter name from nrt.conf file now that
+ *           we have that file support. */
+extern int nrt_clear_node_state(void)
+{
+	int i, j;
+	adap_resources_t res;
+	char *adapter_name = "sniN";
+	uint16_t adapter_type= RSCT_DEVTYPE_INFINIBAND;	/* FIXME: How to fill in? */
+	int err;
+
+	for (i = 0; i < NRT_MAXADAPTERS; i++) {
+		adapter_name[3] = i + (int) '0';
+		err = nrt_adapter_resources(NRT_VERSION, adapter_name,
+					    adapter_type, &res);
+		if (err != NRT_SUCCESS) {
+			error("nrt_adapter_resources(%s, %hu): %s",
+			      adapter_name, adapter_type, nrt_err_str(err));
+			continue;
+		}
+#if NRT_DEBUG
+		info("nrt_clear_node_state: nrt_adapter_resources():");
+		_print_adapter_resources(adapter_name, adapter_type, &res);
+#endif
+		for (j = 0; j < res.window_count; j++) {
+			err = nrt_clean_window(NRT_VERSION, adapter_name,
+						adapter_type, KILL, 
+						res.window_list[j]);
+			if (err != NRT_SUCCESS) {
+				error("nrt_clean_window(%s, %hu): %s",
+				      adapter_name, adapter_type,
+				      nrt_err_str(err));
+			}
+		}
+		free(res.window_list);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern char *nrt_err_str(int rc)
 {
 	static char str[16];
@@ -2484,26 +2572,4 @@ extern char *nrt_err_str(int rc)
 
 	snprintf(str, sizeof(str), "%d", rc);
 	return str;
-}
-
-extern void nrt_dump_adapter(char *adapter_name, uint16_t adapter_type,
-			     adap_resources_t *adapter_res)
-{
-	int i;
-
-	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
-	info("  node_number:%u", adapter_res->node_number);
-	info("  num_spigots:%hu", adapter_res->num_spigots);
-	for (i = 0; i < MAX_SPIGOTS; i++) {
-		info("  lid[%d]:%hu", i, adapter_res->lid[i]);
-		info("  network_id[%d]:%"PRIu64"",
-		     i, adapter_res->network_id[i]);
-		info("  lmc[%d]:%hu", i, adapter_res->lmc[i]);
-		info("  spigot_id[%d]:%hu", i, adapter_res->spigot_id[i]);
-	}
-	info("  window_count:%hu", adapter_res->window_count);
-	for (i = 0; i < adapter_res->window_count; i++)
-		info("  window_list[%d]:%hu", i, adapter_res->window_list[i]);
-	info("  rcontext_block_count:%"PRIu64"",
-	     adapter_res->rcontext_block_count);
 }
