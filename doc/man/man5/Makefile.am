@@ -6,6 +6,7 @@ man5_MANS = bluegene.conf.5 \
 	cgroup.conf.5 \
 	cray.conf.5 \
 	gres.conf.5 \
+	nrt.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
 	topology.conf.5 \
@@ -16,6 +17,7 @@ html_DATA = \
 	bluegene.conf.html \
 	cgroup.conf.html \
 	gres.conf.html \
+	nrt.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
 	topology.conf.html \

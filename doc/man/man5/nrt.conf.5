@@ -1,0 +1,75 @@
+.TH "nrt.conf" "5" "January 2012" "nrt.conf 2.4" "SLURM configuration file"
+
+.SH "NAME"
+nrt.conf \- Slurm configuration file for the IBM Network Resource Table (NRT) specific information
+
+.SH "DESCRIPTION"
+\fBnrt.conf\fP is an ASCII file which defines parameters used by 
+SLURM's switch/nrt plugin in support of IBM systems in which the Network
+Resource Table (NRT) Application Programming Interface (API) is used to
+manage its network.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
+same directory as the \fBslurm.conf\fP file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+SLURM daemons.
+.LP
+The configuration parameters available include:
+
+.TP
+\fBAdapterName\fR=<switch_name>
+Name of switch adapter(s). This can use the same name format as the SLURM
+hostname expression (numeric values or ranges in square brackets). For example,
+"sni0", "sni[0-1]", "sni[0,1]" or "sni[0-1,2]".
+
+.TP
+\fBAdapterType\fR=<type>
+The adapter type. Valid values include:
+.RS
+.TP 12
+\fBIB\fR
+InfiniBand switch type
+.TP
+\fBHPCE\fR
+HPCE switch type
+.RE
+
+.SH "EXAMPLE"
+.LP
+.br
+###
+.br
+# SLURM Network Resource Table (NRT) configuration file
+.br
+###
+.br
+AdapterName=sni[0-1]
+.br
+AdapterType=IB
+
+.SH "COPYING"
+Copyright (C) 2012 SchedMD LLC.
+Produced at SchedMD LLC (cf, DISCLAIMER).
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.schedmd.com/slurmdocs/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

@@ -319,6 +319,7 @@ man5_MANS = bluegene.conf.5 \
 	cgroup.conf.5 \
 	cray.conf.5 \
 	gres.conf.5 \
+	nrt.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
 	topology.conf.5 \
@@ -328,6 +329,7 @@ man5_MANS = bluegene.conf.5 \
 @HAVE_MAN2HTML_TRUE@	bluegene.conf.html \
 @HAVE_MAN2HTML_TRUE@	cgroup.conf.html \
 @HAVE_MAN2HTML_TRUE@	gres.conf.html \
+@HAVE_MAN2HTML_TRUE@	nrt.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurm.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.conf.html \
 @HAVE_MAN2HTML_TRUE@	topology.conf.html \
