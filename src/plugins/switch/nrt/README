@@ -2,7 +2,6 @@
 1A. Add nrt.conf man page
 1B. Add nrt.conf example
 1C. Modify nrt.conf parsing and data structures to support adapter_type
-    (e.g. currently hard-wired to type RSCT_DEVTYPE_INFINIBAND)
 
 2. NRT APIs
 2A. Convert all Federation switch API calls to Torrent switch API calls

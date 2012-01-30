@@ -256,6 +256,33 @@ nrt_slurmd_step_init(void)
 }
 
 #if NRT_DEBUG
+/* Used by: all */
+static void
+_print_table(nrt_creator_per_task_input_t *table, int size)
+{
+	uint16_t adapter_type = RSCT_DEVTYPE_INFINIBAND;
+	int i;
+
+	assert(table);
+	assert(size > 0);
+
+	info("--Begin NRT table--");
+	for (i = 0; i < size; i++) {
+/* FIXME: table contains a union, it could contain either IB or HPCE data */
+		if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+			nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
+			ib_tbl_ptr = &table[i].ib_per_task;
+			info("  task_id:  %hu", ib_tbl_ptr->task_id);
+			info("  win_id:   %hu", ib_tbl_ptr->win_id);
+			info("  base_lid: %hu", ib_tbl_ptr->base_lid);
+		} else {
+			fatal("_print_table: lack HPCE code");
+		}
+	}
+	info("--End NRT table--");
+}
+
+
 /* Used by: slurmd */
 static void 
 _print_adapter_resources(char *adapter_name, uint16_t adapter_type,
@@ -427,7 +454,7 @@ _fill_in_adapter_cache(void)
 			return SLURM_ERROR;
 		}
 #if NRT_DEBUG
-		info("nrt_adapter_resources():");
+		info("_fill_in_adapter_cache: nrt_adapter_resources():");
 		_print_adapter_resources(adapter_name, adapter_type_code,
 					 &res);
 #endif
@@ -745,7 +772,10 @@ nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 	assert(n);
 	assert(n->magic == NRT_NODEINFO_MAGIC);
 	assert(buf);
-
+#if NRT_DEBUG
+	info("nrt_pack_nodeinfo():");
+	_print_nodeinfo(n);
+#endif
 	offset = get_buf_offset(buf);
 	pack32(n->magic, buf);
 	packmem(n->name, NRT_HOSTLEN, buf);
@@ -781,7 +811,10 @@ _copy_node(nrt_nodeinfo_t *dest, nrt_nodeinfo_t *src)
 	assert(src);
 	assert(dest->magic == NRT_NODEINFO_MAGIC);
 	assert(src->magic == NRT_NODEINFO_MAGIC);
-
+#if NRT_DEBUG
+	info("_copy_node():");
+	_print_nodeinfo(src);
+#endif
 	strncpy(dest->name, src->name, NRT_HOSTLEN);
 	dest->adapter_count = src->adapter_count;
 	for (i = 0; i < dest->adapter_count; i++) {
@@ -1106,7 +1139,7 @@ copy_node:
 
 #if NRT_DEBUG
 	info("_unpack_nodeinfo");
-	_print_libstate(nrt_state);
+	_print_nodeinfo(tmp_n);
 #endif
 
 	return SLURM_SUCCESS;
@@ -1144,6 +1177,10 @@ nrt_free_nodeinfo(nrt_nodeinfo_t *n, bool ptr_into_array)
 
 	assert(n->magic == NRT_NODEINFO_MAGIC);
 
+#if NRT_DEBUG
+	info("_unpack_nodeinfo");
+	_print_nodeinfo(n);
+#endif
 	if (n->adapter_list) {
 		adapter = n->adapter_list;
 		for (i = 0; i < n->adapter_count; i++) {
@@ -1432,35 +1469,6 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 
 	return SLURM_SUCCESS;
 }
-
-
-#if NRT_DEBUG
-/* Used by: all */
-static void
-_print_table(nrt_creator_per_task_input_t *table, int size)
-{
-	uint16_t adapter_type = RSCT_DEVTYPE_INFINIBAND;
-	int i;
-
-	assert(table);
-	assert(size > 0);
-
-	info("--Begin NRT table--");
-	for (i = 0; i < size; i++) {
-/* FIXME: table contains a union, it could contain either IB or HPCE data */
-		if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
-			nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-			ib_tbl_ptr = &table[i].ib_per_task;
-			info("  task_id:  %hu", ib_tbl_ptr->task_id);
-			info("  win_id:   %hu", ib_tbl_ptr->win_id);
-			info("  base_lid: %hu", ib_tbl_ptr->base_lid);
-		} else {
-			fatal("_print_table: lack HPCE code");
-		}
-	}
-	info("--End NRT table--");
-}
-#endif
 
 
 /* Find all of the windows used by this job step and set their
@@ -2297,8 +2305,8 @@ nrt_unload_table(nrt_jobinfo_t *jp)
 				ib_tbl_ptr = &table[j].ib_per_task;
 				if (ib_tbl_ptr->base_lid != local_lid)
 					continue;
-				debug3("freeing adapter %s base_lid %hu win_id %hu "
-				       "job_key %hu",
+				debug3("freeing adapter %s base_lid %hu "
+				       "win_id %hu job_key %hu",
 				       adapter_name, ib_tbl_ptr->base_lid,
 				       ib_tbl_ptr->win_id, jp->job_key);
 				err = _unload_window(adapter_name,
@@ -2389,6 +2397,10 @@ _pack_libstate(nrt_libstate_t *lp, Buf buffer)
 	assert(lp);
 	assert(lp->magic == NRT_LIBSTATE_MAGIC);
 
+#if NRT_DEBUG
+ 	info("_pack_libstate");
+	_print_libstate(lp);
+ #endif
 	offset = get_buf_offset(buffer);
 	pack32(lp->magic, buffer);
 	pack32(lp->node_count, buffer);
@@ -2439,7 +2451,10 @@ _unpack_libstate(nrt_libstate_t *lp, Buf buffer)
 		return SLURM_ERROR;
 	}
 	safe_unpack16(&lp->key_index, buffer);
-
+#if NRT_DEBUG
+ 	info("_unpack_libstate");
+	_print_libstate(lp);
+ #endif
 	return SLURM_SUCCESS;
 
 unpack_error:
