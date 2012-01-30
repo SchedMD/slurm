@@ -154,6 +154,7 @@ pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* slurmd/slurmstepd global variables */
 hostlist_t adapter_list;
+uint16_t   adapter_type_code = 0;
 static nrt_cache_entry_t lid_cache[NRT_MAXADAPTERS];
 
 static int  _fill_in_adapter_cache(void);
@@ -161,7 +162,7 @@ static void _hash_rebuild(nrt_libstate_t *state);
 static void _init_adapter_cache(void);
 static int  _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 			    uint16_t adapter_type);
-static int  _parse_nrt_file(hostlist_t *adapter_list);
+static int  _parse_nrt_file(hostlist_t *adapter_list, uint16_t *adapter_code);
 static char *_win_state_str(win_state_t state);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a
@@ -225,7 +226,8 @@ nrt_slurmd_init(void)
 	/*_init_adapter_cache();*/
 
 	adapter_list = hostlist_create(NULL);
-	if (_parse_nrt_file(&adapter_list) != SLURM_SUCCESS)
+	if (_parse_nrt_file(&adapter_list, &adapter_type_code) !=
+	    SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	assert(hostlist_count(adapter_list) <= NRT_MAXADAPTERS);
 	return SLURM_SUCCESS;
@@ -243,7 +245,8 @@ nrt_slurmd_step_init(void)
 	_init_adapter_cache();
 
 	adapter_list = hostlist_create(NULL);
-	if (_parse_nrt_file(&adapter_list) != SLURM_SUCCESS)
+	if (_parse_nrt_file(&adapter_list, &adapter_type_code) !=
+	    SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	assert(hostlist_count(adapter_list) <= NRT_MAXADAPTERS);
 
@@ -379,7 +382,7 @@ _print_libstate(const nrt_libstate_t *l)
 
 /* The lid caching functions were created to avoid unnecessary
  * function calls each time we need to load network tables on a node.
- * _init_cache() simply initializes the cache to sane values and
+ * _init_cache() simply initializes the cache to save values and
  * needs to be called before any other cache functions are called.
  *
  * Used by: slurmd/slurmstepd
@@ -407,7 +410,6 @@ _fill_in_adapter_cache(void)
 {
 	hostlist_iterator_t adapters;
 	char *adapter_name = NULL;
-	uint16_t adapter_type= RSCT_DEVTYPE_INFINIBAND;
 	adap_resources_t res;
 	int num;
 	int rc;
@@ -416,15 +418,18 @@ _fill_in_adapter_cache(void)
 	adapters = hostlist_iterator_create(adapter_list);
 	for (i = 0; (adapter_name = hostlist_next(adapters)); i++) {
 		rc = nrt_adapter_resources(NRT_VERSION, adapter_name,
-					    adapter_type, &res);
+					    adapter_type_code, &res);
 		if (rc != NRT_SUCCESS) {
 			error("nrt_adapter_resources(%s, %hu): %s",
-			      adapter_name, adapter_type, nrt_err_str(rc));
+			      adapter_name, adapter_type_code,
+			      nrt_err_str(rc));
+			free(adapter_name);
 			return SLURM_ERROR;
 		}
 #if NRT_DEBUG
 		info("nrt_adapter_resources():");
-		_print_adapter_resources(adapter_name, adapter_type, &res);
+		_print_adapter_resources(adapter_name, adapter_type_code,
+					 &res);
 #endif
 
 		num = adapter_name[3] - (int)'0';
@@ -588,13 +593,15 @@ static char *_get_nrt_conf(void)
 	return rc;
 }
 
-static int _parse_nrt_file(hostlist_t *adapter_list)
+static int _parse_nrt_file(hostlist_t *adapter_list, uint16_t *adapter_code)
 {
-	s_p_options_t options[] = {{"AdapterName", S_P_STRING}, {NULL}};
+	s_p_options_t options[] = {
+		{"AdapterName", S_P_STRING},
+		{"AdapterType", S_P_STRING},
+		{NULL}};
 	s_p_hashtbl_t *tbl;
-	char *adapter_name;
+	char *adapter_name, *adapter_type;
 
-/* FIXME: Need to set adapter_type per nrt.conf file */
 	debug("Reading the nrt.conf file");
 	if (!nrt_conf)
 		nrt_conf = _get_nrt_conf();
@@ -609,6 +616,15 @@ static int _parse_nrt_file(hostlist_t *adapter_list)
 		if (rc == 0)
 			error("Adapter name format is incorrect.");
 		xfree(adapter_name);
+	}
+	if (s_p_get_string(&adapter_type, "AdapterType", tbl)) {
+		if (!strcasecmp(adapter_type, "IB") ||
+		    !strcasecmp(adapter_type, "InfiniBand")) {
+			*adapter_code = RSCT_DEVTYPE_INFINIBAND;
+		} else {
+			error("Adapter type is invalid (%s).", adapter_type);
+		}
+		xfree(adapter_type);
 	}
 
 	s_p_hashtbl_destroy(tbl);
@@ -627,7 +643,6 @@ _get_adapters(nrt_adapter_t *list, int *count)
 {
 	hostlist_iterator_t adapter_iter;
 	char *adapter_name = NULL;
-	uint16_t adapter_type;
 	int i, rc;
 
 	assert(list != NULL);
@@ -635,12 +650,11 @@ _get_adapters(nrt_adapter_t *list, int *count)
 
 	adapter_iter = hostlist_iterator_create(adapter_list);
 	for (i = 0; (adapter_name = hostlist_next(adapter_iter)); i++) {
-/* FIXME: Need to set adapter_type per nrt.conf file */
-		adapter_type = RSCT_DEVTYPE_INFINIBAND;
-		rc = _set_up_adapter(list + i, adapter_name, adapter_type);
+		rc = _set_up_adapter(list + i, adapter_name,
+				     adapter_type_code);
 		if (rc != SLURM_SUCCESS) {
-			fatal("Failed to set up adapter %s of type %u",
-			      adapter_name, adapter_type);
+			fatal("Failed to set up adapter %s of type %hu",
+			      adapter_name, adapter_type_code);
 		}
 		free(adapter_name);
 	}
@@ -2127,7 +2141,6 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 	int i;
 	int err;
 	char *adapter_name;
-	uint16_t adapter_type;
 	uint64_t network_id;
 	uint bulk_xfer_resources = 0;	/* Unused by NRT today */
 	int rc;
@@ -2147,9 +2160,6 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 		_print_jobinfo(jp);
 #endif
 		adapter_name = jp->tableinfo[i].adapter_name;
-/* FIXME: Determine adapter_type from adapter_name and nrt.conf file contents.
- * We probably do NOT want to store adapter_type in nrt_jobinfo_t */
-		adapter_type = RSCT_DEVTYPE_INFINIBAND;
 		network_id = _get_network_id_from_adapter(adapter_name);
 
 		rc = _wait_for_all_windows(&jp->tableinfo[i]);
@@ -2159,14 +2169,15 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 		if (adapter_name == NULL)
 			continue;
 		if (jp->bulk_xfer && (i == 0)) {
-			rc = _check_rdma_job_count(adapter_name, adapter_type);
+			rc = _check_rdma_job_count(adapter_name,
+						   adapter_type_code);
 			if (rc != SLURM_SUCCESS)
 				return rc;
 		}
 #if NRT_DEBUG
 		info("attempting nrt_load_table_rdma:");
 		info("adapter_name:%s adapter_type:%hu", adapter_name,
-		     adapter_type);
+		     adapter_type_code);
 		info("  network_id:%"PRIu64" uid:%u pid:%u", network_id,
 		     (uint32_t)uid, (uint32_t)pid);
 		info("  job_key:%hd job_desc:%s", jp->job_key, jp->job_desc);
@@ -2174,7 +2185,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 		     bulk_xfer_resources);
 		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
 /* FIXME: table contains a union, it could contain either IB or HPCE data */
-			if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
+			if (adapter_type_code == RSCT_DEVTYPE_INFINIBAND) {
 				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
 				ib_tbl_ptr = &jp->tableinfo[i].table[j].
 					     ib_per_task;
@@ -2200,7 +2211,7 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
 #endif
 /* FIXME: nrt_load_table_rdma can not be array of pointers, but must be array of creator elements */
 		err = nrt_load_table_rdma(NRT_VERSION,
-					  adapter_name, adapter_type,
+					  adapter_name, adapter_type_code,
 					  network_id, uid, pid,
 					  jp->job_key, jp->job_desc,
 					  jp->bulk_xfer,
@@ -2493,41 +2504,56 @@ nrt_libstate_clear(void)
 	return SLURM_SUCCESS;
 }
 
-/* FIXME! - should use adapter name from nrt.conf file now that
- *           we have that file support. */
 extern int nrt_clear_node_state(void)
 {
-	int i, j;
+	int err, j;
 	adap_resources_t res;
-	char *adapter_name = "sniN";
-	uint16_t adapter_type= RSCT_DEVTYPE_INFINIBAND;	/* FIXME: How to fill in? */
-	int err;
+	hostlist_iterator_t adapters;
+	char *adapter_name;
 
-	for (i = 0; i < NRT_MAXADAPTERS; i++) {
-		adapter_name[3] = i + (int) '0';
+	if (!adapter_list) {
+		/*
+		 * Work-around for the nrt_* functions calling umask(0)
+		 */
+		nrt_umask = umask(0077);
+		umask(nrt_umask);
+
+		adapter_list = hostlist_create(NULL);
+		if (_parse_nrt_file(&adapter_list, &adapter_type_code) !=
+		    SLURM_SUCCESS)
+			return SLURM_FAILURE;
+	}
+
+	adapters = hostlist_iterator_create(adapter_list);
+	while ((adapter_name = hostlist_next(adapters))) {
 		err = nrt_adapter_resources(NRT_VERSION, adapter_name,
-					    adapter_type, &res);
+					    adapter_type_code, &res);
 		if (err != NRT_SUCCESS) {
 			error("nrt_adapter_resources(%s, %hu): %s",
-			      adapter_name, adapter_type, nrt_err_str(err));
+			      adapter_name, adapter_type_code,
+			      nrt_err_str(err));
+			free(adapter_name);
 			continue;
 		}
 #if NRT_DEBUG
 		info("nrt_clear_node_state: nrt_adapter_resources():");
-		_print_adapter_resources(adapter_name, adapter_type, &res);
+		_print_adapter_resources(adapter_name, adapter_type_code,
+					 &res);
 #endif
 		for (j = 0; j < res.window_count; j++) {
 			err = nrt_clean_window(NRT_VERSION, adapter_name,
-						adapter_type, KILL, 
+						adapter_type_code, KILL, 
 						res.window_list[j]);
 			if (err != NRT_SUCCESS) {
 				error("nrt_clean_window(%s, %hu): %s",
-				      adapter_name, adapter_type,
+				      adapter_name, adapter_type_code,
 				      nrt_err_str(err));
 			}
 		}
 		free(res.window_list);
+		free(adapter_name);
 	}
+	hostlist_iterator_destroy(adapters);
 
 	return SLURM_SUCCESS;
 }
