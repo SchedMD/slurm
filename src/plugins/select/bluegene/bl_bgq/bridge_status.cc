@@ -254,7 +254,8 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 }
 
 static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
-				EnumWrapper<Hardware::State> state)
+				EnumWrapper<Hardware::State> state,
+				List *delete_list)
 {
 	Coordinates ibm_cnode_coords = getNodeMidplaneCoordinates(cnode_loc);
 	uint16_t cnode_coords[Dimension::NodeDims];
@@ -263,7 +264,6 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	bg_record_t *bg_record;
 	ba_mp_t *found_ba_mp;
 	ListIterator itr, itr2;
-	List delete_list = NULL;
 	select_nodeinfo_t *nodeinfo;
 	struct node_record *node_ptr = NULL;
 
@@ -359,7 +359,6 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	xfree(nodeinfo->failed_cnodes);
 	nodeinfo->failed_cnodes = ba_node_map_ranged_hostlist(
 		ba_mp->cnode_err_bitmap, ba_mp_geo_system);
-	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *)list_next(itr))) {
 		if (bg_record->free_cnt)
@@ -385,12 +384,15 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 
 			if (bg_conf->sub_mp_sys
 			    && (state == Hardware::Missing)) {
-				if (!delete_list)
-					delete_list = list_create(NULL);
+				if (!*delete_list)
+					*delete_list = list_create(NULL);
 				debug("Removing block %s, "
 				      "it has missing cnodes",
 				      bg_record->bg_block_id);
-				list_push(delete_list, bg_record);
+				/* If we don't have any mp_counts
+				 * force block removal */
+				bg_record->mp_count = 0;
+				list_push(*delete_list, bg_record);
 				break;
 			}
 
@@ -454,18 +456,11 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&block_state_mutex);
-
-	bg_status_process_kill_job_list(kill_job_list);
-
-	if (delete_list) {
-		free_block_list(NO_VAL, delete_list, 1, 0);
-		list_destroy(delete_list);
-	}
 }
 
 static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
-				 EnumWrapper<Hardware::State> state)
+				 EnumWrapper<Hardware::State> state,
+				 List *delete_list)
 {
 	select_nodeinfo_t *nodeinfo;
 	struct node_record *node_ptr = NULL;
@@ -503,8 +498,6 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 	} else if (!(ba_mp->axis_switch[dim].usage & BG_SWITCH_CABLE_ERROR)) {
 		bg_record_t *bg_record = NULL;
 		ListIterator itr;
-		List delete_list = NULL;
-		bool delete_it = 0;
 
 		next_ba_mp = ba_mp->next_mp[dim];
 
@@ -530,11 +523,6 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 			nodeinfo->extra_info = xstrdup(reason);
 
 		/* Now handle potential overlapping blocks. */
-		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
-			delete_it = 1;
-
-		slurm_mutex_lock(&block_state_mutex);
-		delete_list = list_create(NULL);
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = (bg_record_t *)list_next(itr))) {
 			if (bg_record->free_cnt)
@@ -545,13 +533,11 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				continue;
 			if (!bit_test(bg_record->mp_bitmap, next_ba_mp->index))
 				continue;
-			list_push(delete_list, bg_record);
+			if (!*delete_list)
+				*delete_list = list_create(NULL);
+			list_push(*delete_list, bg_record);
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&block_state_mutex);
-
-		free_block_list(NO_VAL, delete_list, delete_it, 0);
-		list_destroy(delete_list);
 	}
 	last_bg_update = time(NULL);
 }
@@ -713,7 +699,7 @@ static void _do_block_poll(void)
 }
 
 static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
-				    ba_mp_t *ba_mp)
+				    ba_mp_t *ba_mp, List *delete_list)
 {
 	Midplane::ConstPtr mp_ptr = bridge_get_midplane(bgq, ba_mp);
 	int i;
@@ -735,7 +721,8 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 			BOOST_FOREACH(const Node::ConstPtr& cnode_ptr, vec) {
 				_handle_node_change(ba_mp,
 						    cnode_ptr->getLocation(),
-						    cnode_ptr->getState());
+						    cnode_ptr->getState(),
+						    delete_list);
 			}
 		}
 	}
@@ -772,7 +759,8 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 				if (my_cable)
 					_handle_cable_change(
 						dim, ba_mp,
-						my_cable->getState());
+						my_cable->getState(),
+						delete_list);
 			}
 		}
 	}
@@ -782,6 +770,7 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 			      ComputeHardware::ConstPtr bgqsys)
 {
 	ba_mp_t *ba_mp;
+	List delete_list = NULL;
 
 	if (!bgqsys) {
 		error("_do_hardware_poll: No ComputeHardware ptr");
@@ -800,10 +789,24 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 		}
 		return;
 	}
+	/* block_state_mutex may be needed in some of these functions,
+	 * so lock it first to avoid dead lock */
+	slurm_mutex_lock(&block_state_mutex);
 	slurm_mutex_lock(&ba_system_mutex);
 	if ((ba_mp = coord2ba_mp(coords)))
-		_handle_midplane_update(bgqsys, ba_mp);
+		_handle_midplane_update(bgqsys, ba_mp, &delete_list);
 	slurm_mutex_unlock(&ba_system_mutex);
+	slurm_mutex_unlock(&block_state_mutex);
+
+	bg_status_process_kill_job_list(kill_job_list);
+
+	if (delete_list) {
+		bool delete_it = 0;
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			delete_it = 1;
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
+		list_destroy(delete_list);
+	}
 }
 
 static void *_poll(void *no_data)
@@ -1050,10 +1053,14 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	int dim;
 	ba_mp_t *ba_mp;
+	List delete_list = NULL;
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
+	/* block_state_mutex may be needed in _handle_node_change,
+	 * so lock it first to avoid dead lock */
+	slurm_mutex_lock(&block_state_mutex);
 	slurm_mutex_lock(&ba_system_mutex);
 	ba_mp = coord2ba_mp(coords);
 
@@ -1065,6 +1072,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
 		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
 		return;
 	}
 
@@ -1073,8 +1081,21 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	     bridge_hardware_state_string(event.getPreviousState()),
 	     bridge_hardware_state_string(event.getState()));
 
-	_handle_node_change(ba_mp, event.getLocation(), event.getState());
+	_handle_node_change(ba_mp, event.getLocation(), event.getState(),
+			    &delete_list);
 	slurm_mutex_unlock(&ba_system_mutex);
+	slurm_mutex_unlock(&block_state_mutex);
+
+	bg_status_process_kill_job_list(kill_job_list);
+
+	if (delete_list) {
+		/* The only reason blocks are added to this list is if
+		   there are missing cnodes on the block so remove
+		   them from the mix.
+		*/
+		free_block_list(NO_VAL, delete_list, 1, 0);
+		list_destroy(delete_list);
+	}
 
 	return;
 }
@@ -1086,13 +1107,16 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	int dim;
 	ba_mp_t *from_ba_mp;
-
+	List delete_list = NULL;
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
 	dim = event.getDimension();
 
+	/* block_state_mutex may be needed in _handle_cable_change,
+	 * so lock it first to avoid dead lock */
+	slurm_mutex_lock(&block_state_mutex);
 	slurm_mutex_lock(&ba_system_mutex);
 	from_ba_mp = coord2ba_mp(coords);
 	if (!from_ba_mp) {
@@ -1102,13 +1126,22 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 		      bridge_hardware_state_string(event.getPreviousState()),
 		      bridge_hardware_state_string(event.getState()));
 		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
 		return;
 	}
 
 	/* Else mark the midplane down */
-	_handle_cable_change(dim, from_ba_mp, event.getState());
+	_handle_cable_change(dim, from_ba_mp, event.getState(), &delete_list);
 	slurm_mutex_unlock(&ba_system_mutex);
+	slurm_mutex_unlock(&block_state_mutex);
 
+	if (delete_list) {
+		bool delete_it = 0;
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			delete_it = 1;
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
+		list_destroy(delete_list);
+	}
 	return;
 }
 

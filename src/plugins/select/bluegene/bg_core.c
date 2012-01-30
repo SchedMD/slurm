@@ -121,7 +121,8 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	*/
 	remove_from_bg_list(bg_lists->booted, bg_record);
 
-	if (restore)
+	/* If we don't have any mp_counts force block removal */
+	if (restore && bg_record->mp_count)
 		return SLURM_SUCCESS;
 
 	if (remove_from_bg_list(bg_lists->main, bg_record) != SLURM_SUCCESS) {
