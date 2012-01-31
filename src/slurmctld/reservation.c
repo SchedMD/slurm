@@ -3179,11 +3179,17 @@ static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
 	struct node_record *node_ptr;
 
 	if (!resv_ptr->node_bitmap) {
-		error("reservation %s lacks a bitmap", resv_ptr->name);
+		error("maintenance reservation %s lacks a bitmap",
+		      resv_ptr->name);
 		return;
 	}
 
 	i_first = bit_ffs(resv_ptr->node_bitmap);
+	if (i_first < 0) {
+		error("maintenance reservation %s includes no nodes",
+		      resv_ptr->name);
+		return;
+	}
 	i_last  = bit_fls(resv_ptr->node_bitmap);
 	for (i=i_first; i<=i_last; i++) {
 		if (!bit_test(resv_ptr->node_bitmap, i))

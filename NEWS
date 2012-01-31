@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     Didier Gazen, Laboratoire d'Aerologie.
  -- BLUEGENE - fix for not allowing jobs if all midplanes are drained and all
     blocks are in an error state.
+ -- Avoid slurmctld abort due to bad pointer when setting an advanced
+    reservation MAINT flag if it contains no nodes (only licenses).
 
 * Changes in SLURM 2.3.3
 ========================
