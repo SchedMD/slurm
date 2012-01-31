@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
     jobacct_gather_g_getinfo() until there is data to read from the socket.
  -- Fix typo in accounting when using reservations. Patch from Alejandro
     Lucero Palau.
+ -- Fix to the multifactor priority plugin to calculate effective usage earlier
+    to give a correct priority on the first decay cycle after a restart of the
+    slurmctld. Patch from Martin Perry, Bull.
 
 * Changes in SLURM 2.3.3
 ========================
