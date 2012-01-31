@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.0.pre4
+=============================
+
 * Changes in SLURM 2.4.0.pre3
 =============================
  -- Let a job be submitted even if it exceeds a QOS limit. Job will be left
@@ -135,7 +138,6 @@ documents those changes that are of interest to users and admins.
     slurmctld. Patch from Martin Perry, Bull.
  -- Permit user root to run a job step for any job as any user. Patch from
     Didier Gazen, Laboratoire d'Aerologie.
-
 
 * Changes in SLURM 2.3.3
 ========================
