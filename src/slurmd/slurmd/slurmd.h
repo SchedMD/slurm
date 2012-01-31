@@ -111,7 +111,7 @@ typedef struct slurmd_config {
 	char         *pubkey;		/* location of job cred public key */
 	char         *epilog;		/* Path to Epilog script	   */
 	char         *prolog;		/* Path to prolog script           */
-	char         *stepd_loc;	/* Non-standard slurmstepd path    */
+	char         *stepd_loc;	/* slurmstepd path                 */
 	char         *task_prolog;	/* per-task prolog script          */
 	char         *task_epilog;	/* per-task epilog script          */
 	int           port;		/* local slurmd port               */

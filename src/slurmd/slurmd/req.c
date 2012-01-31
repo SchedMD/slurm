@@ -661,16 +661,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("close read to_slurmd in parent: %m");
 		return rc;
 	} else {
-		char slurm_stepd_path[MAXPATHLEN];
-		char *const argv[2] = { slurm_stepd_path, NULL};
+		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
 		int failed = 0;
-		if (conf->stepd_loc) {
-			snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-				 "%s", conf->stepd_loc);
-		} else {
-			snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-				 "%s/sbin/slurmstepd", SLURM_PREFIX);
-		}
 		/* inform slurmstepd about our config */
 		setenv("SLURM_CONF", conf->conffile, 1);
 
