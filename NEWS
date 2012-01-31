@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     slurmctld. Patch from Martin Perry, Bull.
  -- Permit user root to run a job step for any job as any user. Patch from
     Didier Gazen, Laboratoire d'Aerologie.
+ -- BLUEGENE - fix for not allowing jobs if all midplanes are drained and all
+    blocks are in an error state.
 
 * Changes in SLURM 2.3.3
 ========================
