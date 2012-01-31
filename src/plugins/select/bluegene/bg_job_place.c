@@ -1308,7 +1308,7 @@ static int _find_best_block_match(List block_list,
 					      block_list, &request, job_list,
 					      track_down_nodes))) {
 					if (errno == ESLURM_INTERCONNECT_FAILURE
-					    || !list_count(job_list)) {
+					    || !track_down_nodes) {
 						char *nodes;
 						if (slurmctld_conf.
 						    slurmctld_debug < 5)
