@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Fix to the multifactor priority plugin to calculate effective usage earlier
     to give a correct priority on the first decay cycle after a restart of the
     slurmctld. Patch from Martin Perry, Bull.
+ -- Permit user root to run a job step for any job as any user. Patch from
+    Didier Gazen, Laboratoire d'Aerologie.
 
 * Changes in SLURM 2.3.3
 ========================
