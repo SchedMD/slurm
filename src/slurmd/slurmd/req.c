@@ -3883,6 +3883,22 @@ run_spank_job_script (const char *mode, char **env)
 	return (status);
 }
 
+static int _run_job_script(const char *name, const char *path,
+		uint32_t jobid, int timeout, char **env)
+{
+	int status, rc;
+	/*
+	 *  Always run both spank prolog/epilog and real prolog/epilog script,
+	 *   even if spank plugins fail. (May want to alter this in the future)
+	 *   If both "script" mechanisms fail, prefer to return the "real"
+	 *   prolog/epilog status.
+	 */
+	status = run_spank_job_script(name, env);
+	if ((rc = run_script(name, path, jobid, timeout, env)))
+		status = rc;
+	return (status);
+}
+
 #ifdef HAVE_BG
 /* a slow prolog is expected on bluegene systems */
 static int
@@ -3899,7 +3915,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_unlock(&conf->config_mutex);
 	_add_job_running_prolog(jobid);
 
-	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
+	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env);
 	_remove_job_running_prolog(jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
@@ -3974,8 +3990,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
 	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
-	run_spank_job_script("prolog", my_env);
-	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
+	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env);
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
 	pthread_cond_broadcast(&timer_cond);
@@ -4014,8 +4029,7 @@ _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(jobid);
-	run_spank_job_script ("epilog", my_env);
-	error_code = run_script("epilog", my_epilog, jobid, -1, my_env);
+	error_code = _run_job_script("epilog", my_epilog, jobid, -1, my_env);
 	xfree(my_epilog);
 	_destroy_env(my_env);
 
