@@ -823,7 +823,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        modify account     - (set options) DefaultQOS=, Description=,       \n\
                             Fairshare=, GrpCPUMins=, GrpCPURunMins=,       \n\
                             GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
-                            GrpWall=, MaxCPUMins=, MaxCPUs=,               \n\
+                            GrpWall=, MaxCPUMins=, MaxCPURunMins=, MaxCPUs=,\n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Organization=, Parent=, and QosLevel=  \n\
                             RawUsage= (with admin privileges only)         \n\
@@ -874,11 +874,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        modify qos         - (set options) Description=, Flags=, GraceTime=,\n\
                             GrpCPUMins=, GrpCPURunMins=, GrpCPUs=,         \n\
                             GrpJobs=, GrpNodes=, GrpSubmitJob=, GrpWall=,  \n\
-                            MaxCPUMins=, MaxCPUs=, MaxCPUsPerUser=,        \n\
-                            MaxJobs=, MaxNodes=, MaxNodesPerUser=,         \n\
-                            MaxSubmitJobs=, MaxWall=, Names=, Preempt=,    \n\
-                            PreemptMode=, Priority=, UsageFactor=,         \n\
-                            and UsageThreshold=                            \n\
+                            MaxCPUMins=, MaxCPURunMins=, MaxCPUs=,         \n\
+                            MaxCPUsPerUser=, MaxJobs=, MaxNodes=,          \n\
+                            MaxNodesPerUser=, MaxSubmitJobs=, MaxWall=,    \n\
+                            Names=, Preempt=, PreemptMode=, Priority=,     \n\
+                            UsageFactor=, and UsageThreshold=              \n\
                             (where options) Descriptions=, ID=, Names=     \n\
                             and PreemptMode=                               \n\
        delete qos         - Descriptions=, ID=, Names=, and PreemptMode=   \n\
@@ -927,8 +927,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        Association        - Account, Cluster, DefaultQOS, Fairshare,       \n\
                             GrpCPUMins, GrpCPURunMins, GrpCPUs, GrpJobs,   \n\
                             GrpNodes, GrpSubmitJob, GrpWall, ID, LFT,      \n\
-                            MaxCPUMins, MaxCPUs, MaxJobs, MaxNodes,        \n\
-                            MaxSubmitJobs, MaxWall, QOS, ParentID,         \n\
+                            MaxCPUMins, MaxCPURunMins, MaxCPUs, MaxJobs,   \n\
+                            MaxNodes, MaxSubmitJobs, MaxWall, QOS, ParentID,\n\
                             ParentName, Partition, RawQOS, RGT, User       \n\
                                                                            \n\
        Cluster            - Classification, Cluster, ClusterNodes,         \n\
@@ -944,9 +944,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        QOS                - Description, Flags, GraceTime, GrpCPUMins,     \n\
                             GrpCPURunMins, GrpCPUs, GrpJobs, GrpNodes,     \n\
-                            GrpSubmitJob, GrpWall, ID, MaxCPUMins, MaxCPUs,\n\
-                            MaxCPUsPerUser, MaxJobs, MaxNodes,             \n\
-                            MaxNodesPerUser, MaxSubmitJobs, MaxWall, Name, \n\
+                            GrpSubmitJob, GrpWall, ID, MaxCPUMins,         \n\
+                            MaxCPURunMins, MaxCPUs, MaxCPUsPerUser,        \n\
+                            MaxJobs, MaxNodes, MaxNodesPerUser,            \n\
+                            MaxSubmitJobs, MaxWall, Name,                  \n\
                             Preempt, PreemptMode, Priority, UsageFactor,   \n\
                             UsageThreshold                                 \n\
                                                                            \n\
