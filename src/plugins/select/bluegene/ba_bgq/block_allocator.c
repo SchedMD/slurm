@@ -786,10 +786,9 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			xassert(ba_mp);
 
 			for (dim=0; dim<cluster_dims; dim++) {
-				if (_mp_used(ba_mp, dim)) {
-					info("need to try again");
+				if (_mp_used(ba_mp, dim))
 					goto try_again;
-				}
+
 				if (ba_geo_table->geometry[dim] == 1) {
 					/* Always check MESH here since we
 					 * only care about the IN/OUT ports.
