@@ -38,6 +38,8 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
+set job_name1    "job1"
+set job_name2    "job2"
 
 print_header $test_id
 
@@ -53,7 +55,7 @@ if { [test_bluegene] } {
 #
 # Submit a couple of job so we have something to look at
 #
-set sbatch_pid [spawn $sbatch -N$node_cnt --output=/dev/null --error=/dev/null -t5 $file_in]
+set sbatch_pid [spawn $sbatch -N$node_cnt -J$job_name1 --output=/dev/null --error=/dev/null -t5 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -73,7 +75,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set sbatch_pid [spawn $sbatch -N$node_cnt --output=/dev/null --error=/dev/null --hold -t5 $file_in]
+set sbatch_pid [spawn $sbatch -N$node_cnt -J$job_name2 --output=/dev/null --error=/dev/null --hold -t5 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
@@ -341,11 +343,69 @@ if {[test_cray] == 0 && $job_found == 0} {
 	set exit_code 1
 }
 
+#
+# Filters the name associated with the job
+#
+set job_found 0
+spawn $squeue --format=%i --name $job_name1
+expect {
+	-re "($number)" {
+		set tmp_id $expect_out(1,string)
+		if {$tmp_id == $job_id1} {
+			set job_found 1
+		} else {
+			send_user "\nFAILURE: squeue reported invalid job_id ($tmp_id != $job_name1)\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_found == 0} {
+	send_user "\nFAILURE: squeue failed to locate desired job\n"
+	set exit_code 1
+}
+
+set job_found 0
+spawn $squeue --format=%i --name $job_name2
+expect {
+	-re "($number)" {
+		set tmp_id $expect_out(1,string)
+		if {$tmp_id == $job_id2} {
+			set job_found 1
+		} else {
+			send_user "\nFAILURE: squeue reported invalid job_id ($tmp_id != $job_name2)\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_found == 0} {
+	send_user "\nFAILURE: squeue failed to locate desired job\n"
+	set exit_code 1
+}
+
+#
+# Cancel jobs and remove files
+#
 cancel_job $job_id2
 cancel_job $job_id1
-exec $bin_rm -f $file_in
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in
 }
 exit $exit_code
 
