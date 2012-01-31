@@ -1029,7 +1029,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		    ((job_ptr->details->req_node_bitmap == NULL) ||
 		     (bit_super_set(job_ptr->details->req_node_bitmap,
 					total_bitmap)))) {
-			if (!runable_avail) {
+			avail_nodes = bit_set_count(avail_bitmap);
+			if (!runable_avail && (avail_nodes >= min_nodes)) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = bit_copy(total_bitmap);
 				if (avail_bitmap == NULL)
