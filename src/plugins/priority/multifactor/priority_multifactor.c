@@ -999,6 +999,12 @@ static void *_decay_thread(void *no_data)
 			}
 		}
 
+		/* now calculate all the normalized usage here */
+		assoc_mgr_lock(&locks);
+		_set_children_usage_efctv(
+			assoc_mgr_root_assoc->usage->childern_list);
+		assoc_mgr_unlock(&locks);
+
 		if (!last_ran)
 			goto get_usage;
 		else
@@ -1052,12 +1058,6 @@ static void *_decay_thread(void *no_data)
 		unlock_slurmctld(job_write_lock);
 
 	get_usage:
-		/* now calculate all the normalized usage here */
-		assoc_mgr_lock(&locks);
-		_set_children_usage_efctv(
-			assoc_mgr_root_assoc->usage->childern_list);
-		assoc_mgr_unlock(&locks);
-
 		last_ran = start_time;
 
 		_write_last_decay_ran(last_ran, last_reset);
