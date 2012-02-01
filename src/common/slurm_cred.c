@@ -1317,7 +1317,7 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->jobid);
-		error("Host %s not in hostlist %s",
+		error("Host %s not in credential hostlist %s",
 		      node_name, cred->job_hostlist);
 		hostset_destroy(hset);
 		return;
