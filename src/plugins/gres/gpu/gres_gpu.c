@@ -109,7 +109,7 @@ const uint32_t	plugin_version		= 100;
 
 static char	gres_name[]		= "gpu";
 
-static int *gpu_devices;
+static int *gpu_devices = NULL;
 static int nb_available_files;
 
 /*
@@ -199,7 +199,10 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			xstrfmtcat(dev_list, "%d", i);
+			if (gpu_devices && (gpu_devices[i] >= 0))
+				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
+			else
+				xstrfmtcat(dev_list, "%d", i);
 		}
 	}
 	if (dev_list) {
@@ -236,7 +239,10 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			xstrfmtcat(dev_list, "%d", i);
+			if (gpu_devices && (gpu_devices[i] >= 0))
+				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
+			else
+				xstrfmtcat(dev_list, "%d", i);
 		}
 	}
 	if (dev_list) {
