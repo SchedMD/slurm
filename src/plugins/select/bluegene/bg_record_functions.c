@@ -1525,7 +1525,7 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		error("Hey we are here with no jobs and we have only "
 		      "%d usuable cpus.  We should have %d!",
 		      num_unused_cpus, num_possible_unused_cpus);
-		xassert(0);
+		//xassert(0);
 		num_unused_cpus = num_possible_unused_cpus;
 	}
 
