@@ -142,6 +142,7 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
 #endif
 
+	xfree(job_ptr->batch_host);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
@@ -152,7 +153,7 @@ extern void allocate_nodes(struct job_record *job_ptr)
 			if (IS_NODE_POWER_SAVE(node_ptr))
 				has_cloud_power_save = true;
 		}
-		make_node_alloc(&node_record_table_ptr[i], job_ptr);
+		make_node_alloc(node_ptr, job_ptr);
 		if (job_ptr->batch_host == NULL)
 			job_ptr->batch_host = xstrdup(node_ptr->name);
 	}

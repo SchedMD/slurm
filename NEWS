@@ -142,6 +142,8 @@ documents those changes that are of interest to users and admins.
     blocks are in an error state.
  -- Avoid slurmctld abort due to bad pointer when setting an advanced
     reservation MAINT flag if it contains no nodes (only licenses).
+ -- Fix bug when requeued batch job is scheduled to run on a different node
+    zero, but attemts job launch on old node zero.
 
 * Changes in SLURM 2.3.3
 ========================
