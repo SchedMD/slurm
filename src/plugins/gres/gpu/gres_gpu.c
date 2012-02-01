@@ -109,6 +109,9 @@ const uint32_t	plugin_version		= 100;
 
 static char	gres_name[]		= "gpu";
 
+static int *gpu_devices;
+static int nb_available_files;
+
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
@@ -116,16 +119,50 @@ static char	gres_name[]		= "gpu";
  */
 extern int node_config_load(List gres_conf_list)
 {
-	int rc = SLURM_ERROR;
+	int i, rc = SLURM_ERROR;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
+	int nb_gpu = 0;	/* Number of GPUs in the list */
+	int available_files_index = 0;
 
 	xassert(gres_conf_list);
 	iter = list_iterator_create(gres_conf_list);
 	if (iter == NULL)
 		fatal("list_iterator_create: malloc failure");
+
+	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
 		if (strcmp(gres_slurmd_conf->name, gres_name) == 0) {
+			nb_gpu++;
+		}
+	}
+	list_iterator_destroy(iter);
+	gpu_devices = NULL;
+	nb_available_files = -1;
+
+	/* (Re-)Allocate memory if number of files changed */
+	if (nb_gpu != nb_available_files) {
+		xfree(gpu_devices);	/* No-op if NULL */
+		gpu_devices = (int *) xmalloc(nb_gpu);
+		nb_available_files = nb_gpu;
+		for (i = 0; i < nb_available_files; i++)
+			gpu_devices[i] = -1;
+	}
+
+	iter = list_iterator_create(gres_conf_list);
+	while ((gres_slurmd_conf = list_next(iter))) {
+		if (strcmp(gres_slurmd_conf->name, gres_name) == 0) {
+			/* Populate gpu_devices array with number
+			 * at end of the file name */
+			for (i = 0; gres_slurmd_conf->file[i]; i++) {
+				if (!isdigit(gres_slurmd_conf->file[i]))
+					continue;
+				gpu_devices[available_files_index] =
+					atoi(gres_slurmd_conf->file + i);
+				break;
+			}
+			available_files_index++;
+
 			rc = SLURM_SUCCESS;
 		}
 	}
@@ -133,6 +170,10 @@ extern int node_config_load(List gres_conf_list)
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
+
+	for (i = 0; i < nb_available_files; i++)
+		info("gpu %d is device number %d", i, gpu_devices[i]);
+
 	return rc;
 }
 
