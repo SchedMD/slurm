@@ -129,6 +129,7 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 extern void allocate_nodes(struct job_record *job_ptr)
 {
 	int i;
+	struct node_record *node_ptr;
 
 #ifdef HAVE_FRONT_END
 	job_ptr->front_end_ptr = assign_front_end();
@@ -138,13 +139,13 @@ extern void allocate_nodes(struct job_record *job_ptr)
 #endif
 
 	xfree(job_ptr->batch_host);
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
-		make_node_alloc(&node_record_table_ptr[i], job_ptr);
-		if (job_ptr->batch_host)
-			continue;
-		job_ptr->batch_host = xstrdup(node_record_table_ptr[i].name);
+		make_node_alloc(node_ptr, job_ptr);
+		if (!job_ptr->batch_host)
+			job_ptr->batch_host = xstrdup(node_ptr->name);
 	}
 	last_node_update = time(NULL);
 
