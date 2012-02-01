@@ -137,6 +137,7 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
 #endif
 
+	xfree(job_ptr->batch_host);
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
