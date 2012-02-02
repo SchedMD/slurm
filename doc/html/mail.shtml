@@ -3,20 +3,22 @@
 <h1>Mailing Lists</h1>
 <p>We maintain two SLURM mailing lists:</p>
 <ul>
-<li><b>slurm-announce</b> is designated for communications about SLURM releases
+<li><b>slurm-announce@schedmd.com</b> is designated for communications about SLURM releases
 [low traffic].</li>
-<li><b>slurm-dev</b> is designated for communications to SLURM developers
+<li><b>slurm-dev@schedmd.com</b> is designated for communications to SLURM developers
 [high traffic at times].</li>
 </ul>
-<p>To subscribe to either list, send a message to
-<a href="mailto:majordomo@lists.llnl.gov">majordomo@lists.llnl.gov</a> with the body of the
-message containing the word "subscribe" followed by the list name and your e-mail address
-(if not the sender). For example: <br>
-<i>subscribe slurm-announce bob@yahoo.com</i></p>
+<p>To subscribe to either list, vist the link below, sign up and get involved!<p>
+<a href="http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list">http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list</a><p>
+You can likewise unsubscribe for either list at the same link.
+<p>
+NOTE: If you were on the old slurm-dev@lists.llnl.gov list you were
+automatically migrated into the new list.
+</p>
 
 The archive of the <b>slurm-dev</b> list is located here:<br>
-<a href="http://groups.google.com/group/slurm-devel">groups.google.com/group/slurm-devel</a>.
+<a href="http://groups.google.com/group/slurm-devel">http://groups.google.com/group/slurm-devel</a>.
 
-<p style="text-align:center;">Last modified 13 November 2009</p>
+<p style="text-align:center;">Last modified 2 February 2012</p>
 
 <!--#include virtual="footer.txt"-->
