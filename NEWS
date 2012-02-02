@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     reservation MAINT flag if it contains no nodes (only licenses).
  -- Fix bug when requeued batch job is scheduled to run on a different node
     zero, but attemts job launch on old node zero.
+ -- Fix bug in step task distribution when nodes are not configured in numeric
+    order. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.3.3
 ========================
