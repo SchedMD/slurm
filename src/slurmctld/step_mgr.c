@@ -1922,7 +1922,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		xfree(step_specs->node_list);
 		step_specs->node_list = bitmap2node_name(nodeset);
 	} else {
-		step_node_list = bitmap2node_name(nodeset);
+		step_node_list = bitmap2node_name_sortable(nodeset, false);
 		xfree(step_specs->node_list);
 		step_specs->node_list = xstrdup(step_node_list);
 	}
