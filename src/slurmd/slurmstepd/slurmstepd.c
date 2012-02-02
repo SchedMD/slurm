@@ -244,10 +244,9 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(len);
 	safe_read(sock, incoming_buffer, len);
-	buffer = create_buf(incoming_buffer,len);
-	if(unpack_slurmd_conf_lite_no_alloc(conf, buffer) == SLURM_ERROR) {
+	buffer = create_buf(incoming_buffer, len);
+	if (unpack_slurmd_conf_lite_no_alloc(conf, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
-	}
 	free_buf(buffer);
 
 	conf->log_opts.stderr_level = conf->debug_level;
@@ -285,21 +284,20 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
 	cli = xmalloc(sizeof(slurm_addr_t));
-	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR) {
+	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
-	}
 	free_buf(buffer);
 
 	/* receive self from slurmd */
 	safe_read(sock, &len, sizeof(int));
-	if(len > 0) {
+	if (len > 0) {
 		/* receive packed self from main slurmd */
 		incoming_buffer = xmalloc(sizeof(char) * len);
 		safe_read(sock, incoming_buffer, len);
 		buffer = create_buf(incoming_buffer,len);
 		self = xmalloc(sizeof(slurm_addr_t));
-		if(slurm_unpack_slurm_addr_no_alloc(self, buffer)
-		   == SLURM_ERROR) {
+		if (slurm_unpack_slurm_addr_no_alloc(self, buffer)
+		    == SLURM_ERROR) {
 			fatal("slurmstepd: problem with unpack of "
 			      "slurmd_conf");
 		}
