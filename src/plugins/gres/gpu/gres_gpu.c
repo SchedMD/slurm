@@ -105,7 +105,7 @@
  */
 const char	plugin_name[]		= "Gres GPU plugin";
 const char	plugin_type[]		= "gres/gpu";
-const uint32_t	plugin_version		= 100;
+const uint32_t	plugin_version		= 110;
 
 static char	gres_name[]		= "gpu";
 
@@ -255,4 +255,31 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
 		      "no device files configured");
 	}
+}
+
+/* Send GRES information to slurmstepd on the specified file descriptor*/
+extern void send_stepd(int fd)
+{
+	int i;
+
+	safe_write(fd, &nb_available_files, sizeof(int));
+	for (i = 0; i < nb_available_files; i++)
+		safe_write(fd, &gpu_devices[i], sizeof(int));
+	return;
+
+rwfail:	error("gres_plugin_send_stepd failed");
+}
+
+/* Receive GRES information from slurmd on the specified file descriptor*/
+extern void recv_stepd(int fd)
+{
+	int i;
+
+	safe_read(fd, &nb_available_files, sizeof(int));
+	gpu_devices = xmalloc(sizeof(int) * nb_available_files);
+	for (i = 0; i < nb_available_files; i++)
+		safe_read(fd, &gpu_devices[i], sizeof(int));
+	return;
+
+rwfail:	error("gres_plugin_recv_stepd failed");
 }

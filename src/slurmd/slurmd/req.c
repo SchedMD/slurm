@@ -497,6 +497,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		safe_write(fd, &len, sizeof(int));
 	}
 
+	/* Send GRES information to slurmstepd */
+	gres_plugin_send_stepd(fd);
+
 	/* send req over to slurmstepd */
 	switch(type) {
 	case LAUNCH_BATCH_JOB:

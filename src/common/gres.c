@@ -91,6 +91,8 @@ typedef struct slurm_gres_ops {
 						  void *gres_ptr );
 	void		(*step_set_env)		( char ***job_env_ptr,
 						  void *gres_ptr );
+	void		(*send_stepd)		( int fd );
+	void		(*recv_stepd)		( int fd );
 } slurm_gres_ops_t;
 
 /* Gres plugin context, one for each gres type */
@@ -239,6 +241,8 @@ static int _load_gres_plugin(char *plugin_name,
 		"node_config_load",
 		"job_set_env",
 		"step_set_env",
+		"send_stepd",
+		"recv_stepd",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -4488,3 +4492,36 @@ extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
+/* Send GRES information to slurmstepd on the specified file descriptor*/
+extern void gres_plugin_send_stepd(int fd)
+{
+	int i;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (i = 0; i < gres_context_cnt; i++) {
+		if (gres_context[i].ops.send_stepd == NULL)
+			continue;	/* No plugin to call */
+		(*(gres_context[i].ops.send_stepd)) (fd);
+		break;
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/* Receive GRES information from slurmd on the specified file descriptor*/
+extern void gres_plugin_recv_stepd(int fd)
+{
+	int i;
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (i = 0; i < gres_context_cnt; i++) {
+		if (gres_context[i].ops.recv_stepd == NULL)
+			continue;	/* No plugin to call */
+		(*(gres_context[i].ops.recv_stepd)) (fd);
+		break;
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+}

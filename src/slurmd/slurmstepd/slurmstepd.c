@@ -304,6 +304,9 @@ _init_from_slurmd(int sock, char **argv,
 		free_buf(buffer);
 	}
 
+	/* Receive GRES information from slurmd */
+	gres_plugin_recv_stepd(sock);
+
 	/* receive req from slurmd */
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(sizeof(char) * len);

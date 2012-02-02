@@ -103,7 +103,7 @@
  */
 const char	plugin_name[]		= "Gres NIC plugin";
 const char	plugin_type[]		= "gres/nic";
-const uint32_t	plugin_version		= 100;
+const uint32_t	plugin_version		= 110;
 
 static char	gres_name[]		= "nic";
 
@@ -148,6 +148,18 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
  * upon the job step's GRES state.
  */
 extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
+{
+	/* EMPTY */
+}
+
+/* Send GRES information to slurmstepd on the specified file descriptor*/
+extern void send_stepd(int fd)
+{
+	/* EMPTY */
+}
+
+/* Receive GRES information from slurmd on the specified file descriptor*/
+extern void recv_stepd(int fd)
 {
 	/* EMPTY */
 }

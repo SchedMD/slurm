@@ -3,6 +3,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
+ -- Add logic to cache GPU file information (bitmap index mapping to device
+    file number) in the slurmd daemon and transfer that information to the
+    slurmstepd whenever a job step is initiated. This is needed to set the
+    appropriate CUDA_VISIBLE_DEVICES environment variable value when the
+    devices are not in strict numeric order (e.g. some GPUs are skipped).
+    Based upon work by Nicolas Bigaouette.
 
 * Changes in SLURM 2.4.0.pre3
 =============================

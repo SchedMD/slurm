@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM generic resource plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
-their own SLURM job submit plugins. This is version 100 of the API.
+their own SLURM job submit plugins. This is version 110 of the API.
 
 <p>SLURM generic resource plugins must conform to the
 SLURM Plugin API with the following specifications:
@@ -31,7 +31,7 @@ for the type of accounting package.</p>
 <p><span class="commandline">const uint32_t
 plugin_version="<i>version_number</i>"</span><br>
 <p style="margin-left:.2in">
-The version number should be 100.</p>
+The version number should be 110.</p>
 
 <p>We include samples in the SLURM distribution for
 <ul>
@@ -86,11 +86,29 @@ based upon GRES state information in that credential.
 <span class="commandline">gres_ptr</span>
 (input) pointer to the step's GRES allocation information.<br>
 
+<p class="commandline">
+extern void send_stepd(int fd)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the <i>slurmd</i> daemon to send any needed
+information to the <i>slurmstepd</i> step shepherd.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">fd</span>
+(input) file descriptor to write information to.<br>
+
+<p class="commandline">
+extern void recv_stepd(int fd)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the <i>slurmstepd</i> step shepherd to read any
+needed information from the <i>slurmd</i> daemon.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">fd</span>
+(input) file descriptor to read information from.<br>
+
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM Generic Resource API.
+<p> This document describes version 110 of the SLURM Generic Resource API.
 Future releases of SLURM may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 27 August 2010</p>
+<p style="text-align:center;">Last modified 1 February 2012</p>
 
 <!--#include virtual="footer.txt"-->

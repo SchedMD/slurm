@@ -200,6 +200,12 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 					int *gres_count);
 
+/* Send GRES information to slurmstepd on the specified file descriptor*/
+extern void gres_plugin_send_stepd(int fd);
+
+/* Receive GRES information from slurmd on the specified file descriptor*/
+extern void gres_plugin_recv_stepd(int fd);
+
 /*
  **************************************************************************
  *                 PLUGIN CALLS FOR SLURMCTLD DAEMON                      *
