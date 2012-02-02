@@ -301,7 +301,7 @@ Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIaliases\fP, \fIconfig\fP, \fIdaemons\fP, \fIfrontend\fP,
 \fIjob\fP, \fInode\fP, \fIpartition\fP, \fIreservation\fP, \fIslurmd\fP,
 \fIstep\fP, \fItopology\fP, \fIhostlist\fP or \fIhostnames\fP
-(also \fIblock\fP or \fIsubbp\fP on BlueGene systems).
+(also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified
 entity: the configuration parameter name, job ID, node name, partition name,
 reservation name, or job step ID for \fIconfig\fP, \fIjob\fP, \fInode\fP,
@@ -1200,9 +1200,11 @@ running job on the block!  On dynamically laid out systems REMOVE will
 free and remove the block from the system.  If the block is smaller
 than a midplane every block on that midplane will be removed.
 .TP
-\fISubBPName\fP=<name>
+\fISubMPName\fP=<name>
 Identify the bluegene ionodes to be updated (i.e. bg000[0\-3]). This
 specification is required.
+NOTE: Even on BGQ where node names are given in bg0000[00000] format
+this option takes an ionode name bg0000[0].
 .TP
 
 .SH "ENVIRONMENT VARIABLES"

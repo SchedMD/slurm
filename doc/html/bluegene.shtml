@@ -481,7 +481,11 @@ Recreate, Remove, Resume.
 <p>Alternatively, if only part of a midplane needs to be put
 into an error state which isn't already in a block of the size you
 need, you can set a collection of IO nodes into an error state using
-<i>scontrol</i> (i.e. "<i>scontrol update submpname=bg000[0-3] state=error</i>").
+<i>scontrol</i> (i.e. "<i>scontrol update submpname=bg000[0-3]
+  state=error</i>").
+NOTE: Even on BGQ where node names are given in bg0000[00000] format
+this option takes an ionode name bg0000[0].
+
 This will end any job on the nodes listed, create a block there, and set
 the state of the block to ERROR making it so no job will run on the
 block.  Then resume the block when it is ready to be used again (i.e.
