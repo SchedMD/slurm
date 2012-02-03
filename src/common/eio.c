@@ -197,7 +197,8 @@ cleanup:
 int eio_signal_shutdown(eio_handle_t *eio)
 {
 	char c = 1;
-	if (write(eio->fds[1], &c, sizeof(char)) != 1)
+
+	if (eio && (write(eio->fds[1], &c, sizeof(char)) != 1))
 		return error("eio_handle_signal_shutdown: write; %m");
 	return 0;
 }
