@@ -25,6 +25,9 @@ documents those changes that are of interest to users and admins.
  -- Fix for srun allocating running within existing allocation with --exclude
     option and --nnodes count small enough to remove more nodes. Patch from
     Phil Eckert, LLNL.
+ -- Work around to handle certain combinations of glibc/kernel
+    (i.e. glibc-2.14/Linux-3.1) to correctly open the pty of the slurmstepd
+    as the job user. Patch from Mark Grondona, LLNL.
 
 * Changes in SLURM 2.3.3
 ========================
