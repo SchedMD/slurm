@@ -152,6 +152,9 @@ documents those changes that are of interest to users and admins.
     zero, but attemts job launch on old node zero.
  -- Fix bug in step task distribution when nodes are not configured in numeric
     order. Patch from Hongjia Cao, NUDT.
+ -- Fix for srun allocating running within existing allocation with --exclude
+    option and --nnodes count small enough to remove more nodes. Patch from
+    Phil Eckert, LLNL.
 
 * Changes in SLURM 2.3.3
 ========================
