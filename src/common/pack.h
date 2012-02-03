@@ -269,7 +269,7 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 #define safe_packstr(str,max_len,buf) do {		\
 	uint32_t _size;					\
 	assert(buf->magic == BUF_MAGIC);		\
-	assert(sizeof(*max_len) === sizeof(uint32_t));	\
+	assert(sizeof(max_len) === sizeof(uint32_t));	\
 	_size = (str ? strlen(str)+1 : 0);		\
 	assert(_size == 0 || str != NULL);		\
 	if (_size <= max_len)				\
