@@ -85,7 +85,7 @@ _build_path(char* fname)
 	}
 
 	/* check if already absolute path */
-	if (file_name[0] == '/')
+	if ((file_name[0] == '/') || (file_name[0] == '.'))
 		return file_name;
 
 	/* search for the file using PATH environment variable */
