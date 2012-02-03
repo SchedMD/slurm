@@ -247,9 +247,9 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		} else {
 			if (count > ai->nnodes) {
 				/* remove more nodes than needed for
-				   allocation */
-				int i=0;
-				for (i=count; i>ai->nnodes; i--)
+				 * allocation */
+				int i;
+				for (i = count; i >= ai->nnodes; i--)
 					hostlist_delete_nth(hl, i);
 			}
 			xfree(opt.nodelist);
