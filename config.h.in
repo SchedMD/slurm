@@ -66,6 +66,9 @@
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
+/* Define to 1 if you have the `setresuid' function. */
+#undef HAVE_SETRESUID
+
 /* Define to 1 for Cray XT/XE systems */
 #undef HAVE_CRAY
 

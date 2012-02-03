@@ -183,6 +183,7 @@ AC_CHECK_FUNCS( \
    setproctitle \
    sysctlbyname \
    cfmakeraw \
+   setresuid \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
