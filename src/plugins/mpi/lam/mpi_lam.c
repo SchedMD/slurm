@@ -48,6 +48,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/plugins/mpi/lam/lam.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -79,6 +80,12 @@
 const char plugin_name[]        = "mpi LAM plugin";
 const char plugin_type[]        = "mpi/lam";
 const uint32_t plugin_version   = 100;
+
+int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env)
+{
+	debug("mpi/lam: slurmstepd prefork");
+	return SLURM_SUCCESS;
+}
 
 int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
 			       char ***env)

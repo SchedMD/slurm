@@ -989,6 +989,14 @@ job_manager(slurmd_job_t *job)
 		goto fail2;
 	}
 
+	/* fork necessary threads for MPI */
+	if (mpi_hook_slurmstepd_prefork(job, &job->env) != SLURM_SUCCESS) {
+		error("Failed mpi_hook_slurmstepd_prefork");
+		rc = SLURM_FAILURE;
+		io_close_task_fds(job);
+		goto fail2;
+	}
+	
 	/* calls pam_setup() and requires pam_finish() if successful */
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");

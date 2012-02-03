@@ -50,6 +50,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/mpi.h"
 #include "src/common/env.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -81,6 +82,12 @@
 const char plugin_name[]        = "OpenMPI plugin";
 const char plugin_type[]        = "mpi/openmpi";
 const uint32_t plugin_version   = 100;
+
+int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env)
+{
+	debug("mpi/openmpi: slurmstepd prefork");
+	return SLURM_SUCCESS;
+}
 
 int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
 			       char ***env)

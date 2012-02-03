@@ -46,6 +46,8 @@
 #include <stdbool.h>
 #include "slurm/slurm.h"
 
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
 typedef struct slurm_mpi_context *slurm_mpi_context_t;
 typedef void mpi_plugin_client_state_t;
 
@@ -102,6 +104,9 @@ int mpi_hook_slurmstepd_init (char ***env);
  * the src/common/env.c:env_array_* functions.
  */
 int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env);
+
+
+int mpi_hook_slurmstepd_prefork (const slurmd_job_t *job, char ***env);
 
 /**********************************************************************
  * Hooks called by client applications.

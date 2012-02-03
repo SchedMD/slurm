@@ -55,6 +55,7 @@
 #include "src/common/net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -103,7 +104,13 @@ static pthread_mutex_t shutdown_lock;
 static pthread_cond_t  shutdown_cond;
 
 
-int p_mpi_hook_slurmstepd_task (const mpi_plugin_client_info_t *job,
+int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env)
+{
+	debug("mpi/mpich1_p4: slurmstepd prefork");
+	return SLURM_SUCCESS;
+}
+
+int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 				char ***env)
 {
 	char *nodelist, *task_cnt;

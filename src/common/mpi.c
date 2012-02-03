@@ -51,7 +51,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-
 /*
  * WARNING:  Do not change the order of these fields or add additional
  * fields at the beginning of the structure.  If you do, MPI plugins
@@ -59,6 +58,8 @@
  * at the end of the structure.
  */
 typedef struct slurm_mpi_ops {
+	int          (*slurmstepd_prefork)(const slurmd_job_t *job,
+					   char ***env);
 	int          (*slurmstepd_init)   (const mpi_plugin_task_info_t *job,
 					   char ***env);
 	mpi_plugin_client_state_t *
@@ -142,6 +143,7 @@ _slurm_mpi_get_ops( slurm_mpi_context_t c )
 	 * declared for slurm_mpi_ops_t.
 	 */
 	static const char *syms[] = {
+		"p_mpi_hook_slurmstepd_prefork",
 		"p_mpi_hook_slurmstepd_task",
 		"p_mpi_hook_client_prelaunch",
 		"p_mpi_hook_client_single_task_per_node",
@@ -263,6 +265,14 @@ int mpi_hook_slurmstepd_init (char ***env)
 	unsetenvp (*env, "SLURM_MPI_TYPE");
 
 	return SLURM_SUCCESS;
+}
+
+int mpi_hook_slurmstepd_prefork (const slurmd_job_t *job, char ***env)
+{
+	if (mpi_hook_slurmstepd_init(env) == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.slurmstepd_prefork))(job, env);
 }
 
 int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)

@@ -42,6 +42,12 @@ slurmd daemon runs
 <br>
 which will set configure the slurmd to use the correct mpi as well to interact with the srun.
 <br>
+slurmstepd process runs
+<br>
+<i>p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env);</i>
+<br>
+which executes immediately before fork/exec of tasks.
+<br>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -84,6 +90,17 @@ can run at the same time </p>
 <p style="margin-left:.2in"><b>Returns</b>: false if multiple tasks can run and true if only
 a single task can run at one time.</p>
 
+<p class="commandline">int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env);</p>
+<p style="margin-left:.2in"><b>Description</b>: Used by slurmstepd process immediately prior
+to fork and exec of user tasks.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job</span>&nbsp;&nbsp;&nbsp;(input)
+Pointer to the slurmd sturcture for the job that is running.<br>
+<span class="commandline"> env</span>&nbsp;&nbsp;&nbsp;(input)
+Environment variables for tasks to be spawned.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return -1.</p>
+
 <p class="commandline">int mpi_p_exit();</p>
 <p style="margin-left:.2in"><b>Description</b>: Cleans up anything that needs cleaning up after
 execution.</p>
@@ -104,6 +121,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 April 2006</p>
+<p style="text-align:center;">Last modified 3 February 2012</p>
 
 <!--#include virtual="footer.txt"-->
