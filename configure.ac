@@ -545,6 +545,7 @@ AC_CONFIG_FILES([Makefile
 		 doc/man/man8/Makefile
 		 doc/html/Makefile
 		 doc/html/configurator.html
+		 doc/html/configurator.easy.html
 		 testsuite/Makefile
 		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile

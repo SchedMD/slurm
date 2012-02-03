@@ -82,6 +82,7 @@ html_DATA = \
 	bull.jpg \
 	coding_style.pdf \
 	configurator.html \
+	configurator.easy.html \
 	entities.gif \
 	example_usage.gif \
 	linuxstyles.css \

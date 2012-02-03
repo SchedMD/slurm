@@ -26,7 +26,8 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <ul>
 <li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
 <li><a href="accounting.html">Accounting</a></li>
-<li><a href="configurator.html">Configuration Tool</a></li>
+<li><a href="configurator.html">Configuration Tool (Full version)</a></li>
+<li><a href="configurator.easy.html">Configuration Tool (Simplified version)</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
@@ -94,6 +95,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 October 2011</p>
+<p style="text-align:center;">Last modified 2 February 2012</p>
 
 <!--#include virtual="footer.txt"-->

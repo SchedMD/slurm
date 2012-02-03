@@ -37,6 +37,7 @@ host_triplet = @host@
 target_triplet = @target@
 subdir = doc/html
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/configurator.easy.html.in \
 	$(srcdir)/configurator.html.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -80,7 +81,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
-CONFIG_CLEAN_FILES = configurator.html
+CONFIG_CLEAN_FILES = configurator.html configurator.easy.html
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -389,6 +390,7 @@ html_DATA = \
 	bull.jpg \
 	coding_style.pdf \
 	configurator.html \
+	configurator.easy.html \
 	entities.gif \
 	example_usage.gif \
 	linuxstyles.css \
@@ -447,6 +449,8 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 configurator.html: $(top_builddir)/config.status $(srcdir)/configurator.html.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+configurator.easy.html: $(top_builddir)/config.status $(srcdir)/configurator.easy.html.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
 mostlyclean-libtool:
