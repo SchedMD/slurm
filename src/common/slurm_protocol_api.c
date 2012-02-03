@@ -3648,6 +3648,50 @@ static void _print_data(char *data, int len)
 
 #endif
 
+/*
+ * slurm_forward_data - forward arbitrary data to unix domain sockets on nodes
+ * IN nodelist: nodes to forward data to
+ * IN address: address of unix domain socket
+ * IN len: length of data
+ * IN data: real data
+ * RET: error code
+ */
+extern int
+slurm_forward_data(char *nodelist, char *address, uint32_t len, char *data)
+{
+	List ret_list = NULL;
+	int temp_rc = 0, rc = 0;
+	ret_data_info_t *ret_data_info = NULL;
+	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+	forward_data_msg_t req;
+
+	slurm_msg_t_init(msg);
+
+	debug("slurm_forward_data: nodelist=%s, address=%s, len=%u",
+	      nodelist, address, len);
+	req.address = address;
+	req.len = len;
+	req.data = data;
+
+	msg->msg_type = REQUEST_FORWARD_DATA;
+	msg->data = &req;
+
+	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
+		while ((ret_data_info = list_pop(ret_list))) {
+			temp_rc = slurm_get_return_code(ret_data_info->type,
+							ret_data_info->data);
+			if (temp_rc)
+				rc = temp_rc;
+		}
+	} else {
+		error("slurm_forward_data: no list was returned");
+		rc = SLURM_ERROR;
+	}
+
+	slurm_free_msg(msg);
+	return rc;
+}
+
 
 /*
  * vi: shiftwidth=8 tabstop=8 expandtab

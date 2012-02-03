@@ -284,7 +284,8 @@ typedef enum {
 	RESPONSE_SLURMD_STATUS,
 	RESPONSE_SLURMCTLD_STATUS,
 	REQUEST_JOB_STEP_PIDS,
-        RESPONSE_JOB_STEP_PIDS,
+	RESPONSE_JOB_STEP_PIDS,
+	REQUEST_FORWARD_DATA,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -900,6 +901,12 @@ typedef struct will_run_response_msg {
 	time_t start_time;	/* time when job will start */
 } will_run_response_msg_t;
 
+typedef struct forward_data_msg {
+	char *address;
+	uint32_t len;
+	char *data;
+} forward_data_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1000,6 +1007,7 @@ extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg);
 extern void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg);
+extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)

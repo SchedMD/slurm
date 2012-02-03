@@ -968,6 +968,15 @@ extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
         }
 }
 
+inline void slurm_free_forward_data_msg(forward_data_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->address);
+		xfree(msg->data);
+		xfree(msg);
+	}
+}
+
 extern char *preempt_mode_string(uint16_t preempt_mode)
 {
 	char *gang_str;

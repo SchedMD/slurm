@@ -613,6 +613,11 @@ static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
 static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 				       Buf buffer, uint16_t protocol_version);
 
+static void _pack_forward_data_msg(forward_data_msg_t *msg,
+				   Buf buffer, uint16_t protocol_version);
+static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
+				    Buf buffer, uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -1188,6 +1193,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_stats_response_msg((slurm_msg_t *)msg, buffer);
 		break;
 
+	case REQUEST_FORWARD_DATA:
+		_pack_forward_data_msg((forward_data_msg_t *)msg->data,
+				       buffer, msg->protocol_version);
+		break;
+
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1749,7 +1759,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					   &msg->data, buffer,
 					   msg->protocol_version);
 		break;
- 
+
+	case REQUEST_FORWARD_DATA:
+		rc = _unpack_forward_data_msg((forward_data_msg_t **)&msg->data,
+					      buffer, msg->protocol_version);
+		break;
+
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -10130,6 +10145,35 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_forward_data_msg(forward_data_msg_t *msg,
+				   Buf buffer, uint16_t protocol_version)
+{
+	xassert (msg != NULL);
+	packstr(msg->address, buffer);
+	pack32(msg->len, buffer);
+	packmem(msg->data, msg->len, buffer);
+}
+
+static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
+				    Buf buffer, uint16_t protocol_version)
+{
+	forward_data_msg_t *msg;
+	uint32_t temp32;
+
+	xassert (msg_ptr != NULL);
+	msg = xmalloc(sizeof(forward_data_msg_t));
+	*msg_ptr = msg;
+	safe_unpackstr_xmalloc(&msg->address, &temp32, buffer);
+	safe_unpack32(&msg->len, buffer);
+	safe_unpackmem_xmalloc(&msg->data, &temp32, buffer);
+
+	return SLURM_SUCCESS;
+	
+unpack_error:
+	slurm_free_forward_data_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
 
 static void
 _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer,
