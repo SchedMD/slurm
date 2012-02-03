@@ -1170,6 +1170,9 @@ client_io_handler_start(client_io_t *cio)
 int
 client_io_handler_finish(client_io_t *cio)
 {
+	if (cio == NULL)
+		return SLURM_SUCCESS;
+
 	eio_signal_shutdown(cio->eio);
 	if (pthread_join(cio->ioid, NULL) < 0) {
 		error("Waiting for client io pthread: %m");
@@ -1182,7 +1185,8 @@ client_io_handler_finish(client_io_t *cio)
 void
 client_io_handler_destroy(client_io_t *cio)
 {
-	xassert(cio);
+	if (cio == NULL)
+		return;
 
 	/* FIXME - perhaps should make certain that IO engine is shutdown
 	   (by calling client_io_handler_finish()) before freeing anything */
@@ -1208,6 +1212,7 @@ client_io_handler_downnodes(client_io_t *cio,
 
 	if (cio == NULL)
 		return;
+
 	pthread_mutex_lock(&cio->ioservers_lock);
 	for (i = 0; i < num_node_ids; i++) {
 		node_id = node_ids[i];
@@ -1239,6 +1244,8 @@ client_io_handler_abort(client_io_t *cio)
 	struct server_io_info *info;
 	int i;
 
+	if (cio == NULL)
+		return;
 	pthread_mutex_lock(&cio->ioservers_lock);
 	for (i = 0; i < cio->num_nodes; i++) {
 		if (!bit_test(cio->ioservers_ready_bits, i)) {
