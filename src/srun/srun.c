@@ -564,6 +564,7 @@ int srun(int ac, char **av)
 	    SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		global_rc = 1;
+		slurm_step_launch_abort(job->step_ctx);
 		slurm_step_launch_wait_finish(job->step_ctx);
 		goto cleanup;
 	}
