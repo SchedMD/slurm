@@ -54,7 +54,7 @@ using the command "<i>/etc/init.d/slurm start</i>").
 You should check the log file (<i>SlurmctldLog</i> in the
 <i>slurm.conf</i> file) for an indication of why it failed.
 If it keeps failing, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
+<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
 
 <li>If slurmctld is running but not responding (a very rare situation),
 then kill and restart it (typically as user root using the commands
@@ -65,7 +65,7 @@ then kill and restart it (typically as user root using the commands
 and restart.
 Again check the log file for an indication of why it failed.
 At this point, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
+<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
 
 <li>If it continues to fail without an indication as to the failure
 mode, restart without preserving state (typically as user root
@@ -165,7 +165,7 @@ the node of interest.
 Check the value of "Last slurmctld msg time" to determine
 if the slurmctld is able to communicate with the slurmd.
 If it keeps failing, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
+<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
 
 <li>If slurmd is running but not responding (a very rare situation),
 then kill and restart it (typically as user root using the commands
@@ -179,7 +179,7 @@ then kill and restart it (typically as user root using the commands
 and restart.
 Again check the log file for an indication of why it failed.
 At this point, you should contact the slurm team for help at
-<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
+<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
 
 <li>If still not responding without an indication as to the failure
 mode, restart without preserving state (typically as user root
@@ -296,6 +296,6 @@ partition 000.
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 July 2007</p>
+<p style="text-align:center;">Last modified 3 February 2012</p>
 
 <!--#include virtual="footer.txt"-->

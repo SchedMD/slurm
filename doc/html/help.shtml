@@ -13,13 +13,13 @@ helps you resolve the problem.</li>
 their support staff.</li>
 <li>Send a detailed description of the problem, the output from the command
 "scontrol show config", logs, back traces from any core files, etc. to
-<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
+<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.</li>
 </ol>
 
 <h1>Commercial Support</h1>
 <p>Several companies provide commercial support for SLURM including
 <a href="http://www.schedmd.com">SchedMD</a>.</p>
 
-<p style="text-align:center;">Last modified 30 June 2011</p>
+<p style="text-align:center;">Last modified 3 February 2012</p>
 
 <!--#include virtual="footer.txt"-->

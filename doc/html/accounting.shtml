@@ -193,7 +193,8 @@ a configuration.
 supported for job and step accounting only.</b> The infrastructure for
 PostgresSQL for use with associations is not yet supported, meaning
 sacctmgr will not work correctly.  If interested in adding this
-capability for PostgresSQL, please contact us at slurm-dev@lists.llnl.gov.
+capability for PostgresSQL, please contact us at
+<a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>.
 
 <p>To enable this database support
 one only needs to have the development package for the database they
@@ -777,7 +778,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 10 June 2010</p>
+<p style="text-align: center;">Last modified 3 February 2012</p>
 
 <!--#include virtual="footer.txt"-->
 

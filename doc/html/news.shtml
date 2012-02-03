@@ -85,7 +85,7 @@ of "AMD").</li>
 <h2><a name="25">Major Updates in SLURM Version 2.5 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
-notify <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
+notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
 to coordinate activities. Future development plans includes:
 <ul>
 <li>Faster and more powerful job step management support  (e.g. step
@@ -124,6 +124,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 January 2012</p>
+<p style="text-align:center;">Last modified 3 February 2012</p>
 
 <!--#include virtual="footer.txt"-->

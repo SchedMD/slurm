@@ -41,7 +41,7 @@
 	You should receive a confirmation of this initial stage within in a few days and
 	final confirmation by <b>August 26, 2011</b>.</p>
 
-      <FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:slurm_user_group@lists.llnl.gov?subject=SLURM User Group Registration">
+      <FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:slurm_user_group@schedmd.com?subject=SLURM User Group Registration">
 	<PRE>
 	  <table width="100%" border=0 cellspacing=0 cellpadding=0>
 	    <tr>
