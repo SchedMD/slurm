@@ -490,11 +490,13 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	eio_signal_shutdown(sls->msg_handle);
 
 	pthread_mutex_unlock(&sls->lock);
-	pthread_join(sls->msg_thread, NULL);
+	if (sls->msg_thread)
+		pthread_join(sls->msg_thread, NULL);
 	pthread_mutex_lock(&sls->lock);
 	pmi_kvs_free();
 
-	eio_handle_destroy(sls->msg_handle);
+	if (sls->msg_handle)
+		eio_handle_destroy(sls->msg_handle);
 
 	/* Shutdown the io timeout thread, if one exists */
 	if (sls->io_timeout_thread_created) {
