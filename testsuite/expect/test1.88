@@ -154,13 +154,17 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Check for desired output in stdout
 #
-set expected [expr 6 + 6 + 4 + 4]
+set expected_msg [expr 6 + 6 + 4 + 4]
+set expected_sum [expr 30 + 30 + 12 + 12]
 if {[wait_for_file $file_out] == 0} {
-	set matches  0
 	set complete 0
+	set matches  0
+	set rank_sum 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "just received msg from Rank" {
+                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+			incr rank_sum $expect_out(1,string)
+			incr rank_sum $expect_out(2,string)
 			incr matches
                         exp_continue
                 }
@@ -178,11 +182,14 @@ if {[wait_for_file $file_out] == 0} {
 		send_user "with the configured switch\n"
 		send_user "  Core files may be present from failed MPI tasks\n\n"
 		set exit_code 1
-	} elseif {$matches != $expected} {
-		send_user "\nFAILURE: unexpected output ($matches of $expected)\n"
+	} elseif {$matches != $expected_msg} {
+		send_user "\nFAILURE: unexpected output ($matches of $expected_msg)\n"
 		set exit_code 1
 	} elseif {$complete == 0} {
 		send_user "\nFAILURE: test failed to complete\n"
+		set exit_code 1
+	} elseif {$rank_sum != $expected_sum} {
+		send_user "\nFAILURE: Invalid rank values ($rank_sum != $expected_sum)\n"
 		set exit_code 1
 	}
 } else {
