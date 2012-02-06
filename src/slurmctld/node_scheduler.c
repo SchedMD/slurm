@@ -135,14 +135,13 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 
+	xfree(job_ptr->batch_host);
 #ifdef HAVE_FRONT_END
 	job_ptr->front_end_ptr = assign_front_end();
 	xassert(job_ptr->front_end_ptr);
-	xfree(job_ptr->batch_host);
 	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
 #endif
 
-	xfree(job_ptr->batch_host);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
