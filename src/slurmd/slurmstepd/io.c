@@ -42,6 +42,9 @@
 #endif
 
 #if HAVE_UNISTD_H
+#  if HAVE_SETRESUID
+#    define _GNU_SOURCE /* for setresuid(3) */
+#  endif
 #  include <unistd.h>
 #endif
 
@@ -947,10 +950,28 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		if (task->gtid == 0) {
 			int amaster, aslave;
 			debug("  stdin uses a pty object");
+#if HAVE_SETRESUID
+			/*
+			 *  openpty(3) calls grantpt(3), which sets
+			 *   the owner of the pty device to the *real*
+			 *   uid of the caller. Because of this, we must
+			 *   change our uid temporarily to that of the
+			 *   user (now the effective uid). We have to
+			 *   use setresuid(2) so that we keep a saved uid
+			 *   of root, and can regain previous permissions
+			 *   after the call to openpty.
+			 */
+			if (setresuid(geteuid(), geteuid(), 0) < 0)
+				error ("pre openpty: setresuid: %m");
+#endif
 			if (openpty(&amaster, &aslave, NULL, NULL, NULL) < 0) {
 				error("stdin openpty: %m");
 				return SLURM_ERROR;
 			}
+#if HAVE_SETRESUID
+			if (setresuid(0, getuid(), 0) < 0)
+				error ("post openpty: setresuid: %m");
+#endif
 			task->stdin_fd = aslave;
 			fd_set_close_on_exec(task->stdin_fd);
 			task->to_stdin = amaster;
