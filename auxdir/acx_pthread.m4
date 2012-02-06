@@ -144,7 +144,7 @@ for flag in $acx_pthread_flags; do
         # functions on Solaris that doesn't have a non-functional libc stub.
         # We try pthread_create on general principles.
         AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <pthread.h>]], [[pthread_t th; pthread_join(th, 0);
-                     pthread_attr_init(0); pthread_cleanup_push(0, 0);
+                     pthread_attr_init(0); pthread_cleanup_push(0, 0); pthread_atfork(NULL, NULL, NULL);
                      pthread_create(0,0,0,0); pthread_cleanup_pop(0); ]])],[acx_pthread_ok=yes],[])
 
         LIBS="$save_LIBS"
