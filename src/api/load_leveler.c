@@ -2622,7 +2622,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 
 	if (req->gres) {
 		bool gres_cnt = 0;
-		char *gres, *save_ptr, *sep, *tok;
+		char *gres, *save_ptr = NULL, *sep, *tok;
 		int cnt;
 		gres = xstrdup(req->gres);
 		tok = strtok_r(gres, ",", &save_ptr);
