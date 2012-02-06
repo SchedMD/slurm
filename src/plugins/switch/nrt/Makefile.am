@@ -12,10 +12,10 @@ SWITCH_NRT_LA_SOURCES =		\
 	nrt_keys.h		\
 	switch_nrt.c
 
-if BUILD_NRT
+if HAVE_NRT
 pkglib_LTLIBRARIES = switch_nrt.la
 switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
-switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FEDERATION_LDFLAGS)
+switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(NRT_LDFLAGS)
 
 else
 pkglib_LTLIBRARIES =

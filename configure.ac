@@ -289,6 +289,13 @@ X_AC_FEDERATION
 AM_CONDITIONAL(HAVE_FEDERATION, test "x$ac_have_federation" = "xyes")
 AC_SUBST(HAVE_FEDERATION)
 
+
+dnl check for whether to include IBM NRT (Network Resource Table) support
+dnl
+X_AC_NRT
+AM_CONDITIONAL(HAVE_NRT, test "x$ac_have_nrt" = "xyes")
+AC_SUBST(HAVE_NRT)
+
 dnl check for SGI job container support
 dnl
 X_AC_SGI_JOB
