@@ -9,6 +9,12 @@ documents those changes that are of interest to users and admins.
     appropriate CUDA_VISIBLE_DEVICES environment variable value when the
     devices are not in strict numeric order (e.g. some GPUs are skipped).
     Based upon work by Nicolas Bigaouette.
+ -- BGQ - Remove ability to make a sub-block with a geometry with one or more
+    of it's dimensions of length 3.  There is a limitation in the IBM I/O
+    subsystem that is problematic with multiple sub-blocks with a dimension
+    of length 3, so we will disallow them to be able to be created.  This
+    mean you if you ask the system for an allocation of 12 c-nodes you will
+    be given 16.  If this is ever fix in BGQ you can remove this patch.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
