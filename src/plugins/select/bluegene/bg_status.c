@@ -80,11 +80,10 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 		      bg_record->bg_block_id,
 		      jobinfo->user_name,
 		      jobid);
-		bg_record->job_ptr = NULL;
 	} else if (bg_record->job_list && list_count(bg_record->job_list)) {
 		struct job_record *job_ptr;
-
-		while ((job_ptr = list_pop(bg_record->job_list))) {
+		ListIterator itr = list_iterator_create(bg_record->job_list);
+		while ((job_ptr = list_next(itr))) {
 			select_jobinfo_t *jobinfo;
 
 			if (job_ptr->magic != JOB_MAGIC)
@@ -105,6 +104,7 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 			      jobinfo->user_name,
 			      job_ptr->job_id);
 		}
+		list_iterator_destroy(itr);
 	} else {
 		debug("Block %s was in a ready state "
 		      "but is being freed. No job running.",

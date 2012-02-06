@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     of length 3, so we will disallow them to be able to be created.  This
     mean you if you ask the system for an allocation of 12 c-nodes you will
     be given 16.  If this is ever fix in BGQ you can remove this patch.
+ -- BLUEGENE - Better handling blocks that go into error state or deallocate
+    while jobs are running on them.
 
 * Changes in SLURM 2.4.0.pre3
 =============================

@@ -470,6 +470,8 @@ extern int free_block_list(uint32_t job_id, List track_list,
 	bg_free_block_list_t *bg_free_list;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
+	List kill_job_list = NULL;
+	kill_job_struct_t *freeit;
 
 	if (!track_list || !list_count(track_list))
 		return SLURM_SUCCESS;
@@ -496,33 +498,43 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			     bg_record->bg_block_id,
 			     bg_record->job_ptr->job_id,
 			     bg_record->job_running);
-			/* This is not thread safe if called from
-			   bg_job_place.c anywhere from within
-			   submit_job() or at startup. */
-			slurm_mutex_unlock(&block_state_mutex);
-			bg_requeue_job(bg_record->job_ptr->job_id, 0);
-			slurm_mutex_lock(&block_state_mutex);
+			if (!kill_job_list)
+				kill_job_list =
+					bg_status_create_kill_job_list();
+			freeit = xmalloc(sizeof(kill_job_struct_t));
+			freeit->jobid = bg_record->job_ptr->job_id;
+			list_push(kill_job_list, freeit);
 		} else if (bg_record->job_list
 			   && list_count(bg_record->job_list)) {
 			struct job_record *job_ptr;
+			ListIterator itr;
+
+			if (!kill_job_list)
+				kill_job_list =
+					bg_status_create_kill_job_list();
 			info("We are freeing a block (%s) that has at "
 			     "least 1 job.",
 			     bg_record->bg_block_id);
-			/* This is not thread safe if called from
-			   bg_job_place.c anywhere from within
-			   submit_job() or at startup. */
-			slurm_mutex_unlock(&block_state_mutex);
-			while ((job_ptr = list_pop(bg_record->job_list))) {
+			itr = list_iterator_create(bg_record->job_list);
+			while ((job_ptr = list_next(itr))) {
 				if ((job_ptr->magic != JOB_MAGIC)
 				    || !IS_JOB_FINISHED(job_ptr))
 					continue;
-				bg_requeue_job(job_ptr->job_id, 0);
+				freeit = xmalloc(sizeof(kill_job_struct_t));
+				freeit->jobid = job_ptr->job_id;
+				list_push(kill_job_list, freeit);
 			}
-			slurm_mutex_lock(&block_state_mutex);
+			list_iterator_destroy(itr);
 		}
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+
+	if (kill_job_list) {
+		bg_status_process_kill_job_list(kill_job_list);
+		list_destroy(kill_job_list);
+		kill_job_list = NULL;
+	}
 
 	if (wait) {
 		/* Track_freeing_blocks waits until the list is done

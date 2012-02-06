@@ -2255,6 +2255,9 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
 	char reason[200];
+	List kill_job_list = NULL;
+	kill_job_struct_t *freeit;
+	ListIterator itr;
 
 	if (!block_desc_ptr->bg_block_id) {
 		error("update_block: No name specified");
@@ -2304,31 +2307,38 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			 bg_block_state_string(state));
 	}
 
-	/* First fail any job running on this block */
-	if (bg_record->job_running > NO_JOB_RUNNING) {
-		slurm_mutex_unlock(&block_state_mutex);
-		bg_requeue_job(bg_record->job_running, 0);
-		slurm_mutex_lock(&block_state_mutex);
-		if (!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
-			slurm_mutex_unlock(&block_state_mutex);
-			error("while trying to put block in "
-			      "error state it disappeared");
-			return SLURM_ERROR;
+	/* First fail any job running on this block (Not for resume though) */
+	if (block_desc_ptr->state != BG_BLOCK_TERM) {
+		if (bg_record->job_running > NO_JOB_RUNNING) {
+			if (!kill_job_list)
+				kill_job_list =
+					bg_status_create_kill_job_list();
+			freeit = xmalloc(sizeof(kill_job_struct_t));
+			freeit->jobid = bg_record->job_running;
+			list_push(kill_job_list, freeit);
+		} else if (bg_record->job_list
+			   && list_count(bg_record->job_list)) {
+			struct job_record *job_ptr;
+			if (!kill_job_list)
+				kill_job_list =
+					bg_status_create_kill_job_list();
+			itr = list_iterator_create(bg_record->job_list);
+			while ((job_ptr = list_next(itr))) {
+				if (job_ptr->magic != JOB_MAGIC)
+					continue;
+				freeit = xmalloc(sizeof(kill_job_struct_t));
+				freeit->jobid = job_ptr->job_id;
+				list_push(kill_job_list, freeit);
+			}
+			list_iterator_destroy(itr);
 		}
-		/* need to set the job_ptr to NULL
-		   here or we will get error message
-		   about us trying to free this block
-		   with a job in it.
-		*/
-		bg_record->job_ptr = NULL;
-	} else if (bg_record->job_list && list_count(bg_record->job_list)) {
-		struct job_record *job_ptr;
+	}
+
+	if (kill_job_list) {
 		slurm_mutex_unlock(&block_state_mutex);
-		while ((job_ptr = list_pop(bg_record->job_list))) {
-			if (job_ptr->magic != JOB_MAGIC)
-				continue;
-			bg_requeue_job(job_ptr->job_id, 0);
-		}
+		bg_status_process_kill_job_list(kill_job_list);
+		list_destroy(kill_job_list);
+		kill_job_list = NULL;
 		slurm_mutex_lock(&block_state_mutex);
 		if (!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
 			slurm_mutex_unlock(&block_state_mutex);
@@ -2340,7 +2350,6 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 
 	if (block_desc_ptr->state == BG_BLOCK_ERROR_FLAG) {
 		bg_record_t *found_record = NULL;
-		ListIterator itr;
 		List delete_list = list_create(NULL);
 		/* This loop shouldn't do much in regular Dynamic mode
 		   since there shouldn't be overlapped blocks.  But if
