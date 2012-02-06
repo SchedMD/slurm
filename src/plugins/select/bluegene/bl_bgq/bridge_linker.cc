@@ -700,9 +700,9 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	try {
 		std::vector<std::string> mp_vec;
 		if (!Block::isIOConnected(bg_record->bg_block_id, &mp_vec)) {
-			error("block %s is not IOConnected, "
-			      "contact your admin. Midplanes not "
-			      "connected are ...", bg_record->bg_block_id);
+			error("Block %s is not IOConnected, "
+			      "contact your admin. Hardware not "
+			      "connected ...", bg_record->bg_block_id);
 			BOOST_FOREACH(const std::string& mp, mp_vec) {
 				error("%s", mp.c_str());
 			}
