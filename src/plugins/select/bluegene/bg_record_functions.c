@@ -1374,7 +1374,12 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
 		list_push(bg_lists->job_running, bg_record);
 		num_unused_cpus -= bg_record->cpu_cnt;
+	} else {
+		info("hey I was in the job_running table %d %d?",
+		     list_count(bg_record->job_list), num_unused_cpus);
+		xassert(0);
 	}
+
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
 
@@ -1497,6 +1502,7 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 	/* bg_record->boot_count = 0; */
 
 	last_bg_update = time(NULL);
+
 	/* Only remove from the job_running list if
 	   job_running == NO_JOB_RUNNING, since blocks in
 	   error state could also be in this list and we don't
@@ -1525,7 +1531,7 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		error("Hey we are here with no jobs and we have only "
 		      "%d usuable cpus.  We should have %d!",
 		      num_unused_cpus, num_possible_unused_cpus);
-		//xassert(0);
+		xassert(0);
 		num_unused_cpus = num_possible_unused_cpus;
 	}
 
