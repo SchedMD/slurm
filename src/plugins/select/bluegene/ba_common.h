@@ -263,9 +263,13 @@ extern void ba_print_geo_table(ba_geo_system_t *my_geo_system);
  *		Set dim_count and dim_size. Other fields should be NULL.
  *		This function will set total_size, geo_table_ptr, and
  *		geo_table_size.
+ * IN     avoid_three - used to get around a limitation in the IBM IO
+ *              system where a sub-block allocation can't reliably
+ *              have a dimension of 3 in in.
  * Release memory using ba_free_geo_table().
  */
-extern void ba_create_geo_table(ba_geo_system_t *my_geo_system);
+extern void ba_create_geo_table(ba_geo_system_t *my_geo_system,
+				bool avoid_three);
 
 /*
  * Free memory allocated by ba_create_geo_table().

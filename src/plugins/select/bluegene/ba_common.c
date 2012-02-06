@@ -1147,7 +1147,8 @@ extern void ba_print_geo_table(ba_geo_system_t *my_geo_system)
 	}
 }
 
-extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
+extern void ba_create_geo_table(ba_geo_system_t *my_geo_system,
+				bool avoid_three)
 {
 	ba_geo_table_t *geo_ptr;
 	int dim, inx[my_geo_system->dim_count], passthru, product;
@@ -1170,12 +1171,17 @@ extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 					       (my_geo_system->total_size+1));
 
 	do {
+		bool found_three = 0;
 		/* Store new value */
 		geo_ptr = xmalloc(sizeof(ba_geo_table_t));
 		geo_ptr->geometry = xmalloc(sizeof(uint16_t) *
 					    my_geo_system->dim_count);
 		product = 1;
 		for (dim = 0; dim < my_geo_system->dim_count; dim++) {
+			if (avoid_three && (inx[dim] == 3)) {
+				found_three = 1;
+				goto next_geo;
+			}
 			geo_ptr->geometry[dim] = inx[dim];
 			product *= inx[dim];
 			passthru = my_geo_system->dim_size[dim] - inx[dim];
@@ -1202,6 +1208,11 @@ extern void ba_create_geo_table(ba_geo_system_t *my_geo_system)
 		}
 		geo_ptr->next_ptr = *last_pptr;
 		*last_pptr = geo_ptr;
+	next_geo:
+		if (found_three) {
+			xfree(geo_ptr->geometry);
+			xfree(geo_ptr);
+		}
 	} while (_incr_geo(inx, my_geo_system));   /* Generate next geometry */
 }
 

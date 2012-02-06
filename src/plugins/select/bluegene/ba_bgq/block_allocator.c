@@ -137,7 +137,7 @@ extern void ba_create_system()
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		ba_main_geo_system->dim_size[dim] = DIM_SIZE[dim];
 
-	ba_create_geo_table(ba_main_geo_system);
+	ba_create_geo_table(ba_main_geo_system, 0);
 	//ba_print_geo_table(ba_main_geo_system);
 
 	/* build all the possible geos for a sub block inside a mid plane */
@@ -151,7 +151,23 @@ extern void ba_create_system()
 	ba_mp_geo_system->dim_size[2] = 4;
 	ba_mp_geo_system->dim_size[3] = 4;
 	ba_mp_geo_system->dim_size[4] = 2;
-	ba_create_geo_table(ba_mp_geo_system);
+	/* FIXME: We need to not create and geo with a dimension of 3 in it.
+	 * There apparently is a limitation in BGQ where you can't
+	 * make a sub-block with a dimension of 3.  If this ever goes
+	 * away just remove remove the extra parameter to the
+	 * ba_create_geo_table.
+	 *
+	 * FROM IBM:
+	 * We have recently encountered a problematic scenario with
+	 * sub-block jobs and how the system (used for I/O) and user
+	 * (used for MPI) torus class routes are configured. The
+	 * network device hardware has cutoff registers to prevent
+	 * packets from flowing outside of the
+	 * sub-block. Unfortunately, when the sub-block has a size 3,
+	 * the job can attempt to send user packets outside of its
+	 * sub-block. This causes it to be terminated by signal 36.
+	 */
+	ba_create_geo_table(ba_mp_geo_system, 1);
 	//ba_print_geo_table(ba_mp_geo_system);
 
 	/* Now set it up to mark the corners of each nodecard.  This
