@@ -1,113 +1,126 @@
-/*****************************************************************************\
- *  nrt.h - Library routines for initiating jobs using IBM's NRT (Network
- *          Routing Table)
- *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
- *  Portions Copyright (C) 2011 SchedMD LLC.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jason King <jking@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
- *
- *  This file is part of SLURM, a resource management program.
- *  For details, see <http://www.schedmd.com/slurmdocs/>.
- *  Please also read the included file: DISCLAIMER.
- *
- *  SLURM is free software; you can redistribute it and/or modify it under
- *  the terms of the GNU General Public License as published by the Free
- *  Software Foundation; either version 2 of the License, or (at your option)
- *  any later version.
- *
- *  In addition, as a special exception, the copyright holders give permission
- *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and
- *  distribute linked combinations including the two. You must obey the GNU
- *  General Public License in all respects for all of the code used other than
- *  OpenSSL. If you modify file(s) with this exception, you may extend this
- *  exception to your version of the file(s), but you are not obligated to do
- *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in
- *  the program, then also delete it here.
- *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
- *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- *  details.
- *
- *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
-\*****************************************************************************/
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include "src/common/slurm_xlator.h"
+/* This should be the same as IBM's nrt.h file (or close anyway) */
 
 #ifndef _NRT_INCLUDED
 #define _NRT_INCLUDED
 
-#if HAVE_LIBNRT
-# include <nrt.h>
-#else
-# error "Must have libnrt to compile this module!"
+#include <stdint.h>
+
+#define MAX_SPIGOTS		4
+#define NRT_MAX_DEVICENAME_SIZE	6
+#define NRT_VERSION		100
+
+#define NRT_SUCCESS		0
+#define NRT_EINVAL		1
+#define NRT_EPERM		2
+#define NRT_PNSDAPI		3
+#define NRT_EADAPTER		4
+#define NRT_ESYSTEM		5
+#define NRT_EMEM		6
+#define NRT_EIO			7
+#define NRT_NO_RDMA_AVAIL	8
+#define NRT_EADAPTYPE		9
+#define NRT_BAD_VERSION		10
+#define NRT_EAGAIN		11
+#define NRT_WRONG_WINDOW_STATE	12
+#define NRT_UNKNOWN_ADAPTER	13
+
+#define NRT_ALREADY_LOADED	15
+
+
+typedef struct {
+	uint32_t	node_number;			// to form unique ID
+	uint8_t		num_spigots;			//Ports for IB, spigots for HCPE
+	uint8_t		padding1[3];			//future use
+	uint16_t	lid[MAX_SPIGOTS];		//(IB only) Logical ID of each spigot
+	uint64_t 	network_id[MAX_SPIGOTS];	//Network ID for each adapter spigot
+	uint8_t		lmc[MAX_SPIGOTS];		//(IB only) Logical mask of each spigot
+	uint8_t		spigot_id[MAX_SPIGOTS];		//Port/Spigot IDs
+	uint16_t	window_count;			//Count of window in window_list
+	uint8_t 	padding2[6];			//future use
+	uint16_t	*window_list;			//array of available windows
+	uint64_t	rcontext_block_count;		//available rcxt blocks
+} adap_resources_t;
+
+
+typedef enum {	NRT_WIN_UNAVAILABLE,	//Initialization in progress
+		NRT_WIN_INVALID,	// Not a usable window
+		NRT_WIN_AVAILABLE,	// Ready for NRT load
+		NRT_WIN_RESERVED,	//Window reserved, NRT not loaded
+					//	(for POE-PMD)
+		NRT_WIN_READY,		//NRT loaded
+		NRT_WIN_RUNNING		//Window is running
+} win_state_t;
+
+typedef struct {
+	pid_t		client_pid;		// Pid of process that loaded
+	uid_t 		uid;			// Uid using the window
+	uint16_t 	window_id;		// Window being reported
+	uint16_t	bulk_transfer;		// Is this lead using RDMA?
+	uint32_t	rcontext_blocks;	// rcontexts per window
+	win_state_t 	state;			// Window state
+	uint8_t		padding[4];
+} nrt_status_t;
+
+typedef enum { LEAVE_IN_USE, KILL } clean_option_t;
+
+
+int nrt_adapter_resources(int version, char *adapter_device_string,
+			          uint16_t adapter_type,
+			          adap_resources_t *adapter_infor_OUT);
+
+int nrt_clean_window (int version, char *adapter_or_string,
+			uint16_t adapter_type,
+			clean_option_t  leave_inuse_or_kill,
+			ushort window_id);
+
+
+typedef struct {
+	uint16_t 	task_id;
+	uint16_t 	win_id;
+	uint32_t 	node_number;
+	char 		device_name[NRT_MAX_DEVICENAME_SIZE];
+	uint16_t 	base_lid;
+	uint8_t 	port_id;
+	uint8_t		lmc;
+	uint8_t 	port_status;  //ignored
+	uint8_t 	padding[3];
+} nrt_creator_ib_per_task_input_t;
+
+typedef struct {
+	uint16_t 	task_id;
+/* FIXME: We have no idea what this should contain */
+} nrt_creator_hpce_per_task_input_t;
+
+typedef union {
+	nrt_creator_hpce_per_task_input_t	hpce_per_task;
+	nrt_creator_ib_per_task_input_t		ib_per_task;
+} nrt_creator_per_task_input_t;
+
+int nrt_load_table_rdma (int version, char *adapter_or_string,
+			uint16_t adapter_type,
+			uint64_t network_id, uid_t uid, pid_t pid,
+			ushort job_key, char *job_description,
+			uint use_bulk_transfer,
+			uint bulk_transfer_resources, int table_size,
+			nrt_creator_per_task_input_t *per_task_input);
+
+
+int nrt_rdma_jobs(int version, char *adapter_device_string,
+		      uint16_t adapter_type, uint16_t *job_count,
+		      uint16_t **job_keys);
+
+
+int nrt_status_adapter (int version, char *adapter_device_string,
+			uint16_t adapter_type, uint16_t *window_count,
+			nrt_status_t ** status_array);
+
+
+int nrt_unload_window 	(int version, char * adapter_device_string,
+				uint16_t adapter_type, ushort job_key,
+				ushort window_id);
+
+
+
+
+int nrt_version(void);
 #endif
-
-/* opaque data structures - no peeking! */
-typedef struct nrt_libstate nrt_libstate_t;
-typedef struct nrt_jobinfo  nrt_jobinfo_t;
-typedef struct nrt_nodeinfo nrt_nodeinfo_t;
-
-/* NOTE: error codes should be between ESLURM_SWITCH_MIN and
- * ESLURM_SWITCH MAX as defined in slurm/slurm_errno.h */
-enum {
-	/* switch/nrt specific error codes */
-	ESTATUS =					3000,
-	EADAPTER,
-	ENOADAPTER,
-	EBADMAGIC_NRT_NODEINFO,
-	EBADMAGIC_NRT_JOBINFO,
-	EBADMAGIC_NRT_LIBSTATE,
-	EUNPACK,
-	EHOSTNAME,
-	ENOTSUPPORTED,
-	EVERSION,
-	EWINDOW,
-	EUNLOAD
-};
-
-#define NRT_MAXADAPTERS 2
-#define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
-
-extern int nrt_slurmctld_init(void);
-extern int nrt_slurmd_init(void);
-extern int nrt_slurmd_step_init(void);
-extern int nrt_alloc_nodeinfo(nrt_nodeinfo_t **nh);
-extern int nrt_build_nodeinfo(nrt_nodeinfo_t *np, char *hostname);
-extern char *nrt_print_nodeinfo(nrt_nodeinfo_t *np, char *buf, size_t size);
-extern int nrt_pack_nodeinfo(nrt_nodeinfo_t *np, Buf buf);
-extern int nrt_unpack_nodeinfo(nrt_nodeinfo_t *np, Buf buf);
-extern void nrt_free_nodeinfo(nrt_nodeinfo_t *np, bool ptr_into_array);
-extern int nrt_alloc_jobinfo(nrt_jobinfo_t **jh);
-extern int nrt_build_jobinfo(nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
-			     bool sn_all, char *adapter_name, int bulk_xfer);
-extern int nrt_pack_jobinfo(nrt_jobinfo_t *jp, Buf buf);
-extern int nrt_unpack_jobinfo(nrt_jobinfo_t *jp, Buf buf);
-extern nrt_jobinfo_t *nrt_copy_jobinfo(nrt_jobinfo_t *jp);
-extern void nrt_free_jobinfo(nrt_jobinfo_t *jp);
-extern int nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid);
-extern int nrt_init(void);
-extern int nrt_fini(void);
-extern int nrt_unload_table(nrt_jobinfo_t *jp);
-extern int nrt_unpack_libstate(nrt_libstate_t *lp, Buf buffer);
-extern int nrt_get_jobinfo(nrt_jobinfo_t *jp, int key, void *data);
-extern void nrt_libstate_save(Buf buffer, bool free_flag);
-extern int nrt_libstate_restore(Buf buffer);
-extern int nrt_job_step_complete(nrt_jobinfo_t *jp, hostlist_t hl);
-extern int nrt_job_step_allocated(nrt_jobinfo_t *jp, hostlist_t hl);
-extern int nrt_libstate_clear(void);
-extern int nrt_slurmctld_init(void);
-extern int nrt_slurmd_init(void);
-extern int nrt_slurmd_step_init(void);
-
-#endif /* _NRT_INCLUDED */

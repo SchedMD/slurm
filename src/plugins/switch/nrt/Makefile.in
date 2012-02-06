@@ -38,7 +38,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 subdir = src/plugins/switch/nrt
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -66,6 +66,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
+	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -107,10 +108,11 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 switch_nrt_la_LIBADD =
-am__switch_nrt_la_SOURCES_DIST = nrt.c nrt.h nrt_keys.h switch_nrt.c
+am__switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h \
+	switch_nrt.c
 am__objects_1 = nrt.lo switch_nrt.lo
 @HAVE_NRT_TRUE@am_switch_nrt_la_OBJECTS = $(am__objects_1)
-am__EXTRA_switch_nrt_la_SOURCES_DIST = nrt.c nrt.h nrt_keys.h \
+am__EXTRA_switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h \
 	switch_nrt.c
 switch_nrt_la_OBJECTS = $(am_switch_nrt_la_OBJECTS)
 switch_nrt_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -160,7 +162,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = -DFEDERATION_CONFIG_FILE=\"$(sysconfdir)/nrt.conf\"
+CPPFLAGS = -DNRT_CONFIG_FILE=\"$(sysconfdir)/nrt.conf\"
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -342,8 +344,9 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 SWITCH_NRT_LA_SOURCES = \
-	nrt.c nrt.h		\
+	nrt.c			\
 	nrt_keys.h		\
+	slurm_nrt.h		\
 	switch_nrt.c
 
 @HAVE_NRT_FALSE@pkglib_LTLIBRARIES = 

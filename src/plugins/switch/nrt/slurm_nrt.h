@@ -1,0 +1,117 @@
+/*****************************************************************************\
+ *  slurm_nrt.h - Library routines for initiating jobs using IBM's NRT
+ *                (Network Routing Table)
+ *****************************************************************************
+ *  Copyright (C) 2004 The Regents of the University of California.
+ *  Portions Copyright (C) 2011 SchedMD LLC.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Jason King <jking@llnl.gov>
+ *  CODE-OCEC-09-009. All rights reserved.
+ *
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include "src/common/slurm_xlator.h"
+
+#ifndef _SLURM_NRT_INCLUDED
+#define _SLURM_NRT_INCLUDED
+
+#if HAVE_LIBNRT
+# include <nrt.h>
+# define RSCT_DEVTYPE_INFINIBAND 32
+#else
+# error "Must have libnrt to compile this module!"
+#endif
+
+/* opaque data structures - no peeking! */
+typedef struct nrt_libstate nrt_libstate_t;
+typedef struct nrt_jobinfo  nrt_jobinfo_t;
+typedef struct nrt_nodeinfo nrt_nodeinfo_t;
+
+/* NOTE: error codes should be between ESLURM_SWITCH_MIN and
+ * ESLURM_SWITCH MAX as defined in slurm/slurm_errno.h */
+enum {
+	/* switch/nrt specific error codes */
+	ESTATUS =					3000,
+	EADAPTER,
+	ENOADAPTER,
+	EBADMAGIC_NRT_NODEINFO,
+	EBADMAGIC_NRT_JOBINFO,
+	EBADMAGIC_NRT_LIBSTATE,
+	EUNPACK,
+	EHOSTNAME,
+	ENOTSUPPORTED,
+	EVERSION,
+	EWINDOW,
+	EUNLOAD
+};
+
+#define NRT_DEBUG 1	/* Enable extra logging. 0=off, 1=on, 2=verbose */
+#define NRT_MAXADAPTERS 2
+#define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
+
+extern int nrt_clear_node_state(void);
+extern char *nrt_err_str(int rc);
+extern int nrt_slurmctld_init(void);
+extern int nrt_slurmd_init(void);
+extern int nrt_slurmd_step_init(void);
+extern int nrt_alloc_nodeinfo(nrt_nodeinfo_t **nh);
+extern int nrt_build_nodeinfo(nrt_nodeinfo_t *np, char *hostname);
+extern char *nrt_print_nodeinfo(nrt_nodeinfo_t *np, char *buf, size_t size);
+extern int nrt_pack_nodeinfo(nrt_nodeinfo_t *np, Buf buf);
+extern int nrt_unpack_nodeinfo(nrt_nodeinfo_t *np, Buf buf);
+extern void nrt_free_nodeinfo(nrt_nodeinfo_t *np, bool ptr_into_array);
+extern int nrt_alloc_jobinfo(nrt_jobinfo_t **jh);
+extern int nrt_build_jobinfo(nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
+			     bool sn_all, char *adapter_name, int bulk_xfer);
+extern int nrt_pack_jobinfo(nrt_jobinfo_t *jp, Buf buf);
+extern int nrt_unpack_jobinfo(nrt_jobinfo_t *jp, Buf buf);
+extern nrt_jobinfo_t *nrt_copy_jobinfo(nrt_jobinfo_t *jp);
+extern void nrt_free_jobinfo(nrt_jobinfo_t *jp);
+extern int nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid);
+extern int nrt_init(void);
+extern int nrt_fini(void);
+extern int nrt_unload_table(nrt_jobinfo_t *jp);
+extern int nrt_unpack_libstate(nrt_libstate_t *lp, Buf buffer);
+extern int nrt_get_jobinfo(nrt_jobinfo_t *jp, int key, void *data);
+extern void nrt_libstate_save(Buf buffer, bool free_flag);
+extern int nrt_libstate_restore(Buf buffer);
+extern int nrt_job_step_complete(nrt_jobinfo_t *jp, hostlist_t hl);
+extern int nrt_job_step_allocated(nrt_jobinfo_t *jp, hostlist_t hl);
+extern int nrt_libstate_clear(void);
+extern int nrt_slurmctld_init(void);
+extern int nrt_slurmd_init(void);
+extern int nrt_slurmd_step_init(void);
+
+#endif /* _SLURM_NRT_INCLUDED */
