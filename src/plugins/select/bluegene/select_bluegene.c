@@ -1934,16 +1934,23 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 		if (cluster_flags & CLUSTER_FLAG_BGQ
 		    && (bg_record->mp_count == 1)) {
-			xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
-			if (!ba_mp->cnode_bitmap)
-				ba_mp->cnode_bitmap =
-					ba_create_ba_mp_cnode_bitmap(bg_record);
-			step_jobinfo->units_used =
-				bit_copy(ba_mp->cnode_bitmap);
-			step_jobinfo->units_avail =
-				bit_copy(ba_mp->cnode_bitmap);
+			bitstr_t *used_bitmap;
+
+			if (jobinfo->units_avail)
+				used_bitmap = jobinfo->units_used;
+			else {
+				xassert((ba_mp = list_peek(
+						 bg_record->ba_mp_list)));
+				if (!ba_mp->cnode_bitmap)
+					ba_mp->cnode_bitmap =
+						ba_create_ba_mp_cnode_bitmap(
+							bg_record);
+				used_bitmap = ba_mp->cnode_bitmap;
+			}
+			step_jobinfo->units_used = bit_copy(used_bitmap);
+			step_jobinfo->units_avail = bit_copy(used_bitmap);
 			bit_not(step_jobinfo->units_used);
-			bit_or(ba_mp->cnode_bitmap, step_jobinfo->units_used);
+			bit_or(used_bitmap, step_jobinfo->units_used);
 		}
 
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);

@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     be given 16.  If this is ever fix in BGQ you can remove this patch.
  -- BLUEGENE - Better handling blocks that go into error state or deallocate
     while jobs are running on them.
+ -- BGQ - fix for handling mix of steps running at same time some of which
+    are full allocation jobs, and others that are smaller.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
