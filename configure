@@ -19146,7 +19146,7 @@ int
 main ()
 {
 pthread_t th; pthread_join(th, 0);
-                     pthread_attr_init(0); pthread_cleanup_push(0, 0);
+                     pthread_attr_init(0); pthread_cleanup_push(0, 0); pthread_atfork(NULL, NULL, NULL);
                      pthread_create(0,0,0,0); pthread_cleanup_pop(0);
   ;
   return 0;
