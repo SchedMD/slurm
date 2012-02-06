@@ -84,6 +84,11 @@ AC_DEFUN([X_AC_AIX],
        ac_with_load_leveler="yes"
      ]
    )
+   if test "x$ac_with_load_leveler" = "xyes"; then
+     AC_MSG_RESULT([yes])
+   else
+     AC_MSG_RESULT([no])
+   fi
    AC_SUBST(LOADLEVELER_INCLUDES)
    AM_CONDITIONAL(HAVE_LLAPI_H,    test "x$ac_with_llapi_h" = "xyes")
    AM_CONDITIONAL(USE_LOADLEVELER, test "x$ac_with_load_leveler" = "xyes")
