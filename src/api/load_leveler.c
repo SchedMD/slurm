@@ -826,6 +826,7 @@ static uint32_t _gen_auth_key(void)
 	return key;
 }
 
+#ifndef HAVE_LLAPI_H
 /* Abort the back-end job
  * Return true if abort message send */
 static bool _xmit_abort(void)
@@ -870,6 +871,7 @@ static bool _xmit_abort(void)
 
 	return true;
 }
+#endif
 
 static bool _xmit_resp(slurm_fd_t socket_conn, uint32_t resp_auth_key,
 		       uint32_t new_auth_key, uint16_t comm_port)
@@ -2826,30 +2828,25 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 
 #ifdef HAVE_LLAPI_H
 {
-	LL_job *job_info;
+	LL_job *job_info = NULL;
 	submit_response_msg_t *resp_ptr;
 	char *monitor_program = NULL, *monitor_arg = NULL;
-	char *sep1, *sep2;
 
 	if (req->spank_job_env_size >= 1)
-		monitor_program = spank_job_env[0];
+		monitor_program = req->spank_job_env[0];
 	if (req->spank_job_env_size >= 2)
-		monitor_arg = spank_job_env[1];
+		monitor_arg = req->spank_job_env[1];
 	rc = llsubmit(pathname, monitor_program, monitor_arg, job_info,
 		      LL_JOB_VERSION);
 	if (rc == 0) {
 		resp_ptr = xmalloc(sizeof(submit_response_msg_t));
 		*resp = resp_ptr;
-		sep2 = strrchr(job_info->jobid, '.');
-		sep1 = strrchr(job_info->jobid, '.');
-		if (sep1) {
+		if (job_info->steps > 0) {
+			LL_job_step *step_ptr = job_info->step_list[0];
 			/* Reduce to short hostname.<jobid> */
-			sep1[0] = '\0';
-			xstrfmtcat(resp_ptr->job_id, "%s.%s", job_info->jobid,
-				   sep2+1);
-		} else
-			resp_ptr->job_id = xstrdup(job_info->jobid);
-		resp_ptr->step_id = job_info->stepid;
+			xstrfmtcat(resp_ptr->job_id, "%s.%d",
+				   step_ptr->id.from_host, step_ptr->id.proc);
+		}
 		resp_ptr->error_code = SLURM_SUCCESS;
 		llfree_job_info(job_info, LL_JOB_VERSION);
 	} else {
