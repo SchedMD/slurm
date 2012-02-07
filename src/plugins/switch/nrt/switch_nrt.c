@@ -579,7 +579,7 @@ extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
  */
 static int _nrt_version_ok(void)
 {
-	return((nrt_version() == NRT_VERSION) ? 1 : 0);
+	return ((NRT_VERSION == 1100) ? 1 : 0);
 }
 
 int switch_p_node_init(void)

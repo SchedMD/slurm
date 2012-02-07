@@ -140,10 +140,8 @@ struct nrt_jobinfo {
 };
 
 typedef struct {
-	char adapter_name[NRT_MAX_DEVICENAME_SIZE];
+	char adapter_names[NRT_MAX_ADAPTER_NAME_LEN];
 	uint16_t adapter_type;
-	uint16_t lid[MAX_SPIGOTS];
-	uint64_t network_id[MAX_SPIGOTS];
 } nrt_cache_entry_t;
 
 /*
@@ -151,18 +149,19 @@ typedef struct {
  */
 nrt_libstate_t *nrt_state = NULL;
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
+#define NRT_MAX_ADAPTERS (NRT_MAX_ADAPTERS_PER_TYPE * NRT_MAX_ADAPTER_TYPES)
 
 /* slurmd/slurmstepd global variables */
 hostlist_t adapter_list;
 uint16_t   adapter_type_code = 0;
-static nrt_cache_entry_t lid_cache[NRT_MAXADAPTERS];
+static int lid_cache_size = 0;
+static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 
 static int  _fill_in_adapter_cache(void);
 static void _hash_rebuild(nrt_libstate_t *state);
 static void _init_adapter_cache(void);
 static int  _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 			    uint16_t adapter_type);
-static int  _parse_nrt_file(hostlist_t *adapter_list, uint16_t *adapter_code);
 static char *_win_state_str(win_state_t state);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a
@@ -223,13 +222,6 @@ nrt_slurmd_init(void)
 	nrt_umask = umask(0077);
 	umask(nrt_umask);
 
-	/*_init_adapter_cache();*/
-
-	adapter_list = hostlist_create(NULL);
-	if (_parse_nrt_file(&adapter_list, &adapter_type_code) !=
-	    SLURM_SUCCESS)
-		return SLURM_FAILURE;
-	assert(hostlist_count(adapter_list) <= NRT_MAXADAPTERS);
 	return SLURM_SUCCESS;
 }
 
@@ -243,13 +235,6 @@ nrt_slurmd_step_init(void)
 	umask(nrt_umask);
 
 	_init_adapter_cache();
-
-	adapter_list = hostlist_create(NULL);
-	if (_parse_nrt_file(&adapter_list, &adapter_type_code) !=
-	    SLURM_SUCCESS)
-		return SLURM_FAILURE;
-	assert(hostlist_count(adapter_list) <= NRT_MAXADAPTERS);
-
 	_fill_in_adapter_cache();
 
 	return SLURM_SUCCESS;
@@ -417,15 +402,7 @@ _print_libstate(const nrt_libstate_t *l)
 static void
 _init_adapter_cache(void)
 {
-	int i, j;
-
-	for (i = 0; i < NRT_MAXADAPTERS; i++) {
-		lid_cache[i].adapter_name[0] = '\0';
-		for (j = 0; j < MAX_SPIGOTS; j++) {
-			lid_cache[i].lid[j] = (uint16_t) -1;
-			lid_cache[i].network_id[j] = (uint64_t) -1;
-		}
-	}
+	lid_cache_size = 0;
 }
 
 /* Use nrt_adapter_resources to cache information about local adapters.
@@ -435,46 +412,53 @@ _init_adapter_cache(void)
 static int
 _fill_in_adapter_cache(void)
 {
-	hostlist_iterator_t adapters;
-	char *adapter_name = NULL;
-	adap_resources_t res;
-	int num;
-	int rc;
-	int i, j;
+	int err, i, j, rc = SLURM_SUCCESS;
+	nrt_cmd_query_adapter_types_t adapter_types;
+	nrt_cmd_query_adapter_names_t adapter_names;
 
-	adapters = hostlist_iterator_create(adapter_list);
-	for (i = 0; (adapter_name = hostlist_next(adapters)); i++) {
-		rc = nrt_adapter_resources(NRT_VERSION, adapter_name,
-					    adapter_type_code, &res);
-		if (rc != NRT_SUCCESS) {
-			error("nrt_adapter_resources(%s, %hu): %s",
-			      adapter_name, adapter_type_code,
-			      nrt_err_str(rc));
-			free(adapter_name);
-			return SLURM_ERROR;
-		}
 #if NRT_DEBUG
-		info("_fill_in_adapter_cache: nrt_adapter_resources():");
-		_print_adapter_resources(adapter_name, adapter_type_code,
-					 &res);
+	info("_fill_in_adapter_cache: begin");
 #endif
-
-		num = adapter_name[3] - (int)'0';
-		assert(num < NRT_MAXADAPTERS);
-		for (j = 0; j < MAX_SPIGOTS; j++) {
-			lid_cache[num].lid[j] = res.lid[j];
-			lid_cache[num].network_id[j] = res.network_id[j];
-		}
-		strncpy(lid_cache[num].adapter_name, adapter_name,
-			NRT_MAX_DEVICENAME_SIZE);
-
-		free(res.window_list);
-		free(adapter_name);
+	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+			  &adapter_types);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		return SLURM_ERROR;
 	}
-	hostlist_iterator_destroy(adapters);
-	umask(nrt_umask);
 
-	return SLURM_SUCCESS;
+	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
+#if NRT_DEBUG
+		info("adapter_type[%d]: %u",
+		     i, adapter_types.adapter_types[i]);
+#endif
+		adapter_names.adapter_type = adapter_types.adapter_types[i];
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				  &adapter_names);
+		if (err != NRT_SUCCESS) {
+			error("nrt_command(adapter_names, %u): %s",
+			      adapter_names.adapter_type, nrt_err_str(err));
+			rc = SLURM_ERROR;
+			continue;
+		}
+		for (j = 0; j < adapter_names.num_adapter_names[0]; j++) {
+#if NRT_DEBUG
+			info("adapter_names[%d]: %s",
+			     j, adapter_names.adapter_names[j]);
+#endif
+			adapter_status.adapter_name = adapter_names.
+						      adapter_names[j];
+			lid_cache[lid_cache_size].adapter_type = adapter_names.
+								 adapter_type;
+			strncpy(lid_cache[lid_cache_size].adapter_name,
+				adapter_names.adapter_names[j],
+				NRT_MAX_ADAPTER_NAME_LEN);
+			lid_cache_size++;
+		}
+	}
+#if NRT_DEBUG
+	info("_fill_in_adapter_cache: complete: %d", rc);
+#endif
+	return rc;
 }
 
 
@@ -594,67 +578,6 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
 	}
 	free(status);
 	nrt_adapter->window_list = tmp_winlist;
-
-	return SLURM_SUCCESS;
-}
-
-static char *_get_nrt_conf(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *rc;
-	int i;
-
-	if (!val)
-		return xstrdup(NRT_CONFIG_FILE);
-
-	/* Replace file name on end of path */
-	i = strlen(val) - strlen("slurm.conf") + strlen("nrt.conf") + 1;
-	rc = xmalloc(i);
-	strcpy(rc, val);
-	val = strrchr(rc, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = rc;
-	strcpy(val, "nrt.conf");
-	return rc;
-}
-
-static int _parse_nrt_file(hostlist_t *adapter_list, uint16_t *adapter_code)
-{
-	s_p_options_t options[] = {
-		{"AdapterName", S_P_STRING},
-		{"AdapterType", S_P_STRING},
-		{NULL}};
-	s_p_hashtbl_t *tbl;
-	char *adapter_name, *adapter_type;
-
-	debug("Reading the nrt.conf file");
-	if (!nrt_conf)
-		nrt_conf = _get_nrt_conf();
-
-	tbl = s_p_hashtbl_create(options);
-	if (s_p_parse_file(tbl, NULL, nrt_conf, false) == SLURM_ERROR)
-		fatal("something wrong with opening/reading nrt.conf file");
-
-	if (s_p_get_string(&adapter_name, "AdapterName", tbl)) {
-		int rc;
-		rc = hostlist_push(*adapter_list, adapter_name);
-		if (rc == 0)
-			error("Adapter name format is incorrect.");
-		xfree(adapter_name);
-	}
-	if (s_p_get_string(&adapter_type, "AdapterType", tbl)) {
-		if (!strcasecmp(adapter_type, "IB") ||
-		    !strcasecmp(adapter_type, "InfiniBand")) {
-			*adapter_code = RSCT_DEVTYPE_INFINIBAND;
-		} else {
-			error("Adapter type is invalid (%s).", adapter_type);
-		}
-		xfree(adapter_type);
-	}
-
-	s_p_hashtbl_destroy(tbl);
 
 	return SLURM_SUCCESS;
 }
@@ -2243,27 +2166,44 @@ nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid)
  */
 static int
 _unload_window(char *adapter_name, uint16_t adapter_type,
-	       unsigned short job_key, unsigned short window_id, int retry)
+	       nrt_job_key_t job_key, nrt_window_id_t window_id, int retry)
 {
-	int i;
-	int err;
+	int err, i;
+	nrt_cmd_clean_window_t  clean_window;
+	nrt_cmd_unload_window_t unload_window;
 
 	for (i = 0; i < retry; i++) {
-		if (i > 0)
+		if (i > 0) {
 			sleep(1);
-		err = nrt_unload_window(NRT_VERSION, adapter_name,
-					adapter_type, job_key, window_id);
+		} else {
+			unload_window.adapter_name = adapter_name;
+			unload_window.adapter_type = adapter_type;
+			unload_window.job_key = job_key;
+			unload_window.window_id = window_id;
+		}
+#if NRT_DEBUG
+		info("nrt_command(unload_window, %s, %u, %u, %hu)",
+		      adapter_name, adapter_type, job_key, window_id);
+#endif
+		err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
+				  &unload_window);
 		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
-		debug("Unable to unload window for job_key %hd, "
+		debug("Unable to unload window for job_key %hu, "
 		      "nrt_unload_window(%s, %u): %s",
 		      job_key, adapter_name, adapter_type, nrt_err_str(err));
 
-		err = nrt_clean_window(NRT_VERSION, adapter_name,
-				adapter_type, KILL, window_id);
+		if (i == 0) {
+			clean_window.adapter_name = adapter_name;
+			clean_window.adapter_type = adapter_type;
+			clean_window.leave_inuse_or_kill = KILL;
+			clean_window.window_id = window_id;
+		}
+		err = nrt_command(NRT_VERSION, NRT_CMD_CLEAN_WINDOW,
+				  &clean_window);
 		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
-		error("Unable to clean window for job_key %hd, "
+		error("Unable to clean window for job_key %hu, "
 		      "nrt_clean_window(%s, %u): %s",
 		      job_key, adapter_name, adapter_type, nrt_err_str(err));
 	}
@@ -2280,48 +2220,20 @@ _unload_window(char *adapter_name, uint16_t adapter_type,
 extern int
 nrt_unload_table(nrt_jobinfo_t *jp)
 {
-	int i, j;
-	int err = SLURM_SUCCESS, rc = SLURM_SUCCESS;
-	char *adapter_name;
-	uint16_t adapter_type;
-	nrt_creator_per_task_input_t *table;
-	uint32_t table_length;
-	int local_lid;
+	int err, i, j, rc = SLURM_SUCCESS;
 	int retry = 15;
 
         assert(jp);
         assert(jp->magic == NRT_JOBINFO_MAGIC);
 	for (i = 0; i < jp->tables_per_task; i++) {
-		table        = jp->tableinfo[i].table;
-		table_length = jp->tableinfo[i].table_length;
-		adapter_name = jp->tableinfo[i].adapter_name;
-		adapter_type = jp->tableinfo[i].adapter_type;
-		local_lid = _get_lid_from_adapter(adapter_name);
-
-		for (j = 0; j < table_length; j++) {
-/* FIXME: table contains a union, it could contain either IB or HPCE data */
-			if (adapter_type == RSCT_DEVTYPE_INFINIBAND) {
-				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-				ib_tbl_ptr = &table[j].ib_per_task;
-				if (ib_tbl_ptr->base_lid != local_lid)
-					continue;
-				debug3("freeing adapter %s base_lid %hu "
-				       "win_id %hu job_key %hu",
-				       adapter_name, ib_tbl_ptr->base_lid,
-				       ib_tbl_ptr->win_id, jp->job_key);
-				err = _unload_window(adapter_name,
-						     adapter_type,
-						     jp->job_key,
-						     ib_tbl_ptr->win_id,
-						     retry);
-			} else {
-				fatal("nrt_unload_table: lack HPCE code");
-			}
-			if (err != SLURM_SUCCESS) {
-				rc = err;
-				slurm_seterrno(EUNLOAD);
-				retry = 2;
-			}
+		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
+			err = _unload_window(jp->tableinfo[i].adapter_name,
+					     jp->tableinfo[i].adapter_type,
+					     jp->job_key,
+					     jp->tableinfo[i].table[j].window_id,
+					     retry);
+			if (err != NRT_SUCCESS)
+				rc = SLURM_ERROR;
 		}
 	}
 	return rc;
@@ -2521,56 +2433,89 @@ nrt_libstate_clear(void)
 
 extern int nrt_clear_node_state(void)
 {
-	int err, j;
-	adap_resources_t res;
-	hostlist_iterator_t adapters;
-	char *adapter_name;
+	int err, i, j, k, rc = SLURM_SUCCESS;
+	nrt_cmd_query_adapter_types_t adapter_types;
+	nrt_cmd_query_adapter_names_t adapter_names;
+	nrt_cmd_status_adapter_t adapter_status;
+	nrt_cmd_clean_window_t clean_window;
 
-	if (!adapter_list) {
-		/*
-		 * Work-around for the nrt_* functions calling umask(0)
-		 */
-		nrt_umask = umask(0077);
-		umask(nrt_umask);
-
-		adapter_list = hostlist_create(NULL);
-		if (_parse_nrt_file(&adapter_list, &adapter_type_code) !=
-		    SLURM_SUCCESS)
-			return SLURM_FAILURE;
+#if NRT_DEBUG
+	info("nrt_clear_node_state: begin");
+#endif
+	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+			  &adapter_types);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		return SLURM_ERROR;
 	}
 
-	adapters = hostlist_iterator_create(adapter_list);
-	while ((adapter_name = hostlist_next(adapters))) {
-		err = nrt_adapter_resources(NRT_VERSION, adapter_name,
-					    adapter_type_code, &res);
+	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
+#if NRT_DEBUG
+		info("adapter_type[%d]: %u",
+		     i, adapter_types.adapter_types[i]);
+#endif
+		adapter_names.adapter_type = adapter_types.adapter_types[i];
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				  &adapter_names);
 		if (err != NRT_SUCCESS) {
-			error("nrt_adapter_resources(%s, %hu): %s",
-			      adapter_name, adapter_type_code,
-			      nrt_err_str(err));
-			free(adapter_name);
+			error("nrt_command(adapter_names, %u): %s",
+			      adapter_names.adapter_type, nrt_err_str(err));
+			rc = SLURM_ERROR;
 			continue;
 		}
+		for (j = 0; j < adapter_names.num_adapter_names[0]; j++) {
 #if NRT_DEBUG
-		info("nrt_clear_node_state: nrt_adapter_resources():");
-		_print_adapter_resources(adapter_name, adapter_type_code,
-					 &res);
+			info("adapter_names[%d]: %s",
+			     j, adapter_names.adapter_names[j]);
 #endif
-		for (j = 0; j < res.window_count; j++) {
-			err = nrt_clean_window(NRT_VERSION, adapter_name,
-						adapter_type_code, KILL, 
-						res.window_list[j]);
+			adapter_status.adapter_name = adapter_names.
+						      adapter_names[j];
+			adapter_status.adapter_type = adapter_names.
+						      adapter_type;
+			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
+					  &adapter_status);
 			if (err != NRT_SUCCESS) {
-				error("nrt_clean_window(%s, %hu): %s",
-				      adapter_name, adapter_type_code,
+				error("nrt_command(clean_status, %s, %u): %s",
+				      adapter_status.adapter_name,
+				      adapter_status.adapter_type,
 				      nrt_err_str(err));
+				rc = SLURM_ERROR;
+				continue;
+			}
+
+			for (k = 0; k < adapter_status.window_count[0]; k++) {
+#if NRT_DEBUG
+				info("window_id[%d]: %u", k,
+				     adapter_status.status_array[k]->
+				     window_id);
+#endif
+				clean_window.adapter_name = adapter_names.
+							    adapter_names[i];
+				clean_window.adapter_type = adapter_names.
+							    adapter_type;
+				clean_window.leave_inuse_or_kill = KILL;
+				clean_window.window_id = adapter_status.
+							 status_array[k]->
+							 window_id;
+				err = nrt_command(NRT_VERSION,
+						  NRT_CMD_CLEAN_WINDOW,
+						  &clean_window);
+				if (err != NRT_SUCCESS) {
+					error("nrt_command(clean_window, "
+					      "%s, %u, %u): %s",
+					      clean_window.adapter_name,
+					      clean_window.adapter_type,
+					      clean_window.window_id,
+					      nrt_err_str(err));
+					rc = SLURM_ERROR;
+				}
 			}
 		}
-		free(res.window_list);
-		free(adapter_name);
 	}
-	hostlist_iterator_destroy(adapters);
-
-	return SLURM_SUCCESS;
+#if NRT_DEBUG
+	info("nrt_clear_node_state: complete: %d", rc);
+#endif
+	return rc;
 }
 
 extern char *nrt_err_str(int rc)
@@ -2582,6 +2527,12 @@ extern char *nrt_err_str(int rc)
 		return "Already loaded";
 	case NRT_BAD_VERSION:
 		return "Bad version";
+	case NRT_CAU_EXCEEDED:
+		return "CAU index request exeeds available resources";
+	case NRT_CAU_RESERVE:
+		return "Error during CAU index reserve";
+	case NRT_CAU_UNRESERVE:
+		return "Error during CAU index unreserve";
 	case NRT_EADAPTER:
 		return "Invalid adapter name";
 	case NRT_EADAPTYPE:
@@ -2596,17 +2547,41 @@ extern char *nrt_err_str(int rc)
 		return "Memory allocation error";
 	case NRT_EPERM:
 		return "Permission denied, not root";
+	case NRT_ERR_COMMAND_TYPE:
+		return "Invalid command type";
 	case NRT_ESYSTEM:
 		return "A system error occured";
+	case NRT_IMM_SEND_RESERVE:
+		return "Error during immediate send slot reserve";
+	case NRT_NO_FREE_WINDOW:
+		return "No free window";
 	case NRT_NO_RDMA_AVAIL:
 		return "No RDMA windows available";
+	case NRT_NTBL_LOAD_FAILED:
+		return "Failed to load NTBL";
+	case NRT_NTBL_NOT_FOUND:
+		return "NTBL not found";
+	case NRT_NTBL_UNLOAD_FAILED:
+		return "Failed to unload NTBL";
+	case NRT_OP_NOT_VALID:
+		return "Requested operation not valid for given device";
 	case NRT_PNSDAPI:
 		return "Error communicating with Protocol Network Services "
 		       "Daemon";
+	case NRT_RDMA_CLEAN_FAILED:
+		return "Task RDMA cleanup failed";
 	case NRT_SUCCESS:
 		return "Success";
+	case NRT_TIMEOUT:
+		return "No response back from PNSD/job";
 	case NRT_UNKNOWN_ADAPTER:
 		return "Unknown adaper";
+	case NRT_WIN_CLOSE_FAILED:
+		return "Task can not close window";
+	case NRT_WIN_OPEN_FAILED:
+		return "Task can not open window";
+	case NRT_WRONG_PREEMPT_STATE:
+		return "Invalid preemption state";
 	case NRT_WRONG_WINDOW_STATE:
 		return "Wrong window state";
 	}
