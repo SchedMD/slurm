@@ -66,11 +66,16 @@
 #define NRT_NODEINFO_MAGIC	0xc00cc00a
 #define NRT_JOBINFO_MAGIC	0xc00cc00b
 #define NRT_LIBSTATE_MAGIC	0xc00cc00c
-#define NRT_HOSTLEN 20
+#define NRT_HOSTLEN		20
+#define NRT_NODECOUNT		128
+#define NRT_HASHCOUNT		128
+#define NRT_MAX_ADAPTERS (NRT_MAX_ADAPTERS_PER_TYPE * NRT_MAX_ADAPTER_TYPES)
 
 #if 1
-pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
-mode_t nrt_umask;
+pthread_mutex_t		global_lock = PTHREAD_MUTEX_INITIALIZER;
+extern bool		nrt_need_state_save;
+slurm_nrt_libstate_t *	nrt_state = NULL;
+mode_t			nrt_umask;
 
 /*
  * Data structures specific to switch/nrt
@@ -104,6 +109,16 @@ typedef struct slurm_nrt_nodeinfo {
 	struct slurm_nrt_nodeinfo *next;
 } slurm_nrt_nodeinfo_t;
 
+struct slurm_nrt_libstate {
+	uint32_t magic;
+	uint32_t node_count;
+	uint32_t node_max;
+	slurm_nrt_nodeinfo_t *node_list;
+	uint32_t hash_max;
+	slurm_nrt_nodeinfo_t **hash_table;
+	uint16_t key_index;
+};
+
 /* The _lock() and _unlock() functions are used to lock/unlock a
  * global mutex.  Used to serialize access to the global library
  * state variable nrt_state.
@@ -128,6 +143,158 @@ _unlock(void)
 	}
 }
 
+/* The idea behind keeping the hash table was to avoid a linear
+ * search of the node list each time we want to retrieve or
+ * modify a node's data.  The _hash_index function translates
+ * a node name to an index into the hash table.
+ *
+ * Used by: slurmctld
+ */
+static int
+_hash_index(char *name)
+{
+	int index = 0;
+	int j;
+
+	assert(name);
+
+	/* Multiply each character by its numerical position in the
+	 * name string to add a bit of entropy, because host names such
+	 * as cluster[0001-1000] can cause excessive index collisions.
+	 */
+	for (j = 1; *name; name++, j++)
+		index += (int)*name * j;
+	index %= nrt_state->hash_max;
+
+	return index;
+}
+
+/* Tries to find a node fast using the hash table
+ *
+ * Used by: slurmctld
+ */
+static slurm_nrt_nodeinfo_t *
+_find_node(slurm_nrt_libstate_t *lp, char *name)
+{
+	int i;
+	slurm_nrt_nodeinfo_t *n;
+
+	assert(name);
+	assert(lp);
+
+	if (lp->node_count == 0)
+		return NULL;
+
+	if (lp->hash_table) {
+		i = _hash_index(name);
+		n = lp->hash_table[i];
+		while (n) {
+			assert(n->magic == NRT_NODEINFO_MAGIC);
+			if (!strncmp(n->name, name, NRT_HOSTLEN))
+				return n;
+			n = n->next;
+		}
+	}
+
+	return NULL;
+}
+
+/* Add the hash entry for a newly created slurm_nrt_nodeinfo_t
+ */
+static void
+_hash_add_nodeinfo(slurm_nrt_libstate_t *state, slurm_nrt_nodeinfo_t *node)
+{
+	int index;
+
+	assert(state);
+	assert(state->hash_table);
+	assert(state->hash_max >= state->node_count);
+	if (!node->name[0])
+		return;
+	index = _hash_index(node->name);
+	node->next = state->hash_table[index];
+	state->hash_table[index] = node;
+}
+
+/* Recreates the hash table for the node list.
+ *
+ * Used by: slurmctld
+ */
+static void
+_hash_rebuild(slurm_nrt_libstate_t *state)
+{
+	int i;
+
+	assert(state);
+
+	if (state->hash_table)
+		xfree(state->hash_table);
+	if ((state->node_count > state->hash_max) || (state->hash_max == 0))
+		state->hash_max += NRT_HASHCOUNT;
+	state->hash_table = (slurm_nrt_nodeinfo_t **)
+			    xmalloc(sizeof(slurm_nrt_nodeinfo_t *) *
+			    state->hash_max);
+	for (i = 0; i < state->node_count; i++)
+		_hash_add_nodeinfo(state, &(state->node_list[i]));
+}
+
+/* If the node is already in the node list then simply return
+ * a pointer to it, otherwise dynamically allocate memory to the
+ * node list if necessary.
+ *
+ * Used by: slurmctld
+ */
+static slurm_nrt_nodeinfo_t *
+_alloc_node(slurm_nrt_libstate_t *lp, char *name)
+{
+	slurm_nrt_nodeinfo_t *n = NULL;
+	int new_bufsize;
+	bool need_hash_rebuild = false;
+
+	assert(lp);
+
+	if (name != NULL) {
+		n = _find_node(lp, name);
+		if (n != NULL)
+			return n;
+	}
+
+	nrt_need_state_save = true;
+
+	if (lp->node_count >= lp->node_max) {
+		lp->node_max += NRT_NODECOUNT;
+		new_bufsize = lp->node_max * sizeof(slurm_nrt_nodeinfo_t);
+		if (lp->node_list == NULL) {
+			lp->node_list = (slurm_nrt_nodeinfo_t *)
+					xmalloc(new_bufsize);
+		} else {
+			lp->node_list = (slurm_nrt_nodeinfo_t *)
+					xrealloc(lp->node_list, new_bufsize);
+		}
+		need_hash_rebuild = true;
+	}
+	if (lp->node_list == NULL) {
+		slurm_seterrno(ENOMEM);
+		return NULL;
+	}
+
+	n = lp->node_list + (lp->node_count++);
+	n->magic = NRT_NODEINFO_MAGIC;
+	n->name[0] = '\0';
+	n->adapter_list = (struct slurm_nrt_adapter *)
+			  xmalloc(NRT_MAXADAPTERS *
+			  sizeof(struct slurm_nrt_adapter));
+
+	if (name != NULL) {
+		strncpy(n->name, name, NRT_HOSTLEN);
+		if (need_hash_rebuild || (lp->node_count > lp->hash_max))
+			_hash_rebuild(lp);
+		else
+			_hash_add_nodeinfo(lp, n);
+	}
+
+	return n;
+}
 static char *_win_state_str(win_state_t state)
 {
 	if (state == NRT_WIN_UNAVAILABLE)
@@ -181,16 +348,6 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 	info("--End Node Info--");
 }
 #endif
-
-/* Tries to find a node fast using the hash table
- *
- * Used by: slurmctld
- */
-static slurm_nrt_nodeinfo_t *
-_find_node(slurm_nrt_libstate_t *lp, char *name)
-{
-	return NULL;
-}
 
 extern int
 nrt_slurmctld_init(void)
@@ -540,7 +697,9 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	/*
 	 * Update global libstate with this nodes' info.
 	 */
-	tmp_n = xmalloc(sizeof(slurm_nrt_nodeinfo_t));
+	tmp_n = _alloc_node(nrt_state, name);
+	if (tmp_n == NULL)
+		return SLURM_ERROR;
 	tmp_n->magic = magic;
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for (i = 0; i < tmp_n->adapter_count; i++) {
@@ -918,14 +1077,11 @@ extern char *nrt_err_str(int rc)
 /* THIS IS OLD CODE, LIKELY TO BE MODIFIED AND MERGED INTO THE ABOVE #ifdef   */
 /******************************************************************************/
 #define JOB_DESC_LEN 64	/* Length of job description */
-#define NRT_NODECOUNT 128
-#define NRT_HASHCOUNT 128
 #define NRT_AUTO_WINMEM 0
 #define NRT_MAX_WIN 15
 #define NRT_MIN_WIN 0
 
 char* nrt_conf = NULL;
-extern bool nrt_need_state_save;
 
 mode_t nrt_umask;
 
@@ -964,9 +1120,7 @@ typedef struct {
 /*
  * Globals
  */
-nrt_libstate_t *nrt_state = NULL;
-pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
-#define NRT_MAX_ADAPTERS (NRT_MAX_ADAPTERS_PER_TYPE * NRT_MAX_ADAPTER_TYPES)
+
 
 /* slurmd/slurmstepd global variables */
 hostlist_t adapter_list;
@@ -1334,158 +1488,6 @@ nrt_alloc_jobinfo(nrt_jobinfo_t **j)
 	*j = new;
 
 	return 0;
-}
-
-/* The idea behind keeping the hash table was to avoid a linear
- * search of the node list each time we want to retrieve or
- * modify a node's data.  The _hash_index function translates
- * a node name to an index into the hash table.
- *
- * Used by: slurmctld
- */
-static int
-_hash_index(char *name)
-{
-	int index = 0;
-	int j;
-
-	assert(name);
-
-	/* Multiply each character by its numerical position in the
-	 * name string to add a bit of entropy, because host names such
-	 * as cluster[0001-1000] can cause excessive index collisions.
-	 */
-	for (j = 1; *name; name++, j++)
-		index += (int)*name * j;
-	index %= nrt_state->hash_max;
-
-	return index;
-}
-
-/* Tries to find a node fast using the hash table
- *
- * Used by: slurmctld
- */
-static nrt_nodeinfo_t *
-_find_node(nrt_libstate_t *lp, char *name)
-{
-	int i;
-	nrt_nodeinfo_t *n;
-
-	assert(name);
-	assert(lp);
-
-	if (lp->node_count == 0)
-		return NULL;
-
-	if (lp->hash_table) {
-		i = _hash_index(name);
-		n = lp->hash_table[i];
-		while (n) {
-			assert(n->magic == NRT_NODEINFO_MAGIC);
-			if (!strncmp(n->name, name, NRT_HOSTLEN))
-				return n;
-			n = n->next;
-		}
-	}
-
-	return NULL;
-}
-
-/* Add the hash entry for a newly created nrt_nodeinfo_t
- */
-static void
-_hash_add_nodeinfo(nrt_libstate_t *state, nrt_nodeinfo_t *node)
-{
-	int index;
-
-	assert(state);
-	assert(state->hash_table);
-	assert(state->hash_max >= state->node_count);
-	if (!strlen(node->name))
-		return;
-	index = _hash_index(node->name);
-	node->next = state->hash_table[index];
-	state->hash_table[index] = node;
-}
-
-/* Recreates the hash table for the node list.
- *
- * Used by: slurmctld
- */
-static void
-_hash_rebuild(nrt_libstate_t *state)
-{
-	int i;
-
-	assert(state);
-
-	if (state->hash_table)
-		xfree(state->hash_table);
-	if (state->node_count > state->hash_max || state->hash_max == 0)
-		state->hash_max += NRT_HASHCOUNT;
-	state->hash_table = (nrt_nodeinfo_t **)
-			    xmalloc(sizeof(nrt_nodeinfo_t *) * state->hash_max);
-	memset(state->hash_table, 0,
-	       sizeof(nrt_nodeinfo_t *) * state->hash_max);
-	for (i = 0; i < state->node_count; i++)
-		_hash_add_nodeinfo(state, &(state->node_list[i]));
-}
-
-/* If the node is already in the node list then simply return
- * a pointer to it, otherwise dynamically allocate memory to the
- * node list if necessary.
- *
- * Used by: slurmctld
- */
-static nrt_nodeinfo_t *
-_alloc_node(nrt_libstate_t *lp, char *name)
-{
-	nrt_nodeinfo_t *n = NULL;
-	int new_bufsize;
-	bool need_hash_rebuild = false;
-
-	assert(lp);
-
-	if (name != NULL) {
-		n = _find_node(lp, name);
-		if (n != NULL)
-			return n;
-	}
-
-	nrt_need_state_save = true;
-
-	if (lp->node_count >= lp->node_max) {
-		lp->node_max += NRT_NODECOUNT;
-		new_bufsize = lp->node_max * sizeof(nrt_nodeinfo_t);
-		if (lp->node_list == NULL) {
-			lp->node_list = (nrt_nodeinfo_t *)xmalloc(new_bufsize);
-		} else {
-			lp->node_list = (nrt_nodeinfo_t *)xrealloc(lp->node_list,
-								   new_bufsize);
-		}
-		need_hash_rebuild = true;
-	}
-	if (lp->node_list == NULL) {
-		slurm_seterrno(ENOMEM);
-		return NULL;
-	}
-
-	n = lp->node_list + (lp->node_count++);
-	n->magic = NRT_NODEINFO_MAGIC;
-	n->name[0] = '\0';
-	n->adapter_list = (struct nrt_adapter *) xmalloc(NRT_MAXADAPTERS *
-			  sizeof(struct nrt_adapter));
-
-	if (name != NULL) {
-		strncpy(n->name, name, NRT_HOSTLEN);
-		if (need_hash_rebuild || lp->node_count > lp->hash_max)
-			_hash_rebuild(lp);
-		else
-			_hash_add_nodeinfo(lp, n);
-	}
-
-	return n;
 }
 
 
