@@ -47,7 +47,7 @@
 #endif
 
 enum {
-	/* Federation specific get_jobinfo keys */
+	/* NRT specific get_jobinfo keys */
 	NRT_JOBINFO_TABLEINFO,
 	NRT_JOBINFO_TABLESPERTASK,
 	NRT_JOBINFO_KEY,
@@ -55,10 +55,10 @@ enum {
 	NRT_JOBINFO_MODE
 };
 
-/* Information shared between slurm_ll_api and the slurm federation driver */
+/* Information shared between slurm_ll_api and the slurm NRT driver */
 typedef struct nrt_tableinfo {
 	uint32_t table_length;
-	void *table; /* Pointer to nrt_ib_task_info_t or nrt_hfi_task_info_t */
+	void *table; /* Pointer to nrt_*_task_info_t*/
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	uint16_t adapter_type;
 } nrt_tableinfo_t;

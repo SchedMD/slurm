@@ -95,20 +95,20 @@ typedef struct nrt_window {
 	uint16_t job_key;  /* FIXME: Perhaps change to uid or client_pid? */
 } nrt_window_t;
 
-typedef struct nrt_adapter {
+struct nrt_adapter {
 	char adapter_name[NRT_MAX_DEVICENAME_SIZE];
 	uint16_t adapter_type;
-	uint16_t lid[MAX_SPIGOTS];
-	uint64_t network_id[MAX_SPIGOTS];
+	uint16_t lid;
+	uint64_t network_id;
 	uint16_t window_count;
 	nrt_window_t *window_list;
-} nrt_adapter_t;
+};
 
 struct nrt_nodeinfo {
 	uint32_t magic;
 	char name[NRT_HOSTLEN];
 	uint32_t adapter_count;
-	nrt_adapter_t *adapter_list;
+	struct nrt_adapter *adapter_list;
 	struct nrt_nodeinfo *next;
 };
 
@@ -140,7 +140,7 @@ struct nrt_jobinfo {
 };
 
 typedef struct {
-	char adapter_names[NRT_MAX_ADAPTER_NAME_LEN];
+	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	uint16_t adapter_type;
 } nrt_cache_entry_t;
 
@@ -160,7 +160,7 @@ static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 static int  _fill_in_adapter_cache(void);
 static void _hash_rebuild(nrt_libstate_t *state);
 static void _init_adapter_cache(void);
-static int  _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
+static int  _set_up_adapter(struct nrt_adapter *nrt_adapter, char *adapter_name,
 			    uint16_t adapter_type);
 static char *_win_state_str(win_state_t state);
 
@@ -342,7 +342,7 @@ static void
 _print_nodeinfo(nrt_nodeinfo_t *n)
 {
 	int i, j;
-	nrt_adapter_t *a;
+	struct nrt_adapter *a;
 	nrt_window_t *w;
 
 	assert(n);
@@ -469,7 +469,7 @@ _fill_in_adapter_cache(void)
  * Used by: slurmd
  */
 static void
-_cache_lid(nrt_adapter_t *ap)
+_cache_lid(struct nrt_adapter *ap)
 {
 	int j;
 	assert(ap);
@@ -507,7 +507,7 @@ _get_network_id_from_adapter(char *adapter_name)
 }
 
 
-static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
+static int _set_up_adapter(struct nrt_adapter *nrt_adapter, char *adapter_name,
 			   uint16_t adapter_type)
 {
 	adap_resources_t res;
@@ -569,7 +569,7 @@ static int _set_up_adapter(nrt_adapter_t *nrt_adapter, char *adapter_name,
  * Used by: slurmd
  */
 static int
-_get_adapters(nrt_adapter_t *list, int *count)
+_get_adapters(struct nrt_adapter *list, int *count)
 {
 	hostlist_iterator_t adapter_iter;
 	char *adapter_name = NULL;
@@ -626,7 +626,8 @@ nrt_alloc_nodeinfo(nrt_nodeinfo_t **n)
  	assert(n);
 
 	new = (nrt_nodeinfo_t *) xmalloc(sizeof(nrt_nodeinfo_t));
-	new->adapter_list = (nrt_adapter_t *) xmalloc(sizeof(nrt_adapter_t) *
+	new->adapter_list = (struct nrt_adapter *)
+			    xmalloc(sizeof(struct nrt_adapter) *
 			    NRT_MAXADAPTERS);
 	new->magic = NRT_NODEINFO_MAGIC;
 	new->adapter_count = 0;
@@ -669,7 +670,7 @@ extern int
 nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 {
 	int i, j;
-	nrt_adapter_t *a;
+	struct nrt_adapter *a;
 	int offset;
 
 	assert(n);
@@ -707,8 +708,8 @@ static int
 _copy_node(nrt_nodeinfo_t *dest, nrt_nodeinfo_t *src)
 {
 	int i, j;
-	nrt_adapter_t *sa = NULL;
-	nrt_adapter_t *da = NULL;
+	struct nrt_adapter *sa = NULL;
+	struct nrt_adapter *da = NULL;
 
 	assert(dest);
 	assert(src);
@@ -878,8 +879,8 @@ _alloc_node(nrt_libstate_t *lp, char *name)
 	n = lp->node_list + (lp->node_count++);
 	n->magic = NRT_NODEINFO_MAGIC;
 	n->name[0] = '\0';
-	n->adapter_list = (nrt_adapter_t *) xmalloc(NRT_MAXADAPTERS *
-			  sizeof(nrt_adapter_t));
+	n->adapter_list = (struct nrt_adapter *) xmalloc(NRT_MAXADAPTERS *
+			  sizeof(struct nrt_adapter));
 
 	if (name != NULL) {
 		strncpy(n->name, name, NRT_HOSTLEN);
@@ -945,7 +946,7 @@ static int
 _unpack_nodeinfo(nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 {
 	int i, j;
-	nrt_adapter_t *tmp_a = NULL;
+	struct nrt_adapter *tmp_a = NULL;
 	nrt_window_t *tmp_w = NULL;
 	uint32_t size;
 	nrt_nodeinfo_t *tmp_n = NULL;
@@ -1072,7 +1073,7 @@ nrt_unpack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
 extern void
 nrt_free_nodeinfo(nrt_nodeinfo_t *n, bool ptr_into_array)
 {
-	nrt_adapter_t *adapter;
+	struct nrt_adapter *adapter;
 	int i;
 
 	if (!n)
@@ -1122,7 +1123,7 @@ _next_key(void)
 
 /* FIXME - this could be a little smarter than walking the whole list each time */
 static nrt_window_t *
-_find_free_window(nrt_adapter_t *adapter) {
+_find_free_window(struct nrt_adapter *adapter) {
 	int i;
 	nrt_window_t *window;
 
@@ -1137,7 +1138,7 @@ _find_free_window(nrt_adapter_t *adapter) {
 
 
 static nrt_window_t *
-_find_window(nrt_adapter_t *adapter, uint16_t window_id) {
+_find_window(struct nrt_adapter *adapter, uint16_t window_id) {
 	int i;
 	nrt_window_t *window;
 
@@ -1165,7 +1166,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		      char *hostname, int task_id, uint16_t job_key)
 {
 	nrt_nodeinfo_t *node;
-	nrt_adapter_t *adapter;
+	struct nrt_adapter *adapter;
 	nrt_window_t *window;
 	int i;
 
@@ -1222,7 +1223,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 			char *hostname, int task_id, uint16_t job_key)
 {
 	nrt_nodeinfo_t *node;
-	nrt_adapter_t *adapter = NULL;
+	struct nrt_adapter *adapter = NULL;
 	nrt_window_t *window;
 	nrt_creator_per_task_input_t *table;
 	int i;
@@ -1294,7 +1295,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		  uint16_t job_key)
 {
 	nrt_nodeinfo_t *node = NULL;
-	nrt_adapter_t *adapter = NULL;
+	struct nrt_adapter *adapter = NULL;
 	nrt_window_t *window = NULL;
 	nrt_creator_per_task_input_t *table = NULL;
 	int i, j;
@@ -1452,7 +1453,7 @@ static void inline
 _free_windows_by_job_key(uint16_t job_key, char *nodename)
 {
 	nrt_nodeinfo_t *node;
-	nrt_adapter_t *adapter;
+	struct nrt_adapter *adapter;
 	nrt_window_t *window;
 	int i, j;
 
@@ -2015,8 +2016,13 @@ _check_rdma_job_count(char *adapter_name, uint16_t adapter_type)
 	uint16_t *job_keys;
 	int err, i;
 
+#if 1
+	err = NRT_SUCESS;
+#else
+/* FIXME: Address this later, RDMA jobs are those using bulk transters */
 	err = nrt_rdma_jobs(NRT_VERSION, adapter_name, adapter_type,
 			    &job_count, &job_keys);
+#endif
 	if (err != NRT_SUCCESS) {
 		error("nrt_rdma_jobs(): %s", nrt_err_str(err));
 		return SLURM_ERROR;
