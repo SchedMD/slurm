@@ -70,7 +70,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			 rm_connect_param *connect_param,
 			 int *rm_sockfds, int rm_timeout, char **error_msg)
 {
-	return -1;
+	return 0;
 }
 
 /* Releases the resource manager handle, closes the socket that is
@@ -95,7 +95,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
  */
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
-	return -1;
+	return 0;
 }
 
 /* This resource management interface is called to return job event
@@ -159,7 +159,7 @@ extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 			   int rm_timeout, char ** error_msg)
 {
-	return -1;
+	return 0;
 }
 
 /* The pe_rm_get_job_info function is called to return job
@@ -194,7 +194,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			      char ** error_msg)
 {
-	return -1;
+	return 0;
 }
 
 /* The handle to the resource manager is returned to the calling
@@ -259,7 +259,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		      char** error_msg);
 {
-	return -1;
+	return 0;
 }
 
 /* Used to inform the resource manager that a checkpoint is in
@@ -281,7 +281,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 			    char ** error_msg)
 {
-	return -1;
+	return 0;
 }
 
 /* This function is used to submit an interactive job to the resource
@@ -301,6 +301,6 @@ extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		     char** error_msg)
 {
-	return -1;
+	return 0;
 }
 
