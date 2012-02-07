@@ -66,18 +66,10 @@
 #define NRT_NODEINFO_MAGIC	0xc00cc00a
 #define NRT_JOBINFO_MAGIC	0xc00cc00b
 #define NRT_LIBSTATE_MAGIC	0xc00cc00c
-
-#define JOB_DESC_LEN 64	/* Length of job description */
 #define NRT_HOSTLEN 20
-#define NRT_NODECOUNT 128
-#define NRT_HASHCOUNT 128
-#define NRT_AUTO_WINMEM 0
-#define NRT_MAX_WIN 15
-#define NRT_MIN_WIN 0
 
-char* nrt_conf = NULL;
-extern bool nrt_need_state_save;
-
+#if 1
+pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 mode_t nrt_umask;
 
 /*
@@ -89,28 +81,585 @@ mode_t nrt_umask;
  * module.
  */
 
-typedef struct nrt_window {
-	uint16_t window_id;
-	uint32_t state;
-	uint16_t job_key;  /* FIXME: Perhaps change to uid or client_pid? */
-} nrt_window_t;
+typedef struct slurm_nrt_window {
+	nrt_window_id_t window_id;
+	win_state_t state;
+	nrt_job_key_t job_key;  /* FIXME: Perhaps change to uid or client_pid? */
+} slurm_nrt_window_t;
 
-struct nrt_adapter {
-	char adapter_name[NRT_MAX_DEVICENAME_SIZE];
-	uint16_t adapter_type;
-	uint16_t lid;
-	uint64_t network_id;
-	uint16_t window_count;
-	nrt_window_t *window_list;
-};
+typedef struct slurm_nrt_adapter {
+	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
+	nrt_adapter_t adapter_type;
+//	uint16_t lid;
+//	uint64_t network_id;
+	nrt_window_id_t window_count;
+	slurm_nrt_window_t *window_list;
+} slurm_nrt_adapter_t;
 
-struct nrt_nodeinfo {
+typedef struct slurm_nrt_nodeinfo {
 	uint32_t magic;
 	char name[NRT_HOSTLEN];
 	uint32_t adapter_count;
-	struct nrt_adapter *adapter_list;
-	struct nrt_nodeinfo *next;
-};
+	struct slurm_nrt_adapter *adapter_list;
+	struct slurm_nrt_nodeinfo *next;
+} slurm_nrt_nodeinfo_t;
+
+/* The _lock() and _unlock() functions are used to lock/unlock a
+ * global mutex.  Used to serialize access to the global library
+ * state variable nrt_state.
+ */
+static void
+_lock(void)
+{
+	int err = 1;
+
+	while (err) {
+		err = pthread_mutex_lock(&global_lock);
+	}
+}
+
+static void
+_unlock(void)
+{
+	int err = 1;
+
+	while (err) {
+		err = pthread_mutex_unlock(&global_lock);
+	}
+}
+
+static char *_win_state_str(win_state_t state)
+{
+	if (state == NRT_WIN_UNAVAILABLE)
+		return "Unavailable";
+	else if (state == NRT_WIN_INVALID)
+		return "Invalid";
+	else if (state == NRT_WIN_RESERVED)
+		return "Reserved";
+	else if (state == NRT_WIN_READY)
+		return "Ready";
+	else if (state == NRT_WIN_RUNNING)
+		return "Running";
+	else {
+		static char buf[16];
+		snprintf(buf, sizeof(buf), "%d", state);
+		return buf;
+	}
+}
+
+extern int
+nrt_slurmctld_init(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int
+nrt_slurmd_init(void)
+{
+	/*
+	 * This is a work-around for the nrt_* functions calling umask(0)
+	 */
+	nrt_umask = umask(0077);
+	umask(nrt_umask);
+
+	return SLURM_SUCCESS;
+}
+
+extern int
+nrt_slurmd_step_init(void)
+{
+	/*
+	 * This is a work-around for the nrt_* functions calling umask(0)
+	 */
+	nrt_umask = umask(0077);
+	umask(nrt_umask);
+
+	return SLURM_SUCCESS;
+}
+
+/* Used by: slurmd, slurmctld */
+extern int
+nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **j)
+{
+	return SLURM_SUCCESS;
+}
+
+
+/* Used by: slurmd, slurmctld */
+extern int
+nrt_alloc_nodeinfo(slurm_nrt_nodeinfo_t **n)
+{
+	slurm_nrt_nodeinfo_t *new;
+
+ 	assert(n);
+
+	new = (slurm_nrt_nodeinfo_t *) xmalloc(sizeof(slurm_nrt_nodeinfo_t));
+	new->adapter_list = (struct slurm_nrt_adapter *)
+			    xmalloc(sizeof(struct slurm_nrt_adapter) *
+			    NRT_MAX_ADAPTER_TYPES * NRT_MAX_ADAPTERS_PER_TYPE);
+	new->magic = NRT_NODEINFO_MAGIC;
+	new->adapter_count = 0;
+	new->next = NULL;
+
+	*n = new;
+
+	return 0;
+}
+
+static int
+_get_adapters(slurm_nrt_nodeinfo_t *n)
+{
+	int err, i, j, k, rc = SLURM_SUCCESS;
+	nrt_cmd_query_adapter_types_t adapter_types;
+	nrt_cmd_query_adapter_names_t adapter_names;
+	nrt_cmd_status_adapter_t adapter_status;
+
+#if NRT_DEBUG
+	info("nrt_build_nodeinfo: begin");
+#endif
+	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+			  &adapter_types);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		return SLURM_ERROR;
+	}
+
+	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
+#if NRT_DEBUG
+		info("adapter_type[%d]: %u",
+		     i, adapter_types.adapter_types[i]);
+#endif
+		adapter_names.adapter_type = adapter_types.adapter_types[i];
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				  &adapter_names);
+		if (err != NRT_SUCCESS) {
+			error("nrt_command(adapter_names, %u): %s",
+			      adapter_names.adapter_type, nrt_err_str(err));
+			rc = SLURM_ERROR;
+			continue;
+		}
+		for (j = 0; j < adapter_names.num_adapter_names[0]; j++) {
+			slurm_nrt_adapter_t *adapter_ptr;
+#if NRT_DEBUG
+			info("adapter_names[%d]: %s",
+			     j, adapter_names.adapter_names[j]);
+#endif
+			adapter_status.adapter_name = adapter_names.
+						      adapter_names[j];
+			adapter_status.adapter_type = adapter_names.
+						      adapter_type;
+			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
+					  &adapter_status);
+			if (err != NRT_SUCCESS) {
+				error("nrt_command(clean_status, %s, %u): %s",
+				      adapter_status.adapter_name,
+				      adapter_status.adapter_type,
+				      nrt_err_str(err));
+				rc = SLURM_ERROR;
+				continue;
+			}
+
+			adapter_ptr = &n->adapter_list[n->adapter_count];
+			strncpy(adapter_ptr->adapter_name,
+				adapter_status.adapter_name,
+				NRT_MAX_ADAPTER_NAME_LEN);
+			adapter_ptr->adapter_type = adapter_status.
+						    adapter_type;
+			adapter_ptr->window_count = adapter_status.
+						    window_count[0];
+			adapter_ptr->window_list =
+				xmalloc(sizeof(slurm_nrt_window_t) *
+					adapter_ptr->window_count);
+			n->adapter_count++;
+			for (k = 0; k < adapter_status.window_count[0]; k++) {
+				slurm_nrt_window_t *window_ptr;
+#if NRT_DEBUG
+				info("window_id[%d]: %u", k,
+				     adapter_status.status_array[k]->
+				     window_id);
+				info("state[%d]: %u", k,
+				     adapter_status.status_array[k]->state);
+				info("client_pid[%d]: %u", k,
+				     adapter_status.status_array[k]->
+				     client_pid);
+#endif
+				window_ptr = adapter_ptr->window_list + k;
+				window_ptr->window_id = adapter_status.
+							status_array[k]->
+							window_id;
+				window_ptr->state = adapter_status.
+							status_array[k]->
+							state;
+				window_ptr->job_key = adapter_status.
+							status_array[k]->
+							client_pid;
+			}
+		}
+	}
+#if NRT_DEBUG
+	info("nrt_build_nodeinfo: complete: %d", rc);
+#endif
+	return rc;
+}
+
+/* Assumes a pre-allocated nodeinfo structure and uses _get_adapters
+ * to do the dirty work.  We probably collect more information about
+ * the adapters on a give node than we need to but it was done
+ * in the interest of being prepared for future requirements.
+ *
+ * Used by: slurmd
+ */
+extern int
+nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
+{
+	int err;
+
+	assert(n);
+	assert(n->magic == NRT_NODEINFO_MAGIC);
+	assert(name);
+
+	strncpy(n->name, name, NRT_HOSTLEN);
+	_lock();
+	err = _get_adapters(n);
+	_unlock();
+
+	return err;
+}
+
+/* Used by: all */
+extern int
+nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Unpack nodeinfo and update persistent libstate.
+ *
+ * Used by: slurmctld
+ */
+extern int
+nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
+{
+	return SLURM_SUCCESS;
+}
+
+
+/* Used by: slurmd, slurmctld */
+extern void
+nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *n, bool ptr_into_array)
+{
+	return;
+}
+
+/* Find all of the windows used by job step "jp" on the hosts
+ * designated in hostlist "hl" and mark their state NRT_WIN_AVAILABLE.
+ *
+ * Used by: slurmctld
+ */
+extern int
+nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
+{
+	return SLURM_SUCCESS;
+}
+
+
+/* Find all of the windows used by job step "jp" and mark their
+ * state NRT_WIN_UNAVAILABLE.
+ *
+ * Used by the slurmctld at startup time to restore the allocation
+ * status of any job steps that were running at the time the previous
+ * slurmctld was shutdown.  Also used to restore the allocation
+ * status after a call to switch_clear().
+ */
+extern int
+nrt_job_step_allocated(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Setup everything for the job.  Assign tasks across
+ * nodes based on the hostlist given and create the network table used
+ * on all nodes of the job.
+ *
+ * Used by: slurmctld
+ */
+extern int
+nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
+		  bool sn_all, char *adapter_name, int bulk_xfer)
+{
+
+	return SLURM_SUCCESS;
+}
+
+/* Used by: all */
+extern int
+nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Used by: all */
+extern int
+nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Used by: all */
+extern slurm_nrt_jobinfo_t *
+nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
+{
+	return NULL;
+}
+
+/* Used by: all */
+extern void
+nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
+{
+	return;
+}
+
+/* Return data to code for whom jobinfo is an opaque type.
+ *
+ * Used by: all
+ */
+extern int
+nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Load a network table on node.  If table contains more than one window
+ * for a given adapter, load the table only once for that adapter.
+ *
+ * Used by: slurmd
+ */
+extern int
+nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Assumes that, on error, new switch state information will be
+ * read from node.
+ *
+ * Used by: slurmd
+ */
+extern int
+nrt_unload_table(slurm_nrt_jobinfo_t *jp)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Allocate and initialize memory for the persistent libstate.
+ *
+ * Used by: slurmctld
+ */
+extern int
+nrt_init(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int
+nrt_fini(void)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Used by: slurmctld */
+extern void
+nrt_libstate_save(Buf buffer, bool free_flag)
+{
+	return;
+}
+
+/* Used by: slurmctld */
+extern int
+nrt_libstate_restore(Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int
+nrt_libstate_clear(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int nrt_clear_node_state(void)
+{
+	int err, i, j, k, rc = SLURM_SUCCESS;
+	nrt_cmd_query_adapter_types_t adapter_types;
+	nrt_cmd_query_adapter_names_t adapter_names;
+	nrt_cmd_status_adapter_t adapter_status;
+	nrt_cmd_clean_window_t clean_window;
+
+#if NRT_DEBUG
+	info("nrt_clear_node_state: begin");
+#endif
+	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+			  &adapter_types);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		return SLURM_ERROR;
+	}
+
+	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
+#if NRT_DEBUG
+		info("adapter_type[%d]: %u",
+		     i, adapter_types.adapter_types[i]);
+#endif
+		adapter_names.adapter_type = adapter_types.adapter_types[i];
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				  &adapter_names);
+		if (err != NRT_SUCCESS) {
+			error("nrt_command(adapter_names, %u): %s",
+			      adapter_names.adapter_type, nrt_err_str(err));
+			rc = SLURM_ERROR;
+			continue;
+		}
+		for (j = 0; j < adapter_names.num_adapter_names[0]; j++) {
+#if NRT_DEBUG
+			info("adapter_names[%d]: %s",
+			     j, adapter_names.adapter_names[j]);
+#endif
+			adapter_status.adapter_name = adapter_names.
+						      adapter_names[j];
+			adapter_status.adapter_type = adapter_names.
+						      adapter_type;
+			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
+					  &adapter_status);
+			if (err != NRT_SUCCESS) {
+				error("nrt_command(clean_status, %s, %u): %s",
+				      adapter_status.adapter_name,
+				      adapter_status.adapter_type,
+				      nrt_err_str(err));
+				rc = SLURM_ERROR;
+				continue;
+			}
+
+			for (k = 0; k < adapter_status.window_count[0]; k++) {
+#if NRT_DEBUG
+				info("window_id[%d]: %u", k,
+				     adapter_status.status_array[k]->
+				     window_id);
+#endif
+				clean_window.adapter_name = adapter_names.
+							    adapter_names[i];
+				clean_window.adapter_type = adapter_names.
+							    adapter_type;
+				clean_window.leave_inuse_or_kill = KILL;
+				clean_window.window_id = adapter_status.
+							 status_array[k]->
+							 window_id;
+				err = nrt_command(NRT_VERSION,
+						  NRT_CMD_CLEAN_WINDOW,
+						  &clean_window);
+				if (err != NRT_SUCCESS) {
+					error("nrt_command(clean_window, "
+					      "%s, %u, %u): %s",
+					      clean_window.adapter_name,
+					      clean_window.adapter_type,
+					      clean_window.window_id,
+					      nrt_err_str(err));
+					rc = SLURM_ERROR;
+				}
+			}
+		}
+	}
+#if NRT_DEBUG
+	info("nrt_clear_node_state: complete: %d", rc);
+#endif
+	return rc;
+}
+
+extern char *nrt_err_str(int rc)
+{
+	static char str[16];
+
+	switch (rc) {
+	case NRT_ALREADY_LOADED:
+		return "Already loaded";
+	case NRT_BAD_VERSION:
+		return "Bad version";
+	case NRT_CAU_EXCEEDED:
+		return "CAU index request exeeds available resources";
+	case NRT_CAU_RESERVE:
+		return "Error during CAU index reserve";
+	case NRT_CAU_UNRESERVE:
+		return "Error during CAU index unreserve";
+	case NRT_EADAPTER:
+		return "Invalid adapter name";
+	case NRT_EADAPTYPE:
+		return "Invalid adapter type";
+	case NRT_EAGAIN:
+		return "Try call again later";
+	case NRT_EINVAL:
+		return "Invalid input paramter";
+	case NRT_EIO:
+		return "Adapter reported a DOWN state";
+	case NRT_EMEM:
+		return "Memory allocation error";
+	case NRT_EPERM:
+		return "Permission denied, not root";
+	case NRT_ERR_COMMAND_TYPE:
+		return "Invalid command type";
+	case NRT_ESYSTEM:
+		return "A system error occured";
+	case NRT_IMM_SEND_RESERVE:
+		return "Error during immediate send slot reserve";
+	case NRT_NO_FREE_WINDOW:
+		return "No free window";
+	case NRT_NO_RDMA_AVAIL:
+		return "No RDMA windows available";
+	case NRT_NTBL_LOAD_FAILED:
+		return "Failed to load NTBL";
+	case NRT_NTBL_NOT_FOUND:
+		return "NTBL not found";
+	case NRT_NTBL_UNLOAD_FAILED:
+		return "Failed to unload NTBL";
+	case NRT_OP_NOT_VALID:
+		return "Requested operation not valid for given device";
+	case NRT_PNSDAPI:
+		return "Error communicating with Protocol Network Services "
+		       "Daemon";
+	case NRT_RDMA_CLEAN_FAILED:
+		return "Task RDMA cleanup failed";
+	case NRT_SUCCESS:
+		return "Success";
+	case NRT_TIMEOUT:
+		return "No response back from PNSD/job";
+	case NRT_UNKNOWN_ADAPTER:
+		return "Unknown adaper";
+	case NRT_WIN_CLOSE_FAILED:
+		return "Task can not close window";
+	case NRT_WIN_OPEN_FAILED:
+		return "Task can not open window";
+	case NRT_WRONG_PREEMPT_STATE:
+		return "Invalid preemption state";
+	case NRT_WRONG_WINDOW_STATE:
+		return "Wrong window state";
+	}
+
+	snprintf(str, sizeof(str), "%d", rc);
+	return str;
+}
+#else
+/******************************************************************************/
+/* THIS IS OLD CODE, LIKELY TO BE MODIFIED AND MERGED INTO THE ABOVE #ifdef   */
+/******************************************************************************/
+#define JOB_DESC_LEN 64	/* Length of job description */
+#define NRT_NODECOUNT 128
+#define NRT_HASHCOUNT 128
+#define NRT_AUTO_WINMEM 0
+#define NRT_MAX_WIN 15
+#define NRT_MIN_WIN 0
+
+char* nrt_conf = NULL;
+extern bool nrt_need_state_save;
+
+mode_t nrt_umask;
 
 struct nrt_libstate {
 	uint32_t magic;
@@ -205,24 +754,6 @@ static char *_win_state_str(win_state_t state)
 		snprintf(buf, sizeof(buf), "%d", state);
 		return buf;
 	}
-}
-
-extern int
-nrt_slurmctld_init(void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int
-nrt_slurmd_init(void)
-{
-	/*
-	 * This is a work-around for the nrt_* functions calling umask(0)
-	 */
-	nrt_umask = umask(0077);
-	umask(nrt_umask);
-
-	return SLURM_SUCCESS;
 }
 
 extern int
@@ -614,54 +1145,6 @@ nrt_alloc_jobinfo(nrt_jobinfo_t **j)
 	new->tableinfo = NULL;
 	*j = new;
 
-	return 0;
-}
-
-/* Used by: slurmd, slurmctld */
-extern int
-nrt_alloc_nodeinfo(nrt_nodeinfo_t **n)
-{
-	nrt_nodeinfo_t *new;
-
- 	assert(n);
-
-	new = (nrt_nodeinfo_t *) xmalloc(sizeof(nrt_nodeinfo_t));
-	new->adapter_list = (struct nrt_adapter *)
-			    xmalloc(sizeof(struct nrt_adapter) *
-			    NRT_MAXADAPTERS);
-	new->magic = NRT_NODEINFO_MAGIC;
-	new->adapter_count = 0;
-	new->next = NULL;
-
-	*n = new;
-
-	return 0;
-}
-
-/* Assumes a pre-allocated nodeinfo structure and uses _get_adapters
- * to do the dirty work.  We probably collect more information about
- * the adapters on a give node than we need to but it was done
- * in the interest of being prepared for future requirements.
- *
- * Used by: slurmd
- */
-extern int
-nrt_build_nodeinfo(nrt_nodeinfo_t *n, char *name)
-{
-	int count;
-	int err;
-
-	assert(n);
-	assert(n->magic == NRT_NODEINFO_MAGIC);
-	assert(name);
-
-	strncpy(n->name, name, NRT_HOSTLEN);
-	_lock();
-	err = _get_adapters(n->adapter_list, &count);
-	_unlock();
-	if (err != 0)
-		return err;
-	n->adapter_count = count;
 	return 0;
 }
 
@@ -2543,75 +3026,4 @@ extern int nrt_clear_node_state(void)
 #endif
 	return rc;
 }
-
-extern char *nrt_err_str(int rc)
-{
-	static char str[16];
-
-	switch (rc) {
-	case NRT_ALREADY_LOADED:
-		return "Already loaded";
-	case NRT_BAD_VERSION:
-		return "Bad version";
-	case NRT_CAU_EXCEEDED:
-		return "CAU index request exeeds available resources";
-	case NRT_CAU_RESERVE:
-		return "Error during CAU index reserve";
-	case NRT_CAU_UNRESERVE:
-		return "Error during CAU index unreserve";
-	case NRT_EADAPTER:
-		return "Invalid adapter name";
-	case NRT_EADAPTYPE:
-		return "Invalid adapter type";
-	case NRT_EAGAIN:
-		return "Try call again later";
-	case NRT_EINVAL:
-		return "Invalid input paramter";
-	case NRT_EIO:
-		return "Adapter reported a DOWN state";
-	case NRT_EMEM:
-		return "Memory allocation error";
-	case NRT_EPERM:
-		return "Permission denied, not root";
-	case NRT_ERR_COMMAND_TYPE:
-		return "Invalid command type";
-	case NRT_ESYSTEM:
-		return "A system error occured";
-	case NRT_IMM_SEND_RESERVE:
-		return "Error during immediate send slot reserve";
-	case NRT_NO_FREE_WINDOW:
-		return "No free window";
-	case NRT_NO_RDMA_AVAIL:
-		return "No RDMA windows available";
-	case NRT_NTBL_LOAD_FAILED:
-		return "Failed to load NTBL";
-	case NRT_NTBL_NOT_FOUND:
-		return "NTBL not found";
-	case NRT_NTBL_UNLOAD_FAILED:
-		return "Failed to unload NTBL";
-	case NRT_OP_NOT_VALID:
-		return "Requested operation not valid for given device";
-	case NRT_PNSDAPI:
-		return "Error communicating with Protocol Network Services "
-		       "Daemon";
-	case NRT_RDMA_CLEAN_FAILED:
-		return "Task RDMA cleanup failed";
-	case NRT_SUCCESS:
-		return "Success";
-	case NRT_TIMEOUT:
-		return "No response back from PNSD/job";
-	case NRT_UNKNOWN_ADAPTER:
-		return "Unknown adaper";
-	case NRT_WIN_CLOSE_FAILED:
-		return "Task can not close window";
-	case NRT_WIN_OPEN_FAILED:
-		return "Task can not open window";
-	case NRT_WRONG_PREEMPT_STATE:
-		return "Invalid preemption state";
-	case NRT_WRONG_WINDOW_STATE:
-		return "Wrong window state";
-	}
-
-	snprintf(str, sizeof(str), "%d", rc);
-	return str;
-}
+#endif

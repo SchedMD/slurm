@@ -60,7 +60,7 @@ typedef struct nrt_tableinfo {
 	uint32_t table_length;
 	void *table; /* Pointer to nrt_*_task_info_t*/
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
-	uint16_t adapter_type;
+	nrt_adapter_t adapter_type;
 } nrt_tableinfo_t;
 
 #endif /* _NRT_KEYS_INCLUDED */

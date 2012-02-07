@@ -55,9 +55,9 @@
 #endif
 
 /* opaque data structures - no peeking! */
-typedef struct nrt_libstate nrt_libstate_t;
-typedef struct nrt_jobinfo  nrt_jobinfo_t;
-typedef struct nrt_nodeinfo nrt_nodeinfo_t;
+typedef struct slurm_nrt_libstate slurm_nrt_libstate_t;
+typedef struct slurm_nrt_jobinfo  slurm_nrt_jobinfo_t;
+typedef struct slurm_nrt_nodeinfo slurm_nrt_nodeinfo_t;
 
 /* NOTE: error codes should be between ESLURM_SWITCH_MIN and
  * ESLURM_SWITCH MAX as defined in slurm/slurm_errno.h */
@@ -86,29 +86,29 @@ extern char *nrt_err_str(int rc);
 extern int nrt_slurmctld_init(void);
 extern int nrt_slurmd_init(void);
 extern int nrt_slurmd_step_init(void);
-extern int nrt_alloc_nodeinfo(nrt_nodeinfo_t **nh);
-extern int nrt_build_nodeinfo(nrt_nodeinfo_t *np, char *hostname);
-extern char *nrt_print_nodeinfo(nrt_nodeinfo_t *np, char *buf, size_t size);
-extern int nrt_pack_nodeinfo(nrt_nodeinfo_t *np, Buf buf);
-extern int nrt_unpack_nodeinfo(nrt_nodeinfo_t *np, Buf buf);
-extern void nrt_free_nodeinfo(nrt_nodeinfo_t *np, bool ptr_into_array);
-extern int nrt_alloc_jobinfo(nrt_jobinfo_t **jh);
-extern int nrt_build_jobinfo(nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
+extern int nrt_alloc_nodeinfo(slurm_nrt_nodeinfo_t **nh);
+extern int nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *np, char *hostname);
+extern char *nrt_print_nodeinfo(slurm_nrt_nodeinfo_t *np, char *buf, size_t size);
+extern int nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
+extern int nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
+extern void nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *np, bool ptr_into_array);
+extern int nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **jh);
+extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			     bool sn_all, char *adapter_name, int bulk_xfer);
-extern int nrt_pack_jobinfo(nrt_jobinfo_t *jp, Buf buf);
-extern int nrt_unpack_jobinfo(nrt_jobinfo_t *jp, Buf buf);
-extern nrt_jobinfo_t *nrt_copy_jobinfo(nrt_jobinfo_t *jp);
-extern void nrt_free_jobinfo(nrt_jobinfo_t *jp);
-extern int nrt_load_table(nrt_jobinfo_t *jp, int uid, int pid);
+extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
+extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
+extern slurm_nrt_jobinfo_t *nrt_copy_jobinfo(slurm_nrt_jobinfo_t *jp);
+extern void nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp);
+extern int nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid);
 extern int nrt_init(void);
 extern int nrt_fini(void);
-extern int nrt_unload_table(nrt_jobinfo_t *jp);
-extern int nrt_unpack_libstate(nrt_libstate_t *lp, Buf buffer);
-extern int nrt_get_jobinfo(nrt_jobinfo_t *jp, int key, void *data);
+extern int nrt_unload_table(slurm_nrt_jobinfo_t *jp);
+extern int nrt_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
+extern int nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data);
 extern void nrt_libstate_save(Buf buffer, bool free_flag);
 extern int nrt_libstate_restore(Buf buffer);
-extern int nrt_job_step_complete(nrt_jobinfo_t *jp, hostlist_t hl);
-extern int nrt_job_step_allocated(nrt_jobinfo_t *jp, hostlist_t hl);
+extern int nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl);
+extern int nrt_job_step_allocated(slurm_nrt_jobinfo_t *jp, hostlist_t hl);
 extern int nrt_libstate_clear(void);
 extern int nrt_slurmctld_init(void);
 extern int nrt_slurmd_init(void);

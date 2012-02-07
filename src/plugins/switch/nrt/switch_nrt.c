@@ -322,7 +322,10 @@ extern int switch_p_clear_node_state(void)
 
 extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
-	return nrt_alloc_nodeinfo((nrt_nodeinfo_t **)switch_node);
+#if NRT_DEBUG
+	info("switch_p_alloc_node_info()");
+#endif
+	return nrt_alloc_nodeinfo((slurm_nrt_nodeinfo_t **)switch_node);
 }
 
 extern int switch_p_build_node_info(switch_node_info_t *switch_node)
@@ -339,7 +342,8 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 	tmp = strstr(hostname, ".");
 	if (tmp)
 		*tmp = '\0';
-	return nrt_build_nodeinfo((nrt_nodeinfo_t *)switch_node, hostname);
+	return nrt_build_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node,
+				  hostname);
 }
 
 extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer)
@@ -347,7 +351,7 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer)
 #if NRT_DEBUG
 	info("switch_p_pack_node_info()");
 #endif
-	return nrt_pack_nodeinfo((nrt_nodeinfo_t *)switch_node, buffer);
+	return nrt_pack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer);
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
@@ -356,7 +360,7 @@ extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
 #if NRT_DEBUG
 	info("switch_p_unpack_node_info()");
 #endif
-	return nrt_unpack_nodeinfo((nrt_nodeinfo_t *)switch_node, buffer);
+	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer);
 }
 
 extern void switch_p_free_node_info(switch_node_info_t **switch_node)
@@ -365,13 +369,13 @@ extern void switch_p_free_node_info(switch_node_info_t **switch_node)
 	info("switch_p_free_node_info()");
 #endif
 	if (switch_node)
-		nrt_free_nodeinfo((nrt_nodeinfo_t *)*switch_node, false);
+		nrt_free_nodeinfo((slurm_nrt_nodeinfo_t *)*switch_node, false);
 }
 
 extern char * switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 					 char *buf, size_t size)
 {
-	return nrt_print_nodeinfo((nrt_nodeinfo_t *)switch_node, buf, size);
+	return nrt_print_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buf, size);
 }
 
 /*
@@ -382,7 +386,7 @@ extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 #if NRT_DEBUG
 	info("switch_p_alloc_jobinfo()");
 #endif
-	return nrt_alloc_jobinfo((nrt_jobinfo_t **)switch_job);
+	return nrt_alloc_jobinfo((slurm_nrt_jobinfo_t **)switch_job);
 }
 
 static char *_adapter_name_check(char *network)
@@ -452,7 +456,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		if (strstr(network, "bulk_xfer")
 		    || strstr(network, "BULK_XFER"))
 			bulk_xfer = 1;
-		err = nrt_build_jobinfo((nrt_jobinfo_t *)switch_job, list,
+		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
 					nprocs,	sn_all, adapter_name,
 					bulk_xfer);
 		hostlist_destroy(list);
@@ -470,7 +474,7 @@ extern switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 #if NRT_DEBUG
 	info("switch_p_copy_jobinfo()");
 #endif
-	j = (switch_jobinfo_t *)nrt_copy_jobinfo((nrt_jobinfo_t *)switch_job);
+	j = (switch_jobinfo_t *)nrt_copy_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
 	if (!j)
 		error("nrt_copy_jobinfo failed");
 
@@ -482,7 +486,7 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 #if NRT_DEBUG
 	info("switch_p_free_jobinfo()");
 #endif
-	return nrt_free_jobinfo((nrt_jobinfo_t *)switch_job);
+	return nrt_free_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
 }
 
 extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
@@ -490,7 +494,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 #if NRT_DEBUG
 	info("switch_p_pack_jobinfo()");
 #endif
-	return nrt_pack_jobinfo((nrt_jobinfo_t *)switch_job, buffer);
+	return nrt_pack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
 }
 
 extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
@@ -498,7 +502,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 #if NRT_DEBUG
 	info("switch_p_unpack_jobinfo()");
 #endif
-	return nrt_unpack_jobinfo((nrt_jobinfo_t *)switch_job, buffer);
+	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
 }
 
 extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
@@ -507,7 +511,7 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
 #if NRT_DEBUG
 	info("switch_p_get_jobinfo()");
 #endif
-	return nrt_get_jobinfo((nrt_jobinfo_t *)switch_job, key,
+	return nrt_get_jobinfo((slurm_nrt_jobinfo_t *)switch_job, key,
 			       resulting_data);
 }
 
@@ -517,7 +521,7 @@ static inline int _make_step_comp(switch_jobinfo_t *jobinfo, char *nodelist)
 	int rc;
 
 	list = hostlist_create(nodelist);
-	rc = nrt_job_step_complete((nrt_jobinfo_t *)jobinfo, list);
+	rc = nrt_job_step_complete((slurm_nrt_jobinfo_t *)jobinfo, list);
 	hostlist_destroy(list);
 
 	return rc;
@@ -557,7 +561,7 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo, char *nodelist
 	info("switch_p_job_step_allocated()");
 #endif
 	list = hostlist_create(nodelist);
-	rc = nrt_job_step_allocated((nrt_jobinfo_t *)jobinfo, list);
+	rc = nrt_job_step_allocated((slurm_nrt_jobinfo_t *)jobinfo, list);
 	hostlist_destroy(list);
 
 	return rc;
@@ -612,7 +616,7 @@ extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid)
 	info("switch_p_job_init()");
 #endif
 	pid = getpid();
-	return nrt_load_table((nrt_jobinfo_t *)jobinfo, uid, pid);
+	return nrt_load_table((slurm_nrt_jobinfo_t *)jobinfo, uid, pid);
 }
 
 extern int switch_p_job_fini (switch_jobinfo_t *jobinfo)
@@ -638,7 +642,7 @@ extern int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 	} else
 		debug("Job %u.%u: pgid value is zero", job_id, step_id);
 
-	err = nrt_unload_table((nrt_jobinfo_t *)jobinfo);
+	err = nrt_unload_table((slurm_nrt_jobinfo_t *)jobinfo);
 	if (err != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
