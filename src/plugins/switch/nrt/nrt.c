@@ -147,9 +147,45 @@ static char *_win_state_str(win_state_t state)
 	}
 }
 
+#if NRT_DEBUG
+/* Used by: slurmd, slurmctld */
+static void
+_print_nodeinfo(slurm_nrt_nodeinfo_t *n)
+{
+	int i, j;
+	struct slurm_nrt_adapter *a;
+	slurm_nrt_window_t *w;
+
+	assert(n);
+	assert(n->magic == NRT_NODEINFO_MAGIC);
+
+	info("--Begin Node Info--");
+	info("  node: %s", n->name);
+	info("  adapter_count: %u", n->adapter_count);
+	for (i = 0; i < n->adapter_count; i++) {
+		a = n->adapter_list + i;
+		info("  adapter: %s", a->adapter_name);
+		info("    type: %hu", a->adapter_type);
+		info("    window_count: %hu", a->window_count);
+		w = a->window_list;
+		for (j = 0; j < a->window_count; j++) {
+#if (NRT_DEBUG < 2)
+			if (w[j].state != NRT_WIN_AVAILABLE)
+				continue;
+#endif
+			info("      window %hu: %s", w->window_id,
+			     _win_state_str(w->state));
+			info("      job_key %hu", w->job_key);
+		}
+	}
+	info("--End Node Info--");
+}
+#endif
+
 extern int
 nrt_slurmctld_init(void)
 {
+	/* No op */
 	return SLURM_SUCCESS;
 }
 
@@ -173,6 +209,8 @@ nrt_slurmd_step_init(void)
 	 */
 	nrt_umask = umask(0077);
 	umask(nrt_umask);
+
+/* FIXME: Should we cache NRT state information? */
 
 	return SLURM_SUCCESS;
 }
@@ -225,10 +263,6 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	}
 
 	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
-#if NRT_DEBUG
-		info("adapter_type[%d]: %u",
-		     i, adapter_types.adapter_types[i]);
-#endif
 		adapter_names.adapter_type = adapter_types.adapter_types[i];
 		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 				  &adapter_names);
@@ -240,10 +274,6 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		}
 		for (j = 0; j < adapter_names.num_adapter_names[0]; j++) {
 			slurm_nrt_adapter_t *adapter_ptr;
-#if NRT_DEBUG
-			info("adapter_names[%d]: %s",
-			     j, adapter_names.adapter_names[j]);
-#endif
 			adapter_status.adapter_name = adapter_names.
 						      adapter_names[j];
 			adapter_status.adapter_type = adapter_names.
@@ -251,7 +281,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
 					  &adapter_status);
 			if (err != NRT_SUCCESS) {
-				error("nrt_command(clean_status, %s, %u): %s",
+				error("nrt_command(status_adapter, %s, %u): %s",
 				      adapter_status.adapter_name,
 				      adapter_status.adapter_type,
 				      nrt_err_str(err));
@@ -273,16 +303,6 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			n->adapter_count++;
 			for (k = 0; k < adapter_status.window_count[0]; k++) {
 				slurm_nrt_window_t *window_ptr;
-#if NRT_DEBUG
-				info("window_id[%d]: %u", k,
-				     adapter_status.status_array[k]->
-				     window_id);
-				info("state[%d]: %u", k,
-				     adapter_status.status_array[k]->state);
-				info("client_pid[%d]: %u", k,
-				     adapter_status.status_array[k]->
-				     client_pid);
-#endif
 				window_ptr = adapter_ptr->window_list + k;
 				window_ptr->window_id = adapter_status.
 							status_array[k]->
@@ -297,6 +317,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		}
 	}
 #if NRT_DEBUG
+	_print_nodeinfo(n);
 	info("nrt_build_nodeinfo: complete: %d", rc);
 #endif
 	return rc;
@@ -348,7 +369,26 @@ nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 extern void
 nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *n, bool ptr_into_array)
 {
-	return;
+	struct slurm_nrt_adapter *adapter;
+	int i;
+
+	if (!n)
+		return;
+
+	assert(n->magic == NRT_NODEINFO_MAGIC);
+
+#if NRT_DEBUGX
+	info("nrt_free_nodeinfo");
+	_print_nodeinfo(n);
+#endif
+	if (n->adapter_list) {
+		adapter = n->adapter_list;
+		for (i = 0; i < n->adapter_count; i++)
+			xfree(adapter[i].window_list);
+		xfree(n->adapter_list);
+	}
+	if (!ptr_into_array)
+		xfree(n);
 }
 
 /* Find all of the windows used by job step "jp" on the hosts
@@ -506,10 +546,6 @@ extern int nrt_clear_node_state(void)
 	}
 
 	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
-#if NRT_DEBUG
-		info("adapter_type[%d]: %u",
-		     i, adapter_types.adapter_types[i]);
-#endif
 		adapter_names.adapter_type = adapter_types.adapter_types[i];
 		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 				  &adapter_names);
@@ -520,10 +556,6 @@ extern int nrt_clear_node_state(void)
 			continue;
 		}
 		for (j = 0; j < adapter_names.num_adapter_names[0]; j++) {
-#if NRT_DEBUG
-			info("adapter_names[%d]: %s",
-			     j, adapter_names.adapter_names[j]);
-#endif
 			adapter_status.adapter_name = adapter_names.
 						      adapter_names[j];
 			adapter_status.adapter_type = adapter_names.
@@ -540,11 +572,6 @@ extern int nrt_clear_node_state(void)
 			}
 
 			for (k = 0; k < adapter_status.window_count[0]; k++) {
-#if NRT_DEBUG
-				info("window_id[%d]: %u", k,
-				     adapter_status.status_array[k]->
-				     window_id);
-#endif
 				clean_window.adapter_name = adapter_names.
 							    adapter_names[i];
 				clean_window.adapter_type = adapter_names.
@@ -564,7 +591,14 @@ extern int nrt_clear_node_state(void)
 					      clean_window.window_id,
 					      nrt_err_str(err));
 					rc = SLURM_ERROR;
+					continue;
 				}
+#if NRT_DEBUG
+				info("nrt_command(clean_window, %s, %u, %u)",
+				     clean_window.adapter_name,
+				     clean_window.adapter_type,
+				     clean_window.window_id);
+#endif
 			}
 		}
 	}
@@ -711,50 +745,6 @@ static void _hash_rebuild(nrt_libstate_t *state);
 static void _init_adapter_cache(void);
 static int  _set_up_adapter(struct nrt_adapter *nrt_adapter, char *adapter_name,
 			    uint16_t adapter_type);
-static char *_win_state_str(win_state_t state);
-
-/* The _lock() and _unlock() functions are used to lock/unlock a
- * global mutex.  Used to serialize access to the global library
- * state variable nrt_state.
- */
-static void
-_lock(void)
-{
-	int err = 1;
-
-	while (err) {
-		err = pthread_mutex_lock(&global_lock);
-	}
-}
-
-static void
-_unlock(void)
-{
-	int err = 1;
-
-	while (err) {
-		err = pthread_mutex_unlock(&global_lock);
-	}
-}
-
-static char *_win_state_str(win_state_t state)
-{
-	if (state == NRT_WIN_UNAVAILABLE)
-		return "Unavailable";
-	else if (state == NRT_WIN_INVALID)
-		return "Invalid";
-	else if (state == NRT_WIN_RESERVED)
-		return "Reserved";
-	else if (state == NRT_WIN_READY)
-		return "Ready";
-	else if (state == NRT_WIN_RUNNING)
-		return "Running";
-	else {
-		static char buf[16];
-		snprintf(buf, sizeof(buf), "%d", state);
-		return buf;
-	}
-}
 
 extern int
 nrt_slurmd_step_init(void)
@@ -866,42 +856,6 @@ _print_jobinfo(nrt_jobinfo_t *j)
 	info("  num_tasks: %d", j->num_tasks);
 	info("  tableinfo supressed");
 	info("--End Jobinfo--");
-}
-
-/* Used by: slurmd, slurmctld */
-static void
-_print_nodeinfo(nrt_nodeinfo_t *n)
-{
-	int i, j;
-	struct nrt_adapter *a;
-	nrt_window_t *w;
-
-	assert(n);
-	assert(n->magic == NRT_NODEINFO_MAGIC);
-
-	info("--Begin Node Info--");
-	info("  node: %s", n->name);
-	info("  adapter_count: %u", n->adapter_count);
-	for (i = 0; i < n->adapter_count; i++) {
-		a = n->adapter_list + i;
-		info("  adapter: %s", a->adapter_name);
-		info("    type: %hu", a->adapter_type);
-		info("    window_count: %hu", a->window_count);
-#if (NRT_DEBUG > 1)
-		info("    lid[0]: %hu", a->lid[0]);
-		info("    network_id[0]: %"PRIu64"", a->network_id[0]);
-#endif
-		w = a->window_list;
-		for (j = 0; j < a->window_count; j++) {
-#if (NRT_DEBUG < 2)
-			if (w[j].state != NRT_WIN_AVAILABLE)
-				continue;
-#endif
-			info("    window %hu: %s", w->window_id,
-			     nrt_err_str(w->state));
-		}
-	}
-	info("--End Node Info--");
 }
 
 /* Used by: slurmctld */
