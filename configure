@@ -21261,11 +21261,11 @@ fi
 
 
 
-  if test "$OBJECT_MODE" = "64"; then
-     nrt_default_dirs="/usr/lib64"
-  else
-     nrt_default_dirs="/usr/lib"
-  fi
+   if test "$OBJECT_MODE" = "64"; then
+      nrt_default_dirs="/usr/lib64"
+   else
+      nrt_default_dirs="/usr/lib"
+   fi
 
 
 # Check whether --with-libnrt was given.
@@ -21274,9 +21274,9 @@ if test "${with_libnrt+set}" = set; then :
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable IBM NRT support" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable IBM NRT support" >&5
 $as_echo_n "checking whether to enable IBM NRT support... " >&6; }
-  for nrt_dir in $nrt_default_dirs; do
+   for nrt_dir in $nrt_default_dirs; do
       # skip dirs that don't exist
       if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
          continue;

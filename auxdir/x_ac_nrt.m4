@@ -16,16 +16,16 @@
 
 AC_DEFUN([X_AC_NRT],
 [
-  if test "$OBJECT_MODE" = "64"; then
-     nrt_default_dirs="/usr/lib64"
-  else
-     nrt_default_dirs="/usr/lib"
-  fi
+   if test "$OBJECT_MODE" = "64"; then
+      nrt_default_dirs="/usr/lib64"
+   else
+      nrt_default_dirs="/usr/lib"
+   fi
 
-  AC_ARG_WITH([libnrt], AS_HELP_STRING(--with-libnrt=PATH,Specify path to libnrt.so), [ nrt_default_dirs="$withval $nrt_default_dirs"])
+   AC_ARG_WITH([libnrt], AS_HELP_STRING(--with-libnrt=PATH,Specify path to libnrt.so), [ nrt_default_dirs="$withval $nrt_default_dirs"])
 
-  AC_MSG_CHECKING([whether to enable IBM NRT support])
-  for nrt_dir in $nrt_default_dirs; do
+   AC_MSG_CHECKING([whether to enable IBM NRT support])
+   for nrt_dir in $nrt_default_dirs; do
       # skip dirs that don't exist
       if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
          continue;
