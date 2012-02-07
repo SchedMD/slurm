@@ -18,6 +18,7 @@
 # --with mysql       %_with_mysql       1    require mysql support
 # --with openssl     %_with_openssl     1    require openssl RPM to be installed
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
+# --with percs       %_with_percs       1    build percs RPM
 # --with postgres    %_with_postgres    1    require postgresql support
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
@@ -324,6 +325,17 @@ Obsoletes: slurm-aix-federation
 SLURM plugins for IBM AIX and Federation switch.
 %endif
 
+%if %{slurm_with percs}
+%package percs
+Summary: SLURM plugins to run on an IBM PERCS system.
+Group: System Environment/Base
+Requires: slurm nrt
+BuildRequires: nrt
+%description percs
+SLURM plugins to run on an IBM PERCS system, POE interface and NRT switch plugin.
+%endif
+
+
 %if %{slurm_with sgijob}
 %package proctrack-sgi-job
 Summary: SLURM process tracking plugin for SGI job containers.
@@ -484,8 +496,6 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
 test -f $RPM_BUILD_ROOT/%{_bindir}/sview			&&
   echo %{_bindir}/sview					>> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so  	&&
-  echo %{_libdir}/slurm/switch_nrt.so			>> $LIST
 
 %if %{slurm_with aix}
 install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/federation.conf.example
@@ -514,6 +524,14 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
   echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so  &&
   echo %{_libdir}/slurm/switch_federation.so           >> $LIST
+
+LIST=./percs.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so  	&&
+  echo %{_libdir}/slurm/switch_nrt.so			>> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so  	&&
+  echo %{_libdir}/slurm/libpermapi.so			>> $LIST
+
 
 LIST=./slurmdbd.files
 touch $LIST
@@ -781,6 +799,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_libdir}/slurm/checkpoint_aix.so
 %config %{_sysconfdir}/federation.conf.example
+%endif
+#############################################################################
+
+%if %{slurm_with percs}
+%files -f percs.files percs
+%defattr(-,root,root)
 %endif
 #############################################################################
 
