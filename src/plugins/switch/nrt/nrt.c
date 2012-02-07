@@ -182,6 +182,16 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 }
 #endif
 
+/* Tries to find a node fast using the hash table
+ *
+ * Used by: slurmctld
+ */
+static slurm_nrt_nodeinfo_t *
+_find_node(slurm_nrt_libstate_t *lp, char *name)
+{
+	return NULL;
+}
+
 extern int
 nrt_slurmctld_init(void)
 {
@@ -351,7 +361,227 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 extern int
 nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 {
+	int i, j;
+	struct slurm_nrt_adapter *a;
+	int offset;
+
+	assert(n);
+	assert(n->magic == NRT_NODEINFO_MAGIC);
+	assert(buf);
+#if NRT_DEBUG
+	info("nrt_pack_nodeinfo():");
+	_print_nodeinfo(n);
+#endif
+	offset = get_buf_offset(buf);
+	pack32(n->magic, buf);
+	packmem(n->name, NRT_HOSTLEN, buf);
+	pack32(n->adapter_count, buf);
+	for (i = 0; i < n->adapter_count; i++) {
+		a = n->adapter_list + i;
+		packmem(a->adapter_name, NRT_MAX_ADAPTER_NAME_LEN, buf);
+		pack16(a->adapter_type, buf);
+		pack16(a->window_count, buf);
+		for (j = 0; j < a->window_count; j++) {
+			uint32_t state = a->window_list[j].state;
+			pack16(a->window_list[j].window_id, buf);
+			pack32(state, buf);
+			pack32(a->window_list[j].job_key, buf);
+		}
+	}
+
+	return(get_buf_offset(buf) - offset);
+}
+
+/* Used by: all */
+static int
+_copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
+{
+	int i, j;
+	struct slurm_nrt_adapter *sa = NULL;
+	struct slurm_nrt_adapter *da = NULL;
+
+	assert(dest);
+	assert(src);
+	assert(dest->magic == NRT_NODEINFO_MAGIC);
+	assert(src->magic == NRT_NODEINFO_MAGIC);
+#if NRT_DEBUG
+	info("_copy_node():");
+	_print_nodeinfo(src);
+#endif
+	strncpy(dest->name, src->name, NRT_HOSTLEN);
+	dest->adapter_count = src->adapter_count;
+	for (i = 0; i < dest->adapter_count; i++) {
+		sa = src->adapter_list + i;
+		da = dest->adapter_list +i;
+		strncpy(da->adapter_name, sa->adapter_name,
+			NRT_MAX_ADAPTER_NAME_LEN);
+		da->adapter_type = sa->adapter_type;
+		da->window_count = sa->window_count;
+		da->window_list = (slurm_nrt_window_t *)
+				  xmalloc(sizeof(slurm_nrt_window_t) *
+				  da->window_count);
+		for (j = 0; j < da->window_count; j++) {
+			da->window_list[j].window_id = sa->window_list[j].
+						       window_id;
+			da->window_list[j].state = sa->window_list[j].state;
+			da->window_list[j].job_key = sa->window_list[j].
+						     job_key;
+		}
+	}
+
 	return SLURM_SUCCESS;
+}
+
+/* Throw away adapter portion of the nodeinfo.
+ *
+ * Used by: _unpack_nodeinfo
+ */
+static int
+_fake_unpack_adapters(Buf buf)
+{
+	uint32_t adapter_count;
+	uint16_t window_count;
+	uint32_t dummy32;
+	uint16_t dummy16;
+	char *dummyptr;
+	int i, j;
+
+	safe_unpack32(&adapter_count, buf);
+	for (i = 0; i < adapter_count; i++) {
+		/* no copy, just advances buf counters */
+		safe_unpackmem_ptr(&dummyptr, &dummy32, buf);
+		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
+			goto unpack_error;
+		safe_unpack16(&dummy16, buf);
+		safe_unpack16(&window_count, buf);
+		for (j = 0; j < window_count; j++) {
+			safe_unpack16(&dummy16, buf);
+			safe_unpack32(&dummy32, buf);
+			safe_unpack32(&dummy32, buf);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+
+/* Unpack nodeinfo and update persistent libstate.
+ *
+ * If believe_window_status is true, we honor the window status variables
+ * from the packed nrt_nodeinfo_t.  If it is false we set the status of
+ * all windows to NRT_WIN_AVAILABLE.
+ *
+ * Used by: slurmctld
+ */
+static int
+_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
+{
+	int i, j, rc = SLURM_SUCCESS;
+	struct slurm_nrt_adapter *tmp_a = NULL;
+	slurm_nrt_window_t *tmp_w = NULL;
+	uint32_t size;
+	slurm_nrt_nodeinfo_t *tmp_n = NULL;
+	char *name_ptr, name[NRT_HOSTLEN];
+	uint32_t magic;
+	uint16_t dummy16;
+
+	/* NOTE!  We don't care at this point whether n is valid.
+	 * If it's NULL, we will just forego the copy at the end.
+	 */
+	assert(buf);
+
+	/* Extract node name from buffer
+	 */
+	safe_unpack32(&magic, buf);
+	if (magic != NRT_NODEINFO_MAGIC)
+		slurm_seterrno_ret(EBADMAGIC_NRT_NODEINFO);
+	safe_unpackmem_ptr(&name_ptr, &size, buf);
+	if (size != NRT_HOSTLEN)
+		goto unpack_error;
+	memcpy(name, name_ptr, size);
+
+	/* When the slurmctld is in normal operating mode (NOT backup mode),
+	 * the global nrt_state structure should NEVER be NULL at the time that
+	 * this function is called.  Therefore, if nrt_state is NULL here,
+	 * we assume that the controller is in backup mode.  In backup mode,
+	 * the slurmctld only unpacks RPCs to find out their identity.
+	 * Most of the RPCs, including the one calling this function, are
+	 * simply ignored.
+	 *
+	 * So, here we just do a fake unpack to advance the buffer pointer.
+	 */
+	if (nrt_state == NULL) {
+		if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
+			slurm_seterrno_ret(EUNPACK);
+		} else {
+			return SLURM_SUCCESS;
+		}
+	}
+
+	/* If we already have nodeinfo for this node, we ignore this message.
+	 * The slurmctld's view of window allocation is always better than
+	 * the slurmd's view.  We only need the slurmd's view if the slurmctld
+	 * has no nodeinfo at all for that node.
+	 */
+	if (name != NULL) {
+		tmp_n = _find_node(nrt_state, name);
+		if (tmp_n != NULL) {
+			if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
+				slurm_seterrno_ret(EUNPACK);
+			} else {
+				goto copy_node;
+			}
+		}
+	}
+
+	/*
+	 * Update global libstate with this nodes' info.
+	 */
+	tmp_n = xmalloc(sizeof(slurm_nrt_nodeinfo_t));
+	tmp_n->magic = magic;
+	safe_unpack32(&tmp_n->adapter_count, buf);
+	for (i = 0; i < tmp_n->adapter_count; i++) {
+		tmp_a = tmp_n->adapter_list + i;
+		safe_unpackmem_ptr(&name_ptr, &size, buf);
+		if (size != NRT_MAX_ADAPTER_NAME_LEN)
+			goto unpack_error;
+		memcpy(tmp_a->adapter_name, name_ptr, size);
+		safe_unpack16(&dummy16, buf);
+		tmp_a->adapter_type = dummy16;
+		safe_unpack16(&tmp_a->window_count, buf);
+		tmp_w = (slurm_nrt_window_t *)
+			xmalloc(sizeof(slurm_nrt_window_t) *
+			tmp_a->window_count);
+		for (j = 0; j < tmp_a->window_count; j++) {
+			safe_unpack16(&tmp_w[j].window_id, buf);
+			safe_unpack32(&tmp_w[j].state, buf);
+			safe_unpack32(&tmp_w[j].job_key, buf);
+			if (!believe_window_status) {
+				tmp_w[j].state = NRT_WIN_AVAILABLE;
+				tmp_w[j].job_key = 0;
+			}
+		}
+		tmp_a->window_list = tmp_w;
+		tmp_w = NULL;	/* don't free if unpack error on next adapter */
+	}
+#if NRT_DEBUG
+	info("_unpack_nodeinfo");
+	_print_nodeinfo(tmp_n);
+#endif
+
+copy_node:
+	/* Only copy the node_info structure if the caller wants it */
+	if ((n != NULL) && (_copy_node(n, tmp_n) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+	nrt_free_nodeinfo(tmp_n, false);
+	return rc;
+
+unpack_error:
+	xfree(tmp_w);
+	slurm_seterrno_ret(EUNPACK);
 }
 
 /* Unpack nodeinfo and update persistent libstate.
@@ -361,9 +591,13 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 extern int
 nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 {
-	return SLURM_SUCCESS;
-}
+	int rc;
 
+	_lock();
+	rc = _unpack_nodeinfo(n, buf, false);
+	_unlock();
+	return rc;
+}
 
 /* Used by: slurmd, slurmctld */
 extern void
@@ -1102,82 +1336,6 @@ nrt_alloc_jobinfo(nrt_jobinfo_t **j)
 	return 0;
 }
 
-/* Used by: all */
-extern int
-nrt_pack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
-{
-	int i, j;
-	struct nrt_adapter *a;
-	int offset;
-
-	assert(n);
-	assert(n->magic == NRT_NODEINFO_MAGIC);
-	assert(buf);
-#if NRT_DEBUG
-	info("nrt_pack_nodeinfo():");
-	_print_nodeinfo(n);
-#endif
-	offset = get_buf_offset(buf);
-	pack32(n->magic, buf);
-	packmem(n->name, NRT_HOSTLEN, buf);
-	pack32(n->adapter_count, buf);
-	for (i = 0; i < n->adapter_count; i++) {
-		a = n->adapter_list + i;
-		packmem(a->adapter_name, NRT_MAX_DEVICENAME_SIZE, buf);
-		pack16(a->adapter_type, buf);
-		for (j = 0; j < MAX_SPIGOTS; j++) {
-			pack16(a->lid[j], buf);
-			pack64(a->network_id[j], buf);
-		}
-		pack16(a->window_count, buf);
-		for (j = 0; j < a->window_count; j++) {
-			pack16(a->window_list[j].window_id, buf);
-			pack32(a->window_list[j].state, buf);
-			pack16(a->window_list[j].job_key, buf);
-		}
-	}
-
-	return(get_buf_offset(buf) - offset);
-}
-
-/* Used by: all */
-static int
-_copy_node(nrt_nodeinfo_t *dest, nrt_nodeinfo_t *src)
-{
-	int i, j;
-	struct nrt_adapter *sa = NULL;
-	struct nrt_adapter *da = NULL;
-
-	assert(dest);
-	assert(src);
-	assert(dest->magic == NRT_NODEINFO_MAGIC);
-	assert(src->magic == NRT_NODEINFO_MAGIC);
-#if NRT_DEBUG
-	info("_copy_node():");
-	_print_nodeinfo(src);
-#endif
-	strncpy(dest->name, src->name, NRT_HOSTLEN);
-	dest->adapter_count = src->adapter_count;
-	for (i = 0; i < dest->adapter_count; i++) {
-		sa = src->adapter_list + i;
-		da = dest->adapter_list +i;
-		strncpy(da->adapter_name, sa->adapter_name,
-			NRT_MAX_DEVICENAME_SIZE);
-		da->adapter_type = sa->adapter_type;
-		for (j = 0; j < MAX_SPIGOTS; j++) {
-			da->lid[j] = sa->lid[j];
-			da->network_id[j] = sa->network_id[j];
-		}
-		da->window_count = sa->window_count;
-		da->window_list = (nrt_window_t *)xmalloc(sizeof(nrt_window_t) *
-				  da->window_count);
-		for (j = 0; j < da->window_count; j++)
-			da->window_list[j] = sa->window_list[j];
-	}
-
-	return SLURM_SUCCESS;
-}
-
 /* The idea behind keeping the hash table was to avoid a linear
  * search of the node list each time we want to retrieve or
  * modify a node's data.  The _hash_index function translates
@@ -1328,181 +1486,6 @@ _alloc_node(nrt_libstate_t *lp, char *name)
 	}
 
 	return n;
-}
-
-/* Throw away adapter portion of the nodeinfo.
- *
- * Used by: _unpack_nodeinfo
- */
-static int
-_fake_unpack_adapters(Buf buf)
-{
-	uint32_t adapter_count;
-	uint16_t window_count;
-	uint64_t dummy64;
-	uint32_t dummy32;
-	uint16_t dummy16;
-	char *dummyptr;
-	int i, j;
-
-	safe_unpack32(&adapter_count, buf);
-	for (i = 0; i < adapter_count; i++) {
-		/* no copy, just advances buf counters */
-		safe_unpackmem_ptr(&dummyptr, &dummy32, buf);
-		if (dummy32 != NRT_MAX_DEVICENAME_SIZE)
-			goto unpack_error;
-		safe_unpack16(&dummy16, buf);
-		for (j = 0; j < MAX_SPIGOTS; j++) {
-			safe_unpack16(&dummy16, buf);
-			safe_unpack64(&dummy64, buf);
-		}
-		safe_unpack16(&window_count, buf);
-		for (j = 0; j < window_count; j++) {
-			safe_unpack16(&dummy16, buf);
-			safe_unpack32(&dummy32, buf);
-			safe_unpack16(&dummy16, buf);
-		}
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	return SLURM_ERROR;
-}
-
-
-/* Unpack nodeinfo and update persistent libstate.
- *
- * If believe_window_status is true, we honor the window status variables
- * from the packed nrt_nodeinfo_t.  If it is false we set the status of
- * all windows to NRT_WIN_AVAILABLE.
- *
- * Used by: slurmctld
- */
-static int
-_unpack_nodeinfo(nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
-{
-	int i, j;
-	struct nrt_adapter *tmp_a = NULL;
-	nrt_window_t *tmp_w = NULL;
-	uint32_t size;
-	nrt_nodeinfo_t *tmp_n = NULL;
-	char *name_ptr, name[NRT_HOSTLEN];
-	uint32_t magic;
-
-	/* NOTE!  We don't care at this point whether n is valid.
-	 * If it's NULL, we will just forego the copy at the end.
-	 */
-	assert(buf);
-
-	/* Extract node name from buffer
-	 */
-	safe_unpack32(&magic, buf);
-	if (magic != NRT_NODEINFO_MAGIC)
-		slurm_seterrno_ret(EBADMAGIC_NRT_NODEINFO);
-	safe_unpackmem_ptr(&name_ptr, &size, buf);
-	if (size != NRT_HOSTLEN)
-		goto unpack_error;
-	memcpy(name, name_ptr, size);
-
-	/* When the slurmctld is in normal operating mode (NOT backup mode),
-	 * the global nrt_state structure should NEVER be NULL at the time that
-	 * this function is called.  Therefore, if nrt_state is NULL here,
-	 * we assume that the controller is in backup mode.  In backup mode,
-	 * the slurmctld only unpacks RPCs to find out their identity.
-	 * Most of the RPCs, including the one calling this function, are
-	 * simply ignored.
-	 *
-	 * So, here we just do a fake unpack to advance the buffer pointer.
-	 */
-	if (nrt_state == NULL) {
-		if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
-			slurm_seterrno_ret(EUNPACK);
-		} else {
-			return SLURM_SUCCESS;
-		}
-	}
-
-	/* If we already have nodeinfo for this node, we ignore this message.
-	 * The slurmctld's view of window allocation is always better than
-	 * the slurmd's view.  We only need the slurmd's view if the slurmctld
-	 * has no nodeinfo at all for that node.
-	 */
-	if (name != NULL) {
-		tmp_n = _find_node(nrt_state, name);
-		if (tmp_n != NULL) {
-			if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
-				slurm_seterrno_ret(EUNPACK);
-			} else {
-				goto copy_node;
-			}
-		}
-	}
-
-	/* Update global libstate with this nodes' info.
-	 */
-	tmp_n = _alloc_node(nrt_state, name);
-	if (tmp_n == NULL)
-		return SLURM_ERROR;
-	tmp_n->magic = magic;
-	safe_unpack32(&tmp_n->adapter_count, buf);
-	for (i = 0; i < tmp_n->adapter_count; i++) {
-		tmp_a = tmp_n->adapter_list + i;
-		safe_unpackmem_ptr(&name_ptr, &size, buf);
-		if (size != NRT_MAX_DEVICENAME_SIZE)
-			goto unpack_error;
-		memcpy(tmp_a->adapter_name, name_ptr, size);
-		safe_unpack16(&tmp_a->adapter_type, buf);
-		for (j = 0; j < MAX_SPIGOTS; j++) {
-			safe_unpack16(&tmp_a->lid[j], buf);
-			safe_unpack64(&tmp_a->network_id[j], buf);
-		}
-		safe_unpack16(&tmp_a->window_count, buf);
-		tmp_w = (nrt_window_t *) xmalloc(sizeof(nrt_window_t) *
-			tmp_a->window_count);
-		for (j = 0; j < tmp_a->window_count; j++) {
-			safe_unpack16(&tmp_w[j].window_id, buf);
-			safe_unpack32(&tmp_w[j].state, buf);
-			safe_unpack16(&tmp_w[j].job_key, buf);
-			if (!believe_window_status) {
-				tmp_w[j].state = NRT_WIN_AVAILABLE;
-				tmp_w[j].job_key = 0;
-			}
-		}
-		tmp_a->window_list = tmp_w;
-		tmp_w = NULL;	/* don't free on unpack error of next adapter */
-	}
-
-copy_node:
-	/* Only copy the node_info structure if the caller wants it */
-	if ((n != NULL) && (_copy_node(n, tmp_n) != SLURM_SUCCESS))
-		return SLURM_ERROR;
-
-#if NRT_DEBUG
-	info("_unpack_nodeinfo");
-	_print_nodeinfo(tmp_n);
-#endif
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	xfree(tmp_w);
-	slurm_seterrno_ret(EUNPACK);
-}
-
-/* Unpack nodeinfo and update persistent libstate.
- *
- * Used by: slurmctld
- */
-extern int
-nrt_unpack_nodeinfo(nrt_nodeinfo_t *n, Buf buf)
-{
-	int rc;
-
-	_lock();
-	rc = _unpack_nodeinfo(n, buf, false);
-	_unlock();
-	return rc;
 }
 
 
