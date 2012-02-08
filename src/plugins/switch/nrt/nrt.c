@@ -1050,7 +1050,6 @@ copy_node:
 	/* Only copy the node_info structure if the caller wants it */
 	if ((n != NULL) && (_copy_node(n, tmp_n) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
-	nrt_free_nodeinfo(tmp_n, false);
 	return rc;
 
 unpack_error:
