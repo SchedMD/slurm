@@ -101,13 +101,13 @@ typedef struct slurm_nrt_adapter {
 	slurm_nrt_window_t *window_list;
 } slurm_nrt_adapter_t;
 
-typedef struct slurm_nrt_nodeinfo {
+struct slurm_nrt_nodeinfo {
 	uint32_t magic;
 	char name[NRT_HOSTLEN];
 	uint32_t adapter_count;
 	struct slurm_nrt_adapter *adapter_list;
 	struct slurm_nrt_nodeinfo *next;
-} slurm_nrt_nodeinfo_t;
+};
 
 struct slurm_nrt_libstate {
 	uint32_t magic;
