@@ -718,12 +718,16 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 {
 	int err, i, j, k, rc = SLURM_SUCCESS;
 	nrt_cmd_query_adapter_types_t adapter_types;
+	unsigned int num_adapter_types;
+	nrt_adapter_t adapter_type[NRT_MAX_ADAPTER_TYPES];
 	nrt_cmd_query_adapter_names_t adapter_names;
 	nrt_cmd_status_adapter_t adapter_status;
 
 #if NRT_DEBUG
 	info("nrt_build_nodeinfo: begin");
 #endif
+	adapter_types.num_adapter_types = &num_adapter_types;
+	adapter_types.adapter_types = adapter_type;
 	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
 			  &adapter_types);
 	if (err != NRT_SUCCESS) {
@@ -731,8 +735,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		return SLURM_ERROR;
 	}
 
-	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
-		adapter_names.adapter_type = adapter_types.adapter_types[i];
+	for (i = 0; i < num_adapter_types; i++) {
+		adapter_names.adapter_type = adapter_type[i];
 		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 				  &adapter_names);
 		if (err != NRT_SUCCESS) {
@@ -1400,6 +1404,8 @@ nrt_clear_node_state(void)
 {
 	int err, i, j, k, rc = SLURM_SUCCESS;
 	nrt_cmd_query_adapter_types_t adapter_types;
+	unsigned int num_adapter_types;
+	nrt_adapter_t adapter_type[NRT_MAX_ADAPTER_TYPES];
 	nrt_cmd_query_adapter_names_t adapter_names;
 	nrt_cmd_status_adapter_t adapter_status;
 	nrt_cmd_clean_window_t clean_window;
@@ -1407,6 +1413,8 @@ nrt_clear_node_state(void)
 #if NRT_DEBUG
 	info("nrt_clear_node_state: begin");
 #endif
+	adapter_types.num_adapter_types = &num_adapter_types;
+	adapter_types.adapter_types = adapter_type;
 	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
 			  &adapter_types);
 	if (err != NRT_SUCCESS) {
@@ -1414,8 +1422,8 @@ nrt_clear_node_state(void)
 		return SLURM_ERROR;
 	}
 
-	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
-		adapter_names.adapter_type = adapter_types.adapter_types[i];
+	for (i = 0; i < num_adapter_types; i++) {
+		adapter_names.adapter_type = adapter_type[i];
 		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 				  &adapter_names);
 		if (err != NRT_SUCCESS) {
@@ -1688,11 +1696,15 @@ _fill_in_adapter_cache(void)
 {
 	int err, i, j, rc = SLURM_SUCCESS;
 	nrt_cmd_query_adapter_types_t adapter_types;
+	unsigned int num_adapter_types;
+	nrt_adapter_t adapter_type[NRT_MAX_ADAPTER_TYPES];
 	nrt_cmd_query_adapter_names_t adapter_names;
 
 #if NRT_DEBUG
 	info("_fill_in_adapter_cache: begin");
 #endif
+	adapter_types.num_adapter_types = &num_adapter_types;
+	adapter_types.adapter_types = adapter_type;
 	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
 			  &adapter_types);
 	if (err != NRT_SUCCESS) {
@@ -1700,12 +1712,11 @@ _fill_in_adapter_cache(void)
 		return SLURM_ERROR;
 	}
 
-	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
+	for (i = 0; i < num_adapter_types; i++) {
 #if NRT_DEBUG
-		info("adapter_type[%d]: %u",
-		     i, adapter_types.adapter_types[i]);
+		info("adapter_type[%d]: %u", i, adapter_type[i]);
 #endif
-		adapter_names.adapter_type = adapter_types.adapter_types[i];
+		adapter_names.adapter_type = adapter_type[i];
 		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 				  &adapter_names);
 		if (err != NRT_SUCCESS) {
@@ -2879,6 +2890,8 @@ extern int nrt_clear_node_state(void)
 {
 	int err, i, j, k, rc = SLURM_SUCCESS;
 	nrt_cmd_query_adapter_types_t adapter_types;
+	unsigned int num_adapter_types;
+	nrt_adapter_t adapter_type[NRT_MAX_ADAPTER_TYPES];
 	nrt_cmd_query_adapter_names_t adapter_names;
 	nrt_cmd_status_adapter_t adapter_status;
 	nrt_cmd_clean_window_t clean_window;
@@ -2886,6 +2899,8 @@ extern int nrt_clear_node_state(void)
 #if NRT_DEBUG
 	info("nrt_clear_node_state: begin");
 #endif
+	adapter_types.num_adapter_types = &num_adapter_types;
+	adapter_types.adapter_types = adapter_type;
 	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
 			  &adapter_types);
 	if (err != NRT_SUCCESS) {
@@ -2893,12 +2908,11 @@ extern int nrt_clear_node_state(void)
 		return SLURM_ERROR;
 	}
 
-	for (i = 0; i < adapter_types.num_adapter_types[0]; i++) {
+	for (i = 0; i < num_adapter_types; i++) {
 #if NRT_DEBUG
-		info("adapter_type[%d]: %u",
-		     i, adapter_types.adapter_types[i]);
+		info("adapter_type[%d]: %u", i, adapter_type[i]);
 #endif
-		adapter_names.adapter_type = adapter_types.adapter_types[i];
+		adapter_names.adapter_type = adapter_type[i];
 		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 				  &adapter_names);
 		if (err != NRT_SUCCESS) {
