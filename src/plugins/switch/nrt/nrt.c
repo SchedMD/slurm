@@ -119,6 +119,23 @@ struct slurm_nrt_libstate {
 	uint16_t key_index;
 };
 
+struct slurm_nrt_jobinfo {
+	uint32_t magic;
+	/* version from nrt_version() */
+	/* adapter from lid in table */
+	/* network_id from lid in table */
+	/* uid from getuid() */
+	/* pid from getpid() */
+	uint32_t job_key;
+	char job_desc[NRT_MAX_JOB_NAME_LEN];
+	uint8_t bulk_xfer;  /* flag */
+	uint16_t tables_per_task;
+	nrt_tableinfo_t *tableinfo;
+
+	hostlist_t nodenames;
+	uint32_t num_tasks;
+};
+
 /* Local functions */
 static slurm_nrt_libstate_t *
 		_alloc_libstate(void);
@@ -465,9 +482,18 @@ nrt_slurmd_step_init(void)
 extern int
 nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **j)
 {
-	return SLURM_SUCCESS;
-}
+	slurm_nrt_jobinfo_t *new;
 
+	assert(j != NULL);
+	new = (slurm_nrt_jobinfo_t *) xmalloc(sizeof(slurm_nrt_jobinfo_t));
+	new->magic = NRT_JOBINFO_MAGIC;
+	new->job_key = -1;
+	new->tables_per_task = 0;
+	new->tableinfo = NULL;
+	*j = new;
+
+	return 0;
+}
 
 /* Used by: slurmd, slurmctld */
 extern int
@@ -1198,23 +1224,6 @@ extern char *nrt_err_str(int rc)
 
 char* nrt_conf = NULL;
 
-struct nrt_jobinfo {
-	uint32_t magic;
-	/* version from nrt_version() */
-	/* adapter from lid in table */
-	/* network_id from lid in table */
-	/* uid from getuid() */
-	/* pid from getpid() */
-	uint16_t job_key;
-	char job_desc[JOB_DESC_LEN];
-	uint8_t bulk_xfer;  /* flag */
-	uint16_t tables_per_task;
-	nrt_tableinfo_t *tableinfo;
-
-	hostlist_t nodenames;
-	int num_tasks;
-};
-
 typedef struct {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	uint16_t adapter_type;
@@ -1553,23 +1562,6 @@ _get_adapters(struct nrt_adapter *list, int *count)
 
 	if (!*count)
 		slurm_seterrno_ret(ENOADAPTER);
-
-	return 0;
-}
-
-/* Used by: slurmd, slurmctld */
-extern int
-nrt_alloc_jobinfo(nrt_jobinfo_t **j)
-{
-	nrt_jobinfo_t *new;
-
-	assert(j != NULL);
-	new = (nrt_jobinfo_t *) xmalloc(sizeof(nrt_jobinfo_t));
-	new->magic = NRT_JOBINFO_MAGIC;
-	new->job_key = -1;
-	new->tables_per_task = 0;
-	new->tableinfo = NULL;
-	*j = new;
 
 	return 0;
 }
