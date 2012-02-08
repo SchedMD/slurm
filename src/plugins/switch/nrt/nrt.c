@@ -1126,6 +1126,7 @@ _next_key(void)
 	assert(nrt_state);
 
 	_lock();
+	key = nrt_state->key_index;
 	if (key == 0)
 		key++;
 	nrt_state->key_index = key + 1;
