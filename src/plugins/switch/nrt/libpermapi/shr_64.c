@@ -43,8 +43,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
-//#include <slurm/slurm.h>
-
+#include <slurm/slurm.h>
 
 /* The connection communicates information to and from the resource
  * manager, so that the resource manager can start the parallel task
