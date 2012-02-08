@@ -1653,7 +1653,7 @@ static void _opt_args(int argc, char **argv)
 
 		if (opt.nodes_set) {
 			if (node_cnt > opt.ntasks) {
-				if (!opt.nodes_set_env)
+				if (opt.nodes_set_opt)
 					info("You asked for %d nodes, "
 					     "but only %d tasks, resetting "
 					     "node count to %u.",
