@@ -397,6 +397,8 @@ static char *_adapter_name_check(char *network)
         regmatch_t pmatch[5];
         char *name;
 
+	if (!network)
+		return NULL;
 	if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
                 error("sockname regex compilation failed");
                 return NULL;
@@ -427,12 +429,16 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 #else
 	debug3("network = \"%s\"", network);
 #endif
-	if (strstr(network, "ip") || strstr(network, "IP")) {
+	if (network && (strstr(network, "ip") || strstr(network, "IP"))) {
 		debug2("NRT: \"ip\" found in network string, "
 		       "no network tables allocated");
 		return SLURM_SUCCESS;
 	} else {
-		if (strstr(network, "sn_all") || strstr(network, "SN_ALL")) {
+		if (!network) {
+			/* default to sn_all */
+			sn_all = true;
+		} else if (strstr(network, "sn_all") ||
+		           strstr(network, "SN_ALL")) {
 			debug3("Found sn_all in network string");
 			sn_all = true;
 		} else if (strstr(network, "sn_single") ||
@@ -454,8 +460,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		for (i = 0; i < hostlist_count(list); i++)
 			nprocs += tasks_per_node[i];
 
-		if (strstr(network, "bulk_xfer") ||
-		    strstr(network, "BULK_XFER"))
+		if (network &&
+		    (strstr(network, "bulk_xfer") ||
+		     strstr(network, "BULK_XFER")))
 			bulk_xfer = 1;
 		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
 					nprocs,	sn_all, adapter_name,
