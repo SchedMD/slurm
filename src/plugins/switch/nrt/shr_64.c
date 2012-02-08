@@ -35,15 +35,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <permapi.h>
+
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
-#include <slurm/slurm.h>
+//#include <slurm/slurm.h>
 
-#include <permapi.h>
 
 /* The connection communicates information to and from the resource
  * manager, so that the resource manager can start the parallel task
@@ -257,7 +258,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
  *        integer less than 0 - FAILURE
  */
 extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
-		      char** error_msg);
+		      char** error_msg)
 {
 	return 0;
 }
