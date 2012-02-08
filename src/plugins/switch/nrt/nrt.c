@@ -119,6 +119,28 @@ struct slurm_nrt_libstate {
 	uint16_t key_index;
 };
 
+/* Local functions */
+static slurm_nrt_libstate_t *
+		_alloc_libstate(void);
+static slurm_nrt_nodeinfo_t *
+		_alloc_node(slurm_nrt_libstate_t *lp, char *name);
+static int	_copy_node(slurm_nrt_nodeinfo_t *dest,
+			   slurm_nrt_nodeinfo_t *src);
+static int	_fake_unpack_adapters(Buf buf);
+static slurm_nrt_nodeinfo_t *
+		_find_node(slurm_nrt_libstate_t *lp, char *name);
+static int	_get_adapters(slurm_nrt_nodeinfo_t *n);
+static void	_hash_add_nodeinfo(slurm_nrt_libstate_t *state,
+				   slurm_nrt_nodeinfo_t *node);
+static int	_hash_index(char *name);
+static void	_hash_rebuild(slurm_nrt_libstate_t *state);
+static void	_lock(void);
+static void	_unlock(void);
+static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
+static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
+				 bool believe_window_status);
+static char *	_win_state_str(win_state_t state);
+
 /* The _lock() and _unlock() functions are used to lock/unlock a
  * global mutex.  Used to serialize access to the global library
  * state variable nrt_state.
@@ -295,7 +317,9 @@ _alloc_node(slurm_nrt_libstate_t *lp, char *name)
 
 	return n;
 }
-static char *_win_state_str(win_state_t state)
+
+static char *
+_win_state_str(win_state_t state)
 {
 	if (state == NRT_WIN_UNAVAILABLE)
 		return "Unavailable";
@@ -347,7 +371,62 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 	}
 	info("--End Node Info--");
 }
+
+/* Used by: slurmctld */
+static void
+_print_libstate(const slurm_nrt_libstate_t *l)
+{
+	int i;
+
+	assert(l);
+	assert(l->magic == NRT_LIBSTATE_MAGIC);
+
+	info("--Begin libstate--\n");
+	info("  node_count = %u", l->node_count);
+	info("  node_max = %u", l->node_max);
+	info("  hash_max = %u", l->hash_max);
+	info("  key_index = %hu", l->key_index);
+	for (i = 0; i < l->node_count; i++) {
+		_print_nodeinfo(&l->node_list[i]);
+	}
+	info("--End libstate--");
+}
 #endif
+
+static slurm_nrt_libstate_t *
+_alloc_libstate(void)
+{
+	slurm_nrt_libstate_t *tmp;
+
+	tmp = (slurm_nrt_libstate_t *) xmalloc(sizeof(slurm_nrt_libstate_t));
+	tmp->magic = NRT_LIBSTATE_MAGIC;
+	tmp->node_count = 0;
+	tmp->node_max = 0;
+	tmp->node_list = NULL;
+	tmp->hash_max = 0;
+	tmp->hash_table = NULL;
+	tmp->key_index = 1;
+
+	return tmp;
+}
+
+/* Allocate and initialize memory for the persistent libstate.
+ *
+ * Used by: slurmctld
+ */
+extern int
+nrt_init(void)
+{
+	slurm_nrt_libstate_t *tmp;
+
+	tmp = _alloc_libstate();
+	_lock();
+	assert(!nrt_state);
+	nrt_state = tmp;
+	_unlock();
+
+	return SLURM_SUCCESS;
+}
 
 extern int
 nrt_slurmctld_init(void)
@@ -884,16 +963,6 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 	return SLURM_SUCCESS;
 }
 
-/* Allocate and initialize memory for the persistent libstate.
- *
- * Used by: slurmctld
- */
-extern int
-nrt_init(void)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int
 nrt_fini(void)
 {
@@ -908,9 +977,54 @@ nrt_libstate_save(Buf buffer, bool free_flag)
 }
 
 /* Used by: slurmctld */
+static int
+_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
+{
+	uint32_t node_count;
+	int i;
+
+	assert(lp->magic == NRT_LIBSTATE_MAGIC);
+
+	safe_unpack32(&lp->magic, buffer);
+	safe_unpack32(&node_count, buffer);
+	for (i = 0; i < node_count; i++) {
+		if (_unpack_nodeinfo(NULL, buffer, false) != SLURM_SUCCESS)
+			goto unpack_error;
+	}
+	if (lp->node_count != node_count) {
+		error("Failed to recover switch state of all nodes (%u of %u)",
+		      lp->node_count, node_count);
+		return SLURM_ERROR;
+	}
+	safe_unpack16(&lp->key_index, buffer);
+#if NRT_DEBUG
+ 	info("_unpack_libstate");
+	_print_libstate(lp);
+ #endif
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("unpack error in _unpack_libstate");
+	slurm_seterrno_ret(EBADMAGIC_NRT_LIBSTATE);
+	return SLURM_ERROR;
+}
+
+/* Used by: slurmctld */
 extern int
 nrt_libstate_restore(Buf buffer)
 {
+	_lock();
+	assert(!nrt_state);
+
+	nrt_state = _alloc_libstate();
+	if (!nrt_state) {
+		error("nrt_libstate_restore nrt_state is NULL");
+		_unlock();
+		return SLURM_FAILURE;
+	}
+	_unpack_libstate(nrt_state, buffer);
+	_unlock();
+
 	return SLURM_SUCCESS;
 }
 
@@ -920,7 +1034,8 @@ nrt_libstate_clear(void)
 	return SLURM_SUCCESS;
 }
 
-extern int nrt_clear_node_state(void)
+extern int
+nrt_clear_node_state(void)
 {
 	int err, i, j, k, rc = SLURM_SUCCESS;
 	nrt_cmd_query_adapter_types_t adapter_types;
@@ -1083,18 +1198,6 @@ extern char *nrt_err_str(int rc)
 
 char* nrt_conf = NULL;
 
-mode_t nrt_umask;
-
-struct nrt_libstate {
-	uint32_t magic;
-	uint32_t node_count;
-	uint32_t node_max;
-	nrt_nodeinfo_t *node_list;
-	uint32_t hash_max;
-	nrt_nodeinfo_t **hash_table;
-	uint16_t key_index;
-};
-
 struct nrt_jobinfo {
 	uint32_t magic;
 	/* version from nrt_version() */
@@ -1244,25 +1347,6 @@ _print_jobinfo(nrt_jobinfo_t *j)
 	info("  num_tasks: %d", j->num_tasks);
 	info("  tableinfo supressed");
 	info("--End Jobinfo--");
-}
-
-/* Used by: slurmctld */
-static void
-_print_libstate(const nrt_libstate_t *l)
-{
-	int i;
-
-	assert(l);
-	assert(l->magic == NRT_LIBSTATE_MAGIC);
-
-	info("--Begin libstate--\n");
-	info("  node_count = %u", l->node_count);
-	info("  node_max = %u", l->node_max);
-	info("  hash_max = %u", l->hash_max);
-	for (i = 0; i < l->node_count; i++) {
-		_print_nodeinfo(&l->node_list[i]);
-	}
-	info("--End libstate--");
 }
 #endif
 
@@ -2687,43 +2771,6 @@ nrt_unload_table(nrt_jobinfo_t *jp)
 	return rc;
 }
 
-static nrt_libstate_t *
-_alloc_libstate(void)
-{
-	nrt_libstate_t *tmp;
-
-	tmp = (nrt_libstate_t *) xmalloc(sizeof(nrt_libstate_t));
-	tmp->magic = NRT_LIBSTATE_MAGIC;
-	tmp->node_count = 0;
-	tmp->node_max = 0;
-	tmp->node_list = NULL;
-	tmp->hash_max = 0;
-	tmp->hash_table = NULL;
-	tmp->key_index = 1;
-
-	return tmp;
-}
-
-/* Allocate and initialize memory for the persistent libstate.
- *
- * Used by: slurmctld
- */
-extern int
-nrt_init(void)
-{
-	nrt_libstate_t *tmp;
-
-	tmp = _alloc_libstate();
-	if (!tmp)
-		return SLURM_FAILURE;
-	_lock();
-	assert(!nrt_state);
-	nrt_state = tmp;
-	_unlock();
-
-	return SLURM_SUCCESS;
-}
-
 static void
 _free_libstate(nrt_libstate_t *lp)
 {
@@ -2788,58 +2835,6 @@ nrt_libstate_save(Buf buffer, bool free_flag)
 		nrt_state = NULL;	/* freed above */
 	}
 	_unlock();
-}
-
-/* Used by: slurmctld */
-static int
-_unpack_libstate(nrt_libstate_t *lp, Buf buffer)
-{
-	uint32_t node_count;
-	int i;
-
-	assert(lp->magic == NRT_LIBSTATE_MAGIC);
-
-	safe_unpack32(&lp->magic, buffer);
-	safe_unpack32(&node_count, buffer);
-	for (i = 0; i < node_count; i++) {
-		if (_unpack_nodeinfo(NULL, buffer, false) != SLURM_SUCCESS)
-			goto unpack_error;
-	}
-	if (lp->node_count != node_count) {
-		error("Failed to recover switch state of all nodes (%d of %u)",
-		      lp->node_count, node_count);
-		return SLURM_ERROR;
-	}
-	safe_unpack16(&lp->key_index, buffer);
-#if NRT_DEBUG
- 	info("_unpack_libstate");
-	_print_libstate(lp);
- #endif
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("unpack error in _unpack_libstate");
-	slurm_seterrno_ret(EBADMAGIC_NRT_LIBSTATE);
-	return SLURM_ERROR;
-}
-
-/* Used by: slurmctld */
-extern int
-nrt_libstate_restore(Buf buffer)
-{
-	_lock();
-	assert(!nrt_state);
-
-	nrt_state = _alloc_libstate();
-	if (!nrt_state) {
-		error("nrt_libstate_restore nrt_state is NULL");
-		_unlock();
-		return SLURM_FAILURE;
-	}
-	_unpack_libstate(nrt_state, buffer);
-	_unlock();
-
-	return SLURM_SUCCESS;
 }
 
 extern int
