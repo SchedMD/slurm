@@ -933,6 +933,7 @@ with_slurmctld_port
 with_slurmd_port
 with_slurmdbd_port
 with_slurmctld_port_count
+with_libnrt
 with_readline
 with_ssl
 with_munge
@@ -1646,6 +1647,7 @@ Optional Packages:
   --with-slurmdbd-port=N  set slurmdbd default port [6819]
   --with-slurmctld-port-count=N
                           set slurmctld default port count [1]
+  --with-libnrt=PATH      Specify path to libnrt.so
   --without-readline      compile without readline support
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
@@ -21259,24 +21261,31 @@ fi
 
 
 
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable IBM NRT support" >&5
-$as_echo_n "checking whether to enable IBM NRT support... " >&6; }
    if test "$OBJECT_MODE" = "64"; then
       nrt_default_dirs="/usr/lib64"
    else
       nrt_default_dirs="/usr/lib"
    fi
+
+
+# Check whether --with-libnrt was given.
+if test "${with_libnrt+set}" = set; then :
+  withval=$with_libnrt;  nrt_default_dirs="$withval $nrt_default_dirs"
+fi
+
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable IBM NRT support" >&5
+$as_echo_n "checking whether to enable IBM NRT support... " >&6; }
    for nrt_dir in $nrt_default_dirs; do
       # skip dirs that don't exist
       if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
          continue;
       fi
-
       # search for required NRT API libraries
-      if test -f "$ntbl_dir/libnrt.so"; then
+      if test -f "$nrt_dir/libnrt.so"; then
          ac_have_nrt="yes"
          NRT_LDFLAGS="-lnrt"
-         break;
+	 break;
       fi
 
    done

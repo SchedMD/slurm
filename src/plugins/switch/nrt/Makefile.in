@@ -107,6 +107,14 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
+libpermapi_la_LIBADD =
+am__libpermapi_la_SOURCES_DIST = shr_64.c
+@HAVE_NRT_TRUE@am_libpermapi_la_OBJECTS = shr_64.lo
+libpermapi_la_OBJECTS = $(am_libpermapi_la_OBJECTS)
+libpermapi_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libpermapi_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_NRT_TRUE@am_libpermapi_la_rpath = -rpath $(pkglibdir)
 switch_nrt_la_LIBADD =
 am__switch_nrt_la_SOURCES_DIST = nrt.c nrt_keys.h slurm_nrt.h \
 	switch_nrt.c
@@ -132,8 +140,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(switch_nrt_la_SOURCES) $(EXTRA_switch_nrt_la_SOURCES)
-DIST_SOURCES = $(am__switch_nrt_la_SOURCES_DIST) \
+SOURCES = $(libpermapi_la_SOURCES) $(switch_nrt_la_SOURCES) \
+	$(EXTRA_switch_nrt_la_SOURCES)
+DIST_SOURCES = $(am__libpermapi_la_SOURCES_DIST) \
+	$(am__switch_nrt_la_SOURCES_DIST) \
 	$(am__EXTRA_switch_nrt_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
@@ -343,6 +353,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 SWITCH_NRT_LA_SOURCES = \
 	nrt.c			\
 	nrt_keys.h		\
@@ -350,9 +361,13 @@ SWITCH_NRT_LA_SOURCES = \
 	switch_nrt.c
 
 @HAVE_NRT_FALSE@pkglib_LTLIBRARIES = 
-@HAVE_NRT_TRUE@pkglib_LTLIBRARIES = switch_nrt.la
+@HAVE_NRT_TRUE@pkglib_LTLIBRARIES = switch_nrt.la libpermapi.la
 @HAVE_NRT_TRUE@switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
 @HAVE_NRT_TRUE@switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(NRT_LDFLAGS)
+@HAVE_NRT_TRUE@libpermapi_la_SOURCES = shr_64.c
+@HAVE_NRT_TRUE@libpermapi_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+@HAVE_NRT_TRUE@	$(convenience_libs) -lpthread
+
 @HAVE_NRT_FALSE@EXTRA_switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
 all: all-am
 
@@ -419,6 +434,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+libpermapi.la: $(libpermapi_la_OBJECTS) $(libpermapi_la_DEPENDENCIES) 
+	$(libpermapi_la_LINK) $(am_libpermapi_la_rpath) $(libpermapi_la_OBJECTS) $(libpermapi_la_LIBADD) $(LIBS)
 switch_nrt.la: $(switch_nrt_la_OBJECTS) $(switch_nrt_la_DEPENDENCIES) 
 	$(switch_nrt_la_LINK) $(am_switch_nrt_la_rpath) $(switch_nrt_la_OBJECTS) $(switch_nrt_la_LIBADD) $(LIBS)
 
@@ -429,6 +446,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nrt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shr_64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_nrt.Plo@am__quote@
 
 .c.o:

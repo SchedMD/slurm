@@ -16,23 +16,25 @@
 
 AC_DEFUN([X_AC_NRT],
 [
-   AC_MSG_CHECKING([whether to enable IBM NRT support])
    if test "$OBJECT_MODE" = "64"; then
       nrt_default_dirs="/usr/lib64"
    else
       nrt_default_dirs="/usr/lib"
    fi
+
+   AC_ARG_WITH([libnrt], AS_HELP_STRING(--with-libnrt=PATH,Specify path to libnrt.so), [ nrt_default_dirs="$withval $nrt_default_dirs"])
+
+   AC_MSG_CHECKING([whether to enable IBM NRT support])
    for nrt_dir in $nrt_default_dirs; do
       # skip dirs that don't exist
       if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
          continue;
       fi
-
       # search for required NRT API libraries
-      if test -f "$ntbl_dir/libnrt.so"; then
+      if test -f "$nrt_dir/libnrt.so"; then
          ac_have_nrt="yes"
          NRT_LDFLAGS="-lnrt"
-         break;
+	 break;
       fi
 
    done
