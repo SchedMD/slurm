@@ -21284,7 +21284,7 @@ $as_echo_n "checking whether to enable IBM NRT support... " >&6; }
       # search for required NRT API libraries
       if test -f "$nrt_dir/libnrt.so"; then
          ac_have_nrt="yes"
-         NRT_LDFLAGS="-lnrt"
+         NRT_LDFLAGS="-L$nrt_dir -lnrt"
 	 break;
       fi
 

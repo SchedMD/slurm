@@ -33,7 +33,7 @@ AC_DEFUN([X_AC_NRT],
       # search for required NRT API libraries
       if test -f "$nrt_dir/libnrt.so"; then
          ac_have_nrt="yes"
-         NRT_LDFLAGS="-lnrt"
+         NRT_LDFLAGS="-L$nrt_dir -lnrt"
 	 break;
       fi
 
