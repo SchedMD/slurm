@@ -576,8 +576,7 @@ test22.2   sreport h, n, p, P, t, V options
 test23.#   Testing of sstat commands and options.
 =================================================
 test23.1   sstat -e, h, usage and V options
-test23.2   sstat --helpformat
-test23.3   sstat -a, n, o, p, P, v options
+test23.2   sstat -a, n, o, p, P, v options
 
 
 test24.#   Testing of sshare/priority multifactor plugin.
