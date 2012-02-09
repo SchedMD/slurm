@@ -240,10 +240,10 @@ _print_job ( bool clear_old )
 	if (params.format == NULL) {
 #ifdef USE_LOADLEVELER
 		if (params.long_list) {
-			params.format = "%.17i %.9P %.8j %.8u %.8T %.10M %.9l "
+			params.format = "%.20i %.9P %.8j %.8u %.8T %.10M %.9l "
 				"%.6D %R";
 		} else {
-			params.format = "%.17i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
+			params.format = "%.20i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
 		}
 #else
 		if (params.long_list) {
