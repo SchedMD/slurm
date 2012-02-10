@@ -445,6 +445,8 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 	} else if ((step_state == STATE_PREEMPTED) ||
 		   (step_state == STATE_PREEMPT_PENDING)) {
 		job_ptr->job_state = JOB_PREEMPTED;
+	} else if (step_state == STATE_REMOVE_PENDING) {
+		 job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 	} else {
 		job_ptr->job_state = JOB_COMPLETE;
 	}
@@ -921,7 +923,7 @@ static void _read_be_key(slurm_fd_t socket_conn, char *hostname)
 	xstrfmtcat(sock_env, "%u", read_key);
 	if (setenv("SLURM_BE_KEY", sock_env, 1))
 		fatal("setenv(SLURM_BE_KEY): %m");
-#ifdef _DEBUG_SALLOC
+#if _DEBUG_SALLOC
 	info("SLURM_BE_KEY=%u", read_key);
 #endif
 	xfree(sock_env);
@@ -929,7 +931,7 @@ static void _read_be_key(slurm_fd_t socket_conn, char *hostname)
 	xstrfmtcat(sock_env, "%s:%hu", hostname, comm_port);
 	if (setenv("SLURM_BE_SOCKET", sock_env, 1))
 		fatal("setenv(SLURM_BE_SOCKET): %m");
-#ifdef _DEBUG_SALLOC
+#if _DEBUG_SALLOC
 	info("SLURM_BE_SOCKET=%s", sock_env);
 #endif
 	xfree(sock_env);
@@ -1605,6 +1607,7 @@ extern int slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 			job_ptr->batch_flag = 1;
 
 		step = NULL;
+		step_inx = -1;
 		rc = ll_get_data(job, LL_JobGetFirstStep, &step);
 		while (!rc && step) {
 			step_inx++;
@@ -2091,19 +2094,19 @@ extern int slurm_load_partitions (time_t update_time,
 	query_object = ll_query(CLASSES);
 	if (!query_object) {
 		verbose("ll_query(CLASSES) failed");
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 	if (rc) {
 		verbose("ll_set_request(CLASSES, ALL), error %d", rc);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	class = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
 	if (!class) {
 		verbose("ll_get_objs(CLASSES), error %d", err_code);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	part_info_ptr = xmalloc(sizeof(node_info_msg_t));
