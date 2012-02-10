@@ -834,10 +834,11 @@ extern char *build_poe_command(void)
 		}
 	}
 	if (opt.network) {
-		if (strstr(opt.network, "ip"))
-			setenv("MP_EUILIB", "ip", 1);
-		else if (strstr(opt.network, "us"))
-			setenv("MP_EUILIB", "us", 1);
+		if (strstr(opt.network, "ip") || strstr(opt.network, "ip"))
+			setenv("MP_EUILIB", "IP", 1);
+		else if (strstr(opt.network, "us") ||
+			 strstr(opt.network, "US"))
+			setenv("MP_EUILIB", "US", 1);
 	}
 	if (opt.nodelist) {
 /* FIXME: Need to generate hostlist file on compute node,
