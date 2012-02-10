@@ -2163,6 +2163,8 @@ extern int slurm_load_partitions (time_t update_time,
 
 		rc = ll_get_data(class, LL_ClassName, &name);
 		if (!rc) {
+			if (!strcmp(name, "No_Class"))
+				part_ptr->flags = PART_FLAG_DEFAULT;
 			part_ptr->name = xstrdup(name);
 			free(name);
 		}
