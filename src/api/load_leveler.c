@@ -1402,13 +1402,13 @@ extern int slurm_load_job (job_info_msg_t **resp, char *job_id,
 	query_object = ll_query(JOBS);
 	if (!query_object) {
 		verbose("ll_query(JOBS) failed");
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 	if (rc) {
 		verbose("ll_set_request(JOBS, ALL), error %d", rc);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
@@ -1418,7 +1418,7 @@ extern int slurm_load_job (job_info_msg_t **resp, char *job_id,
 		obj_count = 0;
 	} else if (!job) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	job_info_ptr = xmalloc(sizeof(job_info_msg_t));
@@ -1528,13 +1528,13 @@ extern int slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 	query_object = ll_query(JOBS);
 	if (!query_object) {
 		verbose("ll_query(JOBS) failed");
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 	if (rc) {
 		verbose("ll_set_request(JOBS, ALL), error %d", rc);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
@@ -1544,7 +1544,7 @@ extern int slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 		obj_count = 0;
 	} else if (!job) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	job_info_ptr = xmalloc(sizeof(job_info_msg_t));
@@ -1624,7 +1624,7 @@ extern int slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 	if (++job_inx != obj_count) {
 		verbose("ll_get_objs(JOBS), bad obj_count %d", obj_count);
 		slurm_free_job_info_msg(job_info_ptr);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	*resp = job_info_ptr;
@@ -1682,13 +1682,13 @@ extern int slurm_get_job_steps (time_t update_time, char *job_id,
 	query_object = ll_query(JOBS);
 	if (!query_object) {
 		verbose("ll_query(JOBS) failed");
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 	if (rc) {
 		verbose("ll_set_request(JOBS, ALL), error %d", rc);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
@@ -1698,7 +1698,7 @@ extern int slurm_get_job_steps (time_t update_time, char *job_id,
 		obj_count = 0;
 	} else if (!job) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	step_buf_cnt = obj_count * 2;
@@ -1757,7 +1757,7 @@ next_job:	job = ll_next_obj(query_object);
 	if (++job_inx != obj_count) {
 		verbose("ll_get_objs(JOBS), bad obj_count %d", obj_count);
 		slurm_free_job_step_info_response_msg(step_info_ptr);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	step_info_ptr->job_step_count = step_inx + 1;
@@ -1802,20 +1802,20 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 	query_object = ll_query(JOBS);
 	if (!query_object) {
 		verbose("ll_query(JOBS) failed");
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 	if (rc) {
 		verbose("ll_set_request(JOBS, ALL), error %d", rc);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	job = ll_get_objs(query_object, LL_HISTORY_FILE, NULL, &obj_count,
 			  &err_code);
 	if (!job) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	*resp = NULL;
@@ -1887,19 +1887,19 @@ extern int slurm_load_node (time_t update_time,
 	query_object = ll_query(MACHINES);
 	if (!query_object) {
 		verbose("ll_query(MACHINES) failed");
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 	if (rc) {
 		verbose("ll_set_request(MACHINES, ALL), error %d", rc);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	machine = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
 	if (!machine) {
 		verbose("ll_get_objs(MACHINES), error %d", err_code);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	node_info_ptr = xmalloc(sizeof(node_info_msg_t));
@@ -2043,7 +2043,7 @@ extern int slurm_load_node (time_t update_time,
 	if (++node_inx != obj_count) {
 		verbose("ll_get_objs(MACHINES), bad obj_count %d", obj_count);
 		slurm_free_node_info_msg(node_info_ptr);
-		return SLURM_COMMUNICATIONS_CONNECTION_ERROR;
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	*resp = node_info_ptr;
@@ -2231,8 +2231,7 @@ extern int slurm_complete_job (char *job_id, uint32_t job_return_code)
 \*****************************************************************************/
 extern int slurm_notify_job (char *job_id, char *message)
 {
-	slurm_seterrno(ESLURM_NOT_SUPPORTED);
-	return -1;
+	slurm_seterrno_ret(ESLURM_NOT_SUPPORTED);
 }
 
 /*
@@ -2243,10 +2242,8 @@ extern int slurm_notify_job (char *job_id, char *message)
  */
 extern int slurm_signal_job (char *job_id, uint16_t signal)
 {
-	if (signal != SIGKILL) {
-		slurm_seterrno(ESLURM_NOT_SUPPORTED);
-		return -1;
-	}
+	if (signal != SIGKILL)
+		slurm_seterrno_ret(ESLURM_NOT_SUPPORTED);
 	return slurm_terminate_job (job_id);
 }
 
@@ -2261,10 +2258,8 @@ extern int slurm_signal_job (char *job_id, uint16_t signal)
 extern int slurm_signal_job_step (char *job_id, uint32_t step_id,
 				  uint16_t signal)
 {
-	if (signal != SIGKILL) {
-		slurm_seterrno(ESLURM_NOT_SUPPORTED);
-		return -1;
-	}
+	if (signal != SIGKILL)
+		slurm_seterrno_ret(ESLURM_NOT_SUPPORTED);
 	return slurm_terminate_job_step (job_id, step_id);
 }
 
@@ -2281,8 +2276,7 @@ extern int slurm_terminate_job (char *job_id)
 	if (fe_job_id && !strcmp(fe_job_id, job_id))
 		fe_job_killed = true;
 	(void) _xmit_abort();
-	slurm_seterrno(ESLURM_NOT_SUPPORTED);
-	return -1;
+	slurm_seterrno_ret(ESLURM_NOT_SUPPORTED);
 #else
 	LL_element *job, *step, *query_object;
 	int err_code, found, i, obj_count, rc = 0;
@@ -2297,15 +2291,13 @@ extern int slurm_terminate_job (char *job_id)
 		query_object = ll_query(JOBS);
 		if (!query_object) {
 			verbose("ll_query(JOBS) failed");
-			slurm_seterrno(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
-			return -1;
+			slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		}
 
 		rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 		if (rc) {
 			verbose("ll_set_request(JOBS, ALL), error %d", rc);
-			slurm_seterrno(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
-			return -1;
+			slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		}
 
 		job = ll_get_objs(query_object, LL_CM, NULL, &obj_count,
@@ -2316,8 +2308,7 @@ extern int slurm_terminate_job (char *job_id)
 			obj_count = 0;
 		} else if (!job) {
 			verbose("ll_get_objs(JOBS), error %d", err_code);
-			slurm_seterrno(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
-			return -1;
+			slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		}
 		while (job) {
 			step = NULL;
@@ -2359,10 +2350,8 @@ static int _term_step_id (char *step_id_str)
 	int cluster = 0, step_id = 0;
 	LL_terminate_job_info *cancel_info;
 
-	if (!job_id) {
-		slurm_seterrno(ESLURM_INVALID_JOB_ID);
-		return -1;
-	}
+	if (!job_id)
+		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
 
 	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
 	cancel_info->version_num =  LL_PROC_VERSION;
@@ -2416,10 +2405,8 @@ extern int slurm_terminate_job_step (char *job_id, uint32_t step_id)
 	int rc;
 	LL_terminate_job_info *cancel_info;
 
-	if (!job_id) {
-		slurm_seterrno(ESLURM_INVALID_JOB_ID);
-		return -1;
-	}
+	if (!job_id)
+		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
 
 	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
 	cancel_info->version_num =  LL_PROC_VERSION;
