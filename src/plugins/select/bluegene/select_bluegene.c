@@ -1049,7 +1049,7 @@ static int _validate_config_blocks(List curr_block_list,
 		itr_conf = list_iterator_create(bg_lists->main);
 		while ((bg_record = list_next(itr_conf)))
 			_handle_existing_block(bg_record);
-
+		list_iterator_destroy(itr_conf);
 		return SLURM_SUCCESS;
 	}
 
