@@ -88,7 +88,7 @@ extern char **environ;
 
 /* Set this to generate debugging information for srun front-end/back-end
  *	program communications */
-#define _DEBUG_SRUN 0
+#define _DEBUG_SRUN 1
 
 /* Timeout for srun front-end/back-end messages in usec */
 #define MSG_TIMEOUT 5000000
@@ -791,6 +791,7 @@ extern char *build_poe_command(void)
 {
 	int i;
 	char *cmd_line = NULL, *tmp_str;
+	char value[32];
 
 	xstrcat(cmd_line, "poe");
 	for (i = 0; i < opt.argc; i++)
@@ -798,43 +799,45 @@ extern char *build_poe_command(void)
 
 	if (opt.network) {
 		if (strstr(opt.network, "dedicated"))
-			xstrfmtcat(cmd_line, " -adapter-use=dedicated");
+			setenv("MP_ADAPTER_USE", "dedicated", 1);
 		else if (strstr(opt.network, "shared"))
-			xstrfmtcat(cmd_line, " -adapter-use=shared");
+			setenv("MP_ADAPTER_USE", "shared", 1);
 	}
 	if (opt.cpu_bind_type) {
 		if ((opt.cpu_bind_type & CPU_BIND_TO_THREADS) ||
 		    (opt.cpu_bind_type & CPU_BIND_TO_CORES)) {
-			xstrfmtcat(cmd_line, " -bindprocs=yes");
+			setenv("MP_BINDPROC", "yes", 1);
 		}
 	}
 	if (opt.shared != (uint16_t) NO_VAL) {
 		if (opt.shared)
-			xstrfmtcat(cmd_line, " -cpu_use=unique");
+			setenv("MP_CPU_USE", "unique", 1);
 		else
-			xstrfmtcat(cmd_line, " -cpu_use=multiple");
+			setenv("MP_CPU_USE", "multiple", 1);
 	}
 	if (opt.network) {
-		if (strstr(opt.network, "ib"))
-			xstrfmtcat(cmd_line, " -devtype=ip");
+		if (strstr(opt.network, "hfi"))
+			setenv("MP_DEVTYPE", "hfi", 1);
+		else if  (strstr(opt.network, "ib"))
+			setenv("MP_DEVTYPE", "ib", 1);
 	}
 	if (opt.network) {
 		if (strstr(opt.network, "sn_all"))
-			xstrfmtcat(cmd_line, " -euidevice=sn_all");
+			setenv("MP_EUIDEVICE", "sn_all", 1);
 		else if (strstr(opt.network, "sn_single"))
-			xstrfmtcat(cmd_line, " -euidevice=sn_single");
+			setenv("MP_EUIDEVICE", "sn_single", 1);
 		else if ((tmp_str = strstr(opt.network, "eth"))) {
 			char buf[5];
 			strncpy(buf, tmp_str, 5);
 			buf[4] = '\0';
-			xstrfmtcat(cmd_line, " -euidevice=%s", buf);
+			setenv("MP_EUIDEVICE", buf, 1);
 		}
 	}
 	if (opt.network) {
-		if (strstr(opt.network, "ib"))
-			xstrfmtcat(cmd_line, " -euilib=ip");
+		if (strstr(opt.network, "ip"))
+			setenv("MP_EUILIB", "ip", 1);
 		else if (strstr(opt.network, "us"))
-			xstrfmtcat(cmd_line, " -euilib=us");
+			setenv("MP_EUILIB", "us", 1);
 	}
 	if (opt.nodelist) {
 /* FIXME: Need to generate hostlist file on compute node,
@@ -874,46 +877,53 @@ extern char *build_poe_command(void)
 		close(fd);
 	}
 	if (opt.msg_timeout) {
-		char value[32];
 		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
-		setenv("MP_TIMEOUT", value, 0);
+		setenv("MP_TIMEOUT", value, 1);
 	}
 	if (opt.immediate)
-		xstrfmtcat(cmd_line, " -retry=0");
+		setenv("MP_RETRY", "0", 1);
 	if (_verbose) {
 		int info_level = MIN((_verbose + 1), 6);
-		xstrfmtcat(cmd_line, " -infolevel=%d", info_level);
+		snprintf(value, sizeof(value), "%d", info_level);
+		setenv("MP_INFOLEVEL", value, 1);
 	}
 	if (opt.labelio)
-		xstrfmtcat(cmd_line, " -labelio");
-	if (opt.min_nodes != NO_VAL)
-		xstrfmtcat(cmd_line, " -nodes=%u", opt.min_nodes);
-	if (opt.ntasks)
-		xstrfmtcat(cmd_line, " -procs=%u", opt.ntasks);
+		setenv("MP_LABLEIO", "yes", 1);
+	if (opt.min_nodes != NO_VAL) {
+		snprintf(value, sizeof(value), "%u", opt.min_nodes);
+		setenv("MP_NODES", value, 1);
+	}
+	if (opt.ntasks) {
+		snprintf(value, sizeof(value), "%u", opt.ntasks);
+		setenv("MP_PROCS", value, 1);
+	}
 	if (opt.cpu_bind_type) {
 		if (opt.cpu_bind_type & CPU_BIND_TO_THREADS)
-			xstrfmtcat(cmd_line, " -task_affinity=cpu");
+			setenv("MP_TASK_AFFINITY", "cpu", 1);
 		else if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
-			xstrfmtcat(cmd_line, " -task_affinity=core");
+			setenv("MP_TASK_AFFINITY", "core", 1);
 		else if (opt.cpus_per_task) {
-			xstrfmtcat(cmd_line, " -task_affinity=cpu:%d",
-				   opt.cpus_per_task);
+			snprintf(value, sizeof(value), "cpu:%d",
+				 opt.cpus_per_task);
+			setenv("MP_TASK_AFFINITY", value, 1);
 		}
 	}
 	if (opt.ntasks_per_node != NO_VAL) {
-		xstrfmtcat(cmd_line, " -tasks_per_node=%u",
-			   opt.ntasks_per_node);
+		snprintf(value, sizeof(value), "%u", opt.ntasks_per_node);
+		setenv("MP_TASKS_PER_NODE", value, 1);
 	}
 	if (opt.unbuffered) {
-		xstrfmtcat(cmd_line, " -stderrmode unordered");
-		xstrfmtcat(cmd_line, " -stdoutmode unordered");
+		setenv("MP_STDERRMODE", "unordered", 1);
+		setenv("MP_STDOUTMODE", "unordered", 1);
 	}
 
 	disable_status = opt.disable_status;
 	quit_on_intr = opt.quit_on_intr;
 	srun_jobid = xstrdup(opt.jobid);
 
-info("%s", cmd_line);
+#if _DEBUG_SRUN
+	info("cmd_line:$s", cmd_line);
+#endif
 	return cmd_line;
 }
 
