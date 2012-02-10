@@ -67,8 +67,12 @@
 #include "src/scancel/scancel.h"
 
 #define MAX_CANCEL_RETRY 10
-#define MAX_THREADS 20
 
+#ifdef USE_LOADLEVELER
+#define MAX_THREADS 1
+#else
+#define MAX_THREADS 20
+#endif
 
 static void  _cancel_jobs (void);
 static void *_cancel_job_id (void *cancel_info);
