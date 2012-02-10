@@ -238,7 +238,9 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 	/* unlock mutex here since down_nodecard could produce
 	   deadlock */
 	slurm_mutex_unlock(&ba_system_mutex);
+	slurm_mutex_unlock(&block_state_mutex);
 	rc = down_nodecard(bg_down_node, io_start, 0, reason);
+	slurm_mutex_lock(&block_state_mutex);
 	slurm_mutex_lock(&ba_system_mutex);
 
 	if (rc == SLURM_SUCCESS)
