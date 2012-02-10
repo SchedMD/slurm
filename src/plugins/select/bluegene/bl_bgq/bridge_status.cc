@@ -192,7 +192,7 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 
 static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 				  EnumWrapper<Hardware::State> state,
-				  char *reason)
+				  char *reason, bool block_state_locked)
 {
 	char bg_down_node[128];
 	int io_start;
@@ -238,9 +238,11 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 	/* unlock mutex here since down_nodecard could produce
 	   deadlock */
 	slurm_mutex_unlock(&ba_system_mutex);
-	slurm_mutex_unlock(&block_state_mutex);
+	if (block_state_locked)
+		slurm_mutex_unlock(&block_state_mutex);
 	rc = down_nodecard(bg_down_node, io_start, 0, reason);
-	slurm_mutex_lock(&block_state_mutex);
+	if (block_state_locked)
+		slurm_mutex_lock(&block_state_mutex);
 	slurm_mutex_lock(&ba_system_mutex);
 
 	if (rc == SLURM_SUCCESS)
@@ -344,7 +346,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			 cnode_coords[4],
 			 cnode_loc.c_str());
 		error("%s", reason);
-		_handle_bad_nodeboard(nc_name, ba_mp->coord_str, state, reason);
+		_handle_bad_nodeboard(nc_name, ba_mp->coord_str,
+				      state, reason, 1);
 		return;
 	}
 
@@ -742,7 +745,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		    && (nb_ptr->getState() != Hardware::Available))
 			_handle_bad_nodeboard(
 				nb_ptr->getLocation().substr(7,3).c_str(),
-				ba_mp->coord_str, nb_ptr->getState(), NULL);
+				ba_mp->coord_str, nb_ptr->getState(), NULL, 1);
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
@@ -1040,7 +1043,7 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	}
 
 	_handle_bad_nodeboard(nb_name, ba_mp->coord_str,
-			      event.getState(), NULL);
+			      event.getState(), NULL, 0);
 	xfree(nb_name);
 	xfree(mp_name);
 	slurm_mutex_unlock(&ba_system_mutex);
