@@ -1225,6 +1225,12 @@ static char *_get_shell(void)
 
 static int _salloc_default_command (int *argcp, char **argvp[])
 {
+#ifdef USE_LOADLEVELER
+	*argcp = 1;
+	*argvp = xmalloc (sizeof (char *) * 2);
+	(*argvp)[0] = _get_shell ();
+	(*argvp)[1] = NULL;
+#else
 	slurm_ctl_conf_t *cf = slurm_conf_lock();
 
 	if (cf->salloc_default_command) {
@@ -1246,6 +1252,7 @@ static int _salloc_default_command (int *argcp, char **argvp[])
 	}
 
 	slurm_conf_unlock();
+#endif
 	return (0);
 }
 
