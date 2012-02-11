@@ -923,7 +923,7 @@ extern char *build_poe_command(void)
 	srun_jobid = xstrdup(opt.jobid);
 
 #if _DEBUG_SRUN
-	info("cmd_line:$s", cmd_line);
+	info("cmd_line:%s", cmd_line);
 #endif
 	return cmd_line;
 }

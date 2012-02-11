@@ -2497,12 +2497,26 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 				  submit_response_msg_t **resp)
 {
 	char *first_line, *pathname, *slurm_cmd_file = NULL;
+	char *set_job_id = NULL, *slash;
 	int fd, i, rc = 0;
 	size_t len, offset = 0, wrote;
 
+	first_line = strchr(req->script, '\n');
+	/* Determine shell type and command line to export SLURM_JOBID */
+	if (first_line) {
+		first_line[0] = '\0';
+		slash = strrchr(req->script, '/');
+		if (!strcmp(req->script, "csh") ||
+		    !strcmp(req->script, "tsch")) {
+			set_job_id = "setenv SLURM_JOBID $LOADL_STEP_ID";
+		} else {	/* bash, ksh, sh */
+			set_job_id = "export SLURM_JOBID=$LOADL_STEP_ID";
+		}
+		first_line[0] = '\n';
+	}
 	/* Move first line of script, e.g. "#!/bin/bash"
 	 * also all subsequent lines that begin with "# @" */
-	first_line = strchr(req->script, '\n');
+
 	while (first_line && (first_line[1] == '#') &&
 	       (first_line[2] == ' ') && (first_line[3] == '@')) {
 		first_line = strchr(first_line+1, '\n');
@@ -2847,7 +2861,11 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 
 	xstrfmtcat(slurm_cmd_file, "# @ queue\n");
 
-	/* Move the reset of the script */
+	/* Set SLURM_JOBID */
+	if (set_job_id)
+		xstrfmtcat(slurm_cmd_file, "%s\n", set_job_id);
+
+	/* Move the rest of the script */
 	if (first_line)
 		xstrfmtcat(slurm_cmd_file, "%s\n", first_line+1);
 
