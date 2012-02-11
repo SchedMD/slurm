@@ -1479,7 +1479,8 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 		while ((ba_mp = list_next(itr))) {
 			if (!ba_mp->used)
 				continue;
-			FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
+			bit_nclear(ba_mp->cnode_bitmap, 0,
+				   bit_size(ba_mp->cnode_bitmap)-1);
 		}
 		list_iterator_destroy(itr);
 #endif

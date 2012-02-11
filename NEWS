@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     while jobs are running on them.
  -- BGQ - fix for handling mix of steps running at same time some of which
     are full allocation jobs, and others that are smaller.
+ -- BGQ - fix for core dump after running multiple sub-block jobs on static
+    blocks.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
