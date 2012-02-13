@@ -1374,9 +1374,10 @@ extern int put_block_in_error_state(bg_record_t *bg_record, char *reason)
 	if (!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
 		list_push(bg_lists->job_running, bg_record);
 		num_unused_cpus -= bg_record->cpu_cnt;
-	} else {
-		info("hey I was in the job_running table %d %d?",
-		     list_count(bg_record->job_list), num_unused_cpus);
+	} else if (!(bg_record->state & BG_BLOCK_ERROR_FLAG)) {
+		info("hey I was in the job_running table %d %d %s?",
+		     list_count(bg_record->job_list), num_unused_cpus,
+		     bg_block_state_string(bg_record->state));
 		xassert(0);
 	}
 
