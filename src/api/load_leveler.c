@@ -93,6 +93,7 @@ static uint32_t global_cpu_cnt = 0, global_node_cnt = 0;
 /*****************************************************************************\
  * Local helper functions
 \*****************************************************************************/
+static bool _is_step_running(LL_element *step);
 static void _jobacct_del(void *x);
 static void _load_adapter_info_job(LL_element *adapter, job_info_t *job_ptr);
 static void _load_adapter_info_step(LL_element *adapter,
@@ -207,7 +208,7 @@ static void _load_global_node_list(void)
 	}
 
 	machine = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
-	if (!machine) {
+	if (err_code) {
 		verbose("ll_get_objs(MACHINES), error %d", err_code);
 		return;
 	}
@@ -420,10 +421,6 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 		job_ptr->job_state = JOB_RUNNING;
 		if (step_state == STATE_STARTING)
 			job_ptr->job_state |= JOB_CONFIGURING;
-		/* See LL_StepEstimatedStartTime above */
-		rc = ll_get_data(step, LL_StepDispatchTime, &start_time);
-		if (!rc)
-			job_ptr->start_time = start_time;
 
 		/* See LL_StepTotalNodesRequested above */
 		rc = ll_get_data(step, LL_StepNodeCount, &node_cnt);
@@ -448,6 +445,16 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 		 job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 	} else {
 		job_ptr->job_state = JOB_COMPLETE;
+	}
+	if (job_ptr->job_state > JOB_PENDING) {
+		/* See LL_StepEstimatedStartTime above */
+		rc = ll_get_data(step, LL_StepDispatchTime, &start_time);
+		if (!rc)
+			job_ptr->start_time = start_time;
+		if ((job_ptr->job_state > JOB_RUNNING) &&
+		    (job_ptr->end_time == 0)) {
+			job_ptr->end_time = job_ptr->start_time;
+		}
 	}
 
 	len = 1;
@@ -542,6 +549,17 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 
 	/* Set some default values for other fields */
 	job_ptr->state_reason = WAIT_NO_REASON;
+}
+
+/* Return true if the step is running */
+static bool _is_step_running(LL_element *step)
+{
+	int rc, step_state;
+
+	rc = ll_get_data(step, LL_StepState, &step_state);
+	if (!rc && (step_state == STATE_RUNNING))
+		return true;
+	return false;
 }
 
 /* Load a step's information into a step record */
@@ -1415,7 +1433,7 @@ extern int slurm_load_job (job_info_msg_t **resp, char *job_id,
 		/* This is the normal response when no jobs exist */
 		debug("ll_get_objs(JOBS), error %d", err_code);
 		obj_count = 0;
-	} else if (!job) {
+	} else if (err_code) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
@@ -1543,7 +1561,7 @@ extern int slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 		/* This is the normal response when no jobs exist */
 		debug("ll_get_objs(JOBS), error %d", err_code);
 		obj_count = 0;
-	} else if (!job) {
+	} else if (err_code) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
@@ -1697,7 +1715,7 @@ extern int slurm_get_job_steps (time_t update_time, char *job_id,
 		/* This is the normal response when no jobs exist */
 		debug("ll_get_objs(JOBS), error %d", err_code);
 		obj_count = 0;
-	} else if (!job) {
+	} else if (err_code) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
@@ -1724,29 +1742,35 @@ extern int slurm_get_job_steps (time_t update_time, char *job_id,
 		if (!match_job_id || !match_step_id)
 			goto next_job;
 
-		if (++step_inx >= step_buf_cnt) {
-			/* Need to increase step buffer size */
-			step_buf_cnt *= 2;
-			xrealloc(step_info_ptr->job_steps,
-				 sizeof(job_step_info_t) * step_buf_cnt);
-		}
-		step_ptr = &step_info_ptr->job_steps[step_inx];
+		while (step) {
+			if (!_is_step_running(step))
+				goto next_step;
 
-		/* The following SLURM fields have no equivalent available
-		 * from LoadLeveler:
-		 * ckpt_interval, resv_ports, select_jobinfo
-		 * node_inx (this could be calculated, but requires reading
-		 *	     and searching the machine table)
-		 */
+			if (++step_inx >= step_buf_cnt) {
+				/* Need to increase step buffer size */
+				step_buf_cnt *= 2;
+				xrealloc(step_info_ptr->job_steps,
+					 sizeof(job_step_info_t) * 
+					 step_buf_cnt);
+			}
+			step_ptr = &step_info_ptr->job_steps[step_inx];
 
-		credential = NULL;
-		rc = ll_get_data(job, LL_JobCredential, &credential);
-		if (!rc && credential)
-			_load_credential_info_step(credential, step_ptr);
+			/* The following SLURM fields have no equivalent
+			 * available from LoadLeveler:
+			 * ckpt_interval, resv_ports, select_jobinfo
+			 * node_inx (this could be calculated, but requires
+			 *	     reading and searching the machine table)
+			 */
 
-		while (!rc && step) {
+			credential = NULL;
+			rc = ll_get_data(job, LL_JobCredential, &credential);
+			if (!rc && credential) {
+				_load_credential_info_step(credential,
+							   step_ptr);
+			}
 			_load_step_info_step(step, step_ptr);
-			step = NULL;
+
+next_step:		step = NULL;
 			rc = ll_get_data(job, LL_JobGetNextStep, &step);
 		}
 
@@ -1814,7 +1838,7 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 
 	job = ll_get_objs(query_object, LL_HISTORY_FILE, NULL, &obj_count,
 			  &err_code);
-	if (!job) {
+	if (err_code) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
@@ -1898,7 +1922,7 @@ extern int slurm_load_node (time_t update_time,
 	}
 
 	machine = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
-	if (!machine) {
+	if (err_code) {
 		verbose("ll_get_objs(MACHINES), error %d", err_code);
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
@@ -2105,7 +2129,7 @@ extern int slurm_load_partitions (time_t update_time,
 	}
 
 	class = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
-	if (!class) {
+	if (err_code) {
 		verbose("ll_get_objs(CLASSES), error %d", err_code);
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
@@ -2354,7 +2378,7 @@ extern int slurm_terminate_job (char *job_id)
 			/* This is the normal response when no jobs exist */
 			debug("ll_get_objs(JOBS), error %d", err_code);
 			obj_count = 0;
-		} else if (!job) {
+		} else if (err_code) {
 			verbose("ll_get_objs(JOBS), error %d", err_code);
 			slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		}
