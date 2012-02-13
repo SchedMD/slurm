@@ -995,9 +995,10 @@ try_again:
 		return false;
 	}
 
-
-	FREE_NULL_BITMAP(jobinfo->units_avail);
-	FREE_NULL_BITMAP(jobinfo->units_used);
+	if (jobinfo->units_avail)
+		FREE_NULL_BITMAP(jobinfo->units_avail);
+	if (jobinfo->units_used)
+		FREE_NULL_BITMAP(jobinfo->units_used);
 
 	jobinfo->units_avail = found_bits;
 	found_bits = NULL;

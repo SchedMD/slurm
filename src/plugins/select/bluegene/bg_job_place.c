@@ -560,7 +560,8 @@ static bg_record_t *_find_matching_block(List block_list,
 				need_free = true;
 			} else
 				total_bitmap = ba_mp->cnode_bitmap;
-			memcpy(&tmp_jobinfo, jobinfo, sizeof(select_jobinfo_t));
+			memset(&tmp_jobinfo, 0, sizeof(select_jobinfo_t));
+			tmp_jobinfo.cnode_cnt = jobinfo->cnode_cnt;
 			if (!ba_sub_block_in_bitmap(
 				    &tmp_jobinfo, total_bitmap, 0)) {
 				if (need_free)
@@ -583,11 +584,17 @@ static bg_record_t *_find_matching_block(List block_list,
 				jobinfo->cnode_cnt = tmp_jobinfo.cnode_cnt;
 				jobinfo->dim_cnt = tmp_jobinfo.dim_cnt;
 
+				if (jobinfo->units_avail)
+					FREE_NULL_BITMAP(jobinfo->units_avail);
 				jobinfo->units_avail = tmp_jobinfo.units_avail;
 				tmp_jobinfo.units_avail = NULL;
+
+				if (jobinfo->units_used)
+					FREE_NULL_BITMAP(jobinfo->units_used);
 				jobinfo->units_used = tmp_jobinfo.units_used;
 				tmp_jobinfo.units_used = NULL;
 
+				xfree(jobinfo->ionode_str);
 				jobinfo->ionode_str = tmp_jobinfo.ionode_str;
 				tmp_jobinfo.ionode_str = NULL;
 
