@@ -74,15 +74,15 @@ and commands are denoted below.
 </p>
 <ul>
 <li> <b>MUNGE</b> The auth/munge plugin will be built if the MUNGE authentication
-                  library is installed. MUNGE is used as the default
-                  authentication mechanism.</li>
+		  library is installed. MUNGE is used as the default
+		  authentication mechanism.</li>
 <li> <b>Authd</b> The auth/authd plugin will be built and installed if
-                  the libauth library and its dependency libe are installed.
+		  the libauth library and its dependency libe are installed.
 		  </li>
 <li> <b>Federation</b> The switch/federation plugin will be built and installed
 		  if the IBM Federation switch library is installed.
 <li> <b>QsNet</b> support in the form of the switch/elan plugin requires
-                  that the qsnetlibs package (from Quadrics) be installed along
+		  that the qsnetlibs package (from Quadrics) be installed along
 		  with its development counterpart (i.e. the qsnetheaders
 		  package.) The switch/elan plugin also requires the
 		  presence of the libelanosts library and /etc/elanhosts
@@ -103,7 +103,7 @@ and commands are denoted below.
 		  &quot;ptrack&quot; kernel patch is required for process
 		  tracking.
 <li> <b>sview</b> The sview command will be built only if and <i>gtk+-2.0</i>
-                  is installed</li>
+		  is installed</li>
 </ul>
 Please see the <a href=download.html>Download</a> page for references to
 required software to build these plugins.</p>
@@ -668,11 +668,9 @@ but may also include minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher minor
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 2.0 to 2.1) <b>always upgrade the SlurmDBD daemon first</b>.
-There is no need to upgrade the SlurmDBD daemon when performing a n update
-at the micro level (e.g. from 2.1.0 to 2.1.1).</p>
+from 2.0 to 2.1) <b>always upgrade the SlurmDBD daemon first</b>.</p>
 
-<p>When upgrading to a new major or minor release of SLURM <u>prior to version 
+<p>When upgrading to a new major or minor release of SLURM <u>prior to version
 2.2</u> (e.g. 2.0.x to 2.1.x) all running and pending jobs will be purged due to
 changes in state save information.
 When upgrading to a new micro release of SLURM (e.g. 2.1.1 to 2.1.2) all
