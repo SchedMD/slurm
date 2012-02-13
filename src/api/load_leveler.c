@@ -1500,7 +1500,9 @@ extern int slurm_load_job (job_info_msg_t **resp, char *job_id,
  */
 extern int slurm_job_node_ready(char *job_id)
 {
-/* FIXME: Add LoadLeveler test here */
+	/* This function is not used on LoadLeveler systems */
+	error("slurm_job_node_ready() is not supported on LoadLeveler "
+	      "systems");
 	return (READY_NODE_STATE | READY_JOB_STATE);
 }
 
@@ -2624,7 +2626,8 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 		xstrfmtcat(slurm_cmd_file, "# @ error = %s\n", fname);
 		xfree(fname);
 	} else {
-/* FIXME: Will both stdout/err go to same file?, default stderr to /dev/null */
+/* FIXME: Will both stdout/err go to the same file?,
+ * Default LoadLeveler error file name is "std.err" */
 		xstrfmtcat(slurm_cmd_file, "# @ error = slurm-$(jobid).out\n");
 	}
 
@@ -2657,7 +2660,11 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 	if (req->name)
 		xstrfmtcat(slurm_cmd_file, "# @ job_name = %s\n", req->name);
 
-	xstrfmtcat(slurm_cmd_file, "# @ job_type = parallel\n");
+	if ((req->num_tasks == 1) ||
+	    ((req->ntasks_per_node == 1) && (req->min_nodes == 1)))
+		xstrfmtcat(slurm_cmd_file, "# @ job_type = serial\n");
+	else
+		xstrfmtcat(slurm_cmd_file, "# @ job_type = parallel\n");
 
 	if (req->reservation) {
 		xstrfmtcat(slurm_cmd_file, "# @ ll_res_id = %s\n",
@@ -3090,7 +3097,9 @@ extern int
 slurm_allocation_lookup(char *jobid,
 			job_alloc_info_response_msg_t **info)
 {
-/* FIXME: Need to add code */
+	/* This function is not used on LoadLeveler systems */
+	error("slurm_allocation_lookup() is not supported on LoadLeveler "
+	      "systems");
 	return SLURM_ERROR;
 }
 

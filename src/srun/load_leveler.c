@@ -1034,7 +1034,6 @@ extern int srun_front_end (char *cmd_line)
 	port_s = ntohs(((struct sockaddr_in) addr_s).sin_port);
 	auth_key = _gen_auth_key();
 
-/* FIXME: Create SLURM/step specific environment variables */
 	/* Generate back-end execute line */
 	gethostname_short(hostname, sizeof(hostname));
 	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %u %s",
