@@ -117,7 +117,6 @@ static void _proc_disp_use_stat(LL_element *disp_use,
 static int  _proc_mach_use_stat(LL_element *mach_use, List stats_list,
 				int node_inx, int task_inx, char *node_name);
 static void _proc_step_stat(LL_element *step, List stats_list);
-static int  _term_step_id (char *step_id_str);
 static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
 			   bool *match_job_id, bool *match_step_id);
 
@@ -2267,6 +2266,51 @@ extern int slurm_signal_job_step (char *job_id, uint32_t step_id,
 	return slurm_terminate_job_step (job_id, step_id);
 }
 
+#ifdef HAVE_LLAPI_H
+static int _term_step_id (char *step_id_str)
+{
+	int rc;
+	char *job_id, *dot;
+	int cluster = 0, step_id = 0;
+	LL_terminate_job_info *cancel_info;
+
+	if (!job_id)
+		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
+
+	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
+	cancel_info->version_num =  LL_PROC_VERSION;
+	job_id = xstrdup(step_id_str);
+	dot = strrchr(job_id, '.');
+	if (dot) {
+		dot[0] = '\0';
+		step_id = atoi(dot+1);
+	}
+	dot = strrchr(job_id, '.');
+	if (dot) {
+		dot[0] = '\0';
+		cluster = atoi(dot+1);
+	} else {
+		verbose("Terminate invalid step ID: %s", step_id_str);
+	}
+	cancel_info->StepId.from_host = job_id;
+	cancel_info->StepId.cluster = cluster;
+	cancel_info->StepId.proc = step_id;
+	cancel_info->msg =  "Explicitly cancelled";
+	rc = ll_terminate_job(cancel_info);
+	debug("terminate step:%s:%d:%d: rc=%d", job_id, cluster, step_id, rc);
+	xfree(job_id);
+	xfree(cancel_info);
+
+	if (rc == API_OK)
+		return 0;
+	if (rc == API_CANT_AUTH)
+		slurm_seterrno(ESLURM_ACCESS_DENIED);
+        else
+		slurm_seterrno(SLURM_ERROR);
+	return -1;
+}
+#endif
+
 /*
  * slurm_terminate_job - terminates all steps of an existing job by sending
  *	a REQUEST_TERMINATE_JOB rpc to all slurmd in the job allocation.
@@ -2343,54 +2387,6 @@ extern int slurm_terminate_job (char *job_id)
 			break;
 	}
 	return rc;
-#endif
-}
-
-static int _term_step_id (char *step_id_str)
-{
-#ifdef HAVE_LLAPI_H
-	int rc;
-	char *job_id, *dot;
-	int cluster = 0, step_id = 0;
-	LL_terminate_job_info *cancel_info;
-
-	if (!job_id)
-		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
-
-	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
-	cancel_info->version_num =  LL_PROC_VERSION;
-	job_id = xstrdup(step_id_str);
-	dot = strrchr(job_id, '.');
-	if (dot) {
-		dot[0] = '\0';
-		step_id = atoi(dot+1);
-	}
-	dot = strrchr(job_id, '.');
-	if (dot) {
-		dot[0] = '\0';
-		cluster = atoi(dot+1);
-	} else {
-		verbose("Terminate invalid step ID: %s", step_id_str);
-	}
-	cancel_info->StepId.from_host = job_id;
-	cancel_info->StepId.cluster = cluster;
-	cancel_info->StepId.proc = step_id;
-	cancel_info->msg =  "Explicitly cancelled";
-	rc = ll_terminate_job(cancel_info);
-	debug("terminate step:%s:%d:%d: rc=%d", job_id, cluster, step_id, rc);
-	xfree(job_id);
-	xfree(cancel_info);
-
-	if (rc == API_OK)
-		return 0;
-	if (rc == API_CANT_AUTH)
-		slurm_seterrno(ESLURM_ACCESS_DENIED);
-        else
-		slurm_seterrno(SLURM_ERROR);
-	return -1;
-#else
-	slurm_seterrno(ESLURM_NOT_SUPPORTED);
-	return -1;
 #endif
 }
 
@@ -2499,17 +2495,21 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 				  submit_response_msg_t **resp)
 {
 	char *first_line, *pathname, *slurm_cmd_file = NULL;
-	char *set_job_id = NULL, *slash;
+	char *set_job_id = NULL;
 	int fd, i, rc = 0;
 	size_t len, offset = 0, wrote;
 
 	first_line = strchr(req->script, '\n');
 	/* Determine shell type and command line to export SLURM_JOBID */
 	if (first_line) {
+		char *shell, *slash;
 		first_line[0] = '\0';
 		slash = strrchr(req->script, '/');
-		if (!strcmp(req->script, "csh") ||
-		    !strcmp(req->script, "tcsh")) {
+		if (slash)
+			shell = slash + 1;
+		else
+			shell = req->script;
+		if (!strcmp(shell, "csh") || !strcmp(shell, "tcsh")) {
 			set_job_id = "setenv SLURM_JOBID $LOADL_STEP_ID";
 		} else {	/* bash, ksh, sh */
 			set_job_id = "export SLURM_JOBID=$LOADL_STEP_ID";
