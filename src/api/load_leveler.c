@@ -2507,7 +2507,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 		first_line[0] = '\0';
 		slash = strrchr(req->script, '/');
 		if (!strcmp(req->script, "csh") ||
-		    !strcmp(req->script, "tsch")) {
+		    !strcmp(req->script, "tcsh")) {
 			set_job_id = "setenv SLURM_JOBID $LOADL_STEP_ID";
 		} else {	/* bash, ksh, sh */
 			set_job_id = "export SLURM_JOBID=$LOADL_STEP_ID";
