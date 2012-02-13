@@ -19646,6 +19646,50 @@ fi
 
 
 
+  x_ac_link_dlopen="yes"
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <dlfcn.h>
+int
+main ()
+{
+void * x = dlopen("/dev/null", 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_link_dlopen="yes"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  if test "$x_ac_link_dlopen" = "no"; then
+    _x_ac_dlopen_libs_save="$LIBS"
+    LIBS="-ldl $LIBS"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <dlfcn.h>
+int
+main ()
+{
+void * x = dlopen("/dev/null", 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_link_dlopen="yes"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  fi
+
+  if test "$x_ac_link_dlopen" = "no"; then
+    as_fn_error $? "\"Unable to link with dlopen()\"" "$LINENO" 5
+  fi
+
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for initscr in -lncurses" >&5
 $as_echo_n "checking for initscr in -lncurses... " >&6; }
