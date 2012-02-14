@@ -348,7 +348,6 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		error("%s", reason);
 		_handle_bad_nodeboard(nc_name, ba_mp->coord_str,
 				      state, reason, 1);
-		return;
 	}
 
 	if (!changed)
