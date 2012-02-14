@@ -1,0 +1,251 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test sacct filtering of records by account and job name.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2012 SchedMD LLC.
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov> and 
+#            Nathan Yee <nyee32@schedmd.com>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id     "12.3"
+set exit_code   0
+set file_in     "test.$test_id.input"
+set job_name_1  "JOB1"
+set job_name_2  "JOB2"
+set ta		"slurm_test-account.1"
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\n"
+	send_user "Use sacctmgr mod user \$USER_NAME set admin=admin.\n"
+	exit 0
+}
+
+#
+# Identify the user and his current default account
+#
+set acct_name ""
+set user_name ""
+spawn $bin_id -u -n
+expect {
+	 -re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+set s_pid [spawn $sacctmgr show user $user_name]
+expect {
+	-re "$user_name *($alpha_numeric_under)" {
+		set acct_name $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "FAILURE: sacctmgr add not responding\n"
+		slow_kill $s_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use sacctmgr to add an account
+#
+set aamatches 0
+set sadd_pid [spawn $sacctmgr -i add account $ta]
+expect {
+	-re "Adding Account" {
+		incr aamatches
+		exp_continue
+	}
+	-re "Nothing new added" {
+		send_user "\nWARNING: vestigial account $ta found\n"
+		incr aamatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$aamatches != 1} {
+	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
+	exit 1
+}
+
+#
+# Add self to this new account
+#
+set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta]
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Submit two slurm jobs that will execute 'id'
+#
+set job_id_1 0
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -t1 -A $ta -J $job_name_1 -v $bin_id]
+expect {
+	-re "launching ($number)" {
+		set job_id_1 $expect_out(1,string)
+		exp_continue
+		
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set job_id_2 0
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -t1 -A $ta -J $job_name_2 -v $bin_id]
+expect {
+	-re "launching ($number)" {
+		set job_id_2 $expect_out(1,string)
+		exp_continue
+		
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Wait for accounting data to be propagated to slurmdbd
+#
+sleep 5
+
+#
+# Matches the job name with the job id
+#
+set idmatch 0
+send_user "\nJob id1 number: $job_id_1\n"
+spawn $sacct -A '$ta' --name=$job_name_1 -p -o jobid
+expect {
+	-re "$job_id_1" {
+		incr idmatch
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+
+}
+
+send_user "\nJob id2 number: $job_id_2\n"
+spawn $sacct -A '$ta' --name=$job_name_2 -p -o jobid
+expect {
+	-re "$job_id_2" {
+		incr idmatch
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$idmatch != 2} {
+	send_user "\nFAILURE: sacct could not match job id to job name\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to delete the test account
+#
+set damatches 0
+set sadel_pid [spawn $sacctmgr -i delete account $ta]
+expect {
+	-re "Deleting account" {
+		incr damatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$damatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting account\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	print_success $test_id
+}
+exit $exit_code
+
