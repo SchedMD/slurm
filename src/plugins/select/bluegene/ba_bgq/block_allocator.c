@@ -1584,10 +1584,13 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
 
 	if (!job_ptr) {
-		FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
-		if (ba_mp->cnode_usable_bitmap)
+		if (ba_mp->cnode_usable_bitmap) {
+			FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
 			ba_mp->cnode_bitmap =
 				bit_copy(ba_mp->cnode_usable_bitmap);
+		} else if (ba_mp->cnode_bitmap)
+			bit_nclear(ba_mp->cnode_bitmap, 0,
+				   bit_size(ba_mp->cnode_bitmap)-1);
 		return NULL;
 	}
 
