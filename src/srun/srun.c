@@ -1107,6 +1107,7 @@ _handle_msg(slurm_msg_t *msg)
 	case SRUN_JOB_COMPLETE:
 		debug("received job step complete message");
 		slurm_free_srun_job_complete_msg(msg->data);
+		runjob_signal(SIGKILL);
 		break;
 	case SRUN_USER_MSG:
 		um = msg->data;
