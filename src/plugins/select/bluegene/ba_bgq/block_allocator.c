@@ -1519,6 +1519,7 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	select_jobinfo_t *jobinfo;
 	ba_mp_t *ba_mp;
 	char *tmp_char = NULL, *tmp_char2 = NULL, *tmp_char3 = NULL;
+	bool bad_magic = 0;
 
 	xassert(bg_record);
 
@@ -1534,7 +1535,7 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 		      "a job with bad magic, you should "
 		      "probably reboot the block.",
 		      bg_record->bg_block_id);
-		return NULL;
+		bad_magic = 1;
 	}
 
 	itr = list_iterator_create(bg_record->job_list);
@@ -1544,7 +1545,8 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 			      bg_record->bg_block_id);
 			list_delete_item(itr);
 			continue;
-		}
+		} else if (bad_magic)
+			continue;
 
 		if (!in_job_ptr) {
 			/* if there is not an in_job_ptr it is because
@@ -1567,7 +1569,9 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	}
 	list_iterator_destroy(itr);
 
-	if (in_job_ptr && !job_ptr) {
+	if (bad_magic)
+		return NULL;
+	else if (in_job_ptr && !job_ptr) {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			error("ba_remove_job_in_block_job_list: "
 			      "Couldn't remove sub-block job %u from "

@@ -980,7 +980,7 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 		return REMOVE_USER_ERR;
 	}
 
-	if (bg_record->job_ptr) {
+	if (bg_record->job_ptr && (bg_record->job_ptr->magic == JOB_MAGIC)) {
 		select_jobinfo_t *jobinfo = (select_jobinfo_t *)
 			bg_record->job_ptr->select_jobinfo->data;
 		BOOST_FOREACH(const std::string& user, vec) {
@@ -1003,7 +1003,14 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 		 * name from the vector as we go.
 		 */
 		while ((job_ptr = (struct job_record *)list_next(itr))) {
-			select_jobinfo_t *jobinfo = (select_jobinfo_t *)
+			select_jobinfo_t *jobinfo;
+
+			if (job_ptr->magic != JOB_MAGIC) {
+				list_delete_item(itr);
+				continue;
+			}
+
+			jobinfo = (select_jobinfo_t *)
 				job_ptr->select_jobinfo->data;
 			iter = std::find(vec.begin(), vec.end(),
 					 jobinfo->user_name);
