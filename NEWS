@@ -21,6 +21,9 @@ documents those changes that are of interest to users and admins.
     are full allocation jobs, and others that are smaller.
  -- BGQ - fix for core dump after running multiple sub-block jobs on static
     blocks.
+ -- BGQ - fixed sync issue where if a job finishes in SLURM but not in mmcs
+    for a long time after the SLURM job has been flushed from the system
+    we don't have to worry about rebooting the block to sync the system.
 
 * Changes in SLURM 2.4.0.pre3
 =============================

@@ -1520,24 +1520,24 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	ba_mp_t *ba_mp;
 	char *tmp_char = NULL, *tmp_char2 = NULL, *tmp_char3 = NULL;
 	bool bad_magic = 0;
+	bitstr_t *used_cnodes = NULL;
 
 	xassert(bg_record);
 
 	if (!bg_record->job_list)
 		return NULL;
 
+	xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
+
 	if (in_job_ptr && in_job_ptr->magic != JOB_MAGIC) {
 		/* This can if the mmcs job hang out in the system
 		 * forever. And it gets cleared after the job is out
 		 * of the system.
 		 */
-		error("On block %s we were trying to remove "
-		      "a job with bad magic, you should "
-		      "probably reboot the block.",
-		      bg_record->bg_block_id);
 		bad_magic = 1;
+		used_cnodes = bit_copy(ba_mp->cnode_bitmap);
 	}
-
+again:
 	itr = list_iterator_create(bg_record->job_list);
 	while ((job_ptr = list_next(itr))) {
 		if (job_ptr->magic != JOB_MAGIC) {
@@ -1545,8 +1545,20 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 			      bg_record->bg_block_id);
 			list_delete_item(itr);
 			continue;
-		} else if (bad_magic)
+		} else if (bad_magic) {
+			jobinfo = job_ptr->select_jobinfo->data;
+			if (!jobinfo->units_avail) {
+				error("ba_remove_job_in_block_job_list: "
+				      "no units avail bitmap on the jobinfo, "
+				      "continuing");
+				continue;
+			}
+			bit_not(jobinfo->units_avail);
+			bit_and(used_cnodes, jobinfo->units_avail);
+			bit_not(jobinfo->units_avail);
+
 			continue;
+		}
 
 		if (!in_job_ptr) {
 			/* if there is not an in_job_ptr it is because
@@ -1569,21 +1581,7 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	}
 	list_iterator_destroy(itr);
 
-	if (bad_magic)
-		return NULL;
-	else if (in_job_ptr && !job_ptr) {
-		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			error("ba_remove_job_in_block_job_list: "
-			      "Couldn't remove sub-block job %u from "
-			      "block %s",
-			      in_job_ptr->job_id, bg_record->bg_block_id);
-		}
-		return NULL;
-	}
-
-	xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
-
-	if (!job_ptr) {
+	if (!in_job_ptr) {
 		if (ba_mp->cnode_usable_bitmap) {
 			FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
 			ba_mp->cnode_bitmap =
@@ -1592,25 +1590,54 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 			bit_nclear(ba_mp->cnode_bitmap, 0,
 				   bit_size(ba_mp->cnode_bitmap)-1);
 		return NULL;
+	} else if (!job_ptr && !bad_magic) {
+		/* If the job was not found reset the block with the
+		   running jobs and go from there.
+		*/
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			error("ba_remove_job_in_block_job_list: "
+			      "Couldn't remove sub-block job %u from "
+			      "block %s",
+			      in_job_ptr->job_id, bg_record->bg_block_id);
+		}
+		bad_magic = 1;
+		used_cnodes = bit_copy(ba_mp->cnode_bitmap);
+		goto again;
 	}
 
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		debug("ba_remove_job_in_block_job_list: "
-		      "Removing sub-block job %u from block %s",
-		      job_ptr->job_id, bg_record->bg_block_id);
+	if (bad_magic) {
+		num_unused_cpus +=
+			bit_set_count(used_cnodes) * bg_conf->cpu_ratio;
+		bit_not(used_cnodes);
+		bit_and(ba_mp->cnode_bitmap, used_cnodes);
+		bit_not(used_cnodes);
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			debug("ba_remove_job_in_block_job_list: "
+			      "Removing old sub-block job using %d cnodes "
+			      "from block %s",
+			      bit_set_count(used_cnodes),
+			      bg_record->bg_block_id);
+		}
+	} else {
+		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			debug("ba_remove_job_in_block_job_list: "
+			      "Removing sub-block job %u from block %s",
+			      job_ptr->job_id, bg_record->bg_block_id);
+		}
+
+		jobinfo = job_ptr->select_jobinfo->data;
+
+		if (!jobinfo->units_avail) {
+			error("ba_remove_job_in_block_job_list: "
+			      "no units avail bitmap on the jobinfo");
+			return job_ptr;
+		}
+		used_cnodes = jobinfo->units_avail;
 	}
 
-	jobinfo = job_ptr->select_jobinfo->data;
-
-	if (!jobinfo->units_avail) {
-		error("ba_remove_job_in_block_job_list: "
-		      "no units avail bitmap on the jobinfo");
-		return job_ptr;
-	}
-
-	bit_not(jobinfo->units_avail);
-	bit_and(ba_mp->cnode_bitmap, jobinfo->units_avail);
-	bit_not(jobinfo->units_avail);
+	bit_not(used_cnodes);
+	bit_and(ba_mp->cnode_bitmap, used_cnodes);
+	bit_not(used_cnodes);
 
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_ALGO) {
 		bitstr_t *total_bitmap = bit_copy(ba_mp->cnode_bitmap);
@@ -1622,7 +1649,7 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 		}
 
 		tmp_char = ba_node_map_ranged_hostlist(
-			jobinfo->units_avail, ba_mp_geo_system);
+			used_cnodes, ba_mp_geo_system);
 		bit_not(total_bitmap);
 		tmp_char2 = ba_node_map_ranged_hostlist(
 			total_bitmap, ba_mp_geo_system);
@@ -1637,6 +1664,9 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 		xfree(tmp_char3);
 		FREE_NULL_BITMAP(total_bitmap);
 	}
+
+	if (bad_magic)
+		FREE_NULL_BITMAP(used_cnodes);
 
 	return job_ptr;
 }
