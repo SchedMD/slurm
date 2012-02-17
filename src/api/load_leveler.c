@@ -1879,7 +1879,7 @@ fini:	ll_free_objs(job);
 
 	if (match_job_id && match_step_id)
 		return SLURM_PROTOCOL_SUCCESS;
-	return SLURM_ERROR;
+	slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
 #else
 	verbose("running without loadleveler");
 	*resp = NULL;
