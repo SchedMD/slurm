@@ -84,10 +84,8 @@ int field_count = 0;
 static void _load_leveler_step_stats(slurmdb_stats_t *temp_stats,
 				     jobacctinfo_t *job_acct_ptr)
 {
-	temp_stats->cpu_ave   = job_acct_ptr->sys_cpu_sec  * 1000000 +
-				job_acct_ptr->user_cpu_sec * 1000000 +
-				job_acct_ptr->sys_cpu_usec +
-				job_acct_ptr->user_cpu_usec;
+	temp_stats->cpu_ave   = job_acct_ptr->sys_cpu_sec +
+				job_acct_ptr->user_cpu_sec;
 	temp_stats->pages_ave = job_acct_ptr->tot_pages;
 	temp_stats->rss_ave   = job_acct_ptr->tot_rss;
 	temp_stats->vsize_ave = job_acct_ptr->tot_vsize;
