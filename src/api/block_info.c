@@ -115,7 +115,7 @@ char *slurm_sprint_block_info(
 	block_info_t * block_ptr, int one_liner)
 {
 	int j;
-	char tmp1[16], *tmp_char = NULL;
+	char tmp1[16], tmp2[16], *tmp_char = NULL;
 	char *out = NULL;
 	char *line_end = "\n   ";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
@@ -126,12 +126,19 @@ char *slurm_sprint_block_info(
 	/****** Line 1 ******/
 	convert_num_unit((float)block_ptr->cnode_cnt, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
+	if (cluster_flags & CLUSTER_FLAG_BGQ) {
+		convert_num_unit((float)block_ptr->cnode_err_cnt, tmp2,
+				 sizeof(tmp2), UNIT_NONE);
+		tmp_char = xstrdup_printf("%s/%s", tmp1, tmp2);
+	} else
+		tmp_char = tmp1;
 
 	out = xstrdup_printf("BlockName=%s TotalNodes=%s State=%s%s",
-			     block_ptr->bg_block_id, tmp1,
+			     block_ptr->bg_block_id, tmp_char,
 			     bg_block_state_string(block_ptr->state),
 			     line_end);
-
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
+		xfree(tmp_char);
 	/****** Line 2 ******/
 	j = 0;
 	if (block_ptr->job_list)

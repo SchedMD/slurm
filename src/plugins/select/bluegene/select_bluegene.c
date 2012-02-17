@@ -506,7 +506,8 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->linuximage, buffer);
 		packstr(bg_record->mloaderimage, buffer);
 		packstr(bg_record->mp_str, buffer);
-		pack32((uint32_t)bg_record->cnode_cnt, buffer);
+		pack32(bg_record->cnode_cnt, buffer);
+		pack32(bg_record->cnode_err_cnt, buffer);
 		pack16((uint16_t)bg_record->node_use, buffer);
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);

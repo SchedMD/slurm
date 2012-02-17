@@ -42,6 +42,7 @@ typedef struct {
 	uint16_t state;
 	int size;
 	int cnode_cnt;
+	int cnode_err_cnt;
 	GtkTreeIter iter_ptr;
 	bool iter_set;
 	int *mp_inx;            /* list index pairs into node_table for *mp_str:
@@ -277,7 +278,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 				 sview_block_info_t *block_ptr,
 				 int update)
 {
-	char tmp_cnt[18];
+	char tmp_cnt[18], tmp_cnt2[18];
 	char *tmp_char = NULL;
 	GtkTreeIter iter;
 	GtkTreeStore *treestore =
@@ -347,11 +348,18 @@ static void _layout_block_record(GtkTreeView *treeview,
 	}
 	convert_num_unit((float)block_ptr->cnode_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
+	if (cluster_flags & CLUSTER_FLAG_BGQ) {
+		convert_num_unit((float)block_ptr->cnode_err_cnt, tmp_cnt2,
+				 sizeof(tmp_cnt2), UNIT_NONE);
+		tmp_char = xstrdup_printf("%s/%s", tmp_cnt, tmp_cnt2);
+	} else
+		tmp_char = tmp_cnt;
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
 						 SORTID_NODE_CNT),
-				   tmp_cnt);
-
+				   tmp_char);
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
+		xfree(tmp_char);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
 						 SORTID_PARTITION),
@@ -369,15 +377,20 @@ static void _layout_block_record(GtkTreeView *treeview,
 static void _update_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore)
 {
-	char cnode_cnt[20];
-	char *tmp_char = NULL, *tmp_char2 = NULL;
+	char cnode_cnt[20], cnode_cnt2[20];
+	char *tmp_char = NULL, *tmp_char2 = NULL, *tmp_char3 = NULL;
 
 	convert_num_unit((float)block_ptr->cnode_cnt, cnode_cnt,
 			 sizeof(cnode_cnt), UNIT_NONE);
+	if (cluster_flags & CLUSTER_FLAG_BGQ) {
+		convert_num_unit((float)block_ptr->cnode_err_cnt, cnode_cnt2,
+				 sizeof(cnode_cnt), UNIT_NONE);
+		tmp_char3 = xstrdup_printf("%s/%s", cnode_cnt, cnode_cnt2);
+	} else
+		tmp_char3 = cnode_cnt;
 
 	tmp_char = conn_type_string_full(block_ptr->bg_conn_type);
 	tmp_char2 = _set_running_job_str(block_ptr->job_list, 0);
-
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &block_ptr->iter_ptr,
 			   SORTID_BLOCK,        block_ptr->bg_block_name,
@@ -388,7 +401,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_IMAGEMLOADER, block_ptr->imagemloader,
 			   SORTID_JOB,          tmp_char2,
 			   SORTID_NODE_INX,     block_ptr->mp_inx,
-			   SORTID_NODE_CNT,       cnode_cnt,
+			   SORTID_NODE_CNT,     tmp_char3,
 			   SORTID_NODELIST,     block_ptr->mp_str,
 			   SORTID_PARTITION,    block_ptr->slurm_part_name,
 			   SORTID_REASON,       block_ptr->reason,
@@ -399,6 +412,8 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   -1);
 	xfree(tmp_char);
 	xfree(tmp_char2);
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
+		xfree(tmp_char3);
 
 	if (cluster_flags & CLUSTER_FLAG_BGP) {
 		gtk_tree_store_set(treestore, &block_ptr->iter_ptr,
@@ -671,6 +686,8 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 		block_ptr->cnode_cnt
 			= block_info_ptr->block_array[i].cnode_cnt;
+		block_ptr->cnode_err_cnt
+			= block_info_ptr->block_array[i].cnode_err_cnt;
 		block_ptr->mp_inx
 			= block_info_ptr->block_array[i].mp_inx;
 		_set_block_partition(part_info_ptr, block_ptr);

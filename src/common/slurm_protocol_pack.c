@@ -8712,6 +8712,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 			packnull(buffer);
 			packnull(buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack16((uint16_t)NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
@@ -8762,6 +8763,7 @@ static void _pack_block_info_msg(block_info_t *block_info, Buf buffer,
 		packstr(block_info->mloaderimage, buffer);
 		packstr(block_info->mp_str, buffer);
 		pack32(block_info->cnode_cnt, buffer);
+		pack32(block_info->cnode_err_cnt, buffer);
 		pack16(block_info->node_use, buffer);
 		packstr(block_info->ramdiskimage, buffer);
 		packstr(block_info->reason, buffer);
@@ -9057,6 +9059,7 @@ extern int slurm_unpack_block_info_members(block_info_t *block_info, Buf buffer,
 		safe_unpackstr_xmalloc(&(block_info->mp_str), &uint32_tmp,
 				       buffer);
 		safe_unpack32(&block_info->cnode_cnt, buffer);
+		safe_unpack32(&block_info->cnode_err_cnt, buffer);
 		safe_unpack16(&block_info->node_use, buffer);
 		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
 				       &uint32_tmp, buffer);

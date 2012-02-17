@@ -62,6 +62,7 @@ block_info_to_hv(block_info_t *block_info, HV *hv)
 	if(block_info->mp_str)
 		STORE_FIELD(hv, block_info, mp_str, charp);
 	STORE_FIELD(hv, block_info, cnode_cnt, uint32_t);
+	STORE_FIELD(hv, block_info, cnode_err_cnt, uint32_t);
 	STORE_FIELD(hv, block_info, node_use, uint16_t);
 	if(block_info->ramdiskimage)
 		STORE_FIELD(hv, block_info, ramdiskimage, charp);

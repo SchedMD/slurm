@@ -24,6 +24,10 @@ documents those changes that are of interest to users and admins.
  -- BGQ - fixed sync issue where if a job finishes in SLURM but not in mmcs
     for a long time after the SLURM job has been flushed from the system
     we don't have to worry about rebooting the block to sync the system.
+ -- BGQ - In scontrol/sview node counts are now displayed with
+    CnodeCount/CnodeErrCount so to point out there are cnodes in an error state
+    on the block.  Draining the block and having it reboot when all jobs are
+    gone will clear up the cnodes in Software Failure.
 
 * Changes in SLURM 2.4.0.pre3
 =============================

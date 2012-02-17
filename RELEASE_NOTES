@@ -79,7 +79,7 @@ Added the following struct definitions
 ======================================
 trigger_info_t:		flags added
 update_node_msg_t:	node_addr and node_hostname added
-
+block_info_t:		cnode_err_cnt added
 
 Changed the following enums and #defines
 ========================================

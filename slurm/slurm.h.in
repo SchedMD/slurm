@@ -1566,6 +1566,7 @@ typedef struct {
 	char *blrtsimage;       /* BlrtsImage for this block */
 	uint16_t conn_type[HIGHEST_DIMENSIONS];
 	uint32_t cnode_cnt;
+	uint32_t cnode_err_cnt;
 	int *ionode_inx;        /* list index pairs for ionodes in the
 				 * node listed for *ionode_str:
 				 * start_range_1, end_range_1,
