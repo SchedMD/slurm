@@ -112,11 +112,6 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 				int step_inx);
 static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr);
 static void _load_task_info_job(LL_element *task, job_info_t *job_ptr);
-static void _proc_disp_use_stat(LL_element *disp_use,
-				jobacctinfo_t *job_acct_ptr,
-			        int node_inx, int task_inx);
-static int  _proc_mach_use_stat(LL_element *mach_use, List stats_list,
-				int node_inx, int task_inx, char *node_name);
 static void _proc_step_stat(LL_element *step, List stats_list);
 static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
 			   bool *match_job_id, bool *match_step_id);
@@ -741,63 +736,45 @@ static void _proc_disp_use_stat(LL_element *disp_use,
 	}
 }
 
-/* Return the number of tasks dispatched on this machine */
-static int _proc_mach_use_stat(LL_element *mach_use, List stats_list,
-			       int node_inx, int task_inx, char *node_name)
+static void _proc_step_stat(LL_element *step, List stats_list)
 {
 	job_step_stat_t *step_stat_ptr;
 	jobacctinfo_t *job_acct_ptr;
 	job_step_pids_t *job_pids_ptr;
-	LL_element *disp_use = NULL;
-	int task_cnt = 0;
+	int64_t max_rss = 0, sys_time = 0, user_time = 0;
 
-	step_stat_ptr = xmalloc(sizeof(job_step_stat_t));
 	job_acct_ptr = xmalloc(sizeof(jobacctinfo_t));
-	step_stat_ptr->jobacct = job_acct_ptr;
-	job_pids_ptr = xmalloc(sizeof(job_step_pids_t));
-	step_stat_ptr->step_pids = job_pids_ptr;
-	list_append(stats_list, step_stat_ptr);
+	job_acct_ptr->pid = 1;		/* NOT AVAILABLE */
+	ll_get_data(step, LL_StepStepSystemTime64, &sys_time);
+	job_acct_ptr->sys_cpu_sec = sys_time;
+	job_acct_ptr->sys_cpu_usec = 0;
+	ll_get_data(step, LL_StepStepUserTime64, &user_time);
+	job_acct_ptr->user_cpu_sec = user_time;
+	job_acct_ptr->user_cpu_usec = 0;
+	job_acct_ptr->max_vsize = 0;	/* NOT AVAILABLE */
+	/* job_acct_ptr->max_vsize_id = 0; */
+	job_acct_ptr->tot_vsize = 0;	/* NOT AVAILABLE */
+	ll_get_data(step, LL_StepStepMaxrss64, &max_rss);
+	job_acct_ptr->max_rss = max_rss;
+	/* job_acct_ptr->max_rss_id = 0; */
+	job_acct_ptr->tot_rss = 0;	/* NOT AVAILABLE */
+	job_acct_ptr->max_pages = 0;	/* NOT AVAILABLE */
+	/* job_acct_ptr->max_pages_id = 0; */
+	job_acct_ptr->tot_pages = 0;	/* NOT AVAILABLE */
+	job_acct_ptr->min_cpu = 0;	/* NOT AVAILABLE */
+	/* job_acct_ptr->min_cpu_id = 0; */
+	job_acct_ptr->tot_cpu = 0;	/* NOT AVAILABLE */
 
+	job_pids_ptr = xmalloc(sizeof(job_step_pids_t));
 	job_pids_ptr->pid_cnt = 1;
 	job_pids_ptr->pid = xmalloc(sizeof(uint32_t));
 	job_pids_ptr->pid[0] = 1;	/* sstat needs something here */
-	job_pids_ptr->node_name = xstrdup(node_name);
+	job_pids_ptr->node_name = xstrdup("TBD");
 
-	ll_get_data(mach_use, LL_MachUsageGetFirstDispUsage, &disp_use);
-	while (disp_use) {
-		_proc_disp_use_stat(mach_use, job_acct_ptr, node_inx, task_inx);
-		task_cnt++;
-		task_inx++;
-		disp_use = NULL;
-		ll_get_data(mach_use, LL_MachUsageGetNextDispUsage, &disp_use);
-	}
-	step_stat_ptr->num_tasks = task_cnt;
-
-	return task_cnt;
-}
-
-static void _proc_step_stat(LL_element *step, List stats_list)
-{
-	LL_element *machine = NULL, *mach_use = NULL;
-	char *node_name = NULL;
-	int node_inx = 0, task_inx = 0, rc;
-
-	ll_get_data(step, LL_StepGetFirstMachine, &machine);
-	ll_get_data(step, LL_StepGetFirstMachUsage, &mach_use);
-	while (mach_use) {
-		node_name = NULL;
-		if (machine) {
-			ll_get_data(machine, LL_MachineName, &node_name);
-			ll_get_data(step, LL_StepGetNextMachine, &machine);
-		}
-		rc = _proc_mach_use_stat(mach_use, stats_list, node_inx++,
-					 task_inx, node_name);
-		if (node_name)
-			free(node_name);
-		task_inx += rc;
-		mach_use = NULL;
-		ll_get_data(step, LL_StepGetNextMachUsage, &mach_use);
-	}
+	step_stat_ptr = xmalloc(sizeof(job_step_stat_t));
+	step_stat_ptr->jobacct = job_acct_ptr;
+	step_stat_ptr->step_pids = job_pids_ptr;
+	list_append(stats_list, step_stat_ptr);
 }
 
 /* Test if this step record is matches the input job_id and step_id.
@@ -1825,6 +1802,9 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 {
 #ifdef HAVE_LLAPI_H
 	LL_element *query_object, *job, *step;
+	char *sstat_host = NULL;
+	char *sstat_source = LL_SCHEDD;
+	int sstat_daemon = LL_SCHEDD;
 	bool match_job_id, match_step_id;
 	int err_code, obj_count, rc;
 
@@ -1834,13 +1814,32 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
+	/*
+	 * step accounting information available from LL_HISTORY_FILE or 
+	 * LL_SCHEDD, but not LL_CM. The environment variable SSTAT_SOURCE
+	 * controls where to look. Supported values for SSTAT_SOURCE include:
+	 * 1. "SCHEDD" or
+	 * 2. "HISTORY:<filename>"
+	 */
+	sstat_source = getenv("SSTAT_SOURCE");
+	if (sstat_source) {
+		if (!strcmp(sstat_source, "SCHEDD"))
+			sstat_daemon = LL_SCHEDD;
+		else if (!strncmp(sstat_source, "HISTORY:", 8)) {
+			sstat_daemon = LL_HISTORY_FILE;
+			sstat_host = sstat_source + 8;
+		}
+	}
+
+	/* NOTE: If gathering data from LL_HISTORY_FILE, we might filter by
+	 * QUERY_ENDDATE or some other field */
 	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
 	if (rc) {
 		verbose("ll_set_request(JOBS, ALL), error %d", rc);
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
-	job = ll_get_objs(query_object, LL_HISTORY_FILE, NULL, &obj_count,
+	job = ll_get_objs(query_object, sstat_daemon, sstat_host, &obj_count,
 			  &err_code);
 	if (err_code) {
 		verbose("ll_get_objs(JOBS), error %d", err_code);
