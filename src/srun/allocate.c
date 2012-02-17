@@ -110,6 +110,8 @@ static void _set_pending_job_id(char *job_id)
 {
 	debug2("Pending job allocation %s", job_id);
 	pending_job_id = xstrdup(job_id);
+	if (!opt.jobid)
+		opt.jobid = xstrdup(job_id);
 }
 
 static void _signal_while_allocating(int signo)

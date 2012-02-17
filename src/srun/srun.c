@@ -218,8 +218,33 @@ int srun(int ac, char **av)
 	pthread_t msg_thread = (pthread_t) 0;
 #endif
 #ifdef USE_LOADLEVELER
-	if ((ac > 1) && !strcmp(av[1], "--srun-be"))
-		exit(srun_back_end (ac, av));
+	if ((ac > 1) && !strcmp(av[1], "--jobid")) {
+		char *dot, *job_id = "", *ll_step_id;
+		char *tmp_step_id = getenv("LOADL_STEP_ID");
+		if (!tmp_step_id) {
+			printf("UNKNOWN\n");
+			exit(1);
+		}
+		ll_step_id = xstrdup(tmp_step_id);
+		dot = strrchr(ll_step_id, '.');
+		if (dot) {
+			dot[0] = '\0';
+			/* step_id = atoi(dot+1); */
+		}
+		dot = strrchr(ll_step_id, '.');
+		if (dot)
+			job_id = dot + 1;
+		dot = strchr(ll_step_id, '.');
+		if (dot)
+			dot[0] = '\0';
+		printf("%s.%s\n", ll_step_id, job_id);
+		exit(0);
+	}
+	if ((ac > 1) && !strcmp(av[1], "--srun-be")) {
+		log_options_t logopt = LOG_OPTS_SYSLOG_DEFAULT;
+		log_init(xbasename(av[0]), logopt, 0, NULL);
+	 	exit(srun_back_end (ac, av));
+	}
 #endif
 	env->stepid = -1;
 	env->procid = -1;

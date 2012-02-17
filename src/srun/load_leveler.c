@@ -88,7 +88,7 @@ extern char **environ;
 
 /* Set this to generate debugging information for srun front-end/back-end
  *	program communications */
-#define _DEBUG_SRUN 1
+#define _DEBUG_SRUN 0
 
 /* Timeout for srun front-end/back-end messages in usec */
 #define MSG_TIMEOUT 5000000
@@ -1039,7 +1039,9 @@ extern int srun_front_end (char *cmd_line)
 	xstrfmtcat(exec_line, "%s/bin/srun --srun-be %s %hu %hu %hu %u %s",
 		   SLURM_PREFIX, hostname, port_o, port_e, port_s, auth_key,
 		   cmd_line);
+#if _DEBUG_SRUN
 	printf("%s\n", exec_line);
+#endif
 	i = salloc_be_spawn(exec_line);
 	xfree(exec_line);
 	if (i)
