@@ -71,6 +71,7 @@
 /* Set this to generate debugging information for salloc front-end/back-end
  *	program communications */
 #define _DEBUG_SALLOC 0
+#define _DEBUG_SSTAT  0
 
 /* Timeout for salloc front-end/back-end messages in usec */
 #define MSG_TIMEOUT 5000000
@@ -705,24 +706,24 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	job_acct_ptr = xmalloc(sizeof(jobacctinfo_t));
 	job_acct_ptr->pid = 1;		/* NOT AVAILABLE */
 	ll_get_data(step, LL_StepStepSystemTime64, &sys_time);
-	job_acct_ptr->sys_cpu_sec = sys_time;
-	job_acct_ptr->sys_cpu_usec = 0;
+	job_acct_ptr->sys_cpu_sec  = (sys_time / 1000000);
+	job_acct_ptr->sys_cpu_usec = (sys_time % 1000000);
 	ll_get_data(step, LL_StepStepUserTime64, &user_time);
-	job_acct_ptr->user_cpu_sec = user_time;
-	job_acct_ptr->user_cpu_usec = 0;
-	job_acct_ptr->max_vsize = 0;	/* NOT AVAILABLE */
+	job_acct_ptr->user_cpu_sec  = (user_time / 1000000);
+	job_acct_ptr->user_cpu_usec = (user_time % 1000000);
+	/* job_acct_ptr->max_vsize = 0;	   NOT AVAILABLE */
 	/* job_acct_ptr->max_vsize_id = 0; */
-	job_acct_ptr->tot_vsize = 0;	/* NOT AVAILABLE */
+	/* job_acct_ptr->tot_vsize = 0;	   NOT AVAILABLE */
 	ll_get_data(step, LL_StepStepMaxrss64, &max_rss);
 	job_acct_ptr->max_rss = max_rss;	/* KB */
-	/* job_acct_ptr->max_rss_id = 0; */
-	job_acct_ptr->tot_rss = 0;	/* NOT AVAILABLE */
-	job_acct_ptr->max_pages = 0;	/* NOT AVAILABLE */
-	/* job_acct_ptr->max_pages_id = 0; */
-	job_acct_ptr->tot_pages = 0;	/* NOT AVAILABLE */
-	job_acct_ptr->min_cpu = 0;	/* NOT AVAILABLE */
-	/* job_acct_ptr->min_cpu_id = 0; */
-	job_acct_ptr->tot_cpu = sys_time + user_time; /* Secs */
+	/* job_acct_ptr->max_rss_id = 0;   NOT AVAILABLE */
+	/* job_acct_ptr->tot_rss = 0;	   NOT AVAILABLE */
+	/* job_acct_ptr->max_pages = 0;	   NOT AVAILABLE */
+	/* job_acct_ptr->max_pages_id = 0; NOT AVAILABLE */
+	/* job_acct_ptr->tot_pages = 0;	   NOT AVAILABLE */
+	/* job_acct_ptr->min_cpu = 0;	   NOT AVAILABLE */
+	/* job_acct_ptr->min_cpu_id = 0;   NOT AVAILABLE */
+	job_acct_ptr->tot_cpu = (sys_time + user_time) / 1000000;
 
 	job_pids_ptr = xmalloc(sizeof(job_step_pids_t));
 	job_pids_ptr->pid_cnt = 1;
@@ -733,9 +734,15 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	step_stat_ptr = xmalloc(sizeof(job_step_stat_t));
 	step_stat_ptr->jobacct = job_acct_ptr;
 	ll_get_data(step, LL_StepTotalTasksRequested, &task_cnt);
+	if (task_cnt == 0)
+		ll_get_data(step, LL_StepTaskInstanceCount, &task_cnt);
 	step_stat_ptr->num_tasks = task_cnt;
 	step_stat_ptr->step_pids = job_pids_ptr;
 	list_append(stats_list, step_stat_ptr);
+#if _DEBUG_SSTAT
+	info("StepStat: sys:%ld user:%ld tot:%ld rss:%ld:task_cnt:%d",
+	      sys_time, user_time, job_acct_ptr->tot_cpu, max_rss, task_cnt);
+#endif
 }
 
 /* Test if this step record is matches the input job_id and step_id.
