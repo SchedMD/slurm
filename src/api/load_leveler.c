@@ -654,7 +654,7 @@ static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr)
 		step_ptr->nodes = xmalloc(len);
 		hostlist_sort(hl);
 		hostlist_uniq(hl);
-		while (hostlist_ranged_string(hl, len, job_ptr->nodes) < 0) {
+		while (hostlist_ranged_string(hl, len, step_ptr->nodes) < 0) {
 			len *= 2;
 			xrealloc(step_ptr->nodes, len);
 		}
