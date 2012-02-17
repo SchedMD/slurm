@@ -325,7 +325,7 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 	int len, rc;
 	char *account, *class, *comment, *dependency, *end_ptr, *nodes_req;
 	char *mach_name, *resv_name, *state_desc, *step_id, *work_dir;
-	int cpus_core, exit_code, node_cnt, node_usage;
+	int cpus_core, exit_code, node_usage;
 	int priority, restart, start_cnt, step_state, task_cnt, tasks_node;
 	time_t fini_time, start_time;
 	int64_t time_limit;
@@ -422,10 +422,14 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 		if (step_state == STATE_STARTING)
 			job_ptr->job_state |= JOB_CONFIGURING;
 
-		/* See LL_StepTotalNodesRequested above */
+#if 0
+		/* LL_StepNodeCount reports bad results,
+		 * use StepTotalNodesRequested above instead */
+		int node_cnt;
 		rc = ll_get_data(step, LL_StepNodeCount, &node_cnt);
 		if (!rc)
 			job_ptr->num_nodes = node_cnt;
+#endif
 
 		/* See LL_StepTotalTasksRequested above*/
 		rc = ll_get_data(step, LL_StepTaskInstanceCount, &task_cnt);
