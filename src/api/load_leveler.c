@@ -1857,7 +1857,7 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 				      &match_job_id, &match_step_id);
 			if (!match_job_id)
 				break;
-			if (match_step_id) {
+			if (!match_step_id) {
 				step = NULL;
 				rc = ll_get_data(job, LL_JobGetNextStep, &step);
 				continue;
