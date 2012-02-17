@@ -564,13 +564,13 @@ static bool _is_step_running(LL_element *step)
 /* Load a step's information into a step record */
 static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr)
 {
-	LL_element *adapter = NULL, *node = NULL;
-	int rc;
-	char *ckpt_dir, *class, *name, *step_id;
+	LL_element *adapter = NULL, *machine = NULL, *node = NULL;
+	int len, rc;
+	char *ckpt_dir, *class, *mach_name, *name, *step_id;
 	int step_state, task_cnt;
 	time_t start_time;
-	char **hosts;
 	int64_t time_limit;
+	hostlist_t hl;
 
 	rc = ll_get_data(step, LL_StepCkptExecuteDirectory, &ckpt_dir);
 	if (!rc) {
@@ -634,33 +634,31 @@ static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr)
 			step_ptr->num_tasks = task_cnt;
 		}
 
-		rc = ll_get_data(step, LL_StepHostList, &hosts);
-		if (!rc) {
-			char *sep;
-			int i, len;
-			hostlist_t hl;
-			hl = hostlist_create(NULL);
-			for (i = 0; hosts[i]; i++) {
-				sep = strchr(hosts[i], '.');
-				if (sep)
-					sep[0] = '\0';
-				hostlist_push(hl, hosts[i]);
-				free(hosts[i]);
-			}
-			len = (i + 1) * 16;
-			step_ptr->nodes = xmalloc(len);
-			hostlist_sort(hl);
-			hostlist_uniq(hl);
-			while (hostlist_ranged_string(hl, len,
-						      step_ptr->nodes) < 0) {
-				len *= 2;
-				xrealloc(step_ptr->nodes, len);
-			}
-			hostlist_destroy(hl);
-			free(hosts);
-		} else {
-			step_ptr->nodes = xstrdup("(UNKNOWN)");
+		len = 1;
+		hl = hostlist_create(NULL);
+		rc = ll_get_data(step, LL_StepGetFirstMachine, &machine);
+		while (!rc && machine) {
+			char *short_host, *dot;
+			rc = ll_get_data(machine, LL_MachineName, &mach_name);
+			short_host = xstrdup(mach_name);
+			dot = strchr(short_host, (int) '.');
+			if (dot) {
+				dot[0] = '\0';
+				len += (dot - short_host + 1);
+			} else
+				len += (strlen(short_host) + 1);
+			hostlist_push(hl, short_host);
+			xfree(short_host);
+			rc = ll_get_data(step, LL_StepGetNextMachine, &machine);
 		}
+		step_ptr->nodes = xmalloc(len);
+		hostlist_sort(hl);
+		hostlist_uniq(hl);
+		while (hostlist_ranged_string(hl, len, job_ptr->nodes) < 0) {
+			len *= 2;
+			xrealloc(step_ptr->nodes, len);
+		}
+		hostlist_destroy(hl);
 	} else {
 		step_ptr->run_time = NO_VAL;
 		step_ptr->nodes = xstrdup("(NOT_RUNNING)");
