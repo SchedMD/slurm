@@ -2538,9 +2538,13 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 		else
 			shell = req->script;
 		if (!strcmp(shell, "csh") || !strcmp(shell, "tcsh")) {
-			set_job_id = "setenv SLURM_JOBID $LOADL_STEP_ID";
+			xstrfmtcat(set_job_id,
+				   "setenv SLURM_JOBID `%s/bin/srun --jobid`",
+				   SLURM_PREFIX);
 		} else {	/* bash, ksh, sh */
-			set_job_id = "export SLURM_JOBID=$LOADL_STEP_ID";
+			xstrfmtcat(set_job_id, 
+				   "export SLURM_JOBID=`%s/bin/srun --jobid`",
+				    SLURM_PREFIX);
 		}
 		first_line[0] = '\n';
 	}
