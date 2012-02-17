@@ -700,6 +700,7 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	jobacctinfo_t *job_acct_ptr;
 	job_step_pids_t *job_pids_ptr;
 	int64_t max_rss = 0, sys_time = 0, user_time = 0;
+	int task_cnt;
 
 	job_acct_ptr = xmalloc(sizeof(jobacctinfo_t));
 	job_acct_ptr->pid = 1;		/* NOT AVAILABLE */
@@ -713,7 +714,7 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	/* job_acct_ptr->max_vsize_id = 0; */
 	job_acct_ptr->tot_vsize = 0;	/* NOT AVAILABLE */
 	ll_get_data(step, LL_StepStepMaxrss64, &max_rss);
-	job_acct_ptr->max_rss = max_rss;
+	job_acct_ptr->max_rss = max_rss;	/* KB */
 	/* job_acct_ptr->max_rss_id = 0; */
 	job_acct_ptr->tot_rss = 0;	/* NOT AVAILABLE */
 	job_acct_ptr->max_pages = 0;	/* NOT AVAILABLE */
@@ -721,16 +722,18 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	job_acct_ptr->tot_pages = 0;	/* NOT AVAILABLE */
 	job_acct_ptr->min_cpu = 0;	/* NOT AVAILABLE */
 	/* job_acct_ptr->min_cpu_id = 0; */
-	job_acct_ptr->tot_cpu = 0;	/* NOT AVAILABLE */
+	job_acct_ptr->tot_cpu = sys_time + user_time; /* Secs */
 
 	job_pids_ptr = xmalloc(sizeof(job_step_pids_t));
 	job_pids_ptr->pid_cnt = 1;
 	job_pids_ptr->pid = xmalloc(sizeof(uint32_t));
 	job_pids_ptr->pid[0] = 1;	/* sstat needs something here */
-	job_pids_ptr->node_name = xstrdup("TBD");
+	job_pids_ptr->node_name = xstrdup("N/A");
 
 	step_stat_ptr = xmalloc(sizeof(job_step_stat_t));
 	step_stat_ptr->jobacct = job_acct_ptr;
+	ll_get_data(step, LL_StepTotalTasksRequested, &task_cnt);
+	step_stat_ptr->num_tasks = task_cnt;
 	step_stat_ptr->step_pids = job_pids_ptr;
 	list_append(stats_list, step_stat_ptr);
 }

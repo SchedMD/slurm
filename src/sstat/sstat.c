@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "sstat.h"
+#include "src/common/jobacct_common.h"
 
 void _destroy_steps(void *object);
 void _print_header(void);
@@ -78,6 +79,20 @@ slurmdb_step_rec_t step;
 List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
+
+#ifdef USE_LOADLEVELER
+static void _load_leveler_step_stats(slurmdb_stats_t *temp_stats,
+				     jobacctinfo_t *job_acct_ptr)
+{
+	temp_stats->cpu_ave   = job_acct_ptr->sys_cpu_sec  * 1000000 +
+				job_acct_ptr->user_cpu_sec * 1000000 +
+				job_acct_ptr->sys_cpu_usec +
+				job_acct_ptr->user_cpu_usec;
+	temp_stats->pages_ave = job_acct_ptr->tot_pages;
+	temp_stats->rss_ave   = job_acct_ptr->tot_rss;
+	temp_stats->vsize_ave = job_acct_ptr->tot_vsize;
+}
+#endif
 
 #ifdef USE_LOADLEVELER
 int _do_stat(char *jobid, uint32_t stepid, char *nodelist)
@@ -149,8 +164,13 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 			xfree(step.pid_str);
 		} else {
 			hostlist_push(hl, step_stat->step_pids->node_name);
+#ifdef USE_LOADLEVELER
+			_load_leveler_step_stats(&temp_stats,
+						 step_stat->jobacct);
+#else
 			jobacct_gather_g_2_stats(&temp_stats,
 						 step_stat->jobacct);
+#endif
 			ntasks += step_stat->num_tasks;
 			aggregate_stats(&step.stats, &temp_stats);
 		}
