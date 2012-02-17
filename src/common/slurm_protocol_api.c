@@ -464,6 +464,9 @@ uint16_t slurm_get_msg_timeout(void)
  */
 char *slurm_get_plugin_dir(void)
 {
+#ifdef USE_LOADLEVELER
+        return NULL;
+#else
 	char *plugin_dir = NULL;
 	slurm_ctl_conf_t *conf;
 
@@ -475,6 +478,7 @@ char *slurm_get_plugin_dir(void)
 		slurm_conf_unlock();
 	}
 	return plugin_dir;
+#endif
 }
 
 /* slurm_get_priority_decay_hl
@@ -1348,6 +1352,9 @@ uint16_t slurm_get_preempt_mode(void)
  */
 char *slurm_get_jobacct_gather_type(void)
 {
+#ifdef USE_LOADLEVELER
+        return NULL;
+#else
 	char *jobacct_type = NULL;
 	slurm_ctl_conf_t *conf;
 
@@ -1358,6 +1365,7 @@ char *slurm_get_jobacct_gather_type(void)
 		slurm_conf_unlock();
 	}
 	return jobacct_type;
+#endif
 }
 
 /* slurm_get_jobacct_freq

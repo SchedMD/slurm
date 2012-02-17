@@ -696,46 +696,6 @@ static void _load_task_info_job(LL_element *task, job_info_t *job_ptr)
 	}
 }
 
-/* NOTE: Fields not set: max_pages, max_pages_id, tot_pages,
- *	 max_vsize, max_vsize_id, tot_vsize
- * NOTE: pid is always set to 1 (init) */
-static void _proc_disp_use_stat(LL_element *disp_use,
-				jobacctinfo_t *job_acct_ptr,
-			        int node_inx, int task_inx)
-{
-	int64_t id_rss, is_rss, max_rss, tot_rss;
-	int64_t sys_time, user_time, tot_time;
-	bool first_pass = (job_acct_ptr->pid == 0);
-
-/* FIXME: What are the units of these values */
-	ll_get_data(disp_use, LL_DispUsageStepIdrss64, &id_rss);
-	ll_get_data(disp_use, LL_DispUsageStepIsrss64, &is_rss);
-	ll_get_data(disp_use, LL_DispUsageStepMaxrss64, &max_rss);
-	ll_get_data(disp_use, LL_DispUsageStepSystemTime64, &sys_time);
-	ll_get_data(disp_use, LL_DispUsageStepUserTime64, &user_time);
-
-	job_acct_ptr->pid = 1;
-	job_acct_ptr->sys_cpu_sec = sys_time;
-	job_acct_ptr->sys_cpu_usec = 0;
-	job_acct_ptr->user_cpu_sec = user_time;
-	job_acct_ptr->user_cpu_usec = 0;
-	tot_time = sys_time + user_time;
-	job_acct_ptr->tot_cpu += tot_time;
-	if (first_pass || (job_acct_ptr->min_cpu > tot_time)) {
-		job_acct_ptr->min_cpu = tot_time;
-		job_acct_ptr->min_cpu_id.nodeid = node_inx;
-		job_acct_ptr->min_cpu_id.taskid = task_inx;
-	}
-
-	tot_rss = id_rss + is_rss;
-	job_acct_ptr->tot_rss += tot_rss;
-	if (first_pass || (job_acct_ptr->max_rss < tot_rss)) {
-		job_acct_ptr->max_rss = tot_rss;
-		job_acct_ptr->max_rss_id.nodeid = node_inx;
-		job_acct_ptr->max_rss_id.taskid = task_inx;
-	}
-}
-
 static void _proc_step_stat(LL_element *step, List stats_list)
 {
 	job_step_stat_t *step_stat_ptr;
@@ -1803,7 +1763,7 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 #ifdef HAVE_LLAPI_H
 	LL_element *query_object, *job, *step;
 	char *sstat_host = NULL;
-	char *sstat_source = LL_SCHEDD;
+	char *sstat_source;
 	int sstat_daemon = LL_SCHEDD;
 	bool match_job_id, match_step_id;
 	int err_code, obj_count, rc;

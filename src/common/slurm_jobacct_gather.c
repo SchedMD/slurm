@@ -116,7 +116,11 @@ _slurm_jobacct_gather_context_create( const char *jobacct_gather_type)
 	slurm_jobacct_gather_context_t *c;
 
 	if ( jobacct_gather_type == NULL ) {
+#ifdef USE_LOADLEVELER
+		verbose("_slurm_jobacct_gather_context_create: no jobacct type");
+#else
 		error("_slurm_jobacct_gather_context_create: no jobacct type");
+#endif
 		return NULL;
 	}
 
@@ -266,7 +270,11 @@ static int _slurm_jobacct_gather_init(void)
 	g_jobacct_gather_context = _slurm_jobacct_gather_context_create(
 		jobacct_gather_type);
 	if ( g_jobacct_gather_context == NULL ) {
+#ifdef USE_LOADLEVELER
+		verbose("cannot create a context for %s", jobacct_gather_type );
+#else
 		error( "cannot create a context for %s", jobacct_gather_type );
+#endif
 		retval = SLURM_ERROR;
 		goto done;
 	}
