@@ -281,7 +281,8 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		i = len - cluster_rec->dimensions;
 		if (nodes[len-1] == ']')
 			i--;
-		if (i > cluster_rec->dimensions) {
+
+		if (i > 0) {
 			char *p = '\0';
 			number = xstrntol(nodes + i, &p,
 					  cluster_rec->dimensions, 36);
