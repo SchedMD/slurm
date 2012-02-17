@@ -54,7 +54,7 @@ print_field_t fields[] = {
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES},
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
-	{-12, "JobID", print_fields_str, PRINT_JOBID},
+	{-22, "JobID", print_fields_str, PRINT_JOBID},
 	{8, "MaxPages", print_fields_str, PRINT_MAXPAGES},
 	{12, "MaxPagesNode", print_fields_str, PRINT_MAXPAGESNODE},
 	{14, "MaxPagesTask", print_fields_int, PRINT_MAXPAGESTASK},
