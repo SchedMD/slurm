@@ -223,6 +223,15 @@ slurmstop() {
 	  fi
        done
     done
+
+    # slurmstatus return 1 in case of stopped daemon
+    # and that is what we are looking for here
+    if [[ ${RETVAL} == "1" ]]
+    then
+        RETVAL=0
+    else
+        RETVAL=1
+    fi
 }
 
 #
