@@ -64,7 +64,7 @@ sbin_PROGRAMS = slurmctld
 
 slurmctld_LDADD = 				    \
 	$(top_builddir)/src/common/libdaemonize.la  \
-	$(top_builddir)/src/api/libslurm.o -ldl
+	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:

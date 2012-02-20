@@ -7,7 +7,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sacctmgr
 
-sacctmgr_LDADD =  $(top_builddir)/src/db_api/libslurmdb.o -ldl \
+sacctmgr_LDADD =  $(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS) \
 	$(READLINE_LIBS)
 
 sacctmgr_SOURCES =	\

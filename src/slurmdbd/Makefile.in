@@ -58,6 +58,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -91,8 +92,9 @@ am_slurmdbd_OBJECTS = agent.$(OBJEXT) backup.$(OBJEXT) \
 	proc_req.$(OBJEXT) read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) \
 	slurmdbd.$(OBJEXT)
 slurmdbd_OBJECTS = $(am_slurmdbd_OBJECTS)
+am__DEPENDENCIES_1 =
 slurmdbd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o
+	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1)
 slurmdbd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(slurmdbd_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -146,6 +148,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -316,7 +319,7 @@ CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
 slurmdbd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o -ldl
+	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 slurmdbd_SOURCES = \
 	agent.c			\

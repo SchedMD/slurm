@@ -58,6 +58,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -96,7 +97,8 @@ slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) ../common/libslurmd_common.la
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	../common/libslurmd_common.la
 slurmstepd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurmstepd_LDFLAGS) $(LDFLAGS) -o $@
@@ -150,6 +152,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -319,7 +322,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 slurmstepd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o -ldl \
+	$(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
 	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) \
 	../common/libslurmd_common.la
 

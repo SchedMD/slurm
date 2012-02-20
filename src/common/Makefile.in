@@ -67,6 +67,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -95,7 +96,8 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-libcommon_la_DEPENDENCIES =
+am__DEPENDENCIES_1 =
+libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
 	xcgroup_read_config.h xcgroup.c xcgroup.h xcpuinfo.c \
 	xcpuinfo.h assoc_mgr.c assoc_mgr.h xmalloc.c xmalloc.h \
@@ -235,6 +237,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -513,7 +516,7 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD = -ldl
+libcommon_la_LIBADD = $(DL_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libcommon

@@ -55,6 +55,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -88,24 +89,25 @@ am__EXEEXT_1 = pack-test$(EXEEXT) log-test$(EXEEXT) \
 bitstring_test_SOURCES = bitstring-test.c
 bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
 bitstring_test_LDADD = $(LDADD)
-@HAVE_ELAN_TRUE@am__DEPENDENCIES_1 = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
+am__DEPENDENCIES_1 =
+@HAVE_ELAN_TRUE@am__DEPENDENCIES_2 = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
 bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
 log_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 pack_test_SOURCES = pack-test.c
 pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
 pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 runqsw_SOURCES = runqsw.c
 runqsw_OBJECTS = runqsw.$(OBJEXT)
 runqsw_LDADD = $(LDADD)
 runqsw_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -158,6 +160,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -329,7 +332,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_ELAN_FALSE@elan_lib = 
 @HAVE_ELAN_TRUE@elan_lib = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
 INCLUDES = -I$(top_srcdir)
-LDADD = $(top_builddir)/src/api/libslurm.o -ldl\
+LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)\
 		$(elan_lib)
 
 all: all-am

@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
  -- Work around to handle certain combinations of glibc/kernel
     (i.e. glibc-2.14/Linux-3.1) to correctly open the pty of the slurmstepd
     as the job user. Patch from Mark Grondona, LLNL.
+ -- Modify linking to include "-ldl" only when needed. Patch from Aleksej
+    Saushev.
 
 * Changes in SLURM 2.3.3
 ========================

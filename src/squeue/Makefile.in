@@ -60,6 +60,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -92,7 +93,9 @@ PROGRAMS = $(bin_PROGRAMS)
 am_squeue_OBJECTS = squeue.$(OBJEXT) print.$(OBJEXT) opts.$(OBJEXT) \
 	sort.$(OBJEXT)
 squeue_OBJECTS = $(am_squeue_OBJECTS)
-squeue_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
+am__DEPENDENCIES_1 =
+squeue_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 squeue_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(squeue_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -147,6 +150,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -314,7 +318,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-squeue_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
+squeue_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c
 squeue_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

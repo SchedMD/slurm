@@ -61,6 +61,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -112,8 +113,10 @@ am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c grid.c \
 	node_info.c resv_info.c submit_info.c admin_info.c common.c \
 	config_info.c defaults.c
 sview_OBJECTS = $(am_sview_OBJECTS)
+am__DEPENDENCIES_1 =
 @HAVE_GTK_TRUE@sview_DEPENDENCIES =  \
-@HAVE_GTK_TRUE@	$(top_builddir)/src/db_api/libslurmdb.o
+@HAVE_GTK_TRUE@	$(top_builddir)/src/db_api/libslurmdb.o \
+@HAVE_GTK_TRUE@	$(am__DEPENDENCIES_1)
 sview_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(sview_CFLAGS) $(CFLAGS) $(sview_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -170,6 +173,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -337,7 +341,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-@HAVE_GTK_TRUE@sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o -ldl
+@HAVE_GTK_TRUE@sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
 @HAVE_GTK_TRUE@noinst_HEADERS = sview.h
 @HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_TRUE@	block_info.c front_end_info.c node_info.c resv_info.c \

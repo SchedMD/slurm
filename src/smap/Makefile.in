@@ -65,6 +65,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -108,9 +109,10 @@ am__EXTRA_smap_SOURCES_DIST = smap.h smap.c job_functions.c \
 	partition_functions.c configure_functions.c grid_functions.c \
 	reservation_functions.c opts.c
 smap_OBJECTS = $(am_smap_OBJECTS)
+am__DEPENDENCIES_1 =
 @HAVE_SOME_CURSES_TRUE@smap_DEPENDENCIES =  \
 @HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/api/libslurm.o \
-@HAVE_SOME_CURSES_TRUE@	$(am__append_1)
+@HAVE_SOME_CURSES_TRUE@	$(am__DEPENDENCIES_1) $(am__append_1)
 smap_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(smap_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -166,6 +168,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -339,8 +342,8 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_SOME_CURSES_TRUE@	reservation_functions.c opts.c \
 @HAVE_SOME_CURSES_TRUE@	$(am__append_2)
 @HAVE_SOME_CURSES_TRUE@smap_LDADD =  \
-@HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl \
-@HAVE_SOME_CURSES_TRUE@	$(am__append_1)
+@HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/api/libslurm.o \
+@HAVE_SOME_CURSES_TRUE@	$(DL_LIBS) $(am__append_1)
 @BLUEGENE_LOADED_TRUE@@HAVE_SOME_CURSES_TRUE@bg_dir = $(top_builddir)/src/plugins/select/bluegene
 @HAVE_SOME_CURSES_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @HAVE_SOME_CURSES_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \

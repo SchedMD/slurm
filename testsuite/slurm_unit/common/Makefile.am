@@ -9,7 +9,7 @@ elan_lib =
 endif
 
 INCLUDES = 	-I$(top_srcdir)
-LDADD =		$(top_builddir)/src/api/libslurm.o -ldl\
+LDADD =		$(top_builddir)/src/api/libslurm.o $(DL_LIBS)\
 		$(elan_lib)
 
 check_PROGRAMS = \

@@ -9,7 +9,7 @@ bin_PROGRAMS = srun_cr
 
 srun_cr_SOURCES = srun_cr.c
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 srun_cr_LDADD = $(convenience_libs) $(BLCR_LIBS)
 

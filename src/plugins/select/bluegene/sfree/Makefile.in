@@ -57,6 +57,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -88,7 +89,9 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_sfree_OBJECTS = sfree.$(OBJEXT) opts.$(OBJEXT)
 sfree_OBJECTS = $(am_sfree_OBJECTS)
-sfree_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
+am__DEPENDENCIES_1 =
+sfree_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 sfree_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sfree_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -142,6 +145,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -310,7 +314,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
-sfree_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
+sfree_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 sfree_SOURCES = sfree.c sfree.h opts.c
 sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 all: all-am

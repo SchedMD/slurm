@@ -7,7 +7,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sacct
 
-sacct_LDADD = 	$(top_builddir)/src/db_api/libslurmdb.o -ldl
+sacct_LDADD = 	$(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
 
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
