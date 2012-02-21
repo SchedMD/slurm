@@ -59,6 +59,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -98,8 +99,10 @@ am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	allocate.$(OBJEXT) multi_prog.$(OBJEXT) task_state.$(OBJEXT) \
 	srun.wrapper.$(OBJEXT) $(am__objects_1)
 srun_OBJECTS = $(am_srun_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
-srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
+srun_DEPENDENCIES = $(am__DEPENDENCIES_2)
 srun_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(srun_LDFLAGS) $(LDFLAGS) -o $@
@@ -163,6 +166,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -341,7 +345,7 @@ srun_SOURCES = srun.c srun.h opt.c opt.h srun_job.c srun_job.h \
 # pthread is needed for compiling with g++ (which is used for linking
 # no matter if on a BGQ or not because of mentioning a .cc file
 convenience_libs = \
-	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
+	$(top_builddir)/src/api/libslurm.o -lpthread $(DL_LIBS)
 
 srun_LDADD = \
 	$(convenience_libs)

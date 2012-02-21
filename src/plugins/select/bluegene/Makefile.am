@@ -13,7 +13,7 @@ pkglib_LTLIBRARIES = select_bluegene.la
 
 noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bluegene_la_SOURCES = select_bluegene.c \

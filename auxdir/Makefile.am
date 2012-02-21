@@ -17,6 +17,7 @@ EXTRA_DIST = \
     x_ac_cray.m4 \
     x_ac_databases.m4 \
     x_ac_debug.m4 \
+    x_ac_dlfcn.m4 \
     x_ac_elan.m4 \
     x_ac_env.m4 \
     x_ac_federation.m4 \

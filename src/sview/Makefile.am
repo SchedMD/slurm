@@ -9,7 +9,7 @@ if BUILD_SVIEW
 
 bin_PROGRAMS = sview
 
-sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o -ldl
+sview_LDADD = $(top_builddir)/src/db_api/libslurmdb.o $(DL_LIBS)
 
 noinst_HEADERS = sview.h
 sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \

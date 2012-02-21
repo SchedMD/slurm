@@ -88,6 +88,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -201,7 +202,8 @@ am__slurm_epilog_SOURCES_DIST = slurm_epilog.c
 @BLUEGENE_LOADED_TRUE@am_slurm_epilog_OBJECTS =  \
 @BLUEGENE_LOADED_TRUE@	slurm_epilog.$(OBJEXT)
 slurm_epilog_OBJECTS = $(am_slurm_epilog_OBJECTS)
-am__DEPENDENCIES_3 = $(top_builddir)/src/api/libslurm.o
+am__DEPENDENCIES_3 = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 @BLUEGENE_LOADED_TRUE@slurm_epilog_DEPENDENCIES =  \
 @BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_3)
 slurm_epilog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -325,6 +327,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -499,7 +502,7 @@ INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 pkglib_LTLIBRARIES = select_bluegene.la $(am__append_2) \
 	$(am__append_3) $(am__append_5)
 noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \

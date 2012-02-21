@@ -58,6 +58,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -95,8 +96,10 @@ libblock_allocator_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 PROGRAMS = $(noinst_PROGRAMS)
 wire_test_SOURCES = wire_test.c
 wire_test_OBJECTS = wire_test.$(OBJEXT)
+am__DEPENDENCIES_1 =
 wire_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	../libba_common.la $(libblock_allocator_la_OBJECTS)
+	$(am__DEPENDENCIES_1) ../libba_common.la \
+	$(libblock_allocator_la_OBJECTS)
 wire_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(wire_test_LDFLAGS) $(LDFLAGS) -o $@
@@ -151,6 +154,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -333,7 +337,7 @@ wire_testSOURCES = wire_test.c
 
 # compile against the block_allocator.o since we don't really want to
 # link against the bridge_linker.
-wire_test_LDADD = $(top_builddir)/src/api/libslurm.o -ldl \
+wire_test_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
 		../libba_common.la $(libblock_allocator_la_OBJECTS)
 
 wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)

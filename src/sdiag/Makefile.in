@@ -58,6 +58,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -89,7 +90,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_sdiag_OBJECTS = sdiag.$(OBJEXT) opts.$(OBJEXT)
 sdiag_OBJECTS = $(am_sdiag_OBJECTS)
-sdiag_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
+am__DEPENDENCIES_1 =
+sdiag_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 sdiag_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sdiag_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -144,6 +147,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -313,7 +317,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-sdiag_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
+sdiag_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 sdiag_SOURCES = sdiag.c opts.c
 sdiag_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am

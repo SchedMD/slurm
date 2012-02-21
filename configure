@@ -712,6 +712,7 @@ HAVE_SCHED_SETAFFINITY_TRUE
 HAVE_NUMA_FALSE
 HAVE_NUMA_TRUE
 NUMA_LIBS
+DL_LIBS
 WITH_GNU_LD_FALSE
 WITH_GNU_LD_TRUE
 WITH_CXX_FALSE
@@ -18029,6 +18030,135 @@ $as_echo "#define HAVE__SYSTEM_CONFIGURATION 1" >>confdefs.h
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking library containing dlopen" >&5
+$as_echo_n "checking library containing dlopen... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -l" >&5
+$as_echo_n "checking for dlopen in -l... " >&6; }
+if ${ac_cv_lib__dlopen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-l  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dlopen ();
+int
+main ()
+{
+return dlopen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib__dlopen=yes
+else
+  ac_cv_lib__dlopen=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib__dlopen" >&5
+$as_echo "$ac_cv_lib__dlopen" >&6; }
+if test "x$ac_cv_lib__dlopen" = xyes; then :
+  ac_have_dlopen=yes; DL_LIBS=""
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
+$as_echo_n "checking for dlopen in -ldl... " >&6; }
+if ${ac_cv_lib_dl_dlopen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ldl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dlopen ();
+int
+main ()
+{
+return dlopen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_dl_dlopen=yes
+else
+  ac_cv_lib_dl_dlopen=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dl_dlopen" >&5
+$as_echo "$ac_cv_lib_dl_dlopen" >&6; }
+if test "x$ac_cv_lib_dl_dlopen" = xyes; then :
+  ac_have_dlopen=yes; DL_LIBS="-ldl"
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -lsvdl" >&5
+$as_echo_n "checking for dlopen in -lsvdl... " >&6; }
+if ${ac_cv_lib_svdl_dlopen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lsvdl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dlopen ();
+int
+main ()
+{
+return dlopen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_svdl_dlopen=yes
+else
+  ac_cv_lib_svdl_dlopen=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_svdl_dlopen" >&5
+$as_echo "$ac_cv_lib_svdl_dlopen" >&6; }
+if test "x$ac_cv_lib_svdl_dlopen" = xyes; then :
+  ac_have_dlopen=yes; DL_LIBS="-lsvdl"
+fi
+
+fi
+
+fi
+
+
+
 
 
 

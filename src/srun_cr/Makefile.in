@@ -57,6 +57,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -88,9 +89,10 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_srun_cr_OBJECTS = srun_cr.$(OBJEXT)
 srun_cr_OBJECTS = $(am_srun_cr_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
-am__DEPENDENCIES_2 =
-srun_cr_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
+srun_cr_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
 srun_cr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(srun_cr_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -145,6 +147,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -316,7 +319,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
 srun_cr_SOURCES = srun_cr.c
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 srun_cr_LDADD = $(convenience_libs) $(BLCR_LIBS)
 srun_cr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BLCR_LDFLAGS)
 all: all-am

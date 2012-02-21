@@ -7,7 +7,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sprio
 
-sprio_LDADD = 	$(top_builddir)/src/api/libslurm.o -ldl
+sprio_LDADD = 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 noinst_HEADERS = sprio.h print.h
 sprio_SOURCES = sprio.c print.c opts.c

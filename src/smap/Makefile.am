@@ -18,7 +18,7 @@ smap_SOURCES = smap.c \
 	job_functions.c partition_functions.c \
 	grid_functions.c reservation_functions.c opts.c
 
-smap_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
+smap_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 if BLUEGENE_LOADED
 bg_dir = $(top_builddir)/src/plugins/select/bluegene

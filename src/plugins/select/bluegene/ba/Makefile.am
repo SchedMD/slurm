@@ -23,7 +23,7 @@ wire_testSOURCES = wire_test.c
 
 # compile against the block_allocator.o since we don't really want to
 # link against the bridge_linker.
-wire_test_LDADD = $(top_builddir)/src/api/libslurm.o -ldl \
+wire_test_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
 		../libba_common.la $(libblock_allocator_la_OBJECTS)
 
 total += ../libba_common.la $(top_builddir)/src/api/libslurm.o

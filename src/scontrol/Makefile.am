@@ -20,7 +20,7 @@ scontrol_SOURCES =	\
 	update_part.c	\
 	update_step.c
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
+convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 
 
 scontrol_LDADD = \

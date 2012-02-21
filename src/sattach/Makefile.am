@@ -12,7 +12,7 @@ sattach_SOURCES = \
 	sattach.c \
 	sattach.wrapper.c
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
+convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 sattach_LDADD = \
 	$(convenience_libs)

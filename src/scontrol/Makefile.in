@@ -57,6 +57,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
+	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -92,9 +93,10 @@ am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
 	update_node.$(OBJEXT) update_part.$(OBJEXT) \
 	update_step.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
-am__DEPENDENCIES_2 =
-scontrol_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
+scontrol_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
 scontrol_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(scontrol_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -149,6 +151,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -332,7 +335,7 @@ scontrol_SOURCES = \
 	update_part.c	\
 	update_step.c
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
+convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 scontrol_LDADD = \
 	$(convenience_libs) \
 	$(READLINE_LIBS)

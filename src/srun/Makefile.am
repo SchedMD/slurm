@@ -26,7 +26,7 @@ srun_SOURCES = \
 # pthread is needed for compiling with g++ (which is used for linking
 # no matter if on a BGQ or not because of mentioning a .cc file
 convenience_libs = \
-	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
+	$(top_builddir)/src/api/libslurm.o -lpthread $(DL_LIBS)
 
 srun_LDADD = \
 	$(convenience_libs)

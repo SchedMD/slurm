@@ -129,6 +129,10 @@ dnl Checks for structures.
 dnl
 X_AC__SYSTEM_CONFIGURATION
 
+dnl Check for dlfcn
+dnl
+X_AC_DLFCN
+
 dnl check to see if glibc's program_invocation_name is available:
 dnl
 X_AC_SLURM_PROGRAM_INVOCATION_NAME
