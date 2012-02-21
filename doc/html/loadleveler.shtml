@@ -316,10 +316,17 @@ options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
 <h3><a name="sstat">sstat</a></h3>
 <p>All sstat options function as expected including filtering, sorting, and
 output formatting, however only a limited subset of information is available.
+In fact, he only information available is the job step ID, CPU time used by
+the job step, and task count.
 The following sstat data is not available from LoadLeveler:
 pid (process ID),
-AveVMSize, MaxVMSize, MaxVMSizeNode, MaxVMSizeTask (virtual memory data),
-MaxPages, MaxPagesNode, and MaxPagesTask (paging data).</p>
+AveVMSize, MaxVMSize, MaxVMSizeNode, MaxVMSizeTask (Virtual Memory data),
+AveRSS, MaxRSS, MaxRSSNode, MaxRSSTask (Resident Set Size, real memory data),
+AvePages, MaxPages, MaxPagesNode, and MaxPagesTask (paging data),
+MinCPU, MinCPUNode, MinCPUTask (CPU time information by node or task).
+While the LoadLeveler API defines functions to read Resident Set Size (real
+memory) information, only values of zero have been observed for running job
+steps.</p>
 
 <h2><a name=install>Installation and Configuration</a></h2>
 
@@ -343,6 +350,6 @@ LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 January 2012</p>
+<p style="text-align:center;">Last modified 21 Febuary 2012</p>
 
 <!--#include virtual="footer.txt"-->

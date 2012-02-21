@@ -714,6 +714,8 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	/* job_acct_ptr->max_vsize = 0;	   NOT AVAILABLE */
 	/* job_acct_ptr->max_vsize_id = 0; */
 	/* job_acct_ptr->tot_vsize = 0;	   NOT AVAILABLE */
+	/* NOTE: We have tried reading ALL of the step RSS data types and
+	 * the values have always been zero */
 	ll_get_data(step, LL_StepStepMaxrss64, &max_rss);
 	job_acct_ptr->max_rss = max_rss;	/* KB */
 	/* job_acct_ptr->max_rss_id = 0;   NOT AVAILABLE */
@@ -740,7 +742,7 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	step_stat_ptr->step_pids = job_pids_ptr;
 	list_append(stats_list, step_stat_ptr);
 #if _DEBUG_SSTAT
-	info("StepStat: sys:%ld user:%ld tot:%ld rss:%ld:task_cnt:%d",
+	info("StepStat: sys:%ld user:%ld tot:%u rss:%ld:task_cnt:%d",
 	      sys_time, user_time, job_acct_ptr->tot_cpu, max_rss, task_cnt);
 #endif
 }
