@@ -35,7 +35,7 @@ AC_DEFUN([X_AC_HWLOC],
  	  _x_ac_hwloc_libs_save="$LIBS"
           LIBS="-L$d/$bit -lhwloc $LIBS"
           AC_LINK_IFELSE(
-            AC_LANG_CALL([], hwloc_topology_init),
+            [AC_LANG_CALL([], hwloc_topology_init)],
             AS_VAR_SET(x_ac_cv_hwloc_dir, $d))
           AC_TRY_LINK([#include <hwloc.h>],
                       [int i = HWLOC_OBJ_PCI_DEVICE;],

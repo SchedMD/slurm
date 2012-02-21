@@ -40,7 +40,7 @@ AC_DEFUN([X_AC_MUNGE], [
  	  _x_ac_munge_libs_save="$LIBS"
           LIBS="-L$d/$bit -lmunge $LIBS"
           AC_LINK_IFELSE(
-            AC_LANG_CALL([], munge_encode),
+            [AC_LANG_CALL([], munge_encode)],
             AS_VAR_SET(x_ac_cv_munge_dir, $d))
           LIBS="$_x_ac_munge_libs_save"
           test -n "$x_ac_cv_munge_dir" && break
