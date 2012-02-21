@@ -24,6 +24,9 @@
 commands over a
 <a href="http://publib.boulder.ibm.com/infocenter/clresctr/vxrx/index.jsp?topic=/com.ibm.cluster.loadl.doc/llbooks.html">
 LoadLeveler</a> infrastructure.
+Note this is a distinct branch of the SLURM code rather than the default
+SLURM distribution. This "loadleveler" branch is available from
+<a href="https://github.com/SchedMD/slurm/tree/loadleveler">https://github.com/SchedMD/slurm/tree/loadleveler</a>.
 The user is presented with a set of commands that look and feel like a native
 SLURM installation, but which interface to an underlying LoadLeveler job scheduler.
 Most changes are in the SLURM library which communicates with LoadLeveler rather
@@ -53,6 +56,12 @@ rather than a number in these SLURM commands. Note that the hostnames are
 also truncated in the job ID (e.g. LoadLeveler job ID
 "tux123.cluster.corporation.com.45678" is reported as "tux123.45678" by the
 SLURM commands).</li>
+<li><b>Job Steps</b>: Submitting multiple job steps to LoadLeveler requires
+the batch script submitted contain syntax defining and submitting the job
+steps. This mode of operation is not compatible with SLURM, which permits
+job steps to be created an arbitrary times during the job's execution. SLURM's
+srun command wrapper addresses this issue by invoking LoadLeveler's POE
+command, but each invocation is treated like a single job step with ID 0.</li>
 <li><b>Partitions</b>: LoadLeveler classes are treated as SLURM
 partitions.</li>
 <li><b>Node Resources</b>: LoadLeveler node resources are treated as
@@ -62,7 +71,7 @@ SLURM generic resources (GRES).</li>
 
 <h2><a name="commands">Commands</a></h2>
 <h3><a name="salloc">salloc</a></h3>
-<p>LoadLeveler lacks an interactive job allocaiton mode equivalent to SLURM.
+<p>LoadLeveler lacks an interactive job allocation mode equivalent to SLURM.
 The salloc command submits a batch job to LoadLeveler that will make an
 authenticated socket connection back to the salloc command once the resource 
 allocation has been made as shown in Figure 1. This socket connection will be
@@ -257,7 +266,7 @@ job_resrcs (job allocated resources details, e.g. specific cores).</p> -->
 
 
 <h3><a name="srun">srun</a></h3>
-<p>LoadLeveler lacks an interactive job allocaiton mode equivalent to SLURM.
+<p>LoadLeveler lacks an interactive job allocation mode equivalent to SLURM.
 The srun command submits a batch job to LoadLeveler that will make a socket
 connection back to the srun command once the resource allocation has been
 made using the same mechanism as the salloc command shown in
@@ -312,6 +321,11 @@ The following srun options have no LoadLeveler equivalent and will be ignored:<p
 Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
 options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
 
+<p>When the srun command is invoked from within an existing allocation,
+it causes LoadLeveler's POE command to be invoked and a job step to be created.
+Since it is not possible for the job steps to be defined at the time that a
+batch job is submitted to LoadLeveler, every srun invocation will be treated
+as one job step with an ID of zero.</p>
 
 <h3><a name="sstat">sstat</a></h3>
 <p>All sstat options function as expected including filtering, sorting, and
@@ -332,8 +346,11 @@ steps.</p>
 
 <p>Because of the extensive changes required to the SLURM code for LoadLeveler
 support, this code is maintained in the "loadleveler" branch of the SLURM code
-rather than in the "master" SLURM code base. The source code and RPMs will be
-made available upon request.</p>
+rather than in the "master" SLURM code base. This "loadleveler" branch is
+directly available from
+<a href="https://github.com/SchedMD/slurm/tree/loadleveler">https://github.com/SchedMD/slurm/tree/loadleveler</a>.
+The source code tar-ball and RPMs can be made available to SchedMD customers
+upon request.</p>
 
 <p>Building SLURM files to support LoadLeveler requires that SLURM's "configure"
 program (executed at build time) be invoked with the option
