@@ -94,6 +94,7 @@ static uint32_t global_cpu_cnt = 0, global_node_cnt = 0;
 /*****************************************************************************\
  * Local helper functions
 \*****************************************************************************/
+static char *_get_schedd(char *job_id);
 static bool _is_step_running(LL_element *step);
 static void _jobacct_del(void *x);
 static void _load_adapter_info_job(LL_element *adapter, job_info_t *job_ptr);
@@ -113,9 +114,76 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 				int step_inx);
 static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr);
 static void _load_task_info_job(LL_element *task, job_info_t *job_ptr);
+static bool _match_job_name(char *job_name1, char *job_name2);
 static void _proc_step_stat(LL_element *step, List stats_list);
 static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
 			   bool *match_job_id, bool *match_step_id);
+
+static bool _match_job_name(char *job_name1, char *job_name2)
+{
+	char *dot1, *dot2;
+
+	/* Match job ID number portion */
+	dot1 = strrchr(job_name1, '.');
+	dot2 = strrchr(job_name2, '.');
+	if (!dot1 || !dot2 || strcmp(dot1+1, dot2+1))
+		return false;
+
+	/* Match job hostname portion */
+	dot1 = strchr(job_name1, '.');
+	dot2 = strchr(job_name2, '.');
+	if ((dot1 - job_name1) != (dot2 - job_name2))
+		return false;	/* different hostname sizes */
+	if (strncmp(job_name1, job_name2, (dot1 - job_name1)))
+		return false;	/* different hostnames */
+	return true;
+}
+
+static char *_get_schedd(char *job_id)
+{
+	static char schedd_name[256];
+	LL_element  *job, *query_object;
+	char *job_name = NULL, *job_schedd = NULL;
+	int rc;
+
+	query_object = ll_query(JOBS);
+	if (!query_object) {
+		verbose("ll_query(JOBS) failed");
+		return NULL;
+	}
+
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(JOBS, ALL), error %d", rc);
+		return NULL;
+	}
+
+	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!job && (err_code == LL_DATA_NOT_RECEIVED)) {
+		/* This is the normal response when no jobs exist */
+		debug("ll_get_objs(JOBS), error %d", err_code);
+		return NULL;
+	} else if (err_code) {
+		verbose("ll_get_objs(JOBS), error %d", err_code);
+		return NULL;
+	}
+
+	while (job) {
+		rc = ll_get_data(job, LL_JobName, &job_name);
+		if (!rc && _match_job_name(job_id, job_name)) {
+			rc = ll_get_data(job, LL_JobSchedd, &job_schedd);
+			if (!rc && job_schedd) {
+				strncpy(schedd_name, job_schedd,
+					sizeof(schedd_name));
+				break;
+			}
+		job = ll_next_obj(query_object);
+	}
+	ll_free_objs(job);
+	ll_deallocate(job);
+
+	return schedd_name;
+}
 
 static void _jobacct_del(void *x)
 {
@@ -1778,17 +1846,11 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 	bool match_job_id, match_step_id;
 	int err_code, obj_count, rc;
 
-	query_object = ll_query(JOBS);
-	if (!query_object) {
-		verbose("ll_query(JOBS) failed");
-		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
-	}
-
 	/*
 	 * step accounting information available from LL_HISTORY_FILE or 
 	 * LL_SCHEDD, but not LL_CM. The environment variable SSTAT_SOURCE
 	 * controls where to look. Supported values for SSTAT_SOURCE include:
-	 * 1. "SCHEDD" or
+	 * 1. "SCHEDD" (default value) or
 	 * 2. "HISTORY:<filename>"
 	 */
 	sstat_source = getenv("SSTAT_SOURCE");
@@ -1799,6 +1861,18 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 			sstat_daemon = LL_HISTORY_FILE;
 			sstat_host = sstat_source + 8;
 		}
+	}
+
+	/* If the information source is SCHEDD, then we need to identify
+	 * the host */
+	if (sstat_daemon == LL_SCHEDD) {
+		sstat_host = _get_schedd(job_id);
+	}
+
+	query_object = ll_query(JOBS);
+	if (!query_object) {
+		verbose("ll_query(JOBS) failed");
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	/* NOTE: If gathering data from LL_HISTORY_FILE, we might filter by
