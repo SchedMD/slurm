@@ -149,7 +149,8 @@ static void _bridge_status_disconnect()
 }
 
 static void _handle_bad_midplane(const char *mp_coords,
-				 EnumWrapper<Hardware::State> state)
+				 EnumWrapper<Hardware::State> state,
+				 bool block_state_locked)
 {
 	char bg_down_node[128];
 
@@ -162,15 +163,24 @@ static void _handle_bad_midplane(const char *mp_coords,
 		error("Midplane %s, state went to '%s', marking midplane down.",
 		      bg_down_node,
 		      bridge_hardware_state_string(state.toValue()));
+		/* unlock mutex here since slurm_drain_nodes could produce
+		   deadlock */
+		slurm_mutex_unlock(&ba_system_mutex);
+		if (block_state_locked)
+			slurm_mutex_unlock(&block_state_mutex);
 		slurm_drain_nodes(
 			bg_down_node,
 			(char *)"select_bluegene: MMCS midplane not UP",
 			slurm_get_slurm_user_id());
+		if (block_state_locked)
+			slurm_mutex_lock(&block_state_mutex);
+		slurm_mutex_lock(&ba_system_mutex);
 	}
 }
 
 static void _handle_bad_switch(int dim, const char *mp_coords,
-			       EnumWrapper<Hardware::State> state)
+			       EnumWrapper<Hardware::State> state,
+			       bool block_state_locked)
 {
 	char bg_down_node[128];
 
@@ -184,9 +194,17 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 		      "marking midplane down.",
 		      dim, bg_down_node,
 		      bridge_hardware_state_string(state.toValue()));
+		/* unlock mutex here since slurm_drain_nodes could produce
+		   deadlock */
+		slurm_mutex_unlock(&ba_system_mutex);
+		if (block_state_locked)
+			slurm_mutex_unlock(&block_state_mutex);
 		slurm_drain_nodes(bg_down_node,
 				  (char *)"select_bluegene: MMCS switch not UP",
 				  slurm_get_slurm_user_id());
+		if (block_state_locked)
+			slurm_mutex_lock(&block_state_mutex);
+		slurm_mutex_lock(&ba_system_mutex);
 	}
 }
 
@@ -715,7 +733,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 	}
 
 	if (mp_ptr->getState() != Hardware::Available) {
-		_handle_bad_midplane(ba_mp->coord_str, mp_ptr->getState());
+		_handle_bad_midplane(ba_mp->coord_str, mp_ptr->getState(), 1);
 		/* no reason to continue */
 		return;
 	} else {
@@ -753,7 +771,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 			if (switch_ptr->getState() != Hardware::Available)
 				_handle_bad_switch(dim,
 						   ba_mp->coord_str,
-						   switch_ptr->getState());
+						   switch_ptr->getState(), 1);
 			else {
 				Cable::ConstPtr my_cable =
 					switch_ptr->getCable();
@@ -945,7 +963,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	}
 
 	/* Else mark the midplane down */
-	_handle_bad_midplane(ba_mp->coord_str, event.getState());
+	_handle_bad_midplane(ba_mp->coord_str, event.getState(), 0);
 	slurm_mutex_unlock(&ba_system_mutex);
 	return;
 
@@ -990,7 +1008,7 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 	}
 
 	/* Else mark the midplane down */
-	_handle_bad_switch(dim, ba_mp->coord_str, event.getState());
+	_handle_bad_switch(dim, ba_mp->coord_str, event.getState(), 0);
 	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
