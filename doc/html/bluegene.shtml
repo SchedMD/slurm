@@ -150,6 +150,23 @@ valid: bgl[000xC44], bgl000, bglZZZ
 invalid: BGL[000xC44], BglC00, bglb00, Bglzzz
 </p>
 
+<p><b>IMPORTANT:</b> SLURM requires that all systems start with 0 in each
+dimension.  So if you have a BlueGene/Q system and only want SLURM to
+run on a portion of it you need to define the entire system and mark
+midplanes down in the slurm.conf file or with scontrol/sview.
+<br>
+In example of this with a BGQ system of [0000x2333] but only can
+use [2000x2333] you could define it in your slurm.conf like this.
+<pre>
+...
+NodeName=bgq[0000x1333] sate=down
+NodeName=bgq[2000x2333] state=unknown
+...
+</pre>
+This would mark your nodes not managed as down and only create blocks
+on the portion of the machine you want to use.
+</p>
+
 <p>In a system configured with <i>small blocks</i> (any block less
 than a full midplane), there will be divisions in the midplane
 notation. On BlueGene/L and BlueGene/P systems, the midplane name may
@@ -236,6 +253,11 @@ keys scroll the window containing the text information.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>System Administration for BlueGene/Q only</h2>
+
+<p><b>IMPORTANT:</b> The SlurmUser defined in the slurm.conf must be
+added to the bgadmin group.  This allows the slurmctld to access
+information from the system and manipulate blocks.
+</p>
 
 <p>In order to make <i>srun</i> operate correctly with the underlying system
 and to ensure security for new MPI jobs, it is necessary to enable the
