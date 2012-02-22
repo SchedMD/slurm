@@ -490,12 +490,15 @@ static int _spank_stack_load(struct spank_stack *stack, const char *path)
 
 	verbose("spank: opening plugin stack %s", path);
 
+	/*
+	 *  Try to open plugstack.conf. A missing config file is not an
+	 *   error, but is equivalent to an empty file.
+	 */
 	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE))) {
 		if (errno == ENOENT)
-			debug("spank: Failed to open %s: %m", path);
-		else
-			error("spank: Failed to open %s: %m", path);
-		return -1;
+			return (0);
+		error("spank: Failed to open %s: %m", path);
+		return (-1);
 	}
 
 	line = 1;
@@ -688,17 +691,6 @@ struct spank_stack *spank_stack_init(enum spank_context_type context)
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	const char *path = conf->plugstack;
 	slurm_conf_unlock();
-
-	/*
-	 *  A nonexistent spank config is not an error, but
-	 *   abort on any other access failures
-	 */
-	if (access (path, R_OK) < 0) {
-		if (errno == ENOENT)
-			return (0);
-		error ("spank: Unable to open config file `%s': %m", path);
-		return (NULL);
-	}
 
 	return spank_stack_create (path, context);
 }
