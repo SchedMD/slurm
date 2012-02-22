@@ -837,7 +837,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 		*/
 		for (dim=0; dim<cluster_dims; dim++) {
 			if ((ba_request->conn_type[dim] == SELECT_MESH)
-			    && (ba_geo_table->geometry[dim] == DIM_SIZE[dim]))
+			    && (ba_geo_table->geometry[dim] == 1))
 				ba_request->conn_type[dim] = SELECT_TORUS;
 		}
 
