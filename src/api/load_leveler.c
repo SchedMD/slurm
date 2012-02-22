@@ -122,13 +122,10 @@ static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
 static char *_get_schedd(char *job_id, uint32_t step_id)
 {
 	static char schedd_name[256];
-	job_info_msg_t *job_info_ptr;
-	job_info_t *job_ptr;
-	LL_element *credential, *job, *query_object, *step;
-	int err_code, job_type, obj_count, rc;
-	char *job_schedd = NULL, *name, *submit_host;
+	LL_element *job, *query_object, *step;
+	int err_code, obj_count, rc;
+	char *job_schedd = NULL;
 	bool match_job_id, match_step_id;
-	time_t submit_time;
 
 	query_object = ll_query(JOBS);
 	if (!query_object) {
@@ -798,8 +795,13 @@ static void _proc_step_stat(LL_element *step, List stats_list)
 	step_stat_ptr = xmalloc(sizeof(job_step_stat_t));
 	step_stat_ptr->jobacct = job_acct_ptr;
 	ll_get_data(step, LL_StepTotalTasksRequested, &task_cnt);
-	if (task_cnt == 0)
+	if (task_cnt == 0) {
 		ll_get_data(step, LL_StepTaskInstanceCount, &task_cnt);
+		/* For unknwon reasons, the task count always seems to be
+		 * too high by 1 */
+		if (task_cnt > 1)
+			task_cnt--;
+	}
 	step_stat_ptr->num_tasks = task_cnt;
 	step_stat_ptr->step_pids = job_pids_ptr;
 	list_append(stats_list, step_stat_ptr);
