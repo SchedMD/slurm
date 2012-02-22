@@ -289,7 +289,12 @@ static bg_record_t *_find_matching_block(List block_list,
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
 	char tmp_char[256];
-
+	int dim = 0;
+#ifdef HAVE_BG_L_P
+	int conn_type_dims = 1;
+#else
+	int conn_type_dims = SYSTEM_DIMENSIONS;
+#endif
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 		info("number of blocks to check: %d state %d "
 		     "asking for %u-%u cpus",
@@ -494,40 +499,50 @@ static bg_record_t *_find_matching_block(List block_list,
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-		if ((request->conn_type[0] != bg_record->conn_type[0])
-		    && (request->conn_type[0] != SELECT_NAV)) {
+		for (dim=0; dim<conn_type_dims; dim++) {
+			if ((request->conn_type[dim]
+			     != bg_record->conn_type[dim])
+			    && (request->conn_type[dim] != SELECT_NAV)) {
 #ifdef HAVE_BGP
-			if (request->conn_type[0] >= SELECT_SMALL) {
-				/* we only want to reboot blocks if
-				   they have to be so skip booted
-				   blocks if in small state
-				*/
-				if (check_image
-				    && (bg_record->state
-					== BG_BLOCK_INITED)) {
-					*allow = 1;
-					continue;
+				if (request->conn_type[0] >= SELECT_SMALL) {
+					/* we only want to reboot blocks if
+					   they have to be so skip booted
+					   blocks if in small state
+					*/
+					if (check_image
+					    && (bg_record->state
+						== BG_BLOCK_INITED)) {
+						*allow = 1;
+						break;
+					}
+					goto good_conn_type;
+				} else if (bg_record->conn_type[0]
+					   >= SELECT_SMALL) {
+					/* since we already checked to see if
+					   the cpus were good this means we are
+					   looking for a block in a range that
+					   includes small and regular blocks.
+					   So we can just continue on.
+					*/
+					goto good_conn_type;
 				}
-				goto good_conn_type;
-			} else if (bg_record->conn_type[0] >= SELECT_SMALL) {
-				/* since we already checked to see if
-				   the cpus were good this means we are
-				   looking for a block in a range that
-				   includes small and regular blocks.
-				   So we can just continue on.
-				*/
-				goto good_conn_type;
-			}
 #endif
-			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-				info("bg block %s conn-type not usable "
-				     "asking for %s bg_record is %s",
-				     bg_record->bg_block_id,
-				     conn_type_string_full(request->conn_type),
-				     conn_type_string_full(
-					     bg_record->conn_type));
-			continue;
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("bg block %s conn-type not usable "
+					     "asking for %s bg_record is %s",
+					     bg_record->bg_block_id,
+					     conn_type_string_full(
+						     request->conn_type),
+					     conn_type_string_full(
+						     bg_record->conn_type));
+				break;
+			}
 		}
+
+		if (dim != conn_type_dims)
+			continue;
+
 #ifdef HAVE_BGP
 	good_conn_type:
 #endif
