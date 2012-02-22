@@ -1469,7 +1469,8 @@ extern void ba_set_ionode_str(bg_record_t *bg_record)
 	hostlist_t hl;
 	bool set_small = 0;
 
-	if (!bg_record->ionode_bitmap)
+	if (!bg_record->ionode_bitmap
+	    || bit_ffs(bg_record->ionode_bitmap) == -1)
 		return;
 
 	hl = hostlist_create_dims("", 5);
@@ -1478,6 +1479,7 @@ extern void ba_set_ionode_str(bg_record_t *bg_record)
 	     ionode_num <= bit_fls(bg_record->ionode_bitmap);
 	     ionode_num++) {
 		int nc_num, nc_start, nc_end;
+
 		if (!bit_test(bg_record->ionode_bitmap, ionode_num))
 			continue;
 
