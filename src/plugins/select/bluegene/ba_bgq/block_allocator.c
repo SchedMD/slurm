@@ -230,7 +230,7 @@ extern void ba_create_system()
 	*/
 	ba_main_grid_array = xmalloc(sizeof(ba_mp_t *) *
 				     ba_main_geo_system->total_size);
-
+	i = 0;
 	ba_main_grid = (ba_mp_t****)
 		xmalloc(sizeof(ba_mp_t***) * DIM_SIZE[A]);
 	for (a = 0; a < DIM_SIZE[A]; a++) {
