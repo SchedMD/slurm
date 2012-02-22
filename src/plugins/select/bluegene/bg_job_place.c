@@ -1611,7 +1611,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
 				jobinfo->conn_type[dim] = SELECT_NAV;
 		}
-	} else if (bg_conf->sub_blocks && (min_nodes < bg_conf->mp_cnode_cnt)) {
+	} else if (bg_conf->sub_blocks
+		   && (job_ptr->details->max_cpus < bg_conf->cpus_per_mp)) {
 		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
 			jobinfo->conn_type[dim] = SELECT_NAV;
 	}
