@@ -94,7 +94,7 @@ static uint32_t global_cpu_cnt = 0, global_node_cnt = 0;
 /*****************************************************************************\
  * Local helper functions
 \*****************************************************************************/
-static char *_get_schedd(char *job_id);
+static char *_get_schedd(char *job_id, uint32_t step_id);
 static bool _is_step_running(LL_element *step);
 static void _jobacct_del(void *x);
 static void _load_adapter_info_job(LL_element *adapter, job_info_t *job_ptr);
@@ -114,37 +114,21 @@ static void _load_step_info_job(LL_element *step, job_info_t *job_ptr,
 				int step_inx);
 static void _load_step_info_step(LL_element *step, job_step_info_t *step_ptr);
 static void _load_task_info_job(LL_element *task, job_info_t *job_ptr);
-static bool _match_job_name(char *job_name1, char *job_name2);
 static void _proc_step_stat(LL_element *step, List stats_list);
 static void _test_step_id (LL_element *step, char *job_id, uint32_t step_id,
 			   bool *match_job_id, bool *match_step_id);
 
-static bool _match_job_name(char *job_name1, char *job_name2)
-{
-	char *dot1, *dot2;
 
-	/* Match job ID number portion */
-	dot1 = strrchr(job_name1, '.');
-	dot2 = strrchr(job_name2, '.');
-	if (!dot1 || !dot2 || strcmp(dot1+1, dot2+1))
-		return false;
-
-	/* Match job hostname portion */
-	dot1 = strchr(job_name1, '.');
-	dot2 = strchr(job_name2, '.');
-	if ((dot1 - job_name1) != (dot2 - job_name2))
-		return false;	/* different hostname sizes */
-	if (strncmp(job_name1, job_name2, (dot1 - job_name1)))
-		return false;	/* different hostnames */
-	return true;
-}
-
-static char *_get_schedd(char *job_id)
+static char *_get_schedd(char *job_id, uint32_t step_id)
 {
 	static char schedd_name[256];
-	LL_element  *job, *query_object;
-	char *job_name = NULL, *job_schedd = NULL;
-	int rc;
+	job_info_msg_t *job_info_ptr;
+	job_info_t *job_ptr;
+	LL_element *credential, *job, *query_object, *step;
+	int err_code, job_type, obj_count, rc;
+	char *job_schedd = NULL, *name, *submit_host;
+	bool match_job_id, match_step_id;
+	time_t submit_time;
 
 	query_object = ll_query(JOBS);
 	if (!query_object) {
@@ -168,17 +152,27 @@ static char *_get_schedd(char *job_id)
 		return NULL;
 	}
 
+	schedd_name[0] = '\0';
 	while (job) {
-		rc = ll_get_data(job, LL_JobName, &job_name);
-		if (!rc && _match_job_name(job_id, job_name)) {
-			rc = ll_get_data(job, LL_JobSchedd, &job_schedd);
-			if (!rc && job_schedd) {
-				strncpy(schedd_name, job_schedd,
-					sizeof(schedd_name));
-				break;
-			}
-		job = ll_next_obj(query_object);
+		step = NULL;
+		match_job_id = match_step_id = false;
+		rc = ll_get_data(job, LL_JobGetFirstStep, &step);
+		if (!rc && step) {
+			_test_step_id(step, job_id, NO_VAL,
+				      &match_job_id, &match_step_id);
+		}
+		if (!match_job_id) {
+			job = ll_next_obj(query_object);
+			continue;	/* Try next job */
+		}
+
+		/* We found a match */
+		rc = ll_get_data(job, LL_JobSchedd, &job_schedd);
+		if (!rc && job_schedd)
+			strncpy(schedd_name, job_schedd, sizeof(schedd_name));
+		break;
 	}
+
 	ll_free_objs(job);
 	ll_deallocate(job);
 
@@ -1866,7 +1860,7 @@ extern int slurm_job_step_stat(char *job_id, uint32_t step_id,
 	/* If the information source is SCHEDD, then we need to identify
 	 * the host */
 	if (sstat_daemon == LL_SCHEDD) {
-		sstat_host = _get_schedd(job_id);
+		sstat_host = _get_schedd(job_id, step_id);
 	}
 
 	query_object = ll_query(JOBS);
