@@ -982,7 +982,8 @@ _build_job_list( char* str )
 }
 
 /*
- * _build_str_list- build a list of strings
+ * _build_str_list - convert a string of comma-separated elements
+ *		     into a list of strings
  * IN str - comma separated list of strings
  * RET List of strings
  */
@@ -997,11 +998,12 @@ _build_str_list( char* str )
 	my_list = list_create( NULL );
 	my_part_list = xstrdup( str );
 	part = strtok_r( my_part_list, ",", &tmp_char );
-	while (part)
-	{
+	while (part) {
 		list_append( my_list, part );
 		part = strtok_r( NULL, ",", &tmp_char );
 	}
+	/* NOTE: Do NOT xfree my_part_list or the elements just added to the
+	 * list will also be freed. */
 	return my_list;
 }
 
