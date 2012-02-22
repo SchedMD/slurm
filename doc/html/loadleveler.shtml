@@ -184,8 +184,8 @@ srun a.out
 
 <h3><a name="scancel">scancel</a></h3>
 <p>LoadLeveler lacks the ability to send an arbitrary signal to any job or
-job step. It is only able to cancel specific a specific job. Any attempt to
-use scancel for signalling a job step or sending a signal other than SIGKILL
+job step. It is only able to cancel specific a specific job or step. Any
+attempt to use scancel for sending a signal other than SIGKILL
 to a job will result in an error message of "Requested operation not supported
 on this system". scancel's job filtering options however do work as expected
 (--account, --interactive, --name, --partition, --reservation, --state and
@@ -319,13 +319,20 @@ The following srun options have no LoadLeveler equivalent and will be ignored:<p
 
 <p>In addition, srun some options are not fully compatable:
 Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
-options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
+options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".
+The srun -l or --label option on LoadLeveler results in identical output
+from more than one task are combined on a single line (e.g. "0-1: whatever"
+rather than "0: whatever" and "1: whatever" as done by SLURM).</p>
 
 <p>When the srun command is invoked from within an existing allocation,
 it causes LoadLeveler's POE command to be invoked and a job step to be created.
 Since it is not possible for the job steps to be defined at the time that a
 batch job is submitted to LoadLeveler, every srun invocation will be treated
 as one job step with an ID of zero.</p>
+
+<p>Many limitations exist with respect to the size of a LoadLeveler job step
+allocation within an existing job allocation, therefore most options used to
+execute a job step at a size different from the job allocation will fail.</p>
 
 <h3><a name="sstat">sstat</a></h3>
 <p>All sstat options function as expected including filtering, sorting, and
@@ -367,6 +374,6 @@ LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 Febuary 2012</p>
+<p style="text-align:center;">Last modified 22 Febuary 2012</p>
 
 <!--#include virtual="footer.txt"-->
