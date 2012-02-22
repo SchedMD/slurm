@@ -839,6 +839,10 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			if ((ba_request->conn_type[dim] == SELECT_MESH)
 			    && (ba_geo_table->geometry[dim] == 1))
 				ba_request->conn_type[dim] = SELECT_TORUS;
+			/* else if ((ba_request->conn_type[dim] == SELECT_MESH) */
+			/* 	 && (ba_geo_table->geometry[dim] */
+			/* 	     == DIM_SIZE[dim])) */
+			/* 	ba_request->conn_type[dim] = SELECT_TORUS; */
 		}
 
 		itr = list_iterator_create(main_mps);
