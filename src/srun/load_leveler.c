@@ -889,7 +889,7 @@ extern char *build_poe_command(void)
 		setenv("MP_INFOLEVEL", value, 1);
 	}
 	if (opt.labelio)
-		setenv("MP_LABLEIO", "yes", 1);
+		setenv("MP_LABELIO", "yes", 1);
 	if (opt.min_nodes != NO_VAL) {
 		snprintf(value, sizeof(value), "%u", opt.min_nodes);
 		setenv("MP_NODES", value, 1);
