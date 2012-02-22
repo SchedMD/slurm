@@ -2450,6 +2450,8 @@ extern int slurm_terminate_job (char *job_id)
 
 			job = ll_next_obj(query_object);
 		}
+		ll_free_objs(job);
+		ll_deallocate(job);
 		if (found == 0)
 			break;
 	}
@@ -2469,31 +2471,66 @@ extern int slurm_terminate_job (char *job_id)
 extern int slurm_terminate_job_step (char *job_id, uint32_t step_id)
 {
 #ifdef HAVE_LLAPI_H
-	int rc;
-	LL_terminate_job_info *cancel_info;
+	LL_element *job, *step, *query_object;
+	int err_code, obj_count, rc = 0;
+	bool match_job_id, match_step_id;
+	char *step_id_str;
 
-	if (!job_id)
-		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
+	/* Scan list of job steps for match */
+	query_object = ll_query(JOBS);
+	if (!query_object) {
+		verbose("ll_query(JOBS) failed");
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+	}
 
-	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
-	cancel_info->version_num =  LL_PROC_VERSION;
-	cancel_info->StepId.from_host = job_id;
-	cancel_info->StepId.cluster =
-	cancel_info->StepId.proc = step_id;
-	cancel_info->msg =  "Explicitly cancelled";
-	rc = ll_terminate_job(cancel_info);
-	xfree(cancel_info);
+	rc = ll_set_request(query_object, QUERY_ALL, NULL, ALL_DATA);
+	if (rc) {
+		verbose("ll_set_request(JOBS, ALL), error %d", rc);
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+	}
 
-	if (rc == API_OK)
-		return 0;
-	if (rc == -7)
-		slurm_seterrno(ESLURM_ACCESS_DENIED);
-	else
-		slurm_seterrno(SLURM_ERROR);
-	return -1;
+	job = ll_get_objs(query_object, LL_CM, NULL, &obj_count, &err_code);
+	if (!job && (err_code == LL_DATA_NOT_RECEIVED)) {
+		/* This is the normal response when no jobs exist */
+		debug("ll_get_objs(JOBS), error %d", err_code);
+		obj_count = 0;
+	} else if (err_code) {
+		verbose("ll_get_objs(JOBS), error %d", err_code);
+		slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+	}
+	while (job) {
+		step = NULL;
+		match_job_id = match_step_id = false;
+		rc = ll_get_data(job, LL_JobGetFirstStep, &step);
+		while (!rc && step) {
+			_test_step_id(step, job_id, step_id,
+				      &match_job_id, &match_step_id);
+			if (!match_job_id)
+				break;
+			if (match_step_id) {
+				step_id_str = NULL;
+				rc = ll_get_data(step, LL_StepID, &step_id_str);
+				if (rc || (step_id_str == NULL)) {
+					verbose("ll_get_data(StepID), error %d",
+						err_code);
+					rc = -1;
+				} else {
+					_term_step_id(step_id_str);
+				}
+				break;
+			}
+			step = NULL;
+			rc = ll_get_data(job, LL_JobGetNextStep, &step);
+		}
+		if (match_job_id)
+			break;
+		job = ll_next_obj(query_object);
+	}
+	ll_free_objs(job);
+	ll_deallocate(job);
+	return rc;
 #else
-	slurm_seterrno(ESLURM_NOT_SUPPORTED);
-	return -1;
+	slurm_seterrno_ret(ESLURM_NOT_SUPPORTED);
 #endif
 }
 
@@ -2697,8 +2734,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 		xstrfmtcat(slurm_cmd_file, "# @ error = %s\n", fname);
 		xfree(fname);
 	} else {
-/* FIXME: Will both stdout/err go to the same file?,
- * Default LoadLeveler error file name is "std.err" */
+		/* Default LoadLeveler error file name is "std.err" */
 		xstrfmtcat(slurm_cmd_file, "# @ error = slurm-$(jobid).out\n");
 	}
 
