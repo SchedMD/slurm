@@ -2398,6 +2398,9 @@ extern int slurm_terminate_job (char *job_id)
 	bool match_job_id, match_step_id;
 	char *step_id_str;
 
+	if (fe_job_id && !strcmp(fe_job_id, job_id))
+		fe_job_killed = true;
+
 	/* Make up to 4 passes through job list to capture job steps started
 	 * while we are scanning and terminating job steps */
 	for (i = 0; i < 4; i++) {
