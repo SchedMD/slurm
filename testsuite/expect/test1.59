@@ -56,29 +56,15 @@ if {[string compare [switch_type] "elan"] == 0} {
 }
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
-spawn $scontrol show partition $partition
-expect {
-	-re "not found" {
-		send_user "\nFAILURE: partition $partition doesn't exist\n"
-		exit 1
-	}
-	-re "TotalNodes=($number)" {
-		set node_count $expect_out(1,string)
-		if { $node_count < 3 } {
-			send_user "WARNING: system must have at least 3 \
-				   nodes to run this test on.  This system \
-				   only has $node_count.\n"
-			exit $exit_code
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
-	}
-	eof {
-	}
+
+set node_count [get_node_cnt_in_part $partition]
+if { $node_count < 3 } {
+	send_user "WARNING: system must have at least 3 \
+		   nodes to run this test on.  This system \
+		   only has $node_count.\n"
+	exit $exit_code
 }
+
 set node0 0
 set node1 0
 set node2 0

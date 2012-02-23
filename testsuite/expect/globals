@@ -2063,6 +2063,42 @@ proc get_node_cnt { } {
 
 ################################################################
 #
+# Proc: get_node_cnt_in_part
+#
+# Purpose: Determine how many nodes are in a given partition
+#
+# Returns count of nodes in a partition or 0 if unknown
+#
+################################################################
+
+proc get_node_cnt_in_part { partition } {
+	global scontrol number
+
+#	log_user 0
+	set node_cnt 0
+	set scon_pid [spawn -noecho $scontrol show partition $partition]
+	expect {
+		-re "not found" {
+			send_user "\nFAILURE: partition $partition doesn't exist\n"
+		}
+		-re "TotalNodes=($number)" {
+			set node_cnt $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+		}
+		eof {
+		}
+	}
+#	log_user 1
+
+	return $node_cnt
+}
+
+
+################################################################
+#
 # Proc: print_success
 #
 # Purpose:  Print success with test ID
