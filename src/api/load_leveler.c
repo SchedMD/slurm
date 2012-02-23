@@ -1129,7 +1129,7 @@ static bool _fe_test_job_fini(char *job_id)
 	int i, rc;
 	job_info_t *job_ptr;
 	job_info_msg_t *job_info_msg;
-	bool job_fini = false;
+	bool job_fini = true;	/* Assume complete if not found */
 
 	if (fe_job_killed)	/* SIGINT processed in salloc */
 		return true;
@@ -1142,8 +1142,8 @@ static bool _fe_test_job_fini(char *job_id)
 		if (strcmp(job_info_msg->job_array[i].job_id, job_id))
 			continue;
 		job_ptr = &job_info_msg->job_array[i];
-		if (job_ptr->job_state >= JOB_COMPLETE)
-			job_fini = true;
+		if (job_ptr->job_state < JOB_COMPLETE)
+			job_fini = false;
 		break;
 	}
 	slurm_free_job_info_msg(job_info_msg);
@@ -2341,7 +2341,7 @@ static int _term_step_id (char *step_id_str)
 	int cluster = 0, step_id = 0;
 	LL_terminate_job_info *cancel_info;
 
-	if (!job_id)
+	if (!step_id_str)
 		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
 
 	cancel_info = xmalloc(sizeof(LL_terminate_job_info));
