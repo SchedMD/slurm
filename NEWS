@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
     as the job user. Patch from Mark Grondona, LLNL.
  -- Modify linking to include "-ldl" only when needed. Patch from Aleksej
     Saushev.
+ -- Fix smap regression to display nodes that are drained or down correctly.
 
 * Changes in SLURM 2.3.3
 ========================
