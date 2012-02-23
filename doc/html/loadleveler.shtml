@@ -290,6 +290,7 @@ The following srun options have no LoadLeveler equivalent and will be ignored:<p
 <li>--mincpus (minimum number of processors required)</li>
 <li>--msg-timeout (message timeout)</li>
 <li>--mpi (MPI type)</li>
+<li>--multi-prog</li>
 <li>-k, --no-kill (set to not kill job upon node failure)</li>
 <li>--ntasks-per-core (number of tasks to invoke per core)</li>
 <li>--ntasks-per-socket (number of tasks to invoke per socket)</li>
@@ -330,9 +331,22 @@ Since it is not possible for the job steps to be defined at the time that a
 batch job is submitted to LoadLeveler, every srun invocation will be treated
 as one job step with an ID of zero.</p>
 
-<p>Many limitations exist with respect to the size of a LoadLeveler job step
-allocation within an existing job allocation, therefore most options used to
-execute a job step at a size different from the job allocation will fail.</p>
+<p>Options used to execute a job step at a size different from the job
+allocation will fail with the current code base. Additional code could
+enable this capability with some restrictions.</p>
+
+<!-- Changes required support POE sub-jobs of different sizes or MPMD:
+1. Add "export MP_NEWJOB=parallel" to the batch script
+2. Build a poe command file of the following form:
+   <cmd>@<step_id>:<total_tasks>:<protocol>:<num_tasks>
+   If the command has arguments, use a command of this form:
+   /bin/bash -c "<cmd> <args>"
+   The protocol must be determined by SLURM (not sure how).
+   Possible values for protocol include: mpi, lapi, upc, etc.
+   Set num_tasks equal to total_tasks or "*" unless MPMD is used.
+3. Replace "poe <cmd> <args>" in the srun code with "poe -cmdfile <fname>"
+Confirmed to work on February 23, 2012, but not added to the code.
+-->
 
 <h3><a name="sstat">sstat</a></h3>
 <p>All sstat options function as expected including filtering, sorting, and
@@ -374,6 +388,6 @@ LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 Febuary 2012</p>
+<p style="text-align:center;">Last modified 23 Febuary 2012</p>
 
 <!--#include virtual="footer.txt"-->
