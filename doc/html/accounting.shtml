@@ -139,7 +139,7 @@ The pathname of local domain socket will be needed in the SLURM
 and SlurmDBD configuration files (slurm.conf and slurmdbd.conf
 respectively, more details are provided below).</p>
 
-<p?Whether you use any authentication module or not you will need to have
+<p>Whether you use any authentication module or not you will need to have
 a way for the SlurmDBD to get uid's for users and/or admin.  If using
 MUNGE, it is ideal for your users to have the same id on all your
 clusters.  If this is the case you should have a combination of every clusters
@@ -149,7 +149,7 @@ the passwd file the action will fail.  If not using MUNGE, you should
 add anyone you want to be an administrator or operator to the passwd file.
 If they plan on running sacctmgr or any of the accounting tools they
 should have the same uid, or they will not authentic correctly.  An
-LDAP server could also server as a way to gather this information.
+LDAP server could also server as a way to gather this information.</p>
 
 <h2>Slurm JobComp Configuration</h2>
 
