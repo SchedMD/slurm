@@ -252,6 +252,7 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 				}
 			}
 			smap_node->index = i;
+			smap_node->state = node_ptr->node_state;
 			smap_system_ptr->grid[i] = smap_node;
 			smap_system_ptr->node_cnt++;
 		}
@@ -289,6 +290,26 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 	}
 }
 
+extern void update_grid(node_info_msg_t *node_info_ptr)
+{
+	int i;
+
+	if (!node_info_ptr)
+		return;
+
+	for (i = 0; i < node_info_ptr->record_count; i++) {
+		node_info_t *node_ptr = &node_info_ptr->node_array[i];
+		smap_node_t *smap_node;
+
+		if (!node_info_ptr->node_array[i].name
+		    || (node_info_ptr->node_array[i].name[0] == '\0'))
+			continue;
+		smap_node = smap_system_ptr->grid[i];
+		if (smap_node)
+			smap_node->state = node_ptr->node_state;
+	}
+}
+
 extern void clear_grid(void)
 {
 	smap_node_t *smap_node;
@@ -299,8 +320,14 @@ extern void clear_grid(void)
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		smap_node = smap_system_ptr->grid[i];
-		smap_node->color = COLOR_WHITE;
-		smap_node->letter = '.';
+		if ((smap_node->state == NODE_STATE_DOWN)
+		    || (smap_node->state & NODE_STATE_DRAIN)) {
+			smap_node->color = COLOR_BLACK;
+			smap_node->letter = '#';
+		} else {
+			smap_node->color = COLOR_WHITE;
+			smap_node->letter = '.';
+		}
 	}
 }
 
