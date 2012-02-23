@@ -59,7 +59,6 @@ expect {
 		exit 1
 	}
 	-re "MaxNodes=($number)" {
-	send_user "here 1\n"
 		set max_nodes $expect_out(1,string)
 		exp_continue
 	}
