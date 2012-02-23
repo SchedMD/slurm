@@ -2959,7 +2959,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 	if (req->time_limit != NO_VAL) {
 		int hours, minutes;
 		hours   = req->time_limit / 60;
-		minutes = req->time_limit / 60;
+		minutes = req->time_limit % 60;
 		xstrfmtcat(slurm_cmd_file,
 			   "# @ wall_clock_limit = %d:%2.2d:00,%d:%2.2d:00\n",
 			   hours, minutes, hours, minutes);
