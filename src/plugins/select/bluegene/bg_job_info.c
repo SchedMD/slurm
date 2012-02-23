@@ -147,12 +147,15 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		for (i=0; i<jobinfo->dim_cnt; i++) {
 			jobinfo->geometry[i] = uint16[i];
 			new_size *= uint16[i];
-
 			/* Make sure the conn type is correct with the
 			 * new count */
-			if ((new_size > 1)
-			    && (first_conn_type >= SELECT_SMALL))
-				jobinfo->conn_type[i] = SELECT_TORUS;
+			if (new_size > 1) {
+				if (first_conn_type != (uint16_t)NO_VAL)
+					jobinfo->conn_type[i] = SELECT_NAV;
+				else if (first_conn_type >= SELECT_SMALL)
+					jobinfo->conn_type[i] =
+						bg_conf->default_conn_type[i];
+			}
 		}
 
 		break;
@@ -213,9 +216,15 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		    || (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt)) {
 			if (jobinfo->conn_type[0] < SELECT_SMALL)
 				jobinfo->conn_type[0] = SELECT_SMALL;
-		} else if (jobinfo->conn_type[0] >= SELECT_SMALL)
-			for (i=0; i<SYSTEM_DIMENSIONS; i++)
-				jobinfo->conn_type[i] = SELECT_TORUS;
+		} else if (jobinfo->conn_type[0] >= SELECT_SMALL) {
+			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+				if (jobinfo->conn_type[i] == (uint16_t)NO_VAL)
+					jobinfo->conn_type[i] = SELECT_NAV;
+				else
+					jobinfo->conn_type[i] =
+						bg_conf->default_conn_type[i];
+			}
+		}
 		break;
 	case SELECT_JOBDATA_ALTERED:
 		jobinfo->altered = *uint16;
