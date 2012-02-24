@@ -374,7 +374,8 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 	}
 }
 
-/* locks should be put in place before calling this function ASSOC_WRITE */
+/* locks should be put in place before calling this function
+ * ASSOC_WRITE, USER_WRITE */
 static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 				      List assoc_list, int reset)
 {
@@ -498,6 +499,9 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 	} else {
 		assoc->uid = NO_VAL;
 	}
+	/* If you uncomment this below make sure you put READ_LOCK on
+	 * the qos_list (the third lock) on calling functions.
+	 */
 	//log_assoc_rec(assoc);
 
 	return SLURM_SUCCESS;
@@ -515,6 +519,8 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 }
 
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
+/* locks should be put in place before calling this function
+ * ASSOC_WRITE, USER_WRITE */
 static int _post_association_list(List assoc_list)
 {
 	slurmdb_association_rec_t *assoc = NULL;
@@ -662,7 +668,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 	slurmdb_association_cond_t assoc_q;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   READ_LOCK, WRITE_LOCK, NO_LOCK };
+				   NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
@@ -833,7 +839,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 	ListIterator assoc_mgr_itr = NULL;
 	slurmdb_association_rec_t *curr_assoc = NULL, *assoc = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+				   NO_LOCK, WRITE_LOCK, NO_LOCK };
 //	DEF_TIMERS;
 
 	memset(&assoc_q, 0, sizeof(slurmdb_association_cond_t));
@@ -1167,8 +1173,13 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 extern int assoc_mgr_fini(char *state_save_location)
 {
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+				   WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+
 	if (state_save_location)
 		dump_assoc_mgr_state(state_save_location);
+
+	assoc_mgr_lock(&locks);
 
 	if (assoc_mgr_association_list)
 		list_destroy(assoc_mgr_association_list);
@@ -1183,6 +1194,8 @@ extern int assoc_mgr_fini(char *state_save_location)
 	assoc_mgr_qos_list = NULL;
 	assoc_mgr_user_list = NULL;
 	assoc_mgr_wckey_list = NULL;
+
+	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
