@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
  -- Several bug fixes and performance improvements with related to batch
     scripts containing very large numbers of arguments. Patches from Par
     Andersson, NSC.
+ -- Fixed extremely hard to reproduce threading issue in assoc_mgr.
 
 * Changes in SLURM 2.3.3
 ========================
