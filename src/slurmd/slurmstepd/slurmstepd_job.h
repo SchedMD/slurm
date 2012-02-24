@@ -106,7 +106,7 @@ typedef struct task_info {
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */
 
-	int		argc;
+	uint32_t	argc;
 	char	      **argv;
 } slurmd_task_info_t;
 
@@ -123,7 +123,7 @@ typedef struct slurmd_job {
 	uint32_t       job_mem;  /* MB of memory reserved for the job       */
 	uint32_t       step_mem; /* MB of memory reserved for the step      */
 	uint16_t       cpus;   /* number of cpus to use for this job        */
-	uint16_t       argc;   /* number of commandline arguments           */
+	uint32_t       argc;   /* number of commandline arguments           */
 	char         **env;    /* job environment                           */
 	char         **argv;   /* job argument vector                       */
 	char          *cwd;    /* path to current working directory         */

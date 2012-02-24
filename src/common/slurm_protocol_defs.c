@@ -359,8 +359,10 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	if (msg) {
 		xfree(msg->account);
 		xfree(msg->alloc_node);
-		for (i = 0; i < msg->argc; i++)
-			xfree(msg->argv[i]);
+		if (msg->argv) {
+			for (i = 0; i < msg->argc; i++)
+				xfree(msg->argv[i]);
+		}
 		xfree(msg->argv);
 		xfree(msg->blrtsimage);
 		xfree(msg->ckpt_dir);
