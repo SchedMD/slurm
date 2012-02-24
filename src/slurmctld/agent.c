@@ -806,6 +806,9 @@ static void *_thread_per_group_rpc(void *args)
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Lock: Read node */
+	slurmctld_lock_t node_read_lock = {
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
@@ -875,8 +878,11 @@ static void *_thread_per_group_rpc(void *args)
 		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
 			thread_state = DSH_DONE;
 		} else {
-			if (!srun_agent)
+			if (!srun_agent) {
+				lock_slurmctld(node_read_lock);
 				_comm_err(thread_ptr->nodelist, msg_type);
+				unlock_slurmctld(node_read_lock);
+			}
 		}
 		goto cleanup;
 	}
@@ -966,8 +972,10 @@ static void *_thread_per_group_rpc(void *args)
 					errno = ret_data_info->err;
 				else
 					errno = rc;
+				lock_slurmctld(node_read_lock);
 				rc = _comm_err(ret_data_info->node_name,
 					       msg_type);
+				unlock_slurmctld(node_read_lock);
 			}
 			if (srun_agent)
 				thread_state = DSH_FAILED;
