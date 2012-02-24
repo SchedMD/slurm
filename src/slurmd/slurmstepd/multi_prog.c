@@ -141,7 +141,7 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
  */
 extern int
 multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
-		    int *argc, char ***argv)
+		    uint32_t *argc, char ***argv)
 {
 	char *line = NULL;
 	int line_num = 0;
