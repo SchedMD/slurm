@@ -383,7 +383,7 @@ struct feature_record {
  * can be purged after initiation */
 struct job_details {
 	uint16_t acctg_freq;		/* accounting polling interval */
-	uint16_t argc;			/* count of argv elements */
+	uint32_t argc;			/* count of argv elements */
 	char **argv;			/* arguments for a batch job script */
 	time_t begin_time;		/* start at this time (srun --begin),
 					 * resets to time first eligible
