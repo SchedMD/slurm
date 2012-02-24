@@ -31,6 +31,9 @@ documents those changes that are of interest to users and admins.
  -- Modify linking to include "-ldl" only when needed. Patch from Aleksej
     Saushev.
  -- Fix smap regression to display nodes that are drained or down correctly.
+ -- Several bug fixes and performance improvements with related to batch
+    scripts containing very large numbers of arguments. Patches from Par
+    Andersson, NSC.
 
 * Changes in SLURM 2.3.3
 ========================
