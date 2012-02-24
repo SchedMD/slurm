@@ -469,7 +469,7 @@ static void
 _print_daemons (void)
 {
 	slurm_ctl_conf_info_msg_t *conf;
-	char me[MAX_SLURM_NAME], *b, *c, *n;
+	char me[MAX_SLURM_NAME], *b, *c, *n, *token, *save_ptr = NULL;
 	int actld = 0, ctld = 0, d = 0;
 	char daemon_list[] = "slurmctld slurmd";
 
@@ -482,11 +482,19 @@ _print_daemons (void)
 		    (strcasecmp(b, "localhost") == 0))
 			ctld = 1;
 	}
-	if ((c = conf->control_machine)) {
+	if (conf->control_machine) {
 		actld = 1;
-		if ((strcmp(c, me) == 0) ||
-		    (strcasecmp(c, "localhost") == 0))
-			ctld = 1;
+		c = xstrdup(conf->control_machine);
+		token = strtok_r(c, ",", &save_ptr);
+		while (token) {
+			if ((strcmp(token, me) == 0) ||
+			    (strcasecmp(token, "localhost") == 0)) {
+				ctld = 1;
+				break;
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(c);
 	}
 	slurm_conf_unlock();
 
