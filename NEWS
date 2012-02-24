@@ -184,6 +184,8 @@ documents those changes that are of interest to users and admins.
     scripts containing very large numbers of arguments. Patches from Par
     Andersson, NSC.
  -- Fixed extremely hard to reproduce threading issue in assoc_mgr.
+ -- Correct "scontrol show daemons" output if there is more than one
+    ControlMachine configured.
 
 * Changes in SLURM 2.3.3
 ========================
