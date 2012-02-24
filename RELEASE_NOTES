@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.4
-19 December 2011
+24 February 2012
 
 
 IMPORTANT NOTE:
@@ -36,6 +36,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   of scontrol and sview commands also use the string names.
 * Changed default value of "StateSaveLocation" configuration parameter from
   "/tmp" to "/var/spool" to help avoid purging.
+* Change default "SchedulerParameters" "max_switch_wait" field value from 60 to
+  300 seconds.
 
 
 COMMAND CHANGES (see man pages for details)
@@ -66,6 +68,8 @@ OTHER CHANGES
   allocation if the initial srun process is abnormallly terminated (e.g. by
   SIGKILL).
 * Added support for Cray GPU memory allocation as GRES (Generic RESources).
+* Correct setting of CUDA_VISIBLE_DEVICES for gres/gpu plugin if device files
+  to be used are not in numeric order (e.g. GPU 1 maps to "/dev/nvidia4").
 
 API CHANGES
 ===========

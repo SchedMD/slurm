@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
     CnodeCount/CnodeErrCount so to point out there are cnodes in an error state
     on the block.  Draining the block and having it reboot when all jobs are
     gone will clear up the cnodes in Software Failure.
+ -- Change default SchedulerParameters max_switch_wait field value from 60 to
+    300 seconds.
 
 * Changes in SLURM 2.4.0.pre3
 =============================

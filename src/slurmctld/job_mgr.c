@@ -319,7 +319,7 @@ static void _delete_job_desc_files(uint32_t job_id)
 static uint32_t _max_switch_wait(uint32_t input_wait)
 {
 	static time_t sched_update = 0;
-	static uint32_t max_wait = 60;
+	static uint32_t max_wait = 300;	/* default max_switch_wait, seconds */
 	char *sched_params, *tmp_ptr;
 	int i;
 
