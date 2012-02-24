@@ -373,6 +373,7 @@ with SLURM are provided below.
 <ul>
 <li><a href="mpi_guide.html#bluegene_mpi">BlueGene MPI</a></li>
 <li><a href="mpi_guide.html#hp_mpi">HP-MPI</a></li>
+<li><a href="mpi_guide.html#intel_mpi">Intel MPI</a></li>
 <li><a href="mpi_guide.html#lam_mpi">LAM/MPI</a></li>
 <li><a href="mpi_guide.html#mpich1">MPICH1</a></li>
 <li><a href="mpi_guide.html#mpich2">MPICH2</a></li>
@@ -384,6 +385,6 @@ with SLURM are provided below.
 <li><a href="mpi_guide.html#quadrics_mpi">Quadrics MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 26 February 2009</p>
+<p style="text-align:center;">Last modified 24 February 2012</p>
 
 <!--#include virtual="footer.txt"-->

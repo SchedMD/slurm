@@ -142,7 +142,7 @@ _sub_expression(char *args_spec, int task_rank, int task_offset)
  *	than calling multi_prog_get_argv once for each task.
  */
 extern int multi_prog_get_argv(char *config_data, char **prog_env,
-			       int task_rank, int *argc, char ***argv,
+			       int task_rank, uint32_t *argc, char ***argv,
 			       int global_argc, char **global_argv)
 {
 	char *line = NULL;
