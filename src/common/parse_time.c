@@ -711,14 +711,18 @@ extern void secs2time_str(time_t time, char *string, int size)
 		hours = (time / 3600) % 24;
 		days = time / 86400;
 
-		if (days)
+		if ((days < 0) || (hours < 0) || (minutes < 0) ||
+		    (seconds < 0)) {
+			snprintf(string, size, "INVALID");
+		} else if (days) {
 			snprintf(string, size,
 				"%ld-%2.2ld:%2.2ld:%2.2ld",
 				days, hours, minutes, seconds);
-		else
+		} else {
 			snprintf(string, size,
 				"%2.2ld:%2.2ld:%2.2ld",
 				hours, minutes, seconds);
+		}
 	}
 }
 
@@ -732,14 +736,19 @@ extern void mins2time_str(uint32_t time, char *string, int size)
 		minutes = time % 60;
 		hours = time / 60 % 24;
 		days = time / 1440;
-		if (days)
+
+		if ((days < 0) || (hours < 0) || (minutes < 0) ||
+		    (seconds < 0)) {
+			snprintf(string, size, "INVALID");
+		} else if (days) {
 			snprintf(string, size,
 				"%ld-%2.2ld:%2.2ld:%2.2ld",
 				days, hours, minutes, seconds);
-		else
+		} else {
 			snprintf(string, size,
 				"%2.2ld:%2.2ld:%2.2ld",
 				hours, minutes, seconds);
+		}
 	}
 }
 
