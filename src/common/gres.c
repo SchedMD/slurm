@@ -977,7 +977,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 				      tmp_name, gres_context[j].gres_name);
 				continue;
 			}
-			if (gres_context[j].has_file && !has_file) {
+			if (gres_context[j].has_file && !has_file && count) {
 				error("gres_plugin_node_config_unpack: gres/%s"
 				      " lacks File parameter for node %s",
 				      tmp_name, node_name);
