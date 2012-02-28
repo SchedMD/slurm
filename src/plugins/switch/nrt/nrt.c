@@ -394,6 +394,55 @@ _find_window(slurm_nrt_adapter_t *adapter, uint16_t window_id)
 }
 
 /*
+ * For one node, free all of the windows belonging to a particular
+ * job step (as identified by the job_key).
+ */
+static void
+_free_windows_by_job_key(uint16_t job_key, char *node_name)
+{
+	slurm_nrt_nodeinfo_t *node;
+	slurm_nrt_adapter_t *adapter;
+	slurm_nrt_window_t *window;
+	int i, j;
+
+	/* debug3("_free_windows_by_job_key(%hu, %s)", job_key, node_name); */
+	if ((node = _find_node(nrt_state, node_name)) == NULL)
+		return;
+
+	if (node->adapter_list == NULL) {
+		error("_free_windows_by_job_key, "
+		      "adapter_list NULL for node %s", node_name);
+		return;
+	}
+	for (i = 0; i < node->adapter_count; i++) {
+		adapter = &node->adapter_list[i];
+		if (adapter->window_list == NULL) {
+			error("_free_windows_by_job_key, "
+			      "window_list NULL for node %s adapter %s",
+			      node->name, adapter->adapter_name);
+			continue;
+		}
+		/* We could check here to see if this adapter's name
+		 * is in the nrt_jobinfo tablinfo list to avoid the next
+		 * loop if the adapter isn't in use by the job step.
+		 * However, the added searching and string comparisons
+		 * probably aren't worth it, especially since MOST job
+		 * steps will use all of the adapters.
+		 */
+		for (j = 0; j < adapter->window_count; j++) {
+			window = &adapter->window_list[j];
+
+			if (window->job_key == job_key) {
+				/* debug3("Freeing adapter %s window %d",
+				   adapter->name, window->id); */
+				window->state = NRT_WIN_UNAVAILABLE;
+				window->job_key = 0;
+			}
+		}
+	}
+}
+
+/*
  * Find all of the windows used by this job step and set their
  * status to "state".
  *
@@ -422,7 +471,7 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	if ((jp == NULL) || (hostlist_is_empty(hl)))
 		return SLURM_ERROR;
 
-	if ((jp->tables_per_task == 0) || (!jp->tableinfo) ||
+	if ((jp->tables_per_task == 0) || (jp->tableinfo == NULL) ||
 	    (jp->tableinfo[0].table_length == 0))
 		return SLURM_SUCCESS;
 
@@ -1396,6 +1445,48 @@ nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *n, bool ptr_into_array)
 extern int
 nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 {
+	hostlist_t uniq_hl;
+	hostlist_iterator_t hi;
+	char *node_name;
+
+	xassert(!hostlist_is_empty(hl));
+	xassert(jp);
+	xassert(jp->magic == NRT_JOBINFO_MAGIC);
+
+	if ((jp == NULL) || (hostlist_is_empty(hl)))
+		return SLURM_ERROR;
+
+	if ((jp->tables_per_task == 0) || (jp->tableinfo == NULL) ||
+	    (jp->tableinfo[0].table_length == 0))
+		return SLURM_SUCCESS;
+
+	/* The hl hostlist may contain duplicate node_names (poe -hostfile
+	 * triggers duplicates in the hostlist).  Since there
+	 * is no reason to call _free_windows_by_job_key more than once
+	 * per node_name, we create a new unique hostlist.
+	 */
+	uniq_hl = hostlist_copy(hl);
+	hostlist_uniq(uniq_hl);
+	hi = hostlist_iterator_create(uniq_hl);
+
+	_lock();
+	if (nrt_state != NULL) {
+		while ((node_name = hostlist_next(hi)) != NULL) {
+			_free_windows_by_job_key(jp->job_key, node_name);
+			free(node_name);
+		}
+	} else { /* nrt_state == NULL */
+		/* If there is no state at all, the job is already cleaned
+		 * up. :)  This should really only happen when the backup
+		 * controller is calling job_fini() just before it takes over
+		 * the role of active controller.
+		 */
+		debug("nrt_job_step_complete called when nrt_state == NULL");
+	}
+	_unlock();
+
+	hostlist_iterator_destroy(hi);
+	hostlist_destroy(uniq_hl);
 	return SLURM_SUCCESS;
 }
 
@@ -2092,109 +2183,6 @@ _get_adapters(struct nrt_adapter *list, int *count)
 		slurm_seterrno_ret(ENOADAPTER);
 
 	return 0;
-}
-
-/*
- * For one node, free all of the windows belonging to a particular
- * job step (as identified by the job_key).
- */
-static void inline
-_free_windows_by_job_key(uint16_t job_key, char *nodename)
-{
-	nrt_nodeinfo_t *node;
-	struct nrt_adapter *adapter;
-	nrt_window_t *window;
-	int i, j;
-
-	/* debug3("_free_windows_by_job_key(%hu, %s)", job_key, nodename); */
-	if ((node = _find_node(nrt_state, nodename)) == NULL)
-		return;
-
-	if (node->adapter_list == NULL) {
-		error("_free_windows_by_job_key, "
-		      "adapter_list NULL for node %s", nodename);
-		return;
-	}
-	for (i = 0; i < node->adapter_count; i++) {
-		adapter = &node->adapter_list[i];
-		if (adapter->window_list == NULL) {
-			error("_free_windows_by_job_key, "
-			      "window_list NULL for node %s adapter %s",
-			      node->name, adapter->adapter_name);
-			continue;
-		}
-		/* We could check here to see if this adapter's name
-		 * is in the nrt_jobinfo tablinfo list to avoid the next
-		 * loop if the adapter isn't in use by the job step.
-		 * However, the added searching and string comparisons
-		 * probably aren't worth it, especially since MOST job
-		 * steps will use all of the adapters.
-		 */
-		for (j = 0; j < adapter->window_count; j++) {
-			window = &adapter->window_list[j];
-
-			if (window->job_key == job_key) {
-				/* debug3("Freeing adapter %s window %d",
-				   adapter->name, window->id); */
-				window->state = NRT_WIN_UNAVAILABLE;
-				window->job_key = 0;
-			}
-		}
-	}
-}
-
-/* Find all of the windows used by job step "jp" on the hosts
- * designated in hostlist "hl" and mark their state NRT_WIN_AVAILABLE.
- *
- * Used by: slurmctld
- */
-extern int
-nrt_job_step_complete(nrt_jobinfo_t *jp, hostlist_t hl)
-{
-	hostlist_t uniq_hl;
-	hostlist_iterator_t hi;
-	char *nodename;
-
-	xassert(!hostlist_is_empty(hl));
-	xassert(jp);
-	xassert(jp->magic == NRT_JOBINFO_MAGIC);
-
-	if ((jp == NULL) || (hostlist_is_empty(hl)))
-		return SLURM_ERROR;
-
-	if ((jp->tables_per_task == 0)
-	    || !jp->tableinfo
-	    || (jp->tableinfo[0].table_length == 0))
-		return SLURM_SUCCESS;
-
-	/* The hl hostlist may contain duplicate nodenames (poe -hostfile
-	 * triggers duplicates in the hostlist).  Since there
-	 * is no reason to call _free_windows_by_job_key more than once
-	 * per nodename, we create a new unique hostlist.
-	 */
-	uniq_hl = hostlist_copy(hl);
-	hostlist_uniq(uniq_hl);
-	hi = hostlist_iterator_create(uniq_hl);
-
-	_lock();
-	if (nrt_state != NULL) {
-		while ((nodename = hostlist_next(hi)) != NULL) {
-			_free_windows_by_job_key(jp->job_key, nodename);
-			free(nodename);
-		}
-	} else { /* nrt_state == NULL */
-		/* If there is no state at all, the job is already cleaned
-		 * up. :)  This should really only happen when the backup
-		 * controller is calling job_fini() just before it takes over
-		 * the role of active controller.
-		 */
-		debug("nrt_job_step_complete called when nrt_state == NULL");
-	}
-	_unlock();
-
-	hostlist_iterator_destroy(hi);
-	hostlist_destroy(uniq_hl);
-	return SLURM_SUCCESS;
 }
 
 static void
