@@ -1168,8 +1168,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	int full_node_cnt;
 	int min_procs_per_node;
 	int max_procs_per_node;
-/* FIXME: where can we load this from? */
-	nrt_adapter_t adapter_type = NRT_HFI;
+	nrt_adapter_t adapter_type = NRT_MAX_ADAPTER_TYPES;
 	int table_rec_len = 0;
 
 	assert(jp);
@@ -1184,24 +1183,26 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 
 	hi = hostlist_iterator_create(hl);
 
+	/*
+	 * Peek at the first host to figure out tables_per_task and adapter
+	 * type. This driver assumes that all nodes have the same number of
+	 * adapters per node.  Bad things will happen if this assumption is
+	 * incorrect.
+	 */
+	host = hostlist_next(hi);
+	_lock();
+	node = _find_node(nrt_state, host);
 	if (sn_all) {
-		/*
-		 * Peek at the first host to figure out tables_per_task.
-		 * This driver assumes that all nodes have the same number
-		 * of adapters per node.  Bad things will happen if this
-		 * assumption is incorrect.
-		 */
-		host = hostlist_next(hi);
-		_lock();
-		node = _find_node(nrt_state, host);
 		jp->tables_per_task = node ? node->adapter_count : 0;
-		_unlock();
-		if (host != NULL)
-			free(host);
-		hostlist_iterator_reset(hi);
 	} else {
 		jp->tables_per_task = 1;
 	}
+	if (node && node->adapter_list)
+		adapter_type = node->adapter_list->adapter_type;
+	_unlock();
+	if (host != NULL)
+		free(host);
+	hostlist_iterator_reset(hi);
 
 	/* Allocate memory for each nrt_tableinfo_t */
 	jp->tableinfo = (nrt_tableinfo_t *) xmalloc(jp->tables_per_task *
