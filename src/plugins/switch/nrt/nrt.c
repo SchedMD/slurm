@@ -1784,6 +1784,42 @@ nrt_libstate_restore(Buf buffer)
 extern int
 nrt_libstate_clear(void)
 {
+	int i, j, k;
+	slurm_nrt_nodeinfo_t *node;
+	slurm_nrt_adapter_t *adapter;
+	slurm_nrt_window_t *window;
+
+
+#if NRT_DEBUG
+	info("Clearing state on all windows in global NRT state");
+#else
+	debug3("Clearing state on all windows in global NRT state");
+#endif
+	_lock();
+	if (!nrt_state || !nrt_state->node_list) {
+		error("nrt_state or node_list not initialized!");
+		_unlock();
+		return SLURM_ERROR;
+	}
+
+	for (i = 0; i < nrt_state->node_count; i++) {
+		node = &nrt_state->node_list[i];
+		if (!node->adapter_list)
+			continue;
+		for (j = 0; j < node->adapter_count; j++) {
+			adapter = &node->adapter_list[i];
+			if (!adapter || !adapter->window_list)
+				continue;
+			for (k = 0; k < adapter->window_count; k++) {
+				window = &adapter->window_list[k];
+				if (!window)
+					continue;
+				window->state = NRT_WIN_UNAVAILABLE;
+			}
+		}
+	}
+	_unlock();
+
 	return SLURM_SUCCESS;
 }
 
@@ -2796,13 +2832,6 @@ _free_libstate(nrt_libstate_t *lp)
 	xfree(lp);
 }
 
-extern int
-nrt_fini(void)
-{
-	xfree(nrt_conf);
-	return SLURM_SUCCESS;
-}
-
 /* Used by: slurmctld */
 static int
 _pack_libstate(nrt_libstate_t *lp, Buf buffer)
@@ -2844,42 +2873,5 @@ nrt_libstate_save(Buf buffer, bool free_flag)
 		nrt_state = NULL;	/* freed above */
 	}
 	_unlock();
-}
-
-extern int
-nrt_libstate_clear(void)
-{
-	int i, j, k;
-	struct nrt_nodeinfo *node;
-	struct nrt_adapter *adapter;
-	struct nrt_window *window;
-
-	debug3("Clearing state on all windows in global NRT state");
-	_lock();
-	if (!nrt_state || !nrt_state->node_list) {
-		error("nrt_state or node_list not initialized!");
-		_unlock();
-		return SLURM_ERROR;
-	}
-
-	for (i = 0; i < nrt_state->node_count; i++) {
-		node = &nrt_state->node_list[i];
-		if (!node->adapter_list)
-			continue;
-		for (j = 0; j < node->adapter_count; j++) {
-			adapter = &node->adapter_list[i];
-			if (!adapter || !adapter->window_list)
-				continue;
-			for (k = 0; k < adapter->window_count; k++) {
-				window = &adapter->window_list[k];
-				if (!window)
-					continue;
-				window->state = NRT_WIN_UNAVAILABLE;
-			}
-		}
-	}
-	_unlock();
-
-	return SLURM_SUCCESS;
 }
 #endif
