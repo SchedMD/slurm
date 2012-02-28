@@ -536,6 +536,8 @@ static int _get_part_rec_field (lua_State *L)
 	if (part_ptr == NULL) {
 		error("_get_part_field: part_ptr is NULL");
 		lua_pushnil (L);
+	} else if (!strcmp(name, "default_time")) {
+		lua_pushnumber (L, part_ptr->default_time);
 	} else if (!strcmp(name, "flag_default")) {
 		int is_default = 0;
 		if (part_ptr->flags & PART_FLAG_DEFAULT)
