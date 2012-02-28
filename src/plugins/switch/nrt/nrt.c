@@ -177,10 +177,12 @@ static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
 static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
+static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
 				 bool believe_window_status);
+static int	_unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf);
 static char *	_win_state_str(win_state_t state);
 static int	_window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 				  char *hostname, int task_id,
@@ -1657,19 +1659,148 @@ fail:
 	return SLURM_FAILURE;
 }
 
+static void
+_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
+{
+	int i;
+
+	pack32(tableinfo->table_length, buf);
+	if (tableinfo->adapter_type == NRT_IB) {
+		nrt_ib_task_info_t *ib_tbl_ptr;
+		for (i = 0, ib_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, ib_tbl_ptr++) {
+			pack32(ib_tbl_ptr->task_id, buf);
+			pack32(ib_tbl_ptr->base_lid, buf);
+			pack16(ib_tbl_ptr->win_id, buf);
+		}
+	} else if (tableinfo->adapter_type == NRT_HFI) {
+		nrt_hfi_task_info_t *hfi_tbl_ptr;
+		for (i = 0, hfi_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, hfi_tbl_ptr++) {
+			uint16_t tmp_16;
+			uint8_t  tmp_8;
+			pack32(hfi_tbl_ptr->task_id, buf);
+			tmp_16 = hfi_tbl_ptr->lid;
+			pack16(tmp_16, buf);
+			tmp_8 = hfi_tbl_ptr->win_id;
+			pack8(tmp_8, buf);
+		}
+	} else {
+		fatal("_pack_tableinfo: Missing support for adapter "
+		      "type %hu", tableinfo->adapter_type);
+	}
+	packmem(tableinfo->adapter_name, NRT_MAX_DEVICENAME_SIZE, buf);
+}
 
 /* Used by: all */
 extern int
 nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 {
+	int i;
+
+	assert(j);
+	assert(j->magic == NRT_JOBINFO_MAGIC);
+	assert(buf);
+
+	pack32(j->magic, buf);
+	pack32(j->job_key, buf);
+	pack8(j->bulk_xfer, buf);
+	pack16(j->tables_per_task, buf);
+	for (i = 0; i < j->tables_per_task; i++) {
+		_pack_tableinfo(&j->tableinfo[i], buf);
+	}
+
 	return SLURM_SUCCESS;
+}
+
+/* return 0 on success, -1 on failure */
+static int
+_unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
+{
+	uint32_t size;
+	char *name_ptr;
+	int i;
+
+	safe_unpack32(&tableinfo->table_length, buf);
+	if (tableinfo->adapter_type == NRT_IB) {
+		nrt_ib_task_info_t *ib_tbl_ptr;
+		tableinfo->table = (nrt_ib_task_info_t *)
+				   xmalloc(tableinfo->table_length *
+				   sizeof(nrt_ib_task_info_t));
+		for (i = 0, ib_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, ib_tbl_ptr++) {
+			safe_unpack32(&ib_tbl_ptr->task_id, buf);
+			safe_unpack32(&ib_tbl_ptr->base_lid, buf);
+			safe_unpack16(&ib_tbl_ptr->win_id, buf);
+		}
+	} else if (tableinfo->adapter_type == NRT_HFI) {
+		nrt_hfi_task_info_t *hfi_tbl_ptr;
+		tableinfo->table = (nrt_hfi_task_info_t *)
+				   xmalloc(tableinfo->table_length *
+				   sizeof(nrt_hfi_task_info_t));
+		for (i = 0, hfi_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, hfi_tbl_ptr++) {
+			uint16_t tmp_16;
+			uint8_t  tmp_8;
+			safe_unpack32(&hfi_tbl_ptr->task_id, buf);
+			safe_unpack16(&tmp_16, buf);
+			hfi_tbl_ptr->lid = tmp_16;
+			safe_unpack8(&tmp_8, buf);
+			hfi_tbl_ptr->win_id = tmp_8;
+		}
+	} else {
+		fatal("_unpack_tableinfo: Missing support for adapter "
+		      "type %hu", tableinfo->adapter_type);
+	}
+	safe_unpackmem_ptr(&name_ptr, &size, buf);
+	if (size != NRT_MAX_DEVICENAME_SIZE)
+		goto unpack_error;
+	memcpy(tableinfo->adapter_name, name_ptr, size);
+	return 0;
+
+unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
+	error("unpack error in _unpack_tableinfo");
+	return -1;
 }
 
 /* Used by: all */
 extern int
 nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 {
+	int i;
+
+	assert(j);
+	assert(j->magic == NRT_JOBINFO_MAGIC);
+	assert(buf);
+
+	safe_unpack32(&j->magic, buf);
+	assert(j->magic == NRT_JOBINFO_MAGIC);
+	safe_unpack32(&j->job_key, buf);
+	safe_unpack8(&j->bulk_xfer, buf);
+	safe_unpack16(&j->tables_per_task, buf);
+
+	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task *
+						   sizeof(nrt_tableinfo_t));
+	for (i = 0; i < j->tables_per_task; i++) {
+		if (_unpack_tableinfo(&j->tableinfo[i], buf) != 0)
+			goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	error("nrt_unpack_jobinfo error");
+	if (j->tableinfo) {
+		for (i = 0; i < j->tables_per_task; i++)
+			xfree(j->tableinfo[i].table);
+		xfree(j->tableinfo);
+	}
+	slurm_seterrno_ret(EUNPACK);
+	return SLURM_ERROR;
 }
 
 /* Used by: all */
@@ -2318,121 +2449,6 @@ _get_adapters(struct nrt_adapter *list, int *count)
 		slurm_seterrno_ret(ENOADAPTER);
 
 	return 0;
-}
-
-static void
-_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
-{
-	int i;
-
-	pack32(tableinfo->table_length, buf);
-/* FIXME: table contains a union, it could contain either IB or HPCE data */
-	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
-		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-		for (i = 0; i < tableinfo->table_length; i++) {
-			ib_tbl_ptr = &tableinfo[i].table[i].ib_per_task;
-			pack16(ib_tbl_ptr->task_id, buf);
-			pack16(ib_tbl_ptr->base_lid, buf);
-			pack16(ib_tbl_ptr->win_id, buf);
-		}
-	} else {
-		fatal("_pack_tableinfo: Missing support for adapter "
-		      "type %hu", tableinfo->adapter_type);
-	}
-	packmem(tableinfo->adapter_name, NRT_MAX_DEVICENAME_SIZE, buf);
-}
-
-/* Used by: all */
-extern int
-nrt_pack_jobinfo(nrt_jobinfo_t *j, Buf buf)
-{
-	int i;
-
-	assert(j);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
-	assert(buf);
-
-	pack32(j->magic, buf);
-	pack16(j->job_key, buf);
-	pack8(j->bulk_xfer, buf);
-	pack16(j->tables_per_task, buf);
-	for (i = 0; i < j->tables_per_task; i++) {
-		_pack_tableinfo(&j->tableinfo[i], buf);
-	}
-
-	return SLURM_SUCCESS;
-}
-
-/* return 0 on success, -1 on failure */
-static int
-_unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
-{
-	uint32_t size;
-	char *name_ptr;
-	int i;
-
-	safe_unpack32(&tableinfo->table_length, buf);
-/* FIXME: table contains a union, it could contain either IB or HPCE data */
-	if (tableinfo->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
-		nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-		tableinfo->table = (nrt_creator_per_task_input_t *)
-				   xmalloc(tableinfo->table_length *
-				   sizeof(nrt_creator_per_task_input_t));
-		for (i = 0; i < tableinfo->table_length; i++) {
-			ib_tbl_ptr = &tableinfo[i].table[i].ib_per_task;
-			safe_unpack16(&ib_tbl_ptr->task_id, buf);
-			safe_unpack16(&ib_tbl_ptr->base_lid, buf);
-			safe_unpack16(&ib_tbl_ptr->win_id, buf);
-		}
-	} else {
-		fatal("_unpack_tableinfo: Missing support for adapter "
-		      "type %hu", tableinfo->adapter_type);
-	}
-	safe_unpackmem_ptr(&name_ptr, &size, buf);
-	if (size != NRT_MAX_DEVICENAME_SIZE)
-		goto unpack_error;
-	memcpy(tableinfo->adapter_name, name_ptr, size);
-	return 0;
-
-unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
-	error("unpack error in _unpack_tableinfo");
-	return -1;
-}
-
-/* Used by: all */
-int
-nrt_unpack_jobinfo(nrt_jobinfo_t *j, Buf buf)
-{
-	int i;
-
-	assert(j);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
-	assert(buf);
-
-	safe_unpack32(&j->magic, buf);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
-	safe_unpack16(&j->job_key, buf);
-	safe_unpack8(&j->bulk_xfer, buf);
-	safe_unpack16(&j->tables_per_task, buf);
-
-	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task
-						   * sizeof(nrt_tableinfo_t));
-	for (i = 0; i < j->tables_per_task; i++) {
-		if (_unpack_tableinfo(&j->tableinfo[i], buf) != 0)
-			goto unpack_error;
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("nrt_unpack_jobinfo error");
-	if (j->tableinfo) {
-		for (i = 0; i < j->tables_per_task; i++)
-			xfree(j->tableinfo[i].table);
-		xfree(j->tableinfo);
-	}
-	slurm_seterrno_ret(EUNPACK);
-	return SLURM_ERROR;
 }
 
 /* Used by: all */
