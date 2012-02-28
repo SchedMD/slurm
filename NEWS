@@ -38,6 +38,10 @@ documents those changes that are of interest to users and admins.
  -- Correct "scontrol show daemons" output if there is more than one
     ControlMachine configured.
  -- Add node read lock where needed in slurmctld/agent code.
+ -- Added test for LUA library named "liblua5.1.so.0" in addition to
+    "liblua5.1.so" as needed by Debian. Patch by Remi Palancher.
+ -- Added partition default_time field to job_submit LUA plugin. Patch by
+    Remi Palancher.
 
 * Changes in SLURM 2.3.3
 ========================
