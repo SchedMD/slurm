@@ -230,11 +230,11 @@ int init (void)
 	 *   ensure symbols from liblua are available to libs opened
 	 *   by any lua scripts.
 	 */
-	if (!dlopen ("liblua.so", RTLD_NOW | RTLD_GLOBAL)) {
-		if (!dlopen ("liblua5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
-		    !dlopen ("liblua5.1.so.0", RTLD_NOW | RTLD_GLOBAL))
-			return (error("Failed to open liblua.so: %s",
-				      dlerror()));
+	if (!dlopen ("liblua.so",      RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen ("liblua5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen ("liblua5.1.so.0", RTLD_NOW | RTLD_GLOBAL)) {
+		return (error("Failed to open liblua.so: %s",
+			      dlerror()));
 	}
 
 	/*
