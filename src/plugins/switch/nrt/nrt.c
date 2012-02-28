@@ -812,7 +812,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	nrt_window_id_t window_count;
 
 #if NRT_DEBUG
-	info("nrt_build_nodeinfo: begin");
+	info("_get_adapters: begin");
 #endif
 	adapter_types.num_adapter_types = &num_adapter_types;
 	adapter_types.adapter_types = adapter_type;
@@ -885,7 +885,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	}
 #if NRT_DEBUG
 	_print_nodeinfo(n);
-	info("nrt_build_nodeinfo: complete: %d", rc);
+	info("_get_adapters: complete: %d", rc);
 #endif
 	return rc;
 }
@@ -1891,34 +1891,6 @@ _get_adapters(struct nrt_adapter *list, int *count)
 	return 0;
 }
 
-
-/* Used by: slurmd, slurmctld */
-extern void
-nrt_free_nodeinfo(nrt_nodeinfo_t *n, bool ptr_into_array)
-{
-	struct nrt_adapter *adapter;
-	int i;
-
-	if (!n)
-		return;
-
-	assert(n->magic == NRT_NODEINFO_MAGIC);
-
-#if NRT_DEBUG
-	info("_unpack_nodeinfo");
-	_print_nodeinfo(n);
-#endif
-	if (n->adapter_list) {
-		adapter = n->adapter_list;
-		for (i = 0; i < n->adapter_count; i++) {
-			xfree(adapter[i].window_list);
-		}
-		xfree(n->adapter_list);
-	}
-	if (!ptr_into_array)
-		xfree(n);
-}
-
 static nrt_window_t *
 _find_window(struct nrt_adapter *adapter, uint16_t window_id) {
 	int i;
@@ -2911,104 +2883,5 @@ nrt_libstate_clear(void)
 	_unlock();
 
 	return SLURM_SUCCESS;
-}
-
-extern int nrt_clear_node_state(void)
-{
-	int err, i, j, k, rc = SLURM_SUCCESS;
-	nrt_cmd_query_adapter_types_t adapter_types;
-	unsigned int num_adapter_types;
-	nrt_adapter_t adapter_type[NRT_MAX_ADAPTER_TYPES];
-	nrt_cmd_query_adapter_names_t adapter_names;
-	unsigned int max_windows, num_adapter_names;
-	nrt_cmd_status_adapter_t adapter_status;
-	nrt_status_t *status_array = NULL;
-	nrt_window_id_t window_count;
-	nrt_cmd_clean_window_t clean_window;
-
-#if NRT_DEBUG
-	info("nrt_clear_node_state: begin");
-#endif
-	adapter_types.num_adapter_types = &num_adapter_types;
-	adapter_types.adapter_types = adapter_type;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-			  &adapter_types);
-	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
-		return SLURM_ERROR;
-	}
-
-	for (i = 0; i < num_adapter_types; i++) {
-#if NRT_DEBUG
-		info("adapter_type[%d]: %u", i, adapter_type[i]);
-#endif
-		adapter_names.adapter_type = adapter_type[i];
-		adapter_names.num_adapter_names = &num_adapter_names;
-		adapter_names.max_windows = &max_windows;
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
-				  &adapter_names);
-		if (err != NRT_SUCCESS) {
-			error("nrt_command(adapter_names, %u): %s",
-			      adapter_names.adapter_type, nrt_err_str(err));
-			rc = SLURM_ERROR;
-			continue;
-		}
-		status_array = xmalloc(sizeof(nrt_status_t) * max_windows);
-		for (j = 0; j < num_adapter_names[0]; j++) {
-#if NRT_DEBUG
-			info("adapter_names[%d]: %s",
-			     j, adapter_names.adapter_names[j]);
-#endif
-			adapter_status.adapter_name = adapter_names.
-						      adapter_names[j];
-			adapter_status.adapter_type = adapter_names.
-						      adapter_type;
-			adapter_status.status_array = &status_array;
-			adapter_status.window_count = &window_count;
-			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
-					  &adapter_status);
-			if (err != NRT_SUCCESS) {
-				error("nrt_command(clean_status, %s, %u): %s",
-				      adapter_status.adapter_name,
-				      adapter_status.adapter_type,
-				      nrt_err_str(err));
-				rc = SLURM_ERROR;
-				continue;
-			}
-
-			for (k = 0; k < window_count; k++) {
-#if NRT_DEBUG
-				info("window_id[%d]: %u", k,
-				     adapter_status.status_array[k]->
-				     window_id);
-#endif
-				clean_window.adapter_name = adapter_names.
-							    adapter_names[i];
-				clean_window.adapter_type = adapter_names.
-							    adapter_type;
-				clean_window.leave_inuse_or_kill = KILL;
-				clean_window.window_id = adapter_status.
-							 status_array[k]->
-							 window_id;
-				err = nrt_command(NRT_VERSION,
-						  NRT_CMD_CLEAN_WINDOW,
-						  &clean_window);
-				if (err != NRT_SUCCESS) {
-					error("nrt_command(clean_window, "
-					      "%s, %u, %u): %s",
-					      clean_window.adapter_name,
-					      clean_window.adapter_type,
-					      clean_window.window_id,
-					      nrt_err_str(err));
-					rc = SLURM_ERROR;
-				}
-			}
-		}
-		xfree(status_array);
-	}
-#if NRT_DEBUG
-	info("nrt_clear_node_state: complete: %d", rc);
-#endif
-	return rc;
 }
 #endif
