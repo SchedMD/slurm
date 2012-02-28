@@ -165,6 +165,7 @@ static slurm_nrt_window_t *
 		_find_window(slurm_nrt_adapter_t *adapter, uint16_t window_id);
 static slurm_nrt_window_t *_find_free_window(slurm_nrt_adapter_t *adapter);
 static slurm_nrt_nodeinfo_t *_find_node(slurm_nrt_libstate_t *lp, char *name);
+static void	_free_libstate(slurm_nrt_libstate_t *lp);
 static int	_get_adapters(slurm_nrt_nodeinfo_t *n);
 static void	_hash_add_nodeinfo(slurm_nrt_libstate_t *state,
 				   slurm_nrt_nodeinfo_t *node);
@@ -175,6 +176,7 @@ static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
 				       hostlist_t hl, win_state_t state);
 static void	_lock(void);
 static nrt_job_key_t _next_key(void);
+static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
@@ -1722,11 +1724,63 @@ nrt_fini(void)
 	return SLURM_SUCCESS;
 }
 
+static void
+_free_libstate(slurm_nrt_libstate_t *lp)
+{
+	int i;
+
+	if (!lp)
+		return;
+	if (lp->node_list != NULL) {
+		for (i = 0; i < lp->node_count; i++)
+			nrt_free_nodeinfo(&lp->node_list[i], true);
+		xfree(lp->node_list);
+	}
+	xfree(lp->hash_table);
+	xfree(lp);
+}
+
+/* Used by: slurmctld */
+static int
+_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
+{
+	int offset;
+	int i;
+
+	assert(lp);
+	assert(lp->magic == NRT_LIBSTATE_MAGIC);
+
+#if NRT_DEBUG
+ 	info("_pack_libstate");
+	_print_libstate(lp);
+ #endif
+	offset = get_buf_offset(buffer);
+	pack32(lp->magic, buffer);
+	pack32(lp->node_count, buffer);
+	for (i = 0; i < lp->node_count; i++)
+		(void)nrt_pack_nodeinfo(&lp->node_list[i], buffer);
+	/* don't pack hash_table, we'll just rebuild on restore */
+	pack16(lp->key_index, buffer);
+
+	return(get_buf_offset(buffer) - offset);
+}
+
 /* Used by: slurmctld */
 extern void
 nrt_libstate_save(Buf buffer, bool free_flag)
 {
-	return;
+	_lock();
+
+	if (nrt_state != NULL)
+		_pack_libstate(nrt_state, buffer);
+
+	/* Clean up nrt_state since backup slurmctld can repeatedly
+	 * save and restore state */
+	if (free_flag) {
+		_free_libstate(nrt_state);
+		nrt_state = NULL;	/* freed above */
+	}
+	_unlock();
 }
 
 /* Used by: slurmctld */
@@ -2816,62 +2870,4 @@ nrt_unload_table(nrt_jobinfo_t *jp)
 	return rc;
 }
 
-static void
-_free_libstate(nrt_libstate_t *lp)
-{
-	int i;
-
-	if (!lp)
-		return;
-	if (lp->node_list != NULL) {
-		for (i = 0; i < lp->node_count; i++)
-			nrt_free_nodeinfo(&lp->node_list[i], true);
-		xfree(lp->node_list);
-	}
-	xfree(lp->hash_table);
-	xfree(lp);
-}
-
-/* Used by: slurmctld */
-static int
-_pack_libstate(nrt_libstate_t *lp, Buf buffer)
-{
-	int offset;
-	int i;
-
-	assert(lp);
-	assert(lp->magic == NRT_LIBSTATE_MAGIC);
-
-#if NRT_DEBUG
- 	info("_pack_libstate");
-	_print_libstate(lp);
- #endif
-	offset = get_buf_offset(buffer);
-	pack32(lp->magic, buffer);
-	pack32(lp->node_count, buffer);
-	for (i = 0; i < lp->node_count; i++)
-		(void)nrt_pack_nodeinfo(&lp->node_list[i], buffer);
-	/* don't pack hash_table, we'll just rebuild on restore */
-	pack16(lp->key_index, buffer);
-
-	return(get_buf_offset(buffer) - offset);
-}
-
-/* Used by: slurmctld */
-extern void
-nrt_libstate_save(Buf buffer, bool free_flag)
-{
-	_lock();
-
-	if (nrt_state != NULL)
-		_pack_libstate(nrt_state, buffer);
-
-	/* Clean up nrt_state since backup slurmctld can repeatedly
-	 * save and restore state */
-	if (free_flag) {
-		_free_libstate(nrt_state);
-		nrt_state = NULL;	/* freed above */
-	}
-	_unlock();
-}
 #endif
