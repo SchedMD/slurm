@@ -1679,20 +1679,65 @@ nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 	return NULL;
 }
 
+
 /* Used by: all */
 extern void
 nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
 {
+	int i;
+	nrt_tableinfo_t *tableinfo;
+
+	if (!jp)
+		return;
+
+	if (jp->magic != NRT_JOBINFO_MAGIC) {
+		error("jp is not a switch/nrt slurm_nrt_jobinfo_t");
+		return;
+	}
+
+	jp->magic = 0;
+	if ((jp->tables_per_task > 0) && (jp->tableinfo != NULL)) {
+		for (i = 0; i < jp->tables_per_task; i++) {
+			tableinfo = &jp->tableinfo[i];
+			xfree(tableinfo->table);
+		}
+		xfree(jp->tableinfo);
+	}
+
+	xfree(jp);
+	jp = NULL;
+
 	return;
 }
 
-/* Return data to code for whom jobinfo is an opaque type.
+/* Return data to code for which jobinfo is an opaque type.
  *
  * Used by: all
  */
 extern int
 nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 {
+	nrt_tableinfo_t **tableinfo = (nrt_tableinfo_t **)data;
+	int *tables_per = (int *)data;
+	int *job_key = (int *)data;
+
+	assert(jp);
+	assert(jp->magic == NRT_JOBINFO_MAGIC);
+
+	switch (key) {
+		case NRT_JOBINFO_TABLEINFO:
+			*tableinfo = jp->tableinfo;
+			break;
+		case NRT_JOBINFO_TABLESPERTASK:
+			*tables_per = jp->tables_per_task;
+			break;
+		case NRT_JOBINFO_KEY:
+			*job_key = jp->job_key;
+			break;
+		default:
+			slurm_seterrno_ret(EINVAL);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -2432,69 +2477,6 @@ nrt_copy_jobinfo(nrt_jobinfo_t *job)
 
 	return new;
 }
-
-/* Used by: all */
-extern void
-nrt_free_jobinfo(nrt_jobinfo_t *jp)
-{
-	int i;
-	nrt_tableinfo_t *tableinfo;
-
-	if (!jp) {
-		return;
-	}
-
-	if (jp->magic != NRT_JOBINFO_MAGIC) {
-		error("jp is not a switch/nrt nrt_jobinfo_t");
-		return;
-	}
-
-	jp->magic = 0;
-	if (jp->tables_per_task > 0 && jp->tableinfo != NULL) {
-		for (i = 0; i < jp->tables_per_task; i++) {
-			tableinfo = &jp->tableinfo[i];
-			xfree(tableinfo->table);
-		}
-		xfree(jp->tableinfo);
-	}
-
-	xfree(jp);
-	jp = NULL;
-
-	return;
-}
-
-/* Return data to code for whom jobinfo is an opaque type.
- *
- * Used by: all
- */
-extern int
-nrt_get_jobinfo(nrt_jobinfo_t *jp, int key, void *data)
-{
-	nrt_tableinfo_t **tableinfo = (nrt_tableinfo_t **)data;
-	int *tables_per = (int *)data;
-	int *job_key = (int *)data;
-
-	assert(jp);
-	assert(jp->magic == NRT_JOBINFO_MAGIC);
-
-	switch(key) {
-	case NRT_JOBINFO_TABLEINFO:
-		*tableinfo = jp->tableinfo;
-		break;
-	case NRT_JOBINFO_TABLESPERTASK:
-		*tables_per = jp->tables_per_task;
-		break;
-	case NRT_JOBINFO_KEY:
-		*job_key = jp->job_key;
-		break;
-	default:
-		slurm_seterrno_ret(EINVAL);
-	}
-
-	return SLURM_SUCCESS;
-}
-
 
 /*
  * Check up to "retry" times for "window_id" on "adapter_name"
