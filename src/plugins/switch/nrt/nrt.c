@@ -135,6 +135,15 @@ struct slurm_nrt_jobinfo {
 	uint32_t num_tasks;
 };
 
+typedef struct {
+	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
+	nrt_adapter_t adapter_type;
+} nrt_cache_entry_t;
+
+static int lid_cache_size = 0;
+static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
+
+
 /* Local functions */
 static int	_allocate_windows_all(int adapter_cnt,
 			nrt_tableinfo_t *tableinfo, char *hostname,
@@ -149,6 +158,7 @@ static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_copy_node(slurm_nrt_nodeinfo_t *dest,
 			   slurm_nrt_nodeinfo_t *src);
 static int	_fake_unpack_adapters(Buf buf);
+static int	_fill_in_adapter_cache(void);
 static slurm_nrt_window_t *_find_free_window(slurm_nrt_adapter_t *adapter);
 static slurm_nrt_nodeinfo_t *_find_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_get_adapters(slurm_nrt_nodeinfo_t *n);
@@ -156,6 +166,7 @@ static void	_hash_add_nodeinfo(slurm_nrt_libstate_t *state,
 				   slurm_nrt_nodeinfo_t *node);
 static int	_hash_index(char *name);
 static void	_hash_rebuild(slurm_nrt_libstate_t *state);
+static void	_init_adapter_cache(void);
 static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static void	_unlock(void);
@@ -186,6 +197,79 @@ _unlock(void)
 	while (err) {
 		err = pthread_mutex_unlock(&global_lock);
 	}
+}
+
+/* The lid caching functions were created to avoid unnecessary
+ * function calls each time we need to load network tables on a node.
+ * _init_cache() simply initializes the cache to save values and
+ * needs to be called before any other cache functions are called.
+ *
+ * Used by: slurmd/slurmstepd
+ */
+static void
+_init_adapter_cache(void)
+{
+	lid_cache_size = 0;
+}
+
+/* Use nrt_adapter_resources to cache information about local adapters.
+ *
+ * Used by: slurmstepd
+ */
+static int
+_fill_in_adapter_cache(void)
+{
+	int err, i, j, rc = SLURM_SUCCESS;
+	nrt_cmd_query_adapter_types_t adapter_types;
+	unsigned int num_adapter_types;
+	nrt_adapter_t adapter_type[NRT_MAX_ADAPTER_TYPES];
+	nrt_cmd_query_adapter_names_t adapter_names;
+	unsigned int max_windows, num_adapter_names;
+
+#if NRT_DEBUG
+	info("_fill_in_adapter_cache: begin");
+#endif
+	adapter_types.num_adapter_types = &num_adapter_types;
+	adapter_types.adapter_types = adapter_type;
+	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+			  &adapter_types);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		return SLURM_ERROR;
+	}
+
+	for (i = 0; i < num_adapter_types; i++) {
+#if NRT_DEBUG
+		info("adapter_type[%d]: %u", i, adapter_type[i]);
+#endif
+		adapter_names.adapter_type = adapter_type[i];
+		adapter_names.num_adapter_names = &num_adapter_names;
+		adapter_names.max_windows = &max_windows;
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				  &adapter_names);
+		if (err != NRT_SUCCESS) {
+			error("nrt_command(adapter_names, %u): %s",
+			      adapter_names.adapter_type, nrt_err_str(err));
+			rc = SLURM_ERROR;
+			continue;
+		}
+		for (j = 0; j < num_adapter_names; j++) {
+#if NRT_DEBUG
+			info("adapter_names[%d]: %s",
+			     j, adapter_names.adapter_names[j]);
+#endif
+			lid_cache[lid_cache_size].adapter_type = adapter_names.
+								 adapter_type;
+			strncpy(lid_cache[lid_cache_size].adapter_name,
+				adapter_names.adapter_names[j],
+				NRT_MAX_ADAPTER_NAME_LEN);
+			lid_cache_size++;
+		}
+	}
+#if NRT_DEBUG
+	info("_fill_in_adapter_cache: complete: %d", rc);
+#endif
+	return rc;
 }
 
 /* The idea behind keeping the hash table was to avoid a linear
@@ -670,7 +754,8 @@ nrt_slurmd_step_init(void)
 	nrt_umask = umask(0077);
 	umask(nrt_umask);
 
-/* FIXME: Should we cache NRT state information? */
+	_init_adapter_cache();
+	_fill_in_adapter_cache();
 
 	return SLURM_SUCCESS;
 }
@@ -1585,11 +1670,6 @@ extern char *nrt_err_str(int rc)
 
 char* nrt_conf = NULL;
 
-typedef struct {
-	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
-	uint16_t adapter_type;
-} nrt_cache_entry_t;
-
 /*
  * Globals
  */
@@ -1598,29 +1678,11 @@ typedef struct {
 /* slurmd/slurmstepd global variables */
 hostlist_t adapter_list;
 uint16_t   adapter_type_code = 0;
-static int lid_cache_size = 0;
-static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 
-static int  _fill_in_adapter_cache(void);
 static void _hash_rebuild(nrt_libstate_t *state);
-static void _init_adapter_cache(void);
 static int  _set_up_adapter(struct nrt_adapter *nrt_adapter, char *adapter_name,
 			    uint16_t adapter_type);
 
-extern int
-nrt_slurmd_step_init(void)
-{
-	/*
-	 * This is a work-around for the nrt_* functions calling umask(0)
-	 */
-	nrt_umask = umask(0077);
-	umask(nrt_umask);
-
-	_init_adapter_cache();
-	_fill_in_adapter_cache();
-
-	return SLURM_SUCCESS;
-}
 
 #if NRT_DEBUG
 /* Used by: slurmd */
@@ -1691,82 +1753,6 @@ _print_jobinfo(nrt_jobinfo_t *j)
 	info("--End Jobinfo--");
 }
 #endif
-
-/* The lid caching functions were created to avoid unnecessary
- * function calls each time we need to load network tables on a node.
- * _init_cache() simply initializes the cache to save values and
- * needs to be called before any other cache functions are called.
- *
- * Used by: slurmd/slurmstepd
- */
-static void
-_init_adapter_cache(void)
-{
-	lid_cache_size = 0;
-}
-
-/* Use nrt_adapter_resources to cache information about local adapters.
- *
- * Used by: slurmstepd
- */
-static int
-_fill_in_adapter_cache(void)
-{
-	int err, i, j, rc = SLURM_SUCCESS;
-	nrt_cmd_query_adapter_types_t adapter_types;
-	unsigned int num_adapter_types;
-	nrt_adapter_t adapter_type[NRT_MAX_ADAPTER_TYPES];
-	nrt_cmd_query_adapter_names_t adapter_names;
-	unsigned int max_windows, num_adapter_names;
-
-#if NRT_DEBUG
-	info("_fill_in_adapter_cache: begin");
-#endif
-	adapter_types.num_adapter_types = &num_adapter_types;
-	adapter_types.adapter_types = adapter_type;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-			  &adapter_types);
-	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
-		return SLURM_ERROR;
-	}
-
-	for (i = 0; i < num_adapter_types; i++) {
-#if NRT_DEBUG
-		info("adapter_type[%d]: %u", i, adapter_type[i]);
-#endif
-		adapter_names.adapter_type = adapter_type[i];
-		adapter_names.num_adapter_names = &num_adapter_names;
-		adapter_names.max_windows = &max_windows;
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
-				  &adapter_names);
-		if (err != NRT_SUCCESS) {
-			error("nrt_command(adapter_names, %u): %s",
-			      adapter_names.adapter_type, nrt_err_str(err));
-			rc = SLURM_ERROR;
-			continue;
-		}
-		for (j = 0; j < num_adapter_names; j++) {
-#if NRT_DEBUG
-			info("adapter_names[%d]: %s",
-			     j, adapter_names.adapter_names[j]);
-#endif
-			adapter_status.adapter_name = adapter_names.
-						      adapter_names[j];
-			lid_cache[lid_cache_size].adapter_type = adapter_names.
-								 adapter_type;
-			strncpy(lid_cache[lid_cache_size].adapter_name,
-				adapter_names.adapter_names[j],
-				NRT_MAX_ADAPTER_NAME_LEN);
-			lid_cache_size++;
-		}
-	}
-#if NRT_DEBUG
-	info("_fill_in_adapter_cache: complete: %d", rc);
-#endif
-	return rc;
-}
-
 
 /* Cache the lid and network_id of a given adapter.  Ex:  sni0 with lid 10
  * gets cached in array index 0 with a lid = 10 and a name = sni0.
