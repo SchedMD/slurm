@@ -95,7 +95,7 @@ typedef struct slurm_nrt_window {
 typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
-//	uint16_t lid;
+	uint16_t lid;		/* FIXME: No information about where loaded from */
 //	uint64_t network_id;
 	nrt_window_id_t window_count;
 	slurm_nrt_window_t *window_list;
@@ -159,6 +159,10 @@ static int	_copy_node(slurm_nrt_nodeinfo_t *dest,
 			   slurm_nrt_nodeinfo_t *src);
 static int	_fake_unpack_adapters(Buf buf);
 static int	_fill_in_adapter_cache(void);
+static slurm_nrt_nodeinfo_t *
+		_find_node(slurm_nrt_libstate_t *lp, char *name);
+static slurm_nrt_window_t *
+		_find_window(slurm_nrt_adapter_t *adapter, uint16_t window_id);
 static slurm_nrt_window_t *_find_free_window(slurm_nrt_adapter_t *adapter);
 static slurm_nrt_nodeinfo_t *_find_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_get_adapters(slurm_nrt_nodeinfo_t *n);
@@ -167,6 +171,8 @@ static void	_hash_add_nodeinfo(slurm_nrt_libstate_t *state,
 static int	_hash_index(char *name);
 static void	_hash_rebuild(slurm_nrt_libstate_t *state);
 static void	_init_adapter_cache(void);
+static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
+				       hostlist_t hl, win_state_t state);
 static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static void	_unlock(void);
@@ -174,6 +180,9 @@ static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
 				 bool believe_window_status);
 static char *	_win_state_str(win_state_t state);
+static int	_window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
+				  char *hostname, int task_id,
+				  win_state_t state, uint16_t job_key);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a
  * global mutex.  Used to serialize access to the global library
@@ -367,6 +376,202 @@ _hash_rebuild(slurm_nrt_libstate_t *state)
 		_hash_add_nodeinfo(state, &(state->node_list[i]));
 }
 
+static slurm_nrt_window_t *
+_find_window(slurm_nrt_adapter_t *adapter, uint16_t window_id)
+{
+	int i;
+	slurm_nrt_window_t *window;
+
+	for (i = 0; i < adapter->window_count; i++) {
+		window = &adapter->window_list[i];
+		if (window->window_id == window_id)
+			return window;
+	}
+
+	debug3("Unable to _find_window %hu on adapter %s",
+	       window_id, adapter->adapter_name);
+	return (slurm_nrt_window_t *) NULL;
+}
+
+/*
+ * Find all of the windows used by this job step and set their
+ * status to "state".
+ *
+ * Used by: slurmctld
+ */
+static int
+_job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
+		       win_state_t state)
+{
+	hostlist_iterator_t hi;
+	char *host;
+	int proc_cnt;
+	int nprocs;
+	int nnodes;
+	int i, j;
+	int err, rc = SLURM_SUCCESS;
+	int task_cnt;
+	int full_node_cnt;
+	int min_procs_per_node;
+	int max_procs_per_node;
+
+	xassert(!hostlist_is_empty(hl));
+	xassert(jp);
+	xassert(jp->magic == NRT_JOBINFO_MAGIC);
+
+	if ((jp == NULL) || (hostlist_is_empty(hl)))
+		return SLURM_ERROR;
+
+	if ((jp->tables_per_task == 0) || (!jp->tableinfo) ||
+	    (jp->tableinfo[0].table_length == 0))
+		return SLURM_SUCCESS;
+
+	debug3("jp->tables_per_task = %d", jp->tables_per_task);
+	nprocs = jp->tableinfo[0].table_length;
+	hi = hostlist_iterator_create(hl);
+
+	debug("Finding windows");
+	nnodes = hostlist_count(hl);
+	full_node_cnt = nprocs % nnodes;
+	min_procs_per_node = nprocs / nnodes;
+	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
+
+	proc_cnt = 0;
+	_lock();
+	for  (i = 0; i < nnodes; i++) {
+		host = hostlist_next(hi);
+		if (!host)
+			error("Failed to get next host");
+
+		if (i < full_node_cnt)
+			task_cnt = max_procs_per_node;
+		else
+			task_cnt = min_procs_per_node;
+
+		for (j = 0; j < task_cnt; j++) {
+			err = _window_state_set(jp->tables_per_task,
+						jp->tableinfo,
+						host, proc_cnt,
+						state, jp->job_key);
+			rc = MAX(rc, err);
+			proc_cnt++;
+		}
+		free(host);
+	}
+	_unlock();
+
+	hostlist_iterator_destroy(hi);
+	return rc;
+}
+
+
+/* Find the correct NRT structs and set the state
+ * of the switch windows for the specified task_id.
+ *
+ * Used by: slurmctld
+ */
+static int
+_window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
+		  char *hostname, int task_id, win_state_t state,
+		  uint16_t job_key)
+{
+	slurm_nrt_nodeinfo_t *node = NULL;
+	slurm_nrt_adapter_t *adapter = NULL;
+	slurm_nrt_window_t *window = NULL;
+	int i, j;
+	bool adapter_found;
+	uint16_t win_id = 0;
+
+	assert(tableinfo);
+	assert(hostname);
+	assert(adapter_cnt <= NRT_MAXADAPTERS);
+
+	node = _find_node(nrt_state, hostname);
+	if (node == NULL) {
+		error("Failed to find node in node_list: %s", hostname);
+		return SLURM_ERROR;
+	}
+	if (node->adapter_list == NULL) {
+		error("Found node, but adapter_list is NULL");
+		return SLURM_ERROR;
+	}
+
+	for (i = 0; i < adapter_cnt; i++) {
+		if (tableinfo[i].table == NULL) {
+			error("tableinfo[%d].table is NULL", i);
+			return SLURM_ERROR;
+		}
+
+		adapter_found = false;
+		/* Find the adapter that matches the one in tableinfo */
+		for (j = 0; j < node->adapter_count; j++) {
+			adapter = &node->adapter_list[j];
+			if (strcasecmp(adapter->adapter_name,
+				       tableinfo[i].adapter_name))
+				continue;
+			if (adapter->adapter_type == NRT_IB) {
+				nrt_ib_task_info_t *ib_tbl_ptr;
+				ib_tbl_ptr = tableinfo[i].table + task_id;
+				if (ib_tbl_ptr == NULL) {
+					error("tableinfo[%d].table[%d] is "
+					      "NULL", i, task_id);
+					return SLURM_ERROR;
+				}
+				if (adapter->lid == ib_tbl_ptr->base_lid) {
+					adapter_found = true;
+					win_id = ib_tbl_ptr->win_id;
+					debug3("Setting status %s adapter %s "
+					       "lid %hu window %hu for task %d",
+					       state == NRT_WIN_UNAVAILABLE ?
+					       "UNLOADED" : "LOADED",
+					       adapter->adapter_name,
+					       ib_tbl_ptr->base_lid,
+					       ib_tbl_ptr->win_id, task_id);
+					break;
+				}
+			} else if (adapter->adapter_type == NRT_HFI) {
+				nrt_hfi_task_info_t *hfi_tbl_ptr;
+				hfi_tbl_ptr = tableinfo[i].table + task_id;
+				if (hfi_tbl_ptr == NULL) {
+					error("tableinfo[%d].table[%d] is "
+					      "NULL", i, task_id);
+					return SLURM_ERROR;
+				}
+				if (adapter->lid == hfi_tbl_ptr->lid) {
+					adapter_found = true;
+					win_id = hfi_tbl_ptr->win_id;
+					debug3("Setting status %s adapter %s "
+					       "lid %hu window %hu for task %d",
+					       state == NRT_WIN_UNAVAILABLE ?
+					       "UNLOADED" : "LOADED",
+					       adapter->adapter_name,
+					       hfi_tbl_ptr->lid,
+					       hfi_tbl_ptr->win_id, task_id);
+					break;
+				}
+			} else {
+				fatal("_window_state_set: Missing support for "
+				      "adapter type %hu",
+				      adapter->adapter_type);
+
+			}
+		}
+		if (!adapter_found) {
+			error("Did not find adapter %s with lid %hu ",
+			      adapter->adapter_name, adapter->lid);
+			return SLURM_ERROR;
+		}
+
+		window = _find_window(adapter, win_id);
+		if (window) {
+			window->state = state;
+			window->job_key =
+				(state == NRT_WIN_UNAVAILABLE) ? 0 : job_key;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
 /* If the node is already in the node list then simply return
  * a pointer to it, otherwise dynamically allocate memory to the
  * node list if necessary.
@@ -1194,7 +1399,6 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 	return SLURM_SUCCESS;
 }
 
-
 /* Find all of the windows used by job step "jp" and mark their
  * state NRT_WIN_UNAVAILABLE.
  *
@@ -1206,9 +1410,8 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 extern int
 nrt_job_step_allocated(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 {
-	return SLURM_SUCCESS;
+	return _job_step_window_state(jp, hl, NRT_WIN_UNAVAILABLE);
 }
-
 
 /* Assign a unique key to each job.  The key is used later to
  * gain access to the network table loaded on each node of a job.
@@ -1891,183 +2094,6 @@ _get_adapters(struct nrt_adapter *list, int *count)
 	return 0;
 }
 
-static nrt_window_t *
-_find_window(struct nrt_adapter *adapter, uint16_t window_id) {
-	int i;
-	nrt_window_t *window;
-
-	for (i = NRT_MIN_WIN; i < adapter->window_count; i++) {
-		window = &adapter->window_list[i];
-		if (window->window_id == window_id)
-			return window;
-	}
-
-	debug3("Unable to _find_window %hu on adapter %s",
-	       window_id, adapter->adapter_name);
-	return (nrt_window_t *) NULL;
-}
-
-/* Find the correct NRT structs and set the state
- * of the switch windows for the specified task_id.
- *
- * Used by: slurmctld
- */
-static int
-_window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
-		  char *hostname, int task_id, win_state_t state,
-		  uint16_t job_key)
-{
-	nrt_nodeinfo_t *node = NULL;
-	struct nrt_adapter *adapter = NULL;
-	nrt_window_t *window = NULL;
-	nrt_creator_per_task_input_t *table = NULL;
-	int i, j;
-	bool adapter_found;
-	uint16_t win_id = 0;
-
-	assert(tableinfo);
-	assert(hostname);
-	assert(adapter_cnt <= NRT_MAXADAPTERS);
-
-	node = _find_node(nrt_state, hostname);
-	if (node == NULL) {
-		error("Failed to find node in node_list: %s", hostname);
-		return SLURM_ERROR;
-	}
-	if (node->adapter_list == NULL) {
-		error("Found node, but adapter_list is NULL");
-		return SLURM_ERROR;
-	}
-
-	for (i = 0; i < adapter_cnt; i++) {
-		if (tableinfo[i].table == NULL) {
-			error("tableinfo[%d].table is NULL", i);
-			return SLURM_ERROR;
-		}
-		table = &tableinfo[i].table[task_id];
-		if (table == NULL) {
-			error("tableinfo[%d].table[%d] is NULL", i, task_id);
-			return SLURM_ERROR;
-		}
-
-		adapter_found = false;
-		/* Find the adapter that matches the one in tableinfo */
-		for (j = 0; j < node->adapter_count; j++) {
-			adapter = &node->adapter_list[j];
-			if (strcasecmp(adapter->adapter_name,
-				       tableinfo[i].adapter_name))
-				continue;
-/* FIXME: table contains a union, it could contain either IB or HPCE data */
-			if (adapter->adapter_type == RSCT_DEVTYPE_INFINIBAND) {
-				nrt_creator_ib_per_task_input_t *ib_tbl_ptr;
-				ib_tbl_ptr = &table->ib_per_task;
-				if (adapter->lid[0] == ib_tbl_ptr->base_lid) {
-					adapter_found = true;
-					win_id = ib_tbl_ptr->win_id;
-					debug3("Setting status %s adapter %s "
-					       "lid %hu window %hu for task %d",
-					       state == NRT_WIN_UNAVAILABLE ?
-					       "UNLOADED" : "LOADED",
-					       adapter->adapter_name,
-					       ib_tbl_ptr->base_lid,
-					       ib_tbl_ptr->win_id, task_id);
-					break;
-				}
-			} else {
-				fatal("_window_state_set: Missing support for "
-				      "adapter type %hu",
-				      adapter->adapter_type);
-
-			}
-		}
-		if (!adapter_found) {
-			error("Did not find adapter %s with lid %hu ",
-			      adapter->adapter_name, adapter->lid[0]);
-			return SLURM_ERROR;
-		}
-
-		window = _find_window(adapter, win_id);
-		if (window) {
-			window->state = state;
-			window->job_key =
-				(state == NRT_WIN_UNAVAILABLE) ? 0 : job_key;
-		}
-	}
-
-	return SLURM_SUCCESS;
-}
-
-
-/* Find all of the windows used by this job step and set their
- * status to "state".
- *
- * Used by: slurmctld
- */
-static int
-_job_step_window_state(nrt_jobinfo_t *jp, hostlist_t hl, win_state_t state)
-{
-	hostlist_iterator_t hi;
-	char *host;
-	int proc_cnt;
-	int nprocs;
-	int nnodes;
-	int i, j;
-	int err, rc = SLURM_SUCCESS;
-	int task_cnt;
-	int full_node_cnt;
-	int min_procs_per_node;
-	int max_procs_per_node;
-
-	xassert(!hostlist_is_empty(hl));
-	xassert(jp);
-	xassert(jp->magic == NRT_JOBINFO_MAGIC);
-
-	if ((jp == NULL) || (hostlist_is_empty(hl)))
-		return SLURM_ERROR;
-
-	if ((jp->tables_per_task == 0)
-	    || (!jp->tableinfo)
-	    || (jp->tableinfo[0].table_length == 0))
-		return SLURM_SUCCESS;
-
-	debug3("jp->tables_per_task = %d", jp->tables_per_task);
-	nprocs = jp->tableinfo[0].table_length;
-	hi = hostlist_iterator_create(hl);
-
-	debug("Finding windows");
-	nnodes = hostlist_count(hl);
-	full_node_cnt = nprocs % nnodes;
-	min_procs_per_node = nprocs / nnodes;
-	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-
-	proc_cnt = 0;
-	_lock();
-	for  (i = 0; i < nnodes; i++) {
-		host = hostlist_next(hi);
-		if (!host)
-			error("Failed to get next host");
-
-		if (i < full_node_cnt)
-			task_cnt = max_procs_per_node;
-		else
-			task_cnt = min_procs_per_node;
-
-		for (j = 0; j < task_cnt; j++) {
-			err = _window_state_set(jp->tables_per_task,
-						jp->tableinfo,
-						host, proc_cnt,
-						state, jp->job_key);
-			rc = MAX(rc, err);
-			proc_cnt++;
-		}
-		free(host);
-	}
-	_unlock();
-
-	hostlist_iterator_destroy(hi);
-	return rc;
-}
-
 /*
  * For one node, free all of the windows belonging to a particular
  * job step (as identified by the job_key).
@@ -2170,22 +2196,6 @@ nrt_job_step_complete(nrt_jobinfo_t *jp, hostlist_t hl)
 	hostlist_destroy(uniq_hl);
 	return SLURM_SUCCESS;
 }
-
-
-/* Find all of the windows used by job step "jp" and mark their
- * state NRT_WIN_UNAVAILABLE.
- *
- * Used by the slurmctld at startup time to restore the allocation
- * status of any job steps that were running at the time the previous
- * slurmctld was shutdown.  Also used to restore the allocation
- * status after a call to switch_clear().
- */
-extern int
-nrt_job_step_allocated(nrt_jobinfo_t *jp, hostlist_t hl)
-{
-	return _job_step_window_state(jp, hl, NRT_WIN_UNAVAILABLE);
-}
-
 
 static void
 _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
