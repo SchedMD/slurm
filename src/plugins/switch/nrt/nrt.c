@@ -1807,9 +1807,44 @@ unpack_error:
 extern slurm_nrt_jobinfo_t *
 nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 {
-	return NULL;
-}
+	slurm_nrt_jobinfo_t *new;
+	int i;
+	int base_size = 0, table_size;
 
+	assert(job);
+	assert(job->magic == NRT_JOBINFO_MAGIC);
+
+	if (nrt_alloc_jobinfo(&new)) {
+		error("Allocating new jobinfo");
+		slurm_seterrno(ENOMEM);
+		return NULL;
+	}
+	memcpy(new, job, sizeof(slurm_nrt_jobinfo_t));
+
+	/* table will be empty (and table_size == 0) when the network string
+	 * from poe does not contain "us".
+	 * (See man poe: -euilib or MP_EUILIB)
+	 */
+	new->tableinfo = (nrt_tableinfo_t *) xmalloc(job->tables_per_task *
+						     sizeof(nrt_table_info_t));
+	for (i = 0; i < job->tables_per_task; i++) {
+		if (job->tableinfo->adapter_type == NRT_IB) {
+			base_size = sizeof(nrt_ib_task_info_t);
+		} else if (job->tableinfo->adapter_type == NRT_HFI) {
+			base_size = sizeof(nrt_hfi_task_info_t);
+		} else {
+			fatal("nrt_copy_jobinfo: Missing support for adapter "
+			      "type %hu", job->tableinfo->adapter_type);
+		}
+		new->tableinfo[i].table_length = job->tableinfo[i].table_length;
+		table_size = base_size * job->tableinfo[i].table_length;
+		new->tableinfo->table = xmalloc(table_size);
+		memcpy(new->tableinfo[i].table, job->tableinfo[i].table,
+		       table_size);
+	}
+
+	return new;
+}
 
 /* Used by: all */
 extern void
@@ -2449,49 +2484,6 @@ _get_adapters(struct nrt_adapter *list, int *count)
 		slurm_seterrno_ret(ENOADAPTER);
 
 	return 0;
-}
-
-/* Used by: all */
-extern nrt_jobinfo_t *
-nrt_copy_jobinfo(nrt_jobinfo_t *job)
-{
-	nrt_jobinfo_t *new;
-	int i, k;
-
-	assert(job);
-	assert(job->magic == NRT_JOBINFO_MAGIC);
-
-	if (nrt_alloc_jobinfo(&new)) {
-		error("Allocating new jobinfo");
-		slurm_seterrno(ENOMEM);
-		return NULL;
-	}
-	memcpy(new, job, sizeof(nrt_jobinfo_t));
-	/* table will be empty (and table_size == 0) when the network string
-	 * from poe does not contain "us".
-	 * (See man poe: -euilib or MP_EUILIB)
-	 */
-	if (job->tables_per_task > 0) {
-		/* Allocate memory for each nrt_tableinfo_t */
-		new->tableinfo = (nrt_tableinfo_t *)xmalloc(
-				 job->tables_per_task * sizeof(nrt_tableinfo_t));
-		memcpy(new->tableinfo, job->tableinfo,
-		       sizeof(nrt_tableinfo_t) * job->tables_per_task);
-
-		for (i = 0; i < job->tables_per_task; i++) {
-			new->tableinfo[i].table =
-				(nrt_creator_per_task_input_t *)
-				xmalloc(job->tableinfo[i].table_length *
-				sizeof(nrt_creator_per_task_input_t));
-			for (k = 0; k < new->tableinfo[i].table_length; k++) {
-				memcpy(&new->tableinfo[i].table[k],
-				       &job->tableinfo[i].table[k],
-				       sizeof(nrt_tableinfo_t));
-			}
-		}
-	}
-
-	return new;
 }
 
 /*
