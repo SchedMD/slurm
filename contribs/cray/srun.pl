@@ -466,31 +466,6 @@ if ($have_job == 0) {
 	$command .= " -T"					if $aprun_line_buf;
 	$time_secs = get_seconds($time_limit)			if $time_limit;
 	$command .= " -t $time_secs"				if $time_secs;
-	$script = get_multi_prog($script)			if $multi_prog;
-
-	# Input and output file options are not supported by aprun, but can be handled by perl
-	$command .= " <$input_file"				if $input_file;
-	if ($error_file && ($error_file eq "none")) {
-		$error_file = "/dev/null"
-	}
-	if ($output_file && ($output_file eq "none")) {
-		$output_file = "/dev/null"
-	}
-	if ($open_mode && ($open_mode eq "a")) {
-		$command .= " >>$output_file"			if $output_file;
-		if ($error_file) {
-			$command .= " 2>>$error_file";
-		} elsif ($output_file) {
-			$command .= " 2>&1";
-		}
-	} else {
-		$command .= " >$output_file"			if $output_file;
-		if ($error_file) {
-			$command .= " 2>$error_file";
-		} elsif ($output_file) {
-			$command .= " 2>&1";
-		}
-	}
 
 	# Srun option which are not supported by aprun
 	#	$command .= " --disable-status"			if $disable_status;
@@ -515,7 +490,33 @@ if ($have_job == 0) {
 	#	$command .= " --test-only"			if $test_only;
 	#	$command .= " --unbuffered"			if $unbuffered;
 
+	$script = get_multi_prog($script)			if $multi_prog;
 	$command .= " $script";
+
+	# Input and output file options are not supported as aprun arguments,
+	# but forwarded
+	$command .= " <$input_file"				if $input_file;
+	if ($error_file && ($error_file eq "none")) {
+		$error_file = "/dev/null"
+	}
+	if ($output_file && ($output_file eq "none")) {
+		$output_file = "/dev/null"
+	}
+	if ($open_mode && ($open_mode eq "a")) {
+		$command .= " >>$output_file"			if $output_file;
+		if ($error_file) {
+			$command .= " 2>>$error_file";
+		} elsif ($output_file) {
+			$command .= " 2>&1";
+		}
+	} else {
+		$command .= " >$output_file"			if $output_file;
+		if ($error_file) {
+			$command .= " 2>$error_file";
+		} elsif ($output_file) {
+			$command .= " 2>&1";
+		}
+	}
 }
 
 # Print here for debugging
