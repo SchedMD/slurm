@@ -1745,7 +1745,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 	bool have_count = false, have_or = false;
 	struct feature_record *feat;
 
-	if (detail_ptr->features == NULL)	/* no constraints */
+	if (!detail_ptr || !detail_ptr->features)	/* no constraints */
 		return SLURM_SUCCESS;
 	if (detail_ptr->feature_list)		/* already processed */
 		return SLURM_SUCCESS;
