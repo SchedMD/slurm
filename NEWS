@@ -193,6 +193,7 @@ documents those changes that are of interest to users and admins.
     "liblua5.1.so" as needed by Debian. Patch by Remi Palancher.
  -- Added partition default_time field to job_submit LUA plugin. Patch by
     Remi Palancher.
+ -- Fix bug in cray/srun wrapper stdin/out/err file handling.
 
 * Changes in SLURM 2.3.3
 ========================
