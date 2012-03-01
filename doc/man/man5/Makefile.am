@@ -1,7 +1,5 @@
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
-EXTRA_DIST = man5
-
 man5_MANS = bluegene.conf.5 \
 	cgroup.conf.5 \
 	cray.conf.5 \
@@ -11,7 +9,10 @@ man5_MANS = bluegene.conf.5 \
 	topology.conf.5 \
 	wiki.conf.5
 
+EXTRA_DIST = $(man5_MANS)
+
 if HAVE_MAN2HTML
+
 html_DATA = \
 	bluegene.conf.html \
 	cgroup.conf.html \
@@ -31,7 +32,3 @@ SUFFIXES = .html
 	`dirname $<`/../man2html.py $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
 
 endif
-
-dist-hook:
-	-rm -rf `find $(distdir) -name CVS`
-

@@ -1,7 +1,5 @@
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
-EXTRA_DIST = man1
-
 man1_MANS = \
 	sacct.1 \
 	sacctmgr.1 \
@@ -24,6 +22,8 @@ man1_MANS = \
 	sstat.1 \
 	strigger.1 \
 	sview.1
+
+EXTRA_DIST = $(man1_MANS)
 
 if HAVE_MAN2HTML
 
@@ -59,6 +59,3 @@ SUFFIXES = .html
 	`dirname $<`/../man2html.py $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
 
 endif
-
-dist-hook:
-	-rm -rf `find $(distdir) -name CVS`

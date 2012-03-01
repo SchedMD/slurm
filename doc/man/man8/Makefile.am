@@ -1,14 +1,15 @@
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
-EXTRA_DIST = man8
-
 man8_MANS = slurmctld.8 \
 	slurmd.8 \
 	slurmdbd.8 \
 	slurmstepd.8 \
 	spank.8
 
+EXTRA_DIST = $(man8_MANS)
+
 if HAVE_MAN2HTML
+
 html_DATA = \
 	slurmctld.html \
 	slurmd.html \
@@ -26,7 +27,3 @@ SUFFIXES = .html
 	`dirname $<`/../man2html.py $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
 
 endif
-
-dist-hook:
-	-rm -rf `find $(distdir) -name CVS`
-

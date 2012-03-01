@@ -1,5 +1,3 @@
-EXTRA_DIST = man3
-
 man3_MANS = slurm_hostlist_create.3 \
 	slurm_hostlist_destroy.3 \
 	slurm_hostlist_shift.3 \
@@ -132,3 +130,4 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_update_reservation.3 \
 	slurm_update_step.3
 
+EXTRA_DIST = $(man3_MANS)

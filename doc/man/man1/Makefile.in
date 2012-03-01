@@ -313,7 +313,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = man1 $(am__append_1)
 man1_MANS = \
 	sacct.1 \
 	sacctmgr.1 \
@@ -337,6 +336,7 @@ man1_MANS = \
 	strigger.1 \
 	sview.1
 
+EXTRA_DIST = $(man1_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@html_DATA = \
 @HAVE_MAN2HTML_TRUE@	sacct.html \
 @HAVE_MAN2HTML_TRUE@	sacctmgr.html \
@@ -505,9 +505,6 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
-	$(MAKE) $(AM_MAKEFLAGS) \
-	  top_distdir="$(top_distdir)" distdir="$(distdir)" \
-	  dist-hook
 check-am: all-am
 check: check-am
 all-am: Makefile $(MANS) $(DATA)
@@ -612,12 +609,12 @@ uninstall-man: uninstall-man1
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	dist-hook distclean distclean-generic distclean-libtool \
-	distdir dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-htmlDATA install-info install-info-am \
-	install-man install-man1 install-pdf install-pdf-am install-ps \
+	distclean distclean-generic distclean-libtool distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-htmlDATA install-info install-info-am install-man \
+	install-man1 install-pdf install-pdf-am install-ps \
 	install-ps-am install-strip installcheck installcheck-am \
 	installdirs maintainer-clean maintainer-clean-generic \
 	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
@@ -627,9 +624,6 @@ uninstall-man: uninstall-man1
 
 @HAVE_MAN2HTML_TRUE@.1.html:
 @HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
-
-dist-hook:
-	-rm -rf `find $(distdir) -name CVS`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
