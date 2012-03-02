@@ -55,7 +55,6 @@ my (	$account,
 	$acctg_freq,
 	$alps,
 	$aprun_line_buf,
-	$aprun_quiet,
 	$begin_time,
 	$chdir,
 	$check_time,
@@ -147,7 +146,6 @@ my $srun   = "BINDIR/srun";
 
 my $have_job;
 $aprun_line_buf = 1;
-$aprun_quiet = 1;
 $have_job = 0;
 
 foreach (keys %ENV) {
@@ -416,7 +414,7 @@ if ($have_job == 0) {
 		if (index($alps, "-m") >= 0)  { $memory_per_cpu = 0 };
 		if (index($alps, "-n") >= 0)  { $num_tasks = 0; $num_nodes = 0; }
 		if (index($alps, "-N") >= 0)  { $ntasks_per_node = 0; $num_nodes = 0; }
-		if (index($alps, "-q") >= 0)  { $aprun_quiet = 0 };
+		if (index($alps, "-q") >= 0)  { $quiet = 0 };
 		if (index($alps, "-S") >= 0)  { $ntasks_per_socket = 0 };
 		if (index($alps, "-sn") >= 0) { $sockets_per_node = 0 };
 		if (index($alps, "-ss") >= 0) { $memory_bind = 0 };
@@ -455,7 +453,7 @@ if ($have_job == 0) {
 		$command .= " -n $num_nodes";
 	}
 
-	$command .= " -q"					if $aprun_quiet;
+	$command .= " -q"					if $quiet;
 	# $command .= " -r"		no srun equivalent, core specialization
 	$command .= " -S $ntasks_per_socket" 			if $ntasks_per_socket;
 	# $command .= " -sl"		no srun equivalent, task placement on nodes

@@ -194,6 +194,8 @@ documents those changes that are of interest to users and admins.
  -- Added partition default_time field to job_submit LUA plugin. Patch by
     Remi Palancher.
  -- Fix bug in cray/srun wrapper stdin/out/err file handling.
+ -- In cray/srun wrapper, only include aprun "-q" option when srun "--quiet"
+    option is used.
 
 * Changes in SLURM 2.3.3
 ========================
