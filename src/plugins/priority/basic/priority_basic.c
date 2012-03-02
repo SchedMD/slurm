@@ -119,6 +119,7 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 	if (job_ptr->details)
 		new_prio -= (job_ptr->details->nice - NICE_OFFSET);
 
+	/* System hold is priority 0 */
 	if (new_prio < 1)
 		new_prio = 1;
 

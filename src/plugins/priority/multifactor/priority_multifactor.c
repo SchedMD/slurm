@@ -186,7 +186,7 @@ static int _apply_decay(double decay_factor)
  * This should be called every PriorityUsageResetPeriod
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
-static int _reset_usage()
+static int _reset_usage(void)
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
@@ -554,11 +554,11 @@ static uint32_t _get_priority_internal(time_t start_time,
 	memcpy(&pre_factors, job_ptr->prio_factors,
 	       sizeof(priority_factors_object_t));
 
-	job_ptr->prio_factors->priority_age *= (double)weight_age;
-	job_ptr->prio_factors->priority_fs *= (double)weight_fs;
-	job_ptr->prio_factors->priority_js *= (double)weight_js;
+	job_ptr->prio_factors->priority_age  *= (double)weight_age;
+	job_ptr->prio_factors->priority_fs   *= (double)weight_fs;
+	job_ptr->prio_factors->priority_js   *= (double)weight_js;
 	job_ptr->prio_factors->priority_part *= (double)weight_part;
-	job_ptr->prio_factors->priority_qos *= (double)weight_qos;
+	job_ptr->prio_factors->priority_qos  *= (double)weight_qos;
 
 	priority = job_ptr->prio_factors->priority_age
 		+ job_ptr->prio_factors->priority_fs
