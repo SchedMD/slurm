@@ -195,7 +195,7 @@ main (int argc, char *argv[])
 			      "setgroups: %m");
 		}
 	} else {
-		info("Not running as root. Can't drop supplementary groups");
+		debug("Not running as root. Can't drop supplementary groups");
 	}
 
 	/*
