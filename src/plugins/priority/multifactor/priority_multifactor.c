@@ -533,7 +533,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	double priority		= 0.0;
 	priority_factors_object_t pre_factors;
 
-	if (job_ptr->direct_set_prio && (job_ptr->priority > 1))
+	if (job_ptr->direct_set_prio && (job_ptr->priority > 0))
 		return job_ptr->priority;
 
 	if (!job_ptr->details) {
@@ -542,12 +542,6 @@ static uint32_t _get_priority_internal(time_t start_time,
 		      job_ptr->job_id);
 		return 0;
 	}
-	/*
-	 * This means the job is not eligible yet
-	 */
-	if (!job_ptr->details->begin_time
-	    || (job_ptr->details->begin_time > start_time))
-		return 1;
 
 	/* figure out the priority */
 	_get_priority_factors(start_time, job_ptr);
@@ -567,12 +561,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 		+ job_ptr->prio_factors->priority_qos
 		- (double)(job_ptr->prio_factors->nice - NICE_OFFSET);
 
-	/*
-	 * 0 means the job is held; 1 means system hold
-	 * so 2 is the lowest non-held priority
-	 */
-	if (priority < 2)
-		priority = 2;
+	/* Priority 0 is reserved for held jobs */
+	if (priority < 1)
+		priority = 1;
 
 	if (priority_debug) {
 		info("Weighted Age priority is %f * %u = %.2f",
@@ -1039,12 +1030,10 @@ static void *_decay_thread(void *no_data)
 			}
 
 			/*
-			 * This means the job is held, 0, or a system
-			 * hold, 1. Continue also if the job is not
-			 * pending.  There is no reason to set the
-			 * priority if the job isn't pending.
+			 * Priority 0 is reserved for held jobs. Also skip
+			 * priority calculation for non-pending jobs.
 			 */
-			if ((job_ptr->priority <= 1)
+			if ((job_ptr->priority == 0)
 			    || !IS_JOB_PENDING(job_ptr))
 				continue;
 
