@@ -76,7 +76,7 @@ The salloc command submits a batch job to LoadLeveler that will make an
 authenticated socket connection back to the salloc command once the resource 
 allocation has been made as shown in Figure 1. This socket connection will be
 used to spawn subsequent programs within the LoadLeveler job allocation;
-specifically to invoke LoadLeveler's POE command in response to the invocation
+specifically to invoke LoadLeveler's POE command in response to the execution
 of SLURM's srun command.</p>
 
 <div class="figure">
@@ -85,7 +85,8 @@ of SLURM's srun command.</p>
 </div>
 
 <p>Most salloc options function as expected to submit a job to LoadLeveler.
-The following salloc options have no LoadLeveler equivalent and will be ignored:<p>
+The following salloc options have no LoadLeveler equivalent and will be
+ignored without warning:<p>
 <ul>
 <li>--acctg-freq (accounting polling interval, seconds)</li>
 <li>--contiguous (set if job requires contiguous nodes)</li>
@@ -115,13 +116,14 @@ The following salloc options have no LoadLeveler equivalent and will be ignored:
 Only the only --cpu-bind supported are "cores" and "threads", all --mem-bind
 options are mapped to LoadLeveler's "mcm_affinity_options=mcm_mem_req".</p>
 
-<p>The following environment variables are set for salloc jobs:
+<p>The following environment variables are set for salloc jobs when appropriate:
 SLURM_JOBID, SLURM_JOB_CPUS_PER_NODE, SLURM_JOB_ID, SLURM_JOB_NODELIST,
 SLURM_JOB_NUM_NODES, SLURM_NNODES, SLURM_NODELIST, SLURM_SUBMIT_DIR, and
 SLURM_TASKS_PER_NODE.
 In addition, the following two environment variables are used for communications
 between the salloc command and a batch job submitted to LoadLeveler:
-SLURM_BE_KEY, SLURM_BE_SOCKET.</p>
+SLURM_BE_KEY, SLURM_BE_SOCKET (for SLURM Back End Key used to sign
+communications and SLURM Back End Socket port respectively).</p>
 
 <p>If SLURM's srun command is executed within an
 salloc command, an authenticated communication will be sent to the salloc
@@ -137,7 +139,8 @@ file traffic back to the srun which initiated it.</p>
 
 <h3><a name="sbatch">sbatch</a></h3>
 <p>Most sbatch options function as expected to submit a job to LoadLeveler.
-The following sbatch options have no LoadLeveler equivalent and will be ignored:<p>
+The following sbatch options have no LoadLeveler equivalent and will be
+ignored without warning:<p>
 
 <ul>
 <li>--acctg-freq (accounting polling interval, seconds)</li>
@@ -267,14 +270,16 @@ job_resrcs (job allocated resources details, e.g. specific cores).</p> -->
 
 <h3><a name="srun">srun</a></h3>
 <p>LoadLeveler lacks an interactive job allocation mode equivalent to SLURM.
-The srun command submits a batch job to LoadLeveler that will make a socket
-connection back to the srun command once the resource allocation has been
-made using the same mechanism as the salloc command shown in
-<a href="#fig2">Figure 2</a> except the salloc back-end is invoked directly
-by srun rather than the salloc command.</p>
+If the srun command is executed not within a salloc or sbatch environment
+(i.e. the SLURM_JOBID environment variable is not set), then srun submits a
+batch job to LoadLeveler that will make a socket connection back to the srun
+command once the resource allocation has been made using the same mechanism
+as the salloc command shown in <a href="#fig2">Figure 2</a> except the salloc
+back-end is invoked directly by srun rather than the salloc command.</p>
 
 <p>Most srun options function as expected to submit a job to LoadLeveler.
-The following srun options have no LoadLeveler equivalent and will be ignored:<p>
+The following srun options have no LoadLeveler equivalent and will be ignored
+without warning:<p>
 <ul>
 <li>--acctg-freq (accounting polling interval, seconds)</li>
 <li>--contiguous (set if job requires contiguous nodes)</li>
@@ -333,7 +338,8 @@ as one job step with an ID of zero.</p>
 
 <p>Options used to execute a job step at a size different from the job
 allocation will fail with the current code base. Additional code could
-enable this capability with some restrictions.</p>
+enable this capability, although the user would need to specify the protocol
+used by the job step (e.g. mpi, lapi, upc, etc.).</p>
 
 <!-- Changes required support POE sub-jobs of different sizes or MPMD:
 1. Add "export MP_NEWJOB=parallel" to the batch script
@@ -388,6 +394,6 @@ LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 Febuary 2012</p>
+<p style="text-align:center;">Last modified 5 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
