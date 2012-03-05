@@ -60,8 +60,9 @@ extern char *build_poe_command(void);
  *	     [3]:  Port number for stdin/out
  *	     [4]:  Port number for stderr
  *	     [5]:  Port number for signals/exit status
- *	     [6]:  Program to be spawned for user
- *	     [7+]: Arguments to spawned program
+ *	     [6]:  Authentication key
+ *	     [7]:  Program to be spawned for user
+ *	     [8+]: Arguments to spawned program
  * RETURN - remote processes exit code
  */
 extern int srun_back_end (int argc, char **argv);
