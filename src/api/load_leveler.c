@@ -2618,12 +2618,26 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 			shell = req->script;
 		if (!strcmp(shell, "csh") || !strcmp(shell, "tcsh")) {
 			xstrfmtcat(set_job_id,
-				   "setenv SLURM_JOBID `%s/bin/srun --jobid`",
+				   "setenv SLURM_JOBID `%s/bin/srun --jobid`/n",
 				   SLURM_PREFIX);
+			xstrfmtcat(set_job_id,
+				   "setenv SLURM_JOB_ID $SLURM_JOBID\n");
+			xstrfmtcat(set_job_id, 
+				   "setenv SLURM_NODELIST `%s/bin/srun --nodelist`\n",
+				    SLURM_PREFIX);
+			xstrfmtcat(set_job_id, 
+				   "setenv SLURM_JOB_NODELIST $SLURM_NODELIST\n");
 		} else {	/* bash, ksh, sh */
 			xstrfmtcat(set_job_id, 
-				   "export SLURM_JOBID=`%s/bin/srun --jobid`",
+				   "export SLURM_JOBID=`%s/bin/srun --jobid`\n",
 				    SLURM_PREFIX);
+			xstrfmtcat(set_job_id, 
+				   "export SLURM_JOB_ID=$SLURM_JOBID\n");
+			xstrfmtcat(set_job_id, 
+				   "export SLURM_NODELIST=`%s/bin/srun --nodelist`\n",
+				    SLURM_PREFIX);
+			xstrfmtcat(set_job_id, 
+				   "export SLURM_JOB_NODELIST=$SLURM_NODELIST\n");
 		}
 		first_line[0] = '\n';
 	}

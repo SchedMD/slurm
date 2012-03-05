@@ -218,7 +218,7 @@ int srun(int ac, char **av)
 	pthread_t msg_thread = (pthread_t) 0;
 #endif
 #ifdef USE_LOADLEVELER
-	if ((ac > 1) && !strcmp(av[1], "--jobid")) {
+	if ((ac == 2) && !strcmp(av[1], "--jobid")) {
 		char *dot, *job_id = "", *ll_step_id;
 		char *tmp_step_id = getenv("LOADL_STEP_ID");
 		if (!tmp_step_id) {
@@ -238,6 +238,42 @@ int srun(int ac, char **av)
 		if (dot)
 			dot[0] = '\0';
 		printf("%s.%s\n", ll_step_id, job_id);
+		exit(0);
+	}
+	if ((ac == 2) && !strcmp(av[1], "--nodelist")) {
+		hostset_t hs;
+		int buf_len = 1;
+		char *buf, *dot, *space, *ll_proc_list, *proc_ptr;
+		char *tmp_proc_list = getenv("LOADL_PROCESSOR_LIST");
+		if (!tmp_proc_list) {
+			printf("UNKNOWN\n");
+			exit(1);
+		}
+		hs = hostset_create(NULL);
+		proc_ptr = ll_proc_list = xstrdup(tmp_proc_list);
+		while (proc_ptr && proc_ptr[0]) {
+			space = strchr(proc_ptr, ' ');
+			if (space)
+				space[0] = '\0';
+			dot = strchr(proc_ptr, ' ');
+			if (dot)
+				dot[0] = '\0';
+			buf_len += strlen(proc_ptr);
+			hostset_insert(hs, proc_ptr);
+			if (space)
+				proc_ptr = space + 1;
+			else
+				proc_ptr = NULL;
+		}
+		buf = xmalloc(buf_len);
+		while (hostset_ranged_string(hs, buf_len, buf) < 0) {
+			buf_len *= 2;
+			buf = xrealloc(buf, buf_len);
+		}
+		hostset_destroy(hs);
+		printf("%s\n", buf);
+		xfree(buf);
+		xfree(ll_proc_list);
 		exit(0);
 	}
 	if ((ac > 1) && !strcmp(av[1], "--srun-be")) {
