@@ -255,7 +255,7 @@ int srun(int ac, char **av)
 			space = strchr(proc_ptr, ' ');
 			if (space)
 				space[0] = '\0';
-			dot = strchr(proc_ptr, ' ');
+			dot = strchr(proc_ptr, '.');
 			if (dot)
 				dot[0] = '\0';
 			buf_len += strlen(proc_ptr);

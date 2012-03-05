@@ -2618,7 +2618,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 			shell = req->script;
 		if (!strcmp(shell, "csh") || !strcmp(shell, "tcsh")) {
 			xstrfmtcat(set_job_id,
-				   "setenv SLURM_JOBID `%s/bin/srun --jobid`/n",
+				   "setenv SLURM_JOBID `%s/bin/srun --jobid`\n",
 				   SLURM_PREFIX);
 			xstrfmtcat(set_job_id,
 				   "setenv SLURM_JOB_ID $SLURM_JOBID\n");
