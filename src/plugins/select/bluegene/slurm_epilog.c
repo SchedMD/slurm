@@ -54,24 +54,14 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/hostlist.h"
-
 #define _DEBUG 0
 
 /*
  * Check the bgblock's status every POLL_SLEEP seconds.
- * Retry for a period of MIN_DELAY + (INCR_DELAY * base partition count).
- * For example if MIN_DELAY=300 and INCR_DELAY=20, wait up to 428 seconds
- * for a 16 base partition bgblock to ready (300 + 20 * 16).
+ * Retry until the job is removed
  */
 #define POLL_SLEEP 3			/* retry interval in seconds  */
-#define MIN_DELAY  300			/* time in seconds */
-#define INCR_DELAY 20			/* time in seconds per BP */
 
-int max_delay = MIN_DELAY;
-int cur_delay = 0;
-
-static int  _get_job_size(uint32_t job_id);
 static void _wait_part_not_ready(uint32_t job_id);
 
 int main(int argc, char *argv[])
@@ -97,23 +87,18 @@ int main(int argc, char *argv[])
 
 static void _wait_part_not_ready(uint32_t job_id)
 {
-	int is_ready = 1, i, rc;
-
-	max_delay = MIN_DELAY + (INCR_DELAY * _get_job_size(job_id));
+	int is_ready = 1, rc;
 
 #if _DEBUG
 	printf("Waiting for job %u to be not ready.", job_id);
 #endif
 
-	for (i=0; (cur_delay < max_delay); i++) {
-		if (i) {
-			sleep(POLL_SLEEP);
-			cur_delay += POLL_SLEEP;
-#if _DEBUG
-			printf(".");
-#endif
-		}
-
+	/* It has been decided waiting forever is a better solution
+	   than ending early and saying we are done when in reality
+	   the job is still running.  So now we trust the slurmctld to
+	   tell us when we are done and never end until that happens.
+	*/
+	while (1) {
 		rc = slurm_job_node_ready(job_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -123,6 +108,10 @@ static void _wait_part_not_ready(uint32_t job_id)
 			is_ready = 0;
 			break;
 		}
+		sleep(POLL_SLEEP);
+#if _DEBUG
+		printf(".");
+#endif
 	}
 
 #if _DEBUG
@@ -134,35 +123,4 @@ static void _wait_part_not_ready(uint32_t job_id)
 	if (is_ready == 1)
 		fprintf(stderr, "Job %u is still ready.\n", job_id);
 
-}
-
-static int _get_job_size(uint32_t job_id)
-{
-	job_info_msg_t *job_buffer_ptr;
-	job_info_t * job_ptr;
-	int i, size = 1;
-	hostlist_t hl;
-
-	if (slurm_load_jobs((time_t) 0, &job_buffer_ptr, SHOW_ALL)) {
-		slurm_perror("slurm_load_jobs");
-		return 1;
-	}
-
-	for (i = 0; i < job_buffer_ptr->record_count; i++) {
-		job_ptr = &job_buffer_ptr->job_array[i];
-		if (job_ptr->job_id != job_id)
-			continue;
-		hl = hostlist_create(job_ptr->nodes);
-		if (hl) {
-			size = hostlist_count(hl);
-			hostlist_destroy(hl);
-		}
-		break;
-	}
-	slurm_free_job_info_msg (job_buffer_ptr);
-
-#if _DEBUG
-	printf("Size is %d\n", size);
-#endif
-	return size;
 }
