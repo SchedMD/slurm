@@ -102,6 +102,18 @@ smaller.  While this option gives great flexibility to run a host of job
 sizes previously not available on any BlueGene system it also may cause
 security concerns since IO traffic can share the same path with other jobs.
 
+NOTE - There is a current limitation for sub-block jobs and how the system
+(used for I/O) and user (used for MPI) torus class routes are configured. The
+network device hardware has cutoff registers to prevent packets from flowing
+outside of the sub-block. Unfortunately, when the sub-block has a size 3,
+the job can attempt to send user packets outside of its sub-block. This causes
+it to be terminated by signal 36.  To prevent this from happening SLURM does
+not allow a sub-block to be used with any dimension of 3.
+
+NOTE - In the current IBM API it does not allow wrapping inside a midplane.
+Meaning you can not create a sub-block of 2 with nodes in the 0 and 3 position.
+SLURM will support this in the future when the underlying system allows it.
+
 .SH "All options below are common on all BlueGene systems:"
 .TP
 \fBAltMloaderImage\fR

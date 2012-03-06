@@ -289,6 +289,20 @@ reload the plugin and all should be good afterway.  After doing this
 you may see some warning/error messages about the current running jobs
 when finishing not being known.  This is expected and can usually be ignored.
 
+<b>Notes about sub-block allocations:</b>
+<p>
+There is a current limitation for sub-block jobs and how the system
+(used for I/O) and user (used for MPI) torus class routes are configured. The
+network device hardware has cutoff registers to prevent packets from flowing
+outside of the sub-block. Unfortunately, when the sub-block has a size 3,
+the job can attempt to send user packets outside of its sub-block. This causes
+it to be terminated by signal 36.  To prevent this from happening SLURM does
+not allow a sub-block to be used with any dimension of 3.
+</p><p>
+In the current IBM API it does not allow wrapping inside a midplane.
+Meaning you can not create a sub-block of 2 with nodes in the 0 and 3 position.
+SLURM will support this in the future when the underlying system allows it.
+</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>System Administration for all BlueGene Systems</h2>
