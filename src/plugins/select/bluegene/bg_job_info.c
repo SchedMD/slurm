@@ -69,8 +69,8 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	jobinfo->reboot = (uint16_t) NO_VAL;
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;
-	jobinfo->block_cnode_cnt = NO_VAL;
-	jobinfo->cnode_cnt = NO_VAL;
+	jobinfo->block_cnode_cnt = 0;
+	jobinfo->cnode_cnt = 0;
 
 	/* This bitstr is created when used. */
 	//jobinfo->units_avail = bit_alloc(bg_conf->mp_cnode_cnt);
