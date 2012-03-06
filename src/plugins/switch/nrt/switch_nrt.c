@@ -407,8 +407,8 @@ static char *_adapter_name_check(char *network)
 	if (regexec(&re, network, nmatch, pmatch, 0) == REG_NOMATCH) {
 		return NULL;
 	}
-	name = strndup(network + pmatch[1].rm_so,
-		       (size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
+	name = xstrndup(network + pmatch[1].rm_so,
+			(size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
 	regfree(&re);
 
 	return name;
@@ -468,8 +468,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 					nprocs,	sn_all, adapter_name,
 					bulk_xfer);
 		hostlist_destroy(list);
-		if (adapter_name)
-			free(adapter_name);
+		xfree(adapter_name);
 
 		return err;
 	}
