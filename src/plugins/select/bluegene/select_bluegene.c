@@ -2090,6 +2090,27 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	return rc;
 }
 
+/* The job lock should be in place before calling this function. */
+extern int select_p_is_job_finished(struct job_record *job_ptr)
+{
+#ifdef HAVE_BGQ
+	if (job_ptr && job_ptr->magic == JOB_MAGIC) {
+		select_jobinfo_t *jobinfo = (select_jobinfo_t *)
+			job_ptr->select_jobinfo->data;
+		/* This means the job is finished and ready to be
+		   taken away.
+		*/
+		if (!jobinfo->block_cnode_cnt)
+			return 1;
+		else
+			return 0;
+	}
+
+	error("Checking a job with bad magic, this should never happen.");
+#endif
+	return 1;
+}
+
 /* The unpack for this is in common/slurm_protocol_pack.c */
 extern int select_p_pack_select_info(time_t last_query_time,
 				     uint16_t show_flags, Buf *buffer_ptr,

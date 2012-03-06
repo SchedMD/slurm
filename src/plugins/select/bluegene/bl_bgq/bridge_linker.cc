@@ -325,8 +325,21 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	 * issues where a step could complete after the job completion
 	 * has taken place (since we are on a thread here).
 	 */
-	if (job_ptr)
+	if (job_ptr) {
 		lock_slurmctld(job_read_lock);
+		if (job_ptr->magic == JOB_MAGIC) {
+			select_jobinfo_t *jobinfo = (select_jobinfo_t *)
+				job_ptr->select_jobinfo->data;
+			/* This means the job is finished and ready to be
+			   taken away.
+			*/
+			jobinfo->block_cnode_cnt = 0;
+		} else {
+			error("We have a job with a bad magic. "
+			      "This should never happen.  It was running on %s",
+			      block_id);
+		}
+	}
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main, block_id);
 	if (bg_record) {
