@@ -65,8 +65,14 @@ extern int runjob_launch(int argc, char **argv,
 
 extern void runjob_signal(int signal)
 {
-	if (rj_client_ptr)
-		rj_client_ptr->kill(signal);
+	if (rj_client_ptr) {
+		try {
+			rj_client_ptr->kill(signal);
+		}  catch (const std::exception& e) {
+			std::cerr << "could send signal " << signal
+				  << " to job: " << e.what() << std::endl;
+		}
+	}
 }
 
 #endif

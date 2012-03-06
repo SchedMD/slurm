@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
     gone will clear up the cnodes in Software Failure.
  -- Change default SchedulerParameters max_switch_wait field value from 60 to
     300 seconds.
+ -- BGQ - catch errors from the kill option of the runjob client.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
