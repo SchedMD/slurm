@@ -45,6 +45,8 @@
 #include "src/common/hostlist.h"
 #include <slurm/slurm.h>
 
+#include "src/srun/srun_job.h"
+
 /* The connection communicates information to and from the resource
  * manager, so that the resource manager can start the parallel task
  * manager, and is available for the caller to communicate directly
@@ -82,6 +84,11 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
  */
 extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
+	srun_job_t *job = (srun_job_t *)*resource_mgr;
+	/* We are at the end so don't worry about freeing the
+	   srun_job_t pointer */
+	resource_mgr = NULL;
+
 	info("got pr_rm_free called");
 
 }
@@ -244,7 +251,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
  * OUT resource_mgr - Pointer to the rmhandle_t handle returned by the
  *        pe_rm_init function. This handle should be used by all other
  *        resource manager API calls.
- * IN/OUT rm_id - Pointer to a character string that defines a
+ * IN rm_id - Pointer to a character string that defines a
  *        resource manager ID, for checkpoint and restart cases. This
  *        pointer can be set to NULL, which means there is no previous
  *        resource manager session or job running. When it is set to a
@@ -264,6 +271,12 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		      char** error_msg)
 {
+	srun_job_t *job = NULL;
+	/* SLURM was originally written against 1300, so we will
+	 * return that, no matter what comes in so we always work.
+	 */
+	*rmapi_version = 1300;
+	*resource_mgr = (void *)job;
 	info("got pr_rm_init called");
 	return 0;
 }
