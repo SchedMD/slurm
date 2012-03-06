@@ -258,6 +258,11 @@ nochange_state:
 						bg_record->job_list);
 				while ((job_ptr = list_next(job_itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
+						error("bg_status_update_"
+						      "block_state: 1 "
+						      "bad magic found when "
+						      "looking at block %s",
+						      bg_record->bg_block_id);
 						list_delete_item(job_itr);
 						continue;
 					}
@@ -319,6 +324,11 @@ nochange_state:
 						bg_record->job_list);
 				while ((job_ptr = list_next(job_itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
+						error("bg_status_update_"
+						      "block_state: 2 "
+						      "bad magic found when "
+						      "looking at block %s",
+						      bg_record->bg_block_id);
 						list_delete_item(job_itr);
 						continue;
 					}

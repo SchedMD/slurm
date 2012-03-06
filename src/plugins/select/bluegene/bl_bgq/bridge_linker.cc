@@ -1019,6 +1019,10 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 			select_jobinfo_t *jobinfo;
 
 			if (job_ptr->magic != JOB_MAGIC) {
+				error("bridge_block_sync_users: "
+				      "bad magic found when "
+				      "looking at block %s",
+				      bg_record->bg_block_id);
 				list_delete_item(itr);
 				continue;
 			}

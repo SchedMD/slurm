@@ -238,6 +238,10 @@ extern struct job_record *find_job_in_bg_record(bg_record_t *bg_record,
 	itr = list_iterator_create(bg_record->job_list);
 	while ((job_ptr = list_next(itr))) {
 		if (job_ptr->magic != JOB_MAGIC) {
+			error("find_job_in_bg_record: "
+			      "bad magic found when "
+			      "looking at block %s",
+			      bg_record->bg_block_id);
 			list_delete_item(itr);
 			continue;
 		}

@@ -483,6 +483,10 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 			itr = list_iterator_create(bg_record->job_list);
 			while ((job_ptr = list_next(itr))) {
 				if (job_ptr->magic != JOB_MAGIC) {
+					error("_pack_block: "
+					      "bad magic found when "
+					      "packing block %s",
+					      bg_record->bg_block_id);
 					list_delete_item(itr);
 					slurm_pack_block_job_info(
 						NULL, buffer,
@@ -534,6 +538,10 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 			itr = list_iterator_create(bg_record->job_list);
 			while ((job_ptr = list_next(itr))) {
 				if (job_ptr->magic != JOB_MAGIC) {
+					error("_pack_block 2.3: "
+					      "bad magic found when "
+					      "packing block %s",
+					      bg_record->bg_block_id);
 					list_delete_item(itr);
 					continue;
 				}
@@ -1788,6 +1796,10 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 				xassert(itr);
 				while ((found_job_ptr = list_next(itr))) {
 					if (found_job_ptr->magic != JOB_MAGIC) {
+						error("select_p_job_ready: "
+						      "bad magic found when "
+						      "looking at job %u",
+						      job_ptr->job_id);
 						list_delete_item(itr);
 						continue;
 					}
@@ -2508,6 +2520,11 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 					found_record->job_list);
 				while ((job_ptr = list_next(itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
+						error("select_p_update_block: "
+						      "bad magic found when "
+						      "looking at block %s",
+						      found_record->
+						      bg_block_id);
 						list_delete_item(itr);
 						continue;
 					}
