@@ -383,17 +383,22 @@ upon request.</p>
 program (executed at build time) be invoked with the option
 "--with-loadleveler=&lt;path&gt;" where "&lt;path&gt;" identifies the
 fully qualified pathname of where LoadLeveler is installed (i.e. the "llapi.h"
-header file will be at "&lt;path&gt;/include/llapi.h"). If SLURM's "configure"
-program is invoked by the "rpmbuild" command, then in your "~/.rpmmacros" file
-include the line<br>
-"%_with_loadleveler &lt;path&gt;" for the same result.
+header file will be at "&lt;path&gt;/include/llapi.h" and the "libllapi.so"
+library file will be at "&lt;path&gt;/lib64/libllapi.so", if you are not sure of
+the path, one possible location is "/opt/ibmll/LoadL/scheduler/full")
+If SLURM's "configure" program is invoked by the "rpmbuild" command, then in
+your "~/.rpmmacros" file include the line:</p>
+<pre>
+%_with_loadleveler &lt;path&gt;
+</pre>
+<p>for the same result.
 Only one RPM file will be created with all of the required files.</p>
 
-<p>There is no need for any SLURM configuration files when operating with
-LoadLeveler.</p>
+<p>There is no need for any SLURM configuration files, daemons or libraries
+when operating with LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 March 2012</p>
+<p style="text-align:center;">Last modified 6 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
