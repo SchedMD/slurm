@@ -1068,6 +1068,7 @@ _destroy_conf(void)
 static void
 _print_config(void)
 {
+	int days, hours, mins, secs;
 	char name[128];
 
 	gethostname_short(name, sizeof(name));
@@ -1086,8 +1087,15 @@ _print_config(void)
 
 	get_memory(&conf->real_memory_size);
 	get_tmp_disk(&conf->tmp_disk_space, "/tmp");
-	printf("RealMemory=%u TmpDisk=%u\n",
+	printf("RealMemory=%u TmpDisk=%u ",
 	       conf->real_memory_size, conf->tmp_disk_space);
+
+	get_up_time(&conf->up_time);
+	secs  =  conf->up_time % 60;
+	mins  = (conf->up_time / 60) % 60;
+	hours = (conf->up_time / 3600) % 24;
+	days  = (conf->up_time / 86400);
+	printf("UpTime=%u-%2.2u:%2.2u:%2.2u\n", days, hours, mins, secs);
 }
 
 static void
