@@ -57,7 +57,7 @@ extern int get_cpuinfo(uint16_t numproc,
  *  - XCPUINFO_ERROR
  *  - XCPUINFO_SUCCESS
  */
-int xcpuinfo_init();
+int xcpuinfo_init(void);
 
 /*
  * Destroy xcpuinfo internal data
@@ -66,7 +66,7 @@ int xcpuinfo_init();
  *  - XCPUINFO_ERROR
  *  - XCPUINFO_SUCCESS
  */
-int xcpuinfo_fini();
+int xcpuinfo_fini(void);
 
 /*
  * Use xcpuinfo internal data to convert an abstract range

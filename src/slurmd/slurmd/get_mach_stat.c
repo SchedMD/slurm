@@ -284,7 +284,7 @@ get_memory(uint32_t *real_memory)
 	int mem;
 	size_t len = sizeof(mem);
 	if (sysctlbyname("hw.physmem", &mem, &len, NULL, 0) == -1) {
-		error("get_procs: error running sysctl(HW_PHYSMEM)");
+		error("get_memory: error running sysctl(HW_PHYSMEM)");
 		return EINVAL;
 	}
 	*real_memory = mem;

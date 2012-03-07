@@ -671,7 +671,7 @@ int _ranges_conv(char* lrange,char** prange,int mode);
 /* xcpuinfo_mac_to_abs(mach,&abs); */
 
 int
-xcpuinfo_init()
+xcpuinfo_init(void)
 {
 	if ( initialized )
 		return XCPUINFO_SUCCESS;
@@ -689,7 +689,7 @@ xcpuinfo_init()
 }
 
 int
-xcpuinfo_fini()
+xcpuinfo_fini(void)
 {
 	if ( ! initialized )
 		return XCPUINFO_SUCCESS;
