@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2011" "slurm.conf 2.4" "Slurm configuration file"
+.TH "slurm.conf" "6" "March 2012" "slurm.conf 2.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2570,6 +2570,10 @@ one or more jobs allocated to it, but will not be allocated to any new jobs.
 but will be established when the \fBslurmd\fR daemon on that node registers.
 The default value is "UNKNOWN".
 Also see the \fBDownNodes\fR parameter below.
+
+For example: "FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03]
+State=UNKNOWN" is used to define four front end nodes for running slurmd
+daemons.
 
 .LP
 The partition configuration permits you to establish different job
