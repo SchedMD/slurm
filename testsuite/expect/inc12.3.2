@@ -1,0 +1,151 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test for accounting records of specific jobs on specific nodes
+# This is a sub-test of test12.3
+############################################################################
+# Copyright (C) 2012 SchedMD LLC.
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+proc inc12_3_2 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct job_1_node_0 job_1_node_2 job_2_node_1 job_2_node_2} {
+	
+	global alpha_numeric_under sacct
+	global exit_code
+
+	send_user "\nSearch for jobs on node: $job_1_node_0\n"
+	set job_1_match 0
+	set job_2_match 0
+	spawn $sacct -A '$test_acct' -N$job_1_node_0
+	expect {
+	
+		-re "$job_id_1" {
+			incr job_1_match
+		 	exp_continue 
+		}
+		-re "$job_id_2" {
+			incr job_2_match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct did not respond\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_1_match != 1} {
+		send_user "\nFAILURE:sacct was unable to find the job $job_id_1 on node $job_1_node_0 ($job_1_match != 1)\n"
+		set exit_code 1
+	}
+	if {$job_2_match != 0} {
+		send_user "\nFAILURE:sacct was found job $job_id_2 on node $job_1_node_0 ($job_2_match != 0)\n"
+		set exit_code 1
+	}
+
+
+	send_user "\nSearch for jobs on node: $job_1_node_2\n"
+	set job_1_match 0
+	set job_2_match 0
+	spawn $sacct -A '$test_acct' -N$job_1_node_2
+	expect {
+	
+		-re "$job_id_1" {
+			incr job_1_match
+		 	exp_continue 
+		}
+		-re "$job_id_2" {
+			incr job_2_match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct did not respond\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_1_match != 1} {
+		send_user "\nFAILURE:sacct was unable to find the job $job_id_1 on node $job_1_node_2 ($job_1_match != 1)\n"
+		set exit_code 1
+	}
+
+
+	send_user "\nSearch for jobs on node: $job_2_node_1\n"
+	set job_1_match 0
+	set job_2_match 0
+	spawn $sacct -A '$test_acct' -N$job_2_node_1
+	expect {
+	
+		-re "$job_id_1" {
+			incr job_1_match
+		 	exp_continue 
+		}
+		-re "$job_id_2" {
+			incr job_2_match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct did not respond\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_2_match != 1} {
+		send_user "\nFAILURE:sacct was unable to find the job $job_id_2 on node $job_2_node_1 ($job_2_match != 1)\n"
+		set exit_code 1
+	}
+
+
+	send_user "\nSearch for jobs on node: $job_2_node_2\n"
+	set job_1_match 0
+	set job_2_match 0
+	spawn $sacct -A '$test_acct' -N$job_2_node_2
+	expect {
+	
+		-re "$job_id_1" {
+			incr job_1_match
+		 	exp_continue 
+		}
+		-re "$job_id_2" {
+			incr job_2_match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct did not respond\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	
+	if {$job_2_match != 1} {
+		send_user "\nFAILURE: sacct was unable to find the job $job_id_2 on node $job_2_node_2 ($job_2_match != 1)\n"
+		set exit_code 1
+	}
+}
+

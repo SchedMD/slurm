@@ -34,13 +34,14 @@
 ############################################################################
 source ./globals
 source ./globals_accounting
+source ./inc12.3.2
 
 set test_id     "12.3"
 set exit_code   0
-set file_in     "test.$test_id.input"
 set job_name_1  "JOB1"
 set job_name_2  "JOB2"
-set ta		"slurm_test-account.1"
+set file_in     "test.$test_id.input"
+set test_acct	"slurm_test-account.1"
 
 print_header $test_id
 
@@ -49,15 +50,27 @@ print_header $test_id
 #
 if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
+	exit $exit_code
 }
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\n"
 	send_user "Use sacctmgr mod user \$USER_NAME set admin=admin.\n"
-	exit 0
+	exit $exit_code
 }
 
+#
+# Make sure we have enough nodes to test functionality
+#
+set partition [default_partition]
+set node_count [get_node_cnt_in_part $partition]
+if { $node_count < 3 } {
+	send_user "WARNING: system must have at least 3 \
+		   nodes to run this test on.  This system \
+		   only has $node_count.\n"
+	exit $exit_code
+}
+	
 #
 # Identify the user and his current default account
 #
@@ -90,17 +103,17 @@ expect {
 }
 
 #
-# Use sacctmgr to add an account
+# Use sacctmgr to add a test account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $ta]
+set sadd_pid [spawn $sacctmgr -i add account $test_acct]
 expect {
 	-re "Adding Account" {
 		incr aamatches
 		exp_continue
 	}
 	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $ta found\n"
+		send_user "\nWARNING: vestigial account $test_acct found\n"
 		incr aamatches
 		exp_continue
 	}
@@ -121,7 +134,7 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta]
+set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
@@ -134,16 +147,18 @@ expect {
 }
 
 #
-# Submit two slurm jobs that will execute 'id'
+# Submit two slurm jobs to capture job info
 #
 set job_id_1 0
+set job_1_node_inx 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 -A $ta -J $job_name_1 -v $bin_id]
+set srun_pid [spawn $srun -N2 -t1 -A $test_acct -J $job_name_1 -v $bin_id]
 expect {
-	-re "launching ($number)" {
+	-re "launching ($number).0 on host ($alpha_numeric_under)," {
 		set job_id_1 $expect_out(1,string)
+		set job_1_node($job_1_node_inx) $expect_out(2,string)
+		incr job_1_node_inx
 		exp_continue
-		
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -154,15 +169,24 @@ expect {
 		wait
 	}
 }
+if {$job_1_node_inx != 2} {
+	send_user "\nFAILURE: srun host count bad ($job_1_node_inx != 2)\n"
+	exit 1
+}	
 
+#
+# Second job explicitly excludes node zero from previous job
+#
 set job_id_2 0
-set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 -A $ta -J $job_name_2 -v $bin_id]
+set job_2_node_inx 0
+set srun_pid [spawn $srun -N2 -x $job_1_node(0) -t1 -A $test_acct -J $job_name_2 -v $bin_id]
 expect {
-	-re "launching ($number)" {
+
+	-re "launching ($number).0 on host ($alpha_numeric_under)," {
 		set job_id_2 $expect_out(1,string)
+		set job_2_node($job_2_node_inx) $expect_out(2,string)
+		incr job_2_node_inx
 		exp_continue
-		
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -172,6 +196,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$job_2_node_inx != 2} {
+	send_user "\nFAILURE: srun host count bad ($job_2_node_inx != 2)\n"
+	exit 1
 }
 
 #
@@ -180,51 +208,15 @@ expect {
 sleep 5
 
 #
-# Matches the job name with the job id
+# Execute sub-tests based upon these jobs
 #
-set idmatch 0
-send_user "\nJob id1 number: $job_id_1\n"
-spawn $sacct -A '$ta' --name=$job_name_1 -p -o jobid
-expect {
-	-re "$job_id_1" {
-		incr idmatch
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-
-}
-
-send_user "\nJob id2 number: $job_id_2\n"
-spawn $sacct -A '$ta' --name=$job_name_2 -p -o jobid
-expect {
-	-re "$job_id_2" {
-		incr idmatch
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$idmatch != 2} {
-	send_user "\nFAILURE: sacct could not match job id to job name\n"
-	set exit_code 1
-}
+inc12_3_2 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct $job_1_node(0) $job_1_node(1) $job_2_node(0) $job_2_node(1)
 
 #
 # Use sacctmgr to delete the test account
 #
 set damatches 0
-set sadel_pid [spawn $sacctmgr -i delete account $ta]
+set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
 expect {
 	-re "Deleting account" {
 		incr damatches
