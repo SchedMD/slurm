@@ -1038,8 +1038,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				if (IS_NODE_DOWN(node_ptr)) {
 					state_val = NODE_STATE_IDLE;
+#ifndef HAVE_FRONT_END
 					node_ptr->node_state |=
 							NODE_STATE_NO_RESPOND;
+#endif
 					node_ptr->last_response = now;
 					ping_nodes_now = true;
 				} else if (IS_NODE_FUTURE(node_ptr)) {
@@ -1052,8 +1054,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 							node_ptr->comm_name);
 					if (node_ptr->slurm_addr.sin_port) {
 						state_val = NODE_STATE_IDLE;
+#ifndef HAVE_FRONT_END
 						node_ptr->node_state |=
 							NODE_STATE_NO_RESPOND;
+#endif
 						node_ptr->last_response = now;
 						ping_nodes_now = true;
 					} else {

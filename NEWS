@@ -34,6 +34,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - make it so the epilog runs until slurmctld tells it the job is
     gone.  Previously it had a timelimit which has proven to not be the right
     thing.
+ -- FRONTEND - fix issue where if a compute node was in a down state and
+    an admin updates the node to idle/resume the compute nodes will go
+    instantly to idle instead of idle* which means no response.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
