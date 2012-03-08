@@ -36,16 +36,28 @@
 \*****************************************************************************/
 
 #include <permapi.h>
+#include <dlfcn.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include <slurm/slurm.h>
 
 #include "src/srun/srun_job.h"
+#include "src/srun/opt.h"
+#include "src/srun/allocate.h"
+
+void *my_handle = NULL;
+srun_job_t *job = NULL;
+
+
+extern char **environ;
 
 /* The connection communicates information to and from the resource
  * manager, so that the resource manager can start the parallel task
@@ -84,11 +96,12 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
  */
 extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
-	srun_job_t *job = (srun_job_t *)*resource_mgr;
-	/* We are at the end so don't worry about freeing the
+	//srun_job_t *job = (srun_job_t *)*resource_mgr;
+       	/* We are at the end so don't worry about freeing the
 	   srun_job_t pointer */
 	resource_mgr = NULL;
 
+	dlclose(my_handle);
 	info("got pr_rm_free called");
 
 }
@@ -105,6 +118,9 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
 	info("got pr_rm_free_event called");
+	if (job_event) {
+		xfree(*job_event);
+	}
 	return 0;
 }
 
@@ -128,24 +144,24 @@ extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
  *        A job status change occurred, which results in one of the
  *        following job states. In this case, the caller may need to take
  *        appropriate action.
- * JOB_STATE_RUNNING
+ *     JOB_STATE_RUNNING
  *        Indicates that the job has started. POE uses the
  *        pe_rm_get_job_info function to return the job
  *        information. When a job state of JOB_STATE_RUNNING has been
  *        returned, the job has started running and POE can obtain the
  *        job information by way of the pe_rm_get_job_info function call.
- * JOB_STATE_NOTRUN
+ *     JOB_STATE_NOTRUN
  *        Indicates that the job was not run, and POE will terminate.
- * JOB_STATE_PREEMPTED
+ *     JOB_STATE_PREEMPTED
  *        Indicates that the job was preempted.
- * JOB_STATE_RESUMED
+ *     JOB_STATE_RESUMED
  *        Indicates that the job has resumed.
  * JOB_TIMER_EVENT
  *        Indicates that no events occurred during the period
  *        specified by pe_rm_timeout.
  *
  * IN resource_mgr
- * IN job_event - The address of the pointer to the job_event_t
+ * OUT job_event - The address of the pointer to the job_event_t
  *        type. If an event is generated successfully by the resource
  *        manager, that event is saved at the location specified, and
  *        pe_rm_get_event returns 0 (or a nonzero value, if the event
@@ -169,7 +185,21 @@ extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 			   int rm_timeout, char ** error_msg)
 {
-	info("got pr_rm_get_event called");
+	job_event_t *ret_event = NULL;
+	job_info_t *job_info = NULL;
+	info("got pr_rm_get_event called %d %p %p", rm_timeout,
+	     job_event, *job_event);
+	ret_event = xmalloc(sizeof(job_event_t));
+	*job_event = ret_event;
+	ret_event->event = JOB_STATE_EVENT;
+	job_info = xmalloc(sizeof(job_info_t));
+	ret_event->event_data = (void *)job_info;
+	job_info->procs = 1;
+	job_info->host_count = 1;
+	job_info->hosts = xmalloc(sizeof(host_usage_t));
+	job_info->hosts->task_count = 1;
+	job_info->hosts->host_name = xstrdup("snowflake");
+
 	return 0;
 }
 
@@ -271,13 +301,29 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		      char** error_msg)
 {
-	srun_job_t *job = NULL;
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
 	*rmapi_version = 1300;
 	*resource_mgr = (void *)job;
-	info("got pr_rm_init called");
+#ifdef MYSELF_SO
+	/* Since POE opens this lib without RTLD_LAZY | RTLD_GLOBAL we
+	   just open ourself again with those options and bada bing
+	   bada boom we are good to go with the symbols we need.
+	*/
+	my_handle = dlopen(MYSELF_SO, RTLD_LAZY | RTLD_GLOBAL);
+	if (!my_handle) {
+		debug("%s", dlerror());
+		return 1;
+	}
+#else
+	fatal("I haven't been told where I am.  This should never happen.");
+#endif
+	info("got pr_rm_init called %s", rm_id);
+
+	/* Set up slurmctld message handler */
+	slurmctld_msg_init();
+
 	return 0;
 }
 
@@ -321,7 +367,207 @@ extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		     char** error_msg)
 {
-	info("got pr_rm_submit_job called");
+	resource_allocation_response_msg_t *resp;
+	job_request_t *pe_job_req = NULL;
+	job_info_t *pe_job_info = NULL;
+
+	info("got pr_rm_submit_job called %d", job_cmd.job_format);
+	if (job_cmd.job_format != 1) {
+		/* We don't handle files */
+		error("SLURM doesn't handle files to submit_job");
+		return 1;
+	}
+
+	pe_job_req = (job_request_t *)job_cmd.job_command;
+
+	info("job_type\t= %d", pe_job_req->job_type);
+	info("num_nodes\t= %d", pe_job_req->num_nodes);
+	info("tasks_per_node\t= %d", pe_job_req->tasks_per_node);
+	info("total_tasks\t= %d", pe_job_req->total_tasks);
+	info("usage_mode\t= %d", pe_job_req->node_usage);
+	//info("netowrk_usage\t= %d", pe_job_req->network_usage);
+	info("check_pointable\t= %d", pe_job_req->check_pointable);
+	info("check_dir\t= %s", pe_job_req->check_dir);
+	info("task_affinity\t= %s", pe_job_req->task_affinity);
+	info("pthreads\t= %d", pe_job_req->parallel_threads);
+	info("pool\t= %s", pe_job_req->pool);
+	info("save_job\t= %s", pe_job_req->save_job_file);
+	info("require\t= %s", pe_job_req->requirements);
+	info("node_topology\t= %s", pe_job_req->node_topology);
+
+	int i;
+	char *saved_argv = getenv("MP_I_SAVED_ARGV"),
+		*tmp_char = NULL, *walking_char = NULL;
+	int my_argc = 1;
+	char **my_argv;
+	tmp_char = saved_argv;
+	i = 0;
+	while (tmp_char[i]) {
+		if (tmp_char[i] != ' ') {
+			i++;
+			continue;
+		}
+		i++;
+		while (tmp_char[i] && tmp_char[i] == ' ') {
+			i++;
+		}
+		my_argc++;
+	}
+	my_argv = (char **) xmalloc((my_argc + 1) * sizeof(char *));
+	tmp_char = xstrdup(saved_argv);
+	walking_char = tmp_char;
+	my_argc = 0;
+	i = 0;
+	while (tmp_char[i]) {
+		if (tmp_char[i] != ' ') {
+			i++;
+			continue;
+		}
+		tmp_char[i] = '\0';
+		i++;
+		my_argv[my_argc] = xstrdup(walking_char);
+		my_argc++;
+
+		while (tmp_char[i] && tmp_char[i] == ' ')
+			i++;
+		walking_char = tmp_char + i;
+	}
+	if (walking_char) {
+		my_argv[my_argc] = xstrdup(walking_char);
+		my_argc++;
+	}
+	xfree(tmp_char);
+
+	/* if (environ == NULL) { */
+	/* 	error("no environ"); */
+	/* 	return 1; */
+	/* } */
+	/* for (i=0; environ[i]; i++) { */
+	/* 	info("%s", environ[i]); */
+	/* } */
+
+	initialize_and_process_args(my_argc, my_argv);
+	i = 0;
+	while(my_argv[i]) {
+		//info("freeing %s", my_argv[i]);
+		xfree(my_argv[i]);
+		i++;
+	}
+	xfree(my_argv);
+
+	/* opt.min_nodes = pe_job_req->num_nodes; */
+	/* if (pe_job_req->tasks_per_node != -1) */
+	/* 	opt.ntasks_per_node = pe_job_req->tasks_per_node; */
+	/* opt.ntasks = pe_job_req->total_tasks; */
+	info("got part of %s", opt.partition);
+	if (!opt.partition)
+		opt.partition = xstrdup(pe_job_req->pool);
+/* 	/\* now global "opt" should be filled in and available, */
+/* 	 * create a job from opt */
+/* 	 *\/ */
+/* 	if (opt.test_only) { */
+/* 		int rc = allocate_test(); */
+/* 		if (rc) { */
+/* 			slurm_perror("allocation failure"); */
+/* 			exit (1); */
+/* 		} */
+/* 		exit (0); */
+
+/* 	} else if (opt.no_alloc) { */
+/* 		info("do not allocate resources"); */
+/* 		job = job_create_noalloc(); */
+/* 		if (create_job_step(job, false) < 0) { */
+/* 			exit(error_exit); */
+/* 		} */
+/* 	} else if ((resp = existing_allocation())) { */
+/* 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, */
+/* 					&resp->node_cnt); */
+/* 		if (opt.nodes_set_env && !opt.nodes_set_opt && */
+/* 		    (opt.min_nodes > resp->node_cnt)) { */
+/* 			/\* This signifies the job used the --no-kill option */
+/* 			 * and a node went DOWN or it used a node count range */
+/* 			 * specification, was checkpointed from one size and */
+/* 			 * restarted at a different size *\/ */
+/* 			error("SLURM_NNODES environment varariable " */
+/* 			      "conflicts with allocated node count (%u!=%u).", */
+/* 			      opt.min_nodes, resp->node_cnt); */
+/* 			/\* Modify options to match resource allocation. */
+/* 			 * NOTE: Some options are not supported *\/ */
+/* 			opt.min_nodes = resp->node_cnt; */
+/* 			xfree(opt.alloc_nodelist); */
+/* 			if (!opt.ntasks_set) */
+/* 				opt.ntasks = opt.min_nodes; */
+/* 		} */
+/* 		if (opt.alloc_nodelist == NULL) */
+/* 			opt.alloc_nodelist = xstrdup(resp->node_list); */
+/* 		if (opt.exclusive) */
+/* 			_step_opt_exclusive(); */
+/* 		_set_env_vars(resp); */
+/* 		if (_validate_relative(resp)) */
+/* 			exit(error_exit); */
+/* 		job = job_step_create_allocation(resp); */
+/* 		slurm_free_resource_allocation_response_msg(resp); */
+
+/* 		if (opt.begin != 0) { */
+/* 			error("--begin is ignored because nodes" */
+/* 			      " are already allocated."); */
+/* 		} */
+/* 		if (!job || create_job_step(job, false) < 0) */
+/* 			exit(error_exit); */
+/* 	} else { */
+/* 		/\* Combined job allocation and job step launch *\/ */
+/* #if defined HAVE_FRONT_END && (!defined HAVE_BG || defined HAVE_BG_L_P || !defined HAVE_BG_FILES) */
+/* 		uid_t my_uid = getuid(); */
+/* 		if ((my_uid != 0) && */
+/* 		    (my_uid != slurm_get_slurm_user_id())) { */
+/* 			error("srun task launch not supported on this system"); */
+/* 			exit(error_exit); */
+/* 		} */
+/* #endif */
+		if (opt.relative_set && opt.relative) {
+			fatal("--relative option invalid for job allocation "
+			      "request");
+		}
+
+		if (!opt.job_name_set_env && opt.job_name_set_cmd)
+			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
+		else if (!opt.job_name_set_env && opt.argc)
+			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
+
+		if ( !(resp = allocate_nodes()) )
+			return error_exit;
+
+		//got_alloc = true;
+		//_print_job_information(resp);
+		//_set_env_vars(resp);
+		/* if (_validate_relative(resp)) { */
+		/* 	slurm_complete_job(resp->job_id, 1); */
+		/* 	return error_exit; */
+		/* } */
+		job = job_create_allocation(resp);
+
+		opt.exclusive = false;	/* not applicable for this step */
+		opt.time_limit = NO_VAL;/* not applicable for step, only job */
+		xfree(opt.constraints);	/* not applicable for this step */
+		if (!opt.job_name_set_cmd && opt.job_name_set_env) {
+			/* use SLURM_JOB_NAME env var */
+			opt.job_name_set_cmd = true;
+		}
+
+		/*
+		 *  Become --uid user
+		 */
+		/* if (_become_user () < 0) */
+		/* 	info("Warning: Unable to assume uid=%u", opt.uid); */
+
+		if (!job || create_job_step(job, true) < 0) {
+			slurm_complete_job(resp->job_id, 1);
+			return error_exit;
+		}
+
+		slurm_free_resource_allocation_response_msg(resp);
+	/* } */
+		//*resource_mgr = (void *)pe_job;
 	return 0;
 }
 

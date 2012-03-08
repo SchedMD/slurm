@@ -108,7 +108,8 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 libpermapi_la_LIBADD =
-am_libpermapi_la_OBJECTS = shr_64.lo
+am_libpermapi_la_OBJECTS = shr_64.lo opt.lo srun_job.lo srun_pty.lo \
+	debugger.lo fname.lo allocate.lo multi_prog.lo task_state.lo
 libpermapi_la_OBJECTS = $(am_libpermapi_la_OBJECTS)
 libpermapi_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -155,7 +156,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = @CPPFLAGS@
+CPPFLAGS = -DMYSELF_SO=\"$(libdir)/slurm/libpermapi.so\"
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -340,9 +341,22 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 # making a .la
 pkglib_LTLIBRARIES = libpermapi.la
-libpermapi_la_SOURCES = shr_64.c
-libpermapi_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+convenience_libs = \
 	$(top_builddir)/src/api/libslurm.o -ldl -lpthread
+
+srun_dir = $(top_srcdir)/src/srun
+libpermapi_la_SOURCES = shr_64.c \
+	$(srun_dir)/opt.c \
+	$(srun_dir)/srun_job.c \
+	$(srun_dir)/srun_pty.c \
+	$(srun_dir)/debugger.c    \
+	$(srun_dir)/fname.c     \
+	$(srun_dir)/allocate.c  \
+	$(srun_dir)/multi_prog.c \
+	$(srun_dir)/task_state.c
+
+libpermapi_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+	$(convenience_libs)
 
 all: all-am
 
@@ -418,7 +432,15 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debugger.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shr_64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_job.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_pty.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_state.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -440,6 +462,62 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+opt.lo: $(srun_dir)/opt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT opt.lo -MD -MP -MF $(DEPDIR)/opt.Tpo -c -o opt.lo `test -f '$(srun_dir)/opt.c' || echo '$(srcdir)/'`$(srun_dir)/opt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/opt.Tpo $(DEPDIR)/opt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/opt.c' object='opt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o opt.lo `test -f '$(srun_dir)/opt.c' || echo '$(srcdir)/'`$(srun_dir)/opt.c
+
+srun_job.lo: $(srun_dir)/srun_job.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srun_job.lo -MD -MP -MF $(DEPDIR)/srun_job.Tpo -c -o srun_job.lo `test -f '$(srun_dir)/srun_job.c' || echo '$(srcdir)/'`$(srun_dir)/srun_job.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/srun_job.Tpo $(DEPDIR)/srun_job.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/srun_job.c' object='srun_job.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srun_job.lo `test -f '$(srun_dir)/srun_job.c' || echo '$(srcdir)/'`$(srun_dir)/srun_job.c
+
+srun_pty.lo: $(srun_dir)/srun_pty.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srun_pty.lo -MD -MP -MF $(DEPDIR)/srun_pty.Tpo -c -o srun_pty.lo `test -f '$(srun_dir)/srun_pty.c' || echo '$(srcdir)/'`$(srun_dir)/srun_pty.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/srun_pty.Tpo $(DEPDIR)/srun_pty.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/srun_pty.c' object='srun_pty.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srun_pty.lo `test -f '$(srun_dir)/srun_pty.c' || echo '$(srcdir)/'`$(srun_dir)/srun_pty.c
+
+debugger.lo: $(srun_dir)/debugger.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT debugger.lo -MD -MP -MF $(DEPDIR)/debugger.Tpo -c -o debugger.lo `test -f '$(srun_dir)/debugger.c' || echo '$(srcdir)/'`$(srun_dir)/debugger.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/debugger.Tpo $(DEPDIR)/debugger.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/debugger.c' object='debugger.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o debugger.lo `test -f '$(srun_dir)/debugger.c' || echo '$(srcdir)/'`$(srun_dir)/debugger.c
+
+fname.lo: $(srun_dir)/fname.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT fname.lo -MD -MP -MF $(DEPDIR)/fname.Tpo -c -o fname.lo `test -f '$(srun_dir)/fname.c' || echo '$(srcdir)/'`$(srun_dir)/fname.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fname.Tpo $(DEPDIR)/fname.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/fname.c' object='fname.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o fname.lo `test -f '$(srun_dir)/fname.c' || echo '$(srcdir)/'`$(srun_dir)/fname.c
+
+allocate.lo: $(srun_dir)/allocate.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT allocate.lo -MD -MP -MF $(DEPDIR)/allocate.Tpo -c -o allocate.lo `test -f '$(srun_dir)/allocate.c' || echo '$(srcdir)/'`$(srun_dir)/allocate.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/allocate.Tpo $(DEPDIR)/allocate.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/allocate.c' object='allocate.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o allocate.lo `test -f '$(srun_dir)/allocate.c' || echo '$(srcdir)/'`$(srun_dir)/allocate.c
+
+multi_prog.lo: $(srun_dir)/multi_prog.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT multi_prog.lo -MD -MP -MF $(DEPDIR)/multi_prog.Tpo -c -o multi_prog.lo `test -f '$(srun_dir)/multi_prog.c' || echo '$(srcdir)/'`$(srun_dir)/multi_prog.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/multi_prog.Tpo $(DEPDIR)/multi_prog.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/multi_prog.c' object='multi_prog.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o multi_prog.lo `test -f '$(srun_dir)/multi_prog.c' || echo '$(srcdir)/'`$(srun_dir)/multi_prog.c
+
+task_state.lo: $(srun_dir)/task_state.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT task_state.lo -MD -MP -MF $(DEPDIR)/task_state.Tpo -c -o task_state.lo `test -f '$(srun_dir)/task_state.c' || echo '$(srcdir)/'`$(srun_dir)/task_state.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/task_state.Tpo $(DEPDIR)/task_state.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srun_dir)/task_state.c' object='task_state.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o task_state.lo `test -f '$(srun_dir)/task_state.c' || echo '$(srcdir)/'`$(srun_dir)/task_state.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -649,6 +727,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
+
+force:
+$(convenience_libs) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
