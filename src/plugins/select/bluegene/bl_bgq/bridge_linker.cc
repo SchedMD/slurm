@@ -542,8 +542,8 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		*/
 		slurm_mutex_lock(&ba_system_mutex);
 		start_mp = coord2ba_mp(bg_record->start);
-		xassert(start_mp);
-		xassert(start_mp->loc);
+		assert(start_mp);
+		assert(start_mp->loc);
 		midplanes.push_back(start_mp->loc);
 		slurm_mutex_unlock(&ba_system_mutex);
 
