@@ -136,7 +136,7 @@ BuildRequires: readline-devel
 %endif
 
 %if %{slurm_with openssl}
-BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
+# BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 
 %if %{slurm_with mysql}
@@ -151,7 +151,7 @@ BuildRequires: postgresql-devel >= 8.0.0
 # FIXME: AIX can't seem to find this even though this is in existance there.
 # We should probably figure out a better way of doing this, but for now we
 # just won't look for it on AIX.
-BuildRequires: perl(ExtUtils::MakeMaker)
+# BuildRequires: perl(ExtUtils::MakeMaker)
 %endif
 
 %description

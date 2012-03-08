@@ -385,11 +385,15 @@ program (executed at build time) be invoked with the option
 fully qualified pathname of where LoadLeveler is installed (i.e. the "llapi.h"
 header file will be at "&lt;path&gt;/include/llapi.h" and the "libllapi.so"
 library file will be at "&lt;path&gt;/lib64/libllapi.so", if you are not sure of
-the path, one possible location is "/opt/ibmll/LoadL/scheduler/full")
+the path, one possible location is "/opt/ibmll/LoadL/scheduler/full").
+In addition the <i>readline-devel</i> may be missing on your system.
+If that is the case, SLURM support for the readline function will need to be
+disabled at SLURM's build time.
 If SLURM's "configure" program is invoked by the "rpmbuild" command, then in
-your "~/.rpmmacros" file include the line:</p>
+your "~/.rpmmacros" file should look something like this:</p>
 <pre>
 %_with_loadleveler &lt;path&gt;
+%_without_readline 1
 </pre>
 <p>for the same result.
 Only one RPM file will be created with all of the required files.</p>
@@ -399,6 +403,6 @@ when operating with LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 March 2012</p>
+<p style="text-align:center;">Last modified 8 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
