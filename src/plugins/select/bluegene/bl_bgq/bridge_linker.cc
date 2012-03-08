@@ -555,13 +555,12 @@ extern int bridge_block_create(bg_record_t *bg_record)
 			*/
 			slurm_mutex_lock(&ba_system_mutex);
 			main_mp = coord2ba_mp(ba_mp->coord);
-			if (!main_mp) {
+			/* don't add the start_mp again. */
+			if (!main_mp || (main_mp == start_mp)) {
 				slurm_mutex_unlock(&ba_system_mutex);
 				continue;
 			}
-			/* don't add the start_mp again. */
-			if (main_mp == start_mp)
-				continue;
+
 			// info("got %s(%s) %d", main_mp->coord_str,
 			//      main_mp->loc, ba_mp->used);
 			if (ba_mp->used)
