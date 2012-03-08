@@ -1015,7 +1015,8 @@ static int _validate_config_blocks(List curr_block_list,
 	xassert(found_block_list);
 
 	/* read in state from last run. */
-	rc = _load_state_file(curr_block_list, dir);
+	if (bg_recover)
+		rc = _load_state_file(curr_block_list, dir);
 
 #ifndef HAVE_BG_FILES
 	if (rc != SLURM_SUCCESS)
