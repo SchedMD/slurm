@@ -531,18 +531,37 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		}
 
 	} else {
-		ListIterator itr = list_iterator_create(bg_record->ba_mp_list);
+		ListIterator itr;
+		ba_mp_t *main_mp, *start_mp;
+
+		/* If we are dealing with meshes we always need to
+		   have the first midplane added as the start corner.
+		   If we don't the API doesn't know what to do.  Since
+		   we only need this here we only set it here. It
+		   never gets freed since it is just a copy.
+		*/
+		slurm_mutex_lock(&ba_system_mutex);
+		start_mp = coord2ba_mp(bg_record->start);
+		xassert(start_mp);
+		xassert(start_mp->loc);
+		midplanes.push_back(start_mp->loc);
+		slurm_mutex_unlock(&ba_system_mutex);
+
+		itr = list_iterator_create(bg_record->ba_mp_list);
 		while ((ba_mp = (ba_mp_t *)list_next(itr))) {
 			/* Since the midplane locations aren't set up in the
 			   copy of this pointer we need to go out a get the
 			   real one from the system and use it.
 			*/
 			slurm_mutex_lock(&ba_system_mutex);
-			ba_mp_t *main_mp = coord2ba_mp(ba_mp->coord);
+			main_mp = coord2ba_mp(ba_mp->coord);
 			if (!main_mp) {
 				slurm_mutex_unlock(&ba_system_mutex);
 				continue;
 			}
+			/* don't add the start_mp again. */
+			if (main_mp == start_mp)
+				continue;
 			// info("got %s(%s) %d", main_mp->coord_str,
 			//      main_mp->loc, ba_mp->used);
 			if (ba_mp->used)
