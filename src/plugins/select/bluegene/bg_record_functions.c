@@ -942,6 +942,8 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	static int create_size = NO_VAL;
 	static select_ba_request_t blockreq;
 	int rc = SLURM_SUCCESS;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	xassert(mp_name);
 
@@ -998,6 +1000,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	tmp_record.ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
 	bit_nset(tmp_record.ionode_bitmap, io_start, io_start+io_cnt);
 
+	/* To avoid deadlock we always must lock the slurmctld before
+	   the block_state_mutex.
+	*/
+	if (!slurmctld_locked)
+		lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
@@ -1008,19 +1015,13 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			continue;
 
 		if (bg_record->job_running > NO_JOB_RUNNING) {
-			if (slurmctld_locked)
-				job_fail(bg_record->job_running);
-			else
-				slurm_fail_job(bg_record->job_running);
+			job_fail(bg_record->job_running);
 		} else if (bg_record->job_list) {
 			ListIterator job_itr = list_iterator_create(
 				bg_record->job_list);
 			struct job_record *job_ptr;
 			while ((job_ptr = list_next(job_itr))) {
-				if (slurmctld_locked)
-					job_fail(job_ptr->job_id);
-				else
-					slurm_fail_job(job_ptr->job_id);
+				job_fail(job_ptr->job_id);
 			}
 			list_iterator_destroy(job_itr);
 		}
@@ -1043,6 +1044,8 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+	if (!slurmctld_locked)
+		unlock_slurmctld(job_write_lock);
 
 	if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
