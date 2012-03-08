@@ -425,9 +425,10 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			if (state != Hardware::Available) {
 				bit_set(found_ba_mp->cnode_err_bitmap, inx);
 				bg_record->cnode_err_cnt++;
-			} else if (set && bg_record->cnode_err_cnt) {
+			} else if (set) {
 				bit_clear(found_ba_mp->cnode_err_bitmap, inx);
-				bg_record->cnode_err_cnt--;
+				if (bg_record->cnode_err_cnt)
+					bg_record->cnode_err_cnt--;
 			}
 
 			err_ratio = (float)bg_record->cnode_err_cnt
