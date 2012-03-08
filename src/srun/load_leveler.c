@@ -786,7 +786,32 @@ static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 	return valid;
 }
 
-/* Build a POE command line based upon srun options (using global variables) */
+/* Build a POE command line based upon srun options (using global variables)
+ *
+ * In order to support MPMD or job steps smaller than the job allocation size,
+ * specify a command file using the poe option -cmdfile or MP_CMDFILE env var.
+ * See page 43 here: http://publib.boulder.ibm.com/epubs/pdf/c2367811.pdf
+ * The command file should contain one more more lines of the following form:
+ * <cmd>@<step_id>:<total_tasks>:<protocol>:<num_tasks>
+ * IBM is working to eliminate the need to specify protocol, but until then it
+ * might be determined as follows:
+ *
+ * We are currently looking at 'ldd <program>' and checking the name of the
+ * MPI and PAMI libraries and on x86, also checking to see if  Intel MPI
+ * library is used.
+ * This is done at runtime in PMD and depending on '-mpilib' option and
+ * '-config' option used, change the LD_LIBRARY_PATH to properly support the
+ * different PE Runtime levels the customer have installed on their cluster.
+ *
+ * There is precedence order that would be important if multiple libraries are
+ * listed in the 'ldd output' as long as you know it is not a
+ * mixed protocol (i.e. Openshmem + MPI, UPC + MPI, etc) application.
+ * 1) If MPI library is found (libmpi.so) -> 'mpi' should be used
+ * 2) if Openshmem library is found (libshmem.so) -> 'shmem' should be used
+ * 3) if UPC runtime library is found (???) -> 'pgas' should be used
+ * 4) if only PAMI library is found (libpami.so) -> 'pami' should be used
+ * 5) if only LAPI library is found (liblapi.so) -> 'lapi' should be used
+ */
 extern char *build_poe_command(void)
 {
 	int i;
