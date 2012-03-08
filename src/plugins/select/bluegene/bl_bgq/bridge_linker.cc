@@ -206,13 +206,11 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 		bg_record->ba_mp_list = list_create(destroy_ba_mp);
 
 	memset(&ba_request, 0, sizeof(ba_request));
-	memcpy(ba_request.start, bg_record->start, sizeof(bg_record->start));
 	memcpy(ba_request.geometry, bg_record->geo, sizeof(bg_record->geo));
 	memcpy(ba_request.conn_type, bg_record->conn_type,
 	       sizeof(bg_record->conn_type));
-	ba_request.start_req = 1;
 	node_char = set_bg_block(bg_record->ba_mp_list, &ba_request);
-
+	memcpy(bg_record->start, ba_request.start, sizeof(bg_record->start));
 	ba_reset_all_removed_mps();
 	if (!node_char)
 		fatal("I was unable to make the requested block.");

@@ -678,6 +678,14 @@ extern int add_bg_record(List records, List *used_nodes,
 		bg_record->mloaderimage =
 			xstrdup(bg_conf->default_mloaderimage);
 
+#ifdef HAVE_BGQ
+	/* The start is always right, for blocks larger than 1, from
+	   the blockreq so don't take chances. */
+	if (bg_record->mp_count > 1)
+		memcpy(bg_record->start, blockreq->start,
+		       sizeof(bg_record->start));
+#endif
+
 	if (bg_record->conn_type[0] < SELECT_SMALL) {
 		/* this needs to be an append so we keep things in the
 		   order we got them, they will be sorted later */

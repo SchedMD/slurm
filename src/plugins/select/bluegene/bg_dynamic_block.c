@@ -447,6 +447,7 @@ setup_records:
 		blockreq.linuximage = request->linuximage;
 		blockreq.mloaderimage = request->mloaderimage;
 		blockreq.ramdiskimage = request->ramdiskimage;
+		memcpy(blockreq.start, request->start, sizeof(blockreq.start));
 		memcpy(blockreq.conn_type, request->conn_type,
 		       sizeof(blockreq.conn_type));
 

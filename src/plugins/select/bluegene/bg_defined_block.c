@@ -151,16 +151,12 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					select_ba_request_t ba_request;
 					memset(&ba_request, 0,
 					       sizeof(ba_request));
-					memcpy(ba_request.start,
-					       bg_record->start,
-					       sizeof(bg_record->start));
 					memcpy(ba_request.geometry,
 					       bg_record->geo,
 					       sizeof(bg_record->geo));
 					memcpy(ba_request.conn_type,
 					       bg_record->conn_type,
 					       sizeof(bg_record->conn_type));
-					ba_request.start_req = 1;
 					name = set_bg_block(results,
 							    &ba_request);
 					ba_reset_all_removed_mps();
@@ -192,6 +188,9 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 #ifdef HAVE_BGQ
 					bg_record->ba_mp_list = results;
 					results = NULL;
+					memcpy(bg_record->start,
+					       ba_request.start,
+					       sizeof(bg_record->start));
 #else
 					bg_record->ba_mp_list =
 						list_create(destroy_ba_mp);

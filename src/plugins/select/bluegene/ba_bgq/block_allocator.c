@@ -866,6 +866,12 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			}
 		}
 		list_iterator_destroy(itr);
+
+		/* fill in the start with the actual start of the
+		 * block since it isn't always easy to figure out and
+		 * is easily */
+		memcpy(ba_request->start, start_loc, sizeof(ba_request->start));
+
 		break;
 	}
 
