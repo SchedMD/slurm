@@ -441,11 +441,13 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			debug("count in error for %s is %u with ratio at %u",
 			      bg_record->bg_block_id, bg_record->cnode_err_cnt,
 			      bg_record->err_ratio);
+
 			/* If the state is available no reason to go
 			   kill jobs so just break out here instead.
 			*/
 			if (state == Hardware::Available)
 				break;
+
 			if (bg_record->job_ptr)
 				job_ptr = bg_record->job_ptr;
 			else if (bg_record->job_list
