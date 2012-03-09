@@ -251,8 +251,16 @@ _fill_in_adapter_cache(void)
 #endif
 	adapter_types.num_adapter_types = &num_adapter_types;
 	adapter_types.adapter_types = adapter_type;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-			  &adapter_types);
+	for (i = 0; i < 2; i++) {
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+				  &adapter_types);
+		if (err != NRT_EAGAIN)
+			break;
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("Is pnsd daemon started? Retrying...");
+		/* Run "/opt/ibmhpc/pecurrent/ppe.pami/pnsd/pnsd -A" */
+		sleep(5);
+	}
 	if (err != NRT_SUCCESS) {
 		error("nrt_command(adapter_types): %s", nrt_err_str(err));
 		return SLURM_ERROR;
@@ -1147,8 +1155,16 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 #endif
 	adapter_types.num_adapter_types = &num_adapter_types;
 	adapter_types.adapter_types = adapter_type;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-			  &adapter_types);
+	for (i = 0; i < 2; i++) {
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+				  &adapter_types);
+		if (err != NRT_EAGAIN)
+			break;
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("Is pnsd daemon started? Retrying...");
+		/* Run "/opt/ibmhpc/pecurrent/ppe.pami/pnsd/pnsd -A" */
+		sleep(5);
+	}
 	if (err != NRT_SUCCESS) {
 		error("nrt_command(adapter_types): %s", nrt_err_str(err));
 		return SLURM_ERROR;
@@ -2522,8 +2538,16 @@ nrt_clear_node_state(void)
 #endif
 	adapter_types.num_adapter_types = &num_adapter_types;
 	adapter_types.adapter_types = adapter_type;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-			  &adapter_types);
+	for (i = 0; i < 2; i++) {
+		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+				  &adapter_types);
+		if (err != NRT_EAGAIN)
+			break;
+		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("Is pnsd daemon started? Retrying...");
+		/* Run "/opt/ibmhpc/pecurrent/ppe.pami/pnsd/pnsd -A" */
+		sleep(5);
+	}
 	if (err != NRT_SUCCESS) {
 		error("nrt_command(adapter_types): %s", nrt_err_str(err));
 		return SLURM_ERROR;
