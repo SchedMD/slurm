@@ -1,6 +1,6 @@
 /***************************************************************************** \
- *  nrt.c - Library routines for initiating jobs using IBM's NRT (Network
- *          Routing Table)
+ *  switch_nrt.c - Swtich plugin interface, This calls functions in nrt.c
+ *	which contains the interface to IBM's NRT (Network Routing Table) API
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -425,7 +425,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	char *adapter_name = NULL;
 
 #if NRT_DEBUG
-	info("switch_p_build_jobinfo(): network:%s", network);
+	info("switch_p_build_jobinfo(): nodelist:%s network:%s",
+	     nodelist, network);
 #else
 	debug3("network = \"%s\"", network);
 #endif
@@ -464,8 +465,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		    (strstr(network, "bulk_xfer") ||
 		     strstr(network, "BULK_XFER")))
 			bulk_xfer = 1;
-		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
-					nprocs,	sn_all, adapter_name,
+		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job,
+					list, nprocs, sn_all, adapter_name,
 					bulk_xfer);
 		hostlist_destroy(list);
 		xfree(adapter_name);

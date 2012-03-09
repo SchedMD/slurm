@@ -742,6 +742,8 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	/* Reserve a window on each adapter for this task */
 	for (i = 0; i < adapter_cnt; i++) {
 		adapter = &node->adapter_list[i];
+		if (adapter->adapter_type != adapter_type)
+			continue;
 		window = _find_free_window(adapter);
 		if (window == NULL) {
 			error("No free windows on node %s adapter %s",
@@ -906,8 +908,9 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	int i;
 
 	info("--Begin Adapter Status--");
-	info("  adapter_name:%s adapter_type:%hu",
-	     status_adapter->adapter_name, status_adapter->adapter_type);
+	info("  adapter_name:%s adapter_type:%s",
+	     status_adapter->adapter_name,
+	     _adapter_type_str(status_adapter->adapter_type));
 	for (i = 0; i < *status_adapter->window_count; i++) {
 		nrt_status_t *status = status_adapter->status_array[i];
 		info("  client_pid[%d]:%u", i, (uint32_t)status->client_pid);
@@ -936,8 +939,9 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 	info("  adapter_count: %u", n->adapter_count);
 	for (i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
-		info("  adapter: %s", a->adapter_name);
-		info("    type: %hu", a->adapter_type);
+		info("  adapter_name: %s", a->adapter_name);
+		info("    adapter_type: %s",
+		     _adapter_type_str(a->adapter_type));
 		info("    window_count: %hu", a->window_count);
 		w = a->window_list;
 		for (j = 0; j < MIN(a->window_count, NRT_DEBUG_CNT); j++) {
@@ -962,7 +966,7 @@ _print_libstate(const slurm_nrt_libstate_t *l)
 	assert(l);
 	assert(l->magic == NRT_LIBSTATE_MAGIC);
 
-	info("--Begin libstate--\n");
+	info("--Begin libstate--");
 	info("  node_count = %u", l->node_count);
 	info("  node_max = %u", l->node_max);
 	info("  hash_max = %u", l->hash_max);
@@ -1024,7 +1028,10 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  table_size: %u", j->tables_per_task);
 	info("  bulk_xfer: %u", j->bulk_xfer);
 	info("  tables_per_task: %hu", j->tables_per_task);
-	hostlist_ranged_string(j->nodenames, sizeof(buf), buf);
+	if (j->nodenames)
+		hostlist_ranged_string(j->nodenames, sizeof(buf), buf);
+	else
+		strcpy(buf, "(NULL)");
 	info("  nodenames: %s", buf);
 	info("  num_tasks: %d", j->num_tasks);
 	info("  tableinfo supressed");
@@ -1693,7 +1700,9 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		slurm_seterrno_ret(EINVAL);
 
 	jp->bulk_xfer = (uint8_t) bulk_xfer;
-	jp->job_key = _next_key();
+	jp->job_key   = _next_key();
+	jp->nodenames = hostlist_copy(hl);
+	jp->num_tasks = nprocs;
 
 	hi = hostlist_iterator_create(hl);
 
@@ -1732,7 +1741,12 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		jp->tableinfo[i].table = xmalloc(nprocs * table_rec_len);
 	}
 
+#if NRT_DEBUG
+	info("Allocating windows: adapter_name:%s adapter_type:%s",
+	     adapter_name, _adapter_type_str(adapter_type));
+#else
 	debug("Allocating windows");
+#endif
 	nnodes = hostlist_count(hl);
 	full_node_cnt = nprocs % nnodes;
 	min_procs_per_node = nprocs / nnodes;
@@ -1835,6 +1849,10 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 	assert(buf);
 
+#if NRT_DEBUG
+	info("nrt_pack_jobinfo:");
+	_print_jobinfo(j);
+#endif
 	pack32(j->magic, buf);
 	pack32(j->job_key, buf);
 	pack8(j->bulk_xfer, buf);
@@ -1921,6 +1939,10 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 			goto unpack_error;
 	}
 
+#if NRT_DEBUG
+	info("nrt_unpack_jobinfo:");
+	_print_jobinfo(j);
+#endif
 	return SLURM_SUCCESS;
 
 unpack_error:
