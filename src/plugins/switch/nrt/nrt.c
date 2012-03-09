@@ -912,9 +912,11 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	int i;
 
 	info("--Begin Adapter Status--");
-	info("  adapter_name:%s adapter_type:%s",
-	     status_adapter->adapter_name,
+	info("  adapter_name:%s", status_adapter->adapter_name);
+	info("  adapter_type:%s",
 	     _adapter_type_str(status_adapter->adapter_type));
+	info("  window_count:%hu", *status_adapter->window_count);
+	info("  --------");
 	for (i = 0; i < MIN(*status_adapter->window_count, NRT_DEBUG_CNT);
 	     i++) {
 		nrt_status_t *status = status_adapter->status_array[i];
@@ -1014,7 +1016,8 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type)
 			info("  lid: %u", hfi_tbl_ptr->lid);
 			info("  win_id: %hu", hfi_tbl_ptr->win_id);
 		} else {
-			fatal("Unsupported adapter type: %u", adapter_type);
+			fatal("Unsupported adapter_type: %s",
+			      _adapter_type_str(adapter_type));
 		}
 	}
 	info("--End NRT table--");
@@ -1701,6 +1704,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	int min_procs_per_node;
 	int max_procs_per_node;
 	nrt_adapter_t adapter_type = NRT_MAX_ADAPTER_TYPES;
+	int adapter_type_count = 0;
 	int table_rec_len = 0;
 
 	assert(jp);
@@ -1726,13 +1730,23 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	host = hostlist_next(hi);
 	_lock();
 	node = _find_node(nrt_state, host);
+	if (node && node->adapter_list) {
+		for (i = 0; i < node->adapter_count; i++) {
+			if ((node->adapter_list[i].adapter_type != NRT_IB) &&
+			    (node->adapter_list[i].adapter_type != NRT_HFI))
+				continue;
+			if (adapter_type == NRT_MAX_ADAPTER_TYPES) {
+				adapter_type = node->adapter_list[i].
+					       adapter_type;
+			}
+			adapter_type_count++;
+		}
+	}
 	if (sn_all) {
-		jp->tables_per_task = node ? node->adapter_count : 0;
+		jp->tables_per_task = adapter_type_count;
 	} else {
 		jp->tables_per_task = 1;
 	}
-	if (node && node->adapter_list)
-		adapter_type = node->adapter_list->adapter_type;
 	_unlock();
 	if (host != NULL)
 		free(host);
@@ -1831,6 +1845,8 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 		for (i = 0, ib_tbl_ptr = tableinfo->table;
 		     i < tableinfo->table_length;
 		     i++, ib_tbl_ptr++) {
+			packmem(ib_tbl_ptr->device_name,
+				NRT_MAX_DEVICENAME_SIZE, buf);
 			pack32(ib_tbl_ptr->task_id, buf);
 			pack32(ib_tbl_ptr->base_lid, buf);
 			pack16(ib_tbl_ptr->win_id, buf);
@@ -1897,6 +1913,9 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 		for (i = 0, ib_tbl_ptr = tableinfo->table;
 		     i < tableinfo->table_length;
 		     i++, ib_tbl_ptr++) {
+			safe_unpackmem(ib_tbl_ptr->device_name, &size, buf);
+			if (size != NRT_MAX_DEVICENAME_SIZE)
+				goto unpack_error;
 			safe_unpack32(&ib_tbl_ptr->task_id, buf);
 			safe_unpack32(&ib_tbl_ptr->base_lid, buf);
 			safe_unpack16(&ib_tbl_ptr->win_id, buf);
@@ -2176,8 +2195,9 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 			  &adapter_names);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_names, %u): %s",
-		      adapter_names.adapter_type, nrt_err_str(err));
+		error("nrt_command(adapter_names, %s): %s",
+		      _adapter_type_str(adapter_names.adapter_type),
+		      nrt_err_str(err));
 		rc = SLURM_ERROR;
 		max_windows = 16;	/* FIXME: What should this be? */
 	}
@@ -2195,7 +2215,8 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 			window_id = hfi_tbl_ptr->win_id;
 		} else {
 			fatal("_wait_for_all_windows: Missing support for "
-			      "adapter type %hu", tableinfo->adapter_type);
+			      "adapter_type:%s",
+			      _adapter_type_str(tableinfo->adapter_type));
 		}
 
 		err = _wait_for_window_unloaded(tableinfo->adapter_name,
@@ -2312,8 +2333,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid)
 		load_table.per_task_input = jp->tableinfo[i].table;
 		err = nrt_command(NRT_VERSION, NRT_CMD_LOAD_TABLE, &load_table);
 		if (err != NRT_SUCCESS) {
-			error("unable to load table: [%d] %s",
-			      err, nrt_err_str(err));
+			error("nrt_command(load table): %s", nrt_err_str(err));
 			return SLURM_ERROR;
 		}
 	}
