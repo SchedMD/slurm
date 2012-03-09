@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
  -- FRONTEND - fix issue where if a compute node was in a down state and
     an admin updates the node to idle/resume the compute nodes will go
     instantly to idle instead of idle* which means no response.
+ -- Fix regression in 2.4.0.pre3 where number of submitted jobs limit wasn't
+    being honored for QOS.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
