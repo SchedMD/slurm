@@ -186,19 +186,16 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 			   int rm_timeout, char ** error_msg)
 {
 	job_event_t *ret_event = NULL;
-	job_info_t *job_info = NULL;
+	int *state;
 	info("got pr_rm_get_event called %d %p %p", rm_timeout,
 	     job_event, *job_event);
+
 	ret_event = xmalloc(sizeof(job_event_t));
 	*job_event = ret_event;
 	ret_event->event = JOB_STATE_EVENT;
-	job_info = xmalloc(sizeof(job_info_t));
-	ret_event->event_data = (void *)job_info;
-	job_info->procs = 1;
-	job_info->host_count = 1;
-	job_info->hosts = xmalloc(sizeof(host_usage_t));
-	job_info->hosts->task_count = 1;
-	job_info->hosts->host_name = xstrdup("snowflake");
+	state = xmalloc(sizeof(int));
+	*state = JOB_STATE_RUNNING;
+	ret_event->event_data = (void *)state;
 
 	return 0;
 }
@@ -220,7 +217,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
  * environment of the process that originally called the function.
  *
  * IN resource_mgr
- * IN job_info - The address of the pointer to the job_info_t
+ * OUT job_info - The address of the pointer to the job_info_t
  *        type. The job_info_t type contains the job information
  *        returned by the resource manager for the handle that is
  *        specified. The caller itself must free the data areas that
@@ -235,7 +232,39 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			      char ** error_msg)
 {
-	info("got pr_rm_get_job_info called");
+	job_info_t *ret_info = xmalloc(sizeof(job_info_t));
+
+	info("got pr_rm_get_job_info called %p %p", job_info, *job_info);
+
+	*job_info = ret_info;
+
+	ret_info->job_name = xstrdup("test");
+	ret_info->rm_id = xstrdup("1");
+	ret_info->procs = 1;
+	ret_info->max_instances = 1;
+	ret_info->job_key = 1;
+	ret_info->check_pointable = 0;
+	ret_info->protocol = NULL;
+	ret_info->mode = NULL;
+	ret_info->instance = NULL;
+	ret_info->devicename = NULL;
+	ret_info->num_network = 1;
+	ret_info->host_count = 1;
+
+	ret_info->hosts = xmalloc(sizeof(host_usage_t));
+	ret_info->hosts->task_count = 1;
+	ret_info->hosts->task_ids = xmalloc(sizeof(int));
+	*ret_info->hosts->task_ids = 1;
+	ret_info->hosts->host_name = xstrdup("snowflake");
+	ret_info->hosts->virtual_ip = xstrdup("127.0.0.1");
+	ret_info->hosts->host_address = xstrdup("127.0.0.1");
+
+	ret_info->rset_name = NULL;
+	ret_info->master_virtual_ip = NULL;
+	ret_info->mdcr_jobid = 1;
+	ret_info->mdcr_netmask = NULL;
+	ret_info->ckptdir = NULL;
+
 	return 0;
 }
 
