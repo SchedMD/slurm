@@ -756,6 +756,8 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		if (adapter_type == NRT_IB) {
 			nrt_ib_task_info_t *ib_table;
 			ib_table = (nrt_ib_task_info_t *) tableinfo[i].table;
+			strncpy(ib_table->device_name, adapter->adapter_name,
+				NRT_MAX_DEVICENAME_SIZE);
 			ib_table += task_id;
 			ib_table->task_id = task_id;
 			ib_table->win_id = window->window_id;
@@ -835,6 +837,8 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 	if (adapter_type == NRT_IB) {
 		nrt_ib_task_info_t *ib_table;
 		ib_table = (nrt_ib_task_info_t *) tableinfo[i].table;
+		strncpy(ib_table->device_name, adapter_name,
+			NRT_MAX_DEVICENAME_SIZE);
 		ib_table += task_id;
 		ib_table->task_id = task_id;
 		ib_table->win_id = window->window_id;
@@ -911,7 +915,8 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	info("  adapter_name:%s adapter_type:%s",
 	     status_adapter->adapter_name,
 	     _adapter_type_str(status_adapter->adapter_type));
-	for (i = 0; i < *status_adapter->window_count; i++) {
+	for (i = 0; i < MIN(*status_adapter->window_count, NRT_DEBUG_CNT);
+	     i++) {
 		nrt_status_t *status = status_adapter->status_array[i];
 		info("  client_pid[%d]:%u", i, (uint32_t)status->client_pid);
 		info("  uid[%d]:%u", i, (uint32_t) status->uid);
@@ -919,6 +924,7 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 		info("  bulk_xfer[%d]:%hu", i, status->bulk_transfer);
 		info("  rcontext_blocks[%d]:%u", i, status->rcontext_blocks);
 		info("  state[%d]:%s", i, _win_state_str(status->state));
+		info("  --------");
 	}
 	info("--End Adapter Status--");
 }
@@ -1018,6 +1024,7 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type)
 static void
 _print_jobinfo(slurm_nrt_jobinfo_t *j)
 {
+	int i;
 	char buf[128];
 
 	assert(j);
@@ -1034,7 +1041,11 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 		strcpy(buf, "(NULL)");
 	info("  nodenames: %s", buf);
 	info("  num_tasks: %d", j->num_tasks);
-	info("  tableinfo supressed");
+	for (i = 0; i < j->tables_per_task; i++) {
+		_print_table(j->tableinfo[i].table,
+			     j->tableinfo[i].table_length,
+			     j->tableinfo[i].adapter_type);
+	}
 	info("--End Jobinfo--");
 }
 #endif
@@ -1170,7 +1181,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		if (err != NRT_EAGAIN)
 			break;
 		error("nrt_command(adapter_types): %s", nrt_err_str(err));
-		error("Is pnsd daemon started? Retrying...");
+		error("Is PNSD daemon started? Retrying...");
 		/* Run "/opt/ibmhpc/pecurrent/ppe.pami/pnsd/pnsd -A" */
 		sleep(5);
 	}
@@ -1734,8 +1745,10 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		table_rec_len = sizeof(nrt_ib_task_info_t);
 	else if (adapter_type == NRT_HFI)
 		table_rec_len = sizeof(nrt_hfi_task_info_t);
-	else
-		fatal("Unsupported adapter_type: %u", adapter_type);
+	else {
+		fatal("Unsupported adapter_type: %s",
+		      _adapter_type_str(adapter_type));
+	}
 	for (i = 0; i < jp->tables_per_task; i++) {
 		jp->tableinfo[i].table_length = nprocs;
 		jp->tableinfo[i].table = xmalloc(nprocs * table_rec_len);
@@ -1790,8 +1803,11 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 
 #if NRT_DEBUG
 	info("nrt_build_jobinfo");
-	_print_table(jp->tableinfo[i].table, jp->tableinfo[i].table_length,
-		     adapter_type);
+	for  (i = 0; i < nnodes; i++) {
+		_print_table(jp->tableinfo[i].table,
+			     jp->tableinfo[i].table_length,
+			     jp->tableinfo[i].adapter_type);
+	}
 #endif
 
 	hostlist_iterator_destroy(hi);
@@ -2216,7 +2232,8 @@ _check_rdma_job_count(char *adapter_name, nrt_adapter_t adapter_type)
 	}
 #if NRT_DEBUG
 	info("_check_rdma_job_count: nrt_rdma_jobs:");
-	info("adapter_name:%s adapter_type:%hu", adapter_name, adapter_type);
+	info("adapter_name:%s adapter_type:%s", adapter_name,
+	     _adapter_type_str(adapter_type));
 	for (i = 0; i < job_count; i++)
 		info("  job_keys[%d]:%hu", i, job_keys[i]);
 #endif
@@ -2302,6 +2319,9 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid)
 	}
 	umask(nrt_umask);
 
+#if NRT_DEBUG
+	info("nrt_load_table complete");
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -2370,6 +2390,10 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
+#if NRT_DEBUG
+	info("nrt_unload_table");
+	_print_jobinfo(jp);
+#endif
 	for (i = 0; i < jp->tables_per_task; i++) {
 		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
 			if (jp->tableinfo[i].adapter_type == NRT_IB) {
@@ -2386,8 +2410,9 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 				window_id = hfi_tbl_ptr->win_id;
 			} else {
 				fatal("nrt_unload_table: invalid adapter "
-				      "type: %hu", 
-				      jp->tableinfo[i].adapter_type);
+				      "type: %s",
+				      _adapter_type_str(jp->tableinfo[i].
+							adapter_type));
 			}
 			err = _unload_window(jp->tableinfo[i].adapter_name,
 					     jp->tableinfo[i].adapter_type,
