@@ -350,8 +350,7 @@ extern List create_dynamic_block(List block_list,
 	}
 
 	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
-		info("allocate failure for size %d base "
-		     "partitions of free midplanes",
+		info("allocate failure for %d midplanes with free midplanes",
 		     request->size);
 	rc = SLURM_ERROR;
 
