@@ -318,6 +318,8 @@ int main(int argc, char *argv[])
 						  &callbacks);
 #else
 	desc.script = salloc_front_end();
+	desc.std_err = "/dev/null";
+	desc.std_out = "/dev/null";
 #endif
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
