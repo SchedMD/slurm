@@ -240,6 +240,36 @@ int srun(int ac, char **av)
 		printf("%s.%s\n", ll_step_id, job_id);
 		exit(0);
 	}
+	if ((ac == 2) && !strcmp(av[1], "--nodecnt")) {
+		hostset_t hs;
+		int buf_len = 1;
+		char *dot, *space, *ll_proc_list, *proc_ptr;
+		char *tmp_proc_list = getenv("LOADL_PROCESSOR_LIST");
+		if (!tmp_proc_list) {
+			printf("UNKNOWN\n");
+			exit(1);
+		}
+		hs = hostset_create(NULL);
+		proc_ptr = ll_proc_list = xstrdup(tmp_proc_list);
+		while (proc_ptr && proc_ptr[0]) {
+			space = strchr(proc_ptr, ' ');
+			if (space)
+				space[0] = '\0';
+			dot = strchr(proc_ptr, '.');
+			if (dot)
+				dot[0] = '\0';
+			buf_len += strlen(proc_ptr);
+			hostset_insert(hs, proc_ptr);
+			if (space)
+				proc_ptr = space + 1;
+			else
+				proc_ptr = NULL;
+		}
+		printf("%d\n", hostset_count(hs));
+		hostset_destroy(hs);
+		xfree(ll_proc_list);
+		exit(0);
+	}
 	if ((ac == 2) && !strcmp(av[1], "--nodelist")) {
 		hostset_t hs;
 		int buf_len = 1;
@@ -274,6 +304,20 @@ int srun(int ac, char **av)
 		printf("%s\n", buf);
 		xfree(buf);
 		xfree(ll_proc_list);
+		exit(0);
+	}
+	if ((ac == 2) && !strcmp(av[1], "--taskcnt")) {
+		int i, task_cnt = 1;
+		char *tmp_proc_list = getenv("LOADL_PROCESSOR_LIST");
+		if (!tmp_proc_list) {
+			printf("UNKNOWN\n");
+			exit(1);
+		}
+		for (i = 0; tmp_proc_list[i]; i++) {
+			if (tmp_proc_list[i] == ' ')
+				task_cnt++;
+		}
+		printf("%d\n", task_cnt);
 		exit(0);
 	}
 	if ((ac > 1) && !strcmp(av[1], "--srun-be")) {

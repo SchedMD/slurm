@@ -2622,7 +2622,13 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 				   SLURM_PREFIX);
 			xstrfmtcat(set_job_id,
 				   "setenv SLURM_JOB_ID $SLURM_JOBID\n");
-			xstrfmtcat(set_job_id, 
+			xstrfmtcat(set_job_id,
+				   "setenv SLURM_NNODES `%s/bin/srun --nodecnt`\n",
+				   SLURM_PREFIX);
+			xstrfmtcat(set_job_id,
+				   "setenv SLURM_NPROCS `%s/bin/srun --taskcnt`\n",
+				   SLURM_PREFIX);
+			xstrfmtcat(set_job_id,
 				   "setenv SLURM_NODELIST `%s/bin/srun --nodelist`\n",
 				    SLURM_PREFIX);
 			xstrfmtcat(set_job_id, 
@@ -2633,7 +2639,13 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 				    SLURM_PREFIX);
 			xstrfmtcat(set_job_id, 
 				   "export SLURM_JOB_ID=$SLURM_JOBID\n");
-			xstrfmtcat(set_job_id, 
+			xstrfmtcat(set_job_id,
+				   "export SLURM_NNODES=`%s/bin/srun --nodecnt`\n",
+				   SLURM_PREFIX);
+			xstrfmtcat(set_job_id,
+				   "export SLURM_NPROCS=`%s/bin/srun --taskcnt`\n",
+				   SLURM_PREFIX);
+			xstrfmtcat(set_job_id,
 				   "export SLURM_NODELIST=`%s/bin/srun --nodelist`\n",
 				    SLURM_PREFIX);
 			xstrfmtcat(set_job_id, 
