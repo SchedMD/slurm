@@ -786,6 +786,73 @@ static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 	return valid;
 }
 
+/* Given a program name, return its communication protocol */
+static char *_get_cmd_protocol(char *cmd)
+{
+	int stdout_pipe[2] = {-1, -1}, stderr_pipe[2] = {-1, -1};
+	int read_size, buf_rem = 16 * 1024, offset = 0, status;
+	pid_t pid;
+	char *buf, *protocol = "mpi";
+
+	if ((pipe(stdout_pipe) == -1) || (pipe(stderr_pipe) == -1)) {
+		error("pipe: %m");
+		return "mpi";
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		error("fork: %m");
+		return "mpi";
+	} else if (pid == 0) {
+		if ((dup2(stdout_pipe[1], 1) == -1) ||
+		    (dup2(stderr_pipe[1], 2) == -1)) {
+			error("dup2: %m");
+			return NULL;
+		}
+		(void) close(0);	/* stdin */
+		(void) close(stdout_pipe[0]);
+		(void) close(stdout_pipe[1]);
+		(void) close(stderr_pipe[0]);
+		(void) close(stderr_pipe[1]);
+
+		execlp("/usr/bin/ldd", "ldd", cmd, NULL);
+		error("execv(ldd) error: %m");
+		return NULL;
+	}
+
+	(void) close(stdout_pipe[1]);
+	(void) close(stderr_pipe[1]);
+	buf = xmalloc(buf_rem);
+	while ((read_size = read(stdout_pipe[0], &buf[offset], buf_rem))) {
+		if (read_size > 0) {
+			buf_rem -= read_size;
+			offset  += read_size;
+			if (buf_rem == 0)
+				break;
+		} else if ((errno != EAGAIN) || (errno != EINTR)) {
+			error("read(pipe): %m");
+			break;
+		}
+	}
+	if (strstr(buf, "libmpi.so"))
+		protocol = "mpi";
+	else if (strstr(buf, "libshmem.so"))
+		protocol = "shmem";
+	else if (strstr(buf, "libxlpgas.so"))
+		protocol = "pgas";
+	else if (strstr(buf, "libpami.so"))
+		protocol = "pami";
+	else if (strstr(buf, "liblapi.so"))
+		protocol = "lapi";
+	xfree(buf);
+	while ((waitpid(pid, &status, 0) == -1) && (errno == EINTR))
+		;
+	(void) close(stdout_pipe[0]);
+	(void) close(stderr_pipe[0]);
+
+	return protocol;
+}
+
 /* Build a POE command line based upon srun options (using global variables) */
 extern char *build_poe_command(void)
 {
@@ -793,6 +860,7 @@ extern char *build_poe_command(void)
 	char *cmd_line = NULL, *tmp_str;
 	char value[32];
 	bool need_cmdfile = false;
+	char *protocol = "mpi";
 
 	/*
 	 * In order to support MPMD or job steps smaller than the job
@@ -826,13 +894,25 @@ extern char *build_poe_command(void)
 	if (opt.multi_prog)
 		need_cmdfile = true;
 	if (opt.ntasks_set && !need_cmdfile) {
-		if (opt.ntasks != atoi(getenv("SLURM_NPROCS")))
+		tmp_str = getenv("SLURM_NPROCS");
+		if (!tmp_str)
+			tmp_str = getenv("SLURM_NNODES");
+		if (tmp_str && (opt.ntasks != atoi(tmp_str)))
 			need_cmdfile = true;
 	}
 	if (opt.nodes_set && !need_cmdfile) {
-		if (opt.min_nodes != atoi(getenv("SLURM_NNODES")))
+		tmp_str = getenv("SLURM_NNODES");
+		if (tmp_str && (opt.min_nodes != atoi(tmp_str)))
 			need_cmdfile = true;
 	}
+
+/* FIXME: Need more work here */
+	if (opt.multi_prog) {
+		protocol = "multi";
+	} else {
+		protocol = _get_cmd_protocol(opt.argv[0]);
+	}
+	info("cmd:%s protcol:%s", opt.argv[0], protocol);
 
 	xstrcat(cmd_line, "poe");
 	for (i = 0; i < opt.argc; i++)
@@ -930,7 +1010,21 @@ extern char *build_poe_command(void)
 		setenv("MP_INFOLEVEL", value, 1);
 	}
 	if (opt.labelio)
-		setenv("MP_LABELIO", "yes", 1);
+		setenv("MP_LABELIO", "yes", 0);
+	if (!strcmp(protocol, "multi"))
+		setenv("MP_MSG_API", "mpi", 0);
+	else if (!strcmp(protocol, "mpi"))
+		setenv("MP_MSG_API", "mpi", 0);
+	else if (!strcmp(protocol, "lapi"))
+		setenv("MP_MSG_API", "lapi", 0);
+	else if (!strcmp(protocol, "pami"))
+		setenv("MP_MSG_API", "pami", 0);
+	else if (!strcmp(protocol, "upc"))
+		setenv("MP_MSG_API", "upc", 0);
+	else if (!strcmp(protocol, "shmem")) {
+		setenv("MP_MSG_API", "shmem,xmi", 0);
+		setenv("MP_USE_BULK_XFER", "no", 0);
+	}
 	if (opt.min_nodes != NO_VAL) {
 		snprintf(value, sizeof(value), "%u", opt.min_nodes);
 		setenv("MP_NODES", value, 1);
