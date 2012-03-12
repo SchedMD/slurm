@@ -367,9 +367,13 @@ extern List create_dynamic_block(List block_list,
 			   this midplane that have jobs running.
 			*/
 			while ((found_record = list_next(itr2))) {
-				if (!found_record->free_cnt
-				    && (found_record->job_running
-					!= NO_JOB_RUNNING)
+				/* Don't check free_cnt here since
+				   if this block shares the same
+				   midplane it will automatically be
+				   -1. So just look for running jobs.
+				*/
+				if ((found_record->job_running
+				     != NO_JOB_RUNNING)
 				    && bit_overlap(bg_record->mp_bitmap,
 						   found_record->mp_bitmap)) {
 					found = 1;
