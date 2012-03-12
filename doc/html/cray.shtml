@@ -608,6 +608,14 @@ as appropriate to reference the proper file location (modify the variable
 login: # scp /home/crayadm/ben/slurm/etc/init.d.slurm boot:/rr/current/software/
 </pre>
 
+<p>SLURM will ignore any interactive jobs or nodes in interactive mode
+so set all your nodes to batch from any service node. Dropping the
+-n option will make all nodes batch.</p>
+
+<pre>
+# xtprocadmin -k m batch -n NODEIDS
+</pre>
+
 <p>Now create the needed directories for logs and state files then start the
 daemons on the sdb and login nodes as shown below.</p>
 
