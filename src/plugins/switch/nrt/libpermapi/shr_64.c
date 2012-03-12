@@ -238,33 +238,37 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 
 	*job_info = ret_info;
 
-	ret_info->job_name = xstrdup("test");
-	ret_info->rm_id = xstrdup("1");
+	ret_info->job_name = xstrdup("hostname");
+	ret_info->rm_id = NULL;
 	ret_info->procs = 1;
 	ret_info->max_instances = 1;
 	ret_info->job_key = 1;
 	ret_info->check_pointable = 0;
-	ret_info->protocol = NULL;
-	ret_info->mode = NULL;
-	ret_info->instance = NULL;
-	ret_info->devicename = NULL;
+	ret_info->protocol = xmalloc(sizeof(char *)*2);
+	ret_info->protocol[0] = xstrdup("mpi");
+	ret_info->mode = xmalloc(sizeof(char *)*2);
+	ret_info->mode[0] = xstrdup("IP/US");
+	ret_info->instance = xmalloc(sizeof(int));
+	*ret_info->instance = 1;
+	ret_info->devicename = xmalloc(sizeof(char *)*2);
+	ret_info->devicename[0] = xstrdup("sn_all");
 	ret_info->num_network = 1;
 	ret_info->host_count = 1;
 
 	ret_info->hosts = xmalloc(sizeof(host_usage_t));
 	ret_info->hosts->task_count = 1;
 	ret_info->hosts->task_ids = xmalloc(sizeof(int));
-	*ret_info->hosts->task_ids = 1;
-	ret_info->hosts->host_name = xstrdup("snowflake");
+	*ret_info->hosts->task_ids = 0;
+	ret_info->hosts->host_name = xstrdup("localhost");
 	ret_info->hosts->virtual_ip = xstrdup("127.0.0.1");
 	ret_info->hosts->host_address = xstrdup("127.0.0.1");
 
 	ret_info->rset_name = NULL;
-	ret_info->master_virtual_ip = NULL;
+	ret_info->master_virtual_ip = xstrdup("127.0.0.1");
 	ret_info->mdcr_jobid = 1;
 	ret_info->mdcr_netmask = NULL;
 	ret_info->ckptdir = NULL;
-
+	info("sending %d and %s", ret_info->instance[0], ret_info->devicename[0]);
 	return 0;
 }
 
