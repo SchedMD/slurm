@@ -84,7 +84,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			 rm_connect_param *connect_param,
 			 int *rm_sockfds, int rm_timeout, char **error_msg)
 {
-	info("got pr_rm_connect called");
+	info("got pe_rm_connect called");
 	return 0;
 }
 
@@ -102,7 +102,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	resource_mgr = NULL;
 
 	dlclose(my_handle);
-	info("got pr_rm_free called");
+	info("got pe_rm_free called");
 
 }
 
@@ -117,7 +117,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
  */
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
-	info("got pr_rm_free_event called");
+	info("got pe_rm_free_event called");
 	if (job_event) {
 		xfree(*job_event);
 	}
@@ -187,7 +187,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 {
 	job_event_t *ret_event = NULL;
 	int *state;
-	info("got pr_rm_get_event called %d %p %p", rm_timeout,
+	info("got pe_rm_get_event called %d %p %p", rm_timeout,
 	     job_event, *job_event);
 
 	ret_event = xmalloc(sizeof(job_event_t));
@@ -234,7 +234,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 {
 	job_info_t *ret_info = xmalloc(sizeof(job_info_t));
 
-	info("got pr_rm_get_job_info called %p %p", job_info, *job_info);
+	info("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
 	*job_info = ret_info;
 
@@ -352,7 +352,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 #else
 	fatal("I haven't been told where I am.  This should never happen.");
 #endif
-	info("got pr_rm_init called %s", rm_id);
+	info("got pe_rm_init called %s", rm_id);
 
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
@@ -379,7 +379,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 			    char ** error_msg)
 {
-	info("got pr_rm_send_event called");
+	info("got pe_rm_send_event called");
 	return 0;
 }
 
@@ -404,7 +404,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	job_request_t *pe_job_req = NULL;
 	job_info_t *pe_job_info = NULL;
 
-	info("got pr_rm_submit_job called %d", job_cmd.job_format);
+	info("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
 		/* We don't handle files */
 		error("SLURM doesn't handle files to submit_job");
