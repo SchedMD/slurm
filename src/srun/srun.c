@@ -497,6 +497,12 @@ int srun(int ac, char **av)
 			exit(error_exit);
 		}
 		job = job_create_allocation(resp);
+#ifdef USE_LOADLEVELER
+		if (!getenv("SLURM_NNODES"))
+			setenvf(NULL, "SLURM_NNODES", "%u", job->nhosts);
+		if (!getenv("SLURM_NPROCS"))
+			setenvf(NULL, "SLURM_NPROCS", "%u", job->ntasks);
+#endif
 
 		opt.exclusive = false;	/* not applicable for this step */
 		opt.time_limit = NO_VAL;/* not applicable for step, only job */
