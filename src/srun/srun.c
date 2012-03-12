@@ -314,8 +314,11 @@ int srun(int ac, char **av)
 			exit(1);
 		}
 		for (i = 0; tmp_proc_list[i]; i++) {
-			if (tmp_proc_list[i] == ' ')
+			if ((tmp_proc_list[i]   == ' ') &&
+			    (tmp_proc_list[i+1] != '\0')) {
+				/* Ignore trailing space */
 				task_cnt++;
+			}
 		}
 		printf("%d\n", task_cnt);
 		exit(0);
