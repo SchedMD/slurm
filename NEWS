@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
     option is used.
  -- BLUEGENE - fix issue where if a small block was in error it could hold up
     the queue when trying to place a larger than midplane job.
+ -- CRAY - ignore all interactive nodes and jobs on interactive nodes.
 
 * Changes in SLURM 2.3.3
 ========================

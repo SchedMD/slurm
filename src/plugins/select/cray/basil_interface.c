@@ -122,6 +122,14 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		struct node_record *node_ptr;
 		char tmp[50];
 
+		/* This will ignore interactive nodes when iterating through
+		 * the apbasil inventory.  If we don't do this, SLURM is
+		 * unable to resolve the ID to a nidXXX name since it's not in
+		 * the slurm.conf file.  (Chris North)
+		 */
+		if (node->role == BNR_INTER)
+			continue;
+
 		node_ptr = _find_node_by_basil_id(node->node_id);
 		if (node_ptr == NULL) {
 			error("nid%05u (%s node in state %s) not in slurm.conf",
@@ -187,6 +195,14 @@ extern int basil_inventory(void)
 		int node_inx;
 		struct node_record *node_ptr;
 		char *reason = NULL;
+
+		/* This will ignore interactive nodes when iterating through
+		 * the apbasil inventory.  If we don't do this, SLURM is
+		 * unable to resolve the ID to a nidXXX name since it's not in
+		 * the slurm.conf file.  (Chris North)
+		 */
+		if (node->role == BNR_INTER)
+			continue;
 
 		node_ptr = _find_node_by_basil_id(node->node_id);
 		if (node_ptr == NULL) {
@@ -303,7 +319,13 @@ extern int basil_inventory(void)
 		}
 		list_iterator_destroy(job_iter);
 
-		if (job_ptr == NULL) {
+		/*
+		 * Changed to ignore reservations for "UNKNOWN" batch
+		 * ids (e.g. the interactive region) (Chris North)
+		 */
+
+		if ((job_ptr == NULL) && (strcmp(rsvn->batch_id, "UNKNOWN"))) {
+
 			error("orphaned ALPS reservation %u, trying to remove",
 			      rsvn->rsvn_id);
 			basil_safe_release(rsvn->rsvn_id, inv);
