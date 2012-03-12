@@ -1,0 +1,85 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test for accounting records of specific job names with their ID
+############################################################################
+# Copyright (C) 2012 SchedMD LLC.
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
+	
+	global sacct 
+	global exit_code
+
+	set idmatch 0
+	send_user "\nSearch for job ID $job_id_1 having name $job_name_1\n"
+	send_user "\nJob id1 number: $job_id_1\n"
+	spawn $sacct -A '$test_acct' --name=$job_name_1 -p -o jobid
+	expect {
+		-re "$job_id_1" {
+			incr idmatch
+			exp_continue
+		}
+		-re "$job_id_2" {
+			incr idmatch
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+
+	}
+	if {$idmatch != 1} {
+		send_user "\nFAILURE: sacct could not match job id to job name\n"
+		set exit_code 1
+	}
+
+	set idmatch 0
+	send_user "\nSearch for job ID $job_id_2 having name $job_name_2\n"
+	spawn $sacct -A '$test_acct' --name=$job_name_2 -p -o jobid
+	expect {
+		-re "$job_id_1" {
+			incr idmatch
+			exp_continue
+		}
+		-re "$job_id_2" {
+			incr idmatch
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$idmatch != 1} {
+		send_user "\nFAILURE: sacct could not match job id to job name\n"
+		set exit_code 1
+	}
+}

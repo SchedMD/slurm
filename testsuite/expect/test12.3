@@ -34,12 +34,14 @@
 ############################################################################
 source ./globals
 source ./globals_accounting
+source ./inc12.3.1
 source ./inc12.3.2
 
 set test_id     "12.3"
 set exit_code   0
 set job_name_1  "JOB1"
 set job_name_2  "JOB2"
+set job_name_3  "JOB3"
 set file_in     "test.$test_id.input"
 set test_acct	"slurm_test-account.1"
 
@@ -203,6 +205,34 @@ if {$job_2_node_inx != 2} {
 }
 
 #
+# Third job explicitly excludes node 1 from previous job
+#
+set job_id_3 0
+set job_3_node_inx 0
+set srun_pid [spawn $srun -w$job_1_node(0),$job_2_node(1) -t1 -A $test_acct -J $job_name_3 -v $bin_id]
+expect {
+
+	-re "launching ($number).0 on host ($alpha_numeric_under)," {
+		set job_id_3 $expect_out(1,string)
+		set job_3_node($job_3_node_inx) $expect_out(2,string)
+		incr job_3_node_inx
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_3_node_inx != 2} {
+	send_user "\nFAILURE: srun host count bad ($job_3_node_inx != 2)\n"
+	exit 1
+}
+
+#
 # Wait for accounting data to be propagated to slurmdbd
 #
 sleep 5
@@ -210,7 +240,9 @@ sleep 5
 #
 # Execute sub-tests based upon these jobs
 #
-inc12_3_2 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct $job_1_node(0) $job_1_node(1) $job_2_node(0) $job_2_node(1)
+inc12_3_1 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct
+
+inc12_3_2 $job_id_1 $job_id_2 $job_id_3 $job_name_1 $job_name_2 $test_acct $job_1_node(0) $job_1_node(1) $job_2_node(0) $job_2_node(1)
 
 #
 # Use sacctmgr to delete the test account
