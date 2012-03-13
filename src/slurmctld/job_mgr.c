@@ -2999,10 +2999,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = test_only || too_fragmented ||
 		(!top_prio) || (!independent);
-
 	if (!no_alloc && !avail_front_end()) {
-		debug("sched: schedule() returning, no front end nodes are "
-		       "available");
+		debug("sched: job_allocate() returning, no front end nodes "
+		       "are available");
 		error_code = ESLURM_NODES_BUSY;
 	} else
 		error_code = select_nodes(job_ptr, no_alloc, NULL);
