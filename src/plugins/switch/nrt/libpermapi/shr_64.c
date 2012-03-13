@@ -39,6 +39,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -52,12 +53,126 @@
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/allocate.h"
+#include "src/srun/task_state.h"
 
 void *my_handle = NULL;
 srun_job_t *job = NULL;
-
+task_state_t task_state;
 
 extern char **environ;
+
+static int
+_is_local_file (fname_t *fname)
+{
+	if (fname->name == NULL)
+		return 1;
+
+	if (fname->taskid != -1)
+		return 1;
+
+	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
+}
+
+static slurm_step_layout_t *
+_get_slurm_step_layout(srun_job_t *job)
+{
+	job_step_create_response_msg_t *resp;
+
+	if (!job || !job->step_ctx)
+		return (NULL);
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
+	if (!resp)
+	    return (NULL);
+	return (resp->step_layout);
+}
+
+static void
+_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
+{
+	bool err_shares_out = false;
+	int file_flags;
+
+	if (opt.open_mode == OPEN_MODE_APPEND)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND;
+	else if (opt.open_mode == OPEN_MODE_TRUNCATE)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+	else {
+		slurm_ctl_conf_t *conf;
+		conf = slurm_conf_lock();
+		if (conf->job_file_append)
+			file_flags = O_CREAT|O_WRONLY|O_APPEND;
+		else
+			file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+		slurm_conf_unlock();
+	}
+
+	/*
+	 * create stdin file descriptor
+	 */
+	if (_is_local_file(job->ifname)) {
+		if ((job->ifname->name == NULL) ||
+		    (job->ifname->taskid != -1)) {
+			cio_fds->in.fd = STDIN_FILENO;
+		} else {
+			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
+			if (cio_fds->in.fd == -1) {
+				error("Could not open stdin file: %m");
+				exit(error_exit);
+			}
+		}
+		if (job->ifname->type == IO_ONE) {
+			cio_fds->in.taskid = job->ifname->taskid;
+			cio_fds->in.nodeid = slurm_step_layout_host_id(
+				_get_slurm_step_layout(job),
+				job->ifname->taskid);
+		}
+	}
+
+	/*
+	 * create stdout file descriptor
+	 */
+	if (_is_local_file(job->ofname)) {
+		if ((job->ofname->name == NULL) ||
+		    (job->ofname->taskid != -1)) {
+			cio_fds->out.fd = STDOUT_FILENO;
+		} else {
+			cio_fds->out.fd = open(job->ofname->name,
+					       file_flags, 0644);
+			if (cio_fds->out.fd == -1) {
+				error("Could not open stdout file: %m");
+				exit(error_exit);
+			}
+		}
+		if (job->ofname->name != NULL
+		    && job->efname->name != NULL
+		    && !strcmp(job->ofname->name, job->efname->name)) {
+			err_shares_out = true;
+		}
+	}
+
+	/*
+	 * create seperate stderr file descriptor only if stderr is not sharing
+	 * the stdout file descriptor
+	 */
+	if (err_shares_out) {
+		debug3("stdout and stderr sharing a file");
+		cio_fds->err.fd = cio_fds->out.fd;
+		cio_fds->err.taskid = cio_fds->out.taskid;
+	} else if (_is_local_file(job->efname)) {
+		if ((job->efname->name == NULL) ||
+		    (job->efname->taskid != -1)) {
+			cio_fds->err.fd = STDERR_FILENO;
+		} else {
+			cio_fds->err.fd = open(job->efname->name,
+					       file_flags, 0644);
+			if (cio_fds->err.fd == -1) {
+				error("Could not open stderr file: %m");
+				exit(error_exit);
+			}
+		}
+	}
+}
 
 /* The connection communicates information to and from the resource
  * manager, so that the resource manager can start the parallel task
@@ -84,7 +199,73 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			 rm_connect_param *connect_param,
 			 int *rm_sockfds, int rm_timeout, char **error_msg)
 {
-	info("got pe_rm_connect called");
+	srun_job_t **job_ptr = (srun_job_t **)resource_mgr;
+	srun_job_t *job = *job_ptr;
+	slurm_step_launch_params_t launch_params;
+	int my_argc = 1;
+	char **my_argv = xmalloc(sizeof(char *)*my_argc+1);
+	my_argv[0] = xstrdup("/etc/pmdv12");
+
+	info("got pe_rm_connect called %p %d", rm_sockfds, rm_sockfds[0]);
+
+	task_state = task_state_create(1);
+	slurm_step_launch_params_t_init(&launch_params);
+	launch_params.gid = opt.gid;
+	launch_params.alias_list = job->alias_list;
+	launch_params.argc = my_argc;
+	launch_params.argv = my_argv;
+	launch_params.multi_prog = opt.multi_prog ? true : false;
+	launch_params.cwd = opt.cwd;
+	launch_params.slurmd_debug = opt.slurmd_debug;
+	launch_params.buffered_stdio = !opt.unbuffered;
+	launch_params.labelio = opt.labelio ? true : false;
+	launch_params.remote_output_filename =fname_remote_string(job->ofname);
+	launch_params.remote_input_filename = fname_remote_string(job->ifname);
+	launch_params.remote_error_filename = fname_remote_string(job->efname);
+	launch_params.task_prolog = opt.task_prolog;
+	launch_params.task_epilog = opt.task_epilog;
+	launch_params.cpu_bind = opt.cpu_bind;
+	launch_params.cpu_bind_type = opt.cpu_bind_type;
+	launch_params.mem_bind = opt.mem_bind;
+	launch_params.mem_bind_type = opt.mem_bind_type;
+	launch_params.open_mode = opt.open_mode;
+	if (opt.acctg_freq >= 0)
+		launch_params.acctg_freq = opt.acctg_freq;
+	launch_params.pty = opt.pty;
+	launch_params.cpus_per_task	= 1;
+	launch_params.task_dist         = opt.distribution;
+	launch_params.ckpt_dir		= opt.ckpt_dir;
+	launch_params.restart_dir       = opt.restart_dir;
+	launch_params.preserve_env      = opt.preserve_env;
+	launch_params.spank_job_env     = opt.spank_job_env;
+	launch_params.spank_job_env_size = opt.spank_job_env_size;
+
+	_set_stdio_fds(job, &launch_params.local_fds);
+	rm_sockfds[0] = launch_params.local_fds.in.fd;
+	rm_sockfds[1] = launch_params.local_fds.out.fd;
+	rm_sockfds[2] = launch_params.local_fds.err.fd;
+
+	launch_params.parallel_debug = false;
+
+	update_job_state(job, SRUN_JOB_LAUNCHING);
+	if (slurm_step_launch(job->step_ctx, &launch_params, NULL) !=
+	    SLURM_SUCCESS) {
+		error("Application launch failed: %m");
+		slurm_step_launch_wait_finish(job->step_ctx);
+		goto cleanup;
+	}
+
+	update_job_state(job, SRUN_JOB_STARTING);
+	if (slurm_step_launch_wait_start(job->step_ctx) == SLURM_SUCCESS) {
+		update_job_state(job, SRUN_JOB_RUNNING);
+	} else {
+		info("Job step %u.%u aborted before step completely launched.",
+		     job->jobid, job->stepid);
+	}
+cleanup:
+	xfree(my_argv[0]);
+	xfree(my_argv);
+	info("done launching");
 	return 0;
 }
 
@@ -338,7 +519,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	 * return that, no matter what comes in so we always work.
 	 */
 	*rmapi_version = 1300;
-	*resource_mgr = (void *)job;
+	*resource_mgr = (void *)&job;
 #ifdef MYSELF_SO
 	/* Since POE opens this lib without RTLD_LAZY | RTLD_GLOBAL we
 	   just open ourself again with those options and bada bing
@@ -600,7 +781,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 
 		slurm_free_resource_allocation_response_msg(resp);
 	/* } */
-		//*resource_mgr = (void *)pe_job;
+		//*resource_mgr = (void *)job;
 	return 0;
 }
 
