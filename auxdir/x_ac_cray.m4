@@ -75,12 +75,14 @@ AC_DEFUN([X_AC_CRAY],
       AC_MSG_ERROR([Cray BASIL requires the cray-MySQL-devel-enterprise rpm])
     fi
 
+    # Used by X_AC_DEBUG to set default SALLOC_RUN_FOREGROUND value to 1
+    x_ac_salloc_background=no
+
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_FRONT_END,    1, [Define to 1 if running slurmd on front-end only])
     AC_DEFINE(HAVE_CRAY,         1, [Define to 1 for Cray XT/XE systems])
     AC_DEFINE(SALLOC_KILL_CMD,   1, [Define to 1 for salloc to kill child processes at job termination])
-    AC_DEFINE(SALLOC_RUN_FOREGROUND, 1, [Define to 1 to require salloc execution in the foreground.])
   fi
   AM_CONDITIONAL(HAVE_CRAY, test "$ac_have_cray" = "yes")
   AM_CONDITIONAL(HAVE_REAL_CRAY, test "$ac_have_real_cray" = "yes")
