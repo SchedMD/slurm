@@ -334,13 +334,27 @@ node/31:# emacs -nw /etc/pam.d/common-session
 An example of building and installing SLURM version 2.3.0 is shown below.</p>
 
 <p><b>NOTE:</b> By default neither the <i>salloc</i> command or <i>srun</i>
-command wrapper can be executed as a background process. This is done in order
-to better identify every process spawned under the <i>salloc</i> process by
-using terminal foreground process group IDs. You can optionally enable
-<i>salloc</i> and <i>srun</i> to execute as background processes by using the
-configure option <i>"--enable-salloc-background"</i>, however doing so will
+command wrapper can be executed as a background process. This is done for two
+reasons:</p>
+<ol>
+<li>Only one ALPS reservation can be created from each session ID. The
+<i>salloc</i> command can not change it's session ID without disconnecting
+itself from the terminal and its parent process, meaning the process could not
+be later put into the foreground or easily identified</li>
+<li>To better identify every process spawned under the <i>salloc</i> process
+using terminal foreground process group IDs</li>
+</ol>
+<p>You can optionally enable <i>salloc</i> and <i>srun</i> to execute as
+background processes by using the configure option
+<i>"--enable-salloc-background"</i>, however doing will result in failed
+resource allocations
+(<i>error: Failed to allocate resources: Requested reservation is in use</i>)
+if not executed sequentially and
 increase the likelyhood of orphaned processes.</p>
-<!--Example:
+<!-- Example:
+ Modify srun script or ask user to execute "/usr/bin/setsid"
+ before salloc or srun command -->
+<!-- Example:
  salloc spawns zsh, zsh spawns bash, etc.
  when salloc terminates, bash becomes a child of init -->
 
@@ -350,7 +364,6 @@ login: # slurm/configure \
   --prefix=/opt/slurm/2.3.0 \
   --with-munge=/opt/slurm/munge/ \
   --with-mysql_config=/opt/cray/MySQL/5.0.64-1.0000.2899.20.2.gem/bin \
-  --enable-salloc-background \
   --with-srun2aprun
 login: # make -j
 login: # mkdir install
