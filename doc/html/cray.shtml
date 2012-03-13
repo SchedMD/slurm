@@ -147,7 +147,7 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
 
 <h2>Administrator Guide</h2>
 
-<h3>Install supporting rpms</h3>
+<h3>Install supporting RPMs</h3>
 
 <p>The build requires a few -devel RPMs listed below. You can obtain these from
 SuSe/Novell.
@@ -333,12 +333,24 @@ node/31:# emacs -nw /etc/pam.d/common-session
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
 An example of building and installing SLURM version 2.3.0 is shown below.</p>
 
+<p><b>NOTE:</b> By default neither the <i>salloc</i> command or <i>srun</i>
+command wrapper can be executed as a background process. This is done in order
+to better identify every process spawned under the <i>salloc</i> process by
+using terminal foreground process group IDs. You can optionally enable
+<i>salloc</i> and <i>srun</i> to execute as background processes by using the
+configure option <i>"--enable-salloc-background"</i>, however doing so will
+increase the likelyhood of orphaned processes.</p>
+<!--Example:
+ salloc spawns zsh, zsh spawns bash, etc.
+ when salloc terminates, bash becomes a child of init -->
+
 <pre>
 login: # mkdir build && cd build
 login: # slurm/configure \
   --prefix=/opt/slurm/2.3.0 \
   --with-munge=/opt/slurm/munge/ \
   --with-mysql_config=/opt/cray/MySQL/5.0.64-1.0000.2899.20.2.gem/bin \
+  --enable-salloc-background \
   --with-srun2aprun
 login: # make -j
 login: # mkdir install
@@ -641,6 +653,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 August 2011</p></td>
+<p style="text-align:center;">Last modified 13 March 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

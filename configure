@@ -20683,6 +20683,9 @@ fi
       as_fn_error $? "Cray BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
     fi
 
+    # Used by X_AC_DEBUG to set default SALLOC_RUN_FOREGROUND value to 1
+    x_ac_salloc_background=no
+
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 
@@ -20697,9 +20700,6 @@ $as_echo "#define HAVE_CRAY 1" >>confdefs.h
 
 
 $as_echo "#define SALLOC_KILL_CMD 1" >>confdefs.h
-
-
-$as_echo "#define SALLOC_RUN_FOREGROUND 1" >>confdefs.h
 
   fi
    if test "$ac_have_cray" = "yes"; then

@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - ignore all interactive nodes and jobs on interactive nodes.
  -- Add new job state reason of "FrontEndDown" which applies only to Cray and
     IBM BlueGene systems.
+ -- Cray - Enable configure option of "--enable-salloc-background" to permit
+    the srun and salloc commands to be executed in the background.
 
 * Changes in SLURM 2.3.3
 ========================
