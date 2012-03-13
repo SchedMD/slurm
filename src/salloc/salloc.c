@@ -246,10 +246,14 @@ int main(int argc, char *argv[])
 		 * after first making sure stdin is not redirected.
 		 */
 	} else if ((tpgid = tcgetpgrp(STDIN_FILENO)) < 0) {
+#ifdef HAVE_CRAY
+		verbose("no controlling terminal");
+#else
 		if (!opt.no_shell) {
 			error("no controlling terminal: please set --no-shell");
 			exit(error_exit);
 		}
+#endif
 #ifdef SALLOC_RUN_FOREGROUND
 	} else if ((!opt.no_shell) && (pid == getpgrp())) {
 		if (tpgid == pid)
