@@ -109,9 +109,11 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 		debug("Block %s was in a ready state "
 		      "but is being freed. No job running.",
 		      bg_record->bg_block_id);
+		/* Make sure block is cleaned up.  If there are
+		 * running jobs on the block this happens when they
+		 * are cleaned off. */
+		bg_reset_block(bg_record, NULL);
 	}
-
-	bg_reset_block(bg_record, NULL);
 
 	remove_from_bg_list(bg_lists->booted, bg_record);
 
@@ -173,8 +175,13 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 		debug("Setting bootflag for %s", bg_record->bg_block_id);
 		bg_record->boot_state = 1;
 	} else if (real_state == BG_BLOCK_FREE) {
-		/* make sure block is cleaned up */
-		bg_reset_block(bg_record, NULL);
+		/* Make sure block is cleaned up.  If there are
+		 * running jobs on the block this happens when they
+		 * are cleaned off. */
+		if (bg_record->job_running == NO_JOB_RUNNING
+		    && (!bg_record->job_list
+			|| !list_count(bg_record->job_list)))
+			bg_reset_block(bg_record, NULL);
 		remove_from_bg_list(bg_lists->booted, bg_record);
 	} else if (real_state & BG_BLOCK_ERROR_FLAG) {
 		if (bg_record->boot_state)
