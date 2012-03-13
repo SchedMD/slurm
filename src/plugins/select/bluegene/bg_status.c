@@ -111,15 +111,8 @@ static int _block_is_deallocating(bg_record_t *bg_record, List kill_job_list)
 		      bg_record->bg_block_id);
 	}
 
-	if (bridge_block_sync_users(bg_record) == REMOVE_USER_ERR) {
-		error("Something happened removing users from block %s",
-		      bg_record->bg_block_id);
-	}
+	bg_reset_block(bg_record, NULL);
 
-	if (remove_from_bg_list(bg_lists->job_running, bg_record)
-	    == SLURM_SUCCESS)
-		debug("bg_status.c:%d: block was removed from job_running list",
-		      __LINE__);
 	remove_from_bg_list(bg_lists->booted, bg_record);
 
 	return SLURM_SUCCESS;
@@ -180,32 +173,9 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 		debug("Setting bootflag for %s", bg_record->bg_block_id);
 		bg_record->boot_state = 1;
 	} else if (real_state == BG_BLOCK_FREE) {
-		ListIterator itr = list_iterator_create(bg_record->ba_mp_list);
-		ba_mp_t *ba_mp = NULL;
-
-		if (remove_from_bg_list(bg_lists->job_running, bg_record)
-		    == SLURM_SUCCESS)
-			debug("bg_status.c:%d: "
-			      "block was removed from job_running list",
-			      __LINE__);
-		remove_from_bg_list(bg_lists->booted,
-				    bg_record);
-
-		/* We need to do this for all blocks just incase
-		   sub-blocks were ever used and for some reason not
-		   cleaned up correctly.
-		*/
-		while ((ba_mp = list_next(itr))) {
-			/* Make sure the cnode_bitmap is in a virgin
-			   state */
-			if (ba_mp->cnode_bitmap) {
-				FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
-				if (ba_mp->cnode_usable_bitmap)
-					ba_mp->cnode_bitmap = bit_copy(
-						ba_mp->cnode_usable_bitmap);
-			}
-		}
-		list_iterator_destroy(itr);
+		/* make sure block is cleaned up */
+		bg_reset_block(bg_record, NULL);
+		remove_from_bg_list(bg_lists->booted, bg_record);
 	} else if (real_state & BG_BLOCK_ERROR_FLAG) {
 		if (bg_record->boot_state)
 			error("Block %s in an error state while booting.",
