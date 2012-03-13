@@ -487,6 +487,7 @@ static const struct element_handler *basil_tables[BV_MAX] = {
 	[BV_3_1] = basil_3_1_elements,
 	[BV_4_0] = basil_4_0_elements,
 	[BV_4_1] = basil_4_0_elements
+	[BV_5_0] = basil_4_0_elements
 };
 
 /**
