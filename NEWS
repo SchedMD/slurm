@@ -48,6 +48,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix issue where if a small block was in error it could hold up
     the queue when trying to place a larger than midplane job.
  -- CRAY - ignore all interactive nodes and jobs on interactive nodes.
+ -- Add new job state reason of "FrontEndDown" which applies only to Cray and
+    IBM BlueGene systems.
 
 * Changes in SLURM 2.3.3
 ========================
