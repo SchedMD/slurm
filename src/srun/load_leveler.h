@@ -45,7 +45,7 @@
 #ifdef USE_LOADLEVELER
 
 /* Build a POE command line based upon srun options (using global variables) */
-extern char *build_poe_command(void);
+extern char *build_poe_command(char *job_id);
 
 /*
  * srun_back_end - Open stdin/out/err socket connections to communicate with

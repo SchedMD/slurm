@@ -787,7 +787,7 @@ extern int
 create_job_step(srun_job_t *job, bool use_all_cpus)
 {
 #ifdef USE_LOADLEVELER
- 	char *be_cmd_line = build_poe_command();
+ 	char *be_cmd_line = build_poe_command(job->jobid);
  	error_exit = srun_front_end(be_cmd_line);
 	return -1;
 #else

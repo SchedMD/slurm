@@ -854,14 +854,24 @@ static char *_get_cmd_protocol(char *cmd)
 }
 
 /* Return the next available step ID */
-static int _get_next_stepid(void)
+static int _get_next_stepid(char *job_id)
 {
-	/* FIXME: Need work here too */
-	return 1;
+	char fname[64];
+	int step_id;
+
+	for (step_id = 1; ; step_id++) {
+/* FIXME: Need to delete files at job termination */
+		snprintf(fname, sizeof(fname), "/tmp/slurm_step_%s.%d",
+			 job_id, step_id);
+		if (open(fname, O_CREAT | O_EXCL, 0100) > -1)
+			break;
+	}
+
+	return step_id;
 }
 
 /* Build a POE command line based upon srun options (using global variables) */
-extern char *build_poe_command(void)
+extern char *build_poe_command(char *job_id)
 {
 	int i;
 	char *cmd_line = NULL, *tmp_str;
@@ -908,26 +918,37 @@ extern char *build_poe_command(void)
 			need_cmdfile = true;
 	}
 
-/* FIXME: Need more work here */
 	if (opt.multi_prog) {
 		protocol = "multi";
+/* FIXME: Need more work here */
 	} else {
 		protocol = _get_cmd_protocol(opt.argv[0]);
 	}
-	info("cmd:%s protcol:%s", opt.argv[0], protocol);
+	debug("cmd:%s protcol:%s", opt.argv[0], protocol);
 
 	xstrcat(cmd_line, "poe");
 	if (need_cmdfile) {
 		char *buf;
-		int fd, i, j, k;
+		int fd, i, j, k, step_id;
+		char cmd_fname[256];
+
+		step_id = _get_next_stepid(job_id);
+/* FIXME: Need to delete files at job termination */
+		snprintf(cmd_fname, sizeof(cmd_fname),
+			 "/tmp/slurm_cmdfile_%s.%d", job_id, step_id);
+		while ((fd = creat(cmd_fname, 0600)) < 0) {
+			if (errno == EINTR)
+				continue;
+			fatal("creat(%s): %m", cmd_fname);
+		}
+
 		i = strlen(opt.argv[0]) + 128;
 		buf = xmalloc(i);
-		fd = creat("/tmp/cmd_file", 0600);
 		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
 		j = snprintf(buf, i,
 			    "%s@%d%c%d%c%s:%d\n",
-			    opt.argv[0], _get_next_stepid(), '%', opt.ntasks,
-			    '%', protocol, opt.ntasks);
+			    opt.argv[0], _get_next_stepid(job_id), '%',
+			    opt.ntasks, '%', protocol, opt.ntasks);
 		i = 0;
 		while ((k = write(fd, &buf[i], j))) {
 			if (k > 0) {
@@ -940,8 +961,7 @@ extern char *build_poe_command(void)
 		}
 		(void) close(fd);
 		setenv("MP_NEWJOB", "parallel", 1);
-		setenv("MP_CMDFILE", "/tmp/cmd_file", 1);
-/* FIXME: Need better file name and need to delete upon completion */
+		setenv("MP_CMDFILE", cmd_fname, 1);
 	} else {
 		for (i = 0; i < opt.argc; i++)
 			xstrfmtcat(cmd_line, " %s", opt.argv[i]);
