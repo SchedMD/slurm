@@ -16,11 +16,7 @@
 
 AC_DEFUN([X_AC_NRT],
 [
-   if test "$OBJECT_MODE" = "64"; then
-      nrt_default_dirs="/usr/lib64"
-   else
-      nrt_default_dirs="/usr/lib"
-   fi
+   nrt_default_dirs="/usr/lib64 /usr/lib"
 
    AC_ARG_WITH([libnrt], AS_HELP_STRING(--with-libnrt=PATH,Specify path to libnrt.so), [ nrt_default_dirs="$withval $nrt_default_dirs"])
 

@@ -21261,11 +21261,7 @@ fi
 
 
 
-   if test "$OBJECT_MODE" = "64"; then
-      nrt_default_dirs="/usr/lib64"
-   else
-      nrt_default_dirs="/usr/lib"
-   fi
+   nrt_default_dirs="/usr/lib64 /usr/lib"
 
 
 # Check whether --with-libnrt was given.
