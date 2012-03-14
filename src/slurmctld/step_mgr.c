@@ -2069,14 +2069,17 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint16_t plane_size)
 {
 	uint16_t cpus_per_node[node_count];
-	uint32_t cpu_count_reps[node_count], gres_cpus;
+	uint32_t cpu_count_reps[node_count];
+	struct job_record *job_ptr = step_ptr->job_ptr;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+#ifndef HAVE_BGQ
+	uint32_t gres_cpus;
 	int cpu_inx = -1;
 	int i, usable_cpus, usable_mem;
 	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1, job_node_offset = -1;
 	int first_bit, last_bit;
-	struct job_record *job_ptr = step_ptr->job_ptr;
-	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+#endif
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -2089,7 +2092,16 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 		      "to enforce memory limits for job %u", job_ptr->job_id);
 		step_ptr->mem_per_cpu = 0;
 	}
+#ifdef HAVE_BGQ
+	/* Since we have to deal with a conversion between cnodes and
+	   midplanes here the math is really easy, and already has
+	   been figured out for us in the plugin, so just copy the
+	   numbers.
+	*/
+	memcpy(cpus_per_node, job_resrcs_ptr->cpus, sizeof(cpus_per_node));
+	cpu_count_reps[0] = job_resrcs_ptr->ncpus;
 
+#else
 	/* build the cpus-per-node arrays for the subset of nodes
 	 * used by this job step */
 	first_bit = bit_ffs(job_ptr->node_bitmap);
@@ -2166,7 +2178,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				break;
 		}
 	}
-
+#endif
 	/* if (set_tasks < num_tasks) { */
 	/* 	error("Resources only available for %u of %u tasks", */
 	/* 	     set_tasks, num_tasks); */
