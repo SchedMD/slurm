@@ -6,56 +6,122 @@
  * Licensed under the GPLv2.
  */
 #include "parser_internal.h"
+#include <stdarg.h>
 
+int   log_sel = -1;
+char *xml_log_loc = NULL;
+char  xml_log_file_name[256] = "";
+
+/*
+ * Function: _write_xml
+ * Purpose:  Intercepts SLURM's ALPS BASIL XML requests so that it can
+ *           logged it as well as pass to ALPS BASIL.
+ * Use:  Logging is controlled by environmental variables:
+ *       0) XML_LOG set to enable logging
+ *       1) XML_LOG_LOC not set   => Log to generic "slurm_basil_xml.log" file
+ *       2) XML_LOG_LOC="SLURM"   => Log to the common slurmctld.log file
+ *       3) XML_LOG_LOC=<path>    => Log to file specified by the path here
+ *
+ * Note: Any change in environmental variables requires re-start of slurmctld
+ * to take effect.
+ */
+static int _write_xml(FILE* fp, const char* format, ...) {
+	char buff[1024];
+	va_list ap;
+	int rc;
+	FILE* fplog = NULL;
+
+	/* Write to ALPS BASIL itself as we would have done without logging. */
+	va_start(ap, format);
+	vsnprintf(buff, sizeof(buff), format, ap);
+	va_end(ap);
+	rc = fprintf(fp, "%s", buff);
+	if (log_sel < 1)
+		return rc;
+
+	/* Perform the appropriate logging. */
+	if (xml_log_file_name[0] != '\0') {
+		/* If we have a specific file name, try to open it. */
+		fplog = fopen(xml_log_file_name, "a+");
+		if (fplog == NULL) {
+			error("Problem with fdopen() of %s: %m",
+			      xml_log_file_name);
+		}
+	}
+	if (fplog) {
+		fprintf(fplog, "%s", buff);
+		fclose(fplog);
+	} else
+		info("%s", buff);
+
+	return rc;
+}
+
+static void _init_log_config(void)
+{
+	if (getenv("XML_LOG"))
+		log_sel = 1;
+	else
+		log_sel = 0;
+	xml_log_loc = getenv("XML_LOG_LOC");
+	if (xml_log_loc && strcmp(xml_log_loc, "SLURM") &&
+	    (strlen(xml_log_loc) < sizeof(xml_log_file_name))) {
+		strcpy(xml_log_file_name, xml_log_loc);
+	} else {
+		sprintf(xml_log_file_name, "slurm_basil_xml.log");
+	}
+}
 
 static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 {
 	struct basil_rsvn_param *param;
 
-	fprintf(fp, " <ReserveParamArray user_name=\"%s\"", r->user_name);
+	_write_xml(fp, " <ReserveParamArray user_name=\"%s\"", r->user_name);
 	if (*r->batch_id != '\0')
-		fprintf(fp, " batch_id=\"%s\"", r->batch_id);
+		_write_xml(fp, " batch_id=\"%s\"", r->batch_id);
 	if (*r->account_name != '\0')
-		fprintf(fp, " account_name=\"%s\"", r->account_name);
-	fprintf(fp, ">\n");
+		_write_xml(fp, " account_name=\"%s\"", r->account_name);
+	_write_xml(fp, ">\n");
 
 	for (param = r->params; param; param = param->next) {
-		fprintf(fp, "  <ReserveParam architecture=\"%s\" "
-			"width=\"%ld\" depth=\"%ld\" nppn=\"%ld\"",
-			nam_arch[param->arch],
-			param->width, param->depth, param->nppn);
+		_write_xml(fp, "  <ReserveParam architecture=\"%s\" "
+			   "width=\"%ld\" depth=\"%ld\" nppn=\"%ld\"",
+			   nam_arch[param->arch],
+			   param->width, param->depth, param->nppn);
 
 		if (param->memory || param->labels ||
 		    param->nodes  || param->accel) {
-			fprintf(fp, ">\n");
+			_write_xml(fp, ">\n");
 		} else {
-			fprintf(fp, "/>\n");
+			_write_xml(fp, "/>\n");
 			continue;
 		}
 
 		if (param->memory) {
 			struct basil_memory_param  *mem;
 
-			fprintf(fp, "   <MemoryParamArray>\n");
-			for (mem = param->memory; mem; mem = mem->next)
-				fprintf(fp, "    <MemoryParam type=\"%s\""
-					" size_mb=\"%u\"/>\n",
-					nam_memtype[mem->type],
-					mem->size_mb ? : 1);
-			fprintf(fp, "   </MemoryParamArray>\n");
+			_write_xml(fp, "   <MemoryParamArray>\n");
+			for (mem = param->memory; mem; mem = mem->next) {
+				_write_xml(fp, "    <MemoryParam type=\"%s\""
+					   " size_mb=\"%u\"/>\n",
+					   nam_memtype[mem->type],
+					   mem->size_mb ? : 1);
+			}
+			_write_xml(fp, "   </MemoryParamArray>\n");
 		}
 
 		if (param->labels) {
 			struct basil_label *label;
 
-			fprintf(fp, "   <LabelParamArray>\n");
+			_write_xml(fp, "   <LabelParamArray>\n");
 			for (label = param->labels; label; label = label->next)
-				fprintf(fp, "    <LabelParam name=\"%s\""
-					" type=\"%s\" disposition=\"%s\"/>\n",
-					label->name, nam_labeltype[label->type],
-					nam_ldisp[label->disp]);
+				_write_xml(fp, "    <LabelParam name=\"%s\""
+					   " type=\"%s\" disposition=\"%s\"/>\n",
+					   label->name,
+					   nam_labeltype[label->type],
+					   nam_ldisp[label->disp]);
 
-			fprintf(fp, "   </LabelParamArray>\n");
+			_write_xml(fp, "   </LabelParamArray>\n");
 		}
 
 		if (param->nodes && *param->nodes) {
@@ -71,31 +137,31 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 			 * which had the same effect as supplying it once.
 			 * Hence the array expression is actually not needed.
 			 */
-			fprintf(fp, "   <NodeParamArray>\n"
-				    "    <NodeParam>%s</NodeParam>\n"
-				    "   </NodeParamArray>\n", param->nodes);
+			_write_xml(fp, "   <NodeParamArray>\n"
+				   "    <NodeParam>%s</NodeParam>\n"
+				   "   </NodeParamArray>\n", param->nodes);
 		}
 
 		if (param->accel) {
 			struct basil_accel_param *accel;
 
-			fprintf(fp, "   <AccelParamArray>\n");
+			_write_xml(fp, "   <AccelParamArray>\n");
 			for (accel = param->accel; accel; accel = accel->next) {
-				fprintf(fp, "    <AccelParam type=\"%s\"",
-					nam_acceltype[accel->type]);
+				_write_xml(fp, "    <AccelParam type=\"%s\"",
+					   nam_acceltype[accel->type]);
 
 				if (accel->memory_mb)
-					fprintf(fp, " memory_mb=\"%u\"",
-						accel->memory_mb);
-				fprintf(fp, "/>\n");
+					_write_xml(fp, " memory_mb=\"%u\"",
+						   accel->memory_mb);
+				_write_xml(fp, "/>\n");
 			}
-			fprintf(fp, "   </AccelParamArray>\n");
+			_write_xml(fp, "   </AccelParamArray>\n");
 		}
 
-		fprintf(fp, "  </ReserveParam>\n");
+		_write_xml(fp, "  </ReserveParam>\n");
 	}
-	fprintf(fp, " </ReserveParamArray>\n"
-		    "</BasilRequest>\n");
+	_write_xml(fp, " </ReserveParamArray>\n"
+		   "</BasilRequest>\n");
 }
 
 /*
@@ -110,6 +176,9 @@ int basil_request(struct basil_parse_data *bp)
 	int ec, rc = -BE_UNKNOWN;
 	FILE *apbasil;
 	pid_t pid;
+
+	if (log_sel == -1)
+		_init_log_config();
 
 	if (!cray_conf->apbasil) {
 		error("No alps client defined");
@@ -128,44 +197,44 @@ int basil_request(struct basil_parse_data *bp)
 		fatal("fdopen(): %s", strerror(errno));
 	setlinebuf(apbasil);
 
-	fprintf(apbasil, "<?xml version=\"1.0\"?>\n"
-		"<BasilRequest protocol=\"%s\" method=\"%s\" ",
-		bv_names[bp->version], bm_names[bp->method]);
+	_write_xml(apbasil, "<?xml version=\"1.0\"?>\n"
+		   "<BasilRequest protocol=\"%s\" method=\"%s\" ",
+		   bv_names[bp->version], bm_names[bp->method]);
 
 	switch (bp->method) {
 	case BM_engine:
-		fprintf(apbasil, "type=\"ENGINE\"/>");
+		_write_xml(apbasil, "type=\"ENGINE\"/>");
 		break;
 	case BM_inventory:
-		fprintf(apbasil, "type=\"INVENTORY\"/>");
+		_write_xml(apbasil, "type=\"INVENTORY\"/>");
 		break;
 	case BM_reserve:
-		fprintf(apbasil, ">\n");
+		_write_xml(apbasil, ">\n");
 		_rsvn_write_reserve_xml(apbasil, bp->mdata.res);
 		break;
 	case BM_confirm:
 		if (bp->version == BV_1_0 && *bp->mdata.res->batch_id != '\0')
-			fprintf(apbasil, "job_name=\"%s\" ",
-				bp->mdata.res->batch_id);
-		fprintf(apbasil, "reservation_id=\"%u\" %s=\"%llu\"/>\n",
-			bp->mdata.res->rsvn_id,
-			bp->version >= BV_3_1 ? "pagg_id" : "admin_cookie",
-			(unsigned long long)bp->mdata.res->pagg_id);
+			_write_xml(apbasil, "job_name=\"%s\" ",
+				   bp->mdata.res->batch_id);
+		_write_xml(apbasil, "reservation_id=\"%u\" %s=\"%llu\"/>\n",
+			   bp->mdata.res->rsvn_id,
+			   bp->version >= BV_3_1 ? "pagg_id" : "admin_cookie",
+			   (unsigned long long)bp->mdata.res->pagg_id);
 		break;
 	case BM_release:
-		fprintf(apbasil, "reservation_id=\"%u\"/>\n",
-			bp->mdata.res->rsvn_id);
+		_write_xml(apbasil, "reservation_id=\"%u\"/>\n",
+			   bp->mdata.res->rsvn_id);
 		break;
 	case BM_switch:
 	{
 		char *suspend = bp->mdata.res->suspended ? "OUT" : "IN";
-		fprintf(apbasil, ">\n");
-		fprintf(apbasil, " <ReservationArray>\n");
-		fprintf(apbasil, "  <Reservation reservation_id=\"%u\" "
-			"action=\"%s\"/>\n",
-			bp->mdata.res->rsvn_id, suspend);
-		fprintf(apbasil, " </ReservationArray>\n");
-		fprintf(apbasil, "</BasilRequest>\n");
+		_write_xml(apbasil, ">\n");
+		_write_xml(apbasil, " <ReservationArray>\n");
+		_write_xml(apbasil, "  <Reservation reservation_id=\"%u\" "
+			   "action=\"%s\"/>\n",
+			   bp->mdata.res->rsvn_id, suspend);
+		_write_xml(apbasil, " </ReservationArray>\n");
+		_write_xml(apbasil, "</BasilRequest>\n");
 	}
 		break;
 	default: /* ignore BM_none, BM_MAX, and BM_UNKNOWN covered above */
@@ -177,8 +246,10 @@ int basil_request(struct basil_parse_data *bp)
 
 	rc = parse_basil(bp, from_child);
 	ec = wait_for_child(pid);
-	if (ec)
+	if (ec) {
 		error("%s child process for BASIL %s method exited with %d",
 		      cray_conf->apbasil, bm_names[bp->method], ec);
+	}
+
 	return rc;
 }

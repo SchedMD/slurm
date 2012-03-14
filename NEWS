@@ -39,6 +39,10 @@ documents those changes that are of interest to users and admins.
     instantly to idle instead of idle* which means no response.
  -- Fix regression in 2.4.0.pre3 where number of submitted jobs limit wasn't
     being honored for QOS.
+ -- Cray - Enable logging of BASIL communications with environment variables.
+    Set XML_LOG to enable logging. Set XML_LOG_LOC to specify path to log file
+    or "SLURM" to write to SlurmctldLogFile or unset for "slurm_basil_xml.log".
+    Patch from Steve Tronfinoff, CSCS.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
