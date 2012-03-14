@@ -345,6 +345,13 @@ if ($have_job == 0) {
 		}
 	}
 
+#	Set the job name to the program name. Break into tokens with
+#	'/' (octal 057) separator and use last token for the job name
+	if (!$job_name && $ARGV[0]) {
+		my @dirs = split(/\057/, $ARGV[0]);
+		$job_name = pop(@dirs);
+	}
+
 	$command = "$salloc";
 	$command .= " --account=$account"		if $account;
 	$command .= " --acctg-freq=$acctg_freq"		if $acctg_freq;

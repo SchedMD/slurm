@@ -51,7 +51,11 @@ documents those changes that are of interest to users and admins.
  -- Add new job state reason of "FrontEndDown" which applies only to Cray and
     IBM BlueGene systems.
  -- Cray - Enable configure option of "--enable-salloc-background" to permit
-    the srun and salloc commands to be executed in the background.
+    the srun and salloc commands to be executed in the background. This does
+    NOT remove the ALPS limitation that only one job reservation can be created
+    for each Linux session ID.
+ -- Cray - For srun wrapper when creating a job allocation, set the default job
+    name to the executable file's name.
 
 * Changes in SLURM 2.3.3
 ========================
