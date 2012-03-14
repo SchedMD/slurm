@@ -44,7 +44,7 @@ const char *basil_strerror(int rc)
  */
 void extract_attributes(const XML_Char **attr_list, char **reqv, int reqc)
 {
-	const XML_Char **attr, *val;
+	const XML_Char **attr, *val = NULL;
 
 	while (--reqc >= 0) {
 		for (attr = attr_list, val = NULL; *attr; attr += 2)
@@ -57,6 +57,7 @@ void extract_attributes(const XML_Char **attr_list, char **reqv, int reqc)
 		if (val == NULL)
 			fatal("unspecified '%s' attribute", reqv[reqc]);
 		reqv[reqc] = (XML_Char *)val;
+		val = NULL;
 	}
 }
 
