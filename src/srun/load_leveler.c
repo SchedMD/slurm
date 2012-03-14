@@ -853,6 +853,13 @@ static char *_get_cmd_protocol(char *cmd)
 	return protocol;
 }
 
+/* Return the next available step ID */
+static int _get_next_stepid(void)
+{
+	/* FIXME: Need work here too */
+	return 1;
+}
+
 /* Build a POE command line based upon srun options (using global variables) */
 extern char *build_poe_command(void)
 {
@@ -869,7 +876,7 @@ extern char *build_poe_command(void)
 	 * http://publib.boulder.ibm.com/epubs/pdf/c2367811.pdf
 	 * The command file should contain one more more lines of the following
 	 * form:
-	 * <cmd>@<step_id>:<total_tasks>:<protocol>:<num_tasks>
+	 * <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks>
 	 * IBM is working to eliminate the need to specify protocol, but until
 	 * then it might be determined as follows:
 	 *
@@ -900,11 +907,6 @@ extern char *build_poe_command(void)
 		if (tmp_str && (opt.ntasks != atoi(tmp_str)))
 			need_cmdfile = true;
 	}
-	if (opt.nodes_set && !need_cmdfile) {
-		tmp_str = getenv("SLURM_NNODES");
-		if (tmp_str && (opt.min_nodes != atoi(tmp_str)))
-			need_cmdfile = true;
-	}
 
 /* FIXME: Need more work here */
 	if (opt.multi_prog) {
@@ -915,8 +917,35 @@ extern char *build_poe_command(void)
 	info("cmd:%s protcol:%s", opt.argv[0], protocol);
 
 	xstrcat(cmd_line, "poe");
-	for (i = 0; i < opt.argc; i++)
-		xstrfmtcat(cmd_line, " %s", opt.argv[i]);
+	if (need_cmdfile) {
+		char *buf;
+		int fd, i, j, k;
+		i = strlen(opt.argv[0]) + 128;
+		buf = xmalloc(i);
+		fd = creat("/tmp/cmd_file", 0600);
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
+		j = snprintf(buf, i,
+			    "%s@%d%c%d%c%s:%d\n",
+			    opt.argv[0], _get_next_stepid(), '%', opt.ntasks,
+			    '%', protocol, opt.ntasks);
+		i = 0;
+		while ((k = write(fd, &buf[i], j))) {
+			if (k > 0) {
+				i += k;
+				j -= k;
+			} else if ((errno != EAGAIN) && (errno != EINTR)) {
+				error("write(cmdfile): %m");
+				break;
+			}
+		}
+		(void) close(fd);
+		setenv("MP_NEWJOB", "parallel", 1);
+		setenv("MP_CMDFILE", "/tmp/cmd_file", 1);
+/* FIXME: Need better file name and need to delete upon completion */
+	} else {
+		for (i = 0; i < opt.argc; i++)
+			xstrfmtcat(cmd_line, " %s", opt.argv[i]);
+	}
 
 	if (opt.network) {
 		if (strstr(opt.network, "dedicated"))
