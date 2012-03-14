@@ -854,15 +854,27 @@ static char *_get_cmd_protocol(char *cmd)
 }
 
 /* Return the next available step ID */
-static int _get_next_stepid(char *job_id)
+static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 {
-	char fname[64];
+	char fname[512];
 	int step_id;
+	char *work_dir;
 
+	/* NOTE: Directory must be shared between nodes for cmd_file to work */
+	if (!(work_dir = getenv("HOME"))) {
+		work_dir = xmalloc(512);
+		getcwd(work_dir, 512);
+		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
+		xfree(work_dir);
+	} else {
+		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
+	}
+	mkdir(dname, 0700);
+	
 	for (step_id = 1; ; step_id++) {
 /* FIXME: Need to delete files at job termination */
-		snprintf(fname, sizeof(fname), "/tmp/slurm_step_%s.%d",
-			 job_id, step_id);
+		snprintf(fname, sizeof(fname), "%s/slurm_step_%s.%d",
+			 dname, job_id, step_id);
 		if (open(fname, O_CREAT | O_EXCL, 0100) > -1)
 			break;
 	}
@@ -873,9 +885,9 @@ static int _get_next_stepid(char *job_id)
 /* Build a POE command line based upon srun options (using global variables) */
 extern char *build_poe_command(char *job_id)
 {
-	int i;
+	int i, step_id;
 	char *cmd_line = NULL, *tmp_str;
-	char value[32];
+	char dname[512], value[32];
 	bool need_cmdfile = false;
 	char *protocol = "mpi";
 
@@ -926,16 +938,16 @@ extern char *build_poe_command(char *job_id)
 	}
 	debug("cmd:%s protcol:%s", opt.argv[0], protocol);
 
+	step_id = _get_next_stepid(job_id, dname, sizeof(dname));
 	xstrcat(cmd_line, "poe");
 	if (need_cmdfile) {
 		char *buf;
-		int fd, i, j, k, step_id;
+		int fd, i, j, k;
 		char cmd_fname[256];
 
-		step_id = _get_next_stepid(job_id);
 /* FIXME: Need to delete files at job termination */
 		snprintf(cmd_fname, sizeof(cmd_fname),
-			 "/tmp/slurm_cmdfile_%s.%d", job_id, step_id);
+			 "%s/slurm_cmdfile_%s.%d", dname, job_id, step_id);
 		while ((fd = creat(cmd_fname, 0600)) < 0) {
 			if (errno == EINTR)
 				continue;
@@ -946,10 +958,14 @@ extern char *build_poe_command(char *job_id)
 		buf = xmalloc(i);
 		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
 		j = snprintf(buf, i,
-			    "%s@%d%c%d%c%s:%d\n",
-			    opt.argv[0], _get_next_stepid(job_id), '%',
+			    "%s@%d%c%d%c%s:%d",
+			    opt.argv[0], step_id, '%',
 			    opt.ntasks, '%', protocol, opt.ntasks);
+		for (i = 1; i < opt.argc; i++)	/* start with argv[1] */
+			xstrfmtcat(buf, " %s", opt.argv[i]);
+		xstrfmtcat(buf, "\n");
 		i = 0;
+		j = strlen(buf);
 		while ((k = write(fd, &buf[i], j))) {
 			if (k > 0) {
 				i += k;
