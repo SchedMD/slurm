@@ -8771,9 +8771,17 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			node_ptr = &node_record_table_ptr[i];
+#ifndef HAVE_BG
+			/* If this is a bluegene system we do not want
+			   to mark the entire midplane down if we have
+			   an epilog error.  This would most likely
+			   kill other jobs sharing that midplane and
+			   that is not what we want.
+			*/
 			if (return_code)
 				set_node_down_ptr(node_ptr, "Epilog error");
 			else
+#endif
 				make_node_idle(node_ptr, job_ptr);
 		}
 	}

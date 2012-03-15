@@ -46,6 +46,8 @@ documents those changes that are of interest to users and admins.
  -- FRONTEND - if a front end unexpectedly reboots kill all jobs but don't
     mark front end node down.
  -- FRONTEND - don't down a front end node if you have an epilog error
+ -- BLUEGENE - if a job has an epilog error don't down the midplane it was
+    running on.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
