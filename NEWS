@@ -60,6 +60,9 @@ documents those changes that are of interest to users and admins.
  -- FRONTEND - if a front end unexpectedly reboots kill all jobs but don't
     mark front end node down.
  -- FRONTEND - don't down a front end node if you have an epilog error.
+ -- Cray - fix for if a frontend slurmd was started after the slurmctld had
+    already pinged it on startup the unresponding flag would be removed from
+    the frontend node.
 
 * Changes in SLURM 2.3.3
 ========================
