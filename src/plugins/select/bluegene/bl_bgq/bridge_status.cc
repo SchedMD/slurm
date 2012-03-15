@@ -160,9 +160,12 @@ static void _handle_bad_midplane(const char *mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (!node_already_down(bg_down_node)) {
-		error("Midplane %s, state went to '%s', marking midplane down.",
-		      bg_down_node,
-		      bridge_hardware_state_string(state.toValue()));
+		if (rt_running
+		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+			error("Midplane %s, state went to '%s', "
+			      "marking midplane down.",
+			      bg_down_node,
+			      bridge_hardware_state_string(state.toValue()));
 		/* unlock mutex here since slurm_drain_nodes could produce
 		   deadlock */
 		slurm_mutex_unlock(&ba_system_mutex);
@@ -190,10 +193,12 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (!node_already_down(bg_down_node)) {
-		error("Switch at dim '%d' on Midplane %s, state went to '%s', "
-		      "marking midplane down.",
-		      dim, bg_down_node,
-		      bridge_hardware_state_string(state.toValue()));
+		if (rt_running
+		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+			error("Switch at dim '%d' on Midplane %s, "
+			      "state went to '%s', marking midplane down.",
+			      dim, bg_down_node,
+			      bridge_hardware_state_string(state.toValue()));
 		/* unlock mutex here since slurm_drain_nodes could produce
 		   deadlock */
 		slurm_mutex_unlock(&ba_system_mutex);
@@ -263,15 +268,19 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 		slurm_mutex_lock(&block_state_mutex);
 	slurm_mutex_lock(&ba_system_mutex);
 
-	if (rc == SLURM_SUCCESS)
-		debug("nodeboard %s on %s is in an error state '%s'",
-		      nb_name, bg_down_node,
-		      bridge_hardware_state_string(state.toValue()));
-	else
-		debug2("nodeboard %s on %s is in an error state '%s', "
-		       "but error was returned when trying to make it so",
-		       nb_name, bg_down_node,
-		       bridge_hardware_state_string(state.toValue()));
+	if (rt_running
+	    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME)) {
+		if (rc == SLURM_SUCCESS)
+			debug("nodeboard %s on %s is in an error state '%s'",
+			      nb_name, bg_down_node,
+			      bridge_hardware_state_string(state.toValue()));
+		else
+			debug2("nodeboard %s on %s is in an error state '%s', "
+			       "but error was returned when trying to make "
+			       "it so",
+			       nb_name, bg_down_node,
+			       bridge_hardware_state_string(state.toValue()));
+	}
 	return;
 }
 
@@ -363,7 +372,9 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			 cnode_coords[3],
 			 cnode_coords[4],
 			 cnode_loc.c_str());
-		error("%s", reason);
+		if (rt_running
+		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+			error("%s", reason);
 		_handle_bad_nodeboard(nc_name, ba_mp->coord_str,
 				      state, reason, 1);
 	}
@@ -371,9 +382,11 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	if (!changed)
 		return;
 	last_bg_update = time(NULL);
-	info("_handle_node_change: state for %s - %s is '%s'",
-	     ba_mp->coord_str, cnode_loc.c_str(),
-	     bridge_hardware_state_string(state.toValue()));
+	if (rt_running
+	    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		info("_handle_node_change: state for %s - %s is '%s'",
+		     ba_mp->coord_str, cnode_loc.c_str(),
+		     bridge_hardware_state_string(state.toValue()));
 
 	assert(node_ptr->select_nodeinfo);
 	nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
@@ -438,9 +451,15 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			/* handle really small ratios */
 			if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
 				bg_record->err_ratio = 1;
-			debug("count in error for %s is %u with ratio at %u",
-			      bg_record->bg_block_id, bg_record->cnode_err_cnt,
-			      bg_record->err_ratio);
+
+			if (rt_running
+			    || (bg_conf->slurm_debug_flags
+				& DEBUG_FLAG_NO_REALTIME))
+				debug("count in error for %s is %u "
+				      "with ratio at %u",
+				      bg_record->bg_block_id,
+				      bg_record->cnode_err_cnt,
+				      bg_record->err_ratio);
 
 			/* If the state is available no reason to go
 			   kill jobs so just break out here instead.
@@ -508,9 +527,11 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		assert(nodeinfo);
 
 		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_FULL);
-		info("Cable in dim '%u' on Midplane %s, "
-		     "has returned to service",
-		     dim, ba_mp->coord_str);
+		if (rt_running
+		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+			info("Cable in dim '%u' on Midplane %s, "
+			     "has returned to service",
+			     dim, ba_mp->coord_str);
 		/* Don't resume any blocks in the error, Admins will
 		   do this when they make sure it is ready.  Really
 		   only matters for static blocks.  On a dynamic
@@ -537,10 +558,12 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 
 		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_FULL;
 
-		error("Cable at dim '%d' on Midplane %s, "
-		      "state went to '%s', marking cable down.",
-		      dim, ba_mp->coord_str,
-		      bridge_hardware_state_string(state.toValue()));
+		if (rt_running
+		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+			error("Cable at dim '%d' on Midplane %s, "
+			      "state went to '%s', marking cable down.",
+			      dim, ba_mp->coord_str,
+			      bridge_hardware_state_string(state.toValue()));
 
 		snprintf(reason, sizeof(reason),
 			 "Cable going from %s -> %s (%d) is not available.\n",

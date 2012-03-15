@@ -1742,6 +1742,9 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_GANG		0x00002000	/* debug gang scheduler */
 #define DEBUG_FLAG_RESERVATION	0x00004000	/* advanced reservations */
 #define DEBUG_FLAG_FRONT_END	0x00008000	/* front-end nodes */
+#define DEBUG_FLAG_NO_REALTIME	0x00010000	/* get debug when the
+						 * realtime server
+						 * dies on a bluegene system */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
