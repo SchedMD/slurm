@@ -1966,8 +1966,8 @@ static front_end_record_t * _front_end_reg(
 	state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
 	if ((state_base == NODE_STATE_DOWN) &&
 	    (!strncmp(front_end_ptr->reason, "Not responding", 14))) {
-		info("FrontEnd node %s returned to service",
-		     reg_msg->node_name);
+		error("front end node %s returned to service",
+		      reg_msg->node_name);
 		state_base = NODE_STATE_IDLE;
 		xfree(front_end_ptr->reason);
 		front_end_ptr->reason_time = (time_t) 0;
