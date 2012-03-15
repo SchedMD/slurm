@@ -1018,7 +1018,7 @@ static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 {
 	int fd, i, rc, step_id;
 	char *work_dir;
-	ssize_t io_size;
+	ssize_t io_size = 0;
 	char buf[16];
 
 	/* NOTE: Directory must be shared between nodes for cmd_file to work */
@@ -1038,11 +1038,11 @@ static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 		stepid_fname = xmalloc(strlen(dname) + strlen(job_id) + 32);
 		sprintf(stepid_fname, "%s/slurm_stepid_%s", dname, job_id);
 	}
-	while (((fd = open(stepid_fname, O_CREAT | O_EXCL, 0600)) < 0) &&
+	while (((fd = open(stepid_fname, O_CREAT|O_EXCL|O_RDWR, 0600)) < 0) &&
 	       (errno == EINTR))
 		;
 	if ((fd < 0) && (errno == EEXIST))
-		fd = open(stepid_fname, 0);
+		fd = open(stepid_fname, O_RDWR);
 	if (fd < 0)
 		fatal("open(%s): %m", stepid_fname);
 
@@ -1061,8 +1061,10 @@ static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 		io_size = read(fd, buf, sizeof(buf));
 		if (io_size >= 0)
 			break;
-		if (i > 10)
+		if (i > 10) {
+			flock(fd, LOCK_UN);
 			fatal("read(%s): %m", stepid_fname);
+		}
 	}
 	if (io_size > 0)
 		step_id = atoi(buf) + 1;
@@ -1076,8 +1078,10 @@ static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 		io_size = write(fd, buf, sizeof(buf));
 		if (io_size == sizeof(buf))
 			break;
-		if (i > 10)
+		if (i > 10) {
+			flock(fd, LOCK_UN);
 			fatal("write(%s): %m", stepid_fname);
+		}
 	}
 
 	/* Unlock the file */
@@ -1090,19 +1094,6 @@ static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 	}
 
 	return step_id;
-}
-
-/*
- * srun_purge_files - Purge files created for this job (if any).
- *	This should only be called when srun created the job allocation,
- *	NOT when starting job steps within an existing allocation.
- */
-extern void srun_purge_files(void)
-{
-	if (cmd_fname)
-		unlink(cmd_fname);
-	if (stepid_fname)
-		unlink(stepid_fname);
 }
 
 /* Build a POE command line based upon srun options (using global variables) */
@@ -1396,9 +1387,10 @@ static int _srun_spawn_batch(char *cmd_line)
  *	and execute the user's command.
  *
  * cmd_line IN - Command execute line
+ * srun_alloc IN - TRUE if this srun commanmd created the job allocation
  * RETURN - remote processes exit code or -1 if some internal error
  */
-extern int srun_front_end (char *cmd_line)
+extern int srun_front_end (char *cmd_line, bool  srun_alloc)
 {
 	uint16_t port_e, port_o, port_s;
 	slurm_addr_t addr_e, addr_o, addr_s;
@@ -1624,6 +1616,8 @@ fini:	pthread_mutex_lock(&state_mutex);
 	pthread_mutex_unlock(&state_mutex);
 	if (cmd_fname)
 		(void) unlink(cmd_fname);
+	if (srun_alloc && stepid_fname)
+		(void) unlink(stepid_fname);
 	if (stdout_conn != SLURM_SOCKET_ERROR)
 		slurm_close_accepted_conn(stdout_conn);
 	if (stderr_conn != SLURM_SOCKET_ERROR)

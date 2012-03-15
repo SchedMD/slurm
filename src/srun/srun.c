@@ -520,12 +520,10 @@ int srun(int ac, char **av)
 		 */
 		if (_become_user () < 0)
 			info("Warning: Unable to assume uid=%u", opt.uid);
-
 		if (!job || create_job_step(job, true) < 0) {
 			slurm_complete_job(resp->job_id, 1);
 			exit(error_exit);
 		}
-
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
@@ -753,9 +751,6 @@ cleanup:
 			slurm_complete_job(job->jobid, NO_VAL);
 		else
 			slurm_complete_job(job->jobid, global_rc);
-#ifdef USE_LOADLEVELER
-		srun_purge_files();
-#endif
 	}
 	_shepard_notify(shepard_fd);
 

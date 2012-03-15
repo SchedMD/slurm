@@ -1040,7 +1040,7 @@ static void _spawn_proc(char *exec_line)
 	pid_t pid;
 	int i;
 
-	info("msg: %s", exec_line);
+	//info("msg: %s", exec_line);
 	pid = fork();
 	if (pid < 0) {
 		error("fork: %m");
