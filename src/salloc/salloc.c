@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <termios.h>
@@ -847,10 +848,14 @@ static pid_t _fork_command(char **command)
 /* Purge SLURM files created by srun within this allocation, if any. */
 static void _salloc_purge_files(char *job_id)
 {
-	char *cmd_fname = NULL, dir_name[512], *stepid_fname = NULL, *work_dir;
+
+	char *fname = NULL, dir_name[512], *work_dir;
+	char *cmd_fname = NULL, *stepid_fname = NULL;
 	int len;
 	DIR *dir_ptr;
 	struct dirent *dir_rec;
+	struct stat stat_buf;
+	time_t now = time(NULL);
 
 	/* NOTE: Directory must be shared between nodes for cmd_file to work */
 	if (!(work_dir = getenv("HOME"))) {
@@ -873,9 +878,22 @@ static void _salloc_purge_files(char *job_id)
 	len = strlen(cmd_fname);
 	dir_ptr = opendir(dir_name);
 	while (dir_ptr && (dir_rec = readdir(dir_ptr))) {
+		bool rm_file = false;
 		if (!strncmp(dir_rec->d_name, cmd_fname, len))
-			unlink(dir_rec->d_name);
+			rm_file = true;
+		xstrfmtcat(fname, "%s/%s", dir_name, dir_rec->d_name);
+		if (!rm_file &&
+		    (stat(fname, &stat_buf) == 0)) {
+			double f_age = 0;
+			f_age = difftime(now, stat_buf.st_ctime);
+			if (f_age > 60 * 60 * 24 * 90)	/* 90 days old */
+				rm_file = true;
+		}
+		if (rm_file)
+			unlink(fname);
+		xfree(fname);
 	}
+	closedir(dir_ptr);
 	xfree(cmd_fname);
 }
 
