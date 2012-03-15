@@ -879,13 +879,16 @@ static void _salloc_purge_files(char *job_id)
 	dir_ptr = opendir(dir_name);
 	while (dir_ptr && (dir_rec = readdir(dir_ptr))) {
 		bool rm_file = false;
+		if (dir_rec->d_name[0] == '.')
+			continue;
 		if (!strncmp(dir_rec->d_name, cmd_fname, len))
 			rm_file = true;
 		xstrfmtcat(fname, "%s/%s", dir_name, dir_rec->d_name);
 		if (!rm_file &&
 		    (stat(fname, &stat_buf) == 0)) {
 			double f_age = 0;
-			f_age = difftime(now, stat_buf.st_ctime);
+			if (S_ISREG(stat_buf.st_mode))
+				f_age = difftime(now, stat_buf.st_ctime);
 			if (f_age > 60 * 60 * 24 * 90)	/* 90 days old */
 				rm_file = true;
 		}
