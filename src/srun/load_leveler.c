@@ -853,6 +853,154 @@ static char *_get_cmd_protocol(char *cmd)
 	return protocol;
 }
 
+/*
+ * Parse a multi-prog input file line
+ * line IN - line to parse
+ * num_task OUT - number of tasks to be started
+ * cmd OUT - command to execute, caller must xfree this
+ * args OUT - arguments to the command, caller must xfree this
+ */
+static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
+			     char **args)
+{
+	int i;
+	int first_arg_inx = 0, last_arg_inx = 0;
+	int first_cmd_inx,  last_cmd_inx;
+	int first_task_inx, last_task_inx;
+	hostset_t hs;
+
+	/* Get the task ID string */
+	for (i = 0; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i] == '#')
+		goto fini;
+	if (!isdigit(in_line[i]))
+		goto bad_line;
+	first_task_inx = i;
+	for (i++; in_line[i]; i++) {
+		if (isspace(in_line[i]))
+			break;
+	}
+	if (!isspace(in_line[i]))
+		goto bad_line;
+	last_task_inx = i;
+
+	/* Get the command */
+	for (i++; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i] == '\0')
+		goto bad_line;
+	first_cmd_inx = i;
+	for (i++; in_line[i]; i++) {
+		if (isspace(in_line[i]))
+			break;
+	}
+	if (!isspace(in_line[i]))
+		goto bad_line;
+	last_cmd_inx = i;
+
+	/* Get the command's arguments */
+	for (i++; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i])
+		first_arg_inx = i;
+	for ( ; in_line[i]; i++) {
+		if (in_line[i] == '\n') {
+			last_arg_inx = i;
+			break;
+		}
+	}
+
+	/* Now transfer data to the function arguments */
+	in_line[last_task_inx] = '\0';
+	hs = hostset_create(in_line + first_task_inx);
+	in_line[last_task_inx] = ' ';
+	if (!hs)
+		goto bad_line;
+	*num_tasks = hostset_count(hs);
+	hostset_destroy(hs);
+
+	in_line[last_cmd_inx] = '\0';
+	*cmd = xstrdup(in_line + first_cmd_inx);
+	in_line[last_cmd_inx] = ' ';
+
+	if (last_arg_inx)
+		in_line[last_arg_inx] = '\0';
+	if (first_arg_inx)
+		*args = xstrdup(in_line + first_arg_inx);
+	if (last_arg_inx)
+		in_line[last_arg_inx] = '\n';
+	return;
+
+bad_line:
+	error("invalid input line: %s", in_line);
+fini:	*num_tasks = -1;
+	return;	
+}
+
+/*
+ * Either get or set a POE command line,
+ * line IN/OUT - line to set or get
+ * length IN - size of line in bytes
+ * step_id IN - -1 if input line, otherwise the step ID to output
+ * RET true if more lines to get
+ */
+static bool _multi_prog_parse(char *line, int length, int step_id)
+{
+	static int cmd_count = 0, inx = 0, total_tasks = 0;
+	static char **args = NULL, **cmd = NULL;
+	static int *num_tasks = NULL;
+	int i;
+
+	if (step_id < 0) {
+		char *tmp_args = NULL, *tmp_cmd = NULL;
+		int tmp_tasks = -1;
+		_parse_prog_line(line, &tmp_tasks, &tmp_cmd, &tmp_args);
+
+		if (tmp_tasks < 0) {
+			if (line[0] != '#')
+				error("bad line %s", line);
+			return true;
+		}
+
+		xrealloc(args, (sizeof(char *) * (cmd_count + 1)));
+		xrealloc(cmd,  (sizeof(char *) * (cmd_count + 1)));
+		xrealloc(num_tasks, (sizeof(int) * (cmd_count + 1)));
+		args[cmd_count] = tmp_args;
+		cmd[cmd_count]  = tmp_cmd;
+		num_tasks[cmd_count] = tmp_tasks;
+		total_tasks += tmp_tasks;
+		cmd_count++;
+		return true;
+	} else if (inx >= cmd_count) {
+		for (i = 0; i < cmd_count; i++) {
+			xfree(args[i]);
+			xfree(cmd[i]);
+		}
+		xfree(args);
+		xfree(cmd);
+		xfree(num_tasks);
+		cmd_count = 0;
+		inx = 0;
+		total_tasks = 0;
+		return false;
+	} else {
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
+		snprintf(line, length, "%s@%d%c%d%c%s:%d %s",
+			 cmd[inx], step_id, '%', total_tasks, '%',
+			 _get_cmd_protocol(cmd[inx]), num_tasks[inx],
+			 args[inx]);
+		inx++;
+		return true;
+	}
+}
+
 /* Return the next available step ID */
 static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 {
@@ -863,7 +1011,8 @@ static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 	/* NOTE: Directory must be shared between nodes for cmd_file to work */
 	if (!(work_dir = getenv("HOME"))) {
 		work_dir = xmalloc(512);
-		getcwd(work_dir, 512);
+		if (!getcwd(work_dir, 512))
+			fatal("getcwd(): %m");
 		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
 		xfree(work_dir);
 	} else {
@@ -932,7 +1081,6 @@ extern char *build_poe_command(char *job_id)
 
 	if (opt.multi_prog) {
 		protocol = "multi";
-/* FIXME: Need more work here */
 	} else {
 		protocol = _get_cmd_protocol(opt.argv[0]);
 	}
@@ -956,14 +1104,27 @@ extern char *build_poe_command(char *job_id)
 
 		i = strlen(opt.argv[0]) + 128;
 		buf = xmalloc(i);
-		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
-		j = snprintf(buf, i,
-			    "%s@%d%c%d%c%s:%d",
-			    opt.argv[0], step_id, '%',
-			    opt.ntasks, '%', protocol, opt.ntasks);
-		for (i = 1; i < opt.argc; i++)	/* start with argv[1] */
-			xstrfmtcat(buf, " %s", opt.argv[i]);
-		xstrfmtcat(buf, "\n");
+		if (opt.multi_prog) {
+			char in_line[512];
+			FILE *fp = fopen(opt.argv[0], "r");
+			if (!fp)
+				fatal("fopen(%s): %m", opt.argv[0]);
+			/* Read and parse SLURM MPMD format file here */
+			while (fgets(in_line, sizeof(in_line), fp))
+				_multi_prog_parse(in_line, 512, -1);
+			fclose(fp);
+			/* Write LoadLeveler MPMD format file here */
+			while (_multi_prog_parse(in_line, 512, step_id))
+				j = xstrfmtcat(buf, "%s\n", in_line);
+		} else {
+			/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
+			xstrfmtcat(buf, "%s@%d%c%d%c%s:%d",
+				   opt.argv[0], step_id, '%',
+				   opt.ntasks, '%', protocol, opt.ntasks);
+			for (i = 1; i < opt.argc; i++) /* start at argv[1] */
+				xstrfmtcat(buf, " %s", opt.argv[i]);
+			xstrfmtcat(buf, "\n");
+		}
 		i = 0;
 		j = strlen(buf);
 		while ((k = write(fd, &buf[i], j))) {
