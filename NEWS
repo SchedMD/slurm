@@ -57,6 +57,8 @@ documents those changes that are of interest to users and admins.
  -- Cray - For srun wrapper when creating a job allocation, set the default job
     name to the executable file's name.
  -- Add support for Cray ALPS 5.0.0
+ -- FRONTEND - if a front end unexpectedly reboots kill all jobs but don't
+    mark front end node down.
 
 * Changes in SLURM 2.3.3
 ========================

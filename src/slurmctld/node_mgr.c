@@ -1797,12 +1797,11 @@ static front_end_record_t * _front_end_reg(
 
 	front_end_ptr->boot_time = now - reg_msg->up_time;
 	if (front_end_ptr->last_response &&
-	    (front_end_ptr->boot_time > front_end_ptr->last_response) &&
-	    (slurmctld_conf.ret2service != 2)) {
-		set_front_end_down(front_end_ptr,
-				   "Front end unexpectedly rebooted");
-		info("Front end %s unexpectedly rebooted",
+	    (front_end_ptr->boot_time > front_end_ptr->last_response)) {
+		info("front end %s unexpectedly rebooted, "
+		     "killing all previously running jobs running on it.",
 		     reg_msg->node_name);
+		(void) kill_job_by_front_end_name(front_end_ptr->name);
 		reg_msg->job_count = 0;
 	}
 
