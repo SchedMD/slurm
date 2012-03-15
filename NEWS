@@ -45,6 +45,7 @@ documents those changes that are of interest to users and admins.
     Patch from Steve Tronfinoff, CSCS.
  -- FRONTEND - if a front end unexpectedly reboots kill all jobs but don't
     mark front end node down.
+ -- FRONTEND - don't down a front end node if you have an epilog error
 
 * Changes in SLURM 2.4.0.pre3
 =============================
