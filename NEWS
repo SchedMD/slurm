@@ -43,6 +43,8 @@ documents those changes that are of interest to users and admins.
     Set XML_LOG to enable logging. Set XML_LOG_LOC to specify path to log file
     or "SLURM" to write to SlurmctldLogFile or unset for "slurm_basil_xml.log".
     Patch from Steve Tronfinoff, CSCS.
+ -- FRONTEND - if a front end unexpectedly reboots kill all jobs but don't
+    mark front end node down.
 
 * Changes in SLURM 2.4.0.pre3
 =============================
