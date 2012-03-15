@@ -1112,7 +1112,7 @@ extern char *build_poe_command(char *job_id)
 	 * http://publib.boulder.ibm.com/epubs/pdf/c2367811.pdf
 	 * The command file should contain one more more lines of the following
 	 * form:
-	 * <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks>
+	 * <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args>
 	 * IBM is working to eliminate the need to specify protocol, but until
 	 * then it might be determined as follows:
 	 *
