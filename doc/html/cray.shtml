@@ -309,7 +309,7 @@ node/31: # exit
    generate cluster-unique job container IDs (PAGG IDs). These identifiers are used by
    ALPS to track running (aprun) job steps. The default (session IDs) is not unique
    across multiple login nodes. This standard procedure is described in chapter 9 of
-   <a href="http://docs.cray.com/books/S-2393-30/">S-2393</a> and takes only two
+   <a href="http://docs.cray.com/books/S-2393-4003/">S-2393</a> and takes only two
    steps, both to be done on all 'login' class nodes (xtopview -c login):</p>
    <ul>
 	   <li>make sure that the /etc/init.d/job service is enabled (chkconfig) and started</li>
