@@ -56,6 +56,7 @@ enum basil_version {
 	BV_3_1,		/* Basil 1.1 CLE 3.x (XE/Gemini support)    */
 	BV_4_0,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
 	BV_4_1,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
+	BV_5_0,		/* Basil 1.2 CLE 5.x unconfirmed simulator version  */
 	BV_MAX
 };
 
