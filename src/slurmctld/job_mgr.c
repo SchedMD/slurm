@@ -390,7 +390,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	    && assoc_ptr
 	    && !admin
 	    && (!assoc_ptr->usage->valid_qos
-	        || !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
+		|| !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
 		error("This association %d(account='%s', "
 		      "user='%s', partition='%s') does not have "
 		      "access to qos %s",
@@ -7378,7 +7378,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    (job_specs->alloc_sid ==
 				     ALLOC_SID_USER_HOLD)) {
 					job_ptr->state_reason = WAIT_HELD_USER;
-				} else 
+				} else
 					job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
 			} else if ((job_ptr->state_reason == WAIT_HELD) ||
@@ -7698,7 +7698,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (error_code)
 				goto fini;
 		} else if ((job_specs->min_nodes == 0) ||
-		           (job_specs->min_nodes > job_ptr->node_cnt) ||
+			   (job_specs->min_nodes > job_ptr->node_cnt) ||
 			   job_ptr->details->expanding_jobid) {
 			info("sched: Invalid node count (%u) for job %u update",
 			     job_specs->min_nodes, job_specs->job_id);

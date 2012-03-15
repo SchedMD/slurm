@@ -259,7 +259,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 		}
 		free(this_node_name);
 	}
-	hostlist_destroy(host_list);     
+	hostlist_destroy(host_list);
 
 	return rc;
 #else

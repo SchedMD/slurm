@@ -1910,12 +1910,12 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			      	      "with %u running jobs",
 			      	      node_ptr->name, reg_msg->job_count);
 			}
-			/* 
+			/*
 			 * there must be completing job(s) on this node since
 			 * reg_msg->job_count was set (run_job_cnt +
 			 * comp_job_cnt) in validate_jobs_on_node()
 			 */
-			if (node_ptr->comp_job_cnt != 0) { 
+			if (node_ptr->comp_job_cnt != 0) {
 				node_ptr->node_state |= NODE_STATE_COMPLETING;
 				bit_set(cg_node_bitmap, node_inx);
 			}
@@ -2085,7 +2085,7 @@ extern int validate_nodes_via_front_end(
 			error("Registered job %u.%u in state %s on %s",
 				reg_msg->job_id[i], reg_msg->step_id[i],
 				job_state_string(job_ptr->job_state),
-			        front_end_ptr->name);
+				front_end_ptr->name);
 			kill_job_on_node(reg_msg->job_id[i], job_ptr,
 					 node_ptr);
 		}
