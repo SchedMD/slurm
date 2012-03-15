@@ -965,6 +965,13 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	ba_mp_t *ba_mp;
 	int dim;
 
+	if (event.getPreviousState() == event.getState()) {
+		debug3("Switch previous state was same as current (%s - %s)",
+		       bridge_hardware_state_string(event.getPreviousState()),
+		       bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
@@ -1008,6 +1015,13 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 	ba_mp_t *ba_mp;
 
 
+	if (event.getPreviousState() == event.getState()) {
+		debug3("Switch previous state was same as current (%s - %s)",
+		       bridge_hardware_state_string(event.getPreviousState()),
+		       bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
@@ -1047,15 +1061,25 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	const NodeBoardStateChangedEventInfo& event)
 {
-	/* When dealing with non-pointers these variables don't work
-	   out correctly, so copy them.
-	*/
-	const char *mp_name = xstrdup(event.getLocation().substr(0,6).c_str());
-	const char *nb_name = xstrdup(event.getLocation().substr(7,3).c_str());
+	const char *mp_name;
+	const char *nb_name;
 	Coordinates ibm_coords = event.getMidplaneCoordinates();
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	int dim;
 	ba_mp_t *ba_mp;
+
+	if (event.getPreviousState() == event.getState()) {
+		debug3("Nodeboard previous state was same as current (%s - %s)",
+		       bridge_hardware_state_string(event.getPreviousState()),
+		       bridge_hardware_state_string(event.getState()));
+		return;
+	}
+
+	/* When dealing with non-pointers these variables don't work
+	   out correctly, so copy them.
+	*/
+	mp_name = xstrdup(event.getLocation().substr(0,6).c_str());
+	nb_name = xstrdup(event.getLocation().substr(7,3).c_str());
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
@@ -1106,6 +1130,13 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	int dim;
 	ba_mp_t *ba_mp;
 	List delete_list = NULL;
+
+	if (event.getPreviousState() == event.getState()) {
+		debug3("Node previous state was same as current (%s - %s)",
+		       bridge_hardware_state_string(event.getPreviousState()),
+		       bridge_hardware_state_string(event.getState()));
+		return;
+	}
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
@@ -1160,6 +1191,13 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	int dim;
 	ba_mp_t *from_ba_mp;
 	List delete_list = NULL;
+
+	if (event.getPreviousState() == event.getState()) {
+		debug3("Cable previous state was same as current (%s - %s)",
+		       bridge_hardware_state_string(event.getPreviousState()),
+		       bridge_hardware_state_string(event.getState()));
+		return;
+	}
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
