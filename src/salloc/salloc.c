@@ -119,6 +119,7 @@ static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static pid_t  _fork_command(char **command);
 static void _forward_signal(int signo);
 #ifdef USE_LOADLEVELER
+static void _salloc_purge_files(char *job_id);
 static void _pending_callback(char *job_id);
 #else
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
@@ -444,6 +445,7 @@ int main(int argc, char *argv[])
 #ifdef USE_LOADLEVELER
 		error("Allocation was revoked for job %s before command could "
 		      "be run", alloc->job_id);
+		_salloc_purge_files(alloc->job_id);
 #else
 		error("Allocation was revoked for job %u before command could "
 		      "be run", alloc->job_id);
@@ -539,7 +541,9 @@ relinquish:
 	pthread_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
-#ifndef USE_LOADLEVELER
+#ifdef USE_LOADLEVELER
+	_salloc_purge_files(alloc->job_id);
+#else
 	slurm_allocation_msg_thr_destroy(msg_thr);
 #endif
 	/*
@@ -840,6 +844,41 @@ static pid_t _fork_command(char **command)
 }
 
 #ifdef USE_LOADLEVELER
+/* Purge SLURM files created by srun within this allocation, if any. */
+static void _salloc_purge_files(char *job_id)
+{
+	char *cmd_fname = NULL, dir_name[512], *stepid_fname = NULL, *work_dir;
+	int len;
+	DIR *dir_ptr;
+	struct dirent *dir_rec;
+
+	/* NOTE: Directory must be shared between nodes for cmd_file to work */
+	if (!(work_dir = getenv("HOME"))) {
+		work_dir = xmalloc(512);
+		if (!getcwd(work_dir, 512))
+			fatal("getcwd(): %m");
+		snprintf(dir_name, sizeof(dir_name), "%s/.slurm_loadl",
+			 work_dir);
+		xfree(work_dir);
+	} else {
+		snprintf(dir_name, sizeof(dir_name), "%s/.slurm_loadl",
+			 work_dir);
+	}
+
+	xstrfmtcat(stepid_fname, "%s/slurm_stepid_%s", dir_name, job_id);
+	unlink(stepid_fname);
+	xfree(stepid_fname);
+
+	xstrfmtcat(cmd_fname, "slurm_cmdfile_%s.", job_id);
+	len = strlen(cmd_fname);
+	dir_ptr = opendir(dir_name);
+	while (dir_ptr && (dir_rec = readdir(dir_ptr))) {
+		if (!strncmp(dir_rec->d_name, cmd_fname, len))
+			unlink(dir_rec->d_name);
+	}
+	xfree(cmd_fname);
+}
+
 static void _pending_callback(char *job_id)
 {
 	info("Pending job allocation %s", job_id);

@@ -753,6 +753,9 @@ cleanup:
 			slurm_complete_job(job->jobid, NO_VAL);
 		else
 			slurm_complete_job(job->jobid, global_rc);
+#ifdef USE_LOADLEVELER
+		srun_purge_files();
+#endif
 	}
 	_shepard_notify(shepard_fd);
 

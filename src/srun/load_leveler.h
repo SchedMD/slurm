@@ -82,8 +82,15 @@ extern int srun_front_end (char *cmd_line);
  *	program
  * sig_num IN - signal to send
  * RETURN 0 on success, -1 on error
-*/
+ */
 extern int srun_send_signal(int sig_num);
+
+/*
+ * srun_purge_files - Purge files created for this job (if any).
+ *	This should only be called when srun created the job allocation,
+ *	NOT when starting job steps within an existing allocation.
+ */
+extern void srun_purge_files(void);
 
 #endif	/* USE_LOADLEVELER */
 #endif	/* SRUN_LOADLEVELER_H */

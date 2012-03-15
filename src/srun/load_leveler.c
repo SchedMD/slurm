@@ -44,6 +44,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/file.h>
 #include <sys/param.h>	/* MAXPATHLEN */
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -103,6 +104,8 @@ static bool quit_on_intr = false;
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int srun_state = 0;	/* 0=starting, 1=running, 2=ending */
 static char *srun_jobid = NULL;
+static char *cmd_fname = NULL;
+static char *stepid_fname = NULL;
 
 typedef struct srun_child_wait_data {
 	int dummy_pipe;
@@ -934,6 +937,8 @@ static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
 		in_line[last_arg_inx] = '\0';
 	if (first_arg_inx)
 		*args = xstrdup(in_line + first_arg_inx);
+	else
+		*args = NULL;
 	if (last_arg_inx)
 		in_line[last_arg_inx] = '\n';
 	return;
@@ -990,12 +995,19 @@ static bool _multi_prog_parse(char *line, int length, int step_id)
 		inx = 0;
 		total_tasks = 0;
 		return false;
-	} else {
-		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
+	} else if (args[inx]) {
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...> */
 		snprintf(line, length, "%s@%d%c%d%c%s:%d %s",
 			 cmd[inx], step_id, '%', total_tasks, '%',
 			 _get_cmd_protocol(cmd[inx]), num_tasks[inx],
 			 args[inx]);
+		inx++;
+		return true;
+	} else {
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
+		snprintf(line, length, "%s@%d%c%d%c%s:%d",
+			 cmd[inx], step_id, '%', total_tasks, '%',
+			 _get_cmd_protocol(cmd[inx]), num_tasks[inx]);
 		inx++;
 		return true;
 	}
@@ -1004,9 +1016,10 @@ static bool _multi_prog_parse(char *line, int length, int step_id)
 /* Return the next available step ID */
 static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 {
-	char fname[512];
-	int step_id;
+	int fd, i, rc, step_id;
 	char *work_dir;
+	ssize_t io_size;
+	char buf[16];
 
 	/* NOTE: Directory must be shared between nodes for cmd_file to work */
 	if (!(work_dir = getenv("HOME"))) {
@@ -1019,16 +1032,77 @@ static int _get_next_stepid(char *job_id, char *dname, int dname_size)
 		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
 	}
 	mkdir(dname, 0700);
-	
-	for (step_id = 1; ; step_id++) {
-/* FIXME: Need to delete files at job termination */
-		snprintf(fname, sizeof(fname), "%s/slurm_step_%s.%d",
-			 dname, job_id, step_id);
-		if (open(fname, O_CREAT | O_EXCL, 0100) > -1)
+
+	/* Create or open our stepid file */
+	if (!stepid_fname) {
+		stepid_fname = xmalloc(strlen(dname) + strlen(job_id) + 32);
+		sprintf(stepid_fname, "%s/slurm_stepid_%s", dname, job_id);
+	}
+	while (((fd = open(stepid_fname, O_CREAT | O_EXCL, 0600)) < 0) &&
+	       (errno == EINTR))
+		;
+	if ((fd < 0) && (errno == EEXIST))
+		fd = open(stepid_fname, 0);
+	if (fd < 0)
+		fatal("open(%s): %m", stepid_fname);
+
+	/* Set exclusive lock on the file */
+	for (i = 0; ; i++) {
+		rc = flock(fd, LOCK_EX | LOCK_NB);
+		if (rc == 0)
 			break;
+		if (i > 10)
+			fatal("flock(%s): %m", stepid_fname);
+		usleep(100);
+	}
+
+	/* Read latest step ID from the file */
+	for (i = 0; ; i++) {
+		io_size = read(fd, buf, sizeof(buf));
+		if (io_size >= 0)
+			break;
+		if (i > 10)
+			fatal("read(%s): %m", stepid_fname);
+	}
+	if (io_size > 0)
+		step_id = atoi(buf) + 1;
+	else
+		step_id = 1;
+
+	/* Write new step ID value */
+	snprintf(buf, sizeof(buf), "%d", step_id);
+	for (i = 0; ; i++) {
+		lseek(fd, 0, SEEK_SET);
+		io_size = write(fd, buf, sizeof(buf));
+		if (io_size == sizeof(buf))
+			break;
+		if (i > 10)
+			fatal("write(%s): %m", stepid_fname);
+	}
+
+	/* Unlock the file */
+	for (i = 0; ; i++) {
+		rc = flock(fd, LOCK_UN);
+		if (rc == 0)
+			break;
+		if (i > 10)
+			fatal("flock(%s): %m", stepid_fname);
 	}
 
 	return step_id;
+}
+
+/*
+ * srun_purge_files - Purge files created for this job (if any).
+ *	This should only be called when srun created the job allocation,
+ *	NOT when starting job steps within an existing allocation.
+ */
+extern void srun_purge_files(void)
+{
+	if (cmd_fname)
+		unlink(cmd_fname);
+	if (stepid_fname)
+		unlink(stepid_fname);
 }
 
 /* Build a POE command line based upon srun options (using global variables) */
@@ -1091,11 +1165,14 @@ extern char *build_poe_command(char *job_id)
 	if (need_cmdfile) {
 		char *buf;
 		int fd, i, j, k;
-		char cmd_fname[256];
 
-/* FIXME: Need to delete files at job termination */
-		snprintf(cmd_fname, sizeof(cmd_fname),
-			 "%s/slurm_cmdfile_%s.%d", dname, job_id, step_id);
+		/* NOTE: The command file needs to be in a directory that can
+		 * be read from the compute node(s), so /tmp does not work.
+		 * We use the user's home directory (based upon "HOME"
+		 * environment variable) otherwise use current working
+		 * directory. The file name contains the job ID and step ID. */
+		xstrfmtcat(cmd_fname,
+			   "%s/slurm_cmdfile_%s.%d", dname, job_id, step_id);
 		while ((fd = creat(cmd_fname, 0600)) < 0) {
 			if (errno == EINTR)
 				continue;
@@ -1545,6 +1622,8 @@ extern int srun_front_end (char *cmd_line)
 fini:	pthread_mutex_lock(&state_mutex);
 	srun_state = 2;
 	pthread_mutex_unlock(&state_mutex);
+	if (cmd_fname)
+		(void) unlink(cmd_fname);
 	if (stdout_conn != SLURM_SOCKET_ERROR)
 		slurm_close_accepted_conn(stdout_conn);
 	if (stderr_conn != SLURM_SOCKET_ERROR)
