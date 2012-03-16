@@ -227,6 +227,14 @@ documents those changes that are of interest to users and admins.
     for each Linux session ID.
  -- Cray - For srun wrapper when creating a job allocation, set the default job
     name to the executable file's name.
+ -- Add support for Cray ALPS 5.0.0
+ -- FRONTEND - if a front end unexpectedly reboots kill all jobs but don't
+    mark front end node down.
+ -- FRONTEND - don't down a front end node if you have an epilog error.
+ -- Cray - fix for if a frontend slurmd was started after the slurmctld had
+    already pinged it on startup the unresponding flag would be removed from
+    the frontend node.
+ -- Cray - Fix issue on smap not displaying grid correctly.
 
 * Changes in SLURM 2.3.3
 ========================

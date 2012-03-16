@@ -1975,10 +1975,9 @@ static front_end_record_t * _front_end_reg(
 	}
 	if (state_base == NODE_STATE_UNKNOWN)
 		state_base = NODE_STATE_IDLE;
-#ifndef HAVE_CRAY
-	/* This is handled by the select/cray plugin */
+
 	state_flags &= (~NODE_STATE_NO_RESPOND);
-#endif
+
 	front_end_ptr->node_state = state_base | state_flags;
 	last_front_end_update = now;
 	return front_end_ptr;
