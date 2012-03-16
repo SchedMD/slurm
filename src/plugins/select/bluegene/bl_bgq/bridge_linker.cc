@@ -545,7 +545,6 @@ extern int bridge_block_create(bg_record_t *bg_record)
 		assert(start_mp);
 		assert(start_mp->loc);
 		midplanes.push_back(start_mp->loc);
-		slurm_mutex_unlock(&ba_system_mutex);
 
 		itr = list_iterator_create(bg_record->ba_mp_list);
 		while ((ba_mp = (ba_mp_t *)list_next(itr))) {
@@ -553,13 +552,10 @@ extern int bridge_block_create(bg_record_t *bg_record)
 			   copy of this pointer we need to go out a get the
 			   real one from the system and use it.
 			*/
-			slurm_mutex_lock(&ba_system_mutex);
 			main_mp = coord2ba_mp(ba_mp->coord);
 			/* don't add the start_mp again. */
-			if (!main_mp || (main_mp == start_mp)) {
-				slurm_mutex_unlock(&ba_system_mutex);
+			if (!main_mp || (main_mp == start_mp))
 				continue;
-			}
 
 			// info("got %s(%s) %d", main_mp->coord_str,
 			//      main_mp->loc, ba_mp->used);
@@ -567,9 +563,9 @@ extern int bridge_block_create(bg_record_t *bg_record)
 				midplanes.push_back(main_mp->loc);
 			else
 				pt_midplanes.push_back(main_mp->loc);
-			slurm_mutex_unlock(&ba_system_mutex);
 		}
 		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&ba_system_mutex);
 
 		for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 			switch (bg_record->conn_type[dim]) {
