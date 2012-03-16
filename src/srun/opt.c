@@ -2411,8 +2411,8 @@ static void _opt_list(void)
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
-	info("switch         : %d", opt.req_switch);
-	info("wait-for-switch: %d", opt.wait4switch);
+	info("switches       : %d", opt.req_switch);
+	info("wait-for-switches : %d", opt.wait4switch);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if(opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
@@ -2565,7 +2565,7 @@ static void _usage(void)
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
-"            [--switch=max-switches{@max-time-to-wait}]\n"
+"            [--switches=max-switches{@max-time-to-wait}]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2640,7 +2640,7 @@ static void _help(void)
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -X, --disable-status        Disable Ctrl-C status feature\n"
-"      --switch=max-switches{@max-time-to-wait}\n"
+"      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "\n"
 "Constraint options:\n"
