@@ -176,6 +176,9 @@ documents those changes that are of interest to users and admins.
  -- If job time limit exceeds partition maximum, but job's minimum time limit
     does not, set job's time limit to partition maximum at allocation time.
 
+* Changes in SLURM 2.3.5
+========================
+
 * Changes in SLURM 2.3.4
 ========================
  -- Set DEFAULT flag in partition structure when slurmctld reads the
