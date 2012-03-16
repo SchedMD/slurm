@@ -321,6 +321,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 			}
 			tok = strtok_r(NULL, "\n", &save_ptr);
 		}
+		xfree(reason_str);
 	}
 	if (one_liner)
 		xstrcat(out, "\n");
