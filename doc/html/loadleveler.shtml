@@ -66,7 +66,23 @@ command, but each invocation is treated like a single job step with ID 0.</li>
 partitions.</li>
 <li><b>Node Resources</b>: LoadLeveler node resources are treated as
 SLURM generic resources (GRES).</li>
-</ol> 
+<li><b>Temporary files</b>: For job steps which occupy less than a job's full
+allocation size and for support of Multiple Program Multiple Data (MPMD)
+programs, it is necesary to create temporary files for use by the POE
+command. These temporary files are created in the user's home directory in a
+subdirectory named ".slurm_loadl". If SLURM's srun and salloc commands run to
+completion these temporary files will be deleted at termination. Otherwise the
+salloc command is designed to delete any files in this directory over 90 days
+old. Unused files can also be deleted manually. The two file types are:
+<ul>
+<li>slurm_cmdfile_&lt;job_id&gt;.&lt;step_id&gt;</li>
+<li>slurm_stepid_&lt;job_id&gt;</li>
+</ul>
+The "slurm_cmdfile_*" file contains a POE command file, as translated from its
+SLURM equivalent information.
+The "slurm_stepid_*" file contains a string with the last step ID used for that
+job.</li>
+</ol>
 </p>
 
 <h2><a name="commands">Commands</a></h2>
@@ -295,7 +311,6 @@ without warning:<p>
 <li>--mincpus (minimum number of processors required)</li>
 <li>--msg-timeout (message timeout)</li>
 <li>--mpi (MPI type)</li>
-<li>--multi-prog</li>
 <li>-k, --no-kill (set to not kill job upon node failure)</li>
 <li>--ntasks-per-core (number of tasks to invoke per core)</li>
 <li>--ntasks-per-socket (number of tasks to invoke per socket)</li>
@@ -403,6 +418,6 @@ when operating with LoadLeveler.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 March 2012</p>
+<p style="text-align:center;">Last modified 16 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
