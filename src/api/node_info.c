@@ -181,6 +181,16 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "NodeName=%s ", node_ptr->name);
 	xstrcat(out, tmp_line);
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
+					  SELECT_NODEDATA_RACK_MP,
+					  0, &select_reason_str);
+		if (select_reason_str) {
+			xstrfmtcat(out, "RackMidplane=%s ", select_reason_str);
+			xfree(select_reason_str);
+		}
+	}
+
 	if (node_ptr->arch) {
 		snprintf(tmp_line, sizeof(tmp_line), "Arch=%s ",
 			 node_ptr->arch);

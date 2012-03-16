@@ -52,6 +52,8 @@ documents those changes that are of interest to users and admins.
     state change while the realtime server is running.
  -- Fix multi-cluster mode with sview starting on a non-bluegene cluster going
     to a bluegene cluster.
+ -- BLUEGENE - ability to show Rack Midplane name of midplanes in sview and
+    scontrol.
 
 * Changes in SLURM 2.4.0.pre3
 =============================

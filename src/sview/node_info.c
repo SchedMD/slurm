@@ -54,6 +54,7 @@ enum {
 	SORTID_NODE_HOSTNAME,
 	SORTID_MEMORY,	/* RealMemory */
 	SORTID_REASON,
+	SORTID_RACK_MP,
 	SORTID_SLURMD_START_TIME,
 	SORTID_SOCKETS,
 	SORTID_STATE,
@@ -75,8 +76,8 @@ typedef struct {
 
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.*/
-static char *_initial_page_opts = "Name,State,CPU_Count,Used_CPU_Count,"
-	"Error_CPU_Count,CoresPerSocket,Sockets,ThreadsPerCore,"
+static char *_initial_page_opts = "Name,RackMidplane,State,CPU_Count,"
+	"Used_CPU_Count,Error_CPU_Count,CoresPerSocket,Sockets,ThreadsPerCore,"
 	"Real_Memory,Tmp_Disk";
 
 static display_data_t display_data_node[] = {
@@ -84,12 +85,19 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NAME, "Name", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_node,
+	 create_model_node, admin_edit_node},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, SORTID_RACK_MP, "RackMidplane", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
+#else
+	{G_TYPE_STRING, SORTID_RACK_MP, NULL, TRUE, EDIT_NONE, refresh_node,
+	 create_model_node, admin_edit_node},
+#endif
 	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_COLOR, refresh_node,
-	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_node,
@@ -180,6 +188,12 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_NAME),
 				   node_ptr->name);
+
+	if (sview_node_info_ptr->rack_mp)
+		add_display_treestore_line(update, treestore, &iter,
+					   find_col_name(display_data_node,
+							 SORTID_RACK_MP),
+					   sview_node_info_ptr->rack_mp);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -382,6 +396,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_NAME,      node_ptr->name,
 			   SORTID_NODE_ADDR, node_ptr->node_addr,
 			   SORTID_NODE_HOSTNAME, node_ptr->node_hostname,
+			   SORTID_RACK_MP,   sview_node_info_ptr->rack_mp,
 			   SORTID_REASON,    sview_node_info_ptr->reason,
 			   SORTID_SLURMD_START_TIME,
 				sview_node_info_ptr->slurmd_start_time,
@@ -493,6 +508,7 @@ static void _node_info_list_del(void *object)
 	if (sview_node_info) {
 		xfree(sview_node_info->slurmd_start_time);
 		xfree(sview_node_info->boot_time);
+		xfree(sview_node_info->rack_mp);
 		xfree(sview_node_info);
 	}
 }
@@ -660,6 +676,10 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 		list_append(info_list, sview_node_info_ptr);
 		sview_node_info_ptr->node_ptr = node_ptr;
 		sview_node_info_ptr->pos = i;
+
+		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
+					  SELECT_NODEDATA_RACK_MP,
+					  0, &sview_node_info_ptr->rack_mp);
 
 		if (node_ptr->reason &&
 		    (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
@@ -1757,7 +1777,26 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 
 extern void cluster_change_node(void)
 {
-	display_data_t *display_data = options_data_node;
+	display_data_t *display_data = display_data_node;
+	while (display_data++) {
+		if (display_data->id == -1)
+			break;
+		if (cluster_flags & CLUSTER_FLAG_BG) {
+			switch(display_data->id) {
+			case SORTID_RACK_MP:
+				display_data->name = "RackMidplane";
+				break;
+			}
+		} else {
+			switch(display_data->id) {
+			case SORTID_RACK_MP:
+				display_data->name = NULL;
+				break;
+			}
+		}
+	}
+
+	display_data = options_data_node;
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
@@ -1800,4 +1839,5 @@ extern void cluster_change_node(void)
 				display_data->name = "Make Nodes Idle";
 		}
 	}
+	get_info_node(NULL, NULL);
 }

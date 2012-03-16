@@ -310,6 +310,7 @@ typedef struct {
 	node_info_t *node_ptr;
 	int pos;
 	char *reason;
+	char *rack_mp;
 	char *slurmd_start_time;
 } sview_node_info_t;
 
