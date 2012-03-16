@@ -239,6 +239,7 @@ documents those changes that are of interest to users and admins.
     already pinged it on startup the unresponding flag would be removed from
     the frontend node.
  -- Cray - Fix issue on smap not displaying grid correctly.
+ -- Fixed minor memory leak in sview.
 
 * Changes in SLURM 2.3.3
 ========================

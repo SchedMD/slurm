@@ -509,6 +509,7 @@ static void _node_info_list_del(void *object)
 		xfree(sview_node_info->slurmd_start_time);
 		xfree(sview_node_info->boot_time);
 		xfree(sview_node_info->rack_mp);
+		xfree(sview_node_info->reason);
 		xfree(sview_node_info);
 	}
 }
