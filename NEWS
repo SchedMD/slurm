@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.0.pre5
+=============================
+
 * Changes in SLURM 2.4.0.pre4
 =============================
  -- Add logic to cache GPU file information (bitmap index mapping to device
