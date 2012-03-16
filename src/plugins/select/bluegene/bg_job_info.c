@@ -478,8 +478,15 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packstr(jobinfo->linuximage, buffer);
 			packstr(jobinfo->mloaderimage, buffer);
 			packstr(jobinfo->ramdiskimage, buffer);
-			pack_bit_fmt(jobinfo->units_avail, buffer);
-			pack_bit_fmt(jobinfo->units_used, buffer);
+			if (bg_conf) {
+				pack16(bg_conf->mp_cnode_cnt, buffer);
+				pack_bit_fmt(jobinfo->units_avail, buffer);
+				pack_bit_fmt(jobinfo->units_used, buffer);
+			} else {
+				pack16(0, buffer);
+				packnull(buffer);
+				packnull(buffer);
+			}
 		} else {
 			pack16(dims, buffer);
 			/* pack space for 3 positions for geo
@@ -498,6 +505,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packnull(buffer); //linux
 			packnull(buffer); //mloader
 			packnull(buffer); //ramdisk
+			pack16((uint16_t) 0, buffer); //mp_cnode_cnt
 			packnull(buffer); //units_avail
 			packnull(buffer); //units_used
 		}
@@ -654,6 +662,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 {
 	int i;
 	uint32_t uint32_tmp;
+	uint16_t mp_cnode_cnt;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int dims = slurmdb_setup_cluster_dims();
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
@@ -694,15 +703,16 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp,
 				       buffer);
+		safe_unpack16(&mp_cnode_cnt, buffer);
 		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
 		if (bit_char) {
-			jobinfo->units_avail = bit_alloc(bg_conf->mp_cnode_cnt);
+			jobinfo->units_avail = bit_alloc(mp_cnode_cnt);
 			bit_unfmt(jobinfo->units_avail, bit_char);
 			xfree(bit_char);
 		}
 		safe_unpackstr_xmalloc(&bit_char, &uint32_tmp, buffer);
 		if (bit_char) {
-			jobinfo->units_used = bit_alloc(bg_conf->mp_cnode_cnt);
+			jobinfo->units_used = bit_alloc(mp_cnode_cnt);
 			bit_unfmt(jobinfo->units_used, bit_char);
 			xfree(bit_char);
 		}
