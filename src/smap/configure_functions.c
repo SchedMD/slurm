@@ -615,7 +615,7 @@ static int _resolve(char *com)
 	}
 	if (com[i] == 'r')
 		com[i] = 'R';
-	ret_str = resolve_mp(com+i);
+	ret_str = resolve_mp(com+i, NULL);
 	if (ret_str) {
 		snprintf(error_string, sizeof(error_string), "%s", ret_str);
 		xfree(ret_str);

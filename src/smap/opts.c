@@ -210,7 +210,7 @@ extern void clear_window(WINDOW *win)
 	wnoutrefresh(win);
 }
 
-extern char *resolve_mp(char *desc)
+extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr)
 {
 	char *ret_str = NULL;
 #if defined HAVE_BG_FILES

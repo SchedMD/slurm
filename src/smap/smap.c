@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 	_init_colors();
 
 	if (params.resolve) {
-		char *ret_str = resolve_mp(params.resolve);
+		char *ret_str = resolve_mp(params.resolve, new_node_ptr);
 		if (ret_str) {
 			printf("%s", ret_str);
 			xfree(ret_str);

@@ -195,7 +195,7 @@ bitstr_t *get_requested_node_bitmap(void);
 extern void parse_command_line(int argc, char *argv[]);
 extern void print_date(void);
 extern void clear_window(WINDOW *win);
-extern char *resolve_mp(char *desc);
+extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr);
 
 extern void get_slurm_part(void);
 extern void get_bg_part(void);
