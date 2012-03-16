@@ -63,6 +63,7 @@ documents those changes that are of interest to users and admins.
  -- Cray - fix for if a frontend slurmd was started after the slurmctld had
     already pinged it on startup the unresponding flag would be removed from
     the frontend node.
+ -- Cray - Fix issue on smap not displaying grid correctly.
 
 * Changes in SLURM 2.3.3
 ========================
