@@ -2767,8 +2767,8 @@ static void _opt_list(void)
 	info("plane_size        : %u", opt.plane_size);
 	info("propagate         : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
-	info("switch            : %d", opt.req_switch);
-	info("wait-for-switch   : %d", opt.wait4switch);
+	info("switches          : %d", opt.req_switch);
+	info("wait-for-switches : %d", opt.wait4switch);
 	str = print_commandline(opt.script_argc, opt.script_argv);
 	info("remote command    : `%s'", str);
 	xfree(str);
@@ -2802,7 +2802,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
-"              [--switch=max-switches{@max-time-to-wait}]\n"
+"              [--switches=max-switches{@max-time-to-wait}]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
 
@@ -2859,7 +2859,7 @@ static void _help(void)
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "      --wrap[=command string] wrap commmand string in a sh script and submit\n"
-"      --switch=max-switches{@max-time-to-wait}\n"
+"      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "\n"
 "Constraint options:\n"

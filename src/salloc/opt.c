@@ -1786,8 +1786,8 @@ static void _opt_list(void)
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	str = print_commandline(command_argc, command_argv);
 	info("user command   : `%s'", str);
-	info("switch         : %d", opt.req_switch);
-	info("wait-for-switch: %d", opt.wait4switch);
+	info("switches          : %d", opt.req_switch);
+	info("wait-for-switches : %d", opt.wait4switch);
 	xfree(str);
 
 }
@@ -1818,7 +1818,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list]\n"
-"              [--switch=max-switches[@max-time-to-wait]]\n"
+"              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1866,7 +1866,7 @@ static void _help(void)
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"      --switch=max-switches{@max-time-to-wait}\n"
+"      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "\n"
 "Constraint options:\n"
