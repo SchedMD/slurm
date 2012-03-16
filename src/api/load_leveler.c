@@ -1034,11 +1034,29 @@ static void _wait_pid(pid_t pid)
 	}
 	slurm_attr_destroy(&thread_attr);
 }
-static void _spawn_proc(char *exec_line)
+/* Find a string like "\" \"" or "\" \0" and return printer to the space
+ * or return NULL if not found */
+static char *_find_srun_sep(char *cmd_line)
 {
-	char **argv, *save_ptr = NULL, *tok;
+	int i, len = strlen(cmd_line);
+
+	for (i = 0; i < (len - 2); i++) {
+		if ((cmd_line[i] == '"') &&
+		    (cmd_line[i+1] == ' ') &&
+		    ((cmd_line[i+2] == '"') || (cmd_line[i+2] == '\0')))
+			return cmd_line + i + 1;
+	}
+
+	return NULL;
+}
+/* If srun is executed from within a batch job, we need to fork/exec
+ * POE with the proper environment variables and signal handling.
+ * cmd_line format is: poe <cmd> "<arg1>" "<arg2>" ... */
+static void _spawn_proc(char *cmd_line)
+{
+	char **argv, *begin, *sep;
+	int i = strlen(cmd_line) / 2 + 2;
 	pid_t pid;
-	int i;
 
 	//info("msg: %s", exec_line);
 	pid = fork();
@@ -1051,15 +1069,27 @@ static void _spawn_proc(char *exec_line)
 		return;
 	}
 
-/* Need to deal with quoted and escaped spaces */
+	argv = (char **) xmalloc(sizeof(char *) * i);
+	begin = cmd_line;
 	i = 0;
-	argv = xmalloc(sizeof(char *) * (strlen(exec_line) / 2 + 2));
-	tok = strtok_r(exec_line, " ", &save_ptr);
-	while (tok) {
-		argv[i++] = tok;
-		tok = strtok_r(NULL, " ", &save_ptr);
+	while (1) {
+		if (i < 9)
+			sep = strchr(begin, ' ');
+		else
+			sep = _find_srun_sep(begin);
+		if (sep)
+			sep[0] = '\0';
+		if (i >= 9) {	/* Exclude quotes */
+			int len = strlen(begin);
+			begin[len - 1] = '\0';
+			begin++;
+		}
+		argv[i++] = begin;
+		if (sep)
+			begin = sep + 1;
+		else
+			break;
 	}
-
 	for (i = 0; i < 128; i++)
 		(void) close(i);
 	execvp(argv[0], argv);

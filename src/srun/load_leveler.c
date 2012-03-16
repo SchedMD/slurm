@@ -1208,8 +1208,12 @@ extern char *build_poe_command(char *job_id)
 		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
 	} else {
-		for (i = 0; i < opt.argc; i++)
-			xstrfmtcat(cmd_line, " %s", opt.argv[i]);
+		xstrfmtcat(cmd_line, " %s", opt.argv[0]);
+		/* Each token gets double quotes around it in case any
+		 * arguments contain spaces */
+		for (i = 1; i < opt.argc; i++) {
+			xstrfmtcat(cmd_line, " \"%s\"", opt.argv[i]);
+		}
 	}
 
 	if (opt.network) {
@@ -1357,8 +1361,25 @@ extern char *build_poe_command(char *job_id)
 	return cmd_line;
 }
 
+/* Find a string like "\" \"" or "\" \0" and return printer to the space
+ * or return NULL if not found */
+static char *_find_srun_sep(char *cmd_line)
+{
+	int i, len = strlen(cmd_line);
+
+	for (i = 0; i < (len - 2); i++) {
+		if ((cmd_line[i] == '"') &&
+		    (cmd_line[i+1] == ' ') &&
+		    ((cmd_line[i+2] == '"') || (cmd_line[i+2] == '\0')))
+			return cmd_line + i + 1;
+	}
+
+	return NULL;
+}
+
 /* If srun is executed from within a batch job, we need to fork/exec
- * POE with the proper environment variables and signal handling. */
+ * POE with the proper environment variables and signal handling.
+ * cmd_line format is: poe <cmd> "<arg1>" "<arg2>" ... */
 static int _srun_spawn_batch(char *cmd_line)
 {
 	char **argv, *begin, *sep;
@@ -1368,9 +1389,17 @@ static int _srun_spawn_batch(char *cmd_line)
 	begin = cmd_line;
 	i = 0;
 	while (1) {
-		sep = strchr(begin, ' ');
+		if (i < 2)
+			sep = strchr(begin, ' ');
+		else
+			sep = _find_srun_sep(begin);
 		if (sep)
 			sep[0] = '\0';
+		if (i >= 2) {	/* Exclude quotes */
+			int len = strlen(begin);
+			begin[len - 1] = '\0';
+			begin++;
+		}
 		argv[i++] = begin;
 		if (sep)
 			begin = sep + 1;
