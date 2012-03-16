@@ -147,6 +147,11 @@ extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 		packstr(nodeinfo->extra_info, buffer);
 		packstr(nodeinfo->failed_cnodes, buffer);
 
+		if (nodeinfo->ba_mp)
+			packstr(nodeinfo->ba_mp->loc, buffer);
+		else
+			packstr(nodeinfo->rack_mp, buffer);
+
 		if (nodeinfo->subgrp_list)
 			count = list_count(nodeinfo->subgrp_list);
 
@@ -199,6 +204,9 @@ extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
 				       &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&nodeinfo_ptr->failed_cnodes,
+				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->rack_mp,
 				       &uint32_tmp, buffer);
 
 		safe_unpack16(&size, buffer);
@@ -273,6 +281,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 		nodeinfo->magic = 0;
 		xfree(nodeinfo->extra_info);
 		xfree(nodeinfo->failed_cnodes);
+		xfree(nodeinfo->rack_mp);
 		if (nodeinfo->subgrp_list)
 			list_destroy(nodeinfo->subgrp_list);
 		xfree(nodeinfo);
@@ -502,6 +511,12 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			}
 		}
 		list_iterator_destroy(itr);
+		break;
+	case SELECT_NODEDATA_RACK_MP:
+		if (nodeinfo->ba_mp)
+			*tmp_char = xstrdup(nodeinfo->ba_mp->loc);
+		else if (nodeinfo->rack_mp)
+			*tmp_char = xstrdup(nodeinfo->rack_mp);
 		break;
 	case SELECT_NODEDATA_STR:
 		*tmp_char = NULL;

@@ -62,6 +62,8 @@ struct select_nodeinfo {
 				   an SoftwareFailure state.
 				*/
 	uint16_t magic;		/* magic number */
+	char *rack_mp;          /* name of midplane in rack - midplane
+				   format */
 	List subgrp_list;
 };
 

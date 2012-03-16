@@ -2337,6 +2337,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	case SELECT_NODEDATA_PTR:
 		*select_nodeinfo = nodeinfo;
 		break;
+	case SELECT_NODEDATA_RACK_MP:
 	case SELECT_NODEDATA_EXTRA_INFO:
 		*tmp_char = NULL;
 		break;
