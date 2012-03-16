@@ -2797,9 +2797,12 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 		xstrfmtcat(slurm_cmd_file, "# @ job_name = %s\n", req->name);
 
 	if ((req->num_tasks == 1) ||
-	    ((req->ntasks_per_node == 1) && (req->min_nodes == 1)))
-		xstrfmtcat(slurm_cmd_file, "# @ job_type = serial\n");
-	else
+	    ((req->ntasks_per_node == 1) && (req->min_nodes == 1))) {
+		/* Even for single task jobs, a job_type of parallel
+		 * seems to work better in practice */
+		/* xstrfmtcat(slurm_cmd_file, "# @ job_type = serial\n"); */
+		xstrfmtcat(slurm_cmd_file, "# @ job_type = parallel\n");
+	} else
 		xstrfmtcat(slurm_cmd_file, "# @ job_type = parallel\n");
 
 	if (req->reservation) {
