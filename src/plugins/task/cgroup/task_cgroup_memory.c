@@ -185,7 +185,7 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	 * that cleanup correctly with current memcg.
 	 */
 	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
-		xcgroup_set_uint32_param(&memory_cg,"tasks",getpid());
+		xcgroup_move_process(&memory_cg, getpid());
 		xcgroup_destroy(&memory_cg);
 		xcgroup_set_param(&step_memory_cg,"memory.force_empty","1");
 	}
