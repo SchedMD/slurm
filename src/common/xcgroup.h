@@ -314,4 +314,18 @@ int xcgroup_set_uint64_param(xcgroup_t* cg,char* parameter,uint64_t value);
  */
 int xcgroup_get_uint64_param(xcgroup_t* cg,char* param,uint64_t* value);
 
+
+/*
+ * Move process 'pid' (and all its threads) to cgroup 'cg'
+ *
+ *  This call ensures that pid and all its threads are moved to the
+ *   cgroup cg. If the cgroup.procs file is not writable, then threads
+ *   must be moved individually and this call can be racy.
+ *
+ *  returns:
+ *   - XCGROUP_ERROR
+ *   - XCGROUP_SUCCESS
+ */
+int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
+
 #endif
