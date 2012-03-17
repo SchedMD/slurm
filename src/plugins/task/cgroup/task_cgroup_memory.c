@@ -175,19 +175,22 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		return SLURM_SUCCESS;
 
 	/*
-	 * Move the slurmstepd back to the root memory cg and force empty
+	 * Move the slurmstepd back to the root memory cg and remove[*]
 	 * the step cgroup to move its allocated pages to its parent.
-	 * The release_agent will asynchroneously be called for the step
-	 * cgroup. It will do the necessary cleanup.
-	 * It should be good if this force_empty mech could be done directly
-	 * by the memcg implementation at the end of the last task managed
-	 * by a cgroup. It is too difficult and near impossible to handle
-	 * that cleanup correctly with current memcg.
+	 *
+	 * [*] Calling rmdir(2) on an empty cgroup moves all resident charged
+	 *  pages to the parent (i.e. the job cgroup). (If force_empty were
+	 *  used instead, only clean pages would be flushed). This keeps
+	 *  resident pagecache pages associated with the job. It is expected
+	 *  that the job epilog will then optionally force_empty the
+	 *  job cgroup (to flush pagecache), and then rmdir(2) the cgroup
+	 *  or wait for release notification from kernel.
 	 */
 	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
 		xcgroup_move_process(&memory_cg, getpid());
 		xcgroup_destroy(&memory_cg);
-		xcgroup_set_param(&step_memory_cg,"memory.force_empty","1");
+		if (xcgroup_delete(&step_memory_cg) != XCGROUP_SUCCESS)
+			error ("cgroup: rmdir step memcg failed: %m");
 	}
 
 	xcgroup_destroy(&user_memory_cg);
