@@ -369,7 +369,8 @@ In this case &quot;emcri&quot; is the private management network interface
 for the host &quot;mcri&quot;. Port numbers to be used for
 communications are specified as well as various timer values.</p>
 
-<p>The <i>SlurmUser</i> must be created as needed prior to starting SLURM.
+<p>The <i>SlurmUser</i> must be created as needed prior to starting SLURM
+and must exist on all nodes in your cluster.
 The parent directories for SLURM's log files, process ID files,
 state save directories, etc. are not created by SLURM.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to
@@ -687,6 +688,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 Febuary 2012</p>
+<p style="text-align:center;">Last modified 19 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
