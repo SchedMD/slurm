@@ -47,10 +47,10 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+#include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xcgroup.h"
-#include "src/common/xcpuinfo.h"
 
 #include "task_cgroup.h"
 
@@ -75,14 +75,66 @@ static xcgroup_t step_cpuset_cg;
 
 static int _xcgroup_cpuset_init(xcgroup_t* cg);
 
+/*
+ * convert abstract range into the machine one
+ */
+static int _abs_to_mac(char* lrange, char** prange)
+{
+	bitstr_t* absmap = NULL;
+	bitstr_t* macmap = NULL;
+	int total_cores, total_cpus;
+	int icore, ithread;
+	int absid, macid;
+
+	total_cores = conf->sockets * conf->cores;
+	total_cpus  = conf->sockets * conf->cores * conf->threads;
+	if (total_cpus != conf->block_map_size)
+		goto error;
+
+	/* allocate bitmap */
+	absmap = bit_alloc(total_cores);
+	macmap = bit_alloc(total_cpus);
+	if (!absmap || !macmap)
+		goto clean;
+
+	/* string to bitmap conversion */
+	if (bit_unfmt(absmap, lrange))
+		goto clean;
+
+	/* mapping abstract id to machine id using conf->block_map */
+	for (icore = 0; icore < total_cores; icore++) {
+		if (bit_test(absmap, icore)) {
+			for (ithread = 0; ithread<conf->threads; ithread++) {
+				absid  = icore*conf->threads + ithread;
+				absid %= total_cpus;
+
+				macid  = conf->block_map[absid];
+				macid %= total_cpus;
+
+				bit_set(macmap, macid);
+			}
+		}
+ 	}
+ 
+	/* convert machine cpu bitmap to range string */
+	*prange = (char*)xmalloc(total_cpus*6);
+	bit_fmt(*prange, total_cpus*6, macmap);
+
+	/* free unused bitmaps */
+	bit_free(absmap);
+	bit_free(macmap);
+
+	return SLURM_SUCCESS;
+
+clean:	FREE_NULL_BITMAP(absmap);
+	FREE_NULL_BITMAP(macmap);
+error:	info("_abs_to_mac failed");
+	return SLURM_ERROR;
+}
+
 extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	char release_agent_path[PATH_MAX];
-
-	/* initialize cpuinfo internal data */
-	if (xcpuinfo_init() != XCPUINFO_SUCCESS) {
-		return SLURM_ERROR;
-	}
 
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
@@ -125,7 +177,6 @@ clean:
 	xcgroup_ns_destroy(&cpuset_ns);
 
 error:
-	xcpuinfo_fini();
 	return SLURM_ERROR;
 }
 
@@ -145,7 +196,6 @@ extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	xcgroup_ns_destroy(&cpuset_ns);
 
-	xcpuinfo_fini();
 	return SLURM_SUCCESS;
 }
 
@@ -268,20 +318,20 @@ extern int task_cgroup_cpuset_create(slurmd_job_t *job)
 	      job->job_alloc_cores);
 	debug("task/cgroup: step abstract cores are '%s'",
 	      job->step_alloc_cores);
-	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
-				 &job_alloc_cores) != XCPUINFO_SUCCESS) {
+	if (_abs_to_mac(job->job_alloc_cores,
+	               &job_alloc_cores) != SLURM_SUCCESS) {
 		error("task/cgroup: unable to build job physical cores");
 		goto error;
 	}
-	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
-				 &step_alloc_cores) != XCPUINFO_SUCCESS) {
+	if (_abs_to_mac(job->step_alloc_cores,
+	               &step_alloc_cores) != SLURM_SUCCESS) {
 		error("task/cgroup: unable to build step physical cores");
 		goto error;
 	}
 	debug("task/cgroup: job physical cores are '%s'",
-	      job->job_alloc_cores);
+	      job_alloc_cores);
 	debug("task/cgroup: step physical cores are '%s'",
-	      job->step_alloc_cores);
+	      step_alloc_cores);
 
 	/*
 	 * create user cgroup in the cpuset ns (it could already exist)
@@ -412,6 +462,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	return fstatus;
 
 #else
+	hwloc_obj_type_t socket_or_node;
 	uint32_t i;
 	uint32_t nldoms;
 	uint32_t nsockets;
@@ -448,6 +499,24 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	    bind_type & CPU_BIND_VERBOSE)
 		verbose = 1 ;
 
+	/* Allocate and initialize hwloc objects */
+	hwloc_topology_init(&topology);
+#if HWLOC_API_VERSION <= 0x00010000
+	cpuset = hwloc_cpuset_alloc() ;
+#else
+	cpuset = hwloc_bitmap_alloc() ;
+#endif
+	hwloc_topology_load(topology);
+	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
+	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
+		/* One socket contains multiple NUMA-nodes
+		 * like AMD Opteron 6000 series etc.
+		 * In such case, use NUMA-node instead of socket. */
+		socket_or_node = HWLOC_OBJ_NODE;
+	} else {
+		socket_or_node = HWLOC_OBJ_SOCKET;
+	}
+
 	if (bind_type & CPU_BIND_NONE) {
 		if (verbose)
 			info("task/cgroup: task[%u] is requesting no affinity",
@@ -467,7 +536,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 		if (verbose)
 			info("task/cgroup: task[%u] is requesting "
 			     "socket level binding",taskid);
-		req_hwtype = HWLOC_OBJ_SOCKET;
+		req_hwtype = socket_or_node;
 	} else if (bind_type & CPU_BIND_TO_LDOMS) {
 		if (verbose)
 			info("task/cgroup: task[%u] is requesting "
@@ -479,14 +548,6 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 			     " by default",taskid);
 		req_hwtype = HWLOC_OBJ_CORE;
 	}
-
-	/* Allocate and initialize hwloc objects */
-	hwloc_topology_init(&topology);
-#if HWLOC_API_VERSION <= 0x00010000
-	cpuset = hwloc_cpuset_alloc() ;
-#else
-	cpuset = hwloc_bitmap_alloc() ;
-#endif
 
 	/*
 	 * Perform the topology detection. It will only get allowed PUs.
@@ -504,13 +565,12 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	 * to dispatch the tasks across the sockets and then provide access
 	 * to each task to the cores of its socket.)
 	 */
-	hwloc_topology_load(topology);
 	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						   HWLOC_OBJ_PU);
 	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						     HWLOC_OBJ_CORE);
 	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						       HWLOC_OBJ_SOCKET);
+						       socket_or_node);
 	nldoms = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						     HWLOC_OBJ_NODE);
 	hwtype = HWLOC_OBJ_MACHINE;
@@ -525,7 +585,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	}
 	if (nsockets >= jntasks &&
 	     bind_type & CPU_BIND_TO_SOCKETS) {
-		hwtype = HWLOC_OBJ_SOCKET;
+		hwtype = socket_or_node;
 		nobj = nsockets;
 	}
 	/*

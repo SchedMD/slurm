@@ -165,6 +165,8 @@ ending:
 	xfree(cli);
 	xfree(self);
 	xfree(conf->hostname);
+	xfree(conf->block_map);
+	xfree(conf->block_map_inv);
 	xfree(conf->spooldir);
 	xfree(conf->node_name);
 	xfree(conf->node_topo_addr);

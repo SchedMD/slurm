@@ -62,6 +62,7 @@ organizations. The current SLURM development staff includes: </p>
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
 <li>Eric Lin (Bull)</li>
 <li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
+<li>Komoto Masahiro</li>
 <li>Steven McDougall (SiCortex)</li>
 <li>Donna Mecozzi (Lawrence Livermore National Laboratory)</li>
 <li>Bj&oslash;rn-Helge Mevik (University of Oslo, Norway)</li>
@@ -106,6 +107,6 @@ organizations. The current SLURM development staff includes: </p>
 <li>Nathan Yee (SchedMD)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 2 February 2012</p>
+<p style="text-align:center;">Last modified 20 March 2012</p>
 
 <!--#include virtual="footer.txt"-->

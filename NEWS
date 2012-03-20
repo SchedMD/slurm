@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.0.pre5
 =============================
+ -- Improve task binding logic by making fuller use of HWLOC library,
+    especially with respect to Opteron 6000 series processors. Work contributed
+    by Komoto Masahiro.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
