@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.4
-24 February 2012
+20 March 2012
 
 
 IMPORTANT NOTE:
@@ -18,7 +18,7 @@ innodb_buffer_pool_size=64M
 under the [mysqld] reference in the my.cnf file and restarting the mysqld.
 This is needed when converting large tables over to the new database schema.
 
-SLURM can be upgraded from version 2.2 to version 2.4 without loss of jobs or
+SLURM can be upgraded from version 2.3 to version 2.4 without loss of jobs or
 other state information.
 
 
@@ -29,6 +29,7 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
+* "PriorityFlags" added
 * "RebootProgram" added
 * "ReconfigFlags" added
 * "SlurmdDebugLevel" and "SlurmctldDebugLevel" now accept string names in
@@ -62,6 +63,8 @@ COMMAND CHANGES (see man pages for details)
 
 OTHER CHANGES
 =============
+* Improve task binding logic by making fuller use of HWLOC library,
+  especially with respect to Opteron 6000 series processors.
 * Changde to output tools labels from "BP" to "Midplane" (i.e. "BP_List" was
   changed to "MidplaneList").
 * Modified srun to fork a processes which can terminate the job and/or step
@@ -81,9 +84,10 @@ Changed members of the following structs
 
 Added the following struct definitions
 ======================================
+block_info_t:		cnode_err_cnt added
+slurm_ctl_conf_t	priority_flags, reboot_program and reconfig_flags added
 trigger_info_t:		flags added
 update_node_msg_t:	node_addr and node_hostname added
-block_info_t:		cnode_err_cnt added
 
 Changed the following enums and #defines
 ========================================
