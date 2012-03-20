@@ -588,6 +588,12 @@ enum ctx_keys {
 #define PROP_PRIO_NICER		0x0002	/* Insure that user tasks have a nice
 					 * value that is higher than slurmd */
 
+enum prioflags{
+
+	PRIORITY_FLAGS_ACCRUE_ALWAYS = 1, /* Flag to always accrue age priority to pending jobs ignoring dependencies or holds */
+
+};
+
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
@@ -1860,6 +1866,7 @@ typedef struct slurm_ctl_conf {
 	uint32_t priority_calc_period; /* seconds between priority decay
 					* calculation */
 	uint16_t priority_favor_small; /* favor small jobs over large */
+	uint16_t priority_flags; /* set some flags for priority configuration */
 	uint32_t priority_max_age; /* time when not to add any more
 				    * priority to a job if reached */
 	uint16_t priority_reset_period; /* when to clear usage,

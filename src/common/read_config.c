@@ -227,6 +227,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityMaxAge", S_P_STRING},
 	{"PriorityUsageResetPeriod", S_P_STRING},
 	{"PriorityType", S_P_STRING},
+	{"PriorityFlags", S_P_STRING},
 	{"PriorityWeightAge", S_P_UINT32},
 	{"PriorityWeightFairshare", S_P_UINT32},
 	{"PriorityWeightJobSize", S_P_UINT32},
@@ -2808,6 +2809,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else
 		conf->priority_favor_small = 0;
 
+	conf->priority_flags = 0;
+	if (s_p_get_string(&temp_str, "PriorityFlags", hashtbl)) {
+		if (strstr(temp_str, "ACCRUE_ALWAYS"))
+			conf->priority_flags |= PRIORITY_FLAGS_ACCRUE_ALWAYS;
+	}		
 	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
 		if ((max_time < 0) && (max_time != INFINITE)) {
