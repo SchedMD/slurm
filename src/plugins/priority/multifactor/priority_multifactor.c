@@ -128,6 +128,7 @@ static uint32_t weight_fs; /* weight for Fairshare factor */
 static uint32_t weight_js; /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
+static uint32_t flags; /* Priority Flags */
 
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
 extern double priority_p_calc_fs_factor(long double usage_efctv,
@@ -459,12 +460,19 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 
 	if (weight_age) {
 		uint32_t diff = start_time - job_ptr->details->begin_time;
+		if(flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) diff = start_time - job_ptr->details->submit_time;
 		if (job_ptr->details->begin_time) {
 			if (diff < max_age)
 				job_ptr->prio_factors->priority_age =
 					(double)diff / (double)max_age;
 			else
 				job_ptr->prio_factors->priority_age = 1.0;
+		}else if(flags & PRIORITY_FLAGS_ACCRUE_ALWAYS){
+		 	if (diff < max_age)
+			 	job_ptr->prio_factors->priority_age =
+			  	(double)diff / (double)max_age;
+			else
+			 	job_ptr->prio_factors->priority_age = 1.0;
 		}
 	}
 
@@ -1129,6 +1137,7 @@ static void _internal_setup(void)
 	weight_js = slurm_get_priority_weight_job_size();
 	weight_part = slurm_get_priority_weight_partition();
 	weight_qos = slurm_get_priority_weight_qos();
+	flags = slurmctld_conf.priority_flags;
 
 	if (priority_debug) {
 		info("priority: Max Age is %u", max_age);
@@ -1137,6 +1146,7 @@ static void _internal_setup(void)
 		info("priority: Weight JobSize is %u", weight_js);
 		info("priority: Weight Part is %u", weight_part);
 		info("priority: Weight QOS is %u", weight_qos);
+		info("priority: Flags is %u", flags);
 	}
 }
 

@@ -957,6 +957,17 @@ Applicable only if PriorityType=priority/multifactor.
 Supported values are "YES" and "NO".  The default value is "NO".
 
 .TP
+\fBPriorityFlags\fR
+Flags to modify priority behavior
+Applicable only if PriorityType=priority/multifactor.
+.RS
+.TP 17
+\fBACCRUE_ALWAYS\fR
+If set, priority age factor will be increased despite job dependencies 
+or holds.
+.RE
+
+.TP
 \fBPriorityMaxAge\fR
 Specifies the job age which will be given the maximum age factor in computing
 priority. For example, a value of 30 minutes would result in all jobs over
