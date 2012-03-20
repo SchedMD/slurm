@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd
 
-CPPFLAGS =  -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
+AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
 INCLUDES = -I$(top_srcdir)
 
 slurmd_LDADD = 					   \

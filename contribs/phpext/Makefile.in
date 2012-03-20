@@ -288,8 +288,8 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 php_dir = slurm_php
 phpize = /usr/bin/phpize
-@HAVE_AIX_FALSE@config_line = CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="-g -static $(CFLAGS)" CFLAGS="$(CFLAGS)" ./configure
-@HAVE_AIX_TRUE@config_line = CC="$(CC)" CCFLAGS="-g -static $(CFLAGS)" ./configure
+@HAVE_AIX_FALSE@config_line = CC="$(CC)" LD="$(CC) $(CFLAGS) $(LDFLAGS)" CCFLAGS="-g -static $(CFLAGS)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" ./configure
+@HAVE_AIX_TRUE@config_line = CC="$(CC)" CCFLAGS="-g -static $(CFLAGS) $(CPPFLAGS)" ./configure
 all: all-am
 
 .SUFFIXES:

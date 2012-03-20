@@ -1874,6 +1874,10 @@ static int _build_node_list(struct job_record *job_ptr,
 		info("No nodes satisfy job %u requirements",
 		     job_ptr->job_id);
 		xfree(node_set_ptr);
+		if (job_ptr->resv_name) {
+			job_ptr->state_reason = WAIT_RESERVATION;
+			return ESLURM_NODES_BUSY;
+		}
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 

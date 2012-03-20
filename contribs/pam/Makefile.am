@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-CPPFLAGS = -fPIC
+AM_CPPFLAGS = -fPIC
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 PLUGIN_FLAGS = -module --export-dynamic -avoid-version
 

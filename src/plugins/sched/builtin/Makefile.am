@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-CXXFLAGS = -fexceptions
+AM_CXXFLAGS = -fexceptions
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 

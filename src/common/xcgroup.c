@@ -748,6 +748,52 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 	return fstatus;
 }
 
+static int cgroup_move_process_by_task (xcgroup_t *cg, pid_t pid)
+{
+	DIR *dir;
+	struct dirent *entry;
+	char path [PATH_MAX];
+
+	if (snprintf (path, PATH_MAX, "/proc/%d/task", (int) pid) >= PATH_MAX) {
+		error ("xcgroup: move_process_by_task: path overflow!");
+		return XCGROUP_ERROR;
+	}
+
+	dir = opendir (path);
+	if (!dir) {
+		error ("xcgroup: opendir(%s): %m", path);
+		return XCGROUP_ERROR;
+	}
+
+	while ((entry = readdir (dir))) {
+		if (entry->d_name[0] != '.')
+			xcgroup_set_param (cg, "tasks", entry->d_name);
+	}
+	closedir (dir);
+	return XCGROUP_SUCCESS;
+}
+
+static int cgroup_procs_writable (xcgroup_t *cg)
+{
+	struct stat st;
+	char *path = NULL;
+	int rc = 0;
+
+	xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
+	if ((stat (path, &st) >= 0) && (st.st_mode & S_IWUSR))
+		rc = 1;
+	xfree (path);
+	return (rc);
+}
+
+int xcgroup_move_process (xcgroup_t *cg, pid_t pid)
+{
+	if (!cgroup_procs_writable (cg))
+		return cgroup_move_process_by_task (cg, pid);
+
+	return xcgroup_set_uint32_param (cg, "cgroup.procs", pid);
+}
+
 
 /*
  * -----------------------------------------------------------------------------

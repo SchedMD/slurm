@@ -164,7 +164,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = -DFEDERATION_CONFIG_FILE=\"$(sysconfdir)/federation.conf\"
+CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -341,6 +341,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+AM_CPPFLAGS = -DFEDERATION_CONFIG_FILE=\"$(sysconfdir)/federation.conf\"
 AUTOMAKE_OPTIONS = foreign
 @HAVE_FEDERATION_FALSE@federation_lib = 
 @HAVE_FEDERATION_TRUE@federation_lib = switch_federation.la
