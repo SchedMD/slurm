@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Improve support for overlapping advanced reservations. Patch from
     Bill Brophy, Bull.
+ -- Modify Makefiles for support of Debian hardening flags. Patch from
+    Simon Ruderich.
 
 * Changes in SLURM 2.3.4
 ========================

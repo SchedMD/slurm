@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-CPPFLAGS = -DCRAY_CONFIG_FILE=\"$(sysconfdir)/cray.conf\"
+AM_CPPFLAGS = -DCRAY_CONFIG_FILE=\"$(sysconfdir)/cray.conf\"
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 

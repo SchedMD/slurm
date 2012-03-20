@@ -1,6 +1,6 @@
 # Makefile for jobcomp/pgsql plugin
 
-CPPFLAGS = $(PGSQL_CFLAGS)
+AM_CPPFLAGS = $(PGSQL_CFLAGS)
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
