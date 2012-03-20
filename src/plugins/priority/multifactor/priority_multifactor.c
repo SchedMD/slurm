@@ -111,8 +111,8 @@ time_t last_job_update;
  * minimum version for their plugins as the job completion logging API
  * matures.
  */
-const char plugin_name[]       	= "Priority MULTIFACTOR plugin";
-const char plugin_type[]       	= "priority/multifactor";
+const char plugin_name[]	= "Priority MULTIFACTOR plugin";
+const char plugin_type[]	= "priority/multifactor";
 const uint32_t plugin_version	= 100;
 
 static pthread_t decay_handler_thread;
@@ -471,11 +471,11 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 			} else
 				job_ptr->prio_factors->priority_age = 1.0;
 		} else if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) {
-		 	if (diff < max_age) {
-			 	job_ptr->prio_factors->priority_age =
-			  		(double)diff / (double)max_age;
+			if (diff < max_age) {
+				job_ptr->prio_factors->priority_age =
+					(double)diff / (double)max_age;
 			} else
-			 	job_ptr->prio_factors->priority_age = 1.0;
+				job_ptr->prio_factors->priority_age = 1.0;
 		}
 	}
 
