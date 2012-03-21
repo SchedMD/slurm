@@ -102,7 +102,7 @@ static void *_rollup_handler(void *no_data);
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
 static void  _set_work_dir(void);
 static void *_signal_handler(void *no_data);
-static void  _update_logging(void);
+static void  _update_logging(bool startup);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
 
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
 	if (read_slurmdbd_conf())
 		exit(1);
 	_parse_commandline(argc, argv);
-	_update_logging();
+	_update_logging(true);
 	_update_nice();
 
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
@@ -363,7 +363,7 @@ static void _usage(char *prog_name)
 }
 
 /* Reset slurmctld logging based upon configuration parameters */
-static void _update_logging(void)
+static void _update_logging(bool startup)
 {
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
@@ -385,6 +385,19 @@ static void _update_logging(void)
 	}
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, slurmdbd_conf->log_file);
+	if (startup && slurmdbd_conf->log_file) {
+		int rc;
+		gid_t slurm_user_gid;
+		slurm_user_gid = gid_from_uid(slurmdbd_conf->slurm_user_id);
+		rc = chown(slurmdbd_conf->log_file,
+			   slurmdbd_conf->slurm_user_id, slurm_user_gid);
+		if (rc) {
+			error("chown(%s, %d, %d): %m",
+			      slurmdbd_conf->log_file,
+			      (int) slurmdbd_conf->slurm_user_id,
+			      (int) slurm_user_gid);
+		}
+	}
 }
 
 /* Reset slurmd nice value */
@@ -628,7 +641,7 @@ static void *_signal_handler(void *no_data)
 			info("Reconfigure signal (SIGHUP) received");
 			read_slurmdbd_conf();
 			assoc_mgr_set_missing_uids();
-			_update_logging();
+			_update_logging(false);
 			break;
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */

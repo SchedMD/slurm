@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "August 2010" "slurmdbd.conf 2.2" "Slurm configuration file"
+.TH "slurmdbd.conf" "5" "March 2012" "slurmdbd.conf 2.4" "Slurm configuration file"
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 
@@ -18,6 +18,9 @@ SlurmDbd or daemon receipt of the SIGHUP signal unless otherwise noted.
 .LP
 This file should be only on the computer where SlurmDBD executes and
 should only be readable by the user which executes SlurmDBD (e.g. "slurm").
+If the slurmdbd daemon is started as user root and changes to another
+user ID, the configuration file will initially be read as user root, but will
+be read as the other user ID in response to a SIGHUP signal.
 This file should be protected from unauthorized access since it
 contains a database password.
 The overall configuration parameters available include:

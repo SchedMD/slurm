@@ -1893,6 +1893,10 @@ static void _update_cred_key(void)
  * NOTE: READ lock_slurmctld config before entry */
 void update_logging(void)
 {
+	int rc;
+	uid_t slurm_user_id  = slurmctld_conf.slurm_user_id;
+	gid_t slurm_user_gid = gid_from_uid(slurm_user_id);
+
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
 		slurmctld_conf.slurmctld_debug = MIN(
@@ -1927,6 +1931,25 @@ void update_logging(void)
 
 	sched_log_alter(sched_log_opts, LOG_DAEMON,
 			slurmctld_conf.sched_logfile);
+
+	if (slurmctld_conf.slurmctld_logfile) {
+		rc = chown(slurmctld_conf.slurmctld_logfile,
+			   slurm_user_id, slurm_user_gid);
+		if (rc) {
+			error("chown(%s, %d, %d): %m",
+			      slurmctld_conf.slurmctld_logfile,
+			      (int) slurm_user_id, (int) slurm_user_gid);
+		}
+	}
+	if (slurmctld_conf.sched_logfile) {
+		rc = chown(slurmctld_conf.sched_logfile,
+			   slurm_user_id, slurm_user_gid);
+		if (rc) {
+			error("chown(%s, %d, %d): %m",
+			      slurmctld_conf.sched_logfile,
+			      (int) slurm_user_id, (int) slurm_user_gid);
+		}
+	}
 }
 
 /* Reset slurmd nice value */

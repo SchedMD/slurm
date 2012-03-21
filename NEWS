@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     Carles Fenoy (Barcelona Supercomputer Center).
  -- Modify the step completion RPC between slurmd and slurmstepd in order to
     eliminate a possible deadlock. Based on work by Matthieu Hautreux, CEA.
+ -- Change the owner of slurmctld and slurmdbd log files to the appropriate
+    user. Without this change the files will be created by and owned by the
+    user starting the daemons (likely user root).
 
 * Changes in SLURM 2.4.0.pre4
 =============================
