@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Change the owner of slurmctld and slurmdbd log files to the appropriate
     user. Without this change the files will be created by and owned by the
     user starting the daemons (likely user root).
+ -- Reorganize the slurmstepd logic in order to better support NFS and
+    Kerberos credentials via the AUKS plugin. Work by Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
