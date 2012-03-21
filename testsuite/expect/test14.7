@@ -111,34 +111,22 @@ set matches 0
 if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
-		-re "REQUEST_FILE_BCAST.* Permission denied" {
+		-re "error: REQUEST_FILE_BCAST" {
 			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue
 		}
-		-re "REQUEST_FILE_BCAST.* Operation not permitted" {
-#			variation on Permission denied if initgroups() fails
-#			due to not running slurmd as root
+		-re "ls.* No such file" {
 			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue
 		}
-		-re "REQUEST_FILE_BCAST.* File exists" {
-			send_user "Vestigial file should be removed\n"
-			incr matches
-			exp_continue
-		}
-		-re "No such file" {
+		-re "ls.* does not exist" {
 			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue
 		}
-		-re "does not exist" {
-			send_user "These errors are expected, no worries\n"
-			incr matches
-			exp_continue
-		}
-		-re "not found" {
+		-re "ls.* not found" {
 			send_user "These errors are expected, no worries\n"
 			incr matches
 			exp_continue
