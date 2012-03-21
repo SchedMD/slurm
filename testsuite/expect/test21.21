@@ -491,10 +491,11 @@ if { [test_limits_enforced] == 1 } {
 	sleep 3
 }
 
-
 #
 # Use sacctmgr to delete the test account
 #
+# First wait a few seconds for the job to complete
+sleep 2
 set damatches 0
 set sadel_pid [spawn $sacctmgr -i delete account $ta]
 expect {
