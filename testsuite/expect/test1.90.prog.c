@@ -31,16 +31,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* For RedHat systems, run with NEW_TOOLS=0
- * For current Ubuntu, run wtih NEW_TOOLS=1 */
-#define NEW_TOOLS 0
-
-#if NEW_TOOLS
-#define MY_MASK struct bitmask *
-#define MY_TEST numa_bitmask_isbitset
+/* For RedHat systems, LIBNUMA_API_VERSION is undefined
+ * For current Ubuntu, LIBNUMA_API_VERSION=2 */
+#ifndef LIBNUMA_API_VERSION
+#  define LIBNUMA_API_VERSION 1
+#endif
+#if (LIBNUMA_API_VERSION > 1)
+#  define MY_MASK struct bitmask *
+#  define MY_TEST numa_bitmask_isbitset
 #else
-#define MY_MASK nodemask_t
-#define MY_TEST nodemask_isset
+#  define MY_MASK nodemask_t
+#  define MY_TEST nodemask_isset
 #endif
 
 static void _load_cpu_mask(MY_MASK *cpu_mask)
@@ -58,7 +59,7 @@ static unsigned long _mask_to_int(MY_MASK *mask)
 	int i;
 	unsigned long rc = 0;
 	for (i=0; i<NUMA_NUM_NODES; i++) {
-#if NEW_TOOLS
+#if (LIBNUMA_API_VERSION > 1)
 		if (MY_TEST(*mask, i))
 #else
 		if (MY_TEST(mask, i))
