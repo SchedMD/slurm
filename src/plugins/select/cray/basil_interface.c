@@ -253,7 +253,7 @@ extern int basil_inventory(void)
 				node_ptr->down_time = now;
 			if (IS_NODE_DOWN(node_ptr)) {
 				/* node still down */
-			} else if (slurmctld_conf.slurmd_timeout &&
+			} else if ((slurmctld_conf.slurmd_timeout == 0) ||
 				   ((now - node_ptr->down_time) <
 				    slurmctld_conf.slurmd_timeout)) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
