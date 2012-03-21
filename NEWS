@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     Bill Brophy, Bull.
  -- Modify Makefiles for support of Debian hardening flags. Patch from
     Simon Ruderich.
+ -- CRAY: Fix support for configuration with SlurmdTimeout=0 (never mark
+    node that is DOWN in ALPS as DOWN in SLURM).
 
 * Changes in SLURM 2.3.4
 ========================
