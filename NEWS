@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     by Komoto Masahiro.
  -- Add new configuration parameter PriorityFlags, based upon work by
     Carles Fenoy (Barcelona Supercomputer Center).
+ -- Modify the step completion RPC between slurmd and slurmstepd in order to
+    eliminate a possible deadlock. Based on work by Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
