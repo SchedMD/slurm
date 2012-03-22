@@ -1603,7 +1603,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 
 		/************* acct stuff ********************/
 		jobacct = jobacct_gather_g_remove_task(pid);
-		if(jobacct) {
+		if (jobacct) {
 			jobacct_gather_g_setinfo(jobacct,
 						 JOBACCT_DATA_RUSAGE, &rusage);
 			jobacct_gather_g_aggregate(job->jobacct, jobacct);
@@ -1642,10 +1642,10 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			}
 			job->envtp->procid = t->id;
 
-			if (spank_task_exit (job, t->id) < 0)
+			if (spank_task_exit (job, t->id) < 0) {
 				error ("Unable to spank task %d at exit",
 				       t->id);
-
+			}
 			post_term(job);
 		}
 
