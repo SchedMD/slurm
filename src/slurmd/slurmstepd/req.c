@@ -1290,6 +1290,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid, int protocol)
 	int len;
 	Buf buffer;
 	int version;	/* For future use */
+	bool lock_set = false;
 
 	debug("_handle_completion for job %u.%u",
 	      job->jobid, job->stepid);
@@ -1337,6 +1338,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid, int protocol)
 	 * Record the completed nodes
 	 */
 	pthread_mutex_lock(&step_complete.lock);
+	lock_set = true;
 	if (! step_complete.wait_children) {
 		rc = -1;
 		errnum = ETIMEDOUT; /* not used anyway */
@@ -1380,7 +1382,12 @@ timeout:
 	pthread_mutex_unlock(&step_complete.lock);
 
 	return SLURM_SUCCESS;
-rwfail:
+
+
+rwfail:	if (lock_set) {
+		pthread_cond_signal(&step_complete.cond);
+		pthread_mutex_unlock(&step_complete.lock);
+	}
 	return SLURM_FAILURE;
 }
 
