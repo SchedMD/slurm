@@ -1331,7 +1331,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid, int protocol)
 		free_buf(buffer);
 	} else {
 		jobacct = jobacct_gather_g_create(NULL);
-		jobacct_gather_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+		jobacct_gather_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 	}
 
 	/*
