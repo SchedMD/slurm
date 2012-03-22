@@ -64,8 +64,13 @@ uint32_t mult = 1000;
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
 			     uint16_t rpc_version, Buf buffer)
 {
-	pack32((uint32_t)jobacct_id->nodeid, buffer);
-	pack16((uint16_t)jobacct_id->taskid, buffer);
+	if (jobacct_id) {
+		pack32((uint32_t) jobacct_id->nodeid, buffer);
+		pack16((uint16_t) jobacct_id->taskid, buffer);
+	} else {
+		pack32((uint32_t) 0, buffer);
+		pack16((uint16_t) 0, buffer);
+	}
 }
 
 static int _unpack_jobacct_id(jobacct_id_t *jobacct_id,
@@ -357,15 +362,16 @@ extern void jobacct_common_2_stats(slurmdb_stats_t *stats,
 extern void jobacct_common_pack(struct jobacctinfo *jobacct,
 				uint16_t rpc_version, Buf buffer)
 {
-	int i=0;
+	int i = 0;
 
-	if(!jobacct) {
-		for(i=0; i<16; i++)
+	if (!jobacct) {
+		for (i = 0; i < 12; i++)
 			pack32((uint32_t) 0, buffer);
-		for(i=0; i<4; i++)
-			pack16((uint16_t) 0, buffer);
+		for (i = 0; i < 4; i++)
+			_pack_jobacct_id(NULL, rpc_version, buffer);
 		return;
 	}
+
 	slurm_mutex_lock(&jobacct_lock);
 	pack32((uint32_t)jobacct->user_cpu_sec, buffer);
 	pack32((uint32_t)jobacct->user_cpu_usec, buffer);
@@ -379,6 +385,7 @@ extern void jobacct_common_pack(struct jobacctinfo *jobacct,
 	pack32((uint32_t)jobacct->tot_pages, buffer);
 	pack32((uint32_t)jobacct->min_cpu, buffer);
 	pack32((uint32_t)jobacct->tot_cpu, buffer);
+
 	_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
 	_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
 	_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
@@ -391,6 +398,7 @@ extern int jobacct_common_unpack(struct jobacctinfo **jobacct,
 				 uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
+
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
 	safe_unpack32(&uint32_tmp, buffer);
 	(*jobacct)->user_cpu_sec = uint32_tmp;
@@ -408,17 +416,18 @@ extern int jobacct_common_unpack(struct jobacctinfo **jobacct,
 	safe_unpack32(&(*jobacct)->tot_pages, buffer);
 	safe_unpack32(&(*jobacct)->min_cpu, buffer);
 	safe_unpack32(&(*jobacct)->tot_cpu, buffer);
-	if(_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version, buffer)
-	   != SLURM_SUCCESS)
+
+	if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version, buffer)
+	    != SLURM_SUCCESS)
 		goto unpack_error;
-	if(_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version, buffer)
-	   != SLURM_SUCCESS)
+	if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version, buffer)
+	    != SLURM_SUCCESS)
 		goto unpack_error;
-	if(_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version, buffer)
-	   != SLURM_SUCCESS)
+	if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version, buffer)
+	    != SLURM_SUCCESS)
 		goto unpack_error;
-	if(_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version, buffer)
-	   != SLURM_SUCCESS)
+	if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version, buffer)
+	    != SLURM_SUCCESS)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
