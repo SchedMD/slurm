@@ -458,7 +458,7 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		if (rc == 0) { /* EOF, normal */
 			return -1;
 		} else {
-			debug3("Leaving _handle_request on read error");
+			debug3("Leaving _handle_request on read error: %m");
 			return SLURM_FAILURE;
 		}
 	}
@@ -521,7 +521,7 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		rc = _handle_completion(fd, job, uid, 1);
 		break;
 	case REQUEST_STEP_COMPLETION_V2:
-		debug("Handling REQUEST_STEP_COMPLETION");
+		debug("Handling REQUEST_STEP_COMPLETION_V2");
 		rc = _handle_completion(fd, job, uid, 2);
 		break;
 	case REQUEST_STEP_TASK_INFO:

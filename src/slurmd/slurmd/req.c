@@ -233,7 +233,7 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_mutex_unlock(&job_limits_mutex);
 		return;
 	}
-
+info("get msg_type:%u", msg->msg_type);
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		/* Mutex locking moved into _rpc_batch_job() due to
