@@ -288,34 +288,34 @@ slurmstepd_info_t *
 stepd_get_info(int fd)
 {
 	int req = REQUEST_INFO;
-	slurmstepd_info_t *info;
+	slurmstepd_info_t *step_info;
 	uint16_t protocol_version;
 
-	info = xmalloc(sizeof(slurmstepd_info_t));
+	step_info = xmalloc(sizeof(slurmstepd_info_t));
 	safe_write(fd, &req, sizeof(int));
 
-	safe_read(fd, &info->uid, sizeof(uid_t));
-	safe_read(fd, &info->jobid, sizeof(uint32_t));
-	safe_read(fd, &info->stepid, sizeof(uint32_t));
+	safe_read(fd, &step_info->uid, sizeof(uid_t));
+	safe_read(fd, &step_info->jobid, sizeof(uint32_t));
+	safe_read(fd, &step_info->stepid, sizeof(uint32_t));
 
 	safe_read(fd, &protocol_version, sizeof(uint16_t));
 	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		safe_read(fd, &info->nodeid, sizeof(uint32_t));
-		safe_read(fd, &info->job_mem_limit, sizeof(uint32_t));
-		safe_read(fd, &info->step_mem_limit, sizeof(uint32_t));
+		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
+		safe_read(fd, &step_info->job_mem_limit, sizeof(uint32_t));
+		safe_read(fd, &step_info->step_mem_limit, sizeof(uint32_t));
 	} else {
-		info->nodeid  = protocol_version << 16;
+		step_info->nodeid  = protocol_version << 16;
 		safe_read(fd, &protocol_version, sizeof(uint16_t));
-		info->nodeid |= protocol_version;
-		safe_read(fd, &info->job_mem_limit, sizeof(uint32_t));
-		info->step_mem_limit = info->job_mem_limit;
+		step_info->nodeid |= protocol_version;
+		safe_read(fd, &step_info->job_mem_limit, sizeof(uint32_t));
+		step_info->step_mem_limit = step_info->job_mem_limit;
 		verbose("Old version slurmstepd for step %u.%u", 
-			info->jobid, info->stepid);
+			step_info->jobid, step_info->stepid);
 	}
-	return info;
+	return step_info;
 
 rwfail:
-	xfree(info);
+	xfree(step_info);
 	return NULL;
 }
 
