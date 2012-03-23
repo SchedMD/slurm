@@ -70,6 +70,8 @@
 
 struct spank_plugin_operations {
 	spank_f *init;
+	spank_f *slurmd_init;
+	spank_f *job_prolog;
 	spank_f *init_post_opt;
 	spank_f *local_user_init;
 	spank_f *user_init;
@@ -77,12 +79,16 @@ struct spank_plugin_operations {
 	spank_f *user_task_init;
 	spank_f *task_post_fork;
 	spank_f *task_exit;
+	spank_f *job_epilog;
+	spank_f *slurmd_exit;
 	spank_f *exit;
 };
 
-const int n_spank_syms = 9;
+const int n_spank_syms = 13;
 const char *spank_syms[] = {
 	"slurm_spank_init",
+	"slurm_spank_slurmd_init",
+	"slurm_spank_job_prolog",
 	"slurm_spank_init_post_opt",
 	"slurm_spank_local_user_init",
 	"slurm_spank_user_init",
@@ -90,6 +96,8 @@ const char *spank_syms[] = {
 	"slurm_spank_task_init",
 	"slurm_spank_task_post_fork",
 	"slurm_spank_task_exit",
+	"slurm_spank_job_epilog",
+	"slurm_spank_slurmd_exit",
 	"slurm_spank_exit"
 };
 
@@ -102,6 +110,7 @@ struct spank_plugin {
 	char **argv;
 	struct spank_plugin_operations ops;
 	struct spank_option *opts;
+	struct spank_stack *stack;
 };
 
 /*
@@ -120,24 +129,15 @@ struct spank_plugin_opt {
 };
 
 /*
- *  Initial value for global optvals for SPANK plugin options
- */
-static int spank_optval = 0xfff;
-
-/*
- *  Cache of options provided by spank plugins
- */
-static List option_cache = NULL;
-
-
-/*
- *  SPANK plugin context (local, remote, allocator)
+ *  SPANK plugin context type (local, remote, allocator)
  */
 enum spank_context_type {
 	S_TYPE_NONE,
 	S_TYPE_LOCAL,           /* LOCAL == srun              */
-	S_TYPE_REMOTE,          /* REMOTE == slurmd           */
-	S_TYPE_ALLOCATOR        /* ALLOCATOR == sbatch/salloc */
+	S_TYPE_REMOTE,          /* REMOTE == slurmstepd       */
+	S_TYPE_ALLOCATOR,       /* ALLOCATOR == sbatch/salloc */
+	S_TYPE_SLURMD,          /* SLURMD == slurmd           */
+	S_TYPE_JOB_SCRIPT,      /* JOB_SCRIPT == prolog/epilog*/
 };
 
 /*
@@ -145,6 +145,8 @@ enum spank_context_type {
  */
 typedef enum step_fn {
 	SPANK_INIT = 0,
+	SPANK_SLURMD_INIT,
+	SPANK_JOB_PROLOG,
 	SPANK_INIT_POST_OPT,
 	LOCAL_USER_INIT,
 	STEP_USER_INIT,
@@ -152,8 +154,18 @@ typedef enum step_fn {
 	STEP_USER_TASK_INIT,
 	STEP_TASK_POST_FORK,
 	STEP_TASK_EXIT,
+	SPANK_JOB_EPILOG,
+	SPANK_SLURMD_EXIT,
 	SPANK_EXIT
 } step_fn_t;
+
+/*
+ *  Job information in prolog/epilog context:
+ */
+struct job_script_info {
+	uint32_t  jobid;
+	uid_t     uid;
+};
 
 struct spank_handle {
 #   define SPANK_MAGIC 0x00a5a500
@@ -162,25 +174,95 @@ struct spank_handle {
 	step_fn_t            phase;  /* Which spank fn are we called from?   */
 	void               * job;    /* Reference to current srun|slurmd job */
 	slurmd_task_info_t * task;   /* Reference to current task (if valid) */
+	struct spank_stack  *stack;  /* Reference to the current plugin stack*/
 };
 
 /*
- *  SPANK plugins stack
+ *  SPANK stack. The stack of loaded plugins and associated state.
  */
-static List spank_stack = NULL;
-static enum spank_context_type spank_ctx = S_TYPE_NONE;
-
-static pthread_mutex_t spank_mutex = PTHREAD_MUTEX_INITIALIZER;
+struct spank_stack {
+	enum spank_context_type type;/*  Type of context for this stack      */
+	List plugin_list;	     /*  Stack of spank plugins              */
+	List option_cache;           /*  Cache of plugin options in this ctx */
+	int  spank_optval;           /*  optvalue for next plugin option     */
+	const char * plugin_path;    /*  default path to search for plugins  */
+};
 
 /*
- *  Default plugin dir
+ *  The global spank plugin stack:
  */
-static const char * default_spank_path = NULL;
+static struct spank_stack *global_spank_stack = NULL;
 
 /*
  *  Forward declarations
  */
 static int _spank_plugin_options_cache(struct spank_plugin *p);
+static int _spank_stack_load (struct spank_stack *stack, const char *file);
+static void _spank_plugin_destroy (struct spank_plugin *);
+static void _spank_plugin_opt_destroy (struct spank_plugin_opt *);
+static int spank_stack_get_remote_options(struct spank_stack *, job_options_t);
+static int spank_stack_get_remote_options_env (struct spank_stack *, char **);
+static int spank_stack_set_remote_options_env (struct spank_stack * stack);
+static int dyn_spank_set_job_env (const char *var, const char *val, int ovwt);
+
+static void spank_stack_destroy (struct spank_stack *stack)
+{
+	if (stack->plugin_list)
+		list_destroy (stack->plugin_list);
+	if (stack->option_cache)
+		list_destroy (stack->option_cache);
+	xfree (stack->plugin_path);
+	xfree (stack);
+}
+
+static struct spank_stack *
+spank_stack_create (const char *file, enum spank_context_type type)
+{
+	slurm_ctl_conf_t *conf;
+	struct spank_stack *stack = xmalloc (sizeof (*stack));
+
+	conf = slurm_conf_lock();
+	stack->plugin_path = xstrdup (conf->plugindir);
+	slurm_conf_unlock();
+
+	stack->type = type;
+	stack->spank_optval = 0xfff;
+	stack->plugin_list =
+		list_create ((ListDelF) _spank_plugin_destroy);
+	stack->option_cache =
+		list_create ((ListDelF) _spank_plugin_opt_destroy);
+
+	if (_spank_stack_load (stack, file) < 0) {
+		spank_stack_destroy (stack);
+		return (NULL);
+	}
+
+	return (stack);
+}
+
+static List get_global_option_cache (void)
+{
+	if (global_spank_stack)
+		return (global_spank_stack->option_cache);
+	else
+		return (NULL);
+}
+
+
+static int plugin_in_list (List l, struct spank_plugin *sp)
+{
+	int rc = 0;
+	struct spank_plugin *p;
+	ListIterator i = list_iterator_create (l);
+	while ((p = list_next (i))) {
+		if (p->fq_path == sp->fq_path) {
+			rc = 1;
+			break;
+		}
+	}
+	list_iterator_destroy (i);
+	return (rc);
+}
 
 static void _argv_append(char ***argv, int ac, const char *newarg)
 {
@@ -256,7 +338,8 @@ _plugin_stack_parse_line(char *line, char **plugin, int *acp, char ***argv,
 	return (0);
 }
 
-static struct spank_plugin *_spank_plugin_create(char *path, int ac,
+static struct spank_plugin *_spank_plugin_create(struct spank_stack *stack,
+						 char *path, int ac,
 						 char **av, bool required)
 {
 	struct spank_plugin *plugin;
@@ -283,11 +366,12 @@ static struct spank_plugin *_spank_plugin_create(char *path, int ac,
 	plugin->ac = ac;
 	plugin->argv = av;
 	plugin->ops = ops;
+	plugin->stack = stack;
 
 	/*
 	 *  Do not load static plugin options table in allocator context.
 	 */
-	if (spank_ctx != S_TYPE_ALLOCATOR)
+	if (stack->type != S_TYPE_ALLOCATOR)
 		plugin->opts = plugin_get_sym(p, "spank_options");
 
 	return (plugin);
@@ -353,10 +437,40 @@ _spank_plugin_find (const char *path, const char *file)
 	return (NULL);
 }
 
-static int _spank_conf_include (const char *, int, const char *, List *);
+static int _spank_conf_include (struct spank_stack *,
+	const char *, int, const char *);
 
 static int
-_spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
+spank_stack_plugin_valid_for_context (struct spank_stack *stack,
+	struct spank_plugin *p)
+{
+	switch (stack->type) {
+	case S_TYPE_JOB_SCRIPT:
+		if (p->ops.job_prolog || p->ops.job_epilog)
+			return (1);
+		break;
+	case S_TYPE_SLURMD:
+		if (p->ops.slurmd_init || p->ops.slurmd_exit)
+			return (1);
+		break;
+	case S_TYPE_LOCAL:
+	case S_TYPE_ALLOCATOR:
+	case S_TYPE_REMOTE:
+		/*
+		 *  For backwards compatibility: All plugins were
+		 *   always loaded in these contexts, so continue
+		 *   to do so
+		 */
+		return (1);
+	default:
+		return (0);
+	}
+	return (0);
+}
+
+static int
+_spank_stack_process_line(struct spank_stack *stack,
+	const char *file, int line, char *buf)
 {
 	char **argv;
 	int ac;
@@ -372,7 +486,7 @@ _spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
 	}
 
        if (type == CF_INCLUDE) {
-               int rc = _spank_conf_include (file, line, path, stackp);
+               int rc = _spank_conf_include (stack, file, line, path);
                xfree (path);
                return (rc);
        }
@@ -383,14 +497,14 @@ _spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
 	if (path[0] != '/') {
 		char *f;
 
-		if ((f = _spank_plugin_find (default_spank_path, path))) {
+		if ((f = _spank_plugin_find (stack->plugin_path, path))) {
 			xfree (path);
 			path = f;
 		}
 	}
 
 	required = (type == CF_REQUIRED);
-	if (!(p = _spank_plugin_create(path, ac, argv, required))) {
+	if (!(p = _spank_plugin_create(stack, path, ac, argv, required))) {
 		if (required)
 			error ("spank: %s:%d:"
 			       " Failed to load plugin %s. Aborting.",
@@ -401,57 +515,64 @@ _spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
 				 file, line, path);
 		return (required ? -1 : 0);
 	}
-	if (*stackp == NULL)
-		*stackp = list_create((ListDelF) _spank_plugin_destroy);
+
+	if (plugin_in_list (stack->plugin_list, p)) {
+		error ("spank: %s: cowardly refusing to load a second time",
+			p->fq_path);
+		_spank_plugin_destroy (p);
+		return (0);
+	}
+
+	if (!spank_stack_plugin_valid_for_context (stack, p)) {
+		verbose ("spank: %s: no callbacks in this context", p->fq_path);
+		_spank_plugin_destroy (p);
+		return (0);
+	}
 
 	verbose ("spank: %s:%d: Loaded plugin %s",
 			file, line, xbasename (p->fq_path));
 
-	list_append (*stackp, p);
+	list_append (stack->plugin_list, p);
 	_spank_plugin_options_cache(p);
 
 	return (0);
 }
 
 
-static int _spank_stack_create(const char *path, List * listp)
+static int _spank_stack_load(struct spank_stack *stack, const char *path)
 {
+	int rc = 0;
 	int line;
 	char buf[4096];
 	FILE *fp;
 
 	verbose("spank: opening plugin stack %s", path);
 
+	/*
+	 *  Try to open plugstack.conf. A missing config file is not an
+	 *   error, but is equivalent to an empty file.
+	 */
 	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE))) {
 		if (errno == ENOENT)
-			debug("spank: Failed to open %s: %m", path);
-		else
-			error("spank: Failed to open %s: %m", path);
-		return -1;
+			return (0);
+		error("spank: Failed to open %s: %m", path);
+		return (-1);
 	}
 
 	line = 1;
 	while (fgets(buf, sizeof(buf), fp)) {
-		if (_spank_stack_process_line(path, line, buf, listp) < 0)
-			goto fail_immediately;
+		rc = _spank_stack_process_line(stack, path, line, buf);
+		if (rc < 0)
+			break;
 		line++;
 	}
 
 	fclose(fp);
-	return (0);
-
-      fail_immediately:
-	if (*listp != NULL) {
-		list_destroy(*listp);
-		*listp = NULL;
-	}
-	fclose(fp);
-	return (-1);
+	return (rc);
 }
 
-static int
-_spank_conf_include (const char *file, int lineno, const char *pattern,
-		List *stackp)
+static int _spank_conf_include (struct spank_stack *stack,
+		const char *file, int lineno, const char *pattern)
 {
 	int rc = 0;
 	glob_t gl;
@@ -480,7 +601,7 @@ _spank_conf_include (const char *file, int lineno, const char *pattern,
 	switch (rc) {
 	  case 0:
 	  	for (i = 0; i < gl.gl_pathc; i++) {
-			rc = _spank_stack_create (gl.gl_pathv[i], stackp);
+			rc = _spank_stack_load (stack, gl.gl_pathv[i]);
 			if (rc < 0)
 				break;
 		}
@@ -504,18 +625,19 @@ _spank_conf_include (const char *file, int lineno, const char *pattern,
 }
 
 static int
-_spank_handle_init(struct spank_handle *spank, void * arg,
-		   int taskid, step_fn_t fn)
+_spank_handle_init(struct spank_handle *spank, struct spank_stack *stack,
+		void * arg, int taskid, step_fn_t fn)
 {
 	memset(spank, 0, sizeof(*spank));
 	spank->magic = SPANK_MAGIC;
 	spank->plugin = NULL;
 
 	spank->phase = fn;
+	spank->stack = stack;
 
 	if (arg != NULL) {
 		spank->job = arg;
-		if (spank_ctx == S_TYPE_REMOTE && taskid >= 0) {
+		if (stack->type == S_TYPE_REMOTE && taskid >= 0) {
 			spank->task = ((slurmd_job_t *) arg)->task[taskid];
 		}
 	}
@@ -527,6 +649,10 @@ static const char *_step_fn_name(step_fn_t type)
 	switch (type) {
 	case SPANK_INIT:
 		return ("init");
+	case SPANK_SLURMD_INIT:
+		return ("slurmd_init");
+	case SPANK_JOB_PROLOG:
+		return ("job_prolog");
 	case SPANK_INIT_POST_OPT:
 		return ("init_post_opt");
 	case LOCAL_USER_INIT:
@@ -541,6 +667,10 @@ static const char *_step_fn_name(step_fn_t type)
 		return ("task_post_fork");
 	case STEP_TASK_EXIT:
 		return ("task_exit");
+	case SPANK_JOB_EPILOG:
+		return ("job_epilog");
+	case SPANK_SLURMD_EXIT:
+		return ("slurmd_exit");
 	case SPANK_EXIT:
 		return ("exit");
 	}
@@ -549,7 +679,44 @@ static const char *_step_fn_name(step_fn_t type)
 	return ("unknown");
 }
 
-static int _do_call_stack(step_fn_t type, void * job, int taskid)
+static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
+{
+	switch (type) {
+	case SPANK_INIT:
+		return (sp->ops.init);
+	case SPANK_SLURMD_INIT:
+		return (sp->ops.slurmd_init);
+	case SPANK_JOB_PROLOG:
+		return (sp->ops.job_prolog);
+	case SPANK_INIT_POST_OPT:
+		return (sp->ops.init_post_opt);
+	case LOCAL_USER_INIT:
+		return (sp->ops.local_user_init);
+	case STEP_USER_INIT:
+		return (sp->ops.user_init);
+	case STEP_TASK_INIT_PRIV:
+		return (sp->ops.task_init_privileged);
+	case STEP_USER_TASK_INIT:
+		return (sp->ops.user_task_init);
+	case STEP_TASK_POST_FORK:
+		return (sp->ops.task_post_fork);
+	case STEP_TASK_EXIT:
+		return (sp->ops.task_exit);
+	case SPANK_JOB_EPILOG:
+		return (sp->ops.job_epilog);
+	case SPANK_SLURMD_EXIT:
+		return (sp->ops.slurmd_exit);
+	case SPANK_EXIT:
+		return (sp->ops.exit);
+	default:
+		error ("Unhandled spank function type=%d\n", type);
+		return (NULL);
+	}
+	return (NULL);
+}
+
+static int _do_call_stack(struct spank_stack *stack,
+	step_fn_t type, void * job, int taskid)
 {
 	int rc = 0;
 	ListIterator i;
@@ -557,97 +724,29 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 	struct spank_handle spank[1];
 	const char *fn_name;
 
-	if (!spank_stack)
-		return (0);
+	if (!stack)
+		return (-1);
 
-	if (_spank_handle_init(spank, job, taskid, type) < 0) {
+	if (_spank_handle_init(spank, stack, job, taskid, type) < 0) {
 		error("spank: Failed to initialize handle for plugins");
 		return (-1);
 	}
 
 	fn_name = _step_fn_name(type);
 
-	i = list_iterator_create(spank_stack);
+	i = list_iterator_create(stack->plugin_list);
 	while ((sp = list_next(i))) {
 		const char *name = xbasename(sp->fq_path);
+		spank_f *spank_fn;
 
 		spank->plugin = sp;
 
-		switch (type) {
-		case SPANK_INIT:
-			if (sp->ops.init) {
-				rc = (*sp->ops.init) (spank, sp->ac,
-						      sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case SPANK_INIT_POST_OPT:
-			if (sp->ops.init_post_opt) {
-				rc = (*sp->ops.init_post_opt) (spank, sp->ac,
-						      sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case LOCAL_USER_INIT:
-			if (sp->ops.local_user_init) {
-				rc = (*sp->ops.local_user_init) (spank, sp->ac,
-			 				         sp->argv);
-				debug2("spank: %s: %s = %d", name, fn_name, rc);
-			}
-			break;
-		case STEP_USER_INIT:
-			if (sp->ops.user_init) {
-				rc = (*sp->ops.user_init) (spank, sp->ac,
-							   sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_TASK_INIT_PRIV:
-			if (sp->ops.task_init_privileged) {
-				rc = (*sp->ops.task_init_privileged)
-					(spank, sp->ac, sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_USER_TASK_INIT:
-			if (sp->ops.user_task_init) {
-				rc = (*sp->ops.user_task_init) (spank,
-								sp->ac,
-								sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_TASK_POST_FORK:
-			if (sp->ops.task_post_fork) {
-				rc = (*sp->ops.task_post_fork) (spank,
-								sp->ac,
-								sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		case STEP_TASK_EXIT:
-			if (sp->ops.task_exit) {
-				rc = (*sp->ops.task_exit) (spank, sp->ac,
-							   sp->argv);
-				debug2("spank: %s: %s = %d", name, fn_name,
-				       rc);
-			}
-			break;
-		case SPANK_EXIT:
-			if (sp->ops.exit) {
-				rc = (*sp->ops.exit) (spank, sp->ac,
-						      sp->argv);
-				debug2("spank: %s: %s = %d", name,
-				       fn_name, rc);
-			}
-			break;
-		}
+		spank_fn = spank_plugin_get_fn (sp, type);
+		if (!spank_fn)
+			continue;
+
+		rc = (*spank_fn) (spank, sp->ac, sp->argv);
+		debug2("spank: %s: %s = %d", name, fn_name, rc);
 
 		if ((rc < 0) && sp->required) {
 			error("spank: required plugin %s: "
@@ -662,52 +761,32 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 	return (rc);
 }
 
-int _spank_init(enum spank_context_type context, slurmd_job_t * job)
+struct spank_stack *spank_stack_init(enum spank_context_type context)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	const char *path = conf->plugstack;
-	default_spank_path = conf->plugindir;
 	slurm_conf_unlock();
 
-	spank_ctx = context;
+	return spank_stack_create (path, context);
+}
 
-	/*
-	 *  A nonexistent spank config is not an error, but
-	 *   abort on any other access failures
-	 */
-	if (access (path, R_OK) < 0) {
-		if (errno == ENOENT)
-			return (0);
-		error ("spank: Unable to open config file `%s': %m", path);
+int _spank_init(enum spank_context_type context, slurmd_job_t * job)
+{
+	struct spank_stack *stack;
+
+	if (!(stack = spank_stack_init (context)))
 		return (-1);
-	}
+	global_spank_stack = stack;
 
-	if (_spank_stack_create(path, &spank_stack) < 0) {
-		error("spank: failed to create plugin stack");
-		return (-1);
-	}
+	return (_do_call_stack(stack, SPANK_INIT, job, -1));
+}
 
-	if (_do_call_stack(SPANK_INIT, job, -1) < 0)
-		return (-1);
-
-	/*
-	 *  Nothing more to do unless we are in remote context:
-	 */
-	if (spank_ctx != S_TYPE_REMOTE)
-		return (0);
-
-	/*
-	 *  Remote-specific code:
-	 */
-	if (!job) {
-		error("spank: spank_init called without job reference!");
-		return (-1);
-	}
-
+static int spank_stack_post_opt (struct spank_stack * stack, slurmd_job_t *job)
+{
 	/*
 	 *  Get any remote options from job launch message:
 	 */
-	if (spank_get_remote_options(job->options) < 0) {
+	if (spank_stack_get_remote_options(stack, job->options) < 0) {
 		error("spank: Unable to get remote options");
 		return (-1);
 	}
@@ -715,22 +794,39 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 	/*
 	 *  Get any remote option passed thru environment
 	 */
-	if (spank_get_remote_options_env(job->env) < 0) {
+	if (spank_stack_get_remote_options_env(stack, job->env) < 0) {
 		error("spank: Unable to get remote options from environment");
 		return (-1);
 	}
 
 	/*
+	 * Now clear any remaining options passed through environment
+	 */
+	spank_clear_remote_options_env (job->env);
+
+	/*
 	 *  Now that all options have been processed, we can
 	 *   call the post_opt handlers here in remote context.
 	 */
-	return (_do_call_stack(SPANK_INIT_POST_OPT, job, -1) < 0);
+	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, job, -1) < 0);
+
+}
+
+static int spank_init_remote (slurmd_job_t *job)
+{
+	if (_spank_init (S_TYPE_REMOTE, job) < 0)
+		return (-1);
+
+	/*
+	 * _spank_init initializes global_spank_stack
+	 */
+	return (spank_stack_post_opt (global_spank_stack, job));
 }
 
 int spank_init (slurmd_job_t * job)
 {
 	if (job)
-		return _spank_init (S_TYPE_REMOTE, job);
+		return spank_init_remote (job);
 	else
 		return _spank_init (S_TYPE_LOCAL, NULL);
 }
@@ -740,70 +836,112 @@ int spank_init_allocator (void)
 	return _spank_init (S_TYPE_ALLOCATOR, NULL);
 }
 
+int spank_slurmd_init (void)
+{
+	return _spank_init (S_TYPE_SLURMD, NULL);
+}
+
 int spank_init_post_opt (void)
 {
-	/*
-	 *  In allocator context, set remote options in env here.
-	 */
-	if (spank_ctx == S_TYPE_ALLOCATOR)
-		spank_set_remote_options_env();
+	struct spank_stack *stack = global_spank_stack;
 
-	return (_do_call_stack(SPANK_INIT_POST_OPT, NULL, -1));
+	/*
+	 *  Set remote options in our environment and the
+	 *   spank_job_env so that we can always pull them out
+	 *   on the remote side and/or job prolog epilog.
+	 */
+	spank_stack_set_remote_options_env (stack);
+
+	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, NULL, -1));
 }
 
 int spank_user(slurmd_job_t * job)
 {
-	return (_do_call_stack(STEP_USER_INIT, job, -1));
+	return (_do_call_stack(global_spank_stack, STEP_USER_INIT, job, -1));
 }
 
 int spank_local_user(struct spank_launcher_job_info *job)
 {
-	return (_do_call_stack(LOCAL_USER_INIT, job, -1));
+	return (_do_call_stack(global_spank_stack, LOCAL_USER_INIT, job, -1));
 }
 
 int spank_task_privileged(slurmd_job_t *job, int taskid)
 {
-	return (_do_call_stack(STEP_TASK_INIT_PRIV, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_TASK_INIT_PRIV, job, taskid));
 }
 
 int spank_user_task(slurmd_job_t * job, int taskid)
 {
-	return (_do_call_stack(STEP_USER_TASK_INIT, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_USER_TASK_INIT, job, taskid));
 }
 
 int spank_task_post_fork(slurmd_job_t * job, int taskid)
 {
-	return (_do_call_stack(STEP_TASK_POST_FORK, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_TASK_POST_FORK, job, taskid));
 }
 
 int spank_task_exit(slurmd_job_t * job, int taskid)
 {
-	return (_do_call_stack(STEP_TASK_EXIT, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_TASK_EXIT, job, taskid));
+}
+
+int spank_slurmd_exit (void)
+{
+	int rc;
+	rc =  _do_call_stack (global_spank_stack, SPANK_SLURMD_EXIT, NULL, 0);
+	spank_stack_destroy (global_spank_stack);
+	global_spank_stack = NULL;
+	return (rc);
 }
 
 int spank_fini(slurmd_job_t * job)
 {
-	int rc = _do_call_stack(SPANK_EXIT, job, -1);
+	int rc = _do_call_stack(global_spank_stack, SPANK_EXIT, job, -1);
 
-	if (option_cache)
-		list_destroy(option_cache);
-	if (spank_stack)
-		list_destroy(spank_stack);
+	spank_stack_destroy (global_spank_stack);
+	global_spank_stack = NULL;
 
 	return (rc);
+}
+
+/*
+ *  Run job_epilog or job_prolog callbacks in a private spank context.
+ */
+static int spank_job_script (step_fn_t fn, uint32_t jobid, uid_t uid)
+{
+	int rc = 0;
+	struct spank_stack *stack;
+	struct job_script_info jobinfo = { jobid, uid };
+
+	stack = spank_stack_init (S_TYPE_JOB_SCRIPT);
+	if (!stack)
+		return (-1);
+	global_spank_stack = stack;
+
+	rc = _do_call_stack (stack, fn, &jobinfo, -1);
+
+	spank_stack_destroy (stack);
+	global_spank_stack = NULL;
+	return (rc);
+}
+
+int spank_job_prolog (uint32_t jobid, uid_t uid)
+{
+	return spank_job_script (SPANK_JOB_PROLOG, jobid, uid);
+}
+
+int spank_job_epilog (uint32_t jobid, uid_t uid)
+{
+	return spank_job_script (SPANK_JOB_EPILOG, jobid, uid);
 }
 
 /*
  *  SPANK options functions
  */
 
-static int _spank_next_option_val(void)
+static int _spank_next_option_val(struct spank_stack *stack)
 {
-	int optval;
-	slurm_mutex_lock(&spank_mutex);
-	optval = spank_optval++;
-	slurm_mutex_unlock(&spank_mutex);
-	return (optval);
+	return (stack->spank_optval++);
 }
 
 static struct spank_option * _spank_option_copy(struct spank_option *opt)
@@ -842,7 +980,7 @@ static struct spank_plugin_opt *_spank_plugin_opt_create(struct
 	struct spank_plugin_opt *spopt = xmalloc(sizeof(*spopt));
 	spopt->opt = _spank_option_copy (opt);
 	spopt->plugin = p;
-	spopt->optval = _spank_next_option_val();
+	spopt->optval = _spank_next_option_val(p->stack);
 	spopt->found = 0;
 	spopt->optarg = NULL;
 
@@ -873,11 +1011,15 @@ _spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 {
 	int disabled = 0;
 	struct spank_plugin_opt *spopt;
+	struct spank_stack *stack;
+	List option_cache;
 
-	if (!option_cache) {
-		option_cache =
-		    list_create((ListDelF) _spank_plugin_opt_destroy);
+	stack = p->stack;
+	if (stack == NULL) {
+		error ("spank: %s: can't determine plugin context", p->name);
+		return (ESPANK_BAD_ARG);
 	}
+	option_cache = stack->option_cache;
 
 	spopt = list_find_first(option_cache,
 			(ListFindF) _opt_by_name, opt->name);
@@ -967,6 +1109,10 @@ struct option *spank_option_table_create(const struct option *orig)
 	struct option *opts = NULL;
 	ListIterator i = NULL;
 
+	List option_cache = get_global_option_cache();
+	if (option_cache == NULL)
+		return (NULL);
+
 	opts = optz_create();
 
 	/*
@@ -1000,6 +1146,7 @@ int spank_process_option(int optval, const char *arg)
 {
 	struct spank_plugin_opt *opt;
 	int rc = 0;
+	List option_cache = get_global_option_cache();
 
 	if (option_cache == NULL || (list_count(option_cache) == 0))
 		return (-1);
@@ -1161,6 +1308,7 @@ int spank_print_options(FILE * fp, int left_pad, int width)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
+	List option_cache = get_global_option_cache();
 
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
 		return (0);
@@ -1232,13 +1380,21 @@ static int _option_setenv (struct spank_plugin_opt *option)
 	if (setenv (var, option->optarg, 1) < 0)
 	    error ("failed to set %s=%s in env", var, option->optarg);
 
+	if (dyn_spank_set_job_env (var, option->optarg, 1) < 0)
+	    error ("failed to set %s=%s in env", var, option->optarg);
+
 	return (0);
 }
 
-int spank_set_remote_options_env(void)
+static int spank_stack_set_remote_options_env (struct spank_stack *stack)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
+	List option_cache;
+
+	if (stack == NULL)
+		return (0);
+	option_cache = stack->option_cache;
 
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
 		return (0);
@@ -1256,6 +1412,11 @@ int spank_set_remote_options(job_options_t opts)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
+	List option_cache;
+
+	if (global_spank_stack == NULL)
+		return (0);
+	option_cache = global_spank_stack->option_cache;
 
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
 		return (0);
@@ -1292,12 +1453,14 @@ static int _opt_find(struct spank_plugin_opt *p,
 	return (1);
 }
 
-static struct spank_plugin_opt *_find_remote_option_by_name(const char *str)
+static struct spank_plugin_opt *
+spank_stack_find_option_by_name(struct spank_stack *stack, const char *str)
 {
 	struct spank_plugin_opt *opt = NULL;
 	struct opt_find_args args;
 	char buf[256];
 	char *name;
+	List option_cache = stack->option_cache;
 
 	if (strlcpy(buf, str, sizeof(buf)) >= sizeof(buf)) {
 		error("plugin option \"%s\" too big. Ignoring.", str);
@@ -1332,12 +1495,89 @@ static struct spank_plugin_opt *_find_remote_option_by_name(const char *str)
 	return (opt);
 }
 
+spank_err_t
+spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
+{
+	const char *val;
+	char var[1024];
+	List option_cache;
+	struct spank_plugin_opt *spopt;
+
+	if (argp)
+		*argp = NULL;
+
+	if (!sp->plugin) {
+		error ("spank_option_getopt: Not called from a plugin!?");
+		return (ESPANK_NOT_AVAIL);
+	}
+
+	if (sp->phase == SPANK_INIT)
+		return (ESPANK_NOT_AVAIL);
+
+	if (!opt || !opt->name)
+		return (ESPANK_BAD_ARG);
+
+	if (opt->has_arg && !argp)
+		return (ESPANK_BAD_ARG);
+
+	/*
+	 *   First check the cache:
+	 */
+	option_cache = sp->stack->option_cache;
+	spopt = list_find_first (option_cache,
+	                         (ListFindF) _opt_by_name,
+	                         opt->name);
+	if (spopt) {
+		if (opt->has_arg && argp)
+			*argp = spopt->optarg;
+		return (ESPANK_SUCCESS);
+	}
+
+	/*
+	 *  Otherwise, check current environment:
+	 *
+	 *  We need to check for variables that start with either
+	 *   the default spank option env prefix, or the default
+	 *   prefix + an *extra* prefix of SPANK_, in case we're
+	 *   running in prolog/epilog, where SLURM prepends SPANK_
+	 *   to all spank job environment variables.
+	 */
+	spopt = _spank_plugin_opt_create (sp->plugin, opt, 0);
+	memcpy (var, "SPANK_", 6);
+	if ((val = getenv (_opt_env_name(spopt, var+6, sizeof (var) - 6))) ||
+	    (val = getenv (var))) {
+		spopt->optarg = xstrdup (val);
+		spopt->found = 1;
+		if (opt->has_arg && argp)
+			*argp = spopt->optarg;
+	}
+
+	/*
+	 *  Cache the result
+	 */
+	list_append (option_cache, spopt);
+
+	if (!spopt->found)
+		return (ESPANK_ERROR);
+
+	return (ESPANK_SUCCESS);
+}
+
+
 int spank_get_remote_options_env (char **env)
+{
+	return spank_stack_get_remote_options_env (global_spank_stack, env);
+}
+
+
+static int
+spank_stack_get_remote_options_env (struct spank_stack *stack, char **env)
 {
 	char var [1024];
 	const char *arg;
 	struct spank_plugin_opt *option;
 	ListIterator i;
+	List option_cache = stack->option_cache;
 
 	if (!option_cache)
 		return (0);
@@ -1368,6 +1608,12 @@ int spank_get_remote_options_env (char **env)
 
 int spank_get_remote_options(job_options_t opts)
 {
+	return spank_stack_get_remote_options (global_spank_stack, opts);
+}
+
+static int
+spank_stack_get_remote_options(struct spank_stack *stack, job_options_t opts)
+{
 	const struct job_option_info *j;
 
 	job_options_iterator_reset(opts);
@@ -1378,7 +1624,7 @@ int spank_get_remote_options(job_options_t opts)
 		if (j->type != OPT_TYPE_SPANK)
 			continue;
 
-		if (!(opt = _find_remote_option_by_name(j->option)))
+		if (!(opt = spank_stack_find_option_by_name(stack, j->option)))
 			continue;
 
 		p = opt->opt;
@@ -1391,6 +1637,36 @@ int spank_get_remote_options(job_options_t opts)
 
 	return (0);
 }
+
+/*
+ *  Clear any environment variables for spank options.
+ *   spank option env vars  have a prefix of SPANK_OPTION_ENV_PREFIX,
+ *   or SPANK_ + SPANK_OPTION_ENV_PREFIX
+ */
+int spank_clear_remote_options_env (char **env)
+{
+	char **ep;
+	int len = strlen (SPANK_OPTION_ENV_PREFIX);
+
+	for (ep = env; *ep; ep++) {
+		char *p = *ep;
+		if (strncmp (*ep, "SPANK_", 6) == 0)
+			p = *ep+6;
+		if (strncmp (p, SPANK_OPTION_ENV_PREFIX, len) == 0) {
+			char *end = strchr (p+len, '=');
+			if (end) {
+				char name[1024];
+				memcpy (name, *ep, end - *ep);
+				name [end - *ep] = '\0';
+				info ("unsetenv (%s)\n", name);
+				unsetenvp (env, name);
+			}
+		}
+	}
+	return (0);
+}
+
+
 
 static int tasks_execd (spank_t spank)
 {
@@ -1450,7 +1726,7 @@ static int _valid_in_allocator_context (spank_item_t item)
 	}
 }
 
-static spank_err_t _check_spank_item_validity (spank_item_t item, void *job)
+static spank_err_t _check_spank_item_validity (spank_t spank, spank_item_t item)
 {
 	/*
 	 *  Valid in all contexts:
@@ -1465,15 +1741,24 @@ static spank_err_t _check_spank_item_validity (spank_item_t item, void *job)
 		  break; /* fallthru */
 	}
 
-	if (spank_ctx == S_TYPE_LOCAL) {
-		if (!_valid_in_local_context (item))
-			return ESPANK_NOT_REMOTE;
-		else if (job == NULL)
+	/*
+	 *  No spank_item_t is available in slurmd context at this time.
+	 */
+	if (spank->stack->type == S_TYPE_SLURMD)
+		return ESPANK_NOT_AVAIL;
+	else if (spank->stack->type == S_TYPE_JOB_SCRIPT) {
+		if (item != S_JOB_UID && item != S_JOB_ID)
 			return ESPANK_NOT_AVAIL;
 	}
-	else if (spank_ctx == S_TYPE_ALLOCATOR) {
+	else if (spank->stack->type == S_TYPE_LOCAL) {
+		if (!_valid_in_local_context (item))
+			return ESPANK_NOT_REMOTE;
+		else if (spank->job == NULL)
+			return ESPANK_NOT_AVAIL;
+	}
+	else if (spank->stack->type == S_TYPE_ALLOCATOR) {
 		if (_valid_in_allocator_context (item)) {
-			if (job)
+			if (spank->job)
 				return ESPANK_SUCCESS;
 			else
 				return ESPANK_NOT_AVAIL;
@@ -1543,7 +1828,7 @@ int spank_remote(spank_t spank)
 {
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (-1);
-	if (spank_ctx == S_TYPE_REMOTE)
+	if (spank->stack->type == S_TYPE_REMOTE)
 		return (1);
 	else
 		return (0);
@@ -1551,13 +1836,19 @@ int spank_remote(spank_t spank)
 
 spank_context_t spank_context (void)
 {
-	switch (spank_ctx) {
+	if (global_spank_stack == NULL)
+		return S_CTX_ERROR;
+	switch (global_spank_stack->type) {
 	  case S_TYPE_REMOTE:
 		  return S_CTX_REMOTE;
 	  case S_TYPE_LOCAL:
 		  return S_CTX_LOCAL;
 	  case S_TYPE_ALLOCATOR:
 		  return S_CTX_ALLOCATOR;
+	  case S_TYPE_SLURMD:
+		  return S_CTX_SLURMD;
+	  case S_TYPE_JOB_SCRIPT:
+		  return S_CTX_JOB_SCRIPT;
 	  default:
 		  return S_CTX_ERROR;
 	}
@@ -1582,6 +1873,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	slurmd_task_info_t *task;
 	slurmd_job_t  *slurmd_job = NULL;
 	struct spank_launcher_job_info *launcher_job = NULL;
+	struct job_script_info *s_job_info = NULL;
 	va_list vargs;
 	spank_err_t rc = ESPANK_SUCCESS;
 
@@ -1591,31 +1883,35 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	/*
 	 *  Check for validity of the given item in the current context
 	 */
-	rc = _check_spank_item_validity (item, spank->job);
+	rc = _check_spank_item_validity (spank, item);
 	if (rc != ESPANK_SUCCESS)
 		return (rc);
 
-	if (spank_ctx == S_TYPE_LOCAL)
+	if (spank->stack->type == S_TYPE_LOCAL)
 		launcher_job = spank->job;
-	else if (spank_ctx == S_TYPE_REMOTE)
+	else if (spank->stack->type == S_TYPE_REMOTE)
 		slurmd_job = spank->job;
+	else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+		s_job_info = spank->job;
 
 	va_start(vargs, item);
 	switch (item) {
 	case S_JOB_UID:
 		p2uid = va_arg(vargs, uid_t *);
-		if (spank_ctx == S_TYPE_LOCAL)
+		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2uid = launcher_job->uid;
-		else if (spank_ctx == S_TYPE_REMOTE)
+		else if (spank->stack->type == S_TYPE_REMOTE)
 			*p2uid = slurmd_job->uid;
+		else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+			*p2uid = s_job_info->uid;
 		else
 			*p2uid = getuid();
 		break;
 	case S_JOB_GID:
 		p2gid = va_arg(vargs, gid_t *);
-		if (spank_ctx == S_TYPE_LOCAL)
+		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2gid = launcher_job->gid;
-		else if (spank_ctx == S_TYPE_REMOTE)
+		else if (spank->stack->type == S_TYPE_REMOTE)
 			*p2gid = slurmd_job->gid;
 		else
 			*p2gid = getgid();
@@ -1628,21 +1924,23 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		break;
 	case S_JOB_ID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank_ctx == S_TYPE_LOCAL)
+		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->jobid;
-		else
+		else if (spank->stack->type == S_TYPE_REMOTE)
 			*p2uint32 = slurmd_job->jobid;
+		else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+			*p2uint32 = s_job_info->jobid;
 		break;
 	case S_JOB_STEPID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank_ctx == S_TYPE_LOCAL)
+		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->stepid;
 		else
 			*p2uint32 = slurmd_job->stepid;
 		break;
 	case S_JOB_NNODES:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank_ctx == S_TYPE_LOCAL) {
+		if (spank->stack->type == S_TYPE_LOCAL) {
 			if (launcher_job->step_layout)
 				*p2uint32 = launcher_job->step_layout->
 					    node_cnt;
@@ -1663,7 +1961,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		break;
 	case S_JOB_TOTAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank_ctx == S_TYPE_LOCAL) {
+		if (spank->stack->type == S_TYPE_LOCAL) {
 			if (launcher_job->step_layout)
 				*p2uint32 = launcher_job->step_layout->
 					    task_cnt;
@@ -1685,7 +1983,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_ARGV:
 		p2int = va_arg(vargs, int *);
 		p2argv = va_arg(vargs, char ***);
-		if (spank_ctx == S_TYPE_LOCAL) {
+		if (spank->stack->type == S_TYPE_LOCAL) {
 			*p2int = launcher_job->argc;
 			*p2argv = launcher_job->argv;
 		} else {
@@ -1811,19 +2109,26 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	return (rc);
 }
 
+spank_err_t spank_env_access_check (spank_t spank)
+{
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+	if (spank->stack->type != S_TYPE_REMOTE)
+		return (ESPANK_NOT_REMOTE);
+	if (spank->job == NULL)
+		return (ESPANK_BAD_ARG);
+	return (ESPANK_SUCCESS);
+
+}
+
 spank_err_t spank_getenv(spank_t spank, const char *var, char *buf,
 			 int len)
 {
 	char *val;
+	spank_err_t err = spank_env_access_check (spank);
 
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
-
-	if (spank_ctx != S_TYPE_REMOTE)
-		return (ESPANK_NOT_REMOTE);
-
-	if (spank->job == NULL)
-		return (ESPANK_BAD_ARG);
+	if (err != ESPANK_SUCCESS)
+		return (err);
 
 	if (len < 0)
 		return (ESPANK_BAD_ARG);
@@ -1841,15 +2146,10 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 			 int overwrite)
 {
 	slurmd_job_t * job;
+	spank_err_t err = spank_env_access_check (spank);
 
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
-
-	if (spank_ctx != S_TYPE_REMOTE)
-		return (ESPANK_NOT_REMOTE);
-
-	if (spank->job == NULL)
-		return (ESPANK_BAD_ARG);
+	if (err != ESPANK_SUCCESS)
+		return (err);
 
 	if ((var == NULL) || (val == NULL))
 		return (ESPANK_BAD_ARG);
@@ -1867,14 +2167,10 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 
 spank_err_t spank_unsetenv (spank_t spank, const char *var)
 {
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err = spank_env_access_check (spank);
 
-	if (spank_ctx != S_TYPE_REMOTE)
-		return (ESPANK_NOT_REMOTE);
-
-	if (spank->job == NULL)
-		return (ESPANK_BAD_ARG);
+	if (err != ESPANK_SUCCESS)
+		return (err);
 
 	if (var == NULL)
 		return (ESPANK_BAD_ARG);
@@ -1924,19 +2220,32 @@ extern int dyn_spank_unset_job_env (const char *n)
 	return ((*fn) (n));
 }
 
+static spank_err_t spank_job_control_access_check (spank_t spank)
+{
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+
+	if (spank_remote (spank))
+		return (ESPANK_NOT_LOCAL);
+
+	if (spank->stack->type == S_TYPE_SLURMD)
+		return (ESPANK_NOT_AVAIL);
+
+	return (ESPANK_SUCCESS);
+}
+
 
 spank_err_t spank_job_control_getenv (spank_t spank, const char *var,
 			char *buf, int len)
 {
 	const char *val;
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err;
+
+	if ((err = spank_job_control_access_check (spank)))
+		return (err);
 
 	if ((var == NULL) || (buf == NULL) || (len <= 0))
 		return (ESPANK_BAD_ARG);
-
-	if (spank_remote (spank))
-		return (ESPANK_NOT_LOCAL);
 
 	val = dyn_spank_get_job_env (var);
 	if (val == NULL)
@@ -1951,14 +2260,13 @@ spank_err_t spank_job_control_getenv (spank_t spank, const char *var,
 spank_err_t spank_job_control_setenv (spank_t spank, const char *var,
 			const char *val, int overwrite)
 {
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err;
+
+	if ((err = spank_job_control_access_check (spank)))
+		return (err);
 
 	if ((var == NULL) || (val == NULL))
 		return (ESPANK_BAD_ARG);
-
-	if (spank_remote (spank))
-		return (ESPANK_NOT_LOCAL);
 
 	if (dyn_spank_set_job_env (var, val, overwrite) < 0)
 		return (ESPANK_BAD_ARG);
@@ -1968,14 +2276,13 @@ spank_err_t spank_job_control_setenv (spank_t spank, const char *var,
 
 spank_err_t spank_job_control_unsetenv (spank_t spank, const char *var)
 {
-	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
-		return (ESPANK_BAD_ARG);
+	spank_err_t err;
+
+	if ((err = spank_job_control_access_check (spank)))
+		return (err);
 
 	if (var == NULL)
 		return (ESPANK_BAD_ARG);
-
-	if (spank_remote (spank))
-		return (ESPANK_NOT_LOCAL);
 
 	if (dyn_spank_unset_job_env (var) < 0)
 		return (ESPANK_BAD_ARG);

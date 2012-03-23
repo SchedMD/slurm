@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in allocating GRES that are associated with specific CPUs. In some
     cases the code allocated first available GRES to job instead of allocating
     GRES accessible to the specific CPUs allocated to the job.
+ -- spank: Add callbacks in slurmd: slurm_spank_slurmd_{init,exit}
+     and job epilog/prolog: slurm_spank_job_{prolog,epilog}
+ -- spank: Add spank_option_getopt() function to api
 
 * Changes in SLURM 2.4.0.pre4
 =============================

@@ -79,6 +79,7 @@
 #include "src/common/util-net.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/reverse_tree_math.h"
@@ -382,6 +383,19 @@ slurmd_req(slurm_msg_t *msg)
 	}
 	return;
 }
+static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
+{
+	int len;
+	Buf buffer = init_buf(0);
+	pack_slurmd_conf_lite(cf, buffer);
+	len = get_buf_offset(buffer);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, get_buf_data(buffer), len);
+	free_buf(buffer);
+	return (0);
+ rwfail:
+	return (-1);
+}
 
 static int
 _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
@@ -476,12 +490,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	safe_write(fd, &parent_addr, sizeof(slurm_addr_t));
 
 	/* send conf over to slurmstepd */
-	buffer = init_buf(0);
-	pack_slurmd_conf_lite(conf, buffer);
-	len = get_buf_offset(buffer);
-	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, get_buf_data(buffer), len);
-	free_buf(buffer);
+	if (_send_slurmd_conf_lite(fd, conf) < 0)
+		goto rwfail;
 
 	/* send cli address over to slurmstepd */
 	buffer = init_buf(0);
@@ -652,16 +662,8 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("close read to_slurmd in parent: %m");
 		return rc;
 	} else {
-		char slurm_stepd_path[MAXPATHLEN];
-		char *const argv[2] = { slurm_stepd_path, NULL};
+		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
 		int failed = 0;
-		if (conf->stepd_loc) {
-			snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-				 "%s", conf->stepd_loc);
-		} else {
-			snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-				 "%s/sbin/slurmstepd", SLURM_PREFIX);
-		}
 		/* inform slurmstepd about our config */
 		setenv("SLURM_CONF", conf->conffile, 1);
 
@@ -3820,6 +3822,89 @@ _destroy_env(char **env)
 	return;
 }
 
+static int
+run_spank_job_script (const char *mode, char **env)
+{
+	pid_t cpid;
+	int status = 0;
+	int pfds[2];
+
+	if (pipe (pfds) < 0) {
+		error ("run_spank_job_script: pipe: %m");
+		return (-1);
+	}
+
+	fd_set_close_on_exec (pfds[1]);
+
+	if ((cpid = fork ()) < 0) {
+		error ("executing spank %s: %m", mode);
+		return (-1);
+	}
+	if (cpid == 0) {
+		/* Run slurmstepd spank [prolog|epilog] */
+		char *argv[4] = {
+			(char *) conf->stepd_loc,
+			"spank",
+			(char *) mode,
+			NULL };
+
+		/* Set the correct slurm.conf location */
+		setenvf (&env, "SLURM_CONF", conf->conffile);
+
+		if (dup2 (pfds[0], STDIN_FILENO) < 0)
+			fatal ("dup2: %m");
+#ifdef SETPGRP_TWO_ARGS
+                setpgrp(0, 0);
+#else
+                setpgrp();
+#endif
+		info ("Calling %s %s %s\n", argv[0], argv[1], argv[2]);
+		execve (argv[0], argv, env);
+		error ("execve: %m");
+		exit (127);
+	}
+
+	close (pfds[0]);
+
+	if (_send_slurmd_conf_lite (pfds[1], conf) < 0)
+		error ("Failed to send slurmd conf to slurmstepd\n");
+	close (pfds[1]);
+
+	/*
+	 *  Wait for up to 120s for all spank plugins to complete:
+	 */
+	if (waitpid_timeout (mode, cpid, &status, 120) < 0) {
+		error ("spank/%s timed out after 120s", mode);
+		return (-1);
+	}
+
+	if (status)
+		error ("spank/%s returned status 0x%04x", mode, status);
+
+	/*
+	 *  No longer need SPANK option env vars in environment
+	 */
+	spank_clear_remote_options_env (env);
+
+	return (status);
+}
+
+static int _run_job_script(const char *name, const char *path,
+		uint32_t jobid, int timeout, char **env)
+{
+	int status, rc;
+	/*
+	 *  Always run both spank prolog/epilog and real prolog/epilog script,
+	 *   even if spank plugins fail. (May want to alter this in the future)
+	 *   If both "script" mechanisms fail, prefer to return the "real"
+	 *   prolog/epilog status.
+	 */
+	status = run_spank_job_script(name, env);
+	if ((rc = run_script(name, path, jobid, timeout, env)))
+		status = rc;
+	return (status);
+}
+
 #ifdef HAVE_BG
 /* a slow prolog is expected on bluegene systems */
 static int
@@ -3836,7 +3921,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_unlock(&conf->config_mutex);
 	_add_job_running_prolog(jobid);
 
-	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
+	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env);
 	_remove_job_running_prolog(jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
@@ -3911,7 +3996,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
 	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
-	rc = run_script("prolog", my_prolog, jobid, -1, my_env);
+	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env);
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
 	pthread_cond_broadcast(&timer_cond);
@@ -3950,7 +4035,7 @@ _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(jobid);
-	error_code = run_script("epilog", my_epilog, jobid, -1, my_env);
+	error_code = _run_job_script("epilog", my_epilog, jobid, -1, my_env);
 	xfree(my_epilog);
 	_destroy_env(my_env);
 

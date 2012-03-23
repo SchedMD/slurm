@@ -67,6 +67,10 @@ struct spank_launcher_job_info {
 
 int spank_init (slurmd_job_t *job);
 
+int spank_slurmd_init (void);
+
+int spank_job_prolog (uint32_t jobid, uid_t uid);
+
 int spank_init_allocator (void);
 
 int spank_init_post_opt (void);
@@ -82,6 +86,10 @@ int spank_user_task (slurmd_job_t *job, int taskid);
 int spank_task_post_fork (slurmd_job_t *job, int taskid);
 
 int spank_task_exit (slurmd_job_t *job, int taskid);
+
+int spank_job_epilog (uint32_t jobid, uid_t uid);
+
+int spank_slurmd_exit (void);
 
 int spank_fini (slurmd_job_t *job);
 
@@ -132,12 +140,6 @@ int spank_print_options (FILE *fp, int width, int left_pad);
  */
 int spank_set_remote_options (job_options_t options);
 
-/*  Set all registered remote options (i.e. those passed to
- *   spank_process_option) in the current environment for later
- *   retreival by spank_get_remote_options_env().
- */
-int spank_set_remote_options_env (void);
-
 /*  Register any remote spank options that exist in `options'
  *    to their respective spank plugins. This function ends up invoking
  *    all plugin option callbacks, and will fail (return < 0) if
@@ -158,4 +160,7 @@ int spank_get_remote_options (job_options_t options);
  */
 int spank_get_remote_options_env (char **env);
 
+/*  Clear any spank remote options encoded in environment.
+ */
+int spank_clear_remote_options_env (char **env);
 #endif /* !_PLUGSTACK_H */

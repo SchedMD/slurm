@@ -57,6 +57,46 @@
 
 #include "src/slurmd/common/run_script.h"
 
+/*
+ *  Same as waitpid(2) but kill process group for pid after timeout secs.
+ *   Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
+ */
+int waitpid_timeout (const char *name, pid_t pid, int *pstatus, int timeout)
+{
+	int timeout_ms = 1000 * timeout; /* timeout in ms                   */
+	int max_delay =  1000;           /* max delay between waitpid calls */
+	int delay = 10;                  /* initial delay                   */
+	int rc;
+	int options = WNOHANG;
+
+	if (timeout <= 0)
+		options = 0;
+
+	while ((rc = waitpid (pid, pstatus, options)) <= 0) {
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("waidpid: %m");
+			return (-1);
+		}
+		else if (timeout_ms <= 0) {
+			info ("%s%stimeout after %ds: killing pgid %d",
+			      name != NULL ? name : "",
+			      name != NULL ? ": " : "",
+			      timeout, pid);
+			killpg(pid, SIGKILL);
+			options = 0;
+		}
+		else {
+			poll(NULL, 0, delay);
+			timeout_ms -= delay;
+			delay = MIN (timeout_ms, MIN(max_delay, delay*2));
+		}
+	}
+
+	killpg(pid, SIGKILL);  /* kill children too */
+	return (0);
+}
 
 /*
  * Run a prolog or epilog script (does NOT drop privileges)
@@ -72,7 +112,7 @@ static int
 run_one_script(const char *name, const char *path, uint32_t jobid,
 	   int max_wait, char **env)
 {
-	int status, rc, opt;
+	int status;
 	pid_t cpid;
 
 	xassert(env);
@@ -110,31 +150,9 @@ run_one_script(const char *name, const char *path, uint32_t jobid,
 		exit(127);
 	}
 
-	if (max_wait < 0)
-		opt = 0;
-	else
-		opt = WNOHANG;
-
-	while (1) {
-		rc = waitpid(cpid, &status, opt);
-		if (rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("waidpid: %m");
-			return 0;
-		} else if (rc == 0) {
-			sleep(1);
-			if ((--max_wait) == 0) {
-				killpg(cpid, SIGKILL);
-				opt = 0;
-			}
-		} else  {
-			killpg(cpid, SIGKILL);	/* kill children too */
-			return status;
-		}
-	}
-
-	/* NOTREACHED */
+	if (waitpid_timeout(name, cpid, &status, max_wait) < 0)
+		return (-1);
+	return status;
 }
 
 static void _xfree_f (void *x)

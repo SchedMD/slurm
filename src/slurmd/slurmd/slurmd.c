@@ -92,6 +92,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
@@ -1307,6 +1308,14 @@ _process_cmdline(int ac, char **av)
 			break;
 		}
 	}
+
+	/*
+	 *  If slurmstepd path wasn't overridden by command line, set
+	 *   it to the default here:
+	 */
+	if (!conf->stepd_loc)
+		conf->stepd_loc =
+			xstrdup_printf("%s/sbin/slurmstepd", SLURM_PREFIX);
 }
 
 
@@ -1345,7 +1354,6 @@ _slurmd_init(void)
 	struct rlimit rlim;
 	slurm_ctl_conf_t *cf;
 	struct stat stat_buf;
-	char slurm_stepd_path[MAXPATHLEN];
 	uint32_t cpu_cnt;
 
 	/*
@@ -1397,6 +1405,8 @@ _slurmd_init(void)
 	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
+		return SLURM_FAILURE;
+	if (spank_slurmd_init() < 0)
 		return SLURM_FAILURE;
 
 	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {
@@ -1496,21 +1506,10 @@ _slurmd_init(void)
 	fd_set_close_on_exec(devnull);
 
 	/* make sure we have slurmstepd installed */
-	if (conf->stepd_loc) {
-		snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-			 "%s", conf->stepd_loc);
-	} else {
-		snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-			 "%s/sbin/slurmstepd", SLURM_PREFIX);
-	}
-	if (stat(slurm_stepd_path, &stat_buf)) {
-		fatal("Unable to find slurmstepd file at %s",
-			slurm_stepd_path);
-	}
-	if (!S_ISREG(stat_buf.st_mode)) {
-		fatal("slurmstepd not a file at %s",
-			slurm_stepd_path);
-	}
+	if (stat(conf->stepd_loc, &stat_buf))
+		fatal("Unable to find slurmstepd file at %s", conf->stepd_loc);
+	if (!S_ISREG(stat_buf.st_mode))
+		fatal("slurmstepd not a file at %s", conf->stepd_loc);
 
 	return SLURM_SUCCESS;
 }
@@ -1581,6 +1580,7 @@ _slurmd_fini(void)
 	fini_setproctitle();
 	slurm_select_fini();
 	slurm_jobacct_gather_fini();
+	spank_slurmd_exit();
 	return SLURM_SUCCESS;
 }
 

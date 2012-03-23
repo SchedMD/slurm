@@ -54,6 +54,7 @@
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/plugstack.h"
 
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
@@ -76,6 +77,7 @@ static slurmd_job_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
 #endif
+static int process_cmdline (int argc, char *argv[]);
 
 int slurmstepd_blocked_signals[] = {
 	SIGPIPE, 0
@@ -96,11 +98,9 @@ main (int argc, char *argv[])
 	gid_t *gids;
 	int rc = 0;
 
-	if ((argc == 2) && (strcmp(argv[1], "getenv") == 0)) {
-		print_rlimits();
-		_dump_user_env();
-		exit(0);
-	}
+	if (process_cmdline (argc, argv) < 0)
+		fatal ("Error in slurmstepd command line");
+
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
@@ -178,6 +178,148 @@ ending:
 	return rc;
 }
 
+
+static slurmd_conf_t * read_slurmd_conf_lite (int fd)
+{
+	int rc;
+	int len;
+	Buf buffer;
+	slurmd_conf_t *confl;
+
+	/*  First check to see if we've already initialized the
+	 *   global slurmd_conf_t in 'conf'. Allocate memory if not.
+	 */
+	confl = conf ? conf : xmalloc (sizeof (*confl));
+
+	safe_read(fd, &len, sizeof(int));
+
+	buffer = init_buf(len);
+	safe_read(fd, buffer->head, len);
+
+	rc = unpack_slurmd_conf_lite_no_alloc(confl, buffer);
+	if (rc == SLURM_ERROR)
+		fatal("slurmstepd: problem with unpack of slurmd_conf");
+
+	free_buf(buffer);
+
+	confl->log_opts.stderr_level = confl->debug_level;
+	confl->log_opts.logfile_level = confl->debug_level;
+	confl->log_opts.syslog_level = confl->debug_level;
+	/*
+	 * If daemonizing, turn off stderr logging -- also, if
+	 * logging to a file, turn off syslog.
+	 *
+	 * Otherwise, if remaining in foreground, turn off logging
+	 * to syslog (but keep logfile level)
+	 */
+	if (confl->daemonize) {
+		confl->log_opts.stderr_level = LOG_LEVEL_QUIET;
+		if (confl->logfile)
+			confl->log_opts.syslog_level = LOG_LEVEL_QUIET;
+	} else
+		confl->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+
+	return (confl);
+rwfail:
+	return (NULL);
+}
+
+static int get_jobid_uid_from_env (uint32_t *jobidp, uid_t *uidp)
+{
+	const char *val;
+	char *p;
+
+	if (!(val = getenv ("SLURM_JOBID")))
+		return error ("Unable to get SLURM_JOBID in env!");
+
+	*jobidp = (uint32_t) strtoul (val, &p, 10);
+	if (*p != '\0')
+		return error ("Invalid SLURM_JOBID=%s", val);
+
+	if (!(val = getenv ("SLURM_UID")))
+		return error ("Unable to get SLURM_UID in env!");
+
+	*uidp = (uid_t) strtoul (val, &p, 10);
+	if (*p != '\0')
+		return error ("Invalid SLURM_UID=%s", val);
+
+	return (0);
+}
+
+static int handle_spank_mode (int argc, char *argv[])
+{
+	char prefix[64] = "spank-";
+	const char *mode = argv[2];
+	uid_t uid = (uid_t) -1;
+	uint32_t jobid = (uint32_t) -1;
+	log_options_t lopts = LOG_OPTS_INITIALIZER;
+
+	/*
+	 *  Not necessary to log to syslog
+	 */
+	lopts.syslog_level = LOG_LEVEL_QUIET;
+
+	/*
+	 *  Make our log prefix into spank-prolog: or spank-epilog:
+	 */
+	strcat (prefix, mode);
+	log_init(prefix, lopts, LOG_DAEMON, NULL);
+
+	/*
+	 *  When we are started from slurmd, a lightweight config is
+	 *   sent over the stdin fd. If we are able to read this conf
+	 *   use it to reinitialize the log.
+	 *  It is not a fatal error if we fail to read the conf file.
+	 *   This could happen if slurmstepd is run standalone for
+	 *   testing.
+	 */
+	if ((conf = read_slurmd_conf_lite (STDIN_FILENO)))
+		log_alter (conf->log_opts, 0, conf->logfile);
+	close (STDIN_FILENO);
+
+	if (slurm_conf_init(NULL) != SLURM_SUCCESS)
+		return error ("Failed to read slurm config");
+
+	if (get_jobid_uid_from_env (&jobid, &uid) < 0)
+		return error ("spank environment invalid");
+
+	verbose ("Running spank/%s for jobid [%u] uid [%u]",
+		mode, jobid, uid);
+
+	if (strcmp (mode, "prolog") == 0) {
+		if (spank_job_prolog (jobid, uid) < 0)
+			return (-1);
+	}
+	else if (strcmp (mode, "epilog") == 0) {
+		if (spank_job_epilog (jobid, uid) < 0)
+			return (-1);
+	}
+	else {
+		error ("Invalid mode %s specified!", mode);
+		return (-1);
+	}
+	return (0);
+}
+
+/*
+ *  Process special "modes" of slurmstepd passed as cmdline arguments.
+ */
+static int process_cmdline (int argc, char *argv[])
+{
+	if ((argc == 2) && (strcmp(argv[1], "getenv") == 0)) {
+		print_rlimits();
+		_dump_user_env();
+		exit(0);
+	}
+	if ((argc == 3) && (strcmp(argv[1], "spank") == 0)) {
+		if (handle_spank_mode (argc, argv) < 0)
+			exit (1);
+		exit (0);
+	}
+	return (0);
+}
+
+
 static void
 _send_ok_to_slurmd(int sock)
 {
@@ -243,31 +385,8 @@ _init_from_slurmd(int sock, char **argv,
 	pthread_mutex_unlock(&step_complete.lock);
 
 	/* receive conf from slurmd */
-	safe_read(sock, &len, sizeof(int));
-	incoming_buffer = xmalloc(len);
-	safe_read(sock, incoming_buffer, len);
-	buffer = create_buf(incoming_buffer, len);
-	if (unpack_slurmd_conf_lite_no_alloc(conf, buffer) == SLURM_ERROR)
-		fatal("slurmstepd: problem with unpack of slurmd_conf");
-	free_buf(buffer);
-
-	conf->log_opts.stderr_level = conf->debug_level;
-	conf->log_opts.logfile_level = conf->debug_level;
-	conf->log_opts.syslog_level = conf->debug_level;
-
-	/*
-	 * If daemonizing, turn off stderr logging -- also, if
-	 * logging to a file, turn off syslog.
-	 *
-	 * Otherwise, if remaining in foreground, turn off logging
-	 * to syslog (but keep logfile level)
-	 */
-	if (conf->daemonize) {
-		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (conf->logfile)
-			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
-	} else
-		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+	if ((conf = read_slurmd_conf_lite (sock)) == NULL)
+		fatal("Failed to read conf from slurmd");
 	log_alter(conf->log_opts, 0, conf->logfile);
 
 	debug2("debug level is %d.", conf->debug_level);
