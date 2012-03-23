@@ -801,7 +801,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				avail_tasks = step_spec->num_tasks;
 				total_tasks = step_spec->num_tasks;
 			}
-			if (step_spec->mem_per_cpu) {
+			if (step_spec->mem_per_cpu && _is_mem_resv()) {
 				avail_mem = job_resrcs_ptr->
 					memory_allocated[node_inx] -
 					job_resrcs_ptr->memory_used[node_inx];
