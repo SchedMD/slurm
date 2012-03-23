@@ -1102,7 +1102,9 @@ any desired node resource specifications (<i>CPUs</i>, <i>Sockets</i>,
 <i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
 SLURM will use the resource specification for each node that is
 given in <i>slurm.conf</i> and will not check these specifications
-against those actually found on the node.
+against those actually found on the node. The system would best be configured
+with <i>TaskPlugin=task/none</i>, so that launched tasks can run on any
+available CPU under operating system control.
 
 <p><a name="credential_replayed"><b>16. What does a
 &quot;credential replayed&quot;
@@ -1498,6 +1500,6 @@ https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 October 2011</p>
+<p style="text-align:center;">Last modified 23 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
