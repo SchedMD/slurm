@@ -823,7 +823,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 node_inx, false,
 							 job_ptr->job_id,
 							 NO_VAL);
-			if (cpus_per_task > 0)
+			if ((gres_cnt != NO_VAL) && (cpus_per_task > 0))
 				gres_cnt /= cpus_per_task;
 			avail_tasks = MIN(avail_tasks, gres_cnt);
 			gres_cnt = gres_plugin_step_test(step_gres_list,
@@ -831,10 +831,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 node_inx, true,
 							 job_ptr->job_id,
 							 NO_VAL);
-			if (cpus_per_task > 0)
+			if ((gres_cnt != NO_VAL) && (cpus_per_task > 0))
 				gres_cnt /= cpus_per_task;
 			total_tasks = MIN(total_tasks, gres_cnt);
-
 			if (step_spec->plane_size != (uint16_t) NO_VAL) {
 				if (avail_tasks < step_spec->plane_size)
 					avail_tasks = 0;
