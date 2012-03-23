@@ -94,8 +94,8 @@ typedef struct slurm_nrt_window {
 typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
-	uint16_t lid;		/* FIXME: No information about where loaded from */
-//	uint64_t network_id;
+	nrt_logical_id_t lid;
+	nrt_network_id_t network_id;
 	nrt_window_id_t window_count;
 	slurm_nrt_window_t *window_list;
 } slurm_nrt_adapter_t;
@@ -950,6 +950,8 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("  adapter_name: %s", a->adapter_name);
 		info("    adapter_type: %s",
 		     _adapter_type_str(a->adapter_type));
+		info("    lid: %u", a->lid);
+		info("    network_id: %lu", a->network_id);
 		info("    window_count: %hu", a->window_count);
 		w = a->window_list;
 		for (j = 0; j < MIN(a->window_count, NRT_DEBUG_CNT); j++) {
@@ -1170,6 +1172,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	nrt_cmd_query_adapter_names_t adapter_names;
 	unsigned int max_windows, num_adapter_names;
 	nrt_cmd_status_adapter_t adapter_status;
+	nrt_cmd_query_adapter_info_t query_adapter_info;
+	nrt_adapter_info_t adapter_info;
 	nrt_status_t **status_array = NULL;
 	nrt_window_id_t window_count;
 
@@ -1178,6 +1182,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 #endif
 	adapter_types.num_adapter_types = &num_adapter_types;
 	adapter_types.adapter_types = adapter_type;
+	adapter_info.window_list = NULL;
 	for (i = 0; i < 2; i++) {
 		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
 				  &adapter_types);
@@ -1287,11 +1292,57 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				window_ptr->job_key = (*status_array)[k].
 						      client_pid;
 			}
+
+			/* Now get adapter info (port_id, network_id, etc.) */
+			query_adapter_info.adapter_name = adapter_names.
+							  adapter_names[j];
+			query_adapter_info.adapter_type = adapter_names.
+							  adapter_type;
+			query_adapter_info.adapter_info = &adapter_info;
+			adapter_info.window_list = xmalloc(max_windows *
+						   sizeof(nrt_window_id_t));
+			err = nrt_command(NRT_VERSION,
+					  NRT_CMD_QUERY_ADAPTER_INFO,
+					  &query_adapter_info);
+			if (err != NRT_SUCCESS) {
+				error("nrt_command(adapter_into, %s, %s): %s",
+				      query_adapter_info.adapter_name,
+				      _adapter_type_str(query_adapter_info.
+							adapter_type),
+				      nrt_err_str(err));
+				rc = SLURM_ERROR;
+				continue;
+			}
+#if NRT_DEBUG
+			info("nrt_command(adapter_info, %s, %s), ports:%hu",
+			     query_adapter_info.adapter_name,
+			     _adapter_type_str(query_adapter_info.adapter_type),
+			     adapter_info.num_ports);
+			for (k = 0; k < adapter_info.num_ports; k++) {
+				info("port_id:%hu status:%hu lid:%u "
+				     "network_id:%lu",
+				     adapter_info.port[k].port_id,
+				     adapter_info.port[k].status,
+				     adapter_info.port[k].lid,
+				     adapter_info.port[k].network_id);
+			}
+#endif
+			for (k = 0; k < adapter_info.num_ports; k++) {
+				if (adapter_info.port[k].status != 1)
+					continue;
+				adapter_ptr->lid = adapter_info.port[k].lid;
+				adapter_ptr->network_id = adapter_info.port[k].
+							  network_id;
+				break;
+			}
 		}
-		for (j = 0; j < max_windows; j++) {
-			free(status_array[j]);
+		if (status_array) {
+			for (j = 0; j < max_windows; j++) {
+				free(status_array[j]);
+			}
+			xfree(status_array);
 		}
-		xfree(status_array);
+		xfree(adapter_info.window_list);
 	}
 #if NRT_DEBUG
 	_print_nodeinfo(n);
