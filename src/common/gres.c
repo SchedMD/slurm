@@ -139,7 +139,8 @@ static int	_gres_find_id(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
 extern int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_offset, uint32_t cpu_cnt,
-			   char *gres_name, uint32_t job_id, char *node_name);
+			   char *gres_name, uint32_t job_id, char *node_name,
+			   bitstr_t *core_bitmap);
 static int	_job_config_validate(char *config, uint32_t *gres_cnt,
 				     slurm_gres_context_t *context_ptr);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
@@ -2679,7 +2680,8 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 
 extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		      int node_cnt, int node_offset, uint32_t cpu_cnt,
-		      char *gres_name, uint32_t job_id, char *node_name)
+		      char *gres_name, uint32_t job_id, char *node_name,
+		      bitstr_t *core_bitmap)
 {
 	int i;
 	uint32_t gres_cnt;
@@ -2776,7 +2778,11 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	    job_gres_ptr->gres_bit_alloc[node_offset] &&
 	    node_gres_ptr->topo_gres_bitmap &&
 	    node_gres_ptr->topo_gres_cnt_alloc) {
-		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
+		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+			if (core_bitmap &&
+			    !bit_overlap(core_bitmap,
+					 node_gres_ptr->topo_cpus_bitmap[i]))
+				continue;
 			gres_cnt = bit_overlap(job_gres_ptr->
 					       gres_bit_alloc[node_offset],
 					       node_gres_ptr->
@@ -2798,12 +2804,14 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
  * IN cpu_cnt     - number of CPUs allocated to this job on this node
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
+ * IN core_bitmap - cores allocated to this job on this node (NULL if not
+ *                  available)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 int node_cnt, int node_offset,
 				 uint32_t cpu_cnt, uint32_t job_id,
-				 char *node_name)
+				 char *node_name, bitstr_t *core_bitmap)
 {
 	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -2852,7 +2860,8 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 		rc2 = _job_alloc(job_gres_ptr->gres_data,
 				 node_gres_ptr->gres_data, node_cnt,
 				 node_offset, cpu_cnt,
-				 gres_context[i].gres_name, job_id, node_name);
+				 gres_context[i].gres_name, job_id, node_name,
+				 core_bitmap);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}

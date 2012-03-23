@@ -384,12 +384,14 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  * IN cpu_cnt     - number of CPUs allocated to this job on this node
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
+ * IN core_bitmap - cores allocated to this job on this node (NULL if not
+ *                  available)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list, 
 				 int node_cnt, int node_offset,
 				 uint32_t cpu_cnt, uint32_t job_id,
-				 char *node_name);
+				 char *node_name, bitstr_t *core_bitmap);
 
 /*
  * Deallocate resource from a job and update node and job gres information

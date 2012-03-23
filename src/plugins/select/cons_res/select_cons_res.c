@@ -833,6 +833,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	struct part_res_record *p_ptr;
 	List gres_list;
 	int i, n;
+	bitstr_t *core_bitmap;
 
 	if (!job || !job->core_bitmap) {
 		error("job %u has no select data", job_ptr->job_id);
@@ -856,10 +857,13 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				gres_list = select_node_usage[i].gres_list;
 			else
 				gres_list = node_ptr->gres_list;
+			core_bitmap = copy_job_resources_node(job, n);
 			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
 					      job->nhosts, n, job->cpus[n],
-					      job_ptr->job_id, node_ptr->name);
+					      job_ptr->job_id, node_ptr->name,
+					      core_bitmap);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
+			FREE_NULL_BITMAP(core_bitmap);
 		}
 
 		if (action != 2) {

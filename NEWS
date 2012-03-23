@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
     user starting the daemons (likely user root).
  -- Reorganize the slurmstepd logic in order to better support NFS and
     Kerberos credentials via the AUKS plugin. Work by Matthieu Hautreux, CEA.
+ -- Fix bug in allocating GRES that are associated with specific CPUs. In some
+    cases the code allocated first available GRES to job instead of allocating
+    GRES accessible to the specific CPUs allocated to the job.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
