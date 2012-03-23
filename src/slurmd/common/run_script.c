@@ -44,6 +44,7 @@
 #include <sys/types.h> /* for pid_t */
 #include <sys/signal.h> /* for SIGKILL */
 #endif
+#include <poll.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/errno.h>
