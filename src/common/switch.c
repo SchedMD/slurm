@@ -82,7 +82,7 @@ typedef struct slurm_switch_ops {
 	int          (*node_fini)         ( void );
 	int          (*job_preinit)       ( switch_jobinfo_t *jobinfo );
 	int          (*job_init)          ( switch_jobinfo_t *jobinfo,
-						uid_t uid );
+					    uid_t uid, char *job_name );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
 	int          (*job_postfini)      ( switch_jobinfo_t *jobinfo,
 						uid_t pgid,
@@ -450,12 +450,13 @@ extern int interconnect_preinit(switch_jobinfo_t *jobinfo)
 	return (*(g_context->ops.job_preinit)) (jobinfo);
 }
 
-extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid)
+extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
+			     char *job_name)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_init)) (jobinfo, uid);
+	return (*(g_context->ops.job_init)) (jobinfo, uid, job_name);
 }
 
 extern int interconnect_fini(switch_jobinfo_t *jobinfo)

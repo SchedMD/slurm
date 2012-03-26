@@ -616,7 +616,8 @@ extern int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid)
+extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
+			      char *job_name)
 {
 	pid_t pid;
 
@@ -624,7 +625,8 @@ extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid)
 	info("switch_p_job_init()");
 #endif
 	pid = getpid();
-	return nrt_load_table((slurm_nrt_jobinfo_t *)jobinfo, uid, pid);
+	return nrt_load_table((slurm_nrt_jobinfo_t *)jobinfo, uid, pid,
+			      job_name);
 }
 
 extern int switch_p_job_fini (switch_jobinfo_t *jobinfo)

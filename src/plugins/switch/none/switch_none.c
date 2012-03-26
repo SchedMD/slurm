@@ -179,7 +179,8 @@ int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_init ( switch_jobinfo_t *jobinfo, uid_t uid )
+extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
+			      char *job_name)
 {
 	return SLURM_SUCCESS;
 }

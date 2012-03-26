@@ -271,7 +271,8 @@ extern int interconnect_preinit(switch_jobinfo_t *jobinfo);
  * than the process executing interconnect_fini() [e.g. QsNet])
  *
  */
-extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid);
+extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
+			     char *job_name);
 
 /*
  * This function is run from the same process as interconnect_init()

@@ -1053,6 +1053,35 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	}
 	info("--End Jobinfo--");
 }
+
+static void
+_print_load_table(nrt_cmd_load_table_t *load_table)
+{
+	nrt_table_info_t *table_info = load_table->table_info;
+
+	info("--- Begin load table ---");
+	info("  num_tasks: %u", table_info->num_tasks);
+	info("  job_key: %u", table_info->job_key);
+	info("  uid: %u", (uint32_t)table_info->uid);
+	info("  pid: %u", (uint32_t)table_info->pid);
+	info("  network_id: %lu", table_info->network_id);
+	info("  adapter_type: %s",_adapter_type_str(table_info->adapter_type));
+	info("  is_user_space: %hu", (int)table_info->is_user_space);
+	info("  is_ipv4: %hu", (int)table_info->is_ipv4);
+	info("  context_id: %u", table_info->context_id);
+	info("  table_id: %u", table_info->table_id);
+	info("  job_name: %s", table_info->job_name);
+	info("  protocol_name: %s", table_info->protocol_name);
+	info("  use_bulk_transfer: %hu", (int)table_info->use_bulk_transfer);
+	info("  bulk_transfer_resources: %u", 
+	     table_info->bulk_transfer_resources);
+	info("  immed_send_slots_per_win: %u", 
+	     table_info->immed_send_slots_per_win);
+	info("  num_cau_indexes: %u", table_info->num_cau_indexes);
+	_print_table(load_table->per_task_input, table_info->num_tasks,
+		     table_info->adapter_type);
+	info("--- End load table ---");
+}
 #endif
 
 static slurm_nrt_libstate_t *
@@ -2325,7 +2354,7 @@ _check_rdma_job_count(char *adapter_name, nrt_adapter_t adapter_type)
  * Used by: slurmd
  */
 extern int
-nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid)
+nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 {
 	int i;
 	int err;
@@ -2364,6 +2393,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid)
 
 /* FIXME: Ne need to set a bunch of these paramters appropriately */
 #define TBD 0
+#define TBD1 "mpi"
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
 		table_info.uid = uid;
@@ -2374,14 +2404,27 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid)
 		table_info.is_ipv4 = TBD;
 		table_info.context_id = TBD;
 		table_info.table_id = TBD;
-		strncpy(table_info.job_name, "TBD", NRT_MAX_JOB_NAME_LEN);
-		strncpy(table_info.protocol_name, "TBD", NRT_MAX_PROTO_NAME_LEN);
+		if (job_name) {
+			char *sep = strrchr(job_name,'/');
+			if (sep)
+				sep++;
+			else
+				sep = job_name;
+			strncpy(table_info.job_name, sep,
+				NRT_MAX_JOB_NAME_LEN);
+		} else {
+			table_info.job_name[0] = '\0';
+		}
+		strncpy(table_info.protocol_name, TBD1, NRT_MAX_PROTO_NAME_LEN);
 		table_info.use_bulk_transfer = jp->bulk_xfer;
 		table_info.bulk_transfer_resources = TBD;
 		table_info.immed_send_slots_per_win = TBD;
 		table_info.num_cau_indexes = TBD;
 		load_table.table_info = &table_info;
 		load_table.per_task_input = jp->tableinfo[i].table;
+#if NRT_DEBUG
+		_print_load_table(&load_table);
+#endif
 		err = nrt_command(NRT_VERSION, NRT_CMD_LOAD_TABLE, &load_table);
 		if (err != NRT_SUCCESS) {
 			error("nrt_command(load table): %s", nrt_err_str(err));

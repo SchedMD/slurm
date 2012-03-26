@@ -101,7 +101,8 @@ extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern slurm_nrt_jobinfo_t *nrt_copy_jobinfo(slurm_nrt_jobinfo_t *jp);
 extern void nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp);
-extern int nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid);
+extern int nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid,
+			  char *job_name);
 extern int nrt_init(void);
 extern int nrt_fini(void);
 extern int nrt_unload_table(slurm_nrt_jobinfo_t *jp);

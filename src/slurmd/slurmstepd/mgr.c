@@ -972,8 +972,8 @@ job_manager(slurmd_job_t *job)
 	}
 
 	/* Call interconnect_init() before becoming user */
-	if (!job->batch &&
-	    (interconnect_init(job->switch_job, job->uid) < 0)) {
+	if (!job->batch && job->argv &&
+	    (interconnect_init(job->switch_job, job->uid, job->argv[0]) < 0)) {
 		/* error("interconnect_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		io_close_task_fds(job);
