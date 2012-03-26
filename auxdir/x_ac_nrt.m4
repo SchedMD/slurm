@@ -30,6 +30,7 @@ AC_DEFUN([X_AC_NRT],
       if test -f "$nrt_dir/libnrt.so"; then
          ac_have_nrt="yes"
          NRT_LDFLAGS="-L$nrt_dir -lnrt"
+         NRT_CPPFLAGS="-I/opt/ibmhpc/pecurrent/base/include"
 	 break;
       fi
 
