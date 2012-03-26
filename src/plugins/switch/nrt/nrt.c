@@ -925,17 +925,17 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	info("  adapter_name:%s", status_adapter->adapter_name);
 	info("  adapter_type:%s",
 	     _adapter_type_str(status_adapter->adapter_type));
-	info("  window_count:%hu", *status_adapter->window_count);
+	info("  window_count:%hu", *(status_adapter->window_count));
 	info("  --------");
-	for (i = 0; i < MIN(*status_adapter->window_count, NRT_DEBUG_CNT);
+	for (i = 0; i < MIN(*(status_adapter->window_count), NRT_DEBUG_CNT);
 	     i++) {
-		nrt_status_t *status = status_adapter->status_array[i];
-		info("  client_pid[%d]:%u", i, (uint32_t)status->client_pid);
-		info("  uid[%d]:%u", i, (uint32_t) status->uid);
-		info("  window_id[%d]:%hu", i, status->window_id);
-		info("  bulk_xfer[%d]:%hu", i, status->bulk_transfer);
-		info("  rcontext_blocks[%d]:%u", i, status->rcontext_blocks);
-		info("  state[%d]:%s", i, _win_state_str(status->state));
+		nrt_status_t *status = *(status_adapter->status_array);
+		info("  bulk_xfer:%hu", status[i].bulk_transfer);
+		info("  client_pid:%u", (uint32_t)status[i].client_pid);
+		info("  rcontext_blocks:%u", status[i].rcontext_blocks);
+		info("  state:%s", _win_state_str(status[i].state));
+		info("  uid:%u", (uint32_t) status[i].uid);
+		info("  window_id:%hu", status[i].window_id);
 		info("  --------");
 	}
 	info("--End Adapter Status--");
@@ -1300,18 +1300,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				continue;
 			}
 #if NRT_DEBUG
-			info("nrt_command(status_adapter, %s, %s), "
-			     "window_count:%hu",
-			     adapter_status.adapter_name,
-			     _adapter_type_str(adapter_status.adapter_type),
-			     window_count);
-			for (k = 0; k < MIN(window_count, NRT_DEBUG_CNT); k++){
-				info("window_id:%d uid:%d pid:%d state:%s",
-				     (*status_array)[k].window_id,
-				     (*status_array)[k].uid,
-				     (*status_array)[k].client_pid,
-				     _win_state_str((*status_array)[k].state));
-			}
+			error("nrt_command(status_adapter, %s, %s)",
+			      adapter_status.adapter_name,
+			      _adapter_type_str(adapter_status.adapter_type));
+			_print_adapter_status(&adapter_status);
 #endif
 			adapter_ptr = &n->adapter_list[n->adapter_count];
 			strncpy(adapter_ptr->adapter_name,
@@ -2263,8 +2255,9 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 		err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
 				  &status_adapter);
 		if (err != NRT_SUCCESS) {
-			error("nrt_status_adapter(%s, %d): %s", adapter_name,
-			      (int) adapter_type, nrt_err_str(err));
+			error("nrt_status_adapter(%s, %s): %s", adapter_name,
+			      _adapter_type_str(adapter_type),
+			      nrt_err_str(err));
 			break;
 		}
 #if NRT_DEBUG

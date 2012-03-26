@@ -78,7 +78,7 @@ enum {
 };
 
 #define NRT_DEBUG 1	/* Enable extra logging. 0=off, 1=on, 2=verbose */
-#define NRT_DEBUG_CNT 8	/* Count of windows, adapters, etc to log
+#define NRT_DEBUG_CNT 4	/* Count of windows, adapters, etc to log
 			 * use this to limit volume of logging */
 #define NRT_MAXADAPTERS 2
 #define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
