@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     Simon Ruderich.
  -- CRAY: Fix support for configuration with SlurmdTimeout=0 (never mark
     node that is DOWN in ALPS as DOWN in SLURM).
+ -- Fixed the setting of SLURM_SUBMIT_DIR for jobs submitted by Moab (BZ#1467).
+    Patch by Don Lipari, LLNL.
 
 * Changes in SLURM 2.3.4
 ========================
