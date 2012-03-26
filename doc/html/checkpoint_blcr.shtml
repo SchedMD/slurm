@@ -28,8 +28,8 @@ The job will be restarted using a newly allocated jobid.</li>
 </ol>
 
 <p><b>NOTE:</b> checkpoint/blcr cannot restart interactive jobs. It can
-create checkpoints for both interactive and batch steps, but only
-batch jobs can be restarted.</p>
+create checkpoints for both interactive and batch steps, but <b>only
+batch jobs can be restarted.</b></p>
 
 <p><b>NOTE:</b> BLCR operation has been verified with MVAPICH2. 
 Some other MPI implementations should also work.</p>
@@ -193,6 +193,6 @@ option at job submit time or scontrol's <b>ImageDir</b> option.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 January 2010</p>
+<p style="text-align:center;">Last modified 26 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
