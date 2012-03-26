@@ -1694,6 +1694,13 @@ char **env_array_from_file(const char *fname)
 		if (_env_array_entry_splitter(ptr, name, sizeof(name),
 					      value, ENV_BUFSIZE) &&
 		    (!_discard_env(name, value))) {
+			/*
+			 * Unset the SLURM_SUBMIT_DIR if it is defined so
+			 * that this new value does not get overwritten
+			 * in the subsequent call to env_array_merge().
+			 */
+			if (strcmp(name, "SLURM_SUBMIT_DIR") == 0)
+				unsetenv(name);
 			env_array_overwrite(&env, name, value);
 		}
 	}
