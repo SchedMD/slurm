@@ -122,7 +122,7 @@ struct slurm_nrt_jobinfo {
 	uint32_t magic;
 	/* version from nrt_version() */
 	/* adapter from lid in table */
-	/* network_id from lid in table */
+	nrt_network_id_t network_id;
 	/* uid from getuid() */
 	/* pid from getpid() */
 	nrt_job_key_t job_key;
@@ -1037,6 +1037,7 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 
 	info("--Begin Jobinfo--");
 	info("  job_key: %u", j->job_key);
+	info("  network_id: %lu", j->network_id);
 	info("  table_size: %u", j->tables_per_task);
 	info("  bulk_xfer: %u", j->bulk_xfer);
 	info("  tables_per_task: %hu", j->tables_per_task);
@@ -1408,9 +1409,9 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 extern int
 nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 {
-	int i, j;
 	struct slurm_nrt_adapter *a;
-	int offset;
+	uint16_t dummy16;
+	int i, j, offset;
 
 	assert(n);
 	assert(n->magic == NRT_NODEINFO_MAGIC);
@@ -1426,7 +1427,10 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 	for (i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
 		packmem(a->adapter_name, NRT_MAX_ADAPTER_NAME_LEN, buf);
-		pack16(a->adapter_type, buf);
+		dummy16 = a->adapter_type;
+		pack16(dummy16, buf);	/* adapter_type is an int */
+		pack32(a->lid, buf);
+		pack64(a->network_id, buf);
 		pack16(a->window_count, buf);
 		for (j = 0; j < a->window_count; j++) {
 			uint32_t state = a->window_list[j].state;
@@ -1463,6 +1467,8 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 		strncpy(da->adapter_name, sa->adapter_name,
 			NRT_MAX_ADAPTER_NAME_LEN);
 		da->adapter_type = sa->adapter_type;
+		da->lid          = sa->lid;
+		da->network_id   = sa->network_id;
 		da->window_count = sa->window_count;
 		da->window_list = (slurm_nrt_window_t *)
 				  xmalloc(sizeof(slurm_nrt_window_t) *
@@ -1488,8 +1494,9 @@ _fake_unpack_adapters(Buf buf)
 {
 	uint32_t adapter_count;
 	uint16_t window_count;
-	uint32_t dummy32;
 	uint16_t dummy16;
+	uint32_t dummy32;
+	uint64_t dummy64;
 	char *dummyptr;
 	int i, j;
 
@@ -1500,6 +1507,8 @@ _fake_unpack_adapters(Buf buf)
 		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
+		safe_unpack32(&dummy32, buf);
+		safe_unpack64(&dummy64, buf);
 		safe_unpack16(&window_count, buf);
 		for (j = 0; j < window_count; j++) {
 			safe_unpack16(&dummy16, buf);
@@ -1599,7 +1608,9 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 			goto unpack_error;
 		memcpy(tmp_a->adapter_name, name_ptr, size);
 		safe_unpack16(&dummy16, buf);
-		tmp_a->adapter_type = dummy16;
+		tmp_a->adapter_type = dummy16;	/* adapter_type is an int */
+		safe_unpack32(&tmp_a->lid, buf);
+		safe_unpack64(&tmp_a->network_id, buf);
 		safe_unpack16(&tmp_a->window_count, buf);
 		tmp_w = (slurm_nrt_window_t *)
 			xmalloc(sizeof(slurm_nrt_window_t) *
@@ -1820,6 +1831,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 					       adapter_type;
 			}
 			adapter_type_count++;
+			jp->network_id = node->adapter_list[i].network_id;
 		}
 	}
 	if (sn_all) {
@@ -1969,6 +1981,7 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack32(j->job_key, buf);
 	pack8(j->bulk_xfer, buf);
 	pack16(j->tables_per_task, buf);
+	pack64(j->network_id, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
 		_pack_tableinfo(&j->tableinfo[i], buf);
 	}
@@ -2046,6 +2059,7 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	safe_unpack32(&j->job_key, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
 	safe_unpack16(&j->tables_per_task, buf);
+	safe_unpack64(&j->network_id, buf);
 
 	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task *
 						   sizeof(nrt_tableinfo_t));
@@ -2394,14 +2408,15 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 /* FIXME: Ne need to set a bunch of these paramters appropriately */
 #define TBD 0
 #define TBD1 "mpi"
+#define TBD2 1
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
 		table_info.uid = uid;
-		table_info.network_id = TBD;
+		table_info.network_id = jp->network_id;
 		table_info.pid = pid;
 		table_info.adapter_type = jp->tableinfo[i].adapter_type;
 		table_info.is_user_space = TBD;
-		table_info.is_ipv4 = TBD;
+		table_info.is_ipv4 = TBD2;
 		table_info.context_id = TBD;
 		table_info.table_id = TBD;
 		if (job_name) {
@@ -2425,7 +2440,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 #if NRT_DEBUG
 		_print_load_table(&load_table);
 #endif
-		err = nrt_command(NRT_VERSION, NRT_CMD_LOAD_TABLE, &load_table);
+		err = nrt_command(NRT_VERSION, NRT_CMD_LOAD_TABLE,
+				  &load_table);
 		if (err != NRT_SUCCESS) {
 			error("nrt_command(load table): %s", nrt_err_str(err));
 			return SLURM_ERROR;
@@ -2574,7 +2590,7 @@ _pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 #if NRT_DEBUG
  	info("_pack_libstate");
 	_print_libstate(lp);
- #endif
+#endif
 	offset = get_buf_offset(buffer);
 	pack32(lp->magic, buffer);
 	pack32(lp->node_count, buffer);
