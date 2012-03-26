@@ -2833,11 +2833,11 @@ nrt_clear_node_state(void)
 				continue;
 			}
 #if NRT_DEBUG
-			error("nrt_command(status_adapter, %s, %s), "
-			      "window_count:%hu",
-			      adapter_status.adapter_name,
-			      _adapter_type_str(adapter_status.adapter_type),
-			      window_count);
+			info("nrt_command(status_adapter, %s, %s), "
+			     "window_count:%hu",
+			     adapter_status.adapter_name,
+			     _adapter_type_str(adapter_status.adapter_type),
+			     window_count);
 			/* Only log first NRT_DEBUG_CNT windows here */
 			for (k = 0; k < MIN(window_count, NRT_DEBUG_CNT); k++){
 				info("window_id:%d uid:%d pid:%d state:%s",
