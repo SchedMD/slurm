@@ -53,7 +53,7 @@ bool wait_full = false;
 static int _get_new_info_block(block_info_msg_t **block_ptr)
 {
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
-#ifdef HAVE_BG_L_P
+#ifdef HAVE_BG
 	static block_info_msg_t *bg_info_ptr = NULL;
 	static block_info_msg_t *new_bg_ptr = NULL;
 
@@ -141,6 +141,10 @@ int main(int argc, char *argv[])
 		int i=0;
 		block_info_msg_t *block_ptr = NULL;
 		_get_new_info_block(&block_ptr);
+		if (!block_ptr) {
+			error("there was no block_ptr filled in.");
+			return 1;
+		}
 		if (block_list)
 			list_flush(block_list);
 		else
@@ -168,6 +172,7 @@ int main(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	if (wait_full)
 		_check_status();
+
 	list_destroy(block_list);
 	info("done");
 	return 0;
