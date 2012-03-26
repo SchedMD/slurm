@@ -655,6 +655,7 @@ HAVE_NRT
 HAVE_NRT_FALSE
 HAVE_NRT_TRUE
 NRT_LDFLAGS
+NRT_CPPFLAGS
 HAVE_FEDERATION
 HAVE_FEDERATION_FALSE
 HAVE_FEDERATION_TRUE
@@ -933,6 +934,7 @@ with_slurmctld_port
 with_slurmd_port
 with_slurmdbd_port
 with_slurmctld_port_count
+with_nrth
 with_libnrt
 with_readline
 with_ssl
@@ -1647,7 +1649,8 @@ Optional Packages:
   --with-slurmdbd-port=N  set slurmdbd default port [6819]
   --with-slurmctld-port-count=N
                           set slurmctld default port count [1]
-  --with-libnrt=PATH      Specify path to libnrt.so
+  --with-nrth=PATH        Parent directory of nrt.h
+  --with-libnrt=PATH      Parent directory of libnrt.so
   --without-readline      compile without readline support
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
@@ -17850,7 +17853,7 @@ for ac_header in mcheck.h values.h socket.h sys/socket.h  \
                  pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
-		 llapi.h nrt.h \
+		 llapi.h \
 
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -21261,14 +21264,45 @@ fi
 
 
 
-   nrt_default_dirs="/usr/lib64 /usr/lib"
+   nrt_default_dirs="/usr/include"
 
+# Check whether --with-nrth was given.
+if test "${with_nrth+set}" = set; then :
+  withval=$with_nrth;  nrt_default_dirs="$withval $nrt_default_dirs"
+fi
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking Checking NRT header file" >&5
+$as_echo_n "checking Checking NRT header file... " >&6; }
+   for nrt_dir in $nrt_default_dirs; do
+      # skip dirs that don't exist
+      if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
+         continue;
+      fi
+      # search for required NRT API libraries
+      if test -f "$nrt_dir/nrt.h"; then
+         ac_have_nrt_h="yes"
+         NRT_CPPFLAGS="-I$nrt_dir"
+	 break;
+      fi
+   done
+   if test "x$ac_have_nrt_h" != "xyes" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support IBM NRT API without nrt.h" >&5
+$as_echo "$as_me: Cannot support IBM NRT API without nrt.h" >&6;}
+   else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+   fi
+
+
+
+   nrt_default_dirs="/usr/lib64 /usr/lib"
 
 # Check whether --with-libnrt was given.
 if test "${with_libnrt+set}" = set; then :
   withval=$with_libnrt;  nrt_default_dirs="$withval $nrt_default_dirs"
 fi
-
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable IBM NRT support" >&5
 $as_echo_n "checking whether to enable IBM NRT support... " >&6; }
@@ -21279,15 +21313,14 @@ $as_echo_n "checking whether to enable IBM NRT support... " >&6; }
       fi
       # search for required NRT API libraries
       if test -f "$nrt_dir/libnrt.so"; then
-         ac_have_nrt="yes"
+         ac_have_libnrt="yes"
          NRT_LDFLAGS="-L$nrt_dir -lnrt"
-         NRT_CPPFLAGS="-I/opt/ibmhpc/pecurrent/base/include"
 	 break;
       fi
-
    done
 
-   if test "x$ac_have_nrt" != "xyes" ; then
+
+   if test "x$ac_have_libnrt" != "xyes" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
       { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support IBM NRT API without libnrt." >&5
@@ -21300,15 +21333,17 @@ $as_echo "#define HAVE_LIBNRT 1" >>confdefs.h
 
    fi
 
-
-
- if test "x$ac_have_nrt" = "xyes"; then
+   if test "x$ac_have_nrt_h" == "xyes" && test "x$ac_have_libnrt" == "xyes"; then
+      ac_have_nrt="yes"
+   fi
+    if test "x$ac_have_nrt" = "xyes"; then
   HAVE_NRT_TRUE=
   HAVE_NRT_FALSE='#'
 else
   HAVE_NRT_TRUE='#'
   HAVE_NRT_FALSE=
 fi
+
 
 
 

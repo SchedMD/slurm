@@ -118,7 +118,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
-		 llapi.h nrt.h \
+		 llapi.h \
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -293,8 +293,6 @@ AC_SUBST(HAVE_FEDERATION)
 dnl check for whether to include IBM NRT (Network Resource Table) support
 dnl
 X_AC_NRT
-AM_CONDITIONAL(HAVE_NRT, test "x$ac_have_nrt" = "xyes")
-AC_SUBST(HAVE_NRT)
 
 dnl check for SGI job container support
 dnl
