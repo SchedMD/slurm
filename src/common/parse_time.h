@@ -87,9 +87,13 @@ extern void slurm_make_time_str (time_t *time, char *string, int size);
  *   days-hr:min:sec
  *   days-hr
  * output:
- *   minutes
+ *   minutes for time_str2mins
+ *   seconds for time_str2secs
+ *   NO_VAL on error
+ *   INFINITE for "infinite" or "unlimited"
  */
-extern int time_str2mins(char *string);
+extern int time_str2mins(const char *string);
+extern int time_str2secs(const char *string);
 
 /* Convert a time value into a string that can be converted back by
  * time_str2mins.

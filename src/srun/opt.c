@@ -117,6 +117,7 @@
 #define OPT_ACCTG_FREQ  0x15
 #define OPT_WCKEY       0x16
 #define OPT_SIGNAL      0x17
+#define OPT_TIME_VAL    0x18
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -539,7 +540,7 @@ env_vars_t env_vars[] = {
 {"SLURM_WCKEY",         OPT_STRING,     &opt.wckey,         NULL             },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
-{"SLURM_WAIT4SWITCH",   OPT_INT,        &opt.wait4switch,   NULL             },
+{"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -685,6 +686,10 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid signal specification: %s", val);
 			exit(error_exit);
 		}
+		break;
+
+	case OPT_TIME_VAL:
+		opt.wait4switch = time_str2secs(val);
 		break;
 
 	default:
@@ -1493,7 +1498,7 @@ static void set_options(const int argc, char **argv)
 			if (pos_delimit != NULL) {
 				pos_delimit[0] = '\0';
 				pos_delimit++;
-				opt.wait4switch = time_str2mins(pos_delimit) * 60;
+				opt.wait4switch = time_str2secs(pos_delimit);
 			}
 			opt.req_switch = _get_int(optarg, "switches",
 				true);

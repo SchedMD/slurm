@@ -637,16 +637,18 @@ slurm_make_time_str (time_t *time, char *string, int size)
  *   days-hr:min:sec
  *   days-hr
  * output:
- *   minutes  (or -2 on error, INFINITE is -1 as defined in slurm.h)
- *   if unlimited is the value of string)
+ *   minutes for time_str2mins
+ *   seconds for time_str2secs
+ *   NO_VAL on error
+ *   INFINITE for "infinite" or "unlimited"
  */
-extern int time_str2mins(char *string)
+extern int time_str2secs(const char *string)
 {
 	int days = -1, hr = -1, min = -1, sec = -1;
 	int i, tmp = 0, res = 0;
 
 	if ((string == NULL) || (string[0] == '\0'))
-		return -1;	/* invalid input */
+		return NO_VAL;	/* invalid input */
 	if ((!strcasecmp(string, "-1")) ||
 	    (!strcasecmp(string, "INFINITE")) ||
 	    (!strcasecmp(string, "UNLIMITED"))) {
@@ -658,7 +660,7 @@ extern int time_str2mins(char *string)
 			tmp = (tmp * 10) + (string[i] - '0');
 		} else if (string[i] == '-') {
 			if (days != -1)
-				return -2;	/* invalid input */
+				return NO_VAL;	/* invalid input */
 			days = tmp;
 			tmp = 0;
 		} else if ((string[i] == ':') || (string[i] == '\0')) {
@@ -671,10 +673,10 @@ extern int time_str2mins(char *string)
 				min = sec;
 				sec = tmp;
 			} else
-				return -2;	/* invalid input */
+				return NO_VAL;	/* invalid input */
 			tmp = 0;
 		} else
-			return -2;		/* invalid input */
+			return NO_VAL;		/* invalid input */
 
 		if (string[i] == '\0')
 			break;
@@ -695,9 +697,15 @@ extern int time_str2mins(char *string)
 		min = 0;
 	if (sec == -1)
 		sec = 0;
-	res = (((days * 24) + hr) * 60) + min;
-	res += (sec + 59) / 60;	/* round up */
+	res = ((((days * 24) + hr) * 60) + min) * 60 + sec;
 	return res;
+}
+extern int time_str2mins(const char *string)
+{
+	int i = time_str2secs(string);
+	if ((i != INFINITE) &&  (i != NO_VAL))
+		i = (i + 59) / 60;	/* round up */
+	return i;
 }
 
 extern void secs2time_str(time_t time, char *string, int size)

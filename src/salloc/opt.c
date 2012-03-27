@@ -113,6 +113,7 @@
 #define OPT_WCKEY       0x14
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
+#define OPT_TIME_VAL	0x17
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_CPU_BIND    0x101
@@ -405,7 +406,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
-  {"SALLOC_WAIT4SWITCH",   OPT_INT,        &opt.wait4switch,   NULL          },
+  {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
   {NULL, 0, NULL, NULL}
 };
 
@@ -558,6 +559,11 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		opt.kill_command_signal_set = true;
 		break;
+
+	case OPT_TIME_VAL:
+		opt.wait4switch = time_str2secs(val);
+		break;
+
 	default:
 		/* do nothing */
 		break;
@@ -1148,8 +1154,7 @@ void set_options(const int argc, char **argv)
 			if (pos_delimit != NULL) {
 				pos_delimit[0] = '\0';
 				pos_delimit++;
-				opt.wait4switch = time_str2mins(pos_delimit) *
-						   60;
+				opt.wait4switch = time_str2secs(pos_delimit);
 			}
 			opt.req_switch = _get_int(optarg, "switches");
 			break;
