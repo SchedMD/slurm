@@ -4163,10 +4163,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->license_list = license_list;
 	license_list = NULL;
 
-	if (job_desc->req_switch != NO_VAL) /* Max # of switches */
+	if (job_desc->req_switch != NO_VAL) {	/* Max # of switches */
 		job_ptr->req_switch = job_desc->req_switch;
-	if (job_desc->wait4switch != NO_VAL)
-		job_ptr->wait4switch = _max_switch_wait(job_desc->wait4switch);
+		if (job_desc->wait4switch != NO_VAL) {
+			job_ptr->wait4switch =
+				_max_switch_wait(job_desc->wait4switch);
+		} else
+			job_ptr->wait4switch = _max_switch_wait(INFINITE);
+	}
 	job_ptr->best_switch = true;
 
 	/* Insure that requested partition is valid right now,
