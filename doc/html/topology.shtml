@@ -14,7 +14,7 @@ Jobs are allocated resources on a best-fit basis.
 For larger jobs, this minimizes the number of sets of consecutive nodes
 allocated to the job.</p>
 
-<a name="topo_3d"><h2>Three-dimension Topology</h2>
+<a name="topo_3d"><h2>Three-dimension Topology</h2></a>
 
 <p>Some larger computers rely upon a three-dimensional torus interconnect.
 The IBM BlueGene computers is one example of this which has highly
@@ -132,6 +132,6 @@ SwitchName=s3 Nodes=tux[12-15]
 SwitchName=s4 Switches=s[0-3]
 </pre>
 
-<p style="text-align:center;">Last modified 8 July 2011</p>
+<p style="text-align:center;">Last modified 27 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
