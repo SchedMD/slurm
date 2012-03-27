@@ -524,12 +524,12 @@ _spank_stack_process_line(struct spank_stack *stack,
 	}
 
 	if (!spank_stack_plugin_valid_for_context (stack, p)) {
-		verbose ("spank: %s: no callbacks in this context", p->fq_path);
+		debug2 ("spank: %s: no callbacks in this context", p->fq_path);
 		_spank_plugin_destroy (p);
 		return (0);
 	}
 
-	verbose ("spank: %s:%d: Loaded plugin %s",
+	debug ("spank: %s:%d: Loaded plugin %s",
 			file, line, xbasename (p->fq_path));
 
 	list_append (stack->plugin_list, p);
@@ -546,7 +546,7 @@ static int _spank_stack_load(struct spank_stack *stack, const char *path)
 	char buf[4096];
 	FILE *fp;
 
-	verbose("spank: opening plugin stack %s", path);
+	debug ("spank: opening plugin stack %s", path);
 
 	/*
 	 *  Try to open plugstack.conf. A missing config file is not an
@@ -595,7 +595,7 @@ static int _spank_conf_include (struct spank_stack *stack,
 		xfree (dirc);
 	}
 
-	verbose ("%s: %d: include \"%s\"", file, lineno, pattern);
+	debug ("%s: %d: include \"%s\"", file, lineno, pattern);
 
 	rc = glob (pattern, 0, NULL, &gl);
 	switch (rc) {
@@ -1042,7 +1042,7 @@ _spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 		return (ESPANK_NOSPACE);
 	}
 
-	verbose("SPANK: appending plugin option \"%s\"", opt->name);
+	debug ("SPANK: appending plugin option \"%s\"", opt->name);
 	list_append(option_cache, _spank_plugin_opt_create(p, opt, disabled));
 
 	return (ESPANK_SUCCESS);
@@ -1658,7 +1658,7 @@ int spank_clear_remote_options_env (char **env)
 				char name[1024];
 				memcpy (name, *ep, end - *ep);
 				name [end - *ep] = '\0';
-				info ("unsetenv (%s)\n", name);
+				debug ("unsetenv (%s)\n", name);
 				unsetenvp (env, name);
 			}
 		}
