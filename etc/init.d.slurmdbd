@@ -166,6 +166,7 @@ case "$1" in
 	;;
     status)
 	slurmstatus slurmdbd
+	rc_status -v
 	;;
     restart)
 	$0 stop
