@@ -90,7 +90,6 @@ static void _set_nodes(List nodes, int color, char letter)
 	while ((ba_mp = list_next(itr))) {
 		if (!ba_mp->used)
 			continue;
-		info("got %d", ba_mp->index);
 		smap_node = smap_system_ptr->grid[ba_mp->index];
 		smap_node->color = color;
 		smap_node->letter = letter;
