@@ -553,7 +553,6 @@ http://www.schedmd.com/slurmdocs/mc_support.html
 for more information on resource allocation, assignment of tasks to
 nodes, and binding of tasks to CPUs.
 .RS
-
 First distribution method:
 .TP
 .B block
@@ -1059,12 +1058,16 @@ task/affinity plugin is enabled.
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. If SLURM finds an allocation containing more
-switches than the count specified, the job remain pending until it either finds
-an allocation with desired switch count or the time limit expires. By default
-there is no switch count limit and there is no delay in starting the job.
+switches than the count specified, the job remains pending until it either finds
+an allocation with desired switch count or the time limit expires. 
+It there is no switch count limit, there is no delay in starting the job.
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
+"days\-hours:minutes:seconds".
 The job's maximum time delay may be limited by the system administrator using
 the \fBSchedulerParameters\fR configuration parameter with the
 \fBmax_switch_wait\fR parameter option.
+The default max\-time is the max_switch_wait SchedulerParameter.
 
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>

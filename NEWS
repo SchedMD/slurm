@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
     Patch by Don Lipari, LLNL.
  -- Correction to init.d/slurmdbd exit code for status option. Patch by Bill
     Brophy, Bull.
+ -- When the optional max_time is not specified for --switches=count, the site
+    max (SchedulerParameters=max_switch_wait=seconds) is used for the job.
+    Based on patch from Rod Schultz.
 
 * Changes in SLURM 2.3.4
 ========================

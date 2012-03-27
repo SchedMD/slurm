@@ -1345,7 +1345,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		switches_node_cnt[best_fit_location] = 0;
 		leaf_switch_count++;
 		if (job_ptr->req_switch > 0) {
-			if (time_waiting > job_ptr->wait4switch) {
+			if (time_waiting >= job_ptr->wait4switch) {
 				job_ptr->best_switch = true;
 				debug3("Job=%u Waited %ld sec for switches use=%d",
 					job_ptr->job_id, time_waiting,
