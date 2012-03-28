@@ -1735,7 +1735,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			rem_nodes--;
 			max_nodes--;
 			rem_cpus -= bfsize;
-
 		}		
 
 		/* free best-switch nodes available cpus array */
