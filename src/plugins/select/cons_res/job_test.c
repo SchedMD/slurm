@@ -294,7 +294,8 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	} else {
 		j = avail_cpus / cpus_per_task;
 		num_tasks = MIN(num_tasks, j);
-		avail_cpus = num_tasks * cpus_per_task;
+		if (job_ptr->details->ntasks_per_node)
+			avail_cpus = num_tasks * cpus_per_task;
 	}
 	if ((job_ptr->details->ntasks_per_node &&
 	     (num_tasks < job_ptr->details->ntasks_per_node)) ||
