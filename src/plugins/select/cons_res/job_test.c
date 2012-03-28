@@ -1571,6 +1571,12 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		goto fini;
 	}
 	bit_and(avail_nodes_bitmap, switches_bitmap[best_fit_inx]);
+	if ((min_nodes <  req_nodes) &&
+	    (min_nodes <= switches_node_cnt[best_fit_inx])) {
+		/* If job specifies a range of node counts, then allocate
+		 * resources with a minimal switch configuration */
+		rem_nodes = switches_node_cnt[best_fit_inx];
+	}
 
 	/* Identify usable leafs (within higher switch having best fit) */
 	for (j=0; j<switch_record_cnt; j++) {

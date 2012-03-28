@@ -215,6 +215,8 @@ documents those changes that are of interest to users and admins.
  -- When the optional max_time is not specified for --switches=count, the site
     max (SchedulerParameters=max_switch_wait=seconds) is used for the job.
     Based on patch from Rod Schultz.
+ -- Fix bug in select/cons_res plugin when used with topology/tree and a node
+    range count in job allocation request.
 
 * Changes in SLURM 2.3.4
 ========================
