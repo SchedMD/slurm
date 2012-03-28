@@ -62,6 +62,7 @@ extern int process(shares_response_msg_t *resp)
 	enum {
 		PRINT_ACCOUNT,
 		PRINT_CLUSTER,
+		PRINT_CPUMINS,
 		PRINT_EUSED,
 		PRINT_FSFACTOR,
 		PRINT_ID,
@@ -82,7 +83,7 @@ extern int process(shares_response_msg_t *resp)
 		slurm_addto_char_list(format_list,
 				      "A,User,RawShares,NormShares,"
 				      "RawUsage,NormUsage,EffUsage,"
-				      "FSFctr");
+				      "FSFctr,GrpCPUMins");
 	} else {
 		slurm_addto_char_list(format_list,
 				      "A,User,RawShares,NormShares,"
@@ -148,6 +149,11 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("User");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if (!strncasecmp("GrpCPUMins", object, 1)) {
+			field->type = PRINT_CPUMINS;
+			field->name = xstrdup("GrpCPUMins");
+			field->len = 11;
+			field->print_routine = print_fields_uint64;
 		} else {
 			exit_code=1;
 			fprintf(stderr, "Unknown field '%s'\n", object);
@@ -266,6 +272,11 @@ extern int process(shares_response_msg_t *resp)
 					tmp_char = share->name;
 				field->print_routine(field,
 						     tmp_char,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_CPUMINS:
+				field->print_routine(field,
+						     share->grp_cpu_mins,
 						     (curr_inx == field_count));
 				break;
 			default:

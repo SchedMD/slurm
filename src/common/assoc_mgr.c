@@ -2115,6 +2115,8 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		share->shares_norm = assoc->usage->shares_norm;
 		share->usage_raw = (uint64_t)assoc->usage->usage_raw;
 
+		share->grp_cpu_mins = assoc->grp_cpu_mins;
+
 		if (assoc->user) {
 			/* We only calculate user effective usage when
 			 * we need it

@@ -1,4 +1,4 @@
-.TH SSHARE "1" "November 2008" "sshare 2.0" "SLURM Commands"
+.TH SSHARE "1" "March 2012" "sshare 2.0" "SLURM Commands"
 
 .SH "NAME"
 sshare \- Tool for listing the shares of associations to a cluster.
@@ -14,7 +14,8 @@ being provided by \fBslurmdbd\fR (SLURM Database daemon) which is
 read in from the slurmctld and used to process the shares available
 to a given association.  sshare provides SLURM share information of
 Account, User, Raw Shares, Normalized Shares, Raw Usage, Normalized
-Usage, Effective Usage, and the Fair-share factor for each association.
+Usage, Effective Usage, the Fair-share factor, and the GrpCPUMins limit
+for each association.
 
 
 .SH "OPTIONS"
@@ -104,6 +105,10 @@ from sibling accounts.
 \f3FairShare\fP
 The Fair-Share factor, based on a user or account's assigned shares and
 the effective usage charged to them or their accounts.
+
+.TP
+\f3GrpCPUMins\fP
+The CPU-minutes limit set on the account.
 
 .SH "EXAMPLES"
 .eo

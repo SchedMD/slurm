@@ -430,6 +430,8 @@ typedef struct association_shares_object {
 	double usage_norm;	/* normalized usage */
 	uint64_t usage_raw;	/* measure of resource usage */
 
+	uint64_t grp_cpu_mins;	/* cpu-minute limit */
+
 	uint16_t user;          /* 1 if user association 0 if account
 				 * association */
 } association_shares_object_t;

@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
      and job epilog/prolog: slurm_spank_job_{prolog,epilog}
  -- spank: Add spank_option_getopt() function to api
  -- Change resolution of switch wait time from minutes to seconds.
+ -- Added CrpCPUMins to the output of sshare -l for those using hard limit
+    accounting.  Work contributed by Mark Nelson.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
