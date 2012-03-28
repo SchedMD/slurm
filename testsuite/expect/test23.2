@@ -194,7 +194,7 @@ $srun sleep 10
 # Spawn a job via srun using this account
 #
 set job_id3 0
-spawn $sbatch -N1 -t1 -v --account=$test_acct $file_in1
+spawn $sbatch -N1 -t1 -v --account=$test_acct --output=/dev/null $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id3 $expect_out(1,string)
