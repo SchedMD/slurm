@@ -1910,9 +1910,9 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 		if (gres_node_ptr->topo_cpus_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_cpus_bitmap[i]);
-			info("  topo_cpu_bitmap[%d]:%s", i, tmp_str);
+			info("  topo_cpus_bitmap[%d]:%s", i, tmp_str);
 		} else
-			info("  topo_cpu_bitmap[%d]:NULL", i);
+			info("  topo_cpus_bitmap[%d]:NULL", i);
 		if (gres_node_ptr->topo_cpus_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_gres_bitmap[i]);
