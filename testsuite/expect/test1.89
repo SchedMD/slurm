@@ -90,10 +90,16 @@ exec $bin_chmod 700 $file_prog
 #
 # Create an allocation
 #
-global env
-set env(PS1) $prompt
 set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
 expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		send "export PS1=\"$prompt\"\r"
+		exp_continue
+	}
+	-re "export PS1=\"$prompt\"" {
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
