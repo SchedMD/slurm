@@ -1277,13 +1277,6 @@ extern int bridge_status_fini(void)
 	/* make the rt connection end. */
 	_bridge_status_disconnect();
 
-	slurm_mutex_lock(&rt_mutex);
-
-	if (kill_job_list) {
-		list_destroy(kill_job_list);
-		kill_job_list = NULL;
-	}
-
 	if (real_time_thread) {
 		pthread_join(real_time_thread, NULL);
 		real_time_thread = 0;
@@ -1293,7 +1286,12 @@ extern int bridge_status_fini(void)
 		pthread_join(poll_thread, NULL);
 		poll_thread = 0;
 	}
-	slurm_mutex_unlock(&rt_mutex);
+
+	if (kill_job_list) {
+		list_destroy(kill_job_list);
+		kill_job_list = NULL;
+	}
+
 	pthread_mutex_destroy(&rt_mutex);
 	delete(rt_client_ptr);
 #endif
