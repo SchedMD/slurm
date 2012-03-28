@@ -143,8 +143,8 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 		bit_nset(bg_record->ionode_bitmap,
 			 io_start, io_start+io_cnt);
 		bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
-		bg_record->ionode_str = xstrdup(bitstring);
-		debug3("%s uses ionodes %s",
+		ba_set_ionode_str(bg_record);
+		debug3("%s uses cnodes %s",
 		       bg_record->bg_block_id,
 		       bg_record->ionode_str);
 		bg_record->conn_type[0] = SELECT_SMALL;
