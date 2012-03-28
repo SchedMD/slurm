@@ -139,6 +139,10 @@ if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
 }
+set wc_key_track [test_track_wckey]
+if { $wc_key_track == 0 } {
+	send_user "\nWARNING: Portions of this test will not work without TrackWCKey\n"
+}
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
@@ -576,7 +580,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
+if {$wc_key_track == 1 && $matches != 1} {
 	send_user "\nFAILURE:  sreport didn't give good info 4.\n"
 	incr exit_code 1
 }
@@ -615,7 +619,7 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$wc_key_track == 1 && $matches != 2} {
 	send_user "\nFAILURE:  sreport didn't give good info 5.\n"
 	incr exit_code 1
 }
@@ -901,7 +905,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
+if {$wc_key_track == 1 && $matches != 1} {
 	send_user "\nFAILURE:  sreport didn't give good info 12.\n"
 	incr exit_code 1
 }
@@ -940,7 +944,7 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$wc_key_track == 1 && $matches != 2} {
 	send_user "\nFAILURE:  sreport didn't give good info 13.\n"
 	incr exit_code 1
 }
@@ -1280,7 +1284,7 @@ expect {
 	}
 }
 
-if {$matches != 2} {
+if {$wc_key_track == 1 && $matches != 2} {
 	send_user "\nFAILURE:  sreport didn't give good info 20 $matches.\n"
 	incr exit_code 1
 }
@@ -1323,7 +1327,7 @@ expect {
 	}
 }
 
-if {$matches != 3} {
+if {$wc_key_track == 1 && $matches != 3} {
 	send_user "\nFAILURE:  sreport didn't give good info 21 $matches.\n"
 	incr exit_code 1
 }
