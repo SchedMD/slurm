@@ -1274,10 +1274,10 @@ extern int bridge_status_fini(void)
 
 	bridge_status_inited = false;
 #if defined HAVE_BG_FILES
-	slurm_mutex_lock(&rt_mutex);
-
 	/* make the rt connection end. */
 	_bridge_status_disconnect();
+
+	slurm_mutex_lock(&rt_mutex);
 
 	if (kill_job_list) {
 		list_destroy(kill_job_list);
