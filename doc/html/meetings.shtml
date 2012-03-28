@@ -2,19 +2,23 @@
 
 <h1>Meetings</h1>
 
-<p><b>SLURM User Group Meeting 2011</b><br>
-September 22-23, 2011<br>
-Phoenix, Arizona, USA</p>
+<p><b>SLURM User Group Meeting 2012</b><br>
+9-10 October 2012<br>
+Barcelona, Spain</p>
 
-<p><a href="slurm_ug_cfp.html">Call for submissions</a><br>
-<a href="slurm_ug_registration.html">Registration</a><br>
-<a href="slurm_ug_agenda.html">Agenda</a><br>
+<p><a href="http://www.bsc.es/SlurmUserMeeting2012">Call for submissions</a><br>
+<a href="http://www.bsc.es/SlurmUserMeeting2012">Registration</a><br>
+<a href="http://www.bsc.es/SlurmUserMeeting2012">Agenda</a><br>
 </p>
+
+<!--<p><b>SLURM User Group Meeting 2011</b><br>
+September 22-23, 2011<br>
+Phoenix, Arizona, USA</p>-->
 
 <!--<p><b>SLURM User Group Meeting 2010</b><br>
 October 5, 2010<br>
 Paris, France</p>-->
 
-<p style="text-align:center;">Last modified 23 May 2011</p>
+<p style="text-align:center;">Last modified 27 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
