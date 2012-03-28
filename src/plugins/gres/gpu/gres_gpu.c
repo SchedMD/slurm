@@ -145,7 +145,7 @@ extern int node_config_load(List gres_conf_list)
 	/* (Re-)Allocate memory if number of files changed */
 	if (nb_gpu != nb_available_files) {
 		xfree(gpu_devices);	/* No-op if NULL */
-		gpu_devices = (int *) xmalloc(nb_gpu);
+		gpu_devices = (int *) xmalloc(sizeof(int) * nb_gpu);
 		nb_available_files = nb_gpu;
 		for (i = 0; i < nb_available_files; i++)
 			gpu_devices[i] = -1;
