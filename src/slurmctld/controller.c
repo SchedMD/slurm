@@ -678,6 +678,12 @@ int main(int argc, char *argv[])
 			break;
 		sleep(1);
 	}
+	/* Always call slurm_select_fini() on some systems like
+	   BlueGene we need to make sure other processes are ended
+	   or we could get a random core from within it's
+	   underlying infrastructure.
+	*/
+        slurm_select_fini();
 #endif
 
 	xfree(slurmctld_cluster_name);
