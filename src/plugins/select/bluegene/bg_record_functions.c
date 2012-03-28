@@ -1016,6 +1016,9 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
+		if (bg_record->free_cnt)
+			continue;
+
 		if (!bit_test(bg_record->mp_bitmap, mp_bit))
 			continue;
 
@@ -1244,6 +1247,8 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	while ((bg_record = list_pop(requests))) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((found_record = list_next(itr))) {
+			if (found_record->free_cnt)
+				continue;
 			if (!blocks_overlap(bg_record, found_record))
 				continue;
 			list_push(delete_list, found_record);
