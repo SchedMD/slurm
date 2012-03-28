@@ -2779,7 +2779,13 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	    node_gres_ptr->topo_gres_bitmap &&
 	    node_gres_ptr->topo_gres_cnt_alloc) {
 		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+			/* Insure that if specific CPUs are associated with
+			 * specific GRES and the CPU count matches the
+			 * slurmctld configuration that we only use the GRES
+			 * on the CPUs that have already been allocated. */
 			if (core_bitmap &&
+			    (bit_size(core_bitmap) ==
+			     bit_size(node_gres_ptr->topo_cpus_bitmap[i])) &&
 			    !bit_overlap(core_bitmap,
 					 node_gres_ptr->topo_cpus_bitmap[i]))
 				continue;
