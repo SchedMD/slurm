@@ -16,9 +16,11 @@ NOTE: If you were on the old slurm-dev@lists.llnl.gov list you were
 automatically migrated into the new list.
 </p>
 
-The archive of the <b>slurm-dev</b> list is located here:<br>
-<a href="http://groups.google.com/group/slurm-devel">http://groups.google.com/group/slurm-devel</a>.
+<p>The archive of the <b>slurm-dev</b> list is online:<br>
+<a href=http://dir.gmane.org/gmane.comp.distributed.slurm.devel">http://dir.gmane.org/gmane.comp.distributed.slurm.devel</a><br>
+and<br>
+<a href="http://groups.google.com/group/slurm-devel">http://groups.google.com/group/slurm-devel</a></p>
 
-<p style="text-align:center;">Last modified 2 February 2012</p>
+<p style="text-align:center;">Last modified 28 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
