@@ -54,10 +54,12 @@ static void _set_block_avail(bg_record_t *bg_record);
 
 extern void print_bg_record(bg_record_t* bg_record)
 {
+	char *conn_type;
 	if (!bg_record) {
 		error("print_bg_record, record given is null");
 		return;
 	}
+	conn_type = conn_type_string_full(bg_record->conn_type);
 #if _DEBUG
 	info(" bg_record: ");
 	if (bg_record->bg_block_id)
@@ -69,7 +71,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 	     bg_record->cpu_cnt);
 	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y],
 	     bg_record->geo[Z]);
-	info("\tconn_type: %s", conn_type_string_full(bg_record->conn_type));
+	info("\tconn_type: %s", conn_type);
 #ifdef HAVE_BGL
 	info("\tnode_use: %s", node_use_string(bg_record->node_use));
 #endif
@@ -84,9 +86,10 @@ extern void print_bg_record(bg_record_t* bg_record)
 		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 		info("Record: BlockID:%s Nodes:%s Conn:%s",
 		     bg_record->bg_block_id, tmp_char,
-		     conn_type_string_full(bg_record->conn_type));
+		     conn_type);
 	}
 #endif
+	xfree(conn_type);
 }
 
 extern void destroy_bg_record(void *object)
@@ -577,6 +580,7 @@ extern int add_bg_record(List records, List *used_nodes,
 	ba_mp_t *ba_mp = NULL;
 	ListIterator itr;
 	int i, len;
+	char *conn_type = NULL;
 
 	xassert(bg_conf->slurm_user_name);
 
@@ -603,19 +607,24 @@ extern int add_bg_record(List records, List *used_nodes,
 
 	/* bg_record->boot_state = 0; 	Implicit */
 	bg_record->state = BG_BLOCK_FREE;
-
 #ifdef HAVE_BGL
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
+		conn_type = conn_type_string_full(blockreq->conn_type);
 		info("add_bg_record: asking for %s %d %d %s",
 		     blockreq->save_name, blockreq->small32, blockreq->small128,
-		     conn_type_string_full(blockreq->conn_type));
+		     conn_type);
+		xfree(conn_type);
+	}
 #else
-	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
+	if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK) {
+		conn_type = conn_type_string_full(blockreq->conn_type);
 		info("add_bg_record: asking for %s %d %d %d %d %d %s",
 		     blockreq->save_name, blockreq->small256,
 		     blockreq->small128, blockreq->small64,
 		     blockreq->small32, blockreq->small16,
-		     conn_type_string_full(blockreq->conn_type));
+		     conn_type);
+		xfree(conn_type);
+	}
 #endif
 	/* Set the bitmap blank here if it is a full node we don't
 	   want anything set we also don't want the bg_record->ionode_str set.

@@ -329,9 +329,16 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 #elif defined HAVE_BGP
 	if ((bg_action_ptr->conn_type[0] >= SELECT_SMALL)
 	   && (bg_action_ptr->conn_type[0] != bg_record->conn_type[0])) {
-		debug3("changing small block mode from %s to %s",
-		       conn_type_string_full(bg_record->conn_type),
-		       conn_type_string_full(bg_action_ptr->conn_type));
+		if (bg_conf->slurm_debug_level >= LOG_LEVEL_DEBUG3) {
+			char *req_conn_type =
+				conn_type_string_full(bg_action_ptr->conn_type);
+			char *conn_type =
+				conn_type_string_full(bg_record->conn_type);
+			debug3("changing small block mode from %s to %s",
+			       conn_type, req_conn_type);
+			xfree(req_conn_type);
+			xfree(conn_type);
+		}
 		rc = 1;
 # ifndef HAVE_BG_FILES
 		/* since we don't check state on an emulated system we
@@ -842,6 +849,7 @@ extern int sync_jobs(List job_list)
 		}
 
 		_sync_agent(bg_action_ptr, bg_record);
+		_destroy_bg_action(bg_action_ptr);
 	}
 	list_iterator_destroy(itr);
 

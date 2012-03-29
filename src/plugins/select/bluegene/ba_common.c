@@ -786,9 +786,8 @@ extern void ba_setup_wires(void)
 		_build_geo_bitmap_arrays(i);
 }
 
-extern void destroy_ba_mp(void *ptr)
+extern void free_internal_ba_mp(ba_mp_t *ba_mp)
 {
-	ba_mp_t *ba_mp = (ba_mp_t *)ptr;
 	if (ba_mp) {
 		FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
 		FREE_NULL_BITMAP(ba_mp->cnode_err_bitmap);
@@ -800,6 +799,15 @@ extern void destroy_ba_mp(void *ptr)
 				xfree(ba_mp->nodecard_loc[i]);
 			xfree(ba_mp->nodecard_loc);
 		}
+
+	}
+}
+
+extern void destroy_ba_mp(void *ptr)
+{
+	ba_mp_t *ba_mp = (ba_mp_t *)ptr;
+	if (ba_mp) {
+		free_internal_ba_mp(ba_mp);
 		xfree(ba_mp);
 	}
 }

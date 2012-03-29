@@ -282,7 +282,7 @@ extern void ba_create_system()
 /** */
 extern void ba_destroy_system(void)
 {
-	int a, x, y;
+	int a, x, y, z;
 
 	slurm_mutex_lock(&ba_system_mutex);
 	xfree(ba_main_grid_array);
@@ -290,8 +290,14 @@ extern void ba_destroy_system(void)
 	if (ba_main_grid) {
 		for (a=0; a<DIM_SIZE[A]; a++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				for (y = 0; y < DIM_SIZE[Y]; y++)
+				for (y = 0; y < DIM_SIZE[Y]; y++) {
+					for (z=0; z < DIM_SIZE[Z]; z++) {
+						free_internal_ba_mp(
+							&ba_main_grid
+							[a][x][y][z]);
+					}
 					xfree(ba_main_grid[a][x][y]);
+				}
 				xfree(ba_main_grid[a][x]);
 			}
 			xfree(ba_main_grid[a]);

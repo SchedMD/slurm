@@ -528,14 +528,21 @@ static bg_record_t *_find_matching_block(List block_list,
 				}
 #endif
 				if (bg_conf->slurm_debug_flags
-				    & DEBUG_FLAG_BG_PICK)
+				    & DEBUG_FLAG_BG_PICK) {
+					char *req_conn_type =
+						conn_type_string_full(
+							request->conn_type);
+					char *conn_type =
+						conn_type_string_full(
+							bg_record->conn_type);
 					info("bg block %s conn-type not usable "
 					     "asking for %s bg_record is %s",
 					     bg_record->bg_block_id,
-					     conn_type_string_full(
-						     request->conn_type),
-					     conn_type_string_full(
-						     bg_record->conn_type));
+					     req_conn_type,
+					     conn_type);
+					xfree(req_conn_type);
+					xfree(conn_type);
+				}
 				break;
 			}
 		}
