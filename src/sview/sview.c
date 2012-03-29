@@ -592,6 +592,14 @@ static void _get_current_debug_flags(GtkToggleAction *action)
 		gtk_toggle_action_set_active(toggle_action, new_state);
 
 	debug_action = gtk_action_group_get_action(menu_action_group,
+						  "flags_no_real_time");
+	toggle_action = GTK_TOGGLE_ACTION(debug_action);
+	orig_state = gtk_toggle_action_get_active(toggle_action);
+	new_state = debug_flags & DEBUG_FLAG_NO_REALTIME;
+	if (orig_state != new_state)
+		gtk_toggle_action_set_active(toggle_action, new_state);
+
+	debug_action = gtk_action_group_get_action(menu_action_group,
 						  "flags_prio");
 	toggle_action = GTK_TOGGLE_ACTION(debug_action);
 	orig_state = gtk_toggle_action_get_active(toggle_action);
@@ -722,6 +730,10 @@ static void _set_flags_gres(GtkToggleAction *action)
 static void _set_flags_no_conf_hash(GtkToggleAction *action)
 {
 	_set_flags(action, DEBUG_FLAG_NO_CONF_HASH);
+}
+static void _set_flags_no_real_time(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_NO_REALTIME);
 }
 static void _set_flags_prio(GtkToggleAction *action)
 {
@@ -874,6 +886,7 @@ static char *_get_ui_description()
 		"        <menuitem action='flags_gang'/>"
 		"        <menuitem action='flags_gres'/>"
 		"        <menuitem action='flags_no_conf_hash'/>"
+		"        <menuitem action='flags_no_real_time'/>"
 		"        <menuitem action='flags_prio'/>"
 		"        <menuitem action='flags_reservation'/>"
 		"        <menuitem action='flags_select_type'/>"
@@ -1111,6 +1124,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "Gres", G_CALLBACK(_set_flags_gres), FALSE},
 		{"flags_no_conf_hash", NULL, "NO CONF HASH", NULL,
 		 "NO_CONF_HASH", G_CALLBACK(_set_flags_no_conf_hash), FALSE},
+		{"flags_no_real_time", NULL, "NoRealTime", NULL,
+		 "NoRealTime", G_CALLBACK(_set_flags_no_real_time), FALSE},
 		{"flags_prio", NULL, "Priority", NULL,
 		 "Priority", G_CALLBACK(_set_flags_prio), FALSE},
 		{"flags_reservation", NULL, "Reservation", NULL,
