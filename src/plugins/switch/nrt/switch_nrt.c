@@ -422,7 +422,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	bool bulk_xfer = false, ip_v6 = false, user_space = false;
 	bool sn_all;
 	int i, err, nprocs = 0;
-	char *adapter_name = NULL;
+	char *adapter_name = NULL, *protocol = "mpi";
 
 #if NRT_DEBUG
 	info("switch_p_build_jobinfo(): nodelist:%s network:%s",
@@ -444,6 +444,15 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	    (strstr(network, "us") ||
 	     strstr(network, "US")))
 		user_space = true;
+
+	if (network &&
+	    (strstr(network, "pami") ||
+	     strstr(network, "PAMI")))
+		protocol = "pami";
+	if (network &&
+	    (strstr(network, "lapi") ||
+	     strstr(network, "LAPI")))
+		protocol = "lapi";
 
 	if (!network) {
 		/* default to sn_all */
@@ -472,7 +481,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 
 	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
 				nprocs, sn_all, adapter_name, bulk_xfer,
-				ip_v6, user_space);
+				ip_v6, user_space, protocol);
 
 	hostlist_destroy(list);
 	xfree(adapter_name);

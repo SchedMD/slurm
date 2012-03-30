@@ -134,6 +134,7 @@ struct slurm_nrt_jobinfo {
 	uint8_t bulk_xfer;	/* flag */
 	uint8_t ip_v6;		/* flag */
 	uint8_t user_space;	/* flag */
+	char *protocol;		/* MPI, UPC, LAPI, PAMI, etc. */
 	uint16_t tables_per_task;
 	nrt_tableinfo_t *tableinfo;
 
@@ -1060,6 +1061,7 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  ip_v6: %hu", j->ip_v6);
 	info("  user_space: %hu", j->user_space);
 	info("  tables_per_task: %hu", j->tables_per_task);
+	info("  protocol: %s", j->protocol);
 	if (j->nodenames)
 		hostlist_ranged_string(j->nodenames, sizeof(buf), buf);
 	else
@@ -1807,7 +1809,7 @@ _next_key(void)
 extern int
 nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		  bool sn_all, char *adapter_name, bool bulk_xfer,
-		  bool ip_v6, bool user_space)
+		  bool ip_v6, bool user_space, char *protocol)
 {
 	int nnodes;
 	hostlist_iterator_t hi;
@@ -1838,6 +1840,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	jp->nodenames  = hostlist_copy(hl);
 	jp->num_tasks  = nprocs;
 	jp->user_space = (uint8_t) user_space;
+	jp->protocol   = xstrdup(protocol);
 
 	hi = hostlist_iterator_create(hl);
 
@@ -2017,6 +2020,7 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack8(j->user_space, buf);
 	pack16(j->tables_per_task, buf);
 	pack64(j->network_id, buf);
+	packstr(j->protocol, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
 		_pack_tableinfo(&j->tableinfo[i], buf);
 	}
@@ -2085,6 +2089,7 @@ unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 extern int
 nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 {
+	uint32_t uint32_tmp;
 	int i;
 
 	assert(j);
@@ -2099,6 +2104,7 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	safe_unpack8(&j->user_space, buf);
 	safe_unpack16(&j->tables_per_task, buf);
 	safe_unpack64(&j->network_id, buf);
+	safe_unpackstr_xmalloc(&j->protocol, &uint32_tmp, buf);
 
 	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task *
 						   sizeof(nrt_tableinfo_t));
@@ -2115,6 +2121,7 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 
 unpack_error:
 	error("nrt_unpack_jobinfo error");
+	xfree(j->protocol);
 	if (j->tableinfo) {
 		for (i = 0; i < j->tables_per_task; i++)
 			xfree(j->tableinfo[i].table);
@@ -2183,6 +2190,7 @@ nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
 	}
 
 	jp->magic = 0;
+	xfree(jp->protocol);
 	if ((jp->tables_per_task > 0) && (jp->tableinfo != NULL)) {
 		for (i = 0; i < jp->tables_per_task; i++) {
 			tableinfo = &jp->tableinfo[i];
@@ -2447,8 +2455,6 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 
 /* FIXME: Ne need to set a bunch of these paramters appropriately */
 #define TBD0 0
-#define TBD1 1
-#define TBDM "mpi"
 		bzero(&table_info, sizeof(nrt_table_info_t));
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
@@ -2479,7 +2485,10 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		} else {
 			table_info.job_name[0] = '\0';
 		}
-		strncpy(table_info.protocol_name, TBDM, NRT_MAX_PROTO_NAME_LEN);
+		if (jp->protocol) {
+			strncpy(table_info.protocol_name, jp->protocol,
+				NRT_MAX_PROTO_NAME_LEN);
+		}
 		table_info.use_bulk_transfer = jp->bulk_xfer;
 		table_info.bulk_transfer_resources = TBD0;
 		/* The following fields only apply to Power7 processors
