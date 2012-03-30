@@ -295,7 +295,7 @@ while (my ($key, $line) = each(%start_sql)) {
 	$dbhandle->do($line);
 }
 
-while (my ($key, $line) = each(%start_sql)) {
+while (my ($key, $line) = each(%end_sql)) {
 	$line .= " on duplicate key update time_end=VALUES(time_end), " .
 		"state=VALUES(state), exit_code=VALUES(exit_code)";
 	#print "end\n$line\n\n";

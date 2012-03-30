@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     Based on patch from Rod Schultz.
  -- Fix bug in select/cons_res plugin when used with topology/tree and a node
     range count in job allocation request.
+ -- Fixed moab_2_slurmdb.pl script to correctly work for end records.
 
 * Changes in SLURM 2.3.4
 ========================
