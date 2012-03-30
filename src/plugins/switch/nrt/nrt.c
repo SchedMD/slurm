@@ -131,7 +131,9 @@ struct slurm_nrt_jobinfo {
 	/* uid from getuid() */
 	/* pid from getpid() */
 	nrt_job_key_t job_key;
-	uint8_t bulk_xfer;  /* flag */
+	uint8_t bulk_xfer;	/* flag */
+	uint8_t ip_v6;		/* flag */
+	uint8_t user_space;	/* flag */
 	uint16_t tables_per_task;
 	nrt_tableinfo_t *tableinfo;
 
@@ -1054,7 +1056,9 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  job_key: %u", j->job_key);
 	info("  network_id: %lu", j->network_id);
 	info("  table_size: %u", j->tables_per_task);
-	info("  bulk_xfer: %u", j->bulk_xfer);
+	info("  bulk_xfer: %hu", j->bulk_xfer);
+	info("  ip_v6: %hu", j->ip_v6);
+	info("  user_space: %hu", j->user_space);
 	info("  tables_per_task: %hu", j->tables_per_task);
 	if (j->nodenames)
 		hostlist_ranged_string(j->nodenames, sizeof(buf), buf);
@@ -1802,7 +1806,8 @@ _next_key(void)
  */
 extern int
 nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
-		  bool sn_all, char *adapter_name, int bulk_xfer)
+		  bool sn_all, char *adapter_name, bool bulk_xfer,
+		  bool ip_v6, bool user_space)
 {
 	int nnodes;
 	hostlist_iterator_t hi;
@@ -1827,10 +1832,12 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	if (nprocs <= 0)
 		slurm_seterrno_ret(EINVAL);
 
-	jp->bulk_xfer = (uint8_t) bulk_xfer;
-	jp->job_key   = _next_key();
-	jp->nodenames = hostlist_copy(hl);
-	jp->num_tasks = nprocs;
+	jp->bulk_xfer  = (uint8_t) bulk_xfer;
+	jp->ip_v6      = (uint8_t) ip_v6;
+	jp->job_key    = _next_key();
+	jp->nodenames  = hostlist_copy(hl);
+	jp->num_tasks  = nprocs;
+	jp->user_space = (uint8_t) user_space;
 
 	hi = hostlist_iterator_create(hl);
 
@@ -2006,6 +2013,8 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack32(j->magic, buf);
 	pack32(j->job_key, buf);
 	pack8(j->bulk_xfer, buf);
+	pack8(j->ip_v6, buf);
+	pack8(j->user_space, buf);
 	pack16(j->tables_per_task, buf);
 	pack64(j->network_id, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
@@ -2086,6 +2095,8 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 	safe_unpack32(&j->job_key, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
+	safe_unpack8(&j->ip_v6, buf);
+	safe_unpack8(&j->user_space, buf);
 	safe_unpack16(&j->tables_per_task, buf);
 	safe_unpack64(&j->network_id, buf);
 
@@ -2438,14 +2449,23 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 #define TBD0 0
 #define TBD1 1
 #define TBDM "mpi"
+		bzero(&table_info, sizeof(nrt_table_info_t));
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
 		table_info.uid = uid;
 		table_info.network_id = jp->network_id;
 		table_info.pid = pid;
 		table_info.adapter_type = jp->tableinfo[i].adapter_type;
-		table_info.is_user_space = TBD0;
-		table_info.is_ipv4 = TBD1;
+		if (jp->user_space) {
+			table_info.is_ipv4 = 0;
+			table_info.is_user_space = 1;
+		} else if (jp->ip_v6) {
+			table_info.is_ipv4 = 0;
+			table_info.is_user_space = 0;
+		} else {
+			table_info.is_ipv4 = 1;
+			table_info.is_user_space = 0;
+		}
 		table_info.context_id = 0;
 		table_info.table_id = TBD0;
 		if (job_name) {

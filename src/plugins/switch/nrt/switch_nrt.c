@@ -419,9 +419,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 				  char *network)
 {
 	hostlist_t list = NULL;
+	bool bulk_xfer = false, ip_v6 = false, user_space = false;
 	bool sn_all;
 	int i, err, nprocs = 0;
-	int bulk_xfer = 0;
 	char *adapter_name = NULL;
 
 #if NRT_DEBUG
@@ -430,49 +430,54 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 #else
 	debug3("network = \"%s\"", network);
 #endif
-	if (network && (strstr(network, "ip") || strstr(network, "IP"))) {
-		debug2("NRT: \"ip\" found in network string, "
-		       "no network tables allocated");
-		return SLURM_SUCCESS;
+	if (network &&
+	    (strstr(network, "bulk_xfer") ||
+	     strstr(network, "BULK_XFER")))
+		bulk_xfer = true;
+
+	if (network &&
+	    (strstr(network, "ipv6") ||
+	     strstr(network, "IPV6")))
+		ip_v6 = true;
+
+	if (network &&
+	    (strstr(network, "us") ||
+	     strstr(network, "US")))
+		user_space = true;
+
+	if (!network) {
+		/* default to sn_all */
+		sn_all = true;
+	} else if (strstr(network, "sn_all") ||
+	           strstr(network, "SN_ALL")) {
+		debug3("Found sn_all in network string");
+		sn_all = true;
+	} else if (strstr(network, "sn_single") ||
+		   strstr(network, "SN_SINGLE")) {
+		debug3("Found sn_single in network string");
+		sn_all = false;
+	} else if ((adapter_name = _adapter_name_check(network))) {
+		debug3("Found adapter %s in network string", adapter_name);
+		sn_all = false;
 	} else {
-		if (!network) {
-			/* default to sn_all */
-			sn_all = true;
-		} else if (strstr(network, "sn_all") ||
-		           strstr(network, "SN_ALL")) {
-			debug3("Found sn_all in network string");
-			sn_all = true;
-		} else if (strstr(network, "sn_single") ||
-			   strstr(network, "SN_SINGLE")) {
-			debug3("Found sn_single in network string");
-			sn_all = false;
-		} else if ((adapter_name = _adapter_name_check(network))) {
-			debug3("Found adapter %s in network string",
-			       adapter_name);
-			sn_all = false;
-		} else {
-			/* default to sn_all */
-			sn_all = true;
-		}
-
-		list = hostlist_create(nodelist);
-		if (!list)
-			fatal("hostlist_create(%s): %m", nodelist);
-		for (i = 0; i < hostlist_count(list); i++)
-			nprocs += tasks_per_node[i];
-
-		if (network &&
-		    (strstr(network, "bulk_xfer") ||
-		     strstr(network, "BULK_XFER")))
-			bulk_xfer = 1;
-		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job,
-					list, nprocs, sn_all, adapter_name,
-					bulk_xfer);
-		hostlist_destroy(list);
-		xfree(adapter_name);
-
-		return err;
+		/* default to sn_all */
+		sn_all = true;
 	}
+
+	list = hostlist_create(nodelist);
+	if (!list)
+		fatal("hostlist_create(%s): %m", nodelist);
+	for (i = 0; i < hostlist_count(list); i++)
+		nprocs += tasks_per_node[i];
+
+	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
+				nprocs, sn_all, adapter_name, bulk_xfer,
+				ip_v6, user_space);
+
+	hostlist_destroy(list);
+	xfree(adapter_name);
+
+	return err;
 }
 
 extern switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
