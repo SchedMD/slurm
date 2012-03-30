@@ -36,6 +36,9 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *****************************************************************************
+ *  NOTE: The NRT API communicates with IBM's Protocol Network Services Deamon
+ *  (PNSD). PNSD logs are written to /tmp/serverlog.
 \*****************************************************************************/
 
 #include <assert.h>
@@ -2442,8 +2445,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		table_info.pid = pid;
 		table_info.adapter_type = jp->tableinfo[i].adapter_type;
 		table_info.is_user_space = TBD0;
-		table_info.is_ipv4 = TBD0;
-		table_info.context_id = TBD0;
+		table_info.is_ipv4 = TBD1;
+		table_info.context_id = 0;
 		table_info.table_id = TBD0;
 		if (job_name) {
 			char *sep = strrchr(job_name,'/');
@@ -2459,8 +2462,12 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		strncpy(table_info.protocol_name, TBDM, NRT_MAX_PROTO_NAME_LEN);
 		table_info.use_bulk_transfer = jp->bulk_xfer;
 		table_info.bulk_transfer_resources = TBD0;
-		table_info.immed_send_slots_per_win = TBD0;
-		table_info.num_cau_indexes = TBD0;
+		/* The following fields only apply to Power7 processors
+		 * and have no effect on x86 processors:
+		 * immed_send_slots_per_win
+		 * num_cau_indexes */
+		table_info.immed_send_slots_per_win = 0;
+		table_info.num_cau_indexes = 0;
 		load_table.table_info = &table_info;
 		load_table.per_task_input = jp->tableinfo[i].table;
 #if NRT_DEBUG
