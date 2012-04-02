@@ -397,6 +397,7 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched
 outside of its control.</p>
 
+<hr size=4 width="100%">
 
 <h2><a name="quadrics_mpi" href="http://www.quadrics.com/"><b>Quadrics MPI</b></a></h2>
 
@@ -408,6 +409,7 @@ then initiate it using a command line of this sort:</p>
 $ srun [options] &lt;program&gt; [program args]
 </pre>
 
+<hr size=4 width="100%">
 
 <h2><a name="UPC" href="http://upc.lbl.gov/"><b>UPC (Unified Parallel C)</b></a></h2>
 
@@ -421,7 +423,6 @@ $ srun -N4 -n16 a.out
 </pre>
 
 <hr size=4 width="100%">
-
 
 <p style="text-align:center;">Last modified 2 April 2012</p>
 
