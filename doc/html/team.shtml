@@ -2,10 +2,11 @@
 
 <h1>SLURM Team</h1>
 <p>SLURM development has been a joint effort of many companies and
-organizations. The primary SLURM development staff includes: </p>
+organizations. The primary SLURM development staff currently includes: </p>
 <ul>
-<li>Danny Auble (SchedMD)</li>
-<li>Morris Jette (SchedMD)</li>
+<li>Danny Auble (SchedMD, previously Lawrence Livermore National Laboratory)</li>
+<li>Hongjia Cao (National University of Defense Techonogy, China)</li>
+<li>Morris Jette (SchedMD, previously Lawrence Livermore National Laboratory)</li>
 </ul>
 
 <p> SLURM contributors include: </p>
@@ -24,7 +25,6 @@ organizations. The primary SLURM development staff includes: </p>
 <li>David Bremer (Lawrence Livermore National Laboratory)</li>
 <li>Jon Bringhurst (Los Alamos National Laboratory)</li>
 <li>Bill Brophy (Bull)</li>
-<li>Hongjia Cao (National University of Defense Techonogy, China)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
@@ -108,6 +108,6 @@ organizations. The primary SLURM development staff includes: </p>
 <li>Nathan Yee (SchedMD)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 20 March 2012</p>
+<p style="text-align:center;">Last modified 2 April 2012</p>
 
 <!--#include virtual="footer.txt"-->
