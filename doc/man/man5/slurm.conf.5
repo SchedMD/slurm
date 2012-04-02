@@ -1394,6 +1394,11 @@ In the case of large clusters (more than 1000 nodes) configured with
 desirable.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
+\fBmax_depend_depth=#\fR
+Maximum number of jobs to test for a circular job dependency. Stop testing
+after this number of job dependencies have been tested. The default value is
+10 jobs.
+.TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 60 seconds.
