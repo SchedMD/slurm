@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "September 2011" "gres.conf 2.3" "Slurm configuration file"
+.TH "gres.conf" "5" "April 2012" "gres.conf 2.3" "Slurm configuration file"
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
 
@@ -44,8 +44,8 @@ If any CPU can be used with the resources, then do not specify the
 .TP
 \fBFile\fR
 Fully qualified pathname of the device files associated with a resource. 
-The name can include a numberic range suffix to be interpreted by SLURM
-(e.g. \fIFile=/dev/nvidia[0\-3]\fR).
+The file name parsing logic does not include any support for regular
+expressions. Each file must be explicitly named, one per line.
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making
 use of resources allocated to a different user).
