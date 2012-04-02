@@ -1222,6 +1222,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 
 	if (rc == SLURM_SUCCESS) {
 		/* test for circular dependencies (e.g. A -> B -> A) */
+		(void) _scan_depend(NULL, job_ptr->job_id);
 		if (_scan_depend(new_depend_list, job_ptr->job_id))
 			rc = ESLURM_CIRCULAR_DEPENDENCY;
 	}
@@ -1242,16 +1243,44 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 }
 
 /* Return TRUE if job_id is found in dependency_list.
+ * Pass NULL dependency list to clear the counter.
  * Execute recursively for each dependent job */
 static bool _scan_depend(List dependency_list, uint32_t job_id)
 {
+	static time_t sched_update = 0;
+	static int max_depend_depth = 10;
+	static int job_counter = 0;
 	bool rc = false;
 	ListIterator iter;
 	struct depend_spec *dep_ptr;
 
-	xassert(job_id);
-	xassert(dependency_list);
+	if (sched_update != slurmctld_conf.last_update) {
+		char *sched_params, *tmp_ptr;
 
+		sched_params = slurm_get_sched_params();
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "max_depend_depth="))) {
+		/*                                   01234567890123456 */
+			int i = atoi(tmp_ptr + 17);
+			if (i < 0) {
+				error("ignoring SchedulerParameters: "
+				      "max_depend_depth value of %d", i);
+			} else {
+				      max_depend_depth = i;
+			}
+		}
+		xfree(sched_params);
+		sched_update = slurmctld_conf.last_update;
+	}
+
+	if (dependency_list == NULL) {
+		job_counter = 0;
+		return FALSE;
+	} else if (job_counter++ >= max_depend_depth) {
+		return FALSE;
+	}
+
+	xassert(job_id);
 	iter = list_iterator_create(dependency_list);
 	if (iter == NULL)
 		fatal("list_iterator_create malloc failure");

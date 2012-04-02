@@ -218,6 +218,10 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in select/cons_res plugin when used with topology/tree and a node
     range count in job allocation request.
  -- Fixed moab_2_slurmdb.pl script to correctly work for end records.
+ -- Add support for new SchedulerParameters of max_depend_depth defining the
+    maximum number of jobs to test for circular dependencies (i.e. job A waits
+    for job B to start and job B waits for job A to start). Default value is
+    10 jobs.
 
 * Changes in SLURM 2.3.4
 ========================
