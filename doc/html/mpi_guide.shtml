@@ -1,13 +1,13 @@
 <!--#include virtual="header.txt"-->
 
-<h1>MPI Use Guide</h1>
+<h1>MPI and UPC Users Guide</h1>
 
 <p>MPI use depends upon the type of MPI being used.
 There are three fundamentally different modes of operation used
 by these various MPI implementations.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization
-of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,
+of communications (UPC, Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,
 MVAPICH, MVAPICH2, some MPICH1 modes, and OpenMPI version 1.5 or higher).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (LAM/MPI and HP-MPI).</li>
@@ -43,6 +43,7 @@ with SLURM are provided below.
 <li><a href="#mvapich2">MVAPICH2</a></li>
 <li><a href="#open_mpi">Open MPI</a></li>
 <li><a href="#quadrics_mpi">Quadrics MPI</a></li>
+<li><a href="#UPC">UPC</a></li>
 </ul></p>
 <hr size=4 width="100%">
 
@@ -406,9 +407,22 @@ then initiate it using a command line of this sort:</p>
 <pre>
 $ srun [options] &lt;program&gt; [program args]
 </pre>
+
+
+<h2><a name="UPC" href="http://upc.lbl.gov/"><b>UPC (Unified Parallel C)</b></a></h2>
+
+<p>Berkeley UPC (and likely other UPC implementations) rely upon SLURM to
+allocate resources and launch the application's tasks. The UPC library then
+reads SLURM environment variables in order to determine how the job's task
+count and location. One would build the UPC program in the normal manner
+then initiate it using a command line of this sort:</p>
+<pre>
+$ srun -N4 -n16 a.out
+</pre>
+
 <hr size=4 width="100%">
 
 
-<p style="text-align:center;">Last modified 24 October 2011</p>
+<p style="text-align:center;">Last modified 2 April 2012</p>
 
 <!--#include virtual="footer.txt"-->

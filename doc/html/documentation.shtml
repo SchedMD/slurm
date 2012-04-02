@@ -9,7 +9,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="quickstart.html">Quick Start User Guide</a></li>
 <li><a href="man_index.html">Man Pages</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
-<li><a href="mpi_guide.html">MPI Use Guide</a></li>
+<li><a href="mpi_guide.html">MPI and UPC Users Guide</a></li>
 <li><a href="mc_support.html">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="multi_cluster.html">Multi-Cluster Operation</a></li>
 <li><a href="checkpoint_blcr.html">SLURM Checkpoint/Restart with BLCR</a></li>
@@ -95,6 +95,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 2 February 2012</p>
+<p style="text-align:center;">Last modified 2 April 2012</p>
 
 <!--#include virtual="footer.txt"-->
