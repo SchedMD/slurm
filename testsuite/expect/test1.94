@@ -132,13 +132,19 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 if {[wait_for_file $file_out] == 0} {
 	set matches  0 
-	set complete 0
+	set sum      0
+	set total    0
 	spawn $bin_cat $file_out
 	expect {
                 -re "Hello from ($number) of $task_cnt" {
 			incr matches
+			incr sum $expect_out(1,string)
                         exp_continue
                 }
+		-re "Total is ($number)" {
+			set total $expect_out(1,string)
+                        exp_continue
+		}
 		-re "Failed to mmap" {
 			send_user "\nFAILURE: insufficient shared memory. "
 			send_user "Rebuild UPCC with --disable-pshm option.\n"
@@ -149,13 +155,13 @@ if {[wait_for_file $file_out] == 0} {
                 }
         }
 	if {$matches == 0} {
-		send_user "\nFAILURE: No MPI communications occurred\n"
-		send_user "  The version of MPI you are using may be incompatible "
-		send_user "with the configured switch\n"
-		send_user "  Core files may be present from failed MPI tasks\n\n"
+		send_user "\nFAILURE: No UPC communications occurred\n"
 		set exit_code 1
 	} elseif {$matches != $task_cnt} {
-		send_user "\nFAILURE: unexpected output ($matches of $expected)\n"
+		send_user "\nFAILURE: unexpected output ($matches of $task_cnt)\n"
+		set exit_code 1
+	} elseif {$sum != $total} {
+		send_user "\nFAILURE: Problem with global variables ($sum != $total)\n"
 		set exit_code 1
 	}
 } else {
