@@ -67,6 +67,9 @@ int main (int argc, char *argv[])
 	if (max_nodes < min_nodes)
 		max_nodes = min_nodes;
 
+	/* We do this just to change the MPI type at the start */
+	slurm_mpi_plugin_init("none"); /* Don't try to use PMI */
+
 	/* Create a job allocation */
 	slurm_init_job_desc_msg( &job_req );
 	job_req.min_nodes  = min_nodes;
@@ -155,6 +158,7 @@ int main (int argc, char *argv[])
 	launch->argc = 1;
 	launch->user_managed_io = true; /* This is the key to using
 					  "user managed" IO */
+	launch->mpi_plugin_name = "none"; /* Don't try to use PMI */
 
 	if (slurm_step_launch(ctx, launch, NULL) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
