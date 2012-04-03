@@ -24,6 +24,9 @@ documents those changes that are of interest to users and admins.
  -- Change resolution of switch wait time from minutes to seconds.
  -- Added CrpCPUMins to the output of sshare -l for those using hard limit
     accounting.  Work contributed by Mark Nelson.
+ -- Added mpi/pmi2 plugin for complete support of pmi2 including acquiring
+    additional resources for newly launched tasks. Contributed by Hongjia Cao,
+    NUDT.
 
 * Changes in SLURM 2.4.0.pre4
 =============================

@@ -559,6 +559,8 @@ Select one value for <B>MpiDefault</B>:<BR>
 <input type="radio" name="mpi_default" value="mpich1_p4"> <B>MPICH1-P4</B><BR>
 <input type="radio" name="mpi_default" value="mpich1_shmem"> <B>MPICH1-SHMEM</B>:
 This also works for MVAPICH-SHMEM.<BR>
+<input type="radio" name="mpi_default" value="pmi2"> <B>MPI-PMI2</B>
+(For MPI2 and MVAPICH2)<BR>
 <input type="radio" name="mpi_default" value="mvapich"> <B>MVAPICH</B><BR>
 <input type="radio" name="mpi_default" value="none" checked> <B>None</B>:
 +This works for most other MPI types including MPICH2, LAM MPI and Open MPI.<BR>
@@ -848,5 +850,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 2 February 2012</P>
+Last modified 3 April 2012</P>
 </BODY>

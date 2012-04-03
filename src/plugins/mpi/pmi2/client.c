@@ -184,8 +184,7 @@ extern void
 client_req_free(client_req_t *req)
 {
 	if (req) {
-		if (req->buf)
-			xfree(req->buf);
+		xfree(req->buf);
 		xfree(req);
 	}
 }
@@ -204,7 +203,7 @@ client_req_parse_body(client_req_t *req)
 	/* skip cmd */
 	i = req->parse_idx;
 
-	while(i < req->buf_len) {
+	while (i < req->buf_len) {
 		/* search for key */
 		key = &req->buf[i];
 		while (req->buf[i] != '=' && i < req->buf_len) {

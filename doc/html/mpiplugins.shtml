@@ -16,9 +16,14 @@ conform to the SLURM Plugin API with the following specifications:</p>
 The major type must be &quot;mpi.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
-<li><b>lam</b>&#151;For use with LAM MPI and Open MPI.</li>
-<li><b>mpich-gm</b>&#151;For use with Myrinet.</li>
-<li><b>mvapich</b>&#151;For use with Infiniband.</li>
+<li><b>lam</b>&#151;For use with LAM MPI.</li>
+<li><b>mpich-gm</b>&#151;For use with MPICH-GM.</li>
+<li><b>mpich-mx</b>&#151;For use with MPICH-MX.</li>
+<li><b>mpich1_p4</b>&#151;For use with MPICH1 (P4 communications).</li>
+<li><b>mpich1_shmem</b>&#151;For use with MPICH1 (Shmem communications).</li>
+<li><b>mvapich</b>&#151;For use with MVAPICH.</li>
+<li><b>openmpi</b>&#151;For use with OpenMPI.</li>
+<li><b>pmi2</b>&#151;For use with MPI2 and MVAPICH2.</li>
 <li><b>none</b>&#151;For use with most other versions of MPI.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
@@ -121,6 +126,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 February 2012</p>
+<p style="text-align:center;">Last modified 3 April 2012</p>
 
 <!--#include virtual="footer.txt"-->

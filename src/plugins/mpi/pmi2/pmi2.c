@@ -425,7 +425,7 @@ _handle_spawn(int fd, int lrank, client_req_t *req)
 	}
 	
 	/* a resp will be send back from srun.
-	   this will not be forwarded to the tasks */
+	 * this will not be forwarded to the tasks */
 	rc = spawn_req_send_to_srun(spawn_req, &spawn_resp);
 	if (spawn_resp->rc != SLURM_SUCCESS) {
 		task_resp = client_resp_new();
@@ -478,7 +478,7 @@ handle_pmi2_cmd(int fd, int lrank)
 	}
 	
 	i = 0;
-	while(pmi2_cmd_handlers[i].cmd != NULL) {
+	while (pmi2_cmd_handlers[i].cmd != NULL) {
 		if (!strcmp(req->cmd, pmi2_cmd_handlers[i].cmd))
 			break;
 		i ++;
@@ -496,8 +496,7 @@ handle_pmi2_cmd(int fd, int lrank)
 	return rc;
 
 rwfail:
-	if (buf)
-		xfree(buf);
+	xfree(buf);
 	return SLURM_ERROR;
 }
 

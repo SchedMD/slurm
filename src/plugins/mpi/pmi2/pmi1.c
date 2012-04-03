@@ -181,7 +181,7 @@ _handle_barrier_in(int fd, int lrank, client_req_t *req)
 		rc = temp_kvs_send();
 	}
 	debug3("mpi/pmi2: out _handle_barrier_in, tasks_to_wait=%d, "
-	      "children_to_wait=%d", tasks_to_wait, children_to_wait);
+	       "children_to_wait=%d", tasks_to_wait, children_to_wait);
 	return rc;
 }
 

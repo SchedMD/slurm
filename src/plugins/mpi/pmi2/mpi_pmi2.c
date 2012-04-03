@@ -120,7 +120,7 @@ int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 				job_info.pmi_jobid);
 	env_array_overwrite_fmt(env, "PMI_RANK", "%u", job->gtaskid);
 	env_array_overwrite_fmt(env, "PMI_SIZE", "%u", job->ntasks);
-	if(job_info.spawn_seq) { /* PMI1.1 needs this env-var */
+	if (job_info.spawn_seq) { /* PMI1.1 needs this env-var */
 		env_array_overwrite_fmt(env, "PMI_SPAWNED", "%u", 1);
 	}
 	/* close unused sockets in task */
@@ -162,7 +162,7 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 	return (void *)0x12345678;
 }
 
-int p_mpi_hook_client_single_task_per_node()
+int p_mpi_hook_client_single_task_per_node(void)
 {
 	return false;
 }

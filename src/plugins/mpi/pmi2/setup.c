@@ -627,7 +627,7 @@ _setup_srun_environ(const mpi_plugin_client_info_t *job, char ***env)
 				tree_info.pmi_port);
 	env_array_overwrite_fmt(env, PMI2_STEP_NODES_ENV, "%s",
 				job_info.step_nodelist);
-	env_array_overwrite_fmt(env, PMI2_PROC_MAPPING_ENV,
+	env_array_overwrite_fmt(env, PMI2_PROC_MAPPING_ENV, "%s",
 				job_info.proc_mapping);
 	return SLURM_SUCCESS;
 }
@@ -685,7 +685,8 @@ _setup_srun_task_launch_detection(void)
                 sleep(1);
         }
         slurm_attr_destroy(&attr);
-        debug("mpi/pmi2: task launch detection thread (%lu) started", (unsigned long) tid);
+        debug("mpi/pmi2: task launch detection thread (%lu) started",
+	      (unsigned long) tid);
 
         return SLURM_SUCCESS;
 }

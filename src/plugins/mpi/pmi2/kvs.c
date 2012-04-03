@@ -92,8 +92,7 @@ temp_kvs_init(void)
 	uint32_t nodeid, num_children, size;
 	Buf buf = NULL;
 	
-	if (temp_kvs_buf)
-		xfree(temp_kvs_buf);
+	xfree(temp_kvs_buf);
 	temp_kvs_cnt = 0;
 	temp_kvs_size = TEMP_KVS_SIZE_INC;
 	temp_kvs_buf = xmalloc(temp_kvs_size);
@@ -187,8 +186,8 @@ temp_kvs_send(void)
 	
 	if (! in_stepd()) {	/* srun */
 		rc = tree_msg_to_stepds(job_info.step_nodelist,
-				   temp_kvs_cnt,
-				   temp_kvs_buf);
+					temp_kvs_cnt,
+					temp_kvs_buf);
 	} else if (tree_info.parent_node != NULL) {
 		/* non-first-level stepds */
 		rc = tree_msg_to_stepds(tree_info.parent_node,

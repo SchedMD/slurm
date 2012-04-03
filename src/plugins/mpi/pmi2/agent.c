@@ -179,14 +179,15 @@ _tree_listen_read(eio_obj_t *obj, List objs)
                             (errno == EWOULDBLOCK)) {
                                 return 0;
                         }
-                        error("mpi/pmi2: unable to accept new connection: %m\n");
+                        error("mpi/pmi2: unable to accept new connection: %m");
                         return 0;
 		}
 
 		if (! in_stepd()) {
 			sin = (struct sockaddr_in *) &addr;
 			inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
-			debug3("mpi/pmi2: accepted tree connection: ip=%s sd=%d", buf, sd);
+			debug3("mpi/pmi2: accepted tree connection: ip=%s sd=%d",
+			       buf, sd);
 		}
 		
 		/* read command from socket and handle it */
@@ -342,7 +343,8 @@ pmi2_start_agent(void)
                 sleep(1);
         }
         slurm_attr_destroy(&attr);
-        debug("mpi/pmi2: started agent thread (%lu)", (unsigned long) pmi2_agent_tid);
+        debug("mpi/pmi2: started agent thread (%lu)",
+	      (unsigned long) pmi2_agent_tid);
 
         return SLURM_SUCCESS;
 }

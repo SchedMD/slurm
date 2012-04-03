@@ -573,9 +573,9 @@ _setup_exec_srun(spawn_req_t *req)
 				req->preput_cnt);
 	for (i = 0; i < req->preput_cnt; i ++) {
 		snprintf(env_key, 32, PMI2_PPKEY_ENV"%d", i);
-		env_array_overwrite_fmt(&env, env_key, req->pp_keys[i]);
+		env_array_overwrite_fmt(&env, env_key, "%s", req->pp_keys[i]);
 		snprintf(env_key, 32, PMI2_PPVAL_ENV"%d", i);
-		env_array_overwrite_fmt(&env, env_key, req->pp_vals[i]);
+		env_array_overwrite_fmt(&env, env_key, "%s", req->pp_vals[i]);
 	}
 
 	if (req->subcmd_cnt == 1) {
