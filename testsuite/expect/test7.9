@@ -74,6 +74,11 @@ expect {
 		set invalid 1
 		exp_continue
 	}
+	-re "pmi2" {
+		send_user "\nWARNING: test incompatible with mpi/pmi2\n"
+		set invalid 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
