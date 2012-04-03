@@ -103,7 +103,7 @@ p_mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 	return (void *)0xdeadbeef;
 }
 
-int p_mpi_hook_client_single_task_per_node()
+int p_mpi_hook_client_single_task_per_node(void)
 {
 	return true;
 }

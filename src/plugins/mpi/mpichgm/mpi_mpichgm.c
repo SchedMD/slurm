@@ -126,7 +126,7 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 	return (mpi_plugin_client_state_t *)gmpi_thr_create(job, env);
 }
 
-int p_mpi_hook_client_single_task_per_node()
+int p_mpi_hook_client_single_task_per_node(void)
 {
 	return false;
 }
