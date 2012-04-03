@@ -357,8 +357,7 @@ handle_tree_cmd(int fd)
 	return rc;
 	
 rwfail:
-	if (req_buf)
-		xfree(req_buf);
+	xfree(req_buf);
 	return SLURM_ERROR;
 }
 
@@ -400,8 +399,7 @@ tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr)
 	
 rwfail:
 	close (fd);
-	if (data)
-		xfree(data);
+	xfree(data);
 	return SLURM_ERROR;
 }
 
