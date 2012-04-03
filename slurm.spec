@@ -719,6 +719,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mpi_mvapich.so
 %{_libdir}/slurm/mpi_none.so
 %{_libdir}/slurm/mpi_openmpi.so
+%{_libdir}/slurm/mpi_pmi2.so
 %{_libdir}/slurm/preempt_none.so
 %{_libdir}/slurm/preempt_partition_prio.so
 %{_libdir}/slurm/preempt_qos.so
