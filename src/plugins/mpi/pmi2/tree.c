@@ -162,10 +162,11 @@ _handle_spawn(int fd, Buf buf)
 	rc = spawn_req_unpack(&req, buf);
 	if (rc != SLURM_SUCCESS) {
 		error("mpi/pmi2: failed to unpack spawn request spawn cmd");
-		resp = spawn_resp_new();
+		/* We lack a hostname to send response below.
+		 resp = spawn_resp_new();
 		resp->rc = rc;
 		rc = spawn_resp_send_to_stepd(resp, req->from_node);
-		spawn_resp_free(resp);
+		spawn_resp_free(resp); */
 		return rc;
 	}
 

@@ -152,6 +152,16 @@ spawn_req_pack(spawn_req_t *req, Buf buf)
 {
 	int i, j;
 	spawn_subcmd_t *subcmd;
+	void *auth_cred;
+
+	auth_cred = g_slurm_auth_create(NULL, 2, NULL);
+	if (auth_cred == NULL) {
+		error("authentication: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		return;
+	}
+	(void) g_slurm_auth_pack(auth_cred, buf);
+	(void) g_slurm_auth_destroy(auth_cred);
 
 	pack32(req->seq, buf);
 	packstr(req->from_node, buf);
@@ -185,6 +195,23 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 	spawn_subcmd_t *subcmd = NULL;
 	uint32_t temp32;
 	int i, j;
+	void *auth_cred;
+	uid_t auth_uid, my_uid;
+
+	auth_cred = g_slurm_auth_unpack(buf);
+	if (auth_cred == NULL) {
+		error("authentication: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		return SLURM_ERROR;
+	}
+	auth_uid = g_slurm_auth_get_uid(auth_cred, NULL);
+	(void) g_slurm_auth_destroy(auth_cred);
+	my_uid = getuid();
+	if ((auth_uid != 0) && (auth_uid != my_uid)) {
+		error("mpi/pmi2: spawn request apparently from uid %u",
+		      (uint32_t) auth_uid);
+		return SLURM_ERROR;
+	}
 
 	req = xmalloc(sizeof(spawn_req_t));
 
