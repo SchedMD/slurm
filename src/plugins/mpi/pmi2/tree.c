@@ -161,7 +161,7 @@ _handle_spawn(int fd, Buf buf)
 	
 	rc = spawn_req_unpack(&req, buf);
 	if (rc != SLURM_SUCCESS) {
-		error("mpi/pmi2: failed to unpack spawn request tree cmd");
+		error("mpi/pmi2: failed to unpack spawn request spawn cmd");
 		resp = spawn_resp_new();
 		resp->rc = rc;
 		rc = spawn_resp_send_to_stepd(resp, req->from_node);
@@ -341,7 +341,7 @@ handle_tree_cmd(int fd)
 	safe_read(fd, &cmd, sizeof(uint16_t));
 	cmd = ntohs(cmd);
 	if (cmd >= TREE_CMD_COUNT) {
-		error("invalid tree req command");
+		error("mpi/pmi2: invalid tree req command");
 		return SLURM_ERROR;
 	}
 
