@@ -634,6 +634,81 @@ proc wait_for_step { step_id } {
 	}
 }
 
+################################################################
+#
+# Proc: wait_for_all_jobs
+#
+# Purpose:  Wait for previously submitted SLURM jobs to finish of a
+# certain name, if incr_sleep is set exponential back-off 1 to 10 seconds
+#
+# Returns: A non-zero return code indicates a failure.
+#
+# Input: job_name   -- The name of job to wait for.
+#        incr_sleep -- To exponentially back-off or not
+#
+#
+################################################################
+# Wait up to 900 seconds for all jobs to terminate
+# Return 0 if all jobs done, remainin job count otherwise
+proc wait_for_all_jobs { job_name incr_sleep } {
+	global scancel squeue bin_sleep
+
+	set matches 0
+	set sleep_time  1
+	set my_delay    0
+	set last_matches 0
+	set timeout 30
+	send_user "Waiting for all jobs to terminate\n"
+	for {set inx 0} {$inx < 600} {incr inx} {
+		log_user 0
+		set matches 0
+		spawn $squeue -o %j
+		expect {
+			-re "$job_name" {
+				incr matches
+				exp_continue
+			}
+			-re "error" {
+				set matches -1
+			}
+			timeout {
+				send_user "No response from squeue\n"
+				set matches -1
+			}
+			eof {
+				wait
+			}
+		}
+		log_user 1
+		if {$matches == 0} {
+			send_user "All jobs complete\n"
+			break
+		}
+		if {$matches > 0} {
+			send_user "  $matches jobs remaining\n"
+#			Moab can slow throughput down a lot,
+#			so don't return here
+#			if {$matches == $last_matches} {
+#				send_user "Running jobs hung\n"
+#				break
+#			}
+#			set last_matches $matches
+			exec sleep $sleep_time
+			set my_delay [expr $my_delay + $sleep_time]
+			if { $incr_sleep } {
+				set sleep_time  [expr $sleep_time * 2]
+				if { $sleep_time > 10 } {
+					set sleep_time 10
+				}
+			}
+		}
+	}
+	if {$matches != 0} {
+		exec $scancel -n $job_name
+	}
+	return $matches
+}
+
 
 ################################################################
 #
