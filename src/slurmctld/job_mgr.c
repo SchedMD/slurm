@@ -7291,14 +7291,22 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		} else if (job_specs->end_time < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
-		} else {
+		} else if (authorized ||
+			   (job_ptr->end_time > job_specs->end_time)) {
 			int delta_t  = job_specs->end_time - job_ptr->end_time;
 			job_ptr->end_time = job_specs->end_time;
 			job_ptr->time_limit += (delta_t+30)/60; /* Sec->min */
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_ptr->time_limit,
 			     job_specs->job_id);
+			/* Always use the limit_set_* since if set by a
+			 * super user it be set correctly */
+			job_ptr->limit_set_time = limit_set_time;
 			update_accounting = true;
+		} else {
+			info("sched: Attempt to extend end time for job %u",
+			     job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
