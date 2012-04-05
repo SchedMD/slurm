@@ -966,10 +966,10 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	int dim;
 
 	if (event.getPreviousState() == event.getState()) {
-		debug3("Switch previous state was same as current (%s - %s)",
+		debug("Switch previous state was same as current (%s - %s)",
 		       bridge_hardware_state_string(event.getPreviousState()),
 		       bridge_hardware_state_string(event.getState()));
-		return;
+		//return;
 	}
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
@@ -1016,10 +1016,10 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 
 
 	if (event.getPreviousState() == event.getState()) {
-		debug3("Switch previous state was same as current (%s - %s)",
+		debug("Switch previous state was same as current (%s - %s)",
 		       bridge_hardware_state_string(event.getPreviousState()),
 		       bridge_hardware_state_string(event.getState()));
-		return;
+		//return;
 	}
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
@@ -1069,10 +1069,10 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	ba_mp_t *ba_mp;
 
 	if (event.getPreviousState() == event.getState()) {
-		debug3("Nodeboard previous state was same as current (%s - %s)",
+		debug("Nodeboard previous state was same as current (%s - %s)",
 		       bridge_hardware_state_string(event.getPreviousState()),
 		       bridge_hardware_state_string(event.getState()));
-		return;
+		//return;
 	}
 
 	/* When dealing with non-pointers these variables don't work
@@ -1132,10 +1132,10 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	List delete_list = NULL;
 
 	if (event.getPreviousState() == event.getState()) {
-		debug3("Node previous state was same as current (%s - %s)",
+		debug("Node previous state was same as current (%s - %s)",
 		       bridge_hardware_state_string(event.getPreviousState()),
 		       bridge_hardware_state_string(event.getState()));
-		return;
+		//return;
 	}
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
@@ -1193,10 +1193,10 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	List delete_list = NULL;
 
 	if (event.getPreviousState() == event.getState()) {
-		debug3("Cable previous state was same as current (%s - %s)",
+		debug("Cable previous state was same as current (%s - %s)",
 		       bridge_hardware_state_string(event.getPreviousState()),
 		       bridge_hardware_state_string(event.getState()));
-		return;
+		//return;
 	}
 
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
