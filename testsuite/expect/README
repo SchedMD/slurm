@@ -319,7 +319,6 @@ test7.14   Verify the ability to modify the Derived Exit Code/String fields
            of a job record in the database
 test7.15   Verify signal mask of tasks have no ignored signals.
 
-
 test8.#    Test of Blue Gene specific functionality.
 =================================================
 test8.1    Test of Blue Gene specific sbatch command line options
@@ -353,6 +352,7 @@ test9.5    Stress test of per-task input files.
 test9.6    Stress test of per-task output files.
 test9.7    Stress test multiple simultaneous commands via multiple threads.
 test9.8    Stress test with maximum slurmctld message concurrency.
+test9.9    Throughput test for 2000 jobs for timing
 
 
 test10.#   Testing of smap options.
