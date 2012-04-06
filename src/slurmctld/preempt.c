@@ -254,6 +254,12 @@ extern int slurm_preempt_init(void)
 	int retval = SLURM_SUCCESS;
 	char *preempt_type = NULL;
 
+	/* This function is called frequently, so it should be as fast as
+	 * possible. The test below will be TRUE almost all of the time and
+	 * is as fast as possible. */
+	if (g_preempt_context)
+		return retval;
+
 	slurm_mutex_lock(&g_preempt_context_lock);
 
 	if (g_preempt_context)

@@ -738,11 +738,21 @@ extern int sort_job_queue2(void *x, void *y)
 	job_queue_rec_t *job_rec1 = (job_queue_rec_t *) x;
 	job_queue_rec_t *job_rec2 = (job_queue_rec_t *) y;
 	bool has_resv1, has_resv2;
+	static time_t config_update = 0;
+	static bool preemption_enabled = true;
 
-	if (slurm_job_preempt_check(job_rec1, job_rec2))
-		return -1;
-	if (slurm_job_preempt_check(job_rec2, job_rec1))
-		return 1;
+	/* The following block of code is designed to minimize run time in
+	 * typical configurations for this frequently executed function. */
+	if (config_update != slurmctld_conf.last_update) {
+		preemption_enabled = slurm_preemption_enabled();
+		config_update = slurmctld_conf.last_update;
+	}
+	if (preemption_enabled) {
+		if (slurm_job_preempt_check(job_rec1, job_rec2))
+			return -1;
+		if (slurm_job_preempt_check(job_rec2, job_rec1))
+			return 1;
+	}
 
 	has_resv1 = (job_rec1->job_ptr->resv_id != 0);
 	has_resv2 = (job_rec2->job_ptr->resv_id != 0);
