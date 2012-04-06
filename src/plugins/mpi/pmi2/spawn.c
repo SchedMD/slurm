@@ -631,7 +631,6 @@ _setup_exec_srun(spawn_req_t *req)
 extern int
 spawn_job_do_spawn(spawn_req_t *req)
 {
-	int rc;
 	pid_t child_pid;
 
 	child_pid = fork();
@@ -646,7 +645,7 @@ spawn_job_do_spawn(spawn_req_t *req)
 		spawned_srun_pids[req->seq] = child_pid;
 		return SLURM_SUCCESS;
 	}
-	return rc;
+	return SLURM_ERROR;
 }
 
 static int
