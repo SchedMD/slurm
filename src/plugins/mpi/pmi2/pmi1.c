@@ -515,10 +515,6 @@ handle_pmi1_cmd(int fd, int lrank)
 	/* TODO: read until newline */
 	size = MAX_READLINE;
 	buf = xmalloc(size + 1);
-	if (buf == NULL) {
-		error("mpi/pmi2: memory exhausted");
-		return SLURM_ERROR;
-	}
 	while ( (n = read(fd, buf, size)) < 0 && errno == EINTR );
 	if (n < 0) {
 		error("mpi/pmi2: failed to read PMI1 request");
