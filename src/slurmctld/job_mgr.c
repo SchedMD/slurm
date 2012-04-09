@@ -3650,15 +3650,10 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		job_desc->min_nodes = min_nodes_orig;
 	}
 
-	if (job_desc->max_nodes == NO_VAL) {
-#ifdef HAVE_BG
-		job_desc->max_nodes = min_nodes_orig;
-#else
-		;
-#endif
-	} else if (slurmctld_conf.enforce_part_limits &&
-		   job_desc->max_nodes &&
-		   (job_desc->max_nodes < min_nodes_orig)) {
+	if ((job_desc->max_nodes != NO_VAL) &&
+	    slurmctld_conf.enforce_part_limits &&
+	    job_desc->max_nodes &&
+	    (job_desc->max_nodes < min_nodes_orig)) {
 		info("_valid_job_part: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
 		     job_desc->max_nodes, min_nodes_orig);
@@ -3969,7 +3964,12 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	debug3("before alteration asking for nodes %u-%u cpus %u-%u",
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->min_cpus, job_desc->max_cpus);
-	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
+	if (select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc)
+	    != SLURM_SUCCESS) {
+		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		goto cleanup_fail;
+	}
+
 	debug3("after alteration asking for nodes %u-%u cpus %u-%u",
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->min_cpus, job_desc->max_cpus);
@@ -7014,7 +7014,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	debug3("update before alteration asking for nodes %u-%u cpus %u-%u",
 	       job_specs->min_nodes, job_specs->max_nodes,
 	       job_specs->min_cpus, job_specs->max_cpus);
-	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_specs);
+	if (select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_specs)
+	    != SLURM_SUCCESS) {
+		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		goto fini;
+	}
 	debug3("update after alteration asking for nodes %u-%u cpus %u-%u",
 	       job_specs->min_nodes, job_specs->max_nodes,
 	       job_specs->min_cpus, job_specs->max_cpus);

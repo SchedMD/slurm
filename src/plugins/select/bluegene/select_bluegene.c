@@ -2946,11 +2946,24 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				tmp++;
 
 			if (tmp > job_desc->min_nodes) {
-				error("Asking for more resources than "
-				      "possible.  Requested %u nodes and %u "
-				      "tasks, giving them %u nodes.",
-				      job_desc->min_nodes,
-				      job_desc->min_cpus, tmp);
+				/* This means they actually asked for
+				   nodes and tasks.
+				*/
+				if ((job_desc->max_nodes != NO_VAL)
+				    && (tmp > job_desc->max_nodes)) {
+#ifndef HAVE_BG_L_P
+					error("Asking for more resources than "
+					      "possible.  Denied.");
+					return SLURM_ERROR;
+#else
+					error("Asking for more resources than "
+					      "possible.  Requested %u nodes "
+					      "and %u "
+					      "tasks, giving them %u nodes.",
+					      job_desc->min_nodes,
+					      job_desc->min_cpus, tmp);
+#endif
+				}
 				job_desc->min_nodes = tmp;
 			}
 		}

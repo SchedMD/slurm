@@ -27,6 +27,9 @@ documents those changes that are of interest to users and admins.
  -- Added mpi/pmi2 plugin for complete support of pmi2 including acquiring
     additional resources for newly launched tasks. Contributed by Hongjia Cao,
     NUDT.
+ -- BGQ - fixed issue where if a user asked for a specific node count and more
+    tasks than possible without overcommit the request would be allowed on more
+    nodes than requested.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
