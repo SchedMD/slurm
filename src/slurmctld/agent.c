@@ -526,7 +526,7 @@ static void *_wdog(void *args)
 	int i;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
-	unsigned long usec = 125000;
+	unsigned long usec = 5000;
 	ListIterator itr;
 	thd_complete_t thd_comp;
 	ret_data_info_t *ret_data_info = NULL;
@@ -557,7 +557,7 @@ static void *_wdog(void *args)
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
 		for (i = 0; i < agent_ptr->thread_count; i++) {
 			//info("thread name %s",thread_ptr[i].node_name);
-			if(!thread_ptr[i].ret_list) {
+			if (!thread_ptr[i].ret_list) {
 				_update_wdog_state(&thread_ptr[i],
 						   &thread_ptr[i].state,
 						   &thd_comp);
