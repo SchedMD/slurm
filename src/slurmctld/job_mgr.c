@@ -6857,10 +6857,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->details->max_cpus = NO_VAL;
 
 		if (!limit_set_max_nodes && (job_ptr->limit_set_max_nodes == 1))
-			job_ptr->details->max_cpus = NO_VAL;
+			job_ptr->details->max_nodes = NO_VAL;
 
 		if (!limit_set_time && (job_ptr->limit_set_time == 1))
-			job_ptr->details->max_cpus = NO_VAL;
+			job_ptr->time_limit = NO_VAL;
 
 		if (job_ptr->limit_set_max_cpus != ADMIN_SET_LIMIT)
 			job_ptr->limit_set_max_cpus = limit_set_max_cpus;

@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     slurmdbd accounting and running large amounts of jobs (>50 sec).  Job
     information could be corrupted before it had a chance to reach the DBD.
  -- Fix state restore of job limit set from admin value for min_cpus.
+ -- Fix clearing of limit values if an admin removes the limit for max cpus
+    and time limit where it was previously set by an admin.
 
 * Changes in SLURM 2.3.4
 ========================
