@@ -93,15 +93,15 @@ $ salloc -n4 sh    # allocates 4 processors
 
 <p>Intel&reg; MPI Library for Linux OS supports the following methods of
 launching the MPI jobs under the control of the SLURM job manager:</p>
-<ul>
-<li>The <i>mpirun</i> command over the MPD Process Manager (PM)</li>
-<li>The <i>mpirun</i> command over the Hydra PM</li>
-<li>The <i>mpiexec.hydra</i> command (Hydra PM)</li>
-<li>The <i>srun</i> command (SLURM)</li>
+
+<li><a href="#intel_mpirun_mpd">The <i>mpirun</i> command over the MPD Process Manager (PM)</a></li>
+<li><a href="#intel_mpirun_hydra">The <i>mpirun</i> command over the Hydra PM</a></li>
+<li><a href="#intel_mpiexec_hydra">The <i>mpiexec.hydra</i> command (Hydra PM)</a></li>
+<li><a href="#intel_srun">The <i>srun</i> command (SLURM)</a></li>
 </ul>
 <p>This description provides detailed information on all of these methods.</p>
 
-<h3>The mpirun Command over the MPD Process Manager</h3>
+<h3><a name="intel_mpirun_mpd">The mpirun Command over the MPD Process Manager</a></h3>
 <p>SLURM is supported by the <i>mpirun</i> command of the Intel&reg; MPI Library 3.1
 Build 029 for Linux OS and later releases.</p>
 <p>When launched within a session allocated using the SLURM commands <i>sbatch</i> or
@@ -114,7 +114,7 @@ session over the MPD PM:</p>
 mpirun -n &lt;num_procs&gt; a.out</i>
 </pre>
 
-<h3>The mpirun Command over the Hydra Process Manager</h3>
+<h3><a name="intel_mpirun_hydra">The mpirun Command over the Hydra Process Manager</a></h3>
 <p>SLURM is supported by the <i>mpirun</i> command of the Intel&reg; MPI Library 4.0
 Update 3 through the Hydra PM by default. The behavior of this command is
 analogous to the MPD case described above.</p>
@@ -131,7 +131,7 @@ SLURM session over the Hydra PM:</p>
 rather than the default <i>ssh</i> based method to launch the remote Hydra PM
 service processes.<p>
 
-<h3>The mpiexec.hydra Command (Hydra Process Manager)</h3>
+<h3><a name="intel_mpiexec_hydra">The mpiexec.hydra Command (Hydra Process Manager)</a></h3>
 <p>SLURM is supported by the Intel&reg; MPI Library 4.0 Update 3 directly
 through the Hydra PM.</p>
 <p>Use the following command to start an MPI job within an existing SLURM session:</p>
@@ -139,7 +139,7 @@ through the Hydra PM.</p>
 <i>mpiexec.hydra -bootstrap slurm -n &lt;num_procs&gt; a.out</i>
 </pre>
 
-<h3>The srun Command (SLURM)</h3>
+<h3><a name="intel_srun">The srun Command (SLURM)</a></h3>
 <p>This advanced method is supported by the Intel&reg; MPI Library 4.0 Update 3
  Use the following commands to allocate a SLURM session and start an MPI job in
 it, or to start an MPI job within a SLURM session already created using the
@@ -424,6 +424,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 2 April 2012</p>
+<p style="text-align:center;">Last modified 9 April 2012</p>
 
 <!--#include virtual="footer.txt"-->
