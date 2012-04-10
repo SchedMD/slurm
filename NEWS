@@ -229,6 +229,9 @@ documents those changes that are of interest to users and admins.
     maximum number of jobs to test for circular dependencies (i.e. job A waits
     for job B to start and job B waits for job A to start). Default value is
     10 jobs.
+ -- Fix potential race condition if MinJobAge is very low (i.e. 1) and using
+    slurmdbd accounting and running large amounts of jobs (>50 sec).  Job
+    information could be corrupted before it had a chance to reach the DBD.
 
 * Changes in SLURM 2.3.4
 ========================
