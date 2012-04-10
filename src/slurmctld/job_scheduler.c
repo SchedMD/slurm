@@ -382,14 +382,8 @@ extern int schedule(uint32_t job_limit)
 
 	DEF_TIMERS;
 
-	sched_start = now;
-	if (sched_timeout == 0) {
-		sched_timeout = slurm_get_msg_timeout() / 2;
-		sched_timeout = MAX(sched_timeout, 1);
-		sched_timeout = MIN(sched_timeout, 10);
-	}
-
 	START_TIMER;
+	sched_start = now;
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
@@ -417,6 +411,10 @@ extern int schedule(uint32_t job_limit)
 			}
 		}
 		xfree(sched_params);
+
+		sched_timeout = slurm_get_msg_timeout() / 2;
+		sched_timeout = MAX(sched_timeout, 1);
+		sched_timeout = MIN(sched_timeout, 10);
 		sched_update = slurmctld_conf.last_update;
 	}
 	if (job_limit == 0)
