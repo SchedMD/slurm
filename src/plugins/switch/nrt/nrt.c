@@ -928,20 +928,20 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	int i;
 
 	info("--Begin Adapter Status--");
-	info("  adapter_name:%s", status_adapter->adapter_name);
-	info("  adapter_type:%s",
+	info("  adapter_name: %s", status_adapter->adapter_name);
+	info("  adapter_type: %s",
 	     _adapter_type_str(status_adapter->adapter_type));
-	info("  window_count:%hu", *(status_adapter->window_count));
+	info("  window_count: %hu", *(status_adapter->window_count));
 	info("  --------");
 	for (i = 0; i < MIN(*(status_adapter->window_count), NRT_DEBUG_CNT);
 	     i++) {
 		nrt_status_t *status = *(status_adapter->status_array);
-		info("  bulk_xfer:%hu", status[i].bulk_transfer);
-		info("  client_pid:%u", (uint32_t)status[i].client_pid);
-		info("  rcontext_blocks:%u", status[i].rcontext_blocks);
-		info("  state:%s", _win_state_str(status[i].state));
-		info("  uid:%u", (uint32_t) status[i].uid);
-		info("  window_id:%hu", status[i].window_id);
+		info("  bulk_xfer: %hu", status[i].bulk_transfer);
+		info("  client_pid: %u", (uint32_t)status[i].client_pid);
+		info("  rcontext_blocks: %u", status[i].rcontext_blocks);
+		info("  state: %s", _win_state_str(status[i].state));
+		info("  uid: %u", (uint32_t) status[i].uid);
+		info("  window_id: %hu", status[i].window_id);
 		info("  --------");
 	}
 	info("--End Adapter Status--");
