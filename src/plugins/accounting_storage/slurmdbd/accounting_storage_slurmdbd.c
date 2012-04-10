@@ -122,8 +122,13 @@ static void _partial_free_dbd_job_start(void *object)
 {
 	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
 	if (req) {
-		xfree(req->node_inx);
+		xfree(req->account);
 		xfree(req->block_id);
+		xfree(req->name);
+		xfree(req->nodes);
+		xfree(req->partition);
+		xfree(req->node_inx);
+		xfree(req->wckey);
 	}
 }
 
@@ -147,7 +152,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	}
 	memset(req, 0, sizeof(dbd_job_start_msg_t));
 
-	req->account       = job_ptr->account;
+	req->account       = xstrdup(job_ptr->account);
 	req->assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -175,8 +180,8 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->db_index      = job_ptr->db_index;
 
 	req->job_state     = job_ptr->job_state;
-	req->name          = job_ptr->name;
-	req->nodes         = job_ptr->nodes;
+	req->name          = xstrdup(job_ptr->name);
+	req->nodes         = xstrdup(job_ptr->nodes);
 
 	if (job_ptr->node_bitmap) {
 		char temp_bit[BUF_SIZE];
@@ -184,13 +189,13 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 						job_ptr->node_bitmap));
 	}
 	req->alloc_cpus    = job_ptr->total_cpus;
-	req->partition     = job_ptr->partition;
+	req->partition     = xstrdup(job_ptr->partition);
 	if (job_ptr->details)
 		req->req_cpus = job_ptr->details->min_cpus;
 	req->resv_id       = job_ptr->resv_id;
 	req->priority      = job_ptr->priority;
 	req->timelimit     = job_ptr->time_limit;
-	req->wckey         = job_ptr->wckey;
+	req->wckey         = xstrdup(job_ptr->wckey);
 	req->uid           = job_ptr->user_id;
 	req->qos_id        = job_ptr->qos_id;
 
