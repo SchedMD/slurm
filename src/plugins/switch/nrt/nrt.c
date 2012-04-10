@@ -2083,6 +2083,7 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack8(j->user_space, buf);
 	pack16(j->tables_per_task, buf);
 	pack64(j->network_id, buf);
+	pack32(j->num_tasks, buf);
 	packstr(j->protocol, buf);
 	for (i = 0; i < j->tables_per_task; i++) {
 		_pack_tableinfo(&j->tableinfo[i], buf);
@@ -2183,6 +2184,7 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	safe_unpack8(&j->user_space, buf);
 	safe_unpack16(&j->tables_per_task, buf);
 	safe_unpack64(&j->network_id, buf);
+	safe_unpack32(&j->num_tasks, buf);
 	safe_unpackstr_xmalloc(&j->protocol, &uint32_tmp, buf);
 
 	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task *
