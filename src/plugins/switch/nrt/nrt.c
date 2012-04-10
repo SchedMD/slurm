@@ -774,6 +774,13 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			ib_table->lmc      = 0;
 			ib_table->task_id  = task_id;
 			ib_table->win_id   = window->window_id;
+		} else if (adapter_type == NRT_IPONLY) {
+			nrt_ip_task_info_t *ip_table;
+			ip_table = (nrt_ip_task_info_t *) tableinfo[i].table;
+			ip_table->node_number  = 0;
+			ip_table->task_id      = task_id;
+			memcpy(&ip_table->ip.ipv4_addr, &adapter->ipv4_addr,
+			       sizeof(in_addr_t));
 		} else if (adapter_type == NRT_HFI) {
 			nrt_hfi_task_info_t *hfi_table;
 			hfi_table = (nrt_hfi_task_info_t *) tableinfo[i].table;
@@ -787,6 +794,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 
 		strncpy(tableinfo[i].adapter_name, adapter->adapter_name,
 			NRT_MAX_ADAPTER_NAME_LEN);
+		tableinfo[i].adapter_type = adapter_type;
 	}
 
 	return SLURM_SUCCESS;
@@ -1326,9 +1334,9 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				continue;
 			}
 #if NRT_DEBUG
-			error("nrt_command(status_adapter, %s, %s)",
-			      adapter_status.adapter_name,
-			      _adapter_type_str(adapter_status.adapter_type));
+			info("nrt_command(status_adapter, %s, %s)",
+			     adapter_status.adapter_name,
+			     _adapter_type_str(adapter_status.adapter_type));
 			_print_adapter_status(&adapter_status);
 #endif
 			adapter_ptr = &n->adapter_list[n->adapter_count];
@@ -1888,9 +1896,18 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	node = _find_node(nrt_state, host);
 	if (node && node->adapter_list) {
 		for (i = 0; i < node->adapter_count; i++) {
-			if ((node->adapter_list[i].adapter_type != NRT_IB) &&
-			    (node->adapter_list[i].adapter_type != NRT_HFI))
-				continue;
+			nrt_adapter_t ad_type;
+			ad_type = node->adapter_list[i].adapter_type;
+			if ((ad_type == NRT_IPONLY) ||
+			    (ad_type == NRT_HPCE)) {
+				if (jp->user_space)
+					continue;
+			}
+			if ((ad_type == NRT_IB) ||
+			    (ad_type == NRT_HFI)) {
+				if (!jp->user_space)
+					continue;
+			}
 			if (adapter_type == NRT_MAX_ADAPTER_TYPES) {
 				adapter_type = node->adapter_list[i].
 					       adapter_type;
@@ -1918,6 +1935,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 						    sizeof(nrt_tableinfo_t));
 	if (adapter_type == NRT_IB)
 		table_rec_len = sizeof(nrt_ib_task_info_t);
+	else if (adapter_type == NRT_IPONLY)
+		table_rec_len = sizeof(nrt_ip_task_info_t);
 	else if (adapter_type == NRT_HFI)
 		table_rec_len = sizeof(nrt_hfi_task_info_t);
 	else {
@@ -2012,6 +2031,17 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 			pack32(ib_tbl_ptr->task_id, buf);
 			pack16(ib_tbl_ptr->win_id, buf);
 		}
+	} else if (tableinfo->adapter_type == NRT_IPONLY) {
+		nrt_ip_task_info_t *ip_tbl_ptr;
+		for (i = 0, ip_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, ip_tbl_ptr++) {
+			packmem((char *) &ip_tbl_ptr->ip.ipv4_addr,
+				sizeof(in_addr_t), buf);
+			pack32(ip_tbl_ptr->node_number, buf);
+			pack16(ip_tbl_ptr->reserved, buf);
+			pack32(ip_tbl_ptr->task_id, buf);
+		}
 	} else if (tableinfo->adapter_type == NRT_HFI) {
 		nrt_hfi_task_info_t *hfi_tbl_ptr;
 		for (i = 0, hfi_tbl_ptr = tableinfo->table;
@@ -2086,6 +2116,22 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf)
 			safe_unpack8(&ib_tbl_ptr->port_id, buf);
 			safe_unpack32(&ib_tbl_ptr->task_id, buf);
 			safe_unpack16(&ib_tbl_ptr->win_id, buf);
+		}
+	} else if (tableinfo->adapter_type == NRT_IPONLY) {
+		nrt_ip_task_info_t *ip_tbl_ptr;
+		tableinfo->table = (nrt_ip_task_info_t *)
+				   xmalloc(tableinfo->table_length *
+				   sizeof(nrt_ip_task_info_t));
+		for (i = 0, ip_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, ip_tbl_ptr++) {
+			safe_unpackmem((char *) &ip_tbl_ptr->ip.ipv4_addr,
+				       &size, buf);
+			if (size != sizeof(in_addr_t))
+				goto unpack_error;
+			safe_unpack32(&ip_tbl_ptr->node_number, buf);
+			safe_unpack16(&ip_tbl_ptr->reserved, buf);
+			safe_unpack32(&ip_tbl_ptr->task_id, buf);
 		}
 	} else if (tableinfo->adapter_type == NRT_HFI) {
 		nrt_hfi_task_info_t *hfi_tbl_ptr;

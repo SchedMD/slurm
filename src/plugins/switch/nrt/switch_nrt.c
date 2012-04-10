@@ -436,6 +436,13 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		bulk_xfer = true;
 
 	if (network &&
+	    (strstr(network, "ipv4") ||
+	     strstr(network, "IPV4"))) {
+		ip_v6 = false;
+		user_space = false;
+	}
+
+	if (network &&
 	    (strstr(network, "ipv6") ||
 	     strstr(network, "IPV6")))
 		ip_v6 = true;
