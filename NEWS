@@ -19,7 +19,7 @@ documents those changes that are of interest to users and admins.
     cases the code allocated first available GRES to job instead of allocating
     GRES accessible to the specific CPUs allocated to the job.
  -- spank: Add callbacks in slurmd: slurm_spank_slurmd_{init,exit}
-     and job epilog/prolog: slurm_spank_job_{prolog,epilog}
+    and job epilog/prolog: slurm_spank_job_{prolog,epilog}
  -- spank: Add spank_option_getopt() function to api
  -- Change resolution of switch wait time from minutes to seconds.
  -- Added CrpCPUMins to the output of sshare -l for those using hard limit
@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - fixed issue where if a user asked for a specific node count and more
     tasks than possible without overcommit the request would be allowed on more
     nodes than requested.
+ -- Improved throughput rate for short-lived jobs..
 
 * Changes in SLURM 2.4.0.pre4
 =============================
