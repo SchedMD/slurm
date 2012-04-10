@@ -488,7 +488,7 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 			    && !bit_test(assoc->usage->valid_qos,
 					 assoc->def_qos_id)) {
 				error("assoc %u doesn't have access "
-				      "to it's default %s",
+				      "to it's default qos '%s'",
 				      assoc->id,
 				      slurmdb_qos_str(assoc_mgr_qos_list,
 						      assoc->def_qos_id));
@@ -2414,8 +2414,10 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			    && !bit_test(rec->usage->valid_qos,
 					 rec->def_qos_id)) {
 				error("assoc %u doesn't have access "
-				      "to it's default %d",
-				      rec->id, rec->def_qos_id);
+				      "to it's default qos '%s'",
+				      rec->id,
+				      slurmdb_qos_str(assoc_mgr_qos_list,
+						      rec->def_qos_id));
 				rec->def_qos_id = 0;
 			}
 
