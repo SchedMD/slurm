@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- Fix potential race condition if MinJobAge is very low (i.e. 1) and using
     slurmdbd accounting and running large amounts of jobs (>50 sec).  Job
     information could be corrupted before it had a chance to reach the DBD.
+ -- Fix state restore of job limit set from admin value for min_cpus.
 
 * Changes in SLURM 2.3.4
 ========================

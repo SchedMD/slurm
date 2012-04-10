@@ -1455,7 +1455,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->warn_time    = warn_time;
 	job_ptr->limit_set_max_cpus  = limit_set_max_cpus;
 	job_ptr->limit_set_max_nodes = limit_set_max_nodes;
-	job_ptr->limit_set_min_cpus  = limit_set_max_cpus;
+	job_ptr->limit_set_min_cpus  = limit_set_min_cpus;
 	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
 	job_ptr->limit_set_time      = limit_set_time;
 	job_ptr->req_switch      = req_switch;
