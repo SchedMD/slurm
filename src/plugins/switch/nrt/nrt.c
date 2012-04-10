@@ -97,6 +97,7 @@ typedef struct slurm_nrt_window {
 typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
+	in_addr_t ipv4_addr;
 	nrt_logical_id_t lid;
 	nrt_network_id_t network_id;
 	nrt_port_id_t port_id;
@@ -954,6 +955,7 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 	int i, j;
 	struct slurm_nrt_adapter *a;
 	slurm_nrt_window_t *w;
+	unsigned char *p;
 
 	assert(n);
 	assert(n->magic == NRT_NODEINFO_MAGIC);
@@ -966,6 +968,9 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("  adapter_name: %s", a->adapter_name);
 		info("    adapter_type: %s",
 		     _adapter_type_str(a->adapter_type));
+		p = (unsigned char *) &a->ipv4_addr;
+		info("    ipv4_addr: %d.%d.%d.%d", p[0], p[1], p[2], p[3]);
+		info("    ipv6_addr: TBD");
 		info("    lid: %u", a->lid);
 		info("    network_id: %lu", a->network_id);
 		info("    port_id: %hu", a->port_id);
@@ -1035,6 +1040,18 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type)
 			info("  lpar_id: %u", hfi_tbl_ptr->lpar_id);
 			info("  lid: %u", hfi_tbl_ptr->lid);
 			info("  win_id: %hu", hfi_tbl_ptr->win_id);
+		} else if ((adapter_type == NRT_IPONLY) ||
+			   (adapter_type == NRT_HPCE)) {   /* HPC Ethernet */
+			nrt_ip_task_info_t *ip_tbl_ptr;
+			unsigned char *p;
+			ip_tbl_ptr = table;
+			ip_tbl_ptr += i;
+			info("  task_id: %u", ip_tbl_ptr->task_id);
+			info("  node_number: %u", ip_tbl_ptr->node_number);
+			p = (unsigned char *) &ip_tbl_ptr->ip.ipv4_addr;
+			info("  ipv4_addr: %d.%d.%d.%d",
+			     p[0], p[1], p[2], p[3]);
+			info("  ipv6_addr: TBD");
 		} else {
 			fatal("Unsupported adapter_type: %s",
 			      _adapter_type_str(adapter_type));
@@ -1362,18 +1379,25 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			     _adapter_type_str(query_adapter_info.adapter_type),
 			     adapter_info.num_ports);
 			for (k = 0; k < adapter_info.num_ports; k++) {
+				unsigned char *p;
+				p = (unsigned char *) &adapter_info.port[k].
+						      ipv4_addr;
 				info("port_id:%hu status:%hu lid:%u "
-				     "network_id:%lu special:%lu",
+				     "network_id:%lu special:%lu "
+				     "ipv4_addr:%d.%d.%d.%d",
 				     adapter_info.port[k].port_id,
 				     adapter_info.port[k].status,
 				     adapter_info.port[k].lid,
 				     adapter_info.port[k].network_id,
-				     adapter_info.port[k].special);
+				     adapter_info.port[k].special,
+				     p[0], p[1], p[2], p[3]);
 			}
 #endif
 			for (k = 0; k < adapter_info.num_ports; k++) {
 				if (adapter_info.port[k].status != 1)
 					continue;
+				adapter_ptr->ipv4_addr = adapter_info.port[k].
+							 ipv4_addr;
 				adapter_ptr->lid = adapter_info.port[k].lid;
 				adapter_ptr->network_id = adapter_info.port[k].
 							  network_id;
@@ -1382,6 +1406,11 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				adapter_ptr->special = adapter_info.port[k].
 						       special;
 				break;
+			}
+			if ((adapter_ptr->ipv4_addr == 0) &&
+			    (adapter_info.num_ports > 0)) {
+				adapter_ptr->ipv4_addr = adapter_info.port[0].
+							 ipv4_addr;
 			}
 		}
 		if (status_array) {
@@ -1447,6 +1476,7 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 		packmem(a->adapter_name, NRT_MAX_ADAPTER_NAME_LEN, buf);
 		dummy16 = a->adapter_type;
 		pack16(dummy16, buf);	/* adapter_type is an int */
+		pack32(a->ipv4_addr, buf);
 		pack32(a->lid, buf);
 		pack64(a->network_id, buf);
 		pack8(a->port_id, buf);
@@ -1487,6 +1517,7 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 		strncpy(da->adapter_name, sa->adapter_name,
 			NRT_MAX_ADAPTER_NAME_LEN);
 		da->adapter_type = sa->adapter_type;
+		da->ipv4_addr    = sa->ipv4_addr;
 		da->lid          = sa->lid;
 		da->network_id   = sa->network_id;
 		da->port_id      = sa->port_id;
@@ -1530,6 +1561,7 @@ _fake_unpack_adapters(Buf buf)
 		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
+		safe_unpack32(&dummy32, buf);
 		safe_unpack32(&dummy32, buf);
 		safe_unpack64(&dummy64, buf);
 		safe_unpack8 (&dummy8, buf);
@@ -1634,6 +1666,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		memcpy(tmp_a->adapter_name, name_ptr, size);
 		safe_unpack16(&dummy16, buf);
 		tmp_a->adapter_type = dummy16;	/* adapter_type is an int */
+		safe_unpack32(&tmp_a->ipv4_addr, buf);
 		safe_unpack32(&tmp_a->lid, buf);
 		safe_unpack64(&tmp_a->network_id, buf);
 		safe_unpack8(&tmp_a->port_id, buf);
@@ -2869,8 +2902,8 @@ nrt_clear_node_state(void)
 				continue;
 			}
 #if NRT_DEBUG
-			info("nrt_command(status_adapter, %s, %s), "
-			     "window_count:%hu",
+			info("nrt_command(status_adapter, %s, %s) "
+			     "window_count: %hu",
 			     adapter_status.adapter_name,
 			     _adapter_type_str(adapter_status.adapter_type),
 			     window_count);
