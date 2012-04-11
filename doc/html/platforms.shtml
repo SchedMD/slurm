@@ -3,10 +3,17 @@
 <h1>Platforms</h1>
 <h2>Operating Systems</h2>
 <ul>
-<li><b>AIX</b>&#151;SLURM support for AIX has been thoroughly tested.</li>
+<li><b>AIX</b>&#151;SLURM support for AIX has been thoroughly tested, but we
+know of no AIX installations using SLURM after 2008. IBM's Parallel Environment
+(PE) and Parallel Operating Environment (POE) are not currently supported, but
+are expected to be supported with Linux late in 2012. See
+<a href="ibm.html">IBM AIX User and Administrator Guide</a> for more information.</li>
 <li><b>Linux</b>&#151;SLURM has been thoroughly tested on most popular Linux
 distributions using i386, ia64, and x86_64 architectures.</li>
-<li><b>OS X</b>&#151;SLURM support for OS X is available.</li>
+<li><b>OS X</b>&#151;SLURM has run OS X in the past, but the current OS X linker
+does not support SLURM plugins. (OS X dynamically linked objects can be called by
+the main program. They may not call functions in the main program or other
+dynamically linked objects, which are features required by SLURM.)</li>
 <li><b>Solaris</b>&#151;SLURM support for Solaris (OpenSolaris build 119) was
 added in version 2.1.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
@@ -14,9 +21,13 @@ added in version 2.1.</li>
 <h2>Interconnects</h2>
 <ul>
 <li><b>BlueGene</b>&#151;SLURM support for IBM's BlueGene/L, BlueGene/P and
-BlueGene/Q systems has been thoroughly tested.</li>
+BlueGene/Q systems has been thoroughly tested. See
+<a href="bluegene.html">Blue Gene User and Administrator Guide</a>
+for more information.</li>
 <li><b>Cray XT and XE</b>&#151;Operates as a scheduler on top of Cray's
-ALPS/BASIL software. Supported added in SLURM version 2.3.</li>
+ALPS/BASIL software. Supported added in SLURM version 2.3. Note that Cray's
+ALPS/BASIL software necessitates some changes in SLURM behavior. See
+<a href="cray.html">Cray User and Administrator Guide</a> for more information.</li>
 <li><b>Ethernet</b>&#151;Ethernet requires no special support from SLURM and has
 been thoroughly tested.</li>
 <li><b>IBM Federation</b>&#151;SLURM support for IBM's Federation Switch
@@ -30,6 +41,6 @@ for the three-dimensional torus interconnect.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 8 April 2011</p>
+<p style="text-align:center;">Last modified 9 April 2012</p>
 
 <!--#include virtual="footer.txt"-->

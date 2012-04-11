@@ -7,6 +7,10 @@
 <h2>Presentations</h2>
 <ul>
 
+<li><a href="pdfs/LCS_cgroups_BULL.pdf">Resource Management with Linux Control Groups in HPC Clusters</a>
+Yiannis Georgiou, Bull
+(6th Linux Collaboration Summit, April 2012)</li>
+
 <li><b>Presentations from SLURM Birds Of a Feather,
 SuperComputing 2011, November 2011</b></li>
 <ul>
@@ -226,6 +230,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 6 March 2012</p>
+<p style="text-align:center;">Last modified 11 April 2012</p>
 
 <!--#include virtual="footer.txt"-->

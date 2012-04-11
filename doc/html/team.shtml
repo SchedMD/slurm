@@ -2,14 +2,13 @@
 
 <h1>SLURM Team</h1>
 <p>SLURM development has been a joint effort of many companies and
-organizations. The primary SLURM development staff currently includes: </p>
+organizations. Lead SLURM developers are:
 <ul>
-<li>Danny Auble (SchedMD, previously Lawrence Livermore National Laboratory)</li>
-<li>Hongjia Cao (National University of Defense Techonogy, China)</li>
-<li>Morris Jette (SchedMD, previously Lawrence Livermore National Laboratory)</li>
+<li>Danny Auble (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
+<li>Morris Jette (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
 </ul>
 
-<p> SLURM contributors include: </p>
+<p>SLURM contributors include:</p>
 <ul>
 <li>Ramiro Alba (Centre Tecnol&ograve;gic de Tranfer&egrave;ncia de Calor, Spain)</li>
 <li>Amjad Majid Ali (Colorado State University)</li>
@@ -25,6 +24,7 @@ organizations. The primary SLURM development staff currently includes: </p>
 <li>David Bremer (Lawrence Livermore National Laboratory)</li>
 <li>Jon Bringhurst (Los Alamos National Laboratory)</li>
 <li>Bill Brophy (Bull)</li>
+<li>Hongjia Cao (National University of Defense Techonogy, China)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
@@ -40,8 +40,8 @@ organizations. The primary SLURM development staff currently includes: </p>
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
 <li>Raphael Geissert (Debian)</li>
 <li>Yiannis Georgiou (Bull)</li>
-<li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
 <li>Mark Grondona (Lawrence Livermore National Laboratory)</li>
+<li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
 <li>Takao Hatazaki (HP)</li>
 <li>Matthieu Hautreux (CEA, France)</li>
 <li>Chris Holmes (HP)</li>
