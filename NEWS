@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
  -- Fix state restore of job limit set from admin value for min_cpus.
  -- Fix clearing of limit values if an admin removes the limit for max cpus
     and time limit where it was previously set by an admin.
+ -- Fix issue where log message is more than 256 chars and then has a format.
 
 * Changes in SLURM 2.3.4
 ========================

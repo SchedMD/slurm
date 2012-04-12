@@ -548,18 +548,13 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			break;
 
 		} else {        /* *p == '%' */
-
 			/* take difference from fmt to just before `%' */
 			len = (size_t) ((long)(p) - (long)fmt);
-
 			/* append from fmt to p into buf if there's
 			 * anythere there
 			 */
-			if (len > 0) {
-				memcpy(tmp, fmt, len);
-				tmp[len] = '\0';
-				xstrcat(buf, tmp);
-			}
+			if (len > 0)
+				xstrncat(buf, fmt, len);
 
 			switch (*(++p)) {
 		        case '%':	/* "%%" => "%" */
