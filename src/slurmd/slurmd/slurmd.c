@@ -804,7 +804,6 @@ _read_config(void)
 		conf->cores   = conf->conf_cores;
 		conf->threads = conf->conf_threads;
 	}
-#endif
 
 	if ((conf->cpus    != conf->actual_cpus)    ||
 	    (conf->sockets != conf->actual_sockets) ||
@@ -835,6 +834,7 @@ _read_config(void)
 			      conf->threads, conf->actual_threads);
 		}
 	}
+#endif
 
 	get_memory(&conf->real_memory_size);
 	get_up_time(&conf->up_time);
