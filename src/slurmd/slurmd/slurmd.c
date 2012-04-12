@@ -927,6 +927,12 @@ _read_config(void)
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
 #else
+	/* If the actual resources on a node differ than what is in
+	   the configuration file and we are using
+	   cons_res or gang scheduling we have to use what is in the
+	   configuration file because the slurmctld creates bitmaps
+	   for scheduling before these nodes check in.
+	*/
 	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) ||
 	    ((cf->fast_schedule == 1) &&
 	     (conf->actual_cpus < conf->conf_cpus))) {
@@ -942,18 +948,34 @@ _read_config(void)
 	}
 #endif
 
-	if (cf->fast_schedule &&
-	    ((conf->cpus    != conf->actual_cpus)    ||
-	     (conf->sockets != conf->actual_sockets) ||
-	     (conf->cores   != conf->actual_cores)   ||
-	     (conf->threads != conf->actual_threads))) {
-		info("Node configuration differs from hardware\n"
-		     "   CPUs=%u:%u(hw) Sockets=%u:%u(hw)\n"
-		     "   CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
-		     conf->cpus,    conf->actual_cpus,
-		     conf->sockets, conf->actual_sockets,
-		     conf->cores,   conf->actual_cores,
-		     conf->threads, conf->actual_threads);
+	if ((conf->cpus    != conf->actual_cpus)    ||
+	    (conf->sockets != conf->actual_sockets) ||
+	    (conf->cores   != conf->actual_cores)   ||
+	    (conf->threads != conf->actual_threads)) {
+		if (cf->fast_schedule) {
+			info("Node configuration differs from hardware\n"
+			     "   CPUs=%u:%u(hw) Sockets=%u:%u(hw)\n"
+			     "   CoresPerSocket=%u:%u(hw) "
+			     "ThreadsPerCore=%u:%u(hw)",
+			     conf->cpus,    conf->actual_cpus,
+			     conf->sockets, conf->actual_sockets,
+			     conf->cores,   conf->actual_cores,
+			     conf->threads, conf->actual_threads);
+		} else if ((cf->fast_schedule == 0) && (cr_flag || gang_flag)) {
+			error("You are using cons_res or gang scheduling with "
+			      "Fastschedule=0 and node configuration differs "
+			      "from hardware.  The node configuration used "
+			      "will be what is in the slurm.conf because of "
+			      "the bitmaps the slurmctld must create before "
+			      "the slurmd registers.\n"
+			      "   CPUs=%u:%u(hw) Sockets=%u:%u(hw)\n"
+			      "   CoresPerSocket=%u:%u(hw) "
+			      "ThreadsPerCore=%u:%u(hw)",
+			      conf->cpus,    conf->actual_cpus,
+			      conf->sockets, conf->actual_sockets,
+			      conf->cores,   conf->actual_cores,
+			      conf->threads, conf->actual_threads);
+		}
 	}
 
 	get_memory(&conf->real_memory_size);

@@ -111,6 +111,8 @@ AC_DEFUN([X_AC_DEBUG], [
     AC_MSG_RESULT([no])
   fi
 
+# NOTE: Default value of SALLOC_RUN_FOREGROUND is system dependent
+# x_ac_salloc_background is set to "no" for Cray systems in x_ac_cray.m4
   AC_MSG_CHECKING([whether to disable salloc execution in the background])
   AC_ARG_ENABLE(
     [salloc-background],

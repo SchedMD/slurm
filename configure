@@ -20946,6 +20946,8 @@ $as_echo "yes" >&6; }
 $as_echo "no" >&6; }
   fi
 
+# NOTE: Default value of SALLOC_RUN_FOREGROUND is system dependent
+# x_ac_salloc_background is set to "no" for Cray systems in x_ac_cray.m4
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to disable salloc execution in the background" >&5
 $as_echo_n "checking whether to disable salloc execution in the background... " >&6; }
   # Check whether --enable-salloc-background was given.
