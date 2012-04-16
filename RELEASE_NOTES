@@ -43,7 +43,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   "/tmp" to "/var/spool" to help avoid purging.
 * Change default "SchedulerParameters" "max_switch_wait" field value from 60 to
   300 seconds.
-
+* Added new "SchedulerParameters" of "bf_max_job_user", maximum number of jobs
+  to attempt backfilling per user.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -94,6 +94,12 @@
 #define   BACKFILL_WINDOW		(24 * 60 * 60)
 #endif
 
+/* Length of uid/njobs arrays used for limiting the number of jobs
+ * per user considered in each backfill iteration */
+#ifndef BF_MAX_USERS
+#  define BF_MAX_USERS	1000
+#endif
+
 #define SLURMCTLD_THREAD_LIMIT	5
 
 typedef struct node_space_map {
@@ -118,6 +124,7 @@ static int backfill_interval = BACKFILL_INTERVAL;
 static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int max_backfill_job_cnt = 50;
+static int max_backfill_job_per_user = 0;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
@@ -378,6 +385,12 @@ static void _load_config(void)
 		fatal("Invalid backfill scheduler resolution: %d",
 		      backfill_resolution);
 	}
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_user=")))
+		max_backfill_job_per_user = atoi(tmp_ptr + 16);
+	if (max_backfill_job_per_user < 0) {
+		fatal("Invalid backfill scheduler bf_max_job_user: %d",
+		      max_backfill_job_per_user);
+	}
 
 	xfree(sched_params);
 }
@@ -495,6 +508,8 @@ static int _attempt_backfill(void)
 	static int sched_timeout = 0;
 	int this_sched_timeout = 0, rc = 0;
 	int job_test_count = 0;
+	uint32_t *uid = NULL, nuser = 0;
+	uint16_t *njobs = NULL;
 
 #ifdef HAVE_CRAY
 	/*
@@ -558,6 +573,10 @@ static int _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		_dump_node_space_table(node_space);
 
+	if (max_backfill_job_per_user) {
+		uid = xmalloc(BF_MAX_USERS * sizeof(uint32_t));
+		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
+	}
 	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_test_count++;
@@ -572,6 +591,42 @@ static int _attempt_backfill(void)
 			info("backfill test for job %u", job_ptr->job_id);
 
 		slurmctld_diag_stats.bf_last_depth++;
+
+		if (max_backfill_job_per_user) {
+			for (j = 0; j < nuser; j++) {
+				if (job_ptr->user_id == uid[j]) {
+					njobs[j]++;
+					debug2("backfill: user %u: #jobs %u",
+					       uid[j], njobs[j]);
+					break;
+				}
+			}
+			if (j == nuser) { /* user not found */
+				if (nuser < BF_MAX_USERS) {
+					uid[j] = job_ptr->user_id;
+					njobs[j] = 1;
+					nuser++;
+				} else {
+					error("backfill: too many users in "
+					      "queue. Consider increasing "
+					      "BF_MAX_USERS");
+				}
+				debug2("backfill: found new user %u. "
+				       "Total #users now %u",
+				       job_ptr->user_id, nuser);
+			} else {
+				if (njobs[j] > max_backfill_job_per_user) {
+					/* skip job */
+					debug("backfill: have already checked "
+					      "%u jobs for user %u; skipping "
+					      "job %u",
+					      max_backfill_job_per_user,
+					      job_ptr->user_id,
+					      job_ptr->job_id);
+					continue;
+				}
+			}
+		}
 
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
 		    (part_ptr->node_bitmap == NULL))
@@ -802,6 +857,8 @@ static int _attempt_backfill(void)
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_node_space_table(node_space);
 	}
+	xfree(uid);
+	xfree(njobs);
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 

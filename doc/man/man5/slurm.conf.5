@@ -1,4 +1,4 @@
-.TH "slurm.conf" "6" "March 2012" "slurm.conf 2.4" "Slurm configuration file"
+.TH "slurm.conf" "6" "April 2012" "slurm.conf 2.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1409,6 +1409,15 @@ initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
 The number of seconds between iterations.
 Higher values result in less overhead and better responsiveness.
 The default value is 30 seconds.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+.TP
+\fBbf_max_job_user=#\fR
+The maximum number of jobs per user to attempt backfill scheduling for,
+not counting jobs which cannot be started due to an association resource
+limit.  One can set this limit to prevent users from flooding the backfill
+queue with jobs that cannot start and that prevent jobs from other users
+to start.  This is similar to the MAXIJOB limit in Maui.
+The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBbf_resolution=#\fR

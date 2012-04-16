@@ -31,6 +31,9 @@ documents those changes that are of interest to users and admins.
     tasks than possible without overcommit the request would be allowed on more
     nodes than requested.
  -- Improved throughput rate for short-lived jobs..
+ -- Add support for new SchedulerParameters of bf_max_job_user, maximum number
+    of jobs to attempt backfilling per user. Work by Bjørn-Helge Mevik,
+    University of Oslo.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
