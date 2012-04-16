@@ -350,6 +350,13 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	Buf buffer;
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
+	static int max_agent_queue = 0;
+
+	/* Whatever our max job count is times that by 2 or
+	 * MAX_AGENT_QUEUE which ever is bigger */
+	if (!max_agent_queue)
+		max_agent_queue =
+			MAX(MAX_AGENT_QUEUE, slurmctld_conf.max_job_cnt * 2);
 
 	buffer = pack_slurmdbd_msg(req, rpc_version);
 
@@ -363,7 +370,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		}
 	}
 	cnt = list_count(agent_list);
-	if ((cnt >= (MAX_AGENT_QUEUE / 2)) &&
+	if ((cnt >= (max_agent_queue / 2)) &&
 	    (difftime(time(NULL), syslog_time) > 120)) {
 		/* Record critical error every 120 seconds */
 		syslog_time = time(NULL);
@@ -372,9 +379,9 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		if (callbacks_requested)
 			(callback.dbd_fail)();
 	}
-	if (cnt == (MAX_AGENT_QUEUE - 1))
+	if (cnt == (max_agent_queue - 1))
 		cnt -= _purge_job_start_req();
-	if (cnt < MAX_AGENT_QUEUE) {
+	if (cnt < max_agent_queue) {
 		if (list_enqueue(agent_list, buffer) == NULL)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
