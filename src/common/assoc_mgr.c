@@ -1318,12 +1318,15 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 			return SLURM_ERROR;
 	}
 
+	assoc_mgr_lock(&locks);
+
 	if ((!assoc_mgr_association_list
 	     || !list_count(assoc_mgr_association_list))
-	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
+	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+		assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
+	}
 
-	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while ((found_assoc = list_next(itr))) {
 		if (assoc->uid != found_assoc->uid) {
@@ -1589,11 +1592,13 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 		if (_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if ((!assoc_mgr_user_list || !list_count(assoc_mgr_user_list))
-	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
-		return SLURM_SUCCESS;
-
 	assoc_mgr_lock(&locks);
+	if ((!assoc_mgr_user_list || !list_count(assoc_mgr_user_list))
+	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+		assoc_mgr_unlock(&locks);
+		return SLURM_SUCCESS;
+	}
+
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((found_user = list_next(itr))) {
 		if (user->uid != NO_VAL) {
@@ -1657,11 +1662,13 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 		if (_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if ((!assoc_mgr_qos_list || !list_count(assoc_mgr_qos_list))
-	    && !(enforce & ACCOUNTING_ENFORCE_QOS))
-		return SLURM_SUCCESS;
-
 	assoc_mgr_lock(&locks);
+	if ((!assoc_mgr_qos_list || !list_count(assoc_mgr_qos_list))
+	    && !(enforce & ACCOUNTING_ENFORCE_QOS)) {
+		assoc_mgr_unlock(&locks);
+		return SLURM_SUCCESS;
+	}
+
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((found_qos = list_next(itr))) {
 		if (qos->id == found_qos->id)
@@ -1925,10 +1932,12 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
 			return SLURMDB_ADMIN_NOTSET;
 
-	if (!assoc_mgr_user_list)
-		return SLURMDB_ADMIN_NOTSET;
-
 	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_user_list) {
+		assoc_mgr_unlock(&locks);
+		return SLURMDB_ADMIN_NOTSET;
+	}
+
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((found_user = list_next(itr))) {
 		if (uid == found_user->uid)
@@ -1957,10 +1966,12 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
 			return false;
 
-	if (!assoc_mgr_user_list)
-		return false;
-
 	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_user_list) {
+		assoc_mgr_unlock(&locks);
+		return false;
+	}
+
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((found_user = list_next(itr))) {
 		if (uid == found_user->uid)
@@ -2227,10 +2238,12 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_association_list)
-		return SLURM_SUCCESS;
-
 	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_association_list) {
+		assoc_mgr_unlock(&locks);
+		return SLURM_SUCCESS;
+	}
+
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while ((object = list_pop(update->objects))) {
 		bool update_jobs = false;
@@ -2632,10 +2645,12 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update)
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
 				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
 
-	if (!assoc_mgr_wckey_list)
-		return SLURM_SUCCESS;
-
 	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_wckey_list) {
+		assoc_mgr_unlock(&locks);
+		return SLURM_SUCCESS;
+	}
+
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while ((object = list_pop(update->objects))) {
 		if (object->cluster && assoc_mgr_cluster_name) {
@@ -2751,10 +2766,12 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, WRITE_LOCK, WRITE_LOCK };
 
-	if (!assoc_mgr_user_list)
-		return SLURM_SUCCESS;
-
 	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_user_list) {
+		assoc_mgr_unlock(&locks);
+		return SLURM_SUCCESS;
+	}
+
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
@@ -2873,10 +2890,12 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_qos_list)
-		return SLURM_SUCCESS;
-
 	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_qos_list) {
+		assoc_mgr_unlock(&locks);
+		return SLURM_SUCCESS;
+	}
+
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((object = list_pop(update->objects))) {
 		bool update_jobs = false;
@@ -3167,12 +3186,14 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 		    == SLURM_ERROR)
 			return SLURM_ERROR;
 
+	assoc_mgr_lock(&locks);
 	if ((!assoc_mgr_association_list
 	     || !list_count(assoc_mgr_association_list))
-	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
+	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+		assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
+	}
 
-	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while ((found_assoc = list_next(itr))) {
 		if (assoc_id == found_assoc->id)

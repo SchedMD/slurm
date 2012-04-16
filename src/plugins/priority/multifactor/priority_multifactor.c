@@ -157,10 +157,11 @@ static int _apply_decay(double decay_factor)
 	else if (!calc_fairshare)
 		return SLURM_SUCCESS;
 
+	assoc_mgr_lock(&locks);
+
 	xassert(assoc_mgr_association_list);
 	xassert(assoc_mgr_qos_list);
 
-	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	/* We want to do this to all associations including
 	   root.  All usage_raws are calculated from the bottom up.
@@ -198,9 +199,10 @@ static int _reset_usage(void)
 	if (!calc_fairshare)
 		return SLURM_SUCCESS;
 
+	assoc_mgr_lock(&locks);
+
 	xassert(assoc_mgr_association_list);
 
-	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	/* We want to do this to all associations including
 	   root.  All usage_raws are calculated from the bottom up.
@@ -701,6 +703,7 @@ void _init_grp_used_cpu_run_secs(time_t last_ran)
 	if (itr == NULL)
 		fatal("list_iterator_create: malloc failure");
 
+	assoc_mgr_lock(&locks);
 	while ((job_ptr = list_next(itr))) {
 		if (priority_debug)
 			debug2("job: %u",job_ptr->job_id);
@@ -716,7 +719,6 @@ void _init_grp_used_cpu_run_secs(time_t last_ran)
 
 		delta = job_ptr->total_cpus * (last_ran - job_ptr->start_time);
 
-		assoc_mgr_lock(&locks);
 		qos = (slurmdb_qos_rec_t *) job_ptr->qos_ptr;
 		assoc = (slurmdb_association_rec_t *) job_ptr->assoc_ptr;
 
@@ -745,8 +747,8 @@ void _init_grp_used_cpu_run_secs(time_t last_ran)
 			assoc->usage->grp_used_cpu_run_secs -= delta;
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
-		assoc_mgr_unlock(&locks);
 	}
+	assoc_mgr_unlock(&locks);
 	list_iterator_destroy(itr);
 	unlock_slurmctld(job_read_lock);
 }
