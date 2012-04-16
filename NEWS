@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- Fix clearing of limit values if an admin removes the limit for max cpus
     and time limit where it was previously set by an admin.
  -- Fix issue where log message is more than 256 chars and then has a format.
+ -- Fix sched/wiki2 to support job account name, gres, partition name, wckey,
+    or working directory that contains "#" (a job record separator).
 
 * Changes in SLURM 2.3.4
 ========================
