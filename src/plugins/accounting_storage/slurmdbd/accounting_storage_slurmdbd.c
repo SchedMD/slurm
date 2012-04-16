@@ -277,6 +277,11 @@ static void *_set_db_inx_thread(void *no_data)
 					local_job_list = list_create(
 						_partial_destroy_dbd_job_start);
 				list_append(local_job_list, req);
+				/* Just so we don't have a crazy
+				   amount of messages at once.
+				*/
+				if (list_count(local_job_list) > 1000)
+					break;
 			}
 		}
 		list_iterator_destroy(itr);

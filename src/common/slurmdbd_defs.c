@@ -2025,7 +2025,22 @@ static void *_agent(void *x)
 			info("slurmdbd: agent queue size %u", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list) {
-			if(list_count(agent_list) > 1) {
+			int handle_agent_count = 1000;
+			if (cnt > handle_agent_count) {
+				int agent_count = 0;
+				ListIterator agent_itr =
+					list_iterator_create(agent_list);
+				list_msg.my_list = list_create(NULL);
+				while ((buffer = list_next(agent_itr))) {
+					list_enqueue(list_msg.my_list, buffer);
+					agent_count++;
+					if (agent_count > handle_agent_count)
+						break;
+				}
+				list_iterator_destroy(agent_itr);
+				buffer = pack_slurmdbd_msg(&list_req,
+							   SLURMDBD_VERSION);
+			} else if (cnt > 1) {
 				list_msg.my_list = agent_list;
 				buffer = pack_slurmdbd_msg(&list_req,
 							   SLURMDBD_VERSION);
@@ -2055,7 +2070,7 @@ static void *_agent(void *x)
 				break;
 			}
 			error("slurmdbd: Failure sending message: %d: %m", rc);
-		} else if(list_msg.my_list) {
+		} else if (list_msg.my_list) {
 			rc = _handle_mult_rc_ret(SLURMDBD_VERSION,
 						 read_timeout);
 		} else {
@@ -2082,9 +2097,11 @@ static void *_agent(void *x)
 			   list_msg.my_list as NULL as that is the
 			   sign we sent a mult_msg.
 			*/
-			if(list_msg.my_list)
+			if (list_msg.my_list) {
+				if (list_msg.my_list != agent_list)
+					list_destroy(list_msg.my_list);
 				list_msg.my_list = NULL;
-			else
+			} else
 				buffer = (Buf) list_dequeue(agent_list);
 
 			free_buf(buffer);
@@ -2094,6 +2111,8 @@ static void *_agent(void *x)
 			   got a failure.
 			*/
 			if(list_msg.my_list) {
+				if (list_msg.my_list != agent_list)
+					list_destroy(list_msg.my_list);
 				list_msg.my_list = NULL;
 				free_buf(buffer);
 			}
@@ -2168,6 +2187,7 @@ static void _save_dbd_state(void)
 				free_buf(buffer);
 				continue;
 			}
+
 			rc = _save_dbd_rec(fd, buffer);
 			free_buf(buffer);
 			if (rc != SLURM_SUCCESS)
