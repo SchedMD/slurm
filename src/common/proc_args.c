@@ -693,7 +693,7 @@ static List
 _create_path_list(void)
 {
 	List l = list_create(_freeF);
-	char *path = xstrdup(getenv("PATH"));
+	char *path;
 	char *c, *lc;
 
 	c = getenv("PATH");

@@ -524,12 +524,14 @@ job_update_io_fnames(srun_job_t *job)
 static char *
 _normalize_hostlist(const char *hostlist)
 {
-	char *buf = NULL; 
+	char *buf = NULL;
 	hostlist_t hl = hostlist_create(hostlist);
 
-	if (hl)	
+	if (hl)	{
 		buf = hostlist_ranged_string_xmalloc(hl);
-	if (!hl || !buf)
+		hostlist_destroy(hl);
+	}
+	if (!buf)
 		return xstrdup(hostlist);
 
 	return buf;

@@ -968,14 +968,20 @@ static int _become_user (void)
 	char *user = uid_to_string(opt.uid);
 	gid_t gid = gid_from_uid(opt.uid);
 
-	if (strcmp(user, "nobody") == 0)
+	if (strcmp(user, "nobody") == 0) {
+		xfree(user);
 		return (error ("Invalid user id %u: %m", opt.uid));
+	}
 
-	if (opt.uid == getuid ())
+	if (opt.uid == getuid ()) {
+		xfree(user);
 		return (0);
+	}
 
-	if ((opt.egid != (gid_t) -1) && (setgid (opt.egid) < 0))
+	if ((opt.egid != (gid_t) -1) && (setgid (opt.egid) < 0)) {
+		xfree(user);
 		return (error ("setgid: %m"));
+	}
 
 	initgroups (user, gid); /* Ignore errors */
 	xfree(user);

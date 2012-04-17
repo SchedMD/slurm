@@ -556,9 +556,9 @@ job_desc_msg_create_from_opts (void)
 	if (opt.immediate == 1)
 		j->immediate = opt.immediate;
 	if (opt.job_name)
-		j->name   = xstrdup(opt.job_name);
+		j->name   = opt.job_name;
 	else
-		j->name   = xstrdup(opt.cmd_name);
+		j->name   = opt.cmd_name;
 	if (opt.argc > 0) {
 		j->argc    = 1;
 		j->argv    = (char **) xmalloc(sizeof(char *) * 2);
@@ -566,10 +566,10 @@ job_desc_msg_create_from_opts (void)
 	}
 	if (opt.acctg_freq >= 0)
 		j->acctg_freq     = opt.acctg_freq;
-	j->reservation    = xstrdup(opt.reservation);
-	j->wckey          = xstrdup(opt.wckey);
+	j->reservation    = opt.reservation;
+	j->wckey          = opt.wckey;
 
-	j->req_nodes      = xstrdup(opt.nodelist);
+	j->req_nodes      = opt.nodelist;
 
 	/* simplify the job allocation nodelist,
 	 * not laying out tasks until step */
@@ -627,21 +627,21 @@ job_desc_msg_create_from_opts (void)
 		j->ntasks_per_core   = opt.ntasks_per_core;
 
 	if (opt.mail_user)
-		j->mail_user = xstrdup(opt.mail_user);
+		j->mail_user = opt.mail_user;
 	if (opt.begin)
 		j->begin_time = opt.begin;
 	if (opt.licenses)
-		j->licenses = xstrdup(opt.licenses);
+		j->licenses = opt.licenses;
 	if (opt.network)
-		j->network = xstrdup(opt.network);
+		j->network = opt.network;
 	if (opt.account)
-		j->account = xstrdup(opt.account);
+		j->account = opt.account;
 	if (opt.comment)
-		j->comment = xstrdup(opt.comment);
+		j->comment = opt.comment;
 	if (opt.qos)
-		j->qos = xstrdup(opt.qos);
+		j->qos = opt.qos;
 	if (opt.cwd)
-		j->work_dir = xstrdup(opt.cwd);
+		j->work_dir = opt.cwd;
 
 	if (opt.hold)
 		j->priority     = 0;
@@ -665,13 +665,13 @@ job_desc_msg_create_from_opts (void)
 		j->rotate = 0;
 
 	if (opt.blrtsimage)
-		j->blrtsimage = xstrdup(opt.blrtsimage);
+		j->blrtsimage = opt.blrtsimage;
 	if (opt.linuximage)
-		j->linuximage = xstrdup(opt.linuximage);
+		j->linuximage = opt.linuximage;
 	if (opt.mloaderimage)
-		j->mloaderimage = xstrdup(opt.mloaderimage);
+		j->mloaderimage = opt.mloaderimage;
 	if (opt.ramdiskimage)
-		j->ramdiskimage = xstrdup(opt.ramdiskimage);
+		j->ramdiskimage = opt.ramdiskimage;
 
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
@@ -737,9 +737,7 @@ void
 job_desc_msg_destroy(job_desc_msg_t *j)
 {
 	if (j) {
-		xfree(j->account);
-		xfree(j->comment);
-		xfree(j->qos);
+		xfree(j->req_nodes);
 		xfree(j);
 	}
 }
