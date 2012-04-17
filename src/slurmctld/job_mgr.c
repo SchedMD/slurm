@@ -3713,31 +3713,50 @@ extern int job_limits_check(struct job_record **job_pptr)
 	struct job_record *job_ptr = NULL;
 	slurmdb_qos_rec_t  *qos_ptr;
 	slurmdb_association_rec_t *assoc_ptr;
-
-
+	uint32_t job_min_nodes, job_max_nodes;
+	uint32_t part_min_nodes, part_max_nodes;
+#ifdef HAVE_BG
+	static uint16_t cpus_per_node = 0;
+	if (!cpus_per_node)
+		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+					&cpus_per_node);
+#endif
 	job_ptr = *job_pptr;
 	detail_ptr = job_ptr->details;
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = job_ptr->qos_ptr;
 	assoc_ptr = job_ptr->assoc_ptr;
 
+#ifdef HAVE_BG
+	job_min_nodes = detail_ptr->min_cpus / cpus_per_node;
+	job_max_nodes = detail_ptr->max_cpus / cpus_per_node;
+	part_min_nodes = part_ptr->min_nodes_orig;
+	part_max_nodes = part_ptr->max_nodes_orig;
+#else
+	job_min_nodes = detail_ptr->min_nodes;
+	job_max_nodes = detail_ptr->max_nodes;
+	part_min_nodes = part_ptr->min_nodes;
+	part_max_nodes = part_ptr->max_nodes;
+#endif
+
 	fail_reason = WAIT_NO_REASON;
-	if ((detail_ptr->min_nodes > part_ptr->max_nodes) &&
+
+	if ((job_min_nodes > part_max_nodes) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
 		info("Job %u requested too many nodes (%u) of "
 		     "partition %s(MaxNodes %u)",
-		     job_ptr->job_id, detail_ptr->min_nodes,
-		     part_ptr->name, part_ptr->max_nodes);
+		     job_ptr->job_id, job_min_nodes,
+		     part_ptr->name, part_max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
-	} else if ((detail_ptr->max_nodes != 0) &&  /* no max_nodes for job */
-		   ((detail_ptr->max_nodes < part_ptr->min_nodes) &&
+	} else if ((job_max_nodes != 0) &&  /* no max_nodes for job */
+		   ((job_max_nodes < part_min_nodes) &&
 		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 					       QOS_FLAG_PART_MIN_NODE))))) {
 		info("Job %u requested too few nodes (%u) of "
 		     "partition %s(MinNodes %u)",
-		     job_ptr->job_id, detail_ptr->max_nodes,
-		     part_ptr->name, part_ptr->min_nodes);
+		     job_ptr->job_id, job_max_nodes,
+		     part_ptr->name, part_min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if (part_ptr->state_up == PARTITION_DOWN) {
 		info("Job %u requested down partition %s",

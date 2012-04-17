@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for new SchedulerParameters of bf_max_job_user, maximum number
     of jobs to attempt backfilling per user. Work by Bjørn-Helge Mevik,
     University of Oslo.
+ -- BLUEGENE - fixed issue where MaxNodes limit on a partition only limited
+    larger than midplane jobs.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
