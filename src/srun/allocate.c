@@ -569,7 +569,7 @@ job_desc_msg_create_from_opts (void)
 	j->reservation    = opt.reservation;
 	j->wckey          = opt.wckey;
 
-	j->req_nodes      = opt.nodelist;
+	j->req_nodes      = xstrdup(opt.nodelist);
 
 	/* simplify the job allocation nodelist,
 	 * not laying out tasks until step */
