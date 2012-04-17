@@ -356,22 +356,41 @@ static bg_record_t *_find_matching_block(List block_list,
 					     bg_record->job_ptr->user_id,
 					     bg_record->job_ptr->job_id);
 				continue;
-			} else if (bg_record->err_ratio &&
-				   (bg_record->err_ratio
-				    >= bg_conf->max_block_err)) {
-				/* This means the block is higher than
-				   the given max_block_err defined in
-				   the bluegene.conf.
-				*/
-				if (bg_conf->slurm_debug_flags
-				    & DEBUG_FLAG_BG_PICK)
-					info("block %s can't be used anymore, "
-					     "%u%% of the block is in error "
-					     "state >= %u%%",
-					     bg_record->bg_block_id,
-					     bg_record->err_ratio,
-					     bg_conf->max_block_err);
-				continue;
+			} else if (bg_record->err_ratio) {
+				if (!bg_record->job_ptr
+				    && (!bg_record->job_list
+					|| !list_count(bg_record->job_list))) {
+					List tmp_list = list_create(NULL);
+					if (bg_conf->slurm_debug_flags
+					    & DEBUG_FLAG_BG_PICK)
+						info("going to free block %s "
+						     "there are no jobs "
+						     "running.  This will "
+						     "only happen if the "
+						     "cnodes went into error "
+						     "after no jobs were "
+						     "running.",
+						     bg_record->bg_block_id);
+					list_push(tmp_list, bg_record);
+					free_block_list(NO_VAL, tmp_list, 0, 0);
+					list_destroy(tmp_list);
+				} else if (bg_record->err_ratio
+					   >= bg_conf->max_block_err) {
+					/* This means the block is higher than
+					   the given max_block_err defined in
+					   the bluegene.conf.
+					*/
+					if (bg_conf->slurm_debug_flags
+					    & DEBUG_FLAG_BG_PICK)
+						info("block %s can't be used "
+						     "anymore, %u%% of the "
+						     "block is in error "
+						     "state >= %u%%",
+						     bg_record->bg_block_id,
+						     bg_record->err_ratio,
+						     bg_conf->max_block_err);
+					continue;
+				}
 			}
 		}
 
