@@ -1384,10 +1384,10 @@ extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
 
+	ba_fini();
+
 	_destroy_bg_config(bg_conf);
 	_destroy_bg_lists(bg_lists);
-
-	ba_fini();
 
 	return rc;
 }
