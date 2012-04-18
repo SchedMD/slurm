@@ -233,7 +233,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	delete_list = list_create(NULL);
 	itr = list_iterator_create(bg_lists->main);
 	while ((found_record = list_next(itr))) {
-		if ((!found_record) || (bg_record == found_record))
+		if (bg_record == found_record)
 			continue;
 
 		if (!blocks_overlap(bg_record, found_record)) {
