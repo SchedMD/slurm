@@ -396,8 +396,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		ba_mp->cnode_err_bitmap, ba_mp_geo_system);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *)list_next(itr))) {
-		if (bg_record->free_cnt)
-			continue;
+		/* if a block has a free_cnt we still need to apply this */
 		if (!bit_test(bg_record->mp_bitmap, ba_mp->index))
 			continue;
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
