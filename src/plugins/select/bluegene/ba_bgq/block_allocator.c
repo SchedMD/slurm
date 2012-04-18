@@ -1548,9 +1548,9 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
 
 	if (in_job_ptr && in_job_ptr->magic != JOB_MAGIC) {
-		/* This can if the mmcs job hang out in the system
-		 * forever. And it gets cleared after the job is out
-		 * of the system.
+		/* This can happen if the mmcs job hangs out in the system
+		 * forever, or at least gets cleared a after the SLURM
+		 * job is out of the controller.
 		 */
 		bad_magic = 1;
 		used_cnodes = bit_copy(ba_mp->cnode_bitmap);
