@@ -2554,7 +2554,12 @@ static void _usage(void)
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
-"            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
+#ifdef HAVE_BG_L_P
+"            [--geometry=XxYxZ] "
+#else
+"            [--geometry=AxXxYxZ] "
+#endif
+"[--conn-type=type] [--no-rotate] [--reboot]\n"
 #ifdef HAVE_BGL
 "            [--blrts-image=path] [--linux-image=path]\n"
 "            [--mloader-image=path] [--ramdisk-image=path]\n"
@@ -2701,7 +2706,13 @@ static void _help(void)
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "Blue Gene related options:\n"
+#ifdef HAVE_BG_L_P
 "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
+#else
+"  -g, --geometry=AxXxYxZ      Midplane geometry constraints of the job,\n"
+"                              sub-block allocations can not be allocated\n"
+"                              with the geometry option\n"
+#endif
 "  -R, --no-rotate             disable geometry rotation\n"
 "      --reboot                reboot block before starting job\n"
 "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"

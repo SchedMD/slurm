@@ -997,23 +997,28 @@ Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-\-conn\-type\fR=<\fItype\fR>
-Require the partition connection type to be of a certain type.
+Require the block connection type to be of a certain type.
 On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.
-If NAV, or if not set, then SLURM will try to fit a TORUS else MESH.
+If NAV, or if not set, then SLURM will try to fit a what the
+DefaultConnType is set to in the bluegene.conf if that isn't set the
+default is TORUS.
 You should not normally set this option.
-SLURM will normally allocate a TORUS if possible for a given geometry.
 If running on a BGP system and wanting to run in HTC mode (only for 1
 midplane and below).  You can use HTC_S for SMP, HTC_D for Dual, HTC_V
 for virtual node mode, and HTC_L for Linux mode.
-A comma separated lists of connection types may be specified, one for each dimension.
+For systems that allow a different connection type per dimension you
+can supply a comma separated list of connection types may be specified, one for
+each dimension (i.e. M,T,T,T will give you a torus connection is all
+dimensions expect the first).
 
 .TP
 \fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR>
 Specify the geometry requirements for the job. The three numbers
 represent the required geometry giving dimensions in the X, Y and
 Z directions. For example "\-\-geometry=2x3x4", specifies a block
-of nodes having 2 x 3 x 4 = 24 nodes (actually base partitions on
-Blue Gene).
+of nodes having 2 x 3 x 4 = 24 nodes (actually midplanes on
+Blue Gene).  On a BGQ system the dimensions are AxXxYxZ, and can not
+be used to allocation sub-blocks.
 
 .TP
 \fB\-\-ioload\-image\fR=<\fIpath\fR>
