@@ -44,6 +44,10 @@ if {[test_wiki_sched] == 1} {
 	send_user "         or sched/wiki2 (Moab) schedulers\n"
 	exit $exit_code
 }
+if {[test_bluegene]} {
+	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
+	exit $exit_code
+}
 
 #
 # Submit a job with invalid mincpus requirement
