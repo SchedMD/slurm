@@ -103,11 +103,13 @@ static int _make_sure_block_still_exists(bg_action_t *bg_action_ptr,
 	if ((bg_record->magic != BLOCK_MAGIC)
 	    || !block_ptr_exist_in_list(bg_lists->main, bg_record)) {
 		slurm_mutex_unlock(&block_state_mutex);
-		debug("The block %s disappeared while starting "
-		      "job %u requeueing if possible.",
-		      bg_action_ptr->bg_block_id,
-		      bg_action_ptr->job_ptr->job_id);
-		bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+		if (bg_action_ptr->job_ptr) {
+			debug("The block %s disappeared while starting "
+			      "job %u requeueing if possible.",
+			      bg_action_ptr->bg_block_id,
+			      bg_action_ptr->job_ptr->job_id);
+			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+		}
 		return 0;
 	}
 	return 1;
