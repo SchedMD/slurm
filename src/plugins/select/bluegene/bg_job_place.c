@@ -1924,6 +1924,15 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				set_select_jobinfo(jobinfo,
 						   SELECT_JOBDATA_BLOCK_PTR,
 						   bg_record);
+
+				if (jobinfo->conn_type[0] != SELECT_NAV) {
+					for (dim=0; dim<SYSTEM_DIMENSIONS;
+					     dim++)
+						jobinfo->conn_type[dim] =
+							bg_record->conn_type[
+								dim];
+				}
+
 				_build_job_resources_struct(job_ptr,
 							    slurm_block_bitmap,
 							    bg_record);
