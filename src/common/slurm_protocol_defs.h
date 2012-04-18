@@ -420,6 +420,10 @@ typedef struct association_shares_object {
 	uint32_t assoc_id;	/* association ID */
 
 	char *cluster;          /* cluster name */
+	uint64_t cpu_run_mins;	/* currently running cpu-minutes
+				 *  = grp_used_cpu_run_secs / 60 */
+	uint64_t grp_cpu_mins;	/* cpu-minute limit */
+
 	char *name;             /* name */
 	char *parent;           /* parent name */
 
@@ -429,8 +433,6 @@ typedef struct association_shares_object {
 	double usage_efctv;	/* effective, normalized usage */
 	double usage_norm;	/* normalized usage */
 	uint64_t usage_raw;	/* measure of resource usage */
-
-	uint64_t grp_cpu_mins;	/* cpu-minute limit */
 
 	uint16_t user;          /* 1 if user association 0 if account
 				 * association */

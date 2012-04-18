@@ -70,6 +70,7 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_NORMU,
 		PRINT_RAWS,
 		PRINT_RAWU,
+		PRINT_RUNMINS,
 		PRINT_USER,
 	};
 
@@ -83,7 +84,7 @@ extern int process(shares_response_msg_t *resp)
 		slurm_addto_char_list(format_list,
 				      "A,User,RawShares,NormShares,"
 				      "RawUsage,NormUsage,EffUsage,"
-				      "FSFctr,GrpCPUMins");
+				      "FSFctr,GrpCPUMins,CPURunMins");
 	} else {
 		slurm_addto_char_list(format_list,
 				      "A,User,RawShares,NormShares,"
@@ -104,7 +105,7 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("Account");
 			field->len = -20;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Cluster", object, 1)) {
+		} else if (!strncasecmp("Cluster", object, 2)) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
@@ -153,6 +154,11 @@ extern int process(shares_response_msg_t *resp)
 			field->type = PRINT_CPUMINS;
 			field->name = xstrdup("GrpCPUMins");
 			field->len = 11;
+			field->print_routine = print_fields_uint64;
+		} else if (!strncasecmp("CPURunMins", object, 2)) {
+			field->type = PRINT_RUNMINS;
+			field->name = xstrdup("CPURunMins");
+			field->len = 15;
 			field->print_routine = print_fields_uint64;
 		} else {
 			exit_code=1;
@@ -277,6 +283,11 @@ extern int process(shares_response_msg_t *resp)
 			case PRINT_CPUMINS:
 				field->print_routine(field,
 						     share->grp_cpu_mins,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_RUNMINS:
+				field->print_routine(field,
+						     share->cpu_run_mins,
 						     (curr_inx == field_count));
 				break;
 			default:

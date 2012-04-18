@@ -14,8 +14,8 @@ being provided by \fBslurmdbd\fR (SLURM Database daemon) which is
 read in from the slurmctld and used to process the shares available
 to a given association.  sshare provides SLURM share information of
 Account, User, Raw Shares, Normalized Shares, Raw Usage, Normalized
-Usage, Effective Usage, the Fair-share factor, and the GrpCPUMins limit
-for each association.
+Usage, Effective Usage, the Fair-share factor, the GrpCPUMins limit
+and accumulated currently running CPU-minutes for each association.
 
 
 .SH "OPTIONS"
@@ -109,6 +109,11 @@ the effective usage charged to them or their accounts.
 .TP
 \f3GrpCPUMins\fP
 The CPU-minutes limit set on the account.
+
+.TP
+\f3CPURunMins\fP
+The number of CPU-minutes accumulated by jobs currently running against
+the account.
 
 .SH "EXAMPLES"
 .eo
