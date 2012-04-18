@@ -169,6 +169,7 @@ static void _sync_agent(bg_action_t *bg_action_ptr, bg_record_t *bg_record)
 			(void) slurm_fail_job(job_ptr->job_id);
 			slurm_mutex_lock(&block_state_mutex);
 		}
+		_destroy_bg_action(bg_action_ptr);
 	} else {
 		if (bg_record->state != BG_BLOCK_BOOTING) {
 			error("Block %s isn't ready and isn't "
@@ -178,6 +179,8 @@ static void _sync_agent(bg_action_t *bg_action_ptr, bg_record_t *bg_record)
 			debug("Block %s is booting, job ok",
 			      bg_action_ptr->bg_block_id);
 		}
+		/* the function _block_op calls will destroy the
+		   bg_action_ptr */
 		_block_op(bg_action_ptr);
 	}
 }
@@ -847,9 +850,8 @@ extern int sync_jobs(List job_list)
 			_destroy_bg_action(bg_action_ptr);
 			continue;
 		}
-
+		/* _sync_agent will destroy the bg_action_ptr */
 		_sync_agent(bg_action_ptr, bg_record);
-		_destroy_bg_action(bg_action_ptr);
 	}
 	list_iterator_destroy(itr);
 
