@@ -295,13 +295,34 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		return;
 	}
 
-	slurm_mutex_lock(&block_state_mutex);
-	/* Failure will unlock block_state_mutex so no need to unlock before
-	   return. Failure will unlock block_state_mutex so no need to unlock
-	   before return.
+	while (1) {
+		slurm_mutex_lock(&block_state_mutex);
+		/* Failure will unlock block_state_mutex so no need to
+		   unlock before return. Failure will unlock
+		   block_state_mutex so no need to unlock before return.
+		*/
+		if (!_make_sure_block_still_exists(bg_action_ptr,
+						   bg_record))
+			return;
+		/* If another thread is freeing this block we need to
+		   wait until it is done or we will get into a state
+		   where this job will be killed.
+		*/
+		if (!bg_record->free_cnt)
+			break;
+		debug("waiting for block %s to free for job %u %d "
+		      "other(s) trying to free it",
+		      bg_record->bg_block_id, req_job_id,
+		      bg_record->free_cnt);
+		slurm_mutex_unlock(&block_state_mutex);
+		sleep(1);
+	}
+	/* This was set in the start_job function to close the above
+	   window where a job could be mistakenly requeued if another
+	   thread is trying to free this block as we are trying to run
+	   on it, which is fine since we will reboot it later.
 	*/
-	if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
-		return;
+	bg_record->modifying = 0;
 
 	if ((bg_record->job_running <= NO_JOB_RUNNING)
 	    && !find_job_in_bg_record(bg_record, req_job_id)) {
@@ -533,7 +554,7 @@ no_reboot:
 	*/
 	/* bg_record->boot_count = 0; */
 	if (bg_record->state == BG_BLOCK_INITED) {
-		debug("block %s is ready.", bg_record->bg_block_id);
+		debug("block %s is already ready.", bg_record->bg_block_id);
 		/* Just in case reset the boot flags */
 		bg_record->boot_state = 0;
 		bg_record->boot_count = 0;
@@ -732,6 +753,11 @@ extern int start_job(struct job_record *job_ptr)
 
 	if (!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
+	/* Just incase something happens to free this block before we
+	   start the job we will make it so this job doesn't get blown
+	   away.
+	*/
+	bg_record->modifying = 1;
 	slurm_mutex_unlock(&block_state_mutex);
 
 	info("Queue start of job %u in BG block %s",
