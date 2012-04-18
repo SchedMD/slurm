@@ -37,6 +37,11 @@ set exit_code   0
 
 print_header $test_id
 
+if {[test_bluegene]} {
+	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
+	exit $exit_code
+}
+
 #
 # Report the slurm network and use it to establish window parameters
 #
