@@ -222,8 +222,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		return;
 	}
 
-	if (bg_record->state == BG_BLOCK_TERM) {
-		debug("Block is in Deallocating state, waiting for free.");
+	if ((bg_record->state == BG_BLOCK_TERM) || bg_record->free_cnt) {
 		/* It doesn't appear state of a small block
 		   (conn_type) is held on a BGP system so
 		   if we to reset it so, just set the reboot flag and
