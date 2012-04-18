@@ -487,6 +487,14 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 						break;
 				}
 				list_iterator_destroy(job_itr);
+			} else {
+				/* If there are no jobs running just
+				   free the thing. (This rarely
+				   happens when a mmcs job goes into
+				   error right after it finishes.
+				   Weird, I know.)
+				*/
+				bg_free_block(bg_record, 0, 1);
 			}
 
 			/* block_state_mutex is locked so handle this later */

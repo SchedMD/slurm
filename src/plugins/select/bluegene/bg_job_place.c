@@ -360,20 +360,49 @@ static bg_record_t *_find_matching_block(List block_list,
 				if (!bg_record->job_ptr
 				    && (!bg_record->job_list
 					|| !list_count(bg_record->job_list))) {
-					List tmp_list = list_create(NULL);
-					if (bg_conf->slurm_debug_flags
-					    & DEBUG_FLAG_BG_PICK)
-						info("going to free block %s "
-						     "there are no jobs "
-						     "running.  This will "
-						     "only happen if the "
-						     "cnodes went into error "
-						     "after no jobs were "
-						     "running.",
-						     bg_record->bg_block_id);
-					list_push(tmp_list, bg_record);
-					free_block_list(NO_VAL, tmp_list, 0, 0);
-					list_destroy(tmp_list);
+					bg_record_t *found_record = NULL;
+					slurm_mutex_lock(&block_state_mutex);
+
+					if (bg_record->original)
+						found_record =
+							bg_record->original;
+					else
+						found_record =
+							find_org_in_bg_list(
+								bg_lists->main,
+								bg_record);
+					if (!found_record)
+						found_record = bg_record;
+
+					if (found_record->free_cnt)
+						slurm_mutex_unlock(
+							&block_state_mutex);
+					else {
+						List tmp_list =
+							list_create(NULL);
+						if (bg_conf->slurm_debug_flags
+						    & DEBUG_FLAG_BG_PICK)
+							info("going to free "
+							     "block %s "
+							     "there are no "
+							     "jobs running.  "
+							     "This will only "
+							     "happen if the "
+							     "cnodes went into "
+							     "error after no "
+							     "jobs were "
+							     "running.",
+							     bg_record->
+							     bg_block_id);
+
+						list_push(tmp_list,
+							  found_record);
+						slurm_mutex_unlock(
+							&block_state_mutex);
+						free_block_list(NO_VAL,
+								tmp_list, 0, 0);
+						list_destroy(tmp_list);
+					}
 				} else if (bg_record->err_ratio
 					   >= bg_conf->max_block_err) {
 					/* This means the block is higher than
