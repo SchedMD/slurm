@@ -2554,7 +2554,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		list_iterator_destroy(itr);
 
 		slurm_mutex_unlock(&block_state_mutex);
-		free_block_list(NO_VAL, delete_list, 0, 0);
+		free_block_list(NO_VAL, delete_list, 1, 0);
 		list_destroy(delete_list);
 	} else if (block_desc_ptr->state == BG_BLOCK_BOOTING) {
 		/* This means recreate the block, remove it and then

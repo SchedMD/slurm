@@ -198,6 +198,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	int requeue_job = 0;
 	uint32_t req_job_id = bg_action_ptr->job_ptr->job_id;
 	bool block_inited = 0;
+	bool delete_it = 0;
 
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
@@ -282,7 +283,9 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 	slurm_mutex_unlock(&block_state_mutex);
 
-	rc = free_block_list(req_job_id, delete_list, 0, 1);
+	if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+		delete_it = 1;
+	rc = free_block_list(req_job_id, delete_list, delete_it, 1);
 	list_destroy(delete_list);
 	if (rc != SLURM_SUCCESS) {
 		error("Problem with deallocating blocks to run job %u "

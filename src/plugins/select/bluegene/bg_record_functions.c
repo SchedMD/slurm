@@ -1290,8 +1290,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	list_destroy(requests);
 
 	if (delete_list) {
+		bool delete_it = 0;
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			delete_it = 1;
 		slurm_mutex_unlock(&block_state_mutex);
-		free_block_list(NO_VAL, delete_list, 0, 0);
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
 		list_destroy(delete_list);
 	}
 	slurm_mutex_lock(&block_state_mutex);

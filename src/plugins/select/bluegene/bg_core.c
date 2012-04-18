@@ -220,7 +220,7 @@ static void *_track_freeing_blocks(void *args)
 	}
 	debug("_track_freeing_blocks: Freed them all for job %u", job_id);
 
-	if ((bg_conf->layout_mode == LAYOUT_DYNAMIC) || destroy)
+	if (destroy)
 		restore = false;
 
 	/* If there is a block in error state we need to keep all

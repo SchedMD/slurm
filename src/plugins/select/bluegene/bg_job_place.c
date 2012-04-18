@@ -879,7 +879,7 @@ static int _check_for_booted_overlapping_blocks(
 						}
 					}
 
-					free_block_list(NO_VAL, tmp_list, 0, 0);
+					free_block_list(NO_VAL, tmp_list, 1, 0);
 					list_destroy(tmp_list);
 				}
 				rc = 1;
