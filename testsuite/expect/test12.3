@@ -48,6 +48,14 @@ set test_acct	"slurm_test-account.1"
 print_header $test_id
 
 #
+# Checks if test is running on blue gene.
+#
+if {[test_bluegene]} {
+	send_user "\nWARNING: This test can't be run on a blue gene\n"
+	exit $exit_code
+}
+
+#
 # Check accounting config and bail if not found.
 #
 if { [test_account_storage] == 0 } {
