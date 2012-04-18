@@ -10,7 +10,7 @@
 # Copyright (C) 2012 SchedMD LLC.
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Joseph Donaghy <donaghy1@llnl.gov> and 
+# Written by Joseph Donaghy <donaghy1@llnl.gov> and
 #            Nathan Yee <nyee32@schedmd.com>
 # CODE-OCEC-09-009. All rights reserved.
 #
@@ -72,7 +72,7 @@ if { $node_count < 3 } {
 		   only has $node_count.\n"
 	exit $exit_code
 }
-	
+
 #
 # Identify the user and his current default account
 #
@@ -174,7 +174,7 @@ expect {
 if {$job_1_node_inx != 2} {
 	send_user "\nFAILURE: srun host count bad ($job_1_node_inx != 2)\n"
 	exit 1
-}	
+}
 
 #
 # Second job explicitly excludes node zero from previous job
@@ -272,4 +272,3 @@ if {$exit_code == 0} {
 	print_success $test_id
 }
 exit $exit_code
-
