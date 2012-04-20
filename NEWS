@@ -245,6 +245,7 @@ documents those changes that are of interest to users and admins.
  -- Fix issue where log message is more than 256 chars and then has a format.
  -- Fix sched/wiki2 to support job account name, gres, partition name, wckey,
     or working directory that contains "#" (a job record separator).
+ -- CRAY - fix for handling memory requests from user for an allocation.
 
 * Changes in SLURM 2.3.4
 ========================
