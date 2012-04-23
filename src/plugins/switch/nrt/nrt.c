@@ -154,6 +154,7 @@ static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 
 /* Local functions */
 static char *	_adapter_type_str(nrt_adapter_t type);
+static char *	_nrt_state_str(win_state_t state);
 static int	_allocate_windows_all(int adapter_cnt,
 			nrt_tableinfo_t *tableinfo, char *hostname,
 			nrt_task_id_t task_id, nrt_job_key_t job_key,
@@ -189,6 +190,7 @@ static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf);
+static char *	_port_status_str(nrt_port_status_t status);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
@@ -884,6 +886,22 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 }
 
 static char *
+_port_status_str(nrt_port_status_t status)
+{
+	if (status == 0)
+		return "Down";
+	else if (status == 1)
+		return "Up";
+	else if (status == 2)
+		return "Unconfig";
+	else {
+		static char buf[16];
+		snprintf(buf, sizeof(buf), "%d", status);
+		return buf;
+	}
+}
+
+static char *
 _win_state_str(win_state_t state)
 {
 	if (state == NRT_WIN_UNAVAILABLE)
@@ -935,22 +953,28 @@ static void
 _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 {
 	int i;
+	nrt_window_id_t window_cnt;
+	nrt_status_t *status = *(status_adapter->status_array);
 
 	info("--Begin Adapter Status--");
 	info("  adapter_name: %s", status_adapter->adapter_name);
 	info("  adapter_type: %s",
 	     _adapter_type_str(status_adapter->adapter_type));
-	info("  window_count: %hu", *(status_adapter->window_count));
+	window_cnt = *(status_adapter->window_count);
+	info("  window_count: %hu", window_cnt);
 	info("  --------");
-	for (i = 0; i < MIN(*(status_adapter->window_count), NRT_DEBUG_CNT);
-	     i++) {
-		nrt_status_t *status = *(status_adapter->status_array);
+	for (i = 0; i < MIN(window_cnt, NRT_DEBUG_CNT); i++) {
 		info("  bulk_xfer: %hu", status[i].bulk_transfer);
 		info("  client_pid: %u", (uint32_t)status[i].client_pid);
 		info("  rcontext_blocks: %u", status[i].rcontext_blocks);
 		info("  state: %s", _win_state_str(status[i].state));
 		info("  uid: %u", (uint32_t) status[i].uid);
 		info("  window_id: %hu", status[i].window_id);
+		info("  --------");
+	}
+	if (i < window_cnt) {
+		info("  suppress data for windows %hu through %hu",
+		     status[i].window_id, status[--window_cnt].window_id);
 		info("  --------");
 	}
 	info("--End Adapter Status--");
@@ -1390,11 +1414,12 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				unsigned char *p;
 				p = (unsigned char *) &adapter_info.port[k].
 						      ipv4_addr;
-				info("port_id:%hu status:%hu lid:%u "
+				info("port_id:%hu status:%s lid:%u "
 				     "network_id:%lu special:%lu "
 				     "ipv4_addr:%d.%d.%d.%d",
 				     adapter_info.port[k].port_id,
-				     adapter_info.port[k].status,
+				     _port_status_str(adapter_info.port[k].
+						      status),
 				     adapter_info.port[k].lid,
 				     adapter_info.port[k].network_id,
 				     adapter_info.port[k].special,
@@ -3004,7 +3029,7 @@ nrt_clear_node_state(void)
 		xfree(status_array);
 	}
 #if NRT_DEBUG
-	info("nrt_clear_node_state: complete: %d", rc);
+	info("nrt_clear_node_state: complete:%d", rc);
 #endif
 	return rc;
 }
