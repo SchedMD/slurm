@@ -317,7 +317,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		    || ((!SELECT_IS_CHECK_FULL_SET(query_mode)
 			 || SELECT_IS_MODE_RUN_NOW(query_mode))
 			&& (bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
-			if (bg_record->free_cnt) {
+			if (bg_record->destroy) {
 				/* No reason to look at a block that
 				   is being freed unless we are
 				   running static and looking at the
@@ -325,8 +325,8 @@ static bg_record_t *_find_matching_block(List block_list,
 				*/
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK)
-					info("block %s being free for other "
-					     "job(s), skipping",
+					info("block %s being destroyed, "
+					     "skipping",
 					     bg_record->bg_block_id);
 				continue;
 			} else if ((bg_record->job_running == BLOCK_ERROR_STATE)

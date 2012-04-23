@@ -117,6 +117,7 @@ typedef struct bg_record {
 					   block */
 	uint16_t conn_type[SYSTEM_DIMENSIONS];  /* MESH or Torus or NAV */
 	uint32_t cpu_cnt;               /* count of cpus per block */
+	int destroy;                    /* if the block is being destroyed */
 	uint16_t err_ratio;             /* ratio of how much of this
 					   block is in an error
 					   state. (doesn't apply to BGL/P) */

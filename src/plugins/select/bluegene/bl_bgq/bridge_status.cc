@@ -584,7 +584,7 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		/* Now handle potential overlapping blocks. */
 		itr = list_iterator_create(bg_lists->main);
 		while ((bg_record = (bg_record_t *)list_next(itr))) {
-			if (bg_record->free_cnt)
+			if (bg_record->destroy)
 				continue;
 			if (bg_record->mp_count == 1)
 				continue;

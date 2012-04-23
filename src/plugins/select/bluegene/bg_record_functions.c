@@ -301,8 +301,12 @@ extern List copy_bg_list(List in_list)
 			error("trying to copy a bad record");
 			continue;
 		}
-		/* we don't care about blocks being freed */
-		if (bg_record->free_cnt)
+		/* we don't care about blocks being destroyed and the
+		 * job is gone */
+		if (bg_record->destroy
+		    && (!bg_record->job_ptr
+			&& (!bg_record->job_list
+			    || !list_count(bg_record->job_list))))
 			continue;
 
 		new_record = xmalloc(sizeof(bg_record_t));
@@ -370,6 +374,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	memcpy(sec_record->conn_type, fir_record->conn_type,
 	       sizeof(sec_record->conn_type));
 	sec_record->cpu_cnt = fir_record->cpu_cnt;
+	sec_record->destroy = fir_record->destroy;
 	sec_record->err_ratio = fir_record->err_ratio;
 	sec_record->free_cnt = fir_record->free_cnt;
 	sec_record->full_block = fir_record->full_block;
@@ -1025,7 +1030,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = list_next(itr))) {
-		if (bg_record->free_cnt)
+		if (bg_record->destroy)
 			continue;
 
 		if (!bit_test(bg_record->mp_bitmap, mp_bit))
@@ -1256,7 +1261,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	while ((bg_record = list_pop(requests))) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((found_record = list_next(itr))) {
-			if (found_record->free_cnt)
+			if (found_record->destroy)
 				continue;
 			if (!blocks_overlap(bg_record, found_record))
 				continue;

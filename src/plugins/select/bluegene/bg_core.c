@@ -79,7 +79,6 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	}
 
 	bg_record->free_cnt--;
-
 	if (bg_record->free_cnt == -1) {
 		info("we got a negative 1 here for %s",
 		     bg_record->bg_block_id);
@@ -95,6 +94,9 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 			     bg_record->free_cnt, bg_record->bg_block_id);
 		return SLURM_SUCCESS;
 	}
+
+	/* If we are here we are done with the destroy so just reset it. */
+	bg_record->destroy = 0;
 
 	if (!(bg_record->state & BG_BLOCK_ERROR_FLAG)
 	    && (bg_record->state != BG_BLOCK_FREE)) {
@@ -490,6 +492,11 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			continue;
 		}
 		bg_record->free_cnt++;
+
+		/* just so we don't over write a different thread that
+		   wants this block destroyed */
+		if (destroy && !bg_record->destroy)
+			bg_record->destroy = destroy;
 
 		if (bg_record->job_ptr
 		    && !IS_JOB_FINISHED(bg_record->job_ptr)) {
