@@ -246,6 +246,8 @@ documents those changes that are of interest to users and admins.
  -- Fix sched/wiki2 to support job account name, gres, partition name, wckey,
     or working directory that contains "#" (a job record separator).
  -- CRAY - fix for handling memory requests from user for an allocation.
+ -- Add support for switches parameter to the job_submit/lua plugin. Work by
+    Par Andersson, NSC.
 
 * Changes in SLURM 2.3.4
 ========================

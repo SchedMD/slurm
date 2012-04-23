@@ -52,7 +52,7 @@ Use of this logic requires a configuration setting of
 available resources. This may result in an allocation with
 more that the optimum number of switches. The user can request
 a maximum number of switches for the job as well as a
-maximum time willing to wait for that number using the <i>--switch</i>
+maximum time willing to wait for that number using the <i>--switches</i>
 option with the salloc, sbatch and srun commands. The parameters can
 also be changed for pending jobs using the scontrol and squeue commands.</p>
 
