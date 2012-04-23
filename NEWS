@@ -244,7 +244,8 @@ documents those changes that are of interest to users and admins.
     and time limit where it was previously set by an admin.
  -- Fix issue where log message is more than 256 chars and then has a format.
  -- Fix sched/wiki2 to support job account name, gres, partition name, wckey,
-    or working directory that contains "#" (a job record separator).
+    or working directory that contains "#" (a job record separator). Also fix
+    for wckey or working directory that contains a double quote '\"'.
  -- CRAY - fix for handling memory requests from user for an allocation.
  -- Add support for switches parameter to the job_submit/lua plugin. Work by
     Par Andersson, NSC.
