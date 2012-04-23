@@ -154,6 +154,17 @@ job state information.<br>
 
 <p class="footer"><a href="#top">top</a></p>
 
+<h2>Source Code Management</h2>
+<p>The latest code is in github:
+<a href="https://github.com/SchedMD/slurm">https://github.com/SchedMD/slurm</a>.
+Creating your own branch will make it easier to keep it synchronized
+with our work.</p>
+
+<h2>Compiling</h2>
+<p>Sending the standard output of "make" to a file makes it easier to see any
+warning or error messages:<br>
+<i>"make -j install &gt;make.out"</i></p>
+
 <h2>Configuration</h2>
 <p>Sample configuration files are included in the <b>etc</b> subdirectory.
 The <b>slurm.conf</b> can be built using a <a href="configurator.html">configuration tool</a>.
@@ -169,7 +180,7 @@ are very limited in scope.</p>
 
 <p>We also have a set of Expect SLURM tests available under the <b>testsuite/expect</b>
 directory.  These tests are executed after SLURM has been installed
-and the daemons initiated. About 250 test scripts exercise all SLURM commands
+and the daemons initiated. About 320 test scripts exercise all SLURM commands
 and options including stress tests.  The file <b>testsuite/expect/globals</b>
 contains default paths and procedures for all of the individual tests.  At
 the very least, you will need to set the <i>slurm_dir</i> variable to the correct
@@ -251,6 +262,6 @@ host1> slurmd -N foo21
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2009</p>
+<p style="text-align:center;">Last modified 23 April 2012</p>
 
 <!--#include virtual="footer.txt"-->
