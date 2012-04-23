@@ -205,6 +205,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 					   bg_action_ptr->bg_block_id);
 
 	if (!bg_record) {
+		bg_record->modifying = 0;
 		slurm_mutex_unlock(&block_state_mutex);
 		error("block %s not found in bg_lists->main",
 		      bg_action_ptr->bg_block_id);
@@ -214,6 +215,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 	if ((bg_record->job_running <= NO_JOB_RUNNING)
 	    && !find_job_in_bg_record(bg_record, req_job_id)) {
+		bg_record->modifying = 0;
 		// bg_reset_block(bg_record); should already happened
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("job %u finished during the queueing job "
@@ -275,6 +277,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 		bg_reset_block(bg_record, bg_action_ptr->job_ptr);
 
+		bg_record->modifying = 0;
 		slurm_mutex_unlock(&block_state_mutex);
 		bg_requeue_job(req_job_id, 0);
 		return;
@@ -290,6 +293,16 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		error("Problem with deallocating blocks to run job %u "
 		      "on block %s", req_job_id,
 		      bg_action_ptr->bg_block_id);
+		slurm_mutex_lock(&block_state_mutex);
+		/* Failure will unlock block_state_mutex so no need to
+		   unlock before return.  No need to reset modifying
+		   here if the block doesn't exist.
+		*/
+		if (_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
+			bg_record->modifying = 0;
+			slurm_mutex_unlock(&block_state_mutex);
+		}
+
 		if (IS_JOB_CONFIGURING(bg_action_ptr->job_ptr))
 			bg_requeue_job(req_job_id, 0);
 		return;
@@ -298,11 +311,10 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	while (1) {
 		slurm_mutex_lock(&block_state_mutex);
 		/* Failure will unlock block_state_mutex so no need to
-		   unlock before return. Failure will unlock
-		   block_state_mutex so no need to unlock before return.
+		   unlock before return.  No need to reset modifying
+		   here if the block doesn't exist.
 		*/
-		if (!_make_sure_block_still_exists(bg_action_ptr,
-						   bg_record))
+		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
 			return;
 		/* If another thread is freeing this block we need to
 		   wait until it is done or we will get into a state
