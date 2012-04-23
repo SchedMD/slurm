@@ -494,8 +494,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		xfree(part_ptr->name);
 		part_ptr->name = xstrdup(part->name);
 	} else {
-		verbose("_parse_part_spec: duplicate entry for partition %s",
-			part->name);
+		/* FIXME - maybe should be fatal? */
+		error("_parse_part_spec: duplicate entry for partition %s, "
+		      "ignoring", part->name);
+		return EEXIST;
 	}
 
 	if (part->default_flag) {
@@ -514,7 +516,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if (part->preempt_mode != (uint16_t) NO_VAL)
 		part_ptr->preempt_mode = part->preempt_mode;
 
-	if(part->disable_root_jobs == (uint16_t)NO_VAL) {
+	if (part->disable_root_jobs == (uint16_t)NO_VAL) {
 		if (slurmctld_conf.disable_root_jobs)
 			part_ptr->flags |= PART_FLAG_NO_ROOT;
 	} else if (part->disable_root_jobs) {
@@ -523,7 +525,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part_ptr->flags &= (~PART_FLAG_NO_ROOT);
 	}
 
-	if(part_ptr->flags & PART_FLAG_NO_ROOT)
+	if (part_ptr->flags & PART_FLAG_NO_ROOT)
 		debug2("partition %s does not allow root jobs", part_ptr->name);
 
 	if ((part->default_time != NO_VAL) &&
@@ -593,7 +595,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 			cnt_uniq = hostlist_count(hl);
 			if (cnt_tot != cnt_uniq) {
 				fatal("Duplicate Nodes for Partition %s",
-					part->name);
+				      part->name);
 			}
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = hostlist_ranged_string_xmalloc(hl);

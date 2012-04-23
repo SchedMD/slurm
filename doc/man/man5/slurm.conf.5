@@ -2227,6 +2227,8 @@ configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "NodeName=DEFAULT".
 The "NodeName=" specification must be placed on every line
 describing the configuration of nodes.
+A single node name can not appear as a NodeName value in more than one line
+(duplicate node name records will be ignored).
 In fact, it is generally possible and desirable to define the
 configurations of all nodes in only a few lines.
 This convention permits significant optimization in the scheduling
@@ -2618,6 +2620,8 @@ configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "PartitionName=DEFAULT".
 The "PartitionName=" specification must be placed on every line
 describing the configuration of partitions.
+A single partition name can not appear as a PartitionName value in more than
+one line (duplicate partition name records will be ignored).
 If a partition that is in use is deleted from the configuration and slurm
 is restarted or reconfigured (scontrol reconfigure), jobs using the partition
 are canceled.

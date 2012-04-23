@@ -236,7 +236,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 			node_rec->reason    = xstrdup(node_ptr->reason);
 		} else {
 			/* FIXME - maybe should be fatal? */
-			error("reconfiguration for node %s, ignoring!", alias);
+			error("Reconfiguration for node %s, ignoring!", alias);
 		}
 		free(alias);
 	}
