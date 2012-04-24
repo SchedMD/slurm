@@ -137,7 +137,7 @@ int    retry_step_cnt = 0;
 
 bool srun_max_timer = false;
 bool srun_shutdown  = false;
-static int sig_array[] = {
+int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
 

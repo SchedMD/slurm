@@ -43,10 +43,6 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 
-static int sig_array[] = {
-	SIGHUP,  SIGINT,  SIGQUIT, SIGPIPE,
-	SIGTERM, SIGUSR1, SIGUSR2, 0 };
-
 typedef struct {
 	int (*create_job_step)     (srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),

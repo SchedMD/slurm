@@ -82,10 +82,6 @@ extern char **environ;
 
 static uint32_t pending_job_id = 0;
 
-static int sig_array[] = {
-	SIGHUP,  SIGINT,  SIGQUIT, SIGPIPE,
-	SIGTERM, SIGUSR1, SIGUSR2, 0 };
-
 /*
  * Static Prototypes
  */

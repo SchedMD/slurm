@@ -232,6 +232,7 @@ extern opt_t opt;
 
 extern int error_exit;		/* exit code for slurm errors */
 extern int immediate_exit;	/* exit code for --imediate option & busy */
+extern int sig_array[];
 
 /* return whether any constraints were specified by the user
  * (if new constraints are added above, might want to add them to this
