@@ -474,6 +474,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/partition/Makefile
 		 src/plugins/launch/Makefile
 		 src/plugins/launch/poe/Makefile
+		 src/plugins/launch/runjob/Makefile
 		 src/plugins/launch/slurm/Makefile
 		 src/plugins/preempt/Makefile
 		 src/plugins/preempt/none/Makefile

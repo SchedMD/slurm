@@ -1,3 +1,3 @@
 # Makefile for launch plugins
 
-SUBDIRS = poe slurm
+SUBDIRS = poe runjob slurm
