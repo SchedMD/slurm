@@ -18,6 +18,7 @@ srun_SOURCES = \
 	fname.h     \
 	allocate.c  \
 	allocate.h  \
+	launch.c launch.h \
 	multi_prog.c multi_prog.h \
 	task_state.c task_state.h \
 	srun.wrapper.c
