@@ -35,7 +35,7 @@
 
 #include <stdlib.h>
 
-#include "launch.h"
+#include "src/srun/launch.h"
 #include "src/srun/debugger.h"
 
 #include "src/common/env.h"
@@ -47,7 +47,7 @@ typedef struct {
 	int (*create_job_step)     (srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job);
-	int (*step_launch)         (srun_job_t *job);
+	int (*step_launch)         (srun_job_t *job, task_state_t *task_state);
 } plugin_ops_t;
 
 typedef struct {
@@ -422,10 +422,10 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 							destroy_job);
 }
 
-extern int launch_g_step_launch(srun_job_t *job)
+extern int launch_g_step_launch(srun_job_t *job, task_state_t *task_state)
 {
 	if (launch_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(plugin_context->ops.step_launch))(job);
+	return (*(plugin_context->ops.step_launch))(job, task_state);
 }
