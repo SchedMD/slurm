@@ -1577,22 +1577,34 @@ top:	orig_map = bit_copy(save_bitmap);
 					 cr_type, job_node_req,
 					 select_node_cnt,
 					 future_part, future_usage);
-			tmp_job_ptr->details->usable_nodes =
-				 bit_overlap(bitmap, tmp_job_ptr->node_bitmap);
+			tmp_job_ptr->details->usable_nodes = 0;
 			/*
 			 * If successful, set the last job's usable count to a
 			 * large value so that it will be first after sorting.
+			 * usable_nodes count set to zero above to eliminate
+			 * values previously set to 9999.
 			 * Note: usable_count is only used for sorting purposes
 			 */
 			if (rc == SLURM_SUCCESS) {
-				if (pass_count++ ||
-				    (list_count(preemptee_candidates) == 1))
-					break;
 				tmp_job_ptr->details->usable_nodes = 9999;
+				list_iterator_reset(job_iterator);
+				while ((tmp_job_ptr = (struct job_record *)
+					list_next(job_iterator))) {
+					if (tmp_job_ptr->details->usable_nodes
+					    == 9999)
+						break;
+					tmp_job_ptr->details->usable_nodes =
+						bit_overlap(bitmap,
+							    tmp_job_ptr->
+							    node_bitmap);
+				}
 				while ((tmp_job_ptr = (struct job_record *)
 					list_next(job_iterator))) {
 					tmp_job_ptr->details->usable_nodes = 0;
 				}
+				if (pass_count++ ||
+				    (list_count(preemptee_candidates) == 1))
+					break;
 				list_sort(preemptee_candidates,
 					  (ListCmpF)_sort_usable_nodes_dec);
 				FREE_NULL_BITMAP(orig_map);
@@ -1621,9 +1633,6 @@ top:	orig_map = bit_copy(save_bitmap);
 				if ((mode != PREEMPT_MODE_REQUEUE)    &&
 				    (mode != PREEMPT_MODE_CHECKPOINT) &&
 				    (mode != PREEMPT_MODE_CANCEL))
-					continue;
-				if (bit_overlap(bitmap,
-						tmp_job_ptr->node_bitmap) == 0)
 					continue;
 				if (tmp_job_ptr->details->usable_nodes == 0)
 					continue;
