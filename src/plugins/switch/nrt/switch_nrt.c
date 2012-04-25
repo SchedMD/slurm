@@ -389,31 +389,6 @@ extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 	return nrt_alloc_jobinfo((slurm_nrt_jobinfo_t **)switch_job);
 }
 
-static char *_adapter_name_check(char *network)
-{
-	regex_t re;
-	char *pattern = "(sni[[:digit:]])";
-        size_t nmatch = 5;
-        regmatch_t pmatch[5];
-        char *name;
-
-	if (!network)
-		return NULL;
-	if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
-                error("sockname regex compilation failed");
-                return NULL;
-        }
-	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
-	if (regexec(&re, network, nmatch, pmatch, 0) == REG_NOMATCH) {
-		return NULL;
-	}
-	name = xstrndup(network + pmatch[1].rm_so,
-			(size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
-	regfree(&re);
-
-	return name;
-}
-
 extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 				  uint16_t *tasks_per_node, int cyclic_alloc,
 				  char *network)
@@ -430,6 +405,13 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 #else
 	debug3("network = \"%s\"", network);
 #endif
+
+	list = hostlist_create(nodelist);
+	if (!list)
+		fatal("hostlist_create(%s): %m", nodelist);
+	for (i = 0; i < hostlist_count(list); i++)
+		nprocs += tasks_per_node[i];
+
 	if (network &&
 	    (strstr(network, "bulk_xfer") ||
 	     strstr(network, "BULK_XFER")))
@@ -472,19 +454,13 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		   strstr(network, "SN_SINGLE")) {
 		debug3("Found sn_single in network string");
 		sn_all = false;
-	} else if ((adapter_name = _adapter_name_check(network))) {
-		debug3("Found adapter %s in network string", adapter_name);
+	} else if ((adapter_name = nrt_adapter_name_check(network, list))) {
+		info("Found adapter %s in network string", adapter_name);
 		sn_all = false;
 	} else {
 		/* default to sn_all */
 		sn_all = true;
 	}
-
-	list = hostlist_create(nodelist);
-	if (!list)
-		fatal("hostlist_create(%s): %m", nodelist);
-	for (i = 0; i < hostlist_count(list); i++)
-		nprocs += tasks_per_node[i];
 
 	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
 				nprocs, sn_all, adapter_name, bulk_xfer,

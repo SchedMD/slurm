@@ -748,6 +748,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	assert(tableinfo);
 	assert(hostname);
 
+	debug("in _allocate_windows_all");
 	node = _find_node(nrt_state, hostname);
 	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
@@ -870,7 +871,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 
 	if (!user_space || (adapter_type == NRT_IPONLY)) {
 		nrt_ip_task_info_t *ip_table;
-		ip_table = (nrt_ip_task_info_t *) tableinfo[i].table;
+		ip_table = (nrt_ip_task_info_t *) tableinfo[0].table;
 		ip_table += task_id;
 		ip_table->node_number  = node_id;
 		ip_table->task_id      = task_id;
@@ -878,7 +879,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 		       sizeof(in_addr_t));
 	} else if (adapter_type == NRT_IB) {
 		nrt_ib_task_info_t *ib_table;
-		ib_table = (nrt_ib_task_info_t *) tableinfo[i].table;
+		ib_table = (nrt_ib_task_info_t *) tableinfo[0].table;
 		ib_table += task_id;
 		strncpy(ib_table->device_name, adapter_name,
 			NRT_MAX_DEVICENAME_SIZE);
@@ -890,7 +891,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 		ib_table->win_id   = window->window_id;
 	} else if (adapter_type == NRT_HFI) {
 		nrt_hfi_task_info_t *hfi_table;
-		hfi_table = (nrt_hfi_task_info_t *) tableinfo[i].table;
+		hfi_table = (nrt_hfi_task_info_t *) tableinfo[0].table;
 		hfi_table += task_id;
 		hfi_table += task_id;
 		hfi_table->task_id = task_id;
@@ -2709,6 +2710,8 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 		error("Unable to clean window for job_key %hu, "
 		      "nrt_clean_window(%s, %u): %s",
 		      job_key, adapter_name, adapter_type, nrt_err_str(err));
+		if (err != NRT_EAGAIN)
+			break;
 	}
 
 	return SLURM_FAILURE;
@@ -3145,4 +3148,45 @@ extern char *nrt_err_str(int rc)
 
 	snprintf(str, sizeof(str), "%d", rc);
 	return str;
+}
+
+
+/* return an adapter name from within a job's "network" string
+ * IN network - job's "network" specification
+ * IN list - hostlist of allocated nodes
+ * RET - A network name, must xfree() or NULL if none found */
+extern char *nrt_adapter_name_check(char *network, hostlist_t hl)
+{
+	int i;
+	hostlist_iterator_t hi;
+	slurm_nrt_nodeinfo_t *node;
+	char *host, *net_str = NULL, *token = NULL, *last = NULL;
+	char *adapter_name = NULL;
+
+	if (!network || !hl)
+		return NULL;
+
+	hi = hostlist_iterator_create(hl);
+	host = hostlist_next(hi);
+	hostlist_iterator_destroy(hi);
+	_lock();
+	node = _find_node(nrt_state, host);
+	if (node && node->adapter_list) {
+		net_str = xstrdup(network);
+		token = strtok_r(network, ",", &last);
+	}
+	while (token) {
+		for (i = 0; i < node->adapter_count; i++) {
+			if (!strcmp(token,node->adapter_list[i].adapter_name)){
+				adapter_name = xstrdup(token);
+				break;
+			}
+		}
+		if (adapter_name)
+			break;
+		token = strtok_r(NULL, ",", &last);
+	}
+	_unlock();
+	xfree(net_str);
+	return adapter_name;
 }

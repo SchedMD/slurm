@@ -83,6 +83,7 @@ enum {
 #define NRT_MAXADAPTERS 2
 #define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
 
+extern char *nrt_adapter_name_check(char *network, hostlist_t hl);
 extern int nrt_clear_node_state(void);
 extern char *nrt_err_str(int rc);
 extern int nrt_slurmctld_init(void);
