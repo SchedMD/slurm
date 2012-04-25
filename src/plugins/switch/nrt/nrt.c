@@ -156,12 +156,14 @@ static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 static char *	_adapter_type_str(nrt_adapter_t type);
 static int	_allocate_windows_all(int adapter_cnt,
 			nrt_tableinfo_t *tableinfo, char *hostname,
-			nrt_task_id_t task_id, nrt_job_key_t job_key,
+			int node_id, nrt_task_id_t task_id,
+			nrt_job_key_t job_key,
 			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
 			bool user_space);
 static int	_allocate_window_single(char *adapter_name,
 			nrt_tableinfo_t *tableinfo, char *hostname,
-			nrt_task_id_t task_id, nrt_job_key_t job_key,
+			int node_id, nrt_task_id_t task_id,
+			nrt_job_key_t job_key,
 			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
 			bool user_space);
 static slurm_nrt_libstate_t *_alloc_libstate(void);
@@ -734,7 +736,7 @@ _find_free_window(slurm_nrt_adapter_t *adapter)
  */
 static int
 _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
-		      char *hostname, nrt_task_id_t task_id,
+		      char *hostname, int node_id, nrt_task_id_t task_id,
 		      nrt_job_key_t job_key, nrt_adapter_t adapter_type,
 		      nrt_logical_id_t base_lid, bool user_space)
 {
@@ -771,13 +773,15 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		if (!user_space || (adapter_type == NRT_IPONLY)) {
 			nrt_ip_task_info_t *ip_table;
 			ip_table = (nrt_ip_task_info_t *) tableinfo[i].table;
-			ip_table->node_number  = 0;
+			ip_table += task_id;
+			ip_table->node_number  = node_id;
 			ip_table->task_id      = task_id;
 			memcpy(&ip_table->ip.ipv4_addr, &adapter->ipv4_addr,
 			       sizeof(in_addr_t));
 		} else if (adapter_type == NRT_IB) {
 			nrt_ib_task_info_t *ib_table;
 			ib_table = (nrt_ib_task_info_t *) tableinfo[i].table;
+			ib_table += task_id;
 			strncpy(ib_table->device_name, adapter->adapter_name,
 				NRT_MAX_DEVICENAME_SIZE);
 			ib_table += task_id;
@@ -789,6 +793,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		} else if (adapter_type == NRT_HFI) {
 			nrt_hfi_task_info_t *hfi_table;
 			hfi_table = (nrt_hfi_task_info_t *) tableinfo[i].table;
+			hfi_table += task_id;
 			hfi_table += task_id;
 			hfi_table->task_id = task_id;
 			hfi_table->win_id = window->window_id;
@@ -815,7 +820,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
  */
 static int
 _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
-			char *hostname, nrt_task_id_t task_id,
+			char *hostname, int node_id, nrt_task_id_t task_id,
 			nrt_job_key_t job_key, nrt_adapter_t adapter_type,
 			nrt_logical_id_t base_lid, bool user_space)
 {
@@ -866,13 +871,15 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 	if (!user_space || (adapter_type == NRT_IPONLY)) {
 		nrt_ip_task_info_t *ip_table;
 		ip_table = (nrt_ip_task_info_t *) tableinfo[i].table;
-		ip_table->node_number  = 0;
+		ip_table += task_id;
+		ip_table->node_number  = node_id;
 		ip_table->task_id      = task_id;
 		memcpy(&ip_table->ip.ipv4_addr, &adapter->ipv4_addr,
 		       sizeof(in_addr_t));
 	} else if (adapter_type == NRT_IB) {
 		nrt_ib_task_info_t *ib_table;
 		ib_table = (nrt_ib_task_info_t *) tableinfo[i].table;
+		ib_table += task_id;
 		strncpy(ib_table->device_name, adapter_name,
 			NRT_MAX_DEVICENAME_SIZE);
 		ib_table += task_id;
@@ -884,6 +891,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 	} else if (adapter_type == NRT_HFI) {
 		nrt_hfi_task_info_t *hfi_table;
 		hfi_table = (nrt_hfi_task_info_t *) tableinfo[i].table;
+		hfi_table += task_id;
 		hfi_table += task_id;
 		hfi_table->task_id = task_id;
 		hfi_table->win_id = window->window_id;
@@ -1100,6 +1108,7 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type)
 			fatal("Unsupported adapter_type: %s",
 			      _adapter_type_str(adapter_type));
 		}
+		info("  ------");
 	}
 	info("--End NRT table--");
 }
@@ -1901,7 +1910,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	int nnodes;
 	hostlist_iterator_t hi;
 	char *host = NULL;
-	int proc_cnt = 0;
+	int task_id;
 	int i, j;
 	slurm_nrt_nodeinfo_t *node;
 	int rc;
@@ -2009,7 +2018,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 	full_node_cnt = nprocs % nnodes;
 	min_procs_per_node = nprocs / nnodes;
 	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-	proc_cnt = 0;
+	task_id = 0;
 	_lock();
 	for  (i = 0; i < nnodes; i++) {
 		host = hostlist_next(hi);
@@ -2025,7 +2034,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			if (adapter_name == NULL) {
 				rc = _allocate_windows_all(jp->tables_per_task,
 							   jp->tableinfo,
-							   host, proc_cnt,
+							   host, i, task_id,
 							   jp->job_key,
 							   adapter_type,
 							   base_lid,
@@ -2033,7 +2042,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			} else {
 				rc = _allocate_window_single(adapter_name,
 							     jp->tableinfo,
-							     host, proc_cnt,
+							     host, i, task_id,
 							     jp->job_key,
 							     adapter_type,
 							     base_lid,
@@ -2043,7 +2052,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				_unlock();
 				goto fail;
 			}
-			proc_cnt++;
+			task_id++;
 		}
 		free(host);
 	}
