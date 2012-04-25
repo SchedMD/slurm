@@ -499,7 +499,7 @@ extern int remove_block(List mps, bool is_small)
 		/* Small blocks don't use wires, and only have 1 mp,
 		   so just break. */
 		if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-			info("remove_block: %s state now %d",
+			info("remove_block: midplane %s used state now %d",
 			     ba_mp->coord_str, ba_mp->used);
 
 		for (dim=0; dim<cluster_dims; dim++) {
