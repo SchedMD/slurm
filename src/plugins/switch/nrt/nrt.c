@@ -1198,7 +1198,9 @@ _alloc_libstate(void)
 	tmp->node_list = NULL;
 	tmp->hash_max = 0;
 	tmp->hash_table = NULL;
-	tmp->key_index = 1;
+	/* Start key from random point, old key values are cached,
+	 * which seems to prevent re-use for a while */
+	tmp->key_index = (uint16_t) time(NULL);
 
 	return tmp;
 }
