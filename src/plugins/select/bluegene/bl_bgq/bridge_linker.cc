@@ -75,9 +75,14 @@ static void _setup_ba_mp(int level, uint16_t *coords,
 	Midplane::ConstPtr mp_ptr;
 	int i;
 
-	if (!bgqsys)
-		fatal("_setup_ba_mp: No ComputeHardware ptr");
-
+	if (!bgqsys) {
+		if (bg_recover != NOT_FROM_CONTROLLER)
+			fatal("_setup_ba_mp: No ComputeHardware ptr");
+		else {
+			error("_setup_ba_mp: can't talk to the database");
+			return;
+		}
+	}
 	if (level > SYSTEM_DIMENSIONS)
 		return;
 
