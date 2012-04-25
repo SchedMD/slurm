@@ -390,13 +390,13 @@ extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 }
 
 extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
-				  uint16_t *tasks_per_node, int cyclic_alloc,
+				  uint16_t *tasks_per_node, uint32_t **tids,
 				  char *network)
 {
 	hostlist_t list = NULL;
 	bool bulk_xfer = false, ip_v6 = false, user_space = false;
 	bool sn_all;
-	int i, err, nprocs = 0;
+	int err;
 	char *adapter_name = NULL, *protocol = "mpi";
 
 #if NRT_DEBUG
@@ -409,8 +409,6 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	list = hostlist_create(nodelist);
 	if (!list)
 		fatal("hostlist_create(%s): %m", nodelist);
-	for (i = 0; i < hostlist_count(list); i++)
-		nprocs += tasks_per_node[i];
 
 	if (network &&
 	    (strstr(network, "bulk_xfer") ||
@@ -463,8 +461,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	}
 
 	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
-				nprocs, sn_all, adapter_name, bulk_xfer,
-				ip_v6, user_space, protocol);
+				tasks_per_node, tids, sn_all, adapter_name,
+				bulk_xfer, ip_v6, user_space, protocol);
 
 	hostlist_destroy(list);
 	xfree(adapter_name);

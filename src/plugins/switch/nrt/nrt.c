@@ -1908,21 +1908,17 @@ _next_key(void)
  * Used by: slurmctld
  */
 extern int
-nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
-		  bool sn_all, char *adapter_name, bool bulk_xfer,
-		  bool ip_v6, bool user_space, char *protocol)
+nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
+		  uint16_t *tasks_per_node, uint32_t **tids, bool sn_all,
+		  char *adapter_name, bool bulk_xfer, bool ip_v6,
+		  bool user_space, char *protocol)
 {
-	int nnodes;
+	int nnodes, nprocs = 0;
 	hostlist_iterator_t hi;
 	char *host = NULL;
-	int task_id;
 	int i, j;
 	slurm_nrt_nodeinfo_t *node;
 	int rc;
-	int task_cnt;
-	int full_node_cnt;
-	int min_procs_per_node;
-	int max_procs_per_node;
 	nrt_adapter_t adapter_type = NRT_MAX_ADAPTER_TYPES;
 	nrt_logical_id_t base_lid = 0xffffff;
 	int adapter_type_count = 0;
@@ -1930,9 +1926,13 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
-	assert(!hostlist_is_empty(hl));
+	assert(tasks_per_node);
 
-	if (nprocs <= 0)
+	nnodes = hostlist_count(hl);
+	for (i = 0; i < nnodes; i++)
+		nprocs += tasks_per_node[i];
+
+	if ((nnodes <= 0) || (nprocs <= 0))
 		slurm_seterrno_ret(EINVAL);
 
 	jp->bulk_xfer  = (uint8_t) bulk_xfer;
@@ -2019,27 +2019,17 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 #else
 	debug("Allocating windows");
 #endif
-	nnodes = hostlist_count(hl);
-	full_node_cnt = nprocs % nnodes;
-	min_procs_per_node = nprocs / nnodes;
-	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-	task_id = 0;
 	_lock();
 	for  (i = 0; i < nnodes; i++) {
 		host = hostlist_next(hi);
 		if (!host)
 			error("Failed to get next host");
 
-		if (i < full_node_cnt)
-			task_cnt = max_procs_per_node;
-		else
-			task_cnt = min_procs_per_node;
-
-		for (j = 0; j < task_cnt; j++) {
+		for (j = 0; j < tasks_per_node[i]; j++) {
 			if (adapter_name == NULL) {
 				rc = _allocate_windows_all(jp->tables_per_task,
 							   jp->tableinfo,
-							   host, i, task_id,
+							   host, i, tids[i][j],
 							   jp->job_key,
 							   adapter_type,
 							   base_lid,
@@ -2047,7 +2037,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 			} else {
 				rc = _allocate_window_single(adapter_name,
 							     jp->tableinfo,
-							     host, i, task_id,
+							     host, i,
+							     tids[i][j],
 							     jp->job_key,
 							     adapter_type,
 							     base_lid,
@@ -2057,7 +2048,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
 				_unlock();
 				goto fail;
 			}
-			task_id++;
 		}
 		free(host);
 	}

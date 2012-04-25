@@ -96,7 +96,8 @@ extern int nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
 extern int nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
 extern void nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *np, bool ptr_into_array);
 extern int nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **jh);
-extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl, int nprocs,
+extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
+			     uint16_t *tasks_per_node, uint32_t **tids,
 			     bool sn_all, char *adapter_name, bool bulk_xfer,
 			     bool ip_v6, bool user_space, char *protocol);
 extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);

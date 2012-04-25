@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM switch (interconnect) plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-switch plugins. This is version 0 of the API.
+switch plugins. This is version 100 of the API.
 Note that many of the API functions are used only by one of the daemons. For
 example the slurmctld daemon builds a job step's switch credential
 (<span class="commandline">switch_p_build_jobinfo</span>) while the
@@ -22,9 +22,6 @@ abbreviation for the type of switch. We recommend, for example:</p>
 <ul>
 <li><b>none</b>&#151;A plugin that implements the API without providing any actual
 switch service. This is the case for Ethernet and Myrinet interconnects.</li>
-<li><b>elan</b>&#151;<a href="http://www.quadrics.com/">Quadrics</a>  Elan3 or Elan4
-interconnect.</li>
-<li><b>federation</b>&#151;IBM Federation interconnects.</li>
 <li><b>nrt</b>&#151;IBM Network Resource Table (presently under development).</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
@@ -204,7 +201,7 @@ the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
 <p class="commandline">int switch_p_build_jobinfo (switch_jobinfo_t switch_job,
-char *nodelist, int *tasks_per_node, int cyclic_alloc, char *network);</p>
+char *nodelist, uint16_t *tasks_per_node,  uint32_t **tids, char *network);</p>
 <p style="margin-left:.2in"><b>Description</b>: Build a job's switch credential.
 It is recommended that the credential's magic number be validated.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -213,12 +210,11 @@ switch credential to be updated<br>
 <span class="commandline">nodelist</span>&nbsp;&nbsp;&nbsp; (input) List of nodes
 allocated to the job. This may contain expressions to specify node ranges (e.g.
 "linux[1-20]" or "linux[2,4,6,8]").<br>
-<span class="commandline">tasks_per_node</span>&nbsp;&nbsp;&nbsp; (input) List
+<span class="commandline">tasks_per_node</span>&nbsp;&nbsp;&nbsp; (input) count
 of processes per node to be initiated as part of the job.<br>
-<span class="commandline">cyclic_alloc</span>&nbsp;&nbsp;&nbsp; (input) Non-zero
-if job's processes are to be allocated across nodes in a cyclic fashion (task 0 on node 0,
-task 1 on node 1, etc). If zero, processes are allocated sequentially on a node before
-moving to the next node (tasks 0 and 1 on node 0, tasks 2 and 3 on node 1, etc.).<br>
+<span class="commandline">tids</span>&nbsp;&nbsp;&nbsp; (input) List of task
+IDs to be initiated. The first array index is the node ID. The second array
+index ranges from 0 to tasks_per_node of that node ID minus 1.<br>
 <span class="commandline">network</span>&nbsp;&nbsp;&nbsp; (input) Job's network
 specification from srun command. </p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
@@ -514,6 +510,6 @@ plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 December 2011</p>
+<p style="text-align:center;">Last modified 25 April 2012</p>
 
 <!--#include virtual="footer.txt"-->
