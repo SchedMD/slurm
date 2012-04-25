@@ -2589,9 +2589,11 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 			     jp->tableinfo[i].table_length, adapter_type);
 #endif
 		adapter_name = jp->tableinfo[i].adapter_name;
-		rc = _wait_for_all_windows(&jp->tableinfo[i]);
-		if (rc != SLURM_SUCCESS)
-			return rc;
+		if (jp->user_space) {
+			rc = _wait_for_all_windows(&jp->tableinfo[i]);
+			if (rc != SLURM_SUCCESS)
+				return rc;
+		}
 
 		if (adapter_name == NULL)
 			continue;
@@ -2738,6 +2740,8 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 	info("nrt_unload_table");
 	_print_jobinfo(jp);
 #endif
+	if (!jp->user_space)
+		return rc;
 	for (i = 0; i < jp->tables_per_task; i++) {
 		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
 			if (jp->tableinfo[i].adapter_type == NRT_IB) {
