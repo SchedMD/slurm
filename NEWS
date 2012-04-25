@@ -38,6 +38,7 @@ documents those changes that are of interest to users and admins.
     larger than midplane jobs.
  -- Added cpu_run_min to the output of sshare --long.  Work contributed by
     Mark Nelson.
+ -- BGQ - allow regular users to resolve Rack-Midplane to AXYZ coords.
 
 * Changes in SLURM 2.4.0.pre4
 =============================

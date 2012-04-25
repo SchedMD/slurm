@@ -105,20 +105,18 @@ int main(int argc, char *argv[])
 		min_screen_width = 92;
 
 	/* no need for this if you are resolving */
-	if (!params.resolve) {
-		while (slurm_load_node((time_t) NULL,
-				       &new_node_ptr, SHOW_ALL)) {
-			error_code = slurm_get_errno();
-			printf("slurm_load_node: %s\n",
-			       slurm_strerror(error_code));
-			if (params.display == COMMANDS) {
-				new_node_ptr = NULL;
-				break;		/* just continue */
-			}
-			if (params.iterate == 0)
-				exit(1);
-			sleep(10);	/* keep trying to reconnect */
+	while (slurm_load_node((time_t) NULL,
+			       &new_node_ptr, SHOW_ALL)) {
+		if (params.resolve || (params.display == COMMANDS)) {
+			new_node_ptr = NULL;
+			break;		/* just continue */
 		}
+		error_code = slurm_get_errno();
+		printf("slurm_load_node: %s\n",
+		       slurm_strerror(error_code));
+		if (params.iterate == 0)
+			exit(1);
+		sleep(10);	/* keep trying to reconnect */
 	}
 
 	select_g_ba_init(new_node_ptr, 0);
