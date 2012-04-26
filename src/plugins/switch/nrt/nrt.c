@@ -137,7 +137,7 @@ struct slurm_nrt_jobinfo {
 	/* pid from getpid() */
 	nrt_job_key_t job_key;
 	uint8_t bulk_xfer;	/* flag */
-	uint8_t ip_v6;		/* flag */
+	uint8_t ip_v6;		/* flag *///FIXME
 	uint8_t user_space;	/* flag */
 	char *protocol;		/* MPI, UPC, LAPI, PAMI, etc. */
 	uint16_t tables_per_task;
@@ -197,14 +197,16 @@ static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo,
-				nrt_adapter_t adapter_type, Buf buf);
+				nrt_adapter_t adapter_type, Buf buf,
+				bool ip_v6);
 static char *	_port_status_str(nrt_port_status_t status);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
 				 bool believe_window_status);
 static int	_unpack_tableinfo(nrt_tableinfo_t *tableinfo,
-				  nrt_adapter_t adapter_type, Buf buf);
+				  nrt_adapter_t adapter_type, Buf buf,
+				  bool ip_v6);
 static int	_wait_for_all_windows(nrt_tableinfo_t *tableinfo);
 static int	_wait_for_window_unloaded(char *adapter_name,
 					  nrt_adapter_t adapter_type,
@@ -1082,7 +1084,7 @@ _print_libstate(const slurm_nrt_libstate_t *l)
 }
 /* Used by: all */
 static void
-_print_table(void *table, int size, nrt_adapter_t adapter_type)
+_print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 {
 	int i;
 
@@ -1114,15 +1116,20 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type)
 		} else if ((adapter_type == NRT_IPONLY) ||
 			   (adapter_type == NRT_HPCE)) {   /* HPC Ethernet */
 			nrt_ip_task_info_t *ip_tbl_ptr;
-			unsigned char *p;
+			char addr_str[128];
 			ip_tbl_ptr = table;
 			ip_tbl_ptr += i;
 			info("  task_id: %u", ip_tbl_ptr->task_id);
 			info("  node_number: %u", ip_tbl_ptr->node_number);
-			p = (unsigned char *) &ip_tbl_ptr->ip.ipv4_addr;
-			info("  ipv4_addr: %d.%d.%d.%d",
-			     p[0], p[1], p[2], p[3]);
-			info("  ipv6_addr: TBD");
+			if (ip_v4) {
+				inet_ntop(AF_INET, &ip_tbl_ptr->ip.ipv4_addr,
+					  addr_str, sizeof(addr_str));
+				info("  ipv4_addr: %s", addr_str);
+			} else {
+				inet_ntop(AF_INET6, &ip_tbl_ptr->ip.ipv6_addr,
+					  addr_str, sizeof(addr_str));
+				info("  ipv6_addr: %s", addr_str);
+			}
 		} else {
 			fatal("Unsupported adapter_type: %s",
 			      _adapter_type_str(adapter_type));
@@ -1164,7 +1171,8 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 		else
 			adapter_type = NRT_IPONLY;
 		_print_table(j->tableinfo[i].table,
-			     j->tableinfo[i].table_length, adapter_type);
+			     j->tableinfo[i].table_length, adapter_type,
+			     (j->ip_v6==0));
 	}
 	info("--End Jobinfo--");
 }
@@ -1199,7 +1207,7 @@ _print_load_table(nrt_cmd_load_table_t *load_table)
 	else
 		adapter_type = NRT_IPONLY;
 	_print_table(load_table->per_task_input, table_info->num_tasks,
-		     adapter_type);
+		     adapter_type, table_info->is_ipv4);
 	info("--- End load table ---");
 }
 #endif
@@ -2107,9 +2115,9 @@ fail:
 
 static void
 _pack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
-		Buf buf)
+		Buf buf, bool ip_v6)
 {
-	int i;
+	int i, j;
 
 	pack32(tableinfo->table_length, buf);
 	if (adapter_type == NRT_IB) {
@@ -2130,8 +2138,15 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 		for (i = 0, ip_tbl_ptr = tableinfo->table;
 		     i < tableinfo->table_length;
 		     i++, ip_tbl_ptr++) {
-			packmem((char *) &ip_tbl_ptr->ip.ipv4_addr,
-				sizeof(in_addr_t), buf);
+			if (ip_v6) {
+				for (j = 0; j < 4; j++) {
+					pack32(ip_tbl_ptr->ip.ipv6_addr.
+					       in6_u.u6_addr32[j], buf);
+				}
+			} else {
+				packmem((char *) &ip_tbl_ptr->ip.ipv4_addr,
+					sizeof(in_addr_t), buf);
+			}
 			pack32(ip_tbl_ptr->node_number, buf);
 			pack16(ip_tbl_ptr->reserved, buf);
 			pack32(ip_tbl_ptr->task_id, buf);
@@ -2186,7 +2201,7 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 			adapter_type = NRT_IPONLY;
 		else
 			adapter_type = j->tableinfo[i].adapter_type;
-		_pack_tableinfo(&j->tableinfo[i], adapter_type, buf);
+		_pack_tableinfo(&j->tableinfo[i], adapter_type, buf, j->ip_v6);
 	}
 
 	return SLURM_SUCCESS;
@@ -2195,11 +2210,11 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 /* return 0 on success, -1 on failure */
 static int
 _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
-		  Buf buf)
+		  Buf buf, bool ip_v6)
 {
 	uint32_t size;
 	char *name_ptr;
-	int i;
+	int i, j;
 
 	safe_unpack32(&tableinfo->table_length, buf);
 	if (adapter_type == NRT_IB) {
@@ -2227,10 +2242,18 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 		for (i = 0, ip_tbl_ptr = tableinfo->table;
 		     i < tableinfo->table_length;
 		     i++, ip_tbl_ptr++) {
-			safe_unpackmem((char *) &ip_tbl_ptr->ip.ipv4_addr,
-				       &size, buf);
-			if (size != sizeof(in_addr_t))
-				goto unpack_error;
+			if (ip_v6) {
+				for (j = 0; j < 4; j++) {
+					safe_unpack32(&ip_tbl_ptr->ip.ipv6_addr.
+						      in6_u.u6_addr32[j], buf);
+				}
+			} else {
+				safe_unpackmem((char *)
+					       &ip_tbl_ptr->ip.ipv4_addr,
+					       &size, buf);
+				if (size != sizeof(in_addr_t))
+					goto unpack_error;
+			}
 			safe_unpack32(&ip_tbl_ptr->node_number, buf);
 			safe_unpack16(&ip_tbl_ptr->reserved, buf);
 			safe_unpack32(&ip_tbl_ptr->task_id, buf);
@@ -2296,7 +2319,8 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 			adapter_type = NRT_IPONLY;
 		else
 			adapter_type = j->tableinfo[i].adapter_type;
-		if (_unpack_tableinfo(&j->tableinfo[i], adapter_type, buf))
+		if (_unpack_tableinfo(&j->tableinfo[i], adapter_type, buf,
+				      j->ip_v6))
 			goto unpack_error;
 	}
 
@@ -2627,7 +2651,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		else
 			adapter_type = NRT_IPONLY;
 		_print_table(jp->tableinfo[i].table,
-			     jp->tableinfo[i].table_length, adapter_type);
+			     jp->tableinfo[i].table_length, adapter_type,
+			     jp->ip_v6);
 #endif
 		adapter_name = jp->tableinfo[i].adapter_name;
 		if (jp->user_space) {
