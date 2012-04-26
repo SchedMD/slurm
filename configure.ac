@@ -277,19 +277,6 @@ else
 fi
 AC_SUBST(SLURM_PREFIX)
 
-dnl check for whether to include Elan support
-dnl
-X_AC_ELAN
-AM_CONDITIONAL(HAVE_ELAN, test "x$ac_have_elan" = "xyes")
-AC_SUBST(HAVE_ELAN)
-
-dnl check for whether to include Federation support
-dnl
-X_AC_FEDERATION
-AM_CONDITIONAL(HAVE_FEDERATION, test "x$ac_have_federation" = "xyes")
-AC_SUBST(HAVE_FEDERATION)
-
-
 dnl check for whether to include IBM NRT (Network Resource Table) support
 dnl
 X_AC_NRT
@@ -497,7 +484,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
-		 src/plugins/proctrack/rms/Makefile
 		 src/plugins/proctrack/sgi_job/Makefile
 		 src/plugins/proctrack/lua/Makefile
 		 src/plugins/sched/Makefile
@@ -519,8 +505,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/cray/libemulate/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/switch/Makefile
-		 src/plugins/switch/elan/Makefile
-		 src/plugins/switch/federation/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/switch/nrt/Makefile
 		 src/plugins/switch/nrt/libpermapi/Makefile

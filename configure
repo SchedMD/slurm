@@ -656,14 +656,6 @@ HAVE_NRT_FALSE
 HAVE_NRT_TRUE
 NRT_LDFLAGS
 NRT_CPPFLAGS
-HAVE_FEDERATION
-HAVE_FEDERATION_FALSE
-HAVE_FEDERATION_TRUE
-FEDERATION_LDFLAGS
-HAVE_ELAN
-HAVE_ELAN_FALSE
-HAVE_ELAN_TRUE
-ELAN_LIBS
 SLURM_PREFIX
 SLURMCTLD_PORT_COUNT
 SLURMDBD_PORT
@@ -20997,273 +20989,6 @@ fi
 
 
 
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for rms_prgcreate in -lrmscall" >&5
-$as_echo_n "checking for rms_prgcreate in -lrmscall... " >&6; }
-if ${ac_cv_lib_rmscall_rms_prgcreate+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lrmscall  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char rms_prgcreate ();
-int
-main ()
-{
-return rms_prgcreate ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_rmscall_rms_prgcreate=yes
-else
-  ac_cv_lib_rmscall_rms_prgcreate=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rmscall_rms_prgcreate" >&5
-$as_echo "$ac_cv_lib_rmscall_rms_prgcreate" >&6; }
-if test "x$ac_cv_lib_rmscall_rms_prgcreate" = xyes; then :
-  ac_elan_have_rmscall=yes; ELAN_LIBS="-lrmscall"
-fi
-
-
-   if test "$ac_elan_have_rmscall" != "yes" ; then
-       { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support QsNet without librmscall" >&5
-$as_echo "$as_me: Cannot support QsNet without librmscall" >&6;}
-   fi
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for elan3_create in -lelan3" >&5
-$as_echo_n "checking for elan3_create in -lelan3... " >&6; }
-if ${ac_cv_lib_elan3_elan3_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lelan3  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char elan3_create ();
-int
-main ()
-{
-return elan3_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_elan3_elan3_create=yes
-else
-  ac_cv_lib_elan3_elan3_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_elan3_elan3_create" >&5
-$as_echo "$ac_cv_lib_elan3_elan3_create" >&6; }
-if test "x$ac_cv_lib_elan3_elan3_create" = xyes; then :
-  ac_elan_have_elan3=yes
-else
-  ac_elan_noelan3=1
-fi
-
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for elanctrl_open in -lelanctrl" >&5
-$as_echo_n "checking for elanctrl_open in -lelanctrl... " >&6; }
-if ${ac_cv_lib_elanctrl_elanctrl_open+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lelanctrl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char elanctrl_open ();
-int
-main ()
-{
-return elanctrl_open ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_elanctrl_elanctrl_open=yes
-else
-  ac_cv_lib_elanctrl_elanctrl_open=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_elanctrl_elanctrl_open" >&5
-$as_echo "$ac_cv_lib_elanctrl_elanctrl_open" >&6; }
-if test "x$ac_cv_lib_elanctrl_elanctrl_open" = xyes; then :
-  ac_elan_have_elanctrl=yes
-else
-  ac_elan_noelanctrl=1
-fi
-
-
-   if test "$ac_elan_have_elan3" = "yes"; then
-
-$as_echo "#define HAVE_LIBELAN3 1" >>confdefs.h
-
-      ELAN_LIBS="$ELAN_LIBS -lelan3"
-      test "$ac_elan_have_rmscall" = "yes" && ac_have_elan="yes"
-   elif test "$ac_elan_have_elanctrl" = "yes"; then
-
-$as_echo "#define HAVE_LIBELANCTRL 1" >>confdefs.h
-
-      ELAN_LIBS="$ELAN_LIBS -lelanctrl"
-      test "$ac_elan_have_rmscall" = "yes" && ac_have_elan="yes"
-   else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support QsNet without libelan3 or libelanctrl!" >&5
-$as_echo "$as_me: Cannot support QsNet without libelan3 or libelanctrl!" >&6;}
-   fi
-
-   if test "$ac_have_elan" = yes; then
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for elanhost_config_create in -lelanhosts" >&5
-$as_echo_n "checking for elanhost_config_create in -lelanhosts... " >&6; }
-if ${ac_cv_lib_elanhosts_elanhost_config_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lelanhosts  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char elanhost_config_create ();
-int
-main ()
-{
-return elanhost_config_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_elanhosts_elanhost_config_create=yes
-else
-  ac_cv_lib_elanhosts_elanhost_config_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_elanhosts_elanhost_config_create" >&5
-$as_echo "$ac_cv_lib_elanhosts_elanhost_config_create" >&6; }
-if test "x$ac_cv_lib_elanhosts_elanhost_config_create" = xyes; then :
-  ac_elan_have_elanhosts=yes
-fi
-
-
-     if test "$ac_elan_have_elanhosts" = "yes"; then
-
-$as_echo "#define HAVE_LIBELANHOSTS 1" >>confdefs.h
-
-        ELAN_LIBS="$ELAN_LIBS -lelanhosts"
-     else
-        ac_have_elan="no"
-        { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot build QsNet modules without libelanhosts" >&5
-$as_echo "$as_me: Cannot build QsNet modules without libelanhosts" >&6;}
-     fi
-   fi
-
-
-
- if test "x$ac_have_elan" = "xyes"; then
-  HAVE_ELAN_TRUE=
-  HAVE_ELAN_FALSE='#'
-else
-  HAVE_ELAN_TRUE='#'
-  HAVE_ELAN_FALSE=
-fi
-
-
-
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable AIX Federation switch support" >&5
-$as_echo_n "checking whether to enable AIX Federation switch support... " >&6; }
-   ntbl_default_dirs="/usr/lib"
-   for ntbl_dir in $ntbl_default_dirs; do
-      # skip dirs that don't exist
-      if test ! -z "$ntbl_dir" -a ! -d "$ntbl_dir" ; then
-         continue;
-      fi
-
-      if test "$OBJECT_MODE" = "64"; then
-	 libntbl="ntbl_64"
-      else
-         libntbl="ntbl"
-      fi
-
-      # search for required NTBL API libraries
-      if test -f "$ntbl_dir/lib${libntbl}.so"; then
-         ac_have_federation="yes"
-         FEDERATION_LDFLAGS="-l$libntbl"
-         break;
-      fi
-
-   done
-
-   if test "x$ac_have_federation" != "xyes" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support Federation without libntbl" >&5
-$as_echo "$as_me: Cannot support Federation without libntbl" >&6;}
-   else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_LIBNTBL 1" >>confdefs.h
-
-   fi
-
-
-
- if test "x$ac_have_federation" = "xyes"; then
-  HAVE_FEDERATION_TRUE=
-  HAVE_FEDERATION_FALSE='#'
-else
-  HAVE_FEDERATION_TRUE='#'
-  HAVE_FEDERATION_FALSE=
-fi
-
-
-
-
-
    nrt_default_dirs="/usr/include"
 
 # Check whether --with-nrth was given.
@@ -22256,7 +21981,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/arrayrun/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/cray/libemulate/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/federation/Makefile src/plugins/switch/none/Makefile src/plugins/switch/nrt/Makefile src/plugins/switch/nrt/libpermapi/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/arrayrun/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/cray/libemulate/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/none/Makefile src/plugins/switch/nrt/Makefile src/plugins/switch/nrt/libpermapi/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -22495,14 +22220,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${DEBUG_MODULES_TRUE}" && test -z "${DEBUG_MODULES_FALSE}"; then
   as_fn_error $? "conditional \"DEBUG_MODULES\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_ELAN_TRUE}" && test -z "${HAVE_ELAN_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_ELAN\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_FEDERATION_TRUE}" && test -z "${HAVE_FEDERATION_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_FEDERATION\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_NRT_TRUE}" && test -z "${HAVE_NRT_FALSE}"; then
@@ -23639,7 +23356,6 @@ do
     "src/plugins/proctrack/cgroup/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/cgroup/Makefile" ;;
     "src/plugins/proctrack/pgid/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/pgid/Makefile" ;;
     "src/plugins/proctrack/linuxproc/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/linuxproc/Makefile" ;;
-    "src/plugins/proctrack/rms/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/rms/Makefile" ;;
     "src/plugins/proctrack/sgi_job/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/sgi_job/Makefile" ;;
     "src/plugins/proctrack/lua/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/lua/Makefile" ;;
     "src/plugins/sched/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/sched/Makefile" ;;
@@ -23661,8 +23377,6 @@ do
     "src/plugins/select/cray/libemulate/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/cray/libemulate/Makefile" ;;
     "src/plugins/select/linear/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/linear/Makefile" ;;
     "src/plugins/switch/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/Makefile" ;;
-    "src/plugins/switch/elan/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/elan/Makefile" ;;
-    "src/plugins/switch/federation/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/federation/Makefile" ;;
     "src/plugins/switch/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/none/Makefile" ;;
     "src/plugins/switch/nrt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/nrt/Makefile" ;;
     "src/plugins/switch/nrt/libpermapi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/nrt/libpermapi/Makefile" ;;

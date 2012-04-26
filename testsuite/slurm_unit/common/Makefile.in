@@ -34,7 +34,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
+check_PROGRAMS = $(am__EXEEXT_1)
 TESTS = pack-test$(EXEEXT) log-test$(EXEEXT) bitstring-test$(EXEEXT)
 subdir = testsuite/slurm_unit/common
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -55,9 +55,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
-	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
-	$(top_srcdir)/auxdir/x_ac_federation.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
@@ -85,28 +83,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = pack-test$(EXEEXT) log-test$(EXEEXT) \
 	bitstring-test$(EXEEXT)
-@HAVE_ELAN_TRUE@am__EXEEXT_2 = runqsw$(EXEEXT)
 bitstring_test_SOURCES = bitstring-test.c
 bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
 bitstring_test_LDADD = $(LDADD)
-@HAVE_ELAN_TRUE@am__DEPENDENCIES_1 = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
-bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
-log_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+log_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 pack_test_SOURCES = pack-test.c
 pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
-pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
-runqsw_SOURCES = runqsw.c
-runqsw_OBJECTS = runqsw.$(OBJEXT)
-runqsw_LDADD = $(LDADD)
-runqsw_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -120,8 +108,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c
-DIST_SOURCES = bitstring-test.c log-test.c pack-test.c runqsw.c
+SOURCES = bitstring-test.c log-test.c pack-test.c
+DIST_SOURCES = bitstring-test.c log-test.c pack-test.c
 ETAGS = etags
 CTAGS = ctags
 am__tty_colors = \
@@ -166,9 +154,7 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ELAN_LIBS = @ELAN_LIBS@
 EXEEXT = @EXEEXT@
-FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FGREP = @FGREP@
 GREP = @GREP@
 GTK_CFLAGS = @GTK_CFLAGS@
@@ -176,8 +162,6 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
@@ -331,14 +315,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-@HAVE_ELAN_FALSE@elan_testprogs = 
-@HAVE_ELAN_TRUE@elan_testprogs = runqsw
-@HAVE_ELAN_FALSE@elan_lib = 
-@HAVE_ELAN_TRUE@elan_lib = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
 INCLUDES = -I$(top_srcdir)
-LDADD = $(top_builddir)/src/api/libslurm.o -ldl\
-		$(elan_lib)
-
+LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 all: all-am
 
 .SUFFIXES:
@@ -391,9 +369,6 @@ log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES)
 pack-test$(EXEEXT): $(pack_test_OBJECTS) $(pack_test_DEPENDENCIES) 
 	@rm -f pack-test$(EXEEXT)
 	$(LINK) $(pack_test_OBJECTS) $(pack_test_LDADD) $(LIBS)
-runqsw$(EXEEXT): $(runqsw_OBJECTS) $(runqsw_DEPENDENCIES) 
-	@rm -f runqsw$(EXEEXT)
-	$(LINK) $(runqsw_OBJECTS) $(runqsw_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -404,7 +379,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runqsw.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

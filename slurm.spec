@@ -12,7 +12,6 @@
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
 # --with cray_xt     %_with_cray_xt     1    build for Cray XT system
 # --with debug       %_with_debug       1    enable extra debugging within SLURM
-# --with elan        %_with_elan        1    build switch-elan RPM
 # --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
 # --with mysql       %_with_mysql       1    require mysql support
@@ -43,7 +42,6 @@
 %slurm_without_opt bluegene
 %slurm_without_opt cray
 %slurm_without_opt debug
-%slurm_without_opt elan
 %slurm_without_opt sun_const
 %slurm_without_opt srun2aprun
 
@@ -255,16 +253,6 @@ Requires: slurm
 SLURM plugin interfaces to IBM Blue Gene system
 %endif
 
-%if %{slurm_with elan}
-%package switch-elan
-Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
-Group: System Environment/Base
-Requires: slurm qsnetlibs
-BuildRequires: qsnetlibs
-%description switch-elan
-SLURM switch plugin for Quadrics Elan3 or Elan4.
-%endif
-
 %package slurmdbd
 Summary: SLURM database daemon
 Group: System Environment/Base
@@ -316,13 +304,13 @@ Wrappers to write directly to the slurmdb.
 
 %if %{slurm_with aix}
 %package aix
-Summary: SLURM interfaces to IBM AIX and Federation switch.
+Summary: SLURM interfaces to IBM AIX.
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: proctrack >= 3
 Obsoletes: slurm-aix-federation
 %description aix
-SLURM plugins for IBM AIX and Federation switch.
+SLURM plugins for IBM AIX.
 %endif
 
 %if %{slurm_with percs}
@@ -497,10 +485,6 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
 test -f $RPM_BUILD_ROOT/%{_bindir}/sview			&&
   echo %{_bindir}/sview					>> $LIST
 
-%if %{slurm_with aix}
-install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/federation.conf.example
-%endif
-
 %if %{slurm_with bluegene}
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
 mkdir -p ${RPM_BUILD_ROOT}/etc/ld.so.conf.d
@@ -522,8 +506,6 @@ LIST=./aix.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
   echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so  &&
-  echo %{_libdir}/slurm/switch_federation.so           >> $LIST
 
 LIST=./percs.files
 touch $LIST
@@ -691,14 +673,6 @@ rm -rf $RPM_BUILD_ROOT
 
 #############################################################################
 
-%if %{slurm_with elan}
-%files switch-elan
-%defattr(-,root,root)
-%{_libdir}/slurm/switch_elan.so
-%{_libdir}/slurm/proctrack_rms.so
-%endif
-#############################################################################
-
 %files -f slurmdbd.files slurmdbd
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
@@ -798,7 +772,6 @@ rm -rf $RPM_BUILD_ROOT
 %files -f aix.files aix
 %defattr(-,root,root)
 %{_libdir}/slurm/checkpoint_aix.so
-%config %{_sysconfdir}/federation.conf.example
 %endif
 #############################################################################
 

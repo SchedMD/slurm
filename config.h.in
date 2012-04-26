@@ -133,15 +133,6 @@
 /* Define to 1 if you have the <kstat.h> header file. */
 #undef HAVE_KSTAT_H
 
-/* define if you have libelan3. */
-#undef HAVE_LIBELAN3
-
-/* define if you have libelanctrl. */
-#undef HAVE_LIBELANCTRL
-
-/* define if you have libelanhosts. */
-#undef HAVE_LIBELANHOSTS
-
 /* Define to 1 if you have the `expat' library (-lexpat). */
 #undef HAVE_LIBEXPAT
 
@@ -150,9 +141,6 @@
 
 /* define if you have libnrt. */
 #undef HAVE_LIBNRT
-
-/* define if you have libntbl. */
-#undef HAVE_LIBNTBL
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H

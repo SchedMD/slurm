@@ -1,20 +1,10 @@
 AUTOMAKE_OPTIONS = foreign
 
-if HAVE_ELAN
-elan_testprogs = runqsw
-elan_lib = $(top_builddir)/src/plugins/switch/elan/switch_elan.la
-else
-elan_testprogs =
-elan_lib =
-endif
-
 INCLUDES = 	-I$(top_srcdir)
-LDADD =		$(top_builddir)/src/api/libslurm.o -ldl\
-		$(elan_lib)
+LDADD =		$(top_builddir)/src/api/libslurm.o -ldl
 
 check_PROGRAMS = \
-	$(TESTS) \
-	$(elan_testprogs)
+	$(TESTS)
 
 TESTS = \
 	pack-test \
