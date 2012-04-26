@@ -55,7 +55,10 @@
 # error "Must have libnrt to compile this module!"
 #endif
 
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -98,6 +101,7 @@ typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
 	in_addr_t ipv4_addr;
+	struct in6_addr ipv6_addr;
 	nrt_logical_id_t lid;
 	nrt_network_id_t network_id;
 	nrt_port_id_t port_id;
@@ -159,13 +163,13 @@ static int	_allocate_windows_all(int adapter_cnt,
 			int node_id, nrt_task_id_t task_id,
 			nrt_job_key_t job_key,
 			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
-			bool user_space);
+			bool user_space, bool ip_v6);
 static int	_allocate_window_single(char *adapter_name,
 			nrt_tableinfo_t *tableinfo, char *hostname,
 			int node_id, nrt_task_id_t task_id,
 			nrt_job_key_t job_key,
 			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
-			bool user_space);
+			bool user_space, bool ip_v6);
 static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_check_rdma_job_count(char *adapter_name,
@@ -740,7 +744,7 @@ static int
 _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		      char *hostname, int node_id, nrt_task_id_t task_id,
 		      nrt_job_key_t job_key, nrt_adapter_t adapter_type,
-		      nrt_logical_id_t base_lid, bool user_space)
+		      nrt_logical_id_t base_lid, bool user_space, bool ip_v6)
 {
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter;
@@ -779,8 +783,14 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			ip_table += task_id;
 			ip_table->node_number  = node_id;
 			ip_table->task_id      = task_id;
-			memcpy(&ip_table->ip.ipv4_addr, &adapter->ipv4_addr,
-			       sizeof(in_addr_t));
+			if (ip_v6) {
+				memcpy(&ip_table->ip.ipv6_addr,
+				       &adapter->ipv6_addr,
+				       sizeof(struct in6_addr));
+			} else {
+				memcpy(&ip_table->ip.ipv4_addr,
+				       &adapter->ipv4_addr, sizeof(in_addr_t));
+			}
 		} else if (adapter_type == NRT_IB) {
 			nrt_ib_task_info_t *ib_table;
 			ib_table = (nrt_ib_task_info_t *) tableinfo[i].table;
@@ -825,7 +835,7 @@ static int
 _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 			char *hostname, int node_id, nrt_task_id_t task_id,
 			nrt_job_key_t job_key, nrt_adapter_t adapter_type,
-			nrt_logical_id_t base_lid, bool user_space)
+			nrt_logical_id_t base_lid, bool user_space, bool ip_v6)
 {
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter = NULL;
@@ -877,8 +887,13 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 		ip_table += task_id;
 		ip_table->node_number  = node_id;
 		ip_table->task_id      = task_id;
-		memcpy(&ip_table->ip.ipv4_addr, &adapter->ipv4_addr,
-		       sizeof(in_addr_t));
+		if (ip_v6) {
+			memcpy(&ip_table->ip.ipv6_addr,
+			       &adapter->ipv6_addr, sizeof(struct in6_addr));
+		} else {
+			memcpy(&ip_table->ip.ipv4_addr,
+			       &adapter->ipv4_addr, sizeof(in_addr_t));
+		}
 	} else if (adapter_type == NRT_IB) {
 		nrt_ib_task_info_t *ib_table;
 		ib_table = (nrt_ib_task_info_t *) tableinfo[0].table;
@@ -1010,7 +1025,7 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 	int i, j;
 	struct slurm_nrt_adapter *a;
 	slurm_nrt_window_t *w;
-	unsigned char *p;
+	char addr_str[128];
 
 	assert(n);
 	assert(n->magic == NRT_NODEINFO_MAGIC);
@@ -1023,9 +1038,10 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("  adapter_name: %s", a->adapter_name);
 		info("    adapter_type: %s",
 		     _adapter_type_str(a->adapter_type));
-		p = (unsigned char *) &a->ipv4_addr;
-		info("    ipv4_addr: %d.%d.%d.%d", p[0], p[1], p[2], p[3]);
-		info("    ipv6_addr: TBD");
+		inet_ntop(AF_INET, &a->ipv4_addr, addr_str, sizeof(addr_str));
+		info("    ipv4_addr: %s", addr_str);
+		inet_ntop(AF_INET6, &a->ipv6_addr, addr_str, sizeof(addr_str));
+		info("    ipv6_addr: %s", addr_str);
 		info("    lid: %u", a->lid);
 		info("    network_id: %lu", a->network_id);
 		info("    port_id: %hu", a->port_id);
@@ -1446,19 +1462,24 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			     _adapter_type_str(query_adapter_info.adapter_type),
 			     adapter_info.num_ports);
 			for (k = 0; k < adapter_info.num_ports; k++) {
-				unsigned char *p;
-				p = (unsigned char *) &adapter_info.port[k].
-						      ipv4_addr;
+				char addr_v4_str[128], addr_v6_str[128];
+				inet_ntop(AF_INET,
+					  &adapter_info.port[k].ipv4_addr,
+					  addr_v4_str, sizeof(addr_v4_str));
+				inet_ntop(AF_INET6,
+					  &adapter_info.port[k].ipv6_addr,
+					  addr_v6_str, sizeof(addr_v6_str));
 				info("port_id:%hu status:%s lid:%u "
 				     "network_id:%lu special:%lu "
-				     "ipv4_addr:%d.%d.%d.%d",
+				     "ipv4_addr:%s ipv6_addr:%s/%hu",
 				     adapter_info.port[k].port_id,
 				     _port_status_str(adapter_info.port[k].
 						      status),
 				     adapter_info.port[k].lid,
 				     adapter_info.port[k].network_id,
 				     adapter_info.port[k].special,
-				     p[0], p[1], p[2], p[3]);
+				     addr_v4_str, addr_v6_str,
+				     adapter_info.port[k].ipv6_prefix_len);
 			}
 #endif
 			for (k = 0; k < adapter_info.num_ports; k++) {
@@ -1466,6 +1487,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 					continue;
 				adapter_ptr->ipv4_addr = adapter_info.port[k].
 							 ipv4_addr;
+				adapter_ptr->ipv6_addr = adapter_info.port[k].
+							 ipv6_addr;
 				adapter_ptr->lid = adapter_info.port[k].lid;
 				adapter_ptr->network_id = adapter_info.port[k].
 							  network_id;
@@ -1479,6 +1502,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			    (adapter_info.num_ports > 0)) {
 				adapter_ptr->ipv4_addr = adapter_info.port[0].
 							 ipv4_addr;
+				adapter_ptr->ipv6_addr = adapter_info.port[0].
+							 ipv6_addr;
 			}
 		}
 		if (status_array) {
@@ -1545,6 +1570,8 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 		dummy16 = a->adapter_type;
 		pack16(dummy16, buf);	/* adapter_type is an int */
 		pack32(a->ipv4_addr, buf);
+		for (j = 0; j < 4; j++)
+			pack32(a->ipv6_addr.in6_u.u6_addr32[j], buf);
 		pack32(a->lid, buf);
 		pack64(a->network_id, buf);
 		pack8(a->port_id, buf);
@@ -1586,6 +1613,7 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 			NRT_MAX_ADAPTER_NAME_LEN);
 		da->adapter_type = sa->adapter_type;
 		da->ipv4_addr    = sa->ipv4_addr;
+		da->ipv6_addr    = sa->ipv6_addr;
 		da->lid          = sa->lid;
 		da->network_id   = sa->network_id;
 		da->port_id      = sa->port_id;
@@ -1630,6 +1658,8 @@ _fake_unpack_adapters(Buf buf)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
 		safe_unpack32(&dummy32, buf);
+		for (j = 0; j < 4; j++)
+			safe_unpack32(&dummy32, buf);
 		safe_unpack32(&dummy32, buf);
 		safe_unpack64(&dummy64, buf);
 		safe_unpack8 (&dummy8, buf);
@@ -1735,6 +1765,10 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		safe_unpack16(&dummy16, buf);
 		tmp_a->adapter_type = dummy16;	/* adapter_type is an int */
 		safe_unpack32(&tmp_a->ipv4_addr, buf);
+		for (j = 0; j < 4; j++) {
+			safe_unpack32(&tmp_a->ipv6_addr.in6_u.u6_addr32[j],
+				      buf);
+		}
 		safe_unpack32(&tmp_a->lid, buf);
 		safe_unpack64(&tmp_a->network_id, buf);
 		safe_unpack8(&tmp_a->port_id, buf);
@@ -2033,7 +2067,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 							   jp->job_key,
 							   adapter_type,
 							   base_lid,
-							   jp->user_space);
+							   jp->user_space,
+							   ip_v6);
 			} else {
 				rc = _allocate_window_single(adapter_name,
 							     jp->tableinfo,
@@ -2042,7 +2077,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 							     jp->job_key,
 							     adapter_type,
 							     base_lid,
-							     jp->user_space);
+							     jp->user_space,
+							     ip_v6);
 			}
 			if (rc != SLURM_SUCCESS) {
 				_unlock();
