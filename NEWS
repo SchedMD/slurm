@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
  -- Added cpu_run_min to the output of sshare --long.  Work contributed by
     Mark Nelson.
  -- BGQ - allow regular users to resolve Rack-Midplane to AXYZ coords.
+ -- Add sinfo output format option of "%R" for partition name without "*"
+    appended for default partition.
 
 * Changes in SLURM 2.4.0.pre4
 =============================

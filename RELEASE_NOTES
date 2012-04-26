@@ -65,6 +65,11 @@ COMMAND CHANGES (see man pages for details)
 * Changed meaning of squeue "-n" option to job name from node name for
   consistency with other commands. The "-w" option was added for a short
   node name option. Long options --names and --nodes remain unchanged.
+* Sinfo output format of "%P" now prints "*" after default partition even if
+  no field width is specified (previously included "*" only if no field width
+  was specified. Added output format of "%R" to print partition name only
+  without identifying the default partition with "*").
+* Added cpu_run_min to the output of sshare --long.
 
 OTHER CHANGES
 =============

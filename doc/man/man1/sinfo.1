@@ -1,4 +1,4 @@
-.TH SINFO "1" "September 2011" "sinfo 2.3" "Slurm components"
+.TH SINFO "1" "April 2012" "sinfo 2.4" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -185,10 +185,13 @@ List of node communication addresses
 Partition scheduling priority
 .TP
 \fB%P\fR
-Partition name followed by "*" for the default partition
+Partition name followed by "*" for the default partition, also see \fB%R\fR
 .TP
 \fB%r\fR
 Only user root may initiate jobs, "yes" or "no"
+.TP
+\fB%R\fR
+Partition name, also see \fB%P\fR
 .TP
 \fB%R\fR
 The reason a node is unavailable (down, drained, draining,

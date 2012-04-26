@@ -732,6 +732,24 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_partition_name(sinfo_data_t * sinfo_data, int width,
+			  bool right_justify, char *suffix)
+{
+	if (sinfo_data) {
+		if (sinfo_data->part_info == NULL)
+			_print_str("n/a", width, right_justify, true);
+		else {
+			_print_str(sinfo_data->part_info->name, width,
+				   right_justify, true);
+		}
+	} else
+		_print_str("PARTITION", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_prefix(sinfo_data_t * job, int width, bool right_justify,
 		char* suffix)
 {

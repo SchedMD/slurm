@@ -629,6 +629,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'R') {
+			params.match_flags.partition_flag = true;
+			format_add_partition_name( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if ((field[0] == 'E') || (field[0] == 'R')) {
 			params.match_flags.reason_flag = true;
 			format_add_reason( params.format_list,

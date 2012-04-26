@@ -107,6 +107,8 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_nodes_ai)
 #define format_add_partition(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_partition)
+#define format_add_partition_name(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_partition_name)
 #define format_add_prefix(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_prefix)
 #define format_add_preempt_mode(list,wid,right,suffix) \
@@ -183,6 +185,8 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_partition(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_partition_name(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_prefix(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
