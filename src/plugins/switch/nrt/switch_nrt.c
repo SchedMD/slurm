@@ -394,7 +394,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 				  char *network)
 {
 	hostlist_t list = NULL;
-	bool bulk_xfer = false, ip_v6 = false, user_space = false;
+	bool bulk_xfer = false, ip_v4 = true, user_space = false;
 	bool sn_all;
 	int err;
 	char *adapter_name = NULL, *protocol = "mpi";
@@ -418,14 +418,16 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	if (network &&
 	    (strstr(network, "ipv4") ||
 	     strstr(network, "IPV4"))) {
-		ip_v6 = false;
+		ip_v4 = true;
 		user_space = false;
 	}
 
 	if (network &&
 	    (strstr(network, "ipv6") ||
-	     strstr(network, "IPV6")))
-		ip_v6 = true;
+	     strstr(network, "IPV6"))) {
+		ip_v4 = false;
+		user_space = false;
+	}
 
 	if (network &&
 	    (strstr(network, "us") ||
@@ -462,7 +464,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 
 	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
 				tasks_per_node, tids, sn_all, adapter_name,
-				bulk_xfer, ip_v6, user_space, protocol);
+				bulk_xfer, ip_v4, user_space, protocol);
 
 	hostlist_destroy(list);
 	xfree(adapter_name);
