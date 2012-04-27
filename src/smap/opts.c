@@ -273,6 +273,9 @@ extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr)
 		return ret_str;
 	}
 
+	/* Quite any errors that could come our way here. */
+	ba_configure_set_ba_debug_flags(0);
+
 	bg_configure_ba_setup_wires();
 
 	if (desc[0] != 'R') {

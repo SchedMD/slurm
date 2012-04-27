@@ -1400,6 +1400,9 @@ void get_command(void)
 		xfree(cluster_name);
 	}
 
+	/* make sure we don't get any noisy debug */
+	ba_configure_set_ba_debug_flags(0);
+
 	bg_configure_ba_setup_wires();
 
 	color_count = 0;
@@ -1410,9 +1413,6 @@ void get_command(void)
 		snprintf(com, sizeof(com), "%s", params.command);
 		goto run_command;
 	} else {
-		/* make sure we don't get any noisy debug */
-		ba_configure_set_ba_debug_flags(0);
-
 		text_width = text_win->_maxx;
 		text_startx = text_win->_begx;
 		command_win = newwin(3, text_width - 1, LINES - 4,
