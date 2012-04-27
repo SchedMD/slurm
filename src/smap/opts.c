@@ -266,6 +266,11 @@ extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr)
 			if (ret_str)
 				return ret_str;
 		}
+		if (desc[0] != 'R')
+			ret_str = xstrdup_printf("%s has no resolve\n", name);
+		else
+			ret_str = xstrdup_printf("%s has no resolve.\n", desc);
+		return ret_str;
 	}
 
 	bg_configure_ba_setup_wires();
