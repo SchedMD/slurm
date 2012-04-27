@@ -837,13 +837,21 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 			ba_mp->used = BA_MP_USED_ALTERED;
 			list_append(main_mps, ba_mp);
 		}
-
 		/* If we are going to take up the entire dimension
 		   might as well force it to be TORUS.
 		*/
 		for (dim=0; dim<cluster_dims; dim++) {
-			if ((ba_request->conn_type[dim] == SELECT_MESH)
-			    && (ba_geo_table->geometry[dim] == 1))
+			if (ba_request->conn_type[dim] == SELECT_NAV) {
+				/* On a Q all single midplane blocks must be a
+				   TORUS. */
+				if (ba_request->size == 1)
+					ba_request->conn_type[dim] =
+						SELECT_TORUS;
+				else
+					ba_request->conn_type[dim] =
+						bg_conf->default_conn_type[dim];
+			} else if ((ba_request->conn_type[dim] == SELECT_MESH)
+				   && (ba_geo_table->geometry[dim] == 1))
 				ba_request->conn_type[dim] = SELECT_TORUS;
 			else if ((ba_request->conn_type[dim] == SELECT_MESH)
 				 && (ba_geo_table->geometry[dim]

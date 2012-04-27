@@ -941,12 +941,15 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 	/* This midplane should have already been checked if it was in
 	   use or not */
 	list_append(results, ba_node);
+
 	if (ba_request->conn_type[0] >= SELECT_SMALL) {
 		/* adding the ba_node and ending */
 		ba_node->used |= BA_MP_USED_TRUE;
 		name = xstrdup_printf("%s", ba_node->coord_str);
 		goto end_it;
-	}
+	} else if (ba_request->conn_type[0] == SELECT_NAV)
+		ba_request->conn_type[0] = bg_conf->default_conn_type[0];
+
 	found = _find_x_path(results, ba_node,
 			     ba_node->coord,
 			     ba_request->geometry[X],

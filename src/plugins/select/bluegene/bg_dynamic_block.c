@@ -294,23 +294,6 @@ extern List create_dynamic_block(List block_list,
 			info("small block not able to be placed inside others");
 	}
 
-	if (request->conn_type[0] == SELECT_NAV) {
-#ifndef HAVE_BG_L_P
-		int dim;
-		for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++) {
-			/* On a Q all single midplane blocks must be a
-			   TORUS. */
-			if (request->size == 1)
-				request->conn_type[dim] = SELECT_TORUS;
-			else
-				request->conn_type[dim] =
-					bg_conf->default_conn_type[dim];
-		}
-#else
-		request->conn_type[0] = bg_conf->default_conn_type[0];
-#endif
-	}
-
 	//debug("going to create %d", request->size);
 	if (!new_ba_request(request)) {
 		if (request->geometry[0] != (uint16_t)NO_VAL) {
