@@ -267,9 +267,8 @@ extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr)
 				return ret_str;
 		}
 	}
-#ifdef HAVE_BG
+
 	bg_configure_ba_setup_wires();
-#endif
 
 	if (desc[0] != 'R') {
 		ba_mp = bg_configure_str2ba_mp(name);
