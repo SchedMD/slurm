@@ -523,8 +523,8 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			"More fields will be made available later.");
 		job_msg = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(job_msg);
-		job_msg->group_id = getuid();
-		job_msg->user_id  = getgid();
+		job_msg->group_id = getgid();
+		job_msg->user_id  = getuid();
 		job_msg->work_dir = xmalloc(1024);
 		if (!getcwd(job_msg->work_dir, 1024))
 			goto end_it;
