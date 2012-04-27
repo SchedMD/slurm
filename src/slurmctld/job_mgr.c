@@ -4057,17 +4057,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if (conn_type[0] == (uint16_t) NO_VAL) {
-		conn_type[0] = (uint16_t) SELECT_NAV;
-		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-					    SELECT_JOBDATA_CONN_TYPE,
-					    &conn_type);
-	} else if(((conn_type[0] >= SELECT_SMALL)
-		   && ((job_desc->min_cpus >= cpus_per_mp) && !sub_mp_system))
-		  || (!sub_mp_system
-		      && ((conn_type[0] == SELECT_TORUS)
-			  || (conn_type[0] == SELECT_MESH))
-		      && (job_desc->min_cpus < cpus_per_mp))) {
+
+	if ((conn_type[0] != (uint16_t) NO_VAL)
+	    && (((conn_type[0] >= SELECT_SMALL)
+		 && ((job_desc->min_cpus >= cpus_per_mp) && !sub_mp_system))
+		|| (!sub_mp_system
+		    && ((conn_type[0] == SELECT_TORUS)
+			|| (conn_type[0] == SELECT_MESH))
+		    && (job_desc->min_cpus < cpus_per_mp)))) {
 		/* check to make sure we have a valid conn_type with
 		 * the cpu count */
 		info("Job's cpu count at %u makes our conn_type "
@@ -4076,6 +4073,16 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
+
+	/* make sure we reset all the NO_VAL's to NAV's */
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		if (conn_type[i] == (uint16_t)NO_VAL)
+			conn_type[i] = SELECT_NAV;
+	}
+	select_g_select_jobinfo_set(job_desc->select_jobinfo,
+				    SELECT_JOBDATA_CONN_TYPE,
+				    &conn_type);
+
 #endif
 
 	if (job_desc->max_nodes == NO_VAL)
