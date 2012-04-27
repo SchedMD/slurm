@@ -1422,6 +1422,15 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			     _adapter_type_str(adapter_status.adapter_type));
 			_print_adapter_status(&adapter_status);
 #endif
+			if (window_count > max_windows) {
+				error("nrt_command(status_adapter, %s, %s): "
+				      "window_count > max_windows (%u > %hu)",
+				      adapter_status.adapter_name,
+				      _adapter_type_str(adapter_status.
+							adapter_type),
+				      window_count, max_windows);
+				window_count = max_windows;
+			}
 			adapter_ptr = &n->adapter_list[n->adapter_count];
 			strncpy(adapter_ptr->adapter_name,
 				adapter_status.adapter_name,
@@ -3105,6 +3114,15 @@ nrt_clear_node_state(void)
 				     _win_state_str((*status_array)[k].state));
 			}
 #endif
+			if (window_count > max_windows) {
+				error("nrt_command(status_adapter, %s, %s): "
+				      "window_count > max_windows (%u > %hu)",
+				      adapter_status.adapter_name,
+				      _adapter_type_str(adapter_status.
+							adapter_type),
+				      window_count, max_windows);
+				window_count = max_windows;
+			}
 			for (k = 0; k < window_count; k++) {
 				clean_window.adapter_name = adapter_names.
 							    adapter_names[j];
