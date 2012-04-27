@@ -887,7 +887,7 @@ extern void agent_queue_request(void *dummy)
 int
 job_manager(slurmd_job_t *job)
 {
-	int  rc = 0;
+	int  rc = SLURM_SUCCESS;
 	bool io_initialized = false;
 	char *ckpt_type = slurm_get_checkpoint_type();
 
@@ -936,19 +936,28 @@ job_manager(slurmd_job_t *job)
 	 * It is not a good idea to perform this setup in _fork_all_tasks(),
 	 * since any transient failure of ALPS (which can happen in practice)
 	 * will then set the frontend node to DRAIN.
+	 *
+	 * ALso note that we do not check the reservation for batch jobs with
+	 * a reservation ID of zero and no CPUs. These are SLURM job
+	 * allocations containing no compute nodes and thus have no ALPS
+	 * reservation.
 	 */
-	rc = _select_cray_plugin_job_ready(job);
-	if (rc != SLURM_SUCCESS) {
-		/*
-		 * Transient error: slurmctld knows this condition to mean that
-		 * the ALPS (not the SLURM) reservation failed and tries again.
-		 */
-		if (rc == READY_JOB_ERROR)
-			rc = ESLURM_RESERVATION_NOT_USABLE;
-		else
-			rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
-		error("could not confirm ALPS reservation #%u", job->resv_id);
-		goto fail1;
+	if (!job->batch || job->resv_id || job->cpus) {
+		rc = _select_cray_plugin_job_ready(job);
+		if (rc != SLURM_SUCCESS) {
+			/*
+			 * Transient error: slurmctld knows this condition to
+			 * mean that the ALPS (not the SLURM) reservation
+			 * failed and tries again.
+			 */
+			if (rc == READY_JOB_ERROR)
+				rc = ESLURM_RESERVATION_NOT_USABLE;
+			else
+				rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
+			error("could not confirm ALPS reservation #%u",
+			      job->resv_id);
+			goto fail1;
+		}
 	}
 #endif
 

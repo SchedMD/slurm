@@ -147,9 +147,10 @@ static int _setup_particulars(uint32_t cluster_flags,
 		if (resv_id) {
 			setenvf(dest, "BASIL_RESERVATION_ID", "%u", resv_id);
 		} else {
-			error("Can't set BASIL_RESERVATION_ID "
-			      "environment variable");
-			rc = SLURM_FAILURE;
+			/* This is not an error for a SLURM job allocation with
+			 * no compute nodes and no BASIL reservation */
+			verbose("Can't set BASIL_RESERVATION_ID "
+			        "environment variable");
 		}
 
 	} else if (cluster_flags & CLUSTER_FLAG_AIX) {

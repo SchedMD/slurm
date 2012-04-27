@@ -83,6 +83,9 @@ OTHER CHANGES
 * Added support for Cray GPU memory allocation as GRES (Generic RESources).
 * Correct setting of CUDA_VISIBLE_DEVICES for gres/gpu plugin if device files
   to be used are not in numeric order (e.g. GPU 1 maps to "/dev/nvidia4").
+* Cray - Add support for zero compute note resource allocation to run batch
+  script on front-end node with no ALPS reservation. Useful for pre- or post-
+  processing. NOTE: The partition must be configured with MinNodes=0.
 
 API CHANGES
 ===========

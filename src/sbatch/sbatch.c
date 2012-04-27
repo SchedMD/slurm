@@ -281,11 +281,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->req_nodes = opt.nodelist;
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
-	if (opt.min_nodes)
+	if (opt.nodes_set || opt.min_nodes)
 		desc->min_nodes = opt.min_nodes;
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
-	if (opt.max_nodes)
+	if (opt.nodes_set || opt.max_nodes)
 		desc->max_nodes = opt.max_nodes;
 	if (opt.ntasks_per_node)
 		desc->ntasks_per_node = opt.ntasks_per_node;

@@ -364,9 +364,10 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			return false;
 		}
 		xfree(min_str);
+#ifndef HAVE_CRAY
 		if (*min_nodes == 0)
 			*min_nodes = 1;
-
+#endif
 		max_str = xstrndup(ptr+1, strlen(arg)-((ptr+1)-arg));
 		*max_nodes = _str_to_nodes(max_str, &leftover);
 		if (!xstring_is_whitespace(leftover)) {
@@ -381,11 +382,13 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
+#ifndef HAVE_CRAY
 		if (*min_nodes == 0) {
 			/* whitespace does not a valid node count make */
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
+#endif
 	}
 
 	if ((*max_nodes != 0) && (*max_nodes < *min_nodes)) {

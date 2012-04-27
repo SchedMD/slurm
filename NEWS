@@ -41,6 +41,9 @@ documents those changes that are of interest to users and admins.
  -- BGQ - allow regular users to resolve Rack-Midplane to AXYZ coords.
  -- Add sinfo output format option of "%R" for partition name without "*"
     appended for default partition.
+ -- Cray - Add support for zero compute note resource allocation to run batch
+    script on front-end node with no ALPS reservation. Useful for pre- or post-
+    processing.
 
 * Changes in SLURM 2.4.0.pre4
 =============================

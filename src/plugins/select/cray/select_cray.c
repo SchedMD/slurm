@@ -139,6 +139,16 @@ const char plugin_type[]	= "select/cray";
 uint32_t plugin_id		= 104;
 const uint32_t plugin_version	= 100;
 
+static bool _zero_size_job ( struct job_record *job_ptr )
+{
+	xassert (job_ptr);
+	if (job_ptr->details &&
+	    (job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0))
+		return true;
+	return false;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -248,6 +258,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     List preemptee_candidates,
 			     List *preemptee_job_list)
 {
+	if (min_nodes == 0) {
+		/* Allocate resources only on a front-end node */
+		job_ptr->details->min_cpus = 0;
+	}
+
 	return other_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 			      req_nodes, mode, preemptee_candidates,
 			      preemptee_job_list);
@@ -257,7 +272,8 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 
-	if (do_basil_reserve(job_ptr) != SLURM_SUCCESS) {
+	if ((!_zero_size_job(job_ptr)) &&
+	    (do_basil_reserve(job_ptr) != SLURM_SUCCESS)) {
 		job_ptr->state_reason = WAIT_RESOURCES;
 		xfree(job_ptr->state_desc);
 		return SLURM_ERROR;
@@ -279,7 +295,7 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	 *		means that we need to confirm only if batch_flag is 0,
 	 *		and execute the other_job_ready() only in slurmctld.
 	 */
-	if (!job_ptr->batch_flag)
+	if (!job_ptr->batch_flag && !_zero_size_job(job_ptr))
 		rc = do_basil_confirm(job_ptr);
 	if (rc != SLURM_SUCCESS || (job_ptr->job_state == (uint16_t)NO_VAL))
 		return rc;
@@ -332,7 +348,8 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 				do_basil_release(job_ptr);
 	}
 
-	if (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS)
+	if ((!_zero_size_job(job_ptr)) &&
+	    (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 	return other_job_signal(job_ptr, signal);
 }
@@ -341,7 +358,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
-	if (do_basil_release(job_ptr) != SLURM_SUCCESS)
+	if ((!_zero_size_job(job_ptr)) &&
+	    (do_basil_release(job_ptr) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 	/*
 	 * Convention: like select_p_job_ready, may be called also from
@@ -358,7 +376,8 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
 
-	if (do_basil_switch(job_ptr, 1) != SLURM_SUCCESS)
+	if ((!_zero_size_job(job_ptr)) &&
+	    (do_basil_switch(job_ptr, 1) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 
 	return other_job_suspend(job_ptr, indf_susp);
@@ -369,7 +388,8 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
 
-	if (do_basil_switch(job_ptr, 0) != SLURM_SUCCESS)
+	if ((!_zero_size_job(job_ptr)) &&
+	    (do_basil_switch(job_ptr, 0) != SLURM_SUCCESS))
 		return SLURM_ERROR;
 
 	return other_job_resume(job_ptr, indf_susp);

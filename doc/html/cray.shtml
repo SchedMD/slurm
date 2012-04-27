@@ -150,6 +150,21 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
 <p>Users may specify GPU memory required per node using the <i>--gres=gpu_mem:#</i>
 option to any of the commands used to create a job allocation/reservation.</p>
 
+<h3>Front-End Node Use</h3>
+
+<p>If you want to be allocated resources on a front-end node and no compute
+nodes (typically used for pre- or post-processing functionality) then submit a
+batch job with a node count specification of zero.</p>
+<pre>
+sbatch -N0 preprocess.bash
+</pre>
+<p><b>Note</b>: Support for Cray job allocations with zero compute nodes was
+added to SLURM version 2.4. Earlier versions of SLURM will return an error for
+zero compute node job requests.</p>
+<p><b>Note</b>: Job allocations with zero compute nodes can only be made in
+SLURM partitions explicitly configured with <b>MinNodes=0</b> (the default
+minimum node count for a partition is one compute node).</p>
+
 <h2>Administrator Guide</h2>
 
 <h3>Install supporting RPMs</h3>
@@ -676,6 +691,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 March 2012</p></td>
+<p style="text-align:center;">Last modified 27 April 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
