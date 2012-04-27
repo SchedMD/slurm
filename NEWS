@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for switches parameter to the job_submit/lua plugin. Work by
     Par Andersson, NSC.
  -- Fix to job preemption logic to preempt multiple jobs at the same time.
+ -- Fix minor issue where uid and gid were switched in sview for submitting
+    batch jobs.
 
 * Changes in SLURM 2.3.4
 ========================
