@@ -654,11 +654,8 @@ job_desc_msg_create_from_opts (void)
 	}
 #endif
 
-	for (i=0; i<HIGHEST_DIMENSIONS; i++) {
-		if (opt.conn_type[i] == (uint16_t)NO_VAL)
-			break;
-		j->conn_type[i] = opt.conn_type[i];
-	}
+	memcpy(j->conn_type, opt.conn_type, sizeof(j->conn_type));
+
 	if (opt.reboot)
 		j->reboot = 1;
 	if (opt.no_rotate)
