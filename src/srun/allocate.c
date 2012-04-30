@@ -546,7 +546,6 @@ job_desc_msg_create_from_opts (void)
 {
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	hostlist_t hl = NULL;
-	int i;
 
 	slurm_init_job_desc_msg(j);
 
@@ -649,7 +648,8 @@ job_desc_msg_create_from_opts (void)
 		j->job_id	= opt.jobid;
 #ifdef HAVE_BG
 	if (opt.geometry[0] > 0) {
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		int i;
+		for (i = 0; i < SYSTEM_DIMENSIONS; i++)
 			j->geometry[i] = opt.geometry[i];
 	}
 #endif
