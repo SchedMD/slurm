@@ -59,6 +59,38 @@
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
 #include <hwloc/glibc-sched.h>
+
+# if HWLOC_API_VERSION <= 0x00010000
+/* after this version the cpuset structure and all it's functions
+ * changed to bitmaps.  So to work with old hwloc's we just to the
+ * opposite to avoid having to put a bunch of ifdef's in the code we
+ * just do it here.
+ */
+typedef hwloc_cpuset_t hwloc_bitmap_t;
+
+static inline hwloc_bitmap_t hwloc_bitmap_alloc(void)
+{
+	return hwloc_cpuset_alloc();
+}
+
+static inline void hwloc_bitmap_free(hwloc_bitmap_t bitmap)
+{
+	hwloc_cpuset_free(bitmap);
+}
+
+static inline void hwloc_bitmap_or(
+	hwloc_bitmap_t res, hwloc_bitmap_t bitmap1, hwloc_bitmap_t bitmap2)
+{
+	hwloc_cpuset_or(res, bitmap1, bitmap2);
+}
+
+static inline int hwloc_bitmap_asprintf(char **str, hwloc_bitmap_t bitmap)
+{
+	return hwloc_cpuset_asprintf(str, bitmap);
+}
+
+# endif
+
 #endif
 
 #ifndef PATH_MAX
@@ -704,11 +736,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	int bind_verbose;
 
 	hwloc_topology_t topology;
-#if HWLOC_API_VERSION <= 0x00010000
-	hwloc_cpuset_t cpuset;
-#else
 	hwloc_bitmap_t cpuset;
-#endif
 	hwloc_obj_type_t hwtype;
 	hwloc_obj_type_t req_hwtype;
 
@@ -722,11 +750,9 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 
 	/* Allocate and initialize hwloc objects */
 	hwloc_topology_init(&topology);
-#if HWLOC_API_VERSION <= 0x00010000
-	cpuset = hwloc_cpuset_alloc() ;
-#else
-	cpuset = hwloc_bitmap_alloc() ;
-#endif
+
+	cpuset = hwloc_bitmap_alloc();
+
 	hwloc_topology_load(topology);
 	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
 	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
@@ -842,6 +868,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 		     "affinity",taskid,hwloc_obj_type_string(hwtype));
 
 	} else {
+		char *str;
 
 		if (bind_verbose) {
 			info("task/cgroup: task[%u] using %s granularity",
@@ -860,12 +887,8 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 				req_hwtype, nobj, job, bind_verbose, cpuset);
 		}
 
-		char *str;
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_asprintf(&str,cpuset);
-#else
-		hwloc_bitmap_asprintf(&str,cpuset);
-#endif
+		hwloc_bitmap_asprintf(&str, cpuset);
+
 		tssize = sizeof(cpu_set_t);
 		if (hwloc_cpuset_to_glibc_sched_affinity(topology,cpuset,
 							 &ts,tssize) == 0) {
@@ -887,11 +910,8 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	}
 
 	/* Destroy hwloc objects */
-#if HWLOC_API_VERSION <= 0x00010000
-	hwloc_cpuset_free(cpuset);
-#else
 	hwloc_bitmap_free(cpuset);
-#endif
+
 	hwloc_topology_destroy(topology);
 
 	return fstatus;
