@@ -1039,20 +1039,6 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	return SLURM_SUCCESS;
 }
 
-static struct multi_core_data * _create_default_mc(void)
-{
-	struct multi_core_data *mc_ptr;
-	mc_ptr = xmalloc(sizeof(struct multi_core_data));
-	mc_ptr->sockets_per_node = (uint16_t) NO_VAL;
-	mc_ptr->cores_per_socket = (uint16_t) NO_VAL;
-	mc_ptr->threads_per_core = (uint16_t) NO_VAL;
-/*	mc_ptr is initialized to zero by xmalloc*/
-/*	mc_ptr->ntasks_per_socket = 0; */
-/*	mc_ptr->ntasks_per_core   = 0; */
-/*	mc_ptr->plane_size        = 0; */
-	return mc_ptr;
-}
-
 /* Determine the node requirements for the job:
  * - does the job need exclusive nodes? (NODE_CR_RESERVED)
  * - can the job run on shared nodes?   (NODE_CR_ONE_ROW)
@@ -1675,8 +1661,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		return SLURM_ERROR;
 	}
 
-	if (!job_ptr->details->mc_ptr)
-		job_ptr->details->mc_ptr = _create_default_mc();
 	job_node_share = _get_job_node_share(job_ptr);
 
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
@@ -1868,7 +1852,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
-	if(nodeinfo) {
+	if (nodeinfo) {
 		if (nodeinfo->magic != NODEINFO_MAGIC) {
 			error("select_p_select_nodeinfo_free: "
 			      "nodeinfo magic bad");
@@ -1892,7 +1876,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 	/* only set this once when the last_node_update is newer than
 	   the last time we set things up. */
-	if(last_set_all && (last_node_update < last_set_all)) {
+	if (last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %ld",
 		       (long)last_set_all);
@@ -1904,14 +1888,14 @@ extern int select_p_select_nodeinfo_set_all(void)
 		node_ptr = &(node_record_table_ptr[n]);
 
 		/* We have to use the '_g_' here to make sure we get
-		   the correct data to work on.  i.e. cray calls this
-		   plugin from within select/cray which has it's own
-		   struct.
-		*/
+		 * the correct data to work on.  i.e. cray calls this
+		 * plugin from within select/cray which has it's own
+		 * struct.
+		 */
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_PTR, 0,
 					     (void *)&nodeinfo);
-		if(!nodeinfo) {
+		if (!nodeinfo) {
 			error("no nodeinfo returned from structure");
 			continue;
 		}
@@ -2125,7 +2109,7 @@ extern int select_p_update_node_config(int index)
 		return SLURM_SUCCESS;
 
 	select_node_record[index].real_memory = select_node_record[index].
-		node_ptr->real_memory;
+						node_ptr->real_memory;
 	return SLURM_SUCCESS;
 }
 
