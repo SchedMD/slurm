@@ -82,26 +82,36 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg);
  */
 static int _abs_to_mac(char* lrange, char** prange)
 {
+	static int total_cores = -1, total_cpus = -1;
 	bitstr_t* absmap = NULL;
 	bitstr_t* macmap = NULL;
-	int total_cores, total_cpus;
 	int icore, ithread;
 	int absid, macid;
+	int rc = SLURM_SUCCESS;
 
-	total_cores = conf->sockets * conf->cores;
-	total_cpus  = conf->sockets * conf->cores * conf->threads;
-	if (total_cpus != conf->block_map_size)
-		goto error;
+	if (total_cores == -1) {
+		total_cores = conf->sockets * conf->cores;
+		total_cpus  = conf->sockets * conf->cores * conf->threads;
+		if (total_cpus != conf->block_map_size) {
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+	}
 
 	/* allocate bitmap */
 	absmap = bit_alloc(total_cores);
 	macmap = bit_alloc(total_cpus);
-	if (!absmap || !macmap)
-		goto clean;
+
+	if (!absmap || !macmap) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
 
 	/* string to bitmap conversion */
-	if (bit_unfmt(absmap, lrange))
-		goto clean;
+	if (bit_unfmt(absmap, lrange)) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
 
 	/* mapping abstract id to machine id using conf->block_map */
 	for (icore = 0; icore < total_cores; icore++) {
@@ -123,15 +133,12 @@ static int _abs_to_mac(char* lrange, char** prange)
 	bit_fmt(*prange, total_cpus*6, macmap);
 
 	/* free unused bitmaps */
-	bit_free(absmap);
-	bit_free(macmap);
-
-	return SLURM_SUCCESS;
-
-clean:	FREE_NULL_BITMAP(absmap);
+end_it:
+	FREE_NULL_BITMAP(absmap);
 	FREE_NULL_BITMAP(macmap);
-error:	info("_abs_to_mac failed");
-	return SLURM_ERROR;
+	if (rc != SLURM_SUCCESS)
+		info("_abs_to_mac failed");
+	return rc;
 }
 
 #ifdef HAVE_HWLOC
