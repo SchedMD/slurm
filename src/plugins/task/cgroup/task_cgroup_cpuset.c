@@ -173,6 +173,72 @@ end_it:
 	return rc;
 }
 
+/* when cgroups are configured with cpuset, at least
+ * cpuset.cpus and cpuset.mems must be set or the cgroup
+ * will not be available at all.
+ * we duplicate the ancestor configuration in the init step */
+static int _xcgroup_cpuset_init(xcgroup_t* cg)
+{
+	int fstatus,i;
+
+	char* cpuset_metafiles[] = {
+		"cpuset.cpus",
+		"cpuset.mems"
+	};
+	char* cpuset_meta;
+	char* cpuset_conf;
+	size_t csize;
+
+	xcgroup_t acg;
+	char* acg_name;
+	char* p;
+
+	fstatus = XCGROUP_ERROR;
+
+	/* load ancestor cg */
+	acg_name = (char*) xstrdup(cg->name);
+	p = rindex(acg_name,'/');
+	if (p == NULL) {
+		debug2("task/cgroup: unable to get ancestor path for "
+		       "cpuset cg '%s' : %m",cg->path);
+		return fstatus;
+	} else
+		*p = '\0';
+	if (xcgroup_load(cg->ns,&acg, acg_name) != XCGROUP_SUCCESS) {
+		debug2("task/cgroup: unable to load ancestor for "
+		       "cpuset cg '%s' : %m",cg->path);
+		return fstatus;
+	}
+
+	/* inherits ancestor params */
+	for (i = 0 ; i < 2 ; i++) {
+		cpuset_meta = cpuset_metafiles[i];
+		if (xcgroup_get_param(&acg,cpuset_meta,
+				       &cpuset_conf,&csize)
+		     != XCGROUP_SUCCESS) {
+			debug2("task/cgroup: assuming no cpuset cg "
+			       "support for '%s'",acg.path);
+			xcgroup_destroy(&acg);
+			return fstatus;
+		}
+		if (csize > 0)
+			cpuset_conf[csize-1]='\0';
+		if (xcgroup_set_param(cg,cpuset_meta,cpuset_conf)
+		     != XCGROUP_SUCCESS) {
+			debug2("task/cgroup: unable to write %s configuration "
+			       "(%s) for cpuset cg '%s'",cpuset_meta,
+			       cpuset_conf,cg->path);
+			xcgroup_destroy(&acg);
+			xfree(cpuset_conf);
+			return fstatus;
+		}
+		xfree(cpuset_conf);
+	}
+
+	xcgroup_destroy(&acg);
+	return XCGROUP_SUCCESS;
+}
+
 #ifdef HAVE_HWLOC
 
 /*
@@ -640,72 +706,6 @@ extern int task_cgroup_cpuset_attach_task(slurmd_job_t *job)
 	fstatus = SLURM_SUCCESS;
 
 	return fstatus;
-}
-
-/* when cgroups are configured with cpuset, at least
- * cpuset.cpus and cpuset.mems must be set or the cgroup
- * will not be available at all.
- * we duplicate the ancestor configuration in the init step */
-static int _xcgroup_cpuset_init(xcgroup_t* cg)
-{
-	int fstatus,i;
-
-	char* cpuset_metafiles[] = {
-		"cpuset.cpus",
-		"cpuset.mems"
-	};
-	char* cpuset_meta;
-	char* cpuset_conf;
-	size_t csize;
-
-	xcgroup_t acg;
-	char* acg_name;
-	char* p;
-
-	fstatus = XCGROUP_ERROR;
-
-	/* load ancestor cg */
-	acg_name = (char*) xstrdup(cg->name);
-	p = rindex(acg_name,'/');
-	if (p == NULL) {
-		debug2("task/cgroup: unable to get ancestor path for "
-		       "cpuset cg '%s' : %m",cg->path);
-		return fstatus;
-	} else
-		*p = '\0';
-	if (xcgroup_load(cg->ns,&acg,acg_name) != XCGROUP_SUCCESS) {
-		debug2("task/cgroup: unable to load ancestor for "
-		       "cpuset cg '%s' : %m",cg->path);
-		return fstatus;
-	}
-
-	/* inherits ancestor params */
-	for (i = 0 ; i < 2 ; i++) {
-		cpuset_meta = cpuset_metafiles[i];
-		if (xcgroup_get_param(&acg,cpuset_meta,
-				       &cpuset_conf,&csize)
-		     != XCGROUP_SUCCESS) {
-			debug2("task/cgroup: assuming no cpuset cg "
-			       "support for '%s'",acg.path);
-			xcgroup_destroy(&acg);
-			return fstatus;
-		}
-		if (csize > 0)
-			cpuset_conf[csize-1]='\0';
-		if (xcgroup_set_param(cg,cpuset_meta,cpuset_conf)
-		     != XCGROUP_SUCCESS) {
-			debug2("task/cgroup: unable to write %s configuration "
-			       "(%s) for cpuset cg '%s'",cpuset_meta,
-			       cpuset_conf,cg->path);
-			xcgroup_destroy(&acg);
-			xfree(cpuset_conf);
-			return fstatus;
-		}
-		xfree(cpuset_conf);
-	}
-
-	xcgroup_destroy(&acg);
-	return XCGROUP_SUCCESS;
 }
 
 /* affinity should be set using sched_setaffinity to not force */
