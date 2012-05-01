@@ -60,7 +60,6 @@
 /* _job_test - does most of the real work for select_p_job_test(), which
  *	pretty much just handles load-leveling and max_share logic */
 int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
 		int mode, uint16_t cr_type,
 		enum node_cr_state job_node_req, uint32_t cr_node_cnt,
 		struct part_res_record *cr_part_ptr,

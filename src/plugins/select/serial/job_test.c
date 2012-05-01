@@ -51,13 +51,7 @@
 #include "select_serial.h"
 
 static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, uint32_t cr_node_cnt,
-			uint16_t *cpu_cnt);
-static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *node_map,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, uint32_t cr_node_cnt,
-			uint16_t *cpu_cnt);
+			uint32_t cr_node_cnt, uint16_t *cpu_cnt);
 
 /* _allocate_sockets - Given the job requirements, determine which sockets
  *                     from the given node can be allocated (if any) to this
@@ -810,33 +804,6 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 	return core_map;
 }
 
-
-/*
- * Determine the number of CPUs that a given job can use on a specific node
- * IN: job_ptr - pointer to job we are attempting to start
- * IN: node_index - zero origin node being considered for use
- * IN: cpu_cnt - array with count of CPU's available to job on each node
- * RET: number of usable CPUs on the identified node
- */
-static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,
-			uint16_t *cpu_cnt)
-{
-	int offset, cpus;
-	uint16_t *layout_ptr = job_ptr->details->req_node_layout;
-
-	cpus = cpu_cnt[node_index];
-	if (layout_ptr && 
-	    bit_test(job_ptr->details->req_node_bitmap, node_index)) {
-		offset = bit_get_pos_num(job_ptr->details->req_node_bitmap,
-					 node_index);
-		cpus = MIN(cpus, layout_ptr[offset]);
-	} else if (layout_ptr) {
-		cpus = 0; /* should not happen? */
-	}
-
-	return cpus;
-}
-
 /* Compute resource usage for the given job on all available resources
  *
  * IN: job_ptr     - pointer to the job requesting resources
@@ -867,860 +834,40 @@ static void _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 	*cpu_cnt_ptr = cpu_cnt;
 }
 
-static bool _enough_nodes(int avail_nodes, int rem_nodes,
-			  uint32_t min_nodes, uint32_t req_nodes)
-{
-	int needed_nodes;
-
-	if (req_nodes > min_nodes)
-		needed_nodes = rem_nodes + min_nodes - req_nodes;
-	else
-		needed_nodes = rem_nodes;
-
-	return (avail_nodes >= needed_nodes);
-}
-
-static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
-			 struct job_details *details_ptr, uint16_t *cpu_cnt)
-{
-	int resv_cpus;	/* CPUs to be allocated on other nodes */
-
-	if (details_ptr->shared == 0)	/* Use all CPUs on this node */
-		return;
-
-	resv_cpus = MAX((rem_nodes - 1), 0);
-	resv_cpus *= details_ptr->pn_min_cpus;	/* At least 1 */
-	rem_cpus -= resv_cpus;
-
-	if (*avail_cpus > rem_cpus) {
-		*avail_cpus = MAX(rem_cpus, (int)details_ptr->pn_min_cpus);
-		*cpu_cnt = *avail_cpus;
-	}
-}
-
 /* this is the heart of the selection process */
 static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, uint32_t cr_node_cnt,
-			uint16_t *cpu_cnt)
+		       uint32_t cr_node_cnt, uint16_t *cpu_cnt)
 {
-	int i, j, error_code = SLURM_ERROR;
-	int *consec_nodes;	/* how many nodes we can add from this
-				 * consecutive set of nodes */
-	int *consec_cpus;	/* how many nodes we can add from this
-				 * consecutive set of nodes */
-	int *consec_start;	/* where this consecutive set starts (index) */
-	int *consec_end;	/* where this consecutive set ends (index) */
-	int *consec_req;	/* are nodes from this set required
-				 * (in req_bitmap) */
-	int consec_index, consec_size, sufficient;
-	int rem_cpus, rem_nodes;	/* remaining resources desired */
-	int total_cpus = 0;	/* #CPUs allocated to job */
-	int best_fit_nodes, best_fit_cpus, best_fit_req;
-	int best_fit_sufficient, best_fit_index = 0;
-	int avail_cpus, ll;	/* ll = layout array index */
-	bool required_node;
+	int i;
 	struct job_details *details_ptr = job_ptr->details;
-	bitstr_t *req_map    = details_ptr->req_node_bitmap;
-	uint16_t *layout_ptr = details_ptr->req_node_layout;
 
+	xassert(cpu_cnt);
 	xassert(node_map);
 	if (cr_node_cnt != node_record_count) {
-		error("cons_res: node count inconsistent with slurmctld");
-		return error_code;
+		error("select/serial: node count inconsistent with slurmctld");
+		return SLURM_ERROR;
 	}
-	if (bit_set_count(node_map) < min_nodes)
-		return error_code;
-
-	if ((details_ptr->req_node_bitmap) &&
-	    (!bit_super_set(details_ptr->req_node_bitmap, node_map)))
-		return error_code;
-
-	if (switch_record_cnt && switch_record_table) {
-		/* Perform optimized resource selection based upon topology */
-		return _eval_nodes_topo(job_ptr, node_map,
-					min_nodes, max_nodes, req_nodes,
-					cr_node_cnt, cpu_cnt);
-	}
-
-	consec_size = 50;	/* start allocation for 50 sets of
-				 * consecutive nodes */
-	consec_cpus  = xmalloc(sizeof(int) * consec_size);
-	consec_nodes = xmalloc(sizeof(int) * consec_size);
-	consec_start = xmalloc(sizeof(int) * consec_size);
-	consec_end   = xmalloc(sizeof(int) * consec_size);
-	consec_req   = xmalloc(sizeof(int) * consec_size);
-
-	/* Build table with information about sets of consecutive nodes */
-	consec_index = 0;
-	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
-	consec_req[consec_index] = -1;	/* no required nodes here by default */
-
-	rem_cpus = details_ptr->min_cpus;
-	rem_nodes = MAX(min_nodes, req_nodes);
-
-	for (i = 0, ll = -1; i < cr_node_cnt; i++) {
-		if (req_map)
-			required_node = bit_test(req_map, i);
-		else
-			required_node = false;
-		if (layout_ptr && required_node)
-			ll++;
-		if (bit_test(node_map, i)) {
-			if (consec_nodes[consec_index] == 0)
-				consec_start[consec_index] = i;
-			avail_cpus = cpu_cnt[i];
-			if (layout_ptr && required_node) {
-				avail_cpus = MIN(avail_cpus, layout_ptr[ll]);
-			} else if (layout_ptr) {
-				avail_cpus = 0; /* should not happen? */
-			}
-			if ((max_nodes > 0) && required_node) {
-				if (consec_req[consec_index] == -1) {
-					/* first required node in set */
-					consec_req[consec_index] = i;
-				}
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
-				rem_nodes--;
-				/* leaving bitmap set, decrement max limit */
-				max_nodes--;
-			} else {	/* node not selected (yet) */
-				bit_clear(node_map, i);
-				consec_cpus[consec_index] += avail_cpus;
-				consec_nodes[consec_index]++;
-			}
-		} else if (consec_nodes[consec_index] == 0) {
-			consec_req[consec_index] = -1;
-			/* already picked up any required nodes */
-			/* re-use this record */
-		} else {
-			consec_end[consec_index] = i - 1;
-			if (++consec_index >= consec_size) {
-				consec_size *= 2;
-				xrealloc(consec_cpus, sizeof(int)*consec_size);
-				xrealloc(consec_nodes,sizeof(int)*consec_size);
-				xrealloc(consec_start,sizeof(int)*consec_size);
-				xrealloc(consec_end,  sizeof(int)*consec_size);
-				xrealloc(consec_req,  sizeof(int)*consec_size);
-			}
-			consec_cpus[consec_index]  = 0;
-			consec_nodes[consec_index] = 0;
-			consec_req[consec_index]   = -1;
-		}
-	}
-	if (consec_nodes[consec_index] != 0)
-		consec_end[consec_index++] = i - 1;
-
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
-		for (i = 0; i < consec_index; i++) {
-			info("cons_res: eval_nodes:%d consec "
-			     "c=%d n=%d b=%d e=%d r=%d",
-			     i, consec_cpus[i], consec_nodes[i],
-			     consec_start[i], consec_end[i], consec_req[i]);
-		}
-	}
-
-	/* Compute CPUs already allocated to required nodes */
-	if ((details_ptr->max_cpus != NO_VAL) &&
-	    (total_cpus > details_ptr->max_cpus)) {
-		info("Job %u can't use required nodes due to max CPU limit",
-		     job_ptr->job_id);
-		goto fini;
-	}
-
-	/* accumulate nodes from these sets of consecutive nodes until */
-	/*   sufficient resources have been accumulated */
-	while (consec_index && (max_nodes > 0)) {
-		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
-		best_fit_req = -1;	/* first required node, -1 if none */
-		for (i = 0; i < consec_index; i++) {
-			if (consec_nodes[i] == 0)
-				continue;	/* no usable nodes here */
-
-			if (details_ptr->contiguous &&
-			    details_ptr->req_node_bitmap &&
-			    (consec_req[i] == -1))
-				break;  /* not required nodes */
-
-			sufficient = (consec_cpus[i] >= rem_cpus) &&
-				     _enough_nodes(consec_nodes[i], rem_nodes,
-						   min_nodes, req_nodes);
-
-			/* if first possibility OR */
-			/* contains required nodes OR */
-			/* first set large enough for request OR */
-			/* tightest fit (less resource waste) OR */
-			/* nothing yet large enough, but this is biggest */
-			if ((best_fit_nodes == 0) ||
-			    ((best_fit_req == -1) && (consec_req[i] != -1)) ||
-			    (sufficient && (best_fit_sufficient == 0)) ||
-			    (sufficient && (consec_cpus[i] < best_fit_cpus)) ||
-			    (!sufficient && (consec_cpus[i] > best_fit_cpus))) {
-				best_fit_cpus = consec_cpus[i];
-				best_fit_nodes = consec_nodes[i];
-				best_fit_index = i;
-				best_fit_req = consec_req[i];
-				best_fit_sufficient = sufficient;
-			}
-
-			if (details_ptr->contiguous &&
-			    details_ptr->req_node_bitmap) {
-				/* Must wait for all required nodes to be
-				 * in a single consecutive block */
-				int j, other_blocks = 0;
-				for (j = (i+1); j < consec_index; j++) {
-					if (consec_req[j] != -1) {
-						other_blocks = 1;
-						break;
-					}
-				}
-				if (other_blocks) {
-					best_fit_nodes = 0;
-					break;
-				}
-			}
-		}
-		if (best_fit_nodes == 0)
+	if (details_ptr->req_node_bitmap)
+		bit_or(node_map, details_ptr->req_node_bitmap);
+	i = bit_ffs(node_map);
+	if (i < 0)
+		return SLURM_ERROR;
+	for ( ; i < node_record_count; i++) {
+		if (cpu_cnt[i])
 			break;
-
-		if (details_ptr->contiguous &&
-		    ((best_fit_cpus < rem_cpus) ||
-		     (!_enough_nodes(best_fit_nodes, rem_nodes,
-				     min_nodes, req_nodes))))
-			break;	/* no hole large enough */
-		if (best_fit_req != -1) {
-			/* This collection of nodes includes required ones
-			 * select nodes from this set, first working up
-			 * then down from the required nodes */
-			for (i = best_fit_req;
-			     i <= consec_end[best_fit_index]; i++) {
-				if ((max_nodes <= 0) ||
-				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
-					break;
-				if (bit_test(node_map, i)) {
-					/* required node already in set */
-					continue;
-				}
-				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt);
-				if (avail_cpus <= 0)
-					continue;
-
-				/* This could result in 0, but if the user
-				 * requested nodes here we will still give
-				 * them and then the step layout will sort
-				 * things out. */
-				_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
-					     details_ptr, &cpu_cnt[i]);
-				total_cpus += avail_cpus;
-				/* enforce the max_cpus limit */
-				if ((details_ptr->max_cpus != NO_VAL) &&
-				    (total_cpus > details_ptr->max_cpus)) {
-					debug2("1 can't use this node "
-					       "since it would put us "
-					       "over the limit");
-					total_cpus -= avail_cpus;
-					continue;
-				}
-				bit_set(node_map, i);
-				rem_nodes--;
-				max_nodes--;
-				rem_cpus -= avail_cpus;
-			}
-			for (i = (best_fit_req - 1);
-			     i >= consec_start[best_fit_index]; i--) {
-				if ((max_nodes <= 0) ||
-				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
-					break;
-				if (bit_test(node_map, i))
-					continue;
-				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt);
-				if (avail_cpus <= 0)
-					continue;
-
-				/* This could result in 0, but if the user
-				 * requested nodes here we will still give
-				 * them and then the step layout will sort
-				 * things out. */
-				_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
-					     details_ptr, &cpu_cnt[i]);
-				total_cpus += avail_cpus;
-				/* enforce the max_cpus limit */
-				if ((details_ptr->max_cpus != NO_VAL) &&
-				    (total_cpus > details_ptr->max_cpus)) {
-					debug2("2 can't use this node "
-					       "since it would put us "
-					       "over the limit");
-					total_cpus -= avail_cpus;
-					continue;
-				}
-				rem_cpus -= avail_cpus;
-				bit_set(node_map, i);
-				rem_nodes--;
-				max_nodes--;
-			}
-		} else {
-			/* No required nodes, try best fit single node */
-			int *cpus_array = NULL, array_len;
-			int best_fit = -1, best_size = 0;
-			int first = consec_start[best_fit_index];
-			int last  = consec_end[best_fit_index];
-			if (rem_nodes <= 1) {
-				array_len =  last - first + 1;
-				cpus_array = xmalloc(sizeof(int) * array_len);
-				for (i = first, j = 0; i <= last; i++, j++) {
-					if (bit_test(node_map, i))
-						continue;
-					cpus_array[j] = _get_cpu_cnt(job_ptr,
-								i, cpu_cnt);
-					if (cpus_array[j] < rem_cpus)
-						continue;
-					if ((best_fit == -1) ||
-					    (cpus_array[j] < best_size)) {
-						best_fit = j;
-						best_size = cpus_array[j];
-						if (best_size == rem_cpus)
-							break;
-					}
-				}
-				/* If we found a single node to use, 
-				 * clear cpu counts for all other nodes */
-				for (i = first, j = 0;
-				     ((i <= last) && (best_fit != -1)); 
-				     i++, j++) {
-					if (j != best_fit)
-						cpus_array[j] = 0;
-				}
-			}
-
-			for (i = first, j = 0; i <= last; i++, j++) {
-				if ((max_nodes <= 0) ||
-				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
-					break;
-				if (bit_test(node_map, i))
-					continue;
-
-				if (cpus_array)
-					avail_cpus = cpus_array[j];
-				else {
-					avail_cpus = _get_cpu_cnt(job_ptr, i,
-								  cpu_cnt);
-				}
-				if (avail_cpus <= 0)
-					continue;
-
-				if ((max_nodes == 1) &&
-				    (avail_cpus < rem_cpus)) {
-					/* Job can only take one more node and
-					 * this one has insufficient CPU */
-					continue;
-				}
-
-				/* This could result in 0, but if the user
-				 * requested nodes here we will still give
-				 * them and then the step layout will sort
-				 * things out. */
-				_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
-					     details_ptr, &cpu_cnt[i]);
-				total_cpus += avail_cpus;
-				/* enforce the max_cpus limit */
-				if ((details_ptr->max_cpus != NO_VAL) &&
-				    (total_cpus > details_ptr->max_cpus)) {
-					debug2("3 can't use this node "
-					       "since it would put us "
-					       "over the limit");
-					total_cpus -= avail_cpus;
-					continue;
-				}
-				rem_cpus -= avail_cpus;
-				bit_set(node_map, i);
-				rem_nodes--;
-				max_nodes--;
-			}
-			xfree(cpus_array);
-		}
-
-		if (details_ptr->contiguous ||
-		    ((rem_nodes <= 0) && (rem_cpus <= 0))) {
-			error_code = SLURM_SUCCESS;
-			break;
-		}
-		consec_cpus[best_fit_index] = 0;
-		consec_nodes[best_fit_index] = 0;
 	}
-
-	if (error_code && (rem_cpus <= 0) &&
-	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes))
-		error_code = SLURM_SUCCESS;
-
-fini:	xfree(consec_cpus);
-	xfree(consec_nodes);
-	xfree(consec_start);
-	xfree(consec_end);
-	xfree(consec_req);
-	return error_code;
-}
-
-/*
- * A network topology aware version of _eval_nodes().
- * NOTE: The logic here is almost identical to that of _job_test_topo()
- *       in select_linear.c. Any bug found here is probably also there.
- */
-static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, uint32_t cr_node_cnt,
-			uint16_t *cpu_cnt)
-{
-	bitstr_t **switches_bitmap;		/* nodes on this switch */
-	int       *switches_cpu_cnt;		/* total CPUs on switch */
-	int       *switches_node_cnt;		/* total nodes on switch */
-	int       *switches_required;		/* set if has required node */
-	int        leaf_switch_count = 0;   /* Count of leaf node switches used */
-
-	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
-	bitstr_t  *req_nodes_bitmap   = NULL;
-	int rem_cpus, rem_nodes;	/* remaining resources desired */
-	int avail_cpus;
-	int total_cpus = 0;	/* #CPUs allocated to job */
-	int i, j, rc = SLURM_SUCCESS;
-	int best_fit_inx, first, last;
-	int best_fit_nodes, best_fit_cpus;
-	int best_fit_location = 0, best_fit_sufficient;
-	bool sufficient;
-	long time_waiting = 0;
-
-	if (job_ptr->req_switch) {
-		time_t     time_now;
-		time_now = time(NULL);
-		if (job_ptr->wait4switch_start == 0)
-			job_ptr->wait4switch_start = time_now;
-		time_waiting = time_now - job_ptr->wait4switch_start;
-	}
-
-	rem_cpus = job_ptr->details->min_cpus;
-	if (req_nodes > min_nodes)
-		rem_nodes = req_nodes;
-	else
-		rem_nodes = min_nodes;
-
-	if (job_ptr->details->req_node_bitmap) {
-		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
-		i = bit_set_count(req_nodes_bitmap);
-		if (i > max_nodes) {
-			info("job %u requires more nodes than currently "
-			     "available (%u>%u)",
-			     job_ptr->job_id, i, max_nodes);
-			rc = SLURM_ERROR;
-			goto fini;
-		}
-	}
-
-	/* Construct a set of switch array entries,
-	 * use the same indexes as switch_record_table in slurmctld */
-	switches_bitmap   = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
-	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
-	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
-	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
-	avail_nodes_bitmap = bit_alloc(cr_node_cnt);
-	for (i=0; i<switch_record_cnt; i++) {
-		switches_bitmap[i] = bit_copy(switch_record_table[i].
-					      node_bitmap);
-		bit_and(switches_bitmap[i], bitmap);
-		bit_or(avail_nodes_bitmap, switches_bitmap[i]);
-		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
-		if (req_nodes_bitmap &&
-		    bit_overlap(req_nodes_bitmap, switches_bitmap[i])) {
-			switches_required[i] = 1;
-		}
-	}
-	bit_nclear(bitmap, 0, cr_node_cnt - 1);
-
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
-		for (i=0; i<switch_record_cnt; i++) {
-			char *node_names = NULL;
-			if (switches_node_cnt[i]) {
-				node_names = bitmap2node_name(
-						switches_bitmap[i]);
-			}
-			debug("switch=%s nodes=%u:%s required:%u speed:%u",
-			      switch_record_table[i].name,
-			      switches_node_cnt[i], node_names,
-			      switches_required[i],
-			      switch_record_table[i].link_speed);
-			xfree(node_names);
-		}
-	}
-
-	if (req_nodes_bitmap &&
-	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
-		info("job %u requires nodes not available on any switch",
-		     job_ptr->job_id);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-
-	/* Check that specific required nodes are linked together */
-	if (req_nodes_bitmap) {
-		rc = SLURM_ERROR;
-		for (i=0; i<switch_record_cnt; i++) {
-			if (bit_super_set(req_nodes_bitmap,
-					  switches_bitmap[i])) {
-				rc = SLURM_SUCCESS;
-				break;
-			}
-		}
-		if ( rc == SLURM_ERROR ) {
-			info("job %u requires nodes that are not linked "
-			     "together", job_ptr->job_id);
-			goto fini;
-		}
-	}
-
-	if (req_nodes_bitmap) {
-		/* Accumulate specific required resources, if any */
-		first = bit_ffs(req_nodes_bitmap);
-		last  = bit_fls(req_nodes_bitmap);
-		for (i=first; ((i<=last) && (first>=0)); i++) {
-			if (!bit_test(req_nodes_bitmap, i))
-				continue;
-			if (max_nodes <= 0) {
-				info("job %u requires nodes than allowed",
-				     job_ptr->job_id);
-				rc = SLURM_ERROR;
-				goto fini;
-			}
-			bit_set(bitmap, i);
-			bit_clear(avail_nodes_bitmap, i);
-			avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt);
-			/* This could result in 0, but if the user
-			 * requested nodes here we will still give
-			 * them and then the step layout will sort
-			 * things out. */
-			_cpus_to_use(&avail_cpus, rem_cpus, rem_nodes,
-				     job_ptr->details, &cpu_cnt[i]);
-			rem_nodes--;
-			max_nodes--;
-			total_cpus += avail_cpus;
-			rem_cpus   -= avail_cpus;
-			for (j=0; j<switch_record_cnt; j++) {
-				if (!bit_test(switches_bitmap[j], i))
-					continue;
-				bit_clear(switches_bitmap[j], i);
-				switches_node_cnt[j]--;
-				/* keep track of the accumulated resources */
-				switches_required[j] += avail_cpus;
-			}
-		}
-		/* Compute CPUs already allocated to required nodes */
-		if ((job_ptr->details->max_cpus != NO_VAL) &&
-		    (total_cpus > job_ptr->details->max_cpus)) {
-			info("Job %u can't use required node due to max CPU "
-			     "limit", job_ptr->job_id);
-			rc = SLURM_ERROR;
-			goto fini;
-		}
-		if ((rem_nodes <= 0) && (rem_cpus <= 0))
-			goto fini;
-
-		/* Update bitmaps and node counts for higher-level switches */
-		for (j=0; j<switch_record_cnt; j++) {
-			if (switches_node_cnt[j] == 0)
-				continue;
-			first = bit_ffs(switches_bitmap[j]);
-			if (first < 0)
-				continue;
-			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; i<=last; i++) {
-				if (!bit_test(switches_bitmap[j], i))
-					continue;
-				if (!bit_test(avail_nodes_bitmap, i)) {
-					/* cleared from lower level */
-					bit_clear(switches_bitmap[j], i);
-					switches_node_cnt[j]--;
-				} else {
-					switches_cpu_cnt[j] +=
-						_get_cpu_cnt(job_ptr, i,
-							     cpu_cnt);
-				}
-			}
-		}
-	} else {
-		/* No specific required nodes, calculate CPU counts */
-		for (j=0; j<switch_record_cnt; j++) {
-			first = bit_ffs(switches_bitmap[j]);
-			if (first < 0)
-				continue;
-			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; i<=last; i++) {
-				if (!bit_test(switches_bitmap[j], i))
-					continue;
-				switches_cpu_cnt[j] +=
-					_get_cpu_cnt(job_ptr, i, cpu_cnt);
-			}
-		}
-	}
-
-	/* Determine lowest level switch satisfying request with best fit 
-	 * in respect of the specific required nodes if specified
-	 */
-	best_fit_inx = -1;
-	for (j=0; j<switch_record_cnt; j++) {
-		if ((switches_cpu_cnt[j]  < rem_cpus) ||
-		    (!_enough_nodes(switches_node_cnt[j], rem_nodes,
-				    min_nodes, req_nodes)))
-			continue;
-		/*
-		 * If first possibility OR
-		 * first required switch OR
-		 * lower level switch OR
-		 * same level but tighter switch (less resource waste) OR
-		 * 2 required switches of same level and nodes count
-		 * but the latter accumulated cpus amount is bigger than 
-		 * the former one
-		 */
-		if ((best_fit_inx == -1) ||
-		    (!switches_required[best_fit_inx] &&  switches_required[j]) ||
-		    (switch_record_table[j].level <
-		     switch_record_table[best_fit_inx].level) ||
-		    ((switch_record_table[j].level ==
-		      switch_record_table[best_fit_inx].level) &&
-		     (switches_node_cnt[j] < switches_node_cnt[best_fit_inx])) ||
-		    ((switches_required[best_fit_inx] && switches_required[j]) &&
-		     (switch_record_table[j].level == 
-		      switch_record_table[best_fit_inx].level) &&
-		     (switches_node_cnt[j] == switches_node_cnt[best_fit_inx]) &&
-		     switches_required[best_fit_inx] < switches_required[j]) ) {
-			/* If first possibility OR */
-			/* current best switch not required OR */
-			/* current best switch required but this */
-			/* better one too */
-			if ( best_fit_inx == -1 ||
-			     !switches_required[best_fit_inx] ||
-			     (switches_required[best_fit_inx] && 
-			      switches_required[j]) )
-				best_fit_inx = j;
-		}
-	}
-	if (best_fit_inx == -1) {
-		debug("job %u: best_fit topology failure : no switch "
-		      "satisfying the request found", job_ptr->job_id);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-	if (!switches_required[best_fit_inx] && req_nodes_bitmap ) {
-		debug("job %u: best_fit topology failure : no switch "
-		      "including requested nodes and satisfying the "
-		      "request found", job_ptr->job_id);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-	bit_and(avail_nodes_bitmap, switches_bitmap[best_fit_inx]);
-	if ((min_nodes <  req_nodes) &&
-	    (min_nodes <= switches_node_cnt[best_fit_inx])) {
-		/* If job specifies a range of node counts, then allocate
-		 * resources with a minimal switch configuration */
-		rem_nodes = switches_node_cnt[best_fit_inx];
-	}
-
-	/* Identify usable leafs (within higher switch having best fit) */
-	for (j=0; j<switch_record_cnt; j++) {
-		if ((switch_record_table[j].level != 0) ||
-		    (!bit_super_set(switches_bitmap[j],
-				    switches_bitmap[best_fit_inx]))) {
-			switches_node_cnt[j] = 0;
-		}
-	}
-
-	/* Select resources from these leafs on a best-fit basis */
-	/* Use required switches first to minimize the total amount */
-	/* of switches */
-	/* compute best-switch nodes available array */
-	while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
-		int *cpus_array = NULL, array_len;
-		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
-		for (j=0; j<switch_record_cnt; j++) {
-			if (switches_node_cnt[j] == 0)
-				continue;
-			sufficient = (switches_cpu_cnt[j] >= rem_cpus) &&
-				     _enough_nodes(switches_node_cnt[j],
-						   rem_nodes, min_nodes,
-						   req_nodes);
-			/* If first possibility OR */
-			/* first required switch OR */
-			/* first set large enough for request OR */
-			/* tightest fit (less resource waste) OR */
-			/* nothing yet large enough, but this is biggest OR */
-			/* 2 required switches of same level and cpus count */
-			/* but the latter accumulated cpus amount is bigger */
-			/* than the former one */
-			if ((best_fit_nodes == 0) ||
-			    (!switches_required[best_fit_location] &&
-			     switches_required[j] ) ||
-			    (sufficient && (best_fit_sufficient == 0)) ||
-			    (sufficient &&
-			     (switches_cpu_cnt[j] < best_fit_cpus)) ||
-			    ((sufficient == 0) &&
-			     (switches_cpu_cnt[j] > best_fit_cpus)) ||
-			    (switches_required[best_fit_location] &&
-			     switches_required[j] &&
-			     switches_cpu_cnt[best_fit_location] == 
-			     switches_cpu_cnt[j] && 
-			     switches_required[best_fit_location] < 
-			     switches_required[j]) ) {
-				/* If first possibility OR */
-				/* current best switch not required OR */
-				/* current best switch required but this */
-				/* better one too */
-				if ((best_fit_nodes == 0) ||
-				    !switches_required[best_fit_location] ||
-				    (switches_required[best_fit_location] &&
-				     switches_required[j])) {
-					best_fit_cpus =  switches_cpu_cnt[j];
-					best_fit_nodes = switches_node_cnt[j];
-					best_fit_location = j;
-					best_fit_sufficient = sufficient;
-				}
-			}
-		}
-		if (best_fit_nodes == 0)
-			break;
-
-		leaf_switch_count++;
-		/* Use select nodes from this leaf */
-		first = bit_ffs(switches_bitmap[best_fit_location]);
-		last  = bit_fls(switches_bitmap[best_fit_location]);
-
-		/* compute best-switch nodes available cpus array */
-		array_len = last - first + 1;
-		cpus_array = xmalloc(sizeof(int) * array_len);
-		for (i=first, j=0; ((i<=last) && (first>=0)); i++, j++) {
-			if (!bit_test(switches_bitmap
-				      [best_fit_location], i))
-				cpus_array[j] = 0;
-			else
-				cpus_array[j] = _get_cpu_cnt(job_ptr, i, 
-							     cpu_cnt);
-		}
-
-		if (job_ptr->req_switch > 0) {
-			if (time_waiting >= job_ptr->wait4switch) {
-				job_ptr->best_switch = true;
-				debug3("Job=%u Waited %ld sec for switches use=%d",
-					job_ptr->job_id, time_waiting,
-					leaf_switch_count);
-			} else if (leaf_switch_count>job_ptr->req_switch) {
-				/* Allocation is for more than requested number
-				 * of switches */
-				job_ptr->best_switch = false;
-				debug3("Job=%u waited %ld sec for switches=%u "
-					"found=%d wait %u",
-					job_ptr->job_id, time_waiting,
-					job_ptr->req_switch,
-					leaf_switch_count,
-					job_ptr->wait4switch);
-			} else {
-				job_ptr->best_switch = true;
-			}
-		}
-
-		/* accumulate resources from this leaf on a best-fit basis */
-		while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
-			
-			/* pick a node using a best-fit approach */
-			/* if rem_cpus < 0, then we will search for nodes 
-			 * with lower free cpus nb first
-			 */
-			int suff = 0, bfsuff = 0, bfloc = 0 , bfsize = 0;
-			int ca_bfloc = 0;
-			for (i=first, j=0; ((i<=last) && (first>=0)); 
-			     i++, j++) {
-				if (cpus_array[j] == 0)
-					continue;
-				suff =  cpus_array[j] >= rem_cpus;
-				if ( (bfsize == 0) ||
-				     (suff && !bfsuff) ||
-				     (suff && (cpus_array[j] < bfsize)) ||
-				     (!suff && (cpus_array[j] > bfsize)) ) {
-					bfsuff = suff;
-					bfloc = i;
-					bfsize = cpus_array[j];
-					ca_bfloc = j;
-				}
-			}
-
-			/* no node found, break */
-			if (bfsize == 0)
-				break;
-			
-			/* clear resources of this node from the switch */
-			bit_clear(switches_bitmap[best_fit_location],bfloc);
-			switches_node_cnt[best_fit_location]--;
-
-			switches_cpu_cnt[best_fit_location] -= bfsize;
-			cpus_array[ca_bfloc] = 0;
-
-			/* if this node was already selected in an other */
-			/* switch, skip it */
-			if (bit_test(bitmap, bfloc)) {
-				continue;
-			}
-
-			/* This could result in 0, but if the user
-			 * requested nodes here we will still give
-			 * them and then the step layout will sort
-			 * things out. */
-			_cpus_to_use(&bfsize, rem_cpus, rem_nodes,
-				     job_ptr->details, &cpu_cnt[bfloc]);
-
-			/* enforce the max_cpus limit */
-			if ((job_ptr->details->max_cpus != NO_VAL) &&
-			    (total_cpus+bfsize > job_ptr->details->max_cpus)) {
-				debug2("5 can't use this node since it "
-				       "would put us over the limit");
-				continue;
-			}
-
-			/* take the node into account */
-			bit_set(bitmap, bfloc);
-			total_cpus += bfsize;
-			rem_nodes--;
-			max_nodes--;
-			rem_cpus -= bfsize;
-		}		
-
-		/* free best-switch nodes available cpus array */
-		xfree(cpus_array);
-
-		/* mark this switch as processed */
-		switches_node_cnt[best_fit_location] = 0;
-
-	}
-
-	if ((rem_cpus <= 0) &&
-	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
-		rc = SLURM_SUCCESS;
-	} else
-		rc = SLURM_ERROR;
-
- fini:	FREE_NULL_BITMAP(avail_nodes_bitmap);
-	FREE_NULL_BITMAP(req_nodes_bitmap);
-	for (i=0; i<switch_record_cnt; i++)
-		FREE_NULL_BITMAP(switches_bitmap[i]);
-	xfree(switches_bitmap);
-	xfree(switches_cpu_cnt);
-	xfree(switches_node_cnt);
-	xfree(switches_required);
-
-	return rc;
+	if (i >= node_record_count)
+		return SLURM_ERROR;
+	bit_nclear(node_map, 0, (node_record_count - 1));
+	bit_set(node_map, i);
+	return SLURM_SUCCESS;
 }
 
 /* this is an intermediary step between _select_nodes and _eval_nodes
  * to tackle the knapsack problem. This code incrementally removes nodes
  * with low cpu counts for the job and re-evaluates each result */
 static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
-			 uint32_t min_nodes, uint32_t max_nodes,
-			 uint32_t req_nodes, uint32_t cr_node_cnt,
-			 uint16_t *cpu_cnt)
+			 uint32_t cr_node_cnt, uint16_t *cpu_cnt)
 {
 	int i, count, ec, most_cpus = 0;
 	bitstr_t *origmap, *reqmap = NULL;
@@ -1747,18 +894,11 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		}
 	}
 
-	/* NOTE: details->min_cpus is 1 by default,
-	 * Only reset max_nodes if user explicitly sets a proc count */
-	if ((job_ptr->details->min_cpus > 1) &&
-	    (max_nodes > job_ptr->details->min_cpus))
-		max_nodes = job_ptr->details->min_cpus;
-
 	origmap = bit_copy(node_map);
 	if (origmap == NULL)
 		fatal("bit_copy malloc failure");
 
-	ec = _eval_nodes(job_ptr, node_map, min_nodes, max_nodes,
-			 req_nodes, cr_node_cnt, cpu_cnt);
+	ec = _eval_nodes(job_ptr, node_map, cr_node_cnt, cpu_cnt);
 
 	if (ec == SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(origmap);
@@ -1787,8 +927,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		}
 		if (nochange)
 			continue;
-		ec = _eval_nodes(job_ptr, node_map, min_nodes, max_nodes,
-				 req_nodes, cr_node_cnt, cpu_cnt);
+		ec = _eval_nodes(job_ptr, node_map, cr_node_cnt, cpu_cnt);
 		if (ec == SLURM_SUCCESS) {
 			FREE_NULL_BITMAP(origmap);
 			return ec;
@@ -1801,9 +940,6 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 /* Select the best set of resources for the given job
  * IN: job_ptr      - pointer to the job requesting resources
- * IN: min_nodes    - minimum number of nodes required
- * IN: max_nodes    - maximum number of nodes requested
- * IN: req_nodes    - number of requested nodes
  * IN/OUT: node_map - bitmap of available nodes / bitmap of selected nodes
  * IN: cr_node_cnt  - total number of nodes in the cluster
  * IN/OUT: core_map - bitmap of available cores / bitmap of selected cores
@@ -1811,8 +947,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
  * IN: test_only    - ignore allocated memory check
  * RET - array with number of CPUs available per node or NULL if not runnable
  */
-static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
-				uint32_t max_nodes, uint32_t req_nodes,
+static uint16_t *_select_nodes(struct job_record *job_ptr,
 				bitstr_t *node_map, uint32_t cr_node_cnt,
 				bitstr_t *core_map,
 				struct node_use_record *node_usage,
@@ -1823,7 +958,7 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 	uint32_t start, n, a;
 	bitstr_t *req_map = job_ptr->details->req_node_bitmap;
 
-	if (bit_set_count(node_map) < min_nodes)
+	if (bit_set_count(node_map) == 0)
 		return NULL;
 
 	/* get resource usage for this job from each available node */
@@ -1843,14 +978,13 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 			bit_clear(node_map, n);
 		}
 	}
-	if (bit_set_count(node_map) < min_nodes) {
+	if (bit_set_count(node_map) == 0) {
 		xfree(cpu_cnt);
 		return NULL;
 	}
 
 	/* choose the best nodes for the job */
-	rc = _choose_nodes(job_ptr, node_map, min_nodes, max_nodes, req_nodes,
-			   cr_node_cnt, cpu_cnt);
+	rc = _choose_nodes(job_ptr, node_map, cr_node_cnt, cpu_cnt);
 
 	/* if successful, sync up the core_map with the node_map, and
 	 * create a cpus array */
@@ -1893,9 +1027,7 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
  *         for this job, with the placement influenced by existing
  *         allocations
  */
-extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes,
-			uint32_t req_nodes, int mode,
+extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 			uint16_t cr_type, enum node_cr_state job_node_req, 
 			uint32_t cr_node_cnt,
 			struct part_res_record *cr_part_ptr,
@@ -1934,21 +1066,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 
-	/* This is the case if -O/--overcommit  is true */
-	if (details_ptr->min_cpus == details_ptr->min_nodes) {
-		struct multi_core_data *mc_ptr = details_ptr->mc_ptr;
-
-		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
-		    (mc_ptr->threads_per_core > 1))
-			details_ptr->min_cpus *= mc_ptr->threads_per_core;
-		if ((mc_ptr->cores_per_socket != (uint16_t) NO_VAL) &&
-		    (mc_ptr->cores_per_socket > 1))
-			details_ptr->min_cpus *= mc_ptr->cores_per_socket;
-		if ((mc_ptr->sockets_per_node != (uint16_t) NO_VAL) &&
-		    (mc_ptr->sockets_per_node > 1))
-			details_ptr->min_cpus *= mc_ptr->sockets_per_node;
-	}
-
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
 		info("cons_res: cr_job_test: evaluating job %u on %u nodes",
 		     job_ptr->job_id, bit_set_count(bitmap));
@@ -1963,8 +1080,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 *          within avail_cores
 	 */
 	free_cores = bit_copy(avail_cores);
-	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
-				  bitmap, cr_node_cnt, free_cores,
+	cpu_count = _select_nodes(job_ptr, bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only);
 	if (cpu_count == NULL) {
 		/* job cannot fit */
@@ -2052,8 +1168,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			bit_and(free_cores, tmpcore);
 		}
 	}
-	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
-				  bitmap, cr_node_cnt, free_cores,
+	cpu_count = _select_nodes(job_ptr, bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only);
 	if ((cpu_count) && (job_ptr->best_switch)) {
 		/* job fits! We're done. */
@@ -2111,8 +1226,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	/* make these changes permanent */
 	bit_copybits(avail_cores, free_cores);
-	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
-				  bitmap, cr_node_cnt, free_cores,
+	cpu_count = _select_nodes(job_ptr, bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only);
 	if (!cpu_count) {
 		/* job needs resources that are currently in use by
@@ -2148,9 +1262,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			bit_and(free_cores, tmpcore);
 		}
 	}
-	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
-				   bitmap, cr_node_cnt, free_cores,
-				   node_usage, cr_type, test_only);
+	cpu_count = _select_nodes(job_ptr, bitmap, cr_node_cnt, free_cores,
+				  node_usage, cr_type, test_only);
 	if (cpu_count) {
 		/* jobs from low-priority partitions are the only thing left
 		 * in our way. for now we'll ignore them, but FIXME: we need
@@ -2186,8 +1299,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * this partition */
 		bit_copybits(bitmap, orig_map);
 		bit_copybits(free_cores, avail_cores);
-		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
-					  req_nodes, bitmap, cr_node_cnt,
+		cpu_count = _select_nodes(job_ptr, bitmap, cr_node_cnt,
 					  free_cores, node_usage, cr_type,
 					  test_only);
 		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
@@ -2209,8 +1321,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		bit_copybits(tmpcore, jp_ptr->row[i].row_bitmap);
 		bit_not(tmpcore);
 		bit_and(free_cores, tmpcore);
-		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
-					  req_nodes, bitmap, cr_node_cnt,
+		cpu_count = _select_nodes(job_ptr, bitmap, cr_node_cnt,
 					  free_cores, node_usage, cr_type,
 					  test_only);
 		if (cpu_count) {
@@ -2232,8 +1343,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			info("cons_res: cr_job_test: "
 			     "test 4 trying empty row %i",i);
 		}
-		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
-					  req_nodes, bitmap, cr_node_cnt,
+		cpu_count = _select_nodes(job_ptr, bitmap, cr_node_cnt,
 					  free_cores, node_usage, cr_type,
 					  test_only);
 	}
@@ -2287,12 +1397,8 @@ alloc_job:
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
 		error_code = EINVAL;
-	if ((error_code == SLURM_SUCCESS) && (mode == SELECT_MODE_WILL_RUN)) {
-		/* Set a reasonable value for the number of allocated CPUs.
-		 * Without computing task distribution this is only a guess */
-		job_ptr->total_cpus = MAX(job_ptr->details->min_cpus,
-					  job_ptr->details->min_nodes);
-	}
+	if ((error_code == SLURM_SUCCESS) && (mode == SELECT_MODE_WILL_RUN))
+		job_ptr->total_cpus = 1;
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
 		FREE_NULL_BITMAP(free_cores);
 		xfree(cpu_count);

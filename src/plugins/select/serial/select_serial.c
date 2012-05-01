@@ -1106,7 +1106,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	int rc;
 
-	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
+	rc = cr_job_test(job_ptr, bitmap,
 			 SELECT_MODE_TEST_ONLY, cr_type, job_node_share,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
@@ -1149,7 +1149,7 @@ top:	orig_map = bit_copy(save_bitmap);
 	if (!orig_map)
 		fatal("bit_copy: malloc failure");
 
-	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
+	rc = cr_job_test(job_ptr, bitmap,
 			 SELECT_MODE_RUN_NOW, cr_type, job_node_share,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
@@ -1187,8 +1187,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, 0);
 			bit_or(bitmap, orig_map);
-			rc = cr_job_test(job_ptr, bitmap, min_nodes,
-					 max_nodes, req_nodes,
+			rc = cr_job_test(job_ptr, bitmap,
 					 SELECT_MODE_WILL_RUN,
 					 cr_type, job_node_share,
 					 select_node_cnt,
@@ -1294,7 +1293,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
-	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
+	rc = cr_job_test(job_ptr, bitmap,
 			 SELECT_MODE_WILL_RUN, cr_type, job_node_share,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
@@ -1352,8 +1351,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Test with all preemptable jobs gone */
 	if (preemptee_candidates) {
 		bit_or(bitmap, orig_map);
-		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
-				 req_nodes, SELECT_MODE_WILL_RUN, cr_type,
+		rc = cr_job_test(job_ptr, bitmap,
+				 SELECT_MODE_WILL_RUN, cr_type,
 				 job_node_share, select_node_cnt, future_part,
 				 future_usage);
 		if (rc == SLURM_SUCCESS)
@@ -1377,8 +1376,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			       tmp_job_ptr->job_id, ovrlap);
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, 0);
-			rc = cr_job_test(job_ptr, bitmap, min_nodes,
-					 max_nodes, req_nodes,
+			rc = cr_job_test(job_ptr, bitmap,
 					 SELECT_MODE_WILL_RUN, cr_type,
 					 job_node_share, select_node_cnt,
 					 future_part, future_usage);
