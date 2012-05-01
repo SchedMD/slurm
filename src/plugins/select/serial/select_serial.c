@@ -770,20 +770,34 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	struct part_res_record *p_ptr;
 	List gres_list;
 	int i, n;
+	int i_first, i_last;
 	bitstr_t *core_bitmap;
 
 	if (!job || !job->core_bitmap) {
-		error("job %u has no select data", job_ptr->job_id);
+		error("select/serial: job %u has no select data",
+		      job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _add_job_to_res: job %u act %d ", job_ptr->job_id,
-	       action);
+	debug3("select/serial: _add_job_to_res: job %u act %d ",
+	       job_ptr->job_id, action);
 
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
 		_dump_job_res(job);
 
-	for (i = 0, n = -1; i < select_node_cnt; i++) {
+	i_first = bit_ffs(job->node_bitmap);
+	if (i_first == -1) {
+		error("select/serial: job %u allocated no nodes",
+		      job_ptr->job_id);
+		i_last = -2;
+	} else {
+	i_last  = bit_fls(job->node_bitmap);
+		if (i_first != i_last) {
+			error("select/serial: job %u allocated more than one "
+			      "node", job_ptr->job_id);
+		}
+	}
+	for (i = i_first, n = -1; i < i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
 		n++;
@@ -810,7 +824,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				job->memory_allocated[n];
 			if ((select_node_usage[i].alloc_memory >
 			     select_node_record[i].real_memory)) {
-				error("cons_res: node %s memory is "
+				error("select/serial: node %s memory is "
 				      "overallocated (%u) for job %u",
 				      node_ptr->name,
 				      select_node_usage[i].alloc_memory,
@@ -826,7 +840,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				break;
 		}
 		if (!p_ptr) {
-			error("cons_res: could not find cr partition %s",
+			error("select/serial: could not find cr partition %s",
 			      job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
@@ -839,26 +853,26 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (!_can_job_fit_in_row(job, &(p_ptr->row[i])))
 				continue;
-			debug3("cons_res: adding job %u to part %s row %u",
+			debug3("select/serial: adding job %u to part %s row %u",
 			       job_ptr->job_id, p_ptr->part_ptr->name, i);
 			_add_job_to_row(job, &(p_ptr->row[i]));
 			break;
 		}
 		if (i >= p_ptr->num_rows) {
 			/* ERROR: could not find a row for this job */
-			error("cons_res: ERROR: job overflow: "
+			error("select/serial: job overflow: "
 			      "could not find row for job");
 			/* just add the job to the last row for now */
 			_add_job_to_row(job, &(p_ptr->row[p_ptr->num_rows-1]));
 		}
 		/* update the node state */
-		for (i = 0; i < select_node_cnt; i++) {
+		for (i = i_first; i < i_last; i++) {
 			if (bit_test(job->node_bitmap, i))
 				select_node_usage[i].node_state +=
 					job->node_req;
 		}
 		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
-			info("DEBUG: _add_job_to_res (after):");
+			info("select/serial: _add_job_to_res (after):");
 			_dump_part(p_ptr);
 		}
 	}
@@ -881,7 +895,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 {
 	struct job_resources *job = job_ptr->job_resrcs;
 	struct node_record *node_ptr;
-	int first_bit, last_bit;
+	int i_first, i_last;
 	int i, n;
 	List gres_list;
 
@@ -891,21 +905,24 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		return SLURM_SUCCESS;
 	}
 	if (!job || !job->core_bitmap) {
-		error("job %u has no select data", job_ptr->job_id);
+		error("select/serial: job %u has no select data",
+		      job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _rm_job_from_res: job %u action %d", job_ptr->job_id,
-	       action);
+	debug3("select/serial: _rm_job_from_res: job %u action %d",
+	       job_ptr->job_id, action);
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND)
 		_dump_job_res(job);
 
-	first_bit = bit_ffs(job->node_bitmap);
-	if (first_bit == -1)
-		last_bit = -2;
-	else
-		last_bit =  bit_fls(job->node_bitmap);
-	for (i = first_bit, n = -1; i <= last_bit; i++) {
+	i_first = bit_ffs(job->node_bitmap);
+	if (i_first == -1) {
+		error("select/serial: job %u allocated no nodes",
+		      job_ptr->job_id);
+		i_last = -2;
+	} else
+		i_last =  bit_fls(job->node_bitmap);
+	for (i = i_first, n = -1; i <= i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
 		n++;
@@ -927,7 +944,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				continue;	/* no memory allocated */
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
-				error("cons_res: node %s memory is "
+				error("select/serial: node %s memory is "
 				      "under-allocated (%u-%u) for job %u",
 				      node_ptr->name,
 				      node_usage[i].alloc_memory,
@@ -947,7 +964,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		struct part_res_record *p_ptr;
 
 		if (!job_ptr->part_ptr) {
-			error("cons_res: removed job %u does not have a "
+			error("select/serial: removed job %u does not have a "
 			      "partition assigned",
 			      job_ptr->job_id);
 			return SLURM_ERROR;
@@ -958,7 +975,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				break;
 		}
 		if (!p_ptr) {
-			error("cons_res: removed job %u could not find part %s",
+			error("select/serial: removed job %u could not find "
+			      "part %s",
 			      job_ptr->job_id, job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
@@ -973,7 +991,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				if (p_ptr->row[i].job_list[j] != job)
 					continue;
-				debug3("cons_res: removed job %u from "
+				debug3("select/serial: removed job %u from "
 				       "part %s row %u",
 				       job_ptr->job_id,
 				       p_ptr->part_ptr->name, i);
@@ -998,7 +1016,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			 * the removal of this job. If all cores are now
 			 * available, set node_state = NODE_CR_AVAILABLE
 			 */
-			for (i = 0, n = -1; i < select_node_cnt; i++) {
+			for (i = i_first, n = -1; i < i_last; i++) {
 				if (bit_test(job->node_bitmap, i) == 0)
 					continue;
 				n++;
@@ -1009,8 +1027,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 					node_usage[i].node_state -=
 						job->node_req;
 				} else {
-					error("cons_res:_rm_job_from_res: "
-					      "node_state mis-count");
+					error("select/serial: _rm_job_from_res:"
+					      " node_state mis-count");
 					node_usage[i].node_state =
 						NODE_CR_AVAILABLE;
 				}
