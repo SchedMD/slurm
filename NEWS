@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
  -- Cray - Add support for zero compute note resource allocation to run batch
     script on front-end node with no ALPS reservation. Useful for pre- or post-
     processing.
+ -- Support for cyclic distribution of cpus in task/cgroup plugin from Martin
+    Perry, Bull.
 
 * Changes in SLURM 2.4.0.pre4
 =============================

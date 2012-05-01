@@ -3,6 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
+ *  Portions copyright (C) 2012 Bull
+ *  Written by Martin Perry <martin.perry@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -115,7 +117,7 @@ static int _abs_to_mac(char* lrange, char** prange)
 			}
 		}
  	}
- 
+
 	/* convert machine cpu bitmap to range string */
 	*prange = (char*)xmalloc(total_cpus*6);
 	bit_fmt(*prange, total_cpus*6, macmap);
@@ -131,6 +133,35 @@ clean:	FREE_NULL_BITMAP(absmap);
 error:	info("_abs_to_mac failed");
 	return SLURM_ERROR;
 }
+
+#ifdef HAVE_HWLOC
+static int _task_cgroup_cpuset_dist_cyclic(hwloc_topology_t topology,
+		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
+		slurmd_job_t *job, int bind_verbose,
+#if HWLOC_API_VERSION <= 0x00010000
+		hwloc_cpuset_t cpuset);
+#else
+		hwloc_bitmap_t cpuset);
+#endif
+
+static int _task_cgroup_cpuset_dist_block(hwloc_topology_t topology,
+		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
+		uint32_t nobj, slurmd_job_t *job, int bind_verbose,
+#if HWLOC_API_VERSION <= 0x00010000
+		hwloc_cpuset_t cpuset);
+#else
+		hwloc_bitmap_t cpuset);
+#endif
+
+static void _add_cpuset(
+		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
+		hwloc_obj_t obj, uint32_t taskid, int bind_verbose,
+#if HWLOC_API_VERSION <= 0x00010000
+		hwloc_cpuset_t cpuset);
+#else
+		hwloc_bitmap_t cpuset);
+#endif
+#endif
 
 extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
@@ -449,299 +480,6 @@ extern int task_cgroup_cpuset_attach_task(slurmd_job_t *job)
 	return fstatus;
 }
 
-/* affinity should be set using sched_setaffinity to not force */
-/* user to have to play with the cgroup hierarchy to modify it */
-extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
-{
-	int fstatus = SLURM_ERROR;
-
-#ifndef HAVE_HWLOC
-
-	error("task/cgroup: plugin not compiled with hwloc support, "
-	      "skipping affinity.");
-	return fstatus;
-
-#else
-	hwloc_obj_type_t socket_or_node;
-	uint32_t i;
-	uint32_t nldoms;
-	uint32_t nsockets;
-	uint32_t ncores;
-	uint32_t npus;
-	uint32_t nobj;
-
-	uint32_t pfirst,plast;
-	uint32_t taskid = job->envtp->localid;
-	uint32_t jntasks = job->node_tasks;
-	uint32_t jnpus = jntasks * job->cpus_per_task;
-	pid_t    pid = job->envtp->task_pid;
-
-	cpu_bind_type_t bind_type;
-	int verbose;
-
-	hwloc_topology_t topology;
-#if HWLOC_API_VERSION <= 0x00010000
-	hwloc_cpuset_t cpuset,ct;
-#else
-	hwloc_bitmap_t cpuset,ct;
-#endif
-	hwloc_obj_t obj;
-	struct hwloc_obj *pobj;
-	hwloc_obj_type_t hwtype;
-	hwloc_obj_type_t req_hwtype;
-	int hwdepth;
-
-	size_t tssize;
-	cpu_set_t ts;
-
-	bind_type = job->cpu_bind_type ;
-	if (conf->task_plugin_param & CPU_BIND_VERBOSE ||
-	    bind_type & CPU_BIND_VERBOSE)
-		verbose = 1 ;
-
-	/* Allocate and initialize hwloc objects */
-	hwloc_topology_init(&topology);
-#if HWLOC_API_VERSION <= 0x00010000
-	cpuset = hwloc_cpuset_alloc() ;
-#else
-	cpuset = hwloc_bitmap_alloc() ;
-#endif
-	hwloc_topology_load(topology);
-	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
-	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
-		/* One socket contains multiple NUMA-nodes
-		 * like AMD Opteron 6000 series etc.
-		 * In such case, use NUMA-node instead of socket. */
-		socket_or_node = HWLOC_OBJ_NODE;
-	} else {
-		socket_or_node = HWLOC_OBJ_SOCKET;
-	}
-
-	if (bind_type & CPU_BIND_NONE) {
-		if (verbose)
-			info("task/cgroup: task[%u] is requesting no affinity",
-			     taskid);
-		return 0;
-	} else if (bind_type & CPU_BIND_TO_THREADS) {
-		if (verbose)
-			info("task/cgroup: task[%u] is requesting "
-			     "thread level binding",taskid);
-		req_hwtype = HWLOC_OBJ_PU;
-	} else if (bind_type & CPU_BIND_TO_CORES) {
-		if (verbose)
-			info("task/cgroup: task[%u] is requesting "
-			     "core level binding",taskid);
-		req_hwtype = HWLOC_OBJ_CORE;
-	} else if (bind_type & CPU_BIND_TO_SOCKETS) {
-		if (verbose)
-			info("task/cgroup: task[%u] is requesting "
-			     "socket level binding",taskid);
-		req_hwtype = socket_or_node;
-	} else if (bind_type & CPU_BIND_TO_LDOMS) {
-		if (verbose)
-			info("task/cgroup: task[%u] is requesting "
-			     "ldom level binding",taskid);
-		req_hwtype = HWLOC_OBJ_NODE;
-	} else {
-		if (verbose)
-			info("task/cgroup: task[%u] using core level binding"
-			     " by default",taskid);
-		req_hwtype = HWLOC_OBJ_CORE;
-	}
-
-	/*
-	 * Perform the topology detection. It will only get allowed PUs.
-	 * Detect in the same time the granularity to use for binding.
-	 * The granularity can be relaxed from threads to cores if enough
-	 * cores are available as with hyperthread support, ntasks-per-core
-	 * param can let us have access to more threads per core for each
-	 * task
-	 * Revert back to machine granularity if no finer-grained granularity
-	 * matching the request is found. This will result in no affinity
-	 * applied.
-	 * The detected granularity will be used to find where to best place
-	 * the task, then the cpu_bind option will be used to relax the
-	 * affinity constraint and use more PUs. (i.e. use a core granularity
-	 * to dispatch the tasks across the sockets and then provide access
-	 * to each task to the cores of its socket.)
-	 */
-	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						   HWLOC_OBJ_PU);
-	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						     HWLOC_OBJ_CORE);
-	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						       socket_or_node);
-	nldoms = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						     HWLOC_OBJ_NODE);
-	hwtype = HWLOC_OBJ_MACHINE;
-	nobj = 1;
-	if (npus >= jnpus || bind_type & CPU_BIND_TO_THREADS) {
-		hwtype = HWLOC_OBJ_PU;
-		nobj = npus;
-	}
-	if (ncores >= jnpus || bind_type & CPU_BIND_TO_CORES) {
-		hwtype = HWLOC_OBJ_CORE;
-		nobj = ncores;
-	}
-	if (nsockets >= jntasks &&
-	     bind_type & CPU_BIND_TO_SOCKETS) {
-		hwtype = socket_or_node;
-		nobj = nsockets;
-	}
-	/*
-	 * HWLOC returns all the NUMA nodes available regardless of the
-	 * number of underlying sockets available (regardless of the allowed
-	 * resources). So there is no guarantee that each ldom will be populated
-	 * with usable sockets. So add a simple check that at least ensure that
-	 * we have as many sockets as ldoms before moving to ldoms granularity
-	 */
-	if (nldoms >= jntasks &&
-	     nsockets >= nldoms &&
-	     bind_type & CPU_BIND_TO_LDOMS) {
-		hwtype = HWLOC_OBJ_NODE;
-		nobj = nldoms;
-	}
-
-	/*
-	 * Perform a block binding on the detected object respecting the
-	 * granularity.
-	 * If not enough objects to do the job, revert to no affinity mode
-	 */
-	if (hwloc_compare_types(hwtype,HWLOC_OBJ_MACHINE) == 0) {
-
-		info("task/cgroup: task[%u] disabling affinity because of %s "
-		     "granularity",taskid,hwloc_obj_type_string(hwtype));
-
-	} else if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0 &&
-		    jnpus > nobj) {
-
-		info("task/cgroup: task[%u] not enough %s objects, disabling "
-		     "affinity",taskid,hwloc_obj_type_string(hwtype));
-
-	} else {
-
-		if (verbose) {
-			info("task/cgroup: task[%u] using %s granularity",
-			     taskid,hwloc_obj_type_string(hwtype));
-		}
-		if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
-			/* cores or threads granularity */
-			pfirst = taskid *  job->cpus_per_task ;
-			plast = pfirst + job->cpus_per_task - 1;
-		} else {
-			/* sockets or ldoms granularity */
-			pfirst = taskid;
-			plast = pfirst;
-		}
-
-		hwdepth = hwloc_get_type_depth(topology,hwtype);
-		for (i = pfirst; i <= plast && i < nobj ; i++) {
-			obj = hwloc_get_obj_by_depth(topology,hwdepth,(int)i);
-
-			/* if requested binding overlap the granularity */
-			/* use the ancestor cpuset instead of the object one */
-			if (hwloc_compare_types(hwtype,req_hwtype) > 0) {
-
-				/* Get the parent object of req_hwtype or the */
-				/* one just above if not found (meaning of >0)*/
-				/* (useful for ldoms binding with !NUMA nodes)*/
-				pobj = obj->parent;
-				while (pobj != NULL &&
-					hwloc_compare_types(pobj->type,
-							    req_hwtype) > 0)
-					pobj = pobj->parent;
-
-				if (pobj != NULL) {
-					if (verbose)
-						info("task/cgroup: task[%u] "
-						     "higher level %s found",
-						     taskid,
-						     hwloc_obj_type_string(
-							     pobj->type));
-#if HWLOC_API_VERSION <= 0x00010000
-					ct = hwloc_cpuset_dup(pobj->
-							      allowed_cpuset);
-					hwloc_cpuset_or(cpuset,cpuset,ct);
-					hwloc_cpuset_free(ct);
-#else
-					ct = hwloc_bitmap_dup(pobj->
-							      allowed_cpuset);
-					hwloc_bitmap_or(cpuset,cpuset,ct);
-					hwloc_bitmap_free(ct);
-#endif
-				} else {
-					/* should not be executed */
-					if (verbose)
-						info("task/cgroup: task[%u] "
-						     "no higher level found",
-						     taskid);
-#if HWLOC_API_VERSION <= 0x00010000
-					ct = hwloc_cpuset_dup(obj->
-							      allowed_cpuset);
-					hwloc_cpuset_or(cpuset,cpuset,ct);
-					hwloc_cpuset_free(ct);
-#else
-					ct = hwloc_bitmap_dup(obj->
-							      allowed_cpuset);
-					hwloc_bitmap_or(cpuset,cpuset,ct);
-					hwloc_bitmap_free(ct);
-#endif
-				}
-
-			} else {
-#if HWLOC_API_VERSION <= 0x00010000
-				ct = hwloc_cpuset_dup(obj->allowed_cpuset);
-				hwloc_cpuset_or(cpuset,cpuset,ct);
-				hwloc_cpuset_free(ct);
-#else
-				ct = hwloc_bitmap_dup(obj->allowed_cpuset);
-				hwloc_bitmap_or(cpuset,cpuset,ct);
-				hwloc_bitmap_free(ct);
-#endif
-			}
-		}
-
-		char *str;
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_asprintf(&str,cpuset);
-#else
-		hwloc_bitmap_asprintf(&str,cpuset);
-#endif
-		tssize = sizeof(cpu_set_t);
-		if (hwloc_cpuset_to_glibc_sched_affinity(topology,cpuset,
-							  &ts,tssize) == 0) {
-			fstatus = SLURM_SUCCESS;
-			if (sched_setaffinity(pid,tssize,&ts)) {
-				error("task/cgroup: task[%u] unable to set "
-				      "taskset '%s'",taskid,str);
-				fstatus = SLURM_ERROR;
-			} else if (verbose) {
-				info("task/cgroup: task[%u] taskset '%s' is set"
-				     ,taskid,str);
-			}
-		} else {
-			error("task/cgroup: task[%u] unable to build "
-			      "taskset '%s'",taskid,str);
-			fstatus = SLURM_ERROR;
-		}
-		free(str);
-
-	}
-
-	/* Destroy hwloc objects */
-#if HWLOC_API_VERSION <= 0x00010000
-	hwloc_cpuset_free(cpuset);
-#else
-	hwloc_bitmap_free(cpuset);
-#endif
-	hwloc_topology_destroy(topology);
-
-	return fstatus;
-#endif
-
-}
-
-
 /* when cgroups are configured with cpuset, at least
  * cpuset.cpus and cpuset.mems must be set or the cgroup
  * will not be available at all.
@@ -807,3 +545,418 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 	xcgroup_destroy(&acg);
 	return XCGROUP_SUCCESS;
 }
+
+/* affinity should be set using sched_setaffinity to not force */
+/* user to have to play with the cgroup hierarchy to modify it */
+extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
+{
+	int fstatus = SLURM_ERROR;
+
+#ifndef HAVE_HWLOC
+
+	error("task/cgroup: plugin not compiled with hwloc support, "
+	      "skipping affinity.");
+	return fstatus;
+
+#else
+	hwloc_obj_type_t socket_or_node;
+	uint32_t nldoms;
+	uint32_t nsockets;
+	uint32_t ncores;
+	uint32_t npus;
+	uint32_t nobj;
+	uint32_t taskid = job->envtp->localid;
+	uint32_t jntasks = job->node_tasks;
+	uint32_t jnpus = jntasks * job->cpus_per_task;
+	pid_t    pid = job->envtp->task_pid;
+
+	cpu_bind_type_t bind_type;
+	int bind_verbose;
+
+	hwloc_topology_t topology;
+#if HWLOC_API_VERSION <= 0x00010000
+	hwloc_cpuset_t cpuset;
+#else
+	hwloc_bitmap_t cpuset;
+#endif
+	hwloc_obj_type_t hwtype;
+	hwloc_obj_type_t req_hwtype;
+
+	size_t tssize;
+	cpu_set_t ts;
+
+	bind_type = job->cpu_bind_type ;
+	if (conf->task_plugin_param & CPU_BIND_VERBOSE ||
+	    bind_type & CPU_BIND_VERBOSE)
+		bind_verbose = 1 ;
+
+	/* Allocate and initialize hwloc objects */
+	hwloc_topology_init(&topology);
+#if HWLOC_API_VERSION <= 0x00010000
+	cpuset = hwloc_cpuset_alloc() ;
+#else
+	cpuset = hwloc_bitmap_alloc() ;
+#endif
+	hwloc_topology_load(topology);
+	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
+	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
+		/* One socket contains multiple NUMA-nodes
+		 * like AMD Opteron 6000 series etc.
+		 * In such case, use NUMA-node instead of socket. */
+		socket_or_node = HWLOC_OBJ_NODE;
+	} else {
+		socket_or_node = HWLOC_OBJ_SOCKET;
+	}
+
+	if (bind_type & CPU_BIND_NONE) {
+		if (bind_verbose)
+			info("task/cgroup: task[%u] is requesting no affinity",
+			     taskid);
+		return 0;
+	} else if (bind_type & CPU_BIND_TO_THREADS) {
+		if (bind_verbose)
+			info("task/cgroup: task[%u] is requesting "
+			     "thread level binding",taskid);
+		req_hwtype = HWLOC_OBJ_PU;
+	} else if (bind_type & CPU_BIND_TO_CORES) {
+		if (bind_verbose)
+			info("task/cgroup: task[%u] is requesting "
+			     "core level binding",taskid);
+		req_hwtype = HWLOC_OBJ_CORE;
+	} else if (bind_type & CPU_BIND_TO_SOCKETS) {
+		if (bind_verbose)
+			info("task/cgroup: task[%u] is requesting "
+			     "socket level binding",taskid);
+		req_hwtype = socket_or_node;
+	} else if (bind_type & CPU_BIND_TO_LDOMS) {
+		if (bind_verbose)
+			info("task/cgroup: task[%u] is requesting "
+			     "ldom level binding",taskid);
+		req_hwtype = HWLOC_OBJ_NODE;
+	} else {
+		if (bind_verbose)
+			info("task/cgroup: task[%u] using core level binding"
+			     " by default",taskid);
+		req_hwtype = HWLOC_OBJ_CORE;
+	}
+
+	/*
+	 * Perform the topology detection. It will only get allowed PUs.
+	 * Detect in the same time the granularity to use for binding.
+	 * The granularity can be relaxed from threads to cores if enough
+	 * cores are available as with hyperthread support, ntasks-per-core
+	 * param can let us have access to more threads per core for each
+	 * task
+	 * Revert back to machine granularity if no finer-grained granularity
+	 * matching the request is found. This will result in no affinity
+	 * applied.
+	 * The detected granularity will be used to find where to best place
+	 * the task, then the cpu_bind option will be used to relax the
+	 * affinity constraint and use more PUs. (i.e. use a core granularity
+	 * to dispatch the tasks across the sockets and then provide access
+	 * to each task to the cores of its socket.)
+	 */
+	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						   HWLOC_OBJ_PU);
+	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						     HWLOC_OBJ_CORE);
+	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						       socket_or_node);
+	nldoms = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						     HWLOC_OBJ_NODE);
+
+	hwtype = HWLOC_OBJ_MACHINE;
+	nobj = 1;
+	if (npus >= jnpus || bind_type & CPU_BIND_TO_THREADS) {
+		hwtype = HWLOC_OBJ_PU;
+		nobj = npus;
+	}
+	if (ncores >= jnpus || bind_type & CPU_BIND_TO_CORES) {
+		hwtype = HWLOC_OBJ_CORE;
+		nobj = ncores;
+	}
+	if (nsockets >= jntasks &&
+	     bind_type & CPU_BIND_TO_SOCKETS) {
+		hwtype = socket_or_node;
+		nobj = nsockets;
+	}
+	/*
+	 * HWLOC returns all the NUMA nodes available regardless of the
+	 * number of underlying sockets available (regardless of the allowed
+	 * resources). So there is no guarantee that each ldom will be populated
+	 * with usable sockets. So add a simple check that at least ensure that
+	 * we have as many sockets as ldoms before moving to ldoms granularity
+	 */
+	if (nldoms >= jntasks &&
+	     nsockets >= nldoms &&
+	     bind_type & CPU_BIND_TO_LDOMS) {
+		hwtype = HWLOC_OBJ_NODE;
+		nobj = nldoms;
+	}
+
+	/*
+	 * Bind the detected object to the taskid, respecting the
+	 * granularity, using the designated or default distribution
+	 * method (block or cyclic).
+	 * If not enough objects to do the job, revert to no affinity mode
+	 */
+	if (hwloc_compare_types(hwtype,HWLOC_OBJ_MACHINE) == 0) {
+
+		info("task/cgroup: task[%u] disabling affinity because of %s "
+		     "granularity",taskid,hwloc_obj_type_string(hwtype));
+
+	} else if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0 &&
+		    jnpus > nobj) {
+
+		info("task/cgroup: task[%u] not enough %s objects, disabling "
+		     "affinity",taskid,hwloc_obj_type_string(hwtype));
+
+	} else {
+
+		if (bind_verbose) {
+			info("task/cgroup: task[%u] using %s granularity",
+			     taskid,hwloc_obj_type_string(hwtype));
+		}
+		switch(job->task_dist) {
+		case SLURM_DIST_CYCLIC:
+		case SLURM_DIST_BLOCK:
+		case SLURM_DIST_CYCLIC_CYCLIC:
+		case SLURM_DIST_BLOCK_CYCLIC:
+			_task_cgroup_cpuset_dist_cyclic(topology, hwtype,
+				req_hwtype, job, bind_verbose, cpuset);
+			break;
+		default:
+			_task_cgroup_cpuset_dist_block(topology, hwtype,
+				req_hwtype, nobj, job, bind_verbose, cpuset);
+		}
+
+		char *str;
+#if HWLOC_API_VERSION <= 0x00010000
+		hwloc_cpuset_asprintf(&str,cpuset);
+#else
+		hwloc_bitmap_asprintf(&str,cpuset);
+#endif
+		tssize = sizeof(cpu_set_t);
+		if (hwloc_cpuset_to_glibc_sched_affinity(topology,cpuset,
+							  &ts,tssize) == 0) {
+			fstatus = SLURM_SUCCESS;
+			if (sched_setaffinity(pid,tssize,&ts)) {
+				error("task/cgroup: task[%u] unable to set "
+				      "taskset '%s'",taskid,str);
+				fstatus = SLURM_ERROR;
+			} else if (bind_verbose) {
+				info("task/cgroup: task[%u] taskset '%s' is set"
+				     ,taskid,str);
+			}
+		} else {
+			error("task/cgroup: task[%u] unable to build "
+			      "taskset '%s'",taskid,str);
+			fstatus = SLURM_ERROR;
+		}
+		free(str);
+	}
+
+	/* Destroy hwloc objects */
+#if HWLOC_API_VERSION <= 0x00010000
+	hwloc_cpuset_free(cpuset);
+#else
+	hwloc_bitmap_free(cpuset);
+#endif
+	hwloc_topology_destroy(topology);
+
+	return fstatus;
+#endif
+
+}
+
+#ifdef HAVE_HWLOC
+/*
+ * Distribute cpus to the task using cyclic distribution across sockets
+ */
+static int _task_cgroup_cpuset_dist_cyclic(hwloc_topology_t topology,
+		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
+		slurmd_job_t *job, int bind_verbose,
+#if HWLOC_API_VERSION <= 0x00010000
+		hwloc_cpuset_t cpuset)
+#else
+		hwloc_bitmap_t cpuset)
+#endif
+{
+	hwloc_obj_t obj;
+	uint32_t *obj_idx;
+	uint32_t i, sock_idx, npskip, npdist, nsockets;
+	uint32_t taskid = job->envtp->localid;
+
+	if (bind_verbose)
+		info("task/cgroup: task[%u] using cyclic distribution, "
+				"task_dist %u", taskid, job->task_dist);
+	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						       HWLOC_OBJ_SOCKET);
+	obj_idx = xmalloc(nsockets * sizeof(uint32_t));
+
+	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
+		/* cores or threads granularity */
+		npskip = taskid * job->cpus_per_task;
+		npdist = job->cpus_per_task;
+	} else {
+		/* sockets or ldoms granularity */
+		npskip = taskid;
+		npdist = 1;
+	}
+
+	/* skip objs for lower taskids */
+	i = 0;
+	sock_idx = 0;
+	while (i < npskip) {
+		while ((sock_idx < nsockets) && (i < npskip)) {
+			obj = hwloc_get_obj_below_by_type(topology,
+					HWLOC_OBJ_SOCKET, sock_idx,
+					hwtype, obj_idx[sock_idx]);
+			if (obj != NULL) {
+				obj_idx[sock_idx]++;
+				i++;
+			}
+			sock_idx++;
+		}
+		if (i < npskip)
+			sock_idx = 0;
+	}
+
+	/* distribute objs cyclically across sockets */
+	i = npdist;
+	while (i > 0) {
+		while ((sock_idx < nsockets) && (i > 0)) {
+			obj = hwloc_get_obj_below_by_type(topology,
+					HWLOC_OBJ_SOCKET, sock_idx,
+					hwtype, obj_idx[sock_idx]);
+			if (obj != NULL) {
+				obj_idx[sock_idx]++;
+				_add_cpuset(hwtype, req_hwtype, obj, taskid,
+					bind_verbose, cpuset);
+				i--;
+			}
+			sock_idx++;
+		}
+		sock_idx = 0;
+	}
+	xfree(obj_idx);
+	return XCGROUP_SUCCESS;
+}
+
+/*
+ * Distribute cpus to the task using block distribution
+ */
+static int _task_cgroup_cpuset_dist_block(hwloc_topology_t topology,
+		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
+		uint32_t nobj, slurmd_job_t *job, int bind_verbose,
+#if HWLOC_API_VERSION <= 0x00010000
+		hwloc_cpuset_t cpuset)
+#else
+		hwloc_bitmap_t cpuset)
+#endif
+
+{
+	hwloc_obj_t obj;
+	uint32_t i, pfirst,plast;
+	uint32_t taskid = job->envtp->localid;
+	int hwdepth;
+
+	if (bind_verbose)
+		info("task/cgroup: task[%u] using block distribution, "
+				"task_dist %u", taskid, job->task_dist);
+	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
+		/* cores or threads granularity */
+		pfirst = taskid *  job->cpus_per_task ;
+		plast = pfirst + job->cpus_per_task - 1;
+	} else {
+		/* sockets or ldoms granularity */
+		pfirst = taskid;
+		plast = pfirst;
+	}
+	hwdepth = hwloc_get_type_depth(topology,hwtype);
+	for (i = pfirst; i <= plast && i < nobj ; i++) {
+		obj = hwloc_get_obj_by_depth(topology, hwdepth, (int)i);
+		_add_cpuset(hwtype, req_hwtype, obj, taskid, bind_verbose,
+				cpuset);
+	}
+	return XCGROUP_SUCCESS;
+}
+
+/*
+ * Add cpuset for an object to the total cpuset for a task, using the
+ * appropriate ancestor object cpuset if necessary
+ *
+ * obj = object to add
+ * cpuset = cpuset for task
+ */
+static void _add_cpuset(
+		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
+		hwloc_obj_t obj, uint32_t taskid,  int bind_verbose,
+#if HWLOC_API_VERSION <= 0x00010000
+		hwloc_cpuset_t cpuset)
+#else
+		hwloc_bitmap_t cpuset)
+#endif
+{
+	struct hwloc_obj *pobj;
+#if HWLOC_API_VERSION <= 0x00010000
+	hwloc_cpuset_t ct;
+#else
+	hwloc_bitmap_t ct;
+#endif
+
+	/* if requested binding overlap the granularity */
+	/* use the ancestor cpuset instead of the object one */
+	if (hwloc_compare_types(hwtype,req_hwtype) > 0) {
+
+		/* Get the parent object of req_hwtype or the */
+		/* one just above if not found (meaning of >0)*/
+		/* (useful for ldoms binding with !NUMA nodes)*/
+		pobj = obj->parent;
+		while (pobj != NULL &&
+			hwloc_compare_types(pobj->type, req_hwtype) > 0)
+			pobj = pobj->parent;
+
+		if (pobj != NULL) {
+			if (bind_verbose)
+				info("task/cgroup: task[%u] higher level %s "
+				"found", taskid,
+				hwloc_obj_type_string(pobj->type));
+#if HWLOC_API_VERSION <= 0x00010000
+			ct = hwloc_cpuset_dup(pobj->allowed_cpuset);
+			hwloc_cpuset_or(cpuset,cpuset,ct);
+			hwloc_cpuset_free(ct);
+#else
+			ct = hwloc_bitmap_dup(pobj->allowed_cpuset);
+			hwloc_bitmap_or(cpuset,cpuset,ct);
+			hwloc_bitmap_free(ct);
+#endif
+		} else {
+			/* should not be executed */
+			if (bind_verbose)
+				info("task/cgroup: task[%u] no higher level "
+				"found", taskid);
+#if HWLOC_API_VERSION <= 0x00010000
+			ct = hwloc_cpuset_dup(obj->allowed_cpuset);
+			hwloc_cpuset_or(cpuset,cpuset,ct);
+			hwloc_cpuset_free(ct);
+#else
+			ct = hwloc_bitmap_dup(obj->allowed_cpuset);
+			hwloc_bitmap_or(cpuset,cpuset,ct);
+			hwloc_bitmap_free(ct);
+#endif
+		}
+
+	} else {
+#if HWLOC_API_VERSION <= 0x00010000
+		ct = hwloc_cpuset_dup(obj->allowed_cpuset);
+		hwloc_cpuset_or(cpuset,cpuset,ct);
+		hwloc_cpuset_free(ct);
+#else
+		ct = hwloc_bitmap_dup(obj->allowed_cpuset);
+		hwloc_bitmap_or(cpuset,cpuset,ct);
+		hwloc_bitmap_free(ct);
+#endif
+	}
+}
+#endif
