@@ -1,4 +1,4 @@
-.TH "slurm.conf" "6" "April 2012" "slurm.conf 2.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "April 2012" "slurm.conf 2.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1537,6 +1537,10 @@ consumable resources.
 Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIShared=Exclusive\fR option.
 See the partition \fBShared\fR parameter for more information.
+.TP
+\fBselect/serial\fR
+for allocating resources to single CPU jobs only.
+Highly optimized for maximum throughput.
 .TP
 \fBselect/bluegene\fR
 for a three\-dimensional BlueGene system.
@@ -3360,7 +3364,7 @@ See the \fBlogrotate\fR man page for more details.
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
-Portions Copyright (C) 2010 SchedMD <http://www.sched\-md.com>.
+Portions Copyright (C) 2010-2012 SchedMD <http://www.sched\-md.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

@@ -640,6 +640,8 @@ Select one value for <B>SelectType</B>:<BR>
 resource allocation, does not manage individual processor allocation<BR>
 <input type="radio" name="select_type" value="bluegene">
 <B>BlueGene</B>: For IBM Blue Gene systems only<BR>
+<input type="radio" name="select_type" value="serial">
+<B>Serial</B>: Supports single CPU job allocations only<BR>
 <P>
 
 <H2>Task Launch</H2>
