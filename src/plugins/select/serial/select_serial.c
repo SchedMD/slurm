@@ -1570,6 +1570,57 @@ extern int select_p_block_init(List part_list)
 	return SLURM_SUCCESS;
 }
 
+static bool _is_job_spec_serial(struct job_record *job_ptr)
+{
+	struct job_details *details_ptr = job_ptr->details;
+	struct multi_core_data *mc_ptr = NULL;
+
+	if (details_ptr) {
+		if ((details_ptr->cpus_per_task > 1) &&
+		    (details_ptr->cpus_per_task != (uint16_t) NO_VAL))
+			return false;
+		if ((details_ptr->min_cpus > 1) &&
+		    (details_ptr->min_cpus != NO_VAL))
+			return false;
+		if ((details_ptr->min_nodes > 1) &&
+		    (details_ptr->min_nodes != NO_VAL))
+			return false;
+		if ((details_ptr->ntasks_per_node > 1) &&
+		    (details_ptr->ntasks_per_node != (uint16_t) NO_VAL))
+			return false;
+		if ((details_ptr->num_tasks > 1) &&
+		    (details_ptr->num_tasks != NO_VAL))
+			return false;
+		if (details_ptr->pn_min_cpus > 1)
+			return false;
+		if (details_ptr->req_node_bitmap &&
+		    (bit_set_count(details_ptr->req_node_bitmap) > 1))
+			return false;
+		mc_ptr = details_ptr->mc_ptr;
+	}
+
+	if (mc_ptr) {
+		/* If data structure exists then heck once and destroy it */
+		if ((mc_ptr->cores_per_socket != (uint16_t) NO_VAL) &&
+		    (mc_ptr->cores_per_socket > 1))
+			return false;
+		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		    (mc_ptr->ntasks_per_core > 1))
+			return false;
+		if ((mc_ptr->ntasks_per_socket != (uint16_t) INFINITE) &&
+		    (mc_ptr->ntasks_per_socket > 1))
+			return false;
+		if ((mc_ptr->sockets_per_node != (uint16_t) NO_VAL) &&
+		    (mc_ptr->sockets_per_node > 1))
+			return false;
+		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
+		    (mc_ptr->threads_per_core > 1))
+			return false;
+		xfree(job_ptr->details->mc_ptr);
+	}
+
+	return true;
+}
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
@@ -1621,6 +1672,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	if (!job_ptr->details)
 		return EINVAL;
+	if ((min_nodes > 1) || !_is_job_spec_serial(job_ptr)) {
+		info("select/serial: job %u not serial", job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 
 	if (!job_ptr->details->mc_ptr)
 		job_ptr->details->mc_ptr = _create_default_mc();
