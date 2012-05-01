@@ -439,7 +439,8 @@ extern int task_cgroup_cpuset_create(slurmd_job_t *job)
 				return SLURM_ERROR;
 			}
 		} else {
-			if (snprintf(jobstep_cgroup_path, PATH_MAX, "%s/step_%u",
+			if (snprintf(jobstep_cgroup_path,
+				     PATH_MAX, "%s/step_%u",
 				     job_cgroup_path, stepid) >= PATH_MAX) {
 				error("task/cgroup: unable to build job step"
 				      " %u.%u cpuset cg relative path: %m",
@@ -867,7 +868,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 #endif
 		tssize = sizeof(cpu_set_t);
 		if (hwloc_cpuset_to_glibc_sched_affinity(topology,cpuset,
-							  &ts,tssize) == 0) {
+							 &ts,tssize) == 0) {
 			fstatus = SLURM_SUCCESS;
 			if (sched_setaffinity(pid,tssize,&ts)) {
 				error("task/cgroup: task[%u] unable to set "
