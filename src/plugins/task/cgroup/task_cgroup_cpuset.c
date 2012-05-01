@@ -135,32 +135,154 @@ error:	info("_abs_to_mac failed");
 }
 
 #ifdef HAVE_HWLOC
-static int _task_cgroup_cpuset_dist_cyclic(hwloc_topology_t topology,
-		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		slurmd_job_t *job, int bind_verbose,
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_t cpuset);
-#else
-		hwloc_bitmap_t cpuset);
-#endif
 
-static int _task_cgroup_cpuset_dist_block(hwloc_topology_t topology,
-		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		uint32_t nobj, slurmd_job_t *job, int bind_verbose,
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_t cpuset);
-#else
-		hwloc_bitmap_t cpuset);
-#endif
-
+/*
+ * Add cpuset for an object to the total cpuset for a task, using the
+ * appropriate ancestor object cpuset if necessary
+ *
+ * obj = object to add
+ * cpuset = cpuset for task
+ */
 static void _add_cpuset(
 		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		hwloc_obj_t obj, uint32_t taskid, int bind_verbose,
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_t cpuset);
-#else
-		hwloc_bitmap_t cpuset);
-#endif
+		hwloc_obj_t obj, uint32_t taskid,  int bind_verbose,
+		hwloc_bitmap_t cpuset)
+{
+	struct hwloc_obj *pobj;
+
+	/* if requested binding overlap the granularity */
+	/* use the ancestor cpuset instead of the object one */
+	if (hwloc_compare_types(hwtype,req_hwtype) > 0) {
+
+		/* Get the parent object of req_hwtype or the */
+		/* one just above if not found (meaning of >0)*/
+		/* (useful for ldoms binding with !NUMA nodes)*/
+		pobj = obj->parent;
+		while (pobj != NULL &&
+			hwloc_compare_types(pobj->type, req_hwtype) > 0)
+			pobj = pobj->parent;
+
+		if (pobj != NULL) {
+			if (bind_verbose)
+				info("task/cgroup: task[%u] higher level %s "
+				"found", taskid,
+				hwloc_obj_type_string(pobj->type));
+			hwloc_bitmap_or(cpuset, cpuset, pobj->allowed_cpuset);
+		} else {
+			/* should not be executed */
+			if (bind_verbose)
+				info("task/cgroup: task[%u] no higher level "
+				"found", taskid);
+			hwloc_bitmap_or(cpuset, cpuset, obj->allowed_cpuset);
+		}
+
+	} else
+		hwloc_bitmap_or(cpuset, cpuset, obj->allowed_cpuset);
+}
+
+/*
+ * Distribute cpus to the task using cyclic distribution across sockets
+ */
+static int _task_cgroup_cpuset_dist_cyclic(
+	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
+	hwloc_obj_type_t req_hwtype, slurmd_job_t *job, int bind_verbose,
+	hwloc_bitmap_t cpuset)
+{
+	hwloc_obj_t obj;
+	uint32_t *obj_idx;
+	uint32_t i, sock_idx, npskip, npdist, nsockets;
+	uint32_t taskid = job->envtp->localid;
+
+	if (bind_verbose)
+		info("task/cgroup: task[%u] using cyclic distribution, "
+				"task_dist %u", taskid, job->task_dist);
+	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						       HWLOC_OBJ_SOCKET);
+	obj_idx = xmalloc(nsockets * sizeof(uint32_t));
+
+	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
+		/* cores or threads granularity */
+		npskip = taskid * job->cpus_per_task;
+		npdist = job->cpus_per_task;
+	} else {
+		/* sockets or ldoms granularity */
+		npskip = taskid;
+		npdist = 1;
+	}
+
+	/* skip objs for lower taskids */
+	i = 0;
+	sock_idx = 0;
+	while (i < npskip) {
+		while ((sock_idx < nsockets) && (i < npskip)) {
+			obj = hwloc_get_obj_below_by_type(topology,
+					HWLOC_OBJ_SOCKET, sock_idx,
+					hwtype, obj_idx[sock_idx]);
+			if (obj != NULL) {
+				obj_idx[sock_idx]++;
+				i++;
+			}
+			sock_idx++;
+		}
+		if (i < npskip)
+			sock_idx = 0;
+	}
+
+	/* distribute objs cyclically across sockets */
+	i = npdist;
+	while (i > 0) {
+		while ((sock_idx < nsockets) && (i > 0)) {
+			obj = hwloc_get_obj_below_by_type(topology,
+					HWLOC_OBJ_SOCKET, sock_idx,
+					hwtype, obj_idx[sock_idx]);
+			if (obj != NULL) {
+				obj_idx[sock_idx]++;
+				_add_cpuset(hwtype, req_hwtype, obj, taskid,
+					bind_verbose, cpuset);
+				i--;
+			}
+			sock_idx++;
+		}
+		sock_idx = 0;
+	}
+	xfree(obj_idx);
+	return XCGROUP_SUCCESS;
+}
+
+/*
+ * Distribute cpus to the task using block distribution
+ */
+static int _task_cgroup_cpuset_dist_block(
+	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
+	hwloc_obj_type_t req_hwtype, uint32_t nobj,
+	slurmd_job_t *job, int bind_verbose, hwloc_bitmap_t cpuset)
+{
+	hwloc_obj_t obj;
+	uint32_t i, pfirst,plast;
+	uint32_t taskid = job->envtp->localid;
+	int hwdepth;
+
+	if (bind_verbose)
+		info("task/cgroup: task[%u] using block distribution, "
+				"task_dist %u", taskid, job->task_dist);
+	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
+		/* cores or threads granularity */
+		pfirst = taskid *  job->cpus_per_task ;
+		plast = pfirst + job->cpus_per_task - 1;
+	} else {
+		/* sockets or ldoms granularity */
+		pfirst = taskid;
+		plast = pfirst;
+	}
+	hwdepth = hwloc_get_type_depth(topology,hwtype);
+	for (i = pfirst; i <= plast && i < nobj ; i++) {
+		obj = hwloc_get_obj_by_depth(topology, hwdepth, (int)i);
+		_add_cpuset(hwtype, req_hwtype, obj, taskid, bind_verbose,
+				cpuset);
+	}
+	return XCGROUP_SUCCESS;
+}
+
 #endif
 
 extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
@@ -768,195 +890,3 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 #endif
 
 }
-
-#ifdef HAVE_HWLOC
-/*
- * Distribute cpus to the task using cyclic distribution across sockets
- */
-static int _task_cgroup_cpuset_dist_cyclic(hwloc_topology_t topology,
-		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		slurmd_job_t *job, int bind_verbose,
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_t cpuset)
-#else
-		hwloc_bitmap_t cpuset)
-#endif
-{
-	hwloc_obj_t obj;
-	uint32_t *obj_idx;
-	uint32_t i, sock_idx, npskip, npdist, nsockets;
-	uint32_t taskid = job->envtp->localid;
-
-	if (bind_verbose)
-		info("task/cgroup: task[%u] using cyclic distribution, "
-				"task_dist %u", taskid, job->task_dist);
-	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						       HWLOC_OBJ_SOCKET);
-	obj_idx = xmalloc(nsockets * sizeof(uint32_t));
-
-	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
-		/* cores or threads granularity */
-		npskip = taskid * job->cpus_per_task;
-		npdist = job->cpus_per_task;
-	} else {
-		/* sockets or ldoms granularity */
-		npskip = taskid;
-		npdist = 1;
-	}
-
-	/* skip objs for lower taskids */
-	i = 0;
-	sock_idx = 0;
-	while (i < npskip) {
-		while ((sock_idx < nsockets) && (i < npskip)) {
-			obj = hwloc_get_obj_below_by_type(topology,
-					HWLOC_OBJ_SOCKET, sock_idx,
-					hwtype, obj_idx[sock_idx]);
-			if (obj != NULL) {
-				obj_idx[sock_idx]++;
-				i++;
-			}
-			sock_idx++;
-		}
-		if (i < npskip)
-			sock_idx = 0;
-	}
-
-	/* distribute objs cyclically across sockets */
-	i = npdist;
-	while (i > 0) {
-		while ((sock_idx < nsockets) && (i > 0)) {
-			obj = hwloc_get_obj_below_by_type(topology,
-					HWLOC_OBJ_SOCKET, sock_idx,
-					hwtype, obj_idx[sock_idx]);
-			if (obj != NULL) {
-				obj_idx[sock_idx]++;
-				_add_cpuset(hwtype, req_hwtype, obj, taskid,
-					bind_verbose, cpuset);
-				i--;
-			}
-			sock_idx++;
-		}
-		sock_idx = 0;
-	}
-	xfree(obj_idx);
-	return XCGROUP_SUCCESS;
-}
-
-/*
- * Distribute cpus to the task using block distribution
- */
-static int _task_cgroup_cpuset_dist_block(hwloc_topology_t topology,
-		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		uint32_t nobj, slurmd_job_t *job, int bind_verbose,
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_t cpuset)
-#else
-		hwloc_bitmap_t cpuset)
-#endif
-
-{
-	hwloc_obj_t obj;
-	uint32_t i, pfirst,plast;
-	uint32_t taskid = job->envtp->localid;
-	int hwdepth;
-
-	if (bind_verbose)
-		info("task/cgroup: task[%u] using block distribution, "
-				"task_dist %u", taskid, job->task_dist);
-	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
-		/* cores or threads granularity */
-		pfirst = taskid *  job->cpus_per_task ;
-		plast = pfirst + job->cpus_per_task - 1;
-	} else {
-		/* sockets or ldoms granularity */
-		pfirst = taskid;
-		plast = pfirst;
-	}
-	hwdepth = hwloc_get_type_depth(topology,hwtype);
-	for (i = pfirst; i <= plast && i < nobj ; i++) {
-		obj = hwloc_get_obj_by_depth(topology, hwdepth, (int)i);
-		_add_cpuset(hwtype, req_hwtype, obj, taskid, bind_verbose,
-				cpuset);
-	}
-	return XCGROUP_SUCCESS;
-}
-
-/*
- * Add cpuset for an object to the total cpuset for a task, using the
- * appropriate ancestor object cpuset if necessary
- *
- * obj = object to add
- * cpuset = cpuset for task
- */
-static void _add_cpuset(
-		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		hwloc_obj_t obj, uint32_t taskid,  int bind_verbose,
-#if HWLOC_API_VERSION <= 0x00010000
-		hwloc_cpuset_t cpuset)
-#else
-		hwloc_bitmap_t cpuset)
-#endif
-{
-	struct hwloc_obj *pobj;
-#if HWLOC_API_VERSION <= 0x00010000
-	hwloc_cpuset_t ct;
-#else
-	hwloc_bitmap_t ct;
-#endif
-
-	/* if requested binding overlap the granularity */
-	/* use the ancestor cpuset instead of the object one */
-	if (hwloc_compare_types(hwtype,req_hwtype) > 0) {
-
-		/* Get the parent object of req_hwtype or the */
-		/* one just above if not found (meaning of >0)*/
-		/* (useful for ldoms binding with !NUMA nodes)*/
-		pobj = obj->parent;
-		while (pobj != NULL &&
-			hwloc_compare_types(pobj->type, req_hwtype) > 0)
-			pobj = pobj->parent;
-
-		if (pobj != NULL) {
-			if (bind_verbose)
-				info("task/cgroup: task[%u] higher level %s "
-				"found", taskid,
-				hwloc_obj_type_string(pobj->type));
-#if HWLOC_API_VERSION <= 0x00010000
-			ct = hwloc_cpuset_dup(pobj->allowed_cpuset);
-			hwloc_cpuset_or(cpuset,cpuset,ct);
-			hwloc_cpuset_free(ct);
-#else
-			ct = hwloc_bitmap_dup(pobj->allowed_cpuset);
-			hwloc_bitmap_or(cpuset,cpuset,ct);
-			hwloc_bitmap_free(ct);
-#endif
-		} else {
-			/* should not be executed */
-			if (bind_verbose)
-				info("task/cgroup: task[%u] no higher level "
-				"found", taskid);
-#if HWLOC_API_VERSION <= 0x00010000
-			ct = hwloc_cpuset_dup(obj->allowed_cpuset);
-			hwloc_cpuset_or(cpuset,cpuset,ct);
-			hwloc_cpuset_free(ct);
-#else
-			ct = hwloc_bitmap_dup(obj->allowed_cpuset);
-			hwloc_bitmap_or(cpuset,cpuset,ct);
-			hwloc_bitmap_free(ct);
-#endif
-		}
-
-	} else {
-#if HWLOC_API_VERSION <= 0x00010000
-		ct = hwloc_cpuset_dup(obj->allowed_cpuset);
-		hwloc_cpuset_or(cpuset,cpuset,ct);
-		hwloc_cpuset_free(ct);
-#else
-		ct = hwloc_bitmap_dup(obj->allowed_cpuset);
-		hwloc_bitmap_or(cpuset,cpuset,ct);
-		hwloc_bitmap_free(ct);
-#endif
-	}
-}
-#endif
