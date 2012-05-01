@@ -168,8 +168,10 @@ static int _abs_to_mac(char* lrange, char** prange)
 end_it:
 	FREE_NULL_BITMAP(absmap);
 	FREE_NULL_BITMAP(macmap);
+
 	if (rc != SLURM_SUCCESS)
 		info("_abs_to_mac failed");
+
 	return rc;
 }
 
