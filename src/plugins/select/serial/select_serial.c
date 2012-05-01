@@ -143,13 +143,13 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct job_record *job_ptr, int action);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
-		    uint32_t req_nodes, uint16_t job_node_req,
+		    uint32_t req_nodes, uint16_t job_node_share,
 		    List preemptee_candidates, List *preemptee_job_list);
 static int _sort_usable_nodes_dec(struct job_record *job_a,
 				  struct job_record *job_b);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
- 		      uint32_t req_nodes, uint16_t job_node_req);
+		      uint32_t req_nodes, uint16_t job_node_share);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t job_node_req,
@@ -1058,7 +1058,7 @@ static struct multi_core_data * _create_default_mc(void)
  * - can the job run on shared nodes?   (NODE_CR_ONE_ROW)
  * - can the job run on overcommitted resources? (NODE_CR_AVAILABLE)
  */
-static uint16_t _get_job_node_req(struct job_record *job_ptr)
+static uint16_t _get_job_node_share(struct job_record *job_ptr)
 {
 	int max_share = job_ptr->part_ptr->max_share;
 
@@ -1102,12 +1102,12 @@ static bool _is_preemptable(struct job_record *job_ptr,
 /* Determine if a job can ever run */
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
-		      uint32_t req_nodes, uint16_t job_node_req)
+		      uint32_t req_nodes, uint16_t job_node_share)
 {
 	int rc;
 
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
-			 SELECT_MODE_TEST_ONLY, cr_type, job_node_req,
+			 SELECT_MODE_TEST_ONLY, cr_type, job_node_share,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
 	return rc;
@@ -1131,7 +1131,7 @@ static int _sort_usable_nodes_dec(struct job_record *job_a,
 /* Allocate resources for a job now, if possible */
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
-		    uint32_t req_nodes, uint16_t job_node_req,
+		    uint32_t req_nodes, uint16_t job_node_share,
 		    List preemptee_candidates, List *preemptee_job_list)
 {
 	int rc;
@@ -1150,7 +1150,7 @@ top:	orig_map = bit_copy(save_bitmap);
 		fatal("bit_copy: malloc failure");
 
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
-			 SELECT_MODE_RUN_NOW, cr_type, job_node_req,
+			 SELECT_MODE_RUN_NOW, cr_type, job_node_share,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
 
@@ -1190,7 +1190,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
 					 SELECT_MODE_WILL_RUN,
-					 cr_type, job_node_req,
+					 cr_type, job_node_share,
 					 select_node_cnt,
 					 future_part, future_usage);
 			tmp_job_ptr->details->usable_nodes = 0;
@@ -1277,7 +1277,7 @@ top:	orig_map = bit_copy(save_bitmap);
  *	each one. Used by SLURM's sched/backfill plugin and Moab. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, uint16_t job_node_req,
+			  uint32_t req_nodes, uint16_t job_node_share,
 			  List preemptee_candidates, List *preemptee_job_list)
 {
 	struct part_res_record *future_part;
@@ -1295,7 +1295,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Try to run with currently available nodes */
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
-			 SELECT_MODE_WILL_RUN, cr_type, job_node_req,
+			 SELECT_MODE_WILL_RUN, cr_type, job_node_share,
 			 select_node_cnt, select_part_record,
 			 select_node_usage);
 	if (rc == SLURM_SUCCESS) {
@@ -1354,7 +1354,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		bit_or(bitmap, orig_map);
 		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 				 req_nodes, SELECT_MODE_WILL_RUN, cr_type,
-				 job_node_req, select_node_cnt, future_part,
+				 job_node_share, select_node_cnt, future_part,
 				 future_usage);
 		if (rc == SLURM_SUCCESS)
 			job_ptr->start_time = now + 1;
@@ -1380,7 +1380,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
 					 SELECT_MODE_WILL_RUN, cr_type,
-					 job_node_req, select_node_cnt,
+					 job_node_share, select_node_cnt,
 					 future_part, future_usage);
 			if (rc == SLURM_SUCCESS) {
 				if (tmp_job_ptr->end_time <= now)
@@ -1608,7 +1608,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			     List *preemptee_job_list)
 {
 	int rc = EINVAL;
-	uint16_t job_node_req;
+	uint16_t job_node_share;
 	bool debug_cpu_bind = false, debug_check = false;
 
 	xassert(bitmap);
@@ -1624,26 +1624,25 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	if (!job_ptr->details->mc_ptr)
 		job_ptr->details->mc_ptr = _create_default_mc();
-	job_node_req = _get_job_node_req(job_ptr);
+	job_node_share = _get_job_node_share(job_ptr);
 
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
-		info("cons_res: select_p_job_test: job %u node_req %u mode %d",
-		     job_ptr->job_id, job_node_req, mode);
-		info("cons_res: select_p_job_test: min_n %u max_n %u req_n %u "
-		     "avail_n %u",
-	 	     min_nodes, max_nodes, req_nodes, bit_set_count(bitmap));
+		info("select/serial: select_p_job_test: job %u node_share %u "
+		     "mode %d avail_n %u",
+		     job_ptr->job_id, job_node_share, mode,
+		     bit_set_count(bitmap));
 		_dump_state(select_part_record);
 	}
 	if (mode == SELECT_MODE_WILL_RUN) {
 		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
-				    req_nodes, job_node_req,
+				    req_nodes, job_node_share,
 				    preemptee_candidates, preemptee_job_list);
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
 		rc = _test_only(job_ptr, bitmap, min_nodes, max_nodes,
-				req_nodes, job_node_req);
+				req_nodes, job_node_share);
 	} else if (mode == SELECT_MODE_RUN_NOW) {
 		rc = _run_now(job_ptr, bitmap, min_nodes, max_nodes,
-			      req_nodes, job_node_req,
+			      req_nodes, job_node_share,
 			      preemptee_candidates, preemptee_job_list);
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
