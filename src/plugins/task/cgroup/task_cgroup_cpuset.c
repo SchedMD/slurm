@@ -123,11 +123,7 @@ static int _abs_to_mac(char* lrange, char** prange)
 
 	if (total_cores == -1) {
 		total_cores = conf->sockets * conf->cores;
-		total_cpus  = conf->sockets * conf->cores * conf->threads;
-		if (total_cpus != conf->block_map_size) {
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
+		total_cpus  = conf->block_map_size;
 	}
 
 	/* allocate bitmap */
